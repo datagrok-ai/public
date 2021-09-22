@@ -14,7 +14,8 @@ export async function RepertoireBrowserApp() {
 
   if (tnames === null || tnames.length === 0) {
     try {
-      let df = (await grok.functions.eval('OpenServerFile("Dskatov:RepertoireBrowser/RepertoireBrowserSample.csv")'))[0];
+      //let df = (await grok.functions.eval('OpenServerFile("Dskatov:RepertoireBrowser/RepertoireBrowserSample.csv")'))[0];
+      let df = DG.DataFrame.create(5);
       view = grok.shell.addTableView(df);
     } catch (e) {
       grok.shell.warning('File "Dskatov:RepertoireBrowser/RepertoireBrowserSample.csv" not found.');
@@ -29,9 +30,9 @@ export async function RepertoireBrowserApp() {
   let app = new LaunchBrowser();
   await app.init(view);
 
-  let df = grok.shell.table('First500seqs');
-  if (df) {
-    let treeBrowser = new TreeBrowser();
-    await treeBrowser.init(df);
-  }
+  // let df = grok.shell.table('First500seqs');
+  // if (df) {
+  //   let treeBrowser = new TreeBrowser();
+  //   await treeBrowser.init(df);
+  // }
 }

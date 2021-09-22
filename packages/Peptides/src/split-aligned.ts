@@ -2,17 +2,17 @@ import * as DG from 'datagrok-api/dg';
 
 export function splitAlignedPeptides(peptideColumn: DG.Column) {
   const splitPeptidesArray: string[][] = [];
-  let flag = true;
+  let isFirstRun = true;
   let splitted;
 
   for (const peptideStr of peptideColumn.toList()) {
     splitted = peptideStr.split('-').slice(1, -1);
 
-    if (flag) {
+    if (isFirstRun) {
       for (let i = 0; i < splitted.length; i++) {
         splitPeptidesArray.push([]);
       }
-      flag = false;
+      isFirstRun = false;
     }
 
     splitted.forEach((value: string, index: number) => {

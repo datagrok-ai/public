@@ -628,8 +628,8 @@ export class Menu {
   /** Returns an existing menu group or adds a new group with the specified text.
    * @param {string} text
    * @returns {Menu} */
-  group(text: string): Menu {
-    return toJs(api.grok_Menu_Group(this.d, text));
+  group(text: string, order: number | null = null): Menu {
+    return toJs(api.grok_Menu_Group(this.d, text, order));
   }
 
   /** Ends a group of menu items and returns to the higher menu level.
@@ -642,8 +642,8 @@ export class Menu {
    * @param {string} text
    * @param {Function} onClick - callback with no parameters
    * @returns {Menu} */
-  item(text: string, onClick: Function): Menu {
-    return toJs(api.grok_Menu_Item(this.d, text, onClick));
+  item(text: string, onClick: Function, order: number | null = null): Menu {
+    return toJs(api.grok_Menu_Item(this.d, text, onClick, order));
   }
 
   /** For each item in items, adds a menu group with the specified text and handler.
@@ -963,6 +963,10 @@ export class Color {
   /** Returns the standard palette of the categorical colors used across all visualizations in Datagrok. */
   static get categoricalPalette(): ColorType[] {
     return api.grok_Color_CategoricalPalette();
+  }
+
+  static scaleColor(x: number, min: number, max: number, alpha?: number, colorScheme?: number[]): number {
+    return api.grok_Color_ScaleColor(x, min, max, alpha ? alpha : null, colorScheme ? colorScheme : null);
   }
 
   static scale(x: number, min: number, max: number): number {

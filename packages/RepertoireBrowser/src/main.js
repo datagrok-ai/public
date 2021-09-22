@@ -26,8 +26,8 @@ export class LaunchBrowser {
         let pViz = new PvizMethods();
         await pViz.init(view, inputs, ngl);
 
-        let msa = new MsaMethods();
-        msa.init(view, inputs);
+        // let msa = new MsaMethods();
+        // msa.init(view, inputs);
 
 
         inputs.repChoice.onChanged(async () => {
