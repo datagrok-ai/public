@@ -11,7 +11,16 @@ export class NglMethods {
 
     async init(view, inputs) {
 
-        inputs.ngl_host.style.backgroundColor ='black';
+        //sample 1
+        //let col_background = '#2e2e2e';
+
+        //sample 2
+        //let col_background = '#f1ead1';
+
+        //sample 3
+        let col_background = 'white';
+
+        inputs.ngl_host.style.backgroundColor = col_background;
         view.box = true;
         this.stage = new NGL.Stage(inputs.ngl_host);
         this.path = _package.webRoot + 'pdbfiles/' + 'TPP000153303.pdb';
@@ -25,12 +34,30 @@ export class NglMethods {
     // ---- NGL ----
     // create a color scheme for CDR3 regions
     CDR3(cdr_scheme, paratopes) {
+
+        //sample 1      
+        // let col_heavy_chain = '#0069a7';
+        // let col_light_chain = '#f1532b';
+        // let col_cdr = '#45d145';
+        //let col_para = 'white';
+        // let col_partopes_high = '(255, 255, 255)';
+        // let col_partopes_low = '(255, 0, 255)';
+
+        //sample 2   
+        let col_heavy_chain = '#000080';
+        let col_light_chain = '#B22222';
+        let col_cdr = '#45d145';
+        let col_para = '#b0c4de';
+        let col_partopes_low = '(176,196,222)'; //col_para in rgb
+        let col_partopes_high = '(255, 0, 255)';
+
+
         let schemeId;
-        let baseH = 'darkblue';
-        let baseL = 'darkred';
+        let baseH = col_heavy_chain;
+        let baseL = col_light_chain;
 
         if (paratopes.value === true) {
-            let palette = MiscMethods.interpolateColors('(255, 255, 255)', '(255, 0, 255)', 100);
+            let palette = MiscMethods.interpolateColors(col_partopes_low, col_partopes_high, 100);
             let selectionScheme = [];
             Object.keys(json.parapred_predictions).forEach((chain) => {
                 Object.keys(json.parapred_predictions[chain]).forEach((index) => {
@@ -39,7 +66,10 @@ export class NglMethods {
                         `${index} and :${chain}`
                     ]);
                 })
+
             })
+            selectionScheme.push([col_para, "* and :H"]);
+            selectionScheme.push([col_para, "* and :L"]);
             schemeId = NGL.ColormakerRegistry.addSelectionScheme(selectionScheme);
         } else {
             if (cdr_scheme.value === 'default') {
@@ -56,7 +86,7 @@ export class NglMethods {
                             str_buffer = str_buffer + ` or ${json.cdr_ranges[str][i][0]}-${json.cdr_ranges[str][i][1]} and :H`;
                         }
                         str_buffer = str_buffer.slice(4);
-                        scheme_buffer.push(["limegreen", str_buffer]);
+                        scheme_buffer.push([col_cdr, str_buffer]);
                         scheme_buffer.push([baseH, "* and :H"]);
 
                     } else if (str.includes(cdr_scheme.value + '_CDRL')) {
@@ -65,7 +95,7 @@ export class NglMethods {
                             str_buffer = str_buffer + ` or ${json.cdr_ranges[str][i][0]}-${json.cdr_ranges[str][i][1]} and :L`;
                         }
                         str_buffer = str_buffer.slice(4);
-                        scheme_buffer.push(["limegreen", str_buffer]);
+                        scheme_buffer.push([col_cdr, str_buffer]);
                         scheme_buffer.push([baseL, "* and :L"]);
                     }
                 });

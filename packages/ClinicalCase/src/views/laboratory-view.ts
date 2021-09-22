@@ -62,7 +62,7 @@ export class LaboratoryView extends DG.ViewBase {
       this.updateBaselineEndpointPlot(baselineEndpointPlot, baselineEndpointDiv, dm, lb, labValue, bl, ep);
     });
 
-    let distributionDiv = ui.div(disributionBoxPlot ? disributionBoxPlot.root : null);
+    let distributionDiv = ui.box(disributionBoxPlot ? disributionBoxPlot.root : null);
     let labValBoxPlot = labValues[ 0 ];
     let trArm = treatmentArms[ 0 ];
     let labValueChoicesBoxPlot = ui.choiceInput('Value', labValBoxPlot, labValues);
@@ -86,7 +86,7 @@ export class LaboratoryView extends DG.ViewBase {
 
 
     this.root.className = 'grok-view ui-box';
-    this.root.append(ui.splitV([
+    /*this.root.append(ui.splitV([
       ui.splitH([
 
         ui.divV([
@@ -134,29 +134,30 @@ export class LaboratoryView extends DG.ViewBase {
         distributionDiv
       ]),
     ]))
-    /*
-    this.root.appendChild(ui.div([
-      ui.divH([
-        ui.block50([ ui.h2('Hy\'s Law Chart'), hysLawScatterPlot ? hysLawScatterPlot.root : null ]),
-        ui.block50([
-          ui.divV([ ui.h2('Baseline/Endpoint with LLN/ULN'),
-          labValueChoices.root,
-          blVisitChoices.root,
-          epVisitChoices.root
-          ]),
-          baselineEndpointDiv ], { style: { 'padding-left': '20px' } }),
-      ]),
-      ui.divH([
-        ui.block50([ ui.h2('Laboratory results'), grid.root ]),
-        ui.block50([
-          ui.divV([ ui.h2('Laboratory results distribution'),
-          labValueChoicesBoxPlot.root,
-          treatmentArmsChoices.root
-          ]),
-          distributionDiv ], { style: { 'padding-left': '20px' } })
-      ])
-    ]));
-    */
+    /*/
+    this.root.appendChild(
+      ui.tabControl({
+        "Hy's law":hysLawScatterPlot.root,
+        "Baseline endpoint":ui.splitV([
+          ui.box(ui.panel([
+            ui.divH([
+              labValueChoices.root,blVisitChoices.root,epVisitChoices.root
+            ])
+          ]),{style:{maxHeight:'80px'}}),
+          baselineEndpointDiv
+        ]),
+        "Laboratory distribution":ui.splitV([
+          ui.box(ui.panel([
+            ui.divH([
+              labValueChoicesBoxPlot.root ,treatmentArmsChoices.root
+            ])
+          ]),{style:{maxHeight:'80px'}}),
+          distributionDiv
+        ]),
+        "Results":grid.root
+      }).root
+    );
+  
   }
 
 

@@ -45,16 +45,10 @@ export class PredictiveModelingTutorial extends Tutorial {
 
     /** Train model actions */
     const trainModel = async (method: string): Promise<void> => {
-      let pmv: DG.View;
-
-      await this.action('Click on "ML | Train Model..." to open a dialog for training models',
-        grok.events.onViewAdded.pipe(filter((v: DG.View) => {
-          if (v.type === 'PredictiveModel') {
-            pmv = v;
-            return true;
-          }
-          return false;
-        })));
+      const pmv = await this.openViewByType(
+        'Click on "ML | Train Model..." to open a dialog for training models',
+        'PredictiveModel'
+      );
 
       // UI generation delay
       await new Promise((resolve) => setTimeout(resolve, 1500));
@@ -115,8 +109,7 @@ export class PredictiveModelingTutorial extends Tutorial {
     await trainModel('Distributed Random Forest');
 
     const browseModels = async () => {
-      await this.action('Click on "Functions | Models" to open the Models Browser',
-        grok.events.onViewAdded.pipe(filter((v: DG.View) => v.type === DG.View.MODELS)));
+      await this.openViewByType('Click on "Functions | Models" to open the Models Browser', DG.View.MODELS);
     };
 
     this.title('Model performance');

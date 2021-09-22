@@ -40,7 +40,7 @@ export class RepertoireBrowserPanel {
         let acc_options = ui.accordion();
         acc_options.addPane('3D model', () => ui.inputs([this.repChoice, this.cdr_scheme]));
         acc_options.addPane('Sequence', () => ui.inputs([this.paratopes, this.ptm_prob]));
-        acc_options.addPane('PTMs', () => ui.inputs([this.ptm_choices]));
+        acc_options.addPane('PTMs', () => ui.div([this.ptm_choices]));
         acc_options.addPane('MSA', () => ui.inputs([this.msaContentChoice]));
         // await MiscMethods.save_load(this.table, acc_options)
         this.root.append(acc_options.root);

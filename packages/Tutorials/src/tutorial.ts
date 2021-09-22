@@ -2,8 +2,8 @@ import * as grok from 'datagrok-api/grok';
 import * as ui from 'datagrok-api/ui';
 import * as DG from 'datagrok-api/dg';
 import $ from 'cash-dom';
-import { Observable } from 'rxjs';
-import { filter, first } from 'rxjs/operators';
+import { fromEvent, Observable } from 'rxjs';
+import { filter, first, map } from 'rxjs/operators';
 import { _package } from './package';
 
 
@@ -78,13 +78,17 @@ export abstract class Tutorial extends DG.Widget {
     this.root.scrollTop = this.root.scrollHeight;
   }
 
+  clearRoot(): void {
+    $(this.root).children().each((idx, el) => $(el).empty());
+  }
+
   firstEvent(eventStream: Observable<any>): Promise<void> {
     return new Promise<void>((resolve, reject) => {
       eventStream.pipe(first()).subscribe((_: any) => resolve());
     });
   }
 
-  async openPlot(name: string, check: (viewer: DG.Viewer) => boolean): Promise<DG.Viewer> {
+  protected async openPlot(name: string, check: (viewer: DG.Viewer) => boolean): Promise<DG.Viewer> {
     // TODO: Expand toolbox / accordion API coverage
     const getViewerIcon = (el: HTMLElement) => $(el).find(`i.svg-${name.replace(' ', '-')}`).get()[0];
     const view = grok.shell.v as DG.View;
@@ -104,8 +108,7 @@ export abstract class Tutorial extends DG.Widget {
     return viewer!;
   }
 
-  async dlgInputAction(dlg: DG.Dialog, instructions: string, caption: string, value: string) {
-    // @ts-ignore
+  protected async dlgInputAction(dlg: DG.Dialog, instructions: string, caption: string, value: string) {
     const inp = dlg.inputs.filter((input: DG.InputBase) => input.caption == caption)[0];
     if (inp == null) return;
     await this.action(instructions,
@@ -117,6 +120,32 @@ export abstract class Tutorial extends DG.Widget {
       }),
       inp.root,
     );
+  }
+
+  /** A helper method to access text inputs in a view. */
+  protected async textInpAction(root: HTMLElement, instructions: string, caption: string, value: string) {
+    const inputRoot = $(root)
+      .find('div.ui-input-text.ui-input-root')
+      .filter((idx, inp) => $(inp).find('label.ui-label.ui-input-label')[0]?.textContent === caption)[0];
+    if (inputRoot == null) return;
+    const input = $(inputRoot).find('input.ui-input-editor')[0] as HTMLInputElement;
+    const source = fromEvent(input, 'input').pipe(map((_) => input.value), filter((val) => val === value));
+    await this.action(instructions, source, inputRoot);
+  }
+
+  /** Prompts the user to open a view of the specified type, waits for it to open and returns it. */
+  protected async openViewByType(instructions: string, type: string): Promise<DG.View> {
+    let view: DG.View;
+
+    await this.action(instructions, grok.events.onViewAdded.pipe(filter((v) => {
+      if (v.type === type) {
+        view = v;
+        return true;
+      }
+      return false;
+    })));
+
+    return view!;
   }
 }
 
@@ -137,6 +166,7 @@ export class TutorialRunner {
 
   async run(t: Tutorial): Promise<void> {
     $(this.root).empty();
+    //t.clearRoot();
     this.root.append(t.root);
     await t.run();
   }

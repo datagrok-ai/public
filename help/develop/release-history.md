@@ -1,6 +1,90 @@
 <!-- TITLE: Release History -->
 <!-- SUBTITLE: -->
 
+# 2021-09-22 Dev build 0.93.29
+
+## Latest Docker Images
+
+* Datagrok: 
+  *  `docker pull datagrok/datagrok:0.93.29`
+  *  `docker pull datagrok/datagrok:latest`
+  
+* [Docker-Compose](admin/docker-compose.md)
+
+## Addressed Issues
+
+* Renamed the file to reflect the feature name 
+* JS API: DG.Color.linear() 
+* Text-based file viewers: ability to edit and save files 
+* Viewers: Organize context menu entries consistently 
+* JS API: menu order parameter 
+* Bar chart: remove barChartFilter bitset 
+* JBIO: prepare color schemes for NGL viewer (WIP)
+* Peptides: various fixes and improvements 
+* (Bug) Bar chart: After switching on the "Relative Values" property, bars are incorrectly colored (WIP)
+
+
+# 2021-09-22 Dev build 0.93.28
+
+## Latest Docker Images
+
+* Datagrok: 
+  *  `docker pull datagrok/datagrok:0.93.28`
+  *  `docker pull datagrok/datagrok:latest`
+  
+* [Docker-Compose](admin/docker-compose.md)
+
+## Addressed Issues
+
+* Peptides: color-coding fix, split sequence join 
+* Closes #118 JS API: color-coding methods (Column.colors) 
+* #118 JS API: color-coding methods (Column.colors) 
+* Peptides: Stacked barchart transfered to ts and added to package 
+* logo Viewer for Peptides 
+* Peptides: Fixed cell renderer column width 
+* Update about-widget.ts 
+* Fix property initialization warnings 
+* (Bug) Fix CVM python environments through conda  
+* DG.Package: methods for working with files 
+* Files: package-specific AppData 
+* (Bug) Bar chart: After switching on the "Relative Values" property, bars are displayed completely zoomed 
+* Fix UI tests (WIP)
+* SMARTS: test possible solutions for aromatization/kekulization 
+* Tutorials package: give rights for editing 
+* Datlas: Build js-api on startup 
+* #84: Scatter Plot: Ability to show min/max on axes where appropriate 
+* Minor code cleanup 
+* Charts on viewers: Universal ability to show them with interactive legend 
+* Core: property for ordering menu items (WIP)
+* JS API: DG.Color.linear() 
+* Bar chart: merge two adjacent filter rectangles 
+* Peptides: ui fixes 
+
+
+# 2021-09-21 Dev build 0.93.27
+
+## Latest Docker Images
+
+* Datagrok: 
+  *  `docker pull datagrok/datagrok:0.93.27`
+  *  `docker pull datagrok/datagrok:latest`
+  
+* [Docker-Compose](admin/docker-compose.md)
+
+## Addressed Issues
+
+* Funcs: Function cache for scripts and data sync 
+* #53 Tutorials package: code clean-up 
+* #53 Tutorials package: helpers for working with view inputs 
+* Update icons for packages 
+* Update package.png 
+* Update Laboratory view 
+* Peptides: color coding optimization 
+* #53 Tutorials package: openViewByType method 
+* JS API: add examples with the linear color-coding 
+* Bar chart: add int column as split and stack column 
+
+
 # 2021-09-20 Dev build 0.93.26
 
 ## Latest Docker Images
