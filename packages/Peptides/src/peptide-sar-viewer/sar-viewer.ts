@@ -7,6 +7,7 @@ export class SARViewer extends DG.JsViewer {
   private grid: DG.Viewer | null;
   protected activityColumnColumnName: string;
   protected activityScalingMethod: string;
+  protected filterMode: boolean;
   // protected showHistogram: boolean;
   // duplicatesHandingMethod: string;
   constructor() {
@@ -17,6 +18,7 @@ export class SARViewer extends DG.JsViewer {
     //TODO: find a way to restrict activityColumnColumnName to accept only numerical columns (double even better)
     this.activityColumnColumnName = this.string('activityColumnColumnName');
     this.activityScalingMethod = this.string('activityScalingMethod', 'none', {choices: ['none', 'lg', '-lg']});
+    this.filterMode = this.bool('filterMode', false);
     // this.showHistogram = this.bool('showHistogram', false);
     // this.duplicatesHandingMethod = this.string('duplicatesHandlingMethod', 'median', {choices: ['median']});
   }
@@ -39,7 +41,7 @@ export class SARViewer extends DG.JsViewer {
   async render() {
     //TODO: optimize. Don't calculate everything again if only view changes
     if (typeof this.dataFrame !== 'undefined' && this.activityColumnColumnName !== null) {
-      this.grid = await describe(this.dataFrame, this.activityColumnColumnName, this.activityScalingMethod);
+      this.grid = await describe(this.dataFrame, this.activityColumnColumnName, this.activityScalingMethod, this.filterMode);
 
       if (this.grid !== null) {
         $(this.root).empty();

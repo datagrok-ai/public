@@ -25,7 +25,8 @@ function decimalAdjust(type: 'floor' | 'ceil' | 'round', value: number, exp: num
 export async function describe(
   df: DG.DataFrame,
   activityColumn: string,
-  activityScaling: string
+  activityScaling: string,
+  filterMode: boolean
   ): Promise<DG.Grid | null> {
   //Split the aligned sequence into separate AARs
   let splitSeqDf: DG.DataFrame | undefined;
@@ -159,13 +160,12 @@ export async function describe(
     if (args.cell.isTableCell && args.cell.tableRowIndex !== null && args.cell.tableColumn !== null) {
       if (args.cell.tableColumn.name === aminoAcidResidue) {
         const textSize = args.g.measureText(args.cell.cell.value);
+        args.g.fillStyle = '#4b4b4a';
         args.g.fillText(
           args.cell.cell.value,
           args.bounds.x + (args.bounds.width - textSize.width) / 2,
-          //FIXME: the text is too high in the cell
           args.bounds.y + (textSize.actualBoundingBoxAscent + textSize.actualBoundingBoxDescent + args.bounds.height) / 2,
         );
-        args.g.fillStyle = '#4b4b4a';
         args.preventDefault();
       } else if (args.cell.cell.value !== null) {
         const query = `${aminoAcidResidue} = ${matrixDf.get(aminoAcidResidue, args.cell.tableRowIndex)} and ${positionColName} = ${args.cell.tableColumn.name}`;
@@ -174,6 +174,8 @@ export async function describe(
         args.g.beginPath();
         const maxRadius = 0.95 * (args.bounds.width > args.bounds.height ? args.bounds.height : args.bounds.width) / 2;
         const radius = Math.ceil(maxRadius * ratio);
+        args.g.fillStyle = DG.Color.getCellColorHtml(args.cell.cell);
+        // args.g.fillStyle = DG.Color.toHtml(DG.Color.scaleColor(args.cell.cell.value, dfMinMedian, dfMaxMedian, undefined, [DG.Color.lightGray, DG.Color.green]));
         args.g.arc(
           args.bounds.x + args.bounds.width / 2,
           args.bounds.y + args.bounds.height / 2,
@@ -184,7 +186,6 @@ export async function describe(
         );
         args.g.closePath();
 
-        args.g.fillStyle = DG.Color.getCellColorHtml(args.cell.cell);
         args.g.fill();
         args.preventDefault();
       }
@@ -207,8 +208,8 @@ export async function describe(
         if (col !== aminoAcidResidue && col !== positionColName) {
           const query = `${aminoAcidResidue} = ${matrixDf.get(aminoAcidResidue, cell.tableRowIndex)} and ${positionColName} = ${cell.tableColumn.name}`;
           const text = `${decimalAdjust('floor', statsDf.groupBy([col]).where(query).aggregate().get(col, 0), -5)}`;
-          // textDivs.push(ui.divText(`${col}: ${text}`));
-          tooltipMap[<string>col] = text;
+          // @ts-ignore: idk what's wrong with indexing object with a string :/
+          tooltipMap[col] = text;
         }
       }
 
@@ -225,7 +226,11 @@ export async function describe(
 
       // @ts-ignore: I'd love to use row.get(), but unfortunately there's no column 'get' :(
       splitSeqDf!.rows.select((row) => row[currentPosition] === currentAAR);
-      df.selection.init((i) => splitSeqDf!.selection.get(i));
+      if (filterMode) {
+        df.filter.init((i) => splitSeqDf!.selection.get(i));
+      } else {
+        df.selection.init((i) => splitSeqDf!.selection.get(i));
+      }
     }
   });
 

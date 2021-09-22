@@ -82,7 +82,18 @@ export function SARViewerHelp(_: DG.Column): DG.Widget {
 //input: column col {semType: alignedSequence}
 //output: widget result
 export function analyzePeptides(col: DG.Column): DG.Widget {
-  const activityColumnChoice = ui.columnInput('Activity column', col.dataFrame, col);
+  // let defaultColumn: DG.Column | null = col;
+  let tempCol = null;
+  for (const column of col.dataFrame.columns.numerical) {
+    tempCol = column;
+    break;
+  }
+  let defaultColumn: DG.Column
+    = col.dataFrame.col("Activity") || col.dataFrame.col("activity")
+    || col.dataFrame.col("IC50") || col.dataFrame.col("ic50")
+    || tempCol;
+
+  const activityColumnChoice = ui.columnInput('Activity column', col.dataFrame, defaultColumn);
   const activityScalingMethod = ui.choiceInput('Activity scaling', 'none', ['none', 'lg', '-lg']);
   // const showHistogram = ui.boolInput('Show histogram', false);
   
