@@ -64,8 +64,8 @@ function createDirectoryContents(name, config, templateDir, packageDir, ide = ''
             '@typescript-eslint/parser': 'latest',
           } : {});
           Object.assign(package.scripts, {
-            'lint': `eslint ./src/*.${ts ? 'ts' : 'js'}`,
-            'lint-fix': `eslint ./src/*.${ts ? 'ts' : 'js'} --fix`,
+            'lint': `eslint ./src/**/*.${ts ? 'ts' : 'js'}`,
+            'lint-fix': `eslint ./src/**/*.${ts ? 'ts' : 'js'} --fix`,
           });
         }
         // Save module names for installation prompt
