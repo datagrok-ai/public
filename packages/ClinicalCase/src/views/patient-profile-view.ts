@@ -1,7 +1,7 @@
 import * as DG from "datagrok-api/dg";
 import * as ui from "datagrok-api/ui";
 import { study } from "../clinical-study";
-import { addColumnWithDrugPlusDosage, addLabOutOfReferenceColumn } from "../data-preparation/data-preparation";
+import { addColumnWithDrugPlusDosage, labDynamicComparedToBaseline, labDynamicComparedToMinMax } from "../data-preparation/data-preparation";
 import { getUniqueValues } from "../data-preparation/utils";
 
 
@@ -43,8 +43,8 @@ export class PatientProfileView extends DG.ViewBase {
         type: 'line',
         multiLineFieldIndex: 2, //index of field by which to split multiple graphs
         x: 'LBDY',
-        y: 'LAB_DEVIATION',
-        extraFields: [ 'LBTEST', 'LBORRES', 'LBORNRLO', 'LBORNRHI' ],
+        y: 'LAB_DYNAMIC',
+        extraFields: [ 'LBTEST', 'LBORRES', 'LBORNRLO', 'LBORNRHI', 'BL_LBORRES' ],
         splitByColumnName: 'LBTEST',                    // get categories from this column
         categories: [ '' ],  // fixed categories
         maxLimit: 1,                                    // max number of linecharts 
@@ -132,8 +132,11 @@ export class PatientProfileView extends DG.ViewBase {
 
 
     this.createTablesToAttach(patientIds[ 0 ]);
-
+    addColumnWithDrugPlusDosage(this.tables[ 'ex' ], 'EXTRT', 'EXDOSE', 'EXDOSU', 'EXTRT_WITH_DOSE');
     this.options_lb_ae_ex_cm['xAxisMinMax'] = this.extractMinAndMaxValuesForXAxis();
+    labDynamicComparedToBaseline(this.tables[ 'lb' ],  this.options_lb_ae_ex_cm['xAxisMinMax']['minX'], 'LAB_DYNAMIC');
+    //labDynamicComparedToMinMax(this.tables[ 'lb' ], 'LAB_DYNAMIC')
+
 
     this.tables[ 'ae' ].plot.fromType('MultiPlot', {
       paramOptions: JSON.stringify(this.options_lb_ae_ex_cm),
@@ -202,8 +205,6 @@ export class PatientProfileView extends DG.ViewBase {
         return row[ 'USUBJID' ] === myId;
       })
     })
-    this.tables[ 'ex' ] = addColumnWithDrugPlusDosage(this.tables[ 'ex' ], 'EXTRT', 'EXDOSE', 'EXDOSU', 'EXTRT_WITH_DOSE');
-    this.tables[ 'lb' ] = addLabOutOfReferenceColumn(this.tables[ 'lb' ], 'LBSTNRLO', 'LBSTNRHI', 'LBSTRESN', 'LAB_DEVIATION');
   }
 
   private extractMinAndMaxValuesForXAxis() {

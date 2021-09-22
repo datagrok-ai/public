@@ -824,7 +824,7 @@ export class MultiPlotViewer extends DG.JsViewer {
             labValuesMultiChoices.input.style.maxWidth = '100%';
             //@ts-ignore
             labValuesMultiChoices.input.style.maxHeight = '100%';
-            ui.dialog({ title: 'Lab values for scatter' })
+            ui.dialog({ title: 'Select values' })
               .add(ui.div([ labValuesMultiChoices ], { style: { width: '400px', height: '300px' } }))
               .onOK(() => {
                 this.updatePlotByCategory(i, this.plots[ i ].edit.selectedValues, false);
