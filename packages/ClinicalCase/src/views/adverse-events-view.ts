@@ -2,12 +2,17 @@ import * as grok from 'datagrok-api/grok';
 import * as DG from "datagrok-api/dg";
 import * as ui from "datagrok-api/ui";
 import { study, ClinRow } from "../clinical-study";
+import { addTreatmentArm, getUniqueValues } from '../data-preparation/utils';
+import { TREATMENT_ARM } from '../constants';
 
 export class AdverseEventsView extends DG.ViewBase {
+
+  aeWithArm: DG.DataFrame;
 
   constructor(name) {
     super(name);
     this.name = name;
+    this.aeWithArm = addTreatmentArm(study.domains.ae.clone(), study.domains.dm, study.domains.ae.columns.names());
 
     let viewerTitle = {style:{
       'color':'var(--grey-6)',
@@ -15,20 +20,13 @@ export class AdverseEventsView extends DG.ViewBase {
       'font-size':'16px',
     }};
 
-    function bar(categoryColumn: string, title:string) {
-      let chart = study.domains.ae.plot.bar( {
-        split: categoryColumn,
-        style: 'dashboard' }).root;
-      chart.prepend(ui.divText(title, viewerTitle))
-      return chart
-    }
 
-    let typesPlot = bar('AEDECOD','Types');
-    let bodySystemsPlot = bar('AEBODSYS', 'Body system');
-    let causalityPlot = bar('AEREL', 'Causality');
-    let outcomePlot = bar('AEOUT', 'Outcome');
+    let typesPlot = this.bar('AEDECOD','Types', viewerTitle, TREATMENT_ARM);
+    let bodySystemsPlot = this.bar('AEBODSYS', 'Body system', viewerTitle, TREATMENT_ARM);
+    let causalityPlot = this.bar('AEREL', 'Causality', viewerTitle, TREATMENT_ARM);
+    let outcomePlot = this.bar('AEOUT', 'Outcome', viewerTitle, TREATMENT_ARM);
 
-    let timelinesPlot = study.domains.ae.plot.line({
+    let timelinesPlot = this.aeWithArm.plot.line({
       x: 'week',
       yColumnNames: ['week'],
       chartTypes: ['Stacked Bar Chart'],
@@ -38,7 +36,7 @@ export class AdverseEventsView extends DG.ViewBase {
 
     timelinesPlot.prepend(ui.divText('Events per week', viewerTitle));
 
-    let scatterPlot = study.domains.ae.plot.scatter({
+    let scatterPlot = this.aeWithArm.plot.scatter({
       x: 'AESTDY',
       y: 'USUBJID',
       color: 'AESEV',
@@ -47,11 +45,11 @@ export class AdverseEventsView extends DG.ViewBase {
       style: 'dashboard'
     }).root;
 
-    scatterPlot.prepend(ui.divText('All events', viewerTitle))
+    scatterPlot.prepend(ui.divText('All events', viewerTitle));
 
-    let grid = study.domains.ae.plot.grid();
-    study.domains.ae.onCurrentRowChanged.subscribe((_) => {
-      grok.shell.o = new ClinRow(study.domains.ae.currentRow);
+    let grid = this.aeWithArm.plot.grid();
+    this.aeWithArm.onCurrentRowChanged.subscribe((_) => {
+      grok.shell.o = new ClinRow(this.aeWithArm.currentRow);
     });
 
     this.root.className = 'grok-view ui-box';
@@ -71,5 +69,15 @@ export class AdverseEventsView extends DG.ViewBase {
         ui.block([grid.root])
     ]));
     */
+  }
+
+  private bar(categoryColumn: string, title:string, viewerTitle: any, splitColumn: string) {
+    let chart = this.aeWithArm.plot.bar( {
+      split: categoryColumn,
+      stack: splitColumn,
+      style: 'dashboard',
+      legendPosition: 'Top' }).root;
+    chart.prepend(ui.divText(title, viewerTitle))
+    return chart
   }
 }

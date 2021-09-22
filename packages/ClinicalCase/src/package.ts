@@ -13,6 +13,7 @@ import {AdverseEventHandler} from './panels/adverse-event-handler';
 import {LaboratoryView} from './views/laboratory-view';
 import {AERiskAssessmentView} from './views/ae-risk-assessment-view';
 import {SurvivalAnalysisView} from './views/survival-analysis-view';
+import { AdditionalView } from './views/additional-view';
 
 export let _package = new DG.Package();
 
@@ -150,6 +151,7 @@ export async function clinicalCaseApp(): Promise<any> {
   addView(new LaboratoryView('Laboratory'));
   addView(new AERiskAssessmentView('AE Risk Assessment'));
   addView(new SurvivalAnalysisView('Survival Analysis'));
+  addView(new AdditionalView('Additional'));
   DG.ObjectHandler.register(new AdverseEventHandler());
 
   grok.shell.v = summary;

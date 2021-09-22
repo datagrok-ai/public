@@ -36,6 +36,18 @@ export function getUniqueValues(df: DG.DataFrame, colName: string) {
     }
   }
 
+  export function filterFloats(df: DG.DataFrame, colName: string) {
+    let column = df.columns.byName(colName);
+    let rowCount = df.rowCount;
+    for (let i = 0; i < rowCount; i++){
+        if(parseFloat(column.get(i)) === NaN){
+            df.rows.removeAt(i);
+            i--;
+            rowCount-=1;
+        }
+    }
+  }
+
   export function filterBooleanColumn(df: DG.DataFrame, colName: string, value: boolean) {
     let column = df.columns.byName(colName);
     let rowCount = df.rowCount;
