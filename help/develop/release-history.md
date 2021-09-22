@@ -1,6 +1,29 @@
 <!-- TITLE: Release History -->
 <!-- SUBTITLE: -->
 
+# 2021-09-22 Dev build 0.93.29
+
+## Latest Docker Images
+
+* Datagrok: 
+  *  `docker pull datagrok/datagrok:0.93.29`
+  *  `docker pull datagrok/datagrok:latest`
+  
+* [Docker-Compose](admin/docker-compose.md)
+
+## Addressed Issues
+
+* Renamed the file to reflect the feature name 
+* JS API: DG.Color.linear() 
+* Text-based file viewers: ability to edit and save files 
+* Viewers: Organize context menu entries consistently 
+* JS API: menu order parameter 
+* Bar chart: remove barChartFilter bitset 
+* JBIO: prepare color schemes for NGL viewer (WIP)
+* Peptides: various fixes and improvements 
+* (Bug) Bar chart: After switching on the "Relative Values" property, bars are incorrectly colored (WIP)
+
+
 # 2021-09-22 Dev build 0.93.28
 
 ## Latest Docker Images
