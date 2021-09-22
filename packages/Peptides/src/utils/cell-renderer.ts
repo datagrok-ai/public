@@ -17,7 +17,15 @@ export class AlignedSequenceCellRenderer extends DG.GridCellRenderer {
   }
 
 
-  render(g: CanvasRenderingContext2D, x: number, y: number, w: number, h: number, gridCell: DG.GridCell, cellStyle: DG.GridCellStyle) {
+  render(
+    g: CanvasRenderingContext2D,
+    x: number,
+    y: number,
+    w: number,
+    h: number,
+    gridCell: DG.GridCell,
+    cellStyle: DG.GridCellStyle
+  ) {
     g.font = 'bold 15px monospace';
     g.textBaseline = 'top';
     const s = gridCell.cell.value;
