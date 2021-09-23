@@ -6,7 +6,7 @@ import React from 'react';
 import ReactDOM from 'react-dom';
 import {ProteinLogo} from 'logojs-react';
 import {SARViewer} from './peptide-sar-viewer/sar-viewer';
-import {AlignedSequenceCellRenderer} from './utils/cell-renderer';
+import {AlignedSequenceCellRenderer, AminoAcidsCellRenderer} from './utils/cell-renderer';
 import {DataFrame} from 'datagrok-api/dg';
 import {splitAlignedPeptides} from './split-aligned';
 import {StackedBarChart} from './stacked-barchart/stacked-barchart-viewer';
@@ -152,6 +152,16 @@ export function stackedBarChart():DG.JsViewer {
 export function alignedSequenceCellRenderer() {
   return new AlignedSequenceCellRenderer();
 }
+
+//name: aminoAcidsCellRenderer
+//tags: cellRenderer, cellRenderer-aminoAcids
+//meta-cell-renderer-sem-type: aminoAcids
+//output: grid_cell_renderer result
+export function aminoAcidsCellRenderer() {
+  return new AminoAcidsCellRenderer();
+}
+
+
 
 class Logo extends DG.JsViewer {
   initialized: boolean;
