@@ -12,16 +12,6 @@ export const _package = new DG.Package();
 //tags: app
 export async function trackOverview() {
   const chem = new Track('Cheminformatics');
-  const tracks = DG.DataFrame.fromColumns([
-    DG.Column.fromList('string', 'track', [chem, eda, ml].map((t) => t.name)),
-    DG.Column.fromList('int', 'start', [10, 1, 15]),
-    DG.Column.fromList('int', 'end', [29, 29, 29]),
-  ]);
-  const timelines = await tracks.plot.fromType('TimelinesViewer', {
-    showZoomSliders: false,
-    lineWidth: 20,
-  });
-  //grok.shell.newView('Tracks', [timelines.root]);
   const runEda = new TutorialRunner(eda);
   const runChem = new TutorialRunner(chem);
   const runMl = new TutorialRunner(ml);
