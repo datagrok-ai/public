@@ -33,6 +33,7 @@ export async function describe(
   for (const col of df.columns) {
     if (col.semType === 'alignedSequence') {
       splitSeqDf = splitAlignedPeptides(col);
+      // splitSeqDf.name = 'splitSeq';
       break;
     }
   }
@@ -43,7 +44,7 @@ export async function describe(
 
   const positionColumns = splitSeqDf.columns.names();
 
-  splitSeqDf.columns.add(df.getCol(activityColumn));
+  // splitSeqDf.columns.add(df.getCol(activityColumn));
 
   // append splitSeqDf columns to source table and make sure columns are not added more than once
   const dfColsSet = new Set(df.columns.names());
@@ -51,19 +52,26 @@ export async function describe(
     df.join(splitSeqDf, [activityColumn], [activityColumn], df.columns.names(), positionColumns, 'inner', true);
   }
 
+  const activityColumnScaled = activityColumn + 'Scaled';
+
   // scale activity
+  //TODO: how to NOT render these?
   switch (activityScaling) {
   case 'lg':
-    await splitSeqDf.columns.addNewCalculated('lg', 'Log10(${' + activityColumn + '})');
-    splitSeqDf.columns.remove(activityColumn);
-    splitSeqDf.getCol('lg').name = activityColumn;
+    await df.columns.addNewCalculated(activityColumnScaled, 'Log10(${' + activityColumn + '})');
+    splitSeqDf.columns.add(df.getCol(activityColumnScaled));
+    // splitSeqDf.columns.remove(activityColumn);
+    // splitSeqDf.getCol('lg').name = activityColumn;
     break;
   case '-lg':
-    await splitSeqDf.columns.addNewCalculated('-lg', '-1*Log10(${' + activityColumn + '})');
-    splitSeqDf.columns.remove(activityColumn);
-    splitSeqDf.getCol('-lg').name = activityColumn;
+    await df.columns.addNewCalculated(activityColumnScaled, '-1*Log10(${' + activityColumn + '})');
+    splitSeqDf.columns.add(df.getCol(activityColumnScaled));
+    // splitSeqDf.columns.remove(activityColumn);
+    // splitSeqDf.getCol('-lg').name = activityColumn;
     break;
   default:
+    await df.columns.addNewCalculated(activityColumnScaled, '${' + activityColumn + '}');
+    splitSeqDf.columns.add(df.getCol(activityColumnScaled));
     break;
   }
 
@@ -73,28 +81,28 @@ export async function describe(
 
   //unpivot a table and handle duplicates
   let matrixDf = splitSeqDf.groupBy(positionColumns)
-    .add('med', activityColumn, activityColumn)
+    .add('med', activityColumnScaled, activityColumnScaled)
     .aggregate()
-    .unpivot([activityColumn], positionColumns, positionColName, aminoAcidResidue);
+    .unpivot([activityColumnScaled], positionColumns, positionColName, aminoAcidResidue);
 
-  const peptidesCount = splitSeqDf.getCol(activityColumn).length;
+  const peptidesCount = splitSeqDf.getCol(activityColumnScaled).length;
 
   //this table contains overall statistics on activity
   const totalStats = matrixDf.groupBy()
-    .add('med', activityColumn, 'med')
+    .add('med', activityColumnScaled, 'med')
     .aggregate();
 
   //preparing for mad
-  const formula = 'Abs(${' + activityColumn + '}-' + totalStats.get('med', 0) + ')';
+  const formula = 'Abs(${' + activityColumnScaled + '}-' + totalStats.get('med', 0) + ')';
   await matrixDf.columns.addNewCalculated('innerMAD', formula);
 
   //statistics for specific AAR at a specific position
   matrixDf = matrixDf.groupBy([positionColName, aminoAcidResidue])
-    .add('count', activityColumn, 'Count')
+    .add('count', activityColumnScaled, 'Count')
     .add('med', 'innerMAD', medianColName) //final step of MAD calculation
-    .add('q1', activityColumn, 'Q1')
-    .add('q2', activityColumn, 'Median')
-    .add('q3', activityColumn, 'Q3')
+    .add('q1', activityColumnScaled, 'Q1')
+    .add('q2', activityColumnScaled, 'Median')
+    .add('q3', activityColumnScaled, 'Q3')
     .aggregate();
 
   // calculate additional stats
@@ -157,7 +165,7 @@ export async function describe(
           dfMinMedian,
           dfMaxMedian,
           undefined,
-          [DG.Color.lightGray, DG.Color.green],
+          [DG.Color.lightLightGray, DG.Color.green],
         ));
         args.g.arc(
           args.bounds.x + args.bounds.width / 2,
@@ -199,8 +207,8 @@ export async function describe(
       }
 
       ui.tooltip.show(ui.tableFromMap(tooltipMap), x, y);
-      return true;
     }
+    return true;
   });
 
   // Select columns in source table that correspond to the currently clicked cell
@@ -211,10 +219,12 @@ export async function describe(
 
       // @ts-ignore: I'd love to use row.get(), but unfortunately there's no column 'get' :(
       splitSeqDf!.rows.select((row) => row[currentPosition] === currentAAR);
-      if (filterMode) {
-        df.filter.init((i) => splitSeqDf!.selection.get(i));
-      } else {
-        df.selection.init((i) => splitSeqDf!.selection.get(i));
+      const bitset = filterMode ? df.filter : df.selection;
+      // bitset.init((i) => splitSeqDf!.selection.get(i));
+      bitset.copyFrom(splitSeqDf!.selection);
+
+      if (!df.col('splitCol')) {
+        df.columns.add(DG.Column.fromBitSet('splitCol', bitset));
       }
     }
   });
