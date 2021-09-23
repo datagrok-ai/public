@@ -2,9 +2,10 @@ import * as grok from 'datagrok-api/grok';
 import * as ui from 'datagrok-api/ui';
 import * as DG from 'datagrok-api/dg';
 import $ from 'cash-dom';
-import { fromEvent, Observable } from 'rxjs';
+import { async, fromEvent, Observable } from 'rxjs';
 import { filter, first, map } from 'rxjs/operators';
 import { _package } from './package';
+import { eda, tutorials } from './tracks/eda';
 
 
 /** A base class for tutorials */
@@ -26,11 +27,25 @@ export abstract class Tutorial extends DG.Widget {
   header: HTMLHeadingElement = ui.h2('');
   subheader: HTMLHeadingElement = ui.h3('');
   activity: HTMLDivElement = ui.div([], 'grok-tutorial-description');
+  status: boolean = false;
 
   static DATA_STORAGE_KEY: string = 'tutorials';
 
+  get getStatus(): Promise<void> {
+   return grok.dapi.userDataStorage.getValue(this.name, Tutorial.DATA_STORAGE_KEY).then((entries) => {
+     if (entries == ''){
+       this.status = false;
+     }
+     if (entries != ''){
+      this.status = true;
+     }
+    })
+  }
+
   constructor() {
-    super(ui.div());
+    super(ui.div([]));
+    this.getStatus;
+
     this.root.append(this.header);
     this.root.append(this.subheader);
     this.root.append(this.activity);
@@ -39,7 +54,7 @@ export abstract class Tutorial extends DG.Widget {
 
   protected abstract _run(): Promise<void>;
 
-  async run(): Promise<void> {
+  async run(tutorials: Tutorial[]): Promise<void> {
     if (this.demoTable) {
       grok.shell.addTableView(await grok.data.getDemoTable(this.demoTable));
     }
@@ -48,6 +63,40 @@ export abstract class Tutorial extends DG.Widget {
 
     this.title('Congratulations!');
     this.describe('You have successfully completed this tutorial.');
+  
+    await grok.dapi.userDataStorage.postValue(this.name, Tutorial.DATA_STORAGE_KEY, 'true');
+
+    let i = 0;
+    let id = 0;
+    while (tutorials[i]){
+      if(tutorials[i].name == this.name){
+        id = i;
+        break;
+      }
+      i++;
+    }
+    
+    if (id<tutorials.length-1){
+      this.root.append(ui.div([
+        ui.bigButton('Start',()=>{
+          console.log(id);
+          id++;
+          console.log(id);
+          $('#tutorial-child-node').html('');
+          $('#tutorial-child-node').append(tutorials[id].root);
+          tutorials[id].run(tutorials);
+        }),
+        ui.button('Cancel',()=>{
+          $('.tutorial').show();
+          $('#tutorial-child-node').html('');
+        })
+      ]))
+    } else if (id==tutorials.length-1) {
+      this.root.append(ui.div([ui.bigButton('Completed',()=>{
+        $('.tutorial').show();
+        $('#tutorial-child-node').html('');
+      })]))
+    }
   }
 
   title(text: string): void {
@@ -162,29 +211,86 @@ export class Track {
 }
 
 export class TutorialRunner {
-  root: HTMLDivElement = ui.div([], 'grok-tutorial,grok-welcome-panel');
+  root: HTMLDivElement = ui.panel([],'tutorial');
 
-  async run(t: Tutorial): Promise<void> {
-    $(this.root).empty();
-    //t.clearRoot();
-    this.root.append(t.root);
-    await t.run();
+  async run(t: Tutorial, tutorials: Tutorial[]): Promise<void> {
+    $('.tutorial').hide();
+    $('#tutorial-child-node').append(t.root);
+
+    await t.run(tutorials);
+  }
+
+  async getCompleted(tutorials: Tutorial[]){
+    let i = 0;
+    let completed = 0;
+    while (tutorials[i]){
+      await tutorials[i].getStatus;
+      if (tutorials[i].status == true){
+        completed++
+      }
+      i++
+    }
+    return completed
   }
 
   constructor(track: Track, onStartTutorial?: (t: Tutorial) => Promise<void>) {
-    this.root.append(ui.h2(`${track.name} Tutorials`));
-    this.root.append(ui.divV(track.tutorials.map((t) => {
-      const el = new TutorialCard(t).root;
-      el.addEventListener('click', () => {
-        if (onStartTutorial == null) {
-          this.run(t);
-        } else {
-          onStartTutorial(t);
-        }
-      });
-      return el;
-    })));
+    let iconList = ui.iconFA('list');
+    iconList.style.color = 'var(--grey-4)';
+    
+    let listLengh = {
+      style:{
+        color:'var(--grey-6)',
+        margin:'0px 0px 0px 5px'
+      }
+    }
 
+    let trackTitle = ui.h1(track.name);
+    trackTitle.style.margin = '0 0 10px 0';
+
+    let progress = ui.element('progress');
+    progress.max = track.tutorials.length;
+    progress.value = '0'
+    progress.style.margin = '5px 0';
+    progress.style.width = '100%';
+
+    (async () => {
+        progress.value = await this.getCompleted(track.tutorials);   
+    })();
+
+    this.root.append(ui.divV([
+      ui.divH([trackTitle,
+        ui.button(ui.iconFA('sync',()=>{}),()=>{
+          let i = 0;
+          while(track.tutorials[i]){
+           grok.dapi.userDataStorage.remove(track.tutorials[i].name, Tutorial.DATA_STORAGE_KEY)
+           i++;
+          }
+          grok.shell.info('complete');
+         }),
+      ], {style:{alignItems:'flex-end'}}),
+      ui.divH([iconList, ui.divText(' Tutorials: '+track.tutorials.length,listLengh),      ]),
+      ui.divH([progress]),
+      ui.divV(track.tutorials.map((t) => {
+        const el = new TutorialCard(t).root;
+        el.style.padding = '5px';
+        el.addEventListener('mouseover', () => {
+          el.style.cursor = 'pointer';
+          el.style.background = 'var(--grey-1)';
+        });
+        el.addEventListener('mouseout', () => {
+          el.style.cursor = 'normal';
+          el.style.background = 'white';
+        });
+        el.addEventListener('click', () => {
+          if (onStartTutorial == null) {
+            this.run(t, track.tutorials);
+          } else {
+            onStartTutorial(t);
+          }
+        });
+        return el;
+      }))
+    ],{style:{marginBottom:'15px'}}));
   }
 
 }
@@ -195,15 +301,54 @@ class TutorialCard {
 
   constructor(tutorial: Tutorial) {
     this.tutorial = tutorial;
+    
+    let tutorialTitle = {
+      style:{
+        fontWeight:'bold',
+        color:'var(--grey-6)',
+        margin:'0px 0px 5px 0px'
+      }
+    };
+
+    let tutorialDesciption = {
+      style:{
+        fontWeight:'normal',
+        color:'var(--grey-4)',
+        margin:'0px',
+        maxHeight: '50px',
+        textOverflow: 'ellipsis',
+        display: '-webkit-box',
+        '-webkit-line-clamp':'3',
+        '-webkit-box-orient': 'vertical',
+        overflow: 'hidden',
+      }
+    }
+
+    let img = ui.image( `${_package.webRoot}images/${tutorial.name.toLowerCase().replace(/ /g, '-')}.png`,90, 70);
+    img.style.border = '1px solid var(--grey-1)';
+    img.style.backgroundSize = 'cover';
+
+    let icon = ui.div([], {style:{maxWidth:'20px', position:'absolute', right:'15px'}});
+    
+
+    (async()=>{
+      await tutorial.getStatus
+      if(tutorial.status == true){
+        icon.append(ui.iconFA('check', ()=>{console.log(tutorial.status)}));
+        icon.style.color = 'var(--green-2)';
+      }
+    })();
+    
 
     this.root = ui.divH([
-      ui.image(
-        `${_package.webRoot}images/${tutorial.name.toLowerCase().replace(/ /g, '-')}.png`,
-        100, 100),
+      ui.div([img], {style:{minWidth:'90px', marginRight:'10px'}}),
+      ui.tooltip.bind(
       ui.divV([
-        ui.h2(tutorial.name),
-        ui.divText(tutorial.description, { id: 'description' }),
-      ]),
-    ], 'grok-tutorial-card');
+        ui.divText(tutorial.name, tutorialTitle),
+        ui.divText(tutorial.description, tutorialDesciption)
+      ]), 
+      `<b>${tutorial.name}</b><br>${tutorial.description}`),
+      icon
+    ], {style:{position:'relative'}});
   }
 }

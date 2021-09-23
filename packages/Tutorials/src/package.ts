@@ -21,7 +21,15 @@ export async function trackOverview() {
     showZoomSliders: false,
     lineWidth: 20,
   });
-  grok.shell.newView('Tracks', [timelines.root]);
-  const runner = new TutorialRunner(eda);
-  grok.shell.dockManager.dock(runner.root, DG.DOCK_TYPE.RIGHT, null, '', 0.3);
+  //grok.shell.newView('Tracks', [timelines.root]);
+  const runEda = new TutorialRunner(eda);
+  const runChem = new TutorialRunner(chem);
+  const runMl = new TutorialRunner(ml);
+  let root = ui.div([
+    runEda.root,runChem.root,runMl.root,
+    ui.panel([],{id:'tutorial-child-node'}),
+  ], {style:{overflowY:'scroll'}});
+
+  console.log(runEda);
+  grok.shell.dockManager.dock(root, DG.DOCK_TYPE.RIGHT, null, 'Tutorials', 0.35);
 }
