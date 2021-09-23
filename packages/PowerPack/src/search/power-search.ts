@@ -125,8 +125,8 @@ function specificWidgetsSearch(s: string, host: HTMLDivElement): void {
 }
 
 async function initTemplates(): Promise<void> {
-  let templatesPath = (await _package.getProperties()).get('searchTemplatesPath');
-  //let templatesPath = `${grok.shell.user.name}:Home/templates`;
+  //let templatesPath = (await _package.getProperties()).get('searchTemplatePaths');
+  let templatesPath = 'System:AppData/PowerPack/search-templates';
 
   for (let path in templatesPath.split(';')) {
     //if (await grok.dapi.files.exists(path)) {
