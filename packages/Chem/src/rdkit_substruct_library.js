@@ -49,7 +49,7 @@ class RdKitSubstructLibrary {
     let matches = "[]";
     if (this.library) {
       try {
-        const queryMol = this.rdKitModule.get_qmol(query); // , "{\"mergeQueryHs\":true}");
+        const queryMol = this.rdKitModule.get_mol(query, "{\"mergeQueryHs\":true}");
         if (queryMol) {
           if (queryMol.is_valid()) {
             matches = this.library.get_matches(queryMol, false, 1, -1);
