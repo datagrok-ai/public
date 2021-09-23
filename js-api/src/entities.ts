@@ -596,7 +596,7 @@ export class Package extends Entity {
   private _files: FileSource | null = null;
   get files(): FileSource {
     if (this._files == null)
-      this._files = new FileSource(`System:PackageData/${this.name}`);
+      this._files = new FileSource(`System:AppData/${this.name}`);
     return this._files;
   }
 }
