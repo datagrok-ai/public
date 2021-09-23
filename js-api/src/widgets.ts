@@ -1331,3 +1331,38 @@ export class ColumnComboBox extends DartWidget {
   }
   get onChanged(): rxjs.Observable<String> { return this.onEvent('d4-column-box-column-changed'); }
 }
+
+/** Column legend for viewers */
+export class Legend extends DartWidget {
+  constructor(d: any) {
+    super(d);
+  }
+
+  static create(column: Column): Legend {
+    return api.grok_Legend(column.d);
+  }
+  
+  get column(): Column {
+    return toJs(api.grok_Legend_Get_Column(this.d));
+  }
+
+  set column(column: Column) {
+    api.grok_Legend_Set_Column(this.d, column);
+  }
+  
+  get showNulls(): Boolean {
+    return api.grok_Legend_Get_ShowNulls(this.d);
+  }
+
+  set showNulls(show: Boolean) {
+    api.grok_Legend_Set_ShowNulls(this.d, show);
+  }
+  
+  get position(): String {
+    return api.grok_Legend_Get_Position(this.d);
+  }
+
+  set position(pos: String) {
+    api.grok_Legend_Set_Position(this.d, pos);
+  }
+}
