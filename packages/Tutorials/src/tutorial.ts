@@ -267,7 +267,7 @@ class TutorialCard {
 
   constructor(tutorial: Tutorial) {
     this.tutorial = tutorial;
-
+    
     let img = ui.image( `${_package.webRoot}images/${tutorial.name.toLowerCase().replace(/ /g, '-')}.png`,90, 70);
     let icon = ui.div([], 'tutorials-card-status');
     
