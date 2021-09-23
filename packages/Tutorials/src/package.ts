@@ -4,6 +4,7 @@ import * as DG from 'datagrok-api/dg';
 import { Track, TutorialRunner } from './tutorial';
 import { eda } from './tracks/eda';
 import { ml } from './tracks/ml';
+import '../css/tutorial.css';
 
 
 export const _package = new DG.Package();
