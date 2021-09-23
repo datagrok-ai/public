@@ -31,20 +31,14 @@ export abstract class Tutorial extends DG.Widget {
 
   static DATA_STORAGE_KEY: string = 'tutorials';
 
-  get getStatus(): Promise<void> {
-   return grok.dapi.userDataStorage.getValue(this.name, Tutorial.DATA_STORAGE_KEY).then((entries) => {
-     if (entries == ''){
-       this.status = false;
-     }
-     if (entries != ''){
-      this.status = true;
-     }
-    })
+  async updateStatus(): Promise<void> {
+    const info = await grok.dapi.userDataStorage.getValue(Tutorial.DATA_STORAGE_KEY, this.name);
+    this.status = info ? true : false;
   }
 
   constructor() {
     super(ui.div([]));
-    this.getStatus;
+    this.updateStatus();
 
     this.root.append(this.header);
     this.root.append(this.subheader);
@@ -64,7 +58,7 @@ export abstract class Tutorial extends DG.Widget {
     this.title('Congratulations!');
     this.describe('You have successfully completed this tutorial.');
   
-    await grok.dapi.userDataStorage.postValue(this.name, Tutorial.DATA_STORAGE_KEY, 'true');
+    await grok.dapi.userDataStorage.postValue(Tutorial.DATA_STORAGE_KEY, this.name, new Date().toUTCString());
 
     let i = 0;
     let id = 0;
@@ -224,7 +218,7 @@ export class TutorialRunner {
     let i = 0;
     let completed = 0;
     while (tutorials[i]){
-      await tutorials[i].getStatus;
+      await tutorials[i].updateStatus();
       if (tutorials[i].status == true){
         completed++
       }
@@ -262,7 +256,7 @@ export class TutorialRunner {
         ui.button(ui.iconFA('sync',()=>{}),()=>{
           let i = 0;
           while(track.tutorials[i]){
-           grok.dapi.userDataStorage.remove(track.tutorials[i].name, Tutorial.DATA_STORAGE_KEY)
+           grok.dapi.userDataStorage.remove(Tutorial.DATA_STORAGE_KEY, track.tutorials[i].name);
            i++;
           }
           grok.shell.info('complete');
@@ -332,7 +326,7 @@ class TutorialCard {
     
 
     (async()=>{
-      await tutorial.getStatus
+      await tutorial.updateStatus();
       if(tutorial.status == true){
         icon.append(ui.iconFA('check', ()=>{console.log(tutorial.status)}));
         icon.style.color = 'var(--green-2)';
