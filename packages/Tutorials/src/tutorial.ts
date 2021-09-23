@@ -206,7 +206,6 @@ export class TutorialRunner {
   async run(t: Tutorial): Promise<void> {
     $('.tutorial').hide();
     $('#tutorial-child-node').append(t.root);
-
     await t.run();
   }
 
@@ -224,31 +223,17 @@ export class TutorialRunner {
   }
 
   constructor(track: Track, onStartTutorial?: (t: Tutorial) => Promise<void>) {
-    let iconList = ui.iconFA('list');
-    iconList.style.color = 'var(--grey-4)';
-    
-    let listLengh = {
-      style:{
-        color:'var(--grey-6)',
-        margin:'0px 0px 0px 5px'
-      }
-    }
-
-    let trackTitle = ui.h1(track.name);
-    trackTitle.style.margin = '0 0 10px 0';
-
+   
     let progress = ui.element('progress');
     progress.max = track.tutorials.length;
-    progress.value = '0'
-    progress.style.margin = '5px 0';
-    progress.style.width = '100%';
+    progress.value = '0';
 
     (async () => {
         progress.value = await this.getCompleted(track.tutorials);   
     })();
 
     this.root.append(ui.divV([
-      ui.divH([trackTitle,
+      ui.divH([ui.h1(track.name),
         ui.button(ui.iconFA('sync',()=>{}),()=>{
           let i = 0;
           while(track.tutorials[i]){
@@ -257,20 +242,11 @@ export class TutorialRunner {
           }
           grok.shell.info('complete');
          }),
-      ], {style:{alignItems:'flex-end'}}),
-      ui.divH([iconList, ui.divText(' Tutorials: '+track.tutorials.length,listLengh),      ]),
+      ], 'tutorials-track-title'),
+      ui.divH([ui.iconFA('list'), ui.divText(' Tutorials: '+track.tutorials.length)], 'tutorials-track-details'),
       ui.divH([progress]),
       ui.divV(track.tutorials.map((t) => {
         const el = new TutorialCard(t).root;
-        el.style.padding = '5px';
-        el.addEventListener('mouseover', () => {
-          el.style.cursor = 'pointer';
-          el.style.background = 'var(--grey-1)';
-        });
-        el.addEventListener('mouseout', () => {
-          el.style.cursor = 'normal';
-          el.style.background = 'white';
-        });
         el.addEventListener('click', () => {
           if (onStartTutorial == null) {
             this.run(t);
@@ -280,7 +256,7 @@ export class TutorialRunner {
         });
         return el;
       }))
-    ],{style:{marginBottom:'15px'}}));
+    ], 'tutorials-track'));
   }
 
 }
@@ -291,54 +267,26 @@ class TutorialCard {
 
   constructor(tutorial: Tutorial) {
     this.tutorial = tutorial;
-    
-    let tutorialTitle = {
-      style:{
-        fontWeight:'bold',
-        color:'var(--grey-6)',
-        margin:'0px 0px 5px 0px'
-      }
-    };
-
-    let tutorialDesciption = {
-      style:{
-        fontWeight:'normal',
-        color:'var(--grey-4)',
-        margin:'0px',
-        maxHeight: '50px',
-        textOverflow: 'ellipsis',
-        display: '-webkit-box',
-        '-webkit-line-clamp':'3',
-        '-webkit-box-orient': 'vertical',
-        overflow: 'hidden',
-      }
-    }
 
     let img = ui.image( `${_package.webRoot}images/${tutorial.name.toLowerCase().replace(/ /g, '-')}.png`,90, 70);
-    img.style.border = '1px solid var(--grey-1)';
-    img.style.backgroundSize = 'cover';
-
-    let icon = ui.div([], {style:{maxWidth:'20px', position:'absolute', right:'15px'}});
+    let icon = ui.div([], 'tutorials-card-status');
     
-
     (async()=>{
       await tutorial.updateStatus();
       if(tutorial.status == true){
-        icon.append(ui.iconFA('check', ()=>{console.log(tutorial.status)}));
-        icon.style.color = 'var(--green-2)';
+        icon.append(ui.iconFA('check', ()=>{}));
       }
     })();
     
-
     this.root = ui.divH([
-      ui.div([img], {style:{minWidth:'90px', marginRight:'10px'}}),
+      img,
       ui.tooltip.bind(
       ui.divV([
-        ui.divText(tutorial.name, tutorialTitle),
-        ui.divText(tutorial.description, tutorialDesciption)
+        ui.divText(tutorial.name, 'tutorials-card-title'),
+        ui.divText(tutorial.description, 'tutorials-card-description')
       ]), 
       `<b>${tutorial.name}</b><br>${tutorial.description}`),
       icon
-    ], {style:{position:'relative'}});
+    ], 'tutorials-card');
   }
 }

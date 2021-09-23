@@ -1,0 +1,75 @@
+.tutorials-root{
+    overflow-y: scroll;
+}
+/* Track Root */
+.tutorials-track{
+  margin-bottom: 15px;
+}
+/* Track Title */
+.tutorials-track-title{
+    align-items: flex-end;
+}
+.tutorials-track-title h1{
+    margin: 0 0 10px 0;
+}
+/* Track Details */
+.tutorials-track-details{
+    color: var(--grey-6);
+}
+.tutorials-track-details>.grok-icon{
+    color: var(--grey-4);
+}
+.tutorials-track-details>div{
+    color: var(--grey-4);
+    margin: 0px 0px 0px 5px;
+}
+/* Track Progress */
+.tutorials-track progress{
+    margin: 5px 0;
+    width: 100%;
+}
+/* Tutorial Card */
+.tutorials-card{
+    padding: 5px;
+    cursor: default;
+    background-color: white;
+    position: relative;
+}
+.tutorials-card:hover{
+    padding: 5px;
+    cursor: pointer;
+    background-color: var(--grey-1);
+    position: relative;
+}
+/* Tutorial Card Title*/
+.tutorials-card-title{
+    font-weight: bold;
+    color: var(--grey-6);
+    margin: 0px 0px 5px 0px;
+}
+/* Tutorial Card Description*/
+.tutorials-card-description{
+    font-weight: normal;
+    color: var(--grey-4);
+    margin: 0px;
+    max-height: 50px;
+    text-overflow: ellipsis;
+    display: -webkit-box;
+    -webkit-line-clamp: 3;
+    -webkit-box-orient: vertical;
+    overflow: hidden;
+}
+/* Tutorial Card Image*/
+.tutorials-card .ui-image{
+    border: 1px solid var(--grey-1);
+    background-size: cover;
+    min-width: 90px;
+    margin-right: 10px;
+}
+/* Tutorial Card Icon Status*/
+.tutorials-card-status{
+    max-width: 20px;
+    position: absolute;
+    right: 15px;
+    color: var(--green-2);
+}
