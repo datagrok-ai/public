@@ -125,8 +125,8 @@ export async function describe(
 
   for (const col of matrixDf.columns) {
     if (col.name === aminoAcidResidue) {
-      //col.semType = 'aminoAcids';
-      //col.setTag('cell.renderer', 'aminoAcids');
+      col.semType = 'aminoAcids';
+      col.setTag('cell.renderer', 'aminoAcids');
     }
   }
   grid.columns.setOrder([aminoAcidResidue].concat(positionColumns));
