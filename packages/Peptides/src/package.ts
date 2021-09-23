@@ -31,7 +31,7 @@ async function main() {
 export function Peptides() {
   const appDescription = ui.info(
     [
-      ui.span(['For more deatails see LINK ']),
+      ui.span(['For more details see LINK ']),
       ui.divText('\n To start the application :', {style: {'font-weight': 'bolder'}}),
       ui.divText('Select the corresponding .csv table with peptide sequences'),
     ], 'Transform peptide sequence data to research insights',
