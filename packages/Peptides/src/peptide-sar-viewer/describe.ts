@@ -50,6 +50,12 @@ export async function describe(
   if (!positionColumns.every((col: string) => dfColsSet.has(col))) {
     df.join(splitSeqDf, [activityColumn], [activityColumn], df.columns.names(), positionColumns, 'inner', true);
   }
+  positionColumns.forEach((name:string)=> {
+    const col = df.getCol(name);
+    col.semType = 'aminoAcids';
+    col.setTag('cell.renderer', 'aminoAcids');
+  });
+
 
   // scale activity
   switch (activityScaling) {
@@ -119,8 +125,8 @@ export async function describe(
 
   for (const col of matrixDf.columns) {
     if (col.name === aminoAcidResidue) {
-      col.semType = 'aminoAcids';
-      col.setTag('cell.renderer', 'aminoAcids');
+      //col.semType = 'aminoAcids';
+      //col.setTag('cell.renderer', 'aminoAcids');
     }
   }
   grid.columns.setOrder([aminoAcidResidue].concat(positionColumns));
