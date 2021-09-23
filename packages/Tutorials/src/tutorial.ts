@@ -13,6 +13,7 @@ export abstract class Tutorial extends DG.Widget {
   abstract get name(): string;
   abstract get description(): string;
 
+  track: Track | null = null;
   demoTable: string = 'demog.csv';
   get t(): DG.DataFrame {
     return grok.shell.t;
@@ -48,7 +49,7 @@ export abstract class Tutorial extends DG.Widget {
 
   protected abstract _run(): Promise<void>;
 
-  async run(tutorials: Tutorial[]): Promise<void> {
+  async run(): Promise<void> {
     if (this.demoTable) {
       grok.shell.addTableView(await grok.data.getDemoTable(this.demoTable));
     }
@@ -60,33 +61,27 @@ export abstract class Tutorial extends DG.Widget {
   
     await grok.dapi.userDataStorage.postValue(Tutorial.DATA_STORAGE_KEY, this.name, new Date().toUTCString());
 
-    let i = 0;
-    let id = 0;
-    while (tutorials[i]){
-      if(tutorials[i].name == this.name){
-        id = i;
-        break;
-      }
-      i++;
+    const tutorials = this.track?.tutorials;
+    if (!tutorials) {
+      console.error('The launched tutorial is not bound to any track.');
+      return;
     }
+    let id = this.track!.tutorials.indexOf(this);
     
-    if (id<tutorials.length-1){
+    if (id < tutorials.length - 1){
       this.root.append(ui.div([
-        ui.bigButton('Start',()=>{
-          console.log(id);
-          id++;
-          console.log(id);
+        ui.bigButton('Start', () => {
           $('#tutorial-child-node').html('');
-          $('#tutorial-child-node').append(tutorials[id].root);
-          tutorials[id].run(tutorials);
+          $('#tutorial-child-node').append(tutorials[++id].root);
+          tutorials[id].run();
         }),
-        ui.button('Cancel',()=>{
+        ui.button('Cancel', () => {
           $('.tutorial').show();
           $('#tutorial-child-node').html('');
         })
       ]))
-    } else if (id==tutorials.length-1) {
-      this.root.append(ui.div([ui.bigButton('Completed',()=>{
+    } else if (id == tutorials.length - 1) {
+      this.root.append(ui.div([ui.bigButton('Complete', () => {
         $('.tutorial').show();
         $('#tutorial-child-node').html('');
       })]))
@@ -201,17 +196,18 @@ export class Track {
   constructor(name: string, ...tutorials: Tutorial[]) {
     this.name = name;
     this.tutorials = tutorials;
+    tutorials.forEach((t) => t.track = this);
   }
 }
 
 export class TutorialRunner {
   root: HTMLDivElement = ui.panel([],'tutorial');
 
-  async run(t: Tutorial, tutorials: Tutorial[]): Promise<void> {
+  async run(t: Tutorial): Promise<void> {
     $('.tutorial').hide();
     $('#tutorial-child-node').append(t.root);
 
-    await t.run(tutorials);
+    await t.run();
   }
 
   async getCompleted(tutorials: Tutorial[]){
@@ -277,7 +273,7 @@ export class TutorialRunner {
         });
         el.addEventListener('click', () => {
           if (onStartTutorial == null) {
-            this.run(t, track.tutorials);
+            this.run(t);
           } else {
             onStartTutorial(t);
           }
