@@ -70,7 +70,9 @@ M  END
             mol.delete();
             mol = rdKitModule.get_mol(molBlock);
           }
-          if (!scaffoldIsMolBlock || molRegenerateCoords) {
+          const molIsMolBlock = this._isMolBlock(molString); 
+          const scaffoldGiven = scaffoldIsMolBlock || scaffoldMolString !== '';
+          if (!molIsMolBlock && !scaffoldGiven || molRegenerateCoords) {
             mol.normalize_2d_molblock();
             mol.straighten_2d_layout();
           }
@@ -177,7 +179,7 @@ M  END
   _initScaffoldString(colTags, tagName) {
 
     let scaffoldString = colTags ? colTags[tagName] : null;
-    if (scaffoldString?.endsWith(this.WHITE_MOLBLOCK_SUFFIX)) {
+    if (scaffoldString?.endsWith(this.WHITE_MOLBLOCK_SUFFIX) || scaffoldString === '') {
       scaffoldString = null;
       if (colTags[tagName]) {
         delete colTags[tagName];
