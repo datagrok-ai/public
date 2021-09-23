@@ -1,6 +1,28 @@
 <!-- TITLE: Release History -->
 <!-- SUBTITLE: -->
 
+# 2021-09-23 Dev build 0.93.30
+
+## Latest Docker Images
+
+* Datagrok: 
+  *  `docker pull datagrok/datagrok:0.93.30`
+  *  `docker pull datagrok/datagrok:latest`
+  
+* [Docker-Compose](admin/docker-compose.md)
+
+## Addressed Issues
+
+* Peptides: refactoring 
+* datagrok-tools: adjust lint scripts for recursive directory check 
+* changed enrollent linechart to cumulative sum, implemented request to clinicaltrials.gov for study info, added split of AEs barcharts by treatment arm 
+* JS API: menu order parameter 
+* Viewers: Organize context menu entries consistently 
+* JS API: Add Legend widget (WIP)
+* tutorials update 
+* Peptides: typo fixed 
+
+
 # 2021-09-22 Dev build 0.93.29
 
 ## Latest Docker Images
