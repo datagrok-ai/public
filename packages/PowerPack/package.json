@@ -27,9 +27,9 @@
 	},
 	"properties": [
 		{
-			"name": "searchTemplatesPath",
+			"name": "searchTemplatePaths",
 			"propertyType": "string",
-			"defaultValue": "Admin:Home/templates",
+			"defaultValue": "Admin:Home/templates;System:AppData/PowerPack/search-templates",
 			"nullable": false
 		}
 	]
