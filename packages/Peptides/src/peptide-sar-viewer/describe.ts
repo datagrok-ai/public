@@ -115,36 +115,34 @@ export async function describe(
   //find min and max MAD across all of the dataframe
   const dfMinMedian = statsDf.getCol(medianColName).min;
   const dfMaxMedian = statsDf.getCol(medianColName).max;
-
   const grid = matrixDf.plot.grid();
 
+  for (const col of matrixDf.columns) {
+    if (col.name === aminoAcidResidue) {
+      col.semType = 'aminoAcids';
+      col.setTag('cell.renderer', 'aminoAcids');
+    }
+  }
   grid.columns.setOrder([aminoAcidResidue].concat(positionColumns));
 
   //render column headers and AAR symbols centered
   grid.onCellRender.subscribe(function(args: DG.GridCellRenderArgs) {
     if (args.cell.isColHeader) {
       const textSize = args.g.measureText(args.cell.gridColumn.name);
-      args.g.fillText(
-        args.cell.gridColumn.name,
-        args.bounds.x + (args.bounds.width - textSize.width) / 2,
-        args.bounds.y + (textSize.actualBoundingBoxAscent + textSize.actualBoundingBoxDescent),
-      );
-      args.g.fillStyle = '#4b4b4a';
+      if ( args.cell.gridColumn.name != aminoAcidResidue) {
+        args.g.fillText(
+          args.cell.gridColumn.name,
+          args.bounds.x + (args.bounds.width - textSize.width) / 2,
+          args.bounds.y + (textSize.actualBoundingBoxAscent + textSize.actualBoundingBoxDescent),
+        );
+        args.g.fillStyle = '#4b4b4a';
+      }
       args.preventDefault();
     }
 
     if (args.cell.isTableCell && args.cell.tableRowIndex !== null && args.cell.tableColumn !== null) {
       if (args.cell.tableColumn.name === aminoAcidResidue) {
-        const textSize = args.g.measureText(args.cell.cell.value);
-        args.g.fillStyle = '#4b4b4a';
-        args.g.fillText(
-          args.cell.cell.value,
-          args.bounds.x + (args.bounds.width - textSize.width) / 2,
-          args.bounds.y +
-            (textSize.actualBoundingBoxAscent + textSize.actualBoundingBoxDescent + args.bounds.height) / 2,
-        );
-        args.preventDefault();
-      //draw circles
+
       } else if (args.cell.cell.value !== null) {
         const query =
           `${aminoAcidResidue} = ${matrixDf.get(aminoAcidResidue, args.cell.tableRowIndex)} ` +

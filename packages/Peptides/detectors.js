@@ -14,7 +14,7 @@ class PeptidesPackageDetectors extends DG.Package {
     detectAminoAcids(col) {
         for (let i = 0; i < col.categories.length; i++) {
             if (col.categories[i]) {
-                if (!['NH2','COOH','C', 'U', 'G', 'P', 'A', 'V', 'I', 'L', 'M', 'F', 'Y', 'W', 'R', 'H', 'K', 'D', 'E', 'S', 'T', 'N', 'Q']
+                if (!['_','NH2','COOH','C', 'U', 'G', 'P', 'A', 'V', 'I', 'L', 'M', 'F', 'Y', 'W', 'R', 'H', 'K', 'D', 'E', 'S', 'T', 'N', 'Q']
                     .includes(col.categories[i])) {
                     return null;
                 }
