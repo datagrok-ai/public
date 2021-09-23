@@ -6,7 +6,7 @@ import { Tutorial } from '../../../tutorial';
 
 
 export class MultivariateAnalysisTutorial extends Tutorial {
-  get name() { return 'Multivariate Analysis (PLS)'; }
+  get name() { return 'Multivariate Analysis'; }
   get description() {
     return 'Multivariate analysis (MVA) is based on the statistical ' +
     'principle of multivariate statistics, which involves observation ' +
@@ -16,7 +16,7 @@ export class MultivariateAnalysisTutorial extends Tutorial {
   demoTable: string = 'cars.csv';
 
   protected async _run() {
-    this.header.textContent = 'Multivariate Analysis (PLS)';
+    this.header.textContent = 'Multivariate Analysis';
     let dlg: DG.Dialog;
 
     await this.action('Click on "ML | Multivariate Analysis (PLS)..."',

@@ -19,7 +19,7 @@ export async function trackOverview() {
   let root = ui.div([
     runEda.root,runChem.root,runMl.root,
     ui.panel([],{id:'tutorial-child-node'}),
-  ], {style:{overflowY:'scroll'}});
+  ], 'tutorials-root');
 
   console.log(runEda);
   grok.shell.dockManager.dock(root, DG.DOCK_TYPE.RIGHT, null, 'Tutorials', 0.35);
