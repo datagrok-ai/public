@@ -243,7 +243,8 @@ export namespace chem {
       'molStringsColumn': column,
       'molString': pattern,
       'substructLibrary':
-        !(settings?.hasOwnProperty('substructLibrary') && !settings.substructLibrary)
+        !(settings?.hasOwnProperty('substructLibrary') && !settings.substructLibrary),
+      'molStringSmarts': null
     });
     await call.call();
     // unpacking our BitSet object from a synthetic column
