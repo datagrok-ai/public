@@ -81,7 +81,7 @@ export class SARViewer extends DG.JsViewer {
       tempCol ? columnNames.splice(columnNames.indexOf(tempCol.name), 1) : null;
 
       //@ts-ignore: *sigh*
-      grok.shell.v.grid.columns.setVisibility(columnNames);
+      grok.shell.v.grid.columns.setVisible(columnNames);
     }
   }
 }

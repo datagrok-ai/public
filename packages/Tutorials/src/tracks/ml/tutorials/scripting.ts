@@ -1,11 +1,13 @@
 import * as grok from 'datagrok-api/grok';
 import * as DG from 'datagrok-api/dg';
 import { filter } from 'rxjs/operators';
-import { Tutorial } from "../../../tutorial";
+import { Tutorial } from '../../../tutorial';
 
 
 export class ScriptingTutorial extends Tutorial {
-  get name() { return 'Scripting'; }
+  get name() {
+    return 'Scripting';
+  }
   get description() {
     return 'Scripting is an integration mechanism with languages for statistical computing';
   }
