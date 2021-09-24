@@ -73,3 +73,15 @@
     right: 15px;
     color: var(--green-2);
 }
+
+.tutorials-target-hint {
+    background-color: #3cb173;
+    border-radius: 5px;
+    animation: blinker 3s linear infinite;
+}
+
+@keyframes blinker {
+    50% {
+        opacity: 0;
+    }
+}

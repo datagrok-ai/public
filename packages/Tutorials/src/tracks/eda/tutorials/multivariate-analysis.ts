@@ -26,7 +26,7 @@ export class MultivariateAnalysisTutorial extends Tutorial {
           return true;
         }
         return false;
-    })));
+      })));
 
     this.describe('This is multivariate analysis dialog. It uses a statistical method that resembles ' +
       'principal components regression. Instead of finding hyperplanes of maximum variance ' +
@@ -37,10 +37,10 @@ export class MultivariateAnalysisTutorial extends Tutorial {
       'how different measures are related to each other and to the outcome.');
 
     await this.dlgInputAction(dlg!, 'Set "Table" to "cars"', 'Table', 'cars');
-    await this.dlgInputAction(dlg!,'Set "Predict" to "price"', 'Predict', 'price');
+    await this.dlgInputAction(dlg!, 'Set "Predict" to "price"', 'Predict', 'price');
 
     this.describe('Set "Features" to "all". Click "All" in the column selection dialog.');
-      // await this.dlgInputAction(dlg!, 'Set "Features" to "all". Click "All" in the column selection dialog',
+    // await this.dlgInputAction(dlg!, 'Set "Features" to "all". Click "All" in the column selection dialog',
     //   'Features', this.t.columns.names().join(','));
     await this.dlgInputAction(dlg!, 'Set the number of components to "3"', 'Components', '3');
     this.describe(`Once you run the analysis, the following visualizations will appear:

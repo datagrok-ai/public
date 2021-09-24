@@ -66,7 +66,13 @@ export abstract class Tutorial extends DG.Widget {
       console.error('The launched tutorial is not bound to any track.');
       return;
     }
-    let id = this.track!.tutorials.indexOf(this);
+    let id = tutorials.indexOf(this);
+
+    const switchToMainView = () => {
+      $('.tutorial').show();
+      $('#tutorial-child-node').html('');
+      grok.shell.tableView(this.t.name).close();
+    };
     
     if (id < tutorials.length - 1){
       this.root.append(ui.div([
@@ -75,16 +81,10 @@ export abstract class Tutorial extends DG.Widget {
           $('#tutorial-child-node').append(tutorials[++id].root);
           tutorials[id].run();
         }),
-        ui.button('Cancel', () => {
-          $('.tutorial').show();
-          $('#tutorial-child-node').html('');
-        })
+        ui.button('Cancel', switchToMainView)
       ]))
     } else if (id == tutorials.length - 1) {
-      this.root.append(ui.div([ui.bigButton('Complete', () => {
-        $('.tutorial').show();
-        $('#tutorial-child-node').html('');
-      })]))
+      this.root.append(ui.div([ui.bigButton('Complete', switchToMainView)]))
     }
   }
 
@@ -101,7 +101,7 @@ export abstract class Tutorial extends DG.Widget {
 
   async action(instructions: string, completed: Observable<any>,
     hint?: HTMLElement | null, hintSub?: DG.StreamSubscription | null): Promise<void> {
-    hint?.classList.add('grok-tutorial-target-hint');
+    hint?.classList.add('tutorials-target-hint');
     const instructionDiv = ui.divText(instructions, 'grok-tutorial-entry-instruction');
     const entry = ui.div([instructionDiv], 'grok-tutorial-entry');
     this.activity.append(entry);
@@ -109,7 +109,7 @@ export abstract class Tutorial extends DG.Widget {
     await this.firstEvent(completed);
     instructionDiv.classList.add('grok-tutorial-entry-success');
     hintSub?.cancel();
-    hint?.classList?.remove('grok-tutorial-target-hint');
+    hint?.classList?.remove('tutorials-target-hint');
   }
 
   protected _scroll(): void {
@@ -128,7 +128,11 @@ export abstract class Tutorial extends DG.Widget {
 
   protected async openPlot(name: string, check: (viewer: DG.Viewer) => boolean): Promise<DG.Viewer> {
     // TODO: Expand toolbox / accordion API coverage
-    const getViewerIcon = (el: HTMLElement) => $(el).find(`i.svg-${name.replace(' ', '-')}`).get()[0];
+    const getViewerIcon = (el: HTMLElement) => {
+      const selector = name == 'filters' ? 'i.fa-filter' : `i.svg-${name.replace(' ', '-')}`;
+      const icon = $(el).find(selector);
+      return icon[0];
+    }
     const view = grok.shell.v as DG.View;
     let viewer: DG.Viewer;
 
