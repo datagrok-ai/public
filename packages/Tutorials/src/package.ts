@@ -21,6 +21,6 @@ export async function trackOverview() {
     ui.panel([],{id:'tutorial-child-node'}),
   ], 'tutorials-root');
 
-  console.log(runEda);
-  grok.shell.dockManager.dock(root, DG.DOCK_TYPE.RIGHT, null, 'Tutorials', 0.35);
+  grok.shell.dockManager.dock(root, DG.DOCK_TYPE.RIGHT, null, 'Tutorials', 0.3);
+  
 }

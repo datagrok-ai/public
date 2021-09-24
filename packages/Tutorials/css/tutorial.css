@@ -3,40 +3,80 @@
 }
 /* Track Root */
 .tutorials-track{
-  margin-bottom: 15px;
+  margin-bottom: 20px;
 }
 /* Track Title */
 .tutorials-track-title{
     align-items: flex-end;
 }
 .tutorials-track-title h1{
-    margin: 0 0 10px 0;
+    margin: 0 0 5px 0;
 }
 /* Track Details */
 .tutorials-track-details{
-    color: var(--grey-6);
-}
-.tutorials-track-details>.grok-icon{
     color: var(--grey-4);
-}
-.tutorials-track-details>div{
-    color: var(--grey-4);
-    margin: 0px 0px 0px 5px;
+    justify-content: space-between;
+    margin-bottom: 10px;
 }
 /* Track Progress */
 .tutorials-track progress{
     margin: 5px 0;
     width: 100%;
+    height: 5px;
 }
+
+.tutorials-track progress[value]{
+    -webkit-appearance: none;
+    appearance: none;
+}
+
+.tutorials-track progress[value]::-webkit-progress-bar {
+ background-color: var(--grey-1);
+ border-radius: 2px;
+}
+
+.tutorials-track progress[value]::-webkit-progress-value {
+    background-image:
+    -webkit-linear-gradient(-45deg, 
+                            transparent 33%, rgba(255, 255, 255, .15) 33%, 
+                            rgba(255,255, 255, .15) 66%, transparent 66%),
+    -webkit-linear-gradient(top, 
+                            rgba(255, 255, 255, .0), 
+                            rgba(0, 0, 0, .0)),
+    -webkit-linear-gradient(left, var(--blue-1), var(--blue-1));
+background-size: 15px 10px, 100% 100%, 100% 100%;
+    border-radius: 2px; 
+} 
+
+progress[value]::-webkit-progress-value::before {
+    content: '80%';
+    position: absolute;
+    right: 0;
+    top: -125%;
+}
+progress[value]::-webkit-progress-value::after {
+    content: '';
+    width: 6px;
+    height: 6px;
+    position: absolute;
+    border-radius: 100%;
+    right: 7px;
+    top: 7px;
+    background-color: white;
+}
+
+
 /* Tutorial Card */
 .tutorials-card{
     padding: 5px;
+    margin: 0 -5px;
     cursor: default;
     background-color: white;
     position: relative;
 }
 .tutorials-card:hover{
     padding: 5px;
+    margin: 0 -5px;
     cursor: pointer;
     background-color: var(--grey-1);
     position: relative;
@@ -70,7 +110,7 @@
 .tutorials-card-status{
     max-width: 20px;
     position: absolute;
-    right: 15px;
+    right: 5px;
     color: var(--green-2);
 }
 

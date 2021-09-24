@@ -26,9 +26,9 @@
 		"Developers"
 	],
 	"scripts": {
+		"build-tutorials": "webpack && grok publish",
 		"debug-tutorials": "grok publish --rebuild",
 		"release-tutorials": "grok publish --rebuild --release",
-		"build-tutorials": "webpack",
 		"build": "webpack",
 		"build-ts": "tsc",
 		"check-code-style": "eslint ./src/**/*.ts",
