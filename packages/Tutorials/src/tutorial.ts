@@ -208,7 +208,8 @@ export abstract class Tutorial extends DG.Widget {
     return view!;
   }
 
-  protected async openDialog(instructions: string, title: string): Promise<DG.Dialog> {
+  /** Prompts the user to open a dialog with the specified title, waits for it to open and returns it. */
+  protected async openDialog(instructions: string, title: string, hint: HTMLElement | null = null): Promise<DG.Dialog> {
     let dialog: DG.Dialog;
 
     await this.action(instructions, grok.events.onDialogShown.pipe(filter((dlg) => {
@@ -217,7 +218,7 @@ export abstract class Tutorial extends DG.Widget {
         return true;
       }
       return false;
-    })));
+    })), hint);
 
     return dialog!;
   }
