@@ -1,7 +1,7 @@
 import * as grok from 'datagrok-api/grok';
 import * as ui from 'datagrok-api/ui';
 import * as DG from 'datagrok-api/dg';
-import { Track, TutorialRunner } from './tutorial';
+import { Track, TutorialRunner } from './track';
 import { chem } from './tracks/chem';
 import { eda } from './tracks/eda';
 import { ml } from './tracks/ml';
