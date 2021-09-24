@@ -189,6 +189,20 @@ export abstract class Tutorial extends DG.Widget {
 
     return view!;
   }
+
+  protected async openDialog(instructions: string, title: string): Promise<DG.Dialog> {
+    let dialog: DG.Dialog;
+
+    await this.action(instructions, grok.events.onDialogShown.pipe(filter((dlg) => {
+      if (dlg.title === title) {
+        dialog = dlg;
+        return true;
+      }
+      return false;
+    })));
+
+    return dialog!;
+  }
 }
 
 
