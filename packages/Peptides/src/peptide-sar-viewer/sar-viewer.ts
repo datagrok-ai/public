@@ -1,3 +1,4 @@
+import * as grok from 'datagrok-api/grok';
 import * as ui from 'datagrok-api/ui';
 import * as DG from 'datagrok-api/dg';
 import {describe} from './describe';
@@ -50,6 +51,37 @@ export class SARViewer extends DG.JsViewer {
         $(this.root).empty();
         this.root.appendChild(this.grid.root);
       }
+
+      grok.events.onAccordionConstructed.subscribe((accordion: DG.Accordion) => {
+        if (accordion.context instanceof DG.DataFrame || typeof accordion.context.dataFrame !== 'undefined') {
+          const originalDf: DG.DataFrame = accordion.context instanceof DG.DataFrame ? accordion.context : DG.toJs(accordion.context.dataFrame);
+
+          if (originalDf.getTag('dataType') === 'peptides') {
+            // const currentDf = originalDf.clone(originalBitset);
+
+            // //FIXME: Can this be done better?
+            // //add bool col to split df on selection/filter instead
+            // let otherDf = originalDf.clone();
+            // const otherBitset = this.filterMode ? otherDf.filter : otherDf.selection;
+            // otherBitset.init((i) => !originalBitset.get(i));
+            // otherDf = otherDf.clone(otherBitset);
+    
+            let histPane = accordion.getPane('Histogram');
+            histPane = histPane ? histPane : accordion.addPane('Histogram', () => {
+              return originalDf.plot.histogram({value: this.activityColumnColumnName + 'Scaled', 'splitColumnName': 'splitCol'});
+            }, true);
+          }
+        }
+      });
+
+      const columnNames = this.dataFrame.columns.names();
+      let tempCol = this.dataFrame.col('splitCol');
+      tempCol ? columnNames.splice(columnNames.indexOf(tempCol.name), 1) : null;
+      tempCol = this.dataFrame.col(this.activityColumnColumnName + 'Scaled');
+      tempCol ? columnNames.splice(columnNames.indexOf(tempCol.name), 1) : null;
+
+      //@ts-ignore: *sigh*
+      grok.shell.v.grid.columns.setVisibility(columnNames);
     }
   }
 }

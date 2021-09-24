@@ -19,6 +19,8 @@ async function main() {
   //  await grok.data.loadTable('https://datagrok.jnj.com/p/ejaeger.il23peptideidp5562/il-23_peptide_idp-5562');
   const path = _package.webRoot + 'files/' + 'aligned.csv';
   const peptides = (await grok.data.loadTable(path));
+  peptides.name = "Peptides";
+  peptides.setTag("dataType", "peptides");
 
   const view = grok.shell.addTableView(peptides);
   view.name = 'PeptidesView';
@@ -79,7 +81,7 @@ export function SARViewerHelp(_: DG.Column): DG.Widget {
 }
 
 //name: Analyze Peptides
-//tags: panel, widget
+//tags: panel, widgets
 //input: column col {semType: alignedSequence}
 //output: widget result
 export function analyzePeptides(col: DG.Column): DG.Widget {
@@ -89,10 +91,7 @@ export function analyzePeptides(col: DG.Column): DG.Widget {
     tempCol = column;
     break;
   }
-  const defaultColumn: DG.Column =
-    col.dataFrame.col('Activity') || col.dataFrame.col('activity') ||
-    col.dataFrame.col('IC50') || col.dataFrame.col('ic50') ||
-    tempCol;
+  const defaultColumn: DG.Column = col.dataFrame.col('activity') || col.dataFrame.col('ic50') || tempCol;
 
   const activityColumnChoice = ui.columnInput('Activity column', col.dataFrame, defaultColumn);
   const activityScalingMethod = ui.choiceInput('Activity scaling', 'none', ['none', 'lg', '-lg']);
@@ -131,7 +130,6 @@ export function sar(): SARViewer {
 //output: widget result
 
 export async function stackedBarchartWidget(col:DG.Column):Promise<DG.Widget> {
-  console.error('eppÈ');
   const viewer = await col.dataFrame.plot.fromType('StackedBarChartAA');
   const panel = ui.divH([viewer.root]);
   return new DG.Widget(panel);
