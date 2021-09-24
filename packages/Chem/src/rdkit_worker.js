@@ -18,7 +18,7 @@ onmessage = async function (e) {
     const result = _substructLibrary.init(args[0]);
     port.postMessage({op: op, retval: result});
   } else if (op === 'substructLibrary::search') {
-    const result = _substructLibrary.search(args[0]);
+    const result = _substructLibrary.search(args[0], args[1]);
     port.postMessage({op: op, retval: result});
   } else if (op === 'substructLibrary::deinit') {
     _substructLibrary.deinit();
