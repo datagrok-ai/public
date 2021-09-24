@@ -666,6 +666,14 @@ export class Menu {
   show(): Menu {
     return toJs(api.grok_Menu_Show(this.d));
   }
+
+  get onContextMenuItemClick() {
+    return __obs('d4-menu-item-click', this.d);
+  }
+
+  toString(): string {
+    return api.grok_MenuItem_ToString(this.d);
+  }
 }
 
 
