@@ -54,7 +54,7 @@ export class DescriptorsTutorial extends Tutorial {
       'NumHDonors', 'NumHeteroatoms', 'NumRotatableBonds', 'NumSaturatedCarbocycles',
       'NumSaturatedHeterocycles', 'NumSaturatedRings', 'RingCount'];
 
-    await this.action('Select "MolWt" (Descriptors group) and all descriptors of "Lipinski" group',
+    await this.action('Select "MolWt" ("Descriptors" group) and all descriptors of "Lipinski" group',
       grok.functions.onAfterRunAction.pipe(filter((call) => {
         const inputs = call.inputs.get('descriptors');
         return call.func.name === 'ChemDescriptors' &&
