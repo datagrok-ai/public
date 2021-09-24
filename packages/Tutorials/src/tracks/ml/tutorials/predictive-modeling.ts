@@ -13,7 +13,7 @@ export class PredictiveModelingTutorial extends Tutorial {
   get description() {
     return 'Predictive modeling uses statistics to predict outcomes';
   }
-
+  get steps(){ return 3} //set thew number of steps
   private async buttonClickAction(root: HTMLElement, instructions: string, caption: string) {
     const btn = $(root).find('button.ui-btn').filter((idx, btn) => btn.textContent === caption)[0];
     if (btn == null) return;

@@ -15,6 +15,8 @@ export class DescriptorsTutorial extends Tutorial {
       'These are numerical values that characterize properties of molecules.';
   }
 
+  get steps(){ return 3} //set thew number of steps
+
   demoTable: string = 'chem/smiles_only.csv';
 
   protected async _run(): Promise<void> {

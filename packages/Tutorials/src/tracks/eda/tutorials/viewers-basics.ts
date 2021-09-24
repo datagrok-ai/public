@@ -10,7 +10,8 @@ export class ViewersTutorial extends Tutorial {
   get description() {
     return 'Learn how to use different viewers together';
   }
-
+  get steps(){ return 3} //set thew number of steps
+    
   protected async _run() {
     this.title('Opening viewers');
 

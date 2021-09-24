@@ -1,4 +1,4 @@
-import { Track } from '../../tutorial';
+import { Track } from '../../track';
 import { FiltersTutorial } from './tutorials/filters';
 import { MultivariateAnalysisTutorial } from './tutorials/multivariate-analysis';
 import { ScatterPlotTutorial } from './tutorials/scatter-plot';
