@@ -99,15 +99,12 @@ export function analyzePeptides(col: DG.Column): DG.Widget {
 
   const startBtn = ui.button('Start', async () => {
     if (activityColumnChoice.value.type === DG.TYPE.FLOAT) {
-      const peptidesView = grok.shell.v;
-      if (peptidesView.type === DG.VIEW_TYPE.TABLE_VIEW) {
-        const options = {
-          'activityColumnColumnName': activityColumnChoice.value.name,
-          'activityScalingMethod': activityScalingMethod.value,
-          // 'showHistogram': showHistogram.value
-        };
-        (<DG.TableView>peptidesView).addViewer('peptide-sar-viewer', options);
-      }
+      const options = {
+        'activityColumnColumnName': activityColumnChoice.value.name,
+        'activityScalingMethod': activityScalingMethod.value,
+        // 'showHistogram': showHistogram.value
+      };
+      (grok.shell.v as DG.TableView).addViewer('peptide-sar-viewer', options);
     } else {
       grok.shell.error('The activity column must be of double type!');
     }
