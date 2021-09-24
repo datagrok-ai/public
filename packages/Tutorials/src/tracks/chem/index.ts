@@ -1,4 +1,4 @@
-import { Track } from '../../tutorial';
+import { Track } from '../../track';
 import { DescriptorsTutorial } from './tutorials/descriptors';
 
 

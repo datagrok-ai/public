@@ -13,6 +13,7 @@ import { eda, tutorials } from './tracks/eda';
 export abstract class Tutorial extends DG.Widget {
   abstract get name(): string;
   abstract get description(): string;
+  abstract get steps(): number;
 
   track: Track | null = null;
   demoTable: string = 'demog.csv';
@@ -20,15 +21,9 @@ export abstract class Tutorial extends DG.Widget {
     return grok.shell.t;
   }
 
-  nextLink: HTMLAnchorElement = ui.link('next',
-    '',
-    'Go to the next tutorial', {
-      classes: 'grok-tutorial-next',
-      style: { display: 'none' },
-    });
-  header: HTMLHeadingElement = ui.h2('');
+  header: HTMLHeadingElement = ui.h1('');
   subheader: HTMLHeadingElement = ui.h3('');
-  activity: HTMLDivElement = ui.div([], 'grok-tutorial-description');
+  activity: HTMLDivElement = ui.div([], 'tutorials-card-description');
   status: boolean = false;
 
   static DATA_STORAGE_KEY: string = 'tutorials';
@@ -44,7 +39,6 @@ export abstract class Tutorial extends DG.Widget {
     this.root.append(this.header);
     this.root.append(this.subheader);
     this.root.append(this.activity);
-    this.root.append(this.nextLink);
   }
 
   protected abstract _run(): Promise<void>;
@@ -108,11 +102,11 @@ export abstract class Tutorial extends DG.Widget {
   }
 
   title(text: string): void {
-    this.activity.append(ui.h2(text));
+    this.activity.append(ui.h1(text));
   }
 
   describe(text: string): void {
-    const div = ui.div([], 'grok-tutorial-description-entry');
+    const div = ui.div([], 'tutorials-card-description');
     div.innerHTML = text;
     this.activity.append(div);
     this._scroll();
