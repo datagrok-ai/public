@@ -13,7 +13,7 @@ import { eda, tutorials } from './tracks/eda';
 export abstract class Tutorial extends DG.Widget {
   abstract get name(): string;
   abstract get description(): string;
-  abstract get steps(): number;
+  abstract get steps():number;
 
   track: Track | null = null;
   demoTable: string = 'demog.csv';
@@ -21,10 +21,17 @@ export abstract class Tutorial extends DG.Widget {
     return grok.shell.t;
   }
 
+  nextLink: HTMLAnchorElement = ui.link('next',
+    '',
+    'Go to the next tutorial', {
+      classes: 'grok-tutorial-next',
+      style: { display: 'none' },
+    });
   header: HTMLHeadingElement = ui.h1('');
   subheader: HTMLHeadingElement = ui.h3('');
-  activity: HTMLDivElement = ui.div([], 'tutorials-card-description');
+  activity: HTMLDivElement = ui.div([], 'tutorials-root-description');
   status: boolean = false;
+  progress: HTMLProgressElement = ui.element('progress');
 
   static DATA_STORAGE_KEY: string = 'tutorials';
 
@@ -34,16 +41,22 @@ export abstract class Tutorial extends DG.Widget {
   }
 
   constructor() {
-    super(ui.div([]));
+
+    super(ui.div([], 'tutorials-track'));
     this.updateStatus();
     this.root.append(this.header);
     this.root.append(this.subheader);
+    this.root.append(this.progress);
+    this.progress.max = 0;
+    this.progress.value = 0;
     this.root.append(this.activity);
+    this.root.append(this.nextLink);
   }
 
   protected abstract _run(): Promise<void>;
 
   async run(t:Tutorial): Promise<void> {
+    this.progress.max = this.steps;
 
     if (this.demoTable) {
       grok.shell.addTableView(await grok.data.getDemoTable(this.demoTable));
@@ -106,7 +119,7 @@ export abstract class Tutorial extends DG.Widget {
   }
 
   describe(text: string): void {
-    const div = ui.div([], 'tutorials-card-description');
+    const div = ui.div([]);
     div.innerHTML = text;
     this.activity.append(div);
     this._scroll();
@@ -115,12 +128,24 @@ export abstract class Tutorial extends DG.Widget {
   async action(instructions: string, completed: Observable<any>,
     hint?: HTMLElement | null, hintSub?: DG.StreamSubscription | null): Promise<void> {
     hint?.classList.add('tutorials-target-hint');
+    let hintIndicator = ui.element('div');
+    hintIndicator.classList = 'blob';
+
+    console.log(hint);
+    console.log(hint?.parentNode);
+    hint?.append(hintIndicator);
+
     const instructionDiv = ui.divText(instructions, 'grok-tutorial-entry-instruction');
-    const entry = ui.div([instructionDiv], 'grok-tutorial-entry');
+    const instructionIndicator = ui.div([],'grok-tutorial-entry-indicator')
+    const entry = ui.divH([instructionIndicator,instructionDiv], 'grok-tutorial-entry');
     this.activity.append(entry);
     this._scroll();
     await this.firstEvent(completed);
     instructionDiv.classList.add('grok-tutorial-entry-success');
+    instructionIndicator.classList.add('grok-tutorial-entry-indicator-success')
+    this.progress.value++;
+
+    hintIndicator.remove();
     hintSub?.cancel();
     hint?.classList?.remove('tutorials-target-hint');
   }
@@ -130,6 +155,7 @@ export abstract class Tutorial extends DG.Widget {
   }
 
   clearRoot(): void {
+    this.progress.value = 0;
     $(this.root).children().each((idx, el) => $(el).empty());
   }
 

@@ -112,7 +112,9 @@ export class Track {
       let icon = ui.div([], 'tutorials-card-status');
       icon.append(ui.iconFA('check', ()=>{}));
       $(icon).hide();
-      
+      $(icon).children().removeClass('fal');
+      $(icon).children().addClass('far');
+
       (async()=>{
         await tutorial.updateStatus();
         if(tutorial.status == true){
