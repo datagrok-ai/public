@@ -114,14 +114,69 @@ progress[value]::-webkit-progress-value::after {
     color: var(--green-2);
 }
 
+
+/* Tutorial Root CSS */
 .tutorials-target-hint {
-    background-color: #3cb173;
-    border-radius: 5px;
-    animation: blinker 3s linear infinite;
+    background-color: rgba(255,162,74, 0.25);
+    border: 1px dashed rgba(255,162,74, 0.5);
 }
 
-@keyframes blinker {
-    50% {
-        opacity: 0;
-    }
+.tutorials-root-description{
+    font-weight: normal;
+    color: var(--grey-4);
+    margin: 0px;
+}
+.grok-tutorial-entry{
+    align-items: center;
+}
+.grok-tutorial-entry-instruction{
+    color: var(--grey-6);
+}
+.grok-tutorial-entry-success{
+    text-decoration: line-through;
+    color: var(--grey-4);
+}
+.grok-tutorial-entry-indicator{
+    width: 5px;
+    height: 5px;
+    border-radius: 100%;
+    background-color: var(--orange-2);
+}
+.grok-tutorial-entry-indicator-success{
+    width: 5px;
+    height: 5px;
+    border-radius: 100%;
+    background-color: var(--green-2);
+}
+
+
+/* Animation */
+/* Add div container with class blob*/
+.blob {
+	background: rgb(255 162 74);
+	border-radius: 50%;
+	box-shadow: 0 0 0 0 rgba(255, 162, 74,.5);
+	margin: -20px 0 0 -20px;
+	height: 5px;
+	width: 5px;
+    position: absolute;
+	transform: scale(1);
+	animation: pulse-white 1.25s infinite;
+}
+
+@keyframes pulse-white {
+	100% {
+		transform: scale(0.9);
+		box-shadow: 0 0 0 0 rgba(255, 255, 255, 1);
+	}
+	
+	70% {
+		transform: scale(1);
+		box-shadow: 0 0 0 50px rgba(255, 255, 255, 0);
+	}
+	
+	100% {
+		transform: scale(0.9);
+		box-shadow: 0 0 0 0 rgba(255, 255, 255, 0);
+	}
 }
