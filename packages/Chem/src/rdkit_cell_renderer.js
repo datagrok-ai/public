@@ -73,9 +73,7 @@ M  END
           }
           const molIsMolBlock = this._isMolBlock(molString); 
           const scaffoldGiven = scaffoldIsMolBlock; //  || scaffoldMolString !== '';
-          console.log("BEFORE normalize_2d_molblock '" + molString + "' | '" + scaffoldMolString + "' | '" + substructJson + "'");
           if (!molIsMolBlock && !scaffoldGiven || !molIsMolBlock && (substructJson === '{}') || molRegenerateCoords) {
-            console.log("normalize_2d_molblock '" + molString + "' | '" + scaffoldMolString + "'");
             mol.normalize_2d_molblock();
             mol.straighten_2d_layout();
           }
