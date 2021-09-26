@@ -12,7 +12,8 @@ export class MultivariateAnalysisTutorial extends Tutorial {
     'principle of multivariate statistics, which involves observation ' +
     'and analysis of more than one statistical outcome variable at a time';
   }
-
+  get steps(){ return 3} //set thew number of steps
+    
   demoTable: string = 'cars.csv';
 
   protected async _run() {

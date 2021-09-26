@@ -10,6 +10,8 @@ export class FiltersTutorial extends Tutorial {
       'and visual assessment of column values';
   }
 
+  get steps(){ return 3} //set thew number of steps
+  
   protected async _run() {
     this.header.textContent = 'Filters';
     this.describe('Dynamic filtering is an important concept in exploratory data analysis, and ' +
