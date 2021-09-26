@@ -388,5 +388,115 @@ class ChemPackage extends DG.Package {
     return [df];
   }
 
+  //name: Structure WIP
+  //description: 2D molecule representation
+  //tags: panel, widgets
+  //input: string smiles { semType: Molecule }
+  //output: widget result
+  structureWIP(smiles) {
+    const mol = rdKitModule.get_mol(smiles);
+    return new DG.Widget(this._svgDiv(mol));
+  }
 
+  //name: Properties WIP
+  //description: Basic molecule properties
+  //tags: panel, widgets
+  //input: string smiles { semType: Molecule }
+  //output: widget result
+  propertiesWIP(smiles) {
+    const mol = new OCL.Molecule.fromSmiles(smiles);
+    const formula = mol.getMolecularFormula();
+    const molProps = new OCL.MoleculeProperties(mol);
+
+    //TODO: name, need PubChem
+    const map = {
+      'SMILES': smiles,
+      'Formula': formula.formula,
+      'MW': formula.absoluteWeight,
+      'Number of HBA': molProps.acceptorCount,
+      'Number of HBD': molProps.donorCount,
+      'LogP': molProps.logP,
+      'LogS': molProps.logS,
+      'Polar Surface Area': molProps.polarSurfaceArea,
+      'Number of rotatabe bonds': molProps.rotatableBondCount,
+      'Number of stereo centers': molProps.stereoCenterCount,
+    };
+
+    return new DG.Widget(ui.tableFromMap(map));
+  }
+
+  //name: SDF WIP
+  //description: Molecule as SDF
+  //tags: panel, widgets
+  //input: string smiles { semType: Molecule }
+  //output: widget result
+  sdfWIP(smiles) {
+    const mol = new OCL.Molecule.fromSmiles(smiles);
+    return new DG.Widget(ui.textInput('', mol.toMolfile()).root);
+  }
+
+  //name: 3D WIP
+  //description: 3D molecule representation
+  //tags: panel, widgets
+  //input: string smiles { semType: Molecule }
+  //output: widget result
+  async get3dWIP(smiles) {
+    //TODO: implement
+    //what is dml?
+    return new DG.Widget();
+  }
+
+  //name: Toxicity WIP
+  //description: Toxicity prediction. Calculated by openchemlib
+  //help-url: /help/domains/chem/info-panels/toxicity-risks.md
+  //tags: panel, widgets
+  //input: string smiles { semType: Molecule }
+  //output: widget result
+  toxicityWIP(smiles) {
+    const mol = new OCL.Molecule.fromSmiles(smiles);
+    const riskTypes = {
+      0: 'Mutagenicity',
+      1: 'Tumorigenicity',
+      2: 'Irritating effects',
+      3: 'Reproductive effects'
+    };
+    const riskLevels = {
+      0: 'Unknown',
+      1: 'None',
+      2: 'Low',
+      3: 'High'
+    };
+
+    const risks = {};
+    Object.keys(riskTypes).forEach((typeId) => {
+      risks[riskTypes[typeId]] = riskLevels[new OCL.ToxicityPredictor().assessRisk(mol, typeId)];
+    });
+
+    //FIXME: no such settings as in Dart: processValueElement, Aydar
+    return new DG.Widget(ui.tableFromMap(risks));
+  }
+
+  //name: Drug Likeness WIP
+  //description: Drug Likeness score, with explanations on molecule fragments contributing to the score. Calculated by openchemlib
+  //help-url: /help/domains/chem/info-panels/drug-likeness.md
+  //tags: panel, widgets
+  //input: string smiles { semType: Molecule }
+  //output: widget result
+  drugLikenessWIP(smiles) {
+    //TODO: implement
+    //what is chem?
+    return new DG.Widget();
+  }
+
+  //name: Structural Alerts WIP
+  //description: Screening drug candidates against structural alerts, i.e. chemical fragments associated to a toxicological response
+  //help-url: /help/domains/chem/info-panels/structural-alerts.md
+  //tags: panel, widgets
+  //input: string smiles { semType: Molecule }
+  //output: widget result
+  structuralAlertsWIP(smiles) {
+    //TODO: implement
+    //what is chem?
+    return new DG.Widget();
+  }
 }
