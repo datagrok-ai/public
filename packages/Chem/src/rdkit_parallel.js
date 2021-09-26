@@ -55,12 +55,12 @@ class RdKitParallel {
     );
   }
   
-  async substructSearch(query) {
+  async substructSearch(query, querySmarts) {
   
     let t = this;
     return this._doParallel(
       async (i, nWorkers) => {
-        return t._workers[i].substructSearch(query);        
+        return t._workers[i].substructSearch(query, querySmarts);        
       },
       async (data) => {
         for (let k = 0; k < data.length; ++k) {

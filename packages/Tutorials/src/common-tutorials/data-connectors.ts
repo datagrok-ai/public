@@ -11,6 +11,8 @@ export class DataConnectorsTutorial extends Tutorial {
   get description() {
     return 'Direct connection to data sources and databases using the connector server';
   }
+  get steps(){ return 3} //set thew number of steps
+  
   demoTable: string = '';
 
   protected async _run() {
