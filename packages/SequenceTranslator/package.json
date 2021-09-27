@@ -5,7 +5,7 @@
   "description": "",
   "dependencies": {
     "@types/react": "latest",
-    "datagrok-api": "latest",
+    "datagrok-api": "../../js-api",
     "datagrok-tools": "^4.1.2",
     "npm": "^7.11.2",
     "save-svg-as-png": "^1.4.17",

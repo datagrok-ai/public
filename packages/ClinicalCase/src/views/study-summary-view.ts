@@ -2,20 +2,24 @@ import * as grok from "datagrok-api/grok";
 import * as DG from "datagrok-api/dg";
 import * as ui from "datagrok-api/ui";
 import { study } from "../clinical-study";
-import { createKaplanMeierDataframe } from "../data-preparation/data-preparation";
-import { createKaplanMeierScatterPlot } from "../custom-scatter-plots/custom-scatter-plots";
+import { cumulativeEnrollemntByDay } from "../data-preparation/data-preparation";
+import { STUDY_ID, SUBJECT_ID } from "../constants";
+import { HttpService } from "../services/http.service";
 
 
 export class StudySummaryView extends DG.ViewBase {
 
- validationView: DG.View;
+ validationView: DG.ViewBase;
  errorsByDomain: any;
  errorsByDomainWithLinks: any;
+ studyId: string;
+ httpService = new HttpService();
 
- constructor() {
-    super();
+ constructor(name) {
+    super(name);
 
-    this.name = study.name;
+    this.name = name;
+    this.studyId = study.domains.dm.get(STUDY_ID, 0);
     const errorsMap = this.createErrorsMap();
     this.errorsByDomain = errorsMap.withCount;
     this.errorsByDomainWithLinks = errorsMap.withLinks;
@@ -23,16 +27,14 @@ export class StudySummaryView extends DG.ViewBase {
   }
 
   async buildView() {
-    let subjsPerDay = study.domains.dm.groupBy(['RFSTDTC']).uniqueCount('USUBJID').aggregate();
-    let refStartCol = subjsPerDay.col('RFSTDTC');
-    for (let i = 0, rowCount = subjsPerDay.rowCount; i < rowCount; i++) {
-      if (refStartCol.isNone(i))
-        subjsPerDay.rows.removeAt(i);
-    }
+    let dateCol = 'RFSTDTC';
+    let cumulativeCol = 'CUMULATIVE_ENROLLMENT';
+    let subjsPerDay = cumulativeEnrollemntByDay(study.domains.dm, dateCol, SUBJECT_ID, cumulativeCol)
+    let refStartCol = subjsPerDay.col(dateCol);
     let lc = DG.Viewer.lineChart(subjsPerDay);
     if (refStartCol.type != DG.TYPE.DATE_TIME) {
-      await subjsPerDay.columns.addNewCalculated('~RFSTDTC', 'Date(${RFSTDTC}, 1, 1)');
-      lc.setOptions({ x: '~RFSTDTC', yColumnNames: ['unique(USUBJID)'] });
+      await subjsPerDay.columns.addNewCalculated(`~${dateCol}`, `Date(\${${dateCol}}, 1, 1)`);
+      lc.setOptions({ x: `~${dateCol}`, yColumnNames: [cumulativeCol] });
     }
 
     let summary = ui.tableFromMap({
@@ -43,30 +45,61 @@ export class StudySummaryView extends DG.ViewBase {
 
     let errorsSummary = ui.tableFromMap(this.errorsByDomainWithLinks);
 
-    let kaplanMeierDataframe = createKaplanMeierDataframe();
-    let kaplanMeierPlot = createKaplanMeierScatterPlot(kaplanMeierDataframe, 'SUBJID', 'TIME', 'SURVIVAL', 'GROUP');
+    let summaryStyle = {style:{
+      'color':'var(--grey-6)',
+      'margin-top':'8px',
+      'margin-left': '5px',
+      'font-size':'16px',
+    }};
 
-    this.root.appendChild(ui.div([
-      ui.divH([
-        ui.block50([
-          ui.divH([
-            ui.block50([ui.h2('Summary'), summary]),
-            ui.block50([ui.h2('Errors'), errorsSummary]),
-          ]),
-          ui.divV([
-            ui.h2('Survival chart'),
-            kaplanMeierPlot.root
-          ]),
+    let summaryLinkStyle = {style:{
+      'margin-top':'8px',
+      'font-size':'16px',
+    }};
+
+    let viewerTitle = {style:{
+      'color':'var(--grey-6)',
+      'margin':'12px 0px 6px 12px',
+      'font-size':'16px',
+    }};
+    
+    lc.root.prepend(ui.divText('Enrollment by day', viewerTitle));
+
+    let arm = DG.Viewer.barChart(study.domains.dm, { split: 'arm', style: 'dashboard', barColor: DG.Color.lightBlue });
+    arm.root.prepend(ui.divText('Treatment arm', viewerTitle));
+
+    let sex = DG.Viewer.barChart(study.domains.dm, { split: 'sex', style: 'dashboard' });
+    sex.root.prepend(ui.divText('Sex', viewerTitle));
+
+    let race = DG.Viewer.barChart(study.domains.dm, { split: 'race', style: 'dashboard' });
+    race.root.prepend(ui.divText('Race', viewerTitle));
+
+    let age = DG.Viewer.histogram(study.domains.dm, { value: 'age', style: 'dashboard' });
+    age.root.prepend(ui.divText('Age', viewerTitle));
+
+    this.root.className = 'grok-view ui-box';
+    this.root.append(ui.splitV([
+      ui.splitH([
+        ui.panel([
+          ui.divH([ui.link(`${this.studyId}`, ()=>{
+            this.getStudyInfoFromClinTrialsGov(this.studyId);
+          }, '', summaryLinkStyle), 
+          ui.divText('summary', summaryStyle)]),
+          summary
         ]),
-        ui.block50([ui.h2('Enrollment'), lc.root])
-      ]),
-      ui.divH([
-        ui.block25([ui.h2('ARM'), study.domains.dm.plot.bar( { split: 'arm', style: 'dashboard' }).root]),
-        ui.block25([ui.h2('Sex'), DG.Viewer.barChart(study.domains.dm, { split: 'sex', style: 'dashboard' }).root]),
-        ui.block25([ui.h2('Race'), DG.Viewer.barChart(study.domains.dm, { split: 'race', style: 'dashboard' }).root]),
-        ui.block25([ui.h2('Age'), DG.Viewer.histogram(study.domains.dm, { value: 'age', style: 'dashboard' }).root]),
-      ], { style: { width: '100%' } }),
-    ]));
+        ui.panel([
+          ui.divText('Errors', summaryStyle),
+          errorsSummary
+        ]),
+      ], {style:{maxHeight:'105px'}}),
+      lc.root,
+      ui.splitH([
+        arm.root,
+        sex.root,
+        race.root,
+        age.root
+      ])
+    ]))
   }
 
   private createErrorsMap() {
@@ -86,4 +119,14 @@ export class StudySummaryView extends DG.ViewBase {
     }
     return {withCount: errorsMapWithCount, withLinks: errorsMap};
   }
+
+  private async getStudyInfoFromClinTrialsGov(studyId: string){
+    //http.getStudyData(studyId);
+    let result = await this.httpService.getStudyData('R01NS050536');
+    ui.dialog({ title: 'Study info' })
+              .add(ui.tableFromMap(result))
+              .onOK(() => {})
+              .show();
+  }
+
 }

@@ -149,7 +149,12 @@ view.grid.col('sex').categoryColors = {
 };
 ```
 
-This [example](https://public.datagrok.ai/js/samples/grid/category-colors) is also available on the platform. If the object contains less categories than given in the corresponding column, the cells belonging to the unmentioned categories will be filled with default colors. This might help in cases when you want to enable color-coding with default colors, to do that, simply leave the object empty.
+This [example](https://public.datagrok.ai/js/samples/grid/category-colors) is
+also available on the platform. If the object contains less categories than
+given in the corresponding column, the cells belonging to the unmentioned
+categories will be filled with default colors. This might help in cases when you
+want to enable color-coding with default colors, to do that, simply leave the
+object empty.
 
 Colors can also be derived from column tags. Numerical columns have the options
 `Off`, `Linear`, and `Conditional`, while categorical columns are limited to
@@ -159,22 +164,29 @@ of constructing a grid for a dataframe with these tags:
 
 ```javascript
 let t = grok.data.demo.demog();
-t.col('height').tags['.color-coding-type'] = 'Conditional';
-t.col('height').tags['.color-coding-conditional'] = `{"20-170":"#00FF00","170-190":"#220505"}`;
+
+t.col('height').tags[DG.TAGS.COLOR_CODING_TYPE] = 'Conditional';
+t.col('height').tags[DG.TAGS.COLOR_CODING_CONDITIONAL] = `{"20-170":"#00FF00","170-190":"#220505"}`;
+
+t.col('age').tags[DG.TAGS.COLOR_CODING_TYPE] = 'Linear';
+t.col('age').tags[DG.TAGS.COLOR_CODING_LINEAR] = `[${DG.Color.orange}, ${DG.Color.green}]`;
+
 grok.shell.addTableView(t);
 ```
 
-You should specify the `.color-coding-type` tag in all cases, the
-`.color-coding-conditional` tag, as the name suggests, works only with
-conditional coloring. Its value contains the rules for determining which color
-matches a number in the column. The slight difference from the first example is
-that values that do not fall within the range, or otherwise are beyond the scope
-of the given rules, are not colored at all. Note that the
-`.color-coding-conditional` tag is optional, when it is not given and the type
-is set to conditional, the default coloring scheme will be applied to the
-column. The binning rules in this case rely on the column's statistics, and are
+You should specify the `COLOR_CODING_TYPE` tag in all cases. The
+`COLOR_CODING_CONDITIONAL` and `COLOR_CODING_LINEAR` tags take effect only when
+the corresponding coloring type is set. For the conditional type, the value
+contains the rules for determining which color matches a number in the column.
+The slight difference from the first example is that values that do not fall
+within the range, or otherwise are beyond the scope of the given rules, are not
+colored at all. Note that the `COLOR_CODING_CONDITIONAL` tag is optional, when it is
+not given and the type is set to conditional, the default coloring scheme will be applied
+to the column. The binning rules in this case rely on the column's statistics, and are
 generated automatically. See the [patterns](../../access/parameterized-queries.md#patterns)
-section to learn the syntax for rules.
+section to learn the syntax for rules. The principle is mostly the same for the linear option:
+when the desired color range is not specified, the cells are colored with standard shades.
+The missing values don't take on any special coloring.
 
 See also:
 

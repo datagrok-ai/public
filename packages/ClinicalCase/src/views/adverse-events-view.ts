@@ -2,24 +2,31 @@ import * as grok from 'datagrok-api/grok';
 import * as DG from "datagrok-api/dg";
 import * as ui from "datagrok-api/ui";
 import { study, ClinRow } from "../clinical-study";
+import { addTreatmentArm, getUniqueValues } from '../data-preparation/utils';
+import { TREATMENT_ARM } from '../constants';
 
 export class AdverseEventsView extends DG.ViewBase {
 
-  constructor() {
-    super();
+  aeWithArm: DG.DataFrame;
 
-    function bar(categoryColumn: string) {
-      return study.domains.ae.plot.bar( {
-        split: categoryColumn,
-        style: 'dashboard' }).root
-    }
+  constructor(name) {
+    super(name);
+    this.name = name;
+    this.aeWithArm = addTreatmentArm(study.domains.ae.clone(), study.domains.dm, study.domains.ae.columns.names());
 
-    let typesPlot = bar('AEDECOD');
-    let bodySystemsPlot = bar('AEBODSYS');
-    let causalityPlot = bar('AEREL');
-    let outcomePlot = bar('AEOUT');
+    let viewerTitle = {style:{
+      'color':'var(--grey-6)',
+      'margin':'12px 0px 6px 12px',
+      'font-size':'16px',
+    }};
 
-    let timelinesPlot = study.domains.ae.plot.line({
+
+    let typesPlot = this.bar('AEDECOD','Types', viewerTitle, TREATMENT_ARM);
+    let bodySystemsPlot = this.bar('AEBODSYS', 'Body system', viewerTitle, TREATMENT_ARM);
+    let causalityPlot = this.bar('AEREL', 'Causality', viewerTitle, TREATMENT_ARM);
+    let outcomePlot = this.bar('AEOUT', 'Outcome', viewerTitle, TREATMENT_ARM);
+
+    let timelinesPlot = this.aeWithArm.plot.line({
       x: 'week',
       yColumnNames: ['week'],
       chartTypes: ['Stacked Bar Chart'],
@@ -27,7 +34,9 @@ export class AdverseEventsView extends DG.ViewBase {
       split: 'AESEV',
       style: 'dashboard' }).root;
 
-    let scatterPlot = study.domains.ae.plot.scatter({
+    timelinesPlot.prepend(ui.divText('Events per week', viewerTitle));
+
+    let scatterPlot = this.aeWithArm.plot.scatter({
       x: 'AESTDY',
       y: 'USUBJID',
       color: 'AESEV',
@@ -36,23 +45,39 @@ export class AdverseEventsView extends DG.ViewBase {
       style: 'dashboard'
     }).root;
 
-    let grid = study.domains.ae.plot.grid();
-    study.domains.ae.onCurrentRowChanged.subscribe((_) => {
-      grok.shell.o = new ClinRow(study.domains.ae.currentRow);
+    scatterPlot.prepend(ui.divText('All events', viewerTitle));
+
+    let grid = this.aeWithArm.plot.grid();
+    this.aeWithArm.onCurrentRowChanged.subscribe((_) => {
+      grok.shell.o = new ClinRow(this.aeWithArm.currentRow);
     });
 
-    this.root.appendChild(ui.div([
-      ui.divH([
-        ui.block25([ui.h2('Types'), typesPlot]),
-        ui.block25([ui.h2('Body System'), bodySystemsPlot]),
-        ui.block50([ui.h2('Events per Week'), timelinesPlot]),
-      ], { style: { width: '100%' } }),
-      ui.divH([
-        ui.block25([ui.h2('Causality'), causalityPlot]),
-        ui.block25([ui.h2('Outcome'), outcomePlot]),
-        ui.block50([ui.h2('All Events'), scatterPlot]),
-      ], { style: { width: '100%' } }),
-      ui.divH([ grid.root ], { style: { width: '100%' } })
+    this.root.className = 'grok-view ui-box';
+    this.root.append(ui.splitV([
+      ui.splitH([timelinesPlot, scatterPlot]),
+      ui.splitH([typesPlot,bodySystemsPlot,causalityPlot,outcomePlot]),
+      ui.splitH([grid.root])
+    ]))
+    /*
+    this.root.appendChild(ui.block([
+        ui.block25([typesPlot]),
+        ui.block25([bodySystemsPlot]),
+        ui.block50([timelinesPlot]),
+        ui.block25([causalityPlot]),
+        ui.block25([outcomePlot]),
+        ui.block50([scatterPlot]),
+        ui.block([grid.root])
     ]));
+    */
+  }
+
+  private bar(categoryColumn: string, title:string, viewerTitle: any, splitColumn: string) {
+    let chart = this.aeWithArm.plot.bar( {
+      split: categoryColumn,
+      stack: splitColumn,
+      style: 'dashboard',
+      legendPosition: 'Top' }).root;
+    chart.prepend(ui.divText(title, viewerTitle))
+    return chart
   }
 }

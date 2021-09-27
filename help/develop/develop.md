@@ -523,6 +523,35 @@ Deploying such package locates it to the Datagrok host URI (such as `https://dev
 
 2. Make sure the required plugins / debuggers for Chrome debugging are installed in your IDE.
 
+## Package settings
+
+A package can have settings, which are either set programmatically or by users
+in the package's properties panel. Every user group has its own settings configuration.
+In the interface, users will be able to adjust the settings for each group they belong to.
+To include a settings editor into a package, add the list of properties to the `package.json` file:
+
+```json
+"properties": [
+  {
+    "name": "Property name",
+    "propertyType": "string",             // `DG.TYPES_SCALAR` are supported
+    "choices": ["value #1", "value #2"],  // Optional field with values of the property type
+    "defaultValue": "value #2",           // Optional field with a default value (it should in choices, if they are given)
+    "nullable": false                     // Optional field determining whether the property value can be null
+  }
+]
+```
+
+To retrieve the state of package settings in code, use the `getProperties` method of `DG.Package`:
+
+```js
+const props = await _package.getProperties();
+```
+
+The above call outputs an object where the keys are property names and the
+values are serialized property values. It's possible to customize the editor's
+appearance by defining a special [editor function](#settings-editors).
+
 ## Function types
 
 A package can contain a variety of functions, so it will be appropriate to give
@@ -536,7 +565,7 @@ tag denoting what the function does, for example:
   * `#semTypeDetector` for [semantic types detectors](#semantic-type-detectors)
   * `#cellRenderer` for custom [cell renderers](#cell-renderers)
   * `#fileViewer` and `#fileExporter` for [file viewers](#file-viewers) and [exporters](#file-exporters)
-  * `#packageSettingsEditor` for [settings editors](#package-settings-editors)
+  * `#packageSettingsEditor` for [settings editors](#settings-editors)
 
 You can use these tags to search for certain functions either from the platform's interface
 ([https://public.datagrok.ai/functions?q](https://public.datagrok.ai/functions?q)) or from within your code:
@@ -612,6 +641,13 @@ A file exporter is a function used for loading data from the platform. It is ann
 with the `#fileExporter` tag. Exporters reside in the platform's top menu "export" section.
 
 *Details:* [How to Create File Exporters](how-to/file-exporters.md)
+
+### Settings editors
+
+Settings editors work with [package properties](#package-settings) and define
+how they will be displayed in the `Settings` pane of the property panel. An
+editor function should return a widget (`DG.Widget`) and be tagged as
+`#packageSettingsEditor`.
 
 ## Documentation
 

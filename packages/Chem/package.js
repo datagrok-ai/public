@@ -116,7 +116,7 @@ class ChemPackage extends DG.Package {
   }
   
   //name: getMorganFingerprints
-  //input: column molColumn
+  //input: column molColumn {semType: Molecule}
   //output: column result [fingerprints]
   getMorganFingerprints(molColumn) {
     return _moleculesToFingerprints(molColumn);
@@ -142,12 +142,13 @@ class ChemPackage extends DG.Package {
   //input: column molStringsColumn
   //input: string molString
   //input: bool substructLibrary
+  //input: string molStringSmarts
   //output: column result
-  async searchSubstructure(molStringsColumn, molString, substructLibrary) {
+  async searchSubstructure(molStringsColumn, molString, substructLibrary, molStringSmarts) {
     try {
       let result =
         substructLibrary ?
-          await chemSubstructureSearchLibrary(molStringsColumn, molString) :
+          await chemSubstructureSearchLibrary(molStringsColumn, molString, molStringSmarts) :
           chemSubstructureSearchGraph(molStringsColumn, molString);
       return DG.Column.fromList('object', 'bitset', [result]);
     } catch (e) {

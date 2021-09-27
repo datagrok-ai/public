@@ -4,7 +4,7 @@
 	"version": "0.0.1",
 	"description": "Set of custom JavaScript viewers",
 	"dependencies": {
-		"datagrok-api": "latest",
+		"datagrok-api": "../../js-api",
 		"circos": "^2.1.0",
 		"d3": "^6.2.0",
 		"d3-cloud": "^1.2.5",
