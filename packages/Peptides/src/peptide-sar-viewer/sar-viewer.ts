@@ -3,6 +3,7 @@ import * as ui from 'datagrok-api/ui';
 import * as DG from 'datagrok-api/dg';
 import {describe} from './describe';
 import $ from 'cash-dom';
+import {tTest} from '../utils/misc';
 
 export class SARViewer extends DG.JsViewer {
   private grid: DG.Viewer | null;
@@ -26,7 +27,7 @@ export class SARViewer extends DG.JsViewer {
     if (typeof this.dataFrame !== 'undefined') {
       // this.subs.push(DG.debounce(this.dataFrame.selection.onChanged, 50).subscribe((_: any) => this.render()));
       // this.subs.push(DG.debounce(this.dataFrame.filter.onChanged, 50).subscribe((_: any) => this.render()));
-      this.subs.push(DG.debounce(ui.onSizeChanged(this.root), 50).subscribe((_: any) => this.render()));
+      // this.subs.push(DG.debounce(ui.onSizeChanged(this.root), 50).subscribe((_: any) => this.render()));
     }
 
     this.render();
@@ -56,7 +57,7 @@ export class SARViewer extends DG.JsViewer {
         if (accordion.context instanceof DG.DataFrame || typeof accordion.context.dataFrame !== 'undefined') {
           const originalDf: DG.DataFrame = accordion.context instanceof DG.DataFrame ? accordion.context : DG.toJs(accordion.context.dataFrame);
 
-          if (originalDf.getTag('dataType') === 'peptides') {
+          if (originalDf.getTag('dataType') === 'peptides' && originalDf.col('~splitCol')) {
             let histPane = accordion.getPane('Distribution');
             histPane = histPane ? histPane : accordion.addPane('Distribution', () => {
               return originalDf.plot.histogram({
@@ -67,6 +68,11 @@ export class SARViewer extends DG.JsViewer {
           }
         }
       });
+
+      const a1 = [1,2,3,4,5];
+      const a2 = [6,7,8,9];
+      console.log(tTest(a1, a2));
+
     }
   }
 }

@@ -2,27 +2,9 @@ import * as grok from 'datagrok-api/grok';
 import * as ui from 'datagrok-api/ui';
 import * as DG from 'datagrok-api/dg';
 import {splitAlignedPeptides} from '../split-aligned';
-import {ChemPalette} from '../utils/chem-palette';
+import {decimalAdjust, tTest, uTest} from '../utils/misc';
+// import {ChemPalette} from '../utils/chem-palette';
 
-
-function decimalAdjust(type: 'floor' | 'ceil' | 'round', value: number, exp: number): number {
-  // If the exp is undefined or zero...
-  if (typeof exp === 'undefined' || +exp === 0) {
-    return Math[type](value);
-  }
-  value = +value;
-  exp = +exp;
-  // If the value is not a number or the exp is not an integer...
-  if (isNaN(value) || !(typeof exp === 'number' && exp % 1 === 0)) {
-    return NaN;
-  }
-  // Shift
-  let valueArr = value.toString().split('e');
-  value = Math[type](+(valueArr[0] + 'e' + (valueArr[1] ? (+valueArr[1] - exp) : -exp)));
-  // Shift back
-  valueArr = value.toString().split('e');
-  return +(valueArr[0] + 'e' + (valueArr[1] ? (+valueArr[1] + exp) : exp));
-}
 
 export async function describe(
   df: DG.DataFrame,
@@ -92,12 +74,15 @@ export async function describe(
   const medianColName = 'MAD';
 
   //unpivot a table and handle duplicates
-  let matrixDf = splitSeqDf.groupBy(positionColumns)
+  splitSeqDf = splitSeqDf.groupBy(positionColumns)
     .add('med', activityColumnScaled, activityColumnScaled)
     .aggregate()
-    .unpivot([activityColumnScaled], positionColumns, positionColName, aminoAcidResidue);
 
   const peptidesCount = splitSeqDf.getCol(activityColumnScaled).length;
+
+  let matrixDf = splitSeqDf.unpivot([activityColumnScaled], positionColumns, positionColName, aminoAcidResidue);
+
+  // grok.shell.addTableView(matrixDf.clone());
 
   //this table contains overall statistics on activity
   const totalStats = matrixDf.groupBy()
@@ -121,6 +106,38 @@ export async function describe(
   await matrixDf.columns.addNewCalculated('IQR', '${q3}-${q1}');
   await matrixDf.columns.addNewCalculated('CQV', '(${q3}-${q1})/(${q3}+${q1})');
   await matrixDf.columns.addNewCalculated('Ratio', '${count}/'.concat(`${peptidesCount}`));
+
+  //calculate p-values based on t-test
+  const pValues: number[] = [];
+  let position: string;
+  let AAR: string;
+  let currentActivity: number[];
+  let otherActivity: number[];
+  let testResult;
+
+  for (let i = 0; i < matrixDf.rowCount; i++) {
+    position = matrixDf.get(positionColName, i);
+    AAR = matrixDf.get(aminoAcidResidue, i);
+
+    currentActivity = splitSeqDf
+      .groupBy([activityColumnScaled])
+      .where(`${position} = ${AAR}`)
+      .aggregate()
+      .getCol(activityColumnScaled)
+      .toList();
+
+    otherActivity = splitSeqDf
+      .groupBy([activityColumnScaled])
+      .where(`${position} != ${AAR}`)
+      .aggregate()
+      .getCol(activityColumnScaled)
+      .toList();
+
+    testResult = tTest(currentActivity, otherActivity);
+    // testResult = uTest(currentActivity, otherActivity);
+    pValues.push(testResult['p-value']);
+  }
+  matrixDf.columns.add(DG.Column.fromList(DG.TYPE.FLOAT, 'p-value', pValues));
 
   const statsDf = matrixDf.clone();
 
@@ -230,16 +247,18 @@ export async function describe(
       const splitColName = '~splitCol';
 
       // @ts-ignore: I'd love to use row.get(), but unfortunately there's no column 'get' :(
-      splitSeqDf!.rows.select((row) => row[currentPosition] === currentAAR);
+      // splitSeqDf!.rows.select((row) => row[currentPosition] === currentAAR);
+      filterMode ? df.rows.filter((row) => row[currentPosition] === currentAAR) : df.rows.select((row) => row[currentPosition] === currentAAR);
+
       const bitset = filterMode ? df.filter : df.selection;
-      // bitset.init((i) => splitSeqDf!.selection.get(i));
-      bitset.copyFrom(splitSeqDf!.selection);
+
+      // bitset.copyFrom(splitSeqDf!.selection);
 
       const splitArray: string[] = [];
       for (let i = 0; i < bitset.length; i++) {
         //TODO: generate better label
         splitArray.push(bitset.get(i) ?
-          `${currentAAR === '-' ? 'Empty' : 'AAR' + currentAAR} at position ${currentPosition}` : 'Other');
+          `${currentAAR === '-' ? 'Empty' : 'AAR ' + currentAAR} at position ${currentPosition}` : 'Other');
       }
 
       const splitCol = DG.Column.fromStrings(splitColName, splitArray);
