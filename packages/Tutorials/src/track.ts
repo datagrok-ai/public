@@ -29,7 +29,7 @@ export class Track {
       $('#tutorial-child-node').html('');
       $('#tutorial-child-node').append(t.root);
       t.clearRoot();
-      await t.run(t);
+      await t.run();
     }
   
     async getCompleted(tutorials: Tutorial[]){
