@@ -12,21 +12,14 @@ export class MultivariateAnalysisTutorial extends Tutorial {
     'principle of multivariate statistics, which involves observation ' +
     'and analysis of more than one statistical outcome variable at a time';
   }
-
+  get steps(){ return 3} //set thew number of steps
+    
   demoTable: string = 'cars.csv';
 
   protected async _run() {
     this.header.textContent = 'Multivariate Analysis';
-    let dlg: DG.Dialog;
-
-    await this.action('Click on "ML | Multivariate Analysis (PLS)..."',
-      grok.events.onDialogShown.pipe(filter((dialog: any) => {
-        if (dialog.title === 'Multivariate Analysis (PLS)') {
-          dlg = dialog;
-          return true;
-        }
-        return false;
-      })));
+    const dlg = await this.openDialog('Click on "ML | Multivariate Analysis (PLS)..."',
+      'Multivariate Analysis (PLS)');
 
     this.describe('This is multivariate analysis dialog. It uses a statistical method that resembles ' +
       'principal components regression. Instead of finding hyperplanes of maximum variance ' +
@@ -36,13 +29,13 @@ export class MultivariateAnalysisTutorial extends Tutorial {
     this.describe('In the following example, we will predict a car price by its attributes, and see ' +
       'how different measures are related to each other and to the outcome.');
 
-    await this.dlgInputAction(dlg!, 'Set "Table" to "cars"', 'Table', 'cars');
-    await this.dlgInputAction(dlg!, 'Set "Predict" to "price"', 'Predict', 'price');
+    await this.dlgInputAction(dlg, 'Set "Table" to "cars"', 'Table', 'cars');
+    await this.dlgInputAction(dlg, 'Set "Predict" to "price"', 'Predict', 'price');
 
     this.describe('Set "Features" to "all". Click "All" in the column selection dialog.');
-    // await this.dlgInputAction(dlg!, 'Set "Features" to "all". Click "All" in the column selection dialog',
+    // await this.dlgInputAction(dlg, 'Set "Features" to "all". Click "All" in the column selection dialog',
     //   'Features', this.t.columns.names().join(','));
-    await this.dlgInputAction(dlg!, 'Set the number of components to "3"', 'Components', '3');
+    await this.dlgInputAction(dlg, 'Set the number of components to "3"', 'Components', '3');
     this.describe(`Once you run the analysis, the following visualizations will appear:
     <ul style="list-style-type:disc">
       <li><code>Scores</code> is a scatter plot that shows correlation between observations</li>

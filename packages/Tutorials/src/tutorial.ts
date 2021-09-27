@@ -2,16 +2,17 @@ import * as grok from 'datagrok-api/grok';
 import * as ui from 'datagrok-api/ui';
 import * as DG from 'datagrok-api/dg';
 import $ from 'cash-dom';
-import { async, fromEvent, Observable } from 'rxjs';
+import { fromEvent, Observable } from 'rxjs';
 import { filter, first, map } from 'rxjs/operators';
 import { _package } from './package';
-import { eda, tutorials } from './tracks/eda';
+import { Track, TutorialRunner } from './track';
 
 
 /** A base class for tutorials */
 export abstract class Tutorial extends DG.Widget {
   abstract get name(): string;
   abstract get description(): string;
+  abstract get steps():number;
 
   track: Track | null = null;
   demoTable: string = 'demog.csv';
@@ -25,10 +26,11 @@ export abstract class Tutorial extends DG.Widget {
       classes: 'grok-tutorial-next',
       style: { display: 'none' },
     });
-  header: HTMLHeadingElement = ui.h2('');
+  header: HTMLHeadingElement = ui.h1('');
   subheader: HTMLHeadingElement = ui.h3('');
-  activity: HTMLDivElement = ui.div([], 'grok-tutorial-description');
+  activity: HTMLDivElement = ui.div([], 'tutorials-root-description');
   status: boolean = false;
+  progress: HTMLProgressElement = ui.element('progress');
 
   static DATA_STORAGE_KEY: string = 'tutorials';
 
@@ -38,11 +40,14 @@ export abstract class Tutorial extends DG.Widget {
   }
 
   constructor() {
-    super(ui.div([]));
-    this.updateStatus();
 
+    super(ui.div([], 'tutorials-track'));
+    this.updateStatus();
     this.root.append(this.header);
     this.root.append(this.subheader);
+    this.root.append(this.progress);
+    this.progress.max = 0;
+    this.progress.value = 0;
     this.root.append(this.activity);
     this.root.append(this.nextLink);
   }
@@ -50,6 +55,8 @@ export abstract class Tutorial extends DG.Widget {
   protected abstract _run(): Promise<void>;
 
   async run(): Promise<void> {
+    this.progress.max = this.steps;
+
     if (this.demoTable) {
       grok.shell.addTableView(await grok.data.getDemoTable(this.demoTable));
     }
@@ -58,7 +65,7 @@ export abstract class Tutorial extends DG.Widget {
 
     this.title('Congratulations!');
     this.describe('You have successfully completed this tutorial.');
-  
+    
     await grok.dapi.userDataStorage.postValue(Tutorial.DATA_STORAGE_KEY, this.name, new Date().toUTCString());
 
     const tutorials = this.track?.tutorials;
@@ -66,10 +73,24 @@ export abstract class Tutorial extends DG.Widget {
       console.error('The launched tutorial is not bound to any track.');
       return;
     }
+
     let id = tutorials.indexOf(this);
+
+    function updateProgress(track:any){
+      track.completed++;
+      $(`.tutorials-track[data-name ='${track?.name}']`)
+      .find(`.tutorials-card[data-name='${track.tutorials[id].name}']`)
+      .children('.tutorials-card-status').show();
+      $(`.tutorials-track[data-name ='${track?.name}']`).find('progress').prop('value', String(100/track.tutorials.length*(track.completed)));
+      $(`.tutorials-track[data-name ='${track?.name}'] > .tutorials-track-details`).children().first().text($(`.tutorials-track[data-name ='${track?.name}']`).find('progress').prop('value')+'% complete');
+      $(`.tutorials-track[data-name ='${track?.name}'] > .tutorials-track-details`).children().last().text(String(track.completed+' / '+track.tutorials.length));
+    }
 
     const switchToMainView = () => {
       $('.tutorial').show();
+      if (this.status != true){
+        updateProgress(this.track);
+      }  
       $('#tutorial-child-node').html('');
       grok.shell.tableView(this.t.name).close();
     };
@@ -77,6 +98,10 @@ export abstract class Tutorial extends DG.Widget {
     if (id < tutorials.length - 1){
       this.root.append(ui.div([
         ui.bigButton('Start', () => {
+          if (this.status != true){
+            console.log('update completed')
+            updateProgress(this.track);
+          }  
           $('#tutorial-child-node').html('');
           $('#tutorial-child-node').append(tutorials[++id].root);
           tutorials[id].run();
@@ -89,25 +114,41 @@ export abstract class Tutorial extends DG.Widget {
   }
 
   title(text: string): void {
-    this.activity.append(ui.h2(text));
+    this.activity.append(ui.h1(text));
   }
 
   describe(text: string): void {
-    const div = ui.div([], 'grok-tutorial-description-entry');
+    const div = ui.div([]);
     div.innerHTML = text;
     this.activity.append(div);
     this._scroll();
   }
 
-  async action(instructions: string, completed: Observable<any>,
+  async action(instructions: string, completed: Observable<any> | Promise<void>,
     hint?: HTMLElement | null, hintSub?: DG.StreamSubscription | null): Promise<void> {
     hint?.classList.add('tutorials-target-hint');
+    let hintIndicator = ui.element('div');
+    hintIndicator.classList = 'blob';
+
+    console.log(hint);
+    console.log(hint?.parentNode);
+    hint?.append(hintIndicator);
+
     const instructionDiv = ui.divText(instructions, 'grok-tutorial-entry-instruction');
-    const entry = ui.div([instructionDiv], 'grok-tutorial-entry');
+    const instructionIndicator = ui.div([],'grok-tutorial-entry-indicator')
+    const entry = ui.divH([instructionIndicator,instructionDiv], 'grok-tutorial-entry');
     this.activity.append(entry);
     this._scroll();
-    await this.firstEvent(completed);
+    if (completed instanceof Promise) {
+      await completed;
+    } else {
+      await this.firstEvent(completed);
+    }
     instructionDiv.classList.add('grok-tutorial-entry-success');
+    instructionIndicator.classList.add('grok-tutorial-entry-indicator-success')
+    this.progress.value++;
+
+    hintIndicator.remove();
     hintSub?.cancel();
     hint?.classList?.remove('tutorials-target-hint');
   }
@@ -117,6 +158,7 @@ export abstract class Tutorial extends DG.Widget {
   }
 
   clearRoot(): void {
+    this.progress.value = 0;
     $(this.root).children().each((idx, el) => $(el).empty());
   }
 
@@ -126,6 +168,7 @@ export abstract class Tutorial extends DG.Widget {
     });
   }
 
+  /** Prompts the user to open a viewer of the specified type and returns it. */
   protected async openPlot(name: string, check: (viewer: DG.Viewer) => boolean): Promise<DG.Viewer> {
     // TODO: Expand toolbox / accordion API coverage
     const getViewerIcon = (el: HTMLElement) => {
@@ -150,6 +193,7 @@ export abstract class Tutorial extends DG.Widget {
     return viewer!;
   }
 
+  /** Prompts the user to put the specified value into a dialog input. */
   protected async dlgInputAction(dlg: DG.Dialog, instructions: string, caption: string, value: string) {
     const inp = dlg.inputs.filter((input: DG.InputBase) => input.caption == caption)[0];
     if (inp == null) return;
@@ -189,108 +233,35 @@ export abstract class Tutorial extends DG.Widget {
 
     return view!;
   }
-}
 
+  /** Prompts the user to open a dialog with the specified title, waits for it to open and returns it. */
+  protected async openDialog(instructions: string, title: string, hint: HTMLElement | null = null): Promise<DG.Dialog> {
+    let dialog: DG.Dialog;
 
-/** A collection of tutorials */
-export class Track {
-  tutorials: Tutorial[];
-  name: string;
-
-  constructor(name: string, ...tutorials: Tutorial[]) {
-    this.name = name;
-    this.tutorials = tutorials;
-    tutorials.forEach((t) => t.track = this);
-  }
-}
-
-export class TutorialRunner {
-  root: HTMLDivElement = ui.panel([],'tutorial');
-
-  async run(t: Tutorial): Promise<void> {
-    $('.tutorial').hide();
-    $('#tutorial-child-node').append(t.root);
-    await t.run();
-  }
-
-  async getCompleted(tutorials: Tutorial[]){
-    let i = 0;
-    let completed = 0;
-    while (tutorials[i]){
-      await tutorials[i].updateStatus();
-      if (tutorials[i].status == true){
-        completed++
+    await this.action(instructions, grok.events.onDialogShown.pipe(filter((dlg) => {
+      if (dlg.title === title) {
+        dialog = dlg;
+        return true;
       }
-      i++
-    }
-    return completed
+      return false;
+    })), hint);
+
+    return dialog!;
   }
 
-  constructor(track: Track, onStartTutorial?: (t: Tutorial) => Promise<void>) {
-   
-    let progress = ui.element('progress');
-    progress.max = track.tutorials.length;
-    progress.value = '0';
+  /** Prompts the user to select a menu item in the context menu. */
+  protected async contextMenuAction(instructions: string, label: string, hint: HTMLElement | null = null): Promise<void> {
+    const commandClick =  new Promise<void>((resolve, reject) => {
+      const sub = grok.events.onContextMenu.subscribe((data) => {
+        data.args.menu.onContextMenuItemClick.pipe(
+          filter((mi) => (new DG.Menu(mi)).toString() === label),
+          first()).subscribe((_: any) => {
+            sub.unsubscribe();
+            resolve();
+          });
+      });
+    });
 
-    (async () => {
-        progress.value = await this.getCompleted(track.tutorials);   
-    })();
-
-    this.root.append(ui.divV([
-      ui.divH([ui.h1(track.name),
-        ui.button(ui.iconFA('sync',()=>{}),()=>{
-          let i = 0;
-          while(track.tutorials[i]){
-           grok.dapi.userDataStorage.remove(Tutorial.DATA_STORAGE_KEY, track.tutorials[i].name);
-           i++;
-          }
-          grok.shell.info('complete');
-         }),
-      ], 'tutorials-track-title'),
-      ui.divH([ui.iconFA('list'), ui.divText(' Tutorials: '+track.tutorials.length)], 'tutorials-track-details'),
-      ui.divH([progress]),
-      ui.divV(track.tutorials.map((t) => {
-        const el = new TutorialCard(t).root;
-        el.addEventListener('click', () => {
-          if (onStartTutorial == null) {
-            this.run(t);
-          } else {
-            onStartTutorial(t);
-          }
-        });
-        return el;
-      }))
-    ], 'tutorials-track'));
-  }
-
-}
-
-class TutorialCard {
-  root: HTMLDivElement = ui.div();
-  tutorial: Tutorial;
-
-  constructor(tutorial: Tutorial) {
-    this.tutorial = tutorial;
-    
-    let img = ui.image( `${_package.webRoot}images/${tutorial.name.toLowerCase().replace(/ /g, '-')}.png`,90, 70);
-    let icon = ui.div([], 'tutorials-card-status');
-    
-    (async()=>{
-      await tutorial.updateStatus();
-      if(tutorial.status == true){
-        icon.append(ui.iconFA('check', ()=>{}));
-      }
-    })();
-    
-    this.root = ui.divH([
-      img,
-      ui.tooltip.bind(
-      ui.divV([
-        ui.divText(tutorial.name, 'tutorials-card-title'),
-        ui.divText(tutorial.description, 'tutorials-card-description')
-      ]), 
-      `<b>${tutorial.name}</b><br>${tutorial.description}`),
-      icon
-    ], 'tutorials-card');
+    await this.action(instructions, commandClick, hint);
   }
 }
