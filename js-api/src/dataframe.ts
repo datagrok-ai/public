@@ -1396,6 +1396,16 @@ export class RowList {
   }
 }
 
+export class RowGroup {
+  private readonly d: any;
+
+  constructor(d: any) { this.d = d; }
+
+  get dataFrame(): DataFrame {
+    return new DataFrame(api.grok_RowGroup_Get_DataFrame(this.d));
+  }
+}
+
 /** Represents a table cell. */
 export class Cell {
   public d: any;

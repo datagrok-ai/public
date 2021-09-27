@@ -10,7 +10,8 @@ export class ScatterPlotTutorial extends Tutorial {
   get description() {
     return 'A graph in which the values of two variables are plotted along two axes';
   }
-
+  get steps(){ return 3} //set thew number of steps
+    
   protected async _run() {
     this.header.textContent = 'Scatter Plot';
     const plot = <DG.ScatterPlotViewer>(await this.openPlot(

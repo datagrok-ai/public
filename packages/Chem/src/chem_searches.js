@@ -196,14 +196,14 @@ function chemSubstructureSearchGraph(molStringsColumn, molString) {
 
 }
 
-async function chemSubstructureSearchLibrary(molStringsColumn, molString) {
+async function chemSubstructureSearchLibrary(molStringsColumn, molString, molStringSmarts) {
 
   await _initRdKitWorkers();
 
   await _cacheByAction({
       foo: chemSubstructureSearchLibrary,
       column: molStringsColumn,
-      query: molString
+      query: molString + " | " + molStringSmarts
     },
     async (params) => {
       const { molIdxToHash, hashToMolblock } = await rdKitParallel.substructInit(molStringsColumn.toList());
@@ -230,7 +230,7 @@ async function chemSubstructureSearchLibrary(molStringsColumn, molString) {
 
   let result = DG.BitSet.create(molStringsColumn.length);
   if (molString.length != 0) {
-    const matches = await rdKitParallel.substructSearch(molString);
+    const matches = await rdKitParallel.substructSearch(molString, molStringSmarts);
     for (let match of matches)
       result.set(match, true, false);
   }

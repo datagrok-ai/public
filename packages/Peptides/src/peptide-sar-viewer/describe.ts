@@ -1,6 +1,8 @@
+import * as grok from 'datagrok-api/grok';
 import * as ui from 'datagrok-api/ui';
 import * as DG from 'datagrok-api/dg';
 import {splitAlignedPeptides} from '../split-aligned';
+import {ChemPalette} from '../utils/chem-palette';
 
 
 function decimalAdjust(type: 'floor' | 'ceil' | 'round', value: number, exp: number): number {
@@ -43,22 +45,26 @@ export async function describe(
   }
 
   const positionColumns = splitSeqDf.columns.names();
+  const activityColumnScaled = `~${activityColumn}Scaled`;
 
-  // splitSeqDf.columns.add(df.getCol(activityColumn));
+  splitSeqDf.columns.add(df.getCol(activityColumn));
+  // grok.shell.addTableView(splitSeqDf);
 
   // append splitSeqDf columns to source table and make sure columns are not added more than once
   const dfColsSet = new Set(df.columns.names());
+
+  if (df.col(activityColumnScaled)) {
+    df.columns.remove(activityColumnScaled);
+  }
+
   if (!positionColumns.every((col: string) => dfColsSet.has(col))) {
     df.join(splitSeqDf, [activityColumn], [activityColumn], df.columns.names(), positionColumns, 'inner', true);
   }
-  positionColumns.forEach((name:string)=> {
+  positionColumns.forEach((name: string)=> {
     const col = df.getCol(name);
     col.semType = 'aminoAcids';
     col.setTag('cell.renderer', 'aminoAcids');
   });
-
-
-  const activityColumnScaled = activityColumn + 'Scaled';
 
   // scale activity
   //TODO: how to NOT render these?
@@ -199,7 +205,7 @@ export async function describe(
       cell.cell.value !== null &&
       cell.tableRowIndex !== null
     ) {
-      const tooltipMap = {};
+      const tooltipMap: {[index: string]: string} = {};
 
       for (const col of statsDf.columns.names()) {
         if (col !== aminoAcidResidue && col !== positionColName) {
@@ -207,7 +213,6 @@ export async function describe(
             `${aminoAcidResidue} = ${matrixDf.get(aminoAcidResidue, cell.tableRowIndex)} ` +
             `and ${positionColName} = ${cell.tableColumn.name}`;
           const text = `${decimalAdjust('floor', statsDf.groupBy([col]).where(query).aggregate().get(col, 0), -5)}`;
-          // @ts-ignore: idk what's wrong with indexing object with a string :/
           tooltipMap[col] = text;
         }
       }
@@ -220,8 +225,9 @@ export async function describe(
   // Select columns in source table that correspond to the currently clicked cell
   grid.table.onCurrentCellChanged.subscribe((_: any) => {
     if (grid.table.currentCell.value !== null && grid.table.currentCol.name !== aminoAcidResidue) {
-      const currentAAR = grid.table.get(aminoAcidResidue, grid.table.currentCell.rowIndex);
+      const currentAAR: string = grid.table.get(aminoAcidResidue, grid.table.currentRowIdx);
       const currentPosition = grid.table.currentCol.name;
+      const splitColName = '~splitCol';
 
       // @ts-ignore: I'd love to use row.get(), but unfortunately there's no column 'get' :(
       splitSeqDf!.rows.select((row) => row[currentPosition] === currentAAR);
@@ -229,9 +235,21 @@ export async function describe(
       // bitset.init((i) => splitSeqDf!.selection.get(i));
       bitset.copyFrom(splitSeqDf!.selection);
 
-      if (!df.col('splitCol')) {
-        df.columns.add(DG.Column.fromBitSet('splitCol', bitset));
+      const splitArray: string[] = [];
+      for (let i = 0; i < bitset.length; i++) {
+        //TODO: generate better label
+        splitArray.push(bitset.get(i) ?
+          `${currentAAR === '-' ? 'Empty' : 'AAR' + currentAAR} at position ${currentPosition}` : 'Other');
       }
+
+      const splitCol = DG.Column.fromStrings(splitColName, splitArray);
+      // const cp = ChemPalette.get_datagrok();
+      const colorMap: {[index: string]: number} = {'Other': DG.Color.lightGray};
+      // colorMap[currentAAR] = cp[currentAAR];
+      colorMap[currentAAR] = DG.Color.green;
+      splitCol.colors.setCategorical(colorMap);
+
+      !df.col(splitColName) ? df.columns.add(splitCol) : df.columns.replace(splitColName, splitCol);
     }
   });
 
