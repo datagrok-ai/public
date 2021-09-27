@@ -1,6 +1,52 @@
 <!-- TITLE: Release History -->
 <!-- SUBTITLE: -->
 
+# 2021-09-27 Dev build 0.93.32
+
+## Latest Docker Images
+
+* Datagrok: 
+  *  `docker pull datagrok/datagrok:0.93.32`
+  *  `docker pull datagrok/datagrok:latest`
+  
+* [Docker-Compose](admin/docker-compose.md)
+
+## Addressed Issues
+
+* Peptides: Added AA cell-renderer, changed sequence cell renderer 
+* update icon 
+* #53 Tutorials package: change the storage structure (refactoring, WIP) 
+* #53 Tutorials package: a proper way to access a tutorial's track (refactoring, WIP) 
+* Closes #119 Chem: Alignment differs for same MolBlocks with different offsets 
+* #53 Tutorials package: css files (refactoring, WIP) 
+* Closes #120 Chem: Rotation flicker when using alignment 
+* Peptides: AA render in sar viewer 
+* #117: PowerPack: PowerSearch: search templates 
+* update tutorials. Add css style 
+* tutorials images 
+* update tutorials 
+* Closes #121 (+ #77). Chem: Support SMARTS 
+* (Bug) Chem: External sketcher, filtering and SMARTS (WIP)
+* Peptides: histogram rework WIP 
+* #53 Tutorials package: code clean-up, hint styling 
+* Peptides: histogram fix WIP 
+* update imgages for tutorials 
+* #122 JS API: RowGroup class 
+* #53 Tutorials package: openDialog method 
+* Peptides: histogram rework and fix 
+* Closes #123 Chem: Substructure search to intercept SMARTS if MolBlock fails 
+* tutorials updates 
+* #53 Tutorials package: cheminformatics track: descriptors 
+* JS API: onContextMenuItemClick 
+* datagrok-tools: adjust lint scripts for recursive directory check 
+* #53 Tutorials package: ability to pass a cusom promise for an action, helper for selecting an item from the context menu, code clean-up 
+* #53 Tutorials package: code clean-up 
+* Chem: Substructure filter 
+* Docker Compose: Remove profiles 
+* (Bug) Filter resets when user recalculates column formula (WIP)
+* Updated public token 
+
+
 # 2021-09-23 Dev build 0.93.31
 
 ## Latest Docker Images
