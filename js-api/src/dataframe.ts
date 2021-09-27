@@ -996,17 +996,17 @@ export class Column {
   }
 
   /** Applies the specified formula to a calculated column.
-   * Returns a new column object, if applied successfully, and null otherwise.
-   * @param {string} formula
-   * @returns {Column} */
-  async applyFormula(formula: string): Promise<Column | null> {
+   * Returns a new column object, if applied successfully, and null otherwise.*/
+  async applyFormula(formula: string, type: ColumnType | null = null, treatAsString: boolean = false): Promise<Column | null> {
     if (!(this.name && this.dataFrame?.columns.contains(this.name)))
       return null;
-    let newCol = await this.dataFrame.columns.addNewCalculated(this.name, formula);
+    if (type == null)
+      type = this.type;
+    let newCol: Column = await this.dataFrame.columns._getNewCalculated(this.name, formula, type, treatAsString);
     for (let [key, value] of this.tags) if (key !== DG.TAGS.FORMULA) newCol.setTag(key, value);
-    this.dataFrame.columns.remove(newCol.name);
-    this.dataFrame.columns.replace(this, newCol);
-    newCol.name = this.name;
+    let name = this.name;
+    newCol = this.dataFrame.columns.replace(this, newCol);
+    newCol.name = name;
     return newCol;
   }
 
@@ -1143,8 +1143,12 @@ export class ColumnList {
    * @param {ColumnType} type
    * @param {bool} treatAsString
    * @returns {Column} */
-  addNewCalculated(name: string, expression: string, type?: ColumnType | null, treatAsString?: boolean | null): Promise<Column> {
+  addNewCalculated(name: string, expression: string, type: ColumnType | 'auto' = 'auto', treatAsString: boolean = false): Promise<Column> {
     return new Promise((resolve, reject) => api.grok_ColumnList_AddNewCalculated(this.d, name, expression, type, treatAsString, (c: any) => resolve(toJs(c)), (e: any) => reject(e)));
+  }
+
+  _getNewCalculated(name: string, expression: string, type: ColumnType | 'auto' = 'auto', treatAsString: boolean = false): Promise<Column> {
+    return new Promise((resolve, reject) => api.grok_ColumnList_GetNewCalculated(this.d, name, expression, type, treatAsString, (c: any) => resolve(toJs(c)), (e: any) => reject(e)));
   }
 
   /** Adds a string column
@@ -1199,11 +1203,9 @@ export class ColumnList {
     return toJs(api.grok_ColumnList_AddNewVirtual(this.d, name, getValue, type));
   }
 
-  /** Removes column by name (case-insensitive).
-   * @param {string} column
-   * @returns {ColumnList} */
-  remove(column: string): ColumnList {
-    api.grok_ColumnList_Remove(this.d, column);
+  /** Removes column by name (case-insensitive).*/
+  remove(column: string, notify: boolean = true): ColumnList {
+    api.grok_ColumnList_Remove(this.d, column, notify);
     return this;
   }
 
@@ -1217,8 +1219,8 @@ export class ColumnList {
    * @param {Column} columnToReplace
    * @param {Column} newColumn
    * */
-  replace(columnToReplace: Column | string, newColumn: Column): void {
-    api.grok_ColumnList_Replace(this.d, (typeof columnToReplace === 'string') ? columnToReplace:  columnToReplace.d, newColumn.d);
+  replace(columnToReplace: Column | string, newColumn: Column): Column {
+    return api.grok_ColumnList_Replace(this.d, (typeof columnToReplace === 'string') ? columnToReplace:  columnToReplace.d, newColumn.d);
   }
 
   /** Iterates over all columns.
@@ -2107,9 +2109,9 @@ export class ColumnDialogHelper {
     let sub = grok.functions.onAfterRunAction.pipe(filter(c => c == call)).subscribe(() => {
       let newCol = call.getOutputParamValue();
       for (let [key, value] of this.column.tags) if (key !== DG.TAGS.FORMULA) newCol.setTag(key, value);
-      this.column.dataFrame.columns.remove(newCol.name);
-      this.column.dataFrame.columns.replace(this.column, newCol);
-      newCol.name = this.column.name;
+      let name = this.column.name;
+      newCol = this.column.dataFrame.columns.replace(this.column, newCol);
+      newCol.name = name;
       sub.unsubscribe();
     });
   }
