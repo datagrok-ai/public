@@ -1,0 +1,30 @@
+{
+	"name": "tensorflow-dev",
+	"beta": true,
+	"friendlyName": "TensorFlow.js",
+	"version": "0.0.1",
+	"description": "",
+	"dependencies": {
+		"@tensorflow/tfjs": "latest",
+		"cash-dom": "latest",
+		"datagrok-api": "../../js-api",
+		"dayjs": "latest",
+		"jszip": "latest",
+		"jszip-sync": "^3.2.1-sync"
+	},
+	"devDependencies": {
+		"webpack": "latest",
+		"webpack-cli": "latest"
+	},
+	"scripts": {
+		"install-dependencies": "npm install",
+		"debug-tensorflow-dev": "grok publish --rebuild",
+		"release-tensorflow-dev": "grok publish --rebuild --release",
+		"build-tensorflow-dev": "webpack",
+		"build": "webpack",
+		"debug-tensorflow-dev-public": "grok publish public --rebuild",
+		"release-tensorflow-dev-public": "grok publish public --rebuild --release",
+		"debug-tensorflow-dev-local": "grok publish local --rebuild",
+		"release-tensorflow-dev-local": "grok publish local --rebuild --release"
+	}
+}

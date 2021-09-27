@@ -44,12 +44,22 @@ class RdKitSubstructLibrary {
     return { molIdxToHash, hashToMolblock };
   }
 
-  search(query) {
+  search(queryMolString, querySmarts) {
 
     let matches = "[]";
     if (this.library) {
       try {
-        const queryMol = this.rdKitModule.get_mol(query, "{\"mergeQueryHs\":true}");
+        let queryMol = null;
+        try {
+          queryMol = this.rdKitModule.get_mol(queryMolString, "{\"mergeQueryHs\":true}");
+        } catch (e2) {
+          if (querySmarts !== null && querySmarts !== '') {
+            console.log("Cannot parse a MolBlock. Switching to SMARTS");
+            queryMol = this.rdKitModule.get_qmol(querySmarts);
+          } else {
+            throw 'SMARTS not set';
+          }
+        }
         if (queryMol) {
           if (queryMol.is_valid()) {
             matches = this.library.get_matches(queryMol, false, 1, -1);

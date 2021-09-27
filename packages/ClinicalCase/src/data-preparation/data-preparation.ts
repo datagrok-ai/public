@@ -4,7 +4,7 @@ import { ALT, AP, AST, BILIRUBIN, TREATMENT_ARM } from '../constants';
 import { addTreatmentArm, dateDifferenceInDays, filterBooleanColumn, filterNulls } from './utils';
 import { study } from '../clinical-study';
 
-export function createMaxValuesData(dataframe, aggregatedColName, filerValue){ 
+export function createMaxValuesDataForHysLaw(dataframe, aggregatedColName, filerValue){ 
 	let condition = `LBTEST = ${filerValue}`; 
 	let grouped = dataframe.groupBy(['USUBJID','LBORRES', 'LBORNRHI'])
 	  .where(condition)
@@ -20,10 +20,10 @@ export function createMaxValuesData(dataframe, aggregatedColName, filerValue){
 
 
 export function createHysLawDataframe(lb: DG.DataFrame, dm: DG.DataFrame) {
-    let alt = createMaxValuesData(lb, ALT, 'Alanine Aminotransferase');
-    let bln = createMaxValuesData(lb, BILIRUBIN, 'Bilirubin');
-    let ast = createMaxValuesData(lb, AST, 'Aspartate Aminotransferase');
-    let ap = createMaxValuesData(lb, AP, 'Alkaline Phosphatase');
+    let alt = createMaxValuesDataForHysLaw(lb, ALT, 'Alanine Aminotransferase');
+    let bln = createMaxValuesDataForHysLaw(lb, BILIRUBIN, 'Bilirubin');
+    let ast = createMaxValuesDataForHysLaw(lb, AST, 'Aspartate Aminotransferase');
+    let ap = createMaxValuesDataForHysLaw(lb, AP, 'Alkaline Phosphatase');
 
     let joined = grok.data.joinTables(bln, alt, [ 'USUBJID' ], [ 'USUBJID' ], [ 'USUBJID', BILIRUBIN ], [ ALT ], DG.JOIN_TYPE.LEFT, false);
     joined = grok.data.joinTables(joined, ast, [ 'USUBJID' ], [ 'USUBJID' ], [ 'USUBJID', ALT, BILIRUBIN ], [ AST ], DG.JOIN_TYPE.LEFT, false);
@@ -209,6 +209,59 @@ export function createAERiskAssessmentDataframe(ae: DG.DataFrame, ex: DG.DataFra
   return tj2.groupBy([ 'AETERM', 'RELATIVE RISK', 'RISK DIFF', 'ODDS RATIO'])
     .aggregate();
 
+}
+
+
+export function labDynamicComparedToBaseline(dataframe, baselineVisitNum: string, newColName: string) {
+  const dfName = dataframe.name;
+  let grouped = dataframe.groupBy([ 'USUBJID', 'LBTEST', 'LBORRES' ])
+    .where(`VISITDY = ${baselineVisitNum}`)
+    .aggregate();
+  grouped.getCol(`LBORRES`).name = 'BL_LBORRES';
+  dataframe.join(grouped,
+    [ 'USUBJID', 'LBTEST' ], [ 'USUBJID', 'LBTEST' ],
+    dataframe.columns.names(), [ 'BL_LBORRES' ], DG.JOIN_TYPE.LEFT, true);
+  dataframe.columns.addNewFloat(newColName)
+    .init((i) => parseFloat(dataframe.get('LBORRES', i)) / parseFloat(dataframe.get('BL_LBORRES', i)));
+  dataframe.name = dfName;
+}
+
+export function labDynamicComparedToMinMax(dataframe, newColName: string) {
+  const dfName = dataframe.name;
+  dataframe.columns.addNewFloat('LBORRES_FLOAT')
+    .init((i) => parseFloat(dataframe.get('LBORRES', i)));
+  let groupedMax = dataframe.groupBy([ 'LBTEST'])
+    .max('LBORRES_FLOAT')
+    .aggregate();
+  let groupedMin = dataframe.groupBy([ 'LBTEST'])
+    .min('LBORRES_FLOAT')
+    .aggregate();
+  dataframe.join(groupedMax, [ 'LBTEST' ], [ 'LBTEST' ], dataframe.columns.names(), [ 'max(LBORRES_FLOAT)' ], DG.JOIN_TYPE.LEFT, true)
+  .join(groupedMin,[ 'LBTEST' ], [ 'LBTEST' ], dataframe.columns.names(), [ 'min(LBORRES_FLOAT)' ], DG.JOIN_TYPE.LEFT, true);
+  dataframe.columns.addNewFloat(newColName)
+    .init((i) => 
+    (parseFloat(dataframe.get('LBORRES', i)) - parseFloat(dataframe.get('min(LBORRES_FLOAT)', i))) / 
+    (parseFloat(dataframe.get('max(LBORRES_FLOAT)', i)) - parseFloat(dataframe.get('min(LBORRES_FLOAT)', i))));
+  dataframe.name = dfName;
+}
+
+
+export function cumulativeEnrollemntByDay(df: DG.DataFrame, dateCol: string, subjIDCol: string, cumCol: string) {
+  const subjsPerDay = df.groupBy([ dateCol ]).uniqueCount(subjIDCol).aggregate();
+  const refStartCol = subjsPerDay.col(dateCol);
+  for (let i = 0, rowCount = subjsPerDay.rowCount; i < rowCount; i++) {
+    if (refStartCol.isNone(i))
+      subjsPerDay.rows.removeAt(i);
+  }
+  subjsPerDay.columns.addNewInt(cumCol)
+    .init((i) => {
+      if (i > 0) {
+        return subjsPerDay.get(cumCol, i - 1) + subjsPerDay.get(`unique(${subjIDCol})`, i)
+      }
+      return subjsPerDay.get(`unique(${subjIDCol})`, i);
+    });
+  subjsPerDay.columns.remove(`unique(${subjIDCol})`)
+  return subjsPerDay;
 }
 
 

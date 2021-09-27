@@ -70,6 +70,13 @@
       ],
       "value": ""
     }, {
+      "id": "82de1932-4777-4e53-b635-4e1b219ab50e",
+      "comment": "",
+      "command": "pause",
+      "target": "4000",
+      "targets": [],
+      "value": ""
+    }, {
       "id": "f59f2e8c-dfd9-45a2-8462-59f16fd0e874",
       "comment": "",
       "command": "doubleClick",
@@ -159,15 +166,22 @@
       ],
       "value": "test_column"
     }, {
+      "id": "48df7623-30f3-452c-b4a1-70d094cf7ff0",
+      "comment": "",
+      "command": "pause",
+      "target": "1000",
+      "targets": [],
+      "value": ""
+    }, {
       "id": "50928b4b-d8cd-4b33-b751-05c8ed768ef2",
       "comment": "",
       "command": "type",
-      "target": "name=Add-New-Column---Text",
+      "target": "name=input-Add-New-Column---Expression",
       "targets": [
-        ["name=Add-New-Column---Text", "name"],
-        ["css=div.d4-input-textarea.d4-input > #editor", "css"],
-        ["css=.d4-input-textarea > #editor", "css:finder"],
-        ["xpath=//textarea[@id='editor']", "xpath:attributes"],
+        ["id=48", "id"],
+        ["name=input-Add-New-Column---Expression", "name"],
+        ["css=#\\34 8", "css:finder"],
+        ["xpath=//textarea[@id='48']", "xpath:attributes"],
         ["xpath=//textarea", "xpath:position"]
       ],
       "value": "1.1"
@@ -179,16 +193,26 @@
       "targets": [],
       "value": ""
     }, {
+      "id": "90ef15a5-43ce-41a8-ac36-47d7cdeac56b",
+      "comment": "",
+      "command": "executeScript",
+      "target": "document.querySelector('[name=input-Add-New-Column---Expression]').dispatchEvent(new Event('input'))",
+      "targets": [],
+      "value": ""
+    }, {
+      "id": "873c2d3e-dfea-40fd-a7b1-0342dd0a59e4",
+      "comment": "",
+      "command": "pause",
+      "target": "1000",
+      "targets": [],
+      "value": ""
+    }, {
       "id": "d4e85992-4e3a-48c9-a200-dadd7e157af4",
       "comment": "",
-      "command": "verifyElementPresent",
-      "target": "xpath=//label[contains(.,'double')]",
-      "targets": [
-        ["css=.pure-control-group:nth-child(2) > label", "css:finder"],
-        ["xpath=//div[2]/div[2]/label", "xpath:position"],
-        ["xpath=//label[contains(.,'double')]", "xpath:innerText"]
-      ],
-      "value": ""
+      "command": "verifyValue",
+      "target": "name=input-Add-New-Column---Type",
+      "targets": [],
+      "value": "auto (double)"
     }, {
       "id": "8f692b5c-a9ab-400e-bcab-86277aff9897",
       "comment": "",
@@ -211,7 +235,7 @@
       "id": "8978d39c-04e6-4dd6-832c-f8d7c86e8c30",
       "comment": "",
       "command": "type",
-      "target": "name=Add-New-Column---Text",
+      "target": "name=input-Add-New-Column---Expression",
       "targets": [
         ["name=Add-New-Column---Text", "name"],
         ["css=div.d4-input-textarea.d4-input > #editor", "css"],
@@ -221,23 +245,33 @@
       ],
       "value": "selenium"
     }, {
-      "id": "13db3219-ea2d-4cb8-b6bb-21b2dfdf9956",
+      "id": "6effb55f-22fb-4c51-bb66-b99b9edb2074",
       "comment": "",
       "command": "pause",
-      "target": "2000",
+      "target": "1000",
       "targets": [],
       "value": ""
     }, {
-      "id": "4204ea0e-c297-4a8a-abf6-fc5bb0f55f2f",
+      "id": "cf4a0b2a-034d-4653-85b8-02bde26cd85f",
       "comment": "",
-      "command": "verifyElementPresent",
-      "target": "xpath=//label[contains(.,'string')]",
-      "targets": [
-        ["css=.pure-control-group:nth-child(2) > label", "css:finder"],
-        ["xpath=//div[2]/div[2]/label", "xpath:position"],
-        ["xpath=//label[contains(.,'double')]", "xpath:innerText"]
-      ],
+      "command": "executeScript",
+      "target": "document.querySelector('[name=input-Add-New-Column---Expression]').dispatchEvent(new Event('input'))",
+      "targets": [],
       "value": ""
+    }, {
+      "id": "1e3901af-067d-448f-8bc2-8841c45d269a",
+      "comment": "",
+      "command": "pause",
+      "target": "1000",
+      "targets": [],
+      "value": ""
+    }, {
+      "id": "baa7ebca-bca6-4872-b9a5-21952d2375f9",
+      "comment": "",
+      "command": "verifyValue",
+      "target": "name=input-Add-New-Column---Type",
+      "targets": [],
+      "value": "auto (string)"
     }, {
       "id": "084c2e9a-d3d9-4dbb-819d-27283a409bce",
       "comment": "",
@@ -253,7 +287,7 @@
       "id": "c2060085-5a77-4b8f-bcef-7831d7e1bf17",
       "comment": "",
       "command": "type",
-      "target": "name=Add-New-Column---Text",
+      "target": "name=input-Add-New-Column---Expression",
       "targets": [
         ["name=Add-New-Column---Text", "name"],
         ["css=div.d4-input-textarea.d4-input > #editor", "css"],
@@ -266,20 +300,30 @@
       "id": "ad86f052-e756-420e-9a27-19b898fc878b",
       "comment": "",
       "command": "pause",
-      "target": "2000",
+      "target": "1000",
       "targets": [],
       "value": ""
     }, {
-      "id": "1c141bca-d1a3-4281-8a3e-a4781e1e75dd",
+      "id": "a8bbe267-698a-40c0-b741-554b9eabe07b",
       "comment": "",
-      "command": "verifyElementPresent",
-      "target": "xpath=//label[contains(.,'bool')]",
-      "targets": [
-        ["css=.pure-control-group:nth-child(2) > label", "css:finder"],
-        ["xpath=//div[2]/div[2]/label", "xpath:position"],
-        ["xpath=//label[contains(.,'double')]", "xpath:innerText"]
-      ],
+      "command": "executeScript",
+      "target": "document.querySelector('[name=input-Add-New-Column---Expression]').dispatchEvent(new Event('input'))",
+      "targets": [],
       "value": ""
+    }, {
+      "id": "740fcd24-b6cd-4beb-8540-e235a6117e31",
+      "comment": "",
+      "command": "pause",
+      "target": "1000",
+      "targets": [],
+      "value": ""
+    }, {
+      "id": "d581bc92-adcc-476f-819d-ae9f0e95ace3",
+      "comment": "",
+      "command": "verifyValue",
+      "target": "name=input-Add-New-Column---Type",
+      "targets": [],
+      "value": "auto (bool)"
     }, {
       "id": "dd810978-1676-404f-a9c0-c99f86664add",
       "comment": "",
@@ -302,7 +346,7 @@
       "id": "0b704a43-f076-4b8e-ac85-a9a4f8af0431",
       "comment": "",
       "command": "type",
-      "target": "name=Add-New-Column---Text",
+      "target": "name=input-Add-New-Column---Expression",
       "targets": [
         ["name=Add-New-Column---Text", "name"],
         ["css=div.d4-input-textarea.d4-input > #editor", "css"],
@@ -312,34 +356,55 @@
       ],
       "value": "20"
     }, {
-      "id": "63d89ab2-b90e-4269-b0bc-30713abef434",
+      "id": "d93896ab-3b85-456e-b4df-d1c42501a020",
       "comment": "",
       "command": "pause",
-      "target": "2000",
+      "target": "1000",
       "targets": [],
       "value": ""
     }, {
-      "id": "03c2e94d-4bb2-49c3-b3ba-35aababbeb0e",
+      "id": "d53a0471-a120-4f33-ab04-f2b73f6b5ca3",
       "comment": "",
-      "command": "verifyElementPresent",
-      "target": "xpath=//label[contains(.,'int')]",
+      "command": "executeScript",
+      "target": "document.querySelector('[name=input-Add-New-Column---Expression]').dispatchEvent(new Event('input'))",
+      "targets": [],
+      "value": ""
+    }, {
+      "id": "63d89ab2-b90e-4269-b0bc-30713abef434",
+      "comment": "",
+      "command": "pause",
+      "target": "1000",
+      "targets": [],
+      "value": ""
+    }, {
+      "id": "56a4e59e-6591-461b-a205-1f177599142e",
+      "comment": "",
+      "command": "verifyValue",
+      "target": "name=input-Add-New-Column---Type",
+      "targets": [],
+      "value": "auto (int)"
+    }, {
+      "id": "a3a11d22-d02e-4f8b-9264-45c2edcf3096",
+      "comment": "",
+      "command": "verifyElementNotPresent",
+      "target": "css=i[name=\"exclamation-circle\"]",
       "targets": [
-        ["css=.pure-control-group:nth-child(2) > label", "css:finder"],
-        ["xpath=//div[2]/div[2]/label", "xpath:position"],
-        ["xpath=//label[contains(.,'double')]", "xpath:innerText"]
+        ["name=icon-exclamation-triangle", "name"],
+        ["xpath=//i[@name='icon-exclamation-triangle']", "xpath:attributes"],
+        ["xpath=//i", "xpath:position"]
       ],
       "value": ""
     }, {
       "id": "273a129c-7108-4050-a5d6-8290eb9e894e",
       "comment": "",
       "command": "click",
-      "target": "name=button-OK",
+      "target": "name=button-Add-New-Column---OK",
       "targets": [
-        ["name=button-OK", "name"],
-        ["css=button[name=\"button-OK\"]", "css"],
+        ["name=button-Add-New-Column---OK", "name"],
         ["css=.enabled", "css:finder"],
-        ["xpath=//button[@name='button-OK']", "xpath:attributes"],
-        ["xpath=//div[9]/div[3]/div/button", "xpath:position"]
+        ["xpath=//button[@name='button-Add-New-Column---OK']", "xpath:attributes"],
+        ["xpath=//button", "xpath:position"],
+        ["xpath=//button[contains(.,'OK')]", "xpath:innerText"]
       ],
       "value": ""
     }, {
@@ -375,6 +440,13 @@
       ],
       "value": ""
     }, {
+      "id": "1e495201-e158-4965-bbde-601966d4bc45",
+      "comment": "",
+      "command": "pause",
+      "target": "1000",
+      "targets": [],
+      "value": ""
+    }, {
       "id": "3b5efc3b-cb4c-4f7c-b5d0-440b79fc96eb",
       "comment": "",
       "command": "click",
@@ -387,6 +459,13 @@
       ],
       "value": ""
     }, {
+      "id": "3d58e3de-2b7b-4bbd-bbc1-ba5c0763996e",
+      "comment": "",
+      "command": "pause",
+      "target": "1000",
+      "targets": [],
+      "value": ""
+    }, {
       "id": "495035c7-bc9c-4059-9b8f-8574dc42b29a",
       "comment": "",
       "command": "verifyText",
@@ -397,6 +476,13 @@
         ["xpath=//tr[2]/td[2]/span", "xpath:position"]
       ],
       "value": "11"
+    }, {
+      "id": "7c92cf3f-569c-416b-84f5-3afc2f297583",
+      "comment": "",
+      "command": "pause",
+      "target": "1000",
+      "targets": [],
+      "value": ""
     }]
   }],
   "suites": [{

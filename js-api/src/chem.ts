@@ -90,7 +90,7 @@ export namespace chem {
     _molFile: string | null = null;
     _smarts: string | null = null;
 
-    getSmiles(): string {
+    getSmiles(): string | null {
       return this.sketcher ? this.sketcher.smiles : this._smiles;
     }
 
@@ -100,7 +100,7 @@ export namespace chem {
         this.sketcher!.smiles = x;
     }
 
-    getMolFile(): string {
+    getMolFile(): string | null {
       return this.sketcher ? this.sketcher.molFile : this._molFile;
     }
 
@@ -137,7 +137,7 @@ export namespace chem {
       let optionsIcon = ui.iconFA('bars', () => {
         Menu
           .popup()
-          .item('Add to favorites', () => console.log(this.sketcher.molFile))
+          .item('Add to favorites', () => console.log(this.sketcher!.molFile))
           .separator()
           .items(funcs.map((f) => f.name), (name: string) => this.setSketcher(name))
           .show();
@@ -243,7 +243,8 @@ export namespace chem {
       'molStringsColumn': column,
       'molString': pattern,
       'substructLibrary':
-        !(settings?.hasOwnProperty('substructLibrary') && !settings.substructLibrary)
+        !(settings?.hasOwnProperty('substructLibrary') && !settings.substructLibrary),
+      'molStringSmarts': null
     });
     await call.call();
     // unpacking our BitSet object from a synthetic column

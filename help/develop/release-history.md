@@ -1,6 +1,254 @@
 <!-- TITLE: Release History -->
 <!-- SUBTITLE: -->
 
+# 2021-09-23 Dev build 0.93.31
+
+## Latest Docker Images
+
+* Datagrok: 
+  *  `docker pull datagrok/datagrok:0.93.31`
+  *  `docker pull datagrok/datagrok:latest`
+  
+* [Docker-Compose](admin/docker-compose.md)
+
+## Addressed Issues
+
+
+
+# 2021-09-23 Dev build 0.93.30
+
+## Latest Docker Images
+
+* Datagrok: 
+  *  `docker pull datagrok/datagrok:0.93.30`
+  *  `docker pull datagrok/datagrok:latest`
+  
+* [Docker-Compose](admin/docker-compose.md)
+
+## Addressed Issues
+
+* Peptides: refactoring 
+* datagrok-tools: adjust lint scripts for recursive directory check 
+* changed enrollent linechart to cumulative sum, implemented request to clinicaltrials.gov for study info, added split of AEs barcharts by treatment arm 
+* JS API: menu order parameter 
+* Viewers: Organize context menu entries consistently 
+* JS API: Add Legend widget (WIP)
+* tutorials update 
+* Peptides: typo fixed 
+
+
+# 2021-09-22 Dev build 0.93.29
+
+## Latest Docker Images
+
+* Datagrok: 
+  *  `docker pull datagrok/datagrok:0.93.29`
+  *  `docker pull datagrok/datagrok:latest`
+  
+* [Docker-Compose](admin/docker-compose.md)
+
+## Addressed Issues
+
+* Renamed the file to reflect the feature name 
+* JS API: DG.Color.linear() 
+* Text-based file viewers: ability to edit and save files 
+* Viewers: Organize context menu entries consistently 
+* JS API: menu order parameter 
+* Bar chart: remove barChartFilter bitset 
+* JBIO: prepare color schemes for NGL viewer (WIP)
+* Peptides: various fixes and improvements 
+* (Bug) Bar chart: After switching on the "Relative Values" property, bars are incorrectly colored (WIP)
+
+
+# 2021-09-22 Dev build 0.93.28
+
+## Latest Docker Images
+
+* Datagrok: 
+  *  `docker pull datagrok/datagrok:0.93.28`
+  *  `docker pull datagrok/datagrok:latest`
+  
+* [Docker-Compose](admin/docker-compose.md)
+
+## Addressed Issues
+
+* Peptides: color-coding fix, split sequence join 
+* Closes #118 JS API: color-coding methods (Column.colors) 
+* #118 JS API: color-coding methods (Column.colors) 
+* Peptides: Stacked barchart transfered to ts and added to package 
+* logo Viewer for Peptides 
+* Peptides: Fixed cell renderer column width 
+* Update about-widget.ts 
+* Fix property initialization warnings 
+* (Bug) Fix CVM python environments through conda  
+* DG.Package: methods for working with files 
+* Files: package-specific AppData 
+* (Bug) Bar chart: After switching on the "Relative Values" property, bars are displayed completely zoomed 
+* Fix UI tests (WIP)
+* SMARTS: test possible solutions for aromatization/kekulization 
+* Tutorials package: give rights for editing 
+* Datlas: Build js-api on startup 
+* #84: Scatter Plot: Ability to show min/max on axes where appropriate 
+* Minor code cleanup 
+* Charts on viewers: Universal ability to show them with interactive legend 
+* Core: property for ordering menu items (WIP)
+* JS API: DG.Color.linear() 
+* Bar chart: merge two adjacent filter rectangles 
+* Peptides: ui fixes 
+
+
+# 2021-09-21 Dev build 0.93.27
+
+## Latest Docker Images
+
+* Datagrok: 
+  *  `docker pull datagrok/datagrok:0.93.27`
+  *  `docker pull datagrok/datagrok:latest`
+  
+* [Docker-Compose](admin/docker-compose.md)
+
+## Addressed Issues
+
+* Funcs: Function cache for scripts and data sync 
+* #53 Tutorials package: code clean-up 
+* #53 Tutorials package: helpers for working with view inputs 
+* Update icons for packages 
+* Update package.png 
+* Update Laboratory view 
+* Peptides: color coding optimization 
+* #53 Tutorials package: openViewByType method 
+* JS API: add examples with the linear color-coding 
+* Bar chart: add int column as split and stack column 
+
+
+# 2021-09-20 Dev build 0.93.26
+
+## Latest Docker Images
+
+* Datagrok: 
+  *  `docker pull datagrok/datagrok:0.93.26`
+  *  `docker pull datagrok/datagrok:latest`
+  
+* [Docker-Compose](admin/docker-compose.md)
+
+## Addressed Issues
+
+* Peptides: property panel WIP 
+* Add "iconTool" to devTools 
+* Peptides: property panel fix 
+* Peptides: finished converting to TS, code cleanup 
+* Linter rules update 
+* Removed an unused dependency 
+* UsageWidget: code cleanup 
+* (Bug) Core: FileInfo.readAsString returns undefined 
+* #117: PowerPack: PowerSearch: search templates \- added server-based collections of templates 
+* implemented ability to set min and max values in multiplot 
+* #117: PowerPack: PowerSearch: build fix 
+* #117: PowerPack: PowerSearch: search templates \- added package settings for templates paths 
+* implmented multiple lines on linechart using eChart graphs 
+* fixed multiplot tooltips bug 
+* Charts on viewers: Universal ability to show them with interactive legend 
+* implemented changing height of scatter plot with categories multiselect in multiplot 
+* #53 Tutorials package: ML (predictive modeling tutorial): actions for the model training view 
+* updating survival plots on tab click in case filters changed 
+* Peptides: Aligned sequence cell renderer text properly aligned, readability increased 
+* Peptides: analyzePeptides fix 
+* Funcs: Function cache for scripts and data sync 
+* Peptides: color coding circles based on MAD 
+* Peptides: help fix 
+* DevTools: add data connection examples 
+* Bar chart: add int column as split column 
+
+
+# 2021-09-17 Dev build 0.93.25
+
+## Latest Docker Images
+
+* Datagrok: 
+  *  `docker pull datagrok/datagrok:0.93.25`
+  *  `docker pull datagrok/datagrok:latest`
+  
+* [Docker-Compose](admin/docker-compose.md)
+
+## Addressed Issues
+
+* Peptide cell renderer 
+* Peptides: color scheme for sequences (WIP)
+* Cron: support @reboot schedule 
+* (Bug) Bar Chart: "by category" sorting throws an exception 
+* update clinical cases UI 
+* Column context actions: take semantic types into account 
+* Packages: change the API source 
+* DevTools: a polyfill for replaceAll 
+* Peptides: scaling method replace ln -> lg 
+* Fixed Analyzer warning 
+* Fixed typo 
+* Removed old dependency 
+* lock files 
+* Barchart: Font changed to serif-sans, column numeration changed, current row highlighting added 
+* Peptides: renderer fix 
+* Updated public token 
+* Package Settings: don't show the settings editor when there are no properties to edit 
+* Peptides: added histogram and updated stats, scaling fix 
+* (Bug) Chem: External sketcher, filtering and SMARTS (WIP)
+* JS API: add missing toJs in package.getProperties() 
+* Wiki: package settings 
+* Peptides: AA sem type detector 
+* (Bug) DataSync: Do not set .query tag if no query was loaded 
+
+
+# 2021-09-16 Dev build 0.93.24
+
+## Latest Docker Images
+
+* Datagrok: 
+  *  `docker pull datagrok/datagrok:0.93.24`
+  *  `docker pull datagrok/datagrok:latest`
+  
+* [Docker-Compose](admin/docker-compose.md)
+
+## Addressed Issues
+
+* (Bug) Form, Tile: rendering error 
+* rewrite Peptides package in TypeScript 
+* Add SAR viewer 
+* JS API: fix type warnings 
+* Peptides: refactor 
+* Peptides: simplified the aligned sequence detector 
+* Stacked barchart: Selection style changed, datagrok palette added, axis display simplified, unreadable bar labeles removed, trying to fix escaping bars bug. 
+* #114: Bio: grid cell renderer for sequences 
+* Sequence: made it work again; code cleanup. 
+* Wiki: Restructure. Access (WIP)
+* escaping bar bug is fixed 
+* JS API: BitSet.and, or, xor, andNot 
+* Peptides: drawing circles in a grid instead of numbers 
+* Peptides: viewer rework 
+* (Bug) JS API: Table.rows.filter() doesn't work if called after opening the table 
+* Form: move setReadOnly implementation into SketchHtmlElementHandler 
+* Minor improvements 
+* JS API: a type for property options 
+* Peptides: added activity scaling options 
+* Peptides: source table selection based on viewer select 
+* Peptides: refactor according to coding guidlines 
+* (Bug) Filters: Range sliders don't always appear on hover 
+* JS API: Minor harmonization 
+* Peptides: dataset fix 
+* AppsViews and PackagesView: make cards smaller 
+* (Bug) Histogram: Change position of the checkbox "Filter out missing values" 
+* added ability to select values for y axe in multiplot, updated patient profile and timelines views 
+* Peptide Cell renderer 
+* #53 Tutorials package: ML (predictive modeling tutorial): missing values imputation 
+* PackageView and Package PP: show github URL (WIP)
+* Clinical Cases UI update 
+* Update package.ts 
+* (Bug) Add new package: impossible to add a package without description 
+* (Bug) Apps: App button goes to common heap instead of separate tab (WIP)
+* Rollback 
+* Peptides: added help to property panel, minor improvements 
+* Fixed views creation 
+* Fixed typing 
+
+
 # 2021-09-14 Dev build 0.93.23
 
 ## Latest Docker Images

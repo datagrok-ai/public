@@ -6,7 +6,7 @@
 	"description": "",
 	"dependencies": {
 		"cash-dom": "^8.1.0",
-		"datagrok-api": "^0.93.7",
+		"datagrok-api": "../../js-api",
 		"dayjs": "^1.10.6",
 		"rxjs": "6.6.7",
 		"ts-loader": "^9.2.5",
@@ -22,6 +22,7 @@
 	},
 	"scripts": {
 		"debug-tutorials": "grok publish --rebuild",
+		"build-debug-tutorials": "webpack && grok publish",
 		"release-tutorials": "grok publish --rebuild --release",
 		"build-tutorials": "webpack",
 		"build": "webpack",

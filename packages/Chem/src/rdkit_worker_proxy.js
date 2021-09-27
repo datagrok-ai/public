@@ -27,8 +27,8 @@ class RdKitWorkerProxy {
     this.call('module::init');
   substructInit = async (dict) =>
     this.call('substructLibrary::init', [dict]);
-  substructSearch = async (query) =>
-    this.call('substructLibrary::search', [query]);
+  substructSearch = async (query, querySmarts) =>
+    this.call('substructLibrary::search', [query, querySmarts]);
   substructDeinit = async () =>
     this.call('substructLibrary::deinit');
 

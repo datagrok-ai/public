@@ -7,6 +7,7 @@ import {initTimeLine} from './timeLinesRender';
 import {MPUtils} from './utils';
 import {ECharts} from 'echarts';
 import {MPLayout} from './layout';
+import { BAR, LINE, SCATTER, TIMELINES } from './constants';
 // import * as deb from "./../debug.js";
 
 export class MultiPlotViewer extends DG.JsViewer {
@@ -51,13 +52,12 @@ export class MultiPlotViewer extends DG.JsViewer {
   private categoryLength : number = 9;
   private paramOptions : string = this.string('paramOptions', 'none22');
   private mode : string = 'none'; // 'brushSelected'
-  private options = {series: [
-
-  ]};
+  private options = {series: [], xAxisMinMax: {}};
 
   typeComboElements : HTMLElement[] = [];
   showHideElements : HTMLElement[] = [];
   closeElements : HTMLElement[] = [];
+  editElements: HTMLElement[] = [];
   categoryCombos : HTMLElement[] = [];
   plots = [];
   box: DOMRect;
@@ -179,7 +179,15 @@ export class MultiPlotViewer extends DG.JsViewer {
       }
 
       if (this.closeElements[i]) {
-        this.closeElements[i].style.top = heightData[i].titleTop + 7 + this.controlsTopShift + 'px';
+        this.closeElements[i].style.top = heightData[i].titleTop + 10 + this.controlsTopShift + 'px';
+      }
+
+      if (this.editElements[i]) {
+        if(this.plots[i].edit.multi){
+          this.editElements[i].style.top = heightData[i].titleTop + 7 + this.controlsTopShift + 'px';
+        } else {
+          this.editElements[i].style.top = heightData[i].titleTop + this.controlsTopShift + 'px';
+        }
       }
 
       if (this.plots[i].categCombo) {
@@ -236,90 +244,26 @@ export class MultiPlotViewer extends DG.JsViewer {
       this.echartOptions.xAxis[visibleIndex].type = 'value';
       //    this.echartOptions.xAxis[i].axisTick = { inside: true, length: 1000 };
       this.echartOptions.xAxis[visibleIndex].show = false;
-      this.echartOptions.xAxis[visibleIndex].min = 0;
-      this.echartOptions.xAxis[visibleIndex].max = 200;
+      this.echartOptions.xAxis[visibleIndex].min = this.options.xAxisMinMax['minX'];
+      this.echartOptions.xAxis[visibleIndex].max = this.options.xAxisMinMax['maxX'];
       this.echartOptions.yAxis[visibleIndex].gridIndex = visibleIndex;
       this.echartOptions.yAxis[visibleIndex].type = this.plots[i].yType || 'value';
       this.echartOptions.yAxis[visibleIndex].show = this.plots[i].show;
       this.echartOptions.yAxis[visibleIndex].triggerEvent = true;
       this.echartOptions.yAxis[visibleIndex].axisLabel = {width: plot.yLabelWidth};
       this.echartOptions.yAxis[visibleIndex].axisLabel.overflow = plot.yLabelOverflow;
+      this.echartOptions.yAxis[visibleIndex].axisLine = {onZero: false};
+      this.echartOptions.yAxis[visibleIndex].axisTick = {alignWithLabel: true};
 
-      let currentSeries = {
-        type: this.plots[i].series.type,
-        show: this.plots[i].show,
-        large: true,
-        gridIndex: visibleIndex,
-        xAxisIndex: visibleIndex,
-        yAxisIndex: visibleIndex,
-        data: this.plots[i].series.data,
-        coordinateSystem: 'cartesian2d',
-        encode: {x: 0, y: 1},
-        selectedMode: 'multiple',
-        xAxis: {},
-        yAxis: {
-          type: plot.yType,
-        },
-        itemStyle: {},
-      };
 
-      if (plot.statusChart) {
-        currentSeries.itemStyle = {
-          color: this.getItemStyleColorFunc(plot.visualMap, plot),
-        };
+      if(plot.multiLineFieldIndex && plot.series.data.length){
+        plot.series.data.forEach(item => {
+          this.echartOptions.series.push(this.getCurrentSeries(plot, visibleIndex, i, plot.series.type, item))
+        })
+      } else {
+        this.echartOptions.series.push(this.getCurrentSeries(plot, visibleIndex, i, plot.series.type, plot.series.data));
       }
 
-      if (plot.visualMap) {
-        if (plot.visualMap.pieces) {
-          currentSeries.itemStyle = {
-            color: this.getItemStyleColorFunc(plot.visualMap, plot),
-          };
-        } else {
-          // if (plot.visualMap) {
-          // keep it to find is any execution ever happens here
-          debugger;
-          const map = plot.visualMap;
-          if (map.type === 'piecewise') {
-            const min = map.pieces[0].min;
-            const max = map.pieces[0].max;
-            map.pieces.push({max: min, color: this.paletteColors[0]});
-            map.pieces.push({min: max, color: this.paletteColors[0]});
-          }
-          map.seriesIndex = visibleIndex;
-          this.echartOptions.visualMap.push(map);
-          map.show = false;
-          // }
-        } // if visualMap.pieces
-      }
-
-      // trim categories and update trimmed data for plots with categories for Y axis
-      if (currentSeries.yAxis && currentSeries.yAxis.type === 'category') {
-        console.warn('plot with category ', i, plot);
-        console.log(this.plots[i].y);
-        const xCols = Array.isArray(plot.x) ? plot.x.length : 1;
-        plot.categoryColumnIndex = xCols;
-        this.plots[i].subjectCol = this.tables[this.plots[i].tableName].getCol(this.plots[i].y);
-        this.plots[i].subjects = this.plots[i].subjectCol.categories;
-       /*  this.plots[i].subjects = this.plots[i].subjects.map(
-            ((s : string) => {
-              return s.length > this.categoryLength ? s.substring(0, this.categoryLength) + '...' : s;
-            }),
-        ); */
-        this.plots[i].subjBuf = this.plots[i].subjectCol.getRawData();
-      }
-
-      if (this.plots[i].type === 'timeLine') {
-        this.plots[i].timeLinesSeries = this.initTimeLine(i, this);
-        currentSeries = this.plots[i].timeLinesSeries;
-        currentSeries.xAxisIndex = visibleIndex;
-        currentSeries.yAxisIndex = visibleIndex;
-        currentSeries.gridIndex = visibleIndex;
-        // currentSeries.encode = {x: [1, 2], y: 0};
-        this.echartOptions.xAxis[visibleIndex].type = 'value';
-        this.echartOptions.yAxis[visibleIndex].type = 'category';
-      }
-
-      this.echartOptions.series.push(currentSeries);
       this.visibleIndexes.push(i);
       visibleIndex++;
     } // for i<this.plots.length
@@ -339,6 +283,70 @@ export class MultiPlotViewer extends DG.JsViewer {
     this.echartOptions.xAxis[visibleIndex - 1].show = true;
     this.echartOptions.xAxis[visibleIndex - 1].type = 'value';
   } // updatePlots
+
+
+  getCurrentSeries(plot: any, visibleIndex: number, i: number, type: string, data: any) {
+    let currentSeries = {
+      type: type,
+      show: plot.show,
+      large: true,
+      gridIndex: visibleIndex,
+      xAxisIndex: visibleIndex,
+      yAxisIndex: visibleIndex,
+      data: data,
+      coordinateSystem: 'cartesian2d',
+      encode: { x: 0, y: 1 },
+      selectedMode: 'multiple',
+      xAxis: {},
+      yAxis: {
+        type: plot.yType,
+      },
+      itemStyle: {},
+    };
+
+    if (plot.statusChart) {
+      currentSeries.itemStyle = {
+        color: this.getItemStyleColorFunc(plot.visualMap, plot),
+      };
+    }
+
+    if (plot.visualMap) {
+      if (plot.visualMap.pieces) {
+        currentSeries.itemStyle = {
+          color: this.getItemStyleColorFunc(plot.visualMap, plot),
+        };
+      } else {
+        // if (plot.visualMap) {
+        // keep it to find is any execution ever happens here
+        debugger;
+        const map = plot.visualMap;
+        if (map.type === 'piecewise') {
+          const min = map.pieces[ 0 ].min;
+          const max = map.pieces[ 0 ].max;
+          map.pieces.push({ max: min, color: this.paletteColors[ 0 ] });
+          map.pieces.push({ min: max, color: this.paletteColors[ 0 ] });
+        }
+        map.seriesIndex = visibleIndex;
+        this.echartOptions.visualMap.push(map);
+        map.show = false;
+        // }
+      } // if visualMap.pieces
+    }
+
+    if (plot.type === 'timeLine') {
+      plot.timeLinesSeries = this.initTimeLine(i, this);
+      currentSeries = plot.timeLinesSeries;
+      currentSeries.xAxisIndex = visibleIndex;
+      currentSeries.yAxisIndex = visibleIndex;
+      currentSeries.gridIndex = visibleIndex;
+      // currentSeries.encode = {x: [1, 2], y: 0};
+      this.echartOptions.xAxis[ visibleIndex ].type = 'value';
+      this.echartOptions.yAxis[ visibleIndex ].type = 'category';
+    }
+
+    return currentSeries;
+  }
+
 
   // create function to use as EChart callback with Datagrok mixins
   // get callback function to define color of marker
@@ -560,7 +568,21 @@ export class MultiPlotViewer extends DG.JsViewer {
           );
         }
       } */
-      plot.series.data = data;
+      if (plot.multiLineFieldIndex && plot.currentCat){  //break data into several arrays according to category(required to draw multiple lines on linechart)
+        const multipleData = [];
+        plot.currentCat.forEach(cat => {
+          let catData = [];
+          data.forEach((item) =>{
+            if(item[plot.multiLineFieldIndex] === cat){
+              catData.push(item);
+            }
+          })
+          multipleData.push(catData);
+        });
+        plot.series.data = multipleData;
+      } else {
+        plot.series.data = data;
+      }
 
       if (plot.type != 'timeLine') {
         this.timeLinesData.push([])
@@ -649,7 +671,7 @@ export class MultiPlotViewer extends DG.JsViewer {
     });
 
     this.echart.on('mouseover', (params) => {
-      const iPlot : number = this.visibleIndexes[params.componentIndex];
+      const iPlot : number = this.echartOptions.series[params.componentIndex].gridIndex;
       const table : DG.DataFrame = this.tables[this.plots[iPlot].tableName];
       const subjBuf = this.plots[iPlot];
       const x = (params.event.event as MouseEvent).x + this.tooltipOffset;
@@ -661,7 +683,7 @@ export class MultiPlotViewer extends DG.JsViewer {
       const val = params.value[1];
 
       if (params.componentType === 'yAxis') {
-        if (this.isGroup(params.componentIndex, params.componentType)) {
+        if (this.isGroup(iPlot, params.componentType)) {
           /* ui.tooltip.showRowGroup(table, (i) => {
             return params.value === this.plots[iPlot].subjects[this.plots[iPlot].subjBuf[i]];
           }, x, y); */
@@ -670,7 +692,7 @@ export class MultiPlotViewer extends DG.JsViewer {
       }
 
       if (params.componentType === 'series') {
-        if (!this.isGroup(params.componentIndex, '')) {
+        if (!this.isGroup(iPlot, '')) {
           ui.tooltip.show(ui.divV(
               (params.data as any[]).map((e, i) => ui.div([colNames[i] + ': ' + e + ''])),
           ), x, y);
@@ -692,20 +714,28 @@ export class MultiPlotViewer extends DG.JsViewer {
   }
 
   deleteElements(): void {
-    this.typeComboElements.map((e) => e.remove());
+    this.typeComboElements.map((e) => { if (e) e.remove(); });
     this.showHideElements.map((e) => e.remove());
     this.closeElements.map((e) => e.remove());
+    this.editElements.map((e) => { if (e) e.remove(); });
   }
 
   setControlsVisibility() : void {
     this.typeComboElements.map((e) => {
-      e.style.visibility = this.showControls ? 'visible' : 'hidden';
+      if(e){
+        e.style.visibility = this.showControls ? 'visible' : 'hidden';
+      }
     });
     this.showHideElements.map((e) => {
       e.style.visibility = this.showControls ? 'visible' : 'hidden';
     });
     this.closeElements.map((e) => {
       e.style.visibility = this.showControls ? 'visible' : 'hidden';
+    });
+    this.editElements.map((e) => {
+      if(e){
+        e.style.visibility = this.showControls ? 'visible' : 'hidden';
+      }
     });
   }
 
@@ -715,36 +745,40 @@ export class MultiPlotViewer extends DG.JsViewer {
     // create comboboxes to choose plot types
     this.typeComboElements = [];
     for (let i = 0; i < this.plots.length; i++) {
-      const inputPlotType: any = ui.choiceInput('', 'scatter', ['scatter', 'line', 'bar'], (event) => {
-        this.plots[i].series.type = event;
-        this.updatePlots();
-        this.render();
-      });
-      this.typeComboElements.push(inputPlotType.root);
-      this.root.appendChild(inputPlotType.root);
-      inputPlotType.root.style.position = 'absolute';
-      inputPlotType.root.style.right = '28px';
-      inputPlotType.root.style['flex-direction'] = 'row';
-      inputPlotType.root.style.top = (40 * i) + 'px';
-      inputPlotType.root.querySelector('select').style.borderBottom = '0px';
+      if (this.plots[ i ].type !== TIMELINES) {
+        const inputPlotType: any = ui.choiceInput('', this.plots[ i ].series.type, [ SCATTER, LINE, BAR ], (event) => {
+          this.plots[ i ].series.type = event;
+          this.updatePlots();
+          this.render();
+        });
+        this.typeComboElements.push(inputPlotType.root);
+        this.root.appendChild(inputPlotType.root);
+        inputPlotType.root.style.position = 'absolute';
+        inputPlotType.root.style.right = '28px';
+        inputPlotType.root.style[ 'flex-direction' ] = 'row';
+        inputPlotType.root.style.top = (40 * i) + 'px';
+        inputPlotType.root.querySelector('select').style.borderBottom = '0px';
+      } else {
+        this.typeComboElements.push(null);
+      }
     }
 
     // create checkboxes for show/hide plots
     this.showHideElements = [];
     for (let i = 0; i < this.plots.length; i++) {
-      const inputPlotType: any = ui.div([ui.iconFA('angle-right'), ui.iconFA('angle-down')]);
+      const inputPlotType: any = ui.div([ ui.iconFA('angle-right'), ui.iconFA('angle-down') ]);
       const showHideIcons = inputPlotType.querySelectorAll('i');
-      showHideIcons[0].style.display = 'none';
+      showHideIcons[ 0 ].style.display = 'none';
       inputPlotType.showSwitch = 1;
       inputPlotType.addEventListener('click', (e) => {
         const div = e.target.parentNode;
         div.showSwitch = 1 - div.showSwitch;
-        const displays = ['', 'none'];
+        const displays = [ '', 'none' ];
         const els = div.querySelectorAll('i');
         const isShown = div.showSwitch;
-        els[0].style.display = displays[isShown];
-        els[1].style.display = displays[1 - isShown];
-        this.plots[i].show = isShown;
+        els[ 0 ].style.display = displays[ isShown ];
+        els[ 1 ].style.display = displays[ 1 - isShown ];
+        this.plots[ i ].show = isShown;
         this.updateFilter();
         this.updatePlots();
         this.render();
@@ -753,7 +787,7 @@ export class MultiPlotViewer extends DG.JsViewer {
       this.root.appendChild(inputPlotType);
       inputPlotType.style.position = 'absolute';
       inputPlotType.style.left = '3px';
-      inputPlotType.style['flex-direction'] = 'row';
+      inputPlotType.style[ 'flex-direction' ] = 'row';
       inputPlotType.style.top = (40 * i) + 'px';
       this.showHideElements.push(inputPlotType);
     }
@@ -776,8 +810,55 @@ export class MultiPlotViewer extends DG.JsViewer {
       this.root.appendChild(inputClose);
     }
 
-/*      // create combobox with categories
-    this.categoryCombos = [];
+    // create edit icons
+    this.editElements = [];
+    for (let i = 0; i < this.plots.length; i++) {
+      if (this.plots[ i ].edit) {
+        if (this.plots[ i ].edit.multi) {
+          const inputEdit = ui.icons.settings(() => {
+            let labValuesMultiChoices = ui.multiChoiceInput('', this.plots[ i ].edit.selectedValues, this.plots[ i ].edit.values)
+            labValuesMultiChoices.onChanged((v) => {
+              this.plots[ i ].edit.selectedValues = labValuesMultiChoices.value;
+            });
+            //@ts-ignore
+            labValuesMultiChoices.input.style.maxWidth = '100%';
+            //@ts-ignore
+            labValuesMultiChoices.input.style.maxHeight = '100%';
+            ui.dialog({ title: 'Select values' })
+              .add(ui.div([ labValuesMultiChoices ], { style: { width: '400px', height: '300px' } }))
+              .onOK(() => {
+                this.updatePlotByCategory(i, this.plots[ i ].edit.selectedValues, false);
+              })
+              .show();
+          }, 'Edit values')
+          inputEdit.style.right = '100px';
+          inputEdit.style.position = 'absolute';
+          inputEdit.style.top = (40 * i) + 'px';
+          inputEdit.style.flexDirection = 'row';
+          this.root.appendChild(inputEdit);
+          this.editElements.push(inputEdit);
+         // this.updatePlotByCategory(i, this.plots[ i ].edit.selectedValues, false);
+        } else {
+          const inputEdit = ui.choiceInput('Value', this.plots[ i ].edit.selectedValues, this.plots[ i ].edit.values);
+          inputEdit.onChanged((v) => {
+            this.plots[ i ].edit.selectedValues = inputEdit.value;
+            this.updatePlotByCategory(i, this.plots[ i ].edit.selectedValues, true);
+          });
+          inputEdit.root.style.right = '100px';
+          inputEdit.root.style.position = 'absolute';
+          inputEdit.root.style.top = (40 * i) + 'px';
+          inputEdit.root.style.flexDirection = 'row';
+          this.root.appendChild(inputEdit.root);
+          this.editElements.push(inputEdit.root);
+        //  this.updatePlotByCategory(i, this.plots[ i ].edit.selectedValues, true);
+        }
+      } else {
+        this.editElements.push(null);
+      }
+    }
+
+    // create combobox with categories
+/*     this.categoryCombos = [];
     for (let i=0; i<this.plots.length; i++) {
       const plot = this.plots[i];
       if (plot.allCats) {
@@ -791,18 +872,22 @@ export class MultiPlotViewer extends DG.JsViewer {
         plot.categCombo = categCombo;
         this.root.appendChild(categCombo.root);
         categCombo.root.style.position = 'absolute';
-        categCombo.root.style.left = '78px';
+        categCombo.root.style.right = '78px';
         categCombo.root.style['flex-direction'] = 'row';
         categCombo.root.style.top = (40 * i) + 'px';
         categCombo.root.querySelector('select').style.borderBottom = '0px';
       }
-    }  */
+    } */
   } // createElements
 
 
-  updatePlotByCategory(plotIndex: number, category: string){
+  updatePlotByCategory(plotIndex: number, category: any, updateTitle: boolean){
+    if(this.plots[plotIndex].type === 'scatter' && category.length){
+      this.plots[plotIndex].height = `${category.length*20}px`;
+    }
     this.plots[plotIndex].currentCat = category;
     this.plots[plotIndex].condition.value = category;
+    if (updateTitle){ this.plots[plotIndex].title = category; }
     this.updateFilter();
     this.render();
   }

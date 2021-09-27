@@ -4,7 +4,7 @@
 	"version": "0.0.3",
 	"description": "",
 	"dependencies": {
-		"datagrok-api": "latest",
+		"datagrok-api": "../../js-api",
 		"wu": "latest",
 		"echarts": "^5.0.0",
 		"echarts-wordcloud": "^2.0.0"

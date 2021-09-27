@@ -2,6 +2,7 @@ import * as grok from 'datagrok-api/grok';
 import * as ui from 'datagrok-api/ui';
 import * as DG from 'datagrok-api/dg';
 import { scriptEditor } from "./script-editor";
+import { IconTool } from "./icon-tool";
 import $ from 'cash-dom';
 import {
   dfExts,
@@ -27,8 +28,8 @@ function getGroupInput(type: string): HTMLElement {
   return inp.root;
 }
 
-function format(s): string {
-  s = s.replaceAll('-', ' ');
+function format(s: string): string {
+  s = s.replace(/-/g, ' ');
   return s[0].toUpperCase() + s.slice(1);
 }
 
@@ -169,4 +170,9 @@ export function _scriptEditor(): void {
     if (view.type == 'ScriptView')
     scriptEditor(view);
   });
+}
+
+//description: IconTool
+export function _IconTool(): void { 
+  grok.shell.newView('Icon Tool', [new IconTool('Icon Tool')]);
 }

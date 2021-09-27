@@ -3,7 +3,7 @@ import {__obs, _sub, observeStream, StreamSubscription} from "./events";
 import {Observable, Subscription} from "rxjs";
 import {Func, Property} from "./entities";
 import {Cell, Column, DataFrame} from "./dataframe";
-import {ColorType, Type} from "./const";
+import {ColorType, PropertyOptions, Type} from "./const";
 import * as React from "react";
 import * as rxjs from "rxjs";
 import {Rect} from "./grid";
@@ -199,7 +199,7 @@ export class Widget {
    * @returns {*}
    * @private
    */
-  addProperty(propertyName: string, propertyType: Type, defaultValue: any = null, options: { [key: string]: string } | null = null): any {
+  addProperty(propertyName: string, propertyType: Type, defaultValue: any = null, options: { [key: string]: string } & PropertyOptions | null = null): any {
     let obj = this;
     // @ts-ignore
     let p = Property.create(propertyName, propertyType, () => obj[propertyName], null, defaultValue);
@@ -628,22 +628,22 @@ export class Menu {
   /** Returns an existing menu group or adds a new group with the specified text.
    * @param {string} text
    * @returns {Menu} */
-  group(text: string): Menu {
-    return toJs(api.grok_Menu_Group(this.d, text));
+  group(text: string, order: number | null = null): Menu {
+    return toJs(api.grok_Menu_Group(this.d, text, order));
   }
 
   /** Ends a group of menu items and returns to the higher menu level.
    * @returns {Menu} */
   endGroup(): Menu {
-    return toJs(api.grok_Menu_End_Group(this.d));
+    return toJs(api.grok_Menu_EndGroup(this.d));
   }
 
   /** Adds a menu group with the specified text and handler.
    * @param {string} text
    * @param {Function} onClick - callback with no parameters
    * @returns {Menu} */
-  item(text: string, onClick: Function): Menu {
-    return toJs(api.grok_Menu_Item(this.d, text, onClick));
+  item(text: string, onClick: Function, order: number | null = null): Menu {
+    return toJs(api.grok_Menu_Item(this.d, text, onClick, order));
   }
 
   /** For each item in items, adds a menu group with the specified text and handler.
@@ -665,6 +665,14 @@ export class Menu {
    * @returns {Menu} */
   show(): Menu {
     return toJs(api.grok_Menu_Show(this.d));
+  }
+
+  get onContextMenuItemClick() {
+    return __obs('d4-menu-item-click', this.d);
+  }
+
+  toString(): string {
+    return api.grok_MenuItem_ToString(this.d);
   }
 }
 
@@ -963,6 +971,10 @@ export class Color {
   /** Returns the standard palette of the categorical colors used across all visualizations in Datagrok. */
   static get categoricalPalette(): ColorType[] {
     return api.grok_Color_CategoricalPalette();
+  }
+
+  static scaleColor(x: number, min: number, max: number, alpha?: number, colorScheme?: number[]): number {
+    return api.grok_Color_ScaleColor(x, min, max, alpha ? alpha : null, colorScheme ? colorScheme : null);
   }
 
   static scale(x: number, min: number, max: number): number {
@@ -1326,4 +1338,39 @@ export class ColumnComboBox extends DartWidget {
     return __obs(eventId, this.d);
   }
   get onChanged(): rxjs.Observable<String> { return this.onEvent('d4-column-box-column-changed'); }
+}
+
+/** Column legend for viewers */
+export class Legend extends DartWidget {
+  constructor(d: any) {
+    super(d);
+  }
+
+  static create(column: Column): Legend {
+    return api.grok_Legend(column.d);
+  }
+  
+  get column(): Column {
+    return toJs(api.grok_Legend_Get_Column(this.d));
+  }
+
+  set column(column: Column) {
+    api.grok_Legend_Set_Column(this.d, column);
+  }
+  
+  get showNulls(): Boolean {
+    return api.grok_Legend_Get_ShowNulls(this.d);
+  }
+
+  set showNulls(show: Boolean) {
+    api.grok_Legend_Set_ShowNulls(this.d, show);
+  }
+  
+  get position(): String {
+    return api.grok_Legend_Get_Position(this.d);
+  }
+
+  set position(pos: String) {
+    api.grok_Legend_Set_Position(this.d, pos);
+  }
 }

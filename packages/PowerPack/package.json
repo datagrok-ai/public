@@ -24,5 +24,13 @@
 		"release-powerpack-dev": "grok publish dev --rebuild --release",
 		"debug-powerpack-public": "grok publish public --rebuild",
 		"release-powerpack-public": "grok publish public --rebuild --release"
-	}
+	},
+	"properties": [
+		{
+			"name": "searchTemplatePaths",
+			"propertyType": "string",
+			"defaultValue": "Admin:Home/templates;System:AppData/PowerPack/search-templates",
+			"nullable": false
+		}
+	]
 }
