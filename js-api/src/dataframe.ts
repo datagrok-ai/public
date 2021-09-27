@@ -1227,7 +1227,7 @@ export class ColumnList {
    * @param {Column} newColumn
    * */
   replace(columnToReplace: Column | string, newColumn: Column): Column {
-    return api.grok_ColumnList_Replace(this.d, (typeof columnToReplace === 'string') ? columnToReplace:  columnToReplace.d, newColumn.d);
+    return toJs(api.grok_ColumnList_Replace(this.d, (typeof columnToReplace === 'string') ? columnToReplace:  columnToReplace.d, newColumn.d));
   }
 
   /** Iterates over all columns.
@@ -2147,7 +2147,10 @@ export class ColumnDialogHelper {
   /** Opens an editor dialog with preview for a calculated column. */
   editFormula(): void {
     let formula = this.column.getTag('formula');
-    if (formula == null || !(this.column.name && this.column.dataFrame?.columns.contains(this.column.name)))
+    let df = this.column.dataFrame;
+    if (formula == null)
+      formula = '';
+    if (!(this.column.name && this.column.dataFrame?.columns.contains(this.column.name)))
       return;
     let params = { table: this.column.dataFrame, expression: formula, name: this.column.name, type: this.column.type };
     let call = DG.Func.byName('AddNewColumn').prepare(params);
@@ -2156,6 +2159,7 @@ export class ColumnDialogHelper {
       let newCol = call.getOutputParamValue();
       for (let [key, value] of this.column.tags) if (key !== DG.TAGS.FORMULA) newCol.setTag(key, value);
       let name = this.column.name;
+      df.columns.remove(newCol.name);
       newCol = this.column.dataFrame.columns.replace(this.column, newCol);
       newCol.name = name;
       sub.unsubscribe();
