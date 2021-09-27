@@ -2,11 +2,10 @@ import * as grok from 'datagrok-api/grok';
 import * as ui from 'datagrok-api/ui';
 import * as DG from 'datagrok-api/dg';
 import $ from 'cash-dom';
-import { async, fromEvent, Observable } from 'rxjs';
+import { fromEvent, Observable } from 'rxjs';
 import { filter, first, map } from 'rxjs/operators';
 import { _package } from './package';
 import { Track, TutorialRunner } from './track';
-import { eda, tutorials } from './tracks/eda';
 
 
 /** A base class for tutorials */
@@ -55,7 +54,7 @@ export abstract class Tutorial extends DG.Widget {
 
   protected abstract _run(): Promise<void>;
 
-  async run(t:Tutorial): Promise<void> {
+  async run(): Promise<void> {
     this.progress.max = this.steps;
 
     if (this.demoTable) {
@@ -89,7 +88,7 @@ export abstract class Tutorial extends DG.Widget {
 
     const switchToMainView = () => {
       $('.tutorial').show();
-      if (t.status != true){
+      if (this.status != true){
         updateProgress(this.track);
       }  
       $('#tutorial-child-node').html('');
@@ -99,13 +98,13 @@ export abstract class Tutorial extends DG.Widget {
     if (id < tutorials.length - 1){
       this.root.append(ui.div([
         ui.bigButton('Start', () => {
-          if (t.status != true){
+          if (this.status != true){
             console.log('update completed')
             updateProgress(this.track);
           }  
           $('#tutorial-child-node').html('');
           $('#tutorial-child-node').append(tutorials[++id].root);
-          tutorials[id].run(tutorials[id]);
+          tutorials[id].run();
         }),
         ui.button('Cancel', switchToMainView)
       ]))
@@ -125,7 +124,7 @@ export abstract class Tutorial extends DG.Widget {
     this._scroll();
   }
 
-  async action(instructions: string, completed: Observable<any>,
+  async action(instructions: string, completed: Observable<any> | Promise<void>,
     hint?: HTMLElement | null, hintSub?: DG.StreamSubscription | null): Promise<void> {
     hint?.classList.add('tutorials-target-hint');
     let hintIndicator = ui.element('div');
@@ -140,7 +139,11 @@ export abstract class Tutorial extends DG.Widget {
     const entry = ui.divH([instructionIndicator,instructionDiv], 'grok-tutorial-entry');
     this.activity.append(entry);
     this._scroll();
-    await this.firstEvent(completed);
+    if (completed instanceof Promise) {
+      await completed;
+    } else {
+      await this.firstEvent(completed);
+    }
     instructionDiv.classList.add('grok-tutorial-entry-success');
     instructionIndicator.classList.add('grok-tutorial-entry-indicator-success')
     this.progress.value++;
@@ -165,6 +168,7 @@ export abstract class Tutorial extends DG.Widget {
     });
   }
 
+  /** Prompts the user to open a viewer of the specified type and returns it. */
   protected async openPlot(name: string, check: (viewer: DG.Viewer) => boolean): Promise<DG.Viewer> {
     // TODO: Expand toolbox / accordion API coverage
     const getViewerIcon = (el: HTMLElement) => {
@@ -189,6 +193,7 @@ export abstract class Tutorial extends DG.Widget {
     return viewer!;
   }
 
+  /** Prompts the user to put the specified value into a dialog input. */
   protected async dlgInputAction(dlg: DG.Dialog, instructions: string, caption: string, value: string) {
     const inp = dlg.inputs.filter((input: DG.InputBase) => input.caption == caption)[0];
     if (inp == null) return;
@@ -242,5 +247,21 @@ export abstract class Tutorial extends DG.Widget {
     })), hint);
 
     return dialog!;
+  }
+
+  /** Prompts the user to select a menu item in the context menu. */
+  protected async contextMenuAction(instructions: string, label: string, hint: HTMLElement | null = null): Promise<void> {
+    const commandClick =  new Promise<void>((resolve, reject) => {
+      const sub = grok.events.onContextMenu.subscribe((data) => {
+        data.args.menu.onContextMenuItemClick.pipe(
+          filter((mi) => (new DG.Menu(mi)).toString() === label),
+          first()).subscribe((_: any) => {
+            sub.unsubscribe();
+            resolve();
+          });
+      });
+    });
+
+    await this.action(instructions, commandClick, hint);
   }
 }
