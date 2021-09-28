@@ -1,7 +1,7 @@
 import {VIEW_TYPE, VIEWER, ViewerType} from './const';
 import {DataFrame} from './dataframe.js';
 import * as ui from '../ui';
-import {ScatterPlotViewer, Viewer} from './viewer';
+import {Viewer} from './viewer';
 import {DockNode, DockManager} from './docking';
 import {Grid} from './grid';
 import {Menu, ToolboxPage} from './widgets';
@@ -580,8 +580,8 @@ export class TableView extends View {
    *  Sample: {@link https://public.datagrok.ai/js/samples/ui/viewers/types/scatter-plot}
    *  @param options
    *  @returns {Viewer} */
-  scatterPlot(options: object | null = null): ScatterPlotViewer {
-    return <ScatterPlotViewer>this.addViewer(VIEWER.SCATTER_PLOT, options);
+  scatterPlot(options: object | null = null): Viewer {
+    return this.addViewer(VIEWER.SCATTER_PLOT, options);
   }
 
   /**

@@ -133,8 +133,8 @@ export class Functions {
     return toJs(api.grok_GetCurrentCall());
   }
 
-  get onBeforeRunAction(): Observable<FuncCall> { return __obs('d4-before-run-action'); }
-  get onAfterRunAction(): Observable<FuncCall> { return __obs('d4-after-run-action'); }
+  get onBeforeRunAction(): Observable<any> { return __obs('d4-before-run-action'); }
+  get onAfterRunAction(): Observable<any> { return __obs('d4-after-run-action'); }
 }
 
 export class Context {
