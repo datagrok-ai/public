@@ -156,10 +156,12 @@ progress[value]::-webkit-progress-value::after {
 	background: rgb(255 162 74);
 	border-radius: 50%;
 	box-shadow: 0 0 0 0 rgba(255, 162, 74,.5);
-	margin: -10px 0px 0px -10px;
+	margin-top: -10px;
+    margin-left: -10px;
 	height: 5px;
 	width: 5px;
     position: fixed;
+    z-index: 1;
 	transform: scale(1);
 	animation: pulse-white 1.25s infinite;
 }

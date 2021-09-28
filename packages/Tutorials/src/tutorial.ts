@@ -6,6 +6,8 @@ import { fromEvent, Observable } from 'rxjs';
 import { filter, first, map } from 'rxjs/operators';
 import { _package } from './package';
 import { Track, TutorialRunner } from './track';
+import { View } from 'datagrok-api/dg';
+import { node } from 'webpack';
 
 
 /** A base class for tutorials */
@@ -129,14 +131,27 @@ export abstract class Tutorial extends DG.Widget {
     hint?.classList.add('tutorials-target-hint');
     let hintIndicator = ui.element('div');
     hintIndicator.classList = 'blob';
-    
-    let x = $(hint).offset()?.left;
-    let y = $(hint).offset()?.top;
-    
-    hintIndicator.style.left = x;
-    hintIndicator.style.top = y;
-    
+  
+    let width = hint ? hint.clientWidth/2 : 0;
+    let height = hint ? hint.clientHeight/2 : 0;
+
+    console.clear();
+    console.log($(hint).css('position'));
+
+
+    let hintPosition = $(hint).css('position');
+
+    if(hintPosition == 'absolute')
+      $(hintIndicator).css('left','-10px');
+
+    if(hintPosition == 'static'){
+      $(hintIndicator).css('margin-left','-10px');
+      $(hintIndicator).css('margin-top',-height);  
+    }
+
     hint?.append(hintIndicator);
+   // $(hintIndicator).css('margin-left', width);
+   // $(hintIndicator).css('margin-top', -height);
 
     const instructionDiv = ui.divText(instructions, 'grok-tutorial-entry-instruction');
     const instructionIndicator = ui.div([],'grok-tutorial-entry-indicator')
