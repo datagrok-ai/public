@@ -13,7 +13,9 @@ import {AdverseEventHandler} from './panels/adverse-event-handler';
 import {LaboratoryView} from './views/laboratory-view';
 import {AERiskAssessmentView} from './views/ae-risk-assessment-view';
 import {SurvivalAnalysisView} from './views/survival-analysis-view';
-import { AdditionalView } from './views/additional-view';
+import { BoxPlotsView } from './views/boxplots-view';
+import { MatrixesView } from './views/matrixes-view';
+import { createPropertyPanel } from './panels/panels-service';
 
 export let _package = new DG.Package();
 
@@ -50,32 +52,18 @@ let submissionValueCol: DG.Column;
 let submissionValues = [];
 
 //name: SDTM Summary
-//tags: panel, widgets
-//input: dataframe df
+//tags: panel
 //output: widget result
-//condition: df.tags.get("sdtm") == "true"
-export function sdtmSummaryPanel(df: DG.DataFrame): DG.Widget {
-  let domain = df.getTag('sdtm-domain');
-  let domainUpper = domain.toUpperCase();
-  let text = `SDTM domain: ${domainUpper}\n`;
-  for (let [c, v] of Object.entries(meta.classes)) {
-    if (v[domainUpper]) text += `${v[domainUpper]}\nClass: ${c}\n`;
-  }
-  for (let column of df.columns) {
-    let name = column.name;
-    let variable = meta.domains[domain][name];
-    text += `${name} ${variable ? checkType(column, variable) ?
-      'valid' : 'invalid' : 'unknown variable'}\n`;
-    if (variable && variable.rule) text += `Passed tests: ${applyRule(column, variable)}\n`;
-  }
-  return new DG.Widget(ui.divText(text));
+//condition: true
+export function sdtmSummaryPanel(): DG.Widget {
+  return new DG.Widget(ui.divText('test'));
 }
 
 //name: SDTM Variable
 //tags: panel, widgets
 //input: column varCol
-//output: widget result
-//condition: t.tags.get("sdtm") == "true"
+//output: view result
+//condition: true
 export function sdtmVariablePanel(varCol: DG.Column): DG.Widget {
   let domain = meta.domains[varCol.dataFrame.getTag('sdtm-domain')];
   let variable = domain[varCol.name];
@@ -143,20 +131,35 @@ export async function clinicalCaseApp(): Promise<any> {
     grok.shell.addView(view);
     return view;
   }
-  let summary = <StudySummaryView>addView(new StudySummaryView('Summary'));
-  addView(new TimelinesView('Timelines'));
-  addView(new PatientProfileView('Patient Profile'));
-  addView(new AdverseEventsView('Adverse Events'));
-  summary.validationView = addView(new ValidationView(summary.errorsByDomain, 'Validation'));
-  addView(new LaboratoryView('Laboratory'));
-  addView(new AERiskAssessmentView('AE Risk Assessment'));
-  addView(new SurvivalAnalysisView('Survival Analysis'));
-  addView(new AdditionalView('Additional'));
+
+  const views = [];
+
+  views.push(<StudySummaryView>addView(new StudySummaryView('Summary')));
+  views.push(<TimelinesView>addView(new TimelinesView('Timelines')));
+  views.push(<PatientProfileView>addView(new PatientProfileView('Patient Profile')));
+  views.push(<AdverseEventsView>addView(new AdverseEventsView('Adverse Events')));
+  views.push(<LaboratoryView>addView(new LaboratoryView('Laboratory')));
+  views.push(<AERiskAssessmentView>addView(new AERiskAssessmentView('AE Risk Assessment')));
+  views.push(<SurvivalAnalysisView>addView(new SurvivalAnalysisView('Survival Analysis')));
+  views.push(<BoxPlotsView>addView(new BoxPlotsView('Box Plots')));
+  //views.push(<MatrixesView>addView(new MatrixesView('Correlation Matrix')));
   DG.ObjectHandler.register(new AdverseEventHandler());
 
+  let summary = views.find(it => it.name === 'Summary');
+  summary.validationView = addView(new ValidationView(summary.errorsByDomain, 'Validation'));
+  views.push(summary.validationView);
+
   grok.shell.v = summary;
+  createPropertyPanel(summary);
   // showStudySummary();
   // showLabs();
+
+  grok.events.onCurrentViewChanged.subscribe((layout) => {
+    setTimeout(() => {
+      const obj = views.find(it => it.name === grok.shell.v.name);
+      createPropertyPanel(obj);
+    }, 100)
+  });
 }
 
 //tags: autostart
@@ -233,3 +236,4 @@ export function showLabs(): void {
     ui.divText('Labs view content'),
   ]);
 }
+

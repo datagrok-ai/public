@@ -59,9 +59,11 @@ export class MPUtils {
       t.allCats = allCats;
       t.tableName = descr.tableName;
       t.yType = 'value';
-      t.edit = descr.edit;
+      t.comboEdit = descr.comboEdit;
+      t.multiEdit = descr.multiEdit;
       t.extraFields = descr.extraFields;
       t.multiLineFieldIndex = descr.multiLineFieldIndex;
+      t.showLegend = descr.showLegend;
       r.push(t);
     }
     return r;

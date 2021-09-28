@@ -57,7 +57,8 @@ export class MultiPlotViewer extends DG.JsViewer {
   typeComboElements : HTMLElement[] = [];
   showHideElements : HTMLElement[] = [];
   closeElements : HTMLElement[] = [];
-  editElements: HTMLElement[] = [];
+  multiEditElements: HTMLElement[] = [];
+  comboEditElements: HTMLElement[] = [];
   categoryCombos : HTMLElement[] = [];
   plots = [];
   box: DOMRect;
@@ -170,6 +171,8 @@ export class MultiPlotViewer extends DG.JsViewer {
         'height': heightData[i].titleHeight,
         'fontSize': (parseFloat(this.defaultTitleHeight) * .6),
       };
+      this.echartOptions.legend[i].top = (heightData[i].titleTop) + 'px'
+
       if (this.typeComboElements[i]) {
         this.typeComboElements[i].style.top = heightData[i].titleTop + this.controlsTopShift + 'px';
       }
@@ -182,13 +185,15 @@ export class MultiPlotViewer extends DG.JsViewer {
         this.closeElements[i].style.top = heightData[i].titleTop + 10 + this.controlsTopShift + 'px';
       }
 
-      if (this.editElements[i]) {
-        if(this.plots[i].edit.multi){
-          this.editElements[i].style.top = heightData[i].titleTop + 7 + this.controlsTopShift + 'px';
-        } else {
-          this.editElements[i].style.top = heightData[i].titleTop + this.controlsTopShift + 'px';
-        }
+      if (this.multiEditElements[i]) {
+          this.multiEditElements[i].style.top = heightData[i].titleTop + 7 + this.controlsTopShift + 'px';
+
       }
+
+      if (this.comboEditElements[i]) {
+        this.comboEditElements[i].style.top = heightData[i].titleTop + this.controlsTopShift + 'px';
+
+    }
 
       if (this.plots[i].categCombo) {
         this.plots[i].categCombo.root.style.top = heightData[i].titleTop + 3 + this.controlsTopShift + 'px';
@@ -227,6 +232,10 @@ export class MultiPlotViewer extends DG.JsViewer {
       const plot = this.plots[i];
       this.echartOptions.title[i].left = '10px';
       this.echartOptions.title[i].text = this.plots[i].title;
+      this.echartOptions.legend[i].data = plot.currentCat;
+      this.echartOptions.legend[i].type = 'scroll';
+      this.echartOptions.legend[i].show = !!plot.showLegend;
+      this.echartOptions.legend[i].width = '400px';
 
       if (!this.plots[i].show) continue;
       if (plot.leftTitle) {
@@ -257,11 +266,11 @@ export class MultiPlotViewer extends DG.JsViewer {
 
 
       if(plot.multiLineFieldIndex && plot.series.data.length){
-        plot.series.data.forEach(item => {
-          this.echartOptions.series.push(this.getCurrentSeries(plot, visibleIndex, i, plot.series.type, item))
+        plot.series.data.forEach((item, index) => {
+          this.echartOptions.series.push(this.getCurrentSeries(plot, visibleIndex, i, plot.series.type, plot.currentCat[index], item))
         })
       } else {
-        this.echartOptions.series.push(this.getCurrentSeries(plot, visibleIndex, i, plot.series.type, plot.series.data));
+        this.echartOptions.series.push(this.getCurrentSeries(plot, visibleIndex, i, plot.series.type, plot.currentCat, plot.series.data));
       }
 
       this.visibleIndexes.push(i);
@@ -285,8 +294,9 @@ export class MultiPlotViewer extends DG.JsViewer {
   } // updatePlots
 
 
-  getCurrentSeries(plot: any, visibleIndex: number, i: number, type: string, data: any) {
+  getCurrentSeries(plot: any, visibleIndex: number, i: number, type: string, name: string, data: any) {
     let currentSeries = {
+      name: name,
       type: type,
       show: plot.show,
       large: true,
@@ -423,6 +433,7 @@ export class MultiPlotViewer extends DG.JsViewer {
 
     this.echartOptions = {
       title: createEmptyObjects(this.plots.length),
+      legend: createEmptyObjects(this.plots.length),
       tooltip: {
         trigger: 'axis',
         showContent: false,
@@ -717,7 +728,8 @@ export class MultiPlotViewer extends DG.JsViewer {
     this.typeComboElements.map((e) => { if (e) e.remove(); });
     this.showHideElements.map((e) => e.remove());
     this.closeElements.map((e) => e.remove());
-    this.editElements.map((e) => { if (e) e.remove(); });
+    this.multiEditElements.map((e) => { if (e) e.remove(); });
+    this.comboEditElements.map((e) => { if (e) e.remove(); });
   }
 
   setControlsVisibility() : void {
@@ -732,7 +744,12 @@ export class MultiPlotViewer extends DG.JsViewer {
     this.closeElements.map((e) => {
       e.style.visibility = this.showControls ? 'visible' : 'hidden';
     });
-    this.editElements.map((e) => {
+    this.multiEditElements.map((e) => {
+      if(e){
+        e.style.visibility = this.showControls ? 'visible' : 'hidden';
+      }
+    });
+    this.comboEditElements.map((e) => {
       if(e){
         e.style.visibility = this.showControls ? 'visible' : 'hidden';
       }
@@ -811,49 +828,65 @@ export class MultiPlotViewer extends DG.JsViewer {
     }
 
     // create edit icons
-    this.editElements = [];
+    this.multiEditElements = [];
     for (let i = 0; i < this.plots.length; i++) {
-      if (this.plots[ i ].edit) {
-        if (this.plots[ i ].edit.multi) {
-          const inputEdit = ui.icons.settings(() => {
-            let labValuesMultiChoices = ui.multiChoiceInput('', this.plots[ i ].edit.selectedValues, this.plots[ i ].edit.values)
-            labValuesMultiChoices.onChanged((v) => {
-              this.plots[ i ].edit.selectedValues = labValuesMultiChoices.value;
-            });
-            //@ts-ignore
-            labValuesMultiChoices.input.style.maxWidth = '100%';
-            //@ts-ignore
-            labValuesMultiChoices.input.style.maxHeight = '100%';
-            ui.dialog({ title: 'Select values' })
-              .add(ui.div([ labValuesMultiChoices ], { style: { width: '400px', height: '300px' } }))
-              .onOK(() => {
-                this.updatePlotByCategory(i, this.plots[ i ].edit.selectedValues, false);
-              })
-              .show();
-          }, 'Edit values')
-          inputEdit.style.right = '100px';
-          inputEdit.style.position = 'absolute';
-          inputEdit.style.top = (40 * i) + 'px';
-          inputEdit.style.flexDirection = 'row';
-          this.root.appendChild(inputEdit);
-          this.editElements.push(inputEdit);
-         // this.updatePlotByCategory(i, this.plots[ i ].edit.selectedValues, false);
-        } else {
-          const inputEdit = ui.choiceInput('Value', this.plots[ i ].edit.selectedValues, this.plots[ i ].edit.values);
-          inputEdit.onChanged((v) => {
-            this.plots[ i ].edit.selectedValues = inputEdit.value;
-            this.updatePlotByCategory(i, this.plots[ i ].edit.selectedValues, true);
+      if (this.plots[ i ].multiEdit) {
+        const inputEdit = ui.icons.settings(() => {
+          let labValuesMultiChoices = ui.multiChoiceInput('', this.plots[ i ].multiEdit.selectedValues, this.plots[ i ].multiEdit.options)
+          labValuesMultiChoices.onChanged((v) => {
+            this.plots[ i ].multiEdit.selectedValues = labValuesMultiChoices.value;
           });
-          inputEdit.root.style.right = '100px';
-          inputEdit.root.style.position = 'absolute';
-          inputEdit.root.style.top = (40 * i) + 'px';
-          inputEdit.root.style.flexDirection = 'row';
-          this.root.appendChild(inputEdit.root);
-          this.editElements.push(inputEdit.root);
-        //  this.updatePlotByCategory(i, this.plots[ i ].edit.selectedValues, true);
-        }
+          //@ts-ignore
+          labValuesMultiChoices.input.style.maxWidth = '100%';
+          //@ts-ignore
+          labValuesMultiChoices.input.style.maxHeight = '100%';
+          ui.dialog({ title: 'Select values' })
+            .add(ui.div([ labValuesMultiChoices ], { style: { width: '400px', height: '300px' } }))
+            .onOK(() => {
+              if(this.plots[ i ].multiEdit.editValue === 'category'){
+                this.updatePlotByCategory(i, this.plots[ i ].multiEdit.selectedValues, false);
+              }
+            })
+            .show();
+        }, 'Edit values')
+        inputEdit.style.right = '100px';
+        inputEdit.style.position = 'absolute';
+        inputEdit.style.top = (40 * i) + 'px';
+        inputEdit.style.flexDirection = 'row';
+        this.root.appendChild(inputEdit);
+        this.multiEditElements.push(inputEdit);
+        // this.updatePlotByCategory(i, this.plots[ i ].edit.selectedValues, false);
       } else {
-        this.editElements.push(null);
+        this.multiEditElements.push(null);
+      }
+    }
+
+
+    // create edit comboboxes
+    this.comboEditElements = [];
+    for (let i = 0; i < this.plots.length; i++) {
+      if (this.plots[ i ].comboEdit) {
+        const inputEdit = ui.choiceInput(this.plots[ i ].comboEdit.editName,
+          this.plots[ i ].comboEdit.selectedValue,
+          this.plots[ i ].comboEdit.options);
+        inputEdit.onChanged((v) => {
+          this.plots[ i ].comboEdit.selectedValue = inputEdit.value;
+          if(this.plots[ i ].comboEdit.editValue === 'category') {
+            this.updatePlotByCategory(i, this.plots[ i ].comboEdit.selectedValue, true);
+          }
+          if(this.plots[ i ].comboEdit.editValue === 'y') {
+            this.updatePlotByYAxis(i, this.plots[ i ].comboEdit.values[this.plots[ i ].comboEdit.selectedValue]);
+          }
+        });
+        inputEdit.root.style.right = '130px';
+        inputEdit.root.style.position = 'absolute';
+        inputEdit.root.style.top = (40 * i) + 'px';
+        inputEdit.root.style.flexDirection = 'row';
+        this.root.appendChild(inputEdit.root);
+        this.comboEditElements.push(inputEdit.root);
+        //  this.updatePlotByCategory(i, this.plots[ i ].edit.selectedValues, true);
+      } else {
+        this.comboEditElements.push(null);
       }
     }
 
@@ -892,6 +925,11 @@ export class MultiPlotViewer extends DG.JsViewer {
     this.render();
   }
 
+  updatePlotByYAxis(plotIndex: number, yAxis: any){
+    this.plots[plotIndex].y = yAxis;
+    this.updateFilter();
+    this.render();
+  }
 
   render(): void {
     console.log('set echart options: ', this.echartOptions);
