@@ -1,7 +1,10 @@
+export const CLIN_TRIAL_GOV_SEARCH = 'https://clinicaltrials.gov/ct2/results?term=';
+export const NCTID_FIELD = 'NCTId';
+
 export class HttpService {
 
     clinTrialsGovUrl = 'https://clinicaltrials.gov/api/query/';
-    studyFields = ['NCTId','Condition','BriefTitle','OrgFullName','Phase','StartDate','CompletionDate','BriefSummary'];
+    studyFields = [NCTID_FIELD,'Condition','BriefTitle','OrgFullName','Phase','StartDate','CompletionDate','BriefSummary'];
     coverage = 'FullMatch';
     searchArea = 'OrgStudyId';
     format = 'JSON';
