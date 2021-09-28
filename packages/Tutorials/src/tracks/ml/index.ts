@@ -1,4 +1,4 @@
-import { Track } from '../../tutorial';
+import { Track } from '../../track';
 import { PredictiveModelingTutorial } from './tutorials/predictive-modeling';
 import { ScriptingTutorial } from './tutorials/scripting';
 

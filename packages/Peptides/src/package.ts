@@ -6,7 +6,7 @@ import React from 'react';
 import ReactDOM from 'react-dom';
 import {ProteinLogo} from 'logojs-react';
 import {SARViewer} from './peptide-sar-viewer/sar-viewer';
-import {AlignedSequenceCellRenderer} from './utils/cell-renderer';
+import {AlignedSequenceCellRenderer, AminoAcidsCellRenderer} from './utils/cell-renderer';
 import {DataFrame} from 'datagrok-api/dg';
 import {splitAlignedPeptides} from './split-aligned';
 import {StackedBarChart} from './stacked-barchart/stacked-barchart-viewer';
@@ -19,6 +19,8 @@ async function main() {
   //  await grok.data.loadTable('https://datagrok.jnj.com/p/ejaeger.il23peptideidp5562/il-23_peptide_idp-5562');
   const path = _package.webRoot + 'files/' + 'aligned.csv';
   const peptides = (await grok.data.loadTable(path));
+  peptides.name = "Peptides";
+  peptides.setTag("dataType", "peptides");
 
   const view = grok.shell.addTableView(peptides);
   view.name = 'PeptidesView';
@@ -31,7 +33,7 @@ async function main() {
 export function Peptides() {
   const appDescription = ui.info(
     [
-      ui.span(['For more deatails see LINK ']),
+      ui.span(['For more details see LINK ']),
       ui.divText('\n To start the application :', {style: {'font-weight': 'bolder'}}),
       ui.divText('Select the corresponding .csv table with peptide sequences'),
     ], 'Transform peptide sequence data to research insights',
@@ -79,7 +81,7 @@ export function SARViewerHelp(_: DG.Column): DG.Widget {
 }
 
 //name: Analyze Peptides
-//tags: panel, widget
+//tags: panel, widgets
 //input: column col {semType: alignedSequence}
 //output: widget result
 export function analyzePeptides(col: DG.Column): DG.Widget {
@@ -89,10 +91,7 @@ export function analyzePeptides(col: DG.Column): DG.Widget {
     tempCol = column;
     break;
   }
-  const defaultColumn: DG.Column =
-    col.dataFrame.col('Activity') || col.dataFrame.col('activity') ||
-    col.dataFrame.col('IC50') || col.dataFrame.col('ic50') ||
-    tempCol;
+  const defaultColumn: DG.Column = col.dataFrame.col('activity') || col.dataFrame.col('ic50') || tempCol;
 
   const activityColumnChoice = ui.columnInput('Activity column', col.dataFrame, defaultColumn);
   const activityScalingMethod = ui.choiceInput('Activity scaling', 'none', ['none', 'lg', '-lg']);
@@ -100,15 +99,12 @@ export function analyzePeptides(col: DG.Column): DG.Widget {
 
   const startBtn = ui.button('Start', async () => {
     if (activityColumnChoice.value.type === DG.TYPE.FLOAT) {
-      const peptidesView = grok.shell.v;
-      if (peptidesView.type === DG.VIEW_TYPE.TABLE_VIEW) {
-        const options = {
-          'activityColumnColumnName': activityColumnChoice.value.name,
-          'activityScalingMethod': activityScalingMethod.value,
-          // 'showHistogram': showHistogram.value
-        };
-        (<DG.TableView>peptidesView).addViewer('peptide-sar-viewer', options);
-      }
+      const options = {
+        'activityColumnColumnName': activityColumnChoice.value.name,
+        'activityScalingMethod': activityScalingMethod.value,
+        // 'showHistogram': showHistogram.value
+      };
+      (grok.shell.v as DG.TableView).addViewer('peptide-sar-viewer', options);
     } else {
       grok.shell.error('The activity column must be of double type!');
     }
@@ -131,7 +127,6 @@ export function sar(): SARViewer {
 //output: widget result
 
 export async function stackedBarchartWidget(col:DG.Column):Promise<DG.Widget> {
-  console.error('eppÈ');
   const viewer = await col.dataFrame.plot.fromType('StackedBarChartAA');
   const panel = ui.divH([viewer.root]);
   return new DG.Widget(panel);
@@ -152,6 +147,16 @@ export function stackedBarChart():DG.JsViewer {
 export function alignedSequenceCellRenderer() {
   return new AlignedSequenceCellRenderer();
 }
+
+//name: aminoAcidsCellRenderer
+//tags: cellRenderer, cellRenderer-aminoAcids
+//meta-cell-renderer-sem-type: aminoAcids
+//output: grid_cell_renderer result
+export function aminoAcidsCellRenderer() {
+  return new AminoAcidsCellRenderer();
+}
+
+
 
 class Logo extends DG.JsViewer {
   initialized: boolean;
