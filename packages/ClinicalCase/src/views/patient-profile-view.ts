@@ -33,7 +33,10 @@ export class PatientProfileView extends DG.ViewBase {
         show: 1,
         yLabelWidth: 50,
         yLabelOverflow: 'truncate',
-        edit: {multi: true, values: Array.from(getUniqueValues(study.domains.lb, 'LBTEST')), selectedValues: []}
+        multiEdit: { 
+          options: Array.from(getUniqueValues(study.domains.lb, 'LBTEST')), 
+          selectedValues: [], 
+          editValue: 'category'}
       },
 
        //linechart 
@@ -43,8 +46,8 @@ export class PatientProfileView extends DG.ViewBase {
         type: 'line',
         multiLineFieldIndex: 2, //index of field by which to split multiple graphs
         x: 'LBDY',
-        y: 'LAB_DYNAMIC',
-        extraFields: [ 'LBTEST', 'LBORRES', 'LBORNRLO', 'LBORNRHI', 'BL_LBORRES' ],
+        y: 'LAB_DYNAMIC_BL',
+        extraFields: [ 'LBTEST', 'LBORRES', 'LBORNRLO', 'LBORNRHI', 'BL_LBORRES', 'min(LBORRES_FLOAT)', 'max(LBORRES_FLOAT)' ],
         splitByColumnName: 'LBTEST',                    // get categories from this column
         categories: [ '' ],  // fixed categories
         maxLimit: 1,                                    // max number of linecharts 
@@ -54,7 +57,17 @@ export class PatientProfileView extends DG.ViewBase {
         show: 1,
         yLabelWidth: 50,
         yLabelOverflow: 'truncate',
-        edit: {multi: true, values: Array.from(getUniqueValues(study.domains.lb, 'LBTEST')), selectedValues: []}
+        multiEdit: {
+          options: Array.from(getUniqueValues(study.domains.lb, 'LBTEST')), 
+          selectedValues: [], 
+          editValue: 'category'},
+        comboEdit: {
+          options: ['From BL', 'Min/Max'], 
+          selectedValue: 'From BL', 
+          editValue: 'y', 
+          editName: 'Type', 
+          values: {'From BL': 'LAB_DYNAMIC_BL', 'Min/Max': 'LAB_DYNAMIC_MIN_MAX'}},
+        showLegend: true
       }, 
 
       // timeLines
@@ -124,18 +137,15 @@ export class PatientProfileView extends DG.ViewBase {
     let patientIds = Array.from(getUniqueValues(study.domains.dm, 'USUBJID'));
     let patienIdBoxPlot = ui.choiceInput('', patientIds[ 0 ], patientIds);
     patienIdBoxPlot.onChanged((v) => {
-      this.createTablesToAttach(patienIdBoxPlot.value);
+      this.updateTablesToAttach(patienIdBoxPlot.value);
       this.attachTablesToMultiplot(this.multiplot_lb_ae_ex_cm, this.options_lb_ae_ex_cm, [ 'lb', 'ae', 'ex', 'cm' ]);
-      this.multiplot_lb_ae_ex_cm.updatePlotByCategory(1, this.options_lb_ae_ex_cm.series[1].edit.selectedValues, true);
-      this.multiplot_lb_ae_ex_cm.updatePlotByCategory(0, this.options_lb_ae_ex_cm.series[0].edit.selectedValues, false);
+      this.multiplot_lb_ae_ex_cm.updatePlotByCategory(1, this.options_lb_ae_ex_cm.series[1].multiEdit.selectedValues, true);
+      this.multiplot_lb_ae_ex_cm.updatePlotByCategory(0, this.options_lb_ae_ex_cm.series[0].multiEdit.selectedValues, false);
     });
 
 
-    this.createTablesToAttach(patientIds[ 0 ]);
-    addColumnWithDrugPlusDosage(this.tables[ 'ex' ], 'EXTRT', 'EXDOSE', 'EXDOSU', 'EXTRT_WITH_DOSE');
-    this.options_lb_ae_ex_cm['xAxisMinMax'] = this.extractMinAndMaxValuesForXAxis();
-    labDynamicComparedToBaseline(this.tables[ 'lb' ],  this.options_lb_ae_ex_cm['xAxisMinMax']['minX'], 'LAB_DYNAMIC');
-    //labDynamicComparedToMinMax(this.tables[ 'lb' ], 'LAB_DYNAMIC')
+    this.createTablesToAttach();
+    this.updateTablesToAttach(patientIds[ 0 ]);
 
 
     this.tables[ 'ae' ].plot.fromType('MultiPlot', {
@@ -144,7 +154,7 @@ export class PatientProfileView extends DG.ViewBase {
 
       this.multiplot_lb_ae_ex_cm = v;
       this.attachTablesToMultiplot(this.multiplot_lb_ae_ex_cm, this.options_lb_ae_ex_cm, [ 'lb', 'ae', 'ex', 'cm' ]);
-      this.multiplot_lb_ae_ex_cm.updatePlotByCategory(0, this.options_lb_ae_ex_cm.series[0].edit.selectedValues, false); //to clear scattr plot after creation
+      this.multiplot_lb_ae_ex_cm.updatePlotByCategory(0, this.options_lb_ae_ex_cm.series[0].multiEdit.selectedValues, false); //to clear scattr plot after creation
       this.setRibbonPanels([
         [
           ui.iconFA('chevron-left',()=>{
@@ -196,15 +206,25 @@ export class PatientProfileView extends DG.ViewBase {
     plot.onTableAttached();
   }
 
-  private createTablesToAttach(myId: any) {
+
+  private createTablesToAttach() {
     Object.keys(this.tableNamesAndFields).forEach(name => {
       this.tables[ name ] = study.domains[ name ].clone();
       this.tables[ name ].name = `patient_${name}`;
+    })
+  }
+
+  private updateTablesToAttach(myId: any){
+    Object.keys(this.tableNamesAndFields).forEach(name => {
       this.tables[ name ].filter.init((i) => {
         let row = this.tables[ name ].row(i);
         return row[ 'USUBJID' ] === myId;
       })
     })
+    addColumnWithDrugPlusDosage(this.tables[ 'ex' ], 'EXTRT', 'EXDOSE', 'EXDOSU', 'EXTRT_WITH_DOSE');
+    this.options_lb_ae_ex_cm['xAxisMinMax'] = this.extractMinAndMaxValuesForXAxis();
+    labDynamicComparedToBaseline(this.tables[ 'lb' ],  this.options_lb_ae_ex_cm['xAxisMinMax']['minX'], 'LAB_DYNAMIC_BL');
+    labDynamicComparedToMinMax(this.tables[ 'lb' ], 'LAB_DYNAMIC_MIN_MAX');
   }
 
   private extractMinAndMaxValuesForXAxis() {
