@@ -1,0 +1,27 @@
+{
+	"name": "pubchemapi",
+	"beta": true,
+	"friendlyName": "PubChemApi",
+	"version": "0.0.1",
+	"description": "",
+	"dependencies": {
+		"datagrok-api": "latest",
+		"cash-dom": "latest",
+		"dayjs": "latest"
+	},
+	"devDependencies": {
+		"webpack": "latest",
+		"webpack-cli": "latest"
+	},
+	"scripts": {
+		"install-dependencies": "npm install",
+		"debug-pubchemapi": "grok publish --rebuild",
+		"release-pubchemapi": "grok publish --rebuild --release",
+		"build-pubchemapi": "webpack",
+		"build": "webpack",
+		"debug-pubchemapi-dev": "grok publish dev --rebuild",
+		"release-pubchemapi-dev": "grok publish dev --rebuild --release",
+		"debug-pubchemapi-local": "grok publish local --rebuild",
+		"release-pubchemapi-local": "grok publish local --rebuild --release"
+	}
+}
