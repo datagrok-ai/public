@@ -38,69 +38,7 @@ export class TutorialRunner {
       if (tutorials[i].status == true) {
         completed++;
       }
-<<<<<<< HEAD
-      return completed
-    }
-  
-    constructor(track: Track, onStartTutorial?: (t: Tutorial) => Promise<void>) {
-      let complete:number = 0;
-      let total:number = track.tutorials.length;
-  
-      let progress = ui.element('progress');
-      progress.max = '100';//track.tutorials.length;
-      progress.value = '2';
-  
-      //Container for progress bar details (percents & completed tutorials)
-      let progressDetails = ui.divH([], 'tutorials-track-details');
-  
-      (async () => {
-          complete = await this.getCompleted(track.tutorials);
-          track.completed = complete;
-          if(total !=0){
-            if(complete!=0){  
-                progress.value = 100/total*complete 
-                progressDetails.append(ui.divText(progress.value+'% complete'));
-            }else{   
-            progressDetails.append(ui.divText('0% complete'));     
-            progressDetails.append(ui.divText(complete+' / '+total));
-            }
-          }else{
-            progressDetails.append(ui.divText('0% complete'));
-            progressDetails.append(ui.divText(complete+' / '+total));
-          }
-      })();
-  
-      
-      let trackRoot = ui.divV([
-        ui.divH([ui.h1(track.name)], 'tutorials-track-title'),
-        ui.divH([progress]),
-        progressDetails,
-        ui.divV(track.tutorials.map((t) => {
-          const el = new TutorialCard(t).root;
-          el.addEventListener('click', () => {
-            if (onStartTutorial == null) {
-              this.run(t);
-            } else {
-              onStartTutorial(t);
-            }
-          });
-          return el;
-        })),
-        ui.link('Clear sotrage',()=>{
-          let i = 0;
-          while(track.tutorials[i]){
-           grok.dapi.userDataStorage.remove(Tutorial.DATA_STORAGE_KEY, track.tutorials[i].name);
-           i++;
-          }
-          grok.shell.info('complete');
-         }, '', '')
-      ], 'tutorials-track');
-  
-      trackRoot.setAttribute('data-name', track.name);
-      this.root.append(trackRoot)
-=======
       i++;
->>>>>>> 25630f784ff3a5473a80465a03b1b1acb74259ca
     }
     return completed;
   }

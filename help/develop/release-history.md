@@ -1,6 +1,92 @@
 <!-- TITLE: Release History -->
 <!-- SUBTITLE: -->
 
+# 2021-09-27 Dev build 0.93.33
+
+## Latest Docker Images
+
+* Datagrok: 
+  *  `docker pull datagrok/datagrok:0.93.33`
+  *  `docker pull datagrok/datagrok:latest`
+  
+* [Docker-Compose](admin/docker-compose.md)
+
+## Addressed Issues
+
+* (Bug) Package environment file deploy does not work 
+* #117: PowerPack: PowerSearch: search templates 
+* Support npm repositories 
+* Packages: Ignore JS files if TS present 
+* #121 Chem: Support SMARTS 
+* #84: Scatter Plot: Property to show/hide extreme labels 
+* Fix grok_connect deploy after upgrade 
+* Added user 
+* #122 JS API: RowGroup class 
+* Line Chart: Marker choice 
+* (Bug) Line Chart: There is no Median in the list of aggregations on the chart 
+* (Bug) Bar chart: Viewer view is not refreshed after changing aggregation 
+* (Bug) Legend: Does not appear when selecting a boolean column 
+* (Bug) Scatter Plot: Wrong color definition for boolean column (blue and red). 
+* Bar chart: don't handle a click on _catNamesBox in _inlineCategories mode, handle a click to the left of the bar as full bar click 
+* #123 Chem: Substructure search to intercept SMARTS if MolBlock fails 
+* (Bug) Histogram: Exception if remove column when filter pane (with histogram) open 
+* Bar chart: remove barChartFilter bitset 
+* Line Chart: Ability to show extreme values (min/max, q1/q3. etc.) of each marker (WIP)
+* (Bug) Bar chart: click with ctrl doesn't disable a selected bar 
+* JS API: onContextMenuItemClick 
+* (Bug) JS API: GroupByBuilder.where won't work with an object pattern 
+* Color-coding: support multiple color representations (hex, rgb) in tags for categorical and linear coloring (WIP)
+* (Bug) Filter resets when user recalculates column formula (WIP)
+* DG.Package: methods for working with files 
+* Change endpoints to use new divided cvm images 
+
+
+# 2021-09-27 Dev build 0.93.32
+
+## Latest Docker Images
+
+* Datagrok: 
+  *  `docker pull datagrok/datagrok:0.93.32`
+  *  `docker pull datagrok/datagrok:latest`
+  
+* [Docker-Compose](admin/docker-compose.md)
+
+## Addressed Issues
+
+* Peptides: Added AA cell-renderer, changed sequence cell renderer 
+* update icon 
+* #53 Tutorials package: change the storage structure (refactoring, WIP) 
+* #53 Tutorials package: a proper way to access a tutorial's track (refactoring, WIP) 
+* Closes #119 Chem: Alignment differs for same MolBlocks with different offsets 
+* #53 Tutorials package: css files (refactoring, WIP) 
+* Closes #120 Chem: Rotation flicker when using alignment 
+* Peptides: AA render in sar viewer 
+* #117: PowerPack: PowerSearch: search templates 
+* update tutorials. Add css style 
+* tutorials images 
+* update tutorials 
+* Closes #121 (+ #77). Chem: Support SMARTS 
+* (Bug) Chem: External sketcher, filtering and SMARTS (WIP)
+* Peptides: histogram rework WIP 
+* #53 Tutorials package: code clean-up, hint styling 
+* Peptides: histogram fix WIP 
+* update imgages for tutorials 
+* #122 JS API: RowGroup class 
+* #53 Tutorials package: openDialog method 
+* Peptides: histogram rework and fix 
+* Closes #123 Chem: Substructure search to intercept SMARTS if MolBlock fails 
+* tutorials updates 
+* #53 Tutorials package: cheminformatics track: descriptors 
+* JS API: onContextMenuItemClick 
+* datagrok-tools: adjust lint scripts for recursive directory check 
+* #53 Tutorials package: ability to pass a cusom promise for an action, helper for selecting an item from the context menu, code clean-up 
+* #53 Tutorials package: code clean-up 
+* Chem: Substructure filter 
+* Docker Compose: Remove profiles 
+* (Bug) Filter resets when user recalculates column formula (WIP)
+* Updated public token 
+
+
 # 2021-09-23 Dev build 0.93.31
 
 ## Latest Docker Images

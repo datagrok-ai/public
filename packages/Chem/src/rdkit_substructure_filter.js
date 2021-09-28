@@ -6,37 +6,61 @@
  * */
 class SubstructureFilter extends DG.Filter {
 
-  constructor() {
-    super();
-    this.smiles = '';
-    this.root = ui.div(null, 'grok-chem-substructure-filter');
-    let sketcher = grok.chem.sketcher((smiles, molfile) => {
-      this.smiles = smiles;
-      // this.dataFrame.temp.smarts = smiles;
-      this.dataFrame.rows.requestFilter();
-    })
-    this.root.appendChild(sketcher);
-  }
 
-  attach(dFrame) {
-
-    this.dataFrame = DG.toJs(dFrame);
-    this.column = this.dataFrame.columns.bySemType(DG.SEMTYPE.MOLECULE);
-    this.dataFrame.onRowsFiltering.subscribe((_) => this.applyFilter());
-  }
-
-  applyFilter() {
-    let subMol = rdKitModule.get_mol(this.smiles);
-
-    for (let i of this.dataFrame.filter.getSelectedIndexes()) {
-      let mol = rdKitModule.get_mol(this.column.get(i));
-      let match = mol.get_substruct_match(subMol);
-      if (match === "{}")
-        this.dataFrame.filter.set(i, false, false);
-      mol.delete();
+    constructor() {
+        super();
+        this.WHITE_MOL = `
+  0  0  0  0  0  0  0  0  0  0999 V2000
+M  END
+`;
+        this.molfile = '';
+        this.root = ui.divV([])
+        this.root.appendChild(grok.chem.sketcher((_, molfile) => {
+            this.molfile = molfile;
+            this.dataFrame.rows.requestFilter();
+        }))
     }
 
-    subMol.delete();
-    this.dataFrame.filter.fireChanged();
-  }
+    attach(dFrame) {
+        this.dataFrame = DG.toJs(dFrame);
+        this.column = this.dataFrame.columns.bySemType(DG.SEMTYPE.MOLECULE);
+        let colChoice = ui.columnInput('Column', this.dataFrame, this.column, (col) => {
+            this.column = col
+            this.dataFrame.filter.setAll(true, false)
+            this.dataFrame.rows.requestFilter();
+
+        })
+
+        this.root.appendChild(colChoice.root);
+        this.dataFrame.onRowsFiltering.subscribe((_) => this.applyFilter());
+
+    }
+
+    reset() {
+        this.dataFrame.filter.setAll(true, false)
+        if (this.column.tags['chem-scaffold-filter']) {
+            delete this.column.tags['chem-scaffold-filter'];
+        }
+        this.dataFrame.filter.fireChanged();
+    }
+
+    applyFilter() {
+        if (!this.molfile || this.molfile.endsWith(this.WHITE_MOL)) {
+            this.reset()
+            return;
+        }
+        grok.functions.call('Chem:searchSubstructure',
+            {'molStringsColumn': this.column, 'molString': this.molfile, 'substructLibrary': false})
+            .then((bitset_col) => {
+                this.dataFrame.filter.copyFrom(bitset_col.get(0))
+                this.column.setTag('chem-scaffold-filter', this.molfile)
+                this.dataFrame.filter.fireChanged();
+
+            }).catch((e) => {
+            console.warn(e)
+            this.reset()
+        })
+
+
+    }
 }
