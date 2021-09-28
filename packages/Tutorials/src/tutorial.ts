@@ -132,8 +132,6 @@ export abstract class Tutorial extends DG.Widget {
     
     let x = $(hint).offset()?.left;
     let y = $(hint).offset()?.top;
-
-    console.log('offset - '+x+':'+y);
     
     hintIndicator.style.left = x;
     hintIndicator.style.top = y;
