@@ -1,3 +1,4 @@
+import * as grok from 'datagrok-api/grok';
 import * as ui from 'datagrok-api/ui';
 import * as DG from 'datagrok-api/dg';
 import {describe} from './describe';
@@ -50,6 +51,22 @@ export class SARViewer extends DG.JsViewer {
         $(this.root).empty();
         this.root.appendChild(this.grid.root);
       }
+
+      grok.events.onAccordionConstructed.subscribe((accordion: DG.Accordion) => {
+        if (accordion.context instanceof DG.DataFrame || typeof accordion.context.dataFrame !== 'undefined') {
+          const originalDf: DG.DataFrame = accordion.context instanceof DG.DataFrame ? accordion.context : DG.toJs(accordion.context.dataFrame);
+
+          if (originalDf.getTag('dataType') === 'peptides') {
+            let histPane = accordion.getPane('Distribution');
+            histPane = histPane ? histPane : accordion.addPane('Distribution', () => {
+              return originalDf.plot.histogram({
+                value: `~${this.activityColumnColumnName}Scaled`,
+                'splitColumnName': '~splitCol',
+              }).root;
+            }, true);
+          }
+        }
+      });
     }
   }
 }
