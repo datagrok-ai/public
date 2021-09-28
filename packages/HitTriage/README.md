@@ -5,15 +5,32 @@ decide which compounds should make it to the next stage.
 It does it in a managed, reproducible manner, with the triage
 template consisting of separate steps. 
 
+Technically, HitTriage is a [package](https://datagrok.ai/help/develop/develop#packages) 
+for the [Datagrok](https://datagrok.ai) platform that contains the
+the `HitTriage` application. There are multiple ways to start it:
+* Open the `Apps` pane and double-click on the `HitTriage` app
+* Open it via the direct link: [https://public.datagrok.ai/apps/HitTriage](https://public.datagrok.ai/apps/HitTriage)
+
 There are two outcomes for each project:
 1. Compounds that proceed to the next steps
 2. Rules used to filter out compounds
 
 ## Project Template
 
+Project template defines the structure associated with the following:
+
 * Data Ingestion
+  * Data query + pre-processing
 * Data Expansion
-* Data Storage
+  * Calculated Properties
+  * Data from External Sources
+* Property Filters
+* Outcome Report Format
+* Actions and Triggers (notifications, etc)
+
+The project template is structured and persisted in a way that allows
+capturing of decision and "replaying" the whole pipeline on demand,
+should any step change and new source data appear.
 
 ## Data Access
 
@@ -49,11 +66,48 @@ Templates are stored in the same database.
 
 ## User Interactions
 
+Users would use the built-in Datagrok facilities for filtering
+that allow interactive filtering for both compounds and calculated
+properties. The UI would look like that:
+
+![](images/hit-triage-filtering.png)
+
+Users will be able to filter out compounds manually, with an 
+optional explanation.
+
+Once the filters are setup, a user clicks the "Submit" button, at which point
+both hits and decisions get stored in the database, a report is 
+generated, and a notification is sent to the project team.
+
 ## Capturing Results
 
-There are two kinds of results: molecules annotated with the 
+There are two kinds of results: hits and decisions. 
+Both are stored in the database.
+
+## Advanced Analytics
+
+The following HitTriage-related advanced analytics functionality is available
+out-of-the-box:
+
+* Structure rendering (RDKit or OpenChemLib)
+* Substructure search (either server-side or client-side)
+* Interactive data exploration
+* Clustering 
+* Property Calculators
+* Chemical Space Exploration
+* Dimensionality Reduction (t-SNE, SPE)
+* Multivariate Analysis
+
+In addition, the solution takes advantage of the built-in
+data augmentation system. Whenever a user clicks on a structure,
+the relevant information (assays, projects, dose-response curves, etc)
+gets shown in the property panel on the right.
 
 ## Visualization and Reporting Outcomes
+
+* Built-in [viewers](../../help/visualize/viewers.md)
+* Export to Excel / PDF
+* Share outcomes as URLs
 
 ## Security and Privileges
 
