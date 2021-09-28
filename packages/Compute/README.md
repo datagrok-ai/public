@@ -20,3 +20,33 @@ Scientific model is an arbitrary function with typed inputs and outputs.
 into full-fledged scientific models, providing for easy to use and highly automated
 evaluation and computation environment. In addition, Datagrok platform supports a layout markup,
 so that the model function becomes a GUI-rich application with no manual coding.
+
+## Roadmap
+
+1. Stacked functions
+
+2. Persistent, sharable historical runs
+
+3. Sensitivity analysis
+
+4. Modeling input parameters
+
+5. Outlier detection and annotation
+
+6. Model Repository and discoverability
+
+7. Scalable and asyncronous computations
+
+8. Export and reporting
+
+9. Functions REST endpoints
+
+10. Data annotation
+
+11. Test data for functions
+
+12. Functions versioning
+
+13. Scaling on demand
+
+While most of the above features are implemented in the package, some of them are part of the platform, .
