@@ -129,9 +129,15 @@ export abstract class Tutorial extends DG.Widget {
     hint?.classList.add('tutorials-target-hint');
     let hintIndicator = ui.element('div');
     hintIndicator.classList = 'blob';
+    
+    let x = $(hint).offset()?.left;
+    let y = $(hint).offset()?.top;
 
-    console.log(hint);
-    console.log(hint?.parentNode);
+    console.log('offset - '+x+':'+y);
+    
+    hintIndicator.style.left = x;
+    hintIndicator.style.top = y;
+    
     hint?.append(hintIndicator);
 
     const instructionDiv = ui.divText(instructions, 'grok-tutorial-entry-instruction');
