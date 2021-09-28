@@ -26,8 +26,10 @@ with typed inputs and outputs:
 * Provides for easy to use and highly automated evaluation and computation environment
 * Enables contextual process for Design of Experiment (sensitivity analysis and more)
 
-In addition, Datagrok platform supports a layout markup, so that the model function becomes
+In addition, Datagrok platform supports a UI layout markup, so that the model function becomes
 a GUI-rich application with no manual coding.
+
+Project planning board: [link](https://github.com/datagrok-ai/public/projects/8).
 
 ## Roadmap
 
