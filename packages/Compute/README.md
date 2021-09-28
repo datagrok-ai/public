@@ -33,51 +33,51 @@ a GUI-rich application with no manual coding.
 
 1. UI markup
 
-Annotate function inputs and outputs to produce highly interactive, visually reach GUI:
+  Annotate function inputs and outputs to produce highly interactive, visually reach GUI:
 
-* arrange inputs and outputs in blocks and tabs
-* add captions, units of measure and other information to inputs and outputs
-* automatically produce additional plots with Datagrok
-  [viewers](https://datagrok.ai/help/visualize/viewers)
+  * arrange inputs and outputs in blocks and tabs
+  * add captions, units of measure and other information to inputs and outputs
+  * automatically produce additional plots with Datagrok
+    [viewers](https://datagrok.ai/help/visualize/viewers)
 
 2. Input providers
 
-Produce inputs to functions in-place as outputs of other functions (input providers), including:
+  Produce inputs to functions in-place as outputs of other functions (input providers), including:
 
-* queries to databases
-* dialog-based functions (outlier detection, data annotation)
-* queries to OpenAPI and REST endpoints
-* other computing functions with or without GUI
+  * queries to databases
+  * dialog-based functions (outlier detection, data annotation)
+  * queries to OpenAPI and REST endpoints
+  * other computing functions with or without GUI
 
-These may include UI parts as well. The input provider is specified as part of the Universal UI markup.
+  These may include UI parts as well. The input provider is specified as part of the Universal UI markup.
 
 3. Persistent, sharable historical runs
 
-It is already possible to provide a link to a function (with specified input parameters in
-the URI), which will open a function view and run it.
+  It is already possible to provide a link to a function (with specified input parameters in
+  the URI), which will open a function view and run it.
 
-Once a certain version of a specific function is run with specific inputs, the result should
-be stored in the immutable database log along with the inputs. Later it will be used to verify
-the grounds for decisions made from these calculations.
+  Once a certain version of a specific function is run with specific inputs, the result should
+  be stored in the immutable database log along with the inputs. Later it will be used to verify
+  the grounds for decisions made from these calculations.
 
 4. Sensitivity analysis
 
-* Sample inputs:
-  * by specified number of samples
-  * by a specified distribution or within a range
-  * for a specified set of scalar inputs and/or columns of the matrix input
-* Produce variability analysis for outputs based on the sampled inputs
-* Visualize the results of analysis with Datagrok viewers
+  * Sample inputs:
+    * by specified number of samples
+    * by a specified distribution or within a range
+    * for a specified set of scalar inputs and/or columns of the matrix input
+  * Produce variability analysis for outputs based on the sampled inputs
+  * Visualize the results of analysis with Datagrok viewers
 
 5. Modeling input parameters
 
-Solve an inversion problem: identify input conditions leading to specified output constraints.
+  Solve an inversion problem: identify input conditions leading to specified output constraints.
 
 6. Outlier detection and annotation
 
-* Automatic outliers detection
-* Manual outliers markup and annotation
-* Used as an input provider in other functions
+  * Automatic outliers detection
+  * Manual outliers markup and annotation
+  * Used as an input provider in other functions
 
 7. Model Repository and discoverability
 
