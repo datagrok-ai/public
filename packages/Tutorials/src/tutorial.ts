@@ -130,25 +130,46 @@ export abstract class Tutorial extends DG.Widget {
     hint.classList.add('tutorials-target-hint');
     let hintIndicator = ui.element('div');
     hintIndicator.classList = 'blob';
-  
-    let width = hint ? hint.clientWidth/2 : 0;
-    let height = hint ? hint.clientHeight/2 : 0;
+    hint?.append(hintIndicator);
+
+    let width = hint ? hint.clientWidth : 0;
+    let height = hint ? hint.clientHeight : 0;
+
+    let hintnode = hint?.getBoundingClientRect();
+    let indicatornode = hintIndicator?.getBoundingClientRect();
 
     console.clear();
-    console.log($(hint).css('position'));
+    console.log('hint:'+$(hint).css('position'));
+    console.log('hint top:'+hintnode.top+' left:'+hintnode.left);
+    console.log('indicator top:'+indicatornode.top+' left:'+indicatornode.left);
 
 
     let hintPosition = $(hint).css('position');
 
-    if(hintPosition == 'absolute')
-      $(hintIndicator).css('left','-10px');
-
-    if(hintPosition == 'static'){
-      $(hintIndicator).css('margin-left','-10px');
-      $(hintIndicator).css('margin-top',-height);  
+    if(hintPosition == 'absolute'){
+      $(hintIndicator).css('position','absolute');
+      $(hintIndicator).css('left','0');
+      $(hintIndicator).css('top','0');
+    }
+    if(hintPosition == "relative"){
+      $(hintIndicator).css('position','absolute');
+      $(hintIndicator).css('left','0');
+      $(hintIndicator).css('top','0');
     }
 
-    hint?.append(hintIndicator);
+    if(hintPosition == 'static'){
+      $(hintIndicator).css('position','absolute');
+      if(hintnode.left+1 == indicatornode.left)
+        $(hintIndicator).css('margin-left',0)
+      else
+        $(hintIndicator).css('margin-left',-width)
+      if(hintnode.top+1 == indicatornode.top)
+        $(hintIndicator).css('margin-top',0)
+      else
+        $(hintIndicator).css('margin-top',-height) 
+    }
+
+    
    // $(hintIndicator).css('margin-left', width);
    // $(hintIndicator).css('margin-top', -height);
   }
