@@ -25,6 +25,15 @@ async function main() {
   const view = grok.shell.addTableView(peptides);
   view.name = 'PeptidesView';
 
+  view.grid.onCellRender.subscribe(function (args) {
+    if(args.cell.isColHeader){
+      let textSize = args.g.measureText(args.cell.gridColumn.name);
+      args.g.fillText(args.cell.gridColumn.name, args.bounds.x + (args.bounds.width - textSize.width)/2, args.bounds.y + (textSize.fontBoundingBoxAscent+textSize.fontBoundingBoxDescent)/2);
+      args.g.fillStyle = '#4b4b4a';
+      args.preventDefault();
+    }
+  });
+
   pi.close();
 }
 
@@ -91,7 +100,7 @@ export function analyzePeptides(col: DG.Column): DG.Widget {
     tempCol = column;
     break;
   }
-  const defaultColumn: DG.Column = col.dataFrame.col('activity') || col.dataFrame.col('ic50') || tempCol;
+  const defaultColumn: DG.Column = col.dataFrame.col('activity') || col.dataFrame.col('IC50') || tempCol;
 
   const activityColumnChoice = ui.columnInput('Activity column', col.dataFrame, defaultColumn);
   const activityScalingMethod = ui.choiceInput('Activity scaling', 'none', ['none', 'lg', '-lg']);
@@ -106,7 +115,7 @@ export function analyzePeptides(col: DG.Column): DG.Widget {
       };
       (grok.shell.v as DG.TableView).addViewer('peptide-sar-viewer', options);
     } else {
-      grok.shell.error('The activity column must be of double type!');
+      grok.shell.error('The activity column must be of floating point number type!');
     }
   });
   //showHistogram removed
