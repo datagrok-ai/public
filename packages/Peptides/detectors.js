@@ -3,7 +3,7 @@ class PeptidesPackageDetectors extends DG.Package {
   //input: column col
   //output: string semType
   detectAligned(col) {
-    const regexp = new RegExp('^((\\w+)?-){5,49}\\w+$');
+    const regexp = new RegExp('^((.+)?-){5,49}(\\w|\\(|\\))+$');
     return DG.Detector.sampleCategories(col, (s) => regexp.test(s)) ? 'alignedSequence' : null;
   }
 }

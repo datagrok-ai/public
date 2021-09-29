@@ -13,11 +13,11 @@ import {StackedBarChart} from './stacked-barchart/stacked-barchart-viewer';
 
 export const _package = new DG.Package();
 
-async function main() {
+async function main(chosenFile : string) {
   const pi = DG.TaskBarProgressIndicator.create('Loading Peptides');
   //let peptides =
   //  await grok.data.loadTable('https://datagrok.jnj.com/p/ejaeger.il23peptideidp5562/il-23_peptide_idp-5562');
-  const path = _package.webRoot + 'files/' + 'aligned.csv';
+  const path = _package.webRoot + 'files/' + chosenFile;
   const peptides = (await grok.data.loadTable(path));
   peptides.name = "Peptides";
   peptides.setTag("dataType", "peptides");
@@ -28,7 +28,8 @@ async function main() {
   view.grid.onCellRender.subscribe(function (args) {
     if(args.cell.isColHeader){
       let textSize = args.g.measureText(args.cell.gridColumn.name);
-      args.g.fillText(args.cell.gridColumn.name, args.bounds.x + (args.bounds.width - textSize.width)/2, args.bounds.y + (textSize.fontBoundingBoxAscent+textSize.fontBoundingBoxDescent)/2);
+      args.g.fillText(args.cell.gridColumn.name, args.bounds.x + (args.bounds.width - textSize.width)/2, 
+      args.bounds.y + (textSize.fontBoundingBoxAscent + textSize.fontBoundingBoxDescent));
       args.g.fillStyle = '#4b4b4a';
       args.preventDefault();
     }
@@ -60,7 +61,8 @@ export function Peptides() {
     ui.h2('Choose .csv file'),
     ui.div([
       ui.block25([
-        ui.button('Open demo', () => main(), ''),
+        ui.button('Open simple case demo', () => main('aligned.csv'), ''),
+        ui.button('Open complex case demo', () => main('aligned_2.csv'), '')
       ]),
       ui.block75([annotationViewerDiv]),
     ]),
