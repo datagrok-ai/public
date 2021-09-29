@@ -25,8 +25,17 @@ let multichoiceTableOptions = { 'Adverse events': 'ae', 'Concomitant medication 
 
 export class TimelinesView extends DG.ViewBase {
 
-  selectedOptions = [Object.keys(multichoiceTableOptions)[ 0 ]]
-  selectedDatframes = [Object.values(multichoiceTableOptions)[ 0 ]];
+  options = {
+    subjectColumnName: 'key',
+    startColumnName: 'start',
+    endColumnName: 'end',
+    colorByColumnName: 'domain',
+    eventColumnName: 'event',
+    showEventInTooltip: true
+  }
+
+  selectedOptions = [ Object.keys(multichoiceTableOptions)[ 0 ] ];
+  selectedDatframes = [ Object.values(multichoiceTableOptions)[ 0 ] ];
   timelinesDiv = ui.box();
   filtersDiv = ui.box();
   resultTables: DG.DataFrame;
@@ -98,12 +107,16 @@ export class TimelinesView extends DG.ViewBase {
   private updateTimelinesPlot(){
     this.updateTimelinesTables();
     if(this.resultTables){
-      this.resultTables.plot.fromType(DG.VIEWER.TIMELINES).then((v: any) => {
+      this.resultTables.plot.fromType(DG.VIEWER.TIMELINES, {
+        paramOptions: JSON.stringify(this.options),
+      }).then((v: any) => {
         v.setOptions({
           subjectColumnName: 'key',
           startColumnName: 'start',
           endColumnName: 'end',
           colorByColumnName: 'domain',
+          eventColumnName: 'event',
+          showEventInTooltip: true
         });
         $(v.root).css('position', 'relative')
         v.zoomState = [[0, 10], [0, 10], [90, 100], [90, 100]];
