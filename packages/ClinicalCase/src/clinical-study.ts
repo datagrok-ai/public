@@ -5,6 +5,7 @@ import * as DG from 'datagrok-api/dg';
 import * as meta from './sdtm-meta';
 import { vaidateAEDomain, vaidateDMDomain } from './validation/services/validation-service';
 import { createValidationDataFrame } from './validation/validation-utils';
+import { labDataForCorrelationMatrix } from './data-preparation/data-preparation';
 
 export class ClinicalDomains {
   ae: DG.DataFrame = null;
@@ -75,6 +76,7 @@ export class ClinicalStudy {
   subjectsCount: number;
   sitesCount: number;
   validationResults: DG.DataFrame;
+  labDataForCorelationMatrix: DG.DataFrame;
 
   initFromWorkspace(): void {
     for (let t of grok.shell.tables) {
@@ -99,6 +101,9 @@ export class ClinicalStudy {
   private process(): void {
     if (this.domains.ae != null) {
       this.domains.ae.columns.addNewCalculated('week', 'floor(${AESTDY} / 7)');
+    }
+    if (this.domains.lb != null) {
+    //  this.labDataForCorelationMatrix = labDataForCorrelationMatrix();
     }
   }
 

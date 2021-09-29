@@ -15,7 +15,7 @@ export class DescriptorsTutorial extends Tutorial {
       'These are numerical values that characterize properties of molecules.';
   }
 
-  get steps(){ return 3} //set thew number of steps
+  get steps() { return 3; }
 
   demoTable: string = 'chem/smiles_only.csv';
 
@@ -44,7 +44,7 @@ export class DescriptorsTutorial extends Tutorial {
       .find('label.d4-link-action')
       .filter((idx, el) => el.textContent == 'Chem | Descriptors...')[0];
 
-    await this.openDialog('Click on "Chem | Descriptors..."', 'Descriptors', descriptorsLabel);
+    const dlg = await this.openDialog('Click on "Chem | Descriptors..."', 'Descriptors', descriptorsLabel);
 
     this.describe('The platform supports various groups of descriptors. You can select them ' +
       'either by category or individually. Let\'s compute the average molecular weight and ' +
@@ -56,13 +56,18 @@ export class DescriptorsTutorial extends Tutorial {
       'NumHDonors', 'NumHeteroatoms', 'NumRotatableBonds', 'NumSaturatedCarbocycles',
       'NumSaturatedHeterocycles', 'NumSaturatedRings', 'RingCount'];
 
+    const groupHints = $(dlg.root)
+      .find('.d4-tree-view-group-label')
+      .filter((idx, el) => el.textContent === 'Descriptors' || el.textContent === 'Lipinski')
+      .get();
+
     await this.action('Select "MolWt" ("Descriptors" group) and all descriptors of "Lipinski" group',
       grok.functions.onAfterRunAction.pipe(filter((call) => {
         const inputs = call.inputs.get('descriptors');
         return call.func.name === 'ChemDescriptors' &&
           descriptors.length == inputs.length &&
           descriptors.every((d) => inputs.includes(d));
-      })));
+      })), groupHints);
 
     this.describe('The results of computation are added to the main dataframe. ' +
       'Take some time to examine the findings.');

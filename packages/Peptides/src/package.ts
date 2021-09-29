@@ -13,17 +13,27 @@ import {StackedBarChart} from './stacked-barchart/stacked-barchart-viewer';
 
 export const _package = new DG.Package();
 
-async function main() {
+async function main(chosenFile : string) {
   const pi = DG.TaskBarProgressIndicator.create('Loading Peptides');
   //let peptides =
   //  await grok.data.loadTable('https://datagrok.jnj.com/p/ejaeger.il23peptideidp5562/il-23_peptide_idp-5562');
-  const path = _package.webRoot + 'files/' + 'aligned.csv';
+  const path = _package.webRoot + 'files/' + chosenFile;
   const peptides = (await grok.data.loadTable(path));
   peptides.name = "Peptides";
   peptides.setTag("dataType", "peptides");
 
   const view = grok.shell.addTableView(peptides);
   view.name = 'PeptidesView';
+
+  view.grid.onCellRender.subscribe(function (args) {
+    if(args.cell.isColHeader){
+      let textSize = args.g.measureText(args.cell.gridColumn.name);
+      args.g.fillText(args.cell.gridColumn.name, args.bounds.x + (args.bounds.width - textSize.width)/2, 
+      args.bounds.y + (textSize.fontBoundingBoxAscent + textSize.fontBoundingBoxDescent));
+      args.g.fillStyle = '#4b4b4a';
+      args.preventDefault();
+    }
+  });
 
   pi.close();
 }
@@ -51,7 +61,8 @@ export function Peptides() {
     ui.h2('Choose .csv file'),
     ui.div([
       ui.block25([
-        ui.button('Open demo', () => main(), ''),
+        ui.button('Open simple case demo', () => main('aligned.csv'), ''),
+        ui.button('Open complex case demo', () => main('aligned_2.csv'), '')
       ]),
       ui.block75([annotationViewerDiv]),
     ]),
@@ -91,7 +102,7 @@ export function analyzePeptides(col: DG.Column): DG.Widget {
     tempCol = column;
     break;
   }
-  const defaultColumn: DG.Column = col.dataFrame.col('activity') || col.dataFrame.col('ic50') || tempCol;
+  const defaultColumn: DG.Column = col.dataFrame.col('activity') || col.dataFrame.col('IC50') || tempCol;
 
   const activityColumnChoice = ui.columnInput('Activity column', col.dataFrame, defaultColumn);
   const activityScalingMethod = ui.choiceInput('Activity scaling', 'none', ['none', 'lg', '-lg']);
@@ -109,7 +120,7 @@ export function analyzePeptides(col: DG.Column): DG.Widget {
       };
       (grok.shell.v as DG.TableView).addViewer('peptide-sar-viewer', options);
     } else {
-      grok.shell.error('The activity column must be of double type!');
+      grok.shell.error('The activity column must be of floating point number type!');
     }
   });
 

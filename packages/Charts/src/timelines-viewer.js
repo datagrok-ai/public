@@ -9,6 +9,8 @@ export class TimelinesViewer extends EChartViewer {
     this.startColumnName = this.string('startColumnName');
     this.endColumnName = this.string('endColumnName');
     this.colorByColumnName = this.string('colorByColumnName');
+    this.eventColumnName = this.string('eventColumnName');
+    this.showEventInTooltip = this.bool('showEventInTooltip');
 
     this.marker = this.string('marker', 'circle', { choices: ['circle', 'rect', 'ring', 'diamond'] });
     this.markerSize = this.int('markerSize', 6);
@@ -106,6 +108,9 @@ export class TimelinesViewer extends EChartViewer {
         this.chart.getOption().dataZoom.forEach((z, i) => {
           this.zoomState[i][0] = z.start;
           this.zoomState[i][1] = z.end;
+          if(z.type === 'slider' && Object.keys(z).includes('yAxisIndex')){
+            this.lineWidth = z.end - z.start < 75 ? z.end - z.start < 50 ? 3 : 2 : 1;
+          }
         });
       });
 
@@ -123,15 +128,7 @@ export class TimelinesViewer extends EChartViewer {
         return false;
       }, params.event.event));
 
-      this.chart.on('mouseover', params => ui.tooltip.showRowGroup(this.dataFrame, i => {
-        if (params.componentType === 'yAxis') return this.subjects[this.subjBuf[i]] === params.value;
-        if (params.componentType === 'series') {
-          return params.value[0] === this.subjects[this.subjBuf[i]] &&
-                 params.value[1] === (this.startCol.isNone(i) ? null : this.startBuf[i]) &&
-                 params.value[2] === (this.endCol.isNone(i) ? null : this.endBuf[i]);
-        }
-        return false;
-      }, params.event.event.x + this.tooltipOffset, params.event.event.y + this.tooltipOffset));
+      this.chart.on('mouseover', params => this.getTooltip(params));
 
       this.chart.on('mouseout', () => ui.tooltip.hide());
 
@@ -162,8 +159,33 @@ export class TimelinesViewer extends EChartViewer {
       this.colorCats = this.colorByCol.categories;
       this.colorBuf = this.colorByCol.getRawData();
       this.colorMap = this.getColorMap();
-    }
+    } else if (property.name === 'eventColumnName') {
+      this.eventCol = this.dataFrame.getCol(property.get());
+      this.eventBuf = this.eventCol.getRawData();
+  } 
     this.render();
+  }
+
+  getTooltip(params) {
+    if (!this.showEventInTooltip) {
+      ui.tooltip.showRowGroup(this.dataFrame, i => {
+        if (params.componentType === 'yAxis') return this.subjects[this.subjBuf[i]] === params.value;
+        if (params.componentType === 'series') {
+          return params.value[0] === this.subjects[this.subjBuf[i]] &&
+            params.value[1] === (this.startCol.isNone(i) ? null : this.startBuf[i]) &&
+            params.value[2] === (this.endCol.isNone(i) ? null : this.endBuf[i]);
+        }
+        return false;
+      }, params.event.event.x + this.tooltipOffset, params.event.event.y + this.tooltipOffset)
+    } else {
+      let tooltipContent = params.componentType === 'yAxis' ? ui.div(`${params.value}`) :
+        ui.divV([ui.div(`subjId: ${params.value[0]}`),
+        ui.div(`event: ${params.value[4]}`),
+        ui.div(`start: ${params.value[1]}`),
+        ui.div(`end: ${params.value[2]}`),
+        ])
+      ui.tooltip.show(tooltipContent, params.event.event.x + this.tooltipOffset, params.event.event.y + this.tooltipOffset);
+    }
   }
 
   getColorMap() {
@@ -192,15 +214,18 @@ export class TimelinesViewer extends EChartViewer {
     this.startColumnName = matches[1].length ? matches[1][0] : intColumns[0].name;
     this.endColumnName = matches[2].length ? matches[2][0] : intColumns[intColumns.length - 1].name;
     this.colorByColumnName = matches[3].length ? matches[3][0] : strColumns[0].name;
+    this.eventColumnName = 'event';
 
-    [this.subjectCol, this.startCol, this.endCol, this.colorByCol] = this.dataFrame.columns.byNames([
-      this.subjectColumnName, this.startColumnName, this.endColumnName, this.colorByColumnName
+    [this.subjectCol, this.startCol, this.endCol, this.colorByCol, this.eventCol] = this.dataFrame.columns.byNames([
+      this.subjectColumnName, this.startColumnName, this.endColumnName, this.colorByColumnName, this.eventColumnName
     ]);
 
     this.subjects = this.subjectCol.categories;
     this.subjBuf = this.subjectCol.getRawData();
     this.startBuf = this.startCol.getRawData();
     this.endBuf = this.endCol.getRawData();
+    this.eventCats = this.eventCol.categories;
+    this.eventBuf = this.eventCol.getRawData();
     this.colorCats = this.colorByCol.categories;
     this.colorBuf = this.colorByCol.getRawData();
     this.colorMap = this.getColorMap();
@@ -340,12 +365,14 @@ export class TimelinesViewer extends EChartViewer {
       const start = getTime(i, this.startCol, this.startBuf);
       const end = getTime(i, this.endCol, this.endBuf);
       if (start === end && end === null) continue;
-      const event = this.colorCats[this.colorBuf[i]];
-      const key = `${id}-${start}-${end}`;
+      const color = this.colorCats[this.colorBuf[i]];
+      const event = this.eventCats[this.eventBuf[i]];
+      const key = `${id}-${event}-${start}-${end}`;
       if (tempObj.hasOwnProperty(key)) {
-        tempObj[key][3].push(event);
+        tempObj[key][3].push(color);
+        tempObj[key][4].push(event);
       } else {
-        tempObj[key] = [id, start, end, [event], this.dataFrame.selection.get(i)];
+        tempObj[key] = [id, start, end, [color], [event], this.dataFrame.selection.get(i)];
       }
     }
 
