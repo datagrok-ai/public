@@ -28,8 +28,12 @@
 #        bash grok_connect.sh shell build -q examples/query.json
 #        bash grok_connect.sh shell -q examples/query.json
 #
-DART_SDK=/usr/lib/dart
-DART_PUB=${DART_SDK}/bin/pub
+DART_SDK="$(which dart)"
+DART_PUB=$(which pub)
+
+
+current_dir=$(pwd)
+GROK_SRC="${GROK_SRC:=$current_dir/../../}"
 
 # Base project directory and executable
 GROK_CONNECT_DIR=grok_connect
@@ -52,16 +56,16 @@ else
 
     if [ "$1" == "test" ]; then
         # Get dart test dependencies
-        cd ../../ddt
+        cd $GROK_SRC/ddt
         ${DART_PUB} get
 
-        cd ../grok_shared
+        cd $GROK_SRC/grok_shared
         ${DART_PUB} get
 
-        cd ../ddt/bin/serialization_test
+        cd $GROK_SRC/ddt/bin/serialization_test
         ${DART_PUB} get
 
-        cd ../../../public/connectors
+        cd $GROK_SRC/public/connectors
 
         # Build project
         mvn package
@@ -71,6 +75,7 @@ else
     fi
 
     # Pack into zip
+    cd $GROK_SRC/public/connectors || exit 1
     ZIP_TMP_DIR=${TARGET_DIR}/grok_connect
     mkdir ${ZIP_TMP_DIR}
     echo "java -Xmx4g -classpath lib/*:${GROK_CONNECT} grok_connect.GrokConnect" > ${ZIP_TMP_DIR}/run_grok_connect.sh

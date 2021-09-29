@@ -1,7 +1,7 @@
 import * as grok from 'datagrok-api/grok';
 import * as DG from 'datagrok-api/dg';
 import { ALT, AP, AST, BILIRUBIN, TREATMENT_ARM } from '../constants';
-import { addTreatmentArm, dateDifferenceInDays, filterBooleanColumn, filterNulls } from './utils';
+import { addTreatmentArm, dateDifferenceInDays, filterBooleanColumn, filterNulls, getUniqueValues } from './utils';
 import { study } from '../clinical-study';
 
 export function createMaxValuesDataForHysLaw(dataframe, aggregatedColName, filerValue){ 
@@ -49,14 +49,22 @@ export function createBaselineEndpointDataframe(lb: DG.DataFrame,
   epVisit: string, 
   visitCol: string,
   blNumColumn: string,
-  epNumColumn: string) {
+  epNumColumn = null) {
   let condition = `LBTEST = ${labValue} and ${visitCol} IN`;
   let filteredDataBaseline = createFilteredFloatValuesDataframe(lb, `${condition} (${blVisit})`, [ 'USUBJID', 'LBORRES', 'LBORNRLO', 'LBORNRHI', visitCol ], blNumColumn, 'LBORRES');
-  let filteredDataEndpoint = createFilteredFloatValuesDataframe(lb, `${condition} (${epVisit})`, [ 'USUBJID', 'LBORRES', 'LBORNRLO', 'LBORNRHI', visitCol ], epNumColumn, 'LBORRES');
-  let joined = grok.data.joinTables(filteredDataBaseline, filteredDataEndpoint,
+  let finalDf;
+  let columnsToEXtract = [];
+  if(epVisit){
+    let filteredDataEndpoint = createFilteredFloatValuesDataframe(lb, `${condition} (${epVisit})`, [ 'USUBJID', 'LBORRES', 'LBORNRLO', 'LBORNRHI', visitCol ], epNumColumn, 'LBORRES');
+    finalDf = grok.data.joinTables(filteredDataBaseline, filteredDataEndpoint,
     [ 'USUBJID' ], [ 'USUBJID' ], [ 'USUBJID', blNumColumn, 'LBORNRLO', 'LBORNRHI' ], [ epNumColumn ],
     DG.JOIN_TYPE.LEFT, false);
-  let withTreatmentArm = addTreatmentArm(joined, dm, [ 'USUBJID', blNumColumn, epNumColumn, 'LBORNRLO', 'LBORNRHI' ]);  
+    columnsToEXtract = [ 'USUBJID', blNumColumn, epNumColumn, 'LBORNRLO', 'LBORNRHI' ];
+  } else {
+    finalDf = filteredDataBaseline;
+    columnsToEXtract = [ 'USUBJID', blNumColumn, 'LBORNRLO', 'LBORNRHI' ];
+  }
+  let withTreatmentArm = addTreatmentArm(finalDf, dm, columnsToEXtract);  
   return withTreatmentArm;
   
 }
@@ -262,6 +270,39 @@ export function cumulativeEnrollemntByDay(df: DG.DataFrame, dateCol: string, sub
     });
   subjsPerDay.columns.remove(`unique(${subjIDCol})`)
   return subjsPerDay;
+}
+
+
+export function labDataForCorrelationMatrix() {
+  let subjIds = Array.from(getUniqueValues(study.domains.lb, 'USUBJID'));
+  let t = DG.DataFrame.create();
+  let newCols = Array.from(getUniqueValues(study.domains.lb, 'LBTEST'));
+  newCols.forEach(col => t.columns.addNewFloat(col));
+  t.columns.addNewString('USUBJID');
+  t.columns.addNewString('VISIT');
+  console.log(subjIds);
+  let newRowIndex = -1;
+  subjIds.forEach(it => {
+    let lbs = study.domains.lb.groupBy(study.domains.lb.columns.names())
+      .where(`USUBJID = ${it}`)
+      .aggregate()
+    let order = lbs.getSortedOrder([ 'VISITDY' ] as any);
+    let lbdy = lbs.get('VISITDY', order[ 0 ])
+    t.rows.addNew();
+    newRowIndex +=1;
+    order.forEach(index => {
+      let newLbDy = lbs.get('VISITDY', index)
+      if (lbdy !== newLbDy) {
+        lbdy = newLbDy;
+        newRowIndex += 1;
+        t.rows.addNew();
+      }
+      t.set(lbs.get('LBTEST', index), newRowIndex, lbs.get('LBORRES', index))
+      t.set('USUBJID', newRowIndex, it)
+      t.set('VISIT', newRowIndex, lbs.get('VISIT', index))
+    })
+  })
+  return t;
 }
 
 

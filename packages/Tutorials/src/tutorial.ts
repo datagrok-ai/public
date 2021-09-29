@@ -6,6 +6,8 @@ import { fromEvent, Observable } from 'rxjs';
 import { filter, first, map } from 'rxjs/operators';
 import { _package } from './package';
 import { Track, TutorialRunner } from './track';
+import { View } from 'datagrok-api/dg';
+import { node } from 'webpack';
 
 
 /** A base class for tutorials */
@@ -124,15 +126,66 @@ export abstract class Tutorial extends DG.Widget {
     this._scroll();
   }
 
-  async action(instructions: string, completed: Observable<any> | Promise<void>,
-    hint?: HTMLElement | null, hintSub?: DG.StreamSubscription | null): Promise<void> {
-    hint?.classList.add('tutorials-target-hint');
+  _placeHint(hint: HTMLElement) {
+    hint.classList.add('tutorials-target-hint');
     let hintIndicator = ui.element('div');
     hintIndicator.classList = 'blob';
-
-    console.log(hint);
-    console.log(hint?.parentNode);
     hint?.append(hintIndicator);
+
+    let width = hint ? hint.clientWidth : 0;
+    let height = hint ? hint.clientHeight : 0;
+
+    let hintnode = hint?.getBoundingClientRect();
+    let indicatornode = hintIndicator?.getBoundingClientRect();
+
+    console.clear();
+    console.log('hint:'+$(hint).css('position'));
+    console.log('hint top:'+hintnode.top+' left:'+hintnode.left);
+    console.log('indicator top:'+indicatornode.top+' left:'+indicatornode.left);
+
+
+    let hintPosition = $(hint).css('position');
+
+    if(hintPosition == 'absolute'){
+      $(hintIndicator).css('position','absolute');
+      $(hintIndicator).css('left','0');
+      $(hintIndicator).css('top','0');
+    }
+    if(hintPosition == "relative"){
+      $(hintIndicator).css('position','absolute');
+      $(hintIndicator).css('left','0');
+      $(hintIndicator).css('top','0');
+    }
+
+    if(hintPosition == 'static'){
+      $(hintIndicator).css('position','absolute');
+      if(hintnode.left+1 == indicatornode.left)
+        $(hintIndicator).css('margin-left',0)
+      else
+        $(hintIndicator).css('margin-left',-width)
+      if(hintnode.top+1 == indicatornode.top)
+        $(hintIndicator).css('margin-top',0)
+      else
+        $(hintIndicator).css('margin-top',-height) 
+    }
+
+    
+   // $(hintIndicator).css('margin-left', width);
+   // $(hintIndicator).css('margin-top', -height);
+  }
+
+  _removeHint(hint: HTMLElement) {
+    $(hint).find('div.blob')[0]?.remove();
+    hint.classList.remove('tutorials-target-hint');
+  }
+
+  async action(instructions: string, completed: Observable<any> | Promise<void>,
+    hint?: HTMLElement | HTMLElement[] | null): Promise<void> {
+    if (hint instanceof HTMLElement) {
+      this._placeHint(hint);
+    } else if (Array.isArray(hint)) {
+      hint.forEach((h) => this._placeHint(h));
+    }
 
     const instructionDiv = ui.divText(instructions, 'grok-tutorial-entry-instruction');
     const instructionIndicator = ui.div([],'grok-tutorial-entry-indicator')
@@ -148,9 +201,11 @@ export abstract class Tutorial extends DG.Widget {
     instructionIndicator.classList.add('grok-tutorial-entry-indicator-success')
     this.progress.value++;
 
-    hintIndicator.remove();
-    hintSub?.cancel();
-    hint?.classList?.remove('tutorials-target-hint');
+    if (hint instanceof HTMLElement) {
+      this._removeHint(hint);
+    } else if (Array.isArray(hint)) {
+      hint.forEach((h) => this._removeHint(h));
+    }
   }
 
   protected _scroll(): void {
