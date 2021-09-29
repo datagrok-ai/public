@@ -28,7 +28,8 @@
 		"webpack-cli": "latest"
 	},
 	"sources": [
-		"files/aligned.csv"
+		"files/aligned.csv",
+		"files/aligned_2.csv"
 	],
 	"scripts": {
 		"install-dependencies": "npm install",
