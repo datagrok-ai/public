@@ -126,9 +126,8 @@ export abstract class Tutorial extends DG.Widget {
     this._scroll();
   }
 
-  async action(instructions: string, completed: Observable<any> | Promise<void>,
-    hint?: HTMLElement | null, hintSub?: DG.StreamSubscription | null): Promise<void> {
-    hint?.classList.add('tutorials-target-hint');
+  _placeHint(hint: HTMLElement) {
+    hint.classList.add('tutorials-target-hint');
     let hintIndicator = ui.element('div');
     hintIndicator.classList = 'blob';
   
@@ -152,6 +151,20 @@ export abstract class Tutorial extends DG.Widget {
     hint?.append(hintIndicator);
    // $(hintIndicator).css('margin-left', width);
    // $(hintIndicator).css('margin-top', -height);
+  }
+
+  _removeHint(hint: HTMLElement) {
+    $(hint).find('div.blob')[0]?.remove();
+    hint.classList.remove('tutorials-target-hint');
+  }
+
+  async action(instructions: string, completed: Observable<any> | Promise<void>,
+    hint?: HTMLElement | HTMLElement[] | null): Promise<void> {
+    if (hint instanceof HTMLElement) {
+      this._placeHint(hint);
+    } else if (Array.isArray(hint)) {
+      hint.forEach((h) => this._placeHint(h));
+    }
 
     const instructionDiv = ui.divText(instructions, 'grok-tutorial-entry-instruction');
     const instructionIndicator = ui.div([],'grok-tutorial-entry-indicator')
@@ -167,9 +180,11 @@ export abstract class Tutorial extends DG.Widget {
     instructionIndicator.classList.add('grok-tutorial-entry-indicator-success')
     this.progress.value++;
 
-    hintIndicator.remove();
-    hintSub?.cancel();
-    hint?.classList?.remove('tutorials-target-hint');
+    if (hint instanceof HTMLElement) {
+      this._removeHint(hint);
+    } else if (Array.isArray(hint)) {
+      hint.forEach((h) => this._removeHint(h));
+    }
   }
 
   protected _scroll(): void {
