@@ -37,17 +37,17 @@ export class AminoAcidsCellRenderer extends DG.GridCellRenderer {
 
       cp['-'] = `rgb(77, 77, 77)`;
 
-
       if (s in cp) {
         g.font = `bold ${this.fontSize}px monospace`;
         g.fillStyle = cp[s];
-        g.fillText(s, x + 2, y + 7);
+        const textSize = g.measureText(s);
+        g.fillText(s, x + (w - textSize.width)/2, y + (textSize.fontBoundingBoxAscent + textSize.fontBoundingBoxDescent)/2);
         return;
       }
       g.font = `${this.fontSizeSide / s.length}px monospace`;
       for (let i = 0; i < s.length; i++) {
         g.fillStyle = `rgb(77, 77, 77)`;
-        g.fillText(s[i], x + 3, y + i * this.fontSizeSide * this.spacing / s.length);
+        //g.fillText(s[i], x + 3, y + i * this.fontSizeSide * this.spacing / s.length);
       }
     }
 }
