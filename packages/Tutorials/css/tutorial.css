@@ -126,15 +126,21 @@ progress[value]::-webkit-progress-value::after {
     color: var(--grey-4);
     margin: 0px;
 }
+.tutorials-root-description h3{
+    color:var(--grey-6);
+}
+
 .grok-tutorial-entry{
     align-items: center;
 }
 .grok-tutorial-entry-instruction{
     color: var(--grey-6);
+    font-weight: bolder;
 }
 .grok-tutorial-entry-success{
     text-decoration: line-through;
     color: var(--grey-4);
+    font-weight: normal;
 }
 .grok-tutorial-entry-indicator{
     width: 5px;
@@ -149,6 +155,22 @@ progress[value]::-webkit-progress-value::after {
     background-color: var(--green-2);
 }
 
+.tutorials-root-header{
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 0px;
+}
+.tutorials-root-header h1{
+    margin: 0;
+    padding: 0;
+}
+
+.tutorials-root-progress{
+    padding-bottom: 15px;
+    margin-bottom: 15px;
+    border-bottom: 1px solid var(--grey-2);
+    color: var(--grey-4);
+}
 
 /* Animation */
 /* Add div container with class blob*/

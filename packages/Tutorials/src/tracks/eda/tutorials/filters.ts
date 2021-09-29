@@ -18,17 +18,10 @@ export class FiltersTutorial extends Tutorial {
       "our platform makes it as powerful and easy to use as possible. Let's start with opening " +
       'a couple of regular viewers, so that effects of filtering would be immediately visible.');
 
-    await this.openPlot('scatter plot', (x) => x.type === DG.VIEWER.SCATTER_PLOT);
-    await this.openPlot('histogram', (x) => x.type === DG.VIEWER.HISTOGRAM);
+    await this.openPlot('scatter plot','', (x) => x.type === DG.VIEWER.SCATTER_PLOT);
+    await this.openPlot('histogram', '', (x) => x.type === DG.VIEWER.HISTOGRAM);
 
-    this.describe("Now, let's add filters.");
-    const filters = await this.openPlot('filters', (x) => x.type === DG.VIEWER.FILTERS);
-
-    this.title('Categorical filters');
-
-    this.describe('While appearing very simple, this is a very powerful tool. It combines ' +
-      'multiple indicators along with a few controls that let you easily modify current ' +
-      "filters and selection. Let's start with filtering by a specific category.");
+    const filters = await this.openPlot('filters', `Now, let's add filters.\nWhile appearing very simple, this is a very powerful tool. It combines multiple indicators along with a few controls that let you easily modify current filters and selection. Let's start with filtering by a specific category.`, (x) => x.type === DG.VIEWER.FILTERS);
 
   }
 }
