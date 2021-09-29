@@ -20,7 +20,6 @@ export class AminoAcidsCellRenderer extends DG.GridCellRenderer {
       return this.maxCellWidth;
     }
 
-
     render(
       g: CanvasRenderingContext2D,
       x: number,
@@ -37,11 +36,11 @@ export class AminoAcidsCellRenderer extends DG.GridCellRenderer {
 
       cp['-'] = `rgb(77, 77, 77)`;
 
-
       if (s in cp) {
         g.font = `bold ${this.fontSize}px monospace`;
         g.fillStyle = cp[s];
-        g.fillText(s, x + 2, y + 7);
+        const textSize = g.measureText(s);
+        g.fillText(s, x + (w - textSize.width)/2, y + (textSize.fontBoundingBoxAscent + textSize.fontBoundingBoxDescent)/2);
         return;
       }
       g.font = `${this.fontSizeSide / s.length}px monospace`;
