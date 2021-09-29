@@ -11,18 +11,16 @@ export class ScriptingTutorial extends Tutorial {
   get description() {
     return 'Scripting is an integration mechanism with languages for statistical computing';
   }
-  get steps(){ return 3} //set thew number of steps
+  get steps(){ return 1} //set thew number of steps
 
   protected async _run() {
     this.header.textContent = 'Create and run a script';
+    this.describe('Scripting is an integration mechanism with languages for statistical computing');
+
     const sv = await this.openViewByType(
       'Click on "Functions | Scripts | New Script" to open a script editor',
-      'ScriptView');
-
-    this.describe('This is a script editor. Here, you write code and bind the parameters to ' +
-      'the sample dataset (press F1 to get help on parameter format). Also, the editor ' +
-      'lets you load previously saved scripts, including the samples designed to help ' +
-      'better understand the platform.');
+      'ScriptView', 
+      'This is a script editor. Here, you write code and bind the parameters to the sample dataset (press F1 to get help on parameter format). Also, the editor lets you load previously saved scripts, including the samples designed to help better understand the platform.');
 
   }
 }

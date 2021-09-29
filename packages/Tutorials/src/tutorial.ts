@@ -29,10 +29,13 @@ export abstract class Tutorial extends DG.Widget {
       style: { display: 'none' },
     });
   header: HTMLHeadingElement = ui.h1('');
+  headerDiv: HTMLDivElement = ui.divH([],'tutorials-root-header');
   subheader: HTMLHeadingElement = ui.h3('');
   activity: HTMLDivElement = ui.div([], 'tutorials-root-description');
   status: boolean = false;
+  progressDiv: HTMLDivElement = ui.divV([],'tutorials-root-progress');
   progress: HTMLProgressElement = ui.element('progress');
+  progressSteps: HTMLDivElement = ui.divText('');
 
   static DATA_STORAGE_KEY: string = 'tutorials';
 
@@ -45,11 +48,11 @@ export abstract class Tutorial extends DG.Widget {
 
     super(ui.div([], 'tutorials-track'));
     this.updateStatus();
-    this.root.append(this.header);
-    this.root.append(this.subheader);
-    this.root.append(this.progress);
+    this.root.append(this.headerDiv);
+    this.root.append(this.progressDiv);
     this.progress.max = 0;
-    this.progress.value = 0;
+    this.progress.value = 1;
+    this.root.append(this.subheader);
     this.root.append(this.activity);
     this.root.append(this.nextLink);
   }
@@ -57,7 +60,28 @@ export abstract class Tutorial extends DG.Widget {
   protected abstract _run(): Promise<void>;
 
   async run(): Promise<void> {
+    this.progressDiv.append(this.progress);
     this.progress.max = this.steps;
+
+    this.progressSteps = ui.divText('Step: '+String(this.progress.value)+' of '+this.steps);
+    this.progressDiv.append(this.progressSteps);
+
+    console.clear();
+
+    const switchToMainView = () => {
+      $('.tutorial').show();
+      if (this.status != true){
+        updateProgress(this.track);
+      }  
+      $('#tutorial-child-node').html('');
+      grok.shell.tableView(this.t.name).close();
+    };
+    
+    let closeTutorial = ui.button(ui.iconFA('times-circle'),switchToMainView);
+
+    closeTutorial.style.minWidth = '30px';
+    this.headerDiv.append(this.header);
+    this.headerDiv.append(closeTutorial);
 
     if (this.demoTable) {
       grok.shell.addTableView(await grok.data.getDemoTable(this.demoTable));
@@ -87,36 +111,33 @@ export abstract class Tutorial extends DG.Widget {
       $(`.tutorials-track[data-name ='${track?.name}'] > .tutorials-track-details`).children().first().text($(`.tutorials-track[data-name ='${track?.name}']`).find('progress').prop('value')+'% complete');
       $(`.tutorials-track[data-name ='${track?.name}'] > .tutorials-track-details`).children().last().text(String(track.completed+' / '+track.tutorials.length));
     }
-
-    const switchToMainView = () => {
-      $('.tutorial').show();
-      if (this.status != true){
-        updateProgress(this.track);
-      }  
-      $('#tutorial-child-node').html('');
-      grok.shell.tableView(this.t.name).close();
-    };
     
     if (id < tutorials.length - 1){
-      this.root.append(ui.div([
-        ui.bigButton('Start', () => {
-          if (this.status != true){
-            console.log('update completed')
-            updateProgress(this.track);
-          }  
-          $('#tutorial-child-node').html('');
-          $('#tutorial-child-node').append(tutorials[++id].root);
-          tutorials[id].run();
-        }),
-        ui.button('Cancel', switchToMainView)
+      this.root.append(ui.divV([
+        ui.divText('Next "'+tutorials[++id].name+'"', {style:{margin:'5px 0'}}),
+        ui.divH([
+          ui.bigButton('Start', () => {
+            if (this.status != true){
+              console.log('update completed');
+              updateProgress(this.track);
+            }  
+            $('#tutorial-child-node').html('');
+            $('#tutorial-child-node').append(tutorials[++id].root);
+            tutorials[id].run();
+          }),
+          ui.button('Cancel', switchToMainView)
+        ], {style:{marginLeft:'-4px'}})
       ]))
     } else if (id == tutorials.length - 1) {
-      this.root.append(ui.div([ui.bigButton('Complete', switchToMainView)]))
+      this.root.append(ui.div([
+        ui.divText('You complete all tutorials from '+ this.track?.name),
+        ui.button('Close', switchToMainView,)
+      ]))
     }
   }
 
   title(text: string): void {
-    this.activity.append(ui.h1(text));
+    this.activity.append(ui.h3(text));
   }
 
   describe(text: string): void {
@@ -138,7 +159,7 @@ export abstract class Tutorial extends DG.Widget {
     let hintnode = hint?.getBoundingClientRect();
     let indicatornode = hintIndicator?.getBoundingClientRect();
 
-    console.clear();
+    //console.clear();
     console.log('hint:'+$(hint).css('position'));
     console.log('hint top:'+hintnode.top+' left:'+hintnode.left);
     console.log('indicator top:'+indicatornode.top+' left:'+indicatornode.left);
@@ -168,10 +189,6 @@ export abstract class Tutorial extends DG.Widget {
       else
         $(hintIndicator).css('margin-top',-height) 
     }
-
-    
-   // $(hintIndicator).css('margin-left', width);
-   // $(hintIndicator).css('margin-top', -height);
   }
 
   _removeHint(hint: HTMLElement) {
@@ -179,7 +196,7 @@ export abstract class Tutorial extends DG.Widget {
     hint.classList.remove('tutorials-target-hint');
   }
 
-  async action(instructions: string, completed: Observable<any> | Promise<void>,
+  async action(instructions: string, description:string, completed: Observable<any> | Promise<void>,
     hint?: HTMLElement | HTMLElement[] | null): Promise<void> {
     if (hint instanceof HTMLElement) {
       this._placeHint(hint);
@@ -188,9 +205,16 @@ export abstract class Tutorial extends DG.Widget {
     }
 
     const instructionDiv = ui.divText(instructions, 'grok-tutorial-entry-instruction');
+    const descriptionDiv = ui.divText('', {style:{margin:'0px 0px 0px 15px'}});
     const instructionIndicator = ui.div([],'grok-tutorial-entry-indicator')
-    const entry = ui.divH([instructionIndicator,instructionDiv], 'grok-tutorial-entry');
+    const entry = ui.divH([
+        instructionIndicator,
+        instructionDiv
+    ], 'grok-tutorial-entry');
+    
     this.activity.append(entry);
+    descriptionDiv.innerHTML = description;
+    this.activity.append(descriptionDiv);
     this._scroll();
     if (completed instanceof Promise) {
       await completed;
@@ -198,9 +222,12 @@ export abstract class Tutorial extends DG.Widget {
       await this.firstEvent(completed);
     }
     instructionDiv.classList.add('grok-tutorial-entry-success');
-    instructionIndicator.classList.add('grok-tutorial-entry-indicator-success')
+    instructionIndicator.classList.add('grok-tutorial-entry-indicator-success');
+    $(descriptionDiv).hide();
     this.progress.value++;
-
+    this.progressSteps.innerHTML = '';
+    this.progressSteps.append('Step: '+String(this.progress.value)+' of '+this.steps);
+    
     if (hint instanceof HTMLElement) {
       this._removeHint(hint);
     } else if (Array.isArray(hint)) {
@@ -224,7 +251,7 @@ export abstract class Tutorial extends DG.Widget {
   }
 
   /** Prompts the user to open a viewer of the specified type and returns it. */
-  protected async openPlot(name: string, check: (viewer: DG.Viewer) => boolean): Promise<DG.Viewer> {
+  protected async openPlot(name: string,description: string, check: (viewer: DG.Viewer) => boolean): Promise<DG.Viewer> {
     // TODO: Expand toolbox / accordion API coverage
     const getViewerIcon = (el: HTMLElement) => {
       const selector = name == 'filters' ? 'i.fa-filter' : `i.svg-${name.replace(' ', '-')}`;
@@ -234,7 +261,7 @@ export abstract class Tutorial extends DG.Widget {
     const view = grok.shell.v as DG.View;
     let viewer: DG.Viewer;
 
-    await this.action(`Open ${name}`,
+    await this.action(`Open ${name}`, description,
       grok.events.onViewerAdded.pipe(filter((data: DG.EventData) => {
         const found = check(data.args.viewer);
         if (found) {
@@ -249,10 +276,10 @@ export abstract class Tutorial extends DG.Widget {
   }
 
   /** Prompts the user to put the specified value into a dialog input. */
-  protected async dlgInputAction(dlg: DG.Dialog, instructions: string, caption: string, value: string) {
+  protected async dlgInputAction(dlg: DG.Dialog, instructions: string, description:string, caption: string, value: string) {
     const inp = dlg.inputs.filter((input: DG.InputBase) => input.caption == caption)[0];
     if (inp == null) return;
-    await this.action(instructions,
+    await this.action(instructions, description,
       new Observable((subscriber: any) => {
         if (inp.stringValue === value) subscriber.next(inp.stringValue);
         inp.onChanged(() => {
@@ -264,21 +291,21 @@ export abstract class Tutorial extends DG.Widget {
   }
 
   /** A helper method to access text inputs in a view. */
-  protected async textInpAction(root: HTMLElement, instructions: string, caption: string, value: string) {
+  protected async textInpAction(root: HTMLElement, instructions: string, description:string, caption: string, value: string) {
     const inputRoot = $(root)
       .find('div.ui-input-text.ui-input-root')
       .filter((idx, inp) => $(inp).find('label.ui-label.ui-input-label')[0]?.textContent === caption)[0];
     if (inputRoot == null) return;
     const input = $(inputRoot).find('input.ui-input-editor')[0] as HTMLInputElement;
     const source = fromEvent(input, 'input').pipe(map((_) => input.value), filter((val) => val === value));
-    await this.action(instructions, source, inputRoot);
+    await this.action(instructions, description, source, inputRoot);
   }
 
   /** Prompts the user to open a view of the specified type, waits for it to open and returns it. */
-  protected async openViewByType(instructions: string, type: string): Promise<DG.View> {
+  protected async openViewByType(instructions: string, description: string, type: string): Promise<DG.View> {
     let view: DG.View;
 
-    await this.action(instructions, grok.events.onViewAdded.pipe(filter((v) => {
+    await this.action(instructions, description, grok.events.onViewAdded.pipe(filter((v) => {
       if (v.type === type) {
         view = v;
         return true;
@@ -290,10 +317,10 @@ export abstract class Tutorial extends DG.Widget {
   }
 
   /** Prompts the user to open a dialog with the specified title, waits for it to open and returns it. */
-  protected async openDialog(instructions: string, title: string, hint: HTMLElement | null = null): Promise<DG.Dialog> {
+  protected async openDialog(instructions: string, description: string, title: string, hint: HTMLElement | null = null): Promise<DG.Dialog> {
     let dialog: DG.Dialog;
 
-    await this.action(instructions, grok.events.onDialogShown.pipe(filter((dlg) => {
+    await this.action(instructions, description, grok.events.onDialogShown.pipe(filter((dlg) => {
       if (dlg.title === title) {
         dialog = dlg;
         return true;
@@ -305,7 +332,7 @@ export abstract class Tutorial extends DG.Widget {
   }
 
   /** Prompts the user to select a menu item in the context menu. */
-  protected async contextMenuAction(instructions: string, label: string, hint: HTMLElement | null = null): Promise<void> {
+  protected async contextMenuAction(instructions: string, description:string, label: string, hint: HTMLElement | null = null): Promise<void> {
     const commandClick =  new Promise<void>((resolve, reject) => {
       const sub = grok.events.onContextMenu.subscribe((data) => {
         data.args.menu.onContextMenuItemClick.pipe(
@@ -317,6 +344,6 @@ export abstract class Tutorial extends DG.Widget {
       });
     });
 
-    await this.action(instructions, commandClick, hint);
+    await this.action(instructions, description, commandClick, hint);
   }
 }
