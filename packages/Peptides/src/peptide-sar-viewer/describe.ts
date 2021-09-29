@@ -1,9 +1,11 @@
 import * as grok from 'datagrok-api/grok';
 import * as ui from 'datagrok-api/ui';
 import * as DG from 'datagrok-api/dg';
+//@ts-ignore
+import * as jStat from 'jstat';
 import {splitAlignedPeptides} from '../split-aligned';
 import {decimalAdjust, tTest, uTest} from '../utils/misc';
-// import {ChemPalette} from '../utils/chem-palette';
+import {ChemPalette} from '../utils/chem-palette';
 
 
 export async function describe(
@@ -37,6 +39,11 @@ export async function describe(
 
   if (df.col(activityColumnScaled)) {
     df.columns.remove(activityColumnScaled);
+  }
+
+  //FIXME: this column usually duplicates, so remove it then
+  if (df.col('~IC50Scaled (2)')) {
+    df.columns.remove('~IC50Scaled (2)');
   }
 
   if (!positionColumns.every((col: string) => dfColsSet.has(col))) {
@@ -109,6 +116,7 @@ export async function describe(
 
   //calculate p-values based on t-test
   const pValues: number[] = [];
+  const mDiff: number[] = [];
   let position: string;
   let AAR: string;
   let currentActivity: number[];
@@ -119,39 +127,43 @@ export async function describe(
     position = matrixDf.get(positionColName, i);
     AAR = matrixDf.get(aminoAcidResidue, i);
 
+    //@ts-ignore
+    splitSeqDf.rows.select((row) => row[position] === AAR);
     currentActivity = splitSeqDf
-      .groupBy([activityColumnScaled])
-      .where(`${position} = ${AAR}`)
-      .aggregate()
+      .clone(splitSeqDf.selection, [activityColumnScaled])
       .getCol(activityColumnScaled)
       .toList();
 
+    //@ts-ignore
+    splitSeqDf.rows.select((row) => row[position] !== AAR);
     otherActivity = splitSeqDf
-      .groupBy([activityColumnScaled])
-      .where(`${position} != ${AAR}`)
-      .aggregate()
+      .clone(splitSeqDf.selection, [activityColumnScaled])
       .getCol(activityColumnScaled)
       .toList();
 
     testResult = tTest(currentActivity, otherActivity);
     // testResult = uTest(currentActivity, otherActivity);
     pValues.push(testResult['p-value']);
+    mDiff.push(testResult['Mean difference']!)
   }
   matrixDf.columns.add(DG.Column.fromList(DG.TYPE.FLOAT, 'p-value', pValues));
+  matrixDf.columns.add(DG.Column.fromList(DG.TYPE.FLOAT, 'Mean difference', mDiff));
 
   const statsDf = matrixDf.clone();
 
   //pivot a table to make it matrix-like
   matrixDf = matrixDf.groupBy([aminoAcidResidue])
     .pivot(positionColName)
-    .add('first', medianColName, '')
+    .add('first', 'Mean difference', '')
     .aggregate();
   matrixDf.name = 'SAR';
 
   // !!! DRAWING PHASE !!!
   //find min and max MAD across all of the dataframe
-  const dfMinMedian = statsDf.getCol(medianColName).min;
-  const dfMaxMedian = statsDf.getCol(medianColName).max;
+  // const dfMinMedian = statsDf.getCol(medianColName).min;
+  // const dfMaxMedian = statsDf.getCol(medianColName).max;
+  const dfMin = jStat.min(mDiff);
+  const dfMax = jStat.max(mDiff);
   const grid = matrixDf.plot.grid();
 
   for (const col of matrixDf.columns) {
@@ -184,15 +196,31 @@ export async function describe(
         const query =
           `${aminoAcidResidue} = ${matrixDf.get(aminoAcidResidue, args.cell.tableRowIndex)} ` +
           `and ${positionColName} = ${args.cell.tableColumn.name}`;
-        const ratio = statsDf.groupBy(['ratio']).where(query).aggregate().get('ratio', 0);
-        const maxRadius = 0.95 * (args.bounds.width > args.bounds.height ? args.bounds.height : args.bounds.width) / 2;
-        const radius = Math.ceil(maxRadius * ratio);
+        // const ratio = statsDf.groupBy(['ratio']).where(query).aggregate().get('ratio', 0);
+        const pVal = statsDf.groupBy(['p-value']).where(query).aggregate().get('p-value', 0);
+
+        let coef;
+        if (pVal < 0.01) {
+          coef = 1;
+        } else if (pVal < 0.05) {
+          coef = 2/3;
+        } else if (pVal < 0.1) {
+          coef = 1/3;
+        } else {
+          coef = 0.01;
+        }
+
+        const rCoef = (args.cell.cell.value - dfMin) / (dfMax - dfMin);
+
+        const maxRadius = 0.9 * (args.bounds.width > args.bounds.height ? args.bounds.height : args.bounds.width) / 2;
+        const radius = Math.ceil(maxRadius * rCoef);
 
         args.g.beginPath();
         args.g.fillStyle = DG.Color.toHtml(DG.Color.scaleColor(
-          args.cell.cell.value,
-          dfMinMedian,
-          dfMaxMedian,
+          coef, 0, 1,
+          // args.cell.cell.value,
+          // dfMin,
+          // dfMax,
           undefined,
           [DG.Color.lightLightGray, DG.Color.green],
         ));
@@ -241,7 +269,7 @@ export async function describe(
 
   // Select columns in source table that correspond to the currently clicked cell
   grid.table.onCurrentCellChanged.subscribe((_: any) => {
-    if (grid.table.currentCell.value !== null && grid.table.currentCol.name !== aminoAcidResidue) {
+    if (grid.table.currentCell.value && grid.table.currentCol.name !== aminoAcidResidue) {
       const currentAAR: string = grid.table.get(aminoAcidResidue, grid.table.currentRowIdx);
       const currentPosition = grid.table.currentCol.name;
       const splitColName = '~splitCol';
@@ -261,14 +289,18 @@ export async function describe(
           `${currentAAR === '-' ? 'Empty' : 'AAR ' + currentAAR} at position ${currentPosition}` : 'Other');
       }
 
+      //TODO: fix color-coding
       const splitCol = DG.Column.fromStrings(splitColName, splitArray);
-      // const cp = ChemPalette.get_datagrok();
-      const colorMap: {[index: string]: number} = {'Other': DG.Color.lightGray};
-      // colorMap[currentAAR] = cp[currentAAR];
-      colorMap[currentAAR] = DG.Color.green;
+      const cp = ChemPalette.get_datagrok();
+      const colorMap: {[index: string]: string} = {'Other': DG.Color.toRgb(DG.Color.lightGray)};
+      colorMap[currentAAR] = cp[currentAAR];
+      // colorMap[currentAAR] = DG.Color.green;
       splitCol.colors.setCategorical(colorMap);
 
       !df.col(splitColName) ? df.columns.add(splitCol) : df.columns.replace(splitColName, splitCol);
+
+      // console.log('From cell');
+      // console.log(splitCol.categories);
     }
   });
 

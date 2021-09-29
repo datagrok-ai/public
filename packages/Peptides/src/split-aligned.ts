@@ -21,7 +21,7 @@ export function splitAlignedPeptides(peptideColumn: DG.Column) {
   }
 
   const columnsArray = splitPeptidesArray.map((v, i) => {
-    const col = DG.Column.fromList('string', `a${i+1 < 10 ? 0 : ''}${i+1}`, v); //TODO: Remove 'a'
+    const col = DG.Column.fromList('string', `${i+1 < 10 ? 0 : ''}${i+1}`, v); //TODO: Remove 'a'
     col.semType = 'aminoAcids';
     return col;
   });
