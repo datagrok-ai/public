@@ -2,7 +2,7 @@
 import * as jStat from 'jstat';
 import binarySearch from 'binary-search';
 
-type testStats = {'p-value': number, 't-score'?: number, 'u-score'?: number};
+type testStats = {'p-value': number, 'Mean difference'?: number, 'Median difference'?: number};
 
 export function decimalAdjust(type: 'floor' | 'ceil' | 'round', value: number, exp: number): number {
   // If the exp is undefined or zero...
@@ -73,7 +73,7 @@ export function tTest(arr1: number[], arr2: number[], alpha=0.05, devKnown=false
     Vk_more = jStat.normal.inv(1 - alpha);
     Vk_less = jStat.normal.inv(alpha);
   }
-  return {'p-value': p_tot, 't-score': Z};
+  return {'p-value': p_tot, 'Mean difference': m1 - m2};
 }
 
 export function uTest(x1: number[], x2: number[]): testStats {
@@ -81,6 +81,8 @@ export function uTest(x1: number[], x2: number[]): testStats {
   const n1 = x1.length;
   const n2 = x2.length;
   const U = n1 * n2;
+  const med1 = jStat.median(x1);
+  const med2 = jStat.median(x2);
 
   // simple U-test
   const u1 = x1.reduce((pv, cv) => pv + cv) - (n1 * (n1 + 1)) / 2;
@@ -93,7 +95,7 @@ export function uTest(x1: number[], x2: number[]): testStats {
   const T = tieCorrection(ranks);
   let sd = Math.sqrt((T * U * (n1 + n2 + 1)) / 12.0);
   const mRank = 0.5 + U / 2;
-  const absolutValue = (Math.max(u1, u2) - mRank) / sd;
+  // const absolutValue = (Math.max(u1, u2) - mRank) / sd;
 
   // Effect strength
   // const effectStrength = absolutValue / Math.sqrt(n1 + n2); // effect strength
@@ -109,7 +111,7 @@ export function uTest(x1: number[], x2: number[]): testStats {
   //   rankBiserial,
   //   absolutValue,
   // };
-  return {'p-value': p, 'u-score': absolutValue};
+  return {'p-value': p, 'Median difference': med1 - med2};
 }
 
 function ranking(arrays: number[][]) {
