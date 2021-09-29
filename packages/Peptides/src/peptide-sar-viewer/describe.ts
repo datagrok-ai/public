@@ -19,7 +19,7 @@ export async function describe(
   for (const col of df.columns) {
     if (col.semType === 'alignedSequence') {
       splitSeqDf = splitAlignedPeptides(col);
-      // splitSeqDf.name = 'splitSeq';
+      splitSeqDf.name = 'Split sequence';
       break;
     }
   }
@@ -32,10 +32,6 @@ export async function describe(
   const activityColumnScaled = `~${activityColumn}Scaled`;
 
   splitSeqDf.columns.add(df.getCol(activityColumn));
-  // grok.shell.addTableView(splitSeqDf);
-
-  // append splitSeqDf columns to source table and make sure columns are not added more than once
-  const dfColsSet = new Set(df.columns.names());
 
   if (df.col(activityColumnScaled)) {
     df.columns.remove(activityColumnScaled);
@@ -46,29 +42,21 @@ export async function describe(
     df.columns.remove('~IC50Scaled (2)');
   }
 
+  // append splitSeqDf columns to source table and make sure columns are not added more than once
+  const dfColsSet = new Set(df.columns.names());
   if (!positionColumns.every((col: string) => dfColsSet.has(col))) {
     df.join(splitSeqDf, [activityColumn], [activityColumn], df.columns.names(), positionColumns, 'inner', true);
   }
-  positionColumns.forEach((name: string)=> {
-    const col = df.getCol(name);
-    col.semType = 'aminoAcids';
-    col.setTag('cell.renderer', 'aminoAcids');
-  });
 
   // scale activity
-  //TODO: how to NOT render these?
   switch (activityScaling) {
   case 'lg':
     await df.columns.addNewCalculated(activityColumnScaled, 'Log10(${' + activityColumn + '})');
     splitSeqDf.columns.add(df.getCol(activityColumnScaled));
-    // splitSeqDf.columns.remove(activityColumn);
-    // splitSeqDf.getCol('lg').name = activityColumn;
     break;
   case '-lg':
     await df.columns.addNewCalculated(activityColumnScaled, '-1*Log10(${' + activityColumn + '})');
     splitSeqDf.columns.add(df.getCol(activityColumnScaled));
-    // splitSeqDf.columns.remove(activityColumn);
-    // splitSeqDf.getCol('-lg').name = activityColumn;
     break;
   default:
     await df.columns.addNewCalculated(activityColumnScaled, '${' + activityColumn + '}');
@@ -88,8 +76,6 @@ export async function describe(
   const peptidesCount = splitSeqDf.getCol(activityColumnScaled).length;
 
   let matrixDf = splitSeqDf.unpivot([activityColumnScaled], positionColumns, positionColName, aminoAcidResidue);
-
-  // grok.shell.addTableView(matrixDf.clone());
 
   //this table contains overall statistics on activity
   const totalStats = matrixDf.groupBy()
@@ -217,10 +203,9 @@ export async function describe(
 
         args.g.beginPath();
         args.g.fillStyle = DG.Color.toHtml(DG.Color.scaleColor(
-          coef, 0, 1,
-          // args.cell.cell.value,
-          // dfMin,
-          // dfMax,
+          coef,
+          0,
+          1,
           undefined,
           [DG.Color.lightLightGray, DG.Color.green],
         ));
@@ -263,6 +248,7 @@ export async function describe(
       }
 
       ui.tooltip.show(ui.tableFromMap(tooltipMap), x, y);
+      return true;
     }
     return true;
   });
@@ -276,9 +262,10 @@ export async function describe(
 
       // @ts-ignore: I'd love to use row.get(), but unfortunately there's no column 'get' :(
       // splitSeqDf!.rows.select((row) => row[currentPosition] === currentAAR);
-      filterMode ? df.rows.filter((row) => row[currentPosition] === currentAAR) : df.rows.select((row) => row[currentPosition] === currentAAR);
+      // filterMode ? df.rows.filter((row) => row[currentPosition] === currentAAR) : df.rows.select((row) => row[currentPosition] === currentAAR);
 
       const bitset = filterMode ? df.filter : df.selection;
+      bitset.init((i) => df.get(currentPosition, i) === currentAAR);
 
       // bitset.copyFrom(splitSeqDf!.selection);
 
@@ -294,13 +281,9 @@ export async function describe(
       const cp = ChemPalette.get_datagrok();
       const colorMap: {[index: string]: string} = {'Other': DG.Color.toRgb(DG.Color.lightGray)};
       colorMap[currentAAR] = cp[currentAAR];
-      // colorMap[currentAAR] = DG.Color.green;
       splitCol.colors.setCategorical(colorMap);
 
       !df.col(splitColName) ? df.columns.add(splitCol) : df.columns.replace(splitColName, splitCol);
-
-      // console.log('From cell');
-      // console.log(splitCol.categories);
     }
   });
 

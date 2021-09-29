@@ -25,9 +25,12 @@ export class SARViewer extends DG.JsViewer {
 
   async onTableAttached() {
     const accordionFunc = (accordion: DG.Accordion) => {
-      if (accordion.context instanceof DG.DataFrame || typeof accordion.context.dataFrame !== 'undefined') {
-        // console.log(accordion.context);
-        const originalDf: DG.DataFrame = accordion.context instanceof DG.DataFrame ? accordion.context : accordion.context.dataFrame;
+      console.log(accordion);
+      if (accordion.context instanceof DG.DataFrame) {
+        throw 'STOP! YOU VIOLATED THE LAW!';
+      }
+      if (accordion.context instanceof DG.RowGroup) {
+        const originalDf: DG.DataFrame = accordion.context.dataFrame;
 
         if (originalDf.getTag('dataType') === 'peptides' && originalDf.col('~splitCol')) {
           let histPane = accordion.getPane('Distribution');
@@ -37,31 +40,34 @@ export class SARViewer extends DG.JsViewer {
               'splitColumnName': '~splitCol',
             }).root;
           }, true);
-          // console.log('from accordion');
-          // console.log(originalDf.columns.names());
-          // console.log(originalDf.col('~splitCol')?.categories);
         }
       }
     };
-    // grok.events.onAccordionConstructed.subscribe();
-    if (typeof this.dataFrame !== 'undefined') {
-    //   this.subs.push(DG.debounce(this.dataFrame.selection.onChanged, 50).subscribe((_: any) => this.render()));
-    //   this.subs.push(DG.debounce(this.dataFrame.filter.onChanged, 50).subscribe((_: any) => this.render()));
-    //   this.subs.push(DG.debounce(ui.onSizeChanged(this.root), 50).subscribe((_: any) => this.render()));
-      this.subs.push(DG.debounce(grok.events.onAccordionConstructed, 50).subscribe(accordionFunc));
-    }
+    
+    this.subs.push(DG.debounce(grok.events.onAccordionConstructed, 50).subscribe(accordionFunc));
 
     this.render();
   }
 
   onPropertyChanged(property: DG.Property) {
     super.onPropertyChanged(property);
+
+    if (property.name === 'activityScalingMethod') {
+      const minActivity = this.dataFrame?.col(this.activityColumnColumnName)?.min;
+      if (minActivity && minActivity <= 0 && this.activityScalingMethod !== 'none') {
+        grok.shell.warning(`Could not apply ${this.activityScalingMethod}: ` +
+          `activity column ${this.activityColumnColumnName} contains zero or negative values, falling back to 'none'.`);
+        property.set(this, 'none');
+        return;
+      }
+    }
+
     this.render();
   }
 
   async render() {
     //TODO: optimize. Don't calculate everything again if only view changes
-    if (typeof this.dataFrame !== 'undefined' && this.activityColumnColumnName !== null) {
+    if (typeof this.dataFrame !== 'undefined' && this.activityColumnColumnName) {
       this.grid = await describe(
         this.dataFrame,
         this.activityColumnColumnName,
