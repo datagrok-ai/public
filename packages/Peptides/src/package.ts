@@ -95,21 +95,24 @@ export function analyzePeptides(col: DG.Column): DG.Widget {
 
   const activityColumnChoice = ui.columnInput('Activity column', col.dataFrame, defaultColumn);
   const activityScalingMethod = ui.choiceInput('Activity scaling', 'none', ['none', 'lg', '-lg']);
-  // const showHistogram = ui.boolInput('Show histogram', false);
+  activityColumnChoice.onChanged((_: any) => {
+    activityScalingMethod.enabled = activityColumnChoice.value && activityColumnChoice.value.min > 0;
+    activityScalingMethod.enabled ?
+      activityScalingMethod.setTooltip('Function to apply for each value in activity column') : null;
+  });
 
   const startBtn = ui.button('Start', async () => {
     if (activityColumnChoice.value.type === DG.TYPE.FLOAT) {
       const options = {
         'activityColumnColumnName': activityColumnChoice.value.name,
         'activityScalingMethod': activityScalingMethod.value,
-        // 'showHistogram': showHistogram.value
       };
       (grok.shell.v as DG.TableView).addViewer('peptide-sar-viewer', options);
     } else {
       grok.shell.error('The activity column must be of double type!');
     }
   });
-  //showHistogram removed
+
   return new DG.Widget(ui.divV([ui.inputs([activityColumnChoice, activityScalingMethod]), startBtn]));
 }
 
@@ -157,7 +160,7 @@ export function aminoAcidsCellRenderer() {
 }
 
 
-
+//TODO: move viewer to a separate file
 class Logo extends DG.JsViewer {
   initialized: boolean;
   option: any;
@@ -287,16 +290,13 @@ class Logo extends DG.JsViewer {
   }
 }
 
-//name: Show logo
+//name: Composition analysis
 //tags: panel, widget
 //input: column col {semType: alignedSequence}
 //output: widget result
-export function showl(col: DG.Column): DG.Widget {
-  const startBtn = ui.button('Start', async () => {
-    const peptidesView = grok.shell.v;
-    (<DG.TableView>peptidesView).addViewer('peptide-logo-viewer');
-  });
-  return new DG.Widget(ui.div(startBtn));
+export async function showl(col: DG.Column): Promise<DG.Widget> {
+  const viewer = await col.dataFrame.plot.fromType('peptide-logo-viewer');
+  return new DG.Widget(viewer.root);
 }
 
 //name: peptide-logo-viewer
