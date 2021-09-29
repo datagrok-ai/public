@@ -56,7 +56,6 @@ M  END
     if (mol) {
       try {
         if (mol.is_valid()) {
-          let isActualSubstruct = false;
           const scaffoldIsMolBlock = this._isMolBlock(scaffoldMolString);
           if (scaffoldIsMolBlock) {
             const rdkitScaffoldMol = this._fetchMol(scaffoldMolString, "", molRegenerateCoords, false).mol;
@@ -71,9 +70,7 @@ M  END
             mol.delete();
             mol = rdKitModule.get_mol(molBlock);
           }
-          const molIsMolBlock = this._isMolBlock(molString); 
-          const scaffoldGiven = scaffoldIsMolBlock; //  || scaffoldMolString !== '';
-          if (!molIsMolBlock && !scaffoldGiven || !molIsMolBlock && (substructJson === '{}') || molRegenerateCoords) {
+          if (!scaffoldIsMolBlock || molRegenerateCoords) {
             mol.normalize_2d_molblock();
             mol.straighten_2d_layout();
           }
@@ -180,7 +177,7 @@ M  END
   _initScaffoldString(colTags, tagName) {
 
     let scaffoldString = colTags ? colTags[tagName] : null;
-    if (scaffoldString?.endsWith(this.WHITE_MOLBLOCK_SUFFIX) || scaffoldString === '') {
+    if (scaffoldString?.endsWith(this.WHITE_MOLBLOCK_SUFFIX)) {
       scaffoldString = null;
       if (colTags[tagName]) {
         delete colTags[tagName];

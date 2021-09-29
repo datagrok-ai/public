@@ -1,0 +1,26 @@
+{
+	"name": "hittriage",
+	"beta": true,
+	"friendlyName": "HitTriage",
+	"version": "0.0.1",
+	"description": "",
+	"dependencies": {
+		"datagrok-api": "latest",
+		"ts-loader": "latest",
+		"typescript": "latest"
+	},
+	"devDependencies": {
+		"webpack": "latest",
+		"webpack-cli": "latest"
+	},
+	"scripts": {
+		"debug-hittriage": "grok publish --rebuild",
+		"release-hittriage": "grok publish --rebuild --release",
+		"build-hittriage": "webpack",
+		"build": "webpack",
+		"debug-hittriage-dev": "grok publish dev --rebuild",
+		"release-hittriage-dev": "grok publish dev --rebuild --release",
+		"debug-hittriage-public": "grok publish public --rebuild",
+		"release-hittriage-public": "grok publish public --rebuild --release"
+	}
+}
