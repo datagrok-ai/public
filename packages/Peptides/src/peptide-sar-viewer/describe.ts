@@ -1,10 +1,9 @@
-import * as grok from 'datagrok-api/grok';
 import * as ui from 'datagrok-api/ui';
 import * as DG from 'datagrok-api/dg';
 //@ts-ignore
 import * as jStat from 'jstat';
 import {splitAlignedPeptides} from '../split-aligned';
-import {decimalAdjust, tTest, uTest} from '../utils/misc';
+import {decimalAdjust, tTest} from '../utils/misc';
 import {ChemPalette} from '../utils/chem-palette';
 
 
@@ -169,17 +168,30 @@ export async function describe(
   const grid = matrixDf.plot.grid();
 
   grid.sort([aminoAcidResidue]);
+  grid.columns.setOrder([aminoAcidResidue].concat(positionColumns));
 
   for (const col of matrixDf.columns) {
     if (col.name === aminoAcidResidue) {
       col.semType = 'aminoAcids';
       col.setTag('cell.renderer', 'aminoAcids');
+      let maxLen = 0;
+      col.categories.forEach( (ent:string)=>{
+        if ( ent.length > maxLen) {
+          maxLen = ent.length;
+        }
+      });
+
+      grid.columns.byName(aminoAcidResidue)!.width = maxLen * 15;
     }
   }
-  grid.columns.setOrder([aminoAcidResidue].concat(positionColumns));
 
   //render column headers and AAR symbols centered
   grid.onCellRender.subscribe(function(args: DG.GridCellRenderArgs) {
+    args.g.save();
+    args.g.beginPath();
+    args.g.rect(args.bounds.x, args.bounds.y, args.bounds.width, args.bounds.height);
+    args.g.clip();
+
     if (args.cell.isRowHeader && args.cell.gridColumn.visible) {
       args.cell.gridColumn.visible = false;
       args.preventDefault();
@@ -246,6 +258,7 @@ export async function describe(
         args.preventDefault();
       }
     }
+    args.g.restore();
   });
 
   // show all the statistics in a tooltip over cell
@@ -296,7 +309,7 @@ export async function describe(
 
       //TODO: fix color-coding
       const splitCol = DG.Column.fromStrings(splitColName, splitArray);
-      const cp = ChemPalette.get_datagrok();
+      const cp = ChemPalette.getDatagrok();
       const colorMap: {[index: string]: string} = {'Other': DG.Color.toRgb(DG.Color.lightGray)};
       colorMap[currentAAR] = cp[currentAAR];
       splitCol.colors.setCategorical(colorMap);

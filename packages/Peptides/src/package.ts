@@ -34,16 +34,6 @@ async function main(chosenFile : string) {
   tableGrid = view.grid;
   view.name = 'PeptidesView';
 
-  view.grid.onCellRender.subscribe(function(args) {
-    if (args.cell.isColHeader) {
-      const textSize = args.g.measureText(args.cell.gridColumn.name);
-      args.g.fillText(args.cell.gridColumn.name, args.bounds.x + (args.bounds.width - textSize.width)/2,
-        args.bounds.y + (textSize.fontBoundingBoxAscent + textSize.fontBoundingBoxDescent));
-      args.g.fillStyle = '#4b4b4a';
-      args.preventDefault();
-    }
-  });
-
   pi.close();
 }
 
