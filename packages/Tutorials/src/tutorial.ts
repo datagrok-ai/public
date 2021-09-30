@@ -82,7 +82,8 @@ export abstract class Tutorial extends DG.Widget {
       }  
       this.clearRoot();
       this.closed = true;
-      this._removeHints(this.activeHints);
+      this.onClose.next();
+      // this._removeHints(this.activeHints);
       //grok.shell.tableView(this.t.name).close();
       $('.tutorial').show();
       $('#tutorial-child-node').html('');
@@ -275,8 +276,14 @@ export abstract class Tutorial extends DG.Widget {
 
   firstEvent(eventStream: Observable<any>): Promise<void> {
     return new Promise<void>((resolve, reject) => {
-      eventStream.pipe(first()).subscribe((_: any) => resolve());
-    });
+      const eventSub = eventStream.pipe(first()).subscribe((_: any) => resolve());
+      const closeSub = this.onClose.subscribe(() => {
+        eventSub.unsubscribe();
+        closeSub.unsubscribe();
+        this._removeHints(this.activeHints);
+        reject();
+      });
+    }).catch((_) => console.log('Closing tutorial', this.name));
   }
 
   _onClose: Subject<void> = new Subject();
