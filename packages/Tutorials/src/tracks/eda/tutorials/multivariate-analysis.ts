@@ -12,7 +12,7 @@ export class MultivariateAnalysisTutorial extends Tutorial {
     'principle of multivariate statistics, which involves observation ' +
     'and analysis of more than one statistical outcome variable at a time';
   }
-  get steps(){ return 6} //set thew number of steps
+  get steps(){ return 5} //set thew number of steps
     
   demoTable: string = 'cars.csv';
 
@@ -27,8 +27,8 @@ export class MultivariateAnalysisTutorial extends Tutorial {
     await this.dlgInputAction(dlg, 'Set "Table" to "cars"','', 'Table', 'cars');
     await this.dlgInputAction(dlg, 'Set "Predict" to "price"', 'Set "Features" to "all". Click "All" in the column selection dialog.', 'Predict', 'price');
 
-    await this.dlgInputAction(dlg, 'Set "Features" to "all".', ' Click "All" in the column selection dialog',
-       'Features', this.t.columns.names().join(','));
+   // await this.dlgInputAction(dlg, 'Set "Features" to "all".', ' Click "All" in the column selection dialog',
+   //    'Features', this.t.columns.names().join(','));
     await this.dlgInputAction(dlg, 'Set the number of components to "3"', '', 'Components', '3');
 
     await this.action('Click "OK" and wait for the analysis to complete.', 
