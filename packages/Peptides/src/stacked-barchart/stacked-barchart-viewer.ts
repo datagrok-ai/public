@@ -12,7 +12,6 @@ export function addViewerToHeader(grid: DG.Grid, viewer: Promise<Widget>) {
   let left = 200;
   let right = 200;
   let bottom = 300;
-  console.error(wrapper);
 
   wrapper.style.width = '300px';
   wrapper.style.height = '200px';
@@ -118,7 +117,7 @@ export class StackedBarChart extends DG.JsViewer {
       this.data = [];
 
       this.aminoColumnNames = [];
-      const cp = ChemPalette.get_datagrok();
+      const cp = ChemPalette.getDatagrok();
       this.getColor = (c = '') => {
         //return c ? DG.Color.toRgb(this.colorScale(c)) : 'rgb(127,127,127)'
         return c in cp ? cp[c] : 'rgb(0,0,0)';

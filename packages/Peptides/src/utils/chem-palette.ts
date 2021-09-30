@@ -21,26 +21,26 @@ export class ChemPalette {
   }
 
 
-  static make_palette(dt: [string[], string][], simplified = false) {
+  static makePalette(dt: [string[], string][], simplified = false) {
     const palette: { [key: string]: string } = {};
     dt.forEach((cp) => {
-      const obj_list = cp[0];
+      const objList = cp[0];
       const colour = cp[1];
-      obj_list.forEach((obj, ind) => {
+      objList.forEach((obj, ind) => {
         palette[obj] = ChemPalette.colourPalette[colour][simplified ? 0 : ind];
       });
     });
     return palette;
   }
 
-  static get_datagrok = () => ChemPalette.make_palette([
+  static getDatagrok = () => ChemPalette.makePalette([
     [['C', 'U'], 'yellow'],
     [['G', 'P'], 'red'],
     [['A', 'V', 'I', 'L', 'M', 'F', 'Y', 'W'], 'all_green'],
     [['R', 'H', 'K'], 'light_blue'],
     [['D', 'E'], 'dark_blue'],
     [['S', 'T', 'N', 'Q'], 'orange']]);
-  static get_lesk = () => ChemPalette.make_palette([
+  static getLesk = () => ChemPalette.makePalette([
     [['G', 'A', 'S', 'T'], 'orange'],
     [['C', 'V', 'I', 'L', 'P', 'F', 'Y', 'M', 'W'], 'all_green'],
     [['N', 'Q', 'H'], 'magenta'],
