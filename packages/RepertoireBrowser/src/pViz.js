@@ -38,7 +38,7 @@ export class PvizMethods {
             let ptm_color_obj = {};
             let ptm_el_obj = {};
             let ptm_prob_obj = {};
-            let palette = MiscMethods.interpolateColors('(255, 255, 0)','(255, 0, 0)',5);
+            let palette = MiscMethods.interpolateColors('(255, 255, 0)','(255, 0, 0)', 5);
 
             ptm_choices.forEach(ptm => {
                 let ptm_array = json.ptm_predictions[chain][ptm];
@@ -84,6 +84,8 @@ export class PvizMethods {
         let chains = Object.keys(this.pVizParams.seq);
         chains.forEach((chain) => {
             let den_feature_map = [];
+            let den_el_obj  = [];
+            let den_prob_obj = [];
             let den_color_arr = new Array(this.pVizParams.seq[chain].length).fill(1);
             let palette = MiscMethods.interpolateColors('(255, 255, 0)', '(255, 0, 0)', 5);
 
@@ -93,8 +95,12 @@ export class PvizMethods {
                         den_feature_map.push(point[0]);
                     }
                     den_color_arr[point[0]] = den_color_arr[point[0]] * (1 - point[1])
+                    den_el_obj.push(point[0]);
+                    den_prob_obj.push(point[1]);
                 })
             })
+
+            den_el_obj.sort(function(a, b) {return a - b; });;
 
             den_feature_map.sort((a, b) => a - b);
             den_feature_map = den_feature_map.map(function (ft) {
@@ -116,7 +122,7 @@ export class PvizMethods {
                 den_color_arr[i] = palette[Math.round((1 - den_color_arr[i]) * 4)];
             }
 
-            denMap[chain] = {den_feature_map: den_feature_map, den_color_obj: {'D': den_color_arr}}
+            denMap[chain] = {den_feature_map: den_feature_map, den_color_obj: {'D': den_color_arr}, den_el_obj: den_el_obj, den_prob_obj:den_prob_obj}
         })
 
 
@@ -130,6 +136,8 @@ export class PvizMethods {
         chains.forEach((chain) => {
             let par_feature_map = [];
             let par_color_arr = [];
+            let par_el_obj  = [];
+            let par_prob_obj = [];
             let palette = MiscMethods.interpolateColors('(255, 255, 255)', '(255, 0, 255)', 100);
 
             Object.keys(json.parapred_predictions[chain]).forEach((index) => {
@@ -142,9 +150,11 @@ export class PvizMethods {
                     improbable: true
                 })
                 par_color_arr.push(palette[Math.round(json.parapred_predictions[chain][index] * 100)]);
+                par_el_obj.push(index);
+                par_prob_obj.push(json.parapred_predictions[chain][index]);
             })
 
-            parMap[chain] = {par_feature_map: par_feature_map, par_color_obj: {'P': par_color_arr}}
+            parMap[chain] = {par_feature_map: par_feature_map, par_color_obj: {'P': par_color_arr}, par_el_obj : par_el_obj, par_prob_obj:par_prob_obj}
         })
 
         return(parMap)
@@ -207,6 +217,10 @@ export class PvizMethods {
                 this.pviz.FeatureDisplayer.setStrikeoutCategory(mod);
             });
 
+            this.pviz.FeatureDisplayer.trackHeightPerCategoryType['P'] = 1.5;
+            this.pviz.FeatureDisplayer.setStrikeoutCategory('P');
+            
+
             let switchObj = {'H':{}, 'L':{}}
             let pVizParams = this.pVizParams;
             let stage = this.ngl.stage;
@@ -241,7 +255,7 @@ export class PvizMethods {
                 let selectorStr = 'g.feature.' + ft.category + ' rect.feature';
                 let el = document.querySelectorAll(selectorStr);
                 let el_lst = pVizParams.ptmMap[chain].ptm_el_obj[ft.category];
-                let prob_lst = pVizParams.ptmMap[chain].ptm_prob_obj[ft.category]
+                let prob_lst = pVizParams.ptmMap[chain].ptm_prob_obj[ft.category];
                 el = el[el_lst.indexOf(ft.start)];
                 let prob =  prob_lst[el_lst.indexOf(ft.start)];
 
@@ -253,7 +267,45 @@ export class PvizMethods {
 
             }).addMouseoutCallback(mod_codes, function(ft) {
                 ui.tooltip.hide();
-            }) ;
+            });
+
+            this.pviz.FeatureDisplayer.addMouseoverCallback(['P'], async function(ft) {
+
+                let selectorStr = 'g.feature.data.P.Paratope_predictions rect.feature';
+                let el = document.querySelectorAll(selectorStr);
+                let el_lst = pVizParams.parMap[chain].par_el_obj;
+                let prob_lst = pVizParams.parMap[chain].par_prob_obj;
+                el = el[el_lst.indexOf((ft.start).toString())];
+                let prob =  prob_lst[el_lst.indexOf((ft.start).toString())];
+                
+                ui.tooltip.show(
+                    ui.span([`Probability: ${prob.toFixed(2)}`]),
+                    el.getBoundingClientRect().left + 10,
+                    el.getBoundingClientRect().top + 10
+                );
+
+            }).addMouseoutCallback(mod_codes, function(ft) {
+                ui.tooltip.hide();
+            });
+
+            this.pviz.FeatureDisplayer.addMouseoverCallback(['D'], async function(ft) {
+
+                let selectorStr = 'g.feature.data.D rect.feature';
+                let el = document.querySelectorAll(selectorStr);
+                let el_lst = pVizParams.denMap[chain].den_el_obj;
+                let prob_lst = pVizParams.denMap[chain].den_prob_obj;
+                el = el[el_lst.indexOf(ft.start)];
+                let prob =  prob_lst[el_lst.indexOf(ft.start)];
+                
+                ui.tooltip.show(
+                    ui.span([`Probability: ${prob.toFixed(2)}`]),
+                    el.getBoundingClientRect().left + 10,
+                    el.getBoundingClientRect().top + 10
+                );
+
+            }).addMouseoutCallback(mod_codes, function(ft) {
+                ui.tooltip.hide();
+            });
 
             if (paratopes === true) {
                 seqEntry.addFeatures(this.pVizParams.parMap[chain].par_feature_map);
