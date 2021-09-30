@@ -75,11 +75,7 @@ export abstract class Tutorial extends DG.Widget {
     let id = tutorials.indexOf(this);
     
     
-    let closeTutorial = ui.button(ui.iconFA('times-circle'),()=>{
-      if (this.status != true){
-        this.status = true;
-        updateProgress(this.track);
-      }  
+    let closeTutorial = ui.button(ui.iconFA('times-circle'), () => { 
       this.clearRoot();
       this.closed = true;
       this.onClose.next();
