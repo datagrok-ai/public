@@ -270,7 +270,7 @@ export abstract class Tutorial extends DG.Widget {
   }
 
   clearRoot(): void {
-    this.progress.value = 0;
+    this.progress.value = 1;
     $(this.root).children().each((idx, el) => $(el).empty());
   }
 
