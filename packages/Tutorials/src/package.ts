@@ -5,6 +5,7 @@ import { Track, TutorialRunner } from './track';
 import { chem } from './tracks/chem';
 import { eda } from './tracks/eda';
 import { ml } from './tracks/ml';
+import { TutorialWidget } from './widget';
 import '../css/tutorial.css';
 
 
@@ -23,4 +24,10 @@ export async function trackOverview() {
 
   grok.shell.dockManager.dock(root, DG.DOCK_TYPE.RIGHT, null, 'Tutorials', 0.3);
   
+}
+
+//output: widget tutorial
+//tags: dashboard
+export function tutorialWidget(): DG.Widget {
+  return new TutorialWidget();
 }
