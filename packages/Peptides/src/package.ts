@@ -9,9 +9,10 @@ import {SARViewer} from './peptide-sar-viewer/sar-viewer';
 import {AlignedSequenceCellRenderer, AminoAcidsCellRenderer} from './utils/cell-renderer';
 import {DataFrame} from 'datagrok-api/dg';
 import {splitAlignedPeptides} from './split-aligned';
-import {StackedBarChart} from './stacked-barchart/stacked-barchart-viewer';
+import {StackedBarChart, addViewerToHeader} from './stacked-barchart/stacked-barchart-viewer';
 
 export const _package = new DG.Package();
+let tableGrid: DG.Grid;
 
 async function main(chosenFile : string) {
   const pi = DG.TaskBarProgressIndicator.create('Loading Peptides');
@@ -19,17 +20,18 @@ async function main(chosenFile : string) {
   //  await grok.data.loadTable('https://datagrok.jnj.com/p/ejaeger.il23peptideidp5562/il-23_peptide_idp-5562');
   const path = _package.webRoot + 'files/' + chosenFile;
   const peptides = (await grok.data.loadTable(path));
-  peptides.name = "Peptides";
-  peptides.setTag("dataType", "peptides");
+  peptides.name = 'Peptides';
+  peptides.setTag('dataType', 'peptides');
 
   const view = grok.shell.addTableView(peptides);
+  tableGrid = view.grid;
   view.name = 'PeptidesView';
 
-  view.grid.onCellRender.subscribe(function (args) {
-    if(args.cell.isColHeader){
-      let textSize = args.g.measureText(args.cell.gridColumn.name);
-      args.g.fillText(args.cell.gridColumn.name, args.bounds.x + (args.bounds.width - textSize.width)/2, 
-      args.bounds.y + (textSize.fontBoundingBoxAscent + textSize.fontBoundingBoxDescent));
+  view.grid.onCellRender.subscribe(function(args) {
+    if (args.cell.isColHeader) {
+      const textSize = args.g.measureText(args.cell.gridColumn.name);
+      args.g.fillText(args.cell.gridColumn.name, args.bounds.x + (args.bounds.width - textSize.width)/2,
+        args.bounds.y + (textSize.fontBoundingBoxAscent + textSize.fontBoundingBoxDescent));
       args.g.fillStyle = '#4b4b4a';
       args.preventDefault();
     }
@@ -62,7 +64,7 @@ export function Peptides() {
     ui.div([
       ui.block25([
         ui.button('Open simple case demo', () => main('aligned.csv'), ''),
-        ui.button('Open complex case demo', () => main('aligned_2.csv'), '')
+        ui.button('Open complex case demo', () => main('aligned_2.csv'), ''),
       ]),
       ui.block75([annotationViewerDiv]),
     ]),
@@ -119,6 +121,8 @@ export function analyzePeptides(col: DG.Column): DG.Widget {
         'activityScalingMethod': activityScalingMethod.value,
       };
       (grok.shell.v as DG.TableView).addViewer('peptide-sar-viewer', options);
+      const widgProm = col.dataFrame.plot.fromType('StackedBarChartAA');
+      addViewerToHeader(tableGrid, widgProm);
     } else {
       grok.shell.error('The activity column must be of floating point number type!');
     }

@@ -3,7 +3,64 @@ import * as ui from 'datagrok-api/ui';
 import {axisBottom, scaleBand, scaleLinear, select, color} from 'd3';
 import {ChemPalette} from '../utils/chem-palette';
 import $ from 'cash-dom';
-import {Property} from 'datagrok-api/dg';
+import {GridCell, Property, Widget} from 'datagrok-api/dg';
+
+
+export function addViewerToHeader(grid: DG.Grid, viewer: Promise<Widget>) {
+  const wrapper = ui.div([]);
+  let barchartRoot: HTMLElement = ui.div([]);
+  let left = 200;
+  let right = 200;
+  let bottom = 300;
+  console.error(wrapper);
+
+  wrapper.style.width = '300px';
+  wrapper.style.height = '200px';
+  wrapper.style.position = 'absolute';
+  wrapper.style.left = '200px';
+  wrapper.setAttribute('position', 'absolute;');
+  grid.setOptions({'colHeaderHeight': 200});
+  grid.root.appendChild(wrapper);
+
+  viewer.then((viewer) => {
+    const barchart = viewer as StackedBarChart;
+    barchartRoot = barchart.root;
+    barchartRoot.setAttribute('class', 'ui-div');
+    wrapper.appendChild(barchart.root);
+    barchart.aminoColumnNames.forEach((name) => {
+            grid.columns.byName(name)!.width = 20;
+    });
+    grid.onCellRender.subscribe( (args)=> {
+      if (args.cell.isColHeader) {
+        args.preventDefault();
+      }
+    });
+    grid.onCellPrepare((cell: GridCell) => {
+      if (cell.isColHeader && barchart.aminoColumnNames.length > 0) {
+        if (cell.gridColumn.name == barchart.aminoColumnNames.at(-1)) {
+          right = cell.bounds.right;
+          bottom = cell.bounds.bottom;
+          wrapper.style.width = `${left - right}px`;
+          wrapper.style.height = `${bottom}px`;
+          wrapper.style.left = `${left}px`;
+          barchartRoot.style.width = `${left - right}px`;
+          barchartRoot.style.height = `${bottom}px`;
+          barchartRoot.style.left = `${left}px`;
+        }
+        if (cell.gridColumn.name == barchart.aminoColumnNames.at(0)) {
+          left = cell.bounds.left;
+          bottom = cell.bounds.bottom;
+          wrapper.style.width = `${left - right}px`;
+          wrapper.style.height = `${bottom}px`;
+          wrapper.style.left = `${left}px`;
+          barchartRoot.style.width = `${left - right}px`;
+          barchartRoot.style.height = `${bottom}px`;
+          barchartRoot.style.left = `${left}px`;
+        }
+      }
+    });
+  });
+}
 
 
 export class StackedBarChart extends DG.JsViewer {
@@ -21,9 +78,8 @@ export class StackedBarChart extends DG.JsViewer {
     private yScale: any;
     private xScale: any;
     private data: { 'name': number, 'data': { 'name': string, 'count': number, 'selectedCount': number }[] }[] = [];
-    private colors: { [Key: string]: string; } = {};
     private selectionMode: boolean = false;
-    private aminoColumnNames: string[] = [];
+    public aminoColumnNames: string[] = [];
     // @ts-ignore
     private getColor: ((c?: string) => string);
     private aminoColumnIndices: { [Key: string]: number; } = {};
@@ -40,7 +96,6 @@ export class StackedBarChart extends DG.JsViewer {
       this.initialized = false;
     }
 
-    // Additional chart settings
     init() {
       const groups: [string[], string][] = [
         [['C', 'U'], 'yellow'],
@@ -213,8 +268,10 @@ export class StackedBarChart extends DG.JsViewer {
       }
       const
         width = this.root.parentElement.clientWidth;
+      this.root.style.width = `${width}px`;
       const
         height = this.root.parentElement.clientHeight;
+      this.root.style.width = `${height}px`;
       const
         innerWidth = width - this.margin.left - this.margin.right;
       const
@@ -232,9 +289,9 @@ export class StackedBarChart extends DG.JsViewer {
         svg = select(this.root).append('svg')
           .attr('width', width)
           .attr('height', height);
+      svg.attr('style', 'z-index:1');
       const
         g = svg.append('g').attr('transform', `translate(${this.margin.left}, ${this.margin.top})`);
-
       const
         x = this.xScale
           .domain(this.data.map((d) => d['name']))

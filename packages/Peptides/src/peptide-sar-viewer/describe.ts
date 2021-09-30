@@ -48,6 +48,13 @@ export async function describe(
     df.join(splitSeqDf, [activityColumn], [activityColumn], df.columns.names(), positionColumns, 'inner', true);
   }
 
+  for (const col of df.columns) {
+    if (splitSeqDf.col(col.name) && col.name != activityColumn) {
+      col.semType = 'aminoAcids';
+      col.setTag('cell.renderer', 'aminoAcids');
+    }
+  }
+
   // scale activity
   switch (activityScaling) {
   case 'lg':
@@ -71,7 +78,7 @@ export async function describe(
   //unpivot a table and handle duplicates
   splitSeqDf = splitSeqDf.groupBy(positionColumns)
     .add('med', activityColumnScaled, activityColumnScaled)
-    .aggregate()
+    .aggregate();
 
   const peptidesCount = splitSeqDf.getCol(activityColumnScaled).length;
 
@@ -130,7 +137,7 @@ export async function describe(
     testResult = tTest(currentActivity, otherActivity);
     // testResult = uTest(currentActivity, otherActivity);
     pValues.push(testResult['p-value']);
-    mDiff.push(testResult['Mean difference']!)
+    mDiff.push(testResult['Mean difference']!);
   }
   matrixDf.columns.add(DG.Column.fromList(DG.TYPE.FLOAT, 'p-value', pValues));
   matrixDf.columns.add(DG.Column.fromList(DG.TYPE.FLOAT, 'Mean difference', mDiff));
@@ -162,9 +169,18 @@ export async function describe(
 
   //render column headers and AAR symbols centered
   grid.onCellRender.subscribe(function(args: DG.GridCellRenderArgs) {
+    const textSize = args.g.measureText(args.cell.gridColumn.name);
+    if (args.cell.isRowHeader) {
+      const text = matrixDf.getCol(aminoAcidResidue).get(<number>args.cell.tableRowIndex);
+      args.g.fillText(
+        text,
+        args.bounds.x + (args.bounds.width - textSize.width) / 2,
+        args.bounds.y + (textSize.actualBoundingBoxAscent + textSize.actualBoundingBoxDescent),
+      );
+      args.preventDefault();
+    }
     if (args.cell.isColHeader) {
-      const textSize = args.g.measureText(args.cell.gridColumn.name);
-      if ( args.cell.gridColumn.name != aminoAcidResidue) {
+      if (args.cell.gridColumn.name != aminoAcidResidue) {
         args.g.fillText(
           args.cell.gridColumn.name,
           args.bounds.x + (args.bounds.width - textSize.width) / 2,
