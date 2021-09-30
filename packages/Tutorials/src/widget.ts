@@ -15,10 +15,13 @@ export class TutorialWidget extends DG.Widget {
   allTutorials: HTMLHeadingElement = ui.h2('');
   completeTutorials: HTMLHeadingElement = ui.h2('');
   totalProgress: HTMLHeadingElement = ui.h2('');
+  runners:TutorialRunner[];
 
-  constructor() {
+  constructor(...runners:TutorialRunner[]) {
     super(ui.panel([], 'tutorial-widget'));
 
+    this.runners = runners;
+    
     const runEda = new TutorialRunner(eda);
     const runChem = new TutorialRunner(chem);
     const runMl = new TutorialRunner(ml);
