@@ -168,7 +168,7 @@ progress[value]::-webkit-progress-value::after {
 .tutorials-root-progress{
     padding-bottom: 15px;
     margin-bottom: 15px;
-    border-bottom: 1px solid var(--grey-2);
+    border-bottom: 1px solid var(--grey-1);
     color: var(--grey-4);
 }
 

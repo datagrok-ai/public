@@ -66,18 +66,25 @@ export abstract class Tutorial extends DG.Widget {
     this.progressSteps = ui.divText('Step: '+String(this.progress.value)+' of '+this.steps);
     this.progressDiv.append(this.progressSteps);
 
-    console.clear();
+    const tutorials = this.track?.tutorials;
+    if (!tutorials) {
+      console.error('The launched tutorial is not bound to any track.');
+      return;
+    }
 
-    const switchToMainView = () => {
-      $('.tutorial').show();
+    let id = tutorials.indexOf(this);
+    
+    
+    let closeTutorial = ui.button(ui.iconFA('times-circle'),()=>{
       if (this.status != true){
+        this.status = true;
         updateProgress(this.track);
       }  
+      this.clearRoot();
+      //grok.shell.tableView(this.t.name).close();
+      $('.tutorial').show();
       $('#tutorial-child-node').html('');
-      grok.shell.tableView(this.t.name).close();
-    };
-    
-    let closeTutorial = ui.button(ui.iconFA('times-circle'),switchToMainView);
+    });
 
     closeTutorial.style.minWidth = '30px';
     this.headerDiv.append(this.header);
@@ -91,17 +98,12 @@ export abstract class Tutorial extends DG.Widget {
 
     this.title('Congratulations!');
     this.describe('You have successfully completed this tutorial.');
-    
+
+    console.clear();
+    console.log(id);
+
     await grok.dapi.userDataStorage.postValue(Tutorial.DATA_STORAGE_KEY, this.name, new Date().toUTCString());
-
-    const tutorials = this.track?.tutorials;
-    if (!tutorials) {
-      console.error('The launched tutorial is not bound to any track.');
-      return;
-    }
-
-    let id = tutorials.indexOf(this);
-
+    
     function updateProgress(track:any){
       track.completed++;
       $(`.tutorials-track[data-name ='${track?.name}']`)
@@ -111,27 +113,49 @@ export abstract class Tutorial extends DG.Widget {
       $(`.tutorials-track[data-name ='${track?.name}'] > .tutorials-track-details`).children().first().text($(`.tutorials-track[data-name ='${track?.name}']`).find('progress').prop('value')+'% complete');
       $(`.tutorials-track[data-name ='${track?.name}'] > .tutorials-track-details`).children().last().text(String(track.completed+' / '+track.tutorials.length));
     }
-    
+
+
     if (id < tutorials.length - 1){
       this.root.append(ui.divV([
-        ui.divText('Next "'+tutorials[++id].name+'"', {style:{margin:'5px 0'}}),
+        ui.divText('Next "'+tutorials[id+1].name+'"', {style:{margin:'5px 0'}}),
         ui.divH([
           ui.bigButton('Start', () => {
+            console.log(id)
             if (this.status != true){
-              console.log('update completed');
+              this.status = true;
               updateProgress(this.track);
             }  
+            this.clearRoot();
             $('#tutorial-child-node').html('');
-            $('#tutorial-child-node').append(tutorials[++id].root);
-            tutorials[id].run();
+            $('#tutorial-child-node').append(tutorials[id+1].root);
+            tutorials[id+1].run();
           }),
-          ui.button('Cancel', switchToMainView)
+          ui.button('Cancel', ()=>{
+            console.log(id);
+            if (this.status != true){
+              this.status = true;
+              updateProgress(this.track);
+            }  
+            //grok.shell.tableView(this.t.name).close();
+            this.clearRoot();
+            $('.tutorial').show();
+            $('#tutorial-child-node').html('');
+          })
         ], {style:{marginLeft:'-4px'}})
       ]))
     } else if (id == tutorials.length - 1) {
       this.root.append(ui.div([
-        ui.divText('You complete all tutorials from '+ this.track?.name),
-        ui.button('Close', switchToMainView,)
+        ui.divText(this.track?.name+' complete!'),
+        ui.bigButton('Complete', ()=>{
+          if (this.status != true){
+            this.status = true;
+            updateProgress(this.track);
+          }  
+          //grok.shell.tableView(this.t.name).close();
+          this.clearRoot();
+          $('.tutorial').show();
+          $('#tutorial-child-node').html('');
+        })
       ]))
     }
   }
@@ -158,12 +182,6 @@ export abstract class Tutorial extends DG.Widget {
 
     let hintnode = hint?.getBoundingClientRect();
     let indicatornode = hintIndicator?.getBoundingClientRect();
-
-    //console.clear();
-    console.log('hint:'+$(hint).css('position'));
-    console.log('hint top:'+hintnode.top+' left:'+hintnode.left);
-    console.log('indicator top:'+indicatornode.top+' left:'+indicatornode.left);
-
 
     let hintPosition = $(hint).css('position');
 
