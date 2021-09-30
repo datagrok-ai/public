@@ -180,24 +180,21 @@ export async function describe(
 
   //render column headers and AAR symbols centered
   grid.onCellRender.subscribe(function(args: DG.GridCellRenderArgs) {
-    const textSize = args.g.measureText(args.cell.gridColumn.name);
-    if (args.cell.isRowHeader) {
-      const text = matrixDf.getCol(aminoAcidResidue).get(<number>args.cell.tableRowIndex);
-      args.g.fillText(
-        text,
-        args.bounds.x + (args.bounds.width - textSize.width) / 2,
-        args.bounds.y + (textSize.actualBoundingBoxAscent + textSize.actualBoundingBoxDescent),
-      );
+    if (args.cell.isRowHeader && args.cell.gridColumn.visible) {
+      args.cell.gridColumn.visible = false;
       args.preventDefault();
+      return;
     }
+
     if (args.cell.isColHeader) {
       if (args.cell.gridColumn.name != aminoAcidResidue) {
+        const textSize = args.g.measureText(args.cell.gridColumn.name);
+        args.g.fillStyle = '#4b4b4a';
         args.g.fillText(
           args.cell.gridColumn.name,
           args.bounds.x + (args.bounds.width - textSize.width) / 2,
           args.bounds.y + (textSize.actualBoundingBoxAscent + textSize.actualBoundingBoxDescent),
         );
-        args.g.fillStyle = '#4b4b4a';
       }
       args.preventDefault();
     }
@@ -268,7 +265,8 @@ export async function describe(
           const query =
             `${aminoAcidResidue} = ${matrixDf.get(aminoAcidResidue, cell.tableRowIndex)} ` +
             `and ${positionColName} = ${cell.tableColumn.name}`;
-          const text = `${decimalAdjust('floor', statsDf.groupBy([col]).where(query).aggregate().get(col, 0), -5)}`;
+          let text = `${decimalAdjust('floor', statsDf.groupBy([col]).where(query).aggregate().get(col, 0), -5)}`;
+          text = col === 'Count' ? text + ` / ${peptidesCount}` : text;
           tooltipMap[col] = text;
         }
       }
