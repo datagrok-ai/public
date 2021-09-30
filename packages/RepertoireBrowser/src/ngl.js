@@ -12,13 +12,13 @@ export class NglMethods {
     async init(view, inputs) {
 
         //sample 1
-        //let col_background = '#2e2e2e';
+        let col_background = '#2e2e2e';
 
         //sample 2
         //let col_background = '#f1ead1';
 
         //sample 3
-        let col_background = 'white';
+        //let col_background = 'white';
 
         inputs.ngl_host.style.backgroundColor = col_background;
         view.box = true;
@@ -36,20 +36,20 @@ export class NglMethods {
     CDR3(cdr_scheme, paratopes) {
 
         //sample 1      
-        // let col_heavy_chain = '#0069a7';
-        // let col_light_chain = '#f1532b';
-        // let col_cdr = '#45d145';
-        //let col_para = 'white';
-        // let col_partopes_high = '(255, 255, 255)';
-        // let col_partopes_low = '(255, 0, 255)';
+        let col_heavy_chain = '#0069a7';
+        let col_light_chain = '#f1532b';
+        let col_cdr = '#45d145';
+        let col_para = 'white';
+        let col_partopes_high = '(255, 255, 255)';
+        let col_partopes_low = '(255, 0, 255)';
 
         //sample 2   
-        let col_heavy_chain = '#000080';
-        let col_light_chain = '#B22222';
-        let col_cdr = '#45d145';
-        let col_para = '#b0c4de';
-        let col_partopes_low = '(176,196,222)'; //col_para in rgb
-        let col_partopes_high = '(255, 0, 255)';
+        // let col_heavy_chain = '#000080';
+        // let col_light_chain = '#B22222';
+        // let col_cdr = '#45d145';
+        // let col_para = '#b0c4de';
+        // let col_partopes_low = '(176,196,222)'; //col_para in rgb
+        // let col_partopes_high = '(255, 0, 255)';
 
 
         let schemeId;
