@@ -41,7 +41,7 @@
 		"build": "webpack",
 		"debug-peptides-dev": "grok publish dev --rebuild",
 		"release-peptides-dev": "grok publish dev --rebuild --release",
-		"debug-peptides-public": "grok publish public --rebuild",
+		"debug-peptides-public": "webpack && grok publish public --rebuild",
 		"release-peptides-public": "grok publish public --rebuild --release",
 		"debug-peptides-local": "grok publish local --rebuild",
 		"release-peptides-local": "grok publish local --rebuild --release",
