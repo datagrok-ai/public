@@ -22,6 +22,13 @@ async function main(chosenFile : string) {
   peptides.name = "Peptides";
   peptides.setTag("dataType", "peptides");
 
+  peptides.onSemanticTypeDetecting.subscribe((_) => {
+    for (const col of peptides.columns) {
+      const regexp = new RegExp('^((.+)?-){5,49}(\\w|\\(|\\))+$');
+      col.semType = DG.Detector.sampleCategories(col, (s) => regexp.test(s)) ? 'alignedSequence' : null;
+    }
+  });
+
   const view = grok.shell.addTableView(peptides);
   view.name = 'PeptidesView';
 
@@ -70,27 +77,6 @@ export function Peptides() {
   ]);
 }
 
-//name: SAR Viewer Help
-//tags: panel, widget
-//input: column _ {semType: alignedSequence}
-//output: widget result
-export function SARViewerHelp(_: DG.Column): DG.Widget {
-  const helpStr =
-  'Circle size in the viewer is based on ratio and color is based on MAD.\n' +
-  '\n' +
-  'Statistics:\n' +
-  'Count - number of peptides containing AAR at position\n' +
-  'MAD - Median absolute deviation\n' +
-  'Median - median of activity\n' +
-  'IQR - interquartile range\n' +
-  'CQV - coefficient of quartile variation (quartile coefficient of dispersion)\n' +
-  'Ratio - share of peptides containing AAR at position\n';
-  const div = ui.divV(helpStr.split('\n').map((line) => {
-    return ui.divText(line);
-  }));
-  return new DG.Widget(div);
-}
-
 //name: Analyze Peptides
 //tags: panel, widgets
 //input: column col {semType: alignedSequence}
@@ -99,18 +85,18 @@ export function analyzePeptides(col: DG.Column): DG.Widget {
   // let defaultColumn: DG.Column | null = col;
   let tempCol = null;
   for (const column of col.dataFrame.columns.numerical) {
-    tempCol = column;
-    break;
+    column.type === DG.TYPE.FLOAT ? tempCol = column : null;
   }
   const defaultColumn: DG.Column = col.dataFrame.col('activity') || col.dataFrame.col('IC50') || tempCol;
 
   const activityColumnChoice = ui.columnInput('Activity column', col.dataFrame, defaultColumn);
   const activityScalingMethod = ui.choiceInput('Activity scaling', 'none', ['none', 'lg', '-lg']);
+  // it doesn't make sense to do apply log to values less than 0
   activityColumnChoice.onChanged((_: any) => {
     activityScalingMethod.enabled = activityColumnChoice.value && activityColumnChoice.value.min > 0;
-    activityScalingMethod.enabled ?
-      activityScalingMethod.setTooltip('Function to apply for each value in activity column') : null;
+    activityScalingMethod.setTooltip('Function to apply for each value in activity column');
   });
+  activityColumnChoice.fireChanged();
 
   const startBtn = ui.button('Start', async () => {
     if (activityColumnChoice.value.type === DG.TYPE.FLOAT) {

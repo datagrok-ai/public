@@ -144,13 +144,24 @@ export async function describe(
     .aggregate();
   matrixDf.name = 'SAR';
 
+  const aarCategoryOrder = [
+    '-', //black I guess
+    'C', 'U', //yellow
+    'G', 'P', //red
+    'A', 'V', 'I', 'L', 'M', 'F', 'Y', 'W', //all_green
+    'R', 'H', 'K', //light_blue
+    'D', 'E', //dark_blue
+    'S', 'T', 'N', 'Q', //orange
+  ];
+  matrixDf.getCol(aminoAcidResidue).setCategoryOrder(aarCategoryOrder);
+
   // !!! DRAWING PHASE !!!
   //find min and max MAD across all of the dataframe
-  // const dfMinMedian = statsDf.getCol(medianColName).min;
-  // const dfMaxMedian = statsDf.getCol(medianColName).max;
   const dfMin = jStat.min(mDiff);
   const dfMax = jStat.max(mDiff);
   const grid = matrixDf.plot.grid();
+
+  grid.sort([aminoAcidResidue]);
 
   for (const col of matrixDf.columns) {
     if (col.name === aminoAcidResidue) {
@@ -182,7 +193,6 @@ export async function describe(
         const query =
           `${aminoAcidResidue} = ${matrixDf.get(aminoAcidResidue, args.cell.tableRowIndex)} ` +
           `and ${positionColName} = ${args.cell.tableColumn.name}`;
-        // const ratio = statsDf.groupBy(['ratio']).where(query).aggregate().get('ratio', 0);
         const pVal = statsDf.groupBy(['p-value']).where(query).aggregate().get('p-value', 0);
 
         let coef;
@@ -260,14 +270,8 @@ export async function describe(
       const currentPosition = grid.table.currentCol.name;
       const splitColName = '~splitCol';
 
-      // @ts-ignore: I'd love to use row.get(), but unfortunately there's no column 'get' :(
-      // splitSeqDf!.rows.select((row) => row[currentPosition] === currentAAR);
-      // filterMode ? df.rows.filter((row) => row[currentPosition] === currentAAR) : df.rows.select((row) => row[currentPosition] === currentAAR);
-
       const bitset = filterMode ? df.filter : df.selection;
       bitset.init((i) => df.get(currentPosition, i) === currentAAR);
-
-      // bitset.copyFrom(splitSeqDf!.selection);
 
       const splitArray: string[] = [];
       for (let i = 0; i < bitset.length; i++) {
