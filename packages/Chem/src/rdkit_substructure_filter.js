@@ -14,7 +14,7 @@ class SubstructureFilter extends DG.Filter {
 M  END
 `;
         this.molfile = '';
-        this.root = ui.divV([])
+        this.root = ui.divV([]);
         this.root.appendChild(grok.chem.sketcher((_, molfile) => {
             this.molfile = molfile;
             this.dataFrame.rows.requestFilter();
@@ -25,8 +25,8 @@ M  END
         this.dataFrame = DG.toJs(dFrame);
         this.column = this.dataFrame.columns.bySemType(DG.SEMTYPE.MOLECULE);
         let colChoice = ui.columnInput('Column', this.dataFrame, this.column, (col) => {
-            this.column = col
-            this.dataFrame.filter.setAll(true, false)
+            this.column = col;
+            this.dataFrame.filter.setAll(true, false);
             this.dataFrame.rows.requestFilter();
 
         })
@@ -37,8 +37,8 @@ M  END
     }
 
     reset() {
-        this.dataFrame.filter.setAll(true, false)
-        if (this.column.tags['chem-scaffold-filter']) {
+        this.dataFrame.filter.setAll(true, false);
+        if (this.column?.tags['chem-scaffold-filter']) {
             delete this.column.tags['chem-scaffold-filter'];
         }
         this.dataFrame.filter.fireChanged();
@@ -46,19 +46,24 @@ M  END
 
     applyFilter() {
         if (!this.molfile || this.molfile.endsWith(this.WHITE_MOL)) {
-            this.reset()
+            this.reset();
             return;
         }
         grok.functions.call('Chem:searchSubstructure',
-            {'molStringsColumn': this.column, 'molString': this.molfile, 'substructLibrary': false})
+            {
+                'molStringsColumn': this.column,
+                'molString': this.molfile,
+                'substructLibrary': false,
+                'molStringSmarts': ''
+            })
             .then((bitset_col) => {
-                this.dataFrame.filter.copyFrom(bitset_col.get(0))
-                this.column.setTag('chem-scaffold-filter', this.molfile)
+                this.dataFrame.filter.copyFrom(bitset_col.get(0));
+                this.column.setTag('chem-scaffold-filter', this.molfile);
                 this.dataFrame.filter.fireChanged();
 
             }).catch((e) => {
-            console.warn(e)
-            this.reset()
+            console.warn(e);
+            this.reset();
         })
 
 
