@@ -1,12 +1,8 @@
 import {ChemPalette} from './chem-palette';
 import * as DG from 'datagrok-api/dg';
 
-
 export class AminoAcidsCellRenderer extends DG.GridCellRenderer {
-    private maxCellWidth = 11;
     private fontSize = 15;
-    private fontSizeSide = 35;
-    private spacing = 0.8;
 
     get name() {
       return 'aminoAcidsCR';
@@ -17,8 +13,9 @@ export class AminoAcidsCellRenderer extends DG.GridCellRenderer {
     }
 
     get defaultWidth() {
-      return this.maxCellWidth;
+      return 30;
     }
+
 
     render(
       g: CanvasRenderingContext2D,
@@ -29,25 +26,27 @@ export class AminoAcidsCellRenderer extends DG.GridCellRenderer {
       gridCell: DG.GridCell,
       cellStyle: DG.GridCellStyle,
     ) {
-      g.font = 'bold 15px monospace';
+      g.save();
+      g.beginPath();
+      g.rect(x, y, w, h);
+      g.clip();
+      g.font = `${this.fontSize}px monospace`;
       g.textBaseline = 'top';
       const s = gridCell.cell.value ? gridCell.cell.value : '-';
       const cp = ChemPalette.get_datagrok();
 
       cp['-'] = `rgb(77, 77, 77)`;
-
+      g.fillStyle =`rgb(77, 77, 77)`;
       if (s in cp) {
-        g.font = `bold ${this.fontSize}px monospace`;
         g.fillStyle = cp[s];
-        const textSize = g.measureText(s);
-        g.fillText(s, x + (w - textSize.width)/2, y + (textSize.fontBoundingBoxAscent + textSize.fontBoundingBoxDescent)/2);
-        return;
       }
-      g.font = `${this.fontSizeSide / s.length}px monospace`;
-      for (let i = 0; i < s.length; i++) {
-        g.fillStyle = `rgb(77, 77, 77)`;
-        g.fillText(s[i], x + 3, y + i * this.fontSizeSide * this.spacing / s.length);
-      }
+      const textSize = g.measureText(s);
+      g.fillText(
+        s,
+        x + (w - textSize.width) / 2,
+        y + (textSize.fontBoundingBoxAscent + textSize.fontBoundingBoxDescent) / 2,
+      );
+      g.restore();
     }
 }
 
@@ -55,7 +54,7 @@ export class AlignedSequenceCellRenderer extends DG.GridCellRenderer {
     private maxCellWidth = 270;
     private spacing = 9;
     private fontSize = 18;
-
+    private cp = ChemPalette.get_datagrok();
     get name() {
       return 'alignedSequenceCR';
     }
@@ -77,11 +76,16 @@ export class AlignedSequenceCellRenderer extends DG.GridCellRenderer {
       gridCell: DG.GridCell,
       cellStyle: DG.GridCellStyle,
     ) {
-      g.font = 'bold 15px monospace';
+      g.save();
+      g.beginPath();
+      g.rect(x, y, w, h);
+      g.clip();
+      g.scale(1, 1);
+      g.clearRect(0, 0, h, w);
+      g.font = '15px monospace';
       g.textBaseline = 'top';
       const s = gridCell.cell.value;
 
-      const cp = ChemPalette.get_datagrok();
 
       let xPos = 0;
       let yPos = 0;
@@ -90,17 +94,17 @@ export class AlignedSequenceCellRenderer extends DG.GridCellRenderer {
 
       g.font = `${this.fontSize}}px monospace`;
       for (let i = 0; i < Math.min(s.length, 3); i++) {
-        xPos = 2 + x + i * this.spacing;
-        yPos = y + 6;
+        xPos = x+2 + i * this.spacing;
+        yPos =y + 6;
         g.fillStyle = `rgb(128, 128, 128)`;
         g.fillText(s[i], xPos, yPos);
       }
-      g.font = `bold ${this.fontSize}}px monospace`;
+      g.font = `${this.fontSize}}px monospace`;
       for (let i = 3; i < s.length - 4; i++) {
-        xPos = 3 + x + (i - skipped) * this.spacing;
-        yPos = y + 6;
-        if (s.charAt(i) in cp) {
-          g.fillStyle = cp[s.charAt(i)];
+        xPos =x+ 3 + (i - skipped) * this.spacing;
+        yPos = y+ 6;
+        if (s.charAt(i) in this.cp) {
+          g.fillStyle = this.cp[s.charAt(i)];
           g.fillText(s[i], xPos, yPos);
           odd = true;
           continue;
@@ -115,11 +119,12 @@ export class AlignedSequenceCellRenderer extends DG.GridCellRenderer {
       }
       g.font = `${this.fontSize}}px monospace`;
       for (let i = Math.max(0, s.length - 4); i < s.length; i++) {
-        xPos = 4 + x + (i - skipped) * this.spacing;
-        yPos = y + 6;
+        xPos = x+ 4 + (i - skipped) * this.spacing;
+        yPos = y+ 6;
         g.fillStyle = `rgb(128, 128, 128)`;
         g.fillText(s[i], xPos, yPos);
       }
+      g.restore();
     }
 }
 

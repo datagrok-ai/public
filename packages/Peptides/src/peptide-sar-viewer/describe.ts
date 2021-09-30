@@ -174,12 +174,25 @@ export async function describe(
     if (col.name === aminoAcidResidue) {
       col.semType = 'aminoAcids';
       col.setTag('cell.renderer', 'aminoAcids');
+      let maxLen = 0;
+      col.categories.forEach( (ent:string)=>{
+        if ( ent.length > maxLen) {
+          maxLen = ent.length;
+        }
+      });
+
+      grid.columns.byName(aminoAcidResidue)!.width = maxLen*15;
     }
+    console.error([col.semType]);
   }
   grid.columns.setOrder([aminoAcidResidue].concat(positionColumns));
-
   //render column headers and AAR symbols centered
   grid.onCellRender.subscribe(function(args: DG.GridCellRenderArgs) {
+    args.g.save();
+    args.g.beginPath();
+    args.g.rect(args.bounds.x, args.bounds.y, args.bounds.width, args.bounds.height);
+    args.g.clip();
+
     const textSize = args.g.measureText(args.cell.gridColumn.name);
     if (args.cell.isRowHeader) {
       const text = matrixDf.getCol(aminoAcidResidue).get(<number>args.cell.tableRowIndex);
@@ -249,6 +262,7 @@ export async function describe(
         args.preventDefault();
       }
     }
+    args.g.restore();
   });
 
   // show all the statistics in a tooltip over cell
