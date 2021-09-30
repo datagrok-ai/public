@@ -2,12 +2,10 @@ import * as grok from 'datagrok-api/grok';
 import * as ui from 'datagrok-api/ui';
 import * as DG from 'datagrok-api/dg';
 import $ from 'cash-dom';
-import { fromEvent, Observable } from 'rxjs';
+import { fromEvent, Observable, Subject } from 'rxjs';
 import { filter, first, map } from 'rxjs/operators';
 import { _package } from './package';
 import { Track, TutorialRunner } from './track';
-import { View } from 'datagrok-api/dg';
-import { node } from 'webpack';
 
 
 /** A base class for tutorials */
@@ -33,6 +31,8 @@ export abstract class Tutorial extends DG.Widget {
   subheader: HTMLHeadingElement = ui.h3('');
   activity: HTMLDivElement = ui.div([], 'tutorials-root-description');
   status: boolean = false;
+  closed: boolean = false;
+  activeHints: HTMLElement[] = [];
   progressDiv: HTMLDivElement = ui.divV([],'tutorials-root-progress');
   progress: HTMLProgressElement = ui.element('progress');
   progressSteps: HTMLDivElement = ui.divText('');
@@ -81,6 +81,8 @@ export abstract class Tutorial extends DG.Widget {
         updateProgress(this.track);
       }  
       this.clearRoot();
+      this.closed = true;
+      this._removeHints(this.activeHints);
       //grok.shell.tableView(this.t.name).close();
       $('.tutorial').show();
       $('#tutorial-child-node').html('');
@@ -93,7 +95,7 @@ export abstract class Tutorial extends DG.Widget {
     if (this.demoTable) {
       grok.shell.addTableView(await grok.data.getDemoTable(this.demoTable));
     }
-
+    this.closed = false;
     await this._run();
 
     this.title('Congratulations!');
@@ -209,16 +211,29 @@ export abstract class Tutorial extends DG.Widget {
     }
   }
 
-  _removeHint(hint: HTMLElement) {
-    $(hint).find('div.blob')[0]?.remove();
-    hint.classList.remove('tutorials-target-hint');
+  _removeHints(hint: HTMLElement | HTMLElement[]) {
+    const removeHint = (h: HTMLElement) => {
+      $(h).find('div.blob')[0]?.remove();
+      h.classList.remove('tutorials-target-hint');
+    };
+    if (hint instanceof HTMLElement) {
+      removeHint(hint);
+    } else if (Array.isArray(hint)) {
+      hint.forEach((h) => removeHint(h));
+    }
   }
 
   async action(instructions: string, description:string, completed: Observable<any> | Promise<void>,
     hint?: HTMLElement | HTMLElement[] | null): Promise<void> {
+    if (this.closed) {
+      return;
+    }
+    this.activeHints.length = 0;
     if (hint instanceof HTMLElement) {
+      this.activeHints.push(hint);
       this._placeHint(hint);
     } else if (Array.isArray(hint)) {
+      this.activeHints.push(...hint);
       hint.forEach((h) => this._placeHint(h));
     }
 
@@ -234,11 +249,10 @@ export abstract class Tutorial extends DG.Widget {
     descriptionDiv.innerHTML = description;
     this.activity.append(descriptionDiv);
     this._scroll();
-    if (completed instanceof Promise) {
-      await completed;
-    } else {
-      await this.firstEvent(completed);
-    }
+
+    const currentStep = completed instanceof Promise ? completed : this.firstEvent(completed);
+    await currentStep;
+
     instructionDiv.classList.add('grok-tutorial-entry-success');
     instructionIndicator.classList.add('grok-tutorial-entry-indicator-success');
     $(descriptionDiv).hide();
@@ -246,11 +260,8 @@ export abstract class Tutorial extends DG.Widget {
     this.progressSteps.innerHTML = '';
     this.progressSteps.append('Step: '+String(this.progress.value)+' of '+this.steps);
     
-    if (hint instanceof HTMLElement) {
-      this._removeHint(hint);
-    } else if (Array.isArray(hint)) {
-      hint.forEach((h) => this._removeHint(h));
-    }
+    if (hint != null)
+      this._removeHints(hint);
   }
 
   protected _scroll(): void {
@@ -267,6 +278,9 @@ export abstract class Tutorial extends DG.Widget {
       eventStream.pipe(first()).subscribe((_: any) => resolve());
     });
   }
+
+  _onClose: Subject<void> = new Subject();
+  get onClose() { return this._onClose; }
 
   /** Prompts the user to open a viewer of the specified type and returns it. */
   protected async openPlot(name: string,description: string, check: (viewer: DG.Viewer) => boolean): Promise<DG.Viewer> {
