@@ -1,6 +1,58 @@
 <!-- TITLE: Release History -->
 <!-- SUBTITLE: -->
 
+# 2021-10-01 Dev build 0.93.34
+
+## Latest Docker Images
+
+* Datagrok: 
+  *  `docker pull datagrok/datagrok:0.93.34`
+  *  `docker pull datagrok/datagrok:latest`
+  
+* [Docker-Compose](admin/docker-compose.md)
+
+## Addressed Issues
+
+* (Bug) Filter resets when user recalculates column formula 
+* Compute package, initial commit. 
+* Compute: Readme.md, continued. 
+* JS API: add more specific types 
+* update tutorials 
+* update tu 
+* Updated public token 
+* Filters: graceful handling of column removal 
+* Revert "Merge branch 'master' of https://github.com/datagrok-ai/public" 
+* Pubchem: Search panels 
+* implemented legend and switching type of linechart in multiplot. Implemented study summary property panel 
+* Color-coding: support multiple color representations (hex, rgb) in tags for categorical and linear coloring (WIP)
+* HitTriage: initial commit 
+* HitTriage: documentation: work in progress 
+* (Bug) Chem: External sketcher, filtering and SMARTS (WIP)
+* #53 Tutorials package: cheminformatics track: descriptors 
+* Grok Connect: Update script 
+* Peptides: center aar 
+* Fixed analyzer warnings 
+* Peptides: various improvements WIP 
+* Peptides: polishing 
+* Peptides: add a real-like dataset for analysis (WIP)
+* updated tooltips in timelines view, added dynamic change of lines width depending on zoom to timelines chart 
+* Peptides: Cell renderer split sequence fix & Header barchart 
+* #53 Tutorials package: tutorial cancelation (WIP) 
+* Peptides: verious fixes and improvements 
+* #53 Tutorials package: set initial value in `clearRoot` 
+* #53 Tutorials package: remove unnecessary status update 
+* Substructure filter:undefined column & searchSubstructure changes fix 
+* JBIO: prepare tooltips and update ux (WIP)
+* Peptides: fix header renderer 
+* Peptides: clipped all cells 
+* Peptides: minor fixes and improvements 
+* Grok script: add timing to log 
+* Peptides: BC viewer is now rendered in onCellRender 
+* Peptides: Snake case function name fixed 
+* Peptides: Header BC selection and current column highlighting & labels added 
+* Peptides: more minor fixes and improvements 
+
+
 # 2021-09-27 Dev build 0.93.33
 
 ## Latest Docker Images
