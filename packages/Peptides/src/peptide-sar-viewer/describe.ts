@@ -1,7 +1,9 @@
 import * as ui from 'datagrok-api/ui';
 import * as DG from 'datagrok-api/dg';
+
 //@ts-ignore
 import * as jStat from 'jstat';
+
 import {splitAlignedPeptides} from '../split-aligned';
 import {decimalAdjust, tTest} from '../utils/misc';
 import {ChemPalette} from '../utils/chem-palette';
@@ -150,15 +152,19 @@ export async function describe(
     .aggregate();
   matrixDf.name = 'SAR';
 
-  const aarCategoryOrder = [
-    '-', //black I guess
-    'C', 'U', //yellow
-    'G', 'P', //red
-    'A', 'V', 'I', 'L', 'M', 'F', 'Y', 'W', //all_green
-    'R', 'H', 'K', //light_blue
-    'D', 'E', //dark_blue
-    'S', 'T', 'N', 'Q', //orange
-  ];
+  // const aarCategoryOrder = [
+  //   '-', //black I guess
+  //   'C', 'U', //yellow
+  //   'G', 'P', //red
+  //   'A', 'V', 'I', 'L', 'M', 'F', 'Y', 'W', //all_green
+  //   'R', 'H', 'K', //light_blue
+  //   'D', 'E', //dark_blue
+  //   'S', 'T', 'N', 'Q', //orange
+  // ];
+  let aarCategoryOrder: string[] = ['-'];
+  for (const group of ChemPalette.grokGroups) {
+    aarCategoryOrder = aarCategoryOrder.concat(group[0]);
+  }
   matrixDf.getCol(aminoAcidResidue).setCategoryOrder(aarCategoryOrder);
 
   // !!! DRAWING PHASE !!!
@@ -212,12 +218,19 @@ export async function describe(
     }
 
     if (args.cell.isTableCell && args.cell.tableRowIndex !== null && args.cell.tableColumn !== null) {
-      if (args.cell.tableColumn.name === aminoAcidResidue) {
-
-      } else if (args.cell.cell.value !== null) {
+      if (args.cell.cell.value !== null && args.cell.tableColumn.name !== aminoAcidResidue) {
         const query =
           `${aminoAcidResidue} = ${matrixDf.get(aminoAcidResidue, args.cell.tableRowIndex)} ` +
           `and ${positionColName} = ${args.cell.tableColumn.name}`;
+
+        //don't draw AAR that too little appearnces at this position
+        const count = statsDf.groupBy(['Count']).where(query).aggregate().get('Count', 0);
+        if (count < 5) {
+          args.preventDefault();
+          args.g.restore();
+          return;
+        }
+
         const pVal = statsDf.groupBy(['p-value']).where(query).aggregate().get('p-value', 0);
 
         let coef;
@@ -279,13 +292,20 @@ export async function describe(
             `${aminoAcidResidue} = ${matrixDf.get(aminoAcidResidue, cell.tableRowIndex)} ` +
             `and ${positionColName} = ${cell.tableColumn.name}`;
           let text = `${decimalAdjust('floor', statsDf.groupBy([col]).where(query).aggregate().get(col, 0), -5)}`;
+
+          //@ts-ignore: I'm sure it's gonna be fine, text contains a number
+          if (col === 'Count' && text < 5) {
+            return true;
+          }
+
           text = col === 'Count' ? text + ` / ${peptidesCount}` : text;
           tooltipMap[col] = text;
         }
       }
 
       ui.tooltip.show(ui.tableFromMap(tooltipMap), x, y);
-      return true;
+    // } else if (cell.isColHeader && !cell.isRowHeader) {
+    //   ui.tooltip.show((await df.plot.fromType('peptide-logo-viewer')).root, x, y);
     }
     return true;
   });
@@ -295,7 +315,15 @@ export async function describe(
     if (grid.table.currentCell.value && grid.table.currentCol.name !== aminoAcidResidue) {
       const currentAAR: string = grid.table.get(aminoAcidResidue, grid.table.currentRowIdx);
       const currentPosition = grid.table.currentCol.name;
+
+      const query = `aminoAcidResidue = ${currentAAR} and position = ${currentPosition}`;
+      const text = statsDf.groupBy(['Count']).where(query).aggregate().get('Count', 0);
+      if (text < 5) {
+        return;
+      }
+
       const splitColName = '~splitCol';
+      const otherColName = 'Other';
 
       const bitset = filterMode ? df.filter : df.selection;
       bitset.init((i) => df.get(currentPosition, i) === currentAAR);
@@ -304,17 +332,24 @@ export async function describe(
       for (let i = 0; i < bitset.length; i++) {
         //TODO: generate better label
         splitArray.push(bitset.get(i) ?
-          `${currentAAR === '-' ? 'Empty' : currentAAR} - ${currentPosition}` : 'Other');
+          `${currentAAR === '-' ? 'Empty' : currentAAR} - ${currentPosition}` : otherColName);
       }
 
-      //TODO: fix color-coding
+      console.log(df.columns.names());
       const splitCol = DG.Column.fromStrings(splitColName, splitArray);
-      const cp = ChemPalette.getDatagrok();
-      const colorMap: {[index: string]: string | number} = {'Other': DG.Color.lightGray};
-      colorMap[currentAAR] = cp[currentAAR];
-      splitCol.colors.setCategorical(colorMap);
+      //TODO: use replace as soon as it is ready
+      if (!df.col(splitColName)) {
+        df.columns.add(splitCol);
+      } else {
+        df.columns.remove(splitColName);
+        df.columns.add(splitCol);
+      }
 
-      !df.col(splitColName) ? df.columns.add(splitCol) : df.columns.replace(splitColName, splitCol);
+      const cp = ChemPalette.getDatagrok();
+      const colorMap: {[index: string]: string | number} = {otherColName: DG.Color.lightGray};
+      colorMap[currentAAR] = cp[currentAAR];
+      df.getCol(splitColName).colors.setCategorical(colorMap);
+      df.getCol(splitColName).setCategoryOrder([otherColName]);
     }
   });
 

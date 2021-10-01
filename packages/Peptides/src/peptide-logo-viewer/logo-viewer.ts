@@ -116,7 +116,6 @@ export class Logo extends DG.JsViewer {
 
   async findLogo() {
     this.getInfoFromDf();
-    // ReactDOM.render(React.createElement(ProteinLogo, {alphabet: this.LET_COLORS, ppm: this.ppm}, null), this.reactHost);
     logojs.embedProteinLogo(this.reactHost, {alphabet: this.LET_COLORS, ppm: this.ppm});
   }
 
