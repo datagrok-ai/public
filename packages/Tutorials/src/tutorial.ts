@@ -79,7 +79,6 @@ export abstract class Tutorial extends DG.Widget {
       this.clearRoot();
       this.closed = true;
       this.onClose.next();
-      // this._removeHints(this.activeHints);
       //grok.shell.tableView(this.t.name).close();
       $('.tutorial').show();
       $('#tutorial-child-node').html('');
@@ -220,8 +219,8 @@ export abstract class Tutorial extends DG.Widget {
     }
   }
 
-  async action(instructions: string, description:string, completed: Observable<any> | Promise<void>,
-    hint?: HTMLElement | HTMLElement[] | null): Promise<void> {
+  async action(instructions: string, completed: Observable<any> | Promise<void>,
+    hint: HTMLElement | HTMLElement[] | null = null, description: string = ''): Promise<void> {
     if (this.closed) {
       return;
     }
@@ -253,6 +252,7 @@ export abstract class Tutorial extends DG.Widget {
     instructionDiv.classList.add('grok-tutorial-entry-success');
     instructionIndicator.classList.add('grok-tutorial-entry-indicator-success');
     $(descriptionDiv).hide();
+    $(entry).on('click', () => $(descriptionDiv).toggle());
     this.progress.value++;
     this.progressSteps.innerHTML = '';
     this.progressSteps.append('Step: '+String(this.progress.value)+' of '+this.steps);
@@ -286,7 +286,8 @@ export abstract class Tutorial extends DG.Widget {
   get onClose() { return this._onClose; }
 
   /** Prompts the user to open a viewer of the specified type and returns it. */
-  protected async openPlot(name: string,description: string, check: (viewer: DG.Viewer) => boolean): Promise<DG.Viewer> {
+  protected async openPlot(name: string, check: (viewer: DG.Viewer) => boolean,
+    description: string = ''): Promise<DG.Viewer> {
     // TODO: Expand toolbox / accordion API coverage
     const getViewerIcon = (el: HTMLElement) => {
       const selector = name == 'filters' ? 'i.fa-filter' : `i.svg-${name.replace(' ', '-')}`;
@@ -296,7 +297,7 @@ export abstract class Tutorial extends DG.Widget {
     const view = grok.shell.v as DG.View;
     let viewer: DG.Viewer;
 
-    await this.action(`Open ${name}`, description,
+    await this.action(`Open ${name}`,
       grok.events.onViewerAdded.pipe(filter((data: DG.EventData) => {
         const found = check(data.args.viewer);
         if (found) {
@@ -305,16 +306,18 @@ export abstract class Tutorial extends DG.Widget {
         return found;
       })),
       view.type === 'TableView' ? getViewerIcon((<DG.TableView>view).toolboxPage.accordion.root) : null,
+      description
     );
 
     return viewer!;
   }
 
   /** Prompts the user to put the specified value into a dialog input. */
-  protected async dlgInputAction(dlg: DG.Dialog, instructions: string, description:string, caption: string, value: string) {
+  protected async dlgInputAction(dlg: DG.Dialog, instructions: string,
+    caption: string, value: string, description: string = ''): Promise<void> {
     const inp = dlg.inputs.filter((input: DG.InputBase) => input.caption == caption)[0];
     if (inp == null) return;
-    await this.action(instructions, description,
+    await this.action(instructions,
       new Observable((subscriber: any) => {
         if (inp.stringValue === value) subscriber.next(inp.stringValue);
         inp.onChanged(() => {
@@ -322,52 +325,57 @@ export abstract class Tutorial extends DG.Widget {
         });
       }),
       inp.root,
+      description
     );
   }
 
   /** A helper method to access text inputs in a view. */
-  protected async textInpAction(root: HTMLElement, instructions: string, description:string, caption: string, value: string) {
+  protected async textInpAction(root: HTMLElement, instructions: string,
+    caption: string, value: string, description: string = ''): Promise<void> {
     const inputRoot = $(root)
       .find('div.ui-input-text.ui-input-root')
       .filter((idx, inp) => $(inp).find('label.ui-label.ui-input-label')[0]?.textContent === caption)[0];
     if (inputRoot == null) return;
     const input = $(inputRoot).find('input.ui-input-editor')[0] as HTMLInputElement;
     const source = fromEvent(input, 'input').pipe(map((_) => input.value), filter((val) => val === value));
-    await this.action(instructions, description, source, inputRoot);
+    await this.action(instructions, source, inputRoot, description);
   }
 
   /** Prompts the user to open a view of the specified type, waits for it to open and returns it. */
-  protected async openViewByType(instructions: string, description: string, type: string): Promise<DG.View> {
+  protected async openViewByType(instructions: string, type: string,
+    hint: HTMLElement | HTMLElement[] | null = null, description: string = ''): Promise<DG.View> {
     let view: DG.View;
 
-    await this.action(instructions, description, grok.events.onViewAdded.pipe(filter((v) => {
+    await this.action(instructions, grok.events.onViewAdded.pipe(filter((v) => {
       if (v.type === type) {
         view = v;
         return true;
       }
       return false;
-    })));
+    })), hint, description);
 
     return view!;
   }
 
   /** Prompts the user to open a dialog with the specified title, waits for it to open and returns it. */
-  protected async openDialog(instructions: string, description: string, title: string, hint: HTMLElement | null = null): Promise<DG.Dialog> {
+  protected async openDialog(instructions: string, title: string,
+    hint: HTMLElement | HTMLElement[] | null = null, description: string = ''): Promise<DG.Dialog> {
     let dialog: DG.Dialog;
 
-    await this.action(instructions, description, grok.events.onDialogShown.pipe(filter((dlg) => {
+    await this.action(instructions, grok.events.onDialogShown.pipe(filter((dlg) => {
       if (dlg.title === title) {
         dialog = dlg;
         return true;
       }
       return false;
-    })), hint);
+    })), hint, description);
 
     return dialog!;
   }
 
   /** Prompts the user to select a menu item in the context menu. */
-  protected async contextMenuAction(instructions: string, description:string, label: string, hint: HTMLElement | null = null): Promise<void> {
+  protected async contextMenuAction(instructions: string, label: string,
+    hint: HTMLElement | HTMLElement[] | null = null, description: string = ''): Promise<void> {
     const commandClick =  new Promise<void>((resolve, reject) => {
       const sub = grok.events.onContextMenu.subscribe((data) => {
         data.args.menu.onContextMenuItemClick.pipe(
@@ -379,6 +387,6 @@ export abstract class Tutorial extends DG.Widget {
       });
     });
 
-    await this.action(instructions, description, commandClick, hint);
+    await this.action(instructions, commandClick, hint, description);
   }
 }

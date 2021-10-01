@@ -12,7 +12,7 @@ export async function describe(
   activityColumn: string,
   activityScaling: string,
   filterMode: boolean,
-): Promise<DG.Grid | null> {
+): Promise<[DG.Grid, DG.DataFrame] | [null, null]> {
   //Split the aligned sequence into separate AARs
   let splitSeqDf: DG.DataFrame | undefined;
   for (const col of df.columns) {
@@ -24,7 +24,7 @@ export async function describe(
   }
 
   if (typeof splitSeqDf === 'undefined') {
-    return null;
+    return [null, null];
   }
 
   const positionColumns = splitSeqDf.columns.names();
@@ -304,13 +304,13 @@ export async function describe(
       for (let i = 0; i < bitset.length; i++) {
         //TODO: generate better label
         splitArray.push(bitset.get(i) ?
-          `${currentAAR === '-' ? 'Empty' : 'AAR ' + currentAAR} at position ${currentPosition}` : 'Other');
+          `${currentAAR === '-' ? 'Empty' : currentAAR} - ${currentPosition}` : 'Other');
       }
 
       //TODO: fix color-coding
       const splitCol = DG.Column.fromStrings(splitColName, splitArray);
       const cp = ChemPalette.getDatagrok();
-      const colorMap: {[index: string]: string} = {'Other': DG.Color.toRgb(DG.Color.lightGray)};
+      const colorMap: {[index: string]: string | number} = {'Other': DG.Color.lightGray};
       colorMap[currentAAR] = cp[currentAAR];
       splitCol.colors.setCategorical(colorMap);
 
@@ -318,5 +318,5 @@ export async function describe(
     }
   });
 
-  return grid;
+  return [grid, statsDf];
 }
