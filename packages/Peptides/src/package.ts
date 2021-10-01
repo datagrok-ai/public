@@ -99,6 +99,18 @@ export function analyzePeptides(col: DG.Column): DG.Widget {
       (grok.shell.v as DG.TableView).addViewer('peptide-sar-viewer', options);
       const widgProm = col.dataFrame.plot.fromType('StackedBarChartAA');
       addViewerToHeader(tableGrid, widgProm);
+      tableGrid.dataFrame!.columns.names().forEach((name:string)=>{
+        col = tableGrid.dataFrame!.columns.byName(name);
+        if (col.semType == 'aminoAcids') {
+          let maxLen = 0;
+          col.categories.forEach( (ent:string)=>{
+            if ( ent.length> maxLen) {
+              maxLen = ent.length;
+            }
+          });
+          tableGrid.columns.byName(name)!.width = maxLen*10;
+        }
+      });
     } else {
       grok.shell.error('The activity column must be of floating point number type!');
     }

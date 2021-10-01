@@ -3,61 +3,23 @@ import * as ui from 'datagrok-api/ui';
 import {axisBottom, scaleBand, scaleLinear, select, color} from 'd3';
 import {ChemPalette} from '../utils/chem-palette';
 import $ from 'cash-dom';
-import {GridCell, Property, Widget} from 'datagrok-api/dg';
+import {GridCellRenderArgs, Property, Widget} from 'datagrok-api/dg';
 
 
 export function addViewerToHeader(grid: DG.Grid, viewer: Promise<Widget>) {
-  const wrapper = ui.div([]);
-  let barchartRoot: HTMLElement = ui.div([]);
-  let left = 200;
-  let right = 200;
-  let bottom = 300;
-  console.error(wrapper);
-
-  wrapper.style.width = '300px';
-  wrapper.style.height = '200px';
-  wrapper.style.position = 'absolute';
-  wrapper.style.left = '200px';
-  wrapper.setAttribute('position', 'absolute;');
-  grid.setOptions({'colHeaderHeight': 200});
-  grid.root.appendChild(wrapper);
-
   viewer.then((viewer) => {
     const barchart = viewer as StackedBarChart;
-    barchartRoot = barchart.root;
-    barchartRoot.setAttribute('class', 'ui-div');
-    wrapper.appendChild(barchart.root);
-    barchart.aminoColumnNames.forEach((name) => {
-            grid.columns.byName(name)!.width = 20;
-    });
-    grid.onCellRender.subscribe( (args)=> {
-      if (args.cell.isColHeader) {
+    barchart.tableCanvas = grid.canvas;
+    grid.onCellRender.subscribe((args) => {
+      args.g.save();
+      args.g.beginPath();
+      args.g.rect(args.bounds.x, args.bounds.y, args.bounds.width, args.bounds.height);
+      args.g.clip();
+      if (args.cell.isColHeader && args.cell.tableColumn?.semType == 'aminoAcids') {
+        barchart.renderBarToCanvas(args.g, args.cell, args.bounds.x, args.bounds.y, args.bounds.width, args.bounds.height);
         args.preventDefault();
       }
-    });
-    grid.onCellPrepare((cell: GridCell) => {
-      if (cell.isColHeader && barchart.aminoColumnNames.length > 0) {
-        if (cell.gridColumn.name == barchart.aminoColumnNames.at(-1)) {
-          right = cell.bounds.right;
-          bottom = cell.bounds.bottom;
-          wrapper.style.width = `${left - right}px`;
-          wrapper.style.height = `${bottom}px`;
-          wrapper.style.left = `${left}px`;
-          barchartRoot.style.width = `${left - right}px`;
-          barchartRoot.style.height = `${bottom}px`;
-          barchartRoot.style.left = `${left}px`;
-        }
-        if (cell.gridColumn.name == barchart.aminoColumnNames.at(0)) {
-          left = cell.bounds.left;
-          bottom = cell.bounds.bottom;
-          wrapper.style.width = `${left - right}px`;
-          wrapper.style.height = `${bottom}px`;
-          wrapper.style.left = `${left}px`;
-          barchartRoot.style.width = `${left - right}px`;
-          barchartRoot.style.height = `${bottom}px`;
-          barchartRoot.style.left = `${left}px`;
-        }
-      }
+      args.g.restore();
     });
   });
 }
@@ -77,7 +39,7 @@ export class StackedBarChart extends DG.JsViewer {
     };
     private yScale: any;
     private xScale: any;
-    private data: { 'name': number, 'data': { 'name': string, 'count': number, 'selectedCount': number }[] }[] = [];
+    private data: { 'name': string, 'data': { 'name': string, 'count': number, 'selectedCount': number }[] }[] = [];
     private selectionMode: boolean = false;
     public aminoColumnNames: string[] = [];
     // @ts-ignore
@@ -86,6 +48,9 @@ export class StackedBarChart extends DG.JsViewer {
     private aggregatedTables: { [Key: string]: DG.DataFrame; } = {};
     private aggregatedTablesUnselected: { [Key: string]: DG.DataFrame; } = {};
     private max = 0;
+    private barStats: { [Key: string]: { 'name': string, 'count': number, 'selectedCount': number }[] } = {};
+    tableCanvas: HTMLCanvasElement | undefined;
+    private registered: { [Key: string]: DG.GridCell } = {};
 
     constructor() {
       super();
@@ -142,124 +107,159 @@ export class StackedBarChart extends DG.JsViewer {
       this.subs.forEach((sub) => sub.unsubscribe());
     }
 
-    render(computeData = true) {
-      let df = DG.DataFrame.create();
-      if (this.dataFrame) {
-        df = this.dataFrame;
-      } else {
-        throw new Error('undefined dataframe');
+    computeData(df: DG.DataFrame) {
+      this.data = [];
+      this.aminoColumnNames = [];
+      this.aminoColumnIndices = {};
+
+      df.columns.names().forEach((name: string) => {
+        {
+          // @ts-ignore
+          if (df.getCol(name).semType === 'aminoAcids' &&
+                    !df.getCol(name).categories.includes('COOH') &&
+                    !df.getCol(name).categories.includes('NH2')) {
+            this.aminoColumnIndices[name] = this.aminoColumnNames.length + 1;
+            this.aminoColumnNames.push(name);
+          }
+        }
+      });
+
+      this.aggregatedTables = {};
+      this.aggregatedTablesUnselected = {};
+      const buf1 = df.selection.getBuffer();
+      const buf2 = df.filter.getBuffer();
+      const resbuf = new Int32Array(df.rowCount);
+
+      for (let i = 0; i < buf2.length; i++) {
+        resbuf[i] = buf1[i] & buf2[i];
       }
 
-      if (computeData) {
-        this.data = [];
-        this.aminoColumnNames = [];
-        this.aminoColumnIndices = {};
 
-        df.columns.names().forEach((name: string) => {
-          {
-            // @ts-ignore
-            if (df.getCol(name).semType === 'aminoAcids' &&
-                        !df.getCol(name).categories.includes('COOH') &&
-                        !df.getCol(name).categories.includes('NH2')) {
-              this.aminoColumnIndices[name] = this.aminoColumnNames.length + 1;
-              this.aminoColumnNames.push(name);
-            }
+      const mask = DG.BitSet.fromBytes(resbuf.buffer, df.rowCount);
+      if (mask.trueCount !== df.filter.trueCount) {
+        this.selectionMode = true;
+        this.aminoColumnNames.forEach((name) => {
+          this.aggregatedTables[name] = df
+            .groupBy([name])
+            .whereRowMask(df.filter)
+            .add('count', name, `${name}_count`)
+            .aggregate();
+          const buf1 = df.selection.getBuffer();
+          const buf2 = df.filter.getBuffer();
+          const resbuf = new Int32Array(df.rowCount);
+
+          for (let i = 0; i < buf2.length; i++) {
+            resbuf[i] = buf1[i] & buf2[i];
           }
+
+
+          // @ts-ignore
+          const mask = DG.BitSet.fromBytes(resbuf.buffer, df.rowCount);
+          // @ts-ignore
+          this.aggregatedTablesUnselected[name] = df
+            .groupBy([name])
+            .whereRowMask(mask)
+            .add('count', name, `${name}_count`)
+            .aggregate();
         });
-
-        this.aggregatedTables = {};
-        this.aggregatedTablesUnselected = {};
-        const buf1 = df.selection.getBuffer();
-        const buf2 = df.filter.getBuffer();
-        const resbuf = new Int32Array(df.rowCount);
-
-        for (let i = 0; i < buf2.length; i++) {
-          resbuf[i] = buf1[i] & buf2[i];
-        }
-
-
-        const mask = DG.BitSet.fromBytes(resbuf.buffer, df.rowCount);
-        if (mask.trueCount !== df.filter.trueCount) {
-          this.selectionMode = true;
-          this.aminoColumnNames.forEach((name) => {
-            this.aggregatedTables[name] = df
-              .groupBy([name])
-              .whereRowMask(df.filter)
-              .add('count', name, `${name}_count`)
-              .aggregate();
-            const buf1 = df.selection.getBuffer();
-            const buf2 = df.filter.getBuffer();
-            const resbuf = new Int32Array(df.rowCount);
-
-            for (let i = 0; i < buf2.length; i++) {
-              resbuf[i] = buf1[i] & buf2[i];
-            }
-
-
-            // @ts-ignore
-            const mask = DG.BitSet.fromBytes(resbuf.buffer, df.rowCount);
-            // @ts-ignore
-            this.aggregatedTablesUnselected[name] = df
-              .groupBy([name])
-              .whereRowMask(mask)
-              .add('count', name, `${name}_count`)
-              .aggregate();
-          });
-        } else {
-          this.selectionMode = false;
-          this.aminoColumnNames.forEach((name) => {
-            // @ts-ignore
-            this.aggregatedTables[name] = df
-              .groupBy([name])
-              .whereRowMask(df.filter)
-              .add('count', name, `${name}_count`)
-              .aggregate();
-          },
-          );
-        }
-        this.data = [];
-        for (const [name, df] of Object.entries(this.aggregatedTables)) {
-          const colObj: {
-                    'name': number, 'data':
-                        { 'name': string, 'count': number, 'selectedCount': number }[]
-                } =
-                    {'name': this.aminoColumnIndices[name], 'data': []};
-          this.data.push(colObj);
-          let unselectedRowIndex = 0;
-          for (let i = 0; i < df.rowCount; i++) {
-            const amino = df.getCol(name).get(i);
-            const aminoCount = df.getCol(`${name}_count`).get(i);
-            if ((!amino) || amino === this.dataEmptyAA) {
-              continue;
-            }
-            const aminoObj = {'name': amino, 'count': aminoCount, 'selectedCount': 0};
-            colObj['data'].push(aminoObj);
+      } else {
+        this.selectionMode = false;
+        this.aminoColumnNames.forEach((name) => {
+          // @ts-ignore
+          this.aggregatedTables[name] = df
+            .groupBy([name])
+            .whereRowMask(df.filter)
+            .add('count', name, `${name}_count`)
+            .aggregate();
+        },
+        );
+      }
+      this.data = [];
+      this.barStats = {};
+      for (const [name, df] of Object.entries(this.aggregatedTables)) {
+        const colObj: {
+                'name': string, 'data':
+                    { 'name': string, 'count': number, 'selectedCount': number }[]
+            } =
+                {'name': name, 'data': []};
+        this.barStats[colObj['name']] = colObj['data'];
+        this.data.push(colObj);
+        let unselectedRowIndex = 0;
+        for (let i = 0; i < df.rowCount; i++) {
+          const amino = df.getCol(name).get(i);
+          const aminoCount = df.getCol(`${name}_count`).get(i);
+          if ((!amino) || amino === this.dataEmptyAA) {
+            continue;
+          }
+          const aminoObj = {'name': amino, 'count': aminoCount, 'selectedCount': 0};
+          colObj['data'].push(aminoObj);
 
 
-            if (name in this.aggregatedTablesUnselected) {
-              if (amino != this.aggregatedTablesUnselected[name].getCol(name).get(unselectedRowIndex)) {
-                unselectedRowIndex++;
-              }
-              aminoObj['selectedCount'] = this.aggregatedTablesUnselected[name]
-                .getCol(`${name}_count`)
-                .get(unselectedRowIndex);
-
+          if (name in this.aggregatedTablesUnselected) {
+            if (amino != this.aggregatedTablesUnselected[name].getCol(name).get(unselectedRowIndex)) {
               unselectedRowIndex++;
             }
-          }
-          colObj['data'] = colObj['data'].sort((o1, o2) => {
-            if (this.ord[o1['name']] > this.ord[o2['name']]) {
-              return -1;
-            }
-            if (this.ord[o1['name']] < this.ord[o2['name']]) {
-              return 1;
-            }
+            aminoObj['selectedCount'] = this.aggregatedTablesUnselected[name]
+              .getCol(`${name}_count`)
+              .get(unselectedRowIndex);
 
-            return 0;
-          });
+            unselectedRowIndex++;
+          }
         }
+        colObj['data'] = colObj['data'].sort((o1, o2) => {
+          if (this.ord[o1['name']] > this.ord[o2['name']]) {
+            return -1;
+          }
+          if (this.ord[o1['name']] < this.ord[o2['name']]) {
+            return 1;
+          }
+
+          return 0;
+        });
       }
       this.max = df.filter.trueCount;
+    }
+
+    renderBarToCanvas(g: CanvasRenderingContext2D, cell: DG.GridCell, x: number, y: number, w: number, h: number) {
+      const margin = 0.2;
+      const innerMargin = 0.2;
+      const borderSize = w*margin;
+      x = x+ borderSize;
+      y = y+ borderSize;
+      w = w- borderSize*2;
+      h = h- borderSize*2;
+      g.fillStyle = 'orange';
+      g.font = `20px monospace`;
+      g.textBaseline = 'top';
+
+      const barData = this.barStats[cell.tableColumn!.name];
+      let sum = 0;
+      barData.forEach((obj)=>{
+        sum+=obj['count'];
+      });
+      let curSum = 0;
+      const gapSize = y*innerMargin/barData.length;
+      barData.forEach((obj, index)=>{
+        g.fillStyle = this.getColor(obj['name']);
+        g.fillRect(x, y+h*curSum/sum+gapSize/2, w, h*obj['count']/sum-gapSize);
+        curSum+=obj['count'];
+      });
+      return;
+    }
+
+    render(computeData = true) {
+      const df = this.dataFrame!;
+      if (computeData) {
+        this.computeData(df);
+      }
+      if (this.tableCanvas) {
+        return;
+        for (const name of this.aminoColumnNames) {
+          this.renderBar(name);
+        }
+        return;
+      }
+
 
       // @ts-ignore
 
@@ -475,5 +475,25 @@ export class StackedBarChart extends DG.JsViewer {
     onPropertyChanged(property: Property) {
       super.onPropertyChanged(property);
       this.render();
+    }
+
+    register(args: GridCellRenderArgs) {
+      this.registered[args.cell.tableColumn!.name] = args.cell;
+    }
+
+    unregister(name: string) {
+      if (this.registered[name]) {
+        delete this.registered[name];
+      }
+    }
+
+
+    renderBar(name: string) {
+      if (!(this.registered[name])||!(this.tableCanvas)) {
+        return;
+      }
+      const cell = this.registered[name];
+      const rect = cell.bounds;
+      this.renderBarToCanvas(this.tableCanvas.getContext('2d')!, cell, rect.x, rect.y, rect.width, rect.height);
     }
 }
