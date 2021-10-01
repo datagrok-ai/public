@@ -87,8 +87,12 @@ export class StackedBarChart extends DG.JsViewer {
       this.aminoColumnNames = [];
       const cp = ChemPalette.getDatagrok();
       this.getColor = (c = '') => {
+        if (c.length == 1 || c.at(1) == '(' || c.at(0)?.toLowerCase()=='d') {
+          const amino = c.at(0)?.toUpperCase()!;
+          return amino in cp ? cp[amino] : 'rgb(77,77,77)';
+        }
+        return 'rgb(77,77,77)';
         //return c ? DG.Color.toRgb(this.colorScale(c)) : 'rgb(127,127,127)'
-        return c in cp ? cp[c] : 'rgb(0,0,0)';
       };
     }
 
