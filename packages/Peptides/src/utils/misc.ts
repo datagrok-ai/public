@@ -31,10 +31,18 @@ export function tTest(arr1: number[], arr2: number[], alpha=0.05, devKnown=false
   const n1 = arr1.length;
   const n2 = arr2.length;
 
-  let wv1, wv2, wv,
-    Z, K,
-    p_more, p_less, p_tot,
-    Vk_more_ts, Vk_less_ts, Vk_more, Vk_less;
+  let wv1;
+  let wv2;
+  let wv;
+  let Z;
+  let K;
+  let pMore;
+  let pLess;
+  let pTot;
+  // let VkMoreTs;
+  // let VkLessTs;
+  // let VkMore;
+  // let VkLess;
 
   if (!devKnown) {
     if (!devEqual) {
@@ -43,37 +51,37 @@ export function tTest(arr1: number[], arr2: number[], alpha=0.05, devKnown=false
       Z = (m1 - m2) / Math.sqrt(wv1 + wv2);
       K = Math.pow((wv1 + wv2), 2) / (wv1 * wv1 / (n1 - 1) + wv2 * wv2 / (n2 - 1));
 
-      p_less = jStat.studentt.cdf(Z, K);
-      p_more = 1 - p_less;
-      p_tot = 2 * (p_less < p_more ? p_less : p_more);
+      pLess = jStat.studentt.cdf(Z, K);
+      pMore = 1 - pLess;
+      pTot = 2 * (pLess < pMore ? pLess : pMore);
     } else {
       K = n1 + n2 - 2;
       wv = (v1 * (n1 - 1) + v2 * (n2 - 1)) / K;
       Z = Math.sqrt(n1 * n2 / (n1 + n2)) * (m1 - m2) / wv;
 
-      p_more = 1 - jStat.studentt.cdf(Z, K);
-      p_less = jStat.studentt.cdf(Z, K);
-      p_tot =  2 * (p_less < p_more ? p_less : p_more);
+      pMore = 1 - jStat.studentt.cdf(Z, K);
+      pLess = jStat.studentt.cdf(Z, K);
+      pTot = 2 * (pLess < pMore ? pLess : pMore);
     }
-    Vk_more_ts = jStat.studentt.inv(1 - alpha / 2, K);
-    Vk_less_ts = jStat.studentt.inv(alpha / 2, K);
-    Vk_more = jStat.studentt.inv(1 - alpha, K);
-    Vk_less = jStat.studentt.inv(alpha, K);
+    // VkMoreTs = jStat.studentt.inv(1 - alpha / 2, K);
+    // VkLessTs = jStat.studentt.inv(alpha / 2, K);
+    // VkMore = jStat.studentt.inv(1 - alpha, K);
+    // VkLess = jStat.studentt.inv(alpha, K);
   } else {
     wv1 = v1 / n1;
     wv2 = v2 / n2;
     Z = (m1 - m2) / Math.sqrt(wv1 + wv2);
 
-    p_less = jStat.normal.pdf(Z, 0, 1);
-    p_more = 1 - p_less;
-    p_tot = 2 * (p_less < p_more ? p_less : p_more);
+    pLess = jStat.normal.pdf(Z, 0, 1);
+    pMore = 1 - pLess;
+    pTot = 2 * (pLess < pMore ? pLess : pMore);
 
-    Vk_more_ts = jStat.normal.inv(1 - alpha / 2);
-    Vk_less_ts = jStat.normal.inv(alpha / 2);
-    Vk_more = jStat.normal.inv(1 - alpha);
-    Vk_less = jStat.normal.inv(alpha);
+    // VkMoreTs = jStat.normal.inv(1 - alpha / 2);
+    // VkLessTs = jStat.normal.inv(alpha / 2);
+    // VkMore = jStat.normal.inv(1 - alpha);
+    // VkLess = jStat.normal.inv(alpha);
   }
-  return {'p-value': p_tot, 'Mean difference': m1 - m2};
+  return {'p-value': pTot, 'Mean difference': m1 - m2};
 }
 
 export function uTest(x1: number[], x2: number[]): testStats {
@@ -93,7 +101,7 @@ export function uTest(x1: number[], x2: number[]): testStats {
 
   // Stabdard Deviation and Absolute Value
   const T = tieCorrection(ranks);
-  let sd = Math.sqrt((T * U * (n1 + n2 + 1)) / 12.0);
+  const sd = Math.sqrt((T * U * (n1 + n2 + 1)) / 12.0);
   const mRank = 0.5 + U / 2;
   // const absolutValue = (Math.max(u1, u2) - mRank) / sd;
 
@@ -123,7 +131,7 @@ function ranking(arrays: number[][]) {
   const sorted = concatArray.slice().sort((a, b) => b - a);
   const ranks = concatArray.map(
     (value) =>
-      binarySearch(sorted, value, function (element: number, needle: number) {
+      binarySearch(sorted, value, function(element: number, needle: number) {
         return needle - element;
       }) + 1,
   );
@@ -148,9 +156,9 @@ function tieCorrection(rankValues: number[]) {
     .map((a, i) => (a === 0 ? i : -1))
     .filter((a) => a !== -1);
 
-  let diffCounter = nonNegativeIdxs
+  const diffCounter = nonNegativeIdxs
     .slice(1, nonNegativeIdxs.length)
-    .map(function (num, idx) {
+    .map(function(num, idx) {
       return num - nonNegativeIdxs.slice(0, nonNegativeIdxs.length - 1)[idx];
     })
     .length;
