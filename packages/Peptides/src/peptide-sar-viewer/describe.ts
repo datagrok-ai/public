@@ -1,10 +1,11 @@
-import * as grok from 'datagrok-api/grok';
 import * as ui from 'datagrok-api/ui';
 import * as DG from 'datagrok-api/dg';
+
 //@ts-ignore
 import * as jStat from 'jstat';
+
 import {splitAlignedPeptides} from '../split-aligned';
-import {decimalAdjust, tTest, uTest} from '../utils/misc';
+import {decimalAdjust, tTest} from '../utils/misc';
 import {ChemPalette} from '../utils/chem-palette';
 
 
@@ -13,7 +14,7 @@ export async function describe(
   activityColumn: string,
   activityScaling: string,
   filterMode: boolean,
-): Promise<DG.Grid | null> {
+): Promise<[DG.Grid, DG.DataFrame] | [null, null]> {
   //Split the aligned sequence into separate AARs
   let splitSeqDf: DG.DataFrame | undefined;
   for (const col of df.columns) {
@@ -25,7 +26,7 @@ export async function describe(
   }
 
   if (typeof splitSeqDf === 'undefined') {
-    return null;
+    return [null, null];
   }
 
   const positionColumns = splitSeqDf.columns.names();
@@ -151,15 +152,19 @@ export async function describe(
     .aggregate();
   matrixDf.name = 'SAR';
 
-  const aarCategoryOrder = [
-    '-', //black I guess
-    'C', 'U', //yellow
-    'G', 'P', //red
-    'A', 'V', 'I', 'L', 'M', 'F', 'Y', 'W', //all_green
-    'R', 'H', 'K', //light_blue
-    'D', 'E', //dark_blue
-    'S', 'T', 'N', 'Q', //orange
-  ];
+  // const aarCategoryOrder = [
+  //   '-', //black I guess
+  //   'C', 'U', //yellow
+  //   'G', 'P', //red
+  //   'A', 'V', 'I', 'L', 'M', 'F', 'Y', 'W', //all_green
+  //   'R', 'H', 'K', //light_blue
+  //   'D', 'E', //dark_blue
+  //   'S', 'T', 'N', 'Q', //orange
+  // ];
+  let aarCategoryOrder: string[] = ['-'];
+  for (const group of ChemPalette.grokGroups) {
+    aarCategoryOrder = aarCategoryOrder.concat(group[0]);
+  }
   matrixDf.getCol(aminoAcidResidue).setCategoryOrder(aarCategoryOrder);
 
   // !!! DRAWING PHASE !!!
@@ -169,46 +174,63 @@ export async function describe(
   const grid = matrixDf.plot.grid();
 
   grid.sort([aminoAcidResidue]);
+  grid.columns.setOrder([aminoAcidResidue].concat(positionColumns));
 
   for (const col of matrixDf.columns) {
     if (col.name === aminoAcidResidue) {
       col.semType = 'aminoAcids';
       col.setTag('cell.renderer', 'aminoAcids');
+      let maxLen = 0;
+      col.categories.forEach( (ent:string)=>{
+        if ( ent.length > maxLen) {
+          maxLen = ent.length;
+        }
+      });
+
+      grid.columns.byName(aminoAcidResidue)!.width = maxLen * 15;
     }
   }
-  grid.columns.setOrder([aminoAcidResidue].concat(positionColumns));
 
   //render column headers and AAR symbols centered
   grid.onCellRender.subscribe(function(args: DG.GridCellRenderArgs) {
-    const textSize = args.g.measureText(args.cell.gridColumn.name);
-    if (args.cell.isRowHeader) {
-      const text = matrixDf.getCol(aminoAcidResidue).get(<number>args.cell.tableRowIndex);
-      args.g.fillText(
-        text,
-        args.bounds.x + (args.bounds.width - textSize.width) / 2,
-        args.bounds.y + (textSize.actualBoundingBoxAscent + textSize.actualBoundingBoxDescent),
-      );
+    args.g.save();
+    args.g.beginPath();
+    args.g.rect(args.bounds.x, args.bounds.y, args.bounds.width, args.bounds.height);
+    args.g.clip();
+
+    if (args.cell.isRowHeader && args.cell.gridColumn.visible) {
+      args.cell.gridColumn.visible = false;
       args.preventDefault();
+      return;
     }
+
     if (args.cell.isColHeader) {
       if (args.cell.gridColumn.name != aminoAcidResidue) {
+        const textSize = args.g.measureText(args.cell.gridColumn.name);
+        args.g.fillStyle = '#4b4b4a';
         args.g.fillText(
           args.cell.gridColumn.name,
           args.bounds.x + (args.bounds.width - textSize.width) / 2,
           args.bounds.y + (textSize.actualBoundingBoxAscent + textSize.actualBoundingBoxDescent),
         );
-        args.g.fillStyle = '#4b4b4a';
       }
       args.preventDefault();
     }
 
     if (args.cell.isTableCell && args.cell.tableRowIndex !== null && args.cell.tableColumn !== null) {
-      if (args.cell.tableColumn.name === aminoAcidResidue) {
-
-      } else if (args.cell.cell.value !== null) {
+      if (args.cell.cell.value !== null && args.cell.tableColumn.name !== aminoAcidResidue) {
         const query =
           `${aminoAcidResidue} = ${matrixDf.get(aminoAcidResidue, args.cell.tableRowIndex)} ` +
           `and ${positionColName} = ${args.cell.tableColumn.name}`;
+
+        //don't draw AAR that too little appearnces at this position
+        const count = statsDf.groupBy(['Count']).where(query).aggregate().get('Count', 0);
+        if (count < 5) {
+          args.preventDefault();
+          args.g.restore();
+          return;
+        }
+
         const pVal = statsDf.groupBy(['p-value']).where(query).aggregate().get('p-value', 0);
 
         let coef;
@@ -249,6 +271,7 @@ export async function describe(
         args.preventDefault();
       }
     }
+    args.g.restore();
   });
 
   // show all the statistics in a tooltip over cell
@@ -268,13 +291,21 @@ export async function describe(
           const query =
             `${aminoAcidResidue} = ${matrixDf.get(aminoAcidResidue, cell.tableRowIndex)} ` +
             `and ${positionColName} = ${cell.tableColumn.name}`;
-          const text = `${decimalAdjust('floor', statsDf.groupBy([col]).where(query).aggregate().get(col, 0), -5)}`;
+          let text = `${decimalAdjust('floor', statsDf.groupBy([col]).where(query).aggregate().get(col, 0), -5)}`;
+
+          //@ts-ignore: I'm sure it's gonna be fine, text contains a number
+          if (col === 'Count' && text < 5) {
+            return true;
+          }
+
+          text = col === 'Count' ? text + ` / ${peptidesCount}` : text;
           tooltipMap[col] = text;
         }
       }
 
       ui.tooltip.show(ui.tableFromMap(tooltipMap), x, y);
-      return true;
+    // } else if (cell.isColHeader && !cell.isRowHeader) {
+    //   ui.tooltip.show((await df.plot.fromType('peptide-logo-viewer')).root, x, y);
     }
     return true;
   });
@@ -284,7 +315,15 @@ export async function describe(
     if (grid.table.currentCell.value && grid.table.currentCol.name !== aminoAcidResidue) {
       const currentAAR: string = grid.table.get(aminoAcidResidue, grid.table.currentRowIdx);
       const currentPosition = grid.table.currentCol.name;
+
+      const query = `aminoAcidResidue = ${currentAAR} and position = ${currentPosition}`;
+      const text = statsDf.groupBy(['Count']).where(query).aggregate().get('Count', 0);
+      if (text < 5) {
+        return;
+      }
+
       const splitColName = '~splitCol';
+      const otherColName = 'Other';
 
       const bitset = filterMode ? df.filter : df.selection;
       bitset.init((i) => df.get(currentPosition, i) === currentAAR);
@@ -293,19 +332,26 @@ export async function describe(
       for (let i = 0; i < bitset.length; i++) {
         //TODO: generate better label
         splitArray.push(bitset.get(i) ?
-          `${currentAAR === '-' ? 'Empty' : 'AAR ' + currentAAR} at position ${currentPosition}` : 'Other');
+          `${currentAAR === '-' ? 'Empty' : currentAAR} - ${currentPosition}` : otherColName);
       }
 
-      //TODO: fix color-coding
       const splitCol = DG.Column.fromStrings(splitColName, splitArray);
-      const cp = ChemPalette.get_datagrok();
-      const colorMap: {[index: string]: string} = {'Other': DG.Color.toRgb(DG.Color.lightGray)};
-      colorMap[currentAAR] = cp[currentAAR];
-      splitCol.colors.setCategorical(colorMap);
+      //TODO: use replace as soon as it is ready
+      if (!df.col(splitColName)) {
+        df.columns.add(splitCol);
+      } else {
+        df.columns.remove(splitColName);
+        df.columns.add(splitCol);
+      }
 
-      !df.col(splitColName) ? df.columns.add(splitCol) : df.columns.replace(splitColName, splitCol);
+      //FIXME: coloring doesn't work now
+      // const cp = ChemPalette.getDatagrok();
+      // const colorMap: {[index: string]: string | number} = {otherColName: DG.Color.lightGray};
+      // colorMap[currentAAR] = cp[currentAAR];
+      // df.getCol(splitColName).colors.setCategorical(colorMap);
+      // df.getCol(splitColName).setCategoryOrder([otherColName]);
     }
   });
 
-  return grid;
+  return [grid, statsDf];
 }
