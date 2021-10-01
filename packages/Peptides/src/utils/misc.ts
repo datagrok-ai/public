@@ -1,6 +1,5 @@
 //@ts-ignore: no types
 import * as jStat from 'jstat';
-import binarySearch from 'binary-search';
 
 type testStats = {'p-value': number, 'Mean difference'?: number, 'Median difference'?: number};
 
@@ -101,8 +100,8 @@ export function uTest(x: number[], y: number[], continuity=true): testStats {
   const mu = n1 * n2 / 2;
   const n = n1 + n2;
 
-  const tie_term = _tie_term(ranks);
-  const s = Math.sqrt(n1 * n2 / 12 * ((n + 1) - tie_term / (n* (n - 1))));
+  const tieTerm = _tieTerm(ranks);
+  const s = Math.sqrt(n1 * n2 / 12 * ((n + 1) - tieTerm / (n* (n - 1))));
 
   let numerator = U - mu;
 
@@ -117,11 +116,11 @@ export function uTest(x: number[], y: number[], continuity=true): testStats {
   return {'p-value': p, 'Median difference': med1 - med2};
 }
 
-function _tie_term(ranks: number[]): number {
+function _tieTerm(ranks: number[]): number {
   const ties: {[key: number]: number} = {};
 
   ranks.forEach((num) => {
-    ties[num] = (ties[num] || 0) + 1
+    ties[num] = (ties[num] || 0) + 1;
   });
 
   return jStat.sum(Object.values(ties));

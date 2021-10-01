@@ -18,7 +18,14 @@ export function addViewerToHeader(grid: DG.Grid, viewer: Promise<Widget>) {
       args.g.clip();
 
       if (args.cell.isColHeader && args.cell.tableColumn?.semType == 'aminoAcids') {
-        barchart.renderBarToCanvas(args.g, args.cell, args.bounds.x, args.bounds.y, args.bounds.width, args.bounds.height);
+        barchart.renderBarToCanvas(
+          args.g,
+          args.cell,
+          args.bounds.x,
+          args.bounds.y,
+          args.bounds.width,
+          args.bounds.height,
+        );
         args.preventDefault();
       }
       args.g.restore();

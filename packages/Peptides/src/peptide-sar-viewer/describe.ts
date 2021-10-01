@@ -335,7 +335,6 @@ export async function describe(
           `${currentAAR === '-' ? 'Empty' : currentAAR} - ${currentPosition}` : otherColName);
       }
 
-      console.log(df.columns.names());
       const splitCol = DG.Column.fromStrings(splitColName, splitArray);
       //TODO: use replace as soon as it is ready
       if (!df.col(splitColName)) {
@@ -345,11 +344,12 @@ export async function describe(
         df.columns.add(splitCol);
       }
 
-      const cp = ChemPalette.getDatagrok();
-      const colorMap: {[index: string]: string | number} = {otherColName: DG.Color.lightGray};
-      colorMap[currentAAR] = cp[currentAAR];
-      df.getCol(splitColName).colors.setCategorical(colorMap);
-      df.getCol(splitColName).setCategoryOrder([otherColName]);
+      //FIXME: coloring doesn't work now
+      // const cp = ChemPalette.getDatagrok();
+      // const colorMap: {[index: string]: string | number} = {otherColName: DG.Color.lightGray};
+      // colorMap[currentAAR] = cp[currentAAR];
+      // df.getCol(splitColName).colors.setCategorical(colorMap);
+      // df.getCol(splitColName).setCategoryOrder([otherColName]);
     }
   });
 
