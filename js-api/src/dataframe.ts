@@ -1600,15 +1600,15 @@ export class BitSet {
   }
 
   /** Sets [i]-th bit to [value], does not check bounds */
-  setFast(i: number, value: boolean): void {
-    let buf = api.grok_BitSet_GetBuffer(this.d);
-    let idx = (i | 0) / 0x20;
-
-    if (value)
-      buf[idx] |= 1 << (i & 0x1f);
-    else
-      buf[idx] &= ~(1 << (i & 0x1f));
-  }
+  // setFast(i: number, value: boolean): void {
+  //   let buf = api.grok_BitSet_GetBuffer(this.d);
+  //   let idx = (i | 0) / 0x20;
+  //
+  //   if (value)
+  //     buf[idx] |= 1 << (i & 0x1f);
+  //   else
+  //     buf[idx] &= ~(1 << (i & 0x1f));
+  // }
 
   /** Sets all bits by setting i-th bit to the results of f(i)
    * @param {Function} f
