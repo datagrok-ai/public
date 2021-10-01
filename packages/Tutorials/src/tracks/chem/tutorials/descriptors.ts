@@ -26,24 +26,29 @@ export class DescriptorsTutorial extends Tutorial {
       'In the next steps, we will learn how to calculate descriptors in Datagrok.');
 
     let pp: DG.Accordion;
-    await this.action('Click on the header of a column with molecules', 
-    'In the property panel, you should now see all the actions applicable to the column under the "Actions" section. Let\'s calculate some molecular descriptors for the given dataset.',
+    const ppDescription = 'In the property panel, you should now see all the actions ' +
+      'applicable to the column under the "Actions" section. Let\'s calculate some ' +
+      'molecular descriptors for the given dataset.';
+
+    await this.action('Click on the header of a column with molecules',
       grok.events.onAccordionConstructed.pipe(filter((acc) => {
         if (acc.context instanceof DG.Column && acc.context?.name == 'canonical_smiles') {
           pp = acc;
           return true;
         }
         return false;
-      })));
+      })), null, ppDescription);
 
     pp!.getPane('Actions').expanded = true;
     const descriptorsLabel = $(pp!.root)
       .find('label.d4-link-action')
       .filter((idx, el) => el.textContent == 'Chem | Descriptors...')[0];
 
-    const dlg = await this.openDialog('Click on "Chem | Descriptors..."', 
-    'The platform supports various groups of descriptors. You can select them either by category or individually. Let\'s compute the average molecular weight and Lipinski parameters. These are common descriptors used for drug-likeness prediction.',
-    'Descriptors', descriptorsLabel);
+    const dlgDescription = 'The platform supports various groups of descriptors. You can select ' +
+      'them either by category or individually. Let\'s compute the average molecular weight and ' +
+      'Lipinski parameters. These are common descriptors used for drug-likeness prediction.';
+    const dlg = await this.openDialog('Click on "Chem | Descriptors..."', 'Descriptors',
+      descriptorsLabel, dlgDescription);
 
     const descriptors = ['MolWt', 'FractionCSP3', 'HeavyAtomCount', 'NHOHCount',
       'NOCount', 'NumAliphaticCarbocycles', 'NumAliphaticHeterocycles', 'NumAliphaticRings',
@@ -56,14 +61,16 @@ export class DescriptorsTutorial extends Tutorial {
       .filter((idx, el) => el.textContent === 'Descriptors' || el.textContent === 'Lipinski')
       .get();
 
-    await this.action('Select "MolWt" and "Lipinski" group and press the "OK" button', 
-    `To select the "<b>MolWt</b>" expand the "<b>Descriptors</b>" group.\n The results of computation are added to the main dataframe. Take some time to examine the findings.`,
+    const groupDescription = 'To select the "<b>MolWt</b>" expand the "<b>Descriptors</b>" group.\nThe ' +
+      'results of computation will be added to the main dataframe. Take some time to examine the findings.';
+
+    await this.action('Select "MolWt" and "Lipinski" group and press the "OK" button',
       grok.functions.onAfterRunAction.pipe(filter((call) => {
         const inputs = call.inputs.get('descriptors');
         return call.func.name === 'ChemDescriptors' &&
           descriptors.length == inputs.length &&
           descriptors.every((d) => inputs.includes(d));
-      })), groupHints);
+      })), groupHints, groupDescription);
 
   }
 }
