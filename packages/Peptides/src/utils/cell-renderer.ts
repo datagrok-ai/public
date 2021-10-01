@@ -33,7 +33,7 @@ export class AminoAcidsCellRenderer extends DG.GridCellRenderer {
       g.font = `${this.fontSize}px monospace`;
       g.textBaseline = 'top';
       const s = gridCell.cell.value ? gridCell.cell.value : '-';
-      const cp = ChemPalette.get_datagrok();
+      const cp = ChemPalette.getDatagrok();
 
       cp['-'] = `rgb(77, 77, 77)`;
       g.fillStyle =`rgb(77, 77, 77)`;
@@ -54,7 +54,7 @@ export class AlignedSequenceCellRenderer extends DG.GridCellRenderer {
     private maxCellWidth = 270;
     private spacing = 9;
     private fontSize = 18;
-    private cp = ChemPalette.get_datagrok();
+    private cp = ChemPalette.getDatagrok();
     get name() {
       return 'alignedSequenceCR';
     }

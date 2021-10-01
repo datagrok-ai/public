@@ -3,7 +3,6 @@ import * as ui from 'datagrok-api/ui';
 import * as DG from 'datagrok-api/dg';
 import {describe} from './describe';
 import $ from 'cash-dom';
-import {tTest} from '../utils/misc';
 
 export class SARViewer extends DG.JsViewer {
   private grid: DG.Viewer | null;
@@ -25,29 +24,26 @@ export class SARViewer extends DG.JsViewer {
 
   async onTableAttached() {
     const accordionFunc = (accordion: DG.Accordion) => {
-      console.log(accordion);
-      // if (accordion.context instanceof DG.DataFrame) {
-      //   throw 'STOP! YOU VIOLATED THE LAW!';
-      // }
       if (accordion.context instanceof DG.RowGroup) {
         const originalDf: DG.DataFrame = accordion.context.dataFrame;
 
         if (originalDf.getTag('dataType') === 'peptides' && originalDf.col('~splitCol')) {
           let histPane = accordion.getPane('Distribution');
-          console.log(histPane);
+
           histPane = histPane ? histPane : accordion.addPane('Distribution', () => {
-            // return originalDf.plot.histogram({
-            //   value: `~${this.activityColumnColumnName}Scaled`,
-            //   'splitColumnName': '~splitCol',
-            // }).root;
-            return DG.Viewer.histogram(originalDf, {
-              value: `~${this.activityColumnColumnName}Scaled`, splitColumnName: '~splitCol'
+            //TODO: add colored legend and count
+            const hist = DG.Viewer.histogram(originalDf, {
+              value: `~${this.activityColumnColumnName}Scaled`,
+              splitColumnName: '~splitCol',
+              legendVisibility: 'Never',
             }).root;
+
+            return ui.divV([hist]);
           }, true);
         }
       }
     };
-    
+
     this.subs.push(DG.debounce(grok.events.onAccordionConstructed, 50).subscribe(accordionFunc));
 
     this.render();

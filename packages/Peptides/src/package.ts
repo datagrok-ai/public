@@ -24,8 +24,8 @@ async function main(chosenFile : string) {
   peptides.setTag('dataType', 'peptides');
 
   peptides.onSemanticTypeDetecting.subscribe((_) => {
+    const regexp = new RegExp('^((.+)?-){5,49}(\\w|\\(|\\))+$');
     for (const col of peptides.columns) {
-      const regexp = new RegExp('^((.+)?-){5,49}(\\w|\\(|\\))+$');
       col.semType = DG.Detector.sampleCategories(col, (s) => regexp.test(s)) ? 'alignedSequence' : null;
     }
   });
@@ -52,7 +52,6 @@ export function Peptides() {
   const windows = grok.shell.windows;
   windows.showToolbox = false;
   windows.showHelp = false;
-  windows.showProperties = false;
 
   const mainDiv = ui.div();
   grok.shell.newView('Peptides', [
@@ -69,11 +68,11 @@ export function Peptides() {
   ]);
 }
 
-//name: Analyze Peptides
+//name: Peptides
 //tags: panel, widgets
 //input: column col {semType: alignedSequence}
 //output: widget result
-export function analyzePeptides(col: DG.Column): DG.Widget {
+export async function analyzePeptides(col: DG.Column): Promise<DG.Widget> {
   // let defaultColumn: DG.Column | null = col;
   let tempCol = null;
   for (const column of col.dataFrame.columns.numerical) {
@@ -90,7 +89,7 @@ export function analyzePeptides(col: DG.Column): DG.Widget {
   });
   activityColumnChoice.fireChanged();
 
-  const startBtn = ui.button('Start', async () => {
+  const startBtn = ui.button('Launch SAR', async () => {
     if (activityColumnChoice.value.type === DG.TYPE.FLOAT) {
       const options = {
         'activityColumnColumnName': activityColumnChoice.value.name,
@@ -116,7 +115,9 @@ export function analyzePeptides(col: DG.Column): DG.Widget {
     }
   });
 
-  return new DG.Widget(ui.divV([ui.inputs([activityColumnChoice, activityScalingMethod]), startBtn]));
+  const viewer = await col.dataFrame.plot.fromType('peptide-logo-viewer');
+
+  return new DG.Widget(ui.divV([viewer.root, ui.inputs([activityColumnChoice, activityScalingMethod]), startBtn]));
 }
 
 //name: peptide-sar-viewer
@@ -291,15 +292,6 @@ class Logo extends DG.JsViewer {
       index++;
     }
   }
-}
-
-//name: Composition analysis
-//tags: panel, widget
-//input: column col {semType: alignedSequence}
-//output: widget result
-export async function showl(col: DG.Column): Promise<DG.Widget> {
-  const viewer = await col.dataFrame.plot.fromType('peptide-logo-viewer');
-  return new DG.Widget(viewer.root);
 }
 
 //name: peptide-logo-viewer
