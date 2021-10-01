@@ -84,88 +84,45 @@ export function tTest(arr1: number[], arr2: number[], alpha=0.05, devKnown=false
   return {'p-value': pTot, 'Mean difference': m1 - m2};
 }
 
-export function uTest(x1: number[], x2: number[]): testStats {
-  const ranks = ranking([x1, x2]);
-  const n1 = x1.length;
-  const n2 = x2.length;
-  const U = n1 * n2;
-  const med1 = jStat.median(x1);
-  const med2 = jStat.median(x2);
+export function uTest(x: number[], y: number[], continuity=true): testStats {
+  const xy = x.concat(y);
+  const n1 = x.length;
+  const n2 = y.length;
+  const med1 = jStat.median(x);
+  const med2 = jStat.median(y);
 
-  // simple U-test
-  const u1 = x1.reduce((pv, cv) => pv + cv) - (n1 * (n1 + 1)) / 2;
-  const u2 = U - u1;
+  const ranks = jStat.rank(xy);
 
-  // Rank-biserial correlation
-  // const rankBiserial = 1 - (2 * u2) / U;
+  const R1 = jStat.sum(ranks.slice(0, n1));
+  const U1 = R1 - n1 * (n1 + 1) / 2;
+  const U2 = n1 * n2 - U1;
+  const U = U1 > U2 ? U1 : U2;
 
-  // Stabdard Deviation and Absolute Value
-  const T = tieCorrection(ranks);
-  const sd = Math.sqrt((T * U * (n1 + n2 + 1)) / 12.0);
-  const mRank = 0.5 + U / 2;
-  // const absolutValue = (Math.max(u1, u2) - mRank) / sd;
+  const mu = n1 * n2 / 2;
+  const n = n1 + n2;
 
-  // Effect strength
-  // const effectStrength = absolutValue / Math.sqrt(n1 + n2); // effect strength
+  const tie_term = _tie_term(ranks);
+  const s = Math.sqrt(n1 * n2 / 12 * ((n + 1) - tie_term / (n* (n - 1))));
 
-  //p value
-  const p = jStat.normal.cdf(-Math.abs(((u1 > u2 ? u1 : u2) - mRank) / sd), 0, 1) * 2;
+  let numerator = U - mu;
 
-  // return {
-  //   u1,
-  //   u2,
-  //   p,
-  //   effectStrength,
-  //   rankBiserial,
-  //   absolutValue,
-  // };
+  if (continuity) {
+    numerator -= 0.5;
+  }
+
+  const z = numerator / s;
+
+  const p = 2 * (1 - jStat.normal.cdf(z, 0, 1));
+
   return {'p-value': p, 'Median difference': med1 - med2};
 }
 
-function ranking(arrays: number[][]) {
-  let concatArray: number[] = [];
-  arrays.forEach((item) => {
-    concatArray = concatArray.concat(item);
+function _tie_term(ranks: number[]): number {
+  const ties: {[key: number]: number} = {};
+
+  ranks.forEach((num) => {
+    ties[num] = (ties[num] || 0) + 1
   });
 
-  const sorted = concatArray.slice().sort((a, b) => b - a);
-  const ranks = concatArray.map(
-    (value) =>
-      binarySearch(sorted, value, function(element: number, needle: number) {
-        return needle - element;
-      }) + 1,
-  );
-
-  return ranks;
-}
-
-function tieCorrection(rankValues: number[]) {
-  if (rankValues.length === 0) {
-    throw new Error('tieCorrection: array length should be greater than 0');
-  }
-  if (rankValues.length === 1) {
-    return 1;
-  }
-
-  const sortedArr = rankValues.slice().sort((a, b) => b - a);
-  const leftArr = sortedArr.slice(1, sortedArr.length);
-  const rightArr = sortedArr.slice(0, sortedArr.length - 1);
-  const nonNegative = [0, leftArr.join('').localeCompare(rightArr.join('')), 0];
-
-  const nonNegativeIdxs = nonNegative
-    .map((a, i) => (a === 0 ? i : -1))
-    .filter((a) => a !== -1);
-
-  const diffCounter = nonNegativeIdxs
-    .slice(1, nonNegativeIdxs.length)
-    .map(function(num, idx) {
-      return num - nonNegativeIdxs.slice(0, nonNegativeIdxs.length - 1)[idx];
-    })
-    .length;
-
-  return (
-    1 -
-    (Math.pow(diffCounter, 3) - diffCounter) /
-      (Math.pow(sortedArr.length, 3) - sortedArr.length)
-  );
+  return jStat.sum(Object.values(ties));
 }

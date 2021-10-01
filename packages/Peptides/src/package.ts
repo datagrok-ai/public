@@ -7,6 +7,7 @@ import {SARViewer} from './peptide-sar-viewer/sar-viewer';
 import {AlignedSequenceCellRenderer, AminoAcidsCellRenderer} from './utils/cell-renderer';
 import {Logo} from './peptide-logo-viewer/logo-viewer';
 import {StackedBarChart, addViewerToHeader} from './stacked-barchart/stacked-barchart-viewer';
+// import { tTest, uTest } from './utils/misc';
 
 export const _package = new DG.Package();
 let tableGrid: DG.Grid;
@@ -66,6 +67,12 @@ export function Peptides() {
     ]),
     mainDiv,
   ]);
+
+  // tests test lol
+  // const a1 = [13.3, 6.0, 20.0, 8.0, 14.0, 19.0, 18.0, 25.0, 16.0, 24.0, 15.0, 1.0, 15.0];
+  // const a2 = [22.0, 16.0, 21.7, 21.0, 30.0, 26.0, 12.0, 23.2, 28.0, 23.0];
+  // console.log(uTest(a1, a2));
+  // console.log(tTest(a1, a2));
 }
 
 //name: Peptides

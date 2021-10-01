@@ -124,12 +124,6 @@ export class SARViewer extends DG.JsViewer {
         $(this.root).empty();
         this.root.appendChild(this.grid.root);
       }
-
-      // const a1 = [13.3, 6.0, 20.0, 8.0, 14.0, 19.0, 18.0, 25.0, 16.0, 24.0, 15.0, 1.0, 15.0];
-      // const a2 = [22.0, 16.0, 21.7, 21.0, 30.0, 26.0, 12.0, 23.2, 28.0, 23.0];
-      // console.log(tTest(a1, a2, 0.05, false, false));
-      // console.log(tTest(a1, a2, 0.05, true, false));
-      // console.log(tTest(a1, a2, 0.05, true, true));
     }
   }
 }
