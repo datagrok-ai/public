@@ -104,8 +104,8 @@ export class StackedBarChart extends DG.JsViewer {
         this.subs.push(DG.debounce(this.dataFrame.filter.onChanged, 50).subscribe((_) => this.render()));
         this.subs.push(DG.debounce(this.dataFrame.onCurrentRowChanged, 50).subscribe((_) => this.render()));
         this.subs.push(DG.debounce(ui.onSizeChanged(this.root), 50).subscribe((_) => this.render(false)));
+        this.computeData(this.dataFrame);
       }
-      this.render();
     }
 
     // Cancel subscriptions when the viewer is detached
