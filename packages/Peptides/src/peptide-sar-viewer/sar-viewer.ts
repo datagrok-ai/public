@@ -1,14 +1,16 @@
 import * as grok from 'datagrok-api/grok';
 import * as ui from 'datagrok-api/ui';
 import * as DG from 'datagrok-api/dg';
-import {describe} from './describe';
+
 import $ from 'cash-dom';
+
+import {describe} from './describe';
 
 export class SARViewer extends DG.JsViewer {
   private grid: DG.Viewer | null;
   protected activityColumnColumnName: string;
   protected activityScalingMethod: string;
-  protected filterMode: boolean;
+  // protected filterMode: boolean;
   protected statsDf: DG.DataFrame | null;
   protected initialized: boolean;
   // duplicatesHandingMethod: string;
@@ -22,7 +24,7 @@ export class SARViewer extends DG.JsViewer {
     //TODO: find a way to restrict activityColumnColumnName to accept only numerical columns (double even better)
     this.activityColumnColumnName = this.string('activityColumnColumnName');
     this.activityScalingMethod = this.string('activityScalingMethod', 'none', {choices: ['none', 'lg', '-lg']});
-    this.filterMode = this.bool('filterMode', false);
+    // this.filterMode = this.bool('filterMode', false);
     // this.duplicatesHandingMethod = this.string('duplicatesHandlingMethod', 'median', {choices: ['median']});
   }
 
@@ -38,24 +40,37 @@ export class SARViewer extends DG.JsViewer {
         if (originalDf.getTag('dataType') === 'peptides' && originalDf.col('~splitCol')) {
           const currentAAR: string = this.grid?.table.get('aminoAcidResidue', this.grid?.table.currentRowIdx);
           const currentPosition = this.grid?.table.currentCol.name;
-          const labelStr = `${currentAAR === '-' ? 'Empty' : currentAAR} - ${currentPosition}`;
-          const currentColor = DG.Color.getCategoryColor(originalDf.getCol('~splitCol'), labelStr);
-          const otherColor = DG.Color.getCategoryColor(originalDf.getCol('~splitCol'), 'Other');
-          const currentLabel = ui.label(labelStr, {style: {color: DG.Color.toHtml(currentColor)}});
-          const otherLabel = ui.label('Other', {style: {color: DG.Color.toHtml(otherColor)}});
 
+          const labelStr = `${currentAAR === '-' ? 'Empty' : currentAAR} - ${currentPosition}`;
+          // const currentColor = DG.Color.toHtml(DG.Color.getCategoryColor(originalDf.getCol('~splitCol'), labelStr));
+          // const otherColor = DG.Color.toHtml(DG.Color.getCategoryColor(originalDf.getCol('~splitCol'), 'Other'));
+          const currentLabel = ui.label(labelStr, {style: {color: DG.Color.toHtml(DG.Color.orange)}});
+          const otherLabel = ui.label('Other', {style: {color: DG.Color.toHtml(DG.Color.blue)}});
+
+          const elements: (HTMLLabelElement | HTMLElement)[] = [currentLabel, otherLabel];
 
           let histPane = accordion.getPane('Distribution');
           histPane = histPane ? histPane : accordion.addPane('Distribution', () => {
-
             //TODO: add colored legend and count
-            const hist = DG.Viewer.histogram(originalDf, {
-              value: `~${this.activityColumnColumnName}Scaled`,
+            const hist = originalDf.plot.histogram({
+              valueColumnName: `~${this.activityColumnColumnName}Scaled`,
               splitColumnName: '~splitCol',
               legendVisibility: 'Never',
+              showXAxis: true,
+              showColumnSelector: false,
+              showRangeSlider: false,
             }).root;
+            elements.push(hist);
 
-            return ui.divV([currentLabel, otherLabel, hist]);
+            const tableMap: {[key: string]: string} = {'Statistics:': ''};
+            for (const colName of new Set(['Count', 'p-value', 'Mean difference'])) {
+              const query = `aminoAcidResidue = ${currentAAR} and position = ${currentPosition}`;
+              const text = `${this.statsDf?.groupBy([colName]).where(query).aggregate().get(colName, 0)}`;
+              tableMap[colName] = text;
+            }
+            elements.push(ui.tableFromMap(tableMap));
+
+            return ui.divV(elements);
           }, true);
         }
       }
@@ -97,12 +112,12 @@ export class SARViewer extends DG.JsViewer {
     }
     //TODO: optimize. Don't calculate everything again if only view changes
     if (typeof this.dataFrame !== 'undefined' && this.activityColumnColumnName) {
-      
       [this.grid, this.statsDf] = await describe(
         this.dataFrame,
         this.activityColumnColumnName,
         this.activityScalingMethod,
-        this.filterMode,
+        // this.filterMode,
+        false,
       );
 
       if (this.grid !== null) {
