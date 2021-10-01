@@ -9,11 +9,15 @@ export class SARViewer extends DG.JsViewer {
   protected activityColumnColumnName: string;
   protected activityScalingMethod: string;
   protected filterMode: boolean;
+  protected statsDf: DG.DataFrame | null;
+  protected initialized: boolean;
   // duplicatesHandingMethod: string;
   constructor() {
     super();
 
     this.grid = null;
+    this.statsDf = null;
+    this.initialized = false;
 
     //TODO: find a way to restrict activityColumnColumnName to accept only numerical columns (double even better)
     this.activityColumnColumnName = this.string('activityColumnColumnName');
@@ -22,15 +26,28 @@ export class SARViewer extends DG.JsViewer {
     // this.duplicatesHandingMethod = this.string('duplicatesHandlingMethod', 'median', {choices: ['median']});
   }
 
-  async onTableAttached() {
+  init() {
+    this.initialized = true;
+  }
+
+  onTableAttached() {
     const accordionFunc = (accordion: DG.Accordion) => {
       if (accordion.context instanceof DG.RowGroup) {
         const originalDf: DG.DataFrame = accordion.context.dataFrame;
 
         if (originalDf.getTag('dataType') === 'peptides' && originalDf.col('~splitCol')) {
-          let histPane = accordion.getPane('Distribution');
+          const currentAAR: string = this.grid?.table.get('aminoAcidResidue', this.grid?.table.currentRowIdx);
+          const currentPosition = this.grid?.table.currentCol.name;
+          const labelStr = `${currentAAR === '-' ? 'Empty' : currentAAR} - ${currentPosition}`;
+          const currentColor = DG.Color.getCategoryColor(originalDf.getCol('~splitCol'), labelStr);
+          const otherColor = DG.Color.getCategoryColor(originalDf.getCol('~splitCol'), 'Other');
+          const currentLabel = ui.label(labelStr, {style: {color: DG.Color.toHtml(currentColor)}});
+          const otherLabel = ui.label('Other', {style: {color: DG.Color.toHtml(otherColor)}});
 
+
+          let histPane = accordion.getPane('Distribution');
           histPane = histPane ? histPane : accordion.addPane('Distribution', () => {
+
             //TODO: add colored legend and count
             const hist = DG.Viewer.histogram(originalDf, {
               value: `~${this.activityColumnColumnName}Scaled`,
@@ -38,7 +55,7 @@ export class SARViewer extends DG.JsViewer {
               legendVisibility: 'Never',
             }).root;
 
-            return ui.divV([hist]);
+            return ui.divV([currentLabel, otherLabel, hist]);
           }, true);
         }
       }
@@ -49,8 +66,17 @@ export class SARViewer extends DG.JsViewer {
     this.render();
   }
 
+  detach() {
+    this.subs.forEach((sub) => sub.unsubscribe());
+  }
+
   onPropertyChanged(property: DG.Property) {
     super.onPropertyChanged(property);
+
+    if (!this.initialized) {
+      this.init();
+      return;
+    }
 
     if (property.name === 'activityScalingMethod') {
       const minActivity = this.dataFrame?.col(this.activityColumnColumnName)?.min;
@@ -66,9 +92,13 @@ export class SARViewer extends DG.JsViewer {
   }
 
   async render() {
+    if (!this.initialized) {
+      return;
+    }
     //TODO: optimize. Don't calculate everything again if only view changes
     if (typeof this.dataFrame !== 'undefined' && this.activityColumnColumnName) {
-      this.grid = await describe(
+      
+      [this.grid, this.statsDf] = await describe(
         this.dataFrame,
         this.activityColumnColumnName,
         this.activityScalingMethod,

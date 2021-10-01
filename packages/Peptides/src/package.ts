@@ -34,6 +34,8 @@ async function main(chosenFile : string) {
   tableGrid = view.grid;
   view.name = 'PeptidesView';
 
+  grok.shell.windows.showProperties = true;
+
   pi.close();
 }
 
@@ -52,6 +54,7 @@ export function Peptides() {
   const windows = grok.shell.windows;
   windows.showToolbox = false;
   windows.showHelp = false;
+  windows.showProperties = false;
 
   const mainDiv = ui.div();
   grok.shell.newView('Peptides', [
@@ -218,7 +221,7 @@ class Logo extends DG.JsViewer {
 
   init() {
     this.initialized = true;
-    this.reactHost = ui.div([], {style: {height: '500px', width: '500px'}});
+    this.reactHost = ui.div([], {style: {height: '300px', width: '500px'}});
     console.log('INIT');
     this.target = this.dataFrame;
     this.splitted = splitAlignedPeptides(this.dataFrame!.columns.bySemType(this.colSemType));
