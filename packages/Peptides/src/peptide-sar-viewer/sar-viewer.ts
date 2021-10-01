@@ -49,9 +49,7 @@ export class SARViewer extends DG.JsViewer {
 
           const elements: (HTMLLabelElement | HTMLElement)[] = [currentLabel, otherLabel];
 
-          let histPane = accordion.getPane('Distribution');
-          histPane = histPane ? histPane : accordion.addPane('Distribution', () => {
-            //TODO: add colored legend and count
+          accordion.getPane('Distribution') ? null : accordion.addPane('Distribution', () => {
             const hist = originalDf.plot.histogram({
               valueColumnName: `~${this.activityColumnColumnName}Scaled`,
               splitColumnName: '~splitCol',
