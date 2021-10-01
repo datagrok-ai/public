@@ -252,6 +252,7 @@ export abstract class Tutorial extends DG.Widget {
     instructionDiv.classList.add('grok-tutorial-entry-success');
     instructionIndicator.classList.add('grok-tutorial-entry-indicator-success');
     $(descriptionDiv).hide();
+    $(entry).on('click', () => $(descriptionDiv).toggle());
     this.progress.value++;
     this.progressSteps.innerHTML = '';
     this.progressSteps.append('Step: '+String(this.progress.value)+' of '+this.steps);
