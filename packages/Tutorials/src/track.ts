@@ -4,6 +4,7 @@ import * as DG from 'datagrok-api/dg';
 import $ from 'cash-dom';
 import { _package } from './package';
 import { Tutorial } from './tutorial';
+import { tutorials } from './tracks/chem';
 
 
 /** A collection of tutorials */
@@ -21,6 +22,7 @@ export class Track {
 
 export class TutorialRunner {
   root: HTMLDivElement = ui.panel([], 'tutorial');
+  track: Track;
 
   async run(t: Tutorial): Promise<void> {
     $('.tutorial').hide();
@@ -46,6 +48,8 @@ export class TutorialRunner {
   constructor(track: Track, onStartTutorial?: (t: Tutorial) => Promise<void>) {
     let complete: number = 0;
     let total: number = track.tutorials.length;
+
+    this.track = track;
 
     let progress = ui.element('progress');
     progress.max = '100';//track.tutorials.length;

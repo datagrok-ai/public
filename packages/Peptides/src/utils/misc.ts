@@ -1,6 +1,5 @@
 //@ts-ignore: no types
 import * as jStat from 'jstat';
-import binarySearch from 'binary-search';
 
 type testStats = {'p-value': number, 'Mean difference'?: number, 'Median difference'?: number};
 
@@ -31,10 +30,18 @@ export function tTest(arr1: number[], arr2: number[], alpha=0.05, devKnown=false
   const n1 = arr1.length;
   const n2 = arr2.length;
 
-  let wv1, wv2, wv,
-    Z, K,
-    p_more, p_less, p_tot,
-    Vk_more_ts, Vk_less_ts, Vk_more, Vk_less;
+  let wv1;
+  let wv2;
+  let wv;
+  let Z;
+  let K;
+  let pMore;
+  let pLess;
+  let pTot;
+  // let VkMoreTs;
+  // let VkLessTs;
+  // let VkMore;
+  // let VkLess;
 
   if (!devKnown) {
     if (!devEqual) {
@@ -43,121 +50,78 @@ export function tTest(arr1: number[], arr2: number[], alpha=0.05, devKnown=false
       Z = (m1 - m2) / Math.sqrt(wv1 + wv2);
       K = Math.pow((wv1 + wv2), 2) / (wv1 * wv1 / (n1 - 1) + wv2 * wv2 / (n2 - 1));
 
-      p_less = jStat.studentt.cdf(Z, K);
-      p_more = 1 - p_less;
-      p_tot = 2 * (p_less < p_more ? p_less : p_more);
+      pLess = jStat.studentt.cdf(Z, K);
+      pMore = 1 - pLess;
+      pTot = 2 * (pLess < pMore ? pLess : pMore);
     } else {
       K = n1 + n2 - 2;
       wv = (v1 * (n1 - 1) + v2 * (n2 - 1)) / K;
       Z = Math.sqrt(n1 * n2 / (n1 + n2)) * (m1 - m2) / wv;
 
-      p_more = 1 - jStat.studentt.cdf(Z, K);
-      p_less = jStat.studentt.cdf(Z, K);
-      p_tot =  2 * (p_less < p_more ? p_less : p_more);
+      pMore = 1 - jStat.studentt.cdf(Z, K);
+      pLess = jStat.studentt.cdf(Z, K);
+      pTot = 2 * (pLess < pMore ? pLess : pMore);
     }
-    Vk_more_ts = jStat.studentt.inv(1 - alpha / 2, K);
-    Vk_less_ts = jStat.studentt.inv(alpha / 2, K);
-    Vk_more = jStat.studentt.inv(1 - alpha, K);
-    Vk_less = jStat.studentt.inv(alpha, K);
+    // VkMoreTs = jStat.studentt.inv(1 - alpha / 2, K);
+    // VkLessTs = jStat.studentt.inv(alpha / 2, K);
+    // VkMore = jStat.studentt.inv(1 - alpha, K);
+    // VkLess = jStat.studentt.inv(alpha, K);
   } else {
     wv1 = v1 / n1;
     wv2 = v2 / n2;
     Z = (m1 - m2) / Math.sqrt(wv1 + wv2);
 
-    p_less = jStat.normal.pdf(Z, 0, 1);
-    p_more = 1 - p_less;
-    p_tot = 2 * (p_less < p_more ? p_less : p_more);
+    pLess = jStat.normal.pdf(Z, 0, 1);
+    pMore = 1 - pLess;
+    pTot = 2 * (pLess < pMore ? pLess : pMore);
 
-    Vk_more_ts = jStat.normal.inv(1 - alpha / 2);
-    Vk_less_ts = jStat.normal.inv(alpha / 2);
-    Vk_more = jStat.normal.inv(1 - alpha);
-    Vk_less = jStat.normal.inv(alpha);
+    // VkMoreTs = jStat.normal.inv(1 - alpha / 2);
+    // VkLessTs = jStat.normal.inv(alpha / 2);
+    // VkMore = jStat.normal.inv(1 - alpha);
+    // VkLess = jStat.normal.inv(alpha);
   }
-  return {'p-value': p_tot, 'Mean difference': m1 - m2};
+  return {'p-value': pTot, 'Mean difference': m1 - m2};
 }
 
-export function uTest(x1: number[], x2: number[]): testStats {
-  const ranks = ranking([x1, x2]);
-  const n1 = x1.length;
-  const n2 = x2.length;
-  const U = n1 * n2;
-  const med1 = jStat.median(x1);
-  const med2 = jStat.median(x2);
+export function uTest(x: number[], y: number[], continuity=true): testStats {
+  const xy = x.concat(y);
+  const n1 = x.length;
+  const n2 = y.length;
+  const med1 = jStat.median(x);
+  const med2 = jStat.median(y);
 
-  // simple U-test
-  const u1 = x1.reduce((pv, cv) => pv + cv) - (n1 * (n1 + 1)) / 2;
-  const u2 = U - u1;
+  const ranks = jStat.rank(xy);
 
-  // Rank-biserial correlation
-  // const rankBiserial = 1 - (2 * u2) / U;
+  const R1 = jStat.sum(ranks.slice(0, n1));
+  const U1 = R1 - n1 * (n1 + 1) / 2;
+  const U2 = n1 * n2 - U1;
+  const U = U1 > U2 ? U1 : U2;
 
-  // Stabdard Deviation and Absolute Value
-  const T = tieCorrection(ranks);
-  let sd = Math.sqrt((T * U * (n1 + n2 + 1)) / 12.0);
-  const mRank = 0.5 + U / 2;
-  // const absolutValue = (Math.max(u1, u2) - mRank) / sd;
+  const mu = n1 * n2 / 2;
+  const n = n1 + n2;
 
-  // Effect strength
-  // const effectStrength = absolutValue / Math.sqrt(n1 + n2); // effect strength
+  const tieTerm = _tieTerm(ranks);
+  const s = Math.sqrt(n1 * n2 / 12 * ((n + 1) - tieTerm / (n* (n - 1))));
 
-  //p value
-  const p = jStat.normal.cdf(-Math.abs(((u1 > u2 ? u1 : u2) - mRank) / sd), 0, 1) * 2;
+  let numerator = U - mu;
 
-  // return {
-  //   u1,
-  //   u2,
-  //   p,
-  //   effectStrength,
-  //   rankBiserial,
-  //   absolutValue,
-  // };
+  if (continuity) {
+    numerator -= 0.5;
+  }
+
+  const z = numerator / s;
+
+  const p = 2 * (1 - jStat.normal.cdf(z, 0, 1));
+
   return {'p-value': p, 'Median difference': med1 - med2};
 }
 
-function ranking(arrays: number[][]) {
-  let concatArray: number[] = [];
-  arrays.forEach((item) => {
-    concatArray = concatArray.concat(item);
+function _tieTerm(ranks: number[]): number {
+  const ties: {[key: number]: number} = {};
+
+  ranks.forEach((num) => {
+    ties[num] = (ties[num] || 0) + 1;
   });
 
-  const sorted = concatArray.slice().sort((a, b) => b - a);
-  const ranks = concatArray.map(
-    (value) =>
-      binarySearch(sorted, value, function (element: number, needle: number) {
-        return needle - element;
-      }) + 1,
-  );
-
-  return ranks;
-}
-
-function tieCorrection(rankValues: number[]) {
-  if (rankValues.length === 0) {
-    throw new Error('tieCorrection: array length should be greater than 0');
-  }
-  if (rankValues.length === 1) {
-    return 1;
-  }
-
-  const sortedArr = rankValues.slice().sort((a, b) => b - a);
-  const leftArr = sortedArr.slice(1, sortedArr.length);
-  const rightArr = sortedArr.slice(0, sortedArr.length - 1);
-  const nonNegative = [0, leftArr.join('').localeCompare(rightArr.join('')), 0];
-
-  const nonNegativeIdxs = nonNegative
-    .map((a, i) => (a === 0 ? i : -1))
-    .filter((a) => a !== -1);
-
-  let diffCounter = nonNegativeIdxs
-    .slice(1, nonNegativeIdxs.length)
-    .map(function (num, idx) {
-      return num - nonNegativeIdxs.slice(0, nonNegativeIdxs.length - 1)[idx];
-    })
-    .length;
-
-  return (
-    1 -
-    (Math.pow(diffCounter, 3) - diffCounter) /
-      (Math.pow(sortedArr.length, 3) - sortedArr.length)
-  );
+  return jStat.sum(Object.values(ties));
 }
