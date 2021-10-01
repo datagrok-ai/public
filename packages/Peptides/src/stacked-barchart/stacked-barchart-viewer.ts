@@ -10,11 +10,13 @@ export function addViewerToHeader(grid: DG.Grid, viewer: Promise<Widget>) {
   viewer.then((viewer) => {
     const barchart = viewer as StackedBarChart;
     barchart.tableCanvas = grid.canvas;
+    grid.setOptions({'colHeaderHeight': 200});
     grid.onCellRender.subscribe((args) => {
       args.g.save();
       args.g.beginPath();
       args.g.rect(args.bounds.x, args.bounds.y, args.bounds.width, args.bounds.height);
       args.g.clip();
+
       if (args.cell.isColHeader && args.cell.tableColumn?.semType == 'aminoAcids') {
         barchart.renderBarToCanvas(args.g, args.cell, args.bounds.x, args.bounds.y, args.bounds.width, args.bounds.height);
         args.preventDefault();
@@ -222,27 +224,60 @@ export class StackedBarChart extends DG.JsViewer {
 
     renderBarToCanvas(g: CanvasRenderingContext2D, cell: DG.GridCell, x: number, y: number, w: number, h: number) {
       const margin = 0.2;
-      const innerMargin = 0.2;
-      const borderSize = w*margin;
-      x = x+ borderSize;
-      y = y+ borderSize;
-      w = w- borderSize*2;
-      h = h- borderSize*2;
+      const innerMargin = 0.02;
+      const selectLineration = 0.1;
+      x = x + w * margin;
+      y = y + h * margin / 4;
+      w = w - w * margin * 2;
+      h = h - h * margin / 2;
       g.fillStyle = 'orange';
       g.font = `20px monospace`;
       g.textBaseline = 'top';
-
-      const barData = this.barStats[cell.tableColumn!.name];
+      const name = cell.tableColumn!.name;
+      const barData = this.barStats[name];
       let sum = 0;
-      barData.forEach((obj)=>{
-        sum+=obj['count'];
+      barData.forEach((obj) => {
+        sum += obj['count'];
       });
       let curSum = 0;
-      const gapSize = y*innerMargin/barData.length;
-      barData.forEach((obj, index)=>{
+
+      barData.forEach((obj, index) => {
+        const sBarHeight = h * obj['count'] / this.max;
+        const gapSize = sBarHeight * innerMargin;
         g.fillStyle = this.getColor(obj['name']);
-        g.fillRect(x, y+h*curSum/sum+gapSize/2, w, h*obj['count']/sum-gapSize);
-        curSum+=obj['count'];
+        g.fillRect(
+          x,
+          y + h * (this.max - sum + curSum) / this.max + gapSize / 2,
+          w,
+          sBarHeight - gapSize);
+        if (w <= sBarHeight) {
+          g.fillStyle = 'rgb(0,0,0)';
+          g.font = `${w/2}px`;
+          g.fillText(obj['name'],
+            x+w/4,
+            y + h * (this.max - sum + curSum) / this.max + gapSize / 2 + (sBarHeight - gapSize)/2 -w/4);
+        }
+
+        if (this.selectionMode && obj['selectedCount'] > 0) {
+          g.fillStyle = 'rgb(255,165,0)';
+          g.fillRect(
+            x - w * selectLineration * 1.5,
+            y + h * (this.max - sum + curSum) / this.max + gapSize / 2,
+            w * selectLineration,
+            h * obj['selectedCount'] / this.max - gapSize);
+        }
+
+        // @ts-ignore
+        if (this.dataFrame.currentRow[name] === obj['name']) {
+          g.strokeStyle = 'rgb(0,0,0)';
+          g.strokeRect(
+            x,
+            y + h * (this.max - sum + curSum) / this.max + gapSize / 2,
+            w,
+            sBarHeight - gapSize);
+        }
+
+        curSum += obj['count'];
       });
       return;
     }
@@ -489,7 +524,7 @@ export class StackedBarChart extends DG.JsViewer {
 
 
     renderBar(name: string) {
-      if (!(this.registered[name])||!(this.tableCanvas)) {
+      if (!(this.registered[name]) || !(this.tableCanvas)) {
         return;
       }
       const cell = this.registered[name];
