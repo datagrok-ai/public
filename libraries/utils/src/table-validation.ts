@@ -48,7 +48,7 @@ function validateCell(cell: any, ruleset: RuleSet) : string | null {
 
   for (let rule of ruleset.rules)
     if (rule.column == name) {
-      rule.matcher = rule.matcher ?? DG.ValueMatcher.fromColumn(cell.column, rule.pattern);
+      rule.matcher = rule.matcher ?? DG.ValueMatcher.forColumn(cell.column, rule.pattern);
       let error = rule.matcher.validate(cell.value);
       if (error !== null)
         return error;

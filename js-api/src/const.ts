@@ -383,3 +383,26 @@ export type ElementOptions = { id?: string, classes?: string, style?: object };
 export type CsvImportOptions = { delimiter?: string, decimalSeparator?: string, thousandSeparator?: string };
 export type IndexPredicate = (ind: number) => boolean;
 export type StringPredicate = (str: string) => boolean;
+
+/** Metadata associated with the semantic type. */
+export interface SemTypeInfo {
+
+  /** Semantic type id */
+  name: string;
+
+  /** Semantic type description (shown in tooltips, etc) */
+  description: string;
+
+  /** Specifies the value data type.
+   * For example, the `itemType` for semantic type `Molecule` is `String`.
+   * Used for the automatic detection of semantic data types. */
+  itemType?: ColumnType;
+
+  /** Regular expression to check against the column name
+   * Used for the automatic detection of semantic data types. */
+  columnNameRegexp?: string;
+
+  /** Regular expression to check against the values (only applies to strings)
+   * Used for the automatic detection of semantic data types. */
+  valueRegexp?: string;
+}

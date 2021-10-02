@@ -6,21 +6,10 @@ import {WebWidget} from "../widgets/web-widget";
 import {DataQuery} from "datagrok-api/dg";
 import {widgetHost} from "../utils";
 import {_package} from "../package";
+import {tryParseJson} from "utils/src/string-utils";
+import {initTemplates, templatesSearch} from "./templates-search";
 
 // Power Search: community-curated, template-based, widget-driven search engine
-
-interface Template {
-  template: string;
-  url: string;
-  regexp?: RegExp;   // cached regexp for the template
-}
-
-interface Card {
-  id: string;
-  name: string;
-  widget: string;
-  templates: Template[];
-}
 
 let queries: DG.DataQuery[] = [];
 let widgetFunctions = DG.Func.find({returnType: 'widget'});
@@ -124,57 +113,7 @@ function specificWidgetsSearch(s: string, host: HTMLDivElement): void {
       wf.apply().then((w: DG.Widget) => host.appendChild(ui.div([widgetHost(w)])));
 }
 
-async function initTemplates(): Promise<void> {
-  //let templatesPath = (await _package.getProperties()).get('searchTemplatePaths');
-  let templatesPath = 'System:AppData/PowerPack/search-templates';
 
-  for (let path in templatesPath.split(';')) {
-    //if (await grok.dapi.files.exists(path)) {
-    if (true) {
-      let files = await grok.dapi.files.list(templatesPath, false, null);
-
-      for (let file of files) {
-        let s = await file.readAsString();
-        let collection: any = JSON.parse(s);
-        for (let template of collection.templates)
-          templates.push(template);
-      }
-    }
-  }
-
-  console.log(templates);
-}
-
-/// Community-curated template collection
-function templatesSearch(s: string, host: HTMLDivElement): void {
-  for (let p of templates)
-    for (let t of p.templates) {
-      let x = <any>t;
-      if (x.regexp == null)
-        x.regexp = new RegExp(t.template, 'i');
-      let matches = x.regexp.exec(s);
-
-      if (matches !== null) {
-        console.log(`match! ${p.name}`)
-
-        let widgetProperties: any = {};
-        for (let [k, v] of Object.entries(t))
-          if (k != 'template' && k != 'regexp') {
-            for (let i = 1; i < matches.length; i++)
-              v = v.replace('${' + i + '}', matches[i]);
-
-            widgetProperties[k] = v;
-          }
-
-        DG.Func.byName(p.widget).apply().then((w: DG.Widget) => {
-          w.props.setAll(widgetProperties);
-          host.appendChild(w.root);
-        });
-      }
-    }
-}
-
-//
 export function queriesSearch(s: string, host: HTMLDivElement): void {
   const dateRegExp = new RegExp('\\btoday\\b|\\bthis week\\b');
   const varRegExpStr = '@([a-zA-Z0-9_]+)';
@@ -222,32 +161,3 @@ function functionEvaluationsSearch(s: string, host: HTMLDivElement): void {
     .then((result) => host.appendChild(ui.span([s + ' = ', result], {style: {'font-size' : '20px'}})))
     .catch(() => {})
 }
-
-
-const semTypes = [
-  {
-    name: 'CHEMBL_ID',
-    description: 'ChEMBL compound identifier',
-    template: '(CHEMBL[0-9]+)'
-  }
-];
-
-const templates = [
-  {
-    id: 'foo-test',
-    name: 'Foo Test',
-    widget: 'kpiWidget',
-    templates: [
-      {
-        template: 'foo ([0-9]+)',
-        caption: '${1}'
-      }
-    ]
-  }
-]
-
-const widgetTemplates = [
-
-];
-
-// <object data="https://www.ebi.ac.uk/chembl/embed/#compound_report_card/CHEMBL1193654/name_and_classification" width="100%" height="100%"></object>
