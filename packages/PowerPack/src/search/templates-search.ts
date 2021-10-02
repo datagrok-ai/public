@@ -2,10 +2,6 @@
 import * as grok from 'datagrok-api/grok';
 import * as ui from 'datagrok-api/ui';
 import * as DG from 'datagrok-api/dg';
-import {WebWidget} from "../widgets/web-widget";
-import {DataQuery} from "datagrok-api/dg";
-import {widgetHost} from "../utils";
-import {_package} from "../package";
 import {tryParseJson} from "utils/src/string-utils";
 
 // Power Search: community-curated, template-based, widget-driven search engine
