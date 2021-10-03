@@ -2,7 +2,7 @@ import * as rxjs from 'rxjs';
 import * as rxjsOperators from 'rxjs/operators';
 import { toJs } from './wrappers';
 import { Observable } from "rxjs";
-import { Package } from './entities';
+import {FileInfo, Package} from './entities';
 import { Accordion, Dialog } from "./widgets";
 import { View, ViewLayout } from './view';
 import { Viewer } from "./viewer";
@@ -128,6 +128,9 @@ export class Events {
 
   /** Sample: {@link https://public.datagrok.ai/js/samples/events/layout-events} */
   get onViewLayoutApplied(): rxjs.Observable<ViewLayout> { return __obs('d4-view-layout-applied'); }
+
+  /** File in the file share has been edited and saved by the user. */
+  get onFileEdited(): rxjs.Observable<FileInfo> { return __obs('grok-file-edited'); }
 
   get onCurrentProjectChanged(): rxjs.Observable<any> { return __obs('grok-current-project-changed'); }
 
