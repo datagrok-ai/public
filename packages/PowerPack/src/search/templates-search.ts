@@ -1,8 +1,10 @@
 /* Do not change these import lines. Datagrok will import API library in exactly the same manner */
 import * as grok from 'datagrok-api/grok';
 import * as ui from 'datagrok-api/ui';
+import {filter} from 'rxjs/operators';
 import * as DG from 'datagrok-api/dg';
 import {tryParseJson} from "utils/src/string-utils";
+import {FileInfo} from "datagrok-api/dg";
 
 // Power Search: community-curated, template-based, widget-driven search engine
 
@@ -23,20 +25,31 @@ export async function initTemplates(): Promise<void> {
   //let templatesPath = (await _package.getProperties()).get('searchTemplatePaths');
   let templatesPath = 'System:AppData/PowerPack/search-templates';
 
-  for (let path in templatesPath.split(';')) {
-    //if (await grok.dapi.files.exists(path)) {
-    if (true) {
-      let files = await grok.dapi.files.list(templatesPath, false, null);
+  async function loadTemplates(): Promise<void> {
+    for (let path in templatesPath.split(';')) {
+      //if (await grok.dapi.files.exists(path)) {
+      if (true) {
+        let files = await grok.dapi.files.list(templatesPath, false, null);
 
-      for (let file of files) {
-        let s = await file.readAsString();
-        let collection: any = tryParseJson(s) ?? [];
-        for (let template of collection.templates)
-          templates.push(template);
+        for (let file of files) {
+          let s = await file.readAsString();
+          let collection: any = tryParseJson(s) ?? [];
+          for (let template of collection.templates)
+            templates.push(template);
+        }
       }
     }
   }
 
+  grok.events.onFileEdited
+    // @ts-ignore
+    .pipe(filter((f: FileInfo) => f.path.startsWith('PowerPack/search-templates')))
+    .subscribe((_) => {
+      templates.length = 0;
+      loadTemplates().then((_) => grok.shell.info('Search patterns reloaded.'));
+    });
+
+  await loadTemplates();
   console.log(templates);
 }
 
