@@ -542,9 +542,11 @@ export class DataFrame {
   /** Sample: {@link https://public.datagrok.ai/js/samples/data-frame/events/events} */
   get onRowsRemoved(): Observable<any> { return this._event('ddt-rows-removed'); }
 
-  /** @returns {Observable} */ get onRowsFiltering(): Observable<any> {
-    return this._event('ddt-rows-filtering');
-  }
+  /** Sample: {@link https://public.datagrok.ai/js/samples/data-frame/events/events} */
+  get onRowsFiltered(): Observable<any> { return this._event('ddt-rows-filtered'); }
+
+  /** @returns {Observable} */
+  get onRowsFiltering(): Observable<any> { return this._event('ddt-rows-filtering'); }
 
   /** Sample: {@link https://public.datagrok.ai/js/samples/data-frame/advanced/semantic-type-detection} */
   get onSemanticTypeDetecting(): Observable<any> { return this._event('ddt-semantic-type-detecting'); }
