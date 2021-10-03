@@ -30,11 +30,11 @@ export class MultivariateAnalysisTutorial extends Tutorial {
       'Multivariate Analysis (PLS)');
 
     await this.dlgInputAction(dlg, 'Set "Table" to "cars"', 'Table', 'cars');
-    await this.dlgInputAction(dlg, 'Set "Predict" to "price"', 'Predict', 'price',
-      'Set "Features" to "all". Click "All" in the column selection dialog.');
+    await this.dlgInputAction(dlg, 'Set "Predict" to "price"', 'Predict', 'price');
 
-   // await this.dlgInputAction(dlg, 'Set "Features" to "all".', ' Click "All" in the column selection dialog',
-   //    'Features', this.t.columns.names().join(','));
+    await this.dlgInputAction(dlg, 'Set "Features" to "All".', 'Features',
+      this.t!.columns.names().filter((n: string) => n !== 'model' && n !== 'price').join(','),
+      'Click "All" in the column selection dialog.');
     await this.dlgInputAction(dlg, 'Set the number of components to "3"', 'Components', '3');
 
     const outcomeDescription = `Once you run the analysis, the following visualizations will appear:
