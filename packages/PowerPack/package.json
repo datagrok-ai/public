@@ -8,6 +8,7 @@
 	"description": "",
 	"dependencies": {
 		"cash-dom": "latest",
+		"rxjs": "^6.5.5",
 		"datagrok-api": "../../js-api",
 		"utils": "../../libraries/utils",
 		"datagrok-tools": "^4.1.2",
