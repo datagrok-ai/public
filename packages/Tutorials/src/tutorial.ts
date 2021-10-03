@@ -12,12 +12,13 @@ import { Track, TutorialRunner } from './track';
 export abstract class Tutorial extends DG.Widget {
   abstract get name(): string;
   abstract get description(): string;
-  abstract get steps():number;
+  abstract get steps(): number;
 
   track: Track | null = null;
   demoTable: string = 'demog.csv';
-  get t(): DG.DataFrame {
-    return grok.shell.t;
+  private _t: DG.DataFrame | null = null;
+  get t(): DG.DataFrame | null {
+    return this._t;
   }
 
   nextLink: HTMLAnchorElement = ui.link('next',
@@ -89,7 +90,8 @@ export abstract class Tutorial extends DG.Widget {
     this.headerDiv.append(closeTutorial);
 
     if (this.demoTable) {
-      grok.shell.addTableView(await grok.data.getDemoTable(this.demoTable));
+      this._t = await grok.data.getDemoTable(this.demoTable);
+      grok.shell.addTableView(this._t);
     }
     this.closed = false;
     await this._run();

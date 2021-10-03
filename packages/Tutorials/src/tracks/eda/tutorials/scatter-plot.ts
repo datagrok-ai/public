@@ -50,15 +50,15 @@ export class ScatterPlotTutorial extends Tutorial {
     await this.action('Double-click to unzoom', plot.onResetView, null, zoomReset);
 
     const currentRecord = 'Click on a point. Note that it becomes the current point in a spreadsheet, too.';
-    await this.action('Click on a point', this.t.onCurrentRowChanged, null, currentRecord);
+    await this.action('Click on a point', this.t!.onCurrentRowChanged, null, currentRecord);
 
     const selection = 'Select points by dragging a rectangle on a viewer while holding <b>Shift</b>. ' +
       'Note that the row selection is being reflected on most viewers, such as the spreadsheet. ' +
       'A number of points under the selection rectangle is shown right there.';
-    await this.action('Select points', this.t.onSelectionChanged, null, selection);
+    await this.action('Select points', this.t!.onSelectionChanged, null, selection);
 
     const deselection = `Deselect some points by dragging a rectangle on a viewer while holding <b>Ctrl+Shift</b>.`;
-    await this.action('Deselect points', this.t.onSelectionChanged, null, deselection);
+    await this.action('Deselect points', this.t!.onSelectionChanged, null, deselection);
 
     await this.action('Deselect points',`Deselect some points by dragging a rectangle on a viewer while holding <b>Ctrl+Shift.</b>`, this.t.onSelectionChanged);
   }

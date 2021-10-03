@@ -11,7 +11,7 @@ export class PredictiveModelingTutorial extends Tutorial {
     return 'Predictive Modeling';
   }
   get description() {
-    return 'Predictive modeling uses statistics to predict outcomes';
+    return 'Predictive modeling is a statistical technique used to predict outcomes based on historical data.';
   }
   get steps() { return 12; }
 
@@ -45,7 +45,10 @@ export class PredictiveModelingTutorial extends Tutorial {
   };
 
   protected async _run() {
-    this.describe('Predictive modeling uses statistics to predict outcomes.');
+    this.describe('Predictive modeling is a statistical technique used to predict outcomes ' +
+      'based on historical data. In the next steps, we will train a few models, look at their ' +
+      'performance, learn how to apply a model to a dataset and share it with others, and ' +
+      'lastly, compare the models we have trained.');
 
     /** Train model actions */
     const trainModel = async (method: string): Promise<void> => {
@@ -55,7 +58,7 @@ export class PredictiveModelingTutorial extends Tutorial {
       );
 
       // UI generation delay
-      await new Promise((resolve) => setTimeout(resolve, 1500));
+      await new Promise((resolve) => setTimeout(resolve, 2000));
 
       const viewInputAction = async (instructions: string, caption: string, value: string, description: string = '') => {
         let inputRoot: HTMLDivElement;
@@ -97,15 +100,45 @@ export class PredictiveModelingTutorial extends Tutorial {
       await this.buttonClickAction(pmv.root, 'Click the "Train" button', 'TRAIN');
     };
 
-    //this.title('Train a model');
-    await trainModel('Distributed Random Forest');
+    this.title('Train a model');
+    //await trainModel('Distributed Random Forest');
 
-    const browseModels = async () => {
-      await this.openViewByType('Click on "Functions | Models" to open the Models Browser',  DG.View.MODELS);
-    };
+    this.title('Model performance, application, and sharing');
+    const pmBrowserDescription = 'This is Predictive Models Browser. Here, you can browse ' +
+      'models that you trained or that were shared with you. In the next steps, we will look ' +
+      'at model performance, apply a model to a dataset, and share the model.';
+    await this.openViewByType(
+      'Click on "Functions | Models" to open the Models Browser',
+      DG.View.MODELS, null, pmBrowserDescription);
 
-    //this.title('Model performance');
-    await browseModels();
+    const ppDescription = 'Search for the model you trained (applicable models are always at the ' +
+      'top of the list, also, you can search for it by the previously defined name). Now, select ' +
+      'the model by clicking on it and open "Performance" at the property panel on the right.';
 
+    await this.action('Find model performance data',
+      // TODO: check if acc.context instanceof DG.Model && acc.context?.name === modelName
+      grok.events.onAccordionConstructed.pipe(
+        map((acc) => acc.getPane('Performance')?.expanded),
+        filter((v) => v === true)),
+      null, ppDescription);
+
+    await this.contextMenuAction('Right-click on the trained model and select "Apply to | ' +
+      `${this.t!.toString()}"`, this.t!.toString(), null, 'The result will be available in ' +
+      'the selected table as a column named "Outcome". Check it out in the opened table view.');
+
+    await this.contextMenuAction('Right-click on the model and select "Share...".', 'Share...',
+      null, 'The model you trained is only visible to you, but it is easy to share it with other ' +
+      'users from this dialog: just add a few users (e.g., "All users") and click "OK".');
+
+    this.title('Compare models');
+
+    await trainModel('Gradient Boosting Machine');
+    await this.openViewByType('Click on "Functions | Models" to open the Models Browser', DG.View.MODELS);
+
+    await this.action('Find the trained models and compare them',
+      grok.events.onViewAdded.pipe(filter((view) => view.name == 'Compare models')),
+      $('div.d4-accordion-pane-header').filter((idx, el) => el.textContent == 'Commands')[0],
+      'Search for the trained models and select them holding <b>Shift</b>. ' +
+      'Then use the "Compare" command at the property panel.');
   }
 }
