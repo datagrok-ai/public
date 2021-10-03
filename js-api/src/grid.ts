@@ -481,12 +481,11 @@ export class Grid extends Viewer {
     return __obs('d4-grid-column-resized', this.d);
   }
 
-  /**
-   * Sample: {@link https://public.datagrok.ai/js/samples/grid/resize-events}
-   */
-  get onRowsResized(): Observable<any> {
-    return __obs('d4-grid-rows-resized', this.d);
-  }
+  /** Sample: {@link https://public.datagrok.ai/js/samples/grid/resize-events} */
+  get onRowsResized(): Observable<any> { return __obs('d4-grid-rows-resized', this.d); }
+
+  /** Sample: {@link https://public.datagrok.ai/js/samples/grid/order-rows} */
+  get onRowsSorted(): Observable<any> { return __obs('d4-grid-rows-sorted', this.d); }
 
   /**
    * Currently visible cells
