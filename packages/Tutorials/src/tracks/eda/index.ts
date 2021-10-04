@@ -10,4 +10,4 @@ export const tutorials = [
   ViewersTutorial,
 ];
 export const eda = new Track('Exploratory Data Analysis',
-  ...tutorials.map((t) => new t()));
+  tutorials.map((t) => new t()), 'https://datagrok.ai/help/explore/exploratory-data-analysis');

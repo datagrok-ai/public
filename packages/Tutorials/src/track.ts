@@ -11,11 +11,13 @@ import { tutorials } from './tracks/chem';
 export class Track {
   tutorials: Tutorial[];
   name: string;
+  helpUrl:string
   completed: number = 0;
 
-  constructor(name: string, ...tutorials: Tutorial[]) {
+  constructor(name: string, tutorials: Tutorial[], helpUrl:string) {
     this.name = name;
     this.tutorials = tutorials;
+    this.helpUrl = helpUrl;
     tutorials.forEach((t) => t.track = this);
   }
 }
@@ -78,7 +80,7 @@ export class TutorialRunner {
 
 
     let trackRoot = ui.divV([
-      ui.divH([ui.h1(track.name)], 'tutorials-track-title'),
+      ui.divH([ui.h1(track.name), ui.icons.info(()=>{})], 'tutorials-track-title'),
       ui.divH([progress]),
       progressDetails,
       ui.divV(track.tutorials.map((t) => {
