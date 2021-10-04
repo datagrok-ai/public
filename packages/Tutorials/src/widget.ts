@@ -64,25 +64,8 @@ export class TutorialWidget extends DG.Widget {
                 tracksStas.innerHTML = String(this.totalTracks);
             tutorialsStats.innerHTML = String(this.totalTutorials);
             completeStats.innerHTML = String(this.totalCompleted);
-            progressStats.innerHTML = String(this.totalProgress+'%');
+            progressStats.innerHTML = String(Math.round(this.totalProgress)+'%');
         }
-
-        //let complete = await runEda.getCompleted(runEda.track.tutorials) + await runEda.getCompleted(runChem.track.tutorials) + await runMl.getCompleted(runMl.track.tutorials);
-        //let total = runEda.track.tutorials.length + runChem.track.tutorials.length + runMl.track.tutorials.length;
-        //let progress = 100/total*complete;
-
-        //this.completeTutorials.append(String(complete));
-        //this.allTutorials.append(String(total));
-        //this.totalProgress.append(String(Math.round(progress))+'%');
-
-        //edaProgress.max = runEda.track.tutorials.length;
-        //edaProgress.value = await runEda.getCompleted(runEda.track.tutorials);
-
-        //chemProgress.max = runChem.track.tutorials.length;
-        //chemProgress.value = await runChem.getCompleted(runChem.track.tutorials);
-        
-        //mlProgress.max = runMl.track.tutorials.length;
-        //mlProgress.value = await runMl.getCompleted(runMl.track.tutorials);
         
     })();
 
