@@ -11,7 +11,7 @@ var { jStat } = require('jstat')
 
 export class BoxPlotsView extends DG.ViewBase {
 
-  boxPlotDiv = ui.block([]);
+  boxPlotDiv = ui.div();
   boxPlots = [];
 
   uniqueLabValues = Array.from(getUniqueValues(study.domains.lb, 'LBTEST'));
@@ -113,7 +113,8 @@ export class BoxPlotsView extends DG.ViewBase {
           labelOrientation: 'Horz'
         });
         plot.root.prepend(ui.divText(it, viewerTitle));
-        this.boxPlots.push(plot.root);
+        const boxPlot = Array.from(getUniqueValues(df, category)).length > 3 ? ui.block([plot.root]) : ui.block50([plot.root]);
+        this.boxPlots.push(boxPlot);
       })
       updateDivInnerHTML(this.boxPlotDiv, ui.block(this.boxPlots));
     }
