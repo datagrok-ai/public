@@ -60,7 +60,5 @@ export class ScatterPlotTutorial extends Tutorial {
 
     const deselection = `Deselect some points by dragging a rectangle on a viewer while holding <b>Ctrl+Shift</b>.`;
     await this.action('Deselect points', this.t!.onSelectionChanged, null, deselection);
-
-    await this.action('Deselect points',`Deselect some points by dragging a rectangle on a viewer while holding <b>Ctrl+Shift.</b>`, this.t.onSelectionChanged);
   }
 }

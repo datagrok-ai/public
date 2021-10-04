@@ -47,11 +47,6 @@ export class ViewersTutorial extends Tutorial {
     const currentRecord = 'Move the mouse over records on the scatter plot and grid, ' +
       'and note that the corresponding records are being highlighted in other viewers. ' +
       'Click on a point to make it current, and see how other viewers indicate where the current record is.';
-    await this.action('Click on a point to set the current record.', this.t.onCurrentRowChanged, null, currentRecord);
-
-    await this.action('Now, select one of the bins on the histogram', `Move the mouse over histogram bins to see how the points that fall into that bin are reflected in other viewers. Similarly, hover the mouse over pie chart segments.\n\nNote that the selection is synchronized between all viewers. Now, select one of the bins on the histogram by clicking on it, and see the corresponding records being highlighted on both scatter plot and grid.\n\nThe same concept applies to the rest of the viewers, such as a pie chart or histogram. To select multiple data points, click on a segment while holding <b>Shift</b>. To unselect, hold <b>Ctrl+Shift</b> while clicking. To invert, hold <b>Ctrl</b> while clicking.`, this.t.onSelectionChanged);
-    
-    await this.action('Click on a point to set the current record.', 'Move the mouse over records on the scatter plot and grid, and note that the corresponding records are being highlighted in other viewers. Click on a point to make it current, and see how other viewers indicate where the current record is.' , this.t.onCurrentRowChanged);
-
+    await this.action('Click on a point to set the current record.', this.t!.onCurrentRowChanged, null, currentRecord);
   }
 }

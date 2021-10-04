@@ -28,8 +28,5 @@ export class FiltersTutorial extends Tutorial {
       'powerful tool. It combines multiple indicators along with a few controls that let you easily ' +
       `modify current filters and selection. Let's start with filtering by a specific category.`;
     const filters = await this.openPlot('filters', (x) => x.type === DG.VIEWER.FILTERS, filterDescription);
-
-    const filters = await this.openPlot('filters', `Now, let's add filters.\nWhile appearing very simple, this is a very powerful tool. It combines multiple indicators along with a few controls that let you easily modify current filters and selection. Let's start with filtering by a specific category.`, (x) => x.type === DG.VIEWER.FILTERS);
-
   }
 }
