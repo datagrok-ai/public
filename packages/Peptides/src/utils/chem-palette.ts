@@ -42,6 +42,28 @@ export class ChemPalette {
     });
     return palette;
   }
+  static AAFullNames:{ [Key: string]: string; } = {
+    'Ala': 'A',
+    'Arg': 'R',
+    'Asn': 'N',
+    'Asp': 'D',
+    'Cys': 'C',
+    'Gln': 'Q',
+    'Glu': 'E',
+    'Gly': 'G',
+    'His': 'H',
+    'Ile': 'I',
+    'Leu': 'L',
+    'Lys': 'K',
+    'Met': 'M',
+    'Phe': 'F',
+    'Pro': 'P',
+    'Ser': 'S',
+    'Thr': 'T',
+    'Trp': 'W',
+    'Tyr': 'Y',
+    'Val': 'V',
+  };
 
   static getDatagrok = () => ChemPalette.makePalette(ChemPalette.grokGroups);
   static getLesk = () => ChemPalette.makePalette([

@@ -120,12 +120,33 @@ export class StackedBarChart extends DG.JsViewer {
 
       this.aminoColumnNames = [];
       const cp = ChemPalette.getDatagrok();
-      this.getColor = (c = '') => {
-        if (c.length == 1 || c.at(1) == '(' || c.at(0)?.toLowerCase() == 'd') {
+      this.getColor = (c = '') =>{
+        if (c.length == 1 || c.at(1) == '(') {
           const amino = c.at(0)?.toUpperCase()!;
           return amino in cp ? cp[amino] : 'rgb(77,77,77)';
         }
+        if (c.at(0) == 'd' && c.at(1)! in cp) {
+          if (c.length == 2 || c.at(2) == '(') {
+            const amino = c.at(1)?.toUpperCase()!;
+            return amino in cp ? cp[amino] : 'rgb(77,77,77)';
+          }
+        }
+        if (c.substr(0, 3) in ChemPalette.AAFullNames) {
+          if (c.length == 3 || c.at(3) == '(') {
+            const amino = ChemPalette.AAFullNames[c.substr(0, 3)];
+            return amino in cp ? cp[amino] : 'rgb(77,77,77)';
+          }
+        }
+        if (c.at(0)?.toLowerCase() == c.at(0)) {
+          if (c.substr(1, 3) in ChemPalette.AAFullNames) {
+            if (c.length == 4 || c.at(4) == '(') {
+              const amino = ChemPalette.AAFullNames[c.substr(1, 3)];
+              return amino in cp ? cp[amino] : 'rgb(77,77,77)';
+            }
+          }
+        }
         return 'rgb(77,77,77)';
+        //return c ? DG.Color.toRgb(this.colorScale(c)) : 'rgb(127,127,127)'
       };
     }
 
