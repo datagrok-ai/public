@@ -2053,12 +2053,12 @@ export class ColumnDialogHelper {
       return;
     let params = { table: this.column.dataFrame, expression: formula, name: this.column.name, type: this.column.type };
     let call = DG.Func.byName('AddNewColumn').prepare(params);
+    call.aux['addColumn'] = false;
     call.edit();
     let sub = grok.functions.onAfterRunAction.pipe(filter(c => c == call)).subscribe(() => {
       let newCol = call.getOutputParamValue();
       for (let [key, value] of this.column.tags) if (key !== DG.TAGS.FORMULA) newCol.setTag(key, value);
       let name = this.column.name;
-      df.columns.remove(newCol.name);
       newCol = this.column.dataFrame.columns.replace(this.column, newCol);
       newCol.name = name;
       sub.unsubscribe();
