@@ -1,5 +1,6 @@
 import * as grok from 'datagrok-api/grok';
 import * as DG from 'datagrok-api/dg';
+import * as ui from 'datagrok-api/ui';
 import $ from 'cash-dom';
 import { fromEvent, interval } from 'rxjs';
 import { filter, map } from 'rxjs/operators';
@@ -11,10 +12,11 @@ export class PredictiveModelingTutorial extends Tutorial {
     return 'Predictive Modeling';
   }
   get description() {
-    return 'Predictive modeling is a statistical technique used to predict outcomes based on historical data.'+
-    '<a href="https://datagrok.ai/help/learn/predictive-modeling" target="_blank" class="ui-link d4-link-external">Read more about predictive modeling.</a>';
+    return 'Predictive modeling is a statistical technique used to predict outcomes based on historical data.';
   }
   get steps() { return 12; }
+
+  helpUrl: string = 'https://datagrok.ai/help/learn/predictive-modeling';
 
   private async buttonClickAction(root: HTMLElement, instructions: string, caption: string, description: string = '') {
     const btn = $(root).find('button.ui-btn').filter((idx, btn) => btn.textContent === caption)[0];
@@ -50,6 +52,8 @@ export class PredictiveModelingTutorial extends Tutorial {
       'based on historical data. In the next steps, we will train a few models, look at their ' +
       'performance, learn how to apply a model to a dataset and share it with others, and ' +
       'lastly, compare the models we have trained.');
+
+    this.describe(String(ui.link('More about '+this.name, this.helpUrl).outerHTML)); 
 
     /** Train model actions */
     const trainModel = async (method: string): Promise<void> => {

@@ -1,5 +1,6 @@
 import * as grok from 'datagrok-api/grok';
 import * as DG from 'datagrok-api/dg';
+import * as ui from 'datagrok-api/ui';
 import $ from 'cash-dom';
 import { filter } from 'rxjs/operators';
 import { Tutorial } from '../../../tutorial';
@@ -15,10 +16,13 @@ export class DataConnectorsTutorial extends Tutorial {
   get steps() { return 11; }
   
   demoTable: string = '';
+  helpUrl: string = '';
 
   protected async _run() {
     this.describe('In this tutorial, we will browse the tree of connections and learn how to ' +
       'create new connections to query the database.');
+    
+    this.describe(String(ui.link('More about '+this.name, this.helpUrl).outerHTML));
 
     const dataPane = grok.shell.sidebar.getPane('Data');
     const dbViewInfo = 'In this view, you can create queries to data connectors from the list. ' +

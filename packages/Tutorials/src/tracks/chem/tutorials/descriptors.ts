@@ -1,5 +1,6 @@
 import * as grok from 'datagrok-api/grok';
 import * as DG from 'datagrok-api/dg';
+import * as ui from 'datagrok-api/ui';
 import $ from 'cash-dom';
 import { filter } from 'rxjs/operators';
 import { Tutorial } from "../../../tutorial";
@@ -12,19 +13,21 @@ export class DescriptorsTutorial extends Tutorial {
 
   get description(): string {
     return 'Chemical structures are analyzed via molecular descriptors. ' +
-      'These are numerical values that characterize properties of molecules.'+
-      '<a href="https://datagrok.ai/help/domains/chem/descriptors" target="_blank" class="ui-link d4-link-external">Read more about molecular descriptors.</a>';
+      'These are numerical values that characterize properties of molecules.';
   }
 
   get steps() { return 3; }
 
   demoTable: string = 'chem/smiles_only.csv';
+  helpUrl: string = 'https://datagrok.ai/help/domains/chem/descriptors';
 
   protected async _run(): Promise<void> {
     this.header.textContent = this.name;
     this.describe('Chemical structures are analyzed via molecular descriptors. ' +
       'These are numerical values that characterize properties of molecules. ' +
       'In the next steps, we will learn how to calculate descriptors in Datagrok.');
+    
+    this.describe(String(ui.link('More about '+this.name, this.helpUrl).outerHTML));  
 
     let pp: DG.Accordion;
     const ppDescription = 'In the property panel, you should now see all the actions ' +

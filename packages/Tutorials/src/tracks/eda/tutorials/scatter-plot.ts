@@ -13,6 +13,8 @@ export class ScatterPlotTutorial extends Tutorial {
     return 'A graph in which the values of two variables are plotted along two axes';
   }
   get steps() { return 10; }
+  
+  helpUrl: string = 'https://datagrok.ai/help/visualize/viewers/scatter-plot';
 
   protected async _run() {
     this.header.textContent = 'Scatter Plot';
@@ -22,8 +24,9 @@ export class ScatterPlotTutorial extends Tutorial {
       'encoded by size, color, or marker shape, you can increase the number of displayed variables. ' +
       'The data is displayed as a collection of points, each having the value of one variable ' +
       'determining the position on the horizontal axis and the value of the other variable ' +
-      'determining the position on the vertical axis.'+
-      '<a href="https://datagrok.ai/help/visualize/viewers/scatter-plot" target="_blank" class="ui-link d4-link-external">Read more about sactter plot.</a>');
+      'determining the position on the vertical axis.');
+
+    this.describe(String(ui.link('More about '+this.name, this.helpUrl).outerHTML));
 
     const plot = <DG.ScatterPlotViewer>(await this.openPlot(
       'scatter plot',

@@ -1,4 +1,5 @@
 import * as grok from 'datagrok-api/grok';
+import * as ui from 'datagrok-api/ui';
 import * as DG from 'datagrok-api/dg';
 import { filter } from 'rxjs/operators';
 import { Tutorial } from '../../../tutorial';
@@ -11,7 +12,9 @@ export class ViewersTutorial extends Tutorial {
     return 'Learn how to use different viewers together';
   }
   get steps() { return 6; }
-    
+  
+  helpUrl: string = 'https://datagrok.ai/help/visualize/viewers';
+
   protected async _run() {
     this.title('Opening viewers');
 
@@ -24,8 +27,9 @@ export class ViewersTutorial extends Tutorial {
     this.describe('The icon opens a list of custom viewers, while ' +
     'the "Viewers" tab contains a standard set of visualizations.');
 
-    this.describe("Let's start by opening some viewers."+
-    '<a href="https://datagrok.ai/help/visualize/viewers" target="_blank" class="ui-link d4-link-external">Read more about viewers.</a>');
+    this.describe("Let's start by opening some viewers.");
+
+    this.describe(String(ui.link('More about '+this.name, this.helpUrl).outerHTML));
 
     const sp = await this.openPlot('scatter plot', (x) => x.type === DG.VIEWER.SCATTER_PLOT);
     const hist = await this.openPlot('histogram', (x) => x.type === DG.VIEWER.HISTOGRAM);

@@ -10,7 +10,12 @@
     align-items: flex-end;
 }
 .tutorials-track-title h1{
-    margin: 0 0 5px 0;
+    margin: 0 0 8px 0;
+}
+.tutorials-track-title button{
+    margin: 4px 0;
+    padding: 0px;
+    font-size: 16px;
 }
 /* Track Details */
 .tutorials-track-details{
