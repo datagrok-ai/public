@@ -2,6 +2,7 @@
 import * as grok from 'datagrok-api/grok';
 import * as ui from 'datagrok-api/ui';
 import * as DG from 'datagrok-api/dg';
+import $ from 'cash-dom';
 import { Track, TutorialRunner } from './track';
 import { Tutorial } from './tutorial';
 import { chem } from './tracks/chem';
@@ -12,97 +13,99 @@ import '../css/tutorial.css';
 export class TutorialWidget extends DG.Widget {
   caption: string;
   order: string;
-  allTutorials: HTMLHeadingElement = ui.h1('');
-  completeTutorials: HTMLHeadingElement = ui.h1('');
-  totalProgress: HTMLHeadingElement = ui.h1('');
+  totalTracks: number = 0;
+  totalTutorials:number = 0;
+  totalCompleted:number = 0;
+  totalProgress:number = 0;
 
   runners:TutorialRunner[];
 
   constructor(...runners:TutorialRunner[]) {
     super(ui.panel([], 'tutorial-widget'));
-
-    console.clear;
-    console.log(runners);
+    
     this.runners = runners;
+    let tracksRoot = ui.div([]);
+    let tracks = runners.length;
 
-    const runEda = new TutorialRunner(eda);
-    const runChem = new TutorialRunner(chem);
-    const runMl = new TutorialRunner(ml);
-
-    let edaProgress = ui.element('progress');
-    edaProgress.max = '0';
-    edaProgress.value = '0';
-
-    let chemProgress = ui.element('progress');
-    chemProgress.max = '0';
-    chemProgress.value = '0';
-
-    let mlProgress = ui.element('progress');
-    mlProgress.max = '0';
-    mlProgress.value = '0';
+    let tracksStas = ui.h1('');
+    let tutorialsStats = ui.h1('');
+    let completeStats = ui.h1('');
+    let progressStats = ui.h1('');
 
     (async () => {
-        console.log(runners);
+        this.totalTracks = runners.length;
+        let i = 0;
 
-        let complete = await runEda.getCompleted(runEda.track.tutorials) + await runEda.getCompleted(runChem.track.tutorials) + await runMl.getCompleted(runMl.track.tutorials);
-        let total = runEda.track.tutorials.length + runChem.track.tutorials.length + runMl.track.tutorials.length;
-        let progress = 100/total*complete;
-
-        this.completeTutorials.append(String(complete));
-        this.allTutorials.append(String(total));
-        this.totalProgress.append(String(Math.round(progress))+'%');
-
-        edaProgress.max = runEda.track.tutorials.length;
-        edaProgress.value = await runEda.getCompleted(runEda.track.tutorials);
-
-        chemProgress.max = runChem.track.tutorials.length;
-        chemProgress.value = await runChem.getCompleted(runChem.track.tutorials);
+        while(runners){
         
-        mlProgress.max = runMl.track.tutorials.length;
-        mlProgress.value = await runMl.getCompleted(runMl.track.tutorials);
-    
+            let complete = await runners[i].getCompleted(runners[i].track.tutorials);
+            let total = runners[i].track.tutorials.length;
+
+            this.totalTutorials += total;
+            this.totalCompleted += complete;
+            this.totalProgress = 100/this.totalTutorials*this.totalCompleted;
+            
+            console.log('-------');
+
+            let progressBar = ui.element('progress');
+            progressBar.max = total
+            progressBar.value = complete;
+            
+            tracksRoot.append(ui.divV([
+                ui.divH([
+                    ui.divText(runners[i].track.name),
+                    ui.divText(String(complete)+' / '+String(total))
+                ], 'widget-tutorials-track-details'),
+                progressBar
+            ], 'tutorials-track'));
+            i++;
+
+            if (i==runners.length)
+                tracksStas.innerHTML = String(this.totalTracks);
+            tutorialsStats.innerHTML = String(this.totalTutorials);
+            completeStats.innerHTML = String(this.totalCompleted);
+            progressStats.innerHTML = String(this.totalProgress+'%');
+        }
+
+        //let complete = await runEda.getCompleted(runEda.track.tutorials) + await runEda.getCompleted(runChem.track.tutorials) + await runMl.getCompleted(runMl.track.tutorials);
+        //let total = runEda.track.tutorials.length + runChem.track.tutorials.length + runMl.track.tutorials.length;
+        //let progress = 100/total*complete;
+
+        //this.completeTutorials.append(String(complete));
+        //this.allTutorials.append(String(total));
+        //this.totalProgress.append(String(Math.round(progress))+'%');
+
+        //edaProgress.max = runEda.track.tutorials.length;
+        //edaProgress.value = await runEda.getCompleted(runEda.track.tutorials);
+
+        //chemProgress.max = runChem.track.tutorials.length;
+        //chemProgress.value = await runChem.getCompleted(runChem.track.tutorials);
+        
+        //mlProgress.max = runMl.track.tutorials.length;
+        //mlProgress.value = await runMl.getCompleted(runMl.track.tutorials);
+        
     })();
 
     this.root.append(ui.divV([
         ui.divH([
             ui.divV([
                 ui.label('Tracks'),
-                ui.h1('3')//change to array length of tutorialsRunners
+                tracksStas
             ]),
             ui.divV([
                 ui.label('Tutorials'),
-                this.allTutorials
+                tutorialsStats
             ]),
             ui.divV([
                 ui.label('Complete'),
-                this.completeTutorials
+                completeStats
             ]),
             ui.divV([
                 ui.label('Progress'),
-                this.totalProgress
+                progressStats
             ]),
         ], 'widget-tutorials-summary'),
-        ui.divV([
-            ui.divH([
-                ui.divText(runEda.track.name),
-                ui.divText(edaProgress.value+' / '+String(runEda.track.tutorials.length))
-            ], 'widget-tutorials-track-details'),
-            edaProgress
-        ], 'tutorials-track'),
-        ui.divV([
-            ui.divH([
-                ui.divText(runChem.track.name),
-                ui.divText(chemProgress.value+' / '+String(runChem.track.tutorials.length))
-            ], 'widget-tutorials-track-details'),
-            chemProgress
-        ], 'tutorials-track'),
-        ui.divV([
-            ui.divH([
-                ui.divText(runMl.track.name),
-                ui.divText(mlProgress.value+' / '+String(runMl.track.tutorials.length))
-            ], 'widget-tutorials-track-details'),
-            mlProgress
-        ], 'tutorials-track'),
+        tracksRoot,
     ], 'tutorial'));
 
     // properties
