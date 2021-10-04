@@ -1,9 +1,8 @@
 import {paramsToJs, toDart, toJs} from "./wrappers";
 import {Type} from "./const";
 import {Entity, Func} from "./entities";
-import {DartWidget, ProgressIndicator, Widget} from "./widgets";
-import {Column} from "./dataframe";
-import {_toIterable} from "./utils";
+import {DartWidget, ProgressIndicator,} from "./widgets";
+import {MapProxy, _toIterable} from "./utils";
 import {Observable} from "rxjs";
 import {__obs} from "./events";
 declare let grok: any;
@@ -164,10 +163,15 @@ export class FuncCall {
   private readonly d: any;
   public inputs: any;
   public outputs: any;
+  public aux: any;
+  public options: any;
+
   constructor(d: any) {
     this.d = d;
     this.inputs = new FuncCallParamMapProxy(this.d, true);
     this.outputs = new FuncCallParamMapProxy(this.d, false);
+    this.aux = new MapProxy(api.grok_FuncCall_Get_Aux(this.d));
+    this.options = new MapProxy(api.grok_FuncCall_Get_Aux(this.d));
   }
 
   get func(): Func { return toJs(api.grok_FuncCall_Get_Func(this.d)); }
