@@ -11,7 +11,7 @@ var { jStat } = require('jstat')
 
 export class BoxPlotsView extends DG.ViewBase {
 
-  boxPlotDiv = ui.box();
+  boxPlotDiv = ui.block([]);
   boxPlots = [];
 
   uniqueLabValues = Array.from(getUniqueValues(study.domains.lb, 'LBTEST'));
@@ -88,12 +88,18 @@ export class BoxPlotsView extends DG.ViewBase {
     });
 
 
-    this.root.className = 'grok-view ui-box';
-    this.root.append(ui.splitV([
+    //this.root.className = 'grok-view ui-box';
+
+    this.root.append(ui.div([
+      ui.divH([ blVisitChoices.root, splitByChoices.root, selectBiomarkers ]),
+      ui.block([this.boxPlotDiv])
+    ]));
+    
+    /*this.root.append(ui.splitV([
      // ui.box(plot.root, { style: { maxHeight: '200px' } }),
       ui.box(ui.divH([ blVisitChoices.root, splitByChoices.root, selectBiomarkers ]), { style: { maxHeight: '100px' } }),
       this.boxPlotDiv
-    ]))
+    ]))*/
   }
 
   private updateBoxPlots(viewerTitle: any, category: string) {
@@ -109,7 +115,7 @@ export class BoxPlotsView extends DG.ViewBase {
         plot.root.prepend(ui.divText(it, viewerTitle));
         this.boxPlots.push(plot.root);
       })
-      updateDivInnerHTML(this.boxPlotDiv, ui.splitV(this.boxPlots));
+      updateDivInnerHTML(this.boxPlotDiv, ui.block(this.boxPlots));
     }
   }
 
