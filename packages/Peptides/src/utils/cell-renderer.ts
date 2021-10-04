@@ -2,6 +2,7 @@ import {ChemPalette} from './chem-palette';
 import * as DG from 'datagrok-api/dg';
 
 const cp = ChemPalette.getDatagrok();
+
 function getColor(c = '') {
   if (c.length == 1 || c.at(1) == '(' || c.at(0)?.toLowerCase() == 'd') {
     const amino = c.at(0)?.toUpperCase()!;
@@ -12,20 +13,35 @@ function getColor(c = '') {
 };
 
 function printLeftCentered(
-  x:number,
-  y:number,
-  w:number,
-  h:number,
-  g :CanvasRenderingContext2D,
-  s:string,
+  x: number,
+  y: number,
+  w: number,
+  h: number,
+  g: CanvasRenderingContext2D,
+  s: string,
   color = 'rgb(77,77,77)',
-  pivot:number = 0,
+  pivot: number = 0,
   left = false,
+  hideMod = false,
 ) {
-  const textSize = g.measureText(s);
+  let colorPart = pivot == -1 ? s.substring(0) : s.substring(0, pivot);
+  let grayPart = pivot == -1 ? '' : s.substr(pivot);
+  if (hideMod) {
+    let end = colorPart.lastIndexOf(')');
+    let beg = colorPart.indexOf('(');
+    if (beg > -1 && end > -1&& end - beg > 2) {
+      colorPart = colorPart.substr(0, beg) +'(+)'+ colorPart.substr(end+1);
+    }
+
+    end = grayPart.lastIndexOf(')');
+    beg = grayPart.indexOf('(');
+    if (beg > -1 && end > -1 && end - beg > 2) {
+      grayPart = grayPart.substr(0, beg) +'(+)'+ grayPart.substr(end+1);
+    }
+  }
+  const textSize = g.measureText(colorPart + grayPart);
   const indent = 5;
-  const colorPart = pivot == -1 ? s.substring(0) : s.substring(0, pivot);
-  const grayPart = pivot == -1 ? '' : s.substr(pivot);
+
 
   const colorTextSize = g.measureText(colorPart);
   if (left || textSize.width > w) {
@@ -41,7 +57,8 @@ function printLeftCentered(
       x + indent + colorTextSize.width,
       y + (textSize.fontBoundingBoxAscent + textSize.fontBoundingBoxDescent) / 2,
     );
-    return x + colorTextSize.width + g.measureText(grayPart).width; ;
+    return x + colorTextSize.width + g.measureText(grayPart).width;
+    ;
   } else {
     g.fillStyle = color;
     g.fillText(
@@ -93,14 +110,15 @@ export class AminoAcidsCellRenderer extends DG.GridCellRenderer {
       g.textBaseline = 'top';
       const s: string = gridCell.cell.value ? gridCell.cell.value : '-';
       const color = getColor(s);
+      let pivot = 0;
       if (s.at(0)?.toLowerCase() == 'd') {
-        const modInd = s.indexOf('(');
-        printLeftCentered(x, y, w, h, g, s, color, modInd);
+        pivot = s.indexOf('(');
       } else if (s.at(1) == '(') {
-        printLeftCentered(x, y, w, h, g, s, color, 1);
+        pivot =1;
       } else {
-        printLeftCentered(x, y, w, h, g, s, color, -1);
+        pivot =-1;
       }
+      printLeftCentered(x, y, w, h, g, s, color, pivot, false, true);
       g.restore();
     }
 }
@@ -135,21 +153,21 @@ export class AlignedSequenceCellRenderer extends DG.GridCellRenderer {
       g.clip();
       g.font = '15px monospace';
       g.textBaseline = 'top';
-      const s:string = gridCell.cell.value;
+      const s: string = gridCell.cell.value;
       const subParts = s.split('-');
-      subParts.forEach((amino:string, index) =>{
+      subParts.forEach((amino: string, index) => {
         const color = getColor(amino);
         g.fillStyle = 'rgb(77,77,77)';
-        if (index+1 < subParts.length) {
+        if (index + 1 < subParts.length) {
           amino += '-';
         }
         if (amino.at(0)?.toLowerCase() == 'd') {
           const modInd = amino.indexOf('(');
           x = printLeftCentered(x, y, w, h, g, amino, color, modInd, true);
         } else if (amino.at(1) == '(') {
-          x =printLeftCentered(x, y, w, h, g, amino, color, 1, true);
+          x = printLeftCentered(x, y, w, h, g, amino, color, 1, true);
         } else {
-          x =printLeftCentered(x, y, w, h, g, amino, color, -1, true);
+          x = printLeftCentered(x, y, w, h, g, amino, color, -1, true);
         }
       });
       g.restore();
