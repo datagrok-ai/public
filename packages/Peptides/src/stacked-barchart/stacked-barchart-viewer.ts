@@ -2,6 +2,7 @@ import * as DG from 'datagrok-api/dg';
 import * as ui from 'datagrok-api/ui';
 import {axisBottom, scaleBand, scaleLinear, select, color} from 'd3';
 import {ChemPalette} from '../utils/chem-palette';
+import * as rxjs from 'rxjs';
 import $ from 'cash-dom';
 import {GridCellRenderArgs, Property, Widget} from 'datagrok-api/dg';
 
@@ -9,6 +10,28 @@ import {GridCellRenderArgs, Property, Widget} from 'datagrok-api/dg';
 export function addViewerToHeader(grid: DG.Grid, viewer: Promise<Widget>) {
   viewer.then((viewer) => {
     const barchart = viewer as StackedBarChart;
+    rxjs.fromEvent(grid.overlay, 'mousemove').subscribe((mm:any) => {
+      mm = mm as MouseEvent;
+      const cell = grid.hitTest(mm.offsetX, mm.offsetY);
+      if (cell?.isColHeader && cell.tableColumn?.semType == 'aminoAcids') {
+        barchart.highlight(cell, mm.offsetX, mm.offsetY);
+      }
+    });
+
+    rxjs.fromEvent(grid.overlay, 'click').subscribe((mm:any) => {
+      mm = mm as MouseEvent;
+
+      const cell = grid.hitTest(mm.offsetX, mm.offsetY);
+      if (cell?.isColHeader && cell.tableColumn?.semType == 'aminoAcids') {
+        barchart.beginSelection(mm);
+        return;
+      }
+      barchart.unhighlight();
+    });
+    rxjs.fromEvent(grid.overlay, 'mouseout').subscribe((_) => {
+      barchart.unhighlight();
+    });
+
     barchart.tableCanvas = grid.canvas;
     grid.setOptions({'colHeaderHeight': 200});
     grid.onCellTooltip((cell, x, y) => {
@@ -45,6 +68,7 @@ export function addViewerToHeader(grid: DG.Grid, viewer: Promise<Widget>) {
 export class StackedBarChart extends DG.JsViewer {
     public dataEmptyAA: string;
     public initialized: boolean;
+    private highlighted:{'colName':string, 'aaName':string}|null = null;
     private ord: { [Key: string]: number; } = {};
     private margin: { top: number; left: number; bottom: number; right: number } = {
       top: 10,
@@ -238,7 +262,7 @@ export class StackedBarChart extends DG.JsViewer {
     renderBarToCanvas(g: CanvasRenderingContext2D, cell: DG.GridCell, x: number, y: number, w: number, h: number) {
       const margin = 0.2;
       const innerMargin = 0.02;
-      const selectLineration = 0.1;
+      const selectLineRatio = 0.1;
       x = x + w * margin;
       y = y + h * margin / 4;
       w = w - w * margin * 2;
@@ -274,9 +298,9 @@ export class StackedBarChart extends DG.JsViewer {
         if (this.selectionMode && obj['selectedCount'] > 0) {
           g.fillStyle = 'rgb(255,165,0)';
           g.fillRect(
-            x - w * selectLineration * 1.5,
+            x - w * selectLineRatio * 1.5,
             y + h * (this.max - sum + curSum) / this.max + gapSize / 2,
-            w * selectLineration,
+            w * selectLineRatio,
             h * obj['selectedCount'] / this.max - gapSize);
         }
 
@@ -543,5 +567,55 @@ export class StackedBarChart extends DG.JsViewer {
       const cell = this.registered[name];
       const rect = cell.bounds;
       this.renderBarToCanvas(this.tableCanvas.getContext('2d')!, cell, rect.x, rect.y, rect.width, rect.height);
+    }
+
+    highlight(cell: DG.GridCell, offsetX:number, offsetY:number) {
+      const colName = cell.tableColumn?.name;
+      if (!colName) {
+        return;
+      }
+      const margin = 0.2;
+      const bound = cell.bounds;
+      const x = bound.x + bound.width * margin;
+      const y = 0 + 200 * margin / 4;
+      const w = bound.width - bound.width * margin * 2;
+      const h = 200 - 200 * margin / 2;
+      const barData = this.barStats[colName];
+      let sum = 0;
+      barData.forEach((obj) => {
+        sum += obj['count'];
+      });
+      let curSum = 0;
+
+      barData.forEach((obj, index) => {
+        const sBarHeight = h * obj['count'] / this.max;
+        if (offsetX>=x &&
+            offsetY>=y + h * (this.max - sum + curSum) / this.max &&
+            offsetX<=x+w &&
+            offsetY<=y + h * (this.max - sum + curSum) / this.max + sBarHeight) {
+          this.highlighted = {'colName': colName, 'aaName': obj['name']};
+          return;
+        }
+
+        curSum += obj['count'];
+      });
+      return;
+    }
+
+    unhighlight() {
+      this.highlighted = null;
+    }
+
+    beginSelection(event:any) {
+      if (!this.highlighted || !this.dataFrame) {
+        return;
+      }
+      this.dataFrame!.selection.handleClick((i) => {
+        //let selected = true;
+        // @ts-ignore
+        return this.highlighted!['aaName'] === (this.dataFrame.getCol(this.highlighted!['colName']).get(i));
+
+        //&& (scope.dataFrame.selection.get(i) === selected);
+      }, event);
     }
 }
