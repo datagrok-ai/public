@@ -180,14 +180,13 @@ export async function describe(
     if (col.name === aminoAcidResidue) {
       col.semType = 'aminoAcids';
       col.setTag('cell.renderer', 'aminoAcids');
-      let maxLen = 0;
-      col.categories.forEach( (ent:string)=>{
-        if ( ent.length > maxLen) {
-          maxLen = ent.length;
-        }
-      });
-
-      grid.columns.byName(aminoAcidResidue)!.width = maxLen * 15;
+      // let maxLen = 0;
+      // col.categories.forEach( (ent:string)=>{
+      //   if ( ent.length > maxLen) {
+      //     maxLen = ent.length;
+      //   }
+      // });
+      // grid.columns.byName(aminoAcidResidue)!.width = maxLen * 15;
     }
   }
 
