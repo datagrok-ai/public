@@ -6,4 +6,6 @@ export const tutorials = [
   DataConnectorsTutorial,
 ];
 
-export const da = new Track('Data Access', ...tutorials.map((t) => new t()));
+export const da = new Track('Data Access',
+  tutorials.map((t) => new t()),
+  'https://datagrok.ai/help/develop/how-to/access-data');
