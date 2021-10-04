@@ -54,7 +54,7 @@ export class DataConnectorsTutorial extends Tutorial {
       grok.functions.onAfterRunAction.pipe(filter((call) => {
         const res = call.outputs.get('GetStarbucksUS');
         return call.func.name === 'GetStarbucksUS' &&
-          res instanceof DG.DataFrame && res.rowCount === 13509;
+          res instanceof DG.DataFrame && res?.rowCount === 13509;
       })), null,
     );
   }
