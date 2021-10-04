@@ -64,7 +64,7 @@ export class TutorialRunner {
       if(total !=0){
         if(complete!=0){  
             progress.value = 100/total*complete 
-            progressDetails.append(ui.divText(progress.value+'% complete'));
+            progressDetails.append(ui.divText(progress.value.toFixed() + '% complete'));
             progressDetails.append(ui.divText(complete+' / '+total));
         }else{   
         progressDetails.append(ui.divText('0% complete'));     
