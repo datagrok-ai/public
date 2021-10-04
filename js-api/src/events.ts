@@ -2,10 +2,11 @@ import * as rxjs from 'rxjs';
 import * as rxjsOperators from 'rxjs/operators';
 import { toJs } from './wrappers';
 import { Observable } from "rxjs";
-import { Package } from './entities';
+import {FileInfo, Package} from './entities';
 import { Accordion, Dialog } from "./widgets";
 import { View, ViewLayout } from './view';
 import { Viewer } from "./viewer";
+import { Column } from "./dataframe";
 
 let api = <any>window;
 
@@ -128,6 +129,9 @@ export class Events {
   /** Sample: {@link https://public.datagrok.ai/js/samples/events/layout-events} */
   get onViewLayoutApplied(): rxjs.Observable<ViewLayout> { return __obs('d4-view-layout-applied'); }
 
+  /** File in the file share has been edited and saved by the user. */
+  get onFileEdited(): rxjs.Observable<FileInfo> { return __obs('grok-file-edited'); }
+
   get onCurrentProjectChanged(): rxjs.Observable<any> { return __obs('grok-current-project-changed'); }
 
   get onProjectUploaded(): rxjs.Observable<any> { return __obs('grok-project-uploaded'); }
@@ -150,6 +154,7 @@ export class Events {
 
   get onViewerClosed(): rxjs.Observable<EventData<ViewerArgs>> { return __obs('d4-viewer-closed'); }
 
+  get onFormCreating(): rxjs.Observable<EventData<ColumnsArgs>> { return __obs('d4-form-creating'); }
 
   get onAccordionConstructed(): rxjs.Observable<Accordion> { return __obs('d4-accordion-constructed'); }
 
@@ -283,4 +288,14 @@ export interface MapChangeArgs<K, V> {
 
 export interface ViewerArgs {
   viewer: Viewer;
+}
+
+export class ColumnsArgs extends EventData {
+  get columns(): Column[] {
+    return toJs(api.grok_ColumnsArgs_Get_Columns(this.d));
+  }
+
+  set columns(list: Column[]) {
+    api.grok_ColumnsArgs_Set_Columns(this.d, list);
+  }
 }

@@ -1,12 +1,84 @@
 import {ChemPalette} from './chem-palette';
 import * as DG from 'datagrok-api/dg';
 
+const cp = ChemPalette.getDatagrok();
+
+function getColor(c = '') {
+  if (c.length == 1 || c.at(1) == '(' || c.at(0)?.toLowerCase() == 'd') {
+    const amino = c.at(0)?.toUpperCase()!;
+    return amino in cp ? cp[amino] : 'rgb(77,77,77)';
+  }
+  return 'rgb(77,77,77)';
+  //return c ? DG.Color.toRgb(this.colorScale(c)) : 'rgb(127,127,127)'
+};
+
+function printLeftCentered(
+  x: number,
+  y: number,
+  w: number,
+  h: number,
+  g: CanvasRenderingContext2D,
+  s: string,
+  color = 'rgb(77,77,77)',
+  pivot: number = 0,
+  left = false,
+  hideMod = false,
+) {
+  let colorPart = pivot == -1 ? s.substring(0) : s.substring(0, pivot);
+  let grayPart = pivot == -1 ? '' : s.substr(pivot);
+  if (hideMod) {
+    let end = colorPart.lastIndexOf(')');
+    let beg = colorPart.indexOf('(');
+    if (beg > -1 && end > -1&& end - beg > 2) {
+      colorPart = colorPart.substr(0, beg) +'(+)'+ colorPart.substr(end+1);
+    }
+
+    end = grayPart.lastIndexOf(')');
+    beg = grayPart.indexOf('(');
+    if (beg > -1 && end > -1 && end - beg > 2) {
+      grayPart = grayPart.substr(0, beg) +'(+)'+ grayPart.substr(end+1);
+    }
+  }
+  const textSize = g.measureText(colorPart + grayPart);
+  const indent = 5;
+
+
+  const colorTextSize = g.measureText(colorPart);
+  if (left || textSize.width > w) {
+    g.fillStyle = color;
+    g.fillText(
+      colorPart,
+      x + indent,
+      y + (textSize.fontBoundingBoxAscent + textSize.fontBoundingBoxDescent) / 2,
+    );
+    g.fillStyle = getColor();
+    g.fillText(
+      grayPart,
+      x + indent + colorTextSize.width,
+      y + (textSize.fontBoundingBoxAscent + textSize.fontBoundingBoxDescent) / 2,
+    );
+    return x + colorTextSize.width + g.measureText(grayPart).width;
+    ;
+  } else {
+    g.fillStyle = color;
+    g.fillText(
+      colorPart,
+      x + (w - textSize.width) / 2,
+      y + (textSize.fontBoundingBoxAscent + textSize.fontBoundingBoxDescent) / 2,
+    );
+    g.fillStyle = getColor();
+    g.fillText(
+      grayPart,
+      x + (w - textSize.width) / 2 + colorTextSize.width,
+      y + (textSize.fontBoundingBoxAscent + textSize.fontBoundingBoxDescent) / 2,
+    );
+    return x + (w - textSize.width) / 2 + colorTextSize.width;
+  }
+}
 
 export class AminoAcidsCellRenderer extends DG.GridCellRenderer {
-    private maxCellWidth = 11;
     private fontSize = 15;
-    private fontSizeSide = 35;
-    private spacing = 0.8;
+
 
     get name() {
       return 'aminoAcidsCR';
@@ -17,8 +89,9 @@ export class AminoAcidsCellRenderer extends DG.GridCellRenderer {
     }
 
     get defaultWidth() {
-      return this.maxCellWidth;
+      return 30;
     }
+
 
     render(
       g: CanvasRenderingContext2D,
@@ -29,32 +102,29 @@ export class AminoAcidsCellRenderer extends DG.GridCellRenderer {
       gridCell: DG.GridCell,
       cellStyle: DG.GridCellStyle,
     ) {
-      g.font = 'bold 15px monospace';
+      g.save();
+      g.beginPath();
+      g.rect(x, y, w, h);
+      g.clip();
+      g.font = `${this.fontSize}px monospace`;
       g.textBaseline = 'top';
-      const s = gridCell.cell.value ? gridCell.cell.value : '-';
-      const cp = ChemPalette.get_datagrok();
-
-      cp['-'] = `rgb(77, 77, 77)`;
-
-      if (s in cp) {
-        g.font = `bold ${this.fontSize}px monospace`;
-        g.fillStyle = cp[s];
-        const textSize = g.measureText(s);
-        g.fillText(s, x + (w - textSize.width)/2, y + (textSize.fontBoundingBoxAscent + textSize.fontBoundingBoxDescent)/2);
-        return;
+      const s: string = gridCell.cell.value ? gridCell.cell.value : '-';
+      const color = getColor(s);
+      let pivot = 0;
+      if (s.at(0)?.toLowerCase() == 'd') {
+        pivot = s.indexOf('(');
+      } else if (s.at(1) == '(') {
+        pivot =1;
+      } else {
+        pivot =-1;
       }
-      g.font = `${this.fontSizeSide / s.length}px monospace`;
-      for (let i = 0; i < s.length; i++) {
-        g.fillStyle = `rgb(77, 77, 77)`;
-        g.fillText(s[i], x + 3, y + i * this.fontSizeSide * this.spacing / s.length);
-      }
+      printLeftCentered(x, y, w, h, g, s, color, pivot, false, true);
+      g.restore();
     }
 }
 
 export class AlignedSequenceCellRenderer extends DG.GridCellRenderer {
     private maxCellWidth = 270;
-    private spacing = 9;
-    private fontSize = 18;
 
     get name() {
       return 'alignedSequenceCR';
@@ -77,49 +147,30 @@ export class AlignedSequenceCellRenderer extends DG.GridCellRenderer {
       gridCell: DG.GridCell,
       cellStyle: DG.GridCellStyle,
     ) {
-      g.font = 'bold 15px monospace';
+      g.save();
+      g.beginPath();
+      g.rect(x, y, w, h);
+      g.clip();
+      g.font = '15px monospace';
       g.textBaseline = 'top';
-      const s = gridCell.cell.value;
-
-      const cp = ChemPalette.get_datagrok();
-
-      let xPos = 0;
-      let yPos = 0;
-      let skipped = 0;
-      let odd = true;
-
-      g.font = `${this.fontSize}}px monospace`;
-      for (let i = 0; i < Math.min(s.length, 3); i++) {
-        xPos = 2 + x + i * this.spacing;
-        yPos = y + 6;
-        g.fillStyle = `rgb(128, 128, 128)`;
-        g.fillText(s[i], xPos, yPos);
-      }
-      g.font = `bold ${this.fontSize}}px monospace`;
-      for (let i = 3; i < s.length - 4; i++) {
-        xPos = 3 + x + (i - skipped) * this.spacing;
-        yPos = y + 6;
-        if (s.charAt(i) in cp) {
-          g.fillStyle = cp[s.charAt(i)];
-          g.fillText(s[i], xPos, yPos);
-          odd = true;
-          continue;
+      const s: string = gridCell.cell.value;
+      const subParts = s.split('-');
+      subParts.forEach((amino: string, index) => {
+        const color = getColor(amino);
+        g.fillStyle = 'rgb(77,77,77)';
+        if (index + 1 < subParts.length) {
+          amino += '-';
         }
-        if (odd) {
-          skipped += 1;
-          odd = false;
-          continue;
+        if (amino.at(0)?.toLowerCase() == 'd') {
+          const modInd = amino.indexOf('(');
+          x = printLeftCentered(x, y, w, h, g, amino, color, modInd, true);
+        } else if (amino.at(1) == '(') {
+          x = printLeftCentered(x, y, w, h, g, amino, color, 1, true);
+        } else {
+          x = printLeftCentered(x, y, w, h, g, amino, color, -1, true);
         }
-        g.fillStyle = `rgb(128, 128, 128)`;
-        g.fillText(s[i], xPos, yPos);
-      }
-      g.font = `${this.fontSize}}px monospace`;
-      for (let i = Math.max(0, s.length - 4); i < s.length; i++) {
-        xPos = 4 + x + (i - skipped) * this.spacing;
-        yPos = y + 6;
-        g.fillStyle = `rgb(128, 128, 128)`;
-        g.fillText(s[i], xPos, yPos);
-      }
+      });
+      g.restore();
     }
 }
 
