@@ -29,15 +29,15 @@ To treat data as strings use quotes, for example:
 
 The platform supports a large number of functions, constants and operators. You can find out about them in the corresponding sections of the help system:
 
-- [Binning functions](../functions/binning-functions.md)
-- [Constants](../functions/constants.md)
-- [Conversion functions](../functions/conversion-functions.md)
-- [DateTime functions](../functions/datetime-functions.md)
-- [Math functions](../functions/math-functions.md)
-- [Operators](../functions/operators.md)
-- [Stats functions](../functions/stats-functions.md)
-- [Text functions](../functions/text-functions.md)
-- [TimeSpan functions](../functions/timespan-functions.md)
+- [Binning functions](functions/binning-functions.md)
+- [Constants](functions/constants.md)
+- [Conversion functions](functions/conversion-functions.md)
+- [DateTime functions](functions/datetime-functions.md)
+- [Math functions](functions/math-functions.md)
+- [Operators](functions/operators.md)
+- [Stats functions](functions/stats-functions.md)
+- [Text functions](functions/text-functions.md)
+- [TimeSpan functions](functions/timespan-functions.md)
 
 ### Videos
 
