@@ -1,7 +1,7 @@
 import * as grok from 'datagrok-api/grok';
 import * as DG from 'datagrok-api/dg';
 import { filter } from 'rxjs/operators';
-import { Tutorial } from '../tutorial';
+import { Tutorial } from '../../../tutorial';
 
 
 export class DataConnectorsTutorial extends Tutorial {
