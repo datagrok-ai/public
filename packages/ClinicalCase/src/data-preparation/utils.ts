@@ -69,9 +69,9 @@ export function getUniqueValues(df: DG.DataFrame, colName: string) {
   }
 
 
-export function addTreatmentArm(df: DG.DataFrame, dm: DG.DataFrame, columnsToExtract: string[]) {
-    let withArm = grok.data.joinTables(df, dm, [ 'USUBJID' ], [ 'USUBJID' ], columnsToExtract, [ TREATMENT_ARM ], DG.JOIN_TYPE.LEFT, false);
-    changeEmptyStringsToUnknown(withArm, TREATMENT_ARM);
+export function addDataFromDmDomain(df: DG.DataFrame, dm: DG.DataFrame, columnsToExtract: string[], columnsToExtractFromDm: string[], subjIdColName = 'USUBJID') {
+    let withArm = grok.data.joinTables(df, dm, [ subjIdColName ], [ 'USUBJID' ], columnsToExtract, columnsToExtractFromDm, DG.JOIN_TYPE.LEFT, false);
+    columnsToExtractFromDm.forEach(it => changeEmptyStringsToUnknown(withArm, it));
     return withArm;
 }
 
@@ -93,4 +93,9 @@ export function dataframeContentToRow(df: DG.DataFrame) {
         content = `${content}; `;
     }
     return content;
+}
+
+
+export function getNullOrValue(df: DG.DataFrame, colname: string, index: number){
+    return df.getCol(colname).isNone(index) ?  'null' : df.get(colname, index);
 }

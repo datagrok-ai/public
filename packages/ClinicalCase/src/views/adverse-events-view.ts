@@ -2,7 +2,7 @@ import * as grok from 'datagrok-api/grok';
 import * as DG from "datagrok-api/dg";
 import * as ui from "datagrok-api/ui";
 import { study, ClinRow } from "../clinical-study";
-import { addTreatmentArm, getUniqueValues } from '../data-preparation/utils';
+import { addDataFromDmDomain, getUniqueValues } from '../data-preparation/utils';
 import { TREATMENT_ARM } from '../constants';
 
 export class AdverseEventsView extends DG.ViewBase {
@@ -12,7 +12,7 @@ export class AdverseEventsView extends DG.ViewBase {
   constructor(name) {
     super(name);
     this.name = name;
-    this.aeWithArm = addTreatmentArm(study.domains.ae.clone(), study.domains.dm, study.domains.ae.columns.names());
+    this.aeWithArm = addDataFromDmDomain(study.domains.ae.clone(), study.domains.dm, study.domains.ae.columns.names(), [TREATMENT_ARM]);
 
     let viewerTitle = {style:{
       'color':'var(--grey-6)',
