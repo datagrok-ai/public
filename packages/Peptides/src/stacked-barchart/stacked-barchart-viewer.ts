@@ -11,6 +11,14 @@ export function addViewerToHeader(grid: DG.Grid, viewer: Promise<Widget>) {
     const barchart = viewer as StackedBarChart;
     barchart.tableCanvas = grid.canvas;
     grid.setOptions({'colHeaderHeight': 200});
+    grid.onCellTooltip((cell, x, y) => {
+      if (cell.tableColumn) {
+        if (['aminoAcids', 'alignedSequence'].includes(cell.tableColumn.semType) && !cell.isColHeader) {
+          ui.tooltip.show(ui.divV([ui.divText(cell.cell.value as string)]), x, y);
+          return true;
+        }
+      }
+    });
     grid.onCellRender.subscribe((args) => {
       args.g.save();
       args.g.beginPath();
@@ -89,7 +97,7 @@ export class StackedBarChart extends DG.JsViewer {
       this.aminoColumnNames = [];
       const cp = ChemPalette.getDatagrok();
       this.getColor = (c = '') => {
-        if (c.length == 1 || c.at(1) == '(' || c.at(0)?.toLowerCase()=='d') {
+        if (c.length == 1 || c.at(1) == '(' || c.at(0)?.toLowerCase() == 'd') {
           const amino = c.at(0)?.toUpperCase()!;
           return amino in cp ? cp[amino] : 'rgb(77,77,77)';
         }
@@ -257,10 +265,10 @@ export class StackedBarChart extends DG.JsViewer {
           sBarHeight - gapSize);
         if (w <= sBarHeight) {
           g.fillStyle = 'rgb(0,0,0)';
-          g.font = `${w/2}px`;
+          g.font = `${w / 2}px`;
           g.fillText(obj['name'],
-            x+w/4,
-            y + h * (this.max - sum + curSum) / this.max + gapSize / 2 + (sBarHeight - gapSize)/2 -w/4);
+            x + w / 4,
+            y + h * (this.max - sum + curSum) / this.max + gapSize / 2 + (sBarHeight - gapSize) / 2 - w / 4);
         }
 
         if (this.selectionMode && obj['selectedCount'] > 0) {
