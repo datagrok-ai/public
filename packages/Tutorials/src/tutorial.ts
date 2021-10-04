@@ -109,7 +109,7 @@ export abstract class Tutorial extends DG.Widget {
       $(`.tutorials-track[data-name ='${track?.name}']`)
       .find(`.tutorials-card[data-name='${track.tutorials[id].name}']`)
       .children('.tutorials-card-status').show();
-      $(`.tutorials-track[data-name ='${track?.name}']`).find('progress').prop('value', String(100/track.tutorials.length*(track.completed)));
+      $(`.tutorials-track[data-name ='${track?.name}']`).find('progress').prop('value', (100/track.tutorials.length*(track.completed)).toFixed());
       $(`.tutorials-track[data-name ='${track?.name}'] > .tutorials-track-details`).children().first().text($(`.tutorials-track[data-name ='${track?.name}']`).find('progress').prop('value')+'% complete');
       $(`.tutorials-track[data-name ='${track?.name}'] > .tutorials-track-details`).children().last().text(String(track.completed+' / '+track.tutorials.length));
     }
