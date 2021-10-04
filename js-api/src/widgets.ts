@@ -396,8 +396,8 @@ export class TabPane {
     return toJs(api.grok_TabPane_Get_Parent(this.d));
   }
 
-  get root(): HTMLDivElement {
-    return api.grok_TabPane_Get_Root(this.d);
+  get header(): HTMLDivElement {
+    return api.grok_TabPane_Get_Header(this.d);
   }
 
   get content(): HTMLDivElement {
