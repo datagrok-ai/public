@@ -11,7 +11,8 @@ export class PredictiveModelingTutorial extends Tutorial {
     return 'Predictive Modeling';
   }
   get description() {
-    return 'Predictive modeling is a statistical technique used to predict outcomes based on historical data.';
+    return 'Predictive modeling is a statistical technique used to predict outcomes based on historical data.'+
+    '<a href="https://datagrok.ai/help/learn/predictive-modeling" target="_blank" class="ui-link d4-link-external">Read more about predictive modeling.</a>';
   }
   get steps() { return 12; }
 

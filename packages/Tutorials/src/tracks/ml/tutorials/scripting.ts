@@ -9,7 +9,8 @@ export class ScriptingTutorial extends Tutorial {
     return 'Scripting';
   }
   get description() {
-    return 'Scripting is an integration mechanism with languages for statistical computing';
+    return 'Scripting is an integration mechanism with languages for statistical computing'+
+    '<a href="https://datagrok.ai/help/develop/scripting" target="_blank" class="ui-link d4-link-external">Read more about scripting.</a>';
   }
   get steps() { return 1; }
 

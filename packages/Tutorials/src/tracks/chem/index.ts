@@ -6,4 +6,4 @@ export const tutorials = [
   DescriptorsTutorial,
 ];
 
-export const chem = new Track('Cheminformatics', ...tutorials.map((t) => new t()));
+export const chem = new Track('Cheminformatics', tutorials.map((t) => new t()), 'https://datagrok.ai/help/domains/chem/cheminformatics');

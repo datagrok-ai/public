@@ -12,7 +12,8 @@ export class DescriptorsTutorial extends Tutorial {
 
   get description(): string {
     return 'Chemical structures are analyzed via molecular descriptors. ' +
-      'These are numerical values that characterize properties of molecules.';
+      'These are numerical values that characterize properties of molecules.'+
+      '<a href="https://datagrok.ai/help/domains/chem/descriptors" target="_blank" class="ui-link d4-link-external">Read more about molecular descriptors.</a>';
   }
 
   get steps() { return 3; }
