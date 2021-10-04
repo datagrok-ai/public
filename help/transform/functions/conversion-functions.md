@@ -8,6 +8,7 @@
 - [Boolean](#booleanx)
 - [DateParse](#dateparses)
 - [TimeSpanParse](#timespanparses)
+- [ToString](#tostring)
 
 ## <a name="boolean"></a>Boolean(`x`)
 
@@ -42,4 +43,12 @@ Constructs and returns a TimeSpan based on string pattern `s`.
 
 ```javascript
 TimeSpanParse("01:00")    //  Creates a time interval of one hour
+```
+
+## <a name="tostring"></a>ToString(`x`)
+
+Returns a string representation of number `x`.
+
+```javascript
+ToString(3.14)    //  "3.14"
 ```

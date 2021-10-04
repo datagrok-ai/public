@@ -203,3 +203,24 @@ progress[value]::-webkit-progress-value::after {
 		box-shadow: 0 0 0 0 rgba(255, 255, 255, 0);
 	}
 }
+
+/* Tutorial Widget*/
+.widget-tutorials-summary{
+    margin: 0;
+    margin-bottom: 20px;
+    padding: 0;
+    justify-content: space-between;
+}
+.widget-tutorials-summary label{
+    color:var(--grey-4);
+}
+.widget-tutorials-summary h1{
+    color:var(--grey-6);
+    margin: 5px 0;
+}
+.widget-tutorials-track-details{
+    justify-content: space-between;
+}
+.widget-tutorials-track-details div:last-child{
+    color:var(--grey-4)
+}    
