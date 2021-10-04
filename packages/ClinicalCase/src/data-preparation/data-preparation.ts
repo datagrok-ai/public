@@ -1,7 +1,7 @@
 import * as grok from 'datagrok-api/grok';
 import * as DG from 'datagrok-api/dg';
 import { ALT, AP, AST, BILIRUBIN, TREATMENT_ARM } from '../constants';
-import { addTreatmentArm, dateDifferenceInDays, filterBooleanColumn, filterNulls, getUniqueValues } from './utils';
+import { addDataFromDmDomain, dateDifferenceInDays, filterBooleanColumn, filterNulls, getUniqueValues } from './utils';
 import { study } from '../clinical-study';
 
 export function createMaxValuesDataForHysLaw(dataframe, aggregatedColName, filerValue){ 
@@ -28,7 +28,7 @@ export function createHysLawDataframe(lb: DG.DataFrame, dm: DG.DataFrame) {
     let joined = grok.data.joinTables(bln, alt, [ 'USUBJID' ], [ 'USUBJID' ], [ 'USUBJID', BILIRUBIN ], [ ALT ], DG.JOIN_TYPE.LEFT, false);
     joined = grok.data.joinTables(joined, ast, [ 'USUBJID' ], [ 'USUBJID' ], [ 'USUBJID', ALT, BILIRUBIN ], [ AST ], DG.JOIN_TYPE.LEFT, false);
     joined = grok.data.joinTables(joined, ap, [ 'USUBJID' ], [ 'USUBJID' ], [ 'USUBJID', ALT, BILIRUBIN, AST ], [ AP ], DG.JOIN_TYPE.LEFT, false);
-    let withTreatmentArm = addTreatmentArm(joined, dm, [ 'USUBJID', ALT, BILIRUBIN, AST, AP ]);
+    let withTreatmentArm = addDataFromDmDomain(joined, dm, [ 'USUBJID', ALT, BILIRUBIN, AST, AP ], [TREATMENT_ARM]);
     return withTreatmentArm;
 }
 
@@ -44,6 +44,7 @@ export function createFilteredFloatValuesDataframe(df: DG.DataFrame & any, condi
 
 export function createBaselineEndpointDataframe(lb: DG.DataFrame,
   dm: DG.DataFrame,
+  columnToExtractFromDm: string[],
   labValue: string, 
   blVisit: string, 
   epVisit: string, 
@@ -64,8 +65,8 @@ export function createBaselineEndpointDataframe(lb: DG.DataFrame,
     finalDf = filteredDataBaseline;
     columnsToEXtract = [ 'USUBJID', blNumColumn, 'LBORNRLO', 'LBORNRHI' ];
   }
-  let withTreatmentArm = addTreatmentArm(finalDf, dm, columnsToEXtract);  
-  return withTreatmentArm;
+  let withDmData = addDataFromDmDomain(finalDf, dm, columnsToEXtract, columnToExtractFromDm);  
+  return withDmData;
   
 }
 

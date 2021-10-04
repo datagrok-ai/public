@@ -109,7 +109,8 @@ export class TimelinesViewer extends EChartViewer {
           this.zoomState[i][0] = z.start;
           this.zoomState[i][1] = z.end;
           if(z.type === 'slider' && Object.keys(z).includes('yAxisIndex')){
-            this.lineWidth = z.end - z.start < 75 ? z.end - z.start < 50 ? 3 : 2 : 1;
+            this.lineWidth = z.end - z.start < 60 ? z.end - z.start < 30 ? 3 : 2 : 1;
+            this.markerSize = z.end - z.start < 60 ? z.end - z.start < 30 ? 6 : 4 : 3;
           }
         });
       });
@@ -179,7 +180,7 @@ export class TimelinesViewer extends EChartViewer {
       }, params.event.event.x + this.tooltipOffset, params.event.event.y + this.tooltipOffset)
     } else {
       let tooltipContent = params.componentType === 'yAxis' ? ui.div(`${params.value}`) :
-        ui.divV([ui.div(`subjId: ${params.value[0]}`),
+        ui.divV([ui.div(`key: ${params.value[0]}`),
         ui.div(`event: ${params.value[4]}`),
         ui.div(`start: ${params.value[1]}`),
         ui.div(`end: ${params.value[2]}`),

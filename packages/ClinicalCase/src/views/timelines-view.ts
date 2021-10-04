@@ -6,6 +6,7 @@ import { study } from "../clinical-study";
 import { createFilteredTable, dataframeContentToRow } from "../data-preparation/utils";
 import { updateDivInnerHTML } from "./utils";
 import $ from "cash-dom";
+import { createPropertyPanel } from "../panels/panels-service";
 
 let links = {
   ae: { key: 'USUBJID', start: 'AESTDY', end: 'AEENDY', event: 'AETERM'},
@@ -35,7 +36,7 @@ export class TimelinesView extends DG.ViewBase {
   }
 
   selectedOptions = [ Object.keys(multichoiceTableOptions)[ 0 ] ];
-  selectedDatframes = [ Object.values(multichoiceTableOptions)[ 0 ] ];
+  selectedDataframes = [ Object.values(multichoiceTableOptions)[ 0 ] ];
   timelinesDiv = ui.box();
   filtersDiv = ui.box();
   resultTables: DG.DataFrame;
@@ -44,11 +45,13 @@ export class TimelinesView extends DG.ViewBase {
     super(name);
 
     this.name = name;
+
     let multiChoiceOptions = ui.multiChoiceInput('', [ this.selectedOptions[ 0 ] ] as any, Object.keys(multichoiceTableOptions))
     multiChoiceOptions.onChanged((v) => {
       this.selectedOptions = multiChoiceOptions.value;
       this.updateSelectedDataframes(this.selectedOptions);
       this.updateTimelinesPlot();
+      this.subscribeToSelection();
     });
 
     let customTitle = {style:{
@@ -78,6 +81,13 @@ export class TimelinesView extends DG.ViewBase {
     ]))
 
     this.updateTimelinesPlot();
+    this.subscribeToSelection();
+  }
+
+  private subscribeToSelection(){
+    this.resultTables.onSelectionChanged.subscribe(() => { 
+      createPropertyPanel(this);
+    })
   }
 
   private prepare(domain: DG.DataFrame){
@@ -95,7 +105,7 @@ export class TimelinesView extends DG.ViewBase {
 
   private updateTimelinesTables(){
     this.resultTables = null;
-    for (let dt of study.domains.all().filter((t) => this.selectedDatframes.includes(t.name))) {
+    for (let dt of study.domains.all().filter((t) => this.selectedDataframes.includes(t.name))) {
       let t = this.prepare(dt);
       if (this.resultTables == null)
         this.resultTables = t;
@@ -130,9 +140,9 @@ export class TimelinesView extends DG.ViewBase {
   }
 
   private updateSelectedDataframes(options: string[]){
-    this.selectedDatframes = [];
+    this.selectedDataframes = [];
     options.forEach(item => {
-      this.selectedDatframes.push(multichoiceTableOptions[item])
+      this.selectedDataframes.push(multichoiceTableOptions[item])
     })
   }
 

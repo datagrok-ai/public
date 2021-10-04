@@ -210,7 +210,7 @@ export class LaboratoryView extends DG.ViewBase {
       let labValue = value;
       let blNumCol = `${labValue}_BL`;
       let epNumCol = `${labValue}_EP`;
-      let baselineEndpointDataframe = createBaselineEndpointDataframe(lb, dm, labValue, blVisit, epVisit, visitCol, blNumCol, epNumCol);
+      let baselineEndpointDataframe = createBaselineEndpointDataframe(lb, dm, [TREATMENT_ARM], labValue, blVisit, epVisit, visitCol, blNumCol, epNumCol);
       grok.data.linkTables(lb, baselineEndpointDataframe,
         [ `USUBJID` ], [ `USUBJID` ],
         [ DG.SYNC_TYPE.CURRENT_ROW_TO_ROW, DG.SYNC_TYPE.CURRENT_ROW_TO_SELECTION ]);
