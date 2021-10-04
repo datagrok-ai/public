@@ -11,17 +11,18 @@ export class PredictiveModelingTutorial extends Tutorial {
     return 'Predictive Modeling';
   }
   get description() {
-    return 'Predictive modeling uses statistics to predict outcomes';
+    return 'Predictive modeling is a statistical technique used to predict outcomes based on historical data.';
   }
-  get steps(){ return 3} //set thew number of steps
-  private async buttonClickAction(root: HTMLElement, instructions: string, caption: string) {
+  get steps() { return 12; }
+
+  private async buttonClickAction(root: HTMLElement, instructions: string, caption: string, description: string = '') {
     const btn = $(root).find('button.ui-btn').filter((idx, btn) => btn.textContent === caption)[0];
     if (btn == null) return;
     const source = fromEvent(btn, 'click');
-    await this.action(instructions, source, btn);
+    await this.action(instructions, source, btn, description);
   };
 
-  private async columnInpAction(root: HTMLElement, instructions: string, caption: string, value: string) {
+  private async columnInpAction(root: HTMLElement, instructions: string, caption: string, value: string, description: string = '') {
     const columnInput = $(root)
       .find('div.ui-input-root.ui-input-column')
       .filter((idx, inp) => $(inp).find('label.ui-label.ui-input-label')[0]?.textContent === caption)[0];
@@ -29,10 +30,10 @@ export class PredictiveModelingTutorial extends Tutorial {
     const source = interval(1000).pipe(
       map((_) => $(columnInput).find('div.d4-column-selector-column')[0]?.textContent),
       filter((val) => val === value));
-    await this.action(instructions, source, columnInput);
+    await this.action(instructions, source, columnInput, description);
   };
 
-  private async columnsInpAction(root: HTMLElement, instructions: string, caption: string, value: string) {
+  private async columnsInpAction(root: HTMLElement, instructions: string, caption: string, value: string, description: string = '') {
     const columnsInput = $(root)
       .find('div.ui-input-root.ui-input-columns')
       .filter((idx, inp) => $(inp).find('label.ui-label.ui-input-label')[0]?.textContent === caption)[0];
@@ -40,10 +41,15 @@ export class PredictiveModelingTutorial extends Tutorial {
     const source = interval(1000).pipe(
       map((_) => $(columnsInput).find('div.ui-input-editor > div.ui-input-column-names')[0]?.textContent),
       filter((val) => val === value));
-    await this.action(instructions, source, columnsInput);
+    await this.action(instructions, source, columnsInput, description);
   };
 
   protected async _run() {
+    this.describe('Predictive modeling is a statistical technique used to predict outcomes ' +
+      'based on historical data. In the next steps, we will train a few models, look at their ' +
+      'performance, learn how to apply a model to a dataset and share it with others, and ' +
+      'lastly, compare the models we have trained.');
+
     /** Train model actions */
     const trainModel = async (method: string): Promise<void> => {
       const pmv = await this.openViewByType(
@@ -52,13 +58,9 @@ export class PredictiveModelingTutorial extends Tutorial {
       );
 
       // UI generation delay
-      await new Promise((resolve) => setTimeout(resolve, 1500));
+      await new Promise((resolve) => setTimeout(resolve, 2000));
 
-      this.describe('In this view, you can set parameters to train a model (press F1 to get ' +
-        'help on the Predictive Modeling plugin). In the next steps, we will train, apply, ' +
-        'analyze performance, and compare models to predict sex by age, weight and height.');
-
-      const viewInputAction = async (instructions: string, caption: string, value: string) => {
+      const viewInputAction = async (instructions: string, caption: string, value: string, description: string = '') => {
         let inputRoot: HTMLDivElement;
         let select: HTMLSelectElement;
         $(pmv.root).find('.ui-input-root .ui-input-label span').each((idx, el) => {
@@ -70,19 +72,19 @@ export class PredictiveModelingTutorial extends Tutorial {
         const source = fromEvent(select!, 'change');
         await this.action(instructions,
           source.pipe(map((event: any) => select.value), filter((v: string) => v === value)),
-          inputRoot!);
+          inputRoot!, description);
       };
 
       //await viewInputAction('Set "Table" to "demog"', 'Table', 'demog');
       await this.columnInpAction(pmv.root, 'Set "Predict" to "SEX"', 'Predict', 'SEX');
+      const missingValuesWarning = 'You will see that the column names are highlighted in red. ' +
+        'Click on the question mark to the right of the input to see a warning message. It says ' +
+        'that some of the columns contain missing values, and suggests two ways to address this. ' +
+        'Let\'s use missing values imputation.';
       await this.columnsInpAction(pmv.root, 'Set "Features" to ["AGE", "HEIGHT", "WEIGHT"]',
-        'Features', '(3) AGE, HEIGHT, WEIGHT');
+        'Features', '(3) AGE, HEIGHT, WEIGHT', missingValuesWarning);
 
-      this.describe('You will now see that the column names are highlighted in red. ' +
-        'Click on the question mark to the right of the input to see a warning message. ' +
-        'It says that some of the columns contain missing values, and suggests two ways to address this.');
-
-      const dlg = await this.openDialog('Let\'s use missing values imputation.', 'Missing Values Imputation');
+      const dlg = await this.openDialog('Click on "Missing values imputation"', 'Missing Values Imputation');
 
       await this.dlgInputAction(dlg, 'Set "Table" to "demog"', 'Table', 'demog');
       await this.dlgInputAction(dlg, 'Choose [AGE, HEIGHT, WEIGHT] for "Impute"', 'Impute', 'AGE,HEIGHT,WEIGHT');
@@ -99,14 +101,44 @@ export class PredictiveModelingTutorial extends Tutorial {
     };
 
     this.title('Train a model');
-    await trainModel('Distributed Random Forest');
+    //await trainModel('Distributed Random Forest');
 
-    const browseModels = async () => {
-      await this.openViewByType('Click on "Functions | Models" to open the Models Browser', DG.View.MODELS);
-    };
+    this.title('Model performance, application, and sharing');
+    const pmBrowserDescription = 'This is Predictive Models Browser. Here, you can browse ' +
+      'models that you trained or that were shared with you. In the next steps, we will look ' +
+      'at model performance, apply a model to a dataset, and share the model.';
+    await this.openViewByType(
+      'Click on "Functions | Models" to open the Models Browser',
+      DG.View.MODELS, null, pmBrowserDescription);
 
-    this.title('Model performance');
-    await browseModels();
+    const ppDescription = 'Search for the model you trained (applicable models are always at the ' +
+      'top of the list, also, you can search for it by the previously defined name). Now, select ' +
+      'the model by clicking on it and open "Performance" at the property panel on the right.';
 
+    await this.action('Find model performance data',
+      // TODO: check if acc.context instanceof DG.Model && acc.context?.name === modelName
+      grok.events.onAccordionConstructed.pipe(
+        map((acc) => acc.getPane('Performance')?.expanded),
+        filter((v) => v === true)),
+      null, ppDescription);
+
+    await this.contextMenuAction('Right-click on the trained model and select "Apply to | ' +
+      `${this.t!.toString()}"`, this.t!.toString(), null, 'The result will be available in ' +
+      'the selected table as a column named "Outcome". Check it out in the opened table view.');
+
+    await this.contextMenuAction('Right-click on the model and select "Share...".', 'Share...',
+      null, 'The model you trained is only visible to you, but it is easy to share it with other ' +
+      'users from this dialog: just add a few users (e.g., "All users") and click "OK".');
+
+    this.title('Compare models');
+
+    await trainModel('Gradient Boosting Machine');
+    await this.openViewByType('Click on "Functions | Models" to open the Models Browser', DG.View.MODELS);
+
+    await this.action('Find the trained models and compare them',
+      grok.events.onViewAdded.pipe(filter((view) => view.name == 'Compare models')),
+      $('div.d4-accordion-pane-header').filter((idx, el) => el.textContent == 'Commands')[0],
+      'Search for the trained models and select them holding <b>Shift</b>. ' +
+      'Then use the "Compare" command at the property panel.');
   }
 }

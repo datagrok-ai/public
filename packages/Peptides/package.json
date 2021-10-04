@@ -4,20 +4,17 @@
 	"version": "0.0.1",
 	"description": "",
 	"dependencies": {
-		"d3": "latest",
 		"cash-dom": "latest",
+		"d3": "latest",
 		"datagrok-api": "../../js-api",
 		"dayjs": "latest",
+		"jstat": "^1.9.5",
 		"logojs-react": "^2.1.1",
-		"react": "^17.0.2",
-		"react-dom": "^17.0.2",
 		"ts-loader": "^9.2.5"
 	},
 	"devDependencies": {
 		"@types/d3": "^7.0.0",
 		"@types/jquery": "^3.5.6",
-		"@types/react": "^17.0.22",
-		"@types/react-dom": "^17.0.9",
 		"@typescript-eslint/eslint-plugin": "^4.29.1",
 		"@typescript-eslint/parser": "^4.29.1",
 		"eslint": "^7.32.0",
@@ -43,7 +40,7 @@
 		"release-peptides-public": "grok publish public --rebuild --release",
 		"debug-peptides-local": "grok publish local --rebuild",
 		"release-peptides-local": "grok publish local --rebuild --release",
-		"lint": "eslint ./src/*.ts",
+		"lint": "eslint './src/**/*.ts'",
 		"lint-fix": "eslint ./src/*.ts --fix"
 	}
 }

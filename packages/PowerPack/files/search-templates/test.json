@@ -37,8 +37,8 @@
       "name": "Observability",
       "widget": "webWidget",
       "templates": [{
-        "template": "observability",
-        "url": "https://test.jrd-observability.apps.jnj.com/"
+        "template": "minsk",
+        "url": "https://en.wikipedia.org/wiki/Minsk"
       }]
     }
   ]
