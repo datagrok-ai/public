@@ -136,6 +136,10 @@ progress[value]::-webkit-progress-value::after {
 .grok-tutorial-entry-instruction{
     color: var(--grey-6);
     font-weight: bolder;
+    -webkit-user-select: text;
+    -moz-user-select: text;
+    -ms-user-select: text;
+    user-select: text;
 }
 .grok-tutorial-entry-success{
     text-decoration: line-through;
