@@ -12,16 +12,19 @@ import '../css/tutorial.css';
 export class TutorialWidget extends DG.Widget {
   caption: string;
   order: string;
-  allTutorials: HTMLHeadingElement = ui.h2('');
-  completeTutorials: HTMLHeadingElement = ui.h2('');
-  totalProgress: HTMLHeadingElement = ui.h2('');
+  allTutorials: HTMLHeadingElement = ui.h1('');
+  completeTutorials: HTMLHeadingElement = ui.h1('');
+  totalProgress: HTMLHeadingElement = ui.h1('');
+
   runners:TutorialRunner[];
 
   constructor(...runners:TutorialRunner[]) {
     super(ui.panel([], 'tutorial-widget'));
 
+    console.clear;
+    console.log(runners);
     this.runners = runners;
-    
+
     const runEda = new TutorialRunner(eda);
     const runChem = new TutorialRunner(chem);
     const runMl = new TutorialRunner(ml);
@@ -39,11 +42,7 @@ export class TutorialWidget extends DG.Widget {
     mlProgress.value = '0';
 
     (async () => {
-
-        console.clear();
-        console.log(runEda.track)
-        console.log(runEda.track.tutorials.length)
-        console.log(await runEda.getCompleted(runEda.track.tutorials))
+        console.log(runners);
 
         let complete = await runEda.getCompleted(runEda.track.tutorials) + await runEda.getCompleted(runChem.track.tutorials) + await runMl.getCompleted(runMl.track.tutorials);
         let total = runEda.track.tutorials.length + runChem.track.tutorials.length + runMl.track.tutorials.length;
@@ -67,34 +66,41 @@ export class TutorialWidget extends DG.Widget {
     this.root.append(ui.divV([
         ui.divH([
             ui.divV([
-                ui.label('Progress'),
-                this.totalProgress
+                ui.label('Tracks'),
+                ui.h1('3')//change to array length of tutorialsRunners
+            ]),
+            ui.divV([
+                ui.label('Tutorials'),
+                this.allTutorials
             ]),
             ui.divV([
                 ui.label('Complete'),
                 this.completeTutorials
             ]),
             ui.divV([
-                ui.label('All Tutorials'),
-                this.allTutorials
+                ui.label('Progress'),
+                this.totalProgress
             ]),
-        ]),
+        ], 'widget-tutorials-summary'),
         ui.divV([
             ui.divH([
                 ui.divText(runEda.track.name),
-            ]),
+                ui.divText(edaProgress.value+' / '+String(runEda.track.tutorials.length))
+            ], 'widget-tutorials-track-details'),
             edaProgress
         ], 'tutorials-track'),
         ui.divV([
             ui.divH([
                 ui.divText(runChem.track.name),
-            ]),
+                ui.divText(chemProgress.value+' / '+String(runChem.track.tutorials.length))
+            ], 'widget-tutorials-track-details'),
             chemProgress
         ], 'tutorials-track'),
         ui.divV([
             ui.divH([
                 ui.divText(runMl.track.name),
-            ]),
+                ui.divText(mlProgress.value+' / '+String(runMl.track.tutorials.length))
+            ], 'widget-tutorials-track-details'),
             mlProgress
         ], 'tutorials-track'),
     ], 'tutorial'));
