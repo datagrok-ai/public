@@ -35,10 +35,8 @@ export function addViewerToHeader(grid: DG.Grid, viewer: Promise<Widget>) {
 
 
 export class StackedBarChart extends DG.JsViewer {
-    public dataColumnPrefix: string;
     public dataEmptyAA: string;
     public initialized: boolean;
-    public valueAggrType: string;
     private ord: { [Key: string]: number; } = {};
     private margin: { top: number; left: number; bottom: number; right: number } = {
       top: 10,
@@ -63,10 +61,7 @@ export class StackedBarChart extends DG.JsViewer {
 
     constructor() {
       super();
-
-      this.dataColumnPrefix = this.string('dataColumnPrefix', 'a');
       this.dataEmptyAA = this.string('dataEmptyAA', '-');
-      this.valueAggrType = this.string('valueAggrType', 'avg', {choices: ['avg', 'count', 'sum']});
       this.initialized = false;
     }
 
@@ -99,7 +94,6 @@ export class StackedBarChart extends DG.JsViewer {
           return amino in cp ? cp[amino] : 'rgb(77,77,77)';
         }
         return 'rgb(77,77,77)';
-        //return c ? DG.Color.toRgb(this.colorScale(c)) : 'rgb(127,127,127)'
       };
     }
 

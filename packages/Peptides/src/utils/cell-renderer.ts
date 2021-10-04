@@ -23,7 +23,7 @@ function printLeftCentered(
   left = false,
 ) {
   const textSize = g.measureText(s);
-
+  const indent = 5;
   const colorPart = pivot == -1 ? s.substring(0) : s.substring(0, pivot);
   const grayPart = pivot == -1 ? '' : s.substr(pivot);
 
@@ -32,13 +32,13 @@ function printLeftCentered(
     g.fillStyle = color;
     g.fillText(
       colorPart,
-      x,
+      x + indent,
       y + (textSize.fontBoundingBoxAscent + textSize.fontBoundingBoxDescent) / 2,
     );
     g.fillStyle = getColor();
     g.fillText(
       grayPart,
-      x + colorTextSize.width,
+      x + indent + colorTextSize.width,
       y + (textSize.fontBoundingBoxAscent + textSize.fontBoundingBoxDescent) / 2,
     );
     return x + colorTextSize.width + g.measureText(grayPart).width; ;
