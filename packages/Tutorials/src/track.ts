@@ -78,9 +78,9 @@ export class TutorialRunner {
       }
     })();
 
-
+    console.log(track);
     let trackRoot = ui.divV([
-      ui.divH([ui.h1(track.name), ui.icons.info(()=>{})], 'tutorials-track-title'),
+      ui.divH([ui.h1(track.name), ui.button(ui.icons.help(()=>{}),()=>window.open(track.helpUrl,'_blank'), 'Read more about '+track.name+'\n'+track.helpUrl)], 'tutorials-track-title'),
       ui.divH([progress]),
       progressDetails,
       ui.divV(track.tutorials.map((t) => {

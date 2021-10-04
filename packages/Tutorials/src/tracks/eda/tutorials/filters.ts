@@ -1,4 +1,5 @@
 import * as DG from 'datagrok-api/dg';
+import * as ui from 'datagrok-api/ui';
 import { filter } from 'rxjs/operators';
 import { Tutorial } from '../../../tutorial';
 
@@ -13,13 +14,16 @@ export class FiltersTutorial extends Tutorial {
   }
 
   get steps() { return 3; }
+
+  helpUrl: string = 'https://datagrok.ai/help/visualize/viewers/filters';
   
   protected async _run() {
     this.header.textContent = 'Filters';
     this.describe('Dynamic filtering is an important concept in exploratory data analysis, and ' +
       'our platform makes it as powerful and easy to use as possible. Let\'s start with opening ' +
-      'a couple of regular viewers, so that effects of filtering would be immediately visible.'+
-      '<a href="https://datagrok.ai/help/visualize/viewers/filters" target="_blank" class="ui-link d4-link-external">Read more about filters.</a>');
+      'a couple of regular viewers, so that effects of filtering would be immediately visible.');
+
+    this.describe(String(ui.link('More about '+this.name, this.helpUrl).outerHTML));
 
     await this.openPlot('scatter plot', (x) => x.type === DG.VIEWER.SCATTER_PLOT);
     await this.openPlot('histogram', (x) => x.type === DG.VIEWER.HISTOGRAM);
