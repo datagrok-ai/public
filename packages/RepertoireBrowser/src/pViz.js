@@ -25,7 +25,6 @@ export class PvizMethods {
         await this.pvizResize(inputs.pViz_host_H, 'H', inputs.paratopes);
         await this.pvizResize(inputs.pViz_host_L, 'L', inputs.paratopes);
         MiscMethods.setDockSize(view, inputs.ngl_node, inputs.sequence_tabs, inputs.paratopes);
-
     }
 
     // mapping objects for sequence rendering
@@ -315,7 +314,7 @@ export class PvizMethods {
             });
 
             if (paratopes === true) {
-                seqEntry.addFeatures(this.pVizParams.parMap[chain].par_feature_map);
+               seqEntry.addFeatures(this.pVizParams.parMap[chain].par_feature_map);
             }
             seqEntry.addFeatures(this.pVizParams.ptmMap[chain].ptm_feature_map);
             seqEntry.addFeatures(this.pVizParams.denMap[chain].den_feature_map);
