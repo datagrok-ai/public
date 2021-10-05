@@ -178,7 +178,7 @@ export class AlignedSequenceCellRenderer extends DG.GridCellRenderer {
       const s: string = gridCell.cell.value;
       const subParts = s.split('-');
       subParts.forEach((amino: string, index) => {
-        const [color, pivot] = getColorPivot(s);
+        const [color, pivot] = getColorPivot(amino);
         g.fillStyle = 'rgb(77,77,77)';
         if (index + 1 < subParts.length) {
           amino += '-';
