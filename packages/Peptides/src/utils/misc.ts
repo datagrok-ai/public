@@ -62,10 +62,6 @@ export function tTest(arr1: number[], arr2: number[], alpha=0.05, devKnown=false
       pLess = jStat.studentt.cdf(Z, K);
       pTot = 2 * (pLess < pMore ? pLess : pMore);
     }
-    // VkMoreTs = jStat.studentt.inv(1 - alpha / 2, K);
-    // VkLessTs = jStat.studentt.inv(alpha / 2, K);
-    // VkMore = jStat.studentt.inv(1 - alpha, K);
-    // VkLess = jStat.studentt.inv(alpha, K);
   } else {
     wv1 = v1 / n1;
     wv2 = v2 / n2;

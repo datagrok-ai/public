@@ -97,15 +97,15 @@ export async function describe(
   //statistics for specific AAR at a specific position
   matrixDf = matrixDf.groupBy([positionColName, aminoAcidResidue])
     .add('count', activityColumnScaled, 'Count')
-    .add('med', 'innerMAD', medianColName) //final step of MAD calculation
-    .add('q1', activityColumnScaled, 'Q1')
-    .add('q2', activityColumnScaled, 'Median')
-    .add('q3', activityColumnScaled, 'Q3')
+    //.add('med', 'innerMAD', medianColName) //final step of MAD calculation
+    //.add('q1', activityColumnScaled, 'Q1')
+    //.add('q2', activityColumnScaled, 'Median')
+    //.add('q3', activityColumnScaled, 'Q3')
     .aggregate();
 
   // calculate additional stats
-  await matrixDf.columns.addNewCalculated('IQR', '${q3}-${q1}');
-  await matrixDf.columns.addNewCalculated('CQV', '(${q3}-${q1})/(${q3}+${q1})');
+  //await matrixDf.columns.addNewCalculated('IQR', '${q3}-${q1}');
+  //await matrixDf.columns.addNewCalculated('CQV', '(${q3}-${q1})/(${q3}+${q1})');
   await matrixDf.columns.addNewCalculated('Ratio', '${count}/'.concat(`${peptidesCount}`));
 
   //calculate p-values based on t-test
@@ -140,8 +140,9 @@ export async function describe(
     pValues.push(testResult['p-value']);
     mDiff.push(testResult['Mean difference']!);
   }
-  matrixDf.columns.add(DG.Column.fromList(DG.TYPE.FLOAT, 'p-value', pValues));
   matrixDf.columns.add(DG.Column.fromList(DG.TYPE.FLOAT, 'Mean difference', mDiff));
+  matrixDf.columns.add(DG.Column.fromList(DG.TYPE.FLOAT, 'p-value', pValues));
+
 
   const statsDf = matrixDf.clone();
 
