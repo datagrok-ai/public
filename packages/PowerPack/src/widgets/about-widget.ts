@@ -39,7 +39,6 @@ export class AboutWidget extends DG.Widget {
       ui.button(ui.iconFA('chevron-left'), ()=>{
         if (currentPane != 0){
           currentPane--;
-          console.log(currentPane);
           tabControl.currentPane = tabControl.panes[currentPane];
         }
       })]);
@@ -47,7 +46,6 @@ export class AboutWidget extends DG.Widget {
       ui.button(ui.iconFA('chevron-right'), ()=>{
         if (currentPane<6){
           currentPane++;
-          console.log(currentPane);
           tabControl.currentPane = tabControl.panes[currentPane];
         }
       })

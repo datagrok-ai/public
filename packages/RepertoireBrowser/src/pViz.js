@@ -2,7 +2,7 @@ import * as grok from 'datagrok-api/grok';
 import * as ui from 'datagrok-api/ui';
 import * as DG from "datagrok-api/dg";
 
-import json from "./TPP000153303.json";
+import json from "./VR000030945.json";
 import mutcodes from "./mutcodes.json";
 import {MiscMethods} from "./misc.js"
 
@@ -30,7 +30,6 @@ export class PvizMethods {
 
     // mapping objects for sequence rendering
     ptmMapping(ptm_choices, prob) {
-
         let ptmMap = {}
         let chains = Object.keys(this.pVizParams.seq);
         chains.forEach((chain) => {
@@ -41,7 +40,7 @@ export class PvizMethods {
             let palette = MiscMethods.interpolateColors('(255, 255, 0)','(255, 0, 0)', 5);
 
             ptm_choices.forEach(ptm => {
-                let ptm_array = json.ptm_predictions[chain][ptm];
+                let ptm_array = json.ptm_predictions[chain][ptm.replace(" ", "_")];
                 if (ptm_array !== undefined) {
 
                     let ptm_color_arr = [];
@@ -51,23 +50,23 @@ export class PvizMethods {
                         if(point[1] > prob) {
 
                             ptm_feature_map.push({
-                                groupSet: 'PTMs',
-                                category : mutcodes[ptm],
-                                type : mutcodes[ptm],
+                                groupSet: 'Predicted PTMs',
+                                category : ptm,
+                                type : mutcodes[ptm.replace(" ", "_")],
                                 start : point[0],
                                 end : point[0],
-                                text : mutcodes[ptm],
+                                text : ptm,
                                 improbable : true
                             })
-                            ptm_color_arr.push(palette[Math.round(point[1]*4)])
+                            ptm_color_arr.push(palette[point[1] > 1 ? Math.round(point[1]*4)/100: Math.round(point[1]*4)]);
                             ptm_el_arr.push(point[0]);
                             ptm_prob_arr.push(point[1]);
                         }
                     })
                     if (ptm_color_arr.length > 0) {
-                        ptm_color_obj[mutcodes[ptm]] = ptm_color_arr;
-                        ptm_el_obj[mutcodes[ptm]] = ptm_el_arr;
-                        ptm_prob_obj[mutcodes[ptm]] = ptm_prob_arr;
+                        ptm_color_obj[mutcodes[ptm.replace(" ", "_")]] = ptm_color_arr;
+                        ptm_el_obj[mutcodes[ptm.replace(" ", "_")]] = ptm_el_arr;
+                        ptm_prob_obj[mutcodes[ptm.replace(" ", "_")]] = ptm_prob_arr;
                     }
                 }
             })
@@ -79,33 +78,29 @@ export class PvizMethods {
     }
 
     ptmDenMapping() {
-
         let denMap = {}
         let chains = Object.keys(this.pVizParams.seq);
         chains.forEach((chain) => {
             let den_feature_map = [];
-            let den_el_obj  = [];
-            let den_prob_obj = [];
-            let den_color_arr = new Array(this.pVizParams.seq[chain].length).fill(1);
+            let den_color_arr = new Array(this.pVizParams.seq[chain].length).fill(-1);
+            let den_ptm_arr = new Array(this.pVizParams.seq[chain].length).fill([]);
             let palette = MiscMethods.interpolateColors('(255, 255, 0)', '(255, 0, 0)', 5);
 
-            Object.values(json.ptm_predictions[chain]).forEach((ptm_array) => {
-                ptm_array.forEach(point => {
+            Object.keys(json.ptm_predictions[chain]).forEach((ptm) => {
+                json.ptm_predictions[chain][ptm].forEach(point => {
                     if (!(den_feature_map.includes(point[0]))) {
                         den_feature_map.push(point[0]);
                     }
-                    den_color_arr[point[0]] = den_color_arr[point[0]] * (1 - point[1])
-                    den_el_obj.push(point[0]);
-                    den_prob_obj.push(point[1]);
+                    den_color_arr[point[0]] = den_color_arr[point[0]] == -1 ? (point[1] > 1 ? point[1]/100: point[1]) : 1 - (1 - den_color_arr[point[0]]) * (1 -  (point[1] > 1 ? point[1]/100: point[1]));
+                    den_ptm_arr[point[0]] = den_ptm_arr[point[0]].concat([[ptm, point[1]]]);
                 })
             })
 
-            den_el_obj.sort(function(a, b) {return a - b; });;
-
             den_feature_map.sort((a, b) => a - b);
+            let den_el_obj = den_feature_map.slice();
             den_feature_map = den_feature_map.map(function (ft) {
                 return {
-                    groupSet: 'PTM density',
+                    groupSet: 'Predicted PTM density',
                     category: '',
                     type: 'D',
                     start: ft,
@@ -116,21 +111,26 @@ export class PvizMethods {
             });
 
             den_color_arr = den_color_arr.filter((x) => {
-                return x !== 1
+                return x !== -1
             });
+
+            den_ptm_arr = den_ptm_arr.filter((x) =>{
+                return x.length > 0
+            });
+
+            let den_prob_obj = den_color_arr.slice();
+ 
             for (let i = 0; i < den_color_arr.length; i++) {
-                den_color_arr[i] = palette[Math.round((1 - den_color_arr[i]) * 4)];
+                den_color_arr[i] = palette[Math.round(den_color_arr[i] * 4)];
             }
 
-            denMap[chain] = {den_feature_map: den_feature_map, den_color_obj: {'D': den_color_arr}, den_el_obj: den_el_obj, den_prob_obj:den_prob_obj}
+            denMap[chain] = {den_feature_map: den_feature_map, den_color_obj: {'D': den_color_arr}, den_el_obj:den_el_obj, den_prob_obj:den_prob_obj, den_ptm_arr:den_ptm_arr};
         })
-
 
         return (denMap)
     }
 
     paratopeMapping() {
-
         let parMap = {}
         let chains = Object.keys(this.pVizParams.seq);
         chains.forEach((chain) => {
@@ -154,7 +154,7 @@ export class PvizMethods {
                 par_prob_obj.push(json.parapred_predictions[chain][index]);
             })
 
-            parMap[chain] = {par_feature_map: par_feature_map, par_color_obj: {'P': par_color_arr}, par_el_obj : par_el_obj, par_prob_obj:par_prob_obj}
+            parMap[chain] = {par_feature_map: par_feature_map, par_color_obj: {'P': par_color_arr}, par_el_obj : par_el_obj, par_prob_obj:par_prob_obj};
         })
 
         return(parMap)
@@ -252,15 +252,15 @@ export class PvizMethods {
 
             this.pviz.FeatureDisplayer.addMouseoverCallback(mod_codes, async function(ft) {
 
-                let selectorStr = 'g.feature.' + ft.category + ' rect.feature';
+                let selectorStr = 'g.feature.' + ft.category.replace(" ", "_") + ' rect.feature';
                 let el = document.querySelectorAll(selectorStr);
-                let el_lst = pVizParams.ptmMap[chain].ptm_el_obj[ft.category];
-                let prob_lst = pVizParams.ptmMap[chain].ptm_prob_obj[ft.category];
+                let el_lst = pVizParams.ptmMap[chain].ptm_el_obj[mutcodes[ft.category.replace(" ", "_")]];
+                let prob_lst = pVizParams.ptmMap[chain].ptm_prob_obj[mutcodes[ft.category.replace(" ", "_")]];
                 el = el[el_lst.indexOf(ft.start)];
                 let prob =  prob_lst[el_lst.indexOf(ft.start)];
 
                 ui.tooltip.show(
-                    ui.span([`${ft.category}: Pr ~${prob.toFixed(2)}`]),
+                    ui.span([`${ft.category} probability ~${prob.toFixed(2)}`]),
                     el.getBoundingClientRect().left + 10,
                     el.getBoundingClientRect().top + 10
                 );
@@ -284,7 +284,7 @@ export class PvizMethods {
                     el.getBoundingClientRect().top + 10
                 );
 
-            }).addMouseoutCallback(mod_codes, function(ft) {
+            }).addMouseoutCallback(['P'], function(ft) {
                 ui.tooltip.hide();
             });
 
@@ -294,16 +294,23 @@ export class PvizMethods {
                 let el = document.querySelectorAll(selectorStr);
                 let el_lst = pVizParams.denMap[chain].den_el_obj;
                 let prob_lst = pVizParams.denMap[chain].den_prob_obj;
+                let ptm_list =  pVizParams.denMap[chain].den_ptm_arr;
                 el = el[el_lst.indexOf(ft.start)];
                 let prob =  prob_lst[el_lst.indexOf(ft.start)];
+                let ptmsArPoint = ptm_list[el_lst.indexOf(ft.start)];
+                let ptmsStr = "";
+
+                for(let i = 0; i < ptmsArPoint.length; i++){
+                    ptmsStr += "\n" + ptmsArPoint[i][0].replace("_", " ") + " probability  ~" + (ptmsArPoint[i][1] > 1 ? ptmsArPoint[i][1]/100: ptmsArPoint[i][1]).toFixed(2);
+                }
                 
                 ui.tooltip.show(
-                    ui.span([`Probability: ${prob.toFixed(2)}`]),
+                    ui.divText(`Probability: ${prob.toFixed(2)}${ptmsStr}`),
                     el.getBoundingClientRect().left + 10,
                     el.getBoundingClientRect().top + 10
                 );
 
-            }).addMouseoutCallback(mod_codes, function(ft) {
+            }).addMouseoutCallback(['D'], function(ft) {
                 ui.tooltip.hide();
             });
 
@@ -316,7 +323,6 @@ export class PvizMethods {
             this.applyGradient(this.pVizParams.ptmMap[chain].ptm_color_obj);
             this.applyGradient(this.pVizParams.denMap[chain].den_color_obj);
             this.applyGradient(this.pVizParams.parMap[chain].par_color_obj);
-
         }
     }
 
