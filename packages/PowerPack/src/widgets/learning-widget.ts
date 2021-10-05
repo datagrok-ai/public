@@ -19,12 +19,28 @@ export class LearningWidget extends DG.Widget {
     videoList.style.paddingLeft = '0px';
     videoList.appendChild(ui.div(playlists.map(renderPlaylist)));
 
-    // this.root.appendChild(ui.tabControl({
-    //   'VIDEO':ui.panel(playlists.map(renderPlaylist)),
-    //   'WIKI':ui.panel([list])
-    // }).root
-    // );
+    let tabs = ui.tabControl({
+       'VIDEO':ui.panel([
+        videoList,
+       ]),
+       'WIKI':ui.panel([
+        wikiList
+       ])
+     });
+    
+    grok.functions
+    .call("Tutorials:tutorialWidget")
+    .then((res) => {
+      console.log(res);
+      tabs.addPane('TUTORIALS',()=>res._root)
+    })
+    .catch((error) => {
+      console.log('Opps! Function does not found! \n'+error);
+    });
+    
+    this.root.append(tabs.root);
 
+    /* 
     this.root.appendChild(ui.div([
       ui.panel([
         ui.divText('Video playlists', {
@@ -47,7 +63,7 @@ export class LearningWidget extends DG.Widget {
         wikiList
       ])   
     ]));
-
+    */
     // properties
     this.caption = super.addProperty('caption', DG.TYPE.STRING, 'Learn');
     this.order = super.addProperty('order', DG.TYPE.STRING, '5');
