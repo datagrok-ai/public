@@ -39,8 +39,6 @@ export class TutorialWidget extends DG.Widget {
             this.totalTutorials += total;
             this.totalCompleted += complete;
             this.totalProgress = 100/this.totalTutorials*this.totalCompleted;
-            
-            console.log('-------');
 
             let progressBar = ui.element('progress');
             progressBar.max = total
