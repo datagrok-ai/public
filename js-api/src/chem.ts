@@ -119,6 +119,7 @@ export namespace chem {
     }
 
     setChangeListenerCallback(callback: () => void) {
+      this.changedSub?.unsubscribe();
       this.listeners.push(callback);
       if (this.sketcher)
         this.changedSub = this.sketcher.onChanged.subscribe((_) => callback());
