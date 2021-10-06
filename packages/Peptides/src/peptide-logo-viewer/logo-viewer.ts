@@ -5,6 +5,7 @@ import $ from 'cash-dom';
 
 import * as logojs from 'logojs-react';
 import {splitAlignedPeptides} from '../split-aligned';
+import { ChemPalette } from '../utils/chem-palette';
 
 //TODO: move viewer to a separate file
 export class Logo extends DG.JsViewer {
@@ -42,7 +43,7 @@ export class Logo extends DG.JsViewer {
       {color: 'rgb(158,218,229)', regex: 'H'},
       {color: 'rgb(122, 102, 189)', regex: 'I'},
       {color: 'rgb(108, 218, 229)', regex: 'K'},
-      {color: 'rgb(158,218,229)', regex: 'L'},
+      {color: 'rgb(30,110,96)', regex: 'L'},
       {color: 'rgb(141, 124, 217)', regex: 'M'},
       {color: 'rgb(235,137,70)', regex: 'N'},
       {color: 'rgb(255,152,150)', regex: 'P'},
@@ -127,8 +128,17 @@ export class Logo extends DG.JsViewer {
       const size = col.length;
       this.ppm.push(new Array(22).fill(0));
       for (let i = 0; i < col.length; i++) {
-        if (col.get(i) != '-') {
-          this.ppm[index][this.PROT_NUMS[col.get(i)]] += 1 / size;
+        let c = col.get(i);
+        if (c != '-') {
+          if(c[1] == '(') this.ppm[index][this.PROT_NUMS[c.substr(0,1).toUpperCase()]] += 1 / size;
+          else if(c.substr(0, 3) in ChemPalette.AAFullNames && (c.length == 3 || c.at(3) == '(')){
+            this.ppm[index][this.PROT_NUMS[ChemPalette.AAFullNames[c.substr(0,3)]]] += 1 / size;
+          }
+          else if(c.at(0)?.toLowerCase() == c.at(0) && c.substr(1, 3) in ChemPalette.AAFullNames &&
+          (c.length == 4 || c.at(4) == '(')) {
+            this.ppm[index][this.PROT_NUMS[ChemPalette.AAFullNames[c.substr(1,3)]]] += 1 / size;
+          }
+          else this.ppm[index][this.PROT_NUMS[c]] += 1 / size;
         }
       }
       index++;

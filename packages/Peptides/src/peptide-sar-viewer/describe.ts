@@ -137,7 +137,7 @@ export async function describe(
 
     testResult = tTest(currentActivity, otherActivity);
     // testResult = uTest(currentActivity, otherActivity);
-    pValues.push(testResult['p-value']);
+    pValues.push(testResult['p-value more']);
     mDiff.push(testResult['Mean difference']!);
   }
   matrixDf.columns.add(DG.Column.fromList(DG.TYPE.FLOAT, 'Mean difference', mDiff));
