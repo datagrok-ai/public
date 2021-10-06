@@ -121,7 +121,7 @@ export namespace chem {
     setChangeListenerCallback(callback: () => void) {
       this.listeners.push(callback);
       if (this.sketcher)
-        this.sketcher.onChanged.subscribe((_) => callback());
+        this.changedSub = this.sketcher.onChanged.subscribe((_) => callback());
     }
 
     constructor() {
@@ -153,6 +153,12 @@ export namespace chem {
         this.host]));
 
       this.setSketcher(funcs[0].name);
+    }
+
+    detach() {
+      this.changedSub?.unsubscribe();
+      this.sketcher?.detach();
+      super.detach();
     }
 
     async setSketcher(name: string) {
