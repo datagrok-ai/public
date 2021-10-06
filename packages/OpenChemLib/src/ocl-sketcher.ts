@@ -10,6 +10,7 @@ export class OpenChemLibSketcher extends grok.chem.SketcherBase {
   _sketcher: OCL.StructureEditor;
 
   constructor() {
+    console.log('OCL constructor');
     super();
   }
 
