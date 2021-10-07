@@ -7,7 +7,8 @@ import * as jStat from 'jstat';
 import {splitAlignedPeptides} from '../split-aligned';
 import {decimalAdjust, tTest} from '../utils/misc';
 import {ChemPalette} from '../utils/chem-palette';
-
+import * as grok from 'datagrok-api/src/chem';
+let cp = new ChemPalette('grok');
 
 export async function describe(
   df: DG.DataFrame,
@@ -278,19 +279,19 @@ export async function describe(
   grid.onCellTooltip(function(cell, x, y) {
     if (
       !cell.isRowHeader &&
-      !cell.isColHeader &&
-      cell.tableColumn !== null &&
-      cell.tableColumn.name !== aminoAcidResidue &&
-      cell.cell.value !== null &&
-      cell.tableRowIndex !== null
+        !cell.isColHeader &&
+        cell.tableColumn !== null &&
+        cell.tableColumn.name !== aminoAcidResidue &&
+        cell.cell.value !== null &&
+        cell.tableRowIndex !== null
     ) {
-      const tooltipMap: {[index: string]: string} = {};
+      const tooltipMap: { [index: string]: string } = {};
 
       for (const col of statsDf.columns.names()) {
         if (col !== aminoAcidResidue && col !== positionColName) {
           const query =
-            `${aminoAcidResidue} = ${matrixDf.get(aminoAcidResidue, cell.tableRowIndex)} ` +
-            `and ${positionColName} = ${cell.tableColumn.name}`;
+              `${aminoAcidResidue} = ${matrixDf.get(aminoAcidResidue, cell.tableRowIndex)} ` +
+              `and ${positionColName} = ${cell.tableColumn.name}`;
           let text = `${decimalAdjust('floor', statsDf.groupBy([col]).where(query).aggregate().get(col, 0), -5)}`;
 
           //@ts-ignore: I'm sure it's gonna be fine, text contains a number
@@ -304,8 +305,24 @@ export async function describe(
       }
 
       ui.tooltip.show(ui.tableFromMap(tooltipMap), x, y);
-    // } else if (cell.isColHeader && !cell.isRowHeader) {
-    //   ui.tooltip.show((await df.plot.fromType('peptide-logo-viewer')).root, x, y);
+      // } else if (cell.isColHeader && !cell.isRowHeader) {
+      //   ui.tooltip.show((await df.plot.fromType('peptide-logo-viewer')).root, x, y);
+    }
+    if (
+      !cell.isColHeader &&
+        cell.tableColumn !== null &&
+        cell.tableColumn.name == aminoAcidResidue &&
+        cell.cell.value !== null &&
+        cell.tableRowIndex !== null
+    ) {
+      const toDisplay = [ui.divText(cell.cell.value as string)];
+      // eslint-disable-next-line no-unused-vars
+      const [_c, aar, _p] = cp.getColorAAPivot(cell.cell.value as string);
+      if (aar in ChemPalette.AASmiles) {
+        const sketch = grok.chem.svgMol(ChemPalette.AASmiles[aar]);
+        toDisplay.push(sketch);
+      }
+      ui.tooltip.show(ui.divV(toDisplay), x, y);
     }
     return true;
   });
