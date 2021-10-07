@@ -20,16 +20,23 @@ async function main(chosenFile : string) {
   const peptides = (await grok.data.loadTable(path));
   peptides.name = 'Peptides';
   peptides.setTag('dataType', 'peptides');
-
+  const view = grok.shell.addTableView(peptides);
+  tableGrid = view.grid;
   peptides.onSemanticTypeDetecting.subscribe((_) => {
     const regexp = new RegExp('^((.+)?-){5,49}(\\w|\\(|\\))+$');
     for (const col of peptides.columns) {
       col.semType = DG.Detector.sampleCategories(col, (s) => regexp.test(s)) ? 'alignedSequence' : null;
+      if (col.semType == 'alignedSequence') {
+        let maxWidth = 0;
+        col.categories.forEach((seq:string) =>{
+          maxWidth = maxWidth < seq.length ? seq.length : maxWidth;
+        });
+        tableGrid.columns.byName(col.name)!.width = maxWidth * 15;
+      }
     }
-  });
+  },
+  );
 
-  const view = grok.shell.addTableView(peptides);
-  tableGrid = view.grid;
   view.name = 'PeptidesView';
 
   grok.shell.windows.showProperties = true;

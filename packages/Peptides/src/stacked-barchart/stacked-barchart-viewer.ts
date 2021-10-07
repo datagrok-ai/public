@@ -1,11 +1,12 @@
 import * as DG from 'datagrok-api/dg';
 import * as ui from 'datagrok-api/ui';
+import * as grok from 'datagrok-api/grok';
 import {axisBottom, scaleBand, scaleLinear, select, color} from 'd3';
 import {ChemPalette} from '../utils/chem-palette';
 import * as rxjs from 'rxjs';
 import $ from 'cash-dom';
 import {GridCellRenderArgs, Property, Widget} from 'datagrok-api/dg';
-
+const cp = new ChemPalette('grok');
 
 export function addViewerToHeader(grid: DG.Grid, viewer: Promise<Widget>) {
   viewer.then((viewer) => {
@@ -37,7 +38,15 @@ export function addViewerToHeader(grid: DG.Grid, viewer: Promise<Widget>) {
     grid.onCellTooltip((cell, x, y) => {
       if (cell.tableColumn) {
         if (['aminoAcids', 'alignedSequence'].includes(cell.tableColumn.semType) && !cell.isColHeader) {
-          ui.tooltip.show(ui.divV([ui.divText(cell.cell.value as string)]), x, y);
+          const toDisplay = [ui.divText(cell.cell.value as string)];
+          // eslint-disable-next-line no-unused-vars
+          const [_c, aar, _p] = cp.getColorAAPivot(cell.cell.value as string);
+          if (aar in ChemPalette.AASmiles) {
+            const sketch = grok.chem.svgMol( ChemPalette.AASmiles[aar]);
+            toDisplay.push(sketch);
+          }
+          ui.tooltip.show(ui.divV(toDisplay), x, y);
+
           return true;
         }
       }
@@ -82,7 +91,7 @@ export class StackedBarChart extends DG.JsViewer {
     private selectionMode: boolean = false;
     public aminoColumnNames: string[] = [];
     // @ts-ignore
-    private getColor: ((c?: string) => string);
+
     private aminoColumnIndices: { [Key: string]: number; } = {};
     private aggregatedTables: { [Key: string]: DG.DataFrame; } = {};
     private aggregatedTablesUnselected: { [Key: string]: DG.DataFrame; } = {};
@@ -119,35 +128,6 @@ export class StackedBarChart extends DG.JsViewer {
       this.data = [];
 
       this.aminoColumnNames = [];
-      const cp = ChemPalette.getDatagrok();
-      this.getColor = (c = '') =>{
-        if (c.length == 1 || c.at(1) == '(') {
-          const amino = c.at(0)?.toUpperCase()!;
-          return amino in cp ? cp[amino] : 'rgb(77,77,77)';
-        }
-        if (c.at(0) == 'd' && c.at(1)! in cp) {
-          if (c.length == 2 || c.at(2) == '(') {
-            const amino = c.at(1)?.toUpperCase()!;
-            return amino in cp ? cp[amino] : 'rgb(77,77,77)';
-          }
-        }
-        if (c.substr(0, 3) in ChemPalette.AAFullNames) {
-          if (c.length == 3 || c.at(3) == '(') {
-            const amino = ChemPalette.AAFullNames[c.substr(0, 3)];
-            return amino in cp ? cp[amino] : 'rgb(77,77,77)';
-          }
-        }
-        if (c.at(0)?.toLowerCase() == c.at(0)) {
-          if (c.substr(1, 3) in ChemPalette.AAFullNames) {
-            if (c.length == 4 || c.at(4) == '(') {
-              const amino = ChemPalette.AAFullNames[c.substr(1, 3)];
-              return amino in cp ? cp[amino] : 'rgb(77,77,77)';
-            }
-          }
-        }
-        return 'rgb(77,77,77)';
-        //return c ? DG.Color.toRgb(this.colorScale(c)) : 'rgb(127,127,127)'
-      };
     }
 
     // Stream subscriptions
@@ -302,7 +282,7 @@ export class StackedBarChart extends DG.JsViewer {
       barData.forEach((obj, index) => {
         const sBarHeight = h * obj['count'] / this.max;
         const gapSize = sBarHeight * innerMargin;
-        g.fillStyle = this.getColor(obj['name']);
+        g.fillStyle = cp.getColor(obj['name']);
         g.fillRect(
           x,
           y + h * (this.max - sum + curSum) / this.max + gapSize / 2,
@@ -370,7 +350,7 @@ export class StackedBarChart extends DG.JsViewer {
       const
         innerHeight = height - this.margin.top - this.margin.bottom;
 
-      const getColor = this.getColor;
+      const getColor = cp.getColor;
       const
         scope = this;
 
