@@ -154,12 +154,19 @@ export class AlignedSequenceCellRenderer extends DG.GridCellRenderer {
       g.font = '15px monospace';
       g.textBaseline = 'top';
       const s: string = gridCell.cell.value;
+      const textSize = g.measureText(s);
       const subParts = s.split('-');
+      x = Math.max(x, x+(w-textSize.width)/2);
+      const simplified = !subParts.some((amino, index)=>{
+
+        return amino.length>1&&index!=0&&index!=subParts.length-1;
+      });
       subParts.forEach((amino: string, index) => {
         const [color, pivot] = cp.getColorPivot(amino);
         g.fillStyle = ChemPalette.undefinedColor;
         if (index + 1 < subParts.length) {
-          amino += ' ';
+          const gap = simplified?'':' ';
+          amino += `${amino?'':'-'}${gap}`;
         }
         x = printLeftCentered(x, y, w, h, g, amino, color, pivot, true);
       });
