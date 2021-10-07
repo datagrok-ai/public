@@ -8,7 +8,8 @@ import {splitAlignedPeptides} from '../split-aligned';
 import {decimalAdjust, tTest} from '../utils/misc';
 import {ChemPalette} from '../utils/chem-palette';
 import * as grok from 'datagrok-api/src/chem';
-let cp = new ChemPalette('grok');
+
+const cp = new ChemPalette('grok');
 
 export async function describe(
   df: DG.DataFrame,
@@ -317,6 +318,7 @@ export async function describe(
     ) {
       const toDisplay = [ui.divText(cell.cell.value as string)];
       // eslint-disable-next-line no-unused-vars
+
       const [_c, aar, _p] = cp.getColorAAPivot(cell.cell.value as string);
       if (aar in ChemPalette.AASmiles) {
         const sketch = grok.chem.svgMol(ChemPalette.AASmiles[aar]);
@@ -362,9 +364,8 @@ export async function describe(
       }
 
       //FIXME: coloring doesn't work now
-      // const cp = ChemPalette.getDatagrok();
       // const colorMap: {[index: string]: string | number} = {otherColName: DG.Color.lightGray};
-      // colorMap[currentAAR] = cp[currentAAR];
+      // colorMap[currentAAR] = cp.getColor(currentAAR);
       // df.getCol(splitColName).colors.setCategorical(colorMap);
       // df.getCol(splitColName).setCategoryOrder([otherColName]);
     }
