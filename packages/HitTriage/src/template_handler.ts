@@ -48,6 +48,8 @@ export class TemplateHandler extends DG.ObjectHandler {
       let query = await grok.functions.eval(t.query);
       let call = query.prepare(t.queryParams);
       call.context = t.context;
+
+      console.log ('handler', call.context.getVariable('template'));
       await call.call(true, undefined, {processed: false});
       t.data = call.getOutputParamValue();
      // console.log(t.data);
