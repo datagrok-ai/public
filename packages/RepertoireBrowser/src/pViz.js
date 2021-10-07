@@ -2,7 +2,7 @@ import * as grok from 'datagrok-api/grok';
 import * as ui from 'datagrok-api/ui';
 import * as DG from "datagrok-api/dg";
 
-import json from "./VR000030945.json";
+import json from "./TPP000153303.json";
 import mutcodes from "./mutcodes.json";
 import {MiscMethods} from "./misc.js"
 
@@ -25,7 +25,6 @@ export class PvizMethods {
         await this.pvizResize(inputs.pViz_host_H, 'H', inputs.paratopes);
         await this.pvizResize(inputs.pViz_host_L, 'L', inputs.paratopes);
         MiscMethods.setDockSize(view, inputs.ngl_node, inputs.sequence_tabs, inputs.paratopes);
-
     }
 
     // mapping objects for sequence rendering
@@ -315,7 +314,7 @@ export class PvizMethods {
             });
 
             if (paratopes === true) {
-                seqEntry.addFeatures(this.pVizParams.parMap[chain].par_feature_map);
+               seqEntry.addFeatures(this.pVizParams.parMap[chain].par_feature_map);
             }
             seqEntry.addFeatures(this.pVizParams.ptmMap[chain].ptm_feature_map);
             seqEntry.addFeatures(this.pVizParams.denMap[chain].den_feature_map);
