@@ -37,17 +37,24 @@ export function addViewerToHeader(grid: DG.Grid, viewer: Promise<Widget>) {
     grid.setOptions({'colHeaderHeight': 200});
     grid.onCellTooltip((cell, x, y) => {
       if (cell.tableColumn) {
-        if (['aminoAcids', 'alignedSequence'].includes(cell.tableColumn.semType) && !cell.isColHeader) {
-          const toDisplay = [ui.divText(cell.cell.value as string)];
-          // eslint-disable-next-line no-unused-vars
-          const [_c, aar, _p] = cp.getColorAAPivot(cell.cell.value as string);
-          if (aar in ChemPalette.AASmiles) {
-            const sketch = grok.chem.svgMol( ChemPalette.AASmiles[aar]);
-            toDisplay.push(sketch);
-          }
-          ui.tooltip.show(ui.divV(toDisplay), x, y);
+        if (['aminoAcids', 'alignedSequence'].includes(cell.tableColumn.semType) ) {
+          if ( !cell.isColHeader) {
+            const toDisplay = [ui.divText(cell.cell.value as string)];
+            // eslint-disable-next-line no-unused-vars
+            const [_c, aar, _p] = cp.getColorAAPivot(cell.cell.value as string);
+            if (aar in ChemPalette.AASmiles) {
+              const sketch = grok.chem.svgMol(ChemPalette.AASmiles[aar]);
+              toDisplay.push(sketch);
+            }
+            ui.tooltip.show(ui.divV(toDisplay), x, y);
 
-          return true;
+            return true;
+          } else {
+            if (barchart.highlighted) {
+              ui.tooltip.show(ui.divV([ui.divText(barchart.highlighted.aaName)]), x, y);
+            }
+            return true;
+          }
         }
       }
     });
@@ -77,7 +84,7 @@ export function addViewerToHeader(grid: DG.Grid, viewer: Promise<Widget>) {
 export class StackedBarChart extends DG.JsViewer {
     public dataEmptyAA: string;
     public initialized: boolean;
-    private highlighted:{'colName':string, 'aaName':string}|null = null;
+    highlighted:{'colName':string, 'aaName':string}|null = null;
     private ord: { [Key: string]: number; } = {};
     private margin: { top: number; left: number; bottom: number; right: number } = {
       top: 10,
@@ -267,11 +274,16 @@ export class StackedBarChart extends DG.JsViewer {
       x = x + w * margin;
       y = y + h * margin / 4;
       w = w - w * margin * 2;
-      h = h - h * margin / 2;
-      g.fillStyle = 'orange';
-      g.font = `20px monospace`;
+      h = h - h * margin / 2 - w;
+      g.fillStyle = 'black';
       g.textBaseline = 'top';
+      g.font = `${w / 2}px`;
+      // eslint-disable-next-line no-unused-vars
+
       const name = cell.tableColumn!.name;
+      g.fillText(name,
+        x+w / 4,
+        y + h+ w / 4 );
       const barData = this.barStats[name];
       let sum = 0;
       barData.forEach((obj) => {
@@ -291,7 +303,9 @@ export class StackedBarChart extends DG.JsViewer {
         if (w <= sBarHeight) {
           g.fillStyle = 'rgb(0,0,0)';
           g.font = `${w / 2}px`;
-          g.fillText(obj['name'],
+          // eslint-disable-next-line no-unused-vars
+          const [_c, aar, _p] = cp.getColorAAPivot(obj['name']);
+          g.fillText(aar,
             x + w / 4,
             y + h * (this.max - sum + curSum) / this.max + gapSize / 2 + (sBarHeight - gapSize) / 2 - w / 4);
         }
