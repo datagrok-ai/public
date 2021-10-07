@@ -12,17 +12,15 @@ export let templates: Array<Template>;
 export function init() {
   DG.ObjectHandler.register(new TemplateHandler());
   grok.functions.onAfterRunAction.subscribe((call) => {
-    if (call.func !instanceof DG.DataQuery || templates == undefined)
-      return;
-    let template = templates.find((t) => t.context == call.context);
-    console.log(call, call.context.getVariable('template'), template);
+    let template = call.context.getVariable('template');
     if (template == null)
       return;
-    for (let param in call.func.outputs) {
-      let output = call.outputs.get(param);
+    console.log(call.func.outputs);
+    call.func.outputs.forEach((param)  => {
+      let output = param.get(call);
       if (output instanceof DG.DataFrame)
         output.setTag('HitTriage', template.name);
-    }
+    });
   });
 }
 
@@ -39,6 +37,7 @@ export async function app() {
 
 
 //tags: panel
+//name: Hit Triage
 //input: dataframe table
 //output: widget result
 //condition: table.tags.get("HitTriage") != null
