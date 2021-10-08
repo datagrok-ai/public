@@ -49,7 +49,7 @@ async function main(chosenFile : string) {
 //tags: app
 export function Peptides() {
   let textLink = ui.div();
-  textLink.innerHTML = `For more details see <a href="https://github.com/datagrok-ai/public/blob/master/help/domains/bio/peptides.md">Link</a>.`;
+  textLink.innerHTML = `For more details, see our <a href="https://github.com/datagrok-ai/public/blob/master/help/domains/bio/peptides.md">[wiki]</a>.`;
   
   const appDescription = ui.info(
     [
