@@ -20,7 +20,7 @@ export class ScriptingTutorial extends Tutorial {
     this.header.textContent = 'Create and run a script';
     this.describe('Scripting is an integration mechanism with languages for statistical computing');
 
-    this.describe(String(ui.link('More about '+this.name, this.helpUrl).outerHTML));
+    this.describe(ui.link('More about ' + this.name, this.helpUrl).outerHTML);
 
     const editorIntro = 'This is a script editor. Here, you write code and bind the parameters to the ' +
       'sample dataset (press F1 to get help on parameter format). Also, the editor lets you load ' +

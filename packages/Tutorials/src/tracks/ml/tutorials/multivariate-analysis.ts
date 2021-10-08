@@ -27,7 +27,7 @@ export class MultivariateAnalysisTutorial extends Tutorial {
       'new space.</p><p>In the following example, we will predict a car price by its attributes, ' +
       'and see how different measures are related to each other and to the outcome.</p>');
 
-    this.describe(String(ui.link('More about '+this.name, this.helpUrl).outerHTML)); 
+    this.describe(ui.link('More about ' + this.name, this.helpUrl).outerHTML); 
 
     const dlg = await this.openDialog('Click on "ML | Multivariate Analysis (PLS)..."',
       'Multivariate Analysis (PLS)');

@@ -27,7 +27,7 @@ export class ViewersTutorial extends Tutorial {
     this.describe('The icon opens a list of custom viewers, while ' +
     'the <b>Viewers</b> tab contains a standard set of visualizations.');
 
-    this.describe(String(ui.link('More about '+this.name, this.helpUrl).outerHTML));
+    this.describe(ui.link('More about ' + this.name, this.helpUrl).outerHTML);
 
     this.title('Selection and current records display');
 

@@ -26,7 +26,7 @@ export class ScatterPlotTutorial extends Tutorial {
       'determining the position on the horizontal axis and the value of the other variable ' +
       'determining the position on the vertical axis.');
 
-    this.describe(String(ui.link('More about '+this.name, this.helpUrl).outerHTML));
+    this.describe(ui.link('More about ' + this.name, this.helpUrl).outerHTML);
 
     const plot = <DG.ScatterPlotViewer>(await this.openPlot(
       'scatter plot',
