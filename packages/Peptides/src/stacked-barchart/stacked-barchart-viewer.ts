@@ -223,7 +223,6 @@ export class StackedBarChart extends DG.JsViewer {
                 {'name': name, 'data': []};
         this.barStats[colObj['name']] = colObj['data'];
         this.data.push(colObj);
-        let unselectedRowIndex = 0;
         for (let i = 0; i < df.rowCount; i++) {
           const amino = df.getCol(name).get(i);
           const aminoCount = df.getCol(`${name}_count`).get(i);
@@ -232,17 +231,14 @@ export class StackedBarChart extends DG.JsViewer {
           }
           const aminoObj = {'name': amino, 'count': aminoCount, 'selectedCount': 0};
           colObj['data'].push(aminoObj);
-
-
-          if (name in this.aggregatedTablesUnselected) {
-            if (amino != this.aggregatedTablesUnselected[name].getCol(name).get(unselectedRowIndex)) {
-              unselectedRowIndex++;
+          for (let j = 0; j < this.aggregatedTablesUnselected[name].rowCount; j++) {
+            const unsAmino = this.aggregatedTablesUnselected[name].getCol(`${name}`).get(j);
+            if (unsAmino == amino) {
+              aminoObj['selectedCount'] = this.aggregatedTablesUnselected[name]
+                .getCol(`${name}_count`)
+                .get(j);
+              break;
             }
-            aminoObj['selectedCount'] = this.aggregatedTablesUnselected[name]
-              .getCol(`${name}_count`)
-              .get(unselectedRowIndex);
-
-            unselectedRowIndex++;
           }
         }
         colObj['data'] = colObj['data'].sort((o1, o2) => {
