@@ -40,30 +40,6 @@ export class LearningWidget extends DG.Widget {
     
     this.root.append(tabs.root);
 
-    /* 
-    this.root.appendChild(ui.div([
-      ui.panel([
-        ui.divText('Video playlists', {
-          style:{
-            margin:'4px 0px 8px 0px',
-            fontWeight:'bold',
-            color:'var(--grey-5)'
-          }
-        }),
-        videoList,
-      ], {style:{paddingTop: '0px'}}),
-      ui.panel([
-        ui.divText('Wiki help', {
-          style:{
-            margin:'4px 0px 8px 0px',
-            fontWeight:'bold',
-            color:'var(--grey-5)'
-          }
-        }),
-        wikiList
-      ])   
-    ]));
-    */
     // properties
     this.caption = super.addProperty('caption', DG.TYPE.STRING, 'Learn');
     this.order = super.addProperty('order', DG.TYPE.STRING, '5');
