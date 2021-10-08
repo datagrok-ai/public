@@ -81,7 +81,7 @@ export namespace chem {
 
   export class Sketcher extends Widget {
 
-    host: HTMLElement = ui.box(null, 'grok-sketcher');
+    host: HTMLDivElement = ui.box(null, 'grok-sketcher');
     changedSub: Subscription | null = null;
     sketcher: SketcherBase | null = null;
     listeners: Function[] = [];
