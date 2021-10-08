@@ -706,9 +706,13 @@ export class FileSource {
   }
 
   private setRoot(file: FileInfo | string): string {
-    if (typeof (file) == 'string')
+    if (typeof (file) == 'string') {
       file = `${this.root}${this.root != '' ? '/' : ''}${file}`;
-    return <string>file;
+      return <string>file;
+    } else {
+      file = `${this.root}${this.root != '' ? '/' : ''}${file.path}`;
+      return <string>file;
+    }
   }
 
   /** Deletes a file.
@@ -754,7 +758,7 @@ export class FileSource {
   list(file: FileInfo | string, recursive: boolean, searchPattern: string | null = null): Promise<FileInfo[]> {
     file = this.setRoot(file);
     return new Promise((resolve, reject) =>
-        api.grok_Dapi_UserFiles_List(file, recursive, searchPattern, (data: any) => resolve(toJs(data)), (e: any) => reject(e)));
+        api.grok_Dapi_UserFiles_List(file, recursive, searchPattern, this.root, (data: any) => resolve(toJs(data)), (e: any) => reject(e)));
   }
 
   /** Reads a file as string.

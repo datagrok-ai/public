@@ -110,15 +110,15 @@ export class Functions {
     return new Promise((resolve, reject) => api.grok_CallFunc(name, parameters, (out: any) => resolve(toJs(out)), (err: any) => reject(err), showProgress, toDart(progress)));
   }
 
-  eval(name: string): Promise<any> {
-    return new Promise((resolve, reject) => api.grok_EvalFunc(name, function (out: any) {
+  eval(name: string, context?: Context): Promise<any> {
+    return new Promise((resolve, reject) => api.grok_EvalFunc(name, context?.d, function (out: any) {
       return resolve(toJs(out));
     }, (err: any) => reject(err)));
   }
 
   async find(name: string): Promise<any> {
     let f = await this.eval(name);
-    if (f instanceof Function)
+    if (f instanceof Func)
       return f;
     else
       return null;
@@ -195,12 +195,9 @@ export class FuncCall {
     api.grok_FuncCall_Set_Param_Value(this.d, name, toDart(value));
   }
 
-  /** Executes the function call
-   * @param {boolean} showProgress
-   * @param {ProgressIndicator} progress
-   * @returns {Promise<FuncCall>} */
-  call(showProgress: boolean = false, progress: ProgressIndicator | null = null): Promise<FuncCall> {
-    return new Promise((resolve, reject) => api.grok_FuncCall_Call(this.d, (out: any) => resolve(toJs(out)), (err: any) => reject(err), showProgress, toDart(progress)));
+  /** Executes the function call */
+  call(showProgress: boolean = false, progress?: ProgressIndicator, options?: {processed: boolean}): Promise<FuncCall> {
+    return new Promise((resolve, reject) => api.grok_FuncCall_Call(this.d, (out: any) => resolve(toJs(out)), (err: any) => reject(err), showProgress, toDart(progress), options?.processed));
   }
 
   edit() {
