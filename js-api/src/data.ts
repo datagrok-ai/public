@@ -59,6 +59,12 @@ export class DemoDatasets {
     return this.getDemoTable('demog', rows);
   }
 
+  /** Demographics
+   * @returns {DataFrame}*/
+  molecules(rows: number = 10000): DataFrame {
+    return this.getDemoTable('molecules', rows);
+  }
+
   /** Plate well data
    * @returns {DataFrame}*/
   wells(rows: number = 10000): DataFrame {

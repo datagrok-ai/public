@@ -321,6 +321,7 @@ export enum DEMO_DATASET {
   BIOSENSOR = 'biosensor',
   RANDOM_WALK = 'random walk',
   GEO = 'geo',
+  MOLECULES = 'molecules',
 }
 
 /** @enum {DOCK_TYPE} */
