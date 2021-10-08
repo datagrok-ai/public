@@ -17,6 +17,6 @@ To perform sequence-activity analysis for the dataset choose the column with ass
 
 ![](../../uploads/peptides/Peptides_3.bmp "Alignment table")
 
-The analysis results are presented as a table with residuals in the rows and positions in columns. Here the pairs [position, residue] could be investigated to yield in activity difference with the whole dataset. Points in the results table show the mean difference in activity of subset with selected residual on selected position and all other molecules. This difference is shown as a size of the point. The color of point responds to significance level of such difference. One may estimate this difference by comparing densities which are shown in property panel:
+The analysis results are presented as a table with residuals in the rows and positions in columns. Here the pairs [position, monomer] could be investigated to yield in activity difference with the whole dataset. Points in the results table show the mean difference in activity of subset with selected [position, monomer] and all other molecules. This difference is shown as a size of the point. The color of point responds to significance level of such difference. One may estimate this difference by comparing densities which are shown in property panel:
 
 ![](../../uploads/peptides/Peptides_4.bmp "SAR for peptides")
