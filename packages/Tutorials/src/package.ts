@@ -26,6 +26,7 @@ export async function trackOverview() {
 }
 
 //output: widget tutorial
+//tags: dashboard
 export function tutorialWidget(): DG.Widget {
   return new TutorialWidget(...tracks.map((track) => new TutorialRunner(track)));
 }

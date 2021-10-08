@@ -316,15 +316,7 @@ export async function describe(
         cell.cell.value !== null &&
         cell.tableRowIndex !== null
     ) {
-      const toDisplay = [ui.divText(cell.cell.value as string)];
-      // eslint-disable-next-line no-unused-vars
-
-      const [_c, aar, _p] = cp.getColorAAPivot(cell.cell.value as string);
-      if (aar in ChemPalette.AASmiles) {
-        const sketch = grok.chem.svgMol(ChemPalette.AASmiles[aar]);
-        toDisplay.push(sketch);
-      }
-      ui.tooltip.show(ui.divV(toDisplay), x, y);
+      cp.showTooltip(cell, x, y);
     }
     return true;
   });

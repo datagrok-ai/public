@@ -113,9 +113,15 @@ export async function analyzePeptides(col: DG.Column): Promise<DG.Widget> {
         'activityColumnColumnName': activityColumnChoice.value.name,
         'activityScalingMethod': activityScalingMethod.value,
       };
+      for (let i =0; i<tableGrid.columns.length; i++) {
+        // @ts-ignore
+        tableGrid.columns.byIndex(i)?.visible = false;
+      }
       (grok.shell.v as DG.TableView).addViewer('peptide-sar-viewer', options);
       const widgProm = col.dataFrame.plot.fromType('StackedBarChartAA');
       addViewerToHeader(tableGrid, widgProm);
+      // @ts-ignore
+
       // tableGrid.dataFrame!.columns.names().forEach((name:string)=>{
       //   col = tableGrid.dataFrame!.columns.byName(name);
       //   if (col.semType == 'aminoAcids') {
@@ -167,7 +173,7 @@ export async function pepMolGraph(pep:string):Promise<DG.Widget> {
   const mols = [];
   for (let i = 1; i < split.length - 1; i++) {
     if (split[i] in ChemPalette.AASmiles ) {
-      const aar = ChemPalette.AASmiles[split[i]]
+      const aar = ChemPalette.AASmiles[split[i]];
       mols[i] = aar.substr(0, aar.length-1);
     } else if (!split[i]||split[i]=='-') {
       mols[i] = '';
