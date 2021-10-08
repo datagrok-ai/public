@@ -3,9 +3,9 @@
 
 # Exploring peptides
 
-"Peptides" is a Datagrok feature which aims to deal with peptide sequences and associated activities. From the computational and analytical point of view peptides are considered as an intermidiate case between small molecules and large proteins and thus the combination of different analytical methods has to be used with adequate precautions. 
+"Peptides" is a Datagrok feature which aims to deal with peptide sequences and associated activities. From the computational and analytical point of view peptides are considered as an intermediate case between small molecules and large proteins and thus the combination of different analytical methods has to be used with adequate precautions. 
 
-Datagrok detects such sequences in a table provided so don't have to run an application to use it. If such sequence is detected it will be rendered in the way of amino acid residues classification highlighting hydrophobic/hydrophilic regions and will generate a structure:
+Datagrok detects such sequences in a table provided so there is no need to run an application to use it. If such sequence is detected it will be rendered in the way of amino acid residues classification highlighting hydrophobic/hydrophilic regions and will generate a structure:
 
 ![](../../uploads/peptides/Peptides_1.bmp "Representation of sequence and peptide structure")
 
