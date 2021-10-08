@@ -154,13 +154,22 @@ export class AlignedSequenceCellRenderer extends DG.GridCellRenderer {
       g.font = '15px monospace';
       g.textBaseline = 'top';
       const s: string = gridCell.cell.value;
-      const textSize = g.measureText(s);
-      const subParts = s.split('-');
-      x = Math.max(x, x+(w-textSize.width)/2);
-      const simplified = !subParts.some((amino, index)=>{
 
+      const subParts = s.split('-');
+
+      const simplified = !subParts.some((amino, index)=>{
         return amino.length>1&&index!=0&&index!=subParts.length-1;
       });
+      const text:string[] = [];
+      subParts.forEach((amino: string, index) => {
+        if (index < subParts.length) {
+          const gap = simplified?'':' ';
+          amino += `${amino?'':'-'}${gap}`;
+        }
+        text.push(amino);
+      });
+      const textSize = g.measureText(text.join(''));
+      x = Math.max(x, x+(w-textSize.width)/2);
       subParts.forEach((amino: string, index) => {
         const [color, pivot] = cp.getColorPivot(amino);
         g.fillStyle = ChemPalette.undefinedColor;
