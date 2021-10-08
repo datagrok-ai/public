@@ -22,7 +22,7 @@ export class DataConnectorsTutorial extends Tutorial {
     this.describe('In this tutorial, we will browse the tree of connections and learn how to ' +
       'create new connections to query the database.');
     
-    this.describe(String(ui.link('More about '+this.name, this.helpUrl).outerHTML));
+    this.describe(ui.link('More about ' + this.name, this.helpUrl).outerHTML);
 
     const dataPane = grok.shell.sidebar.getPane('Data');
     const dbViewInfo = 'In this view, you can create queries to data connectors from the list. ' +

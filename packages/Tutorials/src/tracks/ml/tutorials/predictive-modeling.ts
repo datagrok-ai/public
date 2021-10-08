@@ -53,7 +53,7 @@ export class PredictiveModelingTutorial extends Tutorial {
       'performance, learn how to apply a model to a dataset and share it with others, and ' +
       'lastly, compare the models we have trained.');
 
-    this.describe(String(ui.link('More about '+this.name, this.helpUrl).outerHTML)); 
+    this.describe(ui.link('More about ' + this.name, this.helpUrl).outerHTML); 
 
     /** Train model actions */
     const trainModel = async (method: string, skipPMVOpening = false): Promise<void> => {
