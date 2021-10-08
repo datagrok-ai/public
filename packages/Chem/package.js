@@ -500,4 +500,9 @@ class ChemPackage extends DG.Package {
     //what is chem?
     return new DG.Widget();
   }
+
+  //tags: unitTest
+  async _testSubstructureSearch() {
+    await testSubstructureSearch();
+  }
 }

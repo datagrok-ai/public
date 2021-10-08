@@ -13,7 +13,8 @@
     "src/rdkit_substructure_filter.js",
     "src/chem_column_property_panel.js",
     "src/chem_searches.js",
-    "src/sdf_utils.js"
+    "src/sdf_utils.js",
+    "src/tests/chem-tests.js"
   ],
   "properties": [
     {
