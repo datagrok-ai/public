@@ -39,15 +39,7 @@ export function addViewerToHeader(grid: DG.Grid, viewer: Promise<Widget>) {
       if (cell.tableColumn) {
         if (['aminoAcids', 'alignedSequence'].includes(cell.tableColumn.semType) ) {
           if ( !cell.isColHeader) {
-            const toDisplay = [ui.divText(cell.cell.value as string)];
-            // eslint-disable-next-line no-unused-vars
-            const [_c, aar, _p] = cp.getColorAAPivot(cell.cell.value as string);
-            if (aar in ChemPalette.AASmiles) {
-              const sketch = grok.chem.svgMol(ChemPalette.AASmilesTruncated[aar]);
-              toDisplay.push(sketch);
-            }
-            ui.tooltip.show(ui.divV(toDisplay), x, y);
-
+            cp.showTooltip(cell, x, y);
             return true;
           } else {
             if (barchart.highlighted) {
