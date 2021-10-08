@@ -7,6 +7,7 @@ import {SARViewer} from './peptide-sar-viewer/sar-viewer';
 import {AlignedSequenceCellRenderer, AminoAcidsCellRenderer} from './utils/cell-renderer';
 import {Logo} from './peptide-logo-viewer/logo-viewer';
 import {StackedBarChart, addViewerToHeader} from './stacked-barchart/stacked-barchart-viewer';
+import {ChemPalette} from './utils/chem-palette';
 // import { tTest, uTest } from './utils/misc';
 
 export const _package = new DG.Package();
@@ -150,6 +151,31 @@ export function sar(): SARViewer {
 export async function stackedBarchartWidget(col:DG.Column):Promise<DG.Widget> {
   const viewer = await col.dataFrame.plot.fromType('StackedBarChartAA');
   const panel = ui.divH([viewer.root]);
+  return new DG.Widget(panel);
+}
+
+//name: Peptide Molecule
+//tags: panel, widgets
+//input: string pep {semType: alignedSequence}
+//output: widget result
+
+export async function pepMolGraph(pep:string):Promise<DG.Widget> {
+  const split = pep.split('-');
+  const mols = [];
+  for (let i = 1; i < split.length - 1; i++) {
+    if (split[i] in ChemPalette.AASmiles ) {
+      const aar = ChemPalette.AASmiles[split[i]]
+      mols[i] = aar.substr(0, aar.length-1);
+    } else if (!split[i]||split[i]=='-') {
+      mols[i] = '';
+    } else {
+      return new DG.Widget(ui.divH([]));
+    }
+  }
+  console.error(mols);
+  console.error(mols.join('')+'COOH');
+  const sketch = grok.chem.svgMol(mols.join(''));
+  const panel = ui.divH([sketch]);
   return new DG.Widget(panel);
 }
 
