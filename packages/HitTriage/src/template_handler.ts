@@ -19,10 +19,10 @@ export class TemplateHandler extends DG.ObjectHandler {
     getGridCellRenderer(x) { return new FruitGridCellRenderer(); }*/
 
   renderIcon(x: Template, context: any = null): HTMLElement {
-    return <HTMLElement>ui.iconFA('apple-alt');
+    return ui.iconFA('apple-alt');
   }
 
-  renderMarkup(x: Template) {
+  renderMarkup(x: Template): HTMLElement {
     return ui.span([this.renderIcon(x), ui.label(x.name)]);
   }
 
@@ -34,7 +34,7 @@ export class TemplateHandler extends DG.ObjectHandler {
     return ui.divText(`${x.name} is in the air!`);
   }
 
-  renderCard(x: Template, context?: any) {
+  renderCard(x: Template, context?: any): HTMLElement {
     return ui.bind(x, ui.divV([
       this.renderMarkup(x),
       ui.divText(`Context: ${context}`)

@@ -156,12 +156,12 @@ export function tabControl(pages: { [key: string]: any; } | null = null, vertica
 /** Returns DivElement with the specified inner text
  * @param {string} text
  * @param {string | ElementOptions | null} options
- * @returns {HTMLElement} */
-export function divText(text: string, options: string | ElementOptions | any | null = null): HTMLElement {
+ * @returns {HTMLDivElement} */
+export function divText(text: string, options: string | ElementOptions | any | null = null): HTMLDivElement {
   let e = element('div');
   e.innerText = text;
   _options(e, options);
-  return e as HTMLElement;
+  return e as HTMLDivElement;
 }
 
 export function markdown(text: string): HTMLElement {
@@ -258,9 +258,9 @@ export function inlineText(objects: any[]): HTMLElement {
 /**
  * @param {object[]} children
  * @param {string | ElementOptions} options
- * @returns {HTMLElement}
+ * @returns {HTMLDivElement}
  * */
-export function div(children: any[] | string | HTMLElement = [], options: string | ElementOptions | null = null): HTMLElement {
+export function div(children: any[] | string | HTMLElement = [], options: string | ElementOptions | null = null): HTMLDivElement {
   if (!Array.isArray(children))
     children = [children];
   let d = document.createElement('div');
@@ -272,10 +272,10 @@ export function div(children: any[] | string | HTMLElement = [], options: string
   return d;
 }
 
-export function info(children: HTMLElement[] | HTMLElement | string, header: string | null = null, reopenable: boolean = true): HTMLElement {
-  let root: HTMLElement | null;
+export function info(children: HTMLElement[] | HTMLElement | string, header: string | null = null, reopenable: boolean = true): HTMLDivElement {
+  let root: HTMLDivElement | null;
   let divContent: HTMLElement[] = [];
-  let divActual: HTMLElement | null = null;
+  let divActual: HTMLDivElement | null = null;
   let show = iconFA('lightbulb-exclamation', () => {
     if (divActual) divActual.style.display = 'block';
     close.style.display = 'block';
@@ -305,21 +305,21 @@ export function info(children: HTMLElement[] | HTMLElement | string, header: str
 /** Div flex-box container that positions child elements vertically.
  * @param {object[]} items
  * @param {string | ElementOptions} options
- * @returns {HTMLElement} */
-export function divV(items: HTMLElement[], options: string | ElementOptions | null = null): HTMLElement {
-  return <HTMLElement>_options(api.grok_UI_DivV(items == null ? null : items.map(render), 'ui-div'), options);
+ * @returns {HTMLDivElement} */
+export function divV(items: HTMLElement[], options: string | ElementOptions | null = null): HTMLDivElement {
+  return <HTMLDivElement>_options(api.grok_UI_DivV(items == null ? null : items.map(render), 'ui-div'), options);
 }
 
 /** Div flex-box container that positions child elements horizontally.
  * @param {object[]} items
  * @param {string | ElementOptions} options
- * @returns {HTMLElement} */
-export function divH(items: HTMLElement[], options: string | ElementOptions | null = null): HTMLElement {
-  return <HTMLElement>_options(api.grok_UI_DivH(items == null ? null : items.map(render), 'ui-div'), options);
+ * @returns {HTMLDivElement} */
+export function divH(items: HTMLElement[], options: string | ElementOptions | null = null): HTMLDivElement {
+  return <HTMLDivElement>_options(api.grok_UI_DivH(items == null ? null : items.map(render), 'ui-div'), options);
 }
 
 /** Renders content as a card. */
-export function card(content: HTMLElement): HTMLElement {
+export function card(content: HTMLElement): HTMLDivElement {
   return div([content], 'd4-item-card');
 }
 
@@ -427,7 +427,7 @@ function _link(element: HTMLElement, target: string | Function, tooltipMsg?: str
 }
 
 export function image(src: string, width: number, height: number, options?: {target?: string | Function, tooltipMsg?: string}) {
-  let image = element('div') as HTMLElement;
+  let image = element('div') as HTMLDivElement;
   image.classList.add('ui-image');
 
   image.style.backgroundImage = `url(${src})`;
@@ -485,7 +485,7 @@ export function bind(item: any, element: HTMLElement): HTMLElement {
  * @param {Element} anchor
  * @param {boolean} vertical
  * @returns {Element}. */
-export function showPopup(element: Element, anchor: Element, vertical: boolean = false): Element {
+export function showPopup(element: HTMLElement, anchor: HTMLElement, vertical: boolean = false): Element {
   return api.grok_UI_ShowPopup(element, anchor, vertical);
 }
 
@@ -692,7 +692,7 @@ export class tools {
     api.grok_Tools_SetHoverVisibility(host, items);
   }
 
-  static createElementFromHtml(htmlString: string): HTMLElement {
+  static createElementFromHtml(htmlString: string): HTMLDivElement {
     let host = div([]);
     host.innerHTML = htmlString.trim();
     return host;
@@ -864,7 +864,7 @@ export class ObjectHandler {
   }
 
   /** Renders tooltip for the item. */
-  renderTooltip(x: any, context: any = null): HTMLElement {
+  renderTooltip(x: any, context: any = null): HTMLDivElement {
     return divText(this.getCaption(x));
   }
 
@@ -874,12 +874,12 @@ export class ObjectHandler {
   }
 
   /** Renders properties list for the item. */
-  renderProperties(x: any, context: any = null): HTMLElement {
+  renderProperties(x: any, context: any = null): HTMLDivElement {
     return divText(this.getCaption(x));
   }
 
   /** Renders view for the item. */
-  renderView(x: any, context: any = null): HTMLElement {
+  renderView(x: any, context: any = null): HTMLDivElement {
     return this.renderProperties(x);
   }
 
@@ -945,15 +945,15 @@ export class EntityMetaDartProxy extends ObjectHandler {
   isApplicable(x: any): boolean { return api.grok_Meta_IsApplicable(this.d, toDart(x)); }
   getCaption(x: any): string { return api.grok_Meta_Get_Name(this.d, x); }
 
-  renderIcon(x: any, context: any = null): HTMLElement { return api.grok_Meta_RenderIcon(x); }
-  renderMarkup(x: any, context: any = null): HTMLElement { return api.grok_Meta_RenderMarkup(x); }
-  renderTooltip(x: any, context: any = null): HTMLElement { return api.grok_Meta_RenderTooltip(x); }
-  renderCard(x: any, context: any = null): HTMLElement { return api.grok_Meta_RenderCard(x); }
-  renderProperties(x: any, context: any = null): HTMLElement { return api.grok_Meta_RenderProperties(x); }
-  renderView(x: any, context: any = null): HTMLElement { return api.grok_Meta_RenderProperties(x); }
+  renderIcon(x: any, context: any = null): HTMLDivElement { return api.grok_Meta_RenderIcon(x); }
+  renderMarkup(x: any, context: any = null): HTMLDivElement { return api.grok_Meta_RenderMarkup(x); }
+  renderTooltip(x: any, context: any = null): HTMLDivElement { return api.grok_Meta_RenderTooltip(x); }
+  renderCard(x: any, context: any = null): HTMLDivElement { return api.grok_Meta_RenderCard(x); }
+  renderProperties(x: any, context: any = null): HTMLDivElement { return api.grok_Meta_RenderProperties(x); }
+  renderView(x: any, context: any = null): HTMLDivElement { return api.grok_Meta_RenderProperties(x); }
 }
 
-export function box(item: Widget | InputBase | HTMLElement | null = null, options: string | ElementOptions | null = null): HTMLElement {
+export function box(item: Widget | InputBase | HTMLElement | null = null, options: string | ElementOptions | null = null): HTMLDivElement {
   if (item instanceof Widget) {
     item = item.root;
   }
@@ -962,7 +962,7 @@ export function box(item: Widget | InputBase | HTMLElement | null = null, option
     item = item.root;
   }
   if (item != null && $(item).hasClass('ui-box')) {
-    return item as HTMLElement;
+    return item as HTMLDivElement;
   }
   let c = document.createElement('div');
   _options(c, options);
@@ -970,45 +970,45 @@ export function box(item: Widget | InputBase | HTMLElement | null = null, option
   return c;
 }
 
-export function boxFixed(item: Widget | InputBase | HTMLElement | null, options: ElementOptions | null = null): HTMLElement {
+export function boxFixed(item: Widget | InputBase | HTMLElement | null, options: ElementOptions | null = null): HTMLDivElement {
   let c = box(item, options);
   $(c).addClass('ui-box-fixed');
   return c;
 }
 
 /** Div flex-box container that positions child elements vertically. */
-export function splitV(items: HTMLElement[], options: ElementOptions | null = null): HTMLElement {
+export function splitV(items: HTMLElement[], options: ElementOptions | null = null): HTMLDivElement {
   let b = box(null, options);
   $(b).addClass('ui-split-v').append(items.map(item => box(item)));
   return b;
 }
 
 /** Div flex-box container that positions child elements horizontally. */
-export function splitH(items: HTMLElement[], options: ElementOptions | null = null): HTMLElement {
+export function splitH(items: HTMLElement[], options: ElementOptions | null = null): HTMLDivElement {
   let b = box(null, options);
   $(b).addClass('ui-split-h').append(items.map(item => box(item)));
   return b;
 }
 
-export function block(items: HTMLElement[], options: string | ElementOptions | null = null): HTMLElement {
+export function block(items: HTMLElement[], options: string | ElementOptions | null = null): HTMLDivElement {
   let c = div(items, options);
   $(c).addClass('ui-block');
   return c;
 }
 
-export function block75(items: HTMLElement[], options: ElementOptions | null = null): HTMLElement {
+export function block75(items: HTMLElement[], options: ElementOptions | null = null): HTMLDivElement {
   let c = block(items, options);
   $(c).addClass('ui-block-75');
   return c;
 }
 
-export function block25(items: HTMLElement[], options: ElementOptions | null = null): HTMLElement {
+export function block25(items: HTMLElement[], options: ElementOptions | null = null): HTMLDivElement {
   let c = block(items, options);
   $(c).addClass('ui-block-25');
   return c;
 }
 
-export function block50(items: HTMLElement[], options: ElementOptions | null = null): HTMLElement {
+export function block50(items: HTMLElement[], options: ElementOptions | null = null): HTMLDivElement {
   let c = block(items, options);
   $(c).addClass('ui-block-50');
   return c;
@@ -1022,7 +1022,7 @@ export function p(text: string, options: any = null): HTMLParagraphElement {
   return c;
 }
 
-export function panel(items: HTMLElement[] = [], options?: string | ElementOptions): HTMLElement {
+export function panel(items: HTMLElement[] = [], options?: string | ElementOptions): HTMLDivElement {
   let e = div(items, options);
   $(e).addClass('ui-panel');
   return e;
@@ -1036,7 +1036,7 @@ export function label(text: string | null, options: {} | null = null): HTMLLabel
   return c;
 }
 
-export function form(children: InputBase[] = [], options: {} | null = null): HTMLElement {
+export function form(children: InputBase[] = [], options: {} | null = null): HTMLDivElement {
   let d = document.createElement('div');
   if (children != null) {
     $(d).append(children.map(render));
@@ -1046,13 +1046,13 @@ export function form(children: InputBase[] = [], options: {} | null = null): HTM
   return d;
 }
 
-export function narrowForm(children: InputBase[] = [], options: {} | null = null): HTMLElement {
+export function narrowForm(children: InputBase[] = [], options: {} | null = null): HTMLDivElement {
   let d = form(children, options);
   $(d).addClass('ui-form-condensed');
   return d;
 }
 
-export function buttonsInput(children: HTMLButtonElement[] = []): HTMLElement {
+export function buttonsInput(children: HTMLButtonElement[] = []): HTMLDivElement {
   if (!Array.isArray(children))
     children = [children];
 
@@ -1114,7 +1114,7 @@ export namespace cards {
 export namespace labels {
 
   /** Minor details to show using the smaller font */
-  export function details(s: string): HTMLElement {
+  export function details(s: string): HTMLDivElement {
     return divText(s, 'ui-label-details');
   }
 }

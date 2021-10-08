@@ -22,7 +22,7 @@ let api = <any>window;
 export class ViewBase {
   d: any;
   subs: Subscription[];
-  protected _root: HTMLElement;
+  protected _root: HTMLDivElement;
   private _closing: boolean;
 
   /** 
