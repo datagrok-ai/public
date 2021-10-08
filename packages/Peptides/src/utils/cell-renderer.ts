@@ -118,7 +118,7 @@ export class AminoAcidsCellRenderer extends DG.GridCellRenderer {
 }
 
 export class AlignedSequenceCellRenderer extends DG.GridCellRenderer {
-    private maxCellWidth = 270;
+    private maxCellWidth = 200;
 
 
     constructor() {

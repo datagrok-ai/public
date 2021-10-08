@@ -54,15 +54,15 @@ export function Peptides() {
       //ui.divText('\n To start the application :', {style: {'font-weight': 'bolder'}}),
       //ui.divText('Select the corresponding .csv table with peptide sequences'),
     ], 'Transform peptide sequence data to research insights:\n' +
-    " - automatic recognition of peptide sequences\n" +
-    " - native integration with tons of Datagrok out-of-the box features (visualization, filtering, clustering, multivariate analysis, etc)\n" +
-    " - custom rendering in the spreadsheet\n" +
-    " - interactive logo plots\n" +
-    " - rendering residues\n" + 
-    " - structure-activity relationship:\n" +
-    "\t - highlighting statistically significant changes in activity in the [position, monomer] spreadsheet\n" +
-    "\t - for the specific [position, monomer], visualizing changes of activity distribution (specific monomer in this position vs rest of the monomers in this position)" +
-    "\t - interactivity"
+    ' - automatic recognition of peptide sequences\n' +
+    ' - native integration with tons of Datagrok out-of-the box features (visualization, filtering, clustering, multivariate analysis, etc)\n' +
+    ' - custom rendering in the spreadsheet\n' +
+    ' - interactive logo plots\n' +
+    ' - rendering residues\n' +
+    ' - structure-activity relationship:\n' +
+    '\t - highlighting statistically significant changes in activity in the [position, monomer] spreadsheet\n' +
+    '\t - for the specific [position, monomer], visualizing changes of activity distribution (specific monomer in this position vs rest of the monomers in this position)' +
+    '\t - interactivity',
   );
   const annotationViewerDiv = ui.div();
 
@@ -114,8 +114,11 @@ export async function analyzePeptides(col: DG.Column): Promise<DG.Widget> {
         'activityScalingMethod': activityScalingMethod.value,
       };
       for (let i =0; i<tableGrid.columns.length; i++) {
-        // @ts-ignore
-        tableGrid.columns.byIndex(i)?.visible = false;
+
+        if (tableGrid.columns.byIndex(i)?.name && tableGrid.columns.byIndex(i)?.name!='IC50') {
+          // @ts-ignore
+          tableGrid.columns.byIndex(i)?.visible = false;
+        }
       }
       (grok.shell.v as DG.TableView).addViewer('peptide-sar-viewer', options);
       const widgProm = col.dataFrame.plot.fromType('StackedBarChartAA');
