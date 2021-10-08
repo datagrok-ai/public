@@ -22,11 +22,6 @@ export class TutorialWidget extends DG.Widget {
     let tracksRoot = ui.div([]);
     let tracks = runners.length;
 
-    let tracksStas = ui.h1('');
-    let tutorialsStats = ui.h1('');
-    let completeStats = ui.h1('');
-    let progressStats = ui.h1('');
-
     (async () => {
         this.totalTracks = runners.length;
         let i = 0;
@@ -35,52 +30,39 @@ export class TutorialWidget extends DG.Widget {
         
             let complete = await runners[i].getCompleted(runners[i].track.tutorials);
             let total = runners[i].track.tutorials.length;
-
+            console.log(runners[i].root)
             this.totalTutorials += total;
             this.totalCompleted += complete;
             this.totalProgress = 100/this.totalTutorials*this.totalCompleted;
-
-            let progressBar = ui.element('progress');
-            progressBar.max = total
-            progressBar.value = complete;
             
+            let root = runners[i].root;
+
             tracksRoot.append(ui.divV([
                 ui.divH([
-                    ui.divText(runners[i].track.name),
-                    ui.divText(String(complete)+' / '+String(total))
-                ], 'widget-tutorials-track-details'),
-                progressBar
-            ], 'tutorials-track'));
+                    ui.divText(runners[i].track.name, {style:{minWidth:'200px', marginLeft:'5px'}}),
+                    ui.divText(String(complete)+' / '+String(total), {style:{color:'var(--grey-4)', width:'200px', textAlign:'end'}}),
+                    ui.button(ui.iconFA('chevron-right'), ()=>{
+                        let dockRoot = ui.div([root,
+                            ui.panel([],{id:'tutorial-child-node', style:{paddingTop:'10px'}}),
+                          ], 'tutorials-root');
+                        grok.shell.dockManager.dock(dockRoot, DG.DOCK_TYPE.RIGHT, null, 'Tutorials', 0.3);
+                    }),
+                ], {style:{alignItems:'center',zIndex:'100',justifyContent:'space-between'}}),
+                ui.div([],{
+                    style:{
+                        position: 'absolute',
+                        width: String(Math.round(100/total*complete))+'%',
+                        backgroundColor: 'rgba(32, 131, 213, 0.15)',
+                        height: '100%',
+                    }
+                })
+            ], {style:{marginBottom:'10px',position:'relative', border:'1px solid var(--grey-1)', borderRadius:'2px'}}));
             i++;
-
-            if (i==runners.length)
-                tracksStas.innerHTML = String(this.totalTracks);
-            tutorialsStats.innerHTML = String(this.totalTutorials);
-            completeStats.innerHTML = String(this.totalCompleted);
-            progressStats.innerHTML = String(Math.round(this.totalProgress)+'%');
         }
         
     })();
 
     this.root.append(ui.divV([
-        ui.divH([
-            ui.divV([
-                ui.label('Tracks'),
-                tracksStas
-            ]),
-            ui.divV([
-                ui.label('Tutorials'),
-                tutorialsStats
-            ]),
-            ui.divV([
-                ui.label('Complete'),
-                completeStats
-            ]),
-            ui.divV([
-                ui.label('Progress'),
-                progressStats
-            ]),
-        ], 'widget-tutorials-summary'),
         tracksRoot,
     ], 'tutorial'));
 

@@ -34,7 +34,7 @@ class FruitHandler extends DG.ObjectHandler {
   getGridCellRenderer(x) { return new FruitGridCellRenderer(); }
 
   renderIcon(x) { return ui.iconFA('apple-alt'); }
-  renderMarkup(x) { let m = ui.span([this.renderIcon(), ' ', x.name]); $(m).css('color', x.color); return m; }
+  renderMarkup(x) { let m = ui.span([this.renderIcon(), ui.label(x.name)]); $(m).css('color', x.color); return m; }
   renderProperties(x) { return ui.divText(`Properties for ${x.name}`); }
   renderTooltip(x) { return ui.divText(`${x.name} is in the air!`); }
   renderCard(x, context) {

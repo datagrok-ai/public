@@ -50,10 +50,19 @@ async function main(chosenFile : string) {
 export function Peptides() {
   const appDescription = ui.info(
     [
-      ui.span(['For more details see LINK ']),
-      ui.divText('\n To start the application :', {style: {'font-weight': 'bolder'}}),
-      ui.divText('Select the corresponding .csv table with peptide sequences'),
-    ], 'Transform peptide sequence data to research insights',
+      ui.span(['For more details see LINK']),
+      //ui.divText('\n To start the application :', {style: {'font-weight': 'bolder'}}),
+      //ui.divText('Select the corresponding .csv table with peptide sequences'),
+    ], 'Transform peptide sequence data to research insights:\n' +
+    " - automatic recognition of peptide sequences\n" +
+    " - native integration with tons of Datagrok out-of-the box features (visualization, filtering, clustering, multivariate analysis, etc)\n" +
+    " - custom rendering in the spreadsheet\n" +
+    " - interactive logo plots\n" +
+    " - rendering residues\n" + 
+    " - structure-activity relationship:\n" +
+    "\t - highlighting statistically significant changes in activity in the [position, monomer] spreadsheet\n" +
+    "\t - for the specific [position, monomer], visualizing changes of activity distribution (specific monomer in this position vs rest of the monomers in this position)" +
+    "\t - interactivity"
   );
   const annotationViewerDiv = ui.div();
 
@@ -65,22 +74,16 @@ export function Peptides() {
   const mainDiv = ui.div();
   grok.shell.newView('Peptides', [
     appDescription,
-    ui.h2('Choose .csv file'),
+    //ui.h2('Choose .csv file'),
     ui.div([
       ui.block25([
         ui.button('Open simple case demo', () => main('aligned.csv'), ''),
-        ui.button('Open complex case demo', () => main('aligned_2.csv'), ''),
+        //ui.button('Open complex case demo', () => main('aligned_2.csv'), ''),
       ]),
       ui.block75([annotationViewerDiv]),
     ]),
     mainDiv,
   ]);
-
-  // tests test lol
-  // const a1 = [13.3, 6.0, 20.0, 8.0, 14.0, 19.0, 18.0, 25.0, 16.0, 24.0, 15.0, 1.0, 15.0];
-  // const a2 = [22.0, 16.0, 21.7, 21.0, 30.0, 26.0, 12.0, 23.2, 28.0, 23.0];
-  // console.log(uTest(a1, a2));
-  // console.log(tTest(a1, a2));
 }
 
 //name: Peptides
