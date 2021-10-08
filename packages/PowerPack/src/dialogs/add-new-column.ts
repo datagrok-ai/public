@@ -140,7 +140,6 @@ export class AddNewColumnDialog {
     let input = control.input as HTMLInputElement;
         input.classList.add('ui-input-addnewcolumn-name');
         input.placeholder = this.placeholderName;
-        input.disabled = this.edit;
         if (this.call)
           input.value = this.call.getParamValue('name');
 
@@ -287,12 +286,16 @@ export class AddNewColumnDialog {
     let colName = this.getResultColumnName();
     columnIds.push(colName);
 
+    let type = this.getSelectedType()[0];
     // Making the Preview Grid:
-    await this.previwDf!.columns.addNewCalculated(
+    let call = (DG.Func.find({name: 'AddNewColumn'})[0]).prepare({table: this.previwDf!, name: colName, expression: this.inputExpression!.value, type: type});
+    console.log(call);
+    await call.call(false, undefined, {processed: true, report: false});
+/*    await this.previwDf!.columns.addNewCalculated(
         colName,
         this.inputExpression!.value,
         ...this.getSelectedType()
-    );
+    );*/
     this.gridPreview!.dataFrame = this.previwDf!.clone(null, columnIds);
     this.gridPreview!.col(colName)!.backColor = this.newColumnBgColor;
     this.resultColumnType = this.previwDf!.col(colName)!.type;
@@ -396,6 +399,7 @@ export class AddNewColumnDialog {
   /** Adds a New Column to the source table or edit formula for an existing column. */
   async addNewColumnAction(): Promise<void> {
     if (this.edit) {
+      this.call!.setParamValue('name', this.inputName!.value);
       this.call!.setParamValue('expression', this.inputExpression!.value);
       this.call!.setParamValue('type', this.getSelectedType()[0]);
       this.call!.setParamValue('treatAsString', this.getSelectedType()[1]);

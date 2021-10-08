@@ -196,8 +196,8 @@ export class FuncCall {
   }
 
   /** Executes the function call */
-  call(showProgress: boolean = false, progress?: ProgressIndicator, options?: {processed: boolean}): Promise<FuncCall> {
-    return new Promise((resolve, reject) => api.grok_FuncCall_Call(this.d, (out: any) => resolve(toJs(out)), (err: any) => reject(err), showProgress, toDart(progress), options?.processed));
+  call(showProgress: boolean = false, progress?: ProgressIndicator, options?: {processed: boolean, report: boolean}): Promise<FuncCall> {
+    return new Promise((resolve, reject) => api.grok_FuncCall_Call(this.d, (out: any) => resolve(toJs(out)), (err: any) => reject(err), showProgress, toDart(progress), options?.processed, options?.report));
   }
 
   edit() {
