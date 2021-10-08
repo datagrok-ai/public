@@ -1,17 +1,22 @@
 <!-- TITLE: Peptide sequences -->
 <!-- SUBTITLE: -->
 
-## [Peptides application]
+# Exploring peptides
 
-Cheminformatics is an *in silico* discipline serving to handle chemical entities for a number of different purposes:
-- generate possible chemical structures [all possible](https://gdb.unibe.ch/downloads/) or with [synthetic rules implementation](https://cactus.nci.nih.gov/download/savi_download/);
-- storing compounds [collections](https://www.merckgroup.com/en/research/open-innovation/biopharma-open-innovation-portal/open-compound-sourcing.html);
-- facilitation of chemists' work via visualization and reaction prediction;
-- prediction of physical and chemical properties of the compounds (QSPR) and biological activities of the compounds ([QSAR](https://en.wikipedia.org/wiki/Quantitative_structure%E2%80%93activity_relationship));
-- [ADMET](https://en.wikipedia.org/wiki/ADME) prediction;
-- virtual screening to evaluate the most potent drug candidates.
+"Peptides" is a Datagrok feature which aims to deal with peptide sequences and associated activities. From the computational and analytical point of view peptides are considered as an intermidiate case between small molecules and large proteins and thus the combination of different analytical methods has to be used with adequate precautions. 
 
+Datagrok detects such sequences in a table provided so don't have to run an application to use it. If such sequence is detected it will be rendered in the way of amino acid residues classification highlighting hydrophobic/hydrophilic regions and will generate a structure:
 
-See also:
-* [Cheminformatics in Datagrok](https://datagrok.ai/cheminformatics)
+![](../../uploads/peptides/Peptides_1.bmp "Representation of sequence and peptide structure")
 
+By clicking the column with peptide sequences the property panel will appear to provide options for the following analysis. The composition analysis for the whole dataset is also present in property panel:
+
+![](../../uploads/peptides/Peptides_2.bmp "Sequence composition analysis")
+
+To perform sequence-activity analysis for the dataset choose the column with associated activities. In some cases, the value of activity has to be transformed which could change drastically the analysis results. Log and -log transformations are usually used for concentration activities. To facilitate the interpretation of analysis result the sequences are replaced by alignment table:
+
+![](../../uploads/peptides/Peptides_3.bmp "Alignment table")
+
+The analysis results are presented as a table with residuals in the rows and positions in columns. Here the pairs [position, residue] could be investigated to yield in activity difference with the whole dataset. Points in the results table show the mean difference in activity of subset with selected residual on selected position and all other molecules. This difference is shown as a size of the point. The color of point responds to significance level of such difference. One may estimate this difference by comparing densities which are shown in property panel:
+
+![](../../uploads/peptides/Peptides_4.bmp "SAR for peptides")

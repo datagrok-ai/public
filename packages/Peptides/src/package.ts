@@ -48,22 +48,29 @@ async function main(chosenFile : string) {
 //name: Peptides
 //tags: app
 export function Peptides() {
+  let textLink = ui.div();
+  textLink.innerHTML = `For more details see <a href="https://github.com/datagrok-ai/public/blob/master/help/domains/bio/peptides.md">Link</a>.`;
+  
   const appDescription = ui.info(
     [
-      ui.span(['For more details see LINK']),
-      //ui.divText('\n To start the application :', {style: {'font-weight': 'bolder'}}),
-      //ui.divText('Select the corresponding .csv table with peptide sequences'),
-    ], 'Transform peptide sequence data to research insights:\n' +
-    ' - automatic recognition of peptide sequences\n' +
-    ' - native integration with tons of Datagrok out-of-the box features (visualization, filtering, clustering, multivariate analysis, etc)\n' +
-    ' - custom rendering in the spreadsheet\n' +
-    ' - interactive logo plots\n' +
-    ' - rendering residues\n' +
-    ' - structure-activity relationship:\n' +
-    '\t - highlighting statistically significant changes in activity in the [position, monomer] spreadsheet\n' +
-    '\t - for the specific [position, monomer], visualizing changes of activity distribution (specific monomer in this position vs rest of the monomers in this position)' +
-    '\t - interactivity',
+     // ui.divText('\n To start the application :', {style: {'font-weight': 'bolder'}}),
+      ui.divText(   
+      " - automatic recognition of peptide sequences\n" +
+      " - native integration with tons of Datagrok out-of-the box features (visualization, filtering, clustering, multivariate analysis, etc)\n" +
+      " - custom rendering in the spreadsheet\n" +
+      " - interactive logo plots\n" +
+      " - rendering residues\n" + 
+      " - structure-activity relationship:\n \n" +
+      "a) highlighting statistically significant changes in activity in the [position, monomer] spreadsheet\n" +
+      "b) for the specific [position, monomer], visualizing changes of activity distribution (specific monomer in this position vs rest of the monomers in this position)\n" +
+      "c) interactivity\n \t"
+    )
+    ], 
+    
+    `Use and analyse peptide sequence data to support your research:\n`
   );
+
+
   const annotationViewerDiv = ui.div();
 
   const windows = grok.shell.windows;
@@ -74,10 +81,11 @@ export function Peptides() {
   const mainDiv = ui.div();
   grok.shell.newView('Peptides', [
     appDescription,
+    ui.info([textLink]),
     //ui.h2('Choose .csv file'),
     ui.div([
       ui.block25([
-        ui.button('Open simple case demo', () => main('aligned.csv'), ''),
+        ui.button('Open peptide sequences demonstration set', () => main('aligned.csv'), ''),
         //ui.button('Open complex case demo', () => main('aligned_2.csv'), ''),
       ]),
       ui.block75([annotationViewerDiv]),
