@@ -14,7 +14,7 @@ import {
   EntityType,
 } from './constants';
 import './styles.css';
-import * as tests from "./tests/test-examples";
+import * as tests from "../../Chem/src/tests/chem-tests";
 import {testPackages} from "./package-testing";
 
 export const _package = new DG.Package();
