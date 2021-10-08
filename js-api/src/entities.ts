@@ -8,7 +8,7 @@ declare var grok: any;
 let api = <any>window;
 
 type PropertyGetter = (a: object) => any;
-type PropertySetter = (a: object, object:  any) => void;
+type PropertySetter = (a: object, value:  any) => void;
 
 /** @class
  * Base class for system objects stored in the database in a structured manner.
