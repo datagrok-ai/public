@@ -33,6 +33,12 @@
 			"propertyType": "string",
 			"defaultValue": "Admin:Home/templates;System:AppData/PowerPack/search-templates",
 			"nullable": false
+		},
+		{
+			"name": "showWelcomeView",
+			"propertyType": "bool",
+			"defaultValue": true,
+			"nullable": false
 		}
 	]
 }
