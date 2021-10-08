@@ -1,9 +1,30 @@
+import * as DG from 'datagrok-api/dg';
+import * as ui from 'datagrok-api/ui';
+import * as grok from 'datagrok-api/src/chem';
 export class ChemPalette {
     cp:{ [Key: string]: string; } = {};
     constructor(scheme: string) {
       if (scheme == 'grok') {
         this.cp = ChemPalette.getDatagrok();
       }
+    }
+
+    showTooltip(cell:DG.GridCell, x:number, y:number) {
+      const s = cell.cell.value as string;
+      let toDisplay = [ui.divText(s)];
+      // eslint-disable-next-line no-unused-vars
+      const [_c, aar, _p] = this.getColorAAPivot(s);
+      if (aar in ChemPalette.AASmiles) {
+        if (s in ChemPalette.AANames) {
+          toDisplay = [ui.divText(ChemPalette.AANames[s])];
+        }
+        if (s in ChemPalette.AAFullNames) {
+          toDisplay = [ui.divText(ChemPalette.AANames[ChemPalette.AAFullNames[s]])];
+        }
+        const sketch = grok.chem.svgMol(ChemPalette.AASmiles[aar]);
+        toDisplay.push(sketch);
+      }
+      ui.tooltip.show(ui.divV(toDisplay), x, y);
     }
 
     getColor( c: string) {
@@ -98,7 +119,28 @@ export class ChemPalette {
       return palette;
     }
 
-
+    static AANames:{ [Key: string]: string; } = {
+      'G': 'Glycine',
+      'L': 'Leucine',
+      'Y': 'Tyrosine',
+      'S': 'Serine',
+      'E': 'Glutamic acid',
+      'Q': 'Glutamine',
+      'D': 'Aspartic acid',
+      'N': 'Asparagine',
+      'F': 'Phenylalanine',
+      'A': 'Alanine',
+      'K': 'Lysine',
+      'R': 'Arginine',
+      'H': 'Histidine',
+      'C': 'Cysteine',
+      'V': 'Valine',
+      'P': 'Proline',
+      'W': 'Tryptophan',
+      'I': 'Isoleucine',
+      'M': 'Methionine',
+      'T': 'Threonine',
+    }
     static AASmiles: { [Key: string]: string; } = {
       'G': 'NCC(=O)O',
       'L': 'N[C@H](CC(C)C)C(=O)O',
