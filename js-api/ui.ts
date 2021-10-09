@@ -1098,6 +1098,7 @@ export let icons = {
   info: (handler: Function, tooltipMsg: string | null = null) => _iconFA('info-circle', handler, tooltipMsg),
   search: (handler: Function, tooltipMsg: string | null = null) => _iconFA('search', handler, tooltipMsg),
   filter: (handler: Function, tooltipMsg: string | null = null) => _iconFA('filter', handler, tooltipMsg),
+  play: (handler: Function, tooltipMsg: string | null = null) => _iconFA('play', handler, tooltipMsg),
 }
 
 export namespace cards {

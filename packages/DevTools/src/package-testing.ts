@@ -10,8 +10,14 @@ class FunctionTest {
 
 export async function testPackages() {
 
-  let testFunctions: FunctionTest[] = DG.Func
+  let scripts = await grok.dapi.scripts.list();
+  scripts = scripts.filter((s) => s.inputs.length == 0);
+
+  let functions = DG.Func
     .find({tags: [DG.FUNC_TYPES.UNIT_TEST]})
+    .concat(scripts);
+
+  let testFunctions: FunctionTest[] = functions
     .map((f) => {
       return {
         fun: f,
@@ -19,16 +25,29 @@ export async function testPackages() {
       }
     });
 
-  function run() {
-    for (let f of testFunctions) {
-      f.fun.apply()
-        .then((s) => { f.status.innerHTML = 'OK'; f.status.style.color = 'green'; })
-        .catch((error) => f.status.innerHTML = `${error}`);
+  function runFunction(f: FunctionTest) {
+    function set(status: string, color: string) {
+      f.status.innerHTML = status;
+      f.status.style.color = color;
     }
+
+    set('Running...', 'orange')
+    f.fun.apply()
+      .then((_) => set('OK','green'))
+      .catch((error) => set(`${error}`, 'red'));
+  }
+
+  function run() {
+    for (let f of testFunctions)
+      runFunction(f);
   }
 
   ui.dialog()
-    .add(ui.table(testFunctions, (f) => [f.fun.package.name, f.fun, f.status]))
+    .add(ui.table(testFunctions, (f) => [
+      ui.icons.play(() => runFunction(f)),
+      f.fun.package.name,
+      f.fun,
+      f.status]))
     .add(ui.buttonsInput([ui.button('RUN', run) ]))
     .show();
 }
