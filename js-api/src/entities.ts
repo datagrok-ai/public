@@ -141,6 +141,14 @@ export class Func extends Entity {
 
   get description(): string { return api.grok_Func_Get_Description(this.d); }
 
+  get type(): string { return api.grok_Func_Get_Type(this.d); }
+
+  get path(): string { return api.grok_Func_Get_Path(this.d); }
+
+  get helpUrl(): string { return api.grok_Func_Get_HelpUrl(this.d); }
+
+  get package(): Package { return api.grok_Func_Get_Package(this.d); }
+
   /** Returns {@link FuncCall} object in a stand-by state
    * @param {object} parameters
    * @returns {FuncCall} */

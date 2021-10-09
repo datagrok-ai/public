@@ -28,7 +28,7 @@ export async function testPackages() {
   }
 
   ui.dialog()
-    .add(ui.table(testFunctions, (f) => [f.fun.f.fun, f.status]))
+    .add(ui.table(testFunctions, (f) => [f.fun.package.name, f.fun, f.status]))
     .add(ui.buttonsInput([ui.button('RUN', run) ]))
     .show();
 }
