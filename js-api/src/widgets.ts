@@ -182,6 +182,9 @@ export class Widget {
   get root(): HTMLElement { return this._root; }
   set root(r: HTMLElement) { this._root = r; }
 
+  /** For auxiliary information */
+  get temp(): any { return api.grok_Widget_Get_Temp(this.d); }
+
   /** Gets called when a widget is detached and will no longer be used. Typically used for unsubscribing from events.
    * Be sure to call super.detach() if this method is overridden.  */
   detach(): void {
