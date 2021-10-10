@@ -1,6 +1,117 @@
 <!-- TITLE: Release History -->
 <!-- SUBTITLE: -->
 
+# 2021-10-10 Dev build 0.93.35
+
+## Latest Docker Images
+
+* Datagrok: 
+  *  `docker pull datagrok/datagrok:0.93.35`
+  *  `docker pull datagrok/datagrok:latest`
+  
+* [Docker-Compose](admin/docker-compose.md)
+
+## Addressed Issues
+
+* #53 Tutorials package: make step description optional 
+* #53 Tutorials package: show completed step descriptions on click 
+* Peptides:Cell renderers for aa and aligned sequences for advanced dataset & some colors for barchart 
+* Peptides:Fixed 
+* Peptides:Fixed Errors 
+* Peptides: moved logo viewer 
+* Peptides: polishing 
+* Peptides: u-test rework 
+* Peptides: small fixes and improvements 
+* Form: onFormCreating event for adjusting the default column selection 
+* Commented out BitSet.setFast() 
+* #117: PowerPack: PowerSearch: code cleanup and refactoring 
+* Added a picture for dynamic molecular sketchers 
+* JS API: "file edited" event (WIP)
+* Resolves #134 
+* DataFrame.onSorted event 
+* DataFrame.onRowsFiltered event 
+* #53 Tutorials package: Predicitve Modeling (WIP) 
+* #53 Tutorials package: Multivariate Analysis 
+* Line Chart: Ability to show extreme values (min/max, q1/q3. etc.) of each marker (WIP)
+* Peptides: Added indent & small fixes 
+* (Bug) Viewers: error when adding to a view with the restricted width 
+* Scatter Plot: Remove "Asterisk" marker (https://community.datagrok.ai/t/new-marker-by-scatterplot-feature-fails-rendering-with-many-data-points/586) 
+* JS API: Functions: Added help for toString() function 
+* JS API: Functions: Added toString() function (https://community.datagrok.ai/t/type-detection-in-if-statement/589) 
+* update tutorials 
+* Peptides: Long modifications hidden & tooltip added 
+* #53 Tutorials package: allow text selection in steps 
+* #53 Tutorials package: track restructuring 
+* #53 Tutorials package: track progress formatting 
+* property panel in Adverse events view, updated box plot view(added default box plots based on p-value, added strata choice) 
+* clinical case fix box-plots view 
+* JS API: TabPane.header 
+* added check for number of stratas in box plots view 
+* Ability to access FuncCall from function method 
+* JS API: Ability to access FuncCall options and aux 
+* Strict always on 
+* Column.ReplaceData method 
+* Better events in AddNewColumn 
+* #53 Tutorials package: code clean-up 
+* #53 Tutorials package: add missing help URL 
+* update tutorial widget 
+* #53 Tutorials package: data connectors tutorial 
+* Fixed links 
+* #53 Tutorials package: handle edge cases in openViewByType 
+* Peptides:Basic responsive header barchart 
+* Peptides:Fixed color coding rules for AAR && AA are now rendered with short names 
+* update tutorial images 
+* Fixed $130: Core: histogram lines are not colored according to category colors 
+* #53 Tutorials package: Predicitve Modeling 
+* Removed debug printout. 
+* JBIO: prepare tooltips and update ux 
+* update widgets 
+* #53 Tutorials package: viewer basics (WIP) 
+* Peptides:Fixed cell renderer 
+* Peptides: analyse and select the most appropriate subset in the "real@ dataset for tool performance (WIP)
+* Peptides: fixed L color and added full AA names 
+* JBIO: removing test files 
+* (Bug) Property Panel history is broken 
+* (Bug) Form: wrong representation of missing values for qualified numbers 
+* (Bug) QNum Column: isNone check is not correct 
+* Fix Dart Analysis warnings 
+* #53 Tutorials package: viewer basics 
+* Filters: proper detaching from events 
+* (Bug) Chem Filter: After reopening the filter, browser tab with Datagrok freezes 
+* #53 Tutorials package: Filters (EDA track) 
+* Scatter Plot: ability to show lines by equations 
+* Peptides: sketcher-tooltip for aar & refactoring chem palette 
+* Peptides: Barchart fixes & tooltip added 
+* Peptides: Sar aar tooltip added 
+* Peptides: Aligned sequens are now aligned 
+* HitTriage WIP 
+* Viewers: Scatter Plot: Bands 
+* Peptides: Full sequence mol-graph widget 
+* Peptides: polishing 1 for user meeting 
+* Peptides: Aligned sequence are aligned for sure 
+* Better typing 
+* Fixed CSS issue 
+* (Bug) JS: Property setter doesn't work on FuncCall 
+* Package files: Remove path prefix 
+* CSS fix 
+* (Bug) Exception on publishing NPM repo 
+* update learning widget 
+* Peptides: Initial table columns are hidden& Full AAname added to tooltip 
+* Revert "Better typing" 
+* Peptides: Activity column unhidden 
+* Peptides: Barchart fix 
+* Peptides: help 
+* Peptides: fix the number of significant digits in statistics 
+* Peptides: minor polishing 
+* (Bug) Form: Molecules overlap each other after switching to another row 
+* (Bug) Add New Column: Exception after opening dialog for editing an already added column 
+* #135: DevTools: a lightweight package unit-testing framework 
+* (Bug) Package publication deletes properties on second run 
+* PowerPack: Ability to hide welcomeView 
+* Added "molecules" demo dataset that could be used synchronously (grok.data.demo.molecules) 
+* (Bug) Chem: Pass SMARTS properly to searchSubstructure (WIP)
+
+
 # 2021-10-01 Dev build 0.93.34
 
 ## Latest Docker Images
