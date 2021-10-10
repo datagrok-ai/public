@@ -89,6 +89,7 @@ class ChemPackage extends DG.Package {
   // deprecated
   async similarityScoring(molStringsColumn, molString, sorted) {
     try {
+      if (molStringsColumn === null || molString === null) throw "An input was null";
       let result = await _chemSimilarityScoring(molStringsColumn, molString, {'sorted': sorted});
       if (result == null) {
         return DG.DataFrame.create();
@@ -106,6 +107,7 @@ class ChemPackage extends DG.Package {
   //output: dataframe result
   async getSimilarities(molStringsColumn, molString) {
     try {
+      if (molStringsColumn === null || molString === null) throw "An input was null";
       let result = await chemGetSimilarities(molStringsColumn, molString);
       // TODO: get rid of a wrapping DataFrame and be able to return Columns
       return result ? DG.DataFrame.fromColumns([result]) : DG.DataFrame.create();
@@ -130,6 +132,7 @@ class ChemPackage extends DG.Package {
   //output: dataframe result
   async findSimilar(molStringsColumn, molString, aLimit, aCutoff) {
     try {
+      if (molStringsColumn === null || molString === null || aLimit === null || aCutoff === null) throw "An input was null";
       let result = await chemFindSimilar(molStringsColumn, molString, {limit: aLimit, cutoff: aCutoff});
       return result ? result : DG.DataFrame.create();
     } catch (e) {
@@ -146,6 +149,8 @@ class ChemPackage extends DG.Package {
   //output: column result
   async searchSubstructure(molStringsColumn, molString, substructLibrary, molStringSmarts) {
     try {
+      if (molStringsColumn === null || molString === null || substructLibrary === null || molStringSmarts === null)
+        throw "An input was null";
       let result =
         substructLibrary ?
           await chemSubstructureSearchLibrary(molStringsColumn, molString, molStringSmarts) :
