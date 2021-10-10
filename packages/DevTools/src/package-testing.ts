@@ -12,6 +12,7 @@ export async function testPackages() {
 
   let scripts = await grok.dapi.scripts.list();
   scripts = scripts.filter((s) => s.inputs.length == 0);
+  let closeAllOnEachRun = ui.boolInput('Close all on each run', true);
 
   let functions = DG.Func
     .find({tags: [DG.FUNC_TYPES.UNIT_TEST]})
@@ -25,29 +26,34 @@ export async function testPackages() {
       }
     });
 
-  function runFunction(f: FunctionTest) {
+  function runFunction(f: FunctionTest): Promise<any> {
     function set(status: string, color: string) {
       f.status.innerHTML = status;
       f.status.style.color = color;
     }
 
-    set('Running...', 'orange')
-    f.fun.apply()
+    set('Running...', 'orange');
+    return f.fun.apply()
       .then((_) => set('OK','green'))
       .catch((error) => set(`${error}`, 'red'));
   }
 
-  function run() {
-    for (let f of testFunctions)
-      runFunction(f);
+  async function run(): Promise<void> {
+    for (let f of testFunctions) {
+      if (closeAllOnEachRun.value)
+        grok.shell.closeAll();
+      await runFunction(f);
+    }
   }
 
   ui.dialog()
+    .add(closeAllOnEachRun)
     .add(ui.table(testFunctions, (f) => [
       ui.icons.play(() => runFunction(f)),
       f.fun.package.name,
       f.fun,
       f.status]))
     .add(ui.buttonsInput([ui.button('RUN', run) ]))
-    .show();
+    .show()
+    .temp.ignoreCloseAll = true;
 }
