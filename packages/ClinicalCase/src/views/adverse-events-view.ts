@@ -4,6 +4,8 @@ import * as ui from "datagrok-api/ui";
 import { study, ClinRow } from "../clinical-study";
 import { addDataFromDmDomain, getUniqueValues } from '../data-preparation/utils';
 import { TREATMENT_ARM } from '../constants';
+import $ from "cash-dom";
+
 
 export class AdverseEventsView extends DG.ViewBase {
 
@@ -19,7 +21,6 @@ export class AdverseEventsView extends DG.ViewBase {
       'margin':'12px 0px 6px 12px',
       'font-size':'16px',
     }};
-
 
     let typesPlot = this.bar('AEDECOD','Types', viewerTitle, TREATMENT_ARM);
     let bodySystemsPlot = this.bar('AEBODSYS', 'Body system', viewerTitle, TREATMENT_ARM);
@@ -52,9 +53,14 @@ export class AdverseEventsView extends DG.ViewBase {
       grok.shell.o = new ClinRow(this.aeWithArm.currentRow);
     });
 
+
+    let legend = DG.Legend.create(this.aeWithArm.columns.byName(TREATMENT_ARM));
+   // $(legend.root).css('flex-direction', 'row !important');
+
     this.root.className = 'grok-view ui-box';
     this.root.append(ui.splitV([
       ui.splitH([timelinesPlot, scatterPlot]),
+      ui.box(legend.root, { style: { maxHeight: '50px' } }),
       ui.splitH([typesPlot,bodySystemsPlot,causalityPlot,outcomePlot]),
       ui.splitH([grid.root])
     ]))
@@ -76,7 +82,7 @@ export class AdverseEventsView extends DG.ViewBase {
       split: categoryColumn,
       stack: splitColumn,
       style: 'dashboard',
-      legendPosition: 'Top' }).root;
+      legendVisibility: 'Never'}).root;
     chart.prepend(ui.divText(title, viewerTitle))
     return chart
   }

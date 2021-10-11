@@ -18,7 +18,7 @@ export class PatientProfileView extends DG.ViewBase {
         // extraFields is an array to load into echart data arrays
         // all fields later combined into one array [x, y, extraFields]
         // user can address fields by index, for instance index 3 means field "LBORNRLO"
-        extraFields: [ 'LBORRES', 'LBORNRLO', 'LBORNRHI' ],
+        extraFields: [ 'LBSTRESN', 'LBSTNRLO', 'LBSTNRHI' ],
         yType: 'category',                // can be 'value' or 'category'
         statusChart: {
           valueField: 2,                  // index of field with test value
@@ -47,7 +47,7 @@ export class PatientProfileView extends DG.ViewBase {
         multiLineFieldIndex: 2, //index of field by which to split multiple graphs
         x: 'LBDY',
         y: 'LAB_DYNAMIC_BL',
-        extraFields: [ 'LBTEST', 'LBORRES', 'LBORNRLO', 'LBORNRHI', 'BL_LBORRES', 'min(LBORRES_FLOAT)', 'max(LBORRES_FLOAT)' ],
+        extraFields: [ 'LBTEST', 'LBSTRESN', 'LBSTNRLO', 'LBSTNRHI', 'BL_LBSTRESN', 'min(LBSTRESN)', 'max(LBSTRESN)' ],
         splitByColumnName: 'LBTEST',                    // get categories from this column
         categories: [ '' ],  // fixed categories
         maxLimit: 1,                                    // max number of linecharts 
@@ -205,7 +205,7 @@ export class PatientProfileView extends DG.ViewBase {
     plot.options = options;
     plot.onTableAttached();
   }
-
+  
 
   private createTablesToAttach() {
     Object.keys(this.tableNamesAndFields).forEach(name => {
@@ -223,7 +223,7 @@ export class PatientProfileView extends DG.ViewBase {
     })
     addColumnWithDrugPlusDosage(this.tables[ 'ex' ], 'EXTRT', 'EXDOSE', 'EXDOSU', 'EXTRT_WITH_DOSE');
     this.options_lb_ae_ex_cm['xAxisMinMax'] = this.extractMinAndMaxValuesForXAxis();
-    labDynamicComparedToBaseline(this.tables[ 'lb' ],  this.options_lb_ae_ex_cm['xAxisMinMax']['minX'], 'LAB_DYNAMIC_BL');
+    labDynamicComparedToBaseline(this.tables[ 'lb' ],  this.options_lb_ae_ex_cm['xAxisMinMax']['minX'], 'VISITDY', 'LAB_DYNAMIC_BL');
     labDynamicComparedToMinMax(this.tables[ 'lb' ], 'LAB_DYNAMIC_MIN_MAX');
   }
 

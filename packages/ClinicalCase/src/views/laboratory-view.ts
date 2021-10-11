@@ -181,8 +181,8 @@ export class LaboratoryView extends DG.ViewBase {
     if (dm.columns.contains(TREATMENT_ARM) &&
       lb.columns.contains('LBTEST') &&
       lb.columns.contains('USUBJID') &&
-      lb.columns.contains('LBORRES') &&
-      lb.columns.contains('LBORNRHI')) {
+      lb.columns.contains('LBSTRESN') &&
+      lb.columns.contains('LBSTNRHI')) {
       let hysLawDataframe = createHysLawDataframe(lb, dm);
       grok.data.linkTables(lb, hysLawDataframe,
         [ `USUBJID` ], [ `USUBJID` ],
@@ -200,10 +200,10 @@ export class LaboratoryView extends DG.ViewBase {
     if (dm.columns.contains(TREATMENT_ARM) &&
       lb.columns.contains('LBTEST') &&
       lb.columns.contains('USUBJID') &&
-      lb.columns.contains('LBORRES') &&
+      lb.columns.contains('LBSTRESN') &&
       lb.columns.contains('VISIT') &&
-      lb.columns.contains('LBORNRLO') &&
-      lb.columns.contains('LBORNRHI')) {
+      lb.columns.contains('LBSTNRLO') &&
+      lb.columns.contains('LBSTNRHI')) {
       let visitCol = 'VISIT';
       let blVisit = bl;
       let epVisit = ep;
@@ -215,7 +215,7 @@ export class LaboratoryView extends DG.ViewBase {
         [ `USUBJID` ], [ `USUBJID` ],
         [ DG.SYNC_TYPE.CURRENT_ROW_TO_ROW, DG.SYNC_TYPE.CURRENT_ROW_TO_SELECTION ]);
       let baselineEndpointPlot = createBaselineEndpointScatterPlot(baselineEndpointDataframe, blNumCol, epNumCol, TREATMENT_ARM,
-        parseFloat(baselineEndpointDataframe.get('LBORNRLO', 0)), parseFloat(baselineEndpointDataframe.get('LBORNRHI', 0)));
+        baselineEndpointDataframe.get('LBSTNRLO', 0), baselineEndpointDataframe.get('LBSTNRHI', 0));
       return baselineEndpointPlot;
     }
     return null;
@@ -225,7 +225,7 @@ export class LaboratoryView extends DG.ViewBase {
 
     if (lb.columns.contains('LBTEST') &&
       lb.columns.contains('USUBJID') &&
-      lb.columns.contains('LBORRES') &&
+      lb.columns.contains('LBSTRESN') &&
       lb.columns.contains('VISITDY') &&
       dm.columns.contains(TREATMENT_ARM)) {
       let labValue = selectedlabValue;

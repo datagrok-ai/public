@@ -16,6 +16,8 @@ import {SurvivalAnalysisView} from './views/survival-analysis-view';
 import { BoxPlotsView } from './views/boxplots-view';
 import { MatrixesView } from './views/matrixes-view';
 import { createPropertyPanel } from './panels/panels-service';
+import { TimeProfileView } from './views/time-profile-view';
+import { AeBrowserView } from './views/adverse-events-browser';
 
 export let _package = new DG.Package();
 
@@ -142,7 +144,9 @@ export async function clinicalCaseApp(): Promise<any> {
   views.push(<AERiskAssessmentView>addView(new AERiskAssessmentView('AE Risk Assessment')));
   views.push(<SurvivalAnalysisView>addView(new SurvivalAnalysisView('Survival Analysis')));
   views.push(<BoxPlotsView>addView(new BoxPlotsView('Box Plots')));
-  //views.push(<MatrixesView>addView(new MatrixesView('Correlation Matrix')));
+  views.push(<MatrixesView>addView(new MatrixesView('Correlation Matrix')));
+  views.push(<TimeProfileView>addView(new TimeProfileView('Time Profile')));
+  views.push(<AeBrowserView>addView(new AeBrowserView('AE Browser')));
   DG.ObjectHandler.register(new AdverseEventHandler());
 
   let summary = views.find(it => it.name === 'Summary');

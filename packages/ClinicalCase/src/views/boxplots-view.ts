@@ -28,7 +28,7 @@ export class BoxPlotsView extends DG.ViewBase {
   constructor(name) {
     super(name);
     this.name = name;
-    this.labWithDmData = addDataFromDmDomain(study.domains.lb, study.domains.dm, [ 'USUBJID', 'VISITDY', 'VISIT', 'LBTEST', 'LBORRES' ], [TREATMENT_ARM, SEX, RACE, ETHNIC]);
+    this.labWithDmData = addDataFromDmDomain(study.domains.lb, study.domains.dm, [ 'USUBJID', 'VISITDY', 'VISIT', 'LBTEST', 'LBSTRESN' ], [TREATMENT_ARM, SEX, RACE, ETHNIC]);
 
     let viewerTitle = {
       style: {
@@ -110,7 +110,8 @@ export class BoxPlotsView extends DG.ViewBase {
         const plot = DG.Viewer.boxPlot(df, {
           category: category,
           value: `${it}_BL`,
-          labelOrientation: 'Horz'
+          labelOrientation: 'Horz',
+          markerColor: category
         });
         plot.root.prepend(ui.divText(it, viewerTitle));
         const boxPlot = Array.from(getUniqueValues(df, category)).length > 3 ? ui.block([plot.root]) : ui.block50([plot.root]);
@@ -124,20 +125,20 @@ export class BoxPlotsView extends DG.ViewBase {
     let pValuesArray = [];
     this.uniqueLabValues.forEach(item => {
       const valueData = this.labWithDmData
-        .groupBy([ 'USUBJID', 'VISITDY', 'LBTEST', 'LBORRES', TREATMENT_ARM ])
+        .groupBy([ 'USUBJID', 'VISITDY', 'LBTEST', 'LBSTRESN', TREATMENT_ARM ])
         .where(`LBTEST = ${item} and VISITDY = ${visit}`)
         .aggregate();
       const valuesByArm = valueData.groupBy([ TREATMENT_ARM ]).getGroups();
       const dataForAnova = [];
       Object.values(valuesByArm).forEach(it => {
-        const labResults = it.getCol('LBORRES').getRawData();
+        const labResults = it.getCol('LBSTRESN').getRawData();
         dataForAnova.push(Array.from(labResults));
       })
       const pValue = jStat.anovaftest(...dataForAnova);
       pValuesArray.push({labValue: item, pValue: pValue});
 
     });
-    pValuesArray.sort((a, b) => (b.pValue - a.pValue));
+    pValuesArray.sort((a, b) => (a.pValue - b.pValue));
     this.selectedLabValues = pValuesArray.slice(0, 5).map(it => it.labValue);
   }
 }
