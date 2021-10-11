@@ -63,7 +63,7 @@ export class SARViewer extends DG.JsViewer {
             const tableMap: {[key: string]: string} = {'Statistics:': ''};
             for (const colName of new Set(['Count', 'p-value', 'Mean difference'])) {
               const query = `aminoAcidResidue = ${currentAAR} and position = ${currentPosition}`;
-              const text = `${this.statsDf?.groupBy([colName]).where(query).aggregate().get(colName, 0)}`;
+              const text = `${this.statsDf?.groupBy([colName]).where(query).aggregate().get(colName, 0).toFixed(2)}`;
               tableMap[colName] = text;
             }
             elements.push(ui.tableFromMap(tableMap));

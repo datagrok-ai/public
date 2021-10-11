@@ -14,7 +14,7 @@ import {
 import {__obs, EventData, MapChangeArgs, observeStream} from "./events";
 import {toDart, toJs} from "./wrappers";
 import {SIMILARITY_METRIC} from "./const";
-import {_getIterator, _toIterable, _toJson} from "./utils";
+import {MapProxy, _getIterator, _toIterable, _toJson} from "./utils";
 import {Observable}  from "rxjs";
 import {filter} from "rxjs/operators";
 import {Widget} from "./widgets";
@@ -26,109 +26,6 @@ declare let DG: any;
 let api = <any>window;
 type RowPredicate = (row: Row) => boolean;
 type Comparer = (a: any, b: any) => number;
-
-/**
- * Finds the item by its unique id.
- *
- * @typedef {function(Row): boolean} RowPredicate
- * @typedef {function(Column): boolean} ColumnPredicate
- */
-
-/**
- * Proxies a Dart Map, API-compliant to ES 2015+
- */
-
-const MapProxy = new Proxy(class {
-    d: any;
-    objectName: string | null;
-    valueType: string | null;
-    constructor(d: any, objectName: string | null = null, valueType: string | null = null) {
-      this.d = d;
-      this.objectName = objectName;
-      this.valueType = valueType;
-    }
-    keys(): Iterable<any> {
-      return _toIterable(api.grok_Map_Keys(this.d));
-    }
-    values() {
-      return _toIterable(api.grok_Map_Values(this.d));
-    }
-    * [Symbol.iterator] () {
-      for (let key of this.keys()) {
-        const value = DG.toJs(api.grok_Map_Get(this.d, key));
-        yield [key, value];
-      }
-    }
-    entries() {
-      return this;
-    }
-    forEach(callback: (key: string, value: any) => void) {
-      for (const [key, value] of this) {
-        callback(key, value);
-      }
-    }
-    delete(key: string) {
-      return DG.toJs(api.grok_Map_Delete(this.d, DG.toDart(key)));
-    }
-    get(key: any) {
-      return DG.toJs(api.grok_Map_Get(this.d, key));
-    }
-    has(key: string) {
-      return api.grok_Map_Has(this.d, DG.toDart(key));
-    }
-    set(key: string, value: any) {
-      api.grok_Map_Set(this.d, key, DG.toDart(value));
-      return this;
-    }
-    clear() {
-      api.grok_Map_Clear(this.d);
-    }
-    size() {
-      return DG.toJs(api.grok_Map_Size(this.d));
-    }
-  }, {
-    construct(target, args) {
-      // @ts-ignore
-      return new Proxy(new target(...args), {
-        get: function (target: any, prop) {
-          const val = target[prop];
-          if (typeof val === 'function') {
-            return function (...args :string[]) {
-              return val.apply(target, args);
-            };
-          } else {
-            return DG.toJs(api.grok_Map_Get(target.d, prop));
-          }
-        },
-        set: function (target, prop, value) {
-          const valueType = typeof(value);
-          if (!target.valueType || target.valueType === valueType) {
-            api.grok_Map_Set(target.d, prop, DG.toDart(value));
-          } else {
-            throw new Error(`Entries of ${target.objectName} require type '${target.valueType}', passed '${valueType}'`);
-          }
-          return true;
-        },
-        deleteProperty: function (target, prop) {
-          api.grok_Map_Delete(target.d, DG.toDart(prop));
-          return true;
-        },
-        has: function (target, prop) {
-          return api.grok_Map_Has(target.d, DG.toDart(prop));
-        },
-        getOwnPropertyDescriptor(target, prop) {
-          return {
-            enumerable: true,
-            configurable: true
-          };
-        },
-        ownKeys: function (target) {
-          return Array.from(target.keys());
-        }
-      });
-    }
-  }
-);
 
 /** Proxy wrapper for ColumnList
  */
@@ -2156,12 +2053,12 @@ export class ColumnDialogHelper {
       return;
     let params = { table: this.column.dataFrame, expression: formula, name: this.column.name, type: this.column.type };
     let call = DG.Func.byName('AddNewColumn').prepare(params);
+    call.aux['addColumn'] = false;
     call.edit();
     let sub = grok.functions.onAfterRunAction.pipe(filter(c => c == call)).subscribe(() => {
       let newCol = call.getOutputParamValue();
       for (let [key, value] of this.column.tags) if (key !== DG.TAGS.FORMULA) newCol.setTag(key, value);
       let name = this.column.name;
-      df.columns.remove(newCol.name);
       newCol = this.column.dataFrame.columns.replace(this.column, newCol);
       newCol.name = name;
       sub.unsubscribe();

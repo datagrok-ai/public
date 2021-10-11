@@ -1,16 +1,8 @@
 import {ChemPalette} from './chem-palette';
 import * as DG from 'datagrok-api/dg';
 
-const cp = ChemPalette.getDatagrok();
+const cp =new ChemPalette('grok');
 
-function getColor(c = '') {
-  if (c.length == 1 || c.at(1) == '(' || c.at(0)?.toLowerCase() == 'd') {
-    const amino = c.at(0)?.toUpperCase()!;
-    return amino in cp ? cp[amino] : 'rgb(77,77,77)';
-  }
-  return 'rgb(77,77,77)';
-  //return c ? DG.Color.toRgb(this.colorScale(c)) : 'rgb(127,127,127)'
-};
 
 function printLeftCentered(
   x: number,
@@ -19,24 +11,34 @@ function printLeftCentered(
   h: number,
   g: CanvasRenderingContext2D,
   s: string,
-  color = 'rgb(77,77,77)',
+  color = ChemPalette.undefinedColor,
   pivot: number = 0,
   left = false,
   hideMod = false,
 ) {
   let colorPart = pivot == -1 ? s.substring(0) : s.substring(0, pivot);
+  if (colorPart.length == 1) {
+    colorPart = colorPart.toUpperCase();
+  }
+  if (colorPart.length >= 3) {
+    if (colorPart.substring(0, 3) in ChemPalette.AAFullNames) {
+      colorPart = ChemPalette.AAFullNames[s.substring(0, 3)] + colorPart.substr(3);
+    } else if (colorPart.substring(1, 4) in ChemPalette.AAFullNames) {
+      colorPart = colorPart.at(0) + ChemPalette.AAFullNames[s.substring(1, 4)] + colorPart.substr(4);
+    }
+  }
   let grayPart = pivot == -1 ? '' : s.substr(pivot);
   if (hideMod) {
     let end = colorPart.lastIndexOf(')');
     let beg = colorPart.indexOf('(');
-    if (beg > -1 && end > -1&& end - beg > 2) {
-      colorPart = colorPart.substr(0, beg) +'(+)'+ colorPart.substr(end+1);
+    if (beg > -1 && end > -1 && end - beg > 2) {
+      colorPart = colorPart.substr(0, beg) + '(+)' + colorPart.substr(end + 1);
     }
 
     end = grayPart.lastIndexOf(')');
     beg = grayPart.indexOf('(');
     if (beg > -1 && end > -1 && end - beg > 2) {
-      grayPart = grayPart.substr(0, beg) +'(+)'+ grayPart.substr(end+1);
+      grayPart = grayPart.substr(0, beg) + '(+)' + grayPart.substr(end + 1);
     }
   }
   const textSize = g.measureText(colorPart + grayPart);
@@ -51,7 +53,7 @@ function printLeftCentered(
       x + indent,
       y + (textSize.fontBoundingBoxAscent + textSize.fontBoundingBoxDescent) / 2,
     );
-    g.fillStyle = getColor();
+    g.fillStyle = ChemPalette.undefinedColor;
     g.fillText(
       grayPart,
       x + indent + colorTextSize.width,
@@ -66,7 +68,7 @@ function printLeftCentered(
       x + (w - textSize.width) / 2,
       y + (textSize.fontBoundingBoxAscent + textSize.fontBoundingBoxDescent) / 2,
     );
-    g.fillStyle = getColor();
+    g.fillStyle = ChemPalette.undefinedColor;
     g.fillText(
       grayPart,
       x + (w - textSize.width) / 2 + colorTextSize.width,
@@ -109,22 +111,20 @@ export class AminoAcidsCellRenderer extends DG.GridCellRenderer {
       g.font = `${this.fontSize}px monospace`;
       g.textBaseline = 'top';
       const s: string = gridCell.cell.value ? gridCell.cell.value : '-';
-      const color = getColor(s);
-      let pivot = 0;
-      if (s.at(0)?.toLowerCase() == 'd') {
-        pivot = s.indexOf('(');
-      } else if (s.at(1) == '(') {
-        pivot =1;
-      } else {
-        pivot =-1;
-      }
+      const [color, pivot] = cp.getColorPivot(s);
       printLeftCentered(x, y, w, h, g, s, color, pivot, false, true);
       g.restore();
     }
 }
 
 export class AlignedSequenceCellRenderer extends DG.GridCellRenderer {
-    private maxCellWidth = 270;
+    private maxCellWidth = 200;
+
+
+    constructor() {
+      super();
+    }
+
 
     get name() {
       return 'alignedSequenceCR';
@@ -154,21 +154,30 @@ export class AlignedSequenceCellRenderer extends DG.GridCellRenderer {
       g.font = '15px monospace';
       g.textBaseline = 'top';
       const s: string = gridCell.cell.value;
+
       const subParts = s.split('-');
+
+      const simplified = !subParts.some((amino, index)=>{
+        return amino.length>1&&index!=0&&index!=subParts.length-1;
+      });
+      const text:string[] = [];
       subParts.forEach((amino: string, index) => {
-        const color = getColor(amino);
-        g.fillStyle = 'rgb(77,77,77)';
+        if (index < subParts.length) {
+          const gap = simplified?'':' ';
+          amino += `${amino?'':'-'}${gap}`;
+        }
+        text.push(amino);
+      });
+      const textSize = g.measureText(text.join(''));
+      x = Math.max(x, x+(w-textSize.width)/2);
+      subParts.forEach((amino: string, index) => {
+        const [color, pivot] = cp.getColorPivot(amino);
+        g.fillStyle = ChemPalette.undefinedColor;
         if (index + 1 < subParts.length) {
-          amino += '-';
+          const gap = simplified?'':' ';
+          amino += `${amino?'':'-'}${gap}`;
         }
-        if (amino.at(0)?.toLowerCase() == 'd') {
-          const modInd = amino.indexOf('(');
-          x = printLeftCentered(x, y, w, h, g, amino, color, modInd, true);
-        } else if (amino.at(1) == '(') {
-          x = printLeftCentered(x, y, w, h, g, amino, color, 1, true);
-        } else {
-          x = printLeftCentered(x, y, w, h, g, amino, color, -1, true);
-        }
+        x = printLeftCentered(x, y, w, h, g, amino, color, pivot, true);
       });
       g.restore();
     }

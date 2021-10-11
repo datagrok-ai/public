@@ -182,6 +182,9 @@ export class Widget {
   get root(): HTMLElement { return this._root; }
   set root(r: HTMLElement) { this._root = r; }
 
+  /** For auxiliary information */
+  get temp(): any { return api.grok_Widget_Get_Temp(this.d); }
+
   /** Gets called when a widget is detached and will no longer be used. Typically used for unsubscribing from events.
    * Be sure to call super.detach() if this method is overridden.  */
   detach(): void {
@@ -202,7 +205,7 @@ export class Widget {
   addProperty(propertyName: string, propertyType: Type, defaultValue: any = null, options: { [key: string]: string } & PropertyOptions | null = null): any {
     let obj = this;
     // @ts-ignore
-    let p = Property.create(propertyName, propertyType, () => obj[propertyName], null, defaultValue);
+    let p = Property.create(propertyName, propertyType, (_) => obj[propertyName], null, defaultValue);
     p.set = function (_: any, x: any) {
       // @ts-ignore
       obj[propertyName] = x;

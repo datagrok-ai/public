@@ -13,6 +13,8 @@ export class ScatterPlotTutorial extends Tutorial {
     return 'A graph in which the values of two variables are plotted along two axes';
   }
   get steps() { return 10; }
+  
+  helpUrl: string = 'https://datagrok.ai/help/visualize/viewers/scatter-plot';
 
   protected async _run() {
     this.header.textContent = 'Scatter Plot';
@@ -23,6 +25,8 @@ export class ScatterPlotTutorial extends Tutorial {
       'The data is displayed as a collection of points, each having the value of one variable ' +
       'determining the position on the horizontal axis and the value of the other variable ' +
       'determining the position on the vertical axis.');
+
+    this.describe(ui.link('More about ' + this.name, this.helpUrl).outerHTML);
 
     const plot = <DG.ScatterPlotViewer>(await this.openPlot(
       'scatter plot',
@@ -59,7 +63,5 @@ export class ScatterPlotTutorial extends Tutorial {
 
     const deselection = `Deselect some points by dragging a rectangle on a viewer while holding <b>Ctrl+Shift</b>.`;
     await this.action('Deselect points', this.t!.onSelectionChanged, null, deselection);
-
-    await this.action('Deselect points',`Deselect some points by dragging a rectangle on a viewer while holding <b>Ctrl+Shift.</b>`, this.t.onSelectionChanged);
   }
 }

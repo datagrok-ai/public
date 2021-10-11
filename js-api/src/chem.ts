@@ -119,9 +119,10 @@ export namespace chem {
     }
 
     setChangeListenerCallback(callback: () => void) {
+      this.changedSub?.unsubscribe();
       this.listeners.push(callback);
       if (this.sketcher)
-        this.sketcher.onChanged.subscribe((_) => callback());
+        this.changedSub = this.sketcher.onChanged.subscribe((_) => callback());
     }
 
     constructor() {
@@ -153,6 +154,12 @@ export namespace chem {
         this.host]));
 
       this.setSketcher(funcs[0].name);
+    }
+
+    detach() {
+      this.changedSub?.unsubscribe();
+      this.sketcher?.detach();
+      super.detach();
     }
 
     async setSketcher(name: string) {
@@ -197,15 +204,12 @@ export namespace chem {
    * */
   export async function similarityScoring(column: Column, molecule: string = '', settings: { sorted?: boolean } = {sorted: false}) {
 
-    let foo = await grok.functions.eval('Chem:similarityScoring');
-    let call = await foo.prepare({
+    const result = await grok.functions.call('Chem:similarityScoring', {
       'molStringsColumn': column,
       'molString': molecule,
       'sorted': settings.sorted
     });
-    await call.call();
     if (molecule.length != 0) {
-      let result = call.getParamValue('result');
       return settings.sorted ? result : result.columns.byIndex(0);
     }
 
@@ -238,18 +242,14 @@ export namespace chem {
     substructLibrary?: boolean;
   } = {}): Promise<BitSet> {
 
-    let foo = await grok.functions.eval('Chem:searchSubstructure');
-    let call = await foo.prepare({
+    return (await grok.functions.call('Chem:searchSubstructure', {
       'molStringsColumn': column,
       'molString': pattern,
       'substructLibrary':
         !(settings?.hasOwnProperty('substructLibrary') && !settings.substructLibrary),
-      'molStringSmarts': null
-    });
-    await call.call();
-    // unpacking our BitSet object from a synthetic column
-    return call.getParamValue('result').get(0);
-
+      'molStringSmarts': ''
+    })).get(0);
+    
   }
 
   /**
@@ -264,14 +264,12 @@ export namespace chem {
    * */
   export async function getSimilarities(column: Column, molecule: string = '', settings: object = {}): Promise<Column | null> {
 
-    let foo = await grok.functions.eval('Chem:getSimilarities');
-    let call = await foo.prepare({
+    const result = await grok.functions.call('Chem:getSimilarities', {
       'molStringsColumn': column,
       'molString': molecule
     });
-    await call.call();
     // TODO: figure out what's the state in returning columns from package functions
-    return (molecule.length != 0) ? call.getParamValue('result').columns.byIndex(0) : null;
+    return (molecule.length != 0) ? result.columns.byIndex(0) : null;
 
   }
 
@@ -293,15 +291,13 @@ export namespace chem {
    * */
   export async function findSimilar(column: Column, molecule: string = '', settings = {limit: Number.MAX_VALUE, cutoff: 0.0}): Promise<DataFrame | null> {
 
-    let foo = await grok.functions.eval('Chem:findSimilar');
-    let call = await foo.prepare({
+    const result = await grok.functions.call('Chem:findSimilar', {
       'molStringsColumn': column,
       'molString': molecule,
       'limit': settings.limit,
       'cutoff': settings.cutoff
     });
-    await call.call();
-    return (molecule.length != 0) ? call.getParamValue('result') : null;
+    return (molecule.length != 0) ? result : null;
 
   }
 

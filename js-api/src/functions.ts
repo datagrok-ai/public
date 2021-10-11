@@ -1,9 +1,8 @@
 import {paramsToJs, toDart, toJs} from "./wrappers";
 import {Type} from "./const";
 import {Entity, Func} from "./entities";
-import {DartWidget, ProgressIndicator, Widget} from "./widgets";
-import {Column} from "./dataframe";
-import {_toIterable} from "./utils";
+import {DartWidget, ProgressIndicator,} from "./widgets";
+import {MapProxy, _toIterable} from "./utils";
 import {Observable} from "rxjs";
 import {__obs} from "./events";
 declare let grok: any;
@@ -111,15 +110,15 @@ export class Functions {
     return new Promise((resolve, reject) => api.grok_CallFunc(name, parameters, (out: any) => resolve(toJs(out)), (err: any) => reject(err), showProgress, toDart(progress)));
   }
 
-  eval(name: string): Promise<any> {
-    return new Promise((resolve, reject) => api.grok_EvalFunc(name, function (out: any) {
+  eval(name: string, context?: Context): Promise<any> {
+    return new Promise((resolve, reject) => api.grok_EvalFunc(name, context?.d, function (out: any) {
       return resolve(toJs(out));
     }, (err: any) => reject(err)));
   }
 
   async find(name: string): Promise<any> {
     let f = await this.eval(name);
-    if (f instanceof Function)
+    if (f instanceof Func)
       return f;
     else
       return null;
@@ -164,10 +163,15 @@ export class FuncCall {
   private readonly d: any;
   public inputs: any;
   public outputs: any;
+  public aux: any;
+  public options: any;
+
   constructor(d: any) {
     this.d = d;
     this.inputs = new FuncCallParamMapProxy(this.d, true);
     this.outputs = new FuncCallParamMapProxy(this.d, false);
+    this.aux = new MapProxy(api.grok_FuncCall_Get_Aux(this.d));
+    this.options = new MapProxy(api.grok_FuncCall_Get_Aux(this.d));
   }
 
   get func(): Func { return toJs(api.grok_FuncCall_Get_Func(this.d)); }
@@ -191,12 +195,9 @@ export class FuncCall {
     api.grok_FuncCall_Set_Param_Value(this.d, name, toDart(value));
   }
 
-  /** Executes the function call
-   * @param {boolean} showProgress
-   * @param {ProgressIndicator} progress
-   * @returns {Promise<FuncCall>} */
-  call(showProgress: boolean = false, progress: ProgressIndicator | null = null): Promise<FuncCall> {
-    return new Promise((resolve, reject) => api.grok_FuncCall_Call(this.d, (out: any) => resolve(toJs(out)), (err: any) => reject(err), showProgress, toDart(progress)));
+  /** Executes the function call */
+  call(showProgress: boolean = false, progress?: ProgressIndicator, options?: {processed: boolean, report: boolean}): Promise<FuncCall> {
+    return new Promise((resolve, reject) => api.grok_FuncCall_Call(this.d, (out: any) => resolve(toJs(out)), (err: any) => reject(err), showProgress, toDart(progress), options?.processed, options?.report));
   }
 
   edit() {

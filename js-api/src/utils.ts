@@ -1,6 +1,6 @@
 import {Balloon} from './widgets';
 import * as rxjs from 'rxjs';
-import {toJs} from './wrappers';
+import {toDart, toJs} from './wrappers';
 import { Cell } from './dataframe';
 
 let api = <any>window;
@@ -24,6 +24,103 @@ export class Utils {
     return string.split(search).join(replace);
   }
 }
+
+
+/**
+ * Proxies a Dart Map, API-compliant to ES 2015+
+ */
+
+export const MapProxy = new Proxy(class {
+    d: any;
+    objectName: string | null;
+    valueType: string | null;
+    constructor(d: any, objectName: string | null = null, valueType: string | null = null) {
+      this.d = d;
+      this.objectName = objectName;
+      this.valueType = valueType;
+    }
+    keys(): Iterable<any> {
+      return _toIterable(api.grok_Map_Keys(this.d));
+    }
+    values() {
+      return _toIterable(api.grok_Map_Values(this.d));
+    }
+    * [Symbol.iterator] () {
+      for (let key of this.keys()) {
+        const value = toJs(api.grok_Map_Get(this.d, key));
+        yield [key, value];
+      }
+    }
+    entries() {
+      return this;
+    }
+    forEach(callback: (key: string, value: any) => void) {
+      for (const [key, value] of this) {
+        callback(key, value);
+      }
+    }
+    delete(key: string) {
+      return toJs(api.grok_Map_Delete(this.d, toDart(key)));
+    }
+    get(key: any) {
+      return toJs(api.grok_Map_Get(this.d, key));
+    }
+    has(key: string) {
+      return api.grok_Map_Has(this.d, toDart(key));
+    }
+    set(key: string, value: any) {
+      api.grok_Map_Set(this.d, key, toDart(value));
+      return this;
+    }
+    clear() {
+      api.grok_Map_Clear(this.d);
+    }
+    size() {
+      return toJs(api.grok_Map_Size(this.d));
+    }
+  }, {
+    construct(target, args) {
+      // @ts-ignore
+      return new Proxy(new target(...args), {
+        get: function (target: any, prop) {
+          const val = target[prop];
+          if (typeof val === 'function') {
+            return function (...args :string[]) {
+              return val.apply(target, args);
+            };
+          } else {
+            return toJs(api.grok_Map_Get(target.d, prop));
+          }
+        },
+        set: function (target, prop, value) {
+          const valueType = typeof(value);
+          if (!target.valueType || target.valueType === valueType) {
+            api.grok_Map_Set(target.d, prop, toDart(value));
+          } else {
+            throw new Error(`Entries of ${target.objectName} require type '${target.valueType}', passed '${valueType}'`);
+          }
+          return true;
+        },
+        deleteProperty: function (target, prop) {
+          api.grok_Map_Delete(target.d, toDart(prop));
+          return true;
+        },
+        has: function (target, prop) {
+          return api.grok_Map_Has(target.d, toDart(prop));
+        },
+        getOwnPropertyDescriptor(target, prop) {
+          return {
+            enumerable: true,
+            configurable: true
+          };
+        },
+        ownKeys: function (target) {
+          return Array.from(target.keys());
+        }
+      });
+    }
+  }
+);
 
 // export class PropProxy {
 //     constructor(d) {

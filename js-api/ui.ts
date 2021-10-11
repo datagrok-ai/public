@@ -374,7 +374,7 @@ export function tableFromMap(map: { [key: string]: any }): HTMLTableElement {
 }
 
 /** Creates a visual table based on [items] and [renderer]. */
-export function table(items: any[], renderer: ((item: any, ind: number) => any) | null, columnNames: string[] | null = null): HTMLTableElement {
+export function table<T>(items: T[], renderer: ((item: T, ind: number) => any) | null, columnNames: string[] | null = null): HTMLTableElement {
   return toJs(api.grok_HtmlTable(items, renderer !== null ? (object: any, ind: number) => renderer(toJs(object), ind) : null, columnNames)).root;
 }
 
@@ -475,7 +475,7 @@ export function dialog(options: any = ''): Dialog {
  * @param item
  * @param {Element} element
  * @returns {Element}. */
-export function bind(item: any, element: Element): Element {
+export function bind(item: any, element: HTMLElement): HTMLElement {
   return api.grok_UI_Bind(toDart(item), element);
 }
 
@@ -485,7 +485,7 @@ export function bind(item: any, element: Element): Element {
  * @param {Element} anchor
  * @param {boolean} vertical
  * @returns {Element}. */
-export function showPopup(element: Element, anchor: Element, vertical: boolean = false): Element {
+export function showPopup(element: HTMLElement, anchor: HTMLElement, vertical: boolean = false): Element {
   return api.grok_UI_ShowPopup(element, anchor, vertical);
 }
 
@@ -854,12 +854,12 @@ export class ObjectHandler {
   }
 
   /** Renders icon for the item. */
-  renderIcon(x: any, context: any = null): HTMLDivElement {
+  renderIcon(x: any, context: any = null): HTMLElement {
     return divText(this.getCaption(x));
   }
 
   /** Renders markup for the item. */
-  renderMarkup(x: any, context: any = null): HTMLDivElement {
+  renderMarkup(x: any, context: any = null): HTMLElement {
     return divText(this.getCaption(x));
   }
 
@@ -869,7 +869,7 @@ export class ObjectHandler {
   }
 
   /** Renders card div for the item. */
-  renderCard(x: any, context: any = null): HTMLDivElement {
+  renderCard(x: any, context: any = null): HTMLElement {
     return divText(this.getCaption(x));
   }
 
@@ -1098,6 +1098,7 @@ export let icons = {
   info: (handler: Function, tooltipMsg: string | null = null) => _iconFA('info-circle', handler, tooltipMsg),
   search: (handler: Function, tooltipMsg: string | null = null) => _iconFA('search', handler, tooltipMsg),
   filter: (handler: Function, tooltipMsg: string | null = null) => _iconFA('filter', handler, tooltipMsg),
+  play: (handler: Function, tooltipMsg: string | null = null) => _iconFA('play', handler, tooltipMsg),
 }
 
 export namespace cards {

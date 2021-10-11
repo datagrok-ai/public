@@ -1,7 +1,11 @@
 //@ts-ignore: no types
 import * as jStat from 'jstat';
 
-type testStats = {'p-value': number, 'Mean difference'?: number, 'Median difference'?: number};
+type testStats = {'p-value': number, 
+                  'Mean difference'?: number, 
+                  'Median difference'?: number, 
+                  'p-value more': number,
+                  'p-value less': number,};
 
 export function decimalAdjust(type: 'floor' | 'ceil' | 'round', value: number, exp: number): number {
   // If the exp is undefined or zero...
@@ -38,10 +42,6 @@ export function tTest(arr1: number[], arr2: number[], alpha=0.05, devKnown=false
   let pMore;
   let pLess;
   let pTot;
-  // let VkMoreTs;
-  // let VkLessTs;
-  // let VkMore;
-  // let VkLess;
 
   if (!devKnown) {
     if (!devEqual) {
@@ -62,10 +62,6 @@ export function tTest(arr1: number[], arr2: number[], alpha=0.05, devKnown=false
       pLess = jStat.studentt.cdf(Z, K);
       pTot = 2 * (pLess < pMore ? pLess : pMore);
     }
-    // VkMoreTs = jStat.studentt.inv(1 - alpha / 2, K);
-    // VkLessTs = jStat.studentt.inv(alpha / 2, K);
-    // VkMore = jStat.studentt.inv(1 - alpha, K);
-    // VkLess = jStat.studentt.inv(alpha, K);
   } else {
     wv1 = v1 / n1;
     wv2 = v2 / n2;
@@ -74,13 +70,8 @@ export function tTest(arr1: number[], arr2: number[], alpha=0.05, devKnown=false
     pLess = jStat.normal.pdf(Z, 0, 1);
     pMore = 1 - pLess;
     pTot = 2 * (pLess < pMore ? pLess : pMore);
-
-    // VkMoreTs = jStat.normal.inv(1 - alpha / 2);
-    // VkLessTs = jStat.normal.inv(alpha / 2);
-    // VkMore = jStat.normal.inv(1 - alpha);
-    // VkLess = jStat.normal.inv(alpha);
   }
-  return {'p-value': pTot, 'Mean difference': m1 - m2};
+  return {'p-value': pTot, 'Mean difference': m1 - m2, 'p-value more': pMore, 'p-value less': pLess};
 }
 
 export function uTest(x: number[], y: number[], continuity=true): testStats {
@@ -113,7 +104,7 @@ export function uTest(x: number[], y: number[], continuity=true): testStats {
 
   const p = 2 * (1 - jStat.normal.cdf(z, 0, 1));
 
-  return {'p-value': p, 'Median difference': med1 - med2};
+  return {'p-value': p, 'Median difference': med1 - med2, 'p-value more': p, 'p-value less': p};
 }
 
 function _tieTerm(ranks: number[]): number {

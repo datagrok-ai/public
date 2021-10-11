@@ -1,7 +1,10 @@
 {
   "name": "Chembl",
   "tags": ["chem"],
-  "version": "0.1",
+  "version": "0.0.1",
   "fullName": "Chembl",
-  "description": "Chembl integration"
+  "description": "Chembl integration",
+  "scripts": {
+    "deploy": "grok publish"
+  }
 }

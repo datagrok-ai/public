@@ -3,106 +3,67 @@ import * as grok from 'datagrok-api/grok';
 import * as ui from 'datagrok-api/ui';
 import * as DG from 'datagrok-api/dg';
 import { Track, TutorialRunner } from './track';
-import { Tutorial } from './tutorial';
-import { chem } from './tracks/chem';
-import { eda } from './tracks/eda';
-import { ml } from './tracks/ml';
 import '../css/tutorial.css';
 
 export class TutorialWidget extends DG.Widget {
   caption: string;
   order: string;
-  allTutorials: HTMLHeadingElement = ui.h1('');
-  completeTutorials: HTMLHeadingElement = ui.h1('');
-  totalProgress: HTMLHeadingElement = ui.h1('');
+  totalTracks: number = 0;
+  totalTutorials:number = 0;
+  totalCompleted:number = 0;
+  totalProgress:number = 0;
 
   runners:TutorialRunner[];
 
   constructor(...runners:TutorialRunner[]) {
     super(ui.panel([], 'tutorial-widget'));
-
-    console.clear;
-    console.log(runners);
+    
     this.runners = runners;
-
-    const runEda = new TutorialRunner(eda);
-    const runChem = new TutorialRunner(chem);
-    const runMl = new TutorialRunner(ml);
-
-    let edaProgress = ui.element('progress');
-    edaProgress.max = '0';
-    edaProgress.value = '0';
-
-    let chemProgress = ui.element('progress');
-    chemProgress.max = '0';
-    chemProgress.value = '0';
-
-    let mlProgress = ui.element('progress');
-    mlProgress.max = '0';
-    mlProgress.value = '0';
+    let tracksRoot = ui.div([]);
+    let tracks = runners.length;
 
     (async () => {
-        console.log(runners);
+        this.totalTracks = runners.length;
+        let i = 0;
 
-        let complete = await runEda.getCompleted(runEda.track.tutorials) + await runEda.getCompleted(runChem.track.tutorials) + await runMl.getCompleted(runMl.track.tutorials);
-        let total = runEda.track.tutorials.length + runChem.track.tutorials.length + runMl.track.tutorials.length;
-        let progress = 100/total*complete;
-
-        this.completeTutorials.append(String(complete));
-        this.allTutorials.append(String(total));
-        this.totalProgress.append(String(Math.round(progress))+'%');
-
-        edaProgress.max = runEda.track.tutorials.length;
-        edaProgress.value = await runEda.getCompleted(runEda.track.tutorials);
-
-        chemProgress.max = runChem.track.tutorials.length;
-        chemProgress.value = await runChem.getCompleted(runChem.track.tutorials);
+        while(runners){
         
-        mlProgress.max = runMl.track.tutorials.length;
-        mlProgress.value = await runMl.getCompleted(runMl.track.tutorials);
-    
+            let complete = await runners[i].getCompleted(runners[i].track.tutorials);
+            let total = runners[i].track.tutorials.length;
+            console.log(runners[i].root)
+            this.totalTutorials += total;
+            this.totalCompleted += complete;
+            this.totalProgress = 100/this.totalTutorials*this.totalCompleted;
+            
+            let root = runners[i].root;
+
+            tracksRoot.append(ui.divV([
+                ui.divH([
+                    ui.divText(runners[i].track.name, {style:{minWidth:'200px', marginLeft:'5px'}}),
+                    ui.divText(String(complete)+' / '+String(total), {style:{color:'var(--grey-4)', width:'200px', textAlign:'end'}}),
+                    ui.button(ui.iconFA('chevron-right'), ()=>{
+                        let dockRoot = ui.div([root,
+                            ui.panel([],{id:'tutorial-child-node', style:{paddingTop:'10px'}}),
+                          ], 'tutorials-root');
+                        grok.shell.dockManager.dock(dockRoot, DG.DOCK_TYPE.RIGHT, null, 'Tutorials', 0.3);
+                    }),
+                ], {style:{alignItems:'center',zIndex:'100',justifyContent:'space-between'}}),
+                ui.div([],{
+                    style:{
+                        position: 'absolute',
+                        width: String(Math.round(100/total*complete))+'%',
+                        backgroundColor: 'rgba(32, 131, 213, 0.15)',
+                        height: '100%',
+                    }
+                })
+            ], {style:{marginBottom:'10px',position:'relative', border:'1px solid var(--grey-1)', borderRadius:'2px'}}));
+            i++;
+        }
+        
     })();
 
     this.root.append(ui.divV([
-        ui.divH([
-            ui.divV([
-                ui.label('Tracks'),
-                ui.h1('3')//change to array length of tutorialsRunners
-            ]),
-            ui.divV([
-                ui.label('Tutorials'),
-                this.allTutorials
-            ]),
-            ui.divV([
-                ui.label('Complete'),
-                this.completeTutorials
-            ]),
-            ui.divV([
-                ui.label('Progress'),
-                this.totalProgress
-            ]),
-        ], 'widget-tutorials-summary'),
-        ui.divV([
-            ui.divH([
-                ui.divText(runEda.track.name),
-                ui.divText(edaProgress.value+' / '+String(runEda.track.tutorials.length))
-            ], 'widget-tutorials-track-details'),
-            edaProgress
-        ], 'tutorials-track'),
-        ui.divV([
-            ui.divH([
-                ui.divText(runChem.track.name),
-                ui.divText(chemProgress.value+' / '+String(runChem.track.tutorials.length))
-            ], 'widget-tutorials-track-details'),
-            chemProgress
-        ], 'tutorials-track'),
-        ui.divV([
-            ui.divH([
-                ui.divText(runMl.track.name),
-                ui.divText(mlProgress.value+' / '+String(runMl.track.tutorials.length))
-            ], 'widget-tutorials-track-details'),
-            mlProgress
-        ], 'tutorials-track'),
+        tracksRoot,
     ], 'tutorial'));
 
     // properties

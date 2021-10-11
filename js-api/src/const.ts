@@ -254,6 +254,9 @@ export const FUNC_TYPES = {
   /** Makes a widget appear on the welcome screen
    *  Signature: dashboard(): DG.Widget */
   DASHBOARD: 'dashboard',
+
+  /** Package unit-test functions. This is used by the DevTools package. */
+  UNIT_TEST: 'unitTest'
 }
 
 ////// Viewers
@@ -318,6 +321,7 @@ export enum DEMO_DATASET {
   BIOSENSOR = 'biosensor',
   RANDOM_WALK = 'random walk',
   GEO = 'geo',
+  MOLECULES = 'molecules',
 }
 
 /** @enum {DOCK_TYPE} */
