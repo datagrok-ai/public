@@ -15,8 +15,6 @@ export function debounce<T>(observable: rxjs.Observable<T>, milliseconds: number
 }
 
 export function __obs(eventId: string, object: any = null): Observable<any> {
-  console.log(`${eventId} initialized.`);
-
   if (object == null) {
     let observable = rxjs.fromEventPattern(
       function (handler) {

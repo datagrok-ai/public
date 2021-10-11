@@ -14,6 +14,8 @@ import {
   EntityType,
 } from './constants';
 import './styles.css';
+import * as tests from "./tests/test-examples";
+import {testPackages} from "./package-testing";
 
 export const _package = new DG.Package();
 
@@ -176,3 +178,12 @@ export function _scriptEditor(): void {
 export function _IconTool(): void { 
   grok.shell.newView('Icon Tool', [new IconTool('Icon Tool')]);
 }
+
+//name: testPackages
+export async function _testPackages(): Promise<void> { await testPackages(); }
+
+//tags: unitTest
+export function _throwsException(): void { tests.throwsException(); }
+
+//tags: unitTest
+export function _returnsFine(): void { tests.returnsFine(); }

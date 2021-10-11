@@ -8,7 +8,7 @@ declare var grok: any;
 let api = <any>window;
 
 type PropertyGetter = (a: object) => any;
-type PropertySetter = (a: object, object:  any) => void;
+type PropertySetter = (a: object, value:  any) => void;
 
 /** @class
  * Base class for system objects stored in the database in a structured manner.
@@ -140,6 +140,14 @@ export class Func extends Entity {
   }
 
   get description(): string { return api.grok_Func_Get_Description(this.d); }
+
+  get type(): string { return api.grok_Func_Get_Type(this.d); }
+
+  get path(): string { return api.grok_Func_Get_Path(this.d); }
+
+  get helpUrl(): string { return api.grok_Func_Get_HelpUrl(this.d); }
+
+  get package(): Package { return api.grok_Func_Get_Package(this.d); }
 
   /** Returns {@link FuncCall} object in a stand-by state
    * @param {object} parameters

@@ -11,11 +11,11 @@ import '../css/tutorial.css';
 
 
 export const _package = new DG.Package();
+const tracks = [eda, chem, ml, da];
 
 //name: Tutorials
 //tags: app
 export async function trackOverview() {
-  const tracks = [eda, chem, ml, da];
   let root = ui.div([
     ...tracks.map((track) => new TutorialRunner(track).root),
     ui.panel([],{id:'tutorial-child-node', style:{paddingTop:'10px'}}),
@@ -28,5 +28,5 @@ export async function trackOverview() {
 //output: widget tutorial
 //tags: dashboard
 export function tutorialWidget(): DG.Widget {
-  return new TutorialWidget();
+  return new TutorialWidget(...tracks.map((track) => new TutorialRunner(track)));
 }

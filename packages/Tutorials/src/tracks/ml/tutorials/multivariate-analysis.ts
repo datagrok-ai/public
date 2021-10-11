@@ -15,6 +15,7 @@ export class MultivariateAnalysisTutorial extends Tutorial {
   get steps() { return 5; }
     
   demoTable: string = 'cars.csv';
+  helpUrl: string = 'https://datagrok.ai/help/explore/multivariate-analysis/pls';
 
   protected async _run() {
     this.header.textContent = 'Multivariate Analysis';
@@ -25,6 +26,8 @@ export class MultivariateAnalysisTutorial extends Tutorial {
       'model by projecting the predicted variables and the observable variables to a ' +
       'new space.</p><p>In the following example, we will predict a car price by its attributes, ' +
       'and see how different measures are related to each other and to the outcome.</p>');
+
+    this.describe(ui.link('More about ' + this.name, this.helpUrl).outerHTML); 
 
     const dlg = await this.openDialog('Click on "ML | Multivariate Analysis (PLS)..."',
       'Multivariate Analysis (PLS)');

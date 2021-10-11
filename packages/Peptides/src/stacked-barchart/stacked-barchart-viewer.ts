@@ -1,21 +1,52 @@
 import * as DG from 'datagrok-api/dg';
 import * as ui from 'datagrok-api/ui';
+import * as grok from 'datagrok-api/grok';
 import {axisBottom, scaleBand, scaleLinear, select, color} from 'd3';
 import {ChemPalette} from '../utils/chem-palette';
+import * as rxjs from 'rxjs';
 import $ from 'cash-dom';
 import {GridCellRenderArgs, Property, Widget} from 'datagrok-api/dg';
-
+const cp = new ChemPalette('grok');
 
 export function addViewerToHeader(grid: DG.Grid, viewer: Promise<Widget>) {
   viewer.then((viewer) => {
     const barchart = viewer as StackedBarChart;
+    rxjs.fromEvent(grid.overlay, 'mousemove').subscribe((mm:any) => {
+      mm = mm as MouseEvent;
+      const cell = grid.hitTest(mm.offsetX, mm.offsetY);
+      if (cell?.isColHeader && cell.tableColumn?.semType == 'aminoAcids') {
+        barchart.highlight(cell, mm.offsetX, mm.offsetY);
+      }
+    });
+
+    rxjs.fromEvent(grid.overlay, 'click').subscribe((mm:any) => {
+      mm = mm as MouseEvent;
+
+      const cell = grid.hitTest(mm.offsetX, mm.offsetY);
+      if (cell?.isColHeader && cell.tableColumn?.semType == 'aminoAcids') {
+        barchart.beginSelection(mm);
+        return;
+      }
+      barchart.unhighlight();
+    });
+    rxjs.fromEvent(grid.overlay, 'mouseout').subscribe((_) => {
+      barchart.unhighlight();
+    });
+
     barchart.tableCanvas = grid.canvas;
     grid.setOptions({'colHeaderHeight': 200});
     grid.onCellTooltip((cell, x, y) => {
       if (cell.tableColumn) {
-        if (['aminoAcids', 'alignedSequence'].includes(cell.tableColumn.semType) && !cell.isColHeader) {
-          ui.tooltip.show(ui.divV([ui.divText(cell.cell.value as string)]), x, y);
-          return true;
+        if (['aminoAcids', 'alignedSequence'].includes(cell.tableColumn.semType) ) {
+          if ( !cell.isColHeader) {
+            cp.showTooltip(cell, x, y);
+            return true;
+          } else {
+            if (barchart.highlighted) {
+              ui.tooltip.show(ui.divV([ui.divText(barchart.highlighted.aaName)]), x, y);
+            }
+            return true;
+          }
         }
       }
     });
@@ -45,6 +76,7 @@ export function addViewerToHeader(grid: DG.Grid, viewer: Promise<Widget>) {
 export class StackedBarChart extends DG.JsViewer {
     public dataEmptyAA: string;
     public initialized: boolean;
+    highlighted:{'colName':string, 'aaName':string}|null = null;
     private ord: { [Key: string]: number; } = {};
     private margin: { top: number; left: number; bottom: number; right: number } = {
       top: 10,
@@ -58,7 +90,7 @@ export class StackedBarChart extends DG.JsViewer {
     private selectionMode: boolean = false;
     public aminoColumnNames: string[] = [];
     // @ts-ignore
-    private getColor: ((c?: string) => string);
+
     private aminoColumnIndices: { [Key: string]: number; } = {};
     private aggregatedTables: { [Key: string]: DG.DataFrame; } = {};
     private aggregatedTablesUnselected: { [Key: string]: DG.DataFrame; } = {};
@@ -95,14 +127,6 @@ export class StackedBarChart extends DG.JsViewer {
       this.data = [];
 
       this.aminoColumnNames = [];
-      const cp = ChemPalette.getDatagrok();
-      this.getColor = (c = '') => {
-        if (c.length == 1 || c.at(1) == '(' || c.at(0)?.toLowerCase() == 'd') {
-          const amino = c.at(0)?.toUpperCase()!;
-          return amino in cp ? cp[amino] : 'rgb(77,77,77)';
-        }
-        return 'rgb(77,77,77)';
-      };
     }
 
     // Stream subscriptions
@@ -199,7 +223,6 @@ export class StackedBarChart extends DG.JsViewer {
                 {'name': name, 'data': []};
         this.barStats[colObj['name']] = colObj['data'];
         this.data.push(colObj);
-        let unselectedRowIndex = 0;
         for (let i = 0; i < df.rowCount; i++) {
           const amino = df.getCol(name).get(i);
           const aminoCount = df.getCol(`${name}_count`).get(i);
@@ -208,17 +231,14 @@ export class StackedBarChart extends DG.JsViewer {
           }
           const aminoObj = {'name': amino, 'count': aminoCount, 'selectedCount': 0};
           colObj['data'].push(aminoObj);
-
-
-          if (name in this.aggregatedTablesUnselected) {
-            if (amino != this.aggregatedTablesUnselected[name].getCol(name).get(unselectedRowIndex)) {
-              unselectedRowIndex++;
+          for (let j = 0; j < this.aggregatedTablesUnselected[name].rowCount; j++) {
+            const unsAmino = this.aggregatedTablesUnselected[name].getCol(`${name}`).get(j);
+            if (unsAmino == amino) {
+              aminoObj['selectedCount'] = this.aggregatedTablesUnselected[name]
+                .getCol(`${name}_count`)
+                .get(j);
+              break;
             }
-            aminoObj['selectedCount'] = this.aggregatedTablesUnselected[name]
-              .getCol(`${name}_count`)
-              .get(unselectedRowIndex);
-
-            unselectedRowIndex++;
           }
         }
         colObj['data'] = colObj['data'].sort((o1, o2) => {
@@ -238,15 +258,20 @@ export class StackedBarChart extends DG.JsViewer {
     renderBarToCanvas(g: CanvasRenderingContext2D, cell: DG.GridCell, x: number, y: number, w: number, h: number) {
       const margin = 0.2;
       const innerMargin = 0.02;
-      const selectLineration = 0.1;
+      const selectLineRatio = 0.1;
       x = x + w * margin;
       y = y + h * margin / 4;
       w = w - w * margin * 2;
-      h = h - h * margin / 2;
-      g.fillStyle = 'orange';
-      g.font = `20px monospace`;
+      h = h - h * margin / 2 - w;
+      g.fillStyle = 'black';
       g.textBaseline = 'top';
+      g.font = `${w / 2}px`;
+      // eslint-disable-next-line no-unused-vars
+
       const name = cell.tableColumn!.name;
+      g.fillText(name,
+        x+w / 4,
+        y + h+ w / 4 );
       const barData = this.barStats[name];
       let sum = 0;
       barData.forEach((obj) => {
@@ -257,7 +282,7 @@ export class StackedBarChart extends DG.JsViewer {
       barData.forEach((obj, index) => {
         const sBarHeight = h * obj['count'] / this.max;
         const gapSize = sBarHeight * innerMargin;
-        g.fillStyle = this.getColor(obj['name']);
+        g.fillStyle = cp.getColor(obj['name']);
         g.fillRect(
           x,
           y + h * (this.max - sum + curSum) / this.max + gapSize / 2,
@@ -266,7 +291,9 @@ export class StackedBarChart extends DG.JsViewer {
         if (w <= sBarHeight) {
           g.fillStyle = 'rgb(0,0,0)';
           g.font = `${w / 2}px`;
-          g.fillText(obj['name'],
+          // eslint-disable-next-line no-unused-vars
+          const [_c, aar, _p] = cp.getColorAAPivot(obj['name']);
+          g.fillText(aar,
             x + w / 4,
             y + h * (this.max - sum + curSum) / this.max + gapSize / 2 + (sBarHeight - gapSize) / 2 - w / 4);
         }
@@ -274,9 +301,9 @@ export class StackedBarChart extends DG.JsViewer {
         if (this.selectionMode && obj['selectedCount'] > 0) {
           g.fillStyle = 'rgb(255,165,0)';
           g.fillRect(
-            x - w * selectLineration * 1.5,
+            x - w * selectLineRatio * 1.5,
             y + h * (this.max - sum + curSum) / this.max + gapSize / 2,
-            w * selectLineration,
+            w * selectLineRatio,
             h * obj['selectedCount'] / this.max - gapSize);
         }
 
@@ -325,7 +352,7 @@ export class StackedBarChart extends DG.JsViewer {
       const
         innerHeight = height - this.margin.top - this.margin.bottom;
 
-      const getColor = this.getColor;
+      const getColor = cp.getColor;
       const
         scope = this;
 
@@ -543,5 +570,55 @@ export class StackedBarChart extends DG.JsViewer {
       const cell = this.registered[name];
       const rect = cell.bounds;
       this.renderBarToCanvas(this.tableCanvas.getContext('2d')!, cell, rect.x, rect.y, rect.width, rect.height);
+    }
+
+    highlight(cell: DG.GridCell, offsetX:number, offsetY:number) {
+      const colName = cell.tableColumn?.name;
+      if (!colName) {
+        return;
+      }
+      const margin = 0.2;
+      const bound = cell.bounds;
+      const x = bound.x + bound.width * margin;
+      const y = 0 + 200 * margin / 4;
+      const w = bound.width - bound.width * margin * 2;
+      const h = 200 - 200 * margin / 2;
+      const barData = this.barStats[colName];
+      let sum = 0;
+      barData.forEach((obj) => {
+        sum += obj['count'];
+      });
+      let curSum = 0;
+
+      barData.forEach((obj, index) => {
+        const sBarHeight = h * obj['count'] / this.max;
+        if (offsetX>=x &&
+            offsetY>=y + h * (this.max - sum + curSum) / this.max &&
+            offsetX<=x+w &&
+            offsetY<=y + h * (this.max - sum + curSum) / this.max + sBarHeight) {
+          this.highlighted = {'colName': colName, 'aaName': obj['name']};
+          return;
+        }
+
+        curSum += obj['count'];
+      });
+      return;
+    }
+
+    unhighlight() {
+      this.highlighted = null;
+    }
+
+    beginSelection(event:any) {
+      if (!this.highlighted || !this.dataFrame) {
+        return;
+      }
+      this.dataFrame!.selection.handleClick((i) => {
+        //let selected = true;
+        // @ts-ignore
+        return this.highlighted!['aaName'] === (this.dataFrame.getCol(this.highlighted!['colName']).get(i));
+
+        //&& (scope.dataFrame.selection.get(i) === selected);
+      }, event);
     }
 }

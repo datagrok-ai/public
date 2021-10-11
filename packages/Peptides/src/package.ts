@@ -7,6 +7,7 @@ import {SARViewer} from './peptide-sar-viewer/sar-viewer';
 import {AlignedSequenceCellRenderer, AminoAcidsCellRenderer} from './utils/cell-renderer';
 import {Logo} from './peptide-logo-viewer/logo-viewer';
 import {StackedBarChart, addViewerToHeader} from './stacked-barchart/stacked-barchart-viewer';
+import {ChemPalette} from './utils/chem-palette';
 // import { tTest, uTest } from './utils/misc';
 
 export const _package = new DG.Package();
@@ -20,16 +21,23 @@ async function main(chosenFile : string) {
   const peptides = (await grok.data.loadTable(path));
   peptides.name = 'Peptides';
   peptides.setTag('dataType', 'peptides');
-
+  const view = grok.shell.addTableView(peptides);
+  tableGrid = view.grid;
   peptides.onSemanticTypeDetecting.subscribe((_) => {
     const regexp = new RegExp('^((.+)?-){5,49}(\\w|\\(|\\))+$');
     for (const col of peptides.columns) {
       col.semType = DG.Detector.sampleCategories(col, (s) => regexp.test(s)) ? 'alignedSequence' : null;
+      if (col.semType == 'alignedSequence') {
+        let maxWidth = 0;
+        col.categories.forEach((seq:string) =>{
+          maxWidth = maxWidth < seq.length ? seq.length : maxWidth;
+        });
+        tableGrid.columns.byName(col.name)!.width = maxWidth * 15;
+      }
     }
-  });
+  },
+  );
 
-  const view = grok.shell.addTableView(peptides);
-  tableGrid = view.grid;
   view.name = 'PeptidesView';
 
   grok.shell.windows.showProperties = true;
@@ -40,13 +48,29 @@ async function main(chosenFile : string) {
 //name: Peptides
 //tags: app
 export function Peptides() {
+  let textLink = ui.div();
+  textLink.innerHTML = `For more details, see our <a href="https://github.com/datagrok-ai/public/blob/master/help/domains/bio/peptides.md">[wiki]</a>.`;
+  
   const appDescription = ui.info(
     [
-      ui.span(['For more details see LINK ']),
-      ui.divText('\n To start the application :', {style: {'font-weight': 'bolder'}}),
-      ui.divText('Select the corresponding .csv table with peptide sequences'),
-    ], 'Transform peptide sequence data to research insights',
+     // ui.divText('\n To start the application :', {style: {'font-weight': 'bolder'}}),
+      ui.divText(   
+      " - automatic recognition of peptide sequences\n" +
+      " - native integration with tons of Datagrok out-of-the box features (visualization, filtering, clustering, multivariate analysis, etc)\n" +
+      " - custom rendering in the spreadsheet\n" +
+      " - interactive logo plots\n" +
+      " - rendering residues\n" + 
+      " - structure-activity relationship:\n \n" +
+      "a) highlighting statistically significant changes in activity in the [position, monomer] spreadsheet\n" +
+      "b) for the specific [position, monomer], visualizing changes of activity distribution (specific monomer in this position vs rest of the monomers in this position)\n" +
+      "c) interactivity\n \t"
+    )
+    ], 
+    
+    `Use and analyse peptide sequence data to support your research:\n`
   );
+
+
   const annotationViewerDiv = ui.div();
 
   const windows = grok.shell.windows;
@@ -57,22 +81,17 @@ export function Peptides() {
   const mainDiv = ui.div();
   grok.shell.newView('Peptides', [
     appDescription,
-    ui.h2('Choose .csv file'),
+    ui.info([textLink]),
+    //ui.h2('Choose .csv file'),
     ui.div([
       ui.block25([
-        ui.button('Open simple case demo', () => main('aligned.csv'), ''),
-        ui.button('Open complex case demo', () => main('aligned_2.csv'), ''),
+        ui.button('Open peptide sequences demonstration set', () => main('aligned.csv'), ''),
+        //ui.button('Open complex case demo', () => main('aligned_2.csv'), ''),
       ]),
       ui.block75([annotationViewerDiv]),
     ]),
     mainDiv,
   ]);
-
-  // tests test lol
-  // const a1 = [13.3, 6.0, 20.0, 8.0, 14.0, 19.0, 18.0, 25.0, 16.0, 24.0, 15.0, 1.0, 15.0];
-  // const a2 = [22.0, 16.0, 21.7, 21.0, 30.0, 26.0, 12.0, 23.2, 28.0, 23.0];
-  // console.log(uTest(a1, a2));
-  // console.log(tTest(a1, a2));
 }
 
 //name: Peptides
@@ -102,9 +121,18 @@ export async function analyzePeptides(col: DG.Column): Promise<DG.Widget> {
         'activityColumnColumnName': activityColumnChoice.value.name,
         'activityScalingMethod': activityScalingMethod.value,
       };
+      for (let i =0; i<tableGrid.columns.length; i++) {
+
+        if (tableGrid.columns.byIndex(i)?.name && tableGrid.columns.byIndex(i)?.name!='IC50') {
+          // @ts-ignore
+          tableGrid.columns.byIndex(i)?.visible = false;
+        }
+      }
       (grok.shell.v as DG.TableView).addViewer('peptide-sar-viewer', options);
       const widgProm = col.dataFrame.plot.fromType('StackedBarChartAA');
       addViewerToHeader(tableGrid, widgProm);
+      // @ts-ignore
+
       // tableGrid.dataFrame!.columns.names().forEach((name:string)=>{
       //   col = tableGrid.dataFrame!.columns.byName(name);
       //   if (col.semType == 'aminoAcids') {
@@ -143,6 +171,31 @@ export function sar(): SARViewer {
 export async function stackedBarchartWidget(col:DG.Column):Promise<DG.Widget> {
   const viewer = await col.dataFrame.plot.fromType('StackedBarChartAA');
   const panel = ui.divH([viewer.root]);
+  return new DG.Widget(panel);
+}
+
+//name: Peptide Molecule
+//tags: panel, widgets
+//input: string pep {semType: alignedSequence}
+//output: widget result
+
+export async function pepMolGraph(pep:string):Promise<DG.Widget> {
+  const split = pep.split('-');
+  const mols = [];
+  for (let i = 1; i < split.length - 1; i++) {
+    if (split[i] in ChemPalette.AASmiles ) {
+      const aar = ChemPalette.AASmiles[split[i]];
+      mols[i] = aar.substr(0, aar.length-1);
+    } else if (!split[i]||split[i]=='-') {
+      mols[i] = '';
+    } else {
+      return new DG.Widget(ui.divH([]));
+    }
+  }
+  console.error(mols);
+  console.error(mols.join('')+'COOH');
+  const sketch = grok.chem.svgMol(mols.join(''));
+  const panel = ui.divH([sketch]);
   return new DG.Widget(panel);
 }
 

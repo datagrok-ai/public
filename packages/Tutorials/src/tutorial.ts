@@ -109,7 +109,7 @@ export abstract class Tutorial extends DG.Widget {
       $(`.tutorials-track[data-name ='${track?.name}']`)
       .find(`.tutorials-card[data-name='${track.tutorials[id].name}']`)
       .children('.tutorials-card-status').show();
-      $(`.tutorials-track[data-name ='${track?.name}']`).find('progress').prop('value', String(100/track.tutorials.length*(track.completed)));
+      $(`.tutorials-track[data-name ='${track?.name}']`).find('progress').prop('value', (100/track.tutorials.length*(track.completed)).toFixed());
       $(`.tutorials-track[data-name ='${track?.name}'] > .tutorials-track-details`).children().first().text($(`.tutorials-track[data-name ='${track?.name}']`).find('progress').prop('value')+'% complete');
       $(`.tutorials-track[data-name ='${track?.name}'] > .tutorials-track-details`).children().last().text(String(track.completed+' / '+track.tutorials.length));
     }
@@ -348,13 +348,24 @@ export abstract class Tutorial extends DG.Widget {
     hint: HTMLElement | HTMLElement[] | null = null, description: string = ''): Promise<DG.View> {
     let view: DG.View;
 
-    await this.action(instructions, grok.events.onViewAdded.pipe(filter((v) => {
+    // If the view was opened earlier, we find it and wait until it becomes current.
+    for (const v of grok.shell.views) {
       if (v.type === type) {
         view = v;
-        return true;
       }
-      return false;
-    })), hint, description);
+    }
+
+    await this.action(instructions, view! == null ?
+      grok.events.onViewAdded.pipe(filter((v) => {
+        if (v.type === type) {
+          view = v;
+          return true;
+        }
+        return false;
+      })) : grok.shell.v.type === view.type ?
+      new Promise<void>((resolve, reject) => resolve()) :
+      grok.events.onCurrentViewChanged.pipe(filter((_) => grok.shell.v.type === view.type)),
+      hint, description);
 
     return view!;
   }

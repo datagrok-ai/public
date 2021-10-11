@@ -7,7 +7,9 @@ import * as jStat from 'jstat';
 import {splitAlignedPeptides} from '../split-aligned';
 import {decimalAdjust, tTest} from '../utils/misc';
 import {ChemPalette} from '../utils/chem-palette';
+import * as grok from 'datagrok-api/src/chem';
 
+const cp = new ChemPalette('grok');
 
 export async function describe(
   df: DG.DataFrame,
@@ -97,15 +99,15 @@ export async function describe(
   //statistics for specific AAR at a specific position
   matrixDf = matrixDf.groupBy([positionColName, aminoAcidResidue])
     .add('count', activityColumnScaled, 'Count')
-    .add('med', 'innerMAD', medianColName) //final step of MAD calculation
-    .add('q1', activityColumnScaled, 'Q1')
-    .add('q2', activityColumnScaled, 'Median')
-    .add('q3', activityColumnScaled, 'Q3')
+    //.add('med', 'innerMAD', medianColName) //final step of MAD calculation
+    //.add('q1', activityColumnScaled, 'Q1')
+    //.add('q2', activityColumnScaled, 'Median')
+    //.add('q3', activityColumnScaled, 'Q3')
     .aggregate();
 
   // calculate additional stats
-  await matrixDf.columns.addNewCalculated('IQR', '${q3}-${q1}');
-  await matrixDf.columns.addNewCalculated('CQV', '(${q3}-${q1})/(${q3}+${q1})');
+  //await matrixDf.columns.addNewCalculated('IQR', '${q3}-${q1}');
+  //await matrixDf.columns.addNewCalculated('CQV', '(${q3}-${q1})/(${q3}+${q1})');
   await matrixDf.columns.addNewCalculated('Ratio', '${count}/'.concat(`${peptidesCount}`));
 
   //calculate p-values based on t-test
@@ -137,11 +139,12 @@ export async function describe(
 
     testResult = tTest(currentActivity, otherActivity);
     // testResult = uTest(currentActivity, otherActivity);
-    pValues.push(testResult['p-value']);
+    pValues.push(testResult['p-value more']);
     mDiff.push(testResult['Mean difference']!);
   }
-  matrixDf.columns.add(DG.Column.fromList(DG.TYPE.FLOAT, 'p-value', pValues));
   matrixDf.columns.add(DG.Column.fromList(DG.TYPE.FLOAT, 'Mean difference', mDiff));
+  matrixDf.columns.add(DG.Column.fromList(DG.TYPE.FLOAT, 'p-value', pValues));
+
 
   const statsDf = matrixDf.clone();
 
@@ -277,19 +280,19 @@ export async function describe(
   grid.onCellTooltip(function(cell, x, y) {
     if (
       !cell.isRowHeader &&
-      !cell.isColHeader &&
-      cell.tableColumn !== null &&
-      cell.tableColumn.name !== aminoAcidResidue &&
-      cell.cell.value !== null &&
-      cell.tableRowIndex !== null
+        !cell.isColHeader &&
+        cell.tableColumn !== null &&
+        cell.tableColumn.name !== aminoAcidResidue &&
+        cell.cell.value !== null &&
+        cell.tableRowIndex !== null
     ) {
-      const tooltipMap: {[index: string]: string} = {};
+      const tooltipMap: { [index: string]: string } = {};
 
       for (const col of statsDf.columns.names()) {
         if (col !== aminoAcidResidue && col !== positionColName) {
           const query =
-            `${aminoAcidResidue} = ${matrixDf.get(aminoAcidResidue, cell.tableRowIndex)} ` +
-            `and ${positionColName} = ${cell.tableColumn.name}`;
+              `${aminoAcidResidue} = ${matrixDf.get(aminoAcidResidue, cell.tableRowIndex)} ` +
+              `and ${positionColName} = ${cell.tableColumn.name}`;
           let text = `${decimalAdjust('floor', statsDf.groupBy([col]).where(query).aggregate().get(col, 0), -5)}`;
 
           //@ts-ignore: I'm sure it's gonna be fine, text contains a number
@@ -303,8 +306,17 @@ export async function describe(
       }
 
       ui.tooltip.show(ui.tableFromMap(tooltipMap), x, y);
-    // } else if (cell.isColHeader && !cell.isRowHeader) {
-    //   ui.tooltip.show((await df.plot.fromType('peptide-logo-viewer')).root, x, y);
+      // } else if (cell.isColHeader && !cell.isRowHeader) {
+      //   ui.tooltip.show((await df.plot.fromType('peptide-logo-viewer')).root, x, y);
+    }
+    if (
+      !cell.isColHeader &&
+        cell.tableColumn !== null &&
+        cell.tableColumn.name == aminoAcidResidue &&
+        cell.cell.value !== null &&
+        cell.tableRowIndex !== null
+    ) {
+      cp.showTooltip(cell, x, y);
     }
     return true;
   });
@@ -344,9 +356,8 @@ export async function describe(
       }
 
       //FIXME: coloring doesn't work now
-      // const cp = ChemPalette.getDatagrok();
       // const colorMap: {[index: string]: string | number} = {otherColName: DG.Color.lightGray};
-      // colorMap[currentAAR] = cp[currentAAR];
+      // colorMap[currentAAR] = cp.getColor(currentAAR);
       // df.getCol(splitColName).colors.setCategorical(colorMap);
       // df.getCol(splitColName).setCategoryOrder([otherColName]);
     }

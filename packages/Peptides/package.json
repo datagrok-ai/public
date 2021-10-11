@@ -10,6 +10,7 @@
 		"dayjs": "latest",
 		"jstat": "^1.9.5",
 		"logojs-react": "^2.1.1",
+		"rxjs": "^7.3.1",
 		"ts-loader": "^9.2.5"
 	},
 	"devDependencies": {

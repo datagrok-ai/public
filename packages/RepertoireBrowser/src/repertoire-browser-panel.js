@@ -26,13 +26,17 @@ export class RepertoireBrowserPanel {
         this.cdr_scheme = ui.choiceInput('CDR3 Scheme', 'default', this.schemes_lst);
 
         this.ptm_predictions = [...new Set([...Object.keys(json.ptm_predictions.H), ...Object.keys(json.ptm_predictions.L)])];
+        for(let i = 0; i < this.ptm_predictions.length; i++){
+            this.ptm_predictions[i] = this.ptm_predictions[i].replace("_", " ");
+        }
+
         this.ptm_choices = ui.multiChoiceInput('', [], this.ptm_predictions);
 
         this.ptm_prob = ui.floatInput('PTM probability', 0.2);
 
         this.paratopes = ui.boolInput('Paratopes', false);
 
-        this.msaContentChoice = ui.choiceInput('Content', 'AA MSA', ['AA MSA', 'DNA MSA', 'Hybrid']);
+        //this.msaContentChoice = ui.choiceInput('Content', 'AA MSA', ['AA MSA', 'DNA MSA', 'Hybrid']);
 
 
         // ---- INPUTS PANEL ----
@@ -40,8 +44,8 @@ export class RepertoireBrowserPanel {
         let acc_options = ui.accordion();
         acc_options.addPane('3D model', () => ui.inputs([this.repChoice, this.cdr_scheme]));
         acc_options.addPane('Sequence', () => ui.inputs([this.paratopes, this.ptm_prob]));
-        acc_options.addPane('PTMs', () => ui.div([this.ptm_choices]));
-        acc_options.addPane('MSA', () => ui.inputs([this.msaContentChoice]));
+        acc_options.addPane('Predicted PTMs', () => ui.div([this.ptm_choices]));
+        //acc_options.addPane('MSA', () => ui.inputs([this.msaContentChoice]));
         // await MiscMethods.save_load(this.table, acc_options)
         this.root.append(acc_options.root);
 
@@ -57,9 +61,7 @@ export class RepertoireBrowserPanel {
         this.msa_host_H = ui.box();
         this.sequence_tabs = ui.tabControl({
             'HEAVY': this.pViz_host_H,
-            'LIGHT': this.pViz_host_L,
-            'MSA HEAVY': this.msa_host_H,
-            'MSA LIGHT': this.msa_host_L,
+            'LIGHT': this.pViz_host_L
         }).root;
 
 

@@ -1,11 +1,11 @@
 {
   "name": "Chem",
-  "version": "0.15",
+  "version": "0.16",
   "fullName": "Chem",
   "description": "Cheminformatics support: \n\n* RDKit-based rendering \n* Molecule sketching \n*",
   "sources": [
     "css/chem.css",
-    "src/RDKit_minimal_2021.03_16.js",
+    "src/RDKit_minimal_2021.03_17.js",
     "src/rdkit_worker_proxy.js",
     "src/rdkit_substruct_library.js",
     "src/rdkit_parallel.js",
@@ -13,7 +13,8 @@
     "src/rdkit_substructure_filter.js",
     "src/chem_column_property_panel.js",
     "src/chem_searches.js",
-    "src/sdf_utils.js"
+    "src/sdf_utils.js",
+    "src/tests/chem-tests.js"
   ],
   "properties": [
     {
