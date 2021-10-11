@@ -111,8 +111,8 @@ You will learn: how to write semantic type detectors, how to develop context-spe
    When everything is done correctly, the `detectors.js` file will get loaded by the platform automatically, and the 
    `detectNucleotides` function will be executed against every column in a newly added table.
 
-4. Test your implementation by opening the following CSV or TXT file (or go `Data | Text`, and paste it there). Make 
-   sure you click on DONE (this will trigger semantic types detection):
+4. Test your implementation by opening the following CSV or TXT file (or go to `📁 (Data) | Text`
+   and paste it there). Make sure you click on DONE (this will trigger semantic types detection):
    ```
    sequence, id
    GATTACA, 1997
@@ -123,7 +123,7 @@ You will learn: how to write semantic type detectors, how to develop context-spe
    you will see `quality: dna_nucleotide` in the bottom of the tooltip. Alternatively, you can 
    find this information if you click on the column and expand the 'Details' pane in the property panel on the right.
    
-5. Now transform the previously created `complement` function into an [info panel]():
+5. Now transform the previously created `complement` function into an [info panel](how-to/add-info-panel.md):
    tag it with `panel` and `widgets` tags and change the output type to `widget` (see an example [here][014]).
    This will instruct the platform to use the `complement` function for providing additional information for
    string values of the `dna_nucleotide` semantic type. To test it, simply open our test file, click on any cell
@@ -172,8 +172,8 @@ In this exercise, we will count occurrences of a given subsequence in a nucleoti
    You can find your login inside the profile page between name and email (under avatar), or in the profile URL: 
    `https://dev.datagrok.ai/u/<yourLogin>/summary`.
 7. Let's apply `CountSubsequencePython` to the input dataframe using Datagrok UI.
-   Open a table — say, let's go for `sequences.csv`. Navigate to `Data | Files` and open
-   `Demo Files / bio / sequences.csv`. Navigate to a menu item `Edit | Add New Column...`
+   Open a table — say, let's go for `sars-cov-2.csv`. Navigate to `Data | Files` and open
+   `Demo Files / bio / sars-cov-2.csv`. Navigate to a menu item `Edit | Add New Column...`
    and click it. Type in your expression using the function you've just previously created:  
    ![](exercises-add-new-column.png)
    Observe how the `Preview Result Columns` change while you are modifying the expression. 
@@ -245,7 +245,7 @@ Let's repeat what we've achieved in the last point of the previous exercise, now
       
 3. Run the function with a "Play" button on top of the function window. THe dialog will prompt you to select
    a dataframe. Navigate to a "Data" view (first button on the left sidebar) and open a file with nucleotide sequences
-   (say, `Demo Files / bio / sequences.csv`). Go back to the `Run Function` dialog to select the opened dataframe.
+   (say, `Demo Files / bio / sars-cov-2.csv`). Go back to the `Run Function` dialog to select the opened dataframe.
    
 4. Now choose a column with nucleotide sequences from the dropdown. Notice how the list of columns is automatically
    formed for the selected dataframe. Finally, run the function to get the resulting dataframe.
@@ -316,7 +316,7 @@ _You will learn:_ how to invoke arbitrary Datagrok functions in JavaScript and a
    we get as a result of the script's execution.
    
 4. Let' prepare a visual layout before running our script. Navigate to `Data | Files` and open
-   `Demo Files / bio / sequences.csv`. Then click on `Windows` and activate `Menu`, this will let
+   `Demo Files / bio / sars-cov-2.csv`. Then click on `Windows` and activate `Menu`, this will let
    you move windows around. Stick the `Sequences` table to the side of the `CountSubsequenceTable`
    window and leave enough space in the table to see the new column coming when running the script.
    
@@ -421,7 +421,7 @@ In this exercise, we will work with a `northwind` PostgreSQL database (in case t
 a demo database that Microsoft often uses for showcasing its technology). The database is already deployed and
 is accessible from our server.
 
-1. Navigate to the `Data | Databases | PostgreSQL | northwind | Tables | orders` table
+1. Navigate to the `Data | Databases | PostgreSQL | northwind | Schemas | public | orders` table
 2. Make this table current by left-clicking on it, and explore its property panels on the right. The 
    `Content` pane should be showing first 50 rows of that table.  
 3. Right-click on the table, and choose `New SQL Query...`
@@ -499,7 +499,7 @@ After checking this you should see a nice scatter plot for `WEIGHT` and `HEIGHT`
 8. The Python code you see is what renders the scatter plot form p.6 on the Datagrok server. Let's walk through this code.
    * The script takes as inputs the original dataframe and the three columns. Remember form p.6 there were
      selectors for `X`, `Y`, and `Color` in the property panel. In fact, these three property names are
-     declared with the notation `<yourFirstName>ColumnName` in the names of the three `#input` columns.
+     declared with the notation `<propertyName>ColumnName` in the names of the three `#input` columns.
    * The script produces an `#output` of type `graphics`. It is important the graphics appear in the end
      of the Python script. This is exactly what happens with the `plt.show()` in the last line of the script.
 9. Modify the name of `colorColumnName` to a `temperatureColumnName`, hit `Apply` in the bottom of the window,
@@ -508,7 +508,7 @@ After checking this you should see a nice scatter plot for `WEIGHT` and `HEIGHT`
     property panel.
 11. Add another input column to the script with a name `SEX`. Hit `Apply` and check what appears in the property panel.
 12. Now there's all you need to create a Python scripting viewer for our amino acid histogram task.
-    Open a demo file with nucleotide sequences. It is located at `Data | Files | Demo Files | bio | sequences.csv`.
+    Open a demo file with nucleotide sequences. It is located at `Data | Files | Demo Files | bio | sars-cov-2.csv`.
 `Data` corresponds to the first button from the top on the Datagrok sidebar.
 13. In the top menu you've activated at p.2, hit `Add | Scripting Viewers | New Scripting Viewer`.
 14. Follow what you've learned in the points 1 to 11 to create a scripting viewer taking a column of strings,
@@ -540,7 +540,7 @@ _You will learn:_ how to join and union dataframes using the knowledge of semant
    * creates a dataframe `df` out of `df1` and `df2` in the following way:
      * the content of `df2` goes after `df1`, and all columns of `df1` and `df2` are preserved  
        — this is a UNION operation for dataframes, [as in SQL]();
-       use the dataframe's [`.add`](https://public.datagrok.ai/js/samples/data-frame/append) method
+       use the dataframe's [`.append`](https://public.datagrok.ai/js/samples/data-frame/append) method
      * a new column `Counts` appears in `df`, which contains:
        * for each row `R` from `df1`, `R.counts` is a number of matches of all the subsequences in `R.col1` of
          length `N` in _all_ the sequences of `col2`
@@ -583,14 +583,16 @@ _Prerequisites:_ exercises ["Setting up the environment"](#setting-up-the-enviro
    * use `fusioncharts-smartlabel` to break the original sequence in the current cell into lines which fit into
      a cell's canvas rectangle; learn [here][017] how to do it, consider `SmartLabel.textToLines(...).lines`
      as a target array of lines to render
-   * Datagrok [grid]() is rendered through an [HTML5 Canvas](). The grid's canvas is `g.canvas`.
-     Iterate through the resulting lines and bring them to a `g.canvas` in the `render` method with
-     `g.canvas.getContext("2d").fillText`; learn [more]() about HTML Canvas if it's new for you
+   * Datagrok [grid](visualize/viewers/grid.md) is rendered through an
+     [HTML5 Canvas](https://en.wikipedia.org/wiki/Canvas_element).
+     The grid's canvas is `g.canvas`. Iterate through the resulting lines and bring them to a `g.canvas` in
+     the `render` method with `g.canvas.getContext("2d").fillText`; learn [more]() about HTML Canvas if it's
+     new for you
    * Hint: pay attention to managing `line-height` both at computing the box and rendering text lines
     ```javascript
     class NucleotideBoxCellRenderer extends DG.GridCellRenderer {
       get name() { return 'Nucleotide cell renderer'; }
-      get cellType() { return 'dna_sequence'; }
+      get cellType() { return 'dna_nucleotide'; }
       render(g, x, y, w, h, gridCell, cellStyle) {
         let seq = gridCell.cell.value;
         const sl = new SmartLabel('id', true);
@@ -608,7 +610,7 @@ _Prerequisites:_ exercises ["Setting up the environment"](#setting-up-the-enviro
 4. Add the below to `src/package.js` to make the new cell renderer part of the package:
     ```javascript
     //name: nucleotideBoxCellRenderer
-    //tags: cellRenderer, cellRenderer-dna_sequence
+    //tags: cellRenderer, cellRenderer-dna_nucleotide
     //output: grid_cell_renderer result
     export function nucleotideBoxCellRenderer() {
       return new NucleotideBoxCellRenderer();
