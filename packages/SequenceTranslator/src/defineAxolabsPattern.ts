@@ -55,12 +55,17 @@ function getName(patternName: string): string[] {
 
 function translateSequence(sequence: string, bases: any, ptoLinkages: any, startModification: any, endModification: any, firstPtoExist: boolean) {
   let counter: number = -1;
-  return startModification.value + (firstPtoExist ? 's' : '') + sequence.replace(/[AUGC]/g, function (x: string) {
+  let mainSequence = sequence.replace(/[AUGC]/g, function (x: string) {
     counter++;
     let indexOfSymbol = axolabsMap["RNA"]["symbols"].indexOf(x);
     let symbol = axolabsMap[bases[counter].value]["symbols"][indexOfSymbol];
     return (ptoLinkages[counter].value) ? symbol + 's' : symbol;
-  }) + endModification.value;
+  });
+  if (mainSequence.slice(0, 4) == 'mUmU')
+    mainSequence = '(uu)' + mainSequence.slice(4);
+  if (mainSequence.slice(mainSequence.length - 4) == 'mUmU')
+    mainSequence = mainSequence.slice(4) + '(uu)';
+  return startModification.value + (firstPtoExist ? 's' : '') + mainSequence + endModification.value;
 }
 
 function addColumnWithIds(tableName: string, columnName: string, patternName: string) {
@@ -85,6 +90,7 @@ function addColumnWithTranslatedSequences(tableName: string, columnName: string,
 
 export function defineAxolabsPattern() {
 
+  let enumerateModifications = [defaultBase];
   let maximalSsLength = defaultSequenceLength;
   let maximalAsLength = defaultSequenceLength;
 
@@ -202,21 +208,31 @@ export function defineAxolabsPattern() {
   }
 
   function updateSvgScheme() {
+    let ssBasesList = ssBases.slice(0, ssLength.value).map((e) => e.value);
+    let asBasesList = asBases.slice(0, asLength.value).map((e) => e.value);
+    let enumerateModifications: string[] = createAsStrand.value ? [...new Set(ssBasesList.concat(asBasesList))] : [...new Set(ssBasesList)];
+    isEnumerateModificationsDiv.innerHTML = '';
+    for (let i = 0; i < enumerateModifications.length; i++) {
+      isEnumerateModificationsDiv.append(
+        ui.boolInput(enumerateModifications[i], true).root
+      );
+    }
     svgDiv.innerHTML = '';
     svgDiv.append(
       ui.span([
         drawAxolabsPattern(
           getShortName(saveAs.value),
           createAsStrand.value,
-          ssBases.slice(0, ssLength.value).map((e) => e.value),
-          asBases.slice(0, asLength.value).map((e) => e.value),
+          ssBasesList,
+          asBasesList,
           [firstSsPto.value].concat(ssPtoLinkages.slice(0, ssLength.value).map((e) => e.value)),
           [firstAsPto.value].concat(asPtoLinkages.slice(0, asLength.value).map((e) => e.value)),
           ssThreeModification.value,
           ssFiveModification.value,
           asThreeModification.value,
           asFiveModification.value,
-          comment.value
+          comment.value,
+          enumerateModifications
         )
       ])
     );
@@ -389,7 +405,12 @@ export function defineAxolabsPattern() {
     appAxolabsDescription = ui.div([]),
     loadPatternDiv = ui.div([]),
     asModificationDiv = ui.div([]),
-    firstAsPtoDiv = ui.div([]);
+    firstAsPtoDiv = ui.div([]),
+    isEnumerateModificationsDiv = ui.div([ui.boolInput(defaultBase, true, () => {
+      // if (!enumerateModifications.includes(defaultBase))
+      //   enumerateModifications.push(defaultBase);
+      updateSvgScheme();
+    })]);
 
   let ssBases = Array(defaultSequenceLength).fill(ui.choiceInput('', defaultBase, baseChoices)),
     asBases = Array(defaultSequenceLength).fill(ui.choiceInput('', defaultBase, baseChoices)),
@@ -436,7 +457,6 @@ export function defineAxolabsPattern() {
     }
   }
 
-  // let variable = ;
   let tables = ui.tableInput('Tables', grok.shell.tables[0], grok.shell.tables, (t: DG.DataFrame) => {
     inputSsColumn = ui.choiceInput('SS Column', '', t.columns.names(), (colName: string) => validateSsColumn(colName));
     inputSsColumnDiv.innerHTML = '';
@@ -624,6 +644,7 @@ export function defineAxolabsPattern() {
       svgDiv
     ], {style: {overflowX: 'scroll'}}),
     ui.button('Download', () => svg.saveSvgAsPng(document.getElementById('mySvg'), saveAs.value)),
+    isEnumerateModificationsDiv,
     ui.div([
       ui.div([
         ui.divH([
