@@ -35,8 +35,8 @@ function getTextWidth(text: string, font: number): number {
   return 2 * context.measureText(text).width;
 }
 
-function getTextInsideCircle(bases: string[], index: number, nucleotideCounter: number, numberOfNucleotides: number): string {
-  return (bases[index].slice(-3) == "(o)") ? "" :
+function getTextInsideCircle(bases: string[], index: number, nucleotideCounter: number, numberOfNucleotides: number, enumerateModifications: string[]): string {
+  return (bases[index].slice(-3) == "(o)") || !enumerateModifications.includes(bases[index]) ? "" :
     ['A', 'G', 'C', 'U', 'T'].includes(bases[index]) ? bases[index] : String(numberOfNucleotides - nucleotideCounter);
 }
 
@@ -50,7 +50,8 @@ function getBaseColor(base: string): string {
 }
 
 export function drawAxolabsPattern(patternName: string, asExists: boolean, ssBases: string[], asBases: string[], ssPtoStatuses: boolean[], asPtoStatuses: boolean[],
-                                   ssThreeModification: string, ssFiveModification: string, asThreeModification: string, asFiveModification: string, comment: string) {
+                                   ssThreeModification: string, ssFiveModification: string, asThreeModification: string, asFiveModification: string, comment: string,
+                                   enumerateModifications: string[]) {
 
   function getEquidistantXForLegend(index: number): number {
     return Math.round((index + startFrom) * width / (uniqueBases.length + startFrom) + legendRadius);
@@ -111,6 +112,7 @@ export function drawAxolabsPattern(patternName: string, asExists: boolean, ssBas
     legendFontSize = 14,
     psLinkageColor = 'red',
     fontColor = 'var(--grey-6)',
+    titleFontColor = 'black',
     modificationsColor = 'red',
     ssLeftText = "SS: 5'",
     asLeftText = "AS: 3'",
@@ -128,7 +130,7 @@ export function drawAxolabsPattern(patternName: string, asExists: boolean, ssBas
     widthOfRightText = Math.max(getTextWidth(ssRightText, baseFontSize), getTextWidth(asRightText, baseFontSize)),
     width = widthOfLeftText + widthOfLeftModification + widthOfBases + widthOfRightModification + widthOfRightText + baseDiameter,
     height = asExists ? 11 * baseRadius : 9 * baseRadius,
-    xOfTitle = Math.round(width / 4),
+    xOfTitle = baseRadius,// Math.round(width / 4),
     uniqueBases = asExists ? [...new Set(ssBases.concat(asBases))] : [...new Set(ssBases)],
     isPtoExist = asExists ? [...new Set(ssPtoStatuses.concat(asPtoStatuses))].includes(true) : [...new Set(ssPtoStatuses)].includes(true),
     startFrom = isPtoExist ? 1 : 0,
@@ -137,7 +139,7 @@ export function drawAxolabsPattern(patternName: string, asExists: boolean, ssBas
     xOfSsRightModifications = ssRightOverhangs * baseDiameter + getXOfBaseCircles(-0.5, 0),
     xOfAsRightModifications = asRightOverhangs * baseDiameter + getXOfBaseCircles(-0.5, 0),
     xOfRightTexts = Math.max(xOfSsRightModifications, xOfAsRightModifications) + widthOfLeftModification + baseDiameter * (Math.max(ssRightOverhangs, asRightOverhangs)),
-    yOfTitle = 2 * baseRadius,
+    yOfTitle = baseRadius,
     yOfSsTexts = 4 * baseRadius,
     yOfAsTexts = 7 * baseRadius,
     yOfComment = asExists ? 11 * baseRadius : 8.5 * baseRadius,
@@ -172,7 +174,7 @@ export function drawAxolabsPattern(patternName: string, asExists: boolean, ssBas
       nucleotideCounter--;
     image.append(
       svg.circle(getXOfBaseCircles(i, ssRightOverhangs), yOfSsCircles, baseRadius, getBaseColor(ssBases[i])),
-      svg.text(getTextInsideCircle(ssBases, i, nucleotideCounter, numberOfSsNucleotides), getXOfBaseCircles(i, ssRightOverhangs) + getShiftToAlignNumberInsideCircle(ssBases, ssBases.length - i, numberOfSsNucleotides - nucleotideCounter), yOfSsTexts, baseFontSize, getFontColorVisibleOnBackground(axolabsMap[ssBases[i]]["color"])),
+      svg.text(getTextInsideCircle(ssBases, i, nucleotideCounter, numberOfSsNucleotides, enumerateModifications), getXOfBaseCircles(i, ssRightOverhangs) + getShiftToAlignNumberInsideCircle(ssBases, ssBases.length - i, numberOfSsNucleotides - nucleotideCounter), yOfSsTexts, baseFontSize, getFontColorVisibleOnBackground(axolabsMap[ssBases[i]]["color"])),
       ssPtoStatuses[i] ? svg.star(getXOfBaseCircles(i, ssRightOverhangs) + baseRadius, yOfSsTexts + psLinkageRadius, psLinkageColor) : ''
     );
   }
@@ -191,7 +193,7 @@ export function drawAxolabsPattern(patternName: string, asExists: boolean, ssBas
         nucleotideCounter--;
       image.append(
         svg.circle(getXOfBaseCircles(i, asRightOverhangs), yOfAsCircles, baseRadius, getBaseColor(asBases[i])),
-        svg.text(getTextInsideCircle(asBases, i, numberOfAsNucleotides - nucleotideCounter - 1, numberOfAsNucleotides), getXOfBaseCircles(i, asRightOverhangs) + getShiftToAlignNumberInsideCircle(asBases, i, nucleotideCounter + 1), yOfAsTexts, baseFontSize, getFontColorVisibleOnBackground(axolabsMap[asBases[i]]["color"])),
+        svg.text(getTextInsideCircle(asBases, i, numberOfAsNucleotides - nucleotideCounter - 1, numberOfAsNucleotides, enumerateModifications), getXOfBaseCircles(i, asRightOverhangs) + getShiftToAlignNumberInsideCircle(asBases, i, nucleotideCounter + 1), yOfAsTexts, baseFontSize, getFontColorVisibleOnBackground(axolabsMap[asBases[i]]["color"])),
         asPtoStatuses[i] ? svg.star(getXOfBaseCircles(i, asRightOverhangs) + baseRadius, yOfAsTexts + psLinkageRadius, psLinkageColor) : ''
       );
     }
@@ -201,7 +203,7 @@ export function drawAxolabsPattern(patternName: string, asExists: boolean, ssBas
   }
 
   let title = patternName + ' for ' + String(numberOfSsNucleotides) + (asExists ? '/' + String(numberOfAsNucleotides) : '') + 'mer';
-  image.append(svg.text(title, xOfTitle, yOfTitle, baseFontSize, fontColor));
+  image.append(svg.text(title, xOfTitle, yOfTitle, baseFontSize, titleFontColor));
   for (let i = 0; i < uniqueBases.length; i++)
     image.append(
       svg.circle(getEquidistantXForLegend(i), yOfCirclesInLegends, legendRadius, getBaseColor(uniqueBases[i])),
