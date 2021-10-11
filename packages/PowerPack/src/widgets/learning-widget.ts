@@ -31,7 +31,6 @@ export class LearningWidget extends DG.Widget {
     grok.functions
     .call("Tutorials:tutorialWidget")
     .then((res) => {
-      console.log(res);
       tabs.addPane('TUTORIALS',()=>res._root)
     })
     .catch((error) => {
