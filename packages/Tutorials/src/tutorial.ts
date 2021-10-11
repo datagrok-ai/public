@@ -136,7 +136,7 @@ export abstract class Tutorial extends DG.Widget {
               this.status = true;
               updateProgress(this.track);
             }  
-            //grok.shell.tableView(this.t.name).close();
+            grok.shell.tableView(this.t!.name).close();
             this.clearRoot();
             $('.tutorial').show();
             $('#tutorial-child-node').html('');
@@ -151,7 +151,7 @@ export abstract class Tutorial extends DG.Widget {
             this.status = true;
             updateProgress(this.track);
           }  
-          //grok.shell.tableView(this.t.name).close();
+          grok.shell.tableView(this.t!.name).close();
           this.clearRoot();
           $('.tutorial').show();
           $('#tutorial-child-node').html('');
@@ -392,7 +392,7 @@ export abstract class Tutorial extends DG.Widget {
     const commandClick =  new Promise<void>((resolve, reject) => {
       const sub = grok.events.onContextMenu.subscribe((data) => {
         data.args.menu.onContextMenuItemClick.pipe(
-          filter((mi) => (new DG.Menu(mi)).toString() === label),
+          filter((mi) => (new DG.Menu(mi)).toString().toLowerCase() === label.toLowerCase()),
           first()).subscribe((_: any) => {
             sub.unsubscribe();
             resolve();

@@ -93,14 +93,14 @@ export class TutorialRunner {
         });
         return el;
       })),
-      ui.link('Clear storage', () => {
-        let i = 0;
-        while (track.tutorials[i]) {
-          grok.dapi.userDataStorage.remove(Tutorial.DATA_STORAGE_KEY, track.tutorials[i].name);
-          i++;
-        }
-        grok.shell.info('complete');
-      }, '', '')
+      // ui.link('Clear storage', () => {
+      //   let i = 0;
+      //   while (track.tutorials[i]) {
+      //     grok.dapi.userDataStorage.remove(Tutorial.DATA_STORAGE_KEY, track.tutorials[i].name);
+      //     i++;
+      //   }
+      //   grok.shell.info('complete');
+      // }, '', '')
     ], 'tutorials-track');
 
     trackRoot.setAttribute('data-name', track.name);
