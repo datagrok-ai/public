@@ -213,23 +213,37 @@ progress[value]::-webkit-progress-value::after {
 	}
 }
 
-/* Tutorial Widget*/
-.widget-tutorials-summary{
-    margin: 0;
-    margin-bottom: 20px;
-    padding: 0;
+/* Tutorial Widget */
+
+.widget-tutorial-track{
+    margin-bottom: 10px;
+    position:relative;
+    border: 1px solid var(--steel-1);
+    border-radius: 2px;
+}
+.widget-tutorial-track:hover{
+    cursor: pointer;
+    margin-bottom: 10px;
+    position:relative;
+    border: 1px solid var(--blue-1);
+    border-radius:2px;
+    color: var(--blue-1);
+    background-color: rgba(32, 131, 213, 0.05);
+    transition: border 200ms ease-in-out;
+}
+
+
+.widget-tutorial-track-body{
+    margin: 10px 5px;
+    align-items: center;
+    z-index: 100;
     justify-content: space-between;
 }
-.widget-tutorials-summary label{
-    color:var(--grey-4);
+.widget-tutorial-track-name{
+    min-width: 200px;
 }
-.widget-tutorials-summary h1{
-    color:var(--grey-6);
-    margin: 5px 0;
+.widget-tutorial-track-progress{
+    color: var(--grey-4);
+    width: 200px;
+    text-align: end;
 }
-.widget-tutorials-track-details{
-    justify-content: space-between;
-}
-.widget-tutorials-track-details div:last-child{
-    color:var(--grey-4)
-}    

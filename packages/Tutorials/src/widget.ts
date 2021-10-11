@@ -30,24 +30,26 @@ export class TutorialWidget extends DG.Widget {
         
             let complete = await runners[i].getCompleted(runners[i].track.tutorials);
             let total = runners[i].track.tutorials.length;
-            console.log(runners[i].root)
             this.totalTutorials += total;
             this.totalCompleted += complete;
             this.totalProgress = 100/this.totalTutorials*this.totalCompleted;
             
             let root = runners[i].root;
 
+            let trackroot = ui.divH([
+                ui.divText(runners[i].track.name, 'widget-tutorial-track-name'),
+                ui.divText(String(complete)+' / '+String(total), 'widget-tutorial-track-progress'),
+            ], 'widget-tutorial-track-body');
+
+            trackroot.addEventListener('click', function(){
+                let dockRoot = ui.div([root,
+                    ui.panel([],{id:'tutorial-child-node', style:{paddingTop:'10px'}}),
+                  ], 'tutorials-root');
+                grok.shell.dockManager.dock(dockRoot, DG.DOCK_TYPE.RIGHT, null, 'Tutorials', 0.3);
+            })
+
             tracksRoot.append(ui.divV([
-                ui.divH([
-                    ui.divText(runners[i].track.name, {style:{minWidth:'200px', marginLeft:'5px'}}),
-                    ui.divText(String(complete)+' / '+String(total), {style:{color:'var(--grey-4)', width:'200px', textAlign:'end'}}),
-                    ui.button(ui.iconFA('chevron-right'), ()=>{
-                        let dockRoot = ui.div([root,
-                            ui.panel([],{id:'tutorial-child-node', style:{paddingTop:'10px'}}),
-                          ], 'tutorials-root');
-                        grok.shell.dockManager.dock(dockRoot, DG.DOCK_TYPE.RIGHT, null, 'Tutorials', 0.3);
-                    }),
-                ], {style:{alignItems:'center',zIndex:'100',justifyContent:'space-between'}}),
+                trackroot,
                 ui.div([],{
                     style:{
                         position: 'absolute',
@@ -56,7 +58,7 @@ export class TutorialWidget extends DG.Widget {
                         height: '100%',
                     }
                 })
-            ], {style:{marginBottom:'10px',position:'relative', border:'1px solid var(--grey-1)', borderRadius:'2px'}}));
+            ], 'widget-tutorial-track'));
             i++;
         }
         

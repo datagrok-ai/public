@@ -118,15 +118,21 @@ class TutorialCard {
 
     let img = ui.image(`${_package.webRoot}images/${tutorial.name.toLowerCase().replace(/ /g, '-')}.png`, 90, 70);
     let icon = ui.div([], 'tutorials-card-status');
-    icon.append(ui.iconFA('check', () => { }));
+    let title = ui.divText(tutorial.name, 'tutorials-card-title');
+    let description = ui.divText(tutorial.description, 'tutorials-card-description');
+    icon.append(ui.iconFA('check-circle', () => { }));
     $(icon).hide();
     $(icon).children().removeClass('fal');
-    $(icon).children().addClass('far');
+    $(icon).children().addClass('fas');
 
     (async () => {
       await tutorial.updateStatus();
       if (tutorial.status == true) {
         $(icon).show();
+        $(title).css('color','var(--grey-4)');
+        $(description).css('color','var(--grey-4)');
+        $(img).css('mix-blend-mode','luminosity');
+        $(img).css('opacity','0.7');
       }
     })();
 
@@ -134,8 +140,8 @@ class TutorialCard {
       img,
       ui.tooltip.bind(
         ui.divV([
-          ui.divText(tutorial.name, 'tutorials-card-title'),
-          ui.divText(tutorial.description, 'tutorials-card-description')
+          title,
+          description
         ]),
         `<b>${tutorial.name}</b><br>${tutorial.description}`),
       icon
