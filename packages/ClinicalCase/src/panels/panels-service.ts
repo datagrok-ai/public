@@ -4,7 +4,8 @@ import * as DG from "datagrok-api/dg";
 import { CLIN_TRIAL_GOV_SEARCH, HttpService } from '../services/http.service';
 import { addDataFromDmDomain, getNullOrValue } from '../data-preparation/utils';
 import { study } from '../clinical-study';
-import { TREATMENT_ARM } from '../constants';
+import { SUBJECT_ID, TREATMENT_ARM } from '../constants';
+import { AeBrowserView } from '../views/adverse-events-browser';
 
 export async function createPropertyPanel(viewClass: any) {
     switch (viewClass.name) {
@@ -16,10 +17,25 @@ export async function createPropertyPanel(viewClass: any) {
             grok.shell.o = await timelinesPanel(viewClass.resultTables, viewClass.selectedDataframes);
             break;
         }
+        case 'AE Browser': {
+            grok.shell.o = await aeBrowserPanel(viewClass);
+        }
         default: {
             break;
         }
     }
+}
+
+export async function aeBrowserPanel(view: AeBrowserView) {
+    let acc = ui.accordion();
+    view.domains.forEach(it => {
+        acc.addPane(it, () => {
+            if (it) {
+                return ui.div(view[ it ].plot.grid().root)
+            }
+        });
+    })
+    return acc.root;
 }
 
 export async function summaryPanel(studyId: string) {
@@ -41,10 +57,15 @@ export async function timelinesPanel(timelinesDf: DG.DataFrame, domains: string[
         if (domains.includes('ae')) {
             const aeWithArm = addDataFromDmDomain(timelinesDf.clone(), study.domains.dm, timelinesDf.columns.names(), [TREATMENT_ARM], 'key');
             const aeNumberByArm = aeWithArm.groupBy([ TREATMENT_ARM ]).where('domain = ae').count().aggregate();
-
+            const subjNumberByArm = study.domains.dm.groupBy([ TREATMENT_ARM ]).uniqueCount(SUBJECT_ID).aggregate();
             const aeNumByArmDict = {};
             for (let i = 0; i < aeNumberByArm.rowCount; i++) {
-                aeNumByArmDict[ aeNumberByArm.get(TREATMENT_ARM, i) ] = aeNumberByArm.get('count', i)
+                aeNumByArmDict[ aeNumberByArm.get(TREATMENT_ARM, i) ] = aeNumberByArm.get('count', i) /
+                subjNumberByArm.
+                groupBy([ TREATMENT_ARM, `unique(${SUBJECT_ID})` ])
+                .where(`${TREATMENT_ARM} = ${aeNumberByArm.get(TREATMENT_ARM, i)}`)
+                .aggregate()
+                .get(`unique(${SUBJECT_ID})`, 0);
             }
 
             const aeTop5Dict = {};
@@ -63,7 +84,7 @@ export async function timelinesPanel(timelinesDf: DG.DataFrame, domains: string[
             })
 
             let root = ui.div();
-            root.appendChild(ui.h2('Total AEs'));
+            root.appendChild(ui.h2('Average AE number per subject'));
             root.appendChild(ui.tableFromMap(aeNumByArmDict));
             root.appendChild(ui.h2('Most frequent AEs'));
             root.appendChild(ui.tableFromMap(aeTop5Dict));

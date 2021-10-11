@@ -16,25 +16,21 @@ export class MatrixesView extends DG.ViewBase {
   uniqueLabValues = Array.from(getUniqueValues(study.domains.lb, 'LBTEST'));
   uniqueVisits = Array.from(getUniqueValues(study.domains.lb, 'VISIT'));
 
-  selectedLabValues = null;
-  bl = '';
+  selectedLabValues: any;
+  bl: any;
+  matrixDataframe: DG.DataFrame;
 
 
   constructor(name) {
     super(name);
     this.name = name;
-    
-    let viewerTitle = {style:{
-      'color':'var(--grey-6)',
-      'margin':'12px 0px 6px 12px',
-      'font-size':'16px',
-    }};
 
+    this.createCorrelationMatrixDataframe();
     this.uniqueLabValues = Array.from(getUniqueValues(study.domains.lb, 'LBTEST'));
     this.uniqueVisits = Array.from(getUniqueValues(study.domains.lb, 'VISIT'));
 
-    this.selectedLabValues = null;
-    this.bl = '';
+    this.selectedLabValues = this.uniqueLabValues;
+    this.bl = this.uniqueVisits[0];
 
     let blVisitChoices = ui.choiceInput('BL', this.bl, this.uniqueVisits);
     blVisitChoices.onChanged((v) => {
@@ -67,23 +63,32 @@ export class MatrixesView extends DG.ViewBase {
       ui.box(ui.divH([blVisitChoices.root, selectBiomarkers]), {style:{maxHeight:'100px'}}),
       this.matrixDiv
     ]))
+    this.updateMarix();
 
   }
 
   private updateMarix(){
     if(this.selectedLabValues && this.bl) {
-    study.labDataForCorelationMatrix.rows.match(`VISIT = ${this.bl}`).filter();
-    let matrixDataframe = study.labDataForCorelationMatrix.clone(study.labDataForCorelationMatrix.filter, this.selectedLabValues.concat(['USUBJID'])) 
-    updateDivInnerHTML(this.matrixDiv, grok.shell.addTableView(matrixDataframe).matrixPlot());
+      this.matrixDataframe.rows.match(`VISIT = ${this.bl}`).filter();
+      console.log(this.matrixDataframe.columns.names())
+      let filteredMatrixDataframe = this.matrixDataframe.clone(this.matrixDataframe.filter, this.selectedLabValues.map(it => `${it} avg(LBSTRESN)`)); 
     
-    /* matrixDataframe.plot.fromType(DG.VIEWER.MATRIX_PLOT).then((v: any) => {
+      filteredMatrixDataframe.plot.fromType(DG.VIEWER.CORR_PLOT).then((v: any) => {
         let container = ui.splitV([
-            ui.box(ui.panel([matrixDataframe.plot.grid().root]), {style:{maxHeight:'200px'}}),
             v.root
         ])
         updateDivInnerHTML(this.matrixDiv, container);
-      }); */
+      }); 
     
     }
+  }
+
+  private createCorrelationMatrixDataframe() {
+    let df = study.domains.lb.clone();
+    this.matrixDataframe = df
+      .groupBy([ 'USUBJID', 'VISIT' ])
+      .pivot('LBTEST')
+      .avg('LBSTRESN')
+      .aggregate();
   }
 }

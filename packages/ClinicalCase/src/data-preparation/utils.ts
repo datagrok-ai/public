@@ -99,3 +99,11 @@ export function dataframeContentToRow(df: DG.DataFrame) {
 export function getNullOrValue(df: DG.DataFrame, colname: string, index: number){
     return df.getCol(colname).isNone(index) ?  'null' : df.get(colname, index);
 }
+
+
+export function getMinVisitName(df: DG.DataFrame) {
+    return df.groupBy([ 'VISIT' ])
+        .where(`VISITDY = ${df.getCol('VISITDY').stats[ 'min' ]}`)
+        .aggregate()
+        .get('VISIT', 0);
+}
