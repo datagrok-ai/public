@@ -55,12 +55,17 @@ function getName(patternName: string): string[] {
 
 function translateSequence(sequence: string, bases: any, ptoLinkages: any, startModification: any, endModification: any, firstPtoExist: boolean) {
   let counter: number = -1;
-  return startModification.value + (firstPtoExist ? 's' : '') + sequence.replace(/[AUGC]/g, function (x: string) {
+  let mainSequence = sequence.replace(/[AUGC]/g, function (x: string) {
     counter++;
     let indexOfSymbol = axolabsMap["RNA"]["symbols"].indexOf(x);
     let symbol = axolabsMap[bases[counter].value]["symbols"][indexOfSymbol];
     return (ptoLinkages[counter].value) ? symbol + 's' : symbol;
-  }) + endModification.value;
+  });
+  if (mainSequence.slice(0, 5).split('mU').length == 3)
+    mainSequence = '(uu)' + mainSequence.slice(4);
+  if (mainSequence.slice(mainSequence.length - 7).split('mU').length == 3)
+    mainSequence = mainSequence.slice(0, mainSequence.length - 4) + '(uu)';
+  return startModification.value + (firstPtoExist ? 's' : '') + mainSequence + endModification.value;
 }
 
 function addColumnWithIds(tableName: string, columnName: string, patternName: string) {
@@ -85,6 +90,7 @@ function addColumnWithTranslatedSequences(tableName: string, columnName: string,
 
 export function defineAxolabsPattern() {
 
+  let enumerateModifications = [defaultBase];
   let maximalSsLength = defaultSequenceLength;
   let maximalAsLength = defaultSequenceLength;
 
@@ -98,7 +104,21 @@ export function defineAxolabsPattern() {
         updateSvgScheme();
         updateOutputExamples();
       });
-      asBases[i] = ui.choiceInput('', asBases[i].value, baseChoices, () => {
+      asBases[i] = ui.choiceInput('', asBases[i].value, baseChoices, (v: string) => {
+        if (!enumerateModifications.includes(v)) {
+          enumerateModifications.push(v);
+          isEnumerateModificationsDiv.append(ui.boolInput(v, true, (boolV: boolean) => {
+            if (boolV) {
+              if (!enumerateModifications.includes(v))
+                enumerateModifications.push(v);
+            } else {
+              const index = enumerateModifications.indexOf(v, 0);
+              if (index > -1)
+                enumerateModifications.splice(index, 1);
+            }
+            updateSvgScheme();
+          }).root);
+        }
         updateAsModification();
         updateSvgScheme();
         updateOutputExamples();
@@ -129,7 +149,21 @@ export function defineAxolabsPattern() {
         updateSvgScheme();
         updateOutputExamples();
       });
-      ssBases[i] = ui.choiceInput('', ssBases[i].value, baseChoices, () => {
+      ssBases[i] = ui.choiceInput('', ssBases[i].value, baseChoices, (v: string) => {
+        if (!enumerateModifications.includes(v)) {
+          enumerateModifications.push(v);
+          isEnumerateModificationsDiv.append(ui.boolInput(v, true, (boolV: boolean) => {
+            if (boolV) {
+              if (!enumerateModifications.includes(v))
+                enumerateModifications.push(v);
+            } else {
+              const index = enumerateModifications.indexOf(v, 0);
+              if (index > -1)
+                enumerateModifications.splice(index, 1);
+            }
+            updateSvgScheme();
+          }).root);
+        }
         updateSsModification();
         updateSvgScheme();
         updateOutputExamples();
@@ -216,7 +250,8 @@ export function defineAxolabsPattern() {
           ssFiveModification.value,
           asThreeModification.value,
           asFiveModification.value,
-          comment.value
+          comment.value,
+          enumerateModifications
         )
       ])
     );
@@ -389,7 +424,19 @@ export function defineAxolabsPattern() {
     appAxolabsDescription = ui.div([]),
     loadPatternDiv = ui.div([]),
     asModificationDiv = ui.div([]),
-    firstAsPtoDiv = ui.div([]);
+    firstAsPtoDiv = ui.div([]),
+    isEnumerateModificationsDiv = ui.divH([ui.boolInput(defaultBase, true, (v: boolean) => {
+      if (v) {
+        if (!enumerateModifications.includes(defaultBase))
+          enumerateModifications.push(defaultBase);
+      } else {
+        const index = enumerateModifications.indexOf(defaultBase, 0);
+        if (index > -1)
+          enumerateModifications.splice(index, 1);
+      }
+      updateSvgScheme();
+      updateOutputExamples();
+    }).root]);
 
   let ssBases = Array(defaultSequenceLength).fill(ui.choiceInput('', defaultBase, baseChoices)),
     asBases = Array(defaultSequenceLength).fill(ui.choiceInput('', defaultBase, baseChoices)),
@@ -436,7 +483,6 @@ export function defineAxolabsPattern() {
     }
   }
 
-  // let variable = ;
   let tables = ui.tableInput('Tables', grok.shell.tables[0], grok.shell.tables, (t: DG.DataFrame) => {
     inputSsColumn = ui.choiceInput('SS Column', '', t.columns.names(), (colName: string) => validateSsColumn(colName));
     inputSsColumnDiv.innerHTML = '';
@@ -487,25 +533,25 @@ export function defineAxolabsPattern() {
   let saveAs = ui.textInput('Save As', 'Pattern Name', () => updateSvgScheme());
   saveAs.setTooltip('Name Of New Pattern');
 
-  let ssThreeModification = ui.stringInput("Additional SS 3' Modification", "", () => {
+  let ssThreeModification = ui.stringInput("SS 3' Modification", "", () => {
     updateSvgScheme();
     updateOutputExamples();
   });
   ssThreeModification.setTooltip("Additional SS 3' Modification");
 
-  let ssFiveModification = ui.stringInput("Additional SS 5' Modification", "", () => {
+  let ssFiveModification = ui.stringInput("SS 5' Modification", "", () => {
     updateSvgScheme();
     updateOutputExamples();
   });
   ssFiveModification.setTooltip("Additional SS 5' Modification");
 
-  let asThreeModification = ui.stringInput("Additional AS 3' Modification", "", () => {
+  let asThreeModification = ui.stringInput("AS 3' Modification", "", () => {
     updateSvgScheme();
     updateOutputExamples();
   });
   asThreeModification.setTooltip("Additional AS 3' Modification");
 
-  let asFiveModification = ui.stringInput("Additional AS 5' Modification", "", () => {
+  let asFiveModification = ui.stringInput("AS 5' Modification", "", () => {
     updateSvgScheme();
     updateOutputExamples();
   });
@@ -624,6 +670,7 @@ export function defineAxolabsPattern() {
       svgDiv
     ], {style: {overflowX: 'scroll'}}),
     ui.button('Download', () => svg.saveSvgAsPng(document.getElementById('mySvg'), saveAs.value)),
+    isEnumerateModificationsDiv,
     ui.div([
       ui.div([
         ui.divH([

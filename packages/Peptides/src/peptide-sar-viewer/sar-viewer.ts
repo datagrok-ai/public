@@ -8,6 +8,7 @@ import {describe} from './describe';
 
 export class SARViewer extends DG.JsViewer {
   private grid: DG.Viewer | null;
+  private progress: DG.TaskBarProgressIndicator;
   protected activityColumnColumnName: string;
   protected activityScalingMethod: string;
   // protected filterMode: boolean;
@@ -16,6 +17,7 @@ export class SARViewer extends DG.JsViewer {
   // duplicatesHandingMethod: string;
   constructor() {
     super();
+    this.progress = DG.TaskBarProgressIndicator.create('Loading SAR viewer');
 
     this.grid = null;
     this.statsDf = null;
@@ -42,10 +44,10 @@ export class SARViewer extends DG.JsViewer {
           const currentPosition = this.grid?.table.currentCol.name;
 
           const labelStr = `${currentAAR === '-' ? 'Empty' : currentAAR} - ${currentPosition}`;
-          // const currentColor = DG.Color.toHtml(DG.Color.getCategoryColor(originalDf.getCol('~splitCol'), labelStr));
-          // const otherColor = DG.Color.toHtml(DG.Color.getCategoryColor(originalDf.getCol('~splitCol'), 'Other'));
-          const currentLabel = ui.label(labelStr, {style: {color: DG.Color.toHtml(DG.Color.orange)}});
-          const otherLabel = ui.label('Other', {style: {color: DG.Color.toHtml(DG.Color.blue)}});
+          const currentColor = DG.Color.toHtml(DG.Color.getCategoryColor(originalDf.getCol('~splitCol'), labelStr));
+          const otherColor = DG.Color.toHtml(DG.Color.getCategoryColor(originalDf.getCol('~splitCol'), 'Other'));
+          const currentLabel = ui.label(labelStr, {style: {color: currentColor}});
+          const otherLabel = ui.label('Other', {style: {color: otherColor}});
 
           const elements: (HTMLLabelElement | HTMLElement)[] = [currentLabel, otherLabel];
 
@@ -123,5 +125,6 @@ export class SARViewer extends DG.JsViewer {
         this.root.appendChild(this.grid.root);
       }
     }
+    this.progress.close();
   }
 }
