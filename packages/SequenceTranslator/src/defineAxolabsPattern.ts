@@ -61,10 +61,10 @@ function translateSequence(sequence: string, bases: any, ptoLinkages: any, start
     let symbol = axolabsMap[bases[counter].value]["symbols"][indexOfSymbol];
     return (ptoLinkages[counter].value) ? symbol + 's' : symbol;
   });
-  if (mainSequence.slice(0, 4) == 'mUmU')
+  if (mainSequence.slice(0, 5).split('mU').length == 3)
     mainSequence = '(uu)' + mainSequence.slice(4);
-  if (mainSequence.slice(mainSequence.length - 4) == 'mUmU')
-    mainSequence = mainSequence.slice(4) + '(uu)';
+  if (mainSequence.slice(mainSequence.length - 7).split('mU').length == 3)
+    mainSequence = mainSequence.slice(0, mainSequence.length - 4) + '(uu)';
   return startModification.value + (firstPtoExist ? 's' : '') + mainSequence + endModification.value;
 }
 
@@ -104,7 +104,21 @@ export function defineAxolabsPattern() {
         updateSvgScheme();
         updateOutputExamples();
       });
-      asBases[i] = ui.choiceInput('', asBases[i].value, baseChoices, () => {
+      asBases[i] = ui.choiceInput('', asBases[i].value, baseChoices, (v: string) => {
+        if (!enumerateModifications.includes(v)) {
+          enumerateModifications.push(v);
+          isEnumerateModificationsDiv.append(ui.boolInput(v, true, (boolV: boolean) => {
+            if (boolV) {
+              if (!enumerateModifications.includes(v))
+                enumerateModifications.push(v);
+            } else {
+              const index = enumerateModifications.indexOf(v, 0);
+              if (index > -1)
+                enumerateModifications.splice(index, 1);
+            }
+            updateSvgScheme();
+          }).root);
+        }
         updateAsModification();
         updateSvgScheme();
         updateOutputExamples();
@@ -135,7 +149,21 @@ export function defineAxolabsPattern() {
         updateSvgScheme();
         updateOutputExamples();
       });
-      ssBases[i] = ui.choiceInput('', ssBases[i].value, baseChoices, () => {
+      ssBases[i] = ui.choiceInput('', ssBases[i].value, baseChoices, (v: string) => {
+        if (!enumerateModifications.includes(v)) {
+          enumerateModifications.push(v);
+          isEnumerateModificationsDiv.append(ui.boolInput(v, true, (boolV: boolean) => {
+            if (boolV) {
+              if (!enumerateModifications.includes(v))
+                enumerateModifications.push(v);
+            } else {
+              const index = enumerateModifications.indexOf(v, 0);
+              if (index > -1)
+                enumerateModifications.splice(index, 1);
+            }
+            updateSvgScheme();
+          }).root);
+        }
         updateSsModification();
         updateSvgScheme();
         updateOutputExamples();
@@ -208,23 +236,14 @@ export function defineAxolabsPattern() {
   }
 
   function updateSvgScheme() {
-    let ssBasesList = ssBases.slice(0, ssLength.value).map((e) => e.value);
-    let asBasesList = asBases.slice(0, asLength.value).map((e) => e.value);
-    let enumerateModifications: string[] = createAsStrand.value ? [...new Set(ssBasesList.concat(asBasesList))] : [...new Set(ssBasesList)];
-    isEnumerateModificationsDiv.innerHTML = '';
-    for (let i = 0; i < enumerateModifications.length; i++) {
-      isEnumerateModificationsDiv.append(
-        ui.boolInput(enumerateModifications[i], true).root
-      );
-    }
     svgDiv.innerHTML = '';
     svgDiv.append(
       ui.span([
         drawAxolabsPattern(
           getShortName(saveAs.value),
           createAsStrand.value,
-          ssBasesList,
-          asBasesList,
+          ssBases.slice(0, ssLength.value).map((e) => e.value),
+          asBases.slice(0, asLength.value).map((e) => e.value),
           [firstSsPto.value].concat(ssPtoLinkages.slice(0, ssLength.value).map((e) => e.value)),
           [firstAsPto.value].concat(asPtoLinkages.slice(0, asLength.value).map((e) => e.value)),
           ssThreeModification.value,
@@ -406,11 +425,18 @@ export function defineAxolabsPattern() {
     loadPatternDiv = ui.div([]),
     asModificationDiv = ui.div([]),
     firstAsPtoDiv = ui.div([]),
-    isEnumerateModificationsDiv = ui.div([ui.boolInput(defaultBase, true, () => {
-      // if (!enumerateModifications.includes(defaultBase))
-      //   enumerateModifications.push(defaultBase);
+    isEnumerateModificationsDiv = ui.divH([ui.boolInput(defaultBase, true, (v: boolean) => {
+      if (v) {
+        if (!enumerateModifications.includes(defaultBase))
+          enumerateModifications.push(defaultBase);
+      } else {
+        const index = enumerateModifications.indexOf(defaultBase, 0);
+        if (index > -1)
+          enumerateModifications.splice(index, 1);
+      }
       updateSvgScheme();
-    })]);
+      updateOutputExamples();
+    }).root]);
 
   let ssBases = Array(defaultSequenceLength).fill(ui.choiceInput('', defaultBase, baseChoices)),
     asBases = Array(defaultSequenceLength).fill(ui.choiceInput('', defaultBase, baseChoices)),
@@ -507,25 +533,25 @@ export function defineAxolabsPattern() {
   let saveAs = ui.textInput('Save As', 'Pattern Name', () => updateSvgScheme());
   saveAs.setTooltip('Name Of New Pattern');
 
-  let ssThreeModification = ui.stringInput("Additional SS 3' Modification", "", () => {
+  let ssThreeModification = ui.stringInput("SS 3' Modification", "", () => {
     updateSvgScheme();
     updateOutputExamples();
   });
   ssThreeModification.setTooltip("Additional SS 3' Modification");
 
-  let ssFiveModification = ui.stringInput("Additional SS 5' Modification", "", () => {
+  let ssFiveModification = ui.stringInput("SS 5' Modification", "", () => {
     updateSvgScheme();
     updateOutputExamples();
   });
   ssFiveModification.setTooltip("Additional SS 5' Modification");
 
-  let asThreeModification = ui.stringInput("Additional AS 3' Modification", "", () => {
+  let asThreeModification = ui.stringInput("AS 3' Modification", "", () => {
     updateSvgScheme();
     updateOutputExamples();
   });
   asThreeModification.setTooltip("Additional AS 3' Modification");
 
-  let asFiveModification = ui.stringInput("Additional AS 5' Modification", "", () => {
+  let asFiveModification = ui.stringInput("AS 5' Modification", "", () => {
     updateSvgScheme();
     updateOutputExamples();
   });
