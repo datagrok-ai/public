@@ -26,8 +26,8 @@ export class DescriptorsTutorial extends Tutorial {
     this.describe('Chemical structures are analyzed via molecular descriptors. ' +
       'These are numerical values that characterize properties of molecules. ' +
       'In the next steps, we will learn how to calculate descriptors in Datagrok.');
-    
-    this.describe(ui.link('More about ' + this.name, this.helpUrl).outerHTML);  
+
+    this.describe(ui.link('More about ' + this.name, this.helpUrl).outerHTML);
 
     let pp: DG.Accordion;
     const ppDescription = 'In the property panel, you should now see all the actions ' +
@@ -75,6 +75,5 @@ export class DescriptorsTutorial extends Tutorial {
           descriptors.length == inputs.length &&
           descriptors.every((d) => inputs.includes(d));
       })), groupHints, groupDescription);
-
   }
 }
