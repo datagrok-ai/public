@@ -207,7 +207,7 @@ export function drawAxolabsPattern(patternName: string, asExists: boolean, ssBas
   for (let i = 0; i < uniqueBases.length; i++)
     image.append(
       svg.circle(getEquidistantXForLegend(i), yOfCirclesInLegends, legendRadius, getBaseColor(uniqueBases[i])),
-      svg.text(uniqueBases[i], getEquidistantXForLegend(i) + legendRadius, yOfTextLegend, legendFontSize, fontColor)
+      svg.text(uniqueBases[i], getEquidistantXForLegend(i) + legendRadius + 4, yOfTextLegend, legendFontSize, fontColor)
     );
   return image;
 }
