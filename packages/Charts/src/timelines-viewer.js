@@ -140,28 +140,28 @@ export class TimelinesViewer extends EChartViewer {
   onPropertyChanged(property) {
     if (!this.initialized) return;
     if (property.name === 'axisPointer') {
-      this.option.tooltip.axisPointer.type = property.get();
+      this.option.tooltip.axisPointer.type = property.get(this);
     } else if (property.name === 'showZoomSliders') {
       this.option.dataZoom.forEach(z => {
         if (z.type === 'slider') z.show = this.showZoomSliders;
       });
     } else if (property.name === 'subjectColumnName') {
-      this.subjectCol = this.dataFrame.getCol(property.get());
+      this.subjectCol = this.dataFrame.getCol(property.get(this));
       this.subjects = this.subjectCol.categories;
       this.subjBuf = this.subjectCol.getRawData();
     } else if (property.name === 'startColumnName') {
-      this.startCol = this.dataFrame.getCol(property.get());
+      this.startCol = this.dataFrame.getCol(property.get(this));
       this.startBuf = this.startCol.getRawData();
     } else if (property.name === 'endColumnName') {
-      this.endCol = this.dataFrame.getCol(property.get());
+      this.endCol = this.dataFrame.getCol(property.get(this));
       this.endBuf = this.endCol.getRawData();
     } else if (property.name === 'colorByColumnName') {
-      this.colorByCol = this.dataFrame.getCol(property.get());
+      this.colorByCol = this.dataFrame.getCol(property.get(this));
       this.colorCats = this.colorByCol.categories;
       this.colorBuf = this.colorByCol.getRawData();
       this.colorMap = this.getColorMap();
     } else if (property.name === 'eventColumnName') {
-      this.eventCol = this.dataFrame.getCol(property.get());
+      this.eventCol = this.dataFrame.getCol(property.get(this));
       this.eventBuf = this.eventCol.getRawData();
   } 
     this.render();

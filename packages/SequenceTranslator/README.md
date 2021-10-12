@@ -1,8 +1,12 @@
-# SequenceTranslator
+# [Sequence Translator](https://public.datagrok.ai/apps/Sequencetranslator/)
+
+![Sequence Translator](img/Sequence%20Translator%20Axolabs.png)
 
 SequenceTranslator is a [package](https://datagrok.ai/help/develop/develop#packages) for
 the [Datagrok](https://datagrok.ai) platform, used to translate [oligonucleotide](https://en.wikipedia.org/wiki/Oligonucleotide) 
 sequences between [different representations](https://github.com/datagrok-ai/public/tree/master/packages/SequenceTranslator#sequence-representations).
+
+Presentation: https://www.youtube.com/watch?v=2xuxJjpjXi4&t=3783s
 
 Oligonucleotides are characterized by the sequence of [nucleotide modifications](https://github.com/datagrok-ai/public/tree/master/packages/SequenceTranslator#axolabs-nucleotide-modifications) that make up the entire molecule. 
 The length of the oligonucleotide is usually 13-25 nucleotides long (denoted by "-mer").
