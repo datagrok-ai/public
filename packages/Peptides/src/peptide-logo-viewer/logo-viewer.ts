@@ -7,7 +7,6 @@ import * as logojs from 'logojs-react';
 import {splitAlignedPeptides} from '../split-aligned';
 import { ChemPalette } from '../utils/chem-palette';
 
-//TODO: move viewer to a separate file
 export class Logo extends DG.JsViewer {
   initialized: boolean;
   option: any;
