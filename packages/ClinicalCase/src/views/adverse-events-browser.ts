@@ -21,17 +21,14 @@ export class AeBrowserView extends DG.ViewBase {
         super(name);
         this.name = name;
         study.domains.all().forEach(it => {
-            this[ it.name ] = study.domains[ it.name ].clone();
-            if (!this.domains.includes(it.name)){
-                this.additionalDomains.push(it.name);
+            if(it.name !== 'dm'){
+                this[ it.name ] = study.domains[ it.name ].clone();
+                if (!this.domains.includes(it.name)){
+                    this.additionalDomains.push(it.name);
+                }
             }
         });
         this.aeToSelect = study.domains.ae.clone();
-
-        grok.data.linkTables(this.aeToSelect, this['dm'],
-            [ `USUBJID` ], [ `USUBJID` ],
-            [ DG.SYNC_TYPE.CURRENT_ROW_TO_ROW, DG.SYNC_TYPE.CURRENT_ROW_TO_FILTER ]);
-
 
         this.root.className = 'grok-view ui-box';
 
