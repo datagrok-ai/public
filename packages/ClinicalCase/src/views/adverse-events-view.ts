@@ -4,7 +4,6 @@ import * as ui from "datagrok-api/ui";
 import { study, ClinRow } from "../clinical-study";
 import { addDataFromDmDomain, getUniqueValues } from '../data-preparation/utils';
 import { TREATMENT_ARM } from '../constants';
-import $ from "cash-dom";
 
 
 export class AdverseEventsView extends DG.ViewBase {

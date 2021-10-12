@@ -107,3 +107,9 @@ export function getMinVisitName(df: DG.DataFrame) {
         .aggregate()
         .get('VISIT', 0);
 }
+
+export function dictToString(dict: any){
+    let str = '';
+    Object.keys(dict).forEach(key => str+=`${key}: ${dict[key]}<br/>`);
+    return str;
+}

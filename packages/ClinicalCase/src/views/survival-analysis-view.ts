@@ -10,8 +10,8 @@ import { updateDivInnerHTML } from "./utils";
 
 export class SurvivalAnalysisView extends DG.ViewBase {
 
-  survivalPlotDiv = ui.box(ui.divText('Create dataset',{style:{color:'var(--grey-3)',marginTop:'30px', alignItems:'center'}}));
-  covariatesPlotDiv = ui.box(ui.divText('Create dataset',{style:{color:'var(--grey-3)',marginTop:'30px', alignItems:'center'}}));
+  survivalPlotDiv = ui.box();
+  covariatesPlotDiv = ui.box();
   survivalGridDivCreate = ui.box();
   survivalGridDivFilter = ui.box();
   survivalFilterDiv = ui.box(ui.divText('Create dataset',{style:{color:'var(--grey-3)',marginTop:'30px', alignItems:'center'}}));
@@ -69,11 +69,11 @@ export class SurvivalAnalysisView extends DG.ViewBase {
     tabControl.addPane('Dataset', () => ui.splitV([this.survivalFilterDiv, this.survivalGridDivCreate]));
     tabControl.addPane('Survival Chart', () => {
       this.updateChartsAfterFiltering();
-      this.survivalPlotDiv;
+      return this.survivalPlotDiv;
     });
     tabControl.addPane('Covariates', () => {
       this.updateChartsAfterFiltering();
-      this.covariatesPlotDiv;
+      return this.covariatesPlotDiv;
     });
 
     let customTitle = {style:{
