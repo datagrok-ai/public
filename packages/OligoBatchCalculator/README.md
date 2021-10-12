@@ -2,6 +2,8 @@
 
 ![Oligo Batch Calculator](img/screen.jpg)
 
+Presentation: https://www.youtube.com/watch?v=2xuxJjpjXi4&t=4908s
+
 **Calculates the following oligonucleotide properties:**
 1. Length
 2. Optical Density

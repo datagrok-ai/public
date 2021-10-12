@@ -1,6 +1,6 @@
 import * as grok from 'datagrok-api/grok';
 import * as DG from 'datagrok-api/dg';
-import { ALT, AP, AST, BILIRUBIN, TREATMENT_ARM } from '../constants';
+import { ALT, AP, AST, BILIRUBIN, SUBJECT_ID, TREATMENT_ARM } from '../constants';
 import { addDataFromDmDomain, dateDifferenceInDays, filterBooleanColumn, filterNulls, getUniqueValues } from './utils';
 import { study } from '../clinical-study';
 
@@ -316,4 +316,14 @@ export function labDataForCorrelationMatrix(): DG.DataFrame {
   return t;
 }
 
+
+export function getSubjectDmData(subjId: string, columnsToReturn: string[]){
+  const dmData = study.domains.dm
+  .groupBy(study.domains.dm.columns.names())
+  .where(`${SUBJECT_ID} = ${subjId}`)
+  .aggregate();
+  const dmDict = {};
+  columnsToReturn.forEach(it => dmDict[it] = dmData.get(it, 0));
+  return dmDict;
+}
 

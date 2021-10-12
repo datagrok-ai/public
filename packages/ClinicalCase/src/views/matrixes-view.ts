@@ -70,7 +70,6 @@ export class MatrixesView extends DG.ViewBase {
   private updateMarix(){
     if(this.selectedLabValues && this.bl) {
       this.matrixDataframe.rows.match(`VISIT = ${this.bl}`).filter();
-      console.log(this.matrixDataframe.columns.names())
       let filteredMatrixDataframe = this.matrixDataframe.clone(this.matrixDataframe.filter, this.selectedLabValues.map(it => `${it} avg(LBSTRESN)`)); 
     
       filteredMatrixDataframe.plot.fromType(DG.VIEWER.CORR_PLOT).then((v: any) => {
