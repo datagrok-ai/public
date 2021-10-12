@@ -64,7 +64,7 @@ export abstract class Tutorial extends DG.Widget {
     this.progressDiv.append(this.progress);
     this.progress.max = this.steps;
 
-    this.progressSteps = ui.divText('Step: '+String(this.progress.value)+' of '+this.steps);
+    this.progressSteps = ui.divText(`Step: ${this.progress.value} of ${this.steps}`);
     this.progressDiv.append(this.progressSteps);
 
     const tutorials = this.track?.tutorials;
@@ -76,11 +76,11 @@ export abstract class Tutorial extends DG.Widget {
     let id = tutorials.indexOf(this);
     
     
-    let closeTutorial = ui.button(ui.iconFA('times-circle'), () => { 
+    let closeTutorial = ui.button(ui.iconFA('times-circle'), () => {
       this.clearRoot();
       this.closed = true;
       this.onClose.next();
-      //grok.shell.tableView(this.t.name).close();
+      this._closeAll();
       $('.tutorial').show();
       $('#tutorial-child-node').html('');
     });
@@ -99,8 +99,8 @@ export abstract class Tutorial extends DG.Widget {
     this.title('Congratulations!');
     this.describe('You have successfully completed this tutorial.');
 
-    console.clear();
-    console.log(id);
+    // console.clear();
+    // console.log(id);
 
     await grok.dapi.userDataStorage.postValue(Tutorial.DATA_STORAGE_KEY, this.name, new Date().toUTCString());
     
@@ -135,8 +135,8 @@ export abstract class Tutorial extends DG.Widget {
             if (this.status != true){
               this.status = true;
               updateProgress(this.track);
-            }  
-            //grok.shell.tableView(this.t.name).close();
+            }
+            this._closeAll();
             this.clearRoot();
             $('.tutorial').show();
             $('#tutorial-child-node').html('');
@@ -151,7 +151,7 @@ export abstract class Tutorial extends DG.Widget {
             this.status = true;
             updateProgress(this.track);
           }  
-          //grok.shell.tableView(this.t.name).close();
+          this._closeAll();
           this.clearRoot();
           $('.tutorial').show();
           $('#tutorial-child-node').html('');
@@ -175,37 +175,33 @@ export abstract class Tutorial extends DG.Widget {
     hint.classList.add('tutorials-target-hint');
     let hintIndicator = ui.element('div');
     hintIndicator.classList = 'blob';
-    hint?.append(hintIndicator);
+    hint.append(hintIndicator);
 
     let width = hint ? hint.clientWidth : 0;
     let height = hint ? hint.clientHeight : 0;
 
-    let hintnode = hint?.getBoundingClientRect();
-    let indicatornode = hintIndicator?.getBoundingClientRect();
+    let hintNode = hint.getBoundingClientRect();
+    let indicatorNode = hintIndicator.getBoundingClientRect();
 
     let hintPosition = $(hint).css('position');
 
-    if(hintPosition == 'absolute'){
-      $(hintIndicator).css('position','absolute');
-      $(hintIndicator).css('left','0');
-      $(hintIndicator).css('top','0');
+    if (hintPosition == 'absolute') {
+      $(hintIndicator).css('position', 'absolute');
+      $(hintIndicator).css('left', '0');
+      $(hintIndicator).css('top', '0');
     }
-    if(hintPosition == "relative"){
-      $(hintIndicator).css('position','absolute');
-      $(hintIndicator).css('left','0');
-      $(hintIndicator).css('top','0');
+    if (hintPosition == "relative") {
+      $(hintIndicator).css('position', 'absolute');
+      $(hintIndicator).css('left', '0');
+      $(hintIndicator).css('top', '0');
     }
 
-    if(hintPosition == 'static'){
-      $(hintIndicator).css('position','absolute');
-      if(hintnode.left+1 == indicatornode.left)
-        $(hintIndicator).css('margin-left',0)
-      else
-        $(hintIndicator).css('margin-left',-width)
-      if(hintnode.top+1 == indicatornode.top)
-        $(hintIndicator).css('margin-top',0)
-      else
-        $(hintIndicator).css('margin-top',-height) 
+    if (hintPosition == 'static') {
+      $(hintIndicator).css('position', 'absolute');
+      $(hintIndicator).css('margin-left',
+        hintNode.left + 1 == indicatorNode.left ? 0 : -width);
+      $(hintIndicator).css('margin-top',
+        hintNode.top + 1 == indicatorNode.top ? 0 : -height);
     }
   }
 
@@ -217,7 +213,9 @@ export abstract class Tutorial extends DG.Widget {
     if (hint instanceof HTMLElement) {
       removeHint(hint);
     } else if (Array.isArray(hint)) {
-      hint.forEach((h) => removeHint(h));
+      hint.forEach((h) => {
+        if (h != null) removeHint(h);
+      });
     }
   }
 
@@ -232,7 +230,9 @@ export abstract class Tutorial extends DG.Widget {
       this._placeHint(hint);
     } else if (Array.isArray(hint)) {
       this.activeHints.push(...hint);
-      hint.forEach((h) => this._placeHint(h));
+      hint.forEach((h) => {
+        if (h != null) this._placeHint(h);
+      });
     }
 
     const instructionDiv = ui.divText(instructions, 'grok-tutorial-entry-instruction');
@@ -257,7 +257,7 @@ export abstract class Tutorial extends DG.Widget {
     $(entry).on('click', () => $(descriptionDiv).toggle());
     this.progress.value++;
     this.progressSteps.innerHTML = '';
-    this.progressSteps.append('Step: '+String(this.progress.value)+' of '+this.steps);
+    this.progressSteps.append(`Step: ${this.progress.value} of ${this.steps}`);
     
     if (hint != null)
       this._removeHints(hint);
@@ -282,6 +282,14 @@ export abstract class Tutorial extends DG.Widget {
         reject();
       });
     }).catch((_) => console.log('Closing tutorial', this.name));
+  }
+
+  /** Closes all visual components that were added when working on tutorial, e.g., table views. */
+  _closeAll(): void {
+    // TODO: Take into account dialogs and other views
+    if (this.t?.name) {
+      grok.shell.tableView(this.t.name)?.close();
+    }
   }
 
   _onClose: Subject<void> = new Subject();
@@ -392,7 +400,7 @@ export abstract class Tutorial extends DG.Widget {
     const commandClick =  new Promise<void>((resolve, reject) => {
       const sub = grok.events.onContextMenu.subscribe((data) => {
         data.args.menu.onContextMenuItemClick.pipe(
-          filter((mi) => (new DG.Menu(mi)).toString() === label),
+          filter((mi) => (new DG.Menu(mi)).toString().toLowerCase() === label.toLowerCase()),
           first()).subscribe((_: any) => {
             sub.unsubscribe();
             resolve();

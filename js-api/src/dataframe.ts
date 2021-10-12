@@ -92,6 +92,7 @@ export class DataFrame {
   public filter: BitSet;
   public temp: any;
   public tags: any;
+  public _meta: DataFrameMetaHelper | undefined;
   private _plot: DataFramePlotHelper | undefined;
   private _dialogs: DataFrameDialogHelper | undefined;
 
@@ -135,6 +136,12 @@ export class DataFrame {
    * */
   static fromJson(json: string): DataFrame {
     return new DataFrame(api.grok_DataFrame_FromJson(json));
+  }
+
+  get meta(): DataFrameMetaHelper {
+    if (this._meta == undefined)
+      this._meta = new DataFrameMetaHelper(this);
+    return this._meta;
   }
 
   get plot(): DataFramePlotHelper {
@@ -2005,6 +2012,69 @@ export class Qnum {
    * */
   static toString(x: number): string {
     return api.grok_Qnum_ToString(x);
+  }
+}
+
+interface ShapeOnViewer {
+  type?: string;
+  title?: string;
+  description?: string;
+  color?: string;
+  visible?: boolean;
+  opacity?: number;
+  zindex?: number;
+  min?: number;
+  max?: number;
+  equation: string;
+
+  // Specific to lines:
+  width?: number;
+  spline?: number;
+
+  // Specific to bands:
+  column?: string;
+  column2?: string;
+}
+
+export class DataFrameMetaHelper {
+  private readonly df: DataFrame;
+  private shapes: ShapeOnViewer[] = [];
+
+  constructor(df: DataFrame) {
+    this.df = df;
+    this.shapes = this.getShapes();
+  }
+
+  getShapes(): ShapeOnViewer[] {
+    let json: string | null = this.df.getTag('.shapes');
+    if (json)
+      return JSON.parse(json);
+
+    return [];
+  }
+
+  setShapes(shapes: ShapeOnViewer[] | null = null): void {
+    if (!shapes)
+      return;
+
+    let json: string | null = _toJson(shapes);
+    if (json)
+      this.df.setTag('.shapes', json);
+  }
+
+  addLine(shape: ShapeOnViewer): void {
+    shape.type = 'line';
+    this.addShape(shape);
+  }
+
+  addBand(shape: ShapeOnViewer): void {
+    shape.type = 'band';
+    this.addShape(shape);
+  }
+
+  addShape(shape: ShapeOnViewer): void {
+    this.shapes.push(shape);
+    this.setShapes(this.shapes);
   }
 }
 

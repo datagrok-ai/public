@@ -19,12 +19,10 @@ export async function describe(
 ): Promise<[DG.Grid, DG.DataFrame] | [null, null]> {
   //Split the aligned sequence into separate AARs
   let splitSeqDf: DG.DataFrame | undefined;
-  for (const col of df.columns) {
-    if (col.semType === 'alignedSequence') {
-      splitSeqDf = splitAlignedPeptides(col);
-      splitSeqDf.name = 'Split sequence';
-      break;
-    }
+  const col: DG.Column = df.columns.bySemType('alignedSequence');
+  if (col) {
+    splitSeqDf = splitAlignedPeptides(col);
+    splitSeqDf.name = 'Split sequence';
   }
 
   if (typeof splitSeqDf === 'undefined') {
@@ -118,6 +116,7 @@ export async function describe(
   let currentActivity: number[];
   let otherActivity: number[];
   let testResult;
+  let currentMeanDiff: number;
 
   for (let i = 0; i < matrixDf.rowCount; i++) {
     position = matrixDf.get(positionColName, i);
@@ -139,8 +138,10 @@ export async function describe(
 
     testResult = tTest(currentActivity, otherActivity);
     // testResult = uTest(currentActivity, otherActivity);
-    pValues.push(testResult['p-value more']);
-    mDiff.push(testResult['Mean difference']!);
+    currentMeanDiff = testResult['Mean difference']!;
+
+    mDiff.push(currentMeanDiff);
+    pValues.push(testResult[currentMeanDiff >= 0 ? 'p-value more' : 'p-value less']);
   }
   matrixDf.columns.add(DG.Column.fromList(DG.TYPE.FLOAT, 'Mean difference', mDiff));
   matrixDf.columns.add(DG.Column.fromList(DG.TYPE.FLOAT, 'p-value', pValues));
@@ -175,6 +176,7 @@ export async function describe(
   const dfMin = jStat.min(mDiff);
   const dfMax = jStat.max(mDiff);
   const grid = matrixDf.plot.grid();
+  const countThreshold = 4;
 
   grid.sort([aminoAcidResidue]);
   grid.columns.setOrder([aminoAcidResidue].concat(positionColumns));
@@ -226,39 +228,41 @@ export async function describe(
           `and ${positionColName} = ${args.cell.tableColumn.name}`;
 
         //don't draw AAR that too little appearnces at this position
-        const count = statsDf.groupBy(['Count']).where(query).aggregate().get('Count', 0);
-        if (count < 5) {
+        const count: number = statsDf.groupBy(['Count']).where(query).aggregate().get('Count', 0);
+        if (count < countThreshold || count > peptidesCount - countThreshold) {
           args.preventDefault();
           args.g.restore();
           return;
         }
 
-        const pVal = statsDf.groupBy(['p-value']).where(query).aggregate().get('p-value', 0);
+        const pVal: number = statsDf.groupBy(['p-value']).where(query).aggregate().get('p-value', 0);
 
         let coef;
+        const variant = args.cell.cell.value >= 0;
         if (pVal < 0.01) {
-          coef = 1;
+          coef = variant ? '#299617' : '#722F37';
         } else if (pVal < 0.05) {
-          coef = 2/3;
+          coef = variant ? '#32CD32' : '#D10000';
         } else if (pVal < 0.1) {
-          coef = 1/3;
+          coef = variant ? '#98FF98' : '#FF8A8A';
         } else {
-          coef = 0.01;
+          coef = DG.Color.toHtml(DG.Color.lightLightGray);
         }
 
-        const rCoef = (args.cell.cell.value - dfMin) / (dfMax - dfMin);
+        const rCoef = Math.abs(args.cell.cell.value) / dfMax;
 
         const maxRadius = 0.9 * (args.bounds.width > args.bounds.height ? args.bounds.height : args.bounds.width) / 2;
         const radius = Math.ceil(maxRadius * rCoef);
 
         args.g.beginPath();
-        args.g.fillStyle = DG.Color.toHtml(DG.Color.scaleColor(
-          coef,
-          0,
-          1,
-          undefined,
-          [DG.Color.lightLightGray, DG.Color.green],
-        ));
+        // args.g.fillStyle = DG.Color.toHtml(DG.Color.scaleColor(
+        //   coef,
+        //   0,
+        //   1,
+        //   undefined,
+        //   [DG.Color.darkGray, args.cell.cell.value >= 0 ? DG.Color.green : DG.Color.red],
+        // ));
+        args.g.fillStyle = coef;
         args.g.arc(
           args.bounds.x + args.bounds.width / 2,
           args.bounds.y + args.bounds.height / 2,
@@ -296,11 +300,15 @@ export async function describe(
           let text = `${decimalAdjust('floor', statsDf.groupBy([col]).where(query).aggregate().get(col, 0), -5)}`;
 
           //@ts-ignore: I'm sure it's gonna be fine, text contains a number
-          if (col === 'Count' && text < 5) {
-            return true;
+          if (col === 'Count') {
+            if (parseInt(text) < countThreshold || parseInt(text) > peptidesCount - countThreshold) {
+              return true;
+            }
+            text += ` / ${peptidesCount}`;
+          } else if (col === 'p-value') {
+            text = parseFloat(text) !== 0 ? text : '<0.01'; 
           }
-
-          text = col === 'Count' ? text + ` / ${peptidesCount}` : text;
+          
           tooltipMap[col] = text;
         }
       }
@@ -329,39 +337,49 @@ export async function describe(
 
       const query = `aminoAcidResidue = ${currentAAR} and position = ${currentPosition}`;
       const text = statsDf.groupBy(['Count']).where(query).aggregate().get('Count', 0);
-      if (text < 5) {
+      if (text < countThreshold || text > peptidesCount - countThreshold) {
         return;
       }
 
       const splitColName = '~splitCol';
-      const otherColName = 'Other';
+      const otherLabel = 'Other';
+      const aarLabel = `${currentAAR === '-' ? 'Empty' : currentAAR} - ${currentPosition}`;
 
       const bitset = filterMode ? df.filter : df.selection;
       bitset.init((i) => df.get(currentPosition, i) === currentAAR);
 
       const splitArray: string[] = [];
       for (let i = 0; i < bitset.length; i++) {
-        //TODO: generate better label
-        splitArray.push(bitset.get(i) ?
-          `${currentAAR === '-' ? 'Empty' : currentAAR} - ${currentPosition}` : otherColName);
+        splitArray.push(bitset.get(i) ? aarLabel : otherLabel);
+      }
+
+      //FIXME: it shouldn't be like this. Wait for a fix in core, then delete
+      const spltCol = df.col(splitColName);
+      if (spltCol) {
+        spltCol.setTag('.color-coding-type', 'Off');
+        spltCol.setTag('.color-coding-categorical', '');
       }
 
       const splitCol = DG.Column.fromStrings(splitColName, splitArray);
-      //TODO: use replace as soon as it is ready
       if (!df.col(splitColName)) {
         df.columns.add(splitCol);
       } else {
-        df.columns.remove(splitColName);
-        df.columns.add(splitCol);
+        df.columns.replace(splitColName, splitCol);
       }
 
-      //FIXME: coloring doesn't work now
-      // const colorMap: {[index: string]: string | number} = {otherColName: DG.Color.lightGray};
+      // df.getCol(splitColName).setCategoryOrder([otherLabel, aarLabel]);
+      const colorMap: {[index: string]: string | number} = {};
+      colorMap[otherLabel] = DG.Color.blue;
+      colorMap[aarLabel] = DG.Color.orange;
       // colorMap[currentAAR] = cp.getColor(currentAAR);
-      // df.getCol(splitColName).colors.setCategorical(colorMap);
-      // df.getCol(splitColName).setCategoryOrder([otherColName]);
+      df.getCol(splitColName).colors.setCategorical(colorMap);
     }
   });
+
+  for (const col of matrixDf.columns.names()) {
+    console.log(grid.props['rowHeight']);
+    grid.col(col)!.width = grid.props['rowHeight']; 
+  }
 
   return [grid, statsDf];
 }
