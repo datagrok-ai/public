@@ -7,11 +7,12 @@ import $ from 'cash-dom';
 import {describe} from './describe';
 
 export class SARViewer extends DG.JsViewer {
-  private grid: DG.Viewer | null;
+  private viewerGrid: DG.Grid | null;
+  private sourceGrid: DG.Grid;
   private progress: DG.TaskBarProgressIndicator;
   protected activityColumnColumnName: string;
   protected activityScalingMethod: string;
-  // protected filterMode: boolean;
+  protected filterMode: boolean;
   protected statsDf: DG.DataFrame | null;
   protected initialized: boolean;
   // duplicatesHandingMethod: string;
@@ -19,15 +20,17 @@ export class SARViewer extends DG.JsViewer {
     super();
     this.progress = DG.TaskBarProgressIndicator.create('Loading SAR viewer');
 
-    this.grid = null;
+    this.viewerGrid = null;
     this.statsDf = null;
     this.initialized = false;
 
     //TODO: find a way to restrict activityColumnColumnName to accept only numerical columns (double even better)
     this.activityColumnColumnName = this.string('activityColumnColumnName');
     this.activityScalingMethod = this.string('activityScalingMethod', 'none', {choices: ['none', 'lg', '-lg']});
-    // this.filterMode = this.bool('filterMode', false);
+    this.filterMode = this.bool('filterMode', false);
     // this.duplicatesHandingMethod = this.string('duplicatesHandlingMethod', 'median', {choices: ['median']});
+
+    this.sourceGrid = (grok.shell.v as DG.TableView).grid;
   }
 
   init() {
@@ -40,8 +43,8 @@ export class SARViewer extends DG.JsViewer {
         const originalDf: DG.DataFrame = accordion.context.dataFrame;
 
         if (originalDf.getTag('dataType') === 'peptides' && originalDf.col('~splitCol')) {
-          const currentAAR: string = this.grid?.table.get('aminoAcidResidue', this.grid?.table.currentRowIdx);
-          const currentPosition = this.grid?.table.currentCol.name;
+          const currentAAR: string = this.viewerGrid?.table.get('aminoAcidResidue', this.viewerGrid?.table.currentRowIdx);
+          const currentPosition = this.viewerGrid?.table.currentCol.name;
 
           const labelStr = `${currentAAR === '-' ? 'Empty' : currentAAR} - ${currentPosition}`;
           const currentColor = DG.Color.toHtml(DG.Color.getCategoryColor(originalDf.getCol('~splitCol'), labelStr));
@@ -53,7 +56,7 @@ export class SARViewer extends DG.JsViewer {
 
           accordion.getPane('Distribution') ? null : accordion.addPane('Distribution', () => {
             const hist = originalDf.plot.histogram({
-              valueColumnName: `~${this.activityColumnColumnName}Scaled`,
+              valueColumnName: `${this.activityColumnColumnName}Scaled`,
               splitColumnName: '~splitCol',
               legendVisibility: 'Never',
               showXAxis: true,
@@ -112,17 +115,17 @@ export class SARViewer extends DG.JsViewer {
     }
     //TODO: optimize. Don't calculate everything again if only view changes
     if (typeof this.dataFrame !== 'undefined' && this.activityColumnColumnName) {
-      [this.grid, this.statsDf] = await describe(
+      [this.viewerGrid, this.statsDf] = await describe(
         this.dataFrame,
         this.activityColumnColumnName,
         this.activityScalingMethod,
-        // this.filterMode,
-        false,
+        this.filterMode,
+        this.sourceGrid,
       );
 
-      if (this.grid !== null) {
+      if (this.viewerGrid !== null) {
         $(this.root).empty();
-        this.root.appendChild(this.grid.root);
+        this.root.appendChild(this.viewerGrid.root);
       }
     }
     this.progress.close();
