@@ -6,12 +6,12 @@
 Welcome to Datagrok, the next-generation data platform! This document provides a step-by-step instruction to help you
 start using Datagrok as an engineer.
 
-## 1 Datagrok introduction
+## 1. Datagrok introduction
 
 Our YouTube channel has a [Datagrok demo] that shows the key capabilities of the platform. Check it out for a
 general understanding of Datagrok.
 
-## 2 JavaScript API examples
+## 2. JavaScript API examples
 
 Datagrok has a [a few JavaScript samples] that use the [powerful JavaScript API]. You will use the API to build packages, 
 applications, or plugins for the platform.
@@ -21,12 +21,11 @@ Here are a few examples of the said packages and plugins:
 * [Digital Signal Processing]
 * [Biosignals]
 * [Cheminformatics]
-* [Natural Language Processing]
 * [Cell renderers]
 * [Viewers]
 * [Filters]
 
-## 3 Tooling for local development
+## 3. Tooling for local development
 
 Datagrok comes with the `datagrok-tools` NPM package to help you scaffold a package, an application, or a project on
 your local environment. You will also use `datagrok-tools` to build and publish your code. For more information, check 
@@ -42,17 +41,17 @@ generate a package, add simple code that uses the Datagrok JavaScript API, and p
 development server.
 -->
 
-## 4 JavaScript exercises
+## 4. JavaScript exercises
 
 To gain more experience with the Datagrok JavaScript API, you might want to work on a series of [JavaScript exercises]. 
 They will introduce a more advanced usage of the API and help better understand the development process with Datagrok.
 
-## 5 useful links
+## 5. Useful links
 
 Check out the following spaces and documents for more information about Datagrok:
 
-1. [Community forum] and [meetings]
-   > To join a meeting, go to the [Community Forum] and ask for a Zoom link.
+1. [Community forum] and [meetings]  
+   To join a meeting, go to the [Community Forum] and ask for a Zoom link.
 2. [Release notes]
 3. [Architecture]
 5. [Extending and customizing Datagrok]
@@ -60,7 +59,7 @@ Check out the following spaces and documents for more information about Datagrok
 7. [Building a UI]
 8. [Performance]
 
-## 6 videos
+## 6. Videos
 
 We've curated a few video records that introduce the platform, show the usage of the JavaScript API, and talk about
 extensions.
@@ -68,8 +67,7 @@ extensions.
 1. [Demo]
 2. [Platform overview]
 3. [JS API overview]
-4. [datagrok-tools overview (part 1)]
-     * [datagrok-tools overview (part 2)]
+4. [datagrok-tools overview (part 1)], [datagrok-tools overview (part 2)]
 5. [VS Code Integration]
 6. [Data access]
 7. [Visualization and viewers]
