@@ -58,8 +58,7 @@ export class TimeProfileView extends DG.ViewBase {
                 typeChoices.root, 
                 this.blVisitChicesDiv
             ]), { style: { maxHeight: '100px' } }),
-            this.timeProfileDiv,
-            this.relativeChangeFromBlDataFrame.plot.grid().root
+            this.timeProfileDiv
         ]))
         this.updateTimeProfileDiv();
     }

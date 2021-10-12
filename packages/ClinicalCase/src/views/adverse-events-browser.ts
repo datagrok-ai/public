@@ -5,63 +5,75 @@ import { study } from '../clinical-study';
 import { createPropertyPanel } from '../panels/panels-service';
 import { SUBJECT_ID } from '../constants';
 
-let filters = ['USUBJID', 'AESEV', 'AEBODSYS', 'AESTDY']
+let filters = [ 'USUBJID', 'AESEV', 'AEBODSYS', 'AESTDY' ]
 
 export class AeBrowserView extends DG.ViewBase {
-  
-  domains = ['dm', 'ae', 'cm', 'ex'];
-  aeToSelect: DG.DataFrame;
-  ae: DG.DataFrame;
-  dm: DG.DataFrame;
-  cm: DG.DataFrame;
-  ex: DG.DataFrame;
-  selectedAe: DG.DataFrame;
 
-  constructor(name) {
-    super(name);
-    this.name = name;
-    this.domains.forEach(it => this[it] = study.domains[it].clone());
-    this.aeToSelect = study.domains.ae.clone();
+    domains = [ 'ae', 'cm', 'ex' ];
+    additionalDomains = [];
+    selectedAdditionalDomains = [];
+    aeToSelect: DG.DataFrame;
+    daysPriorAe = 5;
+    currentSubjId = '';
+    currentAeDay: number;
 
-     grok.data.linkTables(this.aeToSelect, this.dm,
-        [ `USUBJID`], [ `USUBJID` ],
-        [ DG.SYNC_TYPE.CURRENT_ROW_TO_ROW, DG.SYNC_TYPE.CURRENT_ROW_TO_FILTER ]); 
+    constructor(name) {
+        super(name);
+        this.name = name;
+        study.domains.all().forEach(it => {
+            this[ it.name ] = study.domains[ it.name ].clone();
+            if (!this.domains.includes(it.name)){
+                this.additionalDomains.push(it.name);
+            }
+        });
+        this.aeToSelect = study.domains.ae.clone();
 
-   
-    this.root.className = 'grok-view ui-box';
+        grok.data.linkTables(this.aeToSelect, this['dm'],
+            [ `USUBJID` ], [ `USUBJID` ],
+            [ DG.SYNC_TYPE.CURRENT_ROW_TO_ROW, DG.SYNC_TYPE.CURRENT_ROW_TO_FILTER ]);
 
-    this.root.append(ui.splitH([
-        this.getFilters(),
-        this.aeToSelect.plot.grid().root
-    ]))
 
-    this.subscribeToCurrentRow();
+        this.root.className = 'grok-view ui-box';
 
-  }
+        this.root.append(ui.splitH([
+            this.getFilters(),
+            this.aeToSelect.plot.grid().root
+        ]))
 
-  private getFilters() {
-    let chart = DG.Viewer.fromType('Filters', this.ae, {
-      'columnNames': filters,
-      'showContextMenu': false,
-    }).root;
-    chart.style.overflowY = 'scroll';
-    return chart
-  }
+        this.subscribeToCurrentRow();
 
-  private subscribeToCurrentRow(){
-    this.aeToSelect.onCurrentRowChanged.subscribe(() => {
-      const currentSubjId = this.aeToSelect.get(SUBJECT_ID, this.aeToSelect.currentRowIdx);
-      const currentAeDate = this.aeToSelect.get('AESTDY', this.aeToSelect.currentRowIdx);
-      this.domains.forEach(domain => {
-          if(domain !== 'dm'){
-              this[domain] = study.domains[domain]
-              .clone()
-              .groupBy(study.domains[domain].columns.names())
-              .where(`${SUBJECT_ID} = ${currentSubjId} and ${domain.toUpperCase()}STDY < ${currentAeDate}`)
-              .aggregate();
-          }
-      })
-      createPropertyPanel(this);
-    })
-  }
+    }
+
+    private getFilters() {
+        let chart = DG.Viewer.fromType('Filters', this.aeToSelect, {
+            'columnNames': filters,
+            'showContextMenu': false,
+        }).root;
+        chart.style.overflowY = 'scroll';
+        return chart
+    }
+
+    private subscribeToCurrentRow() {
+        this.aeToSelect.onCurrentRowChanged.subscribe(() => {
+            this.currentSubjId = this.aeToSelect.get(SUBJECT_ID, this.aeToSelect.currentRowIdx);
+            this.currentAeDay = this.aeToSelect.get('AESTDY', this.aeToSelect.currentRowIdx);
+            this.updateDomains();
+            createPropertyPanel(this);
+        })
+    }
+
+    updateDomains() {
+        this.domains.concat(this.selectedAdditionalDomains).forEach(domain => {
+            if (domain !== 'dm') {
+                const condition = domain === 'lb' ?
+                `${SUBJECT_ID} = ${this.currentSubjId} and ${domain.toUpperCase()}DY < ${this.currentAeDay} and ${domain.toUpperCase()}DY > ${this.currentAeDay - this.daysPriorAe}` :
+                `${SUBJECT_ID} = ${this.currentSubjId} and ${domain.toUpperCase()}STDY < ${this.currentAeDay} and ${domain.toUpperCase()}ENDY > ${this.currentAeDay - this.daysPriorAe}`;
+                this[ domain ] = study.domains[ domain ]
+                    .clone()
+                    .groupBy(study.domains[ domain ].columns.names())
+                    .where(`${condition}`)
+                    .aggregate();
+            }
+        })
+    }
 }
