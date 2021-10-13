@@ -5,7 +5,6 @@ import * as DG from 'datagrok-api/dg';
 import * as OCL from 'openchemlib/full.js';
 
 export function _importSdf(bytes: Uint8Array): DG.DataFrame[] {
-  console.log(bytes);
   let str = new TextDecoder().decode(bytes);
   // @ts-ignore
   let parser = new OCL.SDFileParser(str, null);
