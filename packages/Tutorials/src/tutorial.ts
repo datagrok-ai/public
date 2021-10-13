@@ -2,7 +2,7 @@ import * as grok from 'datagrok-api/grok';
 import * as ui from 'datagrok-api/ui';
 import * as DG from 'datagrok-api/dg';
 import $ from 'cash-dom';
-import { fromEvent, Observable, Subject } from 'rxjs';
+import { fromEvent, interval, Observable, Subject } from 'rxjs';
 import { filter, first, map } from 'rxjs/operators';
 import { _package } from './package';
 import { Track, TutorialRunner } from './track';
@@ -350,6 +350,31 @@ export abstract class Tutorial extends DG.Widget {
     const source = fromEvent(input, 'input').pipe(map((_) => input.value), filter((val) => val === value));
     await this.action(instructions, source, inputRoot, description);
   }
+
+  /** Prompts the user to choose a particular column in a column input with the specified caption. */
+  protected async columnInpAction(root: HTMLElement, instructions: string, caption: string, columnName: string, description: string = '') {
+    const columnInput = $(root)
+      .find('div.ui-input-root.ui-input-column')
+      .filter((idx, inp) => $(inp).find('label.ui-label.ui-input-label')[0]?.textContent === caption)[0];
+    if (columnInput == null) return;
+    const source = interval(1000).pipe(
+      map((_) => $(columnInput).find('div.d4-column-selector-column')[0]?.textContent),
+      filter((value) => value === columnName));
+    await this.action(instructions, source, columnInput, description);
+  };
+
+  /** Prompts the user to choose particular columns in a column input with the specified caption.
+   * Column names should be given in the following format: `(3) AGE, HEIGHT, WEIGHT`. */
+  protected async columnsInpAction(root: HTMLElement, instructions: string, caption: string, columnNames: string, description: string = '') {
+    const columnsInput = $(root)
+      .find('div.ui-input-root.ui-input-columns')
+      .filter((idx, inp) => $(inp).find('label.ui-label.ui-input-label')[0]?.textContent === caption)[0];
+    if (columnsInput == null) return;
+    const source = interval(1000).pipe(
+      map((_) => $(columnsInput).find('div.ui-input-editor > div.ui-input-column-names')[0]?.textContent),
+      filter((value) => value === columnNames));
+    await this.action(instructions, source, columnsInput, description);
+  };
 
   /** Prompts the user to open a view of the specified type, waits for it to open and returns it. */
   protected async openViewByType(instructions: string, type: string,
