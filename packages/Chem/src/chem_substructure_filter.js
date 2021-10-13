@@ -15,16 +15,16 @@ M  END
 `;
     this.molfile = '';
     this.root = ui.divV([]);
-    this.root.appendChild(grok.chem.sketcher((_, molfile) => {
+    this._sketcher = grok.chem.sketcher((_, molfile) => {
       this.molfile = molfile;
       this.dataFrame.rows.requestFilter();
-    }));
+    });
+    this.root.appendChild(this._sketcher);
   }
 
   attach(dFrame) {
     this.dataFrame = dFrame;
     this.column = this.dataFrame.columns.bySemType(DG.SEMTYPE.MOLECULE);
-    this.dataFrame.onRowsFiltering.subscribe((_) => this.applyFilter());
     this.subs.push(this.dataFrame.onRowsFiltering.subscribe((_) => { this.applyFilter(); } ));
   }
 
@@ -33,6 +33,7 @@ M  END
     if (this.column?.tags['chem-scaffold-filter']) {
       delete this.column.tags['chem-scaffold-filter'];
     }
+    // this._sketcher?.setSmiles('');
     // this.dataFrame.filter.fireChanged();
   }
 
@@ -44,7 +45,7 @@ M  END
     grok.functions.call('Chem:searchSubstructure', {
       'molStringsColumn' : this.column,
       'molString': this.molfile,
-      'substructLibrary': false,
+      'substructLibrary': true,
       'molStringSmarts': ''
     })
     .then((bitset_col) => {
