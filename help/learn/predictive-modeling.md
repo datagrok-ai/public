@@ -127,7 +127,8 @@ and [info panels](../discover/info-panels.md#predicting-molecule-solubility).
 
 [![Predictive Modeling](../uploads/youtube/predictive_modeling_youtube2.png "Open on Youtube")](https://www.youtube.com/watch?v=JaJgxtHAb98&t=1418s&ab_channel=Datagrok)
 
-  
+![Predictive Modeling](../uploads/youtube/predictive_modeling_youtube2.png)
+
 See also: 
 
 * [Cheminformatics predictive modeling](../domains/chem/chem-predictive-modeling.md) 
