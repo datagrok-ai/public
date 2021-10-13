@@ -61,7 +61,6 @@ export class AeBrowserView extends DG.ViewBase {
 
     updateDomains() {
         this.domains.concat(this.selectedAdditionalDomains).forEach(domain => {
-            if (domain !== 'dm') {
                 const condition = domain === 'lb' ?
                 `${SUBJECT_ID} = ${this.currentSubjId} and ${domain.toUpperCase()}DY < ${this.currentAeDay} and ${domain.toUpperCase()}DY > ${this.currentAeDay - this.daysPriorAe}` :
                 `${SUBJECT_ID} = ${this.currentSubjId} and ${domain.toUpperCase()}STDY < ${this.currentAeDay} and ${domain.toUpperCase()}ENDY > ${this.currentAeDay - this.daysPriorAe}`;
@@ -70,7 +69,6 @@ export class AeBrowserView extends DG.ViewBase {
                     .groupBy(study.domains[ domain ].columns.names())
                     .where(`${condition}`)
                     .aggregate();
-            }
         })
     }
 }
