@@ -25,28 +25,6 @@ export class PredictiveModelingTutorial extends Tutorial {
     await this.action(instructions, source, btn, description);
   };
 
-  private async columnInpAction(root: HTMLElement, instructions: string, caption: string, value: string, description: string = '') {
-    const columnInput = $(root)
-      .find('div.ui-input-root.ui-input-column')
-      .filter((idx, inp) => $(inp).find('label.ui-label.ui-input-label')[0]?.textContent === caption)[0];
-    if (columnInput == null) return;
-    const source = interval(1000).pipe(
-      map((_) => $(columnInput).find('div.d4-column-selector-column')[0]?.textContent),
-      filter((val) => val === value));
-    await this.action(instructions, source, columnInput, description);
-  };
-
-  private async columnsInpAction(root: HTMLElement, instructions: string, caption: string, value: string, description: string = '') {
-    const columnsInput = $(root)
-      .find('div.ui-input-root.ui-input-columns')
-      .filter((idx, inp) => $(inp).find('label.ui-label.ui-input-label')[0]?.textContent === caption)[0];
-    if (columnsInput == null) return;
-    const source = interval(1000).pipe(
-      map((_) => $(columnsInput).find('div.ui-input-editor > div.ui-input-column-names')[0]?.textContent),
-      filter((val) => val === value));
-    await this.action(instructions, source, columnsInput, description);
-  };
-
   protected async _run() {
     this.describe('Predictive modeling is a statistical technique used to predict outcomes ' +
       'based on historical data. In the next steps, we will train a few models, look at their ' +
