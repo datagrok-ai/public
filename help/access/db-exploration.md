@@ -35,7 +35,7 @@ use context actions that appear in the property panel
 
 ### Videos
 
-<iframe width="560" height="315" src="https://www.youtube.com/embed/YJmSvh3_uCM" frameborder="0" allow="accelerometer; autoplay; encrypted-media; gyroscope; picture-in-picture" allowfullscreen></iframe>
+[![DB exploration](../uploads/youtube/db_exploration.png "Open on Youtube")](https://www.youtube.com/watch?v=YJmSvh3_uCM)
 
 See also:
 * [DB visual query](db-visual-query.md)

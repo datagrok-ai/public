@@ -56,7 +56,7 @@ scripting viewer usage for time series decomposition.
 
 ### Videos
 
-<iframe width="560" height="315" src="https://www.youtube.com/embed/jHRpOnhBAz4" frameborder="0" allow="accelerometer; autoplay; encrypted-media; gyroscope; picture-in-picture" allowfullscreen></iframe>
+[![Scripting Viewer](../../uploads/youtube/scripting_viewer.png "Open on Youtube")](https://www.youtube.com/watch?v=jHRpOnhBAz4)
 
 
 See also: 
