@@ -30,7 +30,7 @@ If no keys specified in 'Keys Columns' joining in performed by row indexes.
 
 ### Videos
 
-<iframe width="560" height="315" src="https://www.youtube.com/embed/dlbK2Zo-eng" frameborder="0" allow="accelerometer; autoplay; encrypted-media; gyroscope; picture-in-picture" allowfullscreen></iframe>
+[![Join Tables](../uploads/youtube/join_tables.png "Open on Youtube")](https://www.youtube.com/watch?v=dlbK2Zo-eng)
 
 Samples:
   * [Join Tables](https://public.datagrok.ai/js/samples/data-frame/join-tables) 

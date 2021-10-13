@@ -26,7 +26,7 @@ Contains gallery of published [projects](project.md).
 
 ## Videos
 
-<iframe width="560" height="315" src="https://www.youtube.com/embed/wAfEqAMOZzw?start=589" frameborder="0" allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture" allowfullscreen></iframe>
+[![Table View](../uploads/youtube/visualizations1.png "Open on Youtube")](https://www.youtube.com/watch?v=wAfEqAMOZzw&t=589s)
 
 See also:
 
