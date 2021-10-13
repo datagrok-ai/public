@@ -129,7 +129,6 @@ and [info panels](../discover/info-panels.md#predicting-molecule-solubility).
 
 [![Open on YouTube](../uploads/youtube/predictive_modeling_youtube2.png "Predictive Modeling")](https://www.youtube.com/watch?v=JaJgxtHAb98&t=1418s&ab_channel=Datagrok)
 
-<iframe width="560" height="315" src="https://www.youtube.com/embed/JaJgxtHAb98?start=1418" frameborder="0" allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture" allowfullscreen></iframe>
   
 See also: 
 
