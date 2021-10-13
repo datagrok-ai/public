@@ -18,13 +18,13 @@ module.exports = {
     'datagrok-api/dg': 'DG',
     'datagrok-api/grok': 'grok',
     'datagrok-api/ui': 'ui',
-    'openchemlib/full.js': 'OCL',
-    'rxjs': 'rxjs',
-    'rxjs/operators': 'rxjs.operators'
+    "openchemlib/full.js": "OCL",
+    "rxjs": "rxjs",
+    "rxjs/operators": "rxjs.operators"
   },
   output: {
     filename: '[name].js',
-    library: 'hittriage',
+    library: 'modelhub',
     libraryTarget: 'var',
     path: path.resolve(__dirname, 'dist'),
   },
