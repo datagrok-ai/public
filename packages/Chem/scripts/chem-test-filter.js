@@ -4,6 +4,7 @@
 
 grok.data.loadTable('https://public.datagrok.ai/demo/sar_small.csv').then(
   async (df) => {
+    await grok.data.detectSemanticTypes(df);
     let filter = await grok.functions.call("Chem:substructureFilter");
     filter.attach(df);
     grok.shell.addTableView(df);
