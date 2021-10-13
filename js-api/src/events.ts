@@ -4,7 +4,7 @@ import { toJs } from './wrappers';
 import { Observable } from "rxjs";
 import {FileInfo, Package} from './entities';
 import { Accordion, Dialog } from "./widgets";
-import { View, ViewLayout } from './view';
+import { View, ViewLayout } from './views/view';
 import { Viewer } from "./viewer";
 import { Column } from "./dataframe";
 
