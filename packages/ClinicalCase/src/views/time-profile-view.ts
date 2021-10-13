@@ -2,7 +2,7 @@ import * as grok from 'datagrok-api/grok';
 import * as DG from "datagrok-api/dg";
 import * as ui from "datagrok-api/ui";
 import { study } from "../clinical-study";
-import { addDataFromDmDomain, getMinVisitName, getUniqueValues } from '../data-preparation/utils';
+import { addDataFromDmDomain, getMaxVisitName, getMinVisitName, getUniqueValues, getVisitNamesAndDays } from '../data-preparation/utils';
 import { ETHNIC, RACE, SEX, TREATMENT_ARM } from '../constants';
 import { updateDivInnerHTML } from './utils';
 import { labDynamicComparedToBaseline } from '../data-preparation/data-preparation';
@@ -11,17 +11,19 @@ import { labDynamicComparedToBaseline } from '../data-preparation/data-preparati
 export class TimeProfileView extends DG.ViewBase {
 
     timeProfileDiv = ui.box();
-    blVisitChicesDiv = ui.div();
     blVisitChoices: DG.InputBase;
+    epVisitChoices: DG.InputBase;
     laboratoryDataFrame: DG.DataFrame;
     relativeChangeFromBlDataFrame: DG.DataFrame;
     uniqueLabValues = Array.from(getUniqueValues(study.domains.lb, 'LBTEST'));
     uniqueVisits = Array.from(getUniqueValues(study.domains.lb, 'VISIT'));
     splitBy = [ TREATMENT_ARM, SEX, RACE, ETHNIC ];
-    types = ['Values', 'Relative change from baseline'];
+    types = ['Values', 'Changes'];
     selectedLabValue: string;
     selectedType: string;
     bl: string;
+    ep: string;
+    visitNamesAndDays: any [];
 
     constructor(name) {
         super(name);
@@ -29,7 +31,9 @@ export class TimeProfileView extends DG.ViewBase {
 
         this.selectedLabValue = this.uniqueLabValues[ 0 ] as string;
         this.selectedType = this.types[0];
-        this.bl = getMinVisitName(study.domains.lb);
+        this.visitNamesAndDays = getVisitNamesAndDays(study.domains.lb);
+        this.bl = this.visitNamesAndDays[0].name;
+        this.ep = this.visitNamesAndDays[this.visitNamesAndDays.length-1].name;
         this.createLaboratoryDataframe();
         this.createrelativeChangeFromBlDataframe();
 
@@ -39,39 +43,54 @@ export class TimeProfileView extends DG.ViewBase {
             this.updateTimeProfileDiv();
         }); */
 
-        let typeChoices = ui.choiceInput('Graph type', this.selectedType, this.types);
+        let typeChoices = ui.choiceInput('', this.selectedType, this.types);
         typeChoices.onChanged((v) => {
             this.selectedType = typeChoices.value;
             this.updateTimeProfileDiv();
         });
 
-        this.blVisitChoices = ui.choiceInput('BL VISIT', this.bl, this.uniqueVisits);
+        this.blVisitChoices = ui.choiceInput('', this.bl, this.uniqueVisits);
         this.blVisitChoices.onChanged((v) => {
             this.bl = this.blVisitChoices.value;
-            this.createrelativeChangeFromBlDataframe();
+            this.updateTimeProfileDiv();
+        });
+
+        this.epVisitChoices = ui.choiceInput('', this.ep, this.uniqueVisits);
+        this.epVisitChoices.onChanged((v) => {
+            this.ep = this.epVisitChoices.value;
             this.updateTimeProfileDiv();
         });
 
         this.root.className = 'grok-view ui-box';
-        this.root.append(ui.splitV([
+/*         this.root.append(ui.splitV([
             ui.box(ui.divH([ //labValueChoices.root, 
                 typeChoices.root, 
                 this.blVisitChicesDiv
             ]), { style: { maxHeight: '100px' } }),
             this.timeProfileDiv
-        ]))
+        ])) */
+        this.root.append(this.timeProfileDiv);
+        this.setRibbonPanels([
+            [
+                ui.span([ 'Plot ' ]),
+                typeChoices.root,
+                ui.span([' from ']),
+                this.blVisitChoices.root,
+                ui.span([' to ']),
+                this.epVisitChoices.root
+            ]
+        ]);
         this.updateTimeProfileDiv();
     }
 
     private updateTimeProfileDiv() {
         switch (this.selectedType) {
             case 'Values': {
-                updateDivInnerHTML(this.blVisitChicesDiv, '');
-                this.updateTimeProfileChart(this.laboratoryDataFrame, 'avg(LBSTRESN)');
+                this.updateTimeProfileChart(this.filterDataFrameByDays(this.laboratoryDataFrame), 'avg(LBSTRESN)');
                 break;
             }
-            case 'Relative change from baseline': {
-                updateDivInnerHTML(this.blVisitChicesDiv, this.blVisitChoices.root);
+            case 'Changes': {
+                this.createrelativeChangeFromBlDataframe();
                 this.updateTimeProfileChart(this.relativeChangeFromBlDataFrame, 'avg(LAB_DYNAMIC_BL)');
                 break;
             }
@@ -97,7 +116,7 @@ export class TimeProfileView extends DG.ViewBase {
     }
 
     private createrelativeChangeFromBlDataframe(){
-        let df = study.domains.lb.clone();
+        let df = this.filterDataFrameByDays(study.domains.lb.clone());
         labDynamicComparedToBaseline(df,  this.bl, 'VISIT', 'LAB_DYNAMIC_BL');
         let dfWithArm = addDataFromDmDomain(df, study.domains.dm, [ 'USUBJID', 'VISITDY', 'VISIT', 'LBTEST', 'LAB_DYNAMIC_BL' ], this.splitBy);
         this.relativeChangeFromBlDataFrame = this.createPivotedDataframe(dfWithArm, 'LAB_DYNAMIC_BL');
@@ -109,6 +128,15 @@ export class TimeProfileView extends DG.ViewBase {
             .pivot('LBTEST')
             .avg(aggregatedColName)
             .aggregate();
+    }
+
+    private filterDataFrameByDays(df: DG.DataFrame){
+        let blDay = this.visitNamesAndDays.find(it => it.name === this.bl).day;
+        let epDay = this.visitNamesAndDays.find(it => it.name === this.ep).day;
+        let filteredDf = df.groupBy(df.columns.names())
+        .where(`VISITDY >= ${blDay} and VISITDY <= ${epDay}`)
+        .aggregate();
+        return filteredDf;
     }
 
 }

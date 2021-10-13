@@ -8,7 +8,6 @@
 class SubstructureFilter extends DG.Filter {
 
   constructor() {
-    
     super();
     this.WHITE_MOL = `
   0  0  0  0  0  0  0  0  0  0999 V2000
@@ -17,32 +16,27 @@ M  END
     this.molfile = '';
     this.root = ui.divV([]);
     this.root.appendChild(grok.chem.sketcher((_, molfile) => {
-        this.molfile = molfile;
-        this.dataFrame.rows.requestFilter();
-      }));
-      
+      this.molfile = molfile;
+      this.dataFrame.rows.requestFilter();
+    }));
   }
 
   attach(dFrame) {
-    
     this.dataFrame = dFrame;
     this.column = this.dataFrame.columns.bySemType(DG.SEMTYPE.MOLECULE);
     this.dataFrame.onRowsFiltering.subscribe((_) => this.applyFilter());
-  
+    this.subs.push(this.dataFrame.onRowsFiltering.subscribe((_) => { this.applyFilter(); } ));
   }
 
   reset() {
-    
-    this.dataFrame.filter.setAll(true, false);
+    // this.dataFrame.filter.setAll(true, false);
     if (this.column?.tags['chem-scaffold-filter']) {
       delete this.column.tags['chem-scaffold-filter'];
     }
-    this.dataFrame.filter.fireChanged();
-  
+    // this.dataFrame.filter.fireChanged();
   }
 
   applyFilter() {
-    
     if (!this.molfile || this.molfile.endsWith(this.WHITE_MOL)) {
       this.reset();
       return;
@@ -54,13 +48,16 @@ M  END
       'molStringSmarts': ''
     })
     .then((bitset_col) => {
-      this.dataFrame.filter.copyFrom(bitset_col.get(0));
+      this.dataFrame.filter.and(bitset_col.get(0));
       this.column.setTag('chem-scaffold-filter', this.molfile);
       this.dataFrame.filter.fireChanged();
     }).catch((e) => {
       console.warn(e);
       this.reset();
     })
-    
+  }
+  
+  detach() {
+    this.subs.forEach((s) => s.unsubscribe());
   }
 }

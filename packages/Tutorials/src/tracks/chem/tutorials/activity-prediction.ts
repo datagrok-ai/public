@@ -17,7 +17,7 @@ export class ActivityPredictionTutorial extends Tutorial {
   }
 
   get steps() {
-    return 6;
+    return 15;
   }
 
   //demoTable: string = 'chem/smiles_only.csv';
@@ -56,11 +56,13 @@ export class ActivityPredictionTutorial extends Tutorial {
       })), null, outputComment);
 
     const addNCIcon = null;
-    const pKiInfo = 'Add a new column based on <b>Ki</b> according to this formula: <b>9 - Log10(${Ki})</b>. ' +
-      'Set the column name to <b>pKi</b>.';
+    const addNCDlg = await this.openDialog('Open the "Add New Column" dialog', 'Add New Column', addNCIcon);
+    await this.dlgInputAction(addNCDlg, 'Name the new column "pKi"', '', 'pKi');
+
+    const pKiInfo = '';
     const formulaRegex = /^(9\s*-\s*Log10\(\$\{Ki\}\)|Sub\(9,\s*Log10\(\$\{Ki\}\)\))$/;
-    await this.action('Transform the activity column into column "pKi"', t.onColumnsAdded.pipe(
-      filter((data) => data.args.columns.some((col: DG.Column) => {
+    await this.action('Transform the activity column "Ki" according to the formula "9 - Log10(${Ki})"',
+      t.onColumnsAdded.pipe(filter((data) => data.args.columns.some((col: DG.Column) => {
         return col.name === 'pKi' &&
           col.tags.has(DG.TAGS.FORMULA) &&
           formulaRegex.test(col.tags[DG.TAGS.FORMULA]);
@@ -87,8 +89,8 @@ export class ActivityPredictionTutorial extends Tutorial {
 
     const descDlg = 'The platform supports various groups of ' +
       'descriptors. You can select them either by category or individually.';
-    const descriptorDlg = await this.openDialog('Click on "Chem | Descriptors..."', 'Descriptors',
-      descriptorsLabel, descDlg);
+    const descriptorDlg = await this.openDialog('Click on "Chem | Descriptors..." action in the property panel',
+      'Descriptors', descriptorsLabel, descDlg);
 
     const descriptors = ['MolWt', 'HeavyAtomMolWt', 'NumValenceElectrons', 'NumRadicalElectrons',
       'MaxPartialCharge', 'MinPartialCharge', 'MaxAbsPartialCharge', 'MinAbsPartialCharge',
@@ -109,7 +111,7 @@ export class ActivityPredictionTutorial extends Tutorial {
     const groupHints = $(descriptorDlg.root)
       .find('.d4-tree-view-node')
       .filter((idx, el) => ['Descriptors', 'GraphDescriptors', 'MolSurf', 'EState VSA', 'Descriptors 3D']
-        .some((group => group === el.textContent)))
+        .some((group) => group === el.textContent))
       .get();
 
     const groupDescription = 'To exclude <b>ExactMolWt</b>, expand the <b>Descriptors</b> group. ' +
@@ -124,5 +126,19 @@ export class ActivityPredictionTutorial extends Tutorial {
           descriptors.length == inputs.length &&
           descriptors.every((d) => inputs.includes(d));
       })), groupHints, groupDescription);
+
+    const pmv = await this.openViewByType('Click on "ML | Train Model..."', 'PredictiveModel');
+
+    // UI generation delay
+    await new Promise((resolve) => setTimeout(resolve, 2000));
+    await this.columnInpAction(pmv.root, 'Set "Predict" to "pKi"', 'Predict', 'pKi');
+
+    const ignoredColumnNames = ['SMILES', 'ID', 'Ki', 'pKi', 'curated_structures'];
+    const featureSelectionTip = 'Select <b>All</b> columns in the popup dialog and uncheck ' +
+      `the first five columns: ${ignoredColumnNames}.`;
+    await this.columnsInpAction(pmv.root, 'Set "Features" to all calculated descriptors',
+      'Features', `(${descriptors.length}) ${t.columns.names()
+        .filter((name: string) => !ignoredColumnNames.includes(name))
+        .join(', ')}`, featureSelectionTip);
   }
 }

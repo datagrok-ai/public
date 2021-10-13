@@ -55,7 +55,7 @@ export class BoxPlotsView extends DG.ViewBase {
     this.uniqueLabValues = Array.from(getUniqueValues(this.labWithDmData, 'LBTEST'));
     this.uniqueVisits = Array.from(getUniqueValues(this.labWithDmData, 'VISIT'));
 
-    this.getTop5PValues(minLabVisit);
+    this.getTopPValues(minLabVisit, 4);
     this.updateBoxPlots(viewerTitle, this.selectedSplitBy);
 
     let blVisitChoices = ui.choiceInput('BL', this.bl, this.uniqueVisits);
@@ -111,7 +111,10 @@ export class BoxPlotsView extends DG.ViewBase {
           category: category,
           value: `${it}_BL`,
           labelOrientation: 'Horz',
-          markerColor: category
+          markerColor: category,
+          showCategorySelector: false,
+          showValueSelector: false,
+          showPValue: true
         });
         plot.root.prepend(ui.divText(it, viewerTitle));
         const boxPlot = Array.from(getUniqueValues(df, category)).length > 3 ? ui.block([plot.root]) : ui.block50([plot.root]);
@@ -121,7 +124,7 @@ export class BoxPlotsView extends DG.ViewBase {
     }
   }
 
-  private getTop5PValues(visit: number){
+  private getTopPValues(visit: number, topNum: number){
     let pValuesArray = [];
     this.uniqueLabValues.forEach(item => {
       const valueData = this.labWithDmData
@@ -139,6 +142,6 @@ export class BoxPlotsView extends DG.ViewBase {
 
     });
     pValuesArray.sort((a, b) => (a.pValue - b.pValue));
-    this.selectedLabValues = pValuesArray.slice(0, 5).map(it => it.labValue);
+    this.selectedLabValues = pValuesArray.slice(0, topNum).map(it => it.labValue);
   }
 }
