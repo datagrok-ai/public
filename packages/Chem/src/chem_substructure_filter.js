@@ -25,7 +25,7 @@ M  END
 
   attach(dFrame) {
     
-    this.dataFrame = DG.toJs(dFrame);
+    this.dataFrame = dFrame;
     this.column = this.dataFrame.columns.bySemType(DG.SEMTYPE.MOLECULE);
     this.dataFrame.onRowsFiltering.subscribe((_) => this.applyFilter());
   
@@ -58,7 +58,7 @@ M  END
       this.column.setTag('chem-scaffold-filter', this.molfile);
       this.dataFrame.filter.fireChanged();
     }).catch((e) => {
-      console.warning(e);
+      console.warn(e);
       this.reset();
     })
     
