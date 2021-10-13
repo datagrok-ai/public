@@ -14,8 +14,9 @@ export async function describe(
   df: DG.DataFrame,
   activityColumn: string,
   activityScaling: string,
-  filterMode: boolean,
   sourceGrid: DG.Grid,
+  twoColorMode: boolean,
+  initialBitset: DG.BitSet | null,
 ): Promise<[DG.Grid, DG.DataFrame] | [null, null]> {
   //Split the aligned sequence into separate AARs
   let splitSeqDf: DG.DataFrame | undefined;
@@ -77,6 +78,7 @@ export async function describe(
     sourceGrid.columns.setOrder([`${activityColumn}`]);
     break;
   }
+  splitSeqDf = splitSeqDf.clone(initialBitset);
 
   const positionColName = 'position';
   const aminoAcidResidue = 'aminoAcidResidue';
@@ -184,7 +186,7 @@ export async function describe(
 
   // !!! DRAWING PHASE !!!
   //find min and max MAD across all of the dataframe
-  // const dfMin = jStat.min(mDiff);
+  const dfMin = twoColorMode ? 0 : jStat.min(mDiff);
   const dfMax = jStat.max(mDiff);
   const grid = matrixDf.plot.grid();
 
@@ -248,18 +250,18 @@ export async function describe(
         const pVal: number = statsDf.groupBy(['p-value']).where(query).aggregate().get('p-value', 0);
 
         let coef;
-        const variant = args.cell.cell.value >= 0;
+        const variant = args.cell.cell.value < 0;
         if (pVal < 0.01) {
-          coef = variant ? '#299617' : '#722F37';
+          coef = variant && twoColorMode ? '#FF7900' : '#299617';
         } else if (pVal < 0.05) {
-          coef = variant ? '#32CD32' : '#D10000';
+          coef = variant && twoColorMode ? '#FFA500' : '#32CD32';
         } else if (pVal < 0.1) {
-          coef = variant ? '#98FF98' : '#FF8A8A';
+          coef = variant && twoColorMode ? '#FBCEB1' : '#98FF98';
         } else {
           coef = DG.Color.toHtml(DG.Color.lightLightGray);
         }
 
-        const rCoef = Math.abs(args.cell.cell.value) / dfMax;
+        const rCoef = ((twoColorMode ? Math.abs(args.cell.cell.value) : args.cell.cell.value) - dfMin) / (dfMax - dfMin);
 
         const maxRadius = 0.9 * (args.bounds.width > args.bounds.height ? args.bounds.height : args.bounds.width) / 2;
         const radius = Math.ceil(maxRadius * rCoef);
@@ -337,59 +339,6 @@ export async function describe(
       cp.showTooltip(cell, x, y);
     }
     return true;
-  });
-
-  // Select columns in source table that correspond to the currently clicked cell
-  grid.table.onCurrentCellChanged.subscribe((_: any) => {
-    if (grid.table.currentCell.value && grid.table.currentCol.name !== aminoAcidResidue) {
-      const currentAAR: string = grid.table.get(aminoAcidResidue, grid.table.currentRowIdx);
-      const currentPosition = grid.table.currentCol.name;
-
-      const query = `aminoAcidResidue = ${currentAAR} and position = ${currentPosition}`;
-      // const text = statsDf.groupBy(['Count']).where(query).aggregate().get('Count', 0);
-      // if (text < countThreshold || text > peptidesCount - countThreshold) {
-      //   return;
-      // }
-
-      const splitColName = '~splitCol';
-      const otherLabel = 'Other';
-      const aarLabel = `${currentAAR === '-' ? 'Empty' : currentAAR} - ${currentPosition}`;
-
-      const bitset = filterMode ? df.filter : df.selection;
-
-      if (!df.col(splitColName)) {
-        df.columns.addNew(splitColName, 'string');
-      }
-
-      let isChosen: boolean;
-      for (let i = 0; i < df.rowCount; i++) {
-        isChosen = df.get(currentPosition, i) === currentAAR;
-        bitset.set(i, isChosen);
-        df.getCol(splitColName).set(i, isChosen ? aarLabel : otherLabel);
-      }
-
-      // bitset.init((i) => df.get(currentPosition, i) === currentAAR);
-
-      // const splitArray: string[] = [];
-      // for (let i = 0; i < bitset.length; i++) {
-      //   splitArray.push(bitset.get(i) ? aarLabel : otherLabel);
-      // }
-
-      // //FIXME: it resets filter; don't replace, init instead
-      // const splitCol = DG.Column.fromStrings(splitColName, splitArray);
-      // if (!df.col(splitColName)) {
-      //   df.columns.add(splitCol);
-      // } else {
-      //   df.columns.replace(splitColName, splitCol);
-      // }
-
-      // df.getCol(splitColName).setCategoryOrder([otherLabel, aarLabel]);
-      const colorMap: {[index: string]: string | number} = {};
-      colorMap[otherLabel] = DG.Color.blue;
-      colorMap[aarLabel] = DG.Color.orange;
-      // colorMap[currentAAR] = cp.getColor(currentAAR);
-      df.getCol(splitColName).colors.setCategorical(colorMap);
-    }
   });
 
   for (const col of matrixDf.columns.names()) {

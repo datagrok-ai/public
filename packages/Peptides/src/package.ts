@@ -106,13 +106,19 @@ export async function analyzePeptides(col: DG.Column): Promise<DG.Widget> {
   }
   const defaultColumn: DG.Column = col.dataFrame.col('activity') || col.dataFrame.col('IC50') || tempCol;
 
-  const activityColumnChoice = ui.columnInput('Activity column', col.dataFrame, defaultColumn);
   const activityScalingMethod = ui.choiceInput('Activity scaling', 'none', ['none', 'lg', '-lg']);
-  // it doesn't make sense to do apply log to values less than 0
-  activityColumnChoice.onChanged((_: any) => {
-    activityScalingMethod.enabled = activityColumnChoice.value && activityColumnChoice.value.min > 0;
-    activityScalingMethod.setTooltip('Function to apply for each value in activity column');
-  });
+  activityScalingMethod.setTooltip('Function to apply for each value in activity column');
+
+  const activityScalingMethodState = function (_: any) {
+    activityScalingMethod.enabled =
+      activityColumnChoice.value && DG.Stats.fromColumn(activityColumnChoice.value, col.dataFrame.filter).min > 0;
+    }
+  const activityColumnChoice = ui.columnInput(
+    'Activity column',
+    col.dataFrame,
+    defaultColumn,
+    activityScalingMethodState,
+  );
   activityColumnChoice.fireChanged();
 
   const startBtn = ui.button('Launch SAR', async () => {
@@ -128,7 +134,8 @@ export async function analyzePeptides(col: DG.Column): Promise<DG.Widget> {
           tableGrid.columns.byIndex(i)?.visible = false;
         }
       }
-      (grok.shell.v as DG.TableView).addViewer('peptide-sar-viewer', options);
+      const psv = (grok.shell.v as DG.TableView).addViewer('peptide-sar-viewer', options);
+      // (psv as SARViewer).initialBitset = col.dataFrame.filter;
       const widgProm = col.dataFrame.plot.fromType('StackedBarChartAA');
       addViewerToHeader(tableGrid, widgProm);
       // @ts-ignore
