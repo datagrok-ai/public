@@ -15,9 +15,21 @@ export const SURVIVAL_ANALYSIS_GUIDE = `1. Select dataset paramenters and click 
 3. Set the survival chart parameters. To see the chart clicn on 'Survival Chart' tab on right.
 4. Set the co-variates. On the right click on 'Co-Variates' tab for see them.
 `
-export const SEVERITY_COLOR_DICT = {'MILD': 'var(--green-2)', 
+export const SEVERITY_COLOR_DICT = {
+        'MILD': 'var(--green-2)', 
         'MODERATE': 'var(--orange-2)', 
         'SEVERE': 'var(--red-3)', 
         'U': 'var(--grey-3)', 
         'UNK': 'var(--grey-3)', 
         'Unknown': 'var(--grey-3)'}
+
+export const CLINICAL_TRIAL_GOV_FIELDS = {
+        'NCTId': 'NCT ID',
+        'Condition': 'Condition',
+        'BriefTitle': 'Brief Title',
+        'OrgFullName': 'Organization',
+        'Phase': 'Phase',
+        'StartDate': 'Start Date',
+        'CompletionDate':'Completion Date',
+        'BriefSummary': 'Brief Summary'
+}

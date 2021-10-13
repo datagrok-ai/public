@@ -108,8 +108,36 @@ export function getMinVisitName(df: DG.DataFrame) {
         .get('VISIT', 0);
 }
 
+export function getMaxVisitName(df: DG.DataFrame) {
+    return df.groupBy([ 'VISIT' ])
+        .where(`VISITDY = ${df.getCol('VISITDY').stats[ 'max' ]}`)
+        .aggregate()
+        .get('VISIT', 0);
+}
+
+export function getVisitName(df: DG.DataFrame) {
+    return df.groupBy([ 'VISIT' ])
+        .where(`VISITDY = ${df.getCol('VISITDY').stats[ 'max' ]}`)
+        .aggregate()
+        .get('VISIT', 0);
+}
+
 export function dictToString(dict: any){
     let str = '';
     Object.keys(dict).forEach(key => str+=`${key}: ${dict[key]}<br/>`);
     return str;
 }
+
+export function getVisitNamesAndDays(df: DG.DataFrame){
+    const data = df
+    .groupBy(['VISITDY', 'VISIT'])
+    .aggregate();
+    const visitsArray = [];
+    let rowCount = data.rowCount;
+    for (let i = 0; i < rowCount; i++){
+        if (!data.getCol('VISITDY').isNone(i) && !data.getCol('VISIT').isNone(i)){
+            visitsArray.push({day: data.get('VISITDY', i), name: data.get('VISIT', i)})
+        }
+    }
+    return visitsArray.sort((a, b) => a.day - b.day);
+  }
