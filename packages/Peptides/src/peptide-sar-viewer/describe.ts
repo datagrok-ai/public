@@ -7,7 +7,6 @@ import * as jStat from 'jstat';
 import {splitAlignedPeptides} from '../split-aligned';
 import {decimalAdjust, tTest} from '../utils/misc';
 import {ChemPalette} from '../utils/chem-palette';
-import * as grok from 'datagrok-api/src/chem';
 
 const cp = new ChemPalette('grok');
 
@@ -16,6 +15,7 @@ export async function describe(
   activityColumn: string,
   activityScaling: string,
   filterMode: boolean,
+  sourceGrid: DG.Grid,
 ): Promise<[DG.Grid, DG.DataFrame] | [null, null]> {
   //Split the aligned sequence into separate AARs
   let splitSeqDf: DG.DataFrame | undefined;
@@ -30,7 +30,7 @@ export async function describe(
   }
 
   const positionColumns = splitSeqDf.columns.names();
-  const activityColumnScaled = `~${activityColumn}Scaled`;
+  const activityColumnScaled = `${activityColumn}Scaled`;
 
   splitSeqDf.columns.add(df.getCol(activityColumn));
 
@@ -39,8 +39,8 @@ export async function describe(
   }
 
   //FIXME: this column usually duplicates, so remove it then
-  if (df.col('~IC50Scaled (2)')) {
-    df.columns.remove('~IC50Scaled (2)');
+  if (df.col(`${activityColumnScaled} (2)`)) {
+    df.columns.remove(`${activityColumnScaled} (2)`);
   }
 
   // append splitSeqDf columns to source table and make sure columns are not added more than once
@@ -61,20 +61,26 @@ export async function describe(
   case 'lg':
     await df.columns.addNewCalculated(activityColumnScaled, 'Log10(${' + activityColumn + '})');
     splitSeqDf.columns.add(df.getCol(activityColumnScaled));
+    sourceGrid.col(activityColumnScaled)!.name = `Log10(${activityColumn})`;
+    sourceGrid.columns.setOrder([`Log10(${activityColumn})`]);
     break;
   case '-lg':
     await df.columns.addNewCalculated(activityColumnScaled, '-1*Log10(${' + activityColumn + '})');
     splitSeqDf.columns.add(df.getCol(activityColumnScaled));
+    sourceGrid.col(activityColumnScaled)!.name = `-Log10(${activityColumn})`;
+    sourceGrid.columns.setOrder([`-Log10(${activityColumn})`]);
     break;
   default:
     await df.columns.addNewCalculated(activityColumnScaled, '${' + activityColumn + '}');
     splitSeqDf.columns.add(df.getCol(activityColumnScaled));
+    sourceGrid.col(activityColumnScaled)!.name = `${activityColumn}`;
+    sourceGrid.columns.setOrder([`${activityColumn}`]);
     break;
   }
 
   const positionColName = 'position';
   const aminoAcidResidue = 'aminoAcidResidue';
-  const medianColName = 'MAD';
+  // const medianColName = 'MAD';
 
   //unpivot a table and handle duplicates
   splitSeqDf = splitSeqDf.groupBy(positionColumns)
@@ -102,6 +108,11 @@ export async function describe(
     //.add('q2', activityColumnScaled, 'Median')
     //.add('q3', activityColumnScaled, 'Q3')
     .aggregate();
+  
+  const countThreshold = 4;
+  //@ts-ignore: never gets old
+  matrixDf.rows.filter((row) => row.Count >= countThreshold && row.Count <= peptidesCount - countThreshold);
+  matrixDf = matrixDf.clone(matrixDf.filter);
 
   // calculate additional stats
   //await matrixDf.columns.addNewCalculated('IQR', '${q3}-${q1}');
@@ -156,27 +167,26 @@ export async function describe(
     .aggregate();
   matrixDf.name = 'SAR';
 
-  // const aarCategoryOrder = [
-  //   '-', //black I guess
-  //   'C', 'U', //yellow
-  //   'G', 'P', //red
-  //   'A', 'V', 'I', 'L', 'M', 'F', 'Y', 'W', //all_green
-  //   'R', 'H', 'K', //light_blue
-  //   'D', 'E', //dark_blue
-  //   'S', 'T', 'N', 'Q', //orange
-  // ];
-  let aarCategoryOrder: string[] = ['-'];
-  for (const group of ChemPalette.grokGroups) {
-    aarCategoryOrder = aarCategoryOrder.concat(group[0]);
-  }
-  matrixDf.getCol(aminoAcidResidue).setCategoryOrder(aarCategoryOrder);
+  // Setting category order
+  // let aarCategoryOrder: string[] = ['-'];
+  // for (const group of ChemPalette.grokGroups) {
+  //   aarCategoryOrder = aarCategoryOrder.concat(group[0]);
+  // }
+  // matrixDf.getCol(aminoAcidResidue).setCategoryOrder(aarCategoryOrder);
+  let aarList: string[] = statsDf.getCol(aminoAcidResidue).toList();
+  const aarWeights: {[index: string]: number} = {};
+  aarList.forEach((value) => {
+    aarWeights[value] = (aarWeights[value] || 0) + 1;
+  });
+  aarList = aarList.filter((value, index, self) => self.indexOf(value) === index);
+  aarList.sort((first, second) => aarWeights[second] - aarWeights[first]);
+  matrixDf.getCol(aminoAcidResidue).setCategoryOrder(aarList);
 
   // !!! DRAWING PHASE !!!
   //find min and max MAD across all of the dataframe
-  const dfMin = jStat.min(mDiff);
+  // const dfMin = jStat.min(mDiff);
   const dfMax = jStat.max(mDiff);
   const grid = matrixDf.plot.grid();
-  const countThreshold = 4;
 
   grid.sort([aminoAcidResidue]);
   grid.columns.setOrder([aminoAcidResidue].concat(positionColumns));
@@ -229,11 +239,11 @@ export async function describe(
 
         //don't draw AAR that too little appearnces at this position
         const count: number = statsDf.groupBy(['Count']).where(query).aggregate().get('Count', 0);
-        if (count < countThreshold || count > peptidesCount - countThreshold) {
-          args.preventDefault();
-          args.g.restore();
-          return;
-        }
+        // if (count < countThreshold || count > peptidesCount - countThreshold) {
+        //   args.preventDefault();
+        //   args.g.restore();
+        //   return;
+        // }
 
         const pVal: number = statsDf.groupBy(['p-value']).where(query).aggregate().get('p-value', 0);
 
@@ -301,9 +311,9 @@ export async function describe(
 
           //@ts-ignore: I'm sure it's gonna be fine, text contains a number
           if (col === 'Count') {
-            if (parseInt(text) < countThreshold || parseInt(text) > peptidesCount - countThreshold) {
-              return true;
-            }
+            // if (parseInt(text) < countThreshold || parseInt(text) > peptidesCount - countThreshold) {
+            //   return true;
+            // }
             text += ` / ${peptidesCount}`;
           } else if (col === 'p-value') {
             text = parseFloat(text) !== 0 ? text : '<0.01'; 
@@ -336,36 +346,42 @@ export async function describe(
       const currentPosition = grid.table.currentCol.name;
 
       const query = `aminoAcidResidue = ${currentAAR} and position = ${currentPosition}`;
-      const text = statsDf.groupBy(['Count']).where(query).aggregate().get('Count', 0);
-      if (text < countThreshold || text > peptidesCount - countThreshold) {
-        return;
-      }
+      // const text = statsDf.groupBy(['Count']).where(query).aggregate().get('Count', 0);
+      // if (text < countThreshold || text > peptidesCount - countThreshold) {
+      //   return;
+      // }
 
       const splitColName = '~splitCol';
       const otherLabel = 'Other';
       const aarLabel = `${currentAAR === '-' ? 'Empty' : currentAAR} - ${currentPosition}`;
 
       const bitset = filterMode ? df.filter : df.selection;
-      bitset.init((i) => df.get(currentPosition, i) === currentAAR);
 
-      const splitArray: string[] = [];
-      for (let i = 0; i < bitset.length; i++) {
-        splitArray.push(bitset.get(i) ? aarLabel : otherLabel);
-      }
-
-      //FIXME: it shouldn't be like this. Wait for a fix in core, then delete
-      const spltCol = df.col(splitColName);
-      if (spltCol) {
-        spltCol.setTag('.color-coding-type', 'Off');
-        spltCol.setTag('.color-coding-categorical', '');
-      }
-
-      const splitCol = DG.Column.fromStrings(splitColName, splitArray);
       if (!df.col(splitColName)) {
-        df.columns.add(splitCol);
-      } else {
-        df.columns.replace(splitColName, splitCol);
+        df.columns.addNew(splitColName, 'string');
       }
+
+      let isChosen: boolean;
+      for (let i = 0; i < df.rowCount; i++) {
+        isChosen = df.get(currentPosition, i) === currentAAR;
+        bitset.set(i, isChosen);
+        df.getCol(splitColName).set(i, isChosen ? aarLabel : otherLabel);
+      }
+
+      // bitset.init((i) => df.get(currentPosition, i) === currentAAR);
+
+      // const splitArray: string[] = [];
+      // for (let i = 0; i < bitset.length; i++) {
+      //   splitArray.push(bitset.get(i) ? aarLabel : otherLabel);
+      // }
+
+      // //FIXME: it resets filter; don't replace, init instead
+      // const splitCol = DG.Column.fromStrings(splitColName, splitArray);
+      // if (!df.col(splitColName)) {
+      //   df.columns.add(splitCol);
+      // } else {
+      //   df.columns.replace(splitColName, splitCol);
+      // }
 
       // df.getCol(splitColName).setCategoryOrder([otherLabel, aarLabel]);
       const colorMap: {[index: string]: string | number} = {};

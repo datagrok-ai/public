@@ -379,21 +379,6 @@ class ChemPackage extends DG.Package {
     element.click();
   }
 
-  //input: string content
-  //output: list tables
-  //tags: file-handler
-  //meta.ext: sdf
-  sdfFileHandler(content) {
-
-    let sr = new SDFReader();
-    let jsn = sr.get_colls(content);
-    let df = DG.DataFrame.create(jsn['molecule'].length);
-    for (const [key, value] of Object.entries(jsn)) {
-      df.columns.add(DG.Column.fromStrings(key,value));
-    }
-    return [df];
-  }
-
   //name: Structure WIP
   //description: 2D molecule representation
   //tags: panel, widgets

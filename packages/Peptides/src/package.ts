@@ -86,7 +86,7 @@ export function Peptides() {
     ui.div([
       ui.block25([
         ui.button('Open peptide sequences demonstration set', () => main('aligned.csv'), ''),
-        //ui.button('Open complex case demo', () => main('aligned_2.csv'), ''),
+        ui.button('Open complex case demo', () => main('aligned_2.csv'), ''),
       ]),
       ui.block75([annotationViewerDiv]),
     ]),
@@ -123,7 +123,7 @@ export async function analyzePeptides(col: DG.Column): Promise<DG.Widget> {
       };
       for (let i =0; i<tableGrid.columns.length; i++) {
 
-        if (tableGrid.columns.byIndex(i)?.name && tableGrid.columns.byIndex(i)?.name!='IC50') {
+        if (tableGrid.columns.byIndex(i)?.name) {
           // @ts-ignore
           tableGrid.columns.byIndex(i)?.visible = false;
         }

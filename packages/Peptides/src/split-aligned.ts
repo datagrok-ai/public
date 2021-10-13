@@ -1,12 +1,12 @@
 import * as DG from 'datagrok-api/dg';
 
 export function splitAlignedPeptides(peptideColumn: DG.Column) {
-  const splitPeptidesArray: string[][] = [];
+  let splitPeptidesArray: string[][] = [];
   let isFirstRun = true;
-  let splitted;
+  let splitted: string[];
 
   for (const peptideStr of peptideColumn.toList()) {
-    splitted = peptideStr.split('-').slice(1, -1);
+    splitted = peptideStr.split('-');
 
     if (isFirstRun) {
       for (let i = 0; i < splitted.length; i++) {
@@ -15,16 +15,27 @@ export function splitAlignedPeptides(peptideColumn: DG.Column) {
       isFirstRun = false;
     }
 
-    splitted.forEach((value: string, index: number) => {
+    splitted.forEach((value, index) => {
       splitPeptidesArray[index].push(value === '' ? '-' : value);
     });
   }
+  
+  //create column names list
+  let columnNames = ['N'];
+  columnNames = columnNames.concat(splitPeptidesArray.map((_, index) => `${index + 1 < 10 ? 0 : ''}${index +1 }`));
+  columnNames.push('C');
 
-  const columnsArray = splitPeptidesArray.map((v, i) => {
-    const col = DG.Column.fromList('string', `${i+1 < 10 ? 0 : ''}${i+1}`, v); //TODO: Remove 'a'
-    col.semType = 'aminoAcids';
-    col.setTag('cell.renderer', 'aminoAcids');
-    return col;
+  // filter out the columns with the same values
+  splitPeptidesArray = splitPeptidesArray.filter((positionArray, index) => {
+    const isRetained = new Set(positionArray).size > 1;
+    if (!isRetained) {
+      columnNames.splice(index, 1);
+    }
+    return isRetained;
+  });
+
+  const columnsArray = splitPeptidesArray.map((positionArray, index) => {
+    return DG.Column.fromList('string', columnNames[index], positionArray);
   });
 
   return DG.DataFrame.fromColumns(columnsArray);
