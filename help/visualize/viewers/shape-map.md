@@ -22,7 +22,7 @@ sometimes it can't map names to the regions. To identify these records, select
 
 ## Videos
 
-<iframe width="560" height="315" src="https://www.youtube.com/embed/7MBXWzdC0-I?start=3650" frameborder="0" allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture" allowfullscreen></iframe>
+[![Shape Map](../../uploads/youtube/visualizations2.png "Open on Youtube")](https://www.youtube.com/watch?v=7MBXWzdC0-I&t=3650s)
 
 See also:
 * Applicable tables: #{x.demo:germany_grp_by_state}, #{x.demo:pa_income_by_county}, #{x.demo:ua_population}  

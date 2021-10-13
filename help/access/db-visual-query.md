@@ -9,7 +9,7 @@ on a server. This feature is supported for all relational [data connectors](data
 
 ## Videos
 
-<iframe width="560" height="315" src="https://www.youtube.com/embed/YJmSvh3_uCM?start=299" frameborder="0" allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture" allowfullscreen></iframe>
+[![Visual Query](../uploads/youtube/db_visual_query.png "Open on Youtube")](https://www.youtube.com/watch?v=YJmSvh3_uCM&t=299s)
 
 See also:
 

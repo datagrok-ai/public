@@ -2128,7 +2128,7 @@ export class ColumnDialogHelper {
     let sub = grok.functions.onAfterRunAction.pipe(filter(c => c == call)).subscribe(() => {
       let newCol = call.getOutputParamValue();
       for (let [key, value] of this.column.tags) if (key !== DG.TAGS.FORMULA) newCol.setTag(key, value);
-      let name = this.column.name;
+      let name = newCol.name;
       newCol = this.column.dataFrame.columns.replace(this.column, newCol);
       newCol.name = name;
       sub.unsubscribe();

@@ -13,7 +13,7 @@ As for web queries, they are automatically shared along with sharing the corresp
 
 ## Videos
 
-<iframe width="560" height="315" src="https://www.youtube.com/embed/7MBXWzdC0-I?start=1334" frameborder="0" allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture" allowfullscreen></iframe>
+[![Sharing](../uploads/youtube/sharing.png "Open on Youtube")](https://www.youtube.com/watch?v=7MBXWzdC0-I&t=1334s)
 
 See also:
 

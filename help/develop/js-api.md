@@ -259,7 +259,7 @@ Code snippets:
 
 ## Videos
 
-<iframe width="560" height="315" src="https://www.youtube.com/embed/YR17h4_0Mc8?start=536" frameborder="0" allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture" allowfullscreen></iframe>
+[![JS API](../uploads/youtube/js_api.png "Open on Youtube")](https://www.youtube.com/watch?v=YR17h4_0Mc8&t=536s)
 
 See also:
 

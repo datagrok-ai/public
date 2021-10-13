@@ -41,7 +41,7 @@ The platform supports a large number of functions, constants and operators. You 
 
 ### Videos
 
-<iframe width="560" height="315" src="https://www.youtube.com/embed/-yTTaS_WOU4" frameborder="0" allow="accelerometer; autoplay; encrypted-media; gyroscope; picture-in-picture" allowfullscreen></iframe>
+[![Add New Columns](../uploads/youtube/add_new_columns.png "Open on Youtube")](https://www.youtube.com/watch?v=-yTTaS_WOU4)
 
 See also:
 
