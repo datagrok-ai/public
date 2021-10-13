@@ -81,7 +81,9 @@ export namespace chem {
 
   export class Sketcher extends Widget {
 
+    molInput: HTMLInputElement = ui.element('input');
     host: HTMLDivElement = ui.box(null, 'grok-sketcher');
+    /* molInputSubscription: Subscription | null = null; */
     changedSub: Subscription | null = null;
     sketcher: SketcherBase | null = null;
     listeners: Function[] = [];
@@ -132,8 +134,25 @@ export namespace chem {
       if (funcs.length == 0)
         throw 'Sketcher functions not found. Please install Chem, OpenChemLib, or MarvinJS package.';
 
-      let molInput: HTMLInputElement = ui.element('input');
-      $(molInput).attr('placeholder', 'SMILES, Inchi, Inchi keys, ChEMBL id, etc');
+      
+      $(this.molInput).attr('placeholder', 'SMILES, Inchi, Inchi keys, ChEMBL id, etc');
+      const smilesInputHandler = (e: any) => {
+        const newSmilesValue: string = (e?.target as HTMLTextAreaElement).value;
+        if (this.getSmiles() !== newSmilesValue) {
+          this.setSmiles(newSmilesValue);
+        }
+        const currentSmiles = this.getSmiles();
+        if (currentSmiles !== newSmilesValue) {
+          (e?.target as HTMLTextAreaElement).value = currentSmiles ?? '';
+        }
+      };
+      this.molInput.addEventListener('focusout', (e) => {
+        smilesInputHandler(e);
+      });
+      this.molInput.addEventListener('keydown', (e) => {
+        if (e.keyCode == 13)
+          smilesInputHandler(e);
+      });
 
       let optionsIcon = ui.iconFA('bars', () => {
         Menu
@@ -145,7 +164,7 @@ export namespace chem {
       });
       $(optionsIcon).addClass('d4-input-options');
 
-      let molInputDiv = ui.div([molInput, optionsIcon], 'grok-sketcher-input');
+      let molInputDiv = ui.div([this.molInput, optionsIcon], 'grok-sketcher-input');
 
       //let sketcherChoice = ui.choiceInput('Sketcher', funcs[0].name, funcs.map((f) => f.name), (name: string) => this.setSketcher(name))
       this.root.appendChild(ui.div([
@@ -171,6 +190,12 @@ export namespace chem {
 
       let f = Func.find({name: name})[0];
       this.sketcher = await f.apply();
+      /*
+      // A backward connection from the sketched molecule to the text
+      this.molInputSubscription?.unsubscribe();
+      this.molInputSubscription = this.sketcher!.onChanged.subscribe((_) => {
+        this.molInput.value = this.getSmiles() ?? ''; });
+      */
       this.host.appendChild(this.sketcher!.root);
       await ui.tools.waitForElementInDom(this.root);
       await this.sketcher!.init();
@@ -440,6 +465,7 @@ export namespace chem {
       .show();
     return;
 
+    /*
     let funcs = Func.find({tags: ['moleculeSketcher']});
     let host = ui.box(null, {style: {width: '500px', height: '500px'}});
     let changedSub: Subscription | null = null;
@@ -464,5 +490,6 @@ export namespace chem {
       .show();
 
     await setSketcher(funcs[0].name);
+    */
   }
 }

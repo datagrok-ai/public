@@ -32,7 +32,7 @@ export class MatrixesView extends DG.ViewBase {
     this.selectedLabValues = this.uniqueLabValues;
     this.bl = this.uniqueVisits[0];
 
-    let blVisitChoices = ui.choiceInput('BL', this.bl, this.uniqueVisits);
+    let blVisitChoices = ui.choiceInput('Baseline', this.bl, this.uniqueVisits);
     blVisitChoices.onChanged((v) => {
       this.bl = blVisitChoices.value;
       this.updateMarix();
@@ -40,7 +40,7 @@ export class MatrixesView extends DG.ViewBase {
 
 
   
-    let selectBiomarkers = ui.bigButton('Select biomarkers', () => { 
+    let selectBiomarkers = ui.iconFA('cog', () => { 
       let labValuesMultiChoices = ui.multiChoiceInput('Select values', this.selectedLabValues, this.uniqueLabValues)
             labValuesMultiChoices.onChanged((v) => {
               this.selectedLabValues = labValuesMultiChoices.value;
@@ -59,10 +59,15 @@ export class MatrixesView extends DG.ViewBase {
 
     
     this.root.className = 'grok-view ui-box';
-    this.root.append(ui.splitV([
-      ui.box(ui.divH([blVisitChoices.root, selectBiomarkers]), {style:{maxHeight:'100px'}}),
-      this.matrixDiv
-    ]))
+    this.root.append(ui.box(this.matrixDiv, { style: {'margin-top': '15px' } }));
+    this.setRibbonPanels([
+      [
+        blVisitChoices.root
+      ],
+      [
+        selectBiomarkers
+      ]
+    ]);
     this.updateMarix();
 
   }

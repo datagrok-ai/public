@@ -3,7 +3,7 @@ import * as DG from "datagrok-api/dg";
 import * as ui from "datagrok-api/ui";
 import { study } from "../clinical-study";
 import { cumulativeEnrollemntByDay } from "../data-preparation/data-preparation";
-import { STUDY_ID, SUBJECT_ID } from "../constants";
+import { CLINICAL_TRIAL_GOV_FIELDS, STUDY_ID, SUBJECT_ID } from "../constants";
 import { HttpService } from "../services/http.service";
 
 
@@ -122,7 +122,7 @@ export class StudySummaryView extends DG.ViewBase {
 
   private async getStudyInfoFromClinTrialsGov(studyId: string){
     //http.getStudyData(studyId);
-    let result = await this.httpService.getStudyData('R01NS050536');
+    let result = await this.httpService.getStudyData('R01NS050536', Object.keys(CLINICAL_TRIAL_GOV_FIELDS));
     ui.dialog({ title: 'Study info' })
               .add(ui.tableFromMap(result))
               .onOK(() => {})

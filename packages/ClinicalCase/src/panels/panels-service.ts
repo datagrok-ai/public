@@ -4,7 +4,7 @@ import * as DG from "datagrok-api/dg";
 import { CLIN_TRIAL_GOV_SEARCH, HttpService } from '../services/http.service';
 import { addDataFromDmDomain, dictToString, getNullOrValue } from '../data-preparation/utils';
 import { study } from '../clinical-study';
-import { SEVERITY_COLOR_DICT, SUBJECT_ID, TREATMENT_ARM, AGE, SEX, RACE } from '../constants';
+import { SEVERITY_COLOR_DICT, SUBJECT_ID, TREATMENT_ARM, AGE, SEX, RACE, CLINICAL_TRIAL_GOV_FIELDS } from '../constants';
 import { AeBrowserView } from '../views/adverse-events-browser';
 import { updateDivInnerHTML } from '../views/utils';
 import $ from "cash-dom";
@@ -92,14 +92,27 @@ export async function aeBrowserPanel(view: AeBrowserView) {
 
 export async function summaryPanel(studyId: string) {
     const httpService = new HttpService();
-    let clinTrialsGovInfo = await httpService.getStudyData('R01NS050536');
-    //let clinTrialsGovInfo = await httpService.getStudyData(studyId);
-    let studyLink = `${CLIN_TRIAL_GOV_SEARCH}${clinTrialsGovInfo[ 'NCTId' ]}`
-    clinTrialsGovInfo[ `Study link` ] = ui.link('Go to study page', () => { window.open(studyLink, '_blank').focus(); })
-    let root = ui.div();
-    root.appendChild(ui.h2(`Study ${studyId} summary`));
-    root.appendChild(ui.tableFromMap(clinTrialsGovInfo));
-    return root;
+    let clinTrialsGovInfo = await httpService.getStudyData('R01NS050536', Object.keys(CLINICAL_TRIAL_GOV_FIELDS));
+    //let clinTrialsGovInfo = await httpService.getStudyData(studyId, Object.keys(CLINICAL_TRIAL_GOV_FIELDS));
+    const summaryDict = {};
+    Object.keys(clinTrialsGovInfo).forEach(key => {
+        summaryDict[ CLINICAL_TRIAL_GOV_FIELDS[ key ] ] = clinTrialsGovInfo[ key ];
+    })
+    let studyLink = `${CLIN_TRIAL_GOV_SEARCH}${summaryDict[ 'NCT ID' ]}`
+    summaryDict[ `Study link` ] = ui.link('Go to study page', () => { window.open(studyLink, '_blank').focus(); })
+    let acc = ui.accordion('summary-panel');
+    //acc.addPane(`${studyId}`, () => ui.tableFromMap(summaryDict), true);
+    acc.addPane(`${studyId}`, () => {
+        let info = ui.div();
+        Object.keys(summaryDict).forEach(key => info.appendChild(
+            ui.divH([
+                ui.div(key, { style: { minWidth: '100px', fontWeight: 'bold' } }),
+                ui.div(summaryDict[ key ])
+            ])
+        ))
+        return info;
+    });
+    return acc.root;
 }
 
 

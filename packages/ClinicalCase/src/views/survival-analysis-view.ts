@@ -60,21 +60,22 @@ export class SurvivalAnalysisView extends DG.ViewBase {
     let createSurvivalDataframe = ui.bigButton('Create dataset', () => { 
      this.refreshDataframe();
      this.filterChanged = true;
+     this.updateChartsAfterFiltering();
      this.survivalDataframe.onFilterChanged.subscribe((_) => {
-       this.filterChanged = true;
+      this.filterChanged = true;
       });
     });
 
     let tabControl = ui.tabControl(null, false);
     tabControl.addPane('Dataset', () => ui.splitV([this.survivalFilterDiv, this.survivalGridDivCreate]));
-    tabControl.addPane('Survival Chart', () => {
+    tabControl.addPane('Survival Chart', () => this.survivalPlotDiv);
+    tabControl.getPane('Survival Chart').header.addEventListener('click', () => {
       this.updateChartsAfterFiltering();
-      return this.survivalPlotDiv;
-    });
-    tabControl.addPane('Covariates', () => {
+    })
+    tabControl.addPane('Covariates', () => this.covariatesPlotDiv);
+    tabControl.getPane('Covariates').header.addEventListener('click', () => {
       this.updateChartsAfterFiltering();
-      return this.covariatesPlotDiv;
-    });
+    })
 
     let customTitle = {style:{
       'color':'var(--grey-6)',
@@ -114,7 +115,7 @@ export class SurvivalAnalysisView extends DG.ViewBase {
               ])
             ]),
             ui.panel([
-              ui.divText('Co-Variates', customTitle),
+              ui.divText('Covariates', customTitle),
               ui.inputs([ 
                 //@ts-ignore
                 this.plotCovariatesChoicesDiv
@@ -132,12 +133,14 @@ export class SurvivalAnalysisView extends DG.ViewBase {
   }
 
   private updateSurvivalPlot() {
+    ui.setUpdateIndicator(this.survivalPlotDiv, true);
     grok.functions.call(
       "Clinicalcase:survivalPlot", {
       "survivalDf": this.survivalDataframe,
       "inputStrata": this.strata,
       "confInt": this.confInterval.toString()
     }).then((result) => {
+      ui.setUpdateIndicator(this.survivalPlotDiv, false);
       //@ts-ignore
       updateDivInnerHTML(this.survivalPlotDiv, ui.image(`data:image/png;base64,${result[ 'plot' ]}`));
       console.warn(dataframeContentToRow(result[ 'diagnostics' ]));
@@ -145,11 +148,13 @@ export class SurvivalAnalysisView extends DG.ViewBase {
   }
 
   private updateCovariatesPlot() {
+    ui.setUpdateIndicator(this.covariatesPlotDiv, true);
     grok.functions.call(
       "Clinicalcase:covariates", {
       "covariatesDf": this.survivalDataframe,
       "coVariates": this.plotCovariates.join(' + ')
     }).then((result) => {
+      ui.setUpdateIndicator(this.covariatesPlotDiv, false);
       //@ts-ignore
       updateDivInnerHTML(this.covariatesPlotDiv, ui.image(`data:image/png;base64,${result[ 'plot' ]}`));
       console.warn(dataframeContentToRow(result[ 'diagnostics' ]));
@@ -172,7 +177,7 @@ export class SurvivalAnalysisView extends DG.ViewBase {
   }
 
   private updatePlotCovariatesChoices(){
-    this.plotCovariatesChoices = ui.multiChoiceInput('Covariates', null, this.survivalColumns.filter(it => it !== 'time' && it !== 'status' && it !== 'USUBJID'));
+    this.plotCovariatesChoices = ui.multiChoiceInput(' ', null, this.survivalColumns.filter(it => it !== 'time' && it !== 'status' && it !== 'USUBJID'));
     this.plotCovariatesChoices.onChanged((v) => {
       this.plotCovariates = this.plotCovariatesChoices.value;
       this.updateCovariatesPlot();
@@ -184,6 +189,7 @@ export class SurvivalAnalysisView extends DG.ViewBase {
      this.survivalColumns = this.survivalDataframe.columns.names();
      this.survivalOptions = [''].concat(this.survivalColumns.filter(it => it !== 'time' && it !== 'status' && it !== 'USUBJID'));
      this.strata = '';
+     this.plotCovariates = null;
      this.updateStrataChoices();
      this.updatePlotCovariatesChoices();
      updateDivInnerHTML(this.strataChoicesDiv, this.strataChoices.root);
@@ -196,6 +202,8 @@ export class SurvivalAnalysisView extends DG.ViewBase {
 
   private updateChartsAfterFiltering(){
     if(this.filterChanged){
+      updateDivInnerHTML(this.covariatesPlotDiv, '');
+      updateDivInnerHTML(this.survivalPlotDiv, '');
       this.updateSurvivalPlot();
       if (this.plotCovariates) {
         this.updateCovariatesPlot();
