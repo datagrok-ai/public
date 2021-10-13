@@ -116,6 +116,8 @@ Even if the purpose of the model is to increase knowledge of the data, the knowl
 and presented in a way that the customer can use it. Depending on the data and on the requirements, the
 results could be presented as a data table, a report, an interactive visualization, or something else.
 
+[![Open on YouTube](../uploads/youtube/predictive_modeling_youtube.png "Predictive Modeling")](https://www.youtube.com/watch?v=tVwpRB8fikQ&t=1141s&ab_channel=Datagrok)
+
 <iframe width="560" height="315" src="https://www.youtube.com/embed/tVwpRB8fikQ?start=1141" frameborder="0" allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture" allowfullscreen></iframe>
 
 Datagrok platform was specifically designed with that in mind. In addition to traditional model deployment
@@ -124,6 +126,8 @@ the [data augmentation](../discover/data-augmentation.md)
 and [info panels](../discover/info-panels.md#predicting-molecule-solubility). 
 
 ### Videos
+
+[![Open on YouTube](../uploads/youtube/predictive_modeling_youtube2.png "Predictive Modeling")](https://www.youtube.com/watch?v=JaJgxtHAb98&t=1418s&ab_channel=Datagrok)
 
 <iframe width="560" height="315" src="https://www.youtube.com/embed/JaJgxtHAb98?start=1418" frameborder="0" allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture" allowfullscreen></iframe>
   
