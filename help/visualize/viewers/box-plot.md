@@ -41,7 +41,7 @@ For instance, you would get the upper whisker inverted on the following data: [0
 
 ## Videos
 
-<iframe width="560" height="315" src="https://www.youtube.com/embed/7MBXWzdC0-I?start=2332" frameborder="0" allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture" allowfullscreen></iframe>
+[![Box Plot](../../uploads/youtube/visualizations2.png "Open on Youtube")](https://www.youtube.com/watch?v=7MBXWzdC0-I&t=2332s)
 
 See also: 
   

@@ -40,7 +40,7 @@ dock the viewer at that spot. To resize the viewer, drag the viewer's border.
 
 ## Docking
 
-<iframe width="560" height="315" src="https://www.youtube.com/embed/wAfEqAMOZzw?start=1726" frameborder="0" allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture" allowfullscreen></iframe>
+[![Docking](../uploads/youtube/visualizations1.png "Open on Youtube")](https://www.youtube.com/watch?v=wAfEqAMOZzw&t=1726s)
 
 ## Selection
 
@@ -100,7 +100,7 @@ some viewers, such as [Bar Chart](viewers/bar-chart.md) and [Pie Chart](viewers/
 could be also used for filtering of the underlying table. Such viewers are a popular choice
 for interactive dashboards.
 
-<iframe width="560" height="315" src="https://www.youtube.com/embed/wAfEqAMOZzw?start=4201" frameborder="0" allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture" allowfullscreen></iframe>
+[![Filters](../uploads/youtube/visualizations1.png "Open on Youtube")](https://www.youtube.com/watch?v=wAfEqAMOZzw&t=4201s)
 
 To control that behavior, click on the viewer's hamburger icon, open "On click" and choose the
 desired mode. Internally, this sets two different [properties](#properties) of a viewer:
@@ -138,7 +138,7 @@ data properties (usually columns to visualize) are exposed as combo boxes on top
 To edit the rest of the properties, either click on the "gear" icon on top of the viewer,
 or press F4 when the viewer has focus, or right-click and select `Viewer | Properties`.
 
-<iframe width="560" height="315" src="https://www.youtube.com/embed/wAfEqAMOZzw?start=804" frameborder="0" allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture" allowfullscreen></iframe>
+[![Properties](../uploads/youtube/visualizations1.png "Open on Youtube")](https://www.youtube.com/watch?v=wAfEqAMOZzw&t=804s)
 
 ![](viewers/viewer-property-panel.gif)
 
@@ -243,7 +243,7 @@ To help users analyze their data in depth, our visualizations include a number o
   * Statistics viewer gives a concise summary of commonly used [measures](viewers/statistics.md#statistical-measures) for selected columns
   * The platform's viewers offer two commands, `To Script | To Python` and `To Script | To R`, that can be used to [reproduce charts](https://www.youtube.com/watch?v=seAgx5TbrzI&t=258s) with Python or R code respectively
 
-<iframe width="560" height="315" src="https://www.youtube.com/embed/wAfEqAMOZzw?start=4810" frameborder="0" allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture" allowfullscreen></iframe>
+[![Statistical hypothesis testing](../uploads/youtube/visualizations1.png "Open on Youtube")](https://www.youtube.com/watch?v=wAfEqAMOZzw&t=4810s)
 
 
 ## Layouts
@@ -419,7 +419,7 @@ Visualizes magnitude and color for data on 3D globe using: latitude, longitude. 
 
 ### Videos
 
-<iframe width="560" height="315" src="https://www.youtube.com/embed/67LzPsdNrEc" frameborder="0" allow="accelerometer; autoplay; encrypted-media; gyroscope; picture-in-picture" allowfullscreen></iframe>
+[![Viewers](../uploads/youtube/visualizations1.png "Open on Youtube")](hhttps://www.youtube.com/watch?v=67LzPsdNrEc)
 
 See also:
 

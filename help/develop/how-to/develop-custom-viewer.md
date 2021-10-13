@@ -533,7 +533,7 @@ You can find more inspiring examples in our [public repository](https://github.c
 
 ## Videos
 
-<iframe width="560" height="315" src="https://www.youtube.com/embed/JaJgxtHAb98?start=202" frameborder="0" allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture" allowfullscreen></iframe>
+[![Viewers JS API](../../uploads/youtube/develop_custom_viewer.png "Open on Youtube")](https://www.youtube.com/watch?v=JaJgxtHAb98&t=202s)
 
 See also:
 

@@ -311,7 +311,7 @@ See [DB Substructure and similarity search](db-substructure-similarity-search.md
 
 ### Videos
 
-<iframe width="560" height="315" src="https://www.youtube.com/embed/k1NVdTRpYOM" frameborder="0" allow="accelerometer; autoplay; encrypted-media; gyroscope; picture-in-picture" allowfullscreen></iframe>
+[![Cheminformatics](../../uploads/youtube/cheminformatics.png "Open on Youtube")](https://www.youtube.com/watch?v=k1NVdTRpYOM)
 
 See also:
 
