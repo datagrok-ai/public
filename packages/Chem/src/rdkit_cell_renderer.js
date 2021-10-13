@@ -174,13 +174,13 @@ M  END
     context.putImageData(image, x, y);
   }
 
-  _initScaffoldString(colTags, tagName) {
+  _initScaffoldString(colTemp, tagName) {
 
-    let scaffoldString = colTags ? colTags[tagName] : null;
+    let scaffoldString = colTemp ? colTemp[tagName] : null;
     if (scaffoldString?.endsWith(this.WHITE_MOLBLOCK_SUFFIX)) {
       scaffoldString = null;
-      if (colTags[tagName]) {
-        delete colTags[tagName];
+      if (colTemp[tagName]) {
+        delete colTemp[tagName];
       }
     }
     return scaffoldString;
@@ -199,10 +199,10 @@ M  END
       return;
     }
 
-    let colTags = gridCell.cell.column.tags;
+    let colTemp = gridCell.cell.column.temp;
 
-    const singleScaffoldHighlightMolString = this._initScaffoldString(colTags, 'chem-scaffold');
-    const singleScaffoldFilterMolString = this._initScaffoldString(colTags, 'chem-scaffold-filter'); // expected a molBlock
+    const singleScaffoldHighlightMolString = this._initScaffoldString(colTemp, 'chem-scaffold');
+    const singleScaffoldFilterMolString = this._initScaffoldString(colTemp, 'chem-scaffold-filter'); // expected a molBlock
     const singleScaffoldMolString = singleScaffoldFilterMolString ?? singleScaffoldHighlightMolString;
     // TODO: make both filtering scaffold and single highlight scaffold appear
     
@@ -214,18 +214,18 @@ M  END
 
     } else {
 
-      let molRegenerateCoords = colTags && colTags['regenerate-coords'] === 'true';
+      let molRegenerateCoords = colTemp && colTemp['regenerate-coords'] === 'true';
       let scaffoldRegenerateCoords = false;
       let df = gridCell.cell.dataFrame;
       let rowScaffoldCol = null;
 
       // if given, take the 'scaffold-col' col
-      if (colTags && colTags['scaffold-col']) {
-        let rowScaffoldColName = colTags['scaffold-col'];
+      if (colTemp && colTemp['scaffold-col']) {
+        let rowScaffoldColName = colTemp['scaffold-col'];
         let rowScaffoldColProbe = df.columns.byName(rowScaffoldColName);
         if (rowScaffoldColProbe !== null) {
-          const scaffoldColTags = rowScaffoldColProbe.tags;
-          scaffoldRegenerateCoords = scaffoldColTags && scaffoldColTags['regenerate-coords'] === 'true';
+          const scaffoldColTemp = rowScaffoldColProbe.temp;
+          scaffoldRegenerateCoords = scaffoldColTemp && scaffoldColTemp['regenerate-coords'] === 'true';
           molRegenerateCoords = scaffoldRegenerateCoords;
           rowScaffoldCol = rowScaffoldColProbe;
         }
@@ -238,7 +238,7 @@ M  END
         // drawing with a per-row scaffold
         let idx = gridCell.tableRowIndex;
         let scaffoldMolString = df.get(rowScaffoldCol.name, idx);
-        let highlightScaffold = colTags && colTags['highlight-scaffold'] === 'true';
+        let highlightScaffold = colTemp && colTemp['highlight-scaffold'] === 'true';
         this._drawMolecule(x, y, w, h, g.canvas,
           molString, scaffoldMolString, highlightScaffold, molRegenerateCoords, scaffoldRegenerateCoords);
       }
