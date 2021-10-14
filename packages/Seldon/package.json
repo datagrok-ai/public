@@ -1,0 +1,26 @@
+{
+	"name": "seldon",
+	"beta": true,
+	"friendlyName": "Seldon",
+	"version": "0.0.1",
+	"description": "",
+	"dependencies": {
+		"datagrok-api": "latest",
+		"ts-loader": "latest",
+		"typescript": "latest"
+	},
+	"devDependencies": {
+		"webpack": "latest",
+		"webpack-cli": "latest"
+	},
+	"scripts": {
+		"debug-seldon": "grok publish --rebuild",
+		"release-seldon": "grok publish --rebuild --release",
+		"build-seldon": "webpack",
+		"build": "webpack",
+		"debug-seldon-dev": "grok publish dev --rebuild",
+		"release-seldon-dev": "grok publish dev --rebuild --release",
+		"debug-seldon-public": "grok publish public --rebuild",
+		"release-seldon-public": "grok publish public --rebuild --release"
+	}
+}
