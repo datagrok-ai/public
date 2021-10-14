@@ -87,7 +87,7 @@ Information about events in available in tooltips on mouse hover. For convenienc
 
 <img src="https://github.com/datagrok-ai/public/blob/clinical-case-app/packages/ClinicalCase/img/patient_profile_zoom.gif" height="500" width='800'/>
 
-* Lab values chart
+* **Lab values chart**
 
 By clicking on settings button you can choose laboratory values to show on chart. List of available values is extraced from 'lb' domain in provided SDTM data.
 
@@ -95,13 +95,13 @@ Values within normal ranges are colored green, values outside normal ranges are 
 
 <img src="https://github.com/datagrok-ai/public/blob/clinical-case-app/packages/ClinicalCase/img/patient_profile_lab.gif" height="500" width='800'/>
 
-* Lab values line chart
+* **Lab values line chart**
 
 You can also choose laboratory values by clicking settings button.
 
 Laboratory line chart provides two ways of calculating values dynamics:
-- relative changes from baseline
-- relative values between min and max contained in dataset
+1. Relative changes from baseline
+2. Relative values between min and max contained in dataset
 
 <img src="https://github.com/datagrok-ai/public/blob/clinical-case-app/packages/ClinicalCase/img/patient_profile_lab_line.gif" height="500" width='800'/>
 
