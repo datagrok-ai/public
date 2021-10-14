@@ -920,6 +920,20 @@ export class Column {
     let name = this.name;
     newCol = this.dataFrame.columns.replace(this, newCol);
     newCol.name = name;
+
+    const dependentColRegex = new RegExp(`.*\\$\{${name}\}|\[${name}\].*`);
+    for (const column of this.dataFrame.columns) {
+      if (column.name === name) continue;
+      const formula = column.tags[DG.TAGS.FORMULA];
+      if (formula != null && dependentColRegex.test(formula)) {
+        let newCol = await this.dataFrame.columns._getNewCalculated(column.name, formula, column.type);
+        for (const [key, value] of column.tags) if (key !== DG.TAGS.FORMULA) newCol.setTag(key, value);
+        const name = column.name;
+        newCol = this.dataFrame.columns.replace(column, newCol);
+        newCol.name = name;
+      }
+    }
+
     return newCol;
   }
 
