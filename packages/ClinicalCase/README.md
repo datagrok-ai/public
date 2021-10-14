@@ -65,7 +65,7 @@ In case trial is registered on [clinicaltrials.gov](https://clinicaltrials.gov/)
 Timelines view allows to visualize events in time. X axis is time axis reflecting study days. On Y axis there are subjects.
 Events are shown either as a point(in case event lased for one day) or as a line (for cases events were prolonged in time)
 
-Adverse events, investigationsl drug exposure and concomitant medication domains are available for analysis(in case SDTM dataset contains corresponding tables). Filters can also be applyed for each domain.
+Adverse events, investigationsl drug exposure and concomitant medication domains are available for analysis(in case SDTM data contains corresponding tables). Filters can also be applyed for each domain.
 
 By zooming in and out you can drill down to particular patient and event or otherwise see the picture of events in general.
 
@@ -76,6 +76,35 @@ Information about particular event is shown in tooltip on mouse hover.
 Several domains can be shown simultaneously on the graph. For instance, the following screenshot shows severe general and cardiac disorders VS aspirin intake.
 
 <img src="https://github.com/datagrok-ai/public/blob/clinical-case-app/packages/ClinicalCase/img/timelines.PNG" height="500" width='800'/>
+
+
+### Patient profile
+
+Patient profile is useful for analysing events related to particular patient.
+You can analyse data from laboratory, adverse events, dug exposue and concomitant medication domains in time and see relations between events. All graphs are linked to the same X axis representing study days and it can be zoomed in and out simultaneously. 
+
+Information about events in available in tooltips on mouse hover. For convenience domains han be collapsed or extended.
+
+<img src="https://github.com/datagrok-ai/public/blob/clinical-case-app/packages/ClinicalCase/img/patient_profile_zoom.gif" height="500" width='800'/>
+
+* Lab values chart
+By clicking on settings button you can choose laboratory values to show on chart. List of available values is extraced from 'lb' domain in provided SDTM data.
+
+Values within normal ranges are colored green, values outside normal ranges are red.
+
+<img src="https://github.com/datagrok-ai/public/blob/clinical-case-app/packages/ClinicalCase/img/patient_profile_lab.gif" height="500" width='800'/>
+
+* Lab values line chart
+You can also choose laboratory values by clicking settings button.
+
+Laboratory line chart provides two ways of calculating values dynamics:
+- relative changes from baseline
+- relative values between min and max contained in dataset
+
+<img src="https://github.com/datagrok-ai/public/blob/clinical-case-app/packages/ClinicalCase/img/patient_profile_lab_line.gif" height="500" width='800'/>
+
+
+
 
 
 
