@@ -36,6 +36,16 @@ export class RepertoireBrowserPanel {
 
         this.paratopes = ui.boolInput('Paratopes', false);
 
+        this.pVizNglRelation =  {'H':{}, 'L':{}};
+
+        this.colorScheme = {"col_background" : 'white',
+                            "col_heavy_chain" : '#0069a7',
+                            "col_light_chain" : '#f1532b',
+                            "col_cdr" : '#45d145',
+                            "col_para" : '#b0c4de',
+                            "col_partopes_low" : '(176,196,222)', //col_para in rgb
+                            "col_partopes_high" : '(255, 0, 255)'};
+
         //this.msaContentChoice = ui.choiceInput('Content', 'AA MSA', ['AA MSA', 'DNA MSA', 'Hybrid']);
 
 
