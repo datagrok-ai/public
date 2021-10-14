@@ -53,7 +53,7 @@ Here you can find number total number of subjects and sites along with the cumul
 
 Also there is a couple of charts with essential population characteristics – age, race, sex, treatment arm – which can be used to assess their distribution within population. Charts are interactive and linked with each other. For instance, by clicking on 'M' sex the other charts will show the proportion of male subjects.
 
-<img src="https://github.com/datagrok-ai/public/blob/clinical-case-app/packages/ClinicalCase/img/summary.gif" height="700"/>
+<img src="https://github.com/datagrok-ai/public/blob/clinical-case-app/packages/ClinicalCase/img/summary.gif" height="500" width='800'/>
 
 In case trial is registered on [clinicaltrials.gov](https://clinicaltrials.gov/) property panel on the right will basic study information extracted from database along with the link to the study on [clinicaltrials.gov](https://clinicaltrials.gov/).
 
