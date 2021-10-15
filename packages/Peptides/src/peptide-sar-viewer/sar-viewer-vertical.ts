@@ -157,6 +157,10 @@ export async function describe(
 
 
   const statsDf = matrixDf.clone();
+  const statsDfAggregated = [];
+  [0.01, 0.05, 0.1].forEach((coef)=>{
+    statsDf.groupBy([positionColName, aminoAcidResidue]);
+  });
   const grid = statsDf.plot.grid();
 
   const colNames:string[] = [];
