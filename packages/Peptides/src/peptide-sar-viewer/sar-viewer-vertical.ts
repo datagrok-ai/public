@@ -153,14 +153,27 @@ export async function describe(
     mDiff.push(testResult['Mean difference']!);
   }
   matrixDf.columns.add(DG.Column.fromList(DG.TYPE.FLOAT, 'Mean difference', mDiff));
-  matrixDf.columns.add(DG.Column.fromList(DG.TYPE.FLOAT, 'p-value', pValues));
+  matrixDf.columns.add(DG.Column.fromList(DG.TYPE.FLOAT, 'pValue', pValues));
 
 
-  const statsDf = matrixDf.clone();
-  const statsDfAggregated = [];
+  let statsDf = matrixDf.clone();
+  //let statsDf = statsDf.groupBy([positionColName, aminoAcidResidue]).where(`Count > 4`).aggregate();
+  let statsDfAgr = statsDf
+    .groupBy([positionColName])
+    .where(`Count > 4 and pValue > 0.1 `)
+    .max('Mean difference')
+    .aggregate(); //and 'pValue' > 0.1  'pValue' < ${coef}`
   [0.01, 0.05, 0.1].forEach((coef)=>{
-    statsDf.groupBy([positionColName, aminoAcidResidue]);
+    statsDfAgr = statsDfAgr.append(statsDf
+      .groupBy([positionColName])
+      .where(`Count > 4 and pValue < ${coef}`)
+      .max('Mean difference')
+      .aggregate());
   });
+  statsDf = grok.data.joinTables(statsDf, statsDfAgr,
+    ['Mean difference', 'position'],
+    ['max(Mean difference)', 'position'],
+    statsDf.columns.names(), [], DG.JOIN_TYPE.LEFT, true );
   const grid = statsDf.plot.grid();
 
   const colNames:string[] = [];
@@ -254,7 +267,7 @@ export async function describe(
         // }
 
         // @ts-ignore
-        const pVal: number = args.cell.cell.row['p-value'];
+        const pVal: number = args.cell.cell.row['pValue'];
         let coef;
         const variant = args.cell.cell.value < 0;
         if (pVal < 0.01) {
@@ -387,6 +400,7 @@ export async function describe(
     }
   });
   grid.sort(['Mean difference'], [false]);
+  grid.sort(['pValue'], [true]);
   return [grid, statsDf];
 }
 

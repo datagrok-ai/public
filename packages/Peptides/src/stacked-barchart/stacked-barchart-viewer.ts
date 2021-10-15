@@ -55,9 +55,7 @@ export function addViewerToHeader(grid: DG.Grid, viewer: Promise<Widget>) {
       args.g.beginPath();
       args.g.rect(args.bounds.x, args.bounds.y, args.bounds.width, args.bounds.height);
       args.g.clip();
-      console.error( [args.cell.tableColumn, args.cell.gridColumn]);
       if (args.cell.isColHeader && barchart.aminoColumnNames.includes(args.cell.gridColumn.name)) {
-        console.error( args.cell.tableColumn?.name);
         barchart.renderBarToCanvas(
           args.g,
           args.cell,
