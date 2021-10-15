@@ -1,5 +1,6 @@
 import {View} from "./view";
 import {ObjectHandler} from "../../ui";
+import {toJs} from "../wrappers";
 let api = <any>window;
 
 /** Base view for working with a collection of objects that reside on the server.
@@ -38,6 +39,22 @@ export class CardView extends View {
 
   set meta(s: ObjectHandler) {
     api.grok_CardView_Set_Meta(this.d, s);
+  }
+
+  get objectType(): string {
+    return api.grok_CardView_Get_Type(this.d);
+  }
+
+  set objectType(s: string) {
+    api.grok_CardView_Set_Type(this.d, s);
+  }
+
+  get searchFields(): string[] {
+    return toJs(api.grok_CardView_Get_SearchFields(this.d));
+  }
+
+  set searchFields(s: string[]) {
+    api.grok_CardView_Set_SearchFields(this.d, s);
   }
 
   /** Programmatically defined invisible
