@@ -28,7 +28,7 @@ export class SARViewer extends DG.JsViewer {
     this.statsDf = null;
     this.initialized = false;
     this.aminoAcidResidue = 'aminoAcidResidue';
-    this._initialBitset = null; // 
+    this._initialBitset = null; //
     this.viewGridInitialized = false;
 
     //TODO: find a way to restrict activityColumnColumnName to accept only numerical columns (double even better)
@@ -119,7 +119,7 @@ export class SARViewer extends DG.JsViewer {
         this.dataFrame.columns.addNew(splitColName, 'string');
       }
 
-      let isChosen = (i: number) => this.dataFrame!.get(currentPosition, i) === currentAAR;
+      const isChosen = (i: number) => this.dataFrame!.get(currentPosition, i) === currentAAR;
       this.dataFrame.getCol(splitColName).init((i) => isChosen(i) ? aarLabel : otherLabel);
 
       if (this.filterMode) {
