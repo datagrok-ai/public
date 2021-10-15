@@ -3,6 +3,7 @@ import * as grok from 'datagrok-api/grok';
 import * as ui from 'datagrok-api/ui';
 import * as DG from 'datagrok-api/dg';
 
+
 import {SARViewer} from './peptide-sar-viewer/sar-viewer';
 import {AlignedSequenceCellRenderer, AminoAcidsCellRenderer} from './utils/cell-renderer';
 import {Logo} from './peptide-logo-viewer/logo-viewer';
@@ -185,7 +186,6 @@ export async function stackedBarchartWidget(col:DG.Column):Promise<DG.Widget> {
 //tags: panel, widgets
 //input: string pep {semType: alignedSequence}
 //output: widget result
-
 export async function pepMolGraph(pep:string):Promise<DG.Widget> {
   const split = pep.split('-');
   const mols = [];
@@ -201,7 +201,7 @@ export async function pepMolGraph(pep:string):Promise<DG.Widget> {
   }
   console.error(mols);
   console.error(mols.join('')+'COOH');
-  const sketch = grok.chem.svgMol(mols.join(''));
+  const sketch = grok.chem.svgMol(mols.join('') + 'O');
   const panel = ui.divH([sketch]);
   return new DG.Widget(panel);
 }
