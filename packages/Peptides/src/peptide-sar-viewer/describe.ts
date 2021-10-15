@@ -342,8 +342,8 @@ export async function describe(
   });
 
   for (const col of matrixDf.columns.names()) {
-    console.log(grid.props['rowHeight']);
-    grid.col(col)!.width = grid.props['rowHeight']; 
+    console.log(grid.props.rowHeight);
+    grid.col(col)!.width = grid.props.rowHeight; 
   }
 
   return [grid, statsDf];
