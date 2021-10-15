@@ -190,11 +190,30 @@ By default 4 biomarkers with min p-value at the earliest study visit splitted by
 
 Correlation matrix showing relations between biomarkers values for all subjects at the selected visit.
 
-On diagonal you can see histograms showing biomarker distribution. Cells at the intersection of certain biomarkers contains correlation coefficient for that pair of biomarkers. 
+On diagonal you can see histograms showing biomarker distribution. Cells at the intersection of certain biomarkers contains correlation coefficient for that pair of biomarkers. By hovering mouse over correlation coefficient you will see scatter plot with corresponding biomarkers values in a tooltip.
 
 By default correlation matrix is created for whole list of biomarkers at the earliest study visit. Visit as well as biomarkers can be further changed via dropdown list and settings button above the boxplots. 
 
-<img src="https://github.com/datagrok-ai/public/blob/clinical-case-app/packages/ClinicalCase/img/corr_matrix.PNG" height="500" width='800'/>
+<img src="https://github.com/datagrok-ai/public/blob/clinical-case-app/packages/ClinicalCase/img/corr_matrix.gif" height="500" width='800'/>
+
+### Time profile
+
+This view contains line chart which allows to evaluate laboratory dynamics in time. X axis is time axis showing days of study. Y axis is biomarker level scale. 
+
+There are 2 types of chart representation:
+
+- Non-normalized biomarkers results
+- Relative changes from baseline
+
+Type of graph and required visits can be selected in the ribbon panel above chart.
+
+<img src="https://github.com/datagrok-ai/public/blob/clinical-case-app/packages/ClinicalCase/img/time_profile_1.gif" height="500" width='800'/>
+
+Line chart is splitted by treatment arm by default. But parameter to split by can be changed as well as biomarker itself. 
+
+<img src="https://github.com/datagrok-ai/public/blob/clinical-case-app/packages/ClinicalCase/img/time_profile_2.gif" height="500" width='800'/>
+
+Each value on the line is drawn in form of distribution. By default points represents median, whiskers represent upper and lower quartiles. Type of distribution can also be changed in property panel. 
 
 
 
