@@ -24,7 +24,7 @@ module.exports = {
   },
   output: {
     filename: '[name].js',
-    library: 'modelhub',
+    library: 'modelcatalog',
     libraryTarget: 'var',
     path: path.resolve(__dirname, 'dist'),
   },

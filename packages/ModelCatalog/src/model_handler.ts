@@ -21,7 +21,15 @@ export class ModelHandler extends DG.ObjectHandler {
   }
 
   renderProperties(x: DG.Script) {
-    return ui.divText(`Properties for ${x.name}`);
+    let a = ui.accordion();
+    a.addTitle(ui.span([this.renderIcon(x), ui.label(x.friendlyName), ui.contextActions(x), ui.star(x.id)]));
+    a.addPane('Details', () => {return this.renderDetails(x)});
+    a.addCountPane('Usage', () => {return ui.span(['Usage statistics'])}, () => 99);
+    return a.root;
+  }
+
+  renderDetails(x: DG.Script) {
+    return ui.tableFromMap({'Created': x.createdOn, 'By': x.author});
   }
 
   renderTooltip(x: DG.Script) {
@@ -30,7 +38,8 @@ export class ModelHandler extends DG.ObjectHandler {
 
   renderCard(x: DG.Script, context?: any): HTMLElement {
     return ui.bind(x, ui.divV([
-      this.renderMarkup(x)
+      ui.h2(x.friendlyName),
+      this.renderDetails(x)
     ], 'd4-gallery-item'));
   }
 
