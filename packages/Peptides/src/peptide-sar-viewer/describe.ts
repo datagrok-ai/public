@@ -111,7 +111,6 @@ export async function describe(
 
   const positionColName = 'position';
   const aminoAcidResidue = 'aminoAcidResidue';
-  // const medianColName = 'MAD';
 
   //unpivot a table and handle duplicates
   splitSeqDf = splitSeqDf.groupBy(positionColumns)
@@ -122,22 +121,9 @@ export async function describe(
 
   let matrixDf = splitSeqDf.unpivot([activityColumnScaled], positionColumns, positionColName, aminoAcidResidue);
 
-  //this table contains overall statistics on activity
-  const totalStats = matrixDf.groupBy()
-    .add('med', activityColumnScaled, 'med')
-    .aggregate();
-
-  //preparing for mad
-  const formula = 'Abs(${' + activityColumnScaled + '}-' + totalStats.get('med', 0) + ')';
-  await matrixDf.columns.addNewCalculated('innerMAD', formula);
-
   //statistics for specific AAR at a specific position
   matrixDf = matrixDf.groupBy([positionColName, aminoAcidResidue])
     .add('count', activityColumnScaled, 'Count')
-    //.add('med', 'innerMAD', medianColName) //final step of MAD calculation
-    //.add('q1', activityColumnScaled, 'Q1')
-    //.add('q2', activityColumnScaled, 'Median')
-    //.add('q3', activityColumnScaled, 'Q3')
     .aggregate();
 
   const countThreshold = 4;
@@ -146,8 +132,6 @@ export async function describe(
   matrixDf = matrixDf.clone(matrixDf.filter);
 
   // calculate additional stats
-  //await matrixDf.columns.addNewCalculated('IQR', '${q3}-${q1}');
-  //await matrixDf.columns.addNewCalculated('CQV', '(${q3}-${q1})/(${q3}+${q1})');
   await matrixDf.columns.addNewCalculated('Ratio', '${count}/'.concat(`${peptidesCount}`));
 
   //calculate p-values based on t-test
@@ -199,35 +183,18 @@ export async function describe(
   matrixDf.name = 'SAR';
 
   // Setting category order
-
-  // let aarCategoryOrder: string[] = ['-'];
-  // for (const group of ChemPalette.grokGroups) {
-  //   aarCategoryOrder = aarCategoryOrder.concat(group[0]);
-  // }
-  // matrixDf.getCol(aminoAcidResidue).setCategoryOrder(aarCategoryOrder);
-
-  // let aarList: string[] = statsDf.getCol(aminoAcidResidue).toList();
-  // const aarWeights: {[index: string]: number} = {};
-  // aarList.forEach((value) => {
-  //   aarWeights[value] = (aarWeights[value] || 0) + 1;
-  // });
-  // aarList = aarList.filter((value, index, self) => self.indexOf(value) === index);
-  // aarList.sort((first, second) => aarWeights[second] - aarWeights[first]);
-  // console.log('STARTED SORTING');
   const sortArgument = twoColorMode ? 'Absolute Mean difference' : 'Mean difference';
   if (twoColorMode) {
     await statsDf.columns.addNewCalculated('Absolute Mean difference', 'Abs(${Mean difference})');
   }
   const aarWeightsDf = statsDf.groupBy([aminoAcidResidue]).sum(sortArgument, 'weight').aggregate();
   const aarList = aarWeightsDf.getCol(aminoAcidResidue).toList();
-  // console.log(aarList);
   let getWeight = (aar: string) => aarWeightsDf
       .groupBy(['weight'])
       .where(`${aminoAcidResidue} = ${aar}`)
       .aggregate()
       .get('weight', 0);
-  aarList.sort((first, second) => getWeight(second) - getWeight(first));
-  // console.log(aarList.map((value) => `${value}: ${getWeight(value)}`));
+  aarList.sort((first, second) => getWeight(second) - getWeight(first));;
 
   matrixDf.getCol(aminoAcidResidue).setCategoryOrder(aarList);
 
@@ -290,14 +257,6 @@ export async function describe(
           `${aminoAcidResidue} = ${matrixDf.get(aminoAcidResidue, args.cell.tableRowIndex)} ` +
           `and ${positionColName} = ${args.cell.tableColumn.name}`;
 
-        //don't draw AAR that too little appearnces at this position
-        const count: number = statsDf.groupBy(['Count']).where(query).aggregate().get('Count', 0);
-        // if (count < countThreshold || count > peptidesCount - countThreshold) {
-        //   args.preventDefault();
-        //   args.g.restore();
-        //   return;
-        // }
-
         const pVal: number = statsDf.groupBy(['p-value']).where(query).aggregate().get('p-value', 0);
 
         let coef;
@@ -320,13 +279,6 @@ export async function describe(
         const radius = Math.ceil(maxRadius * rCoef);
 
         args.g.beginPath();
-        // args.g.fillStyle = DG.Color.toHtml(DG.Color.scaleColor(
-        //   coef,
-        //   0,
-        //   1,
-        //   undefined,
-        //   [DG.Color.darkGray, args.cell.cell.value >= 0 ? DG.Color.green : DG.Color.red],
-        // ));
         args.g.fillStyle = coef;
         args.g.arc(
           args.bounds.x + args.bounds.width / 2,
@@ -367,9 +319,6 @@ export async function describe(
 
           //@ts-ignore: I'm sure it's gonna be fine, text contains a number
           if (col === 'Count') {
-            // if (parseInt(text) < countThreshold || parseInt(text) > peptidesCount - countThreshold) {
-            //   return true;
-            // }
             text += ` / ${peptidesCount}`;
           } else if (col === 'p-value') {
             text = parseFloat(text) !== 0 ? text : '<0.01';
@@ -380,8 +329,6 @@ export async function describe(
       }
 
       ui.tooltip.show(ui.tableFromMap(tooltipMap), x, y);
-      // } else if (cell.isColHeader && !cell.isRowHeader) {
-      //   ui.tooltip.show((await df.plot.fromType('peptide-logo-viewer')).root, x, y);
     }
     if (
       !cell.isColHeader &&
@@ -396,7 +343,6 @@ export async function describe(
   });
 
   for (const col of matrixDf.columns.names()) {
-    // console.log(grid.props.rowHeight);
     grid.col(col)!.width = grid.props.rowHeight; 
   }
 
