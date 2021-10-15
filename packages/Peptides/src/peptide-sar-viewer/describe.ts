@@ -1,12 +1,11 @@
 import * as ui from 'datagrok-api/ui';
 import * as DG from 'datagrok-api/dg';
-
 //@ts-ignore
 import * as jStat from 'jstat';
-
 import {splitAlignedPeptides} from '../split-aligned';
 import {decimalAdjust, tTest} from '../utils/misc';
 import {ChemPalette} from '../utils/chem-palette';
+import {measureAAR} from '../utils/cell-renderer';
 
 const cp = new ChemPalette('grok');
 
@@ -54,7 +53,37 @@ export async function describe(
     if (splitSeqDf.col(col.name) && col.name != activityColumn) {
       col.semType = 'aminoAcids';
       col.setTag('cell.renderer', 'aminoAcids');
+      if (sourceGrid) {
+        setTimeout(() => {
+          let maxWidth = 0;
+          for (const s of col.categories) {
+            const len = measureAAR(s, true);
+            maxWidth = maxWidth < len ? len : maxWidth;
+          }
+          sourceGrid.col(col.name)!.width = Math.max(maxWidth * 10, 30);
+          ;
+        }, 100);
+      }
     }
+  }
+  if (sourceGrid) {
+    const colNames:string[] = [];
+    for (let i = 0; i < sourceGrid.columns.length; i++) {
+      colNames.push(sourceGrid.columns.byIndex(i)!.name);
+    }
+    colNames.sort((a, b)=>{
+      if (sourceGrid.columns.byName(a)?.column?.semType == 'aminoAcids') {
+        if (sourceGrid.columns.byName(b)?.column?.semType == 'aminoAcids') {
+          return 0;
+        }
+        return -1;
+      }
+      if (sourceGrid.columns.byName(b)?.column?.semType == 'aminoAcids') {
+        return 1;
+      }
+      return 0;
+    });
+    sourceGrid?.columns.setOrder(colNames);
   }
 
   // scale activity
@@ -110,7 +139,7 @@ export async function describe(
     //.add('q2', activityColumnScaled, 'Median')
     //.add('q3', activityColumnScaled, 'Q3')
     .aggregate();
-  
+
   const countThreshold = 4;
   //@ts-ignore: never gets old
   matrixDf.rows.filter((row) => row.Count >= countThreshold && row.Count <= peptidesCount - countThreshold);
@@ -186,7 +215,7 @@ export async function describe(
 
   // !!! DRAWING PHASE !!!
   //find min and max MAD across all of the dataframe
-  const dfMin = twoColorMode ? 0 : jStat.min(mDiff);
+  const dfMin = jStat.min(mDiff);
   const dfMax = jStat.max(mDiff);
   const grid = matrixDf.plot.grid();
 
@@ -197,13 +226,17 @@ export async function describe(
     if (col.name === aminoAcidResidue) {
       col.semType = 'aminoAcids';
       col.setTag('cell.renderer', 'aminoAcids');
-      // let maxLen = 0;
-      // col.categories.forEach( (ent:string)=>{
-      //   if ( ent.length > maxLen) {
-      //     maxLen = ent.length;
-      //   }
-      // });
-      // grid.columns.byName(aminoAcidResidue)!.width = maxLen * 15;
+      let maxLen = 0;
+      setTimeout(() => {
+        col.categories.forEach((ent: string) => {
+          const len = measureAAR(ent, true);
+          if (len > maxLen) {
+            maxLen = len;
+          }
+        });
+        grid.columns.byName(aminoAcidResidue)!.width = Math.max(maxLen * 10, 30);
+      },
+      500);
     }
   }
 
@@ -261,7 +294,9 @@ export async function describe(
           coef = DG.Color.toHtml(DG.Color.lightLightGray);
         }
 
-        const rCoef = ((twoColorMode ? Math.abs(args.cell.cell.value) : args.cell.cell.value) - dfMin) / (dfMax - dfMin);
+        const rCoef = ((twoColorMode ?
+          Math.abs(args.cell.cell.value) :
+          args.cell.cell.value) - dfMin) / (dfMax - dfMin);
 
         const maxRadius = 0.9 * (args.bounds.width > args.bounds.height ? args.bounds.height : args.bounds.width) / 2;
         const radius = Math.ceil(maxRadius * rCoef);
@@ -318,9 +353,9 @@ export async function describe(
             // }
             text += ` / ${peptidesCount}`;
           } else if (col === 'p-value') {
-            text = parseFloat(text) !== 0 ? text : '<0.01'; 
+            text = parseFloat(text) !== 0 ? text : '<0.01';
           }
-          
+
           tooltipMap[col] = text;
         }
       }
@@ -343,7 +378,7 @@ export async function describe(
 
   for (const col of matrixDf.columns.names()) {
     console.log(grid.props['rowHeight']);
-    grid.col(col)!.width = grid.props['rowHeight']; 
+    grid.col(col)!.width = grid.props['rowHeight'];
   }
 
   return [grid, statsDf];
