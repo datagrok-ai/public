@@ -157,12 +157,7 @@ export async function describe(
 
 
   let statsDf = matrixDf.clone();
-  statsDf = statsDf.join(
-    statsDf.groupBy([positionColName, aminoAcidResidue]).where(`Count > 4`).aggregate(),
-    [positionColName, aminoAcidResidue],
-    [positionColName, aminoAcidResidue],
-    statsDf.columns.names, [], 'inner', false,
-  );
+  //let statsDf = statsDf.groupBy([positionColName, aminoAcidResidue]).where(`Count > 4`).aggregate();
   let statsDfAgr = statsDf
     .groupBy([positionColName])
     .where(`Count > 4 and pValue > 0.1 `)
