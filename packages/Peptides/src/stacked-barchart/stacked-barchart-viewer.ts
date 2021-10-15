@@ -1,13 +1,14 @@
 import * as DG from 'datagrok-api/dg';
 import * as ui from 'datagrok-api/ui';
+import * as grok from 'datagrok-api/grok';
 import {axisBottom, scaleBand, scaleLinear, select, color} from 'd3';
 import {ChemPalette} from '../utils/chem-palette';
-//@ts-ignore: ignore this shit
 import * as rxjs from 'rxjs';
 import $ from 'cash-dom';
+import {GridCellRenderArgs, Property, Widget} from 'datagrok-api/dg';
 const cp = new ChemPalette('grok');
 
-export function addViewerToHeader(grid: DG.Grid, viewer: Promise<DG.Widget>) {
+export function addViewerToHeader(grid: DG.Grid, viewer: Promise<Widget>) {
   viewer.then((viewer) => {
     const barchart = viewer as StackedBarChart;
     rxjs.fromEvent(grid.overlay, 'mousemove').subscribe((mm:any) => {
@@ -28,7 +29,7 @@ export function addViewerToHeader(grid: DG.Grid, viewer: Promise<DG.Widget>) {
       }
       barchart.unhighlight();
     });
-    rxjs.fromEvent(grid.overlay, 'mouseout').subscribe((_: any) => {
+    rxjs.fromEvent(grid.overlay, 'mouseout').subscribe((_) => {
       barchart.unhighlight();
     });
 
@@ -54,9 +55,7 @@ export function addViewerToHeader(grid: DG.Grid, viewer: Promise<DG.Widget>) {
       args.g.beginPath();
       args.g.rect(args.bounds.x, args.bounds.y, args.bounds.width, args.bounds.height);
       args.g.clip();
-      // console.error( [args.cell.tableColumn, args.cell.gridColumn]);
       if (args.cell.isColHeader && barchart.aminoColumnNames.includes(args.cell.gridColumn.name)) {
-        // console.error( args.cell.tableColumn?.name);
         barchart.renderBarToCanvas(
           args.g,
           args.cell,
@@ -548,12 +547,12 @@ export class StackedBarChart extends DG.JsViewer {
       //   );
     }
 
-    onPropertyChanged(property: DG.Property) {
+    onPropertyChanged(property: Property) {
       super.onPropertyChanged(property);
       this.render();
     }
 
-    register(args: DG.GridCellRenderArgs) {
+    register(args: GridCellRenderArgs) {
       this.registered[args.cell.tableColumn!.name] = args.cell;
     }
 
