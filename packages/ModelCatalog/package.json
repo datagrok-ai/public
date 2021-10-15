@@ -1,0 +1,27 @@
+{
+	"name": "model-catalog",
+	"friendlyName": "Model Catalog",
+	"version": "0.0.1",
+	"description": "",
+	"dependencies": {
+		"datagrok-api": "../../js-api",
+		"ts-loader": "latest",
+		"typescript": "latest"
+	},
+	"devDependencies": {
+		"webpack": "latest",
+		"webpack-cli": "latest"
+	},
+	"scripts": {
+		"debug-modelcatalog": "webpack && grok publish",
+		"release-modelcatalog": "grok publish --rebuild --release",
+		"build-modelcatalog": "webpack",
+		"build": "webpack",
+		"debug-modelcatalog-dev": "grok publish dev --rebuild",
+		"release-modelcatalog-dev": "grok publish dev --rebuild --release",
+		"debug-modelcatalog-public": "grok publish public --rebuild",
+		"release-modelcatalog-public": "grok publish public --rebuild --release",
+		"debug-modelcatalog-local": "grok publish local --rebuild",
+		"release-modelcatalog-local": "grok publish local --rebuild --release"
+	}
+}
