@@ -143,7 +143,7 @@ export async function clinicalCaseApp(): Promise<any> {
   views.push(<LaboratoryView>addView(new LaboratoryView('Laboratory')));
   views.push(<AERiskAssessmentView>addView(new AERiskAssessmentView('AE Risk Assessment')));
   views.push(<SurvivalAnalysisView>addView(new SurvivalAnalysisView('Survival Analysis')));
-  views.push(<BoxPlotsView>addView(new BoxPlotsView('Box Plots')));
+  views.push(<BoxPlotsView>addView(new BoxPlotsView('Biomarkers distribution')));
   views.push(<MatrixesView>addView(new MatrixesView('Correlation Matrix')));
   views.push(<TimeProfileView>addView(new TimeProfileView('Time Profile')));
   views.push(<AeBrowserView>addView(new AeBrowserView('AE Browser')));
