@@ -155,22 +155,20 @@ export class SARViewer extends DG.JsViewer {
         const currentPosition = this.viewerGrid?.table.currentCol.name;
 
         const labelStr = `${currentAAR === '-' ? 'Empty' : currentAAR} - ${currentPosition}`;
-        const currentColor = DG.Color.toHtml(DG.Color.getCategoryColor(originalDf.getCol('~splitCol'), labelStr));
-        const otherColor = DG.Color.toHtml(DG.Color.getCategoryColor(originalDf.getCol('~splitCol'), 'Other'));
+        // const currentColor = DG.Color.toHtml(DG.Color.getCategoryColor(originalDf.getCol('~splitCol'), labelStr));
+        // const otherColor = DG.Color.toHtml(DG.Color.getCategoryColor(originalDf.getCol('~splitCol'), 'Other'));
+        const currentColor = DG.Color.toHtml(DG.Color.orange);
+        const otherColor = DG.Color.toHtml(DG.Color.blue);
         const currentLabel = ui.label(labelStr, {style: {color: currentColor}});
         const otherLabel = ui.label('Other', {style: {color: otherColor}});
 
         const elements: (HTMLLabelElement | HTMLElement)[] = [currentLabel, otherLabel];
 
-        // console.log("Out");
-        // console.log(originalDf.columns.names());
         const distPane = accordion.getPane('Distribution');
         if (distPane) {
           accordion.removePane(distPane);
         }
         accordion.addPane('Distribution', () => {
-          // console.log("In");
-          // console.log(originalDf.columns.names());
           const hist = originalDf.clone(this._initialBitset).plot.histogram({
             valueColumnName: `${this.activityColumnColumnName}Scaled`,
             splitColumnName: '~splitCol',
@@ -184,7 +182,8 @@ export class SARViewer extends DG.JsViewer {
           const tableMap: {[key: string]: string} = {'Statistics:': ''};
           for (const colName of new Set(['Count', 'p-value', 'Mean difference'])) {
             const query = `${this.aminoAcidResidue} = ${currentAAR} and position = ${currentPosition}`;
-            const text = `${this.statsDf?.groupBy([colName]).where(query).aggregate().get(colName, 0).toFixed(2)}`;
+            const textNum = this.statsDf?.groupBy([colName]).where(query).aggregate().get(colName, 0);
+            const text = textNum === 0 ? '<0.01' : `${colName === 'Count' ? textNum : textNum.toFixed(2)}`;
             tableMap[colName] = text;
           }
           elements.push(ui.tableFromMap(tableMap));
