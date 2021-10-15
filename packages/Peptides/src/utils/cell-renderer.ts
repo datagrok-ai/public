@@ -3,7 +3,12 @@ import * as DG from 'datagrok-api/dg';
 
 const cp =new ChemPalette('grok');
 
-
+export function measureAAR(s:string,
+  hideMod = false):number {
+  const end = s.lastIndexOf(')');
+  const beg = s.indexOf('(');
+  return end == beg ? s.length:s.length - (end-beg)+1;
+}
 function printLeftCentered(
   x: number,
   y: number,
@@ -90,10 +95,6 @@ export class AminoAcidsCellRenderer extends DG.GridCellRenderer {
       return 'aminoAcids';
     }
 
-    get defaultWidth() {
-      return 30;
-    }
-
 
     render(
       g: CanvasRenderingContext2D,
@@ -134,9 +135,6 @@ export class AlignedSequenceCellRenderer extends DG.GridCellRenderer {
       return 'alignedSequence';
     }
 
-    get defaultWidth() {
-      return this.maxCellWidth;
-    }
 
     render(
       g: CanvasRenderingContext2D,
@@ -156,7 +154,6 @@ export class AlignedSequenceCellRenderer extends DG.GridCellRenderer {
       const s: string = gridCell.cell.value;
 
       const subParts = s.split('-');
-
       const simplified = !subParts.some((amino, index)=>{
         return amino.length>1&&index!=0&&index!=subParts.length-1;
       });
