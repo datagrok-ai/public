@@ -351,6 +351,25 @@ export abstract class Tutorial extends DG.Widget {
     await this.action(instructions, source, inputRoot, description);
   }
 
+  /** A helper method to access choice inputs in a view. */
+  protected async choiceInputAction(root: HTMLElement, instructions: string,
+    caption: string, value: string, description: string = '') {
+    let inputRoot = null;
+    let select: HTMLSelectElement;
+    $(root).find('.ui-input-root .ui-input-label span').each((idx, el) => {
+      if (el.innerText === caption) {
+        inputRoot = el.parentElement?.parentElement;
+        select = $(inputRoot).find('select')[0] as HTMLSelectElement;
+      }
+    });
+    if (select! == null) return;
+    const source = fromEvent(select, 'change');
+    await this.action(instructions, select.value === value ?
+      new Promise<void>((resolve) => resolve()) :
+      source.pipe(map((_) => select.value), filter((v: string) => v === value)),
+      inputRoot, description);
+  };
+
   /** Prompts the user to choose a particular column in a column input with the specified caption. */
   protected async columnInpAction(root: HTMLElement, instructions: string, caption: string, columnName: string, description: string = '') {
     const columnInput = $(root)

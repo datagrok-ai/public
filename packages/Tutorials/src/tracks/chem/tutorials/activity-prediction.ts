@@ -131,6 +131,7 @@ export class ActivityPredictionTutorial extends Tutorial {
 
     // UI generation delay
     await new Promise((resolve) => setTimeout(resolve, 2000));
+    await this.choiceInputAction(pmv.root, `Set "Table" to "${t.name}"`, 'Table', t.name);
     await this.columnInpAction(pmv.root, 'Set "Predict" to "pKi"', 'Predict', 'pKi');
 
     const ignoredColumnNames = ['SMILES', 'ID', 'Ki', 'pKi', 'curated_structures'];
