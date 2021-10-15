@@ -145,6 +145,7 @@ export class AlignedSequenceCellRenderer extends DG.GridCellRenderer {
       gridCell: DG.GridCell,
       cellStyle: DG.GridCellStyle,
     ) {
+      w = Math.min(gridCell.grid.canvas.width-x, w);
       g.save();
       g.beginPath();
       g.rect(x, y, w, h);
