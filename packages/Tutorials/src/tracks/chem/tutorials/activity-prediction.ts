@@ -141,5 +141,10 @@ export class ActivityPredictionTutorial extends Tutorial {
       'Features', `(${descriptors.length}) ${t.columns.names()
         .filter((name: string) => !ignoredColumnNames.includes(name))
         .join(', ')}`, featureSelectionTip);
+
+    await this.textInpAction(pmv.root, 'Increase maximum runtime to 500 seconds', 'Max runtime secs', '500');
+
+    const modelInfo = '';
+    await this.buttonClickAction(pmv.root, 'Click the "Train" button', 'TRAIN', modelInfo);
   }
 }

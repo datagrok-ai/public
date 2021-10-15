@@ -199,23 +199,41 @@ export async function describe(
   matrixDf.name = 'SAR';
 
   // Setting category order
+
   // let aarCategoryOrder: string[] = ['-'];
   // for (const group of ChemPalette.grokGroups) {
   //   aarCategoryOrder = aarCategoryOrder.concat(group[0]);
   // }
   // matrixDf.getCol(aminoAcidResidue).setCategoryOrder(aarCategoryOrder);
-  let aarList: string[] = statsDf.getCol(aminoAcidResidue).toList();
-  const aarWeights: {[index: string]: number} = {};
-  aarList.forEach((value) => {
-    aarWeights[value] = (aarWeights[value] || 0) + 1;
-  });
-  aarList = aarList.filter((value, index, self) => self.indexOf(value) === index);
-  aarList.sort((first, second) => aarWeights[second] - aarWeights[first]);
+
+  // let aarList: string[] = statsDf.getCol(aminoAcidResidue).toList();
+  // const aarWeights: {[index: string]: number} = {};
+  // aarList.forEach((value) => {
+  //   aarWeights[value] = (aarWeights[value] || 0) + 1;
+  // });
+  // aarList = aarList.filter((value, index, self) => self.indexOf(value) === index);
+  // aarList.sort((first, second) => aarWeights[second] - aarWeights[first]);
+  // console.log('STARTED SORTING');
+  const sortArgument = twoColorMode ? 'Absolute Mean difference' : 'Mean difference';
+  if (twoColorMode) {
+    await statsDf.columns.addNewCalculated('Absolute Mean difference', 'Abs(${Mean difference})');
+  }
+  const aarWeightsDf = statsDf.groupBy([aminoAcidResidue]).sum(sortArgument, 'weight').aggregate();
+  const aarList = aarWeightsDf.getCol(aminoAcidResidue).toList();
+  // console.log(aarList);
+  let getWeight = (aar: string) => aarWeightsDf
+      .groupBy(['weight'])
+      .where(`${aminoAcidResidue} = ${aar}`)
+      .aggregate()
+      .get('weight', 0);
+  aarList.sort((first, second) => getWeight(second) - getWeight(first));
+  // console.log(aarList.map((value) => `${value}: ${getWeight(value)}`));
+
   matrixDf.getCol(aminoAcidResidue).setCategoryOrder(aarList);
 
   // !!! DRAWING PHASE !!!
   //find min and max MAD across all of the dataframe
-  const dfMin = jStat.min(mDiff);
+  const dfMin = twoColorMode ? 0 : jStat.min(mDiff);
   const dfMax = jStat.max(mDiff);
   const grid = matrixDf.plot.grid();
 
@@ -344,7 +362,8 @@ export async function describe(
           const query =
               `${aminoAcidResidue} = ${matrixDf.get(aminoAcidResidue, cell.tableRowIndex)} ` +
               `and ${positionColName} = ${cell.tableColumn.name}`;
-          let text = `${decimalAdjust('floor', statsDf.groupBy([col]).where(query).aggregate().get(col, 0), -5)}`;
+          const textNum = statsDf.groupBy([col]).where(query).aggregate().get(col, 0);
+          let text = `${col === 'Count' ? textNum : textNum.toFixed(5)}`;
 
           //@ts-ignore: I'm sure it's gonna be fine, text contains a number
           if (col === 'Count') {
@@ -377,8 +396,8 @@ export async function describe(
   });
 
   for (const col of matrixDf.columns.names()) {
-    console.log(grid.props['rowHeight']);
-    grid.col(col)!.width = grid.props['rowHeight'];
+    // console.log(grid.props.rowHeight);
+    grid.col(col)!.width = grid.props.rowHeight; 
   }
 
   return [grid, statsDf];
