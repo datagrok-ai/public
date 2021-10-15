@@ -312,8 +312,8 @@ export async function describe(
       for (const col of statsDf.columns.names()) {
         if (col !== aminoAcidResidue && col !== positionColName) {
           const query =
-              `${aminoAcidResidue} = ${matrixDf.get(aminoAcidResidue, cell.tableRowIndex)} ` +
-              `and ${positionColName} = ${cell.tableColumn.name}`;
+            `${aminoAcidResidue} = ${matrixDf.get(aminoAcidResidue, cell.tableRowIndex)} ` +
+            `and ${positionColName} = ${cell.tableColumn.name}`;
           const textNum = statsDf.groupBy([col]).where(query).aggregate().get(col, 0);
           let text = `${col === 'Count' ? textNum : textNum.toFixed(5)}`;
 
