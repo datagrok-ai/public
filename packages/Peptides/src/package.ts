@@ -52,7 +52,7 @@ async function main(chosenFile: string) {
             });
             maxWidth = maxWidth < textSize ? textSize: maxWidth;
           }
-          tableGrid.col(col.name)!.width = Math.min(maxWidth * 10, 1000);
+          tableGrid.col(col.name)!.width = Math.min(maxWidth * 10, 650);
         }, 500);
       }
     }
