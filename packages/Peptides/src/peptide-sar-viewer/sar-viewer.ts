@@ -35,20 +35,11 @@ export class SARViewer extends DG.JsViewer {
     this.activityColumnColumnName = this.string('activityColumnColumnName');
     this.activityScalingMethod = this.string('activityScalingMethod', 'none', {choices: ['none', 'lg', '-lg']});
     this.filterMode = this.bool('filterMode', false);
-    // this.filterMode = false;
     this.bidirectionalAnalysis = this.bool('bidirectionalAnalysis', false);
     // this.duplicatesHandingMethod = this.string('duplicatesHandlingMethod', 'median', {choices: ['median']});
 
     this.sourceGrid = (grok.shell.v as DG.TableView).grid;
   }
-
-  // get initialBitset(): DG.BitSet | null {
-  //   return this._initialBitset;
-  // }
-
-  // set initialBitset(bitset: DG.BitSet | null) {
-  //   this._initialBitset = bitset;
-  // }
 
   init() {
     this._initialBitset = this.dataFrame!.filter.clone();
@@ -60,20 +51,6 @@ export class SARViewer extends DG.JsViewer {
 
     this.render();
   }
-
-  // applyFilter() {
-  //   if (this.viewerGrid && this.dataFrame) {
-  //     const currentAAR: string = this.viewerGrid.table.get(this.aminoAcidResidue, this.viewerGrid.table.currentRowIdx);
-  //     const currentPosition = this.viewerGrid.table.currentCol.name;
-
-  //     for (let i = 0; i < this.dataFrame.rowCount; i++) {
-  //       if (this.initialBitset?.get(i) && this.dataFrame!.get(currentPosition, i) !== currentAAR) {
-  //         this.dataFrame.filter.set(i, false, false);
-  //       }
-  //     }
-  //     this.dataFrame.filter.fireChanged();
-  //   }
-  // }
 
   detach() {
     this.subs.forEach((sub) => sub.unsubscribe());
@@ -129,14 +106,6 @@ export class SARViewer extends DG.JsViewer {
         this.dataFrame.selection.init(isChosen).and(this._initialBitset!, false);
       }
 
-      // if (!this.filterMode) {
-      //   this.dataFrame.selection.init((i) => isChosen(i)).and(this.initialBitset!);
-      // } else {
-      //   //FIXME: for complex dataset, need to choose selection
-      //   this.dataFrame.filter.copyFrom(this.initialBitset!);
-      //   this.applyFilter();
-      // }
-
       // df.getCol(splitColName).setCategoryOrder([otherLabel, aarLabel]);
       const colorMap: {[index: string]: string | number} = {};
       colorMap[otherLabel] = DG.Color.blue;
@@ -155,8 +124,6 @@ export class SARViewer extends DG.JsViewer {
         const currentPosition = this.viewerGrid?.table.currentCol.name;
 
         const labelStr = `${currentAAR === '-' ? 'Empty' : currentAAR} - ${currentPosition}`;
-        // const currentColor = DG.Color.toHtml(DG.Color.getCategoryColor(originalDf.getCol('~splitCol'), labelStr));
-        // const otherColor = DG.Color.toHtml(DG.Color.getCategoryColor(originalDf.getCol('~splitCol'), 'Other'));
         const currentColor = DG.Color.toHtml(DG.Color.orange);
         const otherColor = DG.Color.toHtml(DG.Color.blue);
         const currentLabel = ui.label(labelStr, {style: {color: currentColor}});
@@ -215,10 +182,6 @@ export class SARViewer extends DG.JsViewer {
         this.viewerGrid.table.onCurrentCellChanged.subscribe((_) => this.applyBitset());
 
         grok.events.onAccordionConstructed.subscribe((accordion: DG.Accordion) => this.accordionFunc(accordion));
-        // if (!this.viewGridInitialized) {
-        //   this.subs.push(DG.debounce(this.dataFrame!.onRowsFiltering, 50).subscribe(applyBitset))
-        //   this.viewGridInitialized = true;
-        // }
       }
     }
     this.progress.close();
