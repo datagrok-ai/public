@@ -343,7 +343,7 @@ export abstract class Tutorial extends DG.Widget {
   protected async textInpAction(root: HTMLElement, instructions: string,
     caption: string, value: string, description: string = ''): Promise<void> {
     const inputRoot = $(root)
-      .find('div.ui-input-root')
+      .find('div.ui-input-text.ui-input-root')
       .filter((idx, inp) => $(inp).find('label.ui-label.ui-input-label')[0]?.textContent === caption)[0];
     if (inputRoot == null) return;
     const input = $(inputRoot).find('input.ui-input-editor')[0] as HTMLInputElement;
@@ -393,13 +393,6 @@ export abstract class Tutorial extends DG.Widget {
       map((_) => $(columnsInput).find('div.ui-input-editor > div.ui-input-column-names')[0]?.textContent),
       filter((value) => value === columnNames));
     await this.action(instructions, source, columnsInput, description);
-  };
-
-  protected async buttonClickAction(root: HTMLElement, instructions: string, caption: string, description: string = '') {
-    const btn = $(root).find('button.ui-btn').filter((idx, btn) => btn.textContent === caption)[0];
-    if (btn == null) return;
-    const source = fromEvent(btn, 'click');
-    await this.action(instructions, source, btn, description);
   };
 
   /** Prompts the user to open a view of the specified type, waits for it to open and returns it. */
