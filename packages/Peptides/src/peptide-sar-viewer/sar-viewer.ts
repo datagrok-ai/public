@@ -12,7 +12,7 @@ export class SARViewer extends DG.JsViewer {
   private progress: DG.TaskBarProgressIndicator;
   protected activityColumnColumnName: string;
   protected activityScalingMethod: string;
-  protected twoColorMode: boolean;
+  protected bidirectionalAnalysis: boolean;
   protected filterMode: boolean;
   protected statsDf: DG.DataFrame | null;
   protected initialized: boolean;
@@ -36,27 +36,26 @@ export class SARViewer extends DG.JsViewer {
     this.activityScalingMethod = this.string('activityScalingMethod', 'none', {choices: ['none', 'lg', '-lg']});
     this.filterMode = this.bool('filterMode', false);
     // this.filterMode = false;
-    this.twoColorMode = this.bool('twoColorMode', false);
+    this.bidirectionalAnalysis = this.bool('bidirectionalAnalysis', false);
     // this.duplicatesHandingMethod = this.string('duplicatesHandlingMethod', 'median', {choices: ['median']});
 
     this.sourceGrid = (grok.shell.v as DG.TableView).grid;
   }
 
-  get initialBitset(): DG.BitSet | null {
-    return this._initialBitset;
-  }
+  // get initialBitset(): DG.BitSet | null {
+  //   return this._initialBitset;
+  // }
 
-  set initialBitset(bitset: DG.BitSet | null) {
-    this._initialBitset = bitset;
-  }
+  // set initialBitset(bitset: DG.BitSet | null) {
+  //   this._initialBitset = bitset;
+  // }
 
   init() {
-    this.initialBitset = this.dataFrame!.filter.clone();
+    this._initialBitset = this.dataFrame!.filter.clone();
     this.initialized = true;
   }
 
   onTableAttached() {
-    this.subs.push(DG.debounce(grok.events.onAccordionConstructed, 50).subscribe(this.accordionFunc));
     // this.subs.push(DG.debounce(this.dataFrame!.onRowsFiltering, 50).subscribe((_) => this.applyFilter()))
 
     this.render();
@@ -89,7 +88,7 @@ export class SARViewer extends DG.JsViewer {
     }
 
     if (property.name === 'activityScalingMethod' && typeof this.dataFrame !== 'undefined') {
-      const minActivity = DG.Stats.fromColumn(this.dataFrame.col(this.activityColumnColumnName)!, this.initialBitset).min;
+      const minActivity = DG.Stats.fromColumn(this.dataFrame.col(this.activityColumnColumnName)!, this._initialBitset).min;
       if (minActivity && minActivity <= 0 && this.activityScalingMethod !== 'none') {
         grok.shell.warning(`Could not apply ${this.activityScalingMethod}: ` +
           `activity column ${this.activityColumnColumnName} contains zero or negative values, falling back to 'none'.`);
@@ -101,7 +100,7 @@ export class SARViewer extends DG.JsViewer {
     this.render();
   }
 
-  private applyBitset(_: any) {
+  private applyBitset() {
     if (
       this.dataFrame &&
       this.viewerGrid &&
@@ -163,8 +162,16 @@ export class SARViewer extends DG.JsViewer {
 
         const elements: (HTMLLabelElement | HTMLElement)[] = [currentLabel, otherLabel];
 
-        accordion.getPane('Distribution') ? null : accordion.addPane('Distribution', () => {
-          const hist = originalDf.clone(this.initialBitset).plot.histogram({
+        // console.log("Out");
+        // console.log(originalDf.columns.names());
+        const distPane = accordion.getPane('Distribution');
+        if (distPane) {
+          accordion.removePane(distPane);
+        }
+        accordion.addPane('Distribution', () => {
+          // console.log("In");
+          // console.log(originalDf.columns.names());
+          const hist = originalDf.clone(this._initialBitset).plot.histogram({
             valueColumnName: `${this.activityColumnColumnName}Scaled`,
             splitColumnName: '~splitCol',
             legendVisibility: 'Never',
@@ -199,17 +206,20 @@ export class SARViewer extends DG.JsViewer {
         this.activityColumnColumnName,
         this.activityScalingMethod,
         this.sourceGrid,
-        this.twoColorMode,
+        this.bidirectionalAnalysis,
         this._initialBitset,
       );
 
       if (this.viewerGrid !== null) {
         $(this.root).empty();
         this.root.appendChild(this.viewerGrid.root);
-        if (!this.viewGridInitialized) {
-          this.subs.push(DG.debounce(this.viewerGrid.table.onCurrentCellChanged, 50).subscribe(this.applyBitset));
-          this.viewGridInitialized = false;
-        }
+        this.viewerGrid.table.onCurrentCellChanged.subscribe((_) => this.applyBitset());
+
+        grok.events.onAccordionConstructed.subscribe((accordion: DG.Accordion) => this.accordionFunc(accordion));
+        // if (!this.viewGridInitialized) {
+        //   this.subs.push(DG.debounce(this.dataFrame!.onRowsFiltering, 50).subscribe(applyBitset))
+        //   this.viewGridInitialized = true;
+        // }
       }
     }
     this.progress.close();
