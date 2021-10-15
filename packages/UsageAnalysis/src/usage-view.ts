@@ -76,7 +76,7 @@ export class UsageAnalysisView extends DG.ViewBase {
         ],'toolbox-inputs'), true);
 
         let showUsage = async () => {
-
+            ui.setUpdateIndicator(this.root, true);
             // summary cards
             let summaryDf = await grok.data.query('UsageAnalysis:NewUsersEventsErrors');
             usersSummaryCard = this.getSummary(summaryDf, 'users_count', 'New users');
@@ -128,6 +128,7 @@ export class UsageAnalysisView extends DG.ViewBase {
                 ui.divH([testTrackingCard])
             ])
             );
+            ui.setUpdateIndicator(this.root, false);
         }
 
         (async () => {
