@@ -1,10 +1,10 @@
 import { Track } from '../../track';
-import { ActivityPredictionTutorial } from './tutorials/activity-prediction';
+import { VirtualScreeningTutorial } from './tutorials/virtual-screening';
 import { DescriptorsTutorial } from './tutorials/descriptors';
 
 
 export const tutorials = [
-  ActivityPredictionTutorial,
+  VirtualScreeningTutorial,
   DescriptorsTutorial,
 ];
 

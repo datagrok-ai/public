@@ -7,9 +7,9 @@ import { Tutorial } from "../../../tutorial";
 import { _package } from '../../../package';
 
 
-export class ActivityPredictionTutorial extends Tutorial {
+export class VirtualScreeningTutorial extends Tutorial {
   get name() {
-    return 'Activity Prediction';
+    return 'Virtual Screening';
   }
 
   get description() {
