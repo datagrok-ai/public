@@ -9,6 +9,7 @@ import { AeBrowserView } from '../views/adverse-events-browser';
 import { updateDivInnerHTML } from '../views/utils';
 import $ from "cash-dom";
 import { getSubjectDmData } from '../data-preparation/data-preparation';
+import { Accordion } from 'datagrok-api/dg';
 
 export async function createPropertyPanel(viewClass: any) {
     switch (viewClass.name) {
@@ -30,31 +31,59 @@ export async function createPropertyPanel(viewClass: any) {
 }
 
 export async function aeBrowserPanel(view: AeBrowserView) {
+
+    let accae = ui.accordion('Ae browser');
+    let accIcon = ui.element('i');
+    accIcon.className = 'grok-icon svg-icon svg-view-layout';
+
     if(view.aeToSelect.currentRowIdx !== -1){
         let subjId = view.aeToSelect.get(SUBJECT_ID, view.aeToSelect.currentRowIdx);
-        let title = ui.tooltip.bind(ui.h1(subjId), dictToString(getSubjectDmData(subjId, [AGE, SEX, RACE, TREATMENT_ARM])));
-        let description = ui.divH([view.aeToSelect.get('AETERM', view.aeToSelect.currentRowIdx)]);
+        let title = ui.tooltip.bind(ui.label(subjId), dictToString(getSubjectDmData(subjId, [AGE, SEX, RACE, TREATMENT_ARM])));
+        let description = ui.divH([ui.divText(String(view.aeToSelect.get('AETERM', view.aeToSelect.currentRowIdx).toLowerCase()))]);
         let severity = view.aeToSelect.get('AESEV', view.aeToSelect.currentRowIdx);
         let severityStyle = {style:{
             color: `${SEVERITY_COLOR_DICT[severity.toUpperCase()]}`,
               marginRight: '5px',
               fontWeight: 'bold'
         }}
+
+        accae.addTitle(ui.span([accIcon, title]));
+
         description.prepend(ui.divText(severity, severityStyle));
         let startEndDays = ui.tooltip.bind(
             ui.label(`${getNullOrValue(view.aeToSelect, 'AESTDY', view.aeToSelect.currentRowIdx)} - ${getNullOrValue(view.aeToSelect, 'AEENDY', view.aeToSelect.currentRowIdx)}`), 
             `${getNullOrValue(view.aeToSelect, 'AESTDTC', view.aeToSelect.currentRowIdx)} - ${getNullOrValue(view.aeToSelect, 'AEENDTC', view.aeToSelect.currentRowIdx)}`);
+        
+        /*    
         let summary = ui.div([
           title,
           description,
           ui.inlineText(['Days ', startEndDays])
         ])
+        */
+       
+
         let daysInput = ui.intInput('Days prior AE', view.daysPriorAe);
         daysInput.onChanged((v) => {
             view.daysPriorAe = daysInput.value;
             view.updateDomains();
             updateAccordion();
           });
+    
+        accae.addPane('General', ()=>{
+            let table =  ui.tableFromMap({
+                'Severity': description,
+                'Days': startEndDays,
+                'AE period': daysInput.input
+            });
+            $(table).find('tr').css('vertical-align', 'top');
+            $(table).find('tr').last().css('vertical-align', 'middle');
+            $(table).find('td').css('padding-bottom', '10px');
+            $(table).find('.d4-entity-list>span').css('margin', '0px');
+            return table
+
+        }, true);  
+
         let accDiv = ui.div();
         let updateAccordion = () => {
             let acc = ui.accordion('ae-browser-panel');
@@ -62,13 +91,15 @@ export async function aeBrowserPanel(view: AeBrowserView) {
                 const rowNum = view[ it ].rowCount === 1 && view[ it ].getCol(SUBJECT_ID).isNone(0) ? 0 : view[ it ].rowCount
                 acc.addPane(`${it} (${rowNum})`, () => {
                     if (it) {
-                        return ui.div(view[ it ].plot.grid().root)
+                        let grid = view[ it ].plot.grid();
+                        console.log(grid);
+                        return ui.div(grid.root)
                     }
                 });
             })
             updateDivInnerHTML(accDiv, acc.root);
         }
-        let addButton =  ui.icons.add(() => {
+        let addButton =  ui.button(ui.icons.add(() => {}), ()=>{
             let domainsMultiChoices = ui.multiChoiceInput('', view.selectedAdditionalDomains, view.additionalDomains)
             ui.dialog({ title: 'Select domains' })
               .add(ui.div([ domainsMultiChoices ]))
@@ -81,12 +112,14 @@ export async function aeBrowserPanel(view: AeBrowserView) {
             .show({centerAt: addButton});
         });
         updateAccordion();
-        return ui.div([
-            summary,
-            daysInput,
-            accDiv,
-            addButton
-        ]);
+
+        accDiv.append(addButton)
+        
+        accae.addPane('Domains', ()=>{
+            return accDiv
+        }, true);
+
+        return accae.root
     }
 }
 
@@ -100,24 +133,27 @@ export async function summaryPanel(studyId: string) {
     })
     let studyLink = `${CLIN_TRIAL_GOV_SEARCH}${summaryDict[ 'NCT ID' ]}`
     summaryDict[ `Study link` ] = ui.link('Go to study page', () => { window.open(studyLink, '_blank').focus(); })
+
     let acc = ui.accordion('summary-panel');
-    //acc.addPane(`${studyId}`, () => ui.tableFromMap(summaryDict), true);
-    acc.addPane(`${studyId}`, () => {
-        let info = ui.div();
-        Object.keys(summaryDict).forEach(key => info.appendChild(
-            ui.divH([
-                ui.div(key, { style: { minWidth: '100px', fontWeight: 'bold' } }),
-                ui.div(summaryDict[ key ])
-            ])
-        ))
-        return info;
-    });
+    let accIcon = ui.element('i');
+    accIcon.className = 'grok-icon svg-icon svg-view-layout';
+
+    acc.addTitle(ui.span([accIcon, ui.label(`${studyId}`)]));
+    let acctable = ui.tableFromMap(summaryDict);
+    acc.addPane('General', () => {
+        $(acctable).find('tr').css('vertical-align', 'top');
+        $(acctable).find('td').css('padding-bottom', '10px');
+        $(acctable).find('.d4-entity-list>span').css('margin', '0px');
+        return acctable
+    }, true)
+
     return acc.root;
 }
 
 
 export async function timelinesPanel(timelinesDf: DG.DataFrame, domains: string[]) {
     const selectedInd = timelinesDf.selection.getSelectedIndexes();
+
     if (!selectedInd.length) {
         if (domains.includes('ae')) {
             const aeWithArm = addDataFromDmDomain(timelinesDf.clone(), study.domains.dm, timelinesDf.columns.names(), [TREATMENT_ARM], 'key');
@@ -144,41 +180,75 @@ export async function timelinesPanel(timelinesDf: DG.DataFrame, domains: string[
                     aeTop5Dict[ arm ] = [ aeTop5.get('event', item) ]
                 }
             })
-            Object.keys(aeTop5Dict).forEach(key => {
-                aeTop5Dict[ key ] = aeTop5Dict[ key ].join(',')
+
+            Object.keys(aeTop5Dict).forEach(key => {                
+                aeTop5Dict[ key ] = aeTop5Dict[ key ].join(', ')
             })
 
-            let root = ui.div();
-            root.appendChild(ui.h2('Average AE number per subject'));
-            root.appendChild(ui.tableFromMap(aeNumByArmDict));
-            root.appendChild(ui.h2('Most frequent AEs'));
-            root.appendChild(ui.tableFromMap(aeTop5Dict));
-            return root;
+            let acc = ui.accordion('timelines-panel')
+            let accIcon = ui.element('i');
+            accIcon.className = 'grok-icon svg-icon svg-view-layout';
+
+            let avarageae = ui.tableFromMap(aeNumByArmDict);
+            let mostae = ui.tableFromMap(aeTop5Dict);
+
+            acc.addTitle(ui.span([accIcon, ui.label('Timelines')]));
+            acc.addPane('Average AE', ()=>{
+                $(avarageae).find('tr').css('vertical-align', 'top');
+                $(avarageae).find('td').css('padding-bottom', '10px');
+                $(avarageae).find('.d4-entity-list>span').css('margin', '0px');
+                return avarageae
+            }, true);
+
+            acc.addPane('Frequents AEs', ()=>{
+                $(mostae).find('tr').css('vertical-align', 'top');
+                $(mostae).find('td').css('padding-bottom', '10px');
+                $(mostae).find('.d4-entity-list>span').css('margin', '0px');
+                return mostae
+            });
+            return acc.root;
         }
     } else {
         const eventArray = [];
+        let acc2 = ui.accordion('timelines-patient-panel');
+        let accIcon = ui.element('i');
+        accIcon.className = 'grok-icon svg-icon svg-view-layout';
+
         let summary;
         selectedInd.forEach((item, index) => {
             if (index === 0) {
                 summary = { 'Subject ID': timelinesDf.get('key', item), 'Domain': timelinesDf.get('domain', item) }
             }
-            const eventName = getNullOrValue(timelinesDf, 'event', item);
+            const eventName = String(getNullOrValue(timelinesDf, 'event', item)).toLowerCase();
             const eventStart = getNullOrValue(timelinesDf, 'start', item);
             const eventEnd = getNullOrValue(timelinesDf, 'end', item);
             eventArray.push({
-                event: eventName,
-                start: eventStart,
-                end: eventEnd
+                Event: eventName,
+                Start: eventStart,
+                End: eventEnd
             })
         })
-        let root = ui.div();
-        root.appendChild(ui.tableFromMap(summary));
+        acc2.addTitle(ui.span([accIcon, ui.label(`${Object.values(summary)[0]}`)]));
+        
+        let summarytable = ui.tableFromMap(summary);
+        acc2.addPane('General', ()=>{
+            $(summarytable).find('tr').css('vertical-align', 'top');
+            $(summarytable).find('td').css('padding-bottom', '10px');
+            $(summarytable).find('.d4-entity-list>span').css('margin', '0px');
+            return summarytable
+        },true);
+        
         const divsArray = [];
         eventArray.forEach(it => {
-            divsArray.push(ui.div(ui.tableFromMap(it)));
+            let table = ui.tableFromMap(it);
+            divsArray.push(ui.tableFromMap(it));
         })
-        root.appendChild(ui.divV(divsArray));
-        return root;
+        acc2.addPane('Events', ()=>{
+            $(divsArray).find('.d4-entity-list>span').css('margin', '0px');
+            return ui.divV(divsArray)
+        });
+
+        return acc2.root;
 
     }
 
