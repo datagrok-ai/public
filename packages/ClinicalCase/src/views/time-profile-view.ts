@@ -4,13 +4,11 @@ import * as ui from "datagrok-api/ui";
 import { study } from "../clinical-study";
 import { addDataFromDmDomain, getMaxVisitName, getMinVisitName, getUniqueValues, getVisitNamesAndDays } from '../data-preparation/utils';
 import { ETHNIC, RACE, SEX, TREATMENT_ARM } from '../constants';
-import { updateDivInnerHTML } from './utils';
 import { labDynamicComparedToBaseline } from '../data-preparation/data-preparation';
 
 
 export class TimeProfileView extends DG.ViewBase {
 
-    timeProfileDiv = ui.box();
     blVisitChoices: DG.InputBase;
     epVisitChoices: DG.InputBase;
     laboratoryDataFrame: DG.DataFrame;
@@ -24,6 +22,7 @@ export class TimeProfileView extends DG.ViewBase {
     bl: string;
     ep: string;
     visitNamesAndDays: any [];
+    linechart: any;
 
     constructor(name) {
         super(name);
@@ -46,19 +45,19 @@ export class TimeProfileView extends DG.ViewBase {
         let typeChoices = ui.choiceInput('', this.selectedType, this.types);
         typeChoices.onChanged((v) => {
             this.selectedType = typeChoices.value;
-            this.updateTimeProfileDiv();
+            this.updateTimeProfile();
         });
 
         this.blVisitChoices = ui.choiceInput('', this.bl, this.uniqueVisits);
         this.blVisitChoices.onChanged((v) => {
             this.bl = this.blVisitChoices.value;
-            this.updateTimeProfileDiv();
+            this.updateTimeProfile();
         });
 
         this.epVisitChoices = ui.choiceInput('', this.ep, this.uniqueVisits);
         this.epVisitChoices.onChanged((v) => {
             this.ep = this.epVisitChoices.value;
-            this.updateTimeProfileDiv();
+            this.updateTimeProfile();
         });
 
         this.root.className = 'grok-view ui-box';
@@ -69,7 +68,13 @@ export class TimeProfileView extends DG.ViewBase {
             ]), { style: { maxHeight: '100px' } }),
             this.timeProfileDiv
         ])) */
-        this.root.append(this.timeProfileDiv);
+        this.linechart = DG.Viewer.lineChart(this.filterDataFrameByDays(this.laboratoryDataFrame), {
+            splitColumnName: this.splitBy[0],
+            xColumnName: 'VISITDY',
+            yColumnNames: [`${this.selectedLabValue} avg(LBSTRESN)`],
+            whiskersType: 'Med | Q1, Q3'
+        });
+        this.root.append(this.linechart.root);
         this.setRibbonPanels([
             [
                 ui.span([ 'Plot ' ]),
@@ -80,34 +85,23 @@ export class TimeProfileView extends DG.ViewBase {
                 this.epVisitChoices.root
             ]
         ]);
-        this.updateTimeProfileDiv();
     }
 
-    private updateTimeProfileDiv() {
+    private updateTimeProfile() {
         switch (this.selectedType) {
             case 'Values': {
-                this.updateTimeProfileChart(this.filterDataFrameByDays(this.laboratoryDataFrame), 'avg(LBSTRESN)');
+                this.linechart.dataFrame = this.filterDataFrameByDays(this.laboratoryDataFrame);
                 break;
             }
             case 'Changes': {
                 this.createrelativeChangeFromBlDataframe();
-                this.updateTimeProfileChart(this.relativeChangeFromBlDataFrame, 'avg(LAB_DYNAMIC_BL)');
+                this.linechart.dataFrame = this.relativeChangeFromBlDataFrame;
                 break;
             }
             default: {
                 break;
             }
         }
-    }
-
-    private updateTimeProfileChart(df: DG.DataFrame, yColName: string){
-        let lineChart = DG.Viewer.lineChart(df, {
-            splitColumnName: this.splitBy[0],
-            xColumnName: 'VISITDY',
-            yColumnNames: [`${this.selectedLabValue} ${yColName}`],
-            whiskersType: 'Med | Q1, Q3'
-        });
-        updateDivInnerHTML(this.timeProfileDiv, lineChart.root);
     }
 
     private createLaboratoryDataframe() {
@@ -117,9 +111,9 @@ export class TimeProfileView extends DG.ViewBase {
 
     private createrelativeChangeFromBlDataframe(){
         let df = this.filterDataFrameByDays(study.domains.lb.clone());
-        labDynamicComparedToBaseline(df,  this.bl, 'VISIT', 'LAB_DYNAMIC_BL');
-        let dfWithArm = addDataFromDmDomain(df, study.domains.dm, [ 'USUBJID', 'VISITDY', 'VISIT', 'LBTEST', 'LAB_DYNAMIC_BL' ], this.splitBy);
-        this.relativeChangeFromBlDataFrame = this.createPivotedDataframe(dfWithArm, 'LAB_DYNAMIC_BL');
+        labDynamicComparedToBaseline(df,  this.bl, 'VISIT', 'LAB_DYNAMIC_BL', true);
+        let dfWithArm = addDataFromDmDomain(df, study.domains.dm, [ 'USUBJID', 'VISITDY', 'VISIT', 'LBTEST', 'LBSTRESN' ], this.splitBy);
+        this.relativeChangeFromBlDataFrame = this.createPivotedDataframe(dfWithArm, 'LBSTRESN');
     }
 
     private createPivotedDataframe(df: DG.DataFrame, aggregatedColName: string) {
