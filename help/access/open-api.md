@@ -261,7 +261,7 @@ If you encounter import errors, the following two steps can help.
 
 ## Videos
 
-<iframe width="560" height="315" src="https://www.youtube.com/embed/dKrCk38A1m8?start=3121" frameborder="0" allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture" allowfullscreen></iframe>
+[![Open Api](../uploads/youtube/data_access.png "Open on Youtube")](https://www.youtube.com/watch?v=dKrCk38A1m8&t=3121s)
 
 See also:
 

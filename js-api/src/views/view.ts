@@ -1,17 +1,17 @@
-import {VIEW_TYPE, VIEWER, ViewerType} from './const';
-import {DataFrame} from './dataframe.js';
-import * as ui from '../ui';
-import {ScatterPlotViewer, Viewer} from './viewer';
-import {DockNode, DockManager} from './docking';
-import {Grid} from './grid';
-import {Menu, ToolboxPage} from './widgets';
-import {Entity, Script} from './entities';
-import {toDart, toJs} from './wrappers';
-import {_options, _toIterable} from './utils';
-import { StreamSubscription } from './events';
+import {VIEW_TYPE, VIEWER, ViewerType} from '../const';
+import {DataFrame} from '../dataframe.js';
+import * as ui from '../../ui';
+import {ScatterPlotViewer, Viewer} from '../viewer';
+import {DockManager, DockNode} from '../docking';
+import {Grid} from '../grid';
+import {Menu, ToolboxPage} from '../widgets';
+import {Entity, Script} from '../entities';
+import {toDart, toJs} from '../wrappers';
+import {_options, _toIterable} from '../utils';
+import {StreamSubscription} from '../events';
 import $ from "cash-dom";
 import {Subscription} from "rxjs";
-import {FuncCall} from "./functions";
+import {FuncCall} from "../functions";
 
 
 let api = <any>window;
@@ -663,58 +663,6 @@ export class TableView extends View {
   set syncCurrentObject(x: boolean) { api.grok_TableView_Set_SyncCurrentObject(this.d, x); }
 }
 
-
-/** Base view for working with a collection of objects that reside on the server.
- *  Typically, results are filtered by applying AND operation between two
- *  filters: {@link permanentFilter} (which is set programmatically and is not visible)
- *  and {@link searchValue} entered by the user.
- *
- *  More details on the smart search syntax: {@link https://datagrok.ai/help/overview/smart-search}
- *
- * @extends View */
-export class DataSourceCardView extends View {
-
-  /** @constructs DataSourceCardView */
-  constructor(d: any) {
-    super(d);
-  }
-
-  /**
-   * User-specified {@link https://datagrok.ai/help/overview/smart-search | filter expression}.
-   * @type {string} */
-  get searchValue(): string {
-    return api.grok_DataSourceCardView_Get_SearchValue(this.d);
-  }
-
-  set searchValue(s: string) {
-    api.grok_DataSourceCardView_Set_SearchValue(this.d, s);
-  }
-
-  /** Programmatically defined invisible
-   * {@link https://datagrok.ai/help/overview/smart-search | filter expression}.
-   *  @type {string} */
-  get permanentFilter(): string {
-    return api.grok_DataSourceCardView_Get_PermanentFilter(this.d);
-  }
-
-  set permanentFilter(s: string) {
-    api.grok_DataSourceCardView_Set_PermanentFilter(this.d, s);
-  }
-}
-
-
-/** Projects view */
-export class ProjectsView extends DataSourceCardView {
-  /** @constructs ProjectsView */
-  constructor(d: any) {
-    super(d);
-  }
-
-  static create(params: object): ProjectsView {
-    return new ProjectsView(api.grok_ProjectsView(params));
-  }
-}
-
 /** Script view */
 export class ScriptView extends View {
   /** @constructs ScriptView */
@@ -788,3 +736,4 @@ export class VirtualView {
     api.grok_VirtualItemView_SetData(this.d, length, renderer);
   }
 }
+

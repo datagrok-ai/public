@@ -18,14 +18,8 @@ export class PredictiveModelingTutorial extends Tutorial {
 
   helpUrl: string = 'https://datagrok.ai/help/learn/predictive-modeling';
 
-  private async buttonClickAction(root: HTMLElement, instructions: string, caption: string, description: string = '') {
-    const btn = $(root).find('button.ui-btn').filter((idx, btn) => btn.textContent === caption)[0];
-    if (btn == null) return;
-    const source = fromEvent(btn, 'click');
-    await this.action(instructions, source, btn, description);
-  };
-
   protected async _run() {
+    this.header.textContent = this.name;
     this.describe('Predictive modeling is a statistical technique used to predict outcomes ' +
       'based on historical data. In the next steps, we will train a few models, look at their ' +
       'performance, learn how to apply a model to a dataset and share it with others, and ' +
@@ -46,26 +40,11 @@ export class PredictiveModelingTutorial extends Tutorial {
         await new Promise((resolve) => setTimeout(resolve, 2000));
       }
 
-      const viewInputAction = async (instructions: string, caption: string, value: string, description: string = '') => {
-        let inputRoot: HTMLDivElement;
-        let select: HTMLSelectElement;
-        $(pmv.root).find('.ui-input-root .ui-input-label span').each((idx, el) => {
-          if (el.innerText == caption) {
-            inputRoot = el.parentElement?.parentElement as HTMLDivElement;
-            select = $(inputRoot).find('select')[0] as HTMLSelectElement;
-          }
-        });
-        const source = fromEvent(select!, 'change');
-        await this.action(instructions,
-          source.pipe(map((event: any) => select.value), filter((v: string) => v === value)),
-          inputRoot!, description);
-      };
-
       const hasNulls = this.t!.columns
         .byNames(['AGE', 'HEIGHT', 'WEIGHT'])
         .some((col: DG.Column) => col?.stats.missingValueCount > 0);
 
-      //await viewInputAction('Set "Table" to "demog"', 'Table', 'demog');
+      await this.choiceInputAction(pmv.root, 'Set "Table" to "demog"', 'Table', 'demog');
       await this.columnInpAction(pmv.root, 'Set "Predict" to "SEX"', 'Predict', 'SEX');
       const missingValuesWarning = 'You will see that the column names are highlighted in red. ' +
         'Click on the question mark to the right of the input to see a warning message. It says ' +
@@ -88,7 +67,7 @@ export class PredictiveModelingTutorial extends Tutorial {
           ));
       }
 
-      await viewInputAction(`Set "Method" to "${method}"`, 'Method', method);
+      await this.choiceInputAction(pmv.root, `Set "Method" to "${method}"`, 'Method', method);
       await this.buttonClickAction(pmv.root, 'Click the "Train" button', 'TRAIN');
     };
 

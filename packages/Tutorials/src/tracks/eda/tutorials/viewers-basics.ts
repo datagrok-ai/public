@@ -16,6 +16,7 @@ export class ViewersTutorial extends Tutorial {
   helpUrl: string = 'https://datagrok.ai/help/visualize/viewers';
 
   protected async _run() {
+    this.header.textContent = this.name;
     this.title('Opening viewers');
 
     this.describe(`There are a few ways to add a viewer:

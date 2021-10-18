@@ -6,7 +6,7 @@ module.exports = {
     package: './src/package.ts'
   },
   resolve: {
-    extensions: ['.wasm', '.mjs', '.js', '.json', '.ts', '.tsx'],
+    extensions: ['.wasm', '.mjs', '.ts', '.json', '.tsx'],
   },
   module: {
     rules: [

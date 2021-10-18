@@ -17,7 +17,7 @@ columns that were added, removed, and changed.
 
 ### Videos
 
-<iframe width="560" height="315" src="https://www.youtube.com/embed/rUHFwO1iQUg" frameborder="0" allow="accelerometer; autoplay; encrypted-media; gyroscope; picture-in-picture" allowfullscreen></iframe>
+[![Compare Tables](../uploads/youtube/compare_tables.png "Open on Youtube")](hhttps://www.youtube.com/watch?v=rUHFwO1iQUg)
 
 See also:
 * [JS API: Compare Tables](https://public.datagrok.ai/js/samples/data-frame/compare-tables)

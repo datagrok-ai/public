@@ -58,7 +58,7 @@ export class BoxPlotsView extends DG.ViewBase {
     this.getTopPValues(minLabVisit, 4);
     this.updateBoxPlots(viewerTitle, this.selectedSplitBy);
 
-    let blVisitChoices = ui.choiceInput('BL', this.bl, this.uniqueVisits);
+    let blVisitChoices = ui.choiceInput('Baseleine', this.bl, this.uniqueVisits);
     blVisitChoices.onChanged((v) => {
       this.bl = blVisitChoices.value;
       this.updateBoxPlots(viewerTitle, this.selectedSplitBy);
@@ -70,7 +70,7 @@ export class BoxPlotsView extends DG.ViewBase {
       this.updateBoxPlots(viewerTitle, this.selectedSplitBy);
     });
 
-    let selectBiomarkers = ui.bigButton('Select biomarkers', () => {
+    let selectBiomarkers = ui.iconFA('cog', () => {
       let labValuesMultiChoices = ui.multiChoiceInput('Select values', this.selectedLabValues, this.uniqueLabValues)
       labValuesMultiChoices.onChanged((v) => {
         this.selectedLabValues = labValuesMultiChoices.value;
@@ -87,11 +87,13 @@ export class BoxPlotsView extends DG.ViewBase {
         .show();
     });
 
+    this.setRibbonPanels(
+      [ [blVisitChoices.root], [splitByChoices.root], [selectBiomarkers] ] ,
+ );
 
     //this.root.className = 'grok-view ui-box';
 
     this.root.append(ui.div([
-      ui.divH([ blVisitChoices.root, splitByChoices.root, selectBiomarkers ]),
       ui.block([this.boxPlotDiv])
     ]));
     
