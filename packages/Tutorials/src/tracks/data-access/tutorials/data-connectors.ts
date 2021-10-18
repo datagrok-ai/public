@@ -19,6 +19,7 @@ export class DataConnectorsTutorial extends Tutorial {
   helpUrl: string = '';
 
   protected async _run() {
+    this.header.textContent = this.name;
     this.describe('In this tutorial, we will browse the tree of connections and learn how to ' +
       'create new connections to query the database.');
     

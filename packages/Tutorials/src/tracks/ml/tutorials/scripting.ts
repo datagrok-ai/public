@@ -17,11 +17,12 @@ export class ScriptingTutorial extends Tutorial {
   helpUrl: string = 'https://datagrok.ai/help/develop/scripting';
 
   protected async _run() {
-    this.header.textContent = 'Create and run a script';
+    this.header.textContent = this.name;
     this.describe('Scripting is an integration mechanism with languages for statistical computing');
 
     this.describe(ui.link('More about ' + this.name, this.helpUrl).outerHTML);
 
+    this.title('Create and run a script');
     const editorIntro = 'This is a script editor. Here, you write code and bind the parameters to the ' +
       'sample dataset (press F1 to get help on parameter format). Also, the editor lets you load ' +
       'previously saved scripts, including the samples designed to help better understand the platform.';
