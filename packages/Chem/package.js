@@ -141,6 +141,42 @@ class ChemPackage extends DG.Package {
     }
   }
 
+  //name: chemSimilaritySpeImpl
+  //input: column fingerprints [fingerprints]
+  //input: int dimension
+  //output: dataframe result
+  async chemSimilaritySpeImpl(fingerprints, dimension) {
+    var core = _fingerprintSimilarity;
+    var coordinates = stochasticProximityEmbedding(fingerprints.length, (x, y) => 1.0 - core(fingerprints.get(x), fingerprints.get(y)),
+                                                   2, null, null, 1.0, 2.0, 0.01, fingerprints.length * 100, 100, null);
+    var columns = [
+      DG.Column.fromFloat32Array('X', coordinates[0]),
+      DG.Column.fromFloat32Array('Y', coordinates[1]),
+    ]
+    if (dimension == 3)
+      columns.append(DG.Column.fromFloat32Array('Z', coordinates[2]));
+    return DG.DataFrame.fromColumns(columns);
+  }
+
+  //name: chemSimilarityAnalysis
+  //input: dataframe table
+  //input: column molColumn {semType: Molecule}
+  //output: graphics
+  async chemSimilarityAnalysis(table, molColumn) {
+    var fpColumn = await this.getMorganFingerprints(molColumn);
+    if (fpColumn.stats.missingValueCount > 0) {
+      throw "Molecule column has a null entry";
+    }
+    var coords = await this.chemSimilaritySpeImpl(fpColumn, 2);
+    coords = coords.columns.toList();
+    table = DG.DataFrame.fromColumns(table.columns.toList().concat(coords));
+    let view = grok.shell.addTableView(table);
+    view.scatterPlot({
+      x: 'X',
+      y: 'Y',
+    });
+  }
+
   //name: searchSubstructure
   //input: column molStringsColumn
   //input: string molString

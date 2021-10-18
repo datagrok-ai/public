@@ -237,3 +237,68 @@ async function chemSubstructureSearchLibrary(molStringsColumn, molString, molStr
 
   return result;
 }
+
+function _euclideanDistance(coordinates, row1, row2) {
+  var d = 0.0;
+  for (let i = 0; i < coordinates.length; i++) {
+    var diff = coordinates[i][row1] - coordinates[i][row2];
+    d += diff * diff;
+  }
+  return Math.sqrt(d);
+}
+
+function stochasticProximityEmbedding(length, distance, outDimensions, maxDistance, 
+                                        maxDistanceSteps, radiusPercent, lambda0, lambda1, steps, cycles) {
+  var a = 0, b = 0;
+  function getIndexes() {
+    b = Math.floor(Math.random() * length);
+    for (a = Math.floor(Math.random() * length); b == a; b = Math.floor(Math.random() * length));
+  }
+
+  if (maxDistanceSteps == null)
+    maxDistanceSteps = length * Math.floor((length - 1) / 2);
+  if (maxDistance == null) {
+    maxDistance = -1e37;
+    for (let n = 0; n < maxDistanceSteps; n++) {
+      getIndexes();
+      var d = distance(a, b);
+      if (d > maxDistance)
+        maxDistance = d;
+    }
+  }
+
+  var radius = (radiusPercent == 0.0) ? maxDistance : maxDistance * radiusPercent;
+  var epsilon = 1e-10, lambda = lambda0;
+  var tx1 = new Array(outDimensions), tx2 = new Array(outDimensions), coordinates = new Array(outDimensions);
+  for (let n = 0; n < outDimensions; n++) {
+    var dim = new Array(length);
+    for (var m = 0; m < length; m++)
+      dim[m] = Math.random();
+    coordinates[n] = dim;
+  }    
+
+  for (let i = 0; i < cycles; i++) {
+    for (let j = 0; j < steps; j++) {
+      getIndexes();
+      var dab = _euclideanDistance(coordinates, a, b);
+      var simab = distance(a, b);
+      if (simab > radius && dab >= simab)
+        continue;
+      else {
+        var t1 = lambda * 0.5 * (simab - dab) / (dab + epsilon);
+        for (let k = 0; k < outDimensions; k++) {
+          tx1[k] = t1 * (coordinates[k][a] - coordinates[k][b]);
+          tx2[k] = t1 * (coordinates[k][b] - coordinates[k][a]);
+        }
+        for (let k = 0; k < outDimensions; k++) {
+          coordinates[k][a] += tx1[k];
+          coordinates[k][b] += tx2[k];
+        }
+      }
+    }
+    lambda -= ((lambda0 - lambda1) / (cycles - 1.0));
+    if (lambda < lambda1)
+      break;
+  }
+  return coordinates;
+}
