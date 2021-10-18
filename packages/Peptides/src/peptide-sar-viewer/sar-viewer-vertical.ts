@@ -156,29 +156,36 @@ export async function describe(
   matrixDf.columns.add(DG.Column.fromList(DG.TYPE.FLOAT, 'pValue', pValues));
 
 
-  let statsDf = matrixDf.clone();
-  // statsDf = statsDf.join(
-  //   statsDf.groupBy([positionColName, aminoAcidResidue]).where(`Count > 4`).aggregate(),
-  //   [positionColName, aminoAcidResidue],
-  //   [positionColName, aminoAcidResidue],
-  //   statsDf.columns.names, [], 'inner', false,
-  // );
-  let statsDfAgr = statsDf
-    .groupBy([positionColName])
-    .where(`Count > 4 and pValue > 0.1 `)
-    .max('Mean difference')
-    .aggregate(); //and 'pValue' > 0.1  'pValue' < ${coef}`
-  [0.01, 0.05, 0.1].forEach((coef)=>{
-    statsDfAgr = statsDfAgr.append(statsDf
-      .groupBy([positionColName])
-      .where(`Count > 4 and pValue < ${coef}`)
-      .max('Mean difference')
-      .aggregate());
+  // @ts-ignore
+  const bs = DG.BitSet.create(matrixDf.rowCount, (i) => {
+    return matrixDf.get('Count', i) > 3;
   });
-  statsDf = grok.data.joinTables(statsDf, statsDfAgr,
-    ['Mean difference', 'position'],
-    ['max(Mean difference)', 'position'],
-    statsDf.columns.names(), [], DG.JOIN_TYPE.LEFT, true );
+
+  let statsDf = matrixDf.clone(bs);
+
+
+  const pValueFilteredDF = statsDf.clone(DG.BitSet.create(statsDf.rowCount, (i) => {
+    return statsDf.get('pValue', i) > 0.1;
+  }));
+  let statsDfAgr = grok.data.joinTables(pValueFilteredDF, pValueFilteredDF.groupBy([positionColName])
+    .max('Mean difference')
+    .aggregate(), ['Mean difference', 'position'],
+  ['max(Mean difference)', 'position'], pValueFilteredDF.columns.names(), [], 'inner', false);
+  //and 'pValue' > 0.1  'pValue' < ${coef}`
+
+
+  let lastCoef = 0.0;
+  [0.01, 0.05, 0.1].forEach((coef)=>{
+    const pValueFilteredDF = statsDf.clone(DG.BitSet.create(statsDf.rowCount, (i) => {
+      return statsDf.get('pValue', i) > lastCoef && statsDf.get('pValue', i)< coef;
+    }));
+    statsDfAgr = statsDfAgr.append(grok.data.joinTables(pValueFilteredDF, pValueFilteredDF.groupBy([positionColName])
+      .max('Mean difference')
+      .aggregate(), ['Mean difference', 'position'],
+    ['max(Mean difference)', 'position'], pValueFilteredDF.columns.names(), [], 'inner', false));
+    lastCoef = coef;
+  });
+  statsDf = statsDfAgr;
   const grid = statsDf.plot.grid();
 
   const colNames:string[] = [];
