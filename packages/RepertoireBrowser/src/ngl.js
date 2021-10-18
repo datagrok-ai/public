@@ -11,13 +11,14 @@ export class NglMethods {
 
     async init(view, inputs) {
 
-        let col_background = 'white';
+        let colorScheme = inputs.colorScheme;
+        let col_background = colorScheme["col_background"];
 
         inputs.ngl_host.style.backgroundColor = col_background;
         view.box = true;
         this.stage = new NGL.Stage(inputs.ngl_host);
         this.path = _package.webRoot + 'pdbfiles/' + 'TPP000153303.pdb';
-        this.schemeObj = this.CDR3(inputs.cdr_scheme, inputs.paratopes);
+        this.schemeObj = this.CDR3(inputs.cdr_scheme, inputs.paratopes, colorScheme);
 
         await this.loadPdb(this.path, inputs.repChoice, this.schemeObj);
         this.nglResize(inputs.ngl_host);
@@ -26,14 +27,14 @@ export class NglMethods {
 
     // ---- NGL ----
     // create a color scheme for CDR3 regions
-    CDR3(cdr_scheme, paratopes) {
-  
-        let col_heavy_chain = '#0069a7';
-        let col_light_chain = '#f1532b';
-        let col_cdr = '#45d145';
-        let col_para = '#b0c4de';
-        let col_partopes_low = '(176,196,222)'; //col_para in rgb
-        let col_partopes_high = '(255, 0, 255)';
+    CDR3(cdr_scheme, paratopes, colorScheme) {
+
+        let col_heavy_chain = colorScheme["col_heavy_chain"];
+        let col_light_chain = colorScheme["col_light_chain"];
+        let col_cdr = colorScheme["col_cdr"];
+        let col_para = colorScheme["col_para"];
+        let col_partopes_low = colorScheme["col_partopes_low"]; //col_para in rgb
+        let col_partopes_high = colorScheme["col_partopes_high"];
 
 
         let schemeId;
@@ -65,7 +66,7 @@ export class NglMethods {
                 let scheme_buffer = [];
                 Object.keys(json.cdr_ranges).forEach((str) => {
                     if (str.includes(cdr_scheme.value + '_CDRH')) {
-                        let str_buffer = ''
+                        let str_buffer = '';
                         for (let i = 0; i < Object.keys(json.cdr_ranges[str]).length; i++) {
                             str_buffer = str_buffer + ` or ${json.cdr_ranges[str][i][0]}-${json.cdr_ranges[str][i][1]} and :H`;
                         }

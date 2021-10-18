@@ -149,7 +149,7 @@ export function getSurvivalStatus(eventColumn: DG.Column, i: number) {
   return eventColumn.isNone(i) ? 0 : 1;
 }
 
-export function createAERiskAssessmentDataframe(ae: DG.DataFrame, ex: DG.DataFrame) {
+export function createAERiskAssessmentDataframe(ae: DG.DataFrame, ex: DG.DataFrame, placeboArm: string, activeArm: string) {
 
   let subjArm = createUniqueCountDataframe(ex, [ 'EXTRT' ], 'USUBJID', 'TOTALSUBJ');
   let joinedAeEX = grok.data.joinTables(ae, ex, [ 'USUBJID' ], [ 'USUBJID' ], [ 'USUBJID', 'AETERM' ], [ 'EXTRT' ], DG.JOIN_TYPE.LEFT, false);
@@ -161,11 +161,11 @@ export function createAERiskAssessmentDataframe(ae: DG.DataFrame, ex: DG.DataFra
     .init((i) => parseFloat(tj.get('AECOUNT', i)) / parseFloat(tj.get('TOTALSUBJ', i)));
 
   let aeRiskRatioPlacebo = tj.groupBy([ 'AETERM', 'EXTRT', 'AECOUNT', 'TOTALSUBJ', 'PERCENT' ])
-    .where('EXTRT = PLACEBO')
+    .where(`EXTRT = ${placeboArm}`)
     .aggregate();
 
   let aeRiskRatioActive = tj.groupBy([ 'AETERM', 'EXTRT', 'AECOUNT', 'TOTALSUBJ', 'PERCENT' ])
-    .where('EXTRT = XANOMELINE')
+    .where(`EXTRT = ${activeArm}`)
     .aggregate();
 
 
@@ -189,9 +189,9 @@ export function createAERiskAssessmentDataframe(ae: DG.DataFrame, ex: DG.DataFra
   for (let i = 0; i < rowCount; i++) {
     if (column1.isNone(i)) {
       const value = column2.get(i);
-      column1.set(i, value)
-      percent1.set(i, 0);
-      exposed1.set(i, 0);
+      column1.set(i, value, false)
+      percent1.set(i, 0, false);
+      exposed1.set(i, 0, false);
     } else {
       totalExposed1 = parseFloat(tj2.get('null.TOTALSUBJ', i))
     }
@@ -201,9 +201,9 @@ export function createAERiskAssessmentDataframe(ae: DG.DataFrame, ex: DG.DataFra
   for (let i = 0; i < rowCount; i++) {
     if (column2.isNone(i)) {
       const value = column1.get(i);
-      column2.set(i, value)
-      percent2.set(i, 0);
-      exposed2.set(i, 0);
+      column2.set(i, value, false)
+      percent2.set(i, 0, false);
+      exposed2.set(i, 0, false);
     } else {
       totalExposed2 = parseFloat(tj2.get('null.TOTALSUBJ (2)', i))
     }

@@ -15,7 +15,14 @@ export async function RepertoireBrowserApp() {
   if (tnames === null || tnames.length === 0) {
     try {
       //let df = (await grok.functions.eval('OpenServerFile("Dskatov:RepertoireBrowser/RepertoireBrowserSample.csv")'))[0];
-      let df = DG.DataFrame.create(5);
+      let df = DG.DataFrame.fromColumns([
+        DG.Column.fromList( 'double', 'cdr length', [1.1, 2.1, 3.1]),
+        DG.Column.fromList( 'double','surface_cdr_hydrophobicity', [1.1, 2.1, 3.1]),
+        DG.Column.fromList( 'double','positive_cdr_charge', [1.1, 2.1, 3.1]),
+        DG.Column.fromList( 'double','negative_cdr_charge', [1.1, 2.1, 3.1]),
+        DG.Column.fromList( 'double','sfvcsp', [1.1, 2.1, 3.1])
+      ]);
+
       view = grok.shell.addTableView(df);
     } catch (e) {
       grok.shell.warning('File "Dskatov:RepertoireBrowser/RepertoireBrowserSample.csv" not found.');

@@ -915,12 +915,8 @@ export class Column {
       return null;
     if (type == null)
       type = this.type;
-    let newCol: Column = await this.dataFrame.columns._getNewCalculated(this.name, formula, type, treatAsString);
-    for (let [key, value] of this.tags) if (key !== DG.TAGS.FORMULA) newCol.setTag(key, value);
-    let name = this.name;
-    newCol = this.dataFrame.columns.replace(this, newCol);
-    newCol.name = name;
-    return newCol;
+    return new Promise((resolve, reject) => api.grok_Column_ApplyFormula(
+      this.d, formula, type, treatAsString, (c: any) => resolve(toJs(c)), (e: any) => reject(e)));
   }
 
   /** Creates and returns a new column by converting [column] to the specified [newType].

@@ -88,9 +88,8 @@ export class BoxPlotsView extends DG.ViewBase {
     });
 
     this.setRibbonPanels(
-       [ [blVisitChoices.root], [splitByChoices.root], [selectBiomarkers] ] ,
-  );
-
+      [ [blVisitChoices.root], [splitByChoices.root], [selectBiomarkers] ] ,
+ );
 
     //this.root.className = 'grok-view ui-box';
 

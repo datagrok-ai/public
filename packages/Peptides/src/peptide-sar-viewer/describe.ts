@@ -1,12 +1,11 @@
 import * as ui from 'datagrok-api/ui';
 import * as DG from 'datagrok-api/dg';
-
 //@ts-ignore
 import * as jStat from 'jstat';
-
 import {splitAlignedPeptides} from '../split-aligned';
 import {decimalAdjust, tTest} from '../utils/misc';
 import {ChemPalette} from '../utils/chem-palette';
+import {measureAAR} from '../utils/cell-renderer';
 
 const cp = new ChemPalette('grok');
 
@@ -14,8 +13,9 @@ export async function describe(
   df: DG.DataFrame,
   activityColumn: string,
   activityScaling: string,
-  filterMode: boolean,
   sourceGrid: DG.Grid,
+  twoColorMode: boolean,
+  initialBitset: DG.BitSet | null,
 ): Promise<[DG.Grid, DG.DataFrame] | [null, null]> {
   //Split the aligned sequence into separate AARs
   let splitSeqDf: DG.DataFrame | undefined;
@@ -53,7 +53,37 @@ export async function describe(
     if (splitSeqDf.col(col.name) && col.name != activityColumn) {
       col.semType = 'aminoAcids';
       col.setTag('cell.renderer', 'aminoAcids');
+      if (sourceGrid) {
+        setTimeout(() => {
+          let maxWidth = 0;
+          for (const s of col.categories) {
+            const len = measureAAR(s, true);
+            maxWidth = maxWidth < len ? len : maxWidth;
+          }
+          sourceGrid.col(col.name)!.width = Math.max(maxWidth * 10, 30);
+          ;
+        }, 100);
+      }
     }
+  }
+  if (sourceGrid) {
+    const colNames:string[] = [];
+    for (let i = 0; i < sourceGrid.columns.length; i++) {
+      colNames.push(sourceGrid.columns.byIndex(i)!.name);
+    }
+    colNames.sort((a, b)=>{
+      if (sourceGrid.columns.byName(a)?.column?.semType == 'aminoAcids') {
+        if (sourceGrid.columns.byName(b)?.column?.semType == 'aminoAcids') {
+          return 0;
+        }
+        return -1;
+      }
+      if (sourceGrid.columns.byName(b)?.column?.semType == 'aminoAcids') {
+        return 1;
+      }
+      return 0;
+    });
+    sourceGrid?.columns.setOrder(colNames);
   }
 
   // scale activity
@@ -77,10 +107,10 @@ export async function describe(
     sourceGrid.columns.setOrder([`${activityColumn}`]);
     break;
   }
+  splitSeqDf = splitSeqDf.clone(initialBitset);
 
   const positionColName = 'position';
   const aminoAcidResidue = 'aminoAcidResidue';
-  // const medianColName = 'MAD';
 
   //unpivot a table and handle duplicates
   splitSeqDf = splitSeqDf.groupBy(positionColumns)
@@ -91,32 +121,17 @@ export async function describe(
 
   let matrixDf = splitSeqDf.unpivot([activityColumnScaled], positionColumns, positionColName, aminoAcidResidue);
 
-  //this table contains overall statistics on activity
-  const totalStats = matrixDf.groupBy()
-    .add('med', activityColumnScaled, 'med')
-    .aggregate();
-
-  //preparing for mad
-  const formula = 'Abs(${' + activityColumnScaled + '}-' + totalStats.get('med', 0) + ')';
-  await matrixDf.columns.addNewCalculated('innerMAD', formula);
-
   //statistics for specific AAR at a specific position
   matrixDf = matrixDf.groupBy([positionColName, aminoAcidResidue])
     .add('count', activityColumnScaled, 'Count')
-    //.add('med', 'innerMAD', medianColName) //final step of MAD calculation
-    //.add('q1', activityColumnScaled, 'Q1')
-    //.add('q2', activityColumnScaled, 'Median')
-    //.add('q3', activityColumnScaled, 'Q3')
     .aggregate();
-  
+
   const countThreshold = 4;
   //@ts-ignore: never gets old
   matrixDf.rows.filter((row) => row.Count >= countThreshold && row.Count <= peptidesCount - countThreshold);
   matrixDf = matrixDf.clone(matrixDf.filter);
 
   // calculate additional stats
-  //await matrixDf.columns.addNewCalculated('IQR', '${q3}-${q1}');
-  //await matrixDf.columns.addNewCalculated('CQV', '(${q3}-${q1})/(${q3}+${q1})');
   await matrixDf.columns.addNewCalculated('Ratio', '${count}/'.concat(`${peptidesCount}`));
 
   //calculate p-values based on t-test
@@ -168,23 +183,24 @@ export async function describe(
   matrixDf.name = 'SAR';
 
   // Setting category order
-  // let aarCategoryOrder: string[] = ['-'];
-  // for (const group of ChemPalette.grokGroups) {
-  //   aarCategoryOrder = aarCategoryOrder.concat(group[0]);
-  // }
-  // matrixDf.getCol(aminoAcidResidue).setCategoryOrder(aarCategoryOrder);
-  let aarList: string[] = statsDf.getCol(aminoAcidResidue).toList();
-  const aarWeights: {[index: string]: number} = {};
-  aarList.forEach((value) => {
-    aarWeights[value] = (aarWeights[value] || 0) + 1;
-  });
-  aarList = aarList.filter((value, index, self) => self.indexOf(value) === index);
-  aarList.sort((first, second) => aarWeights[second] - aarWeights[first]);
+  const sortArgument = twoColorMode ? 'Absolute Mean difference' : 'Mean difference';
+  if (twoColorMode) {
+    await statsDf.columns.addNewCalculated('Absolute Mean difference', 'Abs(${Mean difference})');
+  }
+  const aarWeightsDf = statsDf.groupBy([aminoAcidResidue]).sum(sortArgument, 'weight').aggregate();
+  const aarList = aarWeightsDf.getCol(aminoAcidResidue).toList();
+  let getWeight = (aar: string) => aarWeightsDf
+      .groupBy(['weight'])
+      .where(`${aminoAcidResidue} = ${aar}`)
+      .aggregate()
+      .get('weight', 0);
+  aarList.sort((first, second) => getWeight(second) - getWeight(first));;
+
   matrixDf.getCol(aminoAcidResidue).setCategoryOrder(aarList);
 
   // !!! DRAWING PHASE !!!
   //find min and max MAD across all of the dataframe
-  // const dfMin = jStat.min(mDiff);
+  const dfMin = twoColorMode ? 0 : jStat.min(mDiff);
   const dfMax = jStat.max(mDiff);
   const grid = matrixDf.plot.grid();
 
@@ -195,13 +211,17 @@ export async function describe(
     if (col.name === aminoAcidResidue) {
       col.semType = 'aminoAcids';
       col.setTag('cell.renderer', 'aminoAcids');
-      // let maxLen = 0;
-      // col.categories.forEach( (ent:string)=>{
-      //   if ( ent.length > maxLen) {
-      //     maxLen = ent.length;
-      //   }
-      // });
-      // grid.columns.byName(aminoAcidResidue)!.width = maxLen * 15;
+      let maxLen = 0;
+      setTimeout(() => {
+        col.categories.forEach((ent: string) => {
+          const len = measureAAR(ent, true);
+          if (len > maxLen) {
+            maxLen = len;
+          }
+        });
+        grid.columns.byName(aminoAcidResidue)!.width = Math.max(maxLen * 10, 30);
+      },
+      500);
     }
   }
 
@@ -237,41 +257,28 @@ export async function describe(
           `${aminoAcidResidue} = ${matrixDf.get(aminoAcidResidue, args.cell.tableRowIndex)} ` +
           `and ${positionColName} = ${args.cell.tableColumn.name}`;
 
-        //don't draw AAR that too little appearnces at this position
-        const count: number = statsDf.groupBy(['Count']).where(query).aggregate().get('Count', 0);
-        // if (count < countThreshold || count > peptidesCount - countThreshold) {
-        //   args.preventDefault();
-        //   args.g.restore();
-        //   return;
-        // }
-
         const pVal: number = statsDf.groupBy(['p-value']).where(query).aggregate().get('p-value', 0);
 
         let coef;
-        const variant = args.cell.cell.value >= 0;
+        const variant = args.cell.cell.value < 0;
         if (pVal < 0.01) {
-          coef = variant ? '#299617' : '#722F37';
+          coef = variant && twoColorMode ? '#FF7900' : '#299617';
         } else if (pVal < 0.05) {
-          coef = variant ? '#32CD32' : '#D10000';
+          coef = variant && twoColorMode ? '#FFA500' : '#32CD32';
         } else if (pVal < 0.1) {
-          coef = variant ? '#98FF98' : '#FF8A8A';
+          coef = variant && twoColorMode ? '#FBCEB1' : '#98FF98';
         } else {
           coef = DG.Color.toHtml(DG.Color.lightLightGray);
         }
 
-        const rCoef = Math.abs(args.cell.cell.value) / dfMax;
+        const rCoef = ((twoColorMode ?
+          Math.abs(args.cell.cell.value) :
+          args.cell.cell.value) - dfMin) / (dfMax - dfMin);
 
         const maxRadius = 0.9 * (args.bounds.width > args.bounds.height ? args.bounds.height : args.bounds.width) / 2;
         const radius = Math.ceil(maxRadius * rCoef);
 
         args.g.beginPath();
-        // args.g.fillStyle = DG.Color.toHtml(DG.Color.scaleColor(
-        //   coef,
-        //   0,
-        //   1,
-        //   undefined,
-        //   [DG.Color.darkGray, args.cell.cell.value >= 0 ? DG.Color.green : DG.Color.red],
-        // ));
         args.g.fillStyle = coef;
         args.g.arc(
           args.bounds.x + args.bounds.width / 2,
@@ -305,27 +312,23 @@ export async function describe(
       for (const col of statsDf.columns.names()) {
         if (col !== aminoAcidResidue && col !== positionColName) {
           const query =
-              `${aminoAcidResidue} = ${matrixDf.get(aminoAcidResidue, cell.tableRowIndex)} ` +
-              `and ${positionColName} = ${cell.tableColumn.name}`;
-          let text = `${decimalAdjust('floor', statsDf.groupBy([col]).where(query).aggregate().get(col, 0), -5)}`;
+            `${aminoAcidResidue} = ${matrixDf.get(aminoAcidResidue, cell.tableRowIndex)} ` +
+            `and ${positionColName} = ${cell.tableColumn.name}`;
+          const textNum = statsDf.groupBy([col]).where(query).aggregate().get(col, 0);
+          let text = `${col === 'Count' ? textNum : textNum.toFixed(5)}`;
 
           //@ts-ignore: I'm sure it's gonna be fine, text contains a number
           if (col === 'Count') {
-            // if (parseInt(text) < countThreshold || parseInt(text) > peptidesCount - countThreshold) {
-            //   return true;
-            // }
             text += ` / ${peptidesCount}`;
           } else if (col === 'p-value') {
-            text = parseFloat(text) !== 0 ? text : '<0.01'; 
+            text = parseFloat(text) !== 0 ? text : '<0.01';
           }
-          
+
           tooltipMap[col] = text;
         }
       }
 
       ui.tooltip.show(ui.tableFromMap(tooltipMap), x, y);
-      // } else if (cell.isColHeader && !cell.isRowHeader) {
-      //   ui.tooltip.show((await df.plot.fromType('peptide-logo-viewer')).root, x, y);
     }
     if (
       !cell.isColHeader &&
@@ -339,62 +342,8 @@ export async function describe(
     return true;
   });
 
-  // Select columns in source table that correspond to the currently clicked cell
-  grid.table.onCurrentCellChanged.subscribe((_: any) => {
-    if (grid.table.currentCell.value && grid.table.currentCol.name !== aminoAcidResidue) {
-      const currentAAR: string = grid.table.get(aminoAcidResidue, grid.table.currentRowIdx);
-      const currentPosition = grid.table.currentCol.name;
-
-      const query = `aminoAcidResidue = ${currentAAR} and position = ${currentPosition}`;
-      // const text = statsDf.groupBy(['Count']).where(query).aggregate().get('Count', 0);
-      // if (text < countThreshold || text > peptidesCount - countThreshold) {
-      //   return;
-      // }
-
-      const splitColName = '~splitCol';
-      const otherLabel = 'Other';
-      const aarLabel = `${currentAAR === '-' ? 'Empty' : currentAAR} - ${currentPosition}`;
-
-      const bitset = filterMode ? df.filter : df.selection;
-
-      if (!df.col(splitColName)) {
-        df.columns.addNew(splitColName, 'string');
-      }
-
-      let isChosen: boolean;
-      for (let i = 0; i < df.rowCount; i++) {
-        isChosen = df.get(currentPosition, i) === currentAAR;
-        bitset.set(i, isChosen);
-        df.getCol(splitColName).set(i, isChosen ? aarLabel : otherLabel);
-      }
-
-      // bitset.init((i) => df.get(currentPosition, i) === currentAAR);
-
-      // const splitArray: string[] = [];
-      // for (let i = 0; i < bitset.length; i++) {
-      //   splitArray.push(bitset.get(i) ? aarLabel : otherLabel);
-      // }
-
-      // //FIXME: it resets filter; don't replace, init instead
-      // const splitCol = DG.Column.fromStrings(splitColName, splitArray);
-      // if (!df.col(splitColName)) {
-      //   df.columns.add(splitCol);
-      // } else {
-      //   df.columns.replace(splitColName, splitCol);
-      // }
-
-      // df.getCol(splitColName).setCategoryOrder([otherLabel, aarLabel]);
-      const colorMap: {[index: string]: string | number} = {};
-      colorMap[otherLabel] = DG.Color.blue;
-      colorMap[aarLabel] = DG.Color.orange;
-      // colorMap[currentAAR] = cp.getColor(currentAAR);
-      df.getCol(splitColName).colors.setCategorical(colorMap);
-    }
-  });
-
   for (const col of matrixDf.columns.names()) {
-    console.log(grid.props['rowHeight']);
-    grid.col(col)!.width = grid.props['rowHeight']; 
+    grid.col(col)!.width = grid.props.rowHeight; 
   }
 
   return [grid, statsDf];
