@@ -18,7 +18,7 @@ export class MultivariateAnalysisTutorial extends Tutorial {
   helpUrl: string = 'https://datagrok.ai/help/explore/multivariate-analysis/pls';
 
   protected async _run() {
-    this.header.textContent = 'Multivariate Analysis';
+    this.header.textContent = this.name;
 
     this.describe('<p>The multivariate uses a statistical method that resembles principal ' +
       'components regression. Instead of finding hyperplanes of maximum variance ' +

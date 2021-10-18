@@ -18,14 +18,8 @@ export class PredictiveModelingTutorial extends Tutorial {
 
   helpUrl: string = 'https://datagrok.ai/help/learn/predictive-modeling';
 
-  private async buttonClickAction(root: HTMLElement, instructions: string, caption: string, description: string = '') {
-    const btn = $(root).find('button.ui-btn').filter((idx, btn) => btn.textContent === caption)[0];
-    if (btn == null) return;
-    const source = fromEvent(btn, 'click');
-    await this.action(instructions, source, btn, description);
-  };
-
   protected async _run() {
+    this.header.textContent = this.name;
     this.describe('Predictive modeling is a statistical technique used to predict outcomes ' +
       'based on historical data. In the next steps, we will train a few models, look at their ' +
       'performance, learn how to apply a model to a dataset and share it with others, and ' +
