@@ -25,14 +25,11 @@
 
 package grok_connect.utils;
 import java.sql.*;
-import java.util.Collections;
-import java.util.Iterator;
-import java.util.ServiceLoader;
+import java.util.*;
 import java.security.AccessController;
 import java.security.PrivilegedAction;
-import java.util.concurrent.CopyOnWriteArrayList;
+
 import sun.reflect.CallerSensitive;
-import sun.reflect.Reflection;
 
 
 /**
@@ -340,6 +337,8 @@ public class CustomDriverManager {
         }
     }
 
+    static ConnectionPool connectionPool = new ConnectionPool();
+
     //  Worker method called by the public getConnection() methods.
     public static Connection getConnection(
             String url, java.util.Properties info, String driverClassName) throws SQLException {
@@ -361,6 +360,10 @@ public class CustomDriverManager {
             throw new SQLException("The url cannot be null", "08001");
         }
 
+        Connection conn = connectionPool.getConnection(url, info, driverClassName);
+        if (conn != null)
+            return conn;
+
         println("DriverManager.getConnection(\"" + url + "\")");
 
         // Walk through the loaded registeredDrivers attempting to make a connection.
@@ -377,6 +380,7 @@ public class CustomDriverManager {
                     if (con != null) {
                         // Success!
                         println("getConnection returning " + aDriver.getClass().getName());
+                        connectionPool.putConnection(con, url, info, driverClassName);
                         return (con);
                     }
                 } catch (SQLException ex) {
