@@ -19,7 +19,7 @@ export class FiltersTutorial extends Tutorial {
   helpUrl: string = 'https://datagrok.ai/help/visualize/viewers/filters';
   
   protected async _run() {
-    this.header.textContent = 'Filters';
+    this.header.textContent = this.name;
     this.describe('Dynamic filtering is an important concept in exploratory data analysis, and ' +
       'our platform makes it as powerful and easy to use as possible. Let\'s start with opening ' +
       'a couple of regular viewers, so that effects of filtering would be immediately visible.');
