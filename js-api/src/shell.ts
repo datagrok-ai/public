@@ -1,5 +1,5 @@
 import { DataFrame } from "./dataframe";
-import { TableView, View, ViewBase } from "./view";
+import { TableView, View, ViewBase } from "./views/view";
 import { Project, User } from "./entities";
 import { toDart, toJs } from "./wrappers";
 import { Menu, TabControl } from "./widgets";

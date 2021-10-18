@@ -19,7 +19,7 @@ export function splitAlignedPeptides(peptideColumn: DG.Column) {
       splitPeptidesArray[index].push(value === '' ? '-' : value);
     });
   }
-  
+
   //create column names list
   let columnNames = ['N'];
   columnNames = columnNames.concat(splitPeptidesArray.map((_, index) => `${index + 1 < 10 ? 0 : ''}${index +1 }`));

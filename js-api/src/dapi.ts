@@ -20,7 +20,7 @@ import {
   Property,
   FileInfo, HistoryEntry
 } from "./entities";
-import {ViewLayout} from "./view";
+import {ViewLayout} from "./views/view";
 import {toDart, toJs} from "./wrappers";
 import {_propsToDart} from "./utils";
 
@@ -216,11 +216,11 @@ export class Dapi {
  * Can be extended with specific methods. (i.e. {@link UsersDataSource})
  */
 export class HttpDataSource<T> {
-  s: any;
+  d: any;
 
   /** @constructs HttpDataSource */
   constructor(s: any) {
-    this.s = s;
+    this.d = s;
   }
 
   /** Returns all entities that satisfy the filtering criteria (see {@link filter}).
@@ -235,13 +235,13 @@ export class HttpDataSource<T> {
       this.filter(options.filter);
     if (options.order !== undefined)
       this.order(options.order);
-    return new Promise((resolve, reject) => api.grok_DataSource_List(this.s, (q: any) => resolve(q.map(toJs)), (e: any) => reject(e)));
+    return new Promise((resolve, reject) => api.grok_DataSource_List(this.d, (q: any) => resolve(q.map(toJs)), (e: any) => reject(e)));
   }
 
   /** Returns fist entity that satisfies the filtering criteria (see {@link filter}).
    *  @returns Promise<object>  */
   first(): Promise<T> {
-    return new Promise((resolve, reject) => api.grok_DataSource_First(this.s, (q: any) => resolve(toJs(q)), (e: any) => reject(e)));
+    return new Promise((resolve, reject) => api.grok_DataSource_First(this.d, (q: any) => resolve(toJs(q)), (e: any) => reject(e)));
   }
 
   /** Returns an entity with the specified id.
@@ -250,27 +250,27 @@ export class HttpDataSource<T> {
    *  @param {string} id - GUID of the corresponding object
    *  @returns {Promise<object>} - entity. */
   find(id: string): Promise<T> {
-    return new Promise((resolve, reject) => api.grok_DataSource_Find(this.s, id, (q: any) => resolve(toJs(q)), (e: any) => reject(e)));
+    return new Promise((resolve, reject) => api.grok_DataSource_Find(this.d, id, (q: any) => resolve(toJs(q)), (e: any) => reject(e)));
   }
 
   /** Saves an entity. */
   save(e: Entity): Promise<T> {
-    return new Promise((resolve, reject) => api.grok_DataSource_Save(this.s, e.d, (q: any) => resolve(toJs(q)), (e: any) => reject(e)));
+    return new Promise((resolve, reject) => api.grok_DataSource_Save(this.d, e.d, (q: any) => resolve(toJs(q)), (e: any) => reject(e)));
   }
 
   /** Deletes an entity. */
   delete(e: Entity): Promise<void> {
-    return new Promise((resolve, reject) => api.grok_DataSource_Delete(this.s, e.d, () => resolve(), (e: any) => reject(e)));
+    return new Promise((resolve, reject) => api.grok_DataSource_Delete(this.d, e.d, () => resolve(), (e: any) => reject(e)));
   }
 
   by(i: number): HttpDataSource<T> {
-    this.s = api.grok_DataSource_By(this.s, i);
+    this.d = api.grok_DataSource_By(this.d, i);
     return this;
   }
 
   /** Restricts results to the specified page number. See also {@link nextPage}. */
   page(i: number): HttpDataSource<T> {
-    this.s = api.grok_DataSource_Page(this.s, i);
+    this.d = api.grok_DataSource_Page(this.d, i);
     return this;
   }
 
@@ -279,7 +279,7 @@ export class HttpDataSource<T> {
    *  See examples: {@link https://public.datagrok.ai/js/samples/dapi/projects-list}
    *  @returns {HttpDataSource} */
   nextPage(): HttpDataSource<T> {
-    this.s = api.grok_DataSource_NextPage(this.s);
+    this.d = api.grok_DataSource_NextPage(this.d);
     return this;
   }
 
@@ -290,7 +290,7 @@ export class HttpDataSource<T> {
    *  @param {string} w
    *  @returns {HttpDataSource} */
   filter(w: string): HttpDataSource<T> {
-    this.s = api.grok_DataSource_WhereSmart(this.s, w);
+    this.d = api.grok_DataSource_WhereSmart(this.d, w);
     return this;
   }
 
@@ -299,7 +299,7 @@ export class HttpDataSource<T> {
    * @param {boolean} desc
    * @returns {HttpDataSource} */
   order(fieldName: string, desc: boolean = false): HttpDataSource<T> {
-    this.s = api.grok_DataSource_Order(this.s, fieldName, desc);
+    this.d = api.grok_DataSource_Order(this.d, fieldName, desc);
     return this;
   }
 
@@ -307,7 +307,7 @@ export class HttpDataSource<T> {
    * @param {string} include
    * @returns {HttpDataSource} */
   include(include: string): HttpDataSource<T> {
-    this.s = api.grok_DataSource_Include(this.s, _propsToDart(include));
+    this.d = api.grok_DataSource_Include(this.d, _propsToDart(include));
     return this;
   }
 }
@@ -328,29 +328,29 @@ export class UsersDataSource extends HttpDataSource<User> {
   /** Returns current user
    * @returns {Promise<User>} */
   current(): Promise<User> {
-    return toJs(api.grok_UsersDataSource_Current(this.s));
-    //return new Promise((resolve, reject) => api.grok_UsersDataSource_Current(this.s, (q: any) => resolve(s(q)), (e: any) => reject(e)));
+    return toJs(api.grok_UsersDataSource_Current(this.d));
+    //return new Promise((resolve, reject) => api.grok_UsersDataSource_Current(this.d, (q: any) => resolve(s(q)), (e: any) => reject(e)));
   }
 
   /** Returns current session
    * @returns {Promise<UserSession>} */
   currentSession(): Promise<UserSession> {
-    return new Promise((resolve, reject) => api.grok_UsersDataSource_CurrentSession(this.s, (q: any) => resolve(toJs(q)), (e: any) => reject(e)));
+    return new Promise((resolve, reject) => api.grok_UsersDataSource_CurrentSession(this.d, (q: any) => resolve(toJs(q)), (e: any) => reject(e)));
   }
 }
 
 export class AdminDataSource {
-  s: any;
+  d: any;
   /** @constructs AdminDataSource*/
-  constructor(s: any) {
-    this.s = s;
+  constructor(d: any) {
+    this.d = d;
   }
 
   /** Returns information about the services.
    * Sample: {@link https://public.datagrok.ai/js/samples/dapi/admin}
    *  @returns {Promise<Map>} */
   getServiceInfos(): Promise<object[]> {
-    return new Promise((resolve, reject) => api.grok_Dapi_Admin_GetServiceInfos(this.s, (q: any) => resolve(toJs(q)), (e: any) => reject(e)));
+    return new Promise((resolve, reject) => api.grok_Dapi_Admin_GetServiceInfos(this.d, (q: any) => resolve(toJs(q)), (e: any) => reject(e)));
   }
 }
 
@@ -445,7 +445,7 @@ export class GroupsDataSource extends HttpDataSource<Group> {
    *  @param {Group} e
    *  @returns {Promise<Group>} - Group. */
   saveRelations(e: Group): Promise<Group> {
-    return new Promise((resolve, reject) => api.grok_GroupsDataSource_Save(this.s, e.d, (q: any) => resolve(toJs(q)), (e: any) => reject(e)));
+    return new Promise((resolve, reject) => api.grok_GroupsDataSource_Save(this.d, e.d, (q: any) => resolve(toJs(q)), (e: any) => reject(e)));
   }
 
 }
@@ -466,21 +466,21 @@ export class EntitiesDataSource extends HttpDataSource<Entity> {
    * @param {Map[]} props
    * @returns {Promise} */
   saveProperties(props: Map<Property, any>): Promise<void> {
-    return new Promise((resolve, reject) => api.grok_EntitiesDataSource_SaveProperties(this.s, props, (_: any) => resolve(), (e: any) => reject(e)));
+    return new Promise((resolve, reject) => api.grok_EntitiesDataSource_SaveProperties(this.d, props, (_: any) => resolve(), (e: any) => reject(e)));
   }
 
   /** Returns entity properties
    * @param {Entity} entity
    * @returns {Promise<Map>} props */
   getProperties(entity: Entity): Promise<Map<Property, any>> {
-    return new Promise((resolve, reject) => api.grok_EntitiesDataSource_GetProperties(this.s, entity.d, (p: Map<Property, any> | PromiseLike<Map<Property, any>>) => resolve(p), (e: any) => reject(e)));
+    return new Promise((resolve, reject) => api.grok_EntitiesDataSource_GetProperties(this.d, entity.d, (p: Map<Property, any> | PromiseLike<Map<Property, any>>) => resolve(p), (e: any) => reject(e)));
   }
 
   /** Deletes entity properties
    * @param {Map[]} props
    * @returns {Promise} */
   deleteProperties(props: Map<Property, any>): Promise<void> {
-    return new Promise((resolve, reject) => api.grok_EntitiesDataSource_DeleteProperties(this.s, props, (_: any) => resolve(), (e: any) => reject(e)));
+    return new Promise((resolve, reject) => api.grok_EntitiesDataSource_DeleteProperties(this.d, props, (_: any) => resolve(), (e: any) => reject(e)));
   }
 }
 
@@ -500,7 +500,7 @@ export class CredentialsDataSource extends HttpDataSource<Credentials> {
    * @param {Entity} e
    * @returns {Promise<Credentials>} */
   forEntity(e: Entity): Promise<Credentials> {
-    return new Promise((resolve, reject) => api.grok_CredentialsDataSource_ForEntity(this.s, e.d, (c: any) => resolve(toJs(c)), (e: any) => reject(e)));
+    return new Promise((resolve, reject) => api.grok_CredentialsDataSource_ForEntity(this.d, e.d, (c: any) => resolve(toJs(c)), (e: any) => reject(e)));
   }
 }
 
@@ -519,7 +519,7 @@ export class LayoutsDataSource extends HttpDataSource<ViewLayout> {
    * @param {DataFrame} t
    * @returns {Promise<ViewLayout[]>} */
   getApplicable(t: DataFrame): Promise<ViewLayout[]> {
-    return new Promise((resolve, reject) => api.grok_LayoutsDataSource_Applicable(this.s, t.d, (q: any[]) => resolve(q.map((o) => toJs(o))), (e: any) => reject(e)));
+    return new Promise((resolve, reject) => api.grok_LayoutsDataSource_Applicable(this.d, t.d, (q: any[]) => resolve(q.map((o) => toJs(o))), (e: any) => reject(e)));
   }
 }
 

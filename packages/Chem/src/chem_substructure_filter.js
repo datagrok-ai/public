@@ -15,24 +15,25 @@ M  END
 `;
     this.molfile = '';
     this.root = ui.divV([]);
-    this.root.appendChild(grok.chem.sketcher((_, molfile) => {
-        this.molfile = molfile;
-        this.dataFrame.rows.requestFilter();
-      }));
+    this._sketcher = grok.chem.sketcher((_, molfile) => {
+      this.molfile = molfile;
+      this.dataFrame.rows.requestFilter();
+    });
+    this.root.appendChild(this._sketcher);
   }
 
   attach(dFrame) {
     this.dataFrame = dFrame;
     this.column = this.dataFrame.columns.bySemType(DG.SEMTYPE.MOLECULE);
-    this.dataFrame.onRowsFiltering.subscribe((_) => this.applyFilter());
+    this.subs.push(this.dataFrame.onRowsFiltering.subscribe((_) => { this.applyFilter(); } ));
   }
 
   reset() {
-    this.dataFrame.filter.setAll(true, false);
-    if (this.column?.tags['chem-scaffold-filter']) {
-      delete this.column.tags['chem-scaffold-filter'];
-    }
-    this.dataFrame.filter.fireChanged();
+    // this.dataFrame.filter.setAll(true, false);
+    if (this.column?.temp['chem-scaffold-filter'])
+      delete this.column.temp['chem-scaffold-filter'];
+    // this._sketcher?.setSmiles('');
+    // this.dataFrame.filter.fireChanged();
   }
 
   applyFilter() {
@@ -43,16 +44,20 @@ M  END
     grok.functions.call('Chem:searchSubstructure', {
       'molStringsColumn' : this.column,
       'molString': this.molfile,
-      'substructLibrary': false,
+      'substructLibrary': true,
       'molStringSmarts': ''
     })
     .then((bitset_col) => {
-      this.dataFrame.filter.copyFrom(bitset_col.get(0));
-      this.column.setTag('chem-scaffold-filter', this.molfile);
+      this.dataFrame.filter.and(bitset_col.get(0));
+      this.column.temp['chem-scaffold-filter'] = this.molfile;
       this.dataFrame.filter.fireChanged();
     }).catch((e) => {
       console.warn(e);
       this.reset();
     })
+  }
+  
+  detach() {
+    this.subs.forEach((s) => s.unsubscribe());
   }
 }

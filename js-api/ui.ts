@@ -5,7 +5,7 @@
 
 import {ElementOptions, IndexPredicate} from './src/const';
 import {Viewer} from './src/viewer';
-import {VirtualView} from './src/view';
+import {VirtualView} from './src/views/view';
 import {Accordion, Dialog, InputBase, Menu, TabControl, TreeViewNode, Widget, RangeSlider} from './src/widgets';
 import {toDart, toJs} from './src/wrappers';
 import {Functions} from './src/functions';
@@ -864,7 +864,7 @@ export class ObjectHandler {
   }
 
   /** Renders tooltip for the item. */
-  renderTooltip(x: any, context: any = null): HTMLDivElement {
+  renderTooltip(x: any, context: any = null): HTMLElement {
     return divText(this.getCaption(x));
   }
 
@@ -874,12 +874,12 @@ export class ObjectHandler {
   }
 
   /** Renders properties list for the item. */
-  renderProperties(x: any, context: any = null): HTMLDivElement {
+  renderProperties(x: any, context: any = null): HTMLElement {
     return divText(this.getCaption(x));
   }
 
   /** Renders view for the item. */
-  renderView(x: any, context: any = null): HTMLDivElement {
+  renderView(x: any, context: any = null): HTMLElement {
     return this.renderProperties(x);
   }
 
@@ -1068,6 +1068,14 @@ export function buttonsInput(children: HTMLButtonElement[] = []): HTMLDivElement
   return d;
 }
 
+export function contextActions(x: any): HTMLElement {
+  return api.grok_UI_Context_Actions(x);
+}
+
+export function star(id: string): HTMLElement {
+  return api.grok_UI_Star(id);
+}
+
 function _icon(type: string, handler: Function, tooltipMsg: string | null = null): HTMLElement {
   let e = $(`<i class="grok-icon grok-font-icon-${type}"></i>`)[0] as HTMLElement;
   e?.addEventListener('click', () => handler());
@@ -1081,7 +1089,6 @@ function _iconFA(type: string, handler: Function, tooltipMsg: string | null = nu
   tooltip.bind(e, tooltipMsg);
   return e;
 }
-
 
 export let icons = {
   close: (handler: Function, tooltipMsg: string | null = null) => _icon('close', handler, tooltipMsg),

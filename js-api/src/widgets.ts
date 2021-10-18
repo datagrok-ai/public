@@ -305,8 +305,16 @@ export class Accordion extends DartWidget {
     return toJs(api.grok_TabControlBase_GetPane(this.d, name));
   }
 
+  addTitle(element: HTMLElement): void {
+    return api.grok_Accordion_AddTitle(this.d, element);
+  }
+
   addPane(name: string, getContent: Function, expanded: boolean = false, before: AccordionPane | null = null): AccordionPane {
-    return toJs(api.grok_Accordion_AddPane(this.d, name, getContent, expanded, before !== null ? before.d : null));
+    return toJs(api.grok_Accordion_AddPane(this.d, name, getContent, expanded, before !== null ? before.d : null, null));
+  }
+
+  addCountPane(name: string, getContent: Function, getCount: Function, expanded: boolean = false, before: AccordionPane | null = null): AccordionPane {
+    return toJs(api.grok_Accordion_AddPane(this.d, name, getContent, expanded, before !== null ? before.d : null, getCount));
   }
 
   removePane(pane: AccordionPane) {

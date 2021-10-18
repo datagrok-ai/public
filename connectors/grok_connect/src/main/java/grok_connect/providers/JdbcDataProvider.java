@@ -250,6 +250,8 @@ public abstract class JdbcDataProvider extends DataProvider {
     public DataFrame execute(FuncCall queryRun)
             throws ClassNotFoundException, SQLException, ParseException, IOException, QueryCancelledByUser {
 
+        DateTime connectionPreparationStart = DateTime.now();
+
         int count = (queryRun.options != null && queryRun.options.containsKey(DataProvider.QUERY_COUNT))
                 ? ((Double)queryRun.options.get(DataProvider.QUERY_COUNT)).intValue() : 0;
         int memoryLimit = (queryRun.options != null && queryRun.options.containsKey(DataProvider.QUERY_MEMORY_LIMIT_MB))
@@ -261,7 +263,7 @@ public abstract class JdbcDataProvider extends DataProvider {
         DataQuery dataQuery = queryRun.func;
         String query = dataQuery.query;
         Connection connection = getConnection(dataQuery.connection);
-        String commentStart = providerManager.getByName(dataQuery.connection.dataSource).descriptor.commentStart;
+        String commentStart = descriptor.commentStart;
 
         ResultSet resultSet = null;
 
@@ -473,7 +475,8 @@ public abstract class JdbcDataProvider extends DataProvider {
         }
         DateTime finish = DateTime.now();
 
-        String logString = String.format("Execution time by steps: query execution: %s s, column assignment: %s s, dataframe filling: %s s \n",
+        String logString = String.format("Execution time by steps: connection preparation: %s s, query execution: %s s, column assignment: %s s, dataframe filling: %s s \n",
+                (queryExecutionStart.getMillis() - connectionPreparationStart.getMillis())/ 1000.0,
                 (columnAssignmentStart.getMillis() - queryExecutionStart.getMillis())/ 1000.0,
                 (fillingDataframeStart.getMillis() - columnAssignmentStart.getMillis())/ 1000.0,
                 (finish.getMillis() - fillingDataframeStart.getMillis())/ 1000.0);

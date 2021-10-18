@@ -109,7 +109,7 @@ parameter "Conn. string". If filled, it will be used for connection, and all oth
 
 ## Videos
 
-<iframe width="560" height="315" src="https://www.youtube.com/embed/dKrCk38A1m8?start=1048" frameborder="0" allow="accelerometer; autoplay; encrypted-media; gyroscope; picture-in-picture" allowfullscreen></iframe>
+[![Data connection](../uploads/youtube/data_access.png "Open on Youtube")](https://www.youtube.com/watch?v=dKrCk38A1m8&t=1048s)
 
 See also:
 
