@@ -21,6 +21,7 @@ export class EmbeddedViewersTutorial extends Tutorial {
   helpUrl: string = 'https://datagrok.ai/help/visualize/viewers';
 
   protected async _run(): Promise<void> {
+    this.header.textContent = this.name;
     this.describe('Viewers can be placed in tooltips or be part of other viewers. ' +
       'In this tutorial, we will learn how to change the standard tooltip template ' +
       'and work with a Trellis plot that incorporates other viewers.');
