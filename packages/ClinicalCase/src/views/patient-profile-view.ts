@@ -223,7 +223,7 @@ export class PatientProfileView extends DG.ViewBase {
     })
     addColumnWithDrugPlusDosage(this.tables[ 'ex' ], 'EXTRT', 'EXDOSE', 'EXDOSU', 'EXTRT_WITH_DOSE');
     this.options_lb_ae_ex_cm['xAxisMinMax'] = this.extractMinAndMaxValuesForXAxis();
-    labDynamicComparedToBaseline(this.tables[ 'lb' ],  this.options_lb_ae_ex_cm['xAxisMinMax']['minX'], 'VISITDY', 'LAB_DYNAMIC_BL');
+    labDynamicComparedToBaseline(this.tables[ 'lb' ],  this.options_lb_ae_ex_cm['xAxisMinMax']['minX'], 'VISITDY', 'LAB_DYNAMIC_BL', false);
     labDynamicComparedToMinMax(this.tables[ 'lb' ], 'LAB_DYNAMIC_MIN_MAX');
   }
 

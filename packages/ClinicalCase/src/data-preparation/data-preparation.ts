@@ -228,7 +228,7 @@ export function createAERiskAssessmentDataframe(ae: DG.DataFrame, ex: DG.DataFra
 }
 
 
-export function labDynamicComparedToBaseline(dataframe, baselineVisitNum: string, blVisitColumn: string, newColName: string) {
+export function labDynamicComparedToBaseline(dataframe, baselineVisitNum: string, blVisitColumn: string, newColName: string, renameNewCol: boolean) {
   const dfName = dataframe.name;
   let grouped = dataframe.groupBy([ 'USUBJID', 'LBTEST', 'LBSTRESN' ])
     .where(`${blVisitColumn} = ${baselineVisitNum}`)
@@ -245,6 +245,10 @@ export function labDynamicComparedToBaseline(dataframe, baselineVisitNum: string
         return (dataframe.get('LBSTRESN', i) - dataframe.get('BL_LBSTRESN', i)) / dataframe.get('BL_LBSTRESN', i);
       }
     });
+    if(renameNewCol){
+      dataframe.columns.remove('LBSTRESN')
+      dataframe.getCol(newColName).name = 'LBSTRESN';
+    }
   dataframe.name = dfName;
 }
 

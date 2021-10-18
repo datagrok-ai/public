@@ -13,7 +13,6 @@ export class SurvivalAnalysisView extends DG.ViewBase {
   survivalPlotDiv = ui.box();
   covariatesPlotDiv = ui.box();
   survivalGridDivCreate = ui.box();
-  survivalGridDivFilter = ui.box();
   survivalFilterDiv = ui.box(ui.divText('Create dataset',{style:{color:'var(--grey-3)',marginTop:'30px', alignItems:'center'}}));
   strataChoicesDiv = ui.div();
   plotCovariatesChoicesDiv = ui.div();
@@ -195,7 +194,6 @@ export class SurvivalAnalysisView extends DG.ViewBase {
      updateDivInnerHTML(this.strataChoicesDiv, this.strataChoices.root);
      updateDivInnerHTML(this.plotCovariatesChoicesDiv, this.plotCovariatesChoices.root);
      updateDivInnerHTML(this.survivalGridDivCreate, this.survivalDataframe.plot.grid().root);
-     updateDivInnerHTML(this.survivalGridDivFilter, this.survivalDataframe.plot.grid().root);
      updateDivInnerHTML(this.survivalFilterDiv, this.getFilters());
      this.updateSurvivalPlot();
   }
