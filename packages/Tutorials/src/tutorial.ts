@@ -343,13 +343,32 @@ export abstract class Tutorial extends DG.Widget {
   protected async textInpAction(root: HTMLElement, instructions: string,
     caption: string, value: string, description: string = ''): Promise<void> {
     const inputRoot = $(root)
-      .find('div.ui-input-text.ui-input-root')
+      .find('div.ui-input-root')
       .filter((idx, inp) => $(inp).find('label.ui-label.ui-input-label')[0]?.textContent === caption)[0];
     if (inputRoot == null) return;
     const input = $(inputRoot).find('input.ui-input-editor')[0] as HTMLInputElement;
     const source = fromEvent(input, 'input').pipe(map((_) => input.value), filter((val) => val === value));
     await this.action(instructions, source, inputRoot, description);
   }
+
+  /** A helper method to access choice inputs in a view. */
+  protected async choiceInputAction(root: HTMLElement, instructions: string,
+    caption: string, value: string, description: string = '') {
+    let inputRoot = null;
+    let select: HTMLSelectElement;
+    $(root).find('.ui-input-root .ui-input-label span').each((idx, el) => {
+      if (el.innerText === caption) {
+        inputRoot = el.parentElement?.parentElement;
+        select = $(inputRoot).find('select')[0] as HTMLSelectElement;
+      }
+    });
+    if (select! == null) return;
+    const source = fromEvent(select, 'change');
+    await this.action(instructions, select.value === value ?
+      new Promise<void>((resolve) => resolve()) :
+      source.pipe(map((_) => select.value), filter((v: string) => v === value)),
+      inputRoot, description);
+  };
 
   /** Prompts the user to choose a particular column in a column input with the specified caption. */
   protected async columnInpAction(root: HTMLElement, instructions: string, caption: string, columnName: string, description: string = '') {
@@ -374,6 +393,13 @@ export abstract class Tutorial extends DG.Widget {
       map((_) => $(columnsInput).find('div.ui-input-editor > div.ui-input-column-names')[0]?.textContent),
       filter((value) => value === columnNames));
     await this.action(instructions, source, columnsInput, description);
+  };
+
+  protected async buttonClickAction(root: HTMLElement, instructions: string, caption: string, description: string = '') {
+    const btn = $(root).find('button.ui-btn').filter((idx, btn) => btn.textContent === caption)[0];
+    if (btn == null) return;
+    const source = fromEvent(btn, 'click');
+    await this.action(instructions, source, btn, description);
   };
 
   /** Prompts the user to open a view of the specified type, waits for it to open and returns it. */

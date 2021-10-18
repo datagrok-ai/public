@@ -49,6 +49,9 @@ export class Entity {
   /** Time when entity was updated **/
   get updatedOn(): string { return api.grok_Entity_Get_UpdatedOn(this.d); }
 
+  /** Who created entity **/
+  get author(): User { return api.grok_Entity_Get_Author(this.d); }
+
   /** Entity properties */
   getProperties(): Promise<Map<string, any>> {
     return new Promise((resolve, reject) => api.grok_EntitiesDataSource_GetProperties(grok.dapi.entities.s, this.d, (p: any) => resolve(p), (e: any) => reject(e)));
@@ -62,6 +65,17 @@ export class Entity {
   /** Returns a string representing the object */
   toString(): string { return api.grok_Object_ToString(this.d); }
 
+  hasTag(tag: string): boolean {
+    return api.grok_Entity_Has_Tag(this.d, tag);
+  }
+
+  tag(tag: string): boolean {
+    return api.grok_Entity_Tag(this.d, tag);
+  }
+
+  unTag(tag: string): boolean {
+    return api.grok_Entity_UnTag(this.d, tag);
+  }
 }
 
 /**

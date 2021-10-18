@@ -17,7 +17,7 @@ export class ScatterPlotTutorial extends Tutorial {
   helpUrl: string = 'https://datagrok.ai/help/visualize/viewers/scatter-plot';
 
   protected async _run() {
-    this.header.textContent = 'Scatter Plot';
+    this.header.textContent = this.name;
 
     this.describe('A scatter plot is a mathematical diagram that uses Cartesian coordinates ' +
       'to display values for typically two variables for a set of data. If the points are ' +

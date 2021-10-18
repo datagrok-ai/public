@@ -4,8 +4,8 @@ function getMolColumnPropertyPanel(col) {
 
   const NONE = 'None';
   let scaffoldColName = null;
-  if (col?.tags && col.tags['scaffold-col']) {
-    scaffoldColName = col.tags['scaffold-col'];
+  if (col?.temp && col.temp['scaffold-col']) {
+    scaffoldColName = col.temp['scaffold-col'];
   } else {
     scaffoldColName = NONE;
   }
@@ -20,14 +20,14 @@ function getMolColumnPropertyPanel(col) {
     [NONE].concat([...columnsSet].sort()));
   scaffoldColumnChoice.onChanged(_ => {
     const scaffoldColName = scaffoldColumnChoice.stringValue;
-    col.tags['scaffold-col'] = scaffoldColName === NONE ? null : scaffoldColName;
+    col.temp['scaffold-col'] = scaffoldColName === NONE ? null : scaffoldColName;
   });
   let highlightScaffoldsCheckbox = ui.boolInput(
-    'Highlight from column', col?.tags && col.tags['highlight-scaffold'] === 'true',
-    v => { col.tags['highlight-scaffold'] = v.toString(); });
+    'Highlight from column', col?.temp && col.temp['highlight-scaffold'] === 'true',
+    v => { col.temp['highlight-scaffold'] = v.toString(); });
   let regenerateCoordsCheckbox = ui.boolInput(
-    'Regenerate coords', col?.tags && col.tags['regenerate-coords'] === 'true',
-    v => { col.tags['regenerate-coords'] = v.toString(); });
+    'Regenerate coords', col?.temp && col.temp['regenerate-coords'] === 'true',
+    v => { col.temp['regenerate-coords'] = v.toString(); });
     
     
     const matchMoleculeFilteringToDropdown = (v) => {
@@ -38,15 +38,15 @@ function getMolColumnPropertyPanel(col) {
   
   const matchDropdownToMoleculeFiltering = (v) => {
     if (v === 'Categorical')
-      col.tags['.molecule-filtering'] = 'categorical';
+      col.temp['.molecule-filtering'] = 'categorical';
     else if (v === 'Sketching')
-      col.tags['.molecule-filtering'] = 'sketching';
+      col.temp['.molecule-filtering'] = 'sketching';
     else
-      col.tags.delete('.molecule-filtering');
+      col.temp.delete('.molecule-filtering');
   };
   
   let moleculeFilteringChoice = ui.choiceInput('Filter Type',
-    matchMoleculeFilteringToDropdown(col.tags['.molecule-filtering']),
+    matchMoleculeFilteringToDropdown(col.temp['.molecule-filtering']),
     ['Dynamic', 'Categorical', 'Sketching']);
   moleculeFilteringChoice.onChanged(_ => {
     const v = moleculeFilteringChoice.stringValue;
@@ -57,7 +57,7 @@ function getMolColumnPropertyPanel(col) {
   subscr = col.dataFrame.onMetadataChanged.subscribe((a) => {
     // Handling scaffold column
     let scaffoldColumnChoiceValue = scaffoldColumnChoice.stringValue;
-    const scaffoldColumnTag = col.tags && col.tags['scaffold-col'] ? col.tags['scaffold-col'] : NONE;
+    const scaffoldColumnTag = col.temp && col.temp['scaffold-col'] ? col.temp['scaffold-col'] : NONE;
     if (scaffoldColumnChoiceValue !== scaffoldColumnTag) {
       if (scaffoldColumnTag === NONE) {
         scaffoldColumnChoice.root.children[1].value = NONE;
@@ -69,19 +69,19 @@ function getMolColumnPropertyPanel(col) {
     }
     // handling highlight scaffolds selection
     const highlightScaffoldsCheckboxValue = highlightScaffoldsCheckbox.value;
-    const highlightScaffoldsTagPresent = col.tags && col.tags['highlight-scaffold'] === 'true';
+    const highlightScaffoldsTagPresent = col.temp && col.temp['highlight-scaffold'] === 'true';
     if (highlightScaffoldsCheckboxValue != highlightScaffoldsTagPresent) {
       highlightScaffoldsCheckbox.root.children[1].checked = highlightScaffoldsTagPresent;
     }
     // handling regenerate coords selection
     const regenerateCoordsCheckboxValue = regenerateCoordsCheckbox.value;
-    const regenerateCoordsTagPresent = col.tags && col.tags['regenerate-coords'] === 'true';
+    const regenerateCoordsTagPresent = col.temp && col.temp['regenerate-coords'] === 'true';
     if (regenerateCoordsCheckboxValue != regenerateCoordsTagPresent) {
       regenerateCoordsCheckbox.root.children[1].checked = regenerateCoordsTagPresent;
     }
     // handling molecule filtering choice value
     const moleculeFilteringChoiceValue = moleculeFilteringChoice.stringValue;
-    const moleculeFilteringTag = matchMoleculeFilteringToDropdown(col?.tags['.molecule-filtering']);
+    const moleculeFilteringTag = matchMoleculeFilteringToDropdown(col?.temp['.molecule-filtering']);
     if (moleculeFilteringChoiceValue != moleculeFilteringTag) { 
       moleculeFilteringChoice.root.children[1].value = moleculeFilteringTag;
     }

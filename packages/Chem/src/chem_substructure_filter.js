@@ -30,9 +30,8 @@ M  END
 
   reset() {
     // this.dataFrame.filter.setAll(true, false);
-    if (this.column?.tags['chem-scaffold-filter']) {
-      delete this.column.tags['chem-scaffold-filter'];
-    }
+    if (this.column?.temp['chem-scaffold-filter'])
+      delete this.column.temp['chem-scaffold-filter'];
     // this._sketcher?.setSmiles('');
     // this.dataFrame.filter.fireChanged();
   }
@@ -50,7 +49,7 @@ M  END
     })
     .then((bitset_col) => {
       this.dataFrame.filter.and(bitset_col.get(0));
-      this.column.setTag('chem-scaffold-filter', this.molfile);
+      this.column.temp['chem-scaffold-filter'] = this.molfile;
       this.dataFrame.filter.fireChanged();
     }).catch((e) => {
       console.warn(e);
