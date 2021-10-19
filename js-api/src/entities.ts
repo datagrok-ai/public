@@ -28,6 +28,8 @@ export class Entity {
   get id(): string { return api.grok_Entity_Get_Id(this.d); }
   set id(x: string) { api.grok_Entity_Set_Id(this.d, x); }
 
+  newId(): void { api.grok_Entity_New_Id(this.d);}
+
   /** Entity friendly name
    *  @type {string} */
   get friendlyName(): string { return api.grok_Entity_Get_FriendlyName(this.d); }
@@ -237,8 +239,12 @@ export class DataQuery extends Func {
     super(d);
   }
 
+  get adHoc(): boolean { return api.grok_Query_Get_AdHoc(this.d); }
+  set adHoc(a: boolean) { api.grok_Query_Set_AdHoc(this.d, a); }
+
   /** Query text */
   get query(): string { return api.grok_Query_Query(this.d); }
+  set query(q: string) { api.grok_Query_Set_Query(this.d, q); }
 }
 
 /** Represents a data job
