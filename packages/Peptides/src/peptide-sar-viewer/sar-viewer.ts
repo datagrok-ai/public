@@ -63,7 +63,10 @@ export class SARViewer extends DG.JsViewer {
     }
 
     if (property.name === 'activityScalingMethod' && typeof this.dataFrame !== 'undefined') {
-      const minActivity = DG.Stats.fromColumn(this.dataFrame.col(this.activityColumnColumnName)!, this._initialBitset).min;
+      const minActivity = DG.Stats.fromColumn(
+        this.dataFrame.col(this.activityColumnColumnName)!,
+        this._initialBitset,
+      ).min;
       if (minActivity && minActivity <= 0 && this.activityScalingMethod !== 'none') {
         grok.shell.warning(`Could not apply ${this.activityScalingMethod}: ` +
           `activity column ${this.activityColumnColumnName} contains zero or negative values, falling back to 'none'.`);
@@ -118,7 +121,10 @@ export class SARViewer extends DG.JsViewer {
       const originalDf: DG.DataFrame = accordion.context.dataFrame;
 
       if (originalDf.getTag('dataType') === 'peptides' && originalDf.col('~splitCol')) {
-        const currentAAR: string = this.viewerGrid?.table.get(this.aminoAcidResidue, this.viewerGrid?.table.currentRowIdx);
+        const currentAAR: string = this.viewerGrid?.table.get(
+          this.aminoAcidResidue,
+          this.viewerGrid?.table.currentRowIdx,
+        );
         const currentPosition = this.viewerGrid?.table.currentCol.name;
 
         const labelStr = `${currentAAR === '-' ? 'Empty' : currentAAR} - ${currentPosition}`;

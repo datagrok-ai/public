@@ -22,6 +22,7 @@ let api = <any>window;
 export class ViewBase {
   d: any;
   subs: Subscription[];
+  private _helpUrl: string | null = null;
   protected _root: HTMLDivElement;
   private _closing: boolean;
 
@@ -67,11 +68,11 @@ export class ViewBase {
 
   /** @returns {string|null} View help URL. */
   get helpUrl(): string | null {
-    return api.grok_View_Get_HelpUrl(this.d);
+    return this._helpUrl;
   }
 
   set helpUrl(url: string | null) {
-    api.grok_View_Set_HelpUrl(this.d, url);
+    this._helpUrl = url;
   }
 
   private _name: string;
@@ -281,6 +282,15 @@ export class View extends ViewBase {
 
   set description(s: string) {
     api.grok_View_Set_Description(this.d, s);
+  }
+
+  /** @returns {string|null} View help URL. */
+  get helpUrl(): string | null {
+    return api.grok_View_Get_HelpUrl(this.d);
+  }
+
+  set helpUrl(url: string | null) {
+    api.grok_View_Set_HelpUrl(this.d, url);
   }
 
   /** 
