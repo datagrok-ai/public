@@ -95,7 +95,7 @@ You will learn: how to write semantic type detectors, how to develop context-spe
 
 3. <a name="detectors"></a> Define a `detectNucleotides` semantic type detector function as part of the special
    `detectors.js` file. 
-    ```javascript
+   ```javascript
    class <yourFirstName>SequencePackageDetectors extends DG.Package {
 
      //tags: semTypeDetector
@@ -105,13 +105,20 @@ You will learn: how to write semantic type detectors, how to develop context-spe
          // your code goes here
      }
    }
-    ```   
-   It should check whether a column is a string column, and whether each string represents a nucleotide (hint: for best 
-   performance, don't iterate over all column values, instead iterate on `column.categories`). 
+   ```   
+   It should check whether a column is a string column, and whether each string represents a nucleotide. 
+   If condition is met, it should return `"dna_nucleotide"` string.
+
+   For best performance, don't iterate over all column values, instead iterate [on `column.categories`](https://datagrok.ai/help/develop/dataframe#work-with-categories). Full Datagrok Column type API could be found [here](https://datagrok.ai/help/develop/dataframe#dgcolumn).
+
+4. Upload your package to `dev.datagrok.ai` using `grok publish dev --rebuild`
+   command.
    When everything is done correctly, the `detectors.js` file will get loaded by the platform automatically, and the 
    `detectNucleotides` function will be executed against every column in a newly added table.
 
-4. Test your implementation by opening the following CSV or TXT file (or go to `📁 (Data) | Text`
+5. Reload the `dev.datagrok.ai` page to use updated version of your package.  
+
+6. Test your implementation by opening the following CSV or TXT file (or go to `📁 (Data) | Text`
    and paste it there). Make sure you click on DONE (this will trigger semantic types detection):
    ```
    sequence, id
@@ -120,14 +127,19 @@ You will learn: how to write semantic type detectors, how to develop context-spe
    TTTAGGC, 2021 
    ```
    Hover over the `sequence` column header after the data is imported — if everything is done correctly,
-   you will see `quality: dna_nucleotide` in the bottom of the tooltip. Alternatively, you can 
+   you will see `quality: dna_nucleotide` in the bottom of the tooltip:
+   ![](exercises-semantic-tooltip.png)    
+   Alternatively, you can 
    find this information if you click on the column and expand the 'Details' pane in the property panel on the right.
    
-5. Now transform the previously created `complement` function into an [info panel](how-to/add-info-panel.md):
+7. Now transform the previously created `complement` function into an [info panel](how-to/add-info-panel.md):
    tag it with `panel` and `widgets` tags and change the output type to `widget` (see an example [here][014]).
    This will instruct the platform to use the `complement` function for providing additional information for
    string values of the `dna_nucleotide` semantic type. To test it, simply open our test file, click on any cell
-   in the `sequence` column, and find the `complement` property in the panel on the right.
+   in the `sequence` column, and find the `complement` property in the panel on the right
+   as it is shown on screenshot:
+   ![](exercises-complement-data-panel.png)
+
    
 ## Scripting and functions
 
@@ -205,29 +217,29 @@ Let's repeat what we've achieved in the last point of the previous exercise, now
    #language: python
    #input: dataframe sequences
    #input: column columnName
-   #input: string subsequence = "ACC"
+   #input: string subsequence = acc
    #output: dataframe result {action:join(sequences)}
    ```  
    This function takes as an input a dataframe with a column containing nucleotide sequences, named as a value of
    `columnName`, a nucleotide subsequence `subsequence` being sought, and outputs an input dataframe with a new column
    _appended_ to it, containing numbers of subsequence occurrences in the nucleotide sequences. Say, for a table on
-   the left the following table on the right should be produced for a subsequence `ACC` being sought:  
+   the left the following table on the right should be produced for a subsequence `acc` being sought:  
     <table>
     <tr><td>
     
-    | Sequence     | ID     |
-    |--------------|--------|
-    | AACCTCACCCAT | 123AB  |
-    | CCTTCTCCTCCT | 198CD  |
-    | CTGGAAGACCTA | 637EF  |
+    | GenBank    | ID         |
+    |------------|------------|
+    | MT079845.1 | ctacaagaga |
+    | MT079851.1 | attaaaggtt |
+    | MT326187.1 | gttctctaaa |
     
     </td><td>
-    
-    | Sequence     | ID     | N(ACC) |  
-    |--------------|--------|--------|
-    | AACCTCACCCAT | 123AB  | 2      |
-    | CCTTCTCCTCCT | 198CD  | 1      |
-    | CTGGAAGACCTA | 637EF  | 0      |
+
+    | GenBank    | ID         | N(acc) |
+    |------------|------------|--------|
+    | MT079845.1 | ctaccagaga | 1      |
+    | MT079851.1 | attaaaggtt | 0      |
+    | MT326187.1 | gttctctacc | 1      |
     
     </td></tr>
     </table>  
@@ -528,9 +540,9 @@ _You will learn:_ how to join and union dataframes using the knowledge of semant
    from the exercise ["Semantic Types"](#semantic-types).
 2. Add a function to the package as follows:
    ```javascript
-    //name: fuzzyJoin
-    //input: dataframe df1 
-    //input: dataframe df2
+   //name: fuzzyJoin
+   //input: dataframe df1 
+   //input: dataframe df2
    //input: int N
    ...
    ```
@@ -539,7 +551,7 @@ _You will learn:_ how to join and union dataframes using the knowledge of semant
    * takes a first column in `df2` which has a semantic type of `dna_nucleotide`, let's say it is `col2`
    * creates a dataframe `df` out of `df1` and `df2` in the following way:
      * the content of `df2` goes after `df1`, and all columns of `df1` and `df2` are preserved  
-       — this is a UNION operation for dataframes, [as in SQL]();
+       — this is a UNION operation for dataframes, as in SQL;
        use the dataframe's [`.append`](https://public.datagrok.ai/js/samples/data-frame/append) method
      * a new column `Counts` appears in `df`, which contains:
        * for each row `R` from `df1`, `R.counts` is a number of matches of all the subsequences in `R.col1` of
@@ -555,6 +567,8 @@ _You will learn:_ how to join and union dataframes using the knowledge of semant
    output helps find some syntactic errors in JavaScript.
 7. Launch the platform, open the two files from `"Demo files"`: `sars-cov-2.csv` and `a-h1n1.csv`,
    and run the package's `fuzzyJoin` function using one of the methods you've learned.
+   The result for N=3 should look similar to:
+   ![](exercises-transforming-dataframes.png)
 8. Read more about joining dataframes through the case reviewed at our
    [Community Forum](https://community.datagrok.ai/t/table-to-table-augmentation/493/4), and with
    [a sample](https://public.datagrok.ai/js/samples/data-frame/join-tables).
@@ -586,7 +600,7 @@ _Prerequisites:_ exercises ["Setting up the environment"](#setting-up-the-enviro
    * Datagrok [grid](visualize/viewers/grid.md) is rendered through an
      [HTML5 Canvas](https://en.wikipedia.org/wiki/Canvas_element).
      The grid's canvas is `g.canvas`. Iterate through the resulting lines and bring them to a `g.canvas` in
-     the `render` method with `g.canvas.getContext("2d").fillText`; learn [more]() about HTML Canvas if it's
+     the `render` method with `g.canvas.getContext("2d").fillText`; learn more about HTML Canvas if it's
      new for you
    * Hint: pay attention to managing `line-height` both at computing the box and rendering text lines
     ```javascript
@@ -702,21 +716,21 @@ based on the ENA sequence ID contained in a currently selected grid cell.
     //output: widget result
     //condition: isPotentialENAId(cellText)
     export async function enaSequence(cellText) {
-      const url = `https://www.ebi.ac.uk/ena/browser/api/fasta/{$cellText}`;     
-      const fasta = await grok.dapi.fetchProxy(url).text();
+      const url = `https://www.ebi.ac.uk/ena/browser/api/fasta/${cellText}`;     
+      const fasta = await (await grok.dapi.fetchProxy(url)).text();
       return new DG.Widget(ui.box(
         // ... the widget controls are composed here
       ));
     }
    ```
    
-   Incorporate a [`textarea`](https://github.com/datagrok-ai/public/packages/ApiSamples/scripts/ui/accordion.js)
+   Incorporate a [`textInput`](https://github.com/datagrok-ai/public/blob/master/packages/ApiSamples/scripts/ui/components/accordion.js)
    control to display a sequence in a scrollable fashion. Add a caption to that text area to display
    an ENA's name for this sequence, which also comes in the fasta file. Use a
-   [`splitV`](https://github.com/datagrok-ai/public/packages/ApiSamples/scripts/ui/layouts/splitters.js)
+   [`splitV`](https://github.com/datagrok-ai/public/blob/master/packages/ApiSamples/scripts/ui/layouts/splitters.js)
    control to nicely locate the caption at the top and the text area at the bottom.
    
-`fetchProxy` mimics the regular `fetch` method of ECMAScript, but solves a [CORS]() limitation of
+`fetchProxy` mimics the regular `fetch` method of ECMAScript, but solves a [CORS](https://developer.mozilla.org/en-US/docs/Web/HTTP/CORS) limitation of
 JavaScript. In this panel, you'd query the external domain from your web page, whereas CORS prevents
 you from querying anything outside a reach of your web page's domain. Thus Datagrok provides a proxy facility in the
 neat `fetchProxy` wrapper.
@@ -764,7 +778,7 @@ The search topic may be `coronavirus`, `influenza` etc.
     let grid = DG.Viewer.grid(df);
     let limitInput = ui.intInput('How many rows: ', 100);
     let queryInput = ui.stringInput('Query: ', 'coronavirus');
-    let button = ui.button('Search');
+    let button = ui.button('Preview');
     ui.dialog('Create sequences table')
       .add(ui.splitV([
         ui.splitH([
@@ -774,7 +788,7 @@ The search topic may be `coronavirus`, `influenza` etc.
         ui.div([grid]),
         ui.div([limitInput])
       ]))
-      .onOK(_ => {
+      .onOK(() => {
         /* Handle table creation */
         // Display the resulting table
         grok.shell.addTableView(df);
