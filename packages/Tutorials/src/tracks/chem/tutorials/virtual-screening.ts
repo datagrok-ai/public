@@ -7,9 +7,9 @@ import { Tutorial } from "../../../tutorial";
 import { _package } from '../../../package';
 
 
-export class ActivityPredictionTutorial extends Tutorial {
+export class VirtualScreeningTutorial extends Tutorial {
   get name() {
-    return 'Activity Prediction';
+    return 'Virtual Screening';
   }
 
   get description() {
@@ -21,23 +21,42 @@ export class ActivityPredictionTutorial extends Tutorial {
   }
 
   //demoTable: string = 'chem/smiles_only.csv';
-  helpUrl: string = '';
+  helpUrl: string = 'https://datagrok.ai/help/domains/chem/chem-curate';
 
   protected async _run(): Promise<void> {
     // TODO: add the dataset to demo files
+    // Experimental data
     const t = await grok.data.loadTable(`${_package.webRoot}src/tracks/chem/tables/chem-tutorial-1-1.csv`);
     const v = grok.shell.addTableView(t);
+    // Generated data
+    const smiles = await grok.data.loadTable(`${_package.webRoot}src/tracks/chem/tables/chem-tutorial-1-2.csv`);
+    grok.shell.addTableView(smiles);
+    grok.shell.v = v;
 
     this.header.textContent = this.name;
-    this.describe('Introduction to this tutorial');
+    this.describe('<p>In this tutorial, you are playing the role of an <i>in silico</i> researcher. ' +
+      'The department of chemical synthesis has provided a number of new compounds, and biological ' +
+      'laboratories measured their <i>in vitro</i> activities against one of the molecular targets, which ' +
+      'is engaged in viral replication.</p><p>Your mission is to determine if there are compounds of these ' +
+      'chemical classes which could be synthesized and investigated at the next iteration, and thus reduce ' +
+      'the costs of following synthesis and research by excluding less potent molecules from the list.</p>' +
+      '<p>You have two datasets:' + 
+      `<ol>
+        <li>A dataset with experimental results: structural information on synthesized 
+          compounds and related biological activity in the <b>Ki</b> column.</li>
+        <li>A generated dataset with all structures of the same chemical classes which were not yet synthesized.</li>
+      </ol></p>`);
 
-    this.describe(ui.link('More about ' + this.name, this.helpUrl).outerHTML);
+    // this.describe(ui.link('More about chemical structures curation', this.helpUrl).outerHTML);
 
     const addNCIcon = null;
     const addNCDlg = await this.openDialog('Open the "Add New Column" dialog', 'Add New Column', addNCIcon);
     await this.dlgInputAction(addNCDlg, 'Name the new column "pKi"', '', 'pKi');
 
-    const pKiInfo = '';
+    const pKiInfo = '<b>Ki</b> is a binding constant for each structure represented in nanomolar concentration. ' +
+      'To curate the experimental activity, we change the units to molar, perform a log transformation as ' +
+      'log-transformed concentrations are commonly normally distributed, and invert the values, since the ' +
+      'compounds with a lower <b>Ki</b> are more active.';
     const formulaRegex = /^(9\s*-\s*Log10\(\$\{Ki\}\)|Sub\(9,\s*Log10\(\$\{Ki\}\)\))$/;
     await this.action('Transform the activity column "Ki" according to the formula "9 - Log10(${Ki})"',
       t.onColumnsAdded.pipe(filter((data) => data.args.columns.some((col: DG.Column) => {
@@ -64,16 +83,19 @@ export class ActivityPredictionTutorial extends Tutorial {
 
     const computeDescriptors = async (descriptors: string[]) => {
       const chemMenu = null;
-      const curationInfo = '';
+      const curationInfo = 'At first glance at the provided chemical data, all compounds were extracted as salts ' +
+        'with different counterions, and there might be different inconsistencies in the raw data. Let\'s curate ' +
+        'the chemical structures given in the dataset. We will assume that all these compounds are present in the ' +
+        'body in a neutralized form.';
       const curationDlg = await this.openDialog('Open "Chem | Curate"', 'CurateChemStructures', chemMenu, curationInfo);
 
-      const neutralizationInfo = '';
+      const neutralizationInfo = 'Perform "Neutralization" to remove charges.';
       await this.dlgInputAction(curationDlg, 'Check "Neutralization"', 'Neutralization', 'true', neutralizationInfo);
 
-      const tautomerInfo = '';
+      const tautomerInfo = 'Perform "Tautomerization" to transform all tautomers to a unified form.';
       await this.dlgInputAction(curationDlg, 'Check "Tautomerization"', 'Tautomerization', 'true', tautomerInfo);
 
-      const mainFragmentInfo = '';
+      const mainFragmentInfo = 'Choose "Main Fragment" to remove counterions.';
       await this.dlgInputAction(curationDlg, 'Check "Main Fragment"', 'Main Fragment', 'true', mainFragmentInfo);
 
       const outputComment = '';
@@ -104,8 +126,12 @@ export class ActivityPredictionTutorial extends Tutorial {
         .find('label.d4-link-action')
         .filter((idx, el) => el.textContent == 'Chem | Descriptors...')[0];
 
-      const descDlg = 'The platform supports various groups of ' +
-        'descriptors. You can select them either by category or individually.';
+      const descDlg = 'To characterize the molecules, we should calculate molecular descriptors – ' +
+        'useful values that reflect the molecule\'s structure and thus have structural interpretation. ' +
+        'Each chemical structure will have a facilitated representation as vector of descriptors. There ' +
+        'are different types of descriptors, you can select them either by category or individually. We ' +
+        'will combine the ones that describe molecular graph itself, as well as the surface of the whole ' +
+        'molecule and its physico-chemical properties.';
       const descriptorDlg = await this.openDialog('Click on "Chem | Descriptors..." action in the property panel',
         'Descriptors', descriptorsLabel, descDlg);
 
@@ -148,7 +174,10 @@ export class ActivityPredictionTutorial extends Tutorial {
 
     await this.textInpAction(pmv.root, 'Increase maximum runtime to 500 seconds', 'Max runtime secs', '500');
 
-    const modelInfo = '';
+    const modelInfo = 'Now we are ready to develop a model to predict activity. All the specified ' +
+      'descriptors are now used as features and the first dataset is now a training set. Build the ' +
+      'model and create an "observed versus predicted" plot to make sure that the model adequately ' +
+      'predicts activity in the training set.';
     await this.buttonClickAction(pmv.root, 'Click the "Train" button', 'TRAIN', modelInfo);
     await this.contextMenuAction('Right-click on the trained model and select "Apply to | ' +
       `${t.toString()}"`, t.toString(), null, 'The result will be available in the selected ' +
@@ -164,20 +193,17 @@ export class ActivityPredictionTutorial extends Tutorial {
     await this.action('Set Y to "outcome"', info.yColSelector.onChanged.pipe(filter((name: string) =>
       name === 'outcome')), info.yColSelector.root, colSelectionTip);
 
-    const smiles = await grok.data.loadTable(`${_package.webRoot}src/tracks/chem/tables/chem-tutorial-1-2.csv`);
-    grok.shell.addTableView(smiles);
-    // Pause to examine the scatter plot with predicted vs real values
-    grok.shell.v = v;
-
     const tablesPane = grok.shell.sidebar.getPane('Tables');
     const tabPaneHints = [tablesPane.header, $(tablesPane.content)
       .find('div.d4-toggle-button')
       .filter((idx, el) => Array.from(el.children).some((c) => c.textContent === smiles.name))[0]!,
     ];
+    const generatedDataInfo = 'Now use the model to screen the generated structures. To predict activities for ' +
+      'these structures, repeat the curation procedure for them and generate descriptors for the curated dataset.';
 
     await this.action(`Find "${smiles.name}" in the tables tab`, grok.events.onCurrentViewChanged.pipe(
       filter((_) => grok.shell.v.name === smiles.name && grok.shell.v.type === DG.VIEW_TYPE.TABLE_VIEW)),
-      tabPaneHints);
+      tabPaneHints, generatedDataInfo);
 
     await computeDescriptors(descriptors);
 
