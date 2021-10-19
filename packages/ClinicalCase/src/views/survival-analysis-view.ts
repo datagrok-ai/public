@@ -16,8 +16,13 @@ export class SurvivalAnalysisView extends DG.ViewBase {
   survivalFilterDiv = ui.box(ui.divText('Create dataset',{style:{color:'var(--grey-3)',marginTop:'30px', alignItems:'center'}}));
   strataChoicesDiv = ui.div();
   plotCovariatesChoicesDiv = ui.div();
+  parametersPanel = ui.div();
   strataChoices: DG.InputBase;
   plotCovariatesChoices: DG.InputBase;
+  endpointChoices: DG.InputBase;
+  covariatesChoices: DG.InputBase;
+  confIntChoices: DG.InputBase;
+  createSurvivalDataframe: HTMLButtonElement;
   survivalColumns = [];
   confIntervals = [ 0.7, 0.75, 0.8, 0.85, 0.9, 0.95, 0.99 ];
   survivalOptions = [''];
@@ -37,26 +42,26 @@ export class SurvivalAnalysisView extends DG.ViewBase {
     this.name = name;
     this.endpoint = Object.keys(this.endpointOptions)[ 0 ];
 
-    let endpointChoices = ui.choiceInput('Endpoint', Object.keys(this.endpointOptions)[ 0 ], Object.keys(this.endpointOptions));
-    endpointChoices.onChanged((v) => {
-      this.endpoint = endpointChoices.value;
+    this.endpointChoices = ui.choiceInput('Endpoint', Object.keys(this.endpointOptions)[ 0 ], Object.keys(this.endpointOptions));
+    this.endpointChoices.onChanged((v) => {
+      this.endpoint = this.endpointChoices.value;
     });
 
-    let covariatesChoices = ui.multiChoiceInput('Covariates', null, this.covariatesOptions);
-    covariatesChoices.onChanged((v) => {
-      this.covariates = covariatesChoices.value;
+    this.covariatesChoices = ui.multiChoiceInput('Covariates', null, this.covariatesOptions);
+    this.covariatesChoices.onChanged((v) => {
+      this.covariates = this.covariatesChoices.value;
     });
 
-    let confIntChoices = ui.choiceInput('Confidence', this.confIntervals[ 0 ], this.confIntervals);
-    confIntChoices.onChanged((v) => {
-      this.confInterval = confIntChoices.value;
+    this.confIntChoices = ui.choiceInput('Confidence', this.confIntervals[ 0 ], this.confIntervals);
+    this.confIntChoices.onChanged((v) => {
+      this.confInterval = this.confIntChoices.value;
       this.updateSurvivalPlot();
     });
 
     this.updateStrataChoices();
     this.updatePlotCovariatesChoices();
 
-    let createSurvivalDataframe = ui.bigButton('Create dataset', () => { 
+    this.createSurvivalDataframe = ui.bigButton('Create dataset', () => { 
      this.refreshDataframe();
      this.filterChanged = true;
      this.updateChartsAfterFiltering();
@@ -66,21 +71,54 @@ export class SurvivalAnalysisView extends DG.ViewBase {
     });
 
     let tabControl = ui.tabControl(null, false);
-    tabControl.addPane('Dataset', () => ui.splitV([this.survivalFilterDiv, this.survivalGridDivCreate]));
-    tabControl.addPane('Survival Chart', () => this.survivalPlotDiv);
+    tabControl.addPane('Dataset', () => 
+    ui.splitV([
+      guide,
+      ui.splitH([
+        ui.box( ui.panel([
+          ui.inputs([
+            this.endpointChoices,
+            this.covariatesChoices,
+            //@ts-ignore
+            ui.buttonsInput([this.createSurvivalDataframe])
+          ])
+        ]), { style: { maxWidth: '300px' }}),
+        ui.splitV([this.survivalFilterDiv, this.survivalGridDivCreate])
+      ])
+    ]));
+
+    tabControl.addPane('Survival Chart', () => ui.splitV([
+      guide,
+      ui.splitH([
+        ui.box( ui.panel([
+          ui.inputs([
+            this.confIntChoices,
+            //@ts-ignore
+            this.strataChoicesDiv,
+          ])
+        ]), { style: { maxWidth: '300px' }}),
+        ui.splitV([this.survivalFilterDiv, this.survivalGridDivCreate])
+      ])
+    ]));
     tabControl.getPane('Survival Chart').header.addEventListener('click', () => {
       this.updateChartsAfterFiltering();
+
     })
-    tabControl.addPane('Covariates', () => this.covariatesPlotDiv);
+    tabControl.addPane('Covariates', () => ui.splitV([
+      guide,
+      ui.splitH([
+        ui.box( ui.panel([
+          ui.inputs([
+            //@ts-ignore
+            this.plotCovariatesChoicesDiv
+          ])
+        ]), { style: { maxWidth: '300px' }}),
+        ui.splitV([this.survivalFilterDiv, this.survivalGridDivCreate])
+      ])
+    ]));
     tabControl.getPane('Covariates').header.addEventListener('click', () => {
       this.updateChartsAfterFiltering();
     })
-
-    let customTitle = {style:{
-      'color':'var(--grey-6)',
-      'margin-top':'8px',
-      'font-size':'16px',
-    }};
 
       this.root.className = 'grok-view ui-box';
       this.setRibbonPanels([
@@ -94,42 +132,56 @@ export class SurvivalAnalysisView extends DG.ViewBase {
       let guide = ui.info(SURVIVAL_ANALYSIS_GUIDE,'Survival Analysis Quick Guide', false);
       this.root.append(ui.splitV([
         guide,
-        ui.splitH([
-          ui.box(ui.div([
-            ui.panel([
-              ui.divText('Dataset', customTitle),
-              ui.inputs([ 
-                endpointChoices,
-                covariatesChoices,
-                //@ts-ignore
-                ui.buttonsInput([createSurvivalDataframe])
-              ])
-            ]),
-            ui.panel([
-              ui.divText('Survival Parameters', customTitle),
-              ui.inputs([ 
-                confIntChoices,
-                //@ts-ignore
-                this.strataChoicesDiv,
-              ])
-            ]),
-            ui.panel([
-              ui.divText('Covariates', customTitle),
-              ui.inputs([ 
-                //@ts-ignore
-                this.plotCovariatesChoicesDiv
-              ])
-            ])
-          ]), { style: { maxWidth: '300px' }}),
-          tabControl.root
-        ])
+       tabControl.root
       ]))
       //@ts-ignore
       guide.parentNode.style.flexGrow = '0';
       //@ts-ignore
       guide.parentNode.classList = 'ui-div';
 
+     // this.updateParameterPanel('Dataset');
+
   }
+
+  private updateParameterPanel(panelName: string) {
+    let panel;
+    switch (panelName) {
+      case 'Dataset': {
+        panel = ui.panel([
+          ui.inputs([
+            this.endpointChoices,
+            this.covariatesChoices,
+            //@ts-ignore
+            ui.buttonsInput([this.createSurvivalDataframe])
+          ])
+        ]);
+        break;
+      }
+      case 'Survival Chart': {
+        panel = ui.panel([
+          ui.inputs([
+            this.confIntChoices,
+            //@ts-ignore
+            this.strataChoicesDiv,
+          ])
+        ]);
+        break;
+      }
+      case 'Covariates': {
+        panel = ui.panel([
+          ui.inputs([
+            //@ts-ignore
+            this.plotCovariatesChoicesDiv
+          ])
+        ]);
+      }
+      default: {
+        break;
+      }
+    }
+    updateDivInnerHTML(this.parametersPanel, panel);
+  }
+
 
   private updateSurvivalPlot() {
     ui.setUpdateIndicator(this.survivalPlotDiv, true);

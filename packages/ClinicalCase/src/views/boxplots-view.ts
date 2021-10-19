@@ -1,7 +1,7 @@
 import * as grok from 'datagrok-api/grok';
 import * as DG from "datagrok-api/dg";
 import * as ui from "datagrok-api/ui";
-import { study, ClinRow } from "../clinical-study";
+import { study } from "../clinical-study";
 import { addDataFromDmDomain, getUniqueValues } from '../data-preparation/utils';
 import { createBaselineEndpointDataframe } from '../data-preparation/data-preparation';
 import { ETHNIC, RACE, SEX, TREATMENT_ARM } from '../constants';
@@ -24,6 +24,8 @@ export class BoxPlotsView extends DG.ViewBase {
 
   labWithDmData: DG.DataFrame;
 
+  pValuesArray: any;
+
 
   constructor(name) {
     super(name);
@@ -34,7 +36,16 @@ export class BoxPlotsView extends DG.ViewBase {
       style: {
         'color': 'var(--grey-6)',
         'margin': '12px 0px 6px 12px',
-        'font-size': '16px',
+        'font-size': '14px',
+        'font-weight': 'bold'
+      }
+    };
+
+    let viewerTitlePValue = {
+      style: {
+        'color': 'var(--grey-6)',
+        'margin': '12px 0px 6px 100px',
+        'font-size': '12px',
       }
     };
 
@@ -56,18 +67,18 @@ export class BoxPlotsView extends DG.ViewBase {
     this.uniqueVisits = Array.from(getUniqueValues(this.labWithDmData, 'VISIT'));
 
     this.getTopPValues(minLabVisit, 4);
-    this.updateBoxPlots(viewerTitle, this.selectedSplitBy);
+    this.updateBoxPlots(viewerTitle, viewerTitlePValue, this.selectedSplitBy);
 
     let blVisitChoices = ui.choiceInput('Baseleine', this.bl, this.uniqueVisits);
     blVisitChoices.onChanged((v) => {
       this.bl = blVisitChoices.value;
-      this.updateBoxPlots(viewerTitle, this.selectedSplitBy);
+      this.updateBoxPlots(viewerTitle, viewerTitlePValue, this.selectedSplitBy);
     });
 
     let splitByChoices = ui.choiceInput('Split by', this.selectedSplitBy, this.splitBy);
     splitByChoices.onChanged((v) => {
       this.selectedSplitBy = splitByChoices.value;
-      this.updateBoxPlots(viewerTitle, this.selectedSplitBy);
+      this.updateBoxPlots(viewerTitle, viewerTitlePValue, this.selectedSplitBy);
     });
 
     let selectBiomarkers = ui.iconFA('cog', () => {
@@ -82,7 +93,7 @@ export class BoxPlotsView extends DG.ViewBase {
       ui.dialog({ title: 'Select values' })
         .add(ui.div([ labValuesMultiChoices ], { style: { width: '400px', height: '300px' } }))
         .onOK(() => {
-          this.updateBoxPlots(viewerTitle, this.selectedSplitBy);
+          this.updateBoxPlots(viewerTitle, viewerTitlePValue, this.selectedSplitBy);
         })
         .show();
     });
@@ -104,7 +115,7 @@ export class BoxPlotsView extends DG.ViewBase {
     ]))*/
   }
 
-  private updateBoxPlots(viewerTitle: any, category: string) {
+  private updateBoxPlots(viewerTitle: any, viewerTitlePValue: any, category: string) {
     if (this.selectedLabValues && this.bl) {
       this.boxPlots = [];
       this.selectedLabValues.forEach(it => {
@@ -118,7 +129,10 @@ export class BoxPlotsView extends DG.ViewBase {
           showValueSelector: false,
           showPValue: true
         });
-        plot.root.prepend(ui.divText(it, viewerTitle));
+        plot.root.prepend(ui.splitH([
+          ui.divText(it, viewerTitle), 
+          ui.divText(`p-value: ${this.pValuesArray.find(val => val.labValue === it).pValue.toPrecision(5)}`, viewerTitlePValue)
+        ], { style: { maxHeight: '35px' } }));
         const boxPlot = Array.from(getUniqueValues(df, category)).length > 3 ? ui.block([plot.root]) : ui.block50([plot.root]);
         this.boxPlots.push(boxPlot);
       })
@@ -127,7 +141,7 @@ export class BoxPlotsView extends DG.ViewBase {
   }
 
   private getTopPValues(visit: number, topNum: number){
-    let pValuesArray = [];
+    this.pValuesArray = [];
     this.uniqueLabValues.forEach(item => {
       const valueData = this.labWithDmData
         .groupBy([ 'USUBJID', 'VISITDY', 'LBTEST', 'LBSTRESN', TREATMENT_ARM ])
@@ -140,10 +154,10 @@ export class BoxPlotsView extends DG.ViewBase {
         dataForAnova.push(Array.from(labResults));
       })
       const pValue = jStat.anovaftest(...dataForAnova);
-      pValuesArray.push({labValue: item, pValue: pValue});
+      this.pValuesArray.push({labValue: item, pValue: pValue});
 
     });
-    pValuesArray.sort((a, b) => (a.pValue - b.pValue));
-    this.selectedLabValues = pValuesArray.slice(0, topNum).map(it => it.labValue);
+    this.pValuesArray.sort((a, b) => (a.pValue - b.pValue));
+    this.selectedLabValues = this.pValuesArray.slice(0, topNum).map(it => it.labValue);
   }
 }
