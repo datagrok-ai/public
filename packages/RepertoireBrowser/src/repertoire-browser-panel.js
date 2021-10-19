@@ -2,8 +2,8 @@ import * as ui from "datagrok-api/ui";
 import * as grok from "datagrok-api/grok";
 import * as DG from "datagrok-api/dg";
 import {MiscMethods} from "./misc";
-import json from "./TPP000153303.json";
-
+//import json from "./TPP000153303.json";
+import json from "./VR000030945.json";
 
 export class RepertoireBrowserPanel {
 
@@ -43,6 +43,7 @@ export class RepertoireBrowserPanel {
                             "col_light_chain" : '#f1532b',
                             "col_cdr" : '#45d145',
                             "col_para" : '#b0c4de',
+                            "col_highlight" : '#45d145',
                             "col_partopes_low" : '(176,196,222)', //col_para in rgb
                             "col_partopes_high" : '(255, 0, 255)'};
 

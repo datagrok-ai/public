@@ -1,7 +1,8 @@
 import * as grok from 'datagrok-api/grok';
 import * as ui from 'datagrok-api/ui';
 import * as DG from "datagrok-api/dg";
-import json from "./TPP000153303.json";
+//import json from "./TPP000153303.json";
+import json from "./VR000030945.json";
 import {MiscMethods} from "./misc.js"
 import {_package} from "./package";
 
@@ -17,7 +18,7 @@ export class NglMethods {
         inputs.ngl_host.style.backgroundColor = col_background;
         view.box = true;
         this.stage = new NGL.Stage(inputs.ngl_host);
-        this.path = _package.webRoot + 'pdbfiles/' + 'TPP000153303.pdb';
+        this.path = _package.webRoot + 'pdbfiles/' + 'VR000030945.pdb';//'TPP000153303.pdb';
         this.schemeObj = this.CDR3(inputs.cdr_scheme, inputs.paratopes, colorScheme);
 
         await this.loadPdb(this.path, inputs.repChoice, this.schemeObj);
