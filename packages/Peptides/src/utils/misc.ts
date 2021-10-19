@@ -1,11 +1,13 @@
 //@ts-ignore: no types
 import * as jStat from 'jstat';
 
-type testStats = {'p-value': number, 
-                  'Mean difference'?: number, 
-                  'Median difference'?: number, 
-                  'p-value more': number,
-                  'p-value less': number,};
+type testStats = {
+  'p-value': number,
+  'Mean difference'?: number,
+  'Median difference'?: number,
+  'p-value more': number,
+  'p-value less': number,
+};
 
 export function decimalAdjust(type: 'floor' | 'ceil' | 'round', value: number, exp: number): number {
   // If the exp is undefined or zero...

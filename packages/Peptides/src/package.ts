@@ -3,13 +3,11 @@ import * as grok from 'datagrok-api/grok';
 import * as ui from 'datagrok-api/ui';
 import * as DG from 'datagrok-api/dg';
 
-
 import {SARViewer} from './peptide-sar-viewer/sar-viewer';
 import {AlignedSequenceCellRenderer, AminoAcidsCellRenderer} from './utils/cell-renderer';
 import {Logo} from './peptide-logo-viewer/logo-viewer';
 import {StackedBarChart, addViewerToHeader} from './stacked-barchart/stacked-barchart-viewer';
 import {ChemPalette} from './utils/chem-palette';
-import {describe} from './peptide-sar-viewer/describe';
 import {SARViewerVertical} from './peptide-sar-viewer/sar-viewer-vertical';
 // import { tTest, uTest } from './utils/misc';
 
@@ -69,26 +67,28 @@ async function main(chosenFile: string) {
 //name: Peptides
 //tags: app
 export function Peptides() {
-  const textLink = ui.div();
-  textLink.innerHTML = `For more details, see our <a href="https://github.com/datagrok-ai/public/blob/master/help/domains/bio/peptides.md">[wiki]</a>.`;
+  const wikiLink = ui.link('wiki', 'https://github.com/datagrok-ai/public/blob/master/help/domains/bio/peptides.md');
+  const textLink = ui.inlineText(['For more details, see our ', wikiLink, '.']);
 
   const appDescription = ui.info(
     [
       // ui.divText('\n To start the application :', {style: {'font-weight': 'bolder'}}),
-      ui.divText(
-        ' - automatic recognition of peptide sequences\n' +
-      ' - native integration with tons of Datagrok out-of-the box features (visualization, filtering, clustering, multivariate analysis, etc)\n' +
-      ' - custom rendering in the spreadsheet\n' +
-      ' - interactive logo plots\n' +
-      ' - rendering residues\n' +
-      ' - structure-activity relationship:\n \n' +
-      'a) highlighting statistically significant changes in activity in the [position, monomer] spreadsheet\n' +
-      'b) for the specific [position, monomer], visualizing changes of activity distribution (specific monomer in this position vs rest of the monomers in this position)\n' +
-      'c) interactivity\n \t',
-      ),
+      ui.list([
+        '- automatic recognition of peptide sequences',
+        '- native integration with tons of Datagrok out-of-the box features (visualization, filtering, clustering, ' +
+        'multivariate analysis, etc)',
+        '- custom rendering in the spreadsheet',
+        '- interactive logo plots',
+        '- rendering residues',
+        '- structure-activity relationship:',
+        ' ',
+        'a) highlighting statistically significant changes in activity in the [position, monomer] spreadsheet',
+        'b) for the specific [position, monomer], visualizing changes of activity distribution (specific monomer in ' +
+        'this position vs rest of the monomers in this position)',
+        'c) interactivity',
+      ]),
     ],
-
-    `Use and analyse peptide sequence data to support your research:\n`,
+    'Use and analyse peptide sequence data to support your research:',
   );
 
 
