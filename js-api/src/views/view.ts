@@ -67,7 +67,11 @@ export class ViewBase {
 
   /** @returns {string|null} View help URL. */
   get helpUrl(): string | null {
-    return null;
+    return api.grok_View_Get_HelpUrl(this.d);
+  }
+
+  set helpUrl(url: string | null) {
+    api.grok_View_Set_HelpUrl(this.d, url);
   }
 
   private _name: string;
