@@ -42,7 +42,9 @@ See our [GitHub repository](https://github.com/datagrok-ai/public/tree/master/pa
 
 ## Getting started
 
-To develop a package on the Datagrok platform, you will need [Node.js](https://nodejs.org/en/) and [npm](https://www.npmjs.com/get-npm) installed. Also, install [Webpack](https://webpack.js.org/guides/installation/) to be able to build your package locally and debug it using `Webpack DevServer`. Optionally, you can use `Babel`, `React` as well as other advanced JavaScript frameworks.
+To develop a package on the Datagrok platform, you will need [Node.js](https://nodejs.org/en/) and [npm](https://www.npmjs.com/get-npm) installed. To avoid permission issues when installing packages globally (`-g`), use a version manager to install both `Node.js` and `npm` (here are the [instructions](https://docs.npmjs.com/downloading-and-installing-node-js-and-npm#using-a-node-version-manager-to-install-nodejs-and-npm).
+
+Also, install [Webpack](https://webpack.js.org/guides/installation/) to be able to build your package locally and debug it using `Webpack DevServer`. Optionally, you can use `Babel`, `React` as well as other advanced JavaScript frameworks.
 
 Here are the first steps to get you started:
 
@@ -50,7 +52,7 @@ Here are the first steps to get you started:
    ```
    npm install datagrok-tools -g
    ```
-   To avoid permission issues when installing packages globally (`-g`), use a version manager to install both `Node.js` and `npm` (here are the [instructions](https://docs.npmjs.com/downloading-and-installing-node-js-and-npm)).  On macOS and Unix systems, you may also need to use `sudo` at the beginning of the installation command and enter the root password if prompted.
+   On macOS and Unix systems, you may also need to use `sudo` at the beginning of the installation command and enter the root password if prompted.
    
 2. Configure your environment with the following command:
    ```
@@ -60,9 +62,9 @@ Here are the first steps to get you started:
 
 3. Create a new package by running this command:
    ```
-   grok create <packageName>
+   grok create <packageName> <options>
    ```
-   A new folder `MyPackage` will be created automatically as well as its contents.
+   A new folder `MyPackage` will be created automatically as well as its contents. Datagrok CLI supports TypeScript, ESLint and VSCode boilerplates out-of-the-box. We highly recommend use TypeScript and ESLint, specially if you are commiting to [public Datagrok repository](https://github.com/datagrok-ai/public). Type `grok create --help` to see all possible package creation options.
 
 4. Once you've completed the work on your package, upload it by running:
    ```
@@ -401,7 +403,7 @@ The second file, `tasks.json`, contains the following (for Windows):
   "tasks": [
     {
       "type": "shell",
-      "command": "cmd.exe /c 'call webpack && call grok publish'",
+      "command": "cmd.exe /c \"webpack && grok publish dev\"",
       "label": "rebuild"
     }
   ]
