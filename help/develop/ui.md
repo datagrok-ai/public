@@ -121,6 +121,7 @@ Figma Datagrok UIKit avaliable on [Figma Community](https://www.figma.com/@datag
 * [Tree View](#tree-view)
 * [Iframe](#iframe)
 * [Info Bars](#info-bars)
+* [Update indicator](#Update-indicator)
 
 </details>
 
@@ -1060,4 +1061,13 @@ Info bar allows adding assisting information to views, typically at their top ar
 grok.shell.newView('View', [
   ui.info('Info text', 'Optional header', false)
 ]);
+```
+
+## Update indicator
+
+Update indicator allow to show the updating state for each UI or View.
+
+```javascript
+let view = grok.shell.newView('Update indicator demo');
+ui.setUpdateIndicator(view.root, true);
 ```
