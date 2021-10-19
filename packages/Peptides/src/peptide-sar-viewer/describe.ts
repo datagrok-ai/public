@@ -3,7 +3,7 @@ import * as DG from 'datagrok-api/dg';
 //@ts-ignore
 import * as jStat from 'jstat';
 import {splitAlignedPeptides} from '../split-aligned';
-import {decimalAdjust, tTest} from '../utils/misc';
+import {tTest} from '../utils/misc';
 import {ChemPalette} from '../utils/chem-palette';
 import {measureAAR} from '../utils/cell-renderer';
 
@@ -189,12 +189,12 @@ export async function describe(
   }
   const aarWeightsDf = statsDf.groupBy([aminoAcidResidue]).sum(sortArgument, 'weight').aggregate();
   const aarList = aarWeightsDf.getCol(aminoAcidResidue).toList();
-  let getWeight = (aar: string) => aarWeightsDf
-      .groupBy(['weight'])
-      .where(`${aminoAcidResidue} = ${aar}`)
-      .aggregate()
-      .get('weight', 0);
-  aarList.sort((first, second) => getWeight(second) - getWeight(first));;
+  const getWeight = (aar: string) => aarWeightsDf
+    .groupBy(['weight'])
+    .where(`${aminoAcidResidue} = ${aar}`)
+    .aggregate()
+    .get('weight', 0);
+  aarList.sort((first, second) => getWeight(second) - getWeight(first));
 
   matrixDf.getCol(aminoAcidResidue).setCategoryOrder(aarList);
 
@@ -343,7 +343,7 @@ export async function describe(
   });
 
   for (const col of matrixDf.columns.names()) {
-    grid.col(col)!.width = grid.props.rowHeight; 
+    grid.col(col)!.width = grid.props.rowHeight;
   }
 
   return [grid, statsDf];
