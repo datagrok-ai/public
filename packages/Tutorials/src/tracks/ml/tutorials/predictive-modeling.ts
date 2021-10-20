@@ -33,6 +33,7 @@ export class PredictiveModelingTutorial extends Tutorial {
         skipPMVOpening ? 'Return to the model training view' :
         'Click on "ML | Train Model..." to open a dialog for training models',
         'PredictiveModel',
+        this.getMenuItem('ML'),
       );
 
       // UI generation delay
