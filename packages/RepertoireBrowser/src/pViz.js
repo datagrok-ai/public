@@ -288,7 +288,7 @@ export class PvizMethods {
                 let prob =  prob_lst[el_lst.indexOf(ft.start)];
 
                 ui.tooltip.show(
-                    ui.span([`${ft.category} probability ~${prob.toFixed(2)}`]),
+                    ui.span([`${ft.category} probability ${prob.toFixed(2)}`]),
                     el.getBoundingClientRect().left + 10,
                     el.getBoundingClientRect().top + 10
                 );
@@ -329,7 +329,7 @@ export class PvizMethods {
                 let ptmsStr = "";
 
                 for(let i = 0; i < ptmsArPoint.length; i++){
-                    ptmsStr += "\n" + ptmsArPoint[i][0].replace("_", " ") + " probability  ~" + (ptmsArPoint[i][1] > 1 ? ptmsArPoint[i][1]/100: ptmsArPoint[i][1]).toFixed(2);
+                    ptmsStr += "\n" + ptmsArPoint[i][0].replace("_", " ") + " probability  " + (ptmsArPoint[i][1] > 1 ? ptmsArPoint[i][1]/100: ptmsArPoint[i][1]).toFixed(2);
                 }
                 
                 ui.tooltip.show(
@@ -370,6 +370,14 @@ export class PvizMethods {
         let pVizParams = this.pVizParams;
         let colorScheme = inputs.colorScheme;
 
+        let col_heavy_chain = colorScheme["col_heavy_chain"];
+        let col_light_chain = colorScheme["col_light_chain"];
+        let col_cdr = colorScheme["col_cdr"];
+        let col_para = colorScheme["col_para"];
+        let col_partopes_low = colorScheme["col_partopes_low"]; //col_para in rgb
+        let col_partopes_high = colorScheme["col_partopes_high"];
+        let col_highlight = colorScheme["col_highlight"]
+
         //highlights in NGL
         let stage = this.ngl.stage;
         let scheme_buffer = [];
@@ -377,16 +385,33 @@ export class PvizMethods {
         Object.keys(switchObj).forEach((keyChain) =>{
             Object.keys(switchObj[keyChain]).forEach((keyFtStart) =>{
                 if(switchObj[keyChain][keyFtStart]['state'] === true){
-                    scheme_buffer.push([colorScheme["col_highlight"], `${parseInt(keyFtStart) + 1} and :${keyChain}`]);
+                    scheme_buffer.push([col_highlight, `${parseInt(keyFtStart) + 1} and :${keyChain}`]);
                 }
             });
         });
         
-        scheme_buffer.push([colorScheme["col_heavy_chain"], "* and :H"]);
-        scheme_buffer.push([colorScheme["col_light_chain"], "* and :L"]);
-        let schemeId = NGL.ColormakerRegistry.addSelectionScheme(scheme_buffer);
-        stage.compList[0].addRepresentation(inputs.repChoice.value, {color: schemeId});
+        if(inputs.paratopes.value === true){
+            let palette = MiscMethods.interpolateColors(col_partopes_low, col_partopes_high, 100);
+            Object.keys(json.parapred_predictions).forEach((chain) => {
+                Object.keys(json.parapred_predictions[chain]).forEach((index) => {
+                    scheme_buffer.push([
+                        palette[Math.round(json.parapred_predictions[chain][index] * 100)],
+                        `${index} and :${chain}`
+                    ]);
+                })
 
+            })
+            scheme_buffer.push([col_para, "* and :H"]);
+            scheme_buffer.push([col_para, "* and :L"]);
+            let schemeId = NGL.ColormakerRegistry.addSelectionScheme(scheme_buffer);
+            stage.compList[0].addRepresentation(inputs.repChoice.value, {color: schemeId});
+        }
+        else{
+            scheme_buffer.push([col_heavy_chain, "* and :H"]);
+            scheme_buffer.push([col_light_chain, "* and :L"]);
+            let schemeId = NGL.ColormakerRegistry.addSelectionScheme(scheme_buffer);
+            stage.compList[0].addRepresentation(inputs.repChoice.value, {color: schemeId});
+        }
 
         //colors of selected pViz
         let selectorStr = 'g.feature.data.D rect.feature';
@@ -402,7 +427,6 @@ export class PvizMethods {
             lists[ptm] =[elPTM, el_lstPTM];
         });
         
-
         Object.keys(switchObj).forEach((keyChain) =>{
             let el_lst = pVizParams.denMap[keyChain].den_el_obj;
 
