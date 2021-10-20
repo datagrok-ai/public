@@ -376,7 +376,8 @@ export class PvizMethods {
         let col_para = colorScheme["col_para"];
         let col_partopes_low = colorScheme["col_partopes_low"]; //col_para in rgb
         let col_partopes_high = colorScheme["col_partopes_high"];
-        let col_highlight = colorScheme["col_highlight"]
+        let col_highlight =  (inputs.cdr_scheme.value === 'default' || inputs.paratopes.value === true) ? 
+                                                colorScheme["col_highlight"]: colorScheme["col_highlight_cdr"];
 
         //highlights in NGL
         let stage = this.ngl.stage;
@@ -407,10 +408,35 @@ export class PvizMethods {
             stage.compList[0].addRepresentation(inputs.repChoice.value, {color: schemeId});
         }
         else{
-            scheme_buffer.push([col_heavy_chain, "* and :H"]);
-            scheme_buffer.push([col_light_chain, "* and :L"]);
-            let schemeId = NGL.ColormakerRegistry.addSelectionScheme(scheme_buffer);
-            stage.compList[0].addRepresentation(inputs.repChoice.value, {color: schemeId});
+            if (inputs.cdr_scheme.value === 'default') {
+                scheme_buffer.push([col_heavy_chain, "* and :H"]);
+                scheme_buffer.push([col_light_chain, "* and :L"]);
+                let schemeId = NGL.ColormakerRegistry.addSelectionScheme(scheme_buffer);
+                stage.compList[0].addRepresentation(inputs.repChoice.value, {color: schemeId});
+            } else{
+                Object.keys(json.cdr_ranges).forEach((str) => {
+                    if (str.includes(inputs.cdr_scheme.value + '_CDRH')) {
+                        let str_buffer = '';
+                        for (let i = 0; i < Object.keys(json.cdr_ranges[str]).length; i++) {
+                            str_buffer = str_buffer + ` or ${json.cdr_ranges[str][i][0]}-${json.cdr_ranges[str][i][1]} and :H`;
+                        }
+                        str_buffer = str_buffer.slice(4);
+                        scheme_buffer.push([col_cdr, str_buffer]);
+                        scheme_buffer.push([col_heavy_chain, "* and :H"]);
+
+                    } else if (str.includes(inputs.cdr_scheme.value + '_CDRL')) {
+                        let str_buffer = ''
+                        for (let i = 0; i < Object.keys(json.cdr_ranges[str]).length; i++) {
+                            str_buffer = str_buffer + ` or ${json.cdr_ranges[str][i][0]}-${json.cdr_ranges[str][i][1]} and :L`;
+                        }
+                        str_buffer = str_buffer.slice(4);
+                        scheme_buffer.push([col_cdr, str_buffer]);
+                        scheme_buffer.push([col_light_chain, "* and :L"]);
+                    }
+                });
+                let schemeId = NGL.ColormakerRegistry.addSelectionScheme(scheme_buffer);
+                stage.compList[0].addRepresentation(inputs.repChoice.value, {color: schemeId});
+            }
         }
 
         //colors of selected pViz
