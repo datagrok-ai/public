@@ -157,7 +157,7 @@ export class VirtualScreeningTutorial extends Tutorial {
 
     await computeDescriptors(descriptors);
 
-    const pmv = await this.openViewByType('Click on "ML | Train Model..."', 'PredictiveModel');
+    const pmv = await this.openViewByType('Click on "ML | Train Model..."', 'PredictiveModel', this.getMenuItem('ML'));
 
     // UI generation delay
     await new Promise((resolve) => setTimeout(resolve, 2000));
