@@ -456,6 +456,13 @@ export abstract class Tutorial extends DG.Widget {
     return dialog!;
   }
 
+  /** Prompts the user to open the "Add New Column" dialog, waits for it to open and returns it. */
+  protected async openAddNCDialog(instructions: string = 'Open the "Add New Column" dialog',
+    description: string = ''): Promise<DG.Dialog> {
+    const addNCIcon = $('div.d4-ribbon-item').has('i.svg-add-new-column')[0];
+    return await this.openDialog(instructions, 'Add New Column', addNCIcon, description);
+  }
+
   /** Prompts the user to select a menu item in the context menu. */
   protected async contextMenuAction(instructions: string, label: string,
     hint: HTMLElement | HTMLElement[] | null = null, description: string = ''): Promise<void> {

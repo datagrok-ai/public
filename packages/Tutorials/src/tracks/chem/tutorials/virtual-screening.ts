@@ -49,8 +49,7 @@ export class VirtualScreeningTutorial extends Tutorial {
 
     // this.describe(ui.link('More about chemical structures curation', this.helpUrl).outerHTML);
 
-    const addNCIcon = null;
-    const addNCDlg = await this.openDialog('Open the "Add New Column" dialog', 'Add New Column', addNCIcon);
+    const addNCDlg = await this.openAddNCDialog();
     await this.dlgInputAction(addNCDlg, 'Name the new column "pKi"', '', 'pKi');
 
     const pKiInfo = '<b>Ki</b> is a binding constant for each structure represented in nanomolar concentration. ' +
@@ -63,7 +62,7 @@ export class VirtualScreeningTutorial extends Tutorial {
         return col.name === 'pKi' &&
           col.tags.has(DG.TAGS.FORMULA) &&
           formulaRegex.test(col.tags[DG.TAGS.FORMULA]);
-      }))), addNCIcon, pKiInfo);
+      }))), null, pKiInfo);
 
     const descriptors = ['MolWt', 'HeavyAtomMolWt', 'NumValenceElectrons', 'NumRadicalElectrons',
       'MaxPartialCharge', 'MinPartialCharge', 'MaxAbsPartialCharge', 'MinAbsPartialCharge',
