@@ -82,7 +82,7 @@ export class VirtualScreeningTutorial extends Tutorial {
       'InertialShapeFactor', 'Eccentricity', 'Asphericity', 'SpherocityIndex'];
 
     const computeDescriptors = async (descriptors: string[]) => {
-      const chemMenu = null;
+      const chemMenu = this.getMenuItem('Chem');
       const curationInfo = 'At first glance at the provided chemical data, all compounds were extracted as salts ' +
         'with different counterions, and there might be different inconsistencies in the raw data. Let\'s curate ' +
         'the chemical structures given in the dataset. We will assume that all these compounds are present in the ' +
