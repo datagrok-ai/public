@@ -8,7 +8,6 @@ import {AlignedSequenceCellRenderer, AminoAcidsCellRenderer} from './utils/cell-
 import {Logo} from './peptide-logo-viewer/logo-viewer';
 import {StackedBarChart, addViewerToHeader} from './stacked-barchart/stacked-barchart-viewer';
 import {ChemPalette} from './utils/chem-palette';
-import {SARViewerVertical} from './peptide-sar-viewer/sar-viewer-vertical';
 // import { tTest, uTest } from './utils/misc';
 
 export const _package = new DG.Package();
@@ -165,15 +164,15 @@ export async function analyzePeptides(col: DG.Column): Promise<DG.Widget> {
       // @ts-ignore
 
 
-      const viewer = DG.Viewer.fromType('peptide-sar-viewer', tableGrid.table, options);
-      (grok.shell.v as DG.TableView).addViewer(viewer);
-      const refNode = (grok.shell.v as DG.TableView).dockManager.dock(viewer, 'right');
+      // const viewer = DG.Viewer.fromType('peptide-sar-viewer', tableGrid.table, options);
+      // (grok.shell.v as DG.TableView).addViewer(viewer);
+      // const refNode = (grok.shell.v as DG.TableView).dockManager.dock(viewer, 'right');
 
-      const hist = DG.Viewer.fromType('peptide-sar-viewer-vertical', tableGrid.table, options);
-      (grok.shell.v as DG.TableView).addViewer(hist);
-      (grok.shell.v as DG.TableView).dockManager.dock(hist, DG.DOCK_TYPE.DOWN, refNode);
+      // const hist = DG.Viewer.fromType('peptide-sar-viewer-vertical', tableGrid.table, options);
+      // (grok.shell.v as DG.TableView).addViewer(hist);
+      // (grok.shell.v as DG.TableView).dockManager.dock(hist, DG.DOCK_TYPE.DOWN, refNode);
 
-      // (grok.shell.v as DG.TableView).addViewer('peptide-sar-viewer', options);
+      (grok.shell.v as DG.TableView).addViewer('peptide-sar-viewer', options);
       // (grok.shell.v as DG.TableView).addViewer('peptide-sar-viewer-vertical', options);
       // @ts-ignore
       //view.dockManager.dock(ui.divText('bottom'), 'down');
@@ -212,14 +211,6 @@ export async function analyzePeptides(col: DG.Column): Promise<DG.Widget> {
 //output: viewer result
 export function sar(): SARViewer {
   return new SARViewer();
-}
-
-//name: peptide-sar-viewer-vertical
-//description: Peptides SAR Viewer
-//tags: viewer
-//output: viewer result
-export function sarVertical(): SARViewerVertical {
-  return new SARViewerVertical();
 }
 
 //name: StackedBarchart Widget
