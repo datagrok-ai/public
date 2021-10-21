@@ -9,7 +9,8 @@ const utils = require('../utils.js');
 
 
 module.exports = {
-  publish: publish
+  publish: publish,
+  processPackage: processPackage
 };
 
 const grokDir = path.join(os.homedir(), '.grok');
