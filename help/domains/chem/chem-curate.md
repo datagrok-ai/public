@@ -1,6 +1,8 @@
 <!-- TITLE: Cheminformatics chemical structures curation -->
 <!-- SUBTITLE: -->
 
+# Cheminformatics chemical structures curation
+
 Curation tools could be used for a wide spectrum of purposes and propose different ways which one can use in a preferred combination.
  
 When no options are chosen the curation tools will process sanitization procedures and will perform chemotypes standardization with no actual modification of input data. All possible options also include this procedure and execute a specific task. All given examples show that pairs of different graphs may correspond to a single structure if certain conditions are applied.

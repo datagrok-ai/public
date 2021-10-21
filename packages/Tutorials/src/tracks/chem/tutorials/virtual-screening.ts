@@ -49,8 +49,7 @@ export class VirtualScreeningTutorial extends Tutorial {
 
     // this.describe(ui.link('More about chemical structures curation', this.helpUrl).outerHTML);
 
-    const addNCIcon = null;
-    const addNCDlg = await this.openDialog('Open the "Add New Column" dialog', 'Add New Column', addNCIcon);
+    const addNCDlg = await this.openAddNCDialog();
     await this.dlgInputAction(addNCDlg, 'Name the new column "pKi"', '', 'pKi');
 
     const pKiInfo = '<b>Ki</b> is a binding constant for each structure represented in nanomolar concentration. ' +
@@ -63,7 +62,7 @@ export class VirtualScreeningTutorial extends Tutorial {
         return col.name === 'pKi' &&
           col.tags.has(DG.TAGS.FORMULA) &&
           formulaRegex.test(col.tags[DG.TAGS.FORMULA]);
-      }))), addNCIcon, pKiInfo);
+      }))), null, pKiInfo);
 
     const descriptors = ['MolWt', 'HeavyAtomMolWt', 'NumValenceElectrons', 'NumRadicalElectrons',
       'MaxPartialCharge', 'MinPartialCharge', 'MaxAbsPartialCharge', 'MinAbsPartialCharge',
@@ -82,7 +81,7 @@ export class VirtualScreeningTutorial extends Tutorial {
       'InertialShapeFactor', 'Eccentricity', 'Asphericity', 'SpherocityIndex'];
 
     const computeDescriptors = async (descriptors: string[]) => {
-      const chemMenu = null;
+      const chemMenu = this.getMenuItem('Chem');
       const curationInfo = 'At first glance at the provided chemical data, all compounds were extracted as salts ' +
         'with different counterions, and there might be different inconsistencies in the raw data. Let\'s curate ' +
         'the chemical structures given in the dataset. We will assume that all these compounds are present in the ' +
@@ -157,7 +156,7 @@ export class VirtualScreeningTutorial extends Tutorial {
 
     await computeDescriptors(descriptors);
 
-    const pmv = await this.openViewByType('Click on "ML | Train Model..."', 'PredictiveModel');
+    const pmv = await this.openViewByType('Click on "ML | Train Model..."', 'PredictiveModel', this.getMenuItem('ML'));
 
     // UI generation delay
     await new Promise((resolve) => setTimeout(resolve, 2000));
