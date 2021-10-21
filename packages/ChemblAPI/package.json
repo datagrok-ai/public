@@ -1,0 +1,29 @@
+{
+	"name": "chemblapi",
+	"beta": true,
+	"friendlyName": "ChemblAPI",
+	"version": "0.0.1",
+	"description": "",
+	"dependencies": {
+		"datagrok-api": "latest",
+		"cash-dom": "latest",
+		"dayjs": "latest"
+	},
+	"devDependencies": {
+		"@types/d3": "^7.0.0",
+		"@types/jquery": "^3.5.6",
+		"webpack": "latest",
+		"webpack-cli": "latest"
+	},
+	"scripts": {
+		"install-dependencies": "npm install",
+		"debug-chemblapi": "grok publish --rebuild",
+		"release-chemblapi": "grok publish --rebuild --release",
+		"build-chemblapi": "webpack",
+		"build": "webpack",
+		"debug-chemblapi-dev": "grok publish dev --rebuild",
+		"release-chemblapi-dev": "grok publish dev --rebuild --release",
+		"debug-chemblapi-local": "grok publish local --rebuild",
+		"release-chemblapi-local": "grok publish local --rebuild --release"
+	}
+}
