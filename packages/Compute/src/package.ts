@@ -23,6 +23,6 @@ export function modelCatalog() {
   let v = DG.CardView.create({dataSource: grok.dapi.scripts, permanentFilter: '#model'})
   v.meta = new ModelHandler();
   v.name = 'Models';
-  v.permanentFilter = '#modelhub';
+  v.permanentFilter = '#model';
   grok.shell.addView(v);
 }
