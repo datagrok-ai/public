@@ -240,19 +240,25 @@ export class Widget {
 /** Base class for DataFrame-bound filtering controls */
 export class Filter extends Widget {
   dataFrame: DataFrame | null;
+  indicator: HTMLDivElement;
+  controls: HTMLDivElement;
+  host: HTMLElement;
 
   constructor() {
     super(ui.div());
 
-    /** @member {DataFrame} */
     this.dataFrame = null;
+    this.indicator = ui.divText('i');
+    this.controls = ui.divText('c');
+    this.host = this.root;
   }
+
+  saveState(): any { console.log('save state'); }
+  applyState(state: any): void { console.log('apply state'); }
 
   /** Gets called when a data frame is attached.
    * @param {DataFrame} dataFrame*/
   attach(dataFrame: DataFrame): void {}
-
-  detach(): void {}
 }
 
 
