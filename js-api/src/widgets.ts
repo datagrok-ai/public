@@ -304,6 +304,9 @@ export class Accordion extends DartWidget {
     return api.grok_TabControlBase_Get_Panes(this.d).map(toJs);
   }
 
+  get header(): HTMLElement { return api.grok_Accordion_Get_Header(this.d); }
+  set header(header) { api.grok_Accordion_Set_Header(this.d, header); }
+
   /** Returns a pane with the specified name.
    * @param {string} name
    * @returns {AccordionPane} */
