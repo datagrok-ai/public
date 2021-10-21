@@ -29,9 +29,6 @@ function add(args) {
   if (!fs.existsSync(packagePath)) return console.log('`package.json` not found');
   try {
     const package = JSON.parse(fs.readFileSync(packagePath));
-    if (package.friendlyName !== curFolder && package.fullName !== curFolder) {
-      return console.log('The package name differs from the one in `package.json`');
-    }
   } catch (error) {
     console.error(`Error while reading ${packagePath}:`)
     console.error(error);

@@ -3,12 +3,16 @@ import * as grok from 'datagrok-api/grok';
 import * as ui from 'datagrok-api/ui';
 import * as DG from 'datagrok-api/dg';
 
-import {SARViewer} from './peptide-sar-viewer/sar-viewer';
-import {AlignedSequenceCellRenderer, AminoAcidsCellRenderer} from './utils/cell-renderer';
+import {SARViewerBase} from './peptide-sar-viewer/sar-viewer';
+import {
+  AlignedSequenceCellRenderer,
+  AminoAcidsCellRenderer,
+  expandColumn,
+  processSequence,
+} from './utils/cell-renderer';
 import {Logo} from './peptide-logo-viewer/logo-viewer';
 import {StackedBarChart, addViewerToHeader} from './stacked-barchart/stacked-barchart-viewer';
 import {ChemPalette} from './utils/chem-palette';
-import {SARViewerVertical} from './peptide-sar-viewer/sar-viewer-vertical';
 // import { tTest, uTest } from './utils/misc';
 
 export const _package = new DG.Package();
@@ -29,29 +33,16 @@ async function main(chosenFile: string) {
     for (const col of peptides.columns) {
       col.semType = DG.Detector.sampleCategories(col, (s) => regexp.test(s)) ? 'alignedSequence' : null;
       if (col.semType == 'alignedSequence') {
-        setTimeout(()=>{
-          let maxWidth = 0;
-          for (const s of col.categories) {
-            const subParts:string[] = s.split('-');
-            const simplified = !subParts.some((amino, index)=>{
-              return amino.length>1&&index!=0&&index!=subParts.length-1;
-            });
-            const text:string[] = [];
-            subParts.forEach((amino: string, index) => {
-              if (index < subParts.length) {
-                const gap = simplified?'':' ';
-                amino += `${amino?'':'-'}${gap}`;
-              }
-              text.push(amino);
-            });
-            let textSize = 0;
-            text.forEach((aar)=>{
-              textSize += aar.length;
-            });
-            maxWidth = maxWidth < textSize ? textSize: maxWidth;
-          }
-          tableGrid.col(col.name)!.width = Math.min(maxWidth * 10, 650);
-        }, 500);
+        expandColumn(col, tableGrid, (ent)=>{
+          const subParts:string[] = ent.split('-');
+          // eslint-disable-next-line no-unused-vars
+          const [text, _] = processSequence(subParts);
+          let textSize = 0;
+          text.forEach((aar)=>{
+            textSize += aar.length;
+          });
+          return textSize;
+        });
       }
     }
   },
@@ -165,15 +156,15 @@ export async function analyzePeptides(col: DG.Column): Promise<DG.Widget> {
       // @ts-ignore
 
 
-      const viewer = DG.Viewer.fromType('peptide-sar-viewer', tableGrid.table, options);
-      (grok.shell.v as DG.TableView).addViewer(viewer);
-      const refNode = (grok.shell.v as DG.TableView).dockManager.dock(viewer, 'right');
+      // const viewer = DG.Viewer.fromType('peptide-sar-viewer', tableGrid.table, options);
+      // (grok.shell.v as DG.TableView).addViewer(viewer);
+      // const refNode = (grok.shell.v as DG.TableView).dockManager.dock(viewer, 'right');
 
-      const hist = DG.Viewer.fromType('peptide-sar-viewer-vertical', tableGrid.table, options);
-      (grok.shell.v as DG.TableView).addViewer(hist);
-      (grok.shell.v as DG.TableView).dockManager.dock(hist, DG.DOCK_TYPE.DOWN, refNode);
+      // const hist = DG.Viewer.fromType('peptide-sar-viewer-vertical', tableGrid.table, options);
+      // (grok.shell.v as DG.TableView).addViewer(hist);
+      // (grok.shell.v as DG.TableView).dockManager.dock(hist, DG.DOCK_TYPE.DOWN, refNode);
 
-      // (grok.shell.v as DG.TableView).addViewer('peptide-sar-viewer', options);
+      (grok.shell.v as DG.TableView).addViewer('peptide-sar-viewer', options);
       // (grok.shell.v as DG.TableView).addViewer('peptide-sar-viewer-vertical', options);
       // @ts-ignore
       //view.dockManager.dock(ui.divText('bottom'), 'down');
@@ -210,16 +201,8 @@ export async function analyzePeptides(col: DG.Column): Promise<DG.Widget> {
 //description: Peptides SAR Viewer
 //tags: viewer
 //output: viewer result
-export function sar(): SARViewer {
-  return new SARViewer();
-}
-
-//name: peptide-sar-viewer-vertical
-//description: Peptides SAR Viewer
-//tags: viewer
-//output: viewer result
-export function sarVertical(): SARViewerVertical {
-  return new SARViewerVertical();
+export function sar(): SARViewerBase {
+  return new SARViewerBase();
 }
 
 //name: StackedBarchart Widget

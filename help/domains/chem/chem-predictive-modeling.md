@@ -1,13 +1,13 @@
 <!-- TITLE: Cheminformatics predictive modeling -->
 <!-- SUBTITLE: -->
 
-Grok is a perfect platform for building, applying, deploying, and managing predictive models
-that are based on molecules.  
+# Cheminformatics predictive modeling
 
+Datagrok is a perfect platform for building, applying, deploying, and managing predictive models
+that are based on molecules.
 
-
-For cheminiformatics, Grok simplifies the process of building, applying, and deploying models
-by knowing which descriptors were used for building the model 
+For cheminformatics, Datagrok simplifies the process of building, applying, and deploying models
+by knowing which descriptors were used for building the model.
 
 # Training
 

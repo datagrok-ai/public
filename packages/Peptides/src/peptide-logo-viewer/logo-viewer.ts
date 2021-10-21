@@ -60,10 +60,12 @@ export class Logo extends DG.JsViewer {
 
   init() {
     this.initialized = true;
-    this.reactHost = ui.div([], {style: {height: '200px', width: '500px'}});
+    // this.reactHost = ui.div([]);
     console.log('INIT');
     this.target = this.dataFrame;
     this.splitted = splitAlignedPeptides(this.dataFrame!.columns.bySemType(this.colSemType));
+    this.root.style.width = 'auto';
+    this.root.style.height = 'auto';
   }
 
   onTableAttached() {
@@ -108,15 +110,15 @@ export class Logo extends DG.JsViewer {
     if (typeof this.dataFrame !== 'undefined') {
       this.findLogo();
 
-      if (this.reactHost !== null) {
-        this.root.appendChild(this.reactHost);
-      }
+      // if (this.reactHost !== null) {
+      //   this.root.appendChild(this.reactHost);
+      // }
     }
   }
 
   async findLogo() {
     this.getInfoFromDf();
-    logojs.embedProteinLogo(this.reactHost, {alphabet: this.LET_COLORS, ppm: this.ppm});
+    logojs.embedProteinLogo(this.root, {alphabet: this.LET_COLORS, ppm: this.ppm});
   }
 
   getInfoFromDf() {

@@ -54,8 +54,6 @@ export async function drugBankSimilaritySearch(molecule, limit, cutoff) {
         let index = DG.Column.fromInt32Array('index', Int32Array.from(new Array(dbdf.rowCount), (x, i) => i))
         dbdf.columns.add(index)
         return dbdf.join(searchdf, ['index'], ['index'], ['molecule'], ['molecule'], JOIN_TYPE.INNER, true)
-
-
     } catch (e) {
         console.error(e);
         return null;

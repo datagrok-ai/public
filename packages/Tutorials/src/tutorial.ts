@@ -295,6 +295,17 @@ export abstract class Tutorial extends DG.Widget {
   _onClose: Subject<void> = new Subject();
   get onClose() { return this._onClose; }
 
+  protected get menuRoot(): HTMLElement {
+    return grok.shell.windows.simpleMode ? grok.shell.v.ribbonMenu.root : grok.shell.topMenu.root;
+  }
+
+  protected getMenuItem(name: string): HTMLElement | null {
+    return $(this.menuRoot)
+      .find('div.d4-menu-item.d4-menu-group')
+      .filter((idx, el) => Array.from(el.children).some((c) => c.textContent === name))
+      .get(0) ?? null;
+  }
+
   /** Prompts the user to open a viewer of the specified type and returns it. */
   protected async openPlot(name: string, check: (viewer: DG.Viewer) => boolean,
     description: string = ''): Promise<DG.Viewer> {
@@ -443,6 +454,13 @@ export abstract class Tutorial extends DG.Widget {
     })), hint, description);
 
     return dialog!;
+  }
+
+  /** Prompts the user to open the "Add New Column" dialog, waits for it to open and returns it. */
+  protected async openAddNCDialog(instructions: string = 'Open the "Add New Column" dialog',
+    description: string = ''): Promise<DG.Dialog> {
+    const addNCIcon = $('div.d4-ribbon-item').has('i.svg-add-new-column')[0];
+    return await this.openDialog(instructions, 'Add New Column', addNCIcon, description);
   }
 
   /** Prompts the user to select a menu item in the context menu. */
