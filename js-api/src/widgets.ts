@@ -330,11 +330,11 @@ export class Accordion extends DartWidget {
 
 
 /** A pane in the {@link Accordion} control. */
-export class AccordionPane {
+export class AccordionPane extends DartWidget {
   d: any;
 
   constructor(d: any) {
-    this.d = d;
+    super(d);
   }
 
   /** Expanded state
