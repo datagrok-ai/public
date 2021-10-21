@@ -4,7 +4,12 @@ import * as ui from 'datagrok-api/ui';
 import * as DG from 'datagrok-api/dg';
 
 import {SARViewer} from './peptide-sar-viewer/sar-viewer';
-import {AlignedSequenceCellRenderer, AminoAcidsCellRenderer} from './utils/cell-renderer';
+import {
+  AlignedSequenceCellRenderer,
+  AminoAcidsCellRenderer,
+  expandColumn,
+  processSequence,
+} from './utils/cell-renderer';
 import {Logo} from './peptide-logo-viewer/logo-viewer';
 import {StackedBarChart, addViewerToHeader} from './stacked-barchart/stacked-barchart-viewer';
 import {ChemPalette} from './utils/chem-palette';
@@ -28,29 +33,16 @@ async function main(chosenFile: string) {
     for (const col of peptides.columns) {
       col.semType = DG.Detector.sampleCategories(col, (s) => regexp.test(s)) ? 'alignedSequence' : null;
       if (col.semType == 'alignedSequence') {
-        setTimeout(()=>{
-          let maxWidth = 0;
-          for (const s of col.categories) {
-            const subParts:string[] = s.split('-');
-            const simplified = !subParts.some((amino, index)=>{
-              return amino.length>1&&index!=0&&index!=subParts.length-1;
-            });
-            const text:string[] = [];
-            subParts.forEach((amino: string, index) => {
-              if (index < subParts.length) {
-                const gap = simplified?'':' ';
-                amino += `${amino?'':'-'}${gap}`;
-              }
-              text.push(amino);
-            });
-            let textSize = 0;
-            text.forEach((aar)=>{
-              textSize += aar.length;
-            });
-            maxWidth = maxWidth < textSize ? textSize: maxWidth;
-          }
-          tableGrid.col(col.name)!.width = Math.min(maxWidth * 10, 650);
-        }, 500);
+        expandColumn(col, tableGrid, (ent)=>{
+          const subParts:string[] = ent.split('-');
+          // eslint-disable-next-line no-unused-vars
+          const [text, _] = processSequence(subParts);
+          let textSize = 0;
+          text.forEach((aar)=>{
+            textSize += aar.length;
+          });
+          return textSize;
+        });
       }
     }
   },

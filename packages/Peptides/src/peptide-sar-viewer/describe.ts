@@ -4,7 +4,7 @@ import * as DG from 'datagrok-api/dg';
 import {splitAlignedPeptides} from '../split-aligned';
 import {tTest} from '../utils/misc';
 import {ChemPalette} from '../utils/chem-palette';
-import {measureAAR} from '../utils/cell-renderer';
+import {setAARRenderer} from '../utils/cell-renderer';
 
 const cp = new ChemPalette('grok');
 
@@ -51,18 +51,7 @@ export async function describe(
 
   for (const col of df.columns) {
     if (splitSeqDf.col(col.name) && col.name != activityColumn) {
-      col.semType = 'aminoAcids';
-      col.setTag('cell.renderer', 'aminoAcids');
-      if (sourceGrid) {
-        setTimeout(() => {
-          let maxWidth = 0;
-          for (const s of col.categories) {
-            const len = measureAAR(s, true);
-            maxWidth = maxWidth < len ? len : maxWidth;
-          }
-          sourceGrid.col(col.name)!.width = Math.max(maxWidth * 15, 30);
-        }, 100);
-      }
+      setAARRenderer(col, sourceGrid);
     }
   }
   if (sourceGrid) {
@@ -194,15 +183,17 @@ export async function describe(
   aarList.sort((first, second) => getWeight(second) - getWeight(first));
 
   matrixDf.getCol(aminoAcidResidue).setCategoryOrder(aarList);
+  //const sequenceDf = segregateBestAtAllCateg(statsDf, twoColorMode);
 
   // SAR vertical table (naive, choose best Mean difference from pVals <= 0.01)
-  //TODO: aquire ALL of the positions
+  // TODO: aquire ALL of the positions
+
   let sequenceDf = statsDf.groupBy(['Mean difference', aminoAcidResidue, positionColName, 'Count', 'Ratio', 'pValue'])
     .where('pValue <= 0.1')
     .aggregate();
 
   let tempStats: DG.Stats;
-  let maxAtPos: {[index: string]: number} = {};
+  const maxAtPos: {[index: string]: number} = {};
   for (const pos of sequenceDf.getCol(positionColName).categories) {
     tempStats = DG.Stats.fromColumn(
       sequenceDf.getCol('Mean difference'),
@@ -229,38 +220,13 @@ export async function describe(
   //FIXME: looks inefficient
   for (const col of matrixDf.columns) {
     if (col.name === aminoAcidResidue) {
-      col.semType = 'aminoAcids';
-      col.setTag('cell.renderer', 'aminoAcids');
-      let maxLen = 0;
-      setTimeout(() => {
-        col.categories.forEach((ent: string) => {
-          const len = measureAAR(ent, true);
-          if (len > maxLen) {
-            maxLen = len;
-          }
-        });
-        SARgrid.columns.byName(aminoAcidResidue)!.width = Math.max(maxLen * 10, 30);
-      },
-      500);
+      setAARRenderer(col, SARgrid);
       break;
     }
   }
-  //FIXME: duplicating code
   for (const col of sequenceDf.columns) {
     if (col.name === aminoAcidResidue) {
-      col.semType = 'aminoAcids';
-      col.setTag('cell.renderer', 'aminoAcids');
-      let maxLen = 0;
-      setTimeout(() => {
-        col.categories.forEach((ent: string) => {
-          const len = measureAAR(ent, true);
-          if (len > maxLen) {
-            maxLen = len;
-          }
-        });
-        SARVgrid.columns.byName(aminoAcidResidue)!.width = Math.max(maxLen * 10, 30);
-      },
-      500);
+      setAARRenderer(col, SARVgrid);
       break;
     }
   }
@@ -396,4 +362,50 @@ export async function describe(
   }
 
   return [SARgrid, SARVgrid, statsDf];
+}
+
+
+//Selects best (by mean difference) amino acids in all positions in all categories(p-value)
+function segregateBestAtAllCateg(originalDf: DG.DataFrame, twoColorMode:boolean):DG.DataFrame {
+  //todo: make with group by + refactor
+  const filteredDf = originalDf.clone(DG.BitSet.create(originalDf.rowCount, (i) => {
+    return originalDf.get('Count', i) > 3;
+  }));
+  const pValueFilteredDF = filteredDf.clone(DG.BitSet.create(filteredDf.rowCount, (i) => {
+    return filteredDf.get('pValue', i) >= 0.1 && filteredDf.get('Mean difference', i) > 0;
+  }));
+  let statsDfAgr = grok.data.joinTables(pValueFilteredDF, pValueFilteredDF.groupBy(['Position'])
+    .max('Mean difference')
+    .aggregate(), ['Mean difference', 'Position'],
+  ['max(Mean difference)', 'Position'], pValueFilteredDF.columns.names(), [], 'inner', false);
+  //and 'pValue' > 0.1  'pValue' < ${coef}`
+  let lastCoef = 0.0;
+  [0.01, 0.05, 0.1].forEach((coef)=>{
+    const pValueFilteredDF = filteredDf.clone(DG.BitSet.create(filteredDf.rowCount, (i) => {
+      return filteredDf.get('pValue', i) >= lastCoef &&
+          filteredDf.get('pValue', i)< coef &&
+          (filteredDf.get('Mean difference', i) > 0 || !twoColorMode);
+    }));
+    statsDfAgr = statsDfAgr.append(grok.data.joinTables(pValueFilteredDF, pValueFilteredDF.groupBy(['Position'])
+      .max('Mean difference')
+      .aggregate(), ['Mean difference', 'Position'],
+    ['max(Mean difference)', 'Position'], pValueFilteredDF.columns.names(), [], 'inner', false));
+    lastCoef = coef;
+  });
+  if (twoColorMode) {
+    lastCoef = 0.0;
+    [0.01, 0.05, 0.1, 1.01].forEach((coef) => {
+      const pValueFilteredDF = filteredDf.clone(DG.BitSet.create(filteredDf.rowCount, (i) => {
+        return filteredDf.get('pValue', i) >= lastCoef &&
+            filteredDf.get('pValue', i) < coef &&
+            filteredDf.get('Mean difference', i) <= 0;
+      }));
+      statsDfAgr = statsDfAgr.append(grok.data.joinTables(pValueFilteredDF, pValueFilteredDF.groupBy(['Position'])
+        .min('Mean difference')
+        .aggregate(), ['Mean difference', 'position'],
+      ['min(Mean difference)', 'position'], pValueFilteredDF.columns.names(), [], 'inner', false));
+      lastCoef = coef;
+    });
+  }
+  return statsDfAgr;
 }
