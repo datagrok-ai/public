@@ -263,7 +263,8 @@ export class MultiPlotViewer extends DG.JsViewer {
       this.echartOptions.yAxis[visibleIndex].axisLabel.overflow = plot.yLabelOverflow;
       this.echartOptions.yAxis[visibleIndex].axisLine = {onZero: false};
       this.echartOptions.yAxis[visibleIndex].axisTick = {alignWithLabel: true};
-
+      this.echartOptions.yAxis[visibleIndex].min = plot.additionalParams ? plot.additionalParams.min : undefined;
+      this.echartOptions.yAxis[visibleIndex].max =  plot.additionalParams ? plot.additionalParams.max : undefined;
 
       if(plot.multiLineFieldIndex && plot.series.data.length){
         plot.series.data.forEach((item, index) => {
@@ -312,6 +313,7 @@ export class MultiPlotViewer extends DG.JsViewer {
         type: plot.yType,
       },
       itemStyle: {},
+      markLine: plot.additionalParams ? plot.additionalParams.markLine : undefined
     };
 
     if (plot.statusChart) {
@@ -607,8 +609,8 @@ export class MultiPlotViewer extends DG.JsViewer {
   }
 
   isGroup(componentIndex: number, componentType: string) : boolean {
-    const type = this.plots[this.visibleIndexes[componentIndex]].type;
-    const yType = this.plots[this.visibleIndexes[componentIndex]].yType;
+    const type = this.plots[componentIndex].type;
+    const yType = this.plots[componentIndex].yType;
 
     if ((type === 'scatter' || type === 'line') &&
       yType == 'category' && componentType == 'yAxis') return true;
@@ -682,7 +684,8 @@ export class MultiPlotViewer extends DG.JsViewer {
     });
 
     this.echart.on('mouseover', (params) => {
-      const iPlot : number = this.echartOptions.series[params.componentIndex].gridIndex;
+
+      const iPlot : number = this.visibleIndexes[this.echartOptions.series[params.componentIndex].gridIndex];
       const table : DG.DataFrame = this.tables[this.plots[iPlot].tableName];
       const subjBuf = this.plots[iPlot];
       const x = (params.event.event as MouseEvent).x + this.tooltipOffset;
@@ -871,6 +874,7 @@ export class MultiPlotViewer extends DG.JsViewer {
           this.plots[ i ].comboEdit.options);
         inputEdit.onChanged((v) => {
           this.plots[ i ].comboEdit.selectedValue = inputEdit.value;
+          this.plots[i].additionalParams = this.plots[ i ].comboEdit.additionalParams[this.plots[ i ].comboEdit.selectedValue];
           if(this.plots[ i ].comboEdit.editValue === 'category') {
             this.updatePlotByCategory(i, this.plots[ i ].comboEdit.selectedValue, true);
           }
