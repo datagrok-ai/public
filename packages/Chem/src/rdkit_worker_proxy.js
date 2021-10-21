@@ -1,7 +1,13 @@
-class RdKitWorkerProxy {
+import WorkerClass from './rdkit_worker.js';
+
+export class RdKitWorkerProxy {
 
   constructor(basePath, path = 'rdkit_worker.js') {
-    this.worker = new Worker(basePath + 'src/' + path);
+    // this.worker = new Worker(basePath + 'src/' + path);
+    // https://webpack.js.org/guides/web-workers/
+    // this.worker = new Worker('./' + path, { type: 'module' });
+    // https://dannadori.medium.com/how-to-bundle-webworker-in-npm-package-620dcec922e1
+    this.worker = WorkerClass();
   }
 
   async call(op, args = []) {
@@ -23,8 +29,8 @@ class RdKitWorkerProxy {
     });
   }
 
-  moduleInit = async () =>
-    this.call('module::init');
+  moduleInit = async (pathToRdkit) =>
+    this.call('module::init', [pathToRdkit]);
   substructInit = async (dict) =>
     this.call('substructLibrary::init', [dict]);
   substructSearch = async (query, querySmarts) =>

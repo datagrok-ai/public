@@ -1,4 +1,6 @@
-class RdKitParallel {
+import {RdKitWorkerProxy} from './rdkit_worker_proxy.js';
+
+export class RdKitParallel {
   
   constructor(nWorkers = -1) {
     if (nWorkers <= 0) {
@@ -13,8 +15,8 @@ class RdKitParallel {
     this._workers = [];
     let initWaiters = [];
     for (let k = 0; k < this._nWorkers; ++k) {
-      let worker = new RdKitWorkerProxy(webRoot);
-      initWaiters.push(worker.moduleInit());
+      let worker = new RdKitWorkerProxy();
+      initWaiters.push(worker.moduleInit(webRoot));
       this._workers.push(worker);
     }
     await Promise.all(initWaiters);

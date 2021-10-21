@@ -1,6 +1,6 @@
 let subscr = null;
 
-function getMolColumnPropertyPanel(col) {
+export function getMolColumnPropertyPanel(col) {
 
   const NONE = 'None';
   let scaffoldColName = null;
