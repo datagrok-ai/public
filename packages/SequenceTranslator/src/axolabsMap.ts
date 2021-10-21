@@ -78,7 +78,7 @@ export const axolabsMap: {[index: string]: {fullName: string, symbols: [string, 
   "InvAbasic": {
     fullName: "Inverted abasic capped",
     symbols: ["(invabasic)", "(invabasic)", "(invabasic)", "(invabasic)"],
-    color: "rgb(240,62,202)"
+    color: "rgb(217,137,219)"
   },
   "5'-vinylps": {
     fullName: "5'-vinylphosphonate-2'-OMe-uridine",
@@ -88,7 +88,7 @@ export const axolabsMap: {[index: string]: {fullName: string, symbols: [string, 
   "InvAbasic(o)": {
     fullName: "Inverted abasic capped (overhang)",
     symbols: ["(invabasic)", "(invabasic)", "(invabasic)", "(invabasic)"],
-    color: "rgb(240,62,202)"
+    color: "rgb(217,137,219)"
   },
   "2'-OMe-U(o)": {
     fullName: "Nucleotide Uridine with 2’O-Methyl protection (overhang)",
