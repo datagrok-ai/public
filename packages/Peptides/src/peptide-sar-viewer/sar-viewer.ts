@@ -54,7 +54,8 @@ export class SARViewer extends DG.JsViewer {
 
   onTableAttached() {
     this.sourceGrid = this.view.grid;
-    this.render();
+    this.subs.push(DG.debounce(ui.onSizeChanged(this.root), 50).subscribe((_) => this.render(false).then()));
+    this.render().then();
   }
 
   detach() {
@@ -82,7 +83,7 @@ export class SARViewer extends DG.JsViewer {
       }
     }
 
-    this.render();
+    this.render().then();
   }
 
   private applyBitset() {
@@ -162,8 +163,8 @@ export class SARViewer extends DG.JsViewer {
             showColumnSelector: false,
             showRangeSlider: false,
           }).root;
-          hist.style.maxWidth = "500px";
-          hist.style.minWidth = "250px";
+          hist.style.maxWidth = '500px';
+          hist.style.minWidth = '250px';
           elements.push(hist);
 
           const tableMap: {[key: string]: string} = {'Statistics:': ''};
@@ -219,31 +220,41 @@ export class SARViewer extends DG.JsViewer {
       }
     }
   }
-
-  async render() {
+  // argument compute data can be used to just redraw grids.
+  // Probably iirelevant since mostly grids are updating themselves, and render is only used to update data.
+  async render(computeData = true) {
     if (!this.initialized) {
       return;
     }
     //TODO: optimize. Don't calculate everything again if only view changes
-    if (typeof this.dataFrame !== 'undefined' && this.activityColumnColumnName && this.sourceGrid) {
-      [this.viewerGrid, this.viewerVGrid, this.statsDf] = await describe(
-        this.dataFrame,
-        this.activityColumnColumnName,
-        this.activityScalingMethod,
-        this.sourceGrid,
-        this.bidirectionalAnalysis,
-        this._initialBitset,
-      );
+    if (computeData) {
+      if (typeof this.dataFrame !== 'undefined' && this.activityColumnColumnName && this.sourceGrid) {
+        [this.viewerGrid, this.viewerVGrid, this.statsDf] = await describe(
+          this.dataFrame,
+          this.activityColumnColumnName,
+          this.activityScalingMethod,
+          this.sourceGrid,
+          this.bidirectionalAnalysis,
+          this._initialBitset,
+        );
 
-      if (this.viewerGrid !== null && this.viewerVGrid !== null) {
-        $(this.root).empty();
-        this.root.appendChild(ui.splitV([this.viewerGrid.root, this.viewerVGrid.root]));
-        this.viewerGrid.dataFrame!.onCurrentCellChanged.subscribe((_) => {this.applyBitset(); this.syncGridsFunc(false)});
-        this.viewerVGrid.dataFrame!.onCurrentCellChanged.subscribe((_) => this.syncGridsFunc(true));
+        if (this.viewerGrid !== null && this.viewerVGrid !== null) {
+          $(this.root).empty();
+          this.root.appendChild(ui.splitV([this.viewerGrid.root, this.viewerVGrid.root]));
+          this.viewerGrid.dataFrame!.onCurrentCellChanged.subscribe((_) => {
+            this.applyBitset();
+            this.syncGridsFunc(false);
+          });
+          this.viewerVGrid.dataFrame!.onCurrentCellChanged.subscribe((_) => this.syncGridsFunc(true));
 
-        grok.events.onAccordionConstructed.subscribe((accordion: DG.Accordion) => this.accordionFunc(accordion));
+          grok.events.onAccordionConstructed.subscribe((accordion: DG.Accordion) => this.accordionFunc(accordion));
+        }
       }
     }
+    //fixes viewers not rendering immediately after analyze.
+    this.viewerVGrid?.invalidate();
+    this.viewerGrid?.invalidate();
+
     this.progress.close();
   }
 }
