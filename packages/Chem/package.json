@@ -1,21 +1,9 @@
 {
   "name": "Chem",
-  "version": "0.17",
+  "friendlyName": "Chem",
   "fullName": "Chem",
+  "version": "0.20.0",
   "description": "Cheminformatics support: \n\n* RDKit-based rendering \n* Molecule sketching \n*",
-  "sources": [
-    "css/chem.css",
-    "src/RDKit_minimal_2021.03_17.js",
-    "src/rdkit_worker_proxy.js",
-    "src/rdkit_substruct_library.js",
-    "src/rdkit_parallel.js",
-    "src/rdkit_cell_renderer.js",
-    "src/chem_substructure_filter.js",
-    "src/chem_column_property_panel.js",
-    "src/chem_searches.js",
-    "src/sdf_utils.js",
-    "src/tests/chem-tests.js"
-  ],
   "properties": [
     {
       "name": "Renderer",
@@ -29,6 +17,24 @@
     }
   ],
   "dependencies": {
-    "datagrok-tools": "^4.0.15"
+    "datagrok-api": "latest",
+    "cash-dom": "latest",
+    "dayjs": "latest",
+    "ts-loader": "latest",
+    "typescript": "latest",
+    "datagrok-tools": "latest",
+    "file-loader": "latest",
+    "worker-loader": "latest"
+  },
+  "devDependencies": {
+    "file-loader": "^6.2.0",
+    "webpack": "latest",
+    "webpack-cli": "latest"
+  },
+  "browser": {
+    "fs": false,
+    "path": false,
+    "os": false,
+    "crypto": false
   }
 }

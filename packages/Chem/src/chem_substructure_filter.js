@@ -1,11 +1,14 @@
 /**
  * RDKit-based substructure filters that uses Datagrok's collaborative filtering.
- *
  * 1. On onRowsFiltering event, only FILTER OUT rows that do not satisfy this filter's criteria
  * 2. Call dataFrame.rows.requestFilter when filtering criteria changes.
  * */
 
-class SubstructureFilter extends DG.Filter {
+import * as grok from 'datagrok-api/grok';
+import * as ui from 'datagrok-api/ui';
+import * as DG from 'datagrok-api/dg';
+
+export class SubstructureFilter extends DG.Filter {
 
   constructor() {
     super();
