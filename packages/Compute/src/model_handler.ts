@@ -9,7 +9,7 @@ export class ModelHandler extends DG.ObjectHandler {
 
   // Checks whether this is the handler for [x]
   isApplicable(x: any) {
-    return x instanceof DG.Script && x.hasTag("modelhub");
+    return x instanceof DG.Script && x.hasTag("model");
   }
 
   renderIcon(x: DG.Script, context: any = null): HTMLElement {

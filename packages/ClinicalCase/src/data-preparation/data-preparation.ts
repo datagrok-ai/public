@@ -270,6 +270,17 @@ export function labDynamicComparedToMinMax(dataframe, newColName: string) {
 }
 
 
+export function labDynamicRelatedToRef(df: DG.DataFrame, newColName: string){
+  df.columns.addNewFloat(newColName)
+    .init((i) => {
+      const val = df.get('LBSTRESN', i);
+      const min = df.get('LBSTNRLO', i);
+      const max = df.get('LBSTNRHI', i);
+      return val >= max ? val/max : val <= min ? 0 - min/val : ((val-min)/(max-min) - 0.5 )*2;
+    });
+}
+
+
 export function cumulativeEnrollemntByDay(df: DG.DataFrame, dateCol: string, subjIDCol: string, cumCol: string) {
   const subjsPerDay = df.groupBy([ dateCol ]).uniqueCount(subjIDCol).aggregate();
   const refStartCol = subjsPerDay.col(dateCol);
