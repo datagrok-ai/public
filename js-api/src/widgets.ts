@@ -618,6 +618,8 @@ export class Menu {
     return toJs(api.grok_Menu_Context());
   }
 
+  get root(): HTMLElement { return api.grok_Menu_Get_Root(this.d); }
+
   /** Finds a child menu item with the specified text.
    * @param {string} text
    * @returns {Menu} */

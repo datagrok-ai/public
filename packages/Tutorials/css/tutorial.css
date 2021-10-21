@@ -139,6 +139,7 @@ progress[value]::-webkit-progress-value::after {
     align-items: center;
 }
 .grok-tutorial-entry-instruction{
+    margin: 10px;
     color: var(--grey-6);
     font-weight: bolder;
     -webkit-user-select: text;

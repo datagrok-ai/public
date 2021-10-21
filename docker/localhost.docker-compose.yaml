@@ -1,7 +1,7 @@
  version: "3"
  services:
    db:
-     image: postgres:latest
+     image: postgres:12.4
      environment:
        POSTGRES_USER: postgres
        POSTGRES_PASSWORD: postgres
@@ -55,8 +55,6 @@
        datagrok:
          aliases:
            - jupyter_notebook
-     volumes:
-       - jupyter_notebooks:/home/grok/notebooks
      restart: unless-stopped
    jupyter_kernel_gateway:
      image: datagrok/jupyter_kernel_gateway:latest
@@ -79,6 +77,5 @@
    datagrok_db:
    datagrok_data:
    datagrok_cfg:
-   jupyter_notebooks:
  networks:
    datagrok:

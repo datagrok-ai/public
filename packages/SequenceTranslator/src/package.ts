@@ -155,6 +155,7 @@ export function sequenceTranslator(): void {
           let outputSequenceObj = convertSequence(inputSequenceField.value);
           let flavor: string = outputSequenceObj.Nucleotides.includes('U') ? "RNA_both_caps" : "DNA_both_caps";
           let smiles = await nucleotidesToSmiles(outputSequenceObj.Nucleotides, flavor);
+          smiles = smiles.replace(/@/g, '');  // Remove StereoChemistry on the Nucleic acid chain and remove the Chiral label
           //@ts-ignore
           let mol = new OCL.Molecule.fromSmiles(smiles);
           let result = `\n${mol.toMolfile()}\n` + '$$$$';

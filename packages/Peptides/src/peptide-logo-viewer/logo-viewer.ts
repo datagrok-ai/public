@@ -5,7 +5,7 @@ import $ from 'cash-dom';
 
 import * as logojs from 'logojs-react';
 import {splitAlignedPeptides} from '../split-aligned';
-import { ChemPalette } from '../utils/chem-palette';
+import {ChemPalette} from '../utils/chem-palette';
 
 export class Logo extends DG.JsViewer {
   initialized: boolean;
@@ -60,10 +60,12 @@ export class Logo extends DG.JsViewer {
 
   init() {
     this.initialized = true;
-    this.reactHost = ui.div([], {style: {height: '200px', width: '500px'}});
+    // this.reactHost = ui.div([]);
     console.log('INIT');
     this.target = this.dataFrame;
     this.splitted = splitAlignedPeptides(this.dataFrame!.columns.bySemType(this.colSemType));
+    this.root.style.width = 'auto';
+    this.root.style.height = 'auto';
   }
 
   onTableAttached() {
@@ -108,15 +110,15 @@ export class Logo extends DG.JsViewer {
     if (typeof this.dataFrame !== 'undefined') {
       this.findLogo();
 
-      if (this.reactHost !== null) {
-        this.root.appendChild(this.reactHost);
-      }
+      // if (this.reactHost !== null) {
+      //   this.root.appendChild(this.reactHost);
+      // }
     }
   }
 
   async findLogo() {
     this.getInfoFromDf();
-    logojs.embedProteinLogo(this.reactHost, {alphabet: this.LET_COLORS, ppm: this.ppm});
+    logojs.embedProteinLogo(this.root, {alphabet: this.LET_COLORS, ppm: this.ppm});
   }
 
   getInfoFromDf() {
@@ -127,17 +129,19 @@ export class Logo extends DG.JsViewer {
       const size = col.length;
       this.ppm.push(new Array(22).fill(0));
       for (let i = 0; i < col.length; i++) {
-        let c = col.get(i);
+        const c = col.get(i);
         if (c != '-') {
-          if(c[1] == '(') this.ppm[index][this.PROT_NUMS[c.substr(0,1).toUpperCase()]] += 1 / size;
-          else if(c.substr(0, 3) in ChemPalette.AAFullNames && (c.length == 3 || c.at(3) == '(')){
-            this.ppm[index][this.PROT_NUMS[ChemPalette.AAFullNames[c.substr(0,3)]]] += 1 / size;
+          if (c[1] == '(') {
+            this.ppm[index][this.PROT_NUMS[c.substr(0, 1).toUpperCase()]] += 1 / size;
+          } else if (c.substr(0, 3) in ChemPalette.AAFullNames && (c.length == 3 || c.at(3) == '(')) {
+            this.ppm[index][this.PROT_NUMS[ChemPalette.AAFullNames[c.substr(0, 3)]]] += 1 / size;
+          } else if (c.at(0)?.toLowerCase() == c.at(0) && c.substr(1, 3) in ChemPalette.AAFullNames &&
+            (c.length == 4 || c.at(4) == '(')
+          ) {
+            this.ppm[index][this.PROT_NUMS[ChemPalette.AAFullNames[c.substr(1, 3)]]] += 1 / size;
+          } else {
+            this.ppm[index][this.PROT_NUMS[c]] += 1 / size;
           }
-          else if(c.at(0)?.toLowerCase() == c.at(0) && c.substr(1, 3) in ChemPalette.AAFullNames &&
-          (c.length == 4 || c.at(4) == '(')) {
-            this.ppm[index][this.PROT_NUMS[ChemPalette.AAFullNames[c.substr(1,3)]]] += 1 / size;
-          }
-          else this.ppm[index][this.PROT_NUMS[c]] += 1 / size;
         }
       }
       index++;
