@@ -6,10 +6,10 @@ import $ from 'cash-dom';
 
 import {describe} from './describe';
 
-export class SARViewer extends DG.JsViewer {
-  private viewerGrid: DG.Grid | null;
-  private sourceGrid: DG.Grid | null;
-  private progress: DG.TaskBarProgressIndicator;
+export class SARViewerBase extends DG.JsViewer {
+  protected viewerGrid: DG.Grid | null;
+  protected sourceGrid: DG.Grid | null;
+  protected progress: DG.TaskBarProgressIndicator;
   protected activityColumnColumnName: string;
   protected activityScalingMethod: string;
   protected bidirectionalAnalysis: boolean;
@@ -19,7 +19,8 @@ export class SARViewer extends DG.JsViewer {
   protected viewGridInitialized: boolean;
   protected aminoAcidResidue;
   protected _initialBitset: DG.BitSet | null;
-  private viewerVGrid: DG.Grid | null;
+  protected viewerVGrid: DG.Grid | null;
+  protected currentBitset: DG.BitSet | null;
   // protected pValueThreshold: number;
   // protected amountOfBestAARs: number;
   // duplicatesHandingMethod: string;
@@ -34,6 +35,7 @@ export class SARViewer extends DG.JsViewer {
     this.aminoAcidResidue = 'AAR';
     this._initialBitset = null;
     this.viewGridInitialized = false;
+    this.currentBitset = null;
 
     //TODO: find a way to restrict activityColumnColumnName to accept only numerical columns (double even better)
     this.activityColumnColumnName = this.string('activityColumnColumnName');
@@ -54,8 +56,7 @@ export class SARViewer extends DG.JsViewer {
 
   onTableAttached() {
     this.sourceGrid = this.view.grid;
-    this.subs.push(DG.debounce(ui.onSizeChanged(this.root), 50).subscribe((_) => this.render(false).then()));
-    this.render().then();
+    this.render();
   }
 
   detach() {
@@ -83,7 +84,7 @@ export class SARViewer extends DG.JsViewer {
       }
     }
 
-    this.render().then();
+    this.render();
   }
 
   private applyBitset() {
@@ -94,7 +95,8 @@ export class SARViewer extends DG.JsViewer {
       this.viewerGrid.dataFrame.currentCell.value &&
       this.viewerGrid.dataFrame.currentCol.name !== this.aminoAcidResidue
     ) {
-      const currentAAR: string = this.viewerGrid.dataFrame.get(this.aminoAcidResidue, this.viewerGrid.dataFrame.currentRowIdx);
+      const currentAAR: string =
+        this.viewerGrid.dataFrame.get(this.aminoAcidResidue, this.viewerGrid.dataFrame.currentRowIdx);
       const currentPosition = this.viewerGrid.dataFrame.currentCol.name;
 
       const splitColName = '~splitCol';
@@ -108,13 +110,17 @@ export class SARViewer extends DG.JsViewer {
       const isChosen = (i: number) => this.dataFrame!.get(currentPosition, i) === currentAAR;
       this.dataFrame.getCol(splitColName).init((i) => isChosen(i) ? aarLabel : otherLabel);
 
-      if (this.filterMode) {
-        this.dataFrame.selection.setAll(false, false);
-        this.dataFrame.filter.init(isChosen).and(this._initialBitset!, false);
-      } else {
-        this.dataFrame.filter.copyFrom(this._initialBitset!);
-        this.dataFrame.selection.init(isChosen).and(this._initialBitset!, false);
-      }
+      // if (this.filterMode) {
+      //   this.dataFrame.selection.setAll(false, false);
+      //   this.dataFrame.filter.init(isChosen).and(this._initialBitset!, false);
+      // } else {
+      //   this.dataFrame.filter.copyFrom(this._initialBitset!);
+      //   this.dataFrame.selection.init(isChosen).and(this._initialBitset!, false);
+      // }
+      this.currentBitset = DG.BitSet.create(this.dataFrame.rowCount, isChosen).and(this._initialBitset!);
+      // (this.filterMode ? this.dataFrame.selection.setAll(false) : this.dataFrame.filter.copyFrom(this._initialBitset!)).fireChanged();
+      this.sourceFilteringFunc();
+
 
       // df.getCol(splitColName).setCategoryOrder([otherLabel, aarLabel]);
       const colorMap: {[index: string]: string | number} = {};
@@ -122,6 +128,16 @@ export class SARViewer extends DG.JsViewer {
       colorMap[aarLabel] = DG.Color.orange;
       // colorMap[currentAAR] = cp.getColor(currentAAR);
       this.dataFrame.getCol(splitColName).colors.setCategorical(colorMap);
+    }
+  }
+
+  private sourceFilteringFunc() {
+    if (this.filterMode) {
+      this.dataFrame!.selection.setAll(false, false);
+      this.dataFrame!.filter.copyFrom(this.currentBitset!);
+    } else {
+      this.dataFrame!.filter.copyFrom(this._initialBitset!);
+      this.dataFrame!.selection.copyFrom(this.currentBitset!);
     }
   }
 
@@ -155,6 +171,7 @@ export class SARViewer extends DG.JsViewer {
         }
         accordion.addPane('Distribution', () => {
           const hist = originalDf.clone(this._initialBitset).plot.histogram({
+          // const hist = originalDf.plot.histogram({
             filteringEnabled: false,
             valueColumnName: `${this.activityColumnColumnName}Scaled`,
             splitColumnName: '~splitCol',
@@ -163,8 +180,7 @@ export class SARViewer extends DG.JsViewer {
             showColumnSelector: false,
             showRangeSlider: false,
           }).root;
-          hist.style.maxWidth = '500px';
-          hist.style.minWidth = '250px';
+          hist.style.width = 'auto';
           elements.push(hist);
 
           const tableMap: {[key: string]: string} = {'Statistics:': ''};
@@ -206,10 +222,14 @@ export class SARViewer extends DG.JsViewer {
         if (typeof otherPos === 'undefined' && otherPos !== this.aminoAcidResidue) {
           return;
         }
-        const otherAAR: string = this.viewerGrid.dataFrame.get(this.aminoAcidResidue, this.viewerGrid.dataFrame.currentRowIdx);
+        const otherAAR: string =
+          this.viewerGrid.dataFrame.get(this.aminoAcidResidue, this.viewerGrid.dataFrame.currentRowIdx);
         let otherRowIndex = -1;
         for (let i = 0; i < this.viewerVGrid.dataFrame.rowCount; i++) {
-          if (this.viewerVGrid.dataFrame.get(this.aminoAcidResidue, i) === otherAAR && this.viewerVGrid.dataFrame.get('Position', i) === otherPos) {
+          if (
+            this.viewerVGrid.dataFrame.get(this.aminoAcidResidue, i) === otherAAR &&
+            this.viewerVGrid.dataFrame.get('Position', i) === otherPos
+          ) {
             otherRowIndex = i;
             break;
           }
@@ -246,6 +266,7 @@ export class SARViewer extends DG.JsViewer {
             this.syncGridsFunc(false);
           });
           this.viewerVGrid.dataFrame!.onCurrentCellChanged.subscribe((_) => this.syncGridsFunc(true));
+          this.dataFrame.onRowsFiltering.subscribe((_) => this.sourceFilteringFunc());
 
           grok.events.onAccordionConstructed.subscribe((accordion: DG.Accordion) => this.accordionFunc(accordion));
         }
