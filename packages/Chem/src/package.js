@@ -4,7 +4,7 @@ import * as DG from 'datagrok-api/dg';
 import {createRDKit} from './RDKit_minimal_2021.03_17.js';
 import {getMolColumnPropertyPanel} from './chem_column_property_panel.js';
 import * as chemSearches from './chem_searches.js';
-import {setSearchesRdKitModule} from './chem_searches.js';
+import {setSearchesRdKitModule, moleculesToFingerprints} from './chem_searches.js';
 import {RDKitCellRenderer} from './rdkit_cell_renderer.js';
 import {SubstructureFilter} from './chem_substructure_filter.js';
 
@@ -132,7 +132,7 @@ export async function getSimilarities(molStringsColumn, molString) {
 //input: column molColumn {semType: Molecule}
 //output: column result [fingerprints]
 export function getMorganFingerprints(molColumn) {
-  return _moleculesToFingerprints(molColumn);
+  return moleculesToFingerprints(molColumn);
 }
 
 //name: findSimilar
