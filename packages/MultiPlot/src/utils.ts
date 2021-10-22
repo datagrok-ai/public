@@ -39,7 +39,7 @@ export class MPUtils {
 
   // convert one multiline describtion to the several plots
   // only objects with field "splitByColumnName"
-  generatePlotsFromDescribtions(descr: any, categs: string[], allCats: string[]): any {
+  generatePlotsFromDescriptions(descr: any, categs: string[], allCats: string[]): any {
     const r = [];
     const categsMax = descr.maxLimit;
     const fieldsNumber = categs.length < categsMax ? categs.length : categsMax;
@@ -94,7 +94,7 @@ export class MPUtils {
         p.allCats = sortedCats;
         const activeCats = this.concatArrayUnique(p.categories ?? [], sortedCats, p.maxLimit);
         p.activeCats = activeCats;
-        const plotsArray = this.generatePlotsFromDescribtions(p, activeCats, sortedCats);
+        const plotsArray = this.generatePlotsFromDescriptions(p, activeCats, sortedCats);
         r = r.concat(plotsArray);
       } else {
         if (p.statusChart) {

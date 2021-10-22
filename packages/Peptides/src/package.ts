@@ -3,7 +3,7 @@ import * as grok from 'datagrok-api/grok';
 import * as ui from 'datagrok-api/ui';
 import * as DG from 'datagrok-api/dg';
 
-import {SARViewer} from './peptide-sar-viewer/sar-viewer';
+import {SARViewerBase} from './peptide-sar-viewer/sar-viewer';
 import {
   AlignedSequenceCellRenderer,
   AminoAcidsCellRenderer,
@@ -201,8 +201,8 @@ export async function analyzePeptides(col: DG.Column): Promise<DG.Widget> {
 //description: Peptides SAR Viewer
 //tags: viewer
 //output: viewer result
-export function sar(): SARViewer {
-  return new SARViewer();
+export function sar(): SARViewerBase {
+  return new SARViewerBase();
 }
 
 //name: StackedBarchart Widget

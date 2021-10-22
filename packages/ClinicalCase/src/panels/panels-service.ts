@@ -10,6 +10,7 @@ import { updateDivInnerHTML } from '../views/utils';
 import $ from "cash-dom";
 import { getSubjectDmData } from '../data-preparation/data-preparation';
 import { Accordion } from 'datagrok-api/dg';
+import { AEBrowserHelper } from '../helpers/ae-browser-helper';
 
 export async function createPropertyPanel(viewClass: any) {
     switch (viewClass.name) {
@@ -30,8 +31,10 @@ export async function createPropertyPanel(viewClass: any) {
     }
 }
 
-export async function aeBrowserPanel(view: AeBrowserView) {
+export async function aeBrowserPanel(view: AEBrowserHelper) {
 
+    let panelDiv = ui.div();
+    
     let accae = ui.accordion('Ae browser');
     let accIcon = ui.element('i');
     accIcon.className = 'grok-icon svg-icon svg-view-layout';
@@ -53,14 +56,6 @@ export async function aeBrowserPanel(view: AeBrowserView) {
         let startEndDays = ui.tooltip.bind(
             ui.label(`${getNullOrValue(view.aeToSelect, 'AESTDY', view.aeToSelect.currentRowIdx)} - ${getNullOrValue(view.aeToSelect, 'AEENDY', view.aeToSelect.currentRowIdx)}`), 
             `${getNullOrValue(view.aeToSelect, 'AESTDTC', view.aeToSelect.currentRowIdx)} - ${getNullOrValue(view.aeToSelect, 'AEENDTC', view.aeToSelect.currentRowIdx)}`);
-        
-        /*    
-        let summary = ui.div([
-          title,
-          description,
-          ui.inlineText(['Days ', startEndDays])
-        ])
-        */
        
 
         let daysInput = ui.intInput('Days prior AE', view.daysPriorAe);
@@ -89,13 +84,23 @@ export async function aeBrowserPanel(view: AeBrowserView) {
             let acc = ui.accordion('ae-browser-panel');
             view.domains.concat(view.selectedAdditionalDomains).forEach(it => {
                 const rowNum = view[ it ].rowCount === 1 && view[ it ].getCol(SUBJECT_ID).isNone(0) ? 0 : view[ it ].rowCount
-                acc.addPane(`${it} (${rowNum})`, () => {
+                acc.addCountPane(`${it}`, () => {
                     if (it) {
-                        let grid = view[ it ].plot.grid();
-                        console.log(grid);
-                        return ui.div(grid.root)
+                        if(!rowNum){
+                            return ui.divText('No records found');
+                        } else {
+                            let grid = view[ it ].plot.grid();
+                            if(rowNum < 7){
+                                grid.root.style.maxHeight = rowNum < 4 ? '100px' : '150px' ;
+                            }
+                            return ui.div(grid.root);
+                        }
                     }
-                });
+                }, () => rowNum);
+                let panel = acc.getPane(`${it}`);
+                let root = (<any>window).grok_Widget_Get_Root(panel.d); //panel.root
+                $(root).css('display', 'flex');
+                $(root).css('opacity', '1');
             })
             updateDivInnerHTML(accDiv, acc.root);
         }
@@ -112,14 +117,12 @@ export async function aeBrowserPanel(view: AeBrowserView) {
             .show({centerAt: addButton});
         });
         updateAccordion();
-
-        accDiv.append(addButton)
         
-        accae.addPane('Domains', ()=>{
-            return accDiv
-        }, true);
+        panelDiv.append(accae.root);
+        panelDiv.append(accDiv);
+        panelDiv.append(addButton);
 
-        return accae.root
+        return panelDiv;
     }
 }
 

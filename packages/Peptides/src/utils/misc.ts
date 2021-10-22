@@ -9,25 +9,6 @@ type testStats = {
   'p-value less': number,
 };
 
-export function decimalAdjust(type: 'floor' | 'ceil' | 'round', value: number, exp: number): number {
-  // If the exp is undefined or zero...
-  if (typeof exp === 'undefined' || +exp === 0) {
-    return Math[type](value);
-  }
-  value = +value;
-  exp = +exp;
-  // If the value is not a number or the exp is not an integer...
-  if (isNaN(value) || !(typeof exp === 'number' && exp % 1 === 0)) {
-    return NaN;
-  }
-  // Shift
-  let valueArr = value.toString().split('e');
-  value = Math[type](+(valueArr[0] + 'e' + (valueArr[1] ? (+valueArr[1] - exp) : -exp)));
-  // Shift back
-  valueArr = value.toString().split('e');
-  return +(valueArr[0] + 'e' + (valueArr[1] ? (+valueArr[1] + exp) : exp));
-}
-
 export function tTest(arr1: number[], arr2: number[], alpha=0.05, devKnown=false, devEqual=false): testStats {
   const m1: number = jStat.mean(arr1);
   const m2: number = jStat.mean(arr2);

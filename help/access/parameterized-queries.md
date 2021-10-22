@@ -56,7 +56,34 @@ Is one of:
 *   **`double`** – float scalar
 *   **`bool`** – boolean scalar
 *   **`string`** – string
-*   **`datetime`** – [DateTime]() <!-- TODO -->
+*   **`datetime`** – [DateTime]()
+<!-- TODO -->
+*   **`list<T>`** — a list of type `T` (currently `string` is supported)
+
+##### Using lists in queries
+
+To use lists as inputs to the queries, consider the following transformation:
+
+* Specify `list<T>` as a type of a parameter `p`, `T` is the type of list elements
+* Wrap the use of `p` inside the SQL query into `= ANY` operator: `= ANY(p)`, or a similar
+  operator with an alternative selection of the comparison type, such as `>= ANY` or `< ANY`
+  
+For example, here is how we can transform a query to `northwind` taking a single `string`
+parameter for a country:
+
+```
+--input: string country
+select * from customers where country = @country
+```
+
+into a query taking a comma-separated list of countries:
+
+```
+--input: list<string> countries
+select * from customers where country = ANY(@countries)
+```
+
+Learn more about using the lists feature in this video: [link](https://www.youtube.com/watch?v=meRAEF7ogtw).
 
 #### Choices and suggestions
 

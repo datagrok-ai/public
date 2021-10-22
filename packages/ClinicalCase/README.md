@@ -53,11 +53,11 @@ Here you can find number total number of subjects and sites along with the cumul
 
 Also there is a couple of charts with essential population characteristics – age, race, sex, treatment arm – which can be used to assess their distribution within population. Charts are interactive and linked with each other. For instance, by clicking on 'M' sex the other charts will show the proportion of male subjects.
 
-<img src="https://github.com/datagrok-ai/public/blob/clinical-case-app/packages/ClinicalCase/img/summary.gif" height="500" width='800'/>
+<img src="https://github.com/datagrok-ai/public/blob/master/packages/ClinicalCase/img/summary.gif" height="500" width='800'/>
 
 In case trial is registered on [clinicaltrials.gov](https://clinicaltrials.gov/) property panel on the right will basic study information extracted from database along with the link to the study on [clinicaltrials.gov](https://clinicaltrials.gov/).
 
-<img src="https://github.com/datagrok-ai/public/blob/clinical-case-app/packages/ClinicalCase/img/Summary_property_panel.PNG"/>
+<img src="https://github.com/datagrok-ai/public/blob/master/packages/ClinicalCase/img/Summary_property_panel.PNG"/>
 
 
 ### Timelines
@@ -71,11 +71,11 @@ By zooming in and out you can drill down to particular patient and event or othe
 
 Information about particular event is shown in tooltip on mouse hover.
 
-<img src="https://github.com/datagrok-ai/public/blob/clinical-case-app/packages/ClinicalCase/img/timelines.gif" height="500" width='800'/>
+<img src="https://github.com/datagrok-ai/public/blob/master/packages/ClinicalCase/img/timelines.gif" height="500" width='800'/>
 
 Several domains can be shown simultaneously on the graph. For instance, the following screenshot shows severe general and cardiac disorders VS aspirin intake.
 
-<img src="https://github.com/datagrok-ai/public/blob/clinical-case-app/packages/ClinicalCase/img/timelines.PNG" height="500" width='800'/>
+<img src="https://github.com/datagrok-ai/public/blob/master/packages/ClinicalCase/img/timelines.PNG" height="500" width='800'/>
 
 
 ### Patient profile
@@ -85,7 +85,7 @@ You can analyse data from laboratory, adverse events, dug exposue and concomitan
 
 Information about events in available in tooltips on mouse hover. For convenience domains han be collapsed or extended.
 
-<img src="https://github.com/datagrok-ai/public/blob/clinical-case-app/packages/ClinicalCase/img/patient_profile_zoom.gif" height="500" width='800'/>
+<img src="https://github.com/datagrok-ai/public/blob/master/packages/ClinicalCase/img/patient_profile_zoom.gif" height="500" width='800'/>
 
 * **Lab values chart**
 
@@ -93,7 +93,7 @@ By clicking on settings button you can choose laboratory values to show on chart
 
 Values within normal ranges are colored green, values outside normal ranges are red.
 
-<img src="https://github.com/datagrok-ai/public/blob/clinical-case-app/packages/ClinicalCase/img/patient_profile_lab.gif" height="500" width='800'/>
+<img src="https://github.com/datagrok-ai/public/blob/master/packages/ClinicalCase/img/patient_profile_lab.gif" height="500" width='800'/>
 
 * **Lab values line chart**
 
@@ -103,7 +103,7 @@ Laboratory line chart provides two ways of calculating values dynamics:
 1. Relative changes from baseline
 2. Relative values between min and max contained in dataset
 
-<img src="https://github.com/datagrok-ai/public/blob/clinical-case-app/packages/ClinicalCase/img/patient_profile_lab_line.gif" height="500" width='800'/>
+<img src="https://github.com/datagrok-ai/public/blob/master/packages/ClinicalCase/img/patient_profile_lab_line.gif" height="500" width='800'/>
 
 ### Adverse events
 
@@ -117,7 +117,7 @@ Scatter plot can be zoomed in and out to drill down to particular patient or see
 
 Color indicates severity of an Adverse event.
 
-<img src="https://github.com/datagrok-ai/public/blob/clinical-case-app/packages/ClinicalCase/img/ae_all_events.gif" height="500" width='800'/>
+<img src="https://github.com/datagrok-ai/public/blob/master/packages/ClinicalCase/img/ae_all_events.gif" height="500" width='800'/>
 
 
 * **Events per week**
@@ -134,7 +134,7 @@ Color corresponds to treatment arm. So you can visually assess proportion of eac
 
 Barcharts are also interactive. By selecting one of the groups in a barchart (for instance, adverse events related to study drug for patients who took placebo) corresponding rows will be selected in the table and 'All events' scatter plot.
 
-<img src="https://github.com/datagrok-ai/public/blob/clinical-case-app/packages/ClinicalCase/img/ae_barcharts.gif" height="500" width='800'/>
+<img src="https://github.com/datagrok-ai/public/blob/master/packages/ClinicalCase/img/ae_barcharts.gif" height="500" width='800'/>
 
 
 ### Laboratory
@@ -149,7 +149,7 @@ Shows peak bilirubin values versus peak ALT/AST values across the study. Referen
 
 Color coresponds to treatment arm.
 
-<img src="https://github.com/datagrok-ai/public/blob/clinical-case-app/packages/ClinicalCase/img/hys_law.PNG" height="500" width='800'/>
+<img src="https://github.com/datagrok-ai/public/blob/master/packages/ClinicalCase/img/hys_law.PNG" height="500" width='800'/>
 
 * **Baseline endpoint**
 
@@ -161,7 +161,7 @@ Baseline, enpoint visits as well as laboratory value can be selected using dropd
 
 Color coresponds to treatment arm.
 
-<img src="https://github.com/datagrok-ai/public/blob/clinical-case-app/packages/ClinicalCase/img/bl_ep.PNG" height="500" width='800'/>
+<img src="https://github.com/datagrok-ai/public/blob/master/packages/ClinicalCase/img/bl_ep.PNG" height="500" width='800'/>
 
 * **Laboratoty distribution**
 
@@ -170,13 +170,34 @@ In particular you can analyze median, min and max values, upper and lower quarti
 
 Laboratory value as well as study visit can be selected via dropdown lists above box plots.
 
-<img src="https://github.com/datagrok-ai/public/blob/clinical-case-app/packages/ClinicalCase/img/lab_distr.PNG" height="500" width='800'/>
+<img src="https://github.com/datagrok-ai/public/blob/master/packages/ClinicalCase/img/lab_distr.PNG" height="500" width='800'/>
 
 * **Results**
 
 This tab contains laboratory domain table.
 
-<img src="https://github.com/datagrok-ai/public/blob/clinical-case-app/packages/ClinicalCase/img/lab_table.PNG" height="500" width='800'/>
+<img src="https://github.com/datagrok-ai/public/blob/master/packages/ClinicalCase/img/lab_table.PNG" height="500" width='800'/>
+
+### Survival analysis
+This view is designed to create Kaplan-Meier curves and perform covariates analysis.
+
+Steps to perform survival analysis:
+
+- create dataset (`Dataset` tab)
+
+Choose endpoint for which you want to create Kaplan-Meier curve. Optionally you can include basic covariates(age, sex, race, treatment arm) into dataset. Click `Create dataset` button. 
+
+Dataset can be further filtered.
+
+<img src="https://github.com/datagrok-ai/public/blob/master/packages/ClinicalCase/img/survival_dataset.gif" height="500" width='800'/>
+
+- go to `Survival` tab. You will see Kaplan-Meier curve. You can modify confidence interval or choose strata(stratas will be available in dropdown list in case covariates for dataset are selected). After modifying parameters curve will be updated.
+
+<img src="https://github.com/datagrok-ai/public/blob/master/packages/ClinicalCase/img/survival_kaplan_meier.gif" height="500" width='800'/>
+
+In case you want to perform covariates analysis you should go to `Covariates` tab and check one or several covariates.
+
+<img src="https://github.com/datagrok-ai/public/blob/master/packages/ClinicalCase/img/survival_covariates.PNG" height="500" width='800'/>
 
 ### Biomarkers distribution
 
@@ -184,7 +205,7 @@ The view shows distribution of selected biomarker values for all subjects at sel
 
 By default 4 biomarkers with min p-value at the earliest study visit splitted by treatment arm are shown. Baseline visit, split parameter as well as biomarkers can be further changed via dropdown lists and settings button above the boxplots.
 
-<img src="https://github.com/datagrok-ai/public/blob/clinical-case-app/packages/ClinicalCase/img/biomarkers_dist.gif" height="500" width='800'/>
+<img src="https://github.com/datagrok-ai/public/blob/master/packages/ClinicalCase/img/biomarkers_dist.gif" height="500" width='800'/>
 
 ### Correlation matrix
 
@@ -194,7 +215,7 @@ On diagonal you can see histograms showing biomarker distribution. Cells at the 
 
 By default correlation matrix is created for whole list of biomarkers at the earliest study visit. Visit as well as biomarkers can be further changed via dropdown list and settings button above the boxplots. 
 
-<img src="https://github.com/datagrok-ai/public/blob/clinical-case-app/packages/ClinicalCase/img/corr_matrix.gif" height="500" width='800'/>
+<img src="https://github.com/datagrok-ai/public/blob/master/packages/ClinicalCase/img/corr_matrix.gif" height="500" width='800'/>
 
 ### Time profile
 
@@ -207,11 +228,11 @@ There are 2 types of chart representation:
 
 Type of graph and required visits can be selected in the ribbon panel above chart.
 
-<img src="https://github.com/datagrok-ai/public/blob/clinical-case-app/packages/ClinicalCase/img/time_profile_1.gif" height="500" width='800'/>
+<img src="https://github.com/datagrok-ai/public/blob/master/packages/ClinicalCase/img/time_profile_1.gif" height="500" width='800'/>
 
 Line chart is splitted by treatment arm by default. But parameter to split by can be changed as well as biomarker itself. 
 
-<img src="https://github.com/datagrok-ai/public/blob/clinical-case-app/packages/ClinicalCase/img/time_profile_2.gif" height="500" width='800'/>
+<img src="https://github.com/datagrok-ai/public/blob/master/packages/ClinicalCase/img/time_profile_2.gif" height="500" width='800'/>
 
 Each value on the line is drawn in form of distribution. By default points represents median, whiskers represent upper and lower quartiles. Type of distribution can also be changed in property panel. 
 
@@ -228,7 +249,7 @@ By selecting row in a table the following information will be displayed on a pro
 - input with number of days before AE for which you want to analyze events in other domains (by default it's 5)
 - list of expandable domain panels which contains rows with events occurred during selected period before the AE (by default adverse event, drug exposure and concomitant domains are selected, but you can add other domains by clicking on `+` button)
 
-<img src="https://github.com/datagrok-ai/public/blob/clinical-case-app/packages/ClinicalCase/img/ae_browser.gif" height="500" width='800'/>
+<img src="https://github.com/datagrok-ai/public/blob/master/packages/ClinicalCase/img/ae_browser.gif" height="500" width='800'/>
 
 
 ### Validation
@@ -239,7 +260,7 @@ In the upper table there is a whole list of violated rules. In the lower table t
 
 By selecting a row in the upper table the lower table wil be filtered by the selected violated rule rule.
 
-<img src="https://github.com/datagrok-ai/public/blob/clinical-case-app/packages/ClinicalCase/img/validation.gif" height="500" width='800'/>
+<img src="https://github.com/datagrok-ai/public/blob/master/packages/ClinicalCase/img/validation.gif" height="500" width='800'/>
 
 
 

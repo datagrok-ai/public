@@ -18,6 +18,8 @@ import { MatrixesView } from './views/matrixes-view';
 import { createPropertyPanel } from './panels/panels-service';
 import { TimeProfileView } from './views/time-profile-view';
 import { AeBrowserView } from './views/adverse-events-browser';
+import { AEBrowserHelper } from './helpers/ae-browser-helper';
+import { SUBJECT_ID } from './constants';
 
 export let _package = new DG.Package();
 
@@ -146,7 +148,18 @@ export async function clinicalCaseApp(): Promise<any> {
   views.push(<BoxPlotsView>addView(new BoxPlotsView('Biomarkers distribution')));
   views.push(<MatrixesView>addView(new MatrixesView('Correlation Matrix')));
   views.push(<TimeProfileView>addView(new TimeProfileView('Time Profile')));
-  views.push(<AeBrowserView>addView(new AeBrowserView('AE Browser')));
+
+  const aeBrowserDf = study.domains.ae.clone();
+  const aeBrowserView = DG.TableView.create(aeBrowserDf);
+  aeBrowserView.name = 'AE browser';
+  views.push(addView(aeBrowserView));
+  const aeBrwoserHelper = new AEBrowserHelper(aeBrowserDf);
+  aeBrowserDf.onCurrentRowChanged.subscribe(() => {
+    aeBrwoserHelper.currentSubjId = aeBrowserDf.get(SUBJECT_ID, aeBrowserDf.currentRowIdx);
+    aeBrwoserHelper.currentAeDay = aeBrowserDf.get('AESTDY', aeBrowserDf.currentRowIdx);
+    aeBrwoserHelper.createAEBrowserPanel();
+})
+
   DG.ObjectHandler.register(new AdverseEventHandler());
 
   let summary = views.find(it => it.name === 'Summary');

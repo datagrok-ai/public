@@ -1,7 +1,7 @@
 import * as DG from "datagrok-api/dg";
 import * as ui from "datagrok-api/ui";
 import { study } from "../clinical-study";
-import { addColumnWithDrugPlusDosage, labDynamicComparedToBaseline, labDynamicComparedToMinMax } from "../data-preparation/data-preparation";
+import { addColumnWithDrugPlusDosage, labDynamicComparedToBaseline, labDynamicComparedToMinMax, labDynamicRelatedToRef } from "../data-preparation/data-preparation";
 import { getUniqueValues } from "../data-preparation/utils";
 
 
@@ -62,12 +62,30 @@ export class PatientProfileView extends DG.ViewBase {
           selectedValues: [], 
           editValue: 'category'},
         comboEdit: {
-          options: ['From BL', 'Min/Max'], 
-          selectedValue: 'From BL', 
+          options: ['From BL', 'Min/Max', 'Related to ref'], 
+          selectedValue: 'From BL',
           editValue: 'y', 
           editName: 'Type', 
-          values: {'From BL': 'LAB_DYNAMIC_BL', 'Min/Max': 'LAB_DYNAMIC_MIN_MAX'}},
-        showLegend: true
+          values: {'From BL': 'LAB_DYNAMIC_BL', 'Min/Max': 'LAB_DYNAMIC_MIN_MAX', 'Related to ref': 'LAB_DYNAMIC_REF'},
+          additionalParams: {
+            'Related to ref': {
+              markLine: {
+                lineStyle: {
+                  color: '#333'
+                },
+                data: [
+                  {
+                    yAxis: -1
+                  },
+                  {
+                    yAxis: 1
+                  },
+                ]
+              }
+            }
+          }
+        },
+        showLegend: true,
       }, 
 
       // timeLines
@@ -225,6 +243,7 @@ export class PatientProfileView extends DG.ViewBase {
     this.options_lb_ae_ex_cm['xAxisMinMax'] = this.extractMinAndMaxValuesForXAxis();
     labDynamicComparedToBaseline(this.tables[ 'lb' ],  this.options_lb_ae_ex_cm['xAxisMinMax']['minX'], 'VISITDY', 'LAB_DYNAMIC_BL', false);
     labDynamicComparedToMinMax(this.tables[ 'lb' ], 'LAB_DYNAMIC_MIN_MAX');
+    labDynamicRelatedToRef(this.tables[ 'lb' ], 'LAB_DYNAMIC_REF');
   }
 
   private extractMinAndMaxValuesForXAxis() {

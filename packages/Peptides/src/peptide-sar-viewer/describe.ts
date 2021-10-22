@@ -257,7 +257,12 @@ export async function describe(
     //   args.preventDefault();
     // }
 
-    if (args.cell.isTableCell && args.cell.tableRowIndex !== null && args.cell.tableColumn !== null && args.cell.cell.value !== null) {
+    if (
+      args.cell.isTableCell &&
+      args.cell.tableRowIndex !== null &&
+      args.cell.tableColumn !== null &&
+      args.cell.cell.value !== null
+    ) {
       if (renderColNames.indexOf(args.cell.tableColumn.name) !== -1) {
         const currentPosition = args.cell.tableColumn.name !== 'Mean difference' ?
           args.cell.tableColumn.name : args.cell.grid.table.get(positionColName, args.cell.tableRowIndex);
@@ -363,7 +368,6 @@ export async function describe(
 
   return [SARgrid, SARVgrid, statsDf];
 }
-
 
 //Selects best (by mean difference) amino acids in all positions in all categories(p-value)
 function segregateBestAtAllCateg(originalDf: DG.DataFrame, twoColorMode:boolean):DG.DataFrame {
