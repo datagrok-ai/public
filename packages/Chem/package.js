@@ -148,13 +148,13 @@ class ChemPackage extends DG.Package {
   async chemSimilaritySpeImpl(fingerprints, dimension) {
     var core = _fingerprintSimilarity;
     var coordinates = stochasticProximityEmbedding(fingerprints.length, (x, y) => 1.0 - core(fingerprints.get(x), fingerprints.get(y)),
-                                                   2, null, null, 1.0, 2.0, 0.01, fingerprints.length * 100, 100, null);
+                                                   2, null, null, 1.0, 2.0, 0.01, fingerprints.length * 100, 100);
     var columns = [
-      DG.Column.fromFloat32Array('X', coordinates[0]),
-      DG.Column.fromFloat32Array('Y', coordinates[1]),
+      DG.Column.fromFloat32Array('SPE_X', coordinates[0]),
+      DG.Column.fromFloat32Array('SPE_Y', coordinates[1]),
     ]
     if (dimension == 3)
-      columns.append(DG.Column.fromFloat32Array('Z', coordinates[2]));
+      columns.append(DG.Column.fromFloat32Array('SPE_Z', coordinates[2]));
     return DG.DataFrame.fromColumns(columns);
   }
 
@@ -163,18 +163,64 @@ class ChemPackage extends DG.Package {
   //input: column molColumn {semType: Molecule}
   //output: graphics
   async chemSimilarityAnalysis(table, molColumn) {
+    // var startTime = performance.now();
     var fpColumn = await this.getMorganFingerprints(molColumn);
     if (fpColumn.stats.missingValueCount > 0) {
-      throw "Molecule column has a null entry";
+      throw new Error("Molecule column has a null entry");
     }
-    var coords = await this.chemSimilaritySpeImpl(fpColumn, 2);
-    coords = coords.columns.toList();
-    table = DG.DataFrame.fromColumns(table.columns.toList().concat(coords));
-    let view = grok.shell.addTableView(table);
-    view.scatterPlot({
-      x: 'X',
-      y: 'Y',
-    });
+    
+    if (window.Worker) {
+      const myWorker = new Worker(this.webRoot + '/src/chem_searches.js');
+      const byteCount = 16, byteSize = 8;
+      var fpMaskArray = new Array(fpColumn.length);
+
+      for (let i = 0; i < fpColumn.length; ++i) {
+        var binaryString = fpColumn.get(i).toBinaryString()
+        var mask = 0, cnt = 0;
+        var fpMask = new Uint8Array(byteCount);
+
+        for (let j = 0; j < binaryString.length; ++j) {
+          if(j % byteSize == 0) {
+            fpMask[cnt++] = mask;
+            mask = 0;
+          }
+          if (binaryString[j] == '1') 
+            mask |= (1 << ((binaryString.length - j - 1) % byteSize));
+        }
+        fpMaskArray[i] = fpMask;
+      }
+
+      myWorker.postMessage([fpColumn.length, fpMaskArray,
+                            2, null, null, 1.0, 2.0, 0.01, fpColumn.length * 100, 100]);
+      myWorker.onmessage = function(event) {
+        var coordinates = event.data;
+        var coords = [
+          DG.Column.fromFloat32Array('SPE_X', coordinates[0]),
+          DG.Column.fromFloat32Array('SPE_Y', coordinates[1]),
+        ]
+        table = DG.DataFrame.fromColumns(table.columns.toList().concat(coords));
+        let view = grok.shell.addTableView(table);
+        view.scatterPlot({
+          x: 'SPE_X',
+          y: 'SPE_Y',
+        });
+      };
+      myWorker.onerror = function(error) {
+        grok.shell.error(error.message);
+      };
+      // var endTime = performance.now();
+      // alert(`Runtime is ${(endTime - startTime) / 1000} secs`); 
+    } else {
+      throw new Error("Your browser doesn\'t support web workers.");
+    }
+    // return new Promise((resolve, reject) => {
+    //   let d = ui.dialog();
+    //   d.add(ui.button('OK', () => {
+    //     d.close();
+    //     resolve(table);
+    //   }));
+    //   d.show();
+    // });
   }
 
   //name: searchSubstructure
