@@ -304,6 +304,7 @@ export class Accordion extends DartWidget {
     return api.grok_TabControlBase_Get_Panes(this.d).map(toJs);
   }
 
+  /** Header element on top of the accordion */
   get header(): HTMLElement { return api.grok_Accordion_Get_Header(this.d); }
   set header(header) { api.grok_Accordion_Set_Header(this.d, header); }
 
@@ -314,18 +315,23 @@ export class Accordion extends DartWidget {
     return toJs(api.grok_TabControlBase_GetPane(this.d, name));
   }
 
+  /** Adds a title element. */
   addTitle(element: HTMLElement): void {
     return api.grok_Accordion_AddTitle(this.d, element);
   }
 
+  /** Adds a pane */
   addPane(name: string, getContent: Function, expanded: boolean = false, before: AccordionPane | null = null): AccordionPane {
     return toJs(api.grok_Accordion_AddPane(this.d, name, getContent, expanded, before !== null ? before.d : null, null));
   }
 
+  /** Adds a pane with the count indicator next to the title.
+   * getCount() is executed immediately. */
   addCountPane(name: string, getContent: Function, getCount: Function, expanded: boolean = false, before: AccordionPane | null = null): AccordionPane {
     return toJs(api.grok_Accordion_AddPane(this.d, name, getContent, expanded, before !== null ? before.d : null, getCount));
   }
 
+  /** Removed the specified pane. */
   removePane(pane: AccordionPane) {
     api.grok_Accordion_RemovePane(this.d, pane.d);
   }
