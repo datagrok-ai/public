@@ -2,9 +2,9 @@
 import * as grok from 'datagrok-api/grok';
 import * as ui from 'datagrok-api/ui';
 import * as DG from 'datagrok-api/dg';
-import { ModelHandler } from "./model_handler";
-import { selectOutliersManually } from './outliers_detector';
-import { DataFrame } from 'datagrok-api/dg';
+import {ModelHandler} from './model_handler';
+import {selectOutliersManually} from './outliers_detector';
+import {DataFrame} from 'datagrok-api/dg';
 
 export const _package = new DG.Package();
 
@@ -22,7 +22,7 @@ export function init() {
 //name: Model Catalog
 //tags: app
 export function modelCatalog() {
-  let v = DG.CardView.create({ dataSource: grok.dapi.scripts, permanentFilter: '#model' })
+  const v = DG.CardView.create({dataSource: grok.dapi.scripts, permanentFilter: '#model'});
   v.meta = new ModelHandler();
   v.name = 'Models';
   v.permanentFilter = '#model';
@@ -32,5 +32,5 @@ export function modelCatalog() {
 //name: manualOutlierDetectionDialog
 //input: dataframe inputData
 export async function manualOutlierDetectionDialog(inputData: DataFrame) {
-  selectOutliersManually(inputData)
+  selectOutliersManually(inputData);
 }

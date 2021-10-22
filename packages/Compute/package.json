@@ -12,6 +12,10 @@
 		"typescript": "latest"
 	},
 	"devDependencies": {
+		"@typescript-eslint/eslint-plugin": "^5.1.0",
+		"@typescript-eslint/parser": "^5.1.0",
+		"eslint": "^8.0.1",
+		"eslint-config-google": "^0.14.0",
 		"webpack": "latest",
 		"webpack-cli": "latest"
 	},

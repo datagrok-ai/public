@@ -4,12 +4,12 @@ import * as DG from 'datagrok-api/dg';
 
 export class ModelHandler extends DG.ObjectHandler {
   get type() {
-    return 'Model'
+    return 'Model';
   }
 
   // Checks whether this is the handler for [x]
   isApplicable(x: any) {
-    return x instanceof DG.Script && x.hasTag("model");
+    return x instanceof DG.Script && x.hasTag('model');
   }
 
   renderIcon(x: DG.Script, context: any = null): HTMLElement {
@@ -21,10 +21,14 @@ export class ModelHandler extends DG.ObjectHandler {
   }
 
   renderProperties(x: DG.Script) {
-    let a = ui.accordion();
+    const a = ui.accordion();
     a.addTitle(ui.span([this.renderIcon(x), ui.label(x.friendlyName), ui.contextActions(x), ui.star(x.id)]));
-    a.addPane('Details', () => {return this.renderDetails(x)});
-    a.addCountPane('Usage', () => {return ui.span(['Usage statistics'])}, () => 99);
+    a.addPane('Details', () => {
+      return this.renderDetails(x);
+    });
+    a.addCountPane('Usage', () => {
+      return ui.span(['Usage statistics']);
+    }, () => 99);
     return a.root;
   }
 
@@ -39,7 +43,7 @@ export class ModelHandler extends DG.ObjectHandler {
   renderCard(x: DG.Script, context?: any): HTMLElement {
     return ui.bind(x, ui.divV([
       ui.h2(x.friendlyName),
-      this.renderDetails(x)
+      this.renderDetails(x),
     ], 'd4-gallery-item'));
   }
 
