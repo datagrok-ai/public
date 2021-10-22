@@ -2,9 +2,10 @@
 
 ## Folder content preview
 
-To provide custom folder content preview, register a function like that takes
-two parameters `folder` and `files`, inspects them and returns a widget if 
-a custom preview could be provided, or null otherwise.
+To provide custom folder content preview, register a function tagged
+as `folderViewer` that takes two parameters `folder` and `files`, 
+inspects them and returns a widget if a custom preview could be provided, 
+or null otherwise.
 
 The following function adds the 'START' button if one of the files in that folder
 is named "demog.csv":
