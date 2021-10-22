@@ -8,21 +8,28 @@
 	"description": "",
 	"dependencies": {
 		"cash-dom": "latest",
-		"rxjs": "^6.5.5",
 		"datagrok-api": "../../js-api",
-		"utils": "../../libraries/utils",
-		"datagrok-tools": "^4.1.2",
-		"ts-loader": "latest",
-		"typescript": "latest",
-		"webpack": "^5.33.2",
-		"webpack-cli": "^4.6.0"
+		"rxjs": "^6.5.5",
+		"ts-loader": "^9.2.6",
+		"typescript": "^4.4.4",
+		"utils": "../../libraries/utils"
+	},
+	"devDependencies": {
+		"@types/jest": "latest",
+		"datagrok-tools": "../../tools",
+		"jest": "latest",
+		"puppeteer": "latest",
+		"ts-jest": "latest",
+		"webpack": "^5.59.1",
+		"webpack-cli": "^4.9.1"
 	},
 	"scripts": {
-		"debug-powerpack": "webpack && grok publish",
-		"release-powerpack": "grok publish --rebuild --release",
+		"debug-powerpack": " grok publish localhost --rebuild",
+		"release-powerpack": "webpack && grok publish dev",
 		"build-powerpack": "webpack && grok publish",
 		"build": "webpack",
-		"debug-powerpack-dev": "grok publish dev --rebuild",
+		"test": "jest",
+		"debug-powerpack-dev": "webpack && grok publish dev",
 		"release-powerpack-dev": "grok publish dev --rebuild --release",
 		"debug-powerpack-public": "grok publish public --rebuild",
 		"release-powerpack-public": "grok publish public --rebuild --release"
