@@ -77,9 +77,7 @@ export class PredictiveModelingTutorial extends Tutorial {
 
     this.title('Model performance, application, and sharing');
 
-    const funcPane = grok.shell.sidebar.getPane('Functions');
-    const funcPaneHints = [funcPane.header, $(funcPane.content)
-      .find(`div.d4-toggle-button[data-view=${DG.View.MODELS}]`)[0]!];
+    const funcPaneHints = this.getSidebarHints('Functions', DG.View.MODELS);
 
     const pmBrowserDescription = 'This is Predictive Models Browser. Here, you can browse ' +
       'models that you trained or that were shared with you. In the next steps, we will look ' +
