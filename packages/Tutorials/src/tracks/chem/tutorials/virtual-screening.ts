@@ -206,16 +206,12 @@ export class VirtualScreeningTutorial extends Tutorial {
 
     await computeDescriptors(descriptors);
 
-    const funcPane = grok.shell.sidebar.getPane('Functions');
-    const funcPaneHints = [funcPane.header, $(funcPane.content)
-      .find(`div.d4-toggle-button[data-view=${DG.View.MODELS}]`)[0]!];
-
     const pmBrowserDescription = 'This is Predictive Model Browser. Here, you can browse ' +
       'models that you trained or that were shared with you. It\'s time to apply the model ' +
       'to another dataset, which has been added to your open tables.';
 
     await this.openViewByType('Click on "Functions | Models" to open the Model Browser',
-      DG.View.MODELS, funcPaneHints, pmBrowserDescription);
+      DG.View.MODELS, this.getSidebarHints('Functions', DG.View.MODELS), pmBrowserDescription);
     await this.contextMenuAction('Right-click on the trained model and select "Apply to | ' +
       `${smiles.toString()}"`, smiles.toString());
   }

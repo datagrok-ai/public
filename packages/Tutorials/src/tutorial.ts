@@ -306,6 +306,12 @@ export abstract class Tutorial extends DG.Widget {
       .get(0) ?? null;
   }
 
+  protected getSidebarHints(paneName: string, commandName: string): HTMLElement[] {
+    const pane = grok.shell.sidebar.getPane(paneName);
+    const command = $(pane.content).find(`div.d4-toggle-button[data-view=${commandName}]`)[0]!;
+    return [pane.header, command];
+  }
+
   /** Prompts the user to open a viewer of the specified type and returns it. */
   protected async openPlot(name: string, check: (viewer: DG.Viewer) => boolean,
     description: string = ''): Promise<DG.Viewer> {
