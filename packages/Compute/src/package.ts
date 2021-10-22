@@ -3,6 +3,8 @@ import * as grok from 'datagrok-api/grok';
 import * as ui from 'datagrok-api/ui';
 import * as DG from 'datagrok-api/dg';
 import { ModelHandler } from "./model_handler";
+import { selectOutliersManually } from './outliers_detector';
+import { DataFrame } from 'datagrok-api/dg';
 
 export const _package = new DG.Package();
 
@@ -25,4 +27,10 @@ export function modelCatalog() {
   v.name = 'Models';
   v.permanentFilter = '#model';
   grok.shell.addView(v);
+}
+
+//name: manualOutlierDetectionDialog
+//input: dataframe inputData
+export async function manualOutlierDetectionDialog(inputData: DataFrame) {
+  selectOutliersManually(inputData)
 }
