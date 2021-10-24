@@ -378,10 +378,8 @@ export function defineAxolabsPattern() {
       let loadPattern = ui.choiceInput('Load Pattern', '', lstMy, (v: string) => parsePatternAndUpdateUi(v));
 
       let myOrOthersPatternList = ui.choiceInput('', 'Mine', ['Mine', 'Others'], (v: string) => {
-        if (v == 'Mine')
-          loadPattern = ui.choiceInput('Load Pattern', '', lstMy, (v: string) => parsePatternAndUpdateUi(v));
-        else if (v == 'Others')
-          loadPattern = ui.choiceInput('Load Pattern', '', lstOthers, (v: string) => parsePatternAndUpdateUi(v));
+        let currentList = v == 'Mine' ? lstMy : lstOthers;
+        loadPattern = ui.choiceInput('Load Pattern', '', currentList, (v: string) => parsePatternAndUpdateUi(v))
 
         loadPattern.root.append(myOrOthersPatternList.input);
         loadPattern.root.append(loadPattern.input);
