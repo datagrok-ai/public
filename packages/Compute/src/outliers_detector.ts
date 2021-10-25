@@ -50,10 +50,24 @@ export async function selectOutliersManually(inputData: DataFrame) {
     },
   };
 
+  const removeOutlierGroupBtn = {
+    text: 'REMOVE OUTLIERS GROUP',
+    action: () => {
+      if (isInnerModalOpened) return;
+
+      augmentedInput.selection.getSelectedIndexes().forEach((selectedIndex: number) => {
+        augmentedInput.set(IS_OUTLIER_COL_LABEL, selectedIndex, false);
+        augmentedInput.set(OUTLIER_REASON_COL_LABEL, selectedIndex, '');
+      });
+      augmentedInput.selection.setAll(false);
+    },
+  };
+
   const result = new Promise<{augmentedInput: DataFrame, editedInput: DataFrame}>((resolve, reject) => {
     ui.dialog('Manually select outliers')
       .add(scatterPlot.root)
       .addButton(addOutlierGroupBtn.text, addOutlierGroupBtn.action)
+      .addButton(removeOutlierGroupBtn.text, removeOutlierGroupBtn.action)
       .onOK(() => {
         editedInput.rows.filter((row) => !augmentedInput.get(IS_OUTLIER_COL_LABEL, row.idx));
         resolve({augmentedInput, editedInput});
