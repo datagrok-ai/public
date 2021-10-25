@@ -7,6 +7,7 @@ import { createFilteredTable, dataframeContentToRow } from "../data-preparation/
 import { updateDivInnerHTML } from "./utils";
 import $ from "cash-dom";
 import { createPropertyPanel } from "../panels/panels-service";
+import { ILazyLoading } from "../lazy-loading/lazy-loading";
 
 let links = {
   ae: { key: 'USUBJID', start: 'AESTDY', end: 'AEENDY', event: 'AETERM'},
@@ -24,7 +25,7 @@ let filters = {
 
 let multichoiceTableOptions = { 'Adverse events': 'ae', 'Concomitant medication intake': 'cm', 'Drug exposure': 'ex' }
 
-export class TimelinesView extends DG.ViewBase {
+export class TimelinesView extends DG.ViewBase implements ILazyLoading {
 
   options = {
     subjectColumnName: 'key',
@@ -43,10 +44,13 @@ export class TimelinesView extends DG.ViewBase {
 
   constructor(name) {
     super(name);
-
     this.name = name;
+  }
 
-    let multiChoiceOptions = ui.multiChoiceInput('', [ this.selectedOptions[ 0 ] ] as any, Object.keys(multichoiceTableOptions))
+  loaded: boolean;
+
+  load(): void {
+        let multiChoiceOptions = ui.multiChoiceInput('', [ this.selectedOptions[ 0 ] ] as any, Object.keys(multichoiceTableOptions))
     multiChoiceOptions.onChanged((v) => {
       this.selectedOptions = multiChoiceOptions.value;
       this.updateSelectedDataframes(this.selectedOptions);

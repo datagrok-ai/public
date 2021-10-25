@@ -6,9 +6,10 @@ import { study } from "../clinical-study";
 import { SURVIVAL_ANALYSIS_GUIDE, TREATMENT_ARM } from "../constants";
 import { createSurvivalData } from "../data-preparation/data-preparation";
 import { dataframeContentToRow } from "../data-preparation/utils";
+import { ILazyLoading } from "../lazy-loading/lazy-loading";
 import { updateDivInnerHTML } from "./utils";
 
-export class SurvivalAnalysisView extends DG.ViewBase {
+export class SurvivalAnalysisView extends DG.ViewBase implements ILazyLoading {
 
   survivalPlotDiv = ui.box();
   covariatesPlotDiv = ui.box();
@@ -38,8 +39,12 @@ export class SurvivalAnalysisView extends DG.ViewBase {
 
   constructor(name) {
     super(name);
-
     this.name = name;
+  }
+
+  loaded: boolean;
+
+  load(): void {
     this.endpoint = Object.keys(this.endpointOptions)[ 0 ];
 
     this.endpointChoices = ui.choiceInput('Endpoint', Object.keys(this.endpointOptions)[ 0 ], Object.keys(this.endpointOptions));
@@ -134,7 +139,6 @@ export class SurvivalAnalysisView extends DG.ViewBase {
       guide.parentNode.classList = 'ui-div';
 
      // this.updateParameterPanel('Dataset');
-
   }
 
 

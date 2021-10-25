@@ -5,9 +5,10 @@ import { study } from "../clinical-study";
 import { cumulativeEnrollemntByDay } from "../data-preparation/data-preparation";
 import { CLINICAL_TRIAL_GOV_FIELDS, STUDY_ID, SUBJECT_ID } from "../constants";
 import { HttpService } from "../services/http.service";
+import { ILazyLoading } from "../lazy-loading/lazy-loading";
 
 
-export class StudySummaryView extends DG.ViewBase {
+export class StudySummaryView extends DG.ViewBase implements ILazyLoading {
 
  validationView: DG.ViewBase;
  errorsByDomain: any;
@@ -17,9 +18,13 @@ export class StudySummaryView extends DG.ViewBase {
 
  constructor(name) {
     super(name);
-
     this.name = name;
-    this.helpUrl = 'https://github.com/datagrok-ai/public/tree/master/packages/ClinicalCase';
+  }
+  
+  loaded: boolean;
+
+  load(): void {
+    //this.helpUrl = 'https://github.com/datagrok-ai/public/tree/master/packages/ClinicalCase';
     this.studyId = study.domains.dm.get(STUDY_ID, 0);
     const errorsMap = this.createErrorsMap();
     this.errorsByDomain = errorsMap.withCount;
