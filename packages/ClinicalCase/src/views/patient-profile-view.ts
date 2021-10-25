@@ -3,9 +3,10 @@ import * as ui from "datagrok-api/ui";
 import { study } from "../clinical-study";
 import { addColumnWithDrugPlusDosage, labDynamicComparedToBaseline, labDynamicComparedToMinMax, labDynamicRelatedToRef } from "../data-preparation/data-preparation";
 import { getUniqueValues } from "../data-preparation/utils";
+import { ILazyLoading } from "../lazy-loading/lazy-loading";
 
 
-export class PatientProfileView extends DG.ViewBase {
+export class PatientProfileView extends DG.ViewBase implements ILazyLoading {
 
   options_lb_ae_ex_cm = {
     series: [
@@ -75,13 +76,25 @@ export class PatientProfileView extends DG.ViewBase {
                 },
                 data: [
                   {
-                    yAxis: -1
+                    name: 'lower lim',
+                    yAxis: -1,
+                    label: {
+                      formatter: '{b}',
+                      position: 'start'
+                    }
                   },
                   {
-                    yAxis: 1
+                    name: 'upper lim',
+                    yAxis: 1,
+                    label: {
+                      formatter: '{b}',
+                      position: 'start'
+                    }
                   },
                 ]
-              }
+              },
+              min: -1.5,
+              max: 1.5
             }
           }
         },
@@ -149,9 +162,13 @@ export class PatientProfileView extends DG.ViewBase {
 
   constructor(name) {
     super(name);
-
     this.name = name;
+  }
 
+  loaded: boolean;
+
+  load(): void {
+    
     let patientIds = Array.from(getUniqueValues(study.domains.dm, 'USUBJID'));
     let patienIdBoxPlot = ui.choiceInput('', patientIds[ 0 ], patientIds);
     patienIdBoxPlot.onChanged((v) => {

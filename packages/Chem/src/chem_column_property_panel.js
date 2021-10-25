@@ -1,6 +1,6 @@
 let subscr = null;
 
-function getMolColumnPropertyPanel(col) {
+export function getMolColumnPropertyPanel(col) {
 
   const NONE = 'None';
   let scaffoldColName = null;
@@ -21,13 +21,14 @@ function getMolColumnPropertyPanel(col) {
   scaffoldColumnChoice.onChanged(_ => {
     const scaffoldColName = scaffoldColumnChoice.stringValue;
     col.temp['scaffold-col'] = scaffoldColName === NONE ? null : scaffoldColName;
+    col.dataFrame.fireValuesChanged();
   });
   let highlightScaffoldsCheckbox = ui.boolInput(
     'Highlight from column', col?.temp && col.temp['highlight-scaffold'] === 'true',
-    v => { col.temp['highlight-scaffold'] = v.toString(); });
+    v => { col.temp['highlight-scaffold'] = v.toString(); col.dataFrame.fireValuesChanged(); });
   let regenerateCoordsCheckbox = ui.boolInput(
     'Regenerate coords', col?.temp && col.temp['regenerate-coords'] === 'true',
-    v => { col.temp['regenerate-coords'] = v.toString(); });
+    v => { col.temp['regenerate-coords'] = v.toString(); col.dataFrame.fireValuesChanged(); });
     
     
     const matchMoleculeFilteringToDropdown = (v) => {
@@ -37,12 +38,13 @@ function getMolColumnPropertyPanel(col) {
   };
   
   const matchDropdownToMoleculeFiltering = (v) => {
-    if (v === 'Categorical')
+    if (v === 'Categorical') {
       col.temp['.molecule-filtering'] = 'categorical';
-    else if (v === 'Sketching')
+    } else if (v === 'Sketching') {
       col.temp['.molecule-filtering'] = 'sketching';
-    else
+    } else {
       col.temp.delete('.molecule-filtering');
+    }
   };
   
   let moleculeFilteringChoice = ui.choiceInput('Filter Type',

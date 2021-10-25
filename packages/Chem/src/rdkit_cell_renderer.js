@@ -1,11 +1,17 @@
 /**
  * RDKit-based molecule cell renderer.
  * */
-class RDKitCellRenderer extends DG.GridCellRenderer {
+ 
+import * as grok from 'datagrok-api/grok';
+import * as ui from 'datagrok-api/ui';
+import * as DG from 'datagrok-api/dg';
 
-  constructor() {
+export class RDKitCellRenderer extends DG.GridCellRenderer {
+
+  constructor(rdKitModule) {
 
     super();
+    this.rdKitModule = rdKitModule;
     this.canvasCounter = 0;
     this.molCache = new DG.LruCache();
     this.molCache.onItemEvicted = function (obj) {
@@ -43,10 +49,10 @@ M  END
     let substructJson = "{}";
 
     try {
-      mol = rdKitModule.get_mol(molString);
+      mol = this.rdKitModule.get_mol(molString);
     } catch (e) {
       try {
-        mol = rdKitModule.get_mol(molString, "{\"kekulize\":false}");
+        mol = this.rdKitModule.get_mol(molString, "{\"kekulize\":false}");
       } catch (e2) {
         console.error(
           "In _fetchMolGetOrCreate: RDKit .get_mol crashes on a molString: `" + molString + "`");
@@ -68,7 +74,7 @@ M  END
           } else if (molRegenerateCoords) {
             const molBlock = mol.get_new_coords(true);
             mol.delete();
-            mol = rdKitModule.get_mol(molBlock);
+            mol = this.rdKitModule.get_mol(molBlock);
           }
           if (!scaffoldIsMolBlock || molRegenerateCoords) {
             mol.normalize_2d_molblock();

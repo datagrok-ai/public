@@ -158,7 +158,7 @@ export function sequenceTranslator(): void {
           smiles = smiles.replace(/@/g, '');  // Remove StereoChemistry on the Nucleic acid chain and remove the Chiral label
           //@ts-ignore
           let mol = new OCL.Molecule.fromSmiles(smiles);
-          let result = `\n${mol.toMolfile()}\n` + '$$$$';
+          let result = `${mol.toMolfile()}\n` + '$$$$';
           var element = document.createElement('a');
           element.setAttribute('href', 'data:text/plain;charset=utf-8,' + encodeURIComponent(result));
           element.setAttribute('download', outputSequenceObj.Nucleotides + '.sdf');

@@ -1,9 +1,18 @@
-var rdKitParallel = null;
-async function _initRdKitWorkers() {
+import {RdKitParallel} from './rdkit_parallel.js';
+
+let searchesRdKitModule = null;
+let rdKitParallel = null;
+
+export async function setSearchesRdKitModule(module)
+{
+  searchesRdKitModule = module;
+}
+
+async function _initRdKitWorkers(workerWebRoot) {
   let foo = _initRdKitWorkers;
   if (typeof foo.initialized == 'undefined' || !foo.initialized) {
     rdKitParallel = new RdKitParallel();
-    await rdKitParallel.init(rdKitWorkerWebRoot);
+    await rdKitParallel.init(workerWebRoot);
     _initRdKitWorkers.initialized = true;
   }
 }
@@ -41,7 +50,7 @@ function _morganFP(molString, fp_length = 128, fp_radius = 2) {
       "Possibly an empty molString: `" + molString + "`");
   } else {
     try {
-      let mol = rdKitModule.get_mol(molString);
+      let mol = searchesRdKitModule.get_mol(molString);
       let mfp = mol.get_morgan_fp(fp_radius, fp_length);
       mol.delete();
       return mfp;
@@ -55,7 +64,7 @@ function _morganFP(molString, fp_length = 128, fp_radius = 2) {
 
 }
 
-function _moleculesToFingerprints(molStringsColumn, settings = {}) {
+export function moleculesToFingerprints(molStringsColumn, settings = {}) {
   const len = molStringsColumn.length;
   const fpLength = settings.hasOwnProperty('fpLength') ? settings.fpLength : 128;
   const fpRadius = settings.hasOwnProperty('fpRadius') ? settings.fpRadius : 2;
@@ -159,28 +168,28 @@ async function _chemSimilarityScoring(molStringsColumn, molString, settings) {
 
 }
 
-async function chemGetSimilarities(molStringsColumn, molString = "", settings = {}) {
+export async function chemGetSimilarities(molStringsColumn, molString = "", settings = {}) {
   settings.sorted = false;
   return _chemSimilarityScoring(molStringsColumn, molString, settings);
 }
 
-async function chemFindSimilar(molStringsColumn, molString = "", settings = {}) {
+export async function chemFindSimilar(molStringsColumn, molString = "", settings = {}) {
   settings.sorted = true;
   return _chemSimilarityScoring(molStringsColumn, molString, settings);
 }
 
-function chemSubstructureSearchGraph(molStringsColumn, molString) {
+export function chemSubstructureSearchGraph(molStringsColumn, molString) {
 
   const len = molStringsColumn.length;
   let result = DG.BitSet.create(len);
   if (molString.length == 0) {
     return result;
   }
-  let subMol = rdKitModule.get_mol(molString);
+  let subMol = searchesRdKitModule.get_mol(molString);
   for (let i = 0; i < len; ++i) {
     let item = molStringsColumn.get(i);
     try {
-      let mol = rdKitModule.get_mol(item);
+      let mol = searchesRdKitModule.get_mol(item);
       let match = mol.get_substruct_match(subMol);
       if (match !== "{}")
         result.set(i, true, false);
@@ -196,9 +205,9 @@ function chemSubstructureSearchGraph(molStringsColumn, molString) {
 
 }
 
-async function chemSubstructureSearchLibrary(molStringsColumn, molString, molStringSmarts) {
+export async function chemSubstructureSearchLibrary(molStringsColumn, molString, molStringSmarts, workerWebRoot) {
 
-  await _initRdKitWorkers();
+  await _initRdKitWorkers(workerWebRoot);
 
   await _cacheByAction({
       foo: chemSubstructureSearchLibrary,

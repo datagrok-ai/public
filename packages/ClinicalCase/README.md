@@ -62,7 +62,7 @@ In case trial is registered on [clinicaltrials.gov](https://clinicaltrials.gov/)
 
 ### Timelines
 
-Timelines view allows to visualize events in time. X axis is time axis reflecting study days. On Y axis there are subjects.
+Timelines view allows to visualize events flow in time. X axis is time axis reflecting study days. On Y axis there are subjects.
 Events are shown either as a point(in case event lased for one day) or as a line (for cases events were prolonged in time)
 
 Adverse events, investigationsl drug exposure and concomitant medication domains are available for analysis(in case SDTM data contains corresponding tables). Filters can also be applyed for each domain.
@@ -83,7 +83,7 @@ Several domains can be shown simultaneously on the graph. For instance, the foll
 Patient profile is useful for analysing events related to particular patient.
 You can analyse data from laboratory, adverse events, dug exposue and concomitant medication domains in time and see relations between events. All graphs are linked to the same X axis representing study days and it can be zoomed in and out simultaneously. 
 
-Information about events in available in tooltips on mouse hover. For convenience domains han be collapsed or extended.
+Information about events is available in tooltips on mouse hover. For convenience domains can be collapsed or extended.
 
 <img src="https://github.com/datagrok-ai/public/blob/master/packages/ClinicalCase/img/patient_profile_zoom.gif" height="500" width='800'/>
 
@@ -107,11 +107,11 @@ Laboratory line chart provides two ways of calculating values dynamics:
 
 ### Adverse events
 
-View to explore Advere events domain. Contains couple of charts along with Adverse events table view.
+View to explore Adverse events domain. Contains couple of charts along with Adverse events table view.
 
 * **All events**
 
-Plots all adverse events registered during the study. Detailed information is available in tooltip. Also when selecting Adverse event on the plot corresponding row becomes current in Adverse event table. So Adverse event of inteest can easily be analyzedin details. Selection also works vice versa - when selecting a row in a table corresponding Adverse event is selected on a scatter plot.
+Plots all adverse events registered during the study. Detailed information is available in tooltip. Also when selecting Adverse event on the plot corresponding row becomes current in Adverse event table. So Adverse event of inteest can easily be analyzed in details. Selection also works vice versa - when selecting a row in a table corresponding Adverse event is selected on a scatter plot.
 
 Scatter plot can be zoomed in and out to drill down to particular patient or see picure in general. 
 
@@ -128,7 +128,7 @@ Color corresponds to severity of an Adverse event.
 
 * **Barcharts**
 
-There are barcharts plotting number of events by Type, Body system, Causality and Outcome.
+There are barcharts plotting events distribution by Type, Body system, Causality and Outcome.
 
 Color corresponds to treatment arm. So you can visually assess proportion of each treatment group.
 

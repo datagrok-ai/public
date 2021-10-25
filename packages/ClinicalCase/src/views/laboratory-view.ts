@@ -6,12 +6,17 @@ import { createBaselineEndpointDataframe, createHysLawDataframe, createLabValues
 import { ALT, AP, BILIRUBIN, TREATMENT_ARM } from '../constants';
 import { createBaselineEndpointScatterPlot, createHysLawScatterPlot } from '../custom-scatter-plots/custom-scatter-plots';
 import { getUniqueValues } from '../data-preparation/utils';
+import { ILazyLoading } from '../lazy-loading/lazy-loading';
 
-export class LaboratoryView extends DG.ViewBase {
+export class LaboratoryView extends DG.ViewBase implements ILazyLoading {
 
   constructor(name) {
     super(name);
     this.name = name;
+ }
+  loaded: boolean;
+  
+  load(): void {
     let lb = study.domains.lb;
     let dm = study.domains.dm;
 
@@ -30,6 +35,7 @@ export class LaboratoryView extends DG.ViewBase {
     let disributionBoxPlot = this.labValuesDistributionPlot(dm, lb, uniqueLabValues[ 0 ], uniqueTreatmentArms[ 0 ]);
 
     this.generateUI(dm, lb, grid, hysLawScatterPlot, baselineEndpointPlot, uniqueLabValues, uniqueVisits, uniqueTreatmentArms, disributionBoxPlot);
+ 
   }
 
 
