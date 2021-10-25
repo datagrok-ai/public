@@ -10,8 +10,8 @@ export const SEX = 'SEX';
 export const RACE = 'RACE';
 export const ETHNIC = 'ETHNIC';
 export const colorsForSurvivalChart = ['red', 'green', 'blue', 'yellow']
-export const SURVIVAL_ANALYSIS_GUIDE = `1. Select dataset paramenters and click 'Create dataset'
-2. Filter data if neded,
+export const SURVIVAL_ANALYSIS_GUIDE = `1. Select dataset parameters and click 'Create dataset'.
+2. Filter data if needed.
 3. Go to 'Survival Chart' tab to see Kaplan-Meier curve. You can modify the survival chart parameters - confidence interval and strata.
 4. Go to 'Covariates' tab to perform covariates analysis. Check one or more covariates to see graphs.
 `

@@ -60,10 +60,7 @@ async function testCase(title, f) {
   console.clear();
   console.log('Chem Benchmark');
 
-  // TODO: await _ChemPackage.init(); dummy priming for now
-  await grok.chem.searchSubstructure(
-    DG.Column.fromList(DG.TYPE.STRING, '', ['c1ccccc1']));
-  let rdKitCellRenderer = new RDKitCellRenderer();
+  let rdKitCellRenderer = await grok.functions.call('Chem:rdkitCellRenderer');
   let grid = DG.Viewer.grid(df);
   let canvas = grid.canvas;
   let ctx = canvas.getContext('2d');

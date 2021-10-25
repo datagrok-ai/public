@@ -19,29 +19,6 @@ import {PowerPackSettingsEditor} from "./settings-editor";
 
 export let _package = new DG.Package();
 
-//input: int a
-//input: int b
-//output: int c
-export function sum(a: number, b: number) {
-  return a + b;
-}
-
-//name: outliersTest
-//input: dataframe table
-//output: dataframe result
-export async function outliersTest(table: DG.DataFrame) {
-  return new Promise((resolve, reject) => {
-    let d = ui.dialog();
-    d.add(ui.button('OK', () => {
-      d.close();
-      resolve(table);
-    }));
-    d.show();
-
-    //reject(error)
-  });
-}
-
 //name: compareColumns
 //top-menu: Data | Compare Columns...
 export function _compareColumns(): void {

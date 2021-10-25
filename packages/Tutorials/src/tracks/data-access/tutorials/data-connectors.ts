@@ -25,15 +25,12 @@ export class DataConnectorsTutorial extends Tutorial {
     
     this.describe(ui.link('More about ' + this.name, this.helpUrl).outerHTML);
 
-    const dataPane = grok.shell.sidebar.getPane('Data');
     const dbViewInfo = 'In this view, you can create queries to data connectors from the list. ' +
       'Each tree branch corresponds to a provider and shows connections to the given data source.';
 
     await this.openViewByType(
       'Find "Data | Databases" in the sidebar to open the tree of connections',
-      DG.View.DATABASES,
-      [dataPane.header, $(dataPane.content).find(`div.d4-toggle-button[data-view=${DG.View.DATABASES}]`)[0]!],
-      dbViewInfo
+      DG.View.DATABASES, this.getSidebarHints('Data', DG.View.DATABASES), dbViewInfo
     );
 
     const dlg = await this.openDialog('Create a connection to PostgreSQL server',

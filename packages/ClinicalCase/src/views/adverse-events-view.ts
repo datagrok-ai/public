@@ -4,15 +4,21 @@ import * as ui from "datagrok-api/ui";
 import { study, ClinRow } from "../clinical-study";
 import { addDataFromDmDomain, getUniqueValues } from '../data-preparation/utils';
 import { TREATMENT_ARM } from '../constants';
+import { ILazyLoading } from '../lazy-loading/lazy-loading';
 
 
-export class AdverseEventsView extends DG.ViewBase {
+export class AdverseEventsView extends DG.ViewBase implements ILazyLoading {
 
   aeWithArm: DG.DataFrame;
 
   constructor(name) {
     super(name);
     this.name = name;
+  }
+
+  loaded: boolean;
+
+  load(): void {
     this.aeWithArm = addDataFromDmDomain(study.domains.ae.clone(), study.domains.dm, study.domains.ae.columns.names(), [TREATMENT_ARM]);
 
     let viewerTitle = {style:{

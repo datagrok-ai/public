@@ -6,8 +6,9 @@ import { validationRulesList } from "../package";
 import { pinnacleRuleIdColumnName, validationResultRuleIdColumn } from "../validation/constants";
 import { createRulesDataFrame } from '../validation/validation-utils';
 import { getUniqueValues } from '../data-preparation/utils';
+import { ILazyLoading } from '../lazy-loading/lazy-loading';
 
-export class ValidationView extends DG.ViewBase {
+export class ValidationView extends DG.ViewBase implements ILazyLoading {
 
   resultsDataframe: DG.DataFrame;
   rulesDataframe: DG.DataFrame;
@@ -19,8 +20,13 @@ export class ValidationView extends DG.ViewBase {
   constructor(errorsMap: any, name) {
     super(name);
     this.name = name;
-
     this.errorsByDomain = errorsMap;
+  }
+
+  loaded: boolean;
+
+  load(): void {
+
     this.resultsDataframe = study.validationResults;
     this.domains = study.domains;
 

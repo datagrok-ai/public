@@ -1,29 +1,31 @@
-importScripts('RDKit_minimal_2021.03_17.js');
-importScripts('rdkit_substruct_library.js');
+// importScripts('RDKit_minimal_2021.03_17.js');
+// importScripts('rdkit_substruct_library.js');
+import {createRDKit} from './RDKit_minimal_2021.03_17.js'
+import {RdKitSubstructLibrary} from './rdkit_substruct_library.js'
 
-let _rdKitModule = null;
-let _substructLibrary = null;
+// var _rdKitModule = null;
+// var _substructLibrary = null;
 
-onmessage = async function (e) {
-
+async function handler(e) {
   const {op, args} = e.data;
   let port = e.ports[0];
-
   if (op === 'module::init') {
-    _rdKitModule = await initRDKitModule();
+    const webRoot = args[0];
+    handler._rdKitModule = await createRDKit(webRoot);
     console.log("RDKit (worker) initialized");
-    _substructLibrary = new RdKitSubstructLibrary(_rdKitModule);
+    handler._substructLibrary = new RdKitSubstructLibrary(handler._rdKitModule);
     port.postMessage({op: op});
   } else if (op === 'substructLibrary::init') {
-    const result = _substructLibrary.init(args[0]);
+    const result = handler._substructLibrary.init(args[0]);
     port.postMessage({op: op, retval: result});
   } else if (op === 'substructLibrary::search') {
-    const result = _substructLibrary.search(args[0], args[1]);
+    const result = handler._substructLibrary.search(args[0], args[1]);
     port.postMessage({op: op, retval: result});
   } else if (op === 'substructLibrary::deinit') {
-    _substructLibrary.deinit();
-    _substructLibrary = null;
+    handler._substructLibrary.deinit();
+    handler._substructLibrary = null;
     port.postMessage({op: op});
   }
-
 }
+
+onmessage = handler;

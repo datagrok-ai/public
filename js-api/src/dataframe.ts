@@ -1394,6 +1394,8 @@ export class BitSet {
     return bitset;
   }
 
+  /** Returns the underlying storage. Be careful with the
+   * direct manipulations, as some statistics (set count, etc) are cached. */
   getBuffer(): Int32Array {
     return api.grok_BitSet_Get_Buffer(this.d);
   }

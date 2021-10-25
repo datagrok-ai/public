@@ -1,4 +1,4 @@
-class RdKitSubstructLibrary {
+export class RdKitSubstructLibrary {
 
   constructor(module) {
 

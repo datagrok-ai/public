@@ -3,15 +3,7 @@ const path = require('path');
 module.exports = {
   mode: 'development',
   entry: {
-    package: './src/package.ts',
-  },
-  resolve: {
-    extensions: ['.wasm', '.mjs', '.js', '.json', '.ts', '.tsx'],
-  },
-  module: {
-    rules: [
-      {test: /\.tsx?$/, loader: 'ts-loader'},
-    ],
+    package: './src/package.js'
   },
   devtool: 'inline-source-map',
   externals: {
@@ -26,7 +18,7 @@ module.exports = {
   },
   output: {
     filename: '[name].js',
-    library: 'compute',
+    library: 'simpkpd',
     libraryTarget: 'var',
     path: path.resolve(__dirname, 'dist'),
   },
