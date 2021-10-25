@@ -75,13 +75,25 @@ export class PatientProfileView extends DG.ViewBase {
                 },
                 data: [
                   {
-                    yAxis: -1
+                    name: 'lower lim',
+                    yAxis: -1,
+                    label: {
+                      formatter: '{b}',
+                      position: 'start'
+                    }
                   },
                   {
-                    yAxis: 1
+                    name: 'upper lim',
+                    yAxis: 1,
+                    label: {
+                      formatter: '{b}',
+                      position: 'start'
+                    }
                   },
                 ]
-              }
+              },
+              min: -1.5,
+              max: 1.5
             }
           }
         },
