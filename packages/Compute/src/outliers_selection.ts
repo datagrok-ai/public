@@ -24,6 +24,7 @@ export async function selectOutliersManually(inputData: DataFrame) {
   const reasonInput = ui.textInput('Reason', '');
   const scatterPlot = DG.Viewer.scatterPlot(augmentedInput, {
     'color': OUTLIER_REASON_COL_LABEL,
+    'lassoTool': true,
   });
 
   let isInnerModalOpened = false;
