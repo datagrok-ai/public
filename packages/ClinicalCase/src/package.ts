@@ -163,17 +163,20 @@ export async function clinicalCaseApp(): Promise<any> {
   DG.ObjectHandler.register(new AdverseEventHandler());
 
   let summary = views.find(it => it.name === 'Summary');
+  summary.load();
+  summary.loaded = true;
   summary.validationView = addView(new ValidationView(summary.errorsByDomain, 'Validation'));
   views.push(summary.validationView);
-
   grok.shell.v = summary;
   createPropertyPanel(summary);
-  // showStudySummary();
-  // showLabs();
 
-  grok.events.onCurrentViewChanged.subscribe((layout) => {
+  grok.events.onCurrentViewChanged.subscribe((v) => {
     setTimeout(() => {
       const obj = views.find(it => it.name === grok.shell.v.name);
+      if(!obj.loaded){
+        obj.load();
+        obj.loaded = true;
+      }
       createPropertyPanel(obj);
     }, 100)
   });

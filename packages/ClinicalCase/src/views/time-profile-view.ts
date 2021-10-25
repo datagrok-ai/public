@@ -5,9 +5,10 @@ import { study } from "../clinical-study";
 import { addDataFromDmDomain, getMaxVisitName, getMinVisitName, getUniqueValues, getVisitNamesAndDays } from '../data-preparation/utils';
 import { ETHNIC, RACE, SEX, TREATMENT_ARM } from '../constants';
 import { labDynamicComparedToBaseline } from '../data-preparation/data-preparation';
+import { ILazyLoading } from '../lazy-loading/lazy-loading';
 
 
-export class TimeProfileView extends DG.ViewBase {
+export class TimeProfileView extends DG.ViewBase implements ILazyLoading {
 
     blVisitChoices: DG.InputBase;
     epVisitChoices: DG.InputBase;
@@ -27,7 +28,12 @@ export class TimeProfileView extends DG.ViewBase {
     constructor(name) {
         super(name);
         this.name = name;
+    }
 
+    loaded: boolean;
+
+    load(): void {
+        
         this.selectedLabValue = this.uniqueLabValues[ 0 ] as string;
         this.selectedType = this.types[0];
         this.visitNamesAndDays = getVisitNamesAndDays(study.domains.lb);

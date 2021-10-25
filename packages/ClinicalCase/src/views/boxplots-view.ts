@@ -6,10 +6,11 @@ import { addDataFromDmDomain, getUniqueValues } from '../data-preparation/utils'
 import { createBaselineEndpointDataframe } from '../data-preparation/data-preparation';
 import { ETHNIC, RACE, SEX, TREATMENT_ARM } from '../constants';
 import { updateDivInnerHTML } from './utils';
+import { ILazyLoading } from '../lazy-loading/lazy-loading';
 var { jStat } = require('jstat')
 
 
-export class BoxPlotsView extends DG.ViewBase {
+export class BoxPlotsView extends DG.ViewBase implements ILazyLoading {
 
   boxPlotDiv = ui.div();
   boxPlots = [];
@@ -30,6 +31,11 @@ export class BoxPlotsView extends DG.ViewBase {
   constructor(name) {
     super(name);
     this.name = name;
+  }
+
+  loaded: boolean;
+
+  load(): void {
     this.labWithDmData = addDataFromDmDomain(study.domains.lb, study.domains.dm, [ 'USUBJID', 'VISITDY', 'VISIT', 'LBTEST', 'LBSTRESN' ], [TREATMENT_ARM, SEX, RACE, ETHNIC]);
 
     let viewerTitle = {

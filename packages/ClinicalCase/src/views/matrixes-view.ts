@@ -3,9 +3,10 @@ import * as DG from "datagrok-api/dg";
 import * as ui from "datagrok-api/ui";
 import { study } from "../clinical-study";
 import { getUniqueValues } from '../data-preparation/utils';
+import { ILazyLoading } from '../lazy-loading/lazy-loading';
 
 
-export class MatrixesView extends DG.ViewBase {
+export class MatrixesView extends DG.ViewBase implements ILazyLoading {
 
   matrixPlot: any;
   uniqueLabValues = Array.from(getUniqueValues(study.domains.lb, 'LBTEST'));
@@ -19,7 +20,11 @@ export class MatrixesView extends DG.ViewBase {
   constructor(name) {
     super(name);
     this.name = name;
+  }
+  loaded: boolean;
 
+  load(): void {
+    
     this.createCorrelationMatrixDataframe();
     this.uniqueLabValues = Array.from(getUniqueValues(study.domains.lb, 'LBTEST'));
     this.uniqueVisits = Array.from(getUniqueValues(study.domains.lb, 'VISIT'));
@@ -63,7 +68,6 @@ export class MatrixesView extends DG.ViewBase {
         ]
       ]);
     });
-
   }
 
   private updateMarix() {
