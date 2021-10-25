@@ -6,7 +6,7 @@ import {BitSet, DataFrame} from 'datagrok-api/dg';
 export async function selectOutliersManually(inputData: DataFrame) {
   const IS_OUTLIER_COL_LABEL = 'isOutlier';
 
-  const OUTLIER_REASON_COL_LABEL = 'Outlying reason';
+  const OUTLIER_REASON_COL_LABEL = 'Reason';
 
   const editedInput = inputData.clone();
   const augmentedInput = inputData.clone();
@@ -21,7 +21,7 @@ export async function selectOutliersManually(inputData: DataFrame) {
       .add(DG.Column.fromStrings(OUTLIER_REASON_COL_LABEL, Array.from({length: inputData.rowCount}, () => '')));
   }
 
-  const reasonInput = ui.textInput('Reason text', '');
+  const reasonInput = ui.textInput('Reason', '');
   const scatterPlot = DG.Viewer.scatterPlot(augmentedInput, {
     'color': OUTLIER_REASON_COL_LABEL,
   });
@@ -33,7 +33,7 @@ export async function selectOutliersManually(inputData: DataFrame) {
     action: () => {
       if (isInnerModalOpened) return;
 
-      const innerDialog = ui.dialog('Enter the outling reason for selected group')
+      const innerDialog = ui.dialog('Add outliers group')
         .add(reasonInput)
         .onOK(
           () => {
@@ -64,7 +64,7 @@ export async function selectOutliersManually(inputData: DataFrame) {
   };
 
   const result = new Promise<{augmentedInput: DataFrame, editedInput: DataFrame}>((resolve, reject) => {
-    ui.dialog('Manually select outliers')
+    ui.dialog('Manual outliers selection')
       .add(scatterPlot.root)
       .addButton(addOutlierGroupBtn.text, addOutlierGroupBtn.action)
       .addButton(removeOutlierGroupBtn.text, removeOutlierGroupBtn.action)
@@ -73,9 +73,9 @@ export async function selectOutliersManually(inputData: DataFrame) {
         resolve({augmentedInput, editedInput});
       })
       .onCancel(() => {
-        reject(new Error('Manual outlier detection aborted'));
+        reject(new Error('Manual outliers selection is aborted'));
       })
-      .show();
+      .show({width: 900, height: 600});
   });
 
   return result;
