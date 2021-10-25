@@ -35,7 +35,7 @@ export async function aeBrowserPanel(view: AEBrowserHelper) {
 
     let panelDiv = ui.div();
     
-    let accae = ui.accordion('Ae browser');
+    let accae = ui.accordion('ae-browser-panel');
     let accIcon = ui.element('i');
     accIcon.className = 'grok-icon svg-icon svg-view-layout';
 
@@ -58,14 +58,22 @@ export async function aeBrowserPanel(view: AEBrowserHelper) {
             `${getNullOrValue(view.aeToSelect, 'AESTDTC', view.aeToSelect.currentRowIdx)} - ${getNullOrValue(view.aeToSelect, 'AEENDTC', view.aeToSelect.currentRowIdx)}`);
        
 
-        let daysInput = ui.intInput('Days prior AE', view.daysPriorAe);
+        let daysInput = ui.intInput('Prior AE', view.daysPriorAe);
         daysInput.onChanged((v) => {
             view.daysPriorAe = daysInput.value;
             view.updateDomains();
             updateAccordion();
           });
-    
-        accae.addPane('General', ()=>{
+          startEndDays.innerHTML = 'Days ' + startEndDays.innerHTML;
+          startEndDays.style.marginTop = '5px';
+          //@ts-ignore
+          accae.header = ui.div([
+            description,
+            startEndDays,
+            //@ts-ignore
+            ui.divH([ui.divText('Days prior AE'), daysInput.input], {style: {alignItems: 'center', gap: '5px'}}),
+          ])
+/*         accae.addPane('General', ()=>{
             let table =  ui.tableFromMap({
                 'Severity': description,
                 'Days': startEndDays,
@@ -77,33 +85,46 @@ export async function aeBrowserPanel(view: AEBrowserHelper) {
             $(table).find('.d4-entity-list>span').css('margin', '0px');
             return table
 
-        }, true);  
+        }, true);   */
 
-        let accDiv = ui.div();
+        let getPaneContent = (it, rowNum) => {
+            if (it) {
+                if(!rowNum){
+                    return ui.divText('No records found');
+                } else {
+                    let grid = view[ it ].plot.grid();
+                    if(rowNum < 7){
+                        grid.root.style.maxHeight = rowNum < 4 ? '100px' : '150px' ;
+                    }
+                    grid.root.style.width = '250px';
+                    return ui.div(grid.root);
+                }
+            }
+        }
+
         let updateAccordion = () => {
-            let acc = ui.accordion('ae-browser-panel');
             view.domains.concat(view.selectedAdditionalDomains).forEach(it => {
                 const rowNum = view[ it ].rowCount === 1 && view[ it ].getCol(SUBJECT_ID).isNone(0) ? 0 : view[ it ].rowCount
-                acc.addCountPane(`${it}`, () => {
-                    if (it) {
-                        if(!rowNum){
-                            return ui.divText('No records found');
-                        } else {
-                            let grid = view[ it ].plot.grid();
-                            if(rowNum < 7){
-                                grid.root.style.maxHeight = rowNum < 4 ? '100px' : '150px' ;
-                            }
-                            return ui.div(grid.root);
-                        }
-                    }
-                }, () => rowNum);
-                let panel = acc.getPane(`${it}`);
-                let root = (<any>window).grok_Widget_Get_Root(panel.d); //panel.root
-                $(root).css('display', 'flex');
-                $(root).css('opacity', '1');
+                let pane = accae.getPane(`${it}`);
+                //@ts-ignore
+                updateDivInnerHTML(pane.root.lastChild, getPaneContent(it, rowNum));
+                //@ts-ignore
+                pane.root.firstChild.lastChild.innerText = rowNum;
             })
-            updateDivInnerHTML(accDiv, acc.root);
         }
+
+        let createAccordion = () => {
+            view.domains.concat(view.selectedAdditionalDomains).forEach(it => {
+                const rowNum = view[ it ].rowCount === 1 && view[ it ].getCol(SUBJECT_ID).isNone(0) ? 0 : view[ it ].rowCount
+                accae.addCountPane(`${it}`, () => getPaneContent(it, rowNum), () => rowNum);
+                let panel = accae.getPane(`${it}`);
+                //@ts-ignore
+                $(panel.root).css('display', 'flex');
+                //@ts-ignore
+                $(panel.root).css('opacity', '1');
+            })
+        }
+        
         let addButton =  ui.button(ui.icons.add(() => {}), ()=>{
             let domainsMultiChoices = ui.multiChoiceInput('', view.selectedAdditionalDomains, view.additionalDomains)
             ui.dialog({ title: 'Select domains' })
@@ -116,10 +137,9 @@ export async function aeBrowserPanel(view: AEBrowserHelper) {
               //@ts-ignore
             .show({centerAt: addButton});
         });
-        updateAccordion();
+        createAccordion();
         
         panelDiv.append(accae.root);
-        panelDiv.append(accDiv);
         panelDiv.append(addButton);
 
         return panelDiv;

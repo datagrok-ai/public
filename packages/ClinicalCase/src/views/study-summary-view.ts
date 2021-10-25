@@ -19,6 +19,7 @@ export class StudySummaryView extends DG.ViewBase {
     super(name);
 
     this.name = name;
+    this.helpUrl = 'https://github.com/datagrok-ai/public/tree/master/packages/ClinicalCase';
     this.studyId = study.domains.dm.get(STUDY_ID, 0);
     const errorsMap = this.createErrorsMap();
     this.errorsByDomain = errorsMap.withCount;

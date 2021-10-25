@@ -263,16 +263,23 @@ export class MultiPlotViewer extends DG.JsViewer {
       this.echartOptions.yAxis[visibleIndex].axisLabel.overflow = plot.yLabelOverflow;
       this.echartOptions.yAxis[visibleIndex].axisLine = {onZero: false};
       this.echartOptions.yAxis[visibleIndex].axisTick = {alignWithLabel: true};
-      this.echartOptions.yAxis[visibleIndex].min = plot.additionalParams ? plot.additionalParams.min : undefined;
-      this.echartOptions.yAxis[visibleIndex].max =  plot.additionalParams ? plot.additionalParams.max : undefined;
 
       if(plot.multiLineFieldIndex && plot.series.data.length){
+        let minY;
+        let maxY;
         plot.series.data.forEach((item, index) => {
-          this.echartOptions.series.push(this.getCurrentSeries(plot, visibleIndex, i, plot.series.type, plot.currentCat[index], item))
+          this.echartOptions.series.push(this.getCurrentSeries(plot, visibleIndex, i, plot.series.type, plot.currentCat[index], item));
+          item.forEach(it => {
+            if(!minY || minY > it[1]) {minY = it[1]};
+            if(!maxY || maxY < it[1]) {maxY = it[1]};
+          })        
         })
+        this.echartOptions.yAxis[visibleIndex].min = plot.additionalParams ? plot.additionalParams.min && plot.additionalParams.min < minY ? plot.additionalParams.min : minY : undefined;
+        this.echartOptions.yAxis[visibleIndex].max =  plot.additionalParams ? plot.additionalParams.max && plot.additionalParams.max > maxY ? plot.additionalParams.max : maxY: undefined;
       } else {
         this.echartOptions.series.push(this.getCurrentSeries(plot, visibleIndex, i, plot.series.type, plot.currentCat, plot.series.data));
       }
+
 
       this.visibleIndexes.push(i);
       visibleIndex++;
