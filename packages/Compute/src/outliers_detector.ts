@@ -20,10 +20,14 @@ export async function selectOutliersManually(inputData: DataFrame) {
     'color': OUTLIER_REASON_COL_LABEL,
   });
 
+  let isInnerModalOpened = false;
+
   const addOutlierGroupBtn = {
     text: 'ADD OUTLIERS GROUP',
     action: () => {
-      ui.dialog('Enter the outling reason for selected group')
+      if (isInnerModalOpened) return;
+
+      const innerDialog = ui.dialog('Enter the outling reason for selected group')
         .add(reasonInput)
         .onOK(
           () => {
@@ -35,6 +39,8 @@ export async function selectOutliersManually(inputData: DataFrame) {
           },
         )
         .show();
+      innerDialog.onClose.subscribe(() => isInnerModalOpened = false);
+      isInnerModalOpened = true;
     },
   };
 
