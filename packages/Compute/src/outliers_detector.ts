@@ -58,6 +58,9 @@ export async function selectOutliersManually(inputData: DataFrame) {
         editedInput.rows.filter((row) => !augmentedInput.get(IS_OUTLIER_COL_LABEL, row.idx));
         resolve({augmentedInput, editedInput});
       })
+      .onCancel(() => {
+        reject(new Error('Manual outlier detection aborted'));
+      })
       .show();
   });
 
