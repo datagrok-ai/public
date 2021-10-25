@@ -21,7 +21,8 @@ export function PubChemSearchWidget(mol, searchType) {
   let panel = ui.divV([compsHost]);
   let search = {
     'similarity': async () => pc.similaritySearch('smiles', mol),
-    'substructure': async () => pc.substructureSearch('smiles', mol)
+    'substructure': async () => pc.substructureSearch('smiles', mol),
+    'identity': async () => pc.identitySearch('smiles', mol)
   }
 
   if (!searchType in search) {
@@ -36,8 +37,13 @@ export function PubChemSearchWidget(mol, searchType) {
       }
       t.col('CanonicalSMILES').semType = 'Molecule';
       t.col('CanonicalSMILES').setTag('cell.renderer', 'Molecule');
-
-      compsHost.appendChild(t.plot.grid().root);
+      if(searchType === 'substructure') {
+        t.col('CanonicalSMILES').temp['chem-scaffold-filter'] = mol;
+        t.col('CanonicalSMILES').temp['chem-scaffold'] = mol;
+      }
+      let grid = t.plot.grid();
+      grid.columns.setOrder(['CanonicalSMILES','CID']);
+      compsHost.appendChild(grid.root);
       headerHost.appendChild(ui.iconFA('arrow-square-down', () => {
         t.name = `"PubChem Similarity Search"`;
         grok.shell.addTableView(t);
@@ -61,7 +67,6 @@ export function PubChemSearchWidget(mol, searchType) {
 //tags: panel, widgets
 //input: string mol {semType: Molecule}
 //output: widget result
-//condition: true
 export function PubChemSubstructureSearchPanel(mol) {
   return PubChemSearchWidget(mol, 'substructure');
 }
@@ -70,9 +75,24 @@ export function PubChemSubstructureSearchPanel(mol) {
 //tags: panel, widgets
 //input: string mol {semType: Molecule}
 //output: widget result
-//condition: true
 export function PubChemSimilaritySearchPanel(mol) {
   return PubChemSearchWidget(mol, 'similarity');
+}
+
+//name: PubChem Identity Search
+//tags: panel, widgets
+//input: string mol {semType: Molecule}
+//output: widget result
+export function pubChemIdentitySearch(mol) {
+  return PubChemSearchWidget(mol, 'identity');
+}
+
+//name: IUPAC name
+//input: string smiles
+//output: string iupacName
+export function getIupacName(smiles) {
+  const identityDf = pc.getIUPACName('smiles', smiles);
+  return identityDf;
 }
 
 class PubChem {
@@ -84,29 +104,38 @@ class PubChem {
       maxRequests -= 1;
       json = await this._getListById(listId);
     }
-    console.error(json);
+
     let df = DG.DataFrame.fromObjects(json)
     return df
 
   }
-
+  async getIUPACName(idType, id, params = {})
+  {
+    let listId = await this._asyncSearchId("identity", idType, id, params);
+    let json = await this._getListById(listId,{},[]);
+    for(let prop of json[0]['props']){
+      if(prop['urn']['label'] === 'IUPAC Name'){
+        return prop['value'];
+      }
+    }
+    return '';
+  }
   async identitySearch(idType, id, params = {}) {
-    let listId = await this._asyncSearchId("identity", idType, id, params)
-    let json = await this._getListById(listId)
-    let df = DG.DataFrame.fromObjects(json)
-    return df
+    let listId = await this._asyncSearchId("identity", idType, id, params);
+    let json = await this._getListById(listId,{},[]);
+    let df = DG.DataFrame.fromObjects(json);
+    return df;
   }
 
   async substructureSearch(idType, id, params = {}) {
-    let listId = await this._asyncSearchId("substructure", idType, id, params)
-    //todo: put in separate function
+    let listId = await this._asyncSearchId("substructure", idType, id, params);
     let json = undefined;
     let maxRequests = 10;
     while (!json && maxRequests > 0) {
       maxRequests -= 1;
       json = await this._getListById(listId);
     }
-    console.error(json);
+
     let df = DG.DataFrame.fromObjects(json)
     return df
   }
@@ -139,24 +168,24 @@ class PubChem {
     });
   }
 
-  _getListById(listId, params = {}) {
+  _getListById(listId, params = {},propertyList = ['CanonicalSMILES']) {
     return new Promise(function (resolve, reject) {
       let url = `/compound/listkey`
       params = params ? params : {}
       let xmlHttp = new XMLHttpRequest();
-      let theUrl = `${pug}${url}/${listId}/property/CanonicalSMILES/JSON` +
+      let properties = propertyList.length == 0 ? '':`/property/${propertyList.join(',')}`
+      let theUrl = `${pug}${url}/${listId}${properties}/JSON` +
         `${params == {} ? '' : '?' + Object.keys(params).map(key => key + '=' + params[key]).join('&')}`
-      console.error(theUrl);
       xmlHttp.open("GET", theUrl, true);
       xmlHttp.onload = function () {
         if (this.status >= 200 && this.status < 300) {
           let json = JSON.parse(xmlHttp.responseText);
-          console.error(json['PropertyTable']);
           if (json['PropertyTable']) {
-            console.error(json['PropertyTable']['Properties']);
             resolve(json['PropertyTable']['Properties']);
-          } else {
-            resolve(undefined);
+          } else if(json['PC_Compounds']) {
+            resolve(json['PC_Compounds']);
+          } else if(json['Waiting']){
+            pc._getListById(listId, params,propertyList).then((r) => resolve(r))
           }
         } else
           reject();
@@ -177,6 +206,7 @@ class PubChem {
       xmlHttp.open("GET", theUrl, true);
       xmlHttp.onload = function () {
         if (this.status >= 200 && this.status < 300) {
+          console.error(JSON.parse(xmlHttp.responseText))
           let id = JSON.parse(xmlHttp.responseText)['Waiting']['ListKey'];
           resolve(id);
         } else
