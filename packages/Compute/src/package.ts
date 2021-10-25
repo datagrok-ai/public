@@ -31,6 +31,9 @@ export function modelCatalog() {
 
 //name: manualOutlierDetectionDialog
 //input: dataframe inputData
+//output: dataframe augmentedInput
+//output: dataframe editedInput
 export async function manualOutlierDetectionDialog(inputData: DataFrame) {
-  selectOutliersManually(inputData);
+  const {augmentedInput, editedInput} = await selectOutliersManually(inputData);
+  return {augmentedInput, editedInput};
 }

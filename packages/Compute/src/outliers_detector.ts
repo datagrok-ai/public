@@ -43,7 +43,10 @@ export async function selectOutliersManually(inputData: DataFrame) {
     .addButton(addOutlierGroupBtn.text, addOutlierGroupBtn.action)
     .onOK(async () => {
       editedInput.rows.filter((row) => !augmentedInput.get(IS_OUTLIER_COL_LABEL, row.idx));
-      grok.shell.addTableView(augmentedInput);
-      grok.shell.addTableView(editedInput);
     }).show();
+
+  return {
+    augmentedInput,
+    editedInput,
+  };
 }
