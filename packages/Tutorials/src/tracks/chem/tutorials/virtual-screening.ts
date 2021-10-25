@@ -2,9 +2,10 @@ import * as grok from 'datagrok-api/grok';
 import * as DG from 'datagrok-api/dg';
 import * as ui from 'datagrok-api/ui';
 import $ from 'cash-dom';
-import { filter } from 'rxjs/operators';
+import { filter, map } from 'rxjs/operators';
 import { Tutorial } from "../../../tutorial";
 import { _package } from '../../../package';
+import { interval } from 'rxjs';
 
 
 export class VirtualScreeningTutorial extends Tutorial {
@@ -173,7 +174,7 @@ export class VirtualScreeningTutorial extends Tutorial {
     const ignoredColumnNames = ['SMILES', 'ID', 'Ki', activityColName, curatedMolColName];
     const featureSelectionTip = 'Select <b>All</b> columns in the popup dialog and uncheck ' +
       `the first five columns: ${ignoredColumnNames}.`;
-    await this.columnsInpAction(pmv.root, 'Set "Features" to all calculated descriptors', // first uncounted
+    await this.columnsInpAction(pmv.root, 'Set "Features" to all calculated descriptors',
       'Features', `(${descriptors.length}) ${t.columns.names()
         .filter((name: string) => !ignoredColumnNames.includes(name))
         .join(', ')}`, featureSelectionTip);
@@ -186,7 +187,8 @@ export class VirtualScreeningTutorial extends Tutorial {
       'predicts activity in the training set.';
     await this.buttonClickAction(pmv.root, 'Click the "Train" button', 'TRAIN', modelInfo);
     await this.contextMenuAction('Right-click on the trained model and select "Apply to | ' +
-      `${t.toString()}"`, t.toString(), null, 'The result will be available in the selected ' +
+      `${t.toString()}"`, t.toString(), null, 'The menu opens both from the status bar with the model ' +
+      'name and from <b>Functions | Models</b>. The result will be available in the selected ' +
       'table as a column named "Outcome".');
 
     grok.shell.v = v;
@@ -252,8 +254,9 @@ export class VirtualScreeningTutorial extends Tutorial {
     const sketcherInput = $(filters.root).find('div.grok-sketcher-input > input')[0];
     if (!sketcherInput) return;
 
-    await this.action('Filter the compounds by the substituents "CCl.OCc1ccccc1C"', smiles.onFilterChanged.pipe(
-      filter(() => smiles.rows.filters.some((f) => f === `${curatedMolColName}: contains Cc1ccccc1CO.CCl`))), // TODO: check if this string replacement is ok
+    await this.action('Filter the compounds by the substituents "CCl.OCc1ccccc1C"', interval(1000).pipe(
+      map(() => smiles.rows.filters),
+      filter((filters: string[]) => filters.some((f) => f === `${curatedMolColName}: contains Cc1ccccc1CO.CCl`))), // TODO: check if this string replacement is ok
       sketcherInput, 'As you might have noticed, some of the most potent molecules in the data happen ' +
       'to have them. The next step is to identify the scaffolds at the core of these molecules and look ' +
       'them up in the ChEMBL database that contains bioactive molecules with drug-like properties.');
@@ -261,7 +264,7 @@ export class VirtualScreeningTutorial extends Tutorial {
     const scaffoldColName = 'scaffolds';
     await this.dlgInputAction(await this.openAddNCDialog('Add a column for scaffolds'),
       `Name it "${scaffoldColName}"`, '', scaffoldColName);
-    await this.action('Click OK', t.onColumnsAdded.pipe(filter((data) =>
+    await this.action('Click OK', smiles.onColumnsAdded.pipe(filter((data) =>
       data.args.columns.some((col: DG.Column) => col.name === scaffoldColName))));
 
     const scaffold1 = 'O=C1CC2=C(N1)C=CC=C2';
