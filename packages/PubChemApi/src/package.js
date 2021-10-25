@@ -75,7 +75,7 @@ export function PubChemSimilaritySearchPanel(mol) {
   return PubChemSearchWidget(mol, 'similarity');
 }
 
-class PubChem {
+export class PubChem {
   async similaritySearch(idType, id, params = {}) {
     let listId = await this._asyncSearchId("similarity", idType, id, params)
     let json = undefined;
