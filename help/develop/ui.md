@@ -708,10 +708,10 @@ ui.tableFromMap({
 
 ```javascript
 ui.list([
-'element 1',
-grok.shell.user
-'element 3',
-])
+        'element 1',
+        grok.shell.user,
+        'element 3',
+      ])
 ```
 
 ## Buttons
