@@ -40,6 +40,12 @@ Available tags:
 panel, init
 `;
 
+const HELP_API = `
+Usage: grok api
+
+Create wrapper functions for package scripts
+`;
+
 const HELP_CONFIG = `
 Usage: grok config
 
@@ -89,6 +95,7 @@ file and converting your scripts in the \`package.json\` file
 
 module.exports = {
   add: HELP_ADD,
+  api: HELP_API,
   config: HELP_CONFIG,
   create: HELP_CREATE,
   publish: HELP_PUBLISH,
