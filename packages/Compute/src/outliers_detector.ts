@@ -10,10 +10,16 @@ export async function selectOutliersManually(inputData: DataFrame) {
 
   const editedInput = inputData.clone();
   const augmentedInput = inputData.clone();
-  augmentedInput.columns
-    .add(DG.Column.fromBitSet(IS_OUTLIER_COL_LABEL, BitSet.create(inputData.rowCount, () => false)));
-  augmentedInput.columns
-    .add(DG.Column.fromStrings(OUTLIER_REASON_COL_LABEL, Array.from({length: inputData.rowCount}, () => '')));
+
+  if (!inputData.columns.byName(IS_OUTLIER_COL_LABEL)) {
+    augmentedInput.columns
+      .add(DG.Column.fromBitSet(IS_OUTLIER_COL_LABEL, BitSet.create(inputData.rowCount, () => false)));
+  }
+
+  if (!inputData.columns.byName(OUTLIER_REASON_COL_LABEL)) {
+    augmentedInput.columns
+      .add(DG.Column.fromStrings(OUTLIER_REASON_COL_LABEL, Array.from({length: inputData.rowCount}, () => '')));
+  }
 
   const reasonInput = ui.textInput('Reason text', '');
   const scatterPlot = DG.Viewer.scatterPlot(augmentedInput, {
