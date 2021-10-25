@@ -167,29 +167,60 @@ function normalizeSequence(sequence: string): string {
             sequence.replace(/(fU|fA|fC|fG|mU|mA|mC|mG|ps|A|U|G|C)/g, function (x) {return obj[x]});
 }
 
-// function detectExpectedRepresentation(sequence: string): string {
-//
-// }
+function indexOfFirstNotValidCharacter(sequence: string) {
+  //TODO: generate const arrays programmatically from map.ts
+  const oneDigitSymbols = ["A", "U", "T", "C", "G", "u", "a", "c", "g", "s"],
+    twoDigitSymbols = ["fA", "fU", "fC", "fG", "mA", "mU", "mC", "mG", "dA", "dU", "dC", "dG", "dT", "rA", "rU", "rC", "rG", "ps",
+      "Uf", "Af", "Cf", "Gf"],
+    manyDigitSymbols = ["moeA", "moe5mC", "(5m)moeC", "moeG", "moeT", "5mC", "(5m)C"];
 
-//name: Oligo Batch Calculator App
+  let i = 0;
+  while (i < sequence.length) {
+    if (manyDigitSymbols.some((s) => s == sequence.slice(i, i + s.length))) {
+      let matchedString = manyDigitSymbols.find((s) => s == sequence.slice(i, i + s.length));
+      i += matchedString!.length;
+    } else if (twoDigitSymbols.includes(sequence.slice(i, i + 2))) {
+      i += 2;
+    } else if (oneDigitSymbols.includes(sequence[i])) {
+      i++;
+    } else {
+      return i;
+    }
+  }
+  return -1;
+}
+
+function arrayIntersection(array1: string[], array2: string[]): string[] {
+  return array1.filter(value => array2.includes(value));
+}
+
+//name: Oligo Batch Calculator
 //tags: app
 export function OligoBatchCalculatorApp() {
 
   function updateTable(text: string) {
 
     let sequences = text.split('\n').map((s) => s.replace(/\s/g, '')).filter(item => item);
-    let normalizedSequences = sequences.map((s) => normalizeSequence(s));
-    let molecularWeights = sequences.map((s) => molecularWeight(s));
-    let extinctionCoefficients = normalizedSequences.map((s) => extinctionCoefficient(s));
-    let nMole = sequences.map((s) => nMole(s, yieldAmount.value, units.value));
-    let opticalDensity = sequences.map((s) => opticalDensity(s, yieldAmount.value, units.value));
 
-    for (let i = 0; i < sequences.length; i++) {
+    let indicesOfFirstNotValidCharacter = Array(sequences.length),
+      normalizedSequences = Array(sequences.length),
+      molecularWeights = Array(sequences.length),
+      extinctionCoefficients = Array(sequences.length),
+      nMoles = Array(sequences.length),
+      opticalDensities = Array(sequences.length),
+      molecularMasses = Array(sequences.length);
 
-    }
-
-    let od260 = opticalDensity(extinctionCoefficients, molecularWeights, nMole, yieldAmount.value, units.value);
-    let mass = Mass(extinctionCoefficients, molecularWeights, nMole, od260, yieldAmount.value, units.value);
+    sequences.forEach((sequence, i) => {
+      indicesOfFirstNotValidCharacter[i] = indexOfFirstNotValidCharacter(sequence);
+      if (indicesOfFirstNotValidCharacter[i] < 0) {
+        normalizedSequences[i] = normalizeSequence(sequence);
+        molecularWeights[i] = molecularWeight(sequence);
+        extinctionCoefficients[i] = extinctionCoefficient(normalizedSequences[i]);
+        nMoles[i] = nMole(sequence, yieldAmount.value, units.value);
+        opticalDensities[i] = opticalDensity(sequence, yieldAmount.value, units.value);
+        molecularMasses[i] = molecularMass(sequence, yieldAmount.value, units.value);
+      }
+    });
 
     let moleName1 = (units.value == 'µmole' || units.value == 'mg') ? 'µmole' : 'nmole';
     let moleName2 = (units.value == 'µmole') ? 'µmole' : 'nmole';
@@ -200,41 +231,33 @@ export function OligoBatchCalculatorApp() {
       DG.Column.fromList('int', 'Item', Array(...Array(sequences.length + 1).keys()).slice(1)),
       DG.Column.fromList('string', 'Sequence', sequences),
       DG.Column.fromList('int', 'Length', normalizedSequences.map((s) => s.length / 2)),
-      DG.Column.fromList('double', 'OD 260', od260),
-      DG.Column.fromList('double', moleName1, nMole),
-      DG.Column.fromList('double', 'Mass (' + massName + ')', mass),
-      DG.Column.fromList('double', moleName2 + '/OD', nMole.map(function(n, i) {return coefficient * n / od260[i]})),
-      DG.Column.fromList('double', 'µg/OD', mass.map(function(n, i) {return coefficient * n / od260[i]})),
+      DG.Column.fromList('double', 'OD 260', opticalDensities),
+      DG.Column.fromList('double', moleName1, nMoles),
+      DG.Column.fromList('double', 'Mass (' + massName + ')', molecularMasses),
+      DG.Column.fromList('double', moleName2 + '/OD', nMoles.map(function(n, i) {return coefficient * n / opticalDensities[i]})),
+      DG.Column.fromList('double', 'µg/OD', molecularMasses.map(function(n, i) {return coefficient * n / opticalDensities[i]})),
       DG.Column.fromList('double', 'MW', molecularWeights),
       DG.Column.fromList('int', 'Ext. Coefficient', extinctionCoefficients)
     ]);
 
     let grid = DG.Viewer.grid(table);
-    grid.table.onDataChanged
     let col = grid.columns.byName('Sequence');
     col!.cellType = 'html';
 
     grid.onCellPrepare(function (gc) {
       if (gc.isTableCell && gc.gridColumn.name == 'Sequence') {
-        let arr = ui.divH([], {style: {margin: '6px 0 0 6px'}});
-        for (let i = 0; i < gc.cell.value.length; i++) {
-          // if (indicesOfWrongSymbols[gc.gridRow].includes(i)) {
-          //   arr.append(ui.divText(gc.cell.value[i], {style: {color: "red"}}));
-          // } else {
-          //   arr.append(ui.divText(gc.cell.value[i], {style: {color: "grey"}}));
-          // }
-        }
-        gc.style.element = arr;
+        let items = (indicesOfFirstNotValidCharacter[gc.gridRow] < 0) ?
+          [ui.divText(gc.cell.value, {style: {color: "grey"}})] :
+          [
+            ui.divText(gc.cell.value.slice(0, indicesOfFirstNotValidCharacter[gc.gridRow]), {style: {color: "grey"}}),
+            ui.divText(gc.cell.value.slice(indicesOfFirstNotValidCharacter[gc.gridRow]), {style: {color: "red"}})
+          ];
+        gc.style.element = ui.divH(items, {style: {margin: '6px 0 0 6px'}}
+        );
       }
     });
+    tableDiv.innerHTML = '';
     tableDiv.append(grid.root);
-    // if (indicesOfWrongSymbols.some((e) => e.length > 0))
-    //   removeUnrecognizedSymbolsButtonDiv.append(
-    //     ui.button('REMOVE ERRORS', () => {
-    //       inputSequenceField.value = cleanSequences.join('\n');
-    //       updateTable(cleanSequences.join('\n'));
-    //     })
-    //   );
   }
 
   let windows = grok.shell.windows;
@@ -246,12 +269,12 @@ export function OligoBatchCalculatorApp() {
   let table = DG.DataFrame.create();
   let tableDiv = ui.box();
 
-  updateTable(defaultInput);
   let inputSequences = ui.textInput("", defaultInput, async (txt: string) => updateTable(txt));
   let yieldAmount = ui.floatInput('', 1, () => updateTable(inputSequences.value));
   let units = ui.choiceInput('', 'OD', ['OD', 'µg', 'mg', 'µmole', 'nmole'], () => updateTable(inputSequences.value));
   let clearSequences = ui.button('CLEAR', () => inputSequences.value = '');
 
+  updateTable(defaultInput);
 
   let saveAsButton = ui.bigButton('SAVE AS CSV', () => {
     let link = document.createElement("a");
