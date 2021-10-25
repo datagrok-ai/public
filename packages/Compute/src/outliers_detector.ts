@@ -38,15 +38,16 @@ export async function selectOutliersManually(inputData: DataFrame) {
     },
   };
 
-  ui.dialog('Manually select outliers')
-    .add(scatterPlot.root)
-    .addButton(addOutlierGroupBtn.text, addOutlierGroupBtn.action)
-    .onOK(async () => {
-      editedInput.rows.filter((row) => !augmentedInput.get(IS_OUTLIER_COL_LABEL, row.idx));
-    }).show();
+  const result = new Promise<{augmentedInput: DataFrame, editedInput: DataFrame}>((resolve, reject) => {
+    ui.dialog('Manually select outliers')
+      .add(scatterPlot.root)
+      .addButton(addOutlierGroupBtn.text, addOutlierGroupBtn.action)
+      .onOK(() => {
+        editedInput.rows.filter((row) => !augmentedInput.get(IS_OUTLIER_COL_LABEL, row.idx));
+        resolve({augmentedInput, editedInput});
+      })
+      .show();
+  });
 
-  return {
-    augmentedInput,
-    editedInput,
-  };
+  return result;
 }
