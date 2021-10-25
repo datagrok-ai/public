@@ -1,4 +1,3 @@
-import puppeteer from 'puppeteer';
 import path from "path";
 import os from "os";
 import fs from "fs";
@@ -47,7 +46,7 @@ export function getDevKey(hostKey: string): {url: string, key: string} {
   return {url, key};
 }
 
-export async function getBrowserPage(): Promise<{browser: puppeteer.Browser, page: puppeteer.Page}> {
+export async function getBrowserPage(puppeteer: any): Promise<{browser: any, page: any}> {
   let url:string = process.env.HOST ?? '';
   let cfg = getDevKey(url);
   url = cfg.url;
