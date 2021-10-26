@@ -1,0 +1,34 @@
+{
+	"name": "simpkpd",
+	"friendlyName": "SimPKPD",
+	"version": "0.0.1",
+	"description": "",
+	"dependencies": {
+		"datagrok-api": "latest",
+		"cash-dom": "latest",
+		"dayjs": "latest"
+	},
+	"devDependencies": {
+		"@types/d3": "^7.0.0",
+		"@types/jquery": "^3.5.6",
+		"@typescript-eslint/eslint-plugin": "^4.29.1",
+		"@typescript-eslint/parser": "^4.29.1",
+		"eslint": "^7.32.0",
+		"eslint-config-google": "^0.14.0",
+		"ts-loader": "^9.2.5",
+		"typescript": "^4.4.3",
+		"webpack": "latest",
+		"webpack-cli": "latest"
+	},
+	"sources": [],
+	"scripts": {
+		"debug-simpkpd": "webpack && grok publish",
+		"release-simpkpd": "grok publish --rebuild --release",
+		"build-simpkpd": "webpack",
+		"build": "webpack",
+		"debug-simpkpd-public": "grok publish public --rebuild",
+		"release-simpkpd-public": "grok publish public --rebuild --release",
+		"debug-simpkpd-local": "grok publish local --rebuild",
+		"release-simpkpd-local": "grok publish local --rebuild --release"
+	}
+}
