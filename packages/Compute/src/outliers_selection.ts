@@ -66,7 +66,9 @@ export async function selectOutliersManually(inputData: DataFrame) {
 
   const result = new Promise<{augmentedInput: DataFrame, editedInput: DataFrame}>((resolve, reject) => {
     ui.dialog('Manual outliers selection')
-      .add(scatterPlot.root)
+      .add(
+        ui.divH([scatterPlot.root]),
+      )
       .addButton(addOutlierGroupBtn.text, addOutlierGroupBtn.action)
       .addButton(removeOutlierGroupBtn.text, removeOutlierGroupBtn.action)
       .onOK(() => {
@@ -76,7 +78,7 @@ export async function selectOutliersManually(inputData: DataFrame) {
       .onCancel(() => {
         reject(new Error('Manual outliers selection is aborted'));
       })
-      .show({width: 900, height: 600});
+      .show({width: 900, height: 400});
   });
 
   return result;
