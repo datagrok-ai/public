@@ -22,9 +22,35 @@ export async function selectOutliersManually(inputData: DataFrame) {
   const scatterPlot = DG.Viewer.scatterPlot(inputData, {
     'color': OUTLIER_REASON_COL_LABEL,
     'lassoTool': true,
+    'legendVisibility': 'Never',
   });
 
+  const groupsListGrid = DG.Viewer.grid(DG.DataFrame.fromColumns([
+    DG.Column.fromStrings('Reason', []),
+    DG.Column.fromInt32Array('Count', new Int32Array([])),
+  ]));
+
   let isInnerModalOpened = false;
+
+  const updateTable = () => {
+    const uniqueValues: {[key:string]: number} = {};
+    for (let i = 0; i < inputData.rowCount; i++) {
+      const record = inputData.columns.byName(OUTLIER_REASON_COL_LABEL).get(i);
+      const count = uniqueValues[record];
+      if (record != '') {
+        count ?
+          uniqueValues[record]++ :
+          uniqueValues[record] = 1;
+      }
+    }
+    groupsListGrid.dataFrame = DG.DataFrame.fromColumns([
+      DG.Column.fromStrings('Reason', []),
+      DG.Column.fromInt32Array('Count', new Int32Array([])),
+    ]);
+    Object.keys(uniqueValues).map((key: string) => {
+      groupsListGrid.dataFrame?.rows.addNew([key, uniqueValues[key]]);
+    });
+  };
 
   const addOutlierGroupBtn = {
     text: 'ADD OUTLIERS GROUP',
@@ -39,6 +65,7 @@ export async function selectOutliersManually(inputData: DataFrame) {
               inputData.set(IS_OUTLIER_COL_LABEL, selectedIndex, true);
               inputData.set(OUTLIER_REASON_COL_LABEL, selectedIndex, reasonInput.value);
             });
+            updateTable();
             inputData.selection.setAll(false);
           },
         )
@@ -57,14 +84,20 @@ export async function selectOutliersManually(inputData: DataFrame) {
         inputData.set(IS_OUTLIER_COL_LABEL, selectedIndex, false);
         inputData.set(OUTLIER_REASON_COL_LABEL, selectedIndex, '');
       });
+      updateTable();
       inputData.selection.setAll(false);
     },
   };
 
+  updateTable();
+
   const result = new Promise<{augmentedInput: DataFrame, editedInput: DataFrame}>((resolve, reject) => {
     ui.dialog('Manual outliers selection')
       .add(
-        ui.divH([scatterPlot.root]),
+        ui.divH([
+          scatterPlot.root,
+          groupsListGrid.root,
+        ]),
       )
       .addButton(addOutlierGroupBtn.text, addOutlierGroupBtn.action)
       .addButton(removeOutlierGroupBtn.text, removeOutlierGroupBtn.action)
