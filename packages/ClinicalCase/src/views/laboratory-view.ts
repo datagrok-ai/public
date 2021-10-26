@@ -13,11 +13,11 @@ export class LaboratoryView extends DG.ViewBase implements ILazyLoading {
   constructor(name) {
     super({});
     this.name = name;
+    this.helpUrl = 'https://raw.githubusercontent.com/datagrok-ai/public/master/packages/ClinicalCase/views_help/laboratory.md';
  }
   loaded: boolean;
   
   load(): void {
-    this.helpUrl = 'https://raw.githubusercontent.com/datagrok-ai/public/master/packages/ClinicalCase/views_help/laboratory.md';
     let lb = study.domains.lb;
     let dm = study.domains.dm;
 

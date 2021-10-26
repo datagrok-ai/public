@@ -31,12 +31,12 @@ export class BoxPlotsView extends DG.ViewBase implements ILazyLoading {
   constructor(name) {
     super({});
     this.name = name;
+    this.helpUrl = 'https://raw.githubusercontent.com/datagrok-ai/public/master/packages/ClinicalCase/views_help/biomarkers_distribution.md';
   }
 
   loaded: boolean;
 
   load(): void {
-    this.helpUrl = 'https://raw.githubusercontent.com/datagrok-ai/public/master/packages/ClinicalCase/views_help/biomarkers_distribution.md';
     this.labWithDmData = addDataFromDmDomain(study.domains.lb, study.domains.dm, [ 'USUBJID', 'VISITDY', 'VISIT', 'LBTEST', 'LBSTRESN' ], [TREATMENT_ARM, SEX, RACE, ETHNIC]);
 
     let viewerTitle = {

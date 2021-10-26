@@ -40,12 +40,12 @@ export class SurvivalAnalysisView extends DG.ViewBase implements ILazyLoading {
   constructor(name) {
     super({});
     this.name = name;
+    this.helpUrl = 'https://raw.githubusercontent.com/datagrok-ai/public/master/packages/ClinicalCase/views_help/survival_analysis.md';
   }
 
   loaded: boolean;
 
   load(): void {
-    this.helpUrl = 'https://raw.githubusercontent.com/datagrok-ai/public/master/packages/ClinicalCase/views_help/survival_analysis.md';
     this.endpoint = Object.keys(this.endpointOptions)[ 0 ];
     this.endpointChoices = ui.choiceInput('Endpoint', Object.keys(this.endpointOptions)[ 0 ], Object.keys(this.endpointOptions));
     this.endpointChoices.onChanged((v) => {
