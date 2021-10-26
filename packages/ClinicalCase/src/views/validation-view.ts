@@ -26,7 +26,7 @@ export class ValidationView extends DG.ViewBase implements ILazyLoading {
   loaded: boolean;
 
   load(): void {
-
+    this.helpUrl = 'https://raw.githubusercontent.com/datagrok-ai/public/master/packages/ClinicalCase/views_help/validation.md';
     this.resultsDataframe = study.validationResults;
     this.domains = study.domains;
 

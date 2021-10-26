@@ -168,7 +168,7 @@ export class PatientProfileView extends DG.ViewBase implements ILazyLoading {
   loaded: boolean;
 
   load(): void {
-    
+    this.helpUrl = 'https://raw.githubusercontent.com/datagrok-ai/public/master/packages/ClinicalCase/views_help/patient_profile.md';
     let patientIds = Array.from(getUniqueValues(study.domains.dm, 'USUBJID'));
     let patienIdBoxPlot = ui.choiceInput('', patientIds[ 0 ], patientIds);
     patienIdBoxPlot.onChanged((v) => {

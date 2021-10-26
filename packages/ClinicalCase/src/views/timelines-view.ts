@@ -50,7 +50,8 @@ export class TimelinesView extends DG.ViewBase implements ILazyLoading {
   loaded: boolean;
 
   load(): void {
-        let multiChoiceOptions = ui.multiChoiceInput('', [ this.selectedOptions[ 0 ] ] as any, Object.keys(multichoiceTableOptions))
+    this.helpUrl = 'https://raw.githubusercontent.com/datagrok-ai/public/master/packages/ClinicalCase/views_help/timelines.md';
+    let multiChoiceOptions = ui.multiChoiceInput('', [this.selectedOptions[0]] as any, Object.keys(multichoiceTableOptions))
     multiChoiceOptions.onChanged((v) => {
       this.selectedOptions = multiChoiceOptions.value;
       this.updateSelectedDataframes(this.selectedOptions);

@@ -33,7 +33,7 @@ export class TimeProfileView extends DG.ViewBase implements ILazyLoading {
     loaded: boolean;
 
     load(): void {
-        
+        this.helpUrl = 'https://raw.githubusercontent.com/datagrok-ai/public/master/packages/ClinicalCase/views_help/time_profile.md';
         this.selectedLabValue = this.uniqueLabValues[ 0 ] as string;
         this.selectedType = this.types[0];
         this.visitNamesAndDays = getVisitNamesAndDays(study.domains.lb);
