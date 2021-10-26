@@ -60,6 +60,6 @@ for n in range(0, length):
 
     standardized[n] = Chem.MolToSmiles(mol, kekuleSmiles = kekulization)
 
-curated = pd.DataFrame(standardized, columns = ['curated_structures'])
+curated = pd.DataFrame(standardized, columns = ['curated_molecule'])
 
 
