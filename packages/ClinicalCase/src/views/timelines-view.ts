@@ -43,7 +43,7 @@ export class TimelinesView extends DG.ViewBase implements ILazyLoading {
   resultTables: DG.DataFrame;
 
   constructor(name) {
-    super(name);
+    super({});
     this.name = name;
   }
 

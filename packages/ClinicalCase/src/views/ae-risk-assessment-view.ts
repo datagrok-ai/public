@@ -10,7 +10,7 @@ export class AERiskAssessmentView extends DG.ViewBase implements ILazyLoading  {
   riskAssessmentDataframe: DG.DataFrame;
 
   constructor(name) {
-    super(name);
+    super({});
     this.name = name;
   } 
 

@@ -18,7 +18,7 @@ export class ValidationView extends DG.ViewBase implements ILazyLoading {
   domains: any;
 
   constructor(errorsMap: any, name) {
-    super(name);
+    super({});
     this.name = name;
     this.errorsByDomain = errorsMap;
   }

@@ -25,6 +25,7 @@ export let _package = new DG.Package();
 
 export let validationRulesList = null;
 
+let domains = Object.keys(study.domains).map(it => `${it.toLocaleLowerCase()}.csv`);
 
 let links = {
   ae: { key: 'USUBJID', start: 'AESTDY', end: 'AEENDY', event: 'AETERM' },
@@ -180,6 +181,33 @@ export async function clinicalCaseApp(): Promise<any> {
       createPropertyPanel(obj);
     }, 100)
   });
+}
+
+
+//tags: folderViewer
+//input: file folder
+//input: list<file> files
+//output: widget
+export async function clinicalCaseFolderLauncher(folder: DG.FileInfo, files: DG.FileInfo[]): Promise<DG.Widget | undefined> {
+  if (files.some((f) => f.fileName.toLowerCase() === 'dm.csv')) {
+    let res = await grok.dapi.files.readAsText(`${folder.fullPath}/dm.csv`);
+    let table = DG.DataFrame.fromCsv(res);
+    let studyId = table.get('STUDYID', 0);
+    return DG.Widget.fromRoot(ui.div([
+      ui.panel([
+        ui.divText('Folder contains SDTM data'),
+        ui.divText(`Study ID: ${studyId}`)]),
+      ui.button('Run ClinicalCase', async () => {
+        await Promise.all(files.map(async (file) => {
+          if(domains.includes(file.fileName.toLowerCase())){
+            let df = await grok.data.files.openTable(`${folder.fullPath}/${file.fileName.toLowerCase()}`);
+            grok.shell.addTableView(df);
+          }
+        }));
+        grok.functions.call("Clinicalcase:clinicalCaseApp");
+      })
+    ]));
+  }
 }
 
 //tags: autostart

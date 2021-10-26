@@ -38,7 +38,7 @@ export class SurvivalAnalysisView extends DG.ViewBase implements ILazyLoading {
   filterChanged = false;
 
   constructor(name) {
-    super(name);
+    super({});
     this.name = name;
   }
 

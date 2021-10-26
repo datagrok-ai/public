@@ -19,7 +19,7 @@ export class AeBrowserView extends DG.ViewBase implements ILazyLoading {
     currentAeDay: number;
 
     constructor(name) {
-        super(name);
+        super({});
         this.name = name;
     }
 

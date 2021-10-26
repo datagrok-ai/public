@@ -29,7 +29,7 @@ export class BoxPlotsView extends DG.ViewBase implements ILazyLoading {
 
 
   constructor(name) {
-    super(name);
+    super({});
     this.name = name;
   }
 

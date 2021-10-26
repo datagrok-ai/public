@@ -26,7 +26,7 @@ export class TimeProfileView extends DG.ViewBase implements ILazyLoading {
     linechart: any;
 
     constructor(name) {
-        super(name);
+        super({});
         this.name = name;
     }
 
