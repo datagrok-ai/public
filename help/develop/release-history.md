@@ -1,6 +1,205 @@
 <!-- TITLE: Release History -->
 <!-- SUBTITLE: -->
 
+# 2021-10-26 Dev build 0.94.1
+
+## Latest Docker Images
+
+* Datagrok: 
+  *  `docker pull datagrok/datagrok:0.94.1`
+  *  `docker pull datagrok/datagrok:latest`
+  
+* [Docker-Compose](admin/docker-compose.md)
+
+## Addressed Issues
+
+* JsEditor: show the result of the script execution, if possible 
+* Code cleanup 
+* (Possibly) fixed a bug when no network interfaces are present 
+* Widget.temp property (WIP)
+* #135: DevTools: a lightweight package unit-testing framework 
+* (Bug) Chem Filter: After reopening the filter, browser tab with Datagrok freezes (WIP)
+* added time profile and adverse event browser views 
+* Dart Utils: Minor code cleanup 
+* Programming exercises (WIP)
+* (Bug) Trellis Plot: Expanded viewer is only using a third of the horizontal space 
+* #53 Tutorials package: Viewers (EDA track) 
+* Wiki: Restructure. Access (WIP)
+* Sequence Translator: enhancements to AxoLabs display  
+* Update tutorials widget 
+* Peptides: various fixes and imporvements 
+* Scatter Plot: Add tooltips for lines and bands 
+* #53 Tutorials package: code clean-up 
+* JS API: Add method to easily customize lines & bands in a Scatter Plot 
+* SequenceTranslator: OligoBatchCalculator: added image and links to YouTube presentations 
+* #53 Tutorials package: chem: Activity prediction (WIP) 
+* Help & JS Examples: Add info about lines & band in a Scatter Plot (WIP)
+* Wiki: Simplify Develop and Getting Started (WIP)
+* updated AE browser property panel, fixed bug with property getter in Timelines viewer, fixed bug in Survival analysis view 
+* removed dm from additional domains in AE browser property panel 
+* (Bug) Chem: sdf file handler isn't invoked (WIP)
+* Fixes #136: Client-side SDF file reader 
+* Removed the sdf file reader from Chem (since it is now part of the OpenChemLib) 
+* Peptides: minor improvements 
+* Help: Change youtube video to screenshots (WIP)
+* #53 Tutorials package: chem: update datasets 
+* #132 Chem: Move Substructure Filter panel to the package 
+* Removed debug printout 
+* #132 Chem: Move Substructure Filter panel to the package. Grooming 
+* (Bug) Add New Column: Exception after opening dialog for editing an already added column 
+* Caret: predict as factor 
+* #138 Chem: Text search for molecules in the sketcher. wip: SMILES only 
+* Update CONTRIB.md, grooming 
+* Updated UI in Time profile, Box plots, Matrix, Summary views. Fixed bugs in Survival analysis view 
+* #132 Chem: Move Substructure Filter panel to the package. Collaborative filtering 
+* #132 Chem: Move Substructure Filter panel to the package. Substruct library 
+* #139 Chem: Move from .tags to .temp 
+* (Bug) Chem | Similarity Analysis: Execution process does not end. Errors in the console 
+* Expose DataSourceCardView to TS-API (WIP)
+* ModelHub initial commit 
+* Peptides: various fixes and improvements WIP 
+* added summary view description to readme 
+* summary view screenshots 
+* updated images links 
+* added gif of summary view 
+* added summary gif 
+* set gif width and height 
+* timelines view description 
+* corrected typo 
+* Fixed JS-API deploy 
+* patient profile view description 
+* correced markdown 
+* All dependent columns should be recalculated after new formula was applied (WIP)
+* Molecular Liability Browser: refactor to handle common actions in NGL and pViz 
+* adverse events view description 
+* Set version to 0.94.0 
+* Grok connect: log query execution time by steps  
+* Seldon: initial package commit 
+* added laboratory view description 
+* #93 Peptides: fixed 2d view 
+* Peptides: Barchart fix again && sar-list-viewer && little fixes 
+* Peptides: filter fix and other improvements 
+* Peptides: Sequence width 
+* biomarkers distribution description, updated biomarkers distribution view(created ribbon panel) 
+* #53 Tutorials package: base class improvements 
+* added correlation matix view description 
+* added time profile description 
+* Peptides: viewer row sorting and colors fix 
+* added ae browser description 
+* Peptides: Sar-list update 
+* Revert "Peptides: Sar-list update" 
+* Revert "Merge remote-tracking branch 'origin/master'" 
+* Update Usage analysis package 
+* Peptides: deleted commented code 
+* updated boxplots view 
+* Update icon 
+* JS-API: ContextActions method 
+* JS-API: star() method 
+* JS-API: Accordion pane counts 
+* JS-API: author getter 
+* JS-API: Accordion.addTitle method 
+* Renamed package 
+* JS-API: ContextActions method (WIP)
+* JS-API: star() method (WIP)
+* JS-API: Accordion pane counts (WIP)
+* JS-API: author getter (WIP)
+* JS-API: Accordion.addTitle method (WIP)
+* Expose DataSourceCardView to TS-API (WIP)
+* (Bug) Grid: column reordering throws an error 
+* added validation view description, fixed bug with time profile view 
+* #53 Tutorials package: add missing titles 
+* updated ae browser gif 
+* Clinical Case: update property panel 
+* View: helpUrl setter 
+* #53 Tutorials package: chem: renaming 
+* added p-values to box plots, updated survival analysis view 
+* Added example of setUpdateIndicator. 
+* Peptides: minor refactoring 
+* Model Catalog stubs 
+* Support Ad-Hoc queries in JS 
+* (Bug) JS-API deploy ignores deleted files 
+* Update localhost.docker-compose.yaml 
+* Fixed typos and replaced oudated resources in Help/develop and Help/exercises sections. Added illustrations. 
+* Update package icons 
+* JBIO: all PTMs tracks syncing (WIP)
+* Wiki: add missing heading for chem articles 
+* Sequence Translator: Enhancements to SVG 
+* JS API: Menu.root 
+* #53 Tutorials package: getMenuItem helper for visual hints 
+* #53 Tutorials package: entry function fix 
+* #53 Tutorials package: add visual hints for the top menu 
+* Locked postgres image version 
+* JBIO: PTMs syncing with paratopes and cdr 
+* Remove form editor toolbar 
+* JBIO: motif PTMs in own track and group 
+* Peptides: major refactoring, viewers merging 
+* Peptides: Refactor & nasty bugs fixed & selection mode for SARV 
+* ChemblApi 
+* #150 Chem: Move to webpack and TS. wip 
+* Peptides: minor fixes and improvements 
+* added laboratory linechart with changes within normalized normal ranges, changed AE browser view to TableView, updated survival analysis view UI 
+* added survival analysis description 
+* Code cleanjup 
+* JS-API: Packages test framework (WIP)
+* Fixed naming 
+* JS-API: AccordionPane.root property 
+* JS API: Filters (WIP)
+* JS API: Accordion.header 
+* Pubchem API 
+* Wiki: Using lists in parameterized queries 
+* #150 Chem: Move to webpack and TS. Moved to webpack 
+* #53 Tutorials package: add visual hints for the sidebar panes 
+* Accordion: more documentation 
+* Minor code cleanup. 
+* Removed accidentaly added functions 
+* Resolves #165: Folder Browser Preview Functions 
+* Sidebar menu button (WIP)
+* Delete the tutorials plugin 
+* Formatting in Compute fixed 
+* Added manual outliers detection 
+* Peptides: removing lock 
+* Fixed analyzer warnings 
+* Sequence Translator: option to be able to  view just users’ pattern  
+* Added eslint config and formatted all existing files 
+* #53 Tutorials package: chem: virtual screening 
+* (Bug) Filters: date format is not correctly displayed in a tooltip 
+* SequenceTranslator: minor code simplification 
+* Oligo Batch Calculator: assume sequence representation by it's first valid code 
+* datagrok-tools: `grok api` command 
+* corrected typos in readme, updated ae browser property panel, adde labels to reference lines in laboratory linechart 
+* Added generated dataframes return 
+* Deleted tutorials plugin 
+* Removed puppeteer dep 
+* implemented lazy view loading 
+* Context Help: allow loading external resources 
+* PubChemApi: export PubChem class 
+* Scripting: Support "id" annotation 
+* (Bug) Chem: ChEMBL search throws an error for unknown molecules 
+* ChemblApi: Iupac name function 
+* Added function abort on cancel event 
+* Added protection from multiple dialog opening 
+* Added promise resolve on dialog closing 
+* Added RemoveOutlier button 
+* Added column existence check before the column insertion 
+* Removed debug line, Fixed css 
+* Harmonize scalar outputs in function view (WIP)
+* Removed debug 
+* Fixed backgroundColor option to be optional 
+* Changed "detection" tem to "selection" term 
+* Lasso tool is enabled by default 
+* Fixed typo in ui.list example 
+* Add demo files 
+* added help for summary view 
+* added help urls for views 
+* moved seting of help urls to constructors 
+* Lesser fixes for tutorials 
+* Fixed scatterPlot width 
+* Changed non-mutating outlier selection on mutating 
+* updated laboratory help 
+* Timelines: remove a hard-coded column name 
+* (Bug) Package Properties: default values are ignored 
+
+
 # 2021-10-10 Dev build 0.93.35
 
 ## Latest Docker Images
