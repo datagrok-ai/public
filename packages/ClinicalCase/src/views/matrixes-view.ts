@@ -20,11 +20,11 @@ export class MatrixesView extends DG.ViewBase implements ILazyLoading {
   constructor(name) {
     super({});
     this.name = name;
+    this.helpUrl = 'https://raw.githubusercontent.com/datagrok-ai/public/master/packages/ClinicalCase/views_help/correlation_matrix.md';
   }
   loaded: boolean;
 
   load(): void {
-    this.helpUrl = 'https://raw.githubusercontent.com/datagrok-ai/public/master/packages/ClinicalCase/views_help/correlaion_matix.md';
     this.createCorrelationMatrixDataframe();
     this.uniqueLabValues = Array.from(getUniqueValues(study.domains.lb, 'LBTEST'));
     this.uniqueVisits = Array.from(getUniqueValues(study.domains.lb, 'VISIT'));

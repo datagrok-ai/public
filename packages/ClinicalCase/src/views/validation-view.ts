@@ -21,12 +21,12 @@ export class ValidationView extends DG.ViewBase implements ILazyLoading {
     super({});
     this.name = name;
     this.errorsByDomain = errorsMap;
+    this.helpUrl = 'https://raw.githubusercontent.com/datagrok-ai/public/master/packages/ClinicalCase/views_help/validation.md';
   }
 
   loaded: boolean;
 
   load(): void {
-    this.helpUrl = 'https://raw.githubusercontent.com/datagrok-ai/public/master/packages/ClinicalCase/views_help/validation.md';
     this.resultsDataframe = study.validationResults;
     this.domains = study.domains;
 
