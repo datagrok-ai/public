@@ -241,7 +241,7 @@ async function chemSubstructureSearchLibrary(molStringsColumn, molString, molStr
 onmessage = function (e) {
   var length = e.data[0], fpColumn = e.data[1], outDimensions = e.data[2], maxDistance = e.data[3], 
       maxDistanceSteps = e.data[4], radiusPercent = e.data[5], lambda0 = e.data[6], 
-      lambda1 = e.data[7], steps = e.data[8], cycles = e.data[9]; 
+      lambda1 = e.data[7], steps = e.data[8], cycles = e.data[9], _onBitCount = e.data[10]; 
   var a = 0, b = 0;
 
   function getIndexes() {
@@ -258,67 +258,20 @@ onmessage = function (e) {
     return Math.sqrt(d);
   }
 
-  function _myFoldFingerprint(maskFp, newLength) {
-    const byteCount = 16, byteSize = 8;
-    var result = new Uint8Array(byteCount);
-    for (let i = 0; i < byteCount; ++i) {
-      for (let j = 0; j < byteSize; ++j) {
-        if ((maskFp[i] >> j) & 1) {
-          let pos = ((byteCount - i - 1) * byteSize + j) % newLength;
-          let byteId = byteCount - pos / byteSize - 1, bitInByte = pos % byteSize;
-          result[byteId] |= (1 << (bitInByte));
-        }
-      }
-    }
-    return result;
-  }
-
-  function _getBitCount(n) {
-    if (typeof(n) != "number")
-      throw new Error("_getBitCount function expects only numeric parameter");
-    var count = 0;
-    while (n > 0) {
-      n = n & (n - 1);
-      count++;
-    }
-    return count;
-  }
-
   function _tanimotoSimilarity(maskA, maskB) {
     const byteCount = 16;
     var bothABcount = 0, onlyAcount = 0, onlyBcount = 0;
     for (let i = 0; i < byteCount; ++i) {
       var curMaskA = maskA[i], curMaskB = maskB[i];
       var bothAB = (curMaskA & curMaskB), onlyA = (curMaskA ^ bothAB), onlyB = (curMaskB ^ bothAB);
-      bothABcount += _getBitCount(bothAB);
-      onlyAcount += _getBitCount(onlyA);
-      onlyBcount += _getBitCount(onlyB);
+      bothABcount += _onBitCount[bothAB];
+      onlyAcount += _onBitCount[onlyA];
+      onlyBcount += _onBitCount[onlyB];
     }  
     return bothABcount / (onlyAcount + onlyBcount + bothABcount);
   }
 
-  function _getFingerprintLength(mask) {
-    const byteCount = 16, byteSize = 8;
-    for (let i = 0; i < byteCount; ++i) {
-      for (let j = byteSize - 1; j >= 0; --j) {
-        if((mask[i] >> j) & 1) 
-          return (byteCount - i - 1) * byteSize + j;
-      }
-    }
-    return 0;
-  }
-  
-  function _myFingerprintSimilarity(maskFp1, maskFp2) {
-    const len1 = _getFingerprintLength(maskFp1);
-    const len2 = _getFingerprintLength(maskFp2);
-    if (len1 < len2)
-      maskFp2 = _myFoldFingerprint(maskFp2, len1);
-    else if (len2 < len1)
-      maskFp1 = _myFoldFingerprint(maskFp1, len2);
-    return _tanimotoSimilarity(maskFp1, maskFp2); // tanimotoSimilarity(fp1, fp2);
-  }
-
-  var distance = (x, y) => 1.0 - _myFingerprintSimilarity(fpColumn[x], fpColumn[y]);
+  var distance = (x, y) => 1.0 - _tanimotoSimilarity(fpColumn[x], fpColumn[y]);
 
   if (maxDistanceSteps == null)
     maxDistanceSteps = length * Math.floor((length - 1) / 2);

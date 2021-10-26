@@ -163,64 +163,75 @@ class ChemPackage extends DG.Package {
   //input: column molColumn {semType: Molecule}
   //output: graphics
   async chemSimilarityAnalysis(table, molColumn) {
-    // var startTime = performance.now();
+    var startTime = performance.now();
     var fpColumn = await this.getMorganFingerprints(molColumn);
     if (fpColumn.stats.missingValueCount > 0) {
       throw new Error("Molecule column has a null entry");
     }
+
+    var _onBitCount = Int8Array.from([
+      0, 1, 1, 2, 1, 2, 2, 3, 1, 2, 2, 3, 2, 3, 3, 4,
+      1, 2, 2, 3, 2, 3, 3, 4, 2, 3, 3, 4, 3, 4, 4, 5,
+      1, 2, 2, 3, 2, 3, 3, 4, 2, 3, 3, 4, 3, 4, 4, 5,
+      2, 3, 3, 4, 3, 4, 4, 5, 3, 4, 4, 5, 4, 5, 5, 6,
+      1, 2, 2, 3, 2, 3, 3, 4, 2, 3, 3, 4, 3, 4, 4, 5,
+      2, 3, 3, 4, 3, 4, 4, 5, 3, 4, 4, 5, 4, 5, 5, 6,
+      2, 3, 3, 4, 3, 4, 4, 5, 3, 4, 4, 5, 4, 5, 5, 6,
+      3, 4, 4, 5, 4, 5, 5, 6, 4, 5, 5, 6, 5, 6, 6, 7,
+      1, 2, 2, 3, 2, 3, 3, 4, 2, 3, 3, 4, 3, 4, 4, 5,
+      2, 3, 3, 4, 3, 4, 4, 5, 3, 4, 4, 5, 4, 5, 5, 6,
+      2, 3, 3, 4, 3, 4, 4, 5, 3, 4, 4, 5, 4, 5, 5, 6,
+      3, 4, 4, 5, 4, 5, 5, 6, 4, 5, 5, 6, 5, 6, 6, 7,
+      2, 3, 3, 4, 3, 4, 4, 5, 3, 4, 4, 5, 4, 5, 5, 6,
+      3, 4, 4, 5, 4, 5, 5, 6, 4, 5, 5, 6, 5, 6, 6, 7,
+      3, 4, 4, 5, 4, 5, 5, 6, 4, 5, 5, 6, 5, 6, 6, 7,
+      4, 5, 5, 6, 5, 6, 6, 7, 5, 6, 6, 7, 6, 7, 7, 8]);
     
     if (window.Worker) {
       const myWorker = new Worker(this.webRoot + '/src/chem_searches.js');
-      const byteCount = 16, byteSize = 8;
+      const byteSize = 8, byteCount = 16, subMaskSize = 32;
       var fpMaskArray = new Array(fpColumn.length);
 
       for (let i = 0; i < fpColumn.length; ++i) {
-        var binaryString = fpColumn.get(i).toBinaryString()
-        var mask = 0, cnt = 0;
-        var fpMask = new Uint8Array(byteCount);
-
-        for (let j = 0; j < binaryString.length; ++j) {
-          if(j % byteSize == 0) {
-            fpMask[cnt++] = mask;
-            mask = 0;
+        var buffer = fpColumn.get(i).getBuffer();
+        var maskArray = new Uint8Array(byteCount);
+        for (const subBuffer of buffer) {
+          var subMaskNum = subMaskSize / byteSize;
+          for (let j = 0; j < subMaskNum; ++j) {
+            var mask = (subBuffer >> ((subMaskNum - j - 1) * byteSize)) & 0xff;
+            maskArray[j] = mask;
           }
-          if (binaryString[j] == '1') 
-            mask |= (1 << ((binaryString.length - j - 1) % byteSize));
         }
-        fpMaskArray[i] = fpMask;
+        fpMaskArray[i] = maskArray;
       }
 
       myWorker.postMessage([fpColumn.length, fpMaskArray,
-                            2, null, null, 1.0, 2.0, 0.01, fpColumn.length * 100, 100]);
-      myWorker.onmessage = function(event) {
-        var coordinates = event.data;
-        var coords = [
-          DG.Column.fromFloat32Array('SPE_X', coordinates[0]),
-          DG.Column.fromFloat32Array('SPE_Y', coordinates[1]),
-        ]
-        table = DG.DataFrame.fromColumns(table.columns.toList().concat(coords));
-        let view = grok.shell.addTableView(table);
-        view.scatterPlot({
-          x: 'SPE_X',
-          y: 'SPE_Y',
-        });
-      };
-      myWorker.onerror = function(error) {
-        grok.shell.error(error.message);
-      };
-      // var endTime = performance.now();
-      // alert(`Runtime is ${(endTime - startTime) / 1000} secs`); 
+                            2, null, null, 1.0, 2.0, 0.01, fpColumn.length * 100, 100, _onBitCount]);
+                            
+      return new Promise((resolve, reject) => {
+        myWorker.onmessage = function(event) {
+          var coordinates = event.data;
+          var coords = [
+            DG.Column.fromFloat32Array('SPE_X', coordinates[0]),
+            DG.Column.fromFloat32Array('SPE_Y', coordinates[1]),
+          ]
+          table = DG.DataFrame.fromColumns(table.columns.toList().concat(coords));
+          let view = grok.shell.addTableView(table);
+          view.scatterPlot({
+            x: 'SPE_X',
+            y: 'SPE_Y',
+          });
+          var endTime = performance.now();
+          alert(`Runtime is ${(endTime - startTime) / 1000} secs`); 
+          resolve();
+        };
+        myWorker.onerror = function(error) {
+          reject(error.message);
+        };
+      });
     } else {
       throw new Error("Your browser doesn\'t support web workers.");
     }
-    // return new Promise((resolve, reject) => {
-    //   let d = ui.dialog();
-    //   d.add(ui.button('OK', () => {
-    //     d.close();
-    //     resolve(table);
-    //   }));
-    //   d.show();
-    // });
   }
 
   //name: searchSubstructure
