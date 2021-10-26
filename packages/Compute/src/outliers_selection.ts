@@ -8,21 +8,18 @@ export async function selectOutliersManually(inputData: DataFrame) {
 
   const OUTLIER_REASON_COL_LABEL = 'Reason';
 
-  const editedInput = inputData.clone();
-  const augmentedInput = inputData.clone();
-
   if (!inputData.columns.byName(IS_OUTLIER_COL_LABEL)) {
-    augmentedInput.columns
+    inputData.columns
       .add(DG.Column.fromBitSet(IS_OUTLIER_COL_LABEL, BitSet.create(inputData.rowCount, () => false)));
   }
 
   if (!inputData.columns.byName(OUTLIER_REASON_COL_LABEL)) {
-    augmentedInput.columns
+    inputData.columns
       .add(DG.Column.fromStrings(OUTLIER_REASON_COL_LABEL, Array.from({length: inputData.rowCount}, () => '')));
   }
 
   const reasonInput = ui.textInput('Reason', '');
-  const scatterPlot = DG.Viewer.scatterPlot(augmentedInput, {
+  const scatterPlot = DG.Viewer.scatterPlot(inputData, {
     'color': OUTLIER_REASON_COL_LABEL,
     'lassoTool': true,
   });
@@ -38,11 +35,11 @@ export async function selectOutliersManually(inputData: DataFrame) {
         .add(reasonInput)
         .onOK(
           () => {
-            augmentedInput.selection.getSelectedIndexes().forEach((selectedIndex: number) => {
-              augmentedInput.set(IS_OUTLIER_COL_LABEL, selectedIndex, true);
-              augmentedInput.set(OUTLIER_REASON_COL_LABEL, selectedIndex, reasonInput.value);
+            inputData.selection.getSelectedIndexes().forEach((selectedIndex: number) => {
+              inputData.set(IS_OUTLIER_COL_LABEL, selectedIndex, true);
+              inputData.set(OUTLIER_REASON_COL_LABEL, selectedIndex, reasonInput.value);
             });
-            augmentedInput.selection.setAll(false);
+            inputData.selection.setAll(false);
           },
         )
         .show();
@@ -56,11 +53,11 @@ export async function selectOutliersManually(inputData: DataFrame) {
     action: () => {
       if (isInnerModalOpened) return;
 
-      augmentedInput.selection.getSelectedIndexes().forEach((selectedIndex: number) => {
-        augmentedInput.set(IS_OUTLIER_COL_LABEL, selectedIndex, false);
-        augmentedInput.set(OUTLIER_REASON_COL_LABEL, selectedIndex, '');
+      inputData.selection.getSelectedIndexes().forEach((selectedIndex: number) => {
+        inputData.set(IS_OUTLIER_COL_LABEL, selectedIndex, false);
+        inputData.set(OUTLIER_REASON_COL_LABEL, selectedIndex, '');
       });
-      augmentedInput.selection.setAll(false);
+      inputData.selection.setAll(false);
     },
   };
 
@@ -72,8 +69,9 @@ export async function selectOutliersManually(inputData: DataFrame) {
       .addButton(addOutlierGroupBtn.text, addOutlierGroupBtn.action)
       .addButton(removeOutlierGroupBtn.text, removeOutlierGroupBtn.action)
       .onOK(() => {
-        editedInput.rows.filter((row) => !augmentedInput.get(IS_OUTLIER_COL_LABEL, row.idx));
-        resolve({augmentedInput, editedInput});
+        const editedInput = inputData.clone();
+        editedInput.rows.filter((row) => !inputData.get(IS_OUTLIER_COL_LABEL, row.idx));
+        resolve({augmentedInput: inputData, editedInput});
       })
       .onCancel(() => {
         reject(new Error('Manual outliers selection is aborted'));
