@@ -50,7 +50,7 @@ export class VirtualScreeningTutorial extends Tutorial {
 
     // this.describe(ui.link('More about chemical structures curation', this.helpUrl).outerHTML);
 
-    const curatedMolColName = 'curated_structures';
+    const curatedMolColName = 'curated_molecule';
     const activityColName = 'pKi';
 
     const addNCDlg = await this.openAddNCDialog();
