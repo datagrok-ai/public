@@ -1,4 +1,5 @@
 const rnaColor = "rgb(255,230,153)";
+const invAbasicColor = "rgb(203,119,211)";
 export const axolabsMap: {[index: string]: {fullName: string, symbols: [string, string, string, string], color: string}} = {
   "RNA": {
     fullName: "RNA nucleotides",
@@ -78,7 +79,7 @@ export const axolabsMap: {[index: string]: {fullName: string, symbols: [string, 
   "InvAbasic": {
     fullName: "Inverted abasic capped",
     symbols: ["(invabasic)", "(invabasic)", "(invabasic)", "(invabasic)"],
-    color: "rgb(217,137,219)"
+    color: invAbasicColor
   },
   "5'-vinylps": {
     fullName: "5'-vinylphosphonate-2'-OMe-uridine",
@@ -88,7 +89,7 @@ export const axolabsMap: {[index: string]: {fullName: string, symbols: [string, 
   "InvAbasic(o)": {
     fullName: "Inverted abasic capped (overhang)",
     symbols: ["(invabasic)", "(invabasic)", "(invabasic)", "(invabasic)"],
-    color: "rgb(217,137,219)"
+    color: invAbasicColor
   },
   "2'-OMe-U(o)": {
     fullName: "Nucleotide Uridine with 2’O-Methyl protection (overhang)",

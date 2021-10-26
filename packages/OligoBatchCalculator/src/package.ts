@@ -35,6 +35,8 @@ export function opticalDensity(sequence: string, amount: number, outputUnits: st
   if (outputUnits == 'Milligrams' || outputUnits == 'Micrograms') {
     const coefficient = outputUnits == 'Milligrams' ? 1 : 0.001;
     return coefficient * amount * extinctionCoefficient(sequence) / molecularWeight(sequence);
+  } else if (outputUnits == 'OD') {
+    return amount;
   }
   let coefficient = (outputUnits == 'NMole') ? 1000000 : (outputUnits == 'Milligrams') ? 1 : 1000;
   return amount * extinctionCoefficient(sequence) / coefficient;
@@ -55,8 +57,11 @@ export function nMole(sequence: string, amount: number, outputUnits: string): nu
 //input: string outputUnits {choices: ['Optical Density', 'Milligrams', 'Micromoles', 'Millimoles']}
 //output: double molecularMass
 export function molecularMass(sequence: string, amount: number, outputUnits: string): number {
-  if (outputUnits == 'Optical Density')
-    return 1000 * amount * molecularWeight(sequence) / extinctionCoefficient(sequence);
+  if (outputUnits == 'Optical Density' || outputUnits == 'OD') {
+    let ec = extinctionCoefficient(sequence);
+    return (ec == 0) ? amount * molecularWeight(sequence) : 1000 * amount * molecularWeight(sequence) / ec;
+  }
+
   const coefficient = (outputUnits == 'Milligrams' || outputUnits == 'Micromoles') ? 1 : 1000;
   return amount / extinctionCoefficient(sequence) * molecularWeight(sequence) * coefficient * opticalDensity(sequence, amount, outputUnits) / nMole(sequence, amount, outputUnits);
 }
@@ -141,7 +146,7 @@ function normalizeSequence(sequence: string): string {
     return sequence;
   const isSiRnaAxolabs = /^[fAUGCuacgs]+$/.test(sequence);
   const isGCRS = /^[fmpsACGU]+$/.test(sequence);
-  const isGcrsGapmers = /^.*moe.+$/.test(sequence) || /^.*5mC.+$/.test(sequence);
+  const isGcrsGapmers = /^.*moe.+$/.test(sequence) || /^.*5mC+$/.test(sequence);
   const obj: {[index: string]: string} = isRna ?
     {"A": "rA", "U": "rU", "G": "rG", "C": "rC"} :
     isDna ?
@@ -173,7 +178,7 @@ function indexOfFirstNotValidCharacter(sequence: string) {
     twoDigitSymbols = ["fA", "fU", "fC", "fG", "mA", "mU", "mC", "mG", "dA", "dU", "dC", "dG", "dT", "rA", "rU", "rC", "rG", "ps",
       "Uf", "Af", "Cf", "Gf"],
     manyDigitSymbols = ["moeA", "moe5mC", "(5m)moeC", "moeG", "moeT", "5mC", "(5m)C"];
-
+  const flag = !sequence.includes('r') && !sequence.includes('d') && !sequence.includes('f') && !sequence.includes('m');
   let i = 0;
   while (i < sequence.length) {
     if (manyDigitSymbols.some((s) => s == sequence.slice(i, i + s.length))) {
@@ -181,7 +186,7 @@ function indexOfFirstNotValidCharacter(sequence: string) {
       i += matchedString!.length;
     } else if (twoDigitSymbols.includes(sequence.slice(i, i + 2))) {
       i += 2;
-    } else if (oneDigitSymbols.includes(sequence[i])) {
+    } else if (oneDigitSymbols.includes(sequence[i]) && flag) {
       i++;
     } else {
       return i;
@@ -190,15 +195,12 @@ function indexOfFirstNotValidCharacter(sequence: string) {
   return -1;
 }
 
-function arrayIntersection(array1: string[], array2: string[]): string[] {
-  return array1.filter(value => array2.includes(value));
-}
-
 //name: Oligo Batch Calculator
 //tags: app
 export function OligoBatchCalculatorApp() {
 
   function updateTable(text: string) {
+    tableDiv.innerHTML = '';
 
     let sequences = text.split('\n').map((s) => s.replace(/\s/g, '')).filter(item => item);
 
@@ -252,11 +254,10 @@ export function OligoBatchCalculatorApp() {
             ui.divText(gc.cell.value.slice(0, indicesOfFirstNotValidCharacter[gc.gridRow]), {style: {color: "grey"}}),
             ui.divText(gc.cell.value.slice(indicesOfFirstNotValidCharacter[gc.gridRow]), {style: {color: "red"}})
           ];
-        gc.style.element = ui.divH(items, {style: {margin: '6px 0 0 6px'}}
-        );
+        gc.style.element = ui.divH(items, {style: {margin: '6px 0 0 6px'}});
       }
     });
-    tableDiv.innerHTML = '';
+
     tableDiv.append(grid.root);
   }
 
@@ -320,7 +321,7 @@ export function OligoBatchCalculatorApp() {
 
   $('.inputSequence textarea')
     .css('resize','none')
-    .css('min-height','50px')
+    .css('min-height','70px')
     .css('width','100%')
     .css('font-family','monospace');
 }
