@@ -2,7 +2,7 @@
 
 This view contains several specific charts for analyzing laboratory results.
 
-* [**Hy's law**](https://en.wikipedia.org/wiki/Hy%27s_law)
+* [Hy's law](https://en.wikipedia.org/wiki/Hy%27s_law)
 
 Scatter plot for analyzing possible risk of a fatal drug-induced liver injury.
 
