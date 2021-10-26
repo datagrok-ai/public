@@ -99,9 +99,10 @@ Values within normal ranges are colored green, values outside normal ranges are 
 
 You can also choose laboratory values by clicking settings button.
 
-Laboratory line chart provides two ways of calculating values dynamics:
+Laboratory line chart provides the following of calculating values dynamics:
 1. Relative changes from baseline
 2. Relative values between min and max contained in dataset
+3. Relative changes between normalized normal ranges
 
 <img src="https://github.com/datagrok-ai/public/blob/master/packages/ClinicalCase/img/patient_profile_lab_line.gif" height="500" width='800'/>
 
@@ -145,7 +146,7 @@ This view contains several specific charts for analyzing laboratory results.
 
 Scatter plot for analyzing possible risk of a fatal drug-induced liver injury.
 
-Shows peak bilirubin values versus peak ALT/AST values across the study. Reference lines are shown at 3*ULN for ALT and AST and 2*ULN for BILI and ALP. Possible Hy's law is defined as AST or ALT >= 3*ULN with bilirubin >=2*ULN.
+Shows peak bilirubin values versus peak ALT/AST values across the study. Reference lines are shown at 3*ULN for ALT and AST and 2*ULN for Bilirubin. Possible Hy's law is defined as AST or ALT >= 3*ULN with bilirubin >=2*ULN.
 
 Color coresponds to treatment arm.
 
