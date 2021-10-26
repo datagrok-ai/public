@@ -146,13 +146,14 @@ export async function clinicalCaseApp(): Promise<any> {
   views.push(<LaboratoryView>addView(new LaboratoryView('Laboratory')));
   views.push(<AERiskAssessmentView>addView(new AERiskAssessmentView('AE Risk Assessment')));
   views.push(<SurvivalAnalysisView>addView(new SurvivalAnalysisView('Survival Analysis')));
-  views.push(<BoxPlotsView>addView(new BoxPlotsView('Biomarkers distribution')));
+  views.push(<BoxPlotsView>addView(new BoxPlotsView('Biomarkers Distribution')));
   views.push(<MatrixesView>addView(new MatrixesView('Correlation Matrix')));
   views.push(<TimeProfileView>addView(new TimeProfileView('Time Profile')));
 
   const aeBrowserDf = study.domains.ae.clone();
   const aeBrowserView = DG.TableView.create(aeBrowserDf);
   aeBrowserView.name = 'AE browser';
+  aeBrowserView.helpUrl = 'https://raw.githubusercontent.com/datagrok-ai/public/master/packages/ClinicalCase/views_help/ae_browser.md';
   views.push(addView(aeBrowserView));
   const aeBrwoserHelper = new AEBrowserHelper(aeBrowserDf);
   aeBrowserDf.onCurrentRowChanged.subscribe(() => {
@@ -168,8 +169,10 @@ export async function clinicalCaseApp(): Promise<any> {
   summary.loaded = true;
   summary.validationView = addView(new ValidationView(summary.errorsByDomain, 'Validation'));
   views.push(summary.validationView);
-  grok.shell.v = summary;
-  createPropertyPanel(summary);
+  
+  setTimeout(() => {
+    grok.shell.v = summary;
+  }, 1000);
 
   grok.events.onCurrentViewChanged.subscribe((v) => {
     setTimeout(() => {
@@ -182,6 +185,9 @@ export async function clinicalCaseApp(): Promise<any> {
     }, 100)
   });
 }
+
+
+
 
 
 //tags: folderViewer
