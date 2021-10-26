@@ -161,7 +161,7 @@ export class PatientProfileView extends DG.ViewBase implements ILazyLoading {
   multiplot_lb_ae_ex_cm: any;
 
   constructor(name) {
-    super(name);
+    super({});
     this.name = name;
   }
 

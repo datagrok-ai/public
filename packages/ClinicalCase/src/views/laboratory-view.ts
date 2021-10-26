@@ -11,7 +11,7 @@ import { ILazyLoading } from '../lazy-loading/lazy-loading';
 export class LaboratoryView extends DG.ViewBase implements ILazyLoading {
 
   constructor(name) {
-    super(name);
+    super({});
     this.name = name;
  }
   loaded: boolean;

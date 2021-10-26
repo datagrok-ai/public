@@ -17,14 +17,14 @@ export class StudySummaryView extends DG.ViewBase implements ILazyLoading {
  httpService = new HttpService();
 
  constructor(name) {
-    super(name);
+    super({});
     this.name = name;
   }
   
   loaded: boolean;
 
   load(): void {
-    //this.helpUrl = 'https://github.com/datagrok-ai/public/tree/master/packages/ClinicalCase';
+    this.helpUrl = 'https://raw.githubusercontent.com/datagrok-ai/public/master/packages/ClinicalCase/views_help/summary.md';
     this.studyId = study.domains.dm.get(STUDY_ID, 0);
     const errorsMap = this.createErrorsMap();
     this.errorsByDomain = errorsMap.withCount;

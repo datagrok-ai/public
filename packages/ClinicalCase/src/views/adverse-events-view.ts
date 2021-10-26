@@ -12,7 +12,7 @@ export class AdverseEventsView extends DG.ViewBase implements ILazyLoading {
   aeWithArm: DG.DataFrame;
 
   constructor(name) {
-    super(name);
+    super({});
     this.name = name;
   }
 

@@ -18,7 +18,7 @@ export class MatrixesView extends DG.ViewBase implements ILazyLoading {
 
 
   constructor(name) {
-    super(name);
+    super({});
     this.name = name;
   }
   loaded: boolean;
