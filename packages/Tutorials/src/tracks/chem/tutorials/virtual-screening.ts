@@ -18,7 +18,7 @@ export class VirtualScreeningTutorial extends Tutorial {
   }
 
   get steps() {
-    return 37;
+    return 46;
   }
 
   //demoTable: string = 'chem/smiles_only.csv';
@@ -264,23 +264,30 @@ export class VirtualScreeningTutorial extends Tutorial {
     const scaffoldColName = 'scaffolds';
     await this.dlgInputAction(await this.openAddNCDialog('Add a column for scaffolds'),
       `Name it "${scaffoldColName}"`, '', scaffoldColName);
-    await this.action('Click OK', smiles.onColumnsAdded.pipe(filter((data) =>
+    await this.action('Click "OK" and drag the new column to the beginning of the grid', smiles.onColumnsAdded.pipe(filter((data) =>
       data.args.columns.some((col: DG.Column) => col.name === scaffoldColName))));
 
-    const scaffold1 = 'O=C1CC2=C(N1)C=CC=C2';
     const scaffoldCol = smiles.getCol(scaffoldColName);
+    const mol1 = smiles.getCol(curatedMolColName).get(firstIndex);
+    let scaffold1 = 'O=C1CC2=C(N1)C=CC=C2';
+    let scaffold2 = 'C1OC(c2cccs2)c2cccnc12';
+    if (mol1.includes('s')) {
+      // swap the scaffolds in case the predictions differ
+      [scaffold1, scaffold2] = [scaffold2, scaffold1];
+    }
+
     await this.action(`Paste the value "${scaffold1}" to the first row in "${scaffoldColName}"`,
       smiles.onValuesChanged.pipe(filter(() => scaffoldCol.get(firstIndex) === scaffold1)));
-    const scaffold2 = 'C1OC(c2cccs2)c2cccnc12';
     await this.action(`Paste the value "${scaffold2}" to the second row in "${scaffoldColName}"`,
-      smiles.onValuesChanged); // TODO: check according to outcomeCol.getSortedOrder()[1]
+      smiles.onValuesChanged);
+    // TODO: check according to outcomeCol.getSortedOrder()[1]
     scaffoldCol.semType = DG.SEMTYPE.MOLECULE;
     // TODO: invalidate the grid properly
     const testSetView = <DG.TableView>grok.shell.v;
     testSetView.loadLayout(testSetView.saveLayout());
     testSetView.grid.sort(['outcome'], [false]);
 
-    let chemblPane = null;
+    let chemblPane: DG.AccordionPane;
     await this.action('Click on the first scaffold', grok.events.onAccordionConstructed.pipe(filter((acc) => {
       if (acc.context.value === scaffold1) {
         chemblPane = acc.getPane('ChEMBL search');
@@ -289,6 +296,22 @@ export class VirtualScreeningTutorial extends Tutorial {
       return false;
     })));
 
-    // await this.action('Find the molecule in ChEMBL',, chemblPane.root);
+    const chemblSearch = 'Expand the "ChEMBL search" pane and wait for the query to complete. ' +
+      'If the search outputs a list of compounds containing this scaffold, it means that ' +
+      'similar molecules have been successfully synthesized and investigated. It makes ' +
+      'the further research less risky, but also less profitable due to license agreements. ' +
+      'Otherwise, we can say that we have found a novel compound, which has more potential ' +
+      'profits, but may involve more risks during synthesis and further research stages.';
+    chemblPane!.expanded = false;
+    await this.action('Search the scaffold in the ChEMBL database',
+      interval(3000).pipe(filter(() => chemblPane!.expanded)),
+      chemblPane!.root,
+      chemblSearch);
+    
+    await this.action('Click on the second scaffold and run "ChEMBL search"',
+      grok.events.onAccordionConstructed.pipe(filter((acc) => acc.context.value === scaffold2)));
+    
+
+    this.describe('Conclusions...');
   }
 }
