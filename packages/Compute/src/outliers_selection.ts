@@ -5,8 +5,8 @@ import {BitSet, DataFrame} from 'datagrok-api/dg';
 
 export async function selectOutliersManually(inputData: DataFrame) {
   const IS_OUTLIER_COL_LABEL = 'isOutlier';
-
   const OUTLIER_REASON_COL_LABEL = 'Reason';
+  const OUTLIER_COUNT_COL_LABEL = 'Count';
 
   if (!inputData.columns.byName(IS_OUTLIER_COL_LABEL)) {
     inputData.columns
@@ -25,10 +25,36 @@ export async function selectOutliersManually(inputData: DataFrame) {
     'legendVisibility': 'Never',
   });
 
-  const groupsListGrid = DG.Viewer.grid(DG.DataFrame.fromColumns([
-    DG.Column.fromStrings('Reason', []),
-    DG.Column.fromInt32Array('Count', new Int32Array([])),
-  ]));
+  const clearTable = () => {
+    return DG.DataFrame.fromColumns([
+      DG.Column.fromStrings(OUTLIER_REASON_COL_LABEL, []),
+      DG.Column.fromInt32Array(OUTLIER_COUNT_COL_LABEL, new Int32Array([])),
+      DG.Column.fromStrings('', []),
+    ]);
+  };
+
+  const groupsListGrid = DG.Viewer.grid(clearTable());
+
+  groupsListGrid.onCellPrepare(function(gc) {
+    const btn = (reason: string) => ui.icons.delete(() => {
+      console.log(reason);
+      for (let i = 0; i < inputData.rowCount; i++) {
+        if (inputData.columns.byName(OUTLIER_REASON_COL_LABEL).get(i) === reason) {
+          inputData.columns.byName(OUTLIER_REASON_COL_LABEL).set(i, '');
+        }
+      }
+      updateTable();
+    });
+
+    if (!gc.isTableCell) {
+      return;
+    }
+
+    if (gc.gridColumn.name === '') {
+      gc.gridColumn.cellType = 'html';
+      gc.style.element = ui.div(btn(gc.grid.dataFrame?.get(OUTLIER_REASON_COL_LABEL, gc.gridRow)));
+    }
+  });
 
   let isInnerModalOpened = false;
 
@@ -43,12 +69,9 @@ export async function selectOutliersManually(inputData: DataFrame) {
           uniqueValues[record] = 1;
       }
     }
-    groupsListGrid.dataFrame = DG.DataFrame.fromColumns([
-      DG.Column.fromStrings('Reason', []),
-      DG.Column.fromInt32Array('Count', new Int32Array([])),
-    ]);
+    groupsListGrid.dataFrame = clearTable();
     Object.keys(uniqueValues).map((key: string) => {
-      groupsListGrid.dataFrame?.rows.addNew([key, uniqueValues[key]]);
+      groupsListGrid.dataFrame?.rows.addNew([key, uniqueValues[key], '']);
     });
   };
 
