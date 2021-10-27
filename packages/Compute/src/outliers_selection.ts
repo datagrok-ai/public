@@ -37,7 +37,6 @@ export async function selectOutliersManually(inputData: DataFrame) {
 
   groupsListGrid.onCellPrepare(function(gc) {
     const btn = (reason: string) => ui.icons.delete(() => {
-      console.log(reason);
       for (let i = 0; i < inputData.rowCount; i++) {
         if (inputData.columns.byName(OUTLIER_REASON_COL_LABEL).get(i) === reason) {
           inputData.columns.byName(OUTLIER_REASON_COL_LABEL).set(i, '');
@@ -52,7 +51,7 @@ export async function selectOutliersManually(inputData: DataFrame) {
 
     if (gc.gridColumn.name === '') {
       gc.gridColumn.cellType = 'html';
-      gc.style.element = ui.div(btn(gc.grid.dataFrame?.get(OUTLIER_REASON_COL_LABEL, gc.gridRow)));
+      gc.style.element = btn(gc.grid.dataFrame?.get(OUTLIER_REASON_COL_LABEL, gc.gridRow));
     }
   });
 
@@ -75,9 +74,9 @@ export async function selectOutliersManually(inputData: DataFrame) {
     });
   };
 
-  const addOutlierGroupBtn = {
-    text: 'ADD OUTLIERS GROUP',
-    action: () => {
+  const addOutlierGroupBtn = ui.button(
+    'MARK AS OUTLIERS',
+    () => {
       if (isInnerModalOpened) return;
 
       const innerDialog = ui.dialog('Add outliers group')
@@ -95,12 +94,11 @@ export async function selectOutliersManually(inputData: DataFrame) {
         .show();
       innerDialog.onClose.subscribe(() => isInnerModalOpened = false);
       isInnerModalOpened = true;
-    },
-  };
+    });
 
-  const removeOutlierGroupBtn = {
-    text: 'REMOVE OUTLIERS GROUP',
-    action: () => {
+  const removeOutlierGroupBtn = ui.button(
+    'UNMARK OUTLIERS',
+    () => {
       if (isInnerModalOpened) return;
 
       inputData.selection.getSelectedIndexes().forEach((selectedIndex: number) => {
@@ -109,8 +107,7 @@ export async function selectOutliersManually(inputData: DataFrame) {
       });
       updateTable();
       inputData.selection.setAll(false);
-    },
-  };
+    });
 
   updateTable();
 
@@ -118,12 +115,14 @@ export async function selectOutliersManually(inputData: DataFrame) {
     ui.dialog('Manual outliers selection')
       .add(
         ui.divH([
-          scatterPlot.root,
-          groupsListGrid.root,
+          ui.block75([scatterPlot.root]),
+          ui.block25([
+            ui.divV([
+              groupsListGrid.root, addOutlierGroupBtn, removeOutlierGroupBtn,
+            ], {style: {height: '300px'}}),
+          ]),
         ]),
       )
-      .addButton(addOutlierGroupBtn.text, addOutlierGroupBtn.action)
-      .addButton(removeOutlierGroupBtn.text, removeOutlierGroupBtn.action)
       .onOK(() => {
         const editedInput = inputData.clone();
         editedInput.rows.filter((row) => !inputData.get(IS_OUTLIER_COL_LABEL, row.idx));
@@ -132,7 +131,7 @@ export async function selectOutliersManually(inputData: DataFrame) {
       .onCancel(() => {
         reject(new Error('Manual outliers selection is aborted'));
       })
-      .show({width: 900, height: 400});
+      .show({width: 950, height: 400});
   });
 
   return result;
