@@ -21,17 +21,15 @@ export class VirtualScreeningTutorial extends Tutorial {
     return 46;
   }
 
-  //demoTable: string = 'chem/smiles_only.csv';
+  demoTable: string = 'chem/tutorials/training-data.csv';
   helpUrl: string = 'https://datagrok.ai/help/domains/chem/chem-curate';
 
   protected async _run(): Promise<void> {
-    // TODO: add the dataset to demo files
-    // Experimental data
-    const t = await grok.data.loadTable(`${_package.webRoot}src/tracks/chem/tables/chem-tutorial-1-1.csv`);
-    const v = grok.shell.addTableView(t);
+    // Save the view with experimental data
+    const v = grok.shell.v;
     // Generated data
-    const smiles = await grok.data.loadTable(`${_package.webRoot}src/tracks/chem/tables/chem-tutorial-1-2.csv`);
-    const screeningSetView = grok.shell.addTableView(smiles);
+    const screeningData = await grok.data.getDemoTable('chem/tutorials/screening-data.csv');
+    const screeningSetView = grok.shell.addTableView(screeningData);
     grok.shell.v = v;
 
     this.header.textContent = this.name;
@@ -62,7 +60,7 @@ export class VirtualScreeningTutorial extends Tutorial {
       'compounds with a lower <b>Ki</b> are more active.';
     const formulaRegex = /^(9\s*-\s*Log10\(\$\{Ki\}\)|Sub\(9,\s*Log10\(\$\{Ki\}\)\))$/;
     await this.action('Transform the activity column "Ki" according to the formula "9 - Log10(${Ki})"',
-      t.onColumnsAdded.pipe(filter((data) => data.args.columns.some((col: DG.Column) => {
+      this.t!.onColumnsAdded.pipe(filter((data) => data.args.columns.some((col: DG.Column) => {
         return col.name === activityColName &&
           col.tags.has(DG.TAGS.FORMULA) &&
           formulaRegex.test(col.tags[DG.TAGS.FORMULA]);
@@ -168,14 +166,14 @@ export class VirtualScreeningTutorial extends Tutorial {
 
     // UI generation delay
     await new Promise((resolve) => setTimeout(resolve, 2000));
-    await this.choiceInputAction(pmv.root, `Set "Table" to "${t.name}"`, 'Table', t.name);
+    await this.choiceInputAction(pmv.root, `Set "Table" to "${this.t!.name}"`, 'Table', this.t!.name);
     await this.columnInpAction(pmv.root, `Set "Predict" to "${activityColName}"`, 'Predict', activityColName);
 
     const ignoredColumnNames = ['SMILES', 'ID', 'Ki', activityColName, curatedMolColName];
     const featureSelectionTip = 'Select <b>All</b> columns in the popup dialog and uncheck ' +
       `the first five columns: ${ignoredColumnNames}.`;
     await this.columnsInpAction(pmv.root, 'Set "Features" to all calculated descriptors',
-      'Features', `(${descriptors.length}) ${t.columns.names()
+      'Features', `(${descriptors.length}) ${this.t!.columns.names()
         .filter((name: string) => !ignoredColumnNames.includes(name))
         .join(', ')}`, featureSelectionTip);
 
@@ -187,7 +185,7 @@ export class VirtualScreeningTutorial extends Tutorial {
       'predicts activity in the training set.';
     await this.buttonClickAction(pmv.root, 'Click the "Train" button', 'TRAIN', modelInfo);
     await this.contextMenuAction('Right-click on the trained model and select "Apply to | ' +
-      `${t.toString()}"`, t.toString(), null, 'The menu opens both from the status bar with the model ' +
+      `${this.t!.toString()}"`, this.t!.toString(), null, 'The menu opens both from the status bar with the model ' +
       'name and from <b>Functions | Models</b>. The result will be available in the selected ' +
       'table as a column named "Outcome".');
 
@@ -204,13 +202,13 @@ export class VirtualScreeningTutorial extends Tutorial {
     const tablesPane = grok.shell.sidebar.getPane('Tables');
     const tabPaneHints = [tablesPane.header, $(tablesPane.content)
       .find('div.d4-toggle-button')
-      .filter((idx, el) => Array.from(el.children).some((c) => c.textContent === smiles.name))[0]!,
+      .filter((idx, el) => Array.from(el.children).some((c) => c.textContent === screeningData.name))[0]!,
     ];
     const generatedDataInfo = 'Now use the model to screen the generated structures. To predict activities for ' +
       'these structures, repeat the curation procedure for them and generate descriptors for the curated dataset.';
 
-    await this.action(`Find "${smiles.name}" in the tables tab`, grok.events.onCurrentViewChanged.pipe(
-      filter((_) => grok.shell.v.name === smiles.name && grok.shell.v.type === DG.VIEW_TYPE.TABLE_VIEW)),
+    await this.action(`Find "${screeningData.name}" in the tables tab`, grok.events.onCurrentViewChanged.pipe(
+      filter((_) => grok.shell.v.name === screeningData.name && grok.shell.v.type === DG.VIEW_TYPE.TABLE_VIEW)),
       tabPaneHints, generatedDataInfo);
 
     await computeDescriptors(descriptors, true);
@@ -222,10 +220,10 @@ export class VirtualScreeningTutorial extends Tutorial {
     await this.openViewByType('Click on "Functions | Models" to open the Model Browser',
       DG.View.MODELS, this.getSidebarHints('Functions', DG.View.MODELS), pmBrowserDescription);
     await this.contextMenuAction('Right-click on the trained model and select "Apply to | ' +
-      `${smiles.toString()}"`, smiles.toString());
+      `${screeningData.toString()}"`, screeningData.toString());
 
-    await this.action(`Open "${smiles.name}"`, grok.events.onCurrentViewChanged.pipe(
-      filter((_) => grok.shell.v.name === smiles.name && grok.shell.v.type === DG.VIEW_TYPE.TABLE_VIEW)),
+    await this.action(`Open "${screeningData.name}"`, grok.events.onCurrentViewChanged.pipe(
+      filter((_) => grok.shell.v.name === screeningData.name && grok.shell.v.type === DG.VIEW_TYPE.TABLE_VIEW)),
       tabPaneHints);
 
     const sortInfo = 'Sort the values in the <b>outcome</b> column in descending order by double-clicking the ' +
@@ -233,12 +231,12 @@ export class VirtualScreeningTutorial extends Tutorial {
     await this.action('Sort the data to find the compounds with the highest activity',
       screeningSetView.grid.onRowsSorted, null, sortInfo);
 
-    const outcomeCol = smiles.getCol('outcome');
-    await this.action('Click on the most active compound', smiles.onCurrentCellChanged.pipe(
-      filter(() => smiles.currentCol.name === curatedMolColName &&
-        outcomeCol.get(smiles.currentCell.rowIndex) === outcomeCol.max)),
+    const outcomeCol = screeningData.getCol('outcome');
+    await this.action('Click on the most active compound', screeningData.onCurrentCellChanged.pipe(
+      filter(() => screeningData.currentCol.name === curatedMolColName &&
+        outcomeCol.get(screeningData.currentCell.rowIndex) === outcomeCol.max)),
       null, 'It should be in the first row after sorting. Make sure to pick the curated form.');
-    const firstIndex = smiles.currentCell.rowIndex;
+    const firstIndex = screeningData.currentCell.rowIndex;
 
     const filterDescription = 'Find the funnel icon <i class="grok-icon far fa-filter grok-icon-filter"></i> ' +
       'in the toolbox or press <b>Ctrl+F</b>. The panel should show a sketcher for better filtering on molecular data.';
@@ -255,7 +253,7 @@ export class VirtualScreeningTutorial extends Tutorial {
     if (!sketcherInput) return;
 
     await this.action('Filter the compounds by the substituents "CCl.OCc1ccccc1C"', interval(1000).pipe(
-      map(() => smiles.rows.filters),
+      map(() => screeningData.rows.filters),
       filter((filters: string[]) => filters.some((f) => f === `${curatedMolColName}: contains Cc1ccccc1CO.CCl`))), // TODO: check if this string replacement is ok
       sketcherInput, 'As you might have noticed, some of the most potent molecules in the data happen ' +
       'to have them. The next step is to identify the scaffolds at the core of these molecules and look ' +
@@ -264,11 +262,11 @@ export class VirtualScreeningTutorial extends Tutorial {
     const scaffoldColName = 'scaffolds';
     await this.dlgInputAction(await this.openAddNCDialog('Add a column for scaffolds'),
       `Name it "${scaffoldColName}"`, '', scaffoldColName);
-    await this.action('Click "OK" and drag the new column to the beginning of the grid', smiles.onColumnsAdded.pipe(filter((data) =>
+    await this.action('Click "OK" and drag the new column to the beginning of the grid', screeningData.onColumnsAdded.pipe(filter((data) =>
       data.args.columns.some((col: DG.Column) => col.name === scaffoldColName))));
 
-    const scaffoldCol = smiles.getCol(scaffoldColName);
-    const mol1 = smiles.getCol(curatedMolColName).get(firstIndex);
+    const scaffoldCol = screeningData.getCol(scaffoldColName);
+    const mol1 = screeningData.getCol(curatedMolColName).get(firstIndex);
     let scaffold1 = 'O=C1CC2=C(N1)C=CC=C2';
     let scaffold2 = 'C1OC(c2cccs2)c2cccnc12';
     if (mol1.includes('s')) {
@@ -277,9 +275,9 @@ export class VirtualScreeningTutorial extends Tutorial {
     }
 
     await this.action(`Paste the value "${scaffold1}" to the first row in "${scaffoldColName}"`,
-      smiles.onValuesChanged.pipe(filter(() => scaffoldCol.get(firstIndex) === scaffold1)));
+      screeningData.onValuesChanged.pipe(filter(() => scaffoldCol.get(firstIndex) === scaffold1)));
     await this.action(`Paste the value "${scaffold2}" to the second row in "${scaffoldColName}"`,
-      smiles.onValuesChanged);
+      screeningData.onValuesChanged);
     // TODO: check according to outcomeCol.getSortedOrder()[1]
     scaffoldCol.semType = DG.SEMTYPE.MOLECULE;
     // TODO: invalidate the grid properly
