@@ -12,6 +12,12 @@ exports.spaceToCamelCase = (s, firstUpper = true) => {
   return (firstUpper ? s[0].toUpperCase() : s[0].toLowerCase()) + s.slice(1);
 }
 
+exports.wordsToCamelCase = (s, firstUpper = true) => {
+  const m = s.match(/^[A-Z]+/); // only abbreviation handling
+  const lastIndex = m ? m[0].length : 1;
+  return s.slice(0, lastIndex).toLowerCase() + s.slice(lastIndex);
+}
+
 exports.camelCaseToKebab = (s) => {
   return s.replace(/[A-Z]/g, (char, index) => index == 0 ? char.toLowerCase() : '-'+ char.toLowerCase());
 }
@@ -35,7 +41,7 @@ exports.replacers = {
     : name.includes(' ') ? this.spaceToCamelCase(name) : name[0].toUpperCase() + name.slice(1)),
   FUNC_NAME_LOWERCASE: (s, name) => s.replace(/#{FUNC_NAME_LOWERCASE}/g, name.includes('-') ?
     this.kebabToCamelCase(name, false) : name.includes(' ') ?
-    this.spaceToCamelCase(name, false) : name[0].toLowerCase() + name.slice(1)),
+    this.spaceToCamelCase(name, false) : this.wordsToCamelCase(name, false)),
   PARAMS_OBJECT: (s, params) => s.replace(/#{PARAMS_OBJECT}/g, params.length ? `{ ${params.map((p) => p.name).join(', ')} }` : `{}`),
   OUTPUT_TYPE: (s, type) => s.replace(/#{OUTPUT_TYPE}/g, type),
   TYPED_PARAMS: (s, params) => s.replace(/#{TYPED_PARAMS}/g, params.map((p) => `${p.name}: ${p.type}`).join(', '))
@@ -95,7 +101,7 @@ exports.dgToTsTypeMap = {
 exports.getScriptOutputType = (script, comment = '#') => {
   const regex = new RegExp(`${comment}\\s*output:\\s?([a-z_]+)\\s*`);
   const match = script.match(regex);
-  if (!match) return null;
+  if (!match) return 'void';
   return this.dgToTsTypeMap[match[1]] || 'any';
 };
 

@@ -67,7 +67,7 @@ Read more about package development in [Datagrok's documentation](https://datagr
   we recommend that you postfix them with 'View' and 'Viewer' respectively.
   Supported languages for scripts are `javascript`, `julia`, `node`, `octave`, `python`, `r`.
   Available function tags: `panel`, `init`.
-- `api` creates wrapper functions for package scripts. The output is stored in `/src/functions.ts`.
+- `api` creates wrapper functions for package scripts. The output is stored in `/src/scripts-api.ts`.
 - `publish` uploads a package to the specified server (pass either a URL or a server alias from the `config.yaml` file).
   ```
   cd <package-name>
