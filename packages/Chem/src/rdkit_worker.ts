@@ -1,8 +1,5 @@
-import {createRDKit} from './RDKit_minimal_2021.03_17.js'
-import {RdKitSubstructLibrary} from './rdkit_substruct_library.js'
-
-// var _rdKitModule = null;
-// var _substructLibrary = null;
+import {createRDKit} from './RDKit_minimal_2021.03_17.js';
+import {RdKitSubstructLibrary} from './rdkit_substruct_library';
 
 async function handler(e) {
   const {op, args} = e.data;
