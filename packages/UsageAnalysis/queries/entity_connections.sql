@@ -1,5 +1,5 @@
 --name: entity links
---connection: System:Datagrok
+--connection: System:DatagrokAdmin
 --tags: log
 
 -- connection <-> query

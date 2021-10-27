@@ -1,6 +1,6 @@
 --name: count all
 --tags: log,counts
---connection: System:Datagrok
+--connection: System:DatagrokAdmin
 --output: int eventsCount
 --output: int notificationsCount
 --output: int usersCount

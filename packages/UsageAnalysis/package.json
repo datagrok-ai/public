@@ -5,9 +5,13 @@
 	"version": "0.0.1",
 	"description": "Usage Analysis System",
 	"dependencies": {
-		"datagrok-api": "../../js-api",
+		"acorn": "^8.5.0",
 		"cash-dom": "^8.1.0",
+		"css-loader": "^6.4.0",
+		"datagrok-api": "../../js-api",
 		"moment": "^2.29.1",
+		"package-lock.json": "^1.0.0",
+		"style-loader": "^3.3.0",
 		"ts-loader": "^8.1.0",
 		"typescript": "^4.2.3",
 		"webpack": "^5.33.2"
