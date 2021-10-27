@@ -34,8 +34,6 @@ public class GrokConnect {
 
             providerManager = new ProviderManager(logger);
 
-            CustomDriverManager.printDriverNames();
-
             port(port);
             connectorsModule();
 
