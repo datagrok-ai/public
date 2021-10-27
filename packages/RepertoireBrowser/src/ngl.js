@@ -1,7 +1,7 @@
 import * as grok from 'datagrok-api/grok';
 import * as ui from 'datagrok-api/ui';
 import * as DG from "datagrok-api/dg";
-import json from "./TPP000153303.json";
+import json from "./example.json";
 import {MiscMethods} from "./misc.js"
 import {_package} from "./package";
 
@@ -17,7 +17,7 @@ export class NglMethods {
         inputs.ngl_host.style.backgroundColor = col_background;
         view.box = true;
         this.stage = new NGL.Stage(inputs.ngl_host);
-        this.path = _package.webRoot + 'pdbfiles/' + 'TPP000153303.pdb';
+        this.path = _package.webRoot + 'pdbfiles/' + 'example.pdb';
         this.schemeObj = this.CDR3(inputs.cdr_scheme, inputs.paratopes, colorScheme);
 
         await this.loadPdb(this.path, inputs.repChoice, this.schemeObj);
@@ -38,8 +38,6 @@ export class NglMethods {
 
 
         let schemeId;
-        let baseH = col_heavy_chain;
-        let baseL = col_light_chain;
 
         if (paratopes.value === true) {
             let palette = MiscMethods.interpolateColors(col_partopes_low, col_partopes_high, 100);
@@ -59,8 +57,8 @@ export class NglMethods {
         } else {
             if (cdr_scheme.value === 'default') {
                 schemeId = NGL.ColormakerRegistry.addSelectionScheme([
-                    [baseH, "* and :H"],
-                    [baseL, "* and :L"]
+                    [col_heavy_chain, "* and :H"],
+                    [col_light_chain, "* and :L"]
                 ]);
             } else {
                 let scheme_buffer = [];
@@ -72,7 +70,7 @@ export class NglMethods {
                         }
                         str_buffer = str_buffer.slice(4);
                         scheme_buffer.push([col_cdr, str_buffer]);
-                        scheme_buffer.push([baseH, "* and :H"]);
+                        scheme_buffer.push([col_heavy_chain, "* and :H"]);
 
                     } else if (str.includes(cdr_scheme.value + '_CDRL')) {
                         let str_buffer = ''
@@ -81,7 +79,7 @@ export class NglMethods {
                         }
                         str_buffer = str_buffer.slice(4);
                         scheme_buffer.push([col_cdr, str_buffer]);
-                        scheme_buffer.push([baseL, "* and :L"]);
+                        scheme_buffer.push([col_light_chain, "* and :L"]);
                     }
                 });
                 schemeId = NGL.ColormakerRegistry.addSelectionScheme(scheme_buffer);
