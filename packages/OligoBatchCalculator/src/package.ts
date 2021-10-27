@@ -61,7 +61,6 @@ export function molecularMass(sequence: string, amount: number, outputUnits: str
     let ec = extinctionCoefficient(sequence);
     return (ec == 0) ? amount * molecularWeight(sequence) : 1000 * amount * molecularWeight(sequence) / ec;
   }
-
   const coefficient = (outputUnits == 'Milligrams' || outputUnits == 'Micromoles') ? 1 : 1000;
   return amount / extinctionCoefficient(sequence) * molecularWeight(sequence) * coefficient * opticalDensity(sequence, amount, outputUnits) / nMole(sequence, amount, outputUnits);
 }
@@ -178,15 +177,23 @@ function indexOfFirstNotValidCharacter(sequence: string) {
     twoDigitSymbols = ["fA", "fU", "fC", "fG", "mA", "mU", "mC", "mG", "dA", "dU", "dC", "dG", "dT", "rA", "rU", "rC", "rG", "ps",
       "Uf", "Af", "Cf", "Gf"],
     manyDigitSymbols = ["moeA", "moe5mC", "(5m)moeC", "moeG", "moeT", "5mC", "(5m)C"];
-  const flag = !sequence.includes('r') && !sequence.includes('d') && !sequence.includes('f') && !sequence.includes('m');
+  const firstUniqueCharacters = ['r', 'd', 'f', 'm'];
   let i = 0;
+  let firstCodeIsOneCharacter = false;
+  let firstCodeIsTwoCharacter = false;
   while (i < sequence.length) {
-    if (manyDigitSymbols.some((s) => s == sequence.slice(i, i + s.length))) {
+    if (!firstCodeIsOneCharacter && manyDigitSymbols.some((s) => s == sequence.slice(i, i + s.length))) {
       let matchedString = manyDigitSymbols.find((s) => s == sequence.slice(i, i + s.length));
       i += matchedString!.length;
-    } else if (twoDigitSymbols.includes(sequence.slice(i, i + 2))) {
+    } else if (!firstCodeIsOneCharacter && twoDigitSymbols.includes(sequence.slice(i, i + 2))) {
+      firstCodeIsTwoCharacter = true;
       i += 2;
-    } else if (oneDigitSymbols.includes(sequence[i]) && flag) {
+    } else if (!firstCodeIsTwoCharacter && oneDigitSymbols.includes(sequence[i])) {
+      firstCodeIsOneCharacter = true;
+      if (i > 1 && firstUniqueCharacters.includes(sequence[i-2])) //rArAT
+        return i;
+      else if (firstUniqueCharacters.includes(sequence[i+1])) // TTrA
+        return i + 1;
       i++;
     } else {
       return i;
@@ -216,11 +223,15 @@ export function OligoBatchCalculatorApp() {
       indicesOfFirstNotValidCharacter[i] = indexOfFirstNotValidCharacter(sequence);
       if (indicesOfFirstNotValidCharacter[i] < 0) {
         normalizedSequences[i] = normalizeSequence(sequence);
-        molecularWeights[i] = molecularWeight(sequence);
-        extinctionCoefficients[i] = extinctionCoefficient(normalizedSequences[i]);
-        nMoles[i] = nMole(sequence, yieldAmount.value, units.value);
-        opticalDensities[i] = opticalDensity(sequence, yieldAmount.value, units.value);
-        molecularMasses[i] = molecularMass(sequence, yieldAmount.value, units.value);
+        try {
+          molecularWeights[i] = molecularWeight(sequence);
+          extinctionCoefficients[i] = extinctionCoefficient(normalizedSequences[i]);
+          nMoles[i] = nMole(sequence, yieldAmount.value, units.value);
+          opticalDensities[i] = opticalDensity(sequence, yieldAmount.value, units.value);
+          molecularMasses[i] = molecularMass(sequence, yieldAmount.value, units.value);
+        } catch (e) {
+          grok.shell.error(e);
+        }
       }
     });
 
