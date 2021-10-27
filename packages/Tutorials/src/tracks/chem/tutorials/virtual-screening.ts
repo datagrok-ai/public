@@ -14,7 +14,12 @@ export class VirtualScreeningTutorial extends Tutorial {
   }
 
   get description() {
-    return 'Tutorial description in a card';
+    return 'In this tutorial, you are playing the role of an in silico researcher. ' +
+    'The department of chemical synthesis has provided a number of new compounds, and biological ' +
+    'laboratories measured their in vitro activities against one of the molecular targets, which ' +
+    'is engaged in viral replication. Your mission is to determine if there are compounds of these ' +
+    'chemical classes which could be synthesized and investigated at the next iteration, and thus reduce ' +
+    'the costs of following synthesis and research by excluding less potent molecules from the list.';
   }
 
   get steps() {
@@ -50,6 +55,9 @@ export class VirtualScreeningTutorial extends Tutorial {
 
     const curatedMolColName = 'curated_molecule';
     const activityColName = 'pKi';
+    const predictedColName = 'outcome';
+
+    this.title('Process biological activity data');
 
     const addNCDlg = await this.openAddNCDialog();
     await this.dlgInputAction(addNCDlg, `Name the new column "${activityColName}"`, '', activityColName);
@@ -83,6 +91,8 @@ export class VirtualScreeningTutorial extends Tutorial {
       'InertialShapeFactor', 'Eccentricity', 'Asphericity', 'SpherocityIndex'];
 
     const computeDescriptors = async (descriptors: string[], hasHistory = false) => {
+      if (!hasHistory) this.title('Compute molecular descriptors');
+
       const chemMenu = this.getMenuItem('Chem');
       const curationInfo = 'At first glance at the provided chemical data, all compounds were extracted as salts ' +
         'with different counterions, and there might be different inconsistencies in the raw data. Let\'s curate ' +
@@ -113,7 +123,7 @@ export class VirtualScreeningTutorial extends Tutorial {
         'applicable to the column under the "Actions" section. Let\'s calculate some ' +
         'molecular descriptors for the given dataset.';
 
-      await this.action('Click on the header of a column with curated structures',
+      await this.action('Click on the header of a column with curated molecules',
         grok.events.onAccordionConstructed.pipe(filter((acc) => {
           if (acc.context instanceof DG.Column && acc.context?.name === curatedMolColName) {
             ppColumn = acc;
@@ -162,6 +172,7 @@ export class VirtualScreeningTutorial extends Tutorial {
 
     await computeDescriptors(descriptors);
 
+    this.title('Train a model to predict activity based on molecule structure')
     const pmv = await this.openViewByType('Click on "ML | Train Model..."', 'PredictiveModel', this.getMenuItem('ML'));
 
     // UI generation delay
@@ -187,7 +198,7 @@ export class VirtualScreeningTutorial extends Tutorial {
     await this.contextMenuAction('Right-click on the trained model and select "Apply to | ' +
       `${this.t!.toString()}"`, this.t!.toString(), null, 'The menu opens both from the status bar with the model ' +
       'name and from <b>Functions | Models</b>. The result will be available in the selected ' +
-      'table as a column named "Outcome".');
+      `table as a column named <b>${predictedColName}</b>.`);
 
     grok.shell.v = v;
     const sp = await this.openPlot('scatter plot', (x) => x.type === DG.VIEWER.SCATTER_PLOT);
@@ -196,8 +207,8 @@ export class VirtualScreeningTutorial extends Tutorial {
       'When the column is selected, look at how close the predictions are to the actual values.';
     await this.action(`Set X to "${activityColName}"`, info.xColSelector.onChanged.pipe(filter((name: string) =>
       name === activityColName)), info.xColSelector.root);
-    await this.action('Set Y to "outcome"', info.yColSelector.onChanged.pipe(filter((name: string) =>
-      name === 'outcome')), info.yColSelector.root, colSelectionTip);
+    await this.action(`Set Y to "${predictedColName}"`, info.yColSelector.onChanged.pipe(filter((name: string) =>
+      name === predictedColName)), info.yColSelector.root, colSelectionTip);
 
     const tablesPane = grok.shell.sidebar.getPane('Tables');
     const tabPaneHints = [tablesPane.header, $(tablesPane.content)
@@ -206,6 +217,10 @@ export class VirtualScreeningTutorial extends Tutorial {
     ];
     const generatedDataInfo = 'Now use the model to screen the generated structures. To predict activities for ' +
       'these structures, repeat the curation procedure for them and generate descriptors for the curated dataset.';
+
+    this.title('Virtual screening');
+    this.describe('This procedure is called virtual screening — we are now trying to find ' +
+      'the possible hits among structures that were not yet synthesized and tested.');
 
     await this.action(`Find "${screeningData.name}" in the tables tab`, grok.events.onCurrentViewChanged.pipe(
       filter((_) => grok.shell.v.name === screeningData.name && grok.shell.v.type === DG.VIEW_TYPE.TABLE_VIEW)),
@@ -226,12 +241,14 @@ export class VirtualScreeningTutorial extends Tutorial {
       filter((_) => grok.shell.v.name === screeningData.name && grok.shell.v.type === DG.VIEW_TYPE.TABLE_VIEW)),
       tabPaneHints);
 
-    const sortInfo = 'Sort the values in the <b>outcome</b> column in descending order by double-clicking the ' +
-      'column header. Drag the column to the left if you want it to be closer to the columns with molecules.';
+    const sortInfo = `Sort the values in the <b>${predictedColName}</b> column in descending order by double-clicking ` +
+      'the column header. Drag the column to the left if you want it to be closer to the columns with molecules.';
     await this.action('Sort the data to find the compounds with the highest activity',
       screeningSetView.grid.onRowsSorted, null, sortInfo);
 
-    const outcomeCol = screeningData.getCol('outcome');
+    this.describe('Let us check that the given structures have similar activities due to same chemical groups.');
+
+    const outcomeCol = screeningData.getCol(predictedColName);
     await this.action('Click on the most active compound', screeningData.onCurrentCellChanged.pipe(
       filter(() => screeningData.currentCol.name === curatedMolColName &&
         outcomeCol.get(screeningData.currentCell.rowIndex) === outcomeCol.max)),
@@ -259,6 +276,9 @@ export class VirtualScreeningTutorial extends Tutorial {
       'to have them. The next step is to identify the scaffolds at the core of these molecules and look ' +
       'them up in the ChEMBL database that contains bioactive molecules with drug-like properties.');
 
+    this.describe('Predicted active compounds have common groups but different scaffolds. We should now ' +
+      'estimate if these scaffolds have already been investigated. The filter panel may be closed.');
+
     const scaffoldColName = 'scaffolds';
     await this.dlgInputAction(await this.openAddNCDialog('Add a column for scaffolds'),
       `Name it "${scaffoldColName}"`, '', scaffoldColName);
@@ -283,7 +303,7 @@ export class VirtualScreeningTutorial extends Tutorial {
     // TODO: invalidate the grid properly
     const testSetView = <DG.TableView>grok.shell.v;
     testSetView.loadLayout(testSetView.saveLayout());
-    testSetView.grid.sort(['outcome'], [false]);
+    testSetView.grid.sort([predictedColName], [false]);
 
     let chemblPane: DG.AccordionPane;
     await this.action('Click on the first scaffold', grok.events.onAccordionConstructed.pipe(filter((acc) => {
@@ -310,6 +330,13 @@ export class VirtualScreeningTutorial extends Tutorial {
       grok.events.onAccordionConstructed.pipe(filter((acc) => acc.context.value === scaffold2)));
     
 
-    this.describe('Conclusions...');
+    this.title('Conclusions');
+    this.describe('We have performed a virtual screening which yielded two compounds with ' +
+      'different scaffolds. The one is a brand-new scaffold and could possibly be used to ' +
+      'create new drugs as new chemical entities with high benefits, though such approach ' +
+      'have its limitations and complexities. The other is already used, as was shown in ' +
+      'similarity search in ChEMBL, and it facilitates the development of its derivatives, ' +
+      'but additional investigation is required to be sure that the potent hit is not ' +
+      'protected by any umbrella patent.');
   }
 }
