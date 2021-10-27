@@ -1,6 +1,5 @@
 package grok_connect.providers;
 
-import java.sql.*;
 import java.util.*;
 import grok_connect.utils.*;
 import grok_connect.connectors_info.*;
@@ -20,17 +19,20 @@ public class Neo4jDataProvider extends JdbcDataProvider {
         descriptor.aggregations = null;
     }
 
-    public Connection getConnection(DataConnection conn) throws ClassNotFoundException, SQLException {
-        Class.forName(driverClassName);
+    @Override
+    public String getConnectionString(DataConnection conn) {
+        String connString = super.getConnectionString(conn);
+        if (!conn.hasCustomConnectionString() && !conn.ssl())
+            connString += "?nossl";
+        return connString;
+    }
+
+    @Override
+    public void prepareProvider() throws ClassNotFoundException {
+        super.prepareProvider();
         Class.forName("org.neo4j.jdbc.bolt.BoltDriver");
         Class.forName("org.neo4j.jdbc.boltrouting.BoltRoutingNeo4jDriver");
         Class.forName("org.neo4j.jdbc.http.HttpDriver");
-        java.util.Properties properties = defaultConnectionProperties(conn);
-        String connString = getConnectionString(conn);
-        if (!conn.hasCustomConnectionString() && !conn.ssl())
-            connString += "?nossl";
-        return CustomDriverManager.getConnection(connString, properties, driverClassName);
-
     }
 
     public String getConnectionStringImpl(DataConnection conn) {
