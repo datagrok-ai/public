@@ -29,11 +29,6 @@ public class ImpalaDataProvider extends JdbcDataProvider {
         descriptor.credentialsTemplate = DbCredentials.dbCredentialsTemplate;
     }
 
-    public Connection getConnection(DataConnection conn) throws ClassNotFoundException, SQLException {
-        Class.forName(driverClassName);
-        return CustomDriverManager.getConnection(getConnectionString(conn), conn.credentials.getLogin(), conn.credentials.getPassword(), driverClassName);
-    }
-
     protected void appendQueryParam(DataQuery dataQuery, String paramName, StringBuilder queryBuffer) {
         //if list -- append all items
         FuncParam param = dataQuery.getParam(paramName);
