@@ -168,45 +168,18 @@ class ChemPackage extends DG.Package {
     if (fpColumn.stats.missingValueCount > 0) {
       throw new Error("Molecule column has a null entry");
     }
-
-    var _onBitCount = Int8Array.from([
-      0, 1, 1, 2, 1, 2, 2, 3, 1, 2, 2, 3, 2, 3, 3, 4,
-      1, 2, 2, 3, 2, 3, 3, 4, 2, 3, 3, 4, 3, 4, 4, 5,
-      1, 2, 2, 3, 2, 3, 3, 4, 2, 3, 3, 4, 3, 4, 4, 5,
-      2, 3, 3, 4, 3, 4, 4, 5, 3, 4, 4, 5, 4, 5, 5, 6,
-      1, 2, 2, 3, 2, 3, 3, 4, 2, 3, 3, 4, 3, 4, 4, 5,
-      2, 3, 3, 4, 3, 4, 4, 5, 3, 4, 4, 5, 4, 5, 5, 6,
-      2, 3, 3, 4, 3, 4, 4, 5, 3, 4, 4, 5, 4, 5, 5, 6,
-      3, 4, 4, 5, 4, 5, 5, 6, 4, 5, 5, 6, 5, 6, 6, 7,
-      1, 2, 2, 3, 2, 3, 3, 4, 2, 3, 3, 4, 3, 4, 4, 5,
-      2, 3, 3, 4, 3, 4, 4, 5, 3, 4, 4, 5, 4, 5, 5, 6,
-      2, 3, 3, 4, 3, 4, 4, 5, 3, 4, 4, 5, 4, 5, 5, 6,
-      3, 4, 4, 5, 4, 5, 5, 6, 4, 5, 5, 6, 5, 6, 6, 7,
-      2, 3, 3, 4, 3, 4, 4, 5, 3, 4, 4, 5, 4, 5, 5, 6,
-      3, 4, 4, 5, 4, 5, 5, 6, 4, 5, 5, 6, 5, 6, 6, 7,
-      3, 4, 4, 5, 4, 5, 5, 6, 4, 5, 5, 6, 5, 6, 6, 7,
-      4, 5, 5, 6, 5, 6, 6, 7, 5, 6, 6, 7, 6, 7, 7, 8]);
     
     if (window.Worker) {
       const myWorker = new Worker(this.webRoot + '/src/chem_searches.js');
-      const byteSize = 8, byteCount = 16, subMaskSize = 32;
-      var fpMaskArray = new Array(fpColumn.length);
+      var fpBuffers = new Array(fpColumn.length);
 
       for (let i = 0; i < fpColumn.length; ++i) {
         var buffer = fpColumn.get(i).getBuffer();
-        var maskArray = new Uint8Array(byteCount);
-        for (const subBuffer of buffer) {
-          var subMaskNum = subMaskSize / byteSize;
-          for (let j = 0; j < subMaskNum; ++j) {
-            var mask = (subBuffer >> ((subMaskNum - j - 1) * byteSize)) & 0xff;
-            maskArray[j] = mask;
-          }
-        }
-        fpMaskArray[i] = maskArray;
+        fpBuffers[i] = buffer;
       }
 
-      myWorker.postMessage([fpColumn.length, fpMaskArray,
-                            2, null, null, 1.0, 2.0, 0.01, fpColumn.length * 100, 100, _onBitCount]);
+      myWorker.postMessage([fpColumn.length, fpBuffers,
+                            2, null, null, 1.0, 2.0, 0.01, fpColumn.length * 100, 100]);
                             
       return new Promise((resolve, reject) => {
         myWorker.onmessage = function(event) {
