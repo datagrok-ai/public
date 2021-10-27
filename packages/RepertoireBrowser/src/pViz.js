@@ -2,8 +2,8 @@ import * as grok from 'datagrok-api/grok';
 import * as ui from 'datagrok-api/ui';
 import * as DG from "datagrok-api/dg";
 
-import json from "./TPP000153303.json";
-
+//import json from "./TPP000153303.json";
+import json from "./example.json";
 import mutcodes from "./mutcodes.json";
 import {MiscMethods} from "./misc.js"
 
@@ -311,6 +311,32 @@ export class PvizMethods {
                 await pv.consistentlyColorpVizNGL(inputs, chain);
             })
 
+            this.pviz.FeatureDisplayer.addClickCallback (mod_motifs_codes, async function(ft) {
+
+                let selectorStr = 'g.feature.' + mutcodes[ft.category.replaceAll(" ", "_")] + "." 
+                + ft.category.replaceAll(" ", "_").replaceAll(")", "\\)").replaceAll("(", "\\(");
+                let el = document.querySelectorAll(selectorStr);
+                let el_lst = pVizParams.ptmMotifsMap[chain].ptm_el_obj[mutcodes[ft.category.replaceAll(" ", "_")]];
+
+                let sidechains = `${ft.start + 1} and :${chain} and (not backbone or .CA or (PRO and .N))`;
+
+                let r;
+                
+                if (switchObj[chain][ft.start] === undefined) {
+                    r = stage.compList[0].addRepresentation("ball+stick", {sele: sidechains});
+                    
+                    switchObj[chain][ft.start] = {};
+                    switchObj[chain][ft.start]['state'] = true;
+                    switchObj[chain][ft.start]['rep'] = r;
+                    el[el_lst.indexOf(ft.start)].style.fill = 'black';
+
+                } else {
+                    switchObj[chain][ft.start]['state'] = !switchObj[chain][ft.start]['state']
+                }
+
+                await pv.consistentlyColorpVizNGL(inputs, chain);
+            })
+
             this.pviz.FeatureDisplayer.addClickCallback (['D'], async function(ft) {
 
                 let selectorStr = 'g.feature.data.D rect.feature';
@@ -336,6 +362,25 @@ export class PvizMethods {
                 await pv.consistentlyColorpVizNGL(inputs, chain);
             })
 
+            this.pviz.FeatureDisplayer.addMouseoverCallback(mod_codes, async function(ft) {
+
+                let selectorStr = 'g.feature.' + ft.category.replaceAll(" ", "_") + ' rect.feature';
+                let el = document.querySelectorAll(selectorStr);
+                let el_lst = pVizParams.ptmMap[chain].ptm_el_obj[mutcodes[ft.category.replaceAll(" ", "_")]];
+                let prob_lst = pVizParams.ptmMap[chain].ptm_prob_obj[mutcodes[ft.category.replaceAll(" ", "_")]];
+                el = el[el_lst.indexOf(ft.start)];
+                let prob =  prob_lst[el_lst.indexOf(ft.start)];
+
+                ui.tooltip.show(
+                    ui.span([`${ft.category} probability ${prob.toFixed(2)}`]),
+                    el.getBoundingClientRect().left + 10,
+                    el.getBoundingClientRect().top + 10
+                );
+
+            }).addMouseoutCallback(mod_codes, function(ft) {
+                ui.tooltip.hide();
+            });
+
             this.pviz.FeatureDisplayer.addMouseoverCallback(mod_motifs_codes, async function(ft) {
 
                 let selectorStr = 'g.feature.' + mutcodes[ft.category.replaceAll(" ", "_")] + "." 
@@ -348,25 +393,6 @@ export class PvizMethods {
 
                 ui.tooltip.show(
                     ui.span([`${ft.category}`]),
-                    el.getBoundingClientRect().left + 10,
-                    el.getBoundingClientRect().top + 10
-                );
-
-            }).addMouseoutCallback(mod_codes, function(ft) {
-                ui.tooltip.hide();
-            });
-
-            this.pviz.FeatureDisplayer.addMouseoverCallback(mod_codes, async function(ft) {
-
-                let selectorStr = 'g.feature.' + ft.category.replaceAll(" ", "_") + ' rect.feature';
-                let el = document.querySelectorAll(selectorStr);
-                let el_lst = pVizParams.ptmMap[chain].ptm_el_obj[mutcodes[ft.category.replaceAll(" ", "_")]];
-                let prob_lst = pVizParams.ptmMap[chain].ptm_prob_obj[mutcodes[ft.category.replaceAll(" ", "_")]];
-                el = el[el_lst.indexOf(ft.start)];
-                let prob =  prob_lst[el_lst.indexOf(ft.start)];
-
-                ui.tooltip.show(
-                    ui.span([`${ft.category} probability ${prob.toFixed(2)}`]),
                     el.getBoundingClientRect().left + 10,
                     el.getBoundingClientRect().top + 10
                 );
@@ -523,14 +549,22 @@ export class PvizMethods {
         let selectorStr = 'g.feature.data.D rect.feature';
         let el = document.querySelectorAll(selectorStr);
 
-        let lists = [];
+        let lists_ptm = [];
+        let lists_ptm_motifs = [];
 
         inputs.ptm_choices.value.forEach(ptm => {
             let selectorStrPTM = 'g.feature.' + ptm.replaceAll(" ", "_") + ' rect.feature';
             let elPTM = document.querySelectorAll(selectorStrPTM);
             let el_lstPTM = pVizParams.ptmMap[chosenTracksChain].ptm_el_obj[mutcodes[ptm.replaceAll(" ", "_")]];
-            //lists.push({key: ptm, value: [elPTM, el_lstPTM]});
-            lists[ptm] =[elPTM, el_lstPTM];
+            lists_ptm[ptm] =[elPTM, el_lstPTM];
+        });
+
+        inputs.ptm_motif_choices.value.forEach(ptm => {
+            let selectorStrPTM = 'g.feature.' + mutcodes[ptm.replaceAll(" ", "_")] + "." 
+                     + ptm.replaceAll(" ", "_").replaceAll(")", "\\)").replaceAll("(", "\\(");
+            let elPTM = document.querySelectorAll(selectorStrPTM);
+            let el_lstPTM = pVizParams.ptmMotifsMap[chosenTracksChain].ptm_el_obj[mutcodes[ptm.replaceAll(" ", "_")]];
+            lists_ptm_motifs[ptm] =[elPTM, el_lstPTM];
         });
         
         Object.keys(switchObj).forEach((keyChain) =>{
@@ -550,12 +584,24 @@ export class PvizMethods {
                         el[el_lst.indexOf(position)].style.fill = 'black';
                     }
 
-                    Object.keys(lists).forEach(ptm =>{
-                        let elPTM = lists[ptm][0];
-                        let el_lstPTM = lists[ptm][1];
+                    Object.keys(lists_ptm).forEach(ptm =>{
+                        let elPTM = lists_ptm[ptm][0];
+                        let el_lstPTM = lists_ptm[ptm][1];
                         if(typeof el_lstPTM !== 'undefined' && el_lstPTM.indexOf(position) !== -1){
                             if (switchObj[keyChain][position]['state'] === false) {
                                 elPTM[el_lstPTM.indexOf(position)].style.fill = pVizParams.ptmMap[keyChain].ptm_color_obj[mutcodes[ptm.replaceAll(" ", "_")]][el_lstPTM.indexOf(position)];
+                            } else {
+                                elPTM[el_lstPTM.indexOf(position)].style.fill = 'black';
+                            }
+                        }
+                    });
+
+                    Object.keys(lists_ptm_motifs).forEach(ptm =>{
+                        let elPTM = lists_ptm_motifs[ptm][0];
+                        let el_lstPTM = lists_ptm_motifs[ptm][1];
+                        if(typeof el_lstPTM !== 'undefined' && el_lstPTM.indexOf(position) !== -1){
+                            if (switchObj[keyChain][position]['state'] === false) {
+                                elPTM[el_lstPTM.indexOf(position)].style.fill = pVizParams.ptmMotifsMap[keyChain].ptm_color_obj[mutcodes[ptm.replaceAll(" ", "_")]][el_lstPTM.indexOf(position)];
                             } else {
                                 elPTM[el_lstPTM.indexOf(position)].style.fill = 'black';
                             }

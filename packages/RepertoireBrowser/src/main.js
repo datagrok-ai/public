@@ -93,13 +93,16 @@ export class LaunchBrowser {
             ngl.stage.removeAllComponents();
             let schemeObj = ngl.CDR3(inputs.cdr_scheme, inputs.paratopes, inputs.colorScheme);
             await ngl.loadPdb(ngl.path, inputs.repChoice, schemeObj);
+
+            await pViz.loadSequence(inputs, 'H')
+            await pViz.loadSequence(inputs, 'L')
         });
 
         inputs.cdr_scheme.onChanged(async () => {
 
-            ngl.stage.removeAllComponents();
-            let schemeObj = ngl.CDR3(inputs.cdr_scheme, inputs.paratopes, inputs.colorScheme);
-            await ngl.loadPdb(ngl.path, inputs.repChoice, schemeObj);
+            // ngl.stage.removeAllComponents();
+            // let schemeObj = ngl.CDR3(inputs.cdr_scheme, inputs.paratopes, inputs.colorScheme);
+            // await ngl.loadPdb(ngl.path, inputs.repChoice, schemeObj);
 
             pViz.pVizParams.cdrMap = pViz.cdrMapping(inputs.cdr_scheme.value)
             await pViz.loadSequence(inputs, 'H')
@@ -110,9 +113,9 @@ export class LaunchBrowser {
 
         inputs.paratopes.onChanged(async () => {
 
-            ngl.stage.removeAllComponents();
-            let schemeObj = ngl.CDR3(inputs.cdr_scheme, inputs.paratopes, inputs.colorScheme);
-            await ngl.loadPdb(ngl.path, inputs.repChoice, schemeObj);
+            // ngl.stage.removeAllComponents();
+            // let schemeObj = ngl.CDR3(inputs.cdr_scheme, inputs.paratopes, inputs.colorScheme);
+            // await ngl.loadPdb(ngl.path, inputs.repChoice, schemeObj);
 
             await pViz.loadSequence(inputs, 'H')
             await pViz.loadSequence(inputs, 'L')
@@ -129,6 +132,15 @@ export class LaunchBrowser {
             MiscMethods.setDockSize(view, inputs.ngl_node, inputs.sequence_tabs, inputs.paratopes);
         });
 
+        inputs.ptm_motif_choices.onChanged(async () => {
+
+            pViz.pVizParams.ptmMotifsMap = pViz.ptmMotifsMapping(inputs.ptm_motif_choices.value, inputs.ptm_prob.value)
+            await pViz.loadSequence(inputs, 'H')
+            await pViz.loadSequence(inputs, 'L')
+
+            MiscMethods.setDockSize(view, inputs.ngl_node, inputs.sequence_tabs, inputs.paratopes);
+        });
+
         inputs.ptm_prob.onChanged(async () => {
 
             pViz.pVizParams.ptmMap = pViz.ptmMapping(inputs.ptm_choices.value, inputs.ptm_prob.value)
@@ -138,9 +150,9 @@ export class LaunchBrowser {
             MiscMethods.setDockSize(view, inputs.ngl_node, inputs.sequence_tabs, inputs.paratopes);
         });
 
-        inputs.msaContentChoice.onChanged(() => { msa.drawAlignments(); });
+        //inputs.msaContentChoice.onChanged(() => { msa.drawAlignments(); });
 
-        DG.debounce(view.table.onCurrentRowChanged, 200).subscribe(() => { msa.drawAlignments(); });
+        //DG.debounce(view.table.onCurrentRowChanged, 200).subscribe(() => { msa.drawAlignments(); });
 
     }
 
