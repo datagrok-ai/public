@@ -1,8 +1,9 @@
 package grok_connect.providers;
 
 import java.sql.*;
+import java.util.Properties;
+
 import grok_connect.connectors_info.*;
-import grok_connect.utils.CustomDriverManager;
 import grok_connect.utils.ProviderManager;
 
 
@@ -16,11 +17,6 @@ public class FirebirdDataProvider extends JdbcDataProvider {
         descriptor.description = "Query Firebird database";
         descriptor.connectionTemplate = DbCredentials.dbConnectionTemplate;
         descriptor.credentialsTemplate = DbCredentials.dbCredentialsTemplate;
-    }
-
-    public Connection getConnection(DataConnection conn) throws ClassNotFoundException, SQLException {
-        Class.forName(driverClassName);
-        return CustomDriverManager.getConnection(getConnectionString(conn), conn.credentials.getLogin(), conn.credentials.getPassword(), driverClassName);
     }
 
     public String getConnectionStringImpl(DataConnection conn) {

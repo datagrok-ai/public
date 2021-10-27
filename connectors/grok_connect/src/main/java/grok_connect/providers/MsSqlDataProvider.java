@@ -51,12 +51,11 @@ public class MsSqlDataProvider extends JdbcDataProvider {
         descriptor.aggregations.add(new AggrFunctionInfo(Stats.STDEV, "stdev(#)", Types.dataFrameNumericTypes));
     }
 
-    public Connection getConnection(DataConnection conn) throws ClassNotFoundException, SQLException {
-        Class.forName(driverClassName);
-        String connString = getConnectionString(conn);
+    public String getConnectionString(DataConnection conn) {
+        String connString = super.getConnectionString(conn);
         connString = connString.endsWith(";") ? connString : connString + ";";
         connString += "user=" + conn.credentials.getLogin() + ";password=" + conn.credentials.getPassword();
-        return CustomDriverManager.getConnection(connString, driverClassName);
+        return connString;
     }
 
     public String getConnectionStringImpl(DataConnection conn) {
