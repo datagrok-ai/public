@@ -241,8 +241,28 @@ async function chemSubstructureSearchLibrary(molStringsColumn, molString, molStr
 onmessage = function (e) {
   var length = e.data[0], fpColumn = e.data[1], outDimensions = e.data[2], maxDistance = e.data[3], 
       maxDistanceSteps = e.data[4], radiusPercent = e.data[5], lambda0 = e.data[6], 
-      lambda1 = e.data[7], steps = e.data[8], cycles = e.data[9], _onBitCount = e.data[10]; 
+      lambda1 = e.data[7], steps = e.data[8], cycles = e.data[9]; 
   var a = 0, b = 0;
+
+  const _onBitCount = Int8Array.from([
+    0, 1, 1, 2, 1, 2, 2, 3, 1, 2, 2, 3, 2, 3, 3, 4,
+    1, 2, 2, 3, 2, 3, 3, 4, 2, 3, 3, 4, 3, 4, 4, 5,
+    1, 2, 2, 3, 2, 3, 3, 4, 2, 3, 3, 4, 3, 4, 4, 5,
+    2, 3, 3, 4, 3, 4, 4, 5, 3, 4, 4, 5, 4, 5, 5, 6,
+    1, 2, 2, 3, 2, 3, 3, 4, 2, 3, 3, 4, 3, 4, 4, 5,
+    2, 3, 3, 4, 3, 4, 4, 5, 3, 4, 4, 5, 4, 5, 5, 6,
+    2, 3, 3, 4, 3, 4, 4, 5, 3, 4, 4, 5, 4, 5, 5, 6,
+    3, 4, 4, 5, 4, 5, 5, 6, 4, 5, 5, 6, 5, 6, 6, 7,
+    1, 2, 2, 3, 2, 3, 3, 4, 2, 3, 3, 4, 3, 4, 4, 5,
+    2, 3, 3, 4, 3, 4, 4, 5, 3, 4, 4, 5, 4, 5, 5, 6,
+    2, 3, 3, 4, 3, 4, 4, 5, 3, 4, 4, 5, 4, 5, 5, 6,
+    3, 4, 4, 5, 4, 5, 5, 6, 4, 5, 5, 6, 5, 6, 6, 7,
+    2, 3, 3, 4, 3, 4, 4, 5, 3, 4, 4, 5, 4, 5, 5, 6,
+    3, 4, 4, 5, 4, 5, 5, 6, 4, 5, 5, 6, 5, 6, 6, 7,
+    3, 4, 4, 5, 4, 5, 5, 6, 4, 5, 5, 6, 5, 6, 6, 7,
+    4, 5, 5, 6, 5, 6, 6, 7, 5, 6, 6, 7, 6, 7, 7, 8]);
+
+  const wordCount = 4, byteSize = 8, wordSize = 32;
 
   function getIndexes() {
     b = Math.floor(Math.random() * length);
@@ -258,15 +278,25 @@ onmessage = function (e) {
     return Math.sqrt(d);
   }
 
+  function calculateBitCount(mask) {
+    var count = 0;
+    for (let j = 0; j < wordSize / byteSize; ++j) {
+      var subMask = (mask >> j * 8) & 0xff;
+      count += _onBitCount[subMask];
+    }
+    return count;
+  }
+
   function _tanimotoSimilarity(maskA, maskB) {
-    const byteCount = 16;
     var bothABcount = 0, onlyAcount = 0, onlyBcount = 0;
-    for (let i = 0; i < byteCount; ++i) {
+    for (let i = 0; i < wordCount; ++i) {
       var curMaskA = maskA[i], curMaskB = maskB[i];
-      var bothAB = (curMaskA & curMaskB), onlyA = (curMaskA ^ bothAB), onlyB = (curMaskB ^ bothAB);
-      bothABcount += _onBitCount[bothAB];
-      onlyAcount += _onBitCount[onlyA];
-      onlyBcount += _onBitCount[onlyB];
+      var bothAB = (curMaskA & curMaskB);
+      var onlyA = (curMaskA ^ bothAB);
+      var onlyB = (curMaskB ^ bothAB);
+      bothABcount += calculateBitCount(bothAB);
+      onlyAcount += calculateBitCount(onlyA);
+      onlyBcount += calculateBitCount(onlyB);
     }  
     return bothABcount / (onlyAcount + onlyBcount + bothABcount);
   }
@@ -284,8 +314,6 @@ onmessage = function (e) {
     }
   }
 
-  console.log('Flag 1.');
-
   var radius = (radiusPercent == 0.0) ? maxDistance : maxDistance * radiusPercent;
   var epsilon = 1e-9, lambda = lambda0;
   var coordinates = new Array(outDimensions);
@@ -295,8 +323,6 @@ onmessage = function (e) {
       dim[m] = Math.random();
     coordinates[n] = dim;
   }    
-
-  console.log('Flag 2.');
 
   for (let i = 0; i < cycles; ++i) {
     for (let j = 0; j < steps; ++j) {
@@ -317,7 +343,6 @@ onmessage = function (e) {
     if (lambda < lambda1)
       break;
   }
-
-  console.log('Flag 3.');
+  
   postMessage(coordinates);
 };
