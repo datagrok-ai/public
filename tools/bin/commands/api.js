@@ -47,7 +47,8 @@ function generateWrappers() {
     wrappers.push(tb.build());
   }
 
-  let funcFilePath = path.join(curDir, 'functions.ts');
+  const srcDir = path.join(curDir, 'src');
+  let funcFilePath = path.join(fs.existsSync(srcDir) ? srcDir : curDir, 'scripts-api.ts');
   if (fs.existsSync(funcFilePath)) {
     console.log(`The file ${funcFilePath} already exists\nRewriting its contents...`);
   }
