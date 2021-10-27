@@ -155,12 +155,12 @@ async function _chemSimilarityScoring(molStringsColumn, molString, settings) {
     {foo: _chemSimilarityScoring, column: molStringsColumn, query: molString},
     (params) => {
       let {foo, column, query} = params;
-      foo.cachedStructure = _moleculesToFingerprints(molStringsColumn, settings);
+      foo.cachedStructure = moleculesToFingerprints(molStringsColumn, settings);
     });
 
   if (molString.length != 0) {
     const fingerprintCol = _chemSimilarityScoring.cachedStructure;
-    const fingerprint = _moleculesToFingerprints(DG.Column.fromStrings('molecules', [molString]), settings).get(0);
+    const fingerprint = moleculesToFingerprints(DG.Column.fromStrings('molecules', [molString]), settings).get(0);
     return _chemSimilarityScoringByFingerprints(fingerprintCol, fingerprint, molStringsColumn, settings);
   } else {
     return null;
