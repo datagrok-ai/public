@@ -10,27 +10,31 @@ import * as DG from 'datagrok-api/dg';
 
 export class SubstructureFilter extends DG.Filter {
 
-  constructor() {
-    super();
-    this.WHITE_MOL = `
+  molfile: string = '';
+  column: DG.Column | null = null;
+  _sketcher: HTMLElement;
+  readonly WHITE_MOL = `
   0  0  0  0  0  0  0  0  0  0999 V2000
 M  END
 `;
-    this.molfile = '';
+
+  constructor() {
+    super();
     this.root = ui.divV([]);
-    this._sketcher = grok.chem.sketcher((_, molfile) => {
+    this._sketcher = grok.chem.sketcher((_: any, molfile: string) => {
       this.molfile = molfile;
-      this.dataFrame.rows.requestFilter();
+      this.dataFrame?.rows.requestFilter();
     });
     this.root.appendChild(this._sketcher);
   }
 
-  attach(dFrame) {
+  attach(dFrame: DG.DataFrame) {
     this.dataFrame = dFrame;
     this.column = this.dataFrame.columns.bySemType(DG.SEMTYPE.MOLECULE);
     this.subs.push(this.dataFrame.onRowsFiltering.subscribe((_) => { this.applyFilter(); } ));
   }
 
+  // TODO: this needs to be triggered
   reset() {
     // this.dataFrame.filter.setAll(true, false);
     if (this.column?.temp['chem-scaffold-filter'])
@@ -51,9 +55,9 @@ M  END
       'molStringSmarts': ''
     })
     .then((bitset_col) => {
-      this.dataFrame.filter.and(bitset_col.get(0));
-      this.column.temp['chem-scaffold-filter'] = this.molfile;
-      this.dataFrame.filter.fireChanged();
+      this.dataFrame?.filter.and(bitset_col.get(0));
+      this.column!.temp['chem-scaffold-filter'] = this.molfile; // not sure if !
+      this.dataFrame?.filter.fireChanged();
     }).catch((e) => {
       console.warn(e);
       this.reset();

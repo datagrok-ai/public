@@ -2,18 +2,18 @@ import * as grok from 'datagrok-api/grok';
 import * as ui from 'datagrok-api/ui';
 import * as DG from 'datagrok-api/dg';
 import {createRDKit} from './RDKit_minimal_2021.03_17.js';
-import {getMolColumnPropertyPanel} from './chem_column_property_panel.js';
-import * as chemSearches from './chem_searches.js';
-import {setSearchesRdKitModule, moleculesToFingerprints} from './chem_searches.js';
+import {getMolColumnPropertyPanel} from './chem_column_property_panel';
+import * as chemSearches from './chem_searches';
+import {setSearchesRdKitModule, moleculesToFingerprints} from './chem_searches';
 import {setCommonRdKitModule, drawMoleculeToCanvas} from './chem_common.js';
-import {RDKitCellRenderer} from './rdkit_cell_renderer.js';
-import {SubstructureFilter} from './chem_substructure_filter.js';
+import {SubstructureFilter} from './chem_substructure_filter';
 
 let rdKitModule = null;
 let rdKitWorkerWebRoot = null;
 let initialized = false;
 let structure = {};
-export let _package = new DG.Package();
+
+export const _package = new DG.Package();
 
 
 //name: initChem

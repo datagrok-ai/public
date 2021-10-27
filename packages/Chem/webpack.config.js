@@ -3,7 +3,7 @@ const path = require('path');
 module.exports = {
   mode: 'development',
   entry: {
-    package: ['./src/RDKit_minimal_2021.03_17.wasm', './src/package.js'/*, './src/rdkit_worker.js'*/]
+    package: ['./src/RDKit_minimal_2021.03_17.wasm', './src/package.ts']
   },
   // devtool: 'inline-source-map',
   devServer: {
@@ -29,16 +29,13 @@ module.exports = {
     asyncWebAssembly: true,
     topLevelAwait: true
   },
-  /*
   resolve: {
-    extensions: ['.wasm', '.mjs', '.js', '.json', '.ts', '.tsx'],
+    fallback: { "url": false },
+    extensions: ['.wasm', '.mjs', '.js', '.json', '.ts', '.tsx']
   },
-  */
   module: {
     rules: [
-      // WASM files should not be processed but just
-      // be emitted and we want to have their public URL.
-      // file-loader -> options -> name =  '[name].[ext]'  - prevents webpack name change
+      // prevent a webpack name change
       {
         test: /\.(wasm)$/i,
         type: "javascript/auto",
@@ -47,18 +44,9 @@ module.exports = {
           publicPath: "dist/",
           name: '[name].[ext]'
         }
-      }/*,
+      },
       {
-        test: /\_(worker.js)$/i,
-        type: "javascript/auto",
-        loader: "file-loader",
-        options: {
-          publicPath: "dist/",
-          name: '[name].[ext]'
-        }
-      }*/,
-      {
-        test: /_worker\.js$/i,
+        test: /_worker\.ts$/i,
         loader: "worker-loader",
         options: {
           inline:"no-fallback"
@@ -67,13 +55,11 @@ module.exports = {
       {
         test: /\.tsx?$/,
         loader: 'ts-loader'
+      },
+      {
+        test: /\.css$/,
+        use: ['style-loader', 'css-loader']
       }
     ],
-  }/*
-  resolve: {
-    fallback: {
-      path: "false",
-      fs: "false"
-    },
-  }*/
+  }
 };

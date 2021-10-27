@@ -1,3 +1,17 @@
+# 2021-10-14 build 0.94.0
+
+* Improvements in scatter plot: https://community.datagrok.ai/t/extensions-to-the-scatter-plot-viewer/481
+* Custom ML: 
+
+* (Bug) Bar Chart: an exception when a column with missing values is selected as "stack" 
+* (Bug) Bar chart: null values ​​are not indicated 
+* (Bug) Bar chart: Exception if reduce sliders when zooming 
+* Bar Chart: with the `include nulls` property off, the legend should not mention (no value) 
+* (Bug) Conditional Coloring: Empty cells are coloured if all values in this column are empty 
+
+
+
+
 # 2021-07-29 build 0.93.0
 
 ## Highlights
