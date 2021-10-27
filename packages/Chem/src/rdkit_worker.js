@@ -1,5 +1,3 @@
-// importScripts('RDKit_minimal_2021.03_17.js');
-// importScripts('rdkit_substruct_library.js');
 import {createRDKit} from './RDKit_minimal_2021.03_17.js'
 import {RdKitSubstructLibrary} from './rdkit_substruct_library.js'
 

@@ -5,6 +5,7 @@ import {createRDKit} from './RDKit_minimal_2021.03_17.js';
 import {getMolColumnPropertyPanel} from './chem_column_property_panel.js';
 import * as chemSearches from './chem_searches.js';
 import {setSearchesRdKitModule, moleculesToFingerprints} from './chem_searches.js';
+import {setCommonRdKitModule, drawMoleculeToCanvas} from './chem_common.js';
 import {RDKitCellRenderer} from './rdkit_cell_renderer.js';
 import {SubstructureFilter} from './chem_substructure_filter.js';
 
@@ -22,6 +23,7 @@ export async function initChem() {
     rdKitWorkerWebRoot = _package.webRoot;
     rdKitModule = await createRDKit(rdKitWorkerWebRoot);
     setSearchesRdKitModule(rdKitModule);
+    setCommonRdKitModule(rdKitModule);
     console.log('RDKit (package) initialized');
     rdKitModule.prefer_coordgen(false);
     _package.STORAGE_NAME = 'rdkit_descriptors';
@@ -51,6 +53,18 @@ function _svgDiv(mol) {
   let root = ui.div();
   root.innerHTML = mol.get_svg();
   return root;
+}
+
+//name: canvasMol
+//input: int x
+//input: int y
+//input: int w
+//input: int h
+//input: object canvas
+//input: string molString
+//input: string scaffoldMolString
+export function canvasMol(x, y, w, h, canvas, molString, scaffoldMolString = null) {
+  drawMoleculeToCanvas(x, y, w, h, canvas, molString, scaffoldMolString === '' ? null : scaffoldMolString);
 }
 
 //name: getCLogP
