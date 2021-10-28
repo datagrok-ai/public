@@ -8,20 +8,19 @@ export function exportFuncCall(call: DG.FuncCall) {
   //todo: check status
   // if (call.status != FuncCall.STATUS_COMPLETED) ...
 
-  // @ts-ignore
-  window.cccc = call;
   const BLOB_TYPE = 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet;charset=UTF-8';
   const exportWorkbook = new ExcelJS.Workbook();
 
-  const isScalarType = (type: string) => {
-    return DG.TYPES_SCALAR.has(type as DG.TYPE);
+  const isScalarType = (type: DG.TYPE) => {
+    return DG.TYPES_SCALAR.has(type);
   };
 
-  const isDataframe = (type: string) => (type === 'dataframe');
+  const isDataframe = (type: DG.TYPE) => (type === DG.TYPE.DATA_FRAME);
 
   const dfOutputs = call.func.outputs.filter(
     (output: DG.Property) => isDataframe(output.propertyType),
   ) as DG.Property[];
+
   const scalarOutputs = call.func.outputs.filter(
     (output: DG.Property) => isScalarType(output.propertyType),
   ) as DG.Property[];
