@@ -657,6 +657,9 @@ export class Property {
   get name(): string { return api.grok_Property_Get_Name(this.d); }
   set name(s: string) { api.grok_Property_Set_Name(this.d, s); }
 
+  get category(): string { return api.grok_Property_Get_Category(this.d); }
+  set category(s: string) { api.grok_Property_Set_Category(this.d, s); }
+
   /** Property type */
   get propertyType(): string { return api.grok_Property_Get_PropertyType(this.d); }
   set propertyType(s: string) { api.grok_Property_Set_PropertyType(this.d, s); }
