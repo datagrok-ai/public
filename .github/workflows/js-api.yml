@@ -2,7 +2,7 @@ name: JS API Package
 on:
   push:
     paths:
-      - 'js-api'
+      - 'js-api/**'
 jobs:
   build:
     runs-on: ubuntu-latest
