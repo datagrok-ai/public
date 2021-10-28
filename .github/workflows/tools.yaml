@@ -1,10 +1,10 @@
-name: JS API Package
+name: Datagrok Tools Package
 on:
   push:
     branches:
       - 'master'
     paths:
-      - 'js-api/package.json'
+      - 'tools/package.json'
 jobs:
   build:
     runs-on: ubuntu-latest
@@ -17,10 +17,8 @@ jobs:
           node-version: '12.x'
           registry-url: 'https://registry.npmjs.org'
       - run: npm install
-        working-directory: ./js-api
-      - run: npm run build-ts
-        working-directory: ./js-api
+        working-directory: ./tools
       - run: npm publish
-        working-directory: ./js-api
+        working-directory: ./tools
         env:
           NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
