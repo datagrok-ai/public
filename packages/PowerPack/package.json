@@ -1,5 +1,5 @@
 {
-	"name": "datagrok@power-pack",
+	"name": "@datagrok/power-pack",
 	"friendlyName": "PowerPack",
 	"sources": [
 		"css/power-pack.css"

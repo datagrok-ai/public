@@ -1,5 +1,5 @@
 {
-  "name": "datagrok@octave-scripts",
+  "name": "@datagrok/octave-scripts",
   "version": "1.0.0",
   "description": "Octave Scripts",
   "sources": [ ]

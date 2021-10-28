@@ -1,5 +1,5 @@
 {
-  "name": "datagrok@chemblbrowser",
+  "name": "@datagrok/chemblbrowser",
   "beta": true,
   "fullName": "ChemblBrowser",
   "version": "0.0.1",

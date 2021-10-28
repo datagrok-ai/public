@@ -1,5 +1,5 @@
 {
-	"name": "datagrok@tensorflow-dev",
+	"name": "@datagrok/tensorflow-dev",
 	"beta": true,
 	"friendlyName": "TensorFlow.js",
 	"version": "0.0.1",

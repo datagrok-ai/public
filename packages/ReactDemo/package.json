@@ -1,5 +1,5 @@
 {
-  "name": "datagrok@react-demo",
+  "name": "@datagrok/react-demo",
   "version": "0.1.0",
   "fullName": "React Demo",
   "description": "Demonstrates the use of the React library within Datagrok.",

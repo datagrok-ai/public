@@ -1,5 +1,5 @@
 {
-  "name": "datagrok@cli",
+  "name": "@datagrok/cli",
   "beta": true,
   "version": "0.1.0",
   "fullName": "CLI",

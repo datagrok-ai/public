@@ -1,5 +1,5 @@
 {
-  "name": "datagrok@notebooks",
+  "name": "@datagrok/notebooks",
   "fullName": "Notebooks",
   "version": "0.2.11",
   "description": "JupyterLab Notebooks integration package",

@@ -1,5 +1,5 @@
 {
-	"name": "datagrok@dsp",
+	"name": "@datagrok/dsp",
 	"fullName": "DSP",
 	"version": "0.0.1",
 	"description": "A pack of various digital signal processing tools",
