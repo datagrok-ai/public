@@ -15,7 +15,10 @@ jobs:
           registry-url: 'https://registry.npmjs.org'
           scope: '@datagrok'
       - run: npm install
+        working-directory: ./js-api
       - run: npm run build-ts
-#       - run: npm publish
-#         env:
-#           NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
+        working-directory: ./js-api
+      - run: npm publish
+        working-directory: ./js-api
+        env:
+          NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
