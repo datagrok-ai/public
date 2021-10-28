@@ -9,11 +9,11 @@ export function exportFuncCall(targetFuncScript: FuncCall) {
   const BLOB_TYPE = 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet;charset=UTF-8';
   const exportWorkbook = new ExcelJS.Workbook();
 
-  const isScalarType = (type: string) => {
-    return TYPES_SCALAR.has(type as TYPE);
+  const isScalarType = (type: TYPE) => {
+    return TYPES_SCALAR.has(type);
   };
 
-  const isDataframe = (type: string) => (type === 'dataframe');
+  const isDataframe = (type: TYPE) => (type === TYPE.DATA_FRAME);
 
   const dfOutputs = targetFuncScript.func.outputs.filter(
     (output: Property) => isDataframe(output.propertyType),
