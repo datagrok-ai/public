@@ -4,13 +4,16 @@
 	"version": "0.0.1",
 	"description": "",
 	"dependencies": {
-		"datagrok-api": "../../js-api",
 		"cash-dom": "latest",
+		"datagrok-api": "../../js-api",
 		"dayjs": "latest",
+		"exceljs": "^4.3.0",
+		"file-saver": "^2.0.5",
 		"ts-loader": "latest",
 		"typescript": "latest"
 	},
 	"devDependencies": {
+		"@types/file-saver": "^2.0.3",
 		"@typescript-eslint/eslint-plugin": "^5.1.0",
 		"@typescript-eslint/parser": "^5.1.0",
 		"eslint": "^8.0.1",
