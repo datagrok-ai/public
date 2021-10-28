@@ -9,8 +9,15 @@ import {setCommonRdKitModule, drawMoleculeToCanvas} from './chem_common';
 import {SubstructureFilter} from './chem_substructure_filter';
 import {RDKitCellRenderer} from './rdkit_cell_renderer';
 import * as OCL from 'openchemlib/full.js';
+import { drugLikenessWidget } from './widgets/drug-likeness';
+import { molfileWidget } from './widgets/molfile';
+import { propertiesWidget } from './widgets/properties';
+import { setStructuralAlertsRdKitModule, structuralAlertsWidget } from './widgets/structural-alerts';
+import { structure2dWidget } from './widgets/structure2d';
+import { structure3dWidget } from './widgets/structure3d';
+import { toxicityWidget } from './widgets/toxicity';
 
-let rdKitModule: any = null;
+export let rdKitModule: any = null;
 let rdKitWorkerWebRoot: string | undefined;
 let initialized = false;
 let structure = {};
@@ -29,6 +36,7 @@ export async function initChem() {
     rdKitModule = await createRDKit(rdKitWorkerWebRoot);
     setSearchesRdKitModule(rdKitModule);
     setCommonRdKitModule(rdKitModule);
+    setStructuralAlertsRdKitModule(rdKitModule);
     console.log('RDKit (package) initialized');
     rdKitModule.prefer_coordgen(false);
     initialized = true;
@@ -48,7 +56,7 @@ export function substructureFilter() {
   return new SubstructureFilter();
 }
 
-function _svgDiv(mol: any) {
+export function _svgDiv(mol: any) {
   let root = ui.div();
   root.innerHTML = mol.get_svg();
   return root;
@@ -105,6 +113,7 @@ export async function rdkitCellRenderer() {
   // if (props?.Renderer && props.Renderer === 'RDKit') {
   return new RDKitCellRenderer(rdKitModule);
   //}
+  //TODO: use OCL cell rendnerer
 }
 
 //name: getSimilarities
@@ -349,123 +358,68 @@ export function saveAsSdf() {
   element.click();
 }
 
-/*
-
-//name: Structure WIP
-//description: 2D molecule representation
-//tags: panel, widgets
-//input: string smiles { semType: Molecule }
-//output: widget result
-export function structureWIP(smiles) {
-  const mol = rdKitModule.get_mol(smiles);
-  return new DG.Widget(this._svgDiv(mol));
-}
-
-//name: Properties WIP
-//description: Basic molecule properties
-//tags: panel, widgets
-//input: string smiles { semType: Molecule }
-//output: widget result
-export function propertiesWIP(smiles) {
-  const mol = new OCL.Molecule.fromSmiles(smiles);
-  const formula = mol.getMolecularFormula();
-  const molProps = new OCL.MoleculeProperties(mol);
-
-  //TODO: name, need PubChem
-  const map = {
-    'SMILES': smiles,
-    'Formula': formula.formula,
-    'MW': formula.absoluteWeight,
-    'Number of HBA': molProps.acceptorCount,
-    'Number of HBD': molProps.donorCount,
-    'LogP': molProps.logP,
-    'LogS': molProps.logS,
-    'Polar Surface Area': molProps.polarSurfaceArea,
-    'Number of rotatabe bonds': molProps.rotatableBondCount,
-    'Number of stereo centers': molProps.stereoCenterCount,
-  };
-
-  return new DG.Widget(ui.tableFromMap(map));
-}
-
-//name: SDF WIP
-//description: Molecule as SDF
-//tags: panel, widgets
-//input: string smiles { semType: Molecule }
-//output: widget result
-export function sdfWIP(smiles) {
-  const mol = new OCL.Molecule.fromSmiles(smiles);
-  return new DG.Widget(ui.textInput('', mol.toMolfile()).root);
-}
-
-//name: 3D WIP
-//description: 3D molecule representation
-//tags: panel, widgets
-//input: string smiles { semType: Molecule }
-//output: widget result
-export async function get3dWIP(smiles) {
-  //TODO: implement
-  //what is dml?
-  return new DG.Widget();
-}
-
-//name: Toxicity WIP
-//description: Toxicity prediction. Calculated by openchemlib
-//help-url: /help/domains/chem/info-panels/toxicity-risks.md
-//tags: panel, widgets
-//input: string smiles { semType: Molecule }
-//output: widget result
-export function toxicityWIP(smiles) {
-  const mol = new OCL.Molecule.fromSmiles(smiles);
-  const riskTypes = {
-    0: 'Mutagenicity',
-    1: 'Tumorigenicity',
-    2: 'Irritating effects',
-    3: 'Reproductive effects'
-  };
-  const riskLevels = {
-    0: 'Unknown',
-    1: 'None',
-    2: 'Low',
-    3: 'High'
-  };
-
-  const risks = {};
-  Object.keys(riskTypes).forEach((typeId) => {
-    risks[riskTypes[typeId]] = riskLevels[new OCL.ToxicityPredictor().assessRisk(mol, typeId)];
-  });
-
-  //FIXME: no such settings as in Dart: processValueElement, Aydar
-  return new DG.Widget(ui.tableFromMap(risks));
-}
-
-//name: Drug Likeness WIP
+//name: Drug Likeness
 //description: Drug Likeness score, with explanations on molecule fragments contributing to the score. Calculated by openchemlib
 //help-url: /help/domains/chem/info-panels/drug-likeness.md
 //tags: panel, widgets
 //input: string smiles { semType: Molecule }
 //output: widget result
-export function drugLikenessWIP(smiles) {
-  //TODO: implement
-  //what is chem?
-  return new DG.Widget();
+export function drugLikeness(smiles: string) {
+  return drugLikenessWidget(smiles);
 }
 
-//name: Structural Alerts WIP
+//name: Molfile
+//description: Molecule as Molfile
+//tags: panel, widgets
+//input: string smiles { semType: Molecule }
+//output: widget result
+export function molfile(smiles: string) {
+  return molfileWidget(smiles);
+}
+
+//name: Properties
+//description: Basic molecule properties
+//tags: panel, widgets
+//input: string smiles { semType: Molecule }
+//output: widget result
+export async function properties(smiles: string) {
+  return propertiesWidget(smiles);
+}
+
+//name: Structural Alerts
 //description: Screening drug candidates against structural alerts, i.e. chemical fragments associated to a toxicological response
 //help-url: /help/domains/chem/info-panels/structural-alerts.md
 //tags: panel, widgets
 //input: string smiles { semType: Molecule }
 //output: widget result
-export function structuralAlertsWIP(smiles) {
-  //TODO: implement
-  //what is chem?
-  return new DG.Widget();
+export async function structuralAlerts(smiles: string) {
+  return structuralAlertsWidget(smiles);
 }
 
-//tags: unitTest
-export async function _testSubstructureSearch() {
-  await testSubstructureSearch();
+//name: Structure 2D
+//description: 2D molecule representation
+//tags: panel, widgets
+//input: string smiles { semType: Molecule }
+//output: widget result
+export function structure2d(smiles: string) {
+  return structure2dWidget(smiles);
 }
 
-*/
+//name: Structure 3D
+//description: 3D molecule representation
+//tags: panel, widgets
+//input: string smiles { semType: Molecule }
+//output: widget result
+export async function structure3d(smiles: string) {
+  return structure3dWidget(smiles);
+}
+
+//name: Toxicity
+//description: Toxicity prediction. Calculated by openchemlib
+//help-url: /help/domains/chem/info-panels/toxicity-risks.md
+//tags: panel, widgets
+//input: string smiles { semType: Molecule }
+//output: widget result
+export function toxicity(smiles: string) {
+  return toxicityWidget(smiles);
+}
