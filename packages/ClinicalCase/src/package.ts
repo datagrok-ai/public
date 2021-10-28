@@ -132,7 +132,7 @@ export async function clinicalCaseApp(): Promise<any> {
   function addView(view: DG.ViewBase): DG.ViewBase {
     view.box = true;
     view.parentCall = c;
-    view.path = '/'+view.name;
+    view.path = '/' + view.name;
     grok.shell.addView(view);
     return view;
   }
@@ -150,26 +150,29 @@ export async function clinicalCaseApp(): Promise<any> {
   views.push(<MatrixesView>addView(new MatrixesView('Correlation Matrix')));
   views.push(<TimeProfileView>addView(new TimeProfileView('Time Profile')));
 
-  const aeBrowserDf = study.domains.ae.clone();
-  const aeBrowserView = DG.TableView.create(aeBrowserDf);
-  aeBrowserView.name = 'AE browser';
-  aeBrowserView.helpUrl = 'https://raw.githubusercontent.com/datagrok-ai/public/master/packages/ClinicalCase/views_help/ae_browser.md';
-  views.push(addView(aeBrowserView));
-  const aeBrwoserHelper = new AEBrowserHelper(aeBrowserDf);
-  aeBrowserDf.onCurrentRowChanged.subscribe(() => {
-    aeBrwoserHelper.currentSubjId = aeBrowserDf.get(SUBJECT_ID, aeBrowserDf.currentRowIdx);
-    aeBrwoserHelper.currentAeDay = aeBrowserDf.get('AESTDY', aeBrowserDf.currentRowIdx);
-    aeBrwoserHelper.createAEBrowserPanel();
-})
+  if (study.domains.ae) {
+    const aeBrowserDf = study.domains.ae.clone();
+    const aeBrowserView = DG.TableView.create(aeBrowserDf);
+    aeBrowserView.name = 'AE browser';
+    aeBrowserView.helpUrl = 'https://raw.githubusercontent.com/datagrok-ai/public/master/packages/ClinicalCase/views_help/ae_browser.md';
+    views.push(addView(aeBrowserView));
+    const aeBrwoserHelper = new AEBrowserHelper(aeBrowserDf);
+    aeBrowserDf.onCurrentRowChanged.subscribe(() => {
+      aeBrwoserHelper.currentSubjId = aeBrowserDf.get(SUBJECT_ID, aeBrowserDf.currentRowIdx);
+      aeBrwoserHelper.currentAeDay = aeBrowserDf.get('AESTDY', aeBrowserDf.currentRowIdx);
+      aeBrwoserHelper.createAEBrowserPanel();
+    })
+  }
 
   DG.ObjectHandler.register(new AdverseEventHandler());
 
   let summary = views.find(it => it.name === 'Summary');
   summary.load();
   summary.loaded = true;
-  summary.validationView = addView(new ValidationView(summary.errorsByDomain, 'Validation'));
-  views.push(summary.validationView);
-  
+  let valView = addView(new ValidationView(summary.errorsByDomain, 'Validation'));
+  summary.validationView = valView;
+  views.push(valView);
+
   setTimeout(() => {
     grok.shell.v = summary;
   }, 1000);
@@ -177,7 +180,7 @@ export async function clinicalCaseApp(): Promise<any> {
   grok.events.onCurrentViewChanged.subscribe((v) => {
     setTimeout(() => {
       const obj = views.find(it => it.name === grok.shell.v.name);
-      if(!obj.loaded){
+      if (!obj.loaded) {
         obj.load();
         obj.loaded = true;
       }

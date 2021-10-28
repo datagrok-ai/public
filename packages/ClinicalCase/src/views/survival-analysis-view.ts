@@ -7,7 +7,7 @@ import { SURVIVAL_ANALYSIS_GUIDE, TREATMENT_ARM } from "../constants";
 import { createSurvivalData } from "../data-preparation/data-preparation";
 import { dataframeContentToRow } from "../data-preparation/utils";
 import { ILazyLoading } from "../lazy-loading/lazy-loading";
-import { updateDivInnerHTML } from "./utils";
+import { checkDomainExists, updateDivInnerHTML } from "./utils";
 
 export class SurvivalAnalysisView extends DG.ViewBase implements ILazyLoading {
 
@@ -46,6 +46,10 @@ export class SurvivalAnalysisView extends DG.ViewBase implements ILazyLoading {
   loaded: boolean;
 
   load(): void {
+    checkDomainExists(['dm', 'ae'], false, this);
+ }
+
+  createView(): void {
     this.endpoint = Object.keys(this.endpointOptions)[ 0 ];
     this.endpointChoices = ui.choiceInput('Endpoint', Object.keys(this.endpointOptions)[ 0 ], Object.keys(this.endpointOptions));
     this.endpointChoices.onChanged((v) => {

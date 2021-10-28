@@ -4,6 +4,7 @@ import * as ui from "datagrok-api/ui";
 import { study, ClinRow } from "../clinical-study";
 import { createAERiskAssessmentDataframe } from '../data-preparation/data-preparation';
 import { ILazyLoading } from '../lazy-loading/lazy-loading';
+import { checkDomainExists } from './utils';
 
 export class AERiskAssessmentView extends DG.ViewBase implements ILazyLoading  {
 
@@ -17,6 +18,10 @@ export class AERiskAssessmentView extends DG.ViewBase implements ILazyLoading  {
   loaded: boolean;
 
   load(): void {
+    checkDomainExists(['ae', 'ex'], false, this);
+ }
+
+  createView(): void {
     this.riskAssessmentDataframe = createAERiskAssessmentDataframe(study.domains.ae, study.domains.ex, 'PLACEBO', 'XANOMELINE');
     let grid = this.riskAssessmentDataframe.plot.grid();
    

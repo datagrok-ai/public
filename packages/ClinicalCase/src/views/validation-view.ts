@@ -7,6 +7,7 @@ import { pinnacleRuleIdColumnName, validationResultRuleIdColumn } from "../valid
 import { createRulesDataFrame } from '../validation/validation-utils';
 import { getUniqueValues } from '../data-preparation/utils';
 import { ILazyLoading } from '../lazy-loading/lazy-loading';
+import { checkDomainExists } from './utils';
 
 export class ValidationView extends DG.ViewBase implements ILazyLoading {
 
@@ -14,19 +15,30 @@ export class ValidationView extends DG.ViewBase implements ILazyLoading {
   rulesDataframe: DG.DataFrame;
   resultsGrid: DG.Grid;
   rulesGrid: DG.Grid;
-  errorsByDomain: any;
+  errorsByDomain = {};
   domains: any;
 
   constructor(errorsMap: any, name) {
     super({});
     this.name = name;
-    this.errorsByDomain = errorsMap;
+    if(!errorsMap){
+      const validationSummary = study.validationResults.groupBy([ 'Domain' ]).count().aggregate();
+      for (let i = 0; i < validationSummary.rowCount; ++i) {
+        this.errorsByDomain [ validationSummary.get('Domain', i) ] = validationSummary.get('count', i);
+      }
+    } else {
+      this.errorsByDomain = errorsMap;
+    }
     this.helpUrl = 'https://raw.githubusercontent.com/datagrok-ai/public/master/packages/ClinicalCase/views_help/validation.md';
   }
 
   loaded: boolean;
 
   load(): void {
+    this.createView();
+ }
+
+  createView(): void {
     this.resultsDataframe = study.validationResults;
     this.domains = study.domains;
 
@@ -97,7 +109,8 @@ export class ValidationView extends DG.ViewBase implements ILazyLoading {
   
   private getViolatedRulesDataframe(rules: DG.DataFrame, uniqueViolatedRuleIds: any) {
     const res = createRulesDataFrame();
-    let column = rules.columns.byName(pinnacleRuleIdColumnName);
+    console.log(rules.columns.names());
+    let column = rules.getCol(pinnacleRuleIdColumnName);
     let rowCount = rules.rowCount;
     for (let i = 0; i < rowCount; i++) {
       if (uniqueViolatedRuleIds.has(column.get(i))) {
