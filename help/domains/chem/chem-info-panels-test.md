@@ -62,7 +62,7 @@ Platform supports special info-panels for chemical data that are displayed on [P
 
 1. Expand "Solubility prediction" tab on [Property Panel](../overview/navigation.md#properties)
    * Tab shows shows calculated value of molecule solubility prediction
-   * Info panel is result of execution of corresponding GROK script "Solubility predictions"
+   * Info panel is result of execution of corresponding Grok script "Solubility predictions"
    * Prediction calculated based on chem descriptors
    * Predictive model is used for prediction
 

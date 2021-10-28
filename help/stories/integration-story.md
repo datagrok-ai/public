@@ -58,7 +58,7 @@ This has many benefits:
 
 ## JavaScript API
 
-JavaScript is the lingua franca of the web, and naturally it is a first-class language in the Grok ecosystem. 
+JavaScript is the lingua franca of the web, and naturally it is a first-class language in the Datagrok ecosystem. 
 We expose a [JavaScript API](../develop/js-api.md) that allows you to control most of the platform, including
 data manipulation, handling platform events, creating custom viewers, controlling window docking,
 customizing the platform, etc.  
