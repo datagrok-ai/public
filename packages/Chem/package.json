@@ -16,8 +16,11 @@
       "nullable": false
     }
   ],
+  "sources": [
+    "common/ngl_viewer/ngl.js"
+  ],
   "dependencies": {
-    "datagrok-api": "latest",
+    "datagrok-api": "../../js-api",
     "cash-dom": "latest",
     "dayjs": "latest",
     "ts-loader": "latest",
@@ -40,5 +43,10 @@
     "path": false,
     "os": false,
     "crypto": false
+  },
+  "scripts": {
+    "build": "webpack",
+    "lint": "eslint './src/**/*.ts'",
+		"lint-fix": "eslint ./src/*.ts --fix"
   }
 }
