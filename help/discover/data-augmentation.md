@@ -46,7 +46,7 @@ record (or do it on demand whenever the current record changes), and visualize t
 current context (which can be a table, a column, or any other [object](../overview/objects.md)). 
 Info panels are meant to be 
 easily developed by the users of the platform, and shared with other users. 
-You can use all features of the Grok platform, such as scripting, data 
+You can use all features of the Datagrok platform, such as scripting, data 
 querying and transformation pipeline, user-defined functions,
 markup, viewers, predictive models.
 
