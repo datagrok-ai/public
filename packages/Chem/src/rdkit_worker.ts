@@ -3,10 +3,9 @@ import {RdKitSubstructLibrary} from './rdkit_substruct_library';
 
 const ctx: Worker = self as any;
 
-let handler: any = {};
+let handler: any = {}; // Own for each worker
 
 ctx.addEventListener("message", async (e: any) => {
-  console.log("event!!!");
   const {op, args} = e.data;
   let port = e.ports[0];
   if (op === 'module::init') {
