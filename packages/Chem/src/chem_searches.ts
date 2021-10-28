@@ -9,15 +9,14 @@ export async function setSearchesRdKitModule(module: any)
   searchesRdKitModule = module;
 }
 
+let _initRdKitWorkersState: {[_:string]: any} = {};
 async function _initRdKitWorkers(workerWebRoot: string) {
-  let foo = _initRdKitWorkers;
-  if (typeof foo.initialized == 'undefined' || !foo.initialized) {
+  if (typeof _initRdKitWorkersState.initialized == 'undefined' || !_initRdKitWorkersState.initialized) {
     rdKitParallel = new RdKitParallel();
     await rdKitParallel.init(workerWebRoot);
-    _initRdKitWorkers.initialized = true;
+    _initRdKitWorkersState.initialized = true;
   }
 }
-namespace _initRdKitWorkers { export let initialized = false; }
 
 interface CacheParams {
   cachedForCol : DG.Column | null;
