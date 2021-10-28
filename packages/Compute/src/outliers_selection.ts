@@ -36,14 +36,16 @@ export async function selectOutliersManually(inputData: DataFrame) {
   const groupsListGrid = DG.Viewer.grid(clearTable());
 
   groupsListGrid.onCellPrepare(function(gc) {
-    const btn = (reason: string) => ui.icons.delete(() => {
-      for (let i = 0; i < inputData.rowCount; i++) {
-        if (inputData.columns.byName(OUTLIER_REASON_COL_LABEL).get(i) === reason) {
-          inputData.columns.byName(OUTLIER_REASON_COL_LABEL).set(i, '');
+    const btn = (reason: string) => ui.div(
+      ui.icons.delete(() => {
+        for (let i = 0; i < inputData.rowCount; i++) {
+          if (inputData.columns.byName(OUTLIER_REASON_COL_LABEL).get(i) === reason) {
+            inputData.columns.byName(OUTLIER_REASON_COL_LABEL).set(i, '');
+          }
         }
-      }
-      updateTable();
-    });
+        updateTable();
+      }), {style: {'text-align': 'center'}},
+    );
 
     if (!gc.isTableCell) {
       return;
@@ -111,6 +113,19 @@ export async function selectOutliersManually(inputData: DataFrame) {
     },
   );
 
+  const autoOutlierGroupBtn = ui.button(
+    'AUTO...',
+    () => {
+      if (isInnerModalOpened) return;
+
+      const autoDetectionDialog = ui.dialog('Automatic detection')
+        .onOK(()=>{})
+        .show();
+      autoDetectionDialog.onClose.subscribe(() => isInnerModalOpened = false);
+      isInnerModalOpened = true;
+    },
+  );
+
   inputData.onSelectionChanged.subscribe(() => {
     if (inputData.selection.trueCount === 0) {
       addOutlierGroupBtn.classList.add('disabled');
@@ -134,9 +149,9 @@ export async function selectOutliersManually(inputData: DataFrame) {
             ui.divV([
               groupsListGrid.root,
               ui.divH([
-                ui.block50([addOutlierGroupBtn], {style: {'text-align': 'center'}}),
-                ui.block50([removeOutlierGroupBtn], {style: {'text-align': 'center'}}),
-              ]),
+                ui.block75([addOutlierGroupBtn, removeOutlierGroupBtn]),
+                autoOutlierGroupBtn,
+              ], {style: {'text-align': 'center'}}),
             ], {style: {height: '300px'}}),
           ]),
         ]),
