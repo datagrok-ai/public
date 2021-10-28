@@ -155,7 +155,7 @@ function _chemSimilarityScoringByFingerprints(
 // smiles, cxsmiles, molblock, v3Kmolblock, and inchi;
 // see https://github.com/rdkit/rdkit/blob/master/Code/MinimalLib/minilib.h
 
-let _chemSimilarityScoringCacheParams = cacheParamsDefaults;
+let _chemSimilarityScoringCacheParams = { ...cacheParamsDefaults };
 async function _chemSimilarityScoring(molStringsColumn: DG.Column, molString: string, settings: { [name: string]: any })
     : Promise<ReturnType<typeof _chemSimilarityScoringByFingerprints> | null> {
 
@@ -164,7 +164,7 @@ async function _chemSimilarityScoring(molStringsColumn: DG.Column, molString: st
   _chemSimilarityScoringCacheParams.column = molStringsColumn;
   _chemSimilarityScoringCacheParams.query = molString;
 
-  _cacheByAction(
+  await _cacheByAction(
       _chemSimilarityScoringCacheParams,
     async (params: CacheParams) => {
       params.cachedStructure = moleculesToFingerprints(molStringsColumn, settings);
@@ -219,7 +219,7 @@ export function chemSubstructureSearchGraph(molStringsColumn: DG.Column, molStri
 
 }
 
-let _chemSubstructureSearchLibraryParams = cacheParamsDefaults;
+let _chemSubstructureSearchLibraryParams = {...cacheParamsDefaults};
 export async function chemSubstructureSearchLibrary(
     molStringsColumn: DG.Column, molString: string, molStringSmarts: string, workerWebRoot: any) {
 
