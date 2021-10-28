@@ -1,7 +1,7 @@
 {
-  "name": "cli",
+  "name": "datagrok@cli",
   "beta": true,
-  "version": "0.1.0-test",
+  "version": "0.1.0",
   "fullName": "CLI",
   "description": "Demonstrates integration with command-line tools",
   "sources": [

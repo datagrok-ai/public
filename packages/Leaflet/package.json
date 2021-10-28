@@ -1,5 +1,5 @@
 {
-  "name": "leaflet",
+  "name": "datagrok@leaflet",
   "version": "0.1.0",
   "fullName": "Leaflet",
   "description": "Interactive map with a number of extensions that uses Leaflet.js",

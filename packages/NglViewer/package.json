@@ -1,5 +1,5 @@
 {
-  "name": "ngl-viewer",
+  "name": "datagrok@ngl-viewer",
   "version": "0.1.0",
   "fullName": "NGL Viewer",
   "description": "Web-based 3D molecular graphics. Supports the following file formats: .PDB, .CIF, SDF, MOL",
