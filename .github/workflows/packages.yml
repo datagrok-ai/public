@@ -31,7 +31,7 @@ jobs:
               else
                 build='true'
               fi
-              MATRIX_INCLUDE_JSON+="{\"package\": \"${DIR}\", \"build\": \"${build}\"}"
+              MATRIX_INCLUDE_JSON+="{\"project\": \"${DIR}\", \"package\": \"${DIR}\", \"build\": \"${build}\"}"
           done
 
           MATRIX_INCLUDE_JSON="${MATRIX_INCLUDE_JSON//\}\{/\}, \{}"
