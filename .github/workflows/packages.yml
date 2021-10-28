@@ -53,6 +53,7 @@ jobs:
     runs-on: ubuntu-latest
     environment: Prod
     strategy:
+      fail-fast: false
       matrix: ${{ fromJson(needs.metadata.outputs.matrix) }}
     steps:
       - uses: actions/checkout@v2
@@ -67,7 +68,7 @@ jobs:
       - run: npm run build
         working-directory: ${{ matrix.package }}
         if: matrix.build == 'true'
-      - run: npm publish
+      - run: npm publish --access public
         working-directory: ${{ matrix.package }}
         env:
           NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}

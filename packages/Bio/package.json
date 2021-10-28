@@ -2,7 +2,7 @@
 	"name": "bio",
 	"beta": true,
 	"friendlyName": "Bio",
-	"version": "0.0.1",
+	"version": "0.0.1-test",
 	"description": "",
 	"dependencies": {
 		"cash-dom": "latest",
