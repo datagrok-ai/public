@@ -46,10 +46,10 @@ module.exports = {
         }
       },
       {
-        test: /_worker\.ts$/i,
+        test: /.worker\.js$/i,
         loader: "worker-loader",
         options: {
-          inline:"no-fallback"
+          inline: "no-fallback"
         },
       },
       {
