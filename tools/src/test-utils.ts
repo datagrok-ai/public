@@ -1,13 +1,22 @@
-import path from "path";
-import os from "os";
-import fs from "fs";
-// @ts-ignore
+import * as path from "path";
+import * as os from "os";
+import * as fs from "fs";
 import * as yaml from 'js-yaml';
-// @ts-ignore
-import * as utils from '../bin/utils'
+const fetch = require('node-fetch');
 
-export async function getToken(devKey: string) {
-  return 'GGuDtdZ1Qu3sHOwscchQdl2ozmzXwzcjJ52VByCyYqOQS6v5XzMHcLtOs8ehgqJeWlMkU48AXWkLwEkx2L516gRoRzXBQd5oT3784YyeysOP1za9BebKpJ3ZxsQAb1SJ';
+export async function getToken(url: string, key: string) {
+  let response = await fetch(`${url}/users/login/dev/${key}`, {method: 'POST'});
+  let json = await response.json();
+  if (json.isSuccess == true)
+    return json.token;
+  else
+    throw 'Unable to login to server. Check your dev key';
+}
+
+export async function getWebUrl(url: string, token: string) {
+  let response = await fetch(`${url}/admin/plugins/admin/settings`, {headers: {Authorization: token}});
+  let json = await response.json();
+  return json.settings.webRoot;
 }
 
 const grokDir = path.join(os.homedir(), '.grok');
@@ -24,7 +33,8 @@ function mapURL(conf: object):object {
 }
 
 export function getDevKey(hostKey: string): {url: string, key: string} {
-  let config = yaml.safeLoad(fs.readFileSync(confPath));
+  let config = yaml.load(fs.readFileSync(confPath, 'utf8')) as any;
+  // @ts-ignore
   let host = hostKey == '' ? config.default : hostKey;
   host = host.trim();
   let urls = mapURL(config);
@@ -50,25 +60,30 @@ export async function getBrowserPage(puppeteer: any): Promise<{browser: any, pag
   let url:string = process.env.HOST ?? '';
   let cfg = getDevKey(url);
   url = cfg.url;
-  if (url.endsWith('/api'))
-    url = url.slice(0, -4);
+
   let key = cfg.key;
+  let token = await getToken(url, key);
+  url = await getWebUrl(url, token);
+  console.log(`Using web root: ${url}`);
+
   let browser = await puppeteer.launch({
     args: ['--disable-dev-shm-usage', '--disable-features=site-per-process'],
     ignoreHTTPSErrors: true,
   });
+
   let page = await browser.newPage();
-  let token = await getToken(key);
-  await page.goto(`${url}/api/info/server`);
+  await page.goto(`${url}/oauth/`);
   await page.setCookie({name: 'auth', value: token});
   await page.evaluate((token: any) => {
     window.localStorage.setItem('auth', token);
   }, token);
   await page.goto(url);
   try {
-    await page.waitForSelector('.grok-view');
+    await page.waitForSelector('.grok-preloader');
+    console.log('got preloader');
+    await page.waitForFunction(() => document.querySelector('.grok-preloader') == null, {timeout: 100000});
   } catch (error) {
-    throw 'Can`t load the page';
+    throw error;
   }
   return {browser, page};
 }
