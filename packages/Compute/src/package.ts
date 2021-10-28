@@ -4,7 +4,7 @@ import * as ui from 'datagrok-api/ui';
 import * as DG from 'datagrok-api/dg';
 import {ModelHandler} from './model_handler';
 import {selectOutliersManually} from './outliers_selection';
-import {DataFrame} from 'datagrok-api/dg';
+import {DataFrame, FuncCall} from 'datagrok-api/dg';
 import {exportFuncCall} from './export_funccall';
 
 export const _package = new DG.Package();
@@ -42,5 +42,8 @@ export async function manualOutlierSelectionDialog(inputData: DataFrame) {
 //name: testExportFuncCall
 export async function testExportFuncCall() {
   const funcName = 'Compute:Chemometric';
-  exportFuncCall(funcName);
+  grok.functions.eval(funcName).then((res) => {
+    const funcScript = res.prepare({a: 3, b: 3});
+    exportFuncCall(funcScript);
+  });
 }
