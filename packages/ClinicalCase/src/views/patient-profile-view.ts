@@ -1,9 +1,11 @@
 import * as DG from "datagrok-api/dg";
 import * as ui from "datagrok-api/ui";
 import { study } from "../clinical-study";
+import { SUBJECT_ID } from "../constants";
 import { addColumnWithDrugPlusDosage, labDynamicComparedToBaseline, labDynamicComparedToMinMax, labDynamicRelatedToRef } from "../data-preparation/data-preparation";
 import { getUniqueValues } from "../data-preparation/utils";
 import { ILazyLoading } from "../lazy-loading/lazy-loading";
+import { checkDomainExists } from "./utils";
 
 
 export class PatientProfileView extends DG.ViewBase implements ILazyLoading {
@@ -19,12 +21,12 @@ export class PatientProfileView extends DG.ViewBase implements ILazyLoading {
         // extraFields is an array to load into echart data arrays
         // all fields later combined into one array [x, y, extraFields]
         // user can address fields by index, for instance index 3 means field "LBORNRLO"
-        extraFields: [ 'LBSTRESN', 'LBSTNRLO', 'LBSTNRHI' ],
+        extraFields: ['LBSTRESN', 'LBSTNRLO', 'LBSTNRHI'],
         yType: 'category',                // can be 'value' or 'category'
         statusChart: {
           valueField: 2,                  // index of field with test value
           splitByColumnName: 'LBTEST',    // column to get categories
-          categories: [ '' ], // fixed categories
+          categories: [''], // fixed categories
           minField: 3,                    // min and max normal value 
           maxField: 4,                    // will be displayed with default color, otherwises "red"
           alertColor: 'red',
@@ -34,13 +36,15 @@ export class PatientProfileView extends DG.ViewBase implements ILazyLoading {
         show: 1,
         yLabelWidth: 50,
         yLabelOverflow: 'truncate',
-        multiEdit: { 
-          options: Array.from(getUniqueValues(study.domains.lb, 'LBTEST')), 
-          selectedValues: [], 
-          editValue: 'category'}
+        multiEdit: {
+          options: study.domains.lb ? Array.from(getUniqueValues(study.domains.lb, 'LBTEST')) : [],
+          selectedValues: [],
+          editValue: 'category',
+          updateTitle: false
+        }
       },
 
-       //linechart 
+      //linechart 
       {
         tableName: 'patient_lb',
         title: 'Lab values line chart',
@@ -48,9 +52,9 @@ export class PatientProfileView extends DG.ViewBase implements ILazyLoading {
         multiLineFieldIndex: 2, //index of field by which to split multiple graphs
         x: 'LBDY',
         y: 'LAB_DYNAMIC_BL',
-        extraFields: [ 'LBTEST', 'LBSTRESN', 'LBSTNRLO', 'LBSTNRHI', 'BL_LBSTRESN', 'min(LBSTRESN)', 'max(LBSTRESN)' ],
+        extraFields: ['LBTEST', 'LBSTRESN', 'LBSTNRLO', 'LBSTNRHI', 'BL_LBSTRESN', 'min(LBSTRESN)', 'max(LBSTRESN)'],
         splitByColumnName: 'LBTEST',                    // get categories from this column
-        categories: [ '' ],  // fixed categories
+        categories: [''],  // fixed categories
         maxLimit: 1,                                    // max number of linecharts 
         yType: 'category',
         markerShape: 'square',
@@ -59,15 +63,17 @@ export class PatientProfileView extends DG.ViewBase implements ILazyLoading {
         yLabelWidth: 50,
         yLabelOverflow: 'truncate',
         multiEdit: {
-          options: Array.from(getUniqueValues(study.domains.lb, 'LBTEST')), 
-          selectedValues: [], 
-          editValue: 'category'},
+          options: study.domains.lb ? Array.from(getUniqueValues(study.domains.lb, 'LBTEST')) : [],
+          selectedValues: [],
+          editValue: 'category',
+          updateTitle: true
+        },
         comboEdit: {
-          options: ['From BL', 'Min/Max', 'Related to ref'], 
+          options: ['From BL', 'Min/Max', 'Related to ref'],
           selectedValue: 'From BL',
-          editValue: 'y', 
-          editName: 'Type', 
-          values: {'From BL': 'LAB_DYNAMIC_BL', 'Min/Max': 'LAB_DYNAMIC_MIN_MAX', 'Related to ref': 'LAB_DYNAMIC_REF'},
+          editValue: 'y',
+          editName: 'Type',
+          values: { 'From BL': 'LAB_DYNAMIC_BL', 'Min/Max': 'LAB_DYNAMIC_MIN_MAX', 'Related to ref': 'LAB_DYNAMIC_REF' },
           additionalParams: {
             'Related to ref': {
               markLine: {
@@ -99,7 +105,7 @@ export class PatientProfileView extends DG.ViewBase implements ILazyLoading {
           }
         },
         showLegend: true,
-      }, 
+      },
 
       // timeLines
       {
@@ -107,7 +113,7 @@ export class PatientProfileView extends DG.ViewBase implements ILazyLoading {
         title: 'Adverse Events',
         type: 'timeLine',
         y: 'AETERM',                      // category column
-        x: [ 'AESTDY', 'AEENDY' ],          // [startTime, endTime]
+        x: ['AESTDY', 'AEENDY'],          // [startTime, endTime]
         yType: 'category',
         color: 'red',                     // color of marker
         markerShape: 'circle',
@@ -122,7 +128,7 @@ export class PatientProfileView extends DG.ViewBase implements ILazyLoading {
         title: 'Drug Exposure',
         type: 'timeLine',
         y: 'EXTRT_WITH_DOSE',
-        x: [ 'EXSTDY', 'EXENDY' ],
+        x: ['EXSTDY', 'EXENDY'],
         yType: 'category',
         color: 'red',
         markerShape: 'circle',
@@ -137,7 +143,7 @@ export class PatientProfileView extends DG.ViewBase implements ILazyLoading {
         title: 'Concomitant medication',
         type: 'timeLine',
         y: 'CMTRT',
-        x: [ 'CMSTDY', 'CMENDY' ],
+        x: ['CMSTDY', 'CMENDY'],
         yType: 'category',
         color: 'red',
         markerShape: 'circle',
@@ -151,11 +157,11 @@ export class PatientProfileView extends DG.ViewBase implements ILazyLoading {
 
   }
 
-  tableNamesAndFields =  {
-    'lb': {'start': 'LBDY'}, 
-    'ae': {'start': 'AESTDY', 'end': 'AEENDY'}, 
-    'ex': {'start': 'EXSTDY', 'end': 'EXENDY'},
-    'cm': {'start': 'CMSTDY', 'end': 'CMENDY'}
+  tableNamesAndFields = {
+    'lb': { 'start': 'LBDY' },
+    'ae': { 'start': 'AESTDY', 'end': 'AEENDY' },
+    'ex': { 'start': 'EXSTDY', 'end': 'EXENDY' },
+    'cm': { 'start': 'CMSTDY', 'end': 'CMENDY' }
   };
   tables = {};
   multiplot_lb_ae_ex_cm: any;
@@ -169,33 +175,39 @@ export class PatientProfileView extends DG.ViewBase implements ILazyLoading {
   loaded: boolean;
 
   load(): void {
+    checkDomainExists(['dm', 'ae', 'lb', 'cm', 'ex'], false, this);
+  }
+
+  createView(): void {
     let patientIds = Array.from(getUniqueValues(study.domains.dm, 'USUBJID'));
-    let patienIdBoxPlot = ui.choiceInput('', patientIds[ 0 ], patientIds);
+    let patienIdBoxPlot = ui.choiceInput('', patientIds[0], patientIds);
     patienIdBoxPlot.onChanged((v) => {
       this.updateTablesToAttach(patienIdBoxPlot.value);
-      this.attachTablesToMultiplot(this.multiplot_lb_ae_ex_cm, this.options_lb_ae_ex_cm, [ 'lb', 'ae', 'ex', 'cm' ]);
-      this.multiplot_lb_ae_ex_cm.updatePlotByCategory(1, this.options_lb_ae_ex_cm.series[1].multiEdit.selectedValues, true);
+      this.attachTablesToMultiplot(this.multiplot_lb_ae_ex_cm, this.options_lb_ae_ex_cm, ['lb', 'ae', 'ex', 'cm']);
+      this.multiplot_lb_ae_ex_cm.setAdditionalParams(1, this.options_lb_ae_ex_cm.series[1].comboEdit.additionalParams[this.options_lb_ae_ex_cm.series[1].comboEdit.selectedValue])
+      let updateTitle = this.options_lb_ae_ex_cm.series[1].multiEdit.selectedValues.length ? true : false;
+      this.multiplot_lb_ae_ex_cm.updatePlotByCategory(1, this.options_lb_ae_ex_cm.series[1].multiEdit.selectedValues, updateTitle);
+      this.multiplot_lb_ae_ex_cm.updatePlotByYAxis(1, this.options_lb_ae_ex_cm.series[1].comboEdit.values[this.options_lb_ae_ex_cm.series[1].comboEdit.selectedValue]);
       this.multiplot_lb_ae_ex_cm.updatePlotByCategory(0, this.options_lb_ae_ex_cm.series[0].multiEdit.selectedValues, false);
     });
 
+    this.options_lb_ae_ex_cm['xAxisMinMax'] = this.extractMinAndMaxValuesForXAxis();
+    this.updateTablesToAttach(patientIds[0]);
 
-    this.createTablesToAttach();
-    this.updateTablesToAttach(patientIds[ 0 ]);
 
-
-    this.tables[ 'ae' ].plot.fromType('MultiPlot', {
+    this.tables['ae'].plot.fromType('MultiPlot', {
       paramOptions: JSON.stringify(this.options_lb_ae_ex_cm),
     }).then((v: any) => {
 
       this.multiplot_lb_ae_ex_cm = v;
-      this.attachTablesToMultiplot(this.multiplot_lb_ae_ex_cm, this.options_lb_ae_ex_cm, [ 'lb', 'ae', 'ex', 'cm' ]);
+      this.attachTablesToMultiplot(this.multiplot_lb_ae_ex_cm, this.options_lb_ae_ex_cm, ['lb', 'ae', 'ex', 'cm']);
       this.multiplot_lb_ae_ex_cm.updatePlotByCategory(0, this.options_lb_ae_ex_cm.series[0].multiEdit.selectedValues, false); //to clear scattr plot after creation
       this.setRibbonPanels([
         [
-          ui.iconFA('chevron-left',()=>{
+          ui.iconFA('chevron-left', () => {
             //@ts-ignore
             let current = patienIdBoxPlot.input.selectedIndex;
-            if (current!=0){
+            if (current != 0) {
               current--;
               //@ts-ignore
               patienIdBoxPlot.value = patienIdBoxPlot.input.options[current].value;
@@ -209,12 +221,12 @@ export class PatientProfileView extends DG.ViewBase implements ILazyLoading {
           patienIdBoxPlot.root
         ],
         [
-          ui.iconFA('chevron-right',()=>{
+          ui.iconFA('chevron-right', () => {
             //@ts-ignore
             let current = patienIdBoxPlot.input.selectedIndex;
             //@ts-ignore
             let length = patienIdBoxPlot.input.length;
-            if (current!=length){
+            if (current != length) {
               current++;
               //@ts-ignore
               patienIdBoxPlot.value = patienIdBoxPlot.input.options[current].value;
@@ -222,59 +234,59 @@ export class PatientProfileView extends DG.ViewBase implements ILazyLoading {
               patienIdBoxPlot.input.selectedIndex = current
               patienIdBoxPlot.fireChanged();
             }
-          })  
+          })
         ]
       ]);
-      this.root.className = 'grok-view ui-box';  
+      this.root.className = 'grok-view ui-box';
       this.root.appendChild(this.multiplot_lb_ae_ex_cm.root);
-
     });
   }
 
   private attachTablesToMultiplot(plot: any, options: any, tableNames: string[]) {
     const tablesToAttach = {};
     tableNames.forEach(name => {
-      tablesToAttach[ `patient_${name}` ] = this.tables[ name ]
+      tablesToAttach[`patient_${name}`] = this.tables[name]
     });
     plot.tables = tablesToAttach;
     plot.options = options;
     plot.onTableAttached();
   }
-  
 
-  private createTablesToAttach() {
-    Object.keys(this.tableNamesAndFields).forEach(name => {
-      this.tables[ name ] = study.domains[ name ].clone();
-      this.tables[ name ].name = `patient_${name}`;
-    })
-  }
 
-  private updateTablesToAttach(myId: any){
-    Object.keys(this.tableNamesAndFields).forEach(name => {
-      this.tables[ name ].filter.init((i) => {
-        let row = this.tables[ name ].row(i);
-        return row[ 'USUBJID' ] === myId;
+  /*   private createTablesToAttach() {
+      Object.keys(this.tableNamesAndFields).forEach(name => {
+        this.tables[ name ] = study.domains[ name ].clone();
+        this.tables[ name ].name = `patient_${name}`;
       })
+    } */
+
+  private updateTablesToAttach(myId: any) {
+    Object.keys(this.tableNamesAndFields).forEach(name => {
+      this.tables[name] = study.domains[name].clone()
+        .groupBy(study.domains[name].columns.names())
+        .where(`${SUBJECT_ID} = ${myId}`)
+        .aggregate();
+      this.tables[name].name = `patient_${name}`;
     })
-    addColumnWithDrugPlusDosage(this.tables[ 'ex' ], 'EXTRT', 'EXDOSE', 'EXDOSU', 'EXTRT_WITH_DOSE');
-    this.options_lb_ae_ex_cm['xAxisMinMax'] = this.extractMinAndMaxValuesForXAxis();
-    labDynamicComparedToBaseline(this.tables[ 'lb' ],  this.options_lb_ae_ex_cm['xAxisMinMax']['minX'], 'VISITDY', 'LAB_DYNAMIC_BL', false);
-    labDynamicComparedToMinMax(this.tables[ 'lb' ], 'LAB_DYNAMIC_MIN_MAX');
-    labDynamicRelatedToRef(this.tables[ 'lb' ], 'LAB_DYNAMIC_REF');
+    addColumnWithDrugPlusDosage(this.tables['ex'], 'EXTRT', 'EXDOSE', 'EXDOSU', 'EXTRT_WITH_DOSE');
+    labDynamicComparedToBaseline(this.tables['lb'], this.options_lb_ae_ex_cm['xAxisMinMax']['minX'], 'VISITDY', 'LAB_DYNAMIC_BL', false);
+    labDynamicComparedToMinMax(this.tables['lb'], 'LAB_DYNAMIC_MIN_MAX');
+    labDynamicRelatedToRef(this.tables['lb'], 'LAB_DYNAMIC_REF');
   }
 
   private extractMinAndMaxValuesForXAxis() {
     let min = null;
     let max = null;
-    Object.keys(this.tables).forEach(table => {
-      let minColName = this.tableNamesAndFields[ table ][ 'start' ];
-      let maxColName = this.tableNamesAndFields[ table ][ 'end' ] ?? this.tableNamesAndFields[ table ][ 'start' ];
-      let newMin = this.tables[ table ].getCol(minColName).stats[ 'min' ];
+    Object.keys(this.tableNamesAndFields).forEach(tableName => {
+      let table = study.domains[tableName];
+      let minColName = this.tableNamesAndFields[tableName]['start'];
+      let maxColName = this.tableNamesAndFields[tableName]['end'] ?? this.tableNamesAndFields[tableName]['start'];
+      let newMin = table.getCol(minColName).stats['min'];
       min = min !== null || newMin > min ? min : newMin;
-      let newMax = this.tables[ table ].getCol(maxColName).stats[ 'max' ];
+      let newMax = table.getCol(maxColName).stats['max'];
       max = max !== null || newMax < max ? max : newMax;
     })
-    return {minX: min, maxX: max};
+    return { minX: min, maxX: max };
   }
 
 }

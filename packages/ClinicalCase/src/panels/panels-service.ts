@@ -73,19 +73,6 @@ export async function aeBrowserPanel(view: AEBrowserHelper) {
             //@ts-ignore
             ui.divH([ui.divText('Days prior AE'), daysInput.input], {style: {alignItems: 'center', gap: '5px'}}),
           ])
-/*         accae.addPane('General', ()=>{
-            let table =  ui.tableFromMap({
-                'Severity': description,
-                'Days': startEndDays,
-                'AE period': daysInput.input
-            });
-            $(table).find('tr').css('vertical-align', 'top');
-            $(table).find('tr').last().css('vertical-align', 'middle');
-            $(table).find('td').css('padding-bottom', '10px');
-            $(table).find('.d4-entity-list>span').css('margin', '0px');
-            return table
-
-        }, true);   */
 
         let getPaneContent = (it, rowNum) => {
             if (it) {

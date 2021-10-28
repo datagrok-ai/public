@@ -60,18 +60,18 @@ export function createBaselineEndpointDataframe(lb: DG.DataFrame,
   blNumColumn: string,
   epNumColumn = null) {
   let condition = `LBTEST = ${labValue} and ${visitCol} IN`;
-  let filteredDataBaseline = createFilteredDataframe(lb, `${condition} (${blVisit})`, [ 'USUBJID', 'LBSTRESN', 'LBSTNRLO', 'LBSTNRHI', visitCol ], blNumColumn, 'LBSTRESN');
+  let filteredDataBaseline = createFilteredDataframe(lb, `${condition} (${blVisit})`, [ 'USUBJID', 'LBSTRESN', 'LBSTNRLO', 'LBSTNRHI', visitCol, 'LBTEST' ], blNumColumn, 'LBSTRESN');
   let finalDf;
   let columnsToEXtract = [];
   if(epVisit){
-    let filteredDataEndpoint = createFilteredDataframe(lb, `${condition} (${epVisit})`, [ 'USUBJID', 'LBSTRESN', 'LBSTNRLO', 'LBSTNRHI', visitCol ], epNumColumn, 'LBSTRESN');
+    let filteredDataEndpoint = createFilteredDataframe(lb, `${condition} (${epVisit})`, [ 'USUBJID', 'LBSTRESN', 'LBSTNRLO', 'LBSTNRHI', visitCol, 'LBTEST' ], epNumColumn, 'LBSTRESN');
     finalDf = grok.data.joinTables(filteredDataBaseline, filteredDataEndpoint,
-    [ 'USUBJID' ], [ 'USUBJID' ], [ 'USUBJID', blNumColumn, 'LBSTNRLO', 'LBSTNRHI' ], [ epNumColumn ],
+    [ 'USUBJID' ], [ 'USUBJID' ], [ 'USUBJID', blNumColumn, 'LBSTNRLO', 'LBSTNRHI', 'LBTEST'], [ epNumColumn ],
     DG.JOIN_TYPE.LEFT, false);
-    columnsToEXtract = [ 'USUBJID', blNumColumn, epNumColumn, 'LBSTNRLO', 'LBSTNRHI' ];
+    columnsToEXtract = [ 'USUBJID', blNumColumn, epNumColumn, 'LBSTNRLO', 'LBSTNRHI', 'LBTEST' ];
   } else {
     finalDf = filteredDataBaseline;
-    columnsToEXtract = [ 'USUBJID', blNumColumn, 'LBSTNRLO', 'LBSTNRHI' ];
+    columnsToEXtract = [ 'USUBJID', blNumColumn, 'LBSTNRLO', 'LBSTNRHI', 'LBTEST' ];
   }
   let withDmData = addDataFromDmDomain(finalDf, dm, columnsToEXtract, columnToExtractFromDm);  
   return withDmData;
