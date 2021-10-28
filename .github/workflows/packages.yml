@@ -31,7 +31,7 @@ jobs:
               else
                 build='true'
               fi
-              MATRIX_INCLUDE_JSON+="{\"project\": \"${DIR}\", \"package\": \"${DIR}\", \"build\": \"${build}\"}"
+              MATRIX_INCLUDE_JSON+="{\"project\": \"${DIR}\", \"build\": \"${build}\"}"
           done
 
           MATRIX_INCLUDE_JSON="${MATRIX_INCLUDE_JSON//\}\{/\}, \{}"
@@ -64,12 +64,14 @@ jobs:
           node-version: '12.x'
           registry-url: 'https://registry.npmjs.org'
           scope: '@datagrok'
+      - name: Docker meta
+        run: echo ${{ matrix.project }}
       - run: npm install
-        working-directory: ${{ matrix.package }}
+        working-directory: ${{ matrix.project }}
       - run: npm run build
-        working-directory: ${{ matrix.package }}
+        working-directory: ${{ matrix.project }}
         if: ${{ matrix.build == 'true' }}
       - run: npm publish --access public
-        working-directory: ${{ matrix.package }}
+        working-directory: ${{ matrix.project }}
         env:
           NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
