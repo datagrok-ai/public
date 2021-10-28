@@ -228,6 +228,8 @@ provider-specific SQL query on the backend.
 
 [![Parameterized queries](../uploads/youtube/data_access.png "Open on Youtube")](https://www.youtube.com/watch?v=dKrCk38A1m8&t=1980s)
 
+[YouTube: Datagrok database parameterized queries](https://www.youtube.com/watch?v=sSJp5CXcYKQ&ab_channel=Datagrok)
+
 See also:
 
   * [Data query](data-query.md)
