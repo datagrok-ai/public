@@ -32,10 +32,10 @@ Data jobs are first-class entities in the Datagrok platform, and as such are sub
 and routines performed against them whenever they are used in the specific context. Some of the commonly used 
 privileges are:
 
-  * can_create
-  * can_edit
-  * can_delete
-  * can_query
+  * `create`
+  * `edit`
+  * `delete`
+  * `query`
 
 Those privileges can be given to individuals or to groups (which can be defined via dynamic filters). 
 For more information on the access privilege model, refer to the Datagrok - Access Privileges page.

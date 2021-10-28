@@ -14,8 +14,8 @@ and see how a particular change impacted the result.
 
 ## Self-documented data flows
 
-Since Grok already has a lot of information related to the data flows, in many cases there is no need 
-to create and maintain documentation for the data flows. Grok offers several out-of-the-box 
+Since Datagrok already has a lot of information related to the data flows, in many cases there is no need 
+to create and maintain documentation for the data flows. Datagrok offers several out-of-the-box 
 jobs that build visual representations of the data flows. They answer the following questions:
 * Who are end users of a particular database / connection / query?
 * Which data sources does a particular group of users use?
