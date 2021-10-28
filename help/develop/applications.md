@@ -45,7 +45,7 @@ to starting your first Datagrok application development.
 See also:
 
   * [Grok JS development](develop.md)
-  * [Developing grok applications](develop.md#applications)
+  * [Developing Datagrok applications](develop.md#applications)
   * [Applications on Datagrok Public](https://public.datagrok.ai/apps)
   * [Development samples gallery](https://public.datagrok.ai/js)
   * [A guide: How to build an app](how-to/build-an-app.md)
