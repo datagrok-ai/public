@@ -1,5 +1,5 @@
 {
-  "name": "Sequence",
+  "name": "sequence",
   "version": "0.1",
   "fullName": "Sequence",
   "description": "Support for the biological sequences (DNA, RNA, proteins), including FASTA readers, 3D visualization of molecules, MSA viewer, and functions for working with sequences",

@@ -1,8 +1,8 @@
 {
-  "name": "Chem",
+  "name": "chem",
   "friendlyName": "Chem",
   "fullName": "Chem",
-  "version": "0.21.0-test",
+  "version": "0.21.0",
   "description": "Cheminformatics support: \n\n* RDKit-based rendering \n* Molecule sketching \n*",
   "properties": [
     {
