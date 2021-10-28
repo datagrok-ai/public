@@ -5,13 +5,17 @@ import {createRDKit} from './RDKit_minimal_2021.03_17.js';
 import {getMolColumnPropertyPanel} from './chem_column_property_panel';
 import * as chemSearches from './chem_searches';
 import {setSearchesRdKitModule, moleculesToFingerprints} from './chem_searches';
-import {setCommonRdKitModule, drawMoleculeToCanvas} from './chem_common.js';
+import {setCommonRdKitModule, drawMoleculeToCanvas} from './chem_common';
 import {SubstructureFilter} from './chem_substructure_filter';
+import {RDKitCellRenderer} from './rdkit_cell_renderer';
+import * as OCL from 'openchemlib/full.js';
 
-let rdKitModule = null;
-let rdKitWorkerWebRoot = null;
+let rdKitModule: any = null;
+let rdKitWorkerWebRoot: string | undefined;
 let initialized = false;
 let structure = {};
+const _STORAGE_NAME = 'rdkit_descriptors';
+const _KEY = 'selected';
 
 export const _package = new DG.Package();
 
@@ -21,17 +25,12 @@ export async function initChem() {
   if (!initialized) {
     // structure.name = "Chem";
     rdKitWorkerWebRoot = _package.webRoot;
+    // @ts-ignore
     rdKitModule = await createRDKit(rdKitWorkerWebRoot);
     setSearchesRdKitModule(rdKitModule);
     setCommonRdKitModule(rdKitModule);
     console.log('RDKit (package) initialized');
     rdKitModule.prefer_coordgen(false);
-    _package.STORAGE_NAME = 'rdkit_descriptors';
-    _package.KEY = 'selected';
-    _package.rdKitRendererCache = new DG.LruCache();
-    _package.rdKitRendererCache.onItemEvicted = (mol) => {
-      mol.delete();
-    };
     initialized = true;
   }
 }
@@ -49,7 +48,7 @@ export function substructureFilter() {
   return new SubstructureFilter();
 }
 
-function _svgDiv(mol) {
+function _svgDiv(mol: any) {
   let root = ui.div();
   root.innerHTML = mol.get_svg();
   return root;
@@ -63,14 +62,16 @@ function _svgDiv(mol) {
 //input: object canvas
 //input: string molString
 //input: string scaffoldMolString
-export function canvasMol(x, y, w, h, canvas, molString, scaffoldMolString = null) {
-  drawMoleculeToCanvas(x, y, w, h, canvas, molString, scaffoldMolString === '' ? null : scaffoldMolString);
+export function canvasMol(
+  x: number, y: number, w: number, h: number, canvas: HTMLCanvasElement,
+  molString: string, scaffoldMolString: string | null = null) {
+  drawMoleculeToCanvas(x, y, w, h, canvas, molString, scaffoldMolString == '' ? null : scaffoldMolString);
 }
 
 //name: getCLogP
 //input: string smiles {semType: Molecule}
 //output: double cLogP
-export function getCLogP(smiles) {
+export function getCLogP(smiles: string) {
   let mol = rdKitModule.get_mol(smiles);
   return JSON.parse(mol.get_descriptors()).CrippenClogP;
 }
@@ -79,11 +80,11 @@ export function getCLogP(smiles) {
 //tags: panel, widgets
 //input: string smiles {semType: Molecule}
 //output: widget result
-export function rdkitInfoPanel(smiles) {
+export function rdkitInfoPanel(smiles: string) {
   let mol = rdKitModule.get_mol(smiles);
   return new DG.Widget(ui.divV([
-    this._svgDiv(mol),
-    ui.divText(`${this.getCLogP(smiles)}`)
+    _svgDiv(mol),
+    ui.divText(`${getCLogP(smiles)}`)
   ]));
 }
 
@@ -91,7 +92,7 @@ export function rdkitInfoPanel(smiles) {
 //input: column molColumn {semType: Molecule}
 //tags: panel
 //output: widget result
-export function molColumnPropertyPanel(molColumn) {
+export function molColumnPropertyPanel(molColumn: DG.Column) {
   return getMolColumnPropertyPanel(molColumn);
 }
 
@@ -106,37 +107,18 @@ export async function rdkitCellRenderer() {
   //}
 }
 
-//name: similarityScoring
-//input: column molStringsColumn
-//input: string molString
-//input: bool sorted
-//output: dataframe result
-// deprecated
-export async function similarityScoring(molStringsColumn, molString, sorted) {
-  try {
-    if (molStringsColumn === null || molString === null) throw "An input was null";
-    let result = await _chemSimilarityScoring(molStringsColumn, molString, {'sorted': sorted});
-    if (result == null) {
-      return DG.DataFrame.create();
-    }
-    return (sorted ? result : DG.DataFrame.fromColumns([result]));
-  } catch (e) {
-    console.error("In similarityScoring: " + e.toString());
-    throw e;
-  }
-}
-
 //name: getSimilarities
 //input: column molStringsColumn
 //input: string molString
 //output: dataframe result
-export async function getSimilarities(molStringsColumn, molString) {
+export async function getSimilarities(molStringsColumn: DG.Column, molString: string) {
   try {
     if (molStringsColumn === null || molString === null) throw "An input was null";
-    let result = await chemSearches.chemGetSimilarities(molStringsColumn, molString);
+    // TODO: Make in the future so that the return type is always one
+    let result = (await chemSearches.chemGetSimilarities(molStringsColumn, molString)) as DG.Column;
     // TODO: get rid of a wrapping DataFrame and be able to return Columns
     return result ? DG.DataFrame.fromColumns([result]) : DG.DataFrame.create();
-  } catch (e) {
+  } catch (e: any) {
     console.error("In getSimilarities: " + e.toString());
     throw e;
   }
@@ -145,7 +127,7 @@ export async function getSimilarities(molStringsColumn, molString) {
 //name: getMorganFingerprints
 //input: column molColumn {semType: Molecule}
 //output: column result [fingerprints]
-export function getMorganFingerprints(molColumn) {
+export function getMorganFingerprints(molColumn: DG.Column) {
   return moleculesToFingerprints(molColumn);
 }
 
@@ -155,12 +137,12 @@ export function getMorganFingerprints(molColumn) {
 //input: int limit
 //input: int cutoff
 //output: dataframe result
-export async function findSimilar(molStringsColumn, molString, aLimit, aCutoff) {
+export async function findSimilar(molStringsColumn: DG.Column, molString: string, aLimit: number, aCutoff: number) {
   try {
     if (molStringsColumn === null || molString === null || aLimit === null || aCutoff === null) throw "An input was null";
     let result = await chemSearches.chemFindSimilar(molStringsColumn, molString, {limit: aLimit, cutoff: aCutoff});
     return result ? result : DG.DataFrame.create();
-  } catch (e) {
+  } catch (e: any) {
     console.error("In getSimilarities: " + e.toString());
     throw e;
   }
@@ -172,7 +154,7 @@ export async function findSimilar(molStringsColumn, molString, aLimit, aCutoff) 
 //input: bool substructLibrary
 //input: string molStringSmarts
 //output: column result
-export async function searchSubstructure(molStringsColumn, molString, substructLibrary, molStringSmarts) {
+export async function searchSubstructure(molStringsColumn: DG.Column, molString: string, substructLibrary: boolean, molStringSmarts: string) {
   try {
     if (molStringsColumn === null || molString === null || substructLibrary === null || molStringSmarts === null)
       throw "An input was null";
@@ -181,24 +163,14 @@ export async function searchSubstructure(molStringsColumn, molString, substructL
         await chemSearches.chemSubstructureSearchLibrary(molStringsColumn, molString, molStringSmarts, rdKitWorkerWebRoot) :
         chemSearches.chemSubstructureSearchGraph(molStringsColumn, molString);
     return DG.Column.fromList('object', 'bitset', [result]);
-  } catch (e) {
+  } catch (e: any) {
     console.error("In substructureSearch: " + e.toString());
     throw e;
   }
 }
 
-//name: substructureSearch
-//input: column molStringsColumn
-//input: string molString
-//input: bool substructLibrary
-//output: column result
-// deprecated
-export async function substructureSearch(molStringsColumn, molString, substructLibrary) {
-  return this.searchSubstructure(molStringsColumn, molString, substructLibrary);
-}
-
 //tags: app
-function descriptorsApp(context) {
+function descriptorsApp(context: any) {
   let defaultSmiles = 'O=C1CN=C(c2ccccc2N1)C3CCCCC3';
   let sketcherValue = defaultSmiles;
 
@@ -212,25 +184,25 @@ function descriptorsApp(context) {
   let view = grok.shell.addTableView(table);
 
   let dsDiv = ui.divV([], 'grok-prop-panel');
-  dsDiv.appendChild(this.descriptorsWidget(defaultSmiles).root);
+  dsDiv.appendChild(descriptorsWidget(defaultSmiles).root);
 
-  let sketcher = grok.chem.sketcher((smiles, molfile) => {
+  let sketcher = grok.chem.sketcher((smiles: string, molfile: string) => {
     sketcherValue = smiles;
     removeChildren(dsDiv);
-    dsDiv.appendChild(this.descriptorsWidget(smiles).root);
+    dsDiv.appendChild(descriptorsWidget(smiles).root);
   }, defaultSmiles);
   let addButton = ui.bigButton('ADD', async () => {
-    this.getSelected().then(selected => {
+    getSelected().then(selected => {
       grok.chem.descriptors(DG.DataFrame.fromCsv(`smiles\n${sketcherValue}`), 'smiles', selected).then(t => {
         let columnNames = table.columns.names();
-        if ((table.columns.length !== selected.length + 1) || selected.some(s => !columnNames.includes(s))) {
+        if ((table.columns.length !== selected.length + 1) || selected.some((s: any) => !columnNames.includes(s))) {
           table = DG.DataFrame.create();
           table.name = 'Descriptors';
           view.dataFrame = table;
           for (let col of t.columns.toList())
             table.columns.addNew(col.name, col.type);
         }
-        table.rows.addNew(t.columns.toList().map(c => c.get(0)));
+        table.rows.addNew(t.columns.toList().map((c: any) => c.get(0)));
       });
     });
   });
@@ -253,12 +225,12 @@ function descriptorsApp(context) {
 //tags: panel, widgets
 //input: string smiles { semType: Molecule }
 //output: widget result
-export function descriptorsWidget(smiles) {
+export function descriptorsWidget(smiles: string) {
   let widget = new DG.Widget(ui.div());
   let result = ui.div();
   let selectButton = ui.bigButton('SELECT', async () => {
-    openDescriptorsDialog(await this.getSelected(), async (selected) => {
-      await grok.dapi.userDataStorage.postValue(this.STORAGE_NAME, this.KEY, JSON.stringify(selected));
+    openDescriptorsDialog(await getSelected(), async (selected: any) => {
+      await grok.dapi.userDataStorage.postValue(_STORAGE_NAME, _KEY, JSON.stringify(selected));
       update();
     });
   });
@@ -267,10 +239,10 @@ export function descriptorsWidget(smiles) {
   let update = () => {
     removeChildren(result);
     result.appendChild(ui.loader());
-    this.getSelected().then(selected => {
-      grok.chem.descriptors(DG.DataFrame.fromCsv(`smiles\n${smiles}`), 'smiles', selected).then(table => {
+    getSelected().then(selected => {
+      grok.chem.descriptors(DG.DataFrame.fromCsv(`smiles\n${smiles}`), 'smiles', selected).then((table: any) => {
         removeChildren(result);
-        let map = {};
+        let map: {[_: string]: any} = {};
         for (let descriptor of selected)
           map[descriptor] = table.col(descriptor).get(0);
         result.appendChild(ui.tableFromMap(map));
@@ -288,23 +260,23 @@ export function descriptorsWidget(smiles) {
 
 //description: Get selected descriptors
 export async function getSelected() {
-  let str = await grok.dapi.userDataStorage.getValue(this.STORAGE_NAME, this.KEY);
+  let str = await grok.dapi.userDataStorage.getValue(_STORAGE_NAME, _KEY);
   let selected = (str != null && str !== '') ? JSON.parse(str) : [];
   if (selected.length === 0) {
-    selected = (await grok.chem.descriptorsTree())['Lipinski']['descriptors'].slice(0, 3).map(p => p['name']);
-    await grok.dapi.userDataStorage.postValue(this.STORAGE_NAME, this.KEY, JSON.stringify(selected));
+    selected = (await grok.chem.descriptorsTree() as any)['Lipinski']['descriptors'].slice(0, 3).map((p: any) => p['name']);
+    await grok.dapi.userDataStorage.postValue(_STORAGE_NAME, _KEY, JSON.stringify(selected));
   }
   return selected;
 }
 
 //description: Open descriptors selection dialog
-function openDescriptorsDialog(selected, onOK) {
-  grok.chem.descriptorsTree().then(descriptors => {
+function openDescriptorsDialog(selected: any, onOK: any) {
+  grok.chem.descriptorsTree().then((descriptors: {[_:string]: any}) => {
     let tree = ui.tree();
     tree.root.style.maxHeight = '400px';
 
-    let groups = {};
-    let items = [];
+    let groups: {[_:string]: any} = {};
+    let items: DG.TreeViewNode[] = [];
 
     for (let groupName in descriptors) {
       let group = tree.group(groupName, null, false);
@@ -326,34 +298,13 @@ function openDescriptorsDialog(selected, onOK) {
     ui.dialog('Chem Descriptors')
       .add(clear)
       .add(tree.root)
-      .onOK(() => onOK(items.filter(i => i.checked).map(i => i.value['name'])))
+      .onOK(() => onOK(items.filter(i => i.checked).map((i: any) => i.value['name'])))
       .show();
   });
 }
 
-function renderMolRdKitCanvasCache(molString, canvas, x, y, w, h) {
-
-  let mol = this.rdKitRendererCache.getOrCreate(molString, (s) => {
-    try {
-      return rdKitModule.get_mol(s);
-    } catch (e) {
-      return rdKitModule.get_mol("");
-    }
-  });
-
-  const opts = {
-    "clearBackground": false,
-    "offsetx": Math.floor(x),
-    "offsety": -Math.floor(y),
-    "width": Math.floor(w),
-    "height": Math.floor(h)
-  };
-  mol.draw_to_canvas_with_highlights(canvas, JSON.stringify(opts));
-
-}
-
 //description: Removes all children from node
-function removeChildren(node) {
+function removeChildren(node: any) {
   while (node.firstChild)
     node.removeChild(node.firstChild);
 }
@@ -376,7 +327,7 @@ export function saveAsSdf() {
 
   for (let i = 0; i < table.rowCount; i++) {
     try {
-      let mol = new OCL.Molecule.fromSmiles(structureColumn.get(i));
+      let mol = OCL.Molecule.fromSmiles(structureColumn.get(i));
       result += `\n${mol.toMolfile()}\n`;
 
       // properties
@@ -397,6 +348,8 @@ export function saveAsSdf() {
   element.setAttribute('download', table.name + '.sdf');
   element.click();
 }
+
+/*
 
 //name: Structure WIP
 //description: 2D molecule representation
@@ -514,3 +467,5 @@ export function structuralAlertsWIP(smiles) {
 export async function _testSubstructureSearch() {
   await testSubstructureSearch();
 }
+
+*/

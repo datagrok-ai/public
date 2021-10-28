@@ -24,12 +24,16 @@
     "typescript": "latest",
     "datagrok-tools": "latest",
     "file-loader": "latest",
-    "worker-loader": "latest"
+    "worker-loader": "latest",
+    "offscreen-canvas": "latest",
+    "openchemlib": "6.0.1"
   },
   "devDependencies": {
-    "file-loader": "^6.2.0",
+    "@types/offscreencanvas": "latest",
+    "file-loader": "latest",
     "webpack": "latest",
-    "webpack-cli": "latest"
+    "webpack-cli": "latest",
+    "openchemlib": "6.0.1"
   },
   "browser": {
     "fs": false,

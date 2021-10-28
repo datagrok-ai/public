@@ -1,16 +1,18 @@
-import {RdKitParallel} from './rdkit_parallel.js';
+import {RdKitParallel} from './rdkit_parallel';
 import * as grok from 'datagrok-api/grok';
 import * as ui from 'datagrok-api/ui';
 import * as DG from 'datagrok-api/dg';
 
-let commonRdKitModule = null;
+let commonRdKitModule: any = null;
 
-export async function setCommonRdKitModule(module)
+export async function setCommonRdKitModule(module: any)
 {
   commonRdKitModule = module;
 }
 
-export function drawMoleculeToCanvas(x, y, w, h, onscreenCanvas, molString, scaffoldMolString = null) {
+export function drawMoleculeToCanvas(
+  x: number, y: number, w: number, h: number,
+  onscreenCanvas: HTMLCanvasElement, molString: string, scaffoldMolString: string | null = null) {
   let mol = commonRdKitModule.get_mol(molString);
   const molBlock = mol.get_new_coords(true);
   mol.delete();
@@ -49,10 +51,10 @@ export function drawMoleculeToCanvas(x, y, w, h, onscreenCanvas, molString, scaf
     Object.assign(opts, substruct);
   }
   // we need the offscreen canvas first to not let the molecule scaffold skew on a real canvas
-  let offscreenCanvas = new OffscreenCanvas(w, h);
+  let offscreenCanvas: OffscreenCanvas | null = new OffscreenCanvas(w, h);
   mol.draw_to_canvas_with_highlights(offscreenCanvas, JSON.stringify(opts));
-  let image = offscreenCanvas.getContext('2d').getImageData(0, 0, w, h);
+  let image = offscreenCanvas!.getContext('2d')!.getImageData(0, 0, w, h);
   let context = onscreenCanvas.getContext('2d');
-  context.putImageData(image, x, y);
-  offscreenCanvas = null;
+  context!.putImageData(image, x, y);
+  offscreenCanvas = null; // ? GC definitely
 }

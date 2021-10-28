@@ -1,7 +1,10 @@
 import {createRDKit} from './RDKit_minimal_2021.03_17.js';
 import {RdKitSubstructLibrary} from './rdkit_substruct_library';
 
-async function handler(e) {
+const ctx: Worker = self as any;
+
+let handler: any = {};
+ctx.onmessage = async (e: any) => {
   const {op, args} = e.data;
   let port = e.ports[0];
   if (op === 'module::init') {
@@ -22,5 +25,3 @@ async function handler(e) {
     port.postMessage({op: op});
   }
 }
-
-onmessage = handler;
