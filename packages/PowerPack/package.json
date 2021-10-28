@@ -1,9 +1,7 @@
 {
 	"name": "@datagrok/power-pack",
 	"friendlyName": "PowerPack",
-	"sources": [
-		"css/power-pack.css"
-	],
+	"sources": ["css/power-pack.css"],
 	"version": "0.0.1",
 	"description": "",
 	"dependencies": {
