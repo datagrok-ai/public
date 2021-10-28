@@ -1,7 +1,7 @@
 {
   "name": "cli",
   "beta": true,
-  "version": "0.1",
+  "version": "0.1.0",
   "fullName": "CLI",
   "description": "Demonstrates integration with command-line tools",
   "sources": [

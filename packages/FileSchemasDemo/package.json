@@ -1,6 +1,6 @@
 {
   "name": "schemas-demo",
-  "version": "1",
+  "version": "1.0.0",
   "description": "Demonstrates relations between schemas, properties, files, and functions",
   "sources": [ ]
 }

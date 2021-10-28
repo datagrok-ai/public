@@ -20,6 +20,8 @@ jobs:
           registry-url: 'https://registry.npmjs.org'
       - run: npm install
         working-directory: ./js-api
+      - run: npm run build
+        working-directory: ./js-api
       - run: npm run build-ts
         working-directory: ./js-api
       - run: npm publish

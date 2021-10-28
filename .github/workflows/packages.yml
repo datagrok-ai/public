@@ -26,7 +26,12 @@ jobs:
 
           for DIR in ${CHANGED_DIRS}; do
               MATRIX_PROJECTS_JSON+=$(sed 's/^/"/;s/$/"/' <<< "${DIR}")
-              MATRIX_INCLUDE_JSON+="{\"package\": \"${DIR}\"}"
+              if [ -z "$(jq  '. | select( has("scripts") == true ).scripts | select( has("build") == true )' ${DIR}/package.json)" ]; then
+                build='false'
+              else
+                build='true'
+              fi
+              MATRIX_INCLUDE_JSON+="{\"package\": \"${DIR}\", \"build\": \"${build}\"}"
           done
 
           MATRIX_INCLUDE_JSON="${MATRIX_INCLUDE_JSON//\}\{/\}, \{}"
@@ -59,6 +64,9 @@ jobs:
           scope: '@datagrok'
       - run: npm install
         working-directory: ${{ matrix.package }}
+      - run: npm run build
+        working-directory: ${{ matrix.package }}
+        if: matrix.build == 'true'
       - run: npm publish
         working-directory: ${{ matrix.package }}
         env:
