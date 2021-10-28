@@ -6,6 +6,7 @@ on:
 jobs:
   build:
     runs-on: ubuntu-latest
+    environment: Prod
     steps:
       - uses: actions/checkout@v2
       # Setup .npmrc file to publish to npm
