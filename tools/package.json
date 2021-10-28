@@ -4,10 +4,12 @@
   "description": "Utility to upload and publish packages to Datagrok",
   "homepage": "https://github.com/datagrok-ai/public/tree/master/tools#readme",
   "dependencies": {
+    "@types/node": "latest",
+    "@types/js-yaml": "latest",
     "inquirer": "^7.1.0",
     "minimist": "^1.2.5",
     "node-fetch": "^2.6.0",
-    "fs": "^0.0.1-security",
+    "fs": "latest",
     "node-recursive-directory": "^1.2.0",
     "path": "^0.12.7",
     "archiver": "^4.0.2",
