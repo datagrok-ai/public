@@ -54,7 +54,7 @@ jobs:
         with:
           node-version: '12.x'
           registry-url: 'https://registry.npmjs.org'
-          scope: @datagrok
+          scope: '@datagrok'
       - run: npm install
         working-directory: ${{ matrix.package }}
       - run: npm publish
