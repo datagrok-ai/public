@@ -1,12 +1,13 @@
 import * as grok from 'datagrok-api/grok';
 import * as ui from 'datagrok-api/ui';
 import * as DG from 'datagrok-api/dg';
-import {BitSet, DataFrame, FuncCall, Script} from 'datagrok-api/dg';
+import {BitSet, ColumnList, DataFrame, FuncCall, Script} from 'datagrok-api/dg';
 
 export async function selectOutliersManually(inputData: DataFrame) {
   const IS_OUTLIER_COL_LABEL = 'isOutlier';
   const OUTLIER_REASON_COL_LABEL = 'Reason';
   const OUTLIER_COUNT_COL_LABEL = 'Count';
+  const INPUT_COLUMNS_SIZE = (inputData.columns as ColumnList).length;
 
   if (!inputData.columns.byName(IS_OUTLIER_COL_LABEL)) {
     inputData.columns
@@ -118,10 +119,13 @@ export async function selectOutliersManually(inputData: DataFrame) {
     () => {
       if (isInnerModalOpened) return;
 
-      const options = DG.Func.find({name: 'Max'}).map((func) => func.name);
+      const options = DG.Func.find({name: 'ExtractRows'}).map((func) => func.name);
       const detectionChoiceInput = ui.choiceInput('Function', '', options);
+      let selectedFunc: DG.FuncCall;
       detectionChoiceInput.onChanged(() => {
-        DG.Func.find({name: detectionChoiceInput.value})[0].prepare().getEditor().then((editor) => {
+        selectedFunc = DG.Func.find({name: detectionChoiceInput.value})[0]
+          .prepare();
+        selectedFunc.getEditor(false, false).then((editor) => {
           autoDetectionDialog.clear();
           autoDetectionDialog.add(ui.divV([detectionChoiceInput.root, editor]));
         });
@@ -130,7 +134,33 @@ export async function selectOutliersManually(inputData: DataFrame) {
       const autoDetectionDialog = ui.dialog('Automatic detection')
         .add(detectionChoiceInput.root)
         .onOK(()=>{
-
+          selectedFunc.call().then((result) => {
+            const selectedDf = (result.outputs.result as DataFrame);
+            selectedDf.col(IS_OUTLIER_COL_LABEL)?.init(() => true);
+            selectedDf.col(OUTLIER_REASON_COL_LABEL)?.init(selectedFunc.func.name);
+            const mergedData = inputData.join(
+              selectedDf,
+              [...Array(INPUT_COLUMNS_SIZE).keys()]
+                .map((idx) => (inputData.columns as ColumnList).byIndex(idx).name),
+              [...Array(INPUT_COLUMNS_SIZE).keys()]
+                .map((idx) => (selectedDf.columns as ColumnList).byIndex(idx).name),
+              [...Array(INPUT_COLUMNS_SIZE).keys()]
+                .map((idx) => (inputData.columns as ColumnList).byIndex(idx).name),
+              [...Array(2).keys()]
+                .map((idx) => (idx + INPUT_COLUMNS_SIZE))
+                .map((idx) => (selectedDf.columns as ColumnList).byIndex(idx).name),
+              DG.JOIN_TYPE.OUTER,
+              false,
+            );
+            const selected = DG.BitSet.create(inputData.rowCount, (idx) => (
+              (mergedData.columns as ColumnList).byIndex(INPUT_COLUMNS_SIZE).get(idx)
+            ));
+            selected.getSelectedIndexes().forEach((selectedIndex: number) => {
+              inputData.set(IS_OUTLIER_COL_LABEL, selectedIndex, true);
+              inputData.set(OUTLIER_REASON_COL_LABEL, selectedIndex, selectedFunc.func.name);
+            });
+            updateTable();
+          });
         })
         .show();
       autoDetectionDialog.onClose.subscribe(() => isInnerModalOpened = false);
