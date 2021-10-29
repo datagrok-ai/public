@@ -280,9 +280,8 @@ onmessage = function (e) {
 
   function calculateBitCount(mask) {
     var count = 0;
-    for (let j = 0; j < wordSize / byteSize; ++j) {
-      var subMask = (mask >> j * 8) & 0xff;
-      count += _onBitCount[subMask];
+    for (let subMask = mask; subMask != 0; subMask >>= 8) {
+      count += _onBitCount[subMask & 0xff];
     }
     return count;
   }
