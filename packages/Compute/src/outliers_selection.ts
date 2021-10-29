@@ -118,16 +118,13 @@ export async function selectOutliersManually(inputData: DataFrame) {
     () => {
       if (isInnerModalOpened) return;
 
-      const detectionChoiceInput = ui.choiceInput('Function', 'test', ['Compute:PMax', 'test']);
+      const options = DG.Func.find({name: 'Max'}).map((func) => func.name);
+      const detectionChoiceInput = ui.choiceInput('Function', '', options);
       detectionChoiceInput.onChanged(() => {
-        grok.functions
-          .eval(detectionChoiceInput.stringValue)
-          .then((res: Script) => (res.prepare()))
-          .then((res: FuncCall) => (res.getEditor()))
-          .then((editor) => {
-            autoDetectionDialog.clear();
-            autoDetectionDialog.add(ui.divV([detectionChoiceInput.root, editor]));
-          });
+        DG.Func.find({name: detectionChoiceInput.value})[0].prepare().getEditor().then((editor) => {
+          autoDetectionDialog.clear();
+          autoDetectionDialog.add(ui.divV([detectionChoiceInput.root, editor]));
+        });
       });
 
       const autoDetectionDialog = ui.dialog('Automatic detection')
