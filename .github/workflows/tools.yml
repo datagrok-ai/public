@@ -18,10 +18,10 @@ jobs:
           registry-url: 'https://registry.npmjs.org'
       - run: npm install
         working-directory: ./tools
-      - run: npm publish
-        working-directory: ./tools
-        env:
-          NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
+#      - run: npm publish
+#        working-directory: ./tools
+#        env:
+#          NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
       - name: Commit package-lock.json
         run: |
           if [ -z $(git status -s tools/package-lock.json) ]; then
