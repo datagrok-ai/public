@@ -4,5 +4,6 @@
   "version": "0.1.0",
   "fullName": "CLI",
   "description": "Demonstrates integration with command-line tools",
-  "sources": []
+  "sources": [
+  ]
 }

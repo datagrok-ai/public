@@ -3,5 +3,7 @@
   "version": "0.2.0",
   "fullName": "Chemspace",
   "description": "Chemspace API demo",
-  "sources": ["css/chemspace.css"]
+  "sources": [
+    "css/chemspace.css"
+  ]
 }
