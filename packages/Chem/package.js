@@ -161,8 +161,10 @@ class ChemPackage extends DG.Package {
   //name: chemSimilarityAnalysis
   //input: dataframe table
   //input: column molColumn {semType: Molecule}
+  //input: int cycleNum
+  //input: int stepNum
   //output: graphics
-  async chemSimilarityAnalysis(table, molColumn) {
+  async chemSimilarityAnalysis(table, molColumn, cycleNum, stepNum) {
     var startTime = performance.now();
     var fpColumn = await this.getMorganFingerprints(molColumn);
     if (fpColumn.stats.missingValueCount > 0) {
@@ -179,7 +181,7 @@ class ChemPackage extends DG.Package {
       }
 
       myWorker.postMessage([fpColumn.length, fpBuffers,
-                            2, null, null, 1.0, 2.0, 0.01, fpColumn.length * 100, 100]);
+                            2, null, null, 1.0, 2.0, 0.01, stepNum, cycleNum]);
                             
       return new Promise((resolve, reject) => {
         myWorker.onmessage = function(event) {
