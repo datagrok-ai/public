@@ -1,4 +1,4 @@
-export const map = {
+export const map: {[index: string]: {[index: string]: {"name": string, "molecularWeight": number}}} = {
   "BioSpring Code For ASO Gapmers": {
     "5": {
       "name": "2'MOE-5Me-rU",
