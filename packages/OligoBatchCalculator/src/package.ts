@@ -7,6 +7,15 @@ import {map} from "./map";
 
 export let _package = new DG.Package();
 
+let molecularWeightsObj: {[index: string]: number} = {};
+for (let representation of Object.values(map))
+  for (let code of Object.keys(representation))
+    molecularWeightsObj[code] = representation[code].molecularWeight;
+
+function sortByStringLengthInAscendingOrder(array: string[]): string[] {
+  return array.sort(function(a, b) { return a.length - b.length; });
+}
+
 //name: Oligo Batch Calculator
 //input: string sequence
 //input: double amount
@@ -32,7 +41,7 @@ export function OligoBatchCalculator(sequence: string, amount: number, outputUni
 //input: string outputUnits {choices: ['NMole', 'Milligrams', 'Micrograms']}
 //output: double opticalDensity
 export function opticalDensity(sequence: string, amount: number, outputUnits: string): number {
-  if (outputUnits == 'Milligrams' || outputUnits == 'Micrograms') {
+  if (outputUnits == 'Milligrams' || outputUnits == 'Micrograms' || outputUnits == 'mg' || outputUnits == 'µg') {
     const coefficient = outputUnits == 'Milligrams' ? 1 : 0.001;
     return coefficient * amount * extinctionCoefficient(sequence) / molecularWeight(sequence);
   } else if (outputUnits == 'OD') {
@@ -69,42 +78,24 @@ export function molecularMass(sequence: string, amount: number, outputUnits: str
 //input: string sequence
 //output: double molecularWeight
 export function molecularWeight(sequence: string): number {
-  //TODO: get weights from map.ts (problem: some keys are in several representations at the same time, example: "8", "A", etc.)
-  const weights: {[index: string]: number} = {
-    "ps":	16.07, "s": 16.07,
-    "fA":	331.2, "fU": 308.16, "fC": 307.18, "fG": 347.19,
-    "mA":	343.24, "mU":	320.2, "mC": 319.21, "mG": 359.24,
-    "A": 313.21, "U": 306.17, "C": 289.18, "G": 329.21, "T": 304.2,
-    "dA": 313.21, "dU": 306.17, "dC": 289.18, "dG": 329.21, "dT": 304.2,
-    "rA": 329.21, "rU": 306.17, "rC": 305.18, "rG": 345.21,
-    "Af": 331.2, "Uf": 308.16, "Gf": 347.19, "Cf": 307.18,
-    "u": 320.2, "a": 343.24, "c": 319.21, "g": 359.24,
-    "moeT": 378.27, "moeA": 387.29, "moe5mC": 377.29, "moeG": 403.28, "5mC": 303.28, "(5m)moeC": 377.29, "(5m)C": 303.28
-  };
-  const recognizableSymbols = Object.keys(weights);
+  //TODO: problem: some keys are in several representations at the same time (example: "8", "A", etc.), they have different molecular weights
+  //solution: add optional argument 'representation'
+  const codes = sortByStringLengthInAscendingOrder(Object.keys(molecularWeightsObj));
   let molecularWeight = 0;
   let i = 0;
-  const manyDigitSymbols = ["moeA", "moe5mC", "(5m)moeC", "moeG", "moeT", "5mC", "(5m)C"];
-  while (i < sequence.length)
-    if (manyDigitSymbols.some((s) => s == sequence.slice(i, i + s.length))) {
-      let matchedString = manyDigitSymbols.find((s) => s == sequence.slice(i, i + s.length));
-      molecularWeight += weights[sequence.slice(i, i + matchedString!.length)];
-      i += matchedString!.length;
-    } else if (recognizableSymbols.includes(sequence.slice(i, i + 2))) {
-      molecularWeight += weights[sequence.slice(i, i + 2)];
-      i += 2;
-    } else if (recognizableSymbols.includes(sequence[i])) {
-      molecularWeight += weights[sequence[i]];
-      i++;
-    }
-  return (sequence.length > 0) ? molecularWeight - 61.97 : 0;
+  while (i < sequence.length) {
+    let matchedCode = codes.find((s) => s == sequence.slice(i, i + s.length));
+    molecularWeight += molecularWeightsObj[sequence.slice(i, i + matchedCode!.length)];
+    i += matchedCode!.length;
+  }
+  return molecularWeight - 61.97;
 }
 
 //name: extinctionCoefficient
 //input: string sequence
 //output: double extinctionCoefficient
 export function extinctionCoefficient(sequence: string): number {
-  sequence = !(sequence[0] == 'r' || sequence[0] == 'd') ? normalizeSequence(sequence) : sequence;
+  sequence = normalizeSequence(sequence);
   const individualBases: {[index: string]: number} = {
       'dA': 15400, 'dC': 7400, 'dG': 11500, 'dT': 8700,
       'rA': 15400, 'rC': 7200, 'rG': 11500, 'rU': 9900
@@ -171,35 +162,50 @@ function normalizeSequence(sequence: string): string {
             sequence.replace(/(fU|fA|fC|fG|mU|mA|mC|mG|ps|A|U|G|C)/g, function (x) {return obj[x]});
 }
 
-function indexOfFirstNotValidCharacter(sequence: string) {
-  //TODO: generate const arrays programmatically from map.ts
-  const oneDigitSymbols = ["A", "U", "T", "C", "G", "u", "a", "c", "g", "s"],
-    twoDigitSymbols = ["fA", "fU", "fC", "fG", "mA", "mU", "mC", "mG", "dA", "dU", "dC", "dG", "dT", "rA", "rU", "rC", "rG", "ps",
-      "Uf", "Af", "Cf", "Gf"],
-    manyDigitSymbols = ["moeA", "moe5mC", "(5m)moeC", "moeG", "moeT", "5mC", "(5m)C"];
-  const firstUniqueCharacters = ['r', 'd', 'f', 'm'];
-  let i = 0;
-  let firstCodeIsOneCharacter = false;
-  let firstCodeIsTwoCharacter = false;
-  while (i < sequence.length) {
-    if (!firstCodeIsOneCharacter && manyDigitSymbols.some((s) => s == sequence.slice(i, i + s.length))) {
-      let matchedString = manyDigitSymbols.find((s) => s == sequence.slice(i, i + s.length));
-      i += matchedString!.length;
-    } else if (!firstCodeIsOneCharacter && twoDigitSymbols.includes(sequence.slice(i, i + 2))) {
-      firstCodeIsTwoCharacter = true;
-      i += 2;
-    } else if (!firstCodeIsTwoCharacter && oneDigitSymbols.includes(sequence[i])) {
-      firstCodeIsOneCharacter = true;
-      if (i > 1 && firstUniqueCharacters.includes(sequence[i-2])) //rArAT
-        return i;
-      else if (firstUniqueCharacters.includes(sequence[i+1])) // TTrA
-        return i + 1;
-      i++;
-    } else {
-      return i;
+function getListOfPossibleRepresentationsByFirstMatchedCodes(sequence: string): string[] {
+  let representations: string[] = [];
+  Object.keys(map).forEach((representation: string) => {
+    if (Object.keys(map[representation]).some((s) => s == sequence.slice(0, s.length)))
+      representations.push(representation);
+  });
+  return representations;
+}
+
+function indexOfFirstNotValidCharacter(sequence: string): number {
+  let representations = getListOfPossibleRepresentationsByFirstMatchedCodes(sequence),
+    outputIndices = Array(representations.length).fill(0);
+
+  const firstUniqueCharacters = ['r', 'd', 'f', 'm'],
+    secondCharactersInNormalizedCodes = ["A", "U", "T", "C", "G"];
+
+  representations.forEach((representation, representationIndex) => {
+    while (outputIndices[representationIndex] < sequence.length) {
+
+      let matchedCode = Object.keys(map[representations[representationIndex]])
+        .find((s) => s == sequence.slice(outputIndices[representationIndex], outputIndices[representationIndex] + s.length));
+
+      if (matchedCode == null)
+        break;
+
+      if (  // for mistake pattern 'rAA'
+        outputIndices[representationIndex] > 1 &&
+        secondCharactersInNormalizedCodes.includes(sequence[outputIndices[representationIndex]]) &&
+        firstUniqueCharacters.includes(sequence[outputIndices[representationIndex] - 2])
+      )
+        break;
+
+      if (  // for mistake pattern 'ArA'
+        firstUniqueCharacters.includes(sequence[outputIndices[representationIndex] + 1]) &&
+        secondCharactersInNormalizedCodes.includes(sequence[outputIndices[representationIndex]])
+      ) {
+        outputIndices[representationIndex]++;
+        break;
+      }
+
+      outputIndices[representationIndex] += matchedCode.length;
     }
-  }
-  return -1;
+  });
+  return (Math.max.apply(Math, outputIndices) == sequence.length) ? -1 : Math.max.apply(Math, outputIndices);
 }
 
 //name: Oligo Batch Calculator
@@ -230,7 +236,8 @@ export function OligoBatchCalculatorApp() {
           opticalDensities[i] = opticalDensity(sequence, yieldAmount.value, units.value);
           molecularMasses[i] = molecularMass(sequence, yieldAmount.value, units.value);
         } catch (e) {
-          grok.shell.error(e);
+          indicesOfFirstNotValidCharacter[i] = 0;
+          grok.shell.error(String(e));
         }
       }
     });
