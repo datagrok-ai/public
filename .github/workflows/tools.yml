@@ -24,7 +24,7 @@ jobs:
 #          NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
       - name: Commit package-lock.json
         run: |
-          if [ -z $(git status -s tools/package-lock.json) ]; then
+          if [ ! -z "$(git status -s tools/package-lock.json)" ]; then
             git config --global user.name 'GitHub Actions'
             git config --global user.email 'githubactions@datagrok.ai'
             git add ${{ matrix.project }}/package-lock.json
