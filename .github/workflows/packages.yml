@@ -21,11 +21,9 @@ jobs:
         run: |
           CHANGED_DIRS=$(git diff-tree --no-commit-id --name-only -r ${{ github.sha }} 'packages/*/package.json' | xargs -I {} dirname {})
 
-          MATRIX_PROJECTS_JSON="["
           MATRIX_INCLUDE_JSON="["
 
           for DIR in ${CHANGED_DIRS}; do
-              MATRIX_PROJECTS_JSON+=$(sed 's/^/"/;s/$/"/' <<< "${DIR}")
               if [ -z "$(jq  '. | select( has("scripts") == true ).scripts | select( has("build") == true )' ${DIR}/package.json)" ]; then
                 build='false'
               else
@@ -36,13 +34,11 @@ jobs:
 
           MATRIX_INCLUDE_JSON="${MATRIX_INCLUDE_JSON//\}\{/\}, \{}"
           MATRIX_INCLUDE_JSON+="]"
-          MATRIX_PROJECTS_JSON="${MATRIX_PROJECTS_JSON//\"\"/\", \"}"
-          MATRIX_PROJECTS_JSON+="]"
-          MATRIX_JSON="{\"projects\": ${MATRIX_PROJECTS_JSON}, \"include\": ${MATRIX_INCLUDE_JSON}}"
+          MATRIX_JSON="{\"include\": ${MATRIX_INCLUDE_JSON}}"
           echo "${MATRIX_JSON}"
 
           CONTINUE_JOB="no"
-          if [[ "${MATRIX_PROJECTS_JSON}" != "[]" ]]; then
+          if [[ "${MATRIX_INCLUDE_JSON}" != "[]" ]]; then
             CONTINUE_JOB="yes"
           fi
           echo "::set-output name=continue::${CONTINUE_JOB}"
