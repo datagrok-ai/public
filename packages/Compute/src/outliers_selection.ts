@@ -1,16 +1,15 @@
 import * as grok from 'datagrok-api/grok';
 import * as ui from 'datagrok-api/ui';
 import * as DG from 'datagrok-api/dg';
-import {BitSet, ColumnList, DataFrame, FuncCall, Script} from 'datagrok-api/dg';
 
-export async function selectOutliersManually(inputData: DataFrame) {
+export async function selectOutliersManually(inputData: DG.DataFrame) {
   const IS_OUTLIER_COL_LABEL = 'isOutlier';
   const OUTLIER_REASON_COL_LABEL = 'Reason';
   const OUTLIER_COUNT_COL_LABEL = 'Count';
 
   if (!inputData.columns.byName(IS_OUTLIER_COL_LABEL)) {
     inputData.columns
-      .add(DG.Column.fromBitSet(IS_OUTLIER_COL_LABEL, BitSet.create(inputData.rowCount, () => false)));
+      .add(DG.Column.fromBitSet(IS_OUTLIER_COL_LABEL, DG.BitSet.create(inputData.rowCount, () => false)));
   }
 
   if (!inputData.columns.byName(OUTLIER_REASON_COL_LABEL)) {
@@ -118,7 +117,7 @@ export async function selectOutliersManually(inputData: DataFrame) {
     () => {
       if (isInnerModalOpened) return;
 
-      const INPUT_COLUMNS_SIZE = (inputData.columns as ColumnList).length -
+      const INPUT_COLUMNS_SIZE = (inputData.columns as DG.ColumnList).length -
       (!inputData.columns.byName(IS_OUTLIER_COL_LABEL) ? 0 : 1) -
       (!inputData.columns.byName(OUTLIER_REASON_COL_LABEL) ? 0 : 1);
 
@@ -138,26 +137,25 @@ export async function selectOutliersManually(inputData: DataFrame) {
         .add(detectionChoiceInput.root)
         .onOK(()=>{
           selectedFunc.call().then((result) => {
-            const selectedDf = (result.outputs.result as DataFrame);
+            const selectedDf = (result.outputs.result as DG.DataFrame);
             selectedDf.col(IS_OUTLIER_COL_LABEL)?.init(() => true);
             selectedDf.col(OUTLIER_REASON_COL_LABEL)?.init(selectedFunc.func.name);
             const mergedData = inputData.join(
               selectedDf,
               [...Array(INPUT_COLUMNS_SIZE).keys()]
-                .map((idx) => (inputData.columns as ColumnList).byIndex(idx).name),
+                .map((idx) => (inputData.columns as DG.ColumnList).byIndex(idx).name),
               [...Array(INPUT_COLUMNS_SIZE).keys()]
-                .map((idx) => (selectedDf.columns as ColumnList).byIndex(idx).name),
+                .map((idx) => (selectedDf.columns as DG.ColumnList).byIndex(idx).name),
               [...Array(INPUT_COLUMNS_SIZE).keys()]
-                .map((idx) => (inputData.columns as ColumnList).byIndex(idx).name),
+                .map((idx) => (inputData.columns as DG.ColumnList).byIndex(idx).name),
               [...Array(2).keys()]
                 .map((idx) => (idx + INPUT_COLUMNS_SIZE))
-                .map((idx) => (selectedDf.columns as ColumnList).byIndex(idx).name),
+                .map((idx) => (selectedDf.columns as DG.ColumnList).byIndex(idx).name),
               DG.JOIN_TYPE.OUTER,
               false,
             );
-            grok.shell.addTableView(mergedData);
             const selected = DG.BitSet.create(inputData.rowCount, (idx) => (
-              (mergedData.columns as ColumnList).byIndex(INPUT_COLUMNS_SIZE).get(idx)
+              (mergedData.columns as DG.ColumnList).byIndex(INPUT_COLUMNS_SIZE).get(idx)
             ));
             selected.getSelectedIndexes().forEach((selectedIndex: number) => {
               inputData.set(IS_OUTLIER_COL_LABEL, selectedIndex, true);
@@ -186,7 +184,7 @@ export async function selectOutliersManually(inputData: DataFrame) {
   addOutlierGroupBtn.classList.add('disabled');
   removeOutlierGroupBtn.classList.add('disabled');
 
-  const result = new Promise<{augmentedInput: DataFrame, editedInput: DataFrame}>((resolve, reject) => {
+  const result = new Promise<{augmentedInput: DG.DataFrame, editedInput: DG.DataFrame}>((resolve, reject) => {
     ui.dialog('Manual outliers selection')
       .add(
         ui.divH([
