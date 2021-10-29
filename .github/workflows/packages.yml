@@ -1,0 +1,84 @@
+name: Datagrok Packages
+on:
+  push:
+    branches:
+      - 'master'
+    paths:
+      - 'packages/*/package.json'
+jobs:
+  metadata:
+    runs-on: ubuntu-latest
+    outputs:
+      matrix: ${{ steps.generate-matrix.outputs.matrix }}
+      continue: ${{ steps.generate-matrix.outputs.continue }}
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v2
+        with:
+          fetch-depth: 2
+      - name: Generate matrix
+        id: generate-matrix
+        run: |
+          CHANGED_DIRS=$(git diff-tree --no-commit-id --name-only -r ${{ github.sha }} 'packages/*/package.json' | xargs -I {} dirname {})
+
+          MATRIX_INCLUDE_JSON="["
+
+          for DIR in ${CHANGED_DIRS}; do
+              if [ -z "$(jq  '. | select( has("scripts") == true ).scripts | select( has("build") == true )' ${DIR}/package.json)" ]; then
+                build='false'
+              else
+                build='true'
+              fi
+              MATRIX_INCLUDE_JSON+="{\"project\": \"${DIR}\", \"build\": \"${build}\"}"
+          done
+
+          MATRIX_INCLUDE_JSON="${MATRIX_INCLUDE_JSON//\}\{/\}, \{}"
+          MATRIX_INCLUDE_JSON+="]"
+          MATRIX_JSON="{\"include\": ${MATRIX_INCLUDE_JSON}}"
+          echo "${MATRIX_JSON}"
+
+          CONTINUE_JOB="no"
+          if [[ "${MATRIX_INCLUDE_JSON}" != "[]" ]]; then
+            CONTINUE_JOB="yes"
+          fi
+          echo "::set-output name=continue::${CONTINUE_JOB}"
+          echo "::set-output name=matrix::${MATRIX_JSON}"
+  build:
+    needs: metadata
+    if: needs.metadata.outputs.continue == 'yes'
+    runs-on: ubuntu-latest
+    environment: Prod
+    strategy:
+      fail-fast: false
+      max-parallel: 10
+      matrix: ${{ fromJson(needs.metadata.outputs.matrix) }}
+    steps:
+      - uses: actions/checkout@v2
+      - name: Setup Node
+        uses: actions/setup-node@v2
+        with:
+          node-version: '12.x'
+          registry-url: 'https://registry.npmjs.org'
+          scope: '@datagrok'
+      - name: Upgrade npm
+        run: npm install -g npm@latest
+      - name: npm version
+        run: npm version
+      - run: npm install
+        working-directory: ${{ matrix.project }}
+      - run: npm run build
+        working-directory: ${{ matrix.project }}
+        if: ${{ matrix.build == 'true' }}
+      - run: npm publish --access public
+        working-directory: ${{ matrix.project }}
+        env:
+          NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
+      - name: Commit package-lock.json
+        run: |
+          if [-z $(git status -s ${{ matrix.project }}/package-lock.json)]; then
+            git config --global user.name 'GitHub Actions'
+            git config --global user.email 'githubactions@datagrok.ai'
+            git add ${{ matrix.project }}/package-lock.json
+            git commit -m "GitHub Actions: Update ${{ matrix.project }}/package-lock.json "
+            git push
+          fi

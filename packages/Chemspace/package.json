@@ -1,6 +1,6 @@
 {
-  "name": "Chemspace",
-  "version": "0.2",
+  "name": "@datagrok/chemspace",
+  "version": "0.2.0",
   "fullName": "Chemspace",
   "description": "Chemspace API demo",
   "sources": [

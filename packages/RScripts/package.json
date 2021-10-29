@@ -1,6 +1,6 @@
 {
-  "name": "RScripts",
-  "version": "1",
+  "name": "@datagrok/r-scripts",
+  "version": "1.0.0",
   "description": "R Scripts",
   "sources": [ ]
 }

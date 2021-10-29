@@ -1,5 +1,5 @@
 {
-	"name": "sunburst",
+	"name": "@datagrok/sunburst",
 	"fullName": "Sunburst",
 	"version": "1.0.0",
 	"description": "Sunburst chart for the datagrok platform",

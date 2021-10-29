@@ -1,5 +1,5 @@
 {
-  "name": "discovery",
+  "name": "@datagrok/discovery",
   "beta": true,
   "fullName": "Discovery",
   "version": "0.0.1",

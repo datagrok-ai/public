@@ -1,7 +1,7 @@
 {
-  "name": "FileEditors",
+  "name": "@datagrok/file-editors",
   "beta": true,
-  "version": "0.1",
+  "version": "0.1.0",
   "fullName": "File Editors",
   "description": "Support for editing end previewing multiple file formats (PDF, SVG)",
   "sources": [

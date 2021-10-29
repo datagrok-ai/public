@@ -1,0 +1,24 @@
+name: Datagrok Tools Package
+on:
+  push:
+    branches:
+      - 'master'
+    paths:
+      - 'tools/package.json'
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    environment: Prod
+    steps:
+      - uses: actions/checkout@v2
+      - name: Setup Node
+        uses: actions/setup-node@v2
+        with:
+          node-version: '12.x'
+          registry-url: 'https://registry.npmjs.org'
+      - run: npm install
+        working-directory: ./tools
+      - run: npm publish
+        working-directory: ./tools
+        env:
+          NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
