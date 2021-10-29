@@ -5,7 +5,6 @@ on:
 #      - 'master'
     paths:
       - 'js-api/package.json'
-      - 'js-api/package-lock.json'
 jobs:
   build:
     runs-on: ubuntu-latest
@@ -13,7 +12,6 @@ jobs:
     steps:
       - name: Checkout
         uses: actions/checkout@v2
-      # Setup .npmrc file to publish to npm
       - name: Setup Node
         uses: actions/setup-node@v2
         with:
