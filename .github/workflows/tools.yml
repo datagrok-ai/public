@@ -1,8 +1,8 @@
 name: Datagrok Tools Package
 on:
   push:
-#    branches:
-#      - 'master'
+    branches:
+      - 'master'
     paths:
       - 'tools/package.json'
 jobs:
