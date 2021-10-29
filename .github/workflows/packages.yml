@@ -53,24 +53,38 @@ jobs:
       fail-fast: false
       max-parallel: 10
       matrix: ${{ fromJson(needs.metadata.outputs.matrix) }}
+    outputs:
+      check: ${{ steps.after.outputs.check }}
     steps:
       - uses: actions/checkout@v2
-      # Setup .npmrc file to publish to npm
-      - uses: actions/setup-node@v2
-        with:
-          node-version: '12.x'
-          registry-url: 'https://registry.npmjs.org'
-          scope: '@datagrok'
-      - name: Upgrade npm
-        run: npm install -g npm@latest
-      - name: npm version
-        run: npm version
-      - run: npm install
-        working-directory: ${{ matrix.project }}
-      - run: npm run build
-        working-directory: ${{ matrix.project }}
-        if: ${{ matrix.build == 'true' }}
-      - run: npm publish --access public
-        working-directory: ${{ matrix.project }}
-        env:
-          NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
+#      - name: Setup Node
+#        uses: actions/setup-node@v2
+#        with:
+#          node-version: '12.x'
+#          registry-url: 'https://registry.npmjs.org'
+#          scope: '@datagrok'
+#      - name: Upgrade npm
+#        run: npm install -g npm@latest
+#      - name: npm version
+#        run: npm version
+#      - run: npm install
+#        working-directory: ${{ matrix.project }}
+#      - run: npm run build
+#        working-directory: ${{ matrix.project }}
+#        if: ${{ matrix.build == 'true' }}
+#      - run: npm publish --access public
+#        working-directory: ${{ matrix.project }}
+#        env:
+#          NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
+      - name: before
+        id: before
+        run: echo "::set-output name=git::before"
+      - name: after
+        id: after
+        run: echo "::set-output name=check::${{ steps.before.outputs.git }}after"
+  check:
+    needs: build
+    runs-on: ubuntu-latest
+    environment: Prod
+    steps:
+      - run: echo ${{ needs.build.outputs.check }}
