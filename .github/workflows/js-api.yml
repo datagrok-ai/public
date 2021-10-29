@@ -1,8 +1,8 @@
 name: JS API Package
 on:
   push:
-    branches:
-      - 'master'
+#    branches:
+#      - 'master'
     paths:
       - 'js-api/package.json'
       - 'js-api/package-lock.json'
