@@ -2,86 +2,66 @@
 import * as grok from 'datagrok-api/grok';
 import * as ui from 'datagrok-api/ui';
 import * as DG from 'datagrok-api/dg';
-import {data} from "datagrok-api/grok";
-import {inputs, stringInput} from "datagrok-api/ui";
+import {wait} from "datagrok-api/ui";
+
 
 export let _package = new DG.Package();
-let packageName = 'Chemblapi'
+let rest = 'https://pubchem.ncbi.nlm.nih.gov/rest';
+let pug = 'https://pubchem.ncbi.nlm.nih.gov/rest/pug';
 
 
-//name: ChemblSubstructureSearch
-//input: string mol {semType: Molecule}
-//output: dataframe dbResult
-export async function
-chemblSubstructureSearch(mol) {
-  try {
-    let df = await grok.data.query('Chemblapi:SubstructureSmile', {'smile': mol})
-
-    if (df == null) {
-      return DG.DataFrame.create();
-    }
-    return df;
-  } catch (e) {
-    console.error("In SubstructureSearch: " + e.toString());
-    throw e;
-  }
-}
-
-//name: ChemblSimilaritySearch
-//input: string molecule {semType: Molecule}
-//output: dataframe drbResult
-export async function chemblSimilaritySearch(molecule) {
-  try {
-    let df = await grok.data.query('Chemblapi:SimilaritySmileScore', {'smile': molecule, 'score': 40})
-    console.warn(df)
-    if (df == null) {
-      return DG.DataFrame.create();
-    }
-    return df;
-
-  } catch (e) {
-    console.error(e);
-    return null;
-  }
-
-}
-
-//name: Chembl Search Widget
+//name: PubChem Search Widget
 //tags: widgets
 //input: string mol {semType: Molecule}
 //input: string searchType
 //output: widget result
-export function ChemblSearchWidget(mol, searchType) {
+export function PubChemSearchWidget(mol, searchType) {
   let headerHost = ui.divH([]);
-  let compsHost = ui.divH([ui.loader(), headerHost]);
+  let compsHost = ui.divH([ui.loader()]);
   let panel = ui.divV([compsHost]);
   let search = {
-    'similarity': async () => chemblSimilaritySearch(mol),
-    'substructure': async () => chemblSubstructureSearch(mol)
+    'similarity': async () => pc.similaritySearch('smiles', mol),
+    'substructure': async () => pc.substructureSearch('smiles', mol),
+    'identity': async () => pc.identitySearch('smiles', mol)
   }
-  if (!searchType in search) {
 
+  if (!searchType in search) {
     throw "DrugBankSearch: No such search type" + searchType;
   }
 
   search[searchType]().then(t => {
       compsHost.removeChild(compsHost.firstChild);
-      if (t == null) {
-
+      if (t == null || t.filter.trueCount === 0) {
         compsHost.appendChild(ui.divText('No matches'));
         return;
       }
-      compsHost.appendChild(DG.Viewer.grid(t).root)
+      let grid = t.plot.grid();
+      grid.columns.setOrder(['CanonicalSMILES','CID']);
+      t.col('CanonicalSMILES').semType = 'Molecule';
+      t.col('CanonicalSMILES').setTag('cell.renderer', 'Molecule');
+      if(searchType === 'substructure') {
+        t.col('CanonicalSMILES').temp['chem-scaffold-filter'] = mol;
+        t.col('CanonicalSMILES').temp['chem-scaffold'] = mol;
+      }
+      let col = grid.columns.byName('CID');
+      col.cellType = 'html';
+      grid.onCellPrepare(function (gc) {
+        if (gc.isTableCell && gc.gridColumn.name === 'CID') {
+          const link = `https://pubchem.ncbi.nlm.nih.gov/compound/${gc.cell.value}`;
+          gc.style.element = ui.divV([
+            ui.link(gc.cell.value,link,link)
+          ]);
+        }
+      });
 
-
+      compsHost.appendChild(grid.root);
       headerHost.appendChild(ui.iconFA('arrow-square-down', () => {
-        t.name = `"DrugBank Similarity Search"`;
+        t.name = `"PubChem Similarity Search"`;
         grok.shell.addTableView(t);
       }, 'Open compounds as table'));
       compsHost.style.overflowY = 'auto';
     }
-  )
-  .catch(err => {
+  ).catch(err => {
     if (compsHost.children.length > 0) {
       compsHost.removeChild(compsHost.firstChild);
     }
@@ -89,360 +69,164 @@ export function ChemblSearchWidget(mol, searchType) {
     ui.tooltip.bind(div, `${err}`);
     compsHost.appendChild(div);
   });
+
   return new DG.Widget(panel);
 }
 
-//name Chembl Get by Id
-//input string id
-//output dataframe
-export async function getById(id) {
-  if (!id.toLowerCase().startsWith("chembl")) {
-    id = "CHEMBL" + id
-  }
-  try {
-    return await grok.data.query(`${packageName}:MoleculeJson`, {'molecule_chembl_id__exact': id});
-  } catch (e) {
-    console.error(e);
-    return null;
-  }
 
-}
-
-//name: Chembl Substructure Search Widget
+//name: PubChem Substructure Search
 //tags: panel, widgets
 //input: string mol {semType: Molecule}
 //output: widget result
-//condition: true
-export function ChemblSubstructureSearchPanel(mol) {
-  return ChemblSearchWidget(mol, 'substructure');
+export function PubChemSubstructureSearchPanel(mol) {
+  return PubChemSearchWidget(mol, 'substructure');
 }
 
-//name: Chembl Similarity Search Widget
+//name: PubChem Similarity Search
 //tags: panel, widgets
 //input: string mol {semType: Molecule}
 //output: widget result
-//condition: true
-export function ChemblSimilaritySearchPanel(mol) {
-  return ChemblSearchWidget(mol, 'similarity');
+export function PubChemSimilaritySearchPanel(mol) {
+  return PubChemSearchWidget(mol, 'similarity');
 }
 
-
-
-//name: test
-//input: string s
-export function test(s) {
-  grok.shell.info(_package.webRoot);
+//name: PubChem Identity Search
+//tags: panel, widgets
+//input: string mol {semType: Molecule}
+//output: widget result
+export function pubChemIdentitySearch(mol) {
+  return PubChemSearchWidget(mol, 'identity');
 }
 
-let r = null;
-let v = null;
-
-
-//name: Browser
-//tags: app
-export async function Browser() {
-
-
-  // Filter inputs
-  let molecule = ui.moleculeInput('Substructure', 'C1CCCCC1');
-  let subName = ui.stringInput('Subname', '');
-  let molregno = ui.stringInput('Molregno', '');
-  let ro5Violation = ui.choiceInput('RO5 Violations', 'All', ['All', '0', '1', '2', '3', '4']);
-  let maxPhase = ui.choiceInput('Max Phase', 'All', ['All', '0', '1', '2', '3', '4']);
-  let molecule_type = ui.choiceInput('Molecule type', 'All', ['Protein', 'Oligonucleotide', 'Unknown', 'Antibody', 'Oligosaccharide', 'Unclassified', 'Enzyme', 'Cell', 'All']);
-  let clear = ui.button([ui.iconFA('trash-alt'), 'Clear filters'], () => clearFilters());
-
-  let controlPanel = ui.form([
-    molecule,
-    subName,
-    molregno,
-    ro5Violation,
-    maxPhase,
-    molecule_type,
-    clear
-  ]);
-  $(controlPanel).addClass('ui-form-condensed'); //TODO: use ui.smallForm instead
-
-  // Filter handlers
-  molecule.onChanged(() => update());
-  subName.onChanged(() => update());
-  molregno.onChanged(() => findByMolregno());
-  ro5Violation.onChanged(() => update());
-  maxPhase.onChanged(() => update());
-  molecule_type.onChanged(() => update());
-
-
-  async function initView() {
-
-    let parser = document.createElement('a');
-    parser.href = window.location;
-    let pathSegments = parser.href.split("?");
-
-
-    // if we came to app by link with molregno in URL
-    if (pathSegments.length === 2 && pathSegments[1].includes("molregno")) {
-      let parsedMolregno = parseInt(pathSegments[1].split("=")[1]);
-      molregno.value = parsedMolregno;
-      let data = await grok.data.query(`${packageName}:FindByMolregno`, {'molregno': parsedMolregno});
-      data.col('canonical_smiles').semType = DG.SEMTYPE.MOLECULE;
-      v = grok.shell.newView('Chembl Browser');
-      r = DG.Viewer.fromType(DG.VIEWER.TILE_VIEWER, data);
-      v.append(ui.divV([r]));
-      v.toolbox = ui.div(controlPanel);
-      v.box = true;
-
-    }
-    // if we came to app by link with set of parameters in URL
-    else if (pathSegments.length > 2 && pathSegments[1].includes("substructure")) {
-
-      let parsedSubstructure = pathSegments[1].split("=")[1];
-      let parsedSubname = pathSegments[2].split("=")[1];
-      let parsedRo5 = parseInt(pathSegments[3].split("=")[1]);
-      let parsedMaxPhase = parseInt(pathSegments[4].split("=")[1]);
-      let parsedMoleculeType = pathSegments[5].split("=")[1];
-
-      let queryParameters = {
-        'substructure': parsedSubstructure,
-        'subname': parsedSubname,
-        'num_ro5_violations': parsedRo5,
-        'max_phase': parsedMaxPhase,
-        'molecule_type': parsedMoleculeType
-      };
-
-      molecule.value = parsedSubstructure;
-      subName.value = parsedSubname;
-      ro5Violation.value = parsedRo5;
-      maxPhase = parsedMaxPhase;
-      molecule_type.value = parsedMoleculeType;
-
-      let data = await grok.data.query(`${packageName}:ChemblBrowserQuery`, queryParameters);
-      data.col('canonical_smiles').semType = DG.SEMTYPE.MOLECULE;
-      v = grok.shell.newView('Chembl Browser');
-      r = DG.Viewer.fromType(DG.VIEWER.TILE_VIEWER, data);
-      v.append(ui.divV([r]));
-      v.toolbox = ui.div(controlPanel);
-      v.box = true;
-    } else {
-      let data = await grok.data.query(`${packageName}:allChemblStructures`, {});
-      data.col('canonical_smiles').semType = DG.SEMTYPE.MOLECULE;
-      v = grok.shell.newView('Chembl Browser');
-      r = DG.Viewer.fromType(DG.VIEWER.TILE_VIEWER, data);
-      v.append(ui.divV([r]));
-      v.toolbox = ui.div(controlPanel);
-      v.box = true;
-    }
-  }
-
-  async function update() {
-    let ro5 = ro5Violation.value == 'All' ? -1 : parseInt(ro5Violation.value);
-    let max_phase = maxPhase.value == 'All' ? -1 : parseInt(maxPhase.value);
-    let queryParameters = {
-      'substructure': molecule.value,
-      'subname': subName.value,
-      'num_ro5_violations': ro5,
-      'max_phase': max_phase,
-      'molecule_type': molecule_type.value
-    };
-    let query = await grok.data.query(`${packageName}:ChemblBrowserQuery`, queryParameters);
-    if (query.rowCount == 0) {
-      grok.shell.info("No results for this filter were found")
-    } else {
-      query.col('canonical_smiles').semType = DG.SEMTYPE.MOLECULE;
-      v.root.children[0].remove();
-      r = DG.Viewer.fromType(DG.VIEWER.TILE_VIEWER, query);
-      r.setOptions({look:look});
-      console.log(r.getOptions());
-      v.toolbox = ui.div(controlPanel);
-      v.append(ui.divV([r]));
-      v.box = true;
-      v.path = '';
-      v.path = `/apps/Chemblbrowser?substructure=${molecule.value}?subname=${subName.value}?num_ro5_violations=${ro5}?max_phase=${max_phase}?molecule_type=${molecule_type.value}`;
-    }
-  }
-
-  async function findByMolregno() {
-    let query = await grok.data.query(`${packageName}:FindByMolregno`, {'molregno': parseInt(molregno.value)});
-    if (query.rowCount == 0) {
-      grok.shell.info("No results for this filter were found")
-    } else {
-      query.col('canonical_smiles').semType = DG.SEMTYPE.MOLECULE;
-      v.root.children[0].remove();
-      r = DG.Viewer.fromType(DG.VIEWER.TILE_VIEWER, query);
-      v.toolbox = ui.div(controlPanel);
-      v.append(ui.divV([r]));
-      v.box = true;
-      v.path = '/apps/Chemblbrowser?molregno=' + molregno.value;
-    }
-  }
-
-  async function clearFilters() {
-    molecule.value = '';
-    subName.value = '';
-    ro5Violation.value = 'All';
-    maxPhase.value = 'All';
-    molecule_type.value = 'All';
-    molregno.value = null;
-    v.path = '';
-  }
-
-  await initView();
-
+//name: IUPAC name
+//input: string smiles
+//output: string iupacName
+export function getIupacName(smiles) {
+  const identityDf = pc.getUPACName('smiles', smiles);
+  return identityDf;
 }
 
+class PubChem {
+  async similaritySearch(idType, id, params = {}) {
+    let listId = await this._asyncSearchId("similarity", idType, id, params)
+    let json = undefined;
+    let maxRequests = 10;
+    while (!json && maxRequests > 0) {
+      maxRequests -= 1;
+      json = await this._getListById(listId);
+    }
 
-const look = {
-  "sketchState": {
-    "#type": "SketchState",
-    "elementStates": [
-      {
-        "left": 142,
-        "top": 94,
-        "width": 100,
-        "height": 20,
-        "type": "field",
-        "viewerSettings": {
-          "table": "FindByMolregno",
-          "column": "molregno",
-          "format": null
-        }
-      },
-      {
-        "left": 142,
-        "top": 118,
-        "width": 100,
-        "height": 20,
-        "type": "field",
-        "viewerSettings": {
-          "table": "FindByMolregno",
-          "column": "compound_name",
-          "format": null
-        }
-      },
-      {
-        "left": 10,
-        "top": 190,
-        "width": 112,
-        "height": 20,
-        "type": "html",
-        "viewerSettings": {
-          "markup": "<label class=\"d4-sketch-column-name\">max_phase</label>"
-        }
-      },
-      {
-        "left": 142,
-        "top": 214,
-        "width": 100,
-        "height": 20,
-        "type": "field",
-        "viewerSettings": {
-          "table": "FindByMolregno",
-          "column": "chembl_id",
-          "format": null
-        }
-      },
-      {
-        "left": 10,
-        "top": 118,
-        "width": 112,
-        "height": 20,
-        "type": "html",
-        "viewerSettings": {
-          "markup": "<label class=\"d4-sketch-column-name\">compound_name</label>"
-        }
-      },
-      {
-        "left": 142,
-        "top": 142,
-        "width": 100,
-        "height": 20,
-        "type": "field",
-        "viewerSettings": {
-          "table": "FindByMolregno",
-          "column": "num_ro5_violations",
-          "format": null
-        }
-      },
-      {
-        "left": 10,
-        "top": 142,
-        "width": 112,
-        "height": 20,
-        "type": "html",
-        "viewerSettings": {
-          "markup": "<label class=\"d4-sketch-column-name\">num_ro5_violations</label>"
-        }
-      },
-      {
-        "left": 10,
-        "top": 94,
-        "width": 112,
-        "height": 20,
-        "type": "html",
-        "viewerSettings": {
-          "markup": "<label class=\"d4-sketch-column-name\">molregno</label>"
-        }
-      },
-      {
-        "left": 142,
-        "top": 166,
-        "width": 100,
-        "height": 20,
-        "type": "field",
-        "viewerSettings": {
-          "table": "FindByMolregno",
-          "column": "synonyms",
-          "format": null
-        }
-      },
-      {
-        "left": 10,
-        "top": 166,
-        "width": 112,
-        "height": 20,
-        "type": "html",
-        "viewerSettings": {
-          "markup": "<label class=\"d4-sketch-column-name\">synonyms</label>"
-        }
-      },
-      {
-        "left": 10,
-        "top": 214,
-        "width": 112,
-        "height": 20,
-        "type": "html",
-        "viewerSettings": {
-          "markup": "<label class=\"d4-sketch-column-name\">chembl_id</label>"
-        }
-      },
-      {
-        "left": 142,
-        "top": 190,
-        "width": 100,
-        "height": 20,
-        "type": "field",
-        "viewerSettings": {
-          "table": "FindByMolregno",
-          "column": "max_phase",
-          "format": null
-        }
-      },
-      {
-        "left": 7,
-        "top": 20,
-        "width": 235,
-        "height": 70,
-        "type": "field",
-        "viewerSettings": {
-          "table": "FindByMolregno",
-          "column": "canonical_smiles",
-          "format": null
-        }
+    let df = DG.DataFrame.fromObjects(json)
+    return df
+
+  }
+  async getUPACName(idType, id, params = {})
+  {
+    let listId = await this._asyncSearchId("identity", idType, id, params);
+    let json = await this._getListById(listId,{},[]);
+    for(let prop of json[0]['props']){
+      if(prop['urn']['label'] === 'IUPAC Name'){
+        return prop['value'];
       }
-    ]
+    }
+    return '';
   }
-};
+  async identitySearch(idType, id, params = {}) {
+    let listId = await this._asyncSearchId("identity", idType, id, params);
+    let json = await this._getListById(listId,{},[]);
+    let df = DG.DataFrame.fromObjects(json);
+    return df;
+  }
 
+  async substructureSearch(idType, id, params = {}) {
+    let listId = await this._asyncSearchId("substructure", idType, id, params);
+    let json = undefined;
+    let maxRequests = 10;
+    while (!json && maxRequests > 0) {
+      maxRequests -= 1;
+      json = await this._getListById(listId);
+    }
 
+    let df = DG.DataFrame.fromObjects(json)
+    return df
+  }
 
+  async smilesToPubChem(smiles) {
+    let s = await this.getBy('smiles', 'cids', smiles);
+    let cids = s["IdentifierList"]["CID"][0];
+    return cids;
+  }
 
+  async getBy(idType, idTypeReturn, id, params = {}) {
+    return new Promise(function (resolve, reject) {
+      let url = `/compound/${idType}/${id}`
+      params = params ? params : {}
+      let xmlHttp = new XMLHttpRequest();
+      let theUrl = `${pug}${url}/${idTypeReturn}/JSON` +
+        `${params == {} ? '' : '?' + Object.keys(params).map(key => key + '=' + params[key]).join('&')}`
+      xmlHttp.open("GET", theUrl, true);
 
+      xmlHttp.onload = function () {
+        if (this.status >= 200 && this.status < 300) {
+          let id = JSON.parse(xmlHttp.responseText);
+          resolve(id);
+        } else {
+          reject();
+        }
+      };
+      xmlHttp.onerror = () => reject();
+      xmlHttp.send(undefined);
+    });
+  }
+
+  _getListById(listId, params = {},propertyList = ['CanonicalSMILES']) {
+    return new Promise(function (resolve, reject) {
+      let url = `/compound/listkey`
+      params = params ? params : {}
+      let xmlHttp = new XMLHttpRequest();
+      let properties = propertyList.length == 0 ? '':`/property/${propertyList.join(',')}`
+      let theUrl = `${pug}${url}/${listId}${properties}/JSON` +
+        `${params == {} ? '' : '?' + Object.keys(params).map(key => key + '=' + params[key]).join('&')}`
+      xmlHttp.open("GET", theUrl, true);
+      xmlHttp.onload = function () {
+        if (this.status >= 200 && this.status < 300) {
+          let json = JSON.parse(xmlHttp.responseText);
+          if (json['PropertyTable']) {
+            resolve(json['PropertyTable']['Properties']);
+          } else if(json['PC_Compounds']) {
+            resolve(json['PC_Compounds']);
+          } else if(json['Waiting']){
+            pc._getListById(listId, params,propertyList).then((r) => resolve(r))
+          }
+        } else
+          reject();
+      };
+      xmlHttp.onerror = () => reject();
+      xmlHttp.send(null);
+    });
+  }
+
+  _asyncSearchId(searchType, idType, id, params = {}) {
+    return new Promise(function (resolve, reject) {
+      params['MaxRecords'] = 20
+      let url = `/compound/${searchType}`
+      let xmlHttp = new XMLHttpRequest();
+      let theUrl = `${pug}${url}/${idType}/${encodeURIComponent(id)}/JSON` +
+        `${params == null ? '' : '?' + Object.keys(params).map(key => key + '=' + params[key]).join('&')}`
+      console.error(theUrl)
+      xmlHttp.open("GET", theUrl, true);
+      xmlHttp.onload = function () {
+        if (this.status >= 200 && this.status < 300) {
+          console.error(JSON.parse(xmlHttp.responseText))
+          let id = JSON.parse(xmlHttp.responseText)['Waiting']['ListKey'];
+          resolve(id);
+        } else
+          reject();
+      };
+      xmlHttp.onerror = () => reject();
+      xmlHttp.send(null);
+    });
+  }
+}
+
+let pc = new PubChem()
