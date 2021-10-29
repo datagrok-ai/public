@@ -61,8 +61,10 @@ jobs:
           node-version: '12.x'
           registry-url: 'https://registry.npmjs.org'
           scope: '@datagrok'
+      - name: Upgrade npm
+        run: npm install -g npm@latest
       - name: npm version
-        run: npm -V
+        run: npm version
       - run: npm install
         working-directory: ${{ matrix.project }}
       - run: npm run build
