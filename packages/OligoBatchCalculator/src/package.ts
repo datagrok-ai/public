@@ -12,8 +12,8 @@ for (let representation of Object.values(map))
   for (let code of Object.keys(representation))
     molecularWeightsObj[code] = representation[code].molecularWeight;
 
-function sortByStringLengthInAscendingOrder(array: string[]): string[] {
-  return array.sort(function(a, b) { return a.length - b.length; });
+function sortByStringLengthInDescendingOrderToCheckForMatchWithLongerCodesFirst(array: string[]): string[] {
+  return array.sort(function(a, b) { return b.length - a.length; });
 }
 
 //name: Oligo Batch Calculator
@@ -77,10 +77,10 @@ export function molecularMass(sequence: string, amount: number, outputUnits: str
 //name: molecularWeight
 //input: string sequence
 //output: double molecularWeight
-export function molecularWeight(sequence: string): number {
-  //TODO: problem: some keys are in several representations at the same time (example: "8", "A", etc.), they have different molecular weights
-  //solution: add optional argument 'representation'
-  const codes = sortByStringLengthInAscendingOrder(Object.keys(molecularWeightsObj));
+export function molecularWeight(sequence: string, representation?: string): number {
+  const codes = (representation) ?
+    Object.keys(molecularWeightsObj[representation]) :
+    sortByStringLengthInDescendingOrderToCheckForMatchWithLongerCodesFirst(Object.keys(molecularWeightsObj));
   let molecularWeight = 0;
   let i = 0;
   while (i < sequence.length) {
@@ -100,7 +100,7 @@ export function extinctionCoefficient(sequence: string): number {
       'dA': 15400, 'dC': 7400, 'dG': 11500, 'dT': 8700,
       'rA': 15400, 'rC': 7200, 'rG': 11500, 'rU': 9900
     },
-    nearestNeighbour: any = {
+    nearestNeighbour: {[index: string]: {[index: string]: number}} = {
       'dA': {'dA': 27400, 'dC': 21200, 'dG': 25000, 'dT': 22800},
       'dC': {'dA': 21200, 'dC': 14600, 'dG': 18000, 'dT': 15200},
       'dG': {'dA': 25200, 'dC': 17600, 'dG': 21600, 'dT': 20000},
@@ -171,17 +171,20 @@ function getListOfPossibleRepresentationsByFirstMatchedCodes(sequence: string): 
   return representations;
 }
 
-function indexOfFirstNotValidCharacter(sequence: string): number {
-  let representations = getListOfPossibleRepresentationsByFirstMatchedCodes(sequence),
-    outputIndices = Array(representations.length).fill(0);
+function isValid(sequence: string) {
+  let possibleRepresentations = getListOfPossibleRepresentationsByFirstMatchedCodes(sequence);
+  if (possibleRepresentations.length == 0)
+    return { indexOfFirstNotValidCharacter: 0, expectedRepresentation: null };
+
+  let outputIndices = Array(possibleRepresentations.length).fill(0);
 
   const firstUniqueCharacters = ['r', 'd', 'f', 'm'],
     secondCharactersInNormalizedCodes = ["A", "U", "T", "C", "G"];
 
-  representations.forEach((representation, representationIndex) => {
+  possibleRepresentations.forEach((representation, representationIndex) => {
     while (outputIndices[representationIndex] < sequence.length) {
 
-      let matchedCode = Object.keys(map[representations[representationIndex]])
+      let matchedCode = Object.keys(map[possibleRepresentations[representationIndex]])
         .find((s) => s == sequence.slice(outputIndices[representationIndex], outputIndices[representationIndex] + s.length));
 
       if (matchedCode == null)
@@ -205,7 +208,14 @@ function indexOfFirstNotValidCharacter(sequence: string): number {
       outputIndices[representationIndex] += matchedCode.length;
     }
   });
-  return (Math.max.apply(Math, outputIndices) == sequence.length) ? -1 : Math.max.apply(Math, outputIndices);
+
+  const indexOfExpectedRepresentation = Math.max.apply(Math, outputIndices);
+  const indexOfFirstNotValidCharacter = (indexOfExpectedRepresentation == sequence.length) ? -1 : indexOfExpectedRepresentation;
+
+  return {
+    indexOfFirstNotValidCharacter: indexOfFirstNotValidCharacter,
+    expectedRepresentation: possibleRepresentations[outputIndices.indexOf(indexOfFirstNotValidCharacter)]
+  };
 }
 
 //name: Oligo Batch Calculator
@@ -215,7 +225,9 @@ export function OligoBatchCalculatorApp() {
   function updateTable(text: string) {
     tableDiv.innerHTML = '';
 
-    let sequences = text.split('\n').map((s) => s.replace(/\s/g, '')).filter(item => item);
+    let sequences = text.split('\n')
+      .map((s) => s.replace(/\s/g, ''))
+      .filter(item => item);
 
     let indicesOfFirstNotValidCharacter = Array(sequences.length),
       normalizedSequences = Array(sequences.length),
@@ -223,33 +235,48 @@ export function OligoBatchCalculatorApp() {
       extinctionCoefficients = Array(sequences.length),
       nMoles = Array(sequences.length),
       opticalDensities = Array(sequences.length),
-      molecularMasses = Array(sequences.length);
+      molecularMasses = Array(sequences.length),
+      reasonsOfError = Array(sequences.length),
+      expectedRepresentations = Array(sequences.length);
 
     sequences.forEach((sequence, i) => {
-      indicesOfFirstNotValidCharacter[i] = indexOfFirstNotValidCharacter(sequence);
+      let output = isValid(sequence);
+      indicesOfFirstNotValidCharacter[i] = output.indexOfFirstNotValidCharacter;
+      expectedRepresentations[i] = output.expectedRepresentation;
       if (indicesOfFirstNotValidCharacter[i] < 0) {
         normalizedSequences[i] = normalizeSequence(sequence);
-        try {
-          molecularWeights[i] = molecularWeight(sequence);
-          extinctionCoefficients[i] = extinctionCoefficient(normalizedSequences[i]);
-          nMoles[i] = nMole(sequence, yieldAmount.value, units.value);
-          opticalDensities[i] = opticalDensity(sequence, yieldAmount.value, units.value);
-          molecularMasses[i] = molecularMass(sequence, yieldAmount.value, units.value);
-        } catch (e) {
+        if (normalizedSequences[i].length > 2) {
+          try {
+            molecularWeights[i] = molecularWeight(sequence, expectedRepresentations[i]);
+            extinctionCoefficients[i] = extinctionCoefficient(normalizedSequences[i]);
+            nMoles[i] = nMole(sequence, yieldAmount.value, units.value);
+            opticalDensities[i] = opticalDensity(sequence, yieldAmount.value, units.value);
+            molecularMasses[i] = molecularMass(sequence, yieldAmount.value, units.value);
+          } catch (e) {
+            reasonsOfError[i] = 'Unknown error, please report it to Datagrok team';
+            indicesOfFirstNotValidCharacter[i] = 0;
+            grok.shell.error(String(e));
+          }
+        } else {
+          reasonsOfError[i] = 'Sequence should contain at least two nucleotides';
           indicesOfFirstNotValidCharacter[i] = 0;
-          grok.shell.error(String(e));
         }
-      }
+      } else if (expectedRepresentations[i] == null)
+        reasonsOfError[i] = "Not valid input";
+      else
+        reasonsOfError[i] = "Sequence is expected to be in representation '" +  expectedRepresentations[i] +
+          "', please see table below to see list of valid codes";
     });
 
-    let moleName1 = (units.value == 'µmole' || units.value == 'mg') ? 'µmole' : 'nmole';
-    let moleName2 = (units.value == 'µmole') ? 'µmole' : 'nmole';
-    let massName = (units.value == 'µmole') ? 'mg' : (units.value == 'mg') ? units.value : 'µg';
-    const coefficient = (units.value == 'mg' || units.value == 'µmole') ? 1000 : 1;
+    const moleName1 = (units.value == 'µmole' || units.value == 'mg') ? 'µmole' : 'nmole',
+      moleName2 = (units.value == 'µmole') ? 'µmole' : 'nmole',
+      massName = (units.value == 'µmole') ? 'mg' : (units.value == 'mg') ? units.value : 'µg',
+      coefficient = (units.value == 'mg' || units.value == 'µmole') ? 1000 : 1,
+      nameOfColumnWithSequences = 'Sequence';
 
     table = DG.DataFrame.fromColumns([
       DG.Column.fromList('int', 'Item', Array(...Array(sequences.length + 1).keys()).slice(1)),
-      DG.Column.fromList('string', 'Sequence', sequences),
+      DG.Column.fromList('string', nameOfColumnWithSequences, sequences),
       DG.Column.fromList('int', 'Length', normalizedSequences.map((s) => s.length / 2)),
       DG.Column.fromList('double', 'OD 260', opticalDensities),
       DG.Column.fromList('double', moleName1, nMoles),
@@ -261,16 +288,19 @@ export function OligoBatchCalculatorApp() {
     ]);
 
     let grid = DG.Viewer.grid(table);
-    let col = grid.columns.byName('Sequence');
+    let col = grid.columns.byName(nameOfColumnWithSequences);
     col!.cellType = 'html';
 
     grid.onCellPrepare(function (gc) {
-      if (gc.isTableCell && gc.gridColumn.name == 'Sequence') {
+      if (gc.isTableCell && gc.gridColumn.name == nameOfColumnWithSequences) {
         let items = (indicesOfFirstNotValidCharacter[gc.gridRow] < 0) ?
           [ui.divText(gc.cell.value, {style: {color: "grey"}})] :
           [
             ui.divText(gc.cell.value.slice(0, indicesOfFirstNotValidCharacter[gc.gridRow]), {style: {color: "grey"}}),
-            ui.divText(gc.cell.value.slice(indicesOfFirstNotValidCharacter[gc.gridRow]), {style: {color: "red"}})
+            ui.tooltip.bind(
+              ui.divText(gc.cell.value.slice(indicesOfFirstNotValidCharacter[gc.gridRow]), {style: {color: "red"}}),
+              reasonsOfError[gc.gridRow]
+            )
           ];
         gc.style.element = ui.divH(items, {style: {margin: '6px 0 0 6px'}});
       }
@@ -302,6 +332,47 @@ export function OligoBatchCalculatorApp() {
     link.click();
   });
 
+  let showCodesButton = ui.button('SHOW CODES', () => {
+    ui.dialog('CODES')
+      .add(
+      ui.divH([
+        DG.HtmlTable.create(
+          [
+            {name: "2'MOE-5Me-rU", bioSpring: '5', gcrs: 'moeT'},
+            {name: "2'MOE-rA", bioSpring: '6', gcrs: 'moeA'},
+            {name: "2'MOE-5Me-rC", bioSpring: '7', gcrs: 'moe5mC'},
+            {name: "2'MOE-rG", bioSpring: '8', gcrs: 'moeG'},
+            {name: "5-Methyl-dC", bioSpring: '9', gcrs: '5mC'},
+            {name: "ps linkage", bioSpring: '*', gcrs: 'ps'},
+            {name: "dA", bioSpring: 'A', gcrs: 'A'},
+            {name: "dC", bioSpring: 'C', gcrs: 'C'},
+            {name: "dT", bioSpring: 'T', gcrs: 'T'},
+            {name: "dG", bioSpring: 'G', gcrs: 'G'}
+          ],
+          (item: {name: string; bioSpring: string; gcrs: string}) => [item.name, item.bioSpring, item.gcrs],
+          ['For ASO Gapmers', 'BioSpring', 'GCRS']
+        ).root,
+        ui.div([], {style: {width: '50px'}}),
+        DG.HtmlTable.create(
+          [
+            {name: "2'-fluoro-U", axolabs: '1', bioSpring: 'Uf', gcrs: 'fU'},
+            {name: "2'-fluoro-A", axolabs: '2', bioSpring: 'Af', gcrs: 'fA'},
+            {name: "2'-fluoro-C", axolabs: '3', bioSpring: 'Cf', gcrs: 'fC'},
+            {name: "2'-fluoro-G", axolabs: '4', bioSpring: 'Gf', gcrs: 'fG'},
+            {name: "OMe-rU", axolabs: '5', bioSpring: 'u', gcrs: 'mU'},
+            {name: "OMe-rA", axolabs: '6', bioSpring: 'a', gcrs: 'mA'},
+            {name: "OMe-rC", axolabs: '7', bioSpring: 'c', gcrs: 'mC'},
+            {name: "OMe-rG", axolabs: '8', bioSpring: 'g', gcrs: 'mG'},
+            {name: "ps linkage", axolabs: '*', bioSpring: 's', gcrs: 'ps'}
+          ],
+          (item: {name: string; axolabs: string, bioSpring: string; gcrs: string}) => [item.name, item.bioSpring, item.axolabs, item.gcrs],
+          ["For 2\'-OMe and 2\'-F modified siRNA", 'BioSpring', 'Axolabs', 'GCRS']
+        ).root
+      ])
+    )
+      .show();
+  });
+
   let title = ui.panel([ui.h1('Oligo Properties')], 'ui-panel ui-box');
   title.style.maxHeight = '45px';
   $(title).children('h1').css('margin', '0px');
@@ -329,10 +400,11 @@ export function OligoBatchCalculatorApp() {
       ui.box(
         ui.panel([
           ui.divH([
-            saveAsButton
+            saveAsButton,
+            showCodesButton
           ])
         ]), {style:{maxHeight:'60px'}}
-      ),
+      )
     ])
   ]);
   view.box = true;
