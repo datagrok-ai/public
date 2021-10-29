@@ -1,5 +1,5 @@
 {
-	"name": "drugbank",
+	"name": "@datagrok/drugbank",
 	"beta": false,
 	"friendlyName": "DrugBank",
 	"version": "0.0.1",

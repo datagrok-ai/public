@@ -1,21 +1,29 @@
 name: JS API Package
 on:
   push:
+    branches:
+      - 'master'
     paths:
-      - 'js-api'
+      - 'js-api/package.json'
 jobs:
   build:
     runs-on: ubuntu-latest
+    environment: Prod
     steps:
-      - uses: actions/checkout@v2
-      # Setup .npmrc file to publish to npm
-      - uses: actions/setup-node@v2
+      - name: Checkout
+        uses: actions/checkout@v2
+      - name: Setup Node
+        uses: actions/setup-node@v2
         with:
           node-version: '12.x'
           registry-url: 'https://registry.npmjs.org'
-          scope: '@datagrok'
       - run: npm install
+        working-directory: ./js-api
+      - run: npm run build
+        working-directory: ./js-api
       - run: npm run build-ts
-#       - run: npm publish
-#         env:
-#           NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
+        working-directory: ./js-api
+      - run: npm publish
+        working-directory: ./js-api
+        env:
+          NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}

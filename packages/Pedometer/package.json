@@ -1,6 +1,6 @@
 {
-  "name": "Pedometer",
-  "version": "0.1",
+  "name": "@datagrok/pedometer",
+  "version": "0.1.0",
   "fullName": "Pedometer",
   "description": "Pedometer for accelerometer signals",
   "sources": [

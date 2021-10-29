@@ -1,5 +1,5 @@
 {
-	"name": "pubchemapi",
+	"name": "@datagrok/pubchemapi",
 	"beta": true,
 	"friendlyName": "PubChemApi",
 	"version": "0.0.1",
