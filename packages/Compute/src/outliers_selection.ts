@@ -1,7 +1,7 @@
 import * as grok from 'datagrok-api/grok';
 import * as ui from 'datagrok-api/ui';
 import * as DG from 'datagrok-api/dg';
-import {BitSet, DataFrame} from 'datagrok-api/dg';
+import {BitSet, DataFrame, FuncCall, Script} from 'datagrok-api/dg';
 
 export async function selectOutliersManually(inputData: DataFrame) {
   const IS_OUTLIER_COL_LABEL = 'isOutlier';
@@ -118,8 +118,23 @@ export async function selectOutliersManually(inputData: DataFrame) {
     () => {
       if (isInnerModalOpened) return;
 
+      const detectionChoiceInput = ui.choiceInput('Function', 'test', ['Compute:PMax', 'test']);
+      detectionChoiceInput.onChanged(() => {
+        grok.functions
+          .eval(detectionChoiceInput.stringValue)
+          .then((res: Script) => (res.prepare()))
+          .then((res: FuncCall) => (res.getEditor()))
+          .then((editor) => {
+            autoDetectionDialog.clear();
+            autoDetectionDialog.add(ui.divV([detectionChoiceInput.root, editor]));
+          });
+      });
+
       const autoDetectionDialog = ui.dialog('Automatic detection')
-        .onOK(()=>{})
+        .add(detectionChoiceInput.root)
+        .onOK(()=>{
+
+        })
         .show();
       autoDetectionDialog.onClose.subscribe(() => isInnerModalOpened = false);
       isInnerModalOpened = true;
