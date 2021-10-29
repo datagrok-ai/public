@@ -6,6 +6,7 @@ import { cumulativeEnrollemntByDay } from "../data-preparation/data-preparation"
 import { CLINICAL_TRIAL_GOV_FIELDS, STUDY_ID, SUBJECT_ID } from "../constants";
 import { HttpService } from "../services/http.service";
 import { ILazyLoading } from "../lazy-loading/lazy-loading";
+import { checkDomainExists } from "./utils";
 
 
 export class StudySummaryView extends DG.ViewBase implements ILazyLoading {
@@ -20,11 +21,16 @@ export class StudySummaryView extends DG.ViewBase implements ILazyLoading {
     super({});
     this.name = name;
     this.helpUrl = 'https://raw.githubusercontent.com/datagrok-ai/public/master/packages/ClinicalCase/views_help/summary.md';
+    this.path = '/summary';
   }
   
   loaded: boolean;
 
   load(): void {
+     checkDomainExists(['dm'], false, this);
+  }
+
+  createView(){
     this.studyId = study.domains.dm.get(STUDY_ID, 0);
     const errorsMap = this.createErrorsMap();
     this.errorsByDomain = errorsMap.withCount;

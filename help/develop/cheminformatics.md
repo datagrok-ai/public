@@ -84,6 +84,48 @@ Examples (see on [github](https://github.com/datagrok-ai/public/tree/master/pack
 * [Maximum common substructure](https://public.datagrok.ai/js/samples/domains/chem/mcs)
 * [R-Group analysis](https://public.datagrok.ai/js/samples/domains/chem/r-group)
 
+
+### Molecule rendering
+
+#### SVG rendering with OpenChemLib
+
+With `grok.chem.svgMol` it's possible to render a molecule into a `div` container with
+an SVG render in it, using [OpenChemLib](https://github.com/cheminfo/openchemlib-js) library:
+
+```
+ui.dialog()
+  .add(grok.chem.svgMol('O=C1CN=C(C2CCCCC2)C2:C:C:C:C:C:2N1', 300, 200))
+  .show();
+```
+
+#### Rendering to canvas with RdKit and scaffolds
+
+With `grok.chem.canvasMol` it's possible to render a molecule, aligned to bonds, using RdKit.
+An optional scaffold highlight may be specified as
+[SMARTS](https://en.wikipedia.org/wiki/SMILES_arbitrary_target_specification). The molecule
+string can be specified in any format supported by RdKit, such as smiles or inchi. Here is
+a complete example:
+
+```
+let root = ui.div();
+let canvas = document.createElement('canvas');
+canvas.width = 300; canvas.height = 200;
+root.appendChild(canvas);
+await grok.chem.canvasMol(
+  0, 0, canvas.width, canvas.height, canvas,
+  'COc1ccc2cc(ccc2c1)C(C)C(=O)OCCCc3cccnc3',
+  'c1ccccc1');
+ui
+.dialog({title:'Molecule'})
+.add(root)
+.show();
+```
+
+The method is currently asynchronous due to technical limitations. It will be made synchronous
+in the future.
+
+Run the above example live here: [link]().
+
 ## Openchemlib.js
 
 [OpenChemLib.JS](https://github.com/cheminfo/openchemlib-js) is a JavaScript port of the 

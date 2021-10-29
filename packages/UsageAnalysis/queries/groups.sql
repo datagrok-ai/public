@@ -1,5 +1,5 @@
 --name: Groups
---connection: System:Datagrok
+--connection: System:DatagrokAdmin
 
 select *
 from groups_relations

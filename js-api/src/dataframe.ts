@@ -542,7 +542,7 @@ export class Row {
 /** Strongly-typed column. */
 export class Column {
   public d: any;
-  private temp: any;
+  public temp: any;
   public tags: any;
   private _dialogs: ColumnDialogHelper | undefined;
   private _colors: ColumnColorHelper | undefined;

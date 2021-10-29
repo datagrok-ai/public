@@ -7,6 +7,7 @@ import { ALT, AP, BILIRUBIN, TREATMENT_ARM } from '../constants';
 import { createBaselineEndpointScatterPlot, createHysLawScatterPlot } from '../custom-scatter-plots/custom-scatter-plots';
 import { getUniqueValues } from '../data-preparation/utils';
 import { ILazyLoading } from '../lazy-loading/lazy-loading';
+import { checkDomainExists } from './utils';
 
 export class LaboratoryView extends DG.ViewBase implements ILazyLoading {
 
@@ -16,8 +17,12 @@ export class LaboratoryView extends DG.ViewBase implements ILazyLoading {
     this.helpUrl = 'https://raw.githubusercontent.com/datagrok-ai/public/master/packages/ClinicalCase/views_help/laboratory.md';
  }
   loaded: boolean;
-  
+
   load(): void {
+    checkDomainExists(['dm', 'lb'], false, this);
+ }
+  
+  createView(): void {
     let lb = study.domains.lb;
     let dm = study.domains.dm;
 
@@ -83,65 +88,8 @@ export class LaboratoryView extends DG.ViewBase implements ILazyLoading {
       this.updateDistributionBoxPlot(disributionBoxPlot, distributionDiv, dm, lb, labValBoxPlot, trArm);
     });
 
-    let viewerTitle = {style:{
-      'color':'var(--grey-6)',
-      'margin':'8px 6px 8px 12px',
-      'font-size':'16px',
-    }};
-
-    //hysLawScatterPlot.root.prepend(ui.divText('Hy\'s Law Chart', viewerTitle));
-
-
     this.root.className = 'grok-view ui-box';
-    /*this.root.append(ui.splitV([
-      ui.splitH([
-
-        ui.divV([
-          ui.divText('Hy\'s law chart', viewerTitle)
-        ],{style:{justifyContent:'flex-end'}}),
-        ui.divV([
-          ui.divH([
-            ui.divText('Baseline endpoint with LLN/ULN', viewerTitle),
-            ui.icons.settings(()=>{
-              let dlg = ui.dialog('Parameters').add(ui.inputs([labValueChoices,blVisitChoices,epVisitChoices]));
-              //@ts-ignore
-              dlg.show({centerAt:baselineEndpointDiv});
-              dlg.root.lastChild.remove();
-            },'Set the parameters')
-          ],{style:{alignItems:'center'}})
-        ],{style:{justifyContent:'flex-end'}})  
-
-      ], {style:{maxHeight:'50px'}}),
-
-      ui.splitH([
-        hysLawScatterPlot.root,
-        baselineEndpointDiv
-      ]),
-
-      ui.splitH([
-        ui.divV([
-          ui.divText('Laboratory results', viewerTitle)
-        ],{style:{justifyContent:'flex-end'}}),
-        ui.divV([
-          ui.divH([
-            ui.divText('Laboratory results distribution', viewerTitle),
-            ui.icons.settings(()=>{
-              let dlg = ui.dialog('Parameters').add(ui.inputs([labValueChoicesBoxPlot,treatmentArmsChoices]));
-              //@ts-ignore
-              dlg.show({centerAt:distributionDiv});
-              dlg.root.lastChild.remove();
-            }, 'Set the parameters')
-          ],{style:{alignItems:'center'}})
-        ],{style:{justifyContent:'flex-end'}})  
-
-      ], {style:{maxHeight:'50px'}}),
-
-      ui.splitH([
-        grid.root,
-        distributionDiv
-      ]),
-    ]))
-    /*/
+   
     this.root.appendChild(
       ui.tabControl({
         "Hy's law":hysLawScatterPlot.root,

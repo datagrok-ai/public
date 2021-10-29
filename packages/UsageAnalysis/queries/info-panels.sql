@@ -2,13 +2,13 @@
 --tags: panel
 --render: RowToTable
 --input: string id { semType: user_id }
---connection: System:Datagrok
+--connection: System:DatagrokAdmin
 select u.first_name, u.last_name from users u
 where id = @id
 --end
 
 --name: userInfoByEmailPanel
---connection: System:Datagrok
+--connection: System:DatagrokAdmin
 --tags: panel
 --input: string email {semType:email}
 

@@ -1,7 +1,11 @@
-import {RdKitWorkerProxy} from './rdkit_worker_proxy.js';
+import {RdKitWorkerProxy} from './rdkit_worker_proxy';
 
 export class RdKitParallel {
-  
+
+  _nWorkers: number;
+  _workers: RdKitWorkerProxy[] = [];
+  segmentLength: number = 0;
+
   constructor(nWorkers = -1) {
     if (nWorkers <= 0) {
       const cpuLogicalCores = window.navigator.hardwareConcurrency;
@@ -11,7 +15,7 @@ export class RdKitParallel {
     }
   }
   
-  async init(webRoot) {
+  async init(webRoot: string): Promise<void> {
     this._workers = [];
     let initWaiters = [];
     for (let k = 0; k < this._nWorkers; ++k) {
@@ -22,7 +26,7 @@ export class RdKitParallel {
     await Promise.all(initWaiters);
   }
   
-  async _doParallel(fooScatter, fooGather = async (d) => null) {
+  async _doParallel(fooScatter: any, fooGather = async (d: any) => []): Promise<any> {
 
     let promises = [];
     const nWorkers = this._nWorkers;
@@ -34,11 +38,11 @@ export class RdKitParallel {
     
   }
   
-  async substructInit(dict) {
+  async substructInit(dict: string[]): Promise<any> {
    
     let t = this;
     return this._doParallel(
-      async (i, nWorkers) => {
+      async (i: number, nWorkers: number) => {
         const length = dict.length;
         const segmentLength = Math.floor(length / nWorkers);
         t.segmentLength = segmentLength;
@@ -47,7 +51,7 @@ export class RdKitParallel {
           dict.slice(i * segmentLength, length);
         return t._workers[i].substructInit(segment);
       },
-      async (resultArray) => resultArray.reduce((acc, item) => {
+      async (resultArray) => resultArray.reduce((acc: any, item: any) => {
         item = item || { molIdxToHash: [], hashToMolblock: {} };
         return {
           molIdxToHash: [ ...acc.molIdxToHash, ...item.molIdxToHash ],
@@ -57,17 +61,17 @@ export class RdKitParallel {
     );
   }
   
-  async substructSearch(query, querySmarts) {
+  async substructSearch(query: string, querySmarts: string) {
   
     let t = this;
     return this._doParallel(
-      async (i, nWorkers) => {
+      async (i: number, nWorkers: number) => {
         return t._workers[i].substructSearch(query, querySmarts);        
       },
-      async (data) => {
+      async (data: any) => {
         for (let k = 0; k < data.length; ++k) {
           data[k] = JSON.parse(data[k]);
-          data[k] = data[k].map(a => a + t.segmentLength * k);
+          data[k] = data[k].map((a: number) => a + t.segmentLength * k);
         }
         return [].concat.apply([], data);
       });

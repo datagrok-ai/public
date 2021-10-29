@@ -25,8 +25,19 @@ public abstract class JdbcDataProvider extends DataProvider {
         this.providerManager = providerManager;
     }
 
-    public abstract Connection getConnection(DataConnection dataConnection)
-            throws ClassNotFoundException, SQLException;
+    public void prepareProvider() throws ClassNotFoundException {
+        Class.forName(driverClassName);
+    }
+
+    public Connection getConnection(DataConnection conn)
+            throws ClassNotFoundException {
+        prepareProvider();
+        return ConnectionPool.getInstance().getConnection(getConnectionString(conn), getProperties(conn), driverClassName);
+    }
+
+    public Properties getProperties(DataConnection conn) {
+        return defaultConnectionProperties(conn);
+    }
 
     public boolean isParametrized() {
         return true;
@@ -487,7 +498,7 @@ public abstract class JdbcDataProvider extends DataProvider {
         if (outputCsv != null)
             csvWriter.close();
 
-        connection.close();
+//        connection.close();
 
         DataFrame dataFrame = new DataFrame();
         dataFrame.addColumns(columns);

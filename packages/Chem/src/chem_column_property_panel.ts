@@ -1,6 +1,9 @@
-let subscr = null;
+import * as ui from 'datagrok-api/ui';
+import * as DG from 'datagrok-api/dg';
 
-export function getMolColumnPropertyPanel(col) {
+let subscr: any = null;
+
+export function getMolColumnPropertyPanel(col: DG.Column) {
 
   const NONE = 'None';
   let scaffoldColName = null;
@@ -10,7 +13,7 @@ export function getMolColumnPropertyPanel(col) {
     scaffoldColName = NONE;
   }
   // TODO: replace with an efficient version, bySemTypesExact won't help; GROK-8094
-  const columnsList = Array.from(col.dataFrame.columns).filter(c => c.semType === DG.SEMTYPE.MOLECULE).map(c => c.name);
+  const columnsList = Array.from(col.dataFrame.columns).filter((c: any) => c.semType === DG.SEMTYPE.MOLECULE).map((c: any) => c.name);
   let columnsSet = new Set(columnsList);
   columnsSet.delete(col.name);
 
@@ -18,26 +21,25 @@ export function getMolColumnPropertyPanel(col) {
     'Scaffold column',
      scaffoldColName,
     [NONE].concat([...columnsSet].sort()));
-  scaffoldColumnChoice.onChanged(_ => {
+  scaffoldColumnChoice.onChanged((_: any) => {
     const scaffoldColName = scaffoldColumnChoice.stringValue;
     col.temp['scaffold-col'] = scaffoldColName === NONE ? null : scaffoldColName;
     col.dataFrame.fireValuesChanged();
   });
   let highlightScaffoldsCheckbox = ui.boolInput(
     'Highlight from column', col?.temp && col.temp['highlight-scaffold'] === 'true',
-    v => { col.temp['highlight-scaffold'] = v.toString(); col.dataFrame.fireValuesChanged(); });
+      (v: any) => { col.temp['highlight-scaffold'] = v.toString(); col.dataFrame.fireValuesChanged(); });
   let regenerateCoordsCheckbox = ui.boolInput(
     'Regenerate coords', col?.temp && col.temp['regenerate-coords'] === 'true',
-    v => { col.temp['regenerate-coords'] = v.toString(); col.dataFrame.fireValuesChanged(); });
-    
-    
-    const matchMoleculeFilteringToDropdown = (v) => {
+      (v: any) => { col.temp['regenerate-coords'] = v.toString(); col.dataFrame.fireValuesChanged(); });
+
+  const matchMoleculeFilteringToDropdown = (v: string) => {
     if (v === 'categorical') return 'Categorical';
     if (v === 'sketching') return 'Sketching';
     return 'Dynamic';
   };
   
-  const matchDropdownToMoleculeFiltering = (v) => {
+  const matchDropdownToMoleculeFiltering = (v: string) => {
     if (v === 'Categorical') {
       col.temp['.molecule-filtering'] = 'categorical';
     } else if (v === 'Sketching') {
@@ -50,7 +52,7 @@ export function getMolColumnPropertyPanel(col) {
   let moleculeFilteringChoice = ui.choiceInput('Filter Type',
     matchMoleculeFilteringToDropdown(col.temp['.molecule-filtering']),
     ['Dynamic', 'Categorical', 'Sketching']);
-  moleculeFilteringChoice.onChanged(_ => {
+  moleculeFilteringChoice.onChanged((_: any) => {
     const v = moleculeFilteringChoice.stringValue;
     matchDropdownToMoleculeFiltering(v);
   });
@@ -61,10 +63,11 @@ export function getMolColumnPropertyPanel(col) {
     let scaffoldColumnChoiceValue = scaffoldColumnChoice.stringValue;
     const scaffoldColumnTag = col.temp && col.temp['scaffold-col'] ? col.temp['scaffold-col'] : NONE;
     if (scaffoldColumnChoiceValue !== scaffoldColumnTag) {
+      let htmlSelectElement = scaffoldColumnChoice.root.children[1] as HTMLSelectElement;
       if (scaffoldColumnTag === NONE) {
-        scaffoldColumnChoice.root.children[1].value = NONE;
+        htmlSelectElement.value = NONE;
       } else if (columnsSet.has(scaffoldColumnTag)) {
-        scaffoldColumnChoice.root.children[1].value = scaffoldColumnTag;
+        htmlSelectElement.value = scaffoldColumnTag;
       } else {
         // TODO: handle a selection of a non-molecule column
       }
@@ -72,20 +75,23 @@ export function getMolColumnPropertyPanel(col) {
     // handling highlight scaffolds selection
     const highlightScaffoldsCheckboxValue = highlightScaffoldsCheckbox.value;
     const highlightScaffoldsTagPresent = col.temp && col.temp['highlight-scaffold'] === 'true';
+    let highlightScaffoldsCheckboxElement = highlightScaffoldsCheckbox.root.children[1] as HTMLInputElement;
     if (highlightScaffoldsCheckboxValue != highlightScaffoldsTagPresent) {
-      highlightScaffoldsCheckbox.root.children[1].checked = highlightScaffoldsTagPresent;
+      highlightScaffoldsCheckboxElement.checked = highlightScaffoldsTagPresent;
     }
     // handling regenerate coords selection
     const regenerateCoordsCheckboxValue = regenerateCoordsCheckbox.value;
     const regenerateCoordsTagPresent = col.temp && col.temp['regenerate-coords'] === 'true';
+    let regenerateCoordsCheckboxElement = regenerateCoordsCheckbox.root.children[1] as HTMLInputElement;
     if (regenerateCoordsCheckboxValue != regenerateCoordsTagPresent) {
-      regenerateCoordsCheckbox.root.children[1].checked = regenerateCoordsTagPresent;
+      regenerateCoordsCheckboxElement.checked = regenerateCoordsTagPresent;
     }
     // handling molecule filtering choice value
     const moleculeFilteringChoiceValue = moleculeFilteringChoice.stringValue;
     const moleculeFilteringTag = matchMoleculeFilteringToDropdown(col?.temp['.molecule-filtering']);
-    if (moleculeFilteringChoiceValue != moleculeFilteringTag) { 
-      moleculeFilteringChoice.root.children[1].value = moleculeFilteringTag;
+    let moleculeFilteringChoiceElement = moleculeFilteringChoice.root.children[1] as HTMLSelectElement;
+    if (moleculeFilteringChoiceValue != moleculeFilteringTag) {
+      moleculeFilteringChoiceElement.value = moleculeFilteringTag;
     }
   });
 

@@ -434,6 +434,29 @@ export namespace chem {
     });
     return root;
   }
+  
+    /**
+   * Renders a molecule to canvas (using RdKit)
+   * TODO: should NOT be async
+   * See example: {@link }
+   * @param {string} smiles - accepts smiles/molfile format
+   * @param {number} x
+   * @param {number} y
+   * @param {number} w
+   * @param {number} h
+   * @param {Object} canvas
+   * @param {string} molString
+   * @param {string} scaffoldMolString
+   * */
+  export async function canvasMol(
+    x: number, y: number, w: number, h: number,
+    canvas: Object, molString: string, scaffoldMolString: string | null = null): Promise<void> {
+      await grok.functions.call('Chem:canvasMol', {
+        'x': x, 'y': y, 'w': w, 'h': h,
+        'canvas': canvas, 'molString': molString,
+        'scaffoldMolString': scaffoldMolString ?? '' 
+      });
+  }
 
   /**
    * Sketches Molecule sketcher.
