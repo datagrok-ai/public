@@ -1,7 +1,7 @@
 const fs = require('fs');
 const path = require('path');
-const help = require('../ent-helpers.js');
-const utils = require('../utils.js');
+const help = require('../utils/ent-helpers.js');
+const utils = require('../utils/utils.js');
 
 module.exports = {
   add: add

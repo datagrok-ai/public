@@ -105,6 +105,12 @@ export function getScriptName(script: string, comment: string = '#'): string | n
   return match ? match[1]?.trim() : null;
 };
 
+export function getParam(name: string, script: string, comment: string = '#'): string | null {
+  const regex = new RegExp(`${comment}\\s*${name}:\\s*(.*)`);
+  const match = script.match(regex);
+  return match ? match[1]?.trim() : null;
+};
+
 export const dgToTsTypeMap: Indexable = {
   int: 'number',
   double: 'number',
@@ -142,7 +148,7 @@ export const scriptWrapperTemplate = `export async function #{FUNC_NAME_LOWERCAS
 }`;
 
 export const queryWrapperTemplate = `export async function #{FUNC_NAME_LOWERCASE}(#{TYPED_PARAMS}): Promise<#{OUTPUT_TYPE}> {
-  return await grok.data.query('#{NAMESPACE}:#{FUNC_NAME}', #{PARAMS_OBJECT});
+  return await grok.data.query('#{NAME}:#{FUNC_NAME}', #{PARAMS_OBJECT});
 }`;
 
 
