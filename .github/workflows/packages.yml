@@ -5,6 +5,7 @@ on:
 #      - 'master'
     paths:
       - 'packages/*/package.json'
+      - 'packages/*/package-lock.json'
 jobs:
   metadata:
     runs-on: ubuntu-latest
@@ -60,8 +61,8 @@ jobs:
           node-version: '12.x'
           registry-url: 'https://registry.npmjs.org'
           scope: '@datagrok'
-      - name: Docker meta
-        run: echo ${{ matrix.project }}
+      - name: npm version
+        run: npm -V
       - run: npm install
         working-directory: ${{ matrix.project }}
       - run: npm run build

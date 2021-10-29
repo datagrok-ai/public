@@ -5,6 +5,7 @@ on:
       - 'master'
     paths:
       - 'js-api/package.json'
+      - 'js-api/package-lock.json'
 jobs:
   build:
     runs-on: ubuntu-latest

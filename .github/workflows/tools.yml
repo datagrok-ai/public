@@ -5,6 +5,7 @@ on:
       - 'master'
     paths:
       - 'tools/package.json'
+      - 'tools/package-lock.json'
 jobs:
   build:
     runs-on: ubuntu-latest
