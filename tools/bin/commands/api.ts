@@ -1,7 +1,7 @@
 import fs from 'fs';
 import path from 'path';
 import walk from 'ignore-walk';
-import * as utils from '../utils.js';
+import * as utils from '../utils/utils.js';
 
 
 function generateQueryWrappers(): void {
@@ -24,9 +24,53 @@ function generateQueryWrappers(): void {
     const script = fs.readFileSync(filepath, 'utf8');
     if (!script) continue;
 
-    const name = utils.getScriptName(script, utils.commentMap[utils.queryExtension]);
-    if (!name) continue;
+    const queries = script.split('--end').map((q) => q.trim()).filter((q) => q.length > 0);
+    for (const q of queries) {
+      const name = utils.getScriptName(q, utils.commentMap[utils.queryExtension]);
+      if (!name) continue;
+      let tb = new utils.TemplateBuilder(utils.queryWrapperTemplate)
+        .replace('FUNC_NAME', name)
+        .replace('FUNC_NAME_LOWERCASE', name);
+      let connection = utils.getParam('connection', q, utils.commentMap[utils.queryExtension]);
+      if (!connection) {
+        // Use the name of the first found connection (either a field or file name)
+        const connectionsDir = path.join(curDir, 'connections');
+        if (fs.existsSync(connectionsDir) && fs.readdirSync(connectionsDir).length !== 0) {
+          const connectionFile = fs.readdirSync(connectionsDir).find((c) => /.+\.json$/.test(c));
+          if (!connectionFile) {
+            console.log(`Connection for query "${name}" not found.`);
+            continue;
+          }
+          try {
+            const paramString = fs.readFileSync(connectionFile, 'utf8');
+            const params = JSON.parse(paramString);
+            connection = params.name || connectionFile.slice(0, -5);
+          } catch(error) {
+            console.log(`Connection for query "${name}" not found.`);
+            continue;
+          }
+        }
+      }
+      tb.replace('NAME', connection!);
+
+      const inputs = utils.getScriptInputs(q, utils.commentMap[utils.queryExtension]);
+      const outputType = utils.getScriptOutputType(q, utils.commentMap[utils.queryExtension]);
+      tb.replace('PARAMS_OBJECT', inputs)
+        .replace('TYPED_PARAMS', inputs)
+        // The query output, if omitted, is a dataframe
+        .replace('OUTPUT_TYPE', outputType === 'void' ? utils.dgToTsTypeMap['dataframe'] : outputType);
+      wrappers.push(tb.build());
+    }
   }
+
+  const srcDir = path.join(curDir, 'src');
+  const queryFilePath = path.join(fs.existsSync(srcDir) ? srcDir : curDir, 'queries-api.ts');
+  if (fs.existsSync(queryFilePath)) {
+    console.log(`The file ${queryFilePath} already exists\nRewriting its contents...`);
+  }
+
+  const sep = '\n';
+  fs.writeFileSync(queryFilePath, utils.dgImports + sep + wrappers.join(sep.repeat(2)) + sep, 'utf8');
 }
 
 function generateScriptWrappers(): void {
@@ -72,7 +116,7 @@ function generateScriptWrappers(): void {
   }
 
   const srcDir = path.join(curDir, 'src');
-  let funcFilePath = path.join(fs.existsSync(srcDir) ? srcDir : curDir, 'scripts-api.ts');
+  const funcFilePath = path.join(fs.existsSync(srcDir) ? srcDir : curDir, 'scripts-api.ts');
   if (fs.existsSync(funcFilePath)) {
     console.log(`The file ${funcFilePath} already exists\nRewriting its contents...`);
   }

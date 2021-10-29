@@ -5,7 +5,7 @@ const os = require('os');
 const path = require('path');
 const walk = require('ignore-walk');
 const yaml = require('js-yaml');
-const utils = require('../utils.js');
+const utils = require('../utils/utils.js');
 
 
 module.exports = {
