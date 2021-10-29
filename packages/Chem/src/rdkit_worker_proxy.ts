@@ -1,16 +1,13 @@
-import WorkerClass from './rdkit_worker.js';
+import Worker from "worker-loader!./rdkit_worker";
 
 export class RdKitWorkerProxy {
 
-  constructor(basePath, path = 'rdkit_worker.js') {
-    // this.worker = new Worker(basePath + 'src/' + path);
-    // https://webpack.js.org/guides/web-workers/
-    // this.worker = new Worker('./' + path, { type: 'module' });
-    // https://dannadori.medium.com/how-to-bundle-webworker-in-npm-package-620dcec922e1
-    this.worker = WorkerClass();
+  worker: Worker;
+  constructor() {
+    this.worker = new Worker();
   }
 
-  async call(op, args = []) {
+  async call(op: string, args: any[] = []) {
     return new Promise((res, rej) => {
 
       // https://advancedweb.hu/how-to-use-async-await-with-postmessage/
@@ -29,11 +26,11 @@ export class RdKitWorkerProxy {
     });
   }
 
-  moduleInit = async (pathToRdkit) =>
+  moduleInit = async (pathToRdkit: string) =>
     this.call('module::init', [pathToRdkit]);
-  substructInit = async (dict) =>
+  substructInit = async (dict: any) =>
     this.call('substructLibrary::init', [dict]);
-  substructSearch = async (query, querySmarts) =>
+  substructSearch = async (query: string, querySmarts: string) =>
     this.call('substructLibrary::search', [query, querySmarts]);
   substructDeinit = async () =>
     this.call('substructLibrary::deinit');

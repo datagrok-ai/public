@@ -4,13 +4,14 @@ import * as ui from "datagrok-api/ui";
 import { study } from "../clinical-study";
 import { getUniqueValues } from '../data-preparation/utils';
 import { ILazyLoading } from '../lazy-loading/lazy-loading';
+import { checkDomainExists } from './utils';
 
 
 export class MatrixesView extends DG.ViewBase implements ILazyLoading {
 
   matrixPlot: any;
-  uniqueLabValues = Array.from(getUniqueValues(study.domains.lb, 'LBTEST'));
-  uniqueVisits = Array.from(getUniqueValues(study.domains.lb, 'VISIT'));
+  uniqueLabValues: any;
+  uniqueVisits: any;
 
   selectedLabValues: any;
   bl: any;
@@ -22,9 +23,14 @@ export class MatrixesView extends DG.ViewBase implements ILazyLoading {
     this.name = name;
     this.helpUrl = 'https://raw.githubusercontent.com/datagrok-ai/public/master/packages/ClinicalCase/views_help/correlation_matrix.md';
   }
+
   loaded: boolean;
 
   load(): void {
+     checkDomainExists(['lb'], false, this);
+  }
+
+  createView(): void {
     this.createCorrelationMatrixDataframe();
     this.uniqueLabValues = Array.from(getUniqueValues(study.domains.lb, 'LBTEST'));
     this.uniqueVisits = Array.from(getUniqueValues(study.domains.lb, 'VISIT'));

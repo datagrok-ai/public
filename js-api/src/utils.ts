@@ -234,7 +234,7 @@ export function _identityInt32(length: number): Int32Array {
  * */
 export class LruCache {
   private capacity: number;
-  private onItemEvicted: Function | null;
+  public onItemEvicted: Function | null;
   private items: {};
   private tail: number;
   private forward: Uint16Array;

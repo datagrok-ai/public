@@ -45,10 +45,10 @@ public class OracleDataProvider extends JdbcDataProvider {
         descriptor.aggregations.add(new AggrFunctionInfo(Stats.STDEV, "median(#)", Types.dataFrameNumericTypes));
     }
 
-    public Connection getConnection(DataConnection conn) throws ClassNotFoundException, SQLException {
-        Class.forName(driverClassName);
+    @Override
+    public void prepareProvider() throws ClassNotFoundException {
+        super.prepareProvider();
         System.getProperties().setProperty("oracle.jdbc.J2EE13Compliant", "true");
-        return CustomDriverManager.getConnection(getConnectionString(conn), conn.credentials.getLogin(), conn.credentials.getPassword(), driverClassName);
     }
 
     public String getConnectionStringImpl(DataConnection conn) {

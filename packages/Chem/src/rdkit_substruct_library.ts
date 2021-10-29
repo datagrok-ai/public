@@ -1,21 +1,22 @@
 export class RdKitSubstructLibrary {
 
-  constructor(module) {
+  rdKitModule: any | null;
+  library: any | null;
 
+  constructor(module: Object) {
     this.rdKitModule = module;
     this.library = null;
-
   }
 
-  init(dict) {
+  init(dict: string[]) {
 
     this.deinit();
     if (dict.length === 0) {
       this.library = null;
       return;
     }
-    this.library = new this.rdKitModule.SubstructLibrary();
-    let hashToMolblock = {};
+    this.library = new this.rdKitModule!.SubstructLibrary();
+    let hashToMolblock: {[_:string] : any} = {};
     let molIdxToHash = [];
     for (let item of dict) {
       let mol;
@@ -44,7 +45,7 @@ export class RdKitSubstructLibrary {
     return { molIdxToHash, hashToMolblock };
   }
 
-  search(queryMolString, querySmarts) {
+  search(queryMolString: string, querySmarts: string) {
 
     let matches = "[]";
     if (this.library) {
@@ -68,7 +69,7 @@ export class RdKitSubstructLibrary {
         }
       } catch (e) {
         console.error(
-          "Possibly a malformed query: `" + query + "`");
+          "Possibly a malformed query: `" + queryMolString + "`");
         // Won't rethrow
       }
     }

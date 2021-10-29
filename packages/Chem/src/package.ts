@@ -2,17 +2,29 @@ import * as grok from 'datagrok-api/grok';
 import * as ui from 'datagrok-api/ui';
 import * as DG from 'datagrok-api/dg';
 import {createRDKit} from './RDKit_minimal_2021.03_17.js';
-import {getMolColumnPropertyPanel} from './chem_column_property_panel.js';
-import * as chemSearches from './chem_searches.js';
-import {setSearchesRdKitModule, moleculesToFingerprints} from './chem_searches.js';
-import {RDKitCellRenderer} from './rdkit_cell_renderer.js';
-import {SubstructureFilter} from './chem_substructure_filter.js';
+import {getMolColumnPropertyPanel} from './chem_column_property_panel';
+import * as chemSearches from './chem_searches';
+import {setSearchesRdKitModule, moleculesToFingerprints} from './chem_searches';
+import {setCommonRdKitModule, drawMoleculeToCanvas} from './chem_common';
+import {SubstructureFilter} from './chem_substructure_filter';
+import {RDKitCellRenderer} from './rdkit_cell_renderer';
+import * as OCL from 'openchemlib/full.js';
+import { drugLikenessWidget } from './widgets/drug-likeness';
+import { molfileWidget } from './widgets/molfile';
+import { propertiesWidget } from './widgets/properties';
+import { setStructuralAlertsRdKitModule, structuralAlertsWidget } from './widgets/structural-alerts';
+import { structure2dWidget } from './widgets/structure2d';
+import { structure3dWidget } from './widgets/structure3d';
+import { toxicityWidget } from './widgets/toxicity';
 
-let rdKitModule = null;
-let rdKitWorkerWebRoot = null;
+export let rdKitModule: any = null;
+let rdKitWorkerWebRoot: string | undefined;
 let initialized = false;
 let structure = {};
-export let _package = new DG.Package();
+const _STORAGE_NAME = 'rdkit_descriptors';
+const _KEY = 'selected';
+
+export const _package = new DG.Package();
 
 
 //name: initChem
@@ -20,16 +32,13 @@ export async function initChem() {
   if (!initialized) {
     // structure.name = "Chem";
     rdKitWorkerWebRoot = _package.webRoot;
+    // @ts-ignore
     rdKitModule = await createRDKit(rdKitWorkerWebRoot);
     setSearchesRdKitModule(rdKitModule);
+    setCommonRdKitModule(rdKitModule);
+    setStructuralAlertsRdKitModule(rdKitModule);
     console.log('RDKit (package) initialized');
     rdKitModule.prefer_coordgen(false);
-    _package.STORAGE_NAME = 'rdkit_descriptors';
-    _package.KEY = 'selected';
-    _package.rdKitRendererCache = new DG.LruCache();
-    _package.rdKitRendererCache.onItemEvicted = (mol) => {
-      mol.delete();
-    };
     initialized = true;
   }
 }
@@ -47,16 +56,30 @@ export function substructureFilter() {
   return new SubstructureFilter();
 }
 
-function _svgDiv(mol) {
+export function _svgDiv(mol: any) {
   let root = ui.div();
   root.innerHTML = mol.get_svg();
   return root;
 }
 
+//name: canvasMol
+//input: int x
+//input: int y
+//input: int w
+//input: int h
+//input: object canvas
+//input: string molString
+//input: string scaffoldMolString
+export function canvasMol(
+  x: number, y: number, w: number, h: number, canvas: HTMLCanvasElement,
+  molString: string, scaffoldMolString: string | null = null) {
+  drawMoleculeToCanvas(x, y, w, h, canvas, molString, scaffoldMolString == '' ? null : scaffoldMolString);
+}
+
 //name: getCLogP
 //input: string smiles {semType: Molecule}
 //output: double cLogP
-export function getCLogP(smiles) {
+export function getCLogP(smiles: string) {
   let mol = rdKitModule.get_mol(smiles);
   return JSON.parse(mol.get_descriptors()).CrippenClogP;
 }
@@ -65,11 +88,11 @@ export function getCLogP(smiles) {
 //tags: panel, widgets
 //input: string smiles {semType: Molecule}
 //output: widget result
-export function rdkitInfoPanel(smiles) {
+export function rdkitInfoPanel(smiles: string) {
   let mol = rdKitModule.get_mol(smiles);
   return new DG.Widget(ui.divV([
-    this._svgDiv(mol),
-    ui.divText(`${this.getCLogP(smiles)}`)
+    _svgDiv(mol),
+    ui.divText(`${getCLogP(smiles)}`)
   ]));
 }
 
@@ -77,7 +100,7 @@ export function rdkitInfoPanel(smiles) {
 //input: column molColumn {semType: Molecule}
 //tags: panel
 //output: widget result
-export function molColumnPropertyPanel(molColumn) {
+export function molColumnPropertyPanel(molColumn: DG.Column) {
   return getMolColumnPropertyPanel(molColumn);
 }
 
@@ -90,39 +113,21 @@ export async function rdkitCellRenderer() {
   // if (props?.Renderer && props.Renderer === 'RDKit') {
   return new RDKitCellRenderer(rdKitModule);
   //}
-}
-
-//name: similarityScoring
-//input: column molStringsColumn
-//input: string molString
-//input: bool sorted
-//output: dataframe result
-// deprecated
-export async function similarityScoring(molStringsColumn, molString, sorted) {
-  try {
-    if (molStringsColumn === null || molString === null) throw "An input was null";
-    let result = await _chemSimilarityScoring(molStringsColumn, molString, {'sorted': sorted});
-    if (result == null) {
-      return DG.DataFrame.create();
-    }
-    return (sorted ? result : DG.DataFrame.fromColumns([result]));
-  } catch (e) {
-    console.error("In similarityScoring: " + e.toString());
-    throw e;
-  }
+  //TODO: use OCL cell rendnerer
 }
 
 //name: getSimilarities
 //input: column molStringsColumn
 //input: string molString
 //output: dataframe result
-export async function getSimilarities(molStringsColumn, molString) {
+export async function getSimilarities(molStringsColumn: DG.Column, molString: string) {
   try {
     if (molStringsColumn === null || molString === null) throw "An input was null";
-    let result = await chemSearches.chemGetSimilarities(molStringsColumn, molString);
+    // TODO: Make in the future so that the return type is always one
+    let result = (await chemSearches.chemGetSimilarities(molStringsColumn, molString)) as DG.Column;
     // TODO: get rid of a wrapping DataFrame and be able to return Columns
     return result ? DG.DataFrame.fromColumns([result]) : DG.DataFrame.create();
-  } catch (e) {
+  } catch (e: any) {
     console.error("In getSimilarities: " + e.toString());
     throw e;
   }
@@ -131,7 +136,7 @@ export async function getSimilarities(molStringsColumn, molString) {
 //name: getMorganFingerprints
 //input: column molColumn {semType: Molecule}
 //output: column result [fingerprints]
-export function getMorganFingerprints(molColumn) {
+export function getMorganFingerprints(molColumn: DG.Column) {
   return moleculesToFingerprints(molColumn);
 }
 
@@ -141,12 +146,12 @@ export function getMorganFingerprints(molColumn) {
 //input: int limit
 //input: int cutoff
 //output: dataframe result
-export async function findSimilar(molStringsColumn, molString, aLimit, aCutoff) {
+export async function findSimilar(molStringsColumn: DG.Column, molString: string, aLimit: number, aCutoff: number) {
   try {
     if (molStringsColumn === null || molString === null || aLimit === null || aCutoff === null) throw "An input was null";
     let result = await chemSearches.chemFindSimilar(molStringsColumn, molString, {limit: aLimit, cutoff: aCutoff});
     return result ? result : DG.DataFrame.create();
-  } catch (e) {
+  } catch (e: any) {
     console.error("In getSimilarities: " + e.toString());
     throw e;
   }
@@ -158,7 +163,7 @@ export async function findSimilar(molStringsColumn, molString, aLimit, aCutoff) 
 //input: bool substructLibrary
 //input: string molStringSmarts
 //output: column result
-export async function searchSubstructure(molStringsColumn, molString, substructLibrary, molStringSmarts) {
+export async function searchSubstructure(molStringsColumn: DG.Column, molString: string, substructLibrary: boolean, molStringSmarts: string) {
   try {
     if (molStringsColumn === null || molString === null || substructLibrary === null || molStringSmarts === null)
       throw "An input was null";
@@ -167,24 +172,14 @@ export async function searchSubstructure(molStringsColumn, molString, substructL
         await chemSearches.chemSubstructureSearchLibrary(molStringsColumn, molString, molStringSmarts, rdKitWorkerWebRoot) :
         chemSearches.chemSubstructureSearchGraph(molStringsColumn, molString);
     return DG.Column.fromList('object', 'bitset', [result]);
-  } catch (e) {
+  } catch (e: any) {
     console.error("In substructureSearch: " + e.toString());
     throw e;
   }
 }
 
-//name: substructureSearch
-//input: column molStringsColumn
-//input: string molString
-//input: bool substructLibrary
-//output: column result
-// deprecated
-export async function substructureSearch(molStringsColumn, molString, substructLibrary) {
-  return this.searchSubstructure(molStringsColumn, molString, substructLibrary);
-}
-
 //tags: app
-function descriptorsApp(context) {
+function descriptorsApp(context: any) {
   let defaultSmiles = 'O=C1CN=C(c2ccccc2N1)C3CCCCC3';
   let sketcherValue = defaultSmiles;
 
@@ -198,25 +193,25 @@ function descriptorsApp(context) {
   let view = grok.shell.addTableView(table);
 
   let dsDiv = ui.divV([], 'grok-prop-panel');
-  dsDiv.appendChild(this.descriptorsWidget(defaultSmiles).root);
+  dsDiv.appendChild(descriptorsWidget(defaultSmiles).root);
 
-  let sketcher = grok.chem.sketcher((smiles, molfile) => {
+  let sketcher = grok.chem.sketcher((smiles: string, molfile: string) => {
     sketcherValue = smiles;
     removeChildren(dsDiv);
-    dsDiv.appendChild(this.descriptorsWidget(smiles).root);
+    dsDiv.appendChild(descriptorsWidget(smiles).root);
   }, defaultSmiles);
   let addButton = ui.bigButton('ADD', async () => {
-    this.getSelected().then(selected => {
+    getSelected().then(selected => {
       grok.chem.descriptors(DG.DataFrame.fromCsv(`smiles\n${sketcherValue}`), 'smiles', selected).then(t => {
         let columnNames = table.columns.names();
-        if ((table.columns.length !== selected.length + 1) || selected.some(s => !columnNames.includes(s))) {
+        if ((table.columns.length !== selected.length + 1) || selected.some((s: any) => !columnNames.includes(s))) {
           table = DG.DataFrame.create();
           table.name = 'Descriptors';
           view.dataFrame = table;
           for (let col of t.columns.toList())
             table.columns.addNew(col.name, col.type);
         }
-        table.rows.addNew(t.columns.toList().map(c => c.get(0)));
+        table.rows.addNew(t.columns.toList().map((c: any) => c.get(0)));
       });
     });
   });
@@ -239,12 +234,12 @@ function descriptorsApp(context) {
 //tags: panel, widgets
 //input: string smiles { semType: Molecule }
 //output: widget result
-export function descriptorsWidget(smiles) {
+export function descriptorsWidget(smiles: string) {
   let widget = new DG.Widget(ui.div());
   let result = ui.div();
   let selectButton = ui.bigButton('SELECT', async () => {
-    openDescriptorsDialog(await this.getSelected(), async (selected) => {
-      await grok.dapi.userDataStorage.postValue(this.STORAGE_NAME, this.KEY, JSON.stringify(selected));
+    openDescriptorsDialog(await getSelected(), async (selected: any) => {
+      await grok.dapi.userDataStorage.postValue(_STORAGE_NAME, _KEY, JSON.stringify(selected));
       update();
     });
   });
@@ -253,10 +248,10 @@ export function descriptorsWidget(smiles) {
   let update = () => {
     removeChildren(result);
     result.appendChild(ui.loader());
-    this.getSelected().then(selected => {
-      grok.chem.descriptors(DG.DataFrame.fromCsv(`smiles\n${smiles}`), 'smiles', selected).then(table => {
+    getSelected().then(selected => {
+      grok.chem.descriptors(DG.DataFrame.fromCsv(`smiles\n${smiles}`), 'smiles', selected).then((table: any) => {
         removeChildren(result);
-        let map = {};
+        let map: {[_: string]: any} = {};
         for (let descriptor of selected)
           map[descriptor] = table.col(descriptor).get(0);
         result.appendChild(ui.tableFromMap(map));
@@ -274,23 +269,23 @@ export function descriptorsWidget(smiles) {
 
 //description: Get selected descriptors
 export async function getSelected() {
-  let str = await grok.dapi.userDataStorage.getValue(this.STORAGE_NAME, this.KEY);
+  let str = await grok.dapi.userDataStorage.getValue(_STORAGE_NAME, _KEY);
   let selected = (str != null && str !== '') ? JSON.parse(str) : [];
   if (selected.length === 0) {
-    selected = (await grok.chem.descriptorsTree())['Lipinski']['descriptors'].slice(0, 3).map(p => p['name']);
-    await grok.dapi.userDataStorage.postValue(this.STORAGE_NAME, this.KEY, JSON.stringify(selected));
+    selected = (await grok.chem.descriptorsTree() as any)['Lipinski']['descriptors'].slice(0, 3).map((p: any) => p['name']);
+    await grok.dapi.userDataStorage.postValue(_STORAGE_NAME, _KEY, JSON.stringify(selected));
   }
   return selected;
 }
 
 //description: Open descriptors selection dialog
-function openDescriptorsDialog(selected, onOK) {
-  grok.chem.descriptorsTree().then(descriptors => {
+function openDescriptorsDialog(selected: any, onOK: any) {
+  grok.chem.descriptorsTree().then((descriptors: {[_:string]: any}) => {
     let tree = ui.tree();
     tree.root.style.maxHeight = '400px';
 
-    let groups = {};
-    let items = [];
+    let groups: {[_:string]: any} = {};
+    let items: DG.TreeViewNode[] = [];
 
     for (let groupName in descriptors) {
       let group = tree.group(groupName, null, false);
@@ -312,34 +307,13 @@ function openDescriptorsDialog(selected, onOK) {
     ui.dialog('Chem Descriptors')
       .add(clear)
       .add(tree.root)
-      .onOK(() => onOK(items.filter(i => i.checked).map(i => i.value['name'])))
+      .onOK(() => onOK(items.filter(i => i.checked).map((i: any) => i.value['name'])))
       .show();
   });
 }
 
-function renderMolRdKitCanvasCache(molString, canvas, x, y, w, h) {
-
-  let mol = this.rdKitRendererCache.getOrCreate(molString, (s) => {
-    try {
-      return rdKitModule.get_mol(s);
-    } catch (e) {
-      return rdKitModule.get_mol("");
-    }
-  });
-
-  const opts = {
-    "clearBackground": false,
-    "offsetx": Math.floor(x),
-    "offsety": -Math.floor(y),
-    "width": Math.floor(w),
-    "height": Math.floor(h)
-  };
-  mol.draw_to_canvas_with_highlights(canvas, JSON.stringify(opts));
-
-}
-
 //description: Removes all children from node
-function removeChildren(node) {
+function removeChildren(node: any) {
   while (node.firstChild)
     node.removeChild(node.firstChild);
 }
@@ -362,7 +336,7 @@ export function saveAsSdf() {
 
   for (let i = 0; i < table.rowCount; i++) {
     try {
-      let mol = new OCL.Molecule.fromSmiles(structureColumn.get(i));
+      let mol = OCL.Molecule.fromSmiles(structureColumn.get(i));
       result += `\n${mol.toMolfile()}\n`;
 
       // properties
@@ -384,119 +358,68 @@ export function saveAsSdf() {
   element.click();
 }
 
-//name: Structure WIP
-//description: 2D molecule representation
-//tags: panel, widgets
-//input: string smiles { semType: Molecule }
-//output: widget result
-export function structureWIP(smiles) {
-  const mol = rdKitModule.get_mol(smiles);
-  return new DG.Widget(this._svgDiv(mol));
-}
-
-//name: Properties WIP
-//description: Basic molecule properties
-//tags: panel, widgets
-//input: string smiles { semType: Molecule }
-//output: widget result
-export function propertiesWIP(smiles) {
-  const mol = new OCL.Molecule.fromSmiles(smiles);
-  const formula = mol.getMolecularFormula();
-  const molProps = new OCL.MoleculeProperties(mol);
-
-  //TODO: name, need PubChem
-  const map = {
-    'SMILES': smiles,
-    'Formula': formula.formula,
-    'MW': formula.absoluteWeight,
-    'Number of HBA': molProps.acceptorCount,
-    'Number of HBD': molProps.donorCount,
-    'LogP': molProps.logP,
-    'LogS': molProps.logS,
-    'Polar Surface Area': molProps.polarSurfaceArea,
-    'Number of rotatabe bonds': molProps.rotatableBondCount,
-    'Number of stereo centers': molProps.stereoCenterCount,
-  };
-
-  return new DG.Widget(ui.tableFromMap(map));
-}
-
-//name: SDF WIP
-//description: Molecule as SDF
-//tags: panel, widgets
-//input: string smiles { semType: Molecule }
-//output: widget result
-export function sdfWIP(smiles) {
-  const mol = new OCL.Molecule.fromSmiles(smiles);
-  return new DG.Widget(ui.textInput('', mol.toMolfile()).root);
-}
-
-//name: 3D WIP
-//description: 3D molecule representation
-//tags: panel, widgets
-//input: string smiles { semType: Molecule }
-//output: widget result
-export async function get3dWIP(smiles) {
-  //TODO: implement
-  //what is dml?
-  return new DG.Widget();
-}
-
-//name: Toxicity WIP
-//description: Toxicity prediction. Calculated by openchemlib
-//help-url: /help/domains/chem/info-panels/toxicity-risks.md
-//tags: panel, widgets
-//input: string smiles { semType: Molecule }
-//output: widget result
-export function toxicityWIP(smiles) {
-  const mol = new OCL.Molecule.fromSmiles(smiles);
-  const riskTypes = {
-    0: 'Mutagenicity',
-    1: 'Tumorigenicity',
-    2: 'Irritating effects',
-    3: 'Reproductive effects'
-  };
-  const riskLevels = {
-    0: 'Unknown',
-    1: 'None',
-    2: 'Low',
-    3: 'High'
-  };
-
-  const risks = {};
-  Object.keys(riskTypes).forEach((typeId) => {
-    risks[riskTypes[typeId]] = riskLevels[new OCL.ToxicityPredictor().assessRisk(mol, typeId)];
-  });
-
-  //FIXME: no such settings as in Dart: processValueElement, Aydar
-  return new DG.Widget(ui.tableFromMap(risks));
-}
-
-//name: Drug Likeness WIP
+//name: Drug Likeness
 //description: Drug Likeness score, with explanations on molecule fragments contributing to the score. Calculated by openchemlib
 //help-url: /help/domains/chem/info-panels/drug-likeness.md
 //tags: panel, widgets
 //input: string smiles { semType: Molecule }
 //output: widget result
-export function drugLikenessWIP(smiles) {
-  //TODO: implement
-  //what is chem?
-  return new DG.Widget();
+export function drugLikeness(smiles: string) {
+  return drugLikenessWidget(smiles);
 }
 
-//name: Structural Alerts WIP
+//name: Molfile
+//description: Molecule as Molfile
+//tags: panel, widgets
+//input: string smiles { semType: Molecule }
+//output: widget result
+export function molfile(smiles: string) {
+  return molfileWidget(smiles);
+}
+
+//name: Properties
+//description: Basic molecule properties
+//tags: panel, widgets
+//input: string smiles { semType: Molecule }
+//output: widget result
+export async function properties(smiles: string) {
+  return propertiesWidget(smiles);
+}
+
+//name: Structural Alerts
 //description: Screening drug candidates against structural alerts, i.e. chemical fragments associated to a toxicological response
 //help-url: /help/domains/chem/info-panels/structural-alerts.md
 //tags: panel, widgets
 //input: string smiles { semType: Molecule }
 //output: widget result
-export function structuralAlertsWIP(smiles) {
-  //TODO: implement
-  //what is chem?
-  return new DG.Widget();
+export async function structuralAlerts(smiles: string) {
+  return structuralAlertsWidget(smiles);
 }
 
-//tags: unitTest
-export async function _testSubstructureSearch() {
-  await testSubstructureSearch();
+//name: Structure 2D
+//description: 2D molecule representation
+//tags: panel, widgets
+//input: string smiles { semType: Molecule }
+//output: widget result
+export function structure2d(smiles: string) {
+  return structure2dWidget(smiles);
+}
+
+//name: Structure 3D
+//description: 3D molecule representation
+//tags: panel, widgets
+//input: string smiles { semType: Molecule }
+//output: widget result
+export async function structure3d(smiles: string) {
+  return structure3dWidget(smiles);
+}
+
+//name: Toxicity
+//description: Toxicity prediction. Calculated by openchemlib
+//help-url: /help/domains/chem/info-panels/toxicity-risks.md
+//tags: panel, widgets
+//input: string smiles { semType: Molecule }
+//output: widget result
+export function toxicity(smiles: string) {
+  return toxicityWidget(smiles);
 }

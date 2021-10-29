@@ -5,7 +5,7 @@ import { study } from "../clinical-study";
 import { addDataFromDmDomain, getUniqueValues } from '../data-preparation/utils';
 import { createBaselineEndpointDataframe } from '../data-preparation/data-preparation';
 import { ETHNIC, RACE, SEX, TREATMENT_ARM } from '../constants';
-import { updateDivInnerHTML } from './utils';
+import { checkDomainExists, updateDivInnerHTML } from './utils';
 import { ILazyLoading } from '../lazy-loading/lazy-loading';
 var { jStat } = require('jstat')
 
@@ -15,8 +15,8 @@ export class BoxPlotsView extends DG.ViewBase implements ILazyLoading {
   boxPlotDiv = ui.div();
   boxPlots = [];
 
-  uniqueLabValues = Array.from(getUniqueValues(study.domains.lb, 'LBTEST'));
-  uniqueVisits = Array.from(getUniqueValues(study.domains.lb, 'VISIT'));
+  uniqueLabValues: any;
+  uniqueVisits: any;
   splitBy =  [TREATMENT_ARM, SEX, RACE, ETHNIC];
 
   selectedLabValues = null;
@@ -37,7 +37,10 @@ export class BoxPlotsView extends DG.ViewBase implements ILazyLoading {
   loaded: boolean;
 
   load(): void {
-    this.labWithDmData = addDataFromDmDomain(study.domains.lb, study.domains.dm, [ 'USUBJID', 'VISITDY', 'VISIT', 'LBTEST', 'LBSTRESN' ], [TREATMENT_ARM, SEX, RACE, ETHNIC]);
+    checkDomainExists(['dm', 'lb'], false, this);
+ }
+
+  createView(): void {
 
     let viewerTitle = {
       style: {
@@ -56,24 +59,22 @@ export class BoxPlotsView extends DG.ViewBase implements ILazyLoading {
       }
     };
 
-/*     const plot = DG.Viewer.boxPlot(study.domains.dm, {
-      category: 'ARM',
-      value: 'AGE',
-      labelOrientation: 'Horz'
-    });
-    plot.root.prepend(ui.divText('Age distribution by treatment arm', viewerTitle)); */
-
-    let minLabVisit = this.labWithDmData.getCol('VISITDY').stats[ 'min' ];
-    let minVisitName = this.labWithDmData
+    let minLabVisit = study.domains.lb.getCol('VISITDY').stats[ 'min' ];
+    let minVisitName = study.domains.lb
       .groupBy([ 'VISITDY', 'VISIT' ])
       .where(`VISITDY = ${minLabVisit}`)
       .aggregate()
       .get('VISIT', 0);
     this.bl = minVisitName;
-    this.uniqueLabValues = Array.from(getUniqueValues(this.labWithDmData, 'LBTEST'));
-    this.uniqueVisits = Array.from(getUniqueValues(this.labWithDmData, 'VISIT'));
 
-    this.getTopPValues(minLabVisit, 4);
+    this.uniqueVisits = Array.from(getUniqueValues(study.domains.lb, 'VISIT'));
+    this.labWithDmData = addDataFromDmDomain(study.domains.lb, study.domains.dm, [ 'USUBJID', 'VISITDY', 'VISIT', 'LBTEST', 'LBSTRESN' ], [TREATMENT_ARM, SEX, RACE, ETHNIC]);
+    this.uniqueLabValues = Array.from(getUniqueValues(this.labWithDmData, 'LBTEST'));
+    this.labWithDmData = this.labWithDmData
+    .groupBy(this.labWithDmData.columns.names())
+    .where(`VISITDY = ${minLabVisit}`)
+    .aggregate();
+    this.getTopPValues(4);
     this.updateBoxPlots(viewerTitle, viewerTitlePValue, this.selectedSplitBy);
 
     let blVisitChoices = ui.choiceInput('Baseleine', this.bl, this.uniqueVisits);
@@ -109,24 +110,19 @@ export class BoxPlotsView extends DG.ViewBase implements ILazyLoading {
       [ [blVisitChoices.root], [splitByChoices.root], [selectBiomarkers] ] ,
  );
 
-    //this.root.className = 'grok-view ui-box';
-
     this.root.append(ui.div([
       ui.block([this.boxPlotDiv])
     ]));
     
-    /*this.root.append(ui.splitV([
-     // ui.box(plot.root, { style: { maxHeight: '200px' } }),
-      ui.box(ui.divH([ blVisitChoices.root, splitByChoices.root, selectBiomarkers ]), { style: { maxHeight: '100px' } }),
-      this.boxPlotDiv
-    ]))*/
   }
 
   private updateBoxPlots(viewerTitle: any, viewerTitlePValue: any, category: string) {
     if (this.selectedLabValues && this.bl) {
       this.boxPlots = [];
+      this.pValuesArray = [];
       this.selectedLabValues.forEach(it => {
         let df = createBaselineEndpointDataframe(study.domains.lb, study.domains.dm, [category], it, this.bl, '', 'VISIT', `${it}_BL`);
+        this.getPValues(df, it, category, `${it}_BL`);
         const plot = DG.Viewer.boxPlot(df, {
           category: category,
           value: `${it}_BL`,
@@ -147,24 +143,25 @@ export class BoxPlotsView extends DG.ViewBase implements ILazyLoading {
     }
   }
 
-  private getTopPValues(visit: number, topNum: number){
+  private getTopPValues(topNum: number){
     this.pValuesArray = [];
-    this.uniqueLabValues.forEach(item => {
-      const valueData = this.labWithDmData
-        .groupBy([ 'USUBJID', 'VISITDY', 'LBTEST', 'LBSTRESN', TREATMENT_ARM ])
-        .where(`LBTEST = ${item} and VISITDY = ${visit}`)
+    this.uniqueLabValues.forEach(val => this.getPValues(this.labWithDmData, val, TREATMENT_ARM, 'LBSTRESN'));
+    this.pValuesArray.sort((a, b) => (a.pValue - b.pValue));
+    this.selectedLabValues = this.pValuesArray.slice(0, topNum).map(it => it.labValue);
+  }
+
+  getPValues(df: DG.DataFrame, labVal: any, category: any, resColName: string){
+      const valueData = df
+        .groupBy([ 'USUBJID', 'LBTEST', resColName, category ])
+        .where(`LBTEST = ${labVal}`)
         .aggregate();
-      const valuesByArm = valueData.groupBy([ TREATMENT_ARM ]).getGroups();
+      const valuesByArm = valueData.groupBy([ category ]).getGroups();
       const dataForAnova = [];
       Object.values(valuesByArm).forEach(it => {
-        const labResults = it.getCol('LBSTRESN').getRawData();
+        const labResults = it.getCol(resColName).getRawData();
         dataForAnova.push(Array.from(labResults));
       })
       const pValue = jStat.anovaftest(...dataForAnova);
-      this.pValuesArray.push({labValue: item, pValue: pValue});
-
-    });
-    this.pValuesArray.sort((a, b) => (a.pValue - b.pValue));
-    this.selectedLabValues = this.pValuesArray.slice(0, topNum).map(it => it.labValue);
+      this.pValuesArray.push({labValue: labVal, pValue: pValue});
   }
 }

@@ -28,7 +28,7 @@
 		"release-powerpack": "webpack && grok publish dev",
 		"build-powerpack": "webpack && grok publish",
 		"build": "webpack",
-		"test": "jest",
+		"test": "set HOST=dev && jest",
 		"debug-powerpack-dev": "webpack && grok publish dev",
 		"release-powerpack-dev": "grok publish dev --rebuild --release",
 		"debug-powerpack-public": "grok publish public --rebuild",

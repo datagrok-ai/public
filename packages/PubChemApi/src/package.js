@@ -90,9 +90,8 @@ export function pubChemIdentitySearch(mol) {
 //name: IUPAC name
 //input: string smiles
 //output: string iupacName
-export function getIupacName(smiles) {
-  const identityDf = pc.getIUPACName('smiles', smiles);
-  return identityDf;
+export async function getIupacName(smiles) {
+  return await pc.getIUPACName('smiles', smiles);
 }
 
 class PubChem {

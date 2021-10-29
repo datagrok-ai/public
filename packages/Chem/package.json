@@ -16,25 +16,37 @@
       "nullable": false
     }
   ],
+  "sources": [
+    "common/ngl_viewer/ngl.js"
+  ],
   "dependencies": {
-    "datagrok-api": "latest",
+    "datagrok-api": "../../js-api",
     "cash-dom": "latest",
     "dayjs": "latest",
     "ts-loader": "latest",
     "typescript": "latest",
     "datagrok-tools": "latest",
     "file-loader": "latest",
-    "worker-loader": "latest"
+    "worker-loader": "latest",
+    "offscreen-canvas": "latest",
+    "openchemlib": "6.0.1"
   },
   "devDependencies": {
-    "file-loader": "^6.2.0",
+    "@types/offscreencanvas": "latest",
+    "file-loader": "latest",
     "webpack": "latest",
-    "webpack-cli": "latest"
+    "webpack-cli": "latest",
+    "openchemlib": "6.0.1"
   },
   "browser": {
     "fs": false,
     "path": false,
     "os": false,
     "crypto": false
+  },
+  "scripts": {
+    "build": "webpack",
+    "lint": "eslint './src/**/*.ts'",
+		"lint-fix": "eslint ./src/*.ts --fix"
   }
 }

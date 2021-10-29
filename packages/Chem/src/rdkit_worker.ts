@@ -1,12 +1,11 @@
-// importScripts('RDKit_minimal_2021.03_17.js');
-// importScripts('rdkit_substruct_library.js');
-import {createRDKit} from './RDKit_minimal_2021.03_17.js'
-import {RdKitSubstructLibrary} from './rdkit_substruct_library.js'
+import {createRDKit} from './RDKit_minimal_2021.03_17.js';
+import {RdKitSubstructLibrary} from './rdkit_substruct_library';
 
-// var _rdKitModule = null;
-// var _substructLibrary = null;
+const ctx: Worker = self as any;
 
-async function handler(e) {
+let handler: any = {}; // Own for each worker
+
+ctx.addEventListener("message", async (e: any) => {
   const {op, args} = e.data;
   let port = e.ports[0];
   if (op === 'module::init') {
@@ -26,6 +25,4 @@ async function handler(e) {
     handler._substructLibrary = null;
     port.postMessage({op: op});
   }
-}
-
-onmessage = handler;
+});

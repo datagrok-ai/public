@@ -312,7 +312,7 @@ our load balancer will take care of dispatching computations.
 ### Scripting
 
 Scripting lets you easily invoke scripts written in languages such as R or Python, and expose
-them to the Grok ecosystem as functions. 
+them to the Datagrok ecosystem as functions. 
 
 Scripting works by sending code along with data to the Jupyter kernel (that resides on the ComputeVM).
 

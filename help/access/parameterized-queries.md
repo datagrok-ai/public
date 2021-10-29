@@ -6,6 +6,7 @@ A parameterized query is a query with one or more parameters. When the query is
 executed from the UI, a user is prompted to enter parameters. It is also possible
 to run a query programmatically with the specified parameters 
 (see this [code snippet](https://public.datagrok.ai/js/samples/data-access/parameterized-query)). 
+See how it works in [this video](https://www.youtube.com/watch?v=sSJp5CXcYKQ&ab_channel=Datagrok).
 
 ## Creating a parameterized query
 
@@ -227,6 +228,8 @@ provider-specific SQL query on the backend.
 ## Videos
 
 [![Parameterized queries](../uploads/youtube/data_access.png "Open on Youtube")](https://www.youtube.com/watch?v=dKrCk38A1m8&t=1980s)
+
+[YouTube: Datagrok database parameterized queries](https://www.youtube.com/watch?v=sSJp5CXcYKQ&ab_channel=Datagrok)
 
 See also:
 

@@ -8,28 +8,32 @@ import * as DG from 'datagrok-api/dg';
 
 export class RDKitCellRenderer extends DG.GridCellRenderer {
 
-  constructor(rdKitModule) {
+  readonly WHITE_MOLBLOCK_SUFFIX = `
+  0  0  0  0  0  0  0  0  0  0999 V2000
+M  END
+`;
+  rdKitModule: any;
+  canvasCounter: number;
+  molCache: DG.LruCache | null;
+  rendersCache: DG.LruCache | null;
+
+  constructor(rdKitModule: any) {
 
     super();
     this.rdKitModule = rdKitModule;
     this.canvasCounter = 0;
     this.molCache = new DG.LruCache();
-    this.molCache.onItemEvicted = function (obj) {
-      obj.mol?.delete();
-      obj.mol = null;
-      obj.substruct = null;
-      obj = null;
+    this.molCache.onItemEvicted = function (obj: {[_ : string]: any} | null) {
+      obj!.mol?.delete();
+      obj!.mol = null;
+      obj!.substruct = null;
+      obj = null; // ? GC definitely delete
     };
     this.rendersCache = new DG.LruCache();
-    this.rendersCache.onItemEvicted = function (obj) {
-      obj.canvas = null;
-      obj = null;
+    this.rendersCache.onItemEvicted = function (obj: {[_ : string]: any} | null) {
+      obj!.canvas = null;
+      obj = null; // ? GC definitely delete
     }
-    this.WHITE_MOLBLOCK_SUFFIX = `
-  0  0  0  0  0  0  0  0  0  0999 V2000
-M  END
-`;
-
   }
 
   get name() { return 'RDKit cell renderer'; }
@@ -37,13 +41,13 @@ M  END
   get defaultWidth() { return 200; }
   get defaultHeight() { return 100; }
 
-  _isMolBlock(molString) {
+  _isMolBlock(molString: string) {
 
     return molString.includes('M  END');
 
   }
 
-  _fetchMolGetOrCreate(molString, scaffoldMolString, molRegenerateCoords) {
+  _fetchMolGetOrCreate(molString: string, scaffoldMolString: string, molRegenerateCoords: boolean) {
 
     let mol = null;
     let substructJson = "{}";
@@ -95,14 +99,18 @@ M  END
     return { mol: mol, substruct: JSON.parse(substructJson), molString: molString, scaffoldMolString: scaffoldMolString };
   }
 
-  _fetchMol(molString, scaffoldMolString, molRegenerateCoords, scaffoldRegenerateCoords) {
+  _fetchMol(
+    molString: string, scaffoldMolString: string,
+    molRegenerateCoords: boolean, scaffoldRegenerateCoords: boolean) {
     const name = molString + " || " + scaffoldMolString + " || "
       + molRegenerateCoords + " || " + scaffoldRegenerateCoords;
-    return this.molCache.getOrCreate(name, (s) =>
+    return this.molCache!.getOrCreate(name, (_: any) =>
       this._fetchMolGetOrCreate(molString, scaffoldMolString, molRegenerateCoords));
   }
   
-  _rendererGetOrCreate(width, height, molString, scaffoldMolString, highlightScaffold, molRegenerateCoords, scaffoldRegenerateCoords) {
+  _rendererGetOrCreate(
+    width: number, height: number, molString: string, scaffoldMolString: string,
+    highlightScaffold: boolean, molRegenerateCoords: boolean, scaffoldRegenerateCoords: boolean) {
 
     let fetchMolObj = this._fetchMol(molString, scaffoldMolString, molRegenerateCoords, scaffoldRegenerateCoords);
     let rdkitMol = fetchMolObj.mol;
@@ -115,33 +123,37 @@ M  END
       this._drawMoleculeToCanvas(rdkitMol, width, height, canvas, substruct, highlightScaffold);
     } else {
       let ctx = canvas.getContext("2d");
-      ctx.lineWidth = 1;
-      ctx.strokeStyle = '#EFEFEF';
-      ctx.beginPath();
-      ctx.moveTo(0, 0);
-      ctx.lineTo(width, height);
-      ctx.stroke();
-      ctx.beginPath();
-      ctx.moveTo(width, 0);
-      ctx.lineTo(0, height);
-      ctx.stroke();
+      ctx!.lineWidth = 1;
+      ctx!.strokeStyle = '#EFEFEF';
+      ctx!.beginPath();
+      ctx!.moveTo(0, 0);
+      ctx!.lineTo(width, height);
+      ctx!.stroke();
+      ctx!.beginPath();
+      ctx!.moveTo(width, 0);
+      ctx!.lineTo(0, height);
+      ctx!.stroke();
     }
     return {canvas: canvas};
 
   }
 
-  _fetchRender(width, height, molString, scaffoldMolString, highlightScaffold, molRegenerateCoords, scaffoldRegenerateCoords) {
+  _fetchRender(
+    width: number, height: number, molString: string, scaffoldMolString: string,
+    highlightScaffold: boolean, molRegenerateCoords: boolean, scaffoldRegenerateCoords: boolean) {
 
     const name = width + " || " + height + " || "
       + molString + " || " + scaffoldMolString  + " || " + highlightScaffold + " || "
       + molRegenerateCoords + " || " + scaffoldRegenerateCoords;
-    return this.rendersCache.getOrCreate(name, (s) =>
+    return this.rendersCache!.getOrCreate(name, (_: any) =>
       this._rendererGetOrCreate(width, height,
         molString, scaffoldMolString, highlightScaffold, molRegenerateCoords, scaffoldRegenerateCoords));
 
   }
 
-  _drawMoleculeToCanvas(rdkitMol, w, h, canvas, substruct, highlightScaffold) {
+  _drawMoleculeToCanvas(
+    rdkitMol: any, w: number, h: number, canvas: OffscreenCanvas,
+    substruct: Object, highlightScaffold: boolean) {
     let opts = {
       "clearBackground": false,
       "offsetx": 0, "offsety": 0,
@@ -164,9 +176,9 @@ M  END
     rdkitMol.draw_to_canvas_with_highlights(canvas, JSON.stringify(opts));
   }
 
-  _drawMolecule(x, y, w, h, onscreenCanvas,
-                molString, scaffoldMolString, highlightScaffold,
-                molRegenerateCoords, scaffoldRegenerateCoords) {
+  _drawMolecule(x: number, y: number, w: number, h: number, onscreenCanvas: HTMLCanvasElement,
+                molString: string, scaffoldMolString: string, highlightScaffold: boolean,
+                molRegenerateCoords: boolean, scaffoldRegenerateCoords: boolean) {
 
 
     const r = window.devicePixelRatio;
@@ -177,10 +189,10 @@ M  END
     let offscreenCanvas = renderObj.canvas;
     let image = offscreenCanvas.getContext('2d').getImageData(0, 0, w, h);
     let context = onscreenCanvas.getContext('2d');
-    context.putImageData(image, x, y);
+    context!.putImageData(image, x, y);
   }
 
-  _initScaffoldString(colTemp, tagName) {
+  _initScaffoldString(colTemp: any, tagName: string) {
 
     let scaffoldString = colTemp ? colTemp[tagName] : null;
     if (scaffoldString?.endsWith(this.WHITE_MOLBLOCK_SUFFIX)) {
@@ -193,7 +205,7 @@ M  END
 
   }
 
-  render(g, x, y, w, h, gridCell, cellStyle) {
+  render(g: any, x: number, y: number, w: number, h: number, gridCell: DG.GridCell, cellStyle: any) {
 
     let molString = gridCell.cell.value;
     if (molString == null || molString === '')
@@ -242,8 +254,8 @@ M  END
         this._drawMolecule(x, y, w, h, g.canvas, molString, "", false, molRegenerateCoords, false);
       } else {
         // drawing with a per-row scaffold
-        let idx = gridCell.tableRowIndex;
-        let scaffoldMolString = df.get(rowScaffoldCol.name, idx);
+        let idx = gridCell.tableRowIndex; // TODO: supposed to be != null?
+        let scaffoldMolString = df.get(rowScaffoldCol.name, idx!);
         let highlightScaffold = colTemp && colTemp['highlight-scaffold'] === 'true';
         this._drawMolecule(x, y, w, h, g.canvas,
           molString, scaffoldMolString, highlightScaffold, molRegenerateCoords, scaffoldRegenerateCoords);

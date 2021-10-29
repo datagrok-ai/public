@@ -6,6 +6,7 @@ import { addDataFromDmDomain, getMaxVisitName, getMinVisitName, getUniqueValues,
 import { ETHNIC, RACE, SEX, TREATMENT_ARM } from '../constants';
 import { labDynamicComparedToBaseline } from '../data-preparation/data-preparation';
 import { ILazyLoading } from '../lazy-loading/lazy-loading';
+import { checkDomainExists } from './utils';
 
 
 export class TimeProfileView extends DG.ViewBase implements ILazyLoading {
@@ -14,8 +15,8 @@ export class TimeProfileView extends DG.ViewBase implements ILazyLoading {
     epVisitChoices: DG.InputBase;
     laboratoryDataFrame: DG.DataFrame;
     relativeChangeFromBlDataFrame: DG.DataFrame;
-    uniqueLabValues = Array.from(getUniqueValues(study.domains.lb, 'LBTEST'));
-    uniqueVisits = Array.from(getUniqueValues(study.domains.lb, 'VISIT'));
+    uniqueLabValues: any;
+    uniqueVisits: any;
     splitBy = [ TREATMENT_ARM, SEX, RACE, ETHNIC ];
     types = ['Values', 'Changes'];
     selectedLabValue: string;
@@ -34,25 +35,32 @@ export class TimeProfileView extends DG.ViewBase implements ILazyLoading {
     loaded: boolean;
 
     load(): void {
+        checkDomainExists(['dm', 'lb'], false, this);
+     }
+
+    createView(): void {
+        this.uniqueLabValues = Array.from(getUniqueValues(study.domains.lb, 'LBTEST'));
+        this.uniqueVisits = Array.from(getUniqueValues(study.domains.lb, 'VISIT'));
         this.selectedLabValue = this.uniqueLabValues[ 0 ] as string;
         this.selectedType = this.types[0];
         this.visitNamesAndDays = getVisitNamesAndDays(study.domains.lb);
         this.bl = this.visitNamesAndDays[0].name;
         this.ep = this.visitNamesAndDays[this.visitNamesAndDays.length-1].name;
         this.createLaboratoryDataframe();
-        this.createrelativeChangeFromBlDataframe();
-
-/*         let labValueChoices = ui.choiceInput('BL', this.selectedLabValue, this.uniqueLabValues);
-        labValueChoices.onChanged((v) => {
-            this.selectedLabValue = labValueChoices.value;
-            this.updateTimeProfileDiv();
-        }); */
 
         let typeChoices = ui.choiceInput('', this.selectedType, this.types);
         typeChoices.onChanged((v) => {
             this.selectedType = typeChoices.value;
             this.updateTimeProfile();
         });
+
+        let labChoices = ui.choiceInput('', this.selectedLabValue, this.uniqueLabValues);
+        labChoices.onChanged((v) => {
+            this.selectedLabValue = labChoices.value;
+            this.updateTimeProfile();
+        });
+        //@ts-ignore
+        labChoices.input.style.width = '200px';
 
         this.blVisitChoices = ui.choiceInput('', this.bl, this.uniqueVisits);
         this.blVisitChoices.onChanged((v) => {
@@ -67,14 +75,7 @@ export class TimeProfileView extends DG.ViewBase implements ILazyLoading {
         });
 
         this.root.className = 'grok-view ui-box';
-/*         this.root.append(ui.splitV([
-            ui.box(ui.divH([ //labValueChoices.root, 
-                typeChoices.root, 
-                this.blVisitChicesDiv
-            ]), { style: { maxHeight: '100px' } }),
-            this.timeProfileDiv
-        ])) */
-        this.linechart = DG.Viewer.lineChart(this.filterDataFrameByDays(this.laboratoryDataFrame), {
+        this.linechart = DG.Viewer.lineChart(this.laboratoryDataFrame, {
             splitColumnName: this.splitBy[0],
             xColumnName: 'VISITDY',
             yColumnNames: [`${this.selectedLabValue} avg(LBSTRESN)`],
@@ -84,6 +85,7 @@ export class TimeProfileView extends DG.ViewBase implements ILazyLoading {
         this.setRibbonPanels([
             [
                 ui.span([ 'Plot ' ]),
+                labChoices.root,
                 typeChoices.root,
                 ui.span([' from ']),
                 this.blVisitChoices.root,
@@ -96,7 +98,8 @@ export class TimeProfileView extends DG.ViewBase implements ILazyLoading {
     private updateTimeProfile() {
         switch (this.selectedType) {
             case 'Values': {
-                this.linechart.dataFrame = this.filterDataFrameByDays(this.laboratoryDataFrame);
+                this.createLaboratoryDataframe();
+                this.linechart.dataFrame = this.laboratoryDataFrame;
                 break;
             }
             case 'Changes': {
@@ -111,7 +114,8 @@ export class TimeProfileView extends DG.ViewBase implements ILazyLoading {
     }
 
     private createLaboratoryDataframe() {
-        let dfWithArm = addDataFromDmDomain(study.domains.lb, study.domains.dm, [ 'USUBJID', 'VISITDY', 'VISIT', 'LBTEST', 'LBSTRESN' ], this.splitBy);
+        let df = this.filterDataFrameByDays(study.domains.lb.clone());
+        let dfWithArm = addDataFromDmDomain(df, study.domains.dm, [ 'USUBJID', 'VISITDY', 'VISIT', 'LBTEST', 'LBSTRESN' ], this.splitBy);
         this.laboratoryDataFrame = this.createPivotedDataframe(dfWithArm, 'LBSTRESN');
     }
 
@@ -134,7 +138,7 @@ export class TimeProfileView extends DG.ViewBase implements ILazyLoading {
         let blDay = this.visitNamesAndDays.find(it => it.name === this.bl).day;
         let epDay = this.visitNamesAndDays.find(it => it.name === this.ep).day;
         let filteredDf = df.groupBy(df.columns.names())
-        .where(`VISITDY >= ${blDay} and VISITDY <= ${epDay}`)
+        .where(`VISITDY >= ${blDay} and VISITDY <= ${epDay} and LBTEST = ${this.selectedLabValue}`)
         .aggregate();
         return filteredDf;
     }
