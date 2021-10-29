@@ -23,7 +23,7 @@
     "babel": "babel bin --extensions .ts -d bin"
   },
   "bin": {
-    "datagrok-upload": "./bin/upload.js",
+    "datagrok-upload": "./bin/_deprecated/upload.js",
     "grok": "./bin/grok.js"
   },
   "babel": {
