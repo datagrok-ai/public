@@ -1,5 +1,6 @@
 package grok_connect.providers;
 
+import grok_connect.utils.GrokConnectException;
 import grok_connect.utils.ProviderManager;
 import serialization.Types;
 import org.bson.*;
@@ -29,7 +30,7 @@ public class MongoDbDataProvider extends JdbcDataProvider {
 
     @SuppressWarnings("unchecked")
     public DataFrame execute(FuncCall queryRun)
-            throws ClassNotFoundException, SQLException {
+            throws ClassNotFoundException, SQLException, GrokConnectException {
 
         DataQuery dataQuery = queryRun.func;
         Connection connection = getConnection(dataQuery.connection);

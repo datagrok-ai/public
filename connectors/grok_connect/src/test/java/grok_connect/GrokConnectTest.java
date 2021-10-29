@@ -28,7 +28,7 @@ public class GrokConnectTest {
         prop1.setProperty("password", "datagrok");
         try {
             cp.getConnection(url, prop1, driverName).createStatement(); // create connection
-        } catch (SQLException throwables) {
+        } catch (Exception throwables) {
             fail();
         }
 
@@ -37,14 +37,14 @@ public class GrokConnectTest {
         prop2.setProperty("password", "test_user");
         try {
             cp.getConnection(url, prop2, driverName).createStatement(); // create connection
-        } catch (SQLException throwables) {
+        } catch (Exception throwables) {
             fail();
         }
 
         try {
             Statement statement = cp.getConnection(url, prop1, driverName).createStatement(); // use connection
             statement.execute(query);
-        } catch (SQLException throwables) {
+        } catch (Exception throwables) {
             fail();
         }
 
@@ -52,7 +52,7 @@ public class GrokConnectTest {
             Statement statement = cp.getConnection(url, prop2, driverName).createStatement(); // use connection
             statement.execute(query);
             fail();
-        } catch (SQLException throwables) {
+        } catch (Exception throwables) {
             assertEquals("ERROR: permission denied for table entities", throwables.getMessage());
         }
 
