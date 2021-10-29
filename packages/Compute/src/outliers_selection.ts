@@ -7,7 +7,6 @@ export async function selectOutliersManually(inputData: DataFrame) {
   const IS_OUTLIER_COL_LABEL = 'isOutlier';
   const OUTLIER_REASON_COL_LABEL = 'Reason';
   const OUTLIER_COUNT_COL_LABEL = 'Count';
-  const INPUT_COLUMNS_SIZE = (inputData.columns as ColumnList).length;
 
   if (!inputData.columns.byName(IS_OUTLIER_COL_LABEL)) {
     inputData.columns
@@ -119,6 +118,10 @@ export async function selectOutliersManually(inputData: DataFrame) {
     () => {
       if (isInnerModalOpened) return;
 
+      const INPUT_COLUMNS_SIZE = (inputData.columns as ColumnList).length -
+      (!inputData.columns.byName(IS_OUTLIER_COL_LABEL) ? 0 : 1) -
+      (!inputData.columns.byName(OUTLIER_REASON_COL_LABEL) ? 0 : 1);
+
       const options = DG.Func.find({name: 'ExtractRows'}).map((func) => func.name);
       const detectionChoiceInput = ui.choiceInput('Function', '', options);
       let selectedFunc: DG.FuncCall;
@@ -152,6 +155,7 @@ export async function selectOutliersManually(inputData: DataFrame) {
               DG.JOIN_TYPE.OUTER,
               false,
             );
+            grok.shell.addTableView(mergedData);
             const selected = DG.BitSet.create(inputData.rowCount, (idx) => (
               (mergedData.columns as ColumnList).byIndex(INPUT_COLUMNS_SIZE).get(idx)
             ));
