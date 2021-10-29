@@ -16,6 +16,7 @@ import { setStructuralAlertsRdKitModule, structuralAlertsWidget } from './widget
 import { structure2dWidget } from './widgets/structure2d';
 import { structure3dWidget } from './widgets/structure3d';
 import { toxicityWidget } from './widgets/toxicity';
+import { OCLCellRenderer } from './ocl_cell_renderer';
 
 export let rdKitModule: any = null;
 let rdKitWorkerWebRoot: string | undefined;
@@ -113,7 +114,14 @@ export async function rdkitCellRenderer() {
   // if (props?.Renderer && props.Renderer === 'RDKit') {
   return new RDKitCellRenderer(rdKitModule);
   //}
-  //TODO: use OCL cell rendnerer
+}
+
+//name: oclCellRenderer
+//tags: cellRenderer, cellRenderer-Molecule
+//meta-cell-renderer-sem-type: Molecule
+//output: grid_cell_renderer result
+export async function oclCellRenderer() {
+  return new OCLCellRenderer();
 }
 
 //name: getSimilarities
