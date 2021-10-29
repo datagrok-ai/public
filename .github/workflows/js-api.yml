@@ -27,3 +27,12 @@ jobs:
         working-directory: ./js-api
         env:
           NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
+      - name: Commit package-lock.json
+        run: |
+          if [ -z $(git status -s js-api/package-lock.json) ]; then
+            git config --global user.name 'GitHub Actions'
+            git config --global user.email 'githubactions@datagrok.ai'
+            git add ${{ matrix.project }}/package-lock.json
+            git commit -m "GitHub Actions: Update js-api/package-lock.json "
+            git push
+          fi
