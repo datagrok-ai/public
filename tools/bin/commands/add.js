@@ -28,7 +28,7 @@ function add(args) {
   // Package directory check
   if (!fs.existsSync(packagePath)) return console.log('`package.json` not found');
   try {
-    const package = JSON.parse(fs.readFileSync(packagePath));
+    const _package = JSON.parse(fs.readFileSync(packagePath));
   } catch (error) {
     console.error(`Error while reading ${packagePath}:`)
     console.error(error);

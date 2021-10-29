@@ -68,12 +68,12 @@ function migrate(args) {
   // Rewrite scripts in `package.json`
   if (!fs.existsSync(packDir)) return console.log('`package.json` doesn\'t exist');
   try {
-    let package = JSON.parse(fs.readFileSync(packDir));
-    for (let script in package.scripts) {
-      if (!package['scripts'][script].includes('datagrok-upload')) continue;
-      package['scripts'][script] = package['scripts'][script].replace(replRegExp, (match) => grokMap[match]);
+    let _package = JSON.parse(fs.readFileSync(packDir));
+    for (let script in _package.scripts) {
+      if (!_package['scripts'][script].includes('datagrok-upload')) continue;
+      _package['scripts'][script] = _package['scripts'][script].replace(replRegExp, (match) => grokMap[match]);
     }
-    fs.writeFileSync(packDir, JSON.stringify(package, null, '\t'));
+    fs.writeFileSync(packDir, JSON.stringify(_package, null, '\t'));
     console.log('Converting scripts in `package.json`... Done!');
   } catch (error) {
     console.error(error);

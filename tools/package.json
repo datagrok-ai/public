@@ -18,11 +18,26 @@
     "js-yaml": "^3.14.0",
     "os": "^0.1.1"
   },
+  "scripts": {
+    "prepublishOnly": "babel bin --extensions .ts -d bin",
+    "babel": "babel bin --extensions .ts -d bin"
+  },
   "bin": {
     "datagrok-upload": "./bin/upload.js",
     "grok": "./bin/grok.js"
   },
+  "babel": {
+    "presets": [
+      "@babel/preset-typescript",
+      "@babel/preset-env"
+    ]
+  },
   "devDependencies": {
+    "@babel/cli": "^7.15.7",
+    "@babel/core": "^7.15.8",
+    "@babel/preset-env": "^7.15.8",
+    "@babel/preset-typescript": "7.15.0",
+    "@types/ignore-walk": "^4.0.0",
     "webpack": "^4.43.0",
     "webpack-cli": "^3.3.11"
   }

@@ -48,30 +48,30 @@ function createDirectoryContents(name, config, templateDir, packageDir, ide = ''
         'http://localhost:63343/login.html' : (new URL(config['servers'][config.default]['url'])).origin);
       if (file === 'package.json') {
         // Generate scripts for non-default servers from `config.yaml`
-        let package = JSON.parse(contents);
+        let _package = JSON.parse(contents);
         for (let server in config.servers) {
           if (server === config.default) continue;
-          package['scripts'][`debug-${name.toLowerCase()}-${server}`] = `grok publish ${server} --rebuild`;
-          package['scripts'][`release-${name.toLowerCase()}-${server}`] = `grok publish ${server} --rebuild --release`;
+          _package['scripts'][`debug-${name.toLowerCase()}-${server}`] = `grok publish ${server} --rebuild`;
+          _package['scripts'][`release-${name.toLowerCase()}-${server}`] = `grok publish ${server} --rebuild --release`;
         }
-        if (ts) Object.assign(package.dependencies, { 'ts-loader': 'latest', 'typescript': 'latest' });
+        if (ts) Object.assign(_package.dependencies, { 'ts-loader': 'latest', 'typescript': 'latest' });
         if (eslint) {
-          Object.assign(package.devDependencies, {
+          Object.assign(_package.devDependencies, {
             'eslint': 'latest',
             'eslint-config-google': 'latest',
           }, ts ? {
             '@typescript-eslint/eslint-plugin': 'latest',
             '@typescript-eslint/parser': 'latest',
           } : {});
-          Object.assign(package.scripts, {
+          Object.assign(_package.scripts, {
             'lint': `eslint src${ts ? ' --ext .ts' : ''}`,
             'lint-fix': `eslint src${ts ? ' --ext .ts' : ''} --fix`,
           });
         }
         // Save module names for installation prompt
-        for (let [module, tag] of Object.entries(Object.assign({}, package.dependencies, package.devDependencies)))
+        for (let [module, tag] of Object.entries(Object.assign({}, _package.dependencies, _package.devDependencies)))
           dependencies.push(`${module}@${tag}`);
-        contents = JSON.stringify(package, null, '\t');
+        contents = JSON.stringify(_package, null, '\t');
       }
       if (file === 'package.js' && ts) copyFilePath = path.join(packageDir, 'package.ts');
       if (file === 'tsconfig.json' && !ts) return false;

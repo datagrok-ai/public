@@ -182,8 +182,8 @@ function publish(args) {
 
   // Get the package name
   if (!fs.existsSync(packDir)) return console.log('`package.json` doesn\'t exist');
-  let package = JSON.parse(fs.readFileSync(packDir));
-  let packageName = package.name;
+  let _package = JSON.parse(fs.readFileSync(packDir));
+  let packageName = _package.name;
 
   // Upload the package
   process.env.NODE_TLS_REJECT_UNAUTHORIZED = "0";
