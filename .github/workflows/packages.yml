@@ -24,12 +24,12 @@ jobs:
           MATRIX_INCLUDE_JSON="["
 
           for DIR in ${CHANGED_DIRS}; do
-              if [ -z "$(jq  '. | select( has("scripts") == true ).scripts | select( has("build") == true )' ${DIR}/package.json)" ]; then
-                build='false'
-              else
-                build='true'
-              fi
-              MATRIX_INCLUDE_JSON+="{\"project\": \"${DIR}\", \"build\": \"${build}\"}"
+            if [ -z "$(jq  '. | select( has("scripts") == true ).scripts | select( has("build") == true )' ${DIR}/package.json)" ]; then
+              build='false'
+            else
+              build='true'
+            fi
+            MATRIX_INCLUDE_JSON+="{\"project\": \"${DIR}\", \"build\": \"${build}\"}"
           done
 
           MATRIX_INCLUDE_JSON="${MATRIX_INCLUDE_JSON//\}\{/\}, \{}"
@@ -75,7 +75,7 @@ jobs:
           NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
       - name: Commit package-lock.json
         run: |
-          if [ -z $(git status -s ${{ matrix.project }}/package-lock.json) ]; then
+          if [ ! -z "$(git status -s ${{ matrix.project }}/package-lock.json)" ]; then
             git config --global user.name 'GitHub Actions'
             git config --global user.email 'githubactions@datagrok.ai'
             git add ${{ matrix.project }}/package-lock.json
