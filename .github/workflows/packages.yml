@@ -78,10 +78,10 @@ jobs:
 #          NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
       - name: before
         id: before
-        run: echo "::set-output name=git::before"
+        run: echo "::set-output name=git::${{ matrix.project }}"
       - name: after
         id: after
-        run: echo "::set-output name=check::${{ steps.before.outputs.git }}after"
+        run: echo "::set-output name=check::${{ steps.before.outputs.git }}after-${{ steps.after.outputs.check }}"
   check:
     needs: build
     runs-on: ubuntu-latest
