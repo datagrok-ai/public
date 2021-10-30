@@ -751,14 +751,14 @@ export class Column {
 
   /**
    * Initializes all values in the column to [columnInitializer].
-   * @param {string | number | Function} valueInitializer
+   * @param {string | number | boolean | Function} valueInitializer value, or a function that returns value by index
    * @returns {Column}
    * */
-  init(valueInitializer: string | number | ((ind: number) => any)): Column {
+  init(valueInitializer: string | number | boolean | ((ind: number) => any)): Column {
     let type = typeof valueInitializer;
     if (type === 'function')
       api.grok_Column_Init(this.d, valueInitializer);
-    else if (type === 'number' || type === 'string')
+    else if (type === 'number' || type === 'string' || type === 'boolean')
       api.grok_Column_SetAllValues(this.d, valueInitializer);
     return this;
   }
