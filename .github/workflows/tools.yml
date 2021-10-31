@@ -1,5 +1,6 @@
 name: Datagrok Tools Package
 on:
+  workflow_dispatch: {}
   push:
     branches:
       - 'master'
@@ -16,6 +17,10 @@ jobs:
         with:
           node-version: '12.x'
           registry-url: 'https://registry.npmjs.org'
+      - name: Upgrade npm
+        run: npm install -g npm@latest
+      - name: npm version
+        run: npm version
       - run: npm install
         working-directory: ./tools
 #      - run: npm publish
@@ -27,7 +32,21 @@ jobs:
           if [ ! -z "$(git status -s tools/package-lock.json)" ]; then
             git config --global user.name 'GitHub Actions'
             git config --global user.email 'githubactions@datagrok.ai'
-            git add ${{ matrix.project }}/package-lock.json
+            git pull
+            git add tools/package-lock.json
             git commit -m "GitHub Actions: Update tools/package-lock.json"
-            git push
+            count=0
+            until git push; do
+              exit=$?
+              wait=$((2 ** count))
+              count=$((count + 1))
+              if [ $count -lt "10" ]; then
+                echo "Retry $count/$retries exited $exit, retrying 'git push' in $wait seconds..."
+                sleep $wait
+                git pull --rebase
+              else
+                echo "Retry $count/$retries exited $exit, no more retries left for 'git push'."
+                exit $exit
+              fi
+            done
           fi
