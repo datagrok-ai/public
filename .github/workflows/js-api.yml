@@ -1,5 +1,6 @@
 name: JS API Package
 on:
+  workflow_dispatch: {}
   push:
     branches:
       - 'master'

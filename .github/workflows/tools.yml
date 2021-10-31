@@ -1,5 +1,6 @@
 name: Datagrok Tools Package
 on:
+  workflow_dispatch: {}
   push:
     branches:
       - 'master'
