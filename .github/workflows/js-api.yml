@@ -33,7 +33,7 @@ jobs:
           if [ ! -z "$(git status -s js-api/package-lock.json)" ]; then
             git config --global user.name 'GitHub Actions'
             git config --global user.email 'githubactions@datagrok.ai'
-            git pull --rebase
+            git pull
             git add js-api/package-lock.json
             git commit -m "GitHub Actions: Update js-api/package-lock.json"
             count=0
