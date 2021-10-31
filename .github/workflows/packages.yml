@@ -1,5 +1,6 @@
 name: Datagrok Packages
 on:
+  workflow_dispatch: {}
   push:
     branches:
       - 'master'
