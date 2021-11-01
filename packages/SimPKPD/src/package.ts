@@ -6,20 +6,15 @@ import * as DG from 'datagrok-api/dg';
 
 export const _package = new DG.Package();
 
-
-
 //name: SimPKPD
 //tags: app
 export async function sim() {
   grok.shell.info("Hello world");
 
-
   let result = await grok.functions.call(
-    "Simpkpd:rxodeCommand", {
-    "inputSD": 3
+    "Simpkpd:rxodeCommandReal", {
+    "inputSD": 1
   });
-
-  console.log(result);
 
   const view = grok.shell.newView('Custom View', [ui.image(`data:image/png;base64,${result}`, 500, 500)]);
 }
