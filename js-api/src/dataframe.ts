@@ -20,6 +20,7 @@ import {filter} from "rxjs/operators";
 import {Widget} from "./widgets";
 import {Grid} from "./grid";
 import {ScatterPlotViewer, TypedEventArgs, Viewer} from "./viewer";
+import {Property} from "./entities";
 
 declare let grok: any;
 declare let DG: any;
@@ -117,6 +118,13 @@ export class DataFrame {
    * @returns {DataFrame} */
   static fromColumns(columns: Column[]): DataFrame {
     return new DataFrame(api.grok_DataFrame_FromColumns(columns.map((c) => c.d)));
+  }
+
+  static fromProperties(properties: Property[], rows: number = 0) {
+    let df = DataFrame.create(rows);
+    for (let p of properties)
+      df.columns.addNew(p.name, p.propertyType);
+    return df;
   }
 
   /** Constructs {@link DataFrame} from a comma-separated values string
