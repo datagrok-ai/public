@@ -487,6 +487,8 @@ export class Grid extends Viewer {
   /** Sample: {@link https://public.datagrok.ai/js/samples/grid/order-rows} */
   get onRowsSorted(): Observable<any> { return __obs('d4-grid-rows-sorted', this.d); }
 
+  get onCellValueEdited(): Observable<GridCell> { return __obs('d4-grid-cell-value-edited', this.d); }
+
   /**
    * Currently visible cells
    */
