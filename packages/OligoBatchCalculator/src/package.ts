@@ -129,6 +129,7 @@ function normalizeSequence(sequence: string): string {
   //TODO: get normalization strings from map.ts (problem: some keys are in several representations at the same time, example: "8", "A", etc.)
   //TODO: create searchValue for replace functions from map.ts
   //TODO: ask conventional name of this operation(instead of 'normalize') and export this function
+  //TODO: pass representation argument
   const isNormalized = /^[rdAUGCT]+$/.test(sequence);
   const isRna = /^[AUGC]+$/.test(sequence);
   const isDna = /^[ATGC]+$/.test(sequence);
@@ -172,6 +173,7 @@ function getListOfPossibleRepresentationsByFirstMatchedCodes(sequence: string): 
 }
 
 function isValid(sequence: string) {
+  //TODO: rewrite using switch case
   let possibleRepresentations = getListOfPossibleRepresentationsByFirstMatchedCodes(sequence);
   if (possibleRepresentations.length == 0)
     return { indexOfFirstNotValidCharacter: 0, expectedRepresentation: null };
@@ -223,7 +225,7 @@ function isValid(sequence: string) {
 export function OligoBatchCalculatorApp() {
 
   function updateTable(text: string) {
-    tableDiv.innerHTML = '';
+    gridDiv.innerHTML = '';
 
     let sequences = text.split('\n')
       .map((s) => s.replace(/\s/g, ''))
@@ -306,7 +308,7 @@ export function OligoBatchCalculatorApp() {
       }
     });
 
-    tableDiv.append(grid.root);
+    gridDiv.append(grid.root);
   }
 
   let windows = grok.shell.windows;
@@ -316,7 +318,7 @@ export function OligoBatchCalculatorApp() {
 
   const defaultInput = 'fAmCmGmAmCpsmU\nmApsmApsfGmAmUmCfGfAfC\nmAmUfGmGmUmCmAfAmGmA';
   let table = DG.DataFrame.create();
-  let tableDiv = ui.box();
+  let gridDiv = ui.box();
 
   let inputSequences = ui.textInput("", defaultInput, async (txt: string) => updateTable(txt));
   let yieldAmount = ui.floatInput('', 1, () => updateTable(inputSequences.value));
@@ -332,44 +334,24 @@ export function OligoBatchCalculatorApp() {
     link.click();
   });
 
+  let tables = ui.divV([]);
+  for (let representation of Object.keys(map)) {
+    let tableRows = [];
+    for (let [key, value] of Object.entries(map[representation]))
+      tableRows.push({'name': value.name, 'code': key, 'weight': value['molecularWeight']});
+    tables.append(
+      DG.HtmlTable.create(
+        tableRows,
+        (item: {name: string; code: string; weight: number}) => [item['name'], item['code'], item['weight']],
+        [representation, 'Code', 'Weight']
+      ).root,
+      ui.div([], {style: {height: '30px'}})
+    );
+  }
+
   let showCodesButton = ui.button('SHOW CODES', () => {
-    ui.dialog('CODES')
-      .add(
-      ui.divH([
-        DG.HtmlTable.create(
-          [
-            {name: "2'MOE-5Me-rU", bioSpring: '5', gcrs: 'moeT'},
-            {name: "2'MOE-rA", bioSpring: '6', gcrs: 'moeA'},
-            {name: "2'MOE-5Me-rC", bioSpring: '7', gcrs: 'moe5mC'},
-            {name: "2'MOE-rG", bioSpring: '8', gcrs: 'moeG'},
-            {name: "5-Methyl-dC", bioSpring: '9', gcrs: '5mC'},
-            {name: "ps linkage", bioSpring: '*', gcrs: 'ps'},
-            {name: "dA", bioSpring: 'A', gcrs: 'A'},
-            {name: "dC", bioSpring: 'C', gcrs: 'C'},
-            {name: "dT", bioSpring: 'T', gcrs: 'T'},
-            {name: "dG", bioSpring: 'G', gcrs: 'G'}
-          ],
-          (item: {name: string; bioSpring: string; gcrs: string}) => [item.name, item.bioSpring, item.gcrs],
-          ['For ASO Gapmers', 'BioSpring', 'GCRS']
-        ).root,
-        ui.div([], {style: {width: '50px'}}),
-        DG.HtmlTable.create(
-          [
-            {name: "2'-fluoro-U", axolabs: '1', bioSpring: 'Uf', gcrs: 'fU'},
-            {name: "2'-fluoro-A", axolabs: '2', bioSpring: 'Af', gcrs: 'fA'},
-            {name: "2'-fluoro-C", axolabs: '3', bioSpring: 'Cf', gcrs: 'fC'},
-            {name: "2'-fluoro-G", axolabs: '4', bioSpring: 'Gf', gcrs: 'fG'},
-            {name: "OMe-rU", axolabs: '5', bioSpring: 'u', gcrs: 'mU'},
-            {name: "OMe-rA", axolabs: '6', bioSpring: 'a', gcrs: 'mA'},
-            {name: "OMe-rC", axolabs: '7', bioSpring: 'c', gcrs: 'mC'},
-            {name: "OMe-rG", axolabs: '8', bioSpring: 'g', gcrs: 'mG'},
-            {name: "ps linkage", axolabs: '*', bioSpring: 's', gcrs: 'ps'}
-          ],
-          (item: {name: string; axolabs: string, bioSpring: string; gcrs: string}) => [item.name, item.bioSpring, item.axolabs, item.gcrs],
-          ["For 2\'-OMe and 2\'-F modified siRNA", 'BioSpring', 'Axolabs', 'GCRS']
-        ).root
-      ])
-    )
+    ui.dialog('Codes')
+      .add(tables)
       .show();
   });
 
@@ -391,11 +373,11 @@ export function OligoBatchCalculatorApp() {
             inputSequences.root
           ],'inputSequence'),
           clearSequences,
-        ]), {style:{maxHeight:'245px'}}
+        ]), {style:{maxHeight:'270px'}}
       ),
       ui.splitV([
         title,
-        ui.panel([tableDiv], 'ui-box')
+        ui.panel([gridDiv], 'ui-box')
       ]),
       ui.box(
         ui.panel([
