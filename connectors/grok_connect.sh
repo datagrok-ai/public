@@ -40,6 +40,7 @@ GROK_CONNECT_DIR=grok_connect
 GROK_CONNECT=grok_connect-1.0.3.jar
 TARGET_DIR=${GROK_CONNECT_DIR}/target
 
+set -e
 if [ "$1" == "shell" ]; then
     shift
 
