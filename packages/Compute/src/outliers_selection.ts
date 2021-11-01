@@ -23,6 +23,8 @@ export async function selectOutliersManually(inputData: DG.DataFrame) {
     'lassoTool': true,
     'legendVisibility': 'Never',
   });
+  scatterPlot.root.style.height = '100%';
+  scatterPlot.root.style.width = '100%';
 
   const clearTable = () => {
     return DG.DataFrame.fromColumns([
@@ -33,6 +35,7 @@ export async function selectOutliersManually(inputData: DG.DataFrame) {
   };
 
   const groupsListGrid = DG.Viewer.grid(clearTable());
+  groupsListGrid.root.style.width = '100%';
 
   groupsListGrid.onCellPrepare(function(gc) {
     const btn = (reason: string) => ui.div(
@@ -185,7 +188,9 @@ export async function selectOutliersManually(inputData: DG.DataFrame) {
   removeOutlierGroupBtn.classList.add('disabled');
 
   const result = new Promise<{augmentedInput: DG.DataFrame, editedInput: DG.DataFrame}>((resolve, reject) => {
-    ui.dialog('Manual outliers selection')
+    ui.dialog('Outliers selection')
+      .add(ui.divText('Manual selection: select the outliers holding "Shift" button and then click on "Mark" button'))
+      .add(ui.divText('Autodetection: click on "Auto" button to choose outliers detection function'))
       .add(
         ui.divH([
           ui.block75([scatterPlot.root]),
@@ -194,11 +199,11 @@ export async function selectOutliersManually(inputData: DG.DataFrame) {
               groupsListGrid.root,
               ui.divH([
                 ui.block75([addOutlierGroupBtn, removeOutlierGroupBtn]),
-                autoOutlierGroupBtn,
+                ui.block25([autoOutlierGroupBtn]),
               ], {style: {'text-align': 'center'}}),
-            ], {style: {height: '300px'}}),
+            ], {style: {height: '50%'}}),
           ]),
-        ]),
+        ], {style: {height: '100%'}}),
       )
       .onOK(() => {
         const editedInput = inputData.clone();
@@ -208,7 +213,7 @@ export async function selectOutliersManually(inputData: DG.DataFrame) {
       .onCancel(() => {
         reject(new Error('Manual outliers selection is aborted'));
       })
-      .show({width: 950, height: 400});
+      .show({width: 950, height: 800});
   });
 
   return result;
