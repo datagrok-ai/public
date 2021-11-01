@@ -4,7 +4,8 @@ Usage: grok <command>
 Datagrok's package management tool
 
 Commands:
-    add       Add a script, app, or viewer
+    add       Add an object template
+    api       Create wrapper functions
     config    Create and manage config files
     create    Create a package
     publish   Upload a package
@@ -43,7 +44,7 @@ panel, init
 const HELP_API = `
 Usage: grok api
 
-Create wrapper functions for package scripts
+Create wrapper functions for package scripts and queries
 `;
 
 const HELP_CONFIG = `

@@ -1,6 +1,6 @@
 const fs = require('fs');
 const path = require('path');
-const help = require('../utils/ent-helpers.js');
+const help = require('../utils/ent-helpers.js').help;
 const utils = require('../utils/utils.js');
 
 module.exports = {

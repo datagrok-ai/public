@@ -1,0 +1,2 @@
+bin/validators/*.ts
+bin/utils/*.ts
