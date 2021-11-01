@@ -3,7 +3,7 @@ const inquirer = require('inquirer');
 const path = require('path');
 const os = require('os');
 const yaml = require('js-yaml');
-const help = require('../utils/ent-helpers.js');
+const help = require('../utils/ent-helpers.js').help;
 const utils = require('../utils/utils.js');
 const exec = require('child_process').exec;
 
