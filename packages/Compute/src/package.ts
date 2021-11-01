@@ -34,14 +34,19 @@ export function modelCatalog() {
 //output: dataframe augmentedInput
 //output: dataframe editedInput
 export async function manualOutlierSelectionDialog(inputData: DG.DataFrame) {
-  const {augmentedInput, editedInput} = await selectOutliersManually(inputData);
-  return {augmentedInput, editedInput};
+  let call = grok.functions.getCurrentCall();
+  if (call.aux['interactive']) {
+    const {augmentedInput, editedInput} = await selectOutliersManually(inputData);
+    return {augmentedInput, editedInput};
+  }
+  return new Promise<{augmentedInput: DG.DataFrame, editedInput: DG.DataFrame}>((resolve, reject) => {
+    resolve({augmentedInput: inputData, editedInput: inputData});
+  });
 }
 
-//name: exportToExcel
+//name: export To Excel
 //input: funccall call
 //tags: export
 export function exportToExcel(call: DG.FuncCall) {
-  console.log(call);
   exportFuncCall(call);
 }
