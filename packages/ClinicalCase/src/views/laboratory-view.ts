@@ -5,21 +5,21 @@ import { ClinRow, study } from "../clinical-study";
 import { createBaselineEndpointDataframe, createHysLawDataframe, createLabValuesByVisitDataframe } from '../data-preparation/data-preparation';
 import { ALT, AP, BILIRUBIN, TREATMENT_ARM } from '../constants';
 import { createBaselineEndpointScatterPlot, createHysLawScatterPlot } from '../custom-scatter-plots/custom-scatter-plots';
-import { getUniqueValues } from '../data-preparation/utils';
 import { ILazyLoading } from '../lazy-loading/lazy-loading';
-import { checkDomainExists } from './utils';
+import { checkMissingDomains } from './utils';
+import { _package } from '../package';
 
 export class LaboratoryView extends DG.ViewBase implements ILazyLoading {
 
   constructor(name) {
     super({});
     this.name = name;
-    this.helpUrl = 'https://raw.githubusercontent.com/datagrok-ai/public/master/packages/ClinicalCase/views_help/laboratory.md';
+    this.helpUrl = `${_package.webRoot}/views_help/laboratory.md`;
  }
   loaded: boolean;
 
   load(): void {
-    checkDomainExists(['dm', 'lb'], false, this);
+    checkMissingDomains(['dm', 'lb'], false, this);
  }
   
   createView(): void {
@@ -33,11 +33,11 @@ export class LaboratoryView extends DG.ViewBase implements ILazyLoading {
 
     let hysLawScatterPlot = this.hysLawScatterPlot(dm, lb);
 
-    let uniqueLabValues = Array.from(getUniqueValues(lb, 'LBTEST'));
-    let uniqueVisits = Array.from(getUniqueValues(lb, 'VISIT'));
+    let uniqueLabValues = lb.getCol('LBTEST').categories;
+    let uniqueVisits = lb.getCol('VISIT').categories;
     let baselineEndpointPlot = this.baselineEndpointPlot(dm, lb, uniqueLabValues[ 0 ], uniqueVisits[ 0 ], uniqueVisits[ 1 ]);
 
-    let uniqueTreatmentArms = Array.from(getUniqueValues(dm, TREATMENT_ARM));
+    let uniqueTreatmentArms = dm.getCol(TREATMENT_ARM).categories;
     let disributionBoxPlot = this.labValuesDistributionPlot(dm, lb, uniqueLabValues[ 0 ], uniqueTreatmentArms[ 0 ]);
 
     this.generateUI(dm, lb, grid, hysLawScatterPlot, baselineEndpointPlot, uniqueLabValues, uniqueVisits, uniqueTreatmentArms, disributionBoxPlot);

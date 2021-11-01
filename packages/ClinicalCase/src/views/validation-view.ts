@@ -2,12 +2,10 @@ import * as grok from 'datagrok-api/grok';
 import * as DG from "datagrok-api/dg";
 import * as ui from "datagrok-api/ui";
 import { study } from "../clinical-study";
-import { validationRulesList } from "../package";
+import { validationRulesList, _package } from "../package";
 import { pinnacleRuleIdColumnName, validationResultRuleIdColumn } from "../validation/constants";
 import { createRulesDataFrame } from '../validation/validation-utils';
-import { getUniqueValues } from '../data-preparation/utils';
 import { ILazyLoading } from '../lazy-loading/lazy-loading';
-import { checkDomainExists } from './utils';
 
 export class ValidationView extends DG.ViewBase implements ILazyLoading {
 
@@ -29,7 +27,7 @@ export class ValidationView extends DG.ViewBase implements ILazyLoading {
     } else {
       this.errorsByDomain = errorsMap;
     }
-    this.helpUrl = 'https://raw.githubusercontent.com/datagrok-ai/public/master/packages/ClinicalCase/views_help/validation.md';
+    this.helpUrl = `${_package.webRoot}/views_help/validation.md`;
   }
 
   loaded: boolean;
@@ -42,7 +40,7 @@ export class ValidationView extends DG.ViewBase implements ILazyLoading {
     this.resultsDataframe = study.validationResults;
     this.domains = study.domains;
 
-    let uniqueViolatedRuleIds = getUniqueValues(study.validationResults, validationResultRuleIdColumn);
+    let uniqueViolatedRuleIds = study.validationResults.getCol(validationResultRuleIdColumn).categories;
     this.rulesDataframe = this.getViolatedRulesDataframe(validationRulesList, uniqueViolatedRuleIds);
 
     this.rulesGrid = this.rulesDataframe.plot.grid();
@@ -50,7 +48,6 @@ export class ValidationView extends DG.ViewBase implements ILazyLoading {
     grok.data.linkTables(this.rulesDataframe, this.resultsDataframe,
       [ `${pinnacleRuleIdColumnName}` ], [ `${validationResultRuleIdColumn}` ],
       [ DG.SYNC_TYPE.CURRENT_ROW_TO_SELECTION, DG.SYNC_TYPE.CURRENT_ROW_TO_SELECTION ]);
-
 
     this.generateUI();
   }
@@ -76,6 +73,7 @@ export class ValidationView extends DG.ViewBase implements ILazyLoading {
       ui.splitV([
         ui.box(ui.divText('Violated rules', viewerTitle), { style: { maxHeight: '45px' } }),
         violatedRules.root,
+        this.resultsDataframe.plot.grid().root,
         ui.box(ui.divText('Errors', viewerTitle), { style: { maxHeight: '45px' } }),
         tabs.root
       ])
@@ -86,12 +84,12 @@ export class ValidationView extends DG.ViewBase implements ILazyLoading {
   private createErrorsTabControl() {
     const tabControl = {}
     Object.keys(this.errorsByDomain).forEach(key => {
-      const domainDataframe = this.domains[ key ];
+      const domainDataframe = this.domains[ key ].clone();
       this.addRowNumberColumn(domainDataframe, key);
       tabControl[`${key.toUpperCase()} (${this.errorsByDomain[ key ]})`] = DG.Viewer.grid(domainDataframe).root;
       grok.data.linkTables(this.resultsDataframe, domainDataframe,
         [ `Row number`,  'Domain'], [ `Row number`,  'Domain lower case' ],
-        [ DG.SYNC_TYPE.SELECTION_TO_SELECTION, DG.SYNC_TYPE.SELECTION_TO_FILTER ]);
+        [ DG.SYNC_TYPE.SELECTION_TO_FILTER, DG.SYNC_TYPE.SELECTION_TO_FILTER ]);
     })
     return tabControl;
   }
@@ -99,7 +97,7 @@ export class ValidationView extends DG.ViewBase implements ILazyLoading {
 
   private addRowNumberColumn(dataframe: DG.DataFrame, domain: string){
     if(!dataframe.columns.contains('Row number')){
-      dataframe.columns.addNewInt('Row number').init((i) => i+1);
+      dataframe.columns.addNewInt('Row number').init((i) => i);
     }
     if(!dataframe.columns.contains('Domain lower case')){
       dataframe.columns.addNewString('Domain lower case').init((i) => domain);
@@ -113,7 +111,7 @@ export class ValidationView extends DG.ViewBase implements ILazyLoading {
     let column = rules.getCol(pinnacleRuleIdColumnName);
     let rowCount = rules.rowCount;
     for (let i = 0; i < rowCount; i++) {
-      if (uniqueViolatedRuleIds.has(column.get(i))) {
+      if (uniqueViolatedRuleIds.includes(column.get(i))) {
         const array = [];
         for (let col of rules.columns)
           array.push(col.get(i));

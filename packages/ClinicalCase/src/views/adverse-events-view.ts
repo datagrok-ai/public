@@ -2,10 +2,11 @@ import * as grok from 'datagrok-api/grok';
 import * as DG from "datagrok-api/dg";
 import * as ui from "datagrok-api/ui";
 import { study, ClinRow } from "../clinical-study";
-import { addDataFromDmDomain, getUniqueValues } from '../data-preparation/utils';
+import { addDataFromDmDomain } from '../data-preparation/utils';
 import { TREATMENT_ARM } from '../constants';
 import { ILazyLoading } from '../lazy-loading/lazy-loading';
-import { checkDomainExists } from './utils';
+import { checkMissingDomains } from './utils';
+import { _package } from '../package';
 
 
 export class AdverseEventsView extends DG.ViewBase implements ILazyLoading {
@@ -15,7 +16,7 @@ export class AdverseEventsView extends DG.ViewBase implements ILazyLoading {
   constructor(name) {
     super({});
     this.name = name;
-    this.helpUrl = 'https://raw.githubusercontent.com/datagrok-ai/public/master/packages/ClinicalCase/views_help/adverse_events.md';
+    this.helpUrl = `${_package.webRoot}/views_help/adverse_events.md`;
     //@ts-ignore
     this.basePath = '/adverse-events';
   }
@@ -23,7 +24,7 @@ export class AdverseEventsView extends DG.ViewBase implements ILazyLoading {
   loaded: boolean;
 
   load(): void {
-    checkDomainExists(['dm', 'ae'], false, this);
+    checkMissingDomains(['dm', 'ae'], false, this);
  }
 
   createView(): void {
