@@ -99,6 +99,7 @@ export async function selectOutliersManually(inputData: DG.DataFrame) {
       innerDialog.onClose.subscribe(() => isInnerModalOpened = false);
       isInnerModalOpened = true;
     },
+    'Mark the selected points as outliers',
   );
 
   const removeOutlierGroupBtn = ui.button(
@@ -113,6 +114,7 @@ export async function selectOutliersManually(inputData: DG.DataFrame) {
       updateTable();
       inputData.selection.setAll(false);
     },
+    'Remove the selected points from oultiers list',
   );
 
   const autoOutlierGroupBtn = ui.button(
@@ -171,6 +173,7 @@ export async function selectOutliersManually(inputData: DG.DataFrame) {
       autoDetectionDialog.onClose.subscribe(() => isInnerModalOpened = false);
       isInnerModalOpened = true;
     },
+    'Choose function to select the outliers',
   );
 
   inputData.onSelectionChanged.subscribe(() => {
