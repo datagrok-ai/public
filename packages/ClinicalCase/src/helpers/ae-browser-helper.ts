@@ -6,7 +6,7 @@ import { createPropertyPanel } from "../panels/panels-service";
 
 export class AEBrowserHelper{
 
-    domains = [ 'ae', 'cm', 'ex' ];
+    domains = [];
     additionalDomains = [];
     selectedAdditionalDomains = [];
     aeToSelect: DG.DataFrame;
@@ -20,6 +20,7 @@ export class AEBrowserHelper{
         study.domains.all().forEach(it => {
             if(it.name !== 'dm'){
                 this[ it.name ] = study.domains[ it.name ].clone();
+                this.domains.push(it.name);
                 if (!this.domains.includes(it.name)){
                     this.additionalDomains.push(it.name);
                 }

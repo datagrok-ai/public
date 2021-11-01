@@ -5,8 +5,9 @@ import { study } from "../clinical-study";
 import { addDataFromDmDomain, getUniqueValues } from '../data-preparation/utils';
 import { createBaselineEndpointDataframe } from '../data-preparation/data-preparation';
 import { ETHNIC, RACE, SEX, TREATMENT_ARM } from '../constants';
-import { checkDomainExists, updateDivInnerHTML } from './utils';
+import { checkMissingDomains, updateDivInnerHTML } from './utils';
 import { ILazyLoading } from '../lazy-loading/lazy-loading';
+import { _package } from '../package';
 var { jStat } = require('jstat')
 
 
@@ -31,13 +32,13 @@ export class BoxPlotsView extends DG.ViewBase implements ILazyLoading {
   constructor(name) {
     super({});
     this.name = name;
-    this.helpUrl = 'https://raw.githubusercontent.com/datagrok-ai/public/master/packages/ClinicalCase/views_help/biomarkers_distribution.md';
+    this.helpUrl = `${_package.webRoot}/views_help/biomarkers_distribution.md`;
   }
 
   loaded: boolean;
 
   load(): void {
-    checkDomainExists(['dm', 'lb'], false, this);
+    checkMissingDomains(['dm', 'lb'], false, this);
  }
 
   createView(): void {
@@ -67,7 +68,7 @@ export class BoxPlotsView extends DG.ViewBase implements ILazyLoading {
       .get('VISIT', 0);
     this.bl = minVisitName;
 
-    this.uniqueVisits = Array.from(getUniqueValues(study.domains.lb, 'VISIT'));
+    this.uniqueVisits = study.domains.lb.getCol('VISIT').categories;
     this.labWithDmData = addDataFromDmDomain(study.domains.lb, study.domains.dm, [ 'USUBJID', 'VISITDY', 'VISIT', 'LBTEST', 'LBSTRESN' ], [TREATMENT_ARM, SEX, RACE, ETHNIC]);
     this.uniqueLabValues = Array.from(getUniqueValues(this.labWithDmData, 'LBTEST'));
     this.labWithDmData = this.labWithDmData

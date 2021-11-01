@@ -2,11 +2,12 @@ import * as grok from 'datagrok-api/grok';
 import * as DG from "datagrok-api/dg";
 import * as ui from "datagrok-api/ui";
 import { study } from "../clinical-study";
-import { addDataFromDmDomain, getMaxVisitName, getMinVisitName, getUniqueValues, getVisitNamesAndDays } from '../data-preparation/utils';
+import { addDataFromDmDomain, getMaxVisitName, getMinVisitName, getVisitNamesAndDays } from '../data-preparation/utils';
 import { ETHNIC, RACE, SEX, TREATMENT_ARM } from '../constants';
 import { labDynamicComparedToBaseline } from '../data-preparation/data-preparation';
 import { ILazyLoading } from '../lazy-loading/lazy-loading';
-import { checkDomainExists } from './utils';
+import { checkMissingDomains } from './utils';
+import { _package } from '../package';
 
 
 export class TimeProfileView extends DG.ViewBase implements ILazyLoading {
@@ -29,18 +30,18 @@ export class TimeProfileView extends DG.ViewBase implements ILazyLoading {
     constructor(name) {
         super({});
         this.name = name;
-        this.helpUrl = 'https://raw.githubusercontent.com/datagrok-ai/public/master/packages/ClinicalCase/views_help/time_profile.md';
+        this.helpUrl = `${_package.webRoot}/views_help/time_profile.md`;
     }
 
     loaded: boolean;
 
     load(): void {
-        checkDomainExists(['dm', 'lb'], false, this);
+        checkMissingDomains(['dm', 'lb'], false, this);
      }
 
     createView(): void {
-        this.uniqueLabValues = Array.from(getUniqueValues(study.domains.lb, 'LBTEST'));
-        this.uniqueVisits = Array.from(getUniqueValues(study.domains.lb, 'VISIT'));
+        this.uniqueLabValues = study.domains.lb.getCol('LBTEST').categories;
+        this.uniqueVisits = study.domains.lb.getCol('VISIT').categories;
         this.selectedLabValue = this.uniqueLabValues[ 0 ] as string;
         this.selectedType = this.types[0];
         this.visitNamesAndDays = getVisitNamesAndDays(study.domains.lb);
