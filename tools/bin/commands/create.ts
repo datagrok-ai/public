@@ -3,9 +3,10 @@ import inquirer from 'inquirer';
 import path from 'path';
 import os from 'os';
 import yaml from 'js-yaml';
+import { exec } from 'child_process';
 import { help } from '../utils/ent-helpers';
 import * as utils from '../utils/utils';
-import { exec } from 'child_process';
+import { validateConf } from '../validators/config-validator';
 
 
 const platform = os.platform();
@@ -110,6 +111,11 @@ export function create(args: CreateArgs) {
 
   // @ts-ignore
   const config = yaml.safeLoad(fs.readFileSync(confPath));
+  const confTest = validateConf(config);
+  if (!confTest.value) {
+    console.log(confTest.message);
+    return false;
+  }
 
   const name = nArgs === 2 ? args['_'][1] : curFolder;
   const validName = /^([A-Za-z\-_\d])+$/.test(name);
