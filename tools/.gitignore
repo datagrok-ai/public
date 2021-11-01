@@ -1,2 +1,3 @@
 bin/validators/*.js
 bin/utils/*.js
+bin/commands/*.js

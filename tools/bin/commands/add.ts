@@ -1,13 +1,10 @@
-const fs = require('fs');
-const path = require('path');
-const help = require('../utils/ent-helpers.js').help;
-const utils = require('../utils/utils.js');
+import fs from 'fs';
+import path from 'path';
+import { help } from '../utils/ent-helpers';
+import * as utils from '../utils/utils';
 
-module.exports = {
-  add: add
-};
 
-function add(args) {
+export function add(args: { _: string[] }) {
   const nOptions = Object.keys(args).length - 1;
   const nArgs = args['_'].length;
   if (nArgs < 2 || nArgs > 5 || nOptions > 0) return false;
@@ -28,7 +25,7 @@ function add(args) {
   // Package directory check
   if (!fs.existsSync(packagePath)) return console.log('`package.json` not found');
   try {
-    const _package = JSON.parse(fs.readFileSync(packagePath));
+    const _package = JSON.parse(fs.readFileSync(packagePath, { encoding: 'utf-8' }));
   } catch (error) {
     console.error(`Error while reading ${packagePath}:`)
     console.error(error);
@@ -39,14 +36,14 @@ function add(args) {
   const packageEntry = ts ? tsPath : jsPath;
   const ext = ts ? '.ts' : '.js';
 
-  function validateName(name) {
+  function validateName(name: string) {
     if (!/^([A-Za-z])+([A-Za-z\d])*$/.test(name)) {
       return console.log('The name may only include letters and numbers. It cannot start with a digit');
     }
     return true;
   }
 
-  function insertName(name, data) {
+  function insertName(name: string, data: string) {
     for (let repl of ['NAME', 'NAME_TITLECASE', 'NAME_LOWERCASE']) {
       data = utils.replacers[repl](data, name);
     }
@@ -56,19 +53,23 @@ function add(args) {
   function createPackageEntryFile() {
     if (!fs.existsSync(srcDir)) fs.mkdirSync(srcDir);
     if (!fs.existsSync(packageEntry)) {
-      var contents = fs.readFileSync(path.join(path.dirname(path.dirname(__dirname)),
+      const contents = fs.readFileSync(path.join(path.dirname(path.dirname(__dirname)),
         'package-template', 'src', 'package.js'), 'utf8');
       fs.writeFileSync(packageEntry, contents, 'utf8');
     }
   }
 
+  let name;
+  let tag;
+  let contents;
+
   switch (entity) {
     case 'script':
       if (nArgs < 4 || nArgs > 5) return false;
       let lang = args['_'][2];
-      var name = args['_'][3];
+      name = args['_'][3];
       if (nArgs === 5) {
-        var tag = args['_'][2];
+        tag = args['_'][2];
         lang = args['_'][3];
         name = args['_'][4];
       }
@@ -95,7 +96,7 @@ function add(args) {
       // Copy the script template
       let templatePath = path.join(path.dirname(path.dirname(__dirname)), 'script-template')
       templatePath = path.join(templatePath, lang + '.' + utils.scriptLangExtMap[lang]);
-      var contents = fs.readFileSync(templatePath, 'utf8');
+      contents = fs.readFileSync(templatePath, 'utf8');
       if (tag) {
         let ind = contents.indexOf('tags: ') + 6;
         contents = contents.slice(0, ind) + 'panel, ' + contents.slice(ind);
@@ -110,7 +111,7 @@ function add(args) {
       if (nArgs !== 3) return false;
 
       // App name check
-      var name = args['_'][2];
+      name = args['_'][2];
       if (!validateName(name)) return false;
 
       // Create src/package.js if it doesn't exist yet
@@ -126,9 +127,9 @@ function add(args) {
     case 'function':
       if (nArgs < 3 || nArgs > 4) return false;
 
-      var name = args['_'][2];
+      name = args['_'][2];
       if (nArgs === 4) {
-        var tag = args['_'][2];
+        tag = args['_'][2];
         name = args['_'][3];
       }
 
@@ -165,9 +166,9 @@ function add(args) {
         return console.log(`The connection file already exists: ${connectPath}`);
       }
 
-      var connection = fs.readFileSync(path.join(path.dirname(path.dirname(__dirname)),
+      const connectionTemplate = fs.readFileSync(path.join(path.dirname(path.dirname(__dirname)),
         'entity-template', 'connection.json'), 'utf8');
-      fs.writeFileSync(connectPath, insertName(name, connection), 'utf8');
+      fs.writeFileSync(connectPath, insertName(name, connectionTemplate), 'utf8');
       console.log(help.connection(name));
       break;
 
@@ -175,7 +176,7 @@ function add(args) {
       if (nArgs !== 3) return false;
 
       // Query name check
-      var name = args['_'][2];
+      name = args['_'][2];
       if (!validateName(name)) return false;
 
       // Create the `queries` folder if it doesn't exist yet
@@ -184,19 +185,20 @@ function add(args) {
       // Add a query to queries.sql
       let query = fs.readFileSync(path.join(path.dirname(path.dirname(__dirname)),
         'entity-template', 'queries.sql'), 'utf8');
-      var contents = insertName(name, query);
+      contents = insertName(name, query);
+      let connection;
       if (fs.existsSync(connectDir) && fs.readdirSync(connectDir).length !== 0) {
         // Use the name of the first found connection
-        var connection = fs.readdirSync(connectDir).find(c => /.+\.json$/.test(c)).slice(0, -5);
+        connection = fs.readdirSync(connectDir).find(c => /.+\.json$/.test(c))?.slice(0, -5);
       } else {
         // Create the default connection file
         if (!fs.existsSync(connectDir)) fs.mkdirSync(connectDir);
-        var connection = fs.readFileSync(path.join(path.dirname(path.dirname(__dirname)),
+        connection = fs.readFileSync(path.join(path.dirname(path.dirname(__dirname)),
           'entity-template', 'connection.json'), 'utf8');
         fs.writeFileSync(path.join(connectDir, 'connection.json'), insertName('connection', connection), 'utf8');
-        var connection = 'connection';
+        connection = 'connection';
       }
-      contents = contents.replace('#{CONNECTION}', connection);
+      contents = contents.replace('#{CONNECTION}', connection!);
       fs.appendFileSync(queryPath, contents);
       console.log(help.query(name));
       break;
@@ -205,7 +207,7 @@ function add(args) {
       if (nArgs !== 3) return false;
 
       // View name check
-      var name = args['_'][2];
+      name = args['_'][2];
       if (!validateName(name)) return false;
       if (!name.endsWith('View')) {
         console.log("For consistency reasons, we recommend postfixing classes with 'View'");
@@ -226,7 +228,7 @@ function add(args) {
       // Add a view function to package.js
       let view = fs.readFileSync(path.join(path.dirname(path.dirname(__dirname)),
         'entity-template', 'view.js'), 'utf8');
-      var contents = insertName(name, "import {#{NAME}} from './#{NAME_LOWERCASE}';\n");
+      contents = insertName(name, "import {#{NAME}} from './#{NAME_LOWERCASE}';\n");
       contents += fs.readFileSync(packageEntry, 'utf8');
       contents += insertName(name, view);
       fs.writeFileSync(packageEntry, contents, 'utf8');
@@ -237,7 +239,7 @@ function add(args) {
       if (nArgs !== 3) return false;
 
       // Viewer name check
-      var name = args['_'][2];
+      name = args['_'][2];
       if (!validateName(name)) return false;
       if (!name.endsWith('Viewer')) {
         console.log("For consistency reasons, we recommend postfixing classes with 'Viewer'");
@@ -259,7 +261,7 @@ function add(args) {
       // Add a viewer function to package.js
       let viewer = fs.readFileSync(path.join(path.dirname(path.dirname(__dirname)),
         'entity-template', 'viewer.js'), 'utf8');
-      var contents = insertName(name, "import {#{NAME}} from './#{NAME_LOWERCASE}';\n");
+      contents = insertName(name, "import {#{NAME}} from './#{NAME_LOWERCASE}';\n");
       contents += fs.readFileSync(packageEntry, 'utf8');
       contents += insertName(name, viewer);
       fs.writeFileSync(packageEntry, contents, 'utf8');
@@ -267,7 +269,7 @@ function add(args) {
       break;
     case 'detector':
       if (nArgs !== 3) return false;
-      var name = args['_'][2];
+      name = args['_'][2];
 
       if (!fs.existsSync(detectorsPath)) {
         let temp = fs.readFileSync(path.join(path.dirname(path.dirname(__dirname)),
@@ -278,7 +280,7 @@ function add(args) {
 
       let detector = fs.readFileSync(path.join(path.dirname(path.dirname(__dirname)),
         'entity-template', 'sem-type-detector.js'), 'utf8');
-      var contents = fs.readFileSync(detectorsPath, 'utf8');
+      contents = fs.readFileSync(detectorsPath, 'utf8');
       let idx = contents.search(/(?<=PackageDetectors extends DG.Package\s*{\s*(\r\n|\r|\n)).*/);
       if (idx === -1) return console.log('Detectors class not found'); 
       contents = contents.slice(0, idx) + detector + contents.slice(idx);

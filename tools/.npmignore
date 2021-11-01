@@ -1,2 +1,3 @@
 bin/validators/*.ts
 bin/utils/*.ts
+bin/commands/*.ts

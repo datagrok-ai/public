@@ -1,7 +1,7 @@
 import fs from 'fs';
 import path from 'path';
 import walk from 'ignore-walk';
-import * as utils from '../utils/utils.js';
+import * as utils from '../utils/utils';
 
 
 function generateQueryWrappers(): void {

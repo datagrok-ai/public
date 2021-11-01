@@ -1,3 +1,6 @@
+import { ValidationResult } from "./interfaces";
+
+
 export function validateConf(config: any): ValidationResult {
   const vr: ValidationResult = {
     message: 'Validation Error\n\nRun `grok config` to see the config file or ' +
@@ -48,10 +51,4 @@ export function validateConf(config: any): ValidationResult {
   }
 
   return vr;
-}
-
-interface ValidationResult {
-  message: string,
-  value: boolean,
-  warnings?: string[],
 }

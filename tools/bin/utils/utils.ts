@@ -30,7 +30,7 @@ export function camelCaseToKebab(s: string): string {
   return s.replace(/[A-Z]/g, (char: string, index: number) => index == 0 ? char.toLowerCase() : '-'+ char.toLowerCase());
 }
 
-export function mapURL(conf: Config): object {
+export function mapURL(conf: Config): Indexable {
   let urls: Indexable = {};
   for (let server in conf['servers']) {
     urls[conf['servers'][server]['url']] = server;
@@ -152,7 +152,7 @@ export const queryWrapperTemplate = `export async function #{FUNC_NAME_LOWERCASE
 }`;
 
 
-interface Config {
+export interface Config {
   servers: {
     [alias: string]: {
       url: string,
@@ -162,4 +162,4 @@ interface Config {
   default: string,
 }
 
-interface Indexable { [key: string]: any }
+export interface Indexable { [key: string]: any }
