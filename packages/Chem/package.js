@@ -158,17 +158,22 @@ class ChemPackage extends DG.Package {
     return DG.DataFrame.fromColumns(columns);
   }
 
-  //name: chemSimilarityAnalysis
+  //name: chemSimilaritySpace
   //input: dataframe table
   //input: column molColumn {semType: Molecule}
-  //input: int cycleNum
-  //input: int stepNum
+  //input: int cycleNum = 100
+  //input: bool allowLongParameters = false
   //output: graphics
-  async chemSimilarityAnalysis(table, molColumn, cycleNum, stepNum) {
+  async chemSimilaritySpace(table, molColumn, cycleNum, allowLongParameters) {
     var startTime = performance.now();
     var fpColumn = await this.getMorganFingerprints(molColumn);
     if (fpColumn.stats.missingValueCount > 0) {
       throw new Error("Molecule column has a null entry");
+    }
+
+    if (cycleNum * fpColumn.length * 100 >= (1e9) && !allowLongParameters) {
+      throw new Error("The given cycle and step numbers are too high to be runned. \
+                       If you want to run it anyway, please check the parameter allowLongParameters");
     }
     
     if (window.Worker) {
@@ -181,7 +186,7 @@ class ChemPackage extends DG.Package {
       }
 
       myWorker.postMessage([fpColumn.length, fpBuffers,
-                            2, null, null, 1.0, 2.0, 0.01, stepNum, cycleNum]);
+                            2, null, null, 1.0, 2.0, 0.01, fpColumn.length * 100, cycleNum]);
                             
       return new Promise((resolve, reject) => {
         myWorker.onmessage = function(event) {
