@@ -503,7 +503,7 @@ public abstract class JdbcDataProvider extends DataProvider {
         if (outputCsv != null)
             csvWriter.close();
 
-//        connection.close();
+        connection.close();
 
         DataFrame dataFrame = new DataFrame();
         dataFrame.addColumns(columns);
