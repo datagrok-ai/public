@@ -232,6 +232,12 @@ export class View extends ViewBase {
       return new View(d);
   }
 
+  static fromRoot(root: HTMLElement) {
+    let view = View.create();
+    view.root.appendChild(root);
+    return view;
+  }
+
   /** Creates a new empty view.
    * @param {string | ElementOptions | null} options
    * @returns {View} */
