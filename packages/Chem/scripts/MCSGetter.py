@@ -16,10 +16,10 @@ length = len(smiles)
 mols = np_none(length)
 idx_err = []
 for n in range(0, length):
-    mol = Chem.MolFromSmiles(smiles[n])
-    if mol is None:
-        idx_err.append(n)
-        continue
-    mols[n] = mol
+  mol = Chem.MolFromSmiles(smiles[n])
+  if mol is None:
+    idx_err.append(n)
+    continue
+  mols[n] = mol
 mols = mols[mols != np.array(None)]
 result = Chem.MolToSmiles(Chem.MolFromSmarts(rdFMCS.FindMCS(mols).smartsString))

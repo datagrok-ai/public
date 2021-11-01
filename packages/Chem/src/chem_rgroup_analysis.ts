@@ -16,7 +16,7 @@ export async function getRGroups(smiles: Column, core: string) {
       'core': core
     });
 
-  let regexConv: RegExp = /(\[)(R)(\d+)(\])/
+  let regexConv: RegExp = /(\[)(R)(\d+)(\])/g
 
   function convert(smiles: string | null): string | null {
     if (smiles != null) {
@@ -24,7 +24,6 @@ export async function getRGroups(smiles: Column, core: string) {
       console.log(smiles);
       if (match != null) {
         smiles = smiles.replace(regexConv, `${match[1]}*:${match[3]}${match[4]}`);
-        console.log(smiles);
       }
     }
     return smiles;

@@ -116,6 +116,7 @@ export async function rdkitCellRenderer() {
   //}
 }
 
+/*
 //name: oclCellRenderer
 //tags: cellRenderer, cellRenderer-Molecule
 //meta-cell-renderer-sem-type: Molecule
@@ -123,6 +124,7 @@ export async function rdkitCellRenderer() {
 export async function oclCellRenderer() {
   return new OCLCellRenderer();
 }
+*/
 
 //name: getSimilarities
 //input: column molStringsColumn
@@ -452,21 +454,31 @@ export function rGroupsAnalytics(df: DG.DataFrame, col: DG.Column) {
     mcsButton.insertAdjacentElement('beforebegin', sketcher);
   });
 
-  let dlg = ui.dialog({title: 'R-Group Analysis', helpUrl: '/help/domains/chem/cheminformatics.md#r-group-analysis'})
-    .add(ui.div([sketcher, ui.tooltip.bind(mcsButton, "Most Common Substructure"), columnPrefixInput, visualAnalysisCheck]))
+  let dlg = ui.dialog({
+    title: 'R-Group Analysis',
+    helpUrl: '/help/domains/chem/cheminformatics.md#r-group-analysis'
+    })
+    .add(ui.div([
+      sketcher,
+      ui.tooltip.bind(mcsButton, "Most Common Substructure"),
+      columnPrefixInput,
+      visualAnalysisCheck
+    ]))
     .onOK(async () => {
       let res = await getRGroups(col, sketcherSmile);
-      for (let resCol of res.columns) col.dataFrame.columns.add(resCol);
-      if (res.columns.length == 0) grok.shell.error("None R-Groups were found");
+      for (let resCol of res.columns)
+        col.dataFrame.columns.add(resCol);
+      if (res.columns.length == 0)
+        grok.shell.error("None R-Groups were found");
       let view = null;
       for (let v of grok.shell.tableViews) {
         view = v;
         break;
       }
       if (visualAnalysisCheck.value && view) {
-        let plot = view.trellisPlot({x: [res.columns[0].name], y: [res.columns[1].name]});
-        console.log(res.columns[0].name, res.columns[1].name)
-
+        let plot = view.trellisPlot({
+          xColumnNames: [res.columns[0].name],
+          yColumnNames: [res.columns[1].name]});
       }
     });
   dlg.show();
