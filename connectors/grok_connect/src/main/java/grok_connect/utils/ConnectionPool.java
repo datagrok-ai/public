@@ -35,6 +35,9 @@ public class ConnectionPool {
             config.setJdbcUrl(url);
             config.setDataSourceProperties(properties);
             config.setDriverClassName(driverClassName);
+            config.setMaximumPoolSize(10);
+            config.setKeepaliveTime(3*60*1000);
+            config.setMaxLifetime(10*60*1000);
             connectionPool.put(key, new HikariDataSource(config));
         }
         return connectionPool.get(key).getConnection();
