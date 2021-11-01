@@ -189,8 +189,8 @@ export async function selectOutliersManually(inputData: DG.DataFrame) {
 
   const result = new Promise<{augmentedInput: DG.DataFrame, editedInput: DG.DataFrame}>((resolve, reject) => {
     ui.dialog('Outliers selection')
-      .add(ui.divText('Manual selection: select the outliers holding "Shift" button and then click on "Mark" button'))
-      .add(ui.divText('Autodetection: click on "Auto" button to choose outliers detection function'))
+      .add(ui.divText('Manual selection: select the outliers holding the "Shift" button and then click on the "Mark" button'))
+      .add(ui.divText('Autodetection: click on the "Auto" button to choose outliers detection function'))
       .add(
         ui.divH([
           ui.block75([scatterPlot.root]),
@@ -201,7 +201,7 @@ export async function selectOutliersManually(inputData: DG.DataFrame) {
                 ui.block75([addOutlierGroupBtn, removeOutlierGroupBtn]),
                 ui.block25([autoOutlierGroupBtn]),
               ], {style: {'text-align': 'center'}}),
-            ], {style: {height: '50%'}}),
+            ], {style: {height: '70%'}}),
           ]),
         ], {style: {height: '100%'}}),
       )
