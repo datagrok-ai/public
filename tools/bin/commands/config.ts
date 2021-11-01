@@ -1,20 +1,20 @@
-const fs = require('fs');
-const inquirer = require('inquirer');
-const os = require('os');
-const path = require('path');
-const yaml = require('js-yaml');
+import fs from 'fs';
+import inquirer from 'inquirer';
+import os from 'os';
+import path from 'path';
+import yaml from 'js-yaml';
+import { validateConf } from '../validators/config-validator';
+import { Indexable } from '../utils/utils';
 
-module.exports = {
-  config: config
-};
 
 const confTemplateDir = path.join(path.dirname(path.dirname(__dirname)), 'config-template.yaml');
+// @ts-ignore
 const confTemplate = yaml.safeLoad(fs.readFileSync(confTemplateDir));
 
 const grokDir = path.join(os.homedir(), '.grok');
 const confPath = path.join(grokDir, 'config.yaml');
 
-function validateKey(key) {
+function validateKey(key: string) {
   if (!key || /^([A-Za-z\d-])+$/.test(key)) {
     return true;
   } else {
@@ -22,19 +22,7 @@ function validateKey(key) {
   }
 }
 
-function validateConf(config) {
-  let valid = false;
-  if (config.hasOwnProperty('servers') && config.servers) {
-    valid = true;
-    for (const server in config.servers) {
-      const validServer = config.servers[server].hasOwnProperty('url') && config.servers[server].hasOwnProperty('key');
-      valid = valid && validServer;
-    }
-  }
-  return valid;
-}
-
-function generateKeyQ(server, url) {
+function generateKeyQ(server: string, url: string): Indexable {
   const origin = (new URL(url)).origin;
   const question = {
     name: server,
@@ -48,22 +36,26 @@ function generateKeyQ(server, url) {
   return question;
 }
 
-function config(args) {
+export function config(args: { _: string[], reset?: boolean }) {
   const nOptions = Object.keys(args).length - 1;
   if (args['_'].length === 1 && (nOptions < 1 || nOptions === 1 && args.reset)) {
     if (!fs.existsSync(grokDir)) {
       fs.mkdirSync(grokDir);
     }
     if (!fs.existsSync(confPath) || args.reset) {
+      // @ts-ignore
       fs.writeFileSync(confPath, yaml.safeDump(confTemplate));
     }
+    // @ts-ignore
     const config = yaml.safeLoad(fs.readFileSync(confPath));
     console.log(`Your config file (${confPath}):`);
     console.log(config);
-    if (!config || !validateConf(config)) {
-      console.log('The file is corrupted. Please run `grok config --reset` to restore the default template');
+    const valRes = validateConf(config);
+    if (!config || !valRes.value) {
+      console.log(valRes.message);
       return false;
     }
+    if (valRes.warnings!.length) console.log(valRes.warnings!.join('\n')); 
     (async () => {
       try {
         const answers = await inquirer.prompt({
@@ -77,7 +69,7 @@ function config(args) {
             const url = config['servers'][server]['url'];
             const question = generateKeyQ(server, url);
             question.default = config['servers'][server]['key'];
-            const devKey = await inquirer.prompt(question);
+            const devKey: Indexable = await inquirer.prompt(question);
             config['servers'][server]['key'] = devKey[server];
           }
           const defaultServer = await inquirer.prompt({
@@ -94,6 +86,7 @@ function config(args) {
             default: config.default
           });
           config.default = defaultServer['default-server'];
+          // @ts-ignore
           fs.writeFileSync(confPath, yaml.safeDump(config));
         }
       } catch (err) {

@@ -1,28 +1,27 @@
-const archiver = require('archiver-promise');
-const fs = require('fs');
-const fetch = require('node-fetch');
-const os = require('os');
-const path = require('path');
-const walk = require('ignore-walk');
-const yaml = require('js-yaml');
-const utils = require('../utils/utils.js');
+// @ts-ignore
+import archiver from 'archiver-promise';
+import fs from 'fs';
+// @ts-ignore
+import fetch from 'node-fetch';
+import os from 'os';
+import path from 'path';
+import walk from 'ignore-walk';
+import yaml from 'js-yaml';
+import * as utils from '../utils/utils';
+import { Indexable } from '../utils/utils';
 
-
-module.exports = {
-  publish: publish,
-  processPackage: processPackage
-};
 
 const grokDir = path.join(os.homedir(), '.grok');
 const confPath = path.join(grokDir, 'config.yaml');
 const confTemplateDir = path.join(path.dirname(path.dirname(__dirname)), 'config-template.yaml');
+// @ts-ignore
 const confTemplate = yaml.safeLoad(fs.readFileSync(confTemplateDir));
 const curDir = process.cwd();
 const packDir = path.join(curDir, 'package.json');
 
-async function processPackage(debug, rebuild, host, devKey, packageName, suffix) {
+export async function processPackage(debug: boolean, rebuild: boolean, host: string, devKey: string, packageName: any, suffix?: string) {
   // Get the server timestamps
-  let timestamps = {};
+  let timestamps: Indexable = {};
   let url = `${host}/packages/dev/${devKey}/${packageName}`;
   if (debug) {
     try {
@@ -40,7 +39,7 @@ async function processPackage(debug, rebuild, host, devKey, packageName, suffix)
   let zip = archiver('zip', {store: false});
 
   // Gather the files
-  let localTimestamps = {};
+  let localTimestamps: Indexable = {};
   let files = await walk({
     path: '.',
     ignoreFiles: ['.npmignore', '.gitignore'],
@@ -107,7 +106,7 @@ async function processPackage(debug, rebuild, host, devKey, packageName, suffix)
     fetch(url, {
       method: 'POST',
       body: zip
-    }).then(async (body) => {
+    }).then(async (body: any) => {
       let response;
       try {
         response = await body.text();
@@ -115,7 +114,7 @@ async function processPackage(debug, rebuild, host, devKey, packageName, suffix)
       } catch (error) {
         console.log(response);
       }
-    }).then(j => resolve(j)).catch(err => {
+    }).then((j: {}) => resolve(j)).catch((err: Error) => {
       reject(err);
     });
   }).catch(error => {
@@ -124,7 +123,7 @@ async function processPackage(debug, rebuild, host, devKey, packageName, suffix)
   await zip.finalize();
 
   try {
-    let log = await uploadPromise;
+    let log = await uploadPromise as Indexable;
 
     fs.unlinkSync('zip');
     if (log['#type'] === 'ApiError') {
@@ -142,7 +141,7 @@ async function processPackage(debug, rebuild, host, devKey, packageName, suffix)
   return 0;
 }
 
-function publish(args) {
+export function publish(args: PublishArgs) {
   const nOptions = Object.keys(args).length - 1;
   const nArgs = args['_'].length;
 
@@ -156,8 +155,10 @@ function publish(args) {
 
   // Create `config.yaml` if it doesn't exist yet
   if (!fs.existsSync(grokDir)) fs.mkdirSync(grokDir);
+  // @ts-ignore
   if (!fs.existsSync(confPath)) fs.writeFileSync(confPath, yaml.safeDump(confTemplate));
 
+  // @ts-ignore
   let config = yaml.safeLoad(fs.readFileSync(confPath));
   let host = config.default;
   let urls = utils.mapURL(config);
@@ -182,7 +183,7 @@ function publish(args) {
 
   // Get the package name
   if (!fs.existsSync(packDir)) return console.log('`package.json` doesn\'t exist');
-  let _package = JSON.parse(fs.readFileSync(packDir));
+  let _package = JSON.parse(fs.readFileSync(packDir, { encoding: 'utf-8' }));
   let packageName = _package.name;
 
   // Upload the package
@@ -201,4 +202,14 @@ function publish(args) {
   });
 
   return true;
+}
+
+interface PublishArgs {
+  _: string[],
+  build?: boolean,
+  rebuild?: boolean,
+  debug?: boolean,
+  release?: boolean,
+  key?: string,
+  suffix?: string,
 }

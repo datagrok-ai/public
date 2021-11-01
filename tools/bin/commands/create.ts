@@ -1,15 +1,12 @@
-const fs = require('fs');
-const inquirer = require('inquirer');
-const path = require('path');
-const os = require('os');
-const yaml = require('js-yaml');
-const help = require('../utils/ent-helpers.js').help;
-const utils = require('../utils/utils.js');
-const exec = require('child_process').exec;
+import fs from 'fs';
+import inquirer from 'inquirer';
+import path from 'path';
+import os from 'os';
+import yaml from 'js-yaml';
+import { help } from '../utils/ent-helpers';
+import * as utils from '../utils/utils';
+import { exec } from 'child_process';
 
-module.exports = {
-  create: create
-};
 
 const platform = os.platform();
 const curDir = process.cwd();
@@ -21,11 +18,12 @@ const confPath = path.join(grokDir, 'config.yaml');
 const templateDir = path.join(path.dirname(path.dirname(__dirname)), 'package-template');
 const confTemplateDir = path.join(path.dirname(path.dirname(__dirname)), 'config-template.yaml');
 
+// @ts-ignore
 const confTemplate = yaml.safeLoad(fs.readFileSync(confTemplateDir));
 
-let dependencies = [];
+let dependencies: string[] = [];
 
-function createDirectoryContents(name, config, templateDir, packageDir, ide = '', ts = false, eslint = false) {
+function createDirectoryContents(name: string, config: utils.Config, templateDir: string, packageDir: string, ide: string = '', ts: boolean = false, eslint: boolean = false) {
   const filesToCreate = fs.readdirSync(templateDir);
 
   filesToCreate.forEach(file => {
@@ -99,7 +97,7 @@ function createDirectoryContents(name, config, templateDir, packageDir, ide = ''
   })
 }
 
-function create(args) {
+export function create(args: CreateArgs) {
   const nOptions = Object.keys(args).length - 1;
   const nArgs = args['_'].length;
   if (nArgs > 2 || nOptions > 3) return false;
@@ -107,8 +105,10 @@ function create(args) {
 
   // Create `config.yaml` if it doesn't exist yet
   if (!fs.existsSync(grokDir)) fs.mkdirSync(grokDir);
+  // @ts-ignore
   if (!fs.existsSync(confPath)) fs.writeFileSync(confPath, yaml.safeDump(confTemplate));
 
+  // @ts-ignore
   const config = yaml.safeLoad(fs.readFileSync(confPath));
 
   const name = nArgs === 2 ? args['_'][1] : curFolder;
@@ -148,4 +148,11 @@ function create(args) {
     console.log('Package name may only include letters, numbers, underscores, or hyphens');
   }
   return true;
+}
+
+interface CreateArgs {
+  _: string[],
+  ide?: string,
+  ts?: boolean,
+  eslint?: boolean,
 }

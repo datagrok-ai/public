@@ -94,7 +94,7 @@ Switch to \`grok\` tools by copying your keys to the config
 file and converting your scripts in the \`package.json\` file
 `;
 
-module.exports = {
+export const help = {
   add: HELP_ADD,
   api: HELP_API,
   config: HELP_CONFIG,
