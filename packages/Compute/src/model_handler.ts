@@ -7,6 +7,17 @@ export class ModelHandler extends DG.ObjectHandler {
     return 'Model';
   }
 
+  async getById(id: string): Promise<DG.Script> {
+    console.log('id:', id);
+    return await grok.dapi.scripts.find(id);
+  }
+
+  async refresh(x: DG.Script): Promise<DG.Script> {
+    let script = await this.getById(x.id);
+    console.log('script:', script);
+    return script;
+  }
+
   // Checks whether this is the handler for [x]
   isApplicable(x: any) {
     return x instanceof DG.Script && x.hasTag('model');
@@ -41,10 +52,14 @@ export class ModelHandler extends DG.ObjectHandler {
   }
 
   renderCard(x: DG.Script, context?: any): HTMLElement {
-    return ui.bind(x, ui.divV([
+    let card = ui.bind(x, ui.divV([
       ui.h2(x.friendlyName),
       this.renderDetails(x),
     ], 'd4-gallery-item'));
+    card.ondblclick = (e) => {
+      grok.shell.addView(DG.FunctionView.createFromFunc(x));
+    }
+    return card;
   }
 
   init() {

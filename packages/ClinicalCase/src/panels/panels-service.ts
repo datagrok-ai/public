@@ -19,7 +19,7 @@ export async function createPropertyPanel(viewClass: any) {
             break;
         }
         case 'Timelines': {
-            grok.shell.o = await timelinesPanel(viewClass.resultTables, viewClass.selectedDataframes);
+            grok.shell.o = await timelinesPanel(viewClass.resultTables, viewClass.selectedDataframes, viewClass.aeBrowserHelper);
             break;
         }
         case 'AE Browser': {
@@ -89,26 +89,37 @@ export async function aeBrowserPanel(view: AEBrowserHelper) {
             }
         }
 
+        let createPane = (it, rowNum) => {
+            accae.addCountPane(`${it}`, () => getPaneContent(it, rowNum), () => rowNum);
+            let panel = accae.getPane(`${it}`);
+            //@ts-ignore
+            $(panel.root).css('display', 'flex');
+            //@ts-ignore
+            $(panel.root).css('opacity', '1');
+        }
+
         let updateAccordion = () => {
-            view.domains.concat(view.selectedAdditionalDomains).forEach(it => {
-                const rowNum = view[ it ].rowCount === 1 && view[ it ].getCol(SUBJECT_ID).isNone(0) ? 0 : view[ it ].rowCount
+            const totalDomains =  view.domains.concat(view.selectedAdditionalDomains);
+            const panesToRemove = accae.panes.filter(it => !totalDomains.includes(it.name));
+            panesToRemove.forEach(it => accae.removePane(it));
+            totalDomains.forEach(it => {
+                const rowNum = view[it].rowCount === 1 && view[it].getCol(SUBJECT_ID).isNone(0) ? 0 : view[it].rowCount
                 let pane = accae.getPane(`${it}`);
-                //@ts-ignore
-                updateDivInnerHTML(pane.root.lastChild, getPaneContent(it, rowNum));
-                //@ts-ignore
-                pane.root.firstChild.lastChild.innerText = rowNum;
+                if (pane) {
+                    //@ts-ignore
+                    updateDivInnerHTML(pane.root.lastChild, getPaneContent(it, rowNum));
+                    //@ts-ignore
+                    pane.root.firstChild.lastChild.innerText = rowNum;
+                } else {
+                    createPane(it, rowNum);
+                }
             })
         }
 
         let createAccordion = () => {
             view.domains.concat(view.selectedAdditionalDomains).forEach(it => {
                 const rowNum = view[ it ].rowCount === 1 && view[ it ].getCol(SUBJECT_ID).isNone(0) ? 0 : view[ it ].rowCount
-                accae.addCountPane(`${it}`, () => getPaneContent(it, rowNum), () => rowNum);
-                let panel = accae.getPane(`${it}`);
-                //@ts-ignore
-                $(panel.root).css('display', 'flex');
-                //@ts-ignore
-                $(panel.root).css('opacity', '1');
+                createPane(it, rowNum);
             })
         }
         
@@ -161,38 +172,38 @@ export async function summaryPanel(studyId: string) {
 }
 
 
-export async function timelinesPanel(timelinesDf: DG.DataFrame, domains: string[]) {
+export async function timelinesPanel(timelinesDf: DG.DataFrame, domains: string[], aeBrowserHelper: AEBrowserHelper) {
     const selectedInd = timelinesDf.selection.getSelectedIndexes();
 
     if (!selectedInd.length) {
         if (domains.includes('ae')) {
             const aeWithArm = addDataFromDmDomain(timelinesDf.clone(), study.domains.dm, timelinesDf.columns.names(), [TREATMENT_ARM], 'key');
-            const aeNumberByArm = aeWithArm.groupBy([ TREATMENT_ARM ]).where('domain = ae').count().aggregate();
-            const subjNumberByArm = study.domains.dm.groupBy([ TREATMENT_ARM ]).uniqueCount(SUBJECT_ID).aggregate();
+            const aeNumberByArm = aeWithArm.groupBy([TREATMENT_ARM]).where('domain = ae').count().aggregate();
+            const subjNumberByArm = study.domains.dm.groupBy([TREATMENT_ARM]).uniqueCount(SUBJECT_ID).aggregate();
             const aeNumByArmDict = {};
             for (let i = 0; i < aeNumberByArm.rowCount; i++) {
-                aeNumByArmDict[ aeNumberByArm.get(TREATMENT_ARM, i) ] = aeNumberByArm.get('count', i) /
-                subjNumberByArm.
-                groupBy([ TREATMENT_ARM, `unique(${SUBJECT_ID})` ])
-                .where(`${TREATMENT_ARM} = ${aeNumberByArm.get(TREATMENT_ARM, i)}`)
-                .aggregate()
-                .get(`unique(${SUBJECT_ID})`, 0);
+                aeNumByArmDict[aeNumberByArm.get(TREATMENT_ARM, i)] = aeNumberByArm.get('count', i) /
+                    subjNumberByArm.
+                        groupBy([TREATMENT_ARM, `unique(${SUBJECT_ID})`])
+                        .where(`${TREATMENT_ARM} = ${aeNumberByArm.get(TREATMENT_ARM, i)}`)
+                        .aggregate()
+                        .get(`unique(${SUBJECT_ID})`, 0);
             }
 
             const aeTop5Dict = {};
-            const aeTop5 = aeWithArm.groupBy([ TREATMENT_ARM, 'event' ]).where('domain = ae').count().aggregate();
-            const order = aeTop5.getSortedOrder([ TREATMENT_ARM, 'event' ] as any);
+            const aeTop5 = aeWithArm.groupBy([TREATMENT_ARM, 'event']).where('domain = ae').count().aggregate();
+            const order = aeTop5.getSortedOrder([TREATMENT_ARM, 'event'] as any);
             order.forEach(item => {
                 const arm = aeTop5.get(TREATMENT_ARM, item);
-                if (Object.keys(aeTop5Dict).includes(arm) && aeTop5Dict[ arm ].length < 5) {
-                    aeTop5Dict[ arm ].push(aeTop5.get('event', item));
+                if (Object.keys(aeTop5Dict).includes(arm) && aeTop5Dict[arm].length < 5) {
+                    aeTop5Dict[arm].push(aeTop5.get('event', item));
                 } else {
-                    aeTop5Dict[ arm ] = [ aeTop5.get('event', item) ]
+                    aeTop5Dict[arm] = [aeTop5.get('event', item)]
                 }
             })
 
-            Object.keys(aeTop5Dict).forEach(key => {                
-                aeTop5Dict[ key ] = aeTop5Dict[ key ].join(', ')
+            Object.keys(aeTop5Dict).forEach(key => {
+                aeTop5Dict[key] = aeTop5Dict[key].join(', ')
             })
 
             let acc = ui.accordion('timelines-panel')
@@ -203,14 +214,14 @@ export async function timelinesPanel(timelinesDf: DG.DataFrame, domains: string[
             let mostae = ui.tableFromMap(aeTop5Dict);
 
             acc.addTitle(ui.span([accIcon, ui.label('Timelines')]));
-            acc.addPane('Average AE', ()=>{
+            acc.addPane('Average AE per patient', () => {
                 $(avarageae).find('tr').css('vertical-align', 'top');
                 $(avarageae).find('td').css('padding-bottom', '10px');
                 $(avarageae).find('.d4-entity-list>span').css('margin', '0px');
                 return avarageae
             }, true);
 
-            acc.addPane('Frequents AEs', ()=>{
+            acc.addPane('Frequents AEs', () => {
                 $(mostae).find('tr').css('vertical-align', 'top');
                 $(mostae).find('td').css('padding-bottom', '10px');
                 $(mostae).find('.d4-entity-list>span').css('margin', '0px');
@@ -224,36 +235,51 @@ export async function timelinesPanel(timelinesDf: DG.DataFrame, domains: string[
         let accIcon = ui.element('i');
         accIcon.className = 'grok-icon svg-icon svg-view-layout';
 
-        let summary;
-        selectedInd.forEach((item, index) => {
-            if (index === 0) {
-                summary = { 'Subject ID': timelinesDf.get('key', item), 'Domain': timelinesDf.get('domain', item) }
-            }
+        let domainAdditionalFields = {
+            ae: { fields: ['AESEV'], pos: 'before' },
+            cm: { fields: ['CMDOSE', 'CMDOSU', 'CMDOSFRQ', 'CMROUTE'], pos: 'after' },
+            ex: { fields: ['EXDOSE', 'EXDOSU', 'EXDOSFRM', 'EXDOSFRQ', 'EXROUTE'], pos: 'after' },
+        }
+
+        selectedInd.forEach((item) => {
+            const domain = timelinesDf.get('domain', item);
+            const addDomainInfo = domainAdditionalFields[domain];
+            let addInfoString = '';
+            const index = timelinesDf.get('rowNum', item);
+            addDomainInfo.fields.forEach(it => {
+                addInfoString += `${study.domains[domain].get(it, index)} `
+            });
             const eventName = String(getNullOrValue(timelinesDf, 'event', item)).toLowerCase();
+            const fullEventName = addDomainInfo.pos === 'before' ? `${addInfoString}${eventName}` : `${eventName} ${addInfoString}`;
+            let eventElement;
+            if (domain === 'ae') {
+                eventElement = ui.link(fullEventName, {}, '', { id: `${index}` });
+                eventElement.addEventListener('click', (event) => {
+                    if(aeBrowserHelper.aeToSelect.currentRowIdx === parseInt(eventElement.id)){
+                        aeBrowserHelper.createAEBrowserPanel();
+                    } else {
+                        //@ts-ignore
+                        aeBrowserHelper.aeToSelect.currentRow = parseInt(eventElement.id);
+                    }
+                    event.stopPropagation();
+                });
+            } else {
+                eventElement = fullEventName;
+            }
             const eventStart = getNullOrValue(timelinesDf, 'start', item);
             const eventEnd = getNullOrValue(timelinesDf, 'end', item);
             eventArray.push({
-                Event: eventName,
-                Start: eventStart,
-                End: eventEnd
+                Event: eventElement,
+                Days: `${eventStart} - ${eventEnd}`
             })
         })
-        acc2.addTitle(ui.span([accIcon, ui.label(`${Object.values(summary)[0]}`)]));
-        
-        let summarytable = ui.tableFromMap(summary);
-        acc2.addPane('General', ()=>{
-            $(summarytable).find('tr').css('vertical-align', 'top');
-            $(summarytable).find('td').css('padding-bottom', '10px');
-            $(summarytable).find('.d4-entity-list>span').css('margin', '0px');
-            return summarytable
-        },true);
-        
+        acc2.addTitle(ui.span([accIcon, ui.label(`${timelinesDf.get('key', selectedInd[0])}`)]));
+
         const divsArray = [];
         eventArray.forEach(it => {
-            let table = ui.tableFromMap(it);
             divsArray.push(ui.tableFromMap(it));
         })
-        acc2.addPane('Events', ()=>{
+        acc2.addPane('Events', () => {
             $(divsArray).find('.d4-entity-list>span').css('margin', '0px');
             return ui.divV(divsArray)
         });

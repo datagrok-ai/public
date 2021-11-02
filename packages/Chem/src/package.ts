@@ -9,13 +9,15 @@ import {setCommonRdKitModule, drawMoleculeToCanvas} from './chem_common';
 import {SubstructureFilter} from './chem_substructure_filter';
 import {RDKitCellRenderer} from './rdkit_cell_renderer';
 import * as OCL from 'openchemlib/full.js';
-import { drugLikenessWidget } from './widgets/drug-likeness';
-import { molfileWidget } from './widgets/molfile';
-import { propertiesWidget } from './widgets/properties';
-import { setStructuralAlertsRdKitModule, structuralAlertsWidget } from './widgets/structural-alerts';
-import { structure2dWidget } from './widgets/structure2d';
-import { structure3dWidget } from './widgets/structure3d';
-import { toxicityWidget } from './widgets/toxicity';
+import {drugLikenessWidget} from './widgets/drug-likeness';
+import {molfileWidget} from './widgets/molfile';
+import {propertiesWidget} from './widgets/properties';
+import {setStructuralAlertsRdKitModule, structuralAlertsWidget} from './widgets/structural-alerts';
+import {structure2dWidget} from './widgets/structure2d';
+import {structure3dWidget} from './widgets/structure3d';
+import {toxicityWidget} from './widgets/toxicity';
+import {OCLCellRenderer} from './ocl_cell_renderer';
+import {getRGroups, getMCS} from "./chem_rgroup_analysis";
 
 export let rdKitModule: any = null;
 let rdKitWorkerWebRoot: string | undefined;
@@ -25,7 +27,6 @@ const _STORAGE_NAME = 'rdkit_descriptors';
 const _KEY = 'selected';
 
 export const _package = new DG.Package();
-
 
 //name: initChem
 export async function initChem() {
@@ -113,8 +114,17 @@ export async function rdkitCellRenderer() {
   // if (props?.Renderer && props.Renderer === 'RDKit') {
   return new RDKitCellRenderer(rdKitModule);
   //}
-  //TODO: use OCL cell rendnerer
 }
+
+/*
+//name: oclCellRenderer
+//tags: cellRenderer, cellRenderer-Molecule
+//meta-cell-renderer-sem-type: Molecule
+//output: grid_cell_renderer result
+export async function oclCellRenderer() {
+  return new OCLCellRenderer();
+}
+*/
 
 //name: getSimilarities
 //input: column molStringsColumn
@@ -251,7 +261,7 @@ export function descriptorsWidget(smiles: string) {
     getSelected().then(selected => {
       grok.chem.descriptors(DG.DataFrame.fromCsv(`smiles\n${smiles}`), 'smiles', selected).then((table: any) => {
         removeChildren(result);
-        let map: {[_: string]: any} = {};
+        let map: { [_: string]: any } = {};
         for (let descriptor of selected)
           map[descriptor] = table.col(descriptor).get(0);
         result.appendChild(ui.tableFromMap(map));
@@ -280,11 +290,11 @@ export async function getSelected() {
 
 //description: Open descriptors selection dialog
 function openDescriptorsDialog(selected: any, onOK: any) {
-  grok.chem.descriptorsTree().then((descriptors: {[_:string]: any}) => {
+  grok.chem.descriptorsTree().then((descriptors: { [_: string]: any }) => {
     let tree = ui.tree();
     tree.root.style.maxHeight = '400px';
 
-    let groups: {[_:string]: any} = {};
+    let groups: { [_: string]: any } = {};
     let items: DG.TreeViewNode[] = [];
 
     for (let groupName in descriptors) {
@@ -346,8 +356,7 @@ export function saveAsSdf() {
         }
 
       result += '$$$$'
-    }
-    catch (error) {
+    } catch (error) {
       console.error(error);
     }
   }
@@ -422,4 +431,59 @@ export async function structure3d(smiles: string) {
 //output: widget result
 export function toxicity(smiles: string) {
   return toxicityWidget(smiles);
+}
+
+//name: rGroupsAnalytics
+//input: dataframe df
+//input: column col {semType: Molecule}
+export function rGroupsAnalytics(df: DG.DataFrame, col: DG.Column) {
+  let sketcherSmile = '';
+  function onChanged(smiles: string) {
+    sketcherSmile = smiles;
+  }
+
+  let sketcher = grok.chem.sketcher(onChanged, sketcherSmile);
+  let columnPrefixInput = ui.stringInput('Column prefix', 'R');
+  let visualAnalysisCheck = ui.boolInput('Visual analysis', true);
+
+  let mcsButton = ui.button('MCS', async () => {
+    let smiles = await getMCS(col);
+    // sketcher.setSmiles(smiles);
+    // sketcher.remove();
+    // sketcherSmile = smiles;
+    // sketcher = grok.chem.sketcher(onChanged, sketcherSmile);
+    // mcsButton.insertAdjacentElement('beforebegin', sketcher);
+  });
+
+  let dlg = ui.dialog({
+    title: 'R-Group Analysis',
+    helpUrl: '/help/domains/chem/cheminformatics.md#r-group-analysis'
+    })
+    .add(ui.div([
+      sketcher,
+      ui.tooltip.bind(mcsButton, "Most Common Substructure"),
+      columnPrefixInput,
+      visualAnalysisCheck
+    ]))
+    .onOK(async () => {
+      let res = await getRGroups(col, sketcherSmile, columnPrefixInput.value);
+      for (let resCol of res.columns) {
+        resCol.semType = DG.SEMTYPE.MOLECULE;
+        col.dataFrame.columns.add(resCol);
+      }
+      if (res.columns.length == 0)
+        grok.shell.error("None R-Groups were found");
+      let view = null;
+      for (let v of grok.shell.tableViews) {
+        view = v;
+        break;
+      }
+      if (visualAnalysisCheck.value && view) {
+        let plot = view.trellisPlot({
+          xColumnNames: [res.columns[0].name],
+          yColumnNames: [res.columns[1].name]});
+      }
+    });
+  dlg.show();
+  dlg.initDefaultHistory();
 }

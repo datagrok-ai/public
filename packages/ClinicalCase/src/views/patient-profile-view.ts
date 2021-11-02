@@ -3,9 +3,9 @@ import * as ui from "datagrok-api/ui";
 import { study } from "../clinical-study";
 import { SUBJECT_ID } from "../constants";
 import { addColumnWithDrugPlusDosage, labDynamicComparedToBaseline, labDynamicComparedToMinMax, labDynamicRelatedToRef } from "../data-preparation/data-preparation";
-import { getUniqueValues } from "../data-preparation/utils";
 import { ILazyLoading } from "../lazy-loading/lazy-loading";
-import { checkDomainExists } from "./utils";
+import { _package } from "../package";
+import { checkMissingDomains } from "./utils";
 
 
 export class PatientProfileView extends DG.ViewBase implements ILazyLoading {
@@ -37,7 +37,7 @@ export class PatientProfileView extends DG.ViewBase implements ILazyLoading {
         yLabelWidth: 50,
         yLabelOverflow: 'truncate',
         multiEdit: {
-          options: study.domains.lb ? Array.from(getUniqueValues(study.domains.lb, 'LBTEST')) : [],
+          options: study.domains.lb ? study.domains.lb.getCol('LBTEST').categories : [],
           selectedValues: [],
           editValue: 'category',
           updateTitle: false
@@ -63,7 +63,7 @@ export class PatientProfileView extends DG.ViewBase implements ILazyLoading {
         yLabelWidth: 50,
         yLabelOverflow: 'truncate',
         multiEdit: {
-          options: study.domains.lb ? Array.from(getUniqueValues(study.domains.lb, 'LBTEST')) : [],
+          options: study.domains.lb ? study.domains.lb.getCol('LBTEST').categories : [],
           selectedValues: [],
           editValue: 'category',
           updateTitle: true
@@ -169,17 +169,17 @@ export class PatientProfileView extends DG.ViewBase implements ILazyLoading {
   constructor(name) {
     super({});
     this.name = name;
-    this.helpUrl = 'https://raw.githubusercontent.com/datagrok-ai/public/master/packages/ClinicalCase/views_help/patient_profile.md';
+    this.helpUrl = `${_package.webRoot}/views_help/patient_profile.md`;
   }
 
   loaded: boolean;
 
   load(): void {
-    checkDomainExists(['dm', 'ae', 'lb', 'cm', 'ex'], false, this);
+    checkMissingDomains(['dm', 'ae', 'lb', 'cm', 'ex'], false, this);
   }
 
   createView(): void {
-    let patientIds = Array.from(getUniqueValues(study.domains.dm, 'USUBJID'));
+    let patientIds = study.domains.dm.getCol('USUBJID').categories;
     let patienIdBoxPlot = ui.choiceInput('', patientIds[0], patientIds);
     patienIdBoxPlot.onChanged((v) => {
       this.updateTablesToAttach(patienIdBoxPlot.value);

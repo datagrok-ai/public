@@ -1,7 +1,7 @@
 import * as grok from 'datagrok-api/grok';
 import * as DG from 'datagrok-api/dg';
 import { ALT, AP, AST, BILIRUBIN, SUBJECT_ID, TREATMENT_ARM } from '../constants';
-import { addDataFromDmDomain, dateDifferenceInDays, filterBooleanColumn, filterNulls, getUniqueValues } from './utils';
+import { addDataFromDmDomain, dateDifferenceInDays, filterBooleanColumn, filterNulls } from './utils';
 import { study } from '../clinical-study';
 
 export function createMaxValuesDataForHysLaw(dataframe, aggregatedColName, filerValue){ 
@@ -301,9 +301,9 @@ export function cumulativeEnrollemntByDay(df: DG.DataFrame, dateCol: string, sub
 
 
 export function labDataForCorrelationMatrix(): DG.DataFrame {
-  let subjIds = Array.from(getUniqueValues(study.domains.lb, 'USUBJID'));
+  let subjIds = study.domains.lb.getCol('USUBJID').categories;
   let t = DG.DataFrame.create();
-  let newCols = Array.from(getUniqueValues(study.domains.lb, 'LBTEST'));
+  let newCols = study.domains.lb.getCol('LBTEST').categories;
   newCols.forEach(col => t.columns.addNewFloat(col));
   t.columns.addNewString('USUBJID');
   t.columns.addNewString('VISIT');

@@ -30,7 +30,7 @@ public abstract class JdbcDataProvider extends DataProvider {
     }
 
     public Connection getConnection(DataConnection conn)
-            throws ClassNotFoundException {
+            throws ClassNotFoundException, SQLException, GrokConnectException {
         prepareProvider();
         return ConnectionPool.getInstance().getConnection(getConnectionString(conn), getProperties(conn), driverClassName);
     }
@@ -41,6 +41,10 @@ public abstract class JdbcDataProvider extends DataProvider {
 
     public boolean isParametrized() {
         return true;
+    }
+
+    protected Integer getTimeout() {
+        return null;
     }
 
     public String getConnectionString(DataConnection conn) {
@@ -71,7 +75,7 @@ public abstract class JdbcDataProvider extends DataProvider {
     }
 
     public DataFrame getSchemas(DataConnection connection)
-            throws ClassNotFoundException, SQLException, ParseException, IOException, QueryCancelledByUser {
+            throws ClassNotFoundException, SQLException, ParseException, IOException, QueryCancelledByUser, GrokConnectException {
         FuncCall queryRun = new FuncCall();
         queryRun.func = new DataQuery();
         queryRun.func.query = getSchemasSql(connection.getDb());
@@ -81,7 +85,7 @@ public abstract class JdbcDataProvider extends DataProvider {
     }
 
     public DataFrame getSchema(DataConnection connection, String schema, String table)
-            throws ClassNotFoundException, SQLException, ParseException, IOException, QueryCancelledByUser {
+            throws ClassNotFoundException, SQLException, ParseException, IOException, QueryCancelledByUser, GrokConnectException {
         FuncCall queryRun = new FuncCall();
         queryRun.func = new DataQuery();
         queryRun.func.query = getSchemaSql(connection.getDb(), schema, table);
@@ -259,7 +263,7 @@ public abstract class JdbcDataProvider extends DataProvider {
 
     @SuppressWarnings("unchecked")
     public DataFrame execute(FuncCall queryRun)
-            throws ClassNotFoundException, SQLException, ParseException, IOException, QueryCancelledByUser {
+            throws ClassNotFoundException, SQLException, ParseException, IOException, QueryCancelledByUser, GrokConnectException {
 
         DateTime connectionPreparationStart = DateTime.now();
 
@@ -267,7 +271,8 @@ public abstract class JdbcDataProvider extends DataProvider {
                 ? ((Double)queryRun.options.get(DataProvider.QUERY_COUNT)).intValue() : 0;
         int memoryLimit = (queryRun.options != null && queryRun.options.containsKey(DataProvider.QUERY_MEMORY_LIMIT_MB))
                 ? ((Double)queryRun.options.get(DataProvider.QUERY_MEMORY_LIMIT_MB)).intValue() : 0;
-        int timeout = (queryRun.options != null && queryRun.options.containsKey(DataProvider.QUERY_TIMEOUT_SEC))
+        Integer providerTimeout = getTimeout();
+        int timeout = providerTimeout != null ? providerTimeout : (queryRun.options != null && queryRun.options.containsKey(DataProvider.QUERY_TIMEOUT_SEC))
                 ? ((Double)queryRun.options.get(DataProvider.QUERY_TIMEOUT_SEC)).intValue() : 300;
 
         // Remove header lines
@@ -498,7 +503,7 @@ public abstract class JdbcDataProvider extends DataProvider {
         if (outputCsv != null)
             csvWriter.close();
 
-//        connection.close();
+        connection.close();
 
         DataFrame dataFrame = new DataFrame();
         dataFrame.addColumns(columns);
@@ -638,7 +643,7 @@ public abstract class JdbcDataProvider extends DataProvider {
     }
 
     public DataFrame queryTable(DataConnection conn, TableQuery query)
-            throws ClassNotFoundException, SQLException, ParseException, IOException, QueryCancelledByUser {
+            throws ClassNotFoundException, SQLException, ParseException, IOException, QueryCancelledByUser, GrokConnectException {
         FuncCall queryRun = new FuncCall();
         queryRun.func = new DataQuery();
         String sql = queryTableSql(conn, query);

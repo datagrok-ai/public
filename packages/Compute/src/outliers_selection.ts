@@ -1,16 +1,16 @@
 import * as grok from 'datagrok-api/grok';
 import * as ui from 'datagrok-api/ui';
 import * as DG from 'datagrok-api/dg';
-import {BitSet, DataFrame, FuncCall, Script} from 'datagrok-api/dg';
+import {_package} from './package';
 
-export async function selectOutliersManually(inputData: DataFrame) {
+export async function selectOutliersManually(inputData: DG.DataFrame) {
   const IS_OUTLIER_COL_LABEL = 'isOutlier';
   const OUTLIER_REASON_COL_LABEL = 'Reason';
   const OUTLIER_COUNT_COL_LABEL = 'Count';
 
   if (!inputData.columns.byName(IS_OUTLIER_COL_LABEL)) {
     inputData.columns
-      .add(DG.Column.fromBitSet(IS_OUTLIER_COL_LABEL, BitSet.create(inputData.rowCount, () => false)));
+      .add(DG.Column.fromBitSet(IS_OUTLIER_COL_LABEL, DG.BitSet.create(inputData.rowCount, () => false)));
   }
 
   if (!inputData.columns.byName(OUTLIER_REASON_COL_LABEL)) {
@@ -24,6 +24,8 @@ export async function selectOutliersManually(inputData: DataFrame) {
     'lassoTool': true,
     'legendVisibility': 'Never',
   });
+  scatterPlot.root.style.height = '100%';
+  scatterPlot.root.style.width = '100%';
 
   const clearTable = () => {
     return DG.DataFrame.fromColumns([
@@ -34,6 +36,7 @@ export async function selectOutliersManually(inputData: DataFrame) {
   };
 
   const groupsListGrid = DG.Viewer.grid(clearTable());
+  groupsListGrid.root.style.width = '100%';
 
   groupsListGrid.onCellPrepare(function(gc) {
     const btn = (reason: string) => ui.div(
@@ -44,7 +47,7 @@ export async function selectOutliersManually(inputData: DataFrame) {
           }
         }
         updateTable();
-      }), {style: {'text-align': 'center'}},
+      }, 'Remove the outliers group'), {style: {'text-align': 'center', 'margin': '6px'}},
     );
 
     if (!gc.isTableCell) {
@@ -97,6 +100,7 @@ export async function selectOutliersManually(inputData: DataFrame) {
       innerDialog.onClose.subscribe(() => isInnerModalOpened = false);
       isInnerModalOpened = true;
     },
+    'Mark the selected points as outliers',
   );
 
   const removeOutlierGroupBtn = ui.button(
@@ -111,6 +115,7 @@ export async function selectOutliersManually(inputData: DataFrame) {
       updateTable();
       inputData.selection.setAll(false);
     },
+    'Remove the selected points from oultiers list',
   );
 
   const autoOutlierGroupBtn = ui.button(
@@ -118,27 +123,58 @@ export async function selectOutliersManually(inputData: DataFrame) {
     () => {
       if (isInnerModalOpened) return;
 
-      const detectionChoiceInput = ui.choiceInput('Function', 'test', ['Compute:PMax', 'test']);
+      const INPUT_COLUMNS_SIZE = (inputData.columns as DG.ColumnList).length -
+      (!inputData.columns.byName(IS_OUTLIER_COL_LABEL) ? 0 : 1) -
+      (!inputData.columns.byName(OUTLIER_REASON_COL_LABEL) ? 0 : 1);
+
+      const options = DG.Func.find({name: 'ExtractRows'}).map((func) => func.name);
+      const detectionChoiceInput = ui.choiceInput('Function', '', options);
+      let selectedFunc: DG.FuncCall;
       detectionChoiceInput.onChanged(() => {
-        grok.functions
-          .eval(detectionChoiceInput.stringValue)
-          .then((res: Script) => (res.prepare()))
-          .then((res: FuncCall) => (res.getEditor()))
-          .then((editor) => {
-            autoDetectionDialog.clear();
-            autoDetectionDialog.add(ui.divV([detectionChoiceInput.root, editor]));
-          });
+        selectedFunc = DG.Func.find({name: detectionChoiceInput.value})[0]
+          .prepare();
+        selectedFunc.getEditor(false, false).then((editor) => {
+          autoDetectionDialog.clear();
+          autoDetectionDialog.add(ui.divV([detectionChoiceInput.root, editor]));
+        });
       });
 
       const autoDetectionDialog = ui.dialog('Automatic detection')
         .add(detectionChoiceInput.root)
         .onOK(()=>{
-
+          selectedFunc.call().then((result) => {
+            const selectedDf = (result.outputs.result as DG.DataFrame);
+            selectedDf.col(IS_OUTLIER_COL_LABEL)?.init(() => true);
+            selectedDf.col(OUTLIER_REASON_COL_LABEL)?.init(selectedFunc.func.name);
+            const mergedData = inputData.join(
+              selectedDf,
+              [...Array(INPUT_COLUMNS_SIZE).keys()]
+                .map((idx) => (inputData.columns as DG.ColumnList).byIndex(idx).name),
+              [...Array(INPUT_COLUMNS_SIZE).keys()]
+                .map((idx) => (selectedDf.columns as DG.ColumnList).byIndex(idx).name),
+              [...Array(INPUT_COLUMNS_SIZE).keys()]
+                .map((idx) => (inputData.columns as DG.ColumnList).byIndex(idx).name),
+              [...Array(2).keys()]
+                .map((idx) => (idx + INPUT_COLUMNS_SIZE))
+                .map((idx) => (selectedDf.columns as DG.ColumnList).byIndex(idx).name),
+              DG.JOIN_TYPE.OUTER,
+              false,
+            );
+            const selected = DG.BitSet.create(inputData.rowCount, (idx) => (
+              (mergedData.columns as DG.ColumnList).byIndex(INPUT_COLUMNS_SIZE).get(idx)
+            ));
+            selected.getSelectedIndexes().forEach((selectedIndex: number) => {
+              inputData.set(IS_OUTLIER_COL_LABEL, selectedIndex, true);
+              inputData.set(OUTLIER_REASON_COL_LABEL, selectedIndex, selectedFunc.func.name);
+            });
+            updateTable();
+          });
         })
         .show();
       autoDetectionDialog.onClose.subscribe(() => isInnerModalOpened = false);
       isInnerModalOpened = true;
     },
+    'Choose function to select the outliers',
   );
 
   inputData.onSelectionChanged.subscribe(() => {
@@ -155,8 +191,15 @@ export async function selectOutliersManually(inputData: DataFrame) {
   addOutlierGroupBtn.classList.add('disabled');
   removeOutlierGroupBtn.classList.add('disabled');
 
-  const result = new Promise<{augmentedInput: DataFrame, editedInput: DataFrame}>((resolve, reject) => {
-    ui.dialog('Manual outliers selection')
+  const result = new Promise<{augmentedInput: DG.DataFrame, editedInput: DG.DataFrame}>((resolve, reject) => {
+    ui.dialog({title: 'Outliers selection', helpUrl: `${_package.webRoot}/help/outliers_selection/main.md`})
+      .add(
+        ui.info(
+          ui.div([
+            ui.p('To select outliers - hold the “SHIFT” key and start to draw a freehand selection on the scatterplot area'),
+          ]),
+        ),
+      )
       .add(
         ui.divH([
           ui.block75([scatterPlot.root]),
@@ -165,11 +208,11 @@ export async function selectOutliersManually(inputData: DataFrame) {
               groupsListGrid.root,
               ui.divH([
                 ui.block75([addOutlierGroupBtn, removeOutlierGroupBtn]),
-                autoOutlierGroupBtn,
+                ui.block25([autoOutlierGroupBtn]),
               ], {style: {'text-align': 'center'}}),
-            ], {style: {height: '300px'}}),
+            ], {style: {height: '70%'}}),
           ]),
-        ]),
+        ], {style: {height: '100%'}}),
       )
       .onOK(() => {
         const editedInput = inputData.clone();
@@ -179,7 +222,7 @@ export async function selectOutliersManually(inputData: DataFrame) {
       .onCancel(() => {
         reject(new Error('Manual outliers selection is aborted'));
       })
-      .show({width: 950, height: 400});
+      .show({width: 950, height: 800});
   });
 
   return result;

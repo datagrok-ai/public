@@ -7,7 +7,8 @@ import { SURVIVAL_ANALYSIS_GUIDE, TREATMENT_ARM } from "../constants";
 import { createSurvivalData } from "../data-preparation/data-preparation";
 import { dataframeContentToRow } from "../data-preparation/utils";
 import { ILazyLoading } from "../lazy-loading/lazy-loading";
-import { checkDomainExists, updateDivInnerHTML } from "./utils";
+import { _package } from "../package";
+import { checkMissingDomains, updateDivInnerHTML } from "./utils";
 
 export class SurvivalAnalysisView extends DG.ViewBase implements ILazyLoading {
 
@@ -40,13 +41,13 @@ export class SurvivalAnalysisView extends DG.ViewBase implements ILazyLoading {
   constructor(name) {
     super({});
     this.name = name;
-    this.helpUrl = 'https://raw.githubusercontent.com/datagrok-ai/public/master/packages/ClinicalCase/views_help/survival_analysis.md';
+    this.helpUrl = `${_package.webRoot}/views_help/survival_analysis.md`;
   }
 
   loaded: boolean;
 
   load(): void {
-    checkDomainExists(['dm', 'ae'], false, this);
+    checkMissingDomains(['dm', 'ae'], false, this);
  }
 
   createView(): void {

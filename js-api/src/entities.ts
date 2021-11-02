@@ -56,12 +56,12 @@ export class Entity {
 
   /** Entity properties */
   getProperties(): Promise<Map<string, any>> {
-    return new Promise((resolve, reject) => api.grok_EntitiesDataSource_GetProperties(grok.dapi.entities.s, this.d, (p: any) => resolve(p), (e: any) => reject(e)));
+    return new Promise((resolve, reject) => api.grok_EntitiesDataSource_GetProperties(grok.dapi.entities.d, this.d, (p: any) => resolve(p), (e: any) => reject(e)));
   }
 
   /** Sets entity properties */
   setProperties(props: Map<string, any>): Promise<any> {
-    return new Promise((resolve, reject) => api.grok_EntitiesDataSource_SetProperties(grok.dapi.entities.s, this.d, props, (_: any) => resolve(_), (e: any) => reject(e)));
+    return new Promise((resolve, reject) => api.grok_EntitiesDataSource_SetProperties(grok.dapi.entities.d, this.d, props, (_: any) => resolve(_), (e: any) => reject(e)));
   }
 
   /** Returns a string representing the object */

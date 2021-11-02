@@ -140,7 +140,8 @@ export async function clinicalCaseApp(): Promise<any> {
   const views = [];
 
   views.push(<StudySummaryView>addView(new StudySummaryView('Summary')));
-  views.push(<TimelinesView>addView(new TimelinesView('Timelines')));
+  const timelinesView = new TimelinesView('Timelines');
+  views.push(<TimelinesView>addView(timelinesView));
   views.push(<PatientProfileView>addView(new PatientProfileView('Patient Profile')));
   views.push(<AdverseEventsView>addView(new AdverseEventsView('Adverse Events')));
   views.push(<LaboratoryView>addView(new LaboratoryView('Laboratory')));
@@ -150,19 +151,27 @@ export async function clinicalCaseApp(): Promise<any> {
   views.push(<MatrixesView>addView(new MatrixesView('Correlation Matrix')));
   views.push(<TimeProfileView>addView(new TimeProfileView('Time Profile')));
 
+  let aeBrowserView;
   if (study.domains.ae) {
     const aeBrowserDf = study.domains.ae.clone();
-    const aeBrowserView = DG.TableView.create(aeBrowserDf);
-    aeBrowserView.name = 'AE browser';
-    aeBrowserView.helpUrl = 'https://raw.githubusercontent.com/datagrok-ai/public/master/packages/ClinicalCase/views_help/ae_browser.md';
-    views.push(addView(aeBrowserView));
-    const aeBrwoserHelper = new AEBrowserHelper(aeBrowserDf);
+    aeBrowserView = DG.TableView.create(aeBrowserDf);
+    const aeBrowserHelper = new AEBrowserHelper(aeBrowserDf);
+    timelinesView.aeBrowserHelper = aeBrowserHelper;
     aeBrowserDf.onCurrentRowChanged.subscribe(() => {
-      aeBrwoserHelper.currentSubjId = aeBrowserDf.get(SUBJECT_ID, aeBrowserDf.currentRowIdx);
-      aeBrwoserHelper.currentAeDay = aeBrowserDf.get('AESTDY', aeBrowserDf.currentRowIdx);
-      aeBrwoserHelper.createAEBrowserPanel();
+      aeBrowserHelper.currentSubjId = aeBrowserDf.get(SUBJECT_ID, aeBrowserDf.currentRowIdx);
+      aeBrowserHelper.currentAeDay = aeBrowserDf.get('AESTDY', aeBrowserDf.currentRowIdx);
+      aeBrowserHelper.createAEBrowserPanel();
     })
+  } else {
+    aeBrowserView = DG.View.create();
+    aeBrowserView.root.append(ui.div([
+      ui.h2('Missing domains:'),
+      ui.divText('ae')
+    ], {style: {margin: 'auto', textAlign: 'center'}}))
   }
+  aeBrowserView.name = 'AE browser';
+  aeBrowserView.helpUrl = 'https://raw.githubusercontent.com/datagrok-ai/public/master/packages/ClinicalCase/views_help/ae_browser.md';
+  views.push(addView(aeBrowserView));
 
   DG.ObjectHandler.register(new AdverseEventHandler());
 
@@ -188,9 +197,6 @@ export async function clinicalCaseApp(): Promise<any> {
     }, 100)
   });
 }
-
-
-
 
 
 //tags: folderViewer

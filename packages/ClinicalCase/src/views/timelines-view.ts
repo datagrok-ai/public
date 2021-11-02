@@ -4,10 +4,12 @@ import * as DG from "datagrok-api/dg";
 import * as ui from "datagrok-api/ui";
 import { study } from "../clinical-study";
 import { createFilteredTable, dataframeContentToRow } from "../data-preparation/utils";
-import { checkDomainExists, updateDivInnerHTML } from "./utils";
+import { checkMissingDomains, updateDivInnerHTML } from "./utils";
 import $ from "cash-dom";
 import { createPropertyPanel } from "../panels/panels-service";
 import { ILazyLoading } from "../lazy-loading/lazy-loading";
+import { AEBrowserHelper } from "../helpers/ae-browser-helper";
+import { _package } from "../package";
 
 let links = {
   ae: { key: 'USUBJID', start: 'AESTDY', end: 'AEENDY', event: 'AETERM'},
@@ -42,11 +44,12 @@ export class TimelinesView extends DG.ViewBase implements ILazyLoading {
   timelinesDiv = ui.box();
   filtersDiv = ui.box();
   resultTables: DG.DataFrame;
+  aeBrowserHelper: AEBrowserHelper;
 
   constructor(name) {
     super({});
     this.name = name;
-    this.helpUrl = 'https://raw.githubusercontent.com/datagrok-ai/public/master/packages/ClinicalCase/views_help/timelines.md';
+    this.helpUrl = `${_package.webRoot}/views_help/timelines.md`;
     //@ts-ignore
     this.basePath = '/timelines';
   }
@@ -54,7 +57,7 @@ export class TimelinesView extends DG.ViewBase implements ILazyLoading {
   loaded: boolean;
 
   load(): void {
-    checkDomainExists(['ae', 'cm', 'ex'], true, this);
+    checkMissingDomains(['ae', 'cm', 'ex'], true, this);
  }
 
   createView(): void {
@@ -113,7 +116,8 @@ export class TimelinesView extends DG.ViewBase implements ILazyLoading {
     let t = df.clone(null, Object.keys(info).map(e => info[ e ]));
     let filterCols = filters[domain.name]
     Object.keys(filterCols).forEach(key => {t.columns.addNewString(key).init((i) => df.get(filterCols[key], i));})
-    t.columns.addNew('domain', DG.TYPE.STRING).init(domain.name);
+    t.columns.addNew('domain', DG.TYPE.STRING).init(domain.name.toLocaleLowerCase());
+    t.columns.addNewFloat('rowNum').init((i) => i);
     for (let name in info)
       t.col(info[ name ]).name = name;
     return t;

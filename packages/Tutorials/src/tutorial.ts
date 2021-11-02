@@ -168,7 +168,7 @@ export abstract class Tutorial extends DG.Widget {
     const div = ui.div([]);
     div.innerHTML = text;
     this.activity.append(div);
-    this._scroll();
+    div.scrollIntoView();
   }
 
   _placeHint(hint: HTMLElement) {
@@ -246,7 +246,7 @@ export abstract class Tutorial extends DG.Widget {
     this.activity.append(entry);
     descriptionDiv.innerHTML = description;
     this.activity.append(descriptionDiv);
-    this._scroll();
+    descriptionDiv.scrollIntoView();
 
     const currentStep = completed instanceof Promise ? completed : this.firstEvent(completed);
     await currentStep;
@@ -261,10 +261,6 @@ export abstract class Tutorial extends DG.Widget {
     
     if (hint != null)
       this._removeHints(hint);
-  }
-
-  protected _scroll(): void {
-    this.root.scrollTop = this.root.scrollHeight;
   }
 
   clearRoot(): void {

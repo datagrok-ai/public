@@ -1,28 +1,49 @@
 {
   "name": "datagrok-tools",
-  "version": "4.1.12",
+  "version": "4.1.14",
   "description": "Utility to upload and publish packages to Datagrok",
   "homepage": "https://github.com/datagrok-ai/public/tree/master/tools#readme",
   "dependencies": {
-    "@types/node": "latest",
-    "@types/js-yaml": "latest",
-    "inquirer": "^7.1.0",
-    "minimist": "^1.2.5",
-    "node-fetch": "^2.6.0",
-    "fs": "latest",
-    "node-recursive-directory": "^1.2.0",
-    "path": "^0.12.7",
+    "@babel/runtime": "^7.16.0",
     "archiver": "^4.0.2",
     "archiver-promise": "^1.0.0",
+    "fs": "latest",
     "ignore-walk": "^3.0.3",
-    "js-yaml": "^3.14.0",
-    "os": "^0.1.1"
+    "inquirer": "^7.1.0",
+    "js-yaml": "^4.1.0",
+    "minimist": "^1.2.5",
+    "node-fetch": "^2.6.0",
+    "node-recursive-directory": "^1.2.0",
+    "os": "^0.1.1",
+    "path": "^0.12.7"
+  },
+  "scripts": {
+    "prepublishOnly": "babel bin --extensions .ts -d bin",
+    "babel": "babel bin --extensions .ts -d bin"
   },
   "bin": {
-    "datagrok-upload": "./bin/upload.js",
+    "datagrok-upload": "./bin/_deprecated/upload.js",
     "grok": "./bin/grok.js"
   },
+  "babel": {
+    "presets": [
+      "@babel/preset-typescript",
+      "@babel/preset-env"
+    ],
+    "plugins": [
+      "@babel/plugin-transform-runtime"
+    ]
+  },
   "devDependencies": {
+    "@babel/cli": "^7.15.7",
+    "@babel/core": "^7.15.8",
+    "@babel/plugin-transform-runtime": "^7.16.0",
+    "@babel/preset-env": "^7.15.8",
+    "@babel/preset-typescript": "7.15.0",
+    "@types/ignore-walk": "^4.0.0",
+    "@types/inquirer": "^8.1.3",
+    "@types/js-yaml": "^4.0.4",
+    "@types/node": "^16.11.6",
     "webpack": "^4.43.0",
     "webpack-cli": "^3.3.11"
   }

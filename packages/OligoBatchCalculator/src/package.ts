@@ -7,6 +7,15 @@ import {map} from "./map";
 
 export let _package = new DG.Package();
 
+let molecularWeightsObj: {[index: string]: number} = {};
+for (let representation of Object.values(map))
+  for (let code of Object.keys(representation))
+    molecularWeightsObj[code] = representation[code].molecularWeight;
+
+function sortByStringLengthInDescendingOrderToCheckForMatchWithLongerCodesFirst(array: string[]): string[] {
+  return array.sort(function(a, b) { return b.length - a.length; });
+}
+
 //name: Oligo Batch Calculator
 //input: string sequence
 //input: double amount
@@ -32,7 +41,7 @@ export function OligoBatchCalculator(sequence: string, amount: number, outputUni
 //input: string outputUnits {choices: ['NMole', 'Milligrams', 'Micrograms']}
 //output: double opticalDensity
 export function opticalDensity(sequence: string, amount: number, outputUnits: string): number {
-  if (outputUnits == 'Milligrams' || outputUnits == 'Micrograms') {
+  if (outputUnits == 'Milligrams' || outputUnits == 'Micrograms' || outputUnits == 'mg' || outputUnits == 'µg') {
     const coefficient = outputUnits == 'Milligrams' ? 1 : 0.001;
     return coefficient * amount * extinctionCoefficient(sequence) / molecularWeight(sequence);
   } else if (outputUnits == 'OD') {
@@ -68,48 +77,30 @@ export function molecularMass(sequence: string, amount: number, outputUnits: str
 //name: molecularWeight
 //input: string sequence
 //output: double molecularWeight
-export function molecularWeight(sequence: string): number {
-  //TODO: get weights from map.ts (problem: some keys are in several representations at the same time, example: "8", "A", etc.)
-  const weights: {[index: string]: number} = {
-    "ps":	16.07, "s": 16.07,
-    "fA":	331.2, "fU": 308.16, "fC": 307.18, "fG": 347.19,
-    "mA":	343.24, "mU":	320.2, "mC": 319.21, "mG": 359.24,
-    "A": 313.21, "U": 306.17, "C": 289.18, "G": 329.21, "T": 304.2,
-    "dA": 313.21, "dU": 306.17, "dC": 289.18, "dG": 329.21, "dT": 304.2,
-    "rA": 329.21, "rU": 306.17, "rC": 305.18, "rG": 345.21,
-    "Af": 331.2, "Uf": 308.16, "Gf": 347.19, "Cf": 307.18,
-    "u": 320.2, "a": 343.24, "c": 319.21, "g": 359.24,
-    "moeT": 378.27, "moeA": 387.29, "moe5mC": 377.29, "moeG": 403.28, "5mC": 303.28, "(5m)moeC": 377.29, "(5m)C": 303.28
-  };
-  const recognizableSymbols = Object.keys(weights);
+export function molecularWeight(sequence: string, representation?: string): number {
+  const codes = (representation) ?
+    Object.keys(molecularWeightsObj[representation]) :
+    sortByStringLengthInDescendingOrderToCheckForMatchWithLongerCodesFirst(Object.keys(molecularWeightsObj));
   let molecularWeight = 0;
   let i = 0;
-  const manyDigitSymbols = ["moeA", "moe5mC", "(5m)moeC", "moeG", "moeT", "5mC", "(5m)C"];
-  while (i < sequence.length)
-    if (manyDigitSymbols.some((s) => s == sequence.slice(i, i + s.length))) {
-      let matchedString = manyDigitSymbols.find((s) => s == sequence.slice(i, i + s.length));
-      molecularWeight += weights[sequence.slice(i, i + matchedString!.length)];
-      i += matchedString!.length;
-    } else if (recognizableSymbols.includes(sequence.slice(i, i + 2))) {
-      molecularWeight += weights[sequence.slice(i, i + 2)];
-      i += 2;
-    } else if (recognizableSymbols.includes(sequence[i])) {
-      molecularWeight += weights[sequence[i]];
-      i++;
-    }
-  return (sequence.length > 0) ? molecularWeight - 61.97 : 0;
+  while (i < sequence.length) {
+    let matchedCode = codes.find((s) => s == sequence.slice(i, i + s.length));
+    molecularWeight += molecularWeightsObj[sequence.slice(i, i + matchedCode!.length)];
+    i += matchedCode!.length;
+  }
+  return molecularWeight - 61.97;
 }
 
 //name: extinctionCoefficient
 //input: string sequence
 //output: double extinctionCoefficient
 export function extinctionCoefficient(sequence: string): number {
-  sequence = !(sequence[0] == 'r' || sequence[0] == 'd') ? normalizeSequence(sequence) : sequence;
+  sequence = normalizeSequence(sequence);
   const individualBases: {[index: string]: number} = {
       'dA': 15400, 'dC': 7400, 'dG': 11500, 'dT': 8700,
       'rA': 15400, 'rC': 7200, 'rG': 11500, 'rU': 9900
     },
-    nearestNeighbour: any = {
+    nearestNeighbour: {[index: string]: {[index: string]: number}} = {
       'dA': {'dA': 27400, 'dC': 21200, 'dG': 25000, 'dT': 22800},
       'dC': {'dA': 21200, 'dC': 14600, 'dG': 18000, 'dT': 15200},
       'dG': {'dA': 25200, 'dC': 17600, 'dG': 21600, 'dT': 20000},
@@ -138,6 +129,7 @@ function normalizeSequence(sequence: string): string {
   //TODO: get normalization strings from map.ts (problem: some keys are in several representations at the same time, example: "8", "A", etc.)
   //TODO: create searchValue for replace functions from map.ts
   //TODO: ask conventional name of this operation(instead of 'normalize') and export this function
+  //TODO: pass representation argument
   const isNormalized = /^[rdAUGCT]+$/.test(sequence);
   const isRna = /^[AUGC]+$/.test(sequence);
   const isDna = /^[ATGC]+$/.test(sequence);
@@ -171,35 +163,61 @@ function normalizeSequence(sequence: string): string {
             sequence.replace(/(fU|fA|fC|fG|mU|mA|mC|mG|ps|A|U|G|C)/g, function (x) {return obj[x]});
 }
 
-function indexOfFirstNotValidCharacter(sequence: string) {
-  //TODO: generate const arrays programmatically from map.ts
-  const oneDigitSymbols = ["A", "U", "T", "C", "G", "u", "a", "c", "g", "s"],
-    twoDigitSymbols = ["fA", "fU", "fC", "fG", "mA", "mU", "mC", "mG", "dA", "dU", "dC", "dG", "dT", "rA", "rU", "rC", "rG", "ps",
-      "Uf", "Af", "Cf", "Gf"],
-    manyDigitSymbols = ["moeA", "moe5mC", "(5m)moeC", "moeG", "moeT", "5mC", "(5m)C"];
-  const firstUniqueCharacters = ['r', 'd', 'f', 'm'];
-  let i = 0;
-  let firstCodeIsOneCharacter = false;
-  let firstCodeIsTwoCharacter = false;
-  while (i < sequence.length) {
-    if (!firstCodeIsOneCharacter && manyDigitSymbols.some((s) => s == sequence.slice(i, i + s.length))) {
-      let matchedString = manyDigitSymbols.find((s) => s == sequence.slice(i, i + s.length));
-      i += matchedString!.length;
-    } else if (!firstCodeIsOneCharacter && twoDigitSymbols.includes(sequence.slice(i, i + 2))) {
-      firstCodeIsTwoCharacter = true;
-      i += 2;
-    } else if (!firstCodeIsTwoCharacter && oneDigitSymbols.includes(sequence[i])) {
-      firstCodeIsOneCharacter = true;
-      if (i > 1 && firstUniqueCharacters.includes(sequence[i-2])) //rArAT
-        return i;
-      else if (firstUniqueCharacters.includes(sequence[i+1])) // TTrA
-        return i + 1;
-      i++;
-    } else {
-      return i;
+function getListOfPossibleRepresentationsByFirstMatchedCodes(sequence: string): string[] {
+  let representations: string[] = [];
+  Object.keys(map).forEach((representation: string) => {
+    if (Object.keys(map[representation]).some((s) => s == sequence.slice(0, s.length)))
+      representations.push(representation);
+  });
+  return representations;
+}
+
+function isValid(sequence: string) {
+  //TODO: rewrite using switch case
+  let possibleRepresentations = getListOfPossibleRepresentationsByFirstMatchedCodes(sequence);
+  if (possibleRepresentations.length == 0)
+    return { indexOfFirstNotValidCharacter: 0, expectedRepresentation: null };
+
+  let outputIndices = Array(possibleRepresentations.length).fill(0);
+
+  const firstUniqueCharacters = ['r', 'd', 'f', 'm'],
+    secondCharactersInNormalizedCodes = ["A", "U", "T", "C", "G"];
+
+  possibleRepresentations.forEach((representation, representationIndex) => {
+    while (outputIndices[representationIndex] < sequence.length) {
+
+      let matchedCode = Object.keys(map[possibleRepresentations[representationIndex]])
+        .find((s) => s == sequence.slice(outputIndices[representationIndex], outputIndices[representationIndex] + s.length));
+
+      if (matchedCode == null)
+        break;
+
+      if (  // for mistake pattern 'rAA'
+        outputIndices[representationIndex] > 1 &&
+        secondCharactersInNormalizedCodes.includes(sequence[outputIndices[representationIndex]]) &&
+        firstUniqueCharacters.includes(sequence[outputIndices[representationIndex] - 2])
+      )
+        break;
+
+      if (  // for mistake pattern 'ArA'
+        firstUniqueCharacters.includes(sequence[outputIndices[representationIndex] + 1]) &&
+        secondCharactersInNormalizedCodes.includes(sequence[outputIndices[representationIndex]])
+      ) {
+        outputIndices[representationIndex]++;
+        break;
+      }
+
+      outputIndices[representationIndex] += matchedCode.length;
     }
-  }
-  return -1;
+  });
+
+  const indexOfExpectedRepresentation = Math.max.apply(Math, outputIndices);
+  const indexOfFirstNotValidCharacter = (indexOfExpectedRepresentation == sequence.length) ? -1 : indexOfExpectedRepresentation;
+
+  return {
+    indexOfFirstNotValidCharacter: indexOfFirstNotValidCharacter,
+    expectedRepresentation: possibleRepresentations[outputIndices.indexOf(indexOfFirstNotValidCharacter)]
+  };
 }
 
 //name: Oligo Batch Calculator
@@ -207,9 +225,11 @@ function indexOfFirstNotValidCharacter(sequence: string) {
 export function OligoBatchCalculatorApp() {
 
   function updateTable(text: string) {
-    tableDiv.innerHTML = '';
+    gridDiv.innerHTML = '';
 
-    let sequences = text.split('\n').map((s) => s.replace(/\s/g, '')).filter(item => item);
+    let sequences = text.split('\n')
+      .map((s) => s.replace(/\s/g, ''))
+      .filter(item => item);
 
     let indicesOfFirstNotValidCharacter = Array(sequences.length),
       normalizedSequences = Array(sequences.length),
@@ -217,32 +237,48 @@ export function OligoBatchCalculatorApp() {
       extinctionCoefficients = Array(sequences.length),
       nMoles = Array(sequences.length),
       opticalDensities = Array(sequences.length),
-      molecularMasses = Array(sequences.length);
+      molecularMasses = Array(sequences.length),
+      reasonsOfError = Array(sequences.length),
+      expectedRepresentations = Array(sequences.length);
 
     sequences.forEach((sequence, i) => {
-      indicesOfFirstNotValidCharacter[i] = indexOfFirstNotValidCharacter(sequence);
+      let output = isValid(sequence);
+      indicesOfFirstNotValidCharacter[i] = output.indexOfFirstNotValidCharacter;
+      expectedRepresentations[i] = output.expectedRepresentation;
       if (indicesOfFirstNotValidCharacter[i] < 0) {
         normalizedSequences[i] = normalizeSequence(sequence);
-        try {
-          molecularWeights[i] = molecularWeight(sequence);
-          extinctionCoefficients[i] = extinctionCoefficient(normalizedSequences[i]);
-          nMoles[i] = nMole(sequence, yieldAmount.value, units.value);
-          opticalDensities[i] = opticalDensity(sequence, yieldAmount.value, units.value);
-          molecularMasses[i] = molecularMass(sequence, yieldAmount.value, units.value);
-        } catch (e) {
-          grok.shell.error(e);
+        if (normalizedSequences[i].length > 2) {
+          try {
+            molecularWeights[i] = molecularWeight(sequence, expectedRepresentations[i]);
+            extinctionCoefficients[i] = extinctionCoefficient(normalizedSequences[i]);
+            nMoles[i] = nMole(sequence, yieldAmount.value, units.value);
+            opticalDensities[i] = opticalDensity(sequence, yieldAmount.value, units.value);
+            molecularMasses[i] = molecularMass(sequence, yieldAmount.value, units.value);
+          } catch (e) {
+            reasonsOfError[i] = 'Unknown error, please report it to Datagrok team';
+            indicesOfFirstNotValidCharacter[i] = 0;
+            grok.shell.error(String(e));
+          }
+        } else {
+          reasonsOfError[i] = 'Sequence should contain at least two nucleotides';
+          indicesOfFirstNotValidCharacter[i] = 0;
         }
-      }
+      } else if (expectedRepresentations[i] == null)
+        reasonsOfError[i] = "Not valid input";
+      else
+        reasonsOfError[i] = "Sequence is expected to be in representation '" +  expectedRepresentations[i] +
+          "', please see table below to see list of valid codes";
     });
 
-    let moleName1 = (units.value == 'µmole' || units.value == 'mg') ? 'µmole' : 'nmole';
-    let moleName2 = (units.value == 'µmole') ? 'µmole' : 'nmole';
-    let massName = (units.value == 'µmole') ? 'mg' : (units.value == 'mg') ? units.value : 'µg';
-    const coefficient = (units.value == 'mg' || units.value == 'µmole') ? 1000 : 1;
+    const moleName1 = (units.value == 'µmole' || units.value == 'mg') ? 'µmole' : 'nmole',
+      moleName2 = (units.value == 'µmole') ? 'µmole' : 'nmole',
+      massName = (units.value == 'µmole') ? 'mg' : (units.value == 'mg') ? units.value : 'µg',
+      coefficient = (units.value == 'mg' || units.value == 'µmole') ? 1000 : 1,
+      nameOfColumnWithSequences = 'Sequence';
 
     table = DG.DataFrame.fromColumns([
       DG.Column.fromList('int', 'Item', Array(...Array(sequences.length + 1).keys()).slice(1)),
-      DG.Column.fromList('string', 'Sequence', sequences),
+      DG.Column.fromList('string', nameOfColumnWithSequences, sequences),
       DG.Column.fromList('int', 'Length', normalizedSequences.map((s) => s.length / 2)),
       DG.Column.fromList('double', 'OD 260', opticalDensities),
       DG.Column.fromList('double', moleName1, nMoles),
@@ -254,22 +290,25 @@ export function OligoBatchCalculatorApp() {
     ]);
 
     let grid = DG.Viewer.grid(table);
-    let col = grid.columns.byName('Sequence');
+    let col = grid.columns.byName(nameOfColumnWithSequences);
     col!.cellType = 'html';
 
     grid.onCellPrepare(function (gc) {
-      if (gc.isTableCell && gc.gridColumn.name == 'Sequence') {
+      if (gc.isTableCell && gc.gridColumn.name == nameOfColumnWithSequences) {
         let items = (indicesOfFirstNotValidCharacter[gc.gridRow] < 0) ?
           [ui.divText(gc.cell.value, {style: {color: "grey"}})] :
           [
             ui.divText(gc.cell.value.slice(0, indicesOfFirstNotValidCharacter[gc.gridRow]), {style: {color: "grey"}}),
-            ui.divText(gc.cell.value.slice(indicesOfFirstNotValidCharacter[gc.gridRow]), {style: {color: "red"}})
+            ui.tooltip.bind(
+              ui.divText(gc.cell.value.slice(indicesOfFirstNotValidCharacter[gc.gridRow]), {style: {color: "red"}}),
+              reasonsOfError[gc.gridRow]
+            )
           ];
         gc.style.element = ui.divH(items, {style: {margin: '6px 0 0 6px'}});
       }
     });
 
-    tableDiv.append(grid.root);
+    gridDiv.append(grid.root);
   }
 
   let windows = grok.shell.windows;
@@ -279,7 +318,7 @@ export function OligoBatchCalculatorApp() {
 
   const defaultInput = 'fAmCmGmAmCpsmU\nmApsmApsfGmAmUmCfGfAfC\nmAmUfGmGmUmCmAfAmGmA';
   let table = DG.DataFrame.create();
-  let tableDiv = ui.box();
+  let gridDiv = ui.box();
 
   let inputSequences = ui.textInput("", defaultInput, async (txt: string) => updateTable(txt));
   let yieldAmount = ui.floatInput('', 1, () => updateTable(inputSequences.value));
@@ -293,6 +332,27 @@ export function OligoBatchCalculatorApp() {
     link.setAttribute("href", "data:text/csv;charset=utf-8,\uFEFF" + encodeURI(table.toCsv()));
     link.setAttribute("download", "Oligo Properties.csv");
     link.click();
+  });
+
+  let tables = ui.divV([]);
+  for (let representation of Object.keys(map)) {
+    let tableRows = [];
+    for (let [key, value] of Object.entries(map[representation]))
+      tableRows.push({'name': value.name, 'code': key, 'weight': value['molecularWeight']});
+    tables.append(
+      DG.HtmlTable.create(
+        tableRows,
+        (item: {name: string; code: string; weight: number}) => [item['name'], item['code'], item['weight']],
+        [representation, 'Code', 'Weight']
+      ).root,
+      ui.div([], {style: {height: '30px'}})
+    );
+  }
+
+  let showCodesButton = ui.button('SHOW CODES', () => {
+    ui.dialog('Codes')
+      .add(tables)
+      .show();
   });
 
   let title = ui.panel([ui.h1('Oligo Properties')], 'ui-panel ui-box');
@@ -313,19 +373,20 @@ export function OligoBatchCalculatorApp() {
             inputSequences.root
           ],'inputSequence'),
           clearSequences,
-        ]), {style:{maxHeight:'245px'}}
+        ]), {style:{maxHeight:'270px'}}
       ),
       ui.splitV([
         title,
-        ui.panel([tableDiv], 'ui-box')
+        ui.panel([gridDiv], 'ui-box')
       ]),
       ui.box(
         ui.panel([
           ui.divH([
-            saveAsButton
+            saveAsButton,
+            showCodesButton
           ])
         ]), {style:{maxHeight:'60px'}}
-      ),
+      )
     ])
   ]);
   view.box = true;
