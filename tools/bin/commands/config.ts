@@ -4,12 +4,11 @@ import os from 'os';
 import path from 'path';
 import yaml from 'js-yaml';
 import { validateConf } from '../validators/config-validator';
-import { Indexable } from '../utils/utils';
+import { Config, Indexable } from '../utils/utils';
 
 
 const confTemplateDir = path.join(path.dirname(path.dirname(__dirname)), 'config-template.yaml');
-// @ts-ignore
-const confTemplate = yaml.safeLoad(fs.readFileSync(confTemplateDir));
+const confTemplate = yaml.load(fs.readFileSync(confTemplateDir, { encoding: 'utf-8' }));
 
 const grokDir = path.join(os.homedir(), '.grok');
 const confPath = path.join(grokDir, 'config.yaml');
@@ -43,11 +42,9 @@ export function config(args: { _: string[], reset?: boolean }) {
       fs.mkdirSync(grokDir);
     }
     if (!fs.existsSync(confPath) || args.reset) {
-      // @ts-ignore
-      fs.writeFileSync(confPath, yaml.safeDump(confTemplate));
+      fs.writeFileSync(confPath, yaml.dump(confTemplate));
     }
-    // @ts-ignore
-    const config = yaml.safeLoad(fs.readFileSync(confPath));
+    const config = yaml.load(fs.readFileSync(confPath, { encoding: 'utf-8' })) as Config;
     console.log(`Your config file (${confPath}):`);
     console.log(config);
     const valRes = validateConf(config);
@@ -86,8 +83,7 @@ export function config(args: { _: string[], reset?: boolean }) {
             default: config.default
           });
           config.default = defaultServer['default-server'];
-          // @ts-ignore
-          fs.writeFileSync(confPath, yaml.safeDump(config));
+          fs.writeFileSync(confPath, yaml.dump(config));
         }
       } catch (err) {
         console.error('The file is corrupted. Please run `grok config --reset` to restore the default template');
