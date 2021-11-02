@@ -13,7 +13,7 @@ export function test() {
   grok.shell.info(_package.webRoot);
 }
 
-//tags: init
+//tags: init, autostart
 export function init() {
   console.log('init');
   DG.ObjectHandler.register(new ModelHandler());
