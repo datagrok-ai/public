@@ -3,6 +3,7 @@
 #input: string smiles
 #input: dataframe df1
 #input: string core
+#input: string prefix
 #output: dataframe result
 
 from rdkit import Chem
@@ -46,7 +47,7 @@ if core is not None:
       for g in range(0, len(fragments_)):
         r_groups[g][n] = fragments_[g]
   for g in range(0, len(r_groups)):
-    result['R' + str(g + 1)] = r_groups[g].tolist()
+    result[prefix + str(g + 1)] = r_groups[g].tolist()
 else:
   raise Exception('Core is empty')
 result = pd.DataFrame.from_dict(result)
