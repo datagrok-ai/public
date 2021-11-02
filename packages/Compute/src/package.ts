@@ -39,7 +39,7 @@ export async function manualOutlierSelectionDialog(inputData: DG.DataFrame) {
   const IS_OUTLIER_COL_LABEL = 'isOutlier';
   const OUTLIER_REASON_COL_LABEL = 'Reason';
 
-  if (call.aux['interactive']) {
+  if (call.options['interactive']) {
     const {augmentedInput, editedInput} = await selectOutliersManually(inputData);
     return {augmentedInput, editedInput};
   }
