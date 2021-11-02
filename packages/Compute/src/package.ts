@@ -34,12 +34,25 @@ export function modelCatalog() {
 //output: dataframe augmentedInput
 //output: dataframe editedInput
 export async function manualOutlierSelectionDialog(inputData: DG.DataFrame) {
-  let call = grok.functions.getCurrentCall();
+  const call = grok.functions.getCurrentCall();
+
+  const IS_OUTLIER_COL_LABEL = 'isOutlier';
+  const OUTLIER_REASON_COL_LABEL = 'Reason';
+
   if (call.aux['interactive']) {
     const {augmentedInput, editedInput} = await selectOutliersManually(inputData);
     return {augmentedInput, editedInput};
   }
   return new Promise<{augmentedInput: DG.DataFrame, editedInput: DG.DataFrame}>((resolve, reject) => {
+    if (!inputData.columns.byName(IS_OUTLIER_COL_LABEL)) {
+      inputData.columns
+        .add(DG.Column.fromBitSet(IS_OUTLIER_COL_LABEL, DG.BitSet.create(inputData.rowCount, () => false)));
+    }
+
+    if (!inputData.columns.byName(OUTLIER_REASON_COL_LABEL)) {
+      inputData.columns
+        .add(DG.Column.fromStrings(OUTLIER_REASON_COL_LABEL, Array.from({length: inputData.rowCount}, () => '')));
+    }
     resolve({augmentedInput: inputData, editedInput: inputData});
   });
 }
