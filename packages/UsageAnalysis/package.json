@@ -1,9 +1,31 @@
 {
-  "name": "UsageAnalysis",
-  "version": "0.1",
-  "fullName": "Usage Analysis",
-  "description": "Usage Analysis System",
-  "sources": [
-    "css/usage_analysis.css"
-  ]
+	"name": "@datagrok/usage-analysis",
+	"beta": true,
+	"friendlyName": "Usage Analysis",
+	"version": "0.0.1",
+	"description": "Usage Analysis System",
+	"dependencies": {
+		"acorn": "^8.5.0",
+		"cash-dom": "^8.1.0",
+		"css-loader": "^6.4.0",
+		"datagrok-api": "../../js-api",
+		"moment": "^2.29.1",
+		"package-lock.json": "^1.0.0",
+		"style-loader": "^3.3.0",
+		"ts-loader": "^8.1.0",
+		"typescript": "^4.2.3",
+		"webpack": "^5.33.2"
+	},
+	"scripts": {
+		"debug-usageanalysis": "webpack && grok publish",
+		"build": "webpack",
+		"release-usageanalysis": "webpack && grok publish --release",
+		"debug-usageanalysis-dev": "grok publish dev --rebuild",
+		"release-usageanalysis-dev": "grok publish dev --rebuild --release",
+		"debug-usageanalysis-public": "grok publish public --rebuild",
+		"release-usageanalysis-public": "grok publish public --rebuild --release"
+	},
+	"devDependencies": {
+		"webpack-cli": "^4.7.2"
+	}
 }

@@ -88,9 +88,11 @@ export class ClinicalStudy {
         this.domains[t.name.toLowerCase()] = t;
     }
 
-    this.subjectsCount = this.domains.dm.rowCount;
-    this.sitesCount = this.domains.dm.col('siteid').stats.uniqueCount;
-    this.name = this.domains.dm.col('studyid').get(0);
+    if(this.domains.dm != null){
+      this.subjectsCount = this.domains.dm.rowCount;
+      this.sitesCount = this.domains.dm.col('siteid').stats.uniqueCount;
+      this.name = this.domains.dm.col('studyid').get(0);
+    }
 
     this.process();
 

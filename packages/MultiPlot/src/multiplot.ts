@@ -169,7 +169,7 @@ export class MultiPlotViewer extends DG.JsViewer {
       this.echartOptions.title[i].text = heightData[i].titleText;
       this.echartOptions.title[i].textStyle = {
         'height': heightData[i].titleHeight,
-        'fontSize': (parseFloat(this.defaultTitleHeight) * .6),
+        'fontSize': (parseFloat(this.defaultTitleHeight) * .6)
       };
       this.echartOptions.legend[i].top = (heightData[i].titleTop) + 'px'
 
@@ -264,14 +264,22 @@ export class MultiPlotViewer extends DG.JsViewer {
       this.echartOptions.yAxis[visibleIndex].axisLine = {onZero: false};
       this.echartOptions.yAxis[visibleIndex].axisTick = {alignWithLabel: true};
 
-
       if(plot.multiLineFieldIndex && plot.series.data.length){
+        let minY;
+        let maxY;
         plot.series.data.forEach((item, index) => {
-          this.echartOptions.series.push(this.getCurrentSeries(plot, visibleIndex, i, plot.series.type, plot.currentCat[index], item))
+          this.echartOptions.series.push(this.getCurrentSeries(plot, visibleIndex, i, plot.series.type, plot.currentCat[index], item));
+          item.forEach(it => {
+            if(!minY || minY > it[1]) {minY = it[1]};
+            if(!maxY || maxY < it[1]) {maxY = it[1]};
+          })        
         })
+        this.echartOptions.yAxis[visibleIndex].min = plot.additionalParams ? plot.additionalParams.min && plot.additionalParams.min < minY ? plot.additionalParams.min : minY : undefined;
+        this.echartOptions.yAxis[visibleIndex].max =  plot.additionalParams ? plot.additionalParams.max && plot.additionalParams.max > maxY ? plot.additionalParams.max : maxY: undefined;
       } else {
         this.echartOptions.series.push(this.getCurrentSeries(plot, visibleIndex, i, plot.series.type, plot.currentCat, plot.series.data));
       }
+
 
       this.visibleIndexes.push(i);
       visibleIndex++;
@@ -312,6 +320,7 @@ export class MultiPlotViewer extends DG.JsViewer {
         type: plot.yType,
       },
       itemStyle: {},
+      markLine: plot.additionalParams ? plot.additionalParams.markLine : undefined
     };
 
     if (plot.statusChart) {
@@ -607,8 +616,8 @@ export class MultiPlotViewer extends DG.JsViewer {
   }
 
   isGroup(componentIndex: number, componentType: string) : boolean {
-    const type = this.plots[this.visibleIndexes[componentIndex]].type;
-    const yType = this.plots[this.visibleIndexes[componentIndex]].yType;
+    const type = this.plots[componentIndex].type;
+    const yType = this.plots[componentIndex].yType;
 
     if ((type === 'scatter' || type === 'line') &&
       yType == 'category' && componentType == 'yAxis') return true;
@@ -682,7 +691,8 @@ export class MultiPlotViewer extends DG.JsViewer {
     });
 
     this.echart.on('mouseover', (params) => {
-      const iPlot : number = this.echartOptions.series[params.componentIndex].gridIndex;
+
+      const iPlot : number = this.visibleIndexes[this.echartOptions.series[params.componentIndex].gridIndex];
       const table : DG.DataFrame = this.tables[this.plots[iPlot].tableName];
       const subjBuf = this.plots[iPlot];
       const x = (params.event.event as MouseEvent).x + this.tooltipOffset;
@@ -785,8 +795,8 @@ export class MultiPlotViewer extends DG.JsViewer {
     for (let i = 0; i < this.plots.length; i++) {
       const inputPlotType: any = ui.div([ ui.iconFA('angle-right'), ui.iconFA('angle-down') ]);
       const showHideIcons = inputPlotType.querySelectorAll('i');
-      showHideIcons[ 0 ].style.display = 'none';
-      inputPlotType.showSwitch = 1;
+      showHideIcons[ this.plots[ i ].show ? 0 : 1 ].style.display = 'none';
+      inputPlotType.showSwitch = this.plots[ i ].show ? 1 : 0;
       inputPlotType.addEventListener('click', (e) => {
         const div = e.target.parentNode;
         div.showSwitch = 1 - div.showSwitch;
@@ -844,7 +854,7 @@ export class MultiPlotViewer extends DG.JsViewer {
             .add(ui.div([ labValuesMultiChoices ], { style: { width: '400px', height: '300px' } }))
             .onOK(() => {
               if(this.plots[ i ].multiEdit.editValue === 'category'){
-                this.updatePlotByCategory(i, this.plots[ i ].multiEdit.selectedValues, false);
+                this.updatePlotByCategory(i, this.plots[ i ].multiEdit.selectedValues, this.plots[ i ].multiEdit.updateTitle);
               }
             })
             .show();
@@ -855,7 +865,6 @@ export class MultiPlotViewer extends DG.JsViewer {
         inputEdit.style.flexDirection = 'row';
         this.root.appendChild(inputEdit);
         this.multiEditElements.push(inputEdit);
-        // this.updatePlotByCategory(i, this.plots[ i ].edit.selectedValues, false);
       } else {
         this.multiEditElements.push(null);
       }
@@ -871,8 +880,9 @@ export class MultiPlotViewer extends DG.JsViewer {
           this.plots[ i ].comboEdit.options);
         inputEdit.onChanged((v) => {
           this.plots[ i ].comboEdit.selectedValue = inputEdit.value;
+          this.setAdditionalParams(i, this.plots[ i ].comboEdit.additionalParams[this.plots[ i ].comboEdit.selectedValue]);
           if(this.plots[ i ].comboEdit.editValue === 'category') {
-            this.updatePlotByCategory(i, this.plots[ i ].comboEdit.selectedValue, true);
+            this.updatePlotByCategory(i, this.plots[ i ].comboEdit.selectedValue, this.plots[ i ].multiEdit.updateTitle);
           }
           if(this.plots[ i ].comboEdit.editValue === 'y') {
             this.updatePlotByYAxis(i, this.plots[ i ].comboEdit.values[this.plots[ i ].comboEdit.selectedValue]);
@@ -884,7 +894,6 @@ export class MultiPlotViewer extends DG.JsViewer {
         inputEdit.root.style.flexDirection = 'row';
         this.root.appendChild(inputEdit.root);
         this.comboEditElements.push(inputEdit.root);
-        //  this.updatePlotByCategory(i, this.plots[ i ].edit.selectedValues, true);
       } else {
         this.comboEditElements.push(null);
       }
@@ -929,6 +938,10 @@ export class MultiPlotViewer extends DG.JsViewer {
     this.plots[plotIndex].y = yAxis;
     this.updateFilter();
     this.render();
+  }
+
+  setAdditionalParams(plotIndex: number, params: any){
+    this.plots[plotIndex].additionalParams = params;
   }
 
   render(): void {

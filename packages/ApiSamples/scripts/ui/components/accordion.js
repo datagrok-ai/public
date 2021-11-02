@@ -7,6 +7,8 @@ v.root.appendChild(ui.h1('UI Toolkit'));
 // accordion
 let acc = ui.accordion();
 
+v.root.header = ui.divText('Custom header');
+
 acc.addPane('links', () => ui.divV([
   ui.link('action', () => grok.shell.info('clicked')),
   ui.link('google.com', 'https://google.com')]));

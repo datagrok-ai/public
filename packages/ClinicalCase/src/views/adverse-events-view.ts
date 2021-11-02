@@ -2,19 +2,33 @@ import * as grok from 'datagrok-api/grok';
 import * as DG from "datagrok-api/dg";
 import * as ui from "datagrok-api/ui";
 import { study, ClinRow } from "../clinical-study";
-import { addDataFromDmDomain, getUniqueValues } from '../data-preparation/utils';
+import { addDataFromDmDomain } from '../data-preparation/utils';
 import { TREATMENT_ARM } from '../constants';
+import { ILazyLoading } from '../lazy-loading/lazy-loading';
+import { checkMissingDomains } from './utils';
+import { _package } from '../package';
 
 
-export class AdverseEventsView extends DG.ViewBase {
+export class AdverseEventsView extends DG.ViewBase implements ILazyLoading {
 
   aeWithArm: DG.DataFrame;
 
   constructor(name) {
-    super(name);
+    super({});
     this.name = name;
-    this.aeWithArm = addDataFromDmDomain(study.domains.ae.clone(), study.domains.dm, study.domains.ae.columns.names(), [TREATMENT_ARM]);
+    this.helpUrl = `${_package.webRoot}/views_help/adverse_events.md`;
+    //@ts-ignore
+    this.basePath = '/adverse-events';
+  }
 
+  loaded: boolean;
+
+  load(): void {
+    checkMissingDomains(['dm', 'ae'], false, this);
+ }
+
+  createView(): void {
+    this.aeWithArm = addDataFromDmDomain(study.domains.ae.clone(), study.domains.dm, study.domains.ae.columns.names(), [TREATMENT_ARM]);
     let viewerTitle = {style:{
       'color':'var(--grey-6)',
       'margin':'12px 0px 6px 12px',
@@ -54,7 +68,6 @@ export class AdverseEventsView extends DG.ViewBase {
 
 
     let legend = DG.Legend.create(this.aeWithArm.columns.byName(TREATMENT_ARM));
-   // $(legend.root).css('flex-direction', 'row !important');
 
     this.root.className = 'grok-view ui-box';
     this.root.append(ui.splitV([
@@ -63,17 +76,7 @@ export class AdverseEventsView extends DG.ViewBase {
       ui.splitH([typesPlot,bodySystemsPlot,causalityPlot,outcomePlot]),
       ui.splitH([grid.root])
     ]))
-    /*
-    this.root.appendChild(ui.block([
-        ui.block25([typesPlot]),
-        ui.block25([bodySystemsPlot]),
-        ui.block50([timelinesPlot]),
-        ui.block25([causalityPlot]),
-        ui.block25([outcomePlot]),
-        ui.block50([scatterPlot]),
-        ui.block([grid.root])
-    ]));
-    */
+
   }
 
   private bar(categoryColumn: string, title:string, viewerTitle: any, splitColumn: string) {

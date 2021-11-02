@@ -1,5 +1,5 @@
 {
-	"name": "nlp",
+	"name": "@datagrok/nlp",
 	"fullName": "NLP",
 	"version": "0.0.1",
 	"description": "Natural Language Processing Package",

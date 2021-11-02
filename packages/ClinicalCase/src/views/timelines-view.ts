@@ -4,9 +4,12 @@ import * as DG from "datagrok-api/dg";
 import * as ui from "datagrok-api/ui";
 import { study } from "../clinical-study";
 import { createFilteredTable, dataframeContentToRow } from "../data-preparation/utils";
-import { updateDivInnerHTML } from "./utils";
+import { checkMissingDomains, updateDivInnerHTML } from "./utils";
 import $ from "cash-dom";
 import { createPropertyPanel } from "../panels/panels-service";
+import { ILazyLoading } from "../lazy-loading/lazy-loading";
+import { AEBrowserHelper } from "../helpers/ae-browser-helper";
+import { _package } from "../package";
 
 let links = {
   ae: { key: 'USUBJID', start: 'AESTDY', end: 'AEENDY', event: 'AETERM'},
@@ -22,9 +25,9 @@ let filters = {
   ex: {'Treatment arm': 'EXTRT'}
 }
 
-let multichoiceTableOptions = { 'Adverse events': 'ae', 'Concomitant medication intake': 'cm', 'Drug exposure': 'ex' }
+let multichoiceTableDict = { 'Adverse events': 'ae', 'Concomitant medication intake': 'cm', 'Drug exposure': 'ex' }
 
-export class TimelinesView extends DG.ViewBase {
+export class TimelinesView extends DG.ViewBase implements ILazyLoading {
 
   options = {
     subjectColumnName: 'key',
@@ -35,18 +38,35 @@ export class TimelinesView extends DG.ViewBase {
     showEventInTooltip: true
   }
 
-  selectedOptions = [ Object.keys(multichoiceTableOptions)[ 0 ] ];
-  selectedDataframes = [ Object.values(multichoiceTableOptions)[ 0 ] ];
+  multichoiceTableOptions: any;
+  selectedOptions: any;
+  selectedDataframes: any; 
   timelinesDiv = ui.box();
   filtersDiv = ui.box();
   resultTables: DG.DataFrame;
+  aeBrowserHelper: AEBrowserHelper;
 
   constructor(name) {
-    super(name);
-
+    super({});
     this.name = name;
+    this.helpUrl = `${_package.webRoot}/views_help/timelines.md`;
+    //@ts-ignore
+    this.basePath = '/timelines';
+  }
 
-    let multiChoiceOptions = ui.multiChoiceInput('', [ this.selectedOptions[ 0 ] ] as any, Object.keys(multichoiceTableOptions))
+  loaded: boolean;
+
+  load(): void {
+    checkMissingDomains(['ae', 'cm', 'ex'], true, this);
+ }
+
+  createView(): void {
+    let existingTables = study.domains.all().map(it => it.name);
+    this.multichoiceTableOptions = {};
+    this.multichoiceTableOptions = Object.fromEntries(Object.entries(multichoiceTableDict).filter(([k,v]) => existingTables.includes(v)));
+    this.selectedOptions =  [ Object.keys(this.multichoiceTableOptions)[ 0 ] ];
+    this.selectedDataframes = [ Object.values(this.multichoiceTableOptions)[ 0 ] ];
+    let multiChoiceOptions = ui.multiChoiceInput('', [this.selectedOptions[0]] as any, Object.keys(this.multichoiceTableOptions));
     multiChoiceOptions.onChanged((v) => {
       this.selectedOptions = multiChoiceOptions.value;
       this.updateSelectedDataframes(this.selectedOptions);
@@ -96,10 +116,10 @@ export class TimelinesView extends DG.ViewBase {
     let t = df.clone(null, Object.keys(info).map(e => info[ e ]));
     let filterCols = filters[domain.name]
     Object.keys(filterCols).forEach(key => {t.columns.addNewString(key).init((i) => df.get(filterCols[key], i));})
-    t.columns.addNew('domain', DG.TYPE.STRING).init(domain.name);
+    t.columns.addNew('domain', DG.TYPE.STRING).init(domain.name.toLocaleLowerCase());
+    t.columns.addNewFloat('rowNum').init((i) => i);
     for (let name in info)
       t.col(info[ name ]).name = name;
-    // t = createFilteredTable(t, t.columns.names(), 'key = 01-701-1015');
     return t;
   }
 
@@ -142,7 +162,7 @@ export class TimelinesView extends DG.ViewBase {
   private updateSelectedDataframes(options: string[]){
     this.selectedDataframes = [];
     options.forEach(item => {
-      this.selectedDataframes.push(multichoiceTableOptions[item])
+      this.selectedDataframes.push(this.multichoiceTableOptions[item])
     })
   }
 

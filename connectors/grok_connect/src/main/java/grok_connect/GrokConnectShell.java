@@ -19,7 +19,7 @@ import grok_connect.connectors_info.*;
 
 public class GrokConnectShell {
     public static void main(String[] args) throws ParseException, IOException, SQLException,
-            java.text.ParseException, ClassNotFoundException, QueryCancelledByUser {
+            java.text.ParseException, ClassNotFoundException, QueryCancelledByUser, GrokConnectException {
 
         Options options = new Options();
 

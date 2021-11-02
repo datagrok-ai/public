@@ -1,5 +1,5 @@
 {
-	"name": "dev-tools",
+	"name": "@datagrok/dev-tools",
 	"beta": false,
 	"friendlyName": "DevTools",
 	"version": "1.0.0",

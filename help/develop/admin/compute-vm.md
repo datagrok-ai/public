@@ -3,7 +3,7 @@
 
 # Compute VM
 
-Compute VM is [docker container](https://www.docker.com/) that includes all Grok platform computational services. 
+Compute VM is [docker container](https://www.docker.com/) that includes all Datagrok platform computational services. 
 Server is easy scalable using [Amazon ECS](https://aws.amazon.com/ecs/) or [Kubernetes](https://kubernetes.io/) services.
 
 ## Services 

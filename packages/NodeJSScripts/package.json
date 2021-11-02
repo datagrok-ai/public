@@ -1,6 +1,6 @@
 {
-  "name": "NodeJsScripts",
-  "version": "1",
+  "name": "@datagrok/nodejs-scripts",
+  "version": "1.0.0",
   "description": "NodeJS Scripts",
   "sources": [ ]
 }

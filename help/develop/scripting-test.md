@@ -51,7 +51,7 @@ The system allows to create your own scripts, open scripts saved locally, and al
 
 1. Run Julia script "PCA" on Jupyter server
 
-1. Run GROK script "Demo Scripts Run Test" 
+1. Run Grok script "Demo Scripts Run Test" 
 
 Use this test scenario to run scripts on OpenCPU and Jupyter servers.
 

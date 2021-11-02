@@ -31,7 +31,7 @@ show UI elements. Yet, they all share the same mechanism and therefore have the 
 * Runnable - dynamically generated UI for editing parameter values 
 * Linkable - simply drag-and-drop a function to a [conversation](../../collaborate/chat.md) or to a dashboard to link to it. Run it
   by right-clicking on the link and choosing "Run..."
-* Usable in [workflow designers] and [query result transformations](../../transform/recipe-editor.md)  
+* Usable in workflow designers and [query result transformations](../../transform/recipe-editor.md)  
 
 
 ## Macros

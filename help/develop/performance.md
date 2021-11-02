@@ -174,8 +174,7 @@ have the same look and feel and usage patterns, and cooperate in certain tasks.
 
 ### Videos
 
-<iframe width="560" height="315" src="https://www.youtube.com/embed/wAfEqAMOZzw?start=907" frameborder="0" allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture" allowfullscreen></iframe>
-
+[![Perfomance](../uploads/youtube/visualizations1.png "Open on Youtube")](https://www.youtube.com/watch?v=wAfEqAMOZzw&t=907s)
 
 See also:
 

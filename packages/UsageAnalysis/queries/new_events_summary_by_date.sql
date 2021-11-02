@@ -1,6 +1,6 @@
 --name: NewEventsSummaryByDate
 --input: string days
---connection: System:Datagrok
+--connection: System:DatagrokAdmin
 SELECT
     DATE(event_time) as day, 
 	COUNT(*)

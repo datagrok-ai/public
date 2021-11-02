@@ -1,6 +1,6 @@
 {
-  "name": "SDTM",
-  "version": "1",
+  "name": "@datagrok/sdtm",
+  "version": "1.0.0",
   "description": "SDTM Viewer",
   "sources": [
     "css/sdtm.css"

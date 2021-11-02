@@ -1,10 +1,9 @@
 import * as DG from 'datagrok-api/dg';
 import * as ui from 'datagrok-api/ui';
-import * as grok from 'datagrok-api/grok';
-import {axisBottom, scaleBand, scaleLinear, select, color} from 'd3';
+import {scaleBand, scaleLinear} from 'd3';
 import {ChemPalette} from '../utils/chem-palette';
+//@ts-ignore: I should be able to install it somehow
 import * as rxjs from 'rxjs';
-import $ from 'cash-dom';
 import {GridCellRenderArgs, Property, Widget} from 'datagrok-api/dg';
 const cp = new ChemPalette('grok');
 
@@ -29,7 +28,7 @@ export function addViewerToHeader(grid: DG.Grid, viewer: Promise<Widget>) {
       }
       barchart.unhighlight();
     });
-    rxjs.fromEvent(grid.overlay, 'mouseout').subscribe((_) => {
+    rxjs.fromEvent(grid.overlay, 'mouseout').subscribe((_: any) => {
       barchart.unhighlight();
     });
 
@@ -55,8 +54,7 @@ export function addViewerToHeader(grid: DG.Grid, viewer: Promise<Widget>) {
       args.g.beginPath();
       args.g.rect(args.bounds.x, args.bounds.y, args.bounds.width, args.bounds.height);
       args.g.clip();
-
-      if (args.cell.isColHeader && args.cell.tableColumn?.semType == 'aminoAcids') {
+      if (args.cell.isColHeader && barchart.aminoColumnNames.includes(args.cell.gridColumn.name)) {
         barchart.renderBarToCanvas(
           args.g,
           args.cell,
@@ -262,17 +260,18 @@ export class StackedBarChart extends DG.JsViewer {
       x = x + w * margin;
       y = y + h * margin / 4;
       w = w - w * margin * 2;
-      h = h - h * margin / 2 - w;
+      h = h - h * margin;
       g.fillStyle = 'black';
       g.textBaseline = 'top';
-      g.font = `${w / 2}px`;
+      g.font = `${h * margin / 2}px`;
       // eslint-disable-next-line no-unused-vars
 
       const name = cell.tableColumn!.name;
+      const colNameSize = g.measureText(name).width;
       g.fillText(name,
-        x+w / 4,
-        y + h+ w / 4 );
-      const barData = this.barStats[name];
+        x + (w - colNameSize)/2,
+        y + h + h * margin / 4);
+      const barData = this.barStats[name]? this.barStats[name]: this.barStats[name];
       let sum = 0;
       barData.forEach((obj) => {
         sum += obj['count'];
@@ -288,14 +287,14 @@ export class StackedBarChart extends DG.JsViewer {
           y + h * (this.max - sum + curSum) / this.max + gapSize / 2,
           w,
           sBarHeight - gapSize);
-        if (w <= sBarHeight) {
+        if (h * margin / 2 <= sBarHeight - gapSize && h * margin / 2 <= w) {
           g.fillStyle = 'rgb(0,0,0)';
-          g.font = `${w / 2}px`;
+          g.font = `${h * margin / 2}px`;
           // eslint-disable-next-line no-unused-vars
           const [_c, aar, _p] = cp.getColorAAPivot(obj['name']);
           g.fillText(aar,
-            x + w / 4,
-            y + h * (this.max - sum + curSum) / this.max + gapSize / 2 + (sBarHeight - gapSize) / 2 - w / 4);
+            x + w / 2 - h * margin / 8,
+            y + h * (this.max - sum + curSum) / this.max + gapSize / 2 + (sBarHeight - gapSize)/2 - h * margin / 8);
         }
 
         if (this.selectionMode && obj['selectedCount'] > 0) {
@@ -328,223 +327,11 @@ export class StackedBarChart extends DG.JsViewer {
         this.computeData(df);
       }
       if (this.tableCanvas) {
-        return;
         for (const name of this.aminoColumnNames) {
           this.renderBar(name);
         }
-        return;
       }
-
-
-      // @ts-ignore
-
-      if (!this.root.parentElement) {
-        throw new Error('No parent element');
-      }
-      const
-        width = this.root.parentElement.clientWidth;
-      this.root.style.width = `${width}px`;
-      const
-        height = this.root.parentElement.clientHeight;
-      this.root.style.width = `${height}px`;
-      const
-        innerWidth = width - this.margin.left - this.margin.right;
-      const
-        innerHeight = height - this.margin.top - this.margin.bottom;
-
-      const getColor = cp.getColor;
-      const
-        scope = this;
-
-      $(this
-        .root,
-      ).empty();
-
-      const
-        svg = select(this.root).append('svg')
-          .attr('width', width)
-          .attr('height', height);
-      svg.attr('style', 'z-index:1');
-      const
-        g = svg.append('g').attr('transform', `translate(${this.margin.left}, ${this.margin.top})`);
-      const
-        x = this.xScale
-          .domain(this.data.map((d) => d['name']))
-          .padding(0.3)
-          .align(0.3)
-          .rangeRound([0, innerWidth]);
-
-      const
-        y = this.yScale
-          .domain([0, this.max]).nice()
-          .rangeRound([innerHeight, 0]);
-
-      // const aminoScale = scaleBand().domain(Object.entries(this.data[`amino_count`])
-      //     .map((d) => (`${d[0]}:${d[1]}`)))
-      //     .rangeRound([0, innerHeight]);
-
-      const cAxis = axisBottom(x);
-      cAxis.tickSize(0);
-      const
-        colAxis = g.append('g').call(cAxis)
-          .attr('transform', `translate(0, ${innerHeight + 10})`);
-      colAxis
-        .attr('font-family', '"Open Sans", sans-serif')
-        .attr('fill', 'black');
-      colAxis.select('.domain').remove();
-
-
-      // let aAxis = axisLeft(aminoScale)
-      // aAxis.tickSize(0);
-      //
-      // let aminoAxis = g.append("g").call(aAxis)
-      // aminoAxis.select(".domain").remove();
-      // aminoAxis.attr("font-family", "common sans")
-      //     .attr("fill", "black")
-      // aminoAxis.selectAll('.tick')
-      //     .on('click', (event) => {
-      //         scope.dataFrame.selection.handleClick(i => {
-      //             let amino_name = event.srcElement.textContent.split(':')[0]
-      //             let res = false
-      //             this.aminoColumnNames.forEach(name => {
-      //                 if (scope.dataFrame.getCol(name).get(i) === amino_name) {
-      //                     res = true;
-      //                 }
-      //             })
-      //             return res;
-      //         }, event)
-      //     });
-
-      g
-        .selectAll(
-          '.group',
-        )
-        .data(this
-
-          .data,
-        )
-        .attr(
-          'class'
-          ,
-          'group',
-        )
-        .enter()
-
-        .append(
-          'g',
-        )
-        .each(
-          function(d: any, i: any) {
-            d['data'].map((obj: any, j: any, arr: any) => {
-              const xPos = x(d['name']);
-              const yPos = ((e) => {
-                let sum = 0;
-                arr.map((obj1: any, k: any) => {
-                  if (k < j) {
-                    sum = sum + obj1['count'];
-                  }
-                });
-                return y(obj['count'] + sum);
-              })();
-
-              const barWidth = x.bandwidth();
-              //const barHeight = innerHeight - y(obj['count']);
-              // eslint-disable-next-line no-invalid-this
-              // @ts-ignore
-              // eslint-disable-next-line no-invalid-this
-              const st = select(this);
-              let that = st
-                .append('rect');
-              if (obj['selectedCount'] > 0) {
-                st.append('line')
-                  .style('stroke', 'orange')
-                  .attr('x1', xPos - barWidth / 10)
-                  .attr('y1', yPos)
-                  .attr('x2', xPos - barWidth / 10)
-                  .attr('y2', innerHeight - y(obj['selectedCount']) + yPos)
-                  .style('stroke-width', barWidth / 7);
-              }
-              that = that.attr('class', 'bar')
-                .attr('data-index', j)
-
-                .attr('x', function(e: any) {
-                  return x(d['name']);
-                })
-                .attr('width', x.bandwidth());
-              // @ts-ignore
-              (scope.dataFrame.currentRow[`${scope.aminoColumnNames[d['name'] - 1]}`] === obj['name']) ?
-                that.style('stroke', 'black')
-                  .style('stroke-width', Math.min(y(obj['count']), x.bandwidth()) / 10) : that.lower();
-
-              that.style('fill', function(e: any) {
-                return getColor(obj['name']);
-              });
-
-              if (innerHeight - y(obj['count']) > Math.min(x.bandwidth(), 10)) {
-                st.append('text')
-                  .text(function(e: any) {
-                    return obj['name'];
-                  })
-                  .attr('x', function(e: any) {
-                    return x(d['name']) + x.bandwidth() / 2;
-                  })
-                  .attr('y', function(e: any) {
-                    let sum = 0;
-                    arr.map((obj1: any, k: any) => {
-                      if (k < j) {
-                        sum = sum + obj1['count'];
-                      }
-                    });
-                    return y(obj['count'] + sum) +
-                                        Math.min(x.bandwidth(), 15) / 2 - 2 +
-                                        (innerHeight - y(obj['count'])) / 2;
-                  })
-                  .attr('font-family', '"Open Sans", sans-serif')
-                  .attr('font-size', `${Math.min(x.bandwidth(), 15)}px`)
-                  .attr('fill', 'black')
-                  .attr('text-anchor', 'middle');
-              }
-              that.attr('y', function(e: any) {
-                let sum = 0;
-                arr.map((obj1: any, k: any) => {
-                  if (k < j) {
-                    sum = sum + obj1['count'];
-                  }
-                });
-                return y(obj['count'] + sum);
-              })
-                .attr('height', function(e: any) {
-                  return innerHeight - y(obj['count']);
-                })
-                .on('mouseover', (event: any, e: any) => {
-                  const newColor = getColor(obj['name']);
-                  // @ts-ignore
-                  that.style('fill', color(newColor).brighter([1]));
-                  ui.tooltip.show(ui.divText(`${obj['name']}:${obj['count']}`), event.x, event.y);
-                })
-                .on('mouseout', () => {
-                  const newColor = getColor(obj['name']);
-                  that.style('fill', newColor);
-                  ui.tooltip.hide();
-                })
-                .on('mousedown', (event: any, e: any) => {
-                  // @ts-ignore
-                  scope.dataFrame.selection.handleClick((i) => {
-                    let aminoName = obj['name'];
-                    //let selected = true;
-                    if (obj['name'].endsWith('_unselected')) {
-                      aminoName = obj['name'].substring(0, obj['name'].length - 11);
-                      //selected = false;
-                    }
-                    // @ts-ignore
-                    return (aminoName === (scope.dataFrame.getCol(`${scope.aminoColumnNames[d['name'] - 1]}`).get(i)));
-
-                    //&& (scope.dataFrame.selection.get(i) === selected);
-                  }, event);
-                });
-            });
-          },
-        );
+      return;
     }
 
     onPropertyChanged(property: Property) {

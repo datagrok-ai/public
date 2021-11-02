@@ -1,11 +1,12 @@
 {
-	"name": "clinicalcase",
+	"name": "@datagrok/clinical-case",
 	"friendlyName": "Clinical Case",
 	"version": "0.0.1",
 	"description": "",
 	"dependencies": {
-		"datagrok-api": "../../js-api",
 		"cash-dom": "^8.1.0",
+		"datagrok-api": "../../js-api",
+		"jstat": "^1.9.5",
 		"moment": "^2.29.1",
 		"ts-loader": "^8.1.0",
 		"typescript": "^4.2.3",

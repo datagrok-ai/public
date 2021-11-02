@@ -3,7 +3,7 @@
 
 # Tutorials
 
-Simple way to learn Data Grok platform.
+Simple way to learn Datagrok platform.
 
 Available tutorials:
 
