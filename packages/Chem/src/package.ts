@@ -448,10 +448,11 @@ export function rGroupsAnalytics(df: DG.DataFrame, col: DG.Column) {
 
   let mcsButton = ui.button('MCS', async () => {
     let smiles = await getMCS(col);
-    sketcher.remove();
-    sketcherSmile = smiles;
-    sketcher = grok.chem.sketcher(onChanged, sketcherSmile);
-    mcsButton.insertAdjacentElement('beforebegin', sketcher);
+    // sketcher.setSmiles(smiles);
+    // sketcher.remove();
+    // sketcherSmile = smiles;
+    // sketcher = grok.chem.sketcher(onChanged, sketcherSmile);
+    // mcsButton.insertAdjacentElement('beforebegin', sketcher);
   });
 
   let dlg = ui.dialog({
@@ -465,9 +466,11 @@ export function rGroupsAnalytics(df: DG.DataFrame, col: DG.Column) {
       visualAnalysisCheck
     ]))
     .onOK(async () => {
-      let res = await getRGroups(col, sketcherSmile);
-      for (let resCol of res.columns)
+      let res = await getRGroups(col, sketcherSmile, columnPrefixInput.value);
+      for (let resCol of res.columns) {
+        resCol.semType = DG.SEMTYPE.MOLECULE;
         col.dataFrame.columns.add(resCol);
+      }
       if (res.columns.length == 0)
         grok.shell.error("None R-Groups were found");
       let view = null;

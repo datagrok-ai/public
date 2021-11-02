@@ -7,13 +7,14 @@ import {Column, DataFrame, TableView} from 'datagrok-api/dg';
 export let _package = new DG.Package();
 
 
-export async function getRGroups(smiles: Column, core: string) {
+export async function getRGroups(smiles: Column, core: string, prefix: string) {
 
   let result: DataFrame = await grok.functions.call(
     "Chem:RGroupGetter", {
       'smiles': smiles.name,
       'df1': smiles.dataFrame,
-      'core': core
+      'core': core,
+      'prefix': prefix
     });
 
   let regexConv: RegExp = /(\[)(R)(\d+)(\])/g
