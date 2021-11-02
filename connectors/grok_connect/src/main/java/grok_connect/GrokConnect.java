@@ -37,6 +37,7 @@ public class GrokConnect {
             port(port);
             connectorsModule();
 
+            System.out.println("grok_connect with Hikari pool");
             System.out.printf("grok_connect: Running on %s\n", uri);
             System.out.println("grok_connect: Connectors: " + String.join(", ",
                     providerManager.getAllProvidersTypes()));

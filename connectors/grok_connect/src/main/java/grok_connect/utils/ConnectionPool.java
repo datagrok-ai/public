@@ -23,25 +23,23 @@ public class ConnectionPool {
         }
     }
 
-    Map<String, HikariDataSource> connectionPool = Collections.synchronizedMap(new LinkedHashMap<>());
+    public Map<String, HikariDataSource> connectionPool = Collections.synchronizedMap(new HashMap<>());
 
-    public Connection getConnection(String url, java.util.Properties properties, String driverClassName) {
-        if (url != null && properties != null && driverClassName != null) {
-            String key = url + properties + driverClassName;
-            if (!connectionPool.containsKey(key)) {
-                HikariConfig config = new HikariConfig();
-                config.setJdbcUrl(url);
-                config.setDataSourceProperties(properties);
-                config.setDriverClassName(driverClassName);
-                connectionPool.put(key, new HikariDataSource(config));
-            }
-            try {
-                return connectionPool.get(key).getConnection();
-            } catch (SQLException throwables) {
-                //TODO: log in query
-                throwables.printStackTrace(System.out);
-            }
+    public Connection getConnection(String url, java.util.Properties properties, String driverClassName) throws GrokConnectException, SQLException {
+        if (url == null || properties == null || driverClassName == null)
+            throw new GrokConnectException("Connection parameters are null");
+
+        String key = url + properties + driverClassName;
+        if (!connectionPool.containsKey(key)) {
+            HikariConfig config = new HikariConfig();
+            config.setJdbcUrl(url);
+            config.setDataSourceProperties(properties);
+            config.setDriverClassName(driverClassName);
+            config.setMaximumPoolSize(10);
+            config.setKeepaliveTime(3*60*1000);
+            config.setMaxLifetime(10*60*1000);
+            connectionPool.put(key, new HikariDataSource(config));
         }
-        return null;
+        return connectionPool.get(key).getConnection();
     }
 }

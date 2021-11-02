@@ -1,5 +1,5 @@
 {
-	"name": "usageanalysis",
+	"name": "@datagrok/usage-analysis",
 	"beta": true,
 	"friendlyName": "Usage Analysis",
 	"version": "0.0.1",

@@ -17,6 +17,14 @@ export function exportFuncCall(call: DG.FuncCall) {
 
   const isDataframe = (type: DG.TYPE) => (type === DG.TYPE.DATA_FRAME);
 
+  const dfInputs = call.func.inputs.filter(
+    (input: DG.Property) => isDataframe(input.propertyType),
+  ) as DG.Property[];
+
+  const scalarInputs = call.func.inputs.filter(
+    (input: DG.Property) => isScalarType(input.propertyType),
+  ) as DG.Property[];
+
   const dfOutputs = call.func.outputs.filter(
     (output: DG.Property) => isDataframe(output.propertyType),
   ) as DG.Property[];
@@ -25,8 +33,22 @@ export function exportFuncCall(call: DG.FuncCall) {
     (output: DG.Property) => isScalarType(output.propertyType),
   ) as DG.Property[];
 
+  // dfInputs.forEach((dfInput) => {
+  //   const currentDfSheet = exportWorkbook.addWorksheet(`Input - ${dfInput.name}`);
+  //   const currentDf = (call.inputs[dfInput.name] as DG.DataFrame);
+  //   currentDfSheet.addRow((currentDf.columns as DG.ColumnList).names());
+  //   for (let i = 0; i < currentDf.rowCount; i++) {
+  //     currentDfSheet.addRow([...currentDf.row(i).cells].map((cell: DG.Cell) => cell.value));
+  //   }
+  // });
+
+  const inputScalarsSheet = exportWorkbook.addWorksheet('Input scalars');
+  scalarInputs.forEach((scalarInput) => {
+    inputScalarsSheet.addRow([scalarInput.name, call.inputs[scalarInput.name]]);
+  });
+
   dfOutputs.forEach((dfOutput) => {
-    const currentDfSheet = exportWorkbook.addWorksheet(dfOutput.name);
+    const currentDfSheet = exportWorkbook.addWorksheet(`Output - ${dfOutput.name}`);
     const currentDf = (call.outputs[dfOutput.name] as DG.DataFrame);
     currentDfSheet.addRow((currentDf.columns as DG.ColumnList).names());
     for (let i = 0; i < currentDf.rowCount; i++) {
@@ -34,9 +56,9 @@ export function exportFuncCall(call: DG.FuncCall) {
     }
   });
 
-  const scalarsSheet = exportWorkbook.addWorksheet('Scalars');
+  const outputScalarsSheet = exportWorkbook.addWorksheet('Output scalars');
   scalarOutputs.forEach((scalarOutput) => {
-    scalarsSheet.addRow([scalarOutput.name, call.outputs[scalarOutput.name]]);
+    outputScalarsSheet.addRow([scalarOutput.name, call.outputs[scalarOutput.name]]);
   });
 
   exportWorkbook.xlsx.writeBuffer().then((data) => {

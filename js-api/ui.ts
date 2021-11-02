@@ -827,6 +827,13 @@ export class ObjectHandler {
 
   toString(): string { return this.name; }
 
+  async getById(id: string): Promise<any> {
+    return null;
+  }
+
+  async refresh(x: any): Promise<any> {
+    return x;
+  }
   /**
    * Override this method to check whether this meta class should handle the specified object.
    * @param x - specified object.

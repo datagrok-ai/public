@@ -17,7 +17,8 @@
         ],
         "max-len": [
             "error",
-            120
+            120,
+            { "ignoreStrings": true }
         ],
         "require-jsdoc": "off",
         "spaced-comment": "off"

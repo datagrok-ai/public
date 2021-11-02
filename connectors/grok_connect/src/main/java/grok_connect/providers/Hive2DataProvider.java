@@ -16,6 +16,11 @@ public class Hive2DataProvider extends HiveDataProvider {
         descriptor.credentialsTemplate = DbCredentials.dbCredentialsTemplate;
     }
 
+    @Override
+    protected Integer getTimeout() {
+        return 0;
+    }
+
     public String getConnectionStringImpl(DataConnection conn) {
         String port = (conn.getPort() == null) ? "" : ":" + conn.getPort();
         return "jdbc:hive2://" + conn.getServer() + port + "/" + conn.getDb();

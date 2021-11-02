@@ -2,9 +2,9 @@ import * as grok from 'datagrok-api/grok';
 import * as DG from "datagrok-api/dg";
 import * as ui from "datagrok-api/ui";
 import { study } from "../clinical-study";
-import { getUniqueValues } from '../data-preparation/utils';
 import { ILazyLoading } from '../lazy-loading/lazy-loading';
-import { checkDomainExists } from './utils';
+import { checkMissingDomains } from './utils';
+import { _package } from '../package';
 
 
 export class MatrixesView extends DG.ViewBase implements ILazyLoading {
@@ -21,19 +21,19 @@ export class MatrixesView extends DG.ViewBase implements ILazyLoading {
   constructor(name) {
     super({});
     this.name = name;
-    this.helpUrl = 'https://raw.githubusercontent.com/datagrok-ai/public/master/packages/ClinicalCase/views_help/correlation_matrix.md';
+    this.helpUrl = `${_package.webRoot}/views_help/correlation_matrix.md`;
   }
 
   loaded: boolean;
 
   load(): void {
-     checkDomainExists(['lb'], false, this);
+    checkMissingDomains(['lb'], false, this);
   }
 
   createView(): void {
     this.createCorrelationMatrixDataframe();
-    this.uniqueLabValues = Array.from(getUniqueValues(study.domains.lb, 'LBTEST'));
-    this.uniqueVisits = Array.from(getUniqueValues(study.domains.lb, 'VISIT'));
+    this.uniqueLabValues = study.domains.lb.getCol('LBTEST').categories;
+    this.uniqueVisits = study.domains.lb.getCol('VISIT').categories;
 
     this.selectedLabValues = this.uniqueLabValues;
     this.bl = this.uniqueVisits[0];
@@ -64,7 +64,8 @@ export class MatrixesView extends DG.ViewBase implements ILazyLoading {
     this.matrixDataframe.plot.fromType(DG.VIEWER.CORR_PLOT).then((v: any) => {
       this.matrixPlot = v;
       this.root.className = 'grok-view ui-box';
-      this.root.append(ui.box(this.matrixPlot.root, { style: { 'margin-top': '15px' } }));
+      this.root.append(ui.box(this.matrixPlot.root));
+      this.root.style.marginTop = '15px';
       this.setRibbonPanels([
         [
           blVisitChoices.root
