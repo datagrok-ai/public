@@ -141,24 +141,7 @@ class ChemPackage extends DG.Package {
     }
   }
 
-  //name: chemSimilaritySpeImpl
-  //input: column fingerprints [fingerprints]
-  //input: int dimension
-  //output: dataframe result
-  async chemSimilaritySpeImpl(fingerprints, dimension) {
-    var core = _fingerprintSimilarity;
-    var coordinates = stochasticProximityEmbedding(fingerprints.length, (x, y) => 1.0 - core(fingerprints.get(x), fingerprints.get(y)),
-                                                   2, null, null, 1.0, 2.0, 0.01, fingerprints.length * 100, 100);
-    var columns = [
-      DG.Column.fromFloat32Array('SPE_X', coordinates[0]),
-      DG.Column.fromFloat32Array('SPE_Y', coordinates[1]),
-    ]
-    if (dimension == 3)
-      columns.append(DG.Column.fromFloat32Array('SPE_Z', coordinates[2]));
-    return DG.DataFrame.fromColumns(columns);
-  }
-
-  //name: chemSimilaritySpace
+  //name: ChemSimilaritySpace
   //input: dataframe table
   //input: column molColumn {semType: Molecule}
   //input: int cycleNum = 100
