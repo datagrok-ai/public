@@ -1,6 +1,7 @@
 import * as grok from 'datagrok-api/grok';
 import * as ui from 'datagrok-api/ui';
 import * as DG from 'datagrok-api/dg';
+import {_package} from './package';
 
 export async function selectOutliersManually(inputData: DG.DataFrame) {
   const IS_OUTLIER_COL_LABEL = 'isOutlier';
@@ -46,7 +47,7 @@ export async function selectOutliersManually(inputData: DG.DataFrame) {
           }
         }
         updateTable();
-      }), {style: {'text-align': 'center'}},
+      }, 'Remove the outliers group'), {style: {'text-align': 'center', 'margin': '6px'}},
     );
 
     if (!gc.isTableCell) {
@@ -191,7 +192,7 @@ export async function selectOutliersManually(inputData: DG.DataFrame) {
   removeOutlierGroupBtn.classList.add('disabled');
 
   const result = new Promise<{augmentedInput: DG.DataFrame, editedInput: DG.DataFrame}>((resolve, reject) => {
-    ui.dialog('Outliers selection')
+    ui.dialog({title: 'Outliers selection', helpUrl: `${_package.webRoot}/help/outliers_selection/main.md`})
       .add(
         ui.info(
           ui.div([
