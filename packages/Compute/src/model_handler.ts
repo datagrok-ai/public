@@ -41,10 +41,14 @@ export class ModelHandler extends DG.ObjectHandler {
   }
 
   renderCard(x: DG.Script, context?: any): HTMLElement {
-    return ui.bind(x, ui.divV([
+    let card = ui.bind(x, ui.divV([
       ui.h2(x.friendlyName),
       this.renderDetails(x),
     ], 'd4-gallery-item'));
+    card.ondblclick = (e) => {
+      grok.shell.addView(DG.FunctionView.createFromFunc(x));
+    }
+    return card;
   }
 
   init() {
