@@ -5,7 +5,7 @@ import {ScatterPlotViewer, Viewer} from '../viewer';
 import {DockManager, DockNode} from '../docking';
 import {Grid} from '../grid';
 import {Menu, ToolboxPage} from '../widgets';
-import {Entity, Script} from '../entities';
+import {Entity, Func, Script} from '../entities';
 import {toDart, toJs} from '../wrappers';
 import {_options, _toIterable} from '../utils';
 import {StreamSubscription} from '../events';
@@ -689,6 +689,15 @@ export class ScriptView extends View {
   }
 }
 
+export class FunctionView extends View {
+  constructor(d: any) {
+    super(d);
+  }
+
+  static createFromFunc(func: Func): FunctionView {
+    return new FunctionView(api.grok_FunctionView(func.d));
+  }
+}
 
 export class ViewLayout extends Entity {
 
