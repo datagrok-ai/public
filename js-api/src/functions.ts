@@ -171,7 +171,7 @@ export class FuncCall {
     this.inputs = new FuncCallParamMapProxy(this.d, true);
     this.outputs = new FuncCallParamMapProxy(this.d, false);
     this.aux = new MapProxy(api.grok_FuncCall_Get_Aux(this.d));
-    this.options = new MapProxy(api.grok_FuncCall_Get_Aux(this.d));
+    this.options = new MapProxy(api.grok_FuncCall_Get_Options(this.d));
   }
 
   get func(): Func { return toJs(api.grok_FuncCall_Get_Func(this.d)); }
