@@ -26,7 +26,7 @@ options.
 
 ### Videos
 
-<iframe width="560" height="315" src="https://www.youtube.com/embed/1EI1w2HECrM" frameborder="0" allow="accelerometer; autoplay; encrypted-media; gyroscope; picture-in-picture" allowfullscreen></iframe>
+[![Aggregate Rows](../uploads/youtube/aggregate.png "Open on Youtube")](https://www.youtube.com/watch?v=1EI1w2HECrM)
 
 See also:
 * [Aggregation functions](aggregation-functions.md)

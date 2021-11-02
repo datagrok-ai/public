@@ -28,6 +28,8 @@ export class Entity {
   get id(): string { return api.grok_Entity_Get_Id(this.d); }
   set id(x: string) { api.grok_Entity_Set_Id(this.d, x); }
 
+  newId(): void { api.grok_Entity_New_Id(this.d);}
+
   /** Entity friendly name
    *  @type {string} */
   get friendlyName(): string { return api.grok_Entity_Get_FriendlyName(this.d); }
@@ -49,14 +51,17 @@ export class Entity {
   /** Time when entity was updated **/
   get updatedOn(): string { return api.grok_Entity_Get_UpdatedOn(this.d); }
 
+  /** Who created entity **/
+  get author(): User { return api.grok_Entity_Get_Author(this.d); }
+
   /** Entity properties */
   getProperties(): Promise<Map<string, any>> {
-    return new Promise((resolve, reject) => api.grok_EntitiesDataSource_GetProperties(grok.dapi.entities.s, this.d, (p: any) => resolve(p), (e: any) => reject(e)));
+    return new Promise((resolve, reject) => api.grok_EntitiesDataSource_GetProperties(grok.dapi.entities.d, this.d, (p: any) => resolve(p), (e: any) => reject(e)));
   }
 
   /** Sets entity properties */
   setProperties(props: Map<string, any>): Promise<any> {
-    return new Promise((resolve, reject) => api.grok_EntitiesDataSource_SetProperties(grok.dapi.entities.s, this.d, props, (_: any) => resolve(_), (e: any) => reject(e)));
+    return new Promise((resolve, reject) => api.grok_EntitiesDataSource_SetProperties(grok.dapi.entities.d, this.d, props, (_: any) => resolve(_), (e: any) => reject(e)));
   }
 
   /** Returns a string representing the object */
@@ -234,8 +239,12 @@ export class DataQuery extends Func {
     super(d);
   }
 
+  get adHoc(): boolean { return api.grok_Query_Get_AdHoc(this.d); }
+  set adHoc(a: boolean) { api.grok_Query_Set_AdHoc(this.d, a); }
+
   /** Query text */
   get query(): string { return api.grok_Query_Query(this.d); }
+  set query(q: string) { api.grok_Query_Set_Query(this.d, q); }
 }
 
 /** Represents a data job
@@ -648,9 +657,12 @@ export class Property {
   get name(): string { return api.grok_Property_Get_Name(this.d); }
   set name(s: string) { api.grok_Property_Set_Name(this.d, s); }
 
+  get category(): string { return api.grok_Property_Get_Category(this.d); }
+  set category(s: string) { api.grok_Property_Set_Category(this.d, s); }
+
   /** Property type */
-  get propertyType(): string { return api.grok_Property_Get_PropertyType(this.d); }
-  set propertyType(s: string) { api.grok_Property_Set_PropertyType(this.d, s); }
+  get propertyType(): TYPE { return api.grok_Property_Get_PropertyType(this.d); }
+  set propertyType(s: TYPE) { api.grok_Property_Set_PropertyType(this.d, s); }
 
   /** Semantic type */
   get semType(): SemType | string { return api.grok_Property_Get_SemType(this.d); }

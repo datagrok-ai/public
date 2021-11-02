@@ -1,84 +1,81 @@
- version: "3"
- services:
-   db:
-     image: postgres:latest
-     environment:
-       POSTGRES_USER: postgres
-       POSTGRES_PASSWORD: postgres
-     ports:
-       - "5432:5432/tcp"
-     networks:
-       datagrok:
-         aliases:
-           - database
-     volumes:
-       - datagrok_db:/var/lib/postgresql/data
-     restart: on-failure
+version: "3"
+services:
+  db:
+    image: postgres:12.4
+    environment:
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: postgres
+    ports:
+      - "5432:5432/tcp"
+    networks:
+      datagrok:
+        aliases:
+          - database
+    volumes:
+      - datagrok_db:/var/lib/postgresql/data
+    restart: on-failure
 
-   datagrok:
-     image: datagrok/datagrok:latest
-     environment:
-       GROK_PARAMETERS: "{\"deployDemo\": false, \"dbServer\": \"database\", \"db\": \"datagrok\", \"dbAdminLogin\": \"postgres\", \"dbAdminPassword\": \"postgres\", \"dbLogin\": \"dg\", \"dbPassword\": \"dg\", \"adminPassword\": \"admin\"}"
-     ports:
-       - "8080:8080/tcp"
-     networks:
-       datagrok:
-         aliases:
-           - datagrok
-     volumes:
-       - datagrok_data:/home/grok/data
-       - datagrok_cfg:/home/grok/cfg
-     restart: unless-stopped
+  datagrok:
+    image: datagrok/datagrok:latest
+    environment:
+      GROK_PARAMETERS: "{\"deployDemo\": false, \"dbServer\": \"database\", \"db\": \"datagrok\", \"dbAdminLogin\": \"postgres\", \"dbAdminPassword\": \"postgres\", \"dbLogin\": \"dg\", \"dbPassword\": \"dg\", \"adminPassword\": \"admin\"}"
+    ports:
+      - "8080:8080/tcp"
+    networks:
+      datagrok:
+        aliases:
+          - datagrok
+    volumes:
+      - datagrok_data:/home/grok/data
+      - datagrok_cfg:/home/grok/cfg
+    restart: unless-stopped
 
-   grok_compute:
-     image: datagrok/grok_compute:latest
-     environment:
-       GROK_COMPUTE_NUM_CORES: 4
-     networks:
-       datagrok:
-         aliases:
-           - grok_compute
-     restart: unless-stopped
-   cvm_nginx:
-     image: datagrok/cvm_nginx:latest
-     ports:
-       - "8090:8090/tcp"
-     networks:
-       datagrok:
-         aliases:
-           - cvm
-           - nginx_cvm
-     restart: unless-stopped
-   jupyter_notebook:
-     image: datagrok/jupyter_notebook:latest
-     networks:
-       datagrok:
-         aliases:
-           - jupyter_notebook
-     volumes:
-       - jupyter_notebooks:/home/grok/notebooks
-     restart: unless-stopped
-   jupyter_kernel_gateway:
-     image: datagrok/jupyter_kernel_gateway:latest
-     networks:
-       datagrok:
-         aliases:
-           - jupyter_notebook
-     restart: unless-stopped
-   h2o:
-     image: datagrok/h2o:latest
-     ports:
-       - "54321:54321/tcp"
-       - "5005:5005/tcp"
-     networks:
-       datagrok:
-         aliases:
-           - h2o
-     restart: unless-stopped
- volumes:
-   datagrok_db:
-   datagrok_data:
-   datagrok_cfg:
-   jupyter_notebooks:
- networks:
-   datagrok:
+  grok_compute:
+    image: datagrok/grok_compute:latest
+    environment:
+      GROK_COMPUTE_NUM_CORES: 4
+    networks:
+      datagrok:
+        aliases:
+          - grok_compute
+    restart: unless-stopped
+  cvm_nginx:
+    image: datagrok/cvm_nginx:latest
+    ports:
+      - "8090:8090/tcp"
+    networks:
+      datagrok:
+        aliases:
+          - cvm
+          - nginx_cvm
+    restart: unless-stopped
+  jupyter_notebook:
+    image: datagrok/jupyter_notebook:latest
+    networks:
+      datagrok:
+        aliases:
+          - jupyter_notebook
+    restart: unless-stopped
+  jupyter_kernel_gateway:
+    image: datagrok/jupyter_kernel_gateway:latest
+    networks:
+      datagrok:
+        aliases:
+          - jupyter_notebook
+    restart: unless-stopped
+  h2o:
+    image: datagrok/h2o:latest
+    ports:
+      - "54321:54321/tcp"
+      - "5005:5005/tcp"
+    networks:
+      datagrok:
+        aliases:
+          - h2o
+    restart: unless-stopped
+volumes:
+  datagrok_db:
+  datagrok_data:
+  datagrok_cfg:
+networks:
+  datagrok:

@@ -542,7 +542,7 @@ export class Row {
 /** Strongly-typed column. */
 export class Column {
   public d: any;
-  private temp: any;
+  public temp: any;
   public tags: any;
   private _dialogs: ColumnDialogHelper | undefined;
   private _colors: ColumnColorHelper | undefined;
@@ -915,12 +915,8 @@ export class Column {
       return null;
     if (type == null)
       type = this.type;
-    let newCol: Column = await this.dataFrame.columns._getNewCalculated(this.name, formula, type, treatAsString);
-    for (let [key, value] of this.tags) if (key !== DG.TAGS.FORMULA) newCol.setTag(key, value);
-    let name = this.name;
-    newCol = this.dataFrame.columns.replace(this, newCol);
-    newCol.name = name;
-    return newCol;
+    return new Promise((resolve, reject) => api.grok_Column_ApplyFormula(
+      this.d, formula, type, treatAsString, (c: any) => resolve(toJs(c)), (e: any) => reject(e)));
   }
 
   /** Creates and returns a new column by converting [column] to the specified [newType].
@@ -1398,6 +1394,8 @@ export class BitSet {
     return bitset;
   }
 
+  /** Returns the underlying storage. Be careful with the
+   * direct manipulations, as some statistics (set count, etc) are cached. */
   getBuffer(): Int32Array {
     return api.grok_BitSet_Get_Buffer(this.d);
   }

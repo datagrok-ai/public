@@ -1,5 +1,5 @@
 {
-	"name": "scatterplot3d",
+	"name": "@datagrok/scatter-plot-3d",
 	"friendlyName": "ScatterPlot3D",
 	"version": "0.0.1",
 	"description": "",

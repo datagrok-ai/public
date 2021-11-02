@@ -88,6 +88,7 @@ export function drawAxolabsPattern(patternName: string, asExists: boolean, ssBas
       e.setAttribute("y", String(y));
       e.setAttribute("font-size", String(fontSize));
       e.setAttribute("font-weight", "normal");
+      e.setAttribute("font-family", "Arial");
       e.setAttribute("fill", color);
       e.innerHTML = text;
       return e;

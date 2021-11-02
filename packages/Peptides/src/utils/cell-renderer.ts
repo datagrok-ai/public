@@ -1,9 +1,44 @@
 import {ChemPalette} from './chem-palette';
 import * as DG from 'datagrok-api/dg';
+const cp = new ChemPalette('grok');
 
-const cp =new ChemPalette('grok');
+export function expandColumn(col:DG.Column,
+  grid:DG.Grid,
+  cellRenderSize: (celVal:string)=>number,
+  textSizeMult = 10,
+  minSize = 30,
+  maxSize = 650,
+  timeout = 500) {
+  let maxLen = 0;
+  col.categories.forEach((ent: string) => {
+    const len = cellRenderSize(ent);
+    if (len > maxLen) {
+      maxLen = len;
+    }
+  });
+  setTimeout(() => {
+      grid.columns.byName(col.name)!.width = Math.min(Math.max(maxLen * textSizeMult, minSize), maxSize);
+  },
+  timeout);
+}
 
+export function setAARRenderer(
+  col:DG.Column,
+  grid:DG.Grid|null = null,
+) {
+  col.semType = 'aminoAcids';
+  col.setTag('cell.renderer', 'aminoAcids');
+  if (grid) {
+    expandColumn(col, grid, (ent) => measureAAR(ent, true));
+  }
+}
 
+export function measureAAR(s:string,
+  hideMod = false):number {
+  const end = s.lastIndexOf(')');
+  const beg = s.indexOf('(');
+  return end == beg ? s.length:s.length - (end-beg)+1;
+}
 function printLeftCentered(
   x: number,
   y: number,
@@ -16,6 +51,7 @@ function printLeftCentered(
   left = false,
   hideMod = false,
 ) {
+  g.textAlign = 'start';
   let colorPart = pivot == -1 ? s.substring(0) : s.substring(0, pivot);
   if (colorPart.length == 1) {
     colorPart = colorPart.toUpperCase();
@@ -60,7 +96,6 @@ function printLeftCentered(
       y + (textSize.fontBoundingBoxAscent + textSize.fontBoundingBoxDescent) / 2,
     );
     return x + colorTextSize.width + g.measureText(grayPart).width;
-    ;
   } else {
     g.fillStyle = color;
     g.fillText(
@@ -88,10 +123,6 @@ export class AminoAcidsCellRenderer extends DG.GridCellRenderer {
 
     get cellType() {
       return 'aminoAcids';
-    }
-
-    get defaultWidth() {
-      return 30;
     }
 
 
@@ -134,9 +165,6 @@ export class AlignedSequenceCellRenderer extends DG.GridCellRenderer {
       return 'alignedSequence';
     }
 
-    get defaultWidth() {
-      return this.maxCellWidth;
-    }
 
     render(
       g: CanvasRenderingContext2D,
@@ -147,6 +175,7 @@ export class AlignedSequenceCellRenderer extends DG.GridCellRenderer {
       gridCell: DG.GridCell,
       cellStyle: DG.GridCellStyle,
     ) {
+      w = Math.min(gridCell.grid.canvas.width-x, w);
       g.save();
       g.beginPath();
       g.rect(x, y, w, h);
@@ -156,18 +185,7 @@ export class AlignedSequenceCellRenderer extends DG.GridCellRenderer {
       const s: string = gridCell.cell.value;
 
       const subParts = s.split('-');
-
-      const simplified = !subParts.some((amino, index)=>{
-        return amino.length>1&&index!=0&&index!=subParts.length-1;
-      });
-      const text:string[] = [];
-      subParts.forEach((amino: string, index) => {
-        if (index < subParts.length) {
-          const gap = simplified?'':' ';
-          amino += `${amino?'':'-'}${gap}`;
-        }
-        text.push(amino);
-      });
+      const [text, simplified] = processSequence(subParts);
       const textSize = g.measureText(text.join(''));
       x = Math.max(x, x+(w-textSize.width)/2);
       subParts.forEach((amino: string, index) => {
@@ -181,5 +199,21 @@ export class AlignedSequenceCellRenderer extends DG.GridCellRenderer {
       });
       g.restore();
     }
+}
+export function processSequence(subParts:string[]) : [string[], boolean] {
+  const simplified = !subParts.some((amino, index)=>{
+    return amino.length>1 &&
+        index !=0 &&
+        index != subParts.length-1;
+  });
+  const text:string[] = [];
+  subParts.forEach((amino: string, index) => {
+    if (index < subParts.length) {
+      const gap = simplified?'':' ';
+      amino += `${amino?'':'-'}${gap}`;
+    }
+    text.push(amino);
+  });
+  return [text, simplified];
 }
 

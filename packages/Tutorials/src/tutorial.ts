@@ -168,7 +168,7 @@ export abstract class Tutorial extends DG.Widget {
     const div = ui.div([]);
     div.innerHTML = text;
     this.activity.append(div);
-    this._scroll();
+    div.scrollIntoView();
   }
 
   _placeHint(hint: HTMLElement) {
@@ -246,7 +246,7 @@ export abstract class Tutorial extends DG.Widget {
     this.activity.append(entry);
     descriptionDiv.innerHTML = description;
     this.activity.append(descriptionDiv);
-    this._scroll();
+    descriptionDiv.scrollIntoView();
 
     const currentStep = completed instanceof Promise ? completed : this.firstEvent(completed);
     await currentStep;
@@ -261,10 +261,6 @@ export abstract class Tutorial extends DG.Widget {
     
     if (hint != null)
       this._removeHints(hint);
-  }
-
-  protected _scroll(): void {
-    this.root.scrollTop = this.root.scrollHeight;
   }
 
   clearRoot(): void {
@@ -294,6 +290,23 @@ export abstract class Tutorial extends DG.Widget {
 
   _onClose: Subject<void> = new Subject();
   get onClose() { return this._onClose; }
+
+  protected get menuRoot(): HTMLElement {
+    return grok.shell.windows.simpleMode ? grok.shell.v.ribbonMenu.root : grok.shell.topMenu.root;
+  }
+
+  protected getMenuItem(name: string): HTMLElement | null {
+    return $(this.menuRoot)
+      .find('div.d4-menu-item.d4-menu-group')
+      .filter((idx, el) => Array.from(el.children).some((c) => c.textContent === name))
+      .get(0) ?? null;
+  }
+
+  protected getSidebarHints(paneName: string, commandName: string): HTMLElement[] {
+    const pane = grok.shell.sidebar.getPane(paneName);
+    const command = $(pane.content).find(`div.d4-toggle-button[data-view=${commandName}]`)[0]!;
+    return [pane.header, command];
+  }
 
   /** Prompts the user to open a viewer of the specified type and returns it. */
   protected async openPlot(name: string, check: (viewer: DG.Viewer) => boolean,
@@ -343,13 +356,32 @@ export abstract class Tutorial extends DG.Widget {
   protected async textInpAction(root: HTMLElement, instructions: string,
     caption: string, value: string, description: string = ''): Promise<void> {
     const inputRoot = $(root)
-      .find('div.ui-input-text.ui-input-root')
+      .find('div.ui-input-root')
       .filter((idx, inp) => $(inp).find('label.ui-label.ui-input-label')[0]?.textContent === caption)[0];
     if (inputRoot == null) return;
     const input = $(inputRoot).find('input.ui-input-editor')[0] as HTMLInputElement;
     const source = fromEvent(input, 'input').pipe(map((_) => input.value), filter((val) => val === value));
     await this.action(instructions, source, inputRoot, description);
   }
+
+  /** A helper method to access choice inputs in a view. */
+  protected async choiceInputAction(root: HTMLElement, instructions: string,
+    caption: string, value: string, description: string = '') {
+    let inputRoot = null;
+    let select: HTMLSelectElement;
+    $(root).find('.ui-input-root .ui-input-label span').each((idx, el) => {
+      if (el.innerText === caption) {
+        inputRoot = el.parentElement?.parentElement;
+        select = $(inputRoot).find('select')[0] as HTMLSelectElement;
+      }
+    });
+    if (select! == null) return;
+    const source = fromEvent(select, 'change');
+    await this.action(instructions, select.value === value ?
+      new Promise<void>((resolve) => resolve()) :
+      source.pipe(map((_) => select.value), filter((v: string) => v === value)),
+      inputRoot, description);
+  };
 
   /** Prompts the user to choose a particular column in a column input with the specified caption. */
   protected async columnInpAction(root: HTMLElement, instructions: string, caption: string, columnName: string, description: string = '') {
@@ -374,6 +406,13 @@ export abstract class Tutorial extends DG.Widget {
       map((_) => $(columnsInput).find('div.ui-input-editor > div.ui-input-column-names')[0]?.textContent),
       filter((value) => value === columnNames));
     await this.action(instructions, source, columnsInput, description);
+  };
+
+  protected async buttonClickAction(root: HTMLElement, instructions: string, caption: string, description: string = '') {
+    const btn = $(root).find('button.ui-btn').filter((idx, btn) => btn.textContent === caption)[0];
+    if (btn == null) return;
+    const source = fromEvent(btn, 'click');
+    await this.action(instructions, source, btn, description);
   };
 
   /** Prompts the user to open a view of the specified type, waits for it to open and returns it. */
@@ -417,6 +456,13 @@ export abstract class Tutorial extends DG.Widget {
     })), hint, description);
 
     return dialog!;
+  }
+
+  /** Prompts the user to open the "Add New Column" dialog, waits for it to open and returns it. */
+  protected async openAddNCDialog(instructions: string = 'Open the "Add New Column" dialog',
+    description: string = ''): Promise<DG.Dialog> {
+    const addNCIcon = $('div.d4-ribbon-item').has('i.svg-add-new-column')[0];
+    return await this.openDialog(instructions, 'Add New Column', addNCIcon, description);
   }
 
   /** Prompts the user to select a menu item in the context menu. */

@@ -28,7 +28,7 @@ function findDuplicates(data: Int32Array | Float32Array | Float64Array | Uint32A
 
 async function isCurrentUserCreatedThisPattern(patternName: string): Promise<boolean> {
   return await grok.dapi.users.current().then((user) => {
-    let [firstName, lastName] = getName(patternName);
+    let [firstName, lastName] = getUserName(patternName);
     return (user.firstName != firstName || user.lastName != lastName);
   });
 }
@@ -43,7 +43,7 @@ function getShortName(patternName: string): string {
   return patternName.slice(0, first - 1);
 }
 
-function getName(patternName: string): string[] {
+function getUserName(patternName: string): string[] {
   let first = -1;
   for (let i = 0; i < patternName.length; i++)
     if (patternName[i] == '(') {
@@ -338,12 +338,12 @@ export function defineAxolabsPattern() {
     return allLengthsAreTheSame;
   }
 
-  async function getName(): Promise<string> {
+  async function getCurrentUserName(): Promise<string> {
     return await grok.dapi.users.current().then((user) => {return ' (created by ' + user.firstName + ' ' + user.lastName + ')'});
   }
 
   async function postPatternToUserStorage() {
-    let author = await getName();
+    let author = await getCurrentUserName();
     if (!saveAs.stringValue.includes('(created by '))
       saveAs.value = saveAs.stringValue + author;
     return grok.dapi.userDataStorage.postValue(
@@ -365,22 +365,61 @@ export function defineAxolabsPattern() {
   }
 
   async function updatePatternsList() {
-    grok.dapi.userDataStorage.get(userStorageKey, false).then((entities) => {
-      let loadPattern = ui.choiceInput('Load Pattern', '', Object.keys(entities), (v: string) => {
-        parsePatternAndUpdateUi(v);
+    grok.dapi.userDataStorage.get(userStorageKey, false).then(async (entities) => {
+      let lstMy: string[] = [],
+        lstOthers: string[] = [];
+
+      for (let ent of Object.keys(entities))
+        if (await isCurrentUserCreatedThisPattern(ent))
+          lstOthers.push(ent);
+        else
+          lstMy.push(getShortName(ent));
+
+      let loadPattern = ui.choiceInput('Load Pattern', '', lstMy, (v: string) => parsePatternAndUpdateUi(v));
+
+      let myOrOthersPatternList = ui.choiceInput('', 'Mine', ['Mine', 'Others'], (v: string) => {
+        let currentList = v == 'Mine' ? lstMy : lstOthers;
+        loadPattern = ui.choiceInput('Load Pattern', '', currentList, (v: string) => parsePatternAndUpdateUi(v))
+
+        loadPattern.root.append(myOrOthersPatternList.input);
+        loadPattern.root.append(loadPattern.input);
+        // @ts-ignore
+        loadPattern.input.style.maxWidth = '100px';
+        loadPattern.setTooltip('Apply Existing Pattern');
+
+        loadPatternDiv.innerHTML = '';
+        loadPatternDiv.append(loadPattern.root);
+        loadPattern.root.append(
+          ui.div([
+            ui.button(ui.iconFA('trash-alt', () => {}), async () => {
+              if (loadPattern.value == null) {
+                grok.shell.warning('Choose pattern to delete');
+              } else if (await isCurrentUserCreatedThisPattern(saveAs.value)) {
+                grok.shell.warning('Cannot delete pattern, created by other user');
+              } else {
+                await grok.dapi.userDataStorage.remove(userStorageKey, loadPattern.value, false)
+                  .then(() => grok.shell.info("Pattern '" + loadPattern.value + "' deleted"));
+              }
+              await updatePatternsList();
+            })
+          ], 'ui-input-options')
+        );
       });
+      loadPattern.root.append(myOrOthersPatternList.input);
+      loadPattern.root.append(loadPattern.input);
+      // @ts-ignore
+      loadPattern.input.style.maxWidth = '100px';
       loadPattern.setTooltip('Apply Existing Pattern');
+
       loadPatternDiv.innerHTML = '';
-      loadPatternDiv.append(
-        loadPattern.root
-      );
+      loadPatternDiv.append(loadPattern.root);
       loadPattern.root.append(
         ui.div([
           ui.button(ui.iconFA('trash-alt', () => {}), async () => {
             if (loadPattern.value == null) {
               grok.shell.warning('Choose pattern to delete');
             } else if (await isCurrentUserCreatedThisPattern(saveAs.value)) {
-                grok.shell.warning('Cannot delete pattern, created by other user');
+              grok.shell.warning('Cannot delete pattern, created by other user');
             } else {
               await grok.dapi.userDataStorage.remove(userStorageKey, loadPattern.value, false)
                 .then(() => grok.shell.info("Pattern '" + loadPattern.value + "' deleted"));
@@ -502,7 +541,7 @@ export function defineAxolabsPattern() {
   let inputIdColumn = ui.choiceInput('ID Column', '', []);
   inputIdColumnDiv.append(inputIdColumn.root);
 
-  updatePatternsList().then(() => grok.shell.info(''));
+  updatePatternsList();
 
   let sequenceBase = ui.choiceInput('Sequence Basis', defaultBase, baseChoices, (v: string) => {
     updateBases(v);

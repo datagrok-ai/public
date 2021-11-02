@@ -18,11 +18,14 @@ import { MatrixesView } from './views/matrixes-view';
 import { createPropertyPanel } from './panels/panels-service';
 import { TimeProfileView } from './views/time-profile-view';
 import { AeBrowserView } from './views/adverse-events-browser';
+import { AEBrowserHelper } from './helpers/ae-browser-helper';
+import { SUBJECT_ID } from './constants';
 
 export let _package = new DG.Package();
 
 export let validationRulesList = null;
 
+let domains = Object.keys(study.domains).map(it => `${it.toLocaleLowerCase()}.csv`);
 
 let links = {
   ae: { key: 'USUBJID', start: 'AESTDY', end: 'AEENDY', event: 'AETERM' },
@@ -129,7 +132,7 @@ export async function clinicalCaseApp(): Promise<any> {
   function addView(view: DG.ViewBase): DG.ViewBase {
     view.box = true;
     view.parentCall = c;
-    view.path = '/'+view.name;
+    view.path = '/' + view.name;
     grok.shell.addView(view);
     return view;
   }
@@ -137,33 +140,89 @@ export async function clinicalCaseApp(): Promise<any> {
   const views = [];
 
   views.push(<StudySummaryView>addView(new StudySummaryView('Summary')));
-  views.push(<TimelinesView>addView(new TimelinesView('Timelines')));
+  const timelinesView = new TimelinesView('Timelines');
+  views.push(<TimelinesView>addView(timelinesView));
   views.push(<PatientProfileView>addView(new PatientProfileView('Patient Profile')));
   views.push(<AdverseEventsView>addView(new AdverseEventsView('Adverse Events')));
   views.push(<LaboratoryView>addView(new LaboratoryView('Laboratory')));
   views.push(<AERiskAssessmentView>addView(new AERiskAssessmentView('AE Risk Assessment')));
   views.push(<SurvivalAnalysisView>addView(new SurvivalAnalysisView('Survival Analysis')));
-  views.push(<BoxPlotsView>addView(new BoxPlotsView('Box Plots')));
+  views.push(<BoxPlotsView>addView(new BoxPlotsView('Biomarkers Distribution')));
   views.push(<MatrixesView>addView(new MatrixesView('Correlation Matrix')));
   views.push(<TimeProfileView>addView(new TimeProfileView('Time Profile')));
-  views.push(<AeBrowserView>addView(new AeBrowserView('AE Browser')));
+
+  let aeBrowserView;
+  if (study.domains.ae) {
+    const aeBrowserDf = study.domains.ae.clone();
+    aeBrowserView = DG.TableView.create(aeBrowserDf);
+    const aeBrowserHelper = new AEBrowserHelper(aeBrowserDf);
+    timelinesView.aeBrowserHelper = aeBrowserHelper;
+    aeBrowserDf.onCurrentRowChanged.subscribe(() => {
+      aeBrowserHelper.currentSubjId = aeBrowserDf.get(SUBJECT_ID, aeBrowserDf.currentRowIdx);
+      aeBrowserHelper.currentAeDay = aeBrowserDf.get('AESTDY', aeBrowserDf.currentRowIdx);
+      aeBrowserHelper.createAEBrowserPanel();
+    })
+  } else {
+    aeBrowserView = DG.View.create();
+    aeBrowserView.root.append(ui.div([
+      ui.h2('Missing domains:'),
+      ui.divText('ae')
+    ], {style: {margin: 'auto', textAlign: 'center'}}))
+  }
+  aeBrowserView.name = 'AE browser';
+  aeBrowserView.helpUrl = 'https://raw.githubusercontent.com/datagrok-ai/public/master/packages/ClinicalCase/views_help/ae_browser.md';
+  views.push(addView(aeBrowserView));
+
   DG.ObjectHandler.register(new AdverseEventHandler());
 
   let summary = views.find(it => it.name === 'Summary');
-  summary.validationView = addView(new ValidationView(summary.errorsByDomain, 'Validation'));
-  views.push(summary.validationView);
+  summary.load();
+  summary.loaded = true;
+  let valView = addView(new ValidationView(summary.errorsByDomain, 'Validation'));
+  summary.validationView = valView;
+  views.push(valView);
 
-  grok.shell.v = summary;
-  createPropertyPanel(summary);
-  // showStudySummary();
-  // showLabs();
+  setTimeout(() => {
+    grok.shell.v = summary;
+  }, 1000);
 
-  grok.events.onCurrentViewChanged.subscribe((layout) => {
+  grok.events.onCurrentViewChanged.subscribe((v) => {
     setTimeout(() => {
       const obj = views.find(it => it.name === grok.shell.v.name);
+      if (!obj.loaded) {
+        obj.load();
+        obj.loaded = true;
+      }
       createPropertyPanel(obj);
     }, 100)
   });
+}
+
+
+//tags: folderViewer
+//input: file folder
+//input: list<file> files
+//output: widget
+export async function clinicalCaseFolderLauncher(folder: DG.FileInfo, files: DG.FileInfo[]): Promise<DG.Widget | undefined> {
+  if (files.some((f) => f.fileName.toLowerCase() === 'dm.csv')) {
+    let res = await grok.dapi.files.readAsText(`${folder.fullPath}/dm.csv`);
+    let table = DG.DataFrame.fromCsv(res);
+    let studyId = table.get('STUDYID', 0);
+    return DG.Widget.fromRoot(ui.div([
+      ui.panel([
+        ui.divText('Folder contains SDTM data'),
+        ui.divText(`Study ID: ${studyId}`)]),
+      ui.button('Run ClinicalCase', async () => {
+        await Promise.all(files.map(async (file) => {
+          if(domains.includes(file.fileName.toLowerCase())){
+            let df = await grok.data.files.openTable(`${folder.fullPath}/${file.fileName.toLowerCase()}`);
+            grok.shell.addTableView(df);
+          }
+        }));
+        grok.functions.call("Clinicalcase:clinicalCaseApp");
+      })
+    ]));
+  }
 }
 
 //tags: autostart

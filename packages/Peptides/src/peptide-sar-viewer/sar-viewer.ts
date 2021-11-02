@@ -6,75 +6,58 @@ import $ from 'cash-dom';
 
 import {describe} from './describe';
 
-export class SARViewer extends DG.JsViewer {
-  private viewerGrid: DG.Grid | null;
-  private sourceGrid: DG.Grid;
-  private progress: DG.TaskBarProgressIndicator;
+export class SARViewerBase extends DG.JsViewer {
+  protected viewerGrid: DG.Grid | null;
+  protected sourceGrid: DG.Grid | null;
+  protected progress: DG.TaskBarProgressIndicator;
   protected activityColumnColumnName: string;
   protected activityScalingMethod: string;
-  protected twoColorMode: boolean;
+  protected bidirectionalAnalysis: boolean;
   protected filterMode: boolean;
   protected statsDf: DG.DataFrame | null;
   protected initialized: boolean;
   protected viewGridInitialized: boolean;
   protected aminoAcidResidue;
   protected _initialBitset: DG.BitSet | null;
+  protected viewerVGrid: DG.Grid | null;
+  protected currentBitset: DG.BitSet | null;
+  // protected pValueThreshold: number;
+  // protected amountOfBestAARs: number;
   // duplicatesHandingMethod: string;
   constructor() {
     super();
     this.progress = DG.TaskBarProgressIndicator.create('Loading SAR viewer');
 
     this.viewerGrid = null;
+    this.viewerVGrid = null;
     this.statsDf = null;
     this.initialized = false;
-    this.aminoAcidResidue = 'aminoAcidResidue';
-    this._initialBitset = null; // 
+    this.aminoAcidResidue = 'AAR';
+    this._initialBitset = null;
     this.viewGridInitialized = false;
+    this.currentBitset = null;
 
     //TODO: find a way to restrict activityColumnColumnName to accept only numerical columns (double even better)
     this.activityColumnColumnName = this.string('activityColumnColumnName');
     this.activityScalingMethod = this.string('activityScalingMethod', 'none', {choices: ['none', 'lg', '-lg']});
     this.filterMode = this.bool('filterMode', false);
-    // this.filterMode = false;
-    this.twoColorMode = this.bool('twoColorMode', false);
+    this.bidirectionalAnalysis = this.bool('bidirectionalAnalysis', false);
+    // this.pValueThreshold = this.float('pValueThreshold', 0.1);
+    // this.amountOfBestAARs = this.int('amountOfBestAAR', 1);
     // this.duplicatesHandingMethod = this.string('duplicatesHandlingMethod', 'median', {choices: ['median']});
 
-    this.sourceGrid = (grok.shell.v as DG.TableView).grid;
-  }
-
-  get initialBitset(): DG.BitSet | null {
-    return this._initialBitset;
-  }
-
-  set initialBitset(bitset: DG.BitSet | null) {
-    this._initialBitset = bitset;
+    this.sourceGrid = null;
   }
 
   init() {
-    this.initialBitset = this.dataFrame!.filter.clone();
+    this._initialBitset = this.dataFrame!.filter.clone();
     this.initialized = true;
   }
 
   onTableAttached() {
-    this.subs.push(DG.debounce(grok.events.onAccordionConstructed, 50).subscribe(this.accordionFunc));
-    // this.subs.push(DG.debounce(this.dataFrame!.onRowsFiltering, 50).subscribe((_) => this.applyFilter()))
-
+    this.sourceGrid = this.view.grid;
     this.render();
   }
-
-  // applyFilter() {
-  //   if (this.viewerGrid && this.dataFrame) {
-  //     const currentAAR: string = this.viewerGrid.table.get(this.aminoAcidResidue, this.viewerGrid.table.currentRowIdx);
-  //     const currentPosition = this.viewerGrid.table.currentCol.name;
-
-  //     for (let i = 0; i < this.dataFrame.rowCount; i++) {
-  //       if (this.initialBitset?.get(i) && this.dataFrame!.get(currentPosition, i) !== currentAAR) {
-  //         this.dataFrame.filter.set(i, false, false);
-  //       }
-  //     }
-  //     this.dataFrame.filter.fireChanged();
-  //   }
-  // }
 
   detach() {
     this.subs.forEach((sub) => sub.unsubscribe());
@@ -89,7 +72,10 @@ export class SARViewer extends DG.JsViewer {
     }
 
     if (property.name === 'activityScalingMethod' && typeof this.dataFrame !== 'undefined') {
-      const minActivity = DG.Stats.fromColumn(this.dataFrame.col(this.activityColumnColumnName)!, this.initialBitset).min;
+      const minActivity = DG.Stats.fromColumn(
+        this.dataFrame.col(this.activityColumnColumnName)!,
+        this._initialBitset,
+      ).min;
       if (minActivity && minActivity <= 0 && this.activityScalingMethod !== 'none') {
         grok.shell.warning(`Could not apply ${this.activityScalingMethod}: ` +
           `activity column ${this.activityColumnColumnName} contains zero or negative values, falling back to 'none'.`);
@@ -101,15 +87,17 @@ export class SARViewer extends DG.JsViewer {
     this.render();
   }
 
-  private applyBitset(_: any) {
+  private applyBitset() {
     if (
       this.dataFrame &&
       this.viewerGrid &&
-      this.viewerGrid.table.currentCell.value &&
-      this.viewerGrid.table.currentCol.name !== this.aminoAcidResidue
+      this.viewerGrid.dataFrame &&
+      this.viewerGrid.dataFrame.currentCell.value &&
+      this.viewerGrid.dataFrame.currentCol.name !== this.aminoAcidResidue
     ) {
-      const currentAAR: string = this.viewerGrid.table.get(this.aminoAcidResidue, this.viewerGrid.table.currentRowIdx);
-      const currentPosition = this.viewerGrid.table.currentCol.name;
+      const currentAAR: string =
+        this.viewerGrid.dataFrame.get(this.aminoAcidResidue, this.viewerGrid.dataFrame.currentRowIdx);
+      const currentPosition = this.viewerGrid.dataFrame.currentCol.name;
 
       const splitColName = '~splitCol';
       const otherLabel = 'Other';
@@ -119,24 +107,20 @@ export class SARViewer extends DG.JsViewer {
         this.dataFrame.columns.addNew(splitColName, 'string');
       }
 
-      let isChosen = (i: number) => this.dataFrame!.get(currentPosition, i) === currentAAR;
+      const isChosen = (i: number) => this.dataFrame!.get(currentPosition, i) === currentAAR;
       this.dataFrame.getCol(splitColName).init((i) => isChosen(i) ? aarLabel : otherLabel);
 
-      if (this.filterMode) {
-        this.dataFrame.selection.setAll(false, false);
-        this.dataFrame.filter.init(isChosen).and(this._initialBitset!, false);
-      } else {
-        this.dataFrame.filter.copyFrom(this._initialBitset!);
-        this.dataFrame.selection.init(isChosen).and(this._initialBitset!, false);
-      }
-
-      // if (!this.filterMode) {
-      //   this.dataFrame.selection.init((i) => isChosen(i)).and(this.initialBitset!);
+      // if (this.filterMode) {
+      //   this.dataFrame.selection.setAll(false, false);
+      //   this.dataFrame.filter.init(isChosen).and(this._initialBitset!, false);
       // } else {
-      //   //FIXME: for complex dataset, need to choose selection
-      //   this.dataFrame.filter.copyFrom(this.initialBitset!);
-      //   this.applyFilter();
+      //   this.dataFrame.filter.copyFrom(this._initialBitset!);
+      //   this.dataFrame.selection.init(isChosen).and(this._initialBitset!, false);
       // }
+      this.currentBitset = DG.BitSet.create(this.dataFrame.rowCount, isChosen).and(this._initialBitset!);
+      // (this.filterMode ? this.dataFrame.selection.setAll(false) : this.dataFrame.filter.copyFrom(this._initialBitset!)).fireChanged();
+      this.sourceFilteringFunc();
+
 
       // df.getCol(splitColName).setCategoryOrder([otherLabel, aarLabel]);
       const colorMap: {[index: string]: string | number} = {};
@@ -147,24 +131,48 @@ export class SARViewer extends DG.JsViewer {
     }
   }
 
+  private sourceFilteringFunc() {
+    if (this.filterMode) {
+      this.dataFrame!.selection.setAll(false, false);
+      this.dataFrame!.filter.copyFrom(this.currentBitset!);
+    } else {
+      this.dataFrame!.filter.copyFrom(this._initialBitset!);
+      this.dataFrame!.selection.copyFrom(this.currentBitset!);
+    }
+  }
+
   private accordionFunc(accordion: DG.Accordion) {
     if (accordion.context instanceof DG.RowGroup) {
       const originalDf: DG.DataFrame = accordion.context.dataFrame;
 
-      if (originalDf.getTag('dataType') === 'peptides' && originalDf.col('~splitCol')) {
-        const currentAAR: string = this.viewerGrid?.table.get(this.aminoAcidResidue, this.viewerGrid?.table.currentRowIdx);
-        const currentPosition = this.viewerGrid?.table.currentCol.name;
+      if (
+        originalDf.getTag('dataType') === 'peptides' &&
+        originalDf.col('~splitCol') &&
+        this.viewerGrid &&
+        this.viewerGrid.dataFrame
+      ) {
+        const currentAAR: string = this.viewerGrid.dataFrame.get(
+          this.aminoAcidResidue,
+          this.viewerGrid.dataFrame.currentRowIdx,
+        );
+        const currentPosition = this.viewerGrid.dataFrame.currentCol.name;
 
         const labelStr = `${currentAAR === '-' ? 'Empty' : currentAAR} - ${currentPosition}`;
-        const currentColor = DG.Color.toHtml(DG.Color.getCategoryColor(originalDf.getCol('~splitCol'), labelStr));
-        const otherColor = DG.Color.toHtml(DG.Color.getCategoryColor(originalDf.getCol('~splitCol'), 'Other'));
+        const currentColor = DG.Color.toHtml(DG.Color.orange);
+        const otherColor = DG.Color.toHtml(DG.Color.blue);
         const currentLabel = ui.label(labelStr, {style: {color: currentColor}});
         const otherLabel = ui.label('Other', {style: {color: otherColor}});
 
         const elements: (HTMLLabelElement | HTMLElement)[] = [currentLabel, otherLabel];
 
-        accordion.getPane('Distribution') ? null : accordion.addPane('Distribution', () => {
-          const hist = originalDf.clone(this.initialBitset).plot.histogram({
+        const distPane = accordion.getPane('Distribution');
+        if (distPane) {
+          accordion.removePane(distPane);
+        }
+        accordion.addPane('Distribution', () => {
+          const hist = originalDf.clone(this._initialBitset).plot.histogram({
+          // const hist = originalDf.plot.histogram({
+            filteringEnabled: false,
             valueColumnName: `${this.activityColumnColumnName}Scaled`,
             splitColumnName: '~splitCol',
             legendVisibility: 'Never',
@@ -172,13 +180,15 @@ export class SARViewer extends DG.JsViewer {
             showColumnSelector: false,
             showRangeSlider: false,
           }).root;
+          hist.style.width = 'auto';
           elements.push(hist);
 
           const tableMap: {[key: string]: string} = {'Statistics:': ''};
-          for (const colName of new Set(['Count', 'p-value', 'Mean difference'])) {
-            const query = `${this.aminoAcidResidue} = ${currentAAR} and position = ${currentPosition}`;
-            const text = `${this.statsDf?.groupBy([colName]).where(query).aggregate().get(colName, 0).toFixed(2)}`;
-            tableMap[colName] = text;
+          for (const colName of new Set(['Count', 'pValue', 'Mean difference'])) {
+            const query = `${this.aminoAcidResidue} = ${currentAAR} and Position = ${currentPosition}`;
+            const textNum = this.statsDf?.groupBy([colName]).where(query).aggregate().get(colName, 0);
+            const text = textNum === 0 ? '<0.01' : `${colName === 'Count' ? textNum : textNum.toFixed(2)}`;
+            tableMap[colName === 'pValue' ? 'p-value' : colName] = text;
           }
           elements.push(ui.tableFromMap(tableMap));
 
@@ -186,32 +196,86 @@ export class SARViewer extends DG.JsViewer {
         }, true);
       }
     }
-  };
+  }
 
-  async render() {
+  syncGridsFunc(sourceVertical: boolean) { //TODO: refactor
+    if (this.viewerGrid && this.viewerGrid.dataFrame && this.viewerVGrid && this.viewerVGrid.dataFrame) {
+      if (sourceVertical) {
+        const dfCell = this.viewerVGrid.dataFrame.currentCell;
+        if (dfCell.column === null || dfCell.column.name !== 'Mean difference') {
+          return;
+        }
+        const otherColName: string = this.viewerVGrid.dataFrame.get('Position', dfCell.rowIndex);
+        const otherRowName: string = this.viewerVGrid.dataFrame.get(this.aminoAcidResidue, dfCell.rowIndex);
+        let otherRowIndex = -1;
+        for (let i = 0; i < this.viewerGrid.dataFrame.rowCount; i++) {
+          if (this.viewerGrid.dataFrame.get(this.aminoAcidResidue, i) === otherRowName) {
+            otherRowIndex = i;
+            break;
+          }
+        }
+        if (otherRowIndex !== -1) {
+          this.viewerGrid.dataFrame.currentCell = this.viewerGrid.dataFrame.cell(otherRowIndex, otherColName);
+        }
+      } else {
+        const otherPos: string = this.viewerGrid.dataFrame.currentCol?.name;
+        if (typeof otherPos === 'undefined' && otherPos !== this.aminoAcidResidue) {
+          return;
+        }
+        const otherAAR: string =
+          this.viewerGrid.dataFrame.get(this.aminoAcidResidue, this.viewerGrid.dataFrame.currentRowIdx);
+        let otherRowIndex = -1;
+        for (let i = 0; i < this.viewerVGrid.dataFrame.rowCount; i++) {
+          if (
+            this.viewerVGrid.dataFrame.get(this.aminoAcidResidue, i) === otherAAR &&
+            this.viewerVGrid.dataFrame.get('Position', i) === otherPos
+          ) {
+            otherRowIndex = i;
+            break;
+          }
+        }
+        if (otherRowIndex !== -1) {
+          this.viewerVGrid.dataFrame.currentCell = this.viewerVGrid.dataFrame.cell(otherRowIndex, 'Mean difference');
+        }
+      }
+    }
+  }
+  // argument compute data can be used to just redraw grids.
+  // Probably iirelevant since mostly grids are updating themselves, and render is only used to update data.
+  async render(computeData = true) {
     if (!this.initialized) {
       return;
     }
     //TODO: optimize. Don't calculate everything again if only view changes
-    if (typeof this.dataFrame !== 'undefined' && this.activityColumnColumnName) {
-      [this.viewerGrid, this.statsDf] = await describe(
-        this.dataFrame,
-        this.activityColumnColumnName,
-        this.activityScalingMethod,
-        this.sourceGrid,
-        this.twoColorMode,
-        this._initialBitset,
-      );
+    if (computeData) {
+      if (typeof this.dataFrame !== 'undefined' && this.activityColumnColumnName && this.sourceGrid) {
+        [this.viewerGrid, this.viewerVGrid, this.statsDf] = await describe(
+          this.dataFrame,
+          this.activityColumnColumnName,
+          this.activityScalingMethod,
+          this.sourceGrid,
+          this.bidirectionalAnalysis,
+          this._initialBitset,
+        );
 
-      if (this.viewerGrid !== null) {
-        $(this.root).empty();
-        this.root.appendChild(this.viewerGrid.root);
-        if (!this.viewGridInitialized) {
-          this.subs.push(DG.debounce(this.viewerGrid.table.onCurrentCellChanged, 50).subscribe(this.applyBitset));
-          this.viewGridInitialized = false;
+        if (this.viewerGrid !== null && this.viewerVGrid !== null) {
+          $(this.root).empty();
+          this.root.appendChild(ui.splitV([this.viewerGrid.root, this.viewerVGrid.root]));
+          this.viewerGrid.dataFrame!.onCurrentCellChanged.subscribe((_) => {
+            this.applyBitset();
+            this.syncGridsFunc(false);
+          });
+          this.viewerVGrid.dataFrame!.onCurrentCellChanged.subscribe((_) => this.syncGridsFunc(true));
+          this.dataFrame.onRowsFiltering.subscribe((_) => this.sourceFilteringFunc());
+
+          grok.events.onAccordionConstructed.subscribe((accordion: DG.Accordion) => this.accordionFunc(accordion));
         }
       }
     }
+    //fixes viewers not rendering immediately after analyze.
+    this.viewerVGrid?.invalidate();
+    this.viewerGrid?.invalidate();
+
     this.progress.close();
   }
 }

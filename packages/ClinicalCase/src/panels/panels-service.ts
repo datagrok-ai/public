@@ -9,6 +9,8 @@ import { AeBrowserView } from '../views/adverse-events-browser';
 import { updateDivInnerHTML } from '../views/utils';
 import $ from "cash-dom";
 import { getSubjectDmData } from '../data-preparation/data-preparation';
+import { Accordion } from 'datagrok-api/dg';
+import { AEBrowserHelper } from '../helpers/ae-browser-helper';
 
 export async function createPropertyPanel(viewClass: any) {
     switch (viewClass.name) {
@@ -17,7 +19,7 @@ export async function createPropertyPanel(viewClass: any) {
             break;
         }
         case 'Timelines': {
-            grok.shell.o = await timelinesPanel(viewClass.resultTables, viewClass.selectedDataframes);
+            grok.shell.o = await timelinesPanel(viewClass.resultTables, viewClass.selectedDataframes, viewClass.aeBrowserHelper);
             break;
         }
         case 'AE Browser': {
@@ -29,46 +31,99 @@ export async function createPropertyPanel(viewClass: any) {
     }
 }
 
-export async function aeBrowserPanel(view: AeBrowserView) {
+export async function aeBrowserPanel(view: AEBrowserHelper) {
+
+    let panelDiv = ui.div();
+    
+    let accae = ui.accordion('ae-browser-panel');
+    let accIcon = ui.element('i');
+    accIcon.className = 'grok-icon svg-icon svg-view-layout';
+
     if(view.aeToSelect.currentRowIdx !== -1){
         let subjId = view.aeToSelect.get(SUBJECT_ID, view.aeToSelect.currentRowIdx);
-        let title = ui.tooltip.bind(ui.h1(subjId), dictToString(getSubjectDmData(subjId, [AGE, SEX, RACE, TREATMENT_ARM])));
-        let description = ui.divH([view.aeToSelect.get('AETERM', view.aeToSelect.currentRowIdx)]);
+        let title = ui.tooltip.bind(ui.label(subjId), dictToString(getSubjectDmData(subjId, [AGE, SEX, RACE, TREATMENT_ARM])));
+        let description = ui.divH([ui.divText(String(view.aeToSelect.get('AETERM', view.aeToSelect.currentRowIdx).toLowerCase()))]);
         let severity = view.aeToSelect.get('AESEV', view.aeToSelect.currentRowIdx);
         let severityStyle = {style:{
             color: `${SEVERITY_COLOR_DICT[severity.toUpperCase()]}`,
               marginRight: '5px',
               fontWeight: 'bold'
         }}
+
+        accae.addTitle(ui.span([accIcon, title]));
+
         description.prepend(ui.divText(severity, severityStyle));
         let startEndDays = ui.tooltip.bind(
             ui.label(`${getNullOrValue(view.aeToSelect, 'AESTDY', view.aeToSelect.currentRowIdx)} - ${getNullOrValue(view.aeToSelect, 'AEENDY', view.aeToSelect.currentRowIdx)}`), 
             `${getNullOrValue(view.aeToSelect, 'AESTDTC', view.aeToSelect.currentRowIdx)} - ${getNullOrValue(view.aeToSelect, 'AEENDTC', view.aeToSelect.currentRowIdx)}`);
-        let summary = ui.div([
-          title,
-          description,
-          ui.inlineText(['Days ', startEndDays])
-        ])
-        let daysInput = ui.intInput('Days prior AE', view.daysPriorAe);
+       
+
+        let daysInput = ui.intInput('Prior AE', view.daysPriorAe);
         daysInput.onChanged((v) => {
             view.daysPriorAe = daysInput.value;
             view.updateDomains();
             updateAccordion();
           });
-        let accDiv = ui.div();
+          startEndDays.innerHTML = 'Days ' + startEndDays.innerHTML;
+          startEndDays.style.marginTop = '5px';
+          //@ts-ignore
+          accae.header = ui.div([
+            description,
+            startEndDays,
+            //@ts-ignore
+            ui.divH([ui.divText('Days prior AE'), daysInput.input], {style: {alignItems: 'center', gap: '5px'}}),
+          ])
+
+        let getPaneContent = (it, rowNum) => {
+            if (it) {
+                if(!rowNum){
+                    return ui.divText('No records found');
+                } else {
+                    let grid = view[ it ].plot.grid();
+                    if(rowNum < 7){
+                        grid.root.style.maxHeight = rowNum < 4 ? '100px' : '150px' ;
+                    }
+                    grid.root.style.width = '250px';
+                    return ui.div(grid.root);
+                }
+            }
+        }
+
+        let createPane = (it, rowNum) => {
+            accae.addCountPane(`${it}`, () => getPaneContent(it, rowNum), () => rowNum);
+            let panel = accae.getPane(`${it}`);
+            //@ts-ignore
+            $(panel.root).css('display', 'flex');
+            //@ts-ignore
+            $(panel.root).css('opacity', '1');
+        }
+
         let updateAccordion = () => {
-            let acc = ui.accordion('ae-browser-panel');
+            const totalDomains =  view.domains.concat(view.selectedAdditionalDomains);
+            const panesToRemove = accae.panes.filter(it => !totalDomains.includes(it.name));
+            panesToRemove.forEach(it => accae.removePane(it));
+            totalDomains.forEach(it => {
+                const rowNum = view[it].rowCount === 1 && view[it].getCol(SUBJECT_ID).isNone(0) ? 0 : view[it].rowCount
+                let pane = accae.getPane(`${it}`);
+                if (pane) {
+                    //@ts-ignore
+                    updateDivInnerHTML(pane.root.lastChild, getPaneContent(it, rowNum));
+                    //@ts-ignore
+                    pane.root.firstChild.lastChild.innerText = rowNum;
+                } else {
+                    createPane(it, rowNum);
+                }
+            })
+        }
+
+        let createAccordion = () => {
             view.domains.concat(view.selectedAdditionalDomains).forEach(it => {
                 const rowNum = view[ it ].rowCount === 1 && view[ it ].getCol(SUBJECT_ID).isNone(0) ? 0 : view[ it ].rowCount
-                acc.addPane(`${it} (${rowNum})`, () => {
-                    if (it) {
-                        return ui.div(view[ it ].plot.grid().root)
-                    }
-                });
+                createPane(it, rowNum);
             })
-            updateDivInnerHTML(accDiv, acc.root);
         }
-        let addButton =  ui.icons.add(() => {
+        
+        let addButton =  ui.button(ui.icons.add(() => {}), ()=>{
             let domainsMultiChoices = ui.multiChoiceInput('', view.selectedAdditionalDomains, view.additionalDomains)
             ui.dialog({ title: 'Select domains' })
               .add(ui.div([ domainsMultiChoices ]))
@@ -80,13 +135,12 @@ export async function aeBrowserPanel(view: AeBrowserView) {
               //@ts-ignore
             .show({centerAt: addButton});
         });
-        updateAccordion();
-        return ui.div([
-            summary,
-            daysInput,
-            accDiv,
-            addButton
-        ]);
+        createAccordion();
+        
+        panelDiv.append(accae.root);
+        panelDiv.append(addButton);
+
+        return panelDiv;
     }
 }
 
@@ -100,85 +154,137 @@ export async function summaryPanel(studyId: string) {
     })
     let studyLink = `${CLIN_TRIAL_GOV_SEARCH}${summaryDict[ 'NCT ID' ]}`
     summaryDict[ `Study link` ] = ui.link('Go to study page', () => { window.open(studyLink, '_blank').focus(); })
+
     let acc = ui.accordion('summary-panel');
-    //acc.addPane(`${studyId}`, () => ui.tableFromMap(summaryDict), true);
-    acc.addPane(`${studyId}`, () => {
-        let info = ui.div();
-        Object.keys(summaryDict).forEach(key => info.appendChild(
-            ui.divH([
-                ui.div(key, { style: { minWidth: '100px', fontWeight: 'bold' } }),
-                ui.div(summaryDict[ key ])
-            ])
-        ))
-        return info;
-    });
+    let accIcon = ui.element('i');
+    accIcon.className = 'grok-icon svg-icon svg-view-layout';
+
+    acc.addTitle(ui.span([accIcon, ui.label(`${studyId}`)]));
+    let acctable = ui.tableFromMap(summaryDict);
+    acc.addPane('General', () => {
+        $(acctable).find('tr').css('vertical-align', 'top');
+        $(acctable).find('td').css('padding-bottom', '10px');
+        $(acctable).find('.d4-entity-list>span').css('margin', '0px');
+        return acctable
+    }, true)
+
     return acc.root;
 }
 
 
-export async function timelinesPanel(timelinesDf: DG.DataFrame, domains: string[]) {
+export async function timelinesPanel(timelinesDf: DG.DataFrame, domains: string[], aeBrowserHelper: AEBrowserHelper) {
     const selectedInd = timelinesDf.selection.getSelectedIndexes();
+
     if (!selectedInd.length) {
         if (domains.includes('ae')) {
             const aeWithArm = addDataFromDmDomain(timelinesDf.clone(), study.domains.dm, timelinesDf.columns.names(), [TREATMENT_ARM], 'key');
-            const aeNumberByArm = aeWithArm.groupBy([ TREATMENT_ARM ]).where('domain = ae').count().aggregate();
-            const subjNumberByArm = study.domains.dm.groupBy([ TREATMENT_ARM ]).uniqueCount(SUBJECT_ID).aggregate();
+            const aeNumberByArm = aeWithArm.groupBy([TREATMENT_ARM]).where('domain = ae').count().aggregate();
+            const subjNumberByArm = study.domains.dm.groupBy([TREATMENT_ARM]).uniqueCount(SUBJECT_ID).aggregate();
             const aeNumByArmDict = {};
             for (let i = 0; i < aeNumberByArm.rowCount; i++) {
-                aeNumByArmDict[ aeNumberByArm.get(TREATMENT_ARM, i) ] = aeNumberByArm.get('count', i) /
-                subjNumberByArm.
-                groupBy([ TREATMENT_ARM, `unique(${SUBJECT_ID})` ])
-                .where(`${TREATMENT_ARM} = ${aeNumberByArm.get(TREATMENT_ARM, i)}`)
-                .aggregate()
-                .get(`unique(${SUBJECT_ID})`, 0);
+                aeNumByArmDict[aeNumberByArm.get(TREATMENT_ARM, i)] = aeNumberByArm.get('count', i) /
+                    subjNumberByArm.
+                        groupBy([TREATMENT_ARM, `unique(${SUBJECT_ID})`])
+                        .where(`${TREATMENT_ARM} = ${aeNumberByArm.get(TREATMENT_ARM, i)}`)
+                        .aggregate()
+                        .get(`unique(${SUBJECT_ID})`, 0);
             }
 
             const aeTop5Dict = {};
-            const aeTop5 = aeWithArm.groupBy([ TREATMENT_ARM, 'event' ]).where('domain = ae').count().aggregate();
-            const order = aeTop5.getSortedOrder([ TREATMENT_ARM, 'event' ] as any);
+            const aeTop5 = aeWithArm.groupBy([TREATMENT_ARM, 'event']).where('domain = ae').count().aggregate();
+            const order = aeTop5.getSortedOrder([TREATMENT_ARM, 'event'] as any);
             order.forEach(item => {
                 const arm = aeTop5.get(TREATMENT_ARM, item);
-                if (Object.keys(aeTop5Dict).includes(arm) && aeTop5Dict[ arm ].length < 5) {
-                    aeTop5Dict[ arm ].push(aeTop5.get('event', item));
+                if (Object.keys(aeTop5Dict).includes(arm) && aeTop5Dict[arm].length < 5) {
+                    aeTop5Dict[arm].push(aeTop5.get('event', item));
                 } else {
-                    aeTop5Dict[ arm ] = [ aeTop5.get('event', item) ]
+                    aeTop5Dict[arm] = [aeTop5.get('event', item)]
                 }
             })
+
             Object.keys(aeTop5Dict).forEach(key => {
-                aeTop5Dict[ key ] = aeTop5Dict[ key ].join(',')
+                aeTop5Dict[key] = aeTop5Dict[key].join(', ')
             })
 
-            let root = ui.div();
-            root.appendChild(ui.h2('Average AE number per subject'));
-            root.appendChild(ui.tableFromMap(aeNumByArmDict));
-            root.appendChild(ui.h2('Most frequent AEs'));
-            root.appendChild(ui.tableFromMap(aeTop5Dict));
-            return root;
+            let acc = ui.accordion('timelines-panel')
+            let accIcon = ui.element('i');
+            accIcon.className = 'grok-icon svg-icon svg-view-layout';
+
+            let avarageae = ui.tableFromMap(aeNumByArmDict);
+            let mostae = ui.tableFromMap(aeTop5Dict);
+
+            acc.addTitle(ui.span([accIcon, ui.label('Timelines')]));
+            acc.addPane('Average AE per patient', () => {
+                $(avarageae).find('tr').css('vertical-align', 'top');
+                $(avarageae).find('td').css('padding-bottom', '10px');
+                $(avarageae).find('.d4-entity-list>span').css('margin', '0px');
+                return avarageae
+            }, true);
+
+            acc.addPane('Frequents AEs', () => {
+                $(mostae).find('tr').css('vertical-align', 'top');
+                $(mostae).find('td').css('padding-bottom', '10px');
+                $(mostae).find('.d4-entity-list>span').css('margin', '0px');
+                return mostae
+            });
+            return acc.root;
         }
     } else {
         const eventArray = [];
-        let summary;
-        selectedInd.forEach((item, index) => {
-            if (index === 0) {
-                summary = { 'Subject ID': timelinesDf.get('key', item), 'Domain': timelinesDf.get('domain', item) }
+        let acc2 = ui.accordion('timelines-patient-panel');
+        let accIcon = ui.element('i');
+        accIcon.className = 'grok-icon svg-icon svg-view-layout';
+
+        let domainAdditionalFields = {
+            ae: { fields: ['AESEV'], pos: 'before' },
+            cm: { fields: ['CMDOSE', 'CMDOSU', 'CMDOSFRQ', 'CMROUTE'], pos: 'after' },
+            ex: { fields: ['EXDOSE', 'EXDOSU', 'EXDOSFRM', 'EXDOSFRQ', 'EXROUTE'], pos: 'after' },
+        }
+
+        selectedInd.forEach((item) => {
+            const domain = timelinesDf.get('domain', item);
+            const addDomainInfo = domainAdditionalFields[domain];
+            let addInfoString = '';
+            const index = timelinesDf.get('rowNum', item);
+            addDomainInfo.fields.forEach(it => {
+                addInfoString += `${study.domains[domain].get(it, index)} `
+            });
+            const eventName = String(getNullOrValue(timelinesDf, 'event', item)).toLowerCase();
+            const fullEventName = addDomainInfo.pos === 'before' ? `${addInfoString}${eventName}` : `${eventName} ${addInfoString}`;
+            let eventElement;
+            if (domain === 'ae') {
+                eventElement = ui.link(fullEventName, {}, '', { id: `${index}` });
+                eventElement.addEventListener('click', (event) => {
+                    if(aeBrowserHelper.aeToSelect.currentRowIdx === parseInt(eventElement.id)){
+                        aeBrowserHelper.createAEBrowserPanel();
+                    } else {
+                        //@ts-ignore
+                        aeBrowserHelper.aeToSelect.currentRow = parseInt(eventElement.id);
+                    }
+                    event.stopPropagation();
+                });
+            } else {
+                eventElement = fullEventName;
             }
-            const eventName = getNullOrValue(timelinesDf, 'event', item);
             const eventStart = getNullOrValue(timelinesDf, 'start', item);
             const eventEnd = getNullOrValue(timelinesDf, 'end', item);
             eventArray.push({
-                event: eventName,
-                start: eventStart,
-                end: eventEnd
+                Event: eventElement,
+                Days: `${eventStart} - ${eventEnd}`
             })
         })
-        let root = ui.div();
-        root.appendChild(ui.tableFromMap(summary));
+        acc2.addTitle(ui.span([accIcon, ui.label(`${timelinesDf.get('key', selectedInd[0])}`)]));
+
         const divsArray = [];
         eventArray.forEach(it => {
-            divsArray.push(ui.div(ui.tableFromMap(it)));
+            divsArray.push(ui.tableFromMap(it));
         })
-        root.appendChild(ui.divV(divsArray));
-        return root;
+        acc2.addPane('Events', () => {
+            $(divsArray).find('.d4-entity-list>span').css('margin', '0px');
+            return ui.divV(divsArray)
+        });
+
+        return acc2.root;
 
     }
 

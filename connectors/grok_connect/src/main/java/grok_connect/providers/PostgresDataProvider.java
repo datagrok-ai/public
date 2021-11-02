@@ -37,14 +37,13 @@ public class PostgresDataProvider extends JdbcDataProvider {
         descriptor.aggregations.add(new AggrFunctionInfo(Stats.STDEV, "stddev(#)", Types.dataFrameNumericTypes));
     }
 
-    public Connection getConnection(DataConnection conn) throws ClassNotFoundException, SQLException {
-        Class.forName(driverClassName);
+    public Properties getProperties(DataConnection conn) {
         java.util.Properties properties = defaultConnectionProperties(conn);
         if (!conn.hasCustomConnectionString() && conn.ssl()) {
             properties.setProperty("ssl", "true");
             properties.setProperty("sslfactory", "org.postgresql.ssl.NonValidatingFactory");
         }
-        return CustomDriverManager.getConnection(getConnectionString(conn), properties, driverClassName);
+        return properties;
     }
 
     public String getConnectionStringImpl(DataConnection conn) {

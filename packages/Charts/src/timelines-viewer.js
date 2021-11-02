@@ -215,7 +215,7 @@ export class TimelinesViewer extends EChartViewer {
     this.startColumnName = matches[1].length ? matches[1][0] : intColumns[0].name;
     this.endColumnName = matches[2].length ? matches[2][0] : intColumns[intColumns.length - 1].name;
     this.colorByColumnName = matches[3].length ? matches[3][0] : strColumns[0].name;
-    this.eventColumnName = 'event';
+    this.eventColumnName = this.dataFrame.columns.contains('event') ? 'event' : strColumns[0].name;
 
     [this.subjectCol, this.startCol, this.endCol, this.colorByCol, this.eventCol] = this.dataFrame.columns.byNames([
       this.subjectColumnName, this.startColumnName, this.endColumnName, this.colorByColumnName, this.eventColumnName

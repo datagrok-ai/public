@@ -240,19 +240,25 @@ export class Widget {
 /** Base class for DataFrame-bound filtering controls */
 export class Filter extends Widget {
   dataFrame: DataFrame | null;
+  indicator: HTMLDivElement;
+  controls: HTMLDivElement;
+  host: HTMLElement;
 
   constructor() {
     super(ui.div());
 
-    /** @member {DataFrame} */
     this.dataFrame = null;
+    this.indicator = ui.divText('i');
+    this.controls = ui.divText('c');
+    this.host = this.root;
   }
+
+  saveState(): any { console.log('save state'); }
+  applyState(state: any): void { console.log('apply state'); }
 
   /** Gets called when a data frame is attached.
    * @param {DataFrame} dataFrame*/
   attach(dataFrame: DataFrame): void {}
-
-  detach(): void {}
 }
 
 
@@ -298,6 +304,10 @@ export class Accordion extends DartWidget {
     return api.grok_TabControlBase_Get_Panes(this.d).map(toJs);
   }
 
+  /** Header element on top of the accordion */
+  get header(): HTMLElement { return api.grok_Accordion_Get_Header(this.d); }
+  set header(header) { api.grok_Accordion_Set_Header(this.d, header); }
+
   /** Returns a pane with the specified name.
    * @param {string} name
    * @returns {AccordionPane} */
@@ -305,10 +315,23 @@ export class Accordion extends DartWidget {
     return toJs(api.grok_TabControlBase_GetPane(this.d, name));
   }
 
-  addPane(name: string, getContent: Function, expanded: boolean = false, before: AccordionPane | null = null): AccordionPane {
-    return toJs(api.grok_Accordion_AddPane(this.d, name, getContent, expanded, before !== null ? before.d : null));
+  /** Adds a title element. */
+  addTitle(element: HTMLElement): void {
+    return api.grok_Accordion_AddTitle(this.d, element);
   }
 
+  /** Adds a pane */
+  addPane(name: string, getContent: Function, expanded: boolean = false, before: AccordionPane | null = null): AccordionPane {
+    return toJs(api.grok_Accordion_AddPane(this.d, name, getContent, expanded, before !== null ? before.d : null, null));
+  }
+
+  /** Adds a pane with the count indicator next to the title.
+   * getCount() is executed immediately. */
+  addCountPane(name: string, getContent: Function, getCount: Function, expanded: boolean = false, before: AccordionPane | null = null): AccordionPane {
+    return toJs(api.grok_Accordion_AddPane(this.d, name, getContent, expanded, before !== null ? before.d : null, getCount));
+  }
+
+  /** Removed the specified pane. */
   removePane(pane: AccordionPane) {
     api.grok_Accordion_RemovePane(this.d, pane.d);
   }
@@ -316,11 +339,11 @@ export class Accordion extends DartWidget {
 
 
 /** A pane in the {@link Accordion} control. */
-export class AccordionPane {
+export class AccordionPane extends DartWidget {
   d: any;
 
   constructor(d: any) {
-    this.d = d;
+    super(d);
   }
 
   /** Expanded state
@@ -506,7 +529,7 @@ export class Dialog extends DartWidget {
   /** @returns {Dialog}
    * @param {{modal: boolean, fullScreen: boolean, center: boolean, centerAt: Element, x: number, y: number, width: number, height: number}|{}} options
    * */
-  show(options?: { modal?: boolean; fullScreen?: boolean; center?: boolean; centerAt?: Element; x?: number; y?: number; width?: number; height?: number; backgroundColor: string;}): Dialog {
+  show(options?: { modal?: boolean; fullScreen?: boolean; center?: boolean; centerAt?: Element; x?: number; y?: number; width?: number; height?: number; backgroundColor?: string;}): Dialog {
     api.grok_Dialog_Show(this.d, options?.modal, options?.fullScreen, options?.center, options?.centerAt, options?.x, options?.y, options?.width, options?.height, options?.backgroundColor);
     return this;
   }
@@ -609,6 +632,8 @@ export class Menu {
   static popup(): Menu {
     return toJs(api.grok_Menu_Context());
   }
+
+  get root(): HTMLElement { return api.grok_Menu_Get_Root(this.d); }
 
   /** Finds a child menu item with the specified text.
    * @param {string} text

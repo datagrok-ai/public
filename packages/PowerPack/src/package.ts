@@ -6,7 +6,6 @@ import { welcomeView } from "./welcome-view";
 import { compareColumns } from './compare-columns';
 import { AddNewColumnDialog } from './dialogs/add-new-column';
 import { DistributionProfilerViewer } from './distribution-profiler';
-import { UsageWidget } from "./widgets/usage-widget";
 import { SystemStatusWidget } from "./widgets/system-status-widget";
 import { RecentProjectsWidget } from "./widgets/recent-projects-widget";
 import { CommunityWidget } from './widgets/community-widget';
@@ -56,12 +55,6 @@ export function _welcomeView(): void {
 //tags: dashboard
 export function systemStatusWidget(): DG.Widget {
   return new SystemStatusWidget();
-}
-
-//output: widget result
-//tags: dashboard
-export function usageWidget(): DG.Widget {
-  return new UsageWidget();
 }
 
 //output: widget result

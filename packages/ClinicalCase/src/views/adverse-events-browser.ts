@@ -4,10 +4,11 @@ import * as ui from "datagrok-api/ui";
 import { study } from '../clinical-study';
 import { createPropertyPanel } from '../panels/panels-service';
 import { SUBJECT_ID } from '../constants';
+import { ILazyLoading } from '../lazy-loading/lazy-loading';
 
 let filters = [ 'USUBJID', 'AESEV', 'AEBODSYS', 'AESTDY' ]
 
-export class AeBrowserView extends DG.ViewBase {
+export class AeBrowserView extends DG.ViewBase implements ILazyLoading {
 
     domains = [ 'ae', 'cm', 'ex' ];
     additionalDomains = [];
@@ -18,9 +19,15 @@ export class AeBrowserView extends DG.ViewBase {
     currentAeDay: number;
 
     constructor(name) {
-        super(name);
+        super({});
         this.name = name;
-        study.domains.all().forEach(it => {
+        this.helpUrl = 'https://raw.githubusercontent.com/datagrok-ai/public/master/packages/ClinicalCase/views_help/ae_browser.md';
+    }
+
+    loaded: boolean;
+    
+    load(): void {
+               study.domains.all().forEach(it => {
             if(it.name !== 'dm'){
                 this[ it.name ] = study.domains[ it.name ].clone();
                 if (!this.domains.includes(it.name)){
@@ -38,7 +45,6 @@ export class AeBrowserView extends DG.ViewBase {
         ]))
 
         this.subscribeToCurrentRow();
-
     }
 
     private getFilters() {

@@ -114,7 +114,7 @@ grok.shell.dockElement(e, 'JS', 'left', 0.5);
 
 ## Registering functions
 
-Pretty much anything in Grok is a [function](../overview/functions/function.md), it is a concept that
+Pretty much anything in Datagrok is a [function](../overview/functions/function.md), it is a concept that
 connects together [scripts](scripting.md) written in different languages, predictive models, statistical
 functions, query transformations, data flows, and many other features.
 

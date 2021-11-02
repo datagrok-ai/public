@@ -15,14 +15,14 @@ const tracks = [eda, chem, ml, da];
 
 //name: Tutorials
 //tags: app
-export async function trackOverview() {
+//top-menu: Help | Tutorials
+export function trackOverview() {
   let root = ui.div([
     ...tracks.map((track) => new TutorialRunner(track).root),
-    ui.panel([],{id:'tutorial-child-node', style:{paddingTop:'10px'}}),
+    ui.panel([], { id: 'tutorial-child-node', style: { paddingTop: '10px' } }),
   ], 'tutorials-root');
 
   grok.shell.dockManager.dock(root, DG.DOCK_TYPE.RIGHT, null, 'Tutorials', 0.3);
-  
 }
 
 //output: widget tutorial

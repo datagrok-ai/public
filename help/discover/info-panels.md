@@ -19,7 +19,7 @@ by the platform.
 
 ## What gets shown and when?
 
-There are thousands (ok slight exaggeration :) of info panels currently available in the Grok platform,
+There are thousands (ok slight exaggeration :) of info panels currently available in the Datagrok platform,
 and certainly we do not want to overwhelm users by showing all of them to everyone.
 To solve this issue, we designed a powerful, easy-to-use mechanism that allows
 us to show panels exactly to the people that need it, when they need it. 
@@ -83,7 +83,7 @@ current record changes, additional details are dynamically retrieved and
 visualized in a different pane. Perhaps the most famous example is your
 favorite email client, where you would click on a subject in order for 
 the content to appear in another pane. Typically, implementing such a feature
-would require coding - but this can be done in a minute using the Grok platform.
+would require coding - but this can be done in a minute using the Datagrok platform.
 
 ### Using pre-defined visualizations
 
@@ -119,7 +119,7 @@ a need arises, the scientist would fire up Matlab, load that dataset, then eithe
 a script or use Matlab's DSP toolbox (along the way, they would need to enter metadata
 that is often not included in the dataset, such as sampling rate).
 
-Within the Grok platform, a simple info panel can be developed that would understand
+Within the Datagrok platform, a simple info panel can be developed that would understand
 when the data is a digital signal, perform all of the above-mentioned operations 
 in the background (utilizing the metadata stored within the dataset), and push the
 results to the user. The result of the script below is a "Spectrogram" panel that would 
@@ -186,7 +186,7 @@ predictions = ExtractColumns(table, ["outcome"])
 
 ### Example: predicting yearly sales of a franchise store
 
-Info panel scripts can use all features of the Grok platform, including 
+Info panel scripts can use all features of the Datagrok platform, including 
 predictive modeling capabilities. The following script would do the following
 behind the scenes when user clicks on a row that contains store address:
 * convert address to to demographic statistics (~50 features such as median income, age, etc)

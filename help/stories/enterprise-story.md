@@ -36,7 +36,7 @@ can be tailored for particular user roles.
 Cross-cutting concepts like performance, security, and extensibility were thought-through
 and carefully integrated into the platform since the very beginning. 
 All functionality can be extended or customized, and both server and client 
-APIs are exposed for integration purposes. In a way, Grok is an operating system for data 
+APIs are exposed for integration purposes. In a way, Datagrok is an operating system for data 
 and algorithms, with customizations, extensions and applications built on top of it. It is 
 designed in such a way that no matter who creates new data, scripts, visualization, or other 
 artifacts, the whole organization benefits from it.
@@ -74,7 +74,7 @@ JavaScript-based viewers with complete control over its behavior. Multiple viewe
 functionality not typically found in plotting software, such as regression lines and confidence 
 intervals for scatter plots, p-values for box plots, or dendrograms for tree maps. All viewers 
 have access to the R or Python, and it’s easy to integrate a R-, Python-, or Julia-based viewers 
-into Grok (it will be less interactive, though). Powerful data transformation and editing 
+into Datagrok (it will be less interactive, though). Powerful data transformation and editing 
 capabilities are built-in. It is also possible to record macros by simply using the UI, and 
 later apply them to new datasets. We have tools for quick inspection of data and drill-down 
 capabilities. An AI-based system mines the platform’s historical usage to make intelligent 

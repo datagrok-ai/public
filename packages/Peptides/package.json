@@ -1,5 +1,5 @@
 {
-	"name": "peptides",
+	"name": "@datagrok/peptides",
 	"friendlyName": "Peptides",
 	"version": "0.0.1",
 	"description": "",
@@ -27,7 +27,8 @@
 	},
 	"sources": [
 		"files/aligned.csv",
-		"files/aligned_2.csv"
+		"files/aligned_2.csv",
+		"common/ngl_viewer/ngl.js"
 	],
 	"scripts": {
 		"install-dependencies": "npm install",

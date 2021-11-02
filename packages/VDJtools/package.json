@@ -1,6 +1,6 @@
 {
-	"name": "vdjtools",
-  "beta": true,
+	"name": "@datagrok/vdj-tools",
+  	"beta": true,
 	"fullName": "VDJtools",
 	"version": "0.0.1",
 	"description": "",

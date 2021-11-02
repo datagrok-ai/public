@@ -1,13 +1,14 @@
 #!/usr/bin/env node
 const argv = require('minimist')(process.argv.slice(2), {alias: {k: 'key'}});
-const help = require('./commands/help');
+const help = require('./commands/help').help;
 
 const commands = {
   add: require('./commands/add').add,
+  api: require('./commands/api').api,
   config: require('./commands/config').config,
   create: require('./commands/create').create,
   publish: require('./commands/publish').publish,
-  migrate: require('./commands/migrate').migrate
+  migrate: require('./_deprecated/migrate').migrate
 };
 
 const command = argv['_'][0];

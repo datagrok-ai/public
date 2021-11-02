@@ -18,7 +18,7 @@ export class MultivariateAnalysisTutorial extends Tutorial {
   helpUrl: string = 'https://datagrok.ai/help/explore/multivariate-analysis/pls';
 
   protected async _run() {
-    this.header.textContent = 'Multivariate Analysis';
+    this.header.textContent = this.name;
 
     this.describe('<p>The multivariate uses a statistical method that resembles principal ' +
       'components regression. Instead of finding hyperplanes of maximum variance ' +
@@ -30,7 +30,7 @@ export class MultivariateAnalysisTutorial extends Tutorial {
     this.describe(ui.link('More about ' + this.name, this.helpUrl).outerHTML); 
 
     const dlg = await this.openDialog('Click on "ML | Multivariate Analysis (PLS)..."',
-      'Multivariate Analysis (PLS)');
+      'Multivariate Analysis (PLS)', this.getMenuItem('ML'));
 
     await this.dlgInputAction(dlg, 'Set "Table" to "cars"', 'Table', 'cars');
     await this.dlgInputAction(dlg, 'Set "Predict" to "price"', 'Predict', 'price');
