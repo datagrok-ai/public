@@ -7,6 +7,17 @@ export class ModelHandler extends DG.ObjectHandler {
     return 'Model';
   }
 
+  async getById(id: string): Promise<DG.Script> {
+    console.log('id:', id);
+    return await grok.dapi.scripts.find(id);
+  }
+
+  async refresh(x: DG.Script): Promise<DG.Script> {
+    let script = await this.getById(x.id);
+    console.log('script:', script);
+    return script;
+  }
+
   // Checks whether this is the handler for [x]
   isApplicable(x: any) {
     return x instanceof DG.Script && x.hasTag('model');
