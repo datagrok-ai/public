@@ -14,7 +14,7 @@ const packDir = path.join(curDir, 'package.json');
 const grokDir = path.join(os.homedir(), '.grok');
 const confPath = path.join(grokDir, 'config.yaml');
 const confTemplateDir = path.join(path.dirname(path.dirname(__dirname)), 'config-template.yaml');
-const confTemplate = yaml.safeLoad(fs.readFileSync(confTemplateDir));
+const confTemplate = yaml.load(fs.readFileSync(confTemplateDir));
 
 const grokMap = {
   'datagrok-upload': 'grok publish',
@@ -34,9 +34,9 @@ function migrate(args) {
 
   // Create `config.yaml` if it doesn't exist yet
   if (!fs.existsSync(grokDir)) fs.mkdirSync(grokDir);
-  if (!fs.existsSync(confPath)) fs.writeFileSync(confPath, yaml.safeDump(confTemplate));
+  if (!fs.existsSync(confPath)) fs.writeFileSync(confPath, yaml.dump(confTemplate));
 
-  let config = yaml.safeLoad(fs.readFileSync(confPath));
+  let config = yaml.load(fs.readFileSync(confPath));
 
   // Copy keys to the `config.yaml` file
   if (fs.existsSync(keysDir)) {
@@ -54,7 +54,7 @@ function migrate(args) {
           console.log(`Skipping an invalid URL in \`upload.keys.json\`: ${url}`);
         }
       }
-      fs.writeFileSync(confPath, yaml.safeDump(config));
+      fs.writeFileSync(confPath, yaml.dump(config));
       console.log(`Migrated data from local \`upload.keys.json\` to ${confPath}`);
       fs.unlinkSync(keysDir);
       console.log('Successfully deleted the file');

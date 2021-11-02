@@ -1,20 +1,21 @@
 {
   "name": "datagrok-tools",
-  "version": "4.1.13",
+  "version": "4.1.14",
   "description": "Utility to upload and publish packages to Datagrok",
   "homepage": "https://github.com/datagrok-ai/public/tree/master/tools#readme",
   "dependencies": {
-    "inquirer": "^7.1.0",
-    "minimist": "^1.2.5",
-    "node-fetch": "^2.6.0",
-    "fs": "latest",
-    "node-recursive-directory": "^1.2.0",
-    "path": "^0.12.7",
+    "@babel/runtime": "^7.16.0",
     "archiver": "^4.0.2",
     "archiver-promise": "^1.0.0",
+    "fs": "latest",
     "ignore-walk": "^3.0.3",
+    "inquirer": "^7.1.0",
     "js-yaml": "^4.1.0",
-    "os": "^0.1.1"
+    "minimist": "^1.2.5",
+    "node-fetch": "^2.6.0",
+    "node-recursive-directory": "^1.2.0",
+    "os": "^0.1.1",
+    "path": "^0.12.7"
   },
   "scripts": {
     "prepublishOnly": "babel bin --extensions .ts -d bin",
