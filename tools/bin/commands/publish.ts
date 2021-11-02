@@ -14,8 +14,7 @@ import { Indexable } from '../utils/utils';
 const grokDir = path.join(os.homedir(), '.grok');
 const confPath = path.join(grokDir, 'config.yaml');
 const confTemplateDir = path.join(path.dirname(path.dirname(__dirname)), 'config-template.yaml');
-// @ts-ignore
-const confTemplate = yaml.safeLoad(fs.readFileSync(confTemplateDir));
+const confTemplate = yaml.load(fs.readFileSync(confTemplateDir, { encoding: 'utf-8' }));
 const curDir = process.cwd();
 const packDir = path.join(curDir, 'package.json');
 
@@ -155,11 +154,9 @@ export function publish(args: PublishArgs) {
 
   // Create `config.yaml` if it doesn't exist yet
   if (!fs.existsSync(grokDir)) fs.mkdirSync(grokDir);
-  // @ts-ignore
-  if (!fs.existsSync(confPath)) fs.writeFileSync(confPath, yaml.safeDump(confTemplate));
+  if (!fs.existsSync(confPath)) fs.writeFileSync(confPath, yaml.dump(confTemplate));
 
-  // @ts-ignore
-  let config = yaml.safeLoad(fs.readFileSync(confPath));
+  let config = yaml.load(fs.readFileSync(confPath, { encoding: 'utf-8' })) as utils.Config;
   let host = config.default;
   let urls = utils.mapURL(config);
   if (nArgs === 2) host = args['_'][1];

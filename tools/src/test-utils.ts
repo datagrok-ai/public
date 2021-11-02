@@ -2,6 +2,7 @@ import * as path from "path";
 import * as os from "os";
 import * as fs from "fs";
 import * as yaml from 'js-yaml';
+import { Config, Indexable } from "../bin/utils/utils";
 const fetch = require('node-fetch');
 
 export async function getToken(url: string, key: string) {
@@ -22,11 +23,9 @@ export async function getWebUrl(url: string, token: string) {
 const grokDir = path.join(os.homedir(), '.grok');
 const confPath = path.join(grokDir, 'config.yaml');
 
-function mapURL(conf: object):object {
-  let urls = {};
-  // @ts-ignore
+function mapURL(conf: Config): Indexable {
+  let urls: Indexable = {};
   for (let server in conf.servers) {
-    // @ts-ignore
     urls[conf['servers'][server]['url']] = conf['servers'][server];
   }
   return urls;
@@ -34,7 +33,6 @@ function mapURL(conf: object):object {
 
 export function getDevKey(hostKey: string): {url: string, key: string} {
   let config = yaml.load(fs.readFileSync(confPath, 'utf8')) as any;
-  // @ts-ignore
   let host = hostKey == '' ? config.default : hostKey;
   host = host.trim();
   let urls = mapURL(config);
@@ -43,10 +41,7 @@ export function getDevKey(hostKey: string): {url: string, key: string} {
   try {
     let url = new URL(host).href;
     if (url.endsWith('/')) url = url.slice(0, -1);
-    if (url in urls)
-      { // @ts-ignore
-        key = config['servers'][urls[url]]['key'];
-      }
+    if (url in urls) key = config['servers'][urls[url]]['key'];
   } catch (error) {
     if (config['servers'][host] == null)
       throw `Unknown server alias. Please add it to ${confPath}`;

@@ -18,9 +18,7 @@ const confPath = path.join(grokDir, 'config.yaml');
 
 const templateDir = path.join(path.dirname(path.dirname(__dirname)), 'package-template');
 const confTemplateDir = path.join(path.dirname(path.dirname(__dirname)), 'config-template.yaml');
-
-// @ts-ignore
-const confTemplate = yaml.safeLoad(fs.readFileSync(confTemplateDir));
+const confTemplate = yaml.load(fs.readFileSync(confTemplateDir, { encoding: 'utf-8' }));
 
 let dependencies: string[] = [];
 
@@ -106,11 +104,9 @@ export function create(args: CreateArgs) {
 
   // Create `config.yaml` if it doesn't exist yet
   if (!fs.existsSync(grokDir)) fs.mkdirSync(grokDir);
-  // @ts-ignore
-  if (!fs.existsSync(confPath)) fs.writeFileSync(confPath, yaml.safeDump(confTemplate));
+  if (!fs.existsSync(confPath)) fs.writeFileSync(confPath, yaml.dump(confTemplate));
 
-  // @ts-ignore
-  const config = yaml.safeLoad(fs.readFileSync(confPath));
+  const config = yaml.load(fs.readFileSync(confPath, { encoding: 'utf-8' })) as utils.Config;
   const confTest = validateConf(config);
   if (!confTest.value) {
     console.log(confTest.message);
