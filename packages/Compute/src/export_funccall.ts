@@ -33,14 +33,14 @@ export function exportFuncCall(call: DG.FuncCall) {
     (output: DG.Property) => isScalarType(output.propertyType),
   ) as DG.Property[];
 
-  dfInputs.forEach((dfInput) => {
-    const currentDfSheet = exportWorkbook.addWorksheet(`Input: ${dfInput.name}`);
-    const currentDf = (call.inputs[dfInput.name] as DG.DataFrame);
-    currentDfSheet.addRow((currentDf.columns as DG.ColumnList).names());
-    for (let i = 0; i < currentDf.rowCount; i++) {
-      currentDfSheet.addRow([...currentDf.row(i).cells].map((cell: DG.Cell) => cell.value));
-    }
-  });
+  // dfInputs.forEach((dfInput) => {
+  //   const currentDfSheet = exportWorkbook.addWorksheet(`Input - ${dfInput.name}`);
+  //   const currentDf = (call.inputs[dfInput.name] as DG.DataFrame);
+  //   currentDfSheet.addRow((currentDf.columns as DG.ColumnList).names());
+  //   for (let i = 0; i < currentDf.rowCount; i++) {
+  //     currentDfSheet.addRow([...currentDf.row(i).cells].map((cell: DG.Cell) => cell.value));
+  //   }
+  // });
 
   const inputScalarsSheet = exportWorkbook.addWorksheet('Input scalars');
   scalarInputs.forEach((scalarInput) => {
@@ -48,7 +48,7 @@ export function exportFuncCall(call: DG.FuncCall) {
   });
 
   dfOutputs.forEach((dfOutput) => {
-    const currentDfSheet = exportWorkbook.addWorksheet(`Output: ${dfOutput.name}`);
+    const currentDfSheet = exportWorkbook.addWorksheet(`Output - ${dfOutput.name}`);
     const currentDf = (call.outputs[dfOutput.name] as DG.DataFrame);
     currentDfSheet.addRow((currentDf.columns as DG.ColumnList).names());
     for (let i = 0; i < currentDf.rowCount; i++) {
