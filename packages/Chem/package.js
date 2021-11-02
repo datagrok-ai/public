@@ -148,44 +148,41 @@ class ChemPackage extends DG.Package {
   //input: bool allowLongParameters = false
   //output: graphics
   async chemSimilaritySpace(table, molColumn, cycleNum, allowLongParameters) {
-    var startTime = performance.now();
-    var fpColumn = await this.getMorganFingerprints(molColumn);
+    const fpColumn = await this.getMorganFingerprints(molColumn);
     if (fpColumn.stats.missingValueCount > 0) {
-      throw new Error("Molecule column has a null entry");
+      throw new Error('Molecule column has a null entry');
     }
 
     if (cycleNum * fpColumn.length * 100 >= (1e9) && !allowLongParameters) {
-      throw new Error("The given cycle and step numbers are too high to be runned. \
-                       If you want to run it anyway, please check the parameter allowLongParameters");
+      throw new Error('The given cycle and step numbers are too high to be runned. \
+      If you want to run it anyway, please check the parameter allowLongParameters');
     }
-    
+
     if (window.Worker) {
       const myWorker = new Worker(this.webRoot + '/src/chem_searches.js');
-      var fpBuffers = new Array(fpColumn.length);
+      const fpBuffers = new Array(fpColumn.length);
 
       for (let i = 0; i < fpColumn.length; ++i) {
-        var buffer = fpColumn.get(i).getBuffer();
+        const buffer = fpColumn.get(i).getBuffer();
         fpBuffers[i] = buffer;
       }
 
       myWorker.postMessage([fpColumn.length, fpBuffers,
-                            2, null, null, 1.0, 2.0, 0.01, fpColumn.length * 100, cycleNum]);
-                            
+        2, null, null, 1.0, 2.0, 0.01, fpColumn.length * 100, cycleNum]);
+
       return new Promise((resolve, reject) => {
         myWorker.onmessage = function(event) {
-          var coordinates = event.data;
-          var coords = [
+          const coordinates = event.data;
+          const coords = [
             DG.Column.fromFloat32Array('SPE_X', coordinates[0]),
             DG.Column.fromFloat32Array('SPE_Y', coordinates[1]),
-          ]
+          ];
           table = DG.DataFrame.fromColumns(table.columns.toList().concat(coords));
-          let view = grok.shell.addTableView(table);
+          const view = grok.shell.addTableView(table);
           view.scatterPlot({
             x: 'SPE_X',
             y: 'SPE_Y',
           });
-          var endTime = performance.now();
-          alert(`Runtime is ${(endTime - startTime) / 1000} secs`); 
           resolve();
         };
         myWorker.onerror = function(error) {
@@ -193,7 +190,7 @@ class ChemPackage extends DG.Package {
         };
       });
     } else {
-      throw new Error("Your browser doesn\'t support web workers.");
+      throw new Error('Your browser doesn\'t support web workers.');
     }
   }
 
