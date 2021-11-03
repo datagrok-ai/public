@@ -495,7 +495,7 @@ export function rGroupsAnalytics(df: DG.DataFrame, col: DG.Column) {
 //input: bool allowLongParameters = false
 //output: graphics
 export async function chemSimilaritySpace(table: DG.DataFrame, molColumn: DG.Column, cycleNum: number, allowLongParameters: number) {
-  const fpColumn = await this.getMorganFingerprints(molColumn);
+  const fpColumn = getMorganFingerprints(molColumn);
   if (fpColumn.stats.missingValueCount > 0) {
     throw new Error('Molecule column has a null entry');
   }
@@ -506,7 +506,7 @@ export async function chemSimilaritySpace(table: DG.DataFrame, molColumn: DG.Col
   }
 
   if (window.Worker) {
-    const myWorker = new Worker(this.webRoot + '/src/chem_searches.js');
+    const myWorker = new Worker(rdKitWorkerWebRoot + 'src/chem_stochastic_proximity_embedding.js');
     const fpBuffers = new Array(fpColumn.length);
 
     for (let i = 0; i < fpColumn.length; ++i) {
