@@ -153,7 +153,7 @@ export const scriptWrapperTemplate = `export async function #{FUNC_NAME_LOWERCAS
 }`;
 
 export const queryWrapperTemplate = `export async function #{FUNC_NAME_LOWERCASE}(#{TYPED_PARAMS}): Promise<#{OUTPUT_TYPE}> {
-  return await grok.data.query('#{NAME}:#{FUNC_NAME}', #{PARAMS_OBJECT});
+  return await grok.data.query('#{PACKAGE_NAMESPACE}:#{FUNC_NAME}', #{PARAMS_OBJECT});
 }`;
 
 
