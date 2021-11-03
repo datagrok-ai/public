@@ -81,7 +81,7 @@ export default class BitArray {
 
   assureInRange(value: number, min: number, max: number, argName: String): void {
     if ((value < min) || (value > max)) {
-      throw new Error(`Argument $argName (${value}) out of range (${min}, ${max})`);
+      throw new Error(`Argument ${argName} (${value}) out of range (${min}, ${max})`);
     }
   }
 
@@ -616,13 +616,13 @@ export default class BitArray {
       const len = this.lengthInInts;
       let i = 0;
       for (; i < len - 1; i++) {
-        for (var k = this._data[i]; k != 0; k >>>= 8) { //todo: cast data[i] to uint
+        for (let k = this._data[i]; k != 0; k >>>= 8) { //todo: cast data[i] to uint
           this._selectedCount += BitArray._onBitCount[k & 0xff];
         }
       }
 
       // The last int.
-      var k = this._data[i];
+      let k = this._data[i];
       const remainingBits = this._length & 0x1f;
       if (remainingBits != 0) {// if remainingBits == 0, the last int is fully used and ALL bits should be left as is.
         k &= ~((4294967295) << remainingBits);
