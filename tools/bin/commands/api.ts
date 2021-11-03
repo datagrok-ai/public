@@ -81,6 +81,9 @@ function generateScriptWrappers(): void {
     return;
   }
 
+  const packagePath = path.join(curDir, 'package.json');
+  const _package = JSON.parse(fs.readFileSync(packagePath, { encoding: 'utf-8' }));
+
   const files = walk.sync({
     path: './scripts',
     ignoreFiles: ['.npmignore', '.gitignore'],
@@ -100,11 +103,8 @@ function generateScriptWrappers(): void {
 
     let tb = new utils.TemplateBuilder(utils.scriptWrapperTemplate)
       .replace('FUNC_NAME', name)
-      .replace('FUNC_NAME_LOWERCASE', name);
-
-    const packagePath = path.join(curDir, 'package.json');
-    const _package = JSON.parse(fs.readFileSync(packagePath, { encoding: 'utf-8' }));
-    tb.replace('PACKAGE_NAMESPACE', _package.name);
+      .replace('FUNC_NAME_LOWERCASE', name)
+      .replace('PACKAGE_NAMESPACE', _package.name);
 
     const inputs = utils.getScriptInputs(script);
     const outputType = utils.getScriptOutputType(script);

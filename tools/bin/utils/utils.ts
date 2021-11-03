@@ -30,6 +30,11 @@ export function camelCaseToKebab(s: string): string {
   return s.replace(/[A-Z]/g, (char: string, index: number) => index == 0 ? char.toLowerCase() : '-'+ char.toLowerCase());
 }
 
+export function removeScope(name: string): string {
+  const split = name.split('/');
+  return split[split.length - 1];
+}
+
 export function mapURL(conf: Config): Indexable {
   let urls: Indexable = {};
   for (let server in conf['servers']) {
@@ -44,7 +49,7 @@ export const replacers: Indexable = {
   NAME_LOWERCASE: (s: string, name: string) => s.replace(/#{NAME_LOWERCASE}/g, name.toLowerCase()),
   NAME_PREFIX: (s: string, name: string) => s.replace(/#{NAME_PREFIX}/g, name.slice(0, 3)),
   PACKAGE_DETECTORS_NAME: (s: string, name: string) => s.replace(/#{PACKAGE_DETECTORS_NAME}/g, kebabToCamelCase(name)),
-  PACKAGE_NAMESPACE: (s: string, name: string) => s.replace(/#{PACKAGE_NAMESPACE}/g, kebabToCamelCase(name)),
+  PACKAGE_NAMESPACE: (s: string, name: string) => s.replace(/#{PACKAGE_NAMESPACE}/g, removeScope(kebabToCamelCase(name))),
   FUNC_NAME: (s: string, name: string) => s.replace(/#{FUNC_NAME}/g, name.includes('-') ? kebabToCamelCase(name)
     : name.includes(' ') ? spaceToCamelCase(name) : name[0].toUpperCase() + name.slice(1)),
   FUNC_NAME_LOWERCASE: (s: string, name: string) => s.replace(/#{FUNC_NAME_LOWERCASE}/g, name.includes('-') ?
