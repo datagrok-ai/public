@@ -5,6 +5,7 @@ import * as DG from 'datagrok-api/dg';
 import {ModelHandler} from './model_handler';
 import {selectOutliersManually} from './outliers_selection';
 import {exportFuncCall} from './export_funccall';
+import {_functionParametersGrid} from "./function-views/function-parameters-grid";
 
 export const _package = new DG.Package();
 
@@ -62,4 +63,19 @@ export async function manualOutlierSelectionDialog(inputData: DG.DataFrame) {
 //tags: export
 export function exportToExcel(call: DG.FuncCall) {
   exportFuncCall(call);
+}
+
+//description: A spreadsheet that lets you interactively edit parameters and evaluate functions
+//tags: functionAnalysis
+//input: func f
+//output: view result
+export function functionParametersGrid(f: DG.Func): DG.View {
+  return _functionParametersGrid(f);
+}
+
+//name: hof
+export function hof() {
+  let f: DG.Func = DG.Func.byName('Sin');
+  let v: DG.View = functionParametersGrid(f);
+  grok.shell.addView(v);
 }
