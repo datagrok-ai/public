@@ -1,11 +1,12 @@
 package grok_connect.utils;
 
 import com.zaxxer.hikari.HikariConfig;
-import com.zaxxer.hikari.HikariDataSource;
 
 import java.sql.Connection;
 import java.sql.SQLException;
-import java.util.*;
+import java.util.Collections;
+import java.util.HashMap;
+import java.util.Map;
 
 public class ConnectionPool {
     private static volatile ConnectionPool instance;
@@ -23,7 +24,7 @@ public class ConnectionPool {
         }
     }
 
-    public Map<String, HikariDataSource> connectionPool = Collections.synchronizedMap(new HashMap<>());
+    public Map<String, HikariDataSourceInformation> connectionPool = Collections.synchronizedMap(new HashMap<>());
 
     public Connection getConnection(String url, java.util.Properties properties, String driverClassName) throws GrokConnectException, SQLException {
         if (url == null || properties == null || driverClassName == null)
@@ -35,11 +36,8 @@ public class ConnectionPool {
             config.setJdbcUrl(url);
             config.setDataSourceProperties(properties);
             config.setDriverClassName(driverClassName);
-            config.setMaximumPoolSize(10);
-            config.setKeepaliveTime(3*60*1000);
-            config.setMaxLifetime(10*60*1000);
-            connectionPool.put(key, new HikariDataSource(config));
+            connectionPool.put(key, new HikariDataSourceInformation(config));
         }
-        return connectionPool.get(key).getConnection();
+        return connectionPool.get(key).hikariDataSource.getConnection();
     }
 }
