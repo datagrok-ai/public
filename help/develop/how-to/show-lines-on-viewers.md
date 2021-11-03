@@ -39,11 +39,11 @@ let plot = view.scatterPlot({
 
 A similar method is used to create bands - `dataframe.meta.addBand()`. Most of the parameters for lines and bands are the same. But there are also some parameters that are specific for lines and bands. See them in the description of the parameters for lines and bands.
 
-More examples of creating lines and bands can be found [here](https://dev.datagrok.ai/js/samples/data-frame/metadata/shapes)
+More examples of creating lines and bands can be found [here](https://dev.datagrok.ai/js/samples/data-frame/metadata/shapes).
 
 ## Line parameters
 
-Method to create line: `dataframe.meta.addLine(parameters)`
+Method to create a line: `dataframe.meta.addLine(parameters)`
 
 Only one parameter ("equation") is required. All other parameters have their default values.
 
@@ -51,10 +51,10 @@ Only one parameter ("equation") is required. All other parameters have their def
 |-----------------|------------|-------------------------------|-------------------------------|----------------------------------------------------------------------|
 | `title`           | string     | 'Reference line'              | Empty string              | Short name of the line used when displaying the tooltip.             |
 | `description`     | string     | 'Normal distribution of data' | Empty string | Detailed description of the line used when displaying the tooltip.   |
-| `equation`        | string     | '${height} = 2.2 * ${weight}' | Required parameter that must be specified | Equation for line. There should be one column to the left of the "=". And any formula using the second column on the right side. The equation uses syntax and formulas similar to the "Add New Column" form.   |
+| `equation`        | string     | '${height} = 2.2 * ${weight}' | Required parameter that must be specified | Equation for line. There should be one column to the left of the "=". And any formula using the second column on the right side. The equation uses syntax and formulas similar to the [Add New Column](../../transform/add-new-column.md) form.   |
 | `color`           | string     | '#FF0000'                     | '#838383' (dark gray color)         | Line color in HEX format.   |
 | `zindex`          | integer    | 25                            | 100                            | The "depth" of the line along the Z axis. The higher the number - the higher the line is located, overlapping other lines with a lower zindex value. The viewer's chart itself has zindex = 0. Values less than zero lead to the placement of lines under the chart. Values greater than zero cause lines to be placed on top of the chart. Lines with the same depth value are displayed in the order in which they were created.   |
-| `opacity`           | float     | 0.7                     | 1.0                     | Opacity is the number in range [0..1], where 0 - is completely invisible, 1 - is completely opaque.   |
+| `opacity`           | float     | 0.7                     | 1.0                     | Opacity is a number in the range [0..1], where 0 is completely invisible, 1 is completely opaque.   |
 | `visible`           | boolean     | false                     | true                     | Indicates whether a line is displayed or hidden.   |
 | `min`           | float     | 50                     | No minimum limit                     | Line boundaries along the value axis. In this example, the line will be drawn for a "Weight" greater than 50 kg.   |
 | `max`           | float     | 300                     | No maximum limit                      | Line boundaries along the value axis. In this example, the line will be drawn for a "Weight" less than 300 kg.   |
@@ -63,7 +63,7 @@ Only one parameter ("equation") is required. All other parameters have their def
 
 ## Band parameters
 
-Method to create band: `dataframe.meta.addBand(parameters)`
+Method to create a band: `dataframe.meta.addBand(parameters)`
 
 Only 3 parameters ("equation", "column" and "column2") are required. All other parameters have their default values.
 
@@ -71,10 +71,10 @@ Only 3 parameters ("equation", "column" and "column2") are required. All other p
 |-----------------|------------|-------------------------------|-------------------------------|----------------------------------------------------------------------|
 | `title`           | string     | 'Clipping range'              | Empty string              | Short name of the band used when displaying the tooltip.             |
 | `description`     | string     | 'Ignored range of data'                | Empty string | Detailed description of the band used when displaying the tooltip.   |
-| `equation`        | string     | '< 40' | Required parameter that must be specified | Band boundary formula. The formula can contain expressions of the form: "< 200", "> 50", "in(18, 60)", "in(q1, q3)", etc. The numbers are specified in the units of the column. in this case in centimeters.    |
+| `equation`        | string     | '< 40' | Required parameter that must be specified | Band boundary formula. The formula can contain expressions of the form: "< 200", "> 50", "in(18, 60)", "in(q1, q3)", etc. The numbers are specified in the units of the column (in this case in centimeters).    |
 | `color`           | string     | '#00FF00'                     | '#F0F0F0' (light gray color)         | Band color in HEX format.   |
 | `zindex`          | integer    | -10                            | 100                            | The "depth" of the band along the Z axis. The higher the number - the higher the band is located, overlapping other lines and bands with a lower zindex value. The viewer's chart itself has zindex = 0. Values less than zero lead to the placement of lines and bands under the chart. Values greater than zero cause bands to be placed on top of the chart. Lines with the same depth value are displayed in the order in which they were created.   |
-| `opacity`           | float     | 0.7                     | 1.0                     | Opacity is the number in range [0..1], where 0 - is completely invisible, 1 - is completely opaque.   |
+| `opacity`           | float     | 0.7                     | 1.0                     | Opacity is a number in the range [0..1], where 0 is completely invisible, 1 is completely opaque.   |
 | `visible`           | boolean     | false                     | true                     | Indicates whether a band is displayed or hidden.   |
 | `min`           | float     | 50                     | No minimum limit                     | Band boundaries along the value axis. In this example, the band will be drawn for a "Weight" greater than 50 kg.   |
 | `max`           | float     | 300                     | No maximum limit                      | Band boundaries along the value axis. In this example, the band will be drawn for a "Weight" less than 300 kg.   |
