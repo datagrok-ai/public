@@ -46,7 +46,7 @@
   },
   "scripts": {
     "build": "webpack",
-    "lint": "eslint './*.ts'",
-    "lint-fix": "eslint ./*.ts --fix"
+    "lint": "eslint './src/*.ts'",
+    "lint-fix": "eslint ./src/*.ts --fix"
   }
 }
