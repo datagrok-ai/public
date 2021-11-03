@@ -199,8 +199,256 @@
 * Timelines: remove a hard-coded column name 
 * (Bug) Package Properties: default values are ignored 
 
+# 2021-10-14 build 0.94.0
 
-# 2021-10-27 Stable version 0.94.0
+## Major features and improvements
+
+* 150 Chem: Move to webpack and TS. Fix wrong refactoring
+* Ability to access FuncCall from function method
+* Accordion: more documentation
+* Add "iconTool" to devTools
+* Add "Switch" control to JS API
+* Add file handlers to function types
+* Add NC: Open column selector when type $ in expression
+* Add SAR viewer
+* Add superclass to the Dialog widget
+* Add ui.switch to examples and docs
+* AppsViews and PackagesView: make cards smaller
+* Bar chart: add collaborative filtering #85
+* Bar chart: add int column as split and stack column
+* Bar chart: don't handle a click on _catNamesBox in _inlineCategories mode, handle a click to the left of the bar as full bar click
+* Barchart: Font changed to serif-sans, column numeration changed, current row highlighting added
+* Bar chart: merge two adjacent filter rectangles
+* Bar chart: remove barChartFilter bitset
+* biomarkers distribution description, updated biomarkers distribution view(created ribbon panel)
+* Can't execute .applyFormula on column without formula tag #95
+* Caret: predict as factor
+* Changed "detection" tem to "selection" term
+* changed enrollent linechart to cumulative sum, implemented request to clinicaltrials.gov for study info, added split of AEs barcharts by treatment arm
+* Changed non-mutating outlier selection on mutating
+* Change endpoints to use new divided cvm images
+* Charts: fix a package publication error
+* Charts on viewers: Universal ability to show them with interactive legend
+* Color-coding: support multiple color representations (hex, rgb) in tags for categorical and linear coloring (WIP)
+* Column.ReplaceData method
+* Column context actions: take semantic types into account
+* Compute: Readme.md, continued.
+* Compute package, initial commit.
+* Connectors: Support Array input parameters #90
+* Context Help: allow loading external resources
+* Core: property for ordering menu items
+* corrected typos in readme, updated ae browser property panel, adde labels to reference lines in laboratory linechart
+* corrections of ui for survival view
+* Cron: support @reboot schedule
+* Dart Utils: Minor code cleanup
+* DataFrame.onRowsFiltered event
+* DataFrame.onSorted event
+* datagrok-tools: adjust lint scripts for recursive directory check
+* datagrok-tools: update package template
+* datagrok-tools: `grok api` command
+* Datagrok API and system samples, add cross linking to improve connectivity (WIP)
+* DevTools: add data connection examples
+* DevTools: annotate API examples
+* DevTools: a polyfill for replaceAll
+* DevTools: integration with Inspector
+* exposed JSMol::get_smarts
+* Fiexed misinformation in data access tutorial
+* Files: package-specific AppData
+* Filters: graceful handling of column removal
+* Filters: proper detaching from events
+* Filters wiki page update
+* Fix Dart Analysis warnings
+* Fixes #136: Client-side SDF file reader
+* Fix grok_connect deploy after upgrade
+* Fix misspelled class names
+* Fix property initialization warnings
+* Fix typos in function registration
+* Fix UI tests (WIP)
+* fized tooltips, yAxesLabels and linechart title in multiplot
+* Form: move setReadOnly implementation into SketchHtmlElementHandler
+* Form: onFormCreating event for adjusting the default column selection
+* Formatting in Compute fixed
+* Frontend track: WIP
+* Funcs: Function cache for scripts and data sync
+* Function parameter editor (WIP)
+* Functions: Tabs in functions markup
+* JS API: DataFrame.insert wrong order of optional argument
+* Grok connect: add logging of memory and column type
+* Grok connect: allow calls without mainCallId
+* Grok Connect: cancelable queries
+* Grok connect: debug queries using inspector and property panel
+* Grok connect: don't show canceled query as an error
+* Grok connect: log params in parameterized query
+* Grok connect: log query execution time by steps
+* Grok Connect: Update script
+* Grok script: add timing to log
+* Harmonize scalar outputs in function view (WIP)
+* Help & JS Examples: Add info about lines & band in a Scatter Plot (WIP)
+* Help: Change youtube video to screenshots (WIP)
+* JS-API: Accordion.addTitle method
+* JS-API: Accordion.addTitle method (WIP)
+* JS-API: AccordionPane.root property
+* JS-API: Accordion pane counts
+* JS-API: Accordion pane counts (WIP)
+* JS-API: author getter
+* JS-API: author getter (WIP)
+* JS-API: ContextActions method
+* JS-API: ContextActions method (WIP)
+* JS-API: Packages test framework (WIP)
+* JS-API: star() method
+* JS-API: star() method (WIP)
+* JS API: "file edited" event (WIP)
+* JS API: Ability to access FuncCall options and aux
+* JS API: ability to set current object to SemanticValue
+* JS API: Accordion.header
+* JS API: add dialog's title
+* JS API: add event args types to onViewerAdded/onViewerClosed
+* JS API: add examples with the linear color-coding
+* JS API: Add Legend widget
+* JS API: Add method to easily customize lines & bands in a Scatter Plot
+* JS API: add missing toJs in package.getProperties()
+* JS API: add more specific types
+* JS API: a type for property options
+* JS API: BitSet.and, or, xor, andNot
+* JS API: correct event args types
+* JS API: Create percentile calculation function
+* JS API: Create ui.makeDraggable()
+* JS API: dataframe.ts cleanup.
+* JS API: DG.Color.linear()
+* JS API: Dialog.inputs
+* JS API: file importers
+* JS API: Filters (WIP)
+* JS API: fix type warnings
+* JS API: Functions: Added help for toString() function
+* JS API: Functions: Added toString() function (https://community.datagrok.ai/t/type-detection-in-if-statement/589)
+* JS API: grok.shell.view should look for a view instead of a table view
+* JS API: grok.shell.windows.showRibbon flag
+* JS API: Menu.root
+* JS API: menu order parameter
+* JS API: Minor harmonization
+* JS API: Moved toJs from grok_api to ui.ts
+* JS API: Move function initFormulaAccelerators from top level ui to tools or misc
+* JS API: onContextMenuItemClick
+* JS API: onDialogShown event
+* JS API: optional parameter in ui.image()
+* JS API: Pass InputBase to Dialog() insted of InpuBase.root
+* JS API: ScatterPlot.onResetView
+* JS API: Some improvements of info-bar
+* JS API: Special logic of passing input to the ui.dialog()
+* JS API: TabPane.header
+* JS API: textual descriptions of currently applied filters (RowList.filters)
+* JS API: ui.image, redirects on the new page when the link doesn't provided
+* JS API: update MapChangeArgs interface
+* JS API: update ScatterPlot event args types
+* JS API Examples: Drag and Drop
+* JsEditor: show the result of the script execution, if possible
+* Lasso tool is enabled by default
+* Legend: Ability to add elements to the legend associated with additional charts (splines)
+* Line Chart: Ability to show extreme values (min/max, q1/q3. etc.) of each marker (WIP)
+* Line Chart: Marker choice
+* Modified Patient Profele View, added AE Risk Assessment View
+* Molecular Liability Browser: refactor to handle common actions in NGL and pViz
+* moved reading of validation rules table to clinicalCaseApp() function
+* moved seting of help urls to constructors
+* Multi linechart with variable number of charts
+* MultiPlot: add category selection to the mulit linechart
+* MultiPlot: added file extension
+* MultiPlot: change color of marker of the status chart according to value and min and max columns
+* MultiPlot: make status chart to display same data as muli linechart
+* MultiPlot: manual categories setting in multi linechart
+* MultiPlot: minor bugs fix and add advanced example to Readme.md
+* MultiPlot: refactor and documenting (WIP)
+* MultiPlot: switch to several tables
+* New PowerPack grid styling
+* PowerPack: Ability to hide welcomeView
+* PowerPack: Described Power Widgets and Power Search
+* Replaced ScatterPlot legend by Grid
+* Scatter Plot: ability to show lines by equations
+* Scatter Plot: Add tooltips for lines and bands
+* Scatter Plot: Legend for markers
+* Scatter Plot: Remove "Asterisk" marker (https://community.datagrok.ai/t/new-marker-by-scatterplot-feature-fails-rendering-with-many-data-points/586)
+* Selenium: Add attributes "name" to elements of the new AddNewColumn dialog
+* Set new AddNC Dialog as standart add/edit dialog
+* SMARTS: test possible solutions for aromatization/kekulization
+* Stacked barchart: Selection style changed, datagrok palette added, axis display simplified, unreadable bar labeles removed, trying to fix escaping bars bug.
+* Substructure filter:undefined column & searchSubstructure changes fix
+* Support Ad-Hoc queries in JS
+* Support npm repositories
+* Text-based file viewers: ability to edit and save files
+* Timelines: remove a hard-coded column name
+* updated boxplots view
+* updated clinical demo files project
+* updated images links
+* updated laboratory help
+* Updated public token
+* updated survival analysis view
+* updated survival analysis view and r scripts
+* updated tooltips in timelines view, added dynamic change of lines width depending on zoom to timelines chart
+* Updated UI in Time profile, Box plots, Matrix, Summary views. Fixed bugs in Survival analysis view
+* updating survival plots on tab click in case filters changed
+* UsageWidget: code cleanup
+* Usage widget and new for UsageAnalysis queries
+* View: helpUrl setter
+* Viewers: Legend usage refactoring
+* Viewers: Organize context menu entries consistently
+* Viewers: Scatter Plot: Bands
+
+## Bugs
+
+* Add New Column: Column names in formula are case sensitive
+* Add New Column: Exception after opening dialog for editing an already added column
+* Add new package: impossible to add a package without description
+* Apps: App button goes to common heap instead of separate tab
+* Bar Chart: "by category" sorting throws an exception
+* Bar chart: After switching on the "Relative Values" property, bars are displayed completely zoomed
+* Bar chart: After switching on the "Relative Values" property, bars are incorrectly colored
+* Bar chart: click with ctrl doesn't disable a selected bar
+* Bar chart: Viewer view is not refreshed after changing aggregation
+* Chem: ChEMBL search throws an error for unknown molecules
+* Chem: External sketcher, filtering and SMARTS
+* Chem: Pass SMARTS properly to searchSubstructure (WIP)
+* Chem: sdf file handler isn't invoked (WIP)
+* Chem Filter: After reopening the filter, browser tab with Datagrok freezes (WIP)
+* Chem | Similarity Analysis: Execution process does not end. Errors in the console
+* Core: FileInfo.readAsString returns undefined
+* DataSync: Do not set .query tag if no query was loaded
+* Exception on publishing NPM repo
+* Filter resets when user recalculates column formula
+* Filters: date format is not correctly displayed in a tooltip
+* Filters: Histogram: synchronization issue
+* Filters: Range sliders don't always appear on hover
+* Fix CVM python environments through conda
+* Form, Tile: rendering error
+* Form: Molecules overlap each other after switching to another row
+* Form: wrong representation of missing values for qualified numbers
+* Grid: column reordering throws an error
+* Grok connect: batch mode sometimes returns the first data frame instead of the last
+* Grok connect: log min, max, mean values for column
+* Grok connect: non-parameterized query is not logged
+* Grok connect: query isn't logged on exception
+* Histogram: Change position of the checkbox "Filter out missing values"
+* Histogram: Exception if remove column when filter pane (with histogram) open
+* JS-API deploy ignores deleted files
+* JS: Property setter doesn't work on FuncCall
+* JS API: "combo-popup.js" example doesn't work
+* JS API: GroupByBuilder.where won't work with an object pattern
+* JS API: Table.rows.filter() doesn't work if called after opening the table
+* Legend: Does not appear when selecting a boolean column
+* Line Chart: There is no Median in the list of aggregations on the chart
+* Oligo Batch Calculator: grid doesn't appear if sequence was recognized as valid
+* Package environment file deploy does not work
+* Package Properties: default values are ignored
+* Package publication deletes properties on second run
+* Property Panel history is broken
+* QNum Column: isNone check is not correct
+* Scatter Plot: Wrong color definition for boolean column (blue and red).
+* Sequence Translator: additional modifications are on the wrong side of antisense strand
+* Tools: False breakpoints in VS Code debugging (WIP)
+* Trellis Plot: Expanded viewer is only using a third of the horizontal space
+* View.grid throws an exception if there is no grid in the layout
+* Viewers: error when adding to a view with the restricted width
+
+# 2021-10-27 Stable version 0.94.0 (autogenerated)
 
 ## Latest Docker Images
 
@@ -2211,8 +2459,136 @@
 * Updated index 
 * Create property-panel.js 
 
+# 2021-07-29 build 0.93.0
 
-# 2021-07-29 Stable version 0.93.0
+## Major features and improvements
+
+* Serialization info panel for columns
+* Ability to share files
+* Ability to skip DF reading on server after Grok Connect request
+* Add New Column: ColumnGrid Widget, minor performance improvements
+* Add Repository: Add attribute "name" for Source Type selector
+* Add string name indexing for columns
+* Adde pubspec to speed-up packages resolving
+* Bar Chart: adaptive font size
+* Bar Chart: automatically zoom in to a reasonable number of categories in case of many categories
+* Bar Chart: make scrolling smoother
+* Binning Functions: BinBySpecificLimits
+* Box Plot: better border color; showCategorySelector and showValueSelector properties
+* Conditional color-coding: bring options from the property panel to column context menu
+* Connectors: Redshift: Schema browsing
+* Connectors: default schema to providers and use as condition for schema browsing
+* Correlation plot: on cell click, show the corresponding scatter plot in the property panel 
+* Grid: ShowVisibleColumnsInTooltip property; automatically pick up cell type from dataframe
+* Histogram and BarChart: improved washed-out default colors
+* JS API: Added grok.shell.startUri
+* JS API: ScatterPlot: add viewport
+* JS API: Stats.histogramsByCategories
+* JS API: TabPane: new properties: root, content, parent
+* JS API: Viewer.onContextMenu event 
+* JS API: add event onAccordionConstructed and Accordion.context getter 
+* JS API: add grok.shell.views and grok.shell.tableViews
+* JS API: dialog.clear()
+* JS API: ui.icons for commonly used icons
+* JS API: ui.image
+* JS API: ui.tools.setHoverVisibility(host, elements)
+* Join tables: Don't include key fields by default
+* Line Chart: MultiAxis: double-click (choosing a primary series) should have no effect
+* Line Chart: move hit-testing functionality to series renderers
+* Line Chart: support for multiple Y axes
+* Math Functions: Log(arg1, arg2), Log10(), Median(), RandBetween(), Round10(), etc.
+* Multi-value filters
+* Query Builder dialog: Add "name" attributes to checkboxes for tables
+* ScatterPlot custom renderer: disable overlay dot rendering on categories hover
+* ScatterPlot custom renderer: changed back marker color; set default marker size to 10
+* Scripting: Ability to set custom name for parameter
+* Scripting: Ability to set postfix for parameter
+* Scripting: Show execution results in the property panel
+* Table View: Columns pane: add search
+* Text Functions: RegExpExtract(), RegExpReplace(), StrFind(), etc.
+* Trellis Plot: ability to enlarge individual in-trellis viewers
+* UI: Ability to set dialog background
+* UTC support in the datetime parser
+* Viewers: implement 'dashboard' style for all standard viewers; support for styles
+* datagrok-tools: allow skipping questions in `grok config`
+
+## Bugs
+
+* Add New Column: Dragging functions opens a drop-area for the table
+* Add new column: Strings in functions cannot be enclosed in single quotes
+* Bar Chart: Unexpected bar color change after filtering
+* Bar Chart: Viewer coloring settings should take precedence over the grid coloring settings (WIP)
+* Bar Chart: coloring cannot be disabled; coloring gets only applied when editing colors in a grid column
+* Box Plot: an exception when stdev(value) = 0
+* Box Plot: improve initial choice of value column (stdev > 0 if possible)
+* Column format changes are not persisted in layouts
+* Connectors: Impala: int32max instead of real values
+* Connectors: Oracle: NullPointerException in DB table content
+* Core: Bitset.falseCount returns the number of set bits
+* Core: default tooltip config is no longer saved with layout
+* Custom ML: apply function from different ML engine
+* Data | Unpivot does not work
+* DataQuery with choices throws an exception
+* Dataframe: Detect column max significant digits in CSV loading
+* Events: onViewerAdded and onViewerClosed are sent twice
+* Excel import: an empty column is created as part of the dataframe
+* Extra space breaks function annotation
+* Filters: Multi-value filters does not turn off when corresponding checkbox is off
+* Filters: There are no icons for sorting and searching on hover for Multi-value filters
+* Filters: adding returns a filter for the column added previously instead of the currently selected one
+* Filters: clicking on "search" should open search field AND focus on it
+* Filters: filter component state is different across pages
+* Filters: if multi-value filters are present in the panel, the reset button doesn't work
+* Filters: multi-value filters have no square indicator on top to toggle category selection
+* Filters: range slider filters out nulls
+* Fixed scrollbars hover
+* Functions View: Click on the selected category does not remove the check mark
+* Functions: function search won't work on packages
+* Grid: drag-and-drop column reordering: provide drop zones
+* Grid: empty space on the right
+* Grid: html cells are not re-rendered after sorting a column
+* Grid: switching global coloring on / off removes linear color-coding
+* Grok connect: "No suitable driver found for..."
+* Grok connect: "The method execute() cannot take arguments" error with query parameters
+* Grok connect: DriverManager returns wrong driver
+* Grok connect: NullPointerException with meta.cache option
+* Grok connect: can't browse scheme of CompoundLookup
+* Hide function deselects the selected columns from the tooltip
+* Incorrect QNum parsing
+* IntColumn.fromList(values) does not work with values outside of the int32 range
+* JS API: Columns.byTags does not work
+* JS API: JsViewerHostCore is returned instead of Viewer instance
+* JS API: Label breaks layout of TextInput with icon
+* JS API: OnDialogClosed event fires twice
+* JS API: Properties cannot be changed in JsViewer (JsViewer.props and JsViewer.setOptions result in errors)
+* JS API: ui.info for a yellow info bar
+* JS Editor: exception when ApiSamples package is not there
+* JS Viewer: Incorrect height calculation
+* JS Viewers: error: NullError: method not found: 'where$1' on null
+* JS: grok.functions.call should return JS object for multiple output parameters
+* Layouts: Grid looses event handlers after layout restore
+* Line Chart: "axes follow filter" feature does not work
+* Line Chart: NullReferenceError when changing X axis column
+* Line Chart: point hit-testing doesn't work for points on the right
+* Matcher: matching on multiple criteria ignores the "and/or" option
+* Packages: beta flag
+* Pie Chart: unnecessary datetime aggregation
+* Prevent socket memory consuming
+* Queries: "Converting object to an encodable object failed" with dataframe as parameter
+* Query-driven dashboards: query controls do not show up when a project is open
+* Radiobutton throws exception when created
+* Scatter Plot: "axes follow filter" feature does not work
+* Scatter Plot: Regression line appear without activation
+* Share button doesn't work for projects
+* View Layouts: Error balloon after deleting saved layout
+* Viewers: Inconsistent column selection inside a viewer and its properties panel
+* Viewers: textColor property misspelling
+* Viewers: the legend colors are not synchronized
+* Viewers: the menu item `Viewer` is not visible in uploaded projects
+* Viewers: Fixes regression in 2D layout alignment of unknown origin
+* grok.dapi.projects.where('bad filter').first() returns a Project instance with d == null
+
+# 2021-07-29 Stable version 0.93.0 (autogenerated)
 
 ## Latest Docker Images
 
