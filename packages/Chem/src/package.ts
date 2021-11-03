@@ -488,13 +488,13 @@ export function rGroupsAnalytics(df: DG.DataFrame, col: DG.Column) {
   dlg.initDefaultHistory();
 }
 
-//name: ChemSimilaritySpace
+//name: ChemSpace
 //input: dataframe table
 //input: column molColumn {semType: Molecule}
 //input: int cycleNum = 100
 //input: bool allowLongParameters = false
 //output: graphics
-export async function chemSimilaritySpace(table: DG.DataFrame, molColumn: DG.Column, cycleNum: number, allowLongParameters: number) {
+export async function chemSpace(table: DG.DataFrame, molColumn: DG.Column, cycleNum: number, allowLongParameters: number) {
   const fpColumn = getMorganFingerprints(molColumn);
   if (fpColumn.stats.missingValueCount > 0) {
     throw new Error('Molecule column has a null entry');

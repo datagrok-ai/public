@@ -47,7 +47,9 @@ onmessage = function(e) {
   }
 
   function _tanimotoSimilarity(maskA, maskB) {
-    let bothABcount = 0; let onlyAcount = 0; let onlyBcount = 0;
+    let bothABcount = 0; 
+    let onlyAcount = 0; 
+    let onlyBcount = 0;
     for (let i = 0; i < wordCount; ++i) {
       const curMaskA = maskA[i]; const curMaskB = maskB[i];
       const bothAB = (curMaskA & curMaskB);
