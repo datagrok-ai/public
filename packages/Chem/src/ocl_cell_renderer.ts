@@ -23,8 +23,7 @@ export class OCLCellRenderer extends DG.GridCellRenderer {
     return molString.endsWith('M  END', 10) ? OCL.Molecule.fromMolfile(molString) : OCL.Molecule.fromSmiles(molString);
   }
 
-  //TODO: molfile, sdf
-  //TODO: cache a molecule?, don't cache image
+  //TODO: sdf
   render(
     g: CanvasRenderingContext2D,
     x: number,
@@ -42,9 +41,8 @@ export class OCLCellRenderer extends DG.GridCellRenderer {
     try {
       if (molString === null) {
         return;
-      } else {
-        mol = this.molCahe.getOrCreate(molString, () => OCLCellRenderer._createMol(molString));
       }
+      mol = this.molCahe.getOrCreate(molString, () => OCLCellRenderer._createMol(molString));
       const canvas = ui.canvas(w, h);
       OCL.StructureView.drawMolecule(canvas, mol);
       g.drawImage(canvas, x, y);

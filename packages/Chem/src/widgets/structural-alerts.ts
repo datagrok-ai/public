@@ -5,32 +5,32 @@ import {_package} from '../package';
 import { drawMoleculeToCanvas } from '../chem_common';
 
 let structuralAlertsRdKitModule: any = null;
+let table: DG.DataFrame | null = null;
+let smartsMap: Map<string, any> = new Map();
 
 export async function setStructuralAlertsRdKitModule(module: any) {
   structuralAlertsRdKitModule = module;
 }
 
-export async function structuralAlertsWidget(smiles: string) {
+export async function loadAlertsCollection() {
   const path = _package.webRoot + 'data-samples/alert_collection.csv';
-  const table = await grok.data.loadTable(path);
-  const alerts = await getStructuralAlerts(table, smiles);
-
-  const ruleRowMap: {[index: number]: DG.Row} = {};
-  for (const row of table.rows) {
-    //@ts-ignore
-    ruleRowMap[row['rule_id']] = row;
+  table = await grok.data.loadTable(path);
+  for (let i = 0; i < table.rowCount; i++) {
+    const currentSmarts = table.get('smarts', i);
+    smartsMap.set(currentSmarts, structuralAlertsRdKitModule.get_qmol(currentSmarts));
   }
+}
+
+export function structuralAlertsWidget(smiles: string) {
+  const alerts = getStructuralAlerts(smiles);
 
   const width = 200;
   const height = 100;
 
   const list = ui.div(alerts.map((i) => {
-    //@ts-ignore
-    const description = ui.divText(ruleRowMap[i]['description']);
-    // const alertImage = drawMolHighlights(smiles, ruleRowMap[i]['smarts']);
+    const description = ui.divText(table!.get('description', i));
     const imageHost = ui.canvas(width, height);
-    //@ts-ignore
-    drawMoleculeToCanvas(0, 0, width, height, imageHost, smiles, ruleRowMap[i]['smarts']);
+    drawMoleculeToCanvas(0, 0, width, height, imageHost, smiles, table!.get('smarts', i));
     return ui.div([description, imageHost], 'd4-flex-col');
   }), 'd4-flex-wrap');
   if (!alerts.length) {
@@ -39,14 +39,14 @@ export async function structuralAlertsWidget(smiles: string) {
   return new DG.Widget(list);
 }
 
-async function getStructuralAlerts(table: DG.DataFrame, smiles: string) {
+function getStructuralAlerts(smiles: string) {
   const alerts: number[] = [];
   const mol = structuralAlertsRdKitModule.get_mol(smiles);
-  for (let i = 0; i < table.rowCount; i++) {
-    const subMol = structuralAlertsRdKitModule.get_qmol(table.get('smarts', i));
+  for (let i = 0; i < table!.rowCount; i++) {
+    const subMol = smartsMap.get(table!.get('smarts', i));
     const matches = mol.get_substruct_matches(subMol);
     if (matches !== '{}') {
-      alerts.push(table.get('rule_id', i));
+      alerts.push(table!.get('rule_id', i));
     }
   }
   return alerts;
