@@ -20,6 +20,7 @@ import {filter} from "rxjs/operators";
 import {Widget} from "./widgets";
 import {Grid} from "./grid";
 import {ScatterPlotViewer, TypedEventArgs, Viewer} from "./viewer";
+import {Property} from "./entities";
 
 declare let grok: any;
 declare let DG: any;
@@ -117,6 +118,13 @@ export class DataFrame {
    * @returns {DataFrame} */
   static fromColumns(columns: Column[]): DataFrame {
     return new DataFrame(api.grok_DataFrame_FromColumns(columns.map((c) => c.d)));
+  }
+
+  static fromProperties(properties: Property[], rows: number = 0) {
+    let df = DataFrame.create(rows);
+    for (let p of properties)
+      df.columns.addNew(p.name, p.propertyType);
+    return df;
   }
 
   /** Constructs {@link DataFrame} from a comma-separated values string
@@ -751,14 +759,14 @@ export class Column {
 
   /**
    * Initializes all values in the column to [columnInitializer].
-   * @param {string | number | Function} valueInitializer
+   * @param {string | number | boolean | Function} valueInitializer value, or a function that returns value by index
    * @returns {Column}
    * */
-  init(valueInitializer: string | number | ((ind: number) => any)): Column {
+  init(valueInitializer: string | number | boolean | ((ind: number) => any)): Column {
     let type = typeof valueInitializer;
     if (type === 'function')
       api.grok_Column_Init(this.d, valueInitializer);
-    else if (type === 'number' || type === 'string')
+    else if (type === 'number' || type === 'string' || type === 'boolean')
       api.grok_Column_SetAllValues(this.d, valueInitializer);
     return this;
   }

@@ -87,6 +87,7 @@ export enum TYPE {
   VIEWER = 'viewer',  // [ViewerBase] subclasses
   LIST = 'list',
   SEM_VALUE = 'semantic_value',
+  FUNC = 'func',
   FUNC_CALL = 'funccall',
   PROPERTY = 'property',
   CATEGORICAL = 'categorical',
@@ -256,7 +257,12 @@ export const FUNC_TYPES = {
   DASHBOARD: 'dashboard',
 
   /** Package unit-test functions. This is used by the DevTools package. */
-  UNIT_TEST: 'unitTest'
+  UNIT_TEST: 'unitTest',
+
+  /**
+   * Function analysis. Examples: sensitivity analysis, parameter editor
+   * Func => View */
+  FUNCTION_ANALYSIS: 'functionAnalysis'
 }
 
 ////// Viewers

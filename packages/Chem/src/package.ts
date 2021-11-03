@@ -487,3 +487,56 @@ export function rGroupsAnalytics(df: DG.DataFrame, col: DG.Column) {
   dlg.show();
   dlg.initDefaultHistory();
 }
+
+//name: ChemSimilaritySpace
+//input: dataframe table
+//input: column molColumn {semType: Molecule}
+//input: int cycleNum = 100
+//input: bool allowLongParameters = false
+//output: graphics
+export async function chemSimilaritySpace(table: DG.DataFrame, molColumn: DG.Column, cycleNum: number, allowLongParameters: number) {
+  const fpColumn = getMorganFingerprints(molColumn);
+  if (fpColumn.stats.missingValueCount > 0) {
+    throw new Error('Molecule column has a null entry');
+  }
+
+  if (cycleNum * fpColumn.length * 100 >= (1e9) && !allowLongParameters) {
+    throw new Error('The given cycle and step numbers are too high to be runned. \
+    If you want to run it anyway, please check the parameter allowLongParameters');
+  }
+
+  if (window.Worker) {
+    const myWorker = new Worker(rdKitWorkerWebRoot + 'src/chem_stochastic_proximity_embedding.js');
+    const fpBuffers = new Array(fpColumn.length);
+
+    for (let i = 0; i < fpColumn.length; ++i) {
+      const buffer = fpColumn.get(i).getBuffer();
+      fpBuffers[i] = buffer;
+    }
+
+    myWorker.postMessage([fpColumn.length, fpBuffers,
+      2, null, null, 1.0, 2.0, 0.01, fpColumn.length * 100, cycleNum]);
+
+    return new Promise<void>((resolve, reject) => {
+      myWorker.onmessage = function(event) {
+        const coordinates = event.data;
+        const coords = [
+          DG.Column.fromFloat32Array('SPE_X', coordinates[0]),
+          DG.Column.fromFloat32Array('SPE_Y', coordinates[1]),
+        ];
+        table = DG.DataFrame.fromColumns(table.columns.toList().concat(coords));
+        const view = grok.shell.addTableView(table);
+        view.scatterPlot({
+          x: 'SPE_X',
+          y: 'SPE_Y',
+        });
+        resolve();
+      };
+      myWorker.onerror = function(error) {
+        reject(error.message);
+      };
+    });
+  } else {
+    throw new Error('Your browser doesn\'t support web workers.');
+  }
+}
