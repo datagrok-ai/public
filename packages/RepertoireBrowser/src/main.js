@@ -90,12 +90,12 @@ export class LaunchBrowser {
 
         inputs.repChoice.onChanged(async () => {
 
-            ngl.stage.removeAllComponents();
-            let schemeObj = ngl.CDR3(inputs.cdr_scheme, inputs.paratopes, inputs.colorScheme);
-            await ngl.loadPdb(ngl.path, inputs.repChoice, schemeObj);
+            //ngl.stage.removeAllComponents();
+            //let schemeObj = ngl.CDR3(inputs.cdr_scheme, inputs.paratopes, inputs.colorScheme);
+            //await ngl.loadPdb(ngl.path, inputs.repChoice, schemeObj);
 
-            await pViz.loadSequence(inputs, 'H')
-            await pViz.loadSequence(inputs, 'L')
+            await pViz.loadSequence(inputs, 'H', true)
+            await pViz.loadSequence(inputs, 'L', true)
         });
 
         inputs.cdr_scheme.onChanged(async () => {

@@ -248,7 +248,7 @@ export class PvizMethods {
     }
 
     // main sequence rendering func
-    async loadSequence(inputs, chain) {
+    async loadSequence(inputs, chain, reLoad = false) {
 
         let host = chain == "H" ? inputs.pViz_host_H : inputs.pViz_host_L;
 
@@ -283,83 +283,39 @@ export class PvizMethods {
 
             let switchObj = inputs.pVizNglRelation;
             let pVizParams = this.pVizParams;
-            let stage = this.ngl.stage;
             let pv = this;
             
-            this.pviz.FeatureDisplayer.addClickCallback (mod_codes, async function(ft) {
-
-                let selectorStr = 'g.feature.' + ft.category.replaceAll(" ", "_") + ' rect.feature';
-                let el = document.querySelectorAll(selectorStr);
-                let el_lst = pVizParams.ptmMap[chain].ptm_el_obj[mutcodes[ft.category.replaceAll(" ", "_")]];
-
-                let sidechains = `${ft.start + 1} and :${chain} and (not backbone or .CA or (PRO and .N))`;
-
-                let r;
-                
-                if (switchObj[chain][ft.start] === undefined) {
-                    r = stage.compList[0].addRepresentation("ball+stick", {sele: sidechains});
-                    
+            this.pviz.FeatureDisplayer.addClickCallback (mod_codes, async function(ft) {               
+                if (switchObj[chain][ft.start] === undefined) {     
                     switchObj[chain][ft.start] = {};
                     switchObj[chain][ft.start]['state'] = true;
-                    switchObj[chain][ft.start]['rep'] = r;
-                    el[el_lst.indexOf(ft.start)].style.fill = 'black';
-
                 } else {
                     switchObj[chain][ft.start]['state'] = !switchObj[chain][ft.start]['state']
                 }
 
-                await pv.consistentlyColorpVizNGL(inputs, chain);
+                await pv.consistentlyColorpVizNGL(inputs, chain, reLoad);
             })
 
-            this.pviz.FeatureDisplayer.addClickCallback (mod_motifs_codes, async function(ft) {
-
-                let selectorStr = 'g.feature.' + mutcodes[ft.category.replaceAll(" ", "_")] + "." 
-                + ft.category.replaceAll(" ", "_").replaceAll(")", "\\)").replaceAll("(", "\\(");
-                let el = document.querySelectorAll(selectorStr);
-                let el_lst = pVizParams.ptmMotifsMap[chain].ptm_el_obj[mutcodes[ft.category.replaceAll(" ", "_")]];
-
-                let sidechains = `${ft.start + 1} and :${chain} and (not backbone or .CA or (PRO and .N))`;
-
-                let r;
-                
+            this.pviz.FeatureDisplayer.addClickCallback (mod_motifs_codes, async function(ft) {               
                 if (switchObj[chain][ft.start] === undefined) {
-                    r = stage.compList[0].addRepresentation("ball+stick", {sele: sidechains});
-                    
                     switchObj[chain][ft.start] = {};
                     switchObj[chain][ft.start]['state'] = true;
-                    switchObj[chain][ft.start]['rep'] = r;
-                    el[el_lst.indexOf(ft.start)].style.fill = 'black';
-
                 } else {
                     switchObj[chain][ft.start]['state'] = !switchObj[chain][ft.start]['state']
                 }
 
-                await pv.consistentlyColorpVizNGL(inputs, chain);
+                await pv.consistentlyColorpVizNGL(inputs, chain, reLoad);
             })
 
             this.pviz.FeatureDisplayer.addClickCallback (['D'], async function(ft) {
-
-                let selectorStr = 'g.feature.data.D rect.feature';
-                let el = document.querySelectorAll(selectorStr);
-                let el_lst = pVizParams.denMap[chain].den_el_obj;
-
-                let sidechains = `${ft.start + 1} and :${chain} and (not backbone or .CA or (PRO and .N))`;
-
-                let r;
-                
                 if (switchObj[chain][ft.start] === undefined) {
-                    r = stage.compList[0].addRepresentation("ball+stick", {sele: sidechains});
-                    
                     switchObj[chain][ft.start] = {};
                     switchObj[chain][ft.start]['state'] = true;
-                    switchObj[chain][ft.start]['rep'] = r;
-                    el[el_lst.indexOf(ft.start)].style.fill = 'black';
-
                 } else {
                     switchObj[chain][ft.start]['state'] = !switchObj[chain][ft.start]['state']
                 }
 
-                await pv.consistentlyColorpVizNGL(inputs, chain);
+                await pv.consistentlyColorpVizNGL(inputs, chain, reLoad);
             })
 
             this.pviz.FeatureDisplayer.addMouseoverCallback(mod_codes, async function(ft) {
@@ -387,9 +343,7 @@ export class PvizMethods {
                                         + ft.category.replaceAll(" ", "_").replaceAll(")", "\\)").replaceAll("(", "\\(");
                 let el = document.querySelectorAll(selectorStr);
                 let el_lst = pVizParams.ptmMotifsMap[chain].ptm_el_obj[mutcodes[ft.category.replaceAll(" ", "_")]];
-                let prob_lst = pVizParams.ptmMotifsMap[chain].ptm_prob_obj[mutcodes[ft.category.replaceAll(" ", "_")]];
                 el = el[el_lst.indexOf(ft.start)];
-                let prob =  prob_lst[el_lst.indexOf(ft.start)];
 
                 ui.tooltip.show(
                     ui.span([`${ft.category}`]),
@@ -457,7 +411,7 @@ export class PvizMethods {
             this.applyGradient(this.pVizParams.ptmMotifsMap[chain].ptm_color_obj);
             this.applyGradient(this.pVizParams.denMap[chain].den_color_obj);
             this.applyGradient(this.pVizParams.parMap[chain].par_color_obj);
-            this.consistentlyColorpVizNGL(inputs, chain);
+            this.consistentlyColorpVizNGL(inputs, chain, reLoad);
         }
     }
 
@@ -470,11 +424,12 @@ export class PvizMethods {
         });
     }
 
-    async consistentlyColorpVizNGL(inputs, chosenTracksChain){
+    async consistentlyColorpVizNGL(inputs, chosenTracksChain, reLoad){
 
         let switchObj = inputs.pVizNglRelation;
         let pVizParams = this.pVizParams;
         let colorScheme = inputs.colorScheme;
+        let ngl = this.ngl
 
         let col_heavy_chain = colorScheme["col_heavy_chain"];
         let col_light_chain = colorScheme["col_light_chain"];
@@ -486,9 +441,8 @@ export class PvizMethods {
                                                 colorScheme["col_highlight"]: colorScheme["col_highlight_cdr"];
 
         //highlights in NGL
-        let stage = this.ngl.stage;
         let scheme_buffer = [];
-                
+               
         Object.keys(switchObj).forEach((keyChain) =>{
             Object.keys(switchObj[keyChain]).forEach((keyFtStart) =>{
                 if(switchObj[keyChain][keyFtStart]['state'] === true){
@@ -497,6 +451,7 @@ export class PvizMethods {
             });
         });
         
+        let schemeId;
         if(inputs.paratopes.value === true){
             let palette = MiscMethods.interpolateColors(col_partopes_low, col_partopes_high, 100);
             Object.keys(json.parapred_predictions).forEach((chain) => {
@@ -510,15 +465,13 @@ export class PvizMethods {
             })
             scheme_buffer.push([col_para, "* and :H"]);
             scheme_buffer.push([col_para, "* and :L"]);
-            let schemeId = NGL.ColormakerRegistry.addSelectionScheme(scheme_buffer);
-            stage.compList[0].addRepresentation(inputs.repChoice.value, {color: schemeId});
+            schemeId = NGL.ColormakerRegistry.addSelectionScheme(scheme_buffer);
         }
         else{
             if (inputs.cdr_scheme.value === 'default') {
                 scheme_buffer.push([col_heavy_chain, "* and :H"]);
                 scheme_buffer.push([col_light_chain, "* and :L"]);
-                let schemeId = NGL.ColormakerRegistry.addSelectionScheme(scheme_buffer);
-                stage.compList[0].addRepresentation(inputs.repChoice.value, {color: schemeId});
+                schemeId = NGL.ColormakerRegistry.addSelectionScheme(scheme_buffer);
             } else{
                 Object.keys(json.cdr_ranges).forEach((str) => {
                     if (str.includes(inputs.cdr_scheme.value + '_CDRH')) {
@@ -540,11 +493,51 @@ export class PvizMethods {
                         scheme_buffer.push([col_light_chain, "* and :L"]);
                     }
                 });
-                let schemeId = NGL.ColormakerRegistry.addSelectionScheme(scheme_buffer);
-                stage.compList[0].addRepresentation(inputs.repChoice.value, {color: schemeId});
+                schemeId = NGL.ColormakerRegistry.addSelectionScheme(scheme_buffer);
             }
         }
 
+        if(reLoad){
+            ngl.stage.removeAllComponents();
+            await ngl.loadPdb(ngl.path, inputs.repChoice, {color: schemeId});
+
+                //recovering ball and stick residual at cartoon view
+            if(inputs.repChoice.value === "cartoon"){
+                Object.keys(switchObj).forEach((keyChain) =>{
+                    Object.keys(switchObj[keyChain]).forEach((keyFtStart) =>{
+                        let selection = `${parseInt(keyFtStart) + 1} and :${keyChain} and (not backbone or .CA or (PRO and .N))`;
+                        let addedRepresentation = ngl.stage.compList[0].addRepresentation("ball+stick", {sele: selection}); 
+                        switchObj[keyChain][keyFtStart]['representation'] = addedRepresentation;
+                                    
+                        if(switchObj[keyChain][keyFtStart]['state'] !== true){
+                            addedRepresentation.setVisibility(false);
+                        }
+                    });
+                });
+            }
+        } else{
+            ngl.stage.compList[0].addRepresentation(inputs.repChoice.value, {color: schemeId});
+
+            if(inputs.repChoice.value === "cartoon"){
+                Object.keys(switchObj).forEach((keyChain) =>{
+                    Object.keys(switchObj[keyChain]).forEach((keyFtStart) =>{
+
+                        if (typeof switchObj[keyChain][keyFtStart]['representation'] === 'undefined'){
+                            let selection = `${parseInt(keyFtStart) + 1} and :${keyChain} and (not backbone or .CA or (PRO and .N))`;
+                            let addedRepresentation = ngl.stage.compList[0].addRepresentation("ball+stick", {sele: selection}); 
+                            switchObj[keyChain][keyFtStart]['representation'] = addedRepresentation;
+                        }
+       
+                        if(switchObj[keyChain][keyFtStart]['state'] !== true){
+                            switchObj[keyChain][keyFtStart]['representation'].setVisibility(false);
+                        } else{
+                            switchObj[keyChain][keyFtStart]['representation'].setVisibility(true);
+                        }
+                    });
+                });
+            }
+        }
+       
         //colors of selected pViz
         let selectorStr = 'g.feature.data.D rect.feature';
         let el = document.querySelectorAll(selectorStr);
@@ -571,8 +564,6 @@ export class PvizMethods {
             let el_lst = pVizParams.denMap[keyChain].den_el_obj;
 
             Object.keys(switchObj[keyChain]).forEach((keyFtStart) =>{
-                let r = switchObj[keyChain][keyFtStart]['rep'];
-                r.setVisibility(switchObj[keyChain][keyFtStart]['state']);
 
                 let position = parseInt(keyFtStart);
 
