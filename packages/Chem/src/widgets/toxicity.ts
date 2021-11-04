@@ -1,6 +1,6 @@
 import * as ui from 'datagrok-api/ui';
 import * as DG from 'datagrok-api/dg';
-import * as OCL from 'openchemlib';
+import * as OCL from 'openchemlib/full.js';
 import { renderDescription } from '../chem_common';
 
 export function toxicityWidget(smiles: string) {

@@ -1,6 +1,6 @@
 import * as ui from 'datagrok-api/ui';
 import * as DG from 'datagrok-api/dg';
-import * as OCL from 'openchemlib';
+import * as OCL from 'openchemlib/full.js';
 import $ from 'cash-dom';
 
 export function molfileWidget(smiles: string) {

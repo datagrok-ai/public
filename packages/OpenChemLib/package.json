@@ -6,14 +6,14 @@
 	"description": "",
 	"dependencies": {
 		"datagrok-api": "../../js-api",
-		"openchemlib": "6.0.1",
 		"ts-loader": "latest",
-		"typescript": "latest"
+		"typescript": "latest",
+		"openchemlib": "6.0.1"
 	},
 	"devDependencies": {
-		"openchemlib": "6.0.1",
 		"webpack": "latest",
-		"webpack-cli": "latest"
+		"webpack-cli": "latest",
+		"openchemlib": "6.0.1"
 	},
 	"scripts": {
 		"debug-openchemlib": "grok publish --rebuild",

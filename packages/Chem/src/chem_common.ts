@@ -2,7 +2,7 @@ import {RdKitParallel} from './rdkit_parallel';
 import * as grok from 'datagrok-api/grok';
 import * as ui from 'datagrok-api/ui';
 import * as DG from 'datagrok-api/dg';
-import * as OCL from 'openchemlib/full';
+import * as OCL from 'openchemlib/full.js';
 
 let commonRdKitModule: any = null;
 
