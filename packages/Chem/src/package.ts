@@ -230,7 +230,7 @@ function descriptorsApp(context: any) {
   let skNode = view.dockManager.dock(skDiv, DG.DOCK_TYPE.RIGHT, null, 'Sketcher', 0.25);
   view.dockManager.dock(dsDiv, DG.DOCK_TYPE.DOWN, skNode, 'Descriptors', 0.5);
 
-  grok.events.onViewRemoved.subscribe((v) => {
+  grok.events.onViewRemoved.subscribe((v: any) => {
     if (v.name === view.name) {
       windows.showToolbox = true;
       windows.showHelp = true;

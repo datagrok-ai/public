@@ -25,6 +25,7 @@
     "dayjs": "latest",
     "ts-loader": "latest",
     "typescript": "latest",
+    "rxjs": "latest",
     "datagrok-tools": "latest",
     "file-loader": "latest",
     "worker-loader": "latest",
@@ -40,7 +41,9 @@
     "file-loader": "latest",
     "openchemlib": "6.0.1",
     "webpack": "latest",
-    "webpack-cli": "latest"
+    "webpack-cli": "latest",
+    "cash-dom": "latest",
+    "rxjs": "latest"
   },
   "browser": {
     "fs": false,
