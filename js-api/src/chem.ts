@@ -124,7 +124,7 @@ export namespace chem {
       this.changedSub?.unsubscribe();
       this.listeners.push(callback);
       if (this.sketcher)
-        this.changedSub = this.sketcher.onChanged.subscribe((_) => callback());
+        this.changedSub = this.sketcher.onChanged.subscribe((_: any) => callback());
     }
 
     constructor() {
@@ -199,7 +199,7 @@ export namespace chem {
       this.host.appendChild(this.sketcher!.root);
       await ui.tools.waitForElementInDom(this.root);
       await this.sketcher!.init();
-      this.changedSub = this.sketcher!.onChanged.subscribe((_) => {
+      this.changedSub = this.sketcher!.onChanged.subscribe((_: any) => {
         for (let callback of this.listeners)
           callback();
         grok.shell.o = SemanticValue.fromValueType(this.sketcher!.smiles, 'Molecule');
