@@ -18,11 +18,11 @@ export class NglMethods {
         view.box = true;
         this.stage = new NGL.Stage(inputs.ngl_host);
         this.path = _package.webRoot + 'pdbfiles/' + 'example.pdb';
+
         this.schemeObj = this.CDR3(inputs.cdr_scheme, inputs.paratopes, colorScheme);
 
         await this.loadPdb(this.path, inputs.repChoice, this.schemeObj);
         this.nglResize(inputs.ngl_host);
-
     }
 
     // ---- NGL ----
@@ -90,7 +90,7 @@ export class NglMethods {
 
     // load the 3D model
     async loadPdb(bytes, repChoice, schemeObj) {
-        this.stage.loadFile(bytes).then(function (o) {
+        await this.stage.loadFile(bytes).then(function (o) {
             o.addRepresentation(repChoice.value, schemeObj);
             o.autoView();
         });
