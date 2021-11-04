@@ -4,7 +4,6 @@ import * as DG from 'datagrok-api/dg';
 let subscr: any = null;
 
 export function getMolColumnPropertyPanel(col: DG.Column) {
-
   const NONE = 'None';
   let scaffoldColName = null;
   if (col?.temp && col.temp['scaffold-col']) {
@@ -13,7 +12,8 @@ export function getMolColumnPropertyPanel(col: DG.Column) {
     scaffoldColName = NONE;
   }
   // TODO: replace with an efficient version, bySemTypesExact won't help; GROK-8094
-  const columnsList = Array.from(col.dataFrame.columns).filter((c: any) => c.semType === DG.SEMTYPE.MOLECULE).map((c: any) => c.name);
+  const columnsList = Array.from(col.dataFrame.columns).filter(
+    (c: any) => c.semType === DG.SEMTYPE.MOLECULE).map((c: any) => c.name);
   let columnsSet = new Set(columnsList);
   columnsSet.delete(col.name);
 
@@ -28,10 +28,16 @@ export function getMolColumnPropertyPanel(col: DG.Column) {
   });
   let highlightScaffoldsCheckbox = ui.boolInput(
     'Highlight from column', col?.temp && col.temp['highlight-scaffold'] === 'true',
-      (v: any) => { col.temp['highlight-scaffold'] = v.toString(); col.dataFrame.fireValuesChanged(); });
+      (v: any) => {
+        col.temp['highlight-scaffold'] = v.toString();
+        col.dataFrame.fireValuesChanged();
+  });
   let regenerateCoordsCheckbox = ui.boolInput(
     'Regenerate coords', col?.temp && col.temp['regenerate-coords'] === 'true',
-      (v: any) => { col.temp['regenerate-coords'] = v.toString(); col.dataFrame.fireValuesChanged(); });
+      (v: any) => {
+        col.temp['regenerate-coords'] = v.toString();
+        col.dataFrame.fireValuesChanged();
+  });
 
   const matchMoleculeFilteringToDropdown = (v: string) => {
     if (v === 'categorical') return 'Categorical';
@@ -58,7 +64,7 @@ export function getMolColumnPropertyPanel(col: DG.Column) {
   });
 
   subscr?.unsubscribe();
-  subscr = col.dataFrame.onMetadataChanged.subscribe((a) => {
+  subscr = col.dataFrame.onMetadataChanged.subscribe((a: any) => {
     // Handling scaffold column
     let scaffoldColumnChoiceValue = scaffoldColumnChoice.stringValue;
     const scaffoldColumnTag = col.temp && col.temp['scaffold-col'] ? col.temp['scaffold-col'] : NONE;
