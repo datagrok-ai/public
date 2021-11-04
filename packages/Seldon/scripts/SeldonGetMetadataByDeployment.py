@@ -71,4 +71,4 @@ with no_ssl_verification():
   deployment_api = seldon_deploy_sdk.ModelMetadataServiceApi(auth())
   responseDeploymentToModel = deployment_api.model_metadata_service_list_runtime_metadata_for_model(deployment_namespace = seldonNamespace, deployment_name = seldonDeployment)
   responseModelMetadata = deployment_api.model_metadata_service_list_model_metadata(uri=responseDeploymentToModel.runtime_metadata[0].model_uri)
-  seldonModelMetadata = responseModelMetadata # here be JSON
+  seldonModelMetadata = repr(responseModelMetadata) # here be JSON
