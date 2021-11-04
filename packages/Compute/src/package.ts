@@ -6,6 +6,7 @@ import {ModelHandler} from './model_handler';
 import {selectOutliersManually} from './outliers_selection';
 import {exportFuncCall} from './export_funccall';
 import {_functionParametersGrid} from "./function-views/function-parameters-grid";
+import {ModelCatalogView} from "./model-catalog-view";
 
 export const _package = new DG.Package();
 
@@ -23,11 +24,7 @@ export function init() {
 //name: Model Catalog
 //tags: app
 export function modelCatalog() {
-  const v = DG.CardView.create({dataSource: grok.dapi.scripts, permanentFilter: '#model'});
-  v.meta = new ModelHandler();
-  v.name = 'Models';
-  v.permanentFilter = '#model';
-  grok.shell.addView(v);
+  grok.shell.addView(new ModelCatalogView());
 }
 
 //name: manualOutlierDetectionDialog
