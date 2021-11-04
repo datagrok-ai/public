@@ -1,11 +1,11 @@
 const path = require('path');
 
-module.exports = {
+module.exports = (env, options) => { return {
   mode: 'development',
   entry: {
     package: ['./src/RDKit_minimal_2021.03_17.wasm', './src/package.ts']
   },
-  // devtool: 'inline-source-map',
+  devtool: options.mode !== 'production' ? 'inline-source-map' : undefined,
   devServer: {
     contentBase: './dist'
   },
@@ -62,4 +62,4 @@ module.exports = {
       }
     ],
   }
-};
+}};
