@@ -33,9 +33,10 @@ export function _functionParametersGrid(f: DG.Func): DG.View {
         params[p.name] = table.col(p.name)!.get(row);
 
       calculating = true;
-      f.apply(params).then(result => {
+      let call = f.prepare(params);
+      call.call().then(c => {
         for (let p of f.outputs)
-          table.col(p.name)!.set(row, f.outputs.length == 1 ? result : result[p.name]);
+          table.col(p.name)!.set(row, call.outputs[p.name]);
         calculating = false;
       });
     }
@@ -46,9 +47,17 @@ export function _functionParametersGrid(f: DG.Func): DG.View {
 
   init();
   functionName.onChanged(() => {
-    f = DG.Func.byName(functionName.value);
-    if (f !== null)
-      init();
+    DG.Func
+      .findAll({name: functionName.value})
+      .then(funcs => {
+        if (funcs.length == 1) {
+          f = funcs[0];
+          init();
+        }
+      });
+    // ;
+    // if (f !== null)
+    //   init();
   });
   return view;
 }
