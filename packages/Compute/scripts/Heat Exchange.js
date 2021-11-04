@@ -1,5 +1,6 @@
 //name: Heat Exchange
 //language: javascript
+//tags: model
 //input: int len = 1000
 //input: double k = 1.2
 //output: dataframe simulation {viewer: Line Chart(multiAxis: "true")}

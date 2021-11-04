@@ -1314,7 +1314,7 @@ export class RowGroup {
   constructor(d: any) { this.d = d; }
 
   get dataFrame(): DataFrame {
-    return new DataFrame(api.grok_RowGroup_Get_DataFrame(this.d));
+    return api.grok_RowGroup_Get_DataFrame(this.d);
   }
 }
 

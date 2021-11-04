@@ -1,5 +1,5 @@
 //name: Lotka-Volterra Model
-//tags: NonlinearDynamics
+//tags: model, NonlinearDynamics
 //description: Model describes the dynamics of biological systems in which two species interact, one as a predator and the other as prey.
 //language: javascript
 //input: double x0 = 0.5 [Initial conditions for prey population]
