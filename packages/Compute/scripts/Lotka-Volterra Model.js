@@ -36,7 +36,7 @@ function rungeKuttaFourthOrderMethod(r, t, h) {
   return sumArrays(k1, k2, k3, k4);
 }
 
-function Euler(X0, t, alpha, beta, delta, gamma) {
+function euler(X0, t, alpha, beta, delta, gamma) {
   let dt = t[1] - t[0]
   let nt = t.length;
   let X  = new Float32Array([nt, X0.length])
@@ -46,7 +46,7 @@ function Euler(X0, t, alpha, beta, delta, gamma) {
   return X
 }
 
-let Xe = Euler(x0, t, alpha, beta, delta, gamma)
+let Xe = euler(x0, t, alpha, beta, delta, gamma)
 
 let arange = function(start, stop, step) {
   return new Float32Array(Math.ceil((stop - start) / step))

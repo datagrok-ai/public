@@ -4,7 +4,7 @@
 //language: javascript
 //input: int iterations = 1000 [Number of iterations per point]
 //input: double x0 = 0.5 [Initial conditions]
-//input: double spacing = 0.0001 [Spacing between points on domain (r-axis)]
+//input: double spacing = 0.001 [Spacing between points on domain (r-axis)]
 //input: double res = 8 [Largest n-cycle visible]
 //output: dataframe df {viewer: Scatter plot(title: "Logistic map")}
 
