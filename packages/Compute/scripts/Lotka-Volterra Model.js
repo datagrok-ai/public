@@ -1,4 +1,5 @@
 //name: Lotka-Volterra Model
+//tags: NonlinearDynamics
 //description: Model describes the dynamics of biological systems in which two species interact, one as a predator and the other as prey.
 //language: javascript
 //input: double x0 = 0.5 [Initial conditions for prey population]
@@ -11,6 +12,7 @@
 //input: double timeStart = 0
 //input: double timeStop = 18
 //output: dataframe df {viewer: Line Chart(x: "Time", multiAxis: "true", title: "Lotka-Volterra Model")}
+//output: dataframe ph {viewer: Line Chart()}
 
 function sumArrays(...arrays) {
   return Array.from({ length: 2 })
@@ -34,6 +36,18 @@ function rungeKuttaFourthOrderMethod(r, t, h) {
   return sumArrays(k1, k2, k3, k4);
 }
 
+function Euler(X0, t, alpha, beta, delta, gamma) {
+  let dt = t[1] - t[0]
+  let nt = t.length;
+  let X  = new Float32Array([nt, X0.length])
+  X[0] = X0;
+  for (let i in range(nt-1))
+    X[i+1] = X[i] + f(X[i], t[i], alpha,  beta, delta, gamma) * dt
+  return X
+}
+
+let Xe = Euler(x0, t, alpha, beta, delta, gamma)
+
 let arange = function(start, stop, step) {
   return new Float32Array(Math.ceil((stop - start) / step))
     .map((_, i) => i * step);
@@ -54,4 +68,9 @@ df = DG.DataFrame.fromColumns([
   DG.Column.fromFloat32Array('Time', timePoints),
   DG.Column.fromFloat32Array('Number of preys', prey),
   DG.Column.fromFloat32Array('Number of predators', predator)
+]);
+
+ph = DG.DataFrame.fromColumns([
+  DG.Column.fromFloat32Array('Number of preys', prey.slice(0, prey.length - 1)),
+  DG.Column.fromFloat32Array('Number of predators', prey.slice(1, prey.length))
 ]);
