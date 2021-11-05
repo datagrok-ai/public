@@ -202,16 +202,19 @@ export function extractRoot(x: any): HTMLElement | null {
   return x;
 }
 
-/** Renders object to html element.
- * @param {object} x
- * @returns {HTMLElement} */
-export function render(x: any): HTMLElement {
-  x = extractRoot(x);
-  if (x == null)
-    return div();
-  if (api.grok_UI_Render == null)
-    return x;
-  return api.grok_UI_Render(x);
+//function applyToNode(HTMLElement element)
+
+/** Renders object to html element. */
+export function render(x: any, options?: ElementOptions): HTMLElement {
+  function renderImpl() {
+    x = extractRoot(x);
+    if (x == null)
+      return div();
+    if (api.grok_UI_Render == null)
+      return x;
+    return api.grok_UI_Render(x);
+  }
+  return _options(renderImpl(), options);
 }
 
 /** Renders a table cell to html element, taking into account grid's formatting and color-coding.
@@ -265,7 +268,7 @@ export function div(children: any[] | string | HTMLElement = [], options: string
     children = [children];
   let d = document.createElement('div');
   if (children != null) {
-    $(d).append(children.map(render));
+    $(d).append(children.map(x => render(x)));
   }
   _options(d, options);
   $(d).addClass('ui-div');
@@ -307,7 +310,7 @@ export function info(children: HTMLElement[] | HTMLElement | string, header: str
  * @param {string | ElementOptions} options
  * @returns {HTMLDivElement} */
 export function divV(items: HTMLElement[], options: string | ElementOptions | null = null): HTMLDivElement {
-  return <HTMLDivElement>_options(api.grok_UI_DivV(items == null ? null : items.map(render), 'ui-div'), options);
+  return <HTMLDivElement>_options(api.grok_UI_DivV(items == null ? null : items.map(x => render(x)), 'ui-div'), options);
 }
 
 /** Div flex-box container that positions child elements horizontally.
@@ -315,7 +318,7 @@ export function divV(items: HTMLElement[], options: string | ElementOptions | nu
  * @param {string | ElementOptions} options
  * @returns {HTMLDivElement} */
 export function divH(items: HTMLElement[], options: string | ElementOptions | null = null): HTMLDivElement {
-  return <HTMLDivElement>_options(api.grok_UI_DivH(items == null ? null : items.map(render), 'ui-div'), options);
+  return <HTMLDivElement>_options(api.grok_UI_DivH(items == null ? null : items.map(x => render(x)), 'ui-div'), options);
 }
 
 /** Renders content as a card. */
@@ -391,7 +394,7 @@ export function waitBox(getElement: () => Promise<HTMLElement>): any {
 }
 
 /** Creates a visual element representing list of [items]. */
-export function list(items: any[]): HTMLElement {
+export function list(items: any[], options?: {processNode?: (node: HTMLElement) => void}): HTMLElement {
   return api.grok_UI_List(Array.from(items).map(toDart));
 }
 
@@ -1046,7 +1049,7 @@ export function label(text: string | null, options: {} | null = null): HTMLLabel
 export function form(children: InputBase[] = [], options: {} | null = null): HTMLDivElement {
   let d = document.createElement('div');
   if (children != null) {
-    $(d).append(children.map(render));
+    $(d).append(children.map(x => render(x)));
   }
   _options(d, options);
   $(d).addClass('ui-form');
@@ -1068,7 +1071,7 @@ export function buttonsInput(children: HTMLButtonElement[] = []): HTMLDivElement
   let e = document.createElement('div');
   $(e).addClass('ui-input-editor');
   if (children != null)
-    $(e).append(children.map(render));
+    $(e).append(children.map(x => render(x)));
   l.textContent = ' ';
   $(l).addClass('ui-label ui-input-label');
   $(d).addClass('ui-input-root ui-input-buttons').append(l).append(e);
