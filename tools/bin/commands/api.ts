@@ -12,6 +12,9 @@ function generateQueryWrappers(): void {
     return;
   }
 
+  const packagePath = path.join(curDir, 'package.json');
+  const _package = JSON.parse(fs.readFileSync(packagePath, { encoding: 'utf-8' }));
+
   const files = walk.sync({
     path: './queries',
     ignoreFiles: ['.npmignore', '.gitignore'],
