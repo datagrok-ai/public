@@ -46,7 +46,7 @@ function getStructuralAlerts(smiles: string) {
     const subMol = smartsMap.get(table!.get('smarts', i));
     const matches = mol.get_substruct_matches(subMol);
     if (matches !== '{}') {
-      alerts.push(table!.get('rule_id', i));
+      alerts.push(i);
     }
   }
   return alerts;

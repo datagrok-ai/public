@@ -640,7 +640,7 @@ export function onSizeChanged(element: HTMLElement): rxjs.Observable<any> {
 
   if (_isDartium()) {
     // Polyfill for Dartium which does not have a native ResizeObserver
-    return new rxjs.Observable(function(observer) {
+    return new rxjs.Observable(function(observer: any) {
       let width = element.clientWidth;
       let height = element.clientHeight;
       let interval = setInterval(() => {
