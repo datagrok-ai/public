@@ -719,7 +719,9 @@ export class Balloon {
 }
 
 
-/** Input control base. Could be used for editing {@link Property} values as well. */
+/** Input control base. Could be used for editing {@link Property} values as well.
+ * The root is a div that consists of {@link captionLabel} and {@link input}.
+ * */
 export class InputBase {
   d: any;
 
@@ -727,6 +729,14 @@ export class InputBase {
     this.d = d;
     if (onChanged != null)
       this.onChanged((_: any) => onChanged(this.value));
+  }
+
+  static forProperty(property: Property): InputBase {
+    return toJs(api.grok_InputBase_ForProperty(property.d));
+  }
+
+  static forColumn(column: Column): InputBase {
+    return toJs(api.grok_InputBase_ForColumn(column.d));
   }
 
   get root(): HTMLElement {
@@ -745,6 +755,7 @@ export class InputBase {
     return api.grok_InputBase_Get_CaptionLabel(this.d);
   };
 
+  /** Returns the actual input */
   get input(): HTMLElement | string {
     return api.grok_InputBase_Get_Input(this.d);
   };
@@ -826,10 +837,6 @@ export class InputBase {
   setTooltip(msg: string): void {
     api.grok_InputBase_SetTooltip(this.d, msg);
   };
-
-  static forProperty(property: Property): InputBase {
-    return toJs(api.grok_InputBase_ForProperty(property.d));
-  }
 }
 
 
