@@ -12,6 +12,9 @@ function generateQueryWrappers(): void {
     return;
   }
 
+  const packagePath = path.join(curDir, 'package.json');
+  const _package = JSON.parse(fs.readFileSync(packagePath, { encoding: 'utf-8' }));
+
   const files = walk.sync({
     path: './queries',
     ignoreFiles: ['.npmignore', '.gitignore'],
@@ -29,8 +32,8 @@ function generateQueryWrappers(): void {
       const name = utils.getScriptName(q, utils.commentMap[utils.queryExtension]);
       if (!name) continue;
       let tb = new utils.TemplateBuilder(utils.queryWrapperTemplate)
-        .replace('FUNC_NAME', name)
-        .replace('FUNC_NAME_LOWERCASE', name)
+        .replace('QUERY_NAME', name)
+        .replace('QUERY_NAME_LOWERCASE', name)
         .replace('PACKAGE_NAMESPACE', _package.name);
 
       const inputs = utils.getScriptInputs(q, utils.commentMap[utils.queryExtension]);

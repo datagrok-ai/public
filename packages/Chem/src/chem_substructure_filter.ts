@@ -31,7 +31,7 @@ M  END
   attach(dFrame: DG.DataFrame) {
     this.dataFrame = dFrame;
     this.column = this.dataFrame.columns.bySemType(DG.SEMTYPE.MOLECULE);
-    this.subs.push(this.dataFrame.onRowsFiltering.subscribe((_) => { this.applyFilter(); } ));
+    this.subs.push(this.dataFrame.onRowsFiltering.subscribe((_: any) => { this.applyFilter(); } ));
   }
 
   // TODO: this needs to be triggered
