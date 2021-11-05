@@ -29,7 +29,8 @@ export class ModelCatalogView extends DG.CardView {
       .filter('#model')
       .list()
       .then((models) => {
-        this.toolbox = ui.list(models);
+        //this.toolbox = ui.list(models);
+        this.toolbox = ui.divV(models.map(model => ui.render(model, {onClick: (_) => grok.shell.info('foo')})));
       });
   }
 }
