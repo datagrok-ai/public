@@ -299,6 +299,7 @@ public abstract class JdbcDataProvider extends DataProvider {
             }
         }
         catch (SQLException e) {
+            connection.close();
             if (providerManager.queryMonitor.checkCancelledId((String) queryRun.aux.get("mainCallId")))
                 throw new QueryCancelledByUser();
             else throw e;
