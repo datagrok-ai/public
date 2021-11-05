@@ -123,7 +123,7 @@ export class VirtualScreeningTutorial extends Tutorial {
         'applicable to the column under the "Actions" section. Let\'s calculate some ' +
         'molecular descriptors for the given dataset.';
 
-      await this.action('Click on the header of a column with curated molecules',
+      await this.action('Click on the header of the column with curated molecules',
         grok.events.onAccordionConstructed.pipe(filter((acc) => {
           if (acc.context instanceof DG.Column && acc.context?.name === curatedMolColName) {
             ppColumn = acc;
@@ -280,7 +280,7 @@ export class VirtualScreeningTutorial extends Tutorial {
       'estimate if these scaffolds have already been investigated. The filter panel may be closed.');
 
     const scaffoldColName = 'scaffolds';
-    await this.dlgInputAction(await this.openAddNCDialog('Add a column for scaffolds'),
+    await this.dlgInputAction(await this.openAddNCDialog('Add an empty column for scaffolds (we will fill it in the next step)'),
       `Name it "${scaffoldColName}"`, '', scaffoldColName);
     await this.action('Click "OK" and drag the new column to the beginning of the grid', screeningData.onColumnsAdded.pipe(filter((data) =>
       data.args.columns.some((col: DG.Column) => col.name === scaffoldColName))));
