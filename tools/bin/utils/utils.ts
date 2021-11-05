@@ -48,11 +48,13 @@ export function friendlyNameToName(s: string, firstUpper: boolean = true): strin
   let cap = true;
   let start = true;
   s = (s ?? '').trim();
+  const letterRegex = /[A-Za-z]/;
+  const digitRegex = /\d/;
   for (let i = 0; i < s.length; i++) {
-    if (!/[A-Za-z]/.test(s[i]) && !/[0-9]/.test(s[i]))
+    if (!letterRegex.test(s[i]) && !digitRegex.test(s[i]))
       cap = true;
     else {
-      if (start && /[0-9]/.test(s[i]))
+      if (start && digitRegex.test(s[i]))
         continue;
       out += start && !firstUpper ? s[i].toLowerCase() : cap ? s[i].toUpperCase() : s[i];
       cap = false;
