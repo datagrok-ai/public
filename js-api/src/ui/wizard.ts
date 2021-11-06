@@ -1,7 +1,7 @@
 /** EXPERIMENTAL - API might change */
 import * as ui from "../../ui";
 import {Dialog} from "../widgets";
-import $ from "cash-dom";
+let api = <any>window;
 
 interface WizardPage {
 
@@ -15,23 +15,23 @@ interface WizardPage {
 
   /** Returns error message (and stops wizard from proceeding to the next page),
    * or null if validated */
-  validate?: () => string;
+  validate?: () => string | null;
 }
 
 /** A set of pages that user navigates using the "<<" and ">>" buttons */
-export class Wizard {
+export class Wizard extends Dialog {
   captionHost = ui.div([], 'ui-wizard-page-title');
   contentHost = ui.div([], 'ui-wizard-page-content');
-  root: HTMLDivElement = ui.divV([this.captionHost, this.contentHost]);
+  wizardRoot: HTMLDivElement = ui.divV([this.captionHost, this.contentHost]);
   pages: WizardPage[] = [];
   _currentPage: WizardPage = { root: ui.div() };
-  dialog: Dialog = ui.dialog().add(this.root);
-  okButton = this.dialog.getButton('OK');
-  prevButton = this.dialog.addButton('<<', () => this.prev());
-  nextButton = this.dialog.addButton('>>', () => this.next());
+  okButton = this.getButton('OK');
+  prevButton = this.addButton('<<', () => this.prev());
+  nextButton = this.addButton('>>', () => this.next());
 
-  Wizard(options?: {title: string}) {
-    this.dialog.title = options?.title ?? '';
+  constructor(options?: {title?: string, helpUrl?: string}) {
+    super(api.grok_Dialog(options?.title, options?.helpUrl));
+    this.add(this.wizardRoot);
   }
 
   page(p: WizardPage): Wizard {
@@ -62,9 +62,9 @@ export class Wizard {
   }
 
   _updateButtonStates() {
-    ui.setClass(this.dialog.getButton('OK'), 'disabled', !this.completable);
-    ui.setClass(this.dialog.getButton('<<'), 'disabled', this.pageIndex == 0);
-    ui.setClass(this.dialog.getButton('>>'), 'disabled', this.pageIndex == this.pages.length - 1);
+    ui.setClass(this.getButton('OK'), 'disabled', !this.completable);
+    ui.setClass(this.getButton('<<'), 'disabled', this.pageIndex == 0);
+    ui.setClass(this.getButton('>>'), 'disabled', this.pageIndex == this.pages.length - 1);
   }
 
   /** Activates the previous page */
