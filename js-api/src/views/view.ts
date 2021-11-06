@@ -232,6 +232,11 @@ export class View extends ViewBase {
       return new View(d);
   }
 
+  /** Creates a view for the specified object, if it is registered, or null otherwise. */
+  static forObject(x: any): View | null {
+    return api.grok_View_ForObject(toDart(x));
+  }
+
   static fromRoot(root: HTMLElement) {
     let view = View.create();
     view.root.appendChild(root);
