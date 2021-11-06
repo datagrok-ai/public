@@ -58,6 +58,13 @@ export function empty(e: HTMLElement): HTMLElement {
   return e;
 }
 
+export function setClass(e: HTMLElement, classes: string, flag: boolean) {
+  if (flag)
+    $(e).addClass(classes);
+  else
+    $(e).removeClass(classes);
+}
+
 /** Removes the [element] from the DOM, and disposes any widgets that
  *  the [element] might contain. See also [empty]. */
 export function remove(element: HTMLElement): void {

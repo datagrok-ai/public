@@ -3,7 +3,7 @@
  */
 
 import * as _package from '../package';
-import BitArray from '../../../../libraries/utils/src/BitArray'
+import BitArray from 'utils/src/bit-array'
 
 jest.mock('datagrok-api/dg', () => {
     const originalModule = jest.requireActual('datagrok-api/dg');
