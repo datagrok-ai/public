@@ -477,6 +477,7 @@ export class Dialog extends DartWidget {
     super(d);
   }
 
+  /** Creates a new dialog with the specified options. */
   static create(options: { title?: string, helpUrl?: string } | string = ''): Dialog {
     if (typeof options === 'string')
       return new Dialog(api.grok_Dialog(options, null));
@@ -484,13 +485,9 @@ export class Dialog extends DartWidget {
       return new Dialog(api.grok_Dialog(options?.title, options?.helpUrl));
   }
 
-  get helpUrl(): string {
-    return api.grok_Dialog_Get_HelpUrl(this.d);
-  };
-
-  set helpUrl(url: string) {
-    api.grok_Dialog_Set_HelpUrl(this.d, url);
-  };
+  /** When provided, adds a "?" icon to the dialog header on the right. */
+  get helpUrl(): string { return api.grok_Dialog_Get_HelpUrl(this.d); };
+  set helpUrl(url: string) { api.grok_Dialog_Set_HelpUrl(this.d, url); };
 
   /** Returns the title of a dialog. */
   get title(): string { return api.grok_Dialog_Get_Title(this.d); };

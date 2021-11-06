@@ -21,7 +21,10 @@ export class ModelCatalogView extends DG.CardView {
   initRibbon() {
     this.ribbonMenu
       .group('Models')
-      .item('Add New...', () => grok.shell.info('Adding new model'));
+        .item('Add New...', () => grok.shell.info('Adding new model'))
+      .endGroup()
+      .group('Help')
+        .item('Compute Engine', () => window.open('https://github.com/datagrok-ai/public/tree/master/packages/Compute', '_blank'))
   }
 
   initToolbox() {
