@@ -18,6 +18,7 @@ export * from './src/views/card_view';
 export * from './src/viewer';
 export * from './src/docking';
 export * from './src/wrappers_impl';
+export * from './src/ui/wizard';
 export {time, timeAsync, Utils, LruCache} from './src/utils';
 export {ObjectHandler, EntityMetaDartProxy} from './ui';
 export * from './src/data';
