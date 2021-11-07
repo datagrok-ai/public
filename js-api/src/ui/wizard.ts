@@ -1,8 +1,9 @@
-/** EXPERIMENTAL - API might change */
+/** EXPERIMENTAL - USE AT YOUR OWN RISK - API might change */
 import * as ui from "../../ui";
 import {Dialog} from "../widgets";
 let api = <any>window;
 
+/** EXPERIMENTAL - USE AT YOUR OWN RISK - API might change */
 interface WizardPage {
 
   root: HTMLDivElement;
@@ -19,6 +20,7 @@ interface WizardPage {
 }
 
 /** A set of pages that user navigates using the "<<" and ">>" buttons */
+/** EXPERIMENTAL - USE AT YOUR OWN RISK - API might change */
 export class Wizard extends Dialog {
   captionHost = ui.div([], 'ui-wizard-page-title');
   contentHost = ui.div([], 'ui-wizard-page-content');
