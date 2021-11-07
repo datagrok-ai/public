@@ -1,12 +1,12 @@
 import * as DG from "datagrok-api/dg";
 import { DataFrame } from "datagrok-api/dg";
 import { study } from '../clinical-study';
-import { SUBJECT_ID } from "../constants";
+import { SUBJECT_ID } from "../columns-constants";
 import { createPropertyPanel } from "../panels/panels-service";
 
 export class AEBrowserHelper{
 
-    domains = [];
+    domains = ['ae', 'ex', 'cm'];
     additionalDomains = [];
     selectedAdditionalDomains = [];
     aeToSelect: DG.DataFrame;
@@ -16,16 +16,18 @@ export class AEBrowserHelper{
     name = 'AE Browser';
 
     constructor(dataFrame: DG.DataFrame){
+        let presentDomains = [];
         this.aeToSelect = dataFrame;
         study.domains.all().forEach(it => {
             if(it.name !== 'dm'){
                 this[ it.name ] = study.domains[ it.name ].clone();
-                this.domains.push(it.name);
+                presentDomains.push(it.name);
                 if (!this.domains.includes(it.name)){
                     this.additionalDomains.push(it.name);
                 }
             }
         });
+        this.domains = this.domains.filter(it => presentDomains.includes(it));
     }
 
     updateDomains() {

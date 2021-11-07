@@ -1,8 +1,10 @@
 import * as DG from "datagrok-api/dg";
 import * as ui from "datagrok-api/ui";
 import { study } from "../clinical-study";
-import { SUBJECT_ID } from "../constants";
+import { AE_END_DAY, AE_START_DAY, AE_TERM, CON_MED_END_DAY, CON_MED_NAME, CON_MED_START_DAY, INV_DRUG_DOSE, INV_DRUG_DOSE_UNITS, INV_DRUG_END_DAY, INV_DRUG_NAME, INV_DRUG_START_DAY, LAB_DAY, LAB_HI_LIM_N, LAB_LO_LIM_N, LAB_RES_N, LAB_TEST, LAB_VISIT_DAY, SUBJECT_ID } from "../columns-constants";
+import { requiredColumnsByView } from "../constants";
 import { addColumnWithDrugPlusDosage, labDynamicComparedToBaseline, labDynamicComparedToMinMax, labDynamicRelatedToRef } from "../data-preparation/data-preparation";
+import { getUniqueValues } from "../data-preparation/utils";
 import { ILazyLoading } from "../lazy-loading/lazy-loading";
 import { _package } from "../package";
 import { checkMissingDomains } from "./utils";
@@ -16,16 +18,16 @@ export class PatientProfileView extends DG.ViewBase implements ILazyLoading {
         tableName: 'patient_lb',
         title: 'Lab values',
         type: 'scatter',
-        x: 'LBDY',
-        y: 'LBTEST',
+        x: LAB_DAY,
+        y: LAB_TEST,
         // extraFields is an array to load into echart data arrays
         // all fields later combined into one array [x, y, extraFields]
         // user can address fields by index, for instance index 3 means field "LBORNRLO"
-        extraFields: ['LBSTRESN', 'LBSTNRLO', 'LBSTNRHI'],
+        extraFields: [LAB_RES_N, LAB_LO_LIM_N, LAB_HI_LIM_N],
         yType: 'category',                // can be 'value' or 'category'
         statusChart: {
           valueField: 2,                  // index of field with test value
-          splitByColumnName: 'LBTEST',    // column to get categories
+          splitByColumnName: LAB_RES_N,    // column to get categories
           categories: [''], // fixed categories
           minField: 3,                    // min and max normal value 
           maxField: 4,                    // will be displayed with default color, otherwises "red"
@@ -37,7 +39,7 @@ export class PatientProfileView extends DG.ViewBase implements ILazyLoading {
         yLabelWidth: 50,
         yLabelOverflow: 'truncate',
         multiEdit: {
-          options: study.domains.lb ? study.domains.lb.getCol('LBTEST').categories : [],
+          options: study.domains.lb ? Array.from(getUniqueValues(study.domains.lb, LAB_TEST)) : [],
           selectedValues: [],
           editValue: 'category',
           updateTitle: false
@@ -50,10 +52,10 @@ export class PatientProfileView extends DG.ViewBase implements ILazyLoading {
         title: 'Lab values line chart',
         type: 'line',
         multiLineFieldIndex: 2, //index of field by which to split multiple graphs
-        x: 'LBDY',
+        x: LAB_DAY,
         y: 'LAB_DYNAMIC_BL',
-        extraFields: ['LBTEST', 'LBSTRESN', 'LBSTNRLO', 'LBSTNRHI', 'BL_LBSTRESN', 'min(LBSTRESN)', 'max(LBSTRESN)'],
-        splitByColumnName: 'LBTEST',                    // get categories from this column
+        extraFields: [LAB_TEST, LAB_RES_N, LAB_LO_LIM_N, LAB_HI_LIM_N, `BL_${LAB_RES_N}`, `min(${LAB_RES_N})`, `max(${LAB_RES_N})`],
+        splitByColumnName: LAB_TEST,                    // get categories from this column
         categories: [''],  // fixed categories
         maxLimit: 1,                                    // max number of linecharts 
         yType: 'category',
@@ -63,7 +65,7 @@ export class PatientProfileView extends DG.ViewBase implements ILazyLoading {
         yLabelWidth: 50,
         yLabelOverflow: 'truncate',
         multiEdit: {
-          options: study.domains.lb ? study.domains.lb.getCol('LBTEST').categories : [],
+          options: study.domains.lb ? Array.from(getUniqueValues(study.domains.lb, LAB_TEST)) : [],
           selectedValues: [],
           editValue: 'category',
           updateTitle: true
@@ -112,8 +114,8 @@ export class PatientProfileView extends DG.ViewBase implements ILazyLoading {
         tableName: 'patient_ae',
         title: 'Adverse Events',
         type: 'timeLine',
-        y: 'AETERM',                      // category column
-        x: ['AESTDY', 'AEENDY'],          // [startTime, endTime]
+        y: AE_TERM,                      // category column
+        x: [AE_START_DAY, AE_END_DAY],          // [startTime, endTime]
         yType: 'category',
         color: 'red',                     // color of marker
         markerShape: 'circle',
@@ -128,7 +130,7 @@ export class PatientProfileView extends DG.ViewBase implements ILazyLoading {
         title: 'Drug Exposure',
         type: 'timeLine',
         y: 'EXTRT_WITH_DOSE',
-        x: ['EXSTDY', 'EXENDY'],
+        x: [INV_DRUG_START_DAY, INV_DRUG_END_DAY],
         yType: 'category',
         color: 'red',
         markerShape: 'circle',
@@ -142,8 +144,8 @@ export class PatientProfileView extends DG.ViewBase implements ILazyLoading {
         tableName: 'patient_cm',
         title: 'Concomitant medication',
         type: 'timeLine',
-        y: 'CMTRT',
-        x: ['CMSTDY', 'CMENDY'],
+        y: CON_MED_NAME,
+        x: [CON_MED_START_DAY, CON_MED_END_DAY],
         yType: 'category',
         color: 'red',
         markerShape: 'circle',
@@ -158,10 +160,10 @@ export class PatientProfileView extends DG.ViewBase implements ILazyLoading {
   }
 
   tableNamesAndFields = {
-    'lb': { 'start': 'LBDY' },
-    'ae': { 'start': 'AESTDY', 'end': 'AEENDY' },
-    'ex': { 'start': 'EXSTDY', 'end': 'EXENDY' },
-    'cm': { 'start': 'CMSTDY', 'end': 'CMENDY' }
+    'lb': { 'start': LAB_DAY },
+    'ae': { 'start': AE_START_DAY, 'end': AE_END_DAY },
+    'ex': { 'start': INV_DRUG_START_DAY, 'end': INV_DRUG_END_DAY },
+    'cm': { 'start': CON_MED_START_DAY, 'end': CON_MED_END_DAY }
   };
   tables = {};
   multiplot_lb_ae_ex_cm: any;
@@ -175,11 +177,11 @@ export class PatientProfileView extends DG.ViewBase implements ILazyLoading {
   loaded: boolean;
 
   load(): void {
-    checkMissingDomains(['dm', 'ae', 'lb', 'cm', 'ex'], false, this);
+    checkMissingDomains(requiredColumnsByView[this.name], false, this);
   }
 
   createView(): void {
-    let patientIds = study.domains.dm.getCol('USUBJID').categories;
+    let patientIds = Array.from(getUniqueValues(study.domains.dm, SUBJECT_ID));
     let patienIdBoxPlot = ui.choiceInput('', patientIds[0], patientIds);
     patienIdBoxPlot.onChanged((v) => {
       this.updateTablesToAttach(patienIdBoxPlot.value);
@@ -268,8 +270,8 @@ export class PatientProfileView extends DG.ViewBase implements ILazyLoading {
         .aggregate();
       this.tables[name].name = `patient_${name}`;
     })
-    addColumnWithDrugPlusDosage(this.tables['ex'], 'EXTRT', 'EXDOSE', 'EXDOSU', 'EXTRT_WITH_DOSE');
-    labDynamicComparedToBaseline(this.tables['lb'], this.options_lb_ae_ex_cm['xAxisMinMax']['minX'], 'VISITDY', 'LAB_DYNAMIC_BL', false);
+    addColumnWithDrugPlusDosage(this.tables['ex'], INV_DRUG_NAME, INV_DRUG_DOSE, INV_DRUG_DOSE_UNITS, 'EXTRT_WITH_DOSE');
+    labDynamicComparedToBaseline(this.tables['lb'], this.options_lb_ae_ex_cm['xAxisMinMax']['minX'], LAB_VISIT_DAY, 'LAB_DYNAMIC_BL', false);
     labDynamicComparedToMinMax(this.tables['lb'], 'LAB_DYNAMIC_MIN_MAX');
     labDynamicRelatedToRef(this.tables['lb'], 'LAB_DYNAMIC_REF');
   }

@@ -7,17 +7,46 @@ export function updateDivInnerHTML(div: HTMLDivElement, content: any){
     div.append(content);
   }
 
-export function checkMissingDomains(requiredDomains: string[], or: boolean, obj: any) {
-  let missingDomains = requiredDomains.filter(it => study.domains[it] === null);
-  let noMissingDomains = or ? requiredDomains.some(it => study.domains[it] !== null) : !missingDomains.length; 
-  if(noMissingDomains){
-    obj.createView();
+export function checkMissingDomains(requiredDomainsAndCols: any, or: boolean, obj: any) {
+  let reqDomains = Object.keys(requiredDomainsAndCols);
+  let missingDomains = reqDomains.filter(it => study.domains[it] === null);
+  let noMissingDomains = or ? reqDomains.some(it => study.domains[it] !== null) : !missingDomains.length;
+  if (noMissingDomains) {
+    if (or) {
+      reqDomains = reqDomains.filter(it => study.domains[it] !== null);
+    }
+    if (checkMissingColumns(obj, reqDomains, requiredDomainsAndCols)) {
+      obj.createView();
+    }
   } else {
-    let domainsDiv = ui.div();
-    missingDomains.forEach(it => {domainsDiv.append(ui.divText(it))})
-    obj.root.append(ui.div([
-      ui.h2('Missing domains:'),
-      domainsDiv
-    ], {style: {margin: 'auto', textAlign: 'center'}}));
+    const errorsDiv = ui.div([], { style: { margin: 'auto', textAlign: 'center' } });
+    createMissingDataDiv(errorsDiv, missingDomains, 'Missing domains:');
+    obj.root.append(errorsDiv);
   }
+}
+
+export function checkMissingColumns(obj: any, reqDomains: string[], requiredDomainsAndCols: any) {
+  const errorsDiv = ui.divV([], {style: {margin: 'auto', textAlign: 'center'}});
+  let noMissingCols = true;
+  reqDomains.forEach(domain => {
+    const domainColumns = study.domains[domain].columns.names();
+    const missingColumns = requiredDomainsAndCols[domain].filter(it => !domainColumns.includes(it));
+    if(missingColumns.length){
+      noMissingCols = false;
+      createMissingDataDiv(errorsDiv, missingColumns, `Missing columns in ${domain}:`)
+    }
+  })
+  if(!noMissingCols){
+    obj.root.append(errorsDiv);
+  }
+  return noMissingCols;
+}
+
+function createMissingDataDiv(div: HTMLDivElement, missingDomainsOrCols: string[], header: string){
+  let domainsDiv = ui.div();
+  missingDomainsOrCols.forEach(it => {domainsDiv.append(ui.divText(it))})
+  div.append(ui.div([
+    ui.h2(header),
+    domainsDiv
+  ]));
 }
