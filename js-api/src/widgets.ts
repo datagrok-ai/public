@@ -1164,75 +1164,65 @@ export class Color {
 export class TreeViewNode {
   d: any;
 
-  /** @constructs {TreeView} */
+  /** @constructs {TreeView} from the Dart object */
   constructor(d: any) {
     this.d = d;
   }
 
-  /** Creates new nodes tree
-   * @returns {TreeViewNode} */
+  /** Creates new tree */
   static tree(): TreeViewNode {
     return toJs(api.grok_TreeViewNode_Tree());
   }
 
-  /** Visual root.
-   * @type {HTMLElement} */
+  /** Visual root */
   get root(): HTMLElement {
     return api.grok_TreeViewNode_Root(this.d);
   }
 
-  /** Caption label.
-   * @type {HTMLElement} */
+  /** Caption label */
   get captionLabel(): HTMLElement {
     return api.grok_TreeViewNode_CaptionLabel(this.d);
   }
 
-  /** Check box.
-   * @type {null|HTMLElement} */
+  /** Check box element  */
   get checkBox(): HTMLElement | null {
     return api.grok_TreeViewNode_CheckBox(this.d);
   }
 
-  /** Returns 'true' if checked
-   * @returns {boolean} */
+  /** Returns `true` if checked */
   get checked(): boolean { return api.grok_TreeViewNode_Get_Checked(this.d); }
   set checked(checked: boolean) { api.grok_TreeViewNode_Set_Checked(this.d, checked); }
 
-  /** Returns node text. */
+  /** Node text */
   get text(): string { return api.grok_TreeViewNode_Text(this.d); }
 
-  /** Node value. */
+  /** Node value */
   get value(): object { return api.grok_TreeViewNode_Get_Value(this.d); };
   set value(v: object) { api.grok_TreeViewNode_Set_Value(this.d, v); };
 
-  /** Gets all node items.
-   * @returns {Array<TreeViewNode>} */
+  /** Gets all node items */
   get items(): TreeViewNode[] {
     return api.grok_TreeViewNode_Items(this.d).map((i: any) => toJs(i));
   }
 
-  /** Add new group to node.
-   * @param {string} text
-   * @param {object} value
-   * @param {boolean} expanded
-   * @returns {TreeViewNode} */
+  /** Adds new group */
   group(text: string, value: object | null = null, expanded: boolean = true): TreeViewNode {
     return toJs(api.grok_TreeViewNode_Group(this.d, text, value, expanded));
   }
 
-  /** Add new item to node.
-   * @param {string} text
-   * @param {object} value
-   * @returns {TreeViewNode} */
+  /** Adds new item to group */
   item(text: string, value: object | null = null): TreeViewNode {
     return toJs(api.grok_TreeViewNode_Item(this.d, text, value));
   }
 
-  /** Enables checkbox on node
-   * @param {boolean} checked */
+  /** Enables checkbox */
   enableCheckBox(checked: boolean = false): void {
     api.grok_TreeViewNode_EnableCheckBox(this.d, checked);
   }
+
+  /**  */
+  get onNodeExpanding(): Observable<TreeViewNode> { return __obs(this.d, 'd4-tree-view-node-expanding'); }
+
 }
 
 
