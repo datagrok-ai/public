@@ -5,7 +5,7 @@ import * as DG from 'datagrok-api/dg';
 import * as meta from './sdtm-meta';
 import { vaidateAEDomain, vaidateDMDomain } from './validation/services/validation-service';
 import { createValidationDataFrame } from './validation/validation-utils';
-import { labDataForCorrelationMatrix } from './data-preparation/data-preparation';
+import { AE_START_DAY, SITE_ID, STUDY_ID } from './columns-constants';
 
 export class ClinicalDomains {
   ae: DG.DataFrame = null;
@@ -90,8 +90,8 @@ export class ClinicalStudy {
 
     if(this.domains.dm != null){
       this.subjectsCount = this.domains.dm.rowCount;
-      this.sitesCount = this.domains.dm.col('siteid').stats.uniqueCount;
-      this.name = this.domains.dm.col('studyid').get(0);
+      this.sitesCount = this.domains.dm.col(SITE_ID).stats.uniqueCount;
+      this.name = this.domains.dm.col(STUDY_ID).get(0);
     }
 
     this.process();
@@ -102,10 +102,7 @@ export class ClinicalStudy {
 
   private process(): void {
     if (this.domains.ae != null) {
-      this.domains.ae.columns.addNewCalculated('week', 'floor(${AESTDY} / 7)');
-    }
-    if (this.domains.lb != null) {
-    //  this.labDataForCorelationMatrix = labDataForCorrelationMatrix();
+      this.domains.ae.columns.addNewCalculated('week', `floor(\${${AE_START_DAY}} / 7)`);
     }
   }
 

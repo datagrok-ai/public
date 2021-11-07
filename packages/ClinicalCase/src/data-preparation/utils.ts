@@ -1,6 +1,6 @@
 import * as DG from "datagrok-api/dg";
 import * as grok from 'datagrok-api/grok';
-import { TREATMENT_ARM } from "../constants";
+import { LAB_VISIT_DAY, LAB_VISIT_NAME, SUBJECT_ID, TREATMENT_ARM } from "../columns-constants";
 
 export function getUniqueValues(df: DG.DataFrame, colName: string) {
     const uniqueIds = new Set();
@@ -69,8 +69,8 @@ export function getUniqueValues(df: DG.DataFrame, colName: string) {
   }
 
 
-export function addDataFromDmDomain(df: DG.DataFrame, dm: DG.DataFrame, columnsToExtract: string[], columnsToExtractFromDm: string[], subjIdColName = 'USUBJID') {
-    let withArm = grok.data.joinTables(df, dm, [ subjIdColName ], [ 'USUBJID' ], columnsToExtract, columnsToExtractFromDm, DG.JOIN_TYPE.LEFT, false);
+export function addDataFromDmDomain(df: DG.DataFrame, dm: DG.DataFrame, columnsToExtract: string[], columnsToExtractFromDm: string[], subjIdColName = SUBJECT_ID) {
+    let withArm = grok.data.joinTables(df, dm, [ subjIdColName ], [ SUBJECT_ID ], columnsToExtract, columnsToExtractFromDm, DG.JOIN_TYPE.LEFT, false);
     columnsToExtractFromDm.forEach(it => changeEmptyStringsToUnknown(withArm, it));
     return withArm;
 }
@@ -101,42 +101,21 @@ export function getNullOrValue(df: DG.DataFrame, colname: string, index: number)
 }
 
 
-export function getMinVisitName(df: DG.DataFrame) {
-    return df.groupBy([ 'VISIT' ])
-        .where(`VISITDY = ${df.getCol('VISITDY').stats[ 'min' ]}`)
-        .aggregate()
-        .get('VISIT', 0);
-}
-
-export function getMaxVisitName(df: DG.DataFrame) {
-    return df.groupBy([ 'VISIT' ])
-        .where(`VISITDY = ${df.getCol('VISITDY').stats[ 'max' ]}`)
-        .aggregate()
-        .get('VISIT', 0);
-}
-
-export function getVisitName(df: DG.DataFrame) {
-    return df.groupBy([ 'VISIT' ])
-        .where(`VISITDY = ${df.getCol('VISITDY').stats[ 'max' ]}`)
-        .aggregate()
-        .get('VISIT', 0);
-}
-
 export function dictToString(dict: any){
     let str = '';
     Object.keys(dict).forEach(key => str+=`${key}: ${dict[key]}<br/>`);
     return str;
 }
 
-export function getVisitNamesAndDays(df: DG.DataFrame){
+export function getLabVisitNamesAndDays(df: DG.DataFrame){
     const data = df
-    .groupBy(['VISITDY', 'VISIT'])
+    .groupBy([LAB_VISIT_DAY, LAB_VISIT_NAME])
     .aggregate();
     const visitsArray = [];
     let rowCount = data.rowCount;
     for (let i = 0; i < rowCount; i++){
-        if (!data.getCol('VISITDY').isNone(i) && !data.getCol('VISIT').isNone(i)){
-            visitsArray.push({day: data.get('VISITDY', i), name: data.get('VISIT', i)})
+        if (!data.getCol(LAB_VISIT_DAY).isNone(i) && !data.getCol(LAB_VISIT_NAME).isNone(i)){
+            visitsArray.push({day: data.get(LAB_VISIT_DAY, i), name: data.get(LAB_VISIT_NAME, i)})
         }
     }
     return visitsArray.sort((a, b) => a.day - b.day);

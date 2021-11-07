@@ -1,17 +1,18 @@
 import * as grok from 'datagrok-api/grok';
 import * as DG from 'datagrok-api/dg';
-import { ALT, AP, AST, BILIRUBIN, SUBJECT_ID, TREATMENT_ARM } from '../constants';
-import { addDataFromDmDomain, dateDifferenceInDays, filterBooleanColumn, filterNulls } from './utils';
+import { ALT, AP, AST, BILIRUBIN } from '../constants';
+import { addDataFromDmDomain, dateDifferenceInDays, filterBooleanColumn, filterNulls, getUniqueValues } from './utils';
 import { study } from '../clinical-study';
+import { AE_CAUSALITY, AE_REQ_HOSP, AE_SEQ, AE_SEVERITY, AE_START_DATE, AE_TERM, INV_DRUG_NAME, LAB_HI_LIM_N, LAB_LO_LIM_N, LAB_RES_N, LAB_TEST, SUBJECT_ID, SUBJ_REF_ENDT, SUBJ_REF_STDT, TREATMENT_ARM } from '../columns-constants';
 
 export function createMaxValuesDataForHysLaw(dataframe, aggregatedColName, filerValue){ 
-	let condition = `LBTEST = ${filerValue}`; 
-	let grouped = dataframe.groupBy(['USUBJID','LBSTRESN', 'LBSTNRHI'])
+	let condition = `${LAB_TEST} = ${filerValue}`; 
+	let grouped = dataframe.groupBy([SUBJECT_ID,LAB_RES_N, LAB_HI_LIM_N])
 	  .where(condition)
 	  .aggregate(); 
 	grouped.columns.addNewFloat(aggregatedColName)
-      .init((i) => grouped.get('LBSTRESN', i)/grouped.get('LBSTNRHI', i));
-    grouped = grouped.groupBy(['USUBJID'])
+      .init((i) => grouped.get(LAB_RES_N, i)/grouped.get(LAB_HI_LIM_N, i));
+    grouped = grouped.groupBy([SUBJECT_ID])
 	  .max(aggregatedColName)
 	  .aggregate();
     grouped.getCol(`max(${aggregatedColName})`).name = aggregatedColName;
@@ -23,12 +24,12 @@ export function createHysLawDataframe(lb: DG.DataFrame, dm: DG.DataFrame) {
     let alt = createMaxValuesDataForHysLaw(lb, ALT, 'Alanine Aminotransferase');
     let bln = createMaxValuesDataForHysLaw(lb, BILIRUBIN, 'Bilirubin');
     let ast = createMaxValuesDataForHysLaw(lb, AST, 'Aspartate Aminotransferase');
-    let ap = createMaxValuesDataForHysLaw(lb, AP, 'Alkaline Phosphatase');
+    //let ap = createMaxValuesDataForHysLaw(lb, AP, 'Alkaline Phosphatase');
 
-    let joined = grok.data.joinTables(bln, alt, [ 'USUBJID' ], [ 'USUBJID' ], [ 'USUBJID', BILIRUBIN ], [ ALT ], DG.JOIN_TYPE.LEFT, false);
-    joined = grok.data.joinTables(joined, ast, [ 'USUBJID' ], [ 'USUBJID' ], [ 'USUBJID', ALT, BILIRUBIN ], [ AST ], DG.JOIN_TYPE.LEFT, false);
-    joined = grok.data.joinTables(joined, ap, [ 'USUBJID' ], [ 'USUBJID' ], [ 'USUBJID', ALT, BILIRUBIN, AST ], [ AP ], DG.JOIN_TYPE.LEFT, false);
-    let withTreatmentArm = addDataFromDmDomain(joined, dm, [ 'USUBJID', ALT, BILIRUBIN, AST, AP ], [TREATMENT_ARM]);
+    let joined = grok.data.joinTables(bln, alt, [ SUBJECT_ID ], [ SUBJECT_ID ], [ SUBJECT_ID, BILIRUBIN ], [ ALT ], DG.JOIN_TYPE.LEFT, false);
+    joined = grok.data.joinTables(joined, ast, [ SUBJECT_ID ], [ SUBJECT_ID ], [ SUBJECT_ID, ALT, BILIRUBIN ], [ AST ], DG.JOIN_TYPE.LEFT, false);
+    //joined = grok.data.joinTables(joined, ap, [ SUBJECT_ID ], [ SUBJECT_ID ], [ SUBJECT_ID, ALT, BILIRUBIN, AST ], [ AP ], DG.JOIN_TYPE.LEFT, false);
+    let withTreatmentArm = addDataFromDmDomain(joined, dm, [ SUBJECT_ID, ALT, BILIRUBIN, AST ], [TREATMENT_ARM]);
     return withTreatmentArm;
 }
 
@@ -59,19 +60,19 @@ export function createBaselineEndpointDataframe(lb: DG.DataFrame,
   visitCol: string,
   blNumColumn: string,
   epNumColumn = null) {
-  let condition = `LBTEST = ${labValue} and ${visitCol} IN`;
-  let filteredDataBaseline = createFilteredDataframe(lb, `${condition} (${blVisit})`, [ 'USUBJID', 'LBSTRESN', 'LBSTNRLO', 'LBSTNRHI', visitCol, 'LBTEST' ], blNumColumn, 'LBSTRESN');
+  let condition = `${LAB_TEST} = ${labValue} and ${visitCol} IN`;
+  let filteredDataBaseline = createFilteredDataframe(lb, `${condition} (${blVisit})`, [ SUBJECT_ID, LAB_RES_N, LAB_LO_LIM_N, LAB_HI_LIM_N, visitCol, LAB_TEST ], blNumColumn, LAB_RES_N);
   let finalDf;
   let columnsToEXtract = [];
   if(epVisit){
-    let filteredDataEndpoint = createFilteredDataframe(lb, `${condition} (${epVisit})`, [ 'USUBJID', 'LBSTRESN', 'LBSTNRLO', 'LBSTNRHI', visitCol, 'LBTEST' ], epNumColumn, 'LBSTRESN');
+    let filteredDataEndpoint = createFilteredDataframe(lb, `${condition} (${epVisit})`, [ SUBJECT_ID, LAB_RES_N, LAB_LO_LIM_N, LAB_HI_LIM_N, visitCol, LAB_TEST ], epNumColumn, LAB_RES_N);
     finalDf = grok.data.joinTables(filteredDataBaseline, filteredDataEndpoint,
-    [ 'USUBJID' ], [ 'USUBJID' ], [ 'USUBJID', blNumColumn, 'LBSTNRLO', 'LBSTNRHI', 'LBTEST'], [ epNumColumn ],
+    [ SUBJECT_ID ], [ SUBJECT_ID ], [ SUBJECT_ID, blNumColumn, LAB_LO_LIM_N, LAB_HI_LIM_N, LAB_TEST], [ epNumColumn ],
     DG.JOIN_TYPE.LEFT, false);
-    columnsToEXtract = [ 'USUBJID', blNumColumn, epNumColumn, 'LBSTNRLO', 'LBSTNRHI', 'LBTEST' ];
+    columnsToEXtract = [ SUBJECT_ID, blNumColumn, epNumColumn, LAB_LO_LIM_N, LAB_HI_LIM_N, LAB_TEST ];
   } else {
     finalDf = filteredDataBaseline;
-    columnsToEXtract = [ 'USUBJID', blNumColumn, 'LBSTNRLO', 'LBSTNRHI', 'LBTEST' ];
+    columnsToEXtract = [ SUBJECT_ID, blNumColumn, LAB_LO_LIM_N, LAB_HI_LIM_N, LAB_TEST ];
   }
   let withDmData = addDataFromDmDomain(finalDf, dm, columnsToEXtract, columnToExtractFromDm);  
   return withDmData;
@@ -83,10 +84,10 @@ export function createLabValuesByVisitDataframe(lb: DG.DataFrame, dm: DG.DataFra
   treatmentArm: string,
   labValueNumCol: string,
   visitCol: string) {
-  let condition = `LBTEST = ${labValue}`;
-  let joined =  grok.data.joinTables(lb, dm, [ 'USUBJID' ], [ 'USUBJID' ], [ 'USUBJID', 'LBSTRESN', 'LBTEST', visitCol ],
+  let condition = `${LAB_TEST} = ${labValue}`;
+  let joined =  grok.data.joinTables(lb, dm, [ SUBJECT_ID ], [ SUBJECT_ID ], [ SUBJECT_ID, LAB_RES_N, LAB_TEST, visitCol ],
   [ TREATMENT_ARM ], DG.JOIN_TYPE.LEFT, false);
-  let filtered =  createFilteredDataframe(joined, condition, [ 'USUBJID', 'LBSTRESN', TREATMENT_ARM, visitCol ], labValueNumCol, 'LBSTRESN');
+  let filtered =  createFilteredDataframe(joined, condition, [ SUBJECT_ID, LAB_RES_N, TREATMENT_ARM, visitCol ], labValueNumCol, LAB_RES_N);
   filtered.rows.filter((row) => row.visitdy != DG.INT_NULL && row.actarm == treatmentArm);
   return filtered;
 }
@@ -114,27 +115,27 @@ export function addColumnWithDrugPlusDosage(df: DG.DataFrame, drugCol: string, d
 
 export function createSurvivalData(endpoint: string, SDTMendpoint: string, covariates: string[]) {
   let dm = study.domains.dm.clone();
-  filterNulls(dm, 'RFENDTC');
-  if (SDTMendpoint === 'AESTDTC') {
+  filterNulls(dm, SUBJ_REF_ENDT); // according to SDTMIG v3.3 RFENDTC is null for screen failures or unassigned subjects
+  if (SDTMendpoint === AE_START_DATE) {
     const ae = study.domains.ae.clone();
     if(endpoint == 'HOSPITALIZATION'){
-      filterBooleanColumn(ae, 'AESHOSP', false);
+      filterBooleanColumn(ae, AE_REQ_HOSP, false);
     }
-    const condition = endpoint == 'DRUG RELATED AE' ? 'AEREL not in (NONE, NOT RELATED)' : 'AESEV = SEVERE';
-    const aeGrouped = ae.groupBy([ 'USUBJID' ]).
-      min('AESEQ').
+    const condition = endpoint == 'DRUG RELATED AE' ? `${AE_CAUSALITY} not in (NONE, NOT RELATED)` : `${AE_SEVERITY} = SEVERE`;
+    const aeGrouped = ae.groupBy([ SUBJECT_ID ]).
+      min(AE_SEQ).
       where(condition).
       aggregate();
-    const aeJoined = grok.data.joinTables(ae, aeGrouped, [ 'USUBJID', 'AESEQ' ],
-      [ 'USUBJID', 'min(AESEQ)' ], [ 'USUBJID', 'AESTDTC' ], [ 'min(AESEQ)' ], DG.JOIN_TYPE.LEFT, false);
-    filterNulls(aeJoined, 'min(AESEQ)');
-    dm = grok.data.joinTables(dm, aeJoined, [ 'USUBJID' ], [ 'USUBJID' ], dm.columns.names(), [ 'AESTDTC' ], DG.JOIN_TYPE.LEFT, false);
+    const aeJoined = grok.data.joinTables(ae, aeGrouped, [ SUBJECT_ID, AE_SEQ ],
+      [ SUBJECT_ID, `min(${AE_SEQ})` ], [ SUBJECT_ID, AE_START_DATE ], [ `min(${AE_SEQ})` ], DG.JOIN_TYPE.LEFT, false);
+    filterNulls(aeJoined, `min(${AE_SEQ})`);
+    dm = grok.data.joinTables(dm, aeJoined, [ SUBJECT_ID ], [ SUBJECT_ID ], dm.columns.names(), [ AE_START_DATE ], DG.JOIN_TYPE.LEFT, false);
   }
   dm.columns.addNewInt('time')
-    .init((i) => getSurvivalTime(dm.columns.byName(SDTMendpoint), dm.columns.byName('RFSTDTC'), dm.columns.byName('RFENDTC'), i));
+    .init((i) => getSurvivalTime(dm.columns.byName(SDTMendpoint), dm.columns.byName(SUBJ_REF_STDT), dm.columns.byName(SUBJ_REF_ENDT), i));
   dm.columns.addNewInt('status')
     .init((i) => getSurvivalStatus(dm.columns.byName(SDTMendpoint), i));
-  return dm.groupBy([ 'USUBJID', 'time', 'status' ].concat(covariates)).aggregate();
+  return dm.groupBy([ SUBJECT_ID, 'time', 'status' ].concat(covariates)).aggregate();
 }
 
 export function getSurvivalTime(eventColumn: DG.Column, startColumn: DG.Column, endColumn: DG.Column, i: number) {
@@ -151,34 +152,34 @@ export function getSurvivalStatus(eventColumn: DG.Column, i: number) {
 
 export function createAERiskAssessmentDataframe(ae: DG.DataFrame, ex: DG.DataFrame, placeboArm: string, activeArm: string) {
 
-  let subjArm = createUniqueCountDataframe(ex, [ 'EXTRT' ], 'USUBJID', 'TOTALSUBJ');
-  let joinedAeEX = grok.data.joinTables(ae, ex, [ 'USUBJID' ], [ 'USUBJID' ], [ 'USUBJID', 'AETERM' ], [ 'EXTRT' ], DG.JOIN_TYPE.LEFT, false);
-  let subjAE = createUniqueCountDataframe(joinedAeEX, [ 'AETERM', 'EXTRT' ], 'USUBJID', 'AECOUNT');
+  let subjArm = createUniqueCountDataframe(ex, [ INV_DRUG_NAME ], SUBJECT_ID, 'TOTALSUBJ');
+  let joinedAeEX = grok.data.joinTables(ae, ex, [ SUBJECT_ID ], [ SUBJECT_ID ], [ SUBJECT_ID, AE_TERM ], [ INV_DRUG_NAME ], DG.JOIN_TYPE.LEFT, false);
+  let subjAE = createUniqueCountDataframe(joinedAeEX, [ AE_TERM, INV_DRUG_NAME ], SUBJECT_ID, 'AECOUNT');
 
-  let tj = grok.data.joinTables(subjAE, subjArm, [ 'EXTRT' ], [ 'EXTRT' ], [ 'AETERM', 'EXTRT', 'AECOUNT' ], [ 'TOTALSUBJ' ], DG.JOIN_TYPE.LEFT, false);
+  let tj = grok.data.joinTables(subjAE, subjArm, [ INV_DRUG_NAME ], [ INV_DRUG_NAME ], [ AE_TERM, INV_DRUG_NAME, 'AECOUNT' ], [ 'TOTALSUBJ' ], DG.JOIN_TYPE.LEFT, false);
 
   tj.columns.addNewFloat('PERCENT')
     .init((i) => parseFloat(tj.get('AECOUNT', i)) / parseFloat(tj.get('TOTALSUBJ', i)));
 
-  let aeRiskRatioPlacebo = tj.groupBy([ 'AETERM', 'EXTRT', 'AECOUNT', 'TOTALSUBJ', 'PERCENT' ])
-    .where(`EXTRT = ${placeboArm}`)
+  let aeRiskRatioPlacebo = tj.groupBy([ AE_TERM, INV_DRUG_NAME, 'AECOUNT', 'TOTALSUBJ', 'PERCENT' ])
+    .where(`${INV_DRUG_NAME} = ${placeboArm}`)
     .aggregate();
 
-  let aeRiskRatioActive = tj.groupBy([ 'AETERM', 'EXTRT', 'AECOUNT', 'TOTALSUBJ', 'PERCENT' ])
-    .where(`EXTRT = ${activeArm}`)
+  let aeRiskRatioActive = tj.groupBy([ AE_TERM, INV_DRUG_NAME, 'AECOUNT', 'TOTALSUBJ', 'PERCENT' ])
+    .where(`${INV_DRUG_NAME} = ${activeArm}`)
     .aggregate();
 
 
-  let tj2 = grok.data.joinTables(aeRiskRatioActive, aeRiskRatioPlacebo, [ 'AETERM' ], [ 'AETERM' ],
-    [ 'AETERM', 'EXTRT', 'AECOUNT', 'TOTALSUBJ', 'PERCENT' ],
-    [ 'AETERM', 'EXTRT', 'AECOUNT', 'TOTALSUBJ', 'PERCENT' ], DG.JOIN_TYPE.OUTER, false);
+  let tj2 = grok.data.joinTables(aeRiskRatioActive, aeRiskRatioPlacebo, [ AE_TERM ], [ AE_TERM ],
+    [ AE_TERM, INV_DRUG_NAME, 'AECOUNT', 'TOTALSUBJ', 'PERCENT' ],
+    [ AE_TERM, INV_DRUG_NAME, 'AECOUNT', 'TOTALSUBJ', 'PERCENT' ], DG.JOIN_TYPE.OUTER, false);
 
 
 
-  let column1 = tj2.columns.byName('null.AETERM');
+  let column1 = tj2.columns.byName(`null.${AE_TERM}`);
   let percent1 = tj2.columns.byName('null.PERCENT');
   let exposed1 = tj2.columns.byName('null.AECOUNT');
-  let column2 = tj2.columns.byName('null.AETERM (2)');
+  let column2 = tj2.columns.byName(`null.${AE_TERM} (2)`);
   let percent2 = tj2.columns.byName('null.PERCENT (2)');
   let exposed2 = tj2.columns.byName('null.AECOUNT (2)');
   let totalExposed1;
@@ -220,9 +221,9 @@ export function createAERiskAssessmentDataframe(ae: DG.DataFrame, ex: DG.DataFra
   tj2.columns.addNewFloat('ODDS RATIO').init((i) => (parseFloat(tj2.get('null.AECOUNT', i)) * (totalExposed2 - parseFloat(tj2.get('null.AECOUNT (2)', i)))) /
     (parseFloat(tj2.get('null.AECOUNT (2)', i)) * (totalExposed1 - parseFloat(tj2.get('null.AECOUNT', i)))));
 
-  tj2.getCol(`null.AETERM`).name = 'AETERM';
+  tj2.getCol(`null.${AE_TERM}`).name = AE_TERM;
 
-  return tj2.groupBy([ 'AETERM', 'RELATIVE RISK', 'RISK DIFF', 'ODDS RATIO'])
+  return tj2.groupBy([ AE_TERM, 'RELATIVE RISK', 'RISK DIFF', 'ODDS RATIO'])
     .aggregate();
 
 }
@@ -230,42 +231,42 @@ export function createAERiskAssessmentDataframe(ae: DG.DataFrame, ex: DG.DataFra
 
 export function labDynamicComparedToBaseline(dataframe, baselineVisitNum: string, blVisitColumn: string, newColName: string, renameNewCol: boolean) {
   const dfName = dataframe.name;
-  let grouped = dataframe.groupBy([ 'USUBJID', 'LBTEST', 'LBSTRESN' ])
+  let grouped = dataframe.groupBy([ SUBJECT_ID, LAB_TEST, LAB_RES_N ])
     .where(`${blVisitColumn} = ${baselineVisitNum}`)
     .aggregate();
-  grouped.getCol(`LBSTRESN`).name = 'BL_LBSTRESN';
+  grouped.getCol(LAB_RES_N).name = `BL_${LAB_RES_N}`;
   dataframe.join(grouped,
-    [ 'USUBJID', 'LBTEST' ], [ 'USUBJID', 'LBTEST' ],
-    dataframe.columns.names(), [ 'BL_LBSTRESN' ], DG.JOIN_TYPE.LEFT, true);
+    [ SUBJECT_ID, LAB_TEST ], [ SUBJECT_ID, LAB_TEST ],
+    dataframe.columns.names(), [ `BL_${LAB_RES_N}` ], DG.JOIN_TYPE.LEFT, true);
   dataframe.columns.addNewFloat(newColName)
     .init((i) => {
-      if(dataframe.getCol('LBSTRESN').isNone(i) || dataframe.getCol('BL_LBSTRESN').isNone(i)) {
+      if(dataframe.getCol(LAB_RES_N).isNone(i) || dataframe.getCol(`BL_${LAB_RES_N}`).isNone(i)) {
         return null;
       } else {
-        return (dataframe.get('LBSTRESN', i) - dataframe.get('BL_LBSTRESN', i)) / dataframe.get('BL_LBSTRESN', i);
+        return (dataframe.get(LAB_RES_N, i) - dataframe.get(`BL_${LAB_RES_N}`, i)) / dataframe.get(`BL_${LAB_RES_N}`, i);
       }
     });
     if(renameNewCol){
-      dataframe.columns.remove('LBSTRESN')
-      dataframe.getCol(newColName).name = 'LBSTRESN';
+      dataframe.columns.remove(LAB_RES_N);
+      dataframe.getCol(newColName).name = LAB_RES_N;
     }
   dataframe.name = dfName;
 }
 
 export function labDynamicComparedToMinMax(dataframe, newColName: string) {
   const dfName = dataframe.name;
-  let groupedMax = dataframe.groupBy([ 'LBTEST'])
-    .max('LBSTRESN')
+  let groupedMax = dataframe.groupBy([ LAB_TEST])
+    .max(LAB_RES_N)
     .aggregate();
-  let groupedMin = dataframe.groupBy([ 'LBTEST'])
-    .min('LBSTRESN')
+  let groupedMin = dataframe.groupBy([ LAB_TEST])
+    .min(LAB_RES_N)
     .aggregate();
-  dataframe.join(groupedMax, [ 'LBTEST' ], [ 'LBTEST' ], dataframe.columns.names(), [ 'max(LBSTRESN)' ], DG.JOIN_TYPE.LEFT, true)
-  .join(groupedMin,[ 'LBTEST' ], [ 'LBTEST' ], dataframe.columns.names(), [ 'min(LBSTRESN)' ], DG.JOIN_TYPE.LEFT, true);
+  dataframe.join(groupedMax, [ LAB_TEST ], [ LAB_TEST ], dataframe.columns.names(), [ `max(${LAB_RES_N})` ], DG.JOIN_TYPE.LEFT, true)
+  .join(groupedMin,[ LAB_TEST ], [ LAB_TEST ], dataframe.columns.names(), [ `min(${LAB_RES_N})` ], DG.JOIN_TYPE.LEFT, true);
   dataframe.columns.addNewFloat(newColName)
     .init((i) => 
-    (dataframe.get('LBSTRESN', i) - dataframe.get('min(LBSTRESN)', i)) / 
-    (dataframe.get('max(LBSTRESN)', i) - dataframe.get('min(LBSTRESN)', i)));
+    (dataframe.get(LAB_RES_N, i) - dataframe.get(`min(${LAB_RES_N})`, i)) / 
+    (dataframe.get(`max(${LAB_RES_N})`, i) - dataframe.get(`min(${LAB_RES_N})`, i)));
   dataframe.name = dfName;
 }
 
@@ -273,9 +274,9 @@ export function labDynamicComparedToMinMax(dataframe, newColName: string) {
 export function labDynamicRelatedToRef(df: DG.DataFrame, newColName: string){
   df.columns.addNewFloat(newColName)
     .init((i) => {
-      const val = df.get('LBSTRESN', i);
-      const min = df.get('LBSTNRLO', i);
-      const max = df.get('LBSTNRHI', i);
+      const val = df.get(LAB_RES_N, i);
+      const min = df.get(LAB_LO_LIM_N, i);
+      const max = df.get(LAB_HI_LIM_N, i);
       return val >= max ? val/max : val <= min ? 0 - min/val : ((val-min)/(max-min) - 0.5 )*2;
     });
 }
@@ -298,39 +299,6 @@ export function cumulativeEnrollemntByDay(df: DG.DataFrame, dateCol: string, sub
   subjsPerDay.columns.remove(`unique(${subjIDCol})`)
   return subjsPerDay;
 }
-
-
-export function labDataForCorrelationMatrix(): DG.DataFrame {
-  let subjIds = study.domains.lb.getCol('USUBJID').categories;
-  let t = DG.DataFrame.create();
-  let newCols = study.domains.lb.getCol('LBTEST').categories;
-  newCols.forEach(col => t.columns.addNewFloat(col));
-  t.columns.addNewString('USUBJID');
-  t.columns.addNewString('VISIT');
-  let newRowIndex = -1;
-  subjIds.forEach(it => {
-    let lbs = study.domains.lb.groupBy(study.domains.lb.columns.names())
-      .where(`USUBJID = ${it}`)
-      .aggregate()
-    let order = lbs.getSortedOrder([ 'VISITDY' ] as any);
-    let lbdy = lbs.get('VISITDY', order[ 0 ])
-    t.rows.addNew();
-    newRowIndex +=1;
-    order.forEach(index => {
-      let newLbDy = lbs.get('VISITDY', index)
-      if (lbdy !== newLbDy) {
-        lbdy = newLbDy;
-        newRowIndex += 1;
-        t.rows.addNew();
-      }
-      t.set(lbs.get('LBTEST', index), newRowIndex, lbs.get('LBSTRESN', index))
-      t.set('USUBJID', newRowIndex, it)
-      t.set('VISIT', newRowIndex, lbs.get('VISIT', index))
-    })
-  })
-  return t;
-}
-
 
 export function getSubjectDmData(subjId: string, columnsToReturn: string[]){
   const dmData = study.domains.dm
