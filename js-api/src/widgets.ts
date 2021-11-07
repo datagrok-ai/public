@@ -1210,6 +1210,11 @@ export class TreeViewNode {
     return toJs(api.grok_TreeViewNode_Group(this.d, text, value, expanded));
   }
 
+  /** Returns existing, or creates a new node group */
+  getOrCreateGroup(text: string, value: object | null = null, expanded: boolean = true): TreeViewNode {
+    return toJs(api.grok_TreeViewNode_GetOrCreateGroup(this.d, text, expanded));
+  }
+
   /** Adds new item to group */
   item(text: string, value: object | null = null): TreeViewNode {
     return toJs(api.grok_TreeViewNode_Item(this.d, text, value));
@@ -1220,9 +1225,44 @@ export class TreeViewNode {
     api.grok_TreeViewNode_EnableCheckBox(this.d, checked);
   }
 
-  /**  */
-  get onNodeExpanding(): Observable<TreeViewNode> { return __obs(this.d, 'd4-tree-view-node-expanding'); }
+  static fromItemCategories(items: any[], props: string[], options?: {
+    itemToString: (item: any) => string
+  }): TreeViewNode {
 
+    function init(node: TreeViewNode, path: string[]) {
+
+      //
+      const pathItems = items.filter((item) => path.every((p, i) => item[props[i]] == path[i]));
+
+      // leafs
+      if (path.length == props.length) {
+        for (let item of pathItems)
+          node.item(options!.itemToString(item), item);
+      }
+      else {
+        let categories: Set<string> = new Set<string>();
+        for (let item of pathItems)
+          categories.add(item[props[path.length]]);
+
+        for (let category of categories)
+          init(node.group(category), [...path, category]);
+
+        // lazy loading - use it for big collections and async queries
+        // for (let category of categories)
+        //   node.group(category)
+        //     .onNodeExpanding
+        //     .subscribe((expandingNode) => init(expandingNode, [...path, category]));
+      }
+    }
+
+    let rootNode = TreeViewNode.tree();
+    init(rootNode, []);
+    return rootNode;
+  }
+
+
+  /**  */
+  get onNodeExpanding(): Observable<TreeViewNode> { return __obs('d4-tree-view-node-expanding', this.d); }
 }
 
 

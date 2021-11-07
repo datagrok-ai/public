@@ -1,6 +1,7 @@
 import * as _chem from './src/chem';
 import * as _ml from './src/ml';
 import * as _utils from './src/utils';
+import * as _x from './src/ui/tree-view';
 import $ from 'cash-dom';
 import * as dayjs from 'dayjs';
 
@@ -26,6 +27,7 @@ export * from './src/data';
 export let chem = _chem;
 export let ml = _ml;
 export let utils = _utils;
+export let x = _x;
 
 $(function () {
   (<any>window).$ = $;
