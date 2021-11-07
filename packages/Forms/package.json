@@ -8,8 +8,7 @@
 		"cash-dom": "latest",
 		"datagrok-api": "latest",
 		"dayjs": "latest",
-		"grapesjs": "0.17.27",
-		"grapesjs-blocks-basic": "^0.1.8"
+		"grapesjs": "0.17.27"
 	},
 	"devDependencies": {
 		"@babel/core": "^7.16.0",
@@ -18,12 +17,15 @@
 		"eslint": "latest",
 		"eslint-config-google": "latest",
 		"file-loader": "^6.2.0",
+		"node-sass": "^6.0.1",
+		"sass": "^1.43.4",
+		"sass-loader": "^12.3.0",
 		"style-loader": "^3.3.1",
-		"webpack": "latest",
+		"webpack": "^5.62.1",
 		"webpack-cli": "latest"
 	},
 	"sources": [
-		"css/style.css"
+		"src/Editor/css/style.scss"
 	],
 	"scripts": {
 		"debug-forms": "grok publish --rebuild",
