@@ -44,6 +44,7 @@ export async function selectOutliersManually(inputData: DG.DataFrame) {
         for (let i = 0; i < inputData.rowCount; i++) {
           if (inputData.columns.byName(OUTLIER_REASON_COL_LABEL).get(i) === reason) {
             inputData.columns.byName(OUTLIER_REASON_COL_LABEL).set(i, '');
+            inputData.columns.byName(IS_OUTLIER_COL_LABEL).set(i, false);
           }
         }
         updateTable();
