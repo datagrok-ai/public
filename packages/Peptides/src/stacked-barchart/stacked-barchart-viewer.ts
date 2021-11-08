@@ -4,16 +4,15 @@ import {scaleBand, scaleLinear} from 'd3';
 import {ChemPalette} from '../utils/chem-palette';
 //@ts-ignore: I should be able to install it somehow
 import * as rxjs from 'rxjs';
-import {GridCellRenderArgs, Property, Widget} from 'datagrok-api/dg';
 const cp = new ChemPalette('grok');
 
-export function addViewerToHeader(grid: DG.Grid, viewer: Promise<Widget>) {
+export function addViewerToHeader(grid: DG.Grid, viewer: Promise<DG.Widget>) {
   viewer.then((viewer) => {
     const barchart = viewer as StackedBarChart;
     rxjs.fromEvent(grid.overlay, 'mousemove').subscribe((mm:any) => {
       mm = mm as MouseEvent;
       const cell = grid.hitTest(mm.offsetX, mm.offsetY);
-      if (cell?.isColHeader && cell.tableColumn?.semType == 'aminoAcids') {
+      if (cell !== null && cell?.isColHeader && cell.tableColumn?.semType == 'aminoAcids') {
         barchart.highlight(cell, mm.offsetX, mm.offsetY);
       }
     });
@@ -334,12 +333,12 @@ export class StackedBarChart extends DG.JsViewer {
       return;
     }
 
-    onPropertyChanged(property: Property) {
+    onPropertyChanged(property: DG.Property) {
       super.onPropertyChanged(property);
       this.render();
     }
 
-    register(args: GridCellRenderArgs) {
+    register(args: DG.GridCellRenderArgs) {
       this.registered[args.cell.tableColumn!.name] = args.cell;
     }
 
