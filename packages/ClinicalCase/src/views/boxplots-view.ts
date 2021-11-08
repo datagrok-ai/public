@@ -79,7 +79,7 @@ export class BoxPlotsView extends DG.ViewBase implements ILazyLoading {
     this.getTopPValues(4);
     this.updateBoxPlots(viewerTitle, viewerTitlePValue, this.selectedSplitBy);
 
-    let blVisitChoices = ui.choiceInput('Baseleine', this.bl, this.uniqueVisits);
+    let blVisitChoices = ui.choiceInput('Baseline', this.bl, this.uniqueVisits);
     blVisitChoices.onChanged((v) => {
       this.bl = blVisitChoices.value;
       this.updateBoxPlots(viewerTitle, viewerTitlePValue, this.selectedSplitBy);
