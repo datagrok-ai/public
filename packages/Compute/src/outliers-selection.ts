@@ -178,6 +178,8 @@ export async function selectOutliersManually(inputData: DG.DataFrame) {
     'Choose function to select the outliers',
   );
 
+  inputData.selection.setAll(false);
+
   inputData.onSelectionChanged.subscribe(() => {
     if (inputData.selection.trueCount === 0) {
       addOutlierGroupBtn.classList.add('disabled');
