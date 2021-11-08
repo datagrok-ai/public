@@ -18,6 +18,8 @@ export async function selectOutliersManually(inputData: DG.DataFrame) {
       .add(DG.Column.fromStrings(OUTLIER_REASON_COL_LABEL, Array.from({length: inputData.rowCount}, () => '')));
   }
 
+  const initialData = inputData.clone();
+
   const reasonInput = ui.textInput('Reason', '');
   const scatterPlot = DG.Viewer.scatterPlot(inputData, {
     'color': OUTLIER_REASON_COL_LABEL,
@@ -223,13 +225,20 @@ export async function selectOutliersManually(inputData: DG.DataFrame) {
         resolve({augmentedInput: inputData, editedInput});
       })
       .onCancel(() => {
-        reject(new Error('Manual outliers selection is aborted'));
+        const editedInput = initialData.clone();
+        editedInput.rows.filter((row) => !initialData.get(IS_OUTLIER_COL_LABEL, row.idx));
+        resolve({augmentedInput: initialData, editedInput});
       });
 
-    selectionDialog.show({width: 950, height: 800});
     // TODO: change the resolving strategy after API update
     // onClose is called before onOK or onCancel, thus, the timeout is requierd
-    selectionDialog.onClose.subscribe(() => setTimeout(()=> reject(new Error('Manual outliers selection is aborted')), 100));
+    selectionDialog.onClose.subscribe(() =>
+      setTimeout(()=>{
+        const editedInput = initialData.clone();
+        editedInput.rows.filter((row) => !initialData.get(IS_OUTLIER_COL_LABEL, row.idx));
+        resolve({augmentedInput: initialData, editedInput});
+      }, 100));
+    selectionDialog.show({width: 950, height: 800});
   });
 
   return result;
