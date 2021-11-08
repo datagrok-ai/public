@@ -18,7 +18,10 @@ export async function createPropertyPanel(viewClass: any) {
             break;
         }
         case 'Timelines': {
-            grok.shell.o = await timelinesPanel(viewClass.resultTables, viewClass.selectedDataframes, viewClass.aeBrowserHelper);
+            const panel = await timelinesPanel(viewClass.resultTables, viewClass.selectedDataframes, viewClass.aeBrowserHelper);
+            if (panel) {
+                grok.shell.o = panel;
+            }
             break;
         }
         case 'AE Browser': {
@@ -230,6 +233,7 @@ export async function timelinesPanel(timelinesDf: DG.DataFrame, domains: string[
         }
     } else {
         const eventArray = [];
+        const eventIndexesArray = [];
         let acc2 = ui.accordion('timelines-patient-panel');
         let accIcon = ui.element('i');
         accIcon.className = 'grok-icon svg-icon svg-view-layout';
@@ -240,53 +244,75 @@ export async function timelinesPanel(timelinesDf: DG.DataFrame, domains: string[
             ex: { fields: [INV_DRUG_DOSE, INV_DRUG_DOSE_UNITS, INV_DRUG_DOSE_FORM, INV_DRUG_DOSE_FREQ, INV_DRUG_ROUTE], pos: 'after' },
         }
 
+        let switchToAEBrowserPanel = (aeRowNum) => {
+            if (aeBrowserHelper.aeToSelect.currentRowIdx === aeRowNum) {
+                aeBrowserHelper.createAEBrowserPanel();
+            } else {
+                //@ts-ignore
+                aeBrowserHelper.aeToSelect.currentRow = aeRowNum;
+            }
+        }
+
+        if (selectedInd.length === 1 && timelinesDf.get('domain', selectedInd[0]) === 'ae') {
+            const aeRowNum = timelinesDf.get('rowNum', selectedInd[0]);
+            switchToAEBrowserPanel(aeRowNum);
+            return null;
+        }
+
         selectedInd.forEach((item) => {
             const domain = timelinesDf.get('domain', item);
             const addDomainInfo = domainAdditionalFields[domain];
             let addInfoString = '';
             const index = timelinesDf.get('rowNum', item);
             addDomainInfo.fields.forEach(it => {
-                if (study.domains[domain].columns.names().includes(it)){
+                if (study.domains[domain].columns.names().includes(it)) {
                     addInfoString += `${study.domains[domain].get(it, index)} `;
                 }
             });
             const eventName = String(getNullOrValue(timelinesDf, 'event', item)).toLowerCase();
             const fullEventName = addDomainInfo.pos === 'before' ? `${addInfoString}${eventName}` : `${eventName} ${addInfoString}`;
-            let eventElement;
-            if (domain === 'ae') {
-                eventElement = ui.link(fullEventName, {}, '', { id: `${index}` });
-                eventElement.addEventListener('click', (event) => {
-                    if(aeBrowserHelper.aeToSelect.currentRowIdx === parseInt(eventElement.id)){
-                        aeBrowserHelper.createAEBrowserPanel();
-                    } else {
-                        //@ts-ignore
-                        aeBrowserHelper.aeToSelect.currentRow = parseInt(eventElement.id);
-                    }
-                    event.stopPropagation();
-                });
-            } else {
-                eventElement = fullEventName;
-            }
             const eventStart = getNullOrValue(timelinesDf, 'start', item);
             const eventEnd = getNullOrValue(timelinesDf, 'end', item);
             eventArray.push({
-                Event: eventElement,
+                Domain: domain,
+                Event: fullEventName,
                 Days: `${eventStart} - ${eventEnd}`
             })
+            eventIndexesArray.push(index);
         })
         acc2.addTitle(ui.span([accIcon, ui.label(`${timelinesDf.get('key', selectedInd[0])}`)]));
 
-        const divsArray = [];
-        eventArray.forEach(it => {
-            divsArray.push(ui.tableFromMap(it));
-        })
-        acc2.addPane('Events', () => {
-            $(divsArray).find('.d4-entity-list>span').css('margin', '0px');
-            return ui.divV(divsArray)
+        const eventTable = DG.DataFrame.fromObjects(eventArray);
+        const eventGrid = eventTable.plot.grid();
+        eventGrid.columns.byName('domain').width = 55;
+        let col = eventGrid.columns.byName('event');
+        col.width = 170;
+        col.cellType = 'html';
+
+        eventGrid.onCellPrepare(function (gc) {
+            if (gc.isTableCell && eventTable.get('Domain', gc.gridRow) === 'ae' && gc.gridColumn.name === 'Event') {
+                let eventElement = ui.link(gc.cell.value, {}, '', { id: `${eventIndexesArray[gc.gridRow]}` });
+                eventElement.addEventListener('click', (event) => {
+                    switchToAEBrowserPanel(parseInt(eventElement.id));
+                    event.stopPropagation();
+                });
+                gc.style.element = ui.div(eventElement, {style: {'white-space': 'nowrap'}});
+            } else {
+                gc.style.element = ui.divText(gc.cell.value, {style: {'white-space': 'nowrap'}});
+            }
+            gc.style.element.style.paddingTop = '7px';
+            gc.style.element.style.paddingLeft = '3px';
+            ui.tooltip.bind(gc.style.element, gc.cell.value);
         });
 
-        return acc2.root;
+        acc2.addPane('Events', () => {
+            return ui.div(eventGrid.root);
+        });
+        const accPane = acc2.getPane('Events').root.getElementsByClassName('d4-accordion-pane-content')[0] as HTMLElement;
+        accPane.style.margin = '0px';
+        accPane.style.paddingLeft = '0px';
 
+        return acc2.root;
     }
 
 }
