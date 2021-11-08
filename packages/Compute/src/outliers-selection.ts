@@ -224,11 +224,10 @@ export async function selectOutliersManually(inputData: DG.DataFrame) {
           ui.block75([scatterPlot.root]),
           ui.block25([
             ui.divV([
-              groupsListGrid.root,
               ui.divH([
-                ui.block75([addOutlierGroupBtn, removeOutlierGroupBtn]),
-                ui.block25([autoOutlierGroupBtn]),
-              ], {style: {'text-align': 'center', 'margin-top': '15px'}}),
+                addOutlierGroupBtn, removeOutlierGroupBtn, autoOutlierGroupBtn,
+              ], {style: {'text-align': 'center'}}),
+              groupsListGrid.root,
             ], {style: {height: '75%'}}),
           ]),
         ], {style: {height: '100%'}}),
