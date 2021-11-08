@@ -211,11 +211,11 @@ export async function selectOutliersManually(inputData: DG.DataFrame) {
   removeOutlierGroupBtn.classList.add('disabled');
 
   const result = new Promise<{augmentedInput: DG.DataFrame, editedInput: DG.DataFrame}>((resolve, reject) => {
-    const selectionDialog = ui.dialog({title: 'Outliers selection', helpUrl: `${_package.webRoot}/help/outliers_selection/main.md`})
+    const selectionDialog = ui.dialog({title: 'Select outliers', helpUrl: `${_package.webRoot}/help/outliers_selection/main.md`})
       .add(
         ui.info(
           ui.div([
-            ui.p('To select outliers - hold the “SHIFT” key and start to draw a freehand selection on the scatterplot area'),
+            ui.p('Hold the “SHIFT” key and start to draw a freehand selection on the scatterplot area'),
           ]),
         ),
       )
