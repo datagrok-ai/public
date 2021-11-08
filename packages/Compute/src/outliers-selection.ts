@@ -83,6 +83,19 @@ export async function selectOutliersManually(inputData: DG.DataFrame) {
     });
   };
 
+  let shouldCancel = true;
+
+  const cancelAllChanges = () => {
+    if (shouldCancel) {
+      (inputData.columns as DG.ColumnList).byName(IS_OUTLIER_COL_LABEL).init(
+        (index) => initialData.get(IS_OUTLIER_COL_LABEL, index),
+      );
+      (inputData.columns as DG.ColumnList).byName(OUTLIER_REASON_COL_LABEL).init(
+        (index) => initialData.get(OUTLIER_REASON_COL_LABEL, index),
+      );
+    }
+  };
+
   const addOutlierGroupBtn = ui.button(
     'MARK',
     () => {
@@ -221,6 +234,7 @@ export async function selectOutliersManually(inputData: DG.DataFrame) {
         ], {style: {height: '100%'}}),
       )
       .onOK(() => {
+        shouldCancel = false;
         const editedInput = inputData.clone();
         editedInput.rows.filter((row) => !inputData.get(IS_OUTLIER_COL_LABEL, row.idx));
         resolve({augmentedInput: inputData, editedInput});
@@ -228,7 +242,8 @@ export async function selectOutliersManually(inputData: DG.DataFrame) {
       .onCancel(() => {
         const editedInput = initialData.clone();
         editedInput.rows.filter((row) => !initialData.get(IS_OUTLIER_COL_LABEL, row.idx));
-        resolve({augmentedInput: initialData, editedInput});
+        cancelAllChanges();
+        resolve({augmentedInput: inputData, editedInput});
       });
 
     // TODO: change the resolving strategy after API update
@@ -237,7 +252,8 @@ export async function selectOutliersManually(inputData: DG.DataFrame) {
       setTimeout(()=>{
         const editedInput = initialData.clone();
         editedInput.rows.filter((row) => !initialData.get(IS_OUTLIER_COL_LABEL, row.idx));
-        resolve({augmentedInput: initialData, editedInput});
+        cancelAllChanges();
+        resolve({augmentedInput: inputData, editedInput});
       }, 100));
     selectionDialog.show({width: 950, height: 800});
   });
