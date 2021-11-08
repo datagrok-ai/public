@@ -1,9 +1,9 @@
 import {toDart, toJs} from "./wrappers";
 import {__obs, _sub, observeStream, StreamSubscription} from "./events";
 import {Observable, Subscription} from "rxjs";
-import {Func, Property} from "./entities";
+import {Func, Property, PropertyOptions} from "./entities";
 import {Cell, Column, DataFrame} from "./dataframe";
-import {ColorType, PropertyOptions, Type} from "./const";
+import {ColorType, Type} from "./const";
 import * as React from "react";
 import * as rxjs from "rxjs";
 import {Rect} from "./grid";
@@ -1308,6 +1308,7 @@ export class RangeSlider extends DartWidget {
   }
 }
 
+
 export class HtmlTable extends DartWidget {
 
   /** @constructs {HtmlTable} */
@@ -1326,6 +1327,7 @@ export class HtmlTable extends DartWidget {
     api.grok_HtmlTable_Remove(this.d, item);
   }
 }
+
 
 /** A combo box with columns as item.
  * Supports sorting, searching, custom tooltips, column-specific rendering, drag-and-drop, etc */
@@ -1383,4 +1385,16 @@ export class Legend extends DartWidget {
   /** Position (left / right / top / bottom) */
   get position(): String { return api.grok_Legend_Get_Position(this.d); }
   set position(pos: String) { api.grok_Legend_Set_Position(this.d, pos); }
+}
+
+
+export class PropertyGrid extends DartWidget {
+
+  constructor() {
+    super(api.grok_PropertyGrid());
+  }
+
+  update(src: any, props: Property[]) {
+    api.grok_PropertyGrid_Update(this.d, src, props.map((x) => toDart(x)));
+  }
 }

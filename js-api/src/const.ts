@@ -388,7 +388,6 @@ export type ColorType = number;
 export type ColorCodingType = `${COLOR_CODING_TYPE}`;
 export type DemoDatasetName = `${DEMO_DATASET}`;
 export type DockType = `${DOCK_TYPE}`;
-export type PropertyOptions = { choices?: string[], semType?: string, description?: string, defaultValue?: any };
 export type CsvImportOptions = { delimiter?: string, decimalSeparator?: string, thousandSeparator?: string };
 export type IndexPredicate = (ind: number) => boolean;
 export type StringPredicate = (str: string) => boolean;
