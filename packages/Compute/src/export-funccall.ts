@@ -17,21 +17,10 @@ export function exportFuncCall(call: DG.FuncCall) {
 
   const isDataFrame = (type: DG.TYPE) => (type === DG.TYPE.DATA_FRAME);
 
-  const dfInputs = call.func.inputs.filter(
-    (input: DG.Property) => isDataFrame(input.propertyType),
-  ) as DG.Property[];
-
-  const scalarInputs = call.func.inputs.filter(
-    (input: DG.Property) => isScalarType(input.propertyType),
-  ) as DG.Property[];
-
-  const dfOutputs = call.func.outputs.filter(
-    (output: DG.Property) => isDataFrame(output.propertyType),
-  ) as DG.Property[];
-
-  const scalarOutputs = call.func.outputs.filter(
-    (output: DG.Property) => isScalarType(output.propertyType),
-  ) as DG.Property[];
+  const dfInputs = call.func.inputs.filter((input) => isDataFrame(input.propertyType));
+  const scalarInputs = call.func.inputs.filter((input) => isScalarType(input.propertyType));
+  const dfOutputs = call.func.outputs.filter((output) => isDataFrame(output.propertyType));
+  const scalarOutputs = call.func.outputs.filter((output) => isScalarType(output.propertyType));
 
   dfInputs.forEach((dfInput) => {
     const currentDfSheet = exportWorkbook.addWorksheet(`Input - ${dfInput.name}`);
