@@ -2,12 +2,11 @@ import * as ui from "datagrok-api/ui";
 import * as grok from "datagrok-api/grok";
 import * as DG from "datagrok-api/dg";
 import {MiscMethods} from "./misc";
-import json from "./example.json";
 
 
 export class RepertoireBrowserPanel {
 
-    async init(view) {
+    async init(view, json) {
 
         // ---- SIDEPANEL REMOVAL ----
         this.view = view
