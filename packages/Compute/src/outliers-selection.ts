@@ -2,6 +2,7 @@ import * as grok from 'datagrok-api/grok';
 import * as ui from 'datagrok-api/ui';
 import * as DG from 'datagrok-api/dg';
 import {_package} from './package';
+import {std, mean, abs} from 'mathjs';
 
 export async function selectOutliersManually(inputData: DG.DataFrame) {
   const IS_OUTLIER_COL_LABEL = 'isOutlier';
@@ -136,55 +137,32 @@ export async function selectOutliersManually(inputData: DG.DataFrame) {
   );
 
   const autoOutlierGroupBtn = ui.button(
-    'AUTO...',
+    'STDDEV RULE...',
     () => {
       if (isInnerModalOpened) return;
 
-      const INPUT_COLUMNS_SIZE = (inputData.columns as DG.ColumnList).length -
-      (!inputData.columns.byName(IS_OUTLIER_COL_LABEL) ? 0 : 1) -
-      (!inputData.columns.byName(OUTLIER_REASON_COL_LABEL) ? 0 : 1);
-
-      const selectedFunc = DG.Func.find({name: 'ExtractRows'})[0].prepare();
-      selectedFunc.getEditor(false, false).then((editor) => {
-        autoDetectionDialog.clear();
-        autoDetectionDialog.add(ui.divV([editor]));
-      });
-
-      const autoDetectionDialog = ui.dialog('Automatic detection')
+      const intInput = ui.intInput('N', 3);
+      const columnInput = ui.columnInput('Values', inputData, null);
+      const autoDetectionDialog = ui.dialog('Edit standard deviation rule')
+        .add(intInput.root)
+        .add(columnInput.root)
         .onOK(()=>{
-          selectedFunc.call().then((result) => {
-            const selectedDf = (result.outputs.result as DG.DataFrame);
-            selectedDf.col(IS_OUTLIER_COL_LABEL)?.init(() => true);
-            selectedDf.col(OUTLIER_REASON_COL_LABEL)?.init(selectedFunc.func.name);
-            const mergedData = inputData.join(
-              selectedDf,
-              [...Array(INPUT_COLUMNS_SIZE).keys()]
-                .map((idx) => (inputData.columns as DG.ColumnList).byIndex(idx).name),
-              [...Array(INPUT_COLUMNS_SIZE).keys()]
-                .map((idx) => (selectedDf.columns as DG.ColumnList).byIndex(idx).name),
-              [...Array(INPUT_COLUMNS_SIZE).keys()]
-                .map((idx) => (inputData.columns as DG.ColumnList).byIndex(idx).name),
-              [...Array(2).keys()]
-                .map((idx) => (idx + INPUT_COLUMNS_SIZE))
-                .map((idx) => (selectedDf.columns as DG.ColumnList).byIndex(idx).name),
-              DG.JOIN_TYPE.OUTER,
-              false,
-            );
-            const selected = DG.BitSet.create(inputData.rowCount, (idx) => (
-              (mergedData.columns as DG.ColumnList).byIndex(INPUT_COLUMNS_SIZE).get(idx)
-            ));
-            selected.getSelectedIndexes().forEach((selectedIndex: number) => {
-              inputData.set(IS_OUTLIER_COL_LABEL, selectedIndex, true);
-              inputData.set(OUTLIER_REASON_COL_LABEL, selectedIndex, selectedFunc.inputs['where'].func.name);
-            });
-            updateTable();
+          const values = [...columnInput.value.values()];
+          const meanValue = mean(values);
+          const stddev = std(values);
+          inputData.selection.init((index)=> abs(meanValue - values[index]) > stddev*intInput.value);
+          inputData.selection.getSelectedIndexes().forEach((selectedIndex: number) => {
+            inputData.set(IS_OUTLIER_COL_LABEL, selectedIndex, true);
+            inputData.set(OUTLIER_REASON_COL_LABEL, selectedIndex, `${intInput.value}x stddev rule`);
           });
+          updateTable();
+          inputData.selection.setAll(false);
         })
         .show();
       autoDetectionDialog.onClose.subscribe(() => isInnerModalOpened = false);
       isInnerModalOpened = true;
     },
-    'Choose function to select the outliers',
+    'Edit standard deviation rule',
   );
 
   inputData.selection.setAll(false);
@@ -247,7 +225,7 @@ export async function selectOutliersManually(inputData: DG.DataFrame) {
         cancelAllChanges();
         resolve({augmentedInput: inputData, editedInput});
       }, 100));
-    selectionDialog.show({width: 950, height: 800});
+    selectionDialog.show({width: 1000, height: 800});
   });
 
   return result;
