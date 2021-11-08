@@ -367,84 +367,92 @@ export class AccordionPane extends DartWidget {
 }
 
 
+/** Tab control that hosts panes inside. See also {@link TabPane} */
 export class TabControl {
   d: any;
   constructor(d: any) {
     this.d = d;
   }
 
+  /** Creates a new TabControl */
   static create(vertical: boolean = false): TabControl {
     return toJs(api.grok_TabControl(vertical));
   }
 
+  /** Visual root */
   get root(): HTMLDivElement {
     return api.grok_Widget_Get_Root(this.d);
   }
 
+  /** Header shown on top of the control */
   get header(): HTMLDivElement {
     return api.grok_TabControlBase_Get_Header(this.d);
   }
 
+  /** Panes currently present in the pane control.
+   * Do not change the array, use {@link addPane} instead */
   get panes(): TabPane[] {
     return api.grok_TabControlBase_Get_Panes(this.d).map(toJs);
   }
 
+  /** Gets the pane with the specified name */
   getPane(name: string): TabPane {
     return toJs(api.grok_TabControlBase_GetPane(this.d, name));
   }
 
-  addPane(name: string, getContent: Function, icon: any = null): TabPane {
+  /** Adds a new pane with the specified name */
+  addPane(name: string, getContent: () => HTMLElement, icon: any = null): TabPane {
     return toJs(api.grok_TabControlBase_AddPane(this.d, name, getContent, icon));
   }
 
+  /** Removes all panes */
   clear(): void {
     api.grok_TabControlBase_Clear(this.d);
   }
 
-  get currentPane(): TabPane {
-    return api.grok_TabControlBase_Get_CurrentPane(this.d);
-  }
+  /** Currently visible pane */
+  get currentPane(): TabPane { return api.grok_TabControlBase_Get_CurrentPane(this.d); }
+  set currentPane(v: TabPane) { api.grok_TabControlBase_Set_CurrentPane(this.d, v.d); }
 
-  set currentPane(v: TabPane) {
-    api.grok_TabControlBase_Set_CurrentPane(this.d, v.d);
-  }
+  /** Occurs before the active pane is changed */
+  get onBeforeTabChanged(): Observable<any> { return __obs('d4-tabcontrol-before-tab-changed', this.d); }
 
+  /** Occurs after the active pane is changed */
+  get onTabChanged(): Observable<any> { return __obs('d4-tabcontrol-tab-changed', this.d); }
 }
 
 
+/** Represents a pane of either {@link TabControl} or {@link Accordion} */
 export class TabPane {
   d: any;
+
+  /** Creates TabPane from the Dart handle */
   constructor(d: any) {
     this.d = d;
   }
 
+  /** {@link TabControl} this pane belongs to */
   get parent(): TabControl {
     return toJs(api.grok_TabPane_Get_Parent(this.d));
   }
 
+  /** A control shown on top of the pane */
   get header(): HTMLDivElement {
     return api.grok_TabPane_Get_Header(this.d);
   }
 
+  /** Content */
   get content(): HTMLDivElement {
     return api.grok_TabPane_Get_Content(this.d);
   }
 
-  get expanded(): boolean {
-    return api.grok_AccordionPane_Get_Expanded(this.d);
-  }
+  /** Whether the pane is expanded. Applicable to Accordion's panes only. */
+  get expanded(): boolean { return api.grok_AccordionPane_Get_Expanded(this.d); }
+  set expanded(v: boolean) { api.grok_AccordionPane_Set_Expanded(this.d, v); }
 
-  set expanded(v: boolean) {
-    api.grok_AccordionPane_Set_Expanded(this.d, v);
-  }
-
-  get name(): string {
-    return api.grok_AccordionPane_Get_Name(this.d);
-  }
-
-  set name(name: string) {
-    api.grok_AccordionPane_Set_Name(this.d, name);
-  }
+  /** Tab pane name */
+  get name(): string { return api.grok_AccordionPane_Get_Name(this.d); }
+  set name(name: string) { api.grok_AccordionPane_Set_Name(this.d, name); }
 }
 
 
