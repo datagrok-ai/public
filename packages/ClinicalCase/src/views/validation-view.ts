@@ -74,7 +74,7 @@ export class ValidationView extends DG.ViewBase implements ILazyLoading {
       ui.splitV([
         ui.box(ui.divText('Violated rules', viewerTitle), { style: { maxHeight: '45px' } }),
         violatedRules.root,
-        this.resultsDataframe.plot.grid().root,
+        //this.resultsDataframe.plot.grid().root,
         ui.box(ui.divText('Errors', viewerTitle), { style: { maxHeight: '45px' } }),
         tabs.root
       ])

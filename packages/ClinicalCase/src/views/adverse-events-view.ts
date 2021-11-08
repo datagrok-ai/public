@@ -69,12 +69,16 @@ export class AdverseEventsView extends DG.ViewBase implements ILazyLoading {
 
 
     let legend = DG.Legend.create(this.aeWithArm.columns.byName(TREATMENT_ARM));
+    legend.root.style.width = '500px';
+    legend.root.style.height = '35px';
 
     this.root.className = 'grok-view ui-box';
     this.root.append(ui.splitV([
       ui.splitH([timelinesPlot, scatterPlot]),
-      ui.box(legend.root, { style: { maxHeight: '50px' } }),
-      ui.splitH([typesPlot,bodySystemsPlot,causalityPlot,outcomePlot]),
+      ui.divV([
+        ui.div(legend.root, { style: { height: '50px' } }),
+        ui.splitH([typesPlot,bodySystemsPlot,causalityPlot,outcomePlot], {style: {width: '100%'}})
+      ]),
       ui.splitH([grid.root])
     ]))
 
