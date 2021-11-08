@@ -160,7 +160,7 @@ Scatter plot is divided to 9 parts each of which is annotated with corresponding
 
 Baseline, enpoint visits as well as laboratory value can be selected using dropdown lists above the scatter plot.
 
-Color coresponds to treatment arm.
+Color corresponds to treatment arm.
 
 <img src="https://github.com/datagrok-ai/public/blob/master/packages/ClinicalCase/img/bl_ep.PNG" height="500" width='800'/>
 

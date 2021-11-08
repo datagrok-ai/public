@@ -44,6 +44,7 @@ export async function selectOutliersManually(inputData: DG.DataFrame) {
         for (let i = 0; i < inputData.rowCount; i++) {
           if (inputData.columns.byName(OUTLIER_REASON_COL_LABEL).get(i) === reason) {
             inputData.columns.byName(OUTLIER_REASON_COL_LABEL).set(i, '');
+            inputData.columns.byName(IS_OUTLIER_COL_LABEL).set(i, false);
           }
         }
         updateTable();
@@ -192,7 +193,7 @@ export async function selectOutliersManually(inputData: DG.DataFrame) {
   removeOutlierGroupBtn.classList.add('disabled');
 
   const result = new Promise<{augmentedInput: DG.DataFrame, editedInput: DG.DataFrame}>((resolve, reject) => {
-    ui.dialog({title: 'Outliers selection', helpUrl: `${_package.webRoot}/help/outliers_selection/main.md`})
+    const selectionDialog = ui.dialog({title: 'Outliers selection', helpUrl: `${_package.webRoot}/help/outliers_selection/main.md`})
       .add(
         ui.info(
           ui.div([
@@ -206,11 +207,12 @@ export async function selectOutliersManually(inputData: DG.DataFrame) {
           ui.block25([
             ui.divV([
               groupsListGrid.root,
-              ui.divH([
-                ui.block75([addOutlierGroupBtn, removeOutlierGroupBtn]),
-                ui.block25([autoOutlierGroupBtn]),
-              ], {style: {'text-align': 'center'}}),
-            ], {style: {height: '70%'}}),
+              ui.divV([
+                ui.div(addOutlierGroupBtn, {style: {'border': '1px solid #2083d5', 'margin-top': '2px'}}),
+                ui.div(removeOutlierGroupBtn, {style: {'border': '1px solid #2083d5', 'margin-top': '2px'}}),
+                ui.div(autoOutlierGroupBtn, {style: {'border': '1px solid #2083d5', 'margin-top': '2px'}}),
+              ], {style: {'text-align': 'center', 'margin-top': '15px'}}),
+            ], {style: {height: '100%'}}),
           ]),
         ], {style: {height: '100%'}}),
       )
@@ -221,8 +223,12 @@ export async function selectOutliersManually(inputData: DG.DataFrame) {
       })
       .onCancel(() => {
         reject(new Error('Manual outliers selection is aborted'));
-      })
-      .show({width: 950, height: 800});
+      });
+
+    selectionDialog.show({width: 950, height: 800});
+    // TODO: change the resolving strategy after API update
+    // onClose is called before onOK or onCancel, thus, the timeout is requierd
+    selectionDialog.onClose.subscribe(() => setTimeout(()=> reject(new Error('Manual outliers selection is aborted')), 100));
   });
 
   return result;

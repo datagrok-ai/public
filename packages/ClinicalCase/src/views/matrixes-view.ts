@@ -5,6 +5,9 @@ import { study } from "../clinical-study";
 import { ILazyLoading } from '../lazy-loading/lazy-loading';
 import { checkMissingDomains } from './utils';
 import { _package } from '../package';
+import { getUniqueValues } from '../data-preparation/utils';
+import { LAB_RES_N, LAB_TEST, LAB_VISIT_NAME, SUBJECT_ID } from '../columns-constants';
+import { requiredColumnsByView } from '../constants';
 
 
 export class MatrixesView extends DG.ViewBase implements ILazyLoading {
@@ -27,13 +30,13 @@ export class MatrixesView extends DG.ViewBase implements ILazyLoading {
   loaded: boolean;
 
   load(): void {
-    checkMissingDomains(['lb'], false, this);
+    checkMissingDomains(requiredColumnsByView[this.name], false, this);
   }
 
   createView(): void {
     this.createCorrelationMatrixDataframe();
-    this.uniqueLabValues = study.domains.lb.getCol('LBTEST').categories;
-    this.uniqueVisits = study.domains.lb.getCol('VISIT').categories;
+    this.uniqueLabValues = Array.from(getUniqueValues(study.domains.lb, LAB_TEST));
+    this.uniqueVisits = Array.from(getUniqueValues(study.domains.lb, LAB_VISIT_NAME));
 
     this.selectedLabValues = this.uniqueLabValues;
     this.bl = this.uniqueVisits[0];
@@ -65,7 +68,7 @@ export class MatrixesView extends DG.ViewBase implements ILazyLoading {
       this.matrixPlot = v;
       this.root.className = 'grok-view ui-box';
       this.root.append(ui.box(this.matrixPlot.root));
-      this.root.style.marginTop = '15px';
+     // this.root.style.marginTop = '15px';
       this.setRibbonPanels([
         [
           blVisitChoices.root
@@ -79,8 +82,8 @@ export class MatrixesView extends DG.ViewBase implements ILazyLoading {
 
   private updateMarix() {
     if (this.selectedLabValues && this.bl) {
-      this.matrixDataframe.rows.match(`VISIT = ${this.bl}`).filter();
-      let filteredMatrixDataframe = this.matrixDataframe.clone(this.matrixDataframe.filter, this.selectedLabValues.map(it => `${it} avg(LBSTRESN)`));
+      this.matrixDataframe.rows.match(`${LAB_VISIT_NAME} = ${this.bl}`).filter();
+      let filteredMatrixDataframe = this.matrixDataframe.clone(this.matrixDataframe.filter, this.selectedLabValues.map(it => `${it} avg(${LAB_RES_N})`));
       this.matrixPlot.dataFrame = filteredMatrixDataframe;
     }
   }
@@ -88,9 +91,9 @@ export class MatrixesView extends DG.ViewBase implements ILazyLoading {
   private createCorrelationMatrixDataframe() {
     let df = study.domains.lb.clone();
     this.matrixDataframe = df
-      .groupBy(['USUBJID', 'VISIT'])
-      .pivot('LBTEST')
-      .avg('LBSTRESN')
+      .groupBy([SUBJECT_ID, LAB_VISIT_NAME])
+      .pivot(LAB_TEST)
+      .avg(LAB_RES_N)
       .aggregate();
   }
 }

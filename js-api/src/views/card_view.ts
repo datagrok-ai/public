@@ -18,6 +18,7 @@ export class CardView extends View {
     super(d);
   }
 
+  /** Creates a new CardView object with the specifed options. */
   static create(options?: any): CardView {
     return new CardView(api.grok_CardView_Create(options));
   }
@@ -25,48 +26,25 @@ export class CardView extends View {
   /**
    * User-specified {@link https://datagrok.ai/help/overview/smart-search | filter expression}.
    * @type {string} */
-  get searchValue(): string {
-    return api.grok_CardView_Get_SearchValue(this.d);
-  }
+  get searchValue(): string { return api.grok_CardView_Get_SearchValue(this.d); }
+  set searchValue(s: string) { api.grok_CardView_Set_SearchValue(this.d, s); }
 
-  set searchValue(s: string) {
-    api.grok_CardView_Set_SearchValue(this.d, s);
-  }
+  /** Object handler (instructions how to render, drag-and-drop, etc) */
+  get meta(): ObjectHandler { return api.grok_CardView_Get_Meta(this.d); }
+  set meta(s: ObjectHandler) { api.grok_CardView_Set_Meta(this.d, s); }
 
-  get meta(): ObjectHandler {
-    return api.grok_CardView_Get_Meta(this.d);
-  }
+  /** Semantic type of the items. */
+  get objectType(): string { return api.grok_CardView_Get_Type(this.d); }
+  set objectType(s: string) { api.grok_CardView_Set_Type(this.d, s); }
 
-  set meta(s: ObjectHandler) {
-    api.grok_CardView_Set_Meta(this.d, s);
-  }
-
-  get objectType(): string {
-    return api.grok_CardView_Get_Type(this.d);
-  }
-
-  set objectType(s: string) {
-    api.grok_CardView_Set_Type(this.d, s);
-  }
-
-  get searchFields(): string[] {
-    return toJs(api.grok_CardView_Get_SearchFields(this.d));
-  }
-
-  set searchFields(s: string[]) {
-    api.grok_CardView_Set_SearchFields(this.d, s);
-  }
+  get searchFields(): string[] { return toJs(api.grok_CardView_Get_SearchFields(this.d)); }
+  set searchFields(s: string[]) { api.grok_CardView_Set_SearchFields(this.d, s); }
 
   /** Programmatically defined invisible
    * {@link https://datagrok.ai/help/overview/smart-search | filter expression}.
    *  @type {string} */
-  get permanentFilter(): string {
-    return api.grok_CardView_Get_PermanentFilter(this.d);
-  }
-
-  set permanentFilter(s: string) {
-    api.grok_CardView_Set_PermanentFilter(this.d, s);
-  }
+  get permanentFilter(): string { return api.grok_CardView_Get_PermanentFilter(this.d); }
+  set permanentFilter(s: string) { api.grok_CardView_Set_PermanentFilter(this.d, s); }
 }
 
 

@@ -1,7 +1,7 @@
 import { BaselineEndpointRenderLines, HysLawRenderLines, KaplanMeierRenderLines } from "./event-handlers";
 import * as DG from "datagrok-api/dg";
 
-export function createHysLawScatterPlot(dataframe, xColumn, yColumn, colorColumn, APColumnName) {
+export function createHysLawScatterPlot(dataframe, xColumn, yColumn, colorColumn, APColumnName = '') {
   const sp = DG.Viewer.scatterPlot(dataframe, {
     x: xColumn,
     y: yColumn,
