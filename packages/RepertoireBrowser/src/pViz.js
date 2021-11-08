@@ -2,35 +2,33 @@ import * as grok from 'datagrok-api/grok';
 import * as ui from 'datagrok-api/ui';
 import * as DG from "datagrok-api/dg";
 
-//import json from "./TPP000153303.json";
-import json from "./example.json";
 import mutcodes from "./mutcodes.json";
 import {MiscMethods} from "./misc.js"
 
 
 export class PvizMethods {
 
-    async init(view, inputs, ngl) {
+    async init(view, inputs, ngl, json) {
 
         this.ngl = ngl
         this.pviz = window.pviz;
         this.pVizParams = {};
-        this.pVizParams.seq = {'H':json.heavy_seq, 'L': json.light_seq}
-        this.pVizParams.ptmMap = this.ptmMapping(inputs.ptm_choices.value, inputs.ptm_prob.value)
-        this.pVizParams.ptmMotifsMap = this.ptmMotifsMapping(inputs.ptm_motif_choices.value, inputs.ptm_prob.value)
-        this.pVizParams.denMap = this.ptmDenMapping()
-        this.pVizParams.parMap = this.paratopeMapping()
-        this.pVizParams.cdrMap = this.cdrMapping(inputs.cdr_scheme.value)
+        this.pVizParams.seq = {'H':json.heavy_seq, 'L': json.light_seq};
+        this.pVizParams.ptmMap = this.ptmMapping(inputs.ptm_choices.value, inputs.ptm_prob.value, json);
+        this.pVizParams.ptmMotifsMap = this.ptmMotifsMapping(inputs.ptm_motif_choices.value, inputs.ptm_prob.value, json)
+        this.pVizParams.denMap = this.ptmDenMapping(json);
+        this.pVizParams.parMap = this.paratopeMapping(json);
+        this.pVizParams.cdrMap = this.cdrMapping(inputs.cdr_scheme.value, json);
 
-        await this.loadSequence(inputs, 'H');
+        await this.loadSequence(inputs, 'H', json);
 
-        await this.pvizResize(inputs, 'H');
-        await this.pvizResize(inputs, 'L');
+        await this.pvizResize(inputs, 'H', json);
+        await this.pvizResize(inputs, 'L', json);
         MiscMethods.setDockSize(view, inputs.ngl_node, inputs.sequence_tabs, inputs.paratopes);
     }
 
     // mapping objects for sequence rendering
-    ptmMapping(ptm_choices, prob) {
+    ptmMapping(ptm_choices, prob, json) {
         let ptmMap = {}
         let chains = Object.keys(this.pVizParams.seq);
         chains.forEach((chain) => {
@@ -78,7 +76,7 @@ export class PvizMethods {
         return(ptmMap);
     }
 
-    ptmMotifsMapping(ptm_choices, prob) {
+    ptmMotifsMapping(ptm_choices, prob, json) {
         let ptmMotifsMap = {}
         let chains = Object.keys(this.pVizParams.seq);
         chains.forEach((chain) => {
@@ -99,7 +97,7 @@ export class PvizMethods {
                         if(point[1] > prob) {
 
                             ptm_feature_map.push({
-                                groupSet: 'Motif PTMs',
+                                groupSet: 'Predicted PTMs',//'Motif PTMs',
                                 category : ptm,
                                 type : mutcodes[ptm.replaceAll(" ", "_")],
                                 start : point[0],
@@ -126,10 +124,12 @@ export class PvizMethods {
         return(ptmMotifsMap);
     }
 
-    ptmDenMapping() {
+    ptmDenMapping(json) {
         let denMap = {}
         let chains = Object.keys(this.pVizParams.seq);
         chains.forEach((chain) => {
+            //let length = chain === "H"? json.H_length : json.L_length;
+
             let den_feature_map = [];
             let den_color_arr = new Array(this.pVizParams.seq[chain].length).fill(-1);
             let den_ptm_arr = new Array(this.pVizParams.seq[chain].length).fill([]);
@@ -139,14 +139,16 @@ export class PvizMethods {
 
                 if(json.ptm_predictions[chain][ptm][0][1] <=1 ){
                     json.ptm_predictions[chain][ptm].forEach(point => {
-                        if (!(den_feature_map.includes(point[0]))) {
-                            den_feature_map.push(point[0]);
+
+                        let index = point[0];
+                        if (!(den_feature_map.includes(index))) {
+                            den_feature_map.push(index);
                         }
-                        den_color_arr[point[0]] = den_color_arr[point[0]] == -1 ? (point[1] > 1 ? point[1]/100: point[1]) : 1 - (1 - den_color_arr[point[0]]) * (1 -  (point[1] > 1 ? point[1]/100: point[1]));
-                        den_ptm_arr[point[0]] = den_ptm_arr[point[0]].concat([[ptm, point[1]]]);
+                        den_color_arr[index] = den_color_arr[index] == -1 ? (point[1] > 1 ? point[1]/100: point[1]) : 1 - (1 - den_color_arr[index]) * (1 -  (point[1] > 1 ? point[1]/100: point[1]));
+                        den_ptm_arr[index] = den_ptm_arr[index].concat([[ptm, point[1]]]);
                     })
                 }
-            })
+            });
 
             den_feature_map.sort((a, b) => a - b);
             let den_el_obj = den_feature_map.slice();
@@ -182,7 +184,7 @@ export class PvizMethods {
         return (denMap)
     }
 
-    paratopeMapping() {
+    paratopeMapping(json) {
         let parMap = {}
         let chains = Object.keys(this.pVizParams.seq);
         chains.forEach((chain) => {
@@ -212,7 +214,7 @@ export class PvizMethods {
         return(parMap)
     }
 
-    cdrMapping(cdr_scheme) {
+    cdrMapping(cdr_scheme, json) {
 
         let cdrMap = {}
         let chains = Object.keys(this.pVizParams.seq);
@@ -248,12 +250,12 @@ export class PvizMethods {
     }
 
     // main sequence rendering func
-    async loadSequence(inputs, chain, reLoad = false) {
+    async loadSequence(inputs, chain, json, reLoad = false) {
 
         let host = chain == "H" ? inputs.pViz_host_H : inputs.pViz_host_L;
 
         if( $(host).width() !== 0) {
-            let seq = this.pVizParams.seq[chain]
+            let seq = this.pVizParams.seq[chain];
 
             let seqEntry = new this.pviz.SeqEntry({
                 sequence: seq
@@ -293,7 +295,7 @@ export class PvizMethods {
                     switchObj[chain][ft.start]['state'] = !switchObj[chain][ft.start]['state']
                 }
 
-                await pv.consistentlyColorpVizNGL(inputs, chain, reLoad);
+                await pv.consistentlyColorpVizNGL(inputs, chain, json, reLoad);
             })
 
             this.pviz.FeatureDisplayer.addClickCallback (mod_motifs_codes, async function(ft) {               
@@ -304,7 +306,7 @@ export class PvizMethods {
                     switchObj[chain][ft.start]['state'] = !switchObj[chain][ft.start]['state']
                 }
 
-                await pv.consistentlyColorpVizNGL(inputs, chain, reLoad);
+                await pv.consistentlyColorpVizNGL(inputs, chain, json, reLoad);
             })
 
             this.pviz.FeatureDisplayer.addClickCallback (['D'], async function(ft) {
@@ -315,7 +317,7 @@ export class PvizMethods {
                     switchObj[chain][ft.start]['state'] = !switchObj[chain][ft.start]['state']
                 }
 
-                await pv.consistentlyColorpVizNGL(inputs, chain, reLoad);
+                await pv.consistentlyColorpVizNGL(inputs, chain, json, reLoad);
             })
 
             this.pviz.FeatureDisplayer.addMouseoverCallback(mod_codes, async function(ft) {
@@ -411,20 +413,20 @@ export class PvizMethods {
             this.applyGradient(this.pVizParams.ptmMotifsMap[chain].ptm_color_obj);
             this.applyGradient(this.pVizParams.denMap[chain].den_color_obj);
             this.applyGradient(this.pVizParams.parMap[chain].par_color_obj);
-            this.consistentlyColorpVizNGL(inputs, chain, reLoad);
+            this.consistentlyColorpVizNGL(inputs, chain, json, reLoad);
         }
     }
 
     // resize handle
-    async pvizResize(inputs, chain) {
+    async pvizResize(inputs, chain, json) {
         let host = chain == "H" ? inputs.pViz_host_H : inputs.pViz_host_L;
 
         ui.onSizeChanged(host).subscribe(async (_) => {
-            await this.loadSequence(inputs, chain)
+            await this.loadSequence(inputs, chain, json)
         });
     }
 
-    async consistentlyColorpVizNGL(inputs, chosenTracksChain, reLoad){
+    async consistentlyColorpVizNGL(inputs, chosenTracksChain, json, reLoad){
 
         let switchObj = inputs.pVizNglRelation;
         let pVizParams = this.pVizParams;
@@ -445,8 +447,10 @@ export class PvizMethods {
                
         Object.keys(switchObj).forEach((keyChain) =>{
             Object.keys(switchObj[keyChain]).forEach((keyFtStart) =>{
+
+                let index = keyChain === "H"? json.map_H[keyFtStart] : json.map_L[keyFtStart];
                 if(switchObj[keyChain][keyFtStart]['state'] === true){
-                    scheme_buffer.push([col_highlight, `${parseInt(keyFtStart) + 1} and :${keyChain}`]);
+                    scheme_buffer.push([col_highlight, `${index} and :${keyChain}`]);
                 }
             });
         });
@@ -456,9 +460,12 @@ export class PvizMethods {
             let palette = MiscMethods.interpolateColors(col_partopes_low, col_partopes_high, 100);
             Object.keys(json.parapred_predictions).forEach((chain) => {
                 Object.keys(json.parapred_predictions[chain]).forEach((index) => {
+
+                    let nindex = chain === "H"? json.map_H[index] : json.map_L[index];
+
                     scheme_buffer.push([
                         palette[Math.round(json.parapred_predictions[chain][index] * 100)],
-                        `${index} and :${chain}`
+                        `${nindex} and :${chain}`
                     ]);
                 })
 
@@ -477,7 +484,10 @@ export class PvizMethods {
                     if (str.includes(inputs.cdr_scheme.value + '_CDRH')) {
                         let str_buffer = '';
                         for (let i = 0; i < Object.keys(json.cdr_ranges[str]).length; i++) {
-                            str_buffer = str_buffer + ` or ${json.cdr_ranges[str][i][0]}-${json.cdr_ranges[str][i][1]} and :H`;
+                            let nindex1 =  json.map_H[json.cdr_ranges[str][i][0]];
+                            let nindex2 =  json.map_H[json.cdr_ranges[str][i][1]];
+
+                            str_buffer = str_buffer + ` or ${nindex1}-${nindex2} and :H`;
                         }
                         str_buffer = str_buffer.slice(4);
                         scheme_buffer.push([col_cdr, str_buffer]);
@@ -486,7 +496,10 @@ export class PvizMethods {
                     } else if (str.includes(inputs.cdr_scheme.value + '_CDRL')) {
                         let str_buffer = ''
                         for (let i = 0; i < Object.keys(json.cdr_ranges[str]).length; i++) {
-                            str_buffer = str_buffer + ` or ${json.cdr_ranges[str][i][0]}-${json.cdr_ranges[str][i][1]} and :L`;
+                            let nindex1 =  json.map_L[json.cdr_ranges[str][i][0]];
+                            let nindex2 =  json.map_L[json.cdr_ranges[str][i][1]];
+
+                            str_buffer = str_buffer + ` or ${nindex1}-${nindex2} and :L`;
                         }
                         str_buffer = str_buffer.slice(4);
                         scheme_buffer.push([col_cdr, str_buffer]);
@@ -505,7 +518,10 @@ export class PvizMethods {
             if(inputs.repChoice.value === "cartoon"){
                 Object.keys(switchObj).forEach((keyChain) =>{
                     Object.keys(switchObj[keyChain]).forEach((keyFtStart) =>{
-                        let selection = `${parseInt(keyFtStart) + 1} and :${keyChain} and (not backbone or .CA or (PRO and .N))`;
+
+                        let index = keyChain === "H"? json.map_H[keyFtStart] : json.map_L[keyFtStart];
+
+                        let selection = `${index} and :${keyChain} and (not backbone or .CA or (PRO and .N))`;
                         let addedRepresentation = ngl.stage.compList[0].addRepresentation("ball+stick", {sele: selection}); 
                         switchObj[keyChain][keyFtStart]['representation'] = addedRepresentation;
                                     
@@ -522,8 +538,10 @@ export class PvizMethods {
                 Object.keys(switchObj).forEach((keyChain) =>{
                     Object.keys(switchObj[keyChain]).forEach((keyFtStart) =>{
 
+                        let index = keyChain === "H"? json.map_H[keyFtStart] : json.map_L[keyFtStart];
+
                         if (typeof switchObj[keyChain][keyFtStart]['representation'] === 'undefined'){
-                            let selection = `${parseInt(keyFtStart) + 1} and :${keyChain} and (not backbone or .CA or (PRO and .N))`;
+                            let selection = `${index} and :${keyChain} and (not backbone or .CA or (PRO and .N))`;
                             let addedRepresentation = ngl.stage.compList[0].addRepresentation("ball+stick", {sele: selection}); 
                             switchObj[keyChain][keyFtStart]['representation'] = addedRepresentation;
                         }
