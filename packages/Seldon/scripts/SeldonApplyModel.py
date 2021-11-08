@@ -112,7 +112,17 @@ with no_ssl_verification():
 
   # 3. Predict
   deployment_api = SeldonDeploymentsApi(auth())
-  obj = { "data" : { "ndarray": seldonInput[inputColumnNames].values.tolist() } }
+  actualInput = seldonInput[inputColumnNames].values.tolist()
+  for j in range(0, len(inputColumnTypes)):
+    if inputColumnTypes[j] == "CATEGORICAL":
+      categoriesObject = inputColumnMeta[j]
+      categoryNamesToInput = {}
+      for key, value in categoriesObject.items():
+        categoryNamesToInput[value] = key
+      for i in range(0, len(actualInput)):
+        value = actualInput[i][inputColumnNames[j]]
+        actualInput[i][inputColumnNames[j]] = categoryNamesToInput[value]
+  obj = { "data" : { "ndarray": actualInput } }
   api_instance = seldon_deploy_sdk.PredictApi(seldon_deploy_sdk.ApiClient(config))
   api_response = api_instance.predict_seldon_deployment(name=seldonDeploymentName, namespace=seldonNamespace, prediction=obj)
   seldonResult = pd.DataFrame(api_response['data']['ndarray'], columns = outputColumnNames)
