@@ -144,20 +144,13 @@ export async function selectOutliersManually(inputData: DG.DataFrame) {
       (!inputData.columns.byName(IS_OUTLIER_COL_LABEL) ? 0 : 1) -
       (!inputData.columns.byName(OUTLIER_REASON_COL_LABEL) ? 0 : 1);
 
-      const options = DG.Func.find({name: 'ExtractRows'}).map((func) => func.name);
-      const detectionChoiceInput = ui.choiceInput('Function', '', options);
-      let selectedFunc: DG.FuncCall;
-      detectionChoiceInput.onChanged(() => {
-        selectedFunc = DG.Func.find({name: detectionChoiceInput.value})[0]
-          .prepare();
-        selectedFunc.getEditor(false, false).then((editor) => {
-          autoDetectionDialog.clear();
-          autoDetectionDialog.add(ui.divV([detectionChoiceInput.root, editor]));
-        });
+      const selectedFunc = DG.Func.find({name: 'ExtractRows'})[0].prepare();
+      selectedFunc.getEditor(false, false).then((editor) => {
+        autoDetectionDialog.clear();
+        autoDetectionDialog.add(ui.divV([editor]));
       });
 
       const autoDetectionDialog = ui.dialog('Automatic detection')
-        .add(detectionChoiceInput.root)
         .onOK(()=>{
           selectedFunc.call().then((result) => {
             const selectedDf = (result.outputs.result as DG.DataFrame);
@@ -182,7 +175,7 @@ export async function selectOutliersManually(inputData: DG.DataFrame) {
             ));
             selected.getSelectedIndexes().forEach((selectedIndex: number) => {
               inputData.set(IS_OUTLIER_COL_LABEL, selectedIndex, true);
-              inputData.set(OUTLIER_REASON_COL_LABEL, selectedIndex, selectedFunc.func.name);
+              inputData.set(OUTLIER_REASON_COL_LABEL, selectedIndex, selectedFunc.inputs['where'].func.name);
             });
             updateTable();
           });
