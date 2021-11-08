@@ -284,13 +284,14 @@ export async function describe(
           coef = DG.Color.toHtml(DG.Color.lightLightGray);
         }
 
-        const chooseMin = () => twoColorMode ? 0 : mdCol.stats.min;
+        const chooseMin = () => twoColorMode ? 0 : mdCol.min;
+        const chooseMax = () => twoColorMode ? Math.max(Math.abs(mdCol.min), mdCol.max) : mdCol.max;
+        const chooseCurrent = () => twoColorMode ? Math.abs(args.cell.cell.value) : args.cell.cell.value;
 
-        const rCoef = ((twoColorMode ? Math.abs(args.cell.cell.value) : args.cell.cell.value) - chooseMin()) /
-          (mdCol.stats.max - chooseMin());
+        const rCoef = (chooseCurrent() - chooseMin()) / (chooseMax() - chooseMin());
 
         const maxRadius = 0.9 * (args.bounds.width > args.bounds.height ? args.bounds.height : args.bounds.width) / 2;
-        const radius = Math.ceil(maxRadius * rCoef);
+        const radius = Math.floor(maxRadius * rCoef);
 
         args.g.beginPath();
         args.g.fillStyle = coef;
