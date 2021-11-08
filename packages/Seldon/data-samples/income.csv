@@ -1024,7 +1024,7 @@ Age, Workclass, Education, Marital Status, Occupation, Relationship, Race, Sex, 
 42,Private,High School grad,Separated,Sales,Not-in-family,White,Female,0,0,30,United-States
 34,Private,High School grad,Married,Service,Husband,White,Male,0,0,40,United-States
 23,Private,High School grad,Never-Married,Blue-Collar,Unmarried,Black,Female,0,0,40,United-States
-56,Private,High School grad,Married,Service,Husband,White,Male,0,0,50,British-Commonwealth?
+56,Private,High School grad,Married,Service,Husband,White,Male,0,0,50,British-Commonwealth
 30,Private,Bachelors,Never-Married,Professional,Not-in-family,Black,Male,0,0,45,?
 45,Private,High School grad,Married,White-Collar,Husband,White,Male,0,0,55,United-States
 48,Private,Dropout,Married,Admin,Wife,White,Female,0,0,40,United-States
@@ -4446,7 +4446,7 @@ Age, Workclass, Education, Marital Status, Occupation, Relationship, Race, Sex, 
 18,Private,Dropout,Never-Married,Blue-Collar,Own-child,White,Male,0,0,55,United-States
 57,Local-gov,Masters,Married,White-Collar,Husband,White,Male,0,0,50,United-States
 49,Private,High School grad,Separated,Service,Not-in-family,Black,Female,0,0,35,United-States
-25,Private,High School grad,Never-Married,White-Collar,Own-child,White,Female,0,0,40,British-Commonwealth?
+25,Private,High School grad,Never-Married,White-Collar,Own-child,White,Female,0,0,40,British-Commonwealth
 52,Federal-gov,High School grad,Separated,Admin,Not-in-family,White,Male,0,0,40,United-States
 56,Private,Dropout,Separated,Blue-Collar,Not-in-family,White,Male,0,0,56,United-States
 26,Self-emp-inc,High School grad,Never-Married,Sales,Not-in-family,White,Male,0,0,48,United-States
@@ -6327,7 +6327,7 @@ Age, Workclass, Education, Marital Status, Occupation, Relationship, Race, Sex, 
 48,Private,Associates,Married,Professional,Husband,White,Male,0,0,50,United-States
 41,Self-emp-not-inc,High School grad,Separated,Service,Unmarried,White,Female,0,0,40,United-States
 24,Private,Bachelors,Never-Married,Admin,Not-in-family,White,Male,0,0,30,United-States
-20,Private,High School grad,Never-Married,Admin,Own-child,White,Male,0,0,40,British-Commonwealth?
+20,Private,High School grad,Never-Married,Admin,Own-child,White,Male,0,0,40,British-Commonwealth
 25,Private,High School grad,Never-Married,Admin,Not-in-family,White,Female,0,0,40,United-States
 57,Private,High School grad,Married,Blue-Collar,Husband,White,Male,0,0,40,United-States
 39,Private,High School grad,Married,White-Collar,Wife,White,Female,0,0,35,Latin-America
@@ -7286,7 +7286,7 @@ Age, Workclass, Education, Marital Status, Occupation, Relationship, Race, Sex, 
 40,Federal-gov,Bachelors,Never-Married,Professional,Not-in-family,White,Female,0,0,40,?
 54,State-gov,Masters,Married,Professional,Husband,Asian-Pac-Islander,Male,0,0,40,British-Commonwealth
 47,Self-emp-inc,High School grad,Married,White-Collar,Husband,White,Male,0,0,42,United-States
-35,Private,High School grad,Married,Service,Husband,White,Male,0,0,40,British-Commonwealth?
+35,Private,High School grad,Married,Service,Husband,White,Male,0,0,40,British-Commonwealth
 33,Private,High School grad,Married,Blue-Collar,Husband,White,Male,0,0,40,United-States
 28,Local-gov,High School grad,Never-Married,Admin,Other-relative,Black,Male,0,0,40,Latin-America
 39,State-gov,Bachelors,Married,White-Collar,Wife,White,Female,0,0,55,United-States
@@ -12505,7 +12505,7 @@ Age, Workclass, Education, Marital Status, Occupation, Relationship, Race, Sex, 
 31,Private,High School grad,Married,Blue-Collar,Husband,White,Male,0,0,50,United-States
 28,Private,High School grad,Married,Service,Husband,White,Male,0,0,35,United-States
 42,Private,High School grad,Married,Service,Wife,White,Female,0,0,23,United-States
-40,Local-gov,Dropout,Married,Service,Wife,White,Female,0,0,40,British-Commonwealth?
+40,Local-gov,Dropout,Married,Service,Wife,White,Female,0,0,40,British-Commonwealth
 24,Private,High School grad,Never-Married,Service,Not-in-family,White,Male,0,0,40,United-States
 37,Self-emp-inc,High School grad,Married,White-Collar,Husband,White,Male,0,0,60,United-States
 36,Private,High School grad,Married,Blue-Collar,Husband,White,Male,0,0,40,United-States
@@ -12815,7 +12815,7 @@ Age, Workclass, Education, Marital Status, Occupation, Relationship, Race, Sex, 
 19,Private,Dropout,Never-Married,Service,Not-in-family,White,Female,0,0,40,United-States
 40,Private,Bachelors,Married,Other,Husband,White,Male,0,0,40,United-States
 23,Private,High School grad,Never-Married,Admin,Own-child,White,Male,0,0,40,United-States
-31,Private,Bachelors,Married,Service,Husband,White,Male,0,0,40,British-Commonwealth?
+31,Private,Bachelors,Married,Service,Husband,White,Male,0,0,40,British-Commonwealth
 40,Local-gov,Associates,Married,White-Collar,Husband,White,Male,0,0,40,United-States
 48,Self-emp-inc,High School grad,Married,Sales,Husband,White,Male,0,0,38,United-States
 46,Private,Masters,Separated,White-Collar,Not-in-family,White,Female,0,0,50,United-States
@@ -13124,7 +13124,7 @@ Age, Workclass, Education, Marital Status, Occupation, Relationship, Race, Sex, 
 27,Private,Dropout,Never-Married,Sales,Own-child,Asian-Pac-Islander,Female,0,0,20,SE-Asia
 43,Local-gov,Masters,Married,White-Collar,Husband,White,Male,0,0,40,United-States
 23,Private,High School grad,Never-Married,Service,Own-child,Black,Male,0,0,25,United-States
-66,Private,Associates,Married,Blue-Collar,Husband,White,Male,5556,0,40,British-Commonwealth?
+66,Private,Associates,Married,Blue-Collar,Husband,White,Male,5556,0,40,British-Commonwealth
 37,Self-emp-not-inc,Dropout,Married,Service,Wife,White,Female,2635,0,40,United-States
 35,Private,High School grad,Never-Married,Admin,Not-in-family,White,Female,0,0,40,United-States
 42,Local-gov,Bachelors,Married,Professional,Husband,White,Male,5178,0,40,United-States
@@ -18246,7 +18246,7 @@ Age, Workclass, Education, Marital Status, Occupation, Relationship, Race, Sex, 
 22,?,High School grad,Never-Married,?,Own-child,Asian-Pac-Islander,Female,0,0,4,Euro_2
 44,Self-emp-not-inc,Dropout,Married,Service,Husband,White,Male,0,0,70,United-States
 23,Private,Associates,Never-Married,Admin,Own-child,White,Male,0,0,40,United-States
-41,Private,Bachelors,Married,White-Collar,Husband,White,Male,0,0,40,British-Commonwealth?
+41,Private,Bachelors,Married,White-Collar,Husband,White,Male,0,0,40,British-Commonwealth
 45,Private,High School grad,Married,Other,Husband,Asian-Pac-Islander,Male,0,0,55,United-States
 29,Private,High School grad,Separated,Blue-Collar,Unmarried,White,Male,0,0,40,United-States
 33,Private,Bachelors,Never-Married,Sales,Not-in-family,White,Male,0,0,45,United-States
@@ -20548,7 +20548,7 @@ Age, Workclass, Education, Marital Status, Occupation, Relationship, Race, Sex, 
 43,Self-emp-not-inc,Bachelors,Married,Blue-Collar,Husband,White,Male,0,0,70,United-States
 33,Private,High School grad,Never-Married,Blue-Collar,Not-in-family,Other,Male,0,0,50,United-States
 23,Federal-gov,Associates,Married,Blue-Collar,Husband,White,Male,0,0,25,United-States
-35,Private,Bachelors,Married,Blue-Collar,Husband,White,Male,0,0,65,British-Commonwealth?
+35,Private,Bachelors,Married,Blue-Collar,Husband,White,Male,0,0,65,British-Commonwealth
 18,Private,High School grad,Never-Married,Service,Own-child,White,Male,0,0,15,United-States
 21,?,High School grad,Never-Married,?,Unmarried,Other,Female,0,0,40,United-States
 33,Local-gov,Bachelors,Married,Other,Husband,Black,Male,0,0,70,United-States
@@ -22199,7 +22199,7 @@ Age, Workclass, Education, Marital Status, Occupation, Relationship, Race, Sex, 
 44,Self-emp-not-inc,Bachelors,Married,White-Collar,Husband,Asian-Pac-Islander,Male,0,0,48,Euro_2
 43,Private,High School grad,Married,Blue-Collar,Husband,White,Male,0,0,50,United-States
 50,Private,High School grad,Separated,Admin,Other-relative,White,Female,0,0,40,United-States
-56,Private,Dropout,Separated,Blue-Collar,Not-in-family,White,Female,0,0,20,British-Commonwealth?
+56,Private,Dropout,Separated,Blue-Collar,Not-in-family,White,Female,0,0,20,British-Commonwealth
 27,Private,High School grad,Married,Blue-Collar,Husband,White,Male,0,0,40,Latin-America
 20,Private,High School grad,Never-Married,Admin,Own-child,Black,Female,0,0,40,United-States
 18,Local-gov,Dropout,Never-Married,Other,Own-child,White,Female,0,0,6,United-States
@@ -23813,7 +23813,7 @@ Age, Workclass, Education, Marital Status, Occupation, Relationship, Race, Sex, 
 19,Local-gov,High School grad,Never-Married,Service,Own-child,Black,Female,0,0,35,United-States
 22,Private,High School grad,Never-Married,Blue-Collar,Own-child,White,Male,0,0,40,United-States
 40,Local-gov,Bachelors,Separated,Professional,Unmarried,White,Female,0,0,70,United-States
-41,Self-emp-not-inc,Associates,Married,Blue-Collar,Husband,White,Male,0,0,40,British-Commonwealth?
+41,Self-emp-not-inc,Associates,Married,Blue-Collar,Husband,White,Male,0,0,40,British-Commonwealth
 71,Self-emp-inc,Bachelors,Married,White-Collar,Husband,White,Male,0,2392,60,United-States
 42,Private,High School grad,Married,Admin,Husband,White,Male,0,0,45,United-States
 31,State-gov,Bachelors,Never-Married,Admin,Not-in-family,White,Male,0,0,47,United-States
@@ -26613,7 +26613,7 @@ Age, Workclass, Education, Marital Status, Occupation, Relationship, Race, Sex, 
 45,Local-gov,Masters,Never-Married,Professional,Not-in-family,White,Female,0,0,40,United-States
 62,State-gov,Associates,Widowed,White-Collar,Unmarried,Black,Female,0,0,40,United-States
 28,Private,Bachelors,Separated,Other,Unmarried,Black,Female,0,0,40,United-States
-36,Self-emp-inc,High School grad,Married,White-Collar,Husband,White,Male,0,0,60,British-Commonwealth?
+36,Self-emp-inc,High School grad,Married,White-Collar,Husband,White,Male,0,0,60,British-Commonwealth
 31,Private,High School grad,Never-Married,Sales,Other-relative,White,Male,0,0,40,United-States
 44,Private,High School grad,Married,Blue-Collar,Husband,Black,Male,0,0,40,?
 33,Self-emp-not-inc,High School grad,Separated,Blue-Collar,Unmarried,White,Male,0,0,50,United-States
@@ -28486,7 +28486,7 @@ Age, Workclass, Education, Marital Status, Occupation, Relationship, Race, Sex, 
 31,Private,High School grad,Never-Married,Sales,Not-in-family,Asian-Pac-Islander,Female,0,0,50,United-States
 30,Private,High School grad,Never-Married,Blue-Collar,Own-child,White,Male,0,0,50,United-States
 24,Private,High School grad,Married,Blue-Collar,Husband,White,Male,0,0,60,United-States
-45,Private,Associates,Married,Blue-Collar,Husband,White,Male,0,0,66,British-Commonwealth?
+45,Private,Associates,Married,Blue-Collar,Husband,White,Male,0,0,66,British-Commonwealth
 30,Private,High School grad,Married,Blue-Collar,Husband,White,Male,0,0,40,United-States
 52,Private,Bachelors,Married,White-Collar,Husband,White,Male,15024,0,55,United-States
 42,State-gov,High School grad,Separated,Admin,Not-in-family,Black,Female,0,0,25,United-States
@@ -29436,7 +29436,7 @@ Age, Workclass, Education, Marital Status, Occupation, Relationship, Race, Sex, 
 51,Private,Bachelors,Separated,Sales,Not-in-family,White,Male,0,0,50,United-States
 45,Self-emp-inc,Prof-School,Never-Married,Blue-Collar,Not-in-family,White,Male,0,0,50,United-States
 18,?,Dropout,Never-Married,?,Own-child,White,Male,0,0,72,United-States
-43,Private,Dropout,Married,Blue-Collar,Husband,White,Male,0,0,40,British-Commonwealth?
+43,Private,Dropout,Married,Blue-Collar,Husband,White,Male,0,0,40,British-Commonwealth
 30,Private,High School grad,Never-Married,Blue-Collar,Own-child,White,Male,0,1504,40,United-States
 32,Private,High School grad,Separated,Admin,Own-child,White,Female,0,0,40,United-States
 45,Private,High School grad,Married,Blue-Collar,Husband,White,Male,0,1902,40,?
@@ -30542,7 +30542,7 @@ Age, Workclass, Education, Marital Status, Occupation, Relationship, Race, Sex, 
 30,Self-emp-not-inc,Associates,Never-Married,Blue-Collar,Own-child,White,Male,0,0,40,United-States
 35,Self-emp-inc,High School grad,Married,Service,Husband,White,Male,0,0,60,United-States
 27,Private,Associates,Married,Sales,Husband,White,Male,0,0,40,United-States
-22,Private,High School grad,Never-Married,White-Collar,Not-in-family,White,Male,0,0,40,British-Commonwealth?
+22,Private,High School grad,Never-Married,White-Collar,Not-in-family,White,Male,0,0,40,British-Commonwealth
 24,Private,High School grad,Never-Married,Blue-Collar,Own-child,White,Male,0,0,30,United-States
 47,Private,Bachelors,Married,Professional,Husband,White,Male,0,0,50,United-States
 47,Private,High School grad,Married,White-Collar,Husband,White,Male,0,0,40,United-States
@@ -31518,7 +31518,7 @@ Age, Workclass, Education, Marital Status, Occupation, Relationship, Race, Sex, 
 42,Local-gov,High School grad,Married,Other,Husband,White,Male,0,0,40,United-States
 24,Private,Bachelors,Never-Married,White-Collar,Not-in-family,White,Male,0,0,40,United-States
 38,Private,Dropout,Separated,Blue-Collar,Not-in-family,White,Male,0,0,40,Latin-America
-29,Private,Bachelors,Married,White-Collar,Husband,White,Male,0,0,52,British-Commonwealth?
+29,Private,Bachelors,Married,White-Collar,Husband,White,Male,0,0,52,British-Commonwealth
 38,Private,High School grad,Married,Blue-Collar,Husband,White,Male,0,0,55,United-States
 33,Private,High School grad,Separated,White-Collar,Unmarried,White,Female,0,0,40,United-States
 61,Private,High School grad,Married,Service,Wife,White,Female,0,0,4,United-States
