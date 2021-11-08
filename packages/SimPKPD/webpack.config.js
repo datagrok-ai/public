@@ -5,13 +5,17 @@ module.exports = {
   entry: {
     package: './src/package.ts'
   },
-  resolve: {
-    extensions: ['.js', '.json', '.ts'],
-  },
   module: {
     rules: [
-      { test: /\.ts$/, loader: 'ts-loader' }
+      {         
+        test: /\.tsx?$/,
+        use: 'ts-loader',
+        exclude: /node_modules/
+      }
     ],
+  },
+  resolve: {
+    extensions: ['.js', '.json', '.ts', '.tsx'],
   },
   devtool: 'inline-source-map',
   externals: {
