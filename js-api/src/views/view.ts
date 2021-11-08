@@ -727,7 +727,7 @@ export class ViewLayout extends Entity {
 
   /** Only defined within the context of the OnViewLayoutXXX events */
   get view(): View {
-    return api.grok_ViewLayout_Get_View(this.d);
+    return toJs(api.grok_ViewLayout_Get_View(this.d));
   }
 
   get viewState(): string {
