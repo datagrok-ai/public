@@ -3,11 +3,12 @@ import * as DG from "datagrok-api/dg";
 import * as ui from "datagrok-api/ui";
 import { study } from "../clinical-study";
 import { cumulativeEnrollemntByDay } from "../data-preparation/data-preparation";
-import { CLINICAL_TRIAL_GOV_FIELDS, STUDY_ID, SUBJECT_ID } from "../constants";
+import { CLINICAL_TRIAL_GOV_FIELDS, requiredColumnsByView } from "../constants";
 import { HttpService } from "../services/http.service";
 import { ILazyLoading } from "../lazy-loading/lazy-loading";
 import { checkMissingDomains } from "./utils";
 import { _package } from "../package";
+import { AGE, RACE, SEX, STUDY_ID, SUBJECT_ID, SUBJ_REF_STDT, TREATMENT_ARM } from "../columns-constants";
 
 
 export class StudySummaryView extends DG.ViewBase implements ILazyLoading {
@@ -28,7 +29,7 @@ export class StudySummaryView extends DG.ViewBase implements ILazyLoading {
   loaded: boolean;
 
   load(): void {
-    checkMissingDomains(['dm'], false, this);
+    checkMissingDomains(requiredColumnsByView[this.name], false, this);
   }
 
   createView(){
@@ -40,7 +41,7 @@ export class StudySummaryView extends DG.ViewBase implements ILazyLoading {
   }
 
   async buildView() {
-    let dateCol = 'RFSTDTC';
+    let dateCol = SUBJ_REF_STDT;
     let cumulativeCol = 'CUMULATIVE_ENROLLMENT';
     let subjsPerDay = cumulativeEnrollemntByDay(study.domains.dm, dateCol, SUBJECT_ID, cumulativeCol)
     let refStartCol = subjsPerDay.col(dateCol);
@@ -48,6 +49,8 @@ export class StudySummaryView extends DG.ViewBase implements ILazyLoading {
     if (refStartCol.type != DG.TYPE.DATE_TIME) {
       await subjsPerDay.columns.addNewCalculated(`~${dateCol}`, `Date(\${${dateCol}}, 1, 1)`);
       lc.setOptions({ x: `~${dateCol}`, yColumnNames: [cumulativeCol] });
+    } else {
+      lc.setOptions({ x: `${dateCol}`, yColumnNames: [cumulativeCol] });
     }
 
     let summary = ui.tableFromMap({
@@ -78,16 +81,16 @@ export class StudySummaryView extends DG.ViewBase implements ILazyLoading {
     
     lc.root.prepend(ui.divText('Enrollment by day', viewerTitle));
 
-    let arm = DG.Viewer.barChart(study.domains.dm, { split: 'arm', style: 'dashboard', barColor: DG.Color.lightBlue });
+    let arm = DG.Viewer.barChart(study.domains.dm, { split: TREATMENT_ARM, style: 'dashboard', barColor: DG.Color.lightBlue });
     arm.root.prepend(ui.divText('Treatment arm', viewerTitle));
 
-    let sex = DG.Viewer.barChart(study.domains.dm, { split: 'sex', style: 'dashboard' });
+    let sex = DG.Viewer.barChart(study.domains.dm, { split: SEX, style: 'dashboard' });
     sex.root.prepend(ui.divText('Sex', viewerTitle));
 
-    let race = DG.Viewer.barChart(study.domains.dm, { split: 'race', style: 'dashboard' });
+    let race = DG.Viewer.barChart(study.domains.dm, { split: RACE, style: 'dashboard' });
     race.root.prepend(ui.divText('Race', viewerTitle));
 
-    let age = DG.Viewer.histogram(study.domains.dm, { value: 'age', style: 'dashboard' });
+    let age = DG.Viewer.histogram(study.domains.dm, { value: AGE, style: 'dashboard' });
     age.root.prepend(ui.divText('Age', viewerTitle));
 
     this.root.className = 'grok-view ui-box';

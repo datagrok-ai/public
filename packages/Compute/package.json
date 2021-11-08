@@ -22,7 +22,7 @@
 		"webpack-cli": "latest"
 	},
 	"scripts": {
-		"debug-compute": "grok publish --rebuild",
+		"debug-compute": "webpack & grok publish",
 		"release-compute": "grok publish --rebuild --release",
 		"build-compute": "webpack",
 		"build": "webpack",

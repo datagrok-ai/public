@@ -196,7 +196,7 @@ export class ViewBase {
    * Appends multiple elements this view. Use {@link append} for appending a single element.
    * @param {object[]} items */
   appendAll(items: HTMLElement[]): HTMLElement {
-    return ui.appendAll(this.root, items.map(ui.render));
+    return ui.appendAll(this.root, items.map(x => ui.render(x)));
   }
 
   /** Detaches this view. */
@@ -230,6 +230,11 @@ export class View extends ViewBase {
       return new TableView(d);
     else
       return new View(d);
+  }
+
+  /** Creates a view for the specified object, if it is registered, or null otherwise. */
+  static forObject(x: any): View | null {
+    return api.grok_View_ForObject(toDart(x));
   }
 
   static fromRoot(root: HTMLElement) {

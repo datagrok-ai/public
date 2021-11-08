@@ -2,6 +2,7 @@ import {Balloon} from './widgets';
 import * as rxjs from 'rxjs';
 import {toDart, toJs} from './wrappers';
 import { Cell } from './dataframe';
+import $ from "cash-dom";
 
 let api = <any>window;
 
@@ -396,6 +397,10 @@ export function _options(element: HTMLElement, options: any) {
     element.className += ` ${options.classes}`;
   if (options.style != null)
     Object.assign(element.style, options.style);
+  if (options.processNode != null)
+    options.processNode(element);
+  if (options.onClick != null)
+    element.addEventListener('click', options.onClick);
   return element;
 }
 

@@ -2,9 +2,9 @@
 import * as grok from 'datagrok-api/grok';
 import * as ui from 'datagrok-api/ui';
 import * as DG from 'datagrok-api/dg';
-import {ModelHandler} from './model_handler';
-import {selectOutliersManually} from './outliers_selection';
-import {exportFuncCall} from './export_funccall';
+import {ModelHandler} from './model-handler';
+import {selectOutliersManually} from './outliers-selection';
+import {exportFuncCall} from './export-funccall';
 import {_functionParametersGrid} from "./function-views/function-parameters-grid";
 import {ModelCatalogView} from "./model-catalog-view";
 

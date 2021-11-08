@@ -5,6 +5,7 @@ import { study, ClinRow } from "../clinical-study";
 import { createAERiskAssessmentDataframe } from '../data-preparation/data-preparation';
 import { ILazyLoading } from '../lazy-loading/lazy-loading';
 import { checkMissingDomains } from './utils';
+import { requiredColumnsByView } from '../constants';
 
 export class AERiskAssessmentView extends DG.ViewBase implements ILazyLoading  {
 
@@ -18,7 +19,7 @@ export class AERiskAssessmentView extends DG.ViewBase implements ILazyLoading  {
   loaded: boolean;
 
   load(): void {
-    checkMissingDomains(['ae', 'ex'], false, this);
+    checkMissingDomains(requiredColumnsByView[this.name], false, this);
  }
 
   createView(): void {
