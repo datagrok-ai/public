@@ -25,10 +25,12 @@ export class ModelCatalogView extends DG.CardView {
   initMenu() {
     this.ribbonMenu
       .group('Models')
-      .item('Add New...', () => onboardModel())
+        .item('Add New...', () => onboardModel())
       .endGroup()
       .group('Help')
-      .item('Compute Engine', () => window.open('https://github.com/datagrok-ai/public/tree/master/packages/Compute', '_blank'));
+        .item('Compute Engine', () => window.open('https://github.com/datagrok-ai/public/tree/master/packages/Compute', '_blank'))
+        .item('Developing Models', () => window.open('https://datagrok.ai/help/develop/scripting', '_blank'))
+      .endGroup();
   }
 
   initToolbox() {
@@ -41,8 +43,8 @@ export class ModelCatalogView extends DG.CardView {
   }
 
   setCurrentModel(model: DG.Script) {
-    const modelView = DG.View.forObject(model)!;
-    const host: HTMLDivElement = this.root.querySelector('.grok-gallery-grid')!;
+    let modelView = DG.View.forObject(model)!;
+    let host: HTMLDivElement = this.root.querySelector('.grok-gallery-grid')!;
     ui.empty(host);
     host.appendChild(modelView.root);
   }
