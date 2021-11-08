@@ -481,12 +481,9 @@ export function dialog(options: any = ''): Dialog {
 }
 
 /** Binds [item] with the [element]. It enables selecting it as a current object, drag-and-drop,
- * tooltip, and popup menu.
- * @param item
- * @param {Element} element
- * @returns {Element}. */
-export function bind(item: any, element: HTMLElement): HTMLElement {
-  return api.grok_UI_Bind(toDart(item), element);
+ * tooltip, and popup menu.*/
+export function bind(item: any, element: HTMLElement, options?: {contextMenu: boolean}): HTMLElement {
+  return api.grok_UI_Bind(toDart(item), element, options?.contextMenu);
 }
 
 /** Shows popup with the [element] near the [anchor].
