@@ -25,6 +25,7 @@ export async function selectOutliersManually(inputData: DG.DataFrame) {
     'color': OUTLIER_REASON_COL_LABEL,
     'lassoTool': true,
     'legendVisibility': 'Never',
+    'filterByZoom': false,
   });
   scatterPlot.root.style.height = '100%';
   scatterPlot.root.style.width = '100%';
