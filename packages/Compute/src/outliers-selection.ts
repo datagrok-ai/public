@@ -207,12 +207,11 @@ export async function selectOutliersManually(inputData: DG.DataFrame) {
           ui.block25([
             ui.divV([
               groupsListGrid.root,
-              ui.divV([
-                ui.div(addOutlierGroupBtn, {style: {'border': '1px solid #2083d5', 'margin-top': '2px'}}),
-                ui.div(removeOutlierGroupBtn, {style: {'border': '1px solid #2083d5', 'margin-top': '2px'}}),
-                ui.div(autoOutlierGroupBtn, {style: {'border': '1px solid #2083d5', 'margin-top': '2px'}}),
+              ui.divH([
+                ui.block75([addOutlierGroupBtn, removeOutlierGroupBtn]),
+                ui.block25([autoOutlierGroupBtn]),
               ], {style: {'text-align': 'center', 'margin-top': '15px'}}),
-            ], {style: {height: '100%'}}),
+            ], {style: {height: '75%'}}),
           ]),
         ], {style: {height: '100%'}}),
       )
