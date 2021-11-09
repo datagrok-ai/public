@@ -37,7 +37,7 @@ public class GrokConnect {
             port(port);
             connectorsModule();
 
-            System.out.println("grok_connect with Hikari pool");
+            logger.info("grok_connect with Hikari pool");
             System.out.printf("grok_connect: Running on %s\n", uri);
             System.out.println("grok_connect: Connectors: " + String.join(", ",
                     providerManager.getAllProvidersTypes()));
@@ -216,6 +216,12 @@ public class GrokConnect {
         post("/cancel", (request, response) -> {
             FuncCall call = gson.fromJson(request.body(), FuncCall.class);
             providerManager.queryMonitor.cancelStatement(call.id);
+            return null;
+        });
+
+        post("/set_settings", (request, response) -> {
+            gson.fromJson(request.body(), Settings.class);
+            ConnectionPool.getInstance().setTimer();
             return null;
         });
     }
