@@ -17,4 +17,11 @@ sex.choices = ['M', 'F'];
 let propGrid = new DG.PropertyGrid();
 propGrid.update(person, [name, sex, width, age, checked]);
 
-ui.dialog().add(propGrid).show({width: 400, height: 250});
+//ui.dialog().add(propGrid).show({width: 400, height: 250});
+
+ui.dialog()
+  .add(ui.h1('Property grid'))
+  .add(propGrid)
+  .add(ui.h1('Form'))
+  .add(ui.input.form(person, [name, sex, width, age, checked]))
+  .show({width: 350, height: 500});

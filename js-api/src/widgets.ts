@@ -736,8 +736,8 @@ export class InputBase {
       this.onChanged((_: any) => onChanged(this.value));
   }
 
-  static forProperty(property: Property): InputBase {
-    return toJs(api.grok_InputBase_ForProperty(property.d));
+  static forProperty(property: Property, source: any = null): InputBase {
+    return toJs(api.grok_InputBase_ForProperty(property.d, source));
   }
 
   static forColumn(column: Column): InputBase {
@@ -749,40 +749,40 @@ export class InputBase {
 
   get caption(): string {
     return api.grok_InputBase_Get_Caption(this.d);
-  };
+  }
 
   get format(): string {
     return api.grok_InputBase_Get_Format(this.d);
-  } ;
+  }
 
   get captionLabel(): string {
     return api.grok_InputBase_Get_CaptionLabel(this.d);
-  };
+  }
 
   /** Returns the actual input */
   get input(): HTMLElement | string {
     return api.grok_InputBase_Get_Input(this.d);
-  };
+  }
 
   /** Whether empty values are allowed */
-  get nullable(): boolean { return api.grok_InputBase_Get_Nullable(this.d); };
-  set nullable(v: boolean) { api.grok_InputBase_Set_Nullable(this.d, v); };
+  get nullable(): boolean { return api.grok_InputBase_Get_Nullable(this.d); }
+  set nullable(v: boolean) { api.grok_InputBase_Set_Nullable(this.d, v); }
 
   /** Input value */
-  get value(): any { return toJs(api.grok_InputBase_Get_Value(this.d)); };
-  set value(x: any) { toDart(api.grok_InputBase_Set_Value(this.d, x)); };
+  get value(): any { return toJs(api.grok_InputBase_Get_Value(this.d)); }
+  set value(x: any) { toDart(api.grok_InputBase_Set_Value(this.d, x)); }
 
   /** String representation of the {@link value} */
-  get stringValue(): string { return api.grok_InputBase_Get_StringValue(this.d); };
-  set stringValue(s: string) { api.grok_InputBase_Set_StringValue(this.d, s); };
+  get stringValue(): string { return api.grok_InputBase_Get_StringValue(this.d); }
+  set stringValue(s: string) { api.grok_InputBase_Set_StringValue(this.d, s); }
 
   /** Whether the input is readonly */
-  get readOnly(): boolean { return api.grok_InputBase_Get_ReadOnly(this.d); };
-  set readOnly(v: boolean) { api.grok_InputBase_Set_ReadOnly(this.d, v); };
+  get readOnly(): boolean { return api.grok_InputBase_Get_ReadOnly(this.d); }
+  set readOnly(v: boolean) { api.grok_InputBase_Set_ReadOnly(this.d, v); }
 
   /** Whether the input is enabled */
-  get enabled(): boolean { return api.grok_InputBase_Get_Enabled(this.d); };
-  set enabled(v: boolean) { api.grok_InputBase_Set_Enabled(this.d, v); };
+  get enabled(): boolean { return api.grok_InputBase_Get_Enabled(this.d); }
+  set enabled(v: boolean) { api.grok_InputBase_Set_Enabled(this.d, v); }
 
   /// Occurs when [value] is changed, either by user or programmatically.
   onChanged(callback: Function): StreamSubscription {

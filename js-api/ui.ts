@@ -14,7 +14,7 @@ import {__obs} from './src/events';
 import {_isDartium, _options} from './src/utils';
 import * as rxjs from 'rxjs';
 import { CanvasRenderer, GridCellRenderer, SemanticValue } from './src/grid';
-import { DateTime } from './src/entities';
+import {DateTime, Property} from './src/entities';
 import { Column, DataFrame } from './src/dataframe';
 
 
@@ -579,6 +579,41 @@ export function inputs(inputs: InputBase[], options: any = null) {
 export function tree(): TreeViewNode {
   return TreeViewNode.tree();
 }
+
+
+// Will come back later (-Andrew)
+//
+// export interface InputOptions {
+//   value?: any;
+//   onValueChanged?: (v: any) => void;
+// }
+//
+//
+export namespace input {
+
+  export function form(source: any, props: Property[]): HTMLElement {
+    return inputs(props.map((p) => InputBase.forProperty(p, source)));
+  }
+
+  // function _options(inputBase: InputBase, options?: InputOptions) {
+  //   if (options == null)
+  //     return;
+  //   return inputBase;
+  // }
+  //
+  // export function int(name: string, options?: InputOptions) {
+  //   return _options(intInput(name, options?.value, options?.onValueChanged));
+  // }
+  //
+  // export function choice(name: string, choices: string[], options?: InputOptions) {
+  //   return _options(choiceInput(name, options?.value ?? choices[0], choices, options?.onValueChanged));
+  // }
+  //
+  // export function multiChoice(name: string, options?: InputOptions) {
+  //
+  // }
+}
+
 
 export function intInput(name: string, value: number, onValueChanged: Function | null = null): InputBase {
   return new InputBase(api.grok_IntInput(name, value), onValueChanged);
