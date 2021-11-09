@@ -4,10 +4,11 @@ import * as ui from "datagrok-api/ui";
 import { study } from "../clinical-study";
 import { addDataFromDmDomain, getUniqueValues } from '../data-preparation/utils';
 import { createBaselineEndpointDataframe } from '../data-preparation/data-preparation';
-import { ETHNIC, RACE, SEX, TREATMENT_ARM } from '../constants';
+import { ETHNIC, LAB_RES_N, LAB_TEST, LAB_VISIT_DAY, LAB_VISIT_NAME, RACE, SEX, SUBJECT_ID, TREATMENT_ARM } from '../columns-constants';
 import { checkMissingDomains, updateDivInnerHTML } from './utils';
 import { ILazyLoading } from '../lazy-loading/lazy-loading';
 import { _package } from '../package';
+import { requiredColumnsByView } from '../constants';
 var { jStat } = require('jstat')
 
 
@@ -38,7 +39,7 @@ export class BoxPlotsView extends DG.ViewBase implements ILazyLoading {
   loaded: boolean;
 
   load(): void {
-    checkMissingDomains(['dm', 'lb'], false, this);
+    checkMissingDomains(requiredColumnsByView[this.name], false, this);
  }
 
   createView(): void {
@@ -60,25 +61,25 @@ export class BoxPlotsView extends DG.ViewBase implements ILazyLoading {
       }
     };
 
-    let minLabVisit = study.domains.lb.getCol('VISITDY').stats[ 'min' ];
+    let minLabVisit = study.domains.lb.getCol(LAB_VISIT_DAY).stats[ 'min' ];
     let minVisitName = study.domains.lb
-      .groupBy([ 'VISITDY', 'VISIT' ])
-      .where(`VISITDY = ${minLabVisit}`)
+      .groupBy([ LAB_VISIT_DAY, LAB_VISIT_NAME ])
+      .where(`${LAB_VISIT_DAY} = ${minLabVisit}`)
       .aggregate()
-      .get('VISIT', 0);
+      .get(LAB_VISIT_NAME, 0);
     this.bl = minVisitName;
 
-    this.uniqueVisits = study.domains.lb.getCol('VISIT').categories;
-    this.labWithDmData = addDataFromDmDomain(study.domains.lb, study.domains.dm, [ 'USUBJID', 'VISITDY', 'VISIT', 'LBTEST', 'LBSTRESN' ], [TREATMENT_ARM, SEX, RACE, ETHNIC]);
-    this.uniqueLabValues = Array.from(getUniqueValues(this.labWithDmData, 'LBTEST'));
+    this.uniqueVisits = Array.from(getUniqueValues(study.domains.lb, LAB_VISIT_NAME));
+    this.labWithDmData = addDataFromDmDomain(study.domains.lb, study.domains.dm, [ SUBJECT_ID, LAB_VISIT_DAY, LAB_VISIT_NAME, LAB_TEST, LAB_RES_N ], [TREATMENT_ARM, SEX, RACE, ETHNIC]);
+    this.uniqueLabValues = Array.from(getUniqueValues(this.labWithDmData, LAB_TEST));
     this.labWithDmData = this.labWithDmData
     .groupBy(this.labWithDmData.columns.names())
-    .where(`VISITDY = ${minLabVisit}`)
+    .where(`${LAB_VISIT_DAY} = ${minLabVisit}`)
     .aggregate();
     this.getTopPValues(4);
     this.updateBoxPlots(viewerTitle, viewerTitlePValue, this.selectedSplitBy);
 
-    let blVisitChoices = ui.choiceInput('Baseleine', this.bl, this.uniqueVisits);
+    let blVisitChoices = ui.choiceInput('Baseline', this.bl, this.uniqueVisits);
     blVisitChoices.onChanged((v) => {
       this.bl = blVisitChoices.value;
       this.updateBoxPlots(viewerTitle, viewerTitlePValue, this.selectedSplitBy);
@@ -122,7 +123,7 @@ export class BoxPlotsView extends DG.ViewBase implements ILazyLoading {
       this.boxPlots = [];
       this.pValuesArray = [];
       this.selectedLabValues.forEach(it => {
-        let df = createBaselineEndpointDataframe(study.domains.lb, study.domains.dm, [category], it, this.bl, '', 'VISIT', `${it}_BL`);
+        let df = createBaselineEndpointDataframe(study.domains.lb, study.domains.dm, [category], it, this.bl, '', LAB_VISIT_NAME, `${it}_BL`);
         this.getPValues(df, it, category, `${it}_BL`);
         const plot = DG.Viewer.boxPlot(df, {
           category: category,
@@ -146,15 +147,15 @@ export class BoxPlotsView extends DG.ViewBase implements ILazyLoading {
 
   private getTopPValues(topNum: number){
     this.pValuesArray = [];
-    this.uniqueLabValues.forEach(val => this.getPValues(this.labWithDmData, val, TREATMENT_ARM, 'LBSTRESN'));
+    this.uniqueLabValues.forEach(val => this.getPValues(this.labWithDmData, val, TREATMENT_ARM, LAB_RES_N));
     this.pValuesArray.sort((a, b) => (a.pValue - b.pValue));
     this.selectedLabValues = this.pValuesArray.slice(0, topNum).map(it => it.labValue);
   }
 
   getPValues(df: DG.DataFrame, labVal: any, category: any, resColName: string){
       const valueData = df
-        .groupBy([ 'USUBJID', 'LBTEST', resColName, category ])
-        .where(`LBTEST = ${labVal}`)
+        .groupBy([ SUBJECT_ID, LAB_TEST, resColName, category ])
+        .where(`${LAB_TEST} = ${labVal}`)
         .aggregate();
       const valuesByArm = valueData.groupBy([ category ]).getGroups();
       const dataForAnova = [];

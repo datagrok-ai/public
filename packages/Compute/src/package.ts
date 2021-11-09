@@ -2,9 +2,11 @@
 import * as grok from 'datagrok-api/grok';
 import * as ui from 'datagrok-api/ui';
 import * as DG from 'datagrok-api/dg';
-import {ModelHandler} from './model_handler';
-import {selectOutliersManually} from './outliers_selection';
-import {exportFuncCall} from './export_funccall';
+import {ModelHandler} from './model-handler';
+import {selectOutliersManually} from './outliers-selection';
+import {exportFuncCall} from './export-funccall';
+import {_functionParametersGrid} from './function-views/function-parameters-grid';
+import {ModelCatalogView} from './model-catalog-view';
 
 export const _package = new DG.Package();
 
@@ -22,11 +24,7 @@ export function init() {
 //name: Model Catalog
 //tags: app
 export function modelCatalog() {
-  const v = DG.CardView.create({dataSource: grok.dapi.scripts, permanentFilter: '#model'});
-  v.meta = new ModelHandler();
-  v.name = 'Models';
-  v.permanentFilter = '#model';
-  grok.shell.addView(v);
+  grok.shell.addView(new ModelCatalogView());
 }
 
 //name: manualOutlierDetectionDialog
@@ -62,4 +60,21 @@ export async function manualOutlierSelectionDialog(inputData: DG.DataFrame) {
 //tags: export
 export function exportToExcel(call: DG.FuncCall) {
   exportFuncCall(call);
+}
+
+/* eslint-disable */
+
+//description: A spreadsheet that lets you interactively edit parameters and evaluate functions
+//tags: functionAnalysis
+//input: func f
+//output: view result
+export function functionParametersGrid(f: DG.Func): DG.View {
+  return _functionParametersGrid(f);
+}
+
+//name: hof
+export function hof() {
+  let f: DG.Func = DG.Func.byName('Sin');
+  let v: DG.View = functionParametersGrid(f);
+  grok.shell.addView(v);
 }

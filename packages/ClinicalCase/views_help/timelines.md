@@ -3,7 +3,7 @@
 Timelines view allows to visualize events flow in time. X axis is time axis reflecting study days. On Y axis there are subjects.
 Events are shown either as a point(in case event lased for one day) or as a line (for cases events were prolonged in time)
 
-Adverse events, investigationsl drug exposure and concomitant medication domains are available for analysis(in case SDTM data contains corresponding tables). Filters can also be applyed for each domain.
+Adverse events, investigational drug exposure and concomitant medication domains are available for analysis(in case SDTM data contains corresponding tables). Filters can also be applied for each domain.
 
 By zooming in and out you can drill down to particular patient and event or otherwise see the picture of events in general.
 

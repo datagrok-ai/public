@@ -20,6 +20,7 @@
       120
     ],
     "require-jsdoc": "off",
-    "spaced-comment": "off"
+    "spaced-comment": "off",
+    "linebreak-style": "off"
   }
 }

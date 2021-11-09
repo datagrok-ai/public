@@ -4,12 +4,11 @@ import * as DG from "datagrok-api/dg";
 import { CLIN_TRIAL_GOV_SEARCH, HttpService } from '../services/http.service';
 import { addDataFromDmDomain, dictToString, getNullOrValue } from '../data-preparation/utils';
 import { study } from '../clinical-study';
-import { SEVERITY_COLOR_DICT, SUBJECT_ID, TREATMENT_ARM, AGE, SEX, RACE, CLINICAL_TRIAL_GOV_FIELDS } from '../constants';
-import { AeBrowserView } from '../views/adverse-events-browser';
+import { SEVERITY_COLOR_DICT, CLINICAL_TRIAL_GOV_FIELDS } from '../constants';
+import { SUBJECT_ID, TREATMENT_ARM, AGE, SEX, RACE, AE_TERM, AE_SEVERITY, AE_START_DAY, AE_END_DAY, AE_START_DATE, AE_END_DATE, DOMAIN, INV_DRUG_DOSE, INV_DRUG_DOSE_UNITS, CON_MED_DOSE, CON_MED_DOSE_UNITS, CON_MED_DOSE_FREQ, CON_MED_ROUTE, INV_DRUG_DOSE_FORM, INV_DRUG_DOSE_FREQ, INV_DRUG_ROUTE } from '../columns-constants';
 import { updateDivInnerHTML } from '../views/utils';
 import $ from "cash-dom";
 import { getSubjectDmData } from '../data-preparation/data-preparation';
-import { Accordion } from 'datagrok-api/dg';
 import { AEBrowserHelper } from '../helpers/ae-browser-helper';
 
 export async function createPropertyPanel(viewClass: any) {
@@ -19,7 +18,10 @@ export async function createPropertyPanel(viewClass: any) {
             break;
         }
         case 'Timelines': {
-            grok.shell.o = await timelinesPanel(viewClass.resultTables, viewClass.selectedDataframes, viewClass.aeBrowserHelper);
+            const panel = await timelinesPanel(viewClass.resultTables, viewClass.selectedDataframes, viewClass.aeBrowserHelper);
+            if (panel) {
+                grok.shell.o = panel;
+            }
             break;
         }
         case 'AE Browser': {
@@ -42,8 +44,8 @@ export async function aeBrowserPanel(view: AEBrowserHelper) {
     if(view.aeToSelect.currentRowIdx !== -1){
         let subjId = view.aeToSelect.get(SUBJECT_ID, view.aeToSelect.currentRowIdx);
         let title = ui.tooltip.bind(ui.label(subjId), dictToString(getSubjectDmData(subjId, [AGE, SEX, RACE, TREATMENT_ARM])));
-        let description = ui.divH([ui.divText(String(view.aeToSelect.get('AETERM', view.aeToSelect.currentRowIdx).toLowerCase()))]);
-        let severity = view.aeToSelect.get('AESEV', view.aeToSelect.currentRowIdx);
+        let description = ui.divH([ui.divText(String(view.aeToSelect.get(AE_TERM, view.aeToSelect.currentRowIdx).toLowerCase()))]);
+        let severity = view.aeToSelect.get(AE_SEVERITY, view.aeToSelect.currentRowIdx);
         let severityStyle = {style:{
             color: `${SEVERITY_COLOR_DICT[severity.toUpperCase()]}`,
               marginRight: '5px',
@@ -54,8 +56,8 @@ export async function aeBrowserPanel(view: AEBrowserHelper) {
 
         description.prepend(ui.divText(severity, severityStyle));
         let startEndDays = ui.tooltip.bind(
-            ui.label(`${getNullOrValue(view.aeToSelect, 'AESTDY', view.aeToSelect.currentRowIdx)} - ${getNullOrValue(view.aeToSelect, 'AEENDY', view.aeToSelect.currentRowIdx)}`), 
-            `${getNullOrValue(view.aeToSelect, 'AESTDTC', view.aeToSelect.currentRowIdx)} - ${getNullOrValue(view.aeToSelect, 'AEENDTC', view.aeToSelect.currentRowIdx)}`);
+            ui.label(`${getNullOrValue(view.aeToSelect, AE_START_DAY, view.aeToSelect.currentRowIdx)} - ${getNullOrValue(view.aeToSelect, AE_END_DAY, view.aeToSelect.currentRowIdx)}`), 
+            `${getNullOrValue(view.aeToSelect, AE_START_DATE, view.aeToSelect.currentRowIdx)} - ${getNullOrValue(view.aeToSelect, AE_END_DATE, view.aeToSelect.currentRowIdx)}`);
        
 
         let daysInput = ui.intInput('Prior AE', view.daysPriorAe);
@@ -146,27 +148,35 @@ export async function aeBrowserPanel(view: AEBrowserHelper) {
 
 export async function summaryPanel(studyId: string) {
     const httpService = new HttpService();
-    let clinTrialsGovInfo = await httpService.getStudyData('R01NS050536', Object.keys(CLINICAL_TRIAL_GOV_FIELDS));
-    //let clinTrialsGovInfo = await httpService.getStudyData(studyId, Object.keys(CLINICAL_TRIAL_GOV_FIELDS));
-    const summaryDict = {};
-    Object.keys(clinTrialsGovInfo).forEach(key => {
-        summaryDict[ CLINICAL_TRIAL_GOV_FIELDS[ key ] ] = clinTrialsGovInfo[ key ];
-    })
-    let studyLink = `${CLIN_TRIAL_GOV_SEARCH}${summaryDict[ 'NCT ID' ]}`
-    summaryDict[ `Study link` ] = ui.link('Go to study page', () => { window.open(studyLink, '_blank').focus(); })
+    //let clinTrialsGovInfo = await httpService.getStudyData('R01NS050536', Object.keys(CLINICAL_TRIAL_GOV_FIELDS));
+    let clinTrialsGovInfo = await httpService.getStudyData(studyId, Object.keys(CLINICAL_TRIAL_GOV_FIELDS));
 
     let acc = ui.accordion('summary-panel');
     let accIcon = ui.element('i');
     accIcon.className = 'grok-icon svg-icon svg-view-layout';
 
     acc.addTitle(ui.span([accIcon, ui.label(`${studyId}`)]));
-    let acctable = ui.tableFromMap(summaryDict);
-    acc.addPane('General', () => {
-        $(acctable).find('tr').css('vertical-align', 'top');
-        $(acctable).find('td').css('padding-bottom', '10px');
-        $(acctable).find('.d4-entity-list>span').css('margin', '0px');
-        return acctable
-    }, true)
+
+    if (clinTrialsGovInfo) {
+        const summaryDict = {};
+        Object.keys(clinTrialsGovInfo).forEach(key => {
+            summaryDict[CLINICAL_TRIAL_GOV_FIELDS[key]] = clinTrialsGovInfo[key];
+        })
+        let studyLink = `${CLIN_TRIAL_GOV_SEARCH}${summaryDict['NCT ID']}`
+        summaryDict[`Study link`] = ui.link('Go to study page', () => { window.open(studyLink, '_blank').focus(); })
+
+        let acctable = ui.tableFromMap(summaryDict);
+        acc.addPane('General', () => {
+            $(acctable).find('tr').css('vertical-align', 'top');
+            $(acctable).find('td').css('padding-bottom', '10px');
+            $(acctable).find('.d4-entity-list>span').css('margin', '0px');
+            return acctable
+        }, true)
+    } else {
+        acc.addPane('General', () => {
+            return ui.divText('Study not found on clinicaltrials.gov')
+        }, true)
+    }
 
     return acc.root;
 }
@@ -178,7 +188,7 @@ export async function timelinesPanel(timelinesDf: DG.DataFrame, domains: string[
     if (!selectedInd.length) {
         if (domains.includes('ae')) {
             const aeWithArm = addDataFromDmDomain(timelinesDf.clone(), study.domains.dm, timelinesDf.columns.names(), [TREATMENT_ARM], 'key');
-            const aeNumberByArm = aeWithArm.groupBy([TREATMENT_ARM]).where('domain = ae').count().aggregate();
+            const aeNumberByArm = aeWithArm.groupBy([TREATMENT_ARM]).where(`${DOMAIN} = ae`).count().aggregate();
             const subjNumberByArm = study.domains.dm.groupBy([TREATMENT_ARM]).uniqueCount(SUBJECT_ID).aggregate();
             const aeNumByArmDict = {};
             for (let i = 0; i < aeNumberByArm.rowCount; i++) {
@@ -191,7 +201,7 @@ export async function timelinesPanel(timelinesDf: DG.DataFrame, domains: string[
             }
 
             const aeTop5Dict = {};
-            const aeTop5 = aeWithArm.groupBy([TREATMENT_ARM, 'event']).where('domain = ae').count().aggregate();
+            const aeTop5 = aeWithArm.groupBy([TREATMENT_ARM, 'event']).where(`${DOMAIN} = ae`).count().aggregate();
             const order = aeTop5.getSortedOrder([TREATMENT_ARM, 'event'] as any);
             order.forEach(item => {
                 const arm = aeTop5.get(TREATMENT_ARM, item);
@@ -231,14 +241,30 @@ export async function timelinesPanel(timelinesDf: DG.DataFrame, domains: string[
         }
     } else {
         const eventArray = [];
+        const eventIndexesArray = [];
         let acc2 = ui.accordion('timelines-patient-panel');
         let accIcon = ui.element('i');
         accIcon.className = 'grok-icon svg-icon svg-view-layout';
 
         let domainAdditionalFields = {
-            ae: { fields: ['AESEV'], pos: 'before' },
-            cm: { fields: ['CMDOSE', 'CMDOSU', 'CMDOSFRQ', 'CMROUTE'], pos: 'after' },
-            ex: { fields: ['EXDOSE', 'EXDOSU', 'EXDOSFRM', 'EXDOSFRQ', 'EXROUTE'], pos: 'after' },
+            ae: { fields: [AE_SEVERITY], pos: 'before' },
+            cm: { fields: [CON_MED_DOSE, CON_MED_DOSE_UNITS, CON_MED_DOSE_FREQ, CON_MED_ROUTE], pos: 'after' },
+            ex: { fields: [INV_DRUG_DOSE, INV_DRUG_DOSE_UNITS, INV_DRUG_DOSE_FORM, INV_DRUG_DOSE_FREQ, INV_DRUG_ROUTE], pos: 'after' },
+        }
+
+        let switchToAEBrowserPanel = (aeRowNum) => {
+            if (aeBrowserHelper.aeToSelect.currentRowIdx === aeRowNum) {
+                aeBrowserHelper.createAEBrowserPanel();
+            } else {
+                //@ts-ignore
+                aeBrowserHelper.aeToSelect.currentRow = aeRowNum;
+            }
+        }
+
+        if (selectedInd.length === 1 && timelinesDf.get('domain', selectedInd[0]) === 'ae') {
+            const aeRowNum = timelinesDf.get('rowNum', selectedInd[0]);
+            switchToAEBrowserPanel(aeRowNum);
+            return null;
         }
 
         selectedInd.forEach((item) => {
@@ -247,45 +273,54 @@ export async function timelinesPanel(timelinesDf: DG.DataFrame, domains: string[
             let addInfoString = '';
             const index = timelinesDf.get('rowNum', item);
             addDomainInfo.fields.forEach(it => {
-                addInfoString += `${study.domains[domain].get(it, index)} `
+                if (study.domains[domain].columns.names().includes(it)) {
+                    addInfoString += `${study.domains[domain].get(it, index)} `;
+                }
             });
             const eventName = String(getNullOrValue(timelinesDf, 'event', item)).toLowerCase();
             const fullEventName = addDomainInfo.pos === 'before' ? `${addInfoString}${eventName}` : `${eventName} ${addInfoString}`;
-            let eventElement;
-            if (domain === 'ae') {
-                eventElement = ui.link(fullEventName, {}, '', { id: `${index}` });
-                eventElement.addEventListener('click', (event) => {
-                    if(aeBrowserHelper.aeToSelect.currentRowIdx === parseInt(eventElement.id)){
-                        aeBrowserHelper.createAEBrowserPanel();
-                    } else {
-                        //@ts-ignore
-                        aeBrowserHelper.aeToSelect.currentRow = parseInt(eventElement.id);
-                    }
-                    event.stopPropagation();
-                });
-            } else {
-                eventElement = fullEventName;
-            }
             const eventStart = getNullOrValue(timelinesDf, 'start', item);
             const eventEnd = getNullOrValue(timelinesDf, 'end', item);
             eventArray.push({
-                Event: eventElement,
+                Domain: domain,
+                Event: fullEventName,
                 Days: `${eventStart} - ${eventEnd}`
             })
+            eventIndexesArray.push(index);
         })
         acc2.addTitle(ui.span([accIcon, ui.label(`${timelinesDf.get('key', selectedInd[0])}`)]));
 
-        const divsArray = [];
-        eventArray.forEach(it => {
-            divsArray.push(ui.tableFromMap(it));
-        })
-        acc2.addPane('Events', () => {
-            $(divsArray).find('.d4-entity-list>span').css('margin', '0px');
-            return ui.divV(divsArray)
+        const eventTable = DG.DataFrame.fromObjects(eventArray);
+        const eventGrid = eventTable.plot.grid();
+        eventGrid.columns.byName('domain').width = 55;
+        let col = eventGrid.columns.byName('event');
+        col.width = 170;
+        col.cellType = 'html';
+
+        eventGrid.onCellPrepare(function (gc) {
+            if (gc.isTableCell && eventTable.get('Domain', gc.gridRow) === 'ae' && gc.gridColumn.name === 'Event') {
+                let eventElement = ui.link(gc.cell.value, {}, '', { id: `${eventIndexesArray[gc.gridRow]}` });
+                eventElement.addEventListener('click', (event) => {
+                    switchToAEBrowserPanel(parseInt(eventElement.id));
+                    event.stopPropagation();
+                });
+                gc.style.element = ui.div(eventElement, {style: {'white-space': 'nowrap'}});
+            } else {
+                gc.style.element = ui.divText(gc.cell.value, {style: {'white-space': 'nowrap'}});
+            }
+            gc.style.element.style.paddingTop = '7px';
+            gc.style.element.style.paddingLeft = '7px';
+            ui.tooltip.bind(gc.style.element, gc.cell.value);
         });
 
-        return acc2.root;
+        acc2.addPane('Events', () => {
+            return ui.div(eventGrid.root);
+        });
+        const accPane = acc2.getPane('Events').root.getElementsByClassName('d4-accordion-pane-content')[0] as HTMLElement;
+        accPane.style.margin = '0px';
+        accPane.style.paddingLeft = '0px';
 
+        return acc2.root;
     }
 
 }

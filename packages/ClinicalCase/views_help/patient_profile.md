@@ -1,7 +1,7 @@
 ### Patient profile
 
-Patient profile is useful for analysing events related to particular patient.
-You can analyse data from laboratory, adverse events, dug exposue and concomitant medication domains in time and see relations between events. All graphs are linked to the same X axis representing study days and it can be zoomed in and out simultaneously. 
+Patient profile is useful for analyzing events related to particular patient.
+You can analyze data from laboratory, adverse events, dug exposure and concomitant medication domains in time and see relations between events. All graphs are linked to the same X axis representing study days and it can be zoomed in and out simultaneously. 
 
 Information about events is available in tooltips on mouse hover. For convenience domains can be collapsed or extended.
 
@@ -9,7 +9,7 @@ Information about events is available in tooltips on mouse hover. For convenienc
 
 * **Lab values chart**
 
-By clicking on settings button you can choose laboratory values to show on chart. List of available values is extraced from 'lb' domain in provided SDTM data.
+By clicking on settings button you can choose laboratory values to show on chart. List of available values is extracted from 'lb' domain in provided SDTM data.
 
 Values within normal ranges are colored green, values outside normal ranges are red.
 

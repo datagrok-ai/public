@@ -15,13 +15,17 @@
 		"common/ngl_viewer/ngl.js"
 	],
 	"scripts": {
-		"debug-repertoirebrowser": "grok publish --rebuild",
-		"release-repertoirebrowser": "grok publish --rebuild --release",
+		"debug-repertoirebrowser": "grok publish dev --rebuild",
+		"release-repertoirebrowser": "grok publish dev --rebuild --release",
 		"build-repertoirebrowser": "webpack",
 		"build": "webpack",
 		"debug-repertoirebrowser-public": "grok publish public --rebuild",
 		"release-repertoirebrowser-public": "grok publish public --rebuild --release",
-		"debug-repertoirebrowser-local": "grok publish dev --rebuild",
-		"release-repertoirebrowser-local": "grok publish dev --rebuild --release"
+		"debug-repertoirebrowser-local": "grok publish local --rebuild",
+		"release-repertoirebrowser-local": "grok publish local --rebuild --release"
+	},
+	"devDependencies": {
+		"webpack": "latest",
+		"webpack-cli": "latest"
 	}
 }

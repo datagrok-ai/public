@@ -8,23 +8,21 @@ with typed inputs and outputs:
 * Inputs and outputs can be scalars, vectors, matrices
 * Typically written in R, Python or Matlab/Octave and run on the server
 * Other languages are possible, including compiled to WebAssembly and run in the browser
-* Can be both simple and fast, or require considerable compute power to run, demanding
-  automatic scaling
+* Automatic scaling
 * Evaluated in multiple contexts of experiment design, such as variability analysis
   of output values with respect to input values
-* Natural to compose, so that an output of one function becomes an input to the other
-* A data source to the function input can be a CSV file, a table from a database query,
-  a file from a file share or a return from a call to a Web REST service
-* The function itself and historical results of its runs are subject to sharing with
-  collaborators and referencing in logs for decisions traceability
+* Composable (an output of one function becomes an input to the other)
+* Could be connected to any data source (db, web service, file, etc)
+* Logging, audit, traceability
+* Privileges and visibility
 
 `Compute` package:
 
 * Allows using arbitrary functions in R, Python and any other language as full-fledged
   scientific models
-* Enables a full lifecycle of mathematical models: create, tune, share, use, validate
+* Enables a full lifecycle of models: create, tune, share, use, validate
 * Provides for easy to use and highly automated evaluation and computation environment
-* Enables contextual process for Design of Experiment (sensitivity analysis and more)
+* Enables contextual process for the Design of Experiment (sensitivity analysis and more)
 
 In addition, Datagrok platform supports a UI layout markup, so that the model function becomes
 a GUI-rich application with no manual coding.

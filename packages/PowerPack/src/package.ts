@@ -43,7 +43,8 @@ export function _distributionProfiler(): DistributionProfilerViewer {
 //tags: autostart
 export function _welcomeView(): void {
   _package.getProperties().then((props) => {
-    if (props.get('showWelcomeView'))
+    // @ts-ignore
+    if (props['showWelcomeView'])
       welcomeView();
   });
 }

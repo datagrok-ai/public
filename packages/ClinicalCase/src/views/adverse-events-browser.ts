@@ -3,7 +3,7 @@ import * as DG from "datagrok-api/dg";
 import * as ui from "datagrok-api/ui";
 import { study } from '../clinical-study';
 import { createPropertyPanel } from '../panels/panels-service';
-import { SUBJECT_ID } from '../constants';
+import { SUBJECT_ID } from '../columns-constants';
 import { ILazyLoading } from '../lazy-loading/lazy-loading';
 
 let filters = [ 'USUBJID', 'AESEV', 'AEBODSYS', 'AESTDY' ]

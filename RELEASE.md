@@ -1,62 +1,31 @@
 # 2021-10-14 build 0.94.0
 
-We've released a [new version](https://public.datagrok.ai/) of the Datagrok
-platform (0.94.0). This release focuses on the areas of visualization, usability,
-rich features for the developers, and traditionally on the platform stability.
+We've released a [new version](https://public.datagrok.ai/) of the Datagrok platform (0.94.0). This release focuses on the areas of visualization, usability, rich features for the developers, and traditionally on the platform stability.
 
 ## Visualization and usability improvements
 
-* Many updates in Scatter plot: a [lasso tool](https://community.datagrok.ai/t/extensions-to-the-scatter-plot-viewer/481/5),
-axis sliders, data split by [marker](https://community.datagrok.ai/t/visualization-related-updates/521/20)
-[shape](https://community.datagrok.ai/t/visualization-related-updates/521/22),
-custom lines by equations; all summarized in
-[this video](https://www.youtube.com/watch?v=Q3Dn5NSDSEY&t=3018s)
-* New [Histogram features](https://www.youtube.com/watch?v=Q3Dn5NSDSEY&t=3490s):
-splines and bands
-* New [Line Chart features](https://www.youtube.com/watch?v=Q3Dn5NSDSEY&t=3562s):
-marker shape selection, whiskers
-* Using “Relative Values” property in combination with the “Stack” property
-[to analyze the distribution of the stacked values](https://community.datagrok.ai/t/bar-chart-updates/580)
-* Many aspects and issues of the Bar Chart
-[addressed](https://community.datagrok.ai/t/piechart-issues/569/3)
-* [Search for category names](https://community.datagrok.ai/t/visualization-related-updates/521/21)
-in filters (useful when there are many categories in the column), more in
-[this video](https://www.youtube.com/watch?v=Q3Dn5NSDSEY&t=3642s)
-* [Lists in parameterized database queries](https://community.datagrok.ai/t/lists-in-parameterized-database-queries/597);
-learn more about this feature [in this video](https://www.youtube.com/watch?v=meRAEF7ogtw),
-and also check the video about
-[parameterized queries in general]((https://www.youtube.com/watch?v=sSJp5CXcYKQ))
-* Database query caching with cron jobs ability, outlined in
-[the video](https://www.youtube.com/watch?v=Q3Dn5NSDSEY&t=3984s)
+* Many updates in Scatter plot: a [lasso tool](https://community.datagrok.ai/t/extensions-to-the-scatter-plot-viewer/481/5), axis sliders, data split by [marker](https://community.datagrok.ai/t/visualization-related-updates/521/20) [shape](https://community.datagrok.ai/t/visualization-related-updates/521/22), custom lines by equations; all summarized in [this video](https://www.youtube.com/watch?v=Q3Dn5NSDSEY&t=3018s)
+* New Histogram features: splines and bands: [video](https://www.youtube.com/watch?v=Q3Dn5NSDSEY&t=3490s)
+* New Line Chart features: marker shape selection, whiskers: [video](https://www.youtube.com/watch?v=Q3Dn5NSDSEY&t=3562s)
+* Using “Relative Values” property in combination with the “Stack” property to analyze the distribution of the stacked values: [overview](https://community.datagrok.ai/t/bar-chart-updates/580)
+* Many aspects and issues of the Bar Chart addressed: [overview](https://community.datagrok.ai/t/piechart-issues/569/3)
+* Search for category names in filters (useful when there are many categories in the column): more in [this video](https://www.youtube.com/watch?v=Q3Dn5NSDSEY&t=3642s) + an [overview](https://community.datagrok.ai/t/visualization-related-updates/521/21)
+* Lists in parameterized database queries: [overview](https://community.datagrok.ai/t/lists-in-parameterized-database-queries/597) + [video](https://www.youtube.com/watch?v=meRAEF7ogtw); also check the video about parameterized queries in general: [link](https://www.youtube.com/watch?v=sSJp5CXcYKQ)
+* Database query caching with cron jobs ability: [video](https://www.youtube.com/watch?v=Q3Dn5NSDSEY&t=3984s)
 
 ## Improvements for developers
 
-* More granular event handling (an example with intercepting conditional color coding
-  settings change: [link](https://community.datagrok.ai/t/javascript-api-updates/526/12))
-* [Creating drag-and-drop objects](https://community.datagrok.ai/t/javascript-api-updates/526/13)
-* [Getting cell colors](https://community.datagrok.ai/t/javascript-api-updates/526/14)
-* Adding custom machine learning models to Datagrok in R, Python, or from
-external models deployed in clusters:
-[video](https://www.youtube.com/watch?v=G66MN30ZPGQ),
-[package](https://github.com/datagrok-ai/public/tree/master/packages/CustomML),
-[help](https://datagrok.ai/help/learn/custom-machine-learning-models)
+* More granular event handling (an example with intercepting conditional color coding settings change: [link](https://community.datagrok.ai/t/javascript-api-updates/526/12))
+* Creating drag-and-drop objects: [overview](https://community.datagrok.ai/t/javascript-api-updates/526/13)
+* Getting cell colors: [overview](https://community.datagrok.ai/t/javascript-api-updates/526/14)
+* Adding custom machine learning models to Datagrok in R, Python, or from external models deployed in clusters: [video](https://www.youtube.com/watch?v=G66MN30ZPGQ), [package](https://github.com/datagrok-ai/public/tree/master/packages/CustomML), [help](https://datagrok.ai/help/learn/custom-machine-learning-models)
 
 ## Enhancements in public packages
 
-* [PowerPack and Universal Search](https://github.com/datagrok-ai/public/tree/master/packages/PowerPack) 
-— commonly used platform enhancements, currently covering Start Page widgets,
-Power Search (ability to search for anything from the Start Screen), and search templates support: [video overview](https://www.youtube.com/watch?v=Q3Dn5NSDSEY&t=86s)
-* Updates in the
-[Peptides](https://github.com/datagrok-ai/public/tree/master/packages/Peptides) package,
-learn more in [the video](https://www.youtube.com/watch?v=Q3Dn5NSDSEY&t=2390s)
+* [PowerPack and Universal Search](https://github.com/datagrok-ai/public/tree/master/packages/PowerPack) — commonly used platform enhancements, currently covering Start Page widgets, Power Search (ability to search for anything from the Start Screen), and search templates support: [video](https://www.youtube.com/watch?v=Q3Dn5NSDSEY&t=86s)
+* Updates in the [Peptides](https://github.com/datagrok-ai/public/tree/master/packages/Peptides) package, learn more in [the video](https://www.youtube.com/watch?v=Q3Dn5NSDSEY&t=2390s)
 
-We have also redesigned our approach to interactive Tutorials. We have moved them to
-a standalone [package](https://github.com/datagrok-ai/public/tree/master/packages/Tutorials)
-and made them available through a dedicated [app](https://public.datagrok.ai/apps).
-Check [this video](https://www.youtube.com/watch?v=Q3Dn5NSDSEY&t=1920s) to get a grasp.
-Every tutorial on the platform now is a simple TypeScript code, like
-[here](https://github.com/datagrok-ai/public/tree/master/packages/Tutorials/src/tracks/chem/tutorials).
-Now it is possible to equip customers' apps and deployments of Datagrok with tutorials as well!
+We have also redesigned our approach to interactive Tutorials. We have moved them to a standalone [package](https://github.com/datagrok-ai/public/tree/master/packages/Tutorials) and made them available through a dedicated [app](https://public.datagrok.ai/apps). Check [this video](https://www.youtube.com/watch?v=Q3Dn5NSDSEY&t=1920s) to get a grasp. Every tutorial on the platform now is a simple TypeScript code, like [here](https://github.com/datagrok-ai/public/tree/master/packages/Tutorials/src/tracks/chem/tutorials). Now it is possible to equip customers' apps and deployments of Datagrok with tutorials as well!
 
 # 2021-07-29 build 0.93.0
 

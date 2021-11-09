@@ -59,19 +59,26 @@ public abstract class JdbcDataProvider extends DataProvider {
 
     // "CONN_AVAILABLE" or exception text
     public String testConnection(DataConnection conn) throws ClassNotFoundException, SQLException {
+        Connection sqlConnection = null;
+        String res;
         try {
-            Connection sqlConnection = getConnection(conn);
+            sqlConnection = getConnection(conn);
             if (sqlConnection.isClosed())
-                return "Connection is not available";
+                res = "Connection is not available";
             else
-                return DataProvider.CONN_AVAILABLE;
+                res = DataProvider.CONN_AVAILABLE;
         } catch (Throwable ex) {
             StringWriter errors = new StringWriter();
             errors.write("ERROR:\n" + ex.toString() + "\n\nSTACK TRACE:\n");
             ex.printStackTrace(new PrintWriter(errors));
             System.out.println(errors.toString());
-            return errors.toString();
+            res = errors.toString();
         }
+        finally {
+            if (sqlConnection != null)
+                sqlConnection.close();
+        }
+        return res;
     }
 
     public DataFrame getSchemas(DataConnection connection)
@@ -299,6 +306,7 @@ public abstract class JdbcDataProvider extends DataProvider {
             }
         }
         catch (SQLException e) {
+            connection.close();
             if (providerManager.queryMonitor.checkCancelledId((String) queryRun.aux.get("mainCallId")))
                 throw new QueryCancelledByUser();
             else throw e;

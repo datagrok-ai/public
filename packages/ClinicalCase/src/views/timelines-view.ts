@@ -1,28 +1,27 @@
-import { ClinicalCaseView } from "../clinical-case-view";
-import * as grok from "datagrok-api/grok";
 import * as DG from "datagrok-api/dg";
 import * as ui from "datagrok-api/ui";
 import { study } from "../clinical-study";
-import { createFilteredTable, dataframeContentToRow } from "../data-preparation/utils";
 import { checkMissingDomains, updateDivInnerHTML } from "./utils";
 import $ from "cash-dom";
 import { createPropertyPanel } from "../panels/panels-service";
 import { ILazyLoading } from "../lazy-loading/lazy-loading";
 import { AEBrowserHelper } from "../helpers/ae-browser-helper";
 import { _package } from "../package";
+import { requiredColumnsByView } from "../constants";
+import { AE_BODY_SYSTEM, AE_END_DAY, AE_SEVERITY, AE_START_DAY, AE_TERM, CON_MED_END_DAY, CON_MED_NAME, CON_MED_START_DAY, INV_DRUG_END_DAY, INV_DRUG_NAME, INV_DRUG_START_DAY, SUBJECT_ID } from "../columns-constants";
 
 let links = {
-  ae: { key: 'USUBJID', start: 'AESTDY', end: 'AEENDY', event: 'AETERM'},
-  cm: { key: 'USUBJID', start: 'CMSTDY', end: 'CMENDY', event: 'CMTRT' },
-  ex: { key: 'USUBJID', start: 'EXSTDY', end: 'EXENDY', event: 'EXTRT' },
+  ae: { key: SUBJECT_ID, start: AE_START_DAY, end: AE_END_DAY, event: AE_TERM},
+  cm: { key: SUBJECT_ID, start: CON_MED_START_DAY, end: CON_MED_END_DAY, event: CON_MED_NAME },
+  ex: { key: SUBJECT_ID, start: INV_DRUG_START_DAY, end: INV_DRUG_END_DAY, event: INV_DRUG_NAME },
   //ex: { key: 'USUBJID', start: 'EXSTDY', end: 'EXENDY', event: 'EXTRT' },
   //lb: { key: 'USUBJID', start: 'LBDY', event: 'LBTEST' }
 };
 
 let filters = {
-  ae: {'AE severity': 'AESEV', 'AE body system': 'AEBODSYS' },
-  cm: {'Concomitant medication': 'CMTRT'},
-  ex: {'Treatment arm': 'EXTRT'}
+  ae: {'AE severity': AE_SEVERITY, 'AE body system': AE_BODY_SYSTEM },
+  cm: {'Concomitant medication': CON_MED_NAME},
+  ex: {'Treatment arm': INV_DRUG_NAME}
 }
 
 let multichoiceTableDict = { 'Adverse events': 'ae', 'Concomitant medication intake': 'cm', 'Drug exposure': 'ex' }
@@ -57,7 +56,7 @@ export class TimelinesView extends DG.ViewBase implements ILazyLoading {
   loaded: boolean;
 
   load(): void {
-    checkMissingDomains(['ae', 'cm', 'ex'], true, this);
+    checkMissingDomains(requiredColumnsByView[this.name], true, this);
  }
 
   createView(): void {

@@ -2,7 +2,7 @@
   "name": "@datagrok/chem",
   "friendlyName": "Chem",
   "fullName": "Chem",
-  "version": "0.21.0",
+  "version": "0.22.0",
   "description": "Cheminformatics support: \n\n* RDKit-based rendering \n* Molecule sketching \n*",
   "properties": [
     {
@@ -25,6 +25,7 @@
     "dayjs": "latest",
     "ts-loader": "latest",
     "typescript": "latest",
+    "rxjs": "latest",
     "datagrok-tools": "latest",
     "file-loader": "latest",
     "worker-loader": "latest",
@@ -33,10 +34,16 @@
   },
   "devDependencies": {
     "@types/offscreencanvas": "latest",
+    "@typescript-eslint/eslint-plugin": "^5.3.0",
+    "@typescript-eslint/parser": "^5.3.0",
+    "eslint": "^8.1.0",
+    "eslint-config-google": "^0.14.0",
     "file-loader": "latest",
+    "openchemlib": "6.0.1",
     "webpack": "latest",
     "webpack-cli": "latest",
-    "openchemlib": "6.0.1"
+    "cash-dom": "latest",
+    "rxjs": "latest"
   },
   "browser": {
     "fs": false,
@@ -46,7 +53,7 @@
   },
   "scripts": {
     "build": "webpack",
-    "lint": "eslint './src/*.ts'",
+    "lint": "eslint ./src/*.ts",
     "lint-fix": "eslint ./src/*.ts --fix"
   }
 }

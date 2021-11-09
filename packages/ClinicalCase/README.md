@@ -65,7 +65,7 @@ In case trial is registered on [clinicaltrials.gov](https://clinicaltrials.gov/)
 Timelines view allows to visualize events flow in time. X axis is time axis reflecting study days. On Y axis there are subjects.
 Events are shown either as a point(in case event lased for one day) or as a line (for cases events were prolonged in time)
 
-Adverse events, investigationsl drug exposure and concomitant medication domains are available for analysis(in case SDTM data contains corresponding tables). Filters can also be applyed for each domain.
+Adverse events, investigational drug exposure and concomitant medication domains are available for analysis(in case SDTM data contains corresponding tables). Filters can also be applied for each domain.
 
 By zooming in and out you can drill down to particular patient and event or otherwise see the picture of events in general.
 
@@ -80,8 +80,8 @@ Several domains can be shown simultaneously on the graph. For instance, the foll
 
 ### Patient profile
 
-Patient profile is useful for analysing events related to particular patient.
-You can analyse data from laboratory, adverse events, dug exposue and concomitant medication domains in time and see relations between events. All graphs are linked to the same X axis representing study days and it can be zoomed in and out simultaneously. 
+Patient profile is useful for analyzing events related to particular patient.
+You can analyze data from laboratory, adverse events, dug exposure and concomitant medication domains in time and see relations between events. All graphs are linked to the same X axis representing study days and it can be zoomed in and out simultaneously. 
 
 Information about events is available in tooltips on mouse hover. For convenience domains can be collapsed or extended.
 
@@ -89,7 +89,7 @@ Information about events is available in tooltips on mouse hover. For convenienc
 
 * **Lab values chart**
 
-By clicking on settings button you can choose laboratory values to show on chart. List of available values is extraced from 'lb' domain in provided SDTM data.
+By clicking on settings button you can choose laboratory values to show on chart. List of available values is extracted from 'lb' domain in provided SDTM data.
 
 Values within normal ranges are colored green, values outside normal ranges are red.
 
@@ -112,9 +112,9 @@ View to explore Adverse events domain. Contains couple of charts along with Adve
 
 * **All events**
 
-Plots all adverse events registered during the study. Detailed information is available in tooltip. Also when selecting Adverse event on the plot corresponding row becomes current in Adverse event table. So Adverse event of inteest can easily be analyzed in details. Selection also works vice versa - when selecting a row in a table corresponding Adverse event is selected on a scatter plot.
+Plots all adverse events registered during the study. Detailed information is available in tooltip. Also when selecting Adverse event on the plot corresponding row becomes current in Adverse event table. So Adverse event of interest can easily be analyzed in details. Selection also works vice versa - when selecting a row in a table corresponding Adverse event is selected on a scatter plot.
 
-Scatter plot can be zoomed in and out to drill down to particular patient or see picure in general. 
+Scatter plot can be zoomed in and out to drill down to particular patient or see picture in general. 
 
 Color indicates severity of an Adverse event.
 
@@ -123,7 +123,7 @@ Color indicates severity of an Adverse event.
 
 * **Events per week**
 
-Historgam with number of Adverse events occurred per week throughout the study. Can help to analyze overall dynamics of Adverse events occurrence.
+Histogram with number of Adverse events occurred per week throughout the study. Can help to analyze overall dynamics of Adverse events occurrence.
 
 Color corresponds to severity of an Adverse event.
 
@@ -148,19 +148,19 @@ Scatter plot for analyzing possible risk of a fatal drug-induced liver injury.
 
 Shows peak bilirubin values versus peak ALT/AST values across the study. Reference lines are shown at 3*ULN for ALT and AST and 2*ULN for Bilirubin. Possible Hy's law is defined as AST or ALT >= 3*ULN with bilirubin >=2*ULN.
 
-Color coresponds to treatment arm.
+Color corresponds to treatment arm.
 
 <img src="https://github.com/datagrok-ai/public/blob/master/packages/ClinicalCase/img/hys_law.PNG" height="500" width='800'/>
 
 * **Baseline endpoint**
 
-Scatter plot which shows ratio between laboratory values at some selected baselibe and enpoint timepoints.
+Scatter plot which shows ratio between laboratory values at some selected baseline and endpoint timepoints.
 
 Scatter plot is divided to 9 parts each of which is annotated with corresponding ration. For instance 'Normal-High' quadrant corresponds to subject who had laboratory value within normal ranges baseline visit but ended up with increased value at endpoint. Thus it can be useful, for example, to identify groups of subjects who developed increasing of some laboratory values compared to baseline or vice versa who started with values out of range but ended within normal ranges.
 
-Baseline, enpoint visits as well as laboratory value can be selected using dropdown lists above the scatter plot.
+Baseline, endpoint visits as well as laboratory value can be selected using dropdown lists above the scatter plot.
 
-Color coresponds to treatment arm.
+Color corresponds to treatment arm.
 
 <img src="https://github.com/datagrok-ai/public/blob/master/packages/ClinicalCase/img/bl_ep.PNG" height="500" width='800'/>
 
@@ -200,7 +200,7 @@ In case you want to perform covariates analysis you should go to `Covariates` ta
 
 <img src="https://github.com/datagrok-ai/public/blob/master/packages/ClinicalCase/img/survival_covariates.PNG" height="500" width='800'/>
 
-### Biomarkers distribution
+### Biomarkers
 
 The view shows distribution of selected biomarker values for all subjects at selected visit splitted by selected parameter. It is useful to evaluate median, upper and lower quartiles and outliers. And since distributions in each boxplot can be grouped by certain parameter it is also possible to evaluate difference in biomarker values distribution between different groups.
 
@@ -208,7 +208,7 @@ By default 4 biomarkers with min p-value at the earliest study visit splitted by
 
 <img src="https://github.com/datagrok-ai/public/blob/master/packages/ClinicalCase/img/biomarkers_dist.gif" height="500" width='800'/>
 
-### Correlation matrix
+### Correlations
 
 Correlation matrix showing relations between biomarkers values for all subjects at the selected visit.
 
@@ -244,9 +244,9 @@ This view is useful for exploring adverse events in details including preceding 
 The view is basically 'ae' domain table which contains list of all registered adverse events. The table can be filtered.
 
 By selecting row in a table the following information will be displayed on a property panel:
-- subject ID (in a tooltip on mouse hover you will see basic demographic characteristics - age, sex, race, teatment arm)
+- subject ID (in a tooltip on mouse hover you will see basic demographic characteristics - age, sex, race, treatment arm)
 - AE name preceded by AE severity
-- Days of study in which AE occured (in a tooltip on mouse hover you will see real AE dates)
+- Days of study in which AE occurred (in a tooltip on mouse hover you will see real AE dates)
 - input with number of days before AE for which you want to analyze events in other domains (by default it's 5)
 - list of expandable domain panels which contains rows with events occurred during selected period before the AE (by default adverse event, drug exposure and concomitant domains are selected, but you can add other domains by clicking on `+` button)
 
@@ -259,7 +259,7 @@ The view contains results of SDTM tables validation performed at the start of th
 
 In the upper table there is a whole list of violated rules. In the lower table there are tabs with domains in which rules have been violated. Table in each ta contains rows with violated rules.
 
-By selecting a row in the upper table the lower table wil be filtered by the selected violated rule rule.
+By selecting a row in the upper table the lower table will be filtered by the selected violated rule.
 
 <img src="https://github.com/datagrok-ai/public/blob/master/packages/ClinicalCase/img/validation.gif" height="500" width='800'/>
 

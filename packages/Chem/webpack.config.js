@@ -1,11 +1,11 @@
 const path = require('path');
 
-module.exports = {
+module.exports = (env, options) => ({
   mode: 'development',
   entry: {
     package: ['./src/RDKit_minimal_2021.03_17.wasm', './src/package.ts']
   },
-  // devtool: 'inline-source-map',
+  devtool: options.mode !== 'production' ? 'inline-source-map' : 'source-map',
   devServer: {
     contentBase: './dist'
   },
@@ -17,7 +17,7 @@ module.exports = {
     'rxjs': 'rxjs',
     'rxjs/operators': 'rxjs.operators',
     'cash-dom': '$',
-    'dayjs': 'dayjs',
+    'dayjs': 'dayjs'
   },
   output: {
     filename: '[name].js',
@@ -62,4 +62,4 @@ module.exports = {
       }
     ],
   }
-};
+});

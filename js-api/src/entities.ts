@@ -8,7 +8,7 @@ declare var grok: any;
 let api = <any>window;
 
 type PropertyGetter = (a: object) => any;
-type PropertySetter = (a: object, value:  any) => void;
+type PropertySetter = (a: object, value: any) => void;
 
 /** @class
  * Base class for system objects stored in the database in a structured manner.
@@ -193,6 +193,15 @@ export class Func extends Entity {
   /** Returns functions with the specified attributes. */
   static find(params?: { package?: string, name?: string, tags?: string[], returnType?: string}): Func[] {
     return api.grok_Func_Find(params?.package, params?.name, params?.tags, params?.returnType);
+  }
+
+  /** Returns functions (including these) with the specified attributes. */
+  static async findAll(params?: { package?: string, name?: string, tags?: string[], returnType?: string}): Promise<Func[]> {
+    let functions = Func.find(params);
+    let queries = await grok.dapi.queries.include('params,connection').filter(`name="${params?.name}"`).list();
+    let scripts = await grok.dapi.scripts.include('params').filter(`name="${params?.name}"`).list();
+
+    return [...functions, ...queries, ...scripts];
   }
 
   /** Returns a function with the specified name. */
@@ -629,6 +638,32 @@ export class Package extends Entity {
   }
 }
 
+
+export interface PropertyOptions {
+
+  /** Property description */
+  description?: string;
+
+  /** Semantic type */
+  semType?: string;
+
+  /** Units of measurement */
+  units?: string;
+
+  /** Minimum value. Applicable to numerical properties only */
+  min?: number;
+
+  /** Maximum value. Applicable to numerical properties only */
+  max?: number;
+
+  /** List of choices. Applicable to string properties only */
+  choices?: string[];
+
+  /** Default value (used for deserialization, cloning, etc) */
+  defaultValue?: any;
+}
+
+
 /**
  * Strongly-typed property associated with an object.
  * Used for reflection, serialization, UI generation, and other introspection-dependent tasks.
@@ -657,6 +692,7 @@ export class Property {
   get name(): string { return api.grok_Property_Get_Name(this.d); }
   set name(s: string) { api.grok_Property_Set_Name(this.d, s); }
 
+  /** Property category */
   get category(): string { return api.grok_Property_Get_Category(this.d); }
   set category(s: string) { api.grok_Property_Set_Category(this.d, s); }
 
@@ -687,46 +723,55 @@ export class Property {
     return api.grok_Property_Get_ColumnTypeFilter(this.d);
   }
 
-  /** Creates a property
-   * @param {string} name
-   * @param {TYPE} type
-   * @param {function} getter
-   * @param {function} setter
-   * @param {object} defaultValue
-   * @returns Property*/
-  static create(name: string, type: Type, getter: PropertyGetter, setter: PropertySetter, defaultValue: any = null): Property {
+  /** Applies the specified options */
+  options(opt?: PropertyOptions): Property {
+    api.grok_Property_Options(opt);
+    return this;
+  }
+
+  /** Creates a property */
+  static create(name: string, type: Type,
+                getter: PropertyGetter,
+                setter: PropertySetter,
+                defaultValue: any = null): Property {
     return new Property(api.grok_Property(name, type, getter, setter, defaultValue));
   }
 
-  /** Creates an integer property
-   * @param {string} name
-   * @param {function} getter
-   * @param {function} setter
-   * @param {object} defaultValue
-   * @returns Property*/
+  /** Creates an integer property */
   static int(name: string, getter: PropertyGetter, setter: PropertySetter, defaultValue: any): Property {
     return Property.create(name, TYPE.INT, getter, setter, defaultValue);
   }
 
-  /** Creates a float property
-   * @param {string} name
-   * @param {function} getter
-   * @param {function} setter
-   * @param {object} defaultValue
-   * @returns Property*/
+  /** Creates a float property */
   static float(name: string, getter: PropertyGetter, setter: PropertySetter, defaultValue: any): Property {
     return Property.create(name, TYPE.FLOAT, getter, setter, defaultValue);
   }
 
-  /** Creates a string property
-   * @param {string} name
-   * @param {function} getter
-   * @param {function} setter
-   * @param {object} defaultValue
-   * @returns Property*/
+  /** Creates a string property */
   static string(name: string, getter: PropertyGetter, setter: PropertySetter, defaultValue: any): Property {
     return Property.create(name, TYPE.STRING, getter, setter, defaultValue);
   }
+
+  /** Creates a bool property */
+  static bool(name: string, getter: PropertyGetter, setter: PropertySetter, defaultValue: any): Property {
+    return Property.create(name, TYPE.BOOL, getter, setter, defaultValue);
+  }
+
+  /** Creates a datetime property */
+  static dateTime(name: string, getter: PropertyGetter, setter: PropertySetter, defaultValue: any): Property {
+    return Property.create(name, TYPE.DATE_TIME, getter, setter, defaultValue);
+  }
+
+  /** Creates property for the JavaScript objects with the corresponding property name */
+  static js(name: string, type: TYPE, options?: PropertyOptions): Property {
+    return Property.create(name, type, (x: any) => x[name], (x: any, v: any) => x[name] = v, options?.defaultValue);
+  }
+
+  static jsInt(name: string, options?: PropertyOptions): Property { return Property.js(name, TYPE.INT, options); }
+  static jsBool(name: string, options?: PropertyOptions): Property { return Property.js(name, TYPE.BOOL, options); }
+  static jsFloat(name: string, options?: PropertyOptions): Property { return Property.js(name, TYPE.FLOAT, options); }
+  static jsString(name: string, options?: PropertyOptions): Property { return Property.js(name, TYPE.STRING, options); }
+  static jsDateTime(name: string, options?: PropertyOptions): Property { return Property.js(name, TYPE.DATE_TIME, options); }
 }
 
 

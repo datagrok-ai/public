@@ -1,6 +1,7 @@
 import * as _chem from './src/chem';
 import * as _ml from './src/ml';
 import * as _utils from './src/utils';
+import * as _x from './src/ui/tree-view';
 import $ from 'cash-dom';
 import * as dayjs from 'dayjs';
 
@@ -15,9 +16,11 @@ export * from './src/grid';
 export * from './src/widgets';
 export * from './src/views/view';
 export * from './src/views/card_view';
+export * from './src/views/multi-view';
 export * from './src/viewer';
 export * from './src/docking';
 export * from './src/wrappers_impl';
+export * from './src/ui/wizard';
 export {time, timeAsync, Utils, LruCache} from './src/utils';
 export {ObjectHandler, EntityMetaDartProxy} from './ui';
 export * from './src/data';
@@ -25,6 +28,7 @@ export * from './src/data';
 export let chem = _chem;
 export let ml = _ml;
 export let utils = _utils;
+export let x = _x;
 
 $(function () {
   (<any>window).$ = $;

@@ -31,20 +31,21 @@ export async function SeldonApply() {
   });
 
   const seldonDeploymentsList = seldonDeploymentsDf.columns.byName('seldonDeployments').toList();
-  let choiceInputDeployment = ui.choiceInput('Deployment', seldonDeploymentsList[0], seldonDeploymentsList);
+  let choiceInputDeployment = ui.choiceInput('Model', seldonDeploymentsList[0], seldonDeploymentsList);
   ui.dialog({
     title: 'Seldon models'
   })
   .add(ui.span([
-    'Select a deployment with a model to apply\n' +
-    'from the namespace ${seldonNamespace}'
+    `Select a model from the namespace '${seldonNamespace}'`
   ]))
   .add(ui.div([choiceInputDeployment]))
   .onOK(async () => {
     let seldonInputDf = grok.shell.tables[0]; // sic!
     // 2. Apply the selected deployment model
-    let seldonResultDf = await grok.functions.call(
-      "Seldon:SeldonApplyModelPy", {      
+    
+    
+    let f = await grok.functions.eval("Seldon:SeldonApplyModelPy");
+    let call = f.prepare({      
         'seldonUser': seldonUser,
         'seldonPassword': seldonPassword,
         'seldonHost': seldonHost,
@@ -54,8 +55,13 @@ export async function SeldonApply() {
         'seldonDeploymentName': choiceInputDeployment.value,
         'seldonInput': seldonInputDf
     });
-    for (let col of seldonResultDf.columns)
-      seldonInputDf.columns.insert(col);
+    await call.call();
+    const seldonErrorState = call.getParamValue('seldonErrorState');
+    if (seldonErrorState === '') {
+      const seldonResultDf = call.getParamValue('seldonResult');
+      for (let col of seldonResultDf.columns)
+        seldonInputDf.columns.insert(col);
+    }
   })
   .show();
 

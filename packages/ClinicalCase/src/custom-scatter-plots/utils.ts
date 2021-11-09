@@ -1,3 +1,5 @@
+import { SUBJECT_ID } from "../columns-constants";
+
 export function renderText(ctx, text, baseline, align, x, y, condition, color = 'black') {
   if (condition) {
     ctx.textBaseline = baseline;
@@ -38,7 +40,7 @@ export function divideTo6Quadrants(ctx, left, right, top, bottom, xHigh, xLow, y
 
 
 export function numOfPatientsInQuadrant(sp, condition, totalNum) {
-  return sp.dataFrame.groupBy([ 'USUBJID' ])
+  return sp.dataFrame.groupBy([ SUBJECT_ID ])
     .where(condition)
     .aggregate().rowCount;
 }
