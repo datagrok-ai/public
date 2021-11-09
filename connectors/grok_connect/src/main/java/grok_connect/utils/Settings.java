@@ -6,6 +6,8 @@ public class Settings {
 
     public boolean debug;
     public int connectionPoolTimerRate;
+    public int connectionPoolMaximumPoolSize;
+    public int connectionPoolIdleTimeout;
 
     public Settings() {
         synchronized(Settings.class) {
