@@ -206,8 +206,6 @@ export class Detector {
    * @returns {boolean}
    * */
   static sampleCategories(column: Column, check: StringPredicate, min: number = 5, max: number = 10): boolean {
-    console.log(column.name);
-
     if (column.type !== TYPE.STRING)
       return false;
 
