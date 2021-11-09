@@ -9,7 +9,6 @@
 		"dayjs": "latest",
 		"exceljs": "^4.3.0",
 		"file-saver": "^2.0.5",
-		"mathjs": "^10.0.0",
 		"ts-loader": "latest",
 		"typescript": "latest"
 	},

@@ -2,12 +2,12 @@ import * as grok from 'datagrok-api/grok';
 import * as ui from 'datagrok-api/ui';
 import * as DG from 'datagrok-api/dg';
 import {_package} from './package';
-import {std, mean, abs} from 'mathjs';
 
 export async function selectOutliersManually(inputData: DG.DataFrame) {
   const IS_OUTLIER_COL_LABEL = 'isOutlier';
   const OUTLIER_REASON_COL_LABEL = 'Reason';
   const OUTLIER_COUNT_COL_LABEL = 'Count';
+  let isInnerModalOpened = false;
 
   if (!inputData.columns.byName(IS_OUTLIER_COL_LABEL)) {
     inputData.columns
@@ -51,7 +51,6 @@ export async function selectOutliersManually(inputData: DG.DataFrame) {
             inputData.columns.byName(IS_OUTLIER_COL_LABEL).set(i, false);
           }
         }
-        updateTable();
       }, 'Remove the outliers group'), {style: {'text-align': 'center', 'margin': '6px'}},
     );
 
@@ -65,9 +64,7 @@ export async function selectOutliersManually(inputData: DG.DataFrame) {
     }
   });
 
-  let isInnerModalOpened = false;
-
-  const updateTable = () => {
+  const updateGroupsTable = () => {
     const uniqueValues: {[key:string]: number} = {};
     for (let i = 0; i < inputData.rowCount; i++) {
       const record = inputData.columns.byName(OUTLIER_REASON_COL_LABEL).get(i);
@@ -83,6 +80,8 @@ export async function selectOutliersManually(inputData: DG.DataFrame) {
       groupsListGrid.dataFrame?.rows.addNew([key, uniqueValues[key], '']);
     });
   };
+
+  inputData.onDataChanged.subscribe(updateGroupsTable);
 
   let shouldCancel = true;
 
@@ -110,7 +109,6 @@ export async function selectOutliersManually(inputData: DG.DataFrame) {
               inputData.set(IS_OUTLIER_COL_LABEL, selectedIndex, true);
               inputData.set(OUTLIER_REASON_COL_LABEL, selectedIndex, reasonInput.value);
             });
-            updateTable();
             inputData.selection.setAll(false);
           },
         )
@@ -130,7 +128,6 @@ export async function selectOutliersManually(inputData: DG.DataFrame) {
         inputData.set(IS_OUTLIER_COL_LABEL, selectedIndex, false);
         inputData.set(OUTLIER_REASON_COL_LABEL, selectedIndex, '');
       });
-      updateTable();
       inputData.selection.setAll(false);
     },
     'Remove the selected points from oultiers list',
@@ -147,15 +144,15 @@ export async function selectOutliersManually(inputData: DG.DataFrame) {
         .add(intInput.root)
         .add(columnInput.root)
         .onOK(()=>{
-          const values = [...columnInput.value.values()];
-          const meanValue = mean(values);
-          const stddev = std(values);
-          inputData.selection.init((index)=> abs(meanValue - values[index]) > stddev*intInput.value);
+          const meanValue = (columnInput.value as DG.Column).stats.avg;
+          const stddev = (columnInput.value as DG.Column).stats.stdev;
+          inputData.selection.init((index)=>
+            Math.abs(meanValue - (columnInput.value as DG.Column).get(index)) > stddev*intInput.value,
+          );
           inputData.selection.getSelectedIndexes().forEach((selectedIndex: number) => {
             inputData.set(IS_OUTLIER_COL_LABEL, selectedIndex, true);
             inputData.set(OUTLIER_REASON_COL_LABEL, selectedIndex, `${intInput.value}x stddev rule`);
           });
-          updateTable();
           inputData.selection.setAll(false);
         })
         .show();
@@ -177,7 +174,7 @@ export async function selectOutliersManually(inputData: DG.DataFrame) {
     }
   });
 
-  updateTable();
+  updateGroupsTable();
   addOutlierGroupBtn.classList.add('disabled');
   removeOutlierGroupBtn.classList.add('disabled');
 
