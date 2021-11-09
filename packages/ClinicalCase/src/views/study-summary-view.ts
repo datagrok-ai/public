@@ -68,11 +68,6 @@ export class StudySummaryView extends DG.ViewBase implements ILazyLoading {
       'font-size':'16px',
     }};
 
-    let summaryLinkStyle = {style:{
-      'margin-top':'8px',
-      'font-size':'16px',
-    }};
-
     let viewerTitle = {style:{
       'color':'var(--grey-6)',
       'margin':'12px 0px 6px 12px',
@@ -97,10 +92,7 @@ export class StudySummaryView extends DG.ViewBase implements ILazyLoading {
     this.root.append(ui.splitV([
       ui.splitH([
         ui.panel([
-          ui.divH([ui.link(`${this.studyId}`, ()=>{
-            this.getStudyInfoFromClinTrialsGov(this.studyId);
-          }, '', summaryLinkStyle), 
-          ui.divText('summary', summaryStyle)]),
+          ui.divText(`${this.studyId} summary`, summaryStyle),
           summary
         ]),
         ui.panel([
@@ -135,14 +127,4 @@ export class StudySummaryView extends DG.ViewBase implements ILazyLoading {
     }
     return {withCount: errorsMapWithCount, withLinks: errorsMap};
   }
-
-  private async getStudyInfoFromClinTrialsGov(studyId: string){
-    //http.getStudyData(studyId);
-    let result = await this.httpService.getStudyData('R01NS050536', Object.keys(CLINICAL_TRIAL_GOV_FIELDS));
-    ui.dialog({ title: 'Study info' })
-              .add(ui.tableFromMap(result))
-              .onOK(() => {})
-              .show();
-  }
-
 }

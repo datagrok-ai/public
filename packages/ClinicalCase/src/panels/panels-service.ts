@@ -148,27 +148,35 @@ export async function aeBrowserPanel(view: AEBrowserHelper) {
 
 export async function summaryPanel(studyId: string) {
     const httpService = new HttpService();
-    let clinTrialsGovInfo = await httpService.getStudyData('R01NS050536', Object.keys(CLINICAL_TRIAL_GOV_FIELDS));
-    //let clinTrialsGovInfo = await httpService.getStudyData(studyId, Object.keys(CLINICAL_TRIAL_GOV_FIELDS));
-    const summaryDict = {};
-    Object.keys(clinTrialsGovInfo).forEach(key => {
-        summaryDict[ CLINICAL_TRIAL_GOV_FIELDS[ key ] ] = clinTrialsGovInfo[ key ];
-    })
-    let studyLink = `${CLIN_TRIAL_GOV_SEARCH}${summaryDict[ 'NCT ID' ]}`
-    summaryDict[ `Study link` ] = ui.link('Go to study page', () => { window.open(studyLink, '_blank').focus(); })
+    //let clinTrialsGovInfo = await httpService.getStudyData('R01NS050536', Object.keys(CLINICAL_TRIAL_GOV_FIELDS));
+    let clinTrialsGovInfo = await httpService.getStudyData(studyId, Object.keys(CLINICAL_TRIAL_GOV_FIELDS));
 
     let acc = ui.accordion('summary-panel');
     let accIcon = ui.element('i');
     accIcon.className = 'grok-icon svg-icon svg-view-layout';
 
     acc.addTitle(ui.span([accIcon, ui.label(`${studyId}`)]));
-    let acctable = ui.tableFromMap(summaryDict);
-    acc.addPane('General', () => {
-        $(acctable).find('tr').css('vertical-align', 'top');
-        $(acctable).find('td').css('padding-bottom', '10px');
-        $(acctable).find('.d4-entity-list>span').css('margin', '0px');
-        return acctable
-    }, true)
+
+    if (clinTrialsGovInfo) {
+        const summaryDict = {};
+        Object.keys(clinTrialsGovInfo).forEach(key => {
+            summaryDict[CLINICAL_TRIAL_GOV_FIELDS[key]] = clinTrialsGovInfo[key];
+        })
+        let studyLink = `${CLIN_TRIAL_GOV_SEARCH}${summaryDict['NCT ID']}`
+        summaryDict[`Study link`] = ui.link('Go to study page', () => { window.open(studyLink, '_blank').focus(); })
+
+        let acctable = ui.tableFromMap(summaryDict);
+        acc.addPane('General', () => {
+            $(acctable).find('tr').css('vertical-align', 'top');
+            $(acctable).find('td').css('padding-bottom', '10px');
+            $(acctable).find('.d4-entity-list>span').css('margin', '0px');
+            return acctable
+        }, true)
+    } else {
+        acc.addPane('General', () => {
+            return ui.divText('Study not found on clinicaltrials.gov')
+        }, true)
+    }
 
     return acc.root;
 }
