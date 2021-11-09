@@ -3,6 +3,8 @@ import * as ui from 'datagrok-api/ui';
 import * as DG from 'datagrok-api/dg';
 import {_package} from './package';
 
+/* eslint-disable */
+
 export function onboardModel() {
   let name = ui.stringInput('Name', '');
   let type = ui.choiceInput('Type', 'Bio', ['Bio', 'Chem']);
