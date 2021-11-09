@@ -434,7 +434,7 @@ export class DataFrame {
   get onMetadataChanged(): Observable<EventData<MapChangeArgs<string, string>>> { return this._event('ddt-table-metadata-changed'); }
 
   /** Sample: {@link https://public.datagrok.ai/js/samples/data-frame/events/events} */
-  get onColumnNameChanged(): Observable<any> { return this._event('ddt-table-column-name-changed'); }
+  get onColumnNameChanged(): Observable<any> { return this._event('ddt-column-name-changed'); }
 
   /** Sample: {@link https://public.datagrok.ai/js/samples/data-frame/events/events} */
   get onColumnSelectionChanged(): Observable<any> { return this._event('ddt-column-selection-changed'); }
@@ -1314,7 +1314,7 @@ export class RowGroup {
   constructor(d: any) { this.d = d; }
 
   get dataFrame(): DataFrame {
-    return new DataFrame(api.grok_RowGroup_Get_DataFrame(this.d));
+    return api.grok_RowGroup_Get_DataFrame(this.d);
   }
 }
 

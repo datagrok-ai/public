@@ -12,7 +12,7 @@ import * as OCL from 'openchemlib/full.js';
 import {drugLikenessWidget} from './widgets/drug-likeness';
 import {molfileWidget} from './widgets/molfile';
 import {propertiesWidget} from './widgets/properties';
-import {setStructuralAlertsRdKitModule, structuralAlertsWidget} from './widgets/structural-alerts';
+import {loadAlertsCollection, setStructuralAlertsRdKitModule, structuralAlertsWidget} from './widgets/structural-alerts';
 import {structure2dWidget} from './widgets/structure2d';
 import {structure3dWidget} from './widgets/structure3d';
 import {toxicityWidget} from './widgets/toxicity';
@@ -39,6 +39,7 @@ export async function initChem() {
     setSearchesRdKitModule(rdKitModule);
     setCommonRdKitModule(rdKitModule);
     setStructuralAlertsRdKitModule(rdKitModule);
+    await loadAlertsCollection();
     console.log('RDKit (package) initialized');
     rdKitModule.prefer_coordgen(false);
     initialized = true;
@@ -117,7 +118,6 @@ export async function rdkitCellRenderer() {
   //}
 }
 
-/*
 //name: oclCellRenderer
 //tags: cellRenderer, cellRenderer-Molecule
 //meta-cell-renderer-sem-type: Molecule
@@ -125,7 +125,6 @@ export async function rdkitCellRenderer() {
 export async function oclCellRenderer() {
   return new OCLCellRenderer();
 }
-*/
 
 //name: getSimilarities
 //input: column molStringsColumn
@@ -232,7 +231,7 @@ function descriptorsApp(context: any) {
   let skNode = view.dockManager.dock(skDiv, DG.DOCK_TYPE.RIGHT, null, 'Sketcher', 0.25);
   view.dockManager.dock(dsDiv, DG.DOCK_TYPE.DOWN, skNode, 'Descriptors', 0.5);
 
-  grok.events.onViewRemoved.subscribe((v) => {
+  grok.events.onViewRemoved.subscribe((v: any) => {
     if (v.name === view.name) {
       windows.showToolbox = true;
       windows.showHelp = true;

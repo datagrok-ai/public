@@ -9,7 +9,7 @@ import {_package} from "./package";
 
 export class NglMethods {
 
-    async init(view, inputs) {
+    async init(view, inputs, json) {
 
         let colorScheme = inputs.colorScheme;
         let col_background = colorScheme["col_background"];
@@ -18,16 +18,16 @@ export class NglMethods {
         view.box = true;
         this.stage = new NGL.Stage(inputs.ngl_host);
         this.path = _package.webRoot + 'pdbfiles/' + 'example.pdb';
-        this.schemeObj = this.CDR3(inputs.cdr_scheme, inputs.paratopes, colorScheme);
+
+        this.schemeObj = this.CDR3(inputs.cdr_scheme, inputs.paratopes, json, colorScheme);
 
         await this.loadPdb(this.path, inputs.repChoice, this.schemeObj);
         this.nglResize(inputs.ngl_host);
-
     }
 
     // ---- NGL ----
     // create a color scheme for CDR3 regions
-    CDR3(cdr_scheme, paratopes, colorScheme) {
+    CDR3(cdr_scheme, paratopes, json, colorScheme) {
 
         let col_heavy_chain = colorScheme["col_heavy_chain"];
         let col_light_chain = colorScheme["col_light_chain"];
@@ -44,6 +44,7 @@ export class NglMethods {
             let selectionScheme = [];
             Object.keys(json.parapred_predictions).forEach((chain) => {
                 Object.keys(json.parapred_predictions[chain]).forEach((index) => {
+
                     selectionScheme.push([
                         palette[Math.round(json.parapred_predictions[chain][index] * 100)],
                         `${index} and :${chain}`
@@ -90,7 +91,7 @@ export class NglMethods {
 
     // load the 3D model
     async loadPdb(bytes, repChoice, schemeObj) {
-        this.stage.loadFile(bytes).then(function (o) {
+        await this.stage.loadFile(bytes).then(function (o) {
             o.addRepresentation(repChoice.value, schemeObj);
             o.autoView();
         });

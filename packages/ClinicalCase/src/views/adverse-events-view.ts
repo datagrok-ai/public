@@ -3,10 +3,11 @@ import * as DG from "datagrok-api/dg";
 import * as ui from "datagrok-api/ui";
 import { study, ClinRow } from "../clinical-study";
 import { addDataFromDmDomain } from '../data-preparation/utils';
-import { TREATMENT_ARM } from '../constants';
+import { AE_BODY_SYSTEM, AE_CAUSALITY, AE_DECOD_TERM, AE_OUTCOME, AE_SEVERITY, AE_START_DAY, SUBJECT_ID, TREATMENT_ARM } from '../columns-constants';
 import { ILazyLoading } from '../lazy-loading/lazy-loading';
 import { checkMissingDomains } from './utils';
 import { _package } from '../package';
+import { requiredColumnsByView } from '../constants';
 
 
 export class AdverseEventsView extends DG.ViewBase implements ILazyLoading {
@@ -24,7 +25,7 @@ export class AdverseEventsView extends DG.ViewBase implements ILazyLoading {
   loaded: boolean;
 
   load(): void {
-    checkMissingDomains(['dm', 'ae'], false, this);
+    checkMissingDomains(requiredColumnsByView[this.name], false, this);
  }
 
   createView(): void {
@@ -35,25 +36,25 @@ export class AdverseEventsView extends DG.ViewBase implements ILazyLoading {
       'font-size':'16px',
     }};
 
-    let typesPlot = this.bar('AEDECOD','Types', viewerTitle, TREATMENT_ARM);
-    let bodySystemsPlot = this.bar('AEBODSYS', 'Body system', viewerTitle, TREATMENT_ARM);
-    let causalityPlot = this.bar('AEREL', 'Causality', viewerTitle, TREATMENT_ARM);
-    let outcomePlot = this.bar('AEOUT', 'Outcome', viewerTitle, TREATMENT_ARM);
+    let typesPlot = this.bar(AE_DECOD_TERM,'Types', viewerTitle, TREATMENT_ARM);
+    let bodySystemsPlot = this.bar(AE_BODY_SYSTEM, 'Body system', viewerTitle, TREATMENT_ARM);
+    let causalityPlot = this.bar(AE_CAUSALITY, 'Causality', viewerTitle, TREATMENT_ARM);
+    let outcomePlot = this.bar(AE_OUTCOME, 'Outcome', viewerTitle, TREATMENT_ARM);
 
     let timelinesPlot = this.aeWithArm.plot.line({
       x: 'week',
       yColumnNames: ['week'],
       chartTypes: ['Stacked Bar Chart'],
       yAggrTypes: [DG.STATS.TOTAL_COUNT],
-      split: 'AESEV',
+      split: AE_SEVERITY,
       style: 'dashboard' }).root;
 
     timelinesPlot.prepend(ui.divText('Events per week', viewerTitle));
 
     let scatterPlot = this.aeWithArm.plot.scatter({
-      x: 'AESTDY',
-      y: 'USUBJID',
-      color: 'AESEV',
+      x: AE_START_DAY,
+      y: SUBJECT_ID,
+      color: AE_SEVERITY,
       markerDefaultSize: 5,
       legendVisibility: 'Never',
       style: 'dashboard'
@@ -68,12 +69,16 @@ export class AdverseEventsView extends DG.ViewBase implements ILazyLoading {
 
 
     let legend = DG.Legend.create(this.aeWithArm.columns.byName(TREATMENT_ARM));
+    legend.root.style.width = '500px';
+    legend.root.style.height = '35px';
 
     this.root.className = 'grok-view ui-box';
     this.root.append(ui.splitV([
       ui.splitH([timelinesPlot, scatterPlot]),
-      ui.box(legend.root, { style: { maxHeight: '50px' } }),
-      ui.splitH([typesPlot,bodySystemsPlot,causalityPlot,outcomePlot]),
+      ui.divV([
+        ui.div(legend.root, { style: { height: '50px' } }),
+        ui.splitH([typesPlot,bodySystemsPlot,causalityPlot,outcomePlot], {style: {width: '100%'}})
+      ]),
       ui.splitH([grid.root])
     ]))
 

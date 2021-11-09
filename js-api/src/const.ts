@@ -388,11 +388,17 @@ export type ColorType = number;
 export type ColorCodingType = `${COLOR_CODING_TYPE}`;
 export type DemoDatasetName = `${DEMO_DATASET}`;
 export type DockType = `${DOCK_TYPE}`;
-export type PropertyOptions = { choices?: string[], semType?: string, description?: string, defaultValue?: any };
-export type ElementOptions = { id?: string, classes?: string, style?: object };
 export type CsvImportOptions = { delimiter?: string, decimalSeparator?: string, thousandSeparator?: string };
 export type IndexPredicate = (ind: number) => boolean;
 export type StringPredicate = (str: string) => boolean;
+
+export type ElementOptions = {
+  id?: string;
+  classes?: string;
+  style?: object;
+  processNode?: (node: HTMLElement) => void;
+  onClick?: (node: HTMLElement) => void;
+};
 
 /** Metadata associated with the semantic type. */
 export interface SemTypeInfo {

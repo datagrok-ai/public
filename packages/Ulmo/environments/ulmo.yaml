@@ -1,9 +1,0 @@
-name: ulmo
-
-channels:
-  - conda-forge
-
-dependencies:
-  - python=3.7
-  - pip:
-    - git+https://github.com/ulmo-dev/ulmo.git

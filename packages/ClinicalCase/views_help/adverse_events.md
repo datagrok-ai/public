@@ -4,9 +4,9 @@ View to explore Adverse events domain. Contains couple of charts along with Adve
 
 * **All events**
 
-Plots all adverse events registered during the study. Detailed information is available in tooltip. Also when selecting Adverse event on the plot corresponding row becomes current in Adverse event table. So Adverse event of inteest can easily be analyzed in details. Selection also works vice versa - when selecting a row in a table corresponding Adverse event is selected on a scatter plot.
+Plots all adverse events registered during the study. Detailed information is available in tooltip. Also when selecting Adverse event on the plot corresponding row becomes current in Adverse event table. So Adverse event of interest can easily be analyzed in details. Selection also works vice versa - when selecting a row in a table corresponding Adverse event is selected on a scatter plot.
 
-Scatter plot can be zoomed in and out to drill down to particular patient or see picure in general. 
+Scatter plot can be zoomed in and out to drill down to particular patient or see picture in general. 
 
 Color indicates severity of an Adverse event.
 
@@ -15,7 +15,7 @@ Color indicates severity of an Adverse event.
 
 * **Events per week**
 
-Historgam with number of Adverse events occurred per week throughout the study. Can help to analyze overall dynamics of Adverse events occurrence.
+Histogram with number of Adverse events occurred per week throughout the study. Can help to analyze overall dynamics of Adverse events occurrence.
 
 Color corresponds to severity of an Adverse event.
 

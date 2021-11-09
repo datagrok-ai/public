@@ -111,41 +111,29 @@ export class ViewBase {
   }
 
   /** View toolbox.
-   *  Sample: {@link https://public.datagrok.ai/js/samples/ui/views/toolbox}
-   * @type {HTMLElement} */
-  get toolbox(): HTMLElement {
-    return api.grok_View_Get_Toolbox(this.d);
-  }
-
-  set toolbox(x: HTMLElement) {
-    api.grok_View_Set_Toolbox(this.d, toDart(x));
-  }
+   *  Sample: {@link https://public.datagrok.ai/js/samples/ui/views/toolbox} */
+  get toolbox(): HTMLElement { return api.grok_View_Get_Toolbox(this.d); }
+  set toolbox(x: HTMLElement) { api.grok_View_Set_Toolbox(this.d, x); }
 
   /** View menu.
-   *  Sample: {@link https://public.datagrok.ai/js/samples/ui/views/ribbon}
-   *  @type {Menu} */
-  get ribbonMenu(): Menu {
-    return new Menu(api.grok_View_Get_RibbonMenu(this.d));
-  }
+   *  Sample: {@link https://public.datagrok.ai/js/samples/ui/views/ribbon} */
+  get ribbonMenu(): Menu { return new Menu(api.grok_View_Get_RibbonMenu(this.d)); }
+  set ribbonMenu(menu: Menu) { api.grok_View_Set_RibbonMenu(this.d, menu.d); }
 
-  set ribbonMenu(menu: Menu) {
-    api.grok_View_Set_RibbonMenu(this.d, menu.d);
-  }
-
-  get closing(): boolean {
-    return this._closing;
-  }
-
-  set closing(c: boolean) {
-    this._closing = c;
-  }
+  /** Whether the view is currently closing. */
+  get closing(): boolean { return this._closing; }
+  set closing(c: boolean) { this._closing = c; }
 
   /** Sets custom view panels on the ribbon.
    * @param {Array<Array<HTMLElement>>} panels
    * @param {boolean} clear Clear all previous before setup
    * Sample: {@link https://public.datagrok.ai/js/samples/ui/views/ribbon} */
-  setRibbonPanels(panels: HTMLElement[][], clear: boolean = false): void {
+  setRibbonPanels(panels: HTMLElement[][], clear: boolean = true): void {
     api.grok_View_SetRibbonPanels(this.d, panels, clear);
+  }
+
+  getRibbonPanels(): HTMLElement[][] {
+    return api.grok_View_GetRibbonPanels(this.d);
   }
 
   /** @returns {HTMLElement} View icon. */
@@ -196,7 +184,7 @@ export class ViewBase {
    * Appends multiple elements this view. Use {@link append} for appending a single element.
    * @param {object[]} items */
   appendAll(items: HTMLElement[]): HTMLElement {
-    return ui.appendAll(this.root, items.map(ui.render));
+    return ui.appendAll(this.root, items.map(x => ui.render(x)));
   }
 
   /** Detaches this view. */
@@ -230,6 +218,11 @@ export class View extends ViewBase {
       return new TableView(d);
     else
       return new View(d);
+  }
+
+  /** Creates a view for the specified object, if it is registered, or null otherwise. */
+  static forObject(x: any): View | null {
+    return api.grok_View_ForObject(toDart(x));
   }
 
   static fromRoot(root: HTMLElement) {
@@ -380,11 +373,9 @@ export class TableView extends View {
     super(d);
   }
 
-  /** Creates a new table view.
-   * @param {DataFrame} table
-   * @returns {TableView} */
-  static create(table: DataFrame): TableView {
-    return new TableView(api.grok_TableView(table.d));
+  /** Creates a new table view, and adds it to the workspace if specified */
+  static create(table: DataFrame, addToWorkspace: boolean = true): TableView {
+    return toJs(api.grok_TableView(table.d, addToWorkspace));
   }
 
   /** Associated table, if it exists (for TableView), or null.
@@ -722,7 +713,7 @@ export class ViewLayout extends Entity {
 
   /** Only defined within the context of the OnViewLayoutXXX events */
   get view(): View {
-    return api.grok_ViewLayout_Get_View(this.d);
+    return toJs(api.grok_ViewLayout_Get_View(this.d));
   }
 
   get viewState(): string {

@@ -6,6 +6,7 @@ import { validationRulesList, _package } from "../package";
 import { pinnacleRuleIdColumnName, validationResultRuleIdColumn } from "../validation/constants";
 import { createRulesDataFrame } from '../validation/validation-utils';
 import { ILazyLoading } from '../lazy-loading/lazy-loading';
+import { getUniqueValues } from '../data-preparation/utils';
 
 export class ValidationView extends DG.ViewBase implements ILazyLoading {
 
@@ -40,7 +41,7 @@ export class ValidationView extends DG.ViewBase implements ILazyLoading {
     this.resultsDataframe = study.validationResults;
     this.domains = study.domains;
 
-    let uniqueViolatedRuleIds = study.validationResults.getCol(validationResultRuleIdColumn).categories;
+    let uniqueViolatedRuleIds = Array.from(getUniqueValues(study.validationResults, validationResultRuleIdColumn));
     this.rulesDataframe = this.getViolatedRulesDataframe(validationRulesList, uniqueViolatedRuleIds);
 
     this.rulesGrid = this.rulesDataframe.plot.grid();
@@ -73,7 +74,7 @@ export class ValidationView extends DG.ViewBase implements ILazyLoading {
       ui.splitV([
         ui.box(ui.divText('Violated rules', viewerTitle), { style: { maxHeight: '45px' } }),
         violatedRules.root,
-        this.resultsDataframe.plot.grid().root,
+        //this.resultsDataframe.plot.grid().root,
         ui.box(ui.divText('Errors', viewerTitle), { style: { maxHeight: '45px' } }),
         tabs.root
       ])

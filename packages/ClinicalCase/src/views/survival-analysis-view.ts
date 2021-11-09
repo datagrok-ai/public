@@ -3,7 +3,8 @@ import { InputBase } from "datagrok-api/dg";
 import * as grok from 'datagrok-api/grok';
 import * as ui from "datagrok-api/ui";
 import { study } from "../clinical-study";
-import { SURVIVAL_ANALYSIS_GUIDE, TREATMENT_ARM } from "../constants";
+import { AE_START_DATE, AGE, DEATH_DATE, RACE, SEX, SUBJECT_ID, TREATMENT_ARM } from "../columns-constants";
+import { requiredColumnsByView, SURVIVAL_ANALYSIS_GUIDE } from "../constants";
 import { createSurvivalData } from "../data-preparation/data-preparation";
 import { dataframeContentToRow } from "../data-preparation/utils";
 import { ILazyLoading } from "../lazy-loading/lazy-loading";
@@ -28,11 +29,11 @@ export class SurvivalAnalysisView extends DG.ViewBase implements ILazyLoading {
   survivalColumns = [];
   confIntervals = [ 0.7, 0.75, 0.8, 0.85, 0.9, 0.95, 0.99 ];
   survivalOptions = [''];
-  covariatesOptions = [ 'AGE', 'SEX', 'RACE', TREATMENT_ARM ];
-  endpointOptions = { 'SAE': 'AESTDTC', 'DEATH': 'DTHDTC', 'HOSPITALIZATION': 'AESTDTC', 'DRUG RELATED AE': 'AESTDTC' };
+  covariatesOptions = [ AGE, SEX, RACE, TREATMENT_ARM ];
+  endpointOptions = { 'SAE': AE_START_DATE, 'DEATH': DEATH_DATE, 'HOSPITALIZATION': AE_START_DATE, 'DRUG RELATED AE': AE_START_DATE };
   confInterval = 0.7;
   strata = '';
-  endpoint = 'TIME TO FIRST SAE';
+  endpoint = 'SAE';
   covariates = [];
   survivalDataframe: DG.DataFrame;
   plotCovariates = [];
@@ -47,7 +48,7 @@ export class SurvivalAnalysisView extends DG.ViewBase implements ILazyLoading {
   loaded: boolean;
 
   load(): void {
-    checkMissingDomains(['dm', 'ae'], false, this);
+    checkMissingDomains(requiredColumnsByView[this.name], false, this);
  }
 
   createView(): void {
@@ -180,7 +181,7 @@ export class SurvivalAnalysisView extends DG.ViewBase implements ILazyLoading {
 
   private getFilters(){
     return DG.Viewer.fromType('Filters', this.survivalDataframe, {
-      'columnNames': this.survivalColumns.filter(it => it !== 'time' && it !== 'status' && it !== 'USUBJID'),
+      'columnNames': this.survivalColumns.filter(it => it !== 'time' && it !== 'status' && it !== SUBJECT_ID),
       'showContextMenu': false,
     }).root
   }
@@ -205,7 +206,7 @@ export class SurvivalAnalysisView extends DG.ViewBase implements ILazyLoading {
         this.updateCovariatesPlot();
       });
     })
-/*     this.plotCovariatesChoices = ui.multiChoiceInput(' ', null, this.survivalColumns.filter(it => it !== 'time' && it !== 'status' && it !== 'USUBJID'));
+/*     this.plotCovariatesChoices = ui.multiChoiceInput(' ', null, this.survivalColumns.filter(it => it !== 'time' && it !== 'status' && it !== SUBJECT_ID));
     this.plotCovariatesChoices.onChanged((v) => {
       this.plotCovariates = this.plotCovariatesChoices.value;
       this.updateCovariatesPlot();
@@ -215,7 +216,7 @@ export class SurvivalAnalysisView extends DG.ViewBase implements ILazyLoading {
   private refreshDataframe(){
     this.survivalDataframe = createSurvivalData(this.endpoint, this.endpointOptions[this.endpoint], this.covariates);
      this.survivalColumns = this.survivalDataframe.columns.names();
-     this.survivalOptions = [''].concat(this.survivalColumns.filter(it => it !== 'time' && it !== 'status' && it !== 'USUBJID'));
+     this.survivalOptions = [''].concat(this.survivalColumns.filter(it => it !== 'time' && it !== 'status' && it !== SUBJECT_ID));
      this.strata = '';
      this.plotCovariates = [];
      this.updateStrataChoices();

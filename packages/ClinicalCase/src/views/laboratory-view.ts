@@ -3,11 +3,13 @@ import * as DG from "datagrok-api/dg";
 import * as ui from "datagrok-api/ui";
 import { ClinRow, study } from "../clinical-study";
 import { createBaselineEndpointDataframe, createHysLawDataframe, createLabValuesByVisitDataframe } from '../data-preparation/data-preparation';
-import { ALT, AP, BILIRUBIN, TREATMENT_ARM } from '../constants';
+import { ALT, AP, BILIRUBIN, requiredColumnsByView, } from '../constants';
 import { createBaselineEndpointScatterPlot, createHysLawScatterPlot } from '../custom-scatter-plots/custom-scatter-plots';
 import { ILazyLoading } from '../lazy-loading/lazy-loading';
 import { checkMissingDomains } from './utils';
 import { _package } from '../package';
+import { getUniqueValues } from '../data-preparation/utils';
+import { LAB_HI_LIM_N, LAB_LO_LIM_N, LAB_TEST, LAB_VISIT_DAY, LAB_VISIT_NAME, SUBJECT_ID, TREATMENT_ARM } from '../columns-constants';
 
 export class LaboratoryView extends DG.ViewBase implements ILazyLoading {
 
@@ -19,7 +21,7 @@ export class LaboratoryView extends DG.ViewBase implements ILazyLoading {
   loaded: boolean;
 
   load(): void {
-    checkMissingDomains(['dm', 'lb'], false, this);
+    checkMissingDomains(requiredColumnsByView[this.name], false, this);
  }
   
   createView(): void {
@@ -33,11 +35,11 @@ export class LaboratoryView extends DG.ViewBase implements ILazyLoading {
 
     let hysLawScatterPlot = this.hysLawScatterPlot(dm, lb);
 
-    let uniqueLabValues = lb.getCol('LBTEST').categories;
-    let uniqueVisits = lb.getCol('VISIT').categories;
+    let uniqueLabValues = Array.from(getUniqueValues(lb, LAB_TEST));
+    let uniqueVisits = Array.from(getUniqueValues(lb, LAB_VISIT_NAME));
     let baselineEndpointPlot = this.baselineEndpointPlot(dm, lb, uniqueLabValues[ 0 ], uniqueVisits[ 0 ], uniqueVisits[ 1 ]);
 
-    let uniqueTreatmentArms = dm.getCol(TREATMENT_ARM).categories;
+    let uniqueTreatmentArms = Array.from(getUniqueValues(dm, TREATMENT_ARM));
     let disributionBoxPlot = this.labValuesDistributionPlot(dm, lb, uniqueLabValues[ 0 ], uniqueTreatmentArms[ 0 ]);
 
     this.generateUI(dm, lb, grid, hysLawScatterPlot, baselineEndpointPlot, uniqueLabValues, uniqueVisits, uniqueTreatmentArms, disributionBoxPlot);
@@ -133,66 +135,42 @@ export class LaboratoryView extends DG.ViewBase implements ILazyLoading {
 
 
   private hysLawScatterPlot(dm: DG.DataFrame, lb: DG.DataFrame) {
-    if (dm.columns.contains(TREATMENT_ARM) &&
-      lb.columns.contains('LBTEST') &&
-      lb.columns.contains('USUBJID') &&
-      lb.columns.contains('LBSTRESN') &&
-      lb.columns.contains('LBSTNRHI')) {
-      let hysLawDataframe = createHysLawDataframe(lb, dm);
-      grok.data.linkTables(lb, hysLawDataframe,
-        [ `USUBJID` ], [ `USUBJID` ],
-        [ DG.SYNC_TYPE.CURRENT_ROW_TO_ROW, DG.SYNC_TYPE.CURRENT_ROW_TO_SELECTION ]);
-        grok.data.linkTables(hysLawDataframe, lb, 
-          [ `USUBJID` ], [ `USUBJID` ],
-          [ DG.SYNC_TYPE.SELECTION_TO_SELECTION, DG.SYNC_TYPE.SELECTION_TO_SELECTION ]);
-      let hysLawScatterPlot = createHysLawScatterPlot(hysLawDataframe, ALT, BILIRUBIN, TREATMENT_ARM, AP);
-      return hysLawScatterPlot;
-    }
-    return null;
+    let hysLawDataframe = createHysLawDataframe(lb, dm);
+    grok.data.linkTables(lb, hysLawDataframe,
+      [SUBJECT_ID], [SUBJECT_ID],
+      [DG.SYNC_TYPE.CURRENT_ROW_TO_ROW, DG.SYNC_TYPE.CURRENT_ROW_TO_SELECTION]);
+    grok.data.linkTables(hysLawDataframe, lb,
+      [SUBJECT_ID], [SUBJECT_ID],
+      [DG.SYNC_TYPE.SELECTION_TO_SELECTION, DG.SYNC_TYPE.SELECTION_TO_SELECTION]);
+    let hysLawScatterPlot = createHysLawScatterPlot(hysLawDataframe, ALT, BILIRUBIN, TREATMENT_ARM);
+    return hysLawScatterPlot;
   }
 
   private baselineEndpointPlot(dm: DG.DataFrame, lb: DG.DataFrame, value: any, bl: any, ep: any) {
-    if (dm.columns.contains(TREATMENT_ARM) &&
-      lb.columns.contains('LBTEST') &&
-      lb.columns.contains('USUBJID') &&
-      lb.columns.contains('LBSTRESN') &&
-      lb.columns.contains('VISIT') &&
-      lb.columns.contains('LBSTNRLO') &&
-      lb.columns.contains('LBSTNRHI')) {
-      let visitCol = 'VISIT';
-      let blVisit = bl;
-      let epVisit = ep;
-      let labValue = value;
-      let blNumCol = `${labValue}_BL`;
-      let epNumCol = `${labValue}_EP`;
-      let baselineEndpointDataframe = createBaselineEndpointDataframe(lb, dm, [TREATMENT_ARM], labValue, blVisit, epVisit, visitCol, blNumCol, epNumCol);
-      grok.data.linkTables(lb, baselineEndpointDataframe,
-        [ `USUBJID` ], [ `USUBJID` ],
-        [ DG.SYNC_TYPE.CURRENT_ROW_TO_ROW, DG.SYNC_TYPE.CURRENT_ROW_TO_SELECTION ]);
-      let baselineEndpointPlot = createBaselineEndpointScatterPlot(baselineEndpointDataframe, blNumCol, epNumCol, TREATMENT_ARM,
-        baselineEndpointDataframe.get('LBSTNRLO', 0), baselineEndpointDataframe.get('LBSTNRHI', 0));
-      return baselineEndpointPlot;
-    }
-    return null;
+    let visitCol = LAB_VISIT_NAME;
+    let blVisit = bl;
+    let epVisit = ep;
+    let labValue = value;
+    let blNumCol = `${labValue}_BL`;
+    let epNumCol = `${labValue}_EP`;
+    let baselineEndpointDataframe = createBaselineEndpointDataframe(lb, dm, [TREATMENT_ARM], labValue, blVisit, epVisit, visitCol, blNumCol, epNumCol);
+    grok.data.linkTables(lb, baselineEndpointDataframe,
+      [ SUBJECT_ID ], [ SUBJECT_ID ],
+      [ DG.SYNC_TYPE.CURRENT_ROW_TO_ROW, DG.SYNC_TYPE.CURRENT_ROW_TO_SELECTION ]);
+    let baselineEndpointPlot = createBaselineEndpointScatterPlot(baselineEndpointDataframe, blNumCol, epNumCol, TREATMENT_ARM,
+      baselineEndpointDataframe.get(LAB_LO_LIM_N, 0), baselineEndpointDataframe.get(LAB_HI_LIM_N, 0));
+    return baselineEndpointPlot;
   }
 
   private labValuesDistributionPlot(dm: DG.DataFrame, lb: DG.DataFrame, selectedlabValue: any, trArm: any) {
-
-    if (lb.columns.contains('LBTEST') &&
-      lb.columns.contains('USUBJID') &&
-      lb.columns.contains('LBSTRESN') &&
-      lb.columns.contains('VISITDY') &&
-      dm.columns.contains(TREATMENT_ARM)) {
-      let labValue = selectedlabValue;
-      let labValueNumColumn = `${labValue} values`;
-      let disributionDataframe = createLabValuesByVisitDataframe(lb, dm, labValue, trArm, labValueNumColumn, 'VISITDY');
-      let disributionBoxPlot = DG.Viewer.boxPlot(disributionDataframe, {
-        category: 'VISITDY',
-        value: labValueNumColumn,
-      });
-      return disributionBoxPlot;
-    }
-    return null;
+    let labValue = selectedlabValue;
+    let labValueNumColumn = `${labValue} values`;
+    let disributionDataframe = createLabValuesByVisitDataframe(lb, dm, labValue, trArm, labValueNumColumn, LAB_VISIT_DAY);
+    let disributionBoxPlot = DG.Viewer.boxPlot(disributionDataframe, {
+      category: LAB_VISIT_DAY,
+      value: labValueNumColumn,
+    });
+    return disributionBoxPlot;
   }
 
 }

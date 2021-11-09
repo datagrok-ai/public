@@ -12,6 +12,9 @@ function generateQueryWrappers(): void {
     return;
   }
 
+  const packagePath = path.join(curDir, 'package.json');
+  const _package = JSON.parse(fs.readFileSync(packagePath, { encoding: 'utf-8' }));
+
   const files = walk.sync({
     path: './queries',
     ignoreFiles: ['.npmignore', '.gitignore'],
@@ -29,29 +32,9 @@ function generateQueryWrappers(): void {
       const name = utils.getScriptName(q, utils.commentMap[utils.queryExtension]);
       if (!name) continue;
       let tb = new utils.TemplateBuilder(utils.queryWrapperTemplate)
-        .replace('FUNC_NAME', name)
-        .replace('FUNC_NAME_LOWERCASE', name);
-      let connection = utils.getParam('connection', q, utils.commentMap[utils.queryExtension]);
-      if (!connection) {
-        // Use the name of the first found connection (either a field or file name)
-        const connectionsDir = path.join(curDir, 'connections');
-        if (fs.existsSync(connectionsDir) && fs.readdirSync(connectionsDir).length !== 0) {
-          const connectionFile = fs.readdirSync(connectionsDir).find((c) => /.+\.json$/.test(c));
-          if (!connectionFile) {
-            console.log(`Connection for query "${name}" not found.`);
-            continue;
-          }
-          try {
-            const paramString = fs.readFileSync(connectionFile, 'utf8');
-            const params = JSON.parse(paramString);
-            connection = params.name || connectionFile.slice(0, -5);
-          } catch(error) {
-            console.log(`Connection for query "${name}" not found.`);
-            continue;
-          }
-        }
-      }
-      tb.replace('NAME', connection!);
+        .replace('QUERY_NAME', name)
+        .replace('QUERY_NAME_LOWERCASE', name)
+        .replace('PACKAGE_NAMESPACE', _package.name);
 
       const inputs = utils.getScriptInputs(q, utils.commentMap[utils.queryExtension]);
       const outputType = utils.getScriptOutputType(q, utils.commentMap[utils.queryExtension]);
@@ -81,6 +64,9 @@ function generateScriptWrappers(): void {
     return;
   }
 
+  const packagePath = path.join(curDir, 'package.json');
+  const _package = JSON.parse(fs.readFileSync(packagePath, { encoding: 'utf-8' }));
+
   const files = walk.sync({
     path: './scripts',
     ignoreFiles: ['.npmignore', '.gitignore'],
@@ -100,11 +86,8 @@ function generateScriptWrappers(): void {
 
     let tb = new utils.TemplateBuilder(utils.scriptWrapperTemplate)
       .replace('FUNC_NAME', name)
-      .replace('FUNC_NAME_LOWERCASE', name);
-
-    const packagePath = path.join(curDir, 'package.json');
-    const _package = JSON.parse(fs.readFileSync(packagePath, { encoding: 'utf-8' }));
-    tb.replace('PACKAGE_NAMESPACE', _package.name);
+      .replace('FUNC_NAME_LOWERCASE', name)
+      .replace('PACKAGE_NAMESPACE', _package.name);
 
     const inputs = utils.getScriptInputs(script);
     const outputType = utils.getScriptOutputType(script);

@@ -1,9 +1,9 @@
 import {toDart, toJs} from "./wrappers";
 import {__obs, _sub, observeStream, StreamSubscription} from "./events";
 import {Observable, Subscription} from "rxjs";
-import {Func, Property} from "./entities";
+import {Func, Property, PropertyOptions} from "./entities";
 import {Cell, Column, DataFrame} from "./dataframe";
-import {ColorType, PropertyOptions, Type} from "./const";
+import {ColorType, Type} from "./const";
 import * as React from "react";
 import * as rxjs from "rxjs";
 import {Rect} from "./grid";
@@ -367,84 +367,92 @@ export class AccordionPane extends DartWidget {
 }
 
 
+/** Tab control that hosts panes inside. See also {@link TabPane} */
 export class TabControl {
   d: any;
   constructor(d: any) {
     this.d = d;
   }
 
+  /** Creates a new TabControl */
   static create(vertical: boolean = false): TabControl {
     return toJs(api.grok_TabControl(vertical));
   }
 
+  /** Visual root */
   get root(): HTMLDivElement {
     return api.grok_Widget_Get_Root(this.d);
   }
 
+  /** Header shown on top of the control */
   get header(): HTMLDivElement {
     return api.grok_TabControlBase_Get_Header(this.d);
   }
 
+  /** Panes currently present in the pane control.
+   * Do not change the array, use {@link addPane} instead */
   get panes(): TabPane[] {
     return api.grok_TabControlBase_Get_Panes(this.d).map(toJs);
   }
 
+  /** Gets the pane with the specified name */
   getPane(name: string): TabPane {
     return toJs(api.grok_TabControlBase_GetPane(this.d, name));
   }
 
-  addPane(name: string, getContent: Function, icon: any = null): TabPane {
+  /** Adds a new pane with the specified name */
+  addPane(name: string, getContent: () => HTMLElement, icon: any = null): TabPane {
     return toJs(api.grok_TabControlBase_AddPane(this.d, name, getContent, icon));
   }
 
+  /** Removes all panes */
   clear(): void {
     api.grok_TabControlBase_Clear(this.d);
   }
 
-  get currentPane(): TabPane {
-    return api.grok_TabControlBase_Get_CurrentPane(this.d);
-  }
+  /** Currently visible pane */
+  get currentPane(): TabPane { return api.grok_TabControlBase_Get_CurrentPane(this.d); }
+  set currentPane(v: TabPane) { api.grok_TabControlBase_Set_CurrentPane(this.d, v.d); }
 
-  set currentPane(v: TabPane) {
-    api.grok_TabControlBase_Set_CurrentPane(this.d, v.d);
-  }
+  /** Occurs before the active pane is changed */
+  get onBeforeTabChanged(): Observable<any> { return __obs('d4-tabcontrol-before-tab-changed', this.d); }
 
+  /** Occurs after the active pane is changed */
+  get onTabChanged(): Observable<any> { return __obs('d4-tabcontrol-tab-changed', this.d); }
 }
 
 
+/** Represents a pane of either {@link TabControl} or {@link Accordion} */
 export class TabPane {
   d: any;
+
+  /** Creates TabPane from the Dart handle */
   constructor(d: any) {
     this.d = d;
   }
 
+  /** {@link TabControl} this pane belongs to */
   get parent(): TabControl {
     return toJs(api.grok_TabPane_Get_Parent(this.d));
   }
 
+  /** A control shown on top of the pane */
   get header(): HTMLDivElement {
     return api.grok_TabPane_Get_Header(this.d);
   }
 
+  /** Content */
   get content(): HTMLDivElement {
     return api.grok_TabPane_Get_Content(this.d);
   }
 
-  get expanded(): boolean {
-    return api.grok_AccordionPane_Get_Expanded(this.d);
-  }
+  /** Whether the pane is expanded. Applicable to Accordion's panes only. */
+  get expanded(): boolean { return api.grok_AccordionPane_Get_Expanded(this.d); }
+  set expanded(v: boolean) { api.grok_AccordionPane_Set_Expanded(this.d, v); }
 
-  set expanded(v: boolean) {
-    api.grok_AccordionPane_Set_Expanded(this.d, v);
-  }
-
-  get name(): string {
-    return api.grok_AccordionPane_Get_Name(this.d);
-  }
-
-  set name(name: string) {
-    api.grok_AccordionPane_Set_Name(this.d, name);
-  }
+  /** Tab pane name */
+  get name(): string { return api.grok_AccordionPane_Get_Name(this.d); }
+  set name(name: string) { api.grok_AccordionPane_Set_Name(this.d, name); }
 }
 
 
@@ -477,6 +485,7 @@ export class Dialog extends DartWidget {
     super(d);
   }
 
+  /** Creates a new dialog with the specified options. */
   static create(options: { title?: string, helpUrl?: string } | string = ''): Dialog {
     if (typeof options === 'string')
       return new Dialog(api.grok_Dialog(options, null));
@@ -484,13 +493,9 @@ export class Dialog extends DartWidget {
       return new Dialog(api.grok_Dialog(options?.title, options?.helpUrl));
   }
 
-  get helpUrl(): string {
-    return api.grok_Dialog_Get_HelpUrl(this.d);
-  };
-
-  set helpUrl(url: string) {
-    api.grok_Dialog_Set_HelpUrl(this.d, url);
-  };
+  /** When provided, adds a "?" icon to the dialog header on the right. */
+  get helpUrl(): string { return api.grok_Dialog_Get_HelpUrl(this.d); };
+  set helpUrl(url: string) { api.grok_Dialog_Set_HelpUrl(this.d, url); };
 
   /** Returns the title of a dialog. */
   get title(): string { return api.grok_Dialog_Get_Title(this.d); };
@@ -719,7 +724,9 @@ export class Balloon {
 }
 
 
-/** Input control base. Could be used for editing {@link Property} values as well. */
+/** Input control base. Could be used for editing {@link Property} values as well.
+ * The root is a div that consists of {@link captionLabel} and {@link input}.
+ * */
 export class InputBase {
   d: any;
 
@@ -729,9 +736,16 @@ export class InputBase {
       this.onChanged((_: any) => onChanged(this.value));
   }
 
-  get root(): HTMLElement {
-    return api.grok_InputBase_Get_Root(this.d);
-  };
+  static forProperty(property: Property): InputBase {
+    return toJs(api.grok_InputBase_ForProperty(property.d));
+  }
+
+  static forColumn(column: Column): InputBase {
+    return toJs(api.grok_InputBase_ForColumn(column.d));
+  }
+
+  /** Visual root (typically a div element that contains {@link caption} and {@link input}) */
+  get root(): HTMLElement { return api.grok_InputBase_Get_Root(this.d); };
 
   get caption(): string {
     return api.grok_InputBase_Get_Caption(this.d);
@@ -745,49 +759,30 @@ export class InputBase {
     return api.grok_InputBase_Get_CaptionLabel(this.d);
   };
 
+  /** Returns the actual input */
   get input(): HTMLElement | string {
     return api.grok_InputBase_Get_Input(this.d);
   };
 
-  get nullable(): boolean {
-    return api.grok_InputBase_Get_Nullable(this.d);
-  };
+  /** Whether empty values are allowed */
+  get nullable(): boolean { return api.grok_InputBase_Get_Nullable(this.d); };
+  set nullable(v: boolean) { api.grok_InputBase_Set_Nullable(this.d, v); };
 
-  set nullable(v: boolean) {
-    api.grok_InputBase_Set_Nullable(this.d, v);
-  };
+  /** Input value */
+  get value(): any { return toJs(api.grok_InputBase_Get_Value(this.d)); };
+  set value(x: any) { toDart(api.grok_InputBase_Set_Value(this.d, x)); };
 
-  get value(): any {
-    return toJs(api.grok_InputBase_Get_Value(this.d));
-  };
+  /** String representation of the {@link value} */
+  get stringValue(): string { return api.grok_InputBase_Get_StringValue(this.d); };
+  set stringValue(s: string) { api.grok_InputBase_Set_StringValue(this.d, s); };
 
-  set value(x: any) {
-    toDart(api.grok_InputBase_Set_Value(this.d, x));
-  };
+  /** Whether the input is readonly */
+  get readOnly(): boolean { return api.grok_InputBase_Get_ReadOnly(this.d); };
+  set readOnly(v: boolean) { api.grok_InputBase_Set_ReadOnly(this.d, v); };
 
-  get stringValue(): string {
-    return api.grok_InputBase_Get_StringValue(this.d);
-  };
-
-  set stringValue(s: string) {
-    api.grok_InputBase_Set_StringValue(this.d, s);
-  };
-
-  get readOnly(): boolean {
-    return api.grok_InputBase_Get_ReadOnly(this.d);
-  };
-
-  set readOnly(v: boolean) {
-    api.grok_InputBase_Set_ReadOnly(this.d, v);
-  };
-
-  get enabled(): boolean {
-    return api.grok_InputBase_Get_Enabled(this.d);
-  };
-
-  set enabled(v: boolean) {
-    api.grok_InputBase_Set_Enabled(this.d, v);
-  };
+  /** Whether the input is enabled */
+  get enabled(): boolean { return api.grok_InputBase_Get_Enabled(this.d); };
+  set enabled(v: boolean) { api.grok_InputBase_Set_Enabled(this.d, v); };
 
   /// Occurs when [value] is changed, either by user or programmatically.
   onChanged(callback: Function): StreamSubscription {
@@ -799,37 +794,37 @@ export class InputBase {
     return _sub(api.grok_InputBase_OnInput(this.d, callback));
   }
 
+  /** Saves the value. Used in dialog history. See also {@link load} */
   save(): any {
     return api.grok_InputBase_Save(this.d);
   };
 
-  load(s: any): any {
-    return api.grok_InputBase_Load(this.d, s);
-  };
+  /** Loads the value. Used in dialog history. See also {@link load} */
+  load(s: any): any { return api.grok_InputBase_Load(this.d, s); };
 
   init(): any {
     return api.grok_InputBase_Init(this.d);
   };
 
+  /** Fires the 'changed' event */
   fireChanged(): any {
     return api.grok_InputBase_FireChanged(this.d);
   };
 
+  /** Adds the specified caption */
   addCaption(caption: string): void {
     api.grok_InputBase_AddCaption(this.d, caption);
   };
 
+  /** Adds a usage example to the input's hamburger menu */
   addPatternMenu(pattern: any): void {
     api.grok_InputBase_AddPatternMenu(this.d, pattern);
   }
 
+  /** Sets the tooltip */
   setTooltip(msg: string): void {
     api.grok_InputBase_SetTooltip(this.d, msg);
   };
-
-  static forProperty(property: Property): InputBase {
-    return toJs(api.grok_InputBase_ForProperty(property.d));
-  }
 }
 
 
@@ -1177,125 +1172,126 @@ export class Color {
 export class TreeViewNode {
   d: any;
 
-  /** @constructs {TreeView} */
+  /** @constructs {TreeView} from the Dart object */
   constructor(d: any) {
     this.d = d;
   }
 
-  /** Creates new nodes tree
-   * @returns {TreeViewNode} */
+  /** Creates new tree */
   static tree(): TreeViewNode {
     return toJs(api.grok_TreeViewNode_Tree());
   }
 
-  /** Visual root.
-   * @type {HTMLElement} */
+  /** Visual root */
   get root(): HTMLElement {
     return api.grok_TreeViewNode_Root(this.d);
   }
 
-  /** Caption label.
-   * @type {HTMLElement} */
+  /** Caption label */
   get captionLabel(): HTMLElement {
     return api.grok_TreeViewNode_CaptionLabel(this.d);
   }
 
-  /** Check box.
-   * @type {null|HTMLElement} */
+  /** Check box element  */
   get checkBox(): HTMLElement | null {
     return api.grok_TreeViewNode_CheckBox(this.d);
   }
 
-  /** Returns 'true' if checked
-   * @returns {boolean} */
-  get checked(): boolean {
-    return api.grok_TreeViewNode_Get_Checked(this.d);
-  }
+  /** Returns `true` if checked */
+  get checked(): boolean { return api.grok_TreeViewNode_Get_Checked(this.d); }
+  set checked(checked: boolean) { api.grok_TreeViewNode_Set_Checked(this.d, checked); }
 
-  set checked(checked: boolean) {
-    api.grok_TreeViewNode_Set_Checked(this.d, checked);
-  }
+  /** Node text */
+  get text(): string { return api.grok_TreeViewNode_Text(this.d); }
 
-  /** Returns node text.
-   * @returns {string} */
-  get text(): string {
-    return api.grok_TreeViewNode_Text(this.d);
-  }
+  /** Node value */
+  get value(): object { return api.grok_TreeViewNode_Get_Value(this.d); };
+  set value(v: object) { api.grok_TreeViewNode_Set_Value(this.d, v); };
 
-  /** Node value.
-   * @type {Object}
-   */
-  get value(): object {
-    return api.grok_TreeViewNode_Get_Value(this.d)
-  };
-
-  set value(v: object) {
-    api.grok_TreeViewNode_Set_Value(this.d, v)
-  };
-
-  /** Gets all node items.
-   * @returns {Array<TreeViewNode>} */
+  /** Gets all node items */
   get items(): TreeViewNode[] {
     return api.grok_TreeViewNode_Items(this.d).map((i: any) => toJs(i));
   }
 
-  /** Add new group to node.
-   * @param {string} text
-   * @param {object} value
-   * @param {boolean} expanded
-   * @returns {TreeViewNode} */
+  /** Adds new group */
   group(text: string, value: object | null = null, expanded: boolean = true): TreeViewNode {
     return toJs(api.grok_TreeViewNode_Group(this.d, text, value, expanded));
   }
 
-  /** Add new item to node.
-   * @param {string} text
-   * @param {object} value
-   * @returns {TreeViewNode} */
+  /** Returns existing, or creates a new node group */
+  getOrCreateGroup(text: string, value: object | null = null, expanded: boolean = true): TreeViewNode {
+    return toJs(api.grok_TreeViewNode_GetOrCreateGroup(this.d, text, expanded));
+  }
+
+  /** Adds new item to group */
   item(text: string, value: object | null = null): TreeViewNode {
     return toJs(api.grok_TreeViewNode_Item(this.d, text, value));
   }
 
-  /** Enables checkbox on node
-   * @param {boolean} checked */
+  /** Enables checkbox */
   enableCheckBox(checked: boolean = false): void {
     api.grok_TreeViewNode_EnableCheckBox(this.d, checked);
   }
+
+  static fromItemCategories(items: any[], props: string[], options?: {
+    itemToString: (item: any) => string
+  }): TreeViewNode {
+
+    function init(node: TreeViewNode, path: string[]) {
+
+      //
+      const pathItems = items.filter((item) => path.every((p, i) => item[props[i]] == path[i]));
+
+      // leafs
+      if (path.length == props.length) {
+        for (let item of pathItems)
+          node.item(options!.itemToString(item), item);
+      }
+      else {
+        let categories: Set<string> = new Set<string>();
+        for (let item of pathItems)
+          categories.add(item[props[path.length]]);
+
+        for (let category of categories)
+          init(node.group(category), [...path, category]);
+
+        // lazy loading - use it for big collections and async queries
+        // for (let category of categories)
+        //   node.group(category)
+        //     .onNodeExpanding
+        //     .subscribe((expandingNode) => init(expandingNode, [...path, category]));
+      }
+    }
+
+    let rootNode = TreeViewNode.tree();
+    init(rootNode, []);
+    return rootNode;
+  }
+
+
+  /**  */
+  get onNodeExpanding(): Observable<TreeViewNode> { return __obs('d4-tree-view-node-expanding', this.d); }
 }
 
+
+/** A slider that lets user control both min and max values. */
 export class RangeSlider extends DartWidget {
 
   static create(): RangeSlider {
     return toJs(api.grok_RangeSlider());
   }
 
-  /** Gets minimum range value.
-   * @type {number}
-   */
-  get minRange(): number {
-    return api.grok_RangeSlider_Get_MinRange(this.d)
-  };
+  /** Minimum range value. */
+  get minRange(): number { return api.grok_RangeSlider_Get_MinRange(this.d) };
 
-  /** Gets maximum range value.
-   * @type {number}
-   */
-  get maxRange(): number {
-    return api.grok_RangeSlider_Get_MaxRange(this.d);
-  };
+  /** Gets maximum range value. */
+  get maxRange(): number { return api.grok_RangeSlider_Get_MaxRange(this.d); };
 
-  /** Gets minimum value.
-   * @type {number}
-   */
-  get min(): number {
-    return api.grok_RangeSlider_Get_Min(this.d);
-  };
+  /** Gets minimum value. */
+  get min(): number { return api.grok_RangeSlider_Get_Min(this.d); };
 
-  /** Gets maximum value.
-   * @type {number}
-   */
-  get max(): number {
-    return api.grok_RangeSlider_Get_Max(this.d);
-  };
+  /** Gets maximum value. */
+  get max(): number { return api.grok_RangeSlider_Get_Max(this.d); };
 
   /** Sets values to range slider.
    * @param {number} minRange
@@ -1311,6 +1307,7 @@ export class RangeSlider extends DartWidget {
     return observeStream(api.grok_RangeSlider_Get_OnValuesChanged(this.d));
   }
 }
+
 
 export class HtmlTable extends DartWidget {
 
@@ -1331,14 +1328,16 @@ export class HtmlTable extends DartWidget {
   }
 }
 
+
+/** A combo box with columns as item.
+ * Supports sorting, searching, custom tooltips, column-specific rendering, drag-and-drop, etc */
 export class ColumnComboBox extends DartWidget {
   /** @constructs {ColumnComboBox} */
   constructor(d: any) {
     super(d);
   }
 
-  /** Creates a column combo box with specified [dataframe] and [predicate]
-   * @returns {ColumnComboBox} */
+  /** Creates a column combo box with specified [dataframe] and [predicate]. */
   static create(dataframe: DataFrame, predicate: Function): ColumnComboBox {
     return toJs(api.grok_ColumnComboBox(dataframe.d, (x: any) => predicate(toJs(x))));
   }
@@ -1348,14 +1347,9 @@ export class ColumnComboBox extends DartWidget {
     return api.grok_ColumnComboBox_Get_Vertical(this.d);
   }
 
-  /** @type {string} */
-  get caption(): string {
-    return api.grok_ColumnComboBox_Get_Caption(this.d);
-  }
-
-  set caption(c: string) {
-    api.grok_ColumnComboBox_Set_Caption(this.d, c);
-  }
+  /** Text to be shown before the combo box */
+  get caption(): string { return api.grok_ColumnComboBox_Get_Caption(this.d); }
+  set caption(c: string) { api.grok_ColumnComboBox_Set_Caption(this.d, c); }
 
   /** @type {Property} */
   get property(): Property {
@@ -1365,6 +1359,8 @@ export class ColumnComboBox extends DartWidget {
   onEvent(eventId: string): rxjs.Observable<any> {
     return __obs(eventId, this.d);
   }
+
+  /** Occurs when the value is changed. */
   get onChanged(): rxjs.Observable<String> { return this.onEvent('d4-column-box-column-changed'); }
 }
 
@@ -1377,28 +1373,28 @@ export class Legend extends DartWidget {
   static create(column: Column): Legend {
     return api.grok_Legend(column.d);
   }
-  
-  get column(): Column {
-    return toJs(api.grok_Legend_Get_Column(this.d));
+
+  /** Column for the legend */
+  get column(): Column { return toJs(api.grok_Legend_Get_Column(this.d)); }
+  set column(column: Column) { api.grok_Legend_Set_Column(this.d, column); }
+
+  /** Whether or not to show empty categories */
+  get showNulls(): Boolean { return api.grok_Legend_Get_ShowNulls(this.d); }
+  set showNulls(show: Boolean) { api.grok_Legend_Set_ShowNulls(this.d, show); }
+
+  /** Position (left / right / top / bottom) */
+  get position(): String { return api.grok_Legend_Get_Position(this.d); }
+  set position(pos: String) { api.grok_Legend_Set_Position(this.d, pos); }
+}
+
+
+export class PropertyGrid extends DartWidget {
+
+  constructor() {
+    super(api.grok_PropertyGrid());
   }
 
-  set column(column: Column) {
-    api.grok_Legend_Set_Column(this.d, column);
-  }
-  
-  get showNulls(): Boolean {
-    return api.grok_Legend_Get_ShowNulls(this.d);
-  }
-
-  set showNulls(show: Boolean) {
-    api.grok_Legend_Set_ShowNulls(this.d, show);
-  }
-  
-  get position(): String {
-    return api.grok_Legend_Get_Position(this.d);
-  }
-
-  set position(pos: String) {
-    api.grok_Legend_Set_Position(this.d, pos);
+  update(src: any, props: Property[]) {
+    api.grok_PropertyGrid_Update(this.d, src, props.map((x) => toDart(x)));
   }
 }
