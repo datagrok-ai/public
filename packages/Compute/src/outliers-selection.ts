@@ -114,15 +114,22 @@ export async function selectOutliersManually(inputData: DG.DataFrame) {
   const addOutlierGroupBtn = ui.button(
     'MARK',
     () => {
+      if (!groupsListGrid.dataFrame) return;
+
       inputData.selection.getSelectedIndexes().forEach((selectedIndex: number) => {
         inputData.set(IS_OUTLIER_COL_LABEL, selectedIndex, true);
         inputData.set(OUTLIER_REASON_COL_LABEL, selectedIndex, 'Manual');
       });
       inputData.selection.setAll(false);
 
-      groupsListGrid.dataFrame?.rows.select((row) => {
-        return [...row.cells][0].value === 'Manual';
-      });
+      let rowNumber = 0;
+      for (let i=0; i< (groupsListGrid.dataFrame.rowCount); i++) {
+        if ((groupsListGrid.dataFrame?.columns as DG.ColumnList).byName(OUTLIER_REASON_COL_LABEL).get(i) === 'Manual') {
+          rowNumber = i;
+        }
+      }
+
+      groupsListGrid.dataFrame.currentCell = groupsListGrid.dataFrame.cell(rowNumber, OUTLIER_REASON_COL_LABEL);
     },
     'Mark the selected points as outliers',
   );
