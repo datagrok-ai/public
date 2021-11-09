@@ -42,7 +42,7 @@ export async function selectOutliersManually(inputData: DG.DataFrame) {
   const groupsListGrid = DG.Viewer.grid(clearTable());
   groupsListGrid.root.style.width = '100%';
 
-  groupsListGrid.onCellPrepare(function(gc) {
+  groupsListGrid.onCellPrepare((gc) => {
     const btn = (reason: string) => ui.div(
       ui.icons.delete(() => {
         for (let i = 0; i < inputData.rowCount; i++) {
@@ -61,6 +61,23 @@ export async function selectOutliersManually(inputData: DG.DataFrame) {
     if (gc.gridColumn.name === '') {
       gc.gridColumn.cellType = 'html';
       gc.style.element = btn(gc.grid.dataFrame?.get(OUTLIER_REASON_COL_LABEL, gc.gridRow));
+    }
+  });
+
+  groupsListGrid.onCellValueEdited.subscribe((editedCell) => {
+    if (!groupsListGrid.dataFrame) return;
+
+    const uniqueValues= new Set<string>();
+    for (let i = 0; i < groupsListGrid.dataFrame?.rowCount; i++) {
+      const record = groupsListGrid.dataFrame?.columns.byName(OUTLIER_REASON_COL_LABEL).get(i);
+      uniqueValues.add(record);
+    }
+
+    for (let i = 0; i < inputData.rowCount; i++) {
+      const currentCellValue = inputData.columns.byName(OUTLIER_REASON_COL_LABEL).get(i);
+      if (currentCellValue != '' && !uniqueValues.has(currentCellValue)) {
+        inputData.columns.byName(OUTLIER_REASON_COL_LABEL).set(i, editedCell.cell.value);
+      }
     }
   });
 
