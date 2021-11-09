@@ -36,7 +36,8 @@ public class ConnectionPool {
             @Override
             public void run() {
                 if (Settings.getInstance().debug) {
-                    System.out.println("Connection pool log:");
+                    if (connectionPool.size() > 0)
+                        System.out.println("Connection pool log:");
                     connectionPool.forEach((k, v) -> {
                         System.out.println("Pool: " + v.hikariDataSource.getPoolName());
                         System.out.println("Active: " + v.poolProxy.getActiveConnections());
