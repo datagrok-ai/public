@@ -7,7 +7,6 @@ export async function selectOutliersManually(inputData: DG.DataFrame) {
   const IS_OUTLIER_COL_LABEL = 'isOutlier';
   const OUTLIER_REASON_COL_LABEL = 'Reason';
   const OUTLIER_COUNT_COL_LABEL = 'Count';
-  let isInnerModalOpened = false;
 
   if (!inputData.columns.byName(IS_OUTLIER_COL_LABEL)) {
     inputData.columns
@@ -21,7 +20,6 @@ export async function selectOutliersManually(inputData: DG.DataFrame) {
 
   const initialData = inputData.clone();
 
-  const reasonInput = ui.textInput('Reason', '');
   const scatterPlot = DG.Viewer.scatterPlot(inputData, {
     'color': OUTLIER_REASON_COL_LABEL,
     'lassoTool': true,
@@ -116,22 +114,15 @@ export async function selectOutliersManually(inputData: DG.DataFrame) {
   const addOutlierGroupBtn = ui.button(
     'MARK',
     () => {
-      if (isInnerModalOpened) return;
+      inputData.selection.getSelectedIndexes().forEach((selectedIndex: number) => {
+        inputData.set(IS_OUTLIER_COL_LABEL, selectedIndex, true);
+        inputData.set(OUTLIER_REASON_COL_LABEL, selectedIndex, 'Manual');
+      });
+      inputData.selection.setAll(false);
 
-      const innerDialog = ui.dialog('Add outliers group')
-        .add(reasonInput)
-        .onOK(
-          () => {
-            inputData.selection.getSelectedIndexes().forEach((selectedIndex: number) => {
-              inputData.set(IS_OUTLIER_COL_LABEL, selectedIndex, true);
-              inputData.set(OUTLIER_REASON_COL_LABEL, selectedIndex, reasonInput.value);
-            });
-            inputData.selection.setAll(false);
-          },
-        )
-        .show();
-      innerDialog.onClose.subscribe(() => isInnerModalOpened = false);
-      isInnerModalOpened = true;
+      groupsListGrid.dataFrame?.rows.select((row) => {
+        return [...row.cells][0].value === 'Manual';
+      });
     },
     'Mark the selected points as outliers',
   );
@@ -139,8 +130,6 @@ export async function selectOutliersManually(inputData: DG.DataFrame) {
   const removeOutlierGroupBtn = ui.button(
     'UNMARK',
     () => {
-      if (isInnerModalOpened) return;
-
       inputData.selection.getSelectedIndexes().forEach((selectedIndex: number) => {
         inputData.set(IS_OUTLIER_COL_LABEL, selectedIndex, false);
         inputData.set(OUTLIER_REASON_COL_LABEL, selectedIndex, '');
@@ -153,11 +142,9 @@ export async function selectOutliersManually(inputData: DG.DataFrame) {
   const autoOutlierGroupBtn = ui.button(
     'STDDEV RULE...',
     () => {
-      if (isInnerModalOpened) return;
-
       const intInput = ui.intInput('N', 3);
       const columnInput = ui.columnInput('Values', inputData, null);
-      const autoDetectionDialog = ui.dialog('Edit standard deviation rule')
+      ui.dialog('Edit standard deviation rule')
         .add(intInput.root)
         .add(columnInput.root)
         .onOK(()=>{
@@ -173,8 +160,6 @@ export async function selectOutliersManually(inputData: DG.DataFrame) {
           inputData.selection.setAll(false);
         })
         .show();
-      autoDetectionDialog.onClose.subscribe(() => isInnerModalOpened = false);
-      isInnerModalOpened = true;
     },
     'Edit standard deviation rule',
   );
@@ -239,7 +224,7 @@ export async function selectOutliersManually(inputData: DG.DataFrame) {
         cancelAllChanges();
         resolve({augmentedInput: inputData, editedInput});
       }, 100));
-    selectionDialog.show({width: 1000, height: 800});
+    selectionDialog.show({width: 1000, height: 800, center: true});
   });
 
   return result;
