@@ -206,6 +206,8 @@ export class Detector {
    * @returns {boolean}
    * */
   static sampleCategories(column: Column, check: StringPredicate, min: number = 5, max: number = 10): boolean {
+    console.log(column.name);
+
     if (column.type !== TYPE.STRING)
       return false;
 
@@ -213,9 +215,15 @@ export class Detector {
     if (categories.length < min)
       return false;
 
-    for (let i = 0; i < Math.max(max, categories.length); i++) {
-      let value = Math.floor(Math.random() * categories.length);
-      if (categories[value] && !check(categories[value]))
+    // check all of them if there are few
+    if (categories.length < max)
+      return categories.every((value) => value === '' || check(value));
+
+    // otherwise, sample randomly
+    for (let i = 0; i < Math.min(max, categories.length); i++) {
+      let categoryIndex = Math.floor(Math.random() * categories.length);
+      let value = categories[categoryIndex];
+      if (value !== '' && !check(value))
         return false;
     }
 
