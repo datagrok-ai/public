@@ -1,9 +1,27 @@
 package grok_connect;
 
+import grok_connect.utils.ConnectionPool;
+import grok_connect.utils.Settings;
 import org.junit.Test;
+
+import java.sql.Connection;
+import java.sql.Statement;
+import java.util.Properties;
+import java.util.Timer;
+import java.util.TimerTask;
+import java.util.concurrent.CountDownLatch;
+
+import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.fail;
 
 
 public class GrokConnectTest {
+
+    ConnectionPool cp = ConnectionPool.getInstance();
+    String url = "jdbc:postgresql://localhost:5432/datagrok";
+    String driverName = "org.postgresql.Driver";
+    String query = "select count(1) from entities";
+
     @Test
     public void testConnect() {
         //GrokConnect.connect("test");
@@ -11,10 +29,6 @@ public class GrokConnectTest {
 
 //    @Test
 //    public void connectionPoolTest() {
-//        ConnectionPool cp = ConnectionPool.getInstance();
-//        String url = "jdbc:postgresql://localhost:5432/datagrok";
-//        String driverName = "org.postgresql.Driver";
-//        String query = "select count(1) from entities";
 //
 //        Properties prop1 = new Properties();
 //        prop1.setProperty("user", "datagrok");
@@ -50,5 +64,32 @@ public class GrokConnectTest {
 //        }
 //
 //        assertEquals(2, cp.connectionPool.size());
+//    }
+//
+//
+//    @Test
+//    public void connectionPoolTimeoutTest() throws InterruptedException {
+//        new Settings();
+//        Settings.getInstance().debug = false;
+//        Settings.getInstance().connectionPoolTimerRate = 60*1000;
+//        Settings.getInstance().connectionPoolMaximumPoolSize = 50;
+//        Settings.getInstance().connectionPoolIdleTimeout = 10000;
+//
+//        Properties prop = new Properties();
+//        prop.setProperty("user", "datagrok");
+//        prop.setProperty("password", "datagrok");
+//
+//        try {
+//            Connection conn = cp.getConnection(url, prop, driverName);
+//            Statement statement = conn.createStatement();
+//            statement.execute(query);
+//            conn.close();
+//        } catch (Exception throwables) {
+//            fail();
+//        }
+//
+//        Thread.sleep(Settings.getInstance().connectionPoolIdleTimeout + 30000); //plus maximum variation
+//        String key = url + prop + driverName;
+//        assertEquals(0, cp.connectionPool.get(key).poolProxy.getTotalConnections());
 //    }
 }
