@@ -301,7 +301,7 @@ export async function timelinesPanel(timelinesDf: DG.DataFrame, domains: string[
                 gc.style.element = ui.divText(gc.cell.value, {style: {'white-space': 'nowrap'}});
             }
             gc.style.element.style.paddingTop = '7px';
-            gc.style.element.style.paddingLeft = '3px';
+            gc.style.element.style.paddingLeft = '7px';
             ui.tooltip.bind(gc.style.element, gc.cell.value);
         });
 

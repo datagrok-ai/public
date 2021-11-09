@@ -159,7 +159,7 @@ export const requiredColumnsByView = {
                         sdtmCols.AE_SEQ
                 ]
         },
-        'Biomarkers Distribution': {
+        'Biomarkers': {
                 'dm': [
                         sdtmCols.SUBJECT_ID,
                         sdtmCols.ETHNIC,
@@ -175,7 +175,7 @@ export const requiredColumnsByView = {
                         sdtmCols.LAB_TEST
                 ]
         },
-        'Correlation Matrix': {
+        'Correlations': {
                 'lb': [
                         sdtmCols.SUBJECT_ID,
                         sdtmCols.LAB_TEST,
