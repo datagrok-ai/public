@@ -5,8 +5,8 @@ import * as DG from 'datagrok-api/dg';
 import {ModelHandler} from './model-handler';
 import {selectOutliersManually} from './outliers-selection';
 import {exportFuncCall} from './export-funccall';
-import {_functionParametersGrid} from "./function-views/function-parameters-grid";
-import {ModelCatalogView} from "./model-catalog-view";
+import {_functionParametersGrid} from './function-views/function-parameters-grid';
+import {ModelCatalogView} from './model-catalog-view';
 
 export const _package = new DG.Package();
 
@@ -61,6 +61,8 @@ export async function manualOutlierSelectionDialog(inputData: DG.DataFrame) {
 export function exportToExcel(call: DG.FuncCall) {
   exportFuncCall(call);
 }
+
+/* eslint-disable */
 
 //description: A spreadsheet that lets you interactively edit parameters and evaluate functions
 //tags: functionAnalysis

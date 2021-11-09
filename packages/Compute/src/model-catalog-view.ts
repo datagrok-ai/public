@@ -5,6 +5,8 @@ import {ModelHandler} from './model-handler';
 import {onboardModel} from './onboard-model';
 const api = <any>window;
 
+/* eslint-disable */
+
 export class ModelCatalogView extends DG.CardView {
   constructor() {
     super(api.grok_CardView_Create({dataSource: grok.dapi.scripts, permanentFilter: '#model'}));
