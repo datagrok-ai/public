@@ -1,4 +1,4 @@
-### Correlation matrix
+### Correlations
 
 Correlation matrix showing relations between biomarkers values for all subjects at the selected visit.
 

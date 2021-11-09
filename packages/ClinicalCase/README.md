@@ -200,7 +200,7 @@ In case you want to perform covariates analysis you should go to `Covariates` ta
 
 <img src="https://github.com/datagrok-ai/public/blob/master/packages/ClinicalCase/img/survival_covariates.PNG" height="500" width='800'/>
 
-### Biomarkers distribution
+### Biomarkers
 
 The view shows distribution of selected biomarker values for all subjects at selected visit splitted by selected parameter. It is useful to evaluate median, upper and lower quartiles and outliers. And since distributions in each boxplot can be grouped by certain parameter it is also possible to evaluate difference in biomarker values distribution between different groups.
 
@@ -208,7 +208,7 @@ By default 4 biomarkers with min p-value at the earliest study visit splitted by
 
 <img src="https://github.com/datagrok-ai/public/blob/master/packages/ClinicalCase/img/biomarkers_dist.gif" height="500" width='800'/>
 
-### Correlation matrix
+### Correlations
 
 Correlation matrix showing relations between biomarkers values for all subjects at the selected visit.
 
