@@ -2019,6 +2019,15 @@ export class Qnum {
   static toString(x: number): string {
     return api.grok_Qnum_ToString(x);
   }
+
+  /**
+   * Returns the string representation of the qualifier.
+   * @param {number} x
+   * @returns {string}
+   * */
+  static sign(x: number): string {
+    return api.grok_Qnum_Sign(x);
+  }
 }
 
 interface ShapeOnViewer {
