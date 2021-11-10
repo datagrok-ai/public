@@ -2,7 +2,7 @@
 	"name": "@datagrok/pubchem-api",
 	"beta": true,
 	"friendlyName": "PubChemApi",
-	"version": "0.0.1",
+	"version": "0.0.2",
 	"description": "",
 	"dependencies": {
 		"datagrok-api": "latest",
