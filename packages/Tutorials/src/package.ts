@@ -15,7 +15,7 @@ const tracks = [eda, chem, ml, da];
 
 //name: Tutorials
 //tags: app
-//top-menu: Help | Tutorials
+//top-menu: Help | Tutorials @Toolbox Help | Tutorials
 export function trackOverview() {
   let root = ui.div([
     ...tracks.map((track) => new TutorialRunner(track).root),
