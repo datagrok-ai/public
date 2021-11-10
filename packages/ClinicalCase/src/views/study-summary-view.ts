@@ -35,8 +35,10 @@ export class StudySummaryView extends DG.ViewBase implements ILazyLoading {
   createView(){
     this.studyId = study.domains.dm.get(STUDY_ID, 0);
     const errorsMap = this.createErrorsMap();
-    this.errorsByDomain = errorsMap.withCount;
-    this.errorsByDomainWithLinks = errorsMap.withLinks;
+    if (errorsMap) {
+      this.errorsByDomain = errorsMap.withCount;
+      this.errorsByDomainWithLinks = errorsMap.withLinks;
+    }
     this.buildView();
   }
 
@@ -59,7 +61,9 @@ export class StudySummaryView extends DG.ViewBase implements ILazyLoading {
     });
 
 
-    let errorsSummary = ui.tableFromMap(this.errorsByDomainWithLinks);
+    let errorsSummary = this.errorsByDomainWithLinks ?
+      ui.tableFromMap(this.errorsByDomainWithLinks) :
+      ui.divText('No errors found', {style: {marginTop: '8px', marginLeft: '5px'}});
 
     let summaryStyle = {style:{
       'color':'var(--grey-6)',
@@ -113,18 +117,21 @@ export class StudySummaryView extends DG.ViewBase implements ILazyLoading {
   private createErrorsMap() {
     const errorsMap = {};
     const errorsMapWithCount = {};
-    const validationSummary = study.validationResults.groupBy([ 'Domain' ]).count().aggregate();
-    for (let i = 0; i < validationSummary.rowCount; ++i) {
-      const domain = validationSummary.get('Domain', i);
-      const errorsCount = validationSummary.get('count', i);
-      const link = ui.link(errorsCount, {}, '', {id: domain});
-      link.addEventListener('click', (event) => {
-        grok.shell.v = this.validationView;
-        event.stopPropagation();
-      });
-      errorsMap[ domain ] = link;
-      errorsMapWithCount[ domain ] = errorsCount;
+    if(study.validationResults.rowCount) {
+      const validationSummary = study.validationResults.groupBy([ 'Domain' ]).count().aggregate();
+      for (let i = 0; i < validationSummary.rowCount; ++i) {
+        const domain = validationSummary.get('Domain', i);
+        const errorsCount = validationSummary.get('count', i);
+        const link = ui.link(errorsCount, {}, '', {id: domain});
+        link.addEventListener('click', (event) => {
+          grok.shell.v = this.validationView;
+          event.stopPropagation();
+        });
+        errorsMap[ domain ] = link;
+        errorsMapWithCount[ domain ] = errorsCount;
+      }
+      return {withCount: errorsMapWithCount, withLinks: errorsMap};
     }
-    return {withCount: errorsMapWithCount, withLinks: errorsMap};
+    return null;
   }
 }

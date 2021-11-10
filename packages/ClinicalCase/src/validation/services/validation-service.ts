@@ -10,7 +10,7 @@ import { AE_SERIOUS, DOMAIN } from '../../columns-constants';
 
 
 export function validateRequiredVariables(df: DG.DataFrame, domain: string, ruleId: string, validationResults: DG.DataFrame){
-    const filter = ([k,v]) => v['req'] === isRequired.REQIIRED;
+    const filter = ([k,v]) => v['req'] === isRequired.REQUIRED;
     const presentRequiredVariables = getListOfVariablesToValidate(df, domain, filter);
     presentRequiredVariables.forEach(item => validateColumns([df.getCol(item)], df.rowCount, isNullVariable, 
     validationResults, ruleId, domain, false));
@@ -44,7 +44,7 @@ export function validateISO8601Variables(df: DG.DataFrame, columnPostfixes: stri
 export function validateSeriousnesCriteriaVariables(df: DG.DataFrame, domain: string, ruleId: string, validationResults: DG.DataFrame){
     const seriousnesVariable = getListOfVariablesToValidate(df, domain, null, [AE_SERIOUS]);
     const criteriaVariables = getListOfVariablesToValidate(df, domain, null, seriousnessCriteriaVariables);
-    if (seriousnesVariable.length && criteriaVariables.length){
+    if (seriousnesVariable.length){
         validateColumns(seriousnesVariable.concat(criteriaVariables).map(it => df.getCol(it)), df.rowCount, seriousnessCriteriaNotIndicated, 
         validationResults, ruleId, domain, true);
     }

@@ -19,8 +19,9 @@ export function checkMissingDomains(requiredDomainsAndCols: any, or: boolean, ob
       obj.createView();
     }
   } else {
-    const errorsDiv = ui.div([], { style: { margin: 'auto', textAlign: 'center' } });
+    const errorsDiv = ui.divV([], { style: { margin: 'auto', textAlign: 'center' } });
     createMissingDataDiv(errorsDiv, missingDomains, 'Missing domains:');
+    checkMissingColumns(errorsDiv, reqDomains, requiredDomainsAndCols);
     obj.root.append(errorsDiv);
   }
 }
@@ -29,15 +30,19 @@ export function checkMissingColumns(obj: any, reqDomains: string[], requiredDoma
   const errorsDiv = ui.divV([], {style: {margin: 'auto', textAlign: 'center'}});
   let noMissingCols = true;
   reqDomains.forEach(domain => {
-    const domainColumns = study.domains[domain].columns.names();
-    const missingColumns = requiredDomainsAndCols[domain].filter(it => !domainColumns.includes(it));
+    const domainColumns = study.domains[domain] ? study.domains[domain].columns.names() : [];
+    const reqCols = requiredDomainsAndCols[domain]['req'] ?? [];
+    const optCols = requiredDomainsAndCols[domain]['opt'] ?? []; //at least one of optional columns should exist in domain
+    const missingReqColumns = reqCols.filter(it => !domainColumns.includes(it));
+    const missingOptColumns = optCols.some(it => study.domains[it] !== null) ? [] : optCols.filter(it => !domainColumns.includes(it));
+    const missingColumns = missingReqColumns.concat(missingOptColumns);
     if(missingColumns.length){
       noMissingCols = false;
       createMissingDataDiv(errorsDiv, missingColumns, `Missing columns in ${domain}:`)
     }
   })
   if(!noMissingCols){
-    obj.root.append(errorsDiv);
+    obj.root ? obj.root.append(errorsDiv) : obj.append(errorsDiv);
   }
   return noMissingCols;
 }

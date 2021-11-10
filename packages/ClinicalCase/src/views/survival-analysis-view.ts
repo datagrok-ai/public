@@ -3,7 +3,7 @@ import { InputBase } from "datagrok-api/dg";
 import * as grok from 'datagrok-api/grok';
 import * as ui from "datagrok-api/ui";
 import { study } from "../clinical-study";
-import { AE_START_DATE, AGE, DEATH_DATE, RACE, SEX, SUBJECT_ID, TREATMENT_ARM } from "../columns-constants";
+import { AE_CAUSALITY, AE_REQ_HOSP, AE_SEQ, AE_SEVERITY, AE_START_DATE, AGE, DEATH_DATE, RACE, SEX, SUBJECT_ID, SUBJ_REF_ENDT, TREATMENT_ARM } from "../columns-constants";
 import { requiredColumnsByView, SURVIVAL_ANALYSIS_GUIDE } from "../constants";
 import { createSurvivalData } from "../data-preparation/data-preparation";
 import { dataframeContentToRow } from "../data-preparation/utils";
@@ -11,6 +11,12 @@ import { ILazyLoading } from "../lazy-loading/lazy-loading";
 import { _package } from "../package";
 import { checkMissingDomains, updateDivInnerHTML } from "./utils";
 
+let colsRequiredForEndpoints = {
+  'SAE': {'ae': [ AE_START_DATE, SUBJECT_ID, AE_SEVERITY, AE_SEQ] },
+  'DEATH': {'dm': [DEATH_DATE] },
+  'HOSPITALIZATION': {'ae': [ AE_START_DATE, SUBJECT_ID, AE_REQ_HOSP, AE_SEVERITY, AE_SEQ] },
+  'DRUG RELATED AE': {'ae': [ AE_START_DATE, SUBJECT_ID, AE_CAUSALITY, AE_SEVERITY, AE_SEQ] },
+}
 export class SurvivalAnalysisView extends DG.ViewBase implements ILazyLoading {
 
   survivalPlotDiv = ui.box();
@@ -30,10 +36,10 @@ export class SurvivalAnalysisView extends DG.ViewBase implements ILazyLoading {
   confIntervals = [ 0.7, 0.75, 0.8, 0.85, 0.9, 0.95, 0.99 ];
   survivalOptions = [''];
   covariatesOptions = [ AGE, SEX, RACE, TREATMENT_ARM ];
-  endpointOptions = { 'SAE': AE_START_DATE, 'DEATH': DEATH_DATE, 'HOSPITALIZATION': AE_START_DATE, 'DRUG RELATED AE': AE_START_DATE };
+  endpointOptions = { 'RETAIN IN STUDY': SUBJ_REF_ENDT };
   confInterval = 0.7;
   strata = '';
-  endpoint = 'SAE';
+  endpoint = '';
   covariates = [];
   survivalDataframe: DG.DataFrame;
   plotCovariates = [];
@@ -52,8 +58,10 @@ export class SurvivalAnalysisView extends DG.ViewBase implements ILazyLoading {
  }
 
   createView(): void {
-    this.endpoint = Object.keys(this.endpointOptions)[ 0 ];
-    this.endpointChoices = ui.choiceInput('Endpoint', Object.keys(this.endpointOptions)[ 0 ], Object.keys(this.endpointOptions));
+    this.updateEndpointOptions();
+    this.covariatesOptions = this.covariatesOptions.filter(it => study.domains.dm.columns.names().includes(it));
+    this.endpoint = Object.keys(this.endpointOptions)[0];
+    this.endpointChoices = ui.choiceInput('Endpoint', Object.keys(this.endpointOptions)[0], Object.keys(this.endpointOptions));
     this.endpointChoices.onChanged((v) => {
       this.endpoint = this.endpointChoices.value;
     });
@@ -63,7 +71,7 @@ export class SurvivalAnalysisView extends DG.ViewBase implements ILazyLoading {
       this.covariates = this.covariatesChoices.value;
     });
 
-    this.confIntChoices = ui.choiceInput('Confidence', this.confIntervals[ 0 ], this.confIntervals);
+    this.confIntChoices = ui.choiceInput('Confidence', this.confIntervals[0], this.confIntervals);
     this.confIntChoices.onChanged((v) => {
       this.confInterval = this.confIntChoices.value;
       this.updateSurvivalPlot();
@@ -72,42 +80,42 @@ export class SurvivalAnalysisView extends DG.ViewBase implements ILazyLoading {
     this.updateStrataChoices();
     this.updatePlotCovariatesChoices();
 
-    this.createSurvivalDataframe = ui.bigButton('Create dataset', () => { 
-     this.refreshDataframe();
-     this.filterChanged = true;
-     this.updateChartsAfterFiltering();
-     this.survivalDataframe.onFilterChanged.subscribe((_) => {
+    this.createSurvivalDataframe = ui.bigButton('Create dataset', () => {
+      this.refreshDataframe();
       this.filterChanged = true;
+      this.updateChartsAfterFiltering();
+      this.survivalDataframe.onFilterChanged.subscribe((_) => {
+        this.filterChanged = true;
       });
     });
 
-    let guide = ui.info(SURVIVAL_ANALYSIS_GUIDE,'Survival Analysis Quick Guide', false);
+    let guide = ui.info(SURVIVAL_ANALYSIS_GUIDE, 'Survival Analysis Quick Guide', false);
 
     let tabControl = ui.tabControl(null, false);
-    tabControl.addPane('Dataset', () => 
-    ui.splitV([
-      ui.splitH([
-        ui.box( ui.panel([
-          ui.inputs([
-            this.endpointChoices,
-            this.covariatesChoices,
-            //@ts-ignore
-            ui.buttonsInput([this.createSurvivalDataframe])
-          ])
-        ]), { style: { maxWidth: '300px' }}),
-        ui.splitV([this.survivalFilterDiv, this.survivalGridDivCreate])
-      ])
-    ]));
+    tabControl.addPane('Dataset', () =>
+      ui.splitV([
+        ui.splitH([
+          ui.box(ui.panel([
+            ui.inputs([
+              this.endpointChoices,
+              this.covariatesChoices,
+              //@ts-ignore
+              ui.buttonsInput([this.createSurvivalDataframe])
+            ])
+          ]), { style: { maxWidth: '300px' } }),
+          ui.splitV([this.survivalFilterDiv, this.survivalGridDivCreate])
+        ])
+      ]));
 
     tabControl.addPane('Survival Chart', () => ui.splitV([
       ui.splitH([
-        ui.box( ui.panel([
+        ui.box(ui.panel([
           ui.inputs([
             this.confIntChoices,
             //@ts-ignore
             this.strataChoicesDiv,
           ])
-        ]), { style: { maxWidth: '300px' }}),
+        ]), { style: { maxWidth: '300px' } }),
         this.survivalPlotDiv
       ])
     ]));
@@ -117,36 +125,53 @@ export class SurvivalAnalysisView extends DG.ViewBase implements ILazyLoading {
     });
 
     tabControl.addPane('Covariates', () => ui.splitV([
-        ui.box(
-            //@ts-ignore
-            this.plotCovariatesChoicesDiv,
-            { style: { maxHeight: '50px' }}),
-        this.covariatesPlotDiv
+      ui.box(
+        //@ts-ignore
+        this.plotCovariatesChoicesDiv,
+        { style: { maxHeight: '50px' } }),
+      this.covariatesPlotDiv
     ]));
     tabControl.getPane('Covariates').header.addEventListener('click', () => {
       this.updateChartsAfterFiltering();
     });
-      this.root.className = 'grok-view ui-box';
-      this.setRibbonPanels([
-        [
-          ui.icons.info(()=>{
-            updateDivInnerHTML(guide, ui.info(SURVIVAL_ANALYSIS_GUIDE,'Survival Analysis Quick Guide', false));
-          })
-        ]
-      ])
+    this.root.className = 'grok-view ui-box';
+    this.setRibbonPanels([
+      [
+        ui.icons.info(() => {
+          updateDivInnerHTML(guide, ui.info(SURVIVAL_ANALYSIS_GUIDE, 'Survival Analysis Quick Guide', false));
+        })
+      ]
+    ])
 
-      this.root.append(ui.splitV([
-        guide,
-       tabControl.root
-      ]))
-      //@ts-ignore
-      guide.parentNode.style.flexGrow = '0';
-      //@ts-ignore
-      guide.parentNode.classList = 'ui-div';
+    this.root.append(ui.splitV([
+      guide,
+      tabControl.root
+    ]))
+    //@ts-ignore
+    guide.parentNode.style.flexGrow = '0';
+    //@ts-ignore
+    guide.parentNode.classList = 'ui-div';
 
-     // this.updateParameterPanel('Dataset');
+    // this.updateParameterPanel('Dataset');
   }
 
+  private updateEndpointOptions(){
+    Object.keys(colsRequiredForEndpoints).forEach(key => {
+      let missingCols = false;
+      let domains = Object.keys(colsRequiredForEndpoints[key]);
+      domains.forEach(dom => {
+        colsRequiredForEndpoints[key][dom].map(it => {
+          if (!study.domains[dom] || !study.domains[dom].columns.names().includes(it)) {
+            missingCols = true;
+          }
+        })
+        if(!missingCols){
+          let domain = Object.keys(colsRequiredForEndpoints[key])[0]
+          this.endpointOptions[key] = colsRequiredForEndpoints[key][domain][0];
+        }
+      })
+    })
+  }
 
   private updateSurvivalPlot() {
     ui.setUpdateIndicator(this.survivalPlotDiv, true);
