@@ -1,7 +1,7 @@
 {
   "name": "@datagrok/notebooks",
   "fullName": "Notebooks",
-  "version": "0.2.11",
+  "version": "0.2.12",
   "description": "JupyterLab Notebooks integration package",
   "repository": "https://github.com/datagrok-ai/public",
   "licence": "MIT",

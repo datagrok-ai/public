@@ -30,7 +30,12 @@ jobs:
             else
               build='true'
             fi
-            MATRIX_INCLUDE_JSON+="{\"project\": \"${DIR}\", \"build\": \"${build}\"}"
+            if [ -z "$(jq  '. | select( has("scripts") == true ).scripts | select( has("test") == true )' ${DIR}/package.json)" ]; then
+              test='false'
+            else
+              test='true'
+            fi
+            MATRIX_INCLUDE_JSON+="{\"project\": \"${DIR}\", \"build\": \"${build}\", \"test\": \"${test}\"}"
           done
 
           MATRIX_INCLUDE_JSON="${MATRIX_INCLUDE_JSON//\}\{/\}, \{}"
@@ -68,6 +73,10 @@ jobs:
         run: npm version
       - run: npm install
         working-directory: ${{ matrix.project }}
+      - run: npm run test
+        working-directory: ${{ matrix.project }}
+        if: ${{ matrix.build == 'true' }}
+        continue-on-error: true
       - run: npm run build
         working-directory: ${{ matrix.project }}
         if: ${{ matrix.build == 'true' }}

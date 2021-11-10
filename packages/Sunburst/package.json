@@ -1,7 +1,7 @@
 {
 	"name": "@datagrok/sunburst",
 	"fullName": "Sunburst",
-	"version": "1.0.0",
+	"version": "1.0.1",
 	"description": "Sunburst chart for the datagrok platform",
 	"dependencies": {
 		"d3": "^5.16.0",
