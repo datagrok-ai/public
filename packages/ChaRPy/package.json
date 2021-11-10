@@ -2,7 +2,7 @@
 	"name": "@datagrok/charpy",
   	"beta": true,
 	"fullName": "ChaRPy",
-	"version": "1.0.0",
+	"version": "1.0.1",
 	"description": "",
 	"dependencies": {
 		"datagrok-api": "../../js-api"

@@ -2,7 +2,7 @@
   "name": "@datagrok/discovery",
   "beta": true,
   "fullName": "Discovery",
-  "version": "0.0.1",
+  "version": "0.0.2",
   "description": "",
   "dependencies": {
     "datagrok-api": "../../js-api"

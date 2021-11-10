@@ -1,7 +1,7 @@
 {
 	"name": "@datagrok/scatter-plot-3d",
 	"friendlyName": "ScatterPlot3D",
-	"version": "0.0.1",
+	"version": "0.0.2",
 	"description": "",
 	"dependencies": {
 		"chokidar": "^3.5.1",

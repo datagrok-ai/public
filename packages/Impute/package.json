@@ -1,7 +1,7 @@
 {
 	"name": "@datagrok/impute",
 	"fullName": "impute",
-	"version": "1.0.0",
+	"version": "1.0.1",
 	"description": "",
 	"dependencies": {
 		"datagrok-api": "../../js-api"
