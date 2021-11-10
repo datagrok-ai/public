@@ -1,34 +1,12 @@
 /* Do not change these import lines to match external modules in webpack configuration */
-import * as grok from 'datagrok-api/grok';
-import * as ui from 'datagrok-api/ui';
 import * as DG from 'datagrok-api/dg';
-import {Column, DataFrame, TableView} from 'datagrok-api/dg';
+import { rgroupGetter } from './scripts-api';
 
 export let _package = new DG.Package();
 
 
-export async function getRGroups(smiles: Column, core: string, prefix: string) {
-
-  let result: DataFrame = await grok.functions.call(
-    "Chem:RGroupGetter", {
-      'smiles': smiles.name,
-      'df1': smiles.dataFrame,
-      'core': core,
-      'prefix': prefix
-    });
-
-  let regexConv: RegExp = /(\[)(R)(\d+)(\])/g
-
-  function convert(smiles: string | null): string | null {
-    if (smiles != null) {
-      let match = regexConv.exec(smiles);
-      console.log(smiles);
-      if (match != null) {
-        smiles = smiles.replace(regexConv, `${match[1]}*:${match[3]}${match[4]}`);
-      }
-    }
-    return smiles;
-  }
+export async function getRGroups(smiles: DG.Column, core: string, prefix: string) {
+  let result: DG.DataFrame = await rgroupGetter(smiles.name, smiles.dataFrame, core, prefix);
 
   for (let col of result.columns) {
     for (let i = 0; i < col.length; i++) {
@@ -36,15 +14,15 @@ export async function getRGroups(smiles: Column, core: string, prefix: string) {
     }
   }
   return result;
-
 }
 
-export async function getMCS(smiles: Column) {
-  let res: string;
-  res = await grok.functions.call(
-    "Chem:MCSGetter", {
-      'smiles': smiles.name,
-      'df1': smiles.dataFrame
-    });
-  return res;
+function convert(smiles: string | null): string | null {
+  if (smiles != null) {
+    let regexConv: RegExp = /(\[)(R)(\d+)(\])/g;
+    let match = regexConv.exec(smiles);
+    if (match != null) {
+      smiles = smiles.replace(regexConv, `${match[1]}*:${match[3]}${match[4]}`);
+    }
+  }
+  return smiles;
 }
