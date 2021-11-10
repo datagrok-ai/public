@@ -5,6 +5,7 @@ import fs from 'fs';
 import fetch from 'node-fetch';
 import os from 'os';
 import path from 'path';
+// @ts-ignore
 import walk from 'ignore-walk';
 import yaml from 'js-yaml';
 import * as utils from '../utils/utils';
@@ -54,7 +55,7 @@ export async function processPackage(debug: boolean, rebuild: boolean, host: str
         includeEmpty: false,
         follow: true
       });
-      distFiles.forEach((df) => {
+      distFiles.forEach((df: any) => {
         files.push(`dist/${df}`);
       })
     } else {
@@ -67,7 +68,7 @@ export async function processPackage(debug: boolean, rebuild: boolean, host: str
 
   let contentValidationLog = '';
 
-  files.forEach((file) => {
+  files.forEach((file: any) => {
     let fullPath = file;
     let relativePath = path.relative(curDir, fullPath);
     let canonicalRelativePath = relativePath.replace(/\\/g, '/');
