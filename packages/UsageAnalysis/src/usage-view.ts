@@ -180,7 +180,7 @@ export class UsageAnalysisView extends DG.ViewBase {
             let loader = ui.loader();
             host.appendChild(loader);
             grok.data.query('UsageAnalysis:UniqueUsersByDate', {'date': dateInput.value})
-            .then(t => {
+            .then((t: DG.DataFrame) => {
                 let ids = Array.from(t.getCol('id').values());
                 grok.dapi.getEntities(ids).then((users) => {
                 host.appendChild(ui.list(users));
