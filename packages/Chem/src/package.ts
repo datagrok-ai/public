@@ -17,8 +17,9 @@ import {structure2dWidget} from './widgets/structure2d';
 import {structure3dWidget} from './widgets/structure3d';
 import {toxicityWidget} from './widgets/toxicity';
 import {OCLCellRenderer} from './ocl_cell_renderer';
-import {getRGroups, getMCS} from "./chem_rgroup_analysis";
+import {getRGroups} from "./chem_rgroup_analysis";
 import {chemSpace} from './analysis/chem_space';
+import {mcsgetter} from './scripts-api';
 
 export let rdKitModule: any = null;
 export let rdKitWorkerWebRoot: string | undefined;
@@ -433,35 +434,34 @@ export function toxicity(smiles: string) {
   return toxicityWidget(smiles);
 }
 
-//name: rGroupsAnalytics
+//top-menu: Chem | R-Groups Analysis
+//name: R-Groups Analysis
 //input: dataframe df
 //input: column col {semType: Molecule}
-export function rGroupsAnalytics(df: DG.DataFrame, col: DG.Column) {
+export function rGroupsAnalysis(df: DG.DataFrame, col: DG.Column) {
   let sketcherSmile = '';
-  function onChanged(smiles: string) {
-    sketcherSmile = smiles;
-  }
 
-  let sketcher = grok.chem.sketcher(onChanged, sketcherSmile);
+  let sketcher = new grok.chem.Sketcher();
   let columnPrefixInput = ui.stringInput('Column prefix', 'R');
   let visualAnalysisCheck = ui.boolInput('Visual analysis', true);
 
   let mcsButton = ui.button('MCS', async () => {
-    let smiles = await getMCS(col);
-    // sketcher.setSmiles(smiles);
-    // sketcher.remove();
-    // sketcherSmile = smiles;
-    // sketcher = grok.chem.sketcher(onChanged, sketcherSmile);
-    // mcsButton.insertAdjacentElement('beforebegin', sketcher);
+    let smiles: string = await mcsgetter(col.name, df);
+    sketcher.setSmiles(smiles);
+    sketcherSmile = smiles;
   });
+  ui.tooltip.bind(mcsButton, "Most Common Substructure");
+  let mcsButtonHost = ui.div([mcsButton]);
+  mcsButtonHost.style.display = 'flex';
+  mcsButtonHost.style.justifyContent = 'center';
 
   let dlg = ui.dialog({
-    title: 'R-Group Analysis',
+    title: 'R-Groups Analysis',
     helpUrl: '/help/domains/chem/cheminformatics.md#r-group-analysis'
     })
     .add(ui.div([
       sketcher,
-      ui.tooltip.bind(mcsButton, "Most Common Substructure"),
+      mcsButtonHost,
       columnPrefixInput,
       visualAnalysisCheck
     ]))
@@ -473,13 +473,9 @@ export function rGroupsAnalytics(df: DG.DataFrame, col: DG.Column) {
       }
       if (res.columns.length == 0)
         grok.shell.error("None R-Groups were found");
-      let view = null;
-      for (let v of grok.shell.tableViews) {
-        view = v;
-        break;
-      }
+      let view = grok.shell.getTableView(col.dataFrame.name);
       if (visualAnalysisCheck.value && view) {
-        let plot = view.trellisPlot({
+        view.trellisPlot({
           xColumnNames: [res.columns[0].name],
           yColumnNames: [res.columns[1].name]});
       }
