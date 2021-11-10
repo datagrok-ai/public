@@ -19,12 +19,16 @@ export async function propertiesWidget(smiles: string) {
     'Polar Surface Area': molProps.polarSurfaceArea,
     'Number of rotatabe bonds': molProps.rotatableBondCount,
     'Number of stereo centers': molProps.stereoCenterCount,
-    'Name': ui.wait(async () => {
-      const iupacName = await grok.functions.call(`PubChemApi:GetIupacName`, {'smiles': smiles});
-      return ui.divText(iupacName ?  iupacName.sval : 'Not found in PubChem');
-    }),
+    'Name': ui.wait(async () => ui.divText(await getIUPACName(smiles))),
   };
 
   return new DG.Widget(ui.tableFromMap(propertiesMap));
 }
-  
+
+async function getIUPACName(smiles: string): Promise<string> {
+  const url = `https://pubchem.ncbi.nlm.nih.gov/rest/pug/compound/smiles/${smiles}/property/IUPACName/JSON`;
+  const response = await fetch(url);
+  const responseJson = await response.json();
+  const result = responseJson['PropertyTable']['Properties'][0];
+  return result.hasOwnProperty('IUPACName') ? result['IUPACName'] : 'Not found in PubChem';
+}

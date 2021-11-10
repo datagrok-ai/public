@@ -42,8 +42,12 @@ export function structuralAlertsWidget(smiles: string) {
 function getStructuralAlerts(smiles: string) {
   const alerts: number[] = [];
   const mol = structuralAlertsRdKitModule.get_mol(smiles);
+  //TODO: use SustructLibrary and count_matches instead. Currently throws an error on rule id 221
+  // const lib = new structuralAlertsRdKitModule.SubstructLibrary();
+  // lib.add_smiles(smiles);
   for (let i = 0; i < table!.rowCount; i++) {
     const subMol = smartsMap.get(table!.get('smarts', i));
+    // lib.count_matches(subMol);
     const matches = mol.get_substruct_matches(subMol);
     if (matches !== '{}') {
       alerts.push(i);
