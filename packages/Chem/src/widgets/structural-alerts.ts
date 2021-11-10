@@ -31,7 +31,9 @@ export function structuralAlertsWidget(smiles: string) {
     const description = ui.divText(table!.get('description', i));
     const imageHost = ui.canvas(width, height);
     drawMoleculeToCanvas(0, 0, width, height, imageHost, smiles, table!.get('smarts', i));
-    return ui.div([description, imageHost], 'd4-flex-col');
+    const host = ui.div([description, imageHost], 'd4-flex-col');
+    host.style.margin = '5px';
+    return host;
   }), 'd4-flex-wrap');
   if (!alerts.length) {
     list.innerText = 'No Alerts';
