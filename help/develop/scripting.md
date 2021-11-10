@@ -245,6 +245,7 @@ Specify the `editor-button` parameter to add a button that executes your subfunc
 | language    | Script language (see the [list of supported languages](#supported-languages) below) |
 | help-url    | Datagrok's Wiki URL                |
 | reference   | Reference to a research paper, Wikipedia article, Git repository, etc.              |
+| top-menu    | Top menu path separated with pipes (`|`) |
 | tags        | Tags                               |
 | sample      | Name of a sample file              |
 | input       | Input parameter                    |
