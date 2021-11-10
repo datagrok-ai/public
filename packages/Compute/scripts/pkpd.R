@@ -2,8 +2,8 @@
 #language: r
 #input: double dosage = 1000 {category: Dosing options} 
 #input: double doseInterval = 12 {category: Dosing options} 
-#input: string compartments {category: PK model; choices: ['1 compartment PK', '2 compartment PK']} 
-#input: double clearance = 17 {category: PK parameters} 
+#input: string compartments = {category: PK model; choices: ['1 compartment PK', '2 compartment PK']} 
+#input: double clearance = 2 {category: PK parameters} 
 #input: double rateConstant = 0.3 {category: PK parameters} [rate constant] 
 #input: double centralV = 4 {category: PK parameters} [central compartment volume]  
 #input: double perV = 30 {category: PK parameters} [peripheral compartment volume]
@@ -11,10 +11,12 @@
 #input: double effRate = 0.2 {category: PD parameters} [effective compartment rate]
 #input: double effect = 8 {category: PD parameters} [EC50]
 #output: graphics PKPD
+#output: double Cmax {units: nM}
 #tags: model
 
 require("ggplot2")
 require("RxODE")
+
 rxCreateCache()
 
 params <- 
@@ -56,5 +58,10 @@ ggplot() +
   geom_line(data = Sims, aes(x = time, y = eff*0.5*cMax/effMax), col = "Blue", alpha = 0.7) + theme_bw() +
   scale_y_continuous(name = "Drug concentration, nM", 
                      sec.axis = sec_axis( trans=~.*effMax*2/cMax, name="Drug effect")) +
-  scale_x_continuous(name = "Time, hours", breaks = seq(0, 120, 12))
-  
+  scale_x_continuous(name = "Time, hours", breaks = seq(0, 120, 12)) +
+  theme(axis.text.x = element_text(size = 24, angle = 0,vjust =.5, family="serif"),
+        axis.text.y = element_text(size = 24, family = "serif"),
+        axis.title.x = element_text(vjust = 1, size = 24, family = "serif"),
+        axis.title.y = element_text(vjust = 1, size = 24, family = "serif")) 
+
+Cmax <- max(Sims$centr)
