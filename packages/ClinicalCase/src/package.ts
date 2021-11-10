@@ -21,7 +21,7 @@ import { AeBrowserView } from './views/adverse-events-browser';
 import { AEBrowserHelper } from './helpers/ae-browser-helper';
 import { AE_END_DATE, AE_END_DAY, AE_SEVERITY, AE_START_DAY, AE_TERM, SUBJECT_ID } from './columns-constants';
 import { STUDY_ID } from './columns-constants';
-import { checkMissingColumns } from './views/utils';
+import { checkMissingColumns, checkMissingDomains } from './views/utils';
 
 export let _package = new DG.Package();
 
@@ -156,7 +156,7 @@ export async function clinicalCaseApp(): Promise<any> {
   let aeBrowserView;
   if (study.domains.ae) {
     aeBrowserView = DG.View.create();
-    if (checkMissingColumns(aeBrowserView, ['ae'], { 'ae': [AE_TERM, AE_SEVERITY, AE_START_DAY, AE_END_DAY] })) {
+    if (checkMissingColumns(aeBrowserView, ['ae'], { 'ae': {'req': [AE_TERM, AE_SEVERITY, AE_START_DAY, AE_END_DAY]} })) {
       const aeBrowserDf = study.domains.ae.clone();
       aeBrowserView = DG.TableView.create(aeBrowserDf);
       const aeBrowserHelper = new AEBrowserHelper(aeBrowserDf);
@@ -169,10 +169,7 @@ export async function clinicalCaseApp(): Promise<any> {
     }
   } else {
     aeBrowserView = DG.View.create();
-    aeBrowserView.root.append(ui.div([
-      ui.h2('Missing domains:'),
-      ui.divText('ae')
-    ], { style: { margin: 'auto', textAlign: 'center' } }))
+    checkMissingDomains({ 'ae': { 'req': [AE_TERM, AE_SEVERITY, AE_START_DAY, AE_END_DAY] } }, false, aeBrowserView);
   }
   aeBrowserView.name = 'AE browser';
   aeBrowserView.helpUrl = 'https://raw.githubusercontent.com/datagrok-ai/public/master/packages/ClinicalCase/views_help/ae_browser.md';
@@ -212,7 +209,7 @@ export async function clinicalCaseFolderLauncher(folder: DG.FileInfo, files: DG.
   if (files.some((f) => f.fileName.toLowerCase() === 'dm.csv')) {
     let res = await grok.dapi.files.readAsText(`${folder.fullPath}/dm.csv`);
     let table = DG.DataFrame.fromCsv(res);
-    let studyId = table.get(STUDY_ID, 0);
+    let studyId = table.columns.names().includes(STUDY_ID) ? table.get(STUDY_ID, 0) : 'undefined';
     return DG.Widget.fromRoot(ui.div([
       ui.panel([
         ui.divText('Folder contains SDTM data'),

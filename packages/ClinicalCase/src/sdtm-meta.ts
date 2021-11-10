@@ -4,7 +4,7 @@ export const SDTM_VERSION = '1.7';
 export const SDTMIG_VERSION = '3.3';
 
 export const enum isRequired {
-  REQIIRED,
+  REQUIRED,
   EXPECTED,
   PERMITTED
 }
@@ -83,18 +83,18 @@ export const classes = {
 
 export const domains = {
   ae: {
-    [sdtmCols.STUDY_ID]: { label: 'Study Identifier', type: 'Char', req: isRequired.REQIIRED },
-    [sdtmCols.DOMAIN]: { label: 'Domain Abbreviation', type: 'Char', req: isRequired.REQIIRED },
-    [sdtmCols.SUBJECT_ID] : { label: 'Unique Subject Identifier', type: 'Char', req: isRequired.REQIIRED },
-    [sdtmCols.AE_SEQ]: { label: 'Sequence Number', type: 'Num', req: isRequired.REQIIRED },
+    [sdtmCols.STUDY_ID]: { label: 'Study Identifier', type: 'Char', req: isRequired.REQUIRED },
+    [sdtmCols.DOMAIN]: { label: 'Domain Abbreviation', type: 'Char', req: isRequired.REQUIRED },
+    [sdtmCols.SUBJECT_ID] : { label: 'Unique Subject Identifier', type: 'Char', req: isRequired.REQUIRED },
+    [sdtmCols.AE_SEQ]: { label: 'Sequence Number', type: 'Num', req: isRequired.REQUIRED },
     'AEGRPID': { label: 'Group ID', type: 'Char', req: isRequired.PERMITTED },
     'AEREFID': { label: 'Reference ID', type: 'Char', req: isRequired.PERMITTED },
     'AESPID': { label: 'Sponsor-Defined Identifier', type: 'Char', req: isRequired.PERMITTED },
-    [sdtmCols.AE_TERM]: { label: 'Reported Term for the Adverse Event', type: 'Char', req: isRequired.REQIIRED },
+    [sdtmCols.AE_TERM]: { label: 'Reported Term for the Adverse Event', type: 'Char', req: isRequired.REQUIRED },
     'AEMODIFY': { label: 'Modified Reported Term', type: 'Char', req: isRequired.PERMITTED },
     'AELLT': { label: 'Lowest Level Term', type: 'Char', req: isRequired.EXPECTED },
     'AELLTCD': { label: 'Lowest Level Term Code', type: 'Num', req: isRequired.EXPECTED },
-    [sdtmCols.AE_DECOD_TERM]: { label: 'Dictionary-Derived Term', type: 'Char', req: isRequired.REQIIRED },
+    [sdtmCols.AE_DECOD_TERM]: { label: 'Dictionary-Derived Term', type: 'Char', req: isRequired.REQUIRED },
     'AEPTCD': { label: 'Preferred Term Code', type: 'Num', req: isRequired.EXPECTED },
     'AEHLT': { label: 'High Level Term', type: 'Char', req: isRequired.EXPECTED },
     'AEHLTCD': { label: 'High Level Term Code', type: 'Num', req: isRequired.EXPECTED },
@@ -181,10 +181,10 @@ export const domains = {
     'CMENTPT': { label: 'End Reference Time Point', type: 'Char' },
   },
   dm: {
-    [sdtmCols.STUDY_ID]: { label: 'Study Identifier', type: 'Char', req: isRequired.REQIIRED },
-    [sdtmCols.DOMAIN]: { label: 'Domain Abbreviation', type: 'Char', req: isRequired.REQIIRED },
-    [sdtmCols.SUBJECT_ID]: { label: 'Unique Subject Identifier', type: 'Char', req: isRequired.REQIIRED },
-    'SUBJID': { label: 'Subject Identifier for the Study', type: 'Char', req: isRequired.REQIIRED },
+    [sdtmCols.STUDY_ID]: { label: 'Study Identifier', type: 'Char', req: isRequired.REQUIRED },
+    [sdtmCols.DOMAIN]: { label: 'Domain Abbreviation', type: 'Char', req: isRequired.REQUIRED },
+    [sdtmCols.SUBJECT_ID]: { label: 'Unique Subject Identifier', type: 'Char', req: isRequired.REQUIRED },
+    'SUBJID': { label: 'Subject Identifier for the Study', type: 'Char', req: isRequired.REQUIRED },
     [sdtmCols.SUBJ_REF_STDT]: { label: 'Subject Reference Start Date/Time', type: 'Char', format: 'ISO 8601', req: isRequired.EXPECTED },
     [sdtmCols.SUBJ_REF_ENDT]: { label: 'Subject Reference End Date/Time', type: 'Char', format: 'ISO 8601', req: isRequired.EXPECTED },
     'RFXSTDTC': { label: 'Date/Time of First Study Treatment', type: 'Char', format: 'ISO 8601', req: isRequired.EXPECTED },
@@ -193,13 +193,13 @@ export const domains = {
     'RFPENDTC': { label: 'Date/Time of End of Participation', type: 'Char', format: 'ISO 8601', req: isRequired.EXPECTED },
     [sdtmCols.DEATH_DATE]: { label: 'Date/Time of Death', type: 'Char', format: 'ISO 8601', req: isRequired.EXPECTED },
     'DTHFL': { label: 'Subject Death Flag', type: 'Char', format: '(NY)', req: isRequired.EXPECTED },
-    [sdtmCols.SITE_ID]: { label: 'Study Site Identifier', type: 'Char', req: isRequired.REQIIRED },
+    [sdtmCols.SITE_ID]: { label: 'Study Site Identifier', type: 'Char', req: isRequired.REQUIRED },
     'INVID': { label: 'Investigator Identifier', type: 'Char', req: isRequired.PERMITTED },
     'INVNAM': { label: 'Investigator Name', type: 'Char', req: isRequired.PERMITTED },
     'BRTHDTC': { label: 'Date/Time of Birth', type: 'Char', format: 'ISO 8601', req: isRequired.PERMITTED },
     [sdtmCols.AGE]: { label: 'Age', type: 'Num', req: isRequired.EXPECTED },
     'AGEU': { label: 'Age Units', type: 'Char', format: '(AGEU)', req: isRequired.EXPECTED },
-    [sdtmCols.SEX]: { label: 'Sex', type: 'Char', format: '(SEX)', req: isRequired.REQIIRED },
+    [sdtmCols.SEX]: { label: 'Sex', type: 'Char', format: '(SEX)', req: isRequired.REQUIRED },
     [sdtmCols.RACE]: { label: 'Race', type: 'Char', format: '(RACE)', req: isRequired.EXPECTED },
     [sdtmCols.ETHNIC]: { label: 'Ethnicity', type: 'Char', format: '(ETHNIC)', req: isRequired.PERMITTED },
     'ARMCD': { label: 'Planned Arm Code', type: 'Char', req: isRequired.EXPECTED },
@@ -208,7 +208,7 @@ export const domains = {
     [sdtmCols.TREATMENT_ARM]: { label: 'Description of Actual Arm', type: 'Char', req: isRequired.EXPECTED },
     'ARMNRS': { label: 'Reason Arm and/or Actual Arm is Null', type: 'Char', req: isRequired.EXPECTED },
     'ACTARMUD': { label: 'Description of Unplanned Actual Arm', type: 'Char', req: isRequired.EXPECTED },
-    'COUNTRY': { label: 'Country', type: 'Char', format: 'ISO 3166-1 Alpha-3', req: isRequired.REQIIRED },
+    'COUNTRY': { label: 'Country', type: 'Char', format: 'ISO 3166-1 Alpha-3', req: isRequired.REQUIRED },
     'DMDTC': { label: 'Date/Time of Collection', type: 'Char', format: 'ISO 8601', req: isRequired.PERMITTED },
     'DMDY': { label: 'Study Day of Collection', type: 'Num', req: isRequired.PERMITTED },
   },

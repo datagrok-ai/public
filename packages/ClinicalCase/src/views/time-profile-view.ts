@@ -41,6 +41,7 @@ export class TimeProfileView extends DG.ViewBase implements ILazyLoading {
      }
 
     createView(): void {
+        this.splitBy = this.splitBy.filter(it => study.domains.dm.columns.names().includes(it));
         this.uniqueLabValues = Array.from(getUniqueValues(study.domains.lb, LAB_TEST));
         this.uniqueVisits = Array.from(getUniqueValues(study.domains.lb, LAB_VISIT_NAME));
         this.selectedLabValue = this.uniqueLabValues[ 0 ] as string;

@@ -44,6 +44,8 @@ export class BoxPlotsView extends DG.ViewBase implements ILazyLoading {
 
   createView(): void {
 
+    this.splitBy = this.splitBy.filter(it => study.domains.dm.columns.names().includes(it));
+    this.selectedSplitBy = this.splitBy[0];
     let viewerTitle = {
       style: {
         'color': 'var(--grey-6)',

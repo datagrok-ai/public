@@ -160,7 +160,7 @@ export class PatientProfileView extends DG.ViewBase implements ILazyLoading {
   }
 
   tableNamesAndFields = {
-    'lb': { 'start': LAB_DAY },
+    'lb': { 'start': LAB_VISIT_DAY },
     'ae': { 'start': AE_START_DAY, 'end': AE_END_DAY },
     'ex': { 'start': INV_DRUG_START_DAY, 'end': INV_DRUG_END_DAY },
     'cm': { 'start': CON_MED_START_DAY, 'end': CON_MED_END_DAY }
