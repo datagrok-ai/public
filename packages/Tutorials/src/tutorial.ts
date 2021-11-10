@@ -120,7 +120,6 @@ export abstract class Tutorial extends DG.Widget {
         ui.divText('Next "'+tutorials[id+1].name+'"', {style:{margin:'5px 0'}}),
         ui.divH([
           ui.bigButton('Start', () => {
-            console.log(id)
             if (this.status != true){
               this.status = true;
               updateProgress(this.track);
@@ -255,6 +254,7 @@ export abstract class Tutorial extends DG.Widget {
     instructionIndicator.classList.add('grok-tutorial-entry-indicator-success');
     $(descriptionDiv).hide();
     $(entry).on('click', () => $(descriptionDiv).toggle());
+    ui.tooltip.bind(entry, description);
     this.progress.value++;
     this.progressSteps.innerHTML = '';
     this.progressSteps.append(`Step: ${this.progress.value} of ${this.steps}`);
