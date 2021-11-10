@@ -67,7 +67,7 @@ export class VirtualScreeningTutorial extends Tutorial {
       'log-transformed concentrations are commonly normally distributed, and invert the values, since the ' +
       'compounds with a lower <b>Ki</b> are more active.';
     const formulaRegex = /^(9\s*-\s*Log10\(\$\{Ki\}\)|Sub\(9,\s*Log10\(\$\{Ki\}\)\))$/;
-    await this.action('Transform the activity column "Ki" according to the formula "9 - Log10(${Ki})"',
+    await this.action('Transform the column "Ki" according to the formula "9 - Log10(${Ki})" and click "OK"',
       this.t!.onColumnsAdded.pipe(filter((data) => data.args.columns.some((col: DG.Column) => {
         return col.name === activityColName &&
           col.tags.has(DG.TAGS.FORMULA) &&
