@@ -78,14 +78,14 @@ jobs:
         run: npm version
       - run: npm install
         working-directory: ${{ matrix.project }}
-      - run: npm run test
-        working-directory: ${{ matrix.project }}
-        if: ${{ matrix.test == 'true' }}
-        continue-on-error: true
       - name: js-api dependencies
         run: npm install
         working-directory: ./js-api
         if: ${{ matrix.install_jsapi == 'true' }}
+      - run: npm run test
+        working-directory: ${{ matrix.project }}
+        if: ${{ matrix.test == 'true' }}
+        continue-on-error: true
       - run: npm run build
         working-directory: ${{ matrix.project }}
         if: ${{ matrix.build == 'true' }}
