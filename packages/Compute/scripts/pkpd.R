@@ -2,7 +2,7 @@
 #language: r
 #input: double dosage = 1000 {category: Dosing options} 
 #input: double doseInterval = 12 {category: Dosing options} 
-#input: string compartments = {category: PK model; choices: ['1 compartment PK', '2 compartment PK']} 
+#input: string compartments {category: PK model; choices: ['2 compartment PK', '1 compartment PK']} 
 #input: double clearance = 2 {category: PK parameters} 
 #input: double rateConstant = 0.3 {category: PK parameters} [rate constant] 
 #input: double centralV = 4 {category: PK parameters} [central compartment volume]  
