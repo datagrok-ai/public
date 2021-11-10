@@ -2025,8 +2025,8 @@ export class Qnum {
    * @param {number} x
    * @returns {string}
    * */
-  static sign(x: number): string {
-    return api.grok_Qnum_Sign(x);
+  static qualifier(x: number): string {
+    return api.grok_Qnum_Qualifier(x);
   }
 }
 
