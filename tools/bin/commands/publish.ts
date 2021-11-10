@@ -7,6 +7,7 @@ import os from 'os';
 import path from 'path';
 // @ts-ignore
 import walk from 'ignore-walk';
+// @ts-ignore
 import yaml from 'js-yaml';
 import * as utils from '../utils/utils';
 import { Indexable } from '../utils/utils';
