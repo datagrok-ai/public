@@ -1,6 +1,6 @@
 class ChemScriptsPackage extends DG.Package {
 
-  //name: ActivityCliffs
+  //name: ActivityCliffs...
   //tags: demo, chem, rdkit 
   //description: get activity cliffs
   //sample: chem/activity_cliffs.csv
