@@ -1,7 +1,7 @@
 {
 	"name": "@datagrok/viewers",
 	"fullName": "Viewers",
-	"version": "0.0.2",
+	"version": "0.0.1",
 	"description": "Set of custom JavaScript viewers",
 	"dependencies": {
 		"datagrok-api": "../../js-api",

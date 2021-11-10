@@ -1,7 +1,7 @@
 {
 	"name": "@datagrok/clinical-case",
 	"friendlyName": "Clinical Case",
-	"version": "0.0.2",
+	"version": "0.0.1",
 	"description": "",
 	"dependencies": {
 		"cash-dom": "^8.1.0",
