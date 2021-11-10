@@ -1,6 +1,6 @@
 #name: CurateChemStructures
 #description: curating a molecules set for structural data homogenization
-#top-menu: Chem | Curate
+#top-menu: Chem | Curate...
 #language: python
 #sample: chem/chem_standards.csv
 #tags: demo, chem, rdkit
