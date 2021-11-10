@@ -12,6 +12,7 @@ export async function getRGroups(smiles: DG.Column, core: string, prefix: string
     for (let i = 0; i < col.length; i++) {
       col.set(i, convert(col.get(i)));
     }
+    col.compact();
   }
   return result;
 }
