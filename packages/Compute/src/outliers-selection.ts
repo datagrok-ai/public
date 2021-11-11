@@ -231,7 +231,7 @@ export async function selectOutliersManually(inputData: DG.DataFrame) {
         cancelAllChanges();
         resolve({augmentedInput: inputData, editedInput});
       }, 100));
-    selectionDialog.show({width: 1000, height: 800, center: true});
+    selectionDialog.show({width: 1000, height: 800});
   });
 
   return result;
