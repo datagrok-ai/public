@@ -25,22 +25,27 @@ jobs:
           MATRIX_INCLUDE_JSON="["
 
           for DIR in ${CHANGED_DIRS}; do
-            if [ -z "$(jq  '. | select( has("scripts") == true ).scripts | select( has("build") == true )' ${DIR}/package.json)" ]; then
+            scripts=$(jq  '. | select( has("scripts") == true ).scripts' ${DIR}/package.json)
+
+            if [ -z "$(jq  '. | select( has("build") == true )' <<< $scripts)" ]; then
               build='false'
             else
               build='true'
             fi
-            if [ -z "$(jq  '. | select( has("scripts") == true ).scripts | select( has("test") == true )' ${DIR}/package.json)" ]; then
+            if [ -z "$(jq  '. | select( has("test") == true )' <<< $scripts)" ]; then
               test='false'
             else
               test='true'
             fi
-            if [ -z "$(jq  '. | select( has("dependencies") == true ).dependencies | select( has("datagrok-api") == true )' ${DIR}/package.json)" ]; then
+
+            dependencies=$(jq  '(. | select( has("dependencies") == true ).dependencies) * (. | select( has("devDependencies") == true ).devDependencies)' ${DIR}/package.json)
+
+            if [ -z "$(jq  '. | select( has("datagrok-api") == true )' <<< $dependencies)" ]; then
               install_jsapi='false'
             else
               install_jsapi='true'
             fi
-            if [ -z "$(jq  '. | select( has("dependencies") == true ).dependencies | select( has("datagrok-tools") == true )' ${DIR}/package.json)" ]; then
+            if [ -z "$(jq  '. | select( has("datagrok-tools") == true )' <<< $dependencies)" ]; then
               install_tools='false'
             else
               install_tools='true'
