@@ -38,7 +38,6 @@ public class HikariDataSourceInformation {
 
         this.hikariDataSource = new HikariDataSource(config);
 
-
         MBeanServer mBeanServer = ManagementFactory.getPlatformMBeanServer();
         ObjectName fullPoolName = null;
         try {
