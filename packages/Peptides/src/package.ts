@@ -29,7 +29,7 @@ async function main(chosenFile: string) {
   const view = grok.shell.addTableView(peptides);
   tableGrid = view.grid;
   peptides.onSemanticTypeDetecting.subscribe((_) => {
-    const regexp = new RegExp('^((.+)?-){5,49}(\\w|\\(|\\))+$');
+    const regexp = new RegExp(/^([^-^\n]*-){2,49}(\w|\(|\))+$/);
     for (const col of peptides.columns) {
       col.semType = DG.Detector.sampleCategories(col, (s) => regexp.test(s)) ? 'alignedSequence' : null;
       if (col.semType == 'alignedSequence') {
@@ -270,3 +270,13 @@ export function aminoAcidsCellRenderer() {
 export function logov() {
   return new Logo();
 }
+
+// //name: Manual Alignment
+// //tags: panel, widgets
+// //input: string monomer {semType: aminoAcids}
+// //output: widget result
+// export function manualAlignment(monomer: string) {
+//   // In a table there can be multiple columns with semType alignedSequence, how do I know which one is used?
+//   // Values matching is probably inefficient and does not guarantee to find the right column
+//   const currentDf = (grok.shell.v as DG.TableView).dataFrame;
+// }
