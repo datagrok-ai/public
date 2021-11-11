@@ -33,7 +33,7 @@ async function main(chosenFile: string) {
   peptides.onSemanticTypeDetecting.subscribe((_) => {
     const regexp = new RegExp(/^([^-^\n]*-){2,49}(\w|\(|\))+$/);
     for (const col of peptides.columns) {
-      col.semType = DG.Detector.sampleCategories(col, (s) => regexp.test(s)) ? 'alignedSequence' : null;
+      col.semType = DG.Detector.sampleCategories(col, (s) => regexp.test(s.trim())) ? 'alignedSequence' : null;
       if (col.semType == 'alignedSequence') {
         expandColumn(col, tableGrid, (ent)=>{
           const subParts:string[] = ent.split('-');
