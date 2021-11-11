@@ -30,10 +30,10 @@ async function main(chosenFile: string) {
   peptides.setTag('dataType', 'peptides');
   const view = grok.shell.addTableView(peptides);
   tableGrid = view.grid;
-  peptides.onSemanticTypeDetecting.subscribe((_) => {
+  peptides.onSemanticTypeDetecting.subscribe((_: any) => {
     const regexp = new RegExp(/^([^-^\n]*-){2,49}(\w|\(|\))+$/);
     for (const col of peptides.columns) {
-      col.semType = DG.Detector.sampleCategories(col, (s) => regexp.test(s.trim())) ? 'alignedSequence' : null;
+      col.semType = DG.Detector.sampleCategories(col, (s: any) => regexp.test(s.trim())) ? 'alignedSequence' : null;
       if (col.semType == 'alignedSequence') {
         expandColumn(col, tableGrid, (ent)=>{
           const subParts:string[] = ent.split('-');
@@ -305,7 +305,7 @@ export function peptideSimilaritySpace(
   const edf = DG.DataFrame.fromColumns(columns);
 
   for (const axis of axesNames) {
-    table.columns.addNewFloat(axis).init((i: number) => edf.getCol(axis).getRawData[i]);
+    table.columns.addNewFloat(axis).init((i: number) => edf.getCol(axis).getRawData()[i]);
   }
   const view = grok.shell.addTableView(table);
   view.name = 'SimilaritySpace';
