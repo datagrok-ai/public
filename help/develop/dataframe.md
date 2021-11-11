@@ -112,6 +112,20 @@ Learn more about supported formats in this article: [Link][108].
 
 <!-- TODO: Explain `notify` -->
 
+#### Refresh the state after modifying the column
+
+Some column associated structures, such as [categories][137], won't be automatically updated
+after the column data modification with `.setString`, `.set` and similar. This is intentional
+for performance reasons. After the modification is meant to be completed, it is possible
+to refresh the column `col` representation, including categories:
+
+```
+col.compact();
+```
+
+This call compacts the internal column representation. Currently, it only affects string
+columns where values were modified
+
 #### Initialize values with a function
 
 It's handy to set all column values in a single batch. This is possile with `.init` function:
@@ -636,3 +650,4 @@ JavaScript property setter).
 [133]: https://public.datagrok.ai/js/samples/data-frame/modification/add-columns
 [134]: https://dev.datagrok.ai/js/samples/data-frame/modification/manipulate
 [135]: #virtual-columns
+[136]: #work-with-categories

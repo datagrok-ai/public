@@ -231,7 +231,9 @@ export async function chemSubstructureSearchLibrary(
   await _cacheByAction(
     _chemSubstructureSearchLibraryParams,
     async (params) => {
-      const { molIdxToHash, hashToMolblock } = await rdKitParallel!.substructInit(molStringsColumn.toList());
+      // TODO: avoid creating an additional array here
+      const { molIdxToHash, hashToMolblock }
+        = await rdKitParallel!.substructInit(molStringsColumn.toList());
       let i = 0;
       let needsUpdate = false;
       for (const item of molIdxToHash) {
@@ -245,11 +247,8 @@ export async function chemSubstructureSearchLibrary(
       }
       if (needsUpdate) {
         // This seems to be the only way to trigger re-calculation of categories
-        // without the following two lines, categories are not updated
-        molStringsColumn.setCategoryOrder(molStringsColumn.categories);
-        molStringsColumn.setCategoryOrder([]);
+        molStringsColumn.compact();
       }
-      // TODO: avoid creating an additional array here
     }
   );
 
