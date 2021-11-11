@@ -5,7 +5,7 @@ import {_package} from './package';
 
 export async function selectOutliersManually(inputData: DG.DataFrame) {
   const IS_OUTLIER_COL_LABEL = 'isOutlier';
-  const OUTLIER_REASON_COL_LABEL = 'Reason';
+  const OUTLIER_RATIONALE_COL_LABEL = 'Rationale';
   const OUTLIER_COUNT_COL_LABEL = 'Count';
 
   if (!inputData.columns.byName(IS_OUTLIER_COL_LABEL)) {
@@ -13,15 +13,15 @@ export async function selectOutliersManually(inputData: DG.DataFrame) {
       .add(DG.Column.fromBitSet(IS_OUTLIER_COL_LABEL, DG.BitSet.create(inputData.rowCount, () => false)));
   }
 
-  if (!inputData.columns.byName(OUTLIER_REASON_COL_LABEL)) {
+  if (!inputData.columns.byName(OUTLIER_RATIONALE_COL_LABEL)) {
     inputData.columns
-      .add(DG.Column.fromStrings(OUTLIER_REASON_COL_LABEL, Array.from({length: inputData.rowCount}, () => '')));
+      .add(DG.Column.fromStrings(OUTLIER_RATIONALE_COL_LABEL, Array.from({length: inputData.rowCount}, () => '')));
   }
 
   const initialData = inputData.clone();
 
   const scatterPlot = DG.Viewer.scatterPlot(inputData, {
-    'color': OUTLIER_REASON_COL_LABEL,
+    'color': OUTLIER_RATIONALE_COL_LABEL,
     'lassoTool': true,
     'legendVisibility': 'Never',
     'filterByZoom': false,
@@ -31,7 +31,7 @@ export async function selectOutliersManually(inputData: DG.DataFrame) {
 
   const clearTable = () => {
     return DG.DataFrame.fromColumns([
-      DG.Column.fromStrings(OUTLIER_REASON_COL_LABEL, []),
+      DG.Column.fromStrings(OUTLIER_RATIONALE_COL_LABEL, []),
       DG.Column.fromInt32Array(OUTLIER_COUNT_COL_LABEL, new Int32Array([])),
       DG.Column.fromStrings('', []),
     ]);
@@ -41,11 +41,11 @@ export async function selectOutliersManually(inputData: DG.DataFrame) {
   groupsListGrid.root.style.width = '100%';
 
   groupsListGrid.onCellPrepare((gc) => {
-    const btn = (reason: string) => ui.div(
+    const btn = (rationale: string) => ui.div(
       ui.icons.delete(() => {
         for (let i = 0; i < inputData.rowCount; i++) {
-          if (inputData.columns.byName(OUTLIER_REASON_COL_LABEL).get(i) === reason) {
-            inputData.columns.byName(OUTLIER_REASON_COL_LABEL).set(i, '');
+          if (inputData.columns.byName(OUTLIER_RATIONALE_COL_LABEL).get(i) === rationale) {
+            inputData.columns.byName(OUTLIER_RATIONALE_COL_LABEL).set(i, '');
             inputData.columns.byName(IS_OUTLIER_COL_LABEL).set(i, false);
           }
         }
@@ -58,7 +58,7 @@ export async function selectOutliersManually(inputData: DG.DataFrame) {
 
     if (gc.gridColumn.name === '') {
       gc.gridColumn.cellType = 'html';
-      gc.style.element = btn(gc.grid.dataFrame?.get(OUTLIER_REASON_COL_LABEL, gc.gridRow));
+      gc.style.element = btn(gc.grid.dataFrame?.get(OUTLIER_RATIONALE_COL_LABEL, gc.gridRow));
     }
   });
 
@@ -67,14 +67,14 @@ export async function selectOutliersManually(inputData: DG.DataFrame) {
 
     const uniqueValues= new Set<string>();
     for (let i = 0; i < groupsListGrid.dataFrame?.rowCount; i++) {
-      const record = groupsListGrid.dataFrame?.columns.byName(OUTLIER_REASON_COL_LABEL).get(i);
+      const record = groupsListGrid.dataFrame?.columns.byName(OUTLIER_RATIONALE_COL_LABEL).get(i);
       uniqueValues.add(record);
     }
 
     for (let i = 0; i < inputData.rowCount; i++) {
-      const currentCellValue = inputData.columns.byName(OUTLIER_REASON_COL_LABEL).get(i);
+      const currentCellValue = inputData.columns.byName(OUTLIER_RATIONALE_COL_LABEL).get(i);
       if (currentCellValue != '' && !uniqueValues.has(currentCellValue)) {
-        inputData.columns.byName(OUTLIER_REASON_COL_LABEL).set(i, editedCell.cell.value);
+        inputData.columns.byName(OUTLIER_RATIONALE_COL_LABEL).set(i, editedCell.cell.value);
       }
     }
   });
@@ -82,7 +82,7 @@ export async function selectOutliersManually(inputData: DG.DataFrame) {
   const updateGroupsTable = () => {
     const uniqueValues: {[key:string]: number} = {};
     for (let i = 0; i < inputData.rowCount; i++) {
-      const record = inputData.columns.byName(OUTLIER_REASON_COL_LABEL).get(i);
+      const record = inputData.columns.byName(OUTLIER_RATIONALE_COL_LABEL).get(i);
       const count = uniqueValues[record];
       if (record != '') {
         count ?
@@ -105,8 +105,8 @@ export async function selectOutliersManually(inputData: DG.DataFrame) {
       (inputData.columns as DG.ColumnList).byName(IS_OUTLIER_COL_LABEL).init(
         (index) => initialData.get(IS_OUTLIER_COL_LABEL, index),
       );
-      (inputData.columns as DG.ColumnList).byName(OUTLIER_REASON_COL_LABEL).init(
-        (index) => initialData.get(OUTLIER_REASON_COL_LABEL, index),
+      (inputData.columns as DG.ColumnList).byName(OUTLIER_RATIONALE_COL_LABEL).init(
+        (index) => initialData.get(OUTLIER_RATIONALE_COL_LABEL, index),
       );
     }
   };
@@ -118,18 +118,18 @@ export async function selectOutliersManually(inputData: DG.DataFrame) {
 
       inputData.selection.getSelectedIndexes().forEach((selectedIndex: number) => {
         inputData.set(IS_OUTLIER_COL_LABEL, selectedIndex, true);
-        inputData.set(OUTLIER_REASON_COL_LABEL, selectedIndex, 'Manual');
+        inputData.set(OUTLIER_RATIONALE_COL_LABEL, selectedIndex, 'Manual');
       });
       inputData.selection.setAll(false);
 
       let rowNumber = 0;
       for (let i=0; i< (groupsListGrid.dataFrame.rowCount); i++) {
-        if ((groupsListGrid.dataFrame?.columns as DG.ColumnList).byName(OUTLIER_REASON_COL_LABEL).get(i) === 'Manual') {
+        if ((groupsListGrid.dataFrame?.columns as DG.ColumnList).byName(OUTLIER_RATIONALE_COL_LABEL).get(i) === 'Manual') {
           rowNumber = i;
         }
       }
 
-      groupsListGrid.dataFrame.currentCell = groupsListGrid.dataFrame.cell(rowNumber, OUTLIER_REASON_COL_LABEL);
+      groupsListGrid.dataFrame.currentCell = groupsListGrid.dataFrame.cell(rowNumber, OUTLIER_RATIONALE_COL_LABEL);
     },
     'Mark the selected points as outliers',
   );
@@ -139,7 +139,7 @@ export async function selectOutliersManually(inputData: DG.DataFrame) {
     () => {
       inputData.selection.getSelectedIndexes().forEach((selectedIndex: number) => {
         inputData.set(IS_OUTLIER_COL_LABEL, selectedIndex, false);
-        inputData.set(OUTLIER_REASON_COL_LABEL, selectedIndex, '');
+        inputData.set(OUTLIER_RATIONALE_COL_LABEL, selectedIndex, '');
       });
       inputData.selection.setAll(false);
     },
@@ -162,7 +162,7 @@ export async function selectOutliersManually(inputData: DG.DataFrame) {
           );
           inputData.selection.getSelectedIndexes().forEach((selectedIndex: number) => {
             inputData.set(IS_OUTLIER_COL_LABEL, selectedIndex, true);
-            inputData.set(OUTLIER_REASON_COL_LABEL, selectedIndex, `${intInput.value}x stddev rule`);
+            inputData.set(OUTLIER_RATIONALE_COL_LABEL, selectedIndex, `${intInput.value}x stddev rule`);
           });
           inputData.selection.setAll(false);
         })
