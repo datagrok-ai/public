@@ -3,14 +3,14 @@ import { Vector3 } from 'three';
 //import { OrbitControls } from "https://threejs.org/examples/jsm/controls/OrbitControls.js";
 import { OrbitControls } from 'three/examples/jsm/controls/OrbitControls.js';
 import { TrackballControls } from 'three/examples/jsm/controls/TrackballControls.js';
-import { test222 } from './test';
+// import { test222 } from './test';
 
 export class ScatterPlot3Dviewer extends DG.JsViewer {
 	constructor() {
 
 		super();
 		console.log("THREE REVISION ", THREE.REVISION);
-		test222();
+		// test222();
 		this.look = {};
 		function hName() {
 	//		console.log('hName hit!')
