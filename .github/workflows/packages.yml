@@ -40,7 +40,12 @@ jobs:
             else
               install_jsapi='true'
             fi
-            MATRIX_INCLUDE_JSON+="{\"project\": \"${DIR}\", \"build\": \"${build}\", \"test\": \"${test}\", \"install_jsapi\": \"${install_jsapi}\"}"
+            if [ -z "$(jq  '. | select( has("dependencies") == true ).dependencies | select( has("datagrok-tools") == true )' ${DIR}/package.json)" ]; then
+              install_tools='false'
+            else
+              install_tools='true'
+            fi
+            MATRIX_INCLUDE_JSON+="{\"project\": \"${DIR}\", \"build\": \"${build}\", \"test\": \"${test}\", \"install_jsapi\": \"${install_jsapi}\", \"install_tools\": \"${install_tools}\"}"
           done
 
           MATRIX_INCLUDE_JSON="${MATRIX_INCLUDE_JSON//\}\{/\}, \{}"
@@ -82,6 +87,10 @@ jobs:
         run: npm install
         working-directory: ./js-api
         if: ${{ matrix.install_jsapi == 'true' }}
+      - name: tools dependencies
+        run: npm install
+        working-directory: ./tools
+        if: ${{ matrix.install_tools == 'true' }}
       - run: npm run test
         working-directory: ${{ matrix.project }}
         if: ${{ matrix.test == 'true' }}
