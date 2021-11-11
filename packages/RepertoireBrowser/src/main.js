@@ -7,7 +7,7 @@ import {NglMethods} from "./ngl.js"
 import {PvizMethods} from "./pViz.js"
 import {MiscMethods} from "./misc.js"
 
-import properties from "./properties.json";
+import properties from "./externalData/properties.json";
 import json from "./examples/example.json";
 import jsonNumbering from "./examples/exampleNums.json";
 import jsonPDB from "./examples/examplePDB.json";
@@ -41,7 +41,7 @@ export class LaunchBrowser {
         ];
 
         ////////////////////////////////////////////////////
-        let ids = (await grok.data.loadTable(_package.webRoot + 'tableFiles/mlb.csv'));
+        let ids = (await grok.data.loadTable(_package.webRoot + 'src/examples/mlb.csv'));
         // let vidsRaw = (await grok.functions.call('MolecularLiabilityBrowser:getVids'));
         let vids = ["VR000000008", "VR000000043","VR000000044"];
         ////////////////////////////////////////////////////
