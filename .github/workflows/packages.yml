@@ -116,11 +116,12 @@ jobs:
             git add ${{ matrix.project }}/package-lock.json
             git commit -m "GitHub Actions: Update ${{ matrix.project }}/package-lock.json"
             count=0
+            retries=10
             until git push; do
               exit=$?
               wait=$((2 ** count))
               count=$((count + 1))
-              if [ $count -lt "10" ]; then
+              if [ $count -lt "$retries" ]; then
                 echo "Retry $count/$retries exited $exit, retrying 'git push' in $wait seconds..."
                 sleep $wait
                 git pull --rebase
