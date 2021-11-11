@@ -15,6 +15,8 @@ import {StackedBarChart, addViewerToHeader} from './stacked-barchart/stacked-bar
 import {ChemPalette} from './utils/chem-palette';
 // import { tTest, uTest } from './utils/misc';
 
+import {SequenceSPE} from './peptide_space/spe_levenstein';
+
 export const _package = new DG.Package();
 let tableGrid: DG.Grid;
 
@@ -280,3 +282,35 @@ export function logov() {
 //   // Values matching is probably inefficient and does not guarantee to find the right column
 //   const currentDf = (grok.shell.v as DG.TableView).dataFrame;
 // }
+
+//name: peptideSimilaritySpace
+//input: dataframe table
+//input: column alignedSequencesColumn {semType: alignedSequence}
+//input: int cyclesCount = 100
+//output: graphics
+export function peptideSimilaritySpace(
+  table: DG.DataFrame,
+  alignedSequencesColumn: DG.Column,
+  cyclesCount: number) {
+  const N = table.rowCount;
+  const axesNames = ['X', 'Y'];
+
+  function transpose(matrix: number[][]): number[][] {
+    return matrix[0].map((col, i) => matrix.map((row) => row[i]));
+  }
+  const spe = new SequenceSPE(N-1, cyclesCount, 0, 2.0, 0.01);
+  const embedding = spe.embed(alignedSequencesColumn.toList());
+  const embcols = transpose(embedding);
+  const columns = Array.from(embcols, (v, k) => (DG.Column.fromList('double', axesNames[k], v)));
+  const edf = DG.DataFrame.fromColumns(columns);
+
+  for (const axis of axesNames) {
+    table.columns.addNewFloat(axis).init((i: number) => edf.getCol(axis).getRawData[i]);
+  }
+  const view = grok.shell.addTableView(table);
+  view.name = 'SimilaritySpace';
+  // eslint-disable-next-line no-unused-vars
+  const plot = view.scatterPlot({x: 'X', y: 'Y'});//, size: 'age', color: 'race'
+
+  //grok.shell.newView('SimilaritySpace').append(ui.divV([scatterPlot.root]));
+}
