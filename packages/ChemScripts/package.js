@@ -1,10 +1,10 @@
 class ChemScriptsPackage extends DG.Package {
 
-  //name: ActivityCliffs...
+  //name: ActivityCliffs
   //tags: demo, chem, rdkit 
   //description: get activity cliffs
   //sample: chem/activity_cliffs.csv
-  //top-menu: Chem | Activity Cliffs
+  //top-menu: Chem | Activity Cliffs...
   //input: dataframe df [Input data table]
   //input: column smiles {type:categorical; semType: Molecule} [Molecules, in SMILES format]
   //input: column activities

@@ -20,6 +20,7 @@ import {OCLCellRenderer} from './ocl_cell_renderer';
 import {getRGroups} from "./chem_rgroup_analysis";
 import {chemSpace} from './analysis/chem_space';
 import {mcsgetter} from './scripts-api';
+import {getDescriptors} from './descriptors/descriptors_calculation';
 
 export let rdKitModule: any = null;
 export let rdKitWorkerWebRoot: string | undefined;
@@ -494,4 +495,12 @@ export async function chemSpaceTopMenu(table: DG.DataFrame,smiles: DG.Column) {
     await chemSpace(table, smiles);
     resolve();
   });
+}
+
+//name: Chem | DescriptorsPort...
+//tags: panel
+//input: column smiles { semType: Molecule }
+//output: string result
+export async function descriptors(table: DG.DataFrame,smiles: DG.Column) {
+  return(getDescriptors(smiles));
 }

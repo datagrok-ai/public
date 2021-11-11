@@ -1,12 +1,11 @@
 import * as grok from 'datagrok-api/grok';
 import * as ui from 'datagrok-api/ui';
-// import * as DG from "datagrok-api/dg";
-import json from "./example.json";
+
 
 export class MiscMethods {
 
     // processes JSON to derive scheme names
-    static extract_schemes() {
+    static extract_schemes(json) {
         let raw_scheme_names = Object.keys(json.cdr_ranges);
         let schemes_lst = ['default'];
         raw_scheme_names.forEach((str) => {

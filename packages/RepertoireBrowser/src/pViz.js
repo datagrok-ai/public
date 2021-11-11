@@ -13,18 +13,18 @@ export class PvizMethods {
         this.ngl = ngl
         this.pviz = window.pviz;
         this.pVizParams = {};
-        this.pVizParams.seq = {'H':json.heavy_seq, 'L': json.light_seq};
-        this.pVizParams.ptmMap = this.ptmMapping(inputs.ptm_choices.value, inputs.ptm_prob.value, json);
-        this.pVizParams.ptmMotifsMap = this.ptmMotifsMapping(inputs.ptm_motif_choices.value, inputs.ptm_prob.value, json)
-        this.pVizParams.denMap = this.ptmDenMapping(json);
-        this.pVizParams.parMap = this.paratopeMapping(json);
-        this.pVizParams.cdrMap = this.cdrMapping(inputs.cdr_scheme.value, json);
+        this.pVizParams.seq = {'H':json.heavy_seq, 'L': json.light_seq}
+        this.pVizParams.ptmMap = this.ptmMapping(inputs.ptm_choices.value, inputs.ptm_prob.value, json)
+        this.pVizParams.ptmMotifsMap = this.ptmMotifsMapping(inputs.ptm_motif_choices.value, inputs.ptm_prob.value)
+        this.pVizParams.denMap = this.ptmDenMapping(json)
+        this.pVizParams.parMap = this.paratopeMapping(json)
+        this.pVizParams.cdrMap = this.cdrMapping(inputs.cdr_scheme.value, json)
 
         await this.loadSequence(inputs, 'H', json);
 
         await this.pvizResize(inputs, 'H', json);
         await this.pvizResize(inputs, 'L', json);
-        MiscMethods.setDockSize(view, inputs.ngl_node, inputs.sequence_tabs, inputs.paratopes);
+        return MiscMethods.setDockSize(view, inputs.ngl_node, inputs.sequence_tabs, inputs.paratopes);
     }
 
     // mapping objects for sequence rendering
@@ -39,7 +39,7 @@ export class PvizMethods {
             let palette = MiscMethods.interpolateColors('(255, 255, 0)','(255, 0, 0)', 5);
 
             ptm_choices.forEach(ptm => {
-                let ptm_array = json.ptm_predictions[chain][ptm.replaceAll(" ", "_")];
+                let ptm_array = json.ptm_predictions[chain][ptm.replace(" ", "_")];
                 if (ptm_array !== undefined) {
 
                     let ptm_color_arr = [];
@@ -51,7 +51,7 @@ export class PvizMethods {
                             ptm_feature_map.push({
                                 groupSet: 'Predicted PTMs',
                                 category : ptm,
-                                type : mutcodes[ptm.replaceAll(" ", "_")],
+                                type : mutcodes[ptm.replace(" ", "_")],
                                 start : point[0],
                                 end : point[0],
                                 text : ptm,
@@ -63,9 +63,9 @@ export class PvizMethods {
                         }
                     })
                     if (ptm_color_arr.length > 0) {
-                        ptm_color_obj[mutcodes[ptm.replaceAll(" ", "_")]] = ptm_color_arr;
-                        ptm_el_obj[mutcodes[ptm.replaceAll(" ", "_")]] = ptm_el_arr;
-                        ptm_prob_obj[mutcodes[ptm.replaceAll(" ", "_")]] = ptm_prob_arr;
+                        ptm_color_obj[mutcodes[ptm.replace(" ", "_")]] = ptm_color_arr;
+                        ptm_el_obj[mutcodes[ptm.replace(" ", "_")]] = ptm_el_arr;
+                        ptm_prob_obj[mutcodes[ptm.replace(" ", "_")]] = ptm_prob_arr;
                     }
                 }
             })
@@ -128,27 +128,22 @@ export class PvizMethods {
         let denMap = {}
         let chains = Object.keys(this.pVizParams.seq);
         chains.forEach((chain) => {
-            //let length = chain === "H"? json.H_length : json.L_length;
-
             let den_feature_map = [];
             let den_color_arr = new Array(this.pVizParams.seq[chain].length).fill(-1);
             let den_ptm_arr = new Array(this.pVizParams.seq[chain].length).fill([]);
             let palette = MiscMethods.interpolateColors('(255, 255, 0)', '(255, 0, 0)', 5);
 
             Object.keys(json.ptm_predictions[chain]).forEach((ptm) => {
-
                 if(json.ptm_predictions[chain][ptm][0][1] <=1 ){
                     json.ptm_predictions[chain][ptm].forEach(point => {
-
-                        let index = point[0];
-                        if (!(den_feature_map.includes(index))) {
-                            den_feature_map.push(index);
+                        if (!(den_feature_map.includes(point[0]))) {
+                            den_feature_map.push(point[0]);
                         }
-                        den_color_arr[index] = den_color_arr[index] == -1 ? (point[1] > 1 ? point[1]/100: point[1]) : 1 - (1 - den_color_arr[index]) * (1 -  (point[1] > 1 ? point[1]/100: point[1]));
-                        den_ptm_arr[index] = den_ptm_arr[index].concat([[ptm, point[1]]]);
+                        den_color_arr[point[0]] = den_color_arr[point[0]] == -1 ? (point[1] > 1 ? point[1]/100: point[1]) : 1 - (1 - den_color_arr[point[0]]) * (1 -  (point[1] > 1 ? point[1]/100: point[1]));
+                        den_ptm_arr[point[0]] = den_ptm_arr[point[0]].concat([[ptm, point[1]]]);
                     })
                 }
-            });
+            })
 
             den_feature_map.sort((a, b) => a - b);
             let den_el_obj = den_feature_map.slice();
@@ -265,7 +260,6 @@ export class PvizMethods {
                 collapsible: true,
                 el: host
             }).render();
-
             let mod_codes = Object.keys(this.pVizParams.ptmMap[chain].ptm_color_obj);
             let mod_motifs_codes = Object.keys(this.pVizParams.ptmMotifsMap[chain].ptm_color_obj);
 
@@ -279,14 +273,11 @@ export class PvizMethods {
                 this.pviz.FeatureDisplayer.setStrikeoutCategory(mod);
             });
 
-            this.pviz.FeatureDisplayer.trackHeightPerCategoryType['P'] = 1.5;
-            this.pviz.FeatureDisplayer.setStrikeoutCategory('P');
-            
-
             let switchObj = inputs.pVizNglRelation;
             let pVizParams = this.pVizParams;
+
             let pv = this;
-            
+
             this.pviz.FeatureDisplayer.addClickCallback (mod_codes, async function(ft) {               
                 if (switchObj[chain][ft.start] === undefined) {     
                     switchObj[chain][ft.start] = {};
@@ -320,25 +311,6 @@ export class PvizMethods {
                 await pv.consistentlyColorpVizNGL(inputs, chain, json, reLoad);
             })
 
-            this.pviz.FeatureDisplayer.addMouseoverCallback(mod_codes, async function(ft) {
-
-                let selectorStr = 'g.feature.' + ft.category.replaceAll(" ", "_") + ' rect.feature';
-                let el = document.querySelectorAll(selectorStr);
-                let el_lst = pVizParams.ptmMap[chain].ptm_el_obj[mutcodes[ft.category.replaceAll(" ", "_")]];
-                let prob_lst = pVizParams.ptmMap[chain].ptm_prob_obj[mutcodes[ft.category.replaceAll(" ", "_")]];
-                el = el[el_lst.indexOf(ft.start)];
-                let prob =  prob_lst[el_lst.indexOf(ft.start)];
-
-                ui.tooltip.show(
-                    ui.span([`${ft.category} probability ${prob.toFixed(2)}`]),
-                    el.getBoundingClientRect().left + 10,
-                    el.getBoundingClientRect().top + 10
-                );
-
-            }).addMouseoutCallback(mod_codes, function(ft) {
-                ui.tooltip.hide();
-            });
-
             this.pviz.FeatureDisplayer.addMouseoverCallback(mod_motifs_codes, async function(ft) {
 
                 let selectorStr = 'g.feature.' + mutcodes[ft.category.replaceAll(" ", "_")] + "." 
@@ -354,6 +326,32 @@ export class PvizMethods {
                 );
 
             }).addMouseoutCallback(mod_codes, function(ft) {
+                ui.tooltip.hide();
+            });
+
+            this.pviz.FeatureDisplayer.addMouseoverCallback(['D'], async function(ft) {
+
+                let selectorStr = 'g.feature.data.D rect.feature';
+                let el = document.querySelectorAll(selectorStr);
+                let el_lst = pVizParams.denMap[chain].den_el_obj;
+                let prob_lst = pVizParams.denMap[chain].den_prob_obj;
+                let ptm_list =  pVizParams.denMap[chain].den_ptm_arr;
+                el = el[el_lst.indexOf(ft.start)];
+                let prob =  prob_lst[el_lst.indexOf(ft.start)];
+                let ptmsArPoint = ptm_list[el_lst.indexOf(ft.start)];
+                let ptmsStr = "";
+
+                for(let i = 0; i < ptmsArPoint.length; i++){
+                    ptmsStr += "\n" + ptmsArPoint[i][0].replace("_", " ") + " probability  ~" + (ptmsArPoint[i][1] > 1 ? ptmsArPoint[i][1]/100: ptmsArPoint[i][1]).toFixed(2);
+                }
+                
+                ui.tooltip.show(
+                    ui.divText(`Probability: ${prob.toFixed(2)}${ptmsStr}`),
+                    el.getBoundingClientRect().left + 10,
+                    el.getBoundingClientRect().top + 10
+                );
+
+            }).addMouseoutCallback(['D'], function(ft) {
                 ui.tooltip.hide();
             });
 
@@ -376,34 +374,8 @@ export class PvizMethods {
                 ui.tooltip.hide();
             });
 
-            this.pviz.FeatureDisplayer.addMouseoverCallback(['D'], async function(ft) {
-
-                let selectorStr = 'g.feature.data.D rect.feature';
-                let el = document.querySelectorAll(selectorStr);
-                let el_lst = pVizParams.denMap[chain].den_el_obj;
-                let prob_lst = pVizParams.denMap[chain].den_prob_obj;
-                let ptm_list =  pVizParams.denMap[chain].den_ptm_arr;
-                el = el[el_lst.indexOf(ft.start)];
-                let prob =  prob_lst[el_lst.indexOf(ft.start)];
-                let ptmsArPoint = ptm_list[el_lst.indexOf(ft.start)];
-                let ptmsStr = "";
-
-                for(let i = 0; i < ptmsArPoint.length; i++){
-                    ptmsStr += "\n" + ptmsArPoint[i][0].replaceAll("_", " ") + " probability  " + (ptmsArPoint[i][1] > 1 ? ptmsArPoint[i][1]/100: ptmsArPoint[i][1]).toFixed(2);
-                }
-                
-                ui.tooltip.show(
-                    ui.divText(`Probability: ${prob.toFixed(2)}${ptmsStr}`),
-                    el.getBoundingClientRect().left + 10,
-                    el.getBoundingClientRect().top + 10
-                );
-
-            }).addMouseoutCallback(['D'], function(ft) {
-                ui.tooltip.hide();
-            });
-
             if (inputs.paratopes.value === true) {
-               seqEntry.addFeatures(this.pVizParams.parMap[chain].par_feature_map);
+                seqEntry.addFeatures(this.pVizParams.parMap[chain].par_feature_map);
             }
             seqEntry.addFeatures(this.pVizParams.ptmMap[chain].ptm_feature_map);
             seqEntry.addFeatures(this.pVizParams.ptmMotifsMap[chain].ptm_feature_map);
@@ -512,7 +484,7 @@ export class PvizMethods {
 
         if(reLoad){
             ngl.stage.removeAllComponents();
-            await ngl.loadPdb(ngl.path, inputs.repChoice, {color: schemeId});
+            await ngl.loadPdb(ngl.pdbStr, inputs.repChoice, {color: schemeId});
 
                 //recovering ball and stick residual at cartoon view
             if(inputs.repChoice.value === "cartoon"){
@@ -555,34 +527,24 @@ export class PvizMethods {
                 });
             }
         }
-       
+
         //colors of selected pViz
         let selectorStr = 'g.feature.data.D rect.feature';
         let el = document.querySelectorAll(selectorStr);
 
-        let lists_ptm = [];
-        let lists_ptm_motifs = [];
+        let lists = [];
 
         inputs.ptm_choices.value.forEach(ptm => {
-            let selectorStrPTM = 'g.feature.' + ptm.replaceAll(" ", "_") + ' rect.feature';
+            let selectorStrPTM = 'g.feature.' + ptm.replace(" ", "_") + ' rect.feature';
             let elPTM = document.querySelectorAll(selectorStrPTM);
-            let el_lstPTM = pVizParams.ptmMap[chosenTracksChain].ptm_el_obj[mutcodes[ptm.replaceAll(" ", "_")]];
-            lists_ptm[ptm] =[elPTM, el_lstPTM];
-        });
-
-        inputs.ptm_motif_choices.value.forEach(ptm => {
-            let selectorStrPTM = 'g.feature.' + mutcodes[ptm.replaceAll(" ", "_")] + "." 
-                     + ptm.replaceAll(" ", "_").replaceAll(")", "\\)").replaceAll("(", "\\(");
-            let elPTM = document.querySelectorAll(selectorStrPTM);
-            let el_lstPTM = pVizParams.ptmMotifsMap[chosenTracksChain].ptm_el_obj[mutcodes[ptm.replaceAll(" ", "_")]];
-            lists_ptm_motifs[ptm] =[elPTM, el_lstPTM];
+            let el_lstPTM = pVizParams.ptmMap[chosenTracksChain].ptm_el_obj[mutcodes[ptm.replace(" ", "_")]];
+            lists[ptm] =[elPTM, el_lstPTM];
         });
         
         Object.keys(switchObj).forEach((keyChain) =>{
             let el_lst = pVizParams.denMap[keyChain].den_el_obj;
 
             Object.keys(switchObj[keyChain]).forEach((keyFtStart) =>{
-
                 let position = parseInt(keyFtStart);
 
                 if (keyChain === chosenTracksChain)
@@ -593,24 +555,12 @@ export class PvizMethods {
                         el[el_lst.indexOf(position)].style.fill = 'black';
                     }
 
-                    Object.keys(lists_ptm).forEach(ptm =>{
-                        let elPTM = lists_ptm[ptm][0];
-                        let el_lstPTM = lists_ptm[ptm][1];
+                    Object.keys(lists).forEach(ptm =>{
+                        let elPTM = lists[ptm][0];
+                        let el_lstPTM = lists[ptm][1];
                         if(typeof el_lstPTM !== 'undefined' && el_lstPTM.indexOf(position) !== -1){
                             if (switchObj[keyChain][position]['state'] === false) {
-                                elPTM[el_lstPTM.indexOf(position)].style.fill = pVizParams.ptmMap[keyChain].ptm_color_obj[mutcodes[ptm.replaceAll(" ", "_")]][el_lstPTM.indexOf(position)];
-                            } else {
-                                elPTM[el_lstPTM.indexOf(position)].style.fill = 'black';
-                            }
-                        }
-                    });
-
-                    Object.keys(lists_ptm_motifs).forEach(ptm =>{
-                        let elPTM = lists_ptm_motifs[ptm][0];
-                        let el_lstPTM = lists_ptm_motifs[ptm][1];
-                        if(typeof el_lstPTM !== 'undefined' && el_lstPTM.indexOf(position) !== -1){
-                            if (switchObj[keyChain][position]['state'] === false) {
-                                elPTM[el_lstPTM.indexOf(position)].style.fill = pVizParams.ptmMotifsMap[keyChain].ptm_color_obj[mutcodes[ptm.replaceAll(" ", "_")]][el_lstPTM.indexOf(position)];
+                                elPTM[el_lstPTM.indexOf(position)].style.fill = pVizParams.ptmMap[keyChain].ptm_color_obj[mutcodes[ptm.replace(" ", "_")]][el_lstPTM.indexOf(position)];
                             } else {
                                 elPTM[el_lstPTM.indexOf(position)].style.fill = 'black';
                             }

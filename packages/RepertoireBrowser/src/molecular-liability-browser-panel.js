@@ -4,7 +4,7 @@ import * as DG from "datagrok-api/dg";
 import {MiscMethods} from "./misc";
 
 
-export class RepertoireBrowserPanel {
+export class MolecularLiabilityBrowserPanel {
 
     async init(view, json) {
 
@@ -16,14 +16,13 @@ export class RepertoireBrowserPanel {
         windows.showHelp = false;
         windows.showConsole = false;
 
-
         // ---- INPUTS ----
         this.reps = ['cartoon', 'backbone', 'ball+stick', 'licorice', 'hyperball', 'surface'];
         this.repChoice = ui.choiceInput('Representation', 'cartoon', this.reps);
 
-        this.schemes_lst = MiscMethods.extract_schemes();
+        this.schemes_lst = MiscMethods.extract_schemes(json);
         this.cdr_scheme = ui.choiceInput('CDR3 Scheme', 'default', this.schemes_lst);
-
+       
         let ptm_keys = [...new Set([...Object.keys(json.ptm_predictions.H), ...Object.keys(json.ptm_predictions.L)])];
         this.ptm_predictions = [];
         this.ptm_motif_predictions = [];
@@ -72,6 +71,7 @@ export class RepertoireBrowserPanel {
         acc_options.addPane('Motif PTMs', () => ui.div([this.ptm_motif_choices]));
         //acc_options.addPane('MSA', () => ui.inputs([this.msaContentChoice]));
         // await MiscMethods.save_load(this.table, acc_options)
+
         this.root.append(acc_options.root);
 
 
@@ -82,11 +82,13 @@ export class RepertoireBrowserPanel {
         // pviz + msa
         this.pViz_host_L = ui.box();
         this.pViz_host_H = ui.box();
-        this.msa_host_L = ui.box();
-        this.msa_host_H = ui.box();
+        //this.msa_host_L = ui.box();
+        //this.msa_host_H = ui.box();
         this.sequence_tabs = ui.tabControl({
             'HEAVY': this.pViz_host_H,
             'LIGHT': this.pViz_host_L
+            //'MSA HEAVY': this.msa_host_H,
+            //'MSA LIGHT': this.msa_host_L,
         }).root;
 
 
@@ -95,6 +97,7 @@ export class RepertoireBrowserPanel {
         this.ngl_node = view.dockManager.dock(this.ngl_host, 'left', this.panel_node, 'NGL');
         this.sequence_node = view.dockManager.dock(this.sequence_tabs, 'down', this.ngl_node, 'Sequence', 0.225);
 
+        return [this.panel_node, this.ngl_node, this.sequence_node];
     }
 
 }
