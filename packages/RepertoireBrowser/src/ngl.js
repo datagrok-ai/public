@@ -1,7 +1,6 @@
 import * as grok from 'datagrok-api/grok';
 import * as ui from 'datagrok-api/ui';
 import * as DG from "datagrok-api/dg";
-import json from "./example.json";
 import {MiscMethods} from "./misc.js"
 import {_package} from "./package";
 
@@ -9,20 +8,20 @@ import {_package} from "./package";
 
 export class NglMethods {
 
-    async init(view, inputs, json) {
+    async init(view, inputs, pdbStr, json) {
 
         let colorScheme = inputs.colorScheme;
         let col_background = colorScheme["col_background"];
 
         inputs.ngl_host.style.backgroundColor = col_background;
         view.box = true;
+        this.pdbStr = pdbStr;
         this.stage = new NGL.Stage(inputs.ngl_host);
-        this.path = _package.webRoot + 'pdbfiles/' + 'example.pdb';
-
         this.schemeObj = this.CDR3(inputs.cdr_scheme, inputs.paratopes, json, colorScheme);
 
-        await this.loadPdb(this.path, inputs.repChoice, this.schemeObj);
+        await this.loadPdb(pdbStr, inputs.repChoice, this.schemeObj);
         this.nglResize(inputs.ngl_host);
+
     }
 
     // ---- NGL ----
@@ -35,22 +34,19 @@ export class NglMethods {
         let col_para = colorScheme["col_para"];
         let col_partopes_low = colorScheme["col_partopes_low"]; //col_para in rgb
         let col_partopes_high = colorScheme["col_partopes_high"];
-
-
+        
         let schemeId;
 
         if (paratopes.value === true) {
-            let palette = MiscMethods.interpolateColors(col_partopes_low, col_partopes_high, 100);
+            let palette = MiscMethods.interpolateColors(col_partopes_high, col_partopes_low, 100);
             let selectionScheme = [];
             Object.keys(json.parapred_predictions).forEach((chain) => {
                 Object.keys(json.parapred_predictions[chain]).forEach((index) => {
-
                     selectionScheme.push([
                         palette[Math.round(json.parapred_predictions[chain][index] * 100)],
                         `${index} and :${chain}`
                     ]);
                 })
-
             })
             selectionScheme.push([col_para, "* and :H"]);
             selectionScheme.push([col_para, "* and :L"]);
@@ -65,7 +61,7 @@ export class NglMethods {
                 let scheme_buffer = [];
                 Object.keys(json.cdr_ranges).forEach((str) => {
                     if (str.includes(cdr_scheme.value + '_CDRH')) {
-                        let str_buffer = '';
+                        let str_buffer = ''
                         for (let i = 0; i < Object.keys(json.cdr_ranges[str]).length; i++) {
                             str_buffer = str_buffer + ` or ${json.cdr_ranges[str][i][0]}-${json.cdr_ranges[str][i][1]} and :H`;
                         }
@@ -90,8 +86,9 @@ export class NglMethods {
     }
 
     // load the 3D model
-    async loadPdb(bytes, repChoice, schemeObj) {
-        await this.stage.loadFile(bytes).then(function (o) {
+    async loadPdb(pdbStr, repChoice, schemeObj) {
+        var stringBlob = new Blob([pdbStr], {type: 'text/plain'} );
+        await this.stage.loadFile(stringBlob, { ext: "pdb" }).then(function (o) {
             o.addRepresentation(repChoice.value, schemeObj);
             o.autoView();
         });
