@@ -150,10 +150,10 @@ export async function selectOutliersManually(inputData: DG.DataFrame) {
     'STDDEV RULE...',
     () => {
       const intInput = ui.intInput('N', 3);
-      const columnInput = ui.columnInput('Values', inputData, null);
+      const columnInput = ui.columnInput('Column', inputData, null);
       ui.dialog('Edit standard deviation rule')
-        .add(intInput.root)
         .add(columnInput.root)
+        .add(intInput.root)
         .onOK(()=>{
           const meanValue = (columnInput.value as DG.Column).stats.avg;
           const stddev = (columnInput.value as DG.Column).stats.stdev;
@@ -168,7 +168,7 @@ export async function selectOutliersManually(inputData: DG.DataFrame) {
         })
         .show();
     },
-    'Edit standard deviation rule',
+    'Detect outliers automatically',
   );
 
   inputData.selection.setAll(false);
