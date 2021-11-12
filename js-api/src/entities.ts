@@ -279,6 +279,13 @@ export class DataConnection extends Entity {
 
   /** Collection of parameters: server, database, endpoint, etc. */
   get parameters(): object { return api.grok_DataConnection_Parameters(this.d); }
+
+  /** Tests the connection, returns "ok" on success or an error message on error
+   * @returns {Promise<string>}*/
+  test(): Promise<string> {
+    return new Promise((resolve, reject) => api.grok_DataConnection_test(this.d, (s: any) => resolve(toJs(s)), (e: any) => reject(e)));
+  }
+
 }
 
 /** Represents a predictive model
