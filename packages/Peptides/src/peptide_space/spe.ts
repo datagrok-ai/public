@@ -22,6 +22,7 @@ const calculateEuclideanDistance = (p: number[], q: number[]) => {
 };
 
 export class SPEBase {
+  protected static dimension = 2;
   protected steps: number;
   protected cycles: number;
   protected cutoff: number;
@@ -30,34 +31,28 @@ export class SPEBase {
   protected lambda2: number;
   protected dlambda2: number;
   protected epsilon: number;
-  constructor(
-    steps: number,
-    cycles: number,
-    cutoff: number,
-    lambda: number,
-    dlambda: number,
-    epsilon: number = 1e-10,
-  ) {
-    this.steps = steps;
-    this.cycles = cycles;
+  protected distanceFunction: Function;
+
+  constructor(options: {[name: string]: any} = {
+    steps: 1000,
+    cycles: 1000,
+    cutoff: 0,
+    lambda: 2.0,
+    dlambda: 0.01,
+    epsilon: 1e-10,
+    distance: Function,
+  }) {
+    this.steps = options.steps;
+    this.cycles = options.cycles;
     // Select a cutoff distance {cutoff} and ...
-    this.cutoff = cutoff;
+    this.cutoff = options.cutoff;
     // ... an initial learning rate {lambda} > 0
-    this.lambda = lambda;
-    this.dlambda = dlambda;
-    this.lambda2 = lambda/2.;
-    this.dlambda2 = dlambda/2.;
-    this.epsilon = epsilon;
-  }
-  /**
-   * distanceFunction
-   * @param {any} item1 First vector of the pair.
-   * @param {any} item2 Second vector of the pair.
-   * @return {number} Distance between these two vectors.
-   */
-  protected distanceFunction(item1: any, item2: any): number {
-    throw new Error('Method not implemented.');
-    return 0;
+    this.lambda = options.lambda;
+    this.dlambda = options.dlambda;
+    this.lambda2 = options.lambda/2.;
+    this.dlambda2 = options.dlambda/2.;
+    this.epsilon = options.epsilon;
+    this.distanceFunction = options.distance;
   }
 
   /**
@@ -71,12 +66,17 @@ export class SPEBase {
     return this.distanceFunction(vectors[index1], vectors[index2]);
   }
 
-  private originalSPE(vectors: Vectors, dimension = 2): Coordinates {
+  /**
+   * embed
+   * @param {Vectors} vectors D-dimensional coordinates.
+   * @return {Coordinates} SPE coordinates in D space.
+   */
+  public embed(vectors: Vectors): Coordinates {
     const nItems = vectors.length;
     const areaWidth = 40;
     // Initialize the D-dimensional coordinates of the N points.
     const coordinates: Coordinates = new Array(nItems).fill(0).map(
-      () => Array.from({length: dimension}, () => Math.floor(Math.random() * areaWidth)),
+      () => Array.from({length: SPEBase.dimension}, () => Math.floor(Math.random() * areaWidth)),
     );
 
     const _randomInt = (range: number) => (Math.floor(Math.random() * range));
@@ -115,13 +115,20 @@ export class SPEBase {
     }
     return coordinates;
   }
+}
 
-  private modifiedSPE(vectors: Vectors, dimension = 2): Coordinates {
+export class PSPEBase extends SPEBase {
+  /**
+   * embed
+   * @param {Vectors} vectors D-dimensional coordinates.
+   * @return {Coordinates} SPE coordinates in D space.
+   */
+  public embed(vectors: Vectors): Coordinates {
     const nItems = vectors.length;
     const areaWidth = 40;
     //  Initialize the D-dimensional coordinates of the N points.
     const coordinates: Coordinates = new Array(nItems).fill(0).map(
-      () => Array.from({length: dimension}, () => Math.floor(Math.random() * areaWidth)),
+      () => Array.from({length: PSPEBase.dimension}, () => Math.floor(Math.random() * areaWidth)),
     );
 
     const _randomInt = (range: number) => (Math.floor(Math.random() * range));
@@ -155,14 +162,5 @@ export class SPEBase {
       }
     }
     return coordinates;
-  }
-
-  /**
-   * embed
-   * @param {Vectors} vectors D-dimensional coordinates.
-   * @return {Coordinates} SPE coordinates in D space.
-   */
-  public embed(vectors: Vectors): Coordinates {
-    return this.originalSPE(vectors);
   }
 }

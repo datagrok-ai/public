@@ -15,7 +15,8 @@ import {StackedBarChart, addViewerToHeader} from './stacked-barchart/stacked-bar
 import {ChemPalette} from './utils/chem-palette';
 // import { tTest, uTest } from './utils/misc';
 
-import {SequenceSPE} from './peptide_space/spe_levenstein';
+import {DimensionalityReducer} from './peptide_space/reduce';
+import * as fl from 'fastest-levenshtein';
 
 export const _package = new DG.Package();
 let tableGrid: DG.Grid;
@@ -286,20 +287,27 @@ export function logov() {
 //name: peptideSimilaritySpace
 //input: dataframe table
 //input: column alignedSequencesColumn {semType: alignedSequence}
+//input: string method {choices: ['UMAP', 'SPE', 'PSPE']}
 //input: int cyclesCount = 100
 //output: graphics
 export function peptideSimilaritySpace(
   table: DG.DataFrame,
   alignedSequencesColumn: DG.Column,
+  method: string,
   cyclesCount: number) {
-  const N = table.rowCount;
+//  const N = table.rowCount;
   const axesNames = ['X', 'Y'];
 
   function transpose(matrix: number[][]): number[][] {
     return matrix[0].map((col, i) => matrix.map((row) => row[i]));
   }
-  const spe = new SequenceSPE(N-1, cyclesCount, 0, 2.0, 0.01);
-  const embedding = spe.embed(alignedSequencesColumn.toList());
+
+  const reducer = new DimensionalityReducer(alignedSequencesColumn.toList(), method, fl.distance);
+  const embedding = reducer.transform();
+
+  //const spe = new SequenceSPE(N-1, cyclesCount, 0, 2.0, 0.01);
+  //const embedding = spe.embed(alignedSequencesColumn.toList());
+
   const embcols = transpose(embedding);
   const columns = Array.from(embcols, (v, k) => (DG.Column.fromList('double', axesNames[k], v)));
   const edf = DG.DataFrame.fromColumns(columns);
