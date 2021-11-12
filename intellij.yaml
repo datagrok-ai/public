@@ -1,0 +1,4 @@
+---
+versionControl:
+  git:
+    updateMethod: rebase

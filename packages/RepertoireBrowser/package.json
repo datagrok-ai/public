@@ -1,7 +1,7 @@
 {
 	"name": "@datagrok/repertoire-browser",
 	"fullName": "RepertoireBrowser",
-	"version": "0.0.2",
+	"version": "0.0.1",
 	"description": "",
 	"dependencies": {
 		"datagrok-api": "../../js-api"
@@ -11,7 +11,6 @@
 		"css/pviz-core.css",
 		"css/additionalStyles.css",
 		"src/pviz-bundle.min.js",
-		"src/msa.min.gz.js",
 		"common/ngl_viewer/ngl.js"
 	],
 	"scripts": {
