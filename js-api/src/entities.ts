@@ -668,6 +668,9 @@ export interface PropertyOptions {
 
   /** Default value (used for deserialization, cloning, etc) */
   defaultValue?: any;
+
+  /** Custom editor (such as slider or text area) */
+  editor?: string;
 }
 
 
