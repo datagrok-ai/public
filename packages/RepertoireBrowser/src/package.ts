@@ -1,4 +1,3 @@
-/* Do not change these import lines. Datagrok will import API library in exactly the same manner */
 import * as grok from 'datagrok-api/grok';
 import * as DG from 'datagrok-api/dg';
 import { LaunchBrowser } from './main.js';
@@ -38,7 +37,6 @@ export async function RepertoireBrowserApp() {
   // } else {
   //   view = grok.shell.getTableView(tnames[0]);
   // }
-
 
   grok.shell.windows.showToolbox = false;
   let vid = getPathSegments(window.location);
