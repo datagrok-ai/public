@@ -37,7 +37,9 @@ function getIdxRandomSubarray(N, n) {
 let caseCntr = 0;
 
 async function testCase(title, f) {
-  await DG.timeAsync(++caseCntr + '. ' + title, f);
+  let msg = await DG.timeAsync(++caseCntr + '. ' + title, f);
+  if (typeof msg === 'string')
+  	console.log(msg);
 }
 
 (async () => {
@@ -101,10 +103,10 @@ async function testCase(title, f) {
 
   await testCase(`Substructure search, building a library of ${col.length} molecules`, async () =>
     await grok.chem.searchSubstructure(col));
-  await testCase(`Substructure search, searching benzene in ${nSearch} molecules`, async () =>
-    await grok.chem.searchSubstructure(col, searchFor[0]));
-  await testCase(`Substructure search, searching aspirin in ${nSearch} molecules`, async () =>
-    await grok.chem.searchSubstructure(col, searchFor[1]));
+  await testCase(`Substructure search, searching benzene in ${nSearch} molecules`, async () => {
+    let s = await grok.chem.searchSubstructure(col, searchFor[0]); return `Found ${s.trueCount} molecules for ${searchFor[0]}`; });
+  await testCase(`Substructure search, searching aspirin in ${nSearch} molecules`, async () => {
+    let s = await grok.chem.searchSubstructure(col, searchFor[1]); return `Found ${s.trueCount} molecules for ${searchFor[1]}` });
 
   await testCase(`Similarity scoring, building a library of ${col.length} molecules`, async () =>
     await grok.chem.getSimilarities(col));
