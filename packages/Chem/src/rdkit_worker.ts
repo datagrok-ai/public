@@ -1,5 +1,6 @@
 import {createRDKit} from './RDKit_minimal_2021.03_17.js';
-import {RdKitFingerprintSearcher} from './rdkit_fingerprint_searcher';
+import {RdKitSubstructLibrary as SearcherClass} from './rdkit_substruct_library';
+// import {RdKitFingerprintSearcher as SearcherClass} from './rdkit_fingerprint_searcher';
 
 const ctx: Worker = self as any;
 
@@ -12,7 +13,7 @@ ctx.addEventListener("message", async (e: any) => {
     const webRoot = args[0];
     handler._rdKitModule = await createRDKit(webRoot);
     console.log("RDKit (worker) initialized");
-    handler._substructLibrary = new RdKitFingerprintSearcher(handler._rdKitModule);
+    handler._substructLibrary = new SearcherClass(handler._rdKitModule);
     port.postMessage({op: op});
   } else if (op === 'substructLibrary::init') {
     const result = handler._substructLibrary.init(args[0]);
