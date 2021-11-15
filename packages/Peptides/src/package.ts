@@ -16,7 +16,8 @@ import {ChemPalette} from './utils/chem-palette';
 // import { tTest, uTest } from './utils/misc';
 
 import {DimensionalityReducer} from './peptide_space/reduce';
-import * as fl from 'fastest-levenshtein';
+import {Measurer} from './peptide_space/measure';
+import {transpose} from './peptide_space/operations';
 
 export const _package = new DG.Package();
 let tableGrid: DG.Grid;
@@ -287,38 +288,82 @@ export function logov() {
 //name: peptideSimilaritySpace
 //input: dataframe table
 //input: column alignedSequencesColumn {semType: alignedSequence}
-//input: string method {choices: ['UMAP', 'SPE', 'PSPE']}
+//input: string method {choices: ['TSNE', 'SPE', 'PSPE']} = 'TSNE'
+//input: string measure {choices: ['Levenshtein', 'Jaro-Winkler']} = 'Levenshtein'
 //input: int cyclesCount = 100
 //output: graphics
 export function peptideSimilaritySpace(
   table: DG.DataFrame,
   alignedSequencesColumn: DG.Column,
   method: string,
+  measure: string,
   cyclesCount: number) {
-//  const N = table.rowCount;
   const axesNames = ['X', 'Y'];
 
-  function transpose(matrix: number[][]): number[][] {
-    return matrix[0].map((col, i) => matrix.map((row) => row[i]));
-  }
-
-  const reducer = new DimensionalityReducer(alignedSequencesColumn.toList(), method, fl.distance);
+  const reducer = new DimensionalityReducer(
+    alignedSequencesColumn.toList(),
+    method,
+    new Measurer(measure).getMeasure(),
+    {cycles: cyclesCount},
+  );
   const embedding = reducer.transform();
-
-  //const spe = new SequenceSPE(N-1, cyclesCount, 0, 2.0, 0.01);
-  //const embedding = spe.embed(alignedSequencesColumn.toList());
 
   const embcols = transpose(embedding);
   const columns = Array.from(embcols, (v, k) => (DG.Column.fromList('double', axesNames[k], v)));
   const edf = DG.DataFrame.fromColumns(columns);
 
   for (const axis of axesNames) {
-    table.columns.addNewFloat(axis).init((i: number) => edf.getCol(axis).getRawData()[i]);
+    const col = table.col(axis);
+    if (col == null) {
+      console.log('Created axis '+axis+'.');
+      table.columns.insert(edf.getCol(axis));
+      //.addNewFloat(axis).init((i: number) => edf.getCol(axis).getRawData()[i]);
+    } else {
+      console.log('Axis '+axis+' is already exists.');
+      table.columns.replace(col, edf.getCol(axis));
+    }
   }
-  const view = grok.shell.addTableView(table);
-  view.name = 'SimilaritySpace';
+
+  const viewName = 'SimilaritySpace';
+  let view = null;
+
+  for (const v of grok.shell.tableViews) {
+    console.log(v.name);
+    console.log(v.table?.name);
+    if (v.name == viewName) {
+      view = v;
+      console.log('Found '+viewName);
+      break;
+    }
+  }
+
+  if (view == null) {
+    console.log(view);
+    view = grok.shell.addTableView(table);
+    console.log(view);
+    view.name = viewName;
+    console.log(view);
+  }
+
   // eslint-disable-next-line no-unused-vars
   const plot = view.scatterPlot({x: 'X', y: 'Y'});//, size: 'age', color: 'race'
 
-  //grok.shell.newView('SimilaritySpace').append(ui.divV([scatterPlot.root]));
+  //grok.shell.newView('SimilaritySpace').append(ui.divV([plot.root]));
 }
+
+/*
+//name: testPeptideSimilaritySpace
+export async function testPeptideSimilaritySpace() {
+  const v1 = 'ABCDEF';
+  const v2 = 'BCDEFGH';
+  const d = new Measurer('Jaro-Winkler').getMeasure()(v1, v2);
+  console.log('testPeptideSimilaritySpace:');
+  console.log(v1);
+  console.log(v2);
+  console.log(d);
+  return;
+  const df = await grok.data.files.openTable('Demo:TestJobs:Files:DemoFiles/bio/peptides.csv');
+  grok.shell.addTableView(df);
+  peptideSimilaritySpace(df, df.getCol('AlignedSequence'), 'TSNE', 'Levenshtein', 100);
+}
+*/
