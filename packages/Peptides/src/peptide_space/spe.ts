@@ -1,25 +1,7 @@
-export type Coordinates = Array<Array<number>>;
-export type Vectors = Array<any>;
+//import nanomemoize from 'nano-memoize';
 
-function substractVectors(v1: number[], v2: number[]): number[] {
-  return v1.map((v, i) => v-v2[i]);
-}
-
-function addVectors(v1: number[], v2: number[]): number[] {
-  return v1.map((v, i) => v+v2[i]);
-}
-
-function multiplyVector(vec: number[], n: number): number[] {
-  return vec.map((v, i) => v*n);
-}
-
-const calculateEuclideanDistance = (p: number[], q: number[]) => {
-  if (p.length != q.length) throw new Error('Arrays have different dimensions.');
-  const subtracted = substractVectors(p, q);
-  const powered = subtracted.map((e) => Math.pow(e, 2));
-  const sum = powered.reduce((total, current) => total + current, 0);
-  return Math.sqrt(sum);
-};
+import {Coordinates, Vectors} from './declarations';
+import {substractVectors, addVectors, multiplyVector, calculateEuclideanDistance} from './operations';
 
 export class SPEBase {
   protected static dimension = 2;
@@ -33,26 +15,23 @@ export class SPEBase {
   protected epsilon: number;
   protected distanceFunction: Function;
 
-  constructor(options: {[name: string]: any} = {
-    steps: 1000,
-    cycles: 1000,
-    cutoff: 0,
-    lambda: 2.0,
-    dlambda: 0.01,
-    epsilon: 1e-10,
-    distance: Function,
-  }) {
-    this.steps = options.steps;
-    this.cycles = options.cycles;
+  constructor(options?: {[name: string]: any}) {
+    this.steps = options?.steps ?? 0;
+    this.cycles = options?.cycles ?? 1e6;
     // Select a cutoff distance {cutoff} and ...
-    this.cutoff = options.cutoff;
+    this.cutoff = options?.cutoff ?? 0;
     // ... an initial learning rate {lambda} > 0
-    this.lambda = options.lambda;
-    this.dlambda = options.dlambda;
-    this.lambda2 = options.lambda/2.;
-    this.dlambda2 = options.dlambda/2.;
-    this.epsilon = options.epsilon;
-    this.distanceFunction = options.distance;
+    this.lambda = options?.lambda ?? 2.0;
+    this.dlambda = options?.dlambda ?? 0.01;
+    this.lambda2 = this.lambda/2.;
+    this.dlambda2 = this.dlambda/2.;
+    this.epsilon = options?.epsilon ?? 1e-10;
+    // eslint-disable-next-line brace-style
+    this.distanceFunction = options?.distance ?? calculateEuclideanDistance;//nanomemoize()
+  }
+
+  protected init() {
+
   }
 
   /**
@@ -81,6 +60,10 @@ export class SPEBase {
 
     const _randomInt = (range: number) => (Math.floor(Math.random() * range));
     let lambda2 = this.lambda2;
+
+    if (this.steps == 0) {
+      this.steps = vectors.length-1;
+    }
 
     for (let cycle = 0; cycle < this.cycles; ++cycle) {
       for (let step = 0; step < this.steps; ++step) {
