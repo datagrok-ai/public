@@ -2,7 +2,7 @@
   "name": "@datagrok/chem",
   "friendlyName": "Chem",
   "fullName": "Chem",
-  "version": "0.24.1",
+  "version": "0.25.0",
   "description": "Cheminformatics support: \n\n* RDKit-based rendering \n* Molecule sketching \n*",
   "properties": [
     {
@@ -20,30 +20,38 @@
     "common/ngl_viewer/ngl.js"
   ],
   "dependencies": {
-    "datagrok-api": "../../js-api",
     "cash-dom": "latest",
+    "datagrok-api": "../../js-api",
+    "datagrok-tools": "latest",
     "dayjs": "latest",
+    "file-loader": "latest",
+    "offscreen-canvas": "latest",
+    "openchemlib": "6.0.1",
+    "rxjs": "latest",
     "ts-loader": "latest",
     "typescript": "latest",
-    "rxjs": "latest",
-    "datagrok-tools": "latest",
-    "file-loader": "latest",
-    "worker-loader": "latest",
-    "offscreen-canvas": "latest",
-    "openchemlib": "6.0.1"
+    "utils": "../../libraries/utils",
+    "worker-loader": "latest"
   },
   "devDependencies": {
+    "@types/jest": "^27.0.2",
+    "@types/js-yaml": "^4.0.4",
     "@types/offscreencanvas": "latest",
     "@typescript-eslint/eslint-plugin": "^5.3.0",
     "@typescript-eslint/parser": "^5.3.0",
+    "cash-dom": "latest",
+    "datagrok-tools": "../../tools",
     "eslint": "^8.1.0",
     "eslint-config-google": "^0.14.0",
     "file-loader": "latest",
+    "jest": "^27.3.1",
     "openchemlib": "6.0.1",
+    "puppeteer": "latest",
+    "rxjs": "latest",
+    "ts-jest": "^27.0.7",
+    "utils": "../../libraries/utils",
     "webpack": "latest",
-    "webpack-cli": "latest",
-    "cash-dom": "latest",
-    "rxjs": "latest"
+    "webpack-cli": "latest"
   },
   "browser": {
     "fs": false,
@@ -54,6 +62,7 @@
   "scripts": {
     "build": "webpack",
     "lint": "eslint ./src/*.ts",
-    "lint-fix": "eslint ./src/*.ts --fix"
+    "lint-fix": "eslint ./src/*.ts --fix",
+    "test": "set HOST=dev && jest"
   }
 }
