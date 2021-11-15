@@ -316,7 +316,7 @@ export function info(children: HTMLElement[] | HTMLElement | string, header: str
  * @param {object[]} items
  * @param {string | ElementOptions} options
  * @returns {HTMLDivElement} */
-export function divV(items: HTMLElement[], options: string | ElementOptions | null = null): HTMLDivElement {
+export function divV(items: any[], options: string | ElementOptions | null = null): HTMLDivElement {
   return <HTMLDivElement>_options(api.grok_UI_DivV(items == null ? null : items.map(x => render(x)), 'ui-div'), options);
 }
 
