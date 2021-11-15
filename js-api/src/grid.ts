@@ -1,4 +1,4 @@
-import {Cell, Column, Row} from "./dataframe";
+import {Cell, Column, DataFrame, Row} from "./dataframe";
 import {Viewer} from "./viewer";
 import {toDart, toJs} from "./wrappers";
 import {__obs, _sub, EventData, StreamSubscription} from "./events";
@@ -6,6 +6,7 @@ import {_identityInt32, _toIterable} from "./utils";
 import { Observable } from "rxjs";
 import { RangeSlider } from "./widgets";
 import {SemType} from "./const";
+import {Property} from "./entities";
 
 
 let api = <any>window;
@@ -344,8 +345,23 @@ export class GridColumnList {
 
 /** High-performance, flexible spreadsheet control */
 export class Grid extends Viewer {
+
   constructor(d: any) {
     super(d);
+  }
+
+  /** Creates a new grid. */
+  static create(table: { d: any; }): Grid {
+    return new Grid(api.grok_Grid_Create(table.d));
+  }
+
+
+  /** Creates a new grid from a list of items (rows) and their properties (columns) */
+  static fromProperties(items: any[], props: Property[]): Grid {
+    const t = DataFrame.create(items.length);
+    for (let p of props)
+      t.columns.addNewVirtual(p.name, (i: number) => p.get(items[i]), p.propertyType);
+    return Grid.create(t);
   }
 
   /** Grid columns.
@@ -445,10 +461,6 @@ export class Grid extends Viewer {
    */
   scrollToPixels(x: number, y: number): void {
     api.grok_Grid_ScrollToPixels(this.d, x, y);
-  }
-
-  static create(table: { d: any; }): Grid {
-    return new Grid(api.grok_Grid_Create(table.d));
   }
 
   /** Causes the grid to repaint.
