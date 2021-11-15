@@ -7,6 +7,7 @@ export async function selectOutliersManually(inputData: DG.DataFrame) {
   const IS_OUTLIER_COL_LABEL = 'isOutlier';
   const OUTLIER_RATIONALE_COL_LABEL = 'Rationale';
   const OUTLIER_COUNT_COL_LABEL = 'Count';
+  const IS_GROUP_CONFIRMED_LABEL = 'isConfirmed';
 
   if (!inputData.columns.byName(IS_OUTLIER_COL_LABEL)) {
     inputData.columns
@@ -33,15 +34,49 @@ export async function selectOutliersManually(inputData: DG.DataFrame) {
     return DG.DataFrame.fromColumns([
       DG.Column.fromStrings(OUTLIER_RATIONALE_COL_LABEL, []),
       DG.Column.fromInt32Array(OUTLIER_COUNT_COL_LABEL, new Int32Array([])),
-      DG.Column.fromStrings('', []),
+      DG.Column.fromStrings('Actions', []),
+      DG.Column.fromBitSet(IS_GROUP_CONFIRMED_LABEL, DG.BitSet.create(0, () => false)),
     ]);
   };
 
   const groupsListGrid = DG.Viewer.grid(clearTable());
   groupsListGrid.root.style.width = '100%';
+  groupsListGrid.columns.setVisible([OUTLIER_RATIONALE_COL_LABEL, OUTLIER_COUNT_COL_LABEL, 'Actions']);
 
   groupsListGrid.onCellPrepare((gc) => {
-    const btn = (rationale: string) => ui.div(
+    if (!gc.isTableCell) {
+      return;
+    }
+
+    const confirmBtn = () => ui.div(
+      ui.iconFA('check', () => {
+        if (!groupsListGrid.dataFrame) return;
+
+        const newRationale =
+          groupsListGrid.dataFrame?.cell(groupsListGrid.dataFrame.rowCount-1, OUTLIER_RATIONALE_COL_LABEL).value;
+
+        inputData.selection.getSelectedIndexes().forEach((selectedIndex: number) => {
+          inputData.set(IS_OUTLIER_COL_LABEL, selectedIndex, true);
+          inputData.set(
+            OUTLIER_RATIONALE_COL_LABEL,
+            selectedIndex,
+            newRationale,
+          );
+        });
+        inputData.selection.setAll(false);
+      }, 'Confirm the outliers'), {style: {'text-align': 'center', 'margin': '6px'}},
+    );
+
+    const cancelBtn = () => ui.div(
+      ui.iconFA('times', () => {
+        if (!groupsListGrid.dataFrame) return;
+
+        groupsListGrid.dataFrame.rows.removeAt(groupsListGrid.dataFrame.rowCount-1);
+        inputData.selection.setAll(false);
+      }, 'Cancel the outliers'), {style: {'text-align': 'center', 'margin': '6px'}},
+    );
+
+    const deleteBtn = (rationale: string) => ui.div(
       ui.icons.delete(() => {
         for (let i = 0; i < inputData.rowCount; i++) {
           if (inputData.columns.byName(OUTLIER_RATIONALE_COL_LABEL).get(i) === rationale) {
@@ -52,18 +87,22 @@ export async function selectOutliersManually(inputData: DG.DataFrame) {
       }, 'Remove the outliers group'), {style: {'text-align': 'center', 'margin': '6px'}},
     );
 
-    if (!gc.isTableCell) {
-      return;
-    }
-
-    if (gc.gridColumn.name === '') {
+    if (gc.gridColumn.name === 'Actions') {
       gc.gridColumn.cellType = 'html';
-      gc.style.element = btn(gc.grid.dataFrame?.get(OUTLIER_RATIONALE_COL_LABEL, gc.gridRow));
+      gc.style.element =
+        ui.divH([
+          ...!gc.grid.dataFrame?.get(IS_GROUP_CONFIRMED_LABEL, gc.gridRow) ?
+            [confirmBtn(), cancelBtn()] :
+            [deleteBtn(gc.grid.dataFrame?.get(OUTLIER_RATIONALE_COL_LABEL, gc.gridRow))],
+        ]);
     }
   });
 
   groupsListGrid.onCellValueEdited.subscribe((editedCell) => {
-    if (!groupsListGrid.dataFrame) return;
+    if (!groupsListGrid.dataFrame || editedCell.gridColumn.name !== OUTLIER_RATIONALE_COL_LABEL) return;
+
+    if (!(groupsListGrid.dataFrame.columns as DG.ColumnList)
+      .byName(IS_GROUP_CONFIRMED_LABEL).get(editedCell.gridRow)) return;
 
     const uniqueValues= new Set<string>();
     for (let i = 0; i < groupsListGrid.dataFrame?.rowCount; i++) {
@@ -91,12 +130,31 @@ export async function selectOutliersManually(inputData: DG.DataFrame) {
       }
     }
     groupsListGrid.dataFrame = clearTable();
+    groupsListGrid.columns.setVisible([OUTLIER_RATIONALE_COL_LABEL, OUTLIER_COUNT_COL_LABEL, 'Actions']);
+
     Object.keys(uniqueValues).map((key: string) => {
-      groupsListGrid.dataFrame?.rows.addNew([key, uniqueValues[key], '']);
+      groupsListGrid.dataFrame?.rows.addNew([key, uniqueValues[key], '', true]);
     });
   };
 
   inputData.onDataChanged.subscribe(updateGroupsTable);
+  inputData.onSelectionChanged.subscribe(() => {
+    if (!groupsListGrid.dataFrame || !inputData.selection.trueCount) return;
+
+    const isConfirmedColumn = (groupsListGrid.dataFrame.columns as DG.ColumnList)
+      .byName(IS_GROUP_CONFIRMED_LABEL).toList();
+
+    if (isConfirmedColumn.some((value) => value === false)) {
+      groupsListGrid.dataFrame.set(
+        OUTLIER_COUNT_COL_LABEL,
+        groupsListGrid.dataFrame.rowCount-1,
+        inputData.selection.trueCount,
+      );
+    } else {
+      const newRow = groupsListGrid.dataFrame.rows.addNew(['Manual', inputData.selection.trueCount, '', false]);
+      groupsListGrid.dataFrame.currentCell = groupsListGrid.dataFrame.cell(newRow.idx, OUTLIER_RATIONALE_COL_LABEL);
+    }
+  });
 
   let shouldCancel = true;
 
@@ -111,31 +169,8 @@ export async function selectOutliersManually(inputData: DG.DataFrame) {
     }
   };
 
-  const addOutlierGroupBtn = ui.button(
-    'MARK',
-    () => {
-      if (!groupsListGrid.dataFrame) return;
-
-      inputData.selection.getSelectedIndexes().forEach((selectedIndex: number) => {
-        inputData.set(IS_OUTLIER_COL_LABEL, selectedIndex, true);
-        inputData.set(OUTLIER_RATIONALE_COL_LABEL, selectedIndex, 'Manual');
-      });
-      inputData.selection.setAll(false);
-
-      let rowNumber = 0;
-      for (let i=0; i< (groupsListGrid.dataFrame.rowCount); i++) {
-        if ((groupsListGrid.dataFrame?.columns as DG.ColumnList).byName(OUTLIER_RATIONALE_COL_LABEL).get(i) === 'Manual') {
-          rowNumber = i;
-        }
-      }
-
-      groupsListGrid.dataFrame.currentCell = groupsListGrid.dataFrame.cell(rowNumber, OUTLIER_RATIONALE_COL_LABEL);
-    },
-    'Mark the selected points as outliers',
-  );
-
   const removeOutlierGroupBtn = ui.button(
-    'UNMARK',
+    'RESET SELECTED',
     () => {
       inputData.selection.getSelectedIndexes().forEach((selectedIndex: number) => {
         inputData.set(IS_OUTLIER_COL_LABEL, selectedIndex, false);
@@ -147,11 +182,11 @@ export async function selectOutliersManually(inputData: DG.DataFrame) {
   );
 
   const autoOutlierGroupBtn = ui.button(
-    'STDDEV RULE...',
+    'AUTO DETECT...',
     () => {
       const intInput = ui.intInput('N', 3);
       const columnInput = ui.columnInput('Column', inputData, null);
-      ui.dialog('Edit standard deviation rule')
+      ui.dialog('Detect outliers automatically')
         .add(columnInput.root)
         .add(intInput.root)
         .onOK(()=>{
@@ -175,16 +210,13 @@ export async function selectOutliersManually(inputData: DG.DataFrame) {
 
   inputData.onSelectionChanged.subscribe(() => {
     if (inputData.selection.trueCount === 0) {
-      addOutlierGroupBtn.classList.add('disabled');
       removeOutlierGroupBtn.classList.add('disabled');
     } else {
-      addOutlierGroupBtn.classList.remove('disabled');
       removeOutlierGroupBtn.classList.remove('disabled');
     }
   });
 
   updateGroupsTable();
-  addOutlierGroupBtn.classList.add('disabled');
   removeOutlierGroupBtn.classList.add('disabled');
 
   const result = new Promise<{augmentedInput: DG.DataFrame, editedInput: DG.DataFrame}>((resolve, reject) => {
@@ -202,7 +234,7 @@ export async function selectOutliersManually(inputData: DG.DataFrame) {
           ui.block25([
             ui.divV([
               ui.divH([
-                addOutlierGroupBtn, removeOutlierGroupBtn, autoOutlierGroupBtn,
+                removeOutlierGroupBtn, autoOutlierGroupBtn,
               ], {style: {'text-align': 'center'}}),
               groupsListGrid.root,
             ], {style: {height: '75%'}}),
