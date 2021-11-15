@@ -146,13 +146,12 @@ function isValid(sequence: string) {
 
   let outputIndices = Array(possibleRepresentations.length).fill(0);
 
-  const firstUniqueCharacters = ['r', 'd', 'f', 'm'],
-    secondCharactersInNormalizedCodes = ["A", "U", "T", "C", "G"];
+  const firstUniqueCharacters = ['r', 'd'], nucleotides = ["A", "U", "T", "C", "G"];
 
   possibleRepresentations.forEach((representation, representationIndex) => {
     while (outputIndices[representationIndex] < sequence.length) {
 
-      let matchedCode = Object.keys(map[possibleRepresentations[representationIndex]])
+      let matchedCode = Object.keys(map[representation])
         .find((s) => s == sequence.slice(outputIndices[representationIndex], outputIndices[representationIndex] + s.length));
 
       if (matchedCode == null)
@@ -160,14 +159,14 @@ function isValid(sequence: string) {
 
       if (  // for mistake pattern 'rAA'
         outputIndices[representationIndex] > 1 &&
-        secondCharactersInNormalizedCodes.includes(sequence[outputIndices[representationIndex]]) &&
+        nucleotides.includes(sequence[outputIndices[representationIndex]]) &&
         firstUniqueCharacters.includes(sequence[outputIndices[representationIndex] - 2])
       )
         break;
 
       if (  // for mistake pattern 'ArA'
         firstUniqueCharacters.includes(sequence[outputIndices[representationIndex] + 1]) &&
-        secondCharactersInNormalizedCodes.includes(sequence[outputIndices[representationIndex]])
+        nucleotides.includes(sequence[outputIndices[representationIndex]])
       ) {
         outputIndices[representationIndex]++;
         break;
