@@ -361,5 +361,6 @@ export function OligoBatchCalculatorApp() {
     .css('resize','none')
     .css('min-height','70px')
     .css('width','100%')
-    .css('font-family','monospace');
+    .css('font-family','monospace')
+    .attr("spellcheck", "false");
 }
