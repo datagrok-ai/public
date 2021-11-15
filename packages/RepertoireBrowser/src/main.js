@@ -12,7 +12,7 @@ import json from "./examples/example.json";
 import jsonNumbering from "./examples/exampleNums.json";
 import jsonPDB from "./examples/examplePDB.json";
 
-import {_package} from "./package";
+import {_package} from "./package.ts";
 
 export class LaunchBrowser {
 
@@ -42,9 +42,27 @@ export class LaunchBrowser {
 
         ////////////////////////////////////////////////////
         let ids = (await grok.data.loadTable(_package.webRoot + 'src/examples/mlb.csv'));
+        for (let column of ids.columns)
+            column.name = column.name.replaceAll("_", " ");
         // let vidsRaw = (await grok.functions.call('MolecularLiabilityBrowser:getVids'));
         let vids = ["VR000000008", "VR000000043","VR000000044"];
         ////////////////////////////////////////////////////
+
+        //let path = _package.webRoot + 'files/' + 'Tree_demo.csv';
+        //let treeData = (await grok.data.loadTable(path));
+        //let treeBrowser = new TreeBrowser();
+
+        //bands on plots for properties
+        for(let i = 0;i < conts.length; i++){
+            ids.col(conts[i]).setTag('.default-filter', '{ "min": ' + yellowLeft[i] + ', "max": ' + yellowRight[i] + ' }');
+            ids.col(conts[i]).setTag('.charts', '[' +
+            '{"type": "band", "title":"BandYellowLeft", "rule" : "' + redLeft[i] + '-' + yellowLeft[i] + '", "color": "#FFD700", "opacity": 0.15},' +
+            '{"type": "band", "title":"BandYellowRight", "rule" : "' + yellowRight[i] + '-' + redRight[i] + '", "color": "#FFD700", "opacity": 0.15}, ' +
+            '{"type": "band", "title":"BandRedLeft", "rule" : "< ' + redLeft[i] + '", "color": "#DC143C", "opacity": 0.15}, ' +
+            '{"type": "band", "title":"BandRedRight", "rule" : "> ' + redRight[i] + '", "color": "#DC143C", "opacity": 0.15},' +
+            '{ "type": "spline", "title": "TAP metrics", "y" : [' + plots_y[i].toString() + '], "color": "#7570B3", "width": 1, "x" : [' + plots_x[i].toString() + '], "normalize-y": true, "visible": true}' +
+            ']');
+        }
 
         //table visual polishing
         for (let column of ids.columns)
@@ -336,86 +354,5 @@ export class LaunchBrowser {
         });
     
         pi.close();
-
-
-
-    //  ///// MAIN BODY ////
-    //  let inputs = new RepertoireBrowserPanel();
-    //  await inputs.init(view, jsonStr);
-
-    //  let ngl = new NglMethods();
-    //  await ngl.init(view, inputs, jsonStr);
-
-    //  let pViz = new PvizMethods();
-    //  await pViz.init(view, inputs, ngl, jsonStr);
-
-    //  // let msa = new MsaMethods();
-    //  // msa.init(view, inputs);
-
-    //  inputs.repChoice.onChanged(async () => {
-
-    //      //ngl.stage.removeAllComponents();
-    //      //let schemeObj = ngl.CDR3(inputs.cdr_scheme, inputs.paratopes, inputs.colorScheme);
-    //      //await ngl.loadPdb(ngl.path, inputs.repChoice, schemeObj);
-
-    //      await pViz.loadSequence(inputs, 'H', jsonStr, true)
-    //      await pViz.loadSequence(inputs, 'L', jsonStr, true)
-    //  });
-
-    //  inputs.cdr_scheme.onChanged(async () => {
-
-    //      // ngl.stage.removeAllComponents();
-    //      // let schemeObj = ngl.CDR3(inputs.cdr_scheme, inputs.paratopes, inputs.colorScheme);
-    //      // await ngl.loadPdb(ngl.path, inputs.repChoice, schemeObj);
-
-    //      pViz.pVizParams.cdrMap = pViz.cdrMapping(inputs.cdr_scheme.value, jsonStr)
-    //      await pViz.loadSequence(inputs, 'H', jsonStr)
-    //      await pViz.loadSequence(inputs, 'L', jsonStr)
-
-    //      MiscMethods.setDockSize(view, inputs.ngl_node, inputs.sequence_tabs, inputs.paratopes);
-    //  });
-
-    //  inputs.paratopes.onChanged(async () => {
-
-    //      // ngl.stage.removeAllComponents();
-    //      // let schemeObj = ngl.CDR3(inputs.cdr_scheme, inputs.paratopes, inputs.colorScheme);
-    //      // await ngl.loadPdb(ngl.path, inputs.repChoice, schemeObj);
-
-    //      await pViz.loadSequence(inputs, 'H', jsonStr)
-    //      await pViz.loadSequence(inputs, 'L', jsonStr)
-
-    //      MiscMethods.setDockSize(view, inputs.ngl_node, inputs.sequence_tabs, inputs.paratopes);
-    //  });
-
-    //  inputs.ptm_choices.onChanged(async () => {
-
-    //      pViz.pVizParams.ptmMap = pViz.ptmMapping(inputs.ptm_choices.value, inputs.ptm_prob.value, jsonStr )
-    //      await pViz.loadSequence(inputs, 'H', jsonStr)
-    //      await pViz.loadSequence(inputs, 'L', jsonStr)
-
-    //      MiscMethods.setDockSize(view, inputs.ngl_node, inputs.sequence_tabs, inputs.paratopes);
-    //  });
-
-    //  inputs.ptm_motif_choices.onChanged(async () => {
-
-    //      pViz.pVizParams.ptmMotifsMap = pViz.ptmMotifsMapping(inputs.ptm_motif_choices.value, inputs.ptm_prob.value, jsonStr)
-    //      await pViz.loadSequence(inputs, 'H', jsonStr)
-    //      await pViz.loadSequence(inputs, 'L', jsonStr)
-
-    //      MiscMethods.setDockSize(view, inputs.ngl_node, inputs.sequence_tabs, inputs.paratopes);
-    //  });
-
-    //  inputs.ptm_prob.onChanged(async () => {
-
-    //      pViz.pVizParams.ptmMap = pViz.ptmMapping(inputs.ptm_choices.value, inputs.ptm_prob.value, jsonStr)
-    //      await pViz.loadSequence(inputs, 'H', jsonStr)
-    //      await pViz.loadSequence(inputs, 'L', jsonStr)
-
-    //      MiscMethods.setDockSize(view, inputs.ngl_node, inputs.sequence_tabs, inputs.paratopes);
-    //  });
-
-    //  //inputs.msaContentChoice.onChanged(() => { msa.drawAlignments(); });
-
-    //  //DG.debounce(view.table.onCurrentRowChanged, 200).subscribe(() => { msa.drawAlignments(); });
     }
 }

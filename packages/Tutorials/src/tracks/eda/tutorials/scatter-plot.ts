@@ -12,7 +12,7 @@ export class ScatterPlotTutorial extends Tutorial {
   get description() {
     return 'A graph in which the values of two variables are plotted along two axes';
   }
-  get steps() { return 10; }
+  get steps() { return 11; }
   
   helpUrl: string = 'https://datagrok.ai/help/visualize/viewers/scatter-plot';
 
