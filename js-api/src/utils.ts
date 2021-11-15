@@ -27,6 +27,15 @@ export class Utils {
 }
 
 
+/** Html-related utilities */
+export namespace HtmlUtils {
+
+  /** Renders the element to canvas */
+  export function renderToCanvas(element: HTMLElement, ratio: number = 1): Promise<HTMLCanvasElement> {
+    return api.grok_HtmlUtils_RenderToCanvas(element, ratio);
+  }
+}
+
 /**
  * Proxies a Dart Map, API-compliant to ES 2015+
  */

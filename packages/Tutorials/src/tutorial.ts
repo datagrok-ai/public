@@ -5,7 +5,7 @@ import $ from 'cash-dom';
 import { fromEvent, interval, Observable, Subject } from 'rxjs';
 import { filter, first, map } from 'rxjs/operators';
 import { _package } from './package';
-import { Track, TutorialRunner } from './track';
+import { Track } from './track';
 
 
 /** A base class for tutorials */
@@ -28,7 +28,7 @@ export abstract class Tutorial extends DG.Widget {
       style: { display: 'none' },
     });
   header: HTMLHeadingElement = ui.h1('');
-  headerDiv: HTMLDivElement = ui.divH([],'tutorials-root-header');
+  headerDiv: HTMLDivElement = ui.divH([] ,'tutorials-root-header');
   subheader: HTMLHeadingElement = ui.h3('');
   activity: HTMLDivElement = ui.div([], 'tutorials-root-description');
   status: boolean = false;
@@ -61,11 +61,7 @@ export abstract class Tutorial extends DG.Widget {
   protected abstract _run(): Promise<void>;
 
   async run(): Promise<void> {
-    this.progressDiv.append(this.progress);
-    this.progress.max = this.steps;
-
-    this.progressSteps = ui.divText(`Step: ${this.progress.value} of ${this.steps}`);
-    this.progressDiv.append(this.progressSteps);
+    this._addHeader();
 
     const tutorials = this.track?.tutorials;
     if (!tutorials) {
@@ -74,20 +70,6 @@ export abstract class Tutorial extends DG.Widget {
     }
 
     let id = tutorials.indexOf(this);
-    
-    
-    let closeTutorial = ui.button(ui.iconFA('times-circle'), () => {
-      this.clearRoot();
-      this.closed = true;
-      this.onClose.next();
-      this._closeAll();
-      $('.tutorial').show();
-      $('#tutorial-child-node').html('');
-    });
-
-    closeTutorial.style.minWidth = '30px';
-    this.headerDiv.append(this.header);
-    this.headerDiv.append(closeTutorial);
 
     if (this.demoTable) {
       this._t = await grok.data.getDemoTable(this.demoTable);
@@ -157,6 +139,27 @@ export abstract class Tutorial extends DG.Widget {
         })
       ]))
     }
+  }
+
+  _addHeader(): void {
+    this.progressDiv.append(this.progress);
+    this.progress.max = this.steps;
+
+    this.progressSteps = ui.divText(`Step: ${this.progress.value} of ${this.steps}`);
+    this.progressDiv.append(this.progressSteps);
+
+    let closeTutorial = ui.button(ui.iconFA('times-circle'), () => {
+      this.clearRoot();
+      this.closed = true;
+      this.onClose.next();
+      this._closeAll();
+      $('.tutorial').show();
+      $('#tutorial-child-node').html('');
+    });
+
+    closeTutorial.style.minWidth = '30px';
+    this.headerDiv.append(this.header);
+    this.headerDiv.append(closeTutorial);
   }
 
   title(text: string): void {
@@ -304,7 +307,8 @@ export abstract class Tutorial extends DG.Widget {
 
   protected getSidebarHints(paneName: string, commandName: string): HTMLElement[] {
     const pane = grok.shell.sidebar.getPane(paneName);
-    const command = $(pane.content).find(`div.d4-toggle-button[data-view=${commandName}]`)[0]!;
+    const command = $(pane.content).find(`div.d4-toggle-button[data-view=${commandName}]`)[0] ??
+      $(pane.content).find('div.d4-toggle-button').filter((idx, el) => el.textContent === commandName)[0]!;
     return [pane.header, command];
   }
 
@@ -337,7 +341,7 @@ export abstract class Tutorial extends DG.Widget {
 
   /** Prompts the user to put the specified value into a dialog input. */
   protected async dlgInputAction(dlg: DG.Dialog, instructions: string,
-    caption: string, value: string, description: string = ''): Promise<void> {
+    caption: string, value: string, description: string = '', historyHint: boolean = false): Promise<void> {
     const inp = dlg.inputs.filter((input: DG.InputBase) => input.caption == caption)[0];
     if (inp == null) return;
     await this.action(instructions,
@@ -347,7 +351,7 @@ export abstract class Tutorial extends DG.Widget {
           if (inp.stringValue === value) subscriber.next(inp.stringValue);
         });
       }),
-      inp.root,
+      historyHint ? $(dlg.root).find('i.fa-history.d4-command-bar-icon')[0]​ : inp.root,
       description
     );
   }

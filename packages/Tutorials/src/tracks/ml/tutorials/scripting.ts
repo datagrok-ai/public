@@ -4,6 +4,7 @@ import * as ui from 'datagrok-api/ui';
 import $ from 'cash-dom';
 import { filter } from 'rxjs/operators';
 import { Tutorial } from '../../../tutorial';
+import { interval } from 'rxjs';
 
 
 export class ScriptingTutorial extends Tutorial {
@@ -13,17 +14,17 @@ export class ScriptingTutorial extends Tutorial {
   get description() {
     return 'Scripting is an integration mechanism with languages for statistical computing';
   }
-  get steps() { return 1; }
+  get steps() { return 11; }
 
   helpUrl: string = 'https://datagrok.ai/help/develop/scripting';
 
   protected async _run() {
     this.header.textContent = this.name;
-    this.describe('Scripting is an integration mechanism with languages for statistical computing');
+    this.describe('Scripting is an integration mechanism with languages for statistical computing.');
 
     this.describe(ui.link('More about ' + this.name, this.helpUrl).outerHTML);
 
-    this.title('Create a script');
+    this.title('Run a script');
 
     const funcPaneHints = this.getSidebarHints('Functions', DG.View.SCRIPTS);
     const editorIntro = 'This is a script editor. Here, you write code and bind the parameters to the ' +
@@ -43,11 +44,12 @@ export class ScriptingTutorial extends Tutorial {
     await this.action('Open a sample table for the script', grok.events.onViewAdded.pipe(
       filter((v) => v.type === DG.VIEW_TYPE.TABLE_VIEW && (<DG.TableView>v).table?.name === sampleDfName)),
       $('div.d4-ribbon-item').has('i.grok-icon.fa-asterisk')[0],
+      'In front of you is a valid script. The commented out section on top defines script parameters. ' +
       'This simple script calculates the number of cells in a dataframe. The <i class="grok-icon fal fa-asterisk"></i> ' +
       'icon opens a demo table for you. It appears only for scripts annotated with a special <i>sample</i> parameter.');
 
-    const callEditorDlg = await this.openDialog('Run a script', sampleScriptName,
-      $('div.d4-ribbon-item').has('i.grok-icon.fa-play')[0],
+    const playBtn = $('div.d4-ribbon-item').has('i.grok-icon.fa-play')[0];
+    let callEditorDlg = await this.openDialog('Run the script', sampleScriptName, playBtn,
       'Before a script gets executed, all its input parameters should be set. If there are any, a dialog like this one ' +
       'will appear. Here we need provide only one input named "Table".');
 
@@ -59,5 +61,43 @@ export class ScriptingTutorial extends Tutorial {
       filter((c) => c.func.name.startsWith(sampleScriptName) && c.getOutputParamValue() === sampleScriptOutput)),
       $(callEditorDlg.root).find('button.ui-btn').filter((idx, btn) => btn.textContent === 'OK')[0]);
 
+    const scriptOutputInfo = 'If a script returns a scalar value, it gets printed to the console. ' +
+      'For dataframe outputs, the platform additionally opens a table view. In our case, the result ' +
+      'is a numeric value, so let\'s open the console to see it. Go to <b>Windows | Console</b> and ' +
+      'turn on the switch. You can use the <b>~</b> key to control the console visibility.';
+    grok.shell.windows.showConsole = false;
+
+    await this.action('Find the results in the console',
+      interval(1000).pipe(filter(() => grok.shell.windows.showConsole)),
+      this.getSidebarHints('Windows', 'Console'),
+      scriptOutputInfo);
+
+    // @ts-ignore
+    const editor = sv.root.lastChild.lastChild.CodeMirror;
+    const doc = editor.getDoc();
+    const scriptBodyIndex = doc.getValue().split('\n').findIndex((line: string) => !line.startsWith('#'));
+    doc.replaceRange('\n', { line: scriptBodyIndex - 1 });
+    const lastLineIndex = doc.lineCount() - 1;
+    const newOutputParam = '#output: dataframe clone';
+    const newOutputParamDef = 'clone = table';
+
+    const dfCloneTip = 'Scripts are not limited to one output parameter. Let\'s check this by appending ' +
+    `<b>${newOutputParam}</b> to the script annotation (line ${scriptBodyIndex + 1}). The cloning part is ` +
+    `quite straightforward: put the initial dataframe into a new variable (paste <b>${newOutputParamDef} ` +
+    `</b> to line ${lastLineIndex + 1}).`;
+
+    await this.action('Add the second output value to the script', interval(1000).pipe(
+      filter(() => doc.getLine(scriptBodyIndex).trim() === newOutputParam &&
+        doc.getLine(lastLineIndex).trim() === newOutputParamDef)),
+      null, dfCloneTip);
+
+    callEditorDlg = await this.openDialog('Run the script', sampleScriptName, playBtn);
+    const historyInfo = 'Find the previously entered parameter in the dialog\'s history.';
+    await this.dlgInputAction(callEditorDlg, `Set "Table" to ${sampleDfName}`, 'Table',
+      sampleDfName, historyInfo, true);
+    await this.action('Click "OK"', grok.functions.onAfterRunAction.pipe(
+      filter((c) => c.func.name.startsWith(sampleScriptName) && c.outputs.size() === 2 &&
+        c.outputs.get('clone') instanceof DG.DataFrame)),
+      $(callEditorDlg.root).find('button.ui-btn').filter((idx, btn) => btn.textContent === 'OK')[0]);
   }
 }

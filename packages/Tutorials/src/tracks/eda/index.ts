@@ -1,4 +1,5 @@
 import { Track } from '../../track';
+import { DashboardTutorial } from './tutorials/dashboard';
 import { FiltersTutorial } from './tutorials/filters';
 import { ScatterPlotTutorial } from './tutorials/scatter-plot';
 import { ViewersTutorial } from './tutorials/viewers-basics';
@@ -9,6 +10,7 @@ export const tutorials = [
   ScatterPlotTutorial,
   ViewersTutorial,
   FiltersTutorial,
+  DashboardTutorial,
   EmbeddedViewersTutorial,
 ];
 
