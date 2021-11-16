@@ -3,7 +3,6 @@ import * as ui from 'datagrok-api/ui';
 import * as DG from 'datagrok-api/dg';
 import ExcelJS from 'exceljs';
 import {saveAs} from 'file-saver';
-import {ColumnList} from 'datagrok-api/dg';
 
 export async function exportFuncCall(call: DG.FuncCall) {
   //todo: check status
@@ -42,7 +41,7 @@ export async function exportFuncCall(call: DG.FuncCall) {
       extension: 'png',
     });
     currentDfSheet.addImage(testImageId, {
-      tl: {col: (currentDf.columns as ColumnList).length + 1, row: 0},
+      tl: {col: (currentDf.columns as DG.ColumnList).length + 1, row: 0},
       ext: {width: canvas.width, height: canvas.height},
     });
   };
