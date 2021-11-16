@@ -118,7 +118,8 @@ export class SARViewerBase extends DG.JsViewer {
       //   this.dataFrame.selection.init(isChosen).and(this._initialBitset!, false);
       // }
       this.currentBitset = DG.BitSet.create(this.dataFrame.rowCount, isChosen).and(this._initialBitset!);
-      // (this.filterMode ? this.dataFrame.selection.setAll(false) : this.dataFrame.filter.copyFrom(this._initialBitset!)).fireChanged();
+      // (this.filterMode ? this.dataFrame.selection.setAll(false) :
+      // this.dataFrame.filter.copyFrom(this._initialBitset!)).fireChanged();
       this.sourceFilteringFunc();
 
 
