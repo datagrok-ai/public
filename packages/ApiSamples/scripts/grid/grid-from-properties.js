@@ -11,4 +11,4 @@ const items = [
   { age: 30, sex: 'F', control: false }
 ]
 
-DG.Grid.fromProperties(items, properties)
+DG.Grid.fromProperties(items, properties).root

@@ -21,15 +21,15 @@ const properties = [
     "editor": "slider",
     "min": 0,
     "max": 10,
-  },
-  {
-    "name": "department",
-    "type": "string",
-    "choices": ["IT", "Business"]
   }];
 
 let props = properties.map((p) => DG.Property.fromOptions(p))
 
-let object = {};
+let object = {
+  reactorType: 'Production',
+  structure: 'CC(=O)OC1=CC=CC=C1C(=O)O',
+  rating: 7,
+  department: 'IT'
+};
 
 ui.input.form(object, props)
