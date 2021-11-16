@@ -8,6 +8,7 @@ import {exportFuncCall} from './export-funccall';
 import {_functionParametersGrid} from './function-views/function-parameters-grid';
 import {ModelCatalogView} from './model-catalog-view';
 
+let initCompleted: boolean = false;
 export const _package = new DG.Package();
 
 //name: test
@@ -17,8 +18,20 @@ export function test() {
 
 //tags: init, autostart
 export function init() {
-  console.log('init');
+  if (initCompleted)
+    return;
   DG.ObjectHandler.register(new ModelHandler());
+  grok.events.onAccordionConstructed.subscribe((acc: DG.Accordion) => {
+    const ent = acc.context;
+    if (ent == null)
+      return;
+    if (ent.type != 'script')
+      return;
+    let restPane = acc.getPane('REST');
+    if (!restPane)
+      acc.addPane('REST', () => ui.wait(async () => (await renderRestPanel(ent)).root));
+  });
+  initCompleted = true;
 }
 
 //name: Model Catalog
@@ -77,4 +90,44 @@ export function hof() {
   let f: DG.Func = DG.Func.byName('Sin');
   let v: DG.View = functionParametersGrid(f);
   grok.shell.addView(v);
+}
+
+//name: renderRestPanel
+//input: func func
+//output: widget panel
+export async function renderRestPanel(func: DG.Func): Promise<DG.Widget> {
+  let params: object = {};
+  func.inputs.forEach((i) => (<any>params)[i.name] = null);
+let curl = `
+curl --location --request POST '${(<any>grok.settings).apiUrl}/v1/func/${func.nqName}/run' \\
+--header 'Authorization: ${getCookie('auth')}' \\
+--header 'Content-Type: application/json' \\
+--data-raw '${JSON.stringify(params)}'`
+let js = `
+var myHeaders = new Headers();
+myHeaders.append("Authorization", "${getCookie('auth')}");
+myHeaders.append("Content-Type", "application/json");
+
+var raw = JSON.stringify(${JSON.stringify(params)});
+
+var requestOptions = {
+  method: 'POST',
+  headers: myHeaders,
+  body: raw,
+  redirect: 'follow'
+};
+
+fetch("${(<any>grok.settings).apiUrl}/v1/func/${func.nqName}/run", requestOptions)
+  .then(response => response.text())
+  .then(result => console.log(result))
+  .catch(error => console.log('error', error));`
+  let tabs = ui.tabControl({'CURL': ui.div([ui.divText(curl)]), 'JS': ui.div([ui.divText(js)])})
+  return DG.Widget.fromRoot(tabs.root);
+}
+
+function getCookie(name: string): string | undefined{
+  let matches = document.cookie.match(new RegExp(
+    "(?:^|; )" + name.replace(/([\.$?*|{}\(\)\[\]\\\/\+^])/g, '\\$1') + "=([^;]*)"
+  ));
+  return matches ? decodeURIComponent(matches[1]) : undefined;
 }
