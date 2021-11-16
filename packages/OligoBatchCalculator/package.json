@@ -2,17 +2,17 @@
 	"name": "@datagrok/oligo-batch-calculator",
 	"beta": false,
 	"friendlyName": "OligoBatchCalculator",
-	"version": "0.0.1",
+	"version": "0.0.2",
 	"description": "",
 	"dependencies": {
-		"datagrok-api": "../../js-api",
+		"datagrok-api": "file:../../js-api",
 		"ts-loader": "latest",
 		"typescript": "latest"
 	},
 	"devDependencies": {
 		"cash-dom": "^8.1.0",
-		"webpack": "latest",
-		"webpack-cli": "latest"
+		"webpack": "^5.64.0",
+		"webpack-cli": "^4.9.1"
 	},
 	"scripts": {
 		"debug-oligobatchcalculator": "grok publish --rebuild",

@@ -648,6 +648,12 @@ export class Package extends Entity {
 
 export interface PropertyOptions {
 
+  /** Property name */
+  name?: string;
+
+  /** Property type */
+  type?: string;
+
   /** Property description */
   description?: string;
 
@@ -722,6 +728,10 @@ export class Property {
   get defaultValue(): any { return api.grok_Property_Get_DefaultValue(this.d); }
   set defaultValue(s: any) { api.grok_Property_Set_DefaultValue(this.d, s); }
 
+  /** Property editor */
+  get editor(): string { return api.grok_Property_Get(this.d, 'editor'); }
+  set editor(s: string) { api.grok_Property_Set(this.d, 'editor', s); }
+
   /** List of possible values of that property.
    *  PropertyGrid will use it to populate combo boxes.
    *  @returns {Array<string>} */
@@ -735,7 +745,8 @@ export class Property {
 
   /** Applies the specified options */
   options(opt?: PropertyOptions): Property {
-    api.grok_Property_Options(opt);
+    if (opt)
+      api.grok_Property_Options(this.d, opt);
     return this;
   }
 
@@ -774,7 +785,10 @@ export class Property {
 
   /** Creates property for the JavaScript objects with the corresponding property name */
   static js(name: string, type: TYPE, options?: PropertyOptions): Property {
-    return Property.create(name, type, (x: any) => x[name], (x: any, v: any) => x[name] = v, options?.defaultValue);
+    return Property.create(name, type,
+      (x: any) => x[name],
+      (x: any, v: any) => x[name] = v,
+      options?.defaultValue).options(options);
   }
 
   static jsInt(name: string, options?: PropertyOptions): Property { return Property.js(name, TYPE.INT, options); }
@@ -782,6 +796,8 @@ export class Property {
   static jsFloat(name: string, options?: PropertyOptions): Property { return Property.js(name, TYPE.FLOAT, options); }
   static jsString(name: string, options?: PropertyOptions): Property { return Property.js(name, TYPE.STRING, options); }
   static jsDateTime(name: string, options?: PropertyOptions): Property { return Property.js(name, TYPE.DATE_TIME, options); }
+
+  static fromOptions(options: PropertyOptions): Property { return Property.js(options.name!, options.type! as TYPE, options); }
 }
 
 

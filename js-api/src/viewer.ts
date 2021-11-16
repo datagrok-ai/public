@@ -49,6 +49,8 @@ export class TypedEventArgs<TData> {
 export class Viewer extends Widget {
   props: ObjectPropertyBag & any | undefined;
 
+  private _meta: ViewerMetaHelper | undefined;
+
   /** @constructs Viewer */
   constructor(d: any, root?: HTMLElement) {
     super(root ?? api.grok_Viewer_Root(d));
@@ -109,6 +111,12 @@ export class Viewer extends Widget {
    * @type {HTMLElement} */
   get root(): HTMLElement {
     return api.grok_Viewer_Root(this.d);
+  }
+
+  get meta(): ViewerMetaHelper {
+    if (this._meta == undefined)
+      this._meta = new ViewerMetaHelper(this);
+    return this._meta;
   }
 
   /** Returns viewer type (see VIEWER constants)
@@ -355,4 +363,67 @@ export class ScatterPlotViewer extends Viewer {
   get onViewportChanged(): rxjs.Observable<Rect> { return this.onEvent('d4-viewport-changed'); }
   get onAfterDrawScene(): rxjs.Observable<null> { return this.onEvent('d4-after-draw-scene'); }
   get onBeforeDrawScene(): rxjs.Observable<null> { return this.onEvent('d4-before-draw-scene'); }
+}
+
+interface ShapeOnViewer {
+  type?: string;
+  title?: string;
+  description?: string;
+  color?: string;
+  visible?: boolean;
+  opacity?: number;
+  zindex?: number;
+  min?: number;
+  max?: number;
+  equation: string;
+
+  // Specific to lines:
+  width?: number;
+  spline?: number;
+
+  // Specific to bands:
+  column?: string;
+  column2?: string;
+}
+
+export class ViewerMetaHelper {
+  private readonly viewer: Viewer;
+  private shapes: ShapeOnViewer[] = [];
+
+  constructor(viewer: Viewer) {
+    this.viewer = viewer;
+    this.shapes = this.getShapes();
+  }
+
+  getShapes(): ShapeOnViewer[] {
+    let json: string | null = this.viewer.props['shapes'];
+    if (json)
+      return JSON.parse(json);
+
+    return [];
+  }
+
+  setShapes(shapes: ShapeOnViewer[] | null = null): void {
+    if (!shapes)
+      return;
+
+    let json: string | null = _toJson(shapes);
+    if (json)
+      this.viewer.props['shapes'] = json;
+  }
+
+  addLine(shape: ShapeOnViewer): void {
+    shape.type = 'line';
+    this.addShape(shape);
+  }
+
+  addBand(shape: ShapeOnViewer): void {
+    shape.type = 'band';
+    this.addShape(shape);
+  }
+
+  addShape(shape: ShapeOnViewer): void {
+    this.shapes.push(shape);
+    this.setShapes(this.shapes);
+  }
 }
