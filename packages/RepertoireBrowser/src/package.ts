@@ -1,6 +1,6 @@
 import * as grok from 'datagrok-api/grok';
 import * as DG from 'datagrok-api/dg';
-import { MolecularLiabilityBrowser } from './main';
+import { MolecularLiabilityBrowser } from './molecular-liability-browser';
 //import { TreeBrowser } from './tree.js';
 
 export let _package = new DG.Package();
