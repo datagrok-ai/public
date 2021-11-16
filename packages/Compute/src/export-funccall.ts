@@ -22,9 +22,23 @@ export async function exportFuncCall(call: DG.FuncCall) {
   const dfOutputs = call.func.outputs.filter((output) => isDataFrame(output.propertyType));
   const scalarOutputs = call.func.outputs.filter((output) => isScalarType(output.propertyType));
 
-  for await (const dfInput of dfInputs) {
+  dfInputs.forEach((dfInput) => {
     const currentDfSheet = exportWorkbook.addWorksheet(`Input - ${dfInput.name}`);
     const currentDf = (call.inputs[dfInput.name] as DG.DataFrame);
+    currentDfSheet.addRow((currentDf.columns as DG.ColumnList).names());
+    for (let i = 0; i < currentDf.rowCount; i++) {
+      currentDfSheet.addRow([...currentDf.row(i).cells].map((cell: DG.Cell) => cell.value));
+    }
+  });
+
+  const inputScalarsSheet = exportWorkbook.addWorksheet('Input scalars');
+  scalarInputs.forEach((scalarInput) => {
+    inputScalarsSheet.addRow([scalarInput.name, call.inputs[scalarInput.name]]);
+  });
+
+  for await (const dfOutput of dfOutputs) {
+    const currentDfSheet = exportWorkbook.addWorksheet(`Output - ${dfOutput.name}`);
+    const currentDf = (call.outputs[dfOutput.name] as DG.DataFrame);
     currentDfSheet.addRow((currentDf.columns as DG.ColumnList).names());
     for (let i = 0; i < currentDf.rowCount; i++) {
       currentDfSheet.addRow([...currentDf.row(i).cells].map((cell: DG.Cell) => cell.value));
@@ -45,20 +59,6 @@ export async function exportFuncCall(call: DG.FuncCall) {
       ext: {width: canvas.width, height: canvas.height},
     });
   };
-
-  const inputScalarsSheet = exportWorkbook.addWorksheet('Input scalars');
-  scalarInputs.forEach((scalarInput) => {
-    inputScalarsSheet.addRow([scalarInput.name, call.inputs[scalarInput.name]]);
-  });
-
-  dfOutputs.forEach((dfOutput) => {
-    const currentDfSheet = exportWorkbook.addWorksheet(`Output - ${dfOutput.name}`);
-    const currentDf = (call.outputs[dfOutput.name] as DG.DataFrame);
-    currentDfSheet.addRow((currentDf.columns as DG.ColumnList).names());
-    for (let i = 0; i < currentDf.rowCount; i++) {
-      currentDfSheet.addRow([...currentDf.row(i).cells].map((cell: DG.Cell) => cell.value));
-    }
-  });
 
   const outputScalarsSheet = exportWorkbook.addWorksheet('Output scalars');
   scalarOutputs.forEach((scalarOutput) => {
