@@ -751,16 +751,16 @@ export class InputBase {
     return api.grok_InputBase_Get_Caption(this.d);
   }
 
-  get format(): string {
-    return api.grok_InputBase_Get_Format(this.d);
-  }
+  /** Value format. */
+  get format(): string { return api.grok_InputBase_Get_Format(this.d); }
+  set format(s: string) { api.grok_InputBase_Set_Format(this.d, s); }
 
   get captionLabel(): string {
     return api.grok_InputBase_Get_CaptionLabel(this.d);
   }
 
   /** Returns the actual input */
-  get input(): HTMLElement | string {
+  get input(): HTMLElement {
     return api.grok_InputBase_Get_Input(this.d);
   }
 

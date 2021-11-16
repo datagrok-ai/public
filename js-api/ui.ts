@@ -378,9 +378,16 @@ export function comboPopupItems(caption: string | HTMLElement, items: { [key: st
   return api.grok_UI_ComboPopup(caption, Object.keys(items), (key: string) => items[key](), null);
 }
 
-/** Creates a visual table based on [map]. */
+/** Creates an html table based on [map]. */
 export function tableFromMap(map: { [key: string]: any }): HTMLTableElement {
   return api.grok_UI_TableFromMap(map);
+}
+
+/** Creates an editable html table for the specified items (rows) and properties (columns). */
+export function tableFromProperties(items: any[], properties: Property[]) {
+  return table(items,
+    (item, i) => properties.map((p) => InputBase.forProperty(p, item).input),
+    properties.map((p) => p.name));
 }
 
 /** Creates a visual table based on [items] and [renderer]. */
