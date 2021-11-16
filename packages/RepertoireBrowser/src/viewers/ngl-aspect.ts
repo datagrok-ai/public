@@ -2,11 +2,15 @@ import * as grok from 'datagrok-api/grok';
 import * as ui from 'datagrok-api/ui';
 import * as DG from "datagrok-api/dg";
 import {MiscMethods} from "./misc.js"
-import {_package} from "../package";
+
 
 // export let _package = new DG.Package();
 
-export class NglMethods {
+export class NglAspect {
+
+  pdbStr: string;
+  stage: any;
+  schemeObj: any;
 
     async init(view, inputs, pdbStr, json) {
 
@@ -16,6 +20,7 @@ export class NglMethods {
         inputs.ngl_host.style.backgroundColor = col_background;
         view.box = true;
         this.pdbStr = pdbStr;
+        //@ts-ignore
         this.stage = new NGL.Stage(inputs.ngl_host);
         this.schemeObj = this.CDR3(inputs.cdr_scheme, inputs.paratopes, json, colorScheme);
 
@@ -50,9 +55,11 @@ export class NglMethods {
             })
             selectionScheme.push([col_para, "* and :H"]);
             selectionScheme.push([col_para, "* and :L"]);
+            //@ts-ignore
             schemeId = NGL.ColormakerRegistry.addSelectionScheme(selectionScheme);
         } else {
             if (cdr_scheme.value === 'default') {
+                //@ts-ignore
                 schemeId = NGL.ColormakerRegistry.addSelectionScheme([
                     [col_heavy_chain, "* and :H"],
                     [col_light_chain, "* and :L"]
@@ -79,6 +86,8 @@ export class NglMethods {
                         scheme_buffer.push([col_light_chain, "* and :L"]);
                     }
                 });
+
+                //@ts-ignore
                 schemeId = NGL.ColormakerRegistry.addSelectionScheme(scheme_buffer);
             }
         }
@@ -106,5 +115,4 @@ export class NglMethods {
         ui.onSizeChanged(host).subscribe((_) => this._resize(host));
         this._resize(host);
     }
-
 }
