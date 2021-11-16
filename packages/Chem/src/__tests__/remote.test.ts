@@ -22,16 +22,22 @@ afterAll(async () => {
   await browser.close();
 });
 
+let fs = require('fs');
+function requireText(name: string, require: any) {
+   return fs.readFileSync(require.resolve(name)).toString();
+};
+
 it('searchSubstructure graph', async () => {
-  const testOutput = await page.evaluate(async () => {
-    const df = await grok.data.loadTable('https://public.datagrok.ai/demo/sar_small.csv'); // TODO: localize
+  let fileSARSmall = requireText("./sar_small.csv", require);
+  const testOutput = await page.evaluate(async (file: string) => {
+    const df = DG.DataFrame.fromCsv(file);
     const col = df.col('smiles')!;
     let bitset = await grok.chem.searchSubstructure(
       col, 'O=C1CN=C(C2CCCCC2)C2:C:C:C:C:C:2N1', {substructLibrary: false});
     const countDataframe = col.length;
     const countResult = bitset.trueCount;
     return {countDataframe, countResult};
-  });
+  }, fileSARSmall);
   expect(testOutput.countDataframe).toBe(200);
   expect(testOutput.countResult).toBe(90);
 });
