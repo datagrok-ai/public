@@ -2,23 +2,29 @@
 
 # How to show lines on viewers
 
-A dataframe can contain information about lines and bands.
+Dataframe and viewer can contain information about lines and bands.
 
 These figures are used by some viewers to draw additional lines on the charts. These can be reference lines, highlighting different areas of the chart and data, etc.
 
 ![Example of lines by equations](../../uploads/viewers/lines-by-equations-example.png)
 
-Shapes information is stored in a special dataframe tag `.shapes`. The viewer automatically reads this tag when it connects to the dataframe.
+Shapes information is stored in a special storage in a dataframe or viewer. The viewer automatically reads storages when it connects to the dataframe.
 
-You can create and modify information about lines and bands by changing the `.shapes` dataframe tag. The content of the tag is a JSON string.
+You can create and modify information about lines and bands by changing the `.shapes` dataframe tag or by changing the `shapes` property of the viewer. The content of these storages is a JSON string.
 
-There is a more convenient way to create lines - method `dataframe.meta.addLine()`.
+There is a more convenient ways to create lines:
+
+- method `dataframe.meta.addLine()` - for creating and saving a line in a dataframe
+- method `viewer.meta.addLine()` - for creating and saving a line in a viewer
+
+Lines saved in the dataframe will be displayed on all viewers in the same way. Lines saved in the viewer are displayed only in this viewer and do not affect other viewers.
 
 An example of creating and displaying a line in this way:
 
 ```javascript
 let demog = grok.data.demo.demog(100);
 
+// Add line to dataframe:
 demog.meta.addLine({
   title: 'Parabola',
   equation: '${height} = 180 + 0.01 * ${weight} * ${weight} - 1.5 * ${weight}',
@@ -33,17 +39,26 @@ let view = grok.shell.addTableView(demog);
 let plot = view.scatterPlot({
   x: 'weight',
   y: 'height',
-  showLinesByEquations: true    // This option allows to hide or show all lines and bands at once.
+  showLinesByEquations: true,         // Hide or show all lines stored in the dataframe.
+  showViewerLinesByEquations: true    // Hide or show all lines stored in the viewer.
 });
+
+// Add line to viewer:
+plot.meta.addLine({
+  equation: '${weight} = 150',
+  color: "#ff0000",
+  width: 10
+});
+
 ```
 
-A similar method is used to create bands - `dataframe.meta.addBand()`. Most of the parameters for lines and bands are the same. But there are also some parameters that are specific for lines and bands. See them in the description of the parameters for lines and bands.
+A similar methods is used to create bands - `dataframe.meta.addBand()` or `viewer.meta.addBand()`. Most of the parameters for lines and bands are the same. But there are also some parameters that are specific for lines and bands. See them in the description of the parameters for lines and bands.
 
 More examples of creating lines and bands can be found [here](https://dev.datagrok.ai/js/samples/data-frame/metadata/shapes).
 
 ## Line parameters
 
-Method to create a line: `dataframe.meta.addLine(parameters)`
+Method to create a line: `dataframe.meta.addLine(parameters)` or `viewer.meta.addLine(parameters)`
 
 Only one parameter ("equation") is required. All other parameters have their default values.
 
@@ -63,7 +78,7 @@ Only one parameter ("equation") is required. All other parameters have their def
 
 ## Band parameters
 
-Method to create a band: `dataframe.meta.addBand(parameters)`
+Method to create a band: `dataframe.meta.addBand(parameters)` or `viewer.meta.addBand(parameters)`
 
 Only 3 parameters ("equation", "column" and "column2") are required. All other parameters have their default values.
 
