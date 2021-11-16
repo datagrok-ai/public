@@ -72,7 +72,7 @@ export class BoxPlotsView extends DG.ViewBase implements ILazyLoading {
     this.bl = minVisitName;
 
     this.uniqueVisits = Array.from(getUniqueValues(study.domains.lb, LAB_VISIT_NAME));
-    this.labWithDmData = addDataFromDmDomain(study.domains.lb, study.domains.dm, [ SUBJECT_ID, LAB_VISIT_DAY, LAB_VISIT_NAME, LAB_TEST, LAB_RES_N ], [TREATMENT_ARM, SEX, RACE, ETHNIC]);
+    this.labWithDmData = addDataFromDmDomain(study.domains.lb, study.domains.dm, [ SUBJECT_ID, LAB_VISIT_DAY, LAB_VISIT_NAME, LAB_TEST, LAB_RES_N ], this.splitBy);
     this.uniqueLabValues = Array.from(getUniqueValues(this.labWithDmData, LAB_TEST));
     this.labWithDmData = this.labWithDmData
     .groupBy(this.labWithDmData.columns.names())
@@ -149,8 +149,9 @@ export class BoxPlotsView extends DG.ViewBase implements ILazyLoading {
 
   private getTopPValues(topNum: number){
     this.pValuesArray = [];
-    this.uniqueLabValues.forEach(val => this.getPValues(this.labWithDmData, val, TREATMENT_ARM, LAB_RES_N));
-    this.pValuesArray.sort((a, b) => (a.pValue - b.pValue));
+    this.uniqueLabValues.forEach(val => this.getPValues(this.labWithDmData, val, this.selectedSplitBy, LAB_RES_N));
+    //@ts-ignore
+    this.pValuesArray.sort((a, b) => a.pValue-b.pValue || isNaN(a.pValue)-isNaN(b.pValue));
     this.selectedLabValues = this.pValuesArray.slice(0, topNum).map(it => it.labValue);
   }
 
