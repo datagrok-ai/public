@@ -5,7 +5,7 @@ import { MolecularLiabilityBrowser } from './molecular-liability-browser';
 
 export let _package = new DG.Package();
 
-function getPathSegments(path) {
+function getPathSegments(path: string) {
   let parser = document.createElement('a');
   parser.href = path;
   let pathSegments = parser.pathname.split('/');
@@ -19,7 +19,7 @@ function getPathSegments(path) {
 //tags: app
 export async function RepertoireBrowserApp() {
   grok.shell.windows.showToolbox = false;
-  let vid = getPathSegments(window.location);
+  let vid = getPathSegments(<string><unknown>window.location);
 
   let app = new MolecularLiabilityBrowser();
   await app.init(vid);
