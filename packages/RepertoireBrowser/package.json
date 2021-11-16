@@ -1,7 +1,7 @@
 {
 	"name": "@datagrok/repertoire-browser",
 	"fullName": "RepertoireBrowser",
-	"version": "0.0.2",
+	"version": "0.0.3",
 	"description": "",
 	"sources": [
 		"css/ngl.css",

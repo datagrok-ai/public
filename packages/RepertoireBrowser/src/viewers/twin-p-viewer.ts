@@ -3,10 +3,9 @@ import * as grok from "datagrok-api/grok";
 import * as DG from "datagrok-api/dg";
 
 import { MolecularLiabilityBrowserPanel } from "./molecular-liability-browser-panel.js"
-import { NglMethods } from "./ngl.js"
-import { PvizMethods } from "./pViz.js"
+import { NglAspect } from "./ngl-aspect"
+import { PvizAspect } from "./pviz-aspect"
 import { MiscMethods } from "./misc.js"
-
 
 import { _package } from "../package";
 
@@ -16,6 +15,10 @@ export class TwinPviewer {
   openPanels;
   ngl;
   pViz;
+
+  // constructor(mlbView: DG.TableView, jsonStr, pdbStr: string){
+
+  // }
 
   async reset(mlbView: DG.TableView) {
     if (!!this.ngl)
@@ -30,9 +33,9 @@ export class TwinPviewer {
 
     this.inputs = new MolecularLiabilityBrowserPanel();
     this.openPanels = await this.inputs.init(mlbView, jsonStr);
-    this.ngl = new NglMethods();
+    this.ngl = new NglAspect();
     await this.ngl.init(mlbView, this.inputs, pdbStr, jsonStr);
-    let pViz = new PvizMethods();
+    let pViz = new PvizAspect();
     this.openPanels.push(await pViz.init(mlbView, this.inputs, this.ngl, jsonStr));
 
 
