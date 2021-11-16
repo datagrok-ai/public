@@ -3,8 +3,9 @@ import * as ui from 'datagrok-api/ui';
 import * as DG from 'datagrok-api/dg';
 import ExcelJS from 'exceljs';
 import {saveAs} from 'file-saver';
+import {ColumnList} from 'datagrok-api/dg';
 
-export function exportFuncCall(call: DG.FuncCall) {
+export async function exportFuncCall(call: DG.FuncCall) {
   //todo: check status
   // if (call.status != FuncCall.STATUS_COMPLETED) ...
 
@@ -22,14 +23,29 @@ export function exportFuncCall(call: DG.FuncCall) {
   const dfOutputs = call.func.outputs.filter((output) => isDataFrame(output.propertyType));
   const scalarOutputs = call.func.outputs.filter((output) => isScalarType(output.propertyType));
 
-  dfInputs.forEach((dfInput) => {
+  for await (const dfInput of dfInputs) {
     const currentDfSheet = exportWorkbook.addWorksheet(`Input - ${dfInput.name}`);
     const currentDf = (call.inputs[dfInput.name] as DG.DataFrame);
     currentDfSheet.addRow((currentDf.columns as DG.ColumnList).names());
     for (let i = 0; i < currentDf.rowCount; i++) {
       currentDfSheet.addRow([...currentDf.row(i).cells].map((cell: DG.Cell) => cell.value));
     }
-  });
+
+    // TODO: change to API call when it will be available. Currently, it does not work if the plot is not visible.
+    // In addition, it does not track the scatterplot's source dataframe
+    const plot = document.getElementsByName('viewer-Scatter-plot')[0];
+
+    const canvas = await DG.HtmlUtils.renderToCanvas(plot);
+    const dataUrl = canvas.toDataURL('image/png');
+    const testImageId = exportWorkbook.addImage({
+      base64: dataUrl,
+      extension: 'png',
+    });
+    currentDfSheet.addImage(testImageId, {
+      tl: {col: (currentDf.columns as ColumnList).length + 1, row: 0},
+      ext: {width: canvas.width, height: canvas.height},
+    });
+  };
 
   const inputScalarsSheet = exportWorkbook.addWorksheet('Input scalars');
   scalarInputs.forEach((scalarInput) => {
