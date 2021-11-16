@@ -293,6 +293,9 @@ export class Accordion extends DartWidget {
   get context(): any {
     return toJs(api.grok_Accordion_Get_Context(this.d));
   }
+  set context(x: any) {
+    api.grok_Accordion_Set_Context(this.d, toDart(x));
+  }
 
   /** Creates a new instance of Accordion */
   static create(key: any = null): Accordion {
@@ -334,6 +337,11 @@ export class Accordion extends DartWidget {
   /** Removed the specified pane. */
   removePane(pane: AccordionPane) {
     api.grok_Accordion_RemovePane(this.d, pane.d);
+  }
+
+  /** Finalizes accordion construction */
+  end() {
+    api.grok_Accordion_End(this.d);
   }
 }
 

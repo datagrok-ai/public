@@ -33,6 +33,7 @@ export class ModelHandler extends DG.ObjectHandler {
 
   renderProperties(x: DG.Script) {
     const a = ui.accordion();
+    a.context = x;
     a.addTitle(ui.span([this.renderIcon(x), ui.label(x.friendlyName), ui.contextActions(x), ui.star(x.id)]));
     a.addPane('Details', () => {
       return this.renderDetails(x);
@@ -40,6 +41,7 @@ export class ModelHandler extends DG.ObjectHandler {
     a.addCountPane('Usage', () => {
       return ui.span(['Usage statistics']);
     }, () => 99);
+    a.end();
     return a.root;
   }
 
