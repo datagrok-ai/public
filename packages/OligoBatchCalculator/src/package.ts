@@ -3,7 +3,6 @@ import * as grok from 'datagrok-api/grok';
 import * as ui from 'datagrok-api/ui';
 import * as DG from 'datagrok-api/dg';
 import $ from 'cash-dom';
-
 import {map} from "./map";
 
 export let _package = new DG.Package();
@@ -48,7 +47,7 @@ export function opticalDensity(sequence: string, amount: number, outputUnits: st
   } else if (outputUnits == 'OD') {
     return amount;
   }
-  let coefficient = (outputUnits == 'NMole') ? 1000000 : (outputUnits == 'Milligrams') ? 1 : 1000;
+  const coefficient = (outputUnits == 'NMole') ? 1000000 : (outputUnits == 'Milligrams') ? 1 : 1000;
   return amount * extinctionCoefficient(sequence) / coefficient;
 }
 
@@ -78,15 +77,12 @@ export function molecularMass(sequence: string, amount: number, outputUnits: str
 //name: molecularWeight
 //input: string sequence
 //output: double molecularWeight
-export function molecularWeight(sequence: string, representation?: string): number {
-  const codes = (representation) ?
-    Object.keys(molecularWeightsObj[representation]) :
-    sortByStringLengthInDescendingOrderToCheckForMatchWithLongerCodesFirst(Object.keys(molecularWeightsObj));
-  let molecularWeight = 0;
-  let i = 0;
+export function molecularWeight(sequence: string): number {
+  const codes = sortByStringLengthInDescendingOrderToCheckForMatchWithLongerCodesFirst(Object.keys(molecularWeightsObj));
+  let molecularWeight = 0, i = 0;
   while (i < sequence.length) {
-    let matchedCode = codes.find((s) => s == sequence.slice(i, i + s.length));
-    molecularWeight += molecularWeightsObj[sequence.slice(i, i + matchedCode!.length)];
+    let matchedCode = codes.find((s) => s == sequence.slice(i, i + s.length))!;
+    molecularWeight += molecularWeightsObj[sequence.slice(i, i + matchedCode.length)];
     i += matchedCode!.length;
   }
   return molecularWeight - 61.97;
@@ -96,72 +92,41 @@ export function molecularWeight(sequence: string, representation?: string): numb
 //input: string sequence
 //output: double extinctionCoefficient
 export function extinctionCoefficient(sequence: string): number {
-  sequence = normalizeSequence(sequence);
+  let output = isValid(sequence);
+  sequence = normalizeSequence(sequence, output.expectedRepresentation!);
   const individualBases: {[index: string]: number} = {
-      'dA': 15400, 'dC': 7400, 'dG': 11500, 'dT': 8700,
-      'rA': 15400, 'rC': 7200, 'rG': 11500, 'rU': 9900
-    },
-    nearestNeighbour: {[index: string]: {[index: string]: number}} = {
-      'dA': {'dA': 27400, 'dC': 21200, 'dG': 25000, 'dT': 22800},
-      'dC': {'dA': 21200, 'dC': 14600, 'dG': 18000, 'dT': 15200},
-      'dG': {'dA': 25200, 'dC': 17600, 'dG': 21600, 'dT': 20000},
-      'dT': {'dA': 23400, 'dC': 16200, 'dG': 19000, 'dT': 16800},
-      'rA': {'rA': 27400, 'rC': 21000, 'rG': 25000, 'rU': 24000},
-      'rC': {'rA': 21000, 'rC': 14200, 'rG': 17800, 'rU': 16200},
-      'rG': {'rA': 25200, 'rC': 17400, 'rG': 21600, 'rU': 21200},
-      'rU': {'rA': 24600, 'rC': 17200, 'rG': 20000, 'rU': 19600}
-    };
+    'dA': 15400, 'dC': 7400, 'dG': 11500, 'dT': 8700,
+    'rA': 15400, 'rC': 7200, 'rG': 11500, 'rU': 9900
+  },
+  nearestNeighbour: {[index: string]: {[index: string]: number}} = {
+    'dA': {'dA': 27400, 'dC': 21200, 'dG': 25000, 'dT': 22800, 'rA': 27400, 'rC': 21000, 'rG': 25000, 'rU': 24000},
+    'dC': {'dA': 21200, 'dC': 14600, 'dG': 18000, 'dT': 15200, 'rA': 21000, 'rC': 14200, 'rG': 17800, 'rU': 16200},
+    'dG': {'dA': 25200, 'dC': 17600, 'dG': 21600, 'dT': 20000, 'rA': 25200, 'rC': 17400, 'rG': 21600, 'rU': 21200},
+    'dT': {'dA': 23400, 'dC': 16200, 'dG': 19000, 'dT': 16800, 'rA': 24600, 'rC': 17200, 'rG': 20000, 'rU': 19600},
+    'rA': {'rA': 27400, 'rC': 21000, 'rG': 25000, 'rU': 24000, 'dA': 27400, 'dC': 21200, 'dG': 25000, 'dT': 22800},
+    'rC': {'rA': 21000, 'rC': 14200, 'rG': 17800, 'rU': 16200, 'dA': 21200, 'dC': 14600, 'dG': 18000, 'dT': 15200},
+    'rG': {'rA': 25200, 'rC': 17400, 'rG': 21600, 'rU': 21200, 'dA': 25200, 'dC': 17600, 'dG': 21600, 'dT': 20000},
+    'rU': {'rA': 24600, 'rC': 17200, 'rG': 20000, 'rU': 19600, 'dA': 23400, 'dC': 16200, 'dG': 19000, 'dT': 16800}
+  };
   let ec1 = 0, ec2 = 0;
   for (let i = 0; i < sequence.length - 2; i += 2)
     if (sequence[i] == sequence[i + 2])
       ec1 += nearestNeighbour[sequence.slice(i, i + 2)][sequence.slice(i + 2, i + 4)];
     else
       ec1 += (
-        nearestNeighbour['r' + (sequence[i + 1] == 'T') ? 'U' : sequence[i + 1]]['r' + (sequence[i + 3] == 'T') ? 'U' : sequence[i + 3]]
+        nearestNeighbour['r' + ((sequence[i + 1] == 'T') ? 'U' : sequence[i + 1])]['r' + ((sequence[i + 3] == 'T') ? 'U' : sequence[i + 3])]
         +
-        nearestNeighbour['d' + (sequence[i + 1] == 'U') ? 'T' : sequence[i + 1]]['d' + (sequence[i + 3] == 'U') ? 'T' : sequence[i + 3]]
+        nearestNeighbour['d' + ((sequence[i + 1] == 'U') ? 'T' : sequence[i + 1])]['d' + ((sequence[i + 3] == 'U') ? 'T' : sequence[i + 3])]
       ) / 2;
   for (let i = 2; i < sequence.length - 2; i += 2)
     ec2 += individualBases[sequence.slice(i, i + 2)];
   return ec1 - ec2;
 }
 
-function normalizeSequence(sequence: string): string {
-  //TODO: get normalization strings from map.ts (problem: some keys are in several representations at the same time, example: "8", "A", etc.)
-  //TODO: create searchValue for replace functions from map.ts
-  //TODO: ask conventional name of this operation(instead of 'normalize') and export this function
-  //TODO: pass representation argument
-  const isNormalized = /^[rdAUGCT]+$/.test(sequence);
-  const isRna = /^[AUGC]+$/.test(sequence);
-  const isDna = /^[ATGC]+$/.test(sequence);
-  if (isNormalized && !isDna && !isRna)
-    return sequence;
-  const isSiRnaAxolabs = /^[fAUGCuacgs]+$/.test(sequence);
-  const isGCRS = /^[fmpsACGU]+$/.test(sequence);
-  const isGcrsGapmers = /^.*moe.+$/.test(sequence) || /^.*5mC+$/.test(sequence);
-  const obj: {[index: string]: string} = isRna ?
-    {"A": "rA", "U": "rU", "G": "rG", "C": "rC"} :
-    isDna ?
-      {"A": "dA", "T": "dT", "G": "dG", "C": "dC"} :
-      isSiRnaAxolabs ?
-        {"Af": "rA", "Uf": "rU", "Gf": "rG", "Cf": "rC", "u": "rU", "a": "rA", "c": "rC", "g": "rG", "s": "", "fU": "rU", "fA": "rA", "fC": "rC", "fG": "rG"} :
-        isGCRS ?
-          {"fU": "rU", "fA": "rA", "fC": "rC", "fG": "rG", "mU": "rU", "mA": "rA", "mC": "rC", "mG": "rG", "ps": "", "s": ""} :
-          isGcrsGapmers ?
-            {"moeA": "rA", "(5m)moeC": "rC", "moe5mC": "rC", "moeG": "rG", "moeT": "rU", "(5m)C": "rC", "5mC": "rC", "U": "rU", "T": "rU", "A": "rA", "C": "rC", "G": "rG", "fU": "rU", "fA": "rA", "fC": "rC", "fG": "rG", "mU": "rU", "mA": "rA", "mC": "rC", "mG": "rG", "ps": "", "s": ""} :
-            {"ps": "", "mA": "rA", "mU": "rU", "mG": "rG", "mC": "rC", "fA": "rA", "fU": "rU", "fG": "rG", "fC": "rC"};
-
-  return isRna ?
-    sequence.replace(/[AUGC]/g, function (x) {return obj[x]}) :
-    isDna ?
-      sequence.replace(/[ATGC]/g, function (x) {return obj[x]}) :
-      isSiRnaAxolabs ?
-        sequence.replace(/(Uf|Af|Cf|Gf|fU|fA|fC|fG|u|a|c|g|s)/g, function (x) {return obj[x]}) :
-        isGCRS ?
-          sequence.replace(/(fU|fA|fC|fG|mU|mA|mC|mG|ps|s)/g, function (x) {return obj[x]}) :
-          isGcrsGapmers ?
-            sequence.replace(/(moeA|\(5m\)moeC|moe5mC|moeG|moeT|A|T|\(5m\)C|5mC|G|ps|s)/g, function (x) {return obj[x]}) :
-            sequence.replace(/(fU|fA|fC|fG|mU|mA|mC|mG|ps|A|U|G|C)/g, function (x) {return obj[x]});
+function normalizeSequence(sequence: string, representation: string): string {
+  const codes = sortByStringLengthInDescendingOrderToCheckForMatchWithLongerCodesFirst(Object.keys(map[representation]));
+  const re = new RegExp('(' + codes.join('|') + ')', 'g');
+  return sequence.replace(re, function (code) {return map[representation][code]["normalized"]});
 }
 
 function getListOfPossibleRepresentationsByFirstMatchedCodes(sequence: string): string[] {
@@ -181,13 +146,12 @@ function isValid(sequence: string) {
 
   let outputIndices = Array(possibleRepresentations.length).fill(0);
 
-  const firstUniqueCharacters = ['r', 'd', 'f', 'm'],
-    secondCharactersInNormalizedCodes = ["A", "U", "T", "C", "G"];
+  const firstUniqueCharacters = ['r', 'd'], nucleotides = ["A", "U", "T", "C", "G"];
 
   possibleRepresentations.forEach((representation, representationIndex) => {
     while (outputIndices[representationIndex] < sequence.length) {
 
-      let matchedCode = Object.keys(map[possibleRepresentations[representationIndex]])
+      let matchedCode = Object.keys(map[representation])
         .find((s) => s == sequence.slice(outputIndices[representationIndex], outputIndices[representationIndex] + s.length));
 
       if (matchedCode == null)
@@ -195,14 +159,14 @@ function isValid(sequence: string) {
 
       if (  // for mistake pattern 'rAA'
         outputIndices[representationIndex] > 1 &&
-        secondCharactersInNormalizedCodes.includes(sequence[outputIndices[representationIndex]]) &&
+        nucleotides.includes(sequence[outputIndices[representationIndex]]) &&
         firstUniqueCharacters.includes(sequence[outputIndices[representationIndex] - 2])
       )
         break;
 
       if (  // for mistake pattern 'ArA'
         firstUniqueCharacters.includes(sequence[outputIndices[representationIndex] + 1]) &&
-        secondCharactersInNormalizedCodes.includes(sequence[outputIndices[representationIndex]])
+        nucleotides.includes(sequence[outputIndices[representationIndex]])
       ) {
         outputIndices[representationIndex]++;
         break;
@@ -217,7 +181,7 @@ function isValid(sequence: string) {
 
   return {
     indexOfFirstNotValidCharacter: indexOfFirstNotValidCharacter,
-    expectedRepresentation: possibleRepresentations[outputIndices.indexOf(indexOfFirstNotValidCharacter)]
+    expectedRepresentation: possibleRepresentations[outputIndices.indexOf(indexOfExpectedRepresentation)]
   };
 }
 
@@ -247,10 +211,10 @@ export function OligoBatchCalculatorApp() {
       indicesOfFirstNotValidCharacter[i] = output.indexOfFirstNotValidCharacter;
       expectedRepresentations[i] = output.expectedRepresentation;
       if (indicesOfFirstNotValidCharacter[i] < 0) {
-        normalizedSequences[i] = normalizeSequence(sequence);
+        normalizedSequences[i] = normalizeSequence(sequence, expectedRepresentations[i]);
         if (normalizedSequences[i].length > 2) {
           try {
-            molecularWeights[i] = molecularWeight(sequence, expectedRepresentations[i]);
+            molecularWeights[i] = molecularWeight(sequence);
             extinctionCoefficients[i] = extinctionCoefficient(normalizedSequences[i]);
             nMoles[i] = nMole(sequence, yieldAmount.value, units.value);
             opticalDensities[i] = opticalDensity(sequence, yieldAmount.value, units.value);
@@ -396,5 +360,6 @@ export function OligoBatchCalculatorApp() {
     .css('resize','none')
     .css('min-height','70px')
     .css('width','100%')
-    .css('font-family','monospace');
+    .css('font-family','monospace')
+    .attr("spellcheck", "false");
 }

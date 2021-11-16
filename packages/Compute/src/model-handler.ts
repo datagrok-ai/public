@@ -55,9 +55,12 @@ export class ModelHandler extends DG.ObjectHandler {
     let card = ui.bind(x, ui.divV([
       ui.h2(x.friendlyName),
       this.renderDetails(x),
-    ], 'd4-gallery-item'));
+    ], 'd4-gallery-item'), {contextMenu: false});
     card.ondblclick = (e) => {
-      grok.shell.addView(DG.FunctionView.createFromFunc(x));
+      let view = DG.FunctionView.createFromFunc(x);
+      if (grok.shell.v.parentCall.func.name == 'modelCatalog')
+        view.parentCall = grok.shell.v.parentCall;
+      grok.shell.addView(view);
     }
     return card;
   }

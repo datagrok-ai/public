@@ -47,7 +47,7 @@ export class ModelCatalogView extends DG.CardView {
 
   setCurrentModel(model: DG.Script) {
     let modelView = DG.View.forObject(model)!;
-    let host: HTMLDivElement = this.root.querySelector('.grok-gallery-grid')!;
+    let host: HTMLDivElement = this.root.querySelector('.grok-gallery-grid')! as HTMLDivElement;
     ui.empty(host);
     host.appendChild(modelView.root);
   }

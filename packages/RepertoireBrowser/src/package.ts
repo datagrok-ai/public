@@ -1,7 +1,7 @@
 import * as grok from 'datagrok-api/grok';
 import * as DG from 'datagrok-api/dg';
-import { LaunchBrowser } from './main.js';
-import { TreeBrowser } from './tree.js';
+import { MolecularLiabilityBrowser } from './main';
+//import { TreeBrowser } from './tree.js';
 
 export let _package = new DG.Package();
 
@@ -18,6 +18,12 @@ function getPathSegments(path) {
 //name: Repertoire Browser
 //tags: app
 export async function RepertoireBrowserApp() {
+  grok.shell.windows.showToolbox = false;
+  let vid = getPathSegments(window.location);
+
+  let app = new MolecularLiabilityBrowser();
+  await app.init(vid);
+
   //let tnames = grok.shell.tableNames;
   //let view = null;
 
@@ -37,12 +43,6 @@ export async function RepertoireBrowserApp() {
   // } else {
   //   view = grok.shell.getTableView(tnames[0]);
   // }
-
-  grok.shell.windows.showToolbox = false;
-  let vid = getPathSegments(window.location);
-
-  let app = new LaunchBrowser();
-  await app.init(vid);
 
   // let df = grok.shell.table('First500seqs');
   // if (df) {
