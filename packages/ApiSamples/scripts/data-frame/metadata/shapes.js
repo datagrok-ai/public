@@ -2,7 +2,7 @@
 let demog = grok.data.demo.demog(100);
 
 /**
- * An example of adding a line with a complete set of parameters.
+ * An example of adding a line with a complete set of parameters to the dataframe.
  * Only one parameter ("equation") is required.
  * All other parameters have their default values.
  */
@@ -26,7 +26,7 @@ demog.meta.addLine({
 });
 
 /**
- * An example of adding a band. Most of the parameters are the same as for lines.
+ * An example of adding a band to the dataframe. Most of the parameters are the same as for lines.
  * There are two required parameters here - "column" and "equation".
  * All other parameters have their default values.
  */
@@ -159,5 +159,15 @@ let view = grok.shell.addTableView(demog);
 let plot = view.scatterPlot({
   x: 'weight',
   y: 'height',
-  showLinesByEquations: true    // This option allows to hide or show all lines and bands at once.
+  showLinesByEquations: true,         // Hide or show all lines stored in the dataframe.
+  showViewerLinesByEquations: true    // Hide or show all lines stored in the viewer.
+});
+
+/**
+ * An example of adding a line to the viewer.
+ */
+plot.meta.addLine({
+  equation: '${weight} = 150',
+  color: "#ff0000",
+  width: 10
 });
