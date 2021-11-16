@@ -1,5 +1,4 @@
 import fs from 'fs';
-import inquirer from 'inquirer';
 import path from 'path';
 import os from 'os';
 import yaml from 'js-yaml';
@@ -51,7 +50,7 @@ function createDirectoryContents(name: string, config: utils.Config, templateDir
           _package['scripts'][`debug-${name.toLowerCase()}-${server}`] = `grok publish ${server} --rebuild`;
           _package['scripts'][`release-${name.toLowerCase()}-${server}`] = `grok publish ${server} --rebuild --release`;
         }
-        if (ts) Object.assign(_package.dependencies, { 'ts-loader': 'latest', 'typescript': 'latest' });
+        if (ts) Object.assign(_package.devDependencies, { 'ts-loader': 'latest', 'typescript': 'latest' });
         if (eslint) {
           Object.assign(_package.devDependencies, {
             'eslint': 'latest',
@@ -132,20 +131,11 @@ export function create(args: CreateArgs) {
     createDirectoryContents(name, config, templateDir, packageDir, args.ide, args.ts, args.eslint);
     console.log(help.package(name, args.ts));
     console.log(`\nThe package has the following dependencies:\n${dependencies.join(' ')}\n`);
-
-    inquirer.prompt({
-      name: 'run-npm-install',
-      type: 'confirm',
-      message: 'Would you like to install them now with `npm`?',
-      default: false,
-    }).then((answers) => {
-      if (!answers['run-npm-install']) return;
-      console.log('\nRunning `npm install` to get the required dependencies...\n');
-      exec('npm install', { cwd: packageDir }, (err, stdout, stderr) => {
-        if (err) throw err;
-        else console.log(stderr, stdout);
-      });
-    }).catch((err) => console.error(err));
+    console.log('Running `npm install` to get the required dependencies...\n');
+    exec('npm install', { cwd: packageDir }, (err, stdout, stderr) => {
+      if (err) throw err;
+      else console.log(stderr, stdout);
+    });
   } else {
     console.log('Package name may only include letters, numbers, underscores, or hyphens');
   }
