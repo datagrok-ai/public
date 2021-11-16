@@ -4,7 +4,7 @@ import * as _utils from './src/utils';
 import * as _x from './src/ui/tree-view';
 import $ from 'cash-dom';
 import * as dayjs from 'dayjs';
-import wu from 'wu';
+import * as wu from 'wu';
 
 export * from './src/const';
 export * from './src/events';
