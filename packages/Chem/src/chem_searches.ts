@@ -1,8 +1,8 @@
-import {RdKitParallel} from './rdkit_parallel';
+import {RdKitService} from './rdkit_service';
 import * as DG from 'datagrok-api/dg';
 
 let searchesRdKitModule: any = null;
-let rdKitParallel: RdKitParallel | null = null;
+let rdKitService: RdKitService | null = null;
 
 export async function setSearchesRdKitModule(module: any)
 {
@@ -12,8 +12,8 @@ export async function setSearchesRdKitModule(module: any)
 let _initRdKitWorkersState: {[_:string]: any} = {};
 async function _initRdKitWorkers(workerWebRoot: string) {
   if (typeof _initRdKitWorkersState.initialized == 'undefined' || !_initRdKitWorkersState.initialized) {
-    rdKitParallel = new RdKitParallel();
-    await rdKitParallel.init(workerWebRoot);
+    rdKitService = new RdKitService();
+    await rdKitService.init(workerWebRoot);
     _initRdKitWorkersState.initialized = true;
   }
 }
@@ -233,7 +233,7 @@ export async function chemSubstructureSearchLibrary(
     async (params) => {
       // TODO: avoid creating an additional array here
       const { molIdxToHash, hashToMolblock }
-        = await rdKitParallel!.substructInit(molStringsColumn.toList());
+        = await rdKitService!.substructInit(molStringsColumn.toList());
       let i = 0;
       let needsUpdate = false;
       for (const item of molIdxToHash) {
@@ -254,7 +254,7 @@ export async function chemSubstructureSearchLibrary(
 
   let result = DG.BitSet.create(molStringsColumn.length);
   if (molString.length != 0) {
-    const matches = await rdKitParallel!.substructSearch(molString, molStringSmarts);
+    const matches = await rdKitService!.substructSearch(molString, molStringSmarts);
     for (let match of matches)
       result.set(match, true, false);
   }

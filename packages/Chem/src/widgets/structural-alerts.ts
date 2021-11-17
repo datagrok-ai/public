@@ -41,7 +41,7 @@ export function structuralAlertsWidget(smiles: string) {
   return new DG.Widget(list);
 }
 
-function getStructuralAlerts(smiles: string) {
+export function getStructuralAlerts(smiles: string) {
   const alerts: number[] = [];
   const mol = structuralAlertsRdKitModule.get_mol(smiles);
   //TODO: use SustructLibrary and count_matches instead. Currently throws an error on rule id 221

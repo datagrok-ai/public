@@ -1,6 +1,6 @@
 import Worker from "./rdkit.worker.ts"; // .ts!
 
-export class RdKitWorkerProxy {
+export class RdKitServiceWorkerHandler {
 
   worker: Worker;
   constructor() {
