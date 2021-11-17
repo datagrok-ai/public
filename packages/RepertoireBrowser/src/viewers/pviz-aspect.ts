@@ -18,19 +18,19 @@ export class PvizAspect {
     this.pviz = window.pviz;
     this.pVizParams = {};
     this.pVizParams.seq = { 'H': json.heavy_seq, 'L': json.light_seq }
-    this.pVizParams.ptmMap = this.ptmMapping(inputs.ptm_choices.value, inputs.ptm_prob.value, json)
+    this.pVizParams.ptmMap = this.ptmMapping(inputs.ptmChoices.value, inputs.ptmProb.value, json)
     //@ts-ignore
-    this.pVizParams.ptmMotifsMap = this.ptmMotifsMapping(inputs.ptm_motif_choices.value, inputs.ptm_prob.value)
+    this.pVizParams.ptmMotifsMap = this.ptmMotifsMapping(inputs.ptmMotifChoices.value, inputs.ptmProb.value)
     this.pVizParams.denMap = this.ptmDenMapping(json)
     this.pVizParams.parMap = this.paratopeMapping(json)
-    this.pVizParams.cdrMap = this.cdrMapping(inputs.cdr_scheme.value, json)
+    this.pVizParams.cdrMap = this.cdrMapping(inputs.cdrScheme.value, json)
 
     await this.loadSequence(inputs, 'H', json);
 
     await this.pvizResize(inputs, 'H', json);
     await this.pvizResize(inputs, 'L', json);
     //@ts-ignore
-    return MiscMethods.setDockSize(view, inputs.ngl_node, inputs.sequence_tabs, inputs.paratopes);
+    return MiscMethods.setDockSize(view, inputs.nglNode, inputs.sequenceTabs, inputs.paratopes);
   }
 
   // mapping objects for sequence rendering
@@ -258,7 +258,7 @@ export class PvizAspect {
   // main sequence rendering func
   async loadSequence(inputs, chain, json, reLoad = false) {
 
-    let host = chain == "H" ? inputs.pViz_host_H : inputs.pViz_host_L;
+    let host = chain == "H" ? inputs.pVizHostH : inputs.pVizHostL;
 
     //@ts-ignore
     if ($(host).width() !== 0) {
@@ -285,7 +285,7 @@ export class PvizAspect {
         this.pviz.FeatureDisplayer.setStrikeoutCategory(mod);
       });
 
-      let switchObj = inputs.pVizNglRelation;
+      let switchObj = inputs.twinSelections;
       let pVizParams = this.pVizParams;
 
       let pv = this;
@@ -410,18 +410,9 @@ export class PvizAspect {
     }
   }
 
-  // resize handle
-  async pvizResize(inputs, chain, json) {
-    let host = chain == "H" ? inputs.pViz_host_H : inputs.pViz_host_L;
-
-    ui.onSizeChanged(host).subscribe(async (_) => {
-      await this.loadSequence(inputs, chain, json)
-    });
-  }
-
   async consistentlyColorpVizNGL(inputs, chosenTracksChain, json, reLoad) {
 
-    let switchObj = inputs.pVizNglRelation;
+    let switchObj = inputs.twinSelections;
     let pVizParams = this.pVizParams;
     let colorScheme = inputs.colorScheme;
     let ngl = this.ngl
@@ -432,7 +423,7 @@ export class PvizAspect {
     let col_para = colorScheme["col_para"];
     let col_partopes_low = colorScheme["col_partopes_low"]; //col_para in rgb
     let col_partopes_high = colorScheme["col_partopes_high"];
-    let col_highlight = (inputs.cdr_scheme.value === 'default' || inputs.paratopes.value === true) ?
+    let col_highlight = (inputs.cdrScheme.value === 'default' || inputs.paratopes.value === true) ?
       colorScheme["col_highlight"] : colorScheme["col_highlight_cdr"];
 
     //highlights in NGL
@@ -469,14 +460,14 @@ export class PvizAspect {
       schemeId = NGL.ColormakerRegistry.addSelectionScheme(scheme_buffer);
     }
     else {
-      if (inputs.cdr_scheme.value === 'default') {
+      if (inputs.cdrScheme.value === 'default') {
         scheme_buffer.push([col_heavy_chain, "* and :H"]);
         scheme_buffer.push([col_light_chain, "* and :L"]);
         //@ts-ignore
         schemeId = NGL.ColormakerRegistry.addSelectionScheme(scheme_buffer);
       } else {
         Object.keys(json.cdr_ranges).forEach((str) => {
-          if (str.includes(inputs.cdr_scheme.value + '_CDRH')) {
+          if (str.includes(inputs.cdrScheme.value + '_CDRH')) {
             let str_buffer = '';
             for (let i = 0; i < Object.keys(json.cdr_ranges[str]).length; i++) {
               let nindex1 = json.map_H[json.cdr_ranges[str][i][0]];
@@ -488,7 +479,7 @@ export class PvizAspect {
             scheme_buffer.push([col_cdr, str_buffer]);
             scheme_buffer.push([col_heavy_chain, "* and :H"]);
 
-          } else if (str.includes(inputs.cdr_scheme.value + '_CDRL')) {
+          } else if (str.includes(inputs.cdrScheme.value + '_CDRL')) {
             let str_buffer = ''
             for (let i = 0; i < Object.keys(json.cdr_ranges[str]).length; i++) {
               let nindex1 = json.map_L[json.cdr_ranges[str][i][0]];
@@ -558,7 +549,7 @@ export class PvizAspect {
 
     let lists = [];
 
-    inputs.ptm_choices.value.forEach(ptm => {
+    inputs.ptmChoices.value.forEach(ptm => {
       let selectorStrPTM = 'g.feature.' + ptm.replace(" ", "_") + ' rect.feature';
       let elPTM = document.querySelectorAll(selectorStrPTM);
       let el_lstPTM = pVizParams.ptmMap[chosenTracksChain].ptm_el_obj[mutcodes[ptm.replace(" ", "_")]];
@@ -593,6 +584,15 @@ export class PvizAspect {
           });
         }
       });
+    });
+  }
+
+  // resize handle
+  async pvizResize(inputs, chain, json) {
+    let host = chain == "H" ? inputs.pVizHostH : inputs.pVizHostL;
+
+    ui.onSizeChanged(host).subscribe(async (_) => {
+      await this.loadSequence(inputs, chain, json)
     });
   }
 }

@@ -17,15 +17,15 @@ export class NglAspect {
         let colorScheme = inputs.colorScheme;
         let col_background = colorScheme["col_background"];
 
-        inputs.ngl_host.style.backgroundColor = col_background;
+        inputs.nglHost.style.backgroundColor = col_background;
         view.box = true;
         this.pdbStr = pdbStr;
         //@ts-ignore
-        this.stage = new NGL.Stage(inputs.ngl_host);
-        this.schemeObj = this.CDR3(inputs.cdr_scheme, inputs.paratopes, json, colorScheme);
+        this.stage = new NGL.Stage(inputs.nglHost);
+        this.schemeObj = this.CDR3(inputs.cdrScheme, inputs.paratopes, json, colorScheme);
 
         await this.loadPdb(pdbStr, inputs.repChoice, this.schemeObj);
-        this.nglResize(inputs.ngl_host);
+        this.nglResize(inputs.nglHost);
 
     }
 
