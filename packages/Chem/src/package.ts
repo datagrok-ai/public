@@ -504,9 +504,3 @@ export async function chemSpaceTopMenu(table: DG.DataFrame, smiles: DG.Column) {
 export async function descriptors(table: DG.DataFrame, smiles: DG.Column) {
   return(getDescriptors(smiles));
 }
-
-export async function testFunc() {
-  return DG.DataFrame.fromCsv(
-`a,b,c
-1,2,3`);
-}
