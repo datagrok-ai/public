@@ -220,6 +220,7 @@ public class GrokConnect {
         });
 
         post("/set_settings", (request, response) -> {
+            System.out.println(request.body());
             gson.fromJson(request.body(), Settings.class);
             ConnectionPool.getInstance().setTimer();
             return null;
