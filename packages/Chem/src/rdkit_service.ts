@@ -1,9 +1,9 @@
-import {RdKitServiceWorkerHandler} from './rdkit_service_worker_handler';
+import {RdKitServiceWorkerClient} from './rdkit_service_worker_client';
 
 export class RdKitService {
 
   _nWorkers: number;
-  _workers: RdKitServiceWorkerHandler[] = [];
+  _workers: RdKitServiceWorkerClient[] = [];
   segmentLength: number = 0;
 
   constructor(nWorkers = -1) {
@@ -19,7 +19,7 @@ export class RdKitService {
     this._workers = [];
     let initWaiters = [];
     for (let k = 0; k < this._nWorkers; ++k) {
-      let worker = new RdKitServiceWorkerHandler();
+      let worker = new RdKitServiceWorkerClient();
       initWaiters.push(worker.moduleInit(webRoot));
       this._workers.push(worker);
     }

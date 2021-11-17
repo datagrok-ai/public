@@ -13,7 +13,7 @@ ctx.addEventListener("message", async (e: any) => {
     const webRoot = args[0];
     handler._rdKitModule = await createRDKit(webRoot);
     console.log("RDKit (worker) initialized");
-    handler._substructLibrary = new ServiceClass(handler._rdKitModule);
+    handler._substructLibrary = new ServiceClass(handler._rdKitModule, webRoot);
     port.postMessage({op: op});
   } else if (op === 'substructLibrary::init') {
     const result = handler._substructLibrary.init(args[0]);

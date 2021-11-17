@@ -4,8 +4,8 @@ export class RdkitServiceSubstructure extends RdKitServiceWorkerBase {
 
   library: any | null;
 
-  constructor(module: Object) {
-    super(module);
+  constructor(module: Object, webRoot: string) {
+    super(module, webRoot);
     this.rdKitModule = module;
     this.library = null;
   }
