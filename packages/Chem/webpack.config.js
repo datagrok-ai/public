@@ -3,7 +3,7 @@ const path = require('path');
 module.exports = (env, options) => ({
   mode: 'development',
   entry: {
-    package: ['./src/RDKit_minimal_2021.03_17.wasm', './src/package.ts']
+    package: ['./src/RDKit_minimal_2021.03_18.wasm', './src/package.ts']
   },
   devtool: options.mode !== 'production' ? 'inline-source-map' : 'source-map',
   devServer: {

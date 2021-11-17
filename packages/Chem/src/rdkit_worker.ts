@@ -1,4 +1,4 @@
-import {createRDKit} from './RDKit_minimal_2021.03_17.js';
+import {createRDKit} from './RDKit_minimal_2021.03_18.js';
 import {RdKitSubstructLibrary as SearcherClass} from './rdkit_substruct_library';
 // import {RdKitFingerprintSearcher as SearcherClass} from './rdkit_fingerprint_searcher';
 
