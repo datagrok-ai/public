@@ -1,9 +1,9 @@
-import {RdKitWorkerProxy} from './rdkit_worker_proxy';
+import {RdKitServiceWorkerHandler} from './rdkit_service_worker_handler';
 
-export class RdKitParallel {
+export class RdKitService {
 
   _nWorkers: number;
-  _workers: RdKitWorkerProxy[] = [];
+  _workers: RdKitServiceWorkerHandler[] = [];
   segmentLength: number = 0;
 
   constructor(nWorkers = -1) {
@@ -19,7 +19,7 @@ export class RdKitParallel {
     this._workers = [];
     let initWaiters = [];
     for (let k = 0; k < this._nWorkers; ++k) {
-      let worker = new RdKitWorkerProxy();
+      let worker = new RdKitServiceWorkerHandler();
       initWaiters.push(worker.moduleInit(webRoot));
       this._workers.push(worker);
     }
