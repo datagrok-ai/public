@@ -8,8 +8,8 @@ export class RdKitServiceWorkerMisc extends RdKitServiceWorkerSimilarity {
     setStructuralAlertsRdKitModule(module, webRoot);
   }
 
-  async initStructuralAlerts() {
-    await loadAlertsCollection([]);
+  initStructuralAlerts(smarts: string[]) {
+    loadAlertsCollection(smarts);
   }
 
   getStructuralAlerts(smiles: string) {

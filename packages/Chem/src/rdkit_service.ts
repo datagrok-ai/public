@@ -2,44 +2,44 @@ import {RdKitServiceWorkerClient} from './rdkit_service_worker_client';
 
 export class RdKitService {
 
-  _nWorkers: number;
-  _workers: RdKitServiceWorkerClient[] = [];
+  readonly _nJobWorkers = 1; // only 1 for now
+  _nParallelWorkers: number;
+  _jobWorkers: RdKitServiceWorkerClient[] = [];
+  _parallelWorkers: RdKitServiceWorkerClient[] = [];
+  _jobWorker: RdKitServiceWorkerClient | undefined;
   segmentLength: number = 0;
 
-  constructor(nWorkers = -1) {
-    if (nWorkers <= 0) {
-      const cpuLogicalCores = window.navigator.hardwareConcurrency;
-      this._nWorkers = Math.max(1, cpuLogicalCores - 2);
-    } else {
-      this._nWorkers = nWorkers;
-    }
+  constructor() {
+    const cpuLogicalCores = window.navigator.hardwareConcurrency;
+    this._nParallelWorkers = Math.max(1, cpuLogicalCores - 2);
   }
-  
+
   async init(webRoot: string): Promise<void> {
-    this._workers = [];
+    this._parallelWorkers = [];
+    this._jobWorkers = [];
     let initWaiters = [];
-    for (let k = 0; k < this._nWorkers; ++k) {
-      let worker = new RdKitServiceWorkerClient();
-      initWaiters.push(worker.moduleInit(webRoot));
-      this._workers.push(worker);
+    for (let i = 0; i < this._nParallelWorkers; ++i) {
+      let workerClient = new RdKitServiceWorkerClient();
+      if (i < this._nJobWorkers)
+        this._jobWorkers[i] = workerClient;
+      this._parallelWorkers[i] = workerClient;
+      initWaiters.push(workerClient.moduleInit(webRoot));
     }
     await Promise.all(initWaiters);
+    this._jobWorker = this._jobWorkers[0];
   }
-  
-  async _doParallel(fooScatter: any, fooGather = async (d: any) => []): Promise<any> {
 
+  async _doParallel(fooScatter: any, fooGather = async (d: any) => []): Promise<any> {
     let promises = [];
-    const nWorkers = this._nWorkers;
+    const nWorkers = this._nParallelWorkers;
     for (let i = 0; i < nWorkers; i++) {
       promises[i] = fooScatter(i, nWorkers);
     }
     let data = await Promise.all(promises);
     return fooGather(data);
-    
   }
-  
+
   async substructInit(dict: string[]): Promise<any> {
-   
     let t = this;
     return this._doParallel(
       async (i: number, nWorkers: number) => {
@@ -49,24 +49,23 @@ export class RdKitService {
         const segment = i < (nWorkers - 1) ?
           dict.slice(i * segmentLength, (i + 1) * segmentLength) :
           dict.slice(i * segmentLength, length);
-        return t._workers[i].substructInit(segment);
+        return t._parallelWorkers[i].substructInit(segment);
       },
       async (resultArray) => resultArray.reduce((acc: any, item: any) => {
-        item = item || { molIdxToHash: [], hashToMolblock: {} };
+        item = item || {molIdxToHash: [], hashToMolblock: {}};
         return {
-          molIdxToHash: [ ...acc.molIdxToHash, ...item.molIdxToHash ],
-          hashToMolblock: { ...acc.hashToMolblock, ...item.hashToMolblock }
+          molIdxToHash: [...acc.molIdxToHash, ...item.molIdxToHash],
+          hashToMolblock: {...acc.hashToMolblock, ...item.hashToMolblock}
         }
-      }, { molIdxToHash: [], hashToMolblock: {} })
+      }, {molIdxToHash: [], hashToMolblock: {}})
     );
   }
-  
+
   async substructSearch(query: string, querySmarts: string) {
-  
     let t = this;
     return this._doParallel(
       async (i: number, nWorkers: number) => {
-        return t._workers[i].substructSearch(query, querySmarts);        
+        return t._parallelWorkers[i].substructSearch(query, querySmarts);
       },
       async (data: any) => {
         for (let k = 0; k < data.length; ++k) {
@@ -75,7 +74,17 @@ export class RdKitService {
         }
         return [].concat.apply([], data);
       });
-  
+  }
+
+  async initStructuralAlerts(smarts: string[]): Promise<void> {
+    for (let i = 0; i < this._jobWorkers.length; ++i) {
+      await this._jobWorkers[i].structuralAlertsInit(smarts);
+    }
+  }
+
+  async getStructuralAlerts(smiles: string): Promise<number[]> {
+    // may be round-robin or job stealing in the future
+    return (await this._jobWorker!.structuralAlertsGet(smiles)) as number[];
   }
 
 }
