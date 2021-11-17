@@ -1,10 +1,19 @@
 import {RdKitServiceWorkerSimilarity} from './rdkit_service_worker_similarity';
-import {loadAlertsCollection, getStructuralAlerts} from './widgets/structural-alerts'
+import { loadAlertsCollection, getStructuralAlerts, setStructuralAlertsRdKitModule } from './widgets/structural-alerts';
 
 export class RdKitServiceWorkerMisc extends RdKitServiceWorkerSimilarity {
 
-  initStructuralAlerts() {}
+  constructor(module: Object, webRoot: string) {
+    super(module, webRoot);
+    setStructuralAlertsRdKitModule(module, webRoot);
+  }
 
-  getStructuralAlerts() {}
+  async initStructuralAlerts() {
+    await loadAlertsCollection([]);
+  }
+
+  getStructuralAlerts(smiles: string) {
+    return getStructuralAlerts(smiles);
+  }
 
 }

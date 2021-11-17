@@ -5,14 +5,15 @@ import {createRDKit} from './RDKit_minimal_2021.03_17.js';
 import {getMolColumnPropertyPanel} from './chem_column_property_panel';
 import * as chemSearches from './chem_searches';
 import {setSearchesRdKitModule, moleculesToFingerprints} from './chem_searches';
-import {setCommonRdKitModule, drawMoleculeToCanvas} from './chem_common';
+import {setCommonRdKitModule, drawMoleculeToCanvas} from './chem_common_rdkit';
 import {SubstructureFilter} from './chem_substructure_filter';
 import {RDKitCellRenderer} from './rdkit_cell_renderer';
 import * as OCL from 'openchemlib/full.js';
 import {drugLikenessWidget} from './widgets/drug-likeness';
 import {molfileWidget} from './widgets/molfile';
 import {propertiesWidget} from './widgets/properties';
-import {loadAlertsCollection, setStructuralAlertsRdKitModule, structuralAlertsWidget} from './widgets/structural-alerts';
+import {setStructuralAlertsRdKitModule, loadAlertsCollection} from './widgets/structural-alerts';
+import {structuralAlertsWidget} from './widgets/structural-alerts-widget';
 import {structure2dWidget} from './widgets/structure2d';
 import {structure3dWidget} from './widgets/structure3d';
 import {toxicityWidget} from './widgets/toxicity';
@@ -23,7 +24,7 @@ import {mcsgetter} from './scripts-api';
 import {getDescriptors} from './descriptors/descriptors_calculation';
 
 export let rdKitModule: any = null;
-export let rdKitWorkerWebRoot: string | undefined;
+export let webRoot: string | undefined;
 let initialized = false;
 let structure = {};
 const _STORAGE_NAME = 'rdkit_descriptors';
@@ -35,13 +36,15 @@ export let _package: any = new DG.Package();
 export async function initChem() {
   if (!initialized) {
     // structure.name = "Chem";
-    rdKitWorkerWebRoot = _package.webRoot;
+    webRoot = _package.webRoot;
     // @ts-ignore
-    rdKitModule = await createRDKit(rdKitWorkerWebRoot);
+    rdKitModule = await createRDKit(webRoot);
     setSearchesRdKitModule(rdKitModule);
     setCommonRdKitModule(rdKitModule);
-    setStructuralAlertsRdKitModule(rdKitModule);
-    await loadAlertsCollection();
+    setStructuralAlertsRdKitModule(rdKitModule, webRoot!);
+    const path = webRoot + 'data-samples/alert_collection.csv';
+    const table = await grok.data.loadTable(path);
+    await loadAlertsCollection(table.columns['smarts'].toList());
     console.log('RDKit (package) initialized');
     rdKitModule.prefer_coordgen(false);
     initialized = true;
@@ -181,7 +184,7 @@ export async function searchSubstructure(molStringsColumn: DG.Column, molString:
       throw "An input was null";
     let result =
       substructLibrary ?
-        await chemSearches.chemSubstructureSearchLibrary(molStringsColumn, molString, molStringSmarts, rdKitWorkerWebRoot) :
+        await chemSearches.chemSubstructureSearchLibrary(molStringsColumn, molString, molStringSmarts, webRoot) :
         chemSearches.chemSubstructureSearchGraph(molStringsColumn, molString);
     return DG.Column.fromList('object', 'bitset', [result]);
   } catch (e: any) {
