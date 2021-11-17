@@ -2030,7 +2030,7 @@ export class Qnum {
   }
 }
 
-interface ShapeOnViewer {
+interface LineOnViewer {
   type?: string;
   title?: string;
   description?: string;
@@ -2053,43 +2053,43 @@ interface ShapeOnViewer {
 
 export class DataFrameMetaHelper {
   private readonly df: DataFrame;
-  private shapes: ShapeOnViewer[] = [];
+  private lines: LineOnViewer[] = [];
 
   constructor(df: DataFrame) {
     this.df = df;
-    this.shapes = this.getShapes();
+    this.lines = this.getLines();
   }
 
-  getShapes(): ShapeOnViewer[] {
-    let json: string | null = this.df.getTag('.shapes');
+  private getLines(): LineOnViewer[] {
+    let json: string | null = this.df.getTag('.lines');
     if (json)
       return JSON.parse(json);
 
     return [];
   }
 
-  setShapes(shapes: ShapeOnViewer[] | null = null): void {
-    if (!shapes)
+  private setLines(lines: LineOnViewer[] | null = null): void {
+    if (!lines)
       return;
 
-    let json: string | null = _toJson(shapes);
+    let json: string | null = _toJson(lines);
     if (json)
-      this.df.setTag('.shapes', json);
+      this.df.setTag('.lines', json);
   }
 
-  addLine(shape: ShapeOnViewer): void {
-    shape.type = 'line';
-    this.addShape(shape);
+  private addItem(line: LineOnViewer): void {
+    this.lines.push(line);
+    this.setLines(this.lines);
   }
 
-  addBand(shape: ShapeOnViewer): void {
-    shape.type = 'band';
-    this.addShape(shape);
+  addLine(line: LineOnViewer): void {
+    line.type = 'line';
+    this.addItem(line);
   }
 
-  addShape(shape: ShapeOnViewer): void {
-    this.shapes.push(shape);
-    this.setShapes(this.shapes);
+  addBand(line: LineOnViewer): void {
+    line.type = 'band';
+    this.addItem(line);
   }
 }
 
