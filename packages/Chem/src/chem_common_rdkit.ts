@@ -4,7 +4,7 @@ import {RdKitService} from './rdkit_service';
 
 let commonRdKitModule: any = null;
 
-export async function setCommonRdKitModule(module: any) {
+export function setCommonRdKitModule(module: any) {
   commonRdKitModule = module;
 }
 

@@ -4,7 +4,7 @@ import * as DG from 'datagrok-api/dg';
 import {createRDKit} from './RDKit_minimal_2021.03_17.js';
 import {getMolColumnPropertyPanel} from './chem_column_property_panel';
 import * as chemSearches from './chem_searches';
-import {setSearchesRdKitModule, moleculesToFingerprints} from './chem_searches';
+import {setSearchesContext, moleculesToFingerprints} from './chem_searches';
 import {setCommonRdKitModule, drawMoleculeToCanvas} from './chem_common_rdkit';
 import {SubstructureFilter} from './chem_substructure_filter';
 import {RDKitCellRenderer} from './rdkit_cell_renderer';
@@ -13,7 +13,8 @@ import {drugLikenessWidget} from './widgets/drug-likeness';
 import {molfileWidget} from './widgets/molfile';
 import {propertiesWidget} from './widgets/properties';
 import {setStructuralAlertsRdKitModule, loadAlertsCollection} from './widgets/structural-alerts';
-import {structuralAlertsWidget} from './widgets/structural-alerts-widget';
+import {RdKitService} from './rdkit_service';
+import {initStructuralAlertsContext, structuralAlertsWidget} from './widgets/structural-alerts-widget';
 import {structure2dWidget} from './widgets/structure2d';
 import {structure3dWidget} from './widgets/structure3d';
 import {toxicityWidget} from './widgets/toxicity';
@@ -23,7 +24,8 @@ import {chemSpace} from './analysis/chem_space';
 import {mcsgetter} from './scripts-api';
 import {getDescriptors} from './descriptors/descriptors_calculation';
 
-export let rdKitModule: any = null;
+let rdKitModule: any = null;
+let rdKitService: any = null;
 export let webRoot: string | undefined;
 let initialized = false;
 let structure = {};
@@ -35,17 +37,21 @@ export let _package: any = new DG.Package();
 //name: initChem
 export async function initChem() {
   if (!initialized) {
-    // structure.name = "Chem";
     webRoot = _package.webRoot;
     // @ts-ignore
     rdKitModule = await createRDKit(webRoot);
-    setSearchesRdKitModule(rdKitModule);
     setCommonRdKitModule(rdKitModule);
     setStructuralAlertsRdKitModule(rdKitModule, webRoot!);
+    console.log('RDKit module package instance was initialized');
+    rdKitService = new RdKitService();
+    await rdKitService.init(webRoot);
+    console.log('RDKit Service was initialized');
+    setSearchesContext(rdKitModule, rdKitService);
     const path = webRoot + 'data-samples/alert_collection.csv';
     const table = await grok.data.loadTable(path);
-    await loadAlertsCollection(table.columns['smarts'].toList());
-    console.log('RDKit (package) initialized');
+    const alertsSmartsList = table.columns['smarts'].toList();
+    const alertsDescriptionsList = table.columns['description'].toList();
+    initStructuralAlertsContext(rdKitService, alertsSmartsList, alertsDescriptionsList);
     rdKitModule.prefer_coordgen(false);
     initialized = true;
   }
@@ -53,6 +59,12 @@ export async function initChem() {
 
 //tags: init
 export async function init() {
+  return initChem();
+}
+
+//name: initChemAutostart
+//tags: autostart
+export async function initChemAutostart() {
   return initChem();
 }
 

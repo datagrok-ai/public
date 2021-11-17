@@ -11,7 +11,7 @@ export function setStructuralAlertsRdKitModule(module: any, webRoot: string) {
   _webRoot = webRoot;
 }
 
-export async function loadAlertsCollection(smarts: string[]) {
+export function loadAlertsCollection(smarts: string[]) {
   _data = smarts;
   for (let i = 0; i < smarts.length; i++) {
     const currentSmarts = smarts[i];

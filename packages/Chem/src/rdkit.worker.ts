@@ -13,19 +13,23 @@ ctx.addEventListener("message", async (e: any) => {
     const webRoot = args[0];
     handler._rdKitModule = await createRDKit(webRoot);
     console.log("RDKit (worker) initialized");
-    handler._substructLibrary = new ServiceClass(handler._rdKitModule, webRoot);
+    handler._rdkitServiceWorker = new ServiceClass(handler._rdKitModule, webRoot);
     port.postMessage({op: op});
   } else if (op === 'substructLibrary::init') {
-    const result = handler._substructLibrary.init(args[0]);
+    const result = handler._rdkitServiceWorker.init(args[0]);
     port.postMessage({op: op, retval: result});
   } else if (op === 'substructLibrary::search') {
-    const result = handler._substructLibrary.search(args[0], args[1]);
+    const result = handler._rdkitServiceWorker.search(args[0], args[1]);
     port.postMessage({op: op, retval: result});
-  } else if (op === 'rdKitService:structuralAlerts') {
-
   } else if (op === 'substructLibrary::deinit') {
-    handler._substructLibrary.deinit();
-    handler._substructLibrary = null;
+    handler._rdkitServiceWorker.deinit();
+    handler._rdkitServiceWorker = null;
     port.postMessage({op: op});
+  } else if (op === 'structuralAlerts::init') {
+    const result = handler._rdkitServiceWorker.initStructuralAlerts(args[0]);
+    port.postMessage({op: op});
+  } else if (op === 'structuralAlerts::get') {
+    const result = handler._rdkitServiceWorker.getStructuralAlerts(args[0]);
+    port.postMessage({op: op, retval: result});
   }
 });
