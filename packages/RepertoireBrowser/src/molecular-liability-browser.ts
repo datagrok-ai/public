@@ -3,7 +3,7 @@ import * as grok from "datagrok-api/grok";
 import * as DG from "datagrok-api/dg";
 
 import { TwinPviewer } from "./viewers/twin-p-viewer"
-
+import { CompostionPviewer } from "./viewers/composition-p-viewer"
 import { _package } from "./package";
 
 export class MolecularLiabilityBrowser {
@@ -16,10 +16,12 @@ export class MolecularLiabilityBrowser {
   filterIcon: HTMLElement;
   queryIcon: HTMLElement;
   hideShowIcon: HTMLElement;
+  hideShowIcon2: HTMLElement;
 
   twinPviewer: TwinPviewer;
+  compostionPviewer: CompostionPviewer;
 
-  #changeVid = (): void => {
+  #changeVid = async (): Promise<void> => {
     if (!this.vids.includes(this.vIdInput.value)) {
       grok.shell.warning("No PDB data data for associated v id");
       return;
@@ -246,6 +248,26 @@ export class MolecularLiabilityBrowser {
     });
   }
 
+  #setHideShowIcon2 = (): void => {
+    this.hideShowIcon2 = ui.iconFA('eye', () => {
+      if (this.hideShowIcon2.classList.value.includes('fa-eye-slash'))
+        grok.events.fireCustomEvent("showAllDock2", null);
+      else
+        grok.events.fireCustomEvent("closeAllDock2", null);
+    });
+    this.hideShowIcon2.classList.value = 'grok-icon fal fa-eye-slash';
+
+    grok.events.onCustomEvent("closeAllDock2").subscribe((v) => {
+      this.compostionPviewer.close(this.mlbView);
+      this.hideShowIcon2.classList.value = 'grok-icon fal fa-eye-slash';
+    });
+
+    grok.events.onCustomEvent("showAllDock2").subscribe((v) => {
+      this.compostionPviewer.open(this.mlbView, this.mlbTable);
+      this.hideShowIcon2.classList.value = 'grok-icon fal fa-eye';
+    });
+  }
+
   async init(urlVid: string | null) {
 
     ////////////////////////////////////////////////////
@@ -256,14 +278,17 @@ export class MolecularLiabilityBrowser {
     this.vids = ["VR000000008", "VR000000043", "VR000000044"];
     ////////////////////////////////////////////////////
 
+    this.compostionPviewer = new CompostionPviewer();
+
     this.#setView();
     this.#setPropertiesFilters();
     this.#setVidInput();
     this.#setFilterIcon();
     this.#setQueryIcon();
     this.#setHideShowIcon();
+    this.#setHideShowIcon2();
 
-    this.mlbView.setRibbonPanels([[this.vIdInput.root], [this.filterIcon, this.queryIcon, this.hideShowIcon]]);
+    this.mlbView.setRibbonPanels([[this.vIdInput.root], [this.filterIcon, this.queryIcon, this.hideShowIcon, this.hideShowIcon2]]);
     
     if (urlVid != null) 
       this.vIdInput.value = urlVid;

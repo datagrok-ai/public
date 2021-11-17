@@ -2,13 +2,11 @@ import * as ui from "datagrok-api/ui";
 import * as grok from "datagrok-api/grok";
 import * as DG from "datagrok-api/dg";
 
-// import { MolecularLiabilityBrowserPanel } from "./molecular-liability-browser-panel.js"
 import { NglAspect } from "./ngl-aspect"
 import { PvizAspect } from "./pviz-aspect"
 import { MiscMethods } from "./misc.js"
 
 import { _package } from "../package";
-import { DockNode } from "datagrok-api/dg";
 
 export class TwinPviewer {
   root: HTMLElement;
