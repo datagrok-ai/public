@@ -1,4 +1,4 @@
-import Worker from "worker-loader!./rdkit_worker";
+import Worker from "./rdkit.worker.ts"; // .ts!
 
 export class RdKitWorkerProxy {
 
