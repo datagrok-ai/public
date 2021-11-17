@@ -39,7 +39,7 @@ let caseCntr = 0;
 async function testCase(title, f) {
   let msg = await DG.timeAsync(++caseCntr + '. ' + title, f);
   if (typeof msg === 'string')
-  	console.log(msg);
+  	console.log("   " + msg);
 }
 
 (async () => {
@@ -98,15 +98,20 @@ async function testCase(title, f) {
 
   const searchFor = [
     'c1ccccc1', // Benzene https://www.ebi.ac.uk/chembl/compound_report_card/CHEMBL277500/ 
-    'CC(=O)Oc1ccccc1C(=O)O' // Aspirin https://www.ebi.ac.uk/chembl/compound_report_card/CHEMBL25/
+    'CC(=O)Oc1ccccc1C(=O)O', // Aspirin https://www.ebi.ac.uk/chembl/compound_report_card/CHEMBL25/
+    'CCCCCCCCCCCCCCCCCC(=O)O', // Stearic acid https://www.ebi.ac.uk/chembl/compound_report_card/CHEMBL46403/
+    'NCCCC[C@H](N)C(=O)O' // Lusine https://www.ebi.ac.uk/chembl/compound_report_card/CHEMBL8085/
   ];
+  
+  const searchForNames = ['Benzene', 'Aspirin', 'Stearic acid', 'Lusine'];
 
   await testCase(`Substructure search, building a library of ${col.length} molecules`, async () =>
     await grok.chem.searchSubstructure(col));
-  await testCase(`Substructure search, searching benzene in ${nSearch} molecules`, async () => {
-    let s = await grok.chem.searchSubstructure(col, searchFor[0]); return `Found ${s.trueCount} molecules for ${searchFor[0]}`; });
-  await testCase(`Substructure search, searching aspirin in ${nSearch} molecules`, async () => {
-    let s = await grok.chem.searchSubstructure(col, searchFor[1]); return `Found ${s.trueCount} molecules for ${searchFor[1]}` });
+  
+  
+  for (let i = 0; i < searchFor.length; ++i)
+    await testCase(`Substructure search, searching ${searchForNames[i]} in ${nSearch} molecules`, async () => {
+      let s = await grok.chem.searchSubstructure(col, searchFor[i]); return `Found ${s.trueCount} molecules for ${searchFor[i]}`; });
 
   await testCase(`Similarity scoring, building a library of ${col.length} molecules`, async () =>
     await grok.chem.getSimilarities(col));
