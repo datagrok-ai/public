@@ -29,7 +29,7 @@ let structure = {};
 const _STORAGE_NAME = 'rdkit_descriptors';
 const _KEY = 'selected';
 
-export const _package = new DG.Package();
+export let _package: any = new DG.Package();
 
 //name: initChem
 export async function initChem() {
@@ -490,7 +490,7 @@ export function rGroupsAnalysis(df: DG.DataFrame, col: DG.Column) {
 //input: dataframe table
 //input: column smiles { semType: Molecule }
 //output: viewer result
-export async function chemSpaceTopMenu(table: DG.DataFrame,smiles: DG.Column) {
+export async function chemSpaceTopMenu(table: DG.DataFrame, smiles: DG.Column) {
   return new Promise<void>(async (resolve, reject) => {
     await chemSpace(table, smiles);
     resolve();
@@ -501,6 +501,12 @@ export async function chemSpaceTopMenu(table: DG.DataFrame,smiles: DG.Column) {
 //tags: panel
 //input: column smiles { semType: Molecule }
 //output: string result
-export async function descriptors(table: DG.DataFrame,smiles: DG.Column) {
+export async function descriptors(table: DG.DataFrame, smiles: DG.Column) {
   return(getDescriptors(smiles));
+}
+
+export async function testFunc() {
+  return DG.DataFrame.fromCsv(
+`a,b,c
+1,2,3`);
 }
