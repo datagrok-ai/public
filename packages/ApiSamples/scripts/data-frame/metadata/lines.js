@@ -129,7 +129,7 @@ demog.meta.addLine({
   equation: '${height} = 147 - sqrt(pow(20, 2) - pow((${weight} - 188.95), 2)) * 1.0',
   zindex: -45,
   color: "#228B22",
-  width: 4,
+  width: 20,
   style: 'dotted'
 });
 
