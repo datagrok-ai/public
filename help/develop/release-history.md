@@ -1,6 +1,841 @@
 <!-- TITLE: Release History -->
 <!-- SUBTITLE: -->
 
+# 2021-11-18 Stable version 0.95.0
+
+## Latest Docker Images
+
+* Datagrok: 
+  *  `docker pull datagrok/datagrok:0.95.0`
+  *  `docker pull datagrok/datagrok:stable`
+* CVM: 
+  *  `docker pull datagrok/cvm:0.95.0`
+  *  `docker pull datagrok/cvm:stable`
+  
+* [Docker-Compose](admin/docker-compose.md)
+
+## Addressed Issues
+
+* updated clinical demo files project 
+* Script Editor, snippets menu 
+* #53 Tutorials package: EDA track (WIP) 
+* Selenium: Add attributes "name" to elements of the new AddNewColumn dialog 
+* JS API: onDialogShown event 
+* Rename d4-input-editor class 
+* Add superclass to the Dialog widget 
+* (Bug) Grok connect: non-parameterized query is not logged 
+* Grok connect: log params in parameterized query 
+* Update README.md 
+* Wiki: Peptides 
+* Update script-editor.ts 
+* Fiexed misinformation in data access tutorial 
+* JS API: add dialog's title 
+* Connectors: Support Array input parameters #90 
+* JS API: Dialog.inputs 
+* Can't execute .applyFormula on column without formula tag #95 
+* chem:svgMol function -> molfile format support added 
+* DrugBank package -> search functions and widgets added 
+* Data on demand 
+* #53 Tutorials package: Data connectors tutorial 
+* DrugBank package -> excessive header removed 
+* Added cache checkbox 
+* resolves #97 datagrok-tools: package content validation: check scripts location 
+* Fix UI tests (WIP)
+* Fixed js-api links 
+* sdf file-reader 
+* Fix a typo 
+* #53 Tutorials package: lock `rxjs` version 
+* sdf reader fix 
+* Update package.js 
+* #53 Tutorials package: Multivariate analysis tutorial 
+* added survival analisys view 
+* #53 Tutorials package: temporary ts-ignore for new functionality 
+* Wiki: misc small fixes. 
+* ApiSamples: a case typo in a sketcher sample. 
+* Wiki: initial Style Guide for Help contributors. 
+* Release: adding a versioned hand-crafted Release Notes. 
+* updated survival analysis view and r scripts 
+* moved reading of validation rules table to clinicalCaseApp() function 
+* Release Notes: 2021-05-10, accumulating. wip 
+* Release Notes: 2021-05-21, accumulating. wip 
+* Release Notes: 2021-06-10, accumulating. wip 
+* Update render-items.js 
+* Update custom-cell-rendering-indexes.js 
+* Release Notes: 2021-07-14, accumulating. wip 
+* Release Notes: 2021-07-29, accumulating. wip 
+* Release Notes: 2021-07-29, short annotation. wip 
+* Release Notes: 2021-07-29 Build 0.93.0 
+* #53 Tutorials package: adjustments to new UI, code clean-up 
+* Release Notes: cleanup. 
+* Wiki: Update filter help 
+* corrections of ui for survival view 
+* Peptides: generate a dataset for further analysis 
+* (Bug) Grok connect: query isn't logged on exception 
+* Filters wiki page update 
+* Wiki: Dataframe (WIP)
+* updated survival analysis view 
+* Initial commit 
+* Fixed training 
+* Fixed typos 
+* #104 Wiki: Library tour 
+* Add ui.switch to examples and docs 
+* added creation of survival dataset (for first SAE occurance), updated survival analisys view 
+* UI improvements in survival analysis view 
+* ApiSamples: fixed a typo. 
+* Docker Compose: a new CVM yaml file. 
+* Docker Compose: adding an old yaml for history. 
+* Docker Compose: removing the old yaml. 
+* Docker Compose: linkified the Docker yaml. 
+* Wiki: Custom machine learning models. Cleanup 
+* Wiki: Custom machine learning models. Links 
+* Charts: fix a package publication error 
+* JS API: update MapChangeArgs interface 
+* #53 Tutorials package: change node placement 
+* #53 Tutorials package: EDA: viewers (WIP) 
+* JS API: add event args types to onViewerAdded/onViewerClosed 
+* Oligo Batch Calculator: detect errors when code table contains one-char and two-chars codes 
+* Sequence Translator: Creating a mol file from the landing page 
+* Pairwise sequences alignment 
+* JS API: Create percentile calculation function 
+* Clarified what the percentile function is. 
+* added hospitalization and drug related ae to Kaplan-Meier endpoints, added ability to choose lab values on Patient profile 
+* fized tooltips, yAxesLabels and linechart title in multiplot 
+* Update package.ts 
+* Stacked barchart added 
+* Wiki: Capitalization 
+* Wiki: Capitalization. Adjustments for source codes with # 
+* Decompose the calculated columns example 
+* API Samples: a few additional links 
+* #110: Chem: dynamic sketchers 
+* GROK-GitHub-109 JS API: DataFrame.insert wrong order of optional argument 
+* GROK-GitHub-109 JS API: DataFrame.insert wrong order of optional argument. Type fix 
+* API Samples: simplify an info panel example 
+* Wiki: Small rendering adjustments 
+* JS API: grok.shell.windows.showRibbon flag 
+* JS API: dataframe.ts cleanup. 
+* null 
+* aligned sequence split function 
+* fixed splitAlignedPeptides function 
+* added splitAlignedSequence panel function 
+* closes #113 datagrok-tools: package template: add eslint config file 
+* Update CONTRIB.md 
+* Peptides: compile the initial dataset, detect sequence, split   
+* rewrite Peptides package in TypeScript 
+* Add SAR viewer 
+* JS API: fix type warnings 
+* Peptides: refactor 
+* Peptides: simplified the aligned sequence detector 
+* Stacked barchart: Selection style changed, datagrok palette added, axis display simplified, unreadable bar labeles removed, trying to fix escaping bars bug. 
+* #114: Bio: grid cell renderer for sequences 
+* Sequence: made it work again; code cleanup. 
+* Wiki: Restructure. Access (WIP)
+* escaping bar bug is fixed 
+* JS API: BitSet.and, or, xor, andNot 
+* Peptides: drawing circles in a grid instead of numbers 
+* Peptides: viewer rework 
+* (Bug) JS API: Table.rows.filter() doesn't work if called after opening the table 
+* Minor improvements 
+* JS API: a type for property options 
+* Peptides: added activity scaling options 
+* Peptides: source table selection based on viewer select 
+* Peptides: refactor according to coding guidlines 
+* JS API: Minor harmonization 
+* Peptides: dataset fix 
+* added ability to select values for y axe in multiplot, updated patient profile and timelines views 
+* Peptide Cell renderer 
+* #53 Tutorials package: ML (predictive modeling tutorial): missing values imputation 
+* Clinical Cases UI update 
+* (Bug) Apps: App button goes to common heap instead of separate tab 
+* Rollback 
+* Peptides: added help to property panel, minor improvements 
+* Fixed views creation 
+* Fixed typing 
+* Peptide cell renderer 
+* Peptides: color scheme for sequences 
+* update clinical cases UI 
+* Packages: change the API source 
+* DevTools: a polyfill for replaceAll 
+* Peptides: scaling method replace ln -> lg 
+* Fixed Analyzer warning 
+* Removed old dependency 
+* lock files 
+* Barchart: Font changed to serif-sans, column numeration changed, current row highlighting added 
+* Peptides: renderer fix 
+* Peptides: added histogram and updated stats, scaling fix 
+* (Bug) Chem: External sketcher, filtering and SMARTS 
+* JS API: add missing toJs in package.getProperties() 
+* Wiki: package settings 
+* exposed JSMol::get_smarts 
+* Peptides: AA sem type detector 
+* Peptides: property panel WIP 
+* Add "iconTool" to devTools 
+* Peptides: property panel fix 
+* Peptides: finished converting to TS, code cleanup 
+* Linter rules update 
+* Removed an unused dependency 
+* UsageWidget: code cleanup 
+* #117: PowerPack: PowerSearch: search templates \- added server-based collections of templates 
+* implemented ability to set min and max values in multiplot 
+* #117: PowerPack: PowerSearch: build fix 
+* #117: PowerPack: PowerSearch: search templates \- added package settings for templates paths 
+* implmented multiple lines on linechart using eChart graphs 
+* fixed multiplot tooltips bug 
+* implemented changing height of scatter plot with categories multiselect in multiplot 
+* #53 Tutorials package: ML (predictive modeling tutorial): actions for the model training view 
+* updating survival plots on tab click in case filters changed 
+* Peptides: Aligned sequence cell renderer text properly aligned, readability increased 
+* Peptides: analyzePeptides fix 
+* Peptides: color coding circles based on MAD 
+* Peptides: help fix 
+* DevTools: add data connection examples 
+* #53 Tutorials package: code clean-up 
+* #53 Tutorials package: helpers for working with view inputs 
+* Update icons for packages 
+* Update package.png 
+* Update Laboratory view 
+* Peptides: color coding optimization 
+* #53 Tutorials package: openViewByType method 
+* JS API: add examples with the linear color-coding 
+* Peptides: color-coding fix, split sequence join 
+* Closes #118 JS API: color-coding methods (Column.colors) 
+* Peptides: Stacked barchart transfered to ts and added to package 
+* logo Viewer for Peptides 
+* Peptides: Fixed cell renderer column width 
+* Update about-widget.ts 
+* Fix property initialization warnings 
+* DG.Package: methods for working with files 
+* SMARTS: test possible solutions for aromatization/kekulization 
+* Tutorials package: give rights for editing 
+* JS API: DG.Color.linear() 
+* Peptides: ui fixes 
+* JS API: menu order parameter 
+* JBIO: prepare color schemes for NGL viewer 
+* Peptides: various fixes and improvements 
+* Peptides: refactoring 
+* datagrok-tools: adjust lint scripts for recursive directory check 
+* changed enrollent linechart to cumulative sum, implemented request to clinicaltrials.gov for study info, added split of AEs barcharts by treatment arm 
+* JS API: Add Legend widget 
+* tutorials update 
+* Peptides: typo fixed 
+* Peptides: Added AA cell-renderer, changed sequence cell renderer 
+* update icon 
+* #53 Tutorials package: change the storage structure (refactoring, WIP) 
+* #53 Tutorials package: a proper way to access a tutorial's track (refactoring, WIP) 
+* Closes #119 Chem: Alignment differs for same MolBlocks with different offsets 
+* #53 Tutorials package: css files (refactoring, WIP) 
+* Closes #120 Chem: Rotation flicker when using alignment 
+* Peptides: AA render in sar viewer 
+* #117: PowerPack: PowerSearch: search templates 
+* update tutorials. Add css style 
+* tutorials images 
+* update tutorials 
+* Closes #121 (+ #77). Chem: Support SMARTS 
+* Peptides: histogram rework WIP 
+* #53 Tutorials package: code clean-up, hint styling 
+* Peptides: histogram fix WIP 
+* update imgages for tutorials 
+* #122 JS API: RowGroup class 
+* #53 Tutorials package: openDialog method 
+* Peptides: histogram rework and fix 
+* Closes #123 Chem: Substructure search to intercept SMARTS if MolBlock fails 
+* tutorials updates 
+* #53 Tutorials package: cheminformatics track: descriptors 
+* JS API: onContextMenuItemClick 
+* fixes #119 
+* Chem: property-panel WIP 
+* #53 Tutorials package: ability to pass a cusom promise for an action, helper for selecting an item from the context menu, code clean-up 
+* Chem: Substructure filter 
+* Docker Compose: Remove profiles 
+* (Bug) Filter resets when user recalculates column formula 
+* Peptides: t-test, u-test and histogram changes WIP 
+* Compute package, initial commit. 
+* Compute: Readme.md, continued. 
+* JS API: add more specific types 
+* update tu 
+* Revert "Merge branch 'master' of https://github.com/datagrok-ai/public" 
+* Pubchem: Search panels 
+* implemented legend and switching type of linechart in multiplot. Implemented study summary property panel 
+* HitTriage: initial commit 
+* HitTriage: documentation: work in progress 
+* Grok Connect: Update script 
+* Peptides: center aar 
+* Peptides: various improvements WIP 
+* Peptides: polishing 
+* Peptides: add a real-like dataset for analysis 
+* updated tooltips in timelines view, added dynamic change of lines width depending on zoom to timelines chart 
+* Peptides: Cell renderer split sequence fix & Header barchart 
+* #53 Tutorials package: tutorial cancelation (WIP) 
+* Peptides: verious fixes and improvements 
+* #53 Tutorials package: set initial value in `clearRoot` 
+* #53 Tutorials package: remove unnecessary status update 
+* Substructure filter:undefined column & searchSubstructure changes fix 
+* JBIO: prepare tooltips and update ux 
+* Peptides: fix header renderer 
+* Peptides: clipped all cells 
+* Peptides: minor fixes and improvements 
+* Peptides: BC viewer is now rendered in onCellRender 
+* Peptides: Snake case function name fixed 
+* Peptides: Header BC selection and current column highlighting & labels added 
+* Peptides: more minor fixes and improvements 
+* #53 Tutorials package: make step description optional 
+* #53 Tutorials package: show completed step descriptions on click 
+* Peptides:Cell renderers for aa and aligned sequences for advanced dataset & some colors for barchart 
+* Peptides:Fixed 
+* Peptides:Fixed Errors 
+* Peptides: moved logo viewer 
+* Peptides: u-test rework 
+* Peptides: small fixes and improvements 
+* Form: onFormCreating event for adjusting the default column selection 
+* Commented out BitSet.setFast() 
+* #117: PowerPack: PowerSearch: code cleanup and refactoring 
+* Added a picture for dynamic molecular sketchers 
+* JS API: "file edited" event (WIP)
+* Resolves #134 
+* DataFrame.onSorted event 
+* DataFrame.onRowsFiltered event 
+* #53 Tutorials package: Predicitve Modeling (WIP) 
+* #53 Tutorials package: Multivariate Analysis 
+* Peptides: Added indent & small fixes 
+* JS API: Functions: Added help for toString() function 
+* Peptides: Long modifications hidden & tooltip added 
+* #53 Tutorials package: allow text selection in steps 
+* #53 Tutorials package: track restructuring 
+* #53 Tutorials package: track progress formatting 
+* property panel in Adverse events view, updated box plot view(added default box plots based on p-value, added strata choice) 
+* clinical case fix box-plots view 
+* JS API: TabPane.header 
+* added check for number of stratas in box plots view 
+* JS API: Ability to access FuncCall options and aux 
+* Strict always on 
+* Better events in AddNewColumn 
+* #53 Tutorials package: add missing help URL 
+* update tutorial widget 
+* #53 Tutorials package: data connectors tutorial 
+* Fixed links 
+* #53 Tutorials package: handle edge cases in openViewByType 
+* Peptides:Basic responsive header barchart 
+* Peptides:Fixed color coding rules for AAR && AA are now rendered with short names 
+* update tutorial images 
+* #53 Tutorials package: Predicitve Modeling 
+* Removed debug printout. 
+* update widgets 
+* #53 Tutorials package: viewer basics (WIP) 
+* Peptides:Fixed cell renderer 
+* Peptides: analyse and select the most appropriate subset in the "real@ dataset for tool performance 
+* Peptides: fixed L color and added full AA names 
+* JBIO: removing test files 
+* #53 Tutorials package: viewer basics 
+* Filters: proper detaching from events 
+* (Bug) Chem Filter: After reopening the filter, browser tab with Datagrok freezes (WIP)
+* #53 Tutorials package: Filters (EDA track) 
+* Peptides: sketcher-tooltip for aar & refactoring chem palette 
+* Peptides: Barchart fixes & tooltip added 
+* Peptides: Sar aar tooltip added 
+* Peptides: Aligned sequens are now aligned 
+* HitTriage WIP 
+* Peptides: Full sequence mol-graph widget 
+* Peptides: polishing 1 for user meeting 
+* Peptides: Aligned sequence are aligned for sure 
+* Better typing 
+* Fixed CSS issue 
+* (Bug) JS: Property setter doesn't work on FuncCall 
+* Package files: Remove path prefix 
+* update learning widget 
+* Peptides: Initial table columns are hidden& Full AAname added to tooltip 
+* Revert "Better typing" 
+* Peptides: Activity column unhidden 
+* Peptides: Barchart fix 
+* Peptides: help 
+* Peptides: fix the number of significant digits in statistics 
+* Peptides: minor polishing 
+* (Bug) Add New Column: Exception after opening dialog for editing an already added column 
+* #135: DevTools: a lightweight package unit-testing framework 
+* PowerPack: Ability to hide welcomeView 
+* Added "molecules" demo dataset that could be used synchronously (grok.data.demo.molecules) 
+* (Bug) Chem: Pass SMARTS properly to searchSubstructure (WIP)
+* Widget.temp property (WIP)
+* added time profile and adverse event browser views 
+* Programming exercises (WIP)
+* #53 Tutorials package: Viewers (EDA track) 
+* Sequence Translator: enhancements to AxoLabs display  
+* Update tutorials widget 
+* Peptides: various fixes and imporvements 
+* JS API: Add method to easily customize lines & bands in a Scatter Plot 
+* SequenceTranslator: OligoBatchCalculator: added image and links to YouTube presentations 
+* #53 Tutorials package: chem: Activity prediction (WIP) 
+* Help & JS Examples: Add info about lines & band in a Scatter Plot 
+* Wiki: Simplify Develop and Getting Started (WIP)
+* updated AE browser property panel, fixed bug with property getter in Timelines viewer, fixed bug in Survival analysis view 
+* removed dm from additional domains in AE browser property panel 
+* Fixes #136: Client-side SDF file reader 
+* Removed the sdf file reader from Chem (since it is now part of the OpenChemLib) 
+* Peptides: minor improvements 
+* Help: Change youtube video to screenshots (WIP)
+* #53 Tutorials package: chem: update datasets 
+* #132 Chem: Move Substructure Filter panel to the package 
+* Removed debug printout 
+* #132 Chem: Move Substructure Filter panel to the package. Grooming 
+* #138 Chem: Text search for molecules in the sketcher. wip: SMILES only 
+* Update CONTRIB.md, grooming 
+* Updated UI in Time profile, Box plots, Matrix, Summary views. Fixed bugs in Survival analysis view 
+* #132 Chem: Move Substructure Filter panel to the package. Collaborative filtering 
+* #132 Chem: Move Substructure Filter panel to the package. Substruct library 
+* #139 Chem: Move from .tags to .temp 
+* Expose DataSourceCardView to TS-API (WIP)
+* ModelHub initial commit 
+* Peptides: various fixes and improvements WIP 
+* added summary view description to readme 
+* summary view screenshots 
+* updated images links 
+* added gif of summary view 
+* added summary gif 
+* set gif width and height 
+* timelines view description 
+* corrected typo 
+* patient profile view description 
+* correced markdown 
+* All dependent columns should be recalculated after new formula was applied (WIP)
+* Molecular Liability Browser: refactor to handle common actions in NGL and pViz 
+* adverse events view description 
+* Set version to 0.94.0 
+* Grok connect: log query execution time by steps  
+* Seldon: initial package commit 
+* added laboratory view description 
+* #93 Peptides: fixed 2d view 
+* Peptides: Barchart fix again && sar-list-viewer && little fixes 
+* Peptides: filter fix and other improvements 
+* Peptides: Sequence width 
+* biomarkers distribution description, updated biomarkers distribution view(created ribbon panel) 
+* #53 Tutorials package: base class improvements 
+* added correlation matix view description 
+* added time profile description 
+* Peptides: viewer row sorting and colors fix 
+* added ae browser description 
+* Peptides: Sar-list update 
+* Revert "Peptides: Sar-list update" 
+* Revert "Merge remote-tracking branch 'origin/master'" 
+* Update Usage analysis package 
+* Peptides: deleted commented code 
+* updated boxplots view 
+* Update icon 
+* JS-API: ContextActions method 
+* JS-API: star() method 
+* JS-API: Accordion pane counts 
+* JS-API: author getter 
+* JS-API: Accordion.addTitle method 
+* Renamed package 
+* add chemSimilarityAnalysis 
+* added validation view description, fixed bug with time profile view 
+* #53 Tutorials package: add missing titles 
+* updated ae browser gif 
+* Connection pool test 
+* Clinical Case: update property panel 
+* View: helpUrl setter 
+* #53 Tutorials package: chem: renaming 
+* added p-values to box plots, updated survival analysis view 
+* Added example of setUpdateIndicator. 
+* Peptides: minor refactoring 
+* Model Catalog stubs 
+* Support Ad-Hoc queries in JS 
+* Update localhost.docker-compose.yaml 
+* Fixed typos and replaced oudated resources in Help/develop and Help/exercises sections. Added illustrations. 
+* Update package icons 
+* JBIO: all PTMs tracks syncing 
+* Wiki: add missing heading for chem articles 
+* Sequence Translator: Enhancements to SVG 
+* (Bug) Usage analysis: UA widget doesn't work for JnJ 
+* JS API: Menu.root 
+* #53 Tutorials package: getMenuItem helper for visual hints 
+* #53 Tutorials package: entry function fix 
+* #53 Tutorials package: add visual hints for the top menu 
+* Locked postgres image version 
+* JBIO: PTMs syncing with paratopes and cdr 
+* JBIO: motif PTMs in own track and group 
+* Peptides: major refactoring, viewers merging 
+* Peptides: Refactor & nasty bugs fixed & selection mode for SARV 
+* ChemblApi 
+* #150 Chem: Move to webpack and TS. wip 
+* added laboratory linechart with changes within normalized normal ranges, changed AE browser view to TableView, updated survival analysis view UI 
+* added survival analysis description 
+* Code cleanjup 
+* JS-API: Packages test framework (WIP)
+* Fixed naming 
+* JS-API: AccordionPane.root property 
+* JS API: Filters (WIP)
+* JS API: Accordion.header 
+* Pubchem API 
+* Wiki: Using lists in parameterized queries 
+* #150 Chem: Move to webpack and TS. Moved to webpack 
+* add web workers 
+* #53 Tutorials package: add visual hints for the sidebar panes 
+* Accordion: more documentation 
+* Minor code cleanup. 
+* Removed accidentaly added functions 
+* Resolves #165: Folder Browser Preview Functions 
+* Formatting in Compute fixed 
+* Added manual outliers detection 
+* Peptides: removing lock 
+* Sequence Translator: option to be able to  view just users’ pattern  
+* Added eslint config and formatted all existing files 
+* #53 Tutorials package: chem: virtual screening 
+* SequenceTranslator: minor code simplification 
+* Oligo Batch Calculator: assume sequence representation by it's first valid code 
+* datagrok-tools: `grok api` command 
+* corrected typos in readme, updated ae browser property panel, adde labels to reference lines in laboratory linechart 
+* Added generated dataframes return 
+* Removed puppeteer dep 
+* implemented lazy view loading 
+* PubChemApi: export PubChem class 
+* ChemblApi: Iupac name function 
+* Added promise resolve on dialog closing 
+* Added protection from multiple dialog opening 
+* Added column existence check before the column insertion 
+* Added function abort on cancel event 
+* Added RemoveOutlier button 
+* Fixed backgroundColor option to be optional 
+* Changed "detection" tem to "selection" term 
+* Lasso tool is enabled by default 
+* Fixed typo in ui.list example 
+* added help for summary view 
+* added help urls for views 
+* moved seting of help urls to constructors 
+* Lesser fixes for tutorials 
+* use byteArray type as fingerprint in similarityAnalysis function 
+* Fixed scatterPlot width 
+* Changed non-mutating outlier selection on mutating 
+* updated laboratory help 
+* Timelines: remove a hard-coded column name 
+* (Bug) Package Properties: default values are ignored 
+* Replaced ScatterPlot legend by Grid 
+* (Bug) Oligo Batch Calculator: grid doesn't appear if sequence was recognized as valid 
+* Added group delete button to the group row 
+* #150 Chem: Move to webpack and TS. Fix wrong refactoring 
+* new release history 
+* Molecular Liability Browser: intremidiate commit 
+* Chembl: added few more queries 
+* Added remove group button to group grid 
+* add minor improvements 
+* Grok connect: connection pool 
+* #169 Chem: Molecule rendering to a canvas with an optional SMARTS scaffold 
+* #150: Chem: Move to webpack and TS. Moving to TS, wip 
+* #150: Chem: Move to webpack and TS. Moving to TS, wip. Compiles 
+* #150: Chem: Move to webpack and TS. Moving to TS, wip. Workers work 
+* #150: Chem: Move to webpack and TS. Moving to TS, wip. Caches work 
+* add class BitArray 
+* #53 Tutorials package: delete data available via the demo files connection 
+* PubChemApi: make IUPAC name function async 
+* Prototype of exportCallFunc added 
+* Moved exportFuncCall to the distinct file 
+* Refactored exportFuncCall 
+* JS-API: property.category 
+* Refactored to keep interface clean 
+* Changed mark/unmark buttons behaviour 
+* Closes #166: Chem: moved panels from core 
+* Update parameterized-queries.md 
+* Linked to the YouTube video 
+* Fixed return type on propertyType getter/setter 
+* Removed type casts on propertyType calls 
+* Added automatic detection dialog 
+* Export function refactoring 
+* Updated Datagrok/Grok wording, fixed missing links 
+* CI: publish packages to npm 
+* improved performance of views loading, added check for missing tables 
+* Added dynamic autodetection dialog render 
+* Chanched functions search principle 
+* fix some bug 
+* Chem: chembl & pubchem id/link to report card added 
+* Grok connect: added Hikari library 
+* Chembl: fix 
+* ChemblBrowser: fix 
+* Added MVP of automatic outliers detection 
+* Oligo Batch Calculator: get codes from input object 
+* Closes #171 Chem: implemented OCL renderer 
+* Fixed the case of multiple autodetections 
+* Fixed imports in outliers selection 
+* Change return type 
+* datagrok-tools: code restructuring 
+* Fix package names 
+* GitHub Actions: Update packages/PhyloTreeViewer/package-lock.json 
+* js-api right version [skip actions] 
+* Grok connect: No suitable driver found for Hive query #173 
+* Grok connect: connection pool safety test  
+* (Bug) Grok connect: connection pool exceptions aren't shown 
+* Release Notes: 2021-10-14 Build 0.94.0 
+* Column.init: added boolean value initializer 
+* #106 Chem: Add R-group analysis to the package. wip 
+* GitHub actions: git push 
+* GitHub actions: workflow_dispatch 
+* tools package-lock.json 
+* GitHub Actions: pull 
+* GitHub Actions: Update tools/package-lock.json 
+* GitHub Actions: upgrade npm 
+* add unsigned bit movement 
+* #53 Tutorials package: replace the scroll method 
+* add default values 
+* Added hints for selection usage 
+* Changed the dialog layout to be more descriptive 
+* GitHub Actions: Update js-api/package-lock.json 
+* (Bug) Grok connect: correctly return connections to Hikari  
+* datagrok-tools: add ignore files 
+* updated validation for missing domains, updated timeines property panel 
+* Added Grok connect log string 
+* Non-interactive mode for outliers detector 
+* Grok Connect: Fail in case of any error during grok_connect.sh 
+* Grok connect: Added HikariCP to Maven dependency 
+* Grok connect: removed test 
+* SimPKPD: RxODE example 
+* datagrok-tools: refactoring 
+* datagrok-tools: run config test 
+* JS API: expose GridCellDataArgs and corresponding events 
+* JS API: Func parameters 
+* DataFrame.fromProperties(properties, rowCount) constructor 
+* View.fromRoot constructor 
+* Grok Connect: Fix "Invalid signature file digest for Manifest" error Excluded manifest signature files in maven-shade-plugin 
+* Docker Compose: valid YAML file 
+* create a new file for SPE 
+* Added tooltips to buttons 
+* Added help section to the top of the dialog 
+* Added context help docs 
+* add code style fix 
+* #53 Tutorials package: dashboards, scripting (WIP) 
+* #53 Tutorials package: delete Molecular Descriptors (covered in Virtual Screening tutorial) 
+* Change package naming 
+* GitHub Actions: Update packages/BioSignals/package-lock.json 
+* Added augmentation for the case with no dialog callled 
+* (Bug) “Outliers…” button cannot be pressed after a single run 
+* (Bug) Functions: After opening Function View, "Scripts" look different 
+* Running calculators from “ModelCatalog” with double-click 
+* (Bug) Functions: Function view doesn't reflect the changed script 
+* add BitArray tests 
+* Added inputs export to file 
+* Fixed lists' names 
+* Missing package-lock files. 
+* Added a dummy simulation example 
+* add a bug fix 
+* add another code style fix 
+* Wiki: minor corrections 
+* Release Notes: 2021-10-14 Build 0.94.0 (cleanup) 
+* change the function name and add style fix 
+* Minor fixes 
+* #178: Compute: Function analyzers: Function parameters grid \- WIP 
+* Added missing lock files 
+* Grok connect: improve Hikari idle connections timeout 
+* Chem: SA optimization and other minor improvements 
+* Removed obsolete packages. 
+* An examples of the JS function that returns multiple values (cool visuals for sensitivity analysis) 
+* Compute: Lotka-Volterra model script 
+* Seldon: Fetch metadata from the deployment's model (v >= 1.3) 
+* Seldon: Fetch metadata from the deployment's model. Stringify outputs 
+* Work in progress 
+* Compute: Lorenz attractor script 
+* #179 Chem: Optimize package.js, externalize OCL 
+* #179 Chem: Optimize package.js, externalize OCL. Cleanup 
+* Compute: Logistic map script 
+* Useful additions 
+* Marked demo scripts as models. 
+* #180: Compute: UX harmonization \- created ModelCatalogView class, added a menu and a toolbox 
+* Adjusted parameters 
+* Reflect TypeScript errors caught by the build server 
+* #181 Workers: Helpers and Wiki 
+* Added 'onClick' and 'handleNode' functions to the ElementOptions type 
+* #180: Compute: UX harmonization \- WIP 
+* #53 Tutorials package: Virtual Screening 
+* (Bug) Grok connect: "Detected both log4j-over-slf4j.jar AND slf4j-log4j12.jar on the class path" 
+* Chem: OCL cell renderer speedup 
+* Chem: structural alerts fix 
+* Update linter config in package template 
+* JS API: added DG.InputBase.forColumn(c) 
+* (Bug) Grok connect: Connection doesn't close on exception 
+* (Bug) Grok connect: Connection doesn't close on test 
+* (Bug) JS API: DataFrame.onColumnNameChanged won't work 
+* JS API: View.forObject(x) 
+* First commit 
+* Renamed to follow our file naming convention 
+* Code cleanup and documentation. 
+* Add #183: Common: Wizard 
+* (Bug) Compute: Outliers. Delete with a "bin" does something else 
+* Implemented custom blocks and styles 
+* Added the dialog resolve on dialog close 
+* Seldon: support CATEGORICAL, move to metadata 
+* Compute: changed the appearance of buttons on outliers selection 
+* Clinical Case: added check for missing sdtm columns for each view, removed hardcoded sdtm columns names \- put them into constants 
+* Compute: renamed the files 
+* Seldon: support CATEGORICAL, move to metadata. wip 
+* A snippet that demonstrates different ways to create a viewer 
+* Added #189: JS API: TreeView.fromItemCategories(items, tags[]) 
+* Minor code cleanup 
+* Clinical Case: updated Timelines property panel 
+* Compute: changed the buttons appearance 
+* (Bug) Compute: Outliers. Hit "Esc" corrupts the state, dataframe disappears 
+* Preparation for model upload 
+* Clinical Case: foxed legend in adverse events view 
+* Removing redundant code 
+* Compute: changed behavior on outliers selection dialog closing 
+* Clinical Case: corrected typos in Readme and views help 
+* (Bug) Core: Sensitivity analysis won't work (WIP)
+* Compute: outliers selection fix on zoom 
+* Compute: added changes reverting on non-OK exit 
+* Compute: fixed texts 
+* Compute: moved buttons to top 
+* Compute: removed function search on autodetection 
+* Compute: changed extractRows function on stddev rule 
+* Compute: Lotka-Volterra Model fix 
+* JS API: TabControl.onTabChanged 
+* Peptides: minor fixes 
+* JS API: View.getRibbonPanels 
+* JS API: MultiView 
+* JS API: PropertyGrid 
+* Clinical Case: renamed biomarkers distribution and correlation matrix views 
+* ModelCatalog: pkpd, popPK models added 
+* Compute: relevant signatures for Maximal Volume and Fab Arm Exchange scripts 
+* Compute: removed mathjs package 
+* Clinical Case: updated summary property panel for case when trial is not registeed on clinicaltrials.gov 
+* Compute: disabled ESLint for several files 
+* Compute: added the editing feature to outliers groups 
+* move chem space to analysis folder 
+* Grok connect: add logging of open and idle connections 
+* update default icon 
+* Compute: removed inner dialog 
+* Compute: added cell selection to outliers 
+* Grok connect: global settings  
+* Grok connect: connection closure test 
+* Chem: commit to check porting 
+* ModelCatalog: PKPD model implementation 
+* (Bug) Semantic type detection takes too long sometimes 
+* Ability to not load package functions (for debug purposes) 
+* JS API: ui.input.form 
+* remove null entry exception 
+* datagrok-tools: version bump 
+* #53 Tutorials package: show completed steps description in a tooltip 
+* Chem: replaced usage of PubChemApi function 
+* ChemScripts: fixes 
+* JS API: Add Qnum.sign() \- returns the string representation of the qualifier 
+* JS API: Rename Qnum.sign() -> Qnum.qualifier() 
+* Histogram: Add ability to set bands transparency 
+* #53 Tutorials package: show the app function as a toolbox command 
+* Chem: added margins to structural alerts blocks 
+* Minor wiki updates 
+* Compute: ModelCatalog separate package is redundant 
+* GitHub Actions: package-lock.json and package.json 
+* GitHub Actions: Update packages/ChemScripts/package-lock.json 
+* GitHub Actions: Update packages/ChemblAPI/package-lock.json 
+* GitHub Actions: Update packages/ChemblBrowser/package-lock.json 
+* GitHub Actions: Update packages/ChaRPy/package-lock.json 
+* GitHub Actions: Update packages/Charts/package-lock.json 
+* GitHub Actions: Update packages/CustomML/package-lock.json 
+* GitHub Actions: Update packages/DSP/package-lock.json 
+* GitHub Actions: Update packages/DrugBank/package-lock.json 
+* GitHub Actions: Update packages/Impute/package-lock.json 
+* GitHub Actions: Update packages/NLP/package-lock.json 
+* GitHub Actions: Update packages/PubChemApi/package-lock.json 
+* GitHub Actions: Update packages/Seldon/package-lock.json 
+* GitHub Actions: Update packages/Notebooks/package-lock.json 
+* GitHub Actions: Update packages/SimPKPD/package-lock.json 
+* GitHub Actions: Update packages/TensorFlow.js/package-lock.json 
+* GitHub Actions: Update packages/VDJtools/package-lock.json 
+* GitHub Actions: install js-api dependencies 
+* GitHub Actions: Update packages/Bio/package-lock.json 
+* GitHub Actions: Update packages/Compute/package-lock.json 
+* GitHub Actions: Update packages/MultiPlot/package-lock.json 
+* GitHub Actions: Update packages/HitTriage/package-lock.json 
+* GitHub Actions: Update packages/DevTools/package-lock.json 
+* GitHub Actions: Update packages/ClinicalCase/package-lock.json 
+* GitHub Actions: Update packages/Chem/package-lock.json 
+* GitHub Actions: Update packages/OpenChemLib/package-lock.json 
+* GitHub Actions: Update packages/Peptides/package-lock.json 
+* GitHub Actions: Update packages/SequenceTranslator/package-lock.json 
+* GitHub Actions: Update packages/Tutorials/package-lock.json 
+* Chem: 3d structure panel fix 
+* GitHub Actions: Discovery and Forms packages 
+* GitHub Actions: Update packages/Discovery/package-lock.json 
+* GitHub Actions: Update packages/Forms/package-lock.json 
+* Repertoire Broeser: commit for build 
+* RepertoireBrowser package release 
+* GitHub Actions: Update packages/RepertoireBrowser/package-lock.json 
+* Fixed analyzer warnings 
+* Clinical case: improved missing columns validation (in case column is optional view will be created) 
+* Remove unnecessary ignore statements 
+* Fix package build errors 
+* GitHub Actions: Update packages/Viewers/package-lock.json 
+* Add wu library #191 
+* Chem: R-Group Analysis fix 
+* Chem: R-Group columns categories fix 
+* GitHub Actions: fix packages build 
+* GitHub Actions: Update packages/UsageAnalysis/package-lock.json 
+* js-api package-lock.json new version 
+* Removing an extra line 
+* Chem: To #PR 39. Invalidate categories 
+* Peptides: RegEx catastrophic backtracking fix 
+* Peptides: string trimming befor regexp testing 
+* Chem: version bump 
+* Compute: changed 'reason' term to 'rationale' 
+* Update .gitignore. 
+* Fix to pass linter rules of string length. 
+* Add prototype of peptide space functionality. 
+* Fix linter suggestions. 
+* Chem version bump 
+* Compute: npm update after wu package 
+* Compute: removed dialog centering 
+* RepertoireBrowser: initial refactor 
+* RepertoireBrowser: fix 
+* Enhance SPE class to be more general. Add UMAP method. 
+* Peptides: detector fix 
+* Peptides: followup cleanup 
+* Docker, Useful additions 
+* Compute: outliers detection fixes 
+* Compute: version bump \- stable 
+* JS API: DataConnection.test() 
+* #53 Tutorials package: inspecting script results, script editing, minor adjustments 
+* JS API: ability to "take a picture" of a viewer 
+* RepertoireBrowser: port to ts initiated 
+* Compute: documentation \- WIP 
+* Chem: Switching to own fingerprints dictionary 
+* Chem: Switching to own fingerprints dictionary. Switch implementations by imports 
+* Oligo Batch Calculator: join representations 
+* Add t-SNE embedding method. Add Jaro-Winkler string metric. 
+* OligoBatchCalculator: spellcheck=false for text area 
+* \* Add universal string measures. \* Add universal embedding methods. \* Add auxiliary types & mathematical  operations. 
+* Added missing convertion 
+* Compute: outlier selection UX improvement 
+* Compute: patch version bump 
+* RepertoireBrowser: porting works 
+* Function View Harmonization 
+* OligoBatchCalculator: fix of sequence validation bug 
+* GitHub Actions: Update packages/OligoBatchCalculator/package-lock.json 
+* #155 Chem: Package autotests. wip: npm run test 
+* RepertoireBrowser: porting main to ts, excliding hartdcode 
+* JS API: ui.input.forProperty 
+* JS API: DG.Grid.fromProperties(items, properties) 
+* JS API: ui.tableFromProperties 
+* RepertoireBrowser: properties added 
+* Undo changes in utils. 
+* Add utils used in Peptides package. 
+* Lines by equations: Extending lines so they can be drawn on different visualization independently 
+* Clinical case: fixed sorting p-values array 
+* RepertoireBrowser: ts porting 
+* #155 Chem: Package autotests: wip. Local dataset 
+* Compute: images export MVP 
+* Compute: fixed imports 
+* Compute: minor version bump 
+* Compute: changed the plot's sheet 
+* Modified import wu 
+* REST API for functions 
+* RepertoireBrowser: class MolecularLiabilityBrowser refactored and ported ts 
+* Resolves #202 datagrok-tools: update package template 
+* RepertoireBrowser: porting to ts 
+* #155 Chem: Package autotests. wip: jest-worker-loader 
+* Chem Benchmark. Add more test molecules 
+* #181 Chem: Workers. wip: Restructure service and service workers 
+* Viewers: harmonize property names for shapes 
+* #155 Chem: Package autotests: wip. Substructure search 
+* Peptides: split function rework 
+* #155 Chem: Package autotests: wip. findSimilar 
+* (Bug) connection.close in JdbcDataProvider.execute didn't account for exceptions other than SQLException 
+* Jbio: add composition analysis view (WIP)
+* #181 Chem: Workers. wip: Structural alerts, architecture 
+* #181 Chem: Workers. wip: Structural alerts on an RdKit Service Worker 
+
+
 # 2021-10-26 Dev build 0.94.1
 
 ## Latest Docker Images
