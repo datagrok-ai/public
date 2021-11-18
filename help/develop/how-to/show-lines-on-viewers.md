@@ -75,6 +75,7 @@ Only one parameter ("equation") is required. All other parameters have their def
 | `max`           | float     | 300                     | No maximum limit                      | Line boundaries along the value axis. In this example, the line will be drawn for a "Weight" less than 300 kg.   |
 | `width`           | float     | 3                     | 1                     | Line width in pixels.   |
 | `spline`           | float     | 0.5                     | 0.9                     | Smoothness of curve line in range [0..1], where 0 - no smoothing, 1 - max smoothing.   |
+| `style`           | string     | 'dashed'                     | 'solid'                     | Line style. Possible styles: 'solid', 'dotted', 'dashed', 'longdash', 'dotdash'.   |
 
 ## Band parameters
 
