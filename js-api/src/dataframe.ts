@@ -21,6 +21,7 @@ import {Widget} from "./widgets";
 import {Grid} from "./grid";
 import {ScatterPlotViewer, TypedEventArgs, Viewer} from "./viewer";
 import {Property} from "./entities";
+import { idText } from 'typescript';
 
 declare let grok: any;
 declare let DG: any;
@@ -2031,6 +2032,7 @@ export class Qnum {
 }
 
 interface LineOnViewer {
+  id?: string;
   type?: string;
   title?: string;
   description?: string;
@@ -2045,6 +2047,7 @@ interface LineOnViewer {
   // Specific to lines:
   width?: number;
   spline?: number;
+  style?: string;
 
   // Specific to bands:
   column?: string;
@@ -2090,6 +2093,16 @@ export class DataFrameMetaHelper {
   addBand(line: LineOnViewer): void {
     line.type = 'band';
     this.addItem(line);
+  }
+
+  removeLines(...ids: string[]): void {
+    if (ids.length == 0) {
+      this.lines = [];
+      this.df.setTag('.lines', '[]');
+      return;
+    }
+    this.lines = this.lines.filter((line) => line.id == undefined || ids.indexOf(line.id) == -1);
+    this.setLines(this.lines);
   }
 }
 
