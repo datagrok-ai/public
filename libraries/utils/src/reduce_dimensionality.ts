@@ -2,7 +2,7 @@ import * as umj from 'umap-js';
 import {TSNE} from '@keckelt/tsne';
 
 import {Options, DistanceMetric, Coordinates, Vector, Vectors} from './type_declarations';
-import {calcDistanceMatrix} from './operations';
+import {calcDistanceMatrix, transposeMatrix} from './operations';
 import {SPEBase, PSPEBase} from './spe';
 import {Measurer} from '../../../libraries/utils/src/string_measure';
 
@@ -209,15 +209,21 @@ export class DimensionalityReducer {
   /**
    * Embeds the data given into the two-dimensional space using the chosen method.
    *
+   * @param {boolean} transpose Whether to transform coordinates to have columns-first orientation.
    * @throws {Error} If the embedding method was not found.
    * @return {Coordinates} Cartesian coordinate of this embedding.
    * @memberof DimensionalityReducer
    */
-  public transform(): Coordinates {
+  public transform(transpose: boolean = false): Coordinates {
     if (this.reducer == undefined) {
       throw new Error('Reducer was not defined.');
     }
-    return this.reducer.transform();
+    let embedding = this.reducer.transform();
+
+    if (transpose) {
+      embedding = transposeMatrix(embedding);
+    }
+    return embedding;
   }
 
   /**
