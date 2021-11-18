@@ -56,6 +56,7 @@ export class SARViewerBase extends DG.JsViewer {
 
   onTableAttached() {
     this.sourceGrid = this.view.grid;
+    this.sourceGrid?.dataFrame?.setTag('dataType', 'peptides');
     this.render();
   }
 
@@ -103,12 +104,15 @@ export class SARViewerBase extends DG.JsViewer {
       const otherLabel = 'Other';
       const aarLabel = `${currentAAR === '-' ? 'Empty' : currentAAR} - ${currentPosition}`;
 
-      if (!this.dataFrame.col(splitColName)) {
-        this.dataFrame.columns.addNew(splitColName, 'string');
+      let splitCol = this.dataFrame.col(splitColName);
+      if (!splitCol) {
+        splitCol = this.dataFrame.columns.addNew(splitColName, 'string');
       }
 
       const isChosen = (i: number) => this.dataFrame!.get(currentPosition, i) === currentAAR;
-      this.dataFrame.getCol(splitColName).init((i) => isChosen(i) ? aarLabel : otherLabel);
+      splitCol!.init((i) => isChosen(i) ? aarLabel : otherLabel);
+
+      //TODO: use column.compact
 
       // if (this.filterMode) {
       //   this.dataFrame.selection.setAll(false, false);
@@ -118,7 +122,8 @@ export class SARViewerBase extends DG.JsViewer {
       //   this.dataFrame.selection.init(isChosen).and(this._initialBitset!, false);
       // }
       this.currentBitset = DG.BitSet.create(this.dataFrame.rowCount, isChosen).and(this._initialBitset!);
-      // (this.filterMode ? this.dataFrame.selection.setAll(false) : this.dataFrame.filter.copyFrom(this._initialBitset!)).fireChanged();
+      // (this.filterMode ? this.dataFrame.selection.setAll(false) :
+      // this.dataFrame.filter.copyFrom(this._initialBitset!)).fireChanged();
       this.sourceFilteringFunc();
 
 
@@ -143,7 +148,7 @@ export class SARViewerBase extends DG.JsViewer {
 
   private accordionFunc(accordion: DG.Accordion) {
     if (accordion.context instanceof DG.RowGroup) {
-      const originalDf: DG.DataFrame = accordion.context.dataFrame;
+      const originalDf: DG.DataFrame = DG.toJs(accordion.context.dataFrame);
 
       if (
         originalDf.getTag('dataType') === 'peptides' &&
@@ -187,7 +192,8 @@ export class SARViewerBase extends DG.JsViewer {
           for (const colName of new Set(['Count', 'pValue', 'Mean difference'])) {
             const query = `${this.aminoAcidResidue} = ${currentAAR} and Position = ${currentPosition}`;
             const textNum = this.statsDf?.groupBy([colName]).where(query).aggregate().get(colName, 0);
-            const text = textNum === 0 ? '<0.01' : `${colName === 'Count' ? textNum : textNum.toFixed(2)}`;
+            // const text = textNum === 0 ? '<0.01' : `${colName === 'Count' ? textNum : textNum.toFixed(2)}`;
+            const text = colName === 'Count' ? `${textNum}` : textNum < 0.01 ? '<0.01' : textNum.toFixed(2);
             tableMap[colName === 'pValue' ? 'p-value' : colName] = text;
           }
           elements.push(ui.tableFromMap(tableMap));

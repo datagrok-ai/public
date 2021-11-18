@@ -159,8 +159,8 @@ let view = grok.shell.addTableView(demog);
 let plot = view.scatterPlot({
   x: 'weight',
   y: 'height',
-  showLinesByEquations: true,         // Hide or show all lines stored in the dataframe.
-  showViewerLinesByEquations: true    // Hide or show all lines stored in the viewer.
+  showDataframeLines: true,         // Hide or show all lines stored in the dataframe.
+  showViewerLines: true    // Hide or show all lines stored in the viewer.
 });
 
 /**

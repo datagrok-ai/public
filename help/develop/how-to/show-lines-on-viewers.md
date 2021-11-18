@@ -8,9 +8,9 @@ These figures are used by some viewers to draw additional lines on the charts. T
 
 ![Example of lines by equations](../../uploads/viewers/lines-by-equations-example.png)
 
-Shapes information is stored in a special storage in a dataframe or viewer. The viewer automatically reads storages when it connects to the dataframe.
+Lines information is stored in a special storage in a dataframe or viewer. The viewer automatically reads storages when it connects to the dataframe.
 
-You can create and modify information about lines and bands by changing the `.shapes` dataframe tag or by changing the `shapes` property of the viewer. The content of these storages is a JSON string.
+You can create and modify information about lines and bands by changing the `.lines` dataframe tag or by changing the `lines` property of the viewer. The content of these storages is a JSON string.
 
 There is a more convenient ways to create lines:
 
@@ -39,8 +39,8 @@ let view = grok.shell.addTableView(demog);
 let plot = view.scatterPlot({
   x: 'weight',
   y: 'height',
-  showLinesByEquations: true,         // Hide or show all lines stored in the dataframe.
-  showViewerLinesByEquations: true    // Hide or show all lines stored in the viewer.
+  showDataframeLines: true,    // Hide or show all lines stored in the dataframe.
+  showViewerLines: true        // Hide or show all lines stored in the viewer.
 });
 
 // Add line to viewer:
@@ -54,7 +54,7 @@ plot.meta.addLine({
 
 A similar methods is used to create bands - `dataframe.meta.addBand()` or `viewer.meta.addBand()`. Most of the parameters for lines and bands are the same. But there are also some parameters that are specific for lines and bands. See them in the description of the parameters for lines and bands.
 
-More examples of creating lines and bands can be found [here](https://dev.datagrok.ai/js/samples/data-frame/metadata/shapes).
+More examples of creating lines and bands can be found [here](https://dev.datagrok.ai/js/samples/data-frame/metadata/lines).
 
 ## Line parameters
 

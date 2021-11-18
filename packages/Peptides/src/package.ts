@@ -2,6 +2,7 @@
 import * as grok from 'datagrok-api/grok';
 import * as ui from 'datagrok-api/ui';
 import * as DG from 'datagrok-api/dg';
+import $ from 'cash-dom';
 
 import {SARViewerBase} from './peptide-sar-viewer/sar-viewer';
 import {
@@ -19,6 +20,8 @@ import {DimensionalityReducer} from '../../../libraries/utils/src/reduce_dimensi
 
 export const _package = new DG.Package();
 let tableGrid: DG.Grid;
+var currentDf: DG.DataFrame;
+var alignedSequenceCol: DG.Column;
 
 async function main(chosenFile: string) {
   const pi = DG.TaskBarProgressIndicator.create('Loading Peptides');
@@ -33,7 +36,7 @@ async function main(chosenFile: string) {
   peptides.onSemanticTypeDetecting.subscribe((_: any) => {
     const regexp = new RegExp(/^([^-^\n]*-){2,49}(\w|\(|\))+$/);
     for (const col of peptides.columns) {
-      col.semType = DG.Detector.sampleCategories(col, (s) => regexp.test(s.trim())) ? 'alignedSequence' : null;
+      col.semType = DG.Detector.sampleCategories(col, (s: any) => regexp.test(s.trim())) ? 'alignedSequence' : null;
       if (col.semType == 'alignedSequence') {
         expandColumn(col, tableGrid, (ent)=>{
           const subParts:string[] = ent.split('-');
@@ -47,8 +50,7 @@ async function main(chosenFile: string) {
         });
       }
     }
-  },
-  );
+  });
 
   view.name = 'PeptidesView';
 
@@ -113,27 +115,60 @@ export function Peptides() {
 //input: column col {semType: alignedSequence}
 //output: widget result
 export async function analyzePeptides(col: DG.Column): Promise<DG.Widget> {
+  tableGrid = (grok.shell.v as DG.TableView).grid;
+  currentDf = tableGrid.dataFrame!;
   // let defaultColumn: DG.Column | null = col;
   let tempCol = null;
-  for (const column of col.dataFrame.columns.numerical) {
+  for (const column of currentDf.columns.numerical) {
     column.type === DG.TYPE.FLOAT ? tempCol = column : null;
   }
-  const defaultColumn: DG.Column = col.dataFrame.col('activity') || col.dataFrame.col('IC50') || tempCol;
+  const defaultColumn: DG.Column = currentDf.col('activity') || currentDf.col('IC50') || tempCol;
+  const histogramHost = ui.div([]);
 
-  const activityScalingMethod = ui.choiceInput('Activity scaling', 'none', ['none', 'lg', '-lg']);
+  let hist: DG.Viewer;
+
+  const activityScalingMethod = ui.choiceInput('Activity scaling', 'none', ['none', 'lg', '-lg'], async (currentMethod: string) => {
+    const currentActivityCol = activityColumnChoice.value.name;
+    let tempDf = currentDf.clone(currentDf.filter, [currentActivityCol]);
+    switch (currentMethod) {
+      case 'lg':
+        await tempDf.columns.addNewCalculated('scaledActivity', 'Log10(${' + currentActivityCol + '})');
+        break;
+      case '-lg':
+        await tempDf.columns.addNewCalculated('scaledActivity', '-1*Log10(${' + currentActivityCol + '})');
+        break;
+      default:
+        await tempDf.columns.addNewCalculated('scaledActivity', '${' + currentActivityCol + '}');
+        break;
+    }
+    // let b: number = hist ? hist.props ? hist.props.bins : 20 : 21;
+    hist = tempDf.plot.histogram({
+      filteringEnabled: false,
+      valueColumnName: 'scaledActivity',
+      legendVisibility: 'Never',
+      showXAxis: true,
+      showColumnSelector: false,
+      showRangeSlider: false,
+      // bins: b,
+    });
+    histogramHost.lastChild?.remove();
+    histogramHost.appendChild(hist.root);
+  });
   activityScalingMethod.setTooltip('Function to apply for each value in activity column');
 
   const activityScalingMethodState = function(_: any) {
     activityScalingMethod.enabled =
-      activityColumnChoice.value && DG.Stats.fromColumn(activityColumnChoice.value, col.dataFrame.filter).min > 0;
+      activityColumnChoice.value && DG.Stats.fromColumn(activityColumnChoice.value, currentDf.filter).min > 0;
+    activityScalingMethod.fireChanged();
   };
   const activityColumnChoice = ui.columnInput(
     'Activity column',
-    col.dataFrame,
+    currentDf,
     defaultColumn,
     activityScalingMethodState,
   );
   activityColumnChoice.fireChanged();
+  activityScalingMethod.fireChanged();
 
   const startBtn = ui.button('Launch SAR', async () => {
     if (activityColumnChoice.value.type === DG.TYPE.FLOAT) {
@@ -152,6 +187,8 @@ export async function analyzePeptides(col: DG.Column): Promise<DG.Widget> {
           tableGrid.columns.byIndex(i)?.visible = false;
         }
       }
+
+      alignedSequenceCol = col;
 
       //await describe(col.dataFrame, activityColumnChoice.value.name, activityScalingMethod.value, false, tableGrid);
 
@@ -174,7 +211,7 @@ export async function analyzePeptides(col: DG.Column): Promise<DG.Widget> {
       // @ts-ignore
       //console.error(sarViewer.view.dockNode);
 
-      const StackedBarchartProm = col.dataFrame.plot.fromType('StackedBarChartAA');
+      const StackedBarchartProm = currentDf.plot.fromType('StackedBarChartAA');
       addViewerToHeader(tableGrid, StackedBarchartProm);
 
       // tableGrid.dataFrame!.columns.names().forEach((name:string)=>{
@@ -194,9 +231,9 @@ export async function analyzePeptides(col: DG.Column): Promise<DG.Widget> {
     }
   });
 
-  const viewer = await col.dataFrame.plot.fromType('peptide-logo-viewer');
+  const viewer = await currentDf.plot.fromType('peptide-logo-viewer');
 
-  return new DG.Widget(ui.divV([viewer.root, ui.inputs([activityColumnChoice, activityScalingMethod]), startBtn]));
+  return new DG.Widget(ui.divV([viewer.root, ui.inputs([activityColumnChoice, activityScalingMethod]), startBtn, histogramHost]));
 }
 
 //name: peptide-sar-viewer
@@ -273,15 +310,25 @@ export function logov() {
   return new Logo();
 }
 
-// //name: Manual Alignment
-// //tags: panel, widgets
-// //input: string monomer {semType: aminoAcids}
-// //output: widget result
-// export function manualAlignment(monomer: string) {
-//   // In a table there can be multiple columns with semType alignedSequence, how do I know which one is used?
-//   // Values matching is probably inefficient and does not guarantee to find the right column
-//   const currentDf = (grok.shell.v as DG.TableView).dataFrame;
-// }
+//name: Manual Alignment
+//tags: panel, widgets
+//input: string monomer {semType: aminoAcids}
+//output: widget result
+export function manualAlignment(monomer: string) {
+  //TODO: update viewers right when the changes get applied
+  const sequenceInput = ui.textInput('', alignedSequenceCol.get(currentDf.currentRowIdx));
+  (sequenceInput.input as HTMLElement).style.height = '50px';
+  (sequenceInput.input as HTMLElement).style.overflow = 'hidden';
+
+  const applyChangesBtn = ui.button('Apply', () => {
+    alignedSequenceCol.set(currentDf.currentRowIdx, sequenceInput.value);
+  });
+
+  const resetBtn = ui.button(ui.iconFA('redo'), () => sequenceInput.value = alignedSequenceCol.get(currentDf.currentRowIdx), 'Reset');
+  $(resetBtn).addClass('dt-snippet-editor-icon dt-reset-icon');
+
+  return new DG.Widget(ui.divV([resetBtn, sequenceInput.root, applyChangesBtn], 'dt-textarea-box'));
+}
 
 //name: peptideSimilaritySpace
 //input: dataframe table
@@ -317,6 +364,7 @@ export function peptideSimilaritySpace(
     if (col == null) {
       table.columns.insert(edf.getCol(axis));
     } else {
+
       table.columns.replace(col, edf.getCol(axis));
     }
   }
