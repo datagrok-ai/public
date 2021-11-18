@@ -17,6 +17,7 @@ import {ChemPalette} from './utils/chem-palette';
 // import { tTest, uTest } from './utils/misc';
 
 import {DimensionalityReducer} from '../../../libraries/utils/src/reduce_dimensionality';
+import {getSequenceMolecularWeight} from './peptide-sar-viewer/molecular_measure';
 
 export const _package = new DG.Package();
 let tableGrid: DG.Grid;
@@ -355,7 +356,7 @@ export function peptideSimilaritySpace(
   cyclesCount: number)
 // eslint-disable-next-line brace-style
 {
-  const axesNames = ['X', 'Y'];
+  const axesNames = ['X', 'Y', 'MW'];
 
   const reducer = new DimensionalityReducer(
     alignedSequencesColumn.toList(),
@@ -364,7 +365,17 @@ export function peptideSimilaritySpace(
     {cycles: cyclesCount},
   );
   const embcols = reducer.transform(true);
-  const columns = Array.from(embcols, (v, k) => (DG.Column.fromList('double', axesNames[k], Array.from(v))));
+  const columns = Array.from(embcols, (v, k) => (DG.Column.fromFloat32Array(axesNames[k], v)));
+
+  const sequences = alignedSequencesColumn.toList();
+  const mw: Float32Array = new Float32Array(sequences.length).fill(0);
+
+  for (let i = 0; i < sequences.length; ++i) {
+    mw[i] = getSequenceMolecularWeight(sequences[i]);
+  }
+
+  columns.push(DG.Column.fromFloat32Array('MW', mw));
+
   const edf = DG.DataFrame.fromColumns(columns);
 
   // Add new axes.
@@ -378,31 +389,16 @@ export function peptideSimilaritySpace(
     }
   }
 
-  const viewName = 'SimilaritySpace';
-  let view = null;
-
-  // Find this specific view to add a viewer.
-  for (const v of grok.shell.tableViews) {
-    if (v.name == viewName) {
-      view = v;
-      break;
-    }
-  }
-
-  // If not found open a new one.
-  if (view == null) {
-    view = grok.shell.addTableView(table);
-    view.name = viewName;
-  }
-
-  const plot = view.scatterPlot({x: 'X', y: 'Y', color: 'Activity'});
+  const view = grok.shell.tableView(table.name);
+  const plot = view.scatterPlot({x: 'X', y: 'Y', color: 'Activity', size: 'MW'});
   // Zoom out to have all points fit into viewport.
   plot.zoom(edf.getCol('X').min, edf.getCol('Y').min, edf.getCol('X').max, edf.getCol('Y').max);
+  //grok.shell.v.append(ui.divV([plot.root]));
+  view.append(ui.divV([plot.root]));
 }
 
 //name: testPeptideSimilaritySpace
-// eslint-disable-next-line no-unused-vars
-/*export*/ async function testPeptideSimilaritySpace() {
+export async function testPeptideSimilaritySpace() {
   const df = await grok.data.files.openTable('Demo:TestJobs:Files:DemoFiles/bio/peptides.csv');
   grok.shell.addTableView(df);
   peptideSimilaritySpace(df, df.getCol('AlignedSequence'), 'PSPE', 'Levenshtein', 100);
