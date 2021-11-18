@@ -4,12 +4,13 @@
 	"version": "0.0.4",
 	"description": "",
 	"dependencies": {
-		"datagrok-api": "../../js-api",
+		"datagrok-api": ">0.94.10",
 		"wu": "latest",
 		"echarts": "^5.0.0",
 		"echarts-wordcloud": "^2.0.0"
 	},
 	"scripts": {
+		"link-api": "npm link datagrok-api",
 		"charts-local": "webpack && grok publish local --rebuild --release",
 		"release-charts": "grok publish --rebuild --release",
 		"build-charts": "webpack",

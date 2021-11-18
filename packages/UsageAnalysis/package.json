@@ -8,7 +8,7 @@
 		"acorn": "^8.5.0",
 		"cash-dom": "^8.1.0",
 		"css-loader": "^6.4.0",
-		"datagrok-api": "../../js-api",
+		"datagrok-api": ">0.94.10",
 		"moment": "^2.29.1",
 		"package-lock.json": "^1.0.0",
 		"style-loader": "^3.3.0",

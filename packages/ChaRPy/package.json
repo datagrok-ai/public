@@ -5,7 +5,7 @@
 	"version": "1.0.1",
 	"description": "",
 	"dependencies": {
-		"datagrok-api": "../../js-api"
+		"datagrok-api": ">0.94.10"
 	},
 	"devDependencies": {
 		"@babel/cli": "7.1.2",
@@ -18,6 +18,7 @@
 		"json5-loader": "^4.0.0"
 	},
 	"scripts": {
+		"link-api": "npm link datagrok-api",
 		"upload-debug-local": "webpack && grok publish http://localhost:8082 ",
 		"upload-debug": "webpack && grok publish https://dev.datagrok.ai/api ",
 		"upload-deploy": "webpack && grok publish https://dev.datagrok.ai/api --release",
