@@ -365,7 +365,7 @@ export class ScatterPlotViewer extends Viewer {
   get onBeforeDrawScene(): rxjs.Observable<null> { return this.onEvent('d4-before-draw-scene'); }
 }
 
-interface ShapeOnViewer {
+interface LineOnViewer {
   type?: string;
   title?: string;
   description?: string;
@@ -388,42 +388,42 @@ interface ShapeOnViewer {
 
 export class ViewerMetaHelper {
   private readonly viewer: Viewer;
-  private shapes: ShapeOnViewer[] = [];
+  private lines: LineOnViewer[] = [];
 
   constructor(viewer: Viewer) {
     this.viewer = viewer;
-    this.shapes = this.getShapes();
+    this.lines = this.getLines();
   }
 
-  getShapes(): ShapeOnViewer[] {
-    let json: string | null = this.viewer.props['shapes'];
+  private getLines(): LineOnViewer[] {
+    let json: string | null = this.viewer.props['lines'];
     if (json)
       return JSON.parse(json);
 
     return [];
   }
 
-  setShapes(shapes: ShapeOnViewer[] | null = null): void {
-    if (!shapes)
+  private setLines(lines: LineOnViewer[] | null = null): void {
+    if (!lines)
       return;
 
-    let json: string | null = _toJson(shapes);
+    let json: string | null = _toJson(lines);
     if (json)
-      this.viewer.props['shapes'] = json;
+      this.viewer.props['lines'] = json;
   }
 
-  addLine(shape: ShapeOnViewer): void {
-    shape.type = 'line';
-    this.addShape(shape);
+  private addItem(line: LineOnViewer): void {
+    this.lines.push(line);
+    this.setLines(this.lines);
   }
 
-  addBand(shape: ShapeOnViewer): void {
-    shape.type = 'band';
-    this.addShape(shape);
+  addLine(line: LineOnViewer): void {
+    line.type = 'line';
+    this.addItem(line);
   }
 
-  addShape(shape: ShapeOnViewer): void {
-    this.shapes.push(shape);
-    this.setShapes(this.shapes);
+  addBand(line: LineOnViewer): void {
+    line.type = 'band';
+    this.addItem(line);
   }
 }

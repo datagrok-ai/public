@@ -18,9 +18,10 @@ export async function describe(
 ): Promise<[DG.Grid, DG.Grid, DG.DataFrame] | [null, null, null]> {
   //Split the aligned sequence into separate AARs
   let splitSeqDf: DG.DataFrame | undefined;
+  let invalidIndexes: number[];
   const col: DG.Column = df.columns.bySemType('alignedSequence');
   if (col) {
-    splitSeqDf = splitAlignedPeptides(col);
+    [splitSeqDf, invalidIndexes] = splitAlignedPeptides(col);
     splitSeqDf.name = 'Split sequence';
   }
 
@@ -363,9 +364,16 @@ export async function describe(
   SARgrid.onCellTooltip(onCellTooltipFunc);
   SARVgrid.onCellTooltip(onCellTooltipFunc);
 
-  for (const col of matrixDf.columns.names()) {
-    SARgrid.col(col)!.width = SARgrid.props.rowHeight;
-  }
+  sourceGrid.onCellPrepare((cell) => {
+    let currentRowIndex = cell.tableRowIndex;
+    if (currentRowIndex && invalidIndexes.includes(currentRowIndex) && !cell.isRowHeader) {
+      cell.style.backColor = DG.Color.red;
+    }
+  });
+
+  // for (const col of matrixDf.columns.names()) {
+  //   SARgrid.col(col)!.width = SARgrid.props.rowHeight;
+  // }
 
   return [SARgrid, SARVgrid, statsDf];
 }

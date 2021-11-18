@@ -5,10 +5,12 @@
       "module": "es2020",
       "allowJs": true, 
       //"strict": true, 
+      "strictPropertyInitialization": false,
       //"noImplicitAny": true,
       "lib": [
           "ES2021",
-          "DOM"],
+          "DOM"
+      ],
       "moduleResolution": "node",
       "esModuleInterop": true, 
       "skipLibCheck": true,

@@ -1,9 +1,11 @@
-export class RdKitSubstructLibrary {
+import {RdKitServiceWorkerBase} from './rdkit_service_worker_base';
 
-  rdKitModule: any | null;
+export class RdkitServiceSubstructure extends RdKitServiceWorkerBase {
+
   library: any | null;
 
-  constructor(module: Object) {
+  constructor(module: Object, webRoot: string) {
+    super(module, webRoot);
     this.rdKitModule = module;
     this.library = null;
   }

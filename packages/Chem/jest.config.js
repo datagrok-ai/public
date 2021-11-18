@@ -1,4 +1,7 @@
 module.exports = {
+  //"compilerOptions": {
+  //  "allowJs": true
+  //},
   "roots": [
     "<rootDir>/src"
   ],
@@ -11,8 +14,9 @@ module.exports = {
     'js',
   ],
   "transform": {
-    "^.+\\.(ts|tsx)$": "ts-jest"
+    "^.+\\.(ts|tsx|js)$": "ts-jest",
+    "^.+\\.worker.[t|j]sx?$": "workerloader-jest-transformer"
   },
-  transformIgnorePatterns: ['^.+\\.js$'],
+  // transformIgnorePatterns: ['^.+\\.js$'],
   testTimeout: 30000
 }
