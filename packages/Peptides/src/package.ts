@@ -16,14 +16,12 @@ import {StackedBarChart, addViewerToHeader} from './stacked-barchart/stacked-bar
 import {ChemPalette} from './utils/chem-palette';
 // import { tTest, uTest } from './utils/misc';
 
-import {DimensionalityReducer} from './peptide_space/reduce';
-import {Measurer} from './peptide_space/measure';
-import {transpose} from './peptide_space/operations';
+import {DimensionalityReducer} from '../../../libraries/utils/src/reduce_dimensionality';
 
 export const _package = new DG.Package();
 let tableGrid: DG.Grid;
-var currentDf: DG.DataFrame;
-var alignedSequenceCol: DG.Column;
+let currentDf: DG.DataFrame;
+let alignedSequenceCol: DG.Column;
 
 async function main(chosenFile: string) {
   const pi = DG.TaskBarProgressIndicator.create('Loading Peptides');
@@ -129,10 +127,14 @@ export async function analyzePeptides(col: DG.Column): Promise<DG.Widget> {
 
   let hist: DG.Viewer;
 
-  const activityScalingMethod = ui.choiceInput('Activity scaling', 'none', ['none', 'lg', '-lg'], async (currentMethod: string) => {
-    const currentActivityCol = activityColumnChoice.value.name;
-    let tempDf = currentDf.clone(currentDf.filter, [currentActivityCol]);
-    switch (currentMethod) {
+  const activityScalingMethod = ui.choiceInput(
+    'Activity scaling',
+    'none',
+    ['none', 'lg', '-lg'],
+    async (currentMethod: string) => {
+      const currentActivityCol = activityColumnChoice.value.name;
+      const tempDf = currentDf.clone(currentDf.filter, [currentActivityCol]);
+      switch (currentMethod) {
       case 'lg':
         await tempDf.columns.addNewCalculated('scaledActivity', 'Log10(${' + currentActivityCol + '})');
         break;
@@ -142,20 +144,20 @@ export async function analyzePeptides(col: DG.Column): Promise<DG.Widget> {
       default:
         await tempDf.columns.addNewCalculated('scaledActivity', '${' + currentActivityCol + '}');
         break;
-    }
-    // let b: number = hist ? hist.props ? hist.props.bins : 20 : 21;
-    hist = tempDf.plot.histogram({
-      filteringEnabled: false,
-      valueColumnName: 'scaledActivity',
-      legendVisibility: 'Never',
-      showXAxis: true,
-      showColumnSelector: false,
-      showRangeSlider: false,
+      }
+      // let b: number = hist ? hist.props ? hist.props.bins : 20 : 21;
+      hist = tempDf.plot.histogram({
+        filteringEnabled: false,
+        valueColumnName: 'scaledActivity',
+        legendVisibility: 'Never',
+        showXAxis: true,
+        showColumnSelector: false,
+        showRangeSlider: false,
       // bins: b,
+      });
+      histogramHost.lastChild?.remove();
+      histogramHost.appendChild(hist.root);
     });
-    histogramHost.lastChild?.remove();
-    histogramHost.appendChild(hist.root);
-  });
   activityScalingMethod.setTooltip('Function to apply for each value in activity column');
 
   const activityScalingMethodState = function(_: any) {
@@ -235,7 +237,9 @@ export async function analyzePeptides(col: DG.Column): Promise<DG.Widget> {
 
   const viewer = await currentDf.plot.fromType('peptide-logo-viewer');
 
-  return new DG.Widget(ui.divV([viewer.root, ui.inputs([activityColumnChoice, activityScalingMethod]), startBtn, histogramHost]));
+  return new DG.Widget(
+    ui.divV([viewer.root, ui.inputs([activityColumnChoice, activityScalingMethod]), startBtn, histogramHost]),
+  );
 }
 
 //name: peptide-sar-viewer
@@ -326,7 +330,11 @@ export function manualAlignment(monomer: string) {
     alignedSequenceCol.set(currentDf.currentRowIdx, sequenceInput.value);
   });
 
-  const resetBtn = ui.button(ui.iconFA('redo'), () => sequenceInput.value = alignedSequenceCol.get(currentDf.currentRowIdx), 'Reset');
+  const resetBtn = ui.button(
+    ui.iconFA('redo'),
+    () => sequenceInput.value = alignedSequenceCol.get(currentDf.currentRowIdx),
+    'Reset',
+  );
   $(resetBtn).addClass('dt-snippet-editor-icon dt-reset-icon');
 
   return new DG.Widget(ui.divV([resetBtn, sequenceInput.root, applyChangesBtn], 'dt-textarea-box'));
@@ -344,29 +352,28 @@ export function peptideSimilaritySpace(
   alignedSequencesColumn: DG.Column,
   method: string,
   measure: string,
-  cyclesCount: number) {
+  cyclesCount: number)
+// eslint-disable-next-line brace-style
+{
   const axesNames = ['X', 'Y'];
 
   const reducer = new DimensionalityReducer(
     alignedSequencesColumn.toList(),
     method,
-    new Measurer(measure).getMeasure(),
+    measure,
     {cycles: cyclesCount},
   );
-  const embedding = reducer.transform();
-
-  const embcols = transpose(embedding);
-  const columns = Array.from(embcols, (v, k) => (DG.Column.fromList('double', axesNames[k], v)));
+  const embcols = reducer.transform(true);
+  const columns = Array.from(embcols, (v, k) => (DG.Column.fromList('double', axesNames[k], Array.from(v))));
   const edf = DG.DataFrame.fromColumns(columns);
 
+  // Add new axes.
   for (const axis of axesNames) {
     const col = table.col(axis);
+
     if (col == null) {
-      console.log('Created axis '+axis+'.');
       table.columns.insert(edf.getCol(axis));
-      //.addNewFloat(axis).init((i: number) => edf.getCol(axis).getRawData()[i]);
     } else {
-      console.log('Axis '+axis+' is already exists.');
       table.columns.replace(col, edf.getCol(axis));
     }
   }
@@ -374,43 +381,29 @@ export function peptideSimilaritySpace(
   const viewName = 'SimilaritySpace';
   let view = null;
 
+  // Find this specific view to add a viewer.
   for (const v of grok.shell.tableViews) {
-    console.log(v.name);
-    console.log(v.table?.name);
     if (v.name == viewName) {
       view = v;
-      console.log('Found '+viewName);
       break;
     }
   }
 
+  // If not found open a new one.
   if (view == null) {
-    console.log(view);
     view = grok.shell.addTableView(table);
-    console.log(view);
     view.name = viewName;
-    console.log(view);
   }
 
-  // eslint-disable-next-line no-unused-vars
-  const plot = view.scatterPlot({x: 'X', y: 'Y'});//, size: 'age', color: 'race'
-
-  //grok.shell.newView('SimilaritySpace').append(ui.divV([plot.root]));
+  const plot = view.scatterPlot({x: 'X', y: 'Y', color: 'Activity'});
+  // Zoom out to have all points fit into viewport.
+  plot.zoom(edf.getCol('X').min, edf.getCol('Y').min, edf.getCol('X').max, edf.getCol('Y').max);
 }
 
-/*
 //name: testPeptideSimilaritySpace
-export async function testPeptideSimilaritySpace() {
-  const v1 = 'ABCDEF';
-  const v2 = 'BCDEFGH';
-  const d = new Measurer('Jaro-Winkler').getMeasure()(v1, v2);
-  console.log('testPeptideSimilaritySpace:');
-  console.log(v1);
-  console.log(v2);
-  console.log(d);
-  return;
+// eslint-disable-next-line no-unused-vars
+/*export*/ async function testPeptideSimilaritySpace() {
   const df = await grok.data.files.openTable('Demo:TestJobs:Files:DemoFiles/bio/peptides.csv');
   grok.shell.addTableView(df);
-  peptideSimilaritySpace(df, df.getCol('AlignedSequence'), 'TSNE', 'Levenshtein', 100);
+  peptideSimilaritySpace(df, df.getCol('AlignedSequence'), 'PSPE', 'Levenshtein', 100);
 }
-*/
