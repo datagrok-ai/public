@@ -1,4 +1,4 @@
-import {BitSetFixedArray} from './bitset/bitset-fixed-array';
+import {BitSetFixedArray} from './bitset-fixed-array';
 
 export class RdKitFingerprintSearcher {
 
