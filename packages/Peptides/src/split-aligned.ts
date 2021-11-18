@@ -1,7 +1,7 @@
 import * as DG from 'datagrok-api/dg';
 
 export function splitAlignedPeptides(peptideColumn: DG.Column): [DG.DataFrame, number[]] {
-  let splitPeptidesArray: string[][] = [];
+  const splitPeptidesArray: string[][] = [];
   let currentSplitPeptide: string[];
   let modeMonomerCount = 0;
   let currentLength;
@@ -23,7 +23,7 @@ export function splitAlignedPeptides(peptideColumn: DG.Column): [DG.DataFrame, n
   // and marking invalid sequences
   let nTerminal: string;
   const invalidIndexes: number[] = [];
-  let splitColumns: string[][] = Array.from({length: modeMonomerCount}, _ => []);
+  let splitColumns: string[][] = Array.from({length: modeMonomerCount}, (_) => []);
   modeMonomerCount--; // minus N-terminal
   for (let i = 0; i < colLength; i++) {
     currentSplitPeptide = splitPeptidesArray[i];
@@ -40,7 +40,7 @@ export function splitAlignedPeptides(peptideColumn: DG.Column): [DG.DataFrame, n
   modeMonomerCount--; // minus C-terminal
 
   //create column names list
-  let columnNames = Array.from({length: modeMonomerCount}, (_, index) => `${index + 1 < 10 ? 0 : ''}${index + 1 }`);
+  const columnNames = Array.from({length: modeMonomerCount}, (_, index) => `${index + 1 < 10 ? 0 : ''}${index + 1 }`);
   columnNames.splice(0, 0, 'N-terminal');
   columnNames.push('C-terminal');
 
