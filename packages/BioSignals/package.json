@@ -4,10 +4,11 @@
   "version": "0.0.2",
   "description": "",
   "dependencies": {
-    "datagrok-api": "../../js-api",
+    "datagrok-api": ">0.94.10",
     "echarts": "^5.0.2"
   },
   "scripts": {
+    "link-api": "npm link datagrok-api",
     "debug-biosignals": "grok publish --rebuild",
     "release-biosignals": "grok publish --rebuild --release",
     "build-biosignals": "webpack",

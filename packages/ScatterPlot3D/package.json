@@ -5,7 +5,7 @@
 	"description": "",
 	"dependencies": {
 		"chokidar": "^3.5.1",
-		"datagrok-api": "../../js-api",
+		"datagrok-api": ">0.94.10",
 		"ws": "^7.4.6"
 	},
 	

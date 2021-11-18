@@ -1,11 +1,14 @@
 {
-	"name": "statistics",
+	"name": "@datagrok-libraries/statistics",
 	"beta": true,
+	"publishConfig": {
+		"access": "public"
+	},
 	"friendlyName": "statistics",
 	"version": "0.0.1",
 	"description": "",
 	"dependencies": {
-		"datagrok-api": "../../js-api",
+		"datagrok-api": ">0.94.10",
 		"cash-dom": "latest",
 		"dayjs": "latest",
 		"ts-loader": "latest",
@@ -21,6 +24,7 @@
 		"@typescript-eslint/parser": "latest"
 	},
 	"scripts": {
+		"link": "npm link",
 		"debug-statistics": "grok publish --rebuild",
 		"release-statistics": "grok publish --rebuild --release",
 		"build-statistics": "webpack",

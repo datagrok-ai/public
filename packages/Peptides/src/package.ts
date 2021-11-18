@@ -15,7 +15,7 @@ import {ChemPalette} from './utils/chem-palette';
 // import { tTest, uTest } from './utils/misc';
 
 // import {DimensionalityReducer} from '../../../libraries/utils/src/reduce_dimensionality';
-import {DimensionalityReducer} from 'lib-utils/src/reduce_dimensionality';
+import {DimensionalityReducer} from '@datagrok-libraries/utils/src/reduce_dimensionality';
 
 import {getSequenceMolecularWeight} from './peptide-sar-viewer/molecular_measure';
 
@@ -197,15 +197,15 @@ export async function analyzePeptides(col: DG.Column): Promise<DG.Widget> {
       const currentActivityCol = activityColumnChoice.value.name;
       const tempDf = currentDf.clone(currentDf.filter, [currentActivityCol]);
       switch (currentMethod) {
-        case 'lg':
-          await tempDf.columns.addNewCalculated('scaledActivity', 'Log10(${' + currentActivityCol + '})');
-          break;
-        case '-lg':
-          await tempDf.columns.addNewCalculated('scaledActivity', '-1*Log10(${' + currentActivityCol + '})');
-          break;
-        default:
-          await tempDf.columns.addNewCalculated('scaledActivity', '${' + currentActivityCol + '}');
-          break;
+      case 'lg':
+        await tempDf.columns.addNewCalculated('scaledActivity', 'Log10(${' + currentActivityCol + '})');
+        break;
+      case '-lg':
+        await tempDf.columns.addNewCalculated('scaledActivity', '-1*Log10(${' + currentActivityCol + '})');
+        break;
+      default:
+        await tempDf.columns.addNewCalculated('scaledActivity', '${' + currentActivityCol + '}');
+        break;
       }
       hist = tempDf.plot.histogram({
         filteringEnabled: false,
@@ -247,7 +247,7 @@ export async function analyzePeptides(col: DG.Column): Promise<DG.Widget> {
             col.name &&
             col.name != 'IC50'&&
             col.column?.semType != 'aminoAcids'
-          ) {
+        ) {
           //@ts-ignore
           tableGrid.columns.byIndex(i)?.visible = false;
         }

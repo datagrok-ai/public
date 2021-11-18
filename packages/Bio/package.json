@@ -6,7 +6,7 @@
 	"description": "",
 	"dependencies": {
 		"cash-dom": "latest",
-		"datagrok-api": "../../js-api",
+		"datagrok-api": ">0.94.10",
 		"dayjs": "latest",
 		"ts-loader": "^9.2.5",
 		"typescript": "^4.4.2"
@@ -16,6 +16,7 @@
 		"webpack-cli": "latest"
 	},
 	"scripts": {
+		"link-api": "npm link datagrok-api",
 		"debug-sequences1": "grok publish --rebuild",
 		"release-sequences1": "grok publish --rebuild --release",
 		"build-sequences1": "webpack",

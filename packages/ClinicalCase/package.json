@@ -5,7 +5,7 @@
 	"description": "",
 	"dependencies": {
 		"cash-dom": "^8.1.0",
-		"datagrok-api": "../../js-api",
+		"datagrok-api": ">0.94.10",
 		"jstat": "^1.9.5",
 		"moment": "^2.29.1",
 		"ts-loader": "^8.1.0",
@@ -13,6 +13,7 @@
 		"webpack": "^5.33.2"
 	},
 	"scripts": {
+		"link-api": "npm link datagrok-api",
 		"debug-clinicalcase": "webpack && grok publish",
 		"release-clinicalcase": "webpack && grok publish --release",
 		"build-clinicalcase": "webpack",
