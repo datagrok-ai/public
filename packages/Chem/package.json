@@ -51,7 +51,8 @@
     "ts-jest": "^27.0.7",
     "utils": "../../libraries/utils",
     "webpack": "latest",
-    "webpack-cli": "latest"
+    "webpack-cli": "latest",
+    "workerloader-jest-transformer": "^0.0.5"
   },
   "browser": {
     "fs": false,

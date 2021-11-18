@@ -1,21 +1,12 @@
-import {RdKitParallel} from './rdkit_parallel';
 import * as DG from 'datagrok-api/dg';
+import {RdKitService} from './rdkit_service';
 
-let searchesRdKitModule: any = null;
-let rdKitParallel: RdKitParallel | null = null;
+let _rdKitModule: any = null;
+let _rdKitService: RdKitService | null = null;
 
-export async function setSearchesRdKitModule(module: any)
-{
-  searchesRdKitModule = module;
-}
-
-let _initRdKitWorkersState: {[_:string]: any} = {};
-async function _initRdKitWorkers(workerWebRoot: string) {
-  if (typeof _initRdKitWorkersState.initialized == 'undefined' || !_initRdKitWorkersState.initialized) {
-    rdKitParallel = new RdKitParallel();
-    await rdKitParallel.init(workerWebRoot);
-    _initRdKitWorkersState.initialized = true;
-  }
+export function setSearchesContext(rdKitModule: any, rdKitService: RdKitService) {
+  _rdKitModule = rdKitModule;
+  _rdKitService = rdKitService;
 }
 
 interface CacheParams {
@@ -64,7 +55,7 @@ function _morganFP(molString: string, fp_length = 128, fp_radius = 2) {
       "Possibly an empty molString: `" + molString + "`");
   } else {
     try {
-      let mol = searchesRdKitModule.get_mol(molString);
+      let mol = _rdKitModule.get_mol(molString);
       let mfp = mol.get_morgan_fp(fp_radius, fp_length);
       mol.delete();
       return mfp;
@@ -199,11 +190,11 @@ export function chemSubstructureSearchGraph(molStringsColumn: DG.Column, molStri
   if (molString.length == 0) {
     return result;
   }
-  let subMol = searchesRdKitModule.get_mol(molString);
+  let subMol = _rdKitModule.get_mol(molString);
   for (let i = 0; i < len; ++i) {
     let item = molStringsColumn.get(i);
     try {
-      let mol = searchesRdKitModule.get_mol(item);
+      let mol = _rdKitModule.get_mol(item);
       let match = mol.get_substruct_match(subMol);
       if (match !== "{}")
         result.set(i, true, false);
@@ -223,7 +214,7 @@ let _chemSubstructureSearchLibraryParams = {...cacheParamsDefaults};
 export async function chemSubstructureSearchLibrary(
     molStringsColumn: DG.Column, molString: string, molStringSmarts: string, workerWebRoot: any) {
 
-  await _initRdKitWorkers(workerWebRoot);
+  // await _initRdKitWorkers(workerWebRoot);
 
   _chemSubstructureSearchLibraryParams.column = molStringsColumn;
   _chemSubstructureSearchLibraryParams.query = molString + "|" + molStringSmarts;
@@ -233,7 +224,7 @@ export async function chemSubstructureSearchLibrary(
     async (params) => {
       // TODO: avoid creating an additional array here
       const { molIdxToHash, hashToMolblock }
-        = await rdKitParallel!.substructInit(molStringsColumn.toList());
+        = await _rdKitService!.substructInit(molStringsColumn.toList());
       let i = 0;
       let needsUpdate = false;
       for (const item of molIdxToHash) {
@@ -254,7 +245,7 @@ export async function chemSubstructureSearchLibrary(
 
   let result = DG.BitSet.create(molStringsColumn.length);
   if (molString.length != 0) {
-    const matches = await rdKitParallel!.substructSearch(molString, molStringSmarts);
+    const matches = await _rdKitService!.substructSearch(molString, molStringSmarts);
     for (let match of matches)
       result.set(match, true, false);
   }
