@@ -20,8 +20,8 @@ import {DimensionalityReducer} from '../../../libraries/utils/src/reduce_dimensi
 
 export const _package = new DG.Package();
 let tableGrid: DG.Grid;
-var currentDf: DG.DataFrame;
-var alignedSequenceCol: DG.Column;
+let currentDf: DG.DataFrame;
+let alignedSequenceCol: DG.Column;
 
 async function main(chosenFile: string) {
   const pi = DG.TaskBarProgressIndicator.create('Loading Peptides');
@@ -127,10 +127,14 @@ export async function analyzePeptides(col: DG.Column): Promise<DG.Widget> {
 
   let hist: DG.Viewer;
 
-  const activityScalingMethod = ui.choiceInput('Activity scaling', 'none', ['none', 'lg', '-lg'], async (currentMethod: string) => {
-    const currentActivityCol = activityColumnChoice.value.name;
-    let tempDf = currentDf.clone(currentDf.filter, [currentActivityCol]);
-    switch (currentMethod) {
+  const activityScalingMethod = ui.choiceInput(
+    'Activity scaling',
+    'none',
+    ['none', 'lg', '-lg'],
+    async (currentMethod: string) => {
+      const currentActivityCol = activityColumnChoice.value.name;
+      const tempDf = currentDf.clone(currentDf.filter, [currentActivityCol]);
+      switch (currentMethod) {
       case 'lg':
         await tempDf.columns.addNewCalculated('scaledActivity', 'Log10(${' + currentActivityCol + '})');
         break;
@@ -140,20 +144,20 @@ export async function analyzePeptides(col: DG.Column): Promise<DG.Widget> {
       default:
         await tempDf.columns.addNewCalculated('scaledActivity', '${' + currentActivityCol + '}');
         break;
-    }
-    // let b: number = hist ? hist.props ? hist.props.bins : 20 : 21;
-    hist = tempDf.plot.histogram({
-      filteringEnabled: false,
-      valueColumnName: 'scaledActivity',
-      legendVisibility: 'Never',
-      showXAxis: true,
-      showColumnSelector: false,
-      showRangeSlider: false,
+      }
+      // let b: number = hist ? hist.props ? hist.props.bins : 20 : 21;
+      hist = tempDf.plot.histogram({
+        filteringEnabled: false,
+        valueColumnName: 'scaledActivity',
+        legendVisibility: 'Never',
+        showXAxis: true,
+        showColumnSelector: false,
+        showRangeSlider: false,
       // bins: b,
+      });
+      histogramHost.lastChild?.remove();
+      histogramHost.appendChild(hist.root);
     });
-    histogramHost.lastChild?.remove();
-    histogramHost.appendChild(hist.root);
-  });
   activityScalingMethod.setTooltip('Function to apply for each value in activity column');
 
   const activityScalingMethodState = function(_: any) {
@@ -233,7 +237,9 @@ export async function analyzePeptides(col: DG.Column): Promise<DG.Widget> {
 
   const viewer = await currentDf.plot.fromType('peptide-logo-viewer');
 
-  return new DG.Widget(ui.divV([viewer.root, ui.inputs([activityColumnChoice, activityScalingMethod]), startBtn, histogramHost]));
+  return new DG.Widget(
+    ui.divV([viewer.root, ui.inputs([activityColumnChoice, activityScalingMethod]), startBtn, histogramHost]),
+  );
 }
 
 //name: peptide-sar-viewer
@@ -324,7 +330,11 @@ export function manualAlignment(monomer: string) {
     alignedSequenceCol.set(currentDf.currentRowIdx, sequenceInput.value);
   });
 
-  const resetBtn = ui.button(ui.iconFA('redo'), () => sequenceInput.value = alignedSequenceCol.get(currentDf.currentRowIdx), 'Reset');
+  const resetBtn = ui.button(
+    ui.iconFA('redo'),
+    () => sequenceInput.value = alignedSequenceCol.get(currentDf.currentRowIdx),
+    'Reset',
+  );
   $(resetBtn).addClass('dt-snippet-editor-icon dt-reset-icon');
 
   return new DG.Widget(ui.divV([resetBtn, sequenceInput.root, applyChangesBtn], 'dt-textarea-box'));
@@ -364,7 +374,6 @@ export function peptideSimilaritySpace(
     if (col == null) {
       table.columns.insert(edf.getCol(axis));
     } else {
-
       table.columns.replace(col, edf.getCol(axis));
     }
   }
