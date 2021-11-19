@@ -14,7 +14,6 @@ import {StackedBarChart, addViewerToHeader} from './stacked-barchart/stacked-bar
 import {ChemPalette} from './utils/chem-palette';
 // import { tTest, uTest } from './utils/misc';
 
-// import {DimensionalityReducer} from '../../../libraries/utils/src/reduce_dimensionality';
 import {DimensionalityReducer} from '@datagrok-libraries/utils/src/reduce_dimensionality';
 
 import {getSequenceMolecularWeight} from './peptide-sar-viewer/molecular_measure';
