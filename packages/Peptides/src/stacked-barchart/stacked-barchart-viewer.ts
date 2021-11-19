@@ -2,13 +2,14 @@ import * as DG from 'datagrok-api/dg';
 import * as ui from 'datagrok-api/ui';
 import {scaleBand, scaleLinear} from 'd3';
 import {ChemPalette} from '../utils/chem-palette';
-//@ts-ignore: I should be able to install it somehow
 import * as rxjs from 'rxjs';
 const cp = new ChemPalette('grok');
 
+//TODO: the function should not accept promise. Await the parameters where it is used
 export function addViewerToHeader(grid: DG.Grid, viewer: Promise<DG.Widget>) {
   viewer.then((viewer) => {
-    const barchart = viewer as StackedBarChart;
+    const barchart = viewer as StackedBarChart; //TODO: accept specifically StackedBarChart object
+    // The following event makes the barchart interactive
     rxjs.fromEvent(grid.overlay, 'mousemove').subscribe((mm:any) => {
       mm = mm as MouseEvent;
       const cell = grid.hitTest(mm.offsetX, mm.offsetY);
@@ -73,9 +74,9 @@ export function addViewerToHeader(grid: DG.Grid, viewer: Promise<DG.Widget>) {
 export class StackedBarChart extends DG.JsViewer {
     public dataEmptyAA: string;
     public initialized: boolean;
-    highlighted:{'colName':string, 'aaName':string}|null = null;
+    highlighted: {'colName' : string, 'aaName' : string} | null = null;
     private ord: { [Key: string]: number; } = {};
-    private margin: { top: number; left: number; bottom: number; right: number } = {
+    private margin: {top: number; left: number; bottom: number; right: number} = {
       top: 10,
       right: 10,
       bottom: 50,
@@ -83,18 +84,17 @@ export class StackedBarChart extends DG.JsViewer {
     };
     private yScale: any;
     private xScale: any;
-    private data: { 'name': string, 'data': { 'name': string, 'count': number, 'selectedCount': number }[] }[] = [];
+    private data: {'name': string, 'data': {'name': string, 'count': number, 'selectedCount': number}[]}[] = [];
     private selectionMode: boolean = false;
     public aminoColumnNames: string[] = [];
-    // @ts-ignore
 
-    private aminoColumnIndices: { [Key: string]: number; } = {};
-    private aggregatedTables: { [Key: string]: DG.DataFrame; } = {};
-    private aggregatedTablesUnselected: { [Key: string]: DG.DataFrame; } = {};
+    private aminoColumnIndices: {[Key: string]: number} = {};
+    private aggregatedTables: {[Key: string]: DG.DataFrame} = {};
+    private aggregatedTablesUnselected: {[Key: string]: DG.DataFrame} = {};
     private max = 0;
-    private barStats: { [Key: string]: { 'name': string, 'count': number, 'selectedCount': number }[] } = {};
+    private barStats: {[Key: string]: {'name': string, 'count': number, 'selectedCount': number}[]} = {};
     tableCanvas: HTMLCanvasElement | undefined;
-    private registered: { [Key: string]: DG.GridCell } = {};
+    private registered: {[Key: string]: DG.GridCell} = {};
 
     constructor() {
       super();
@@ -103,22 +103,22 @@ export class StackedBarChart extends DG.JsViewer {
     }
 
     init() {
-      const groups: [string[], string][] = [
-        [['C', 'U'], 'yellow'],
-        [['G', 'P'], 'red'],
-        [['A', 'V', 'I', 'L', 'M', 'F', 'Y', 'W'], 'all_green'],
-        [['R', 'H', 'K'], 'light_blue'],
-        [['D', 'E'], 'dark_blue'],
-        [['S', 'T', 'N', 'Q'], 'orange']];
+      const groups: {[key: string]: string[]} = {
+        'yellow': ['C', 'U'],
+        'red': ['G', 'P'],
+        'all_green': ['A', 'V', 'I', 'L', 'M', 'F', 'Y', 'W'],
+        'light_blue': ['R', 'H', 'K'],
+        'dark_blue': ['D', 'E'],
+        'orange': ['S', 'T', 'N', 'Q'],
+      };
 
       let i = 0;
-      groups.forEach((item) => {
+      for (const value of Object.values(groups)) {
         i++;
-        // eslint-disable-next-line guard-for-in
-        for (const obj in item[0]) {
-          this.ord[item[0][obj]] = i;
+        for (const obj in value) {
+          this.ord[value[obj]] = i;
         }
-      });
+      }
       this.yScale = scaleLinear();
       this.xScale = scaleBand();
       this.data = [];
@@ -152,8 +152,8 @@ export class StackedBarChart extends DG.JsViewer {
         {
           // @ts-ignore
           if (df.getCol(name).semType === 'aminoAcids' &&
-                    !df.getCol(name).categories.includes('COOH') &&
-                    !df.getCol(name).categories.includes('NH2')) {
+              !df.getCol(name).categories.includes('COOH') &&
+              !df.getCol(name).categories.includes('NH2')) {
             this.aminoColumnIndices[name] = this.aminoColumnNames.length + 1;
             this.aminoColumnNames.push(name);
           }
@@ -170,7 +170,7 @@ export class StackedBarChart extends DG.JsViewer {
         resbuf[i] = buf1[i] & buf2[i];
       }
 
-
+      //TODO: optimize it, why store so many tables?
       const mask = DG.BitSet.fromBytes(resbuf.buffer, df.rowCount);
       if (mask.trueCount !== df.filter.trueCount) {
         this.selectionMode = true;
@@ -214,10 +214,9 @@ export class StackedBarChart extends DG.JsViewer {
       this.barStats = {};
       for (const [name, df] of Object.entries(this.aggregatedTables)) {
         const colObj: {
-                'name': string, 'data':
-                    { 'name': string, 'count': number, 'selectedCount': number }[]
-            } =
-                {'name': name, 'data': []};
+          'name': string,
+          'data': { 'name': string, 'count': number, 'selectedCount': number }[],
+        } = {'name': name, 'data': []};
         this.barStats[colObj['name']] = colObj['data'];
         this.data.push(colObj);
         for (let i = 0; i < df.rowCount; i++) {
@@ -263,7 +262,6 @@ export class StackedBarChart extends DG.JsViewer {
       g.fillStyle = 'black';
       g.textBaseline = 'top';
       g.font = `${h * margin / 2}px`;
-      // eslint-disable-next-line no-unused-vars
 
       const name = cell.tableColumn!.name;
       const colNameSize = g.measureText(name).width;

@@ -366,6 +366,7 @@ export class ScatterPlotViewer extends Viewer {
 }
 
 interface LineOnViewer {
+  id?: string;
   type?: string;
   title?: string;
   description?: string;
@@ -380,6 +381,7 @@ interface LineOnViewer {
   // Specific to lines:
   width?: number;
   spline?: number;
+  style?: string;
 
   // Specific to bands:
   column?: string;
@@ -425,5 +427,15 @@ export class ViewerMetaHelper {
   addBand(line: LineOnViewer): void {
     line.type = 'band';
     this.addItem(line);
+  }
+
+  removeLines(...ids: string[]): void {
+    if (ids.length == 0) {
+      this.lines = [];
+      this.viewer.props['lines'] = '[]';
+      return;
+    }
+    this.lines = this.lines.filter((line) => line.id == undefined || ids.indexOf(line.id) == -1);
+    this.setLines(this.lines);
   }
 }

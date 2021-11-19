@@ -21,7 +21,7 @@
     "@lumino/commands": "^1.10.1",
     "@lumino/widgets": "^1.11.1",
     "bufferutil": "^4.0.1",
-    "datagrok-api": "../../js-api",
+    "datagrok-api": ">0.94.10",
     "es6-promise": "~4.2.8",
     "utf-8-validate": "^5.0.2"
   },
@@ -43,6 +43,7 @@
     "svg-url-loader": "~3.0.3"
   },
   "scripts": {
+    "link-api": "npm link datagrok-api",
     "build": "webpack",
     "clean": "rimraf build",
     "prepublishOnly": "npm run build",

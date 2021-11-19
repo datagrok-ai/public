@@ -8,21 +8,22 @@ import {SARViewerBase} from './peptide-sar-viewer/sar-viewer';
 import {
   AlignedSequenceCellRenderer,
   AminoAcidsCellRenderer,
-  expandColumn,
-  processSequence,
 } from './utils/cell-renderer';
 import {Logo} from './peptide-logo-viewer/logo-viewer';
 import {StackedBarChart, addViewerToHeader} from './stacked-barchart/stacked-barchart-viewer';
 import {ChemPalette} from './utils/chem-palette';
 // import { tTest, uTest } from './utils/misc';
 
-import {DimensionalityReducer} from '../../../libraries/utils/src/reduce_dimensionality';
+// import {DimensionalityReducer} from '../../../libraries/utils/src/reduce_dimensionality';
+import {DimensionalityReducer} from '@datagrok-libraries/utils/src/reduce_dimensionality';
+
 import {getSequenceMolecularWeight} from './peptide-sar-viewer/molecular_measure';
 
 export const _package = new DG.Package();
 let tableGrid: DG.Grid;
 let currentDf: DG.DataFrame;
 let alignedSequenceCol: DG.Column;
+let view: DG.TableView;
 
 async function main(chosenFile: string) {
   const pi = DG.TaskBarProgressIndicator.create('Loading Peptides');
@@ -34,24 +35,24 @@ async function main(chosenFile: string) {
   peptides.setTag('dataType', 'peptides');
   const view = grok.shell.addTableView(peptides);
   tableGrid = view.grid;
-  peptides.onSemanticTypeDetecting.subscribe((_: any) => {
-    const regexp = new RegExp(/^([^-^\n]*-){2,49}(\w|\(|\))+$/);
-    for (const col of peptides.columns) {
-      col.semType = DG.Detector.sampleCategories(col, (s: any) => regexp.test(s.trim())) ? 'alignedSequence' : null;
-      if (col.semType == 'alignedSequence') {
-        expandColumn(col, tableGrid, (ent)=>{
-          const subParts:string[] = ent.split('-');
-          // eslint-disable-next-line no-unused-vars
-          const [text, _] = processSequence(subParts);
-          let textSize = 0;
-          text.forEach((aar)=>{
-            textSize += aar.length;
-          });
-          return textSize;
-        });
-      }
-    }
-  });
+  // peptides.onSemanticTypeDetecting.subscribe((_: any) => {
+  //   const regexp = new RegExp(/^([^-^\n]*-){2,49}(\w|\(|\))+$/);
+  //   for (const col of peptides.columns) {
+  //     col.semType = DG.Detector.sampleCategories(col, (s: any) => regexp.test(s.trim())) ? 'alignedSequence' : null;
+  //     if (col.semType == 'alignedSequence') {
+  //       expandColumn(col, tableGrid, (ent)=>{
+  //         const subParts:string[] = ent.split('-');
+  //         // eslint-disable-next-line no-unused-vars
+  //         const [text, _] = processSequence(subParts);
+  //         let textSize = 0;
+  //         text.forEach((aar)=>{
+  //           textSize += aar.length;
+  //         });
+  //         return textSize;
+  //       });
+  //     }
+  //   }
+  // });
 
   view.name = 'PeptidesView';
 
@@ -87,7 +88,6 @@ export function Peptides() {
     'Use and analyse peptide sequence data to support your research:',
   );
 
-
   const annotationViewerDiv = ui.div();
 
   const windows = grok.shell.windows;
@@ -99,7 +99,6 @@ export function Peptides() {
   grok.shell.newView('Peptides', [
     appDescription,
     ui.info([textLink]),
-    //ui.h2('Choose .csv file'),
     ui.div([
       ui.block25([
         ui.button('Open peptide sequences demonstration set', () => main('aligned.csv'), ''),
@@ -111,17 +110,79 @@ export function Peptides() {
   ]);
 }
 
+//name: peptideSimilaritySpace
+//input: dataframe table
+//input: column alignedSequencesColumn {semType: alignedSequence}
+//input: string method {choices: ['TSNE', 'SPE', 'PSPE']} = 'TSNE'
+//input: string measure {choices: ['Levenshtein', 'Jaro-Winkler']} = 'Levenshtein'
+//input: int cyclesCount = 100
+//output: graphics
+export function peptideSimilaritySpace(
+  table: DG.DataFrame,
+  alignedSequencesColumn: DG.Column,
+  method: string,
+  measure: string,
+  cyclesCount: number,
+  activityColumnName: string,
+) {
+  const axesNames = ['~X', '~Y', 'MW'];
+
+  const reducer = new DimensionalityReducer(
+    alignedSequencesColumn.toList(),
+    method,
+    measure,
+    {cycles: cyclesCount},
+  );
+  const embcols = reducer.transform(true);
+  const columns = Array.from(embcols, (v, k) => (DG.Column.fromFloat32Array(axesNames[k], v)));
+
+  const sequences = alignedSequencesColumn.toList();
+  const mw: Float32Array = new Float32Array(sequences.length).fill(0);
+
+  let currentSequence;
+  for (let i = 0; i < sequences.length; ++i) {
+    currentSequence = sequences[i];
+    mw[i] = currentSequence == null ? 0 : getSequenceMolecularWeight(currentSequence);
+  }
+
+  columns.push(DG.Column.fromFloat32Array('MW', mw));
+
+  const edf = DG.DataFrame.fromColumns(columns);
+
+  // Add new axes.
+  for (const axis of axesNames) {
+    const col = table.col(axis);
+
+    if (col == null) {
+      table.columns.insert(edf.getCol(axis));
+    } else {
+      table.columns.replace(col, edf.getCol(axis));
+    }
+  }
+
+  const view = (grok.shell.v as DG.TableView);
+
+  const viewer = view.addViewer(DG.VIEWER.SCATTER_PLOT, {x: '~X', y: '~Y', color: activityColumnName, size: 'MW'});
+  // (viewer as DG.ScatterPlotViewer).zoom(
+  //   edf.getCol('~X').min,
+  //   edf.getCol('~Y').min,
+  //   edf.getCol('~X').max,
+  //   edf.getCol('~Y').max,
+  // );
+  return viewer;
+}
+
 //name: Peptides
 //tags: panel, widgets
 //input: column col {semType: alignedSequence}
 //output: widget result
 export async function analyzePeptides(col: DG.Column): Promise<DG.Widget> {
-  tableGrid = (grok.shell.v as DG.TableView).grid;
+  view = (grok.shell.v as DG.TableView);
+  tableGrid = view.grid;
   currentDf = tableGrid.dataFrame!;
-  // let defaultColumn: DG.Column | null = col;
   let tempCol = null;
   for (const column of currentDf.columns.numerical) {
-    column.type === DG.TYPE.FLOAT ? tempCol = column : null;
+    tempCol = column.type === DG.TYPE.FLOAT ? column : null;
   }
   const defaultColumn: DG.Column = currentDf.col('activity') || currentDf.col('IC50') || tempCol;
   const histogramHost = ui.div([]);
@@ -146,7 +207,6 @@ export async function analyzePeptides(col: DG.Column): Promise<DG.Widget> {
         await tempDf.columns.addNewCalculated('scaledActivity', '${' + currentActivityCol + '}');
         break;
       }
-      // let b: number = hist ? hist.props ? hist.props.bins : 20 : 21;
       hist = tempDf.plot.histogram({
         filteringEnabled: false,
         valueColumnName: 'scaledActivity',
@@ -181,56 +241,34 @@ export async function analyzePeptides(col: DG.Column): Promise<DG.Widget> {
         'activityColumnColumnName': activityColumnChoice.value.name,
         'activityScalingMethod': activityScalingMethod.value,
       };
-      // @ts-ignore
       for (let i = 0; i < tableGrid.columns.length; i++) {
         const col = tableGrid.columns.byIndex(i);
         if (col &&
             col.name &&
             col.name != 'IC50'&&
-            col.column?.semType != 'aminoAcids') {
-          // @ts-ignore
+            col.column?.semType != 'aminoAcids'
+        ) {
+          //@ts-ignore
           tableGrid.columns.byIndex(i)?.visible = false;
         }
       }
 
       alignedSequenceCol = col;
 
-      //await describe(col.dataFrame, activityColumnChoice.value.name, activityScalingMethod.value, false, tableGrid);
-
-      // @ts-ignore
-
-
-      // const viewer = DG.Viewer.fromType('peptide-sar-viewer', tableGrid.table, options);
-      // (grok.shell.v as DG.TableView).addViewer(viewer);
-      // const refNode = (grok.shell.v as DG.TableView).dockManager.dock(viewer, 'right');
-
-      // const hist = DG.Viewer.fromType('peptide-sar-viewer-vertical', tableGrid.table, options);
-      // (grok.shell.v as DG.TableView).addViewer(hist);
-      // (grok.shell.v as DG.TableView).dockManager.dock(hist, DG.DOCK_TYPE.DOWN, refNode);
-
-      (grok.shell.v as DG.TableView).addViewer('peptide-sar-viewer', options);
-      // (grok.shell.v as DG.TableView).addViewer('peptide-sar-viewer-vertical', options);
-      // @ts-ignore
-      //view.dockManager.dock(ui.divText('bottom'), 'down');
-
-      // @ts-ignore
-      //console.error(sarViewer.view.dockNode);
+      const sarViewer = view.addViewer('peptide-sar-viewer', options);
+      const peptideSpaceViewer = peptideSimilaritySpace(
+        currentDf,
+        col,
+        'TSNE',
+        'Levenshtein',
+        100,
+        `${activityColumnChoice}Scaled`,
+      );
+      view.dockManager.dock(peptideSpaceViewer, 'down');
+      view.dockManager.dock(sarViewer, 'right');
 
       const StackedBarchartProm = currentDf.plot.fromType('StackedBarChartAA');
       addViewerToHeader(tableGrid, StackedBarchartProm);
-
-      // tableGrid.dataFrame!.columns.names().forEach((name:string)=>{
-      //   col = tableGrid.dataFrame!.columns.byName(name);
-      //   if (col.semType == 'aminoAcids') {
-      //     let maxLen = 0;
-      //     col.categories.forEach( (ent:string)=>{
-      //       if ( ent.length> maxLen) {
-      //         maxLen = ent.length;
-      //       }
-      //     });
-      //     tableGrid.columns.byName(name)!.width = maxLen*10;
-      //   }
-      // });
     } else {
       grok.shell.error('The activity column must be of floating point number type!');
     }
@@ -255,7 +293,6 @@ export function sar(): SARViewerBase {
 //tags: panel, widgets
 //input: column col {semType: aminoAcids}
 //output: widget result
-
 export async function stackedBarchartWidget(col: DG.Column): Promise<DG.Widget> {
   const viewer = await col.dataFrame.plot.fromType('StackedBarChartAA');
   const panel = ui.divH([viewer.root]);
@@ -287,7 +324,6 @@ export async function pepMolGraph(pep: string): Promise<DG.Widget> {
 }
 
 //name: StackedBarChartAA
-//description: Creates an awesome viewer
 //tags: viewer
 //output: viewer result
 export function stackedBarChart(): DG.JsViewer {
@@ -341,65 +377,9 @@ export function manualAlignment(monomer: string) {
   return new DG.Widget(ui.divV([resetBtn, sequenceInput.root, applyChangesBtn], 'dt-textarea-box'));
 }
 
-//name: peptideSimilaritySpace
-//input: dataframe table
-//input: column alignedSequencesColumn {semType: alignedSequence}
-//input: string method {choices: ['TSNE', 'SPE', 'PSPE']} = 'TSNE'
-//input: string measure {choices: ['Levenshtein', 'Jaro-Winkler']} = 'Levenshtein'
-//input: int cyclesCount = 100
-//output: graphics
-export function peptideSimilaritySpace(
-  table: DG.DataFrame,
-  alignedSequencesColumn: DG.Column,
-  method: string,
-  measure: string,
-  cyclesCount: number)
-// eslint-disable-next-line brace-style
-{
-  const axesNames = ['X', 'Y', 'MW'];
-
-  const reducer = new DimensionalityReducer(
-    alignedSequencesColumn.toList(),
-    method,
-    measure,
-    {cycles: cyclesCount},
-  );
-  const embcols = reducer.transform(true);
-  const columns = Array.from(embcols, (v, k) => (DG.Column.fromFloat32Array(axesNames[k], v)));
-
-  const sequences = alignedSequencesColumn.toList();
-  const mw: Float32Array = new Float32Array(sequences.length).fill(0);
-
-  for (let i = 0; i < sequences.length; ++i) {
-    mw[i] = getSequenceMolecularWeight(sequences[i]);
-  }
-
-  columns.push(DG.Column.fromFloat32Array('MW', mw));
-
-  const edf = DG.DataFrame.fromColumns(columns);
-
-  // Add new axes.
-  for (const axis of axesNames) {
-    const col = table.col(axis);
-
-    if (col == null) {
-      table.columns.insert(edf.getCol(axis));
-    } else {
-      table.columns.replace(col, edf.getCol(axis));
-    }
-  }
-
-  const view = grok.shell.tableView(table.name);
-  const plot = view.scatterPlot({x: 'X', y: 'Y', color: 'Activity', size: 'MW'});
-  // Zoom out to have all points fit into viewport.
-  plot.zoom(edf.getCol('X').min, edf.getCol('Y').min, edf.getCol('X').max, edf.getCol('Y').max);
-  //grok.shell.v.append(ui.divV([plot.root]));
-  view.append(ui.divV([plot.root]));
-}
-
 //name: testPeptideSimilaritySpace
 export async function testPeptideSimilaritySpace() {
   const df = await grok.data.files.openTable('Demo:TestJobs:Files:DemoFiles/bio/peptides.csv');
   grok.shell.addTableView(df);
-  peptideSimilaritySpace(df, df.getCol('AlignedSequence'), 'PSPE', 'Levenshtein', 100);
+  peptideSimilaritySpace(df, df.getCol('AlignedSequence'), 'PSPE', 'Levenshtein', 100, 'Activity');
 }

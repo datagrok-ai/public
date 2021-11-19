@@ -23,6 +23,7 @@ demog.meta.addLine({
   // Parameters specific to Lines:
   width: 2,            // Line width in pixels.
   spline: 0.9,         // Smoothness of curve line [0..1], where 0 - no smoothing, 1 - max smoothing.
+  style: 'dashed'      // Line style ('solid', 'dotted', 'dashed', 'longdash', 'dotdash').
 });
 
 /**
@@ -67,6 +68,7 @@ demog.meta.addLine({
   color: "#FFA500",
   width: 2,
   visible: true,
+  style: 'dotdash'
 });
 
 demog.meta.addLine({
@@ -127,7 +129,8 @@ demog.meta.addLine({
   equation: '${height} = 147 - sqrt(pow(20, 2) - pow((${weight} - 188.95), 2)) * 1.0',
   zindex: -45,
   color: "#228B22",
-  width: 4
+  width: 20,
+  style: 'dotted'
 });
 
 demog.meta.addBand({
@@ -159,8 +162,8 @@ let view = grok.shell.addTableView(demog);
 let plot = view.scatterPlot({
   x: 'weight',
   y: 'height',
-  showDataframeLines: true,         // Hide or show all lines stored in the dataframe.
-  showViewerLines: true    // Hide or show all lines stored in the viewer.
+  showDataframeLines: true,    // Hide or show all lines stored in the dataframe.
+  showViewerLines: true        // Hide or show all lines stored in the viewer.
 });
 
 /**

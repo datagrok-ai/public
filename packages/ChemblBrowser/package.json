@@ -5,9 +5,10 @@
   "version": "0.0.2",
   "description": "",
   "dependencies": {
-    "datagrok-api": "../../js-api"
+    "datagrok-api": ">0.94.10"
   },
   "scripts": {
+    "link-api": "npm link datagrok-api",
     "debug-chemblbrowser": "grok publish --rebuild",
     "release-chemblbrowser": "grok publish --rebuild --release",
     "build-chemblbrowser": "webpack",

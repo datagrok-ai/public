@@ -31,6 +31,7 @@ export class Logo extends DG.JsViewer {
       'A': 0, 'B': 1, 'C': 2, 'D': 3, 'E': 4, 'F': 5, 'G': 6, 'H': 7, 'I': 8, 'K': 9, 'L': 10, 'M': 11,
       'N': 12, 'P': 13, 'Q': 14, 'R': 15, 'S': 16, 'T': 17, 'U': 18, 'V': 19, 'W': 20, 'Y': 21, 'Z': 22,
     };
+    //TODO: use chem palette
     this.LET_COLORS = [
       {color: 'rgb(44,160,44)', regex: 'A'},
       {color: 'rgb(44,160,44)', regex: 'B'},

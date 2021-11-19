@@ -9,7 +9,7 @@
 	],
 	"dependencies": {
 		"@types/react-dom": "^17.0.9",
-		"datagrok-api": "../../js-api",
+		"datagrok-api": ">0.94.10",
 		"ketcher-core": "^1.1.0",
 		"ketcher-react": "^2.1.0",
 		"ketcher-standalone": "^1.1.0",
