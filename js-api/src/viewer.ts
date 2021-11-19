@@ -365,7 +365,7 @@ export class ScatterPlotViewer extends Viewer {
   get onBeforeDrawScene(): rxjs.Observable<null> { return this.onEvent('d4-before-draw-scene'); }
 }
 
-interface LineOnViewer {
+interface FormulaLine {
   id?: string;
   type?: string;
   title?: string;
@@ -390,52 +390,56 @@ interface LineOnViewer {
 
 export class ViewerMetaHelper {
   private readonly viewer: Viewer;
-  private lines: LineOnViewer[] = [];
+  private formulaLines: FormulaLine[] = [];
+  private formulaLinesProp: string = 'formulaLines';
 
   constructor(viewer: Viewer) {
     this.viewer = viewer;
-    this.lines = this.getLines();
+    this.formulaLines = this.getFormulaLines();
   }
 
-  private getLines(): LineOnViewer[] {
-    let json: string | null = this.viewer.props['lines'];
+  getFormulaLines(): FormulaLine[] {
+    let json: string | null = this.viewer.props[this.formulaLinesProp];
     if (json)
       return JSON.parse(json);
 
     return [];
   }
 
-  private setLines(lines: LineOnViewer[] | null = null): void {
-    if (!lines)
+  addFormulaLines(items: FormulaLine[] | null = null): void {
+    if (!items)
       return;
 
-    let json: string | null = _toJson(lines);
+    let json: string | null = _toJson(items);
     if (json)
-      this.viewer.props['lines'] = json;
+      this.viewer.props[this.formulaLinesProp] = json;
   }
 
-  private addItem(line: LineOnViewer): void {
-    this.lines.push(line);
-    this.setLines(this.lines);
+  addFormulaItem(item: FormulaLine): void {
+    this.formulaLines.push(item);
+    this.addFormulaLines(this.formulaLines);
   }
 
-  addLine(line: LineOnViewer): void {
-    line.type = 'line';
-    this.addItem(line);
+  addFormulaLine(item: FormulaLine): void {
+    item.type = 'line';
+    this.addFormulaItem(item);
   }
 
-  addBand(line: LineOnViewer): void {
-    line.type = 'band';
-    this.addItem(line);
+  addFormulaBand(item: FormulaLine): void {
+    item.type = 'band';
+    this.addFormulaItem(item);
   }
 
-  removeLines(...ids: string[]): void {
+  removeFormulaLines(...ids: string[]): void {
     if (ids.length == 0) {
-      this.lines = [];
-      this.viewer.props['lines'] = '[]';
+      this.formulaLines = [];
+      this.viewer.props[this.formulaLinesProp] = '[]';
       return;
     }
-    this.lines = this.lines.filter((line) => line.id == undefined || ids.indexOf(line.id) == -1);
-    this.setLines(this.lines);
+
+    this.formulaLines = this.formulaLines.filter((item: FormulaLine) =>
+        item.id == undefined || ids.indexOf(item.id) == -1);
+
+    this.addFormulaLines(this.formulaLines);
   }
 }

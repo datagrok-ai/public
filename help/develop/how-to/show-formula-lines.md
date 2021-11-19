@@ -1,23 +1,23 @@
-<!-- TITLE: Show lines on viewers -->
+<!-- TITLE: Show formula lines -->
 
-# How to show lines on viewers
+# How to show formula lines
 
 Dataframe and viewer can contain information about lines and bands.
 
 These figures are used by some viewers to draw additional lines on the charts. These can be reference lines, highlighting different areas of the chart and data, etc.
 
-![Example of lines by equations](../../uploads/viewers/lines-by-equations-example.png)
+![Example of lines by equations](../../uploads/viewers/formula-lines-example.png)
 
 Lines information is stored in a special storage in a dataframe or viewer. The viewer automatically reads storages when it connects to the dataframe.
 
-You can create and modify information about lines and bands by changing the `.lines` dataframe tag or by changing the `lines` property of the viewer. The content of these storages is a JSON string.
+You can create and modify information about lines and bands by changing the `.formula-lines` dataframe tag or by changing the `formulaLines` property of the viewer. The content of these storages is a JSON string.
 
 There is a more convenient ways to create lines:
 
-- method `dataframe.meta.addLine()` - for creating and saving a line in a dataframe
-- method `viewer.meta.addLine()` - for creating and saving a line in a viewer
+- method `dataframe.meta.addFormulaLine()` - for creating and saving a line in a dataframe
+- method `viewer.meta.addFormulaLine()` - for creating and saving a line in a viewer
 
-To completely remove lines from dataframe or viewer use methods `dataframe.meta.removeLines()` or `viewer.meta.removeLines()`. Calling these methods without parameters will delete all lines from the storage. You can also remove only specific lines by listing their IDs, for example: `viewer.meta.removeLines('123', 'abc')`. If a complete removal is not necessary, then you can simply hide the unnecessary line using the `visible` attribute.
+To completely remove lines from dataframe or viewer use methods `dataframe.meta.removeFormulaLines()` or `viewer.meta.removeFormulaLines()`. Calling these methods without parameters will delete all lines from the storage. You can also remove only specific lines by listing their IDs, for example: `viewer.meta.removeFormulaLines('123', 'abc')`. If a complete removal is not necessary, then you can simply hide the unnecessary line using the `visible` attribute.
 
 Lines saved in the dataframe will be displayed on all viewers in the same way. Lines saved in the viewer are displayed only in this viewer and do not affect other viewers.
 
@@ -27,7 +27,7 @@ An example of creating and displaying a line in this way:
 let demog = grok.data.demo.demog(100);
 
 // Add line to dataframe:
-demog.meta.addLine({
+demog.meta.addFormulaLine({
   title: 'Parabola',
   equation: '${height} = 180 + 0.01 * ${weight} * ${weight} - 1.5 * ${weight}',
   zindex: -30,
@@ -36,26 +36,26 @@ demog.meta.addLine({
   visible: true,
 });
 
-// Add line to dataframe:
-demog.meta.addLine({
+// Add another line to dataframe:
+demog.meta.addFormulaLine({
   id: 'MyLine',
   equation: '${height} = 200'
 });
 
 // Remove line with id = 'MyLine':
-demog.meta.removeLines('MyLine');
+demog.meta.removeFormulaLines('MyLine');
 
 let view = grok.shell.addTableView(demog);
 
 let plot = view.scatterPlot({
   x: 'weight',
   y: 'height',
-  showDataframeLines: true,    // Hide or show all lines stored in the dataframe.
-  showViewerLines: true        // Hide or show all lines stored in the viewer.
+  showDataframeFormulaLines: true,    // Hide or show all lines stored in the dataframe.
+  showViewerFormulaLines: true        // Hide or show all lines stored in the viewer.
 });
 
 // Add line to viewer:
-plot.meta.addLine({
+plot.meta.addFormulaLine({
   equation: '${weight} = 150',
   color: "#ff0000",
   width: 10
@@ -63,13 +63,13 @@ plot.meta.addLine({
 
 ```
 
-A similar methods is used to create bands - `dataframe.meta.addBand()` or `viewer.meta.addBand()`. Most of the parameters for lines and bands are the same. But there are also some parameters that are specific for lines and bands. See them in the description of the parameters for lines and bands.
+A similar methods is used to create bands - `dataframe.meta.addFormulaBand()` or `viewer.meta.addFormulaBand()`. Most of the parameters for lines and bands are the same. But there are also some parameters that are specific for lines and bands. See them in the description of the parameters for lines and bands.
 
-More examples of creating lines and bands can be found [here](https://dev.datagrok.ai/js/samples/data-frame/metadata/lines).
+More examples of creating lines and bands can be found [here](https://dev.datagrok.ai/js/samples/data-frame/metadata/formula-lines).
 
 ## Line parameters
 
-Method to create a line: `dataframe.meta.addLine(parameters)` or `viewer.meta.addLine(parameters)`
+Method to create a line: `dataframe.meta.addFormulaLine(parameters)` or `viewer.meta.addFormulaLine(parameters)`
 
 Only one parameter ("equation") is required. All other parameters have their default values.
 
@@ -91,7 +91,7 @@ Only one parameter ("equation") is required. All other parameters have their def
 
 ## Band parameters
 
-Method to create a band: `dataframe.meta.addBand(parameters)` or `viewer.meta.addBand(parameters)`
+Method to create a band: `dataframe.meta.addFormulaBand(parameters)` or `viewer.meta.addFormulaBand(parameters)`
 
 Only 3 parameters ("equation", "column" and "column2") are required. All other parameters have their default values.
 
