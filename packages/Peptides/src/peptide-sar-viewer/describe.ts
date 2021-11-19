@@ -130,6 +130,8 @@ export async function describe(
   let otherActivity: number[];
   let testResult;
   let currentMeanDiff: number;
+  let pvalues: Float32Array = new Float32Array(matrixDf.rowCount).fill(1);
+  let pvalue = 1.;
 
   const mdCol: DG.Column = matrixDf.columns.addNewFloat('Mean difference');
   const pValCol: DG.Column = matrixDf.columns.addNewFloat('pValue');
@@ -154,9 +156,18 @@ export async function describe(
     testResult = tTest(currentActivity, otherActivity);
     // testResult = uTest(currentActivity, otherActivity);
     currentMeanDiff = testResult['Mean difference']!;
+    pvalue = testResult[currentMeanDiff >= 0 ? 'p-value more' : 'p-value less'];
 
     mdCol.set(i, currentMeanDiff);
-    pValCol.set(i, testResult[currentMeanDiff >= 0 ? 'p-value more' : 'p-value less']);
+    pvalues[i] = pvalue;
+  }
+
+  if (true) {
+    pvalues = padjust(pvalues, 'by');
+  }
+
+  for (let i = 0; i < pvalues.length; ++i) {
+    pValCol.set(i, pvalues[i]);
   }
 
   const statsDf = matrixDf.clone();
