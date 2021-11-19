@@ -2,7 +2,7 @@ import * as grok from 'datagrok-api/grok';
 import * as ui from 'datagrok-api/ui';
 import * as DG from 'datagrok-api/dg';
 import {splitAlignedPeptides} from '../split-aligned';
-import {tTest} from 'lib-statistics/src/tests';
+import {tTest} from '@datagrok-libraries/statistics/src/tests';
 import {ChemPalette} from '../utils/chem-palette';
 import {setAARRenderer} from '../utils/cell-renderer';
 
