@@ -1,18 +1,19 @@
 import RdKitWorkerClass from "./rdkit.worker.ts"; // .ts!
+import {WORKER_CALL} from './rdkit_service_worker_api';
 import {WorkerMessageBusClient} from './worker-message-bus-client';
 
 export class RdKitServiceWorkerClient extends WorkerMessageBusClient {
   constructor () { super(new RdKitWorkerClass()); }
   moduleInit = async (pathToRdkit: string) =>
     this.call('module::init', [pathToRdkit]);
-  substructInit = async (dict: any) =>
-    this.call('substructLibrary::init', [dict]);
-  substructSearch = async (query: string, querySmarts: string) =>
-    this.call('substructLibrary::search', [query, querySmarts]);
-  substructDeinit = async () =>
-    this.call('substructLibrary::deinit');
-  structuralAlertsInit = async (smarts: string[]) =>
-    this.call('structuralAlerts::init', [smarts]);
-  structuralAlertsGet = async (smiles: string) =>
-    this.call('structuralAlerts::get', [smiles]);
+  initMoleculesStructures = async (dict: any) =>
+    this.call(WORKER_CALL.INIT_MOLECULES_STRUCTURES, [dict]);
+  searchSubstructure = async (query: string, querySmarts: string) =>
+    this.call(WORKER_CALL.SEARCH_SUBSTRUCTURE, [query, querySmarts]);
+  freeMoleculesStructures = async () =>
+    this.call(WORKER_CALL.FREE_MOLECULES_STRUCTURES);
+  initStructuralAlerts = async (smarts: string[]) =>
+    this.call(WORKER_CALL.INIT_STRUCTURAL_ALERTS, [smarts]);
+  getStructuralAlerts = async (smiles: string) =>
+    this.call(WORKER_CALL.GET_STRUCTURAL_ALERTS, [smiles]);
 }
