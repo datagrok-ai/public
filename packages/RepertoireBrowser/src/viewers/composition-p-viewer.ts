@@ -4,6 +4,7 @@ import * as DG from "datagrok-api/dg";
 
 import { _package } from "../package";
 import { Logo } from "./ca-viewer-logo";
+import { StackedBarChart } from "./ca-viewer-bar-chart";
 
 export class CompostionPviewer {
   root: HTMLElement;
@@ -12,11 +13,18 @@ export class CompostionPviewer {
 
   panelNode: DG.DockNode;
   logoNode: DG.DockNode;
+  barCharNode: DG.DockNode;
   openPanels: DG.DockNode[];
 
   logo: Logo;
+  barChart: StackedBarChart;
 
   logoHost: HTMLElement;
+  barChartHost: HTMLElement;
+
+  aligned: DG.DataFrame;
+
+  isOpen: boolean;
 
   #splitAlignedPeptides(peptideColumn: DG.Column) {
     let splitPeptidesArray: string[][] = [];
@@ -76,24 +84,47 @@ export class CompostionPviewer {
     accOptions.addPane('CDR3 Scheme', () => ui.inputs([this.cdrChoice]));
     this.root.append(accOptions.root);
 
-    //Logo view
-    let aligned = this.#splitAlignedPeptides(mlbTable.columns.byName('CDR Clothia')!);
-    this.logo = new Logo(aligned, mlbTable);
+    this.aligned = this.#splitAlignedPeptides(mlbTable.columns.byName('CDR Clothia')!);
+    //Composition analysis Logo view
+    this.logo = new Logo(this.aligned, mlbTable);
     this.logoHost = ui.divV([this.logo.root]);
-    this.logo.render();
+    this.logo.render(this.aligned);
 
+    //Composition analysis barchart view
+    this.barChart = new StackedBarChart(this.aligned, mlbTable);
+    this.barChartHost = ui.divV([this.logo.root]);
+    this.barChart.render();
 
     // ---- DOCKING ----
     this.panelNode = mlbView.dockManager.dock(this.root, 'right', null, 'Composition');
-    this.logoNode = mlbView.dockManager.dock(this.logoHost, 'left', this.panelNode, 'NGL');
+    this.logoNode = mlbView.dockManager.dock(this.logoHost, 'left', this.panelNode, 'caLogo');
+    this.barCharNode = mlbView.dockManager.dock(this.barChartHost, 'down', this.logoNode, 'caBarChart');
 
-    this.openPanels = [this.panelNode, this.logoNode];
+    this.openPanels = [this.panelNode, this.logoNode, this.barCharNode];
+
+    this.isOpen = true;
   }
 
   async close(mlbView: DG.TableView) {
     if (!!this.openPanels)
       this.openPanels.forEach((p) => mlbView.dockManager.close(p));
+      this.isOpen = false;
   }
 
+  do(view: DG.TableView){
+    if(this.isOpen){
+      let a = view.grid.dataFrame.clone(view.grid.dataFrame.filter);
+      let b = a.columns.byName('CDR Clothia')!;
+
+      if (typeof(b) == "undefined"){
+let d = 0;
+      }
+
+      this.aligned = this.#splitAlignedPeptides(b);
+      this.logo.render(this.aligned);
+
+
+    }
+  }
 
 }
