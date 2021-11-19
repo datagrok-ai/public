@@ -134,7 +134,7 @@ export function peptideSimilaritySpace(
     {cycles: cyclesCount},
   );
   const embcols = reducer.transform(true);
-  const columns = Array.from(embcols, (v, k) => (DG.Column.fromFloat32Array(axesNames[k], v)));
+  const columns = Array.from(embcols, (v: Float32Array, k) => (DG.Column.fromFloat32Array(axesNames[k], v)));
 
   const sequences = alignedSequencesColumn.toList();
   const mw: Float32Array = new Float32Array(sequences.length).fill(0);
