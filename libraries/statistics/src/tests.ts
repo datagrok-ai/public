@@ -1,6 +1,8 @@
 //@ts-ignore: no types
 import * as jStat from 'jstat';
 
+export const padjust = require('@stdlib/stats-padjust');
+
 type testStats = {
   'p-value': number,
   'Mean difference'?: number,
