@@ -113,33 +113,20 @@ function printLeftCentered(
   }
 }
 
+
 export class AminoAcidsCellRenderer extends DG.GridCellRenderer {
-    private fontSize = 15;
 
+    get name() { return 'aminoAcidsCR'; }
 
-    get name() {
-      return 'aminoAcidsCR';
-    }
+    get cellType() { return 'aminoAcids'; }
 
-    get cellType() {
-      return 'aminoAcids';
-    }
-
-
-    render(
-      g: CanvasRenderingContext2D,
-      x: number,
-      y: number,
-      w: number,
-      h: number,
-      gridCell: DG.GridCell,
-      cellStyle: DG.GridCellStyle,
-    ) {
+    render(g: CanvasRenderingContext2D, x: number, y: number, w: number, h: number,
+           gridCell: DG.GridCell, cellStyle: DG.GridCellStyle) {
       g.save();
       g.beginPath();
       g.rect(x, y, w, h);
       g.clip();
-      g.font = `${this.fontSize}px monospace`;
+      g.font = `14px monospace`;
       g.textBaseline = 'top';
       const s: string = gridCell.cell.value ? gridCell.cell.value : '-';
       const [color, pivot] = cp.getColorPivot(s);
@@ -148,46 +135,29 @@ export class AminoAcidsCellRenderer extends DG.GridCellRenderer {
     }
 }
 
+
 export class AlignedSequenceCellRenderer extends DG.GridCellRenderer {
-    private maxCellWidth = 200;
 
+    get name() { return 'alignedSequenceCR'; }
 
-    constructor() {
-      super();
-    }
+    get cellType() { return 'alignedSequence'; }
 
-
-    get name() {
-      return 'alignedSequenceCR';
-    }
-
-    get cellType() {
-      return 'alignedSequence';
-    }
-
-
-    render(
-      g: CanvasRenderingContext2D,
-      x: number,
-      y: number,
-      w: number,
-      h: number,
-      gridCell: DG.GridCell,
-      cellStyle: DG.GridCellStyle,
-    ) {
-      w = Math.min(gridCell.grid.canvas.width-x, w);
+    render(g: CanvasRenderingContext2D, x: number, y: number, w: number, h: number,
+           gridCell: DG.GridCell, cellStyle: DG.GridCellStyle ) {
+      w = Math.min(gridCell.grid.canvas.width - x, w);
       g.save();
       g.beginPath();
       g.rect(x, y, w, h);
       g.clip();
-      g.font = '15px monospace';
+      g.font = '14px monospace';
       g.textBaseline = 'top';
-      const s: string = gridCell.cell.value;
+      const s: string = gridCell.cell.value ?? '';
 
       const subParts = s.split('-');
       const [text, simplified] = processSequence(subParts);
       const textSize = g.measureText(text.join(''));
-      x = Math.max(x, x+(w-textSize.width)/2);
+      x = Math.max(x, x + (w - textSize.width) / 2);
+
       subParts.forEach((amino: string, index) => {
         const [color, pivot] = cp.getColorPivot(amino);
         g.fillStyle = ChemPalette.undefinedColor;
@@ -197,15 +167,19 @@ export class AlignedSequenceCellRenderer extends DG.GridCellRenderer {
         }
         x = printLeftCentered(x, y, w, h, g, amino, color, pivot, true);
       });
+
       g.restore();
     }
 }
+
+
 export function processSequence(subParts:string[]) : [string[], boolean] {
-  const simplified = !subParts.some((amino, index)=>{
-    return amino.length>1 &&
-        index !=0 &&
-        index != subParts.length-1;
-  });
+
+  const simplified = !subParts.some((amino, index) =>
+    amino.length > 1 &&
+    index != 0 &&
+    index != subParts.length - 1);
+
   const text:string[] = [];
   subParts.forEach((amino: string, index) => {
     if (index < subParts.length) {
@@ -216,4 +190,3 @@ export function processSequence(subParts:string[]) : [string[], boolean] {
   });
   return [text, simplified];
 }
-
