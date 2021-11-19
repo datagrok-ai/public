@@ -39,7 +39,7 @@ export class RdKitService {
     return fooGather(data);
   }
 
-  async substructInit(dict: string[]): Promise<any> {
+  async initMoleculesStructures(dict: string[]): Promise<any> {
     let t = this;
     return this._doParallel(
       async (i: number, nWorkers: number) => {
@@ -49,7 +49,7 @@ export class RdKitService {
         const segment = i < (nWorkers - 1) ?
           dict.slice(i * segmentLength, (i + 1) * segmentLength) :
           dict.slice(i * segmentLength, length);
-        return t._parallelWorkers[i].substructInit(segment);
+        return t._parallelWorkers[i].initMoleculesStructures(segment);
       },
       async (resultArray) => resultArray.reduce((acc: any, item: any) => {
         item = item || {molIdxToHash: [], hashToMolblock: {}};
@@ -61,11 +61,11 @@ export class RdKitService {
     );
   }
 
-  async substructSearch(query: string, querySmarts: string) {
+  async searchSubstructure(query: string, querySmarts: string) {
     let t = this;
     return this._doParallel(
       async (i: number, nWorkers: number) => {
-        return t._parallelWorkers[i].substructSearch(query, querySmarts);
+        return t._parallelWorkers[i].searchSubstructure(query, querySmarts);
       },
       async (data: any) => {
         for (let k = 0; k < data.length; ++k) {
@@ -76,15 +76,19 @@ export class RdKitService {
       });
   }
 
+  async initTanimotoFingerprints(dict: string[]) {
+
+  }
+
   async initStructuralAlerts(smarts: string[]): Promise<void> {
     for (let i = 0; i < this._jobWorkers.length; ++i) {
-      await this._jobWorkers[i].structuralAlertsInit(smarts);
+      await this._jobWorkers[i].initStructuralAlerts(smarts);
     }
   }
 
   async getStructuralAlerts(smiles: string): Promise<number[]> {
     // may be round-robin or job stealing in the future
-    return (await this._jobWorker!.structuralAlertsGet(smiles)) as number[];
+    return (await this._jobWorker!.getStructuralAlerts(smiles)) as number[];
   }
 
 }

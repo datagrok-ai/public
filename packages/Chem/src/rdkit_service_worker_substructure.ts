@@ -10,9 +10,9 @@ export class RdkitServiceSubstructure extends RdKitServiceWorkerBase {
     this.library = null;
   }
 
-  init(dict: string[]) {
+  initMoleculesStructures(dict: string[]) {
 
-    this.deinit();
+    this.freeMoleculesStructures();
     if (dict.length === 0) {
       this.library = null;
       return;
@@ -47,7 +47,7 @@ export class RdkitServiceSubstructure extends RdKitServiceWorkerBase {
     return { molIdxToHash, hashToMolblock };
   }
 
-  search(queryMolString: string, querySmarts: string) {
+  searchSubstructure(queryMolString: string, querySmarts: string) {
 
     let matches = "[]";
     if (this.library) {
@@ -79,7 +79,7 @@ export class RdkitServiceSubstructure extends RdKitServiceWorkerBase {
 
   }
 
-  deinit() {
+  freeMoleculesStructures() {
 
     this.library?.delete();
     this.library = null;

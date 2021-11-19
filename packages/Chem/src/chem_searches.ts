@@ -224,7 +224,7 @@ export async function chemSubstructureSearchLibrary(
     async (params) => {
       // TODO: avoid creating an additional array here
       const { molIdxToHash, hashToMolblock }
-        = await _rdKitService!.substructInit(molStringsColumn.toList());
+        = await _rdKitService!.initMoleculesStructures(molStringsColumn.toList());
       let i = 0;
       let needsUpdate = false;
       for (const item of molIdxToHash) {
@@ -245,7 +245,7 @@ export async function chemSubstructureSearchLibrary(
 
   let result = DG.BitSet.create(molStringsColumn.length);
   if (molString.length != 0) {
-    const matches = await _rdKitService!.substructSearch(molString, molStringSmarts);
+    const matches = await _rdKitService!.searchSubstructure(molString, molStringSmarts);
     for (let match of matches)
       result.set(match, true, false);
   }
