@@ -16,6 +16,7 @@
 		"jstat": "latest"
 	},
 	"devDependencies": {
+		"@stdlib/stats-padjust": "^0.0.6",
 		"webpack": "latest",
 		"webpack-cli": "latest",
 		"eslint": "latest",
