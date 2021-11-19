@@ -365,7 +365,7 @@ export async function describe(
   SARVgrid.onCellTooltip(onCellTooltipFunc);
 
   sourceGrid.onCellPrepare((cell) => {
-    let currentRowIndex = cell.tableRowIndex;
+    const currentRowIndex = cell.tableRowIndex;
     if (currentRowIndex && invalidIndexes.includes(currentRowIndex) && !cell.isRowHeader) {
       cell.style.backColor = DG.Color.red;
     }
@@ -379,6 +379,7 @@ export async function describe(
 }
 
 //Selects best (by mean difference) amino acids in all positions in all categories(p-value)
+// eslint-disable-next-line no-unused-vars
 function segregateBestAtAllCateg(originalDf: DG.DataFrame, twoColorMode:boolean):DG.DataFrame {
   //todo: make with group by + refactor
   const filteredDf = originalDf.clone(DG.BitSet.create(originalDf.rowCount, (i) => {
