@@ -17,6 +17,8 @@ There is a more convenient ways to create lines:
 - method `dataframe.meta.addLine()` - for creating and saving a line in a dataframe
 - method `viewer.meta.addLine()` - for creating and saving a line in a viewer
 
+To completely remove lines from dataframe or viewer use methods `dataframe.meta.removeLines()` or `viewer.meta.removeLines()`. Calling these methods without parameters will delete all lines from the storage. You can also remove only specific lines by listing their IDs, for example: `viewer.meta.removeLines('123', 'abc')`. If a complete removal is not necessary, then you can simply hide the unnecessary line using the `visible` attribute.
+
 Lines saved in the dataframe will be displayed on all viewers in the same way. Lines saved in the viewer are displayed only in this viewer and do not affect other viewers.
 
 An example of creating and displaying a line in this way:
@@ -33,6 +35,15 @@ demog.meta.addLine({
   width: 2,
   visible: true,
 });
+
+// Add line to dataframe:
+demog.meta.addLine({
+  id: 'MyLine',
+  equation: '${height} = 200'
+});
+
+// Remove line with id = 'MyLine':
+demog.meta.removeLines('MyLine');
 
 let view = grok.shell.addTableView(demog);
 
@@ -64,6 +75,7 @@ Only one parameter ("equation") is required. All other parameters have their def
 
 | Parameter       | Type       | Example              | Default              | Description                                                          |
 |-----------------|------------|-------------------------------|-------------------------------|----------------------------------------------------------------------|
+| `id`           | string     | '123'              | Empty string              | Line ID. Used to completely remove unnecessary line.            |
 | `title`           | string     | 'Reference line'              | Empty string              | Short name of the line used when displaying the tooltip.             |
 | `description`     | string     | 'Normal distribution of data' | Empty string | Detailed description of the line used when displaying the tooltip.   |
 | `equation`        | string     | '${height} = 2.2 * ${weight}' | Required parameter that must be specified | Equation for line. There should be one column to the left of the "=". And any formula using the second column on the right side. The equation uses syntax and formulas similar to the [Add New Column](../../transform/add-new-column.md) form.   |
@@ -75,6 +87,7 @@ Only one parameter ("equation") is required. All other parameters have their def
 | `max`           | float     | 300                     | No maximum limit                      | Line boundaries along the value axis. In this example, the line will be drawn for a "Weight" less than 300 kg.   |
 | `width`           | float     | 3                     | 1                     | Line width in pixels.   |
 | `spline`           | float     | 0.5                     | 0.9                     | Smoothness of curve line in range [0..1], where 0 - no smoothing, 1 - max smoothing.   |
+| `style`           | string     | 'dashed'                     | 'solid'                     | Line style. Possible styles: 'solid', 'dotted', 'dashed', 'longdash', 'dotdash'.   |
 
 ## Band parameters
 
@@ -84,6 +97,7 @@ Only 3 parameters ("equation", "column" and "column2") are required. All other p
 
 | Parameter       | Type       | Example              | Default              | Description                                                          |
 |-----------------|------------|-------------------------------|-------------------------------|----------------------------------------------------------------------|
+| `id`           | string     | '123'              | Empty string              | Line ID. Used to completely remove unnecessary line.            |
 | `title`           | string     | 'Clipping range'              | Empty string              | Short name of the band used when displaying the tooltip.             |
 | `description`     | string     | 'Ignored range of data'                | Empty string | Detailed description of the band used when displaying the tooltip.   |
 | `equation`        | string     | '< 40' | Required parameter that must be specified | Band boundary formula. The formula can contain expressions of the form: "< 200", "> 50", "in(18, 60)", "in(q1, q3)", etc. The numbers are specified in the units of the column (in this case in centimeters).    |

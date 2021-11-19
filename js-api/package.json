@@ -26,6 +26,7 @@
     "webpack-cli": "^4.6.0"
   },
   "scripts": {
+    "link": "npm link",
     "build-ts": "tsc && eslint ./src/*.js ./dg.js ./ui.js ./grok.js --fix",
     "build-js-api": "webpack",
     "build": "webpack",

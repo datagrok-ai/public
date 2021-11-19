@@ -5,7 +5,7 @@
 	"version": "0.0.1",
 	"description": "",
 	"dependencies": {
-		"datagrok-api": "../../js-api",
+		"datagrok-api": ">0.94.10",
 		"ts-loader": "latest",
 		"typescript": "latest",
 		"cash-dom": "latest"
@@ -15,6 +15,7 @@
 		"webpack-cli": "latest"
 	},
 	"scripts": {
+		"link-api": "npm link datagrok-api",
 		"debug-hittriage": "webpack && grok publish ",
 		"release-hittriage": "grok publish --rebuild --release",
 		"build-hittriage": "webpack",

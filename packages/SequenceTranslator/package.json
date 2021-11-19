@@ -5,7 +5,7 @@
   "description": "",
   "dependencies": {
     "@types/react": "latest",
-    "datagrok-api": "../../js-api",
+    "datagrok-api": ">0.94.10",
     "datagrok-tools": "^4.1.2",
     "npm": "^7.11.2",
     "save-svg-as-png": "^1.4.17",
@@ -13,6 +13,7 @@
     "typescript": "latest"
   },
   "scripts": {
+    "link-api": "npm link datagrok-api",
     "debug-sequencetranslator": "grok publish --rebuild",
     "release-sequencetranslator": "grok publish --rebuild --release",
     "build-sequencetranslator": "webpack",

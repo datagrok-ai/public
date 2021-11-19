@@ -1,5 +1,8 @@
 {
-	"name": "utils",
+	"name": "@datagrok-libraries/utils",
+	"publishConfig": {
+		"access": "public"
+	},
 	"fullName": "Utils",
 	"version": "0.0.1",
 	"description": "Common utilities",
@@ -14,6 +17,7 @@
 		"umap-js": "^1.3.3"
 	},
 	"scripts": {
+		"link": "npm link",
 		"build": "tsc"
 	}
 }

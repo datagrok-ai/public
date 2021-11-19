@@ -16,6 +16,7 @@
 		"webpack-cli": "latest"
 	},
 	"scripts": {
+		"link-api": "npm link datagrok-api",
 		"install-dependencies": "npm install",
 		"debug-chemblapi": "grok publish --rebuild",
 		"release-chemblapi": "grok publish --rebuild --release",

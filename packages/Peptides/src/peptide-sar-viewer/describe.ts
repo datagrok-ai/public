@@ -2,7 +2,7 @@ import * as grok from 'datagrok-api/grok';
 import * as ui from 'datagrok-api/ui';
 import * as DG from 'datagrok-api/dg';
 import {splitAlignedPeptides} from '../split-aligned';
-import {tTest} from '../utils/misc';
+import {tTest} from 'lib-statistics/src/tests';
 import {ChemPalette} from '../utils/chem-palette';
 import {setAARRenderer} from '../utils/cell-renderer';
 
@@ -348,7 +348,6 @@ export async function describe(
           const textNum = statsDf.groupBy([col]).where(query).aggregate().get(col, 0);
           let text = `${col === 'Count' ? textNum : textNum.toFixed(5)}`;
 
-          //@ts-ignore: I'm sure it's gonna be fine, text contains a number
           if (col === 'Count') {
             text += ` / ${peptidesCount}`;
           } else if (col === 'pValue') {
@@ -378,7 +377,7 @@ export async function describe(
   sourceGrid.onCellPrepare((cell) => {
     const currentRowIndex = cell.tableRowIndex;
     if (currentRowIndex && invalidIndexes.includes(currentRowIndex) && !cell.isRowHeader) {
-      cell.style.backColor = DG.Color.red;
+      cell.style.backColor = DG.Color.lightLightGray;
     }
   });
 
@@ -387,50 +386,4 @@ export async function describe(
   // }
 
   return [SARgrid, SARVgrid, statsDf];
-}
-
-//Selects best (by mean difference) amino acids in all positions in all categories(p-value)
-// eslint-disable-next-line no-unused-vars
-function segregateBestAtAllCateg(originalDf: DG.DataFrame, twoColorMode:boolean):DG.DataFrame {
-  //todo: make with group by + refactor
-  const filteredDf = originalDf.clone(DG.BitSet.create(originalDf.rowCount, (i) => {
-    return originalDf.get('Count', i) > 3;
-  }));
-  const pValueFilteredDF = filteredDf.clone(DG.BitSet.create(filteredDf.rowCount, (i) => {
-    return filteredDf.get('pValue', i) >= 0.1 && filteredDf.get('Mean difference', i) > 0;
-  }));
-  let statsDfAgr = grok.data.joinTables(pValueFilteredDF, pValueFilteredDF.groupBy(['Position'])
-    .max('Mean difference')
-    .aggregate(), ['Mean difference', 'Position'],
-  ['max(Mean difference)', 'Position'], pValueFilteredDF.columns.names(), [], 'inner', false);
-  //and 'pValue' > 0.1  'pValue' < ${coef}`
-  let lastCoef = 0.0;
-  [0.01, 0.05, 0.1].forEach((coef)=>{
-    const pValueFilteredDF = filteredDf.clone(DG.BitSet.create(filteredDf.rowCount, (i) => {
-      return filteredDf.get('pValue', i) >= lastCoef &&
-          filteredDf.get('pValue', i)< coef &&
-          (filteredDf.get('Mean difference', i) > 0 || !twoColorMode);
-    }));
-    statsDfAgr = statsDfAgr.append(grok.data.joinTables(pValueFilteredDF, pValueFilteredDF.groupBy(['Position'])
-      .max('Mean difference')
-      .aggregate(), ['Mean difference', 'Position'],
-    ['max(Mean difference)', 'Position'], pValueFilteredDF.columns.names(), [], 'inner', false));
-    lastCoef = coef;
-  });
-  if (twoColorMode) {
-    lastCoef = 0.0;
-    [0.01, 0.05, 0.1, 1.01].forEach((coef) => {
-      const pValueFilteredDF = filteredDf.clone(DG.BitSet.create(filteredDf.rowCount, (i) => {
-        return filteredDf.get('pValue', i) >= lastCoef &&
-            filteredDf.get('pValue', i) < coef &&
-            filteredDf.get('Mean difference', i) <= 0;
-      }));
-      statsDfAgr = statsDfAgr.append(grok.data.joinTables(pValueFilteredDF, pValueFilteredDF.groupBy(['Position'])
-        .min('Mean difference')
-        .aggregate(), ['Mean difference', 'position'],
-      ['min(Mean difference)', 'position'], pValueFilteredDF.columns.names(), [], 'inner', false));
-      lastCoef = coef;
-    });
-  }
-  return statsDfAgr;
 }
