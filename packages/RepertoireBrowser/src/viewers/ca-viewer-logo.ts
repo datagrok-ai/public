@@ -4,15 +4,15 @@ import * as DG from 'datagrok-api/dg';
 import $ from 'cash-dom';
 
 import * as logojs from 'logojs-react';
-import { ChemPalette } from '../utils/chem-palette';
+import { ChemPalette } from '../utils/chem-pallete';
 
 export class Logo extends DG.JsViewer {
   initialized: boolean;
   option: any;
   colSemType: string;
-  splittedTable: DG.DataFrame | null;
-  splitted: DG.DataFrame | null;
+  splitted: DG.DataFrame;
   ppm: Array<Array<number>>;
+  df: DG.DataFrame;
 
   LET_COLORS = [
     { color: 'rgb(44,160,44)', regex: 'A' },
@@ -53,11 +53,10 @@ export class Logo extends DG.JsViewer {
     this.splitted = null;
     this.ppm = [];
 
-
-    this.splittedTable = splittedTable;
     this.initialized = true;
-
-    this.splitted = this.splittedTable;
+    this.df = mlbTable;
+    this.splitted = splittedTable;
+    
     this.root.style.width = 'auto';
     this.root.style.height = 'auto';
     this.root.style.maxHeight = '200px';
@@ -65,8 +64,9 @@ export class Logo extends DG.JsViewer {
 
 
 
-  async render() {
-    //const bits = this.dataFrame!.selection;
+  async render(newAligned: DG.DataFrame) {
+    this.splitted = newAligned;
+    const bits = this.df!.selection;
     let selected = false;
     // if (bits.trueCount > 0) {
     //   selected = true;
@@ -75,10 +75,10 @@ export class Logo extends DG.JsViewer {
     //     .whereRowMask(this.dataFrame!.selection)
     //     .aggregate();
     // }
-    if (selected) {
-      this.splitted = this.splittedTable;
-    } else     
-      this.splitted = this.splittedTable;;
+    // if (selected) {
+    //   this.splitted = this.splittedTable;
+    // } else     
+    //   this.splitted = this.splittedTable;;
     $(this.root).empty();
 
 
