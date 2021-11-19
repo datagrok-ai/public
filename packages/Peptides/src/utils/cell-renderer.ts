@@ -1,5 +1,6 @@
 import {ChemPalette} from './chem-palette';
 import * as DG from 'datagrok-api/dg';
+
 const cp = new ChemPalette('grok');
 
 export function expandColumn(col:DG.Column,
@@ -22,35 +23,24 @@ export function expandColumn(col:DG.Column,
   timeout);
 }
 
-export function setAARRenderer(
-  col:DG.Column,
-  grid:DG.Grid|null = null,
-) {
+export function setAARRenderer(col:DG.Column, grid:DG.Grid|null = null) {
   col.semType = 'aminoAcids';
   col.setTag('cell.renderer', 'aminoAcids');
-  if (grid) {
-    expandColumn(col, grid, (ent) => measureAAR(ent, true));
-  }
+  if (grid)
+    expandColumn(col, grid, (ent) => measureAAR(ent));
 }
 
-export function measureAAR(s:string,
-  hideMod = false):number {
+export function measureAAR(s: string): number {
   const end = s.lastIndexOf(')');
   const beg = s.indexOf('(');
   return end == beg ? s.length:s.length - (end-beg)+1;
 }
+
 function printLeftCentered(
-  x: number,
-  y: number,
-  w: number,
-  h: number,
-  g: CanvasRenderingContext2D,
-  s: string,
-  color = ChemPalette.undefinedColor,
-  pivot: number = 0,
-  left = false,
-  hideMod = false,
-) {
+      x: number, y: number, w: number, h: number,
+      g: CanvasRenderingContext2D, s: string, color = ChemPalette.undefinedColor,
+      pivot: number = 0, left = false, hideMod = false) {
+
   g.textAlign = 'start';
   let colorPart = pivot == -1 ? s.substring(0) : s.substring(0, pivot);
   if (colorPart.length == 1) {
@@ -60,7 +50,7 @@ function printLeftCentered(
     if (colorPart.substring(0, 3) in ChemPalette.AAFullNames) {
       colorPart = ChemPalette.AAFullNames[s.substring(0, 3)] + colorPart.substr(3);
     } else if (colorPart.substring(1, 4) in ChemPalette.AAFullNames) {
-      colorPart = colorPart.at(0) + ChemPalette.AAFullNames[s.substring(1, 4)] + colorPart.substr(4);
+      colorPart = colorPart[0] + ChemPalette.AAFullNames[s.substring(1, 4)] + colorPart.substr(4);
     }
   }
   let grayPart = pivot == -1 ? '' : s.substr(pivot);
@@ -80,35 +70,30 @@ function printLeftCentered(
   const textSize = g.measureText(colorPart + grayPart);
   const indent = 5;
 
-
   const colorTextSize = g.measureText(colorPart);
+
+  function draw(dx1: number, dx2: number) {
+    g.fillStyle = color;
+    g.fillText(
+      colorPart,
+      x + dx1,
+      y + (textSize.fontBoundingBoxAscent + textSize.fontBoundingBoxDescent) / 2,
+    );
+    g.fillStyle = ChemPalette.undefinedColor;
+    g.fillText(
+      grayPart,
+      x + dx2,
+      y + (textSize.fontBoundingBoxAscent + textSize.fontBoundingBoxDescent) / 2,
+    );
+  }
+
+
   if (left || textSize.width > w) {
-    g.fillStyle = color;
-    g.fillText(
-      colorPart,
-      x + indent,
-      y + (textSize.fontBoundingBoxAscent + textSize.fontBoundingBoxDescent) / 2,
-    );
-    g.fillStyle = ChemPalette.undefinedColor;
-    g.fillText(
-      grayPart,
-      x + indent + colorTextSize.width,
-      y + (textSize.fontBoundingBoxAscent + textSize.fontBoundingBoxDescent) / 2,
-    );
+    draw(indent, indent + colorTextSize.width);
     return x + colorTextSize.width + g.measureText(grayPart).width;
-  } else {
-    g.fillStyle = color;
-    g.fillText(
-      colorPart,
-      x + (w - textSize.width) / 2,
-      y + (textSize.fontBoundingBoxAscent + textSize.fontBoundingBoxDescent) / 2,
-    );
-    g.fillStyle = ChemPalette.undefinedColor;
-    g.fillText(
-      grayPart,
-      x + (w - textSize.width) / 2 + colorTextSize.width,
-      y + (textSize.fontBoundingBoxAscent + textSize.fontBoundingBoxDescent) / 2,
-    );
+  }
+  else {
+    draw((w - textSize.width) / 2, (w - textSize.width) / 2 + colorTextSize.width);
     return x + (w - textSize.width) / 2 + colorTextSize.width;
   }
 }
