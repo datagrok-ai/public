@@ -44,7 +44,7 @@ export class TimeProfileView extends DG.ViewBase implements ILazyLoading {
     loaded: boolean;
 
     load(): void {
-        checkMissingDomains(requiredColumnsByView[this.name], false, this);
+        checkMissingDomains(requiredColumnsByView[this.name], this);
      }
 
     createView(): void {

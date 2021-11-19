@@ -169,7 +169,7 @@ export async function clinicalCaseApp(): Promise<any> {
     }
   } else {
     aeBrowserView = DG.View.create();
-    checkMissingDomains({ 'ae': { 'req': [AE_TERM, AE_SEVERITY, AE_START_DAY, AE_END_DAY] } }, false, aeBrowserView);
+    checkMissingDomains({ 'ae': { 'req': [AE_TERM, AE_SEVERITY, AE_START_DAY, AE_END_DAY] } }, aeBrowserView);
   }
   aeBrowserView.name = 'AE browser';
   aeBrowserView.helpUrl = 'https://raw.githubusercontent.com/datagrok-ai/public/master/packages/ClinicalCase/views_help/ae_browser.md';

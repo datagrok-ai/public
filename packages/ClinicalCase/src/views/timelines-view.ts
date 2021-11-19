@@ -56,7 +56,7 @@ export class TimelinesView extends DG.ViewBase implements ILazyLoading {
   loaded: boolean;
 
   load(): void {
-    checkMissingDomains(requiredColumnsByView[this.name], true, this);
+    checkMissingDomains(requiredColumnsByView[this.name], this);
  }
 
   createView(): void {

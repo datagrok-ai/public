@@ -31,209 +31,260 @@ export const CLINICAL_TRIAL_GOV_FIELDS = {
 }
 
 // req - all coulmns must be present, opt - at least one of the columns must be present
+// req_domains - all domains must be present, opt_domains - at least one of domains must be present
 
 export const requiredColumnsByView = {
         'Summary': {
-                'dm': {
-                        'req': [
-                                sdtmCols.STUDY_ID,
-                                sdtmCols.SUBJECT_ID,
-                                sdtmCols.AGE,
-                                sdtmCols.SEX,
-                                sdtmCols.RACE,
-                                sdtmCols.TREATMENT_ARM,
-                                sdtmCols.SUBJ_REF_STDT
-                        ]
-                }
+                'req_domains': {
+                        'dm': {
+                                'req': [
+                                        sdtmCols.STUDY_ID,
+                                        sdtmCols.SUBJECT_ID,
+                                        sdtmCols.AGE,
+                                        sdtmCols.SEX,
+                                        sdtmCols.RACE,
+                                        sdtmCols.TREATMENT_ARM,
+                                        sdtmCols.SUBJ_REF_STDT
+                                ]
+                        }
+                }    
         },
         'Timelines': {
-                'ae': {
-                        'req': [
-                                sdtmCols.DOMAIN,
-                                sdtmCols.SUBJECT_ID,
-                                sdtmCols.AE_START_DAY,
-                                sdtmCols.AE_END_DAY,
-                                sdtmCols.AE_TERM,
-                                sdtmCols.AE_SEVERITY,
-                                sdtmCols.AE_BODY_SYSTEM
-                        ],
-                },
-                'cm': {
-                        'req': [
-                                sdtmCols.DOMAIN,
-                                sdtmCols.SUBJECT_ID,
-                                sdtmCols.CON_MED_NAME,
-                                sdtmCols.CON_MED_START_DAY,
-                                sdtmCols.CON_MED_END_DAY
-                        ]
-                },
-                'ex': {
-                        'req': [
-                                sdtmCols.DOMAIN,
-                                sdtmCols.SUBJECT_ID,
-                                sdtmCols.INV_DRUG_NAME,
-                                sdtmCols.INV_DRUG_START_DAY,
-                                sdtmCols.INV_DRUG_END_DAY
-                        ]
+                'opt_domains': {
+                        'ae': {
+                                'req': [
+                                        sdtmCols.DOMAIN,
+                                        sdtmCols.SUBJECT_ID,
+                                        sdtmCols.AE_START_DAY,
+                                        sdtmCols.AE_END_DAY,
+                                        sdtmCols.AE_TERM,
+                                        sdtmCols.AE_SEVERITY,
+                                        sdtmCols.AE_BODY_SYSTEM
+                                ],
+                        },
+                        'cm': {
+                                'req': [
+                                        sdtmCols.DOMAIN,
+                                        sdtmCols.SUBJECT_ID,
+                                        sdtmCols.CON_MED_NAME,
+                                        sdtmCols.CON_MED_START_DAY,
+                                        sdtmCols.CON_MED_END_DAY
+                                ]
+                        },
+                        'ex': {
+                                'req': [
+                                        sdtmCols.DOMAIN,
+                                        sdtmCols.SUBJECT_ID,
+                                        sdtmCols.INV_DRUG_NAME,
+                                        sdtmCols.INV_DRUG_START_DAY,
+                                        sdtmCols.INV_DRUG_END_DAY
+                                ]
+                        }
                 }
         },
         'Patient Profile': {
-                'dm': {
-                        'req': [
-                                sdtmCols.SUBJECT_ID  
-                        ]
-                },
-                'ae': {
-                        'req': [
-                                sdtmCols.SUBJECT_ID,
-                                sdtmCols.AE_START_DAY,
-                                sdtmCols.AE_END_DAY,
-                                sdtmCols.AE_TERM
-                        ]
-                },
-                'cm': {
-                        'req': [
-                                sdtmCols.SUBJECT_ID,
-                                sdtmCols.CON_MED_NAME,
-                                sdtmCols.CON_MED_START_DAY,
-                                sdtmCols.CON_MED_END_DAY
-                        ]
-                },
-                'ex': {
-                        'req': [
-                                sdtmCols.SUBJECT_ID,
-                                sdtmCols.INV_DRUG_NAME,
-                                sdtmCols.INV_DRUG_START_DAY,
-                                sdtmCols.INV_DRUG_END_DAY,
-                                sdtmCols.INV_DRUG_DOSE,
-                                sdtmCols.INV_DRUG_DOSE_UNITS
-                        ]
-                },
-                'lb': {
-                        'req': [
-                                sdtmCols.SUBJECT_ID,
-                                sdtmCols.LAB_DAY,
-                                sdtmCols.LAB_HI_LIM_N,
-                                sdtmCols.LAB_LO_LIM_N,
-                                sdtmCols.LAB_RES_N,
-                                sdtmCols.LAB_TEST
-                        ]
+                'req_domains': {
+                        'dm': {
+                                'req': [
+                                        sdtmCols.SUBJECT_ID  
+                                ]
+                        },
+                        'ae': {
+                                'req': [
+                                        sdtmCols.SUBJECT_ID,
+                                        sdtmCols.AE_START_DAY,
+                                        sdtmCols.AE_END_DAY,
+                                        sdtmCols.AE_TERM
+                                ]
+                        },
+                        'cm': {
+                                'req': [
+                                        sdtmCols.SUBJECT_ID,
+                                        sdtmCols.CON_MED_NAME,
+                                        sdtmCols.CON_MED_START_DAY,
+                                        sdtmCols.CON_MED_END_DAY
+                                ]
+                        },
+                        'ex': {
+                                'req': [
+                                        sdtmCols.SUBJECT_ID,
+                                        sdtmCols.INV_DRUG_NAME,
+                                        sdtmCols.INV_DRUG_START_DAY,
+                                        sdtmCols.INV_DRUG_END_DAY,
+                                        sdtmCols.INV_DRUG_DOSE,
+                                        sdtmCols.INV_DRUG_DOSE_UNITS
+                                ]
+                        },
+                        'lb': {
+                                'req': [
+                                        sdtmCols.SUBJECT_ID,
+                                        sdtmCols.LAB_DAY,
+                                        sdtmCols.LAB_HI_LIM_N,
+                                        sdtmCols.LAB_LO_LIM_N,
+                                        sdtmCols.LAB_RES_N,
+                                        sdtmCols.LAB_TEST
+                                ]
+                        }
                 }
         },
         'Adverse Events': {
-                'dm': {
-                        'req': [
-                                sdtmCols.SUBJECT_ID,
-                                sdtmCols.TREATMENT_ARM,
-                        ]
-                },
-                'ae': {
-                        'req': [
-                                sdtmCols.SUBJECT_ID,
-                                sdtmCols.AE_DECOD_TERM,
-                                sdtmCols.AE_BODY_SYSTEM,
-                                sdtmCols.AE_CAUSALITY,
-                                sdtmCols.AE_OUTCOME,
-                                sdtmCols.AE_START_DAY,
-                                sdtmCols.AE_SEVERITY
-                        ]
+                'req_domains': {
+                        'dm': {
+                                'req': [
+                                        sdtmCols.SUBJECT_ID,
+                                        sdtmCols.TREATMENT_ARM,
+                                ]
+                        },
+                        'ae': {
+                                'req': [
+                                        sdtmCols.SUBJECT_ID,
+                                        sdtmCols.AE_DECOD_TERM,
+                                        sdtmCols.AE_BODY_SYSTEM,
+                                        sdtmCols.AE_CAUSALITY,
+                                        sdtmCols.AE_OUTCOME,
+                                        sdtmCols.AE_START_DAY,
+                                        sdtmCols.AE_SEVERITY
+                                ]
+                        }
                 }
         },
         'Laboratory': {
-                'dm': {
-                        'req': [
-                                sdtmCols.SUBJECT_ID,
-                                sdtmCols.TREATMENT_ARM
-                        ]
-                },
-                'lb': {
-                        'req': [
-                                sdtmCols.SUBJECT_ID,
-                                sdtmCols.LAB_TEST,
-                                sdtmCols.VISIT_NAME,
-                                sdtmCols.VISIT_DAY,
-                                sdtmCols.LAB_RES_N,
-                                sdtmCols.LAB_LO_LIM_N,
-                                sdtmCols.LAB_HI_LIM_N
-                        ]
+                'req_domains': {
+                        'dm': {
+                                'req': [
+                                        sdtmCols.SUBJECT_ID,
+                                        sdtmCols.TREATMENT_ARM
+                                ]
+                        },
+                        'lb': {
+                                'req': [
+                                        sdtmCols.SUBJECT_ID,
+                                        sdtmCols.LAB_TEST,
+                                        sdtmCols.VISIT_NAME,
+                                        sdtmCols.VISIT_DAY,
+                                        sdtmCols.LAB_RES_N,
+                                        sdtmCols.LAB_LO_LIM_N,
+                                        sdtmCols.LAB_HI_LIM_N
+                                ]
+                        }
                 }
         },
         'AE Risk Assessment': {
-                'ae': {
-                        'req': [
-                                sdtmCols.SUBJECT_ID,
-                                sdtmCols.AE_TERM
-                        ]
-                },
-                'ex': {
-                        'req': [
-                                sdtmCols.SUBJECT_ID,
-                                sdtmCols.INV_DRUG_NAME
-                        ]
+                'req_domains': {
+                        'ae': {
+                                'req': [
+                                        sdtmCols.SUBJECT_ID,
+                                        sdtmCols.AE_TERM
+                                ]
+                        },
+                        'ex': {
+                                'req': [
+                                        sdtmCols.SUBJECT_ID,
+                                        sdtmCols.INV_DRUG_NAME
+                                ]
+                        }
                 }
         },
         'Survival Analysis': {
-                'dm': {
-                        'req': [
-                                sdtmCols.SUBJECT_ID,
-                                sdtmCols.SUBJ_REF_STDT,
-                                sdtmCols.SUBJ_REF_ENDT,
-                        ]
+                'req_domains': {
+                        'dm': {
+                                'req': [
+                                        sdtmCols.SUBJECT_ID,
+                                        sdtmCols.SUBJ_REF_STDT,
+                                        sdtmCols.SUBJ_REF_ENDT,
+                                ]
+                        }
                 }
         },
         'Distributions': {
-                'dm': {
-                        'req': [
-                                sdtmCols.SUBJECT_ID
-                        ],
-                        'opt': [
-                                sdtmCols.ETHNIC,
-                                sdtmCols.SEX,
-                                sdtmCols.RACE,
-                                sdtmCols.TREATMENT_ARM,
-                        ]
+                'req_domains': {
+                        'dm': {
+                                'req': [
+                                        sdtmCols.SUBJECT_ID
+                                ],
+                                'opt': [
+                                        sdtmCols.ETHNIC,
+                                        sdtmCols.SEX,
+                                        sdtmCols.RACE,
+                                        sdtmCols.TREATMENT_ARM,
+                                ]
+                        },
                 },
-                'lb': {
-                        'req': [
-                                sdtmCols.SUBJECT_ID,
-                                sdtmCols.VISIT_DAY,
-                                sdtmCols.VISIT_NAME,
-                                sdtmCols.LAB_RES_N,
-                                sdtmCols.LAB_TEST
-                        ]
+                'opt_domains': {
+                        'lb': {
+                                'req': [
+                                        sdtmCols.SUBJECT_ID,
+                                        sdtmCols.VISIT_DAY,
+                                        sdtmCols.VISIT_NAME,
+                                        sdtmCols.LAB_RES_N,
+                                        sdtmCols.LAB_TEST
+                                ]
+                        },
+                        'vs': {
+                                'req': [
+                                        sdtmCols.SUBJECT_ID,
+                                        sdtmCols.VISIT_DAY,
+                                        sdtmCols.VISIT_NAME,
+                                        sdtmCols.VS_RES_N,
+                                        sdtmCols.VS_TEST   
+                                ]
+                        }
                 }
         },
         'Correlations': {
-                'lb': {
-                        'req': [
-                                sdtmCols.SUBJECT_ID,
-                                sdtmCols.LAB_TEST,
-                                sdtmCols.VISIT_NAME,
-                                sdtmCols.LAB_RES_N
-                        ]
+                'opt_domains': {
+                        'lb': {
+                                'req': [
+                                        sdtmCols.SUBJECT_ID,
+                                        sdtmCols.LAB_TEST,
+                                        sdtmCols.VISIT_NAME,
+                                        sdtmCols.LAB_RES_N
+                                ]
+                        },
+                        'vs': {
+                                'req': [
+                                        sdtmCols.SUBJECT_ID,
+                                        sdtmCols.VS_TEST,
+                                        sdtmCols.VISIT_NAME,
+                                        sdtmCols.VS_RES_N
+                                ]
+                        },
                 }
         },
         'Time Profile': {
-                'dm': {
-                        'req': [
-                                sdtmCols.SUBJECT_ID,
-                        ],
-                        'opt': [
-                                sdtmCols.ETHNIC,
-                                sdtmCols.SEX,
-                                sdtmCols.RACE,
-                                sdtmCols.TREATMENT_ARM
-                        ]
-
+                'req_domains': {
+                        'dm': {
+                                'req': [
+                                        sdtmCols.SUBJECT_ID,
+                                ],
+                                'opt': [
+                                        sdtmCols.ETHNIC,
+                                        sdtmCols.SEX,
+                                        sdtmCols.RACE,
+                                        sdtmCols.TREATMENT_ARM
+                                ]
+        
+                        },
                 },
-                'lb': {
-                        'req': [
-                                sdtmCols.SUBJECT_ID,
-                                sdtmCols.LAB_TEST,
-                                sdtmCols.VISIT_NAME,
-                                sdtmCols.VISIT_DAY,
-                                sdtmCols.LAB_RES_N 
-                        ]
+                'opt_domains': {
+                        'lb': {
+                                'req': [
+                                        sdtmCols.SUBJECT_ID,
+                                        sdtmCols.LAB_TEST,
+                                        sdtmCols.VISIT_NAME,
+                                        sdtmCols.VISIT_DAY,
+                                        sdtmCols.LAB_RES_N 
+                                ]
+                        },
+                        'vs': {
+                                'req': [
+                                        sdtmCols.SUBJECT_ID,
+                                        sdtmCols.VS_TEST,
+                                        sdtmCols.VISIT_NAME,
+                                        sdtmCols.VISIT_DAY,
+                                        sdtmCols.VS_RES_N 
+                                ]
+                        }
                 }
         }
 }
