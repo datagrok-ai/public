@@ -5,6 +5,7 @@ export enum WORKER_CALL {
   FREE_MOLECULES_STRUCTURES = 'freeRdKitMolecules',
   SEARCH_SUBSTRUCTURE = 'searchSubstructure',
   GET_TANIMOTO_FINGERPRINTS = 'getTanimotoFingerprints',
+  GET_SIMILARITIES = 'getSimilarities',
   INIT_STRUCTURAL_ALERTS = 'initStructuralAlerts',
   GET_STRUCTURAL_ALERTS = 'getStructuralAlerts'
 }

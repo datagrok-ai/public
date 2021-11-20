@@ -196,7 +196,7 @@ export async function searchSubstructure(molStringsColumn: DG.Column, molString:
       throw "An input was null";
     let result =
       substructLibrary ?
-        await chemSearches.chemSubstructureSearchLibrary(molStringsColumn, molString, molStringSmarts, webRoot) :
+        await chemSearches.chemSubstructureSearchLibrary(molStringsColumn, molString, molStringSmarts/*, webRoot*/) :
         chemSearches.chemSubstructureSearchGraph(molStringsColumn, molString);
     return DG.Column.fromList('object', 'bitset', [result]);
   } catch (e: any) {

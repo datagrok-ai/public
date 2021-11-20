@@ -49,7 +49,7 @@ module.exports = (env, options) => ({
         test: /\.worker\.ts$/,
         loader: "worker-loader",
         options: {
-          inline: "no-fallback"
+          inline: "fallback" // this creates a separate file
         },
       },
       {
