@@ -698,6 +698,10 @@ export class DockView extends View {
   initDock(): string {
     return api.grok_DockView_InitDock(this.d);
   }
+
+  _handleResize(): string {
+    return api.grok_DockView_HandleResize(this.d);
+  }
 }
 
 export class FunctionView extends DockView {

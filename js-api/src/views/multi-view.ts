@@ -1,4 +1,4 @@
-import {FunctionView, View, ViewBase} from "./view";
+import {DockView, FunctionView, View, ViewBase} from "./view";
 import {ObjectHandler} from "../../ui";
 import {toJs} from "../wrappers";
 import {TabControl, TabPane} from "../widgets";
@@ -85,13 +85,16 @@ export class MultiView extends ViewBase {
   get currentView(): View { return this._currentView; }
   set currentView(x) {
     this._currentView = x;
-    this.toolbox = x.toolbox;
-    this.setRibbonPanels(x.getRibbonPanels());
+    setTimeout(() => {
+      this.toolbox = x.toolbox;
+      this.setRibbonPanels(x.getRibbonPanels());
+    }, 100);
     this._name = x.name;
-    if (x instanceof FunctionView) {
+    if (x instanceof DockView) {
       console.log('bingo');
       x.initDock();
       x._onAdded();
+      x._handleResize();
     }
   }
 }
