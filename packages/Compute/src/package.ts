@@ -37,7 +37,13 @@ export function init() {
 //name: Model Catalog
 //tags: app
 export function modelCatalog() {
-  grok.shell.addView(new ModelCatalogView());
+  let multiView = new DG.MultiView({
+    viewFactories: {
+      'Models': {factory: () => new ModelCatalogView(), allowClose: false}
+    }
+  });
+  multiView.name = 'Model Catalog';
+  grok.shell.addView(multiView);
 }
 
 //name: manualOutlierDetectionDialog

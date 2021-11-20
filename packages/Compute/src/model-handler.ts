@@ -18,17 +18,23 @@ export class ModelHandler extends DG.ObjectHandler {
     return script;
   }
 
+  getLanguageIcon(language: string) {
+    if (language == 'grok')
+      return ui.iconSvg('project');
+    return ui.iconImage('script', `/images/entities/${language}.png`);
+  }
+
   // Checks whether this is the handler for [x]
   isApplicable(x: any) {
     return x instanceof DG.Script && x.hasTag('model');
   }
 
   renderIcon(x: DG.Script, context: any = null): HTMLElement {
-    return ui.iconFA('function');
+    return this.getLanguageIcon(x.language);
   }
 
   renderMarkup(x: DG.Script): HTMLElement {
-    return ui.span([this.renderIcon(x), ui.label(x.name)]);
+    return ui.span([this.renderIcon(x), ui.label(x.name, {style: {marginLeft: '4px'}})], {style: {display: 'inline-flex'}});
   }
 
   renderProperties(x: DG.Script) {
@@ -46,25 +52,39 @@ export class ModelHandler extends DG.ObjectHandler {
   }
 
   renderDetails(x: DG.Script) {
-    return ui.tableFromMap({'Created': x.createdOn, 'By': x.author});
+    return ui.divV([ui.render(x.author), ui.render(x.createdOn)], {style: {lineHeight: '150%', marginTop: '16px'}});
   }
 
   renderTooltip(x: DG.Script) {
-    return ui.divText(`${x.name} is in the air!`);
+    return ui.divText(`${x.name}`);
   }
 
   renderCard(x: DG.Script, context?: any): HTMLElement {
     let card = ui.bind(x, ui.divV([
-      ui.h2(x.friendlyName),
+      ui.h2(this.renderMarkup(x)),
+      ui.divText(x.description),
       this.renderDetails(x),
     ], 'd4-gallery-item'), {contextMenu: false});
     card.ondblclick = (e) => {
-      let view = DG.FunctionView.createFromFunc(x);
-      if (grok.shell.v.parentCall.func.name == 'modelCatalog')
-        view.parentCall = grok.shell.v.parentCall;
-      grok.shell.addView(view);
+      this.openModel(x);
     }
     return card;
+  }
+
+  private openModel(x: DG.Script) {
+    let view = DG.FunctionView.createFromFunc(x);
+    if (grok.shell.v.parentCall.func.name == 'modelCatalog' && grok.shell.v instanceof DG.MultiView) {
+      view.parentCall = grok.shell.v.parentCall;
+      view.toolbox = ui.wait(async () => {
+        let models = await grok.dapi.scripts
+          .filter('#model')
+          .list();
+        return ui.divV(models.map((model) => ui.render(model, {onClick: (_) => this.openModel(model)})), {style: {lineHeight: '150%'}});
+      })
+      let mv: DG.MultiView = <DG.MultiView>grok.shell.v;
+      mv.addView(x.name, {factory: () => view, allowClose: true}, true);
+    } else
+      grok.shell.addView(view);
   }
 
   init() {

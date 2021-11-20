@@ -409,8 +409,8 @@ export class TabControl {
   }
 
   /** Adds a new pane with the specified name */
-  addPane(name: string, getContent: () => HTMLElement, icon: any = null): TabPane {
-    return toJs(api.grok_TabControlBase_AddPane(this.d, name, getContent, icon));
+  addPane(name: string, getContent: () => HTMLElement, icon: any = null, options?: {allowClose: boolean}): TabPane {
+    return toJs(api.grok_TabControlBase_AddPane(this.d, name, getContent, icon, options?.allowClose ?? false));
   }
 
   /** Removes all panes */
@@ -427,6 +427,9 @@ export class TabControl {
 
   /** Occurs after the active pane is changed */
   get onTabChanged(): Observable<any> { return __obs('d4-tabcontrol-tab-changed', this.d); }
+
+  get onTabAdded(): Observable<any> { return __obs('d4-tabcontrol-tab-added', this.d); }
+  get onTabRemoved(): Observable<any> { return __obs('d4-tabcontrol-tab-removed', this.d); }
 }
 
 
