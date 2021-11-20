@@ -85,10 +85,8 @@ export class MultiView extends ViewBase {
   get currentView(): View { return this._currentView; }
   set currentView(x) {
     this._currentView = x;
-    setTimeout(() => {
-      this.toolbox = x.toolbox;
-      this.setRibbonPanels(x.getRibbonPanels());
-    }, 100);
+    this.toolbox = x.toolbox;
+    this.setRibbonPanels(x.getRibbonPanels());
     this._name = x.name;
     if (x instanceof DockView) {
       console.log('bingo');

@@ -71,19 +71,21 @@ export class ModelHandler extends DG.ObjectHandler {
     return card;
   }
 
-  private openModel(x: DG.Script) {
+  private openModel(x: DG.Script, parentView?: DG.ViewBase) {
+    let pv = parentView ?? grok.shell.v;
     let view = DG.FunctionView.createFromFunc(x);
-    if (grok.shell.v.parentCall.func.name == 'modelCatalog' && grok.shell.v instanceof DG.MultiView) {
-      view.parentCall = grok.shell.v.parentCall;
+    if (pv.parentCall.func.name == 'modelCatalog' && pv instanceof DG.MultiView) {
+      view.parentCall = pv.parentCall;
+      view.parentView = pv;
       view.toolbox = ui.wait(async () => {
         let models = await grok.dapi.scripts
           .filter('#model')
           .list();
-        return ui.divV(models.map((model) => ui.render(model, {onClick: (_) => this.openModel(model)})), {style: {lineHeight: '150%'}});
+        return ui.divV(models.map((model) => ui.render(model, {onClick: (_) => this.openModel(model, pv)})), {style: {lineHeight: '150%'}});
       })
-      let mv: DG.MultiView = <DG.MultiView>grok.shell.v;
-      mv.addView(x.name, {factory: () => view, allowClose: true}, true);
-    } else
+      //let mv: DG.MultiView = <DG.MultiView>grok.shell.v;
+      //mv.addView(x.name, {factory: () => view, allowClose: true}, true);
+    }
       grok.shell.addView(view);
   }
 
