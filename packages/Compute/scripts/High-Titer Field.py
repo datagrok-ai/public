@@ -1,4 +1,4 @@
-#name: High-titer field
+#name: High-Titer Field
 #language: python
 #input: double a
 #input: double b
