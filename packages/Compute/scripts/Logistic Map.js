@@ -1,4 +1,4 @@
-//name: Logistic map
+//name: Logistic Map
 //tags: model, NonlinearDynamics
 //description: Archetypal example of how complex, chaotic behaviour can arise from very simple non-linear dynamical equations.
 //language: javascript
