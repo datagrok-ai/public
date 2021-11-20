@@ -109,33 +109,33 @@ export function canvas(width: number | null = null, height: number | null = null
 }
 
 /** @returns {HTMLHeadingElement} */
-export function h1(s: string | Element): HTMLHeadingElement {
+export function h1(s: string | Element, options: string | ElementOptions | null = null): HTMLHeadingElement {
   let x = element('h1');
   if (typeof s === 'string')
     x.innerText = s;
   else
     $(x).append(s);
-  return x as HTMLHeadingElement;
+  return _options(x, options) as HTMLHeadingElement;
 }
 
 /** @returns {HTMLHeadingElement} */
-export function h2(s: string | Element): HTMLHeadingElement {
+export function h2(s: string | Element, options: string | ElementOptions | null = null): HTMLHeadingElement {
   let x = element('h2');
   if (typeof s === 'string')
     x.innerText = s;
   else
     $(x).append(s);
-  return x as HTMLHeadingElement;
+  return _options(x, options) as HTMLHeadingElement;
 }
 
 /** @returns {HTMLHeadingElement} */
-export function h3(s: string | Element): HTMLHeadingElement {
+export function h3(s: string | Element, options: string | ElementOptions | null = null): HTMLHeadingElement {
   let x = element('h3');
   if (typeof s === 'string')
     x.innerText = s;
   else
     $(x).append(s);
-  return x as HTMLHeadingElement;
+  return _options(x, options) as HTMLHeadingElement;
 }
 
 /** Creates an accordion with dynamically populated panes.
@@ -186,6 +186,30 @@ export function iconFA(name: string, handler: ((this: HTMLElement, ev: MouseEven
   i.classList.add('grok-icon');
   i.classList.add('fal');
   i.classList.add(`fa-${name}`);
+  if (handler !== null)
+    i.addEventListener('click', handler);
+  if (tooltipMsg !== null)
+    tooltip.bind(i, tooltipMsg);
+  return i;
+}
+
+export function iconImage(name: string, path: string, handler: ((this: HTMLElement, ev: MouseEvent) => any) | null = null, tooltipMsg: string | null = null): HTMLElement {
+  let i = element('i');
+  i.classList.add('image-icon');
+  if (!path.startsWith('http') && !path.startsWith('/') && !path.startsWith('data:'))
+    path = '/images/$path';
+  i.style.backgroundImage = `url(${path})`;
+  if (handler !== null)
+    i.addEventListener('click', handler);
+  if (tooltipMsg !== null)
+    tooltip.bind(i, tooltipMsg);
+  return i;
+}
+
+export function iconSvg(name: string, handler: ((this: HTMLElement, ev: MouseEvent) => any) | null = null, tooltipMsg: string | null = null): HTMLElement {
+  let i = element('i');
+  i.classList.add('svg-icon');
+  i.classList.add(`svg-${name}`);
   if (handler !== null)
     i.addEventListener('click', handler);
   if (tooltipMsg !== null)

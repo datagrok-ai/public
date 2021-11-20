@@ -75,7 +75,7 @@ export class ViewBase {
     this._helpUrl = url;
   }
 
-  private _name: string;
+  protected _name: string;
 
   /** @type {string} */
   get name(): string {
@@ -87,7 +87,7 @@ export class ViewBase {
   }
 
   get parentCall(): FuncCall {
-    return api.grok_View_Get_ParentCall(this.d);
+    return toJs(api.grok_View_Get_ParentCall(this.d));
   }
 
   set parentCall(s: FuncCall) {
@@ -305,7 +305,7 @@ export class View extends ViewBase {
    *  See also {@link loadLayout}
    *  @returns {ViewLayout} */
   saveLayout(): ViewLayout {
-    return new ViewLayout(api.grok_View_Save_Layout(this.d));
+    return toJs(api.grok_View_Save_Layout(this.d));
   }
 
   /** View name. It gets shown in the tab handle.
@@ -321,6 +321,10 @@ export class View extends ViewBase {
       this._name = s;
     else
       api.grok_View_Set_Name(this.d, s);
+  }
+
+  _onAdded() {
+    api.grok_View_OnAdded(this.d);
   }
 
   // to be used in [createByType].
@@ -686,7 +690,17 @@ export class ScriptView extends View {
   }
 }
 
-export class FunctionView extends View {
+export class DockView extends View {
+  constructor(d: any) {
+    super(d);
+  }
+
+  initDock(): string {
+    return api.grok_DockView_InitDock(this.d);
+  }
+}
+
+export class FunctionView extends DockView {
   constructor(d: any) {
     super(d);
   }

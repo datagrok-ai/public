@@ -52,7 +52,7 @@ export class Entity {
   get updatedOn(): string { return api.grok_Entity_Get_UpdatedOn(this.d); }
 
   /** Who created entity **/
-  get author(): User { return api.grok_Entity_Get_Author(this.d); }
+  get author(): User { return toJs(api.grok_Entity_Get_Author(this.d)); }
 
   /** Entity properties */
   getProperties(): Promise<Map<string, any>> {
@@ -455,6 +455,9 @@ export class Script extends Func {
   /** Script */
   get script(): string { return api.grok_Script_GetScript(this.d); }
   set script(s: string) { api.grok_Script_SetScript(this.d, s); }
+
+  get language(): string { return api.grok_Script_GetLanguage(this.d); }
+  set language(s: string) { api.grok_Script_SetLanguage(this.d, s); }
 }
 
 /** Represents connection credentials

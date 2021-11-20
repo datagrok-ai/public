@@ -34,13 +34,13 @@ export class Shell {
   /** Current table, or null.
    *  @type {DataFrame} */
   get t(): DataFrame {
-    return new DataFrame(api.grok_CurrentTable());
+    return toJs(api.grok_CurrentTable());
   }
 
   /** Current view
    *  @type {ViewBase} */
   get v(): ViewBase {
-    return View.fromDart(api.grok_Get_CurrentView());
+    return toJs(api.grok_Get_CurrentView());
   }
 
   set v(view: ViewBase) {
@@ -82,12 +82,12 @@ export class Shell {
 
   /** @type {TabControl} */
   get sidebar(): TabControl {
-    return new TabControl(api.grok_Get_Sidebar());
+    return toJs(api.grok_Get_Sidebar());
   }
 
   /** @type {Menu} */
   get topMenu(): Menu {
-    return new Menu(api.grok_Get_TopMenu());
+    return toJs(api.grok_Get_TopMenu());
   }
 
   /** @type {HTMLDivElement} */
