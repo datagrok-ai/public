@@ -1,6 +1,40 @@
 <!-- TITLE: Release History -->
 <!-- SUBTITLE: -->
 
+# 2021-11-21 Dev build 0.95.2
+
+## Latest Docker Images
+
+* Datagrok: 
+  *  `docker pull datagrok/datagrok:0.95.2`
+  *  `docker pull datagrok/datagrok:latest`
+  
+* [Docker-Compose](admin/docker-compose.md)
+
+## Addressed Issues
+
+* GitHub Actions: Update js-api/package-lock.json 
+* Scatter Plot: Scroll bars visibility 
+* RepertoireBrowsser: dynamical viewer logo 
+* Filters: add wildcard support in search over categories 
+* Formula lines: Update help 
+* Clinical case: updated missing domains and columns validation 
+* Clinical case: added vital signs domain to distributions, correlation matrix and time profile views 
+* Peptides: ngl in property panel 
+* Peptides: code cleanup and minor improvements 
+* Work in progress 
+* Minor code cleanup 
+* Statistics lib: removed padjust 
+* (Bug) In-Vis Filter: Does not affect the regression line 
+* JS: MultiView: DockView support 
+* Close button on TabControl 
+* Convert FunctionView to DockView 
+* JS: MultiView: DockView support 
+* Disabled MultiView 
+* Samples scripts: naming harmonization 
+* Model Catalog improvements 
+
+
 # 2021-11-19 Dev build 0.95.1
 
 ## Latest Docker Images
