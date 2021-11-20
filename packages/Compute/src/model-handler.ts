@@ -1,6 +1,7 @@
 import * as grok from 'datagrok-api/grok';
 import * as ui from 'datagrok-api/ui';
 import * as DG from 'datagrok-api/dg';
+import {ModelCatalogView} from "./model-catalog-view";
 
 export class ModelHandler extends DG.ObjectHandler {
   get type() {
@@ -34,7 +35,7 @@ export class ModelHandler extends DG.ObjectHandler {
   }
 
   renderMarkup(x: DG.Script): HTMLElement {
-    return ui.span([this.renderIcon(x), ui.label(x.name, {style: {marginLeft: '4px'}})], {style: {display: 'inline-flex'}});
+    return ui.span([this.renderIcon(x), ui.label(x.friendlyName, {style: {marginLeft: '4px'}})], {style: {display: 'inline-flex'}});
   }
 
   renderProperties(x: DG.Script) {
@@ -52,41 +53,28 @@ export class ModelHandler extends DG.ObjectHandler {
   }
 
   renderDetails(x: DG.Script) {
-    return ui.divV([ui.render(x.author), ui.render(x.createdOn)], {style: {lineHeight: '150%', marginTop: '16px'}});
+    return ui.divV([ui.render(x.author), ui.render(x.createdOn)], {style: {lineHeight: '150%'}});
   }
 
   renderTooltip(x: DG.Script) {
-    return ui.divText(`${x.name}`);
+    return ui.divText(`${x.friendlyName}`);
   }
 
   renderCard(x: DG.Script, context?: any): HTMLElement {
     let card = ui.bind(x, ui.divV([
       ui.h2(this.renderMarkup(x)),
-      ui.divText(x.description),
+      ui.divText(x.description, 'ui-description'),
       this.renderDetails(x),
     ], 'd4-gallery-item'), {contextMenu: false});
     card.ondblclick = (e) => {
-      this.openModel(x);
+      ModelHandler.openModel(x);
     }
     return card;
   }
 
-  private openModel(x: DG.Script, parentView?: DG.ViewBase) {
-    let pv = parentView ?? grok.shell.v;
+  static openModel(x: DG.Script, parentView?: DG.ViewBase) {
     let view = DG.FunctionView.createFromFunc(x);
-    if (pv.parentCall.func.name == 'modelCatalog' && pv instanceof DG.MultiView) {
-      view.parentCall = pv.parentCall;
-      view.parentView = pv;
-      view.toolbox = ui.wait(async () => {
-        let models = await grok.dapi.scripts
-          .filter('#model')
-          .list();
-        return ui.divV(models.map((model) => ui.render(model, {onClick: (_) => this.openModel(model, pv)})), {style: {lineHeight: '150%'}});
-      })
-      //let mv: DG.MultiView = <DG.MultiView>grok.shell.v;
-      //mv.addView(x.name, {factory: () => view, allowClose: true}, true);
-    }
-      grok.shell.addView(view);
+    grok.shell.addView(view);
   }
 
   init() {

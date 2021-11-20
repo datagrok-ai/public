@@ -10,9 +10,11 @@
 		"exceljs": "^4.3.0",
 		"file-saver": "^2.0.5",
 		"ts-loader": "latest",
-		"typescript": "latest"
+		"typescript": "latest",
+		"wu": "latest"
 	},
 	"devDependencies": {
+		"@types/wu": "latest",
 		"@types/file-saver": "^2.0.3",
 		"@typescript-eslint/eslint-plugin": "^5.1.0",
 		"@typescript-eslint/parser": "^5.1.0",

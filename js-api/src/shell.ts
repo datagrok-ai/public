@@ -131,7 +131,7 @@ export class Shell {
   /** Opens the view that handles the specified url.
    * Sample: {@link https://public.datagrok.ai/js/samples/ui/docking/docking} */
   route(url: string): View {
-    return View.fromDart(api.grok_Route(url));
+    return toJs(api.grok_Route(url));
   }
 
   /** Adds an item to the workspace.

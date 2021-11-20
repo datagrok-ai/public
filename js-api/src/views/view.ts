@@ -720,6 +720,14 @@ export class FunctionView extends DockView {
   static createFromFunc(func: Func): FunctionView {
     return new FunctionView(api.grok_FunctionView(func.d));
   }
+
+  get func(): Func {
+    return toJs(api.grok_FunctionView_Get_Func(this.d));
+  }
+
+  set func(f: Func) {
+      api.grok_FunctionView_Set_Func(this.d, f.d);
+  }
 }
 
 export class ViewLayout extends Entity {
