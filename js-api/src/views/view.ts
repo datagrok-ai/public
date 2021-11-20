@@ -94,6 +94,14 @@ export class ViewBase {
     api.grok_View_Set_ParentCall(this.d, toDart(s));
   }
 
+  get parentView(): ViewBase {
+    return toJs(api.grok_View_Get_ParentView(this.d));
+  }
+
+  set parentView(s: ViewBase) {
+    api.grok_View_Set_ParentView(this.d, toDart(s));
+  }
+
   /** @type {string} */
   get description(): string {
     return '';
