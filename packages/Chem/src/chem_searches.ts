@@ -9,47 +9,7 @@ export function setSearchesContext(rdKitModule: any, rdKitService: RdKitService)
   _rdKitService = rdKitService;
 }
 
-interface CacheParams {
-  cachedForCol : DG.Column | null;
-  cachedForColVersion: number | null;
-  cachedStructure: any;
-  column: DG.Column | null;
-  query: string | null;
-};
-
-const cacheParamsDefaults: CacheParams = {
-  cachedForCol: null,
-  cachedForColVersion: null,
-  cachedStructure: null,
-  column: null,
-  query: null
-};
-
-async function _cacheByAction(params: CacheParams, invalidator: (_: CacheParams) => Promise<void>) {
-
-  let invalidateCache = false;
-
-  if (
-    params.cachedForCol === null &&
-     params.cachedStructure === null) {
-    invalidateCache = true;
-  }
-
-  if (params.column !== params.cachedForCol ||
-      (params.column!.version !== params.cachedForColVersion) || params.query == null) {
-    invalidateCache = true;
-  }
-
-  if (invalidateCache) {
-    await invalidator(params);
-    params.cachedForCol = params.column;
-    params.cachedForColVersion = params.column!.version;
-    console.log('Molecule cache was invalidated');
-  }
-}
-
 function _morganFP(molString: string, fp_length = 128, fp_radius = 2) {
-
   if (molString.length == 0) {
     console.error(
       "Possibly an empty molString: `" + molString + "`");
@@ -66,7 +26,6 @@ function _morganFP(molString: string, fp_length = 128, fp_radius = 2) {
     }
   }
   return '0'.repeat(fp_length);
-
 }
 
 export function moleculesToFingerprints(molStringsColumn: DG.Column, settings: { [name: string]: number } = { }) {
@@ -83,62 +42,101 @@ export function moleculesToFingerprints(molStringsColumn: DG.Column, settings: {
   return DG.Column.fromList('object', 'fingerprints', fingerprints);
 }
 
-function _foldFingerprint(bitsetFp: DG.BitSet, newLength: number) {
-  let result = DG.BitSet.create(newLength);
-  for (let idx in bitsetFp.getSelectedIndexes())
-    result.set(+idx % newLength, true, false);
-  return result;
-}
-
-function _fingerprintSimilarity(bitsetFp1: DG.BitSet, bitsetFp2: DG.BitSet) {
-  const len1 = bitsetFp1.length;
-  const len2 = bitsetFp2.length;
-  if (len1 < len2)
-    bitsetFp2 = _foldFingerprint(bitsetFp2, len1);
-  else if (len2 < len1)
-    bitsetFp1 = _foldFingerprint(bitsetFp1, len2);
-  return bitsetFp1.similarityTo(bitsetFp2, 'tanimoto'); // tanimotoSimilarity(fp1, fp2);
+async function _chemFindSimilar(molStringsColumn: DG.Column,
+    queryMolString: string, settings: { [name: string]: any }) {
+  const len = molStringsColumn.length;
+  const distances = await _rdKitService!.getSimilarities(queryMolString);
+  const limit = Math.min((settings.hasOwnProperty('limit') ? settings.limit : len), len);
+  const minScore = settings.hasOwnProperty('minScore') ? settings.minScore : 0.0;
+  let sortedIndices = Array.from(Array(len).keys()).sort((i1, i2) => {
+    const a1 = distances[i1];
+    const a2 = distances[i2];
+    if (a2 < a1) return -1;
+    if (a2 > a1) return +1;
+    return 0; // a2.compareTo(a1)
+  });
+  let sortedMolStrings = DG.Column.fromType(DG.TYPE.STRING, 'molecule', limit);
+  let sortedMolInd = DG.Column.fromType(DG.TYPE.INT, 'index', limit);
+  sortedMolStrings.semType = DG.SEMTYPE.MOLECULE;
+  let sortedScores = DG.Column.fromType(DG.TYPE.FLOAT, 'score', limit);
+  for (let n = 0; n < limit; n++) {
+    const idx = sortedIndices[n];
+    const score = distances[idx];
+    if (score < minScore) {
+      sortedMolStrings.dataFrame.rows.removeAt(n, limit - n);
+      sortedScores.dataFrame.rows.removeAt(n, limit - n);
+      break;
+    }
+    sortedMolStrings.set(n, molStringsColumn.get(idx));
+    sortedScores.set(n, score);
+    sortedMolInd.set(n, idx);
+  }
+  return DG.DataFrame.fromColumns([sortedMolStrings, sortedScores, sortedMolInd]);
 }
 
 // Only this function receives {sorted} in settings
-function _chemSimilarityScoringByFingerprints(
-    fingerprintCol: DG.Column, fingerprint: DG.BitSet,
-    molStringsColumn: DG.Column, settings: { [name: string]: any }) {
-  const len = fingerprintCol.length;
-  let distances = DG.Column.fromType(DG.TYPE.FLOAT, 'distances', len);
-  for (let row = 0; row < len; ++row) {
-    const fp = fingerprintCol.get(row);
-    distances.set(row, fp == null ? 1.0 : _fingerprintSimilarity(fingerprint, fp));
+async function _chemGetSimilarities(molStringsColumn: DG.Column, queryMolString: string) {
+  const similaritiesArray = await _rdKitService!.getSimilarities(queryMolString);
+  return DG.Column.fromList(DG.COLUMN_TYPE.FLOAT, 'distances', similaritiesArray);
+}
+
+interface CacheParams {
+  cachedForCol : DG.Column | null;
+  cachedForColVersion: number | null;
+  column: DG.Column | null;
+  query: string | null;
+  moleculesWereIndexed: boolean | null;
+  similarityFingerprintsWereIndexed: boolean | null;
+};
+
+const cacheParamsDefaults: CacheParams = {
+  cachedForCol: null,
+  cachedForColVersion: null,
+  column: null,
+  query: null,
+  moleculesWereIndexed: false,
+  similarityFingerprintsWereIndexed: false,
+};
+
+let _chemCache = { ...cacheParamsDefaults };
+
+async function _invalidate(molStringsColumn: DG.Column, queryMolString: string, includeFingerprints: boolean) {
+  const sameColumnAndVersion = () =>
+    molStringsColumn === _chemCache.cachedForCol &&
+    molStringsColumn.version === _chemCache.cachedForColVersion;
+  if (!sameColumnAndVersion() || queryMolString === null || queryMolString.length === 0) {
+    _chemCache.cachedForCol = molStringsColumn;
+    _chemCache.cachedForColVersion = molStringsColumn.version;
+    _chemCache.moleculesWereIndexed = false;
+    _chemCache.similarityFingerprintsWereIndexed = false;
   }
-  if (settings.hasOwnProperty('sorted') && settings.sorted === true) {
-    const limit = Math.min((settings.hasOwnProperty('limit') ? settings.limit : len), len);
-    const minScore = settings.hasOwnProperty('minScore') ? settings.minScore : 0.0;
-    let sortedIndices = Array.from(Array(len).keys()).sort((i1, i2) => {
-      const a1 = distances.get(i1);
-      const a2 = distances.get(i2);
-      if (a2 < a1) return -1;
-      if (a2 > a1) return +1;
-      return 0; // a2.compareTo(a1)
-    });
-    let sortedMolStrings = DG.Column.fromType(DG.TYPE.STRING, 'molecule', limit);
-    let sortedMolInd = DG.Column.fromType(DG.TYPE.INT, 'index', limit);
-    sortedMolStrings.semType = DG.SEMTYPE.MOLECULE;
-    let sortedScores = DG.Column.fromType(DG.TYPE.FLOAT, 'score', limit);
-    for (let n = 0; n < limit; n++) {
-      const idx = sortedIndices[n];
-      const score = distances.get(idx);
-      if (score < minScore) {
-        sortedMolStrings.dataFrame.rows.removeAt(n, limit - n);
-        sortedScores.dataFrame.rows.removeAt(n, limit - n);
-        break;
+  if (sameColumnAndVersion() && !_chemCache.moleculesWereIndexed) {
+    // TODO: avoid creating an additional array here
+    const { molIdxToHash, hashToMolblock }
+      = await _rdKitService!.initMoleculesStructures(molStringsColumn.toList());
+    let i = 0;
+    let needsUpdate = false;
+    for (const item of molIdxToHash) {
+      const notify = (i === molIdxToHash.length - 1);
+      const molStr = hashToMolblock[item];
+      if (molStr) {
+        molStringsColumn.setString(i, molStr, notify);
+        needsUpdate = true;
       }
-      sortedMolStrings.set(n, molStringsColumn.get(idx));
-      sortedScores.set(n, score);
-      sortedMolInd.set(n, idx);
+      ++i;
     }
-    return DG.DataFrame.fromColumns([sortedMolStrings, sortedScores, sortedMolInd]);
-  } else {
-    return distances;
+    if (needsUpdate) {
+      // This seems to be the only way to trigger re-calculation of categories
+      molStringsColumn.compact();
+    }
+    _chemCache.moleculesWereIndexed = true;
+    _chemCache.similarityFingerprintsWereIndexed = false;
+  }
+  if (includeFingerprints) {
+    if (sameColumnAndVersion() && !_chemCache.similarityFingerprintsWereIndexed) {
+      await _rdKitService!.initTanimotoFingerprints();
+      _chemCache.similarityFingerprintsWereIndexed = true;
+    }
   }
 }
 
@@ -146,45 +144,22 @@ function _chemSimilarityScoringByFingerprints(
 // smiles, cxsmiles, molblock, v3Kmolblock, and inchi;
 // see https://github.com/rdkit/rdkit/blob/master/Code/MinimalLib/minilib.h
 
-let _chemSimilarityScoringCacheParams = { ...cacheParamsDefaults };
-async function _chemSimilarityScoring(molStringsColumn: DG.Column, molString: string, settings: { [name: string]: any })
-    : Promise<ReturnType<typeof _chemSimilarityScoringByFingerprints> | null> {
-
-  // await _initRdKitWorkers();
-
-  _chemSimilarityScoringCacheParams.column = molStringsColumn;
-  _chemSimilarityScoringCacheParams.query = molString;
-
-  await _cacheByAction(
-      _chemSimilarityScoringCacheParams,
-    async (params: CacheParams) => {
-      params.cachedStructure = moleculesToFingerprints(molStringsColumn, settings);
-    });
-
-  if (molString.length != 0) {
-    const fingerprintCol = _chemSimilarityScoringCacheParams.cachedStructure;
-    const fingerprint = moleculesToFingerprints(DG.Column.fromStrings('molecules', [molString]), settings).get(0);
-    return _chemSimilarityScoringByFingerprints(fingerprintCol, fingerprint, molStringsColumn, settings);
-  } else {
-    return null;
-  }
-
-}
-
 export async function chemGetSimilarities(
-    molStringsColumn: DG.Column, molString = "", settings: { [name: string]: any } = {}) {
-  settings.sorted = false;
-  return _chemSimilarityScoring(molStringsColumn, molString, settings);
+    molStringsColumn: DG.Column, queryMolString = "",
+    settings: { [name: string]: any } = {}) {
+  await _invalidate(molStringsColumn, queryMolString, true);
+  return queryMolString.length != 0 ?
+    _chemGetSimilarities(molStringsColumn, queryMolString) : null;
 }
 
 export async function chemFindSimilar(
-    molStringsColumn: DG.Column, molString = "", settings: { [name: string]: any } = {}) {
-  settings.sorted = true;
-  return _chemSimilarityScoring(molStringsColumn, molString, settings);
+    molStringsColumn: DG.Column, queryMolString = "", settings: { [name: string]: any } = {}) {
+  await _invalidate(molStringsColumn, queryMolString, true);
+  return queryMolString.length != 0 ?
+    _chemFindSimilar(molStringsColumn, queryMolString, settings) : null;
 }
 
 export function chemSubstructureSearchGraph(molStringsColumn: DG.Column, molString: string) {
-
   const len = molStringsColumn.length;
   let result = DG.BitSet.create(len);
   if (molString.length == 0) {
@@ -207,48 +182,16 @@ export function chemSubstructureSearchGraph(molStringsColumn: DG.Column, molStri
   }
   subMol.delete();
   return result;
-
 }
 
-let _chemSubstructureSearchLibraryParams = {...cacheParamsDefaults};
 export async function chemSubstructureSearchLibrary(
-    molStringsColumn: DG.Column, molString: string, molStringSmarts: string, workerWebRoot: any) {
-
-  // await _initRdKitWorkers(workerWebRoot);
-
-  _chemSubstructureSearchLibraryParams.column = molStringsColumn;
-  _chemSubstructureSearchLibraryParams.query = molString + "|" + molStringSmarts;
-
-  await _cacheByAction(
-    _chemSubstructureSearchLibraryParams,
-    async (params) => {
-      // TODO: avoid creating an additional array here
-      const { molIdxToHash, hashToMolblock }
-        = await _rdKitService!.initMoleculesStructures(molStringsColumn.toList());
-      let i = 0;
-      let needsUpdate = false;
-      for (const item of molIdxToHash) {
-        const notify = (i === molIdxToHash.length - 1);
-        const molStr = hashToMolblock[item];
-        if (molStr) {
-          molStringsColumn.setString(i, molStr, notify);
-          needsUpdate = true;
-        }
-        ++i;
-      }
-      if (needsUpdate) {
-        // This seems to be the only way to trigger re-calculation of categories
-        molStringsColumn.compact();
-      }
-    }
-  );
-
+    molStringsColumn: DG.Column, molString: string, molStringSmarts: string) {
+  await _invalidate(molStringsColumn, molString, false);
   let result = DG.BitSet.create(molStringsColumn.length);
   if (molString.length != 0) {
     const matches = await _rdKitService!.searchSubstructure(molString, molStringSmarts);
     for (let match of matches)
       result.set(match, true, false);
   }
-
   return result;
 }

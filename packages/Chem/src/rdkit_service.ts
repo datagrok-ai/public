@@ -39,7 +39,7 @@ export class RdKitService {
     return fooGather(data);
   }
 
-  async initMoleculesStructures(dict: string[]): Promise<any> {
+  async _initParallelWorkers(dict: string[], func: any, postFunc: any): Promise<any> {
     let t = this;
     return this._doParallel(
       async (i: number, nWorkers: number) => {
@@ -49,16 +49,22 @@ export class RdKitService {
         const segment = i < (nWorkers - 1) ?
           dict.slice(i * segmentLength, (i + 1) * segmentLength) :
           dict.slice(i * segmentLength, length);
-        return t._parallelWorkers[i].initMoleculesStructures(segment);
+        return func(i, segment);
       },
-      async (resultArray) => resultArray.reduce((acc: any, item: any) => {
+      postFunc
+    );
+  }
+
+  async initMoleculesStructures(dict: string[]): Promise<any> {
+    return this._initParallelWorkers(dict, (i: number, segment: any) =>
+      this._parallelWorkers[i].initMoleculesStructures(segment),
+      async (resultArray: any[]) => resultArray.reduce((acc: any, item: any) => {
         item = item || {molIdxToHash: [], hashToMolblock: {}};
         return {
           molIdxToHash: [...acc.molIdxToHash, ...item.molIdxToHash],
           hashToMolblock: {...acc.hashToMolblock, ...item.hashToMolblock}
         }
-      }, {molIdxToHash: [], hashToMolblock: {}})
-    );
+      }, {molIdxToHash: [], hashToMolblock: {}}));
   }
 
   async searchSubstructure(query: string, querySmarts: string) {
@@ -76,8 +82,20 @@ export class RdKitService {
       });
   }
 
-  async initTanimotoFingerprints(dict: string[]) {
+  async initTanimotoFingerprints() {
+    return this._initParallelWorkers([], (i: number, segment: any) =>
+      this._parallelWorkers[i].initTanimotoFingerprints(), (_: any) => {});
+  }
 
+  async getSimilarities(queryMolString: string): Promise<number[]> {
+    let t = this;
+    return this._doParallel(
+      async (i: number, nWorkers: number) => {
+        return t._parallelWorkers[i].getSimilarities(queryMolString);
+      },
+      async (data: any) => {
+        return [].concat.apply([], data);
+      });
   }
 
   async initStructuralAlerts(smarts: string[]): Promise<void> {

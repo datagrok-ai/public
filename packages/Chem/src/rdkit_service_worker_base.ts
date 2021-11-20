@@ -1,8 +1,8 @@
 export class RdKitServiceWorkerBase {
-  rdKitModule: any | null;
-  webRoot: string | null;
+  _rdKitModule: any | null;
+  _webRoot: string | null;
   constructor(module: Object, webRoot: string) {
-    this.rdKitModule = module;
-    this.webRoot = webRoot;
+    this._rdKitModule = module;
+    this._webRoot = webRoot;
   }
 }

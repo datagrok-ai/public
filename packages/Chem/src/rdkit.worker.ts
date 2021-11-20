@@ -15,23 +15,30 @@ ctx.addEventListener("message", async (e: any) => {
     handler._rdKitModule = await createRDKit(webRoot);
     console.log("RDKit (worker) initialized");
     handler._rdkitServiceWorker = new ServiceWorkerClass(handler._rdKitModule, webRoot);
-    port.postMessage({op: op});
+    port.postMessage({op: op, retval: null});
   } else if (op === WORKER_CALL.INIT_MOLECULES_STRUCTURES) {
     const result = handler._rdkitServiceWorker.initMoleculesStructures(args[0]);
     port.postMessage({op: op, retval: result});
   } else if (op === WORKER_CALL.SEARCH_SUBSTRUCTURE) {
-    const result = handler._rdkitServiceWorker.search(args[0], args[1]);
+    const result = handler._rdkitServiceWorker.searchSubstructure(args[0], args[1]);
     port.postMessage({op: op, retval: result});
   } else if (op === WORKER_CALL.FREE_MOLECULES_STRUCTURES) {
     handler._rdkitServiceWorker.freeMoleculesStructures();
     handler._rdkitServiceWorker = null;
-    port.postMessage({op: op});
+    port.postMessage({op: op, retval: null});
   } else if (op === WORKER_CALL.INIT_TANIMOTO_FINGERPRINTS) {
-  } else if (op === WORKER_CALL.GET_TANIMOTO_FINGERPRINTS) {
-  } else if (op === WORKER_CALL.FREE_TANIMOTO_FINGERPRINTS) {
+    const result = handler._rdkitServiceWorker.initTanimotoFingerprints();
+    console.log("006");
+    port.postMessage({op: op, retval: result});
+    console.log("007");
+  } else if (op === WORKER_CALL.GET_SIMILARITIES) {
+    const result = handler._rdkitServiceWorker.getSimilarities(args[0]);
+    port.postMessage({op: op, retval: result});
+  // } else if (op === WORKER_CALL.GET_TANIMOTO_FINGERPRINTS) {
+  // } else if (op === WORKER_CALL.FREE_TANIMOTO_FINGERPRINTS) {
   } else if (op === WORKER_CALL.INIT_STRUCTURAL_ALERTS) {
     const result = handler._rdkitServiceWorker.initStructuralAlerts(args[0]);
-    port.postMessage({op: op});
+    port.postMessage({op: op, retval: null});
   } else if (op === WORKER_CALL.GET_STRUCTURAL_ALERTS) {
     const result = handler._rdkitServiceWorker.getStructuralAlerts(args[0]);
     port.postMessage({op: op, retval: result});

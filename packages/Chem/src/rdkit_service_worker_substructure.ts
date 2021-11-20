@@ -1,29 +1,27 @@
 import {RdKitServiceWorkerBase} from './rdkit_service_worker_base';
+import {BitSetFixedArray} from "./bitset-fixed-array";
 
 export class RdkitServiceSubstructure extends RdKitServiceWorkerBase {
 
-  library: any | null;
+  _rdKitMols: any[] | null = null;
 
   constructor(module: Object, webRoot: string) {
     super(module, webRoot);
-    this.rdKitModule = module;
-    this.library = null;
   }
 
   initMoleculesStructures(dict: string[]) {
-
     this.freeMoleculesStructures();
     if (dict.length === 0) {
-      this.library = null;
       return;
     }
-    this.library = new this.rdKitModule!.SubstructLibrary();
+    this._rdKitMols = [];
     let hashToMolblock: {[_:string] : any} = {};
     let molIdxToHash = [];
-    for (let item of dict) {
+    for (let i = 0; i < dict.length; ++i) {
+      let item = dict[i];
       let mol;
       try {
-        mol = this.rdKitModule.get_mol(item);
+        mol = this._rdKitModule.get_mol(item);
         if (item.includes('M  END')) {
           item = mol.normalize_2d_molblock();
           mol.straighten_2d_layout();
@@ -35,37 +33,35 @@ export class RdkitServiceSubstructure extends RdKitServiceWorkerBase {
         console.error(
           "Possibly a malformed molString: `" + item + "`");
         // preserving indices with a placeholder
-        mol = this.rdKitModule.get_mol('');
+        mol = this._rdKitModule.get_mol('');
         // Won't rethrow
       }
-      if (mol) {
-        this.library.add_mol(mol);
-        mol.delete();
-      }
+      this._rdKitMols!.push(mol);
       molIdxToHash.push(item);
     }
     return { molIdxToHash, hashToMolblock };
   }
 
   searchSubstructure(queryMolString: string, querySmarts: string) {
-
-    let matches = "[]";
-    if (this.library) {
+    let matches: number[] = [];
+    if (this._rdKitMols) {
       try {
         let queryMol = null;
         try {
-          queryMol = this.rdKitModule.get_mol(queryMolString, "{\"mergeQueryHs\":true}");
+          queryMol = this._rdKitModule.get_mol(queryMolString, "{\"mergeQueryHs\":true}");
         } catch (e2) {
           if (querySmarts !== null && querySmarts !== '') {
             console.log("Cannot parse a MolBlock. Switching to SMARTS");
-            queryMol = this.rdKitModule.get_qmol(querySmarts);
+            queryMol = this._rdKitModule.get_qmol(querySmarts);
           } else {
             throw 'SMARTS not set';
           }
         }
         if (queryMol) {
           if (queryMol.is_valid()) {
-            matches = this.library.get_matches(queryMol, false, 1, -1);
+            for (let i = 0; i < this._rdKitMols!.length; ++i)
+              if (this._rdKitMols![i]!.get_substruct_match(queryMol) !== "{}")
+                  matches.push(i);
           }
           queryMol.delete();
         }
@@ -75,15 +71,16 @@ export class RdkitServiceSubstructure extends RdKitServiceWorkerBase {
         // Won't rethrow
       }
     }
-    return matches;
-
+    return '[' + matches.join(', ') + ']';
   }
 
   freeMoleculesStructures() {
-
-    this.library?.delete();
-    this.library = null;
-
+    if (this._rdKitMols !== null) {
+      for (let mol of this._rdKitMols!) {
+        mol.delete();
+        mol = null;
+      }
+    }
   }
 
 }

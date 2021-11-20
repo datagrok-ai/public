@@ -1,5 +1,3 @@
-// Based on 
-
 export class BitSetFixedArray {
   private _buf: ArrayBuffer;
   private _words: Uint32Array;
@@ -7,7 +5,9 @@ export class BitSetFixedArray {
   private readonly _bitsPerWord = 32;
   private readonly _bytesPerWord = (this._bitsPerWord / 8);
   private _numItems: number | null;
+  private _bitsPerItem: number | null;
   constructor(bitsPerItem: number, numItems: number) {
+    this._bitsPerItem = bitsPerItem;
     this._wordsPerItem = Math.ceil(bitsPerItem / this._bitsPerWord);
     this._buf = new ArrayBuffer(this._wordsPerItem * this._bytesPerWord * numItems);
     this._words = new Uint32Array(this._buf);
@@ -43,10 +43,10 @@ export class BitSetFixedArray {
     const len = this._wordsPerItem;
     let i = item * len;
     for (; i < item * len + len - 1; i++) 
-     for (let k = this._words[i]; k != 0; k >>= 8)
+     for (let k = this._words[i]; k != 0; k >>>= 8)
        _selectedCount += BitSetFixedArray._onBitCount[k & 0xff];    
     let k = this._words[i];
-    let remainingBits = length & 0x1f;
+    let remainingBits = this._bitsPerItem! & 0x1f;
     if (remainingBits != 0)
       k &= ~((4294967295) << remainingBits);
     for (; k != 0; k >>= 8)
@@ -58,13 +58,13 @@ export class BitSetFixedArray {
     const len = this._wordsPerItem;
     let i = item * len, j = 0;
     for (; i < item * len + len - 1; i++, j++) 
-     for (let k = this._words[i] & other._words[j]; k != 0; k >>= 8)
+     for (let k = this._words[i] & other._words[j]; k != 0; k >>>= 8)
        _selectedCount += BitSetFixedArray._onBitCount[k & 0xff];    
     let k = this._words[i] & other._words[j];
-    let remainingBits = length & 0x1f;
+    let remainingBits = this._bitsPerItem! & 0x1f;
     if (remainingBits != 0)
       k &= ~((4294967295) << remainingBits);
-    for (; k != 0; k >>= 8)
+    for (; k != 0; k >>>= 8)
      _selectedCount += BitSetFixedArray._onBitCount[k & 0xff];
     return _selectedCount;
   }
