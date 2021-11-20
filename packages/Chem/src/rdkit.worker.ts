@@ -27,10 +27,8 @@ ctx.addEventListener("message", async (e: any) => {
     handler._rdkitServiceWorker = null;
     port.postMessage({op: op, retval: null});
   } else if (op === WORKER_CALL.INIT_TANIMOTO_FINGERPRINTS) {
-    const result = handler._rdkitServiceWorker.initTanimotoFingerprints();
-    console.log("006");
-    port.postMessage({op: op, retval: result});
-    console.log("007");
+    handler._rdkitServiceWorker.initTanimotoFingerprints();
+    port.postMessage({op: op, retval: null});
   } else if (op === WORKER_CALL.GET_SIMILARITIES) {
     const result = handler._rdkitServiceWorker.getSimilarities(args[0]);
     port.postMessage({op: op, retval: result});

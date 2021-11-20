@@ -24,31 +24,20 @@ export class RdKitServiceWorkerSimilarity extends RdkitServiceSubstructure {
   }
 
   initTanimotoFingerprints(/* the structures are already passed */) {
-
-    console.log("001");
     this.freeTanimotoFingerprints();
-    console.log("002");
     if (this._rdKitMols === null) {
-      return 0;
+      return;
     }
-    console.log("003");
     this._tanimotoFps = new BitSetFixedArray(this._fpLength, this._rdKitMols.length);
-    console.log("004");
     for (let i = 0; i < this._rdKitMols.length; ++i) {
       let item = this._rdKitMols[i];
       try {
-        console.log("009");
         const fp = this._rdKitMols[i].get_morgan_fp(this._fpRadius, this._fpLength);
         this._stringFpToArrBits(i, fp, this._tanimotoFps);
-        console.log("010");
       } catch (e) {
-        console.log("oops");
-        return 0;
         // nothing to do
       }
     }
-    console.log("005");
-    return 1;
   }
 
   _tanimoto(arr: BitSetFixedArray, i: number, sample: BitSetFixedArray): number {
