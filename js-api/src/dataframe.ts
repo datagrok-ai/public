@@ -21,7 +21,6 @@ import {Widget} from "./widgets";
 import {Grid} from "./grid";
 import {ScatterPlotViewer, TypedEventArgs, Viewer} from "./viewer";
 import {Property} from "./entities";
-import { idText } from 'typescript';
 
 declare let grok: any;
 declare let DG: any;
