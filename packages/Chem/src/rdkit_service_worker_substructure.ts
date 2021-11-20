@@ -80,6 +80,7 @@ export class RdkitServiceSubstructure extends RdKitServiceWorkerBase {
         mol.delete();
         mol = null;
       }
+      this._rdKitMols = null;
     }
   }
 
