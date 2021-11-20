@@ -7,6 +7,7 @@ import {selectOutliersManually} from './outliers-selection';
 import {exportFuncCall} from './export-funccall';
 import {_functionParametersGrid} from './function-views/function-parameters-grid';
 import {ModelCatalogView} from './model-catalog-view';
+import wu from "wu";
 
 let initCompleted: boolean = false;
 export const _package = new DG.Package();
@@ -31,19 +32,38 @@ export function init() {
     if (!restPane)
       acc.addPane('REST', () => ui.wait(async () => (await renderRestPanel(ent)).root));
   });
+  let modelsList = ui.wait(async () => {
+    let models = await grok.dapi.scripts
+      .filter('#model')
+      .list();
+    return ui.divV(models.map((model) => ui.render(model, {onClick: (_) => ModelHandler.openModel(model)})), {style: {lineHeight: '150%'}});
+  });
+  grok.events.onViewAdded.subscribe((v: DG.View) => {
+    console.log(v);
+    if (v instanceof DG.FunctionView && v.func?.hasTag("model")) {
+      let modelsView = wu(grok.shell.views).find((v) => v.parentCall?.func.name == 'modelCatalog');
+      console.log(modelsView);
+      if (modelsView != undefined) {
+        v.parentCall = modelsView!.parentCall;
+        v.parentView = modelsView!;
+        v.toolbox = modelsList;
+      }
+    }
+  })
   initCompleted = true;
 }
 
 //name: Model Catalog
 //tags: app
 export function modelCatalog() {
-  let multiView = new DG.MultiView({
+/*  let view = new DG.MultiView({
     viewFactories: {
       'Models': {factory: () => new ModelCatalogView(), allowClose: false}
     }
-  });
-  multiView.name = 'Model Catalog';
-  grok.shell.addView(multiView);
+  });*/
+  let view = new ModelCatalogView();
+  view.name = 'Model Catalog';
+  grok.shell.addView(view);
 }
 
 //name: manualOutlierDetectionDialog
