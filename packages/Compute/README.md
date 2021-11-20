@@ -16,7 +16,7 @@ to enable developing, publishing, discovering, and using scientific applications
 4. [Deployment](#deployment) with [model versioning](#versioning) and support for [environments](#environment)
 5. [Data sources](#data-sources)
 6. [Metadata]
-7. [Integration](#integration): [REST API](#rest-api), [embedding as iframe](#embedding as iframe)
+7. [Integration](#integration): [REST API](#rest-api), [embedding as iframe](#embedding)
 8. [Leveraging the platform]
    1. [Logging, audit, and traceability]
    2. [Privileges and visibility]
@@ -88,7 +88,7 @@ function), executes it, and puts the results back. This architecture guarantees 
 
 * The platform won't get overloaded by trying to execute too many tasks at once
 * Scaling is as simple as adding more workers (which could be hosted externally if necessary)
-* A queue serves as a basis for [audit] and [traceability]
+* A queue serves as a basis for [logging, audit, and traceability](#logging-audit-and-traceability)
 
 
 ## User interface
@@ -231,6 +231,12 @@ passing the data helps us deal with that in a declarative manner.
 
 # Integration
 
+Datagrok was designed with the design goal to be as extensible and easy to integrate with
+as possible, so out-of-the box we get many platform integration capabilities such as
+authentication, data access, and many others. In addition to that, there are some 
+capabilities specific to models: [REST API](#rest-api) and 
+[embedding as iframe](#embedding-as-iframe).
+
 ## REST API
 
 Once registered, each function gets assigned a REST API endpoint that allows external
@@ -241,15 +247,39 @@ property panel on the right. Both JavaScript and Curl samples are provided.
 
 ![](help/rest-api.png)
 
+## Embedding as iframe
+
+Sometimes, an app has to be included in the external web page. The most common way to
+achieve it, yet the most restrictive, is via the [iframe](https://www.w3schools.com/tags/tag_iframe.ASP)
+element. 
+
+**Note:** at the moment, only viewer-based embedding is supported; here is the
+[corresponding ticket](#https://github.com/datagrok-ai/public/issues/211)
+
 # Leveraging the platform
+
+The computation engine utilizes the power of the Datagrok platform, which brings plenty 
+of benefits:
+* Not having to reimplement the wheel
+* Users don't have to switch tools anymore
 
 ## Logging, audit, and traceability
 
+Out-of-the box, the platform provides audit and logging capabilities, and when the model
+is [deployed](#deployment), we get the following automatically:
+
+* See who created, edited, deployed, and used the model
+* Analyze historical input and output parameters
 
 ## Privileges and visibility
 
 Datagrok has the built-in [role-based privileges system](https://datagrok.ai/help/govern/authorization)
-that is used to define who can see, execute, or edit models.
+that is used to define who can see, execute, or edit models. The same mechanism is used
+for the data access control.  
+
+## Exploratory data analysis
+
+Perhaps the most commonly used data structure in computing is a [DataFrame]()
 
 ## Roadmap
 
