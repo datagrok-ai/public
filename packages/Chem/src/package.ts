@@ -151,9 +151,9 @@ export async function getSimilarities(molStringsColumn: DG.Column, molString: st
   try {
     if (molStringsColumn === null || molString === null) throw "An input was null";
     // TODO: Make in the future so that the return type is always one
-    let result = (await chemSearches.chemGetSimilarities(molStringsColumn, molString)) as DG.Column;
+    const result = (await chemSearches.chemGetSimilarities(molStringsColumn, molString)) as unknown; // TODO: !
     // TODO: get rid of a wrapping DataFrame and be able to return Columns
-    return result ? DG.DataFrame.fromColumns([result]) : DG.DataFrame.create();
+    return result ? DG.DataFrame.fromColumns([result as DG.Column]) : DG.DataFrame.create();
   } catch (e: any) {
     console.error("In getSimilarities: " + e.toString());
     throw e;

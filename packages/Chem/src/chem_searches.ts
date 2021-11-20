@@ -87,6 +87,7 @@ interface CacheParams {
   query: string | null;
   moleculesWereIndexed: boolean | null;
   similarityFingerprintsWereIndexed: boolean | null;
+  locked: boolean;
 };
 
 const cacheParamsDefaults: CacheParams = {
@@ -96,9 +97,19 @@ const cacheParamsDefaults: CacheParams = {
   query: null,
   moleculesWereIndexed: false,
   similarityFingerprintsWereIndexed: false,
+  locked: false
 };
 
 let _chemCache = { ...cacheParamsDefaults };
+
+function _lock() {
+  if (_chemCache.locked) { throw('RdKit Service usage locked'); }
+  _chemCache.locked = true;
+}
+
+function _unlock() {
+  _chemCache.locked = false;
+}
 
 async function _invalidate(molStringsColumn: DG.Column, queryMolString: string, includeFingerprints: boolean) {
   const sameColumnAndVersion = () =>
@@ -147,16 +158,22 @@ async function _invalidate(molStringsColumn: DG.Column, queryMolString: string, 
 export async function chemGetSimilarities(
     molStringsColumn: DG.Column, queryMolString = "",
     settings: { [name: string]: any } = {}) {
+  _lock();
   await _invalidate(molStringsColumn, queryMolString, true);
-  return queryMolString.length != 0 ?
-    _chemGetSimilarities(molStringsColumn, queryMolString) : null;
+  const result = queryMolString.length != 0 ?
+    await _chemGetSimilarities(molStringsColumn, queryMolString) : null;
+  _unlock();
+  return result;
 }
 
 export async function chemFindSimilar(
     molStringsColumn: DG.Column, queryMolString = "", settings: { [name: string]: any } = {}) {
+  _lock();
   await _invalidate(molStringsColumn, queryMolString, true);
-  return queryMolString.length != 0 ?
+  const result = queryMolString.length != 0 ?
     _chemFindSimilar(molStringsColumn, queryMolString, settings) : null;
+  _unlock();
+  return result;
 }
 
 export function chemSubstructureSearchGraph(molStringsColumn: DG.Column, molString: string) {
@@ -186,6 +203,7 @@ export function chemSubstructureSearchGraph(molStringsColumn: DG.Column, molStri
 
 export async function chemSubstructureSearchLibrary(
     molStringsColumn: DG.Column, molString: string, molStringSmarts: string) {
+  _lock();
   await _invalidate(molStringsColumn, molString, false);
   let result = DG.BitSet.create(molStringsColumn.length);
   if (molString.length != 0) {
@@ -193,5 +211,6 @@ export async function chemSubstructureSearchLibrary(
     for (let match of matches)
       result.set(match, true, false);
   }
+  _unlock();
   return result;
 }
