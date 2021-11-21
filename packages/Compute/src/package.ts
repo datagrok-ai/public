@@ -36,9 +36,9 @@ export function init() {
     let models = await grok.dapi.scripts
       .filter('#model')
       .list();
-    let list = ui.divV(models.map((model) => ui.render(model, {onClick: (_) => ModelHandler.openModel(model)})), {style: {lineHeight: '150%'}});
+    let list = ui.divV(models.map((model) => ui.render(model, {onClick: (_) => ModelHandler.openModel(model)})), {style: {lineHeight: '165%'}});
 
-    let props = ['domain', 'TA', 'modality', 'antibodyOwner'];
+    let props = ['domain', 'modality'];
     let mtree: { model: DG.Func}[] = models.map((m) => { return {model: m}});
     mtree.forEach((m: {model: DG.Func}) => {
       props.forEach((k) => {

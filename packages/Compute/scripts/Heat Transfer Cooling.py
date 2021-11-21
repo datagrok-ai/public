@@ -3,6 +3,7 @@
 #input: double a
 #input: double b
 #output: double c
-#tags: model
+#tags: model, simulation
+#meta.domain: Manufacturing
 
 c = a / b

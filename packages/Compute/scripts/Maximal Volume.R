@@ -1,6 +1,7 @@
 #name: Maximal Volume
 #language: r
-#tags: model
+#tags: model, simulation
+#meta.domain: Manufacturing
 #input: dataframe test_data {editor: Compute:manualOutlierSelectionDialog; editor-button: Outliers...}
 #input: double test_area = 2.5 {caption: Filter Area; units: cm²} [Filter area]
 #input: double test_pressure = 21 {caption: Pressure; units: psi} [Pressure]
