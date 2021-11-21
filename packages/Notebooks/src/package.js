@@ -86,7 +86,7 @@ class NotebookView extends DG.ViewBase {
   };
 
   get helpUrl() {
-    return '/help/develop/jupyter-notebook.md';
+    return '/help/compute/jupyter-notebook.md';
   }
 
   get path() {
