@@ -88,8 +88,8 @@ every action performed against the connection. For details on that, check out [A
 ## Caching
 
 You can force the platform to cache results of executing queries (taking into account parameters as well).
-This could be especially handy when the query executes slowly and returns relatively small results.
-Very often, caching the values that are used for building the UI automatically
+This is useful when a query executes slowly and returns relatively small results.
+A popular use case is caching the values that are used for building the UI automatically
 (typically this is some form of `select distinct <name> from <table>`) is a good idea.
 
 You can turn caching on for either the whole connection, or for a particular query. For a connection,
