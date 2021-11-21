@@ -17,7 +17,7 @@ them. We call these objects _entities_. Here they are:
   * [User](../govern/user.md)
   * [Group](../govern/group.md)
   * [Model](../learn/predictive-modeling.md)
-  * [Notebook](../develop/jupyter-notebook.md)
+  * [Notebook](../compute/jupyter-notebook.md)
   * [Package](../develop/develop.md#packages)
   * [Project](project.md)
   * [Repository](../access/connectors/git.md)

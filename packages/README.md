@@ -19,7 +19,7 @@
 | [MultiForm](https://github.com/datagrok-ai/public/tree/master/packages/MultiForm) | [Viewers](https://datagrok.ai/help/visualize/viewers), [Custom Viewers](https://datagrok.ai/help/develop/how-to/develop-custom-viewer) |
 | [NLP](https://github.com/datagrok-ai/public/tree/master/packages/NLP) | [Scripting](https://datagrok.ai/help/compute/scripting), [Info Panels](https://datagrok.ai/help/discover/info-panels) |
 | [NodeJSScripts](https://github.com/datagrok-ai/public/tree/master/packages/NodeJSScripts) | [Scripting](https://datagrok.ai/help/compute/scripting) |
-| [Notebooks](https://github.com/datagrok-ai/public/tree/master/packages/Notebooks) | [Jupyter Notebooks](https://datagrok.ai/help/develop/jupyter-notebook) |
+| [Notebooks](https://github.com/datagrok-ai/public/tree/master/packages/Notebooks) | [Jupyter Notebooks](https://datagrok.ai/help/compute/jupyter-notebook) |
 | [OctaveScripts](https://github.com/datagrok-ai/public/tree/master/packages/OctaveScripts) | [Scripting](https://datagrok.ai/help/compute/scripting) |
 | [Pedometer](https://github.com/datagrok-ai/public/tree/master/packages/Pedometer) | [Scripting](https://datagrok.ai/help/compute/scripting), [Info Panels](https://datagrok.ai/help/discover/info-panels), [Semantic Types](https://datagrok.ai/help/discover/semantic-types) |
 | [PlateManagement](https://github.com/datagrok-ai/public/tree/master/packages/PlateManagement) | |
