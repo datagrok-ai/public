@@ -16,7 +16,7 @@ to enable developing, publishing, discovering, and using scientific applications
 4. [Deployment](#deployment) with [model versioning](#versioning) and support for [environments](#environment)
 5. [Data access](#data-access)
 6. [Metadata]
-7. [Integration](#integration): [REST API](#rest-api), [JS API](#js-api), [embedding as iframe](#embedding)
+7. [Integration](#integration): [REST API](#rest-api), [JS API](#js-api), [embedding as iframe](#embedding-as-iframe)
 8. [Leveraging the platform](#leveraging-the-platform)
    1. [Logging, audit, and traceability](#logging-audit-and-traceability)
    2. [Privileges and visibility](#privileges-and-visibility)
@@ -254,10 +254,15 @@ JavaScript-based apps have access to the whole Datagrok platform via the
 
 Sometimes, an app has to be included in the external web page. The simplest way to
 achieve it is via the [iframe](https://www.w3schools.com/tags/tag_iframe.ASP)
-element. 
+element. To embed a model, click on the hamburger icon in the top left corner,
+and choose `Embed...`. You will see a dialog with the HTML code on top that
+you can use to embed this into external website. Note that you can change
+parameter values right in the URL.
 
-**Note:** at the moment, only viewer-based embedding is supported; here is the
-[corresponding ticket](#https://github.com/datagrok-ai/public/issues/211)
+On the bottom, you see a preview of the result ()
+
+![](embed-as-iframe.PNG)
+
 
 # Leveraging the platform
 

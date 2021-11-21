@@ -22,6 +22,7 @@ export function init() {
   if (initCompleted)
     return;
   DG.ObjectHandler.register(new ModelHandler());
+
   grok.events.onAccordionConstructed.subscribe((acc: DG.Accordion) => {
     const ent = acc.context;
     if (ent == null)
@@ -32,6 +33,7 @@ export function init() {
     if (!restPane)
       acc.addPane('REST', () => ui.wait(async () => (await renderRestPanel(ent)).root));
   });
+
   let modelsList = ui.wait(async () => {
     let models = await grok.dapi.scripts
       .filter('#model')
@@ -45,21 +47,17 @@ export function init() {
         (<any>m)[k] = m.model.options[k];
       });
     });
+
     let tree = DG.TreeViewNode.fromItemCategories(mtree,
       props,
       { itemToElement: (x) => ui.render(x.model, {onClick: (_) => ModelHandler.openModel(x.model)}), itemToValue: (x) => x.model, removeEmpty: true }).root
-    let sw = ui.switchInput('By properties', false, () => {
-      if (sw.value) {
-        list.style.display = 'none';
-        tree.style.display = 'flex';
-      } else {
-        list.style.display = 'flex';
-        tree.style.display = 'none';
-      }
-    });
-    sw.value = false;
-    return ui.divV([sw.root, list, tree]);
+
+    return ui.tabControl({
+      'LIST': list,
+      'TREE': tree
+    }).root;
   });
+
   grok.events.onViewAdded.subscribe((v: DG.View) => {
     if (v instanceof DG.FunctionView && v.func?.hasTag("model")) {
       let modelsView = wu(grok.shell.views).find((v) => v.parentCall?.func.name == 'modelCatalog');
@@ -69,7 +67,8 @@ export function init() {
         v.toolbox = modelsList;
       }
     }
-  })
+  });
+
   initCompleted = true;
 }
 
