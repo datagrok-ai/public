@@ -261,7 +261,7 @@ parameter values right in the URL.
 
 On the bottom, you see a preview of the result ()
 
-![](embed-as-iframe.PNG)
+![](embed-as-iframe.png)
 
 
 # Leveraging the platform
@@ -287,8 +287,8 @@ for the data access control.
 
 ## Exploratory data analysis
 
-Perhaps the most commonly used data structure in computing is a [DataFrame](../develop/dataframe.md).
-When you want to analyze either input or output parameter, click on the `+` ("Add to workspace") 
+Perhaps the most commonly used data structure in computing is [DataFrame](../develop/dataframe.md).
+To analyze either input or output dataframe, click on the `+` ("Add to workspace") 
 icon. This will open the dataframe in the [exploratory data analysis](../explore/exploratory-data-analysis.md)
 mode, allowing to [visualize](../visualize/viewers.md) the data,
 [transform](../transform/)
