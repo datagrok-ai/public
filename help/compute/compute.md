@@ -141,7 +141,9 @@ you choose, Datagrok [JS API](https://datagrok.ai/help/develop/develop) could al
 
 Datagrok UI is web-native, so it is possible to use the platform on mobile devices, including 
 performing computations on the client side. Even in the current state with no mobile-specific
-UI optimizations performed, the platform is already usable.
+UI optimizations performed, the platform is already usable. This allows for a $100 tablet 
+to be duct-taped on the instrument in the lab and run a simulation specific to that
+instrument - a truly innovative, affordable, and fit-for-purpose solution! 
 
 Here's Andrew running the client-side Lotka-Volterra Model on the underpowered Nexus 7 from 2012:
 
