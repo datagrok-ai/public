@@ -1,6 +1,27 @@
 <!-- TITLE: Release History -->
 <!-- SUBTITLE: -->
 
+# 2021-11-21 Dev build 0.95.4
+
+## Latest Docker Images
+
+* Datagrok: 
+  *  `docker pull datagrok/datagrok:0.95.4`
+  *  `docker pull datagrok/datagrok:latest`
+  
+* [Docker-Compose](admin/docker-compose.md)
+
+## Addressed Issues
+
+* GitHub Actions: Update js-api/package-lock.json 
+* JKG: lost RxODE 
+* Fixed analyzer warning 
+* Compute: documentation \- moved to the core help 
+* Moved help on scripting help to /compute 
+* Moved help on jupyter help to /compute 
+* iframe-embeddable views 
+
+
 # 2021-11-21 Dev build 0.95.3
 
 ## Latest Docker Images
