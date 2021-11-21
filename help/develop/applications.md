@@ -21,7 +21,7 @@ Application is typically comprised of many [UI features](develop/ui.md) of the p
 including [input controls](develop/ui.md), [accordion panes](develop/ui.md#accordions),
 [grid viewers](develop/ui.md#grid), [scatter plots](visualize/viewers/scatter-plot.md),
 [line charts](visualize/viewers/line-chart.md), and many other [viewers](visualize/viewers);
-functional features, such as these implemented in Python and R [scripts](develop/scripting.md),
+functional features, such as these implemented in Python and R [scripts](compute/scripting.md),
 accessing external web services in JavaScript via
 [OpenAPI specs]() and [REST API](), and many others.
 

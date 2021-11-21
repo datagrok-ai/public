@@ -101,4 +101,4 @@ See also:
 
   * [Console](navigation.md#console)
   * [Functions](functions/function.md)
-  * [Scripting](../develop/scripting.md)
+  * [Scripting](../compute/scripting.md)
