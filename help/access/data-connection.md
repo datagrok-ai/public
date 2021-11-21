@@ -60,6 +60,8 @@ connector in the tree, and choose "Add connection...". Alternatively, click on "
 
 ![](data-connection-tree.png)
 
+### Editing properties
+
 Then, edit the connection attributes, and click on TEST to confirm that you've entered everything
 correctly. The set of attributes you can edit depends on the connector. Typically, for JDBC-based connectors
 you can provide a custom connection string (but do not enter login and password there, they will still
@@ -69,6 +71,8 @@ be picked up from the corresponding fields).
         
 Once a connection is set up, you are ready to start creating queries. There are multiple ways to 
 do so: manually or programmatically.
+
+Note that the platform supports [caching](#caching) of results.
         
 ## Access control
 
@@ -80,6 +84,51 @@ For more information on the access privilege model, check out [privileges](../go
 
 Another “out of the box” feature that comes with connections being first-class entity is the audit trail for 
 every action performed against the connection. For details on that, check out [Audit](../govern/audit.md) page.
+
+## Caching
+
+You can force the platform to cache results of executing queries (taking into account parameters as well).
+This could be especially handy when the query executes slowly and returns relatively small results.
+Very often, caching the values that are used for building the UI automatically
+(typically this is some form of `select distinct <name> from <table>`) is a good idea.
+
+You can turn caching on for either the whole connection, or for a particular query. For a connection,
+open its [properties](#editing-properties), and check the "Cache Results" checkbox. 
+When you check it, the "Invalidate On" input becomes visible. Enter the 
+[cron expression](https://www.freeformatter.com/cron-expression-generator-quartz.html)
+there to define cache invalidation timepoints (for instance, if a database refreshes overnight
+and you want to invalidate it at 1am each night, enter `0 0 1 * * ?`). Leaving the field blank
+will make the cache stay forever.
+
+If a connection gets created automatically as part of the package, you can specify the `cacheResults`
+parameter in the connection json definition:
+
+```json
+{
+  "name": "Northwind",
+  "parameters": {
+    "server": "dev.datagrok.ai",
+    "port": 23306,
+    "db": "Northwind",
+    "cacheSchema": false,
+    "cacheResults": true,
+    "ssl": false,
+    "connString": ""
+  }
+}
+```
+
+To cache results of individual queries, edit the query (either via Datagrok UI if a
+query already exists, or by editing the corresponding .sql file of the package queries)
+and specify the `meta.cache` and `meta.invalidate` fields:
+
+```
+--name: getProductNames
+--input: string department
+--meta.cache: true
+select distinct name from products p 
+where p.department = @department
+```
 
 ## Filtering
 
