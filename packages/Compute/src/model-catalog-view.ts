@@ -16,6 +16,13 @@ export class ModelCatalogView extends DG.CardView {
     this.name = 'Models';
     this.permanentFilter = '#model';
 
+    this.objectType = 'Script';
+    this.categoryFilters =       {
+      'language': 'Language',
+      'tag': 'Tags',
+      'createdOn': 'Created',
+      'author.id': 'Author'
+    };
     this.initRibbon();
     this.initMenu();
   }
