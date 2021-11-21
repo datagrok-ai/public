@@ -36,13 +36,33 @@ export function init() {
     let models = await grok.dapi.scripts
       .filter('#model')
       .list();
-    return ui.divV(models.map((model) => ui.render(model, {onClick: (_) => ModelHandler.openModel(model)})), {style: {lineHeight: '150%'}});
+    let list = ui.divV(models.map((model) => ui.render(model, {onClick: (_) => ModelHandler.openModel(model)})), {style: {lineHeight: '150%'}});
+
+    let props = ['domain', 'TA', 'modality', 'antibodyOwner'];
+    let mtree: { model: DG.Func}[] = models.map((m) => { return {model: m}});
+    mtree.forEach((m: {model: DG.Func}) => {
+      props.forEach((k) => {
+        (<any>m)[k] = m.model.options[k];
+      });
+    });
+    let tree = DG.TreeViewNode.fromItemCategories(mtree,
+      props,
+      { itemToElement: (x) => ui.render(x.model, {onClick: (_) => ModelHandler.openModel(x.model)}), itemToValue: (x) => x.model, removeEmpty: true }).root
+    let sw = ui.switchInput('By properties', false, () => {
+      if (sw.value) {
+        list.style.display = 'none';
+        tree.style.display = 'flex';
+      } else {
+        list.style.display = 'flex';
+        tree.style.display = 'none';
+      }
+    });
+    sw.value = false;
+    return ui.divV([sw.root, list, tree]);
   });
   grok.events.onViewAdded.subscribe((v: DG.View) => {
-    console.log(v);
     if (v instanceof DG.FunctionView && v.func?.hasTag("model")) {
       let modelsView = wu(grok.shell.views).find((v) => v.parentCall?.func.name == 'modelCatalog');
-      console.log(modelsView);
       if (modelsView != undefined) {
         v.parentCall = modelsView!.parentCall;
         v.parentView = modelsView!;
@@ -62,7 +82,7 @@ export function modelCatalog() {
     }
   });*/
   let view = new ModelCatalogView();
-  view.name = 'Model Catalog';
+  view.name = 'Models';
   grok.shell.addView(view);
 }
 

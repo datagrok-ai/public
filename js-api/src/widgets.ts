@@ -1235,7 +1235,7 @@ export class TreeViewNode {
   }
 
   /** Adds new item to group */
-  item(text: string, value: object | null = null): TreeViewNode {
+  item(text: string | Element, value: object | null = null): TreeViewNode {
     return toJs(api.grok_TreeViewNode_Item(this.d, text, value));
   }
 
@@ -1245,18 +1245,22 @@ export class TreeViewNode {
   }
 
   static fromItemCategories(items: any[], props: string[], options?: {
-    itemToString: (item: any) => string
+    removeEmpty: boolean, itemToElement?: (item:any) => Element, itemToString?: (item: any) => string, itemToValue?: (item: any) => any
   }): TreeViewNode {
 
     function init(node: TreeViewNode, path: string[]) {
 
       //
-      const pathItems = items.filter((item) => path.every((p, i) => item[props[i]] == path[i]));
+      const pathItems = items
+        .filter((item) => props.every((p: string) => !(options?.removeEmpty ?? false) || item[p] != null))
+        .filter((item) => path.every((p, i) => item[props[i]] == path[i]));
 
       // leafs
       if (path.length == props.length) {
+        let itemToValue = options!.itemToValue ?? function (i) {return i;};
+        let itemToString = options!.itemToElement ?? options!.itemToString;
         for (let item of pathItems)
-          node.item(options!.itemToString(item), item);
+          node.item(itemToString!(item), itemToValue(item));
       }
       else {
         let categories: Set<string> = new Set<string>();

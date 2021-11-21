@@ -45,6 +45,10 @@ export class CardView extends View {
    *  @type {string} */
   get permanentFilter(): string { return api.grok_CardView_Get_PermanentFilter(this.d); }
   set permanentFilter(s: string) { api.grok_CardView_Set_PermanentFilter(this.d, s); }
+
+  get categoryFilters(): object { return toJs(api.grok_CardView_Get_CategoryFilters(this.d)); }
+  set categoryFilters(ff: object) { api.grok_CardView_Set_CategoryFilters(this.d, ff); }
+
 }
 
 

@@ -3,6 +3,7 @@ import { FuncCall } from "./functions";
 import {toJs} from "./wrappers";
 import {DataFrame} from "./dataframe";
 import {FileSource} from "./dapi";
+import {MapProxy} from "./utils";
 
 declare var grok: any;
 let api = <any>window;
@@ -150,9 +151,13 @@ export class UserSession extends Entity {
  * {@link https://datagrok.ai/help/overview/functions/function}
  * */
 export class Func extends Entity {
+  public aux: any;
+  public options: any;
 
   constructor(d: any) {
     super(d);
+    this.aux = new MapProxy(api.grok_Func_Get_Aux(this.d));
+    this.options = new MapProxy(api.grok_Func_Get_Options(this.d));
   }
 
   get description(): string { return api.grok_Func_Get_Description(this.d); }
