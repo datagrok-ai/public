@@ -426,9 +426,7 @@ export function wait(getElement: () => Promise<HTMLElement>): any {
 
 /** Waits for Future<Element> function to complete and collect its result as a ui.box.*/
 export function waitBox(getElement: () => Promise<HTMLElement>): any {
-  let d = toJs(api.grok_UI_Wait(getElement));
-  $(d).css('ui-box');
-  return d;
+  return toJs(api.grok_UI_WaitBox(getElement));
 }
 
 /** Creates a visual element representing list of [items]. */
