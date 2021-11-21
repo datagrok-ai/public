@@ -21,7 +21,7 @@ them. We call these objects _entities_. Here they are:
   * [Package](../develop/develop.md#packages)
   * [Project](project.md)
   * [Repository](../access/connectors/git.md)
-  * [Script](../develop/scripting.md)
+  * [Script](../compute/scripting.md)
   * [Table](table.md)
   * [View Layout](../visualize/view-layout.md)
 

@@ -45,7 +45,7 @@ Project planning board: [link](https://github.com/datagrok-ai/public/projects/8)
 ## Cross-language support
 
 The basic unit of execution is a [function](https://datagrok.ai/help/overview/functions/function),
-which could be written in [any language that Datagrok supports](https://datagrok.ai/help/develop/scripting)
+which could be written in [any language that Datagrok supports](https://datagrok.ai/help/compute/scripting)
 , such as `Python`, `R`,
 `Julia`, `Matlab/Octave`, `JavaScript`, and others. No matter which language is used, 
 each function has the following properties:
@@ -158,11 +158,11 @@ used versions are available, along with the [audit](#logging-audit-and-traceabil
 
 ### Environment
 
-Scripts could specify the required [environment](../develop/scripting.md#environments), 
+Scripts could specify the required [environment](../compute/scripting.md#environments), 
 such as libraries used, their versions, versions
 of the language interpreter, etc. We use 
-[Conda environments](../develop/scripting.md#conda-environments) for Python, and 
-[Renv environments](../develop/scripting.md#conda-environments) for R.
+[Conda environments](../compute/scripting.md#conda-environments) for Python, and 
+[Renv environments](../compute/scripting.md#conda-environments) for R.
 
 ## Data sources
 

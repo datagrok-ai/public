@@ -11,7 +11,7 @@ and [data processing](https://datagrok.ai/help/transform/add-new-column) tools. 
 scientific community in mind, standartizing and thus facilitating the usual ECG, EEG, EDA, etc. signal processing
 workflows. The fusion of manual and automated steps is largely enabled by
 our [interactive viewers](https://datagrok.ai/help/visualize/viewers)
-, [scripting](https://dev.datagrok.ai/help/develop/scripting) capabilities,
+, [scripting](https://dev.datagrok.ai/help/compute/scripting) capabilities,
 [detector](https://datagrok.ai/help/develop/how-to/add-info-panel) functions,
 [data augmentation](https://datagrok.ai/help/discover/data-augmentation), and a curated collection of
 the [scientific methods](https://datagrok.ai/help/learn/data-science).

@@ -147,7 +147,7 @@ You will learn: how to write semantic type detectors, how to develop context-spe
 
 _Prerequisites:_ basic Python knowledge.
 
-_Details:_ [Scripting](develop/scripting.md), [Dev Meeting 1 | First-class functions][015]
+_Details:_ [Scripting](compute/scripting.md), [Dev Meeting 1 | First-class functions][015]
 
 _You will learn:_ how to create and invoke Datagrok scripts in data science languages like R and Python.
 
@@ -478,7 +478,7 @@ is accessible from our server.
 
 _Prerequisites:_ basic Python knowledge, [matplotlib](https://matplotlib.org/) or a similar library
 
-_Details:_ [Scripting](develop/scripting.md), [Scripting Viewer](visualize/viewers/scripting-viewer.md),
+_Details:_ [Scripting](compute/scripting.md), [Scripting Viewer](visualize/viewers/scripting-viewer.md),
 [Creating a scripting viewer (video)](https://www.youtube.com/embed/jHRpOnhBAz4).
 
 *Amino acids counting task.* In this exercise, we'd use a Python script to generate a histogram
