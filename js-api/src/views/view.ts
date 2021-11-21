@@ -712,7 +712,7 @@ export class DockView extends View {
   }
 }
 
-export class FunctionView extends DockView {
+export class FunctionView extends View {
   constructor(d: any) {
     super(d);
   }

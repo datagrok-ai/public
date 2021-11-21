@@ -34,7 +34,7 @@ export function init() {
       acc.addPane('REST', () => ui.wait(async () => (await renderRestPanel(ent)).root));
   });
 
-  let modelsList = ui.wait(async () => {
+  let modelsList = ui.waitBox(async () => {
     let models = await grok.dapi.scripts
       .filter('#model')
       .list();
