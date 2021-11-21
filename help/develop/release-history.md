@@ -1,6 +1,24 @@
 <!-- TITLE: Release History -->
 <!-- SUBTITLE: -->
 
+# 2021-11-21 Dev build 0.95.3
+
+## Latest Docker Images
+
+* Datagrok: 
+  *  `docker pull datagrok/datagrok:0.95.3`
+  *  `docker pull datagrok/datagrok:latest`
+  
+* [Docker-Compose](admin/docker-compose.md)
+
+## Addressed Issues
+
+* GitHub Actions: Update js-api/package-lock.json 
+* Compute: documentation \- WIP 
+* (Bug) Filters: Uncheck/Check a field in the filter panel that does not update the record properly 
+* Viewers: In-vis filtering: Implement for Bar Chart 
+
+
 # 2021-11-21 Dev build 0.95.2
 
 ## Latest Docker Images
