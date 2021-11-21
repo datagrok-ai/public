@@ -1,6 +1,8 @@
 #name: Fab Arm Exchange
 #language: python
-#tags: model
+#tags: model, simulation
+#meta.modality: Antibody
+#meta.domain: Manufacturing
 #input: double meaConcentration = 60 {category:FAE Reaction Parameters; units:mM; caption:2-MEA Concentration} [2-MEA Concentration]
 #input: double phOfFaeReaction = 7.5 {category:FAE Reaction Parameters; caption:pH of FAE Reaction} [pH of FAE Reaction]
 #input: double faeReactionTime = 3 {category:FAE Reaction Parameters; units:hr; caption:FAE Reaction Time} [FAE Reaction Time]

@@ -12,6 +12,7 @@
 #output: graphics popPK
 #output: double omega 
 #tags: model
+#meta.domain: PKPD
 
 require("ggplot2")
 require("RxODE")
