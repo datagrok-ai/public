@@ -195,34 +195,14 @@ all other cross-cutting features.
 The following examples illustrates it. Suppose we want to develop an R-based simulation against the freshest data from the database.
 This would require two steps: 
 [creating a parameterized query](../access/parameterized-queries.md), 
-and creating a computation script.
-
-Query:
-```
---name: GetByPowderAndMetal
---input: string powder { choices: Brooks:PowderNames }
---input: string metal { choices: Brooks:Metals }
---connection: BrooksDB
-SELECT name,metal,concentration,unit,year,month 
-FROM core.metals 
-WHERE name = @powder AND metal = @metal
-```
-
-Computation:
-```
-#name: Brooks
-#language: r
-#tags: model
-#input: dataframe df { editor: Brooks:GetByPowderAndMetal }
-#input: string unit { choices: ['µg/kg', 'mg/kg', 'µg/L'] }
-#input: float ratio = 0.7
-#output: dataframe resultDf
-#output: graphics plt
-```
-
-End result:
+and creating a computation script. Here are the query, the computation, and the
+automatically generated end result:
 
 ![](auto-ui-queries.png)
+
+Note that the `Powder` and `Metal` inputs above have lists of allowed values that were retrieved
+dynamically by executing the specified `PowderNames` and `Metals` queries. If these queries slow
+the UI down, consider [caching](../access/data-connection.md#caching) the results.
 
 Parameterized queries work via Datagrok's [data access](../access/data-connection.md) mechanism,
 allowing you to benefit from other access-related features:
