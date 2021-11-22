@@ -46,14 +46,14 @@ module.exports = (env, options) => ({
         }
       },
       {
-        test: /.worker\.js$/i,
+        test: /\.worker\.ts$/,
         loader: "worker-loader",
         options: {
           inline: "no-fallback"
         },
       },
       {
-        test: /\.tsx?$/,
+        test: /\.ts$/,
         loader: 'ts-loader'
       },
       {

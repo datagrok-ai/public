@@ -3,6 +3,8 @@ export const STUDY_ID = 'STUDYID';
 export const SITE_ID = 'SITEID';
 export const DOMAIN = 'DOMAIN';
 export const SUBJECT_ID = 'USUBJID';
+export const VISIT_DAY = 'VISITDY';
+export const VISIT_NAME = 'VISIT';
 //dm
 export const TREATMENT_ARM = 'ACTARM';
 export const AGE = 'AGE';
@@ -49,5 +51,7 @@ export const LAB_TEST = 'LBTEST';
 export const LAB_RES_N = 'LBSTRESN';
 export const LAB_LO_LIM_N = 'LBSTNRLO';
 export const LAB_HI_LIM_N = 'LBSTNRHI';
-export const LAB_VISIT_DAY = 'VISITDY';
-export const LAB_VISIT_NAME = 'VISIT';
+//vs
+export const VS_TEST = 'VSTEST';
+export const VS_RES_N = 'VSSTRESN';
+export const VS_DAY = 'VSDY';

@@ -16,7 +16,7 @@ export class ScriptingTutorial extends Tutorial {
   }
   get steps() { return 11; }
 
-  helpUrl: string = 'https://datagrok.ai/help/develop/scripting';
+  helpUrl: string = 'https://datagrok.ai/help/compute/scripting';
 
   protected async _run() {
     this.header.textContent = this.name;

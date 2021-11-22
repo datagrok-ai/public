@@ -29,7 +29,7 @@ class NotebookView extends DG.ViewBase {
     
     // Override basic methods
     get type() { return this.TYPE };
-    get helpUrl() { return '/help/develop/jupyter-notebook.md'; }
+    get helpUrl() { return '/help/compute/jupyter-notebook.md'; }
     get name() { return 'Notebook' };
     get path() { return `${this.PATH}/${this.notebookId}` };
     

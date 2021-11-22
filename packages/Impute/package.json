@@ -4,7 +4,7 @@
 	"version": "1.0.1",
 	"description": "",
 	"dependencies": {
-		"datagrok-api": "../../js-api"
+		"datagrok-api": ">0.94.10"
 	},
 	"devDependencies": {
 		"@babel/cli": "7.1.2",

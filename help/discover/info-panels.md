@@ -210,6 +210,6 @@ predictedSales = PredictSalesByStatistics(statistics)
 See also:
 
 * [Data augmentation](data-augmentation.md) 
-* [Scripting](../develop/scripting.md)
+* [Scripting](../compute/scripting.md)
 * [Semantic types](semantic-types.md)
 * [Cheminformatics: info panels](../domains/chem/cheminformatics.md#info-panels)

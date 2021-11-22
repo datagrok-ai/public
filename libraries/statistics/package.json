@@ -1,0 +1,35 @@
+{
+	"name": "@datagrok-libraries/statistics",
+	"beta": true,
+	"publishConfig": {
+		"access": "public"
+	},
+	"friendlyName": "statistics",
+	"version": "0.0.1",
+	"description": "",
+	"dependencies": {
+		"datagrok-api": ">0.94.10",
+		"cash-dom": "latest",
+		"dayjs": "latest",
+		"ts-loader": "latest",
+		"typescript": "latest",
+		"jstat": "latest"
+	},
+	"devDependencies": {
+		"webpack": "latest",
+		"webpack-cli": "latest",
+		"eslint": "latest",
+		"eslint-config-google": "latest",
+		"@typescript-eslint/eslint-plugin": "latest",
+		"@typescript-eslint/parser": "latest"
+	},
+	"scripts": {
+		"link": "npm link",
+		"debug-statistics": "grok publish --rebuild",
+		"release-statistics": "grok publish --rebuild --release",
+		"build-statistics": "webpack",
+		"build": "webpack",
+		"lint": "eslint src --ext .ts",
+		"lint-fix": "eslint src --ext .ts --fix"
+	}
+}

@@ -16,7 +16,13 @@ export class ModelCatalogView extends DG.CardView {
     this.name = 'Models';
     this.permanentFilter = '#model';
 
-    this.initToolbox();
+    this.objectType = 'Script';
+    this.categoryFilters =       {
+      'language': 'Language',
+      'tag': 'Tags',
+      'createdOn': 'Created',
+      'author.id': 'Author'
+    };
     this.initRibbon();
     this.initMenu();
   }
@@ -32,17 +38,8 @@ export class ModelCatalogView extends DG.CardView {
       .endGroup()
       .group('Help')
         .item('Compute Engine', () => window.open('https://github.com/datagrok-ai/public/tree/master/packages/Compute', '_blank'))
-        .item('Developing Models', () => window.open('https://datagrok.ai/help/develop/scripting', '_blank'))
+        .item('Developing Models', () => window.open('https://datagrok.ai/help/compute/scripting', '_blank'))
       .endGroup();
-  }
-
-  initToolbox() {
-    grok.dapi.scripts
-      .filter('#model')
-      .list()
-      .then((models) => {
-        this.toolbox = ui.divV(models.map((model) => ui.render(model, {onClick: (_) => this.setCurrentModel(model)})));
-      });
   }
 
   setCurrentModel(model: DG.Script) {

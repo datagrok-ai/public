@@ -1,10 +1,13 @@
-//import nanomemoize from 'nano-memoize';
+import {Options, Coordinates, Vectors, DistanceMetric} from './type_declarations';
+import {calculateEuclideanDistance, calcDistanceMatrix, fillRandomMatrix, vectorAdd, randomInt} from './operations';
 
-import * as vec from 'vectorious';
-
-import {Options, Coordinates, Vectors, Matrix} from './type_declarations';
-import {calculateEuclideanDistance, fillRandomMatrix} from './operations';
-
+/**
+ * Implements stochastic proximity embedding.
+ *
+ * @export
+ * @class SPEBase
+ * @link doi:10.1016/S1093-3263(03)00155-4
+ */
 export class SPEBase {
   protected static dimension = 2;
   protected steps: number;
@@ -15,9 +18,14 @@ export class SPEBase {
   protected lambda2: number;
   protected dlambda2: number;
   protected epsilon: number;
-  protected distanceFunction: Function;
-  protected _randomInt: Function;
+  protected distanceFunction: DistanceMetric;
+  protected distance: Coordinates;
 
+  /**
+   * Creates an instance of SPEBase.
+   * @param {Options} [options] Options to pass to the constructor.
+   * @memberof SPEBase
+   */
   constructor(options?: Options) {
     this.steps = options?.steps ?? 0;
     this.cycles = options?.cycles ?? 1e6;
@@ -30,23 +38,36 @@ export class SPEBase {
     this.dlambda2 = this.dlambda/2.;
     this.epsilon = options?.epsilon ?? 1e-10;
     // eslint-disable-next-line brace-style
-    this.distanceFunction = options?.distance ?? calculateEuclideanDistance;//nanomemoize()
-    this._randomInt = (range: number) => (Math.floor(Math.random() * range));
+    this.distanceFunction = options?.distance ?? calculateEuclideanDistance;
+    this.distance = [];
   }
 
   /**
-   * calcDistance
+   * Initializes distance matrix.
+   *
+   * @protected
+   * @param {Vectors} vectors Input vectors to calculate distance between.
+   * @memberof SPEBase
+   */
+  protected initDistance(vectors: Vectors) {
+    this.distance = calcDistanceMatrix(vectors, this.distanceFunction);
+  }
+
+  /**
+   * Calculates distance between the two vectors given.
+   * 
    * @param {Vectors} vectors Set of vectors to calculate distances between.
    * @param {number} index1 Index of the first vector of the pair.
    * @param {number} index2 Index of the second vector of the pair.
    * @return {number} Distance between these two vectors.
    */
   protected calcDistance(vectors: Vectors, index1: number, index2: number): number {
-    return this.distanceFunction(vectors[index1], vectors[index2]);
+    return this.distance[index1][index2];
   }
 
   /**
-   * embed
+   * Embeds the vectors given into a two-dimensional space.
+   * 
    * @param {Vectors} vectors D-dimensional coordinates.
    * @return {Coordinates} SPE coordinates in D space.
    */
@@ -62,13 +83,15 @@ export class SPEBase {
       this.steps = vectors.length-1;
     }
 
+    this.initDistance(vectors);
+
     for (let cycle = 0; cycle < this.cycles; ++cycle) {
       for (let step = 0; step < this.steps; ++step) {
         // Select two points, i and j, at random, ...
-        const i = this._randomInt(nItems); let j = this._randomInt(nItems);
-        while (i == j) j = this._randomInt(nItems);
+        const i = randomInt(nItems); let j = randomInt(nItems);
+        while (i == j) j = randomInt(nItems);
 
-        const rowi = coordinates.slice(i, i+1); const rowj = coordinates.slice(j, j+1);
+        const rowi = coordinates[i]; const rowj = coordinates[j];
 
         // ... retrieve (or evaluate) their proximity in the input space, rij and ...
         const r = this.calcDistance(vectors, i, j);
@@ -79,10 +102,9 @@ export class SPEBase {
         if ((this.cutoff == 0) || (r <= this.cutoff) || (d < r)) {
           const multiplier = lambda2*(r-d)/(d+this.epsilon);
           // ... update the coordinates xi and xj.
-          coordinates.row_add(i, i, multiplier);
-          coordinates.row_add(i, j, -multiplier);
-          coordinates.row_add(j, j, multiplier);
-          coordinates.row_add(j, i, -multiplier);
+          const diffIJ = vectorAdd(rowi, rowj, -1);
+          coordinates[i] = vectorAdd(rowi, diffIJ, multiplier);
+          coordinates[j] = vectorAdd(rowj, diffIJ, -multiplier);
         }
       }
       // Decrease the learning rate {lambda} by a prescribed {dlambda}.
@@ -91,13 +113,21 @@ export class SPEBase {
         break;
       }
     }
-    return coordinates.toArray();
+    return coordinates;
   }
 }
 
-export class PSPEBase extends SPEBase {
+/**
+ * Implements modified stochastic proximity embedding.
+ *
+ * @export
+ * @class PSPEBase
+ * @link doi:10.1016/S1093-3263(03)00155-4
+ */
+ export class PSPEBase extends SPEBase {
   /**
-   * embed
+   * Embeds the vectors given into a two-dimensional space using a modified update rule.
+   * 
    * @param {Vectors} vectors D-dimensional coordinates.
    * @return {Coordinates} SPE coordinates in D space.
    */
@@ -106,18 +136,19 @@ export class PSPEBase extends SPEBase {
     const areaWidth = 40;
     //  Initialize the D-dimensional coordinates of the N points.
     const coordinates = fillRandomMatrix(nItems, PSPEBase.dimension, areaWidth);
-
     let lambda = this.lambda;
+
+    this.initDistance(vectors);
 
     for (let cycle = 0; cycle < this.cycles; ++cycle) {
       // Select a point, i, at random (pivot).
-      const i = this._randomInt(nItems);
-      const rowi = coordinates.slice(i, i+1);
+      const i: number = randomInt(nItems);
+      const rowi = coordinates[i];
 
       // For every point j != i ...
       for (let j = 0; j < nItems; ++j) {
         if (i == j) continue;
-        const rowj = coordinates.slice(j, j+1);
+        const rowj = coordinates[j];
         // ... retrieve (or evaluate) its proximity to i in the input space, rij ...
         const r = this.calcDistance(vectors, i, j);
         // ... and compute their Euclidean distance on the D-dimensional map, dij.
@@ -125,9 +156,9 @@ export class PSPEBase extends SPEBase {
         // If rij <= rc, or if rij > rc and dij < rij ...
         if ((this.cutoff == 0) || (r <= this.cutoff) || (d < r)) {
           const multiplier = lambda*(r-d)/(d+this.epsilon);
+          const diffIJ = vectorAdd(rowi, rowj, -1);
           // ... update the coordinates xj.
-          coordinates.row_add(j, j, multiplier);
-          coordinates.row_add(j, i, -multiplier);
+          coordinates[j] = vectorAdd(rowj, diffIJ, -multiplier);
         }
       }
       // Decrease the learning rate {lambda} by a prescribed {dlambda}.
@@ -136,6 +167,6 @@ export class PSPEBase extends SPEBase {
         break;
       }
     }
-    return coordinates.toArray();
+    return coordinates;
   }
 }

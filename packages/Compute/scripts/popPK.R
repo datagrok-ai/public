@@ -4,18 +4,18 @@
 #input: double doseInterval = 12 {category: Dosing options} 
 #input: string compartments {category: PK model; choices: ['2 compartment PK', '1 compartment PK']} 
 #input: double clearance = 2 {category: PK parameters} 
-#input: double omegaClearance {category: Random effects} [omega clearance] 
+#input: double omegaClearance = 0.3 {category: Random effects} [omega clearance] 
 #input: double rateConstant = 0.3 {category: PK parameters} [rate constant] 
 #input: double centralV = 4 {category: PK parameters} [central compartment volume]  
 #input: double perV = 30 {category: PK parameters} [peripheral compartment volume]
 #input: double interRate = 1 {category: PK parameters} [intercompartmental rate] 
 #output: graphics popPK
-#output: double omega 
 #tags: model
+#meta.domain: PKPD
 
 require("ggplot2")
 require("RxODE")
-require("tidyverse")
+require("dplyr")
 rxCreateCache()
 
 params <- 
@@ -56,14 +56,14 @@ for(i in seq(1, 20)){
   a <- params
   a["CL"] <- params["CL"] + rlnorm(1, 0, omegaClearance)
   
-  Sims <- data.frame(mod1$run(a, ev, inits)) %>% mutate(ID = i)
+  Sims <- data.frame(mod$run(a, ev, inits)) %>% mutate(ID = i)
   SimsAll <- SimsAll %>% bind_rows(Sims)
 }
 
 
 DataSet <- SimsAll %>% select(time, centr, ID)
 
-DataSet <- DartaSet %>% 
+DataSet <- DataSet %>% 
   group_by(time) %>% 
   summarise(mean = mean(centr), 
             q95 = quantile(centr, probs = 0.95),
@@ -75,6 +75,10 @@ ggplot() +
   geom_line(data = DataSet, aes(x = time, y = mean), col = "#483D8B", size =1) + theme_bw()+
   geom_ribbon(data = DataSet, aes(x = time, ymin = q05, ymax = q95), col = "#ADFF2F", fill = "#ADFF2F", alpha = 0.5) + 
   scale_y_continuous(name = "Drug concentration, uM")+
-  scale_x_continuous(name = "Time, hours", breaks = seq(0,1200, 24), limits = c(0, 240))
+  scale_x_continuous(name = "Time, hours", breaks = seq(0, 4, 24), limits = c(0, 24))+
+  theme(axis.text.x = element_text(size = 24, angle = 0,vjust =.5, family="serif"),
+        axis.text.y = element_text(size = 24, family = "serif"),
+        axis.title.x = element_text(vjust = 1, size = 24, family = "serif"),
+        axis.title.y = element_text(vjust = 1, size = 24, family = "serif")) 
 
 omega <- omegaClearance

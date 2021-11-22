@@ -1,32 +1,51 @@
 import * as DG from 'datagrok-api/dg';
 
-export function splitAlignedPeptides(peptideColumn: DG.Column) {
-  let splitPeptidesArray: string[][] = [];
-  let isFirstRun = true;
-  let splitted: string[];
+export function splitAlignedPeptides(peptideColumn: DG.Column): [DG.DataFrame, number[]] {
+  const splitPeptidesArray: string[][] = [];
+  let currentSplitPeptide: string[];
+  let modeMonomerCount = 0;
+  let currentLength;
+  const colLength = peptideColumn.length;
 
-  for (const peptideStr of peptideColumn.toList()) {
-    splitted = peptideStr.split('-');
-
-    if (isFirstRun) {
-      for (let i = 0; i < splitted.length; i++) {
-        splitPeptidesArray.push([]);
-      }
-      isFirstRun = false;
-    }
-
-    splitted.forEach((value, index) => {
-      splitPeptidesArray[index].push(value === '' ? '-' : value);
-    });
+  // splitting data
+  const monomerLengths: {[index: string]: number} = {};
+  for (let i = 0; i < colLength; i++) {
+    currentSplitPeptide = peptideColumn.get(i).split('-').map((value: string) => value ? value : '-');
+    splitPeptidesArray.push(currentSplitPeptide);
+    currentLength = currentSplitPeptide.length;
+    monomerLengths[currentLength + ''] =
+      monomerLengths[currentLength + ''] ? monomerLengths[currentLength + ''] + 1 : 1;
   }
+  //@ts-ignore: what I do here is converting string to number the most effective way I could find. parseInt is slow
+  modeMonomerCount = 1 * Object.keys(monomerLengths).reduce((a, b) => monomerLengths[a] > monomerLengths[b] ? a : b);
+
+  // making sure all of the sequences are of the same size
+  // and marking invalid sequences
+  let nTerminal: string;
+  const invalidIndexes: number[] = [];
+  let splitColumns: string[][] = Array.from({length: modeMonomerCount}, (_) => []);
+  modeMonomerCount--; // minus N-terminal
+  for (let i = 0; i < colLength; i++) {
+    currentSplitPeptide = splitPeptidesArray[i];
+    nTerminal = currentSplitPeptide.pop()!; // it is guaranteed that there will be at least one element
+    currentLength = currentSplitPeptide.length;
+    if (currentLength !== modeMonomerCount) {
+      invalidIndexes.push(i);
+    }
+    for (let j = 0; j < modeMonomerCount; j++) {
+      splitColumns[j].push(j < currentLength ? currentSplitPeptide[j] : '-');
+    }
+    splitColumns[modeMonomerCount].push(nTerminal);
+  }
+  modeMonomerCount--; // minus C-terminal
 
   //create column names list
-  let columnNames = ['N'];
-  columnNames = columnNames.concat(splitPeptidesArray.map((_, index) => `${index + 1 < 10 ? 0 : ''}${index +1 }`));
-  columnNames.push('C');
+  const columnNames = Array.from({length: modeMonomerCount}, (_, index) => `${index + 1 < 10 ? 0 : ''}${index + 1 }`);
+  columnNames.splice(0, 0, 'N-terminal');
+  columnNames.push('C-terminal');
 
   // filter out the columns with the same values
-  splitPeptidesArray = splitPeptidesArray.filter((positionArray, index) => {
+  splitColumns = splitColumns.filter((positionArray, index) => {
     const isRetained = new Set(positionArray).size > 1;
     if (!isRetained) {
       columnNames.splice(index, 1);
@@ -34,9 +53,10 @@ export function splitAlignedPeptides(peptideColumn: DG.Column) {
     return isRetained;
   });
 
-  const columnsArray = splitPeptidesArray.map((positionArray, index) => {
-    return DG.Column.fromList('string', columnNames[index], positionArray);
-  });
-
-  return DG.DataFrame.fromColumns(columnsArray);
+  return [
+    DG.DataFrame.fromColumns(splitColumns.map((positionArray, index) => {
+      return DG.Column.fromList('string', columnNames[index], positionArray);
+    })),
+    invalidIndexes,
+  ];
 }
