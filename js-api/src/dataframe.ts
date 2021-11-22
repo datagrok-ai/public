@@ -1009,7 +1009,7 @@ export class ColumnList {
     return _toIterable(api.grok_ColumnList_Categorical(this.d));
   }
 
-  /** Finds numerical columns. 
+  /** Finds numerical columns.
    * Sample: {@link https://public.datagrok.ai/js/samples/data-frame/find-columns} */
   get numerical(): Iterable<Column> {
     return _toIterable(api.grok_ColumnList_Numerical(this.d));
@@ -2030,7 +2030,8 @@ export class Qnum {
   }
 }
 
-interface ShapeOnViewer {
+interface FormulaLine {
+  id?: string;
   type?: string;
   title?: string;
   description?: string;
@@ -2045,6 +2046,7 @@ interface ShapeOnViewer {
   // Specific to lines:
   width?: number;
   spline?: number;
+  style?: string;
 
   // Specific to bands:
   column?: string;
@@ -2053,43 +2055,57 @@ interface ShapeOnViewer {
 
 export class DataFrameMetaHelper {
   private readonly df: DataFrame;
-  private shapes: ShapeOnViewer[] = [];
+  private formulaLines: FormulaLine[] = [];
+  private formulaLinesTag: string = '.formula-lines';
 
   constructor(df: DataFrame) {
     this.df = df;
-    this.shapes = this.getShapes();
+    this.formulaLines = this.getFormulaLines();
   }
 
-  getShapes(): ShapeOnViewer[] {
-    let json: string | null = this.df.getTag('.shapes');
+  getFormulaLines(): FormulaLine[] {
+    let json: string | null = this.df.getTag(this.formulaLinesTag);
     if (json)
       return JSON.parse(json);
 
     return [];
   }
 
-  setShapes(shapes: ShapeOnViewer[] | null = null): void {
-    if (!shapes)
+  addFormulaLines(items: FormulaLine[] | null = null): void {
+    if (!items)
       return;
 
-    let json: string | null = _toJson(shapes);
+    let json: string | null = _toJson(items);
     if (json)
-      this.df.setTag('.shapes', json);
+      this.df.setTag(this.formulaLinesTag, json);
   }
 
-  addLine(shape: ShapeOnViewer): void {
-    shape.type = 'line';
-    this.addShape(shape);
+  addFormulaItem(item: FormulaLine): void {
+    this.formulaLines.push(item);
+    this.addFormulaLines(this.formulaLines);
   }
 
-  addBand(shape: ShapeOnViewer): void {
-    shape.type = 'band';
-    this.addShape(shape);
+  addFormulaLine(item: FormulaLine): void {
+    item.type = 'line';
+    this.addFormulaItem(item);
   }
 
-  addShape(shape: ShapeOnViewer): void {
-    this.shapes.push(shape);
-    this.setShapes(this.shapes);
+  addFormulaBand(item: FormulaLine): void {
+    item.type = 'band';
+    this.addFormulaItem(item);
+  }
+
+  removeFormulaLines(...ids: string[]): void {
+    if (ids.length == 0) {
+      this.formulaLines = [];
+      this.df.setTag('this.formulaLinesTag', '[]');
+      return;
+    }
+
+    this.formulaLines = this.formulaLines.filter((item: FormulaLine) =>
+        item.id == undefined || ids.indexOf(item.id) == -1);
+
+    this.addFormulaLines(this.formulaLines);
   }
 }
 

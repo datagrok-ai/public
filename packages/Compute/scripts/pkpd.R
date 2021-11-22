@@ -13,6 +13,7 @@
 #output: graphics PKPD
 #output: double Cmax {units: nM}
 #tags: model
+#meta.domain: PKPD
 
 require("ggplot2")
 require("RxODE")

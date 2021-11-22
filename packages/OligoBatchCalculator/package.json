@@ -5,7 +5,7 @@
 	"version": "0.0.2",
 	"description": "",
 	"dependencies": {
-		"datagrok-api": "file:../../js-api",
+		"datagrok-api": ">0.94.10",
 		"ts-loader": "latest",
 		"typescript": "latest"
 	},

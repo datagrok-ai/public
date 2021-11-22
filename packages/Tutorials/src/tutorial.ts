@@ -27,6 +27,7 @@ export abstract class Tutorial extends DG.Widget {
       classes: 'grok-tutorial-next',
       style: { display: 'none' },
     });
+  mainHeader: HTMLDivElement =  ui.div([], 'tutorials-main-header');
   header: HTMLHeadingElement = ui.h1('');
   headerDiv: HTMLDivElement = ui.divH([] ,'tutorials-root-header');
   subheader: HTMLHeadingElement = ui.h3('');
@@ -49,10 +50,10 @@ export abstract class Tutorial extends DG.Widget {
 
     super(ui.div([], 'tutorials-track'));
     this.updateStatus();
-    this.root.append(this.headerDiv);
-    this.root.append(this.progressDiv);
     this.progress.max = 0;
     this.progress.value = 1;
+    this.mainHeader.append(this.headerDiv, this.progressDiv);
+    this.root.append(this.mainHeader);
     this.root.append(this.subheader);
     this.root.append(this.activity);
     this.root.append(this.nextLink);
@@ -268,7 +269,8 @@ export abstract class Tutorial extends DG.Widget {
 
   clearRoot(): void {
     this.progress.value = 1;
-    $(this.root).children().each((idx, el) => $(el).empty());
+    $(this.root).children().each((idx, el) => el.classList.contains('tutorials-main-header') ?
+      ($(this.headerDiv).empty(), $(this.progressDiv).empty()) : $(el).empty());
   }
 
   firstEvent(eventStream: Observable<any>): Promise<void> {

@@ -1,9 +1,9 @@
 import * as DG from "datagrok-api/dg";
 import * as ui from "datagrok-api/ui";
 import { study } from "../clinical-study";
-import { AE_END_DAY, AE_START_DAY, AE_TERM, CON_MED_END_DAY, CON_MED_NAME, CON_MED_START_DAY, INV_DRUG_DOSE, INV_DRUG_DOSE_UNITS, INV_DRUG_END_DAY, INV_DRUG_NAME, INV_DRUG_START_DAY, LAB_DAY, LAB_HI_LIM_N, LAB_LO_LIM_N, LAB_RES_N, LAB_TEST, LAB_VISIT_DAY, SUBJECT_ID } from "../columns-constants";
+import { AE_END_DAY, AE_START_DAY, AE_TERM, CON_MED_END_DAY, CON_MED_NAME, CON_MED_START_DAY, INV_DRUG_DOSE, INV_DRUG_DOSE_UNITS, INV_DRUG_END_DAY, INV_DRUG_NAME, INV_DRUG_START_DAY, LAB_DAY, LAB_HI_LIM_N, LAB_LO_LIM_N, LAB_RES_N, LAB_TEST, SUBJECT_ID } from "../columns-constants";
 import { requiredColumnsByView } from "../constants";
-import { addColumnWithDrugPlusDosage, labDynamicComparedToBaseline, labDynamicComparedToMinMax, labDynamicRelatedToRef } from "../data-preparation/data-preparation";
+import { addColumnWithDrugPlusDosage, dynamicComparedToBaseline, labDynamicComparedToMinMax, labDynamicRelatedToRef } from "../data-preparation/data-preparation";
 import { getUniqueValues } from "../data-preparation/utils";
 import { ILazyLoading } from "../lazy-loading/lazy-loading";
 import { _package } from "../package";
@@ -160,7 +160,7 @@ export class PatientProfileView extends DG.ViewBase implements ILazyLoading {
   }
 
   tableNamesAndFields = {
-    'lb': { 'start': LAB_VISIT_DAY },
+    'lb': { 'start': LAB_DAY },
     'ae': { 'start': AE_START_DAY, 'end': AE_END_DAY },
     'ex': { 'start': INV_DRUG_START_DAY, 'end': INV_DRUG_END_DAY },
     'cm': { 'start': CON_MED_START_DAY, 'end': CON_MED_END_DAY }
@@ -177,7 +177,7 @@ export class PatientProfileView extends DG.ViewBase implements ILazyLoading {
   loaded: boolean;
 
   load(): void {
-    checkMissingDomains(requiredColumnsByView[this.name], false, this);
+    checkMissingDomains(requiredColumnsByView[this.name], this);
   }
 
   createView(): void {
@@ -193,7 +193,6 @@ export class PatientProfileView extends DG.ViewBase implements ILazyLoading {
       this.multiplot_lb_ae_ex_cm.updatePlotByCategory(0, this.options_lb_ae_ex_cm.series[0].multiEdit.selectedValues, false);
     });
 
-    this.options_lb_ae_ex_cm['xAxisMinMax'] = this.extractMinAndMaxValuesForXAxis();
     this.updateTablesToAttach(patientIds[0]);
 
 
@@ -269,9 +268,10 @@ export class PatientProfileView extends DG.ViewBase implements ILazyLoading {
         .where(`${SUBJECT_ID} = ${myId}`)
         .aggregate();
       this.tables[name].name = `patient_${name}`;
-    })
+    });
+    this.options_lb_ae_ex_cm['xAxisMinMax'] = this.extractMinAndMaxValuesForXAxis();
     addColumnWithDrugPlusDosage(this.tables['ex'], INV_DRUG_NAME, INV_DRUG_DOSE, INV_DRUG_DOSE_UNITS, 'EXTRT_WITH_DOSE');
-    labDynamicComparedToBaseline(this.tables['lb'], this.options_lb_ae_ex_cm['xAxisMinMax']['minX'], LAB_VISIT_DAY, 'LAB_DYNAMIC_BL', false);
+    dynamicComparedToBaseline(this.tables['lb'], LAB_TEST, LAB_RES_N, this.options_lb_ae_ex_cm['xAxisMinMax']['minX'], LAB_DAY, 'LAB_DYNAMIC_BL', false);
     labDynamicComparedToMinMax(this.tables['lb'], 'LAB_DYNAMIC_MIN_MAX');
     labDynamicRelatedToRef(this.tables['lb'], 'LAB_DYNAMIC_REF');
   }
@@ -280,7 +280,7 @@ export class PatientProfileView extends DG.ViewBase implements ILazyLoading {
     let min = null;
     let max = null;
     Object.keys(this.tableNamesAndFields).forEach(tableName => {
-      let table = study.domains[tableName];
+      let table = this.tables[tableName];
       let minColName = this.tableNamesAndFields[tableName]['start'];
       let maxColName = this.tableNamesAndFields[tableName]['end'] ?? this.tableNamesAndFields[tableName]['start'];
       let newMin = table.getCol(minColName).stats['min'];

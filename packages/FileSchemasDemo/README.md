@@ -57,4 +57,4 @@ See also:
 
   * Community: [File Management](https://community.datagrok.ai/t/new-feature-file-share-browser/17/6)
   * [Files](https://datagrok.ai/help/access/connectors/files)
-  * [Scripting](https://datagrok.ai/help/develop/scripting)
+  * [Scripting](https://datagrok.ai/help/compute/scripting)

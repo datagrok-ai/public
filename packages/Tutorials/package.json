@@ -7,7 +7,7 @@
 	"dependencies": {
 		"cash-dom": "^8.1.0",
 		"css-loader": "^6.3.0",
-		"datagrok-api": "../../js-api",
+		"datagrok-api": ">0.94.10",
 		"dayjs": "^1.10.6",
 		"rxjs": "6.6.7",
 		"style-loader": "^3.3.0",
@@ -23,6 +23,7 @@
 		"webpack-cli": "^4.7.2"
 	},
 	"scripts": {
+		"link-api": "npm link datagrok-api",
 		"debug-tutorials": "grok publish --rebuild",
 		"build-debug-tutorials": "webpack && grok publish",
 		"release-tutorials": "grok publish --rebuild --release",

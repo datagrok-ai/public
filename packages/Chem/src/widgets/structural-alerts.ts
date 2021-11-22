@@ -1,54 +1,32 @@
-import * as grok from 'datagrok-api/grok';
-import * as ui from 'datagrok-api/ui';
-import * as DG from 'datagrok-api/dg';
-import {_package} from '../package';
-import { drawMoleculeToCanvas } from '../chem_common';
+// The file is imported from a WebWorker. Don't use Datagrok imports
+import { drawMoleculeToCanvas } from '../chem_common_rdkit';
 
-let structuralAlertsRdKitModule: any = null;
-let table: DG.DataFrame | null = null;
-let smartsMap: Map<string, any> = new Map();
+let _structuralAlertsRdKitModule: any = null;
+let _webRoot: string | null = null;
+let _smartsMap: Map<string, any> = new Map();
+let _data: string[] | null = null;
 
-export async function setStructuralAlertsRdKitModule(module: any) {
-  structuralAlertsRdKitModule = module;
+export function setStructuralAlertsRdKitModule(module: any, webRoot: string) {
+  _structuralAlertsRdKitModule = module;
+  _webRoot = webRoot;
 }
 
-export async function loadAlertsCollection() {
-  const path = _package.webRoot + 'data-samples/alert_collection.csv';
-  table = await grok.data.loadTable(path);
-  for (let i = 0; i < table.rowCount; i++) {
-    const currentSmarts = table.get('smarts', i);
-    smartsMap.set(currentSmarts, structuralAlertsRdKitModule.get_qmol(currentSmarts));
+export function loadAlertsCollection(smarts: string[]) {
+  _data = smarts;
+  for (let i = 0; i < smarts.length; i++) {
+    const currentSmarts = smarts[i];
+    _smartsMap.set(currentSmarts, _structuralAlertsRdKitModule.get_qmol(currentSmarts));
   }
 }
 
-export function structuralAlertsWidget(smiles: string) {
-  const alerts = getStructuralAlerts(smiles);
-
-  const width = 200;
-  const height = 100;
-
-  const list = ui.div(alerts.map((i) => {
-    const description = ui.divText(table!.get('description', i));
-    const imageHost = ui.canvas(width, height);
-    drawMoleculeToCanvas(0, 0, width, height, imageHost, smiles, table!.get('smarts', i));
-    const host = ui.div([description, imageHost], 'd4-flex-col');
-    host.style.margin = '5px';
-    return host;
-  }), 'd4-flex-wrap');
-  if (!alerts.length) {
-    list.innerText = 'No Alerts';
-  }
-  return new DG.Widget(list);
-}
-
-function getStructuralAlerts(smiles: string) {
+export function getStructuralAlerts(smiles: string) {
   const alerts: number[] = [];
-  const mol = structuralAlertsRdKitModule.get_mol(smiles);
+  const mol = _structuralAlertsRdKitModule.get_mol(smiles);
   //TODO: use SustructLibrary and count_matches instead. Currently throws an error on rule id 221
-  // const lib = new structuralAlertsRdKitModule.SubstructLibrary();
+  // const lib = new _structuralAlertsRdKitModule.SubstructLibrary();
   // lib.add_smiles(smiles);
-  for (let i = 0; i < table!.rowCount; i++) {
-    const subMol = smartsMap.get(table!.get('smarts', i));
+  for (let i = 0; i < _data!.length; i++) {
+    const subMol = _smartsMap.get(_data![i]);
     // lib.count_matches(subMol);
     const matches = mol.get_substruct_matches(subMol);
     if (matches !== '{}') {

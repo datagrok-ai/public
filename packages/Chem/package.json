@@ -21,7 +21,7 @@
   ],
   "dependencies": {
     "cash-dom": "latest",
-    "datagrok-api": "../../js-api",
+    "datagrok-api": ">0.94.10",
     "datagrok-tools": "latest",
     "dayjs": "latest",
     "file-loader": "latest",
@@ -30,7 +30,7 @@
     "rxjs": "latest",
     "ts-loader": "latest",
     "typescript": "latest",
-    "utils": "../../libraries/utils",
+    "@datagrok-libraries/utils": "latest",
     "worker-loader": "latest"
   },
   "devDependencies": {
@@ -40,7 +40,7 @@
     "@typescript-eslint/eslint-plugin": "^5.3.0",
     "@typescript-eslint/parser": "^5.3.0",
     "cash-dom": "latest",
-    "datagrok-tools": "../../tools",
+    "datagrok-tools": "latest",
     "eslint": "^8.1.0",
     "eslint-config-google": "^0.14.0",
     "file-loader": "latest",
@@ -49,9 +49,10 @@
     "puppeteer": "latest",
     "rxjs": "latest",
     "ts-jest": "^27.0.7",
-    "utils": "../../libraries/utils",
+    "@datagrok-libraries/utils": "latest",
     "webpack": "latest",
-    "webpack-cli": "latest"
+    "webpack-cli": "latest",
+    "workerloader-jest-transformer": "^0.0.5"
   },
   "browser": {
     "fs": false,
@@ -60,6 +61,8 @@
     "crypto": false
   },
   "scripts": {
+    "link-api": "npm link datagrok-api",
+    "link-utils": "npm link @datagrok-libraries/utils",
     "build": "webpack",
     "lint": "eslint ./src/*.ts",
     "lint-fix": "eslint ./src/*.ts --fix",
