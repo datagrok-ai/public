@@ -377,8 +377,17 @@ export function manualAlignment(monomer: string) {
 }
 
 //name: testPeptideSimilaritySpace
-export async function testPeptideSimilaritySpace() {
+//input: string method {choices: ['TSNE', 'UMAP', 'SPE', 'PSPE']} = 'TSNE'
+//input: string measure {choices: ['Levenshtein', 'Jaro-Winkler']} = 'Levenshtein'
+//input: int cyclesCount = 100
+//output: graphics
+export async function testPeptideSimilaritySpace(
+  method: string,
+  measure: string,
+  cyclesCount: number,
+) {
   const df = await grok.data.files.openTable('Demo:TestJobs:Files:DemoFiles/bio/peptides.csv');
-  grok.shell.addTableView(df);
-  peptideSimilaritySpace(df, df.getCol('AlignedSequence'), 'PSPE', 'Levenshtein', 100, 'Activity');
+  const view = grok.shell.addTableView(df);
+  const viewer = peptideSimilaritySpace(df, df.getCol('AlignedSequence'), method, measure, cyclesCount, 'Activity');
+  view.addViewer(viewer);
 }
