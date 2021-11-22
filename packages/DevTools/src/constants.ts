@@ -27,7 +27,7 @@ export const helpUrls = {
   DataFrame: { wiki: 'https://datagrok.ai/help/overview/table', class: 'https://datagrok.ai/js-api/classes/dg.dataframe' },
   DataQuery: { wiki: 'https://datagrok.ai/help/develop/how-to/access-data', class: 'https://datagrok.ai/js-api/classes/dg.dataquery' },
   FileInfo: { wiki: 'https://datagrok.ai/help/develop/how-to/access-data', class: 'https://datagrok.ai/js-api/classes/dg.fileinfo' },
-  Script: { wiki: 'https://datagrok.ai/help/develop/scripting', class: 'https://datagrok.ai/js-api/classes/dg.script' },
+  Script: { wiki: 'https://datagrok.ai/help/compute/scripting', class: 'https://datagrok.ai/js-api/classes/dg.script' },
   ViewLayout: { wiki: 'https://datagrok.ai/help/develop/how-to/layouts', class: 'https://datagrok.ai/js-api/classes/dg.viewlayout' },
   View: { wiki: 'https://datagrok.ai/help/develop/ui#views', class: 'https://datagrok.ai/js-api/classes/dg.view' },
 };

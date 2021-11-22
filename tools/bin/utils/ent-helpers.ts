@@ -32,7 +32,7 @@ The script ${scriptName} has been created. To call it from a JavaScript file, us
 
   await grok.functions.call('${packageName}:${scriptName}', { params });
   
-Read more at https://datagrok.ai/help/develop/scripting
+Read more at https://datagrok.ai/help/compute/scripting
 See examples at https://public.datagrok.ai/scripts,
 https://public.datagrok.ai/js/samples/scripting/scripting`;
 

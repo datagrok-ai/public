@@ -1,6 +1,149 @@
 <!-- TITLE: Release History -->
 <!-- SUBTITLE: -->
 
+# 2021-11-21 Dev build 0.95.5
+
+## Latest Docker Images
+
+* Datagrok: 
+  *  `docker pull datagrok/datagrok:0.95.5`
+  *  `docker pull datagrok/datagrok:latest`
+  
+* [Docker-Compose](admin/docker-compose.md)
+
+## Addressed Issues
+
+* GitHub Actions: Update js-api/package-lock.json 
+* Compute: documentation \- WIP 
+* Model Catalog improvements 
+
+
+# 2021-11-21 Dev build 0.95.4
+
+## Latest Docker Images
+
+* Datagrok: 
+  *  `docker pull datagrok/datagrok:0.95.4`
+  *  `docker pull datagrok/datagrok:latest`
+  
+* [Docker-Compose](admin/docker-compose.md)
+
+## Addressed Issues
+
+* GitHub Actions: Update js-api/package-lock.json 
+* JKG: lost RxODE 
+* Fixed analyzer warning 
+* Compute: documentation \- moved to the core help 
+* Moved help on scripting help to /compute 
+* Moved help on jupyter help to /compute 
+* iframe-embeddable views 
+
+
+# 2021-11-21 Dev build 0.95.3
+
+## Latest Docker Images
+
+* Datagrok: 
+  *  `docker pull datagrok/datagrok:0.95.3`
+  *  `docker pull datagrok/datagrok:latest`
+  
+* [Docker-Compose](admin/docker-compose.md)
+
+## Addressed Issues
+
+* GitHub Actions: Update js-api/package-lock.json 
+* Compute: documentation \- WIP 
+* (Bug) Filters: Uncheck/Check a field in the filter panel that does not update the record properly 
+* Viewers: In-vis filtering: Implement for Bar Chart 
+
+
+# 2021-11-21 Dev build 0.95.2
+
+## Latest Docker Images
+
+* Datagrok: 
+  *  `docker pull datagrok/datagrok:0.95.2`
+  *  `docker pull datagrok/datagrok:latest`
+  
+* [Docker-Compose](admin/docker-compose.md)
+
+## Addressed Issues
+
+* GitHub Actions: Update js-api/package-lock.json 
+* Scatter Plot: Scroll bars visibility 
+* RepertoireBrowsser: dynamical viewer logo 
+* Filters: add wildcard support in search over categories 
+* Formula lines: Update help 
+* Clinical case: updated missing domains and columns validation 
+* Clinical case: added vital signs domain to distributions, correlation matrix and time profile views 
+* Peptides: ngl in property panel 
+* Peptides: code cleanup and minor improvements 
+* Work in progress 
+* Minor code cleanup 
+* Statistics lib: removed padjust 
+* (Bug) In-Vis Filter: Does not affect the regression line 
+* JS: MultiView: DockView support 
+* Close button on TabControl 
+* Convert FunctionView to DockView 
+* JS: MultiView: DockView support 
+* Disabled MultiView 
+* Samples scripts: naming harmonization 
+* Model Catalog improvements 
+
+
+# 2021-11-19 Dev build 0.95.1
+
+## Latest Docker Images
+
+* Datagrok: 
+  *  `docker pull datagrok/datagrok:0.95.1`
+  *  `docker pull datagrok/datagrok:latest`
+  
+* [Docker-Compose](admin/docker-compose.md)
+
+## Addressed Issues
+
+* REST API for functions 
+* Core: Progress indicator for server functions 
+* Connections: add connection tests (WIP)
+* JS API: ui.input.forProperty 
+* JS API: 'slider' editor type (WIP)
+* JS API: ui.tableFromProperties 
+* #180: Compute: UX harmonization \- WIP 
+* (Bug) Trellis Plot: full screen mode for inner viewers doesn't work when trellis is zoomed (WIP)
+* Viewers: Box Plot: In-vis filtering 
+* Wiki improvements 
+* Lines by equations: Extending lines so they can be drawn on different visualization independently 
+* Update help & js examples 
+* Datlas: Add logging to ConnectorsPlugin 
+* Settings documentation improvement 
+* Viewers: harmonize property names for shapes 
+* Fixed misspelling 
+* Packages: get compatible npm package versions (WIP)
+* (Bug) connection.close in JdbcDataProvider.execute didn't account for exceptions other than SQLException 
+* Additional tests for calculated columns 
+* Push version script: releases branch 
+* GitHub Actions: Update js-api/package-lock.json 
+* Scatter Plot: Scroll bars visibility 
+* Docker build script: releases branch 
+* \* Add molecular weight calculation for a peptide sequence. 
+* Lines by equations: Ability to create dashed and dotted lines 
+* Peptides: various fixes and improvements 
+* Lines by equations: Ability to remove lines from storage 
+* Datlas: keep trying to connect to Grok connect 
+* Removed relative paths to datagrok-api 
+* MultiView css fix 
+* GitHub Actions: Update packages/Ketcher/package-lock.json 
+* GitHub Actions: Update packages/ScatterPlot3D/package-lock.json 
+* Compute: documentation \- WIP 
+* Fixed datagrok-api dependency following the concept of use of 'npm link'. 
+* Fixes following linter hints. 
+* Add correction for multiple hypotheses testing. 
+* \* Fix imports. \* Add required packages. 
+* Fixed import and warning 
+* #53 Tutorials package: markup adjustments to the tutorial page 
+
+
 # 2021-11-18 Stable version 0.95.0
 
 ## Latest Docker Images

@@ -114,6 +114,8 @@ export class Events {
 
   get onViewAdded(): rxjs.Observable<View> { return __obs('grok-view-added'); }
 
+  get onViewAdding(): rxjs.Observable<View> { return __obs('grok-view-adding'); }
+
   get onViewRemoved(): rxjs.Observable<View> { return __obs('grok-view-removed'); }
 
   get onViewRenamed(): rxjs.Observable<View> { return __obs('grok-view-renamed'); }

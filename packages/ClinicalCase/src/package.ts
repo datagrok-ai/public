@@ -149,7 +149,7 @@ export async function clinicalCaseApp(): Promise<any> {
   views.push(<LaboratoryView>addView(new LaboratoryView('Laboratory')));
   //views.push(<AERiskAssessmentView>addView(new AERiskAssessmentView('AE Risk Assessment')));
   views.push(<SurvivalAnalysisView>addView(new SurvivalAnalysisView('Survival Analysis')));
-  views.push(<BoxPlotsView>addView(new BoxPlotsView('Biomarkers')));
+  views.push(<BoxPlotsView>addView(new BoxPlotsView('Distributions')));
   views.push(<MatrixesView>addView(new MatrixesView('Correlations')));
   views.push(<TimeProfileView>addView(new TimeProfileView('Time Profile')));
 
@@ -169,7 +169,7 @@ export async function clinicalCaseApp(): Promise<any> {
     }
   } else {
     aeBrowserView = DG.View.create();
-    checkMissingDomains({ 'ae': { 'req': [AE_TERM, AE_SEVERITY, AE_START_DAY, AE_END_DAY] } }, false, aeBrowserView);
+    checkMissingDomains({ 'ae': { 'req': [AE_TERM, AE_SEVERITY, AE_START_DAY, AE_END_DAY] } }, aeBrowserView);
   }
   aeBrowserView.name = 'AE browser';
   aeBrowserView.helpUrl = 'https://raw.githubusercontent.com/datagrok-ai/public/master/packages/ClinicalCase/views_help/ae_browser.md';
