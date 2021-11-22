@@ -15,17 +15,16 @@ const _operations: {[name: string]: Function} = {
  * @return {Int32Array} Array of indices that sort values along the first axis.
  */
 function _argsort(values: Float32Array): Int32Array {
-  const nItems = values.length;
   const v = Array.from(values);
 
   const argsort = (arr: number[]) => arr
     .map((v, i) => [v, i]) // Decorate with index
-    .sort()
+    .sort((a, b) => (a[0] == b[0] ? 0 : (a[0] > b[0] ? 1 : -1)))
     .map((v, _) => v[1]); // Undecorate
 
   const forder = argsort(v);
 
-  return new Int32Array(nItems).fill(0).map((_, i) => forder[i]);
+  return Int32Array.from(forder);
 }
 
 

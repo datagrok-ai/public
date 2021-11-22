@@ -2,7 +2,7 @@
 import * as grok from 'datagrok-api/grok';
 import * as ui from 'datagrok-api/ui';
 import * as DG from 'datagrok-api/dg';
-import * as OCL from 'openchemlib/full.js';
+//import * as OCL from 'openchemlib/full.js';
 
 import $ from 'cash-dom';
 
@@ -258,15 +258,15 @@ export async function analyzePeptides(col: DG.Column): Promise<DG.Widget> {
       alignedSequenceCol = col;
 
       const sarViewer = view.addViewer('peptide-sar-viewer', options);
-      // const peptideSpaceViewer = peptideSimilaritySpace(
-      //   currentDf,
-      //   col,
-      //   'TSNE',
-      //   'Levenshtein',
-      //   100,
-      //   `${activityColumnChoice}Scaled`,
-      // );
-      //view.dockManager.dock(peptideSpaceViewer, 'down');
+      const peptideSpaceViewer = peptideSimilaritySpace(
+        currentDf,
+        col,
+        'TSNE',
+        'Levenshtein',
+        100,
+        `${activityColumnChoice}Scaled`,
+      );
+      view.dockManager.dock(peptideSpaceViewer, 'down');
       view.dockManager.dock(sarViewer, 'right');
 
       const StackedBarchartProm = currentDf.plot.fromType('StackedBarChartAA');
