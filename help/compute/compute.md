@@ -373,6 +373,10 @@ is [deployed](#deployment), we get the following automatically:
 * Analyze historical input and output parameters
 * See how long computations took (and correlate with input parameters if needed)
 
+All function invocation-specific data resides in the Datagrok metadata db (Postgres)
+in a structured, machine-readable way. We can also tune what needs to be persisted
+and where on a per-model basis.
+
 ![img.png](img.png)
 
 ## Privileges and visibility
