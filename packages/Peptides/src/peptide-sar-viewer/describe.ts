@@ -3,7 +3,8 @@ import * as grok from 'datagrok-api/grok';
 import * as ui from 'datagrok-api/ui';
 import * as DG from 'datagrok-api/dg';
 import {splitAlignedPeptides} from '../split-aligned';
-import {tTest, padjust} from '@datagrok-libraries/statistics/src/tests';
+import {tTest} from '@datagrok-libraries/statistics/src/tests';
+import {fdrcorrection} from '@datagrok-libraries/statistics/src/multiple-tests';
 import {ChemPalette} from '../utils/chem-palette';
 import {setAARRenderer} from '../utils/cell-renderer';
 
@@ -164,7 +165,7 @@ export async function describe(
   }
 
   if (true) {
-    pvalues = padjust(pvalues, 'by');
+    pvalues = fdrcorrection(pvalues)[1];
   }
 
   for (let i = 0; i < pvalues.length; ++i) {
