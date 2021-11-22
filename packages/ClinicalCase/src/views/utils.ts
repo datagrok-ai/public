@@ -7,21 +7,28 @@ export function updateDivInnerHTML(div: HTMLDivElement, content: any){
     div.append(content);
   }
 
-export function checkMissingDomains(requiredDomainsAndCols: any, or: boolean, obj: any) {
-  let reqDomains = Object.keys(requiredDomainsAndCols);
-  let missingDomains = reqDomains.filter(it => study.domains[it] === null);
-  let noMissingDomains = or ? reqDomains.some(it => study.domains[it] !== null) : !missingDomains.length;
-  if (noMissingDomains) {
-    if (or) {
-      reqDomains = reqDomains.filter(it => study.domains[it] !== null);
-    }
-    if (checkMissingColumns(obj, reqDomains, requiredDomainsAndCols)) {
+export function checkMissingDomains(requiredDomainsAndCols: any, obj: any) {
+  let reqDomains = requiredDomainsAndCols['req_domains'] ? Object.keys(requiredDomainsAndCols['req_domains']) : [];
+  let optDomains = requiredDomainsAndCols['opt_domains'] ? Object.keys(requiredDomainsAndCols['opt_domains']) : [];
+  let missingReqDomains = reqDomains.filter(it => study.domains[it] === null);
+  let missingOptDomains = optDomains.some(it => study.domains[it] !== null) ? [] : optDomains;
+  let presentOptDomains = optDomains.filter(it => study.domains[it] !== null);
+  let totalMissingDomains = missingReqDomains.concat(missingOptDomains);
+  let requiredColumns = {};
+  reqDomains.forEach(domain => {
+    requiredColumns[domain] = requiredDomainsAndCols['req_domains'][domain];
+  });
+  optDomains.forEach(domain => {
+    requiredColumns[domain] = requiredDomainsAndCols['opt_domains'][domain];
+  });
+  if (!totalMissingDomains.length) {
+    if (checkMissingColumns(obj, reqDomains.concat(presentOptDomains), requiredColumns)) {
       obj.createView();
     }
   } else {
     const errorsDiv = ui.divV([], { style: { margin: 'auto', textAlign: 'center' } });
-    createMissingDataDiv(errorsDiv, missingDomains, 'Missing domains:');
-    checkMissingColumns(errorsDiv, reqDomains, requiredDomainsAndCols);
+    createMissingDataDiv(errorsDiv, totalMissingDomains, 'Missing domains:');
+    checkMissingColumns(errorsDiv, reqDomains.concat(optDomains), requiredColumns);
     obj.root.append(errorsDiv);
   }
 }

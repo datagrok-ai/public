@@ -1,6 +1,6 @@
 import * as DG from "datagrok-api/dg";
 import * as grok from 'datagrok-api/grok';
-import { LAB_VISIT_DAY, LAB_VISIT_NAME, SUBJECT_ID, TREATMENT_ARM } from "../columns-constants";
+import { VISIT_DAY, VISIT_NAME, SUBJECT_ID, TREATMENT_ARM } from "../columns-constants";
 
 export function getUniqueValues(df: DG.DataFrame, colName: string) {
     const uniqueIds = new Set();
@@ -107,16 +107,25 @@ export function dictToString(dict: any){
     return str;
 }
 
-export function getLabVisitNamesAndDays(df: DG.DataFrame){
+export function getVisitNamesAndDays(df: DG.DataFrame){
     const data = df
-    .groupBy([LAB_VISIT_DAY, LAB_VISIT_NAME])
+    .groupBy([VISIT_DAY, VISIT_NAME])
     .aggregate();
     const visitsArray = [];
     let rowCount = data.rowCount;
     for (let i = 0; i < rowCount; i++){
-        if (!data.getCol(LAB_VISIT_DAY).isNone(i) && !data.getCol(LAB_VISIT_NAME).isNone(i)){
-            visitsArray.push({day: data.get(LAB_VISIT_DAY, i), name: data.get(LAB_VISIT_NAME, i)})
+        if (!data.getCol(VISIT_DAY).isNone(i) && !data.getCol(VISIT_NAME).isNone(i)){
+            visitsArray.push({day: data.get(VISIT_DAY, i), name: data.get(VISIT_NAME, i)})
         }
     }
     return visitsArray.sort((a, b) => a.day - b.day);
   }
+
+
+  export function createPivotedDataframe(df: DG.DataFrame, pivotCol: string, aggregatedColName: string, splitBy: string[]) {
+    return df
+        .groupBy([ SUBJECT_ID, VISIT_DAY ].concat(splitBy))
+        .pivot(pivotCol)
+        .avg(aggregatedColName)
+        .aggregate();
+}

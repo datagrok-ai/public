@@ -16,6 +16,6 @@ for all supported file types. This is how it looks in action:
 See also:
 
 * [NGL Viewer](https://nglviewer.org/)
-* [Scripting](https://datagrok.ai/help/develop/scripting)
+* [Scripting](https://datagrok.ai/help/compute/scripting)
 * [Files](https://datagrok.ai/help/access/connectors/files)
 * [File Shares](https://datagrok.ai/help/access/file-shares)

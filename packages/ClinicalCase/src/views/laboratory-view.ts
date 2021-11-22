@@ -9,7 +9,7 @@ import { ILazyLoading } from '../lazy-loading/lazy-loading';
 import { checkMissingDomains } from './utils';
 import { _package } from '../package';
 import { getUniqueValues } from '../data-preparation/utils';
-import { LAB_HI_LIM_N, LAB_LO_LIM_N, LAB_TEST, LAB_VISIT_DAY, LAB_VISIT_NAME, SUBJECT_ID, TREATMENT_ARM } from '../columns-constants';
+import { LAB_HI_LIM_N, LAB_LO_LIM_N, LAB_TEST, VISIT_DAY, VISIT_NAME, SUBJECT_ID, TREATMENT_ARM, LAB_RES_N } from '../columns-constants';
 
 export class LaboratoryView extends DG.ViewBase implements ILazyLoading {
 
@@ -21,7 +21,7 @@ export class LaboratoryView extends DG.ViewBase implements ILazyLoading {
   loaded: boolean;
 
   load(): void {
-    checkMissingDomains(requiredColumnsByView[this.name], false, this);
+    checkMissingDomains(requiredColumnsByView[this.name], this);
  }
   
   createView(): void {
@@ -36,7 +36,7 @@ export class LaboratoryView extends DG.ViewBase implements ILazyLoading {
     let hysLawScatterPlot = this.hysLawScatterPlot(dm, lb);
 
     let uniqueLabValues = Array.from(getUniqueValues(lb, LAB_TEST));
-    let uniqueVisits = Array.from(getUniqueValues(lb, LAB_VISIT_NAME));
+    let uniqueVisits = Array.from(getUniqueValues(lb, VISIT_NAME));
     let baselineEndpointPlot = this.baselineEndpointPlot(dm, lb, uniqueLabValues[ 0 ], uniqueVisits[ 0 ], uniqueVisits[ 1 ]);
 
     let uniqueTreatmentArms = Array.from(getUniqueValues(dm, TREATMENT_ARM));
@@ -147,13 +147,13 @@ export class LaboratoryView extends DG.ViewBase implements ILazyLoading {
   }
 
   private baselineEndpointPlot(dm: DG.DataFrame, lb: DG.DataFrame, value: any, bl: any, ep: any) {
-    let visitCol = LAB_VISIT_NAME;
+    let visitCol = VISIT_NAME;
     let blVisit = bl;
     let epVisit = ep;
     let labValue = value;
     let blNumCol = `${labValue}_BL`;
     let epNumCol = `${labValue}_EP`;
-    let baselineEndpointDataframe = createBaselineEndpointDataframe(lb, dm, [TREATMENT_ARM], labValue, blVisit, epVisit, visitCol, blNumCol, epNumCol);
+    let baselineEndpointDataframe = createBaselineEndpointDataframe(lb, dm, [TREATMENT_ARM], LAB_TEST, LAB_RES_N, [LAB_LO_LIM_N, LAB_HI_LIM_N], labValue, blVisit, epVisit, visitCol, blNumCol, epNumCol);
     grok.data.linkTables(lb, baselineEndpointDataframe,
       [ SUBJECT_ID ], [ SUBJECT_ID ],
       [ DG.SYNC_TYPE.CURRENT_ROW_TO_ROW, DG.SYNC_TYPE.CURRENT_ROW_TO_SELECTION ]);
@@ -165,9 +165,9 @@ export class LaboratoryView extends DG.ViewBase implements ILazyLoading {
   private labValuesDistributionPlot(dm: DG.DataFrame, lb: DG.DataFrame, selectedlabValue: any, trArm: any) {
     let labValue = selectedlabValue;
     let labValueNumColumn = `${labValue} values`;
-    let disributionDataframe = createLabValuesByVisitDataframe(lb, dm, labValue, trArm, labValueNumColumn, LAB_VISIT_DAY);
+    let disributionDataframe = createLabValuesByVisitDataframe(lb, dm, labValue, trArm, labValueNumColumn, VISIT_DAY);
     let disributionBoxPlot = DG.Viewer.boxPlot(disributionDataframe, {
-      category: LAB_VISIT_DAY,
+      category: VISIT_DAY,
       value: labValueNumColumn,
     });
     return disributionBoxPlot;

@@ -12,7 +12,6 @@ The system allows to create your own scripts, open scripts saved locally, and al
 
 ## Testing scenarios
 
-
 1. Open "New Script..." from **Tools | Scripting**
    * The script creation tab is open
 

@@ -21,7 +21,6 @@ import {Widget} from "./widgets";
 import {Grid} from "./grid";
 import {ScatterPlotViewer, TypedEventArgs, Viewer} from "./viewer";
 import {Property} from "./entities";
-import { idText } from 'typescript';
 
 declare let grok: any;
 declare let DG: any;
@@ -1010,7 +1009,7 @@ export class ColumnList {
     return _toIterable(api.grok_ColumnList_Categorical(this.d));
   }
 
-  /** Finds numerical columns. 
+  /** Finds numerical columns.
    * Sample: {@link https://public.datagrok.ai/js/samples/data-frame/find-columns} */
   get numerical(): Iterable<Column> {
     return _toIterable(api.grok_ColumnList_Numerical(this.d));
@@ -2031,7 +2030,7 @@ export class Qnum {
   }
 }
 
-interface LineOnViewer {
+interface FormulaLine {
   id?: string;
   type?: string;
   title?: string;
@@ -2056,53 +2055,57 @@ interface LineOnViewer {
 
 export class DataFrameMetaHelper {
   private readonly df: DataFrame;
-  private lines: LineOnViewer[] = [];
+  private formulaLines: FormulaLine[] = [];
+  private formulaLinesTag: string = '.formula-lines';
 
   constructor(df: DataFrame) {
     this.df = df;
-    this.lines = this.getLines();
+    this.formulaLines = this.getFormulaLines();
   }
 
-  private getLines(): LineOnViewer[] {
-    let json: string | null = this.df.getTag('.lines');
+  getFormulaLines(): FormulaLine[] {
+    let json: string | null = this.df.getTag(this.formulaLinesTag);
     if (json)
       return JSON.parse(json);
 
     return [];
   }
 
-  private setLines(lines: LineOnViewer[] | null = null): void {
-    if (!lines)
+  addFormulaLines(items: FormulaLine[] | null = null): void {
+    if (!items)
       return;
 
-    let json: string | null = _toJson(lines);
+    let json: string | null = _toJson(items);
     if (json)
-      this.df.setTag('.lines', json);
+      this.df.setTag(this.formulaLinesTag, json);
   }
 
-  private addItem(line: LineOnViewer): void {
-    this.lines.push(line);
-    this.setLines(this.lines);
+  addFormulaItem(item: FormulaLine): void {
+    this.formulaLines.push(item);
+    this.addFormulaLines(this.formulaLines);
   }
 
-  addLine(line: LineOnViewer): void {
-    line.type = 'line';
-    this.addItem(line);
+  addFormulaLine(item: FormulaLine): void {
+    item.type = 'line';
+    this.addFormulaItem(item);
   }
 
-  addBand(line: LineOnViewer): void {
-    line.type = 'band';
-    this.addItem(line);
+  addFormulaBand(item: FormulaLine): void {
+    item.type = 'band';
+    this.addFormulaItem(item);
   }
 
-  removeLines(...ids: string[]): void {
+  removeFormulaLines(...ids: string[]): void {
     if (ids.length == 0) {
-      this.lines = [];
-      this.df.setTag('.lines', '[]');
+      this.formulaLines = [];
+      this.df.setTag('this.formulaLinesTag', '[]');
       return;
     }
-    this.lines = this.lines.filter((line) => line.id == undefined || ids.indexOf(line.id) == -1);
-    this.setLines(this.lines);
+
+    this.formulaLines = this.formulaLines.filter((item: FormulaLine) =>
+        item.id == undefined || ids.indexOf(item.id) == -1);
+
+    this.addFormulaLines(this.formulaLines);
   }
 }
 

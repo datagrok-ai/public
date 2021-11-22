@@ -1,6 +1,7 @@
 import * as grok from 'datagrok-api/grok';
 import * as ui from 'datagrok-api/ui';
 import * as DG from 'datagrok-api/dg';
+import {ModelCatalogView} from "./model-catalog-view";
 
 export class ModelHandler extends DG.ObjectHandler {
   get type() {
@@ -18,17 +19,23 @@ export class ModelHandler extends DG.ObjectHandler {
     return script;
   }
 
+  getLanguageIcon(language: string) {
+    if (language == 'grok')
+      return ui.iconSvg('project');
+    return ui.iconImage('script', `/images/entities/${language}.png`);
+  }
+
   // Checks whether this is the handler for [x]
   isApplicable(x: any) {
     return x instanceof DG.Script && x.hasTag('model');
   }
 
   renderIcon(x: DG.Script, context: any = null): HTMLElement {
-    return ui.iconFA('function');
+    return this.getLanguageIcon(x.language);
   }
 
   renderMarkup(x: DG.Script): HTMLElement {
-    return ui.span([this.renderIcon(x), ui.label(x.name)]);
+    return ui.span([this.renderIcon(x), ui.label(x.friendlyName, {style: {marginLeft: '4px'}})], {style: {display: 'inline-flex'}});
   }
 
   renderProperties(x: DG.Script) {
@@ -46,25 +53,28 @@ export class ModelHandler extends DG.ObjectHandler {
   }
 
   renderDetails(x: DG.Script) {
-    return ui.tableFromMap({'Created': x.createdOn, 'By': x.author});
+    return ui.divV([ui.render(x.author), ui.render(x.createdOn)], {style: {lineHeight: '150%'}});
   }
 
   renderTooltip(x: DG.Script) {
-    return ui.divText(`${x.name} is in the air!`);
+    return ui.divText(`${x.friendlyName}`);
   }
 
   renderCard(x: DG.Script, context?: any): HTMLElement {
     let card = ui.bind(x, ui.divV([
-      ui.h2(x.friendlyName),
+      ui.h2(this.renderMarkup(x)),
+      ui.divText(x.description, 'ui-description'),
       this.renderDetails(x),
     ], 'd4-gallery-item'), {contextMenu: false});
     card.ondblclick = (e) => {
-      let view = DG.FunctionView.createFromFunc(x);
-      if (grok.shell.v.parentCall.func.name == 'modelCatalog')
-        view.parentCall = grok.shell.v.parentCall;
-      grok.shell.addView(view);
+      ModelHandler.openModel(x);
     }
     return card;
+  }
+
+  static openModel(x: DG.Script, parentView?: DG.ViewBase) {
+    let view = DG.FunctionView.createFromFunc(x);
+    grok.shell.addView(view);
   }
 
   init() {

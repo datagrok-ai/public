@@ -6,6 +6,7 @@
 //output: double sin
 //output: double cos
 //output: double tan
+//meta.domain: math
 
 sin = Math.sin(x);
 cos = Math.cos(x);
