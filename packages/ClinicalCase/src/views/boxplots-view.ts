@@ -81,7 +81,7 @@ export class BoxPlotsView extends DG.ViewBase implements ILazyLoading {
 
     this.domains.forEach(it => {
       this.uniqueValues[it] = Array.from(getUniqueValues(study.domains[it], this.domainFields[it]['test']));
-     });
+    });
 
     let minLabVisit = this.distrDataframe.getCol(VISIT_DAY).stats[ 'min' ];
     let minVisitName = this.distrDataframe
@@ -94,9 +94,9 @@ export class BoxPlotsView extends DG.ViewBase implements ILazyLoading {
     this.uniqueVisits = Array.from(getUniqueValues(this.distrDataframe, VISIT_NAME));
     this.distrWithDmData = addDataFromDmDomain(this.distrDataframe, study.domains.dm, [ SUBJECT_ID, VISIT_DAY, VISIT_NAME, 'test', 'res' ], this.splitBy);
     this.distrWithDmData = this.distrWithDmData
-    .groupBy(this.distrWithDmData.columns.names())
-    .where(`${VISIT_DAY} = ${minLabVisit}`)
-    .aggregate();
+      .groupBy(this.distrWithDmData.columns.names())
+      .where(`${VISIT_DAY} = ${minLabVisit}`)
+      .aggregate();
     this.getTopPValues(4);
 
     this.updateBoxPlots(viewerTitle, viewerTitlePValue, this.selectedSplitBy);
@@ -117,7 +117,7 @@ export class BoxPlotsView extends DG.ViewBase implements ILazyLoading {
       let multichoices = {};
       this.domains.forEach(domain => {
         let valuesMultiChoices = ui.multiChoiceInput('', this.selectedValuesByDomain[domain], this.uniqueValues[domain])
-        valuesMultiChoices.onChanged((v) => {  
+        valuesMultiChoices.onChanged((v) => {
           this.selectedValuesByDomain[domain] = valuesMultiChoices.value;
         });
         //@ts-ignore
@@ -147,7 +147,7 @@ export class BoxPlotsView extends DG.ViewBase implements ILazyLoading {
 
     this.setRibbonPanels(
       [ [blVisitChoices.root], [splitByChoices.root], [selectBiomarkers] ] ,
- );
+    );
 
     this.root.append(ui.div([
       ui.block([this.boxPlotDiv])

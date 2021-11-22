@@ -136,7 +136,7 @@ export class TimeProfileView extends DG.ViewBase implements ILazyLoading {
             this.updateTimeProfile();
         });
         //@ts-ignore
-        this.labChoices.input.style.width = '200px';
+        this.labChoices.input.style.width = '150px';
         updateDivInnerHTML(this.labChoicesDiv, this.labChoices.root);
     }
 
@@ -146,6 +146,8 @@ export class TimeProfileView extends DG.ViewBase implements ILazyLoading {
             this.bl = this.blVisitChoices.value;
             this.updateTimeProfile();
         });
+        //@ts-ignore
+        this.blVisitChoices.input.style.width = '150px';
         updateDivInnerHTML(this.blVisitDiv, this.blVisitChoices.root);
     }
 
@@ -155,6 +157,8 @@ export class TimeProfileView extends DG.ViewBase implements ILazyLoading {
             this.ep = this.epVisitChoices.value;
             this.updateTimeProfile();
         });
+        //@ts-ignore
+        this.epVisitChoices.input.style.width = '150px';
         updateDivInnerHTML(this.epVisitDiv, this.epVisitChoices.root);
     }
 
