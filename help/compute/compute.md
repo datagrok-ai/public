@@ -1,7 +1,7 @@
 # Compute
 
 A next-generation environment for scientific computing that 
-leverages Datagrok core features, such as 
+leverages core Datagrok features, such as 
 [in-memory data engine](../develop/performance.md#in-memory-database),
 [interactive visualizations](../explore/exploratory-data-analysis.md),
 [data access](../home.md#access),
@@ -51,7 +51,7 @@ Typically, computations are developed in `Python`, `R`, `Julia`, `Matlab/Octave`
 Data access usually uses `SQL`, `SPARQL`, `OpenAPI`, or `JavaScript`. 
 
 Functions could either be registered manually, or published as part of a
-[package](../develop/develop.md), which typically is being developed under the source control system.
+[package](../develop/develop.md), which usually is kept under the source control system.
 Once a package is published, its content is discoverable (subject to checking privileges).
 
 This is an incredibly powerful concept that allows us to approach scientific computations
@@ -298,7 +298,7 @@ search field that allows you to search in the following modes:
 * by name (example: `logistic`)
 * by tag (example: `#chem`)
 * by meta parameter (example: `domain=bio`)
-* by attributes (examples: `created > 4d`, )
+* by attributes (examples: `created > -4d`, )
 
 To open a model, double-click on it.
 
@@ -371,6 +371,7 @@ is [deployed](#deployment), we get the following automatically:
 
 * See who created, edited, deployed, and used the model
 * Analyze historical input and output parameters
+* See how long computations took (and correlate with input parameters if needed)
 
 ![img.png](img.png)
 
