@@ -1,6 +1,30 @@
 <!-- TITLE: Release History -->
 <!-- SUBTITLE: -->
 
+# 2021-11-22 Dev build 0.95.6
+
+## Latest Docker Images
+
+* Datagrok: 
+  *  `docker pull datagrok/datagrok:0.95.6`
+  *  `docker pull datagrok/datagrok:latest`
+  
+* [Docker-Compose](admin/docker-compose.md)
+
+## Addressed Issues
+
+* GitHub Actions: Update js-api/package-lock.json 
+* Model Catalog improvements 
+* new version 
+* Added documentation on caching 
+* Added metadata to demo models 
+* Compute: minor UI improvements 
+* Compute: help: embedding as iframe 
+* OnViewAdding event 
+* Added a gif on how to share a connection 
+* Compute: documentation 
+
+
 # 2021-11-21 Dev build 0.95.5
 
 ## Latest Docker Images
