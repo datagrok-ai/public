@@ -100,8 +100,8 @@ class UMAPReducer extends Reducer {
     function arrayCast2Coordinates(data: number[][]): Coordinates {
       return new Array(data.length).map((_, i) => (Vector.from(data[i])));
     }
-    
-    return arrayCast2Coordinates(embedding);
+    const coords = arrayCast2Coordinates(embedding);
+    return coords;
   }
 }
 
@@ -191,7 +191,12 @@ export class DimensionalityReducer {
     const measure = this.measurer.getMeasure()
 
     if (method == 'UMAP') {
-      this.reducer = new UMAPReducer({...{data: data}, ...{distanceFn: measure}, ...options});
+      this.reducer = new UMAPReducer({
+        ...{data: data}, 
+        ...{distanceFn: measure}, 
+        ...{nEpochs: options?.cycles},
+        ...options
+      });
     } else if (method == 'TSNE') {
       this.reducer = new TSNEReducer({
         ...{data: data},
