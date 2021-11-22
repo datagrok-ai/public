@@ -20,10 +20,10 @@ export function createMaxValuesDataForHysLaw(dataframe, aggregatedColName, filer
 }
 
 
-export function createHysLawDataframe(lb: DG.DataFrame, dm: DG.DataFrame) {
-    let alt = createMaxValuesDataForHysLaw(lb, ALT, 'Alanine Aminotransferase');
-    let bln = createMaxValuesDataForHysLaw(lb, BILIRUBIN, 'Bilirubin');
-    let ast = createMaxValuesDataForHysLaw(lb, AST, 'Aspartate Aminotransferase');
+export function createHysLawDataframe(lb: DG.DataFrame, dm: DG.DataFrame, altName: string, astName: string, blnName: string) {
+    let alt = createMaxValuesDataForHysLaw(lb, ALT, altName);
+    let bln = createMaxValuesDataForHysLaw(lb, BILIRUBIN, blnName);
+    let ast = createMaxValuesDataForHysLaw(lb, AST, astName);
     //let ap = createMaxValuesDataForHysLaw(lb, AP, 'Alkaline Phosphatase');
 
     let joined = grok.data.joinTables(bln, alt, [ SUBJECT_ID ], [ SUBJECT_ID ], [ SUBJECT_ID, BILIRUBIN ], [ ALT ], DG.JOIN_TYPE.LEFT, false);

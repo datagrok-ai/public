@@ -6,12 +6,23 @@ import { createBaselineEndpointDataframe, createHysLawDataframe, createLabValues
 import { ALT, AP, BILIRUBIN, requiredColumnsByView, } from '../constants';
 import { createBaselineEndpointScatterPlot, createHysLawScatterPlot } from '../custom-scatter-plots/custom-scatter-plots';
 import { ILazyLoading } from '../lazy-loading/lazy-loading';
-import { checkMissingDomains } from './utils';
+import { checkMissingDomains, updateDivInnerHTML } from './utils';
 import { _package } from '../package';
 import { getUniqueValues } from '../data-preparation/utils';
 import { LAB_HI_LIM_N, LAB_LO_LIM_N, LAB_TEST, VISIT_DAY, VISIT_NAME, SUBJECT_ID, TREATMENT_ARM, LAB_RES_N } from '../columns-constants';
 
 export class LaboratoryView extends DG.ViewBase implements ILazyLoading {
+
+  hysLawDiv = ui.box();
+  selectedALT = '';
+  selectedAST = '';
+  selectedBLN = '';
+  altChoices: DG.InputBase;
+  astChoices: DG.InputBase;
+  blnChoices: DG.InputBase;
+  hysLawScatterPlot: DG.ScatterPlotViewer;
+  dm: DG.DataFrame;
+  lb: DG.DataFrame;
 
   constructor(name) {
     super({});
@@ -25,30 +36,47 @@ export class LaboratoryView extends DG.ViewBase implements ILazyLoading {
  }
   
   createView(): void {
-    let lb = study.domains.lb;
-    let dm = study.domains.dm;
+    this.lb = study.domains.lb.clone();
+    this.dm = study.domains.dm.clone();
 
-    let grid = lb.plot.grid();
-    lb.onCurrentRowChanged.subscribe((_) => {
-      grok.shell.o = new ClinRow(lb.currentRow);
+    let uniqueLabValues = Array.from(getUniqueValues(this.lb, LAB_TEST));
+    let uniqueVisits = Array.from(getUniqueValues(this.lb, VISIT_NAME));
+
+    let grid = this.lb.plot.grid();
+    this.lb.onCurrentRowChanged.subscribe((_) => {
+      grok.shell.o = new ClinRow(this.lb.currentRow);
+    });
+    
+    this.altChoices = ui.choiceInput('ALT', this.selectedALT, uniqueLabValues);
+    this.altChoices.onChanged((v) => {
+      this.selectedALT = this.altChoices.value;
+      this.updateHysLawScatterPlot();
     });
 
-    let hysLawScatterPlot = this.hysLawScatterPlot(dm, lb);
+    this.astChoices = ui.choiceInput('AST', this.selectedAST, uniqueLabValues);
+    this.astChoices.onChanged((v) => {
+      this.selectedAST = this.astChoices.value;
+      this.updateHysLawScatterPlot();
+    });
 
-    let uniqueLabValues = Array.from(getUniqueValues(lb, LAB_TEST));
-    let uniqueVisits = Array.from(getUniqueValues(lb, VISIT_NAME));
-    let baselineEndpointPlot = this.baselineEndpointPlot(dm, lb, uniqueLabValues[ 0 ], uniqueVisits[ 0 ], uniqueVisits[ 1 ]);
+    this.blnChoices = ui.choiceInput('BLN', this.selectedBLN, uniqueLabValues);
+    this.blnChoices.onChanged((v) => {
+      this.selectedBLN = this.blnChoices.value;
+      this.updateHysLawScatterPlot();
+    });
 
-    let uniqueTreatmentArms = Array.from(getUniqueValues(dm, TREATMENT_ARM));
-    let disributionBoxPlot = this.labValuesDistributionPlot(dm, lb, uniqueLabValues[ 0 ], uniqueTreatmentArms[ 0 ]);
+    let baselineEndpointPlot = this.baselineEndpointPlot(this.dm, this.lb, uniqueLabValues[ 0 ], uniqueVisits[ 0 ], uniqueVisits[ 1 ]);
 
-    this.generateUI(dm, lb, grid, hysLawScatterPlot, baselineEndpointPlot, uniqueLabValues, uniqueVisits, uniqueTreatmentArms, disributionBoxPlot);
+    let uniqueTreatmentArms = Array.from(getUniqueValues(this.dm, TREATMENT_ARM));
+    let disributionBoxPlot = this.labValuesDistributionPlot(this.dm, this.lb, uniqueLabValues[ 0 ], uniqueTreatmentArms[ 0 ]);
+
+    this.generateUI(this.dm, this.lb, grid, this.hysLawDiv, baselineEndpointPlot, uniqueLabValues, uniqueVisits, uniqueTreatmentArms, disributionBoxPlot);
  
   }
 
 
   private generateUI(dm: DG.DataFrame, lb: DG.DataFrame, grid: DG.Grid,
-    hysLawScatterPlot: DG.ScatterPlotViewer,
+    hysLawDiv: HTMLDivElement,
     baselineEndpointPlot: DG.ScatterPlotViewer,
     labValues: string[] & any,
     visits: string[] & any,
@@ -94,7 +122,14 @@ export class LaboratoryView extends DG.ViewBase implements ILazyLoading {
    
     this.root.appendChild(
       ui.tabControl({
-        "Hy's law":hysLawScatterPlot.root,
+        "Hy's law":ui.splitV([
+          ui.box(ui.panel([
+            ui.divH([
+              this.altChoices.root, this.astChoices.root, this.blnChoices.root
+            ])
+          ]),{style:{maxHeight:'80px'}}),
+          hysLawDiv
+        ]),
         "Baseline endpoint":ui.splitV([
           ui.box(ui.panel([
             ui.divH([
@@ -133,17 +168,23 @@ export class LaboratoryView extends DG.ViewBase implements ILazyLoading {
     distributionDiv.append(disributionBoxPlot.root);
   }
 
+  private updateHysLawScatterPlot(){
+    if(this.selectedALT && this.selectedAST && this.selectedBLN){
+      this.createHysLawScatterPlot(this.dm, this.lb);
+      updateDivInnerHTML(this.hysLawDiv, this.hysLawScatterPlot.root);
+    }
+  }
 
-  private hysLawScatterPlot(dm: DG.DataFrame, lb: DG.DataFrame) {
-    let hysLawDataframe = createHysLawDataframe(lb, dm);
+  private createHysLawScatterPlot(dm: DG.DataFrame, lb: DG.DataFrame) {
+    let hysLawDataframe = createHysLawDataframe(lb, dm, this.selectedALT, this.selectedAST, this.selectedBLN);
+    let test = hysLawDataframe.columns.names();
     grok.data.linkTables(lb, hysLawDataframe,
       [SUBJECT_ID], [SUBJECT_ID],
       [DG.SYNC_TYPE.CURRENT_ROW_TO_ROW, DG.SYNC_TYPE.CURRENT_ROW_TO_SELECTION]);
     grok.data.linkTables(hysLawDataframe, lb,
       [SUBJECT_ID], [SUBJECT_ID],
       [DG.SYNC_TYPE.SELECTION_TO_SELECTION, DG.SYNC_TYPE.SELECTION_TO_SELECTION]);
-    let hysLawScatterPlot = createHysLawScatterPlot(hysLawDataframe, ALT, BILIRUBIN, TREATMENT_ARM);
-    return hysLawScatterPlot;
+    this.hysLawScatterPlot = createHysLawScatterPlot(hysLawDataframe, ALT, BILIRUBIN, TREATMENT_ARM);
   }
 
   private baselineEndpointPlot(dm: DG.DataFrame, lb: DG.DataFrame, value: any, bl: any, ep: any) {
