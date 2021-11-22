@@ -58,7 +58,7 @@ export function init() {
     }).root;
   });
 
-  grok.events.onViewAdded.subscribe((v: DG.View) => {
+  grok.events.onViewAdding.subscribe((v: DG.View) => {
     if (v instanceof DG.FunctionView && v.func?.hasTag("model")) {
       let modelsView = wu(grok.shell.views).find((v) => v.parentCall?.func.name == 'modelCatalog');
       if (modelsView != undefined) {
