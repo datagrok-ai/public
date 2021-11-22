@@ -1,7 +1,7 @@
 # Compute
 
-A next-generation environment for scientific computing. 
-It leverages a number of the core Datagrok features, such as 
+A next-generation environment for scientific computing that 
+leverages Datagrok core features, such as 
 [in-memory data engine](../develop/performance.md#in-memory-database),
 [interactive visualizations](../explore/exploratory-data-analysis.md),
 [data access](../home.md#access),
@@ -410,7 +410,7 @@ interest, since this technology unlocks efficient computations on either
 client or server sides (you can choose whether to move data to the algorithm,
 or vice versa).
 
-#### Get industry adoption
+#### Industry adoption
 
 Datagrok already has plenty of unique features making it interesting for large
 biopharma companies that deal with complex scientific data and complex
