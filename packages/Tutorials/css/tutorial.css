@@ -165,6 +165,13 @@ progress[value]::-webkit-progress-value::after {
     background-color: var(--green-2);
 }
 
+.grok-tutorial-step-description {
+    -webkit-user-select: text;
+    -moz-user-select: text;
+    -ms-user-select: text;
+    user-select: text;
+}
+
 .tutorials-root-header{
     justify-content: space-between;
     align-items: center;
