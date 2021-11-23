@@ -5,7 +5,8 @@ import {Options, DistanceMetric, Coordinates, Vector, Vectors, Matrix} from './t
 import {calcDistanceMatrix, transposeMatrix} from './operations';
 import {SPEBase, PSPEBase} from './spe';
 import {Measurer} from './string-measure';
-//import {AlignedSequenceEncoder} from './sequence-encoder';
+import {AlignedSequenceEncoder} from './sequence-encoder';
+import assert from 'assert';
 
 /**
  * Abstract dimensionality reducer.
@@ -80,8 +81,9 @@ class TSNEReducer extends Reducer {
  */
 class UMAPReducer extends Reducer {
   protected reducer: umj.UMAP;
-/*  protected encoder: AlignedSequenceEncoder;
-  protected distanceMatrix: Matrix;*/
+  protected encoder: AlignedSequenceEncoder;
+  protected distanceFn: Function;
+  protected vectors: number[][];
 
   /**
    * Creates an instance of UMAPReducer.
@@ -90,46 +92,39 @@ class UMAPReducer extends Reducer {
    */
   constructor(options: Options) {
     super(options);
+
+    assert('distanceFn' in options);
+
+    this.encoder = new AlignedSequenceEncoder();
+    this.distanceFn = options.distanceFn;
+    this.vectors = [];
+    options.distanceFn = this._encodedDistance.bind(this);
     this.reducer = new umj.UMAP(options);
-/*    this.encoder = new AlignedSequenceEncoder();
-    this.distanceMatrix = calcDistanceMatrix(this.data, options.distanceFn);
-    this.distanceFn = options.distanceFn;*/
   }
 
-/*  protected _encodedDistance(a: number[], b: number[]): number {
-    return this.distanceMatrix[a[a.length-1]][b[b.length-1]];
+  protected _encodedDistance(a: number[], b: number[]): number {
+    return this.distanceFn(this.data[a[0]], this.data[b[0]]);
   }
 
-  protected _decodedDistance(a: number[], b: number[]): number {
-    return this.encoder.decode(a);
-  }
-
-  protected encode(): number[][] {
-    let vectors: number[][] = [];
-
+  protected _encode() {
     for (let i = 0; i < this.data.length; ++i) {
-      let encoded = this.encoder.encode(this.data[i]);
-      vectors.push(encoded);
+      this.vectors.push([i]);
     }
-    return vectors;
   }
-
-  protected _calcDistance() {
-    const nItems = this.data.length;
-    const vectors = this.encode();
-    
-  }*/
 
   /**
    * Embeds the data given into the two-dimensional space using UMAP method.
    * @return {Coordinates} Cartesian coordinate of this embedding.
    */
   public transform(): Coordinates {
-    const embedding = this.reducer.fit(this.data);
+    this._encode();
+
+    const embedding = this.reducer.fit(this.vectors);
 
     function arrayCast2Coordinates(data: number[][]): Coordinates {
       return new Array(data.length).fill(0).map((_, i) => (Vector.from(data[i])));
     }
+
     return arrayCast2Coordinates(embedding);
   }
 }
