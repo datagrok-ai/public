@@ -2,11 +2,11 @@
 import * as grok from 'datagrok-api/grok';
 import * as ui from 'datagrok-api/ui';
 import * as DG from 'datagrok-api/dg';
-import {splitAlignedPeptides} from '../split-aligned';
+import {splitAlignedPeptides} from './utils/split-aligned';
 import {tTest} from '@datagrok-libraries/statistics/src/tests';
 import {fdrcorrection} from '@datagrok-libraries/statistics/src/multiple-tests';
-import {ChemPalette} from '../utils/chem-palette';
-import {setAARRenderer} from '../utils/cell-renderer';
+import {ChemPalette} from './utils/chem-palette';
+import {setAARRenderer} from './utils/cell-renderer';
 
 const cp = new ChemPalette('grok');
 
@@ -17,20 +17,13 @@ export async function describe(
   sourceGrid: DG.Grid,
   twoColorMode: boolean,
   initialBitset: DG.BitSet | null,
-): Promise<[DG.Grid, DG.Grid, DG.DataFrame] | [null, null, null]> {
+): Promise<[DG.Grid, DG.Grid, DG.DataFrame]> {
   //Split the aligned sequence into separate AARs
   let splitSeqDf: DG.DataFrame | undefined;
   let invalidIndexes: number[];
   const col: DG.Column = df.columns.bySemType('alignedSequence');
-  if (col) {
-    [splitSeqDf, invalidIndexes] = splitAlignedPeptides(col);
-    splitSeqDf.name = 'Split sequence';
-  }
-
-  if (typeof splitSeqDf === 'undefined') {
-    return [null, null, null];
-  }
-
+  [splitSeqDf, invalidIndexes] = splitAlignedPeptides(col);
+  splitSeqDf.name = 'Split sequence';
   const positionColumns = splitSeqDf.columns.names();
   const activityColumnScaled = `${activityColumn}Scaled`;
   const renderColNames: string[] = splitSeqDf.columns.names();

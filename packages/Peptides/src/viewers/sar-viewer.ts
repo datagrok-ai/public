@@ -4,9 +4,34 @@ import * as DG from 'datagrok-api/dg';
 
 import $ from 'cash-dom';
 
-import {describe} from './describe';
+import {describe} from '../describe';
+import { Subject } from 'rxjs';
 
-export class SARViewerBase extends DG.JsViewer {
+export class SARViewerModel {
+  private viewerGrid: Subject<DG.Grid> = new Subject<DG.Grid>();
+  private viewerVGrid: Subject<DG.Grid> = new Subject<DG.Grid>();
+  private statsDf: Subject<DG.DataFrame> = new Subject<DG.DataFrame>();
+  public viewerGrid$ = this.viewerGrid.asObservable();
+  public viewerVGrid$ = this.viewerVGrid.asObservable();
+  public statsDf$ = this.statsDf.asObservable();
+
+  async updateData(
+      df: DG.DataFrame,
+      activityCol: string,
+      activityScaling: string,
+      sourceGrid: DG.Grid,
+      twoColorMode: boolean,
+      initialBitset: DG.BitSet | null,
+    ) {
+    const [viewerGrid, viewerVGrid, statsDf] =
+      await describe(df, activityCol, activityScaling, sourceGrid, twoColorMode, initialBitset);
+    this.viewerGrid.next(viewerGrid);
+    this.viewerVGrid.next(viewerVGrid);
+    this.statsDf.next(statsDf);
+  }
+}
+
+export class SARViewer extends DG.JsViewer {
   protected viewerGrid: DG.Grid | null;
   protected sourceGrid: DG.Grid | null;
   protected progress: DG.TaskBarProgressIndicator;
@@ -21,6 +46,8 @@ export class SARViewerBase extends DG.JsViewer {
   protected _initialBitset: DG.BitSet | null;
   protected viewerVGrid: DG.Grid | null;
   protected currentBitset: DG.BitSet | null;
+  // private _model: SARViewerModel | undefined;
+  // private df: DG.DataFrame | null;
   // protected pValueThreshold: number;
   // protected amountOfBestAARs: number;
   // duplicatesHandingMethod: string;
@@ -36,6 +63,7 @@ export class SARViewerBase extends DG.JsViewer {
     this._initialBitset = null;
     this.viewGridInitialized = false;
     this.currentBitset = null;
+    // this.df = null;
 
     //TODO: find a way to restrict activityColumnColumnName to accept only numerical columns (double even better)
     this.activityColumnColumnName = this.string('activityColumnColumnName');
@@ -50,8 +78,14 @@ export class SARViewerBase extends DG.JsViewer {
   }
 
   init() {
+    // this.df = df;
     this._initialBitset = this.dataFrame!.filter.clone();
     this.initialized = true;
+    // this._model = model;
+    // this.subs.push(this._model.statsDf$.subscribe(data => this.statsDf = data));
+    // this.subs.push(this._model.viewerGrid$.subscribe(data => this.viewerGrid = data));
+    // this.subs.push(this._model.viewerVGrid$.subscribe(data => this.viewerVGrid = data));
+    // this.render();
   }
 
   onTableAttached() {
@@ -74,7 +108,7 @@ export class SARViewerBase extends DG.JsViewer {
 
     if (property.name === 'activityScalingMethod' && typeof this.dataFrame !== 'undefined') {
       const minActivity = DG.Stats.fromColumn(
-        this.dataFrame.col(this.activityColumnColumnName)!,
+        this.dataFrame!.col(this.activityColumnColumnName)!,
         this._initialBitset,
       ).min;
       if (minActivity && minActivity <= 0 && this.activityScalingMethod !== 'none') {
@@ -263,6 +297,14 @@ export class SARViewerBase extends DG.JsViewer {
           this.bidirectionalAnalysis,
           this._initialBitset,
         );
+        // await this._model?.updateData(
+        //   this.dataFrame!,
+        //   this.activityColumnColumnName,
+        //   this.activityScalingMethod,
+        //   this.sourceGrid,
+        //   this.bidirectionalAnalysis,
+        //   this._initialBitset,
+        // );
 
         if (this.viewerGrid !== null && this.viewerVGrid !== null) {
           $(this.root).empty();
@@ -272,7 +314,7 @@ export class SARViewerBase extends DG.JsViewer {
             this.syncGridsFunc(false);
           });
           this.viewerVGrid.dataFrame!.onCurrentCellChanged.subscribe((_) => this.syncGridsFunc(true));
-          this.dataFrame.onRowsFiltering.subscribe((_) => this.sourceFilteringFunc());
+          this.dataFrame!.onRowsFiltering.subscribe((_) => this.sourceFilteringFunc());
 
           grok.events.onAccordionConstructed.subscribe((accordion: DG.Accordion) => this.accordionFunc(accordion));
         }
