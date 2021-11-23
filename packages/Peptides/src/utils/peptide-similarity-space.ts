@@ -15,9 +15,8 @@ export function peptideSimilaritySpace(
 ) {
   const axesNames = ['~X', '~Y', 'MW'];
   let columnData = alignedSequencesColumn.toList();
-  const enc = new AlignedSequenceEncoder();
 
-  columnData = columnData.map((v, _) => enc.clean(v));
+  columnData = columnData.map((v, _) => AlignedSequenceEncoder.clean(v));
 
   const reducer = new DimensionalityReducer(
     columnData,
