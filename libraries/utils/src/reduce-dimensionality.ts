@@ -102,10 +102,25 @@ class UMAPReducer extends Reducer {
     this.reducer = new umj.UMAP(options);
   }
 
+  /**
+   * Custom distance wrapper to have numeric inputs instead of string ones.
+   *
+   * @protected
+   * @param {number[]} a The first item.
+   * @param {number[]} b The first item.
+   * @return {number} Distance metric.
+   * @memberof UMAPReducer
+   */
   protected _encodedDistance(a: number[], b: number[]): number {
     return this.distanceFn(this.data[a[0]], this.data[b[0]]);
   }
 
+  /**
+   * Encodes the input data as a vector of indices.
+   *
+   * @protected
+   * @memberof UMAPReducer
+   */
   protected _encode() {
     for (let i = 0; i < this.data.length; ++i) {
       this.vectors.push([i]);
