@@ -65,7 +65,7 @@ export class ClinicalDomains {
   tv: DG.DataFrame = null;
 
   all(): DG.DataFrame[] {
-    return Object.keys(this).map((k) => this[k]).filter((v) => v != null)
+    return Object.keys(this).map((k) => this[ k ]).filter((v) => v != null)
   }
 }
 
@@ -85,13 +85,17 @@ export class ClinicalStudy {
         view.syncCurrentObject = false;
 
       if (t.name.toLowerCase() in this.domains)
-        this.domains[t.name.toLowerCase()] = t;
+        this.domains[ t.name.toLowerCase() ] = t;
     }
 
-    if(this.domains.dm != null){
+    if (this.domains.dm != null) {
       this.subjectsCount = this.domains.dm.rowCount;
-      this.sitesCount = this.domains.dm.col(SITE_ID).stats.uniqueCount;
-      this.name = this.domains.dm.col(STUDY_ID).get(0);
+      if (this.domains.dm.col(SITE_ID)) {
+        this.sitesCount = this.domains.dm.col(SITE_ID).stats.uniqueCount;
+      }
+      if (this.domains.dm.col(STUDY_ID)) {
+        this.name = this.domains.dm.col(STUDY_ID).get(0);
+      }
     }
 
     this.process();
