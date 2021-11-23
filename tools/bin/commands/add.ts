@@ -228,7 +228,7 @@ export function add(args: { _: string[] }) {
       // Add a view function to package.js
       let view = fs.readFileSync(path.join(path.dirname(path.dirname(__dirname)),
         'entity-template', 'view.js'), 'utf8');
-      contents = insertName(name, "import {#{NAME}} from './#{NAME_LOWERCASE}';\n");
+      contents = insertName(name, `import {#{NAME}} from './${utils.camelCaseToKebab(name)}';\n`);
       contents += fs.readFileSync(packageEntry, 'utf8');
       contents += insertName(name, view);
       fs.writeFileSync(packageEntry, contents, 'utf8');
@@ -261,7 +261,7 @@ export function add(args: { _: string[] }) {
       // Add a viewer function to package.js
       let viewer = fs.readFileSync(path.join(path.dirname(path.dirname(__dirname)),
         'entity-template', 'viewer.js'), 'utf8');
-      contents = insertName(name, "import {#{NAME}} from './#{NAME_LOWERCASE}';\n");
+      contents = insertName(name, `import {#{NAME}} from './${utils.camelCaseToKebab(name)}';\n`);
       contents += fs.readFileSync(packageEntry, 'utf8');
       contents += insertName(name, viewer);
       fs.writeFileSync(packageEntry, contents, 'utf8');
