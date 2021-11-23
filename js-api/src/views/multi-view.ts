@@ -1,7 +1,7 @@
-import {View} from "./view";
+import {DockView, FunctionView, View, ViewBase} from "./view";
 import {ObjectHandler} from "../../ui";
 import {toJs} from "../wrappers";
-import {TabControl} from "../widgets";
+import {TabControl, TabPane} from "../widgets";
 let api = <any>window;
 
 class EmptyView extends View {
@@ -10,34 +10,76 @@ class EmptyView extends View {
   }
 }
 
+type ViewDescription = {factory: () => View, allowClose: boolean};
+type ViewFactory = () => View;
+
 export interface MultiViewOptions {
-  viewFactories?: {[name: string]: () => View};
+  viewFactories?: {[name: string]: ViewFactory | ViewDescription};
 }
 
-export class MultiView extends View {
+export class MultiView extends ViewBase {
   _views: Map<String, View> = new Map();
   _options?: MultiViewOptions;
   _currentView: View = new EmptyView();
   tabs: TabControl = TabControl.create();
+  private _fixedName: string | undefined;
 
   constructor(options?: MultiViewOptions) {
-    super(api.grok_View());
+    super({});
+    this.box = true;
 
     this._options = options;
     this.root.appendChild(this.tabs.root);
     this.tabs.onTabChanged.subscribe((_) => this.currentView = this.getView(this.tabs.currentPane.name));
 
+    this.tabs.onTabRemoved.subscribe((tab) => {
+      this._views.delete(tab.name);
+      (<any>this._options!.viewFactories!)[tab.name] = undefined;
+    });
     if (options?.viewFactories) {
-      for (let [name, factory] of Object.entries(options.viewFactories))
-        this.tabs.addPane(name, () => factory().root!);
+      for (let [name] of Object.entries(options.viewFactories)) {
+        this._addNewViewTab(name, false);
+      }
     }
   }
 
-  getView(name: string): View {
-    if (!this._views.has(name))
-      this._views.set(name, this._options?.viewFactories![name]()!);
+  private _addNewViewTab(name: string, activate: boolean): TabPane {
+    let allowClose = false;
+    if ((<ViewDescription>(this._options?.viewFactories![name]!)).allowClose)
+      allowClose = true;
+    let tab = this.tabs.addPane(name, () => this.getView(name).root!, null, {allowClose: allowClose});
+    if (activate)
+      this.tabs.currentPane = tab;
+    return tab;
+  }
 
-    return this._views.get(name)!;
+  addView(name: string, desc: ViewFactory | ViewDescription, activate: boolean) {
+    (<any>this._options?.viewFactories)![name] = desc;
+    this._addNewViewTab(name, activate);
+  }
+
+  _getFactory(factory: ViewFactory | ViewDescription) {
+    let _factory: ViewFactory = (<ViewDescription>factory).factory;
+    if (_factory != undefined)
+      factory = _factory;
+    return factory;
+  }
+
+  getView(name: string): View {
+    if (!this._views.has(name)) {
+      let factory = this._getFactory(this._options?.viewFactories![name]!);
+      this._views.set(name, (<ViewFactory>factory)()!);
+    }
+    let view = this._views.get(name)!;
+    return view;
+  }
+
+  get name(): string {
+    return this._fixedName ?? this._name;
+  }
+
+  set name(s: string) {
+    this._fixedName = s;
   }
 
   get currentView(): View { return this._currentView; }
@@ -45,5 +87,12 @@ export class MultiView extends View {
     this._currentView = x;
     this.toolbox = x.toolbox;
     this.setRibbonPanels(x.getRibbonPanels());
+    this._name = x.name;
+    if (x instanceof DockView) {
+      console.log('bingo');
+      x.initDock();
+      x._onAdded();
+      x._handleResize();
+    }
   }
 }

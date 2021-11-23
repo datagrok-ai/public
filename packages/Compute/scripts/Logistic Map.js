@@ -1,5 +1,5 @@
-//name: Logistic map
-//tags: model, NonlinearDynamics
+//name: Logistic Map
+//tags: model, simulation
 //description: Archetypal example of how complex, chaotic behaviour can arise from very simple non-linear dynamical equations.
 //language: javascript
 //input: int iterations = 1000 [Number of iterations per point]
@@ -7,6 +7,7 @@
 //input: double spacing = 0.001 [Spacing between points on domain (r-axis)]
 //input: double res = 8 [Largest n-cycle visible]
 //output: dataframe df {viewer: Scatter plot(title: "Logistic map")}
+//meta.domain: Nonlinear dynamics
 
 function getRandomNumberInRange(min, max) {
   return Math.random() * (max - min) + min;

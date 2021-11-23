@@ -1,7 +1,6 @@
-import {createRDKit} from './RDKit_minimal_2021.03_17.js';
 import {WORKER_CALL} from './rdkit_service_worker_api'
 import {RdKitServiceWorker as ServiceWorkerClass} from './rdkit_service_worker';
-// import {RdKitFingerprintSearcher as SearcherClass} from './rdkit_fingerprint_searcher';
+import {createRDKit} from './RDKit_minimal_2021.03_18.js';
 
 const ctx: Worker = self as any;
 
