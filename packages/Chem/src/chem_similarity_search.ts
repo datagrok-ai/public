@@ -2,6 +2,9 @@ import * as grok from 'datagrok-api/grok';
 import * as ui from 'datagrok-api/ui';
 import * as DG from 'datagrok-api/dg';
 import {GridCellRenderArgs, Property, Widget} from 'datagrok-api/dg';
+import {getMorganFingerprints} from './package';
+import {_morganFP, _fingerprintSimilarity} from './chem_searches';
+
 
 export class MoleculeViewer extends DG.JsViewer {
   private moleculeColumnName: string;
