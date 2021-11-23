@@ -1,5 +1,6 @@
 import {WORKER_CALL} from './rdkit_service_worker_api'
 import {RdKitServiceWorker as ServiceWorkerClass} from './rdkit_service_worker';
+// @ts-ignore
 import {createRDKit} from './RDKit_minimal_2021.03_18.js';
 
 const ctx: Worker = self as any;

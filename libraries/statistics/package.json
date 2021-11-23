@@ -28,7 +28,7 @@
 		"debug-statistics": "grok publish --rebuild",
 		"release-statistics": "grok publish --rebuild --release",
 		"build-statistics": "webpack",
-		"build": "webpack",
+		"build": "tsc",
 		"lint": "eslint src --ext .ts",
 		"lint-fix": "eslint src --ext .ts --fix"
 	}
