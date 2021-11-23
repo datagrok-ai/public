@@ -21,7 +21,7 @@ export async function selectOutliersManually(inputData: DG.DataFrame) {
   }
 
   if (!inputData.columns.byName(FLUX)) {
-    (inputData.columns as DG.ColumnList).addNew(FLUX, 'double').init((index) => inputData.cell(index, 'filtrate volume (mL)').value / inputData.cell(index, 'time (min)').value);
+    (inputData.columns as DG.ColumnList).addNew(FLUX, 'double').init((index) => (inputData.cell(index, 'filtrate volume (mL)').value/1000.0) / (inputData.cell(index, 'time (min)').value/60.0));
   }
 
   const initialData = inputData.clone();
