@@ -6,20 +6,20 @@ import * as DG from "datagrok-api/dg";
 export function HysLawRenderLines(sp, xLimitAltAst, xLimitAp, yLimit, APColumnName) {
     let ctx = sp.getInfo()[ 'canvas' ].getContext('2d');
     setCanvasStyle(ctx, 'black', 0.2, '10px verdana');
-    let xLimit = sp.props.xColumnName === APColumnName ? xLimitAp : xLimitAltAst;
+    let xLimit = sp.getOptions().look.xColumnName === APColumnName ? xLimitAp : xLimitAltAst;
     let pointXLimit = sp.worldToScreen(xLimit, 0);
     let pointYLimit = sp.worldToScreen(0, yLimit);
     let left = sp.viewBox.x + 3;
     let right = sp.viewBox.x + sp.viewBox.width;
     let top = sp.viewBox.y;
     let bottom = sp.viewBox.y + sp.viewBox.height;
-    renderText(ctx, `Normal(${numOfPatientsInQuadrant(sp, `${sp.props.xColumnName} < ${xLimit} and ${sp.props.yColumnName} < ${yLimit}`, sp.dataFrame.rowCount)})`,
+    renderText(ctx, `Normal(${numOfPatientsInQuadrant(sp, `${sp.getOptions().look.xColumnName} < ${xLimit} and ${sp.getOptions().look.yColumnName} < ${yLimit}`, sp.dataFrame.rowCount)})`,
         'bottom', 'left', left, bottom, left < pointXLimit.x && bottom > pointYLimit.y, 'blue')
-    renderText(ctx, `Temple\'s Corollary(${numOfPatientsInQuadrant(sp, `${sp.props.xColumnName} > ${xLimit} and ${sp.props.yColumnName} < ${yLimit}`, sp.dataFrame.rowCount)})`,
+    renderText(ctx, `Temple\'s Corollary(${numOfPatientsInQuadrant(sp, `${sp.getOptions().look.xColumnName} > ${xLimit} and ${sp.getOptions().look.yColumnName} < ${yLimit}`, sp.dataFrame.rowCount)})`,
         'bottom', 'right', right, bottom, right > pointXLimit.x && bottom > pointYLimit.y, 'blue')
-    renderText(ctx, `Possible Hy\'s Law(${numOfPatientsInQuadrant(sp, `${sp.props.xColumnName} > ${xLimit} and ${sp.props.yColumnName} > ${yLimit}`, sp.dataFrame.rowCount)})`,
+    renderText(ctx, `Possible Hy\'s Law(${numOfPatientsInQuadrant(sp, `${sp.getOptions().look.xColumnName} > ${xLimit} and ${sp.getOptions().look.yColumnName} > ${yLimit}`, sp.dataFrame.rowCount)})`,
         'top', 'right', right, top, right > pointXLimit.x && top < pointYLimit.y, 'blue')
-    renderText(ctx, `Hyperbilirubinemia(${numOfPatientsInQuadrant(sp, `${sp.props.xColumnName} < ${xLimit} and ${sp.props.yColumnName} > ${yLimit}`, sp.dataFrame.rowCount)})`,
+    renderText(ctx, `Hyperbilirubinemia(${numOfPatientsInQuadrant(sp, `${sp.getOptions().look.xColumnName} < ${xLimit} and ${sp.getOptions().look.yColumnName} > ${yLimit}`, sp.dataFrame.rowCount)})`,
         'top', 'left', left, top, left < pointXLimit.x && top < pointYLimit.y, 'blue')
     divideTo4Quadrants(ctx, sp, pointXLimit.x, pointYLimit.y);
 }
