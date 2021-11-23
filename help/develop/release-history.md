@@ -1,6 +1,63 @@
 <!-- TITLE: Release History -->
 <!-- SUBTITLE: -->
 
+# 2021-11-23 Dev build 0.95.7
+
+## Latest Docker Images
+
+* Datagrok: 
+  *  `docker pull datagrok/datagrok:0.95.7`
+  *  `docker pull datagrok/datagrok:latest`
+  
+* [Docker-Compose](admin/docker-compose.md)
+
+## Addressed Issues
+
+* GitHub Actions: Update js-api/package-lock.json 
+* Packages: get compatible npm package versions 
+* NPM repositories: new package manager UI (WIP)
+* Moved types to deps 
+* Fixed a bug with p-values sort. 
+* Update compute.md 
+* Model Catalog improvements 
+* Compute: scripts cleanup 
+* Clinical case: fixed width of choice inputs in Time profile, added ability to select values for ALT, AST, BLN when creating Hy's law plot 
+* Cimpute: fix popPK 
+* Compute: IntervalsFromECG script 
+* fixed library 
+* Scatter Plot: Hide property "formula-lines" from PP 
+* Chem: similarity search port 
+* Chem: fixes 
+* Peptides: package restructuring 
+* Chem: 3d coordinates script optimization 
+* Compute: added additional column of flux 
+* Remove a utility function 
+* (Bug) datagrok-tools: `grok add` inserts invalid import statements 
+* Utils: \* Update operations to in-house implementation. \* Add JSDoc. 
+* Jest: Moving things around for Chem and others 
+* #53 Tutorials package: markup adjustments to the tutorial page 
+* Added trick with .bind for callback distance. 
+* Fixed build issues 
+* Peptides: SAR viewers are split apart 
+* Added missing dependency 
+* Clinical case: fixed bugs with missing domains validation for ae browser view 
+* Compute: fixed column name 
+* Compute: moved methods under eslint-ignore line 
+* Compute: fixed the column computation 
+* Compute: patch version bump 
+* Fix in assert import. 
+* Added docstrings missing. Implements #93 
+* Clinical case: updated Readme 
+* Clinical case: moved Laboratory view parameters to property panel 
+* Compute: changed reason to rationale term 
+* Tutorials: Add sticky header 
+* Tutorials: add chevron icon for step 
+* Tutorials: update css 
+* Fixed css 
+* (Bug) Multiple FuncCall.onCancel subscriptions (WIP)
+* Additional debug lines 
+
+
 # 2021-11-22 Dev build 0.95.6
 
 ## Latest Docker Images
