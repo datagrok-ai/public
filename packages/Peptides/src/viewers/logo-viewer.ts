@@ -4,7 +4,7 @@ import * as DG from 'datagrok-api/dg';
 import $ from 'cash-dom';
 
 import * as logojs from 'logojs-react';
-import {splitAlignedPeptides} from '../split-aligned';
+import {splitAlignedPeptides} from '../utils/split-aligned';
 import {ChemPalette} from '../utils/chem-palette';
 
 export class Logo extends DG.JsViewer {
