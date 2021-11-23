@@ -9,7 +9,7 @@ export function setSearchesContext(rdKitModule: any, rdKitService: RdKitService)
   _rdKitService = rdKitService;
 }
 
-function _morganFP(molString: string, fp_length = 128, fp_radius = 2) {
+export function _morganFP(molString: string, fp_length = 128, fp_radius = 2) {
   if (molString.length == 0) {
     console.error(
       "Possibly an empty molString: `" + molString + "`");

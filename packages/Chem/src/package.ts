@@ -23,7 +23,7 @@ import {getRGroups} from "./chem_rgroup_analysis";
 import {chemSpace} from './analysis/chem_space';
 import {mcsgetter} from './scripts-api';
 import {getDescriptors} from './descriptors/descriptors_calculation';
-import {MoleculeViewer} from './chem_similarity_search';
+// import {MoleculeViewer} from './chem_similarity_search';
 
 let rdKitModule: any = null;
 let rdKitService: any = null;
@@ -521,7 +521,11 @@ export async function descriptors(table: DG.DataFrame, smiles: DG.Column) {
   return(getDescriptors(smiles));
 }
 
+/*
+
 //top-menu: Chem | Similarity Search...
 export async function similaritySearch() {
   grok.shell.addTableView(grok.data.demo.molecules(100)).addViewer(new MoleculeViewer());
 }
+
+*/
