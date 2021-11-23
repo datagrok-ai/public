@@ -63,8 +63,9 @@ export async function analyzePeptidesWidget(
   activityScalingMethod.fireChanged();
 
   const startBtn = ui.button('Launch SAR', async () => {
+    const progress = DG.TaskBarProgressIndicator.create('Loading SAR...');
     if (activityColumnChoice.value.type === DG.TYPE.FLOAT) {
-      const options = {
+      const options: {[key: string]: string} = {
         'activityColumnColumnName': activityColumnChoice.value.name,
         'activityScalingMethod': activityScalingMethod.value,
       };
@@ -72,7 +73,6 @@ export async function analyzePeptidesWidget(
         const col = tableGrid.columns.byIndex(i);
         if (col &&
             col.name &&
-            col.name != 'IC50'&&
             col.column?.semType != 'aminoAcids'
         ) {
           //@ts-ignore
@@ -81,6 +81,7 @@ export async function analyzePeptidesWidget(
       }
 
       const sarViewer = view.addViewer('peptide-sar-viewer', options);
+      const sarViewerVertical = view.addViewer('peptide-sar-viewer-vertical');
       const peptideSpaceViewer = peptideSimilaritySpace(
         currentDf,
         col,
@@ -90,13 +91,15 @@ export async function analyzePeptidesWidget(
         `${activityColumnChoice}Scaled`,
       );
       view.dockManager.dock(peptideSpaceViewer, 'down');
-      view.dockManager.dock(sarViewer, 'right');
+      const refNode = view.dockManager.dock(sarViewer, 'right');
+      view.dockManager.dock(sarViewerVertical, 'down', refNode);
 
       const StackedBarchartProm = currentDf.plot.fromType('StackedBarChartAA');
       addViewerToHeader(tableGrid, StackedBarchartProm);
     } else {
       grok.shell.error('The activity column must be of floating point number type!');
     }
+    progress.close();
   });
 
   const viewer = await currentDf.plot.fromType('peptide-logo-viewer');
