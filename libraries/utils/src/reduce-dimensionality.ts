@@ -6,7 +6,7 @@ import {calcDistanceMatrix, transposeMatrix} from './operations';
 import {SPEBase, PSPEBase} from './spe';
 import {Measurer} from './string-measure';
 import {AlignedSequenceEncoder} from './sequence-encoder';
-import assert from 'assert';
+import {assert} from './operations';
 
 /**
  * Abstract dimensionality reducer.
