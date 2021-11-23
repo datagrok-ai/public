@@ -7,7 +7,7 @@ import {selectOutliersManually} from './outliers-selection';
 import {exportFuncCall} from './export-funccall';
 import {_functionParametersGrid} from './function-views/function-parameters-grid';
 import {ModelCatalogView} from './model-catalog-view';
-import wu from "wu";
+import wu from 'wu';
 
 let initCompleted: boolean = false;
 export const _package = new DG.Package();
@@ -15,74 +15,6 @@ export const _package = new DG.Package();
 //name: test
 export function test() {
   grok.shell.info(_package.webRoot);
-}
-
-//tags: init, autostart
-export function init() {
-  if (initCompleted)
-    return;
-  DG.ObjectHandler.register(new ModelHandler());
-
-  grok.events.onAccordionConstructed.subscribe((acc: DG.Accordion) => {
-    const ent = acc.context;
-    if (ent == null)
-      return;
-    if (ent.type != 'script')
-      return;
-    let restPane = acc.getPane('REST');
-    if (!restPane)
-      acc.addPane('REST', () => ui.wait(async () => (await renderRestPanel(ent)).root));
-  });
-
-  let modelsList = ui.waitBox(async () => {
-    let models = await grok.dapi.scripts
-      .filter('#model')
-      .list();
-    let list = ui.divV(models.map((model) => ui.render(model, {onClick: (_) => ModelHandler.openModel(model)})), {style: {lineHeight: '165%'}});
-
-    let props = ['domain', 'modality'];
-    let mtree: { model: DG.Func}[] = models.map((m) => { return {model: m}});
-    mtree.forEach((m: {model: DG.Func}) => {
-      props.forEach((k) => {
-        (<any>m)[k] = m.model.options[k];
-      });
-    });
-
-    let tree = DG.TreeViewNode.fromItemCategories(mtree,
-      props,
-      { itemToElement: (x) => ui.render(x.model, {onClick: (_) => ModelHandler.openModel(x.model)}), itemToValue: (x) => x.model, removeEmpty: true }).root
-
-    return ui.tabControl({
-      'LIST': list,
-      'TREE': tree
-    }).root;
-  });
-
-  grok.events.onViewAdding.subscribe((v: DG.View) => {
-    if (v instanceof DG.FunctionView && v.func?.hasTag("model")) {
-      let modelsView = wu(grok.shell.views).find((v) => v.parentCall?.func.name == 'modelCatalog');
-      if (modelsView != undefined) {
-        v.parentCall = modelsView!.parentCall;
-        v.parentView = modelsView!;
-        v.toolbox = modelsList;
-      }
-    }
-  });
-
-  initCompleted = true;
-}
-
-//name: Model Catalog
-//tags: app
-export function modelCatalog() {
-/*  let view = new DG.MultiView({
-    viewFactories: {
-      'Models': {factory: () => new ModelCatalogView(), allowClose: false}
-    }
-  });*/
-  let view = new ModelCatalogView();
-  view.name = 'Models';
-  grok.shell.addView(view);
 }
 
 //name: manualOutlierDetectionDialog
@@ -175,4 +107,72 @@ function getCookie(name: string): string | undefined{
     "(?:^|; )" + name.replace(/([\.$?*|{}\(\)\[\]\\\/\+^])/g, '\\$1') + "=([^;]*)"
   ));
   return matches ? decodeURIComponent(matches[1]) : undefined;
+}
+
+//tags: init, autostart
+export function init() {
+  if (initCompleted)
+    return;
+  DG.ObjectHandler.register(new ModelHandler());
+
+  grok.events.onAccordionConstructed.subscribe((acc: DG.Accordion) => {
+    const ent = acc.context;
+    if (ent == null)
+      return;
+    if (ent.type != 'script')
+      return;
+    let restPane = acc.getPane('REST');
+    if (!restPane)
+      acc.addPane('REST', () => ui.wait(async () => (await renderRestPanel(ent)).root));
+  });
+
+  let modelsList = ui.waitBox(async () => {
+    let models = await grok.dapi.scripts
+      .filter('#model')
+      .list();
+    let list = ui.divV(models.map((model) => ui.render(model, {onClick: (_) => ModelHandler.openModel(model)})), {style: {lineHeight: '165%'}});
+
+    let props = ['domain', 'modality'];
+    let mtree: { model: DG.Func}[] = models.map((m) => { return {model: m}});
+    mtree.forEach((m: {model: DG.Func}) => {
+      props.forEach((k) => {
+        (<any>m)[k] = m.model.options[k];
+      });
+    });
+
+    let tree = DG.TreeViewNode.fromItemCategories(mtree,
+      props,
+      { itemToElement: (x) => ui.render(x.model, {onClick: (_) => ModelHandler.openModel(x.model)}), itemToValue: (x) => x.model, removeEmpty: true }).root
+
+    return ui.tabControl({
+      'LIST': list,
+      'TREE': tree
+    }).root;
+  });
+
+  grok.events.onViewAdding.subscribe((v: DG.View) => {
+    if (v instanceof DG.FunctionView && v.func?.hasTag("model")) {
+      let modelsView = wu(grok.shell.views).find((v) => v.parentCall?.func.name == 'modelCatalog');
+      if (modelsView != undefined) {
+        v.parentCall = modelsView!.parentCall;
+        v.parentView = modelsView!;
+        v.toolbox = modelsList;
+      }
+    }
+  });
+
+  initCompleted = true;
+}
+
+//name: Model Catalog
+//tags: app
+export function modelCatalog() {
+/*  let view = new DG.MultiView({
+    viewFactories: {
+      'Models': {factory: () => new ModelCatalogView(), allowClose: false}
+    }
+  });*/
+  let view = new ModelCatalogView();
+  view.name = 'Models';
+  grok.shell.addView(view);
 }

@@ -9,7 +9,8 @@
     "rxjs": "^6.5.5",
     "typescript": "^4.2.3",
     "wu": "latest",
-    "@types/react": "16.9.43",
+    "@types/react": "latest",
+    "react": "latest",
     "@types/wu": "latest"
   },
   "devDependencies": {

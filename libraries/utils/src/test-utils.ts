@@ -1,8 +1,8 @@
 import * as path from "path";
 import * as os from "os";
 import * as fs from "fs";
+// @ts-ignore
 import * as yaml from 'js-yaml';
-import { Config, Indexable } from "../bin/utils/utils";
 const fetch = require('node-fetch');
 
 export async function getToken(url: string, key: string) {
@@ -82,3 +82,16 @@ export async function getBrowserPage(puppeteer: any): Promise<{browser: any, pag
   }
   return {browser, page};
 }
+
+
+interface Config {
+  servers: {
+    [alias: string]: {
+      url: string,
+      key: string
+    }
+  },
+  default: string,
+}
+
+interface Indexable { [key: string]: any }

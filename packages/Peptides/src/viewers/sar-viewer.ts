@@ -31,10 +31,11 @@ export class SARViewerModel {
   }
 }
 
+let model = new SARViewerModel();
+
 export class SARViewer extends DG.JsViewer {
   protected viewerGrid: DG.Grid | null;
   protected sourceGrid: DG.Grid | null;
-  protected progress: DG.TaskBarProgressIndicator;
   protected activityColumnColumnName: string;
   protected activityScalingMethod: string;
   protected bidirectionalAnalysis: boolean;
@@ -46,15 +47,13 @@ export class SARViewer extends DG.JsViewer {
   protected _initialBitset: DG.BitSet | null;
   protected viewerVGrid: DG.Grid | null;
   protected currentBitset: DG.BitSet | null;
-  // private _model: SARViewerModel | undefined;
   // private df: DG.DataFrame | null;
   // protected pValueThreshold: number;
   // protected amountOfBestAARs: number;
   // duplicatesHandingMethod: string;
   constructor() {
     super();
-    this.progress = DG.TaskBarProgressIndicator.create('Loading SAR viewer');
-
+    
     this.viewerGrid = null;
     this.viewerVGrid = null;
     this.statsDf = null;
@@ -63,7 +62,6 @@ export class SARViewer extends DG.JsViewer {
     this._initialBitset = null;
     this.viewGridInitialized = false;
     this.currentBitset = null;
-    // this.df = null;
 
     //TODO: find a way to restrict activityColumnColumnName to accept only numerical columns (double even better)
     this.activityColumnColumnName = this.string('activityColumnColumnName');
@@ -78,14 +76,11 @@ export class SARViewer extends DG.JsViewer {
   }
 
   init() {
-    // this.df = df;
     this._initialBitset = this.dataFrame!.filter.clone();
     this.initialized = true;
-    // this._model = model;
-    // this.subs.push(this._model.statsDf$.subscribe(data => this.statsDf = data));
-    // this.subs.push(this._model.viewerGrid$.subscribe(data => this.viewerGrid = data));
-    // this.subs.push(this._model.viewerVGrid$.subscribe(data => this.viewerVGrid = data));
-    // this.render();
+    this.subs.push(model.statsDf$.subscribe(data => this.statsDf = data));
+    this.subs.push(model.viewerGrid$.subscribe(data => this.viewerGrid = data));
+    this.subs.push(model.viewerVGrid$.subscribe(data => this.viewerVGrid = data));
   }
 
   onTableAttached() {
@@ -289,26 +284,26 @@ export class SARViewer extends DG.JsViewer {
     //TODO: optimize. Don't calculate everything again if only view changes
     if (computeData) {
       if (typeof this.dataFrame !== 'undefined' && this.activityColumnColumnName && this.sourceGrid) {
-        [this.viewerGrid, this.viewerVGrid, this.statsDf] = await describe(
-          this.dataFrame,
-          this.activityColumnColumnName,
-          this.activityScalingMethod,
-          this.sourceGrid,
-          this.bidirectionalAnalysis,
-          this._initialBitset,
-        );
-        // await this._model?.updateData(
-        //   this.dataFrame!,
+        // [this.viewerGrid, this.viewerVGrid, this.statsDf] = await describe(
+        //   this.dataFrame,
         //   this.activityColumnColumnName,
         //   this.activityScalingMethod,
         //   this.sourceGrid,
         //   this.bidirectionalAnalysis,
         //   this._initialBitset,
         // );
+        await model?.updateData(
+          this.dataFrame!,
+          this.activityColumnColumnName,
+          this.activityScalingMethod,
+          this.sourceGrid,
+          this.bidirectionalAnalysis,
+          this._initialBitset,
+        );
 
         if (this.viewerGrid !== null && this.viewerVGrid !== null) {
           $(this.root).empty();
-          this.root.appendChild(ui.splitV([this.viewerGrid.root, this.viewerVGrid.root]));
+          this.root.appendChild(this.viewerGrid.root);
           this.viewerGrid.dataFrame!.onCurrentCellChanged.subscribe((_) => {
             this.applyBitset();
             this.syncGridsFunc(false);
@@ -323,7 +318,25 @@ export class SARViewer extends DG.JsViewer {
     //fixes viewers not rendering immediately after analyze.
     this.viewerVGrid?.invalidate();
     this.viewerGrid?.invalidate();
+  }
+}
 
-    this.progress.close();
+export class SARViewerVertical extends DG.JsViewer {
+  viewerVGrid: DG.Grid | null;
+  constructor() {
+    super();
+
+    this.viewerVGrid = null;
+    this.subs.push(model.viewerVGrid$.subscribe(data => {
+      this.viewerVGrid = data;
+      this.render();
+    }));
+  }
+
+  render() {
+    if (this.viewerVGrid) {
+      $(this.root).empty();
+      this.root.appendChild(this.viewerVGrid.root);
+    }
   }
 }

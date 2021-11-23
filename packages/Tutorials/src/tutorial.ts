@@ -239,11 +239,11 @@ export abstract class Tutorial extends DG.Widget {
     }
 
     const instructionDiv = ui.divText(instructions, 'grok-tutorial-entry-instruction');
-    const descriptionDiv = ui.divText('', {style:{margin:'0px 0px 0px 15px'}});
-    const instructionIndicator = ui.div([],'grok-tutorial-entry-indicator')
+    const descriptionDiv = ui.divText('', { classes: 'grok-tutorial-step-description', style: { margin: '0px 0px 0px 15px' } });
+    const instructionIndicator = ui.div([], 'grok-tutorial-entry-indicator')
     const entry = ui.divH([
-        instructionIndicator,
-        instructionDiv
+      instructionIndicator,
+      instructionDiv
     ], 'grok-tutorial-entry');
     
     this.activity.append(entry);
