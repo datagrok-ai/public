@@ -8,7 +8,7 @@ export async function selectOutliersManually(inputData: DG.DataFrame) {
   const OUTLIER_RATIONALE_COL_LABEL = 'Rationale';
   const OUTLIER_COUNT_COL_LABEL = 'Count';
   const IS_GROUP_CONFIRMED_LABEL = 'isConfirmed';
-  const FLUX = 'flux';
+  const FLUX = 't/V (hr/L)';
 
   if (!inputData.columns.byName(IS_OUTLIER_COL_LABEL)) {
     inputData.columns
