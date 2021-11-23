@@ -1,6 +1,22 @@
 <!-- TITLE: Release History -->
 <!-- SUBTITLE: -->
 
+# 2021-11-23 Dev build 0.95.8
+
+## Latest Docker Images
+
+* Datagrok: 
+  *  `docker pull datagrok/datagrok:0.95.8`
+  *  `docker pull datagrok/datagrok:latest`
+  
+* [Docker-Compose](admin/docker-compose.md)
+
+## Addressed Issues
+
+* GitHub Actions: Update js-api/package-lock.json 
+* (Bug) Socket fails if there is ID in DataFrame Param value instead of TableInfo (WIP)
+
+
 # 2021-11-23 Dev build 0.95.7
 
 ## Latest Docker Images
