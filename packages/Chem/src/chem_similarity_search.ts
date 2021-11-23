@@ -3,8 +3,9 @@ import * as ui from 'datagrok-api/ui';
 import * as DG from 'datagrok-api/dg';
 import {GridCellRenderArgs, Property, Widget} from 'datagrok-api/dg';
 import {getMorganFingerprints} from './package';
-import {_morganFP, _fingerprintSimilarity} from './chem_searches';
+import {_morganFP /*, _fingerprintSimilarity*/} from './chem_searches';
 
+/* 
 
 export class MoleculeViewer extends DG.JsViewer {
   private moleculeColumnName: string;
@@ -194,3 +195,5 @@ export function chemSimilaritySearch(
   const new_indexes = DG.Column.fromList(DG.COLUMN_TYPE.INT,'indexes',molsIdxs);
   return DG.DataFrame.fromColumns([mols, scores, new_indexes]);
 }
+
+*/ 
