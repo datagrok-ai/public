@@ -4,6 +4,14 @@
 /* Track Root */
 .tutorials-track{
   margin-bottom: 20px;
+  position: relative;
+}
+.tutorials-main-header{
+    z-index: 1;
+    position: sticky;
+    top: 0px;
+    background: white;
+    width: 100%;
 }
 /* Track Title */
 .tutorials-track-title{
