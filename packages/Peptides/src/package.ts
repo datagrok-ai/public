@@ -14,7 +14,7 @@ import {StackedBarChart} from './viewers/stacked-barchart-viewer';
 import {analyzePeptidesWidget} from './widgets/analyze-peptides';
 import {peptideSimilaritySpace} from './utils/peptide-similarity-space';
 import {manualAlignmentWidget} from './widgets/manual-alignment';
-import {SARViewer} from './viewers/sar-viewer';
+import {SARViewer, SARViewerVertical} from './viewers/sar-viewer';
 
 export const _package = new DG.Package();
 let tableGrid: DG.Grid;
@@ -125,6 +125,14 @@ export async function peptidesPanel(col: DG.Column): Promise<DG.Widget> {
 //output: viewer result
 export function sar(): SARViewer {
   return new SARViewer();
+}
+
+//name: peptide-sar-viewer-vertical
+//description: Peptides Vertical SAR Viewer
+//tags: viewer
+//output: viewer result
+export function sarVertical(): SARViewerVertical {
+  return new SARViewerVertical();
 }
 
 //name: StackedBarchart Widget
