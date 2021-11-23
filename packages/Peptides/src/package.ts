@@ -11,10 +11,10 @@ import {
 import {Logo} from './viewers/logo-viewer';
 import {StackedBarChart} from './viewers/stacked-barchart-viewer';
 
-import { analyzePeptidesWidget } from './widgets/analyze-peptides';
-import { peptideSimilaritySpace } from './utils/peptide-similarity-space';
-import { manualAlignmentWidget } from './widgets/manual-alignment';
-import { SARViewer } from './viewers/sar-viewer';
+import {analyzePeptidesWidget} from './widgets/analyze-peptides';
+import {peptideSimilaritySpace} from './utils/peptide-similarity-space';
+import {manualAlignmentWidget} from './widgets/manual-alignment';
+import {SARViewer} from './viewers/sar-viewer';
 
 export const _package = new DG.Package();
 let tableGrid: DG.Grid;
@@ -180,7 +180,7 @@ export function logov() {
 //input: string monomer {semType: aminoAcids}
 //output: widget result
 export function manualAlignment(monomer: string) {
-    return manualAlignmentWidget(alignedSequenceCol, currentDf);
+  return manualAlignmentWidget(alignedSequenceCol, currentDf);
 }
 
 //name: testPeptideSimilaritySpace

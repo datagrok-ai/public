@@ -4,11 +4,11 @@ import {Matrix, Vector, Coordinates, Vectors, DistanceMetric} from './type_decla
  * Asserts a condition by throwing an Error.
  *
  * @export
- * @param {boolean} condition Condition to assert.
- * @param {string} message Message to output.
+ * @param {boolean} [condition=false] Condition to assert.
+ * @param {string} [message='Assertion error.'] Message to output.
  * @throws {Error}
  */
-export function assert(condition: boolean, message: string) {
+export function assert(condition: boolean = false, message: string = 'Assertion error.') {
   if (!condition) {
     throw new Error(message);
   }

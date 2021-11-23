@@ -1,8 +1,9 @@
 import * as grok from 'datagrok-api/grok';
 import * as DG from 'datagrok-api/dg';
 
-import {DimensionalityReducer} from '@datagrok-libraries/utils/src/reduce_dimensionality';
+import {DimensionalityReducer} from '@datagrok-libraries/utils/src/reduce-dimensionality';
 import {getSequenceMolecularWeight} from './molecular-measure';
+import {AlignedSequenceEncoder} from '@datagrok-libraries/utils/src/sequence-encoder';
 
 export function peptideSimilaritySpace(
   table: DG.DataFrame,
@@ -13,9 +14,13 @@ export function peptideSimilaritySpace(
   activityColumnName: string,
 ) {
   const axesNames = ['~X', '~Y', 'MW'];
+  let columnData = alignedSequencesColumn.toList();
+  const enc = new AlignedSequenceEncoder();
+
+  columnData = columnData.map((v, _) => enc.clean(v));
 
   const reducer = new DimensionalityReducer(
-    alignedSequencesColumn.toList(),
+    columnData,
     method,
     measure,
     {cycles: cyclesCount},

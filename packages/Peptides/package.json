@@ -38,7 +38,7 @@
 		"link-utils": "npm link @datagrok-libraries/utils",
 		"link-statistics": "npm link @datagrok-libraries/statistics",
 		"link-api": "npm link datagrok-api",
-		"link-all": "npm link datagrok-api @datagrok-libraries/statistics",
+		"link-all": "npm link datagrok-api @datagrok-libraries/utils @datagrok-libraries/statistics",
 		"install-dependencies": "npm install",
 		"debug-peptides": "grok publish --rebuild",
 		"release-peptides": "grok publish --rebuild --release",

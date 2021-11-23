@@ -1,10 +1,11 @@
 import * as umj from 'umap-js';
 import {TSNE} from '@keckelt/tsne';
 
-import {Options, DistanceMetric, Coordinates, Vector, Vectors} from './type_declarations';
+import {Options, DistanceMetric, Coordinates, Vector, Vectors, Matrix} from './type_declarations';
 import {calcDistanceMatrix, transposeMatrix} from './operations';
 import {SPEBase, PSPEBase} from './spe';
-import {Measurer} from '../../../libraries/utils/src/string_measure';
+import {Measurer} from './string-measure';
+//import {AlignedSequenceEncoder} from './sequence-encoder';
 
 /**
  * Abstract dimensionality reducer.
@@ -79,6 +80,8 @@ class TSNEReducer extends Reducer {
  */
 class UMAPReducer extends Reducer {
   protected reducer: umj.UMAP;
+/*  protected encoder: AlignedSequenceEncoder;
+  protected distanceMatrix: Matrix;*/
 
   /**
    * Creates an instance of UMAPReducer.
@@ -88,7 +91,34 @@ class UMAPReducer extends Reducer {
   constructor(options: Options) {
     super(options);
     this.reducer = new umj.UMAP(options);
+/*    this.encoder = new AlignedSequenceEncoder();
+    this.distanceMatrix = calcDistanceMatrix(this.data, options.distanceFn);
+    this.distanceFn = options.distanceFn;*/
   }
+
+/*  protected _encodedDistance(a: number[], b: number[]): number {
+    return this.distanceMatrix[a[a.length-1]][b[b.length-1]];
+  }
+
+  protected _decodedDistance(a: number[], b: number[]): number {
+    return this.encoder.decode(a);
+  }
+
+  protected encode(): number[][] {
+    let vectors: number[][] = [];
+
+    for (let i = 0; i < this.data.length; ++i) {
+      let encoded = this.encoder.encode(this.data[i]);
+      vectors.push(encoded);
+    }
+    return vectors;
+  }
+
+  protected _calcDistance() {
+    const nItems = this.data.length;
+    const vectors = this.encode();
+    
+  }*/
 
   /**
    * Embeds the data given into the two-dimensional space using UMAP method.
@@ -98,10 +128,9 @@ class UMAPReducer extends Reducer {
     const embedding = this.reducer.fit(this.data);
 
     function arrayCast2Coordinates(data: number[][]): Coordinates {
-      return new Array(data.length).map((_, i) => (Vector.from(data[i])));
+      return new Array(data.length).fill(0).map((_, i) => (Vector.from(data[i])));
     }
-    const coords = arrayCast2Coordinates(embedding);
-    return coords;
+    return arrayCast2Coordinates(embedding);
   }
 }
 
