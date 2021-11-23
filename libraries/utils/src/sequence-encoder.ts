@@ -41,12 +41,12 @@ export class AlignedSequenceEncoder {
     /**
      * Truncate NH2 and -COOH terminals of the given sequence.
      *
-     * @protected
+     * @static
      * @param {string} seq The sequence provided.
      * @return {string} Truncated sequence.
      * @memberof AlignedSequenceEncoder
      */
-    protected _truncateSequence(seq: string): string {
+    static _truncateSequence(seq: string): string {
         let start = 0;
         let end = seq.length;
         const termina = ['NH2', 'COOH'];
@@ -67,24 +67,25 @@ export class AlignedSequenceEncoder {
     /**
      * Cuts auxiliary defises before a residue.
      *
-     * @protected
+     * @static
      * @param {string} seq The sequence to process.
      * @return {string} Processed sequence.
      * @memberof AlignedSequenceEncoder
      */
-    protected _dropDefises(seq: string): string {
+    static _dropDefises(seq: string): string {
         return seq.replace(/(-)([^-]+)/g, '$2')
     }
 
     /**
      * Performs truncation and cutting auxiliary defises.
      *
+     * @static
      * @param {string} sequence The sequence work under process.
      * @return {string} Result of cleaning.
      * @memberof AlignedSequenceEncoder
      */
-    public clean(sequence: string): string {
-        return this._dropDefises(this._truncateSequence(sequence));
+    static clean(sequence: string): string {
+        return AlignedSequenceEncoder._dropDefises(AlignedSequenceEncoder._truncateSequence(sequence));
     }
 
     /**
@@ -95,7 +96,7 @@ export class AlignedSequenceEncoder {
      * @memberof AlignedSequenceEncoder
      */
     public encode(sequence: string): number[] {
-        const seq = this.clean(sequence);
+        const seq = AlignedSequenceEncoder.clean(sequence);
         const nItems = seq.length;
         let values = new Array(nItems).fill(0);
     
