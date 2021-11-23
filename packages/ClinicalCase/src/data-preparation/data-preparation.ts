@@ -20,10 +20,10 @@ export function createMaxValuesDataForHysLaw(dataframe, aggregatedColName, filer
 }
 
 
-export function createHysLawDataframe(lb: DG.DataFrame, dm: DG.DataFrame) {
-    let alt = createMaxValuesDataForHysLaw(lb, ALT, 'Alanine Aminotransferase');
-    let bln = createMaxValuesDataForHysLaw(lb, BILIRUBIN, 'Bilirubin');
-    let ast = createMaxValuesDataForHysLaw(lb, AST, 'Aspartate Aminotransferase');
+export function createHysLawDataframe(lb: DG.DataFrame, dm: DG.DataFrame, altName: string, astName: string, blnName: string) {
+    let alt = createMaxValuesDataForHysLaw(lb, ALT, altName);
+    let bln = createMaxValuesDataForHysLaw(lb, BILIRUBIN, blnName);
+    let ast = createMaxValuesDataForHysLaw(lb, AST, astName);
     //let ap = createMaxValuesDataForHysLaw(lb, AP, 'Alkaline Phosphatase');
 
     let joined = grok.data.joinTables(bln, alt, [ SUBJECT_ID ], [ SUBJECT_ID ], [ SUBJECT_ID, BILIRUBIN ], [ ALT ], DG.JOIN_TYPE.LEFT, false);
@@ -51,28 +51,31 @@ export function createFilteredDataframe(df: DG.DataFrame & any, condition: strin
 }
 
 
-export function createBaselineEndpointDataframe(lb: DG.DataFrame,
+export function createBaselineEndpointDataframe(df: DG.DataFrame,
   dm: DG.DataFrame,
   columnToExtractFromDm: string[],
-  labValue: string, 
+  testCol: string,
+  resCol: string,
+  additionalCols: string[],
+  value: string, 
   blVisit: string, 
   epVisit: string, 
   visitCol: string,
   blNumColumn: string,
-  epNumColumn = null) {
-  let condition = `${LAB_TEST} = ${labValue} and ${visitCol} IN`;
-  let filteredDataBaseline = createFilteredDataframe(lb, `${condition} (${blVisit})`, [ SUBJECT_ID, LAB_RES_N, LAB_LO_LIM_N, LAB_HI_LIM_N, visitCol, LAB_TEST ], blNumColumn, LAB_RES_N);
+  epNumColumn = null,) {
+  let condition = `${testCol} = ${value} and ${visitCol} IN`;
+  let filteredDataBaseline = createFilteredDataframe(df, `${condition} (${blVisit})`, [ SUBJECT_ID, resCol, visitCol, testCol ].concat(additionalCols), blNumColumn, resCol);
   let finalDf;
   let columnsToEXtract = [];
   if(epVisit){
-    let filteredDataEndpoint = createFilteredDataframe(lb, `${condition} (${epVisit})`, [ SUBJECT_ID, LAB_RES_N, LAB_LO_LIM_N, LAB_HI_LIM_N, visitCol, LAB_TEST ], epNumColumn, LAB_RES_N);
+    let filteredDataEndpoint = createFilteredDataframe(df, `${condition} (${epVisit})`, [ SUBJECT_ID, resCol, visitCol, testCol ].concat(additionalCols), epNumColumn, resCol);
     finalDf = grok.data.joinTables(filteredDataBaseline, filteredDataEndpoint,
-    [ SUBJECT_ID ], [ SUBJECT_ID ], [ SUBJECT_ID, blNumColumn, LAB_LO_LIM_N, LAB_HI_LIM_N, LAB_TEST], [ epNumColumn ],
+    [ SUBJECT_ID ], [ SUBJECT_ID ], [ SUBJECT_ID, blNumColumn, testCol].concat(additionalCols), [ epNumColumn ],
     DG.JOIN_TYPE.LEFT, false);
-    columnsToEXtract = [ SUBJECT_ID, blNumColumn, epNumColumn, LAB_LO_LIM_N, LAB_HI_LIM_N, LAB_TEST ];
+    columnsToEXtract = [ SUBJECT_ID, blNumColumn, epNumColumn, testCol ].concat(additionalCols);
   } else {
     finalDf = filteredDataBaseline;
-    columnsToEXtract = [ SUBJECT_ID, blNumColumn, LAB_LO_LIM_N, LAB_HI_LIM_N, LAB_TEST ];
+    columnsToEXtract = [ SUBJECT_ID, blNumColumn, testCol ].concat(additionalCols);
   }
   let withDmData = addDataFromDmDomain(finalDf, dm, columnsToEXtract, columnToExtractFromDm);  
   return withDmData;
@@ -229,26 +232,33 @@ export function createAERiskAssessmentDataframe(ae: DG.DataFrame, ex: DG.DataFra
 }
 
 
-export function labDynamicComparedToBaseline(dataframe, baselineVisitNum: string, blVisitColumn: string, newColName: string, renameNewCol: boolean) {
+export function dynamicComparedToBaseline(
+  dataframe: DG.DataFrame, 
+  testCol: string,
+  resCol: string,
+  baselineVisitNum: string, 
+  blVisitColumn: string, 
+  newColName: string, 
+  renameNewCol: boolean) {
   const dfName = dataframe.name;
-  let grouped = dataframe.groupBy([ SUBJECT_ID, LAB_TEST, LAB_RES_N ])
+  let grouped = dataframe.groupBy([ SUBJECT_ID, testCol, resCol ])
     .where(`${blVisitColumn} = ${baselineVisitNum}`)
     .aggregate();
-  grouped.getCol(LAB_RES_N).name = `BL_${LAB_RES_N}`;
+  grouped.getCol(resCol).name = `BL_${resCol}`;
   dataframe.join(grouped,
-    [ SUBJECT_ID, LAB_TEST ], [ SUBJECT_ID, LAB_TEST ],
-    dataframe.columns.names(), [ `BL_${LAB_RES_N}` ], DG.JOIN_TYPE.LEFT, true);
+    [ SUBJECT_ID, testCol ], [ SUBJECT_ID, testCol ],
+    dataframe.columns.names(), [ `BL_${resCol}` ], DG.JOIN_TYPE.LEFT, true);
   dataframe.columns.addNewFloat(newColName)
     .init((i) => {
-      if(dataframe.getCol(LAB_RES_N).isNone(i) || dataframe.getCol(`BL_${LAB_RES_N}`).isNone(i)) {
+      if(dataframe.getCol(resCol).isNone(i) || dataframe.getCol(`BL_${resCol}`).isNone(i)) {
         return null;
       } else {
-        return (dataframe.get(LAB_RES_N, i) - dataframe.get(`BL_${LAB_RES_N}`, i)) / dataframe.get(`BL_${LAB_RES_N}`, i);
+        return (dataframe.get(resCol, i) - dataframe.get(`BL_${resCol}`, i)) / dataframe.get(`BL_${resCol}`, i);
       }
     });
     if(renameNewCol){
-      dataframe.columns.remove(LAB_RES_N);
-      dataframe.getCol(newColName).name = LAB_RES_N;
+      dataframe.columns.remove(resCol);
+      dataframe.getCol(newColName).name = resCol;
     }
   dataframe.name = dfName;
 }

@@ -65,7 +65,7 @@ plot.meta.addFormulaLine({
 
 A similar methods is used to create bands - `dataframe.meta.addFormulaBand()` or `viewer.meta.addFormulaBand()`. Most of the parameters for lines and bands are the same. But there are also some parameters that are specific for lines and bands. See them in the description of the parameters for lines and bands.
 
-More examples of creating lines and bands can be found [here](https://dev.datagrok.ai/js/samples/data-frame/metadata/formula-lines).
+More examples of creating lines and bands can be found [here](https://public.datagrok.ai/js/samples/data-frame/metadata/formula-lines).
 
 ## Line parameters
 
@@ -112,6 +112,7 @@ Only 3 parameters ("equation", "column" and "column2") are required. All other p
 
 See also:
 
+* [Examples of using formula lines](https://public.datagrok.ai/js/samples/data-frame/metadata/formula-lines)
 * [Adding new columns](help/transform/add-new-column)
 * [Math functions](https://datagrok.ai/help/transform/functions/math-functions)
 * [Operators](https://datagrok.ai/help/transform/functions/operators)

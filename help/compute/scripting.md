@@ -42,7 +42,7 @@ call Grok Functions. See [Grok Scripting](../overview/grok-script.md) for more d
 
 First of all, a script can be executed right from the script editor (see picture below).
 
-Other ways involve saving the script as a part of a [package](develop.md#packages). In this case, it gets registered in the platform
+Other ways involve saving the script as a part of a [package](../develop/develop.md#packages). In this case, it gets registered in the platform
 as a [function](../overview/functions/function.md), and can be invoked in different ways:    
 * From the [console](../overview/navigation.md#console)
 * From the [data job](../access/data-job.md)
@@ -57,7 +57,7 @@ with the parameters, the editor can be enriched by [validators](#validators), [c
 and [suggestions](#suggestions). Validators, choices, and suggestions are [functions](../overview/functions/function.md),
 that means they can be implemented in different ways (db query, script, etc), and reused.
 
-Registered scripts can be called via [JavaScript API](js-api.md) in the following manner:
+Registered scripts can be called via [JavaScript API](../develop/js-api.md) in the following manner:
 
 ```javascript
 grok.functions.call(`${packageName}:${scriptName}`, { params });
@@ -68,8 +68,8 @@ To see it in action, open this [code snippet](https://public.datagrok.ai/js/samp
 Scripts that have multiple output parameters may require a different approach. The `grok.functions.call` method returns only the first output value, thus, in order to get all of them, you should work with a function call:
 
 ```javascript
-let function = await grok.functions.eval(`${packageName}:${scriptName}`);
-let call = function.prepare({ params });
+let f = await grok.functions.eval(`${packageName}:${scriptName}`);
+let call = f.prepare({ params });
 await call.call();
 call.getParamValue('paramName');
 ```
@@ -401,7 +401,7 @@ See also:
   * [Octave](https://octave.org/)
   * [Julia](https://julialang.org)
   * [JavaScript](https://www.javascript.com)
-  * [Packages](develop.md#packages)
-  * [JavaScript API](js-api.md)
+  * [Packages](../develop/develop.md#packages)
+  * [JavaScript API](../develop/js-api.md)
   * [Functions](../overview/functions/function.md)
   * [Function call](../overview/functions/function-call.md)

@@ -1,8 +1,11 @@
 import * as grok from 'datagrok-api/grok';
 import * as ui from 'datagrok-api/ui';
 import * as DG from 'datagrok-api/dg';
+
+
 export class ChemPalette {
     cp:{ [Key: string]: string; } = {};
+
     constructor(scheme: string) {
       if (scheme == 'grok') {
         this.cp = ChemPalette.getDatagrok();
@@ -32,32 +35,36 @@ export class ChemPalette {
       const [color, _] = this.getColorPivot(c);
       return color;
     }
+
     getColorAAPivot(c = ''): [string, string, number] {
-      if (c.length == 1 || c.at(1) == '(') {
-        const amino = c.at(0)?.toUpperCase()!;
+      if (c.length == 1 || c[1] == '(') {
+        const amino = c[0]?.toUpperCase()!;
         return amino in this.cp?
           [this.cp[amino], amino, 1]:
           [ChemPalette.undefinedColor, '', 1];
       }
-      if (c.at(0) == 'd' && c.at(1)! in this.cp) {
-        if (c.length == 2 || c.at(2) == '(') {
-          const amino = c.at(1)?.toUpperCase()!;
+
+      if (c[0] == 'd' && c[1]! in this.cp) {
+        if (c.length == 2 || c[2] == '(') {
+          const amino = c[1]?.toUpperCase()!;
           return amino in this.cp?
             [this.cp[amino], amino, 2]:
             [ChemPalette.undefinedColor, '', 2];
         }
       }
+
       if (c.substr(0, 3) in ChemPalette.AAFullNames) {
-        if (c.length == 3 || c.at(3) == '(') {
+        if (c.length == 3 || c[3] == '(') {
           const amino = ChemPalette.AAFullNames[c.substr(0, 3)];
           return amino in this.cp?
             [this.cp[amino], amino, 3]:
             [ChemPalette.undefinedColor, '', 3];
         }
       }
-      if (c.at(0)?.toLowerCase() == c.at(0)) {
+
+      if (c[0]?.toLowerCase() == c[0]) {
         if (c.substr(1, 3) in ChemPalette.AAFullNames) {
-          if (c.length == 4 || c.at(4) == '(') {
+          if (c.length == 4 || c[4] == '(') {
             const amino = ChemPalette.AAFullNames[c.substr(1, 3)];
             return amino in this.cp?
               [this.cp[amino], amino, 4]:
@@ -65,9 +72,10 @@ export class ChemPalette {
           }
         }
       }
+
       return [ChemPalette.undefinedColor, '', 0];
-      //return c ? DG.Color.toRgb(this.colorScale(c)) : 'rgb(127,127,127)'
     }
+
     getColorPivot(c = ''): [string, number] {
       // eslint-disable-next-line no-unused-vars
       const [color, _, pivot] = this.getColorAAPivot(c);
@@ -153,7 +161,7 @@ export class ChemPalette {
       'F': 'NC(CC1=CC=CC=C1)C(=O)O',
       'A': 'N[C@H](C)C(=O)O',
       'K': 'NC(CCCCN)C(=O)O',
-      'R': 'N[C(=O)OH](CCCNC(N)=N)C(=O)O',
+      'R': 'N[C@H](CCCNC(=N)C)C(=O)O',
       'H': 'NC(CC1=CN=C[N]1)C(=O)O',
       'C': 'N[C@@H](CS)C(=O)O',
       'V': 'NC(C(C)C)C(=O)O',
@@ -175,7 +183,7 @@ export class ChemPalette {
       'F': 'C1=CC=C(C=C1)CC(*)*',
       'A': 'C[C@H](*)*',
       'K': 'C(CCN)CC(*)*',
-      'R': '*[C(=O)OH](CCCNC(N)=N)*',
+      'R': '*[C@H](CCCNC(=N)C)*',
       'H': 'C1=C(NC=N1)CC(*)*',
       'C': 'C([C@@H](*)*)S',
       'V': 'CC(C)C(*)*',

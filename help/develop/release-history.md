@@ -1,6 +1,120 @@
 <!-- TITLE: Release History -->
 <!-- SUBTITLE: -->
 
+# 2021-11-22 Dev build 0.95.6
+
+## Latest Docker Images
+
+* Datagrok: 
+  *  `docker pull datagrok/datagrok:0.95.6`
+  *  `docker pull datagrok/datagrok:latest`
+  
+* [Docker-Compose](admin/docker-compose.md)
+
+## Addressed Issues
+
+* GitHub Actions: Update js-api/package-lock.json 
+* Model Catalog improvements 
+* new version 
+* Added documentation on caching 
+* Added metadata to demo models 
+* Compute: minor UI improvements 
+* Compute: help: embedding as iframe 
+* OnViewAdding event 
+* Added a gif on how to share a connection 
+* Compute: documentation 
+
+
+# 2021-11-21 Dev build 0.95.5
+
+## Latest Docker Images
+
+* Datagrok: 
+  *  `docker pull datagrok/datagrok:0.95.5`
+  *  `docker pull datagrok/datagrok:latest`
+  
+* [Docker-Compose](admin/docker-compose.md)
+
+## Addressed Issues
+
+* GitHub Actions: Update js-api/package-lock.json 
+* Compute: documentation \- WIP 
+* Model Catalog improvements 
+
+
+# 2021-11-21 Dev build 0.95.4
+
+## Latest Docker Images
+
+* Datagrok: 
+  *  `docker pull datagrok/datagrok:0.95.4`
+  *  `docker pull datagrok/datagrok:latest`
+  
+* [Docker-Compose](admin/docker-compose.md)
+
+## Addressed Issues
+
+* GitHub Actions: Update js-api/package-lock.json 
+* JKG: lost RxODE 
+* Fixed analyzer warning 
+* Compute: documentation \- moved to the core help 
+* Moved help on scripting help to /compute 
+* Moved help on jupyter help to /compute 
+* iframe-embeddable views 
+
+
+# 2021-11-21 Dev build 0.95.3
+
+## Latest Docker Images
+
+* Datagrok: 
+  *  `docker pull datagrok/datagrok:0.95.3`
+  *  `docker pull datagrok/datagrok:latest`
+  
+* [Docker-Compose](admin/docker-compose.md)
+
+## Addressed Issues
+
+* GitHub Actions: Update js-api/package-lock.json 
+* Compute: documentation \- WIP 
+* (Bug) Filters: Uncheck/Check a field in the filter panel that does not update the record properly 
+* Viewers: In-vis filtering: Implement for Bar Chart 
+
+
+# 2021-11-21 Dev build 0.95.2
+
+## Latest Docker Images
+
+* Datagrok: 
+  *  `docker pull datagrok/datagrok:0.95.2`
+  *  `docker pull datagrok/datagrok:latest`
+  
+* [Docker-Compose](admin/docker-compose.md)
+
+## Addressed Issues
+
+* GitHub Actions: Update js-api/package-lock.json 
+* Scatter Plot: Scroll bars visibility 
+* RepertoireBrowsser: dynamical viewer logo 
+* Filters: add wildcard support in search over categories 
+* Formula lines: Update help 
+* Clinical case: updated missing domains and columns validation 
+* Clinical case: added vital signs domain to distributions, correlation matrix and time profile views 
+* Peptides: ngl in property panel 
+* Peptides: code cleanup and minor improvements 
+* Work in progress 
+* Minor code cleanup 
+* Statistics lib: removed padjust 
+* (Bug) In-Vis Filter: Does not affect the regression line 
+* JS: MultiView: DockView support 
+* Close button on TabControl 
+* Convert FunctionView to DockView 
+* JS: MultiView: DockView support 
+* Disabled MultiView 
+* Samples scripts: naming harmonization 
+* Model Catalog improvements 
+
+
 # 2021-11-19 Dev build 0.95.1
 
 ## Latest Docker Images

@@ -2,6 +2,8 @@
 import * as grok from 'datagrok-api/grok';
 import * as ui from 'datagrok-api/ui';
 import * as DG from 'datagrok-api/dg';
+//import * as OCL from 'openchemlib/full.js';
+
 import $ from 'cash-dom';
 
 import {SARViewerBase} from './peptide-sar-viewer/sar-viewer';
@@ -12,6 +14,7 @@ import {
 import {Logo} from './peptide-logo-viewer/logo-viewer';
 import {StackedBarChart, addViewerToHeader} from './stacked-barchart/stacked-barchart-viewer';
 import {ChemPalette} from './utils/chem-palette';
+
 // import { tTest, uTest } from './utils/misc';
 
 import {DimensionalityReducer} from '@datagrok-libraries/utils/src/reduce_dimensionality';
@@ -303,6 +306,8 @@ export async function stackedBarchartWidget(col: DG.Column): Promise<DG.Widget> 
 //input: string pep {semType: alignedSequence}
 //output: widget result
 export async function pepMolGraph(pep: string): Promise<DG.Widget> {
+  const pi = DG.TaskBarProgressIndicator.create('Creating NGL view');
+
   const split = pep.split('-');
   const mols = [];
   for (let i = 1; i < split.length - 1; i++) {
@@ -315,12 +320,29 @@ export async function pepMolGraph(pep: string): Promise<DG.Widget> {
       return new DG.Widget(ui.divH([]));
     }
   }
-  console.error(mols);
-  console.error(mols.join('') + 'COOH');
-  const sketch = grok.chem.svgMol(mols.join('') + 'O');
+  const smiles = mols.join('') + 'O';
+  let molfileStr = (await grok.functions.call('Peptides:SmiTo3D', {smiles}));
+
+  molfileStr = molfileStr.replaceAll('\\n', '\n'); ;
+  const stringBlob = new Blob([molfileStr], {type: 'text/plain'});
+  const nglHost = ui.div([], {classes: 'd4-ngl-viewer', id: 'ngl-3d-host'});
+
+  //@ts-ignore
+  const stage = new NGL.Stage(nglHost, {backgroundColor: 'white'});
+  //@ts-ignore
+  stage.loadFile(stringBlob, {ext: 'sdf'}).then(function(comp: NGL.StructureComponent) {
+    stage.setSize(300, 300);
+    comp.addRepresentation('ball+stick');
+    comp.autoView();
+  });
+  const sketch = grok.chem.svgMol(smiles);
   const panel = ui.divH([sketch]);
-  return new DG.Widget(panel);
+
+  pi.close();
+
+  return new DG.Widget(ui.div([panel, nglHost]));
 }
+
 
 //name: StackedBarChartAA
 //tags: viewer
@@ -377,8 +399,17 @@ export function manualAlignment(monomer: string) {
 }
 
 //name: testPeptideSimilaritySpace
-export async function testPeptideSimilaritySpace() {
+//input: string method {choices: ['TSNE', 'UMAP', 'SPE', 'PSPE']} = 'TSNE'
+//input: string measure {choices: ['Levenshtein', 'Jaro-Winkler']} = 'Levenshtein'
+//input: int cyclesCount = 100
+//output: graphics
+export async function testPeptideSimilaritySpace(
+  method: string,
+  measure: string,
+  cyclesCount: number,
+) {
   const df = await grok.data.files.openTable('Demo:TestJobs:Files:DemoFiles/bio/peptides.csv');
-  grok.shell.addTableView(df);
-  peptideSimilaritySpace(df, df.getCol('AlignedSequence'), 'PSPE', 'Levenshtein', 100, 'Activity');
+  const view = grok.shell.addTableView(df);
+  const viewer = peptideSimilaritySpace(df, df.getCol('AlignedSequence'), method, measure, cyclesCount, 'Activity');
+  view.addViewer(viewer);
 }

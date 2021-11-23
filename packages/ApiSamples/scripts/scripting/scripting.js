@@ -1,5 +1,5 @@
 //tags: Script, Package
-//help-url: https://datagrok.ai/help/develop/scripting
+//help-url: https://datagrok.ai/help/compute/scripting
 // An example of using scripting (R, Python etc.)
 
 grok.functions.call('PythonScripts:PythonDup', {'s': '1010'}).then(result => grok.shell.info(result));

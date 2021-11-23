@@ -3,6 +3,7 @@ import { FuncCall } from "./functions";
 import {toJs} from "./wrappers";
 import {DataFrame} from "./dataframe";
 import {FileSource} from "./dapi";
+import {MapProxy} from "./utils";
 
 declare var grok: any;
 let api = <any>window;
@@ -52,7 +53,7 @@ export class Entity {
   get updatedOn(): string { return api.grok_Entity_Get_UpdatedOn(this.d); }
 
   /** Who created entity **/
-  get author(): User { return api.grok_Entity_Get_Author(this.d); }
+  get author(): User { return toJs(api.grok_Entity_Get_Author(this.d)); }
 
   /** Entity properties */
   getProperties(): Promise<Map<string, any>> {
@@ -150,9 +151,13 @@ export class UserSession extends Entity {
  * {@link https://datagrok.ai/help/overview/functions/function}
  * */
 export class Func extends Entity {
+  public aux: any;
+  public options: any;
 
   constructor(d: any) {
     super(d);
+    this.aux = new MapProxy(api.grok_Func_Get_Aux(this.d));
+    this.options = new MapProxy(api.grok_Func_Get_Options(this.d));
   }
 
   get description(): string { return api.grok_Func_Get_Description(this.d); }
@@ -301,7 +306,7 @@ export class Model extends Entity {
 
 /** @extends Entity
  * Represents a Jupyter notebook
- * {@link https://datagrok.ai/help/develop/jupyter-notebook}
+ * {@link https://datagrok.ai/help/compute/jupyter-notebook}
  * */
 export class Notebook extends Entity {
   /** @constructs Notebook */
@@ -455,6 +460,9 @@ export class Script extends Func {
   /** Script */
   get script(): string { return api.grok_Script_GetScript(this.d); }
   set script(s: string) { api.grok_Script_SetScript(this.d, s); }
+
+  get language(): string { return api.grok_Script_GetLanguage(this.d); }
+  set language(s: string) { api.grok_Script_SetLanguage(this.d, s); }
 }
 
 /** Represents connection credentials

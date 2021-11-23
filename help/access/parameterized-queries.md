@@ -22,7 +22,7 @@ select * from products where productname = @productName
 
 ## Syntax
 
-The syntax for defining query parameters is based on [scripting](../develop/scripting.md) with additions
+The syntax for defining query parameters is based on [scripting](../compute/scripting.md) with additions
 specific to queries.
 
 ### Query parameters
@@ -88,7 +88,7 @@ Learn more about using the lists feature in this video: [link](https://www.youtu
 
 #### Choices and suggestions
 
-Options for supported types are described in the [Scripting](../develop/scripting.md) section. 
+Options for supported types are described in the [Scripting](../compute/scripting.md) section. 
 
 | Option        | Description                                                                        |
 |---------------|------------------------------------------------------------------------------------|
@@ -236,5 +236,5 @@ See also:
   * [Data query](data-query.md)
   * [Search patterns](../explore/data-search-patterns.md)
   * [Function](../function.md)
-  * [Scripting](../develop/scripting.md)
+  * [Scripting](../compute/scripting.md)
   * [JavaScript API Samples](https://public.datagrok.ai/js/samples/data-access/parameterized-query)

@@ -16,11 +16,11 @@ The platform has browsers for the following entities:
 | [Projects](project.md)                         | [https://public.datagrok.ai/projects](https://public.datagrok.ai/projects)         |
 | [Files](../access/file-shares.md)              | [https://public.datagrok.ai/files](https://public.datagrok.ai/files)               |
 | [Queries](../access/data-query.md)             | [https://public.datagrok.ai/queries](https://public.datagrok.ai/queries)           |
-| [Scripts](../develop/scripting.md)             | [https://public.datagrok.ai/scripts](https://public.datagrok.ai/scripts)           |
+| [Scripts](../compute/scripting.md)             | [https://public.datagrok.ai/scripts](https://public.datagrok.ai/scripts)           |
 | [Functions](functions/function.md)             | [https://public.datagrok.ai/functions](https://public.datagrok.ai/functions)       |
 | [Applications](../develop/develop.md)          | [https://public.datagrok.ai/apps](https://public.datagrok.ai/apps)                 |
 | [Models](../learn/predictive-modeling.md)      | [https://public.datagrok.ai/models](https://public.datagrok.ai/models)             |
-| [Notebooks](../develop/jupyter-notebook.md)    | [https://public.datagrok.ai/notebooks](https://public.datagrok.ai/notebooks)       |
+| [Notebooks](../compute/jupyter-notebook.md)    | [https://public.datagrok.ai/notebooks](https://public.datagrok.ai/notebooks)       |
 | [Users](../govern/user.md)                     | [https://public.datagrok.ai/users](https://public.datagrok.ai/users)               |
 | [Groups](../govern/group.md)                   | [https://public.datagrok.ai/groups](https://public.datagrok.ai/groups)             |
 | [Connections](../access/data-connection.md)    | [https://public.datagrok.ai/connections](https://public.datagrok.ai/connections)   |
