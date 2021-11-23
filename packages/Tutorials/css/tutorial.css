@@ -126,7 +126,9 @@ progress[value]::-webkit-progress-value::after {
     right: 5px;
     color: var(--green-2);
 }
-
+#tutorial-child-node{
+    padding-top:0px!important;
+}
 
 /* Tutorial Root CSS */
 .tutorials-target-hint {
