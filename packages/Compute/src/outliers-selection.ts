@@ -8,6 +8,7 @@ export async function selectOutliersManually(inputData: DG.DataFrame) {
   const OUTLIER_RATIONALE_COL_LABEL = 'Rationale';
   const OUTLIER_COUNT_COL_LABEL = 'Count';
   const IS_GROUP_CONFIRMED_LABEL = 'isConfirmed';
+  const FLUX = 'flux';
 
   if (!inputData.columns.byName(IS_OUTLIER_COL_LABEL)) {
     inputData.columns
@@ -17,6 +18,10 @@ export async function selectOutliersManually(inputData: DG.DataFrame) {
   if (!inputData.columns.byName(OUTLIER_RATIONALE_COL_LABEL)) {
     inputData.columns
       .add(DG.Column.fromStrings(OUTLIER_RATIONALE_COL_LABEL, Array.from({length: inputData.rowCount}, () => '')));
+  }
+
+  if (!inputData.columns.byName(FLUX)) {
+    (inputData.columns as DG.ColumnList).addNew(FLUX, 'double').init((index) => inputData.cell(index, 'filtrate volume (mL)').value / inputData.cell(index, 'time (min)').value);
   }
 
   const initialData = inputData.clone();
