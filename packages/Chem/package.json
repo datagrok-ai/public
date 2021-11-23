@@ -49,7 +49,7 @@
     "puppeteer": "latest",
     "rxjs": "latest",
     "ts-jest": "^27.0.7",
-    "@datagrok-libraries/utils": "latest",
+    "@datagrok-libraries/utils": ">=0.0.3",
     "webpack": "latest",
     "webpack-cli": "latest",
     "workerloader-jest-transformer": "^0.0.5"

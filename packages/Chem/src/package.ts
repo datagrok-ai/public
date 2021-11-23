@@ -1,6 +1,7 @@
 import * as grok from 'datagrok-api/grok';
 import * as ui from 'datagrok-api/ui';
 import * as DG from 'datagrok-api/dg';
+// @ts-ignore
 import {createRDKit} from './RDKit_minimal_2021.03_18.js';
 import {getMolColumnPropertyPanel} from './chem_column_property_panel';
 import * as chemSearches from './chem_searches';
@@ -23,7 +24,7 @@ import {getRGroups} from "./chem_rgroup_analysis";
 import {chemSpace} from './analysis/chem_space';
 import {mcsgetter} from './scripts-api';
 import {getDescriptors} from './descriptors/descriptors_calculation';
-import {MoleculeViewer} from './chem_similarity_search';
+// import {MoleculeViewer} from './chem_similarity_search';
 
 let rdKitModule: any = null;
 let rdKitService: any = null;
@@ -521,7 +522,11 @@ export async function descriptors(table: DG.DataFrame, smiles: DG.Column) {
   return(getDescriptors(smiles));
 }
 
+/*
+
 //top-menu: Chem | Similarity Search...
 export async function similaritySearch() {
   grok.shell.addTableView(grok.data.demo.molecules(100)).addViewer(new MoleculeViewer());
 }
+
+*/
