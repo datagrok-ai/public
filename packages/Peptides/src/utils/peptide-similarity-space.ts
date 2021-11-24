@@ -1,11 +1,47 @@
 import * as grok from 'datagrok-api/grok';
 import * as DG from 'datagrok-api/dg';
 
-import {DimensionalityReducer} from '@datagrok-libraries/utils/src/reduce-dimensionality';
 import {getSequenceMolecularWeight} from './molecular-measure';
 import {AlignedSequenceEncoder} from '@datagrok-libraries/utils/src/sequence-encoder';
+import {Coordinates} from '@datagrok-libraries/utils/src/type_declarations';
 
-export function peptideSimilaritySpace(
+/**
+ * Creates a worker to perform a dimensionality reduction.
+ *
+ * @param {any[]} columnData Samples to process.
+ * @param {string} method Embedding method.
+ * @param {string} measure Distance metric.
+ * @param {number} cyclesCount Number of cycles to repeat.
+ * @return {*} Promise.
+ */
+function createDimensinalityReducingWorker(columnData: any[], method: string, measure: string, cyclesCount: number) {
+  return new Promise(function(resolve) {
+    const worker = new Worker(new URL('../workers/dimensionality-reducer.ts', import.meta.url));
+    worker.postMessage({
+      columnData: columnData,
+      method: method,
+      measure: measure,
+      cyclesCount: cyclesCount,
+    });
+    worker.onmessage = ({data: {embedding}}) => {
+      resolve(embedding);
+    };
+  });
+}
+
+/**
+ * Creates scatter plot with sequences embeded.
+ *
+ * @export
+ * @param {DG.DataFrame} table The table containing samples.
+ * @param {DG.Column} alignedSequencesColumn The samples column.
+ * @param {string} method Embedding method.
+ * @param {string} measure Distance metric.
+ * @param {number} cyclesCount Number of cycles to repeat.
+ * @param {string} activityColumnName A columns containing an activity to assign it to points radius.
+ * @return {*} The scatter plot viewer.
+ */
+export async function peptideSimilaritySpace(
   table: DG.DataFrame,
   alignedSequencesColumn: DG.Column,
   method: string,
@@ -18,14 +54,11 @@ export function peptideSimilaritySpace(
 
   columnData = columnData.map((v, _) => AlignedSequenceEncoder.clean(v));
 
-  const reducer = new DimensionalityReducer(
-    columnData,
-    method,
-    measure,
-    {cycles: cyclesCount},
+  const embcols = await createDimensinalityReducingWorker(columnData, method, measure, cyclesCount);
+  const columns = Array.from(
+    embcols as Coordinates,
+    (v: Float32Array, k) => (DG.Column.fromFloat32Array(axesNames[k], v)),
   );
-  const embcols = reducer.transform(true);
-  const columns = Array.from(embcols, (v: Float32Array, k) => (DG.Column.fromFloat32Array(axesNames[k], v)));
 
   const sequences = alignedSequencesColumn.toList();
   const mw: Float32Array = new Float32Array(sequences.length).fill(0);
@@ -54,11 +87,5 @@ export function peptideSimilaritySpace(
   const view = (grok.shell.v as DG.TableView);
 
   const viewer = view.addViewer(DG.VIEWER.SCATTER_PLOT, {x: '~X', y: '~Y', color: activityColumnName, size: 'MW'});
-  // (viewer as DG.ScatterPlotViewer).zoom(
-  //   edf.getCol('~X').min,
-  //   edf.getCol('~Y').min,
-  //   edf.getCol('~X').max,
-  //   edf.getCol('~Y').max,
-  // );
   return viewer;
 }

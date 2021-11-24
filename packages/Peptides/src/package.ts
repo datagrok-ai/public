@@ -203,6 +203,13 @@ export async function testPeptideSimilaritySpace(
 ) {
   const df = await grok.data.files.openTable('Demo:TestJobs:Files:DemoFiles/bio/peptides.csv');
   const view = grok.shell.addTableView(df);
-  const viewer = peptideSimilaritySpace(df, df.getCol('AlignedSequence'), method, measure, cyclesCount, 'Activity');
+  const viewer = await peptideSimilaritySpace(
+    df,
+    df.getCol('AlignedSequence'),
+    method,
+    measure,
+    cyclesCount,
+    'Activity',
+  );
   view.addViewer(viewer);
 }
