@@ -1,6 +1,7 @@
 // This file will be used from Web Workers, so there
 // should be no imports from Datagrok or OCL
 import {RdKitService} from './rdkit_service';
+import {chemLock, chemUnlock} from './chem_common';
 
 let commonRdKitModule: any = null;
 

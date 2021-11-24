@@ -1,5 +1,6 @@
 import * as DG from 'datagrok-api/dg';
 import {RdKitService} from './rdkit_service';
+import {chemLock, chemUnlock} from './chem_common';
 
 let _rdKitModule: any = null;
 let _rdKitService: RdKitService | null = null;
@@ -102,15 +103,6 @@ const cacheParamsDefaults: CacheParams = {
 
 let _chemCache = { ...cacheParamsDefaults };
 
-function _lock() {
-  if (_chemCache.locked) { throw('RdKit Service usage locked'); }
-  _chemCache.locked = true;
-}
-
-function _unlock() {
-  _chemCache.locked = false;
-}
-
 async function _invalidate(molStringsColumn: DG.Column, queryMolString: string, includeFingerprints: boolean) {
   const sameColumnAndVersion = () =>
     molStringsColumn === _chemCache.cachedForCol &&
@@ -158,21 +150,21 @@ async function _invalidate(molStringsColumn: DG.Column, queryMolString: string, 
 export async function chemGetSimilarities(
     molStringsColumn: DG.Column, queryMolString = "",
     settings: { [name: string]: any } = {}) {
-  _lock();
+  chemLock();
   await _invalidate(molStringsColumn, queryMolString, true);
   const result = queryMolString.length != 0 ?
     await _chemGetSimilarities(molStringsColumn, queryMolString) : null;
-  _unlock();
+  chemUnlock();
   return result;
 }
 
 export async function chemFindSimilar(
     molStringsColumn: DG.Column, queryMolString = "", settings: { [name: string]: any } = {}) {
-  _lock();
+  chemLock();
   await _invalidate(molStringsColumn, queryMolString, true);
   const result = queryMolString.length != 0 ?
     _chemFindSimilar(molStringsColumn, queryMolString, settings) : null;
-  _unlock();
+  chemUnlock();
   return result;
 }
 
@@ -203,7 +195,7 @@ export function chemSubstructureSearchGraph(molStringsColumn: DG.Column, molStri
 
 export async function chemSubstructureSearchLibrary(
     molStringsColumn: DG.Column, molString: string, molStringSmarts: string) {
-  _lock();
+  chemLock();
   await _invalidate(molStringsColumn, molString, false);
   let result = DG.BitSet.create(molStringsColumn.length);
   if (molString.length != 0) {
@@ -211,6 +203,6 @@ export async function chemSubstructureSearchLibrary(
     for (let match of matches)
       result.set(match, true, false);
   }
-  _unlock();
+  chemUnlock();
   return result;
 }

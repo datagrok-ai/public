@@ -3,6 +3,7 @@
 import {RdKitService} from './rdkit_service';
 import * as ui from 'datagrok-api/ui';
 import * as OCL from 'openchemlib/full.js';
+import {chemLock, chemUnlock} from './chem_common';
 
 export function renderDescription(description: OCL.IParameterizedString[]) {
   const host = ui.divV([]);
