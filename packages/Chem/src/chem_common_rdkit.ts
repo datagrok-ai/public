@@ -1,7 +1,6 @@
 // This file will be used from Web Workers, so there
 // should be no imports from Datagrok or OCL
 import {RdKitService} from './rdkit_service';
-import {chemLock, chemUnlock} from './chem_common';
 //@ts-ignore
 import {createRDKit} from "./RDKit_minimal_2021.03_18.js";
 import {convertToRDKit} from './chem_rgroup_analysis';
@@ -12,7 +11,6 @@ export let _webRoot: string | null;
 let initialized = false;
 
 export async function initRdKitService(webRootValue: string) {
-  chemLock();
   if (!initialized) {
     _webRoot = webRootValue;
     _rdKitModule = await createRDKit(_webRoot);
@@ -23,7 +21,6 @@ export async function initRdKitService(webRootValue: string) {
     _rdKitModule.prefer_coordgen(false);
     initialized = true;
   }
-  chemUnlock();
 }
 
 export function getRdKitModule() {
