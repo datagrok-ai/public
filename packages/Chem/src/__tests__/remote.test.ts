@@ -5,7 +5,7 @@ import * as DG from 'datagrok-api/dg';
 import * as grok from 'datagrok-api/grok';
 import * as utils from '@datagrok-libraries/utils/src/test-utils';
 // @ts-ignore
-import * as publish from 'datagrok-tools/bin/commands/publish';
+// import * as publish from 'datagrok-tools/bin/commands/publish';
 import puppeteer from 'puppeteer';
 
 const P_START_TIMEOUT: number = 100000;
