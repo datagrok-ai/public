@@ -2,20 +2,15 @@ import * as grok from 'datagrok-api/grok';
 import * as ui from 'datagrok-api/ui';
 import * as DG from 'datagrok-api/dg';
 // @ts-ignore
-import {createRDKit} from './RDKit_minimal_2021.03_18.js';
 import {getMolColumnPropertyPanel} from './chem_column_property_panel';
 import * as chemSearches from './chem_searches';
 import {moleculesToFingerprints} from './chem_searches';
-import {chemLock, chemUnlock} from './chem_common';
-// import {setCommonRdKitModule, drawMoleculeToCanvas, webRoot} from './chem_common_rdkit';
 import {SubstructureFilter} from './chem_substructure_filter';
 import {RDKitCellRenderer} from './rdkit_cell_renderer';
 import * as OCL from 'openchemlib/full.js';
 import {drugLikenessWidget} from './widgets/drug-likeness';
 import {molfileWidget} from './widgets/molfile';
 import {propertiesWidget} from './widgets/properties';
-import {setStructuralAlertsRdKitModule, loadAlertsCollection} from './widgets/structural-alerts';
-import {RdKitService} from './rdkit_service';
 import {initStructuralAlertsContext, structuralAlertsWidget} from './widgets/structural-alerts-widget';
 import {structure2dWidget} from './widgets/structure2d';
 import {structure3dWidget} from './widgets/structure3d';
@@ -25,6 +20,7 @@ import {chemSpace} from './analysis/chem_space';
 import {getDescriptors} from './descriptors/descriptors_calculation';
 import * as chemCommonRdKit from './chem_common_rdkit';
 import {rGroupAnalysis} from './analysis/r_group';
+import {chemLock, chemUnlock} from './chem_common';
 // import {MoleculeViewer} from './chem_similarity_search';
 
 let structure = {};
@@ -43,23 +39,25 @@ export let _package: any = new DG.Package();
 
 //name: initChem
 export async function initChem() {
+  chemLock();
   await initRdKitService(_package.webRoot);
   const path = getRdKitWebRoot() + 'data-samples/alert_collection.csv';
   const table = await grok.data.loadTable(path);
   const alertsSmartsList = table.columns['smarts'].toList();
   const alertsDescriptionsList = table.columns['description'].toList();
   await initStructuralAlertsContext(alertsSmartsList, alertsDescriptionsList);
+  chemUnlock();
 }
 
 //tags: init
 export async function init() {
-  return initChem();
+  await initChem();
 }
 
 //name: initChemAutostart
 //tags: autostart
 export async function initChemAutostart() {
-  return initChem();
+  await initChem();
 }
 
 //name: SubstructureFilter
@@ -185,6 +183,7 @@ export async function findSimilar(molStringsColumn: DG.Column, molString: string
 //input: string molStringSmarts
 //output: column result
 export async function searchSubstructure(molStringsColumn: DG.Column, molString: string, substructLibrary: boolean, molStringSmarts: string) {
+  chemLock();
   try {
     if (molStringsColumn === null || molString === null || substructLibrary === null || molStringSmarts === null)
       throw "An input was null";
@@ -197,6 +196,7 @@ export async function searchSubstructure(molStringsColumn: DG.Column, molString:
     console.error("In substructureSearch: " + e.toString());
     throw e;
   }
+  chemUnlock();
 }
 
 //name: Descriptors App

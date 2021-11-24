@@ -35,6 +35,7 @@ function requireText(name: string) {
 
 async function _testSearchSubstructure(csv: string, pattern: string, trueIndices: number[], params: any | null = null) {
   let testOutput = await page.evaluate(async (csv: string, pattern: string, trueIndices: number[], params: any) => {
+    // await grok.functions.call('Chem:initChem');
     const df = DG.DataFrame.fromCsv(csv);
     const col = df.columns[0];
     const bitset: DG.BitSet = (params !== null) ?
@@ -56,6 +57,7 @@ async function _testSearchSubstructure(csv: string, pattern: string, trueIndices
 async function _testSearchSubstructureSARSmall(params: any | null = null) {
   let fileSARSmall = requireText("./sar_small.csv");
   const testOutput = await page.evaluate(async (file: string, params: any) => {
+    // await grok.functions.call('Chem:initChem');
     const df = DG.DataFrame.fromCsv(file);
     const col = df.columns[0];
     const bitset: DG.BitSet = (params !== null) ?
@@ -107,6 +109,7 @@ COc1ccc2c(c1)c(CC(=O)N3CCCC3C(=O)Oc4ccc(C)cc4OC)c(C)n2C(=O)c5ccc(Cl)cc5
 it('chem.findSimilar.sar_small', async () => {
   let fileSARSmall = requireText("./sar_small.csv");
   const testOutput = await page.evaluate(async (file: string) => {
+    //await grok.functions.call('Chem:initChem');
     const dfInput = DG.DataFrame.fromCsv(file);
     const colInput = dfInput.columns[0];
     const dfResult: DG.DataFrame = // shouldn't be null
