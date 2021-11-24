@@ -210,8 +210,9 @@ export async function searchSubstructure(molStringsColumn: DG.Column, molString:
   }
 }
 
+//name: Descriptors App
 //tags: app
-function descriptorsApp(context: any) {
+export function descriptorsApp(context: any) {
   let defaultSmiles = 'O=C1CN=C(c2ccccc2N1)C3CCCCC3';
   let sketcherValue = defaultSmiles;
 
