@@ -6,6 +6,7 @@ import {createRDKit} from './RDKit_minimal_2021.03_18.js';
 import {getMolColumnPropertyPanel} from './chem_column_property_panel';
 import * as chemSearches from './chem_searches';
 import {setSearchesContext, moleculesToFingerprints} from './chem_searches';
+import {chemLock, chemUnlock} from './chem_common';
 import {setCommonRdKitModule, drawMoleculeToCanvas} from './chem_common_rdkit';
 import {SubstructureFilter} from './chem_substructure_filter';
 import {RDKitCellRenderer} from './rdkit_cell_renderer';
@@ -38,6 +39,7 @@ export let _package: any = new DG.Package();
 
 //name: initChem
 export async function initChem() {
+  chemLock();
   if (!initialized) {
     webRoot = _package.webRoot;
     // @ts-ignore
@@ -57,6 +59,7 @@ export async function initChem() {
     rdKitModule.prefer_coordgen(false);
     initialized = true;
   }
+  chemUnlock();
 }
 
 //tags: init
