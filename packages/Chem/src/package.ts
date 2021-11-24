@@ -21,11 +21,10 @@ import {structure2dWidget} from './widgets/structure2d';
 import {structure3dWidget} from './widgets/structure3d';
 import {toxicityWidget} from './widgets/toxicity';
 import {OCLCellRenderer} from './ocl_cell_renderer';
-import {getRGroups} from "./chem_rgroup_analysis";
 import {chemSpace} from './analysis/chem_space';
-import {mcsgetter} from './scripts-api';
 import {getDescriptors} from './descriptors/descriptors_calculation';
 import * as chemCommonRdKit from './chem_common_rdkit';
+import {rGroupAnalysis} from './analysis/r_group';
 // import {MoleculeViewer} from './chem_similarity_search';
 
 let structure = {};
@@ -387,7 +386,7 @@ export function saveAsSdf() {
 //input: string smiles { semType: Molecule }
 //output: widget result
 export function drugLikeness(smiles: string) {
-  return drugLikenessWidget(smiles);
+  return smiles ? new DG.Widget(ui.divText('SMILES is empty')): drugLikenessWidget(smiles);
 }
 
 //name: Molfile
@@ -396,7 +395,7 @@ export function drugLikeness(smiles: string) {
 //input: string smiles { semType: Molecule }
 //output: widget result
 export function molfile(smiles: string) {
-  return molfileWidget(smiles);
+  return smiles ? new DG.Widget(ui.divText('SMILES is empty')): molfileWidget(smiles);
 }
 
 //name: Properties
@@ -405,7 +404,7 @@ export function molfile(smiles: string) {
 //input: string smiles { semType: Molecule }
 //output: widget result
 export async function properties(smiles: string) {
-  return propertiesWidget(smiles);
+  return smiles ? new DG.Widget(ui.divText('SMILES is empty')): propertiesWidget(smiles);
 }
 
 //name: Structural Alerts
@@ -415,7 +414,7 @@ export async function properties(smiles: string) {
 //input: string smiles { semType: Molecule }
 //output: widget result
 export async function structuralAlerts(smiles: string) {
-  return structuralAlertsWidget(smiles);
+  return smiles ? new DG.Widget(ui.divText('SMILES is empty')): structuralAlertsWidget(smiles);
 }
 
 //name: Structure 2D
@@ -424,7 +423,7 @@ export async function structuralAlerts(smiles: string) {
 //input: string smiles { semType: Molecule }
 //output: widget result
 export function structure2d(smiles: string) {
-  return structure2dWidget(smiles);
+  return smiles ? new DG.Widget(ui.divText('SMILES is empty')): structure2dWidget(smiles);
 }
 
 //name: Structure 3D
@@ -433,7 +432,7 @@ export function structure2d(smiles: string) {
 //input: string smiles { semType: Molecule }
 //output: widget result
 export async function structure3d(smiles: string) {
-  return structure3dWidget(smiles);
+  return smiles ? new DG.Widget(ui.divText('SMILES is empty')): structure3dWidget(smiles);
 }
 
 //name: Toxicity
@@ -443,57 +442,26 @@ export async function structure3d(smiles: string) {
 //input: string smiles { semType: Molecule }
 //output: widget result
 export function toxicity(smiles: string) {
-  return toxicityWidget(smiles);
+  return smiles ? new DG.Widget(ui.divText('SMILES is empty')): toxicityWidget(smiles);
 }
 
-//top-menu: Chem | R-Groups Analysis
 //name: R-Groups Analysis
-//input: dataframe df
+//top-menu: Chem | R-Groups Analysis
+export function rGroupsAnalysisMenu() {
+  const col = grok.shell.t.columns.bySemType(DG.SEMTYPE.MOLECULE);
+  if (col === null) {
+    grok.shell.error('Current table does not contain molecules')
+    return;
+  }
+  rGroupAnalysis(col);
+}
+
+//name: Chem | R-Groups Analysis
+//friendly-name: Chem | R-Groups Analysis
+//tags: panel, chem
 //input: column col {semType: Molecule}
-export function rGroupsAnalysis(df: DG.DataFrame, col: DG.Column) {
-  let sketcherSmile = '';
-
-  let sketcher = new grok.chem.Sketcher();
-  let columnPrefixInput = ui.stringInput('Column prefix', 'R');
-  let visualAnalysisCheck = ui.boolInput('Visual analysis', true);
-
-  let mcsButton = ui.button('MCS', async () => {
-    let smiles: string = await mcsgetter(col.name, df);
-    sketcher.setSmiles(smiles);
-    sketcherSmile = smiles;
-  });
-  ui.tooltip.bind(mcsButton, "Most Common Substructure");
-  let mcsButtonHost = ui.div([mcsButton]);
-  mcsButtonHost.style.display = 'flex';
-  mcsButtonHost.style.justifyContent = 'center';
-
-  let dlg = ui.dialog({
-    title: 'R-Groups Analysis',
-    helpUrl: '/help/domains/chem/cheminformatics.md#r-group-analysis'
-    })
-    .add(ui.div([
-      sketcher,
-      mcsButtonHost,
-      columnPrefixInput,
-      visualAnalysisCheck
-    ]))
-    .onOK(async () => {
-      let res = await getRGroups(col, sketcherSmile, columnPrefixInput.value);
-      for (let resCol of res.columns) {
-        resCol.semType = DG.SEMTYPE.MOLECULE;
-        col.dataFrame.columns.add(resCol);
-      }
-      if (res.columns.length == 0)
-        grok.shell.error("None R-Groups were found");
-      let view = grok.shell.getTableView(col.dataFrame.name);
-      if (visualAnalysisCheck.value && view) {
-        view.trellisPlot({
-          xColumnNames: [res.columns[0].name],
-          yColumnNames: [res.columns[1].name]});
-      }
-    });
-  dlg.show();
-  dlg.initDefaultHistory();
+export function rGroupsAnalysisPanel(col: DG.Column) {
+  rGroupAnalysis(col);
 }
 
 //top-menu: Chem | Chemical Space...
