@@ -13,16 +13,6 @@ export class RdKitServiceWorkerSimilarity extends RdkitServiceSubstructure {
     this._sample = new BitArray(this._fpLength);
   }
 
-  _stringFpToArrBits(fp: string, arr: BitArray) {
-    for (let j = 0; j < this._fpLength; ++j) {
-      if (fp[j] === '1')
-        arr.setTrue(j);
-      else if (fp[j] === '0')
-        arr.setFalse(j);
-    }
-    return arr;
-  }
-
   initTanimotoFingerprints(/* the structures are already passed */) {
     this.freeTanimotoFingerprints();
     if (this._rdKitMols === null) {
@@ -34,7 +24,7 @@ export class RdKitServiceWorkerSimilarity extends RdkitServiceSubstructure {
       let arr = new BitArray(this._fpLength);
       try {
         const fp = this._rdKitMols[i].get_morgan_fp(this._fpRadius, this._fpLength);
-        arr = this._stringFpToArrBits(fp, arr);
+        arr = this._stringFpToArrBits(fp, arr, this._fpLength);
       } catch (e) {
         // nothing to do
       }
@@ -55,7 +45,7 @@ export class RdKitServiceWorkerSimilarity extends RdkitServiceSubstructure {
     try {
       const mol = this._rdKitModule.get_mol(sampleMol);
       const fp = mol.get_morgan_fp(this._fpRadius, this._fpLength);
-      this._sample = this._stringFpToArrBits(fp, this._sample);
+      this._sample = this._stringFpToArrBits(fp, this._sample, this._fpLength);
       for (let i = 0; i < this._rdKitMols!.length; ++i) {
         distances[i] = this._tanimoto(this._tanimotoFps!, i, this._sample);
       }
