@@ -1,6 +1,5 @@
 import * as DG from 'datagrok-api/dg';
 import {RdKitService} from './rdkit_service';
-import {chemLock, chemUnlock} from './chem_common';
 import {getRdKitModule, getRdKitService} from './chem_common_rdkit';
 
 
@@ -144,21 +143,17 @@ async function _invalidate(molStringsColumn: DG.Column, queryMolString: string, 
 export async function chemGetSimilarities(
     molStringsColumn: DG.Column, queryMolString = "",
     settings: { [name: string]: any } = {}) {
-  chemLock();
   await _invalidate(molStringsColumn, queryMolString, true);
   const result = queryMolString.length != 0 ?
     await _chemGetSimilarities(molStringsColumn, queryMolString) : null;
-  chemUnlock();
   return result;
 }
 
 export async function chemFindSimilar(
     molStringsColumn: DG.Column, queryMolString = "", settings: { [name: string]: any } = {}) {
-  chemLock();
   await _invalidate(molStringsColumn, queryMolString, true);
   const result = queryMolString.length != 0 ?
     _chemFindSimilar(molStringsColumn, queryMolString, settings) : null;
-  chemUnlock();
   return result;
 }
 
@@ -189,7 +184,6 @@ export function chemSubstructureSearchGraph(molStringsColumn: DG.Column, molStri
 
 export async function chemSubstructureSearchLibrary(
     molStringsColumn: DG.Column, molString: string, molStringSmarts: string) {
-  chemLock();
   await _invalidate(molStringsColumn, molString, false);
   let result = DG.BitSet.create(molStringsColumn.length);
   if (molString.length != 0) {
@@ -197,6 +191,5 @@ export async function chemSubstructureSearchLibrary(
     for (let match of matches)
       result.set(match, true, false);
   }
-  chemUnlock();
   return result;
 }

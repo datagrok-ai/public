@@ -54,13 +54,24 @@ export function chemUnlock() {
 
 let _chemLocked = false;
 
-export async function chemLock() {
+export async function chemLock(token: string | null = null) {
+  /*
+  if (token !== null) {
+    console.log(`Locking for ${token}`);
+  }
+  */
   if (_chemLocked) {
     throw(`RdKit Service usage locked:\n${(new Error()).stack}`);
   }
   _chemLocked = true;
+  /*
+  if (token !== null) {
+    console.log(`Locked for ${token}`);
+  }
+   */
 }
 
-export async function chemUnlock() {
+export async function chemUnlock(token: string | null = null) {
   _chemLocked = false;
+  // console.log(`Unlocked for ${token}`);
 }

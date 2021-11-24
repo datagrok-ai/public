@@ -39,14 +39,14 @@ export let _package: any = new DG.Package();
 
 //name: initChem
 export async function initChem() {
-  chemLock();
+  chemLock('initChem');
   await initRdKitService(_package.webRoot);
   const path = getRdKitWebRoot() + 'data-samples/alert_collection.csv';
   const table = await grok.data.loadTable(path);
   const alertsSmartsList = table.columns['smarts'].toList();
   const alertsDescriptionsList = table.columns['description'].toList();
   await initStructuralAlertsContext(alertsSmartsList, alertsDescriptionsList);
-  chemUnlock();
+  chemUnlock('initChem');
 }
 
 //tags: init
@@ -140,16 +140,19 @@ export async function oclCellRenderer() {
 //input: string molString
 //output: dataframe result
 export async function getSimilarities(molStringsColumn: DG.Column, molString: string) {
+  chemLock('getSimilarities');
   try {
     if (molStringsColumn === null || molString === null) throw "An input was null";
     // TODO: Make in the future so that the return type is always one
     const result = (await chemSearches.chemGetSimilarities(molStringsColumn, molString)) as unknown; // TODO: !
     // TODO: get rid of a wrapping DataFrame and be able to return Columns
+    chemUnlock('getSimilarities');
     return result ? DG.DataFrame.fromColumns([result as DG.Column]) : DG.DataFrame.create();
   } catch (e: any) {
     console.error("In getSimilarities: " + e.toString());
     throw e;
   }
+  chemUnlock('getSimilarities');
 }
 
 //name: getMorganFingerprints
@@ -166,14 +169,17 @@ export function getMorganFingerprints(molColumn: DG.Column) {
 //input: int cutoff
 //output: dataframe result
 export async function findSimilar(molStringsColumn: DG.Column, molString: string, aLimit: number, aCutoff: number) {
+  chemLock('chemFindSimilar');
   try {
     if (molStringsColumn === null || molString === null || aLimit === null || aCutoff === null) throw "An input was null";
     let result = await chemSearches.chemFindSimilar(molStringsColumn, molString, {limit: aLimit, cutoff: aCutoff});
+    chemUnlock('chemFindSimilar');
     return result ? result : DG.DataFrame.create();
   } catch (e: any) {
     console.error("In getSimilarities: " + e.toString());
     throw e;
   }
+  chemUnlock('chemFindSimilar');
 }
 
 //name: searchSubstructure
@@ -183,7 +189,7 @@ export async function findSimilar(molStringsColumn: DG.Column, molString: string
 //input: string molStringSmarts
 //output: column result
 export async function searchSubstructure(molStringsColumn: DG.Column, molString: string, substructLibrary: boolean, molStringSmarts: string) {
-  chemLock();
+  chemLock('searchSubstructure');
   try {
     if (molStringsColumn === null || molString === null || substructLibrary === null || molStringSmarts === null)
       throw "An input was null";
@@ -191,12 +197,13 @@ export async function searchSubstructure(molStringsColumn: DG.Column, molString:
       substructLibrary ?
         await chemSearches.chemSubstructureSearchLibrary(molStringsColumn, molString, molStringSmarts/*, webRoot*/) :
         chemSearches.chemSubstructureSearchGraph(molStringsColumn, molString);
+    chemUnlock('searchSubstructure');
     return DG.Column.fromList('object', 'bitset', [result]);
   } catch (e: any) {
     console.error("In substructureSearch: " + e.toString());
     throw e;
   }
-  chemUnlock();
+  chemUnlock('searchSubstructure');
 }
 
 //name: Descriptors App
