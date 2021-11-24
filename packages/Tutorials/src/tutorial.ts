@@ -240,10 +240,11 @@ export abstract class Tutorial extends DG.Widget {
 
     const instructionDiv = ui.divText(instructions, 'grok-tutorial-entry-instruction');
     const descriptionDiv = ui.divText('', { classes: 'grok-tutorial-step-description', style: { margin: '0px 0px 0px 15px' } });
+    const chevron = ui.iconFA('chevron-down');
     const instructionIndicator = ui.div([], 'grok-tutorial-entry-indicator')
     const entry = ui.divH([
       instructionIndicator,
-      instructionDiv
+      instructionDiv,
     ], 'grok-tutorial-entry');
     
     this.activity.append(entry);
@@ -256,8 +257,15 @@ export abstract class Tutorial extends DG.Widget {
 
     instructionDiv.classList.add('grok-tutorial-entry-success');
     instructionIndicator.classList.add('grok-tutorial-entry-indicator-success');
+
     $(descriptionDiv).hide();
-    $(entry).on('click', () => $(descriptionDiv).toggle());
+    if (description.length != 0)
+      entry.append(chevron);
+      
+    $(entry).on('click', () => {
+      $(chevron).toggleClass('fa-chevron-down fa-chevron-up');
+      $(descriptionDiv).toggle()
+    });
     ui.tooltip.bind(entry, description);
     this.progress.value++;
     this.progressSteps.innerHTML = '';

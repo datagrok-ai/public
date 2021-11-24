@@ -10,6 +10,7 @@ import { updateDivInnerHTML } from '../views/utils';
 import $ from "cash-dom";
 import { getSubjectDmData } from '../data-preparation/data-preparation';
 import { AEBrowserHelper } from '../helpers/ae-browser-helper';
+import { LaboratoryView } from '../views/laboratory-view';
 
 export async function createPropertyPanel(viewClass: any) {
     switch (viewClass.name) {
@@ -27,10 +28,83 @@ export async function createPropertyPanel(viewClass: any) {
         case 'AE Browser': {
             grok.shell.o = await aeBrowserPanel(viewClass);
         }
+        case 'Laboratory': {
+            grok.shell.o = await laboratoryPanel(viewClass);
+            break;
+        }
         default: {
             break;
         }
     }
+}
+
+export async function laboratoryPanel(view: LaboratoryView){
+    let panelDiv = ui.div();  
+    let acclab = ui.accordion('laboratory-panel');
+    let accIcon = ui.element('i');
+    accIcon.className = 'grok-icon svg-icon svg-view-layout';
+    acclab.addTitle(ui.span([accIcon, 'Laboratory']));
+
+    let altChoices = ui.choiceInput('ALT', view.selectedALT, view.uniqueLabValues);
+    altChoices.onChanged((v) => {
+      view.selectedALT = altChoices.value;
+      view.updateHysLawScatterPlot();
+    });
+    //@ts-ignore
+    altChoices.input.style.width = '150px';
+
+    let astChoices = ui.choiceInput('AST', view.selectedAST, view.uniqueLabValues);
+    astChoices.onChanged((v) => {
+      view.selectedAST = astChoices.value;
+      view.updateHysLawScatterPlot();
+    });
+    //@ts-ignore
+    astChoices.input.style.width = '150px';
+
+    let blnChoices = ui.choiceInput('BLN', view.selectedBLN, view.uniqueLabValues);
+    blnChoices.onChanged((v) => {
+        view.selectedBLN = blnChoices.value;
+        view.updateHysLawScatterPlot();
+    });
+    //@ts-ignore
+    blnChoices.input.style.width = '150px';
+    acclab.addPane('Hy\'s law', () => ui.divV([ altChoices.root, astChoices.root, blnChoices.root ]), true);
+
+    let labValueChoices = ui.choiceInput('Value', view.selectedLabBlEp, view.uniqueLabValues);
+    let blVisitChoices = ui.choiceInput('BL', view.selectedBl, view.uniqueVisits);
+    let epVisitChoices = ui.choiceInput('EP', view.selectedEp, view.uniqueVisits);
+    labValueChoices.onChanged((v) => {
+        view.selectedLabBlEp = labValueChoices.value;
+        view.updateBaselineEndpointPlot();
+    });
+    blVisitChoices.onChanged((v) => {
+        view.selectedBl = blVisitChoices.value;
+        view.updateBaselineEndpointPlot();
+    });
+    epVisitChoices.onChanged((v) => {
+        view.selectedEp = epVisitChoices.value;
+        view.updateBaselineEndpointPlot();
+    });
+    //@ts-ignore
+    labValueChoices.input.style.width = '150px';
+    acclab.addPane('Baseline endpoint', () => ui.divV([ labValueChoices.root, blVisitChoices.root, epVisitChoices.root ]), true);
+
+
+    let distrChoices = ui.choiceInput('Value', view.selectedLabDistr, view.uniqueLabValues);
+    let treatmentArmsChoices = ui.choiceInput('Treatment arm', view.selectedArm, view.uniqueTreatmentArms);
+    distrChoices.onChanged((v) => {
+      view.selectedLabDistr = distrChoices.value;
+      view.updateDistributionPlot();
+    });
+    treatmentArmsChoices.onChanged((v) => {
+      view.selectedArm = treatmentArmsChoices.value;
+      view.updateDistributionPlot();
+    });
+    //@ts-ignore
+    distrChoices.input.style.width = '150px';
+    acclab.addPane('Laboratory distribution', () => ui.divV([ distrChoices.root, treatmentArmsChoices.root ]), true);
+    panelDiv.append(acclab.root);
+    return panelDiv;
 }
 
 export async function aeBrowserPanel(view: AEBrowserHelper) {

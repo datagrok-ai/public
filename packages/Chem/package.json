@@ -20,9 +20,9 @@
     "common/ngl_viewer/ngl.js"
   ],
   "dependencies": {
+    "@datagrok-libraries/utils": "latest",
     "cash-dom": "latest",
     "datagrok-api": ">0.94.10",
-    "datagrok-tools": "latest",
     "dayjs": "latest",
     "file-loader": "latest",
     "offscreen-canvas": "latest",
@@ -30,17 +30,16 @@
     "rxjs": "latest",
     "ts-loader": "latest",
     "typescript": "latest",
-    "@datagrok-libraries/utils": "latest",
     "worker-loader": "latest"
   },
   "devDependencies": {
+    "@datagrok-libraries/utils": ">=0.0.3",
     "@types/jest": "^27.0.2",
     "@types/js-yaml": "^4.0.4",
     "@types/offscreencanvas": "latest",
     "@typescript-eslint/eslint-plugin": "^5.3.0",
     "@typescript-eslint/parser": "^5.3.0",
     "cash-dom": "latest",
-    "datagrok-tools": "latest",
     "eslint": "^8.1.0",
     "eslint-config-google": "^0.14.0",
     "file-loader": "latest",
@@ -49,7 +48,6 @@
     "puppeteer": "latest",
     "rxjs": "latest",
     "ts-jest": "^27.0.7",
-    "@datagrok-libraries/utils": ">=0.0.3",
     "webpack": "latest",
     "webpack-cli": "latest",
     "workerloader-jest-transformer": "^0.0.5"

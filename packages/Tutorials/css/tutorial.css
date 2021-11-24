@@ -4,6 +4,14 @@
 /* Track Root */
 .tutorials-track{
   margin-bottom: 20px;
+  position: relative;
+}
+.tutorials-main-header{
+    z-index: 1;
+    position: sticky;
+    top: 0px;
+    background: white;
+    width: 100%;
 }
 /* Track Title */
 .tutorials-track-title{
@@ -118,7 +126,9 @@ progress[value]::-webkit-progress-value::after {
     right: 5px;
     color: var(--green-2);
 }
-
+#tutorial-child-node{
+    padding-top:0px!important;
+}
 
 /* Tutorial Root CSS */
 .tutorials-target-hint {
