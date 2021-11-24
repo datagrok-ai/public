@@ -12,7 +12,7 @@ import {Logo} from './viewers/logo-viewer';
 import {StackedBarChart} from './viewers/stacked-barchart-viewer';
 
 import {analyzePeptidesWidget} from './widgets/analyze-peptides';
-import {peptideSimilaritySpace} from './utils/peptide-similarity-space';
+import {peptideSimilaritySpace, peptideSimilaritySpaceFloating} from './utils/peptide-similarity-space';
 import {manualAlignmentWidget} from './widgets/manual-alignment';
 import {SARViewer, SARViewerVertical} from './viewers/sar-viewer';
 
@@ -212,4 +212,35 @@ export async function testPeptideSimilaritySpace(
     'Activity',
   );
   view.addViewer(viewer);
+}
+
+//name: Peptide Space
+//tags: panel, widgets
+//input: column col {semType: alignedSequence}
+//output: widget result
+export async function peptideSpacePanel(col: DG.Column): Promise<DG.Widget> {
+  view = (grok.shell.v as DG.TableView);
+  tableGrid = view.grid;
+  currentDf = col.dataFrame;
+  alignedSequenceCol = col;
+
+  const methodsList = ui.choiceInput('Embedding method', 'UMAP', ['TSNE', 'UMAP', 'SPE', 'PSPE']);
+  methodsList.setTooltip('Embedding method to apply to the dataset.');
+
+  const metricsList = ui.choiceInput('Distance metric', 'Levenshtein', ['Levenshtein', 'Jaro-Winkler']);
+  metricsList.setTooltip('Custom distance metric to pass to the embedding procedure.');
+
+  const cyclesSlider = ui.intInput('Cycles count', 100);
+  cyclesSlider.setTooltip('Number of cycles affects the embedding quality.');
+
+  const viewer = await peptideSimilaritySpaceFloating(
+    currentDf,
+    col,
+    methodsList.value,
+    metricsList.value,
+    cyclesSlider.value,
+    'Activity',
+  );
+  viewer.root.style.width = 'auto';
+  return new DG.Widget(ui.divV([viewer.root, ui.inputs([methodsList, metricsList, cyclesSlider])]));
 }

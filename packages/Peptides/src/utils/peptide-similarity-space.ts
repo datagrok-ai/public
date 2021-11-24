@@ -89,3 +89,51 @@ export async function peptideSimilaritySpace(
   const viewer = view.addViewer(DG.VIEWER.SCATTER_PLOT, {x: '~X', y: '~Y', color: activityColumnName, size: 'MW'});
   return viewer;
 }
+
+export async function peptideSimilaritySpaceFloating(
+  table: DG.DataFrame,
+  alignedSequencesColumn: DG.Column,
+  method: string,
+  measure: string,
+  cyclesCount: number,
+  activityColumnName: string,
+) {
+  const pi = DG.TaskBarProgressIndicator.create('Creating embedding.');
+  const axesNames = ['~X', '~Y', '~MW'];
+  let columnData = alignedSequencesColumn.toList();
+
+  columnData = columnData.map((v, _) => AlignedSequenceEncoder.clean(v));
+
+  const embcols = await createDimensinalityReducingWorker(columnData, method, measure, cyclesCount);
+  const columns = Array.from(
+    embcols as Coordinates,
+    (v: Float32Array, k) => (DG.Column.fromFloat32Array(axesNames[k], v)),
+  );
+
+  const sequences = alignedSequencesColumn.toList();
+  const mw: Float32Array = new Float32Array(sequences.length).fill(0);
+
+  let currentSequence;
+  for (let i = 0; i < sequences.length; ++i) {
+    currentSequence = sequences[i];
+    mw[i] = currentSequence == null ? 0 : getSequenceMolecularWeight(currentSequence);
+  }
+
+  columns.push(DG.Column.fromFloat32Array('~MW', mw));
+
+  const edf = DG.DataFrame.fromColumns(columns);
+
+  // Add new axes.
+  for (const axis of axesNames) {
+    const col = table.col(axis);
+
+    if (col == null) {
+      table.columns.insert(edf.getCol(axis));
+    } else {
+      table.columns.replace(col, edf.getCol(axis));
+    }
+  }
+
+  pi.close();
+  return DG.Viewer.scatterPlot(table, {x: '~X', y: '~Y', color: activityColumnName, size: '~MW'});
+}
