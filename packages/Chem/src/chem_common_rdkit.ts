@@ -4,6 +4,7 @@ import {RdKitService} from './rdkit_service';
 import {chemLock, chemUnlock} from './chem_common';
 //@ts-ignore
 import {createRDKit} from "./RDKit_minimal_2021.03_18.js";
+import {convertToRDKit} from './chem_rgroup_analysis';
 
 export let _rdKitModule: any = null;
 export let _rdKitService: RdKitService | null = null;
@@ -46,14 +47,14 @@ export function getRdKitWebRoot() {
 export function drawMoleculeToCanvas(
   x: number, y: number, w: number, h: number,
   onscreenCanvas: HTMLCanvasElement, molString: string, scaffoldMolString: string | null = null) {
-  let mol = getRdKitModule().get_mol(molString);
+  let mol = getRdKitModule().get_mol(convertToRDKit(molString));
   const molBlock = mol.get_new_coords(true);
   mol.delete();
   mol = getRdKitModule().get_mol(molBlock);
   mol.normalize_2d_molblock();
   mol.straighten_2d_layout();
   let scaffoldMol = scaffoldMolString == null ? null :
-    getRdKitModule().get_qmol(scaffoldMolString);
+    getRdKitModule().get_qmol(convertToRDKit(scaffoldMolString));
   let substructJson = "{}";
   if (scaffoldMol) {
     substructJson = mol.get_substruct_match(scaffoldMol);
