@@ -5,9 +5,9 @@ import * as DG from 'datagrok-api/dg';
 import {createRDKit} from './RDKit_minimal_2021.03_18.js';
 import {getMolColumnPropertyPanel} from './chem_column_property_panel';
 import * as chemSearches from './chem_searches';
-import {setSearchesContext, moleculesToFingerprints} from './chem_searches';
+import {moleculesToFingerprints} from './chem_searches';
 import {chemLock, chemUnlock} from './chem_common';
-import {setCommonRdKitModule, drawMoleculeToCanvas} from './chem_common_rdkit';
+// import {setCommonRdKitModule, drawMoleculeToCanvas, webRoot} from './chem_common_rdkit';
 import {SubstructureFilter} from './chem_substructure_filter';
 import {RDKitCellRenderer} from './rdkit_cell_renderer';
 import * as OCL from 'openchemlib/full.js';
@@ -25,41 +25,31 @@ import {getRGroups} from "./chem_rgroup_analysis";
 import {chemSpace} from './analysis/chem_space';
 import {mcsgetter} from './scripts-api';
 import {getDescriptors} from './descriptors/descriptors_calculation';
+import * as chemCommonRdKit from './chem_common_rdkit';
 // import {MoleculeViewer} from './chem_similarity_search';
 
-let rdKitModule: any = null;
-let rdKitService: any = null;
-export let webRoot: string | undefined;
-let initialized = false;
 let structure = {};
 const _STORAGE_NAME = 'rdkit_descriptors';
 const _KEY = 'selected';
+
+//name: getRdKitModule
+//output: object module
+export const getRdKitModule = chemCommonRdKit.getRdKitModule;
+const initRdKitService = chemCommonRdKit.initRdKitService;
+export const getRdKitService = chemCommonRdKit.getRdKitService;
+const getRdKitWebRoot = chemCommonRdKit.getRdKitWebRoot;
+const drawMoleculeToCanvas = chemCommonRdKit.drawMoleculeToCanvas;
 
 export let _package: any = new DG.Package();
 
 //name: initChem
 export async function initChem() {
-  chemLock();
-  if (!initialized) {
-    webRoot = _package.webRoot;
-    // @ts-ignore
-    rdKitModule = await createRDKit(webRoot);
-    setCommonRdKitModule(rdKitModule);
-    setStructuralAlertsRdKitModule(rdKitModule, webRoot!);
-    console.log('RDKit module package instance was initialized');
-    rdKitService = new RdKitService();
-    await rdKitService.init(webRoot);
-    console.log('RDKit Service was initialized');
-    setSearchesContext(rdKitModule, rdKitService);
-    const path = webRoot + 'data-samples/alert_collection.csv';
-    const table = await grok.data.loadTable(path);
-    const alertsSmartsList = table.columns['smarts'].toList();
-    const alertsDescriptionsList = table.columns['description'].toList();
-    initStructuralAlertsContext(rdKitService, alertsSmartsList, alertsDescriptionsList);
-    rdKitModule.prefer_coordgen(false);
-    initialized = true;
-  }
-  chemUnlock();
+  await initRdKitService(_package.webRoot);
+  const path = getRdKitWebRoot() + 'data-samples/alert_collection.csv';
+  const table = await grok.data.loadTable(path);
+  const alertsSmartsList = table.columns['smarts'].toList();
+  const alertsDescriptionsList = table.columns['description'].toList();
+  await initStructuralAlertsContext(alertsSmartsList, alertsDescriptionsList);
 }
 
 //tags: init
@@ -105,7 +95,7 @@ export function canvasMol(
 //input: string smiles {semType: Molecule}
 //output: double cLogP
 export function getCLogP(smiles: string) {
-  let mol = rdKitModule.get_mol(smiles);
+  let mol = getRdKitModule().get_mol(smiles);
   return JSON.parse(mol.get_descriptors()).CrippenClogP;
 }
 
@@ -114,7 +104,7 @@ export function getCLogP(smiles: string) {
 //input: string smiles {semType: Molecule}
 //output: widget result
 export function rdkitInfoPanel(smiles: string) {
-  let mol = rdKitModule.get_mol(smiles);
+  let mol = getRdKitModule().get_mol(smiles);
   return new DG.Widget(ui.divV([
     _svgDiv(mol),
     ui.divText(`${getCLogP(smiles)}`)
@@ -136,7 +126,7 @@ export function molColumnPropertyPanel(molColumn: DG.Column) {
 export async function rdkitCellRenderer() {
   //let props = DG.toJs(await this.getProperties());
   // if (props?.Renderer && props.Renderer === 'RDKit') {
-  return new RDKitCellRenderer(rdKitModule);
+  return new RDKitCellRenderer(getRdKitModule());
   //}
 }
 

@@ -1,14 +1,8 @@
 import * as DG from 'datagrok-api/dg';
 import {RdKitService} from './rdkit_service';
 import {chemLock, chemUnlock} from './chem_common';
+import {getRdKitModule, getRdKitService} from './chem_common_rdkit';
 
-let _rdKitModule: any = null;
-let _rdKitService: RdKitService | null = null;
-
-export function setSearchesContext(rdKitModule: any, rdKitService: RdKitService) {
-  _rdKitModule = rdKitModule;
-  _rdKitService = rdKitService;
-}
 
 export function _morganFP(molString: string, fp_length = 128, fp_radius = 2) {
   if (molString.length == 0) {
@@ -16,7 +10,7 @@ export function _morganFP(molString: string, fp_length = 128, fp_radius = 2) {
       "Possibly an empty molString: `" + molString + "`");
   } else {
     try {
-      let mol = _rdKitModule.get_mol(molString);
+      let mol = getRdKitModule().get_mol(molString);
       let mfp = mol.get_morgan_fp(fp_radius, fp_length);
       mol.delete();
       return mfp;
@@ -46,7 +40,7 @@ export function moleculesToFingerprints(molStringsColumn: DG.Column, settings: {
 async function _chemFindSimilar(molStringsColumn: DG.Column,
     queryMolString: string, settings: { [name: string]: any }) {
   const len = molStringsColumn.length;
-  const distances = await _rdKitService!.getSimilarities(queryMolString);
+  const distances = await getRdKitService().getSimilarities(queryMolString);
   const limit = Math.min((settings.hasOwnProperty('limit') ? settings.limit : len), len);
   const minScore = settings.hasOwnProperty('minScore') ? settings.minScore : 0.0;
   let sortedIndices = Array.from(Array(len).keys()).sort((i1, i2) => {
@@ -77,7 +71,7 @@ async function _chemFindSimilar(molStringsColumn: DG.Column,
 
 // Only this function receives {sorted} in settings
 async function _chemGetSimilarities(molStringsColumn: DG.Column, queryMolString: string) {
-  const similaritiesArray = await _rdKitService!.getSimilarities(queryMolString);
+  const similaritiesArray = await getRdKitService().getSimilarities(queryMolString);
   return DG.Column.fromList(DG.COLUMN_TYPE.FLOAT, 'distances', similaritiesArray);
 }
 
@@ -116,7 +110,7 @@ async function _invalidate(molStringsColumn: DG.Column, queryMolString: string, 
   if (sameColumnAndVersion() && !_chemCache.moleculesWereIndexed) {
     // TODO: avoid creating an additional array here
     const { molIdxToHash, hashToMolblock }
-      = await _rdKitService!.initMoleculesStructures(molStringsColumn.toList());
+      = await getRdKitService().initMoleculesStructures(molStringsColumn.toList());
     let i = 0;
     let needsUpdate = false;
     for (const item of molIdxToHash) {
@@ -137,7 +131,7 @@ async function _invalidate(molStringsColumn: DG.Column, queryMolString: string, 
   }
   if (includeFingerprints) {
     if (sameColumnAndVersion() && !_chemCache.similarityFingerprintsWereIndexed) {
-      await _rdKitService!.initTanimotoFingerprints();
+      await getRdKitService().initTanimotoFingerprints();
       _chemCache.similarityFingerprintsWereIndexed = true;
     }
   }
@@ -174,11 +168,11 @@ export function chemSubstructureSearchGraph(molStringsColumn: DG.Column, molStri
   if (molString.length == 0) {
     return result;
   }
-  let subMol = _rdKitModule.get_mol(molString);
+  let subMol = getRdKitModule().get_mol(molString);
   for (let i = 0; i < len; ++i) {
     let item = molStringsColumn.get(i);
     try {
-      let mol = _rdKitModule.get_mol(item);
+      let mol = getRdKitModule().get_mol(item);
       let match = mol.get_substruct_match(subMol);
       if (match !== "{}")
         result.set(i, true, false);
@@ -199,7 +193,7 @@ export async function chemSubstructureSearchLibrary(
   await _invalidate(molStringsColumn, molString, false);
   let result = DG.BitSet.create(molStringsColumn.length);
   if (molString.length != 0) {
-    const matches = await _rdKitService!.searchSubstructure(molString, molStringSmarts);
+    const matches = await getRdKitService().searchSubstructure(molString, molStringSmarts);
     for (let match of matches)
       result.set(match, true, false);
   }
