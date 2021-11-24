@@ -1,12 +1,12 @@
 import * as grok from 'datagrok-api/grok';
 import * as ui from 'datagrok-api/ui';
 import * as DG from 'datagrok-api/dg';
-import { peptideSimilaritySpace } from '../utils/peptide-similarity-space';
-import { addViewerToHeader } from '../viewers/stacked-barchart-viewer';
+import {peptideSimilaritySpace} from '../utils/peptide-similarity-space';
+import {addViewerToHeader} from '../viewers/stacked-barchart-viewer';
 
 export async function analyzePeptidesWidget(
-    col: DG.Column, view: DG.TableView, tableGrid: DG.Grid, currentDf: DG.DataFrame
-  ): Promise<DG.Widget> {
+  col: DG.Column, view: DG.TableView, tableGrid: DG.Grid, currentDf: DG.DataFrame,
+): Promise<DG.Widget> {
   let tempCol = null;
   for (const column of currentDf.columns.numerical) {
     tempCol = column.type === DG.TYPE.FLOAT ? column : null;
@@ -82,7 +82,7 @@ export async function analyzePeptidesWidget(
 
       const sarViewer = view.addViewer('peptide-sar-viewer', options);
       const sarViewerVertical = view.addViewer('peptide-sar-viewer-vertical');
-      const peptideSpaceViewer = peptideSimilaritySpace(
+      const peptideSpaceViewer = await peptideSimilaritySpace(
         currentDf,
         col,
         'TSNE',

@@ -25,7 +25,7 @@ export async function manualOutlierSelectionDialog(inputData: DG.DataFrame) {
   const call = grok.functions.getCurrentCall();
 
   const IS_OUTLIER_COL_LABEL = 'isOutlier';
-  const OUTLIER_REASON_COL_LABEL = 'Reason';
+  const OUTLIER_REASON_COL_LABEL = 'Rationale';
 
   if (call.options['interactive']) {
     const {augmentedInput, editedInput} = await selectOutliersManually(inputData);
