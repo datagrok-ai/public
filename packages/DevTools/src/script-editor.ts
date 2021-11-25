@@ -1,6 +1,7 @@
 import * as grok from 'datagrok-api/grok';
 import * as ui from 'datagrok-api/ui';
 import * as DG from 'datagrok-api/dg';
+import $ from 'cash-dom';
 import { TagEditor } from 'datagrok-api/dg';
 
 export async function scriptEditor(view: DG.View) {
@@ -446,18 +447,17 @@ function setScriptRibbon(v:DG.View, doc:any){
     let componentsBtn = ui.div([components],'d4-combo-popup');
     componentsBtn.addEventListener("click", componentsMenu); 
     
-    //@ts-ignore
     let panels = v.getRibbonPanels();
 
     v.setRibbonPanels([
+        
+          ...panels,
+         
         [
             ui.tooltip.bind(viewBtn,'Views'),
             ui.tooltip.bind(layoutsBtn,'Layouts'),
             ui.tooltip.bind(elementsBtn,'Elements'),
             ui.tooltip.bind(componentsBtn,'Components')
-        ],
-        [
-          panels
         ]
     ])
 }
