@@ -1,10 +1,12 @@
-npm unlink datagrok-api
-npm unlink @datagrok-tools/utils
+call npm unlink datagrok-api
+call npm unlink @datagrok-tools/utils
 cd ../../js-api
-npm link
+call npm install
+call npm link
 cd ../libraries/utils
-npm link
+call npm install
+call npm link
 cd ../../packages/Chem
-npm link datagrok-api @datagrok-libraries/utils
-npm install
+call npm install
+call npm link datagrok-api @datagrok-libraries/utils
 webpack
