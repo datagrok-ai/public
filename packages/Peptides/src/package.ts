@@ -2,7 +2,6 @@
 import * as grok from 'datagrok-api/grok';
 import * as ui from 'datagrok-api/ui';
 import * as DG from 'datagrok-api/dg';
-//import * as OCL from 'openchemlib/full.js';
 
 import {
   AlignedSequenceCellRenderer,
@@ -12,7 +11,7 @@ import {Logo} from './viewers/logo-viewer';
 import {StackedBarChart} from './viewers/stacked-barchart-viewer';
 
 import {analyzePeptidesWidget} from './widgets/analyze-peptides';
-import {peptideSimilaritySpace} from './utils/peptide-similarity-space';
+import {PeptideSimilaritySpaceWidget} from './utils/peptide-similarity-space';
 import {manualAlignmentWidget} from './widgets/manual-alignment';
 import {SARViewer, SARViewerVertical} from './viewers/sar-viewer';
 
@@ -191,25 +190,11 @@ export function manualAlignment(monomer: string) {
   return manualAlignmentWidget(alignedSequenceCol, currentDf);
 }
 
-//name: testPeptideSimilaritySpace
-//input: string method {choices: ['TSNE', 'UMAP', 'SPE', 'PSPE']} = 'TSNE'
-//input: string measure {choices: ['Levenshtein', 'Jaro-Winkler']} = 'Levenshtein'
-//input: int cyclesCount = 100
-//output: graphics
-export async function testPeptideSimilaritySpace(
-  method: string,
-  measure: string,
-  cyclesCount: number,
-) {
-  const df = await grok.data.files.openTable('Demo:TestJobs:Files:DemoFiles/bio/peptides.csv');
-  const view = grok.shell.addTableView(df);
-  const viewer = await peptideSimilaritySpace(
-    df,
-    df.getCol('AlignedSequence'),
-    method,
-    measure,
-    cyclesCount,
-    'Activity',
-  );
-  view.addViewer(viewer);
+//name: Peptide Space
+//tags: panel, widgets
+//input: column col {semType: alignedSequence}
+//output: widget result
+export async function peptideSpacePanel(col: DG.Column): Promise<DG.Widget> {
+  const widget = new PeptideSimilaritySpaceWidget(col);
+  return await widget.draw();
 }

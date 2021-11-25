@@ -12,7 +12,7 @@ import {assert} from './operations';
  */
 export class Measurer {
     protected method: string;
-    protected receipt: {[name: string]: DistanceMetric} = {
+    public static receipt: {[name: string]: DistanceMetric} = {
       'Levenshtein': fl.distance,
       'Jaro-Winkler': jaroWinkler,
     };
@@ -23,7 +23,7 @@ export class Measurer {
      * @memberof Measurer
      */
     constructor(method: string) {
-      assert(this.availableMeasures.includes(method), 'The ${method} was not found.')
+      assert(Measurer.availableMeasures.includes(method), 'The ${method} was not found.')
       this.method = method;
     }
 
@@ -32,7 +32,7 @@ export class Measurer {
      * @return {DistanceMetric} Callback of the measure chosen.
      */
     public getMeasure(): DistanceMetric {
-      return this.receipt[this.method];
+      return Measurer.receipt[this.method];
     }
 
     /**
@@ -42,10 +42,10 @@ export class Measurer {
      * @type {string[]}
      * @memberof Measurer
      */
-    public get availableMeasures() : string[] {
+    public static get availableMeasures() : string[] {
       let keys = [];
 
-      for (let key in this.receipt) {
+      for (let key in Measurer.receipt) {
         keys.push(key);
       }
       return keys;
