@@ -92,7 +92,7 @@ async function _chemGetSimilarities(molStringsColumn: DG.Column, queryMolString:
   let distances = new Array(fingerprints.length).fill(0.0);
   try {
     const mol = getRdKitModule().get_mol(queryMolString);
-    const fp = mol.get_morgan_fp(128, 2);
+    const fp = mol.get_morgan_fp(2, 128);
     const sample = _stringFpToArrBits(fp, 128);
     for (let i = 0; i < fingerprints.length; ++i) {
       distances[i] = _tanimoto(fingerprints[i], sample);

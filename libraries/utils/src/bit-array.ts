@@ -53,27 +53,38 @@ export default class BitArray {
     7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7,
     7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7]);
 
-  _data: Uint32Array;
-  _length = 0;
-  _version = 0;
-  _updateLevel = 0;
-  _selectedCount = 0;
-  _selectedCountVersion = -1;
-  _selectedIndexesVersion = -1;
-  _versionedName = '';
-  _versionedNameVersion = -1;
+  private _data: Uint32Array;
+  private _length = 0;
+  private _version = 0;
+  private _updateLevel = 0;
+  private _selectedCount = 0;
+  private _selectedCountVersion = -1;
+  private _selectedIndexesVersion = -1;
+  private _versionedName = '';
+  private _versionedNameVersion = -1;
   SHRINK_THRESHOLD = 0x100;
 
-  constructor(length: number, defaultValue = false) {
-    this._length = length;
-    this._data = BitArray._createBuffer(length);
-
-    if (defaultValue) {
-      for (let i = 0; i < this._data.length; i++) {
-        this._data[i] = -1;
-      }
+  constructor(data: Uint32Array, length: number)
+  constructor(length: number, defaultValue?: boolean)
+  constructor(arg: number | Uint32Array, defaultValue: boolean | number = false) {
+    if (typeof arg === 'number') {
+      const length = arg;
+      let buff = BitArray._createBuffer(length);
+      if (defaultValue)
+        for (let i = 0; i < buff.length; i++)
+          buff[i] = -1;
+      this._data = buff;
+      this._length = length;
+    } else if (arg instanceof Uint32Array) {
+      this._data = arg as Uint32Array;
+      this._length = defaultValue as number;
+    } else {
+      throw new Error("Invalid constructor");
     }
   }
+
+
+  getRawData() { return this._data; }
 
   assureGoez(num: number, argName: String): void {
     if (num < 0) throw new Error(`${argName} should be greater than zero`);
@@ -181,7 +192,7 @@ export default class BitArray {
     return temp;
   }
 
-  static _createBuffer(length: number): Uint32Array {
+  private static _createBuffer(length: number): Uint32Array {
     return new Uint32Array(Math.floor((length + 0x1f) / 0x20));
   }
 

@@ -20,8 +20,8 @@
     "common/ngl_viewer/ngl.js"
   ],
   "dependencies": {
+    "@datagrok-libraries/utils": ">=0.0.5",
     "cash-dom": "latest",
-    "datagrok-api": ">0.94.10",
     "dayjs": "latest",
     "file-loader": "latest",
     "offscreen-canvas": "latest",
@@ -29,7 +29,6 @@
     "rxjs": "latest",
     "ts-loader": "latest",
     "typescript": "latest",
-    "@datagrok-libraries/utils": ">=0.0.5",
     "worker-loader": "latest"
   },
   "devDependencies": {
