@@ -3,7 +3,7 @@ import BitArray from '@datagrok-libraries/utils/src/bit-array';
 export class RdkitServiceSubstructure extends RdKitServiceWorkerBase {
 
   _rdKitMols: any[] | null = null;
-  _patternFps: BitArray[] | null = null;
+  // _patternFps: BitArray[] | null = null;
   // readonly _patternFpLength = 64;
 
   constructor(module: Object, webRoot: string) {
@@ -26,7 +26,7 @@ export class RdkitServiceSubstructure extends RdKitServiceWorkerBase {
       return;
     }
     this._rdKitMols = [];
-    this._patternFps = [];
+    // this._patternFps = [];
     let hashToMolblock: {[_:string] : any} = {};
     let molIdxToHash = [];
     for (let i = 0; i < dict.length; ++i) {
@@ -102,7 +102,7 @@ export class RdkitServiceSubstructure extends RdKitServiceWorkerBase {
       }
       this._rdKitMols = null;
     }
-    this._patternFps = null;
+    // this._patternFps = null;
   }
 
 }
