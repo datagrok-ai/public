@@ -1,7 +1,7 @@
 import * as grok from 'datagrok-api/grok';
 import * as ui from 'datagrok-api/ui';
 import * as DG from 'datagrok-api/dg';
-import {peptideSimilaritySpace} from '../utils/peptide-similarity-space';
+import {createPeptideSimilaritySpaceViewer} from '../utils/peptide-similarity-space';
 import {addViewerToHeader} from '../viewers/stacked-barchart-viewer';
 
 export async function analyzePeptidesWidget(
@@ -82,10 +82,10 @@ export async function analyzePeptidesWidget(
 
       const sarViewer = view.addViewer('peptide-sar-viewer', options);
       const sarViewerVertical = view.addViewer('peptide-sar-viewer-vertical');
-      const peptideSpaceViewer = await peptideSimilaritySpace(
+      const peptideSpaceViewer = await createPeptideSimilaritySpaceViewer(
         currentDf,
         col,
-        'TSNE',
+        't-SNE',
         'Levenshtein',
         100,
         `${activityColumnChoice}Scaled`,
