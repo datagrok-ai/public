@@ -27,13 +27,24 @@ let structure = {};
 const _STORAGE_NAME = 'rdkit_descriptors';
 const _KEY = 'selected';
 
-//name: getRdKitModule
-//output: object module
-export const getRdKitModule = chemCommonRdKit.getRdKitModule;
+const getRdKitModuleLocal = chemCommonRdKit.getRdKitModule;
 const initRdKitService = chemCommonRdKit.initRdKitService;
 export const getRdKitService = chemCommonRdKit.getRdKitService;
 const getRdKitWebRoot = chemCommonRdKit.getRdKitWebRoot;
 const drawMoleculeToCanvas = chemCommonRdKit.drawMoleculeToCanvas;
+
+/**
+* Usage:
+* let a = await grok.functions.call('Chem:getRdKitModule');
+* let b = a.get_mol('C1=CC=CC=C1');
+* alert(b.get_pattern_fp());
+**/
+
+//name: getRdKitModule
+//output: object module
+export function getRdKitModule() {
+  return getRdKitModuleLocal();
+}
 
 export let _package: any = new DG.Package();
 
@@ -92,7 +103,7 @@ export function canvasMol(
 //input: string smiles {semType: Molecule}
 //output: double cLogP
 export function getCLogP(smiles: string) {
-  let mol = getRdKitModule().get_mol(smiles);
+  let mol = getRdKitModuleLocal().get_mol(smiles);
   return JSON.parse(mol.get_descriptors()).CrippenClogP;
 }
 
@@ -101,7 +112,7 @@ export function getCLogP(smiles: string) {
 //input: string smiles {semType: Molecule}
 //output: widget result
 export function rdkitInfoPanel(smiles: string) {
-  let mol = getRdKitModule().get_mol(smiles);
+  let mol = getRdKitModuleLocal().get_mol(smiles);
   return new DG.Widget(ui.divV([
     _svgDiv(mol),
     ui.divText(`${getCLogP(smiles)}`)
@@ -123,7 +134,7 @@ export function molColumnPropertyPanel(molColumn: DG.Column) {
 export async function rdkitCellRenderer() {
   //let props = DG.toJs(await this.getProperties());
   // if (props?.Renderer && props.Renderer === 'RDKit') {
-  return new RDKitCellRenderer(getRdKitModule());
+  return new RDKitCellRenderer(getRdKitModuleLocal());
   //}
 }
 
