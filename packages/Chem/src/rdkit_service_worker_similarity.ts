@@ -14,7 +14,7 @@ export class RdKitServiceWorkerSimilarity extends RdkitServiceSubstructure {
   }
 
   initMorganFingerprints(/* the structures are already passed */) {
-    this.freeTanimotoFingerprints();
+    this.freeMorganFingerprints();
     if (this._rdKitMols === null) {
       return;
     }
@@ -55,12 +55,12 @@ export class RdKitServiceWorkerSimilarity extends RdkitServiceSubstructure {
   }
 
   getMorganFingerprints() {
-    return this._tanimotoFps;
+    return this._tanimotoFps!.map((e: any) => {return {data: e.getRawData().buffer, length: e.length}});
   }
 
-  freeTanimotoFingerprints() {
+  freeMorganFingerprints() {
     this._tanimotoFps = null;
-    this._sample = new BitArray(this._fpLength); // new BitSetFixedArray(this._fpLength, 1);
+    this._sample = new BitArray(this._fpLength);
   }
 
 }

@@ -1,4 +1,5 @@
 import {RdKitServiceWorkerClient} from './rdkit_service_worker_client';
+import BitArray from "@datagrok-libraries/utils/src/bit-array";
 
 export class RdKitService {
 
@@ -29,7 +30,7 @@ export class RdKitService {
     this._jobWorker = this._jobWorkers[0];
   }
 
-  async _doParallel(fooScatter: any, fooGather = async (d: any) => []): Promise<any> {
+  async _doParallel(fooScatter: any, fooGather = (d: any) => []): Promise<any> {
     let promises = [];
     const nWorkers = this._nParallelWorkers;
     for (let i = 0; i < nWorkers; i++) {
@@ -73,7 +74,7 @@ export class RdKitService {
       async (i: number, nWorkers: number) => {
         return t._parallelWorkers[i].searchSubstructure(query, querySmarts);
       },
-      async (data: any) => {
+      (data: any) => {
         for (let k = 0; k < data.length; ++k) {
           data[k] = JSON.parse(data[k]);
           data[k] = data[k].map((a: number) => a + t.segmentLength * k);
@@ -93,20 +94,20 @@ export class RdKitService {
       async (i: number, nWorkers: number) => {
         return t._parallelWorkers[i].getSimilarities(queryMolString);
       },
-      async (data: any) => {
+      (data: any) => {
         return [].concat.apply([], data);
       });
   }
 
   async getMorganFingerprints() {
     let t = this;
-    return this._doParallel(
+    return (await this._doParallel(
       async (i: number, nWorkers: number) => {
         return t._parallelWorkers[i].getMorganFingerprints();
       },
-      async (data: any) => {
+      (data: any) => {
         return [].concat.apply([], data);
-      });
+      })).map((obj: any) => new BitArray(new Uint32Array(obj.data), obj.length));
   }
 
   async initStructuralAlerts(smarts: string[]): Promise<void> {
