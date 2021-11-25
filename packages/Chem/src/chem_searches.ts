@@ -1,6 +1,7 @@
 import * as DG from 'datagrok-api/dg';
 import {RdKitService} from './rdkit_service';
 import {getRdKitModule, getRdKitService} from './chem_common_rdkit';
+import BitArray from "@datagrok-libraries/utils/src/bit-array";
 
 export function _morganFP(molString: string, fp_length = 128, fp_radius = 2) {
   if (molString.length == 0) {
@@ -67,10 +68,37 @@ async function _chemFindSimilar(molStringsColumn: DG.Column,
   return DG.DataFrame.fromColumns([sortedMolStrings, sortedScores, sortedMolInd]);
 }
 
+function _tanimoto(x: BitArray, y: BitArray): number {
+  const total = x.trueCount() + y.trueCount();
+  if (total == 0)
+    return 1.0;
+  const common = x.andWithCountBits(y, true);
+  return common / (total - common);
+}
+
+function _stringFpToArrBits(fp: string, fpLength: number) {
+  let arr = new BitArray(fpLength);
+  for (let j = 0; j < fpLength; ++j) {
+    if (fp[j] === '1')
+      arr.setTrue(j);
+  }
+  return arr;
+}
+
 // Only this function receives {sorted} in settings
 async function _chemGetSimilarities(molStringsColumn: DG.Column, queryMolString: string) {
-  const similaritiesArray = await getRdKitService().getSimilarities(queryMolString);
-  return DG.Column.fromList(DG.COLUMN_TYPE.FLOAT, 'distances', similaritiesArray);
+  // const similaritiesArray = await getRdKitService().getSimilarities(queryMolString);
+  const fingerprints = await getRdKitService().getMorganFingerprints();
+  let distances = new Array(fingerprints.length).fill(0.0);
+  try {
+    const mol = getRdKitModule().get_mol(queryMolString);
+    const fp = mol.get_morgan_fp(128, 2);
+    const sample = _stringFpToArrBits(fp, 128);
+    for (let i = 0; i < fingerprints.length; ++i) {
+      distances[i] = _tanimoto(fingerprints[i], sample);
+    }
+  } finally {}
+  return DG.Column.fromList(DG.COLUMN_TYPE.FLOAT, 'distances', distances);
 }
 
 interface CacheParams {
