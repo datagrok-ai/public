@@ -2,7 +2,6 @@ import * as DG from 'datagrok-api/dg';
 import {RdKitService} from './rdkit_service';
 import {getRdKitModule, getRdKitService} from './chem_common_rdkit';
 
-
 export function _morganFP(molString: string, fp_length = 128, fp_radius = 2) {
   if (molString.length == 0) {
     console.error(
@@ -130,7 +129,7 @@ async function _invalidate(molStringsColumn: DG.Column, queryMolString: string, 
   }
   if (includeFingerprints) {
     if (sameColumnAndVersion() && !_chemCache.similarityFingerprintsWereIndexed) {
-      await getRdKitService().initTanimotoFingerprints();
+      await getRdKitService().initMorganFingerprints();
       _chemCache.similarityFingerprintsWereIndexed = true;
     }
   }

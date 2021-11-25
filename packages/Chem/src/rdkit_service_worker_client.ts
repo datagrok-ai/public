@@ -12,10 +12,12 @@ export class RdKitServiceWorkerClient extends WorkerMessageBusClient {
     this.call(WORKER_CALL.SEARCH_SUBSTRUCTURE, [query, querySmarts]);
   freeMoleculesStructures = async () =>
     this.call(WORKER_CALL.FREE_MOLECULES_STRUCTURES, ['']);
-  initTanimotoFingerprints = async () =>
-    this.call(WORKER_CALL.INIT_TANIMOTO_FINGERPRINTS, ['']);
+  initMorganFingerprints = async () =>
+    this.call(WORKER_CALL.INIT_MORGAN_FINGERPRINTS, ['']);
   getSimilarities = async (molString: string) : Promise<number[]> =>
     this.call(WORKER_CALL.GET_SIMILARITIES, [molString]) as Promise<number[]>;
+  getMorganFingerprints = async () =>
+    this.call(WORKER_CALL.GET_MORGAN_FINGERPRINTS, []);
   initStructuralAlerts = async (smarts: string[]) =>
     this.call(WORKER_CALL.INIT_STRUCTURAL_ALERTS, [smarts]);
   getStructuralAlerts = async (smiles: string) =>

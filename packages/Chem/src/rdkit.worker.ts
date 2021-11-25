@@ -26,14 +26,16 @@ ctx.addEventListener("message", async (e: any) => {
     handler._rdkitServiceWorker.freeMoleculesStructures();
     handler._rdkitServiceWorker = null;
     port.postMessage({op: op, retval: null});
-  } else if (op === WORKER_CALL.INIT_TANIMOTO_FINGERPRINTS) {
-    handler._rdkitServiceWorker.initTanimotoFingerprints();
+  } else if (op === WORKER_CALL.INIT_MORGAN_FINGERPRINTS) {
+    handler._rdkitServiceWorker.initMorganFingerprints();
     port.postMessage({op: op, retval: null});
   } else if (op === WORKER_CALL.GET_SIMILARITIES) {
     const result = handler._rdkitServiceWorker.getSimilarities(args[0]);
     port.postMessage({op: op, retval: result});
-  // } else if (op === WORKER_CALL.GET_TANIMOTO_FINGERPRINTS) {
-  // } else if (op === WORKER_CALL.FREE_TANIMOTO_FINGERPRINTS) {
+  } else if (op === WORKER_CALL.GET_MORGAN_FINGERPRINTS) {
+    const result = handler._rdkitServiceWorker.getMorganFingerprints();
+    port.postMessage({op: op, retval: result});
+  // } else if (op === WORKER_CALL.FREE_MORGAN_FINGERPRINTS) {
   } else if (op === WORKER_CALL.INIT_STRUCTURAL_ALERTS) {
     const result = handler._rdkitServiceWorker.initStructuralAlerts(args[0]);
     port.postMessage({op: op, retval: null});
