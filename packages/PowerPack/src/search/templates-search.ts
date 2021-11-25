@@ -3,7 +3,7 @@ import * as grok from 'datagrok-api/grok';
 import * as ui from 'datagrok-api/ui';
 import {filter} from 'rxjs/operators';
 import * as DG from 'datagrok-api/dg';
-import {tryParseJson} from "utils/src/string-utils";
+import {tryParseJson} from "@datagrok-libraries/utils/src/string-utils";
 import {FileInfo} from "datagrok-api/dg";
 
 // Power Search: community-curated, template-based, widget-driven search engine
