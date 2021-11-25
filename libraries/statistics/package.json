@@ -12,7 +12,7 @@
 		"cash-dom": "latest",
 		"dayjs": "latest",
 		"ts-loader": "latest",
-		"typescript": "latest",
+		"typescript": "^4.2.3",
 		"jstat": "latest"
 	},
 	"devDependencies": {
@@ -27,7 +27,7 @@
 		"link": "npm link",
 		"debug-statistics": "grok publish --rebuild",
 		"release-statistics": "grok publish --rebuild --release",
-		"build-statistics": "webpack",
+		"build-statistics": "tsc",
 		"build": "tsc",
 		"lint": "eslint src --ext .ts",
 		"lint-fix": "eslint src --ext .ts --fix"
