@@ -218,7 +218,7 @@ function modifiedToSmiles(sequence: string) {
     if (i < codesList.length - 1 && codesList[i+1] == 'ps') 
       smiles += obj[codesList[i]];
     else if (codesList[i] == 'ps')
-      smiles += '';
+      smiles += obj[codesList[i]];
     else
       smiles += obj[codesList[i]] + stadardPhosphateLink;
   }
