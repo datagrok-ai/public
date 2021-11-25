@@ -1,7 +1,7 @@
 {
 	"name": "@datagrok/custom-ml",
 	"friendlyName": "CustomML",
-	"version": "0.0.2",
+	"version": "0.0.3",
 	"description": "",
 	"dependencies": {
 		"datagrok-api": ">0.94.10"
