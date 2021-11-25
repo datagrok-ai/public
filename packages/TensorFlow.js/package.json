@@ -2,7 +2,7 @@
 	"name": "@datagrok/tensorflow-dev",
 	"beta": true,
 	"friendlyName": "TensorFlow.js",
-	"version": "0.0.2",
+	"version": "0.0.3",
 	"description": "",
 	"dependencies": {
 		"@tensorflow/tfjs": "latest",

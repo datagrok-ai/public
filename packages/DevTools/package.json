@@ -2,7 +2,7 @@
 	"name": "@datagrok/dev-tools",
 	"beta": false,
 	"friendlyName": "DevTools",
-	"version": "1.0.0",
+	"version": "1.0.1",
 	"description": "",
 	"dependencies": {
 		"datagrok-api": ">0.94.10"
