@@ -1,6 +1,6 @@
 import * as DG from 'datagrok-api/dg';
 
-export function splitAlignedPeptides(peptideColumn: DG.Column): [DG.DataFrame, number[]] {
+export function splitAlignedPeptides(peptideColumn: DG.Column, filter: boolean = true): [DG.DataFrame, number[]] {
   const splitPeptidesArray: string[][] = [];
   let currentSplitPeptide: string[];
   let modeMonomerCount = 0;
@@ -45,13 +45,16 @@ export function splitAlignedPeptides(peptideColumn: DG.Column): [DG.DataFrame, n
   columnNames.push('C-terminal');
 
   // filter out the columns with the same values
-  splitColumns = splitColumns.filter((positionArray, index) => {
-    const isRetained = new Set(positionArray).size > 1;
-    if (!isRetained) {
-      columnNames.splice(index, 1);
-    }
-    return isRetained;
-  });
+  
+  if (filter) {
+    splitColumns = splitColumns.filter((positionArray, index) => {
+      const isRetained = new Set(positionArray).size > 1;
+      if (!isRetained) {
+        columnNames.splice(index, 1);
+      }
+      return isRetained;
+    });
+  }
 
   return [
     DG.DataFrame.fromColumns(splitColumns.map((positionArray, index) => {
