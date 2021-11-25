@@ -41,3 +41,4 @@ Java-based data connectors
 | sqlite-jdbc            | Apache 2.0                              |
 | terajdbc               | License Reference: 398/218655 (Generic Download License) @ 201079/785135/1558341279 |
 | vertica-jdbc           | -                                       |
+| clickhouse-jdbc        | Apache 2.0                              |

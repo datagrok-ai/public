@@ -1,13 +1,15 @@
 import * as grok from 'datagrok-api/grok';
 import * as ui from 'datagrok-api/ui';
 import * as DG from 'datagrok-api/dg';
-import {getMorganFingerprints, webRoot} from '../package';
+// TODO: rewrite this module
+import {moleculesToFingerprints} from '../chem_searches';
+import {getRdKitWebRoot} from '../chem_common_rdkit'
 
 export async function chemSpace(table: DG.DataFrame, molColumn: DG.Column) {
-  const fpColumn = getMorganFingerprints(molColumn);
+  const fpColumn = moleculesToFingerprints(molColumn);
 
   if (window.Worker) {
-    const myWorker = new Worker(webRoot + 'src/analysis/chem_stochastic_proximity_embedding.js');
+    const myWorker = new Worker(getRdKitWebRoot() + 'src/analysis/chem_stochastic_proximity_embedding.js');
     const fpBuffers = new Array(fpColumn.length);
 
     for (let i = 0; i < fpColumn.length; ++i) {

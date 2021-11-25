@@ -3,23 +3,21 @@ import * as ui from 'datagrok-api/ui';
 import * as DG from 'datagrok-api/dg';
 // The file is imported from a WebWorker. Don't use Datagrok imports
 import { drawMoleculeToCanvas } from '../chem_common_rdkit';
-import {RdKitService} from "../rdkit_service";
+import {getRdKitService} from "../chem_common_rdkit";
 // import { getStructuralAlerts } from './structural-alerts';
 
 let _alertsSmarts: string[] = [];
 let _alertsDescriptions: string[] = [];
-let _rdKitService: RdKitService | null = null;
 
 export async function initStructuralAlertsContext(
-  rdKitService: RdKitService, alertsSmarts: string[], alertsDescriptions: string[]) {
-    _rdKitService = rdKitService;
+  alertsSmarts: string[], alertsDescriptions: string[]) {
     _alertsSmarts = alertsSmarts;
     _alertsDescriptions = alertsDescriptions;
-    await _rdKitService.initStructuralAlerts(_alertsSmarts);
+    await getRdKitService().initStructuralAlerts(_alertsSmarts);
 }
 
 export async function structuralAlertsWidget(smiles: string) {
-  const alerts = await _rdKitService!.getStructuralAlerts(smiles); // getStructuralAlerts(smiles);
+  const alerts = await getRdKitService().getStructuralAlerts(smiles); // getStructuralAlerts(smiles);
   const width = 200;
   const height = 100;
   const list = ui.div(alerts.map((i) => {
