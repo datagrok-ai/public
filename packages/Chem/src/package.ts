@@ -4,7 +4,6 @@ import * as DG from 'datagrok-api/dg';
 // @ts-ignore
 import {getMolColumnPropertyPanel} from './chem_column_property_panel';
 import * as chemSearches from './chem_searches';
-import {moleculesToFingerprints} from './chem_searches';
 import {SubstructureFilter} from './chem_substructure_filter';
 import {RDKitCellRenderer} from './rdkit_cell_renderer';
 import * as OCL from 'openchemlib/full.js';
@@ -169,8 +168,24 @@ export async function getSimilarities(molStringsColumn: DG.Column, molString: st
 //name: getMorganFingerprints
 //input: column molColumn {semType: Molecule}
 //output: column result [fingerprints]
-export function getMorganFingerprints(molColumn: DG.Column) {
-  return moleculesToFingerprints(molColumn);
+export async function getMorganFingerprints(molColumn: DG.Column) {
+  chemLock('getMorganFingerprints');
+  const fingerprints = await chemSearches.chemGetMorganFingerprints(molColumn);
+  const fingerprintsBitsets: DG.BitSet[] = [];
+  for (let i = 0; i < fingerprints.length; ++i) {
+    const fingerprint = DG.BitSet.fromBytes(fingerprints[i].getRawData(), fingerprints[i].length);
+    fingerprintsBitsets.push(fingerprint);
+  }
+  chemUnlock('getMorganFingerprints');
+  return DG.Column.fromList('object', 'fingerprints', fingerprintsBitsets);
+}
+
+//name: getMorganFingerprint
+//input: string molString {semType: Molecule}
+//output: object fingerprintBitset [Fingerprints]
+export function getMorganFingerprint(molString: string) {
+  const bitArray = chemSearches.chemGetMorganFingerprint(molString);
+  return DG.BitSet.fromBytes(bitArray.getRawData(), bitArray.length);
 }
 
 //name: findSimilar
