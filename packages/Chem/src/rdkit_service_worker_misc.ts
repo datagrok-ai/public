@@ -1,7 +1,7 @@
-import {RdkitServiceSubstructure} from './rdkit_service_worker_substructure';
+import {RdkitServiceWorkerSubstructure} from './rdkit_service_worker_substructure';
 import { loadAlertsCollection, getStructuralAlerts, setStructuralAlertsRdKitModule } from './widgets/structural-alerts';
 
-export class RdKitServiceWorkerMisc extends RdkitServiceSubstructure {
+export class RdKitServiceWorkerMisc extends RdkitServiceWorkerSubstructure {
 
   constructor(module: Object, webRoot: string) {
     super(module, webRoot);
