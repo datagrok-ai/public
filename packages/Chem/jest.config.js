@@ -17,6 +17,6 @@ module.exports = {
     "^.+\\.(ts|tsx|js)$": "ts-jest",
     "^.+\\.worker.[t|j]sx?$": "workerloader-jest-transformer"
   },
-  // transformIgnorePatterns: ['^.+\\.js$'],
+  transformIgnorePatterns: ['^.+\\.js$'],
   testTimeout: 30000
 }
