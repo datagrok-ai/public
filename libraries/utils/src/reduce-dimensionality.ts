@@ -208,7 +208,7 @@ class PSPEReducer extends Reducer {
  */
 export class DimensionalityReducer {
   private reducer: Reducer | undefined;
-  private methods: string[];
+  public static methods: string[] = ['UMAP', 't-SNE', 'SPE', 'pSPE'];
   private measurer: Measurer;
 
   /**
@@ -220,11 +220,7 @@ export class DimensionalityReducer {
    * @memberof DimensionalityReducer
    */
   constructor(data: any[], method: string, metric: string, options?: Options) {
-    this.methods = ['UMAP', 'TSNE', 'SPE', 'PSPE'];
-
-    if (!this.availableMethods.includes(method)) {
-      throw new Error('The method "'+method+'" is not supported');
-    }
+    assert(DimensionalityReducer.availableMethods.includes(method), `The method '${method}' is not supported`);
 
     this.measurer = new Measurer(metric);
     const measure = this.measurer.getMeasure()
@@ -236,7 +232,7 @@ export class DimensionalityReducer {
         ...{nEpochs: options?.cycles},
         ...options
       });
-    } else if (method == 'TSNE') {
+    } else if (method == 't-SNE') {
       this.reducer = new TSNEReducer({
         ...{data: data},
         ...{distance: measure},
@@ -276,7 +272,7 @@ export class DimensionalityReducer {
    * @readonly
    * @memberof DimensionalityReducer
    */
-  get availableMethods() {
-    return this.methods;
+  static get availableMethods() {
+    return DimensionalityReducer.methods;
   }
 }
