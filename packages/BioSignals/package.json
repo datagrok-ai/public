@@ -1,7 +1,7 @@
 {
   "name": "@datagrok/bio-signals",
   "fullName": "BioSignals",
-  "version": "0.0.2",
+  "version": "0.0.3",
   "description": "",
   "dependencies": {
     "datagrok-api": ">0.94.10",

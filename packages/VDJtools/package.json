@@ -2,7 +2,7 @@
 	"name": "@datagrok/vdj-tools",
   	"beta": true,
 	"fullName": "VDJtools",
-	"version": "0.0.2",
+	"version": "0.0.3",
 	"description": "",
 	"dependencies": {
 		"datagrok-api": ">0.94.10"
