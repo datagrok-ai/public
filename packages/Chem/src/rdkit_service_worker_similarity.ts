@@ -13,7 +13,7 @@ export class RdKitServiceWorkerSimilarity extends RdkitServiceSubstructure {
     this._sample = new BitArray(this._fpLength);
   }
 
-  initTanimotoFingerprints(/* the structures are already passed */) {
+  initMorganFingerprints(/* the structures are already passed */) {
     this.freeTanimotoFingerprints();
     if (this._rdKitMols === null) {
       return;
@@ -52,6 +52,10 @@ export class RdKitServiceWorkerSimilarity extends RdkitServiceSubstructure {
     } finally {
       return distances;
     }
+  }
+
+  getMorganFingerprints() {
+    return this._tanimotoFps;
   }
 
   freeTanimotoFingerprints() {

@@ -82,9 +82,9 @@ export class RdKitService {
       });
   }
 
-  async initTanimotoFingerprints() {
+  async initMorganFingerprints() {
     return this._initParallelWorkers([], (i: number, segment: any) =>
-      this._parallelWorkers[i].initTanimotoFingerprints(), (_: any) => {});
+      this._parallelWorkers[i].initMorganFingerprints(), (_: any) => {});
   }
 
   async getSimilarities(queryMolString: string): Promise<number[]> {
@@ -92,6 +92,17 @@ export class RdKitService {
     return this._doParallel(
       async (i: number, nWorkers: number) => {
         return t._parallelWorkers[i].getSimilarities(queryMolString);
+      },
+      async (data: any) => {
+        return [].concat.apply([], data);
+      });
+  }
+
+  async getMorganFingerprints() {
+    let t = this;
+    return this._doParallel(
+      async (i: number, nWorkers: number) => {
+        return t._parallelWorkers[i].getMorganFingerprints();
       },
       async (data: any) => {
         return [].concat.apply([], data);
