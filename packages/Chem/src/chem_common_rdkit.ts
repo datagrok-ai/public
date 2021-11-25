@@ -1,9 +1,10 @@
 // This file will be used from Web Workers, so there
 // should be no imports from Datagrok or OCL
 import {RdKitService} from './rdkit_service';
+import {convertToRDKit} from './chem_rgroup_analysis';
+import BitArray from "@datagrok-libraries/utils/src/bit-array";
 //@ts-ignore
 import {createRDKit} from "./RDKit_minimal_2021.03_18.js";
-import {convertToRDKit} from './chem_rgroup_analysis';
 
 export let _rdKitModule: any = null;
 export let _rdKitService: RdKitService | null = null;
