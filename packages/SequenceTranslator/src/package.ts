@@ -29,11 +29,11 @@ export function sequenceTranslator() {
   function updateTableAndSVG(sequence: string) {
     moleculeSvgDiv.innerHTML = "";
     outputTableDiv.innerHTML = "";
-    let outputSequencesObj = convertSequence(sequence);
+    let outputSequenceObj = convertSequence(sequence);
     let tableRows = [];
-    for (let key of Object.keys(outputSequencesObj).slice(1)) {
+    for (let key of Object.keys(outputSequenceObj).slice(1)) {
       //@ts-ignore
-      tableRows.push({'key': key, 'value': ui.link(outputSequencesObj[key], () => navigator.clipboard.writeText(outputSequencesObj[key]).then(() => grok.shell.info(sequenceWasCopied)), tooltipSequence, '')})
+      tableRows.push({'key': key, 'value': ui.link(outputSequenceObj[key], () => navigator.clipboard.writeText(outputSequenceObj[key]).then(() => grok.shell.info(sequenceWasCopied)), tooltipSequence, '')})
     }
     outputTableDiv.append(
       ui.div([
@@ -42,15 +42,15 @@ export function sequenceTranslator() {
         ).root
       ], 'table')
     );
-    semTypeOfInputSequence.textContent = 'Detected input type: ' + outputSequencesObj.type;
-    if (!(outputSequencesObj.type == undefinedInputSequence || outputSequencesObj.type == smallNumberOfCharacters)) {
+    semTypeOfInputSequence.textContent = 'Detected input type: ' + outputSequenceObj.type;
+    if (!(outputSequenceObj.type == undefinedInputSequence || outputSequenceObj.type == smallNumberOfCharacters)) {
       let pi = DG.TaskBarProgressIndicator.create('Rendering molecule...');
       try {
-        let flavor: string = (outputSequencesObj.Nucleotides.includes('U')) ? "RNA_both_caps" : "DNA_both_caps";
+        let flavor: string = (outputSequenceObj.Nucleotides.includes('U')) ? "RNA_both_caps" : "DNA_both_caps";
         (async () => {
-          let smiles = (isSiRnaGcrsCode(inputSequenceField.value)) ? 
-            modifiedToSmiles(inputSequenceField.value) :
-            await sequenceToSmiles(outputSequencesObj.Nucleotides, flavor); 
+          let smiles = (isSiRnaGcrsCode(inputSequenceField.value.replace(/\s/g, ''))) ? 
+            modifiedToSmiles(inputSequenceField.value.replace(/\s/g, '')) :
+            await nucleotidesToSmiles(outputSequenceObj.Nucleotides, flavor); 
           smiles = smiles.replace(/@/g, ''); // Remove StereoChemistry on the Nucleic acid chain and remove the Chiral label
           moleculeSvgDiv.append(grok.chem.svgMol(smiles, 900, 300));
         })();
@@ -124,21 +124,21 @@ export function sequenceTranslator() {
   let moleculeSvgDiv = ui.block([]);
 
   let flavor: string = (defaultInput.includes('U')) ? "RNA_both_caps" : "DNA_both_caps";
-  (async () => moleculeSvgDiv.append(grok.chem.svgMol(<string> await sequenceToSmiles(defaultInput, flavor), 900, 300)))();
+  (async () => moleculeSvgDiv.append(grok.chem.svgMol(<string> await nucleotidesToSmiles(defaultInput, flavor), 900, 300)))();
 
   let saveMolFileButton = ui.button('SAVE MOL FILE', async () => {
     let outputSequenceObj = convertSequence(inputSequenceField.value);
-    let flavor: string = outputSequenceObj.Nucleotides.includes('U') ? "RNA_both_caps" : "DNA_both_caps";
-    let smiles = (isSiRnaGcrsCode(inputSequenceField.value)) ? 
-      modifiedToSmiles(inputSequenceField.value) :
-      await sequenceToSmiles(outputSequenceObj.Nucleotides, flavor); 
+    flavor = outputSequenceObj.Nucleotides.includes('U') ? "RNA_both_caps" : "DNA_both_caps";
+    let smiles = (isSiRnaGcrsCode(inputSequenceField.value.replace(/\s/g, ''))) ? 
+      modifiedToSmiles(inputSequenceField.value.replace(/\s/g, '')) :
+      await nucleotidesToSmiles(outputSequenceObj.Nucleotides, flavor); 
     smiles = smiles.replace(/@/g, ''); // Remove StereoChemistry on the Nucleic acid chain and remove the Chiral label
     let mol = OCL.Molecule.fromSmiles(smiles);
     let result = `${mol.toMolfile()}\n`;// + '$$$$';
     var element = document.createElement('a');
     element.setAttribute('href', 'data:text/plain;charset=utf-8,' + encodeURIComponent(result));
     element.setAttribute('download', 
-      ((isSiRnaGcrsCode(inputSequenceField.value)) ? inputSequenceField.value : outputSequenceObj.Nucleotides) + '.mol'
+      ((isSiRnaGcrsCode(inputSequenceField.value.replace(/\s/g, ''))) ? inputSequenceField.value.replace(/\s/g, '') : outputSequenceObj.Nucleotides) + '.mol'
     );
     element.click();
   });
@@ -201,21 +201,32 @@ function modifiedToSmiles(sequence: string) {
     'moeG': 'OC[C@H]1O[C@@H](N2C3N=C(N)NC(=O)C=3N=C2)[C@H](OCCOC)[C@@H]1O',
     'moeA': 'OC[C@H]1O[C@@H](N2C3N=CN=C(N)C=3N=C2)[C@H](OCCOC)[C@@H]1O',
     'moeT': 'OC[C@H]1O[C@@H](N2C=C(C)C(=O)NC2(=O))[C@H](OCCOC)[C@@H]1O',
-    '5mC': 'OC[C@H]1O[C@@H](N2C=C(C)C(N)=NC2(=O))C[C@@H]1O'
+    '5mC': 'OC[C@H]1O[C@@H](N2C=C(C)C(N)=NC2(=O))C[C@@H]1O',
+    'ps': 'OP(=O)(O)S'
   };
+  const stadardPhosphateLink = 'OP(=O)(O)O';
   const codes = Object.keys(obj);
   let i = 0;
   let smiles = '';
+  let codesList = [];
   while (i < sequence.length) {
     let code = codes.find((s) => s == sequence.slice(i, i + s.length))!;
     i += code.length;
-    smiles += (code == 'ps') ? 'OP(=O)(O)S' : obj[code] + 'OP(=O)(O)O';
+    codesList.push(code);
+  }
+  for (let i = 0; i < codesList.length; i++) {
+    if (i < codesList.length - 1 && codesList[i+1] == 'ps') 
+      smiles += obj[codesList[i]];
+    else if (codesList[i] == 'ps')
+      smiles += obj[codesList[i]];
+    else
+      smiles += obj[codesList[i]] + stadardPhosphateLink;
   }
   smiles = smiles.replace(/OO/g, 'O').replace(/SO/g, 'S');
-  return smiles.slice(0, smiles.length - 10);
+  return smiles.slice(0, smiles.length - stadardPhosphateLink.length);
 }
 
-export async function sequenceToSmiles(nucleotides: string, flavor: string) {
+export async function nucleotidesToSmiles(nucleotides: string, flavor: string) {
   return await grok.functions.call('SequenceTranslator:convertFastaToSmiles', {
     'sequence_in_fasta_format': nucleotides,
     'flavor': flavor
@@ -264,6 +275,7 @@ function convertSequence(seq: string) {
       Nucleotides: asoGapmersGcrsToNucleotides(seq),
       BioSpring: asoGapmersGcrsToBioSpring(seq),
       Axolabs: noTranslationTableAvailable,
+      MM12: gcrsToMM12(seq),
       GCRS: seq
     };
   if (isRnaNucleotidesCode(seq))
@@ -296,6 +308,7 @@ function convertSequence(seq: string) {
       Nucleotides: siRnaGcrsToNucleotides(seq),
       BioSpring: siRnaGcrsToBioSpring(seq),
       Axolabs: siRnaGcrsToAxolabs(seq),
+      MM12: gcrsToMM12(seq), 
       GCRS: seq
     };
   if (isGcrsCode(seq))
