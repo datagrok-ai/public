@@ -1,6 +1,76 @@
 <!-- TITLE: Release History -->
 <!-- SUBTITLE: -->
 
+# 2021-11-25 Dev build 0.95.9
+
+## Latest Docker Images
+
+* Datagrok: 
+  *  `docker pull datagrok/datagrok:0.95.9`
+  *  `docker pull datagrok/datagrok:latest`
+  
+* [Docker-Compose](admin/docker-compose.md)
+
+## Addressed Issues
+
+* GitHub Actions: Update js-api/package-lock.json 
+* Jest: Moving things around for Chem and others 
+* NPM repositories: new package manager UI (WIP)
+* #181 Chem: Workers. wip: Access locks on grok API chem functions 
+* Peptides: Add dimensionality reducer worker. 
+* Peptides: Remove console.log. 
+* Formula Lines: Hide '...' button from Filter field in PP 
+* Change routing for CVM components in AWS 
+* Peptides: Add peptide space as a widget. 
+* Chem: Descriptors app 
+* (Bug) Packages: dapi.packages.find ignores the include string 
+* (Bug) Packages: URL field is empty for packages deployed from npm repositories 
+* (Bug) Sequence Translator: molecule SVG and MOL file don't match (WIP)
+* README 
+* Chem: RdKit module external availability, refactoring 
+* Chem: R-Group Analysis fix 
+* add ClickHouse connector 
+* Datlas: Add logging to ConnectorsPlugin 
+* Datals: add tryToReconnectToConnectorServer flag 
+* Chem: version bump, for further evaluation 
+* In-vis Filter: Implement for Line Chart 
+* #181 Chem: Workers. wip: Simplify Similarity to an array of BitArray-s 
+* #181 Chem: Workers. wip: Prepared Substructure Search for pattern fingerprints 
+* Peptides: Add peptide space in property panel. 
+* Packages: version bump 
+* GitHub Actions: Update packages/ChemblBrowser/package-lock.json 
+* GitHub Actions: Update packages/BioSignals/package-lock.json 
+* GitHub Actions: Update packages/Bio/package-lock.json 
+* GitHub Actions: Update packages/CustomML/package-lock.json 
+* GitHub Actions: Update packages/DSP/package-lock.json 
+* GitHub Actions: Update packages/ChaRPy/package-lock.json 
+* GitHub Actions: Update packages/ClinicalCase/package-lock.json 
+* GitHub Actions: Update packages/Discovery/package-lock.json 
+* GitHub Actions: Update packages/Charts/package-lock.json 
+* GitHub Actions: Update packages/DevTools/package-lock.json 
+* GitHub Actions: Update packages/DrugBank/package-lock.json 
+* GitHub Actions: Update packages/PhyloTreeViewer/package-lock.json 
+* GitHub Actions: Update packages/NLP/package-lock.json 
+* GitHub Actions: Update packages/MultiPlot/package-lock.json 
+* GitHub Actions: Update packages/ScatterPlot3D/package-lock.json 
+* GitHub Actions: Update packages/TensorFlow.js/package-lock.json 
+* GitHub Actions: Update packages/Tutorials/package-lock.json 
+* GitHub Actions: Update packages/Ketcher/package-lock.json 
+* GitHub Actions: Update packages/Impute/package-lock.json 
+* GitHub Actions: Update packages/Notebooks/package-lock.json 
+* GitHub Actions: Update packages/VDJtools/package-lock.json 
+* GitHub Actions: Update packages/Viewers/package-lock.json 
+* GitHub Actions: Update packages/UsageAnalysis/package-lock.json 
+* Chem: Preparing a transport for fingerprints 
+* Tutorials: fixed ribbon hint indicator position 
+* DevTools, Script-editor: Fix ribbon panels 
+* Chem: Version bump 0.31.0 (no locks) 
+* Chem: Version bump 0.32.0 (no locks) 
+* null 
+* Fixed build errors 
+* Chem: Version bump 0.33.0 (no locks) 
+
+
 # 2021-11-23 Dev build 0.95.8
 
 ## Latest Docker Images
