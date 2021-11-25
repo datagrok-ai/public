@@ -4,34 +4,7 @@ import * as DG from 'datagrok-api/dg';
 
 import $ from 'cash-dom';
 
-import {describe} from '../describe';
-import { Subject } from 'rxjs';
-
-export class SARViewerModel {
-  private viewerGrid: Subject<DG.Grid> = new Subject<DG.Grid>();
-  private viewerVGrid: Subject<DG.Grid> = new Subject<DG.Grid>();
-  private statsDf: Subject<DG.DataFrame> = new Subject<DG.DataFrame>();
-  public viewerGrid$ = this.viewerGrid.asObservable();
-  public viewerVGrid$ = this.viewerVGrid.asObservable();
-  public statsDf$ = this.statsDf.asObservable();
-
-  async updateData(
-      df: DG.DataFrame,
-      activityCol: string,
-      activityScaling: string,
-      sourceGrid: DG.Grid,
-      twoColorMode: boolean,
-      initialBitset: DG.BitSet | null,
-    ) {
-    const [viewerGrid, viewerVGrid, statsDf] =
-      await describe(df, activityCol, activityScaling, sourceGrid, twoColorMode, initialBitset);
-    this.viewerGrid.next(viewerGrid);
-    this.viewerVGrid.next(viewerVGrid);
-    this.statsDf.next(statsDf);
-  }
-}
-
-let model = new SARViewerModel();
+import { model } from './model';
 
 export class SARViewer extends DG.JsViewer {
   protected viewerGrid: DG.Grid | null;
@@ -79,7 +52,10 @@ export class SARViewer extends DG.JsViewer {
     this._initialBitset = this.dataFrame!.filter.clone();
     this.initialized = true;
     this.subs.push(model.statsDf$.subscribe(data => this.statsDf = data));
-    this.subs.push(model.viewerGrid$.subscribe(data => this.viewerGrid = data));
+    this.subs.push(model.viewerGrid$.subscribe(data => {
+      this.viewerGrid = data;
+      this.render();
+    }));
     this.subs.push(model.viewerVGrid$.subscribe(data => this.viewerVGrid = data));
   }
 
@@ -178,18 +154,20 @@ export class SARViewer extends DG.JsViewer {
   private accordionFunc(accordion: DG.Accordion) {
     if (accordion.context instanceof DG.RowGroup) {
       const originalDf: DG.DataFrame = DG.toJs(accordion.context.dataFrame);
+      const viewerDf = this.viewerGrid?.dataFrame;
 
       if (
         originalDf.getTag('dataType') === 'peptides' &&
         originalDf.col('~splitCol') &&
         this.viewerGrid &&
-        this.viewerGrid.dataFrame
+        viewerDf &&
+        viewerDf.currentCol !== null
       ) {
-        const currentAAR: string = this.viewerGrid.dataFrame.get(
+        const currentAAR: string = viewerDf.get(
           this.aminoAcidResidue,
-          this.viewerGrid.dataFrame.currentRowIdx,
+          viewerDf.currentRowIdx,
         );
-        const currentPosition = this.viewerGrid.dataFrame.currentCol.name;
+        const currentPosition = viewerDf.currentCol.name;
 
         const labelStr = `${currentAAR === '-' ? 'Empty' : currentAAR} - ${currentPosition}`;
         const currentColor = DG.Color.toHtml(DG.Color.orange);
@@ -310,13 +288,11 @@ export class SARViewer extends DG.JsViewer {
           });
           this.viewerVGrid.dataFrame!.onCurrentCellChanged.subscribe((_) => this.syncGridsFunc(true));
           this.dataFrame!.onRowsFiltering.subscribe((_) => this.sourceFilteringFunc());
-
           grok.events.onAccordionConstructed.subscribe((accordion: DG.Accordion) => this.accordionFunc(accordion));
         }
       }
     }
     //fixes viewers not rendering immediately after analyze.
-    this.viewerVGrid?.invalidate();
     this.viewerGrid?.invalidate();
   }
 }
@@ -338,5 +314,6 @@ export class SARViewerVertical extends DG.JsViewer {
       $(this.root).empty();
       this.root.appendChild(this.viewerVGrid.root);
     }
+    this.viewerVGrid?.invalidate();
   }
 }

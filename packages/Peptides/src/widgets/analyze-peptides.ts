@@ -3,6 +3,7 @@ import * as ui from 'datagrok-api/ui';
 import * as DG from 'datagrok-api/dg';
 import {createPeptideSimilaritySpaceViewer} from '../utils/peptide-similarity-space';
 import {addViewerToHeader} from '../viewers/stacked-barchart-viewer';
+import {model} from '../viewers/model';
 
 export async function analyzePeptidesWidget(
   col: DG.Column, view: DG.TableView, tableGrid: DG.Grid, currentDf: DG.DataFrame,
@@ -96,6 +97,8 @@ export async function analyzePeptidesWidget(
 
       const StackedBarchartProm = currentDf.plot.fromType('StackedBarChartAA');
       addViewerToHeader(tableGrid, StackedBarchartProm);
+      
+      // currentDf.onValuesChanged.subscribe(async () => await model.updateDefault());
     } else {
       grok.shell.error('The activity column must be of floating point number type!');
     }

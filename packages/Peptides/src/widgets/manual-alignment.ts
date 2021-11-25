@@ -2,15 +2,26 @@ import * as ui from 'datagrok-api/ui';
 import * as DG from 'datagrok-api/dg';
 
 import $ from 'cash-dom';
+import { model } from '../viewers/model';
+import { splitAlignedPeptides } from '../utils/split-aligned';
 
 export function manualAlignmentWidget(alignedSequenceCol: DG.Column, currentDf: DG.DataFrame) {
-  //TODO: update viewers right when the changes get applied
   const sequenceInput = ui.textInput('', alignedSequenceCol.get(currentDf.currentRowIdx));
   (sequenceInput.input as HTMLElement).style.height = '50px';
   (sequenceInput.input as HTMLElement).style.overflow = 'hidden';
 
-  const applyChangesBtn = ui.button('Apply', () => {
-    alignedSequenceCol.set(currentDf.currentRowIdx, sequenceInput.value);
+  const applyChangesBtn = ui.button('Apply', async () => {
+    const newSequence = sequenceInput.value;
+    const affectedRowIndex = currentDf.currentRowIdx;
+    const [splitSequence,] = splitAlignedPeptides(DG.Column.fromStrings('splitSequence', [newSequence]), false);
+
+    alignedSequenceCol.set(affectedRowIndex, newSequence);
+    for (const part of splitSequence.columns) {
+      if (currentDf.col(part.name) !== null)
+        currentDf.set(part.name, affectedRowIndex, part.get(0));
+    }
+
+    await model.updateDefault();
   });
 
   const resetBtn = ui.button(
