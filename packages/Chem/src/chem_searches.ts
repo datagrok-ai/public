@@ -1,7 +1,7 @@
 import * as DG from 'datagrok-api/dg';
 import {getRdKitModule, getRdKitService} from './chem_common_rdkit';
-import BitArray from "@datagrok-libraries/utils/src/bit-array";
 import {rdKitFingerprintToBitArray, tanimoto} from './chem_common';
+import BitArray from "@datagrok-libraries/utils/src/bit-array";
 
 async function _chemFindSimilar(molStringsColumn: DG.Column,
     queryMolString: string, settings: { [name: string]: any }) {
@@ -37,7 +37,7 @@ async function _chemFindSimilar(molStringsColumn: DG.Column,
 
 // Only this function receives {sorted} in settings
 async function _chemGetSimilarities(queryMolString: string) {
-  const fingerprints = _chemCache.similarityFingerprints!;
+  const fingerprints = _chemCache.tanimotoFingerprints!;
   let distances = new Array(fingerprints.length).fill(0.0);
   const sample = chemGetMorganFingerprint(queryMolString);
   for (let i = 0; i < fingerprints.length; ++i) {
@@ -52,8 +52,8 @@ interface CacheParams {
   column: DG.Column | null;
   query: string | null;
   moleculesWereIndexed: boolean | null;
-  similarityFingerprintsWereIndexed: boolean | null;
-  similarityFingerprints: BitArray[] | null;
+  tanimotoFingerprintsWereIndexed: boolean | null;
+  tanimotoFingerprints: BitArray[] | null;
 };
 
 const cacheParamsDefaults: CacheParams = {
@@ -62,8 +62,8 @@ const cacheParamsDefaults: CacheParams = {
   column: null,
   query: null,
   moleculesWereIndexed: false,
-  similarityFingerprintsWereIndexed: false,
-  similarityFingerprints: null
+  tanimotoFingerprintsWereIndexed: false,
+  tanimotoFingerprints: null
 };
 
 let _chemCache = { ...cacheParamsDefaults };
@@ -76,8 +76,8 @@ async function _invalidate(molStringsColumn: DG.Column, queryMolString: string |
     _chemCache.cachedForCol = molStringsColumn;
     _chemCache.cachedForColVersion = molStringsColumn.version;
     _chemCache.moleculesWereIndexed = false;
-    _chemCache.similarityFingerprintsWereIndexed = false;
-    _chemCache.similarityFingerprints = null;
+    _chemCache.tanimotoFingerprintsWereIndexed = false;
+    _chemCache.tanimotoFingerprints = null;
   }
   if (sameColumnAndVersion() && !_chemCache.moleculesWereIndexed) {
     // TODO: avoid creating an additional array here
@@ -99,15 +99,15 @@ async function _invalidate(molStringsColumn: DG.Column, queryMolString: string |
       molStringsColumn.compact();
     }
     _chemCache.moleculesWereIndexed = true;
-    _chemCache.similarityFingerprintsWereIndexed = false;
-    _chemCache.similarityFingerprints = null;
+    _chemCache.tanimotoFingerprintsWereIndexed = false;
+    _chemCache.tanimotoFingerprints = null;
     console.log(`RdKit molecules for a dataset ${_chemCache.cachedForCol?.name} invalidated`);
   }
   if (includeFingerprints) {
-    if (sameColumnAndVersion() && !_chemCache.similarityFingerprintsWereIndexed) {
+    if (sameColumnAndVersion() && !_chemCache.tanimotoFingerprintsWereIndexed) {
       await getRdKitService().initMorganFingerprints();
-      _chemCache.similarityFingerprintsWereIndexed = true;
-      _chemCache.similarityFingerprints = await getRdKitService().getMorganFingerprints();
+      _chemCache.tanimotoFingerprintsWereIndexed = true;
+      _chemCache.tanimotoFingerprints = await getRdKitService().getMorganFingerprints();
       console.log(`Morgan fingerprints for a dataset ${_chemCache.cachedForCol?.name} invalidated`);
     }
   }
@@ -174,7 +174,7 @@ export async function chemSubstructureSearchLibrary(
 
 export async function chemGetMorganFingerprints(molStringsColumn: DG.Column) {
   await _invalidate(molStringsColumn, null, true);
-  const fingerprints = _chemCache.similarityFingerprints!;
+  const fingerprints = _chemCache.tanimotoFingerprints!;
   return fingerprints;
 }
 
