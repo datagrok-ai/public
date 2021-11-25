@@ -206,6 +206,11 @@ export abstract class Tutorial extends DG.Widget {
       $(hintIndicator).css('margin-top',
         hintNode.top + 1 == indicatorNode.top ? 0 : -height);
     }
+
+    if ($(hint).hasClass('d4-ribbon-item')){
+      $(hintIndicator).css('margin-left', '0px')
+    }
+
   }
 
   _removeHints(hint: HTMLElement | HTMLElement[]) {
