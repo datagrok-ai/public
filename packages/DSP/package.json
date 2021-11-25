@@ -1,7 +1,7 @@
 {
 	"name": "@datagrok/dsp",
 	"fullName": "DSP",
-	"version": "0.0.2",
+	"version": "0.0.3",
 	"description": "A pack of various digital signal processing tools",
 	"dependencies": {
 		"datagrok-api": ">0.94.10"
