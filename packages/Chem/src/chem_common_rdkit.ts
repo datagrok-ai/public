@@ -1,25 +1,57 @@
 // This file will be used from Web Workers, so there
 // should be no imports from Datagrok or OCL
 import {RdKitService} from './rdkit_service';
-import {chemLock, chemUnlock} from './chem_common';
+//@ts-ignore
+import {createRDKit} from "./RDKit_minimal_2021.03_18.js";
+import {convertToRDKit} from './chem_rgroup_analysis';
 
-let commonRdKitModule: any = null;
+export let _rdKitModule: any = null;
+export let _rdKitService: RdKitService | null = null;
+export let _webRoot: string | null;
+let initialized = false;
 
-export function setCommonRdKitModule(module: any) {
-  commonRdKitModule = module;
+export async function initRdKitService(webRootValue: string) {
+  if (!initialized) {
+    _webRoot = webRootValue;
+    _rdKitModule = await createRDKit(_webRoot);
+    console.log('RDKit module package instance was initialized');
+    _rdKitService = new RdKitService();
+    await _rdKitService.init(_webRoot);
+    console.log('RDKit Service was initialized');
+    _rdKitModule.prefer_coordgen(false);
+    initialized = true;
+  }
+}
+
+export function getRdKitModule() {
+  if (!initialized)
+    throw("RdKit Module is not initialized");
+  return _rdKitModule!;
+}
+
+export function getRdKitService() {
+  if (!initialized)
+    throw("RdKit Service is not initialized");
+  return _rdKitService!;
+}
+
+export function getRdKitWebRoot() {
+  if (!initialized)
+    throw("WebRoot for RdKit is not initialized");
+  return _webRoot;
 }
 
 export function drawMoleculeToCanvas(
   x: number, y: number, w: number, h: number,
   onscreenCanvas: HTMLCanvasElement, molString: string, scaffoldMolString: string | null = null) {
-  let mol = commonRdKitModule.get_mol(molString);
+  let mol = getRdKitModule().get_mol(convertToRDKit(molString));
   const molBlock = mol.get_new_coords(true);
   mol.delete();
-  mol = commonRdKitModule.get_mol(molBlock);
+  mol = getRdKitModule().get_mol(molBlock);
   mol.normalize_2d_molblock();
   mol.straighten_2d_layout();
   let scaffoldMol = scaffoldMolString == null ? null :
-    commonRdKitModule.get_qmol(scaffoldMolString);
+    getRdKitModule().get_qmol(convertToRDKit(scaffoldMolString));
   let substructJson = "{}";
   if (scaffoldMol) {
     substructJson = mol.get_substruct_match(scaffoldMol);

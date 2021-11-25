@@ -1,26 +1,16 @@
 import {RdkitServiceSubstructure} from './rdkit_service_worker_substructure';
-import {BitSetFixedArray} from "./bitset-fixed-array";
-import {BitSet} from "datagrok-api/src/dataframe";
-
+// import {BitSetFixedArray} from "./bitset-fixed-array";
+import BitArray from '@datagrok-libraries/utils/src/bit-array';
 export class RdKitServiceWorkerSimilarity extends RdkitServiceSubstructure {
 
-  _tanimotoFps: BitSetFixedArray | null = null;
-  _sample: BitSetFixedArray;
+  _tanimotoFps: BitArray[] | null = null;
+  _sample: BitArray;
   readonly _fpLength: number = 128;
   readonly _fpRadius: number = 2;
 
   constructor(module: Object, webRoot: string) {
     super(module, webRoot);
-    this._sample = new BitSetFixedArray(this._fpLength, 1);
-  }
-
-  _stringFpToArrBits(item: number, fp: string, arr: BitSetFixedArray) {
-    for (let j = 0; j < this._fpLength; ++j) {
-      if (fp[j] === '1')
-        arr.setTrue(item, j);
-      else if (fp[j] === '0')
-        arr.setFalse(item, j);
-    }
+    this._sample = new BitArray(this._fpLength);
   }
 
   initTanimotoFingerprints(/* the structures are already passed */) {
@@ -28,23 +18,25 @@ export class RdKitServiceWorkerSimilarity extends RdkitServiceSubstructure {
     if (this._rdKitMols === null) {
       return;
     }
-    this._tanimotoFps = new BitSetFixedArray(this._fpLength, this._rdKitMols.length);
+    this._tanimotoFps = []; // new  new BitArray(this._fpLength);
     for (let i = 0; i < this._rdKitMols.length; ++i) {
       let item = this._rdKitMols[i];
+      let arr = new BitArray(this._fpLength);
       try {
         const fp = this._rdKitMols[i].get_morgan_fp(this._fpRadius, this._fpLength);
-        this._stringFpToArrBits(i, fp, this._tanimotoFps);
+        arr = this._stringFpToArrBits(fp, arr, this._fpLength);
       } catch (e) {
         // nothing to do
       }
+      this._tanimotoFps.push(arr);
     }
   }
 
-  _tanimoto(arr: BitSetFixedArray, i: number, sample: BitSetFixedArray): number {
-    const total = arr.count(i) + sample.count(0);
+  _tanimoto(arr: BitArray[], i: number, sample: BitArray): number {
+    const total = arr[i].trueCount() + sample.trueCount();
     if (total == 0)
       return 1.0;
-    const common = arr.andWithCountBits(i, sample);
+    const common = arr[i].andWithCountBits(sample, true);
     return common / (total - common);
   }
 
@@ -53,7 +45,7 @@ export class RdKitServiceWorkerSimilarity extends RdkitServiceSubstructure {
     try {
       const mol = this._rdKitModule.get_mol(sampleMol);
       const fp = mol.get_morgan_fp(this._fpRadius, this._fpLength);
-      this._stringFpToArrBits(0, fp, this._sample);
+      this._sample = this._stringFpToArrBits(fp, this._sample, this._fpLength);
       for (let i = 0; i < this._rdKitMols!.length; ++i) {
         distances[i] = this._tanimoto(this._tanimotoFps!, i, this._sample);
       }
@@ -64,7 +56,7 @@ export class RdKitServiceWorkerSimilarity extends RdkitServiceSubstructure {
 
   freeTanimotoFingerprints() {
     this._tanimotoFps = null;
-    this._sample = new BitSetFixedArray(this._fpLength, 1);
+    this._sample = new BitArray(this._fpLength); // new BitSetFixedArray(this._fpLength, 1);
   }
 
 }

@@ -1,5 +1,5 @@
 const rnaColor = "rgb(255,230,153)";
-const invAbasicColor = "rgb(203,119,211)";
+const invAbasicColor = "rgb(255,230,153)";
 export const axolabsMap: {[index: string]: {fullName: string, symbols: [string, string, string, string], color: string}} = {
   "RNA": {
     fullName: "RNA nucleotides",

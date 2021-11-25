@@ -1,12 +1,23 @@
 import {RdKitServiceWorkerBase} from './rdkit_service_worker_base';
-import {BitSetFixedArray} from "./bitset-fixed-array";
-
+import BitArray from '@datagrok-libraries/utils/src/bit-array';
 export class RdkitServiceSubstructure extends RdKitServiceWorkerBase {
 
   _rdKitMols: any[] | null = null;
+  _patternFps: BitArray[] | null = null;
+  // readonly _patternFpLength = 64;
 
   constructor(module: Object, webRoot: string) {
     super(module, webRoot);
+  }
+
+  _stringFpToArrBits(fp: string, arr: BitArray, fpLength: number) {
+    for (let j = 0; j < fpLength; ++j) {
+      if (fp[j] === '1')
+        arr.setTrue(j);
+      else if (fp[j] === '0')
+        arr.setFalse(j);
+    }
+    return arr;
   }
 
   initMoleculesStructures(dict: string[]) {
@@ -15,13 +26,17 @@ export class RdkitServiceSubstructure extends RdKitServiceWorkerBase {
       return;
     }
     this._rdKitMols = [];
+    this._patternFps = [];
     let hashToMolblock: {[_:string] : any} = {};
     let molIdxToHash = [];
     for (let i = 0; i < dict.length; ++i) {
       let item = dict[i];
+      // let arr = new BitArray(this._patternFpLength);
       let mol;
       try {
         mol = this._rdKitModule.get_mol(item);
+        // const fp = mol.get_pattern_fp(this._patternFpLength);
+        // arr = this._stringFpToArrBits(fp, arr, this._patternFpLength);
         if (item.includes('M  END')) {
           item = mol.normalize_2d_molblock();
           mol.straighten_2d_layout();
@@ -36,7 +51,8 @@ export class RdkitServiceSubstructure extends RdKitServiceWorkerBase {
         mol = this._rdKitModule.get_mol('');
         // Won't rethrow
       }
-      this._rdKitMols!.push(mol);
+      this._rdKitMols.push(mol);
+      // this._patternFps.push(arr);
       molIdxToHash.push(item);
     }
     return { molIdxToHash, hashToMolblock };
@@ -47,8 +63,11 @@ export class RdkitServiceSubstructure extends RdKitServiceWorkerBase {
     if (this._rdKitMols) {
       try {
         let queryMol = null;
+        // let arr = new BitArray(this._patternFpLength);
         try {
           queryMol = this._rdKitModule.get_mol(queryMolString, "{\"mergeQueryHs\":true}");
+          // const fp = queryMol.get_pattern_fp(this._patternFpLength);
+          // arr = this._stringFpToArrBits(fp, arr, this._patternFpLength);
         } catch (e2) {
           if (querySmarts !== null && querySmarts !== '') {
             console.log("Cannot parse a MolBlock. Switching to SMARTS");
@@ -60,7 +79,8 @@ export class RdkitServiceSubstructure extends RdKitServiceWorkerBase {
         if (queryMol) {
           if (queryMol.is_valid()) {
             for (let i = 0; i < this._rdKitMols!.length; ++i)
-              if (this._rdKitMols![i]!.get_substruct_match(queryMol) !== "{}")
+              // if (arr.equals(this._patternFps![i].and(arr)))
+                if (this._rdKitMols![i]!.get_substruct_match(queryMol) !== "{}")
                   matches.push(i);
           }
           queryMol.delete();
@@ -82,6 +102,7 @@ export class RdkitServiceSubstructure extends RdKitServiceWorkerBase {
       }
       this._rdKitMols = null;
     }
+    this._patternFps = null;
   }
 
 }

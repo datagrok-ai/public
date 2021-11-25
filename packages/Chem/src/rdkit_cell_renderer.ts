@@ -5,6 +5,7 @@
 import * as grok from 'datagrok-api/grok';
 import * as ui from 'datagrok-api/ui';
 import * as DG from 'datagrok-api/dg';
+import { convertToRDKit } from './chem_rgroup_analysis';
 
 export class RDKitCellRenderer extends DG.GridCellRenderer {
 
@@ -207,7 +208,7 @@ M  END
 
   render(g: any, x: number, y: number, w: number, h: number, gridCell: DG.GridCell, cellStyle: any) {
 
-    let molString = gridCell.cell.value;
+    let molString = convertToRDKit(gridCell.cell.value);
     if (molString == null || molString === '')
       return;
 
