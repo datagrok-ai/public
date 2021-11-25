@@ -5,7 +5,7 @@
 	"version": "1.0.1",
 	"description": "",
 	"dependencies": {
-		"datagrok-api": ">0.94.10"
+		"datagrok-api": ">=0.95.8"
 	},
 	"devDependencies": {
 		"webpack": "latest",
