@@ -60,9 +60,9 @@ export async function chemLock(token: string | null = null) {
     console.log(`Locking for ${token}`);
   }
   */
-  if (_chemLocked) {
-    throw(`RdKit Service usage locked:\n${(new Error()).stack}`);
-  }
+  // if (_chemLocked) {
+  //  throw(`RdKit Service usage locked:\n${(new Error()).stack}`);
+  // }
   _chemLocked = true;
   /*
   if (token !== null) {
