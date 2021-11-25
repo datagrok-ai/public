@@ -1,3 +1,5 @@
+import BitArray from "@datagrok-libraries/utils/src/bit-array";
+
 const lockPromiseForKey: any = {};
 const unlockFunctionForKey: any = {};
 
@@ -74,4 +76,21 @@ export async function chemLock(token: string | null = null) {
 export async function chemUnlock(token: string | null = null) {
   _chemLocked = false;
   // console.log(`Unlocked for ${token}`);
+}
+
+export function tanimoto(x: BitArray, y: BitArray) {
+  const total = x.trueCount() + y.trueCount();
+  if (total == 0)
+    return 1.0;
+  const common = x.andWithCountBits(y, true);
+  return common / (total - common);
+}
+
+export function rdKitFingerprintToBitArray(fp: string, fpLength: number) {
+  let arr = new BitArray(fpLength);
+  for (let j = 0; j < fpLength; ++j) {
+    if (fp[j] === '1')
+      arr.setTrue(j);
+  }
+  return arr;
 }

@@ -1,8 +1,7 @@
-import {RdKitServiceWorkerBase} from './rdkit_service_worker_base';
-import BitArray from '@datagrok-libraries/utils/src/bit-array';
-export class RdkitServiceSubstructure extends RdKitServiceWorkerBase {
+import {RdKitServiceWorkerSimilarity} from './rdkit_service_worker_similarity';
 
-  _rdKitMols: any[] | null = null;
+export class RdkitServiceSubstructure extends RdKitServiceWorkerSimilarity {
+
   // _patternFps: BitArray[] | null = null;
   // readonly _patternFpLength = 64;
 
@@ -10,18 +9,9 @@ export class RdkitServiceSubstructure extends RdKitServiceWorkerBase {
     super(module, webRoot);
   }
 
-  _stringFpToArrBits(fp: string, arr: BitArray, fpLength: number) {
-    for (let j = 0; j < fpLength; ++j) {
-      if (fp[j] === '1')
-        arr.setTrue(j);
-      else if (fp[j] === '0')
-        arr.setFalse(j);
-    }
-    return arr;
-  }
-
   initMoleculesStructures(dict: string[]) {
     this.freeMoleculesStructures();
+    this.freeMorganFingerprints();
     if (dict.length === 0) {
       return;
     }
@@ -36,7 +26,7 @@ export class RdkitServiceSubstructure extends RdKitServiceWorkerBase {
       try {
         mol = this._rdKitModule.get_mol(item);
         // const fp = mol.get_pattern_fp(this._patternFpLength);
-        // arr = this._stringFpToArrBits(fp, arr, this._patternFpLength);
+        // arr = this.stringFpToArrBits(fp, arr, this._patternFpLength);
         if (item.includes('M  END')) {
           item = mol.normalize_2d_molblock();
           mol.straighten_2d_layout();
@@ -67,7 +57,7 @@ export class RdkitServiceSubstructure extends RdKitServiceWorkerBase {
         try {
           queryMol = this._rdKitModule.get_mol(queryMolString, "{\"mergeQueryHs\":true}");
           // const fp = queryMol.get_pattern_fp(this._patternFpLength);
-          // arr = this._stringFpToArrBits(fp, arr, this._patternFpLength);
+          // arr = this.stringFpToArrBits(fp, arr, this._patternFpLength);
         } catch (e2) {
           if (querySmarts !== null && querySmarts !== '') {
             console.log("Cannot parse a MolBlock. Switching to SMARTS");
