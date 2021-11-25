@@ -446,12 +446,18 @@ function setScriptRibbon(v:DG.View, doc:any){
     let componentsBtn = ui.div([components],'d4-combo-popup');
     componentsBtn.addEventListener("click", componentsMenu); 
     
+    //@ts-ignore
+    let panels = v.getRibbonPanels();
+
     v.setRibbonPanels([
         [
             ui.tooltip.bind(viewBtn,'Views'),
             ui.tooltip.bind(layoutsBtn,'Layouts'),
             ui.tooltip.bind(elementsBtn,'Elements'),
             ui.tooltip.bind(componentsBtn,'Components')
+        ],
+        [
+          panels
         ]
     ])
 }
