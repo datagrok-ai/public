@@ -28,7 +28,7 @@ const _KEY = 'selected';
 
 const getRdKitModuleLocal = chemCommonRdKit.getRdKitModule;
 const initRdKitService = chemCommonRdKit.initRdKitService;
-export const getRdKitService = chemCommonRdKit.getRdKitService;
+const getRdKitService = chemCommonRdKit.getRdKitService;
 const getRdKitWebRoot = chemCommonRdKit.getRdKitWebRoot;
 const drawMoleculeToCanvas = chemCommonRdKit.drawMoleculeToCanvas;
 
