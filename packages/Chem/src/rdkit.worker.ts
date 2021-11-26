@@ -29,9 +29,6 @@ ctx.addEventListener("message", async (e: any) => {
   } else if (op === WORKER_CALL.INIT_MORGAN_FINGERPRINTS) {
     handler._rdkitServiceWorker.initMorganFingerprints();
     port.postMessage({op: op, retval: null});
-  } else if (op === WORKER_CALL.GET_SIMILARITIES) {
-    const result = handler._rdkitServiceWorker.getSimilarities(args[0]);
-    port.postMessage({op: op, retval: result});
   } else if (op === WORKER_CALL.GET_MORGAN_FINGERPRINTS) {
     const result = handler._rdkitServiceWorker.getMorganFingerprints();
     port.postMessage({op: op, retval: result});

@@ -88,17 +88,6 @@ export class RdKitService {
       this._parallelWorkers[i].initMorganFingerprints(), (_: any) => {});
   }
 
-  async getSimilarities(queryMolString: string): Promise<number[]> {
-    let t = this;
-    return this._doParallel(
-      async (i: number, nWorkers: number) => {
-        return t._parallelWorkers[i].getSimilarities(queryMolString);
-      },
-      (data: any) => {
-        return [].concat.apply([], data);
-      });
-  }
-
   async getMorganFingerprints() {
     let t = this;
     return (await this._doParallel(
@@ -109,6 +98,7 @@ export class RdKitService {
         return [].concat.apply([], data);
       })).map(
         (obj: any) =>
+          // We deliberately choose Uint32Array over DG.BitSet here
           new BitArray(new Uint32Array(obj.data), obj.length));
   }
 
