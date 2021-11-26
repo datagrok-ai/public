@@ -3,28 +3,6 @@ import BitArray from '@datagrok-libraries/utils/src/bit-array';
 import {rdKitFingerprintToBitArray, tanimoto} from './chem_common';
 import {defaultMorganFpLength, defaultMorganFpRadius} from "./chem_common";
 
-/*
-function rdKitFingerprintToBitArray(fp: string, fpLength: number) {
-  let arr = new BitArray(fpLength);
-  for (let j = 0; j < fpLength; ++j) {
-    if (fp[j] === '1')
-      arr.setTrue(j);
-  }
-  return arr;
-}
- */
-
-/*
-function tanimoto(x: BitArray, y: BitArray) {
-  const total = x.trueCount() + y.trueCount();
-  if (total == 0)
-    return 1.0;
-  const common = x.andWithCountBits(y, true);
-  return common / (total - common);
-}
-
- */
-
 export class RdKitServiceWorkerSimilarity extends RdKitServiceWorkerBase {
 
   _rdKitMols: any[] | null = null;
@@ -54,20 +32,6 @@ export class RdKitServiceWorkerSimilarity extends RdKitServiceWorkerBase {
         // nothing to do
       }
       this._tanimotoFps.push(arr);
-    }
-  }
-
-  getSimilarities(sampleMol: string) {
-    let distances = new Array(this._rdKitMols!.length).fill(0.0);
-    try {
-      const mol = this._rdKitModule.get_mol(sampleMol);
-      const fp = mol.get_morgan_fp(this._fpRadius, this._fpLength);
-      const sample = rdKitFingerprintToBitArray(fp, this._fpLength);
-      for (let i = 0; i < this._rdKitMols!.length; ++i) {
-        distances[i] = tanimoto(this._tanimotoFps![i], sample);
-      }
-    } finally {
-      return distances;
     }
   }
 
