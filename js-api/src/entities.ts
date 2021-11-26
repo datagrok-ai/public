@@ -463,6 +463,15 @@ export class Script extends Func {
 
   get language(): string { return api.grok_Script_GetLanguage(this.d); }
   set language(s: string) { api.grok_Script_SetLanguage(this.d, s); }
+
+  get reference(): string { return api.grok_Script_Get_Reference(this.d); }
+  set reference(s: string) { api.grok_Script_Set_Reference(this.d, s); }
+
+  get sample(): string { return api.grok_Script_Get_Sample(this.d); }
+  set sample(s: string) { api.grok_Script_Set_Sample(this.d, s); }
+
+  get tags(): string[] { return api.grok_Script_Get_Tags(this.d); }
+  set tags(tags: string[]) { api.grok_Script_Set_Tags(this.d, tags); }
 }
 
 /** Represents connection credentials
