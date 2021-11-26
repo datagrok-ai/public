@@ -20,7 +20,7 @@ import {getDescriptors} from './descriptors/descriptors_calculation';
 import * as chemCommonRdKit from './chem_common_rdkit';
 import {rGroupAnalysis} from './analysis/r_group';
 import {chemLock, chemUnlock} from './chem_common';
-// import {MoleculeViewer} from './chem_similarity_search';
+import {MoleculeViewer} from './chem_similarity_search';
 
 let structure = {};
 const _STORAGE_NAME = 'rdkit_descriptors';
@@ -173,7 +173,7 @@ export async function getMorganFingerprints(molColumn: DG.Column) {
   const fingerprints = await chemSearches.chemGetMorganFingerprints(molColumn);
   const fingerprintsBitsets: DG.BitSet[] = [];
   for (let i = 0; i < fingerprints.length; ++i) {
-    const fingerprint = DG.BitSet.fromBytes(fingerprints[i].getRawData(), fingerprints[i].length);
+    const fingerprint = DG.BitSet.fromBytes(fingerprints[i].getRawData().buffer, fingerprints[i].length);
     fingerprintsBitsets.push(fingerprint);
   }
   chemUnlock('getMorganFingerprints');
@@ -518,10 +518,9 @@ export async function descriptors(table: DG.DataFrame, smiles: DG.Column) {
 }
 
 /*
-
 //top-menu: Chem | Similarity Search...
-export async function similaritySearch() {
+export async function chemSimilaritySearch() {
+  // Shouldn't name it similaritySearch
   grok.shell.addTableView(grok.data.demo.molecules(100)).addViewer(new MoleculeViewer());
 }
-
-*/
+ */

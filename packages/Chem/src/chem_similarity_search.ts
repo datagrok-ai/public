@@ -2,9 +2,9 @@ import * as grok from 'datagrok-api/grok';
 import * as ui from 'datagrok-api/ui';
 import * as DG from 'datagrok-api/dg';
 import {GridCellRenderArgs, Property, Widget} from 'datagrok-api/dg';
-import {getMorganFingerprints} from './package';
-
-/* 
+// import {getMorganFingerprint, getMorganFingerprints} from './package';
+import * as chemSearches from './chem_searches';
+import {tanimoto} from './chem_common';
 
 export class MoleculeViewer extends DG.JsViewer {
   private moleculeColumnName: string;
@@ -50,17 +50,17 @@ export class MoleculeViewer extends DG.JsViewer {
   }
 
   // Stream subscriptions
-  onTableAttached(): void {
+  async onTableAttached(): Promise<void> {
     this.init();
 
     if (this.dataFrame) {
-      this.subs.push(DG.debounce(this.dataFrame.onCurrentRowChanged, 50).subscribe((_) => this.render()));
-      this.subs.push(DG.debounce(this.dataFrame.selection.onChanged, 50).subscribe((_) => this.render(false)));
-      this.subs.push(DG.debounce(this.dataFrame.filter.onChanged, 50).subscribe((_) => this.render()));
-      this.subs.push(DG.debounce(ui.onSizeChanged(this.root), 50).subscribe((_) => this.render(false)));
+      this.subs.push(DG.debounce(this.dataFrame.onCurrentRowChanged, 50).subscribe(async (_) => await this.render()));
+      this.subs.push(DG.debounce(this.dataFrame.selection.onChanged, 50).subscribe(async (_) => await  this.render(false)));
+      this.subs.push(DG.debounce(this.dataFrame.filter.onChanged, 50).subscribe(async (_) => await  this.render()));
+      this.subs.push(DG.debounce(ui.onSizeChanged(this.root), 50).subscribe(async (_) => await  this.render(false)));
     }
 
-    this.render();
+    await this.render();
   }
 
   // Cancel subscriptions when the viewer is detached
@@ -81,7 +81,7 @@ export class MoleculeViewer extends DG.JsViewer {
     this.render();
   }
   
-  render(computeData = true): void {
+  async render(computeData = true): Promise<void> {
     if (!this.initialized) {
       return;
     }
@@ -90,7 +90,7 @@ export class MoleculeViewer extends DG.JsViewer {
         this.root.removeChild(this.root.childNodes[0]);
 
       const curIdx = this.dataFrame.currentRowIdx;
-      const df = chemSimilaritySearch(this.dataFrame, this.dataFrame?.getCol(this.moleculeColumnName), 
+      const df = await chemSimilaritySearch(this.dataFrame, this.dataFrame?.getCol(this.moleculeColumnName),
         this.dataFrame?.getCol(this.moleculeColumnName).get(curIdx), 'tanimoto', 10, 0.1);
 
       const molCol = df.getCol('smiles');
@@ -123,7 +123,7 @@ export class MoleculeViewer extends DG.JsViewer {
 //input: string metric = tanimoto
 //input: int limit = 10
 //input: double minScore = 0.7
-export function chemSimilaritySearch(
+export async function chemSimilaritySearch(
   table: DG.DataFrame,
   smiles: DG.Column,
   molecule: string,
@@ -141,11 +141,11 @@ export function chemSimilaritySearch(
     'minSize': 128,
   };
   limit = Math.min(limit, smiles.length);
-  const fingerprint = DG.BitSet.fromString(_morganFP(molecule));
-  const fingerprintCol = getMorganFingerprints(smiles);
+  const fingerprint = chemSearches.chemGetMorganFingerprint(molecule);
+  const fingerprintCol = await chemSearches.chemGetMorganFingerprints(smiles);
   const distances: number[] = [];
 
-  let fpSim = _fingerprintSimilarity;
+  let fpSim = tanimoto;
   let webWorker = false;
   if(webWorker){
     //todo: implement
@@ -153,7 +153,7 @@ export function chemSimilaritySearch(
   }
 
   for (let row = 0; row < fingerprintCol.length; row++) {
-    const fp = fingerprintCol.get(row);
+    const fp = fingerprintCol[row];
     distances[row] = fp == null ? 100.0 : fpSim(fingerprint, fp);
   }
 
@@ -172,7 +172,7 @@ export function chemSimilaritySearch(
   }
 
   let indexes = range(table.rowCount)
-    .filter((idx) => fingerprintCol.get(idx) != null)
+    .filter((idx) => fingerprintCol[idx] != null)
     .sort(compare);
   const molsList = [];
   const scoresList = [];
@@ -194,5 +194,3 @@ export function chemSimilaritySearch(
   const new_indexes = DG.Column.fromList(DG.COLUMN_TYPE.INT,'indexes',molsIdxs);
   return DG.DataFrame.fromColumns([mols, scores, new_indexes]);
 }
-
-*/ 
