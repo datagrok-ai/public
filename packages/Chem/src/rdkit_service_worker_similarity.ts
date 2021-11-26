@@ -71,6 +71,9 @@ export class RdKitServiceWorkerSimilarity extends RdKitServiceWorkerBase {
   }
 
   getMorganFingerprints() {
+    if (this._tanimotoFps === null) {
+      return [];
+    }
     return this._tanimotoFps!.map((e: any) => {return {data: e.getRawData().buffer, length: e.length}});
   }
 

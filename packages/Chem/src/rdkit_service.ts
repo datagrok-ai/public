@@ -107,7 +107,9 @@ export class RdKitService {
       },
       (data: any) => {
         return [].concat.apply([], data);
-      })).map((obj: any) => new BitArray(new Uint32Array(obj.data), obj.length));
+      })).map(
+        (obj: any) =>
+          new BitArray(new Uint32Array(obj.data), obj.length));
   }
 
   async initStructuralAlerts(smarts: string[]): Promise<void> {
