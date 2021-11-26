@@ -1,4 +1,4 @@
-import {ColumnType, SemType, Type, TYPE} from "./const";
+import {ColumnType, ScriptLanguage, SemType, Type, TYPE} from "./const";
 import { FuncCall } from "./functions";
 import {toJs} from "./wrappers";
 import {DataFrame} from "./dataframe";
@@ -461,15 +461,23 @@ export class Script extends Func {
   get script(): string { return api.grok_Script_GetScript(this.d); }
   set script(s: string) { api.grok_Script_SetScript(this.d, s); }
 
-  get language(): string { return api.grok_Script_GetLanguage(this.d); }
-  set language(s: string) { api.grok_Script_SetLanguage(this.d, s); }
+  /** Script language. See also: https://datagrok.ai/help/compute/scripting#header-parameters */
+  get language(): ScriptLanguage { return api.grok_Script_GetLanguage(this.d); }
+  set language(s: ScriptLanguage) { api.grok_Script_SetLanguage(this.d, s); }
 
+  /** Environment name. See also: https://datagrok.ai/help/compute/scripting#header-parameters */
+  get environment(): string { return api.grok_Script_Get_Environment(this.d); }
+  set environment(s: string) { api.grok_Script_Set_Environment(this.d, s); }
+
+  /** Reference header parameter. See also: https://datagrok.ai/help/compute/scripting#header-parameters */
   get reference(): string { return api.grok_Script_Get_Reference(this.d); }
   set reference(s: string) { api.grok_Script_Set_Reference(this.d, s); }
 
+  /** Sample table. See also: https://datagrok.ai/help/compute/scripting#header-parameters */
   get sample(): string { return api.grok_Script_Get_Sample(this.d); }
   set sample(s: string) { api.grok_Script_Set_Sample(this.d, s); }
 
+  /** Script tags. See also: https://datagrok.ai/help/compute/scripting#header-parameters */
   get tags(): string[] { return api.grok_Script_Get_Tags(this.d); }
   set tags(tags: string[]) { api.grok_Script_Set_Tags(this.d, tags); }
 }
