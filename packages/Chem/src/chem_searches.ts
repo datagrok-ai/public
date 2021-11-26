@@ -173,11 +173,21 @@ export async function chemSubstructureSearchLibrary(
   return result;
 }
 
+export function chemGetMorganFingerprint(molString: string): BitArray {
+  try {
+    const mol = getRdKitModule().get_mol(molString);
+    const fp = mol.get_morgan_fp(defaultMorganFpRadius, defaultMorganFpLength);
+    return rdKitFingerprintToBitArray(fp, defaultMorganFpLength);
+  } catch {
+    throw new Error(`Possibly a malformed molString: ${molString}`);
+  }
+}
+
 export async function chemGetMorganFingerprints(molStringsColumn: DG.Column) {
   const len = molStringsColumn.length;
   let fingerprints: BitArray[] = [];
-  const fallbackToSyncExecution = 150;
-  if (len <= fallbackToSyncExecution) {
+  const fallbackCountForSyncExecution = 150;
+  if (len <= fallbackCountForSyncExecution) {
     for (let i = 0; i < len; ++i) {
       try {
         fingerprints.push(chemGetMorganFingerprint(molStringsColumn.get(i)));
@@ -191,14 +201,3 @@ export async function chemGetMorganFingerprints(molStringsColumn: DG.Column) {
   }
   return fingerprints;
 }
-
-export function chemGetMorganFingerprint(molString: string): BitArray {
-  try {
-    const mol = getRdKitModule().get_mol(molString);
-    const fp = mol.get_morgan_fp(defaultMorganFpRadius, defaultMorganFpLength);
-    return rdKitFingerprintToBitArray(fp, defaultMorganFpLength);
-  } catch {
-    throw new Error(`Possibly a malformed molString: ${molString}`);
-  }
-}
-
