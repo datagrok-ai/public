@@ -43,7 +43,7 @@ export class RdKitService {
   async _initParallelWorkers(dict: string[], func: any, postFunc: any): Promise<any> {
     let t = this;
     return this._doParallel(
-      async (i: number, nWorkers: number) => {
+      (i: number, nWorkers: number) => {
         const length = dict.length;
         const segmentLength = Math.floor(length / nWorkers);
         t.segmentLength = segmentLength;
@@ -59,7 +59,7 @@ export class RdKitService {
   async initMoleculesStructures(dict: string[]): Promise<any> {
     return this._initParallelWorkers(dict, (i: number, segment: any) =>
       this._parallelWorkers[i].initMoleculesStructures(segment),
-      async (resultArray: any[]) => resultArray.reduce((acc: any, item: any) => {
+      (resultArray: any[]) => resultArray.reduce((acc: any, item: any) => {
         item = item || {molIdxToHash: [], hashToMolblock: {}};
         return {
           molIdxToHash: [...acc.molIdxToHash, ...item.molIdxToHash],
@@ -71,7 +71,7 @@ export class RdKitService {
   async searchSubstructure(query: string, querySmarts: string) {
     let t = this;
     return this._doParallel(
-      async (i: number, nWorkers: number) => {
+      (i: number, nWorkers: number) => {
         return t._parallelWorkers[i].searchSubstructure(query, querySmarts);
       },
       (data: any) => {
@@ -84,14 +84,17 @@ export class RdKitService {
   }
 
   async initMorganFingerprints() {
-    return this._initParallelWorkers([], (i: number, segment: any) =>
-      this._parallelWorkers[i].initMorganFingerprints(), (_: any) => {});
+    return this._doParallel(
+      (i: number, nWorkers: number) => {
+        return this._parallelWorkers[i].initMorganFingerprints();
+      }, (_: any) => { return []}
+    );
   }
 
   async getMorganFingerprints() {
     let t = this;
     return (await this._doParallel(
-      async (i: number, nWorkers: number) => {
+      (i: number, nWorkers: number) => {
         return t._parallelWorkers[i].getMorganFingerprints();
       },
       (data: any) => {
