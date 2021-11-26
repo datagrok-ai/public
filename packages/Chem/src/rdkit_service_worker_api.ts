@@ -5,6 +5,4 @@ export enum WORKER_CALL {
   GET_MORGAN_FINGERPRINTS = 'getMorganFingerprints',
   FREE_MORGAN_FINGERPRINTS = 'freeMorganFingerprints',
   SEARCH_SUBSTRUCTURE = 'searchSubstructure',
-  INIT_STRUCTURAL_ALERTS = 'initStructuralAlerts',
-  GET_STRUCTURAL_ALERTS = 'getStructuralAlerts'
 }
