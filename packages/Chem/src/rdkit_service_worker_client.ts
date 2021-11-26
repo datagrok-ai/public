@@ -16,8 +16,4 @@ export class RdKitServiceWorkerClient extends WorkerMessageBusClient {
     this.call(WORKER_CALL.INIT_MORGAN_FINGERPRINTS);
   getMorganFingerprints = async () =>
     this.call(WORKER_CALL.GET_MORGAN_FINGERPRINTS);
-  initStructuralAlerts = async (smarts: string[]) =>
-    this.call(WORKER_CALL.INIT_STRUCTURAL_ALERTS, [smarts]);
-  getStructuralAlerts = async (smiles: string) =>
-    this.call(WORKER_CALL.GET_STRUCTURAL_ALERTS, [smiles]);
 }

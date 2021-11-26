@@ -32,12 +32,5 @@ ctx.addEventListener("message", async (e: any) => {
   } else if (op === WORKER_CALL.GET_MORGAN_FINGERPRINTS) {
     const result = handler._rdkitServiceWorker.getMorganFingerprints();
     port.postMessage({op: op, retval: result});
-  // } else if (op === WORKER_CALL.FREE_MORGAN_FINGERPRINTS) {
-  } else if (op === WORKER_CALL.INIT_STRUCTURAL_ALERTS) {
-    const result = handler._rdkitServiceWorker.initStructuralAlerts(args[0]);
-    port.postMessage({op: op, retval: null});
-  } else if (op === WORKER_CALL.GET_STRUCTURAL_ALERTS) {
-    const result = handler._rdkitServiceWorker.getStructuralAlerts(args[0]);
-    port.postMessage({op: op, retval: result});
   }
 });

@@ -1,6 +1,6 @@
-import {RdKitServiceWorkerMisc} from './rdkit_service_worker_misc';
+import {RdKitServiceWorkerSimilarity} from './rdkit_service_worker_similarity';
 
-export class RdKitServiceWorker extends RdKitServiceWorkerMisc {
+export class RdKitServiceWorker extends RdKitServiceWorkerSimilarity {
   constructor(module: Object, webRoot: string) {
     super(module, webRoot);
   }

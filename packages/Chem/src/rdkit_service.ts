@@ -105,15 +105,4 @@ export class RdKitService {
           new BitArray(new Uint32Array(obj.data), obj.length));
   }
 
-  async initStructuralAlerts(smarts: string[]): Promise<void> {
-    for (let i = 0; i < this._jobWorkers.length; ++i) {
-      await this._jobWorkers[i].initStructuralAlerts(smarts);
-    }
-  }
-
-  async getStructuralAlerts(smiles: string): Promise<number[]> {
-    // may be round-robin or job stealing in the future
-    return (await this._jobWorker!.getStructuralAlerts(smiles)) as number[];
-  }
-
 }

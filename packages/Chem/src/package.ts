@@ -10,7 +10,7 @@ import * as OCL from 'openchemlib/full.js';
 import {drugLikenessWidget} from './widgets/drug-likeness';
 import {molfileWidget} from './widgets/molfile';
 import {propertiesWidget} from './widgets/properties';
-import {initStructuralAlertsContext, structuralAlertsWidget} from './widgets/structural-alerts-widget';
+import {initStructuralAlertsContext, structuralAlertsWidget} from './widgets/structural-alerts';
 import {structure2dWidget} from './widgets/structure2d';
 import {structure3dWidget} from './widgets/structure3d';
 import {toxicityWidget} from './widgets/toxicity';
@@ -419,7 +419,7 @@ export function saveAsSdf() {
 //input: string smiles { semType: Molecule }
 //output: widget result
 export function drugLikeness(smiles: string) {
-  return smiles ? new DG.Widget(ui.divText('SMILES is empty')): drugLikenessWidget(smiles);
+  return smiles ? drugLikenessWidget(smiles) : new DG.Widget(ui.divText('SMILES is empty'));
 }
 
 //name: Molfile
@@ -428,7 +428,7 @@ export function drugLikeness(smiles: string) {
 //input: string smiles { semType: Molecule }
 //output: widget result
 export function molfile(smiles: string) {
-  return smiles ? new DG.Widget(ui.divText('SMILES is empty')): molfileWidget(smiles);
+  return smiles ? molfileWidget(smiles) : new DG.Widget(ui.divText('SMILES is empty'));
 }
 
 //name: Properties
@@ -437,7 +437,7 @@ export function molfile(smiles: string) {
 //input: string smiles { semType: Molecule }
 //output: widget result
 export async function properties(smiles: string) {
-  return smiles ? new DG.Widget(ui.divText('SMILES is empty')): propertiesWidget(smiles);
+  return smiles ? propertiesWidget(smiles) : new DG.Widget(ui.divText('SMILES is empty'));
 }
 
 //name: Structural Alerts
@@ -447,7 +447,7 @@ export async function properties(smiles: string) {
 //input: string smiles { semType: Molecule }
 //output: widget result
 export async function structuralAlerts(smiles: string) {
-  return smiles ? new DG.Widget(ui.divText('SMILES is empty')): structuralAlertsWidget(smiles);
+  return smiles ? structuralAlertsWidget(smiles) : new DG.Widget(ui.divText('SMILES is empty'));
 }
 
 //name: Structure 2D
@@ -456,7 +456,7 @@ export async function structuralAlerts(smiles: string) {
 //input: string smiles { semType: Molecule }
 //output: widget result
 export function structure2d(smiles: string) {
-  return smiles ? new DG.Widget(ui.divText('SMILES is empty')): structure2dWidget(smiles);
+  return smiles ? structure2dWidget(smiles) : new DG.Widget(ui.divText('SMILES is empty'));
 }
 
 //name: Structure 3D
@@ -465,7 +465,7 @@ export function structure2d(smiles: string) {
 //input: string smiles { semType: Molecule }
 //output: widget result
 export async function structure3d(smiles: string) {
-  return smiles ? new DG.Widget(ui.divText('SMILES is empty')): structure3dWidget(smiles);
+  return smiles ? structure3dWidget(smiles) : new DG.Widget(ui.divText('SMILES is empty'));
 }
 
 //name: Toxicity
@@ -475,7 +475,7 @@ export async function structure3d(smiles: string) {
 //input: string smiles { semType: Molecule }
 //output: widget result
 export function toxicity(smiles: string) {
-  return smiles ? new DG.Widget(ui.divText('SMILES is empty')): toxicityWidget(smiles);
+  return smiles ? toxicityWidget(smiles) : new DG.Widget(ui.divText('SMILES is empty'));
 }
 
 //name: R-Groups Analysis
