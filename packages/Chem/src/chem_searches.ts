@@ -1,6 +1,7 @@
 import * as DG from 'datagrok-api/dg';
 import {getRdKitModule, getRdKitService} from './chem_common_rdkit';
-import {rdKitFingerprintToBitArray, tanimoto} from './chem_common';
+import {rdKitFingerprintToBitArray, tanimoto,
+  defaultMorganFpRadius, defaultMorganFpLength} from './chem_common';
 import BitArray from "@datagrok-libraries/utils/src/bit-array";
 
 async function _chemFindSimilar(molStringsColumn: DG.Column,
@@ -72,7 +73,7 @@ async function _invalidate(molStringsColumn: DG.Column, queryMolString: string |
   const sameColumnAndVersion = () =>
     molStringsColumn === _chemCache.cachedForCol &&
     molStringsColumn.version === _chemCache.cachedForColVersion;
-  if (!sameColumnAndVersion() || queryMolString === null || queryMolString.length === 0) {
+  if (!sameColumnAndVersion() || !includeFingerprints && (queryMolString === null || queryMolString.length === 0)) {
     _chemCache.cachedForCol = molStringsColumn;
     _chemCache.cachedForColVersion = molStringsColumn.version;
     _chemCache.moleculesWereIndexed = false;
@@ -173,16 +174,29 @@ export async function chemSubstructureSearchLibrary(
 }
 
 export async function chemGetMorganFingerprints(molStringsColumn: DG.Column) {
-  await _invalidate(molStringsColumn, null, true);
-  const fingerprints = _chemCache.morganFingerprints!;
+  const len = molStringsColumn.length;
+  let fingerprints: BitArray[] = [];
+  const fallbackToSyncExecution = 150;
+  if (len <= fallbackToSyncExecution) {
+    for (let i = 0; i < len; ++i) {
+      try {
+        fingerprints.push(chemGetMorganFingerprint(molStringsColumn.get(i)));
+      } catch {
+        fingerprints.push(new BitArray(defaultMorganFpLength));
+      }
+    }
+  } else {
+    await _invalidate(molStringsColumn, null, true);
+    fingerprints = _chemCache.morganFingerprints!;
+  }
   return fingerprints;
 }
 
 export function chemGetMorganFingerprint(molString: string): BitArray {
   try {
     const mol = getRdKitModule().get_mol(molString);
-    const fp = mol.get_morgan_fp(2, 128);
-    return rdKitFingerprintToBitArray(fp, 128);
+    const fp = mol.get_morgan_fp(defaultMorganFpRadius, defaultMorganFpLength);
+    return rdKitFingerprintToBitArray(fp, defaultMorganFpLength);
   } catch {
     throw new Error(`Possibly a malformed molString: ${molString}`);
   }

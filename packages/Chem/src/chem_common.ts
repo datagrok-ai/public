@@ -94,3 +94,6 @@ export function rdKitFingerprintToBitArray(fp: string, fpLength: number) {
   }
   return arr;
 }
+
+export const defaultMorganFpRadius = 2;
+export const defaultMorganFpLength = 128;
