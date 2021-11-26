@@ -1,6 +1,7 @@
 import {RdKitServiceWorkerBase} from './rdkit_service_worker_base';
 import BitArray from '@datagrok-libraries/utils/src/bit-array';
 import {rdKitFingerprintToBitArray, tanimoto} from './chem_common';
+import {defaultMorganFpLength, defaultMorganFpRadius} from "./chem_common";
 
 /*
 function rdKitFingerprintToBitArray(fp: string, fpLength: number) {
@@ -29,8 +30,8 @@ export class RdKitServiceWorkerSimilarity extends RdKitServiceWorkerBase {
   _rdKitMols: any[] | null = null;
   _tanimotoFps: BitArray[] | null = null;
   _sample: BitArray;
-  readonly _fpLength: number = 128;
-  readonly _fpRadius: number = 2;
+  readonly _fpLength: number = defaultMorganFpLength;
+  readonly _fpRadius: number = defaultMorganFpRadius;
 
   constructor(module: Object, webRoot: string) {
     super(module, webRoot);
