@@ -98,6 +98,7 @@ async function _invalidate(molStringsColumn: DG.Column, queryMolString: string |
     if (needsUpdate) {
       // This seems to be the only way to trigger re-calculation of categories
       molStringsColumn.compact();
+      _chemCache.cachedForColVersion = molStringsColumn.version;
     }
     _chemCache.moleculesWereIndexed = true;
     _chemCache.morganFingerprintsWereIndexed = false;
