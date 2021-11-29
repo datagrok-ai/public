@@ -7,10 +7,15 @@ import {map} from "./map";
 
 export let _package = new DG.Package();
 
-let molecularWeightsObj: {[index: string]: number} = {};
-for (let representation of Object.values(map))
-  for (let code of Object.keys(representation))
-    molecularWeightsObj[code] = representation[code].molecularWeight;
+let weightsObj: {[code: string]: number} = {};
+let normalizedObj: {[code: string]: string} = {};
+for (let synthesizer of Object.keys(map))
+  for (let technology of Object.keys(map[synthesizer]))
+    for (let code of Object.keys(map[synthesizer][technology])) {
+      weightsObj[code] = map[synthesizer][technology][code].weight;
+      normalizedObj[code] = map[synthesizer][technology][code].normalized;
+    }
+      
 
 function sortByStringLengthInDescendingOrderToCheckForMatchWithLongerCodesFirst(array: string[]): string[] {
   return array.sort(function(a, b) { return b.length - a.length; });
@@ -41,12 +46,10 @@ export function OligoBatchCalculator(sequence: string, amount: number, outputUni
 //input: string outputUnits {choices: ['NMole', 'Milligrams', 'Micrograms']}
 //output: double opticalDensity
 export function opticalDensity(sequence: string, amount: number, outputUnits: string): number {
-  if (outputUnits == 'Milligrams' || outputUnits == 'Micrograms' || outputUnits == 'mg' || outputUnits == 'µg') {
-    const coefficient = outputUnits == 'Milligrams' ? 1 : 0.001;
-    return coefficient * amount * extinctionCoefficient(sequence) / molecularWeight(sequence);
-  } else if (outputUnits == 'OD') {
+  if (outputUnits == 'Milligrams' || outputUnits == 'Micrograms' || outputUnits == 'mg' || outputUnits == 'µg')
+    return (outputUnits == 'Milligrams' ? 1 : 0.001) * amount * extinctionCoefficient(sequence) / molecularWeight(sequence);
+  if (outputUnits == 'OD')
     return amount;
-  }
   const coefficient = (outputUnits == 'NMole') ? 1000000 : (outputUnits == 'Milligrams') ? 1 : 1000;
   return amount * extinctionCoefficient(sequence) / coefficient;
 }
@@ -78,14 +81,14 @@ export function molecularMass(sequence: string, amount: number, outputUnits: str
 //input: string sequence
 //output: double molecularWeight
 export function molecularWeight(sequence: string): number {
-  const codes = sortByStringLengthInDescendingOrderToCheckForMatchWithLongerCodesFirst(Object.keys(molecularWeightsObj));
-  let molecularWeight = 0, i = 0;
+  const codes = sortByStringLengthInDescendingOrderToCheckForMatchWithLongerCodesFirst(Object.keys(weightsObj));
+  let weight = 0, i = 0;
   while (i < sequence.length) {
     let matchedCode = codes.find((s) => s == sequence.slice(i, i + s.length))!;
-    molecularWeight += molecularWeightsObj[sequence.slice(i, i + matchedCode.length)];
+    weight += weightsObj[sequence.slice(i, i + matchedCode.length)];
     i += matchedCode!.length;
   }
-  return molecularWeight - 61.97;
+  return weight - 61.97;
 }
 
 //name: extinctionCoefficient
@@ -93,12 +96,11 @@ export function molecularWeight(sequence: string): number {
 //output: double extinctionCoefficient
 export function extinctionCoefficient(sequence: string): number {
   let output = isValid(sequence);
-  sequence = normalizeSequence(sequence, output.expectedRepresentation!);
+  sequence = normalizeSequence(sequence, output.expectedSynthesizer!);
   const individualBases: {[index: string]: number} = {
-    'dA': 15400, 'dC': 7400, 'dG': 11500, 'dT': 8700,
-    'rA': 15400, 'rC': 7200, 'rG': 11500, 'rU': 9900
+    'dA': 15400, 'dC': 7400, 'dG': 11500, 'dT': 8700, 'rA': 15400, 'rC': 7200, 'rG': 11500, 'rU': 9900
   },
-  nearestNeighbour: {[index: string]: {[index: string]: number}} = {
+  nearestNeighbour: {[firstBase: string]: {[secondBase: string]: number}} = {
     'dA': {'dA': 27400, 'dC': 21200, 'dG': 25000, 'dT': 22800, 'rA': 27400, 'rC': 21000, 'rG': 25000, 'rU': 24000},
     'dC': {'dA': 21200, 'dC': 14600, 'dG': 18000, 'dT': 15200, 'rA': 21000, 'rC': 14200, 'rG': 17800, 'rU': 16200},
     'dG': {'dA': 25200, 'dC': 17600, 'dG': 21600, 'dT': 20000, 'rA': 25200, 'rC': 17400, 'rG': 21600, 'rU': 21200},
@@ -110,10 +112,9 @@ export function extinctionCoefficient(sequence: string): number {
   };
   let ec1 = 0, ec2 = 0;
   for (let i = 0; i < sequence.length - 2; i += 2)
-    if (sequence[i] == sequence[i + 2])
-      ec1 += nearestNeighbour[sequence.slice(i, i + 2)][sequence.slice(i + 2, i + 4)];
-    else
-      ec1 += (
+    ec1 += (sequence[i] == sequence[i + 2]) ? 
+      nearestNeighbour[sequence.slice(i, i + 2)][sequence.slice(i + 2, i + 4)] :
+      (
         nearestNeighbour['r' + ((sequence[i + 1] == 'T') ? 'U' : sequence[i + 1])]['r' + ((sequence[i + 3] == 'T') ? 'U' : sequence[i + 3])]
         +
         nearestNeighbour['d' + ((sequence[i + 1] == 'U') ? 'T' : sequence[i + 1])]['d' + ((sequence[i + 3] == 'U') ? 'T' : sequence[i + 3])]
@@ -123,65 +124,72 @@ export function extinctionCoefficient(sequence: string): number {
   return ec1 - ec2;
 }
 
-function normalizeSequence(sequence: string, representation: string): string {
-  const codes = sortByStringLengthInDescendingOrderToCheckForMatchWithLongerCodesFirst(Object.keys(map[representation]));
+function normalizeSequence(sequence: string, synthesizer: string): string {
+  const codes = sortByStringLengthInDescendingOrderToCheckForMatchWithLongerCodesFirst(getAllCodesOfSynthesizer(synthesizer));
   const re = new RegExp('(' + codes.join('|') + ')', 'g');
-  return sequence.replace(re, function (code) {return map[representation][code]["normalized"]});
+  return sequence.replace(re, function (code) {return normalizedObj[code]});
 }
 
-function getListOfPossibleRepresentationsByFirstMatchedCodes(sequence: string): string[] {
-  let representations: string[] = [];
-  Object.keys(map).forEach((representation: string) => {
-    if (Object.keys(map[representation]).some((s) => s == sequence.slice(0, s.length)))
-      representations.push(representation);
+function getAllCodesOfSynthesizer(synthesizer: string) {
+  let codes: string[] = [];
+  for (let technology of Object.keys(map[synthesizer]))
+    codes = codes.concat(Object.keys(map[synthesizer][technology]));
+  return codes;    
+}
+
+function getListOfPossibleSynthesizersByFirstMatchedCode(sequence: string): string[] {
+  let synthesizers: string[] = [];
+  Object.keys(map).forEach((synthesizer: string) => {
+    const codes = getAllCodesOfSynthesizer(synthesizer);
+    if (codes.some((s) => s == sequence.slice(0, s.length)))
+      synthesizers.push(synthesizer);
   });
-  return representations;
+  return synthesizers;
 }
 
 function isValid(sequence: string) {
-  //TODO: rewrite using switch case
-  let possibleRepresentations = getListOfPossibleRepresentationsByFirstMatchedCodes(sequence);
-  if (possibleRepresentations.length == 0)
+  let possibleSynthesizers = getListOfPossibleSynthesizersByFirstMatchedCode(sequence);
+  if (possibleSynthesizers.length == 0)
     return { indexOfFirstNotValidCharacter: 0, expectedRepresentation: null };
 
-  let outputIndices = Array(possibleRepresentations.length).fill(0);
+  let outputIndices = Array(possibleSynthesizers.length).fill(0);
 
   const firstUniqueCharacters = ['r', 'd'], nucleotides = ["A", "U", "T", "C", "G"];
 
-  possibleRepresentations.forEach((representation, representationIndex) => {
-    while (outputIndices[representationIndex] < sequence.length) {
+  possibleSynthesizers.forEach((synthesizer, synthesizerIndex) => {
+    let codes = getAllCodesOfSynthesizer(synthesizer);
+    while (outputIndices[synthesizerIndex] < sequence.length) {
 
-      let matchedCode = Object.keys(map[representation])
-        .find((s) => s == sequence.slice(outputIndices[representationIndex], outputIndices[representationIndex] + s.length));
+      let matchedCode = codes
+        .find((c) => c == sequence.slice(outputIndices[synthesizerIndex], outputIndices[synthesizerIndex] + c.length));
 
       if (matchedCode == null)
         break;
 
       if (  // for mistake pattern 'rAA'
-        outputIndices[representationIndex] > 1 &&
-        nucleotides.includes(sequence[outputIndices[representationIndex]]) &&
-        firstUniqueCharacters.includes(sequence[outputIndices[representationIndex] - 2])
-      )
-        break;
+        outputIndices[synthesizerIndex] > 1 &&
+        nucleotides.includes(sequence[outputIndices[synthesizerIndex]]) &&
+        firstUniqueCharacters.includes(sequence[outputIndices[synthesizerIndex] - 2])
+      ) break;
 
       if (  // for mistake pattern 'ArA'
-        firstUniqueCharacters.includes(sequence[outputIndices[representationIndex] + 1]) &&
-        nucleotides.includes(sequence[outputIndices[representationIndex]])
+        firstUniqueCharacters.includes(sequence[outputIndices[synthesizerIndex] + 1]) &&
+        nucleotides.includes(sequence[outputIndices[synthesizerIndex]])
       ) {
-        outputIndices[representationIndex]++;
+        outputIndices[synthesizerIndex]++;
         break;
       }
 
-      outputIndices[representationIndex] += matchedCode.length;
+      outputIndices[synthesizerIndex] += matchedCode.length;
     }
   });
 
-  const indexOfExpectedRepresentation = Math.max.apply(Math, outputIndices);
-  const indexOfFirstNotValidCharacter = (indexOfExpectedRepresentation == sequence.length) ? -1 : indexOfExpectedRepresentation;
+  const indexOfExpectedSythesizer = Math.max.apply(Math, outputIndices);
+  const indexOfFirstNotValidCharacter = (indexOfExpectedSythesizer == sequence.length) ? -1 : indexOfExpectedSythesizer;
 
   return {
     indexOfFirstNotValidCharacter: indexOfFirstNotValidCharacter,
-    expectedRepresentation: possibleRepresentations[outputIndices.indexOf(indexOfExpectedRepresentation)]
+    expectedSynthesizer: possibleSynthesizers[outputIndices.indexOf(indexOfExpectedSythesizer)]
   };
 }
 
@@ -204,14 +212,14 @@ export function OligoBatchCalculatorApp() {
       opticalDensities = Array(sequences.length),
       molecularMasses = Array(sequences.length),
       reasonsOfError = Array(sequences.length),
-      expectedRepresentations = Array(sequences.length);
+      expectedSynthesizers = Array(sequences.length);
 
     sequences.forEach((sequence, i) => {
       let output = isValid(sequence);
       indicesOfFirstNotValidCharacter[i] = output.indexOfFirstNotValidCharacter;
-      expectedRepresentations[i] = output.expectedRepresentation;
+      expectedSynthesizers[i] = output.expectedSynthesizer;
       if (indicesOfFirstNotValidCharacter[i] < 0) {
-        normalizedSequences[i] = normalizeSequence(sequence, expectedRepresentations[i]);
+        normalizedSequences[i] = normalizeSequence(sequence, expectedSynthesizers[i]);
         if (normalizedSequences[i].length > 2) {
           try {
             molecularWeights[i] = molecularWeight(sequence);
@@ -228,10 +236,10 @@ export function OligoBatchCalculatorApp() {
           reasonsOfError[i] = 'Sequence should contain at least two nucleotides';
           indicesOfFirstNotValidCharacter[i] = 0;
         }
-      } else if (expectedRepresentations[i] == null)
+      } else if (expectedSynthesizers[i] == null)
         reasonsOfError[i] = "Not valid input";
       else
-        reasonsOfError[i] = "Sequence is expected to be in representation '" +  expectedRepresentations[i] +
+        reasonsOfError[i] = "Sequence is expected to be in synthesizer format '" +  expectedSynthesizers[i] +
           "', please see table below to see list of valid codes";
     });
 
@@ -300,18 +308,20 @@ export function OligoBatchCalculatorApp() {
   });
 
   let tables = ui.divV([]);
-  for (let representation of Object.keys(map)) {
-    let tableRows = [];
-    for (let [key, value] of Object.entries(map[representation]))
-      tableRows.push({'name': value.name, 'code': key, 'weight': value['molecularWeight']});
-    tables.append(
-      DG.HtmlTable.create(
-        tableRows,
-        (item: {name: string; code: string; weight: number}) => [item['name'], item['code'], item['weight']],
-        [representation, 'Code', 'Weight']
-      ).root,
-      ui.div([], {style: {height: '30px'}})
-    );
+  for (let synthesizer of Object.keys(map)) {
+    for (let technology of Object.keys(map[synthesizer])) {
+      let tableRows = [];
+      for (let [key, value] of Object.entries(map[synthesizer][technology]))
+        tableRows.push({'name': value.name, 'code': key, 'weight': value['weight']});
+      tables.append(
+        DG.HtmlTable.create(
+          tableRows,
+          (item: {name: string; code: string; weight: number}) => [item['name'], item['code'], item['weight']],
+          [synthesizer + ' ' + technology, 'Code', 'Weight']
+        ).root,
+        ui.div([], {style: {height: '30px'}})
+      );
+    }
   }
 
   let showCodesButton = ui.button('SHOW CODES', () => {
