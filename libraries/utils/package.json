@@ -4,7 +4,7 @@
 		"access": "public"
 	},
 	"fullName": "Utils",
-	"version": "0.0.5",
+	"version": "0.0.9",
 	"description": "Common utilities",
 	"dependencies": {
 		"@keckelt/tsne": "^1.0.2",
@@ -13,10 +13,13 @@
 		"dts-bundle": "^0.7.3",
 		"fastest-levenshtein": "^1.0.12",
 		"jaro-winkler-typescript": "^1.0.1",
-		"typescript": "^4.2.3",
 		"umap-js": "^1.3.3",
 		"js-yaml": "^4.1.0",
 		"node-fetch": "^2.6.0"
+	},
+	"devDependencies": {
+		"typescript": "^4.2.3",
+		"ts-loader": "^9.2.6"
 	},
 	"scripts": {
 		"link": "npm link",
