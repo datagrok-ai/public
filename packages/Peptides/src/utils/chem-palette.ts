@@ -4,7 +4,7 @@ import * as DG from 'datagrok-api/dg';
 
 
 export class ChemPalette {
-    cp:{ [Key: string]: string; } = {};
+    cp: {[key: string]: string} = {};
 
     constructor(scheme: string) {
       if (scheme == 'grok') {
@@ -82,7 +82,7 @@ export class ChemPalette {
       return [color, pivot];
     };
 
-    static colourPalette: { [key: string]: string[] } = {
+    static colourPalette: {[key: string]: string[]} = {
       'orange': ['rgb(255,187,120)', 'rgb(245,167,100)', 'rgb(235,137,70)', 'rgb(205, 111, 71)'],
       'all_green': ['rgb(44,160,44)', 'rgb(74,160,74)', 'rgb(23,103,57)', 'rgb(30,110,96)', 'rgb(60,131,95)',
         'rgb(24,110,79)', 'rgb(152,223,138)', 'rgb(182, 223, 138)', 'rgb(152, 193, 138)'],
@@ -105,29 +105,44 @@ export class ChemPalette {
       'white': ['rgb(230,230,230)'],
     }
 
-    static grokGroups: [string[], string][] = [
-      [['C', 'U'], 'yellow'],
-      [['G', 'P'], 'red'],
-      [['A', 'V', 'I', 'L', 'M', 'F', 'Y', 'W'], 'all_green'],
-      [['R', 'H', 'K'], 'light_blue'],
-      [['D', 'E'], 'dark_blue'],
-      [['S', 'T', 'N', 'Q'], 'orange'],
-    ];
+    // static grokGroups: [string[], string][] = [
+    //   [['C', 'U'], 'yellow'],
+    //   [['G', 'P'], 'red'],
+    //   [['A', 'V', 'I', 'L', 'M', 'F', 'Y', 'W'], 'all_green'],
+    //   [['R', 'H', 'K'], 'light_blue'],
+    //   [['D', 'E'], 'dark_blue'],
+    //   [['S', 'T', 'N', 'Q'], 'orange'],
+    // ];
+    static grokGroups: {[key: string]: string[]} = {
+      'yellow': ['C', 'U'],
+      'red': ['G', 'P'],
+      'all_green': ['A', 'V', 'I', 'L', 'M', 'F', 'Y', 'W'],
+      'light_blue': ['R', 'H', 'K'],
+      'dark_blue': ['D', 'E'],
+      'orange': ['S', 'T', 'N', 'Q'],
+    }
+
+    static leskGroups: {[key: string]: string[]} = {
+      'orange': ['G', 'A', 'S', 'T'],
+      'all_green': ['C', 'V', 'I', 'L', 'P', 'F', 'Y', 'M', 'W'],
+      'magenta': ['N', 'Q', 'H'],
+      'red': ['D', 'E'],
+      'all_blue': ['K', 'R'],
+    }
+
     static undefinedColor = 'rgb(100,100,100)'
 
-    static makePalette(dt: [string[], string][], simplified = false) {
+    static makePalette(dt: {[key: string]: string[]}, simplified = false) {
       const palette: { [key: string]: string } = {};
-      dt.forEach((cp) => {
-        const objList = cp[0];
-        const colour = cp[1];
-        objList.forEach((obj, ind) => {
-          palette[obj] = ChemPalette.colourPalette[colour][simplified ? 0 : ind];
+      for (const [color, monomers] of Object.entries(dt)) {
+        monomers.forEach((monomer, index) => {
+          palette[monomer] = ChemPalette.colourPalette[color][simplified ? 0 : index];
         });
-      });
+      }
       return palette;
     }
 
-    static AANames:{ [Key: string]: string; } = {
+    static AANames: {[key: string]: string} = {
       'G': 'Glycine',
       'L': 'Leucine',
       'Y': 'Tyrosine',
@@ -149,7 +164,8 @@ export class ChemPalette {
       'M': 'Methionine',
       'T': 'Threonine',
     }
-    static AASmiles: { [Key: string]: string; } = {
+
+    static AASmiles: {[key: string]: string} = {
       'G': 'NCC(=O)O',
       'L': 'N[C@H](CC(C)C)C(=O)O',
       'Y': 'NC(CC1=CC=C(O)C=C1)C(=O)O',
@@ -171,7 +187,8 @@ export class ChemPalette {
       'M': 'NC(CCSC)C(=O)O',
       'T': 'NC(C(O)C)C(=O)O',
     }
-    static AASmilesTruncated: { [Key: string]: string; } = {
+
+    static AASmilesTruncated: {[key: string]: string} = {
       'G': '*C*',
       'L': 'CC(C)C[C@H](*)*',
       'Y': 'C1=CC(=CC=C1CC(*)*)O',
@@ -194,7 +211,7 @@ export class ChemPalette {
       'T': 'CC(O)C(*)*',
     }
 
-    static AAFullNames: { [Key: string]: string; } = {
+    static AAFullNames: {[key: string]: string} = {
       'Ala': 'A',
       'Arg': 'R',
       'Asn': 'N',
@@ -215,16 +232,13 @@ export class ChemPalette {
       'Trp': 'W',
       'Tyr': 'Y',
       'Val': 'V',
-    };
+    }
 
-    static getDatagrok = ():{ [Key: string]: string; } => {
+    static getDatagrok() {
       return ChemPalette.makePalette(ChemPalette.grokGroups);
-    };
+    }
 
-    getLesk = () => ChemPalette.makePalette([
-      [['G', 'A', 'S', 'T'], 'orange'],
-      [['C', 'V', 'I', 'L', 'P', 'F', 'Y', 'M', 'W'], 'all_green'],
-      [['N', 'Q', 'H'], 'magenta'],
-      [['D', 'E'], 'red'],
-      [['K', 'R'], 'all_blue']])
+    static getLesk() {
+      return ChemPalette.makePalette(ChemPalette.leskGroups);
+    }
 }
