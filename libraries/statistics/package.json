@@ -5,10 +5,10 @@
 		"access": "public"
 	},
 	"friendlyName": "statistics",
-	"version": "0.0.1",
+	"version": "0.1.0",
 	"description": "",
 	"dependencies": {
-		"datagrok-api": ">0.94.10",
+		"datagrok-api": ">0.95.4",
 		"cash-dom": "latest",
 		"dayjs": "latest",
 		"ts-loader": "latest",
