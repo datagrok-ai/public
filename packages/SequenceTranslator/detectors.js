@@ -1,4 +1,4 @@
-class SequencetranslatorPackageDetectors extends DG.Package {
+class SequenceTranslatorPackageDetectors extends DG.Package {
   //tags: semTypeDetector
   //input: column col
   //output: string semType
