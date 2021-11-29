@@ -1,4 +1,4 @@
-class BiosignalsPackageDetectors extends DG.Package {
+class BioSignalsPackageDetectors extends DG.Package {
 
   //tags: semTypeDetector
   //input: column col
