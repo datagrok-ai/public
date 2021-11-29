@@ -3,7 +3,9 @@ import {WORKER_CALL} from './rdkit_service_worker_api';
 import {WorkerMessageBusClient} from './worker-message-bus-client';
 
 export class RdKitServiceWorkerClient extends WorkerMessageBusClient {
-  constructor () { super(new RdKitWorkerClass()); }
+  constructor () {
+    super(new RdKitWorkerClass());
+  }
   moduleInit = async (pathToRdkit: string) =>
     this.call('module::init', [pathToRdkit]);
   initMoleculesStructures = async (dict: any) =>
