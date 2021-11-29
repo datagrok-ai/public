@@ -20,6 +20,9 @@ public class GrokConnect {
 
     private static ProviderManager providerManager;
     private static Logger logger;
+    private static final Gson gson = new GsonBuilder()
+            .registerTypeAdapter(Property.class, new PropertyAdapter())
+            .create();
 
     public static void main(String[] args) {
         int port = 1234;
@@ -49,10 +52,6 @@ public class GrokConnect {
     }
 
     private static void connectorsModule() {
-        Gson gson = new GsonBuilder()
-                .registerTypeAdapter(Property.class, new PropertyAdapter())
-                .create();
-
         post("/query", (request, response) -> {
             logMemory();
 
@@ -97,11 +96,7 @@ public class GrokConnect {
                 buffer.bufPos = result.blob.length;
 
             } catch (Throwable ex) {
-                Map<String, String> exception = printError(ex);
-                result.errorMessage = exception.get("errorMessage");
-                result.errorStackTrace = exception.get("errorStackTrace");
-
-                buffer = new BufferAccessor();
+                buffer = packException(result, ex);
             }
             finally {
                 if (call != null)
@@ -159,14 +154,17 @@ public class GrokConnect {
 
         post("/schemas", (request, response) -> {
             logMemory();
+            BufferAccessor buffer;
+            DataQueryRunResult result = new DataQueryRunResult();
             try {
                 DataConnection connection = gson.fromJson(request.body(), DataConnection.class);
                 DataProvider provider = providerManager.getByName(connection.dataSource);
-                DataFrame result = provider.getSchemas(connection);
-                buildResponse(response, result.toByteArray());
+                DataFrame dataFrame = provider.getSchemas(connection);
+                buffer = packDataFrame(result, dataFrame);
             } catch (Throwable ex) {
-                buildExceptionResponse(response, printError(ex));
+                buffer = packException(result, ex);
             }
+            prepareResponse(result, response, buffer);
 
             logMemory();
             return response;
@@ -174,14 +172,18 @@ public class GrokConnect {
 
         post("/schema", (request, response) -> {
             logMemory();
+
+            BufferAccessor buffer;
+            DataQueryRunResult result = new DataQueryRunResult();
             try {
                 DataConnection connection = gson.fromJson(request.body(), DataConnection.class);
                 DataProvider provider = providerManager.getByName(connection.dataSource);
-                DataFrame result = provider.getSchema(connection, connection.get("schema"), connection.get("table"));
-                buildResponse(response, result.toByteArray());
+                DataFrame dataFrame = provider.getSchema(connection, connection.get("schema"), connection.get("table"));
+                buffer = packDataFrame(result, dataFrame);
             } catch (Throwable ex) {
-                buildExceptionResponse(response, printError(ex));
+                buffer = packException(result, ex);
             }
+            prepareResponse(result, response, buffer);
 
             logMemory();
             return response;
@@ -225,6 +227,33 @@ public class GrokConnect {
             ConnectionPool.getInstance().setTimer();
             return null;
         });
+    }
+
+    private static BufferAccessor packDataFrame(DataQueryRunResult result, DataFrame dataFrame) {
+        result.blob = dataFrame.toByteArray();
+        result.blobLength = result.blob.length;
+        result.columns = dataFrame.columns.size();
+        result.rows = dataFrame.rowCount;
+
+        BufferAccessor buffer = new BufferAccessor(result.blob);
+        buffer.bufPos = result.blob.length;
+        return buffer;
+    }
+
+    private static BufferAccessor packException(DataQueryRunResult result, Throwable ex) {
+        Map<String, String> exception = printError(ex);
+        result.errorMessage = exception.get("errorMessage");
+        result.errorStackTrace = exception.get("errorStackTrace");
+        return new BufferAccessor();
+    }
+
+    private static void prepareResponse(DataQueryRunResult result, Response response, BufferAccessor buffer) {
+        try {
+            buffer.insertStringHeader(gson.toJson(result));
+            buildResponse(response, buffer.toUint8List());
+        } catch (Throwable ex) {
+            buildExceptionResponse(response, printError(ex));
+        }
     }
 
     private static void buildResponse(Response response, byte[] bytes) throws Throwable {
