@@ -424,13 +424,17 @@ export namespace chem {
    * @param {string} smiles - accepts smiles/molfile format
    * @param {number} width
    * @param {number} height
+   * @param {object} options - OCL.IMoleculeToSVGOptions
    * @returns {HTMLDivElement}
    * */
-  export function svgMol(smiles: string, width: number = 300, height: number = 200): HTMLDivElement {
+  export function svgMol(
+      smiles: string, width: number = 300, height: number = 200,
+      options?: {[key: string]: boolean | number | string}
+    ): HTMLDivElement {
     let root = document.createElement('div');
     import('openchemlib/full.js').then((OCL) => {
       let m = smiles.endsWith("M END") ? OCL.Molecule.fromMolfile(smiles): OCL.Molecule.fromSmiles(smiles);
-      root.innerHTML = m.toSVG(width, height);
+      root.innerHTML = m.toSVG(width, height, undefined, options);
     });
     return root;
   }

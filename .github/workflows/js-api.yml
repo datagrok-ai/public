@@ -2,8 +2,6 @@ name: JS API Package
 on:
   workflow_dispatch: {}
   push:
-    branches:
-      - 'master'
     paths:
       - 'js-api/package.json'
 jobs:

@@ -346,6 +346,16 @@ export enum COLOR_CODING_TYPE {
   OFF = 'Off',
 }
 
+export enum SCRIPT_LANGUAGE {
+  JAVASCRIPT = 'javascript',
+  JULIA = 'julia',
+  OCTAVE = 'octave',
+  PYTHON = 'python',
+  R = 'r',
+  NODE = 'nodejs',
+  GROK = 'grok',
+}
+
 /**
  * @typedef {string} AggregationType
  * @typedef {string} SyncType
@@ -391,6 +401,7 @@ export type DockType = `${DOCK_TYPE}`;
 export type CsvImportOptions = { delimiter?: string, decimalSeparator?: string, thousandSeparator?: string };
 export type IndexPredicate = (ind: number) => boolean;
 export type StringPredicate = (str: string) => boolean;
+export type ScriptLanguage = `${SCRIPT_LANGUAGE}`;
 
 export type ElementOptions = {
   id?: string;

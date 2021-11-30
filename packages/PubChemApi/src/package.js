@@ -2,7 +2,6 @@
 import * as grok from 'datagrok-api/grok';
 import * as ui from 'datagrok-api/ui';
 import * as DG from 'datagrok-api/dg';
-import {wait} from "datagrok-api/ui";
 
 
 export let _package = new DG.Package();
@@ -62,6 +61,129 @@ export function PubChemSearchWidget(mol, searchType) {
   return new DG.Widget(panel);
 }
 
+//name: PubChem
+//tags: panel, widgets
+//input: string smiles {semType: Molecule}
+//output: widget result
+export async function PubChemPanel(smiles) {
+  const pubChemId = await pc.smilesToPubChem(smiles);
+  return new DG.Widget(ui.wait(async () => await _PubchemPugView.init(pubChemId)));
+}
+
+class _PubchemPugView {
+  static renderInfoName(info) {
+    return info['Description'] || info['Name'];
+  }
+
+  static renderInfoValue(info, refs) {
+    let text = info['StringValue'] ||
+      info['NumValue']?.toString() ||
+      info['DateValue']?.toString() ||
+      info['BoolValue']?.toString() ||
+      null;
+
+    if (text && info['ValueUnit']) {
+      text += ` ${info['ValueUnit']}`;
+    }
+
+    if (info['Table']) {
+      columNames = info['Table']['ColumnName'];
+      rows = info['Table']['Row'] || [];
+
+      return ui.table(rows, (row, _) => {
+        row['Cell'].map((x) => renderInfoValue(x, refs)).toList();
+      }, columnNames).root;
+    }
+
+    let result;
+    if (info['StringValue'] && info['URL']) {
+      result = ui.div(text.replaceAll('<img src="/', '<img src="https://pubchem.ncbi.nlm.nih.gov/'));
+    } else if (text && info['URL']) {
+      result = ui.url(info['URL'], text);
+    } else if (info['StringValueList']) {
+      //TODO: don't access this twice?
+      result = ui.list(info['StringValueList']);
+    } else if (text) {
+      result = ui.divText(text);
+    } else if (info['ExternalDataMimeType'] === 'image/png' && info['ExternalDataURL']) {
+      result = ui.image(info['ExternalDataURL']); 
+    } else {
+      result = null;
+    }
+
+    if (result instanceof Element && info['ReferenceNumber']) {
+      ui.tooltip.bind(result, () => ui.tableFromMap(refs[info['ReferenceNumber']]));
+    }
+
+    return result || 'unknown';
+  }
+
+  static renderSection(section, refs) {
+    let content = ui.divV([]);
+
+    const description = section['Description'];
+    if (description) {
+      content.append(ui.div(description));
+    }
+
+    const information = section['Information'];
+    if (information) {
+      let table = ui.table(information, (info, _) => [this.renderInfoName(info), this.renderInfoValue(info, refs)]);
+      content.append(table.root);
+    }
+
+    const sections = section['Section'];
+    if (sections) {
+      let acc = ui.accordion(`pubChem/${section['TOCHeading']}`);
+      for (const section of sections) {
+        let pane = acc.addPane(section['TOCHeading'], () => this.renderSection(section, refs));
+        if (section['Description']) {
+          ui.tooltip.bind(pane.header, () => ui.div(section['Description']));
+        }
+      }
+      content.append(acc.root);
+    }
+    return content;
+  }
+
+  static init(pubChemId) {
+    if (pubChemId === '0' || pubChemId === null) {
+      return ui.div('Not found in PubChem.');
+    }
+
+    return new Promise(function (resolve, reject) {
+      const sReq = new XMLHttpRequest();
+      sReq.onload = function() {
+        if (this.status >= 200 && this.status < 300) {
+          const s = sReq.responseText;
+          const json = JSON.parse(s);
+          const acc = ui.accordion('pubChem');
+          acc.header = ui.label(`pubchem: ${pubChemId}`);
+
+          const references = {};
+          for (const ref of json['Record']['Reference']) {
+            references[ref['ReferenceNumber']] = ref;
+          }
+
+          const sections = json['Record']['Section'];
+          for (const section of sections) {
+            acc.addPane(section['TOCHeading'], () => _PubchemPugView.renderSection(section, references));
+          }
+          resolve(acc.root);
+        } else {
+          console.log(`Request status ${this.status}`);
+          reject();
+        }
+      };
+      sReq.onerror = () => {
+        console.log('Request error.');
+        reject();
+      };
+      sReq.open('GET', `${rest}/pug_view/data/compound/${pubChemId}/JSON`);
+      sReq.send();
+    });
+  }
+}
 
 //name: PubChem Substructure Search
 //tags: panel, widgets
@@ -206,8 +328,8 @@ class PubChem {
       xmlHttp.onload = function () {
         if (this.status >= 200 && this.status < 300) {
           console.error(JSON.parse(xmlHttp.responseText))
-          let id = JSON.parse(xmlHttp.responseText)['Waiting']['ListKey'];
-          resolve(id);
+          let keys = JSON.parse(xmlHttp.responseText)['Waiting']['ListKey'];
+          resolve(keys);
         } else
           reject();
       };

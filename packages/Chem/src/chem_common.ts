@@ -12,16 +12,14 @@ const unlockFunctionForKey: any = {};
  *   tries to lock on the same key will need to wait for it to
  *   be unlocked.
  */
-async function lock(key: string) {
+export async function criticalSectionBegin(key: string) {
   if (!lockPromiseForKey[key]) {
     lockPromiseForKey[key] = Promise.resolve();
   }
-
   const takeLockPromise = lockPromiseForKey[key];
   lockPromiseForKey[key] = takeLockPromise.then(() => new Promise((fulfill) => {
     unlockFunctionForKey[key] = fulfill;
   }));
-
   return takeLockPromise;
 }
 
@@ -31,28 +29,12 @@ async function lock(key: string) {
  *   The next person in line will now be able to take out
  *   the lock for that key.
  */
-function unlock(key: string) {
+export function criticalSectionEnd(key: string) {
   if (unlockFunctionForKey[key]) {
     unlockFunctionForKey[key]();
     delete unlockFunctionForKey[key];
   }
 }
-
-/*
-
-let cntr = 0;
-
-export async function chemLock() {
-  await lock(cntr.toString());
-  cntr++;
-}
-
-export function chemUnlock() {
-  unlock(cntr.toString());
-  cntr--;
-}
-
-*/
 
 let _chemLocked = false;
 
@@ -94,3 +76,6 @@ export function rdKitFingerprintToBitArray(fp: string, fpLength: number) {
   }
   return arr;
 }
+
+export const defaultMorganFpRadius = 2;
+export const defaultMorganFpLength = 128;

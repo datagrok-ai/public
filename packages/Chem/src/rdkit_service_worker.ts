@@ -1,6 +1,6 @@
-import {RdKitServiceWorkerMisc} from './rdkit_service_worker_misc';
+import {RdkitServiceWorkerSubstructure} from './rdkit_service_worker_substructure';
 
-export class RdKitServiceWorker extends RdKitServiceWorkerMisc {
+export class RdKitServiceWorker extends RdkitServiceWorkerSubstructure {
   constructor(module: Object, webRoot: string) {
     super(module, webRoot);
   }

@@ -4,7 +4,7 @@ import * as ui from 'datagrok-api/ui';
 import * as DG from 'datagrok-api/dg';
 import {splitAlignedPeptides} from './utils/split-aligned';
 import {tTest} from '@datagrok-libraries/statistics/src/tests';
-import {fdrcorrection} from '@datagrok-libraries/statistics/src/multiple-tests';
+import {fdrcorrection} from '@datagrok-libraries/statistics/src/multiple-tests.js';
 import {ChemPalette} from './utils/chem-palette';
 import {setAARRenderer} from './utils/cell-renderer';
 
