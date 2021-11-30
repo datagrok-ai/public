@@ -104,26 +104,6 @@ export function getCLogP(smiles: string) {
   return JSON.parse(mol.get_descriptors()).CrippenClogP;
 }
 
-//name: RDKit Info
-//tags: panel, widgets
-//input: string smiles {semType: Molecule}
-//output: widget result
-export function rdkitInfoPanel(smiles: string) {
-  let mol = getRdKitModuleLocal().get_mol(smiles);
-  return new DG.Widget(ui.divV([
-    _svgDiv(mol),
-    ui.divText(`${getCLogP(smiles)}`)
-  ]));
-}
-
-//name: RDKit Settings
-//input: column molColumn {semType: Molecule}
-//tags: panel
-//output: widget result
-export function molColumnPropertyPanel(molColumn: DG.Column) {
-  return getMolColumnPropertyPanel(molColumn);
-}
-
 //name: rdkitCellRenderer
 //tags: cellRenderer, cellRenderer-Molecule
 //meta-cell-renderer-sem-type: Molecule
@@ -238,14 +218,6 @@ export function descriptorsApp(context: any) {
   getDescriptorsApp();
 }
 
-//name: Chem Descriptors
-//tags: panel, widgets
-//input: string smiles { semType: Molecule }
-//output: widget result
-export function descriptorsWidget(smiles: string) {
-  return getDescriptorsSingle(smiles);
-}
-
 //description: Removes all children from node
 function removeChildren(node: any) {
   while (node.firstChild)
@@ -291,90 +263,8 @@ export function saveAsSdf() {
   element.click();
 }
 
-//name: Drug Likeness
-//description: Drug Likeness score, with explanations on molecule fragments contributing to the score. Calculated by openchemlib
-//help-url: /help/domains/chem/info-panels/drug-likeness.md
-//tags: panel, widgets
-//input: string smiles { semType: Molecule }
-//output: widget result
-export function drugLikeness(smiles: string) {
-  return smiles ? drugLikenessWidget(smiles) : new DG.Widget(ui.divText('SMILES is empty'));
-}
 
-//name: Molfile
-//description: Molecule as Molfile
-//tags: panel, widgets
-//input: string smiles { semType: Molecule }
-//output: widget result
-export function molfile(smiles: string) {
-  return smiles ? molfileWidget(smiles) : new DG.Widget(ui.divText('SMILES is empty'));
-}
-
-//name: Properties
-//description: Basic molecule properties
-//tags: panel, widgets
-//input: string smiles { semType: Molecule }
-//output: widget result
-export async function properties(smiles: string) {
-  return smiles ? propertiesWidget(smiles) : new DG.Widget(ui.divText('SMILES is empty'));
-}
-
-//name: Structural Alerts
-//description: Screening drug candidates against structural alerts, i.e. chemical fragments associated to a toxicological response
-//help-url: /help/domains/chem/info-panels/structural-alerts.md
-//tags: panel, widgets
-//input: string smiles { semType: Molecule }
-//output: widget result
-export async function structuralAlerts(smiles: string) {
-  return smiles ? structuralAlertsWidget(smiles) : new DG.Widget(ui.divText('SMILES is empty'));
-}
-
-//name: Structure 2D
-//description: 2D molecule representation
-//tags: panel, widgets
-//input: string smiles { semType: Molecule }
-//output: widget result
-export function structure2d(smiles: string) {
-  return smiles ? structure2dWidget(smiles) : new DG.Widget(ui.divText('SMILES is empty'));
-}
-
-//name: Structure 3D
-//description: 3D molecule representation
-//tags: panel, widgets
-//input: string smiles { semType: Molecule }
-//output: widget result
-export async function structure3d(smiles: string) {
-  return smiles ? structure3dWidget(smiles) : new DG.Widget(ui.divText('SMILES is empty'));
-}
-
-//name: Toxicity
-//description: Toxicity prediction. Calculated by openchemlib
-//help-url: /help/domains/chem/info-panels/toxicity-risks.md
-//tags: panel, widgets
-//input: string smiles { semType: Molecule }
-//output: widget result
-export function toxicity(smiles: string) {
-  return smiles ? toxicityWidget(smiles) : new DG.Widget(ui.divText('SMILES is empty'));
-}
-
-//name: R-Groups Analysis
-//top-menu: Chem | R-Groups Analysis
-export function rGroupsAnalysisMenu() {
-  const col = grok.shell.t.columns.bySemType(DG.SEMTYPE.MOLECULE);
-  if (col === null) {
-    grok.shell.error('Current table does not contain molecules')
-    return;
-  }
-  rGroupAnalysis(col);
-}
-
-//name: Chem | R-Groups Analysis
-//friendly-name: Chem | R-Groups Analysis
-//tags: panel, chem
-//input: column col {semType: Molecule}
-export function rGroupsAnalysisPanel(col: DG.Column) {
-  rGroupAnalysis(col);
-}
+//#region Top menu
 
 //top-menu: Chem | Chemical Space...
 //name: Chem Space
@@ -388,13 +278,15 @@ export async function chemSpaceTopMenu(table: DG.DataFrame, smiles: DG.Column) {
   });
 }
 
-//name: Chem | DescriptorsPort...
-//tags: panel
-//input: column smiles { semType: Molecule }
-//output: string result
-export async function descriptors(smiles: DG.Column) {
-  let table: DG.DataFrame = grok.shell.t;
-  getDescriptors(smiles, table);
+//name: R-Groups Analysis
+//top-menu: Chem | R-Groups Analysis
+export function rGroupsAnalysisMenu() {
+  const col = grok.shell.t.columns.bySemType(DG.SEMTYPE.MOLECULE);
+  if (col === null) {
+    grok.shell.error('Current table does not contain molecules')
+    return;
+  }
+  rGroupAnalysis(col);
 }
 
 /*
@@ -404,3 +296,123 @@ export async function chemSimilaritySearch() {
   grok.shell.addTableView(grok.data.demo.molecules(100)).addViewer(new MoleculeViewer());
 }
  */
+//#endregion
+
+//#region Molecule column property panel
+
+//name: Chem | Descriptors...
+//tags: panel, chem
+//input: column smiles { semType: Molecule }
+//output: string result
+export async function descriptors(smiles: DG.Column) {
+  let table: DG.DataFrame = grok.shell.t;
+  getDescriptors(smiles, table);
+}
+
+//name: Chem | R-Groups Analysis
+//friendly-name: Chem | R-Groups Analysis
+//tags: panel, chem
+//input: column col {semType: Molecule}
+export function rGroupsAnalysisPanel(col: DG.Column) {
+  rGroupAnalysis(col);
+}
+
+//name: RDKit Settings
+//input: column molColumn {semType: Molecule}
+//tags: panel
+//output: widget result
+export function molColumnPropertyPanel(molColumn: DG.Column) {
+  return getMolColumnPropertyPanel(molColumn);
+}
+
+//#endregion
+
+//#region Single molecule property panel
+
+//name: Chem Descriptors
+//tags: panel, chem, widgets
+//input: string smiles { semType: Molecule }
+//output: widget result
+export function descriptorsWidget(smiles: string) {
+  return getDescriptorsSingle(smiles);
+}
+
+//name: Drug Likeness
+//description: Drug Likeness score, with explanations on molecule fragments contributing to the score. Calculated by openchemlib
+//help-url: /help/domains/chem/info-panels/drug-likeness.md
+//tags: panel, chem, widgets
+//input: string smiles { semType: Molecule }
+//output: widget result
+export function drugLikeness(smiles: string) {
+  return smiles ? drugLikenessWidget(smiles) : new DG.Widget(ui.divText('SMILES is empty'));
+}
+
+//name: Molfile
+//description: Molecule as Molfile
+//tags: panel, chem, widgets
+//input: string smiles { semType: Molecule }
+//output: widget result
+export function molfile(smiles: string) {
+  return smiles ? molfileWidget(smiles) : new DG.Widget(ui.divText('SMILES is empty'));
+}
+
+//name: Properties
+//description: Basic molecule properties
+//tags: panel, chem, widgets
+//input: string smiles { semType: Molecule }
+//output: widget result
+export async function properties(smiles: string) {
+  return smiles ? propertiesWidget(smiles) : new DG.Widget(ui.divText('SMILES is empty'));
+}
+
+//name: RDKit Info
+//tags: panel, chem, widgets
+//input: string smiles {semType: Molecule}
+//output: widget result
+export function rdkitInfoPanel(smiles: string) {
+  let mol = getRdKitModuleLocal().get_mol(smiles);
+  return new DG.Widget(ui.divV([
+    _svgDiv(mol),
+    ui.divText(`${getCLogP(smiles)}`)
+  ]));
+}
+
+//name: Structural Alerts
+//description: Screening drug candidates against structural alerts, i.e. chemical fragments associated to a toxicological response
+//help-url: /help/domains/chem/info-panels/structural-alerts.md
+//tags: panel, chem, widgets
+//input: string smiles { semType: Molecule }
+//output: widget result
+export async function structuralAlerts(smiles: string) {
+  return smiles ? structuralAlertsWidget(smiles) : new DG.Widget(ui.divText('SMILES is empty'));
+}
+
+//name: Structure 2D
+//description: 2D molecule representation
+//tags: panel, chem, widgets
+//input: string smiles { semType: Molecule }
+//output: widget result
+export function structure2d(smiles: string) {
+  return smiles ? structure2dWidget(smiles) : new DG.Widget(ui.divText('SMILES is empty'));
+}
+
+//name: Structure 3D
+//description: 3D molecule representation
+//tags: panel, chem, widgets
+//input: string smiles { semType: Molecule }
+//output: widget result
+export async function structure3d(smiles: string) {
+  return smiles ? structure3dWidget(smiles) : new DG.Widget(ui.divText('SMILES is empty'));
+}
+
+//name: Toxicity
+//description: Toxicity prediction. Calculated by openchemlib
+//help-url: /help/domains/chem/info-panels/toxicity-risks.md
+//tags: panel, chem, widgets
+//input: string smiles { semType: Molecule }
+//output: widget result
+export function toxicity(smiles: string) {
+  return smiles ? toxicityWidget(smiles) : new DG.Widget(ui.divText('SMILES is empty'));
+}
+
+//#endregion
