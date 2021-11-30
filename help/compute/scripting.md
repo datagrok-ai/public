@@ -132,7 +132,7 @@ To add a validator to a parameter, provide a comma-separated list of functions t
 each time a value is changed. A null indicates that the value is valid, anything else indicates an 
 error which gets shown to the user.
 
-A validator is a function that accepts one parameter of any time, and returns a string. Choice providers
+A validator is a function that accepts one parameter of any type and returns a string. Choice providers
 are applicable only to string parameters.  
 
 The following example adds a "containsLettersOnly" function to the "col" parameter:

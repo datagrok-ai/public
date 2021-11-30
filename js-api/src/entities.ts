@@ -685,7 +685,7 @@ export interface PropertyOptions {
   /** Semantic type */
   semType?: string;
 
-  /** Units of measurement */
+  /** Units of measurement. See also: [postfix] */
   units?: string;
 
   /** Minimum value. Applicable to numerical properties only */
@@ -702,6 +702,17 @@ export interface PropertyOptions {
 
   /** Custom editor (such as slider or text area) */
   editor?: string;
+
+  /** List of validators. It can include [NAMED_VALIDATORS] as well as any pre-defined function names.
+   * Signature: validator(x: DG.Type): string | null.
+   * [null] indicates that the value is valid, [string] describes a validation error. */
+  validators?: string[];
+
+  /** Custom field caption shown in [PropertyGrid] */
+  caption?: string;
+
+  /** Field postfix shown in [PropertyGrid]. [units] take precedence over the [postfix] value. */
+  postfix?: string;
 }
 
 
