@@ -96,14 +96,13 @@ export class AlignedSequenceEncoder {
      * @memberof AlignedSequenceEncoder
      */
     public encode(sequence: string): number[] {
-        const seq = AlignedSequenceEncoder.clean(sequence);
-        const nItems = seq.length;
+        const nItems = sequence.length;
         let values = new Array(nItems).fill(0);
     
         for (let i = 0; i < nItems; ++i) {
-            let char = seq[i];
+            let char = sequence[i];
     
-            assert(char in this.aa2num, `Unknown char '${char}' found in sequence '${seq}'`);
+            assert(char in this.aa2num, `Unknown char '${char}' found in sequence '${sequence}'`);
     
             values[i] = this.aa2num[char];
         }
