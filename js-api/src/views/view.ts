@@ -485,6 +485,16 @@ export class TableView extends View {
    *  Adds a {@link https://datagrok.ai/help/visualize/viewers/correlation-plot | correlation plot}.
    *  Sample: {@link https://public.datagrok.ai/js/samples/ui/viewers/types/corr-plot}
    *  @param options
+   *  @param {("Pearson" | "Spearman")} [options.correlationType="Pearson"]
+   *  @param {boolean} [options.showPearsonR=true]
+   *  @param {boolean} [options.showTooltip=true]
+   *  @param {number} [options.backColor=0xffffff]
+   *  @param {boolean} [options.allowDynamicMenus=true]
+   *  @param {boolean} [options.showContextMenu=true]
+   *  @param {string} [options.title=""]
+   *  @param {string} [options.description=""]
+   *  @param {("Left" | "Right" | "Top" | "Bottom" | "Center")} [options.descriptionPosition="Top"]
+   *  @param {("Auto" | "Always" | "Never")} [options.descriptionVisibilityMode="Auto"]
    *  @returns {Viewer} */
   corrPlot(options: object | null = null): Viewer {
     return this.addViewer(VIEWER.CORR_PLOT, options);
