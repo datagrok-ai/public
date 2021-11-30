@@ -14,6 +14,7 @@ services:
     volumes:
       - datagrok_db:/var/lib/postgresql/data
     restart: on-failure
+    profiles: ["all", "db"]
 
   datagrok:
     image: datagrok/datagrok:latest
@@ -29,16 +30,19 @@ services:
       - datagrok_data:/home/grok/data
       - datagrok_cfg:/home/grok/cfg
     restart: unless-stopped
+    profiles: ["all", "db"]
 
   grok_compute:
     image: datagrok/grok_compute:latest
     environment:
-      GROK_COMPUTE_NUM_CORES: 4
+      GROK_COMPUTE_NUM_CORES: 2
     networks:
       datagrok:
         aliases:
           - grok_compute
     restart: unless-stopped
+    profiles: ["all", "db"]
+
   cvm_nginx:
     image: datagrok/cvm_nginx:latest
     ports:
@@ -49,6 +53,8 @@ services:
           - cvm
           - nginx_cvm
     restart: unless-stopped
+    profiles: ["all", "db"]
+
   jupyter_notebook:
     image: datagrok/jupyter_notebook:latest
     networks:
@@ -56,6 +62,8 @@ services:
         aliases:
           - jupyter_notebook
     restart: unless-stopped
+    profiles: ["all", "db"]
+
   jupyter_kernel_gateway:
     image: datagrok/jupyter_kernel_gateway:latest
     networks:
@@ -63,6 +71,8 @@ services:
         aliases:
           - jupyter_notebook
     restart: unless-stopped
+    profiles: ["all", "db"]
+
   h2o:
     image: datagrok/h2o:latest
     ports:
@@ -73,9 +83,12 @@ services:
         aliases:
           - h2o
     restart: unless-stopped
+    profiles: ["all", "db"]
+
 volumes:
   datagrok_db:
   datagrok_data:
   datagrok_cfg:
+
 networks:
   datagrok:
