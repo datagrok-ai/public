@@ -3,19 +3,21 @@
 //language: javascript
 //tags: model
 //input: dataframe inputTable {editor: Compute:manualOutlierSelectionDialog; editor-button: Outliers...}
-//input: double testArea = 3.5 {caption: Filter Area; units: cm²} [Filter area]
-//input: double vbatch = 25 {caption: VBatch; units: L} [Desired batch size to process]
-//input: double tbatch = 0.5 {caption: TBatch; units: hr} [Desired process time]
+//input: double testArea = 3.5 {caption: Test Filter Area; units: cm²} [Test Filter area]
+//input: double vbatch = 25 {caption: Desired Volume of Batch; units: L} [Desired Volume of Batch]
+//input: double tbatch = 0.5 {caption: Desired process time; units: hr} [Desired process time]
 //input: double sf = 1.5 {caption: Safety Factor} [Safety Factor]
-//input: int order = 2 {caption: Order Of Polynomial Regression} [Order Of Polynomial Regression]
-//output: dataframe dfWithoutOutliers {viewer: Scatter Plot(x: "time (hr)", y: "t/V (hr/(L/m2))", showRegressionLine: "true"); category: Raw Plot}
-//output: dataframe absoluteFluxDecay {viewer: Scatter Plot(x: "V/A (L/m2)", y: "J (LMH)", showRegressionLine: "true"); category: Flux Decay}
-//output: dataframe normalizedFluxDecay {viewer: Scatter Plot(x: "V/A (L/m2)", y: "J/Jo", showRegressionLine: "true"); category: Flux Decay}
-//output: double volume {caption: Volume, L; category: Recommendation}
+//input: int orderOfPolynomialRegression = 2 {caption: Order Of Polynomial Regression} [Order Of Polynomial Regression]
+//meta.showInputs: true
+//help-url: https://datagrok.ai/help/access/parameterized-queries
+//output: dataframe regressionTable {viewer: Scatter Plot(x: "time (min)", y: "filtrate volume (mL)", filter: "!${isOutlier}", showFilteredOutPoints: "true", color: "isOutlier", showRegressionLine: "true"); category: OUTPUT}
+//output: dataframe absoluteFluxDecay {viewer: Scatter Plot(x: "V/A (L/m2)", y: "J (LMH)", showRegressionLine: "true"); category: OUTPUT}
+//output: dataframe normalizedFluxDecay {viewer: Scatter Plot(x: "V/A (L/m2)", y: "J/Jo", showRegressionLine: "true"); category: OUTPUT}
+//output: double volume {caption: Volume, L; category: OUTPUT}
 
 volume = vbatch;
-function gaussianElimination(input, order) {
-  const n = input.length - 1, coefficients = [order];
+function gaussianElimination(input, orderOfPolynomialRegression) {
+  const n = input.length - 1, coefficients = [orderOfPolynomialRegression];
   for (let i = 0; i < n; i++) {
     let maxrow = i;
     for (let j = i + 1; j < n; j++)
@@ -38,9 +40,9 @@ function gaussianElimination(input, order) {
   }
   return coefficients;
 }
-  
-function polynomialRegressionCoefficients(xCol, yCol, order) {
-  const lhs = [], rhs = [], len = xCol.length, k = order + 1;
+
+function polynomialRegressionCoefficients(xCol, yCol, orderOfPolynomialRegression) {
+  const lhs = [], rhs = [], len = xCol.length, k = orderOfPolynomialRegression + 1;
   let a = 0, b = 0;
   for (let i = 0; i < k; i++) {
     for (let l = 0; l < len; l++)
@@ -71,8 +73,8 @@ for (let i = 0; i < isOutlierCol.length; i++) {
   }
 }
 dfWithoutOutliers = DG.DataFrame.fromColumns([
-  DG.Column.fromList('double', "time (min)", timeMin),//inputTable.col("time (min)").toList().filter((i) => isOutlierCol.get(i) == false)),
-  DG.Column.fromList('double', "filtrate volume (mL)", vol)//inputTable.col("filtrate volume (mL)").toList().filter((i) => isOutlierCol.get(i) == false))
+  DG.Column.fromList('double', "time (min)", timeMin),
+  DG.Column.fromList('double', "filtrate volume (mL)", vol)
 ]);
 const timeInMinutes = dfWithoutOutliers.col("time (min)");
 const volumeInMilliliters = dfWithoutOutliers.col("filtrate volume (mL)");
@@ -95,9 +97,9 @@ let cb = [];
 for (let i = 1; i < va.length - 3; i++) {
   let xCol = DG.Column.fromList('double', 'name', timeInSeconds.toList().slice(i, i + 3));
   let yCol = DG.Column.fromList('double', 'name', va.toList().slice(i, i + 3));
-  let coefficients = polynomialRegressionCoefficients(xCol, yCol, order);
-  ca.push(coefficients[order]);
-  cb.push(coefficients[order - 1]);
+  let coefficients = polynomialRegressionCoefficients(xCol, yCol, orderOfPolynomialRegression);
+  ca.push(coefficients[orderOfPolynomialRegression]);
+  cb.push(coefficients[orderOfPolynomialRegression - 1]);
 }
 
 dfWithoutOutliers.columns.addNewFloat('a2').init((i) => (i > 0) ? 3600 * (2 * ca[i] * timeInSeconds.get(i) + cb[i]) : 0);
@@ -109,4 +111,5 @@ const jj0 = dfWithoutOutliers.col('J/Jo');
 absoluteFluxDecay = DG.DataFrame.fromColumns([va, j]);
 normalizedFluxDecay = DG.DataFrame.fromColumns([va, jj0]);
 
+regressionTable = inputTable;
 // coefficients = polynomialRegressionCoefficients(inputTable.col("time (hr)"), dfWithoutOutliers.col("t/V (hr/(L/m2))"), 1);
