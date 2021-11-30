@@ -39,25 +39,14 @@ export function criticalSectionEnd(key: string) {
 let _chemLocked = false;
 
 export async function chemLock(token: string | null = null) {
-  /*
-  if (token !== null) {
-    console.log(`Locking for ${token}`);
+  if (_chemLocked) {
+    throw(`RdKit Service usage locked:\n${(new Error()).stack}`);
   }
-  */
-  // if (_chemLocked) {
-  //  throw(`RdKit Service usage locked:\n${(new Error()).stack}`);
-  // }
   _chemLocked = true;
-  /*
-  if (token !== null) {
-    console.log(`Locked for ${token}`);
-  }
-   */
 }
 
 export async function chemUnlock(token: string | null = null) {
   _chemLocked = false;
-  // console.log(`Unlocked for ${token}`);
 }
 
 export function tanimoto(x: BitArray, y: BitArray) {
