@@ -1,6 +1,6 @@
 import * as DG from 'datagrok-api/dg';
 
-import {Matrix, Vector, Coordinates, Vectors, DistanceMetric} from './type_declarations';
+import {Matrix, Vector, Coordinates, Vectors, DistanceMetric} from './type-declarations';
 
 /**
  * Asserts a condition by throwing an Error.
