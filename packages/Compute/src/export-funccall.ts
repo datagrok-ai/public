@@ -36,29 +36,59 @@ export async function exportFuncCall(call: DG.FuncCall) {
     inputScalarsSheet.addRow([scalarInput.name, call.inputs[scalarInput.name]]);
   });
 
-  for await (const dfOutput of dfOutputs) {
+  dfOutputs.forEach((dfOutput) => {
     const currentDfSheet = exportWorkbook.addWorksheet(`Output - ${dfOutput.name}`);
     const currentDf = (call.outputs[dfOutput.name] as DG.DataFrame);
     currentDfSheet.addRow((currentDf.columns as DG.ColumnList).names());
     for (let i = 0; i < currentDf.rowCount; i++) {
       currentDfSheet.addRow([...currentDf.row(i).cells].map((cell: DG.Cell) => cell.value));
     }
+  });
 
-    // TODO: change to API call when it will be available. Currently, it does not work if the plot is not visible.
-    // In addition, it does not track the scatterplot's source dataframe
-    const plot = document.getElementsByName('viewer-Scatter-plot')[0];
+  // UWAGA: very fragile solution
+  const resultView = document.getElementsByClassName('d4-tab-host ui-box')[0];
+  const tabs = resultView.getElementsByClassName('d4-tab-header-stripe')[0].children;
+  const selectedByUser = resultView.getElementsByClassName('d4-tab-header selected')[0];
+  for (let i=0; i< tabs.length; i++) {
+    (tabs[i] as HTMLElement).click();
+    await new Promise((r) => setTimeout(r, 100));
 
-    const canvas = await DG.HtmlUtils.renderToCanvas(plot);
-    const dataUrl = canvas.toDataURL('image/png');
-    const testImageId = exportWorkbook.addImage({
-      base64: dataUrl,
-      extension: 'png',
-    });
-    currentDfSheet.addImage(testImageId, {
-      tl: {col: (currentDf.columns as DG.ColumnList).length + 1, row: 0},
-      ext: {width: canvas.width, height: canvas.height},
-    });
-  };
+    const titleDivs = document.getElementsByClassName('grok-func-results-header');
+    if (!titleDivs.length) continue;
+
+    for (let i = 0; i < titleDivs.length; i++) {
+      const titleDiv = titleDivs[i];
+
+      const title = titleDiv.firstChild?.textContent;
+      if (!title) continue;
+
+      const plot = titleDiv.nextSibling;
+      if (!plot) continue;
+
+      const canvas = await DG.HtmlUtils.renderToCanvas(plot as HTMLElement);
+      const dataUrl = canvas.toDataURL('image/png');
+      const testImageId = exportWorkbook.addImage({
+        base64: dataUrl,
+        extension: 'png',
+      });
+      const worksheet = exportWorkbook.getWorksheet(`Output - ${title}`);
+
+      if (worksheet) {
+        const columnForImage = ((call.outputs[title] as DG.DataFrame).columns as DG.ColumnList).length + 1;
+        worksheet.addImage(testImageId, {
+          tl: {col: columnForImage, row: 0},
+          ext: {width: canvas.width, height: canvas.height},
+        });
+      } else {
+        const newWorksheet = exportWorkbook.addWorksheet(`Output - Plot - ${title}`);
+        newWorksheet.addImage(testImageId, {
+          tl: {col: 0, row: 0},
+          ext: {width: canvas.width, height: canvas.height},
+        });
+      }
+    }
+  }
+  (selectedByUser as HTMLElement).click();
 
   const outputScalarsSheet = exportWorkbook.addWorksheet('Output scalars');
   scalarOutputs.forEach((scalarOutput) => {
