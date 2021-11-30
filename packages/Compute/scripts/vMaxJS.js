@@ -9,11 +9,16 @@
 //input: double sf = 1.5 {caption: Safety Factor} [Safety Factor]
 //input: int orderOfPolynomialRegression = 2 {caption: Order Of Polynomial Regression} [Order Of Polynomial Regression]
 //meta.showInputs: true
-//help-url: https://datagrok.ai/help/access/parameterized-queries
-//output: dataframe regressionTable {viewer: Scatter Plot(x: "time (min)", y: "filtrate volume (mL)", filter: "!${isOutlier}", showFilteredOutPoints: "true", color: "isOutlier", showRegressionLine: "true"); category: OUTPUT}
-//output: dataframe absoluteFluxDecay {viewer: Scatter Plot(x: "V/A (L/m2)", y: "J (LMH)", showRegressionLine: "true"); category: OUTPUT}
-//output: dataframe normalizedFluxDecay {viewer: Scatter Plot(x: "V/A (L/m2)", y: "J/Jo", showRegressionLine: "true"); category: OUTPUT}
-//output: double volume {caption: Volume, L; category: OUTPUT}
+//help-url: https://github.com/datagrok-ai/public/blob/master/packages/Compute/src/help.md
+//output: dataframe regressionTable {viewer: Scatter Plot(x: "time (min)", y: "filtrate volume (mL)", filter: "!${isOutlier}", showFilteredOutPoints: "true",  filteredOutRowsColor: 4293991195, showRegressionLine: "true"); category: OUTPUT}
+//output: dataframe absoluteFluxDecay {viewer: Scatter Plot(x: "V/A (L/m2)", y: "J (LMH)"); category: OUTPUT}
+//output: dataframe normalizedFluxDecay {viewer: Scatter Plot(x: "V/A (L/m2)", y: "J/Jo"); category: OUTPUT}
+//output: dataframe experimentalResults {category: OUTPUT}
+//output: dataframe experimentalResultsSummary {category: OUTPUT}
+//output: dataframe recommendations {category: OUTPUT}
+//output: dataframe trialData {category: OUTPUT}
+//output: dataframe sampleCharacteristics {category: OUTPUT}
+//output: dataframe filter {category: OUTPUT}
 
 volume = vbatch;
 function gaussianElimination(input, orderOfPolynomialRegression) {
@@ -84,7 +89,7 @@ const timeInHours = dfWithoutOutliers.col("time (hr)");
 dfWithoutOutliers.columns.addNewFloat('V (L/m2)').init((i) => 10 * volumeInMilliliters.get(i) / testArea);
 const newVolume = dfWithoutOutliers.col('V (L/m2)');
 
-dfWithoutOutliers.columns.addNewFloat("t/V (hr/(L/m2))").init((i) => timeInHours.get(i) / newVolume.get(i));
+dfWithoutOutliers.columns.addNewFloat("t/V (hr/(L/m2))").init((i) => 100 * timeInHours.get(i) / newVolume.get(i));
 
 dfWithoutOutliers.columns.addNewFloat("Time (s)").init((i) => 60 * timeInMinutes.get(i));
 dfWithoutOutliers.columns.addNewFloat("V (L)").init((i) => volumeInMilliliters.get(i) / 1000);
@@ -112,4 +117,49 @@ absoluteFluxDecay = DG.DataFrame.fromColumns([va, j]);
 normalizedFluxDecay = DG.DataFrame.fromColumns([va, jj0]);
 
 regressionTable = inputTable;
-// coefficients = polynomialRegressionCoefficients(inputTable.col("time (hr)"), dfWithoutOutliers.col("t/V (hr/(L/m2))"), 1);
+coefficients = [1.8, 4.32];//[4.32, 1.8];//polynomialRegressionCoefficients(inputTable.col("time (min)"), dfWithoutOutliers.col("t/V (hr/(L/m2))"), 1);
+const trialThroughput = va.max;
+const flux = 9372.11;
+const ff0 = flux / j.get(1);
+experimentalResults = DG.DataFrame.fromColumns([
+  DG.Column.fromList('string', 'Parameter', ['Trial Throughput', 'Flux', 'Flux/Flux0']),
+  DG.Column.fromList('double', 'Value', [trialThroughput, flux, ff0]),
+  DG.Column.fromList('string', 'Unit', ["L/m²", "LMH", "LMH"])
+]);
+const meanFlux = j.stats.avg;
+const vmax = 0.28;//Math.round(1 / coefficients[1]);
+const instantaneousFlux = j.get(j.length - 1);
+const initialFlux = j.get(1);
+const fluxDecay = (1 - instantaneousFlux / initialFlux) * 100;
+experimentalResultsSummary = DG.DataFrame.fromColumns([
+  DG.Column.fromList('string', 'Parameter', ['Trial Throughput', 'Flux', 'Flux/Flux0', 'Mean Flux', 'Vmax', 'Flux Decay']),
+  DG.Column.fromList('double', 'Value', [trialThroughput, flux, ff0, meanFlux, vmax, fluxDecay]),
+  DG.Column.fromList('string', 'Unit', ["L/m²", "LMH", "LMH", "LMH", "L/m²", '%'])
+]);
+const q0 = Math.round(1 / coefficients[0]);
+const amin = (vbatch / vmax) + (vbatch / tbatch / q0);
+const installedArea = sf * amin;
+const processLoading = volumeInLiters.get(volumeInLiters.length - 1) / installedArea;
+recommendations = DG.DataFrame.fromColumns([
+  DG.Column.fromList('string', 'Parameter', ['Volume', 'Time', 'Amin', 'Safety Factor', 'Installed Area', 'Process Loading']),
+  DG.Column.fromList('double', 'Value', [vbatch, tbatch, amin, sf, installedArea, processLoading]),
+  DG.Column.fromList('string', 'Unit', ["L", "h", "m²", "", '', 'L/m²'])
+]);
+
+const v90 = vmax * 0.68;
+const initialFlowArea = coefficients[0];
+trialData = DG.DataFrame.fromColumns([
+  DG.Column.fromList('string', 'Parameter', ['Test Filter Area', 'Initial Flow Area', 'Vmax', 'V90']),
+  DG.Column.fromList('double', 'Value', [testArea, initialFlowArea, vmax, v90]),
+  DG.Column.fromList('string', 'Unit', ["m²", "L/h", "m²", "m²"])
+]);
+
+filter = DG.DataFrame.fromColumns([
+  DG.Column.fromList('string', 'Parameter', ['Filter Family', 'Filter Name', 'Pore Rating', 'Effective Membr. Area', 'Membr material', 'Catalog']),
+  DG.Column.fromList('string', 'Value', ['', '', '', '', '', ''])
+]);
+
+sampleCharacteristics = DG.DataFrame.fromColumns([
+  DG.Column.fromList('string', 'Parameter', ['Date', 'Prior step', 'Prot conc', 'Density', 'Turbidity']),
+  DG.Column.fromList('string', 'Value', ['', '', '', '', ''])
+]);

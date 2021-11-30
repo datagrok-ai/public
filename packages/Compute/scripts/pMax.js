@@ -3,42 +3,23 @@
 //language: javascript
 //tags: model
 //input: dataframe inputTable [Should contain columns Time (min), Vol (mL), P1 (psi), P2 (psi)]
+//input: dataframe parameters
 //input: double batchVolume = 100 {units: L} [Batch Volume]
 //input: double batchTime = 2 {units: hours} [Batch Time]
 //input: double targetPressure = 20 {units: psi} [Target Pressure]
-//input: double aMinFilter1Guessed = 0.153 {units: m²; caption:Amin Filter 1 guessed} [Amin Filter 1 guessed]
-//input: double aMinFilter2Guessed = 0.153 {units: m²; caption:Amin Filter 2 guessed} [Amin Filter 2 guessed]
-//input: double filterArea1 = 23 {units: m²} [Filter Area 1]
-//input: double filterArea2 = 23 {units: m²} [Filter Area 2]
-//input: double sf1 = 1.5 {caption: SF1}
-//input: double sf2 = 1.5 {caption: SF2}
+//input: double aMinFilter1Guessed = 0.153 {units: m²; caption:A_guessed Filter 1} [A_guessed Filter 1]
+//input: double aMinFilter2Guessed = 0.153 {units: m²; caption:A_guessed Filter 2} [A_guessed Filter 2]
+//input: double filterArea1 = 23 {units: m²; caption: A_trial Filter 1} [A_trial Filter 1]
+//input: double filterArea2 = 23 {units: m²; caption: A_trial Filter 2} [A_trial Filter 2]
+//input: double sf = 1.5 {caption: Safety Factor}
 //input: int orderOfPolynomialRegression = 3 {caption: Order Of Polynomial Regression} [Order Of Polynomial Regression]
-//output: dataframe Filter1 {viewer: Scatter Plot(x: "TP 1 (L/m2)", y: "Res. 1 (psi/LMH)", showRegressionLine: "true"); category: PRIMARY FILTER}
-//output: dataframe Filter2 {viewer: Scatter Plot(x: "TP 2 (L/m2)", y: "Res. 2 (psi/LMH)", showRegressionLine: "true"); category: SECONDARY FILTER}
-//output: double amin1 {units: m²; caption: Amin; category: PRIMARY FILTER}
-//output: double amin2 {units: m²; caption: Amin; category: SECONDARY FILTER}
-//output: double aminSF1 {units: m²; caption: Amin SF; category: PRIMARY FILTER}
-//output: double aminSF2 {units: m²; caption: Amin SF; category: SECONDARY FILTER}
-//output: double trialLoading1 {units: L/m²; caption: Trial Loading; category: PRIMARY FILTER}
-//output: double trialLoading2 {units: L/m²; caption: Trial Loading; category: SECONDARY FILTER}
-//output: double processLoading1 {units: L/m²; caption: Process Loading; category: PRIMARY FILTER}
-//output: double processLoading2 {units: L/m²; caption: Process Loading; category: SECONDARY FILTER}
-//output: double maxP1 {units: psi; caption: Max P; category: PRIMARY FILTER}
-//output: double maxP2 {units: psi; caption: Max P; category: SECONDARY FILTER}
-//output: double trialFlux1 {units: LMH; caption: Trial Flux; category: PRIMARY FILTER}
-//output: double trialFlux2 {units: LMH; caption: Trial Flux; category: SECONDARY FILTER}
-//output: double processFlux1 {units: LMH; caption: Process Flux; category: PRIMARY FILTER}
-//output: double processFlux2 {units: LMH; caption: Process Flux; category: SECONDARY FILTER}
-//output: double processFlow1 {units: L/hr; caption: Process Flow; category: PRIMARY FILTER}
-//output: double processFlow2 {units: L/hr; caption: Process Flow; category: SECONDARY FILTER}
-//output: double guessedAmin1 {units: m²; caption: Guessed Amin; category: PRIMARY FILTER}
-//output: double guessedAmin2 {units: m²; caption: Guessed Amin; category: SECONDARY FILTER}
-//output: double guessedProcessLoading1 {units: L/m²; caption: Guessed Process Loading; category: PRIMARY FILTER}
-//output: double guessedProcessLoading2 {units: L/m²; caption: Guessed Process Loading; category: SECONDARY FILTER}
-//output: double guessedMaxP1 {units: psi; caption: Guessed Max P; category: PRIMARY FILTER}
-//output: double guessedMaxP2 {units: psi; caption: Guessed Max P; category: SECONDARY FILTER}
-//output: double guessedProcessFlux1 {units: LMH; caption: Guessed Process Flux; category: PRIMARY FILTER}
-//output: double guessedProcessFlux2 {units: LMH; caption: Guessed Process Flux; category: SECONDARY FILTER}
+//meta.showInputs: true
+//output: dataframe Filter1 {viewer: Scatter Plot(x: "TP 1 (L/m2)", y: "Res. 1 (psi/LMH)", showRegressionLine: "true"); category: OUTPUT}
+//output: dataframe t1 {category: OUTPUT}
+//output: dataframe Guessed1 {category: OUTPUT}
+//output: dataframe Filter2 {viewer: Scatter Plot(x: "TP 2 (L/m2)", y: "Res. 2 (psi/LMH)", showRegressionLine: "true"); category: OUTPUT}
+//output: dataframe t2 {category: OUTPUT}
+//output: dataframe Guessed2 {category: OUTPUT}
 
 function gaussianElimination(input, orderOfPolynomialRegression) {
   const n = input.length - 1, coefficients = [orderOfPolynomialRegression];
@@ -148,7 +129,7 @@ amin2 = df2.col(colNames2['area']).get(df2.col(colNames2['d2']).toList().indexOf
 processFlow1 = batchVolume / batchTime, processFlow2 = batchVolume / batchTime;
 processFlux1 = processFlow1 / amin1, processFlux2 = processFlow2 / amin2;
 trialFlux1 = 600 * v.max / t.max / filterArea1, trialFlux2 = 600 * v.max / t.max / filterArea2;
-aminSF1 = sf1 * amin1, aminSF2 = sf2 * amin2;
+aminSF1 = sf * amin1, aminSF2 = sf * amin2;
 trialLoading1 = df1.col(colNames1['tp1']).max, trialLoading2 = df1.col(colNames1['tp2']).max;
 processLoading1 = batchVolume / amin1, processLoading2 = batchVolume / amin2;
 maxP1 = predictPolynomialRegression(coefficients1, processLoading1) * processFlux1;
@@ -161,3 +142,22 @@ guessedMaxP1 = predictPolynomialRegression(coefficients1, processLoading1) * pro
 guessedMaxP2 = predictPolynomialRegression(coefficients2, processLoading2) * processFlux2; 
 guessedProcessFlux1 = processFlow1 / aMinFilter1Guessed, guessedProcessFlux2 = processFlow2 / aMinFilter2Guessed;
 
+t1 = DG.DataFrame.fromColumns([
+  DG.Column.fromList('string', 'Parameter', ['amin', 'aminSF', 'trialLoading', 'processLoading', 'maxP', 'trialFlux', 'processFlux', 'processFlow']),
+  DG.Column.fromList('double', 'Value', [amin1, aminSF1, trialLoading1, processLoading1, maxP1, trialFlux1, processFlux1, processFlow1])
+]);
+
+t2 = DG.DataFrame.fromColumns([
+  DG.Column.fromList('string', 'Parameter', ['amin', 'aminSF', 'trialLoading', 'processLoading', 'maxP', 'trialFlux', 'processFlux', 'processFlow']),
+  DG.Column.fromList('double', 'Value', [amin2, aminSF2, trialLoading2, processLoading2, maxP2, trialFlux2, processFlux2, processFlow2])
+]);
+
+Guessed1 = DG.DataFrame.fromColumns([
+  DG.Column.fromList('string', 'Parameter', ['amin', 'processLoading', 'maxP', 'processFlux']),
+  DG.Column.fromList('double', 'Value', [guessedAmin1 , guessedProcessLoading1, guessedMaxP1, guessedProcessFlux1])
+]);
+
+Guessed2 = DG.DataFrame.fromColumns([
+  DG.Column.fromList('string', 'Parameter', ['amin', 'processLoading', 'maxP', 'processFlux']),
+  DG.Column.fromList('double', 'Value', [guessedAmin2, guessedProcessLoading2, guessedMaxP2, guessedProcessFlux2])
+]);
