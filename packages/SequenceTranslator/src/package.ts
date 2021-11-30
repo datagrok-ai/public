@@ -83,50 +83,31 @@ export function sequenceTranslator() {
     ], (item: {key: string; value: string;}) => [item.key, item.value], ['Code', 'Sequence']).root
   ], 'table');
 
-  let codesAcc = ui.accordion();
-  codesAcc.addPane('CMO Codes', () =>
-    ui.divH([
-      DG.HtmlTable.create(
-        [
-          {name: "2'MOE-5Me-rU", bioSpring: '5', gcrs: 'moeT'},
-          {name: "2'MOE-rA", bioSpring: '6', gcrs: 'moeA'},
-          {name: "2'MOE-5Me-rC", bioSpring: '7', gcrs: 'moe5mC'},
-          {name: "2'MOE-rG", bioSpring: '8', gcrs: 'moeG'},
-          {name: "5-Methyl-dC", bioSpring: '9', gcrs: '5mC'},
-          {name: "ps linkage", bioSpring: '*', gcrs: 'ps'},
-          {name: "dA", bioSpring: 'A', gcrs: 'A'},
-          {name: "dC", bioSpring: 'C', gcrs: 'C'},
-          {name: "dT", bioSpring: 'T', gcrs: 'T'},
-          {name: "dG", bioSpring: 'G', gcrs: 'G'}
-        ],
-        (item: {name: string; bioSpring: string; gcrs: string}) => [item.name, item.bioSpring, item.gcrs],
-        ['For ASO Gapmers', 'BioSpring', 'GCRS']
-      ).root,
-      ui.div([], {style: {width: '50px'}}),
-      DG.HtmlTable.create(
-        [
-          {name: "2'-fluoro-U", axolabs: '1', bioSpring: 'Uf', gcrs: 'fU'},
-          {name: "2'-fluoro-A", axolabs: '2', bioSpring: 'Af', gcrs: 'fA'},
-          {name: "2'-fluoro-C", axolabs: '3', bioSpring: 'Cf', gcrs: 'fC'},
-          {name: "2'-fluoro-G", axolabs: '4', bioSpring: 'Gf', gcrs: 'fG'},
-          {name: "OMe-rU", axolabs: '5', bioSpring: 'u', gcrs: 'mU'},
-          {name: "OMe-rA", axolabs: '6', bioSpring: 'a', gcrs: 'mA'},
-          {name: "OMe-rC", axolabs: '7', bioSpring: 'c', gcrs: 'mC'},
-          {name: "OMe-rG", axolabs: '8', bioSpring: 'g', gcrs: 'mG'},
-          {name: "ps linkage", axolabs: '*', bioSpring: 's', gcrs: 'ps'}
-        ],
-        (item: {name: string; axolabs: string, bioSpring: string; gcrs: string}) => [item.name, item.bioSpring, item.axolabs, item.gcrs],
-        ["For 2\'-OMe and 2\'-F modified siRNA", 'BioSpring', 'Axolabs', 'GCRS']
-      ).root
-    ]), false
-  );
+  let tables = ui.divV([]);
+  for (let synthesizer of Object.keys(map)) {
+    for (let technology of Object.keys(map[synthesizer])) {
+      let tableRows = [];
+      for (let [key, value] of Object.entries(map[synthesizer][technology]))
+        tableRows.push({'name': value.name, 'code': key});
+      tables.append(
+        DG.HtmlTable.create(
+          tableRows,
+          (item: {name: string; code: string;}) => [item['name'], item['code']],
+          [synthesizer + ' ' + technology, 'Code']
+        ).root,
+        ui.div([], {style: {height: '30px'}})
+      );
+    }
+  }
+
+  let showCodesButton = ui.button('SHOW CODES', () => ui.dialog('Codes').add(tables).show());
 
   let moleculeSvgDiv = ui.block([]);
 
   let flavor: string = (defaultInput.includes('U')) ? "RNA_both_caps" : "DNA_both_caps";
   (async () => moleculeSvgDiv.append(grok.chem.svgMol(<string> await nucleotidesToSmiles(defaultInput, flavor), 900, 300)))();
 
-  let saveMolFileButton = ui.button('SAVE MOL FILE', async () => {
+  let saveMolFileButton = ui.bigButton('SAVE MOL FILE', async () => {
     let outputSequenceObj = convertSequence(inputSequenceField.value);
     flavor = outputSequenceObj.Nucleotides.includes('U') ? "RNA_both_caps" : "DNA_both_caps";
     let smiles = (isSiRnaGcrsCode(inputSequenceField.value.replace(/\s/g, ''))) ? 
@@ -159,12 +140,11 @@ export function sequenceTranslator() {
             ui.h1('Output'),
             outputTableDiv
           ]),
-          codesAcc.root,
           moleculeSvgDiv,
-          saveMolFileButton
+          ui.divH([saveMolFileButton, showCodesButton])
         ], 'sequence')
       ]),
-      'AXOLABS': _defineAxolabsPattern()
+      'AXOLABS': defineAxolabsPattern()
     })
   ]);
   v.box = true;
@@ -601,22 +581,4 @@ export function gcrsToMM12(nucleotides: string) {
     "fA": "I", "fC": "J", "fG": "K", "mU": "H", "mA": "E", "mC": "F", "mG": "G"
   };
   return nucleotides.replace(/(mAps|mUps|mGps|mCps|fAps|fUps|fGps|fCps|fU|fA|fC|fG|mU|mA|mC|mG)/g, function (x: string) {return obj[x]});
-}
-
-//name: gcrsToABI
-//input: string nucleotides {semType: GCRS}
-//output: string result {semType: ABI}
-export function gcrsToABI(nucleotides: string) {
-  let count: number = -1;
-  const objForEdges: {[index: string]: string} = {"moeA": "5", "(5m)moeC": "6", "moeG": "7", "moeT": "8"};
-  const objForCenter: {[index: string]: string} = {"A": "A", "T": "T", "(5m)C": "C", "G": "G"};
-  return nucleotides.replace(/(moeA|\(5m\)moeC|moeG|moeT|A|T|\(5m\)C|G)/g, function (x: string) {
-    count++;
-    return (5 < count || count < 15) ? objForCenter[x] : objForEdges[x];
-  });
-}
-
-//name: defineAxolabsPattern
-export function _defineAxolabsPattern() {
-  return defineAxolabsPattern();
 }

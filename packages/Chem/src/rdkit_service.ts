@@ -43,7 +43,7 @@ export class RdKitService {
   async _initParallelWorkers(dict: string[], func: any, postFunc: any): Promise<any> {
     let t = this;
     return this._doParallel(
-      async (i: number, nWorkers: number) => {
+      (i: number, nWorkers: number) => {
         const length = dict.length;
         const segmentLength = Math.floor(length / nWorkers);
         t.segmentLength = segmentLength;
@@ -59,7 +59,7 @@ export class RdKitService {
   async initMoleculesStructures(dict: string[]): Promise<any> {
     return this._initParallelWorkers(dict, (i: number, segment: any) =>
       this._parallelWorkers[i].initMoleculesStructures(segment),
-      async (resultArray: any[]) => resultArray.reduce((acc: any, item: any) => {
+      (resultArray: any[]) => resultArray.reduce((acc: any, item: any) => {
         item = item || {molIdxToHash: [], hashToMolblock: {}};
         return {
           molIdxToHash: [...acc.molIdxToHash, ...item.molIdxToHash],
@@ -71,7 +71,7 @@ export class RdKitService {
   async searchSubstructure(query: string, querySmarts: string) {
     let t = this;
     return this._doParallel(
-      async (i: number, nWorkers: number) => {
+      (i: number, nWorkers: number) => {
         return t._parallelWorkers[i].searchSubstructure(query, querySmarts);
       },
       (data: any) => {
@@ -84,41 +84,25 @@ export class RdKitService {
   }
 
   async initMorganFingerprints() {
-    return this._initParallelWorkers([], (i: number, segment: any) =>
-      this._parallelWorkers[i].initMorganFingerprints(), (_: any) => {});
-  }
-
-  async getSimilarities(queryMolString: string): Promise<number[]> {
-    let t = this;
     return this._doParallel(
-      async (i: number, nWorkers: number) => {
-        return t._parallelWorkers[i].getSimilarities(queryMolString);
-      },
-      (data: any) => {
-        return [].concat.apply([], data);
-      });
+      (i: number, nWorkers: number) => {
+        return this._parallelWorkers[i].initMorganFingerprints();
+      }, (_: any) => { return []}
+    );
   }
 
   async getMorganFingerprints() {
     let t = this;
     return (await this._doParallel(
-      async (i: number, nWorkers: number) => {
+      (i: number, nWorkers: number) => {
         return t._parallelWorkers[i].getMorganFingerprints();
       },
       (data: any) => {
         return [].concat.apply([], data);
-      })).map((obj: any) => new BitArray(new Uint32Array(obj.data), obj.length));
-  }
-
-  async initStructuralAlerts(smarts: string[]): Promise<void> {
-    for (let i = 0; i < this._jobWorkers.length; ++i) {
-      await this._jobWorkers[i].initStructuralAlerts(smarts);
-    }
-  }
-
-  async getStructuralAlerts(smiles: string): Promise<number[]> {
-    // may be round-robin or job stealing in the future
-    return (await this._jobWorker!.getStructuralAlerts(smiles)) as number[];
+      })).map(
+        (obj: any) =>
+          // We deliberately choose Uint32Array over DG.BitSet here
+          new BitArray(new Uint32Array(obj.data), obj.length));
   }
 
 }

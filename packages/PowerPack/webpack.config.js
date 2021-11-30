@@ -6,11 +6,14 @@ module.exports = {
     package: './src/package.ts'
   },
   resolve: {
-    extensions: ['.wasm', '.mjs', '.json', '.ts', '.tsx'],
+    extensions: ['.wasm', '.mjs', '.json', '.js', '.ts', '.tsx'],
   },
   module: {
     rules: [
-      { test: /\.tsx?$/, loader: 'ts-loader' }
+      { test: /\.ts$/,
+        loader: 'ts-loader',
+        exclude: /node_modules/,
+      }
     ],
   },
   devtool: 'inline-source-map',

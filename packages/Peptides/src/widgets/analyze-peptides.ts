@@ -91,9 +91,9 @@ export async function analyzePeptidesWidget(
         100,
         `${activityColumnChoice}Scaled`,
       );
-      view.dockManager.dock(peptideSpaceViewer, 'down');
-      const refNode = view.dockManager.dock(sarViewer, 'right');
-      view.dockManager.dock(sarViewerVertical, 'down', refNode);
+      let refNode = view.dockManager.dock(peptideSpaceViewer, 'down');
+      refNode = view.dockManager.dock(sarViewer, 'right', refNode);
+      view.dockManager.dock(sarViewerVertical, 'right', refNode);
 
       const StackedBarchartProm = currentDf.plot.fromType('StackedBarChartAA');
       addViewerToHeader(tableGrid, StackedBarchartProm);

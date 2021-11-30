@@ -30,3 +30,5 @@ dist/
 
 # Emitted *.js files
 src/**/*.js
+src/**/*.d.ts
+src/**/*.d.ts.map

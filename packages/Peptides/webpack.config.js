@@ -3,19 +3,19 @@ const path = require('path');
 module.exports = {
   mode: 'development',
   entry: {
-    package: './src/package.ts'
+    package: './src/package.ts',
   },
   module: {
     rules: [
       {
-        test: /\.tsx?$/,
+        test: /\.ts?$/,
         use: 'ts-loader',
         exclude: /node_modules/,
       },
     ],
   },
   resolve: {
-    extensions: ['.tsx', '.ts', '.js'],
+    extensions: ['.tsx', '.js', '.ts'],
   },
   devtool: 'inline-source-map',
   externals: {
@@ -24,7 +24,7 @@ module.exports = {
     'datagrok-api/ui': 'ui',
     'openchemlib/full.js': 'OCL',
     'rxjs': 'rxjs',
-    'rxjs/operators': 'rxjs.operators'
+    'rxjs/operators': 'rxjs.operators',
   },
   output: {
     filename: '[name].js',

@@ -1,4 +1,4 @@
-class SDTMPackageDetectors extends DG.Package {
+class SdtmPackageDetectors extends DG.Package {
   //tags: semTypeDetector
   //input: column col
   //output: string semType
