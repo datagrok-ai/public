@@ -1,11 +1,11 @@
 {
 	"name": "@datagrok/compute",
 	"friendlyName": "Compute",
-	"version": "0.2.4",
+	"version": "0.2.5",
 	"description": "",
 	"dependencies": {
 		"cash-dom": "latest",
-		"datagrok-api": ">=0.95.6",
+		"datagrok-api": ">=0.95.8",
 		"dayjs": "latest",
 		"exceljs": "^4.3.0",
 		"file-saver": "^2.0.5",
