@@ -14,11 +14,11 @@ from pyphysio.tests import TestData
 
 ecg_data = TestData.ecg()
 
-ecg = ph.EvenlySignal(values = ecg_data, sampling_freq = samplingFrequency, signal_type = 'ecg')
+ecg = ph.EvenlySignal(values=ecg_data, sampling_freq=samplingFrequency, signal_type = 'ecg')
 
 extracted = ph.BeatFromECG(bpm_max=bpmMax, delta=delta, k=k)(ecg)
 
-fig = plt.plot(extracted)
+Intervals = plt.plot(extracted)
 plt.title('RR intervals')
 plt.xlabel('Interval index')
 plt.ylabel('Seconds')
