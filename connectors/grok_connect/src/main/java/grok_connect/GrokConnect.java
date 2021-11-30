@@ -60,47 +60,54 @@ public class GrokConnect {
             result.log = "";
 
             FuncCall call = null;
-            try {
-                call = gson.fromJson(request.body(), FuncCall.class);
-                call.log = "";
-                call.setParamValues();
-                call.afterDeserialization();
-                System.out.println(call.func.query);
-                DateTime startTime = DateTime.now();
-                DataProvider provider = providerManager.getByName(call.func.connection.dataSource);
-                DataFrame dataFrame = provider.execute(call);
-                double execTime = (DateTime.now().getMillis() - startTime.getMillis()) / 1000.0;
+            if (SettingsManager.getInstance().settings != null) {
+                try {
+                    call = gson.fromJson(request.body(), FuncCall.class);
+                    call.log = "";
+                    call.setParamValues();
+                    call.afterDeserialization();
+                    System.out.println(call.func.query);
+                    DateTime startTime = DateTime.now();
+                    DataProvider provider = providerManager.getByName(call.func.connection.dataSource);
+                    DataFrame dataFrame = provider.execute(call);
+                    double execTime = (DateTime.now().getMillis() - startTime.getMillis()) / 1000.0;
 
-                result.blob = dataFrame.toByteArray();
-                result.blobLength = result.blob.length;
-                result.timeStamp = startTime.toString("yyyy-MM-dd hh:mm:ss");
-                result.execTime = execTime;
-                result.columns = dataFrame.columns.size();
-                result.rows = dataFrame.rowCount;
-                // TODO Write to result log there
+                    result.blob = dataFrame.toByteArray();
+                    result.blobLength = result.blob.length;
+                    result.timeStamp = startTime.toString("yyyy-MM-dd hh:mm:ss");
+                    result.execTime = execTime;
+                    result.columns = dataFrame.columns.size();
+                    result.rows = dataFrame.rowCount;
+                    // TODO Write to result log there
 
-                String logString = String.format("%s: Execution time: %f s, Columns/Rows: %d/%d, Blob size: %d bytes\n",
-                        result.timeStamp,
-                        result.execTime,
-                        result.columns,
-                        result.rows,
-                        result.blobLength);
+                    String logString = String.format("%s: Execution time: %f s, Columns/Rows: %d/%d, Blob size: %d bytes\n",
+                            result.timeStamp,
+                            result.execTime,
+                            result.columns,
+                            result.rows,
+                            result.blobLength);
 
-                if (call.debugQuery) {
-                    result.log += logMemory();
-                    result.log += logString;
+                    if (call.debugQuery) {
+                        result.log += logMemory();
+                        result.log += logString;
+                    }
+                    logger.info(logString);
+
+                    buffer = new BufferAccessor(result.blob);
+                    buffer.bufPos = result.blob.length;
+
+                } catch (Throwable ex) {
+                    buffer = packException(result,ex);
+
                 }
-                logger.info(logString);
-
-                buffer = new BufferAccessor(result.blob);
-                buffer.bufPos = result.blob.length;
-
-            } catch (Throwable ex) {
-                buffer = packException(result, ex);
+                finally {
+                    if (call != null)
+                        result.log += call.log;
+                }
             }
-            finally {
-                if (call != null)
-                    result.log += call.log;
+            else {
+                result.errorMessage = NoSettingsException.class.getName();
+                buffer = new BufferAccessor();
             }
 
             try {
@@ -114,6 +121,9 @@ public class GrokConnect {
         });
 
         post("/test", (request, response) -> {
+            if (SettingsManager.getInstance().settings == null)
+                return NoSettingsException.class.getName();
+
             DataConnection connection = gson.fromJson(request.body(), DataConnection.class);
             DataProvider provider = providerManager.getByName(connection.dataSource);
             response.type(MediaType.TEXT_PLAIN);
@@ -223,7 +233,8 @@ public class GrokConnect {
 
         post("/set_settings", (request, response) -> {
             System.out.println(request.body());
-            gson.fromJson(request.body(), Settings.class);
+            Settings settings = gson.fromJson(request.body(), Settings.class);
+            SettingsManager.getInstance().setSettings(settings);
             ConnectionPool.getInstance().setTimer();
             return null;
         });

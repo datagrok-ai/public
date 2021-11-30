@@ -35,7 +35,7 @@ public class ConnectionPool {
         timerTask = new TimerTask() {
             @Override
             public void run() {
-                if (Settings.getInstance().debug) {
+                if (SettingsManager.getInstance().settings.debug) {
                     if (connectionPool.size() > 0)
                         System.out.println("Connection pool log:");
                     connectionPool.forEach((k, v) -> {
@@ -48,8 +48,8 @@ public class ConnectionPool {
         };
 
         timer.scheduleAtFixedRate(timerTask,
-                Settings.getInstance().connectionPoolTimerRate,
-                Settings.getInstance().connectionPoolTimerRate);
+                SettingsManager.getInstance().settings.connectionPoolTimerRate,
+                SettingsManager.getInstance().settings.connectionPoolTimerRate);
     }
 
     public Map<String, HikariDataSourceInformation> connectionPool = Collections.synchronizedMap(new HashMap<>());

@@ -31,9 +31,9 @@ public class HikariDataSourceInformation {
         config.setJdbcUrl(url);
         config.setDriverClassName(driverClassName);
         config.setDataSourceProperties(properties);
-        config.setMaximumPoolSize(Settings.getInstance().connectionPoolMaximumPoolSize);
+        config.setMaximumPoolSize(SettingsManager.getInstance().settings.connectionPoolMaximumPoolSize);
         config.setMinimumIdle(0);
-        config.setIdleTimeout(Settings.getInstance().connectionPoolIdleTimeout);
+        config.setIdleTimeout(SettingsManager.getInstance().settings.connectionPoolIdleTimeout);
         config.setRegisterMbeans(true);
 
         this.hikariDataSource = new HikariDataSource(config);
