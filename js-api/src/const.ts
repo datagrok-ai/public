@@ -356,6 +356,14 @@ export enum SCRIPT_LANGUAGE {
   GROK = 'grok',
 }
 
+export enum NAMED_VALIDATORS {
+  CONTAINS_MISSING_VALUES = 'containsMissingValues',
+  COLUMN_NAME = 'columnName',
+  COLUMN_IS_NUMERICAL = 'columnIsNumerical',
+  COLUMN_IS_CATEGORICAL = 'columnIsCategorical',
+  NOT_EMPTY = 'notEmpty',
+}
+
 /**
  * @typedef {string} AggregationType
  * @typedef {string} SyncType

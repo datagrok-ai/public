@@ -16,15 +16,13 @@ import {structure3dWidget} from './widgets/structure3d';
 import {toxicityWidget} from './widgets/toxicity';
 import {OCLCellRenderer} from './ocl_cell_renderer';
 import {chemSpace} from './analysis/chem_space';
+import {getDescriptorsSingle} from './descriptors/descriptors_calculation';
 import {getDescriptors} from './descriptors/descriptors_calculation';
+import {getDescriptorsApp} from './descriptors/descriptors_calculation';
 import * as chemCommonRdKit from './chem_common_rdkit';
 import {rGroupAnalysis} from './analysis/r_group';
 import {chemLock, chemUnlock} from './chem_common';
 import {MoleculeViewer} from './chem_similarity_search';
-
-let structure = {};
-const _STORAGE_NAME = 'rdkit_descriptors';
-const _KEY = 'selected';
 
 const getRdKitModuleLocal = chemCommonRdKit.getRdKitModule;
 const initRdKitService = chemCommonRdKit.initRdKitService;
@@ -173,6 +171,7 @@ export async function getMorganFingerprints(molColumn: DG.Column) {
   const fingerprints = await chemSearches.chemGetMorganFingerprints(molColumn);
   const fingerprintsBitsets: DG.BitSet[] = [];
   for (let i = 0; i < fingerprints.length; ++i) {
+    //@ts-ignore
     const fingerprint = DG.BitSet.fromBytes(fingerprints[i].getRawData().buffer, fingerprints[i].length);
     fingerprintsBitsets.push(fingerprint);
   }
@@ -185,6 +184,7 @@ export async function getMorganFingerprints(molColumn: DG.Column) {
 //output: object fingerprintBitset [Fingerprints]
 export function getMorganFingerprint(molString: string) {
   const bitArray = chemSearches.chemGetMorganFingerprint(molString);
+  //@ts-ignore
   return DG.BitSet.fromBytes(bitArray.getRawData(), bitArray.length);
 }
 
@@ -235,54 +235,7 @@ export async function searchSubstructure(molStringsColumn: DG.Column, molString:
 //name: Descriptors App
 //tags: app
 export function descriptorsApp(context: any) {
-  let defaultSmiles = 'O=C1CN=C(c2ccccc2N1)C3CCCCC3';
-  let sketcherValue = defaultSmiles;
-
-  let windows = grok.shell.windows;
-  windows.showToolbox = false;
-  windows.showHelp = false;
-  windows.showProperties = false;
-
-  let table = DG.DataFrame.create();
-  table.name = 'Descriptors';
-  let view = grok.shell.addTableView(table);
-
-  let dsDiv = ui.divV([], 'grok-prop-panel');
-  dsDiv.appendChild(descriptorsWidget(defaultSmiles).root);
-
-  let sketcher = grok.chem.sketcher((smiles: string, molfile: string) => {
-    sketcherValue = smiles;
-    removeChildren(dsDiv);
-    dsDiv.appendChild(descriptorsWidget(smiles).root);
-  }, defaultSmiles);
-  let addButton = ui.bigButton('ADD', async () => {
-    getSelected().then(selected => {
-      grok.chem.descriptors(DG.DataFrame.fromCsv(`smiles\n${sketcherValue}`), 'smiles', selected).then(t => {
-        let columnNames = table.columns.names();
-        if ((table.columns.length !== selected.length + 1) || selected.some((s: any) => !columnNames.includes(s))) {
-          table = DG.DataFrame.create();
-          table.name = 'Descriptors';
-          view.dataFrame = table;
-          for (let col of t.columns.toList())
-            table.columns.addNew(col.name, col.type);
-        }
-        table.rows.addNew(t.columns.toList().map((c: any) => c.get(0)));
-      });
-    });
-  });
-  addButton.style.marginTop = '12px';
-  let skDiv = ui.divV([sketcher, addButton], 'grok-prop-panel,dlg-sketcher,pure-form');
-
-  let skNode = view.dockManager.dock(skDiv, DG.DOCK_TYPE.RIGHT, null, 'Sketcher', 0.25);
-  view.dockManager.dock(dsDiv, DG.DOCK_TYPE.DOWN, skNode, 'Descriptors', 0.5);
-
-  grok.events.onViewRemoved.subscribe((v: any) => {
-    if (v.name === view.name) {
-      windows.showToolbox = true;
-      windows.showHelp = true;
-      windows.showProperties = true;
-    }
-  });
+  getDescriptorsApp();
 }
 
 //name: Chem Descriptors
@@ -290,81 +243,7 @@ export function descriptorsApp(context: any) {
 //input: string smiles { semType: Molecule }
 //output: widget result
 export function descriptorsWidget(smiles: string) {
-  let widget = new DG.Widget(ui.div());
-  let result = ui.div();
-  let selectButton = ui.bigButton('SELECT', async () => {
-    openDescriptorsDialog(await getSelected(), async (selected: any) => {
-      await grok.dapi.userDataStorage.postValue(_STORAGE_NAME, _KEY, JSON.stringify(selected));
-      update();
-    });
-  });
-  selectButton.style.marginTop = '20px';
-
-  let update = () => {
-    removeChildren(result);
-    result.appendChild(ui.loader());
-    getSelected().then(selected => {
-      grok.chem.descriptors(DG.DataFrame.fromCsv(`smiles\n${smiles}`), 'smiles', selected).then((table: any) => {
-        removeChildren(result);
-        let map: { [_: string]: any } = {};
-        for (let descriptor of selected)
-          map[descriptor] = table.col(descriptor).get(0);
-        result.appendChild(ui.tableFromMap(map));
-      });
-    });
-  }
-
-  widget.root.appendChild(result);
-  widget.root.appendChild(selectButton);
-
-  update();
-
-  return widget;
-}
-
-//description: Get selected descriptors
-export async function getSelected() {
-  let str = await grok.dapi.userDataStorage.getValue(_STORAGE_NAME, _KEY);
-  let selected = (str != null && str !== '') ? JSON.parse(str) : [];
-  if (selected.length === 0) {
-    selected = (await grok.chem.descriptorsTree() as any)['Lipinski']['descriptors'].slice(0, 3).map((p: any) => p['name']);
-    await grok.dapi.userDataStorage.postValue(_STORAGE_NAME, _KEY, JSON.stringify(selected));
-  }
-  return selected;
-}
-
-//description: Open descriptors selection dialog
-function openDescriptorsDialog(selected: any, onOK: any) {
-  grok.chem.descriptorsTree().then((descriptors: { [_: string]: any }) => {
-    let tree = ui.tree();
-    tree.root.style.maxHeight = '400px';
-
-    let groups: { [_: string]: any } = {};
-    let items: DG.TreeViewNode[] = [];
-
-    for (let groupName in descriptors) {
-      let group = tree.group(groupName, null, false);
-      group.enableCheckBox();
-      groups[groupName] = group;
-
-      for (let descriptor of descriptors[groupName]['descriptors']) {
-        let item = group.item(descriptor['name'], descriptor);
-        item.enableCheckBox(selected.includes(descriptor['name']));
-        items.push(item);
-      }
-    }
-
-    let clear = ui.button('NONE', () => {
-      for (let g in groups) groups[g].checked = false;
-      for (let i of items) i.checked = false;
-    });
-
-    ui.dialog('Chem Descriptors')
-      .add(clear)
-      .add(tree.root)
-      .onOK(() => onOK(items.filter(i => i.checked).map((i: any) => i.value['name'])))
-      .show();
-  });
+  return getDescriptorsSingle(smiles);
 }
 
 //description: Removes all children from node
@@ -513,8 +392,9 @@ export async function chemSpaceTopMenu(table: DG.DataFrame, smiles: DG.Column) {
 //tags: panel
 //input: column smiles { semType: Molecule }
 //output: string result
-export async function descriptors(table: DG.DataFrame, smiles: DG.Column) {
-  return(getDescriptors(smiles));
+export async function descriptors(smiles: DG.Column) {
+  let table: DG.DataFrame = grok.shell.t;
+  getDescriptors(smiles, table);
 }
 
 /*
