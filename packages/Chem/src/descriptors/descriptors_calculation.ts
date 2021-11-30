@@ -6,29 +6,16 @@ import * as OCL from 'openchemlib/full.js';
 const _STORAGE_NAME = 'rdkit_descriptors';
 const _KEY = 'selected';
 
-export async function getDescriptors(smiles: DG.Column): Promise<void> {
-
-
+export async function getDescriptors(smiles: DG.Column, viewTable: DG.DataFrame): Promise<void> {
 
   openDescriptorsDialog(await getSelected(), async (selected: any) => {
     await grok.dapi.userDataStorage.postValue(_STORAGE_NAME, _KEY, JSON.stringify(selected));
     getSelected().then(selected => {
       grok.chem.descriptors(DG.DataFrame.fromColumns([smiles]), smiles.name, selected).then((table: any) => {
-
-        let map: { [_: string]: any } = {};
-        for (let descriptor of selected)
-          map[descriptor] = table.col(descriptor).get(0);
- 
+        addResultColumns(table, viewTable);
       });
     });
   });
-
-
-  // let t2 = DG.DataFrame.fromColumns([
-  //   DG.Column.fromList('int', 'smi', smiles.toList()),
-  // ]);
-
-
 }
 
 export function getDescriptorsSingle(smiles: string) {
@@ -124,25 +111,46 @@ function openDescriptorsDialog(selected: any, onOK: any) {
     let groups: { [_: string]: any } = {};
     let items: DG.TreeViewNode[] = [];
 
+    const checkAll = (val: boolean) => {
+      for (let g in groups) groups[g].checked = val;
+      for (let i of items) i.checked = val;
+    };
+
+    let selectAll = ui.label('All', { classes: 'd4-link-label', onClick: () => checkAll(true) });
+    selectAll.style.marginLeft = '6px'
+    selectAll.style.marginRight = '12px'
+    let selectNone = ui.label('None', { classes: 'd4-link-label', onClick: () => checkAll(false) });
+
+    let countLabel = ui.label('0 checked')
+    countLabel.style.marginLeft = '24px';
+    countLabel.style.display = 'inline-flex';
+
     for (let groupName in descriptors) {
       let group = tree.group(groupName, null, false);
       group.enableCheckBox();
       groups[groupName] = group;
 
+      group.checkBox!.onchange = (e) => {
+        countLabel.textContent = `${items.filter((i) => i.checked).length} checked`;
+      };
+
       for (let descriptor of descriptors[groupName]['descriptors']) {
         let item = group.item(descriptor['name'], descriptor);
         item.enableCheckBox(selected.includes(descriptor['name']));
         items.push(item);
+
+        item.checkBox!.onchange = (e) => {
+          countLabel.textContent = `${items.filter((i) => i.checked).length} checked`;
+        };
       }
+
+      checkAll(false);
     }
 
-    let clear = ui.button('NONE', () => {
-      for (let g in groups) groups[g].checked = false;
-      for (let i of items) i.checked = false;
-    });
+
 
     ui.dialog('Chem Descriptors')
-      .add(clear)
+      .add(ui.divH([selectAll, selectNone, countLabel]))
       .add(tree.root)
       .onOK(() => onOK(items.filter(i => i.checked).map((i: any) => i.value['name'])))
       .show();
@@ -164,4 +172,19 @@ async function getSelected() {
 function removeChildren(node: any) {
   while (node.firstChild)
     node.removeChild(node.firstChild);
+}
+
+//description: add columns into table.
+function addResultColumns(table: DG.DataFrame, viewTable: DG.DataFrame): void {
+
+  if (table.columns.length > 0) {
+    let descriptors: string[] = table.columns.names();
+
+    for (let i = 1; i < descriptors.length; i++) {
+      let column: DG.Column = table.columns.byName(descriptors[i]);
+
+      //TODO: process equal names
+      viewTable.columns.add(column);
+    }
+  }
 }

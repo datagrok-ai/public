@@ -393,7 +393,8 @@ export async function chemSpaceTopMenu(table: DG.DataFrame, smiles: DG.Column) {
 //input: column smiles { semType: Molecule }
 //output: string result
 export async function descriptors(smiles: DG.Column) {
-  getDescriptors(smiles);
+  let table: DG.DataFrame = grok.shell.t;
+  getDescriptors(smiles, table);
 }
 
 /*
