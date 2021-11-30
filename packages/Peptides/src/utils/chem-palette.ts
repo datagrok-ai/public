@@ -6,17 +6,16 @@ import * as DG from 'datagrok-api/dg';
 export class ChemPalette {
     cp: {[key: string]: string} = {};
 
-    constructor(scheme: string) {
+    constructor(scheme: string, grouping = false) {
       if (scheme == 'grok') {
-        this.cp = ChemPalette.getDatagrok();
+        this.cp = ChemPalette.getDatagrok(grouping);
       }
     }
 
     showTooltip(cell:DG.GridCell, x:number, y:number) {
       const s = cell.cell.value as string;
       let toDisplay = [ui.divText(s)];
-      // eslint-disable-next-line no-unused-vars
-      const [_c, aar, _p] = this.getColorAAPivot(s);
+      const [, aar] = this.getColorAAPivot(s);
       if (aar in ChemPalette.AASmiles) {
         if (s in ChemPalette.AANames) {
           toDisplay = [ui.divText(ChemPalette.AANames[s])];
@@ -31,8 +30,7 @@ export class ChemPalette {
     }
 
     getColor( c: string) {
-    // eslint-disable-next-line no-unused-vars
-      const [color, _] = this.getColorPivot(c);
+      const [color] = this.getColorPivot(c);
       return color;
     }
 
@@ -77,8 +75,7 @@ export class ChemPalette {
     }
 
     getColorPivot(c = ''): [string, number] {
-      // eslint-disable-next-line no-unused-vars
-      const [color, _, pivot] = this.getColorAAPivot(c);
+      const [color,, pivot] = this.getColorAAPivot(c);
       return [color, pivot];
     };
 
@@ -130,14 +127,17 @@ export class ChemPalette {
       'all_blue': ['K', 'R'],
     }
 
-    static undefinedColor = 'rgb(100,100,100)'
+    static undefinedColor = 'rgb(100,100,100)';
 
-    static makePalette(dt: {[key: string]: string[]}, simplified = false) {
+    static makePalette(dt: {[key: string]: string[]}, simplified = false, grouping = false) {
       const palette: { [key: string]: string } = {};
+      const groups = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ';
+      let currentGroup = 0;
       for (const [color, monomers] of Object.entries(dt)) {
         monomers.forEach((monomer, index) => {
-          palette[monomer] = ChemPalette.colourPalette[color][simplified ? 0 : index];
+          palette[grouping ? groups[currentGroup] : monomer] = ChemPalette.colourPalette[color][simplified ? 0 : index];
         });
+        currentGroup++;
       }
       return palette;
     }
@@ -234,8 +234,8 @@ export class ChemPalette {
       'Val': 'V',
     }
 
-    static getDatagrok() {
-      return ChemPalette.makePalette(ChemPalette.grokGroups);
+    static getDatagrok(grouping = false) {
+      return ChemPalette.makePalette(ChemPalette.grokGroups, false, grouping);
     }
 
     static getLesk() {
