@@ -15,7 +15,7 @@ import {PeptideSimilaritySpaceWidget} from './utils/peptide-similarity-space';
 import {manualAlignmentWidget} from './widgets/manual-alignment';
 import {SARViewer, SARViewerVertical} from './viewers/sar-viewer';
 import {peptideMoleculeWidget} from './widgets/peptide-molecule';
-import {calcPositions} from './utils/correlation-analysis';
+import {correlationAnalysisPlots} from './utils/correlation-analysis';
 
 export const _package = new DG.Package();
 let tableGrid: DG.Grid;
@@ -207,22 +207,8 @@ export async function correlationAnalysis() {
 
   const df = await grok.data.files.openTable('Demo:TestJobs:Files:DemoFiles/bio/peptides.csv');
   const tview = grok.shell.addTableView(df);
+  const [cpviewer, bpviewer] = correlationAnalysisPlots(df.getCol('AlignedSequence'));
 
-  const positions = calcPositions(df.getCol('AlignedSequence'));
-  console.log(positions);
-  const posDF = DG.DataFrame.fromColumns(positions.map((v, i) => DG.Column.fromFloat32Array(`${i+1}`, v)));
-  const cpviewer =DG.Viewer.fromType(
-    DG.VIEWER.CORR_PLOT,
-    posDF,
-    {
-      'xColumnNames': posDF.columns.names(),
-      'yColumnNames': posDF.columns.names(),
-      'correlationType': 'Spearman',
-    });
   tview.dockManager.dock(cpviewer, 'right');
-
-  /*const rho = await calcSpearmanRhoMatrix(positions);
-  const rhoDF = DG.DataFrame.fromColumns(rho.map((v) => new DG.Column(v)));
-
-  view.corrPlot.getDartProperties*/
+  tview.dockManager.dock(bpviewer, 'down');
 }
