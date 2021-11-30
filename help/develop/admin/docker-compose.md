@@ -6,10 +6,10 @@
 This document contains instructions for running Datagrok on a regular machine
 via [Docker Compose](https://docs.docker.com/compose/).
 
-This method doesn't require cloud-based hosting. It automatically fetches, configures and runs the required docker
+This method doesn't require cloud-based hosting. It automatically fetches, configures, and runs the required Docker
 images.
 
-If you want to jump-start with Datagrok on your local machine, we recommend this method. If you need to manually install
+If you want to jump-start with Datagrok on your local machine, we recommend this method. If you need to install manually
 PostgreSQL and put Datagrok's working data on a host machine's file system,
 check [Deployment on a regular machine](deploy-regular.md).
 
@@ -21,18 +21,12 @@ check [Deployment on a regular machine](deploy-regular.md).
 
 ## Instructions
 
-1. Create a directory:
-   ```
-   mkdir datagrok
-   cd datagrok
-   ```
-
-2. In this folder, put a Docker Compose yaml
+1. Download a Docker Compose YAML
    file: [link](https://github.com/datagrok-ai/public/blob/master/docker/localhost.docker-compose.yaml).
 
-3. To start up Datagrok, run this command:
-   ```
-   docker-compose --profile all up
+2. To start up Datagrok, run this command:
+   ```bash
+   docker-compose --project-name datagrok --profile all up
    ```  
    Datagrok will deploy a new database automatically.
 
@@ -40,27 +34,41 @@ check [Deployment on a regular machine](deploy-regular.md).
    in Administrator mode (this is a [known issue](https://github.com/docker/compose/issues/4531) of Docker on some
    computers).
 
-4. Once the server is up and running, the Login page should be available
+3. Once the server is up and running, the Login page should be available
    at [`http://localhost:8080`](http://localhost:8080). For a quick setup, login to Datagrok using a username `admin`
    and a password `admin`. To change your password, pass a key-value pair `"adminPassword": "yourPassword"` to the JSON
    string `GROK_PARAMETERS`.
 
-5. After Datagrok is deployed for the first time, you can shut it down using `Ctrl+C`. Alternatively, run the command:
-   ```  
-   docker-compose --profile all down
+4. After Datagrok is deployed for the first time, you can shut it down using `Ctrl+C`. Alternatively, run the command:
+   ```bash
+   docker-compose --project-name datagrok --profile all down
    ```  
    All the data will be saved in the persistent storage ([Docker volumes](https://docs.docker.com/storage/volumes/)). If
    you want to reset Datagrok to factory settings, run the following command instead:
+   ```bash
+   docker-compose --project-name datagrok --profile all down --volumes
    ```  
-   docker-compose --profile all down --volumes
-   ```  
-6. You may use the following commands to comfortably continue working with the existing containers:
+5. You may use the following commands to continue working with the existing containers comfortably:
+   ```bash
+   docker-compose --project-name datagrok --profile all up -d
+   docker-compose --project-name datagrok --profile all stop
    ```
-   docker-compose --profile all up -d
-   docker-compose --profile all stop
-   ```
-   Start in a detached mode allows running the containers in the background leaving out the logs, while the `stop`
+   Starting in a detached mode allows running the containers in the background, leaving out the logs, while the `stop`
    command, as opposed to `docker-compose down`, does not remove the network and the stopped containers after use.
+
+6. Check the settings in the Datagrok (Tools | Settings...).
+    * Connectors
+        * External Host: grok_connect
+    * Scripting:
+        * CVM Url: `http://cvm:8090`
+        * CVM Url Client: `http://localhost:8090`
+        * H2o Url: `http://h2o:54321`
+        * Api Url: `http://datagrok:8080/api`
+        * Cvm Split: `true`
+    * Dev:
+        * CVM Url: `http://localhost:8090`
+        * Cvm Split: `true`
+        * Api Url: `http://datagrok:8080/api`
 
 See also:
 

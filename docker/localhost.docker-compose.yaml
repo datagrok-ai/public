@@ -17,7 +17,7 @@ services:
     profiles: ["all", "db"]
 
   datagrok:
-    image: datagrok/datagrok:latest
+    image: datagrok/datagrok:0.95.11
     environment:
       GROK_PARAMETERS: "{\"deployDemo\": false, \"dbServer\": \"database\", \"db\": \"datagrok\", \"dbAdminLogin\": \"postgres\", \"dbAdminPassword\": \"postgres\", \"dbLogin\": \"dg\", \"dbPassword\": \"dg\", \"adminPassword\": \"admin\"}"
     ports:
