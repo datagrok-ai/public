@@ -23,24 +23,27 @@ export function expandColumn(col:DG.Column,
   timeout);
 }
 
-export function setAARRenderer(col:DG.Column, grid:DG.Grid|null = null) {
+export function setAARRenderer(col: DG.Column, grid: DG.Grid | null = null, grouping = false) {
   col.semType = 'aminoAcids';
   col.setTag('cell.renderer', 'aminoAcids');
-  if (grid)
+  if (grouping) {
+    col.setTag('groups', `${grouping}`);
+  }
+  if (grid) {
     expandColumn(col, grid, (ent) => measureAAR(ent));
+  }
 }
 
 export function measureAAR(s: string): number {
   const end = s.lastIndexOf(')');
   const beg = s.indexOf('(');
-  return end == beg ? s.length:s.length - (end-beg)+1;
+  return end == beg ? s.length : s.length - (end - beg) + 1;
 }
 
 function printLeftCentered(
-      x: number, y: number, w: number, h: number,
-      g: CanvasRenderingContext2D, s: string, color = ChemPalette.undefinedColor,
-      pivot: number = 0, left = false, hideMod = false) {
-
+  x: number, y: number, w: number, h: number,
+  g: CanvasRenderingContext2D, s: string, color = ChemPalette.undefinedColor,
+  pivot: number = 0, left = false, hideMod = false) {
   g.textAlign = 'start';
   let colorPart = pivot == -1 ? s.substring(0) : s.substring(0, pivot);
   if (colorPart.length == 1) {
@@ -91,8 +94,7 @@ function printLeftCentered(
   if (left || textSize.width > w) {
     draw(indent, indent + colorTextSize.width);
     return x + colorTextSize.width + g.measureText(grayPart).width;
-  }
-  else {
+  } else {
     draw((w - textSize.width) / 2, (w - textSize.width) / 2 + colorTextSize.width);
     return x + (w - textSize.width) / 2 + colorTextSize.width;
   }
@@ -100,13 +102,26 @@ function printLeftCentered(
 
 
 export class AminoAcidsCellRenderer extends DG.GridCellRenderer {
+    chemPalette: ChemPalette | null;
 
-    get name() { return 'aminoAcidsCR'; }
+    get name() {
+      return 'aminoAcidsCR';
+    }
 
-    get cellType() { return 'aminoAcids'; }
+    get cellType() {
+      return 'aminoAcids';
+    }
+
+    constructor() {
+      super();
+      this.chemPalette = null;
+    }
 
     render(g: CanvasRenderingContext2D, x: number, y: number, w: number, h: number,
-           gridCell: DG.GridCell, cellStyle: DG.GridCellStyle) {
+      gridCell: DG.GridCell, cellStyle: DG.GridCellStyle) {
+      if (this.chemPalette === null) {
+        this.chemPalette = new ChemPalette('grok', gridCell.tableColumn?.getTag('groups') ? true : false);
+      }
       g.save();
       g.beginPath();
       g.rect(x, y, w, h);
@@ -122,44 +137,47 @@ export class AminoAcidsCellRenderer extends DG.GridCellRenderer {
 
 
 export class AlignedSequenceCellRenderer extends DG.GridCellRenderer {
+  get name() {
+    return 'alignedSequenceCR';
+  }
 
-    get name() { return 'alignedSequenceCR'; }
+  get cellType() {
+    return 'alignedSequence';
+  }
 
-    get cellType() { return 'alignedSequence'; }
+  render(g: CanvasRenderingContext2D, x: number, y: number, w: number, h: number,
+    gridCell: DG.GridCell, cellStyle: DG.GridCellStyle ) {
+    w = Math.min(gridCell.grid.canvas.width - x, w);
+    g.save();
+    g.beginPath();
+    g.rect(x, y, w, h);
+    g.clip();
+    g.font = '14px monospace';
+    g.textBaseline = 'top';
+    const s: string = gridCell.cell.value ?? '';
 
-    render(g: CanvasRenderingContext2D, x: number, y: number, w: number, h: number,
-           gridCell: DG.GridCell, cellStyle: DG.GridCellStyle ) {
-      w = Math.min(gridCell.grid.canvas.width - x, w);
-      g.save();
-      g.beginPath();
-      g.rect(x, y, w, h);
-      g.clip();
-      g.font = '14px monospace';
-      g.textBaseline = 'top';
-      const s: string = gridCell.cell.value ?? '';
+    //TODO: can this be replaced/merged with splitSequence?
+    const subParts = s.split('-');
+    const [text, simplified] = processSequence(subParts);
+    const textSize = g.measureText(text.join(''));
+    x = Math.max(x, x + (w - textSize.width) / 2);
 
-      const subParts = s.split('-');
-      const [text, simplified] = processSequence(subParts);
-      const textSize = g.measureText(text.join(''));
-      x = Math.max(x, x + (w - textSize.width) / 2);
+    subParts.forEach((amino: string, index) => {
+      const [color, pivot] = cp.getColorPivot(amino);
+      g.fillStyle = ChemPalette.undefinedColor;
+      if (index + 1 < subParts.length) {
+        const gap = simplified?'':' ';
+        amino += `${amino?'':'-'}${gap}`;
+      }
+      x = printLeftCentered(x, y, w, h, g, amino, color, pivot, true);
+    });
 
-      subParts.forEach((amino: string, index) => {
-        const [color, pivot] = cp.getColorPivot(amino);
-        g.fillStyle = ChemPalette.undefinedColor;
-        if (index + 1 < subParts.length) {
-          const gap = simplified?'':' ';
-          amino += `${amino?'':'-'}${gap}`;
-        }
-        x = printLeftCentered(x, y, w, h, g, amino, color, pivot, true);
-      });
-
-      g.restore();
-    }
+    g.restore();
+  }
 }
 
 
 export function processSequence(subParts:string[]) : [string[], boolean] {
-
   const simplified = !subParts.some((amino, index) =>
     amino.length > 1 &&
     index != 0 &&

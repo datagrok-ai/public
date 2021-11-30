@@ -115,8 +115,8 @@ export class StackedBarChart extends DG.JsViewer {
       let i = 0;
       for (const value of Object.values(groups)) {
         i++;
-        for (const obj in value) {
-          this.ord[value[obj]] = i;
+        for (const obj of value) {
+          this.ord[obj] = i;
         }
       }
       this.yScale = scaleLinear();

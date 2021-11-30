@@ -10,6 +10,43 @@ import {setAARRenderer} from './utils/cell-renderer';
 
 const cp = new ChemPalette('grok');
 
+const aarGroups = {
+  'R': 'PC',
+  'H': 'PC',
+  'K': 'PC',
+  'D': 'NC',
+  'E': 'NC',
+  'S': 'U',
+  'T': 'U',
+  'N': 'U',
+  'Q': 'U',
+  'C': 'SC',
+  'U': 'SC',
+  'G': 'SC',
+  'P': 'SC',
+  'A': 'H',
+  'V': 'H',
+  'I': 'H',
+  'L': 'H',
+  'M': 'H',
+  'F': 'H',
+  'Y': 'H',
+  'W': 'H',
+  '-': '-',
+};
+
+const groupDescription: {[key: string]: {'description': string, 'aminoAcids': string[]}} = {
+  'PC': {'description': 'Positive Amino Acids, with Electrically Charged Side Chains', 'aminoAcids': ['R', 'H', 'K']},
+  'NC': {'description': 'Negative Amino Acids, with Electrically Charged Side Chains', 'aminoAcids': ['D', 'E']},
+  'U': {'description': 'Amino Acids with Polar Uncharged Side Chains', 'aminoAcids': ['S', 'T', 'N', 'Q']},
+  'SC': {'description': 'Special Cases', 'aminoAcids': ['C', 'U', 'G', 'P']},
+  'H': {
+    'description': 'Amino Acids with Hydrophobic Side Chain',
+    'aminoAcids': ['A', 'V', 'I', 'L', 'M', 'F', 'Y', 'W'],
+  },
+  '-': {'description': 'Unknown Amino Acid', 'aminoAcids': ['-']},
+};
+
 export async function describe(
   df: DG.DataFrame,
   activityColumn: string,
@@ -17,7 +54,8 @@ export async function describe(
   sourceGrid: DG.Grid,
   twoColorMode: boolean,
   initialBitset: DG.BitSet | null,
-): Promise<[DG.Grid, DG.Grid, DG.DataFrame]> {
+  grouping: boolean,
+): Promise<[DG.Grid, DG.Grid, DG.DataFrame, {[key: string]: string}]> {
   //Split the aligned sequence into separate AARs
   let splitSeqDf: DG.DataFrame | undefined;
   let invalidIndexes: number[];
@@ -50,6 +88,7 @@ export async function describe(
       setAARRenderer(col, sourceGrid);
     }
   }
+
   if (sourceGrid) {
     const colNames:string[] = [];
     for (let i = 0; i < sourceGrid.columns.length; i++) {
@@ -105,6 +144,17 @@ export async function describe(
 
   let matrixDf = splitSeqDf.unpivot([activityColumnScaled], positionColumns, positionColName, aminoAcidResidue);
 
+  //TODO: move to chem palette
+  let groupMapping: {[key: string]: string} = {};
+  if (grouping) {
+    groupMapping = aarGroups;
+    const aarCol = matrixDf.getCol(aminoAcidResidue);
+    aarCol.init((index) => groupMapping[aarCol.get(index)[0]] ?? '-');
+    aarCol.compact();
+  } else {
+    Object.keys(aarGroups).forEach((value) => groupMapping[value] = value);
+  }
+
   //statistics for specific AAR at a specific position
   matrixDf = matrixDf.groupBy([positionColName, aminoAcidResidue])
     .add('count', activityColumnScaled, 'Count')
@@ -135,14 +185,14 @@ export async function describe(
     AAR = matrixDf.get(aminoAcidResidue, i);
 
     //@ts-ignore
-    splitSeqDf.rows.select((row) => row[position] === AAR);
+    splitSeqDf.rows.select((row) => groupMapping[row[position]] === AAR);
     currentActivity = splitSeqDf
       .clone(splitSeqDf.selection, [activityColumnScaled])
       .getCol(activityColumnScaled)
       .toList();
 
     //@ts-ignore
-    splitSeqDf.rows.select((row) => row[position] !== AAR);
+    splitSeqDf.rows.select((row) => groupMapping[row[position]] !== AAR);
     otherActivity = splitSeqDf
       .clone(splitSeqDf.selection, [activityColumnScaled])
       .getCol(activityColumnScaled)
@@ -224,17 +274,14 @@ export async function describe(
   SARVgrid.col('pValue')!.format = 'four digits after comma';
   SARVgrid.col('pValue')!.name = 'P-Value';
 
-  //FIXME: looks inefficient
-  for (const col of matrixDf.columns) {
-    if (col.name === aminoAcidResidue) {
-      setAARRenderer(col, SARgrid);
-      break;
+  if (!grouping) {
+    let tempCol = matrixDf.columns.byName(aminoAcidResidue);
+    if (tempCol) {
+      setAARRenderer(tempCol, SARgrid);
     }
-  }
-  for (const col of sequenceDf.columns) {
-    if (col.name === aminoAcidResidue) {
-      setAARRenderer(col, SARVgrid);
-      break;
+    tempCol = sequenceDf.columns.byName(aminoAcidResidue);
+    if (tempCol) {
+      setAARRenderer(tempCol, SARgrid);
     }
   }
 
@@ -362,7 +409,13 @@ export async function describe(
         cell.cell.value !== null &&
         cell.tableRowIndex !== null
     ) {
-      cp.showTooltip(cell, x, y);
+      if (grouping) {
+        const currentGroup = groupDescription[cell.cell.value];
+        const divText = ui.divText('Amino Acids in this group: ' + currentGroup['aminoAcids'].join(', '));
+        ui.tooltip.show(ui.divV([ui.h3(currentGroup['description']), divText]), x, y);
+      } else {
+        cp.showTooltip(cell, x, y);
+      }
     }
     return true;
   };
@@ -376,9 +429,14 @@ export async function describe(
     }
   });
 
-  // for (const col of matrixDf.columns.names()) {
-  //   SARgrid.col(col)!.width = SARgrid.props.rowHeight;
-  // }
+  for (const col of matrixDf.columns.names()) {
+    SARgrid.col(col)!.width = SARgrid.props.rowHeight;
+  }
 
-  return [SARgrid, SARVgrid, statsDf];
+  if (grouping) {
+    SARgrid.col(aminoAcidResidue)!.name = 'Groups';
+    SARVgrid.col(aminoAcidResidue)!.name = 'Groups';
+  }
+
+  return [SARgrid, SARVgrid, statsDf, groupMapping];
 }

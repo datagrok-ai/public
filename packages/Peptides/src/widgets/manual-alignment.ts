@@ -2,8 +2,8 @@ import * as ui from 'datagrok-api/ui';
 import * as DG from 'datagrok-api/dg';
 
 import $ from 'cash-dom';
-import { model } from '../viewers/model';
-import { splitAlignedPeptides } from '../utils/split-aligned';
+import {model} from '../viewers/model';
+import {splitAlignedPeptides} from '../utils/split-aligned';
 
 export function manualAlignmentWidget(alignedSequenceCol: DG.Column, currentDf: DG.DataFrame) {
   const sequenceInput = ui.textInput('', alignedSequenceCol.get(currentDf.currentRowIdx));
@@ -13,12 +13,13 @@ export function manualAlignmentWidget(alignedSequenceCol: DG.Column, currentDf: 
   const applyChangesBtn = ui.button('Apply', async () => {
     const newSequence = sequenceInput.value;
     const affectedRowIndex = currentDf.currentRowIdx;
-    const [splitSequence,] = splitAlignedPeptides(DG.Column.fromStrings('splitSequence', [newSequence]), false);
+    const [splitSequence] = splitAlignedPeptides(DG.Column.fromStrings('splitSequence', [newSequence]), false);
 
     alignedSequenceCol.set(affectedRowIndex, newSequence);
     for (const part of splitSequence.columns) {
-      if (currentDf.col(part.name) !== null)
+      if (currentDf.col(part.name) !== null) {
         currentDf.set(part.name, affectedRowIndex, part.get(0));
+      }
     }
 
     await model.updateDefault();

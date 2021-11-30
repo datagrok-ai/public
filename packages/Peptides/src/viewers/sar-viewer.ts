@@ -4,7 +4,7 @@ import * as DG from 'datagrok-api/dg';
 
 import $ from 'cash-dom';
 
-import { model } from './model';
+import {model} from './model';
 
 export class SARViewer extends DG.JsViewer {
   protected viewerGrid: DG.Grid | null;
@@ -20,16 +20,19 @@ export class SARViewer extends DG.JsViewer {
   protected _initialBitset: DG.BitSet | null;
   protected viewerVGrid: DG.Grid | null;
   protected currentBitset: DG.BitSet | null;
+  grouping: boolean;
+  groupMapping: {[key: string]: string} | null;
   // private df: DG.DataFrame | null;
   // protected pValueThreshold: number;
   // protected amountOfBestAARs: number;
   // duplicatesHandingMethod: string;
   constructor() {
     super();
-    
+
     this.viewerGrid = null;
     this.viewerVGrid = null;
     this.statsDf = null;
+    this.groupMapping = null;
     this.initialized = false;
     this.aminoAcidResidue = 'AAR';
     this._initialBitset = null;
@@ -41,6 +44,7 @@ export class SARViewer extends DG.JsViewer {
     this.activityScalingMethod = this.string('activityScalingMethod', 'none', {choices: ['none', 'lg', '-lg']});
     this.filterMode = this.bool('filterMode', false);
     this.bidirectionalAnalysis = this.bool('bidirectionalAnalysis', false);
+    this.grouping = this.bool('grouping', false);
     // this.pValueThreshold = this.float('pValueThreshold', 0.1);
     // this.amountOfBestAARs = this.int('amountOfBestAAR', 1);
     // this.duplicatesHandingMethod = this.string('duplicatesHandlingMethod', 'median', {choices: ['median']});
@@ -51,12 +55,13 @@ export class SARViewer extends DG.JsViewer {
   init() {
     this._initialBitset = this.dataFrame!.filter.clone();
     this.initialized = true;
-    this.subs.push(model.statsDf$.subscribe(data => this.statsDf = data));
-    this.subs.push(model.viewerGrid$.subscribe(data => {
+    this.subs.push(model.statsDf$.subscribe((data) => this.statsDf = data));
+    this.subs.push(model.viewerGrid$.subscribe((data) => {
       this.viewerGrid = data;
       this.render();
     }));
-    this.subs.push(model.viewerVGrid$.subscribe(data => this.viewerVGrid = data));
+    this.subs.push(model.viewerVGrid$.subscribe((data) => this.viewerVGrid = data));
+    this.subs.push(model.groupMapping$.subscribe((data) => this.groupMapping = data));
   }
 
   onTableAttached() {
@@ -114,7 +119,7 @@ export class SARViewer extends DG.JsViewer {
         splitCol = this.dataFrame.columns.addNew(splitColName, 'string');
       }
 
-      const isChosen = (i: number) => this.dataFrame!.get(currentPosition, i) === currentAAR;
+      const isChosen = (i: number) => this.groupMapping![this.dataFrame!.get(currentPosition, i)] === currentAAR;
       splitCol!.init((i) => isChosen(i) ? aarLabel : otherLabel);
 
       //TODO: use column.compact
@@ -277,6 +282,7 @@ export class SARViewer extends DG.JsViewer {
           this.sourceGrid,
           this.bidirectionalAnalysis,
           this._initialBitset,
+          this.grouping,
         );
 
         if (this.viewerGrid !== null && this.viewerVGrid !== null) {
@@ -303,7 +309,7 @@ export class SARViewerVertical extends DG.JsViewer {
     super();
 
     this.viewerVGrid = null;
-    this.subs.push(model.viewerVGrid$.subscribe(data => {
+    this.subs.push(model.viewerVGrid$.subscribe((data) => {
       this.viewerVGrid = data;
       this.render();
     }));
