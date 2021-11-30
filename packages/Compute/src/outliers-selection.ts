@@ -244,7 +244,7 @@ export async function selectOutliersManually(inputData: DG.DataFrame) {
               groupsListGrid.root,
             ], {style: {height: '75%'}}),
           ]),
-        ], {style: {height: '100%'}}),
+        ], {style: {'height': '100%', 'min-height': '600px'}}),
       )
       .onOK(() => {
         shouldCancel = false;
@@ -268,7 +268,7 @@ export async function selectOutliersManually(inputData: DG.DataFrame) {
         cancelAllChanges();
         resolve({augmentedInput: inputData, editedInput});
       }, 100));
-    selectionDialog.show({width: 1000, height: 800});
+    selectionDialog.show({width: 1000});
   });
 
   return result;
