@@ -1,7 +1,7 @@
 {
 	"name": "@datagrok/compute",
 	"friendlyName": "Compute",
-	"version": "0.2.6",
+	"version": "0.2.7",
 	"description": "",
 	"dependencies": {
 		"cash-dom": "latest",
