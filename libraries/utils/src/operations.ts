@@ -1,6 +1,4 @@
-import * as DG from 'datagrok-api/dg';
-
-import {Matrix, Vector, Coordinates, Vectors, DistanceMetric} from './type_declarations';
+import {Matrix, Vector, Coordinates, Vectors, DistanceMetric} from './type-declarations';
 
 /**
  * Asserts a condition by throwing an Error.
@@ -159,15 +157,4 @@ export function calcDistanceMatrix(data: Vectors, distance: DistanceMetric): Mat
     }
   }
   return matrix;
-}
-
-/**
- * Converts a Matrix into a DataFrame.
- *
- * @export
- * @param {Matrix} matrix A matrix.
- * @return {DG.DataFrame} The data frame.
- */
-export function matrix2DataFrame(matrix: Matrix): DG.DataFrame {
-  return DG.DataFrame.fromColumns(matrix.map((v, i) => DG.Column.fromFloat32Array(`${i+1}`, v)));  
 }
