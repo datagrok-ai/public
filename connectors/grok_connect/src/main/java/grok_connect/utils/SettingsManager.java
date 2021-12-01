@@ -24,4 +24,12 @@ public class SettingsManager {
             return instance;
         }
     }
+
+    public void initSettings(boolean debug, int connectionPoolTimerRate, int connectionPoolMaximumPoolSize, int connectionPoolIdleTimeout) {
+        this.settings = new Settings(debug, connectionPoolTimerRate, connectionPoolMaximumPoolSize, connectionPoolIdleTimeout);
+    }
+
+    public void initSettingsWithDefaults() {
+        initSettings(false, 60*1000, 50, 5*60*1000);
+    }
 }
