@@ -221,7 +221,10 @@ Apart from the files included in the standard template, let's briefly consider w
   * `swaggers`: REST APIs in [Swagger/OpenAPI](../access/open-api.md) format. Examples: [EnamineStore](https://github.com/datagrok-ai/public/tree/master/packages/EnamineStore), [Swaggers](https://github.com/datagrok-ai/public/tree/master/packages/Swaggers)
   * `connections` and `queries`: [connections](../access/data-connection.md) and [queries](../access/data-query.md) for data retrieval. Examples: [Chembl](https://github.com/datagrok-ai/public/tree/master/packages/Chembl), [UsageAnalysis](https://github.com/datagrok-ai/public/tree/master/packages/UsageAnalysis)
   * `css`: CSS files for custom styling. Examples: [Notebooks](https://github.com/datagrok-ai/public/tree/master/packages/Notebooks), [Discovery](https://github.com/datagrok-ai/public/tree/master/packages/Discovery)
-  * `data-samples`: data for demonstration and testing. Examples: [Chem](https://github.com/datagrok-ai/public/tree/master/packages/Chem), [Sunburst](https://github.com/datagrok-ai/public/tree/master/packages/Sunburst)
+  * `tables` and `data-samples`: data for demonstration and testing. Examples: [Chem](https://github.com/datagrok-ai/public/tree/master/packages/Chem), [Sunburst](https://github.com/datagrok-ai/public/tree/master/packages/Sunburst)
+  * `layouts`: `json` files with table view [layouts](how-to/layouts.md)
+  * `schemas`: `yaml` files with property schemas
+  * `jobs`: [data jobs](../access/data-job.md)
 
 ## Development
 
