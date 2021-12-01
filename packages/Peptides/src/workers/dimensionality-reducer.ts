@@ -1,5 +1,5 @@
 import {DimensionalityReducer} from '@datagrok-libraries/utils/src/reduce-dimensionality';
-import {Coordinates} from '@datagrok-libraries/utils/src/type_declarations';
+import {Coordinates} from '@datagrok-libraries/utils/src/type-declarations';
 
 /**
  * Worker thread receiving data function.
