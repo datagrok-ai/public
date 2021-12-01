@@ -197,7 +197,7 @@ export function manualAlignment(monomer: string) {
 //input: column col {semType: alignedSequence}
 //output: widget result
 export async function peptideSpacePanel(col: DG.Column): Promise<DG.Widget> {
-  const widget = new PeptideSimilaritySpaceWidget(col);
+  const widget = new PeptideSimilaritySpaceWidget(col, view ?? grok.shell.v);
   return await widget.draw();
 }
 
