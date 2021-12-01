@@ -1,7 +1,7 @@
 {
   "name": "@datagrok/sequence-translator",
   "friendlyName": "SequenceTranslator",
-  "version": "0.0.1",
+  "version": "0.0.3",
   "description": "",
   "dependencies": {
     "@types/react": "latest",

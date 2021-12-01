@@ -41,11 +41,11 @@ function modifiedToSmiles(sequence: string) {
     codesList.push(code);
   }
   for (let i = 0; i < codesList.length; i++)
-    smiles += (links.includes(codesList[i]) || (i < codesList.length - 1 && links.includes(codesList[i]))) ?
+    smiles += (links.includes(codesList[i]) || (i < codesList.length - 1 && links.includes(codesList[i+1]))) ?
       obj[codesList[i]] :
       obj[codesList[i]] + stadardPhosphateLinkSMILES;
   smiles = smiles.replace(/OO/g, 'O').replace(/SO/g, 'S');
-  return smiles.slice(0, smiles.length - stadardPhosphateLinkSMILES.length);
+  return codesList[codesList.length - 1] == 'ps' ? smiles : smiles.slice(0, smiles.length - stadardPhosphateLinkSMILES.length + 1);
 }
 
 //name: Sequence Translator
