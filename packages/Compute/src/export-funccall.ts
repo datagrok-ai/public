@@ -62,29 +62,55 @@ export async function exportFuncCall(call: DG.FuncCall) {
       const title = titleDiv.firstChild?.textContent;
       if (!title) continue;
 
-      const plot = titleDiv.nextSibling;
-      // if plot does not exist or it is only grid, skip it
-      if (!plot || (plot.firstChild as HTMLElement).getAttribute('name') === 'viewer-Grid') continue;
+      let imageId;
+      let width = 0;
+      let height = 0;
 
-      const canvas = await DG.HtmlUtils.renderToCanvas(plot as HTMLElement);
-      const dataUrl = canvas.toDataURL('image/png');
-      const testImageId = exportWorkbook.addImage({
-        base64: dataUrl,
-        extension: 'png',
-      });
+      const imageDiv = titleDiv.parentElement?.getElementsByClassName('grok-scripting-image-container')[0];
+      if (imageDiv) {
+        const regex = /background-image: url\(.*\)/;
+        const urlAttr = imageDiv.outerHTML.match(regex)?.[0];
+        if (!urlAttr) continue;
+        const url = urlAttr.substring(23, urlAttr?.length - 2);
+        const pic = (await (await fetch(url)).arrayBuffer());
+        imageId = exportWorkbook.addImage({
+          buffer: pic,
+          extension: 'png',
+        });
+        width = imageDiv.clientWidth;
+        height = imageDiv.clientHeight;
+      } else {
+        const plot = titleDiv.nextSibling;
+        // if plot does not exist or it is only grid, skip it
+        if (!plot || (plot.firstChild as HTMLElement).getAttribute('name') === 'viewer-Grid') continue;
+
+        if (plot) {
+          const canvas = await DG.HtmlUtils.renderToCanvas(plot as HTMLElement);
+          const dataUrl = canvas.toDataURL('image/png');
+
+          imageId = exportWorkbook.addImage({
+            base64: dataUrl,
+            extension: 'png',
+          });
+          width = canvas.width;
+          height = canvas.height;
+        }
+      }
+
+      if (imageId === null || imageId === undefined) continue;
+
       const worksheet = exportWorkbook.getWorksheet(`Output - ${title}`);
-
       if (worksheet) {
         const columnForImage = ((call.outputs[title] as DG.DataFrame).columns as DG.ColumnList).length + 1;
-        worksheet.addImage(testImageId, {
+        worksheet.addImage(imageId, {
           tl: {col: columnForImage, row: 0},
-          ext: {width: canvas.width, height: canvas.height},
+          ext: {width, height},
         });
       } else {
         const newWorksheet = exportWorkbook.addWorksheet(`Output - Plot - ${title}`);
-        newWorksheet.addImage(testImageId, {
+        newWorksheet.addImage(imageId, {
           tl: {col: 0, row: 0},
-          ext: {width: canvas.width, height: canvas.height},
+          ext: {width, height},
         });
       }
     }
