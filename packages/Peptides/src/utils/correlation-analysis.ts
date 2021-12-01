@@ -4,9 +4,20 @@
 import * as DG from 'datagrok-api/dg';
 
 import {AlignedSequenceEncoder} from '@datagrok-libraries/utils/src/sequence-encoder';
-import {assert, transposeMatrix, matrix2DataFrame} from '@datagrok-libraries/utils/src/operations';
-import {Vector} from '@datagrok-libraries/utils/src/type-declarations';
+import {assert, transposeMatrix} from '@datagrok-libraries/utils/src/operations';
+import {Vector, Matrix} from '@datagrok-libraries/utils/src/type-declarations';
 import {kendallsTau} from '@datagrok-libraries/statistics/src/correlation-coefficient';
+
+/**
+ * Converts a Matrix into a DataFrame.
+ *
+ * @export
+ * @param {Matrix} matrix A matrix.
+ * @return {DG.DataFrame} The data frame.
+ */
+ export function matrix2DataFrame(matrix: Matrix): DG.DataFrame {
+  return DG.DataFrame.fromColumns(matrix.map((v, i) => DG.Column.fromFloat32Array(`${i+1}`, v)));  
+}
 
 /**
  * Encodes amino acid sequences into a numeric representation.

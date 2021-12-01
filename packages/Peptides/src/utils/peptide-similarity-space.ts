@@ -8,7 +8,7 @@ import {getSequenceMolecularWeight} from './molecular-measure';
 import {AlignedSequenceEncoder} from '@datagrok-libraries/utils/src/sequence-encoder';
 import {DimensionalityReducer} from '@datagrok-libraries/utils/src/reduce-dimensionality';
 import {Measurer} from '@datagrok-libraries/utils/src/string-measure';
-import {Coordinates} from '@datagrok-libraries/utils/src/type_declarations';
+import {Coordinates} from '@datagrok-libraries/utils/src/type-declarations';
 
 /**
  * Creates a worker to perform a dimensionality reduction.
