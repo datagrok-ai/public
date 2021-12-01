@@ -22,6 +22,7 @@ import { AEBrowserHelper } from './helpers/ae-browser-helper';
 import { AE_END_DATE, AE_END_DAY, AE_SEVERITY, AE_START_DAY, AE_TERM, SUBJECT_ID } from './columns-constants';
 import { STUDY_ID } from './columns-constants';
 import { checkMissingColumns, checkMissingDomains } from './views/utils';
+import { TreeMapView } from './views/tree-map-view';
 
 export let _package = new DG.Package();
 
@@ -126,8 +127,14 @@ export async function clinicalCaseApp(): Promise<any> {
   let c: DG.FuncCall = grok.functions.getCurrentCall();
   validationRulesList = await grok.data.loadTable(`${_package.webRoot}tables/validation-rules.csv`);
 
-  if (Object.keys(meta.domains).every((name) => grok.shell.table(name) == null))
-    await grok.dapi.projects.open('clin-demo-files-2');
+  if (Object.keys(meta.domains).every((name) => grok.shell.table(name) == null)) {
+    let demoFiles = await grok.dapi.projects.filter('clin-demo-files-2').list();
+    if (demoFiles.length) {
+      await grok.dapi.projects.open('clin-demo-files-2');
+    } else {
+      grok.shell.warning('Please load SDTM data or demo files');
+    }
+  }
 
   study.initFromWorkspace();
 
@@ -152,6 +159,7 @@ export async function clinicalCaseApp(): Promise<any> {
   views.push(<BoxPlotsView>addView(new BoxPlotsView('Distributions')));
   views.push(<MatrixesView>addView(new MatrixesView('Correlations')));
   views.push(<TimeProfileView>addView(new TimeProfileView('Time Profile')));
+  //views.push(<TreeMapView>addView(new TreeMapView('Tree map')));
 
   let aeBrowserView;
   if (study.domains.ae) {

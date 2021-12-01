@@ -286,5 +286,26 @@ export const requiredColumnsByView = {
                                 ]
                         }
                 }
+        },
+        'Tree map': {
+                'req_domains': {
+                        'dm': {
+                                'req': [
+                                        sdtmCols.SUBJECT_ID
+                                ],
+                                'opt': [
+                                        sdtmCols.ETHNIC,
+                                        sdtmCols.SEX,
+                                        sdtmCols.RACE,
+                                        sdtmCols.TREATMENT_ARM,
+                                ]
+                        },
+                        'ae': {
+                                'req': [
+                                        sdtmCols.SUBJECT_ID
+                                ]
+                        }
+
+                }
         }
 }
