@@ -779,6 +779,12 @@ export class Property {
     return api.grok_Property_Get_ColumnTypeFilter(this.d);
   }
 
+  /** List of validators. It can include [NAMED_VALIDATORS] as well as any pre-defined function names.
+   * Signature: validator(x: DG.Type): string | null.
+   * [null] indicates that the value is valid, [string] describes a validation error. */
+  get validators(): string[] { return api.grok_Property_Get_Validators(this.d); }
+  set validators(x: string[]) { api.grok_Property_Set_Validators(this.d, x); }
+
   /** Applies the specified options */
   options(opt?: PropertyOptions): Property {
     if (opt)
