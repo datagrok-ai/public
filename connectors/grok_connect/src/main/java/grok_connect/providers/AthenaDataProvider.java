@@ -43,8 +43,16 @@ public class AthenaDataProvider extends JdbcDataProvider {
     public String getConnectionString(DataConnection conn) {
         String connString = super.getConnectionString(conn);
         connString = connString.endsWith(";") ? connString : connString + ";";
-        connString += "User=" + conn.credentials.parameters.get("AccessKey") + ";" +
-                "Password=" + conn.credentials.parameters.get("SecretKey");
+        String accessKey = "";
+        String secretKey = "";
+        if (conn.credentials != null) {
+            if (conn.credentials.parameters.get("AccessKey") != null)
+                accessKey = conn.credentials.parameters.get("AccessKey").toString();
+            if (conn.credentials.parameters.get("SecretKey") != null)
+                secretKey = conn.credentials.parameters.get("SecretKey").toString();
+        }
+        connString += "User=" + accessKey + ";" +
+                "Password=" + secretKey;
         return connString;
     }
 
