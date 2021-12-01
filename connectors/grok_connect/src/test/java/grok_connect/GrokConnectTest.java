@@ -2,6 +2,7 @@ package grok_connect;
 
 import grok_connect.utils.ConnectionPool;
 import grok_connect.utils.Settings;
+import grok_connect.utils.SettingsManager;
 import org.junit.Test;
 
 import java.sql.Connection;
@@ -29,6 +30,7 @@ public class GrokConnectTest {
 
 //    @Test
 //    public void connectionPoolTest() {
+//        SettingsManager.getInstance().initSettingsWithDefaults();
 //
 //        Properties prop1 = new Properties();
 //        prop1.setProperty("user", "datagrok");
@@ -69,11 +71,8 @@ public class GrokConnectTest {
 //
 //    @Test
 //    public void connectionPoolTimeoutTest() throws InterruptedException {
-//        new Settings();
-//        Settings.getInstance().debug = false;
-//        Settings.getInstance().connectionPoolTimerRate = 60*1000;
-//        Settings.getInstance().connectionPoolMaximumPoolSize = 50;
-//        Settings.getInstance().connectionPoolIdleTimeout = 10000;
+//        SettingsManager.getInstance().initSettingsWithDefaults();
+//        SettingsManager.getInstance().settings.connectionPoolIdleTimeout = 10000;
 //
 //        Properties prop = new Properties();
 //        prop.setProperty("user", "datagrok");
@@ -88,7 +87,7 @@ public class GrokConnectTest {
 //            fail();
 //        }
 //
-//        Thread.sleep(Settings.getInstance().connectionPoolIdleTimeout + 30000); //plus maximum variation
+//        Thread.sleep(SettingsManager.getInstance().settings.connectionPoolIdleTimeout + 30000); //plus maximum variation
 //        String key = url + prop + driverName;
 //        assertEquals(0, cp.connectionPool.get(key).poolProxy.getTotalConnections());
 //    }
