@@ -1,4 +1,4 @@
-import {Options, Coordinates, Vectors, DistanceMetric} from './type_declarations';
+import {Options, Coordinates, Vectors, DistanceMetric} from './type-declarations';
 import {calculateEuclideanDistance, calcDistanceMatrix, fillRandomMatrix, vectorAdd, randomInt} from './operations';
 
 /**

@@ -1,7 +1,7 @@
 import * as fl from 'fastest-levenshtein';
 import {jaroWinkler} from 'jaro-winkler-typescript';
 
-import {DistanceMetric} from './type_declarations';
+import {DistanceMetric} from './type-declarations';
 import {assert} from './operations';
 
 /**

@@ -1,7 +1,7 @@
 import * as umj from 'umap-js';
 import {TSNE} from '@keckelt/tsne';
 
-import {Options, DistanceMetric, Coordinates, Vector, Vectors, Matrix} from './type_declarations';
+import {Options, DistanceMetric, Coordinates, Vector, Vectors, Matrix} from './type-declarations';
 import {calcDistanceMatrix, transposeMatrix} from './operations';
 import {SPEBase, PSPEBase} from './spe';
 import {Measurer} from './string-measure';

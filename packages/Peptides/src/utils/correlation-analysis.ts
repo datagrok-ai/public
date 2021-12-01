@@ -4,17 +4,28 @@
 import * as DG from 'datagrok-api/dg';
 
 import {AlignedSequenceEncoder} from '@datagrok-libraries/utils/src/sequence-encoder';
-import {assert, transposeMatrix, matrix2DataFrame} from '@datagrok-libraries/utils/src/operations';
-import {Vector} from '@datagrok-libraries/utils/src/type_declarations';
+import {assert, transposeMatrix} from '@datagrok-libraries/utils/src/operations';
+import {Vector, Matrix} from '@datagrok-libraries/utils/src/type-declarations';
+import {kendallsTau} from '@datagrok-libraries/statistics/src/correlation-coefficient';
+
+/**
+ * Converts a Matrix into a DataFrame.
+ *
+ * @export
+ * @param {Matrix} matrix A matrix.
+ * @return {DG.DataFrame} The data frame.
+ */
+ export function matrix2DataFrame(matrix: Matrix): DG.DataFrame {
+  return DG.DataFrame.fromColumns(matrix.map((v, i) => DG.Column.fromFloat32Array(`${i+1}`, v)));  
+}
 
 /**
  * Encodes amino acid sequences into a numeric representation.
  *
- * @export
  * @param {DG.Column} col A column containing the sequences.
  * @return {DG.DataFrame} The resulting data frame.
  */
-export function calcPositions(col: DG.Column): DG.DataFrame {
+function calcPositions(col: DG.Column): DG.DataFrame {
   const sequences = col.toList().map((v, _) => AlignedSequenceEncoder.clean(v));
   const enc = new AlignedSequenceEncoder();
   const encSeqs = sequences.map((v) => Vector.from(enc.encode(v)));
@@ -25,11 +36,10 @@ export function calcPositions(col: DG.Column): DG.DataFrame {
 /**
  * Unfolds a data frame into <category>-<value> format.
  *
- * @export
  * @param {DG.DataFrame} df A data frame to unfold.
  * @return {DG.DataFrame} The resulting data frame.
  */
-export function melt(df: DG.DataFrame): DG.DataFrame {
+function melt(df: DG.DataFrame): DG.DataFrame {
   let keys: string[] = [];
   const values: Float32Array = new Float32Array(df.columns.length*df.rowCount);
   let i = 0;
@@ -43,28 +53,14 @@ export function melt(df: DG.DataFrame): DG.DataFrame {
   return DG.DataFrame.fromColumns([DG.Column.fromStrings('keys', keys), DG.Column.fromFloat32Array('values', values)]);
 }
 
-/*export async function calcSpearmanRhoMatrixExt(positions: Matrix): Promise<Matrix> {
-  const Spearman = require('spearman-rho');
-  const nItems = positions.length;
-  const rho = new Array(nItems).fill(0).map((_) => new Float32Array(nItems).fill(0));
-
-  for (let i = 0; i < nItems; ++i) {
-    for (let j = i+1; j < nItems; ++j) {
-      rho[i][j] = await(new Spearman(positions[i], positions[j])).calc();
-      rho[j][i] = rho[i][j];
-    }
-  }
-  return rho;
-}*/
-
 /**
  * Calculates Spearman's rho rank correlation coefficient.
  *
- * @export
  * @param {DG.DataFrame} df A data frame to process.
  * @return {DG.DataFrame} The correlation matrix.
  */
-export function calcSpearmanRhoMatrix(df: DG.DataFrame): DG.DataFrame {
+// eslint-disable-next-line no-unused-vars
+function calcSpearmanRhoMatrix(df: DG.DataFrame): DG.DataFrame {
   const nItems = df.columns.length;
   const rho = new Array(nItems).fill(0).map((_) => new Float32Array(nItems).fill(0));
 
@@ -75,6 +71,27 @@ export function calcSpearmanRhoMatrix(df: DG.DataFrame): DG.DataFrame {
     }
   }
   return matrix2DataFrame(rho);
+}
+
+/**
+ * Calculates Kendall's tau rank correlation coefficient.
+ *
+ * @param {DG.DataFrame} df A data frame to process.
+ * @param {number} [alpha=0.05] The significance threshold.
+ * @return {DG.DataFrame} The correlation matrix.
+ */
+function calcKendallTauMatrix(df: DG.DataFrame, alpha: number = 0.05): DG.DataFrame {
+  const nItems = df.columns.length;
+  const tau = new Array(nItems).fill(0).map((_) => new Float32Array(nItems).fill(0));
+
+  for (let i = 0; i < nItems; ++i) {
+    for (let j = i+1; j < nItems; ++j) {
+      const res = kendallsTau(df.columns.byIndex(i).getRawData(), df.columns.byIndex(j).getRawData());
+      tau[i][j] = res.prob < alpha ? res.test : 0;
+      tau[j][i] = tau[i][j];
+    }
+  }
+  return matrix2DataFrame(tau);
 }
 
 /**
@@ -95,7 +112,7 @@ export function correlationAnalysisPlots(sequencesColumn: DG.Column): [DG.Viewer
       'correlationType': 'Spearman',
     });
 
-  const rhoDF = calcSpearmanRhoMatrix(posDF);
+  const rhoDF = calcKendallTauMatrix(posDF);
   const meltDF = melt(rhoDF);
 
   const bpviewer = DG.Viewer.fromType(
