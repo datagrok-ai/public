@@ -63,7 +63,8 @@ export async function exportFuncCall(call: DG.FuncCall) {
       if (!title) continue;
 
       const plot = titleDiv.nextSibling;
-      if (!plot) continue;
+      // if plot does not exist or it is only grid, skip it
+      if (!plot || (plot.firstChild as HTMLElement).getAttribute('name') === 'viewer-Grid') continue;
 
       const canvas = await DG.HtmlUtils.renderToCanvas(plot as HTMLElement);
       const dataUrl = canvas.toDataURL('image/png');
