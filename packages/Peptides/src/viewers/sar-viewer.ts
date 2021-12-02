@@ -22,7 +22,6 @@ export class SARViewer extends DG.JsViewer {
   protected currentBitset: DG.BitSet | null;
   grouping: boolean;
   groupMapping: {[key: string]: string} | null;
-  // private df: DG.DataFrame | null;
   // protected pValueThreshold: number;
   // protected amountOfBestAARs: number;
   // duplicatesHandingMethod: string;
@@ -123,21 +122,9 @@ export class SARViewer extends DG.JsViewer {
       splitCol!.init((i) => isChosen(i) ? aarLabel : otherLabel);
 
       //TODO: use column.compact
-
-      // if (this.filterMode) {
-      //   this.dataFrame.selection.setAll(false, false);
-      //   this.dataFrame.filter.init(isChosen).and(this._initialBitset!, false);
-      // } else {
-      //   this.dataFrame.filter.copyFrom(this._initialBitset!);
-      //   this.dataFrame.selection.init(isChosen).and(this._initialBitset!, false);
-      // }
       this.currentBitset = DG.BitSet.create(this.dataFrame.rowCount, isChosen).and(this._initialBitset!);
-      // (this.filterMode ? this.dataFrame.selection.setAll(false) :
-      // this.dataFrame.filter.copyFrom(this._initialBitset!)).fireChanged();
       this.sourceFilteringFunc();
 
-
-      // df.getCol(splitColName).setCategoryOrder([otherLabel, aarLabel]);
       const colorMap: {[index: string]: string | number} = {};
       colorMap[otherLabel] = DG.Color.blue;
       colorMap[aarLabel] = DG.Color.orange;
@@ -267,14 +254,6 @@ export class SARViewer extends DG.JsViewer {
     //TODO: optimize. Don't calculate everything again if only view changes
     if (computeData) {
       if (typeof this.dataFrame !== 'undefined' && this.activityColumnColumnName && this.sourceGrid) {
-        // [this.viewerGrid, this.viewerVGrid, this.statsDf] = await describe(
-        //   this.dataFrame,
-        //   this.activityColumnColumnName,
-        //   this.activityScalingMethod,
-        //   this.sourceGrid,
-        //   this.bidirectionalAnalysis,
-        //   this._initialBitset,
-        // );
         await model?.updateData(
           this.dataFrame!,
           this.activityColumnColumnName,
