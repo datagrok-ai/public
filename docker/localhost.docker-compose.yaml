@@ -17,7 +17,7 @@ services:
     profiles: ["all", "db"]
 
   datagrok:
-    image: datagrok/datagrok:0.95.11
+    image: datagrok/datagrok:latest
     environment:
       GROK_PARAMETERS: "{\"deployDemo\": false, \"dbServer\": \"database\", \"db\": \"datagrok\", \"dbAdminLogin\": \"postgres\", \"dbAdminPassword\": \"postgres\", \"dbLogin\": \"dg\", \"dbPassword\": \"dg\", \"adminPassword\": \"admin\"}"
     ports:
@@ -30,7 +30,16 @@ services:
       - datagrok_data:/home/grok/data
       - datagrok_cfg:/home/grok/cfg
     restart: unless-stopped
-    profiles: ["all", "db"]
+    profiles: ["all", "datagrok"]
+
+  grok_connect:
+    image: datagrok/grok_connect:latest
+    networks:
+      datagrok:
+        aliases:
+          - grok_connect
+    restart: unless-stopped
+    profiles: ["all", "datagrok"]
 
   grok_compute:
     image: datagrok/grok_compute:latest
@@ -41,7 +50,7 @@ services:
         aliases:
           - grok_compute
     restart: unless-stopped
-    profiles: ["all", "db"]
+    profiles: ["all", "cvm"]
 
   cvm_nginx:
     image: datagrok/cvm_nginx:latest
@@ -53,7 +62,7 @@ services:
           - cvm
           - nginx_cvm
     restart: unless-stopped
-    profiles: ["all", "db"]
+    profiles: ["all", "cvm"]
 
   jupyter_notebook:
     image: datagrok/jupyter_notebook:latest
@@ -62,7 +71,7 @@ services:
         aliases:
           - jupyter_notebook
     restart: unless-stopped
-    profiles: ["all", "db"]
+    profiles: ["all", "cvm"]
 
   jupyter_kernel_gateway:
     image: datagrok/jupyter_kernel_gateway:latest
@@ -71,7 +80,7 @@ services:
         aliases:
           - jupyter_notebook
     restart: unless-stopped
-    profiles: ["all", "db"]
+    profiles: ["all", "cvm"]
 
   h2o:
     image: datagrok/h2o:latest
@@ -83,7 +92,7 @@ services:
         aliases:
           - h2o
     restart: unless-stopped
-    profiles: ["all", "db"]
+    profiles: ["all", "cvm"]
 
 volumes:
   datagrok_db:

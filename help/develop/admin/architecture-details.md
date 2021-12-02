@@ -247,3 +247,7 @@ The schema has the following tables:
 | users_sessions       | User sessions                           | 
 | view_layouts         | View layouts                            | 
 | view_layouts_columns | Columns referenced by layouts (used for layout suggestions) | 
+
+See also:
+
+* [Versioning policy](../versioning-policy.md)
