@@ -6,7 +6,7 @@
 		"@keckelt/tsne": "^1.0.2",
 		"cash-dom": "latest",
 		"d3": "latest",
-		"datagrok-api": ">0.95.4",
+		"datagrok-api": ">=0.95.11",
 		"dayjs": "latest",
 		"jaro-winkler-typescript": "^1.0.1",
 		"jstat": "^1.9.5",

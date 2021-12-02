@@ -404,10 +404,10 @@ export async function describe(
     }
     if (
       !cell.isColHeader &&
-        cell.tableColumn !== null &&
-        cell.tableColumn.name == aminoAcidResidue &&
-        cell.cell.value !== null &&
-        cell.tableRowIndex !== null
+      cell.tableColumn !== null &&
+      cell.tableColumn.name == aminoAcidResidue &&
+      cell.cell.value !== null &&
+      cell.tableRowIndex !== null
     ) {
       if (grouping) {
         const currentGroup = groupDescription[cell.cell.value];
