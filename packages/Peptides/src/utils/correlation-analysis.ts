@@ -15,8 +15,8 @@ import {kendallsTau} from '@datagrok-libraries/statistics/src/correlation-coeffi
  * @param {Matrix} matrix A matrix.
  * @return {DG.DataFrame} The data frame.
  */
- export function matrix2DataFrame(matrix: Matrix): DG.DataFrame {
-  return DG.DataFrame.fromColumns(matrix.map((v, i) => DG.Column.fromFloat32Array(`${i+1}`, v)));  
+export function matrix2DataFrame(matrix: Matrix): DG.DataFrame {
+  return DG.DataFrame.fromColumns(matrix.map((v, i) => DG.Column.fromFloat32Array(`${i+1}`, v)));
 }
 
 /**
@@ -25,12 +25,12 @@ import {kendallsTau} from '@datagrok-libraries/statistics/src/correlation-coeffi
  * @param {DG.Column} col A column containing the sequences.
  * @return {DG.DataFrame} The resulting data frame.
  */
-function calcPositions(col: DG.Column): DG.DataFrame {
+function calcPositions(col: DG.Column): [DG.DataFrame, string[]] {
   const sequences = col.toList().map((v, _) => AlignedSequenceEncoder.clean(v));
   const enc = new AlignedSequenceEncoder();
   const encSeqs = sequences.map((v) => Vector.from(enc.encode(v)));
   const positions = transposeMatrix(encSeqs);
-  return matrix2DataFrame(positions);
+  return [matrix2DataFrame(positions), sequences];
 }
 
 /**
@@ -50,7 +50,44 @@ function melt(df: DG.DataFrame): DG.DataFrame {
     i += df.rowCount;
   }
   assert(keys.length == values.length);
-  return DG.DataFrame.fromColumns([DG.Column.fromStrings('keys', keys), DG.Column.fromFloat32Array('values', values)]);
+  return DG.DataFrame.fromColumns([DG.Column.fromStrings('Position', keys), DG.Column.fromFloat32Array('Tau', values)]);
+}
+
+/**
+ * Formats a matrix into <category1>-<category2>-<value> format.
+ *
+ * @param {DG.DataFrame} adjMatrix A data matrix to deal with.
+ * @return {DG.DataFrame} The resulting data frame.
+ */
+function createNetwork(adjMatrix: DG.DataFrame): DG.DataFrame {
+  const nCols = adjMatrix.columns.length;
+  const nRows = adjMatrix.rowCount;
+
+  assert(nCols == nRows);
+
+  const pos1: Array<number> = [];
+  const pos2: Array<number> = [];
+  const weight: Array<number> = [];
+
+  for (let i = 0; i < nCols; ++i) {
+    const c = adjMatrix.columns.byIndex(i);
+
+    for (let j = i+1; j < nRows; ++j) {
+      const r = c.getRawData()[j];
+
+      if (Math.abs(r) > 0) {
+        pos1.push(i+1);
+        pos2.push(j+1);
+        weight.push(r);
+      }
+    }
+  }
+
+  const pos1Col = DG.Column.fromList('int', 'pos1', pos1);
+  const pos2Col = DG.Column.fromList('int', 'pos2', pos2);
+  const weightCol = DG.Column.fromList('double', 'weight', weight);
+
+  return DG.DataFrame.fromColumns([pos1Col, pos2Col, weightCol]);
 }
 
 /**
@@ -73,6 +110,42 @@ function calcSpearmanRhoMatrix(df: DG.DataFrame): DG.DataFrame {
   return matrix2DataFrame(rho);
 }
 
+type PairGuide = {[key: string]: number};
+
+function makeSequenceTemplate(pos1: number, pos2: number, sequences: string[]): PairGuide {
+  const guide: PairGuide = {};// = new Set();
+  const nSeqs = sequences.length;
+
+  for (let i = 0; i < nSeqs; ++i) {
+    const s = sequences[i];
+    const key: string = [s[pos1-1], s[pos2-1]].join('');
+    guide[key] = (guide[key] || 0) + 1;
+  }
+  for (const key of Object.keys(guide)) {
+    guide[key] /= nSeqs;
+  }
+  return guide;
+}
+
+function analyseCorrelation(network: DG.DataFrame, sequences: string[]) {
+  assert(network.columns.length == 3);
+
+  const [pos1Col, pos2Col, weightCol] =
+    new Array<any>(network.columns.length)
+      .fill(0)
+      .map((_, i) => network.columns.byIndex(i).getRawData());
+
+  for (let i = 0; i < network.rowCount; ++i) {
+    const pos1 = pos1Col[i];
+    const pos2 = pos2Col[i];
+    const weight = weightCol[i];
+    const guide = makeSequenceTemplate(pos1, pos2, sequences);
+    console.log([pos1, pos2, weight]);
+    console.log(guide);
+  }
+  return;
+}
+
 /**
  * Calculates Kendall's tau rank correlation coefficient.
  *
@@ -87,7 +160,7 @@ function calcKendallTauMatrix(df: DG.DataFrame, alpha: number = 0.05): DG.DataFr
   for (let i = 0; i < nItems; ++i) {
     for (let j = i+1; j < nItems; ++j) {
       const res = kendallsTau(df.columns.byIndex(i).getRawData(), df.columns.byIndex(j).getRawData());
-      tau[i][j] = res.prob < alpha ? res.test : 0;
+      tau[i][j] = (res.prob < alpha) && (Math.abs(res.test) >= 0.5) ? res.test : 0;
       tau[j][i] = tau[i][j];
     }
   }
@@ -101,26 +174,47 @@ function calcKendallTauMatrix(df: DG.DataFrame, alpha: number = 0.05): DG.DataFr
  * @param {DG.Column} sequencesColumn A column containing amino acid sequences.
  * @return {[DG.Viewer, DG.Viewer]} These two plots.
  */
-export function correlationAnalysisPlots(sequencesColumn: DG.Column): [DG.Viewer, DG.Viewer] {
-  const posDF = calcPositions(sequencesColumn);
-  const cpviewer = DG.Viewer.fromType(
+export function correlationAnalysisPlots(sequencesColumn: DG.Column): [DG.Viewer, DG.Viewer, DG.Viewer] {
+  const [posDF, sequences] = calcPositions(sequencesColumn);
+  /*const cpviewer = DG.Viewer.fromType(
     DG.VIEWER.CORR_PLOT,
     posDF,
     {
       'xColumnNames': posDF.columns.names(),
       'yColumnNames': posDF.columns.names(),
       'correlationType': 'Spearman',
-    });
+    });*/
 
-  const rhoDF = calcKendallTauMatrix(posDF);
-  const meltDF = melt(rhoDF);
+  const ccDF = calcKendallTauMatrix(posDF);
+
+  const hmviewer = DG.Viewer.fromType(
+    DG.VIEWER.HEAT_MAP,
+    posDF,
+  );
+
+  const meltDF = melt(ccDF);
 
   const bpviewer = DG.Viewer.fromType(
     DG.VIEWER.BOX_PLOT,
     meltDF, {
-      'categoryColumnName': 'keys',
-      'valueColumnName': 'values',
+      'categoryColumnName': 'Position',
+      'valueColumnName': 'Tau',
       'statistics': ['min', 'max', 'avg', 'med'],
     });
-  return [cpviewer, bpviewer];
+
+  const nwDF = createNetwork(ccDF);
+
+  const nwviewer = DG.Viewer.fromType(
+    DG.VIEWER.NETWORK_DIAGRAM,
+    nwDF, {
+      'node1ColumnName': 'pos1',
+      'node2ColumnName': 'pos2',
+      'edgeColorColumnName': 'weight',
+      'edgeWidthColumnName': 'weight',
+      'edgeWidth': 4,
+    });
+
+  analyseCorrelation(nwDF, sequences);
+
+  return [bpviewer, hmviewer, nwviewer];
 }
