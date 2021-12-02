@@ -25,9 +25,6 @@ GrokCompute exposes API for the following features:
     - Smiles to Canonical
     - Draw molecule
     - Draw reaction
-* Utilities
-    - Jupyter Notebooks converter (HTML, PDF etc.)
-    - PDF to CSV converter
 * Modeling (concept only)
     - Train
     - Apply
@@ -35,5 +32,6 @@ GrokCompute exposes API for the following features:
 
 See also:
 
+  * [Compute virtual machine architecture](architecture-details.md#compute-virtual-machine)
   * [Compute VM](compute-vm.md)
   * [Cheminformatics](../../domains/chem/cheminformatics.md)
