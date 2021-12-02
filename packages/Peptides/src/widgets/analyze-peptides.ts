@@ -1,8 +1,7 @@
 import * as grok from 'datagrok-api/grok';
 import * as ui from 'datagrok-api/ui';
 import * as DG from 'datagrok-api/dg';
-import {createPeptideSimilaritySpaceViewer} from '../utils/peptide-similarity-space';
-import {addViewerToHeader} from '../viewers/stacked-barchart-viewer';
+import {Peptides} from '../peptides';
 
 export async function analyzePeptidesWidget(
   col: DG.Column, view: DG.TableView, tableGrid: DG.Grid, currentDf: DG.DataFrame,
@@ -23,6 +22,7 @@ export async function analyzePeptidesWidget(
     async (currentMethod: string) => {
       const currentActivityCol = activityColumnChoice.value.name;
       const tempDf = currentDf.clone(currentDf.filter, [currentActivityCol]);
+      //TODO: merge with scaling in describe
       switch (currentMethod) {
       case 'lg':
         await tempDf.columns.addNewCalculated('scaledActivity', 'Log10(${' + currentActivityCol + '})');
@@ -63,45 +63,20 @@ export async function analyzePeptidesWidget(
   activityScalingMethod.fireChanged();
 
   const startBtn = ui.button('Launch SAR', async () => {
-    const progress = DG.TaskBarProgressIndicator.create('Loading SAR...');
     if (activityColumnChoice.value.type === DG.TYPE.FLOAT) {
+      const progress = DG.TaskBarProgressIndicator.create('Loading SAR...');
       const options: {[key: string]: string} = {
         'activityColumnColumnName': activityColumnChoice.value.name,
         'activityScalingMethod': activityScalingMethod.value,
       };
-      for (let i = 0; i < tableGrid.columns.length; i++) {
-        const col = tableGrid.columns.byIndex(i);
-        if (col &&
-            col.name &&
-            col.column?.semType != 'aminoAcids'
-        ) {
-          //@ts-ignore
-          tableGrid.columns.byIndex(i)?.visible = false;
-        }
-      }
 
-      const sarViewer = view.addViewer('peptide-sar-viewer', options);
-      const sarViewerVertical = view.addViewer('peptide-sar-viewer-vertical');
-      const peptideSpaceViewer = await createPeptideSimilaritySpaceViewer(
-        currentDf,
-        col,
-        't-SNE',
-        'Levenshtein',
-        100,
-        `${activityColumnChoice}Scaled`,
-      );
-      let refNode = view.dockManager.dock(peptideSpaceViewer, 'down');
-      refNode = view.dockManager.dock(sarViewer, 'right', refNode);
-      view.dockManager.dock(sarViewerVertical, 'right', refNode);
+      const peptides = new Peptides();
+      await peptides.init(tableGrid, view, currentDf, options, col, activityColumnChoice.value.name);
 
-      const StackedBarchartProm = currentDf.plot.fromType('StackedBarChartAA');
-      addViewerToHeader(tableGrid, StackedBarchartProm);
-
-      // currentDf.onValuesChanged.subscribe(async () => await model.updateDefault());
+      progress.close();
     } else {
       grok.shell.error('The activity column must be of floating point number type!');
     }
-    progress.close();
   });
 
   const viewer = await currentDf.plot.fromType('peptide-logo-viewer');

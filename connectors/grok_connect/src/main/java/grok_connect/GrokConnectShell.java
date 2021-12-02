@@ -58,6 +58,7 @@ public class GrokConnectShell {
 
         FuncCall call = gson.fromJson(new String(Files.readAllBytes(Paths.get(cmd.getOptionValue("query"))), StandardCharsets.UTF_8), FuncCall.class);
         call.setParamValues();
+        SettingsManager.getInstance().initSettingsWithDefaults();
         DateTime startTime = DateTime.now();
         BasicConfigurator.configure();
         Logger logger = Logger.getLogger(GrokConnect.class.getName());

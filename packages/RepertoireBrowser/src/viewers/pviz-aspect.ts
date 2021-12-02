@@ -11,7 +11,7 @@ export class PvizAspect {
   pviz: any;
   pVizParams: any;
 
-  async init(view, inputs, ngl, json) {
+  async init(view, inputs, ngl, json, jsonObs) {
 
     this.ngl = ngl
     //@ts-ignore
@@ -21,14 +21,18 @@ export class PvizAspect {
     this.pVizParams.ptmMap = this.ptmMapping(inputs.ptmChoices.value, inputs.ptmProb.value, json)
     //@ts-ignore
     this.pVizParams.ptmMotifsMap = this.ptmMotifsMapping(inputs.ptmMotifChoices.value, inputs.ptmProb.value)
-    this.pVizParams.denMap = this.ptmDenMapping(json)
-    this.pVizParams.parMap = this.paratopeMapping(json)
-    this.pVizParams.cdrMap = this.cdrMapping(inputs.cdrScheme.value, json)
+    //@ts-ignore
+    if(jsonObs !== null){
+    this.pVizParams.ptmObsMap = this.ptmObsMapping(inputs.ptmObsChoices.value, jsonObs);
+    }
+    this.pVizParams.denMap = this.ptmDenMapping(json);
+    this.pVizParams.parMap = this.paratopeMapping(json);
+    this.pVizParams.cdrMap = this.cdrMapping(inputs.cdrScheme.value, json);
 
-    await this.loadSequence(inputs, 'H', json);
+    await this.loadSequence(inputs, 'H', json, jsonObs);
 
-    await this.pvizResize(inputs, 'H', json);
-    await this.pvizResize(inputs, 'L', json);
+    await this.pvizResize(inputs, 'H', json, jsonObs);
+    await this.pvizResize(inputs, 'L', json, jsonObs);
     //@ts-ignore
     return MiscMethods.setDockSize(view, inputs.nglNode, inputs.sequenceTabs, inputs.paratopes);
   }
@@ -132,6 +136,55 @@ export class PvizAspect {
     })
 
     return (ptmMotifsMap);
+  }
+
+  ptmObsMapping(ptm_choices, json) {
+    let ptmMap = {}
+    let chains = Object.keys(this.pVizParams.seq);
+    chains.forEach((chain) => {
+      let ptm_feature_map = [];
+      let ptm_color_obj = {};
+      let ptm_el_obj = {};
+      let ptm_prob_obj = {};
+      let palette = MiscMethods.interpolateColors('(255, 255, 0)', '(255, 0, 0)', 5);
+
+      ptm_choices.forEach(ptm => {
+        let ptm_pair = json.ptm_observed[chain][ptm.replace(" ", "_")];
+        if (ptm_pair !== undefined) {
+
+          let ptm_color_arr = [];
+          let ptm_el_arr = [];
+          let ptm_prob_arr = [];
+
+          ptm_feature_map.push({
+                groupSet: 'Observed PTMs',
+                category: ptm,
+                type: 'O',
+                start: ptm_pair[0],
+                end: ptm_pair[0],
+                text: ptm,
+                improbable: true
+              })
+              ptm_color_arr.push(palette[ptm_pair[1] > 1 ? Math.round(ptm_pair[1] * 4) / 100 : Math.round(ptm_pair[1] * 4)]);
+              ptm_el_arr.push(ptm_pair[0]);
+              ptm_prob_arr.push(ptm_pair[1]);
+ 
+
+
+          if (ptm_color_arr.length > 0) {
+            ptm_color_obj[mutcodes[ptm.replace(" ", "_")]] = ptm_color_arr;
+            ptm_el_obj[mutcodes[ptm.replace(" ", "_")]] = ptm_el_arr;
+            ptm_prob_obj[mutcodes[ptm.replace(" ", "_")]] = ptm_prob_arr;
+          }
+        }
+      })
+      ptmMap[chain] = {
+        ptm_feature_map: ptm_feature_map, ptm_color_obj: ptm_color_obj,
+        ptm_el_obj: ptm_el_obj, ptm_prob_obj: ptm_prob_obj
+      };
+    })
+
+    return (ptmMap);
   }
 
   ptmDenMapping(json) {
@@ -256,7 +309,7 @@ export class PvizAspect {
   }
 
   // main sequence rendering func
-  async loadSequence(inputs, chain, json, reLoad = false) {
+  async loadSequence(inputs, chain, json, jsonObs, reLoad = false) {
 
     let host = chain == "H" ? inputs.pVizHostH : inputs.pVizHostL;
 
@@ -285,6 +338,14 @@ export class PvizAspect {
         this.pviz.FeatureDisplayer.setStrikeoutCategory(mod);
       });
 
+      if(jsonObs !== null){
+        let mod_observed_codes = Object.keys(this.pVizParams.ptmObsMap[chain].ptm_color_obj);
+        mod_observed_codes.forEach((mod) => {
+          this.pviz.FeatureDisplayer.trackHeightPerCategoryType[mod] = 1.5;
+          this.pviz.FeatureDisplayer.setStrikeoutCategory(mod);
+        });
+      }
+
       let switchObj = inputs.twinSelections;
       let pVizParams = this.pVizParams;
 
@@ -298,7 +359,7 @@ export class PvizAspect {
           switchObj[chain][ft.start]['state'] = !switchObj[chain][ft.start]['state']
         }
 
-        await pv.consistentlyColorpVizNGL(inputs, chain, json, reLoad);
+        await pv.consistentlyColorpVizNGL(inputs, chain, json, jsonObs, reLoad);
       })
 
       this.pviz.FeatureDisplayer.addClickCallback(mod_motifs_codes, async function (ft) {
@@ -309,7 +370,7 @@ export class PvizAspect {
           switchObj[chain][ft.start]['state'] = !switchObj[chain][ft.start]['state']
         }
 
-        await pv.consistentlyColorpVizNGL(inputs, chain, json, reLoad);
+        await pv.consistentlyColorpVizNGL(inputs, chain, json, jsonObs, reLoad);
       })
 
       this.pviz.FeatureDisplayer.addClickCallback(['D'], async function (ft) {
@@ -320,7 +381,7 @@ export class PvizAspect {
           switchObj[chain][ft.start]['state'] = !switchObj[chain][ft.start]['state']
         }
 
-        await pv.consistentlyColorpVizNGL(inputs, chain, json, reLoad);
+        await pv.consistentlyColorpVizNGL(inputs, chain, json, jsonObs, reLoad);
       })
 
       this.pviz.FeatureDisplayer.addMouseoverCallback(mod_motifs_codes, async function (ft) {
@@ -394,23 +455,25 @@ export class PvizAspect {
       }).addMouseoutCallback(['P'], function (ft) {
         ui.tooltip.hide();
       });
-
+      
       if (inputs.paratopes.value === true) {
         seqEntry.addFeatures(this.pVizParams.parMap[chain].par_feature_map);
       }
       seqEntry.addFeatures(this.pVizParams.ptmMap[chain].ptm_feature_map);
       seqEntry.addFeatures(this.pVizParams.ptmMotifsMap[chain].ptm_feature_map);
+      if(jsonObs !== null){seqEntry.addFeatures(this.pVizParams.ptmObsMap[chain].ptm_feature_map);}
       seqEntry.addFeatures(this.pVizParams.denMap[chain].den_feature_map);
       seqEntry.addFeatures(this.pVizParams.cdrMap[chain].cdr_feature_map);
       this.applyGradient(this.pVizParams.ptmMap[chain].ptm_color_obj);
       this.applyGradient(this.pVizParams.ptmMotifsMap[chain].ptm_color_obj);
+      if(jsonObs !== null){ this.applyGradient(this.pVizParams.ptmObsMap[chain].ptm_color_obj);}
       this.applyGradient(this.pVizParams.denMap[chain].den_color_obj);
       this.applyGradient(this.pVizParams.parMap[chain].par_color_obj);
-      this.consistentlyColorpVizNGL(inputs, chain, json, reLoad);
+      this.consistentlyColorpVizNGL(inputs, chain, json, jsonObs, reLoad);
     }
   }
 
-  async consistentlyColorpVizNGL(inputs, chosenTracksChain, json, reLoad) {
+  async consistentlyColorpVizNGL(inputs, chosenTracksChain, json, jsonObs, reLoad) {
 
     let switchObj = inputs.twinSelections;
     let pVizParams = this.pVizParams;
@@ -582,17 +645,31 @@ export class PvizAspect {
               }
             }
           });
+
+          if(jsonObs !== null){
+            Object.keys(lists).forEach(ptm => {
+              let elPTM = lists[ptm][0];
+              let el_lstPTM = lists[ptm][1];
+              if (typeof el_lstPTM !== 'undefined' && el_lstPTM.indexOf(position) !== -1) {
+                if (switchObj[keyChain][position]['state'] === false) {
+                  elPTM[el_lstPTM.indexOf(position)].style.fill = pVizParams.obsMap[keyChain].ptm_color_obj[mutcodes[ptm.replace(" ", "_")]][el_lstPTM.indexOf(position)];
+                } else {
+                  elPTM[el_lstPTM.indexOf(position)].style.fill = 'black';
+                }
+              }
+            });
+          }
         }
       });
     });
   }
 
   // resize handle
-  async pvizResize(inputs, chain, json) {
+  async pvizResize(inputs, chain, json, jsonObs) {
     let host = chain == "H" ? inputs.pVizHostH : inputs.pVizHostL;
 
     ui.onSizeChanged(host).subscribe(async (_) => {
-      await this.loadSequence(inputs, chain, json)
+      await this.loadSequence(inputs, chain, json, jsonObs)
     });
   }
 }

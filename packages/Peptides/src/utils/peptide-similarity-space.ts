@@ -10,15 +10,6 @@ import {DimensionalityReducer} from '@datagrok-libraries/utils/src/reduce-dimens
 import {Measurer} from '@datagrok-libraries/utils/src/string-measure';
 import {Coordinates} from '@datagrok-libraries/utils/src/type-declarations';
 
-/**
- * Creates a worker to perform a dimensionality reduction.
- *
- * @param {any[]} columnData Samples to process.
- * @param {string} method Embedding method.
- * @param {string} measure Distance metric.
- * @param {number} cyclesCount Number of cycles to repeat.
- * @return {Promise<unknown>} Promise.
- */
 function createDimensinalityReducingWorker(
   columnData: any[],
   method: string,
@@ -65,6 +56,7 @@ function inferActivityColumnsName(table: DG.DataFrame): string | null {
  * @param {string} method Embedding method to apply.
  * @param {string} measure Distance metric.
  * @param {number} cyclesCount Number of cycles to repeat.
+ * @param {(DG.TableView | null)} view View to add scatter plot to
  * @param {(string | null)} [activityColumnName] Activity containing column to assign it to points radius.
  * @param {boolean} [zoom=false] Whether to fit view.
  * @return {Promise<DG.ScatterPlotViewer>} A viewer.
@@ -75,6 +67,7 @@ export async function createPeptideSimilaritySpaceViewer(
   method: string,
   measure: string,
   cyclesCount: number,
+  view: DG.TableView | null,
   activityColumnName?: string | null,
   zoom: boolean = false,
 ): Promise<DG.ScatterPlotViewer> {
@@ -117,8 +110,11 @@ export async function createPeptideSimilaritySpaceViewer(
       table.columns.replace(col, edf.getCol(axis));
     }
   }
-  const viewer = DG.Viewer.scatterPlot(table, {x: '~X', y: '~Y', color: activityColumnName ?? '~MW', size: '~MW'});
 
+  // const viewer = DG.Viewer.scatterPlot(table, {x: '~X', y: '~Y', color: activityColumnName ?? '~MW', size: '~MW'});
+  const viewerOptions = {x: '~X', y: '~Y', color: activityColumnName ?? '~MW', size: '~MW'};
+  const viewer = view !== null ?
+    view.addViewer(DG.VIEWER.SCATTER_PLOT, viewerOptions) : DG.Viewer.scatterPlot(table, viewerOptions);
   // Fit view if needed.
   /*if (zoom) {
     viewer.zoom(
@@ -129,7 +125,7 @@ export async function createPeptideSimilaritySpaceViewer(
     );
   }*/
   pi.close();
-  return viewer;
+  return (viewer as DG.ScatterPlotViewer);
 }
 
 /**
@@ -147,13 +143,15 @@ export class PeptideSimilaritySpaceWidget {
   protected availableMethods: string[];
   protected availableMetrics: string[];
   protected viewer: HTMLElement;
+  view: DG.TableView;
 
   /**
    * Creates an instance of PeptideSimilaritySpaceWidget.
    * @param {DG.Column} alignedSequencesColumn The column to get amino acid sequences from.
+   * @param {DG.TableView} view Current view
    * @memberof PeptideSimilaritySpaceWidget
    */
-  constructor(alignedSequencesColumn: DG.Column) {
+  constructor(alignedSequencesColumn: DG.Column, view: DG.TableView) {
     this.availableMethods = DimensionalityReducer.availableMethods;
     this.availableMetrics = Measurer.availableMeasures;
     this.method = this.availableMethods[0];
@@ -161,6 +159,7 @@ export class PeptideSimilaritySpaceWidget {
     this.currentDf = alignedSequencesColumn.dataFrame;
     this.alignedSequencesColumn = alignedSequencesColumn;
     this.viewer = ui.div([]);
+    this.view = view;
   }
 
   /**
@@ -176,6 +175,7 @@ export class PeptideSimilaritySpaceWidget {
       this.method,
       this.metrics,
       this.cycles,
+      null,
       null,
       true,
     );

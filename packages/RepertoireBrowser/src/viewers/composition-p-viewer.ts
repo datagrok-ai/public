@@ -4,7 +4,7 @@ import * as DG from "datagrok-api/dg";
 
 import { _package } from "../package";
 import { Logo } from "./ca-viewer-logo";
-import { StackedBarChart } from "./ca-viewer-bar-chart";
+//import { StackedBarChart } from "./ca-viewer-bar-chart";
 
 export class CompostionPviewer {
   root: HTMLElement;
@@ -17,7 +17,7 @@ export class CompostionPviewer {
   openPanels: DG.DockNode[];
 
   logo: Logo;
-  barChart: StackedBarChart;
+  //barChart: StackedBarChart;
 
   logoHost: HTMLElement;
   barChartHost: HTMLElement;
@@ -91,16 +91,16 @@ export class CompostionPviewer {
     this.logo.render(this.aligned);
 
     //Composition analysis barchart view
-    this.barChart = new StackedBarChart(this.aligned, mlbTable);
-    this.barChartHost = ui.divV([this.logo.root]);
-    this.barChart.render();
+    // this.barChart = new StackedBarChart(this.aligned, mlbTable);
+    // this.barChartHost = ui.divV([this.logo.root]);
+    // this.barChart.render();
 
     // ---- DOCKING ----
     this.panelNode = mlbView.dockManager.dock(this.root, 'right', null, 'Composition');
     this.logoNode = mlbView.dockManager.dock(this.logoHost, 'left', this.panelNode, 'caLogo');
-    this.barCharNode = mlbView.dockManager.dock(this.barChartHost, 'down', this.logoNode, 'caBarChart');
+    //this.barCharNode = mlbView.dockManager.dock(this.barChartHost, 'down', this.logoNode, 'caBarChart');
 
-    this.openPanels = [this.panelNode, this.logoNode, this.barCharNode];
+    this.openPanels = [this.panelNode, this.logoNode];
 
     this.isOpen = true;
   }

@@ -15,8 +15,8 @@ import {kendallsTau} from '@datagrok-libraries/statistics/src/correlation-coeffi
  * @param {Matrix} matrix A matrix.
  * @return {DG.DataFrame} The data frame.
  */
- export function matrix2DataFrame(matrix: Matrix): DG.DataFrame {
-  return DG.DataFrame.fromColumns(matrix.map((v, i) => DG.Column.fromFloat32Array(`${i+1}`, v)));  
+export function matrix2DataFrame(matrix: Matrix): DG.DataFrame {
+  return DG.DataFrame.fromColumns(matrix.map((v, i) => DG.Column.fromFloat32Array(`${i+1}`, v)));
 }
 
 /**

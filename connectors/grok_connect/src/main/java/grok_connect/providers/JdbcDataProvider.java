@@ -724,8 +724,12 @@ public abstract class JdbcDataProvider extends DataProvider {
 
     public static java.util.Properties defaultConnectionProperties(DataConnection conn) {
         java.util.Properties properties = new java.util.Properties();
-        properties.setProperty("user", conn.credentials.getLogin());
-        properties.setProperty("password", conn.credentials.getPassword());
+        if (conn.credentials != null) {
+            if (conn.credentials.getLogin() != null)
+                properties.setProperty("user", conn.credentials.getLogin());
+            if (conn.credentials.getPassword() != null)
+                properties.setProperty("password", conn.credentials.getPassword());
+        }
         return properties;
     }
 }

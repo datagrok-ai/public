@@ -4,7 +4,7 @@ import * as ui from 'datagrok-api/ui';
 import * as DG from 'datagrok-api/dg';
 import {splitAlignedPeptides} from './utils/split-aligned';
 import {tTest} from '@datagrok-libraries/statistics/src/tests';
-import {fdrcorrection} from '@datagrok-libraries/statistics/src/multiple-tests.js';
+import {fdrcorrection} from '@datagrok-libraries/statistics/src/multiple-tests';
 import {ChemPalette} from './utils/chem-palette';
 import {setAARRenderer} from './utils/cell-renderer';
 
@@ -404,10 +404,10 @@ export async function describe(
     }
     if (
       !cell.isColHeader &&
-        cell.tableColumn !== null &&
-        cell.tableColumn.name == aminoAcidResidue &&
-        cell.cell.value !== null &&
-        cell.tableRowIndex !== null
+      cell.tableColumn !== null &&
+      cell.tableColumn.name == aminoAcidResidue &&
+      cell.cell.value !== null &&
+      cell.tableRowIndex !== null
     ) {
       if (grouping) {
         const currentGroup = groupDescription[cell.cell.value];
