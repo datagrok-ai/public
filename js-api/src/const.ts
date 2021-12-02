@@ -364,6 +364,29 @@ export enum NAMED_VALIDATORS {
   NOT_EMPTY = 'notEmpty',
 }
 
+export enum MARKER_TYPE {
+  CIRCLE = "circle",
+  CIRCLE_BORDER = "circle border",
+  SQUARE = "square",
+  SQUARE_BORDER = "square border",
+  CROSS_BORDER = "cross border",
+  CROSS_X_BORDER = "cross x border",
+  DIAMOND = "diamond",
+  DIAMOND_BORDER = "diamond border",
+  TRIANGLE_TOP = "triangle top",
+  TRIANGLE_RIGHT = "triangle right",
+  TRIANGLE_BOTTOM = "triangle bottom",
+  TRIANGLE_LEFT = "triangle left",
+  TRIANGLE_TOP_BORDER = "triangle top border",
+  TRIANGLE_RIGHT_BORDER = "triangle right border",
+  TRIANGLE_BOTTOM_BORDER = "triangle bottom border",
+  TRIANGLE_LEFT_BORDER = "triangle left border",
+  ASTERISK = "asterisk",
+  STAR = "star",
+  DOT = "dot",
+  GRADIENT = "gradient",
+}
+
 /**
  * @typedef {string} AggregationType
  * @typedef {string} SyncType
