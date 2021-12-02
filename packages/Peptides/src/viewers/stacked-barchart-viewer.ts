@@ -287,8 +287,7 @@ export class StackedBarChart extends DG.JsViewer {
         if (h * margin / 2 <= sBarHeight - gapSize && h * margin / 2 <= w) {
           g.fillStyle = 'rgb(0,0,0)';
           g.font = `${h * margin / 2}px`;
-          // eslint-disable-next-line no-unused-vars
-          const [_c, aar, _p] = cp.getColorAAPivot(obj['name']);
+          const [, aar] = cp.getColorAAPivot(obj['name']);
           g.fillText(aar,
             x + w / 2 - h * margin / 8,
             y + h * (this.max - sum + curSum) / this.max + gapSize / 2 + (sBarHeight - gapSize)/2 - h * margin / 8);
@@ -398,11 +397,8 @@ export class StackedBarChart extends DG.JsViewer {
         return;
       }
       this.dataFrame!.selection.handleClick((i) => {
-        //let selected = true;
         // @ts-ignore
         return this.highlighted!['aaName'] === (this.dataFrame.getCol(this.highlighted!['colName']).get(i));
-
-        //&& (scope.dataFrame.selection.get(i) === selected);
       }, event);
     }
 }

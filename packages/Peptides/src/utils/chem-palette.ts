@@ -107,14 +107,6 @@ export class ChemPalette {
       'white': ['rgb(230,230,230)'],
     }
 
-    // static grokGroups: [string[], string][] = [
-    //   [['C', 'U'], 'yellow'],
-    //   [['G', 'P'], 'red'],
-    //   [['A', 'V', 'I', 'L', 'M', 'F', 'Y', 'W'], 'all_green'],
-    //   [['R', 'H', 'K'], 'light_blue'],
-    //   [['D', 'E'], 'dark_blue'],
-    //   [['S', 'T', 'N', 'Q'], 'orange'],
-    // ];
     static grokGroups: {[key: string]: string[]} = {
       'yellow': ['C', 'U'],
       'red': ['G', 'P'],
