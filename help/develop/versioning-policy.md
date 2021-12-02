@@ -36,6 +36,30 @@ the features that are already in other versions.
 For a test release, the `TEST` component must be incremented by one, and the `MINOR` and `MAJOR` components must remain
 unchanged.
 
+## Version information
+
+Every Docker container has information about version and branch it was build on:
+
+1. In Docker Labels
+
+```bash
+docker inspect <image>:<version> --format '{{ json .Config.Labels }}'
+{
+  "branch": "<branch>",
+  "commit-main": "<commit>",
+  "commit-public": "<commit>"
+}
+```
+
+2. In Docker container file system
+
+```bash
+cat /home/grok/git-info.txt
+Branch main: <branch>
+Commit main: <commit>
+Commit public: <commit>
+```
+
 See also:
 
 * [Release History](release-history.md)
