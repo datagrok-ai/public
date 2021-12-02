@@ -19,6 +19,8 @@ installation of a PostgreSQL instance along with locating Datagrok's working fil
 
 Requirements: 2 vCPU and 4 GiB RAM.
 
+### Manual installation
+
 1. Get the latest Datagrok VM docker images from [Docker Hub](https://hub.docker.com/u/datagrok):
 
 ```bash
@@ -74,9 +76,47 @@ docker run -it -d \
     * Connectors
         * External Host: `grok_connect`
 
+### Deploy using Docker Compose
+
+All steps are intended to run the remote Datagrok virtual machine. To run steps below from your local machine:
+
+1. Create SSH access to the host using SSH keys
+2. Check that your user is in `docker` group
+3. Create docker context: `docker context create --docker 'host=ssh://HOST_NAME:22' datagrok`
+4. Switch to the datagrok context `docker context use datagrok`
+
+Deployment instruction:
+
+1. Download Docker Compose yaml
+   file: [link](https://github.com/datagrok-ai/public/blob/master/docker/localhost.docker-compose.yaml).
+2. Replace in `GROK_PARAMETERS` value with
+
+```json
+{
+   "dbServer": "host.docker.internal",      # Postgres database server (use host.docker.internal or 172.17.0.1 to connect to localhost)
+   "dbPort": "5432",                        # Postgres database server port
+   "db": "datagrok",                        # New database name
+   "dbLogin": "datagrok",                   # New DB user name, Datagrok will use it to connect to Postgres database
+   "dbPassword": "SoMeVeRyCoMpLeXpAsSwOrD", # New DB user password, Datagrok will use it to connect to Postgres database
+   "dbAdminLogin": "postgres",              # Postgres admin login
+   "dbAdminPassword": "postgres"            # Postgres admin password
+}
+```
+
+3. Run Datagrok deploy. Wait for the deployment process to complete.
+   `docker-compose --project-name datagrok --profile datagrok up -d`
+4. Check if Datagrok started successfully: `http://HOST_NAME:8080`, login to Datagrok using username "`admin`" and
+   password "`admin`".
+
+5. Edit settings in the Datagrok (Tools | Settings...). Do not forget to click Apply to save new settings.
+    * Connectors
+        * External Host: `grok_connect`
+
 ## Setup Compute Virtual Machine
 
 Requirements: 4 vCPU and 8 GiB RAM.
+
+### Manual installation
 
 1. Get the latest Compute Virtual Machine docker images from [Docker Hub](https://hub.docker.com/u/datagrok):
 
@@ -129,6 +169,33 @@ docker run -it -d \
 ```
 
 4. Edit settings in the Datagrok (Tools | Settings...). Do not forget to click Apply to save new settings.
+    * Scripting:
+        * CVM Url: `http://host.docker.internal:8090`
+        * CVM Url Client: `http://localhost:8090`
+        * H2o Url: `http://localhost:54321`
+        * Api Url: `http://host.docker.internal:8080/api`
+        * Cvm Split: `true`
+    * Dev:
+        * CVM Url: `http://localhost:8090`
+        * Cvm Split: `true`
+        * Api Url: `http://host.docker.internal:8080/api`
+
+### Deploy using Docker Compose
+
+All steps are intended to run the remote Datagrok virtual machine. To run steps below from your local machine:
+
+1. Create SSH access to the host using SSH keys
+2. Check that your user is in `docker` group
+3. Create docker context: `docker context create --docker 'host=ssh://CVM_HOST_NAME:22' cvm`
+4. Switch to the datagrok context `docker context use cvm`
+
+Deployment instruction:
+
+1. Download Docker Compose yaml
+   file: [link](https://github.com/datagrok-ai/public/blob/master/docker/localhost.docker-compose.yaml).
+2. Run Datagrok deploy. Wait for the deployment process to complete.
+   `docker-compose --project-name cvm --profile cvm up -d`
+3. Edit settings in the Datagrok (Tools | Settings...). Do not forget to click Apply to save new settings.
     * Scripting:
         * CVM Url: `http://host.docker.internal:8090`
         * CVM Url Client: `http://localhost:8090`
