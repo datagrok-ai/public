@@ -13,7 +13,6 @@ installation of a PostgreSQL instance along with locating Datagrok's working fil
 
 1. [Install Docker](https://docs.docker.com/get-docker/).
 2. [Install PostgreSQL](https://www.postgresql.org/download/), allow port 5432 in the firewall.
-3. Create grok user with ID 1001 and group with ID 1001
 
 ## Setup Datagrok virtual machine
 
@@ -21,14 +20,15 @@ Requirements: 2 vCPU and 4 GiB RAM.
 
 ### Manual installation
 
-1. Get the latest Datagrok VM docker images from [Docker Hub](https://hub.docker.com/u/datagrok):
+1. Create grok user with ID 1001 and group with ID 1001
+2. Get the latest Datagrok VM docker images from [Docker Hub](https://hub.docker.com/u/datagrok):
 
 ```bash
 docker pull datagrok/datagrok:latest
 docker pull datagrok/grok_connect:latest
 ```
 
-2. Prepare JSON string `GROK_PARAMETERS`:
+3. Prepare JSON string `GROK_PARAMETERS`:
 
 ```json
 {
@@ -42,10 +42,10 @@ docker pull datagrok/grok_connect:latest
 }
 ```
 
-3. Prepare local directory to store data: `GROK_DATA_PATH`, allow write access to the group grok.
-4. Prepare local directory to store config files: `GROK_CFG_PATH`, allow write access to the group grok.
-5. Create docker network for Datagrok: `docker network create datagrok`
-6. Run Grok Connect image
+4. Prepare local directory to store data: `GROK_DATA_PATH`, allow write access to the group grok.
+5. Prepare local directory to store config files: `GROK_CFG_PATH`, allow write access to the group grok.
+6. Create docker network for Datagrok: `docker network create datagrok`
+7. Run Grok Connect image
 
 ```bash
 docker run -it -d \
@@ -55,7 +55,7 @@ docker run -it -d \
   datagrok/grok_connect:latest
 ```
 
-7. Run Datagrok image. Wait for the deployment process to complete.
+8. Run Datagrok image. Wait for the deployment process to complete.
 
 ```bash
 docker run -it -d \
@@ -69,10 +69,10 @@ docker run -it -d \
   datagrok/datagrok:latest
 ```
 
-7. Check if Datagrok started successfully: `http://HOST_NAME:8080`, login to Datagrok using username "`admin`" and
+9. Check if Datagrok started successfully: `http://<DATAGROK_HOST_NAME>:8080`, login to Datagrok using username "`admin`" and
    password "`admin`".
 
-8. Edit settings in the Datagrok (Tools | Settings...). Do not forget to click Apply to save new settings.
+10. Edit settings in the Datagrok (Tools | Settings...). Do not forget to click Apply to save new settings.
     * Connectors
         * External Host: `grok_connect`
 
@@ -82,7 +82,7 @@ All steps are intended to run the remote Datagrok virtual machine. To run steps 
 
 1. Create SSH access to the host using SSH keys
 2. Check that your user is in `docker` group
-3. Create docker context: `docker context create --docker 'host=ssh://HOST_NAME:22' datagrok`
+3. Create docker context: `docker context create --docker 'host=ssh://<DATAGROK_HOST_NAME>:22' datagrok`
 4. Switch to the datagrok context `docker context use datagrok`
 
 Deployment instruction:
@@ -105,7 +105,7 @@ Deployment instruction:
 
 3. Run Datagrok deploy. Wait for the deployment process to complete.
    `docker-compose --project-name datagrok --profile datagrok up -d`
-4. Check if Datagrok started successfully: `http://HOST_NAME:8080`, login to Datagrok using username "`admin`" and
+4. Check if Datagrok started successfully: `http://<DATAGROK_HOST_NAME>:8080`, login to Datagrok using username "`admin`" and
    password "`admin`".
 
 5. Edit settings in the Datagrok (Tools | Settings...). Do not forget to click Apply to save new settings.
@@ -170,15 +170,15 @@ docker run -it -d \
 
 4. Edit settings in the Datagrok (Tools | Settings...). Do not forget to click Apply to save new settings.
     * Scripting:
-        * CVM Url: `http://host.docker.internal:8090`
-        * CVM Url Client: `http://localhost:8090`
-        * H2o Url: `http://localhost:54321`
-        * Api Url: `http://host.docker.internal:8080/api`
+        * CVM Url: `http://<CVM_HOST_NAME>:8090`
+        * CVM Url Client: `http://<CVM_HOST_NAME>:8090`
+        * H2o Url: `http://<CVM_HOST_NAME>:54321`
+        * Api Url: `http://<DATAGROK_HOST_NAME>:8080/api`
         * Cvm Split: `true`
     * Dev:
-        * CVM Url: `http://localhost:8090`
+        * CVM Url: `http://<CVM_HOST_NAME>:8090`
         * Cvm Split: `true`
-        * Api Url: `http://host.docker.internal:8080/api`
+        * Api Url: `http://<DATAGROK_HOST_NAME>:8080/api`
 
 ### Deploy using Docker Compose
 
@@ -186,7 +186,7 @@ All steps are intended to run the remote Datagrok virtual machine. To run steps 
 
 1. Create SSH access to the host using SSH keys
 2. Check that your user is in `docker` group
-3. Create docker context: `docker context create --docker 'host=ssh://CVM_HOST_NAME:22' cvm`
+3. Create docker context: `docker context create --docker 'host=ssh://<CVM_HOST_NAME>:22' cvm`
 4. Switch to the datagrok context `docker context use cvm`
 
 Deployment instruction:
@@ -196,16 +196,16 @@ Deployment instruction:
 2. Run Datagrok deploy. Wait for the deployment process to complete.
    `docker-compose --project-name cvm --profile cvm up -d`
 3. Edit settings in the Datagrok (Tools | Settings...). Do not forget to click Apply to save new settings.
-    * Scripting:
-        * CVM Url: `http://host.docker.internal:8090`
-        * CVM Url Client: `http://localhost:8090`
-        * H2o Url: `http://localhost:54321`
-        * Api Url: `http://host.docker.internal:8080/api`
-        * Cvm Split: `true`
-    * Dev:
-        * CVM Url: `http://localhost:8090`
-        * Cvm Split: `true`
-        * Api Url: `http://host.docker.internal:8080/api`
+   * Scripting:
+      * CVM Url: `http://<CVM_HOST_NAME>:8090`
+      * CVM Url Client: `http://<CVM_HOST_NAME>:8090`
+      * H2o Url: `http://<CVM_HOST_NAME>:54321`
+      * Api Url: `http://<DATAGROK_HOST_NAME>:8080/api`
+      * Cvm Split: `true`
+   * Dev:
+      * CVM Url: `http://<CVM_HOST_NAME>:8090`
+      * Cvm Split: `true`
+      * Api Url: `http://<DATAGROK_HOST_NAME>:8080/api`
 
 See also:
 
