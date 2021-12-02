@@ -25,7 +25,7 @@ grok.shell.v.addViewer(DG.VIEWER.TIMELINES, {
   dateFormat: "",                // Optional (used when the start and/or end are represented as datetime).
                                  // Formats: '{yyyy}-{MM}-{dd}', '{M}/{d}/{yyyy}', '{MMM} {d}', '{dd}', '{d}'
   axisPointer: "shadow",         // Axis pointer style ('cross' | 'line' | 'shadow' | 'none')
-  showZoomSliders: true          // Zoom sliders visibility control
+  showZoomSliders: true,         // Zoom sliders visibility control
   marker: "circle",              // Marker shape ('circle' | 'rect' | 'ring' | 'diamond')
   markerSize: 6,                 // Marker size (the width and height for rectangular shapes, the diameter for circular shapes)
   markerPosition: "main line",   // Marker position ('main line' | 'above main line' | 'scatter')
