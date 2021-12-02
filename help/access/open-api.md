@@ -3,9 +3,29 @@
 
 # OpenAPI
 
-[OpenAPI](https://swagger.io/docs/specification/about/), also known as swagger, is a popular format that describes the structure of the server APIs so that machines can read the document and use the service.
+[OpenAPI](https://swagger.io/docs/specification/about/), also known as swagger,
+is a popular format that describes the structure of the server APIs so that
+machines can read the document and use the service.
 
-Simple example of contents of a Swagger file in `yaml` format (Datagrok also supports `json` format for Swagger files) with a minimum set of attributes might look like this:
+Datagrok integrates with OpenAPI really well. Once a swagger file is imported 
+(you can simply drag-and-drop a `yaml` or `json` file into the app), its content 
+gets translated to 
+[data connections](data-connection.md), 
+[queries](data-query.md), and 
+[functions](../overview/functions/function.md). 
+All of them may be combined and used in [data jobs](data-job.md), 
+[calculations](../compute/compute.md),
+[info panels](../discover/info-panels.md), 
+executed from [console](../overview/navigation.md#console), etc.
+
+You can find this connection in [Connections Tree](https://public.datagrok.ai/connect) 
+under the source "Web". There is a special view 
+[Web Services](https://public.datagrok.ai/webservices) in the Datagrok's UI, 
+which displays only OpenAPI connections. These connections may also be found in 
+the "Data" section on the left sidebar next to "Databases".
+
+Let's take a deeper look on the following example of the OpenAPI `yaml` file 
+(`json` is also supported):
 
 ```yaml
 swagger: '2.0'
@@ -75,12 +95,6 @@ securityDefinitions:
     in: query
 
 ```
-
-The Datagrok platform integrates with OpenAPI really well. Once a swagger file is imported (you can simply drag-and-drop a `yaml` or `json` file into the app), its content gets translated to [data connections](data-connection.md), [queries](data-query.md), and [functions](../overview/functions/function.md). All of them may be combined and used in [data jobs](data-job.md), calculations, [info panels](../discover/info-panels.md), executed from [console](../overview/navigation.md#console), etc.
-
-After a swagger file is uploaded to the platform, a new [data connection](data-connection.md) will be created in Datagrok based on what's described in the swagger file.
-
-You can find this connection in [Connections Tree](https://public.datagrok.ai/connect) under the source "Web". There is a special view [Web Services](https://public.datagrok.ai/webservices) in the Datagrok's UI, which displays only OpenAPI connections. These connections may also be found in the "Data" section on the left sidebar next to "Databases".
 
 You can also find all connections created for OpenAPI in the [Data Connections Browser](https://public.datagrok.ai/connections) ("Manage" section on side bar and then "Connections" view).
 
