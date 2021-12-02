@@ -23,7 +23,12 @@ export class ChemPalette {
         if (s in ChemPalette.AAFullNames) {
           toDisplay = [ui.divText(ChemPalette.AANames[ChemPalette.AAFullNames[s]])];
         }
-        const sketch = grok.chem.svgMol(ChemPalette.AASmiles[aar]);
+        const options = {
+          autoCrop: true,
+          autoCropMargin: 0,
+          suppressChiralText: true,
+        };
+        const sketch = grok.chem.svgMol(ChemPalette.AASmiles[aar], undefined, undefined, options);
         toDisplay.push(sketch);
       }
       ui.tooltip.show(ui.divV(toDisplay), x, y);
