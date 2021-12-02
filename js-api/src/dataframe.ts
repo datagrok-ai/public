@@ -554,6 +554,7 @@ export class Column {
   public tags: any;
   private _dialogs: ColumnDialogHelper | undefined;
   private _colors: ColumnColorHelper | undefined;
+  private _markers: ColumnMarkerHelper | undefined;
 
   constructor(d: any) {
     this.d = d;
@@ -755,6 +756,12 @@ export class Column {
     if (this._colors == undefined)
       this._colors = new ColumnColorHelper(this);
     return this._colors;
+  }
+
+  get markers(): ColumnMarkerHelper {
+    if (this._markers == undefined)
+      this._markers = new ColumnMarkerHelper(this);
+    return this._markers;
   }
 
   /**
@@ -2202,5 +2209,36 @@ export class ColumnColorHelper {
       }
       this.column.tags[DG.TAGS.COLOR_CODING_CONDITIONAL] = JSON.stringify(rules);
     }
+  }
+}
+
+export class ColumnMarkerHelper {
+  private readonly column: Column;
+  private markerCodingTag: string = '.marker-coding';
+
+  constructor(column: Column) {
+    this.column = column;
+  }
+
+  assign(category: string, marker: string): ColumnMarkerHelper {
+    this.setMarkerCoding(category, marker);
+    return this;
+  }
+
+  default(marker: string): ColumnMarkerHelper {
+    return this.assign('~DEFAULT', marker);
+  }
+
+  reset(): ColumnMarkerHelper {
+    this.column.tags[this.markerCodingTag] = '{}';
+    return this;
+  }
+
+  setMarkerCoding(category: string, marker: string): void {
+    let jsonTxt: string | null = this.column.getTag(this.markerCodingTag);
+    let jsonMap: {[key: string]: string} = jsonTxt ? JSON.parse(jsonTxt) : {};
+    jsonMap[category] = marker;
+    jsonTxt = JSON.stringify(jsonMap);
+    this.column.setTag(this.markerCodingTag, jsonTxt);
   }
 }
