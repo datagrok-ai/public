@@ -207,9 +207,9 @@ export async function correlationAnalysis() {
 
   const df = await grok.data.files.openTable('Demo:TestJobs:Files:DemoFiles/bio/peptides.csv');
   const tview = grok.shell.addTableView(df);
-  const [bpviewer, hmviewer, nwviewer] = correlationAnalysisPlots(df.getCol('AlignedSequence'));
+  const [caviewer, hmviewer, nwviewer] = correlationAnalysisPlots(df.getCol('AlignedSequence'));
 
   tview.dockManager.dock(hmviewer, 'right');
-  tview.dockManager.dock(bpviewer, 'down');
+  tview.dockManager.dock(caviewer, 'down');
   tview.dockManager.dock(nwviewer, 'right');
 }

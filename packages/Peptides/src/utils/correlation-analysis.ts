@@ -27,8 +27,9 @@ export function matrix2DataFrame(matrix: Matrix): DG.DataFrame {
  */
 function calcPositions(col: DG.Column): [DG.DataFrame, string[]] {
   const sequences = col.toList().map((v, _) => AlignedSequenceEncoder.clean(v));
-  const enc = new AlignedSequenceEncoder();
+  const enc = new AlignedSequenceEncoder('WimleyWhite');
   const encSeqs = sequences.map((v) => Vector.from(enc.encode(v)));
+  console.log(encSeqs);
   const positions = transposeMatrix(encSeqs);
   return [matrix2DataFrame(positions), sequences];
 }
@@ -39,7 +40,16 @@ function calcPositions(col: DG.Column): [DG.DataFrame, string[]] {
  * @param {DG.DataFrame} df A data frame to unfold.
  * @return {DG.DataFrame} The resulting data frame.
  */
-function melt(df: DG.DataFrame): DG.DataFrame {
+
+/**
+ * Unfolds a data frame into <category>-<value> format.
+ *
+ * @param {DG.DataFrame} df A data frame to unfold.
+ * @param {string} [keysName='Keys'] A name for keys column.
+ * @param {string} [valuesName='Values'] A name for values column.
+ * @return {DG.DataFrame} The resulting data frame.
+ */
+function melt(df: DG.DataFrame, keysName = 'Keys', valuesName = 'Values'): DG.DataFrame {
   let keys: string[] = [];
   const values: Float32Array = new Float32Array(df.columns.length*df.rowCount);
   let i = 0;
@@ -50,7 +60,10 @@ function melt(df: DG.DataFrame): DG.DataFrame {
     i += df.rowCount;
   }
   assert(keys.length == values.length);
-  return DG.DataFrame.fromColumns([DG.Column.fromStrings('Position', keys), DG.Column.fromFloat32Array('Tau', values)]);
+  return DG.DataFrame.fromColumns([
+    DG.Column.fromStrings(keysName, keys),
+    DG.Column.fromFloat32Array(valuesName, values),
+  ]);
 }
 
 /**
@@ -112,8 +125,8 @@ function calcSpearmanRhoMatrix(df: DG.DataFrame): DG.DataFrame {
 
 type PairGuide = {[key: string]: number};
 
-function makeSequenceTemplate(pos1: number, pos2: number, sequences: string[]): PairGuide {
-  const guide: PairGuide = {};// = new Set();
+function makeSequenceTemplate(pos1: number, pos2: number, sequences: string[]): [string, number] {
+  const guide: PairGuide = {};
   const nSeqs = sequences.length;
 
   for (let i = 0; i < nSeqs; ++i) {
@@ -124,7 +137,10 @@ function makeSequenceTemplate(pos1: number, pos2: number, sequences: string[]): 
   for (const key of Object.keys(guide)) {
     guide[key] /= nSeqs;
   }
-  return guide;
+  const sortableArray = Object.entries(guide);
+  const sortedArray = sortableArray.sort(([, a], [, b]) => b - a); // Reverse order
+  //const sortedObject = Object.fromEntries(sortedArray);
+  return sortedArray[0]; // Pair with max frequency.
 }
 
 function analyseCorrelation(network: DG.DataFrame, sequences: string[]) {
@@ -135,15 +151,14 @@ function analyseCorrelation(network: DG.DataFrame, sequences: string[]) {
       .fill(0)
       .map((_, i) => network.columns.byIndex(i).getRawData());
 
+  const pairs = [];
+
   for (let i = 0; i < network.rowCount; ++i) {
-    const pos1 = pos1Col[i];
-    const pos2 = pos2Col[i];
-    const weight = weightCol[i];
-    const guide = makeSequenceTemplate(pos1, pos2, sequences);
-    console.log([pos1, pos2, weight]);
-    console.log(guide);
+    const [pos1, pos2, weight] = [pos1Col[i], pos2Col[i], weightCol[i]];
+    const [pair, freq] = makeSequenceTemplate(pos1, pos2, sequences);
+    pairs.push([pos1, pos2, weight, pair, freq]);
   }
-  return;
+  return pairs;
 }
 
 /**
@@ -165,6 +180,23 @@ function calcKendallTauMatrix(df: DG.DataFrame, alpha: number = 0.05): DG.DataFr
     }
   }
   return matrix2DataFrame(tau);
+}
+
+function describeNetwork(positions: DG.DataFrame, network: any[]): DG.DataFrame {
+  const cols = Array.from(positions.columns).map(
+    (_, i) => DG.Column.fromList('string', positions.columns.byIndex(i).name, []),
+  );
+  const df = DG.DataFrame.fromColumns(cols);
+
+  for (const [pos1, pos2, weight, pair, freq] of network) {
+    //const [pos1, pos2, weight] = Array.from(r.cells).map((c) => c.value);
+    const values = new Array(df.columns.length).fill('');
+    values[pos1-1] = pair[0];//(weight as number).toString();
+    values[pos2-1] = pair[1];//(weight as number).toString();
+    df.rows.addNew(values);
+    console.log([pos1, pos2, weight, pair, freq]);
+  }
+  return df;
 }
 
 /**
@@ -192,15 +224,15 @@ export function correlationAnalysisPlots(sequencesColumn: DG.Column): [DG.Viewer
     posDF,
   );
 
-  const meltDF = melt(ccDF);
+  /*const meltDF = melt(posDF, 'Position', 'Scale');
 
   const bpviewer = DG.Viewer.fromType(
     DG.VIEWER.BOX_PLOT,
     meltDF, {
       'categoryColumnName': 'Position',
-      'valueColumnName': 'Tau',
+      'valueColumnName': 'Scale',
       'statistics': ['min', 'max', 'avg', 'med'],
-    });
+    });*/
 
   const nwDF = createNetwork(ccDF);
 
@@ -214,7 +246,12 @@ export function correlationAnalysisPlots(sequencesColumn: DG.Column): [DG.Viewer
       'edgeWidth': 4,
     });
 
-  analyseCorrelation(nwDF, sequences);
+  const pairs = analyseCorrelation(nwDF, sequences);
+  const nwdDF = describeNetwork(posDF, pairs);
 
-  return [bpviewer, hmviewer, nwviewer];
+  const caviewer = DG.Viewer.fromType(
+    DG.VIEWER.GRID,
+    nwdDF);
+
+  return [caviewer, hmviewer, nwviewer];
 }
