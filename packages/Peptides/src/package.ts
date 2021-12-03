@@ -192,11 +192,13 @@ export async function correlationAnalysis() {
 }
 
 //name: MSA
-export async function testMSA() {
+//input: int gapopen = -20
+//input: int gapextend = -20
+export async function testMSA(gapopen: number, gapextend: number) {
   view = (grok.shell.v as DG.TableView);
 
   const df = await grok.data.files.openTable('Demo:TestJobs:Files:DemoFiles/bio/peptides.csv');
-  const msaCol = await doMSA(df.getCol('AlignedSequence'));
+  const msaCol = await doMSA(df.getCol('AlignedSequence'), gapopen, gapextend);
 
   df.columns.add(msaCol);
   grok.shell.addTableView(df);
