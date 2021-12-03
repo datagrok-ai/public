@@ -46,12 +46,13 @@ export async function exportFuncCall(call: DG.FuncCall) {
   });
 
   // UWAGA: very fragile solution
-  const resultView = document.getElementsByClassName('d4-tab-host ui-box')[0];
+  const funcView = document.getElementsByClassName('grok-view grok-view-func ui-box')[0];
+  const resultView = funcView.getElementsByClassName('d4-tab-host ui-box')[0];
   const tabs = resultView.getElementsByClassName('d4-tab-header-stripe')[0].children;
   const selectedByUser = resultView.getElementsByClassName('d4-tab-header selected')[0];
   for (let i=0; i< tabs.length; i++) {
     (tabs[i] as HTMLElement).click();
-    await new Promise((r) => setTimeout(r, 200));
+    await new Promise((r) => setTimeout(r, 100));
 
     const titleDivs = document.getElementsByClassName('grok-func-results-header');
     if (!titleDivs.length) continue;
