@@ -9,7 +9,7 @@ import {
   SimilarityMetric,
   AggregationType,
   CsvImportOptions,
-  IndexPredicate, FLOAT_NULL, ViewerType, ColorCodingType, ColorType
+  IndexPredicate, FLOAT_NULL, ViewerType, ColorCodingType, MarkerCodingType, ColorType
 } from "./const";
 import {__obs, EventData, MapChangeArgs, observeStream} from "./events";
 import {toDart, toJs} from "./wrappers";
@@ -2063,7 +2063,6 @@ interface FormulaLine {
 export class DataFrameMetaHelper {
   private readonly df: DataFrame;
   private formulaLines: FormulaLine[] = [];
-  private formulaLinesTag: string = '.formula-lines';
 
   constructor(df: DataFrame) {
     this.df = df;
@@ -2071,7 +2070,7 @@ export class DataFrameMetaHelper {
   }
 
   getFormulaLines(): FormulaLine[] {
-    let json: string | null = this.df.getTag(this.formulaLinesTag);
+    let json: string | null = this.df.getTag(DG.TAGS.FORMULA_LINES);
     if (json)
       return JSON.parse(json);
 
@@ -2084,7 +2083,7 @@ export class DataFrameMetaHelper {
 
     let json: string | null = _toJson(items);
     if (json)
-      this.df.setTag(this.formulaLinesTag, json);
+      this.df.setTag(DG.TAGS.FORMULA_LINES, json);
   }
 
   addFormulaItem(item: FormulaLine): void {
@@ -2105,7 +2104,7 @@ export class DataFrameMetaHelper {
   removeFormulaLines(...ids: string[]): void {
     if (ids.length == 0) {
       this.formulaLines = [];
-      this.df.setTag('this.formulaLinesTag', '[]');
+      this.df.setTag(DG.TAGS.FORMULA_LINES, '[]');
       return;
     }
 
@@ -2214,31 +2213,30 @@ export class ColumnColorHelper {
 
 export class ColumnMarkerHelper {
   private readonly column: Column;
-  private markerCodingTag: string = '.marker-coding';
 
   constructor(column: Column) {
     this.column = column;
   }
 
-  assign(category: string, marker: string): ColumnMarkerHelper {
+  assign(category: string, marker: MarkerCodingType): ColumnMarkerHelper {
     this.setMarkerCoding(category, marker);
     return this;
   }
 
-  default(marker: string): ColumnMarkerHelper {
+  default(marker: MarkerCodingType): ColumnMarkerHelper {
     return this.assign('~DEFAULT', marker);
   }
 
   reset(): ColumnMarkerHelper {
-    this.column.tags[this.markerCodingTag] = '{}';
+    this.column.tags[DG.TAGS.MARKER_CODING] = '{}';
     return this;
   }
 
   setMarkerCoding(category: string, marker: string): void {
-    let jsonTxt: string | null = this.column.getTag(this.markerCodingTag);
+    let jsonTxt: string | null = this.column.getTag(DG.TAGS.MARKER_CODING);
     let jsonMap: {[key: string]: string} = jsonTxt ? JSON.parse(jsonTxt) : {};
     jsonMap[category] = marker;
     jsonTxt = JSON.stringify(jsonMap);
-    this.column.setTag(this.markerCodingTag, jsonTxt);
+    this.column.setTag(DG.TAGS.MARKER_CODING, jsonTxt);
   }
 }

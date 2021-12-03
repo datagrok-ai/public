@@ -197,6 +197,9 @@ export const TAGS = {
   COLOR_CODING_CATEGORICAL: '.color-coding-categorical',
   COLOR_CODING_LINEAR: '.color-coding-linear',
 
+  MARKER_CODING: '.marker-coding',
+  FORMULA_LINES: '.formula-lines',
+
   MULTI_VALUE_SEPARATOR: '.multi-value-separator',
   /** When a dataframe is loaded from a CSV, the maximum number of significant digits
    in the fractional part for each numeric column is determined  */
@@ -427,6 +430,7 @@ export type SemType = string;
 export type SimilarityMetric = `${SIMILARITY_METRIC}`;
 export type ColorType = number;
 export type ColorCodingType = `${COLOR_CODING_TYPE}`;
+export type MarkerCodingType = `${MARKER_TYPE}`;
 export type DemoDatasetName = `${DEMO_DATASET}`;
 export type DockType = `${DOCK_TYPE}`;
 export type CsvImportOptions = { delimiter?: string, decimalSeparator?: string, thousandSeparator?: string };
