@@ -16,6 +16,7 @@ import {manualAlignmentWidget} from './widgets/manual-alignment';
 import {SARViewer, SARViewerVertical} from './viewers/sar-viewer';
 import {peptideMoleculeWidget} from './widgets/peptide-molecule';
 import {correlationAnalysisPlots} from './utils/correlation-analysis';
+import {doMSA} from './utils/multiple-sequence-alignment';
 
 export const _package = new DG.Package();
 let tableGrid: DG.Grid;
@@ -188,4 +189,15 @@ export async function correlationAnalysis() {
 
   tview.dockManager.dock(cpviewer, 'right');
   tview.dockManager.dock(bpviewer, 'down');
+}
+
+//name: MSA
+export async function testMSA() {
+  view = (grok.shell.v as DG.TableView);
+
+  const df = await grok.data.files.openTable('Demo:TestJobs:Files:DemoFiles/bio/peptides.csv');
+  const msaCol = await doMSA(df.getCol('AlignedSequence'));
+
+  df.columns.add(msaCol);
+  grok.shell.addTableView(df);
 }
