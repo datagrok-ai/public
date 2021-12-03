@@ -51,7 +51,7 @@ export async function exportFuncCall(call: DG.FuncCall) {
   const selectedByUser = resultView.getElementsByClassName('d4-tab-header selected')[0];
   for (let i=0; i< tabs.length; i++) {
     (tabs[i] as HTMLElement).click();
-    await new Promise((r) => setTimeout(r, 100));
+    await new Promise((r) => setTimeout(r, 200));
 
     const titleDivs = document.getElementsByClassName('grok-func-results-header');
     if (!titleDivs.length) continue;
