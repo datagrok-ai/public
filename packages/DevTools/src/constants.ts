@@ -3,6 +3,11 @@ import * as DG from 'datagrok-api/dg';
 
 export type EntityType = DG.Entity | DG.DataFrame | DG.Column;
 
+export const supportedEntityTypes = [
+  'FileInfo', 'DataConnection', 'DataQuery', 'User', 'Group', 'DataFrame',
+  'Column', 'Package', 'Project', 'Script', 'Func', 'ViewLayout', 'View',
+];
+
 export const dfExts = ['csv', 'xlsx'];
 
 export const entExtract = {
