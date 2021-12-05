@@ -19,7 +19,7 @@ import * as tests from "./tests/test-examples";
 import {testPackages} from "./package-testing";
 
 export const _package = new DG.Package();
-let minifiedClassNameMap = {};
+let minifiedClassNameMap: { [index: string]: string[] } = {};
 
 function getGroupInput(type: string): HTMLElement {
   const items = tags[type];
@@ -83,8 +83,8 @@ export async function renderDevPanel(ent: EntityType): Promise<DG.Widget> {
   }
 
   let type = ent.constructor.name;
-  if (!supportedEntityTypes.includes(type) && type in minifiedClassNameMap && ent instanceof eval(`DG.${minifiedClassNameMap[type]}`)) {
-    type = minifiedClassNameMap[type];
+  if (!supportedEntityTypes.includes(type) && type in minifiedClassNameMap) {
+    type = minifiedClassNameMap[type].find((c) => ent instanceof eval(`DG.${c}`)) ?? type;
   }
   const snippets = await loadSnippets(type,
     (ent instanceof DG.FileInfo && dfExts.includes(ent.extension)) ? 'dataframe'
@@ -152,7 +152,12 @@ export async function renderDevPanel(ent: EntityType): Promise<DG.Widget> {
 
 //tags: autostart
 export function describeCurrentObj(): void {
-  minifiedClassNameMap = Object.fromEntries(supportedEntityTypes.map((t) => [eval(`DG.${t}.name`), t]));
+  minifiedClassNameMap = supportedEntityTypes.reduce((map, t) => {
+    const minClassName = eval(`DG.${t}.name`);
+    map[minClassName] = [...(map[minClassName] || []), t];
+    return map;
+  }, {});
+
   grok.events.onAccordionConstructed.subscribe((acc: DG.Accordion) => {
     const ent = acc.context;
     if (ent == null) return; 
