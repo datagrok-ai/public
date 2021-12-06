@@ -6,7 +6,7 @@ import { mcsgetter } from '../scripts-api';
 /**
  * Finds most common substructure in molecules column and adds to dataframe.
  * @export
- * @param {DG.Column} Whether to fit view.
+ * @param {DG.Column} col column with smiles.
  */
 export async function findMCS(col: DG.Column): Promise<void>{
   if(col.length >= 100000){
@@ -18,8 +18,10 @@ export async function findMCS(col: DG.Column): Promise<void>{
   let mcs: string = await mcsgetter(col.name, col.dataFrame);
   let name = getName("MCS", col.dataFrame.columns.names());
   let mcsCol = DG.Column.fromList("string", name, new Array(col.length).fill(mcs));
-  mcsCol.semType = "molecule";
+  mcsCol.semType = "Molecule";
+  mcsCol.setTag('cell.renderer', 'Molecule')
   col.dataFrame.columns.add(mcsCol);
+
   pi.close();
 }
 
