@@ -1,8 +1,13 @@
 import * as grok from 'datagrok-api/grok';
 import * as ui from 'datagrok-api/ui';
 import * as DG from 'datagrok-api/dg';
-import {_package} from './package';
+import {_package} from '../package';
 
+/**
+ * @param inputData The data to select the outliers in
+ * @returns Two dataframes: 1) with selected outliers and 2) with removed outliers
+ * @deprecated Use the OutliersSelectionViewer instead
+ */
 export async function selectOutliersManually(inputData: DG.DataFrame) {
   const IS_OUTLIER_COL_LABEL = 'isOutlier';
   const OUTLIER_RATIONALE_COL_LABEL = 'Rationale';
