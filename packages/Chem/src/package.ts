@@ -19,6 +19,7 @@ import {chemSpace} from './analysis/chem_space';
 import {getDescriptorsSingle} from './descriptors/descriptors_calculation';
 import {getDescriptors} from './descriptors/descriptors_calculation';
 import {getDescriptorsApp} from './descriptors/descriptors_calculation';
+import {findMCS} from './panels/find-mcs';
 import * as chemCommonRdKit from './chem_common_rdkit';
 import {rGroupAnalysis} from './analysis/r_group';
 import {chemLock, chemUnlock} from './chem_common';
@@ -305,7 +306,7 @@ export async function chemSimilaritySearch() {
 //tags: panel, chem
 //input: column smiles { semType: Molecule }
 //output: string result
-export async function descriptors(smiles: DG.Column) {
+export async function descriptorsPanel(smiles: DG.Column) {
   let table: DG.DataFrame = grok.shell.t;
   getDescriptors(smiles, table);
 }
@@ -316,6 +317,14 @@ export async function descriptors(smiles: DG.Column) {
 //input: column col {semType: Molecule}
 export function rGroupsAnalysisPanel(col: DG.Column) {
   rGroupAnalysis(col);
+}
+
+//name: Chem | Find MCS
+//friendly-name: Chem | Find MCS
+//tags: panel, chem
+//input: column col {semType: Molecule}
+export function findMCSpanel(col: DG.Column) {
+  findMCS(col);
 }
 
 //name: RDKit Settings
