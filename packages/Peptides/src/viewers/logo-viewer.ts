@@ -61,7 +61,6 @@ export class Logo extends DG.JsViewer {
 
   init() {
     this.initialized = true;
-    // this.reactHost = ui.div([]);
     console.log('INIT');
     this.target = this.dataFrame;
     [this.splitted] = splitAlignedPeptides(this.dataFrame!.columns.bySemType(this.colSemType));
@@ -111,10 +110,6 @@ export class Logo extends DG.JsViewer {
 
     if (typeof this.dataFrame !== 'undefined') {
       this.findLogo();
-
-      // if (this.reactHost !== null) {
-      //   this.root.appendChild(this.reactHost);
-      // }
     }
   }
 

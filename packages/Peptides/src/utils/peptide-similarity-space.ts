@@ -1,6 +1,4 @@
 /* Do not change these import lines. Datagrok will import API library in exactly the same manner */
-// eslint-disable-next-line no-unused-vars
-import * as grok from 'datagrok-api/grok';
 import * as ui from 'datagrok-api/ui';
 import * as DG from 'datagrok-api/dg';
 
@@ -10,15 +8,6 @@ import {DimensionalityReducer} from '@datagrok-libraries/utils/src/reduce-dimens
 import {Measurer} from '@datagrok-libraries/utils/src/string-measure';
 import {Coordinates} from '@datagrok-libraries/utils/src/type-declarations';
 
-/**
- * Creates a worker to perform a dimensionality reduction.
- *
- * @param {any[]} columnData Samples to process.
- * @param {string} method Embedding method.
- * @param {string} measure Distance metric.
- * @param {number} cyclesCount Number of cycles to repeat.
- * @return {Promise<unknown>} Promise.
- */
 function createDimensinalityReducingWorker(
   columnData: any[],
   method: string,
@@ -65,6 +54,7 @@ function inferActivityColumnsName(table: DG.DataFrame): string | null {
  * @param {string} method Embedding method to apply.
  * @param {string} measure Distance metric.
  * @param {number} cyclesCount Number of cycles to repeat.
+ * @param {(DG.TableView | null)} view View to add scatter plot to
  * @param {(string | null)} [activityColumnName] Activity containing column to assign it to points radius.
  * @param {boolean} [zoom=false] Whether to fit view.
  * @return {Promise<DG.ScatterPlotViewer>} A viewer.
@@ -156,6 +146,7 @@ export class PeptideSimilaritySpaceWidget {
   /**
    * Creates an instance of PeptideSimilaritySpaceWidget.
    * @param {DG.Column} alignedSequencesColumn The column to get amino acid sequences from.
+   * @param {DG.TableView} view Current view
    * @memberof PeptideSimilaritySpaceWidget
    */
   constructor(alignedSequencesColumn: DG.Column, view: DG.TableView) {
