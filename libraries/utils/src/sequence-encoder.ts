@@ -146,9 +146,13 @@ export class AlignedSequenceEncoder {
     
             assert(char in this.aa2num, `Unknown char '${char}' found in sequence '${sequence}'`);
     
-            values[i] = this.aa2num[char];
+            values[i] = this.encodeLettter(char);
         }
         return values;
+    }
+
+    public encodeLettter(letter: string): number {
+        return this.aa2num[letter];
     }
 
     /**

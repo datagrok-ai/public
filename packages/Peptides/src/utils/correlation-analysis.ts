@@ -1,4 +1,5 @@
 /* Do not change these import lines. Datagrok will import API library in exactly the same manner */
+import * as ui from 'datagrok-api/ui';
 import * as DG from 'datagrok-api/dg';
 
 import {AlignedSequenceEncoder} from '@datagrok-libraries/utils/src/sequence-encoder';
@@ -23,13 +24,34 @@ export function matrix2DataFrame(matrix: Matrix): DG.DataFrame {
  * @param {DG.Column} col A column containing the sequences.
  * @return {DG.DataFrame} The resulting data frame.
  */
-function calcPositions(col: DG.Column): [DG.DataFrame, string[]] {
+export function calcPositions(col: DG.Column): [DG.DataFrame, string[]] {
   const sequences = col.toList().map((v, _) => AlignedSequenceEncoder.clean(v));
   const enc = new AlignedSequenceEncoder('WimleyWhite');
   const encSeqs = sequences.map((v) => Vector.from(enc.encode(v)));
   console.log(encSeqs);
   const positions = transposeMatrix(encSeqs);
   return [matrix2DataFrame(positions), sequences];
+}
+
+function encodeSequences(df: DG.DataFrame): DG.DataFrame {
+  const [nCols, nRows] = [df.columns.length, df.rowCount];
+  //const sequences: string[] = new Array(nRows).fill('');
+  const enc = new AlignedSequenceEncoder('WimleyWhite');
+  const positions = new Array(nCols).fill(0).map((_) => new Float32Array(nRows));
+
+  for (let i = 0; i < nCols; ++i) {
+    const col: DG.Column = df.columns.byIndex(i);
+    //let s = '';
+
+    for (let j = 0; j < nRows; ++j) {
+      const letter = col.get(j);
+      //s += col[j];
+      positions[i][j] = enc.encodeLettter(letter);
+    }
+    //sequences[i] = s;
+  }
+  const posDF = DG.DataFrame.fromColumns(positions.map((v, i) => DG.Column.fromFloat32Array(df.columns.names()[i], v)));
+  return posDF;//, sequences];
 }
 
 /**
@@ -47,7 +69,7 @@ function calcPositions(col: DG.Column): [DG.DataFrame, string[]] {
  * @param {string} [valuesName='Values'] A name for values column.
  * @return {DG.DataFrame} The resulting data frame.
  */
-function melt(df: DG.DataFrame, keysName = 'Keys', valuesName = 'Values'): DG.DataFrame {
+/*function melt(df: DG.DataFrame, keysName = 'Keys', valuesName = 'Values'): DG.DataFrame {
   let keys: string[] = [];
   const values: Float32Array = new Float32Array(df.columns.length*df.rowCount);
   let i = 0;
@@ -62,7 +84,7 @@ function melt(df: DG.DataFrame, keysName = 'Keys', valuesName = 'Values'): DG.Da
     DG.Column.fromStrings(keysName, keys),
     DG.Column.fromFloat32Array(valuesName, values),
   ]);
-}
+}*/
 
 /**
  * Formats a matrix into <category1>-<category2>-<value> format.
@@ -107,7 +129,7 @@ function createNetwork(adjMatrix: DG.DataFrame): DG.DataFrame {
  * @param {DG.DataFrame} df A data frame to process.
  * @return {DG.DataFrame} The correlation matrix.
  */
-function calcSpearmanRhoMatrix(df: DG.DataFrame): DG.DataFrame {
+/*function calcSpearmanRhoMatrix(df: DG.DataFrame): DG.DataFrame {
   const nItems = df.columns.length;
   const rho = new Array(nItems).fill(0).map((_) => new Float32Array(nItems).fill(0));
 
@@ -118,7 +140,7 @@ function calcSpearmanRhoMatrix(df: DG.DataFrame): DG.DataFrame {
     }
   }
   return matrix2DataFrame(rho);
-}
+}*/
 
 type PairGuide = {[key: string]: number};
 
@@ -134,6 +156,7 @@ function makeSequenceTemplate(pos1: number, pos2: number, sequences: string[]): 
   for (const key of Object.keys(guide)) {
     guide[key] /= nSeqs;
   }
+  console.log(guide);
   const sortableArray = Object.entries(guide);
   const sortedArray = sortableArray.sort(([, a], [, b]) => b - a); // Reverse order
   //const sortedObject = Object.fromEntries(sortedArray);
@@ -179,6 +202,10 @@ function calcKendallTauMatrix(df: DG.DataFrame, alpha: number = 0.05): DG.DataFr
   return matrix2DataFrame(tau);
 }
 
+function calcCorrelationMatrix(df: DG.DataFrame) {
+  return calcKendallTauMatrix(df);
+}
+
 function describeNetwork(positions: DG.DataFrame, network: any[]): DG.DataFrame {
   const cols = Array.from(positions.columns).map(
     (_, i) => DG.Column.fromList('string', positions.columns.byIndex(i).name, []),
@@ -188,16 +215,116 @@ function describeNetwork(positions: DG.DataFrame, network: any[]): DG.DataFrame 
   for (const [pos1, pos2, weight, pair, freq] of network) {
     //const [pos1, pos2, weight] = Array.from(r.cells).map((c) => c.value);
     const values = new Array(df.columns.length).fill('');
-    values[pos1-1] = pair[0];//(weight as number).toString();
-    values[pos2-1] = pair[1];//(weight as number).toString();
+    values[pos1-1] = (weight as number).toFixed(2);//pair[0];//(weight as number).toString();
+    values[pos2-1] = (weight as number).toFixed(2);//pair[1];//(weight as number).toString();
     df.rows.addNew(values);
     console.log([pos1, pos2, weight, pair, freq]);
   }
   return df;
 }
 
+type Weights = {[pos: number]: number};
+export type Guide = {[pos: number]: Weights};
+
+const api = <any>window;
+
+class CorrelationDescriptionViewer extends DG.Grid {
+  protected network: DG.DataFrame;
+  protected guide: Guide;
+
+  constructor(d: any, network: DG.DataFrame) {
+    super(d);
+    this.network = network;
+    this.guide = this.calcGuide();
+    //this.onCellTooltip(this.customCellTooltip);
+  }
+
+  static fromNetwork(table: { d: any; }, network: DG.DataFrame): CorrelationDescriptionViewer {
+    return new CorrelationDescriptionViewer(api.grok_Grid_Create(table.d), network);
+  }
+
+  protected calcGuide(): Guide {
+    assert(this.network.columns.length == 3);
+
+    const guide: Guide = {};
+    let [pos1Col, pos2Col, weightCol] = Array.from(this.network.columns);
+
+    pos1Col = pos1Col.getRawData();
+    pos2Col = pos2Col.getRawData();
+    weightCol = weightCol.getRawData();
+
+    function _addWeight(pos1: number, pos2: number, weight: number) {
+      if (guide[pos1] == undefined) {
+        guide[pos1] = {};
+      }
+      guide[pos1][pos2] = weight;
+    }
+
+    for (let i = 0; i < this.network.rowCount; ++i) {
+      const [pos1, pos2, weight] = [pos1Col[i], pos2Col[i], weightCol[i]];
+      _addWeight(pos1, pos2, weight);
+      _addWeight(pos2, pos1, weight);
+    }
+    console.log(guide);
+    return guide;
+  }
+
+  public customCellTooltip(cell: DG.GridCell, x: number, y: number) {
+    if (cell.isColHeader && cell.tableColumn != null) {
+      const pos1 = parseInt(cell.tableColumn.name);
+
+      const elements: HTMLElement[] = [];
+      elements.push(ui.divText(cell.tableColumn.name, {style: {fontWeight: 'bold', fontSize: 10}}));
+      elements.push(ui.divText('Found correlations with:\n'));
+
+      for (const [pos2, weight] of Object.entries(this.guide[pos1])) {
+        elements.push(ui.divText(`${pos2}: R = ${weight.toFixed(2)}\n`, {style: {color: weight > 0 ? 'red' : 'blue'}}));
+      }
+
+      ui.tooltip.show(ui.divV(elements), x, y);
+      return true;
+    }
+  }
+}
+
+function calcGuide(network: DG.DataFrame): Guide {
+  assert(network.columns.length == 3);
+
+  const guide: Guide = {};
+  let [pos1Col, pos2Col, weightCol] = Array.from(network.columns);
+
+  pos1Col = pos1Col.getRawData();
+  pos2Col = pos2Col.getRawData();
+  weightCol = weightCol.getRawData();
+
+  function _addWeight(pos1: number, pos2: number, weight: number) {
+    if (guide[pos1] == undefined) {
+      guide[pos1] = {};
+    }
+    guide[pos1][pos2] = weight;
+  }
+
+  for (let i = 0; i < network.rowCount; ++i) {
+    const [pos1, pos2, weight] = [pos1Col[i], pos2Col[i], weightCol[i]];
+    _addWeight(pos1, pos2, weight);
+    _addWeight(pos2, pos1, weight);
+  }
+  console.log(guide);
+  return guide;
+}
+
+export function correlationAnalysis(df: DG.DataFrame): Guide {
+  const posDF = encodeSequences(df);
+  const ccDF = calcCorrelationMatrix(posDF);
+  const nwDF = createNetwork(ccDF);
+  //const pairs = analyseCorrelation(nwDF, sequences);
+  //const nwdDF = describeNetwork(posDF, pairs);
+  const guide = calcGuide(nwDF);
+  return guide;
+}
+
 /**
- * Creates acorrelation plot and a box plot to perform correlation analysis.
+ * Creates a correlation plot and a box plot to perform correlation analysis.
  *
  * @export
  * @param {DG.Column} sequencesColumn A column containing amino acid sequences.
@@ -246,9 +373,12 @@ export function correlationAnalysisPlots(sequencesColumn: DG.Column): [DG.Viewer
   const pairs = analyseCorrelation(nwDF, sequences);
   const nwdDF = describeNetwork(posDF, pairs);
 
-  const caviewer = DG.Viewer.fromType(
+  /*const caviewer = DG.Viewer.fromType(
     DG.VIEWER.GRID,
-    nwdDF);
+    nwdDF,
+  );*/
+  const caviewer = CorrelationDescriptionViewer.fromNetwork(nwdDF, nwDF);
+  caviewer.onCellTooltip(caviewer.customCellTooltip.bind(caviewer));
 
   return [caviewer, hmviewer, nwviewer];
 }

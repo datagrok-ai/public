@@ -5,6 +5,7 @@ import {tTest} from '@datagrok-libraries/statistics/src/tests';
 import {fdrcorrection} from '@datagrok-libraries/statistics/src/multiple-tests';
 import {ChemPalette} from './utils/chem-palette';
 import {setAARRenderer} from './utils/cell-renderer';
+import {Guide, correlationAnalysis} from './utils/correlation-analysis';
 
 const cp = new ChemPalette('grok');
 
@@ -45,6 +46,31 @@ const groupDescription: {[key: string]: {'description': string, 'aminoAcids': st
   '-': {'description': 'Unknown Amino Acid', 'aminoAcids': ['-']},
 };
 
+let guide: Guide;
+
+function customCellTooltip(cell: DG.GridCell, x: number, y: number) {
+  if (cell.isColHeader && cell.tableColumn != null) {
+    const pos1 = parseInt(cell.tableColumn.name);
+
+    const elements: HTMLElement[] = [];
+    elements.push(ui.divText(cell.tableColumn.name, {style: {fontWeight: 'bold', fontSize: 10}}));
+    elements.push(ui.divText('Found correlations with:\n'));
+
+    for (const [pos2, weight] of Object.entries(guide[pos1])) {
+      elements.push(ui.divText(`${pos2}: R = ${weight.toFixed(2)}\n`, {style: {color: weight > 0 ? 'red' : 'blue'}}));
+    }
+
+    ui.tooltip.show(ui.divV(elements), x, y);
+    return true;
+  }
+}
+
+function customGridColumnHeader(cell: DG.GridCell) {
+  if (cell.isColHeader && cell.tableColumn != null) {
+    cell.style.element.style.textDecoration = 'underline';
+  }
+}
+
 export async function describe(
   df: DG.DataFrame,
   activityColumn: string,
@@ -60,6 +86,11 @@ export async function describe(
   const col: DG.Column = df.columns.bySemType('alignedSequence');
   [splitSeqDf, invalidIndexes] = splitAlignedPeptides(col);
   splitSeqDf.name = 'Split sequence';
+
+  guide = correlationAnalysis(splitSeqDf);
+  sourceGrid.onCellTooltip(customCellTooltip);
+  sourceGrid.onCellPrepare(customGridColumnHeader);
+
   const positionColumns = splitSeqDf.columns.names();
   const activityColumnScaled = `${activityColumn}Scaled`;
   const renderColNames: string[] = splitSeqDf.columns.names();
@@ -353,6 +384,20 @@ export async function describe(
 
   // show all the statistics in a tooltip over cell
   const onCellTooltipFunc = function(cell: DG.GridCell, x: number, y: number) {
+    if (cell.isColHeader && cell.tableColumn != null) {
+      const pos1 = parseInt(cell.tableColumn.name);
+
+      const elements: HTMLElement[] = [];
+      elements.push(ui.divText(cell.tableColumn.name, {style: {fontWeight: 'bold', fontSize: 10}}));
+      elements.push(ui.divText('Found correlations with:\n'));
+
+      for (const [pos2, weight] of Object.entries(guide[pos1])) {
+        elements.push(ui.divText(`${pos2}: R = ${weight.toFixed(2)}\n`, {style: {color: weight > 0 ? 'red' : 'blue'}}));
+      }
+
+      ui.tooltip.show(ui.divV(elements), x, y);
+      return true;
+    }
     if (
       !cell.isRowHeader &&
       !cell.isColHeader &&
