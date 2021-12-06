@@ -1,9 +1,9 @@
-//name: PmaxScript
+//name: Pmax
 //description: pMax Filtration Model
 //language: javascript
-//tags: model
+//tags: model, filtration
 //input: dataframe inputTable [Should contain columns Time (min), Vol (mL), P1 (psi), P2 (psi)]
-//input: dataframe parameters
+//input: dataframe inputParametersForReporting
 //input: double batchVolume = 100 {units: L} [Batch Volume]
 //input: double batchTime = 2 {units: hours} [Batch Time]
 //input: double targetPressure = 20 {units: psi} [Target Pressure]
@@ -12,12 +12,11 @@
 //input: double filterArea1 = 23 {units: m²; caption: A_trial Filter 1} [A_trial Filter 1]
 //input: double filterArea2 = 23 {units: m²; caption: A_trial Filter 2} [A_trial Filter 2]
 //input: double sf = 1.5 {caption: Safety Factor}
-//input: int orderOfPolynomialRegression = 3 {caption: Order Of Polynomial Regression} [Order Of Polynomial Regression]
 //meta.showInputs: true
-//output: dataframe Filter1 {viewer: Scatter Plot(x: "TP 1 (L/m2)", y: "Res. 1 (psi/LMH)", showRegressionLine: "true"); category: OUTPUT}
+//output: dataframe Filter1 {viewer: Scatter Plot(x: "TP 1 (L/m2)", y: "Res. 1 (psi/LMH)", showDataframeFormulaLines: "true"); category: OUTPUT}
 //output: dataframe t1 {category: OUTPUT}
 //output: dataframe Guessed1 {category: OUTPUT}
-//output: dataframe Filter2 {viewer: Scatter Plot(x: "TP 2 (L/m2)", y: "Res. 2 (psi/LMH)", showRegressionLine: "true"); category: OUTPUT}
+//output: dataframe Filter2 {viewer: Scatter Plot(x: "TP 2 (L/m2)", y: "Res. 2 (psi/LMH)", showDataframeFormulaLines: "true"); category: OUTPUT}
 //output: dataframe t2 {category: OUTPUT}
 //output: dataframe Guessed2 {category: OUTPUT}
 
@@ -74,6 +73,18 @@ function predictPolynomialRegression(coefficients, x) {
   return result;
 }
 
+function equasionString(xColName, yColName, coefficients) {
+  let s = '';
+  for (let [index, coefficient] of coefficients.slice(1).reverse().entries()) {
+    s += String(coefficient);
+    for (let i = 0; i < coefficients.length - index - 1; i++)
+      s += " * ${" + String(xColName) + "}";
+    s += " + ";
+  } 
+  return "${" + yColName + "} = " + s + String(coefficients[0]);
+}
+
+const orderOfPolynomialRegression = 3;
 const lengthOfSecondTable = 2985;
 const colNames1 = {
   'time': 'Time (min)', 
@@ -109,7 +120,24 @@ Filter1 = DG.DataFrame.fromColumns([df1.col(colNames1['tp1']), df1.col(colNames1
 Filter2 = DG.DataFrame.fromColumns([df1.col(colNames1['tp2']), df1.col(colNames1['res2'])]);
 const coefficients1 = polynomialRegressionCoefficients(df1.col(colNames1['tp1']), df1.col(colNames1['res1']), orderOfPolynomialRegression);    
 const coefficients2 = polynomialRegressionCoefficients(df1.col(colNames1['tp2']), df1.col(colNames1['res2']), orderOfPolynomialRegression);
+// alert(equasionString(colNames1['tp1'], colNames1['res1'], coefficients1))
+// alert(equasionString(colNames1['tp2'], colNames1['res2'], coefficients2))
 
+Filter1.meta.addFormulaLine({
+  title: 'Parabola',
+  equation: equasionString(colNames1['tp1'], colNames1['res1'], coefficients1),
+  zindex: -30,
+  color: '#ff0000',
+  width: 2
+});
+
+Filter2.meta.addFormulaLine({
+  title: 'Parabola',
+  equation: equasionString(colNames1['tp2'], colNames1['res2'], coefficients2),
+  zindex: -30,
+  color: '#ff0000',
+  width: 2
+});
 
 const df2 = DG.DataFrame.create(lengthOfSecondTable);
 df2.columns.addNewFloat(colNames2['area']).init((i) => (i > 0) ? batchVolume / i : 0);
