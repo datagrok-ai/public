@@ -20,6 +20,8 @@ import {getDescriptorsSingle} from './descriptors/descriptors_calculation';
 import {getDescriptors} from './descriptors/descriptors_calculation';
 import {getDescriptorsApp} from './descriptors/descriptors_calculation';
 import {findMCS} from './panels/find-mcs';
+import {addInchis} from './panels/inchi';
+import {addInchiKeys} from './panels/inchi';
 import * as chemCommonRdKit from './chem_common_rdkit';
 import {rGroupAnalysis} from './analysis/r_group';
 import {chemLock, chemUnlock} from './chem_common';
@@ -302,7 +304,8 @@ export async function chemSimilaritySearch() {
 
 //#region Molecule column property panel
 
-//name: Chem | Descriptors...
+//name: Chem | Descriptors Port...
+//friendly-name: Chem | Descriptors Port...
 //tags: panel, chem
 //input: column smiles { semType: Molecule }
 //output: string result
@@ -311,20 +314,36 @@ export async function descriptorsPanel(smiles: DG.Column) {
   getDescriptors(smiles, table);
 }
 
-//name: Chem | R-Groups Analysis
-//friendly-name: Chem | R-Groups Analysis
+//name: Chem | R-Groups Analysis Port
+//friendly-name: Chem | R-Groups Analysis Port
 //tags: panel, chem
 //input: column col {semType: Molecule}
 export function rGroupsAnalysisPanel(col: DG.Column) {
   rGroupAnalysis(col);
 }
 
-//name: Chem | Find MCS
-//friendly-name: Chem | Find MCS
+//name: Chem | Find MCS Port
+//friendly-name: Chem | Find MCS Port
 //tags: panel, chem
 //input: column col {semType: Molecule}
 export function findMCSpanel(col: DG.Column) {
   findMCS(col);
+}
+
+//name: Chem | To InchI Port
+//friendly-name: Chem | To InchI Port
+//tags: panel, chem
+//input: column col {semType: Molecule}
+export function addInchisPanel(col: DG.Column) {
+  addInchis(col);
+}
+
+//name: Chem | To InchI Keys Port
+//friendly-name: Chem | To InchI Keys Port
+//tags: panel, chem
+//input: column col {semType: Molecule}
+export function addInchisKeysPanel(col: DG.Column) {
+  addInchiKeys(col);
 }
 
 //name: RDKit Settings
