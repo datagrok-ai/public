@@ -14,18 +14,18 @@ It typically serves a targeted need around a particular problem or area. For exa
 * integration applications, where data from several sources is interpreted and visualized in a coherent way
 
 Datagrok applications are developed in JavaScript / TypeScript using our rich
-[Datagrok JavaScript API](develop/js-api.md), with parts in scripting languages
+[Datagrok JavaScript API](js-api.md), with parts in scripting languages
 we support, such as R or Python, by calling [Datagrok scripts](scripting.md).
 
-Application is typically comprised of many [UI features](develop/ui.md) of the platform,
-including [input controls](develop/ui.md), [accordion panes](develop/ui.md#accordions),
-[grid viewers](develop/ui.md#grid), [scatter plots](visualize/viewers/scatter-plot.md),
+Application is typically comprised of many [UI features](ui.md) of the platform,
+including [input controls](ui.md), [accordion panes](ui.md#accordions),
+[grid viewers](ui.md#grid), [scatter plots](visualize/viewers/scatter-plot.md),
 [line charts](visualize/viewers/line-chart.md), and many other [viewers](visualize/viewers);
 functional features, such as these implemented in Python and R [scripts](compute/scripting.md),
 accessing external web services in JavaScript via
 [OpenAPI specs]() and [REST API](), and many others.
 
-One [Datagrok package](../develop/develop.md#packages) may contain zero, one or several applications.
+One [Datagrok package](../develop.md#packages) may contain zero, one or several applications.
 
 # Launching applications
 
@@ -39,7 +39,7 @@ if there are several. You'd learn the right URL first time you run the app from 
 
 There's a handful of concepts and patterns in Datagrok especially useful
 for building applications. The application building story is curated in
-[this guide](develop/how-to/build-an-app.md), which we highly recommend prior
+[this guide](how-to/build-an-app.md), which we highly recommend prior
 to starting your first Datagrok application development.
 
 See also:

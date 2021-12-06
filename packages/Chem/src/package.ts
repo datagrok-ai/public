@@ -23,6 +23,7 @@ import * as chemCommonRdKit from './chem_common_rdkit';
 import {rGroupAnalysis} from './analysis/r_group';
 import {chemLock, chemUnlock} from './chem_common';
 import {MoleculeViewer} from './chem_similarity_search';
+import { identifiersWidget } from './widgets/identifiers';
 
 const getRdKitModuleLocal = chemCommonRdKit.getRdKitModule;
 const initRdKitService = chemCommonRdKit.initRdKitService;
@@ -413,6 +414,14 @@ export async function structure3d(smiles: string) {
 //output: widget result
 export function toxicity(smiles: string) {
   return smiles ? toxicityWidget(smiles) : new DG.Widget(ui.divText('SMILES is empty'));
+}
+
+//name: Identifiers
+//tags: panel, chem, widgets
+//input: string smiles { semType: Molecule }
+//output: widget result
+export async function identifiers(smiles: string) {
+  return smiles ? await identifiersWidget(smiles) : new DG.Widget(ui.divText('SMILES is empty'));
 }
 
 //#endregion

@@ -10,10 +10,12 @@ export class MolecularLiabilityBrowser {
 
   mlbTable: DG.DataFrame;
   vids: string[];
+  vidsObsPTMs: string[];
 
   mlbView: DG.TableView;
   vIdInput: DG.InputBase;
   filterIcon: HTMLElement;
+  filterIcon2: HTMLElement;
   queryIcon: HTMLElement;
   hideShowIcon: HTMLElement;
   hideShowIcon2: HTMLElement;
@@ -27,13 +29,6 @@ export class MolecularLiabilityBrowser {
       return;
     }
 
-    if (!this.twinPviewer) {
-      this.twinPviewer = new TwinPviewer();
-    } else {
-      this.twinPviewer.reset(this.mlbView);
-    }
-
-
     this.mlbView.path = `/Table/${this.vIdInput.value}`;
     //hideShowIcon.classList.value = 'grok-icon fal fa-eye';
     let pi = DG.TaskBarProgressIndicator.create('Creating NGL view');
@@ -43,6 +38,12 @@ export class MolecularLiabilityBrowser {
     //let path = _package.webRoot + 'examples/example.pdb';
     let pdbStr: string = require("./examples/examplePDB.json").pdb;
     let jsonN = require("./examples/exampleNums.json");
+
+    let jsonStrObsPtm = null;
+    if(this.vidsObsPTMs.includes(this.vIdInput.value)){
+      jsonStrObsPtm = require("./examples/exampleOptm.json");
+    }
+
 
     //let jsonStr = JSON.parse((await grok.functions.call('MolecularLiabilityBrowser:getJsonByVid', {"vid" : vid})).columns[0].get(0));
     //let pdbStr = (await grok.functions.call('MolecularLiabilityBrowser:getPdbByVid', {"vid" : vid})).columns[0].get(0);
@@ -63,7 +64,15 @@ export class MolecularLiabilityBrowser {
     jsonStr["map_H"] = hNumbering;
     jsonStr["map_L"] = lNumbering;
 
-    this.twinPviewer.twin(this.mlbView, jsonStr, pdbStr);
+    if (!this.twinPviewer) {
+      this.twinPviewer = new TwinPviewer();
+      this.twinPviewer.init(jsonStr, pdbStr, jsonStrObsPtm);
+    } else {
+      this.twinPviewer.reset(jsonStr, pdbStr, jsonStrObsPtm);
+    }
+    this.twinPviewer.twin(this.mlbView);
+    this.twinPviewer.open(this.mlbView);
+
 
     pi.close();
   };
@@ -192,6 +201,14 @@ export class MolecularLiabilityBrowser {
     }), 'filter data for NGL viewer');
   }
 
+  private setFilterIcon2 = (): void => {
+    this.filterIcon2 = ui.tooltip.bind(ui.iconFA('filter', () => {
+      let a = this.mlbTable;
+      a.rows.select((row) => this.vidsObsPTMs.includes(row["v id"].toString()));
+      grok.functions.call('CmdSelectionToFilter');
+    }), 'filter data with observed PTMs');
+  }
+
   private setQueryIcon = (): void => {
     this.queryIcon = ui.tooltip.bind(ui.iconFA('layer-group', () => {
       //get all possible IDs
@@ -217,7 +234,7 @@ export class MolecularLiabilityBrowser {
           }
 
           this.mlbTable.rows.filter((row) => {
-            let additionalIds = row.get('gdb id mappings').replaceAll(" ", "").split(",");
+            let additionalIds = row["gdb id mappings"].replaceAll(" ", "").split(",");
             let idsIntersect = false;
             for (let i = 0; i < additionalIds.length; i++) {
               if (query.includes(additionalIds[i])) {
@@ -244,12 +261,12 @@ export class MolecularLiabilityBrowser {
     this.hideShowIcon.classList.value = 'grok-icon fal fa-eye';
 
     grok.events.onCustomEvent("closeAllDock").subscribe((v) => {
-      this.twinPviewer.reset(this.mlbView);
+      this.twinPviewer.close(this.mlbView);
       this.hideShowIcon.classList.value = 'grok-icon fal fa-eye-slash';
     });
 
     grok.events.onCustomEvent("showAllDock").subscribe((v) => {
-      this.changeVid();
+      this.twinPviewer.open(this.mlbView);
       this.hideShowIcon.classList.value = 'grok-icon fal fa-eye';
     });
   }
@@ -282,19 +299,21 @@ export class MolecularLiabilityBrowser {
       column.name = column.name.replaceAll("_", " ");
     // let vidsRaw = (await grok.functions.call('MolecularLiabilityBrowser:getVids'));
     this.vids = ["VR000000008", "VR000000043", "VR000000044"];
+    this.vidsObsPTMs = ["VR000000044"];
     ////////////////////////////////////////////////////
 
-    this.compostionPviewer = new CompostionPviewer();
+    //this.compostionPviewer = new CompostionPviewer();
 
     this.setView();
     this.setPropertiesFilters();
     this.setVidInput();
     this.setFilterIcon();
+    this.setFilterIcon2();
     this.setQueryIcon();
     this.setHideShowIcon();
     this.setHideShowIcon2();
     
-    this.mlbView.setRibbonPanels([[this.vIdInput.root], [this.filterIcon, this.queryIcon, this.hideShowIcon, this.hideShowIcon2]]);
+    this.mlbView.setRibbonPanels([[this.vIdInput.root], [this.filterIcon, this.filterIcon2, this.queryIcon, this.hideShowIcon, this.hideShowIcon2]]);
 
     if (urlVid != null)
       this.vIdInput.value = urlVid;

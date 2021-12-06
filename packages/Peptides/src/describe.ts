@@ -1,5 +1,3 @@
-// eslint-disable-next-line no-unused-vars
-import * as grok from 'datagrok-api/grok';
 import * as ui from 'datagrok-api/ui';
 import * as DG from 'datagrok-api/dg';
 import {splitAlignedPeptides} from './utils/split-aligned';
@@ -240,11 +238,9 @@ export async function describe(
   aarList.sort((first, second) => getWeight(second) - getWeight(first));
 
   matrixDf.getCol(aminoAcidResidue).setCategoryOrder(aarList);
-  //const sequenceDf = segregateBestAtAllCateg(statsDf, twoColorMode);
 
   // SAR vertical table (naive, choose best Mean difference from pVals <= 0.01)
   // TODO: aquire ALL of the positions
-
   let sequenceDf = statsDf.groupBy(['Mean difference', aminoAcidResidue, positionColName, 'Count', 'Ratio', 'pValue'])
     .where('pValue <= 0.1')
     .aggregate();
@@ -297,19 +293,6 @@ export async function describe(
       args.preventDefault();
       return;
     }
-
-    // if (args.cell.isColHeader) {
-    //   if (args.cell.gridColumn.name != aminoAcidResidue) {
-    //     const textSize = args.g.measureText(args.cell.gridColumn.name);
-    //     args.g.fillStyle = '#4b4b4a';
-    //     args.g.fillText(
-    //       args.cell.gridColumn.name,
-    //       args.bounds.x + (args.bounds.width - textSize.width) / 2,
-    //       args.bounds.y + (textSize.actualBoundingBoxAscent + textSize.actualBoundingBoxDescent),
-    //     );
-    //   }
-    //   args.preventDefault();
-    // }
 
     if (
       args.cell.isTableCell &&
@@ -404,10 +387,10 @@ export async function describe(
     }
     if (
       !cell.isColHeader &&
-        cell.tableColumn !== null &&
-        cell.tableColumn.name == aminoAcidResidue &&
-        cell.cell.value !== null &&
-        cell.tableRowIndex !== null
+      cell.tableColumn !== null &&
+      cell.tableColumn.name == aminoAcidResidue &&
+      cell.cell.value !== null &&
+      cell.tableRowIndex !== null
     ) {
       if (grouping) {
         const currentGroup = groupDescription[cell.cell.value];

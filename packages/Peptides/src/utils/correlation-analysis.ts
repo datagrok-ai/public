@@ -1,6 +1,4 @@
 /* Do not change these import lines. Datagrok will import API library in exactly the same manner */
-//import * as grok from 'datagrok-api/grok';
-//import * as ui from 'datagrok-api/ui';
 import * as DG from 'datagrok-api/dg';
 
 import {AlignedSequenceEncoder} from '@datagrok-libraries/utils/src/sequence-encoder';
@@ -109,7 +107,6 @@ function createNetwork(adjMatrix: DG.DataFrame): DG.DataFrame {
  * @param {DG.DataFrame} df A data frame to process.
  * @return {DG.DataFrame} The correlation matrix.
  */
-// eslint-disable-next-line no-unused-vars
 function calcSpearmanRhoMatrix(df: DG.DataFrame): DG.DataFrame {
   const nItems = df.columns.length;
   const rho = new Array(nItems).fill(0).map((_) => new Float32Array(nItems).fill(0));
