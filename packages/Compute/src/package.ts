@@ -9,6 +9,7 @@ import {_functionParametersGrid} from './function-views/function-parameters-grid
 import {ModelCatalogView} from './model-catalog-view';
 import wu from 'wu';
 import {_functionEditor} from './function-editor/function-editor';
+import {OutliersSelectionViewer} from './outliers-selection/outliers-selection-viewer';
 
 let initCompleted: boolean = false;
 export const _package = new DG.Package();
