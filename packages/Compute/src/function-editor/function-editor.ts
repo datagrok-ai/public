@@ -418,7 +418,7 @@ export function _functionEditor(functionCode: string) {
   const area = ui.textInput('', '');
   const myCM = CodeMirror.fromTextArea((area.input as HTMLTextAreaElement));
 
-  const previewDiv = ui.divV([ui.h1('Code preview'), area]);
+  const previewDiv = ui.panel([ui.divV([ui.h1('Code preview'), area])]);
   previewDiv.style.flexGrow = '1';
 
   propsForm = functionPropsForm();
