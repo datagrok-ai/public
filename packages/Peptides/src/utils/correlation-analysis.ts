@@ -33,14 +33,14 @@ export function calcPositions(col: DG.Column): [DG.DataFrame, string[]] {
   return [matrix2DataFrame(positions), sequences];
 }
 
-function encodeSequences(df: DG.DataFrame): DG.DataFrame {
-  const [nCols, nRows] = [df.columns.length, df.rowCount];
+function encodeSequences(df: DG.DataFrame, positionColumns?: string[]): DG.DataFrame {
+  const [nCols, nRows] = [positionColumns ? positionColumns.length : df.columns.length, df.rowCount];
   //const sequences: string[] = new Array(nRows).fill('');
   const enc = new AlignedSequenceEncoder('WimleyWhite');
   const positions = new Array(nCols).fill(0).map((_) => new Float32Array(nRows));
 
   for (let i = 0; i < nCols; ++i) {
-    const col: DG.Column = df.columns.byIndex(i);
+    const col: DG.Column = positionColumns ? df.getCol(positionColumns[i]) : df.columns.byIndex(i);
     //let s = '';
 
     for (let j = 0; j < nRows; ++j) {
@@ -313,8 +313,8 @@ function calcGuide(network: DG.DataFrame): Guide {
   return guide;
 }
 
-export function correlationAnalysis(df: DG.DataFrame): Guide {
-  const posDF = encodeSequences(df);
+export function correlationAnalysis(df: DG.DataFrame, positionColumns?: string[]): Guide {
+  const posDF = encodeSequences(df, positionColumns);
   const ccDF = calcCorrelationMatrix(posDF);
   const nwDF = createNetwork(ccDF);
   //const pairs = analyseCorrelation(nwDF, sequences);
@@ -381,4 +381,59 @@ export function correlationAnalysisPlots(sequencesColumn: DG.Column): [DG.Viewer
   caviewer.onCellTooltip(caviewer.customCellTooltip.bind(caviewer));
 
   return [caviewer, hmviewer, nwviewer];
+}
+
+export class CorrelationAnalysisVisualizer {
+  protected guide: Guide;
+  protected highlightedColumns: number[];
+  protected grid: DG.Grid;
+  protected positions: string[];
+
+  constructor(grid: DG.Grid, positionColumns: string[]) {
+    this.grid = grid;
+    this.positions = positionColumns;
+
+    const df = this.grid.dataFrame;
+
+    if (df) {
+      this.guide = correlationAnalysis(df, this.positions);
+      this.highlightedColumns = Object.keys(this.guide).map((v) => parseInt(v));
+    } else {
+      throw new Error('Dataframe was not found in the grid.');
+    }
+  }
+
+  public getTooltipElements(column: DG.Column, positions: string[]): HTMLElement[] {
+    const name = column.name;
+    const pos1 = parseInt(name);
+
+    if (this.highlightedColumns.includes(pos1)) {
+      const padLen = Math.round(Math.log10(positions.length))+1;
+
+      const elements: HTMLElement[] = [];
+      elements.push(ui.divText(name, {style: {fontWeight: 'bold', fontSize: 10}}));
+      elements.push(ui.divText('Found correlations with:\n'));
+
+      for (const [pos2, weight] of Object.entries(this.guide[pos1])) {
+        const w = (weight as number);
+        const style = {style: {color: w > 0 ? 'red' : 'blue'}};
+        elements.push(ui.divText(`${pos2.padStart(padLen, '0')}: R = ${w.toFixed(2)}\n`, style));
+      }
+
+      return elements;
+    }
+    return [];
+  }
+
+  public customGridColumnHeader(args: DG.GridCellRenderArgs) {
+    const cell = args.cell;
+
+    assert(cell.isColHeader);
+    //console.log('customGridColumnHeader');
+
+    if (cell.tableColumn && this.highlightedColumns.includes(parseInt(cell.tableColumn.name))) {
+      //console.log(`onCellPrepare: set background for ${cell.tableColumn.name}`);
+      cell.style.backColor = DG.Color.lightBlue;
+    }
+  }
 }
