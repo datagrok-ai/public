@@ -47,9 +47,10 @@ const groupDescription: {[key: string]: {'description': string, 'aminoAcids': st
 };
 
 let guide: Guide;
+let highlightedColumns: number[];
 
 function customCellTooltip(cell: DG.GridCell, x: number, y: number) {
-  if (cell.isColHeader && cell.tableColumn != null) {
+  if (cell.isColHeader && cell.tableColumn != null && cell.tableColumn.name) {
     const pos1 = parseInt(cell.tableColumn.name);
 
     const elements: HTMLElement[] = [];
@@ -65,11 +66,13 @@ function customCellTooltip(cell: DG.GridCell, x: number, y: number) {
   }
 }
 
-function customGridColumnHeader(cell: DG.GridCell) {
+/*function customGridColumnHeader(cell: DG.GridCell) {
   if (cell.isColHeader && cell.tableColumn != null) {
-    cell.style.element.style.textDecoration = 'underline';
+    if (highlightedColumns.includes(parseInt(cell.tableColumn.name))) {
+      cell.style.backColor = 0xff1f77b4;
+    }
   }
-}
+}*/
 
 export async function describe(
   df: DG.DataFrame,
@@ -88,8 +91,9 @@ export async function describe(
   splitSeqDf.name = 'Split sequence';
 
   guide = correlationAnalysis(splitSeqDf);
+  highlightedColumns = Object.keys(guide).map((v) => parseInt(v));
+  console.log(highlightedColumns);
   sourceGrid.onCellTooltip(customCellTooltip);
-  sourceGrid.onCellPrepare(customGridColumnHeader);
 
   const positionColumns = splitSeqDf.columns.names();
   const activityColumnScaled = `${activityColumn}Scaled`;
@@ -450,7 +454,13 @@ export async function describe(
   SARgrid.onCellTooltip(onCellTooltipFunc);
   SARVgrid.onCellTooltip(onCellTooltipFunc);
 
-  sourceGrid.onCellPrepare((cell) => {
+  sourceGrid.onCellPrepare((cell: DG.GridCell) => {
+    if (cell.isColHeader && cell.tableColumn != null && cell.tableColumn.name) {
+      if (highlightedColumns.includes(parseInt(cell.tableColumn.name))) {
+        console.log(`onCellPrepare: set background for ${cell.tableColumn.name}`);
+        cell.style.backColor = DG.Color.lightBlue;
+      }
+    }
     const currentRowIndex = cell.tableRowIndex;
     if (currentRowIndex && invalidIndexes.includes(currentRowIndex) && !cell.isRowHeader) {
       cell.style.backColor = DG.Color.lightLightGray;
