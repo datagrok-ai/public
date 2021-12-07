@@ -241,13 +241,16 @@ export class OutliersSelectionViewer extends DG.JsViewer {
     updateGroupsTable();
     resetSelectedBtn.classList.add('disabled');
 
+    const info = ui.info(
+      ui.div([
+        ui.p('Hold the “SHIFT” key and start to draw a freehand selection on the plot area'),
+      ], {style: {'white-space': 'pre-wrap'}}),
+    );
+    info.style.marginBottom = '0px';
+
     this.root.replaceWith(
       ui.divV([
-        ui.info(
-          ui.div([
-            ui.p('Hold the “SHIFT” key and start to draw a freehand selection on the plot area'),
-          ], {style: {'white-space': 'pre-wrap'}}),
-        ),
+        info,
         ui.divV([
           ui.divH([
             resetSelectedBtn, resetAllBtn, autoOutlierGroupBtn,
