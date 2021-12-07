@@ -95,6 +95,75 @@ const functionParamsLabels = (key: FUNC_PARAM_FIELDS) => {
   }
 };
 
+enum COMMON_TAG_NAME {
+  VALIDATORS = 'validators',
+  CAPTION = 'caption',
+  POSTFIX = 'postfix',
+  UNITS = 'units'
+}
+
+enum OPTIONAL_TAG_NAME {
+  COLUMNS = 'columns',
+  CATEGORICAL = 'categorical',
+  TYPE = 'type',
+  FORMAT = 'format',
+  ALLOW_NULLS = 'allowNulls',
+  ACTION = 'action',
+  CHOICES = 'choices',
+  SUGGESTIONS = 'suggestions',
+  SEM_TYPE = 'semType'
+}
+
+type DF_TAG_NAME = COMMON_TAG_NAME | OPTIONAL_TAG_NAME.COLUMNS | OPTIONAL_TAG_NAME.CATEGORICAL;
+type COLUMN_TAG_NAME = COMMON_TAG_NAME |
+                        OPTIONAL_TAG_NAME.TYPE | OPTIONAL_TAG_NAME.FORMAT |
+                        OPTIONAL_TAG_NAME.ALLOW_NULLS | OPTIONAL_TAG_NAME.ACTION | OPTIONAL_TAG_NAME.SEM_TYPE
+
+type STRING_TAG_NAME = COMMON_TAG_NAME |
+                        OPTIONAL_TAG_NAME.CHOICES | OPTIONAL_TAG_NAME.SUGGESTIONS
+
+const DF_TAG_NAMES = [...Object.values(COMMON_TAG_NAME), OPTIONAL_TAG_NAME.COLUMNS, OPTIONAL_TAG_NAME.CATEGORICAL];
+const COLUMN_TAG_NAMES = [...Object.values(COMMON_TAG_NAME), OPTIONAL_TAG_NAME.TYPE, OPTIONAL_TAG_NAME.FORMAT,
+  OPTIONAL_TAG_NAME.ALLOW_NULLS, OPTIONAL_TAG_NAME.ACTION, OPTIONAL_TAG_NAME.SEM_TYPE];
+const STRING_TAG_NAMES = [...Object.values(COMMON_TAG_NAME), OPTIONAL_TAG_NAME.CHOICES, OPTIONAL_TAG_NAME.SUGGESTIONS];
+
+type FuncParamBase = {
+  direction: DIRECTION,
+  name?: string,
+  defaultValue?: string,
+  description?: string
+}
+
+type FuncParam =
+    FuncParamBase & {
+  type: DG.TYPE.BOOL | DG.TYPE.DATE_TIME | DG.TYPE.FLOAT | DG.TYPE.GRAPHICS | DG.TYPE.INT
+  options?: {tag: COMMON_TAG_NAME, value: string}[]
+} | FuncParamBase & {
+  type: DG.TYPE.DATA_FRAME,
+  options?: {tag: DF_TAG_NAME, value: string}[]
+} | FuncParamBase & {
+  type: DG.TYPE.COLUMN_LIST | DG.TYPE.COLUMN,
+  options?: {tag: COLUMN_TAG_NAME, value: string}[]
+} | FuncParamBase & {
+  type: DG.TYPE.STRING
+  options?: {tag: STRING_TAG_NAME, value: string}[]
+}
+
+const generateParamLine = (param: DG.Property, direction: string) => {
+  const optionTags = `{${
+    COLUMN_TAG_NAMES
+      .map((tag) => {
+        console.log(param.name, tag, param.options(), (param.options() as any)[tag]);
+        return {tag: tag, val: (param.options() as any)[tag]};
+      })
+      .filter((value) => !!value.val)
+      .map(({tag, val}) => `${tag}:${val}`)
+      .join('; ')
+  }}`;
+  const result =`#${direction}: ${param.propertyType} ${param.name || ''} ${param.defaultValue ? `= ${param.defaultValue}` : ''} ${optionTags} ${param.description ? ` [${param.description}]` : ''}\n`;
+  return result;
+};
+
 export function _functionEditor(functionCode: string) {
   const inputScript = DG.Script.create(functionCode);
 
@@ -276,14 +345,9 @@ export function _functionEditor(functionCode: string) {
       return ui.div(result);
     });
 
-    acc.addPane('Connections', ()=> {
+    acc.addPane('Tags', ()=> {
       return ui.div();
     });
-
-    acc.addPane('Viewers', ()=> {
-      return ui.div();
-    });
-
 
     grok.shell.o = ui.divV([ui.h1(`Param: ${paramName}`), acc.root]);
   };
@@ -351,7 +415,7 @@ export function _functionEditor(functionCode: string) {
   );
 
   const area = ui.textInput('', '');
-  const myCM = CodeMirror.fromTextArea((area.input as HTMLTextAreaElement), {});
+  const myCM = CodeMirror.fromTextArea((area.input as HTMLTextAreaElement));
 
   const previewDiv = ui.divV([ui.h1('Code preview'), area]);
   previewDiv.style.flexGrow = '1';
@@ -429,10 +493,10 @@ export function _functionEditor(functionCode: string) {
       if (propValue) result += `#${functionPropsCode(propField as keyof FuncPropsState)}: ${propValue}\n`;
     });
     functionInputParamsCopy.map((param) => {
-      result += `#input: ${param.propertyType} ${param.name}\n`;
+      result += generateParamLine(param, DIRECTION.INPUT);
     });
     functionOutputParamsCopy.map((param) => {
-      result += `#output: ${param.propertyType} ${param.name}\n`;
+      result += generateParamLine(param, DIRECTION.OUTPUT);
     });
     myCM.setValue(result);
   };

@@ -71,13 +71,17 @@ export function functionEditor() {
   #language: python
   #sample: chem/smiles_coordinates.csv
   #tags: demo, chem, rdkit
-  #input: dataframe data [Input data table]
-  #input: column smiles {type:categorical, semType: Molecule} [Molecules, in SMILES format]
-  #input: int components = 2 [Number of components]
-  #input: int minClusterSize = 3 [Minimum cluster size]
-  #output: graphics spanningTree
-  #output: graphics linkageTree
-  #output: graphics chemSpace
+  #input: dataframe t1 {columns:numerical} [first input data table]
+  #input: dataframe t2 {columns:numerical} [second input data table]
+  #input: column x {type:numerical; table:t1} [x axis column name]
+  #input: column y {type:numerical} [y axis column name]
+  #input: column date {type:datetime; format:mm/dd/yyyy} [date column name]
+  #input: column_list numdata {type:numerical; table:t1} [numerical columns names]
+  #input: int numcomp = 2 {range:2-7} [number of components]
+  #input: bool center = true [number of components]
+  #input: string type = high {choices: ["high", "low"]} [type of filter]
+  #output: dataframe result {action:join(t1)} [pca components]
+  #output: graphics scatter [scatter plot]
   
   import numba
   import hdbscan
