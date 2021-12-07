@@ -8,7 +8,7 @@ import { getRdKitModule } from '../chem_common_rdkit';
  * @export
  * @param {DG.Column} col column with smiles.
  */
-export async function addInchis(col: DG.Column): Promise<void>{
+export function addInchis(col: DG.Column): void{
   let pi = DG.TaskBarProgressIndicator.create('Getting Inchi');
   const rdKitModule = getRdKitModule();
   let inchis = new Array(col.length);
@@ -26,7 +26,7 @@ export async function addInchis(col: DG.Column): Promise<void>{
  * @export
  * @param {DG.Column} col column with smiles.
  */
- export async function addInchiKeys(col: DG.Column): Promise<void>{
+ export function addInchiKeys(col: DG.Column): void{
   let pi = DG.TaskBarProgressIndicator.create('Getting Inchi Keys');
   const rdKitModule = getRdKitModule();
   let inchiKeys = new Array(col.length);
