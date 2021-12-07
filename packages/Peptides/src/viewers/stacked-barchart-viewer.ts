@@ -5,6 +5,8 @@ import {ChemPalette} from '../utils/chem-palette';
 import * as rxjs from 'rxjs';
 const cp = new ChemPalette('grok');
 
+import {CorrelationAnalysisVisualizer} from '../utils/correlation-analysis';
+
 //TODO: the function should not accept promise. Await the parameters where it is used
 export function addViewerToHeader(grid: DG.Grid, viewer: Promise<DG.Widget>) {
   viewer.then((viewer) => {
@@ -32,6 +34,8 @@ export function addViewerToHeader(grid: DG.Grid, viewer: Promise<DG.Widget>) {
       barchart.unhighlight();
     });
 
+    const corrViz = new CorrelationAnalysisVisualizer(grid, barchart.aminoColumnNames);
+
     barchart.tableCanvas = grid.canvas;
     grid.setOptions({'colHeaderHeight': 200});
     grid.onCellTooltip((cell, x, y) => {
@@ -42,7 +46,10 @@ export function addViewerToHeader(grid: DG.Grid, viewer: Promise<DG.Widget>) {
             return true;
           } else {
             if (barchart.highlighted) {
-              ui.tooltip.show(ui.divV([ui.divText(barchart.highlighted.aaName)]), x, y);
+              let elements: HTMLElement[] = [];
+              elements = elements.concat([ui.divText(barchart.highlighted.aaName)]);
+              elements = elements.concat(corrViz.getTooltipElements(cell.tableColumn, barchart.aminoColumnNames));
+              ui.tooltip.show(ui.divV(elements), x, y);
             }
             return true;
           }
@@ -54,6 +61,7 @@ export function addViewerToHeader(grid: DG.Grid, viewer: Promise<DG.Widget>) {
       args.g.beginPath();
       args.g.rect(args.bounds.x, args.bounds.y, args.bounds.width, args.bounds.height);
       args.g.clip();
+
       if (args.cell.isColHeader && barchart.aminoColumnNames.includes(args.cell.gridColumn.name)) {
         barchart.renderBarToCanvas(
           args.g,
@@ -64,6 +72,7 @@ export function addViewerToHeader(grid: DG.Grid, viewer: Promise<DG.Widget>) {
           args.bounds.height,
         );
         args.preventDefault();
+        //corrViz.customGridColumnHeader(args);
       }
       args.g.restore();
     });
