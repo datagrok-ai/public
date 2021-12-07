@@ -21,42 +21,49 @@
 
 volume = vbatch;
 function gaussianElimination(input, orderOfPolynomialRegression) {
-  const n = input.length - 1, coefficients = [orderOfPolynomialRegression];
+  const n = input.length - 1; const coefficients = [orderOfPolynomialRegression];
   for (let i = 0; i < n; i++) {
     let maxrow = i;
-    for (let j = i + 1; j < n; j++)
-      if (Math.abs(input[i][j]) > Math.abs(input[i][maxrow]))
+    for (let j = i + 1; j < n; j++) {
+      if (Math.abs(input[i][j]) > Math.abs(input[i][maxrow])) {
         maxrow = j;
+      }
+    }
     for (let k = i; k < n + 1; k++) {
       const tmp = input[k][i];
       input[k][i] = input[k][maxrow];
       input[k][maxrow] = tmp;
     }
-    for (let j = i + 1; j < n; j++)
-      for (let k = n; k >= i; k--)
+    for (let j = i + 1; j < n; j++) {
+      for (let k = n; k >= i; k--) {
         input[k][j] -= (input[k][i] * input[i][j]) / input[i][i];
+      }
+    }
   }
   for (let j = n - 1; j >= 0; j--) {
     let total = 0;
-    for (let k = j + 1; k < n; k++)
+    for (let k = j + 1; k < n; k++) {
       total += input[k][j] * coefficients[k];
+    }
     coefficients[j] = (input[n][j] - total) / input[j][j];
   }
   return coefficients;
 }
 
 function polynomialRegressionCoefficients(xCol, yCol, orderOfPolynomialRegression) {
-  const lhs = [], rhs = [], len = xCol.length, k = orderOfPolynomialRegression + 1;
-  let a = 0, b = 0;
+  const lhs = []; const rhs = []; const len = xCol.length; const k = orderOfPolynomialRegression + 1;
+  let a = 0; let b = 0;
   for (let i = 0; i < k; i++) {
-    for (let l = 0; l < len; l++)
+    for (let l = 0; l < len; l++) {
       a += (xCol.get(l) ** i) * yCol.get(l);
+    }
     lhs.push(a);
     a = 0;
     const c = [];
     for (let j = 0; j < k; j++) {
-      for (let l = 0; l < len; l++) 
+      for (let l = 0; l < len; l++) {
         b += xCol.get(l) ** (i + j);
+      }
       c.push(b);
       b = 0;
     }
@@ -68,41 +75,41 @@ function polynomialRegressionCoefficients(xCol, yCol, orderOfPolynomialRegressio
 
 const orderOfPolynomialRegression = 2;
 const area = 0.00035;
-const isOutlierCol = inputTable.col("isOutlier");
-let timeMin = [];
-let vol = [];
+const isOutlierCol = inputTable.col('isOutlier');
+const timeMin = [];
+const vol = [];
 for (let i = 0; i < isOutlierCol.length; i++) {
   if (isOutlierCol.get(i) == false) {
-    timeMin.push(inputTable.col("time (min)").get(i));
-    vol.push(inputTable.col("filtrate volume (mL)").get(i));
+    timeMin.push(inputTable.col('time (min)').get(i));
+    vol.push(inputTable.col('filtrate volume (mL)').get(i));
   }
 }
 dfWithoutOutliers = DG.DataFrame.fromColumns([
-  DG.Column.fromList('double', "time (min)", timeMin),
-  DG.Column.fromList('double', "filtrate volume (mL)", vol)
+  DG.Column.fromList('double', 'time (min)', timeMin),
+  DG.Column.fromList('double', 'filtrate volume (mL)', vol),
 ]);
-const timeInMinutes = dfWithoutOutliers.col("time (min)");
-const volumeInMilliliters = dfWithoutOutliers.col("filtrate volume (mL)");
+const timeInMinutes = dfWithoutOutliers.col('time (min)');
+const volumeInMilliliters = dfWithoutOutliers.col('filtrate volume (mL)');
 dfWithoutOutliers.columns.addNewFloat('time (hr)').init((i) => timeInMinutes.get(i) / 60);
-const timeInHours = dfWithoutOutliers.col("time (hr)");
+const timeInHours = dfWithoutOutliers.col('time (hr)');
 
 dfWithoutOutliers.columns.addNewFloat('V (L/m2)').init((i) => 10 * volumeInMilliliters.get(i) / testArea);
 const newVolume = dfWithoutOutliers.col('V (L/m2)');
 
-dfWithoutOutliers.columns.addNewFloat("t/V (hr/(L/m2))").init((i) => 100 * timeInHours.get(i) / newVolume.get(i));
+dfWithoutOutliers.columns.addNewFloat('t/V (hr/(L/m2))').init((i) => 100 * timeInHours.get(i) / newVolume.get(i));
 
-dfWithoutOutliers.columns.addNewFloat("Time (s)").init((i) => 60 * timeInMinutes.get(i));
-dfWithoutOutliers.columns.addNewFloat("V (L)").init((i) => volumeInMilliliters.get(i) / 1000);
+dfWithoutOutliers.columns.addNewFloat('Time (s)').init((i) => 60 * timeInMinutes.get(i));
+dfWithoutOutliers.columns.addNewFloat('V (L)').init((i) => volumeInMilliliters.get(i) / 1000);
 const volumeInLiters = dfWithoutOutliers.col('V (L)');
 const timeInSeconds = dfWithoutOutliers.col('Time (s)');
 dfWithoutOutliers.columns.addNewFloat('V/A (L/m2)').init((i) => volumeInLiters.get(i) / area);
 const va = dfWithoutOutliers.col('V/A (L/m2)');
-let ca = [];
-let cb = [];
+const ca = [];
+const cb = [];
 for (let i = 1; i < va.length - 3; i++) {
-  let xCol = DG.Column.fromList('double', 'name', timeInSeconds.toList().slice(i, i + 3));
-  let yCol = DG.Column.fromList('double', 'name', va.toList().slice(i, i + 3));
-  let coefficients = polynomialRegressionCoefficients(xCol, yCol, orderOfPolynomialRegression);
+  const xCol = DG.Column.fromList('double', 'name', timeInSeconds.toList().slice(i, i + 3));
+  const yCol = DG.Column.fromList('double', 'name', va.toList().slice(i, i + 3));
+  const coefficients = polynomialRegressionCoefficients(xCol, yCol, orderOfPolynomialRegression);
   ca.push(coefficients[orderOfPolynomialRegression]);
   cb.push(coefficients[orderOfPolynomialRegression - 1]);
 }
@@ -125,7 +132,7 @@ experimentalResults = DG.DataFrame.fromColumns([
   DG.Column.fromList('string', 'Run', ['1']),
   DG.Column.fromList('double', 'Trial Throughput (L/m²)', [trialThroughput]),
   DG.Column.fromList('double', 'Flux (LMH)', [flux]),
-  DG.Column.fromList('double', 'Flux/Flux0 (LMH)', [ff0])
+  DG.Column.fromList('double', 'Flux/Flux0 (LMH)', [ff0]),
 ]);
 const meanFlux = j.stats.avg;
 const vmax = 0.28;//Math.round(1 / coefficients[1]);
@@ -140,7 +147,7 @@ experimentalResultsSummary = DG.DataFrame.fromColumns([
   // DG.Column.fromList('double', 'Flux/Flux0 (LMH)', [ff0]),
   DG.Column.fromList('double', 'Mean Flux (LMH)', [meanFlux]),
   DG.Column.fromList('double', 'Vmax (L/m²)', [vmax]),
-  DG.Column.fromList('double', 'Flux Decay (%)', [fluxDecay])
+  DG.Column.fromList('double', 'Flux Decay (%)', [fluxDecay]),
 ]);
 const q0 = Math.round(1 / coefficients[0]);
 const amin = (vbatch / vmax) + (vbatch / tbatch / q0);
@@ -163,7 +170,7 @@ trialData = DG.DataFrame.fromColumns([
   DG.Column.fromList('double', 'Test Filter Area (m²)', [testArea]),
   DG.Column.fromList('double', 'Initial Flow Area (L/h)', [initialFlowArea]),
   DG.Column.fromList('double', 'Vmax (m²)', [vmax]),
-  DG.Column.fromList('double', 'V90 (m²)', [v90])
+  DG.Column.fromList('double', 'V90 (m²)', [v90]),
 ]);
 
 filter = DG.DataFrame.fromColumns([
@@ -180,5 +187,5 @@ sampleCharacteristics = DG.DataFrame.fromColumns([
   DG.Column.fromList('string', 'Prior step', [inputParametersForReporting.get(1, 6)]),
   DG.Column.fromList('string', 'Prot conc', [inputParametersForReporting.get(1, 7)]),
   DG.Column.fromList('string', 'Density', [inputParametersForReporting.get(1, 8)]),
-  DG.Column.fromList('string', 'Turbidity', [inputParametersForReporting.get(1, 9)])
+  DG.Column.fromList('string', 'Turbidity', [inputParametersForReporting.get(1, 9)]),
 ]);
