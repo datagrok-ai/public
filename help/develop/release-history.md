@@ -1,6 +1,24 @@
 <!-- TITLE: Release History -->
 <!-- SUBTITLE: -->
 
+# 2021-12-07 Dev build 0.98.0
+
+## Latest Docker Images
+
+* Datagrok: 
+  *  `docker pull datagrok/datagrok:0.98.0`
+  *  `docker pull datagrok/datagrok:latest`
+  
+* [Docker-Compose](admin/docker-compose.md)
+
+## Addressed Issues
+
+* GitHub Actions: Update js-api/package-lock.json 
+* Function View: Adjust table heights 
+* Grid: add changePropertyPanel property   
+* Fixed analyzer warnings 
+
+
 # 2021-12-07 Dev build 0.97.0
 
 ## Latest Docker Images
