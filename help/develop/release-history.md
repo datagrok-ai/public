@@ -1,6 +1,55 @@
 <!-- TITLE: Release History -->
 <!-- SUBTITLE: -->
 
+# 2021-12-07 Dev build 0.97.0
+
+## Latest Docker Images
+
+* Datagrok: 
+  *  `docker pull datagrok/datagrok:0.97.0`
+  *  `docker pull datagrok/datagrok:latest`
+  
+* [Docker-Compose](admin/docker-compose.md)
+
+## Addressed Issues
+
+* GitHub Actions: Update js-api/package-lock.json 
+* Chem: Set defaults in chem_common.ts 
+* Scatter Plot: Marker coding for Split-By-Marker 
+* Infrastructure Documentation (WIP)
+* Peptides: removed unused code 
+* GitHub Actions: Update packages/Peptides/package-lock.json 
+* Charts: Package documentation (WIP)
+* JS API: Improved code style (marker coding, formula lines) 
+* (Bug) Dev panel doesn't work for any entities 
+* Compute: export timeout increased 
+* (Bug) Scatter Plot: Y axis shows weird values 
+* Compute: fixed bug on script call from Model Hub 
+* Chem: added Identifiers panel 
+* Small help addition 
+* Compute: export function works with single tab 
+* Scatter Plot: Get rid of code duplication (axes and grid lines) 
+* (Bug) Bar chart: When "Axis Type" = "logarithmic", numbers on the axis get merged 
+* Chem: R Group Analysis fix 
+* NPM repositories: new package manager UI (WIP)
+* #228 Chem: MCS panel 
+* Compute: Pmax: add polynomial regression lines (WIP)
+* JS API: add Property options 
+* #228 Chem: panels Inci, Inch Keys 
+* Compute: added outliers selection viewer 
+* Compute: marked the outliers selection dialog as deprecated 
+* Compute: minor version bump 
+* GitHub Actions: Update packages/Compute/package-lock.json 
+* Functions: help-url support for scripts in Function View (WIP)
+* Compute: outliers selection additional column fixed 
+* Ability to disable events in InputBase 
+* Compute: improved the code generation 
+* (Bug) Calculated column with numeric type and empty formula leaves no formula tag 
+* Ability to show multiple viewers in Function View 
+* Function View: Show table inputs if there are viewers set 
+* small css adjustment 
+
+
 # 2021-12-02 Dev build 0.96.0
 
 ## Latest Docker Images
