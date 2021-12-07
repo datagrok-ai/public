@@ -15,14 +15,14 @@ import java.util.List;
 import java.util.Properties;
 
 
-public class СlickHouseProvider extends JdbcDataProvider {
-    public СlickHouseProvider(ProviderManager providerManager) {
+public class ClickHouseProvider extends JdbcDataProvider {
+    public ClickHouseProvider(ProviderManager providerManager) {
         super(providerManager);
         driverClassName = "ru.yandex.clickhouse.ClickHouseDriver";
 
         descriptor = new DataSource();
-        descriptor.type = "СlickHouse";
-        descriptor.description = "Query СlickHouse database";
+        descriptor.type = "ClickHouse";
+        descriptor.description = "Query ClickHouse database";
         descriptor.connectionTemplate = new ArrayList<>(DbCredentials.dbConnectionTemplate);
         descriptor.connectionTemplate.add(new Property(Property.BOOL_TYPE, DbCredentials.SSL));
         descriptor.credentialsTemplate = DbCredentials.dbCredentialsTemplate;
