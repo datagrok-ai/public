@@ -3,12 +3,13 @@ import * as grok from 'datagrok-api/grok';
 import * as ui from 'datagrok-api/ui';
 import * as DG from 'datagrok-api/dg';
 import {ModelHandler} from './model-handler';
-import {selectOutliersManually} from './outliers-selection';
+import {selectOutliersManually} from './outliers-selection/outliers-selection';
 import {exportFuncCall} from './export-funccall';
 import {_functionParametersGrid} from './function-views/function-parameters-grid';
 import {ModelCatalogView} from './model-catalog-view';
 import wu from 'wu';
 import {_functionEditor} from './function-editor/function-editor';
+import {OutliersSelectionViewer} from './outliers-selection/outliers-selection-viewer';
 
 let initCompleted: boolean = false;
 export const _package = new DG.Package();
@@ -44,6 +45,14 @@ export async function manualOutlierSelectionDialog(inputData: DG.DataFrame) {
     }
     resolve({augmentedInput: inputData, editedInput: inputData});
   });
+}
+
+//name: OutliersSelectionViewer
+//description: Creates an outliers selection viewer
+//tags: viewer
+//output: viewer
+export function OutliersSelection() {
+  return new OutliersSelectionViewer();
 }
 
 //name: export To Excel
