@@ -251,7 +251,7 @@ export class OutliersSelectionViewer extends DG.JsViewer {
         ui.divV([
           ui.divH([
             resetSelectedBtn, resetAllBtn, autoOutlierGroupBtn,
-          ], {style: {'text-align': 'center'}}),
+          ], {style: {'text-align': 'center', 'justify-content': 'center'}}),
           groupsListGrid.root,
         ], {style: {'height': '75%'}}),
       ], {style: {'height': '100%', 'min-width': '230px'}}));
