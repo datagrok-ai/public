@@ -241,7 +241,7 @@ export class OutliersSelectionViewer extends DG.JsViewer {
     updateGroupsTable();
     resetSelectedBtn.classList.add('disabled');
 
-    this.root.replaceWith(ui.panel([
+    this.root.replaceWith(
       ui.divV([
         ui.info(
           ui.div([
@@ -254,7 +254,6 @@ export class OutliersSelectionViewer extends DG.JsViewer {
           ], {style: {'text-align': 'center'}}),
           groupsListGrid.root,
         ], {style: {'height': '75%'}}),
-      ], {style: {'height': '100%', 'min-width': '230px'}}),
-    ], {style: {'height': '100%'}}));
+      ], {style: {'height': '100%', 'min-width': '230px'}}));
   }
 }
