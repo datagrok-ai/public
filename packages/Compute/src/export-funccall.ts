@@ -84,7 +84,7 @@ export async function exportFuncCall(call: DG.FuncCall) {
         } else {
           const plot = titleDiv.nextSibling;
           // if plot does not exist or it is only grid, skip it
-          if (!plot || (plot.firstChild as HTMLElement).getAttribute('name') === 'viewer-Grid') continue;
+          if (!plot || (plot.firstChild?.firstChild?.firstChild as HTMLElement).getAttribute('name') === 'viewer-Grid') continue;
 
           if (plot) {
             const canvas = await DG.HtmlUtils.renderToCanvas(plot as HTMLElement);
@@ -146,7 +146,7 @@ export async function exportFuncCall(call: DG.FuncCall) {
       } else {
         const plot = titleDiv.nextSibling;
         // if plot does not exist or it is only grid, skip it
-        if (!plot || (plot.firstChild as HTMLElement).getAttribute('name') === 'viewer-Grid') continue;
+        if (!plot || (plot.firstChild?.firstChild?.firstChild as HTMLElement).getAttribute('name') === 'viewer-Grid') continue;
 
         if (plot) {
           const canvas = await DG.HtmlUtils.renderToCanvas(plot as HTMLElement);
