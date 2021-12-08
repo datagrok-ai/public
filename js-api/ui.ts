@@ -669,7 +669,7 @@ export function floatInput(name: string, value: number, onValueChanged: Function
 }
 
 export function dateInput(name: string, value: DateTime, onValueChanged: Function | null = null): InputBase {
-  return new InputBase(api.grok_DateInput(name, value.d), onValueChanged);
+  return new InputBase(api.grok_DateInput(name, value.dart), onValueChanged);
 }
 
 export function boolInput(name: string, value: boolean, onValueChanged: Function | null = null): InputBase {
@@ -685,11 +685,11 @@ export function moleculeInput(name: string, value: string, onValueChanged: Funct
 }
 
 export function columnInput(name: string, table: DataFrame, value: Column | null, onValueChanged: Function | null = null): InputBase {
-  return new InputBase(api.grok_ColumnInput(name, table.d, value?.d), onValueChanged);
+  return new InputBase(api.grok_ColumnInput(name, table.dart, value?.dart), onValueChanged);
 }
 
 export function columnsInput(name: string, table: DataFrame, onValueChanged: Function | null = null): InputBase {
-  return new InputBase(api.grok_ColumnsInput(name, table.d), onValueChanged);
+  return new InputBase(api.grok_ColumnsInput(name, table.dart), onValueChanged);
 }
 
 export function tableInput(name: string, table: DataFrame, tables: DataFrame[] = grok.shell.tables, onValueChanged: Function | null = null): InputBase {
@@ -770,7 +770,7 @@ export class tools {
   }
 
   static initFormulaAccelerators(textInput: InputBase, table: DataFrame): void {
-    api.grok_UI_InitFormulaAccelerators(toDart(textInput), table.d);
+    api.grok_UI_InitFormulaAccelerators(toDart(textInput), table.dart);
   }
 
   /** Waits until the specified element is in the DOM. */
@@ -827,7 +827,7 @@ export class Tooltip {
   }
 
   showRowGroup(dataFrame: DataFrame, indexPredicate: IndexPredicate, x: number, y: number): void {
-    api.grok_Tooltip_ShowRowGroup(dataFrame.d, indexPredicate, x, y);
+    api.grok_Tooltip_ShowRowGroup(dataFrame.dart, indexPredicate, x, y);
   }
 
   /** Returns a tooltip element.
@@ -1012,16 +1012,16 @@ export class ObjectHandler {
 }
 
 export class EntityMetaDartProxy extends ObjectHandler {
-  d: any;
+  dart: any;
 
   constructor(d: any) {
     super();
-    this.d = d;
+    this.dart = d;
   }
 
-  get type(): string { return api.grok_Meta_Get_Type(this.d); }
-  isApplicable(x: any): boolean { return api.grok_Meta_IsApplicable(this.d, toDart(x)); }
-  getCaption(x: any): string { return api.grok_Meta_Get_Name(this.d, x); }
+  get type(): string { return api.grok_Meta_Get_Type(this.dart); }
+  isApplicable(x: any): boolean { return api.grok_Meta_IsApplicable(this.dart, toDart(x)); }
+  getCaption(x: any): string { return api.grok_Meta_Get_Name(this.dart, x); }
 
   renderIcon(x: any, context: any = null): HTMLDivElement { return api.grok_Meta_RenderIcon(x); }
   renderMarkup(x: any, context: any = null): HTMLDivElement { return api.grok_Meta_RenderMarkup(x); }

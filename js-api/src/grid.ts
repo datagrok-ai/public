@@ -35,8 +35,8 @@ export class Rect {
     this.height = height;
   }
 
-  static fromDart(d: any): Rect {
-    api.grok_Rect_Pack(d, _bytes);
+  static fromDart(dart: any): Rect {
+    api.grok_Rect_Pack(dart, _bytes);
     return new Rect(_bytes[0], _bytes[1], _bytes[2], _bytes[3]);
   }
 
@@ -67,35 +67,35 @@ export class Rect {
 
 /** Represents a grid cell */
 export class GridCell {
-  d: any;
+  dart: any;
 
-  constructor(d: any) {
-    this.d = d;
+  constructor(dart: any) {
+    this.dart = dart;
   }
 
   /** @returns {GridCell} */
   static fromColumnRow(grid: Grid, columnName: string, gridRow: number): GridCell {
-    return new GridCell(api.grok_Grid_GetCell(grid.d, columnName, gridRow));
+    return new GridCell(api.grok_Grid_GetCell(grid.dart, columnName, gridRow));
   }
 
   /** @returns {string} Cell type */
   get cellType(): string {
-    return api.grok_GridCell_Get_CellType(this.d);
+    return api.grok_GridCell_Get_CellType(this.dart);
   }
 
   /** @returns {boolean} Whether this is a table (data) cell (as opposed to special cells like row headers). */
   get isTableCell(): boolean {
-    return api.grok_GridCell_Get_IsTableCell(this.d);
+    return api.grok_GridCell_Get_IsTableCell(this.dart);
   }
 
   /** @returns {boolean} Whether this is a row header. */
   get isRowHeader(): boolean {
-    return api.grok_GridCell_Get_IsRowHeader(this.d);
+    return api.grok_GridCell_Get_IsRowHeader(this.dart);
   }
 
   /** @returns {boolean} Whether this is a column header. */
   get isColHeader(): boolean {
-    return api.grok_GridCell_Get_IsColHeader(this.d);
+    return api.grok_GridCell_Get_IsColHeader(this.dart);
   }
 
   /** @returns {Column} Corresponding table column, or null. */
@@ -115,176 +115,176 @@ export class GridCell {
 
   /** @returns {number} Index of the corresponding grid row. */
   get gridRow(): number {
-    return api.grok_GridCell_Get_GridRow(this.d);
+    return api.grok_GridCell_Get_GridRow(this.dart);
   }
 
   /** @returns {GridColumn} Corresponding grid column. */
   get gridColumn(): GridColumn {
-    return new GridColumn(api.grok_GridCell_Get_GridColumn(this.d));
+    return new GridColumn(api.grok_GridCell_Get_GridColumn(this.dart));
   }
 
   /** Custom text to be shown in a cell . */
   get customText(): string {
-    return api.grok_GridCell_Get_CustomText(this.d);
+    return api.grok_GridCell_Get_CustomText(this.dart);
   }
 
   set customText(x: string) {
-    api.grok_GridCell_Set_CustomText(this.d, x);
+    api.grok_GridCell_Set_CustomText(this.dart, x);
   }
 
   /** @returns {Grid} this cell belongs to. */
   get grid(): Grid {
-    return new Grid(api.grok_GridCell_Get_Grid(this.d));
+    return new Grid(api.grok_GridCell_Get_Grid(this.dart));
   }
 
   /** @returns {Cell} Corresponding table cell. */
   get cell(): Cell {
-    return new Cell(api.grok_GridCell_Get_Cell(this.d));
+    return new Cell(api.grok_GridCell_Get_Cell(this.dart));
   }
 
   /** @returns {GridCellStyle} Style to use for rendering. */
   get style(): GridCellStyle {
-    return new GridCellStyle(api.grok_GridCell_Get_Style(this.d));
+    return new GridCellStyle(api.grok_GridCell_Get_Style(this.dart));
   }
 
   /** Grid cell bounds.
    * Sample: {@link https://public.datagrok.ai/js/samples/grid/cell-bounds}
    */
   get bounds(): Rect {
-    return Rect.fromDart(api.grok_GridCell_Get_Bounds(this.d));
+    return Rect.fromDart(api.grok_GridCell_Get_Bounds(this.dart));
   }
 }
 
 /** Represents a grid column */
 export class GridColumn {
-  d: any;
+  dart: any;
 
-  constructor(d: any) {
-    this.d = d;
+  constructor(dart: any) {
+    this.dart = dart;
   }
 
-  static fromDart(d: any): GridColumn | null {
-    return d == null ? null : new GridColumn(d);
+  static fromDart(dart: any): GridColumn | null {
+    return dart == null ? null : new GridColumn(dart);
   }
 
   /** A {@link Grid} this column is associated with */
   get grid(): Grid {
-    return toJs(api.grok_GridColumn_Get_Grid(this.d));
+    return toJs(api.grok_GridColumn_Get_Grid(this.dart));
   }
 
   /** @returns {Column} Corresponding table column, or null. */
   get column(): Column | null {
-    let col = api.grok_GridColumn_Get_Column(this.d);
+    let col = api.grok_GridColumn_Get_Column(this.dart);
     return col === null ? null : new Column(col);
   }
 
   /** Index of the column.
    *  @returns {number} */
   get idx(): number {
-    return api.grok_GridColumn_Get_Idx(this.d);
+    return api.grok_GridColumn_Get_Idx(this.dart);
   }
 
   /** @returns {string} Column name. */
   get name(): string {
-    return api.grok_GridColumn_Get_Name(this.d);
+    return api.grok_GridColumn_Get_Name(this.dart);
   }
 
   set name(x: string) {
-    api.grok_GridColumn_Set_Name(this.d, x);
+    api.grok_GridColumn_Set_Name(this.dart, x);
   }
 
   /** Column width in pixels.
    * Sample: {@link https://public.datagrok.ai/js/samples/grid/resize-columns}
    *  @returns {number} */
   get width(): number {
-    return api.grok_GridColumn_Get_Width(this.d);
+    return api.grok_GridColumn_Get_Width(this.dart);
   }
 
   set width(x: number) {
-    api.grok_GridColumn_Set_Width(this.d, x);
+    api.grok_GridColumn_Set_Width(this.dart, x);
   }
 
   /** Background column as a 4-byte ARGB number.
    *  @returns {number} */
   get backColor(): number {
-    return api.grok_GridColumn_Get_BackColor(this.d);
+    return api.grok_GridColumn_Get_BackColor(this.dart);
   }
 
   set backColor(x: number) {
-    api.grok_GridColumn_Set_BackColor(this.d, x);
+    api.grok_GridColumn_Set_BackColor(this.dart, x);
   }
 
   /** Column format.
    * Sample: {@link https://public.datagrok.ai/js/samples/grid/html-markup-cells}
    *  @returns {string} */
   get format(): string {
-    return api.grok_GridColumn_Get_Format(this.d);
+    return api.grok_GridColumn_Get_Format(this.dart);
   }
 
   set format(x: string) {
-    api.grok_GridColumn_Set_Format(this.d, x);
+    api.grok_GridColumn_Set_Format(this.dart, x);
   }
 
   /** @returns {string} Cell type. */
   get cellType(): string {
-    return api.grok_GridColumn_Get_CellType(this.d);
+    return api.grok_GridColumn_Get_CellType(this.dart);
   }
 
   set cellType(x: string) {
-    api.grok_GridColumn_Set_CellType(this.d, x);
+    api.grok_GridColumn_Set_CellType(this.dart, x);
   }
 
   /** Column visibility.
    *  @returns {boolean} */
   get visible(): boolean {
-    return api.grok_GridColumn_Get_Visible(this.d);
+    return api.grok_GridColumn_Get_Visible(this.dart);
   }
 
   set visible(x: boolean) {
-    api.grok_GridColumn_Set_Visible(this.d, x);
+    api.grok_GridColumn_Set_Visible(this.dart, x);
   }
 
   /** Custom colors for categories.
    * Sample: {@link https://public.datagrok.ai/js/samples/grid/category-colors}
    *  @returns {Object.<string, number>} */
   get categoryColors(): { [s: string]: number } {
-    return api.grok_GridColumn_Get_CategoryColors(this.d);
+    return api.grok_GridColumn_Get_CategoryColors(this.dart);
   }
 
   set categoryColors(x: { [s: string]: number }) {
-    api.grok_GridColumn_Set_CategoryColors(this.d, x);
+    api.grok_GridColumn_Set_CategoryColors(this.dart, x);
   }
 
   /** Whether the column is editable.
    *  @returns {boolean} */
   get editable(): boolean {
-    return api.grok_GridColumn_Get_Editable(this.d);
+    return api.grok_GridColumn_Get_Editable(this.dart);
   }
 
   set editable(x: boolean) {
-    api.grok_GridColumn_Set_Editable(this.d, x);
+    api.grok_GridColumn_Set_Editable(this.dart, x);
   }
 
   /** Whether the column is selected.
    *  @returns {boolean}  */
   get selected(): boolean {
-    return api.grok_GridColumn_Get_Selected(this.d);
+    return api.grok_GridColumn_Get_Selected(this.dart);
   }
 
   set selected(x: boolean) {
-    api.grok_GridColumn_Set_Selected(this.d, x);
+    api.grok_GridColumn_Set_Selected(this.dart, x);
   }
 
   /** Column position from the left side.
    *  @returns {number}  */
   get left(): number {
-    return api.grok_GridColumn_Get_Left(this.d);
+    return api.grok_GridColumn_Get_Left(this.dart);
   }
 
   /** Column position from the right side.
    *  @returns {number}  */
   get right(): number {
-    return api.grok_GridColumn_Get_Right(this.d);
+    return api.grok_GridColumn_Get_Right(this.dart);
   }
 
   /** Returns all visible cells */
@@ -295,10 +295,10 @@ export class GridColumn {
 
 /** Represents grid columns. */
 export class GridColumnList {
-  d: any;
+  dart: any;
 
-  constructor(d: any) {
-    this.d = d;
+  constructor(dart: any) {
+    this.dart = dart;
   }
 
   /** Row header column.
@@ -311,34 +311,34 @@ export class GridColumnList {
    *  @param {number} index
    *  @returns {GridColumn}  */
   byIndex(index: number): GridColumn | null {
-    return GridColumn.fromDart(api.grok_GridColumnList_ByIndex(this.d, index));
+    return GridColumn.fromDart(api.grok_GridColumnList_ByIndex(this.dart, index));
   }
 
   /** Returns a grid column by name, or null if it does not exist.
    *  @param {string} columnName
    *  @returns {GridColumn}  */
   byName(columnName: string): GridColumn | null {
-    return GridColumn.fromDart(api.grok_GridColumnList_ByName(this.d, columnName));
+    return GridColumn.fromDart(api.grok_GridColumnList_ByName(this.dart, columnName));
   }
 
   /** Sets column order.
    * Sample: {@link https://public.datagrok.ai/js/samples/grid/order-columns}
    *  @param {string[]} columnNames - Order of columns. */
   setOrder(columnNames: string[]): void {
-    api.grok_GridColumnList_SetOrder(this.d, columnNames);
+    api.grok_GridColumnList_SetOrder(this.dart, columnNames);
   }
 
   /** Shows the specified columns (and hides the rest).
    * Sample: {@link https://public.datagrok.ai/js/samples/grid/hide-columns}
    *  @param {string[]} columnNames - Names of the columns to show. */
   setVisible(columnNames: string[]): void {
-    api.grok_GridColumnList_SetVisible(this.d, columnNames);
+    api.grok_GridColumnList_SetVisible(this.dart, columnNames);
   }
 
   /** GridColumnList length.
    *  @returns {number}  */
   get length(): number {
-    return api.grok_GridColumnList_Get_Length(this.d);
+    return api.grok_GridColumnList_Get_Length(this.dart);
   }
 }
 
@@ -346,13 +346,13 @@ export class GridColumnList {
 /** High-performance, flexible spreadsheet control */
 export class Grid extends Viewer {
 
-  constructor(d: any) {
-    super(d);
+  constructor(dart: any) {
+    super(dart);
   }
 
   /** Creates a new grid. */
-  static create(table: { d: any; }): Grid {
-    return new Grid(api.grok_Grid_Create(table.d));
+  static create(table: { dart: any; }): Grid {
+    return new Grid(api.grok_Grid_Create(table.dart));
   }
 
 
@@ -367,7 +367,7 @@ export class Grid extends Viewer {
   /** Grid columns.
    *  @returns {GridColumnList} */
   get columns(): GridColumnList {
-    return new GridColumnList(api.grok_Grid_Get_Columns(this.d));
+    return new GridColumnList(api.grok_Grid_Get_Columns(this.dart));
   }
 
   /** Returns a column with the specified name.
@@ -386,24 +386,24 @@ export class Grid extends Viewer {
    * Sample: {@link https://public.datagrok.ai/js/samples/grid/custom-cell-rendering-indexes}
    * @returns {Observable<GridCellRenderArgs>} */
   get onCellRender(): Observable<GridCellRenderArgs> {
-    return __obs('d4-grid-cell-render', this.d);
+    return __obs('d4-grid-cell-render', this.dart);
   }
 
   /** @returns {HTMLCanvasElement} */
   get canvas(): HTMLCanvasElement {
-    return api.grok_Grid_Get_Canvas(this.d);
+    return api.grok_Grid_Get_Canvas(this.dart);
   }
 
   /** @returns {HTMLCanvasElement} */
   get overlay(): HTMLCanvasElement {
-    return api.grok_Grid_Get_Overlay(this.d);
+    return api.grok_Grid_Get_Overlay(this.dart);
   }
 
   /**
    * Sample: {@link https://public.datagrok.ai/js/samples/grid/custom-cell-prepare}
    */
   onCellPrepare(callback: (cell: GridCell) => any): StreamSubscription {
-    return _sub(api.grok_Grid_OnCellPrepare(this.d, (dcell: any) => {
+    return _sub(api.grok_Grid_OnCellPrepare(this.dart, (dcell: any) => {
       return callback(new GridCell(dcell));
     }));
   }
@@ -412,7 +412,7 @@ export class Grid extends Viewer {
    * Sample: {@link https://public.datagrok.ai/js/samples/grid/custom-cell-tooltip}
    */
   onCellTooltip(callback: (cell: GridCell, x: number, y: number) => any): StreamSubscription {
-    return _sub(api.grok_Grid_OnCellTooltip(this.d, (dcell: any, x: any, y: any) => {
+    return _sub(api.grok_Grid_OnCellTooltip(this.dart, (dcell: any, x: any, y: any) => {
       return callback(new GridCell(dcell), x, y);
     }));
   }
@@ -420,14 +420,14 @@ export class Grid extends Viewer {
   /** Returns a grid cell at the specified position, or null if there is none.
    * Sample: {@link https://public.datagrok.ai/js/samples/grid/hit-test} */
   hitTest(x: number, y: number): GridCell | null {
-    return toJs(api.grok_Grid_HitTest(this.d, x, y));
+    return toJs(api.grok_Grid_HitTest(this.dart, x, y));
   }
 
   /** Sorts rows by the specified [columnIds].
    *  Specify sort directions via [asc] array (true = ascending, false = descending)
    *  If [asc] is not specified, sorts in ascending order. */
   sort(columns: string[] | Column[], orders: boolean[] | null = null): Grid {
-    api.grok_Grid_Sort(this.d, (columns as any[]).map((c: string | Column) => c instanceof Column ? c.d : c), orders);
+    api.grok_Grid_Sort(this.dart, (columns as any[]).map((c: string | Column) => c instanceof Column ? c.dart : c), orders);
     return this;
   }
 
@@ -445,7 +445,7 @@ export class Grid extends Viewer {
    * Sample: {@link https://public.datagrok.ai/js/samples/grid/order-rows}
    * Also, @see sortIndexes */
   setRowOrder(indexes: number[]): Grid {
-    api.grok_Grid_SetRowOrder(this.d, indexes);
+    api.grok_Grid_SetRowOrder(this.dart, indexes);
     return this;
   }
 
@@ -453,100 +453,100 @@ export class Grid extends Viewer {
    * Sample: {@link https://public.datagrok.ai/js/samples/grid/scroll-to-cell}
    */
   scrollToCell(column: string | Column, row: number): void {
-    api.grok_Grid_ScrollToCell(this.d, toDart(column), row);
+    api.grok_Grid_ScrollToCell(this.dart, toDart(column), row);
   }
 
   /** Scrolls the grid to the specified position.
    * Sample: {@link https://public.datagrok.ai/js/samples/grid/scroll-to-pixels}
    */
   scrollToPixels(x: number, y: number): void {
-    api.grok_Grid_ScrollToPixels(this.d, x, y);
+    api.grok_Grid_ScrollToPixels(this.dart, x, y);
   }
 
   /** Causes the grid to repaint.
    * Sample: {@link https://public.datagrok.ai/js/samples/grid/advanced/invalidate}
    **/
-  invalidate(): void { api.grok_Grid_Invalidate(this.d); }
+  invalidate(): void { api.grok_Grid_Invalidate(this.dart); }
 
   /** Vertical scroll bar.
    * Sample: {@link https://public.datagrok.ai/js/samples/grid/scroll-bars}
    */
   get vertScroll(): RangeSlider {
-    return toJs(api.grok_Grid_Get_VertScroll(this.d));
+    return toJs(api.grok_Grid_Get_VertScroll(this.dart));
   }
 
   /** Horizontal scroll bar */
   get horzScroll(): RangeSlider {
-    return toJs(api.grok_Grid_Get_HorzScroll(this.d));
+    return toJs(api.grok_Grid_Get_HorzScroll(this.dart));
   }
 
   /** Forces the grid to execute calculations that were postponed before the next rendering (such as recalculating layout).
    * Call it in case the client code changes column widths and needs to access the new recalculated layout. */
   runPostponedComputations(): void {
-    api.grok_CanvasViewer_RunPostponedComputations(this.d);
+    api.grok_CanvasViewer_RunPostponedComputations(this.dart);
   }
 
   /**
    * Sample: {@link https://public.datagrok.ai/js/samples/grid/resize-events}
    */
   get onColumnResized(): Observable<any> {
-    return __obs('d4-grid-column-resized', this.d);
+    return __obs('d4-grid-column-resized', this.dart);
   }
 
   /** Sample: {@link https://public.datagrok.ai/js/samples/grid/resize-events} */
-  get onRowsResized(): Observable<any> { return __obs('d4-grid-rows-resized', this.d); }
+  get onRowsResized(): Observable<any> { return __obs('d4-grid-rows-resized', this.dart); }
 
   /** Sample: {@link https://public.datagrok.ai/js/samples/grid/order-rows} */
-  get onRowsSorted(): Observable<any> { return __obs('d4-grid-rows-sorted', this.d); }
+  get onRowsSorted(): Observable<any> { return __obs('d4-grid-rows-sorted', this.dart); }
 
-  get onCellValueEdited(): Observable<GridCell> { return __obs('d4-grid-cell-value-edited', this.d); }
+  get onCellValueEdited(): Observable<GridCell> { return __obs('d4-grid-cell-value-edited', this.dart); }
 
   /**
    * Currently visible cells
    */
   getVisibleCells(column: GridColumn | null = null): Iterable<GridCell> {
-    return _toIterable(api.grok_Grid_GetVisibleCells(this.d, column?.d))
+    return _toIterable(api.grok_Grid_GetVisibleCells(this.dart, column?.dart))
   }
 }
 
 
 export class GridCellStyle {
-  d: any;
+  dart: any;
 
-  constructor(d: any) {
-    this.d = d;
+  constructor(dart: any) {
+    this.dart = dart;
   }
 
   get font(): string {
-    return api.grok_GridCellStyle_Get_Font(this.d);
+    return api.grok_GridCellStyle_Get_Font(this.dart);
   }
 
   set font(x: string) {
-    api.grok_GridCellStyle_Set_Font(this.d, x);
+    api.grok_GridCellStyle_Set_Font(this.dart, x);
   }
 
   get textColor(): number {
-    return api.grok_GridCellStyle_Get_TextColor(this.d);
+    return api.grok_GridCellStyle_Get_TextColor(this.dart);
   }
 
   set textColor(x: number) {
-    api.grok_GridCellStyle_Set_TextColor(this.d, x);
+    api.grok_GridCellStyle_Set_TextColor(this.dart, x);
   }
 
   get backColor(): number {
-    return api.grok_GridCellStyle_Get_BackColor(this.d);
+    return api.grok_GridCellStyle_Get_BackColor(this.dart);
   }
 
   set backColor(x: number) {
-    api.grok_GridCellStyle_Set_BackColor(this.d, x);
+    api.grok_GridCellStyle_Set_BackColor(this.dart, x);
   }
 
   get element(): HTMLElement {
-    return api.grok_GridCellStyle_Get_Element(this.d);
+    return api.grok_GridCellStyle_Get_Element(this.dart);
   }
 
   set element(x: HTMLElement) {
-    api.grok_GridCellStyle_Set_Element(this.d, x);
+    api.grok_GridCellStyle_Set_Element(this.dart, x);
   }
 }
 
@@ -554,22 +554,22 @@ export class GridCellStyle {
 /** Grid cell rendering args. */
 export class GridCellRenderArgs extends EventData {
 
-  constructor(d: any) {
-    super(d);
+  constructor(dart: any) {
+    super(dart);
   }
 
   /** @returns {CanvasRenderingContext2D} */
   get g(): CanvasRenderingContext2D {
-    return api.grok_GridCellRenderArgs_Get_G(this.d);
+    return api.grok_GridCellRenderArgs_Get_G(this.dart);
   }
 
   get cell(): GridCell {
-    return new GridCell(api.grok_GridCellRenderArgs_Get_Cell(this.d));
+    return new GridCell(api.grok_GridCellRenderArgs_Get_Cell(this.dart));
   }
 
   /** @returns {Rect} */
   get bounds(): Rect {
-    return api.grok_GridCellRenderArgs_Get_Bounds(this.d);
+    return api.grok_GridCellRenderArgs_Get_Bounds(this.dart);
   }
 }
 
@@ -618,26 +618,26 @@ export class GridCellRenderer extends CanvasRenderer {
 
 
 export class SemanticValue {
-  private readonly d: any;
+  private readonly dart: any;
 
-  constructor(d: any) {
-    this.d = d;
+  constructor(dart: any) {
+    this.dart = dart;
   }
 
   static fromValueType(value: any, semType: SemType | null) {
     return new SemanticValue(api.grok_SemanticValue(value, semType));
   }
 
-  get value(): any { return api.grok_SemanticValue_Get_Value(this.d); }
-  set value(x: any) { api.grok_SemanticValue_Set_Value(this.d, x); }
+  get value(): any { return api.grok_SemanticValue_Get_Value(this.dart); }
+  set value(x: any) { api.grok_SemanticValue_Set_Value(this.dart, x); }
 
-  get semType(): string { return api.grok_SemanticValue_Get_SemType(this.d); }
-  set semType(x: string) { api.grok_SemanticValue_Set_SemType(this.d, x); }
+  get semType(): string { return api.grok_SemanticValue_Get_SemType(this.dart); }
+  set semType(x: string) { api.grok_SemanticValue_Set_SemType(this.dart, x); }
 
   getMeta(name: string): any { return api.grok_SemanticValue_Get_Meta(name); }
   setMeta(name: string, value: any): void { api.grok_SemanticValue_Set_Meta(name, toDart(value)); }
 
-  get cell(): Cell { return api.grok_SemanticValue_Get_Cell(this.d); }
+  get cell(): Cell { return api.grok_SemanticValue_Get_Cell(this.dart); }
   get gridCell(): GridCell { return this.getMeta('gridCell'); }
   get viewer(): Viewer { return this.getMeta('viewer'); }
 }
