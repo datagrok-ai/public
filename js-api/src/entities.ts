@@ -728,7 +728,7 @@ export class Property {
 
   constructor(dart: any) {
     this.dart = dart;
-    this.options = new MapProxy(api.grok_Property_Get_Options(this.d));
+    this.options = new MapProxy(api.grok_Property_Get_Options(this.dart));
   }
 
   /** Property getter is a function that accepts one parameter (item)
