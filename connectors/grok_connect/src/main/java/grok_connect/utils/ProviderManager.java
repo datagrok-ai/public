@@ -42,7 +42,7 @@ public class ProviderManager {
             add(new ImpalaDataProvider(ProviderManager.this));
             add(new DenodoDataProvider(ProviderManager.this));
             add(new SnowflakeDataProvider(ProviderManager.this));
-            add(new СlickHouseProvider(ProviderManager.this));
+            add(new ClickHouseProvider(ProviderManager.this));
         }};
     }
 
