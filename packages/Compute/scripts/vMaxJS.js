@@ -10,12 +10,12 @@
 //input: double sf = 1.5 {caption: Safety Factor} [Safety Factor]
 //help-url: https://github.com/datagrok-ai/public/blob/master/packages/Compute/src/help.md
 //output: dataframe regressionTable {viewer: Scatter Plot(filter: "!${isOutlier}", showFilteredOutPoints: "true",  filteredOutRowsColor: 4293991195, showRegressionLine: "true"); category: OUTPUT}
+//output: dataframe trialData {category: OUTPUT}
 //output: dataframe absoluteFluxDecay {viewer: Scatter Plot(); category: OUTPUT}
 //output: dataframe normalizedFluxDecay {viewer: Scatter Plot(); category: OUTPUT}
 //output: dataframe experimentalResults {category: OUTPUT}
 //output: dataframe experimentalResultsSummary {category: OUTPUT}
 //output: dataframe recommendations {category: OUTPUT}
-//output: dataframe trialData {category: OUTPUT}
 //output: dataframe sampleCharacteristics {category: OUTPUT}
 //output: dataframe filter {category: OUTPUT}
 
@@ -104,24 +104,30 @@ const volumeInLiters = dfWithoutOutliers.col('V (L)');
 const timeInSeconds = dfWithoutOutliers.col('Time (s)');
 dfWithoutOutliers.columns.addNewFloat('V/A (L/m2)').init((i) => volumeInLiters.get(i) / area);
 const va = dfWithoutOutliers.col('V/A (L/m2)');
-const ca = [];
-const cb = [];
-for (let i = 1; i < va.length - 3; i++) {
-  const xCol = DG.Column.fromList('double', 'name', timeInSeconds.toList().slice(i, i + 3));
-  const yCol = DG.Column.fromList('double', 'name', va.toList().slice(i, i + 3));
+const ca = [],  cb = [];
+const windowLength = 3;
+for (let i = 0; i < va.length - windowLength; i++) {
+  const xCol = DG.Column.fromList('double', 'name', timeInSeconds.toList().slice(i, i + windowLength));
+  const yCol = DG.Column.fromList('double', 'name', va.toList().slice(i, i + windowLength));
   const coefficients = polynomialRegressionCoefficients(xCol, yCol, orderOfPolynomialRegression);
   ca.push(coefficients[orderOfPolynomialRegression]);
   cb.push(coefficients[orderOfPolynomialRegression - 1]);
 }
-
-dfWithoutOutliers.columns.addNewFloat('a2').init((i) => (i > 0) ? 3600 * (2 * ca[i] * timeInSeconds.get(i) + cb[i]) : 0);
-dfWithoutOutliers.columns.addNewFloat('a1').init((i) => (i > 0) ? 3600 * (2 * ca[i] * timeInSeconds.get(i) + cb[i]) : 0);
-dfWithoutOutliers.columns.addNewFloat('J (LMH)').init((i) => (i > 0) ? 3600 * (2 * ca[i] * timeInSeconds.get(i) + cb[i]) : 0);
-const j = dfWithoutOutliers.col('J (LMH)');
-dfWithoutOutliers.columns.addNewFloat('J/Jo').init((i) => (i > 0) ? j.get(i) / (3600 * area) : 0);
-const jj0 = dfWithoutOutliers.col('J/Jo');
-absoluteFluxDecay = DG.DataFrame.fromColumns([va, j]);
-normalizedFluxDecay = DG.DataFrame.fromColumns([va, jj0]);
+let newDf = DG.DataFrame.create(dfWithoutOutliers.rowCount - windowLength);
+newDf.columns.addNewFloat('a2').init((i) => (i > 0) ? 3600 * (2 * ca[i] * timeInSeconds.get(i) + cb[i]) : 0);
+newDf.columns.addNewFloat('a1').init((i) => (i > 0) ? 3600 * (2 * ca[i] * timeInSeconds.get(i) + cb[i]) : 0);
+newDf.columns.addNewFloat('J (LMH)').init((i) => (i > 0) ? 3600 * (2 * ca[i] * timeInSeconds.get(i) + cb[i]) : 0);
+const j = newDf.col('J (LMH)');
+newDf.columns.addNewFloat('J/Jo').init((i) => (i > 0) ? j.get(i) / (3600 * area) : 0);
+const jj0 = newDf.col('J/Jo');
+absoluteFluxDecay = DG.DataFrame.fromColumns([
+  DG.Column.fromList('double', va.name, va.toList().slice(0, va.length - windowLength)), 
+  j
+]);
+normalizedFluxDecay = DG.DataFrame.fromColumns([
+  DG.Column.fromList('double', va.name, va.toList().slice(0, va.length - windowLength)), 
+  jj0
+]);
 
 regressionTable = inputTable;
 coefficients = [1.8, 4.32];//[4.32, 1.8];//polynomialRegressionCoefficients(inputTable.col("time (min)"), dfWithoutOutliers.col("t/V (hr/(L/m2))"), 1);
@@ -129,10 +135,11 @@ const trialThroughput = va.max;
 const flux = 9372.11;
 const ff0 = flux / j.get(1);
 experimentalResults = DG.DataFrame.fromColumns([
-  DG.Column.fromList('string', 'Run', ['1']),
-  DG.Column.fromList('double', 'Trial Throughput (L/m²)', [trialThroughput]),
-  DG.Column.fromList('double', 'Flux (LMH)', [flux]),
-  DG.Column.fromList('double', 'Flux/Flux0 (LMH)', [ff0]),
+  DG.Column.fromList('string', 'Run', Array(va.length - windowLength).fill('1')),
+  DG.Column.fromList('double', va.name, va.toList().slice(0, va.length - windowLength)), j, jj0
+  // DG.Column.fromList('double', 'Trial Throughput (L/m²)', [trialThroughput]),
+  // DG.Column.fromList('double', 'Flux (LMH)', [flux]),
+  // DG.Column.fromList('double', 'Flux/Flux0 (LMH)', [ff0]),
 ]);
 const meanFlux = j.stats.avg;
 const vmax = 0.28;//Math.round(1 / coefficients[1]);
@@ -173,19 +180,20 @@ trialData = DG.DataFrame.fromColumns([
   DG.Column.fromList('double', 'V90 (m²)', [v90]),
 ]);
 
+const names = inputParametersForReporting.col('Parameter').toList();
+const values = inputParametersForReporting.col('Value').toList();
 filter = DG.DataFrame.fromColumns([
-  DG.Column.fromList('string', 'Filter Family', [inputParametersForReporting.columns.names()[1]]),
-  DG.Column.fromList('string', 'Filter Name', [inputParametersForReporting.get(1, 0)]),
-  DG.Column.fromList('string', 'Pore Rating', [inputParametersForReporting.get(1, 1)]),
-  DG.Column.fromList('string', 'Effective Membr. Area', [inputParametersForReporting.get(1, 2)]),
-  DG.Column.fromList('string', 'Membr material', [inputParametersForReporting.get(1, 3)]),
-  DG.Column.fromList('string', 'Catalog', [inputParametersForReporting.get(1, 4)]),
+  DG.Column.fromList('string', 'Filter Family', [values[names.indexOf('Filter Family')]]),
+  DG.Column.fromList('string', 'Filter Name', [values[names.indexOf('Filter Name')]]),
+  DG.Column.fromList('string', 'Pore Rating (μm)', [values[names.indexOf('Pore rating (μm)')]]),
+  DG.Column.fromList('string', 'Effective Membr. Area (cm^2)', [values[names.indexOf('Effective Membr. Area (cm^2)')]]),
+  DG.Column.fromList('string', 'Membr material', [values[names.indexOf('Membr material')]]),
+  DG.Column.fromList('string', 'Catalog Nr', [values[names.indexOf('Catalog Nr')]]),
 ]);
-
 sampleCharacteristics = DG.DataFrame.fromColumns([
-  DG.Column.fromList('string', 'Date', [inputParametersForReporting.get(1, 5)]),
-  DG.Column.fromList('string', 'Prior step', [inputParametersForReporting.get(1, 6)]),
-  DG.Column.fromList('string', 'Prot conc', [inputParametersForReporting.get(1, 7)]),
-  DG.Column.fromList('string', 'Density', [inputParametersForReporting.get(1, 8)]),
-  DG.Column.fromList('string', 'Turbidity', [inputParametersForReporting.get(1, 9)]),
+  DG.Column.fromList('string', 'Date', [values[names.indexOf('date ')]]),
+  DG.Column.fromList('string', 'Prior step', [values[names.indexOf('Prior step')]]),
+  DG.Column.fromList('string', 'Prot conc', [values[names.indexOf('Prot conc')]]),
+  DG.Column.fromList('string', 'Density', [values[names.indexOf('Density')]]),
+  DG.Column.fromList('string', 'Turbidity', [values[names.indexOf('Turbidity')]]),
 ]);
