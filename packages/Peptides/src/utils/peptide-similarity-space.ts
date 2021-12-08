@@ -8,6 +8,15 @@ import {DimensionalityReducer} from '@datagrok-libraries/utils/src/reduce-dimens
 import {Measurer} from '@datagrok-libraries/utils/src/string-measure';
 import {Coordinates} from '@datagrok-libraries/utils/src/type-declarations';
 
+/**
+ * A worker to perform dimensionality reduction.
+ *
+ * @param {any[]} columnData The data to process.
+ * @param {string} method A method of dimensionality reduction.
+ * @param {string} measure A distance metrics.
+ * @param {number} cyclesCount Number of iterations to run.
+ * @return {Promise<unknown>} Resulting embedding.
+ */
 function createDimensinalityReducingWorker(
   columnData: any[],
   method: string,
@@ -38,7 +47,6 @@ function inferActivityColumnsName(table: DG.DataFrame): string | null {
   const re = /activity|ic50/i;
   for (const name of table.columns.names()) {
     if (name.match(re)) {
-      console.log(`${name} found.`);
       return name;
     }
   }
@@ -101,29 +109,27 @@ export async function createPeptideSimilaritySpaceViewer(
   // Add new axes.
   for (const axis of axesNames) {
     const col = table.col(axis);
+    const newCol = edf.getCol(axis);
 
-    if (col == null) {
-      table.columns.insert(edf.getCol(axis));
+    if (col != null) {
+      for (let i = 0; i < newCol.length; ++i) {
+        const v = newCol.get(i);
+        table.set(axis, i, v);
+      }
     } else {
-      table.columns.replace(col, edf.getCol(axis));
+      table.columns.insert(newCol);
     }
   }
 
-  // const viewer = DG.Viewer.scatterPlot(table, {x: '~X', y: '~Y', color: activityColumnName ?? '~MW', size: '~MW'});
   const viewerOptions = {x: '~X', y: '~Y', color: activityColumnName ?? '~MW', size: '~MW'};
-  const viewer = view !== null ?
-    view.addViewer(DG.VIEWER.SCATTER_PLOT, viewerOptions) : DG.Viewer.scatterPlot(table, viewerOptions);
-  // Fit view if needed.
-  /*if (zoom) {
-    viewer.zoom(
-      table.getCol('~X').min,
-      table.getCol('~Y').min,
-      table.getCol('~X').max,
-      table.getCol('~Y').max,
-    );
-  }*/
+  const viewer = DG.Viewer.scatterPlot(table, viewerOptions);
+
+  if (view !== null) {
+    view.addViewer(viewer);
+  }
+
   pi.close();
-  return (viewer as DG.ScatterPlotViewer);
+  return viewer;
 }
 
 /**
