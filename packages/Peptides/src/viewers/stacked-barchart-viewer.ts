@@ -34,8 +34,6 @@ export function addViewerToHeader(grid: DG.Grid, viewer: Promise<DG.Widget>) {
       barchart.unhighlight();
     });
 
-    const corrViz = new CorrelationAnalysisVisualizer(grid, barchart.aminoColumnNames);
-
     barchart.tableCanvas = grid.canvas;
     grid.setOptions({'colHeaderHeight': 200});
     grid.onCellTooltip((cell, x, y) => {
@@ -48,7 +46,7 @@ export function addViewerToHeader(grid: DG.Grid, viewer: Promise<DG.Widget>) {
             if (barchart.highlighted) {
               let elements: HTMLElement[] = [];
               elements = elements.concat([ui.divText(barchart.highlighted.aaName)]);
-              elements = elements.concat(corrViz.getTooltipElements(cell.tableColumn, barchart.aminoColumnNames));
+              elements = elements.concat(barchart.getTooltipElements(cell.tableColumn.name, barchart.aminoColumnNames));
               ui.tooltip.show(ui.divV(elements), x, y);
             }
             return true;
@@ -72,7 +70,6 @@ export function addViewerToHeader(grid: DG.Grid, viewer: Promise<DG.Widget>) {
           args.bounds.height,
         );
         args.preventDefault();
-        //corrViz.customGridColumnHeader(args);
       }
       args.g.restore();
     });
@@ -104,11 +101,13 @@ export class StackedBarChart extends DG.JsViewer {
     private barStats: {[Key: string]: {'name': string, 'count': number, 'selectedCount': number}[]} = {};
     tableCanvas: HTMLCanvasElement | undefined;
     private registered: {[Key: string]: DG.GridCell} = {};
+    protected corrViz: CorrelationAnalysisVisualizer | undefined;
 
     constructor() {
       super();
       this.dataEmptyAA = this.string('dataEmptyAA', '-');
       this.initialized = false;
+      this.corrViz = undefined;
     }
 
     init() {
@@ -258,9 +257,17 @@ export class StackedBarChart extends DG.JsViewer {
         });
       }
       this.max = df.filter.trueCount;
+      this.corrViz = new CorrelationAnalysisVisualizer(df, this.aminoColumnNames);
     }
 
-    renderBarToCanvas(g: CanvasRenderingContext2D, cell: DG.GridCell, x: number, y: number, w: number, h: number) {
+    renderBarToCanvas(
+      g: CanvasRenderingContext2D,
+      cell: DG.GridCell,
+      x: number,
+      y: number,
+      w: number,
+      h: number,
+    ) {
       const margin = 0.2;
       const innerMargin = 0.02;
       const selectLineRatio = 0.1;
@@ -277,6 +284,14 @@ export class StackedBarChart extends DG.JsViewer {
       g.fillText(name,
         x + (w - colNameSize)/2,
         y + h + h * margin / 4);
+      this.higlightCorrelatedPositionHeader(
+        g,
+        name,
+        x + (w - colNameSize)/2,
+        y + h + h * margin / 4,
+        colNameSize,
+        margin,
+      );
       const barData = this.barStats[name]? this.barStats[name]: this.barStats[name];
       let sum = 0;
       barData.forEach((obj) => {
@@ -409,5 +424,60 @@ export class StackedBarChart extends DG.JsViewer {
         // @ts-ignore
         return this.highlighted!['aaName'] === (this.dataFrame.getCol(this.highlighted!['colName']).get(i));
       }, event);
+    }
+
+    /**
+     * Highlights column header if the corresponding position is correlated with any other.
+     *
+     * @protected
+     * @param {CanvasRenderingContext2D} g A context to draw on.
+     * @param {string} name The name of the column.
+     * @param {number} x X coordinate to draw at.
+     * @param {number} y Y coordinate to draw at.
+     * @param {number} width The width to take to draw the highlighting.
+     * @param {number} margin The margin to take into account.
+     * @memberof StackedBarChart
+     */
+    protected higlightCorrelatedPositionHeader(
+      g: CanvasRenderingContext2D,
+      name: string,
+      x: number,
+      y: number,
+      width: number,
+      margin: number,
+    ) {
+      if (this.corrViz?.isPositionCorrelating(name)) {
+        const height = width/name.length; //TODO: measure height more precisely.s
+        g.fillRect(x, y + height + margin * 20, width, 2);
+      }
+    }
+
+    /**
+     * Formats HTML elements with the correlation analysis to add to the tooltip.
+     *
+     * @param {string} name A column name to consider.
+     * @param {string[]} positions Optional list of columns containing positions.
+     * @return {HTMLElement[]} The list of elements. Is empty if the position is not correlating.
+     * @memberof StackedBarChart
+     */
+    getTooltipElements(name: string, positions: string[]): HTMLElement[] {
+      const pos1 = parseInt(name);
+
+      if (this.corrViz?.isPositionCorrelating(name)) {
+        const padLen = Math.round(Math.log10(positions.length))+1;
+
+        const elements: HTMLElement[] = [];
+        elements.push(ui.divText(name, {style: {fontWeight: 'bold', fontSize: 10}}));
+        elements.push(ui.divText('Found correlations with:\n'));
+
+        for (const [pos2, weight] of Object.entries(this.corrViz.path[pos1])) {
+          const w = (weight as number);
+          const style = {style: {color: w > 0 ? 'red' : 'blue'}};
+          elements.push(ui.divText(`${pos2.padStart(padLen, '0')}: R = ${w.toFixed(2)}\n`, style));
+        }
+
+        return elements;
+      }
+      return [];
     }
 }
