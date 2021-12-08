@@ -143,7 +143,6 @@ function calcGuide(network: DG.DataFrame): Guide {
     _addWeight(pos1, pos2, weight);
     _addWeight(pos2, pos1, weight);
   }
-  console.log(guide);
   return guide;
 }
 
