@@ -11,6 +11,10 @@ module.exports = {
   module: {
     rules: [
       {test: /\.tsx?$/, loader: 'ts-loader'},
+      {
+        test: /\.css$/,
+        use: ['style-loader', 'css-loader'],
+      },
     ],
   },
   devtool: 'inline-source-map',
@@ -23,7 +27,7 @@ module.exports = {
     'rxjs/operators': 'rxjs.operators',
     'cash-dom': '$',
     'dayjs': 'dayjs',
-    'wu': 'wu'
+    'wu': 'wu',
   },
   output: {
     filename: '[name].js',

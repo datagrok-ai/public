@@ -8,14 +8,14 @@ import { mcsgetter } from '../scripts-api';
  * @export
  * @param {DG.Column} col column with smiles.
  */
-export async function findMCS(col: DG.Column): Promise<void>{
-  if(col.length >= 100000){
+export async function addMcs(col: DG.Column): Promise<void> {
+  if (col.length >= 100000) {
     grok.shell.error("Number of sructures exceeeds 100000");
     return;
   }
 
   let pi = DG.TaskBarProgressIndicator.create('Estimating MCS');
-  let mcs: string = await mcsgetter(col.name, col.dataFrame);
+  let mcs: string = await mcsgetter(col.name, DG.DataFrame.fromColumns([col]));
   let name = getName("MCS", col.dataFrame.columns.names());
   let mcsCol = DG.Column.fromList("string", name, new Array(col.length).fill(mcs));
   mcsCol.semType = "Molecule";
@@ -25,13 +25,13 @@ export async function findMCS(col: DG.Column): Promise<void>{
   pi.close();
 }
 
-function getName(initialName: string, existingNames: string[]){
-  if(!existingNames.includes(initialName)){
+function getName(initialName: string, existingNames: string[]) {
+  if (!existingNames.includes(initialName)) {
     return initialName;
-  } else{
+  } else {
     let counter: number = 1;
     let newName: string = (' ' + initialName + '_' + counter).slice(1);
-    while(existingNames.includes(newName)){
+    while (existingNames.includes(newName)) {
       counter++;
       newName = (' ' + initialName + '_' + counter).slice(1);
     }

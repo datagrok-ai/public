@@ -724,9 +724,11 @@ export interface PropertyOptions {
  */
 export class Property {
   public readonly d: any;
+  public options: any;
 
   constructor(d: any) {
     this.d = d;
+    this.options = new MapProxy(api.grok_Property_Get_Options(this.d));
   }
 
   /** Property getter is a function that accepts one parameter (item)
@@ -780,7 +782,7 @@ export class Property {
   }
 
   /** Applies the specified options */
-  options(opt?: PropertyOptions): Property {
+  fromOptions(opt?: PropertyOptions): Property {
     if (opt)
       api.grok_Property_Options(this.d, opt);
     return this;
@@ -824,7 +826,7 @@ export class Property {
     return Property.create(name, type,
       (x: any) => x[name],
       (x: any, v: any) => x[name] = v,
-      options?.defaultValue).options(options);
+      options?.defaultValue).fromOptions(options);
   }
 
   static jsInt(name: string, options?: PropertyOptions): Property { return Property.js(name, TYPE.INT, options); }
