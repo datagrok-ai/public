@@ -218,7 +218,9 @@ export function _functionEditor(functionCode: string) {
       addButton.replaceWith(newAddButton);
       addButton = newAddButton;
     };
-    const menu = DG.Menu.popup().items(getNewProps(), onItemClick);
+    const menu = DG.Menu.popup().items(getNewProps().map(
+      (propName) => functionPropsLabels(propName as FUNC_PROPS_FIELDS),
+    ), onItemClick);
 
     const shevron = ui.iconFA('chevron-down');
     const button = ui.button([ui.icons.add(()=>{}), shevron], () => {
