@@ -1,6 +1,6 @@
 {
 	"name": "@datagrok/peptides",
-	"version": "0.5.3",
+	"version": "0.5.4",
 	"description": "",
 	"dependencies": {
 		"@keckelt/tsne": "^1.0.2",
