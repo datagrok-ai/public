@@ -45,6 +45,14 @@ const groupDescription: {[key: string]: {'description': string, 'aminoAcids': st
   '-': {'description': 'Unknown Amino Acid', 'aminoAcids': ['-']},
 };
 
+/*function customGridColumnHeader(cell: DG.GridCell) {
+  if (cell.isColHeader && cell.tableColumn != null) {
+    if (highlightedColumns.includes(parseInt(cell.tableColumn.name))) {
+      cell.style.backColor = 0xff1f77b4;
+    }
+  }
+}*/
+
 export async function describe(
   df: DG.DataFrame,
   activityColumn: string,
@@ -60,6 +68,7 @@ export async function describe(
   const col: DG.Column = df.columns.bySemType('alignedSequence');
   [splitSeqDf, invalidIndexes] = splitAlignedPeptides(col);
   splitSeqDf.name = 'Split sequence';
+
   const positionColumns = splitSeqDf.columns.names();
   const activityColumnScaled = `${activityColumn}Scaled`;
   const renderColNames: string[] = splitSeqDf.columns.names();
@@ -405,7 +414,7 @@ export async function describe(
   SARgrid.onCellTooltip(onCellTooltipFunc);
   SARVgrid.onCellTooltip(onCellTooltipFunc);
 
-  sourceGrid.onCellPrepare((cell) => {
+  sourceGrid.onCellPrepare((cell: DG.GridCell) => {
     const currentRowIndex = cell.tableRowIndex;
     if (currentRowIndex && invalidIndexes.includes(currentRowIndex) && !cell.isRowHeader) {
       cell.style.backColor = DG.Color.lightLightGray;
