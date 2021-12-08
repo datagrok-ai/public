@@ -2,8 +2,8 @@
 //description: pMax Filtration Model
 //language: javascript
 //tags: model, filtration
-//input: dataframe inputTable [Should contain columns Time (min), Vol (mL), P1 (psi), P2 (psi)]
-//input: dataframe inputParametersForReporting
+//input: dataframe inputTable {viewer: Grid()} [Should contain columns Time (min), Vol (mL), P1 (psi), P2 (psi)]
+//input: dataframe inputParametersForReporting {viewer: Grid()}
 //input: double batchVolume = 100 {units: L} [Batch Volume]
 //input: double batchTime = 2 {units: hours} [Batch Time]
 //input: double targetPressure = 20 {units: psi} [Target Pressure]
@@ -12,11 +12,10 @@
 //input: double filterArea1 = 23 {units: m²; caption: A_trial Filter 1} [A_trial Filter 1]
 //input: double filterArea2 = 23 {units: m²; caption: A_trial Filter 2} [A_trial Filter 2]
 //input: double sf = 1.5 {caption: Safety Factor}
-//meta.showInputs: true
-//output: dataframe Filter1 {viewer: Scatter Plot(x: "TP 1 (L/m2)", y: "Res. 1 (psi/LMH)", showDataframeFormulaLines: "true"); category: OUTPUT}
+//output: dataframe Filter1 {viewer: Scatter Plot(showRegressionLine: "true"); category: OUTPUT}
 //output: dataframe t1 {category: OUTPUT}
 //output: dataframe Guessed1 {category: OUTPUT}
-//output: dataframe Filter2 {viewer: Scatter Plot(x: "TP 2 (L/m2)", y: "Res. 2 (psi/LMH)", showDataframeFormulaLines: "true"); category: OUTPUT}
+//output: dataframe Filter2 {viewer: Scatter Plot(showRegressionLine: "true"); category: OUTPUT}
 //output: dataframe t2 {category: OUTPUT}
 //output: dataframe Guessed2 {category: OUTPUT}
 
@@ -171,21 +170,37 @@ guessedMaxP2 = predictPolynomialRegression(coefficients2, processLoading2) * pro
 guessedProcessFlux1 = processFlow1 / aMinFilter1Guessed, guessedProcessFlux2 = processFlow2 / aMinFilter2Guessed;
 
 t1 = DG.DataFrame.fromColumns([
-  DG.Column.fromList('string', 'Parameter', ['amin', 'aminSF', 'trialLoading', 'processLoading', 'maxP', 'trialFlux', 'processFlux', 'processFlow']),
-  DG.Column.fromList('double', 'Value', [amin1, aminSF1, trialLoading1, processLoading1, maxP1, trialFlux1, processFlux1, processFlow1])
+  DG.Column.fromList('double', 'amin', [amin1]),
+  DG.Column.fromList('double', 'aminSF', [aminSF1]),
+  DG.Column.fromList('double', 'trialLoading', [trialLoading1]),
+  DG.Column.fromList('double', 'processLoading', [processLoading1]),
+  DG.Column.fromList('double', 'maxP', [maxP1]),
+  DG.Column.fromList('double', 'trialFlux', [trialFlux1]),
+  DG.Column.fromList('double', 'processFlux', [processFlux1]),
+  DG.Column.fromList('double', 'processFlow', [processFlow1])
 ]);
 
 t2 = DG.DataFrame.fromColumns([
-  DG.Column.fromList('string', 'Parameter', ['amin', 'aminSF', 'trialLoading', 'processLoading', 'maxP', 'trialFlux', 'processFlux', 'processFlow']),
-  DG.Column.fromList('double', 'Value', [amin2, aminSF2, trialLoading2, processLoading2, maxP2, trialFlux2, processFlux2, processFlow2])
+  DG.Column.fromList('double', 'amin', [amin2]),
+  DG.Column.fromList('double', 'aminSF', [aminSF2]),
+  DG.Column.fromList('double', 'trialLoading', [trialLoading2]),
+  DG.Column.fromList('double', 'processLoading', [processLoading2]),
+  DG.Column.fromList('double', 'maxP', [maxP2]),
+  DG.Column.fromList('double', 'trialFlux', [trialFlux2]),
+  DG.Column.fromList('double', 'processFlux', [processFlux2]),
+  DG.Column.fromList('double', 'processFlow', [processFlow2])
 ]);
 
 Guessed1 = DG.DataFrame.fromColumns([
-  DG.Column.fromList('string', 'Parameter', ['amin', 'processLoading', 'maxP', 'processFlux']),
-  DG.Column.fromList('double', 'Value', [guessedAmin1 , guessedProcessLoading1, guessedMaxP1, guessedProcessFlux1])
+  DG.Column.fromList('double', 'amin', [guessedAmin1]),
+  DG.Column.fromList('double', 'processLoading', [guessedProcessLoading1]),
+  DG.Column.fromList('double', 'maxP', [guessedMaxP1]),
+  DG.Column.fromList('double', 'processFlux', [guessedProcessFlux1]),
 ]);
 
 Guessed2 = DG.DataFrame.fromColumns([
-  DG.Column.fromList('string', 'Parameter', ['amin', 'processLoading', 'maxP', 'processFlux']),
-  DG.Column.fromList('double', 'Value', [guessedAmin2, guessedProcessLoading2, guessedMaxP2, guessedProcessFlux2])
+  DG.Column.fromList('double', 'amin', [guessedAmin2]),
+  DG.Column.fromList('double', 'processLoading', [guessedProcessLoading2]),
+  DG.Column.fromList('double', 'maxP', [guessedMaxP2]),
+  DG.Column.fromList('double', 'processFlux', [guessedProcessFlux2]),
 ]);
