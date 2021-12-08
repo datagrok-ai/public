@@ -100,7 +100,8 @@ enum COMMON_TAG_NAME {
   VALIDATORS = 'validators',
   CAPTION = 'caption',
   POSTFIX = 'postfix',
-  UNITS = 'units'
+  UNITS = 'units',
+  EDITOR = 'editor',
 }
 
 enum OPTIONAL_TAG_NAME {
@@ -112,22 +113,31 @@ enum OPTIONAL_TAG_NAME {
   ACTION = 'action',
   CHOICES = 'choices',
   SUGGESTIONS = 'suggestions',
-  SEM_TYPE = 'semType'
+  SEM_TYPE = 'semType',
+  MIN = 'min',
+  MAX = 'max',
 }
 
 type DF_TAG_NAME = COMMON_TAG_NAME | OPTIONAL_TAG_NAME.COLUMNS | OPTIONAL_TAG_NAME.CATEGORICAL;
 type COLUMN_TAG_NAME = COMMON_TAG_NAME |
-                        OPTIONAL_TAG_NAME.TYPE | OPTIONAL_TAG_NAME.FORMAT |
+                        OPTIONAL_TAG_NAME.COLUMNS | OPTIONAL_TAG_NAME.FORMAT |
                         OPTIONAL_TAG_NAME.ALLOW_NULLS | OPTIONAL_TAG_NAME.ACTION | OPTIONAL_TAG_NAME.SEM_TYPE
 
 type STRING_TAG_NAME = COMMON_TAG_NAME |
                         OPTIONAL_TAG_NAME.CHOICES | OPTIONAL_TAG_NAME.SUGGESTIONS
 
+type INT_TAG_NAME = COMMON_TAG_NAME | OPTIONAL_TAG_NAME.MIN | OPTIONAL_TAG_NAME.MAX
+
 const COMMON_TAG_NAMES = [...Object.values(COMMON_TAG_NAME)];
-const DF_TAG_NAMES = [...Object.values(COMMON_TAG_NAME), OPTIONAL_TAG_NAME.COLUMNS, OPTIONAL_TAG_NAME.CATEGORICAL];
-const COLUMN_TAG_NAMES = [...Object.values(COMMON_TAG_NAME), OPTIONAL_TAG_NAME.TYPE, OPTIONAL_TAG_NAME.FORMAT,
+const DF_TAG_NAMES = [
+  ...Object.values(COMMON_TAG_NAME),
+  OPTIONAL_TAG_NAME.COLUMNS,
+  OPTIONAL_TAG_NAME.CATEGORICAL,
+  OPTIONAL_TAG_NAME.ACTION];
+const COLUMN_TAG_NAMES = [...Object.values(COMMON_TAG_NAME), OPTIONAL_TAG_NAME.COLUMNS, OPTIONAL_TAG_NAME.FORMAT,
   OPTIONAL_TAG_NAME.ALLOW_NULLS, OPTIONAL_TAG_NAME.ACTION, OPTIONAL_TAG_NAME.SEM_TYPE];
 const STRING_TAG_NAMES = [...Object.values(COMMON_TAG_NAME), OPTIONAL_TAG_NAME.CHOICES, OPTIONAL_TAG_NAME.SUGGESTIONS];
+const INT_TAG_NAMES = [...Object.values(COMMON_TAG_NAME), OPTIONAL_TAG_NAME.MIN, OPTIONAL_TAG_NAME.MAX];
 
 type FuncParamBase = {
   direction: DIRECTION,
@@ -137,8 +147,11 @@ type FuncParamBase = {
 }
 
 type FuncParam =
-    FuncParamBase & {
+  FuncParamBase & {
   type: DG.TYPE.BOOL | DG.TYPE.DATE_TIME | DG.TYPE.FLOAT | DG.TYPE.GRAPHICS | DG.TYPE.INT
+  options?: {tag: COMMON_TAG_NAME, value: string}[]
+} | FuncParamBase & {
+  type: DG.TYPE.INT
   options?: {tag: COMMON_TAG_NAME, value: string}[]
 } | FuncParamBase & {
   type: DG.TYPE.DATA_FRAME,
@@ -154,6 +167,8 @@ type FuncParam =
 const generateParamLine = (param: DG.Property, direction: string) => {
   const optionTags = (() => {
     switch (param.propertyType) {
+    case DG.TYPE.INT:
+      return INT_TAG_NAMES;
     case DG.TYPE.DATA_FRAME:
       return DF_TAG_NAMES;
     case DG.TYPE.COLUMN_LIST:
@@ -167,7 +182,7 @@ const generateParamLine = (param: DG.Property, direction: string) => {
   })();
   const optionTagsPreview = optionTags
     .map((tag) => {
-      console.log(param.name, tag, param.options, param.options[tag]);
+      // console.log(param.name, tag, JSON.stringify(param.options), param.options[tag]);
       return {tag: tag, val: param.options[tag]};
     })
     .filter((value) => !!value.val)
