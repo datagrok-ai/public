@@ -17,9 +17,9 @@ import {toxicityWidget} from './widgets/toxicity';
 import {OCLCellRenderer} from './ocl_cell_renderer';
 import {chemSpace} from './analysis/chem_space';
 import {getDescriptorsSingle} from './descriptors/descriptors_calculation';
-import {getDescriptors} from './descriptors/descriptors_calculation';
+import {addDescriptors} from './descriptors/descriptors_calculation';
 import {getDescriptorsApp} from './descriptors/descriptors_calculation';
-import {findMCS} from './panels/find-mcs';
+import {addMcs} from './panels/find-mcs';
 import {addInchis} from './panels/inchi';
 import {addInchiKeys} from './panels/inchi';
 import * as chemCommonRdKit from './chem_common_rdkit';
@@ -311,7 +311,7 @@ export async function chemSimilaritySearch() {
 //output: string result
 export async function descriptorsPanel(smiles: DG.Column) {
   let table: DG.DataFrame = grok.shell.t;
-  getDescriptors(smiles, table);
+  addDescriptors(smiles, table);
 }
 
 //name: Chem | R-Groups Analysis Port
@@ -326,8 +326,8 @@ export function rGroupsAnalysisPanel(col: DG.Column) {
 //friendly-name: Chem | Find MCS Port
 //tags: panel, chem
 //input: column col {semType: Molecule}
-export function findMCSpanel(col: DG.Column) {
-  findMCS(col);
+export function addMcsPanel(col: DG.Column) {
+  addMcs(col);
 }
 
 //name: Chem | To InchI Port
