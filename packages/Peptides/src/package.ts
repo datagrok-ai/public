@@ -15,7 +15,6 @@ import {PeptideSimilaritySpaceWidget} from './utils/peptide-similarity-space';
 import {manualAlignmentWidget} from './widgets/manual-alignment';
 import {SARViewer, SARViewerVertical} from './viewers/sar-viewer';
 import {peptideMoleculeWidget} from './widgets/peptide-molecule';
-import {correlationAnalysisPlots} from './utils/correlation-analysis';
 
 export const _package = new DG.Package();
 let tableGrid: DG.Grid;
@@ -176,16 +175,4 @@ export function manualAlignment(monomer: string) {
 export async function peptideSpacePanel(col: DG.Column): Promise<DG.Widget> {
   const widget = new PeptideSimilaritySpaceWidget(col, view ?? grok.shell.v);
   return await widget.draw();
-}
-
-//name: Correllation analysis
-export async function correlationAnalysis() {
-  view = (grok.shell.v as DG.TableView);
-
-  const df = await grok.data.files.openTable('Demo:TestJobs:Files:DemoFiles/bio/peptides.csv');
-  const tview = grok.shell.addTableView(df);
-  const [cpviewer, bpviewer] = correlationAnalysisPlots(df.getCol('AlignedSequence'));
-
-  tview.dockManager.dock(cpviewer, 'right');
-  tview.dockManager.dock(bpviewer, 'down');
 }

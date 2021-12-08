@@ -1,17 +1,35 @@
 import {assert} from './operations';
 
-/**
- * Class to categorial encode/decode aligned amino acid residues sequence.
- *
- * @export
- * @class AlignedSequenceEncoder
- */
-export class AlignedSequenceEncoder {
-    protected aa2num: {[name: string]: number};
-    protected num2aa: {[code: number]: string};
+type SideChainScale = {[name: string]: number};
+type SideChainScaleCollection = {[name: string]: SideChainScale};
 
-    constructor () {
-        this.aa2num = {
+class SideChainScales {
+    static scales: SideChainScaleCollection = {
+        // Wimley-White interfacial hydrophobicity scale
+        'WimleyWhite': {
+            '-': 0,
+            'A': 0.17,
+            'C': -0.24,
+            'D': -0.07, // Asp-: 1.23
+            'E': -0.01, // Glu-: 2.02
+            'F': -1.13, // 
+            'G': 0.01,
+            'H': 0.17, // His+: 0.96
+            'I': -0.31,
+            'K': 0.99, // Lys+
+            'L': -0.56,
+            'M': -0.23,
+            'N': 0.42,
+            'P': 0.45,
+            'Q': 0.58,
+            'R': 0.81, // Arg+
+            'S': 0.13,
+            'T': 0.14,
+            'V': 0.07,
+            'W': -1.85,
+            'Y': -0.94,
+        },
+        'categorial': {
             '-': 0,
             'A': 1,
             'C': 2,
@@ -33,7 +51,31 @@ export class AlignedSequenceEncoder {
             'V': 18,
             'W': 19,
             'Y': 20,
-        };
+        },
+    };
+
+    static getAvailableScales(): string[] {
+        return Object.entries(this.scales).map(([k, _]) => k);
+    }
+
+    static getScale(name: string): SideChainScale {
+        assert(!(this.scales[name] === undefined), `Scale '${name}' was not found.`);
+        return this.scales[name];
+    }
+}
+
+/**
+ * Class to categorial encode/decode aligned amino acid residues sequence.
+ *
+ * @export
+ * @class AlignedSequenceEncoder
+ */
+export class AlignedSequenceEncoder {
+    protected aa2num: SideChainScale;
+    protected num2aa: {[code: number]: string};
+
+    constructor (scale: string = 'categorial') {
+        this.aa2num = SideChainScales.getScale(scale);
         this.num2aa = {};
         Object.entries(this.aa2num).forEach(([k, v]) => (this.num2aa[v] = k));
     }
@@ -104,9 +146,13 @@ export class AlignedSequenceEncoder {
     
             assert(char in this.aa2num, `Unknown char '${char}' found in sequence '${sequence}'`);
     
-            values[i] = this.aa2num[char];
+            values[i] = this.encodeLettter(char);
         }
         return values;
+    }
+
+    public encodeLettter(letter: string): number {
+        return this.aa2num[letter];
     }
 
     /**
