@@ -279,7 +279,7 @@ export class TimelinesViewer extends EChartViewer {
             height: this.markerSize
           },
           style: {
-            fill: api.value(4) ? this.selectionColor : this.colorMap[isNaN(api.value(3)) ?
+            fill: api.value(5) ? this.selectionColor : this.colorMap[isNaN(api.value(3)) ?
               this.data[params.dataIndex][3][0] : api.value(3)]
           }
         };
@@ -328,7 +328,7 @@ export class TimelinesViewer extends EChartViewer {
           type: 'rect',
           transition: ['shape'],
           shape: rectShape,
-          style: { fill: api.value(4) ? this.selectionColor : this.colorMap[isNaN(api.value(3)) ?
+          style: { fill: api.value(5) ? this.selectionColor : this.colorMap[isNaN(api.value(3)) ?
             this.data[params.dataIndex][3][0] : api.value(3)] }
         });
       }
