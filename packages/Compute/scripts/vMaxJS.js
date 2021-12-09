@@ -2,24 +2,24 @@
 //description: Predict the minimum filter size required for the separation of effluent from bioreactors, given the constraints of batch size and total batch time based on a training dataset of time vs filtrate volume for a given filter type, filter area and pressure
 //language: javascript
 //tags: model, filtration
-//input: dataframe inputTable {viewer: OutliersSelectionViewer() | Scatter Plot(color: "isOutlier", lassoTool: "true", legendVisibility: "Never", filterByZoom: "false") | Grid()}
-//input: dataframe inputParametersForReporting {viewer: Grid()}
-//input: double testArea = 3.5 {caption: Test Filter Area; units: cm²} [Test Filter area]
-//input: double vbatch = 25 {caption: Desired Volume of Batch; units: L} [Desired Volume of Batch]
-//input: double tbatch = 0.5 {caption: Desired process time; units: hr} [Desired process time]
+//input: dataframe inputTable {caption: Input Table; viewer: OutliersSelectionViewer() | Scatter Plot(filter: "!${isOutlier}", showFilteredOutPoints: "true",  filteredOutRowsColor: 4293991195, showRegressionLine: "true", legendVisibility: "Never", filterByZoom: "false") | Grid()}
+//input: dataframe parametersForReporting {caption: Parameters For Reporting; viewer: Grid()}
+//input: double testFilterArea = 3.5 {caption: Test Filter Area; units: cm²} [Test Filter area]
+//input: double desiredVolumeOfBatch = 25 {caption: Desired Volume Of Batch; units: L} [Desired Volume of Batch]
+//input: double desiredProcessTime = 0.5 {caption: Desired Process Time; units: hr} [Desired process time]
 //input: double sf = 1.5 {caption: Safety Factor} [Safety Factor]
 //help-url: https://github.com/datagrok-ai/public/blob/master/packages/Compute/src/help.md
-//output: dataframe regressionTable {viewer: Scatter Plot(filter: "!${isOutlier}", showFilteredOutPoints: "true",  filteredOutRowsColor: 4293991195, showRegressionLine: "true"); category: OUTPUT}
-//output: dataframe trialData {category: OUTPUT}
-//output: dataframe absoluteFluxDecay {viewer: Scatter Plot(); category: OUTPUT}
-//output: dataframe normalizedFluxDecay {viewer: Scatter Plot(); category: OUTPUT}
-//output: dataframe experimentalResults {category: OUTPUT}
-//output: dataframe experimentalResultsSummary {category: OUTPUT}
-//output: dataframe recommendations {category: OUTPUT}
-//output: dataframe sampleCharacteristics {category: OUTPUT}
-//output: dataframe filter {category: OUTPUT}
+//output: dataframe regressionTable {caption: Regression Table; viewer: Scatter Plot(filter: "!${isOutlier}", showFilteredOutPoints: "true",  filteredOutRowsColor: 4293991195, showRegressionLine: "true"); category: OUTPUT}
+//output: dataframe trialData {caption: Trial Data; category: OUTPUT}
+//output: dataframe absoluteFluxDecay {caption: Absolute Flux Decay; viewer: Scatter Plot(); category: OUTPUT}
+//output: dataframe normalizedFluxDecay {caption: Normalized Flux Decay; viewer: Scatter Plot(); category: OUTPUT}
+//output: dataframe experimentalResults {caption: Experimental Results; category: OUTPUT}
+//output: dataframe experimentalResultsSummary {caption: Experimental Results Summary; category: OUTPUT}
+//output: dataframe recommendations {caption: Recommendations; category: OUTPUT}
+//output: dataframe sampleCharacteristics {caption: Sample Characteristics; category: OUTPUT}
+//output: dataframe filter {caption: Filter; category: OUTPUT}
 
-volume = vbatch;
+volume = desiredVolumeOfBatch;
 function gaussianElimination(input, orderOfPolynomialRegression) {
   const n = input.length - 1; const coefficients = [orderOfPolynomialRegression];
   for (let i = 0; i < n; i++) {
@@ -93,7 +93,7 @@ const volumeInMilliliters = dfWithoutOutliers.col('filtrate volume (mL)');
 dfWithoutOutliers.columns.addNewFloat('time (hr)').init((i) => timeInMinutes.get(i) / 60);
 const timeInHours = dfWithoutOutliers.col('time (hr)');
 
-dfWithoutOutliers.columns.addNewFloat('V (L/m2)').init((i) => 10 * volumeInMilliliters.get(i) / testArea);
+dfWithoutOutliers.columns.addNewFloat('V (L/m2)').init((i) => 10 * volumeInMilliliters.get(i) / testFilterArea);
 const newVolume = dfWithoutOutliers.col('V (L/m2)');
 
 dfWithoutOutliers.columns.addNewFloat('t/V (hr/(L/m2))').init((i) => 100 * timeInHours.get(i) / newVolume.get(i));
@@ -136,19 +136,20 @@ const flux = 9372.11;
 const ff0 = flux / j.get(1);
 experimentalResults = DG.DataFrame.fromColumns([
   DG.Column.fromList('string', 'Run', Array(va.length - windowLength).fill('1')),
-  DG.Column.fromList('double', va.name, va.toList().slice(0, va.length - windowLength)), j, jj0
-  // DG.Column.fromList('double', 'Trial Throughput (L/m²)', [trialThroughput]),
-  // DG.Column.fromList('double', 'Flux (LMH)', [flux]),
-  // DG.Column.fromList('double', 'Flux/Flux0 (LMH)', [ff0]),
+  DG.Column.fromList('double', va.name, va.toList().slice(0, va.length - windowLength)), 
+  j, 
+  jj0
 ]);
 const meanFlux = j.stats.avg;
 const vmax = 0.28;//Math.round(1 / coefficients[1]);
 const instantaneousFlux = j.get(j.length - 1);
 const initialFlux = j.get(1);
 const fluxDecay = (1 - instantaneousFlux / initialFlux) * 100;
+const names = parametersForReporting.col('Parameter').toList();
+const values = parametersForReporting.col('Value').toList();
 experimentalResultsSummary = DG.DataFrame.fromColumns([
   DG.Column.fromList('string', 'Run', ['1']),
-  DG.Column.fromList('string', 'Filter', [inputParametersForReporting.get(0, 1)]),
+  DG.Column.fromList('string', 'Filter', [values[names.indexOf('Filter Name')]]),
   DG.Column.fromList('double', 'Trial Throughput (L/m²)', [trialThroughput]),
   DG.Column.fromList('double', 'Flux0 (LMH)', [j.get(1)]),
   // DG.Column.fromList('double', 'Flux/Flux0 (LMH)', [ff0]),
@@ -157,31 +158,29 @@ experimentalResultsSummary = DG.DataFrame.fromColumns([
   DG.Column.fromList('double', 'Flux Decay (%)', [fluxDecay]),
 ]);
 const q0 = Math.round(1 / coefficients[0]);
-const amin = (vbatch / vmax) + (vbatch / tbatch / q0);
+const amin = (desiredVolumeOfBatch / vmax) + (desiredVolumeOfBatch / desiredProcessTime / q0);
 const installedArea = sf * amin;
 const processLoading = volumeInLiters.get(volumeInLiters.length - 1) / installedArea;
 recommendations = DG.DataFrame.fromColumns([
-  DG.Column.fromList('double', 'Volume (L)', [vbatch]),
-  DG.Column.fromList('double', 'Time (h)', [tbatch]),
+  DG.Column.fromList('double', 'Volume (L)', [desiredVolumeOfBatch]),
+  DG.Column.fromList('double', 'Time (h)', [desiredProcessTime]),
   DG.Column.fromList('double', 'Amin (m²)', [amin]),
   DG.Column.fromList('double', 'Safety Factor', [sf]),
   DG.Column.fromList('double', 'Installed Area', [installedArea]),
   DG.Column.fromList('double', 'Process Loading (L/m²)', [processLoading]),
-  DG.Column.fromList('string', 'Filter', [inputParametersForReporting.get(1, 0)]),
-  DG.Column.fromList('string', 'Installed Device', [inputParametersForReporting.get(1, 10)]),
+  DG.Column.fromList('string', 'Filter', [values[names.indexOf('Filter Name')]]),
+  DG.Column.fromList('string', 'Installed Device', [values[names.indexOf('Installed Device')]]),
 ]);
 
 const v90 = vmax * 0.68;
 const initialFlowArea = coefficients[0];
 trialData = DG.DataFrame.fromColumns([
-  DG.Column.fromList('double', 'Test Filter Area (m²)', [testArea]),
+  DG.Column.fromList('double', 'Test Filter Area (m²)', [testFilterArea]),
   DG.Column.fromList('double', 'Initial Flow Area (L/h)', [initialFlowArea]),
   DG.Column.fromList('double', 'Vmax (m²)', [vmax]),
   DG.Column.fromList('double', 'V90 (m²)', [v90]),
 ]);
 
-const names = inputParametersForReporting.col('Parameter').toList();
-const values = inputParametersForReporting.col('Value').toList();
 filter = DG.DataFrame.fromColumns([
   DG.Column.fromList('string', 'Filter Family', [values[names.indexOf('Filter Family')]]),
   DG.Column.fromList('string', 'Filter Name', [values[names.indexOf('Filter Name')]]),
@@ -191,9 +190,9 @@ filter = DG.DataFrame.fromColumns([
   DG.Column.fromList('string', 'Catalog Nr', [values[names.indexOf('Catalog Nr')]]),
 ]);
 sampleCharacteristics = DG.DataFrame.fromColumns([
-  DG.Column.fromList('string', 'Date', [values[names.indexOf('date ')]]),
-  DG.Column.fromList('string', 'Prior step', [values[names.indexOf('Prior step')]]),
-  DG.Column.fromList('string', 'Prot conc', [values[names.indexOf('Prot conc')]]),
-  DG.Column.fromList('string', 'Density', [values[names.indexOf('Density')]]),
-  DG.Column.fromList('string', 'Turbidity', [values[names.indexOf('Turbidity')]]),
+  DG.Column.fromList('string', 'Date', [values[names.indexOf('date ')]]),
+  DG.Column.fromList('string', 'Prior Step', [values[names.indexOf('Prior Step')]]),
+  DG.Column.fromList('string', 'Prot conc. (mg/mL)', [values[names.indexOf('Prot conc. (mg/mL)')]]),
+  DG.Column.fromList('string', 'Density (g/L)', [values[names.indexOf('Density (g/L)')]]),
+  DG.Column.fromList('string', 'Turbidity (NTU)', [values[names.indexOf('Turbidity (NTU)')]]),
 ]);
