@@ -1,6 +1,59 @@
 <!-- TITLE: Release History -->
 <!-- SUBTITLE: -->
 
+# 2021-12-09 Dev build 0.99.0
+
+## Latest Docker Images
+
+* Datagrok: 
+  *  `docker pull datagrok/datagrok:0.99.0`
+  *  `docker pull datagrok/datagrok:latest`
+  
+* [Docker-Compose](admin/docker-compose.md)
+
+## Addressed Issues
+
+* GitHub Actions: Update js-api/package-lock.json 
+* Dev-tools: version bump 
+* GitHub Actions: Update packages/DevTools/package-lock.json 
+* #228 Chem: descriptors, incho, inchi keys, mcs refactoring and polishing, bug fixes 
+* Compute: Vmax: editable input tab and transposed output tables 
+* Compute: removed margin after info block in SelOut 
+* Compute: centered the buttons in OutSel 
+* Compute: removed padding on OutSel viewer 
+* Compute: added padding to FE preview 
+* Compute: added styling to FE preview 
+* Compute: fixed export after update 
+* Compute: Vmax update 
+* Compute: patch version bump 
+* GitHub Actions: Update packages/Compute/package-lock.json 
+* Grok Connect: rename ClickHouse provider 
+* Update public 
+* Scatter plot: regression line: improve precision for the regression coefficient  
+* Scatter plot: improve axis formatting (".00" postfixes are often unnecessary) 
+* Scatter Plot: Rename and move property for MinMax labels visibility 
+* Minor code cleanup 
+* (Bug) Trellis Plot: full screen mode for inner viewers doesn't work when trellis is zoomed 
+* Peptides #194: Add correlating positions highlighting. 
+* Peptides #194: Release correlation analysis. 
+* Peptides #93: Small adjustments. 
+* Peptides #93: Release. 
+* Peptides #194: Remove debug logging. 
+* Peptides #194: Version up. 
+* RepertoireBrowser: minor fixes 
+* Compute: improved typing on function params 
+* Compute: fixed function propss labels in FE 
+* Compute: code preview generation based on prop type 
+* Renamed .d to .dart to fix minified code 
+* CSS fix 
+* Grok Connect: maven cache in docker image 
+* Compute: bumped minor version and JS API version 
+* Viewers: Unification of properties (alpha/opacity/opaque) 
+* Compute: Vmax and Pmax tables rearrangements 
+* SQLite #47: initial commit (WIP) 
+* (Bug) JS API: null reference in JsViewer.dataframe 
+
+
 # 2021-12-07 Dev build 0.98.0
 
 ## Latest Docker Images
