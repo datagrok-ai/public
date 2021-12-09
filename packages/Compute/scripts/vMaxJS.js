@@ -11,9 +11,7 @@
 //help-url: https://github.com/datagrok-ai/public/blob/master/packages/Compute/src/help.md
 //output: dataframe regressionTable {caption: Regression Table; viewer: Scatter Plot(filter: "!${isOutlier}", showFilteredOutPoints: "true",  filteredOutRowsColor: 4293991195, showRegressionLine: "true"); category: OUTPUT}
 //output: dataframe trialData {caption: Trial Data; category: OUTPUT}
-//output: dataframe absoluteFluxDecay {caption: Absolute Flux Decay; viewer: Scatter Plot(); category: OUTPUT}
-//output: dataframe normalizedFluxDecay {caption: Normalized Flux Decay; viewer: Scatter Plot(); category: OUTPUT}
-//output: dataframe experimentalResults {caption: Experimental Results; category: OUTPUT}
+//output: dataframe fluxDecayDf {caption: Flux Decay Experimental Results; viewer: Line Chart(x: "V/A (L/m2)", multiAxis: "true") | Grid(); category: OUTPUT}
 //output: dataframe experimentalResultsSummary {caption: Experimental Results Summary; category: OUTPUT}
 //output: dataframe recommendations {caption: Recommendations; category: OUTPUT}
 //output: dataframe sampleCharacteristics {caption: Sample Characteristics; category: OUTPUT}
@@ -120,13 +118,10 @@ newDf.columns.addNewFloat('J (LMH)').init((i) => (i > 0) ? 3600 * (2 * ca[i] * t
 const j = newDf.col('J (LMH)');
 newDf.columns.addNewFloat('J/Jo').init((i) => (i > 0) ? j.get(i) / (3600 * area) : 0);
 const jj0 = newDf.col('J/Jo');
-absoluteFluxDecay = DG.DataFrame.fromColumns([
-  DG.Column.fromList('double', va.name, va.toList().slice(0, va.length - windowLength)), 
-  j
-]);
-normalizedFluxDecay = DG.DataFrame.fromColumns([
-  DG.Column.fromList('double', va.name, va.toList().slice(0, va.length - windowLength)), 
-  jj0
+fluxDecayDf = DG.DataFrame.fromColumns([
+  DG.Column.fromList('double', va.name, va.toList().slice(1, va.length - windowLength)), 
+  DG.Column.fromList('double', j.name, j.toList().slice(1, j.length)),
+  DG.Column.fromList('double', jj0.name, jj0.toList().slice(1, jj0.length))
 ]);
 
 regressionTable = inputTable;
