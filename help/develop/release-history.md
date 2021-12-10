@@ -1,6 +1,256 @@
 <!-- TITLE: Release History -->
 <!-- SUBTITLE: -->
 
+# 2021-12-09 Dev build 0.99.0
+
+## Latest Docker Images
+
+* Datagrok: 
+  *  `docker pull datagrok/datagrok:0.99.0`
+  *  `docker pull datagrok/datagrok:latest`
+  
+* [Docker-Compose](admin/docker-compose.md)
+
+## Addressed Issues
+
+* GitHub Actions: Update js-api/package-lock.json 
+* Dev-tools: version bump 
+* GitHub Actions: Update packages/DevTools/package-lock.json 
+* #228 Chem: descriptors, incho, inchi keys, mcs refactoring and polishing, bug fixes 
+* Compute: Vmax: editable input tab and transposed output tables 
+* Compute: removed margin after info block in SelOut 
+* Compute: centered the buttons in OutSel 
+* Compute: removed padding on OutSel viewer 
+* Compute: added padding to FE preview 
+* Compute: added styling to FE preview 
+* Compute: fixed export after update 
+* Compute: Vmax update 
+* Compute: patch version bump 
+* GitHub Actions: Update packages/Compute/package-lock.json 
+* Grok Connect: rename ClickHouse provider 
+* Update public 
+* Scatter plot: regression line: improve precision for the regression coefficient  
+* Scatter plot: improve axis formatting (".00" postfixes are often unnecessary) 
+* Scatter Plot: Rename and move property for MinMax labels visibility 
+* Minor code cleanup 
+* (Bug) Trellis Plot: full screen mode for inner viewers doesn't work when trellis is zoomed 
+* Peptides #194: Add correlating positions highlighting. 
+* Peptides #194: Release correlation analysis. 
+* Peptides #93: Small adjustments. 
+* Peptides #93: Release. 
+* Peptides #194: Remove debug logging. 
+* Peptides #194: Version up. 
+* RepertoireBrowser: minor fixes 
+* Compute: improved typing on function params 
+* Compute: fixed function propss labels in FE 
+* Compute: code preview generation based on prop type 
+* Renamed .d to .dart to fix minified code 
+* CSS fix 
+* Grok Connect: maven cache in docker image 
+* Compute: bumped minor version and JS API version 
+* Viewers: Unification of properties (alpha/opacity/opaque) 
+* Compute: Vmax and Pmax tables rearrangements 
+* SQLite #47: initial commit (WIP) 
+* (Bug) JS API: null reference in JsViewer.dataframe 
+
+
+# 2021-12-07 Dev build 0.98.0
+
+## Latest Docker Images
+
+* Datagrok: 
+  *  `docker pull datagrok/datagrok:0.98.0`
+  *  `docker pull datagrok/datagrok:latest`
+  
+* [Docker-Compose](admin/docker-compose.md)
+
+## Addressed Issues
+
+* GitHub Actions: Update js-api/package-lock.json 
+* Function View: Adjust table heights 
+* Grid: add changePropertyPanel property   
+* Fixed analyzer warnings 
+
+
+# 2021-12-07 Dev build 0.97.0
+
+## Latest Docker Images
+
+* Datagrok: 
+  *  `docker pull datagrok/datagrok:0.97.0`
+  *  `docker pull datagrok/datagrok:latest`
+  
+* [Docker-Compose](admin/docker-compose.md)
+
+## Addressed Issues
+
+* GitHub Actions: Update js-api/package-lock.json 
+* Chem: Set defaults in chem_common.ts 
+* Scatter Plot: Marker coding for Split-By-Marker 
+* Infrastructure Documentation (WIP)
+* Peptides: removed unused code 
+* GitHub Actions: Update packages/Peptides/package-lock.json 
+* Charts: Package documentation (WIP)
+* JS API: Improved code style (marker coding, formula lines) 
+* (Bug) Dev panel doesn't work for any entities 
+* Compute: export timeout increased 
+* (Bug) Scatter Plot: Y axis shows weird values 
+* Compute: fixed bug on script call from Model Hub 
+* Chem: added Identifiers panel 
+* Small help addition 
+* Compute: export function works with single tab 
+* Scatter Plot: Get rid of code duplication (axes and grid lines) 
+* (Bug) Bar chart: When "Axis Type" = "logarithmic", numbers on the axis get merged 
+* Chem: R Group Analysis fix 
+* NPM repositories: new package manager UI (WIP)
+* #228 Chem: MCS panel 
+* Compute: Pmax: add polynomial regression lines (WIP)
+* JS API: add Property options 
+* #228 Chem: panels Inci, Inch Keys 
+* Compute: added outliers selection viewer 
+* Compute: marked the outliers selection dialog as deprecated 
+* Compute: minor version bump 
+* GitHub Actions: Update packages/Compute/package-lock.json 
+* Functions: help-url support for scripts in Function View (WIP)
+* Compute: outliers selection additional column fixed 
+* Ability to disable events in InputBase 
+* Compute: improved the code generation 
+* (Bug) Calculated column with numeric type and empty formula leaves no formula tag 
+* Ability to show multiple viewers in Function View 
+* Function View: Show table inputs if there are viewers set 
+* small css adjustment 
+
+
+# 2021-12-02 Dev build 0.96.0
+
+## Latest Docker Images
+
+* Datagrok: 
+  *  `docker pull datagrok/datagrok:0.96.0`
+  *  `docker pull datagrok/datagrok:latest`
+  
+* [Docker-Compose](admin/docker-compose.md)
+
+## Addressed Issues
+
+* GitHub Actions: Update js-api/package-lock.json 
+* CI: publish libraries packages to npm 
+* (Bug) Sequence Translator: translation from GCRS to MM12 is not displayed 
+* Chem: a curious case where tests passes, but the code shouldn't work 
+* SequenceTranslator: fix of SMILES concatenation of GCRS sequence 
+* Chem: Setup routine (npm unlink/link) 
+* Chem: Version bump 0.36.0 (no locks) 
+* SequenceTranslator: fix of ps linkage concatenation 
+* Fix concurrent modification during iteration exception 
+* #181 Chem: Workers. wip: Passing ArrayBuffers to the main thread 
+* Chem: Fixing external package-lock.json by updates 
+* Tutorials: package.json update 
+* Script editor: update 
+* GitHub Actions: Update packages/Tutorials/package-lock.json 
+* CSS Fix 
+* Chem: Refactoring, fingerprint-centric methods 
+* Chem: Refactoring, small renames 
+* Peptides: some fixes and improvemets 
+* (Bug) Formula Lines: Lines are clipped on some data 
+* NPM repositories: new package manager UI (WIP)
+* Packages: Add tests for versions 
+* Chem: RdKit module external availability 
+* JS API: Script.sample, Script.reference, Script.tags, Script.environment 
+* Peptides: viewers are docked down 
+* Peptides: Add simple correlation analysis. 
+* add tutorial previews 
+* Chem: Proper return of fingerprints with small datasets 
+* Chem: Incorrect cache invalidation on re-use; common fixed setting for Morgan Fingerprints 
+* Chem: Compute Morgan fingerprints on small datasets on a main thread 
+* Chem: Remove workers' getSimilarities in favor of the main thread 
+* Chem: Handling a case in caching when an input column is modified (on PR #39) 
+* Chem: Redundant async calls in rdkit_service.ts 
+* Chem: Remove workers' structuralAlerts in favor of the main thread 
+* Documentation: Correlation plot can also show Spearman's correlation. 
+* corrPlot: Add options description. 
+* Chem: similarity analysis and SPE removal 
+* Chem: Version bump 0.38.0 (no locks) 
+* (Bug) Packages: Infinite detectors loop 
+* Docker versioning 
+* Chem: Moved service_worker part with dictionary to TypeScript 
+* JS Api: added options parameter to chem.svgMol 
+* Oligo Batch Calculator: rearrange object with codes 
+* Fixed class names 
+* PubChem: added PubChem panel 
+* GitHub Actions: Update packages/PubChemApi/package-lock.json 
+* Peptides: updated build script 
+* Sequence Translator: rearrange object with codes 
+* Chem: panels removal 
+* Commit version to the according branch 
+* GitHub Actions: Publish js-api from any branch 
+* Fix condition to create branches in public repository 
+* Git information inside docker containers 
+* (Bug) In-vis Filter: Take into account property ShowFilteredOutPoints 
+* Ability to show input parameters in Function View 
+* Lib statistics: updated package.json 
+* GitHub Actions: Update libraries/statistics/package-lock.json 
+* Peptides: updated package.json 
+* (Bug) MariaDB and MySQL databases throw an exception when trying to open a list of tables 
+* Peptides: chem palette improvement 
+* Fixed build errors 
+* GitHub Actions: Update packages/Peptides/package-lock.json 
+* New build script 
+* Production js build setting 
+* Separate source maps 
+* Scatter Plot: Make scrollbars like a histogram and place them on the axes 
+* Peptides #194: Add a box plot. 
+* Peptides #194: Add missing changes. 
+* More error handling for getNpmPackageVersions 
+* Chem #197: descriptors 
+* Peptides #194: Switch to Kendall's correlation. 
+* Lib statistics: added increment after changes 
+* GitHub Actions: Update libraries/utils/package-lock.json 
+* Check js-api build before docker image build 
+* Grok Connect: Upgrade shade plugin with relocated http 
+* JS API: add Property options (WIP)
+* Chem #197: descriptors polishang 
+* Push version: get latest datagrok-api version from npm registry 
+* Peptides: AAR grouping 
+* Chem: polishing 
+* Compute: fixed export on multiple plots 
+* Packages: optimised search for compatible versions 
+* Compute: path version bump 
+* Compute: Vmax: Pmax: WIP 
+* Compute: js-api version bump and patch version bump 
+* Compute: fixed buttons height 
+* Compute: patch version bump 
+* GitHub Actions: Update packages/Compute/package-lock.json 
+* Fixed addNewColumn layout 
+* Chem: returning locks to the package functions 
+* Unit tests: exclude and include components from command line 
+* Compute: Vmax: Pmax: output parameters joined in tables 
+* (Bug) Grok connect: NPE after dev deploy  
+* Updated dev environment v2 for Linux users 
+* Clinical case: added warning in case demo fils or SDTM data not loaded 
+* Compute: fixed grids export 
+* Peptides #194, #93: Fix Peptide Space. 
+* SequenceTranslator: fix of SMILES concatenation 
+* GitHub Actions: Update packages/SequenceTranslator/package-lock.json 
+* (Bug) Filters: Uncheck/Check a field in the filter panel that does not update the record properly 
+* Libs and Peptides versions bump 
+* Compute: added graphics export feature 
+* Packages: allow subfolders in the directories reserved for entities 
+* (Bug) Grok Connect: Athena: java.lang.NullPointerException at java.util.Hashtable.put(Hashtable.java:460) 
+* Datlas: remove timer for reconnecting to Grok connect 
+* Peptides: dataset restoration 
+* Grok connect: improve SettingsManager for tests and GrokConnectShell 
+* (Bug) Formula Lines: Sometimes tooltips doesn't appear 
+* Wiki: Access \- WIP 
+* Charts: Package documentation (WIP)
+* Peptides #161, #193: improvements 
+* Peptides: version bump 
+* Compute: added Function Editor 
+* SequenceTranslator: version bump 
+* Package files caching 
+* RepertoireBrowser:  updates, new PTM obs tracks 
+* GitHub Actions: Update packages/RepertoireBrowser/package-lock.json 
+
+
 # 2021-11-25 Dev build 0.95.9
 
 ## Latest Docker Images

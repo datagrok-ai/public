@@ -197,6 +197,9 @@ export const TAGS = {
   COLOR_CODING_CATEGORICAL: '.color-coding-categorical',
   COLOR_CODING_LINEAR: '.color-coding-linear',
 
+  MARKER_CODING: '.marker-coding',
+  FORMULA_LINES: '.formula-lines',
+
   MULTI_VALUE_SEPARATOR: '.multi-value-separator',
   /** When a dataframe is loaded from a CSV, the maximum number of significant digits
    in the fractional part for each numeric column is determined  */
@@ -364,6 +367,29 @@ export enum NAMED_VALIDATORS {
   NOT_EMPTY = 'notEmpty',
 }
 
+export enum MARKER_TYPE {
+  CIRCLE = "circle",
+  CIRCLE_BORDER = "circle border",
+  SQUARE = "square",
+  SQUARE_BORDER = "square border",
+  CROSS_BORDER = "cross border",
+  CROSS_X_BORDER = "cross x border",
+  DIAMOND = "diamond",
+  DIAMOND_BORDER = "diamond border",
+  TRIANGLE_TOP = "triangle top",
+  TRIANGLE_RIGHT = "triangle right",
+  TRIANGLE_BOTTOM = "triangle bottom",
+  TRIANGLE_LEFT = "triangle left",
+  TRIANGLE_TOP_BORDER = "triangle top border",
+  TRIANGLE_RIGHT_BORDER = "triangle right border",
+  TRIANGLE_BOTTOM_BORDER = "triangle bottom border",
+  TRIANGLE_LEFT_BORDER = "triangle left border",
+  ASTERISK = "asterisk",
+  STAR = "star",
+  DOT = "dot",
+  GRADIENT = "gradient",
+}
+
 /**
  * @typedef {string} AggregationType
  * @typedef {string} SyncType
@@ -404,6 +430,7 @@ export type SemType = string;
 export type SimilarityMetric = `${SIMILARITY_METRIC}`;
 export type ColorType = number;
 export type ColorCodingType = `${COLOR_CODING_TYPE}`;
+export type MarkerCodingType = `${MARKER_TYPE}`;
 export type DemoDatasetName = `${DEMO_DATASET}`;
 export type DockType = `${DOCK_TYPE}`;
 export type CsvImportOptions = { delimiter?: string, decimalSeparator?: string, thousandSeparator?: string };

@@ -1,11 +1,12 @@
 {
 	"name": "@datagrok/compute",
 	"friendlyName": "Compute",
-	"version": "0.2.8",
+	"version": "0.5.1",
 	"description": "",
 	"dependencies": {
 		"cash-dom": "latest",
-		"datagrok-api": ">=0.95.8",
+		"codemirror": "^5.64.0",
+		"datagrok-api": ">=0.98.0",
 		"dayjs": "latest",
 		"exceljs": "^4.3.0",
 		"file-saver": "^2.0.5",
@@ -14,12 +15,15 @@
 		"wu": "latest"
 	},
 	"devDependencies": {
-		"@types/wu": "latest",
+		"@types/codemirror": "^5.60.5",
 		"@types/file-saver": "^2.0.3",
+		"@types/wu": "latest",
 		"@typescript-eslint/eslint-plugin": "^5.1.0",
 		"@typescript-eslint/parser": "^5.1.0",
+		"css-loader": "^6.5.1",
 		"eslint": "^8.0.1",
 		"eslint-config-google": "^0.14.0",
+		"style-loader": "^3.3.1",
 		"webpack": "latest",
 		"webpack-cli": "latest"
 	},

@@ -1,7 +1,7 @@
 import * as grok from 'datagrok-api/grok';
 import * as ui from 'datagrok-api/ui';
 import * as DG from 'datagrok-api/dg';
-import { Peptides } from '../peptides';
+import {Peptides} from '../peptides';
 
 export async function analyzePeptidesWidget(
   col: DG.Column, view: DG.TableView, tableGrid: DG.Grid, currentDf: DG.DataFrame,
@@ -70,8 +70,8 @@ export async function analyzePeptidesWidget(
         'activityScalingMethod': activityScalingMethod.value,
       };
 
-      let peptides = new Peptides();
-      await peptides.init(tableGrid, view, currentDf, options, col, activityColumnChoice.value.name);      
+      const peptides = new Peptides();
+      await peptides.init(tableGrid, view, currentDf, options, col, activityColumnChoice.value.name);
 
       progress.close();
     } else {
