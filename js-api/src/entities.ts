@@ -17,67 +17,67 @@ type PropertySetter = (a: object, value: any) => void;
  * */
 export class Entity {
 
-  public d: any;
+  public dart: any;
 
   /** @constructs Entity*/
-  constructor(d: any) {
-    this.d = d;
+  constructor(dart: any) {
+    this.dart = dart;
   }
 
   /** Entity ID (GUID)
    *  @type {string} */
-  get id(): string { return api.grok_Entity_Get_Id(this.d); }
-  set id(x: string) { api.grok_Entity_Set_Id(this.d, x); }
+  get id(): string { return api.grok_Entity_Get_Id(this.dart); }
+  set id(x: string) { api.grok_Entity_Set_Id(this.dart, x); }
 
-  newId(): void { api.grok_Entity_New_Id(this.d);}
+  newId(): void { api.grok_Entity_New_Id(this.dart);}
 
   /** Entity friendly name
    *  @type {string} */
-  get friendlyName(): string { return api.grok_Entity_Get_FriendlyName(this.d); }
-  set friendlyName(x: string) { api.grok_Entity_Set_FriendlyName(this.d, x); }
+  get friendlyName(): string { return api.grok_Entity_Get_FriendlyName(this.dart); }
+  set friendlyName(x: string) { api.grok_Entity_Set_FriendlyName(this.dart, x); }
 
   /** Entity short name */
-  get name(): string { return api.grok_Entity_Get_Name(this.d); }
-  set name(x: string) { api.grok_Entity_Set_Name(this.d, x); }
+  get name(): string { return api.grok_Entity_Get_Name(this.dart); }
+  set name(x: string) { api.grok_Entity_Set_Name(this.dart, x); }
 
   /** Entity full-qualified name */
-  get nqName(): string { return api.grok_Entity_Get_nqName(this.d); }
+  get nqName(): string { return api.grok_Entity_Get_nqName(this.dart); }
 
   /** Entity path */
-  get path(): string { return api.grok_Entity_Path(this.d); }
+  get path(): string { return api.grok_Entity_Path(this.dart); }
 
   /** Time when entity was created **/
-  get createdOn(): string { return api.grok_Entity_Get_CreatedOn(this.d); }
+  get createdOn(): string { return api.grok_Entity_Get_CreatedOn(this.dart); }
 
   /** Time when entity was updated **/
-  get updatedOn(): string { return api.grok_Entity_Get_UpdatedOn(this.d); }
+  get updatedOn(): string { return api.grok_Entity_Get_UpdatedOn(this.dart); }
 
   /** Who created entity **/
-  get author(): User { return toJs(api.grok_Entity_Get_Author(this.d)); }
+  get author(): User { return toJs(api.grok_Entity_Get_Author(this.dart)); }
 
   /** Entity properties */
   getProperties(): Promise<Map<string, any>> {
-    return new Promise((resolve, reject) => api.grok_EntitiesDataSource_GetProperties(grok.dapi.entities.d, this.d, (p: any) => resolve(p), (e: any) => reject(e)));
+    return new Promise((resolve, reject) => api.grok_EntitiesDataSource_GetProperties(grok.dapi.entities.dart, this.dart, (p: any) => resolve(p), (e: any) => reject(e)));
   }
 
   /** Sets entity properties */
   setProperties(props: Map<string, any>): Promise<any> {
-    return new Promise((resolve, reject) => api.grok_EntitiesDataSource_SetProperties(grok.dapi.entities.d, this.d, props, (_: any) => resolve(_), (e: any) => reject(e)));
+    return new Promise((resolve, reject) => api.grok_EntitiesDataSource_SetProperties(grok.dapi.entities.dart, this.dart, props, (_: any) => resolve(_), (e: any) => reject(e)));
   }
 
   /** Returns a string representing the object */
-  toString(): string { return api.grok_Object_ToString(this.d); }
+  toString(): string { return api.grok_Object_ToString(this.dart); }
 
   hasTag(tag: string): boolean {
-    return api.grok_Entity_Has_Tag(this.d, tag);
+    return api.grok_Entity_Has_Tag(this.dart, tag);
   }
 
   tag(tag: string): boolean {
-    return api.grok_Entity_Tag(this.d, tag);
+    return api.grok_Entity_Tag(this.dart, tag);
   }
 
   unTag(tag: string): boolean {
-    return api.grok_Entity_UnTag(this.d, tag);
+    return api.grok_Entity_UnTag(this.dart, tag);
   }
 }
 
@@ -87,8 +87,8 @@ export class Entity {
  * */
 export class User extends Entity {
   /** @constructs User*/
-  constructor(d: any) {
-    super(d);
+  constructor(dart: any) {
+    super(dart);
   }
 
   static fromId(id: string): User { return new User(api.grok_User_From_Id(id)); }
@@ -96,30 +96,30 @@ export class User extends Entity {
   static current(): User { return new User(api.grok_User()); }
 
   /** First name */
-  get firstName(): string { return api.grok_User_Get_FirstName(this.d); }
+  get firstName(): string { return api.grok_User_Get_FirstName(this.dart); }
 
   /** Last name */
-  get lastName(): string { return api.grok_User_Get_LastName(this.d); }
+  get lastName(): string { return api.grok_User_Get_LastName(this.dart); }
 
   /** Email */
-  get email(): string | null { return api.grok_User_Get_Email(this.d); }
+  get email(): string | null { return api.grok_User_Get_Email(this.dart); }
 
   /** Picture URL */
-  get picture(): string | object { return api.grok_User_Get_Picture(this.d); }
+  get picture(): string | object { return api.grok_User_Get_Picture(this.dart); }
 
   /** User home project */
-  get project(): Project { return toJs(api.grok_User_Get_Project(this.d)); }
+  get project(): Project { return toJs(api.grok_User_Get_Project(this.dart)); }
 
   /** User home folder connection */
-  get home(): DataConnection { return toJs(api.grok_User_Get_Storage(this.d)); }
+  get home(): DataConnection { return toJs(api.grok_User_Get_Storage(this.dart)); }
 
   /** Login */
-  get login(): string { return api.grok_User_Get_Login(this.d); }
+  get login(): string { return api.grok_User_Get_Login(this.dart); }
 
-  toMarkup(): string { return api.grok_User_ToMarkup(this.d); }
+  toMarkup(): string { return api.grok_User_ToMarkup(this.dart); }
 
   /** Security Group */
-  get group(): Group { return toJs(api.grok_User_Get_Group(this.d)); }
+  get group(): Group { return toJs(api.grok_User_Get_Group(this.dart)); }
 }
 
 
@@ -129,21 +129,21 @@ export class User extends Entity {
  * */
 export class UserSession extends Entity {
   /** @constructs UserSession*/
-  constructor(d: any) {
-    super(d);
+  constructor(dart: any) {
+    super(dart);
   }
 
   /** Entity ID (GUID) */
-  get id(): string { return api.grok_Entity_Get_Id(this.d); }
-  set id(x: string) { api.grok_Entity_Set_Id(this.d, x); }
+  get id(): string { return api.grok_Entity_Get_Id(this.dart); }
+  set id(x: string) { api.grok_Entity_Set_Id(this.dart, x); }
 
-  get type(): string { return api.grok_UserSession_Get_Type(this.d); }
+  get type(): string { return api.grok_UserSession_Get_Type(this.dart); }
 
   /** External Token */
-  get externalToken(): string { return api.grok_UserSession_Get_ExternalToken(this.d); }
+  get externalToken(): string { return api.grok_UserSession_Get_ExternalToken(this.dart); }
 
   /** User */
-  get user(): User { return toJs(api.grok_UserSession_Get_User(this.d)); }
+  get user(): User { return toJs(api.grok_UserSession_Get_User(this.dart)); }
 }
 
 /** Represents a function
@@ -154,37 +154,37 @@ export class Func extends Entity {
   public aux: any;
   public options: any;
 
-  constructor(d: any) {
-    super(d);
-    this.aux = new MapProxy(api.grok_Func_Get_Aux(this.d));
-    this.options = new MapProxy(api.grok_Func_Get_Options(this.d));
+  constructor(dart: any) {
+    super(dart);
+    this.aux = new MapProxy(api.grok_Func_Get_Aux(this.dart));
+    this.options = new MapProxy(api.grok_Func_Get_Options(this.dart));
   }
 
-  get description(): string { return api.grok_Func_Get_Description(this.d); }
+  get description(): string { return api.grok_Func_Get_Description(this.dart); }
 
-  get type(): string { return api.grok_Func_Get_Type(this.d); }
+  get type(): string { return api.grok_Func_Get_Type(this.dart); }
 
-  get path(): string { return api.grok_Func_Get_Path(this.d); }
+  get path(): string { return api.grok_Func_Get_Path(this.dart); }
 
-  get helpUrl(): string { return api.grok_Func_Get_HelpUrl(this.d); }
+  get helpUrl(): string { return api.grok_Func_Get_HelpUrl(this.dart); }
 
-  get package(): Package { return api.grok_Func_Get_Package(this.d); }
+  get package(): Package { return api.grok_Func_Get_Package(this.dart); }
 
   /** Returns {@link FuncCall} object in a stand-by state
    * @param {object} parameters
    * @returns {FuncCall} */
   prepare(parameters: object = {}): FuncCall {
-    return toJs(api.grok_Func_Prepare(this.d, parameters));
+    return toJs(api.grok_Func_Prepare(this.dart, parameters));
   };
 
   /** Input parameters */
   get inputs(): Property[] {
-    return toJs(api.grok_Func_Get_InputParams(this.d));
+    return toJs(api.grok_Func_Get_InputParams(this.dart));
   }
 
   /** Output parameters */
   get outputs(): Property[] {
-    return toJs(api.grok_Func_Get_OutputParams(this.d));
+    return toJs(api.grok_Func_Get_OutputParams(this.dart));
   }
 
   /**
@@ -217,29 +217,29 @@ export class Func extends Entity {
 
 /** Represents a project */
 export class Project extends Entity {
-  constructor(d: any) {
-    super(d);
+  constructor(dart: any) {
+    super(dart);
   }
 
-  get pictureUrl(): string { return api.grok_PictureMixin_Get_PictureUrl(this.d); }
-  get path(): string { return api.grok_Project_Get_Path(this.d); }
-  get isOnServer(): string { return api.grok_Project_Get_IsOnServer(this.d); }
-  get isLocal(): string { return api.grok_Project_Get_IsLocal(this.d); }
+  get pictureUrl(): string { return api.grok_PictureMixin_Get_PictureUrl(this.dart); }
+  get path(): string { return api.grok_Project_Get_Path(this.dart); }
+  get isOnServer(): string { return api.grok_Project_Get_IsOnServer(this.dart); }
+  get isLocal(): string { return api.grok_Project_Get_IsLocal(this.dart); }
 
   /** Project description */
-  get description(): string { return api.grok_Project_Description(this.d); }
+  get description(): string { return api.grok_Project_Description(this.dart); }
 
   /** Project changes flag */
-  get isDirty(): boolean { return api.grok_Project_IsDirty(this.d); }
+  get isDirty(): boolean { return api.grok_Project_IsDirty(this.dart); }
 
   /** Project is empty flag */
-  get isEmpty(): boolean { return api.grok_Project_IsEmpty(this.d); }
+  get isEmpty(): boolean { return api.grok_Project_IsEmpty(this.dart); }
 
-  toMarkup(): string { return api.grok_Project_ToMarkup(this.d); }
+  toMarkup(): string { return api.grok_Project_ToMarkup(this.dart); }
 
   /** Opens the project in workspace */
   open(options?: {closeAll: boolean}): Promise<Project> {
-    return api.grok_Project_Open(this.d, options?.closeAll ?? false);
+    return api.grok_Project_Open(this.dart, options?.closeAll ?? false);
   }
 }
 
@@ -249,16 +249,16 @@ export class Project extends Entity {
  * */
 export class DataQuery extends Func {
   /** @constructs DataQuery*/
-  constructor(d: any) {
-    super(d);
+  constructor(dart: any) {
+    super(dart);
   }
 
-  get adHoc(): boolean { return api.grok_Query_Get_AdHoc(this.d); }
-  set adHoc(a: boolean) { api.grok_Query_Set_AdHoc(this.d, a); }
+  get adHoc(): boolean { return api.grok_Query_Get_AdHoc(this.dart); }
+  set adHoc(a: boolean) { api.grok_Query_Set_AdHoc(this.dart, a); }
 
   /** Query text */
-  get query(): string { return api.grok_Query_Query(this.d); }
-  set query(q: string) { api.grok_Query_Set_Query(this.d, q); }
+  get query(): string { return api.grok_Query_Query(this.dart); }
+  set query(q: string) { api.grok_Query_Set_Query(this.dart, q); }
 }
 
 /** Represents a data job
@@ -267,8 +267,8 @@ export class DataQuery extends Func {
  * */
 export class DataJob extends Func {
   /** @constructs DataJob */
-  constructor(d: any) {
-    super(d);
+  constructor(dart: any) {
+    super(dart);
   }
 }
 
@@ -278,17 +278,17 @@ export class DataJob extends Func {
  * */
 export class DataConnection extends Entity {
   /** @constructs DataConnection */
-  constructor(d: any) {
-    super(d);
+  constructor(dart: any) {
+    super(dart);
   }
 
   /** Collection of parameters: server, database, endpoint, etc. */
-  get parameters(): object { return api.grok_DataConnection_Parameters(this.d); }
+  get parameters(): object { return api.grok_DataConnection_Parameters(this.dart); }
 
   /** Tests the connection, returns "ok" on success or an error message on error
    * @returns {Promise<string>}*/
   test(): Promise<string> {
-    return new Promise((resolve, reject) => api.grok_DataConnection_test(this.d, (s: any) => resolve(toJs(s)), (e: any) => reject(e)));
+    return new Promise((resolve, reject) => api.grok_DataConnection_test(this.dart, (s: any) => resolve(toJs(s)), (e: any) => reject(e)));
   }
 
 }
@@ -299,8 +299,8 @@ export class DataConnection extends Entity {
  * */
 export class Model extends Entity {
   /** @constructs Model */
-  constructor(d: any) {
-    super(d);
+  constructor(dart: any) {
+    super(dart);
   }
 }
 
@@ -310,28 +310,28 @@ export class Model extends Entity {
  * */
 export class Notebook extends Entity {
   /** @constructs Notebook */
-  constructor(d: any) {
-    super(d);
+  constructor(dart: any) {
+    super(dart);
   }
 
   /** Create Notebook on server for edit.
    * @returns {Promise<string>} Current notebook's name */
   edit(): Promise<string> {
-    return new Promise((resolve, reject) => api.grok_Notebook_Edit(this.d, (f: any) => resolve(f), (e: any) => reject(e)));
+    return new Promise((resolve, reject) => api.grok_Notebook_Edit(this.dart, (f: any) => resolve(f), (e: any) => reject(e)));
   }
 
   /** Environment name */
-  get environment(): string { return api.grok_Notebook_Get_Environment(this.d); }
-  set environment(e: string) { api.grok_Notebook_Set_Environment(this.d, e); }
+  get environment(): string { return api.grok_Notebook_Get_Environment(this.dart); }
+  set environment(e: string) { api.grok_Notebook_Set_Environment(this.dart, e); }
 
   /** Description */
-  get description(): string { return api.grok_Notebook_Get_Description(this.d); }
-  set description(e: string) { api.grok_Notebook_Set_Description(this.d, e); }
+  get description(): string { return api.grok_Notebook_Get_Description(this.dart); }
+  set description(e: string) { api.grok_Notebook_Set_Description(this.dart, e); }
 
   /** Converts Notebook to HTML code
    * @returns {Promise<string>} */
   toHtml(): Promise<string> {
-    return new Promise((resolve, reject) => api.grok_Notebook_ToHtml(this.d, (html: any) => resolve(html), (e: any) => reject(e)));
+    return new Promise((resolve, reject) => api.grok_Notebook_ToHtml(this.dart, (html: any) => resolve(html), (e: any) => reject(e)));
   }
 }
 
@@ -340,8 +340,8 @@ export class Notebook extends Entity {
  * */
 export class TableInfo extends Entity {
   /** @constructs TableInfo */
-  constructor(d: any) {
-    super(d);
+  constructor(dart: any) {
+    super(dart);
   }
 }
 
@@ -351,37 +351,37 @@ export class TableInfo extends Entity {
  * */
 export class FileInfo extends Entity {
   /** @constructs FileInfo */
-  constructor(d: any) {
-    super(d);
+  constructor(dart: any) {
+    super(dart);
   }
 
   /** Returns path, i.e. `geo/dmv_offices.csv` */
-  get path(): string { return api.grok_FileInfo_Get_Path(this.d); }
+  get path(): string { return api.grok_FileInfo_Get_Path(this.dart); }
 
   /** Returns full path, i.e. `Demo:TestJobs:Files:DemoFiles/geo/dmv_offices.csv` */
-  get fullPath(): string { return api.grok_FileInfo_Get_FullPath(this.d); }
+  get fullPath(): string { return api.grok_FileInfo_Get_FullPath(this.dart); }
 
   /** Returns file extension, i.e. `csv` */
-  get extension(): string { return api.grok_FileInfo_Get_Extension(this.d); }
+  get extension(): string { return api.grok_FileInfo_Get_Extension(this.dart); }
 
   /** Returns file name, i.e. `dmv_offices.csv` */
-  get fileName(): string { return api.grok_FileInfo_Get_FileName(this.d); }
+  get fileName(): string { return api.grok_FileInfo_Get_FileName(this.dart); }
 
   /** Returns file URL */
-  get url(): string { return api.grok_FileInfo_Get_Url(this.d); }
+  get url(): string { return api.grok_FileInfo_Get_Url(this.dart); }
 
   /** @returns {Promise<string>} */
   // readAsString(): Promise<string> {
-  //   return new Promise((resolve, reject) => api.grok_FileInfo_ReadAsString(this.d, (x: any) => resolve(x), (x: any) => reject(x)));
+  //   return new Promise((resolve, reject) => api.grok_FileInfo_ReadAsString(this.dart, (x: any) => resolve(x), (x: any) => reject(x)));
   // }
 
   readAsString(): Promise<string> {
-    return api.grok_FileInfo_ReadAsString(this.d);
+    return api.grok_FileInfo_ReadAsString(this.dart);
   }
 
   /** @returns {Promise<Uint8Array>} */
   readAsBytes(): Promise<Uint8Array> {
-    return new Promise((resolve, reject) => api.grok_FileInfo_ReadAsBytes(this.d, (x: any) => resolve(x), (x: any) => reject(x)));
+    return new Promise((resolve, reject) => api.grok_FileInfo_ReadAsBytes(this.dart, (x: any) => resolve(x), (x: any) => reject(x)));
   }
 }
 
@@ -390,59 +390,59 @@ export class FileInfo extends Entity {
  * */
 export class Group extends Entity {
   /** @constructs Group */
-  constructor(d: any) {
-    super(d);
+  constructor(dart: any) {
+    super(dart);
   }
 
   static create(name: string): Group { return new Group(api.grok_Group(name)); }
 
   /** Adds a member to the group
    * @param {Group} m */
-  addMember(m: Group): void { api.grok_Group_Add_Member(this.d, m.d, false); }
+  addMember(m: Group): void { api.grok_Group_Add_Member(this.dart, m.dart, false); }
 
   /** Adds an admin member to the group
    * @param {Group} m */
-  addAdminMember(m: Group): void { api.grok_Group_Add_Member(this.d, m.d, true); }
+  addAdminMember(m: Group): void { api.grok_Group_Add_Member(this.dart, m.dart, true); }
 
   /** Removes a member from the group
    * @param {Group} m */
-  removeMember(m: Group): void { api.grok_Group_Remove_Member(this.d, m.d); }
+  removeMember(m: Group): void { api.grok_Group_Remove_Member(this.dart, m.dart); }
 
   /** Adds the group to another one
    * @param {Group} m */
-  includeTo(m: Group): void { api.grok_Group_Add_Membership(this.d, m.d, false); }
+  includeTo(m: Group): void { api.grok_Group_Add_Membership(this.dart, m.dart, false); }
 
   /** Adds the group to another one as an admin
    * @param {Group} m */
-  includeAdminTo(m: Group): void { api.grok_Group_Add_Membership(this.d, m.d, true); }
+  includeAdminTo(m: Group): void { api.grok_Group_Add_Membership(this.dart, m.dart, true); }
 
   /** Removes membership from another group
    * @param {Group} m */
-  excludeFrom(m: Group): void { api.grok_Group_Remove_Membership(this.d, m.d); }
+  excludeFrom(m: Group): void { api.grok_Group_Remove_Membership(this.dart, m.dart); }
 
   /** Returns list of groups that belong to group, with no admin permissions
    * @type {Array<Group>} */
-  get members(): Group[] { return toJs(api.grok_Group_Get_Members(this.d, false)); }
+  get members(): Group[] { return toJs(api.grok_Group_Get_Members(this.dart, false)); }
 
   /** Returns list of groups that belong to group, with admin permissions
    * @type {Array<Group>} */
-  get adminMembers(): Group[] { return toJs(api.grok_Group_Get_Members(this.d, true)); }
+  get adminMembers(): Group[] { return toJs(api.grok_Group_Get_Members(this.dart, true)); }
 
   /** Returns list of groups that group belongs to, with no admin permissions
    * @type {Array<Group>} */
-  get memberships(): Group[] { return toJs(api.grok_Group_Get_Memberships(this.d, false)); }
+  get memberships(): Group[] { return toJs(api.grok_Group_Get_Memberships(this.dart, false)); }
 
   /** Returns list of groups that group belongs to, with admin permissions
    * @type {list<Group>} */
-  get adminMemberships(): Group[] { return toJs(api.grok_Group_Get_Memberships(this.d, true)); }
+  get adminMemberships(): Group[] { return toJs(api.grok_Group_Get_Memberships(this.dart, true)); }
 
   /** Personal user group */
-  get personal(): boolean { return api.grok_Group_Get_Personal(this.d); }
-  set personal(e: boolean) { api.grok_Group_Set_Personal(this.d, e); }
+  get personal(): boolean { return api.grok_Group_Get_Personal(this.dart); }
+  set personal(e: boolean) { api.grok_Group_Set_Personal(this.dart, e); }
 
   /** Hidden group */
-  get hidden(): boolean { return api.grok_Group_Get_Hidden(this.d); }
-  set hidden(e: boolean) { api.grok_Group_Set_Hidden(this.d, e); }
+  get hidden(): boolean { return api.grok_Group_Get_Hidden(this.dart); }
+  set hidden(e: boolean) { api.grok_Group_Set_Hidden(this.dart, e); }
 
 }
 
@@ -451,35 +451,35 @@ export class Group extends Entity {
  * */
 export class Script extends Func {
   /** @constructs Script */
-  constructor(d: any) {
-    super(d);
+  constructor(dart: any) {
+    super(dart);
   }
 
   static create(script: string): Script { return new Script(api.grok_Script_Create(script)); }
 
   /** Script */
-  get script(): string { return api.grok_Script_GetScript(this.d); }
-  set script(s: string) { api.grok_Script_SetScript(this.d, s); }
+  get script(): string { return api.grok_Script_GetScript(this.dart); }
+  set script(s: string) { api.grok_Script_SetScript(this.dart, s); }
 
   /** Script language. See also: https://datagrok.ai/help/compute/scripting#header-parameters */
-  get language(): ScriptLanguage { return api.grok_Script_GetLanguage(this.d); }
-  set language(s: ScriptLanguage) { api.grok_Script_SetLanguage(this.d, s); }
+  get language(): ScriptLanguage { return api.grok_Script_GetLanguage(this.dart); }
+  set language(s: ScriptLanguage) { api.grok_Script_SetLanguage(this.dart, s); }
 
   /** Environment name. See also: https://datagrok.ai/help/compute/scripting#header-parameters */
-  get environment(): string { return api.grok_Script_Get_Environment(this.d); }
-  set environment(s: string) { api.grok_Script_Set_Environment(this.d, s); }
+  get environment(): string { return api.grok_Script_Get_Environment(this.dart); }
+  set environment(s: string) { api.grok_Script_Set_Environment(this.dart, s); }
 
   /** Reference header parameter. See also: https://datagrok.ai/help/compute/scripting#header-parameters */
-  get reference(): string { return api.grok_Script_Get_Reference(this.d); }
-  set reference(s: string) { api.grok_Script_Set_Reference(this.d, s); }
+  get reference(): string { return api.grok_Script_Get_Reference(this.dart); }
+  set reference(s: string) { api.grok_Script_Set_Reference(this.dart, s); }
 
   /** Sample table. See also: https://datagrok.ai/help/compute/scripting#header-parameters */
-  get sample(): string { return api.grok_Script_Get_Sample(this.d); }
-  set sample(s: string) { api.grok_Script_Set_Sample(this.d, s); }
+  get sample(): string { return api.grok_Script_Get_Sample(this.dart); }
+  set sample(s: string) { api.grok_Script_Set_Sample(this.dart, s); }
 
   /** Script tags. See also: https://datagrok.ai/help/compute/scripting#header-parameters */
-  get tags(): string[] { return api.grok_Script_Get_Tags(this.d); }
-  set tags(tags: string[]) { api.grok_Script_Set_Tags(this.d, tags); }
+  get tags(): string[] { return api.grok_Script_Get_Tags(this.dart); }
+  set tags(tags: string[]) { api.grok_Script_Set_Tags(this.dart, tags); }
 }
 
 /** Represents connection credentials
@@ -488,18 +488,18 @@ export class Script extends Func {
  *  See also: {@link https://datagrok.ai/help/govern/security}
  *  */
 export class Credentials extends Entity {
-  constructor(d: any) {
-    super(d);
+  constructor(dart: any) {
+    super(dart);
   }
 
   /** Collection of parameters: login, password, API key, etc. */
-  get parameters(): object { return api.grok_Credentials_Parameters(this.d); }
+  get parameters(): object { return api.grok_Credentials_Parameters(this.dart); }
 }
 
 /** Represents a script environment */
 export class ScriptEnvironment extends Entity {
-  constructor(d: any) {
-    super(d);
+  constructor(dart: any) {
+    super(dart);
   }
 
   /** Create instance of ScriptEnvironment
@@ -511,91 +511,91 @@ export class ScriptEnvironment extends Entity {
   }
 
   /** Environment yaml file content */
-  get environment(): string { return api.grok_ScriptEnvironment_Environment(this.d); }
+  get environment(): string { return api.grok_ScriptEnvironment_Environment(this.dart); }
 
   /** Setup environment */
   setup(): Promise<void> {
-    return new Promise((resolve, reject) => api.grok_ScriptEnvironment_Setup(this.d, () => resolve(), (e: any) => reject(e)));
+    return new Promise((resolve, reject) => api.grok_ScriptEnvironment_Setup(this.dart, () => resolve(), (e: any) => reject(e)));
   }
 }
 
 export class LogEventType extends Entity {
-  constructor(d: any) {
-    super(d);
+  constructor(dart: any) {
+    super(dart);
   }
 
   /** Friendly name of the event type */
-  get name(): string { return api.grok_LogEventType_Get_Name(this.d); }
+  get name(): string { return api.grok_LogEventType_Get_Name(this.dart); }
 }
 
 export class LogEvent extends Entity {
-  constructor(d: any) {
-    super(d);
+  constructor(dart: any) {
+    super(dart);
   }
 
   /** Description of the event */
-  get description(): string { return api.grok_LogEvent_Get_Description(this.d); }
+  get description(): string { return api.grok_LogEvent_Get_Description(this.dart); }
 
   /** Friendly name of the event */
-  get name(): string { return api.grok_LogEvent_Get_Name(this.d); }
+  get name(): string { return api.grok_LogEvent_Get_Name(this.dart); }
 
   /** Source of the event */
-  get source(): string { return api.grok_LogEvent_Get_Source(this.d); }
+  get source(): string { return api.grok_LogEvent_Get_Source(this.dart); }
 
   /** Session id of the event */
-  get session(): UserSession | string { return toJs(api.grok_LogEvent_Get_Session(this.d)); }
+  get session(): UserSession | string { return toJs(api.grok_LogEvent_Get_Session(this.dart)); }
 
   /** Parameters of the event
    * @type {Array<LogEventParameterValue>} */
-  get parameters(): LogEventParameterValue[] { return api.grok_LogEvent_Get_Parameters(this.d); }
+  get parameters(): LogEventParameterValue[] { return api.grok_LogEvent_Get_Parameters(this.dart); }
 
   /** Type of the event
    * @type {LogEventType} */
-  get eventType(): LogEventType { return toJs(api.grok_LogEvent_Get_Type(this.d)); }
+  get eventType(): LogEventType { return toJs(api.grok_LogEvent_Get_Type(this.dart)); }
 }
 
 export class LogEventParameter extends Entity {
-  constructor(d: any) {
-    super(d);
+  constructor(dart: any) {
+    super(dart);
   }
 
   /** Name of the parameter */
-  get name(): string { return api.grok_LogEventParameter_Get_Name(this.d); }
+  get name(): string { return api.grok_LogEventParameter_Get_Name(this.dart); }
 
   /** Type of the parameter */
-  get type(): string { return api.grok_LogEventParameter_Get_Type(this.d); }
+  get type(): string { return api.grok_LogEventParameter_Get_Type(this.dart); }
 
   /** Description of the parameter */
-  get description(): string { return api.grok_LogEventParameter_Get_Description(this.d); }
+  get description(): string { return api.grok_LogEventParameter_Get_Description(this.dart); }
 
   /** Is the parameter input */
-  get isInput(): boolean { return api.grok_LogEventParameter_Get_IsInput(this.d); }
+  get isInput(): boolean { return api.grok_LogEventParameter_Get_IsInput(this.dart); }
 
   /** Is the parameter optional */
-  get isOptional(): boolean { return api.grok_LogEventParameter_Get_IsOptional(this.d); }
+  get isOptional(): boolean { return api.grok_LogEventParameter_Get_IsOptional(this.dart); }
 }
 
 export class LogEventParameterValue extends Entity {
-  constructor(d: any) {
-    super(d);
+  constructor(dart: any) {
+    super(dart);
   }
 
   /** Event of the parameter value
    * @type {LogEvent} */
   get event(): LogEvent {
-    return toJs(api.grok_LogEventParameterValue_Get_Event(this.d));
+    return toJs(api.grok_LogEventParameterValue_Get_Event(this.dart));
   }
 
   /** Parameter of the parameter value
    * @type {LogEventParameter} */
   get parameter(): LogEventParameter {
-    return toJs(api.grok_LogEventParameterValue_Get_Parameter(this.d));
+    return toJs(api.grok_LogEventParameterValue_Get_Parameter(this.dart));
   }
 
   /** Parameter value
    * @type {string} */
   get value(): string {
-    return api.grok_LogEventParameterValue_Get_Value(this.d);
+    return api.grok_LogEventParameterValue_Get_Value(this.dart);
   }
 }
 
@@ -606,11 +606,11 @@ export class Package extends Entity {
   public webRoot: string | undefined;
   public version: string;
 
-  constructor(d: any | undefined = undefined) {
-    super(d);
-    if (typeof d === 'string') {
-      this.webRoot = d;
-      this.d = null;
+  constructor(dart: any | undefined = undefined) {
+    super(dart);
+    if (typeof dart === 'string') {
+      this.webRoot = dart;
+      this.dart = null;
     }
     this.version = "";
   }
@@ -624,20 +624,20 @@ export class Package extends Entity {
   /** Package short name
    *  @type {string} */
   get name() {
-    if (this.d != null)
-      return api.grok_Entity_Get_Name(this.d);
+    if (this.dart != null)
+      return api.grok_Entity_Get_Name(this.dart);
     else
       return this._name;
   }
 
   set name(x) {
-    if (this.d != null)
-      api.grok_Entity_Set_Name(this.d, x);
+    if (this.dart != null)
+      api.grok_Entity_Set_Name(this.dart, x);
     else
       this._name = x;
   }
 
-  get meta() { return (this.d == null) ? null : toJs(api.grok_Package_Get_Meta(this.d)); }
+  get meta() { return (this.dart == null) ? null : toJs(api.grok_Package_Get_Meta(this.dart)); }
 
   /** Loads package
    * @returns {Promise<Package>} */
@@ -723,72 +723,74 @@ export interface PropertyOptions {
  * Samples:
  */
 export class Property {
-  public readonly d: any;
+  public readonly dart: any;
+  public options: any;
 
-  constructor(d: any) {
-    this.d = d;
+  constructor(dart: any) {
+    this.dart = dart;
+    this.options = new MapProxy(api.grok_Property_Get_Options(this.dart));
   }
 
   /** Property getter is a function that accepts one parameter (item)
    * and returns the property value.
    *
    * @returns {PropertyGetter} */
-  get get(): PropertyGetter { return api.grok_Property_Get_Get(this.d); }
-  set get(x: PropertyGetter) { api.grok_Property_Set_Get(this.d, x); }
+  get get(): PropertyGetter { return api.grok_Property_Get_Get(this.dart); }
+  set get(x: PropertyGetter) { api.grok_Property_Set_Get(this.dart, x); }
 
   /** Property setter */
-  get set(): PropertySetter { return api.grok_Property_Get_Set(this.d); }
-  set set(x: PropertySetter) { api.grok_Property_Set_Set(this.d, x); }
+  get set(): PropertySetter { return api.grok_Property_Get_Set(this.dart); }
+  set set(x: PropertySetter) { api.grok_Property_Set_Set(this.dart, x); }
 
   /** Property name */
-  get name(): string { return api.grok_Property_Get_Name(this.d); }
-  set name(s: string) { api.grok_Property_Set_Name(this.d, s); }
+  get name(): string { return api.grok_Property_Get_Name(this.dart); }
+  set name(s: string) { api.grok_Property_Set_Name(this.dart, s); }
 
   /** Property category */
-  get category(): string { return api.grok_Property_Get_Category(this.d); }
-  set category(s: string) { api.grok_Property_Set_Category(this.d, s); }
+  get category(): string { return api.grok_Property_Get_Category(this.dart); }
+  set category(s: string) { api.grok_Property_Set_Category(this.dart, s); }
 
   /** Property type */
-  get propertyType(): TYPE { return api.grok_Property_Get_PropertyType(this.d); }
-  set propertyType(s: TYPE) { api.grok_Property_Set_PropertyType(this.d, s); }
+  get propertyType(): TYPE { return api.grok_Property_Get_PropertyType(this.dart); }
+  set propertyType(s: TYPE) { api.grok_Property_Set_PropertyType(this.dart, s); }
 
   /** Semantic type */
-  get semType(): SemType | string { return api.grok_Property_Get_SemType(this.d); }
-  set semType(s: SemType | string) { api.grok_Property_Set_SemType(this.d, s); }
+  get semType(): SemType | string { return api.grok_Property_Get_SemType(this.dart); }
+  set semType(s: SemType | string) { api.grok_Property_Set_SemType(this.dart, s); }
 
   /** Description */
-  get description(): string { return api.grok_Property_Get_Description(this.d); }
-  set description(s: string) { api.grok_Property_Set_Description(this.d, s); }
+  get description(): string { return api.grok_Property_Get_Description(this.dart); }
+  set description(s: string) { api.grok_Property_Set_Description(this.dart, s); }
 
   /** Default value */
-  get defaultValue(): any { return api.grok_Property_Get_DefaultValue(this.d); }
-  set defaultValue(s: any) { api.grok_Property_Set_DefaultValue(this.d, s); }
+  get defaultValue(): any { return api.grok_Property_Get_DefaultValue(this.dart); }
+  set defaultValue(s: any) { api.grok_Property_Set_DefaultValue(this.dart, s); }
 
   /** Property editor */
-  get editor(): string { return api.grok_Property_Get(this.d, 'editor'); }
-  set editor(s: string) { api.grok_Property_Set(this.d, 'editor', s); }
+  get editor(): string { return api.grok_Property_Get(this.dart, 'editor'); }
+  set editor(s: string) { api.grok_Property_Set(this.dart, 'editor', s); }
 
   /** List of possible values of that property.
    *  PropertyGrid will use it to populate combo boxes.
    *  @returns {Array<string>} */
-  get choices(): string[] { return api.grok_Property_Get_Choices(this.d); }
-  set choices(x: string[]) { api.grok_Property_Set_Choices(this.d, x); }
+  get choices(): string[] { return api.grok_Property_Get_Choices(this.dart); }
+  set choices(x: string[]) { api.grok_Property_Set_Choices(this.dart, x); }
 
   /** Column type filter */
   get columnFilter(): ColumnType | 'numerical' | 'categorical' | null {
-    return api.grok_Property_Get_ColumnTypeFilter(this.d);
+    return api.grok_Property_Get_ColumnTypeFilter(this.dart);
   }
 
   /** List of validators. It can include [NAMED_VALIDATORS] as well as any pre-defined function names.
    * Signature: validator(x: DG.Type): string | null.
    * [null] indicates that the value is valid, [string] describes a validation error. */
-  get validators(): string[] { return api.grok_Property_Get_Validators(this.d); }
-  set validators(x: string[]) { api.grok_Property_Set_Validators(this.d, x); }
+  get validators(): string[] { return api.grok_Property_Get_Validators(this.dart); }
+  set validators(x: string[]) { api.grok_Property_Set_Validators(this.dart, x); }
 
   /** Applies the specified options */
-  options(opt?: PropertyOptions): Property {
+  fromOptions(opt?: PropertyOptions): Property {
     if (opt)
-      api.grok_Property_Options(this.d, opt);
+      api.grok_Property_Options(this.dart, opt);
     return this;
   }
 
@@ -830,7 +832,7 @@ export class Property {
     return Property.create(name, type,
       (x: any) => x[name],
       (x: any, v: any) => x[name] = v,
-      options?.defaultValue).options(options);
+      options?.defaultValue).fromOptions(options);
   }
 
   static jsInt(name: string, options?: PropertyOptions): Property { return Property.js(name, TYPE.INT, options); }
@@ -844,10 +846,10 @@ export class Property {
 
 
 export class DateTime {
-  public d: any;
+  public dart: any;
 
-  constructor(d: any) {
-    this.d = d;
+  constructor(dart: any) {
+    this.dart = dart;
   }
 
   static fromDate(date: Date): DateTime {
@@ -860,12 +862,12 @@ export class DateTime {
 }
 
 export class HistoryEntry {
-  public d: any;
+  public dart: any;
 
-  constructor(d: any) {
-    this.d = d;
+  constructor(dart: any) {
+    this.dart = dart;
   };
 
-  get object(): object { return toJs(api.grok_HistoryEntry_Get_Object(this.d)); }
-  get time(): object { return toJs(api.grok_HistoryEntry_Get_Time(this.d)); }
+  get object(): object { return toJs(api.grok_HistoryEntry_Get_Object(this.dart)); }
+  get time(): object { return toJs(api.grok_HistoryEntry_Get_Time(this.dart)); }
 }

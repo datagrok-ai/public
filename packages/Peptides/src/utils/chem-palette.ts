@@ -23,7 +23,12 @@ export class ChemPalette {
         if (s in ChemPalette.AAFullNames) {
           toDisplay = [ui.divText(ChemPalette.AANames[ChemPalette.AAFullNames[s]])];
         }
-        const sketch = grok.chem.svgMol(ChemPalette.AASmiles[aar]);
+        const options = {
+          autoCrop: true,
+          autoCropMargin: 0,
+          suppressChiralText: true,
+        };
+        const sketch = grok.chem.svgMol(ChemPalette.AASmiles[aar], undefined, undefined, options);
         toDisplay.push(sketch);
       }
       ui.tooltip.show(ui.divV(toDisplay), x, y);
@@ -102,14 +107,6 @@ export class ChemPalette {
       'white': ['rgb(230,230,230)'],
     }
 
-    // static grokGroups: [string[], string][] = [
-    //   [['C', 'U'], 'yellow'],
-    //   [['G', 'P'], 'red'],
-    //   [['A', 'V', 'I', 'L', 'M', 'F', 'Y', 'W'], 'all_green'],
-    //   [['R', 'H', 'K'], 'light_blue'],
-    //   [['D', 'E'], 'dark_blue'],
-    //   [['S', 'T', 'N', 'Q'], 'orange'],
-    // ];
     static grokGroups: {[key: string]: string[]} = {
       'yellow': ['C', 'U'],
       'red': ['G', 'P'],

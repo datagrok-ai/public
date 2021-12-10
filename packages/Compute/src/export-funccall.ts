@@ -46,21 +46,85 @@ export async function exportFuncCall(call: DG.FuncCall) {
   });
 
   // UWAGA: very fragile solution
-  const resultView = document.getElementsByClassName('d4-tab-host ui-box')[0];
-  const tabs = resultView.getElementsByClassName('d4-tab-header-stripe')[0].children;
-  const selectedByUser = resultView.getElementsByClassName('d4-tab-header selected')[0];
-  for (let i=0; i< tabs.length; i++) {
-    (tabs[i] as HTMLElement).click();
-    await new Promise((r) => setTimeout(r, 100));
+  const funcView = document.getElementsByClassName('grok-view grok-view-func ui-box')[0];
+  const resultView = funcView.getElementsByClassName('d4-tab-host ui-box')[0];
+  if (resultView) {
+    const tabs = resultView.getElementsByClassName('d4-tab-header-stripe')[0].children;
+    const selectedByUser = resultView.getElementsByClassName('d4-tab-header selected')[0];
+    for (let i=0; i< tabs.length; i++) {
+      (tabs[i] as HTMLElement).click();
+      await new Promise((r) => setTimeout(r, 150));
 
-    const titleDivs = document.getElementsByClassName('grok-func-results-header');
-    if (!titleDivs.length) continue;
+      const titleDivs = document.getElementsByClassName('grok-func-results-header');
+      if (!titleDivs.length) continue;
 
-    for (let i = 0; i < titleDivs.length; i++) {
+      for (let i = 0; i < titleDivs.length; i++) {
+        const titleDiv = titleDivs[i];
+
+        const title = titleDiv.firstChild?.textContent;
+        if (title === null || title === undefined) continue;
+
+        let imageId;
+        let width = 0;
+        let height = 0;
+
+        const imageDiv = titleDiv.parentElement?.getElementsByClassName('grok-scripting-image-container')[0];
+        if (imageDiv) {
+          const regex = /background-image: url\(.*\)/;
+          const urlAttr = imageDiv.outerHTML.match(regex)?.[0];
+          if (!urlAttr) continue;
+          const url = urlAttr.substring(23, urlAttr?.length - 2);
+          const pic = (await (await fetch(url)).arrayBuffer());
+          imageId = exportWorkbook.addImage({
+            buffer: pic,
+            extension: 'png',
+          });
+          width = imageDiv.clientWidth;
+          height = imageDiv.clientHeight;
+        } else {
+          const plot = titleDiv.nextSibling;
+          // if plot does not exist or it is only grid, skip it
+          if (!plot || (plot.firstChild?.firstChild?.firstChild as HTMLElement).getAttribute('name') === 'viewer-Grid') continue;
+
+          if (plot) {
+            const canvas = await DG.HtmlUtils.renderToCanvas(plot as HTMLElement);
+            const dataUrl = canvas.toDataURL('image/png');
+
+            imageId = exportWorkbook.addImage({
+              base64: dataUrl,
+              extension: 'png',
+            });
+            width = canvas.width;
+            height = canvas.height;
+          }
+        }
+
+        if (imageId === null || imageId === undefined) continue;
+
+        const worksheet = exportWorkbook.getWorksheet(`Output - ${title}`);
+        if (worksheet) {
+          const columnForImage = ((call.outputs[title] as DG.DataFrame).columns as DG.ColumnList).length + 1;
+          worksheet.addImage(imageId, {
+            tl: {col: columnForImage, row: 0},
+            ext: {width, height},
+          });
+        } else {
+          const newWorksheet = exportWorkbook.addWorksheet(`Output - Plot - ${title}`);
+          newWorksheet.addImage(imageId, {
+            tl: {col: 0, row: 0},
+            ext: {width, height},
+          });
+        }
+      }
+    }
+    (selectedByUser as HTMLElement).click();
+  } else {
+    const resultView = document.getElementsByClassName('ui-panel grok-func-results')[0];
+    const titleDivs = resultView.getElementsByClassName('grok-func-results-header');
+    for (let i=0; i< titleDivs.length; i++) {
       const titleDiv = titleDivs[i];
-
       const title = titleDiv.firstChild?.textContent;
-      if (!title) continue;
+      if (title === null || title === undefined) continue;
 
       let imageId;
       let width = 0;
@@ -82,7 +146,7 @@ export async function exportFuncCall(call: DG.FuncCall) {
       } else {
         const plot = titleDiv.nextSibling;
         // if plot does not exist or it is only grid, skip it
-        if (!plot || (plot.firstChild as HTMLElement).getAttribute('name') === 'viewer-Grid') continue;
+        if (!plot || (plot.firstChild?.firstChild?.firstChild as HTMLElement).getAttribute('name') === 'viewer-Grid') continue;
 
         if (plot) {
           const canvas = await DG.HtmlUtils.renderToCanvas(plot as HTMLElement);
@@ -115,7 +179,6 @@ export async function exportFuncCall(call: DG.FuncCall) {
       }
     }
   }
-  (selectedByUser as HTMLElement).click();
 
   const outputScalarsSheet = exportWorkbook.addWorksheet('Output scalars');
   scalarOutputs.forEach((scalarOutput) => {

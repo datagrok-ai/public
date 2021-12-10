@@ -1,6 +1,4 @@
 /* Do not change these import lines. Datagrok will import API library in exactly the same manner */
-// eslint-disable-next-line no-unused-vars
-import * as grok from 'datagrok-api/grok';
 import * as ui from 'datagrok-api/ui';
 import * as DG from 'datagrok-api/dg';
 
@@ -11,13 +9,13 @@ import {Measurer} from '@datagrok-libraries/utils/src/string-measure';
 import {Coordinates} from '@datagrok-libraries/utils/src/type-declarations';
 
 /**
- * Creates a worker to perform a dimensionality reduction.
+ * A worker to perform dimensionality reduction.
  *
- * @param {any[]} columnData Samples to process.
- * @param {string} method Embedding method.
- * @param {string} measure Distance metric.
- * @param {number} cyclesCount Number of cycles to repeat.
- * @return {Promise<unknown>} Promise.
+ * @param {any[]} columnData The data to process.
+ * @param {string} method A method of dimensionality reduction.
+ * @param {string} measure A distance metrics.
+ * @param {number} cyclesCount Number of iterations to run.
+ * @return {Promise<unknown>} Resulting embedding.
  */
 function createDimensinalityReducingWorker(
   columnData: any[],
@@ -49,7 +47,6 @@ function inferActivityColumnsName(table: DG.DataFrame): string | null {
   const re = /activity|ic50/i;
   for (const name of table.columns.names()) {
     if (name.match(re)) {
-      console.log(`${name} found.`);
       return name;
     }
   }
@@ -65,6 +62,7 @@ function inferActivityColumnsName(table: DG.DataFrame): string | null {
  * @param {string} method Embedding method to apply.
  * @param {string} measure Distance metric.
  * @param {number} cyclesCount Number of cycles to repeat.
+ * @param {(DG.TableView | null)} view View to add scatter plot to
  * @param {(string | null)} [activityColumnName] Activity containing column to assign it to points radius.
  * @param {boolean} [zoom=false] Whether to fit view.
  * @return {Promise<DG.ScatterPlotViewer>} A viewer.
@@ -111,29 +109,27 @@ export async function createPeptideSimilaritySpaceViewer(
   // Add new axes.
   for (const axis of axesNames) {
     const col = table.col(axis);
+    const newCol = edf.getCol(axis);
 
-    if (col == null) {
-      table.columns.insert(edf.getCol(axis));
+    if (col != null) {
+      for (let i = 0; i < newCol.length; ++i) {
+        const v = newCol.get(i);
+        table.set(axis, i, v);
+      }
     } else {
-      table.columns.replace(col, edf.getCol(axis));
+      table.columns.insert(newCol);
     }
   }
 
-  // const viewer = DG.Viewer.scatterPlot(table, {x: '~X', y: '~Y', color: activityColumnName ?? '~MW', size: '~MW'});
   const viewerOptions = {x: '~X', y: '~Y', color: activityColumnName ?? '~MW', size: '~MW'};
-  const viewer = view !== null ?
-    view.addViewer(DG.VIEWER.SCATTER_PLOT, viewerOptions) : DG.Viewer.scatterPlot(table, viewerOptions);
-  // Fit view if needed.
-  /*if (zoom) {
-    viewer.zoom(
-      table.getCol('~X').min,
-      table.getCol('~Y').min,
-      table.getCol('~X').max,
-      table.getCol('~Y').max,
-    );
-  }*/
+  const viewer = DG.Viewer.scatterPlot(table, viewerOptions);
+
+  if (view !== null) {
+    view.addViewer(viewer);
+  }
+
   pi.close();
-  return (viewer as DG.ScatterPlotViewer);
+  return viewer;
 }
 
 /**
@@ -156,6 +152,7 @@ export class PeptideSimilaritySpaceWidget {
   /**
    * Creates an instance of PeptideSimilaritySpaceWidget.
    * @param {DG.Column} alignedSequencesColumn The column to get amino acid sequences from.
+   * @param {DG.TableView} view Current view
    * @memberof PeptideSimilaritySpaceWidget
    */
   constructor(alignedSequencesColumn: DG.Column, view: DG.TableView) {

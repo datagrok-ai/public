@@ -4,8 +4,8 @@ export function paramsToJs(params: any): any {
   return DG.paramsToJs(params);
 }
 
-export function toJs(d: any, check: boolean = false): any {
-  return DG.toJs(d);
+export function toJs(dart: any, check: boolean = false): any {
+  return DG.toJs(dart);
 }
 
 export function toDart(x: any): any {

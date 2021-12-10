@@ -46,10 +46,10 @@ public class AthenaDataProvider extends JdbcDataProvider {
         String accessKey = "";
         String secretKey = "";
         if (conn.credentials != null) {
-            if (conn.credentials.parameters.get("AccessKey") != null)
-                accessKey = conn.credentials.parameters.get("AccessKey").toString();
-            if (conn.credentials.parameters.get("SecretKey") != null)
-                secretKey = conn.credentials.parameters.get("SecretKey").toString();
+            if (conn.credentials.parameters.get("accessKey") != null)
+                accessKey = conn.credentials.parameters.get("accessKey").toString();
+            if (conn.credentials.parameters.get("secretKey") != null)
+                secretKey = conn.credentials.parameters.get("secretKey").toString();
         }
         connString += "User=" + accessKey + ";" +
                 "Password=" + secretKey;

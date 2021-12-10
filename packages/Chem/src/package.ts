@@ -17,12 +17,16 @@ import {toxicityWidget} from './widgets/toxicity';
 import {OCLCellRenderer} from './ocl_cell_renderer';
 import {chemSpace} from './analysis/chem_space';
 import {getDescriptorsSingle} from './descriptors/descriptors_calculation';
-import {getDescriptors} from './descriptors/descriptors_calculation';
+import {addDescriptors} from './descriptors/descriptors_calculation';
 import {getDescriptorsApp} from './descriptors/descriptors_calculation';
+import {addMcs} from './panels/find-mcs';
+import {addInchis} from './panels/inchi';
+import {addInchiKeys} from './panels/inchi';
 import * as chemCommonRdKit from './chem_common_rdkit';
 import {rGroupAnalysis} from './analysis/r_group';
 import {chemLock, chemUnlock} from './chem_common';
 import {MoleculeViewer} from './chem_similarity_search';
+import { identifiersWidget } from './widgets/identifiers';
 
 const getRdKitModuleLocal = chemCommonRdKit.getRdKitModule;
 const initRdKitService = chemCommonRdKit.initRdKitService;
@@ -300,21 +304,46 @@ export async function chemSimilaritySearch() {
 
 //#region Molecule column property panel
 
-//name: Chem | Descriptors...
+//name: Chem | Descriptors Port...
+//friendly-name: Chem | Descriptors Port...
 //tags: panel, chem
 //input: column smiles { semType: Molecule }
 //output: string result
-export async function descriptors(smiles: DG.Column) {
+export async function descriptorsPanel(smiles: DG.Column) {
   let table: DG.DataFrame = grok.shell.t;
-  getDescriptors(smiles, table);
+  addDescriptors(smiles, table);
 }
 
-//name: Chem | R-Groups Analysis
-//friendly-name: Chem | R-Groups Analysis
+//name: Chem | R-Groups Analysis Port
+//friendly-name: Chem | R-Groups Analysis Port
 //tags: panel, chem
 //input: column col {semType: Molecule}
 export function rGroupsAnalysisPanel(col: DG.Column) {
   rGroupAnalysis(col);
+}
+
+//name: Chem | Find MCS Port
+//friendly-name: Chem | Find MCS Port
+//tags: panel, chem
+//input: column col {semType: Molecule}
+export function addMcsPanel(col: DG.Column) {
+  addMcs(col);
+}
+
+//name: Chem | To InchI Port
+//friendly-name: Chem | To InchI Port
+//tags: panel, chem
+//input: column col {semType: Molecule}
+export function addInchisPanel(col: DG.Column) {
+  addInchis(col);
+}
+
+//name: Chem | To InchI Keys Port
+//friendly-name: Chem | To InchI Keys Port
+//tags: panel, chem
+//input: column col {semType: Molecule}
+export function addInchisKeysPanel(col: DG.Column) {
+  addInchiKeys(col);
 }
 
 //name: RDKit Settings
@@ -413,6 +442,14 @@ export async function structure3d(smiles: string) {
 //output: widget result
 export function toxicity(smiles: string) {
   return smiles ? toxicityWidget(smiles) : new DG.Widget(ui.divText('SMILES is empty'));
+}
+
+//name: Identifiers
+//tags: panel, chem, widgets
+//input: string smiles { semType: Molecule }
+//output: widget result
+export async function identifiers(smiles: string) {
+  return smiles ? await identifiersWidget(smiles) : new DG.Widget(ui.divText('SMILES is empty'));
 }
 
 //#endregion

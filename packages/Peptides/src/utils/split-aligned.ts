@@ -45,7 +45,6 @@ export function splitAlignedPeptides(peptideColumn: DG.Column, filter: boolean =
   columnNames.push('C-terminal');
 
   // filter out the columns with the same values
-
   if (filter) {
     splitColumns = splitColumns.filter((positionArray, index) => {
       const isRetained = new Set(positionArray).size > 1;

@@ -1,14 +1,20 @@
 import * as grok from 'datagrok-api/grok';
 import * as ui from 'datagrok-api/ui';
 import * as DG from 'datagrok-api/dg';
-import {_package} from './package';
+import {_package} from '../package';
 
+/**
+ * @param inputData The data to select the outliers in
+ * @returns Two dataframes: 1) with selected outliers and 2) with removed outliers
+ * @deprecated Use the OutliersSelectionViewer instead
+ */
 export async function selectOutliersManually(inputData: DG.DataFrame) {
   const IS_OUTLIER_COL_LABEL = 'isOutlier';
   const OUTLIER_RATIONALE_COL_LABEL = 'Rationale';
   const OUTLIER_COUNT_COL_LABEL = 'Count';
   const IS_GROUP_CONFIRMED_LABEL = 'isConfirmed';
-  const FLUX = 't/V (hr/L)';
+  const FLUX = 't/V (hr/(L/m²))';
+  const DEFAULT_TEST_AREA = 3.5;
 
   if (!inputData.columns.byName(IS_OUTLIER_COL_LABEL)) {
     inputData.columns
@@ -21,7 +27,7 @@ export async function selectOutliersManually(inputData: DG.DataFrame) {
   }
 
   if (!inputData.columns.byName(FLUX)) {
-    (inputData.columns as DG.ColumnList).addNew(FLUX, 'double').init((index) => (inputData.cell(index, 'filtrate volume (mL)').value/1000.0) / (inputData.cell(index, 'time (min)').value/60.0));
+    (inputData.columns as DG.ColumnList).addNew(FLUX, 'double').init((index) => (inputData.cell(index, 'time (min)').value/60.0) / ((inputData.cell(index, 'filtrate volume (mL)').value/1000.0) / (DEFAULT_TEST_AREA / 10000.0)));
   }
 
   const initialData = inputData.clone();
