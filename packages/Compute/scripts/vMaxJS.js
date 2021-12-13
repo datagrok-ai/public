@@ -2,8 +2,8 @@
 //description: Predict the minimum filter size required for the separation of effluent from bioreactors, given the constraints of batch size and total batch time based on a training dataset of time vs filtrate volume for a given filter type, filter area and pressure
 //language: javascript
 //tags: model, filtration
-//input: dataframe inputTable {viewer: OutliersSelectionViewer() | Scatter Plot(filter: "!${isOutlier}", showFilteredOutPoints: "true",  filteredOutRowsColor: 4293991195, showRegressionLine: "true") | Grid()}
-//input: dataframe reportingParameters {viewer: Grid()}
+//input: dataframe inputTable {caption: Input Table; viewer: OutliersSelectionViewer() | Scatter Plot(filter: "!${isOutlier}", showFilteredOutPoints: "true",  filteredOutRowsColor: 4293991195, showRegressionLine: "true")}
+//input: dataframe reportingParameters {caption: Reporting Parameters; viewer: Grid()}
 //input: double testFilterArea = 3.5 {caption: Test Filter Area; units: cm²} [Test Filter Area]
 //input: double desiredVolumeOfBatch = 25 {caption: Desired Batch Volume; units: L} [Desired Batch Volume]
 //input: double desiredProcessTime = 0.5 {caption: Desired Process Time; units: hr} [Desired Process Time]
@@ -120,7 +120,12 @@ fluxDecayDf = DG.DataFrame.fromColumns([
   DG.Column.fromList('bool', isOutlierCol.name, isOutlierCol.toList().slice(1, isOutlierCol.length - windowLength))
 ]);
 
-regressionTable = inputTable;
+regressionTable = DG.DataFrame.fromColumns([
+  inputTable.col('time (min)'),
+  inputTable.col('filtrate volume (mL)'),
+  dfWithoutOutliers.col('t/V (hr/(L/m2))'),
+  isOutlierCol
+]);
 coefficients = [1.8, 4.32];//[4.32, 1.8];//polynomialRegressionCoefficients(inputTable.col("time (min)"), dfWithoutOutliers.col("t/V (hr/(L/m2))"), 1);
 const trialThroughput = va.max;
 const flux = 9372.11;
