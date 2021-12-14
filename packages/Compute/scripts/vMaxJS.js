@@ -11,7 +11,7 @@
 //help-url: https://github.com/datagrok-ai/public/blob/master/packages/Compute/src/help.md
 //output: dataframe regressionTable {caption: Regression table; viewer: Scatter Plot(block: 75, filter: "!${isOutlier}", showFilteredOutPoints: "true",  filteredOutRowsColor: 4293991195, showRegressionLine: "true"); category: OUTPUT}
 //output: dataframe trialData {caption: Trial data; viewer: Grid(block: 25, showColumnLabels: false, showRowHeader: false); category: OUTPUT}
-//output: dataframe fluxDecayDf {caption: Flux decay experimental results; viewer: Scatter Plot(y: "J (LMH)", block: 50, filter: "!${isOutlier}", showFilteredOutPoints: "true",  filteredOutRowsColor: 4293991195) | Scatter Plot(y: "J/Jo", block: 50, filter: "!${isOutlier}", showFilteredOutPoints: "true",  filteredOutRowsColor: 4293991195); category: OUTPUT}
+//output: dataframe fluxDecayDf {caption: Flux decay experimental results; viewer: Scatter Plot(description: "Absolute flux decay", y: "J (LMH)", block: 50, filter: "!${isOutlier}", showFilteredOutPoints: "true",  filteredOutRowsColor: 4293991195) | Scatter Plot(description: "Relative flux decay", y: "J/Jo", block: 50, filter: "!${isOutlier}", showFilteredOutPoints: "true",  filteredOutRowsColor: 4293991195); category: OUTPUT}
 //output: dataframe experimentalResultsSummary {viewer: Grid(block: 25, showColumnLabels: false, showRowHeader: false); caption: Experimental results summary; category: OUTPUT}
 //output: dataframe recommendations {viewer: Grid(block: 25, showColumnLabels: false, showRowHeader: false); caption: Recommendations; category: OUTPUT}
 //output: dataframe sampleCharacteristics {viewer: Grid(block: 25, showColumnLabels: false, showRowHeader: false); caption: Sample characteristics; category: OUTPUT}

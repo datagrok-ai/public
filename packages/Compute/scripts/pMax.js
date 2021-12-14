@@ -13,11 +13,11 @@
 //input: double filterArea2 = 23 {units: m²; caption: A_trial filter 2} [A_trial filter 2]
 //input: double sf = 1.5 {caption: Safety factor}
 //output: dataframe Filter1 {caption: Primary filter; viewer: Scatter Plot(block: 50, showDataframeFormulaLines: "true"); category: OUTPUT}
-//output: dataframe t1 {caption: Primary filter results; viewer: Grid(block: 25, showColumnLabels: false, showRowHeader: false); category: OUTPUT}
 //output: dataframe Guessed1 {caption: Guessed primary filter; viewer: Grid(block: 25, showColumnLabels: false, showRowHeader: false); category: OUTPUT}
+//output: dataframe t1 {caption: Primary filter results; viewer: Grid(block: 25, showColumnLabels: false, showRowHeader: false); category: OUTPUT}
 //output: dataframe Filter2 {caption: Secondary filter; viewer: Scatter Plot(block: 50, showDataframeFormulaLines: "true"); category: OUTPUT}
-//output: dataframe t2 {caption: Secondary filter results; viewer: Grid(block: 25, showColumnLabels: false, showRowHeader: false); category: OUTPUT}
 //output: dataframe Guessed2 {caption: Guessed secondary filter; viewer: Grid(block: 25, showColumnLabels: false, showRowHeader: false); category: OUTPUT}
+//output: dataframe t2 {caption: Secondary filter results; viewer: Grid(block: 25, showColumnLabels: false, showRowHeader: false); category: OUTPUT}
 
 function gaussianElimination(input, orderOfPolynomialRegression) {
   const n = input.length - 1, coefficients = [orderOfPolynomialRegression];
