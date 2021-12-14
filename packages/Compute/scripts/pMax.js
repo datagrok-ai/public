@@ -2,22 +2,22 @@
 //description: pMax Filtration Model
 //language: javascript
 //tags: model, filtration
-//input: dataframe inputTable {caption: Input Table; viewer: Grid()} [Should contain columns Time (min), Vol (mL), P1 (psi), P2 (psi)]
-//input: dataframe reportingParameters {caption: Reporting Parameters; viewer: Grid()}
-//input: double batchVolume = 100 {units: L} [Batch Volume]
-//input: double batchTime = 2 {units: hours} [Batch Time]
-//input: double targetPressure = 20 {units: psi} [Target Pressure]
-//input: double aMinFilter1Guessed = 0.153 {units: m²; caption:A_guessed Filter 1} [A_guessed Filter 1]
-//input: double aMinFilter2Guessed = 0.153 {units: m²; caption:A_guessed Filter 2} [A_guessed Filter 2]
-//input: double filterArea1 = 23 {units: m²; caption: A_trial Filter 1} [A_trial Filter 1]
-//input: double filterArea2 = 23 {units: m²; caption: A_trial Filter 2} [A_trial Filter 2]
-//input: double sf = 1.5 {caption: Safety Factor}
-//output: dataframe Filter1 {caption: Primary Filter; viewer: Scatter Plot(showDataframeFormulaLines: "true"); category: OUTPUT}
-//output: dataframe t1 {caption: Primary Filter Results; category: OUTPUT}
-//output: dataframe Guessed1 {caption: Guessed Primary Filter; category: OUTPUT}
-//output: dataframe Filter2 {caption: Secondary Filter; viewer: Scatter Plot(showDataframeFormulaLines: "true"); category: OUTPUT}
-//output: dataframe t2 {caption: Secondary Filter Results; category: OUTPUT}
-//output: dataframe Guessed2 {caption: Guessed Secondary Filter; category: OUTPUT}
+//input: dataframe inputTable {caption: Input table; viewer: Grid(block: 50)} [Should contain columns Time (min), Vol (mL), P1 (psi), P2 (psi)]
+//input: dataframe reportingParameters {caption: Reporting parameters; viewer: Grid(block: 50)}
+//input: double batchVolume = 100 {caption: Batch volume; units: L} [Batch volume]
+//input: double batchTime = 2 {caption: Batch time; units: hours} [Batch time]
+//input: double targetPressure = 20 {caption: Target pressure; units: psi} [Target pressure]
+//input: double aMinFilter1Guessed = 0.153 {units: m²; caption:A_guessed filter 1} [A_guessed filter 1]
+//input: double aMinFilter2Guessed = 0.153 {units: m²; caption:A_guessed filter 2} [A_guessed filter 2]
+//input: double filterArea1 = 23 {units: m²; caption: A_trial filter 1} [A_trial filter 1]
+//input: double filterArea2 = 23 {units: m²; caption: A_trial filter 2} [A_trial filter 2]
+//input: double sf = 1.5 {caption: Safety factor}
+//output: dataframe Filter1 {caption: Primary filter; viewer: Scatter Plot(block: 50, showDataframeFormulaLines: "true"); category: OUTPUT}
+//output: dataframe t1 {caption: Primary filter results; viewer: Grid(block: 25, showColumnLabels: false, showRowHeader: false); category: OUTPUT}
+//output: dataframe Guessed1 {caption: Guessed primary filter; viewer: Grid(block: 25, showColumnLabels: false, showRowHeader: false); category: OUTPUT}
+//output: dataframe Filter2 {caption: Secondary filter; viewer: Scatter Plot(block: 50, showDataframeFormulaLines: "true"); category: OUTPUT}
+//output: dataframe t2 {caption: Secondary filter results; viewer: Grid(block: 25, showColumnLabels: false, showRowHeader: false); category: OUTPUT}
+//output: dataframe Guessed2 {caption: Guessed secondary filter; viewer: Grid(block: 25, showColumnLabels: false, showRowHeader: false); category: OUTPUT}
 
 function gaussianElimination(input, orderOfPolynomialRegression) {
   const n = input.length - 1, coefficients = [orderOfPolynomialRegression];
@@ -167,38 +167,25 @@ guessedMaxP1 = predictPolynomialRegression(coefficients1, processLoading1) * pro
 guessedMaxP2 = predictPolynomialRegression(coefficients2, processLoading2) * processFlux2; 
 guessedProcessFlux1 = processFlow1 / aMinFilter1Guessed, guessedProcessFlux2 = processFlow2 / aMinFilter2Guessed;
 
+const names = ['Amin (m²)', 'Amin w SF (m²)', 'Trial Loading (L/m²)', 'Process Loading (L/m²)', 'Max P (psi)', 'Trial Flux (LMH)', 'Process Flux (LMH)', 'Process Flow (L/hr)'];
+const guessedNames = ['Amin (m²)', 'Process Loading (L/m²)', 'Max P (psi)', 'Process Flux (LMH)'];
+
 t1 = DG.DataFrame.fromColumns([
-  DG.Column.fromFloat32Array('Amin (m²)', [amin1]),
-  DG.Column.fromFloat32Array('Amin w SF (m²)', [aminSF1]),
-  DG.Column.fromFloat32Array('Trial Loading (L/m²)', [trialLoading1]),
-  DG.Column.fromFloat32Array('Process Loading (L/m²)', [processLoading1]),
-  DG.Column.fromFloat32Array('Max P (psi)', [maxP1]),
-  DG.Column.fromFloat32Array('Trial Flux (LMH)', [trialFlux1]),
-  DG.Column.fromFloat32Array('Process Flux (LMH)', [processFlux1]),
-  DG.Column.fromFloat32Array('Process Flow (L/hr)', [processFlow1])
+  DG.Column.fromStrings('Name', names),
+  DG.Column.fromFloat32Array('Value', [amin1, aminSF1, trialLoading1, processLoading1, maxP1, trialFlux1, processFlux1, processFlow1])
 ]);
 
 t2 = DG.DataFrame.fromColumns([
-  DG.Column.fromFloat32Array('Amin (m²)', [amin2]),
-  DG.Column.fromFloat32Array('Amin w SF (m²)', [aminSF2]),
-  DG.Column.fromFloat32Array('Trial Loading (L/m²)', [trialLoading2]),
-  DG.Column.fromFloat32Array('Process Loading (L/m²)', [processLoading2]),
-  DG.Column.fromFloat32Array('Max P (psi)', [maxP2]),
-  DG.Column.fromFloat32Array('Trial Flux (LMH)', [trialFlux2]),
-  DG.Column.fromFloat32Array('Process Flux (LMH)', [processFlux2]),
-  DG.Column.fromFloat32Array('Process Flow (L/hr)', [processFlow2])
+  DG.Column.fromStrings('Name', names),
+  DG.Column.fromFloat32Array('Value', [amin2, aminSF2, trialLoading2, processLoading2, maxP2, trialFlux2, processFlux2, processFlow2])
 ]);
 
 Guessed1 = DG.DataFrame.fromColumns([
-  DG.Column.fromFloat32Array('Amin (m²)', [guessedAmin1]),
-  DG.Column.fromFloat32Array('Process Loading (L/m²)', [guessedProcessLoading1]),
-  DG.Column.fromFloat32Array('Max P (psi)', [guessedMaxP1]),
-  DG.Column.fromFloat32Array('Process Flux (LMH)', [guessedProcessFlux1]),
+  DG.Column.fromStrings('Name', guessedNames),
+  DG.Column.fromFloat32Array('Value', [guessedAmin1, guessedProcessLoading1, guessedMaxP1, guessedProcessFlux1])
 ]);
 
 Guessed2 = DG.DataFrame.fromColumns([
-  DG.Column.fromFloat32Array('Amin (m²)', [guessedAmin2]),
-  DG.Column.fromFloat32Array('Process Loading (L/m²)', [guessedProcessLoading2]),
-  DG.Column.fromFloat32Array('Max P (psi)', [guessedMaxP2]),
-  DG.Column.fromFloat32Array('Process Flux (LMH)', [guessedProcessFlux2]),
+  DG.Column.fromStrings('Name', guessedNames),
+  DG.Column.fromFloat32Array('Value', [guessedAmin2, guessedProcessLoading2, guessedMaxP2, guessedProcessFlux2])
 ]);
