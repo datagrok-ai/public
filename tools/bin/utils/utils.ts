@@ -46,17 +46,20 @@ export function mapURL(conf: Config): Indexable {
 export function friendlyNameToName(s: string, firstUpper: boolean = true): string {
   let out = '';
   let cap = true;
+  let firstWordUpperCase = false;
   let start = true;
   s = (s ?? '').trim();
   const letterRegex = /[A-Za-z]/;
   const digitRegex = /\d/;
+  const isUpper = (s: string) => /[A-Z]/.test(s);
   for (let i = 0; i < s.length; i++) {
     if (!letterRegex.test(s[i]) && !digitRegex.test(s[i]))
       cap = true;
     else {
       if (start && digitRegex.test(s[i]))
         continue;
-      out += start && !firstUpper ? s[i].toLowerCase() : cap ? s[i].toUpperCase() : s[i];
+      firstWordUpperCase = start ? isUpper(s[i]) : firstWordUpperCase && isUpper(s[i]);
+      out += !firstUpper && (start || firstWordUpperCase && !cap) ? s[i].toLowerCase() : cap ? s[i].toUpperCase() : s[i];
       cap = false;
       start = false;
     }
@@ -71,13 +74,8 @@ export const replacers: Indexable = {
   NAME_PREFIX: (s: string, name: string) => s.replace(/#{NAME_PREFIX}/g, name.slice(0, 3)),
   PACKAGE_DETECTORS_NAME: (s: string, name: string) => s.replace(/#{PACKAGE_DETECTORS_NAME}/g, kebabToCamelCase(name)),
   PACKAGE_NAMESPACE: (s: string, name: string) => s.replace(/#{PACKAGE_NAMESPACE}/g, kebabToCamelCase(removeScope(name))),
-  FUNC_NAME: (s: string, name: string) => s.replace(/#{FUNC_NAME}/g, name.includes('-') ? kebabToCamelCase(name)
-    : name.includes(' ') ? spaceToCamelCase(name) : name[0].toUpperCase() + name.slice(1)),
-  FUNC_NAME_LOWERCASE: (s: string, name: string) => s.replace(/#{FUNC_NAME_LOWERCASE}/g, name.includes('-') ?
-    kebabToCamelCase(name, false) : name.includes(' ') ?
-    spaceToCamelCase(name, false) : wordsToCamelCase(name, false)),
-  QUERY_NAME: (s: string, name: string) => s.replace(/#{QUERY_NAME}/g, friendlyNameToName(name)),
-  QUERY_NAME_LOWERCASE: (s: string, name: string) => s.replace(/#{QUERY_NAME_LOWERCASE}/g, friendlyNameToName(name, false)),
+  FUNC_NAME: (s: string, name: string) => s.replace(/#{FUNC_NAME}/g, friendlyNameToName(name)),
+  FUNC_NAME_LOWERCASE: (s: string, name: string) => s.replace(/#{FUNC_NAME_LOWERCASE}/g, friendlyNameToName(name, false)),
   PARAMS_OBJECT: (s: string, params: { name?: string; type?: string }[]) => s.replace(/#{PARAMS_OBJECT}/g, params.length ? `{ ${params.map((p) => p.name).join(', ')} }` : `{}`),
   OUTPUT_TYPE: (s: string, type: string) => s.replace(/#{OUTPUT_TYPE}/g, type),
   TYPED_PARAMS: (s: string, params: { name?: string; type?: string }[]) => s.replace(/#{TYPED_PARAMS}/g, params.map((p) => `${p.name}: ${p.type}`).join(', '))
@@ -175,8 +173,8 @@ export const scriptWrapperTemplate = `export async function #{FUNC_NAME_LOWERCAS
   return await grok.functions.call('#{PACKAGE_NAMESPACE}:#{FUNC_NAME}', #{PARAMS_OBJECT});
 }`;
 
-export const queryWrapperTemplate = `export async function #{QUERY_NAME_LOWERCASE}(#{TYPED_PARAMS}): Promise<#{OUTPUT_TYPE}> {
-  return await grok.data.query('#{PACKAGE_NAMESPACE}:#{QUERY_NAME}', #{PARAMS_OBJECT});
+export const queryWrapperTemplate = `export async function #{FUNC_NAME_LOWERCASE}(#{TYPED_PARAMS}): Promise<#{OUTPUT_TYPE}> {
+  return await grok.data.query('#{PACKAGE_NAMESPACE}:#{FUNC_NAME}', #{PARAMS_OBJECT});
 }`;
 
 

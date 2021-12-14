@@ -100,7 +100,8 @@ enum COMMON_TAG_NAME {
   VALIDATORS = 'validators',
   CAPTION = 'caption',
   POSTFIX = 'postfix',
-  UNITS = 'units'
+  UNITS = 'units',
+  EDITOR = 'editor',
 }
 
 enum OPTIONAL_TAG_NAME {
@@ -112,21 +113,31 @@ enum OPTIONAL_TAG_NAME {
   ACTION = 'action',
   CHOICES = 'choices',
   SUGGESTIONS = 'suggestions',
-  SEM_TYPE = 'semType'
+  SEM_TYPE = 'semType',
+  MIN = 'min',
+  MAX = 'max',
 }
 
 type DF_TAG_NAME = COMMON_TAG_NAME | OPTIONAL_TAG_NAME.COLUMNS | OPTIONAL_TAG_NAME.CATEGORICAL;
 type COLUMN_TAG_NAME = COMMON_TAG_NAME |
-                        OPTIONAL_TAG_NAME.TYPE | OPTIONAL_TAG_NAME.FORMAT |
+                        OPTIONAL_TAG_NAME.COLUMNS | OPTIONAL_TAG_NAME.FORMAT |
                         OPTIONAL_TAG_NAME.ALLOW_NULLS | OPTIONAL_TAG_NAME.ACTION | OPTIONAL_TAG_NAME.SEM_TYPE
 
 type STRING_TAG_NAME = COMMON_TAG_NAME |
                         OPTIONAL_TAG_NAME.CHOICES | OPTIONAL_TAG_NAME.SUGGESTIONS
 
-const DF_TAG_NAMES = [...Object.values(COMMON_TAG_NAME), OPTIONAL_TAG_NAME.COLUMNS, OPTIONAL_TAG_NAME.CATEGORICAL];
-const COLUMN_TAG_NAMES = [...Object.values(COMMON_TAG_NAME), OPTIONAL_TAG_NAME.TYPE, OPTIONAL_TAG_NAME.FORMAT,
+type INT_TAG_NAME = COMMON_TAG_NAME | OPTIONAL_TAG_NAME.MIN | OPTIONAL_TAG_NAME.MAX
+
+const COMMON_TAG_NAMES = [...Object.values(COMMON_TAG_NAME)];
+const DF_TAG_NAMES = [
+  ...Object.values(COMMON_TAG_NAME),
+  OPTIONAL_TAG_NAME.COLUMNS,
+  OPTIONAL_TAG_NAME.CATEGORICAL,
+  OPTIONAL_TAG_NAME.ACTION];
+const COLUMN_TAG_NAMES = [...Object.values(COMMON_TAG_NAME), OPTIONAL_TAG_NAME.COLUMNS, OPTIONAL_TAG_NAME.FORMAT,
   OPTIONAL_TAG_NAME.ALLOW_NULLS, OPTIONAL_TAG_NAME.ACTION, OPTIONAL_TAG_NAME.SEM_TYPE];
 const STRING_TAG_NAMES = [...Object.values(COMMON_TAG_NAME), OPTIONAL_TAG_NAME.CHOICES, OPTIONAL_TAG_NAME.SUGGESTIONS];
+const INT_TAG_NAMES = [...Object.values(COMMON_TAG_NAME), OPTIONAL_TAG_NAME.MIN, OPTIONAL_TAG_NAME.MAX];
 
 type FuncParamBase = {
   direction: DIRECTION,
@@ -136,8 +147,11 @@ type FuncParamBase = {
 }
 
 type FuncParam =
-    FuncParamBase & {
+  FuncParamBase & {
   type: DG.TYPE.BOOL | DG.TYPE.DATE_TIME | DG.TYPE.FLOAT | DG.TYPE.GRAPHICS | DG.TYPE.INT
+  options?: {tag: COMMON_TAG_NAME, value: string}[]
+} | FuncParamBase & {
+  type: DG.TYPE.INT
   options?: {tag: COMMON_TAG_NAME, value: string}[]
 } | FuncParamBase & {
   type: DG.TYPE.DATA_FRAME,
@@ -151,17 +165,30 @@ type FuncParam =
 }
 
 const generateParamLine = (param: DG.Property, direction: string) => {
-  const optionTags = `{${
-    COLUMN_TAG_NAMES
-      .map((tag) => {
-        console.log(param.name, tag, param.options(), (param.options() as any)[tag]);
-        return {tag: tag, val: (param.options() as any)[tag]};
-      })
-      .filter((value) => !!value.val)
-      .map(({tag, val}) => `${tag}:${val}`)
-      .join('; ')
-  }}`;
-  const result =`#${direction}: ${param.propertyType} ${param.name || ''} ${param.defaultValue ? `= ${param.defaultValue}` : ''} ${optionTags} ${param.description ? ` [${param.description}]` : ''}\n`;
+  const optionTags = (() => {
+    switch (param.propertyType) {
+    case DG.TYPE.INT:
+      return INT_TAG_NAMES;
+    case DG.TYPE.DATA_FRAME:
+      return DF_TAG_NAMES;
+    case DG.TYPE.COLUMN_LIST:
+    case DG.TYPE.COLUMN:
+      return COLUMN_TAG_NAMES;
+    case DG.TYPE.STRING:
+      return STRING_TAG_NAMES;
+    default:
+      return COMMON_TAG_NAMES;
+    }
+  })();
+  const optionTagsPreview = optionTags
+    .map((tag) => {
+      // console.log(param.name, tag, JSON.stringify(param.options), param.options[tag]);
+      return {tag: tag, val: param.options[tag]};
+    })
+    .filter((value) => !!value.val)
+    .map(({tag, val}) => `${tag}:${val}`)
+    .join('; ');
+  const result =`#${direction}: ${param.propertyType} ${param.name? `${param.name} ` : ''}${param.defaultValue ? `= ${param.defaultValue} ` : ''}${!!optionTagsPreview.length ? `{${optionTagsPreview}} ` : ''}${param.description ? `[${param.description}]` : ''}\n`;
   return result;
 };
 
@@ -218,7 +245,9 @@ export function _functionEditor(functionCode: string) {
       addButton.replaceWith(newAddButton);
       addButton = newAddButton;
     };
-    const menu = DG.Menu.popup().items(getNewProps(), onItemClick);
+    const menu = DG.Menu.popup().items(getNewProps().map(
+      (propName) => functionPropsLabels(propName as FUNC_PROPS_FIELDS),
+    ), onItemClick);
 
     const shevron = ui.iconFA('chevron-down');
     const button = ui.button([ui.icons.add(()=>{}), shevron], () => {

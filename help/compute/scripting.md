@@ -90,7 +90,7 @@ Configurations are stored in the same repository with the script, in the folder 
 located under the repository root. Here is an 
 [example of such configuration](https://github.com/datagrok-ai/public/tree/master/environments)
 for the [Datagrok public repository](https://github.com/datagrok-ai/public). Also, a package can define
-its own configurations as well ([see examples](https://github.com/datagrok-ai/public/tree/master/packages/PythonScripts)).
+its own configurations as well ([see examples](https://github.com/datagrok-ai/public/tree/master/packages/DemoScripts)).
 
 If the `#environment` tag in the script header is not specified, the script uses the configuration
 defined in the `default.yaml`.  
@@ -105,7 +105,7 @@ This is how to define the "chemprop" environment in the script header:
 
 [_Renv_](https://rstudio.github.io/renv/articles/renv.html) environments are natively supported. Datagrok runs each R script in a temporary folder with a unique name. This folder becomes an _renv_ project folder for the current run of the script.
 
-Start using _renv_ by initializing it and installing packages (see a [full example](https://github.com/datagrok-ai/public/tree/master/packages/RScripts/scripts/renv_spelling.R)):
+Start using _renv_ by initializing it and installing packages (see a [full example](https://github.com/datagrok-ai/public/tree/master/packages/DemoScripts/scripts/r/renv_spelling.R)):
 
 ```
 #language: r

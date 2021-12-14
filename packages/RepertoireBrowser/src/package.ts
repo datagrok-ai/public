@@ -21,9 +21,10 @@ export async function RepertoireBrowserApp() {
   grok.shell.windows.showToolbox = false;
   let vid = getPathSegments(<string><unknown>window.location);
 
+  let pi = DG.TaskBarProgressIndicator.create('Opening Molecular Liability Browser');
   let app = new MolecularLiabilityBrowser();
   await app.init(vid);
-
+  pi.close();
   //let tnames = grok.shell.tableNames;
   //let view = null;
 

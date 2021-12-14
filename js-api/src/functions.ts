@@ -11,21 +11,21 @@ let api = <any>window;
 
 
 const FuncCallParamMapProxy = new Proxy(class {
-    d: any;
+    dart: any;
     input: boolean;
-    constructor(d: any, input: boolean) {
-      this.d = d;
+    constructor(dart: any, input: boolean) {
+      this.dart = dart;
       this.input = input;
     }
     keys(): Iterable<any> {
-      return _toIterable(this.input ? api.grok_Func_InputParamMap_Keys(this.d) : api.grok_Func_OutputParamMap_Keys(this.d));
+      return _toIterable(this.input ? api.grok_Func_InputParamMap_Keys(this.dart) : api.grok_Func_OutputParamMap_Keys(this.dart));
     }
     values() {
-      return _toIterable(this.input ? api.grok_Func_InputParamMap_Values(this.d) : api.grok_Func_OutputParamMap_Values(this.d));
+      return _toIterable(this.input ? api.grok_Func_InputParamMap_Values(this.dart) : api.grok_Func_OutputParamMap_Values(this.dart));
     }
     * [Symbol.iterator] () {
       for (let key of this.keys()) {
-        const value = DG.toJs(this.input ? api.grok_Func_InputParamMap_Get(this.d, key) : api.grok_Func_OutputParamMap_Get(this.d, key));
+        const value = DG.toJs(this.input ? api.grok_Func_InputParamMap_Get(this.dart, key) : api.grok_Func_OutputParamMap_Get(this.dart, key));
         yield [key, value];
       }
     }
@@ -38,23 +38,23 @@ const FuncCallParamMapProxy = new Proxy(class {
       }
     }
     delete(key: string) {
-      return DG.toJs(this.input ? api.grok_Func_InputParamMap_Delete(this.d, key) : api.grok_Func_OutputParamMap_Delete(this.d, key));
+      return DG.toJs(this.input ? api.grok_Func_InputParamMap_Delete(this.dart, key) : api.grok_Func_OutputParamMap_Delete(this.dart, key));
     }
     get(key: any) {
-      return DG.toJs(this.input ? api.grok_Func_InputParamMap_Get(this.d, key) : api.grok_Func_OutputParamMap_Get(this.d, key));
+      return DG.toJs(this.input ? api.grok_Func_InputParamMap_Get(this.dart, key) : api.grok_Func_OutputParamMap_Get(this.dart, key));
     }
     has(key: string) {
-      return this.input ? api.grok_Func_InputParamMap_Has(this.d, key) : api.grok_Func_OutputParamMap_Has(this.d, key);
+      return this.input ? api.grok_Func_InputParamMap_Has(this.dart, key) : api.grok_Func_OutputParamMap_Has(this.dart, key);
     }
     set(key: string, value: any) {
-      this.input ? api.grok_Func_InputParamMap_Set(this.d, key, DG.toDart(value)) : api.grok_Func_OutputParamMap_Set(this.d, key, DG.toDart(value));
+      this.input ? api.grok_Func_InputParamMap_Set(this.dart, key, DG.toDart(value)) : api.grok_Func_OutputParamMap_Set(this.dart, key, DG.toDart(value));
       return this;
     }
     clear() {
-      this.input ? api.grok_Func_InputParamMap_Clear(this.d) : api.grok_Func_OutputParamMap_Clear(this.d);
+      this.input ? api.grok_Func_InputParamMap_Clear(this.dart) : api.grok_Func_OutputParamMap_Clear(this.dart);
     }
     size() {
-      return DG.toJs(this.input ? api.grok_Func_InputParamMap_Size(this.d) : api.grok_Func_OutputParamMap_Size(this.d));
+      return DG.toJs(this.input ? api.grok_Func_InputParamMap_Size(this.dart) : api.grok_Func_OutputParamMap_Size(this.dart));
     }
   }, {
     construct(target, args) {
@@ -67,19 +67,19 @@ const FuncCallParamMapProxy = new Proxy(class {
               return val.apply(target, args);
             };
           } else {
-            return DG.toJs(target.input ? api.grok_Func_InputParamMap_Get(target.d, prop) : api.grok_Func_OutputParamMap_Get(target.d, prop));
+            return DG.toJs(target.input ? api.grok_Func_InputParamMap_Get(target.dart, prop) : api.grok_Func_OutputParamMap_Get(target.dart, prop));
           }
         },
         set: function (target, prop, value) {
-          target.input ? api.grok_Func_InputParamMap_Set(target.d, prop, DG.toDart(value)) : api.grok_Func_OutputParamMap_Set(target.d, prop, DG.toDart(value));
+          target.input ? api.grok_Func_InputParamMap_Set(target.dart, prop, DG.toDart(value)) : api.grok_Func_OutputParamMap_Set(target.dart, prop, DG.toDart(value));
           return true;
         },
         deleteProperty: function (target, prop) {
-          target.input ? api.grok_Func_InputParamMap_Delete(target.d, DG.toDart(prop)) : api.grok_Func_OutputParamMap_Delete(target.d, DG.toDart(prop));
+          target.input ? api.grok_Func_InputParamMap_Delete(target.dart, DG.toDart(prop)) : api.grok_Func_OutputParamMap_Delete(target.dart, DG.toDart(prop));
           return true;
         },
         has: function (target, prop) {
-          return target.input ? api.grok_InputParamMap_Has(target.d, DG.toDart(prop)) : api.grok_OutputParamMap_Has(target.d, DG.toDart(prop));
+          return target.input ? api.grok_InputParamMap_Has(target.dart, DG.toDart(prop)) : api.grok_OutputParamMap_Has(target.dart, DG.toDart(prop));
         },
         getOwnPropertyDescriptor(target, prop) {
           return {
@@ -111,7 +111,7 @@ export class Functions {
   }
 
   eval(name: string, context?: Context): Promise<any> {
-    return new Promise((resolve, reject) => api.grok_EvalFunc(name, context?.d, function (out: any) {
+    return new Promise((resolve, reject) => api.grok_EvalFunc(name, context?.dart, function (out: any) {
       return resolve(toJs(out));
     }, (err: any) => reject(err)));
   }
@@ -137,9 +137,9 @@ export class Functions {
 }
 
 export class Context {
-  readonly d: any;
-  constructor(d: any) {
-    this.d = d;
+  readonly dart: any;
+  constructor(dart: any) {
+    this.dart = dart;
   }
 
   static create(): Context {
@@ -147,11 +147,11 @@ export class Context {
   }
 
   setVariable(name: string, value: any): void {
-    api.grok_Context_Set_Variable(this.d, name, toDart(value));
+    api.grok_Context_Set_Variable(this.dart, name, toDart(value));
   }
 
   getVariable(name: string): any {
-    return toJs(api.grok_Context_Get_Variable(this.d, name));
+    return toJs(api.grok_Context_Get_Variable(this.dart, name));
   }
 
 }
@@ -160,52 +160,52 @@ export class Context {
  * {@link https://datagrok.ai/help/overview/functions/function-call*}
  * */
 export class FuncCall {
-  private readonly d: any;
+  private readonly dart: any;
   public inputs: any;
   public outputs: any;
   public aux: any;
   public options: any;
 
-  constructor(d: any) {
-    this.d = d;
-    this.inputs = new FuncCallParamMapProxy(this.d, true);
-    this.outputs = new FuncCallParamMapProxy(this.d, false);
-    this.aux = new MapProxy(api.grok_FuncCall_Get_Aux(this.d));
-    this.options = new MapProxy(api.grok_FuncCall_Get_Options(this.d));
+  constructor(dart: any) {
+    this.dart = dart;
+    this.inputs = new FuncCallParamMapProxy(this.dart, true);
+    this.outputs = new FuncCallParamMapProxy(this.dart, false);
+    this.aux = new MapProxy(api.grok_FuncCall_Get_Aux(this.dart));
+    this.options = new MapProxy(api.grok_FuncCall_Get_Options(this.dart));
   }
 
-  get func(): Func { return toJs(api.grok_FuncCall_Get_Func(this.d)); }
-  set func(func: Func) {api.grok_FuncCall_Get_Func(this.d, func.d)}
+  get func(): Func { return toJs(api.grok_FuncCall_Get_Func(this.dart)); }
+  set func(func: Func) {api.grok_FuncCall_Get_Func(this.dart, func.dart)}
 
   /** Returns function call parameter value
    * @param {string} name
    * @returns {object} */
   getParamValue(name: string): any {
-    return toJs(api.grok_FuncCall_Get_Param_Value(this.d, name));
+    return toJs(api.grok_FuncCall_Get_Param_Value(this.dart, name));
   }
 
-  get context(): Context { return toJs(api.grok_FuncCall_Get_Context(this.d)); }
-  set context(context: Context) { api.grok_FuncCall_Set_Context(this.d, context.d); }
+  get context(): Context { return toJs(api.grok_FuncCall_Get_Context(this.dart)); }
+  set context(context: Context) { api.grok_FuncCall_Set_Context(this.dart, context.dart); }
 
   getOutputParamValue(): any {
-    return toJs(api.grok_FuncCall_Get_Output_Param_Value(this.d));
+    return toJs(api.grok_FuncCall_Get_Output_Param_Value(this.dart));
   }
 
   setParamValue(name: string, value: any): void {
-    api.grok_FuncCall_Set_Param_Value(this.d, name, toDart(value));
+    api.grok_FuncCall_Set_Param_Value(this.dart, name, toDart(value));
   }
 
   /** Executes the function call */
   call(showProgress: boolean = false, progress?: ProgressIndicator, options?: {processed?: boolean, report?: boolean}): Promise<FuncCall> {
-    return new Promise((resolve, reject) => api.grok_FuncCall_Call(this.d, (out: any) => resolve(toJs(out)), (err: any) => reject(err), showProgress, toDart(progress), options?.processed, options?.report));
+    return new Promise((resolve, reject) => api.grok_FuncCall_Call(this.dart, (out: any) => resolve(toJs(out)), (err: any) => reject(err), showProgress, toDart(progress), options?.processed, options?.report));
   }
 
   edit() {
-    api.grok_FuncCall_Edit(this.d);
+    api.grok_FuncCall_Edit(this.dart);
   }
 
   getEditor(condensed?: boolean, showTableSelectors?: boolean): Promise<HTMLElement> {
-    return new Promise((resolve, reject) => api.grok_FuncCall_Get_Editor(this.d, condensed, showTableSelectors, (out: any) => resolve(out), (err: any) => reject(err)));
+    return new Promise((resolve, reject) => api.grok_FuncCall_Get_Editor(this.dart, condensed, showTableSelectors, (out: any) => resolve(out), (err: any) => reject(err)));
   }
 }
 
@@ -216,8 +216,8 @@ export function callFuncWithDartParameters<T>(f: (...params: any[]) => T, params
 
 export class StepEditor extends DartWidget {
 
-  constructor(d: any) {
-    super(d);
+  constructor(dart: any) {
+    super(dart);
   }
 
   static create(): StepEditor {
@@ -225,11 +225,11 @@ export class StepEditor extends DartWidget {
   }
 
   loadScript(script: String): Promise<void> {
-    return new Promise((resolve, reject) => api.grok_StepEditor_LoadScript(this.d, script, (out: any) => resolve(toJs(out)), (err: any) => reject(err)));
+    return new Promise((resolve, reject) => api.grok_StepEditor_LoadScript(this.dart, script, (out: any) => resolve(toJs(out)), (err: any) => reject(err)));
   }
 
   toScript(): string {
-    return api.grok_StepEditor_ToScript(this.d);
+    return api.grok_StepEditor_ToScript(this.dart);
   }
 
 }

@@ -24,10 +24,10 @@ export class TimelinesViewer extends EChartViewer {
       { choices: ['cross', 'line', 'shadow', 'none'] });
     this.showZoomSliders = this.bool('showZoomSliders', true);
 
-    this.subjectRegex = /^USUBJID$/;
-    this.eventRegex = /^([A-Z]{2}(TERM|TEST|TRT|VAL)|(ACT)?ARM|MIDS(TYPE)?|VISIT)$/;
-    this.startRegex = /^((VISIT|[A-Z]{2}(ST)?)DY)$/;
-    this.endRegex = /^((VISIT|[A-Z]{2}(EN)?)DY)$/;
+    this.subjectRegex = /^USUBJID$|id/;
+    this.eventRegex = /^([A-Z]{2}(TERM|TEST|TRT|VAL)|(ACT)?ARM|MIDS(TYPE)?|VISIT)$|event/;
+    this.startRegex = /^((VISIT|[A-Z]{2}(ST)?)DY)$|start|begin/;
+    this.endRegex = /^((VISIT|[A-Z]{2}(EN)?)DY)$|stop|end/;
 
     this.data = [];
     this.count = 0;
@@ -200,7 +200,6 @@ export class TimelinesViewer extends EChartViewer {
     this.init();
 
     const columns = this.dataFrame.columns.toList();
-    const names = this.dataFrame.columns.names();
 
     const strColumns = columns.filter(col => col.type === 'string')
       .sort((a, b) => a.categories.length - b.categories.length);
@@ -208,14 +207,11 @@ export class TimelinesViewer extends EChartViewer {
     const intColumns = columns.filter(col => col.type === 'int')
       .sort((a, b) => a.stats.avg - b.stats.avg);
 
-    const matches = [this.subjectRegex, this.startRegex, this.endRegex,
-      this.eventRegex].map(regex => names.filter(name => name.match(regex)));
-
-    this.subjectColumnName = matches[0].length ? matches[0][0] : strColumns[strColumns.length - 1].name;
-    this.startColumnName = matches[1].length ? matches[1][0] : intColumns[0].name;
-    this.endColumnName = matches[2].length ? matches[2][0] : intColumns[intColumns.length - 1].name;
-    this.colorByColumnName = matches[3].length ? matches[3][0] : strColumns[0].name;
-    this.eventColumnName = this.dataFrame.columns.contains('event') ? 'event' : strColumns[0].name;
+    this.subjectColumnName = (this.findColumn(columns, this.subjectRegex, [DG.COLUMN_TYPE.STRING]) || strColumns[strColumns.length - 1]).name;
+    this.startColumnName = (this.findColumn(columns, this.startRegex, [DG.COLUMN_TYPE.INT, DG.COLUMN_TYPE.DATE_TIME]) || intColumns[0]).name;
+    this.endColumnName = (this.findColumn(columns, this.endRegex, [DG.COLUMN_TYPE.INT, DG.COLUMN_TYPE.DATE_TIME]) || intColumns[intColumns.length - 1]).name;
+    this.colorByColumnName = (this.findColumn(columns, this.eventRegex, [DG.COLUMN_TYPE.STRING]) || strColumns[0]).name;
+    this.eventColumnName = this.dataFrame.columns.contains('event') ? 'event' : this.colorByColumnName;
 
     [this.subjectCol, this.startCol, this.endCol, this.colorByCol, this.eventCol] = this.dataFrame.columns.byNames([
       this.subjectColumnName, this.startColumnName, this.endColumnName, this.colorByColumnName, this.eventColumnName
@@ -283,7 +279,7 @@ export class TimelinesViewer extends EChartViewer {
             height: this.markerSize
           },
           style: {
-            fill: api.value(4) ? this.selectionColor : this.colorMap[isNaN(api.value(3)) ?
+            fill: api.value(5) ? this.selectionColor : this.colorMap[isNaN(api.value(3)) ?
               this.data[params.dataIndex][3][0] : api.value(3)]
           }
         };
@@ -332,7 +328,7 @@ export class TimelinesViewer extends EChartViewer {
           type: 'rect',
           transition: ['shape'],
           shape: rectShape,
-          style: { fill: api.value(4) ? this.selectionColor : this.colorMap[isNaN(api.value(3)) ?
+          style: { fill: api.value(5) ? this.selectionColor : this.colorMap[isNaN(api.value(3)) ?
             this.data[params.dataIndex][3][0] : api.value(3)] }
         });
       }
@@ -341,6 +337,10 @@ export class TimelinesViewer extends EChartViewer {
     };
 
     super.onTableAttached();
+  }
+
+  findColumn(columns, regex, types = []) {
+    return columns.find((c) => (types.length ? types.includes(c.type) : true) && c.name.match(regex));
   }
 
   getSeriesData() {

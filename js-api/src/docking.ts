@@ -13,36 +13,36 @@ let api = <any>window;
  * Samples: {@link https://public.datagrok.ai/js/samples/ui/docking/docking}
  * */
 export class DockNode {
-  d: any;
+  dart: any;
 
-  constructor(d: any) {
-    this.d = d;
+  constructor(dart: any) {
+    this.dart = dart;
   }
 
   /** @returns {DockContainer} */
   get container(): DockContainer {
-    return new DockContainer(api.grok_DockNode_Get_Container(this.d));
+    return new DockContainer(api.grok_DockNode_Get_Container(this.dart));
   }
 
   /** Detaches this node from parent. */
   detachFromParent(): void {
-    return api.grok_DockNode_DetachFromParent(this.d);
+    return api.grok_DockNode_DetachFromParent(this.dart);
   }
 
   /** Removes a child node.
    * @param {DockNode} childNode */
   removeChild(childNode: DockNode): void {
-    return api.grok_DockNode_RemoveChild(this.d, childNode);
+    return api.grok_DockNode_RemoveChild(this.dart, childNode);
   }
 
   /** @returns {DockNode} */
   get parent(): DockNode {
-    return toJs(api.grok_DockNode_Parent(this.d));
+    return toJs(api.grok_DockNode_Parent(this.dart));
   }
 
   /** @returns {Iterable.<DockNode>} */
   get children(): Iterable<DockNode> {
-    return _toIterable(api.grok_DockNode_Children(this.d));
+    return _toIterable(api.grok_DockNode_Children(this.dart));
   }
 }
 
@@ -53,32 +53,32 @@ export class DockNode {
  * Samples: {@link https://public.datagrok.ai/js/samples/ui/docking/docking}
  * */
 export class DockContainer {
-  d: any;
+  dart: any;
 
-  constructor(d: any) {
-    this.d = d;
+  constructor(dart: any) {
+    this.dart = dart;
   }
 
   /** Container element.
    * @returns {HTMLDivElement} */
   get containerElement(): HTMLDivElement {
-    return api.grok_DockContainer_Get_ContainerElement(this.d);
+    return api.grok_DockContainer_Get_ContainerElement(this.dart);
   }
 
   /** Destroys and detaches the container. */
   destroy(): void {
-    api.grok_DockContainer_Destroy(this.d);
+    api.grok_DockContainer_Destroy(this.dart);
   }
 
   /** Undocks a panel and converts it into a floating dialog window
    *  It is assumed that only leaf nodes (panels) can be undocked */
   float(): void {
-    api.grok_DockContainer_Float(this.d);
+    api.grok_DockContainer_Float(this.dart);
   }
 
   /** Removes a dock container from the dock layout hierarchy
    *  @returns {DockNode} - the node that was removed from the dock tree */
-  //remove() { return new DockNode(api.grok_DockContainer_Remove(this.d)); }
+  //remove() { return new DockNode(api.grok_DockContainer_Remove(this.dart)); }
 }
 
 
@@ -93,18 +93,18 @@ export class DockContainer {
  * Learn more: {@link https://github.com/coderespawn/dock-spawn} for details.
  */
 export class DockManager {
-  d: any;
+  dart: any;
 
-  constructor(d: any) {
-    this.d = d;
+  constructor(dart: any) {
+    this.dart = dart;
   }
 
   get element(): HTMLDivElement {
-    return api.grok_DockManager_Get_Element(this.d);
+    return api.grok_DockManager_Get_Element(this.dart);
   }
 
   get rootNode(): DockNode {
-    return toJs(api.grok_DockManager_Get_RootNode(this.d));
+    return toJs(api.grok_DockManager_Get_RootNode(this.dart));
   }
 
   /**
@@ -113,7 +113,7 @@ export class DockManager {
    * 3D view in a modeling package, etc.)
    */
   get documentContainer(): DockContainer {
-    return new DockContainer(api.grok_DockManaget_Get_DocumentContainer(this.d));
+    return new DockContainer(api.grok_DockManaget_Get_DocumentContainer(this.dart));
   }
 
   /**
@@ -126,7 +126,7 @@ export class DockManager {
    * @returns {DockNode}
    * */
   dock(element: HTMLElement | Viewer, dockType: DockType = DG.DOCK_TYPE.LEFT, refNode: DockNode | null = null, title?: string, ratio: number = 0.5): DockNode {
-    return new DockNode(api.grok_DockManager_Dock(this.d, refNode === null ? null : refNode.d, element, dockType, title, ratio));
+    return new DockNode(api.grok_DockManager_Dock(this.dart, refNode === null ? null : refNode.dart, element, dockType, title, ratio));
   }
 
   /**
@@ -135,11 +135,11 @@ export class DockManager {
    * */
   close(object: HTMLElement | DockNode): void {
     // @ts-ignore
-    if (object.d === undefined)
-      api.grok_DockManager_UndockByElement(this.d, object);
+    if (object.dart === undefined)
+      api.grok_DockManager_UndockByElement(this.dart, object);
     else
       // @ts-ignore
-      api.grok_DockManager_UndockNode(this.d, object.d);
+      api.grok_DockManager_UndockNode(this.dart, object.dart);
   }
 
   /**
@@ -148,7 +148,7 @@ export class DockManager {
    * @returns {DockNode}
    * */
   findNode(element: HTMLElement): DockNode {
-    return toJs(api.grok_DockManager_FindNode(this.d, element));
+    return toJs(api.grok_DockManager_FindNode(this.dart, element));
   }
 
   // /**
@@ -159,6 +159,6 @@ export class DockManager {
   //  * @returns {DockNode}
   //  * */
   // dockDialog(element, dockType, refNode, title = '') {
-  //     return new DockNode(api.grok_DockManager_DockDialog(this.d, refNode == null ? null : refNode.d, element, dockType, title));
+  //     return new DockNode(api.grok_DockManager_DockDialog(this.dart, refNode == null ? null : refNode.dart, element, dockType, title));
   // }
 }
