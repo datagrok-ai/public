@@ -1,6 +1,28 @@
 <!-- TITLE: Release History -->
 <!-- SUBTITLE: -->
 
+# 2021-12-14 Dev build 0.102.0
+
+## Latest Docker Images
+
+* Datagrok: 
+  *  `docker pull datagrok/datagrok:0.102.0`
+  *  `docker pull datagrok/datagrok:latest`
+  
+* [Docker-Compose](admin/docker-compose.md)
+
+## Addressed Issues
+
+* Function View: Ability to show grid 
+* NPM repositories: new package manager UI (WIP)
+* Compute: Vmax: Pmax: rounding values, convenient naming objects, transposing tables 
+* Compute: export improved 
+* Compute: made OutSel buttons flexible 
+* (Bug) Grid: "Show row header" property does not have any effect 
+* Compute: removed buttons from OutSel 
+* Compute: Vmax: remove titles 
+
+
 # 2021-12-14 Dev build 0.101.0
 
 ## Latest Docker Images
