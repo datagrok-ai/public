@@ -4,6 +4,17 @@ import * as DG from 'datagrok-api/dg';
 import ExcelJS from 'exceljs';
 import {saveAs} from 'file-saver';
 
+
+const getSheetName = (name: string, direction: DIRECTION) => {
+  const idealName = `${direction} - ${name}`;
+  return (idealName.length > 31) ? name.substring(0, 32) : idealName;
+};
+
+enum DIRECTION {
+  INPUT = 'Input',
+  OUTPUT = 'Output'
+}
+
 export async function exportFuncCall(call: DG.FuncCall) {
   //todo: check status
   // if (call.status != FuncCall.STATUS_COMPLETED) ...
@@ -22,8 +33,12 @@ export async function exportFuncCall(call: DG.FuncCall) {
   const dfOutputs = call.func.outputs.filter((output) => isDataFrame(output.propertyType));
   const scalarOutputs = call.func.outputs.filter((output) => isScalarType(output.propertyType));
 
+  const realNames: Record<string, string> = {};
+
   dfInputs.forEach((dfInput) => {
-    const currentDfSheet = exportWorkbook.addWorksheet(`Input - ${dfInput.name}`);
+    const visibleTitle = dfInput.options.caption || dfInput.name;
+    const currentDfSheet = exportWorkbook.addWorksheet(getSheetName(visibleTitle, DIRECTION.INPUT));
+    realNames[visibleTitle] = dfInput.name;
     const currentDf = (call.inputs[dfInput.name] as DG.DataFrame);
     currentDfSheet.addRow((currentDf.columns as DG.ColumnList).names());
     for (let i = 0; i < currentDf.rowCount; i++) {
@@ -31,13 +46,17 @@ export async function exportFuncCall(call: DG.FuncCall) {
     }
   });
 
-  const inputScalarsSheet = exportWorkbook.addWorksheet('Input scalars');
-  scalarInputs.forEach((scalarInput) => {
-    inputScalarsSheet.addRow([scalarInput.name, call.inputs[scalarInput.name]]);
-  });
+  if (scalarInputs.length) {
+    const inputScalarsSheet = exportWorkbook.addWorksheet('Input scalars');
+    scalarInputs.forEach((scalarInput) => {
+      inputScalarsSheet.addRow([scalarInput.name, call.inputs[scalarInput.name]]);
+    });
+  }
 
   dfOutputs.forEach((dfOutput) => {
-    const currentDfSheet = exportWorkbook.addWorksheet(`Output - ${dfOutput.name}`);
+    const visibleTitle = dfOutput.options.caption || dfOutput.name;
+    const currentDfSheet = exportWorkbook.addWorksheet(getSheetName(visibleTitle, DIRECTION.OUTPUT));
+    realNames[visibleTitle] = dfOutput.name;
     const currentDf = (call.outputs[dfOutput.name] as DG.DataFrame);
     currentDfSheet.addRow((currentDf.columns as DG.ColumnList).names());
     for (let i = 0; i < currentDf.rowCount; i++) {
@@ -57,12 +76,18 @@ export async function exportFuncCall(call: DG.FuncCall) {
 
       const titleDivs = document.getElementsByClassName('grok-func-results-header');
       if (!titleDivs.length) continue;
+      let skipNext = false;
 
       for (let i = 0; i < titleDivs.length; i++) {
+        if (skipNext) {
+          skipNext = false;
+          continue;
+        }
         const titleDiv = titleDivs[i];
+        if (titleDiv.parentElement?.style.display === 'none') continue;
 
-        const title = titleDiv.firstChild?.textContent;
-        if (title === null || title === undefined) continue;
+        const visibleTitle = titleDiv.firstChild?.textContent;
+        if (visibleTitle === null || visibleTitle === undefined) continue;
 
         let imageId;
         let width = 0;
@@ -82,9 +107,22 @@ export async function exportFuncCall(call: DG.FuncCall) {
           width = imageDiv.clientWidth;
           height = imageDiv.clientHeight;
         } else {
-          const plot = titleDiv.nextSibling;
-          // if plot does not exist or it is only grid, skip it
-          if (!plot || (plot.firstChild?.firstChild?.firstChild as HTMLElement).getAttribute('name') === 'viewer-Grid') continue;
+          let plot: ChildNode | null | undefined = titleDiv.nextSibling;
+
+          if (plot && !titleDiv.getElementsByClassName('svg-table').length && (plot as HTMLElement).getAttribute('name') === 'viewer-Grid') continue;
+
+          if (plot && titleDiv.getElementsByClassName('svg-table').length) {
+            if ((plot as HTMLElement).getAttribute('name') === 'viewer-OutliersSelectionViewer') {
+              plot = titleDiv.parentElement?.nextSibling?.firstChild?.nextSibling;
+              skipNext = true;
+            }
+            if ((plot as HTMLElement).getAttribute('name') === 'viewer-Grid') {
+              (titleDiv.getElementsByClassName('svg-table')[0] as HTMLElement).click();
+              await new Promise((r) => setTimeout(r, 150));
+              plot = titleDiv.nextSibling;
+            }
+          }
+          console.log(plot);
 
           if (plot) {
             const canvas = await DG.HtmlUtils.renderToCanvas(plot as HTMLElement);
@@ -101,15 +139,22 @@ export async function exportFuncCall(call: DG.FuncCall) {
 
         if (imageId === null || imageId === undefined) continue;
 
-        const worksheet = exportWorkbook.getWorksheet(`Output - ${title}`);
+        const worksheet = exportWorkbook.getWorksheet(getSheetName(visibleTitle, DIRECTION.INPUT)) ||
+                          exportWorkbook.getWorksheet(getSheetName(visibleTitle, DIRECTION.OUTPUT));
         if (worksheet) {
-          const columnForImage = ((call.outputs[title] as DG.DataFrame).columns as DG.ColumnList).length + 1;
+          console.log(visibleTitle);
+          console.log(realNames[visibleTitle]);
+          const columnForImage = (((call
+            .inputs[realNames[visibleTitle]] || call
+            .outputs[realNames[visibleTitle]]) as DG.DataFrame)
+            .columns as DG.ColumnList)
+            .length + 1;
           worksheet.addImage(imageId, {
             tl: {col: columnForImage, row: 0},
             ext: {width, height},
           });
         } else {
-          const newWorksheet = exportWorkbook.addWorksheet(`Output - Plot - ${title}`);
+          const newWorksheet = exportWorkbook.addWorksheet(`Output - Plot - ${visibleTitle}`);
           newWorksheet.addImage(imageId, {
             tl: {col: 0, row: 0},
             ext: {width, height},
@@ -121,10 +166,17 @@ export async function exportFuncCall(call: DG.FuncCall) {
   } else {
     const resultView = document.getElementsByClassName('ui-panel grok-func-results')[0];
     const titleDivs = resultView.getElementsByClassName('grok-func-results-header');
+    let skipNext = false;
+
     for (let i=0; i< titleDivs.length; i++) {
+      if (skipNext) {
+        skipNext = false;
+        continue;
+      }
+
       const titleDiv = titleDivs[i];
-      const title = titleDiv.firstChild?.textContent;
-      if (title === null || title === undefined) continue;
+      const visibleTitle = titleDiv.firstChild?.textContent;
+      if (visibleTitle === null || visibleTitle === undefined) continue;
 
       let imageId;
       let width = 0;
@@ -144,9 +196,20 @@ export async function exportFuncCall(call: DG.FuncCall) {
         width = imageDiv.clientWidth;
         height = imageDiv.clientHeight;
       } else {
-        const plot = titleDiv.nextSibling;
-        // if plot does not exist or it is only grid, skip it
-        if (!plot || (plot.firstChild?.firstChild?.firstChild as HTMLElement).getAttribute('name') === 'viewer-Grid') continue;
+        let plot: ChildNode | null | undefined = titleDiv.nextSibling;
+
+        console.log(plot);
+
+        if (plot &&
+            ((plot as HTMLElement).getAttribute('name') === 'viewer-Grid' ||
+            (plot as HTMLElement).getAttribute('name') === 'viewer-OutliersSelectionViewer')) {
+          if (titleDiv.getElementsByClassName('svg-table').length) {
+            plot = titleDiv.parentElement?.nextSibling?.firstChild?.nextSibling;
+            skipNext = true;
+          } else {
+            continue;
+          }
+        }
 
         if (plot) {
           const canvas = await DG.HtmlUtils.renderToCanvas(plot as HTMLElement);
@@ -163,15 +226,18 @@ export async function exportFuncCall(call: DG.FuncCall) {
 
       if (imageId === null || imageId === undefined) continue;
 
-      const worksheet = exportWorkbook.getWorksheet(`Output - ${title}`);
+      const worksheet = exportWorkbook.getWorksheet(getSheetName(visibleTitle, DIRECTION.OUTPUT));
       if (worksheet) {
-        const columnForImage = ((call.outputs[title] as DG.DataFrame).columns as DG.ColumnList).length + 1;
+        const columnForImage = ((call
+          .outputs[realNames[visibleTitle]] as DG.DataFrame)
+          .columns as DG.ColumnList)
+          .length + 1;
         worksheet.addImage(imageId, {
           tl: {col: columnForImage, row: 0},
           ext: {width, height},
         });
       } else {
-        const newWorksheet = exportWorkbook.addWorksheet(`Output - Plot - ${title}`);
+        const newWorksheet = exportWorkbook.addWorksheet(`Output - Plot - ${visibleTitle}`);
         newWorksheet.addImage(imageId, {
           tl: {col: 0, row: 0},
           ext: {width, height},
@@ -180,10 +246,12 @@ export async function exportFuncCall(call: DG.FuncCall) {
     }
   }
 
-  const outputScalarsSheet = exportWorkbook.addWorksheet('Output scalars');
-  scalarOutputs.forEach((scalarOutput) => {
-    outputScalarsSheet.addRow([scalarOutput.name, call.outputs[scalarOutput.name]]);
-  });
+  if (scalarOutputs.length) {
+    const outputScalarsSheet = exportWorkbook.addWorksheet('Output scalars');
+    scalarOutputs.forEach((scalarOutput) => {
+      outputScalarsSheet.addRow([scalarOutput.name, call.outputs[scalarOutput.name]]);
+    });
+  }
 
   exportWorkbook.xlsx.writeBuffer().then((data) => {
     const blob = new Blob([data], {type: BLOB_TYPE});
