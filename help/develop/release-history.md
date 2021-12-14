@@ -1,6 +1,43 @@
 <!-- TITLE: Release History -->
 <!-- SUBTITLE: -->
 
+# 2021-12-14 Dev build 0.100.0
+
+## Latest Docker Images
+
+* Datagrok: 
+  *  `docker pull datagrok/datagrok:0.100.0`
+  *  `docker pull datagrok/datagrok:latest`
+  
+* [Docker-Compose](admin/docker-compose.md)
+
+## Addressed Issues
+
+* GitHub Actions: Update js-api/package-lock.json 
+* Compute: Vmax: consistent capitalization, Update regression line in Input tab after selecting new outliers 
+* Timelines: improve column selection heuristics 
+* SQLite #47: added missing file 
+* Compute: Vmax: flux decay multiaxis linechart 
+* Timelines: selection color is missing 
+* Scatter Plot: an option to follow global filter 
+* Viewers: Unification of properties (alpha/opacity/opaque) 
+* Added an SQLite demo file 
+* SQLite: improved documentation 
+* (Bug) datagrok-tools: `grok api` creates invalid function declarations 
+* GitHub Actions: Update tools/package-lock.json 
+* Move scripts into DemoPackages 
+* Compute: Vmax and Pmax enhancements 
+* GitHub Actions: Update packages/Compute/package-lock.json 
+* Grok connect: NPE when settings in schemas, schema, and query_table_sql are null  
+* Formula lines: Fixed name conflict 
+* NPM repositories: add check for deprecated versions 
+* NPM repositories: improve package search for given scope (WIP)
+* Compute: Vmax: flux decay plot outliers bug fix 
+* Terraform configuration for CVM 
+* Function View: Viewer positioning tags 
+* Function View: Ability to show grid 
+
+
 # 2021-12-09 Dev build 0.99.0
 
 ## Latest Docker Images
