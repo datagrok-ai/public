@@ -107,24 +107,25 @@ export async function exportFuncCall(call: DG.FuncCall) {
           width = imageDiv.clientWidth;
           height = imageDiv.clientHeight;
         } else {
-          let plot: ChildNode | null | undefined = titleDiv.nextSibling;
+          let plotDiv: ChildNode | null | undefined = titleDiv.nextSibling;
 
-          if (plot && !titleDiv.getElementsByClassName('svg-table').length && (plot as HTMLElement).getAttribute('name') === 'viewer-Grid') continue;
+          if (plotDiv && !titleDiv.getElementsByClassName('svg-table').length && (plotDiv as HTMLElement).getAttribute('name') === 'viewer-Grid') continue;
 
-          if (plot && titleDiv.getElementsByClassName('svg-table').length) {
-            if ((plot as HTMLElement).getAttribute('name') === 'viewer-OutliersSelectionViewer') {
-              plot = titleDiv.parentElement?.nextSibling?.firstChild?.nextSibling;
+          if (plotDiv && titleDiv.getElementsByClassName('svg-table').length) {
+            if ((plotDiv as HTMLElement).getAttribute('name') === 'viewer-OutliersSelectionViewer') {
+              plotDiv = titleDiv.parentElement?.nextSibling?.firstChild?.nextSibling;
               skipNext = true;
             }
-            if ((plot as HTMLElement).getAttribute('name') === 'viewer-Grid') {
+            if ((plotDiv as HTMLElement).getAttribute('name') === 'viewer-Grid') {
               (titleDiv.getElementsByClassName('svg-table')[0] as HTMLElement).click();
               await new Promise((r) => setTimeout(r, 150));
-              plot = titleDiv.nextSibling;
+              plotDiv = titleDiv.nextSibling;
             }
           }
-          console.log(plot);
+          console.log(plotDiv);
 
-          if (plot) {
+          if (plotDiv) {
+            const plot = (plotDiv as HTMLElement).getElementsByClassName('d4-layout-middle')[0];
             const canvas = await DG.HtmlUtils.renderToCanvas(plot as HTMLElement);
             const dataUrl = canvas.toDataURL('image/png');
 
@@ -196,22 +197,20 @@ export async function exportFuncCall(call: DG.FuncCall) {
         width = imageDiv.clientWidth;
         height = imageDiv.clientHeight;
       } else {
-        let plot: ChildNode | null | undefined = titleDiv.nextSibling;
-
-        console.log(plot);
-
-        if (plot &&
-            ((plot as HTMLElement).getAttribute('name') === 'viewer-Grid' ||
-            (plot as HTMLElement).getAttribute('name') === 'viewer-OutliersSelectionViewer')) {
+        let plotDiv: ChildNode | null | undefined = titleDiv.nextSibling;
+        if (plotDiv &&
+            ((plotDiv as HTMLElement).getAttribute('name') === 'viewer-Grid' ||
+            (plotDiv as HTMLElement).getAttribute('name') === 'viewer-OutliersSelectionViewer')) {
           if (titleDiv.getElementsByClassName('svg-table').length) {
-            plot = titleDiv.parentElement?.nextSibling?.firstChild?.nextSibling;
+            plotDiv = titleDiv.parentElement?.nextSibling?.firstChild?.nextSibling;
             skipNext = true;
           } else {
             continue;
           }
         }
 
-        if (plot) {
+        if (plotDiv) {
+          const plot = (plotDiv as HTMLElement).getElementsByClassName('d4-layout-middle')[0];
           const canvas = await DG.HtmlUtils.renderToCanvas(plot as HTMLElement);
           const dataUrl = canvas.toDataURL('image/png');
 
