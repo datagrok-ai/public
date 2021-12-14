@@ -15,6 +15,7 @@ import {PeptideSimilaritySpaceWidget} from './utils/peptide-similarity-space';
 import {manualAlignmentWidget} from './widgets/manual-alignment';
 import {SARViewer, SARViewerVertical} from './viewers/sar-viewer';
 import {peptideMoleculeWidget} from './widgets/peptide-molecule';
+import {SpiralPlot} from './viewers/spiral-plot';
 
 export const _package = new DG.Package();
 let tableGrid: DG.Grid;
@@ -175,4 +176,17 @@ export function manualAlignment(monomer: string) {
 export async function peptideSpacePanel(col: DG.Column): Promise<DG.Widget> {
   const widget = new PeptideSimilaritySpaceWidget(col, view ?? grok.shell.v);
   return await widget.draw();
+}
+
+//name: Spiral Plot
+////input: dataframe table
+////input: column activity
+//tags: viewer, panel
+//output: viewer result
+export async function spiralPlot(): Promise<DG.Viewer> {//(table: DG.DataFrame, activity: DG.Column) {
+// Read as dataframe
+  const table = await grok.data.files.openTable('Demo:TestJobs:Files:DemoFiles/bio/peptides.csv');
+  const activity = await table.columns.addNewCalculated('-log10(Activity)', '0-Log10(${Activity})');
+  view = grok.shell.addTableView(table);
+  return view.addViewer(SpiralPlot.fromTable(table, {valuesColumnName: activity.name}));
 }
