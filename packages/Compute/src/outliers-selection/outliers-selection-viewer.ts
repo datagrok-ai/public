@@ -63,6 +63,7 @@ export class OutliersSelectionViewer extends DG.JsViewer {
 
     const groupsListGrid = DG.Viewer.grid(clearTable());
     groupsListGrid.root.style.width = '100%';
+    groupsListGrid.root.style.minWidth = '230px';
     groupsListGrid.columns.setVisible([OUTLIER_RATIONALE_COL_LABEL, OUTLIER_COUNT_COL_LABEL, 'Actions']);
 
     groupsListGrid.onCellPrepare((gc) => {
@@ -241,22 +242,21 @@ export class OutliersSelectionViewer extends DG.JsViewer {
     updateGroupsTable();
     resetSelectedBtn.classList.add('disabled');
 
-    const info = ui.info(
-      ui.div([
-        ui.p('Hold the “SHIFT” key and start to draw a freehand selection on the plot area'),
-      ], {style: {'white-space': 'pre-wrap'}}),
-    );
-    info.style.marginBottom = '0px';
+    // const info = ui.info(
+    //   ui.div([
+    //     ui.p('Hold the “SHIFT” key and start to draw a freehand selection on the plot area'),
+    //   ], {style: {'white-space': 'pre-wrap'}}),
+    // );
+    // info.style.marginBottom = '0px';
 
     this.root.replaceWith(
       ui.divV([
-        info,
         ui.divV([
           ui.divH([
             resetSelectedBtn, resetAllBtn, autoOutlierGroupBtn,
-          ], {style: {'text-align': 'center', 'justify-content': 'center'}}),
+          ], {style: {'text-align': 'center', 'justify-content': 'center', 'flex-wrap': 'wrap'}}),
           groupsListGrid.root,
         ], {style: {'height': '75%'}}),
-      ], {style: {'height': '100%', 'min-width': '230px'}}));
+      ], {style: {'height': '100%'}}));
   }
 }
