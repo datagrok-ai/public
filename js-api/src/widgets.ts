@@ -248,8 +248,8 @@ export class Filter extends Widget {
     super(ui.div());
 
     this.dataFrame = null;
-    this.indicator = ui.divText('i');
-    this.controls = ui.divText('c');
+    this.indicator = ui.div([], 'd4-filter-indicator');
+    this.controls = ui.div([], 'd4-flex-row');
     this.host = this.root;
   }
 
