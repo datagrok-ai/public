@@ -12,17 +12,17 @@
 //output: dataframe regressionTable {caption: Regression Table; viewer: Scatter Plot(filter: "!${isOutlier}", showFilteredOutPoints: "true",  filteredOutRowsColor: 4293991195, showRegressionLine: "true"); category: OUTPUT}
 //output: dataframe trialData {caption: Trial Data; category: OUTPUT}
 //output: dataframe fluxDecayDf {caption: Flux Decay Experimental Results; viewer: Scatter Plot(block: 50, filter: "!${isOutlier}", showFilteredOutPoints: "true",  filteredOutRowsColor: 4293991195) | Grid(block: 50); category: OUTPUT}
-//output: dataframe experimentalResultsSummary {caption: Experimental Results Summary; category: OUTPUT}
-//output: dataframe recommendations {caption: Recommendations; category: OUTPUT}
-//output: dataframe sampleCharacteristics {viewer: Grid(block: 50), caption: Sample Characteristics; category: OUTPUT}
-//output: dataframe filter {viewer: Grid(block: 25), caption: Filter; category: OUTPUT}
+//output: dataframe experimentalResultsSummary {viewer: Grid(block: 50); caption: Experimental Results Summary; category: OUTPUT}
+//output: dataframe recommendations {viewer: Grid(block: 50); caption: Recommendations; category: OUTPUT}
+//output: dataframe sampleCharacteristics {viewer: Grid(block: 50); caption: Sample Characteristics; category: OUTPUT}
+//output: dataframe filter {viewer: Grid(block: 50); caption: Filter; category: OUTPUT}
 
-inputTable = grok.shell.tables[0];
-reportingParameters = grok.shell.tables[0];
-testFilterArea = 3.5;
-desiredVolumeOfBatch = 25;
-desiredProcessTime = 0.5;
-sf = 1.5;
+// inputTable = grok.shell.tables[0];
+// reportingParameters = grok.shell.tables[0];
+// testFilterArea = 3.5;
+// desiredVolumeOfBatch = 25;
+// desiredProcessTime = 0.5;
+// sf = 1.5;
 function gaussianElimination(input, orderOfPolynomialRegression) {
   const n = input.length - 1, coefficients = [orderOfPolynomialRegression];
   for (let i = 0; i < n; i++) {
@@ -126,6 +126,7 @@ regressionTable = DG.DataFrame.fromColumns([
   inputTable.col('t/V (hr/(L/m²))'),
   inputTable.col('isOutlier')
 ]);
+
 coefficients = polynomialRegressionCoefficients(DG.Column.fromFloat32Array("time (min)", timeMin), DG.Column.fromFloat32Array("t/V (hr/(L/m2))", vol), 1);
 const initialFlowRate = coefficients[0];
 const trialThroughput = va.max;
@@ -139,28 +140,19 @@ const initialFlux = j.get(1);
 const fluxDecay = (1 - instantaneousFlux / initialFlux) * 100;
 const names = reportingParameters.col('Parameter').toList();
 const values = reportingParameters.col('Value').toList();
-experimentalResultsSummary = DG.DataFrame.fromColumns([
-  DG.Column.fromStrings('Run', ['1']),
-  DG.Column.fromStrings('Filter', [values[names.indexOf('Filter Name')]]),
-  DG.Column.fromFloat32Array('Trial Throughput (L/m²)', [trialThroughput]),
-  DG.Column.fromFloat32Array('Flux0 (LMH)', [j.get(1)]),
-  DG.Column.fromFloat32Array('Mean Flux (LMH)', [meanFlux]),
-  DG.Column.fromFloat32Array('Vmax (L/m²)', [vmax]),
-  DG.Column.fromFloat32Array('Flux Decay (%)', [fluxDecay]),
-]);
-const q0 = Math.round(1 / coefficients[0]);
+const q0 = 1 / coefficients[0];
 const amin = (desiredVolumeOfBatch / vmax) + (desiredVolumeOfBatch / desiredProcessTime / q0);
 const installedArea = sf * amin;
 const processLoading = volumeInLiters.get(volumeInLiters.length - 1) / installedArea;
+
+experimentalResultsSummary = DG.DataFrame.fromColumns([
+  DG.Column.fromStrings('Name', ['Run', 'Filter', 'Trial Throughput (L/m²)', 'Flux0 (LMH)', 'Mean Flux (LMH)', 'Vmax (L/m²)', 'Flux Decay (%)']),
+  DG.Column.fromStrings('Value', ['1', values[names.indexOf('Filter Name')], String(trialThroughput), String(j.get(1)), String(meanFlux), String(vmax), String(fluxDecay)])
+]);
+
 recommendations = DG.DataFrame.fromColumns([
-  DG.Column.fromFloat32Array('Volume (L)', [desiredVolumeOfBatch]),
-  DG.Column.fromFloat32Array('Time (h)', [desiredProcessTime]),
-  DG.Column.fromFloat32Array('Amin (m²)', [amin]),
-  DG.Column.fromFloat32Array('Safety Factor', [sf]),
-  DG.Column.fromFloat32Array('Installed Area', [installedArea]),
-  DG.Column.fromFloat32Array('Process Loading (L/m²)', [processLoading]),
-  DG.Column.fromStrings('Filter', [values[names.indexOf('Filter Name')]]),
-  DG.Column.fromStrings('Installed Device', [values[names.indexOf('Installed Device')]]),
+  DG.Column.fromStrings('Name', ['Volume (L)', 'Time (h)', 'Amin (m²)', 'Safety Factor', 'Installed Area', 'Process Loading (L/m²)', 'Filter', 'Installed Device']),
+  DG.Column.fromStrings('Value', [String(desiredVolumeOfBatch), String(desiredProcessTime), String(amin), String(sf), String(installedArea), String(processLoading), values[names.indexOf('Filter Name')], values[names.indexOf('Installed Device')]])
 ]);
 
 trialData = DG.DataFrame.fromColumns([
