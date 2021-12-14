@@ -2,14 +2,14 @@
 //description: Predict the minimum filter size required for the separation of effluent from bioreactors, given the constraints of batch size and total batch time based on a training dataset of time vs filtrate volume for a given filter type, filter area and pressure
 //language: javascript
 //tags: model, filtration
-//input: dataframe inputTable {caption: Input table; viewer: OutliersSelectionViewer(block: 25) | Scatter Plot(block: 75, filter: "!${isOutlier}", showFilteredOutPoints: "true",  filteredOutRowsColor: 4293991195, showRegressionLine: "true")}
+//input: dataframe inputTable {caption: Input table; viewer: OutliersSelectionViewer(block: 25) | Scatter Plot(y: "t/V (hr/(L/m²))", block: 75, filter: "!${isOutlier}", showFilteredOutPoints: "true",  filteredOutRowsColor: 4293991195, showRegressionLine: "true")}
 //input: dataframe reportingParameters {caption: Reporting parameters; viewer: Grid()}
 //input: double testFilterArea = 3.5 {caption: Test filter area; units: cm²} [Test filter area]
 //input: double desiredVolumeOfBatch = 25 {caption: Desired batch volume; units: L} [Desired batch volume]
 //input: double desiredProcessTime = 0.5 {caption: Desired process time; units: hr} [Desired process time]
 //input: double sf = 1.5 {caption: Safety factor} [Safety factor]
 //help-url: https://github.com/datagrok-ai/public/blob/master/packages/Compute/src/help.md
-//output: dataframe regressionTable {caption: Regression table; viewer: Scatter Plot(block: 75, filter: "!${isOutlier}", showFilteredOutPoints: "true",  filteredOutRowsColor: 4293991195, showRegressionLine: "true"); category: OUTPUT}
+//output: dataframe kineticFiltration {caption: Kinetic filtration; viewer: Scatter Plot(block: 75, filter: "!${isOutlier}", showFilteredOutPoints: "true",  filteredOutRowsColor: 4293991195, showRegressionLine: "true"); category: OUTPUT}
 //output: dataframe trialData {caption: Trial data; viewer: Grid(block: 25, showColumnLabels: false, showRowHeader: false); category: OUTPUT}
 //output: dataframe fluxDecayDf {caption: Flux decay experimental results; viewer: Scatter Plot(description: "Absolute flux decay", y: "J (LMH)", block: 50, filter: "!${isOutlier}", showFilteredOutPoints: "true",  filteredOutRowsColor: 4293991195) | Scatter Plot(description: "Relative flux decay", y: "J/Jo", block: 50, filter: "!${isOutlier}", showFilteredOutPoints: "true",  filteredOutRowsColor: 4293991195); category: OUTPUT}
 //output: dataframe experimentalResultsSummary {viewer: Grid(block: 25, showColumnLabels: false, showRowHeader: false); caption: Experimental results summary; category: OUTPUT}
@@ -147,10 +147,10 @@ fluxDecayDf = DG.DataFrame.fromColumns([
   DG.Column.fromList('bool', isOutlierCol.name, isOutlierCol.toList().slice(1, isOutlierCol.length - windowLength))
 ]);
 
-regressionTable = DG.DataFrame.fromColumns([
+kineticFiltration = DG.DataFrame.fromColumns([
   timeInMinutesCol,
-  volumeInMillilitersCol,
   inputTable.col('t/V (hr/(L/m²))'),
+  volumeInMillilitersCol,
   isOutlierCol
 ]);
 
@@ -172,13 +172,13 @@ const initialFlux = Math.round(1000 * j.get(1)) / 1000;
 const ff0 = flux / initialFlux;
 const meanFlux = Math.round(1000 * j.stats.avg) / 1000;
 const vmax = Math.round(1000 * coefficients[1]) / 1000;
-const v90 = Math.round(1000 * (vmax * 0.68)) / 1000;
+const v90 = Math.round(1000 * vmax * 0.68) / 1000;
 const instantaneousFlux = j.get(j.length - 1);
 const fluxDecay = Math.round(1000 * (1 - instantaneousFlux / initialFlux) * 100) / 1000;
 const names = reportingParameters.col('Parameter name').toList();
 const values = reportingParameters.col('Parameter value').toList();
 const q0 = 1 / coefficients[0];
-const amin = Math.round(1000 * (desiredVolumeOfBatch / vmax) + (desiredVolumeOfBatch / desiredProcessTime / q0)) / 1000;
+const amin = Math.round(1000 * ((desiredVolumeOfBatch / vmax) + (desiredVolumeOfBatch / desiredProcessTime / q0))) / 1000;
 const installedArea = Math.round(1000 * sf * amin) / 1000;
 const processLoading = Math.round(1000 * volumeInLiters.get(volumeInLiters.length - 1) / installedArea) / 1000;
 
