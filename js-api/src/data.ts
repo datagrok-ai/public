@@ -141,7 +141,7 @@ export class Data {
    * Links tables by the specified key columns using the specified link types (such as "current row to filter").
    * */
   linkTables(t1: DataFrame, t2: DataFrame, keyColumns1: string[], keyColumns2: string[], linkTypes: SyncType[]): void {
-    api.grok_LinkTables(t1.d, t2.d, keyColumns1, keyColumns2, linkTypes);
+    api.grok_LinkTables(t1.dart, t2.dart, keyColumns1, keyColumns2, linkTypes);
   };
 
   /**
@@ -149,7 +149,7 @@ export class Data {
    * Sample: {@link https://public.datagrok.ai/js/samples/data-frame/compare-tables}
    * */
   compareTables(t1: DataFrame, t2: DataFrame, keyColumns1: string[], keyColumns2: string[], valueColumns1: string[], valueColumns2: string[]): void {
-    api.grok_CompareTables(t1.d, t2.d, keyColumns1, keyColumns2, valueColumns1, valueColumns2);
+    api.grok_CompareTables(t1.dart, t2.dart, keyColumns1, keyColumns2, valueColumns1, valueColumns2);
   };
 
   /**
@@ -165,7 +165,7 @@ export class Data {
    * @returns {DataFrame}
    * */
   joinTables(t1: DataFrame, t2: DataFrame, keyColumns1: string[], keyColumns2: string[], valueColumns1: string[], valueColumns2: string[], joinType: JoinType, inPlace: boolean): DataFrame {
-    return new DataFrame(api.grok_JoinTables(t1.d, t2.d, keyColumns1, keyColumns2, valueColumns1, valueColumns2, joinType, inPlace));
+    return new DataFrame(api.grok_JoinTables(t1.dart, t2.dart, keyColumns1, keyColumns2, valueColumns1, valueColumns2, joinType, inPlace));
   }
 
   /**
@@ -190,7 +190,7 @@ export class Data {
   }
 
   detectSemanticTypes(t: any): Promise<void> {
-    return new Promise((resolve, reject) => api.grok_DetectSemanticTypes(t.d, (_: any) => resolve(), (e: any) => reject(e)));
+    return new Promise((resolve, reject) => api.grok_DetectSemanticTypes(t.dart, (_: any) => resolve(), (e: any) => reject(e)));
   }
 }
 

@@ -239,7 +239,7 @@
         ["xpath=//textarea[@id='editor']", "xpath:attributes"],
         ["xpath=//textarea", "xpath:position"]
       ],
-      "value": "RScripts:RDup(GetCurrentRowField(\"sex\"))"
+      "value": "DemoScripts:RDup(GetCurrentRowField(\"sex\"))"
     }, {
       "id": "6f82bcb7-026c-4452-9b7b-a1d082618fb4",
       "comment": "",

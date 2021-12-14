@@ -20,15 +20,15 @@ export function paramsToJs(params: any): any {
 
 
 /**
- * Instantiates the corresponding JS handler for the Dart object [d]. See also {@link toDart}
- * @param d - Dart handle
+ * Instantiates the corresponding JS handler for the Dart object [dart]. See also {@link toDart}
+ * @param dart - Dart handle
  * @param {boolean} check - when true, throws an exception if the object can't be converted to JS.
  * @returns JavaScript wrapper for the Dart object
  * */
-export function toJs(d: any, check: boolean = false): any {
-  let type = (<any>window).grok_GetType(d);
+export function toJs(dart: any, check: boolean = false): any {
+  let type = (<any>window).grok_GetType(dart);
   if (type === TYPE.MAP) {
-    let wrapper = (<any>window).grok_GetWrapper(d);
+    let wrapper = (<any>window).grok_GetWrapper(dart);
     for (let key in wrapper) {
       if (wrapper.hasOwnProperty(key)) {
         let type = (<any>window).grok_GetType(wrapper[key]);
@@ -38,30 +38,30 @@ export function toJs(d: any, check: boolean = false): any {
     }
     return wrapper;
   } else if (type === TYPE.LIST) {
-    return paramsToJs(d);
+    return paramsToJs(dart);
   } else if (type === 'DG.TypedEventArgs')
-    return new TypedEventArgs(d);
+    return new TypedEventArgs(dart);
 
-  let wrapper = (<any>window).grok_GetWrapper(d);
+  let wrapper = (<any>window).grok_GetWrapper(dart);
   if (wrapper != null)
     return wrapper;
 
   if (type === TYPE.PROPERTY)
-    return new Property(d);
+    return new Property(dart);
   if (check)
     throw `Not supported type: ${type}`;
 
-  return d;
+  return dart;
 }
 
 /** Extracts a Dart handle from the JavaScript wrapper. See also {@link toJs} */
 export function toDart(x: any): any {
   if (x === undefined || x === null)
     return x;
-  if (typeof x.d !== 'undefined')
-    return x.d;
   if (typeof x.toDart === 'function')
     return x.toDart();
+  if (typeof x.dart !== 'undefined')
+    return x.dart;
   return x;
 }
 

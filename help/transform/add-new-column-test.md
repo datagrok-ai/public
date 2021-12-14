@@ -76,7 +76,7 @@ properties and functions).
    
 1. Register new function ```norm2```(*) using JavaScript (**Tools | Scripting | JavaScript**) 
 
-1. Enter ```(norm2(Demo:RScripts:BMI($HEIGHT, $WEIGHT), $AGE)+norm2(Demo:RScripts:BSA($HEIGHT, $WEIGHT), $AGE))*100``` to *"Formula"* field and execute dialog
+1. Enter ```(norm2(Demo:DemoScripts:BMI($HEIGHT, $WEIGHT), $AGE)+norm2(Demo:DemoScripts:BSA($HEIGHT, $WEIGHT), $AGE))*100``` to *"Formula"* field and execute dialog
   * New column added to table witch result of entered formula 
   * Added column has the name "New Column" (when you enter long formula, name is not auto complete)
    

@@ -206,7 +206,7 @@
         ["xpath=//div[@id='elementContent']/div/div[3]/input", "xpath:idRelative"],
         ["xpath=//div[3]/input", "xpath:position"]
       ],
-      "value": "rScripts:ACF(\"TSLA\", [\"Date\", \"Open\", \"High\", \"Low\", \"Close\", \"Volume\", \"Adjusted\"])"
+      "value": "DemoScripts:ACF(\"TSLA\", [\"Date\", \"Open\", \"High\", \"Low\", \"Close\", \"Volume\", \"Adjusted\"])"
     }, {
       "id": "da037a93-a449-4530-93d8-d78dbea1ccd9",
       "comment": "",
@@ -256,7 +256,7 @@
         ["xpath=//div[@id='elementContent']/div/div[3]/input", "xpath:idRelative"],
         ["xpath=//div[3]/input", "xpath:position"]
       ],
-      "value": "rScripts:ArimaForecasting(\"TSLA\", \"Date\", \"Close\", 4, 3, 3, 25)"
+      "value": "DemoScripts:ArimaForecasting(\"TSLA\", \"Date\", \"Close\", 4, 3, 3, 25)"
     }, {
       "id": "03564a6e-19f6-4981-87db-8ebe6e4f0b49",
       "comment": "",
@@ -306,7 +306,7 @@
         ["xpath=//div[@id='elementContent']/div/div[3]/input", "xpath:idRelative"],
         ["xpath=//div[3]/input", "xpath:position"]
       ],
-      "value": "rScripts:ANOVA(\"beer\", \"BJCP Categories\", \"IBU\")"
+      "value": "DemoScripts:ANOVA(\"beer\", \"BJCP Categories\", \"IBU\")"
     }, {
       "id": "59547885-c5b6-484b-a370-69361173f88c",
       "comment": "",
@@ -356,7 +356,7 @@
         ["xpath=//div[@id='elementContent']/div/div[3]/input", "xpath:idRelative"],
         ["xpath=//div[3]/input", "xpath:position"]
       ],
-      "value": "rScripts:ContourPlot(\"volcano\", [\"V1\", \"V2\", \"V3\", \"V4\", \"V5\", \"V6\", \"V7\", \"V8\", \"V9\", \"V10\", \"V11\", \"V12\", \"V13\", \"V14\", \"V15\", \"V16\", \"V17\", \"V18\", \"V19\", \"V20\", \"V21\", \"V22\", \"V23\", \"V24\", \"V25\", \"V26\", \"V27\", \"V28\", \"V29\", \"V30\", \"V31\", \"V32\", \"V33\", \"V34\", \"V35\", \"V36\", \"V37\", \"V38\", \"V39\", \"V40\", \"V41\", \"V42\", \"V43\", \"V44\", \"V45\", \"V46\", \"V47\", \"V48\", \"V49\", \"V50\", \"V51\", \"V52\", \"V53\", \"V54\", \"V55\", \"V56\", \"V57\", \"V58\", \"V59\", \"V60\", \"V61\"])"
+      "value": "DemoScripts:ContourPlot(\"volcano\", [\"V1\", \"V2\", \"V3\", \"V4\", \"V5\", \"V6\", \"V7\", \"V8\", \"V9\", \"V10\", \"V11\", \"V12\", \"V13\", \"V14\", \"V15\", \"V16\", \"V17\", \"V18\", \"V19\", \"V20\", \"V21\", \"V22\", \"V23\", \"V24\", \"V25\", \"V26\", \"V27\", \"V28\", \"V29\", \"V30\", \"V31\", \"V32\", \"V33\", \"V34\", \"V35\", \"V36\", \"V37\", \"V38\", \"V39\", \"V40\", \"V41\", \"V42\", \"V43\", \"V44\", \"V45\", \"V46\", \"V47\", \"V48\", \"V49\", \"V50\", \"V51\", \"V52\", \"V53\", \"V54\", \"V55\", \"V56\", \"V57\", \"V58\", \"V59\", \"V60\", \"V61\"])"
     }, {
       "id": "18c1d217-7ddd-42df-a55f-839708ea56dc",
       "comment": "",
@@ -406,7 +406,7 @@
         ["xpath=//div[@id='elementContent']/div/div[3]/input", "xpath:idRelative"],
         ["xpath=//div[3]/input", "xpath:position"]
       ],
-      "value": "rScripts:FinancialChart(\"TSLA\", \"Date\", \"Open\", \"High\", \"Low\", \"Close\", \"Volume\", \"Adjusted\")"
+      "value": "DemoScripts:FinancialChart(\"TSLA\", \"Date\", \"Open\", \"High\", \"Low\", \"Close\", \"Volume\", \"Adjusted\")"
     }, {
       "id": "a0625824-c357-4270-9056-9fae6ca2f328",
       "comment": "",
@@ -456,7 +456,7 @@
         ["xpath=//div[@id='elementContent']/div/div[3]/input", "xpath:idRelative"],
         ["xpath=//div[3]/input", "xpath:position"]
       ],
-      "value": "rScripts:FittingDrc(\"acidiq\", \"dose\", \"rgr\")"
+      "value": "DemoScripts:FittingDrc(\"acidiq\", \"dose\", \"rgr\")"
     }, {
       "id": "e147c0b6-820f-474e-87ab-42aae7d59dae",
       "comment": "",
@@ -506,7 +506,7 @@
         ["xpath=//div[@id='elementContent']/div/div[3]/input", "xpath:idRelative"],
         ["xpath=//div[3]/input", "xpath:position"]
       ],
-      "value": "rScripts:IirFilter(\"ecg\", \"EcgWaveform\", 6, 0.35, 256, \"high\")"
+      "value": "DemoScripts:IirFilter(\"ecg\", \"EcgWaveform\", 6, 0.35, 256, \"high\")"
     }, {
       "id": "0a842e98-ec5a-4511-9b64-eefd61e535a5",
       "comment": "",
@@ -556,7 +556,7 @@
         ["xpath=//div[@id='elementContent']/div/div[3]/input", "xpath:idRelative"],
         ["xpath=//div[3]/input", "xpath:position"]
       ],
-      "value": "rScripts:KNN(\"demog\", [\"AGE\", \"HEIGHT\", \"WEIGHT\"], 5)"
+      "value": "DemoScripts:KNNR(\"demog\", [\"AGE\", \"HEIGHT\", \"WEIGHT\"], 5)"
     }, {
       "id": "b8625c9c-e91b-4f52-a9ae-6999c2e6ee44",
       "comment": "",
@@ -606,7 +606,7 @@
         ["xpath=//div[@id='elementContent']/div/div[3]/input", "xpath:idRelative"],
         ["xpath=//div[3]/input", "xpath:position"]
       ],
-      "value": "rScripts:KsTest(\"TSLA\", \"Open\", \"High\")"
+      "value": "DemoScripts:KsTest(\"TSLA\", \"Open\", \"High\")"
     }, {
       "id": "e810a090-3690-4d34-bf77-374e6deb7a32",
       "comment": "",
@@ -656,7 +656,7 @@
         ["xpath=//div[@id='elementContent']/div/div[3]/input", "xpath:idRelative"],
         ["xpath=//div[3]/input", "xpath:position"]
       ],
-      "value": "rScripts:LDA(\"winequality\", \"type\", [\"fixed.acidity\", \"volatile.acidity\", \"citric.acid\", \"residual.sugar\", \"chlorides\", \"free.sulfur.dioxide\", \"total.sulfur.dioxide\", \"density\", \"pH\", \"sulphates\", \"alcohol\", \"quality\"], 0.5)"
+      "value": "DemoScripts:LDA(\"winequality\", \"type\", [\"fixed.acidity\", \"volatile.acidity\", \"citric.acid\", \"residual.sugar\", \"chlorides\", \"free.sulfur.dioxide\", \"total.sulfur.dioxide\", \"density\", \"pH\", \"sulphates\", \"alcohol\", \"quality\"], 0.5)"
     }, {
       "id": "3e5fa22c-af8e-42e7-a0ec-d923b51c4f8b",
       "comment": "",
@@ -706,7 +706,7 @@
         ["xpath=//div[@id='elementContent']/div/div[3]/input", "xpath:idRelative"],
         ["xpath=//div[3]/input", "xpath:position"]
       ],
-      "value": "rScripts:LinearRegression(\"TSLA\", \"Date\", \"Open\", false)"
+      "value": "DemoScripts:LinearRegression(\"TSLA\", \"Date\", \"Open\", false)"
     }, {
       "id": "11f607df-dbc1-472e-b9b3-9dd1da953cab",
       "comment": "",
@@ -756,7 +756,7 @@
         ["xpath=//div[@id='elementContent']/div/div[3]/input", "xpath:idRelative"],
         ["xpath=//div[3]/input", "xpath:position"]
       ],
-      "value": "rScripts:LMER(\"winequality\", [\"citric.acid\", \"residual.sugar\", \"density\", \"pH\"], \"alcohol\", \"fixed.acidity\", 0.5)"
+      "value": "DemoScripts:LMER(\"winequality\", [\"citric.acid\", \"residual.sugar\", \"density\", \"pH\"], \"alcohol\", \"fixed.acidity\", 0.5)"
     }, {
       "id": "166ec02e-156e-4628-aeb2-38ebdcb57487",
       "comment": "",
@@ -806,7 +806,7 @@
         ["xpath=//div[@id='elementContent']/div/div[3]/input", "xpath:idRelative"],
         ["xpath=//div[3]/input", "xpath:position"]
       ],
-      "value": "rScripts:MANOVA(\"beer\", \"IBU\", \"SRM\", \"OG\")"
+      "value": "DemoScripts:MANOVA(\"beer\", \"IBU\", \"SRM\", \"OG\")"
     }, {
       "id": "c033968b-d733-4224-8d2d-35a1f08dfff9",
       "comment": "",
@@ -856,7 +856,7 @@
         ["xpath=//div[@id='elementContent']/div/div[3]/input", "xpath:idRelative"],
         ["xpath=//div[3]/input", "xpath:position"]
       ],
-      "value": "rScripts:PCA(\"cars\", [\"diesel\", \"turbo\", \"two.doors\", \"hatchback\", \"wheel.base\", \"length\", \"width\", \"height\", \"curb.weight\", \"eng.size\", \"horsepower\", \"peak.rpm\", \"symbol\", \"city.mpg\", \"highway.mpg\", \"price\"], 2, true, true)"
+      "value": "DemoScripts:PCAR(\"cars\", [\"diesel\", \"turbo\", \"two.doors\", \"hatchback\", \"wheel.base\", \"length\", \"width\", \"height\", \"curb.weight\", \"eng.size\", \"horsepower\", \"peak.rpm\", \"symbol\", \"city.mpg\", \"highway.mpg\", \"price\"], 2, true, true)"
     }, {
       "id": "69d22bb5-cb26-49a9-ba85-1b8b446c3be4",
       "comment": "",
@@ -906,7 +906,7 @@
         ["xpath=//div[@id='elementContent']/div/div[3]/input", "xpath:idRelative"],
         ["xpath=//div[3]/input", "xpath:position"]
       ],
-      "value": "rScripts:PLS(\"cars\", \"price\", [\"diesel\", \"turbo\", \"two.doors\", \"hatchback\", \"wheel.base\", \"length\", \"width\", \"height\", \"curb.weight\", \"eng.size\", \"horsepower\", \"peak.rpm\", \"symbol\", \"city.mpg\", \"highway.mpg\"], 2)"
+      "value": "DemoScripts:PLS(\"cars\", \"price\", [\"diesel\", \"turbo\", \"two.doors\", \"hatchback\", \"wheel.base\", \"length\", \"width\", \"height\", \"curb.weight\", \"eng.size\", \"horsepower\", \"peak.rpm\", \"symbol\", \"city.mpg\", \"highway.mpg\"], 2)"
     }, {
       "id": "56bc0a0d-b615-4136-9f65-3fc35bad2dc1",
       "comment": "",
@@ -956,7 +956,7 @@
         ["xpath=//div[@id='elementContent']/div/div[3]/input", "xpath:idRelative"],
         ["xpath=//div[3]/input", "xpath:position"]
       ],
-      "value": "rScripts:Spectrogram(\"ecg\", \"EcgWaveform\", 256, 1024, 0.1, true)"
+      "value": "DemoScripts:Spectrogram(\"ecg\", \"EcgWaveform\", 256, 1024, 0.1, true)"
     }, {
       "id": "357b922e-a96d-496b-b67b-c916fd1f4a81",
       "comment": "",
@@ -1006,7 +1006,7 @@
         ["xpath=//div[@id='elementContent']/div/div[3]/input", "xpath:idRelative"],
         ["xpath=//div[3]/input", "xpath:position"]
       ],
-      "value": "rScripts:SurfacePlot(\"TSLA\", \"Open\", \"High\", \"Low\")"
+      "value": "DemoScripts:SurfacePlot(\"TSLA\", \"Open\", \"High\", \"Low\")"
     }, {
       "id": "3019cdf1-4bea-45a3-bf14-bd36b49c1cc0",
       "comment": "",
@@ -1056,7 +1056,7 @@
         ["xpath=//div[@id='elementContent']/div/div[3]/input", "xpath:idRelative"],
         ["xpath=//div[3]/input", "xpath:position"]
       ],
-      "value": "rScripts:TimeSeriesDecomposition(\"births\", \"Date\", \"Births\")"
+      "value": "DemoScripts:TimeSeriesDecomposition(\"births\", \"Date\", \"Births\")"
     }, {
       "id": "06f69875-2d50-420f-946b-e88c5a2cd94b",
       "comment": "",
@@ -1106,7 +1106,7 @@
         ["xpath=//div[@id='elementContent']/div/div[3]/input", "xpath:idRelative"],
         ["xpath=//div[3]/input", "xpath:position"]
       ],
-      "value": "rScripts:TTest(\"TSLA\", \"Open\", \"High\")"
+      "value": "DemoScripts:TTestR(\"TSLA\", \"Open\", \"High\")"
     }, {
       "id": "db00f32b-3efa-4e38-a948-cbc8e55c8daa",
       "comment": "",
