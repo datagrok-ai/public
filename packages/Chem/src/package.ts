@@ -76,6 +76,7 @@ export async function initChemAutostart() {
 //description: RDKit-based substructure filter
 //tags: filter
 //output: filter result
+//meta.semType: Molecule
 export function substructureFilter() {
   return new SubstructureFilter();
 }
