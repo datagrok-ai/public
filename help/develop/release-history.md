@@ -1,6 +1,26 @@
 <!-- TITLE: Release History -->
 <!-- SUBTITLE: -->
 
+# 2021-12-14 Dev build 0.101.0
+
+## Latest Docker Images
+
+* Datagrok: 
+  *  `docker pull datagrok/datagrok:0.101.0`
+  *  `docker pull datagrok/datagrok:latest`
+  
+* [Docker-Compose](admin/docker-compose.md)
+
+## Addressed Issues
+
+* Function View: Ability to show grid 
+* Compute: Vmax: transposing tables(WIP) 
+* Release notes: ignore GitHub Actions commits 
+* Added isolatesCount to GROK_PARAMETERS 
+* Added pool settings to GROK_PARAMETERS 
+* Peptides #93: Add spiral projection viewer. 
+
+
 # 2021-12-14 Dev build 0.100.0
 
 ## Latest Docker Images
