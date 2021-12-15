@@ -44,7 +44,7 @@ export class PvizAspect {
     this.denMapping();
     this.ptmMapping(ptmChoices, ptmProb);
     this.motMapping(ptmMotifChoices, ptmProb);
-
+    if (this.jsonObs !== null) { this.obsMapping(ptmObsChoices); };
 
     await this.render('H');
 
@@ -196,6 +196,36 @@ export class PvizAspect {
         ui.tooltip.hide();
       });
 
+      this.pviz.FeatureDisplayer.addMouseoverCallback(obsCodes, async function (ft) {
+        let selectorStr = 'g.feature.' + ft.category.replaceAll(" ", "_") + "."
+          + ft.category.replaceAll(" ", "_") + ' rect.feature';
+
+        let el = document.querySelectorAll(selectorStr);
+        let el_lst = pVizParams.obsMap[chain].obs_el_obj[ft.category];
+        let types = pVizParams.obsMap[chain].obs_prob_obj[ft.start][0];
+        let probabilities = pVizParams.obsMap[chain].obs_prob_obj[ft.start][1];
+
+        //@ts-ignore
+        el = el[el_lst.indexOf(ft.start)];
+
+        let ptmsStr = "";
+
+        for (let i = 0; i < types.length; i++) {
+          let prob = probabilities[i] == 0 ? "NA" : (probabilities[i] == 0.01 ? 0 : probabilities[i].toFixed(2));
+          ptmsStr += "\n" + types[i] + " ~" + prob;
+        }
+
+        ui.tooltip.show(
+          ui.divText(`Probability: ${ptmsStr}`),
+          //@ts-ignore
+          el.getBoundingClientRect().left + 10,
+          //@ts-ignore
+          el.getBoundingClientRect().top + 10
+        );
+
+      }).addMouseoutCallback(obsCodes, function (ft) {
+        ui.tooltip.hide();
+      });
 
       //mouse click handlers
       this.pviz.FeatureDisplayer.addClickCallback(['D'], async function (ft) {
@@ -231,6 +261,16 @@ export class PvizAspect {
         await pv.color(chain);
       });
 
+      this.pviz.FeatureDisplayer.addClickCallback(obsCodes, async function (ft) {
+        if (switchObj[chain][ft.start] === undefined) {
+          switchObj[chain][ft.start] = {};
+          switchObj[chain][ft.start]['state'] = true;
+        } else {
+          switchObj[chain][ft.start]['state'] = !switchObj[chain][ft.start]['state']
+        }
+        grok.events.fireCustomEvent("selectionChanged", null);
+        await pv.color(chain);
+      });
     }
   }
 
@@ -305,7 +345,28 @@ export class PvizAspect {
             }
           });
 
+          //observed PTMS
+          let listsObservedPtms = [];
 
+          this.obsChoices.forEach(ptm => {
+            let selectorStrPTM = 'g.feature.' + ptm.replaceAll(" ", "_") + "."
+              + ptm.replaceAll(" ", "_") + ' rect.feature';
+            let elPTM = document.querySelectorAll(selectorStrPTM);
+            let el_lstPTM = pVizParams.obsMap[chosenTracksChain].obs_el_obj[ptm.replace(" ", "_")];
+            listsObservedPtms[ptm] = [elPTM, el_lstPTM];
+          });
+
+          Object.keys(listsObservedPtms).forEach(ptm => {
+            let elPTM = listsObservedPtms[ptm][0];
+            let el_lstPTM = listsObservedPtms[ptm][1];
+            if (typeof el_lstPTM !== 'undefined' && el_lstPTM.indexOf(position) !== -1) {
+              if (switchObj[keyChain][position]['state'] === false) {
+                elPTM[el_lstPTM.indexOf(position)].style.fill = pVizParams.obsMap[keyChain].obs_color_obj[ptm.replace(" ", "_")][el_lstPTM.indexOf(position)];
+              } else {
+                elPTM[el_lstPTM.indexOf(position)].style.fill = 'black';
+              }
+            }
+          });
         }
       });
     });
@@ -525,6 +586,78 @@ export class PvizAspect {
     })
 
     this.pVizParams.motMap = (motMap);
+  }
+
+  obsMapping(ptmChoices) {
+    this.obsChoices = ptmChoices;
+    let obsMap = {}
+    let chains = Object.keys(this.pVizParams.seq);
+    let palette = MiscMethods.interpolateColors('(255, 255, 0)', '(255, 0, 0)', 5);
+
+    chains.forEach((chain) => {
+      let obs_feature_map = [];
+      let obs_color_obj = {};
+      let obs_el_obj = {};
+      let obs_prob_obj = {};
+
+      ptmChoices.forEach(ptm => {
+        let ptm_tree = this.jsonObs.ptm_observed[chain][ptm.replace(" ", "_")];
+        if (ptm_tree !== undefined) {
+
+          let obs_color_arr = [];
+          let obs_el_arr = [];
+          let obs_types_arr = [];
+          let obs_types_probs_arr = [];
+
+          Object.keys(ptm_tree).forEach((type) => {
+            let point = this.jsonObs.ptm_observed[chain][ptm.replace(" ", "_")][type];
+            if (!obs_el_arr.includes(point[0])) {
+              obs_el_arr.push(point[0]);
+            }
+          });
+
+          obs_el_arr.forEach((position) => {
+            let types = [];
+            let types_probs = [];
+            let prob = -1;
+            Object.keys(ptm_tree).forEach((type) => {
+              let point = this.jsonObs.ptm_observed[chain][ptm][type];
+              if (point[0] === position) {
+                types.push(type);
+                types_probs.push(point[1]);
+                let addProb = point[1] == 0.01 ? 0 : point[1];
+                prob = prob == -1 ? addProb / 100 : 1 - (1 - prob) * (1 - addProb / 100);
+              }
+            });
+
+            obs_color_arr.push(palette[Math.round(prob * 4)]);
+            obs_types_arr.push(types);
+            obs_types_probs_arr.push(types_probs);
+
+            obs_feature_map.push({
+              groupSet: 'Observed PTMs',
+              category: ptm,
+              type: ptm,
+              start: position,
+              end: position,
+              text: ptm,
+              improbable: true
+            })
+
+            obs_color_obj[ptm.replace(" ", "_")] = obs_color_arr;
+            obs_el_obj[ptm.replace(" ", "_")] = obs_el_arr;
+            obs_prob_obj[position] = [types, types_probs];
+          });
+        }
+      });
+
+      obsMap[chain] = {
+        obs_feature_map: obs_feature_map, obs_color_obj: obs_color_obj,
+        obs_el_obj: obs_el_obj, obs_prob_obj: obs_prob_obj
+      };
+    });
+
+    this.pVizParams.obsMap = (obsMap);
   }
 
   applyGradient(gradient_obj) {
