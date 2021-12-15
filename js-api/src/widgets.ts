@@ -243,6 +243,7 @@ export class Filter extends Widget {
   indicator: HTMLDivElement;
   controls: HTMLDivElement;
   host: HTMLElement;
+  columnName?: string;
 
   constructor() {
     super(ui.div());
