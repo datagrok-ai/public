@@ -148,6 +148,9 @@ public class GrokConnect {
 
         post("/query_table_sql", (request, response) -> {
             logMemory();
+            if (SettingsManager.getInstance().settings == null)
+                return NoSettingsException.class.getName();
+
             String result = "";
             try {
                 DataConnection connection = gson.fromJson(request.body(), DataConnection.class);
@@ -166,13 +169,19 @@ public class GrokConnect {
             logMemory();
             BufferAccessor buffer;
             DataQueryRunResult result = new DataQueryRunResult();
-            try {
-                DataConnection connection = gson.fromJson(request.body(), DataConnection.class);
-                DataProvider provider = providerManager.getByName(connection.dataSource);
-                DataFrame dataFrame = provider.getSchemas(connection);
-                buffer = packDataFrame(result, dataFrame);
-            } catch (Throwable ex) {
-                buffer = packException(result, ex);
+            if (SettingsManager.getInstance().settings != null) {
+                try {
+                    DataConnection connection = gson.fromJson(request.body(), DataConnection.class);
+                    DataProvider provider = providerManager.getByName(connection.dataSource);
+                    DataFrame dataFrame = provider.getSchemas(connection);
+                    buffer = packDataFrame(result, dataFrame);
+                } catch (Throwable ex) {
+                    buffer = packException(result, ex);
+                }
+            }
+            else {
+                result.errorMessage = NoSettingsException.class.getName();
+                buffer = new BufferAccessor();
             }
             prepareResponse(result, response, buffer);
 
@@ -185,13 +194,19 @@ public class GrokConnect {
 
             BufferAccessor buffer;
             DataQueryRunResult result = new DataQueryRunResult();
-            try {
-                DataConnection connection = gson.fromJson(request.body(), DataConnection.class);
-                DataProvider provider = providerManager.getByName(connection.dataSource);
-                DataFrame dataFrame = provider.getSchema(connection, connection.get("schema"), connection.get("table"));
-                buffer = packDataFrame(result, dataFrame);
-            } catch (Throwable ex) {
-                buffer = packException(result, ex);
+            if (SettingsManager.getInstance().settings != null) {
+                try {
+                    DataConnection connection = gson.fromJson(request.body(), DataConnection.class);
+                    DataProvider provider = providerManager.getByName(connection.dataSource);
+                    DataFrame dataFrame = provider.getSchema(connection, connection.get("schema"), connection.get("table"));
+                    buffer = packDataFrame(result, dataFrame);
+                } catch (Throwable ex) {
+                    buffer = packException(result, ex);
+                }
+            }
+            else {
+                result.errorMessage = NoSettingsException.class.getName();
+                buffer = new BufferAccessor();
             }
             prepareResponse(result, response, buffer);
 

@@ -2,6 +2,7 @@ import * as grok from 'datagrok-api/grok';
 import * as ui from 'datagrok-api/ui';
 import * as DG from 'datagrok-api/dg';
 import CodeMirror from 'codemirror';
+import 'codemirror/lib/codemirror.css';
 import {_package} from '../package';
 
 const enum FUNC_PROPS_FIELDS {
@@ -95,6 +96,102 @@ const functionParamsLabels = (key: FUNC_PARAM_FIELDS) => {
   }
 };
 
+enum COMMON_TAG_NAME {
+  VALIDATORS = 'validators',
+  CAPTION = 'caption',
+  POSTFIX = 'postfix',
+  UNITS = 'units',
+  EDITOR = 'editor',
+}
+
+enum OPTIONAL_TAG_NAME {
+  COLUMNS = 'columns',
+  CATEGORICAL = 'categorical',
+  TYPE = 'type',
+  FORMAT = 'format',
+  ALLOW_NULLS = 'allowNulls',
+  ACTION = 'action',
+  CHOICES = 'choices',
+  SUGGESTIONS = 'suggestions',
+  SEM_TYPE = 'semType',
+  MIN = 'min',
+  MAX = 'max',
+}
+
+type DF_TAG_NAME = COMMON_TAG_NAME | OPTIONAL_TAG_NAME.COLUMNS | OPTIONAL_TAG_NAME.CATEGORICAL;
+type COLUMN_TAG_NAME = COMMON_TAG_NAME |
+                        OPTIONAL_TAG_NAME.COLUMNS | OPTIONAL_TAG_NAME.FORMAT |
+                        OPTIONAL_TAG_NAME.ALLOW_NULLS | OPTIONAL_TAG_NAME.ACTION | OPTIONAL_TAG_NAME.SEM_TYPE
+
+type STRING_TAG_NAME = COMMON_TAG_NAME |
+                        OPTIONAL_TAG_NAME.CHOICES | OPTIONAL_TAG_NAME.SUGGESTIONS
+
+type INT_TAG_NAME = COMMON_TAG_NAME | OPTIONAL_TAG_NAME.MIN | OPTIONAL_TAG_NAME.MAX
+
+const COMMON_TAG_NAMES = [...Object.values(COMMON_TAG_NAME)];
+const DF_TAG_NAMES = [
+  ...Object.values(COMMON_TAG_NAME),
+  OPTIONAL_TAG_NAME.COLUMNS,
+  OPTIONAL_TAG_NAME.CATEGORICAL,
+  OPTIONAL_TAG_NAME.ACTION];
+const COLUMN_TAG_NAMES = [...Object.values(COMMON_TAG_NAME), OPTIONAL_TAG_NAME.COLUMNS, OPTIONAL_TAG_NAME.FORMAT,
+  OPTIONAL_TAG_NAME.ALLOW_NULLS, OPTIONAL_TAG_NAME.ACTION, OPTIONAL_TAG_NAME.SEM_TYPE];
+const STRING_TAG_NAMES = [...Object.values(COMMON_TAG_NAME), OPTIONAL_TAG_NAME.CHOICES, OPTIONAL_TAG_NAME.SUGGESTIONS];
+const INT_TAG_NAMES = [...Object.values(COMMON_TAG_NAME), OPTIONAL_TAG_NAME.MIN, OPTIONAL_TAG_NAME.MAX];
+
+type FuncParamBase = {
+  direction: DIRECTION,
+  name?: string,
+  defaultValue?: string,
+  description?: string
+}
+
+type FuncParam =
+  FuncParamBase & {
+  type: DG.TYPE.BOOL | DG.TYPE.DATE_TIME | DG.TYPE.FLOAT | DG.TYPE.GRAPHICS | DG.TYPE.INT
+  options?: {tag: COMMON_TAG_NAME, value: string}[]
+} | FuncParamBase & {
+  type: DG.TYPE.INT
+  options?: {tag: COMMON_TAG_NAME, value: string}[]
+} | FuncParamBase & {
+  type: DG.TYPE.DATA_FRAME,
+  options?: {tag: DF_TAG_NAME, value: string}[]
+} | FuncParamBase & {
+  type: DG.TYPE.COLUMN_LIST | DG.TYPE.COLUMN,
+  options?: {tag: COLUMN_TAG_NAME, value: string}[]
+} | FuncParamBase & {
+  type: DG.TYPE.STRING
+  options?: {tag: STRING_TAG_NAME, value: string}[]
+}
+
+const generateParamLine = (param: DG.Property, direction: string) => {
+  const optionTags = (() => {
+    switch (param.propertyType) {
+    case DG.TYPE.INT:
+      return INT_TAG_NAMES;
+    case DG.TYPE.DATA_FRAME:
+      return DF_TAG_NAMES;
+    case DG.TYPE.COLUMN_LIST:
+    case DG.TYPE.COLUMN:
+      return COLUMN_TAG_NAMES;
+    case DG.TYPE.STRING:
+      return STRING_TAG_NAMES;
+    default:
+      return COMMON_TAG_NAMES;
+    }
+  })();
+  const optionTagsPreview = optionTags
+    .map((tag) => {
+      // console.log(param.name, tag, JSON.stringify(param.options), param.options[tag]);
+      return {tag: tag, val: param.options[tag]};
+    })
+    .filter((value) => !!value.val)
+    .map(({tag, val}) => `${tag}:${val}`)
+    .join('; ');
+  const result =`#${direction}: ${param.propertyType} ${param.name? `${param.name} ` : ''}${param.defaultValue ? `= ${param.defaultValue} ` : ''}${!!optionTagsPreview.length ? `{${optionTagsPreview}} ` : ''}${param.description ? `[${param.description}]` : ''}\n`;
+  return result;
+};
+
 export function _functionEditor(functionCode: string) {
   const inputScript = DG.Script.create(functionCode);
 
@@ -148,7 +245,9 @@ export function _functionEditor(functionCode: string) {
       addButton.replaceWith(newAddButton);
       addButton = newAddButton;
     };
-    const menu = DG.Menu.popup().items(getNewProps(), onItemClick);
+    const menu = DG.Menu.popup().items(getNewProps().map(
+      (propName) => functionPropsLabels(propName as FUNC_PROPS_FIELDS),
+    ), onItemClick);
 
     const shevron = ui.iconFA('chevron-down');
     const button = ui.button([ui.icons.add(()=>{}), shevron], () => {
@@ -276,14 +375,9 @@ export function _functionEditor(functionCode: string) {
       return ui.div(result);
     });
 
-    acc.addPane('Connections', ()=> {
+    acc.addPane('Tags', ()=> {
       return ui.div();
     });
-
-    acc.addPane('Viewers', ()=> {
-      return ui.div();
-    });
-
 
     grok.shell.o = ui.divV([ui.h1(`Param: ${paramName}`), acc.root]);
   };
@@ -351,9 +445,9 @@ export function _functionEditor(functionCode: string) {
   );
 
   const area = ui.textInput('', '');
-  const myCM = CodeMirror.fromTextArea((area.input as HTMLTextAreaElement), {});
+  const myCM = CodeMirror.fromTextArea((area.input as HTMLTextAreaElement));
 
-  const previewDiv = ui.divV([ui.h1('Code preview'), area]);
+  const previewDiv = ui.panel([ui.divV([ui.h1('Code preview'), area])]);
   previewDiv.style.flexGrow = '1';
 
   propsForm = functionPropsForm();
@@ -429,10 +523,10 @@ export function _functionEditor(functionCode: string) {
       if (propValue) result += `#${functionPropsCode(propField as keyof FuncPropsState)}: ${propValue}\n`;
     });
     functionInputParamsCopy.map((param) => {
-      result += `#input: ${param.propertyType} ${param.name}\n`;
+      result += generateParamLine(param, DIRECTION.INPUT);
     });
     functionOutputParamsCopy.map((param) => {
-      result += `#output: ${param.propertyType} ${param.name}\n`;
+      result += generateParamLine(param, DIRECTION.OUTPUT);
     });
     myCM.setValue(result);
   };

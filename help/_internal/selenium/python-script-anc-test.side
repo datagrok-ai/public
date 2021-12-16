@@ -232,7 +232,7 @@
         ["xpath=//textarea[@id='editor']", "xpath:attributes"],
         ["xpath=//textarea", "xpath:position"]
       ],
-      "value": "PythonScripts:PythonDup(GetCurrentRowField(\"sex\"))"
+      "value": "DemoScripts:PythonDup(GetCurrentRowField(\"sex\"))"
     }, {
       "id": "be9cee24-ece0-402b-b7ee-7513bb302dc3",
       "comment": "",

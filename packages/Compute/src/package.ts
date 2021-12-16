@@ -3,12 +3,13 @@ import * as grok from 'datagrok-api/grok';
 import * as ui from 'datagrok-api/ui';
 import * as DG from 'datagrok-api/dg';
 import {ModelHandler} from './model-handler';
-import {selectOutliersManually} from './outliers-selection';
+import {selectOutliersManually} from './outliers-selection/outliers-selection';
 import {exportFuncCall} from './export-funccall';
 import {_functionParametersGrid} from './function-views/function-parameters-grid';
 import {ModelCatalogView} from './model-catalog-view';
 import wu from 'wu';
 import {_functionEditor} from './function-editor/function-editor';
+import {OutliersSelectionViewer} from './outliers-selection/outliers-selection-viewer';
 
 let initCompleted: boolean = false;
 export const _package = new DG.Package();
@@ -46,6 +47,14 @@ export async function manualOutlierSelectionDialog(inputData: DG.DataFrame) {
   });
 }
 
+//name: OutliersSelectionViewer
+//description: Creates an outliers selection viewer
+//tags: viewer
+//output: viewer
+export function OutliersSelection() {
+  return new OutliersSelectionViewer();
+}
+
 //name: export To Excel
 //input: funccall call
 //tags: export
@@ -62,13 +71,17 @@ export function functionEditor() {
   #language: python
   #sample: chem/smiles_coordinates.csv
   #tags: demo, chem, rdkit
-  #input: dataframe data [Input data table]
-  #input: column smiles {type:categorical, semType: Molecule} [Molecules, in SMILES format]
-  #input: int components = 2 [Number of components]
-  #input: int minClusterSize = 3 [Minimum cluster size]
-  #output: graphics spanningTree
-  #output: graphics linkageTree
-  #output: graphics chemSpace
+  #input: dataframe t1 {columns:numerical} [first input data table]
+  #input: dataframe t2 {columns:numerical} [second input data table]
+  #input: column x {type:numerical; table:t1} [x axis column name]
+  #input: column y {type:numerical} [y axis column name]
+  #input: column date {type:datetime; format:mm/dd/yyyy} [date column name]
+  #input: column_list numdata {type:numerical; table:t1} [numerical columns names]
+  #input: int numcomp = 2 {range:2-7} [number of components]
+  #input: bool center = true [number of components]
+  #input: string type = high {choices: ["high", "low"]} [type of filter]
+  #output: dataframe result {action:join(t1)} [pca components]
+  #output: graphics scatter [scatter plot]
   
   import numba
   import hdbscan

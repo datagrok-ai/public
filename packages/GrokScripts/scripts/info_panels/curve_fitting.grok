@@ -7,4 +7,4 @@
 #output: graphics pic
 #condition: "acidiq" == table.name
 
-pic = Rscripts:Fittingdrc("acidiq", "dose", "rgr")
+pic = DemoScripts:Fittingdrc("acidiq", "dose", "rgr")

@@ -15,7 +15,7 @@ import {PeptideSimilaritySpaceWidget} from './utils/peptide-similarity-space';
 import {manualAlignmentWidget} from './widgets/manual-alignment';
 import {SARViewer, SARViewerVertical} from './viewers/sar-viewer';
 import {peptideMoleculeWidget} from './widgets/peptide-molecule';
-import {correlationAnalysisPlots} from './utils/correlation-analysis';
+import {SpiralPlot} from './viewers/spiral-plot';
 
 export const _package = new DG.Package();
 let tableGrid: DG.Grid;
@@ -25,35 +25,13 @@ let view: DG.TableView;
 
 async function main(chosenFile: string) {
   const pi = DG.TaskBarProgressIndicator.create('Loading Peptides');
-  //let peptides =
-  //  await grok.data.loadTable('https://datagrok.jnj.com/p/ejaeger.il23peptideidp5562/il-23_peptide_idp-5562');
   const path = _package.webRoot + 'files/' + chosenFile;
   const peptides = (await grok.data.loadTable(path));
   peptides.name = 'Peptides';
   peptides.setTag('dataType', 'peptides');
   const view = grok.shell.addTableView(peptides);
   tableGrid = view.grid;
-  // peptides.onSemanticTypeDetecting.subscribe((_: any) => {
-  //   const regexp = new RegExp(/^([^-^\n]*-){2,49}(\w|\(|\))+$/);
-  //   for (const col of peptides.columns) {
-  //     col.semType = DG.Detector.sampleCategories(col, (s: any) => regexp.test(s.trim())) ? 'alignedSequence' : null;
-  //     if (col.semType == 'alignedSequence') {
-  //       expandColumn(col, tableGrid, (ent)=>{
-  //         const subParts:string[] = ent.split('-');
-  //         // eslint-disable-next-line no-unused-vars
-  //         const [text, _] = processSequence(subParts);
-  //         let textSize = 0;
-  //         text.forEach((aar)=>{
-  //           textSize += aar.length;
-  //         });
-  //         return textSize;
-  //       });
-  //     }
-  //   }
-  // });
-
   view.name = 'PeptidesView';
-
   grok.shell.windows.showProperties = true;
 
   pi.close();
@@ -67,7 +45,6 @@ export function Peptides() {
 
   const appDescription = ui.info(
     [
-      // ui.divText('\n To start the application :', {style: {'font-weight': 'bolder'}}),
       ui.list([
         '- automatic recognition of peptide sequences',
         '- native integration with tons of Datagrok out-of-the box features (visualization, filtering, clustering, ' +
@@ -201,14 +178,15 @@ export async function peptideSpacePanel(col: DG.Column): Promise<DG.Widget> {
   return await widget.draw();
 }
 
-//name: Correllation analysis
-export async function correlationAnalysis() {
-  view = (grok.shell.v as DG.TableView);
-
-  const df = await grok.data.files.openTable('Demo:TestJobs:Files:DemoFiles/bio/peptides.csv');
-  const tview = grok.shell.addTableView(df);
-  const [cpviewer, bpviewer] = correlationAnalysisPlots(df.getCol('AlignedSequence'));
-
-  tview.dockManager.dock(cpviewer, 'right');
-  tview.dockManager.dock(bpviewer, 'down');
+//name: Spiral Plot
+////input: dataframe table
+////input: column activity
+//tags: viewer, panel
+//output: viewer result
+export async function spiralPlot(): Promise<DG.Viewer> {//(table: DG.DataFrame, activity: DG.Column) {
+// Read as dataframe
+  const table = await grok.data.files.openTable('Demo:TestJobs:Files:DemoFiles/bio/peptides.csv');
+  const activity = await table.columns.addNewCalculated('-log10(Activity)', '0-Log10(${Activity})');
+  view = grok.shell.addTableView(table);
+  return view.addViewer(SpiralPlot.fromTable(table, {valuesColumnName: activity.name}));
 }

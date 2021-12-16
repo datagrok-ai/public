@@ -20,7 +20,7 @@ let api = <any>window;
  * Subclass ViewBase to implement a Datagrok view in JavaScript.
  * */
 export class ViewBase {
-  d: any;
+  dart: any;
   subs: Subscription[];
   private _helpUrl: string | null = null;
   protected _root: HTMLDivElement;
@@ -33,7 +33,7 @@ export class ViewBase {
    * @param {boolean} createHost - Create JS host wrapper. */
   constructor(params: object | null = null, path: string = '', createHost: boolean = true) {
     if (createHost)
-      this.d = api.grok_View_CreateJsViewHost(this);
+      this.dart = api.grok_View_CreateJsViewHost(this);
 
     this._name = 'New view';
     this._root = ui.panel([], 'grok-view');
@@ -87,19 +87,19 @@ export class ViewBase {
   }
 
   get parentCall(): FuncCall {
-    return toJs(api.grok_View_Get_ParentCall(this.d));
+    return toJs(api.grok_View_Get_ParentCall(this.dart));
   }
 
   set parentCall(s: FuncCall) {
-    api.grok_View_Set_ParentCall(this.d, toDart(s));
+    api.grok_View_Set_ParentCall(this.dart, toDart(s));
   }
 
   get parentView(): ViewBase {
-    return toJs(api.grok_View_Get_ParentView(this.d));
+    return toJs(api.grok_View_Get_ParentView(this.dart));
   }
 
   set parentView(s: ViewBase) {
-    api.grok_View_Set_ParentView(this.d, toDart(s));
+    api.grok_View_Set_ParentView(this.dart, toDart(s));
   }
 
   /** @type {string} */
@@ -120,13 +120,13 @@ export class ViewBase {
 
   /** View toolbox.
    *  Sample: {@link https://public.datagrok.ai/js/samples/ui/views/toolbox} */
-  get toolbox(): HTMLElement { return api.grok_View_Get_Toolbox(this.d); }
-  set toolbox(x: HTMLElement) { api.grok_View_Set_Toolbox(this.d, x); }
+  get toolbox(): HTMLElement { return api.grok_View_Get_Toolbox(this.dart); }
+  set toolbox(x: HTMLElement) { api.grok_View_Set_Toolbox(this.dart, x); }
 
   /** View menu.
    *  Sample: {@link https://public.datagrok.ai/js/samples/ui/views/ribbon} */
-  get ribbonMenu(): Menu { return new Menu(api.grok_View_Get_RibbonMenu(this.d)); }
-  set ribbonMenu(menu: Menu) { api.grok_View_Set_RibbonMenu(this.d, menu.d); }
+  get ribbonMenu(): Menu { return new Menu(api.grok_View_Get_RibbonMenu(this.dart)); }
+  set ribbonMenu(menu: Menu) { api.grok_View_Set_RibbonMenu(this.dart, menu.dart); }
 
   /** Whether the view is currently closing. */
   get closing(): boolean { return this._closing; }
@@ -137,11 +137,11 @@ export class ViewBase {
    * @param {boolean} clear Clear all previous before setup
    * Sample: {@link https://public.datagrok.ai/js/samples/ui/views/ribbon} */
   setRibbonPanels(panels: HTMLElement[][], clear: boolean = true): void {
-    api.grok_View_SetRibbonPanels(this.d, panels, clear);
+    api.grok_View_SetRibbonPanels(this.dart, panels, clear);
   }
 
   getRibbonPanels(): HTMLElement[][] {
-    return api.grok_View_GetRibbonPanels(this.d);
+    return api.grok_View_GetRibbonPanels(this.dart);
   }
 
   /** @returns {HTMLElement} View icon. */
@@ -203,7 +203,7 @@ export class ViewBase {
   /** Closes this view. */
   close(): void {
     this._closing = true;
-    api.grok_View_Close(this.d);
+    api.grok_View_Close(this.dart);
   }
 }
 
@@ -215,17 +215,17 @@ export class ViewBase {
 export class View extends ViewBase {
 
   /** @constructs View */
-  constructor(d: any) {
+  constructor(dart: any) {
     super(null, '', false);
-    this.d = d;
+    this.dart = dart;
   }
 
-  static fromDart(d: any): View | TableView {
-    let type = api.grok_View_Get_Type(d);
+  static fromDart(dart: any): View | TableView {
+    let type = api.grok_View_Get_Type(dart);
     if (type === VIEW_TYPE.TABLE_VIEW)
-      return new TableView(d);
+      return new TableView(dart);
     else
-      return new View(d);
+      return new View(dart);
   }
 
   /** Creates a view for the specified object, if it is registered, or null otherwise. */
@@ -257,47 +257,47 @@ export class View extends ViewBase {
   get root(): HTMLElement {
     if (api.grok_View_Get_Root == null)
       return this._root;
-    return api.grok_View_Get_Root(this.d);
+    return api.grok_View_Get_Root(this.dart);
   }
 
   get type(): string {
-    return api.grok_View_Get_Type(this.d);
+    return api.grok_View_Get_Type(this.dart);
   }
 
   get path(): string {
-    return api.grok_View_Get_Path(this.d);
+    return api.grok_View_Get_Path(this.dart);
   }
 
   set path(s: string) {
-    api.grok_View_Set_Path(this.d, s);
+    api.grok_View_Set_Path(this.dart, s);
   }
 
   /**
    *  View type URI. Note that {@link path} is specific to the instance of the view.
    *  @type {string} */
   get basePath(): string {
-    return api.grok_View_Get_BasePath(this.d);
+    return api.grok_View_Get_BasePath(this.dart);
   }
 
   set basePath(s: string) {
-    api.grok_View_Set_BasePath(this.d, s);
+    api.grok_View_Set_BasePath(this.dart, s);
   }
 
   get description(): string {
-    return api.grok_View_Get_Description(this.d);
+    return api.grok_View_Get_Description(this.dart);
   }
 
   set description(s: string) {
-    api.grok_View_Set_Description(this.d, s);
+    api.grok_View_Set_Description(this.dart, s);
   }
 
   /** @returns {string|null} View help URL. */
   get helpUrl(): string | null {
-    return api.grok_View_Get_HelpUrl(this.d);
+    return api.grok_View_Get_HelpUrl(this.dart);
   }
 
   set helpUrl(url: string | null) {
-    api.grok_View_Set_HelpUrl(this.d, url);
+    api.grok_View_Set_HelpUrl(this.dart, url);
   }
 
   /** 
@@ -305,7 +305,7 @@ export class View extends ViewBase {
    *  See also {@link saveLayout}
    *  @param {ViewLayout} layout */
   loadLayout(layout: ViewLayout): void {
-    return api.grok_View_Load_Layout(this.d, layout.d);
+    return api.grok_View_Load_Layout(this.dart, layout.dart);
   }
 
   /** 
@@ -313,14 +313,14 @@ export class View extends ViewBase {
    *  See also {@link loadLayout}
    *  @returns {ViewLayout} */
   saveLayout(): ViewLayout {
-    return toJs(api.grok_View_Save_Layout(this.d));
+    return toJs(api.grok_View_Save_Layout(this.dart));
   }
 
   /** View name. It gets shown in the tab handle.
    * @type {string} */
   get name(): string {
     // @ts-ignore
-    return api.grok_View_Get_Name == null ? this._name : api.grok_View_Get_Name(this.d);
+    return api.grok_View_Get_Name == null ? this._name : api.grok_View_Get_Name(this.dart);
   }
 
   set name(s: string) {
@@ -328,11 +328,11 @@ export class View extends ViewBase {
       // @ts-ignore
       this._name = s;
     else
-      api.grok_View_Set_Name(this.d, s);
+      api.grok_View_Set_Name(this.dart, s);
   }
 
   _onAdded() {
-    api.grok_View_OnAdded(this.d);
+    api.grok_View_OnAdded(this.dart);
   }
 
   // to be used in [createByType].
@@ -381,39 +381,39 @@ export class View extends ViewBase {
  */
 export class TableView extends View {
   /** @constructs TableView */
-  constructor(d: any) {
-    super(d);
+  constructor(dart: any) {
+    super(dart);
   }
 
   /** Creates a new table view, and adds it to the workspace if specified */
   static create(table: DataFrame, addToWorkspace: boolean = true): TableView {
-    return toJs(api.grok_TableView(table.d, addToWorkspace));
+    return toJs(api.grok_TableView(table.dart, addToWorkspace));
   }
 
   /** Associated table, if it exists (for TableView), or null.
    *  @type {DataFrame} */
   get table(): DataFrame | null {
-    return toJs(api.grok_View_Get_Table(this.d));
+    return toJs(api.grok_View_Get_Table(this.dart));
   }
 
   /** @type {Grid} */
   get grid(): Grid {
-    return toJs(api.grok_View_Get_Grid(this.d));
+    return toJs(api.grok_View_Get_Grid(this.dart));
   }
 
   /** @type {DataFrame} */
   get dataFrame(): DataFrame {
-    return toJs(api.grok_View_Get_DataFrame(this.d));
+    return toJs(api.grok_View_Get_DataFrame(this.dart));
   }
 
   set dataFrame(x: DataFrame) {
-    api.grok_View_Set_DataFrame(this.d, x.d);
+    api.grok_View_Set_DataFrame(this.dart, x.dart);
   }
 
   /** View toolbox that gets shown on the left, in the sidebar.
    *  @type {ToolboxPage} */
   get toolboxPage(): ToolboxPage {
-    return new ToolboxPage(api.grok_View_Get_ToolboxPage(this.d));
+    return new ToolboxPage(api.grok_View_Get_ToolboxPage(this.dart));
   }
 
   /** Adds a viewer of the specified type.
@@ -422,9 +422,9 @@ export class TableView extends View {
    * @returns {Viewer} */
   addViewer(v: ViewerType | string | Viewer, options: object | null = null): Viewer {
     if (typeof v === 'string')
-      v = toJs(api.grok_View_AddViewerByName(this.d, v)) as Viewer;
+      v = toJs(api.grok_View_AddViewerByName(this.dart, v)) as Viewer;
     else
-      api.grok_View_AddViewer(this.d, v.d);
+      api.grok_View_AddViewer(this.dart, v.dart);
     if (options !== null)
       v.setOptions(options);
     return v;
@@ -435,14 +435,14 @@ export class TableView extends View {
    *  windows that reside inside this view.
    *  @type {DockNode} */
   get dockNode(): DockNode {
-    return new DockNode(api.grok_View_Get_DockNode(this.d));
+    return new DockNode(api.grok_View_Get_DockNode(this.dart));
   }
 
   /** 
    * View's dock manager. Only defined for DockView descendants such as {@link TableView}, UsersView, etc.
    * @type {DockManager} */
   get dockManager(): DockManager {
-    return new DockManager(api.grok_View_Get_DockManager(this.d));
+    return new DockManager(api.grok_View_Get_DockManager(this.dart));
   }
 
   /** 
@@ -673,78 +673,78 @@ export class TableView extends View {
 
   /** Resets view layout, leaving only grid visible. */
   resetLayout(): void {
-    api.grok_View_ResetLayout(this.d);
+    api.grok_View_ResetLayout(this.dart);
   }
 
   /** Detaches and closes the view. */
   detach(): void {
-    api.grok_View_Detach(this.d);
+    api.grok_View_Detach(this.dart);
   }
 
   /** Detaches all viewers. */
   detachViewers(): void {
-    api.grok_View_DetachViewers(this.d);
+    api.grok_View_DetachViewers(this.dart);
   }
 
   /** Returns all viewers.
    * @type {Iterable.<Viewer>} */
   get viewers(): Iterable<Viewer> {
-    return _toIterable(api.grok_View_Get_Viewers(this.d));
+    return _toIterable(api.grok_View_Get_Viewers(this.dart));
   }
 
-  get syncCurrentObject(): boolean { return api.grok_TableView_Get_SyncCurrentObject(this.d); }
-  set syncCurrentObject(x: boolean) { api.grok_TableView_Set_SyncCurrentObject(this.d, x); }
+  get syncCurrentObject(): boolean { return api.grok_TableView_Get_SyncCurrentObject(this.dart); }
+  set syncCurrentObject(x: boolean) { api.grok_TableView_Set_SyncCurrentObject(this.dart, x); }
 }
 
 /** Script view */
 export class ScriptView extends View {
   /** @constructs ScriptView */
-  constructor(d: any) {
-    super(d);
+  constructor(dart: any) {
+    super(dart);
   }
 
   static create(script: Script): ScriptView {
-    return new ScriptView(api.grok_ScriptView(script.d));
+    return new ScriptView(api.grok_ScriptView(script.dart));
   }
 }
 
 export class DockView extends View {
-  constructor(d: any) {
-    super(d);
+  constructor(dart: any) {
+    super(dart);
   }
 
   initDock(): string {
-    return api.grok_DockView_InitDock(this.d);
+    return api.grok_DockView_InitDock(this.dart);
   }
 
   _handleResize(): string {
-    return api.grok_DockView_HandleResize(this.d);
+    return api.grok_DockView_HandleResize(this.dart);
   }
 }
 
 export class FunctionView extends View {
-  constructor(d: any) {
-    super(d);
+  constructor(dart: any) {
+    super(dart);
   }
 
   static createFromFunc(func: Func): FunctionView {
-    return new FunctionView(api.grok_FunctionView(func.d));
+    return new FunctionView(api.grok_FunctionView(func.dart));
   }
 
   get func(): Func {
-    return toJs(api.grok_FunctionView_Get_Func(this.d));
+    return toJs(api.grok_FunctionView_Get_Func(this.dart));
   }
 
   set func(f: Func) {
-      api.grok_FunctionView_Set_Func(this.d, f.d);
+      api.grok_FunctionView_Set_Func(this.dart, f.dart);
   }
 }
 
 export class ViewLayout extends Entity {
 
   /** @constructs ViewLayout */
-  constructor(d: any) {
-    super(d);
+  constructor(dart: any) {
+    super(dart);
   }
 
   static fromJson(json: string): ViewLayout {
@@ -757,35 +757,35 @@ export class ViewLayout extends Entity {
 
   /** Only defined within the context of the OnViewLayoutXXX events */
   get view(): View {
-    return toJs(api.grok_ViewLayout_Get_View(this.d));
+    return toJs(api.grok_ViewLayout_Get_View(this.dart));
   }
 
   get viewState(): string {
-    return api.grok_ViewLayout_Get_ViewState(this.d);
+    return api.grok_ViewLayout_Get_ViewState(this.dart);
   }
 
   set viewState(state: string) {
-    api.grok_ViewLayout_Set_ViewState(this.d, state);
+    api.grok_ViewLayout_Set_ViewState(this.dart, state);
   }
 
   getUserDataValue(key: string): string {
-    return api.grok_ViewLayout_Get_UserDataValue(this.d, key);
+    return api.grok_ViewLayout_Get_UserDataValue(this.dart, key);
   }
 
   setUserDataValue(key: string, value: string) {
-    return api.grok_ViewLayout_Set_UserDataValue(this.d, key, value);
+    return api.grok_ViewLayout_Set_UserDataValue(this.dart, key, value);
   }
 
   toJson(): string {
-    return api.grok_ViewLayout_ToJson(this.d);
+    return api.grok_ViewLayout_ToJson(this.dart);
   }
 }
 
 export class VirtualView {
-  d: any;
+  dart: any;
 
-  constructor(d: any) {
-    this.d = d;
+  constructor(dart: any) {
+    this.dart = dart;
   }
 
   static create(verticalScroll: boolean = true, maxCols: number = 100): VirtualView {
@@ -793,11 +793,11 @@ export class VirtualView {
   }
 
   get root(): HTMLElement {
-    return api.grok_VirtualItemView_Get_Root(this.d);
+    return api.grok_VirtualItemView_Get_Root(this.dart);
   }
 
   setData(length: number, renderer: any): void {
-    api.grok_VirtualItemView_SetData(this.d, length, renderer);
+    api.grok_VirtualItemView_SetData(this.dart, length, renderer);
   }
 }
 

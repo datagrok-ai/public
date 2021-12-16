@@ -1,6 +1,205 @@
 <!-- TITLE: Release History -->
 <!-- SUBTITLE: -->
 
+# 2021-12-14 Dev build 0.102.0
+
+## Latest Docker Images
+
+* Datagrok: 
+  *  `docker pull datagrok/datagrok:0.102.0`
+  *  `docker pull datagrok/datagrok:latest`
+  
+* [Docker-Compose](admin/docker-compose.md)
+
+## Addressed Issues
+
+* Function View: Ability to show grid 
+* NPM repositories: new package manager UI (WIP)
+* Compute: Vmax: Pmax: rounding values, convenient naming objects, transposing tables 
+* Compute: export improved 
+* Compute: made OutSel buttons flexible 
+* (Bug) Grid: "Show row header" property does not have any effect 
+* Compute: removed buttons from OutSel 
+* Compute: Vmax: remove titles 
+
+
+# 2021-12-14 Dev build 0.101.0
+
+## Latest Docker Images
+
+* Datagrok: 
+  *  `docker pull datagrok/datagrok:0.101.0`
+  *  `docker pull datagrok/datagrok:latest`
+  
+* [Docker-Compose](admin/docker-compose.md)
+
+## Addressed Issues
+
+* Function View: Ability to show grid 
+* Compute: Vmax: transposing tables(WIP) 
+* Release notes: ignore GitHub Actions commits 
+* Added isolatesCount to GROK_PARAMETERS 
+* Added pool settings to GROK_PARAMETERS 
+* Peptides #93: Add spiral projection viewer. 
+
+
+# 2021-12-14 Dev build 0.100.0
+
+## Latest Docker Images
+
+* Datagrok: 
+  *  `docker pull datagrok/datagrok:0.100.0`
+  *  `docker pull datagrok/datagrok:latest`
+  
+* [Docker-Compose](admin/docker-compose.md)
+
+## Addressed Issues
+
+* GitHub Actions: Update js-api/package-lock.json 
+* Compute: Vmax: consistent capitalization, Update regression line in Input tab after selecting new outliers 
+* Timelines: improve column selection heuristics 
+* SQLite #47: added missing file 
+* Compute: Vmax: flux decay multiaxis linechart 
+* Timelines: selection color is missing 
+* Scatter Plot: an option to follow global filter 
+* Viewers: Unification of properties (alpha/opacity/opaque) 
+* Added an SQLite demo file 
+* SQLite: improved documentation 
+* (Bug) datagrok-tools: `grok api` creates invalid function declarations 
+* GitHub Actions: Update tools/package-lock.json 
+* Move scripts into DemoPackages 
+* Compute: Vmax and Pmax enhancements 
+* GitHub Actions: Update packages/Compute/package-lock.json 
+* Grok connect: NPE when settings in schemas, schema, and query_table_sql are null  
+* Formula lines: Fixed name conflict 
+* NPM repositories: add check for deprecated versions 
+* NPM repositories: improve package search for given scope (WIP)
+* Compute: Vmax: flux decay plot outliers bug fix 
+* Terraform configuration for CVM 
+* Function View: Viewer positioning tags 
+* Function View: Ability to show grid 
+
+
+# 2021-12-09 Dev build 0.99.0
+
+## Latest Docker Images
+
+* Datagrok: 
+  *  `docker pull datagrok/datagrok:0.99.0`
+  *  `docker pull datagrok/datagrok:latest`
+  
+* [Docker-Compose](admin/docker-compose.md)
+
+## Addressed Issues
+
+* GitHub Actions: Update js-api/package-lock.json 
+* Dev-tools: version bump 
+* GitHub Actions: Update packages/DevTools/package-lock.json 
+* #228 Chem: descriptors, incho, inchi keys, mcs refactoring and polishing, bug fixes 
+* Compute: Vmax: editable input tab and transposed output tables 
+* Compute: removed margin after info block in SelOut 
+* Compute: centered the buttons in OutSel 
+* Compute: removed padding on OutSel viewer 
+* Compute: added padding to FE preview 
+* Compute: added styling to FE preview 
+* Compute: fixed export after update 
+* Compute: Vmax update 
+* Compute: patch version bump 
+* GitHub Actions: Update packages/Compute/package-lock.json 
+* Grok Connect: rename ClickHouse provider 
+* Update public 
+* Scatter plot: regression line: improve precision for the regression coefficient  
+* Scatter plot: improve axis formatting (".00" postfixes are often unnecessary) 
+* Scatter Plot: Rename and move property for MinMax labels visibility 
+* Minor code cleanup 
+* (Bug) Trellis Plot: full screen mode for inner viewers doesn't work when trellis is zoomed 
+* Peptides #194: Add correlating positions highlighting. 
+* Peptides #194: Release correlation analysis. 
+* Peptides #93: Small adjustments. 
+* Peptides #93: Release. 
+* Peptides #194: Remove debug logging. 
+* Peptides #194: Version up. 
+* RepertoireBrowser: minor fixes 
+* Compute: improved typing on function params 
+* Compute: fixed function propss labels in FE 
+* Compute: code preview generation based on prop type 
+* Renamed .d to .dart to fix minified code 
+* CSS fix 
+* Grok Connect: maven cache in docker image 
+* Compute: bumped minor version and JS API version 
+* Viewers: Unification of properties (alpha/opacity/opaque) 
+* Compute: Vmax and Pmax tables rearrangements 
+* SQLite #47: initial commit (WIP) 
+* (Bug) JS API: null reference in JsViewer.dataframe 
+
+
+# 2021-12-07 Dev build 0.98.0
+
+## Latest Docker Images
+
+* Datagrok: 
+  *  `docker pull datagrok/datagrok:0.98.0`
+  *  `docker pull datagrok/datagrok:latest`
+  
+* [Docker-Compose](admin/docker-compose.md)
+
+## Addressed Issues
+
+* GitHub Actions: Update js-api/package-lock.json 
+* Function View: Adjust table heights 
+* Grid: add changePropertyPanel property   
+* Fixed analyzer warnings 
+
+
+# 2021-12-07 Dev build 0.97.0
+
+## Latest Docker Images
+
+* Datagrok: 
+  *  `docker pull datagrok/datagrok:0.97.0`
+  *  `docker pull datagrok/datagrok:latest`
+  
+* [Docker-Compose](admin/docker-compose.md)
+
+## Addressed Issues
+
+* GitHub Actions: Update js-api/package-lock.json 
+* Chem: Set defaults in chem_common.ts 
+* Scatter Plot: Marker coding for Split-By-Marker 
+* Infrastructure Documentation (WIP)
+* Peptides: removed unused code 
+* GitHub Actions: Update packages/Peptides/package-lock.json 
+* Charts: Package documentation (WIP)
+* JS API: Improved code style (marker coding, formula lines) 
+* (Bug) Dev panel doesn't work for any entities 
+* Compute: export timeout increased 
+* (Bug) Scatter Plot: Y axis shows weird values 
+* Compute: fixed bug on script call from Model Hub 
+* Chem: added Identifiers panel 
+* Small help addition 
+* Compute: export function works with single tab 
+* Scatter Plot: Get rid of code duplication (axes and grid lines) 
+* (Bug) Bar chart: When "Axis Type" = "logarithmic", numbers on the axis get merged 
+* Chem: R Group Analysis fix 
+* NPM repositories: new package manager UI (WIP)
+* #228 Chem: MCS panel 
+* Compute: Pmax: add polynomial regression lines (WIP)
+* JS API: add Property options 
+* #228 Chem: panels Inci, Inch Keys 
+* Compute: added outliers selection viewer 
+* Compute: marked the outliers selection dialog as deprecated 
+* Compute: minor version bump 
+* GitHub Actions: Update packages/Compute/package-lock.json 
+* Functions: help-url support for scripts in Function View (WIP)
+* Compute: outliers selection additional column fixed 
+* Ability to disable events in InputBase 
+* Compute: improved the code generation 
+* (Bug) Calculated column with numeric type and empty formula leaves no formula tag 
+* Ability to show multiple viewers in Function View 
+* Function View: Show table inputs if there are viewers set 
+* small css adjustment 
+
+
 # 2021-12-02 Dev build 0.96.0
 
 ## Latest Docker Images

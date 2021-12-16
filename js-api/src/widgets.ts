@@ -117,7 +117,7 @@ export class Widget {
   protected _properties: Property[];
   props: any; //ObjectPropertyBag;
   subs: Subscription[];
-  d: any;
+  dart: any;
 
   /** @constructs Widget and initializes its root. */
   constructor(widgetRoot: HTMLElement) {
@@ -138,9 +138,9 @@ export class Widget {
   }
 
   toDart() {
-    if (this.d == null)
-      this.d = api.grok_Widget_Wrap(this);
-    return this.d;
+    if (this.dart == null)
+      this.dart = api.grok_Widget_Wrap(this);
+    return this.dart;
   }
 
   /** Registers a subscription to an external event.
@@ -169,7 +169,7 @@ export class Widget {
   onPropertyChanged(property: Property | null): void {}
 
   getDartProperties(): any[] {
-    return this.getProperties().map((p) => p.d);
+    return this.getProperties().map((p) => p.dart);
   }
 
   onFrameAttached(dataFrame: DataFrame): void {
@@ -183,7 +183,7 @@ export class Widget {
   set root(r: HTMLElement) { this._root = r; }
 
   /** For auxiliary information */
-  get temp(): any { return api.grok_Widget_Get_Temp(this.d); }
+  get temp(): any { return api.grok_Widget_Get_Temp(this.dart); }
 
   /** Gets called when a widget is detached and will no longer be used. Typically used for unsubscribing from events.
    * Be sure to call super.detach() if this method is overridden.  */
@@ -214,7 +214,7 @@ export class Widget {
 
     if (options !== null) {
       for (let key of Object.keys(options))
-        api.grok_PropMixin_SetPropertyValue(p.d, key, options[key]);
+        api.grok_PropMixin_SetPropertyValue(p.dart, key, options[key]);
     }
 
     this._properties.push(p);
@@ -243,13 +243,14 @@ export class Filter extends Widget {
   indicator: HTMLDivElement;
   controls: HTMLDivElement;
   host: HTMLElement;
+  columnName?: string;
 
   constructor() {
     super(ui.div());
 
     this.dataFrame = null;
-    this.indicator = ui.divText('i');
-    this.controls = ui.divText('c');
+    this.indicator = ui.div([], 'd4-filter-indicator');
+    this.controls = ui.div([], 'd4-flex-row');
     this.host = this.root;
   }
 
@@ -263,17 +264,17 @@ export class Filter extends Widget {
 
 
 export class DartWidget extends Widget {
-  constructor(d: any) {
-    super(api.grok_Widget_Get_Root(d));
-    this.d = d;
+  constructor(dart: any) {
+    super(api.grok_Widget_Get_Root(dart));
+    this.dart = dart;
   }
 
   get root(): HTMLElement {
-    return api.grok_Widget_Get_Root(this.d);
+    return api.grok_Widget_Get_Root(this.dart);
   }
 
   getProperties(): Property[] {
-    return toJs(api.grok_PropMixin_GetProperties(this.d));
+    return toJs(api.grok_PropMixin_GetProperties(this.dart));
   }
 }
 
@@ -285,16 +286,16 @@ export class DartWidget extends Widget {
 export class Accordion extends DartWidget {
 
   /** @constructs Accordion */
-  constructor(d: any) {
-    super(d);
+  constructor(dart: any) {
+    super(dart);
   }
 
   /** An object this accordion is associated with */
   get context(): any {
-    return toJs(api.grok_Accordion_Get_Context(this.d));
+    return toJs(api.grok_Accordion_Get_Context(this.dart));
   }
   set context(x: any) {
-    api.grok_Accordion_Set_Context(this.d, toDart(x));
+    api.grok_Accordion_Set_Context(this.dart, toDart(x));
   }
 
   /** Creates a new instance of Accordion */
@@ -304,82 +305,82 @@ export class Accordion extends DartWidget {
 
   /** @type {AccordionPane[]} */
   get panes(): AccordionPane[] {
-    return api.grok_TabControlBase_Get_Panes(this.d).map(toJs);
+    return api.grok_TabControlBase_Get_Panes(this.dart).map(toJs);
   }
 
   /** Header element on top of the accordion */
-  get header(): HTMLElement { return api.grok_Accordion_Get_Header(this.d); }
-  set header(header) { api.grok_Accordion_Set_Header(this.d, header); }
+  get header(): HTMLElement { return api.grok_Accordion_Get_Header(this.dart); }
+  set header(header) { api.grok_Accordion_Set_Header(this.dart, header); }
 
   /** Returns a pane with the specified name.
    * @param {string} name
    * @returns {AccordionPane} */
   getPane(name: string): AccordionPane {
-    return toJs(api.grok_TabControlBase_GetPane(this.d, name));
+    return toJs(api.grok_TabControlBase_GetPane(this.dart, name));
   }
 
   /** Adds a title element. */
   addTitle(element: HTMLElement): void {
-    return api.grok_Accordion_AddTitle(this.d, element);
+    return api.grok_Accordion_AddTitle(this.dart, element);
   }
 
   /** Adds a pane */
   addPane(name: string, getContent: Function, expanded: boolean = false, before: AccordionPane | null = null): AccordionPane {
-    return toJs(api.grok_Accordion_AddPane(this.d, name, getContent, expanded, before !== null ? before.d : null, null));
+    return toJs(api.grok_Accordion_AddPane(this.dart, name, getContent, expanded, before !== null ? before.dart : null, null));
   }
 
   /** Adds a pane with the count indicator next to the title.
    * getCount() is executed immediately. */
   addCountPane(name: string, getContent: Function, getCount: Function, expanded: boolean = false, before: AccordionPane | null = null): AccordionPane {
-    return toJs(api.grok_Accordion_AddPane(this.d, name, getContent, expanded, before !== null ? before.d : null, getCount));
+    return toJs(api.grok_Accordion_AddPane(this.dart, name, getContent, expanded, before !== null ? before.dart : null, getCount));
   }
 
   /** Removed the specified pane. */
   removePane(pane: AccordionPane) {
-    api.grok_Accordion_RemovePane(this.d, pane.d);
+    api.grok_Accordion_RemovePane(this.dart, pane.dart);
   }
 
   /** Finalizes accordion construction */
   end() {
-    api.grok_Accordion_End(this.d);
+    api.grok_Accordion_End(this.dart);
   }
 }
 
 
 /** A pane in the {@link Accordion} control. */
 export class AccordionPane extends DartWidget {
-  d: any;
+  dart: any;
 
-  constructor(d: any) {
-    super(d);
+  constructor(dart: any) {
+    super(dart);
   }
 
   /** Expanded state
    * @type {boolean} */
   get expanded(): boolean {
-    return api.grok_AccordionPane_Get_Expanded(this.d);
+    return api.grok_AccordionPane_Get_Expanded(this.dart);
   }
 
   set expanded(v: boolean) {
-    api.grok_AccordionPane_Set_Expanded(this.d, v);
+    api.grok_AccordionPane_Set_Expanded(this.dart, v);
   }
 
   /** @type {string} */
   get name(): string {
-    return api.grok_AccordionPane_Get_Name(this.d);
+    return api.grok_AccordionPane_Get_Name(this.dart);
   }
 
   set name(name: string) {
-    api.grok_AccordionPane_Set_Name(this.d, name);
+    api.grok_AccordionPane_Set_Name(this.dart, name);
   }
 }
 
 
 /** Tab control that hosts panes inside. See also {@link TabPane} */
 export class TabControl {
-  d: any;
-  constructor(d: any) {
-    this.d = d;
+  dart: any;
+  constructor(dart: any) {
+    this.dart = dart;
   }
 
   /** Creates a new TabControl */
@@ -389,92 +390,92 @@ export class TabControl {
 
   /** Visual root */
   get root(): HTMLDivElement {
-    return api.grok_Widget_Get_Root(this.d);
+    return api.grok_Widget_Get_Root(this.dart);
   }
 
   /** Header shown on top of the control */
   get header(): HTMLDivElement {
-    return api.grok_TabControlBase_Get_Header(this.d);
+    return api.grok_TabControlBase_Get_Header(this.dart);
   }
 
   /** Panes currently present in the pane control.
    * Do not change the array, use {@link addPane} instead */
   get panes(): TabPane[] {
-    return api.grok_TabControlBase_Get_Panes(this.d).map(toJs);
+    return api.grok_TabControlBase_Get_Panes(this.dart).map(toJs);
   }
 
   /** Gets the pane with the specified name */
   getPane(name: string): TabPane {
-    return toJs(api.grok_TabControlBase_GetPane(this.d, name));
+    return toJs(api.grok_TabControlBase_GetPane(this.dart, name));
   }
 
   /** Adds a new pane with the specified name */
   addPane(name: string, getContent: () => HTMLElement, icon: any = null, options?: {allowClose: boolean}): TabPane {
-    return toJs(api.grok_TabControlBase_AddPane(this.d, name, getContent, icon, options?.allowClose ?? false));
+    return toJs(api.grok_TabControlBase_AddPane(this.dart, name, getContent, icon, options?.allowClose ?? false));
   }
 
   /** Removes all panes */
   clear(): void {
-    api.grok_TabControlBase_Clear(this.d);
+    api.grok_TabControlBase_Clear(this.dart);
   }
 
   /** Currently visible pane */
-  get currentPane(): TabPane { return api.grok_TabControlBase_Get_CurrentPane(this.d); }
-  set currentPane(v: TabPane) { api.grok_TabControlBase_Set_CurrentPane(this.d, v.d); }
+  get currentPane(): TabPane { return api.grok_TabControlBase_Get_CurrentPane(this.dart); }
+  set currentPane(v: TabPane) { api.grok_TabControlBase_Set_CurrentPane(this.dart, v.dart); }
 
   /** Occurs before the active pane is changed */
-  get onBeforeTabChanged(): Observable<any> { return __obs('d4-tabcontrol-before-tab-changed', this.d); }
+  get onBeforeTabChanged(): Observable<any> { return __obs('d4-tabcontrol-before-tab-changed', this.dart); }
 
   /** Occurs after the active pane is changed */
-  get onTabChanged(): Observable<any> { return __obs('d4-tabcontrol-tab-changed', this.d); }
+  get onTabChanged(): Observable<any> { return __obs('d4-tabcontrol-tab-changed', this.dart); }
 
-  get onTabAdded(): Observable<any> { return __obs('d4-tabcontrol-tab-added', this.d); }
-  get onTabRemoved(): Observable<any> { return __obs('d4-tabcontrol-tab-removed', this.d); }
+  get onTabAdded(): Observable<any> { return __obs('d4-tabcontrol-tab-added', this.dart); }
+  get onTabRemoved(): Observable<any> { return __obs('d4-tabcontrol-tab-removed', this.dart); }
 }
 
 
 /** Represents a pane of either {@link TabControl} or {@link Accordion} */
 export class TabPane {
-  d: any;
+  dart: any;
 
   /** Creates TabPane from the Dart handle */
-  constructor(d: any) {
-    this.d = d;
+  constructor(dart: any) {
+    this.dart = dart;
   }
 
   /** {@link TabControl} this pane belongs to */
   get parent(): TabControl {
-    return toJs(api.grok_TabPane_Get_Parent(this.d));
+    return toJs(api.grok_TabPane_Get_Parent(this.dart));
   }
 
   /** A control shown on top of the pane */
   get header(): HTMLDivElement {
-    return api.grok_TabPane_Get_Header(this.d);
+    return api.grok_TabPane_Get_Header(this.dart);
   }
 
   /** Content */
   get content(): HTMLDivElement {
-    return api.grok_TabPane_Get_Content(this.d);
+    return api.grok_TabPane_Get_Content(this.dart);
   }
 
   /** Whether the pane is expanded. Applicable to Accordion's panes only. */
-  get expanded(): boolean { return api.grok_AccordionPane_Get_Expanded(this.d); }
-  set expanded(v: boolean) { api.grok_AccordionPane_Set_Expanded(this.d, v); }
+  get expanded(): boolean { return api.grok_AccordionPane_Get_Expanded(this.dart); }
+  set expanded(v: boolean) { api.grok_AccordionPane_Set_Expanded(this.dart, v); }
 
   /** Tab pane name */
-  get name(): string { return api.grok_AccordionPane_Get_Name(this.d); }
-  set name(name: string) { api.grok_AccordionPane_Set_Name(this.d, name); }
+  get name(): string { return api.grok_AccordionPane_Get_Name(this.dart); }
+  set name(name: string) { api.grok_AccordionPane_Set_Name(this.dart, name); }
 }
 
 
 export class ToolboxPage {
-  d: any;
-  constructor(d: any) {
-    this.d = d;
+  dart: any;
+  constructor(dart: any) {
+    this.dart = dart;
   }
 
   get accordion(): Accordion {
-    return toJs(api.grok_ToolboxPage_Get_Accordion(this.d));
+    return toJs(api.grok_ToolboxPage_Get_Accordion(this.dart));
   }
 }
 
@@ -492,8 +493,8 @@ export class ToolboxPage {
  * */
 export class Dialog extends DartWidget {
 
-  constructor(d: any) {
-    super(d);
+  constructor(dart: any) {
+    super(dart);
   }
 
   /** Creates a new dialog with the specified options. */
@@ -505,22 +506,22 @@ export class Dialog extends DartWidget {
   }
 
   /** When provided, adds a "?" icon to the dialog header on the right. */
-  get helpUrl(): string { return api.grok_Dialog_Get_HelpUrl(this.d); };
-  set helpUrl(url: string) { api.grok_Dialog_Set_HelpUrl(this.d, url); };
+  get helpUrl(): string { return api.grok_Dialog_Get_HelpUrl(this.dart); };
+  set helpUrl(url: string) { api.grok_Dialog_Set_HelpUrl(this.dart, url); };
 
   /** Returns the title of a dialog. */
-  get title(): string { return api.grok_Dialog_Get_Title(this.d); };
-  set title(t: string) { api.grok_Dialog_Set_Title(this.d, t); };
+  get title(): string { return api.grok_Dialog_Get_Title(this.dart); };
+  set title(t: string) { api.grok_Dialog_Set_Title(this.dart, t); };
 
   /** Returns a list of the dialog's inputs. */
-  get inputs(): InputBase[] { return api.grok_Dialog_Get_Inputs(this.d); }
+  get inputs(): InputBase[] { return api.grok_Dialog_Get_Inputs(this.dart); }
 
   /**
    * Sets the OK button handler, and shows the OK button
    * @param {Function} handler
    * @returns {Dialog} */
   onOK(handler: Function): Dialog {
-    api.grok_Dialog_OnOK(this.d, handler);
+    api.grok_Dialog_OnOK(this.dart, handler);
     return this;
   }
 
@@ -529,31 +530,31 @@ export class Dialog extends DartWidget {
    * @param {Function} handler
    * @returns {Dialog} */
   onCancel(handler: Function): Dialog {
-    api.grok_Dialog_OnCancel(this.d, handler);
+    api.grok_Dialog_OnCancel(this.dart, handler);
     return this;
   }
 
   /** @returns {Observable} */
   get onClose(): Observable<any> {
-    return __obs('d4-dialog-closed', this.d);
+    return __obs('d4-dialog-closed', this.dart);
   }
 
   // Using __obs is a recommended method. The below are obsolete and shall not be used:
-  // onClose(handler) { api.grok_Dialog_OnClose(this.d, handler); return this; }
-  // onClose(handler) { let s = _sub(api.grok_Dialog_OnClose(this.d, () => { handler(); s.cancel(); })); return this; }
+  // onClose(handler) { api.grok_Dialog_OnClose(this.dart, handler); return this; }
+  // onClose(handler) { let s = _sub(api.grok_Dialog_OnClose(this.dart, () => { handler(); s.cancel(); })); return this; }
 
   /** @returns {Dialog}
    * @param {{modal: boolean, fullScreen: boolean, center: boolean, centerAt: Element, x: number, y: number, width: number, height: number}|{}} options
    * */
   show(options?: { modal?: boolean; fullScreen?: boolean; center?: boolean; centerAt?: Element; x?: number; y?: number; width?: number; height?: number; backgroundColor?: string;}): Dialog {
-    api.grok_Dialog_Show(this.d, options?.modal, options?.fullScreen, options?.center, options?.centerAt, options?.x, options?.y, options?.width, options?.height, options?.backgroundColor);
+    api.grok_Dialog_Show(this.dart, options?.modal, options?.fullScreen, options?.center, options?.centerAt, options?.x, options?.y, options?.width, options?.height, options?.backgroundColor);
     return this;
   }
 
   /** @returns {Dialog}
    * @param {boolean} fullScreen  */
   showModal(fullScreen: boolean): Dialog {
-    api.grok_Dialog_Show(this.d, true, fullScreen, false, null, null, null, null, null, null);
+    api.grok_Dialog_Show(this.dart, true, fullScreen, false, null, null, null, null, null, null);
     return this;
   }
 
@@ -561,13 +562,13 @@ export class Dialog extends DartWidget {
    * @param {HTMLElement | Widget | InputBase} content
    * @returns {Dialog} */
   add(content: HTMLElement | Widget | InputBase): Dialog {
-    api.grok_Dialog_Add(this.d, toDart(content));
+    api.grok_Dialog_Add(this.dart, toDart(content));
     return this;
   }
 
   /** Closes the dialog. */
   close(): void {
-    api.grok_Dialog_Close(this.d);
+    api.grok_Dialog_Close(this.dart);
   }
 
   /** Returns command button with the specified text.
@@ -575,7 +576,7 @@ export class Dialog extends DartWidget {
    * @returns {HTMLButtonElement}
    * */
   getButton(text: string): HTMLButtonElement {
-    return api.grok_Dialog_GetButton(this.d, text);
+    return api.grok_Dialog_GetButton(this.dart, text);
   }
 
   /** Adds command button with the specified text.
@@ -586,7 +587,7 @@ export class Dialog extends DartWidget {
    * @returns {Dialog}
    * */
   addButton(text: string, action: Function, index: number = 0, tooltip: any = null): Dialog {
-    api.grok_Dialog_AddButton(this.d, text, action, index, tooltip);
+    api.grok_Dialog_AddButton(this.dart, text, action, index, tooltip);
     return this;
   }
 
@@ -596,7 +597,7 @@ export class Dialog extends DartWidget {
    * @returns {Dialog}
    * */
   addContextAction(text: string, action: Function): Dialog {
-    api.grok_Dialog_AddContextAction(this.d, text, action);
+    api.grok_Dialog_AddContextAction(this.dart, text, action);
     return this;
   }
 
@@ -605,18 +606,18 @@ export class Dialog extends DartWidget {
    * @param {Function} applyInput - refreshes the UI according to input
    * */
   history(getInput: () => any, applyInput: (x: any) => void): void {
-    api.grok_Dialog_History(this.d, getInput, applyInput);
+    api.grok_Dialog_History(this.dart, getInput, applyInput);
   }
 
   /** Initializes default history. */
   initDefaultHistory(): Dialog {
-    api.grok_Dialog_InitDefaultHistory(this.d);
+    api.grok_Dialog_InitDefaultHistory(this.dart);
     return this;
   }
 
   /** Clears the content. */
   clear() {
-    api.grok_Dialog_Clear(this.d);
+    api.grok_Dialog_Clear(this.dart);
   }
 }
 
@@ -633,10 +634,10 @@ export class Dialog extends DartWidget {
  *   .show();
  * */
 export class Menu {
-  d: any;
+  dart: any;
 
-  constructor(d: any) {
-    this.d = d;
+  constructor(dart: any) {
+    this.dart = dart;
   }
 
   static create(): Menu {
@@ -649,37 +650,37 @@ export class Menu {
     return toJs(api.grok_Menu_Context());
   }
 
-  get root(): HTMLElement { return api.grok_Menu_Get_Root(this.d); }
+  get root(): HTMLElement { return api.grok_Menu_Get_Root(this.dart); }
 
   /** Finds a child menu item with the specified text.
    * @param {string} text
    * @returns {Menu} */
   find(text: string): Menu {
-    return toJs(api.grok_Menu_Find(this.d, text));
+    return toJs(api.grok_Menu_Find(this.dart, text));
   }
 
   /** Removes a child menu item with the specified text.
    * @param {string} text */
   remove(text: string): void {
-    api.grok_Menu_Remove(this.d, text);
+    api.grok_Menu_Remove(this.dart, text);
   }
 
   /** Removes all child menu items. */
   clear(): void {
-    api.grok_Menu_Clear(this.d);
+    api.grok_Menu_Clear(this.dart);
   }
 
   /** Returns an existing menu group or adds a new group with the specified text.
    * @param {string} text
    * @returns {Menu} */
   group(text: string, order: number | null = null): Menu {
-    return toJs(api.grok_Menu_Group(this.d, text, order));
+    return toJs(api.grok_Menu_Group(this.dart, text, order));
   }
 
   /** Ends a group of menu items and returns to the higher menu level.
    * @returns {Menu} */
   endGroup(): Menu {
-    return toJs(api.grok_Menu_EndGroup(this.d));
+    return toJs(api.grok_Menu_EndGroup(this.dart));
   }
 
   /** Adds a menu group with the specified text and handler.
@@ -687,7 +688,7 @@ export class Menu {
    * @param {Function} onClick - callback with no parameters
    * @returns {Menu} */
   item(text: string, onClick: Function, order: number | null = null): Menu {
-    return toJs(api.grok_Menu_Item(this.d, text, onClick, order));
+    return toJs(api.grok_Menu_Item(this.dart, text, onClick, order));
   }
 
   /** For each item in items, adds a menu group with the specified text and handler.
@@ -696,27 +697,27 @@ export class Menu {
    * @param {Function} onClick - a callback with one parameter
    * @returns {Menu} */
   items(items: string[], onClick: Function): Menu {
-    return toJs(api.grok_Menu_Items(this.d, items, onClick));
+    return toJs(api.grok_Menu_Items(this.dart, items, onClick));
   }
 
   /** Adds a separator line.
    *  @returns {Menu} */
   separator(): Menu {
-    return toJs(api.grok_Menu_Separator(this.d));
+    return toJs(api.grok_Menu_Separator(this.dart));
   }
 
   /** Shows the menu.
    * @returns {Menu} */
   show(): Menu {
-    return toJs(api.grok_Menu_Show(this.d));
+    return toJs(api.grok_Menu_Show(this.dart));
   }
 
   get onContextMenuItemClick() {
-    return __obs('d4-menu-item-click', this.d);
+    return __obs('d4-menu-item-click', this.dart);
   }
 
   toString(): string {
-    return api.grok_MenuItem_ToString(this.d);
+    return api.grok_MenuItem_ToString(this.dart);
   }
 }
 
@@ -739,110 +740,110 @@ export class Balloon {
  * The root is a div that consists of {@link captionLabel} and {@link input}.
  * */
 export class InputBase {
-  d: any;
+  dart: any;
 
-  constructor(d: any, onChanged: any = null) {
-    this.d = d;
+  constructor(dart: any, onChanged: any = null) {
+    this.dart = dart;
     if (onChanged != null)
       this.onChanged((_: any) => onChanged(this.value));
   }
 
   static forProperty(property: Property, source: any = null): InputBase {
-    return toJs(api.grok_InputBase_ForProperty(property.d, source));
+    return toJs(api.grok_InputBase_ForProperty(property.dart, source));
   }
 
   static forColumn(column: Column): InputBase {
-    return toJs(api.grok_InputBase_ForColumn(column.d));
+    return toJs(api.grok_InputBase_ForColumn(column.dart));
   }
 
   /** Visual root (typically a div element that contains {@link caption} and {@link input}) */
-  get root(): HTMLElement { return api.grok_InputBase_Get_Root(this.d); };
+  get root(): HTMLElement { return api.grok_InputBase_Get_Root(this.dart); };
 
   get caption(): string {
-    return api.grok_InputBase_Get_Caption(this.d);
+    return api.grok_InputBase_Get_Caption(this.dart);
   }
 
   /** Value format. */
-  get format(): string { return api.grok_InputBase_Get_Format(this.d); }
-  set format(s: string) { api.grok_InputBase_Set_Format(this.d, s); }
+  get format(): string { return api.grok_InputBase_Get_Format(this.dart); }
+  set format(s: string) { api.grok_InputBase_Set_Format(this.dart, s); }
 
   get captionLabel(): string {
-    return api.grok_InputBase_Get_CaptionLabel(this.d);
+    return api.grok_InputBase_Get_CaptionLabel(this.dart);
   }
 
   /** Returns the actual input */
   get input(): HTMLElement {
-    return api.grok_InputBase_Get_Input(this.d);
+    return api.grok_InputBase_Get_Input(this.dart);
   }
 
   /** Whether empty values are allowed */
-  get nullable(): boolean { return api.grok_InputBase_Get_Nullable(this.d); }
-  set nullable(v: boolean) { api.grok_InputBase_Set_Nullable(this.d, v); }
+  get nullable(): boolean { return api.grok_InputBase_Get_Nullable(this.dart); }
+  set nullable(v: boolean) { api.grok_InputBase_Set_Nullable(this.dart, v); }
 
   /** Input value */
-  get value(): any { return toJs(api.grok_InputBase_Get_Value(this.d)); }
-  set value(x: any) { toDart(api.grok_InputBase_Set_Value(this.d, x)); }
+  get value(): any { return toJs(api.grok_InputBase_Get_Value(this.dart)); }
+  set value(x: any) { toDart(api.grok_InputBase_Set_Value(this.dart, x)); }
 
   /** String representation of the {@link value} */
-  get stringValue(): string { return api.grok_InputBase_Get_StringValue(this.d); }
-  set stringValue(s: string) { api.grok_InputBase_Set_StringValue(this.d, s); }
+  get stringValue(): string { return api.grok_InputBase_Get_StringValue(this.dart); }
+  set stringValue(s: string) { api.grok_InputBase_Set_StringValue(this.dart, s); }
 
   /** Whether the input is readonly */
-  get readOnly(): boolean { return api.grok_InputBase_Get_ReadOnly(this.d); }
-  set readOnly(v: boolean) { api.grok_InputBase_Set_ReadOnly(this.d, v); }
+  get readOnly(): boolean { return api.grok_InputBase_Get_ReadOnly(this.dart); }
+  set readOnly(v: boolean) { api.grok_InputBase_Set_ReadOnly(this.dart, v); }
 
   /** Whether the input is enabled */
-  get enabled(): boolean { return api.grok_InputBase_Get_Enabled(this.d); }
-  set enabled(v: boolean) { api.grok_InputBase_Set_Enabled(this.d, v); }
+  get enabled(): boolean { return api.grok_InputBase_Get_Enabled(this.dart); }
+  set enabled(v: boolean) { api.grok_InputBase_Set_Enabled(this.dart, v); }
 
   /// Occurs when [value] is changed, either by user or programmatically.
   onChanged(callback: Function): StreamSubscription {
-    return _sub(api.grok_InputBase_OnChanged(this.d, callback));
+    return _sub(api.grok_InputBase_OnChanged(this.dart, callback));
   }
 
   /// Occurs when [value] is changed by user.
   onInput(callback: Function): StreamSubscription {
-    return _sub(api.grok_InputBase_OnInput(this.d, callback));
+    return _sub(api.grok_InputBase_OnInput(this.dart, callback));
   }
 
   /** Saves the value. Used in dialog history. See also {@link load} */
   save(): any {
-    return api.grok_InputBase_Save(this.d);
+    return api.grok_InputBase_Save(this.dart);
   };
 
   /** Loads the value. Used in dialog history. See also {@link load} */
-  load(s: any): any { return api.grok_InputBase_Load(this.d, s); };
+  load(s: any): any { return api.grok_InputBase_Load(this.dart, s); };
 
   init(): any {
-    return api.grok_InputBase_Init(this.d);
+    return api.grok_InputBase_Init(this.dart);
   };
 
   /** Fires the 'changed' event */
   fireChanged(): any {
-    return api.grok_InputBase_FireChanged(this.d);
+    return api.grok_InputBase_FireChanged(this.dart);
   };
 
   /** Adds the specified caption */
   addCaption(caption: string): void {
-    api.grok_InputBase_AddCaption(this.d, caption);
+    api.grok_InputBase_AddCaption(this.dart, caption);
   };
 
   /** Adds a usage example to the input's hamburger menu */
   addPatternMenu(pattern: any): void {
-    api.grok_InputBase_AddPatternMenu(this.d, pattern);
+    api.grok_InputBase_AddPatternMenu(this.dart, pattern);
   }
 
   /** Sets the tooltip */
   setTooltip(msg: string): void {
-    api.grok_InputBase_SetTooltip(this.d, msg);
+    api.grok_InputBase_SetTooltip(this.dart, msg);
   };
 }
 
 
 export class ProgressIndicator {
-  d: any;
-  constructor(d: any) {
-    this.d = d;
+  dart: any;
+  constructor(dart: any) {
+    this.dart = dart;
   }
 
   static create() {
@@ -850,31 +851,31 @@ export class ProgressIndicator {
   }
 
   get percent(): number {
-    return api.grok_ProgressIndicator_Get_Percent(this.d);
+    return api.grok_ProgressIndicator_Get_Percent(this.dart);
   }
 
   get description(): string {
-    return api.grok_ProgressIndicator_Get_Description(this.d);
+    return api.grok_ProgressIndicator_Get_Description(this.dart);
   }
 
   set description(s: string) {
-    api.grok_ProgressIndicator_Set_Description(this.d, s);
+    api.grok_ProgressIndicator_Set_Description(this.dart, s);
   }
 
   update(percent: number, description: string): void {
-    api.grok_ProgressIndicator_Update(this.d, percent, description);
+    api.grok_ProgressIndicator_Update(this.dart, percent, description);
   }
 
   log(line: string): void {
-    api.grok_ProgressIndicator_Log(this.d, line);
+    api.grok_ProgressIndicator_Log(this.dart, line);
   }
 
   get onProgressUpdated(): Observable<any> {
-    return observeStream(api.grok_Progress_Updated(this.d));
+    return observeStream(api.grok_Progress_Updated(this.dart));
   }
 
   get onLogUpdated(): Observable<any> {
-    return observeStream(api.grok_Progress_Log_Updated(this.d));
+    return observeStream(api.grok_Progress_Log_Updated(this.dart));
   }
 
 }
@@ -886,15 +887,15 @@ export class TaskBarProgressIndicator extends ProgressIndicator {
   }
 
   close(): any {
-    return api.grok_TaskBarProgressIndicator_Close(this.d);
+    return api.grok_TaskBarProgressIndicator_Close(this.dart);
   }
 }
 
 
 export class TagEditor {
-  d: any;
-  constructor(d: any) {
-    this.d = d;
+  dart: any;
+  constructor(dart: any) {
+    this.dart = dart;
   }
 
   static create(): TagEditor {
@@ -902,51 +903,51 @@ export class TagEditor {
   }
 
   get root(): HTMLElement {
-    return api.grok_TagEditor_Get_Root(this.d);
+    return api.grok_TagEditor_Get_Root(this.dart);
   }
 
   get tags(): TagElement[] {
-    return api.grok_TagEditor_Get_Tags(this.d);
+    return api.grok_TagEditor_Get_Tags(this.dart);
   }
 
   addTag(tag: TagElement | string, notify: boolean = true) {
-    return api.grok_TagEditor_AddTag(this.d, tag, notify);
+    return api.grok_TagEditor_AddTag(this.dart, tag, notify);
   }
 
   removeTag(tag: TagElement | string): void {
-    api.grok_TagEditor_RemoveTag(this.d, tag);
+    api.grok_TagEditor_RemoveTag(this.dart, tag);
   }
 
   clearTags(): void {
-    api.grok_TagEditor_ClearTags(this.d);
+    api.grok_TagEditor_ClearTags(this.dart);
   }
 
   set acceptsDragDrop(predicate: (...params: any[]) => boolean) {
-    api.grok_TagEditor_Set_AcceptsDragDrop(this.d, (x: any) => predicate(toJs(x, false)));
+    api.grok_TagEditor_Set_AcceptsDragDrop(this.dart, (x: any) => predicate(toJs(x, false)));
   };
 
   set doDrop(action: Function) {
-    api.grok_TagEditor_Set_DoDrop(this.d, (x: any) => action(toJs(x, false)));
+    api.grok_TagEditor_Set_DoDrop(this.dart, (x: any) => action(toJs(x, false)));
   }
 
   onChanged(callback: Function): StreamSubscription {
-    return _sub(api.grok_TagEditor_OnChanged(this.d, callback));
+    return _sub(api.grok_TagEditor_OnChanged(this.dart, callback));
   }
 }
 
 
 export class TagElement {
-  d: any;
-  constructor(d: any) {
-    this.d = d;
+  dart: any;
+  constructor(dart: any) {
+    this.dart = dart;
   }
 
   get tag(): TagElement | string {
-    return api.grok_TagElement_Get_Tag(this.d);
+    return api.grok_TagElement_Get_Tag(this.dart);
   };
 
   set tag(x: TagElement | string) {
-    api.grok_TagElement_Set_Tag(this.d, x);
+    api.grok_TagElement_Set_Tag(this.dart, x);
   };
 }
 
@@ -957,7 +958,7 @@ export class Color {
   /** Returns a color associated with the specified cell as an ARGB-formatted integer.
    * To convert to html color, use {@link getCellColorHtml} or {@link toHtml}. */
   static getCellColor(cell: Cell): number {
-    return api.grok_Color_FromCell(cell.d);
+    return api.grok_Color_FromCell(cell.dart);
   }
 
   /** Returns a string representation of the color associated with the specified cell.
@@ -969,7 +970,7 @@ export class Color {
   /** Returns a color associated with the specified category within a column.
    * Returns ARGB-formatted integer. To convert to html color, use {@link toHtml}. */
   static getCategoryColor(column: Column, category: any): number {
-    return api.grok_Color_FromCategory(column.d, category);
+    return api.grok_Color_FromCategory(column.dart, category);
   }
 
   /** Returns the Alpha component of the color represented as ARGB-formatted integer. */
@@ -1181,11 +1182,11 @@ export class Color {
  * Sample: {@link https://public.datagrok.ai/js/samples/ui/tree-view}
  * */
 export class TreeViewNode {
-  d: any;
+  dart: any;
 
   /** @constructs {TreeView} from the Dart object */
-  constructor(d: any) {
-    this.d = d;
+  constructor(dart: any) {
+    this.dart = dart;
   }
 
   /** Creates new tree */
@@ -1195,53 +1196,53 @@ export class TreeViewNode {
 
   /** Visual root */
   get root(): HTMLElement {
-    return api.grok_TreeViewNode_Root(this.d);
+    return api.grok_TreeViewNode_Root(this.dart);
   }
 
   /** Caption label */
   get captionLabel(): HTMLElement {
-    return api.grok_TreeViewNode_CaptionLabel(this.d);
+    return api.grok_TreeViewNode_CaptionLabel(this.dart);
   }
 
   /** Check box element  */
   get checkBox(): HTMLElement | null {
-    return api.grok_TreeViewNode_CheckBox(this.d);
+    return api.grok_TreeViewNode_CheckBox(this.dart);
   }
 
   /** Returns `true` if checked */
-  get checked(): boolean { return api.grok_TreeViewNode_Get_Checked(this.d); }
-  set checked(checked: boolean) { api.grok_TreeViewNode_Set_Checked(this.d, checked); }
+  get checked(): boolean { return api.grok_TreeViewNode_Get_Checked(this.dart); }
+  set checked(checked: boolean) { api.grok_TreeViewNode_Set_Checked(this.dart, checked); }
 
   /** Node text */
-  get text(): string { return api.grok_TreeViewNode_Text(this.d); }
+  get text(): string { return api.grok_TreeViewNode_Text(this.dart); }
 
   /** Node value */
-  get value(): object { return api.grok_TreeViewNode_Get_Value(this.d); };
-  set value(v: object) { api.grok_TreeViewNode_Set_Value(this.d, v); };
+  get value(): object { return api.grok_TreeViewNode_Get_Value(this.dart); };
+  set value(v: object) { api.grok_TreeViewNode_Set_Value(this.dart, v); };
 
   /** Gets all node items */
   get items(): TreeViewNode[] {
-    return api.grok_TreeViewNode_Items(this.d).map((i: any) => toJs(i));
+    return api.grok_TreeViewNode_Items(this.dart).map((i: any) => toJs(i));
   }
 
   /** Adds new group */
   group(text: string, value: object | null = null, expanded: boolean = true): TreeViewNode {
-    return toJs(api.grok_TreeViewNode_Group(this.d, text, value, expanded));
+    return toJs(api.grok_TreeViewNode_Group(this.dart, text, value, expanded));
   }
 
   /** Returns existing, or creates a new node group */
   getOrCreateGroup(text: string, value: object | null = null, expanded: boolean = true): TreeViewNode {
-    return toJs(api.grok_TreeViewNode_GetOrCreateGroup(this.d, text, expanded));
+    return toJs(api.grok_TreeViewNode_GetOrCreateGroup(this.dart, text, expanded));
   }
 
   /** Adds new item to group */
   item(text: string | Element, value: object | null = null): TreeViewNode {
-    return toJs(api.grok_TreeViewNode_Item(this.d, text, value));
+    return toJs(api.grok_TreeViewNode_Item(this.dart, text, value));
   }
 
   /** Enables checkbox */
   enableCheckBox(checked: boolean = false): void {
-    api.grok_TreeViewNode_EnableCheckBox(this.d, checked);
+    api.grok_TreeViewNode_EnableCheckBox(this.dart, checked);
   }
 
   static fromItemCategories(items: any[], props: string[], options?: {
@@ -1285,7 +1286,7 @@ export class TreeViewNode {
 
 
   /**  */
-  get onNodeExpanding(): Observable<TreeViewNode> { return __obs('d4-tree-view-node-expanding', this.d); }
+  get onNodeExpanding(): Observable<TreeViewNode> { return __obs('d4-tree-view-node-expanding', this.dart); }
 }
 
 
@@ -1297,16 +1298,16 @@ export class RangeSlider extends DartWidget {
   }
 
   /** Minimum range value. */
-  get minRange(): number { return api.grok_RangeSlider_Get_MinRange(this.d) };
+  get minRange(): number { return api.grok_RangeSlider_Get_MinRange(this.dart) };
 
   /** Gets maximum range value. */
-  get maxRange(): number { return api.grok_RangeSlider_Get_MaxRange(this.d); };
+  get maxRange(): number { return api.grok_RangeSlider_Get_MaxRange(this.dart); };
 
   /** Gets minimum value. */
-  get min(): number { return api.grok_RangeSlider_Get_Min(this.d); };
+  get min(): number { return api.grok_RangeSlider_Get_Min(this.dart); };
 
   /** Gets maximum value. */
-  get max(): number { return api.grok_RangeSlider_Get_Max(this.d); };
+  get max(): number { return api.grok_RangeSlider_Get_Max(this.dart); };
 
   /** Sets values to range slider.
    * @param {number} minRange
@@ -1314,12 +1315,12 @@ export class RangeSlider extends DartWidget {
    * @param {number} min
    * @param {number} max */
   setValues(minRange: number, maxRange: number, min: number, max: number): void {
-    api.grok_RangeSlider_SetValues(this.d, minRange, maxRange, min, max);
+    api.grok_RangeSlider_SetValues(this.dart, minRange, maxRange, min, max);
   };
 
   /** @returns {Observable} */
   get onValuesChanged(): Observable<any> {
-    return observeStream(api.grok_RangeSlider_Get_OnValuesChanged(this.d));
+    return observeStream(api.grok_RangeSlider_Get_OnValuesChanged(this.dart));
   }
 }
 
@@ -1327,8 +1328,8 @@ export class RangeSlider extends DartWidget {
 export class HtmlTable extends DartWidget {
 
   /** @constructs {HtmlTable} */
-  constructor(d: any) {
-    super(d);
+  constructor(dart: any) {
+    super(dart);
   }
 
   /** Creates a visual table based on [items], [renderer], and [columnNames]
@@ -1339,7 +1340,7 @@ export class HtmlTable extends DartWidget {
 
   /** Removes item */
   remove(item: any): void {
-    api.grok_HtmlTable_Remove(this.d, item);
+    api.grok_HtmlTable_Remove(this.dart, item);
   }
 }
 
@@ -1348,31 +1349,31 @@ export class HtmlTable extends DartWidget {
  * Supports sorting, searching, custom tooltips, column-specific rendering, drag-and-drop, etc */
 export class ColumnComboBox extends DartWidget {
   /** @constructs {ColumnComboBox} */
-  constructor(d: any) {
-    super(d);
+  constructor(dart: any) {
+    super(dart);
   }
 
   /** Creates a column combo box with specified [dataframe] and [predicate]. */
   static create(dataframe: DataFrame, predicate: Function): ColumnComboBox {
-    return toJs(api.grok_ColumnComboBox(dataframe.d, (x: any) => predicate(toJs(x))));
+    return toJs(api.grok_ColumnComboBox(dataframe.dart, (x: any) => predicate(toJs(x))));
   }
 
   /** @type {boolean} */
   get vertical(): boolean {
-    return api.grok_ColumnComboBox_Get_Vertical(this.d);
+    return api.grok_ColumnComboBox_Get_Vertical(this.dart);
   }
 
   /** Text to be shown before the combo box */
-  get caption(): string { return api.grok_ColumnComboBox_Get_Caption(this.d); }
-  set caption(c: string) { api.grok_ColumnComboBox_Set_Caption(this.d, c); }
+  get caption(): string { return api.grok_ColumnComboBox_Get_Caption(this.dart); }
+  set caption(c: string) { api.grok_ColumnComboBox_Set_Caption(this.dart, c); }
 
   /** @type {Property} */
   get property(): Property {
-    return toJs(api.grok_ColumnComboBox_Get_Property(this.d));
+    return toJs(api.grok_ColumnComboBox_Get_Property(this.dart));
   }
 
   onEvent(eventId: string): rxjs.Observable<any> {
-    return __obs(eventId, this.d);
+    return __obs(eventId, this.dart);
   }
 
   /** Occurs when the value is changed. */
@@ -1381,25 +1382,25 @@ export class ColumnComboBox extends DartWidget {
 
 /** Column legend for viewers */
 export class Legend extends DartWidget {
-  constructor(d: any) {
-    super(d);
+  constructor(dart: any) {
+    super(dart);
   }
 
   static create(column: Column): Legend {
-    return api.grok_Legend(column.d);
+    return api.grok_Legend(column.dart);
   }
 
   /** Column for the legend */
-  get column(): Column { return toJs(api.grok_Legend_Get_Column(this.d)); }
-  set column(column: Column) { api.grok_Legend_Set_Column(this.d, column); }
+  get column(): Column { return toJs(api.grok_Legend_Get_Column(this.dart)); }
+  set column(column: Column) { api.grok_Legend_Set_Column(this.dart, column); }
 
   /** Whether or not to show empty categories */
-  get showNulls(): Boolean { return api.grok_Legend_Get_ShowNulls(this.d); }
-  set showNulls(show: Boolean) { api.grok_Legend_Set_ShowNulls(this.d, show); }
+  get showNulls(): Boolean { return api.grok_Legend_Get_ShowNulls(this.dart); }
+  set showNulls(show: Boolean) { api.grok_Legend_Set_ShowNulls(this.dart, show); }
 
   /** Position (left / right / top / bottom) */
-  get position(): String { return api.grok_Legend_Get_Position(this.d); }
-  set position(pos: String) { api.grok_Legend_Set_Position(this.d, pos); }
+  get position(): String { return api.grok_Legend_Get_Position(this.dart); }
+  set position(pos: String) { api.grok_Legend_Set_Position(this.dart, pos); }
 }
 
 
@@ -1410,6 +1411,6 @@ export class PropertyGrid extends DartWidget {
   }
 
   update(src: any, props: Property[]) {
-    api.grok_PropertyGrid_Update(this.d, src, props.map((x) => toDart(x)));
+    api.grok_PropertyGrid_Update(this.dart, src, props.map((x) => toDart(x)));
   }
 }

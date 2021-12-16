@@ -13,3 +13,11 @@ export async function rgroupGetter(smiles: string, df1: DG.DataFrame, core: stri
 export async function smilesTo3DCoordinates(smiles: string): Promise<string> {
   return await grok.functions.call('Chem:SmilesTo3DCoordinates', { smiles });
 }
+
+export async function getDescriptorsTree(): Promise<any> {
+  return JSON.parse((await grok.functions.call('Chem:DescTree')).replaceAll("\\\"", "\'").replaceAll("\\", ""));
+}
+
+export async function getDescriptorsPy(smiles: string, df1: DG.DataFrame, selected: string, df2: DG.DataFrame): Promise<any> {
+  return await grok.functions.call('Chem:Desc', { smiles, df1, selected, df2 });
+}

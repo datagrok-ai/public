@@ -22,8 +22,8 @@ export function __obs(eventId: string, object: any = null): Observable<any> {
           handler(toJs(x));
         });
       },
-      function (handler, d) {
-        new StreamSubscription(d).cancel();
+      function (handler, dart) {
+        new StreamSubscription(dart).cancel();
       }
     );
     return observable;
@@ -34,8 +34,8 @@ export function __obs(eventId: string, object: any = null): Observable<any> {
           handler(toJs(x));
         });
       },
-      function (handler, d) {
-        new StreamSubscription(d).cancel();
+      function (handler, dart) {
+        new StreamSubscription(dart).cancel();
       }
     );
     return o2;
@@ -54,8 +54,8 @@ export function observeStream(dartStream: any): Observable<any> {
         handler(toJs(x));
       });
     },
-    function (handler, d) {
-      new StreamSubscription(d).cancel();
+    function (handler, dart) {
+      new StreamSubscription(dart).cancel();
     }
   );
   return observable;
@@ -164,13 +164,13 @@ export class Events {
 /*
 
 export class Stream {
-  private d: any;
-  constructor(d: any) {
-    this.d = d;
+  private dart: any;
+  constructor(dart: any) {
+    this.dart = dart;
   }
 
   listen(onData: any) {
-    return new StreamSubscription(api.grok_Stream_Listen(this.d, onData));
+    return new StreamSubscription(api.grok_Stream_Listen(this.dart, onData));
   }
 
   toObservable() {
@@ -192,45 +192,45 @@ export class Stream {
 
 /** Subscription to an event stream. Call [cancel] to stop listening. */
 export class StreamSubscription {
-  private d: any;
-  constructor(d: any) {
-    this.d = d;
+  private dart: any;
+  constructor(dart: any) {
+    this.dart = dart;
   }
 
   unsubscribe(): void { this.cancel(); }
 
-  cancel(): void { api.grok_Subscription_Cancel(this.d); }
+  cancel(): void { api.grok_Subscription_Cancel(this.dart); }
 }
 
 /** Event arguments. {@see args} contains event details.
  *  Sample: {@link https://public.datagrok.ai/js/samples/events/global-events}*/
 export class EventData<TArgs = any> {
-  public d: any;
+  public dart: any;
 
-  constructor(d: any) {
-    this.d = d;
+  constructor(dart: any) {
+    this.dart = dart;
   }
 
   /** @type {UIEvent} */
   get causedBy(): UIEvent {
-    return api.grok_EventData_Get_CausedBy(this.d);
+    return api.grok_EventData_Get_CausedBy(this.dart);
   }
 
   /** Whether the default event handling is prevented. See also {@link preventDefault}
    * @returns {boolean} */
   get isDefaultPrevented(): boolean {
-    return api.grok_EventData_Get_IsDefaultPrevented(this.d);
+    return api.grok_EventData_Get_IsDefaultPrevented(this.dart);
   }
 
   /** Prevents default handling. See also {@link isDefaultPrevented}.
    * Sample: {@link https://public.datagrok.ai/js/samples/events/prevented-event} */
   preventDefault(): void {
-    api.grok_EventData_PreventDefault(this.d);
+    api.grok_EventData_PreventDefault(this.dart);
   }
 
   /** Event details. */
   get args(): { [index: string]: TArgs } {
-    let x = api.grok_EventData_Get_Args(this.d);
+    let x = api.grok_EventData_Get_Args(this.dart);
     let result: { [index: string]: any } = {};
     for (const property in x)
       if (x.hasOwnProperty(property))
@@ -275,8 +275,8 @@ export class EventBus {
   }
 }
 
-export function _sub(d: any): StreamSubscription {
-  return new StreamSubscription(d);
+export function _sub(dart: any): StreamSubscription {
+  return new StreamSubscription(dart);
 }
 
 export interface MapChangeArgs<K, V> {
@@ -292,10 +292,10 @@ export interface ViewerArgs {
 
 export class ColumnsArgs extends EventData {
   get columns(): Column[] {
-    return toJs(api.grok_ColumnsArgs_Get_Columns(this.d));
+    return toJs(api.grok_ColumnsArgs_Get_Columns(this.dart));
   }
 
   set columns(list: Column[]) {
-    api.grok_ColumnsArgs_Set_Columns(this.d, list);
+    api.grok_ColumnsArgs_Set_Columns(this.dart, list);
   }
 }
