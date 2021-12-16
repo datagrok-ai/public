@@ -1,5 +1,3 @@
-// eslint-disable-next-line no-unused-vars
-import * as grok from 'datagrok-api/grok';
 import * as ui from 'datagrok-api/ui';
 import * as DG from 'datagrok-api/dg';
 import {splitAlignedPeptides} from './utils/split-aligned';
@@ -47,6 +45,14 @@ const groupDescription: {[key: string]: {'description': string, 'aminoAcids': st
   '-': {'description': 'Unknown Amino Acid', 'aminoAcids': ['-']},
 };
 
+/*function customGridColumnHeader(cell: DG.GridCell) {
+  if (cell.isColHeader && cell.tableColumn != null) {
+    if (highlightedColumns.includes(parseInt(cell.tableColumn.name))) {
+      cell.style.backColor = 0xff1f77b4;
+    }
+  }
+}*/
+
 export async function describe(
   df: DG.DataFrame,
   activityColumn: string,
@@ -62,6 +68,7 @@ export async function describe(
   const col: DG.Column = df.columns.bySemType('alignedSequence');
   [splitSeqDf, invalidIndexes] = splitAlignedPeptides(col);
   splitSeqDf.name = 'Split sequence';
+
   const positionColumns = splitSeqDf.columns.names();
   const activityColumnScaled = `${activityColumn}Scaled`;
   const renderColNames: string[] = splitSeqDf.columns.names();
@@ -240,11 +247,9 @@ export async function describe(
   aarList.sort((first, second) => getWeight(second) - getWeight(first));
 
   matrixDf.getCol(aminoAcidResidue).setCategoryOrder(aarList);
-  //const sequenceDf = segregateBestAtAllCateg(statsDf, twoColorMode);
 
   // SAR vertical table (naive, choose best Mean difference from pVals <= 0.01)
   // TODO: aquire ALL of the positions
-
   let sequenceDf = statsDf.groupBy(['Mean difference', aminoAcidResidue, positionColName, 'Count', 'Ratio', 'pValue'])
     .where('pValue <= 0.1')
     .aggregate();
@@ -297,19 +302,6 @@ export async function describe(
       args.preventDefault();
       return;
     }
-
-    // if (args.cell.isColHeader) {
-    //   if (args.cell.gridColumn.name != aminoAcidResidue) {
-    //     const textSize = args.g.measureText(args.cell.gridColumn.name);
-    //     args.g.fillStyle = '#4b4b4a';
-    //     args.g.fillText(
-    //       args.cell.gridColumn.name,
-    //       args.bounds.x + (args.bounds.width - textSize.width) / 2,
-    //       args.bounds.y + (textSize.actualBoundingBoxAscent + textSize.actualBoundingBoxDescent),
-    //     );
-    //   }
-    //   args.preventDefault();
-    // }
 
     if (
       args.cell.isTableCell &&
@@ -422,7 +414,7 @@ export async function describe(
   SARgrid.onCellTooltip(onCellTooltipFunc);
   SARVgrid.onCellTooltip(onCellTooltipFunc);
 
-  sourceGrid.onCellPrepare((cell) => {
+  sourceGrid.onCellPrepare((cell: DG.GridCell) => {
     const currentRowIndex = cell.tableRowIndex;
     if (currentRowIndex && invalidIndexes.includes(currentRowIndex) && !cell.isRowHeader) {
       cell.style.backColor = DG.Color.lightLightGray;

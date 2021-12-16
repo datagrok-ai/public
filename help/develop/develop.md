@@ -216,8 +216,8 @@ Continuing the topic we have just touched on, here are naming guidelines and gen
 
 Apart from the files included in the standard template, let's briefly consider what else can be distributed as part of a package. Depending on your needs, the package may contain some of the following additional folders:
 
-  * `environments`: [environment configurations](scripting.md#environments) for [scripts](scripting.md). Examples: [PythonScripts](https://github.com/datagrok-ai/public/tree/master/packages/PythonScripts)
-  * `scripts`: a collection of [scripts](scripting.md) used for computations. Examples: [ChemScripts](https://github.com/datagrok-ai/public/tree/master/packages/ChemScripts), [RScripts](https://github.com/datagrok-ai/public/tree/master/packages/RScripts), [Impute](https://github.com/datagrok-ai/public/tree/master/packages/Impute)
+  * `environments`: [environment configurations](scripting.md#environments) for [scripts](scripting.md). Examples: [DemoScripts](https://github.com/datagrok-ai/public/tree/master/packages/DemoScripts)
+  * `scripts`: a collection of [scripts](scripting.md) used for computations. Examples: [ChemScripts](https://github.com/datagrok-ai/public/tree/master/packages/ChemScripts), [DemoScripts](https://github.com/datagrok-ai/public/tree/master/packages/DemoScripts), [Impute](https://github.com/datagrok-ai/public/tree/master/packages/Impute)
   * `swaggers`: REST APIs in [Swagger/OpenAPI](../access/open-api.md) format. Examples: [EnamineStore](https://github.com/datagrok-ai/public/tree/master/packages/EnamineStore), [Swaggers](https://github.com/datagrok-ai/public/tree/master/packages/Swaggers)
   * `connections` and `queries`: [connections](../access/data-connection.md) and [queries](../access/data-query.md) for data retrieval. Examples: [Chembl](https://github.com/datagrok-ai/public/tree/master/packages/Chembl), [UsageAnalysis](https://github.com/datagrok-ai/public/tree/master/packages/UsageAnalysis)
   * `css`: CSS files for custom styling. Examples: [Notebooks](https://github.com/datagrok-ai/public/tree/master/packages/Notebooks), [Discovery](https://github.com/datagrok-ai/public/tree/master/packages/Discovery)

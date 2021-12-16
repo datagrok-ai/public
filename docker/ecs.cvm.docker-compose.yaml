@@ -1,0 +1,343 @@
+version: "3"
+
+networks:
+  cvm:
+
+services:
+
+  grok_compute:
+    image: datagrok/grok_compute:latest
+    environment:
+      GROK_COMPUTE_NUM_CORES: 2
+    networks:
+      - cvm
+    ports:
+      - 80:80
+      - target: 5005
+        x-aws-protocol: http
+        protocol: tcp
+    deploy:
+      replicas: 1
+      resources:
+        limits:
+          cpus: '1'
+          memory: 1G
+        reservations:
+          cpus: '0.25'
+          memory: 200M
+
+  jupyter_notebook:
+    image: datagrok/jupyter_notebook:latest
+    networks:
+      - cvm
+    ports:
+      - target: 5005
+        x-aws-protocol: http
+        protocol: tcp
+      - target: 8889
+        x-aws-protocol: http
+        protocol: tcp
+    deploy:
+      replicas: 1
+      resources:
+        limits:
+          cpus: '1'
+          memory: 1G
+        reservations:
+          cpus: '0.25'
+          memory: 200M
+
+  jupyter_kernel_gateway:
+    image: datagrok/jupyter_kernel_gateway:latest
+    networks:
+      - cvm
+    ports:
+      - target: 5005
+        x-aws-protocol: http
+        protocol: tcp
+      - target: 8888
+        x-aws-protocol: http
+        protocol: tcp
+    deploy:
+      replicas: 1
+      resources:
+        limits:
+          cpus: '2'
+          memory: 3G
+        reservations:
+          cpus: '0.5'
+          memory: 300M
+
+  h2o:
+    image: datagrok/h2o:latest
+    networks:
+      - cvm
+    ports:
+      - target: 5005
+        x-aws-protocol: http
+        protocol: tcp
+      - target: 54321
+        x-aws-protocol: http
+        protocol: tcp
+    deploy:
+      replicas: 1
+      resources:
+        limits:
+          cpus: '1'
+          memory: 2G
+        reservations:
+          cpus: '0.25'
+          memory: 300M
+
+x-aws-cloudformation:
+  Resources:
+
+    H2oTCP5005Listener:
+      Properties:
+        DefaultActions:
+          - ForwardConfig:
+              TargetGroups:
+                - TargetGroupArn:
+                    Ref: H2oTCP5005TargetGroup
+            Type: forward
+        Protocol: "HTTP"
+    H2oTCP5005TargetGroup:
+      Properties:
+        HealthCheckPath: /info
+        Matcher:
+          HttpCode: 200
+        TargetGroupAttributes:
+          - Key: stickiness.enabled
+            Value: true
+          - Key: stickiness.type
+            Value: lb_cookie
+          - Key: stickiness.lb_cookie.duration_seconds
+            Value: 86400
+    H2oTCP54321Listener:
+      Properties:
+        DefaultActions:
+          - ForwardConfig:
+              TargetGroups:
+                - TargetGroupArn:
+                    Ref: H2oTCP54321TargetGroup
+            Type: forward
+        Protocol: "HTTP"
+    H2oTCP54321TargetGroup:
+      Properties:
+        HealthCheckPath: /3/About
+        Matcher:
+          HttpCode: 200
+        TargetGroupAttributes:
+          - Key: stickiness.enabled
+            Value: true
+          - Key: stickiness.type
+            Value: lb_cookie
+          - Key: stickiness.lb_cookie.duration_seconds
+            Value: 86400
+
+    GrokcomputeTCP80TargetGroup:
+    GrokcomputeTCP80Listener:
+      Properties:
+        DefaultActions:
+          - FixedResponseConfig:
+              StatusCode: 204
+            Type: fixed-response
+        Protocol: "HTTP"
+
+    GrokcomputeTCP5005Listener:
+    GrokcomputeTCP5005ListenerRule:
+      Properties:
+        Priority: 2
+        Actions:
+          - ForwardConfig:
+              TargetGroups:
+                - TargetGroupArn:
+                    Ref: GrokcomputeTCP5005TargetGroup
+            Type: forward
+        Conditions:
+          - Field: path-pattern
+            PathPatternConfig:
+              Values:
+                - /grok_compute/*
+        ListenerArn:
+          Ref: GrokcomputeTCP80Listener
+      Type: AWS::ElasticLoadBalancingV2::ListenerRule
+    GrokcomputeTCP5005TargetGroup:
+      Properties:
+        HealthCheckPath: /grok_compute/info
+        Matcher:
+          HttpCode: 200
+        TargetGroupAttributes:
+          - Key: stickiness.enabled
+            Value: true
+          - Key: stickiness.type
+            Value: lb_cookie
+          - Key: stickiness.lb_cookie.duration_seconds
+            Value: 86400
+    GrokcomputeService:
+      DependsOn:
+        - GrokcomputeTCP80Listener
+        - GrokcomputeTCP5005ListenerRule
+      Properties:
+        LoadBalancers:
+          - ContainerName: grok_compute
+            ContainerPort: 5005
+            TargetGroupArn:
+              Ref: GrokcomputeTCP5005TargetGroup
+
+    JupyterkernelgatewayTCP5005Listener:
+    JupyterkernelgatewayTCP5005ListenerRule:
+      Properties:
+        Priority: 3
+        Actions:
+          - ForwardConfig:
+              TargetGroups:
+                - TargetGroupArn:
+                    Ref: JupyterkernelgatewayTCP5005TargetGroup
+            Type: forward
+        Conditions:
+          - Field: path-pattern
+            PathPatternConfig:
+              Values:
+                - /jupyter/helper/*
+        ListenerArn:
+          Ref: GrokcomputeTCP80Listener
+      Type: AWS::ElasticLoadBalancingV2::ListenerRule
+    JupyterkernelgatewayTCP5005TargetGroup:
+      Properties:
+        HealthCheckPath: /jupyter/helper/info
+        Matcher:
+          HttpCode: 200
+        TargetGroupAttributes:
+          - Key: stickiness.enabled
+            Value: true
+          - Key: stickiness.type
+            Value: lb_cookie
+          - Key: stickiness.lb_cookie.duration_seconds
+            Value: 86400
+    JupyterkernelgatewayTCP8888TargetGroup:
+      Properties:
+        HealthCheckPath: /jupyter/api/swagger.yaml
+        Matcher:
+          HttpCode: 200
+        TargetGroupAttributes:
+          - Key: stickiness.enabled
+            Value: true
+          - Key: stickiness.type
+            Value: lb_cookie
+          - Key: stickiness.lb_cookie.duration_seconds
+            Value: 86400
+    JupyterkernelgatewayTCP8888Listener:
+      Properties:
+        DefaultActions:
+          - ForwardConfig:
+              TargetGroups:
+                - TargetGroupArn:
+                    Ref: JupyterkernelgatewayTCP8888TargetGroup
+            Type: forward
+        Protocol: "HTTPS"
+        Certificates:
+          - arn:aws:acm:us-east-2:766822877060:certificate/6bd7a4c0-7087-457a-8493-066389561e57
+    JupyterkernelgatewayTCP8888ListenerRule:
+      Properties:
+        Priority: 4
+        Actions:
+          - ForwardConfig:
+              TargetGroups:
+                - TargetGroupArn:
+                    Ref: JupyterkernelgatewayTCP8888TargetGroup
+            Type: forward
+        Conditions:
+          - Field: path-pattern
+            PathPatternConfig:
+              Values:
+                - /jupyter/*
+        ListenerArn:
+          Ref: GrokcomputeTCP80Listener
+      Type: AWS::ElasticLoadBalancingV2::ListenerRule
+    JupyterkernelgatewayService:
+      DependsOn:
+        - JupyterkernelgatewayTCP5005ListenerRule
+        - JupyterkernelgatewayTCP8888Listener
+        - JupyterkernelgatewayTCP8888ListenerRule
+
+    JupyternotebookTCP5005Listener:
+    JupyternotebookTCP5005ListenerRule:
+      Properties:
+        Priority: 5
+        Actions:
+          - ForwardConfig:
+              TargetGroups:
+                - TargetGroupArn:
+                    Ref: JupyternotebookTCP5005TargetGroup
+            Type: forward
+        Conditions:
+          - Field: path-pattern
+            PathPatternConfig:
+              Values:
+                - /notebook/helper/*
+        ListenerArn:
+          Ref: GrokcomputeTCP80Listener
+      Type: AWS::ElasticLoadBalancingV2::ListenerRule
+    JupyternotebookTCP5005TargetGroup:
+      Properties:
+        HealthCheckPath: /notebook/helper/info
+        Matcher:
+          HttpCode: 200
+        TargetGroupAttributes:
+          - Key: stickiness.enabled
+            Value: true
+          - Key: stickiness.type
+            Value: lb_cookie
+          - Key: stickiness.lb_cookie.duration_seconds
+            Value: 86400
+    JupyternotebookTCP8889TargetGroup:
+      Properties:
+        HealthCheckPath: /notebook/api
+        Matcher:
+          HttpCode: 200
+        TargetGroupAttributes:
+          - Key: stickiness.enabled
+            Value: true
+          - Key: stickiness.type
+            Value: lb_cookie
+          - Key: stickiness.lb_cookie.duration_seconds
+            Value: 86400
+    JupyternotebookTCP8889Listener:
+      Properties:
+        DefaultActions:
+          - ForwardConfig:
+              TargetGroups:
+                - TargetGroupArn:
+                    Ref: JupyternotebookTCP8889TargetGroup
+            Type: forward
+        Protocol: "HTTPS"
+        Certificates:
+          - arn:aws:acm:us-east-2:766822877060:certificate/6bd7a4c0-7087-457a-8493-066389561e57
+    JupyternotebookTCP8889ListenerRule:
+      Properties:
+        Priority: 6
+        Actions:
+          - ForwardConfig:
+              TargetGroups:
+                - TargetGroupArn:
+                    Ref: JupyternotebookTCP8889TargetGroup
+            Type: forward
+        Conditions:
+          - Field: path-pattern
+            PathPatternConfig:
+              Values:
+                - /notebook/*
+        ListenerArn:
+          Ref: GrokcomputeTCP80Listener
+      Type: AWS::ElasticLoadBalancingV2::ListenerRule
+    JupyternotebookService:
+      DependsOn:
+        - JupyternotebookTCP5005ListenerRule
+        - JupyternotebookTCP8889Listener
+        - JupyternotebookTCP8889ListenerRule
+
+    JupyterkernelgatewayTaskDefinition:
+      Properties:
+        EphemeralStorage:
+          SizeInGiB: 50

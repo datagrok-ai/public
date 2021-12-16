@@ -6,6 +6,8 @@ import { TwinPviewer } from "./viewers/twin-p-viewer"
 import { CompostionPviewer } from "./viewers/composition-p-viewer"
 import { _package } from "./package";
 
+const _STRUCTURE_COL_NAME = '3D view';
+
 export class MolecularLiabilityBrowser {
 
   mlbTable: DG.DataFrame;
@@ -31,7 +33,7 @@ export class MolecularLiabilityBrowser {
 
     this.mlbView.path = `/Table/${this.vIdInput.value}`;
     //hideShowIcon.classList.value = 'grok-icon fal fa-eye';
-    let pi = DG.TaskBarProgressIndicator.create('Creating NGL view');
+    let pi = DG.TaskBarProgressIndicator.create('Creating 3D view');
 
     ////////////////////////////////////////////////////
     let jsonStr = require("./examples/example.json");
@@ -70,7 +72,7 @@ export class MolecularLiabilityBrowser {
     } else {
       this.twinPviewer.reset(jsonStr, pdbStr, jsonStrObsPtm);
     }
-    this.twinPviewer.twin(this.mlbView);
+    this.twinPviewer.show(this.mlbView);
     this.twinPviewer.open(this.mlbView);
 
 
@@ -113,8 +115,8 @@ export class MolecularLiabilityBrowser {
 
     
     let filters = this.mlbView.addViewer(DG.VIEWER.FILTERS);
-    const filterColumns = filters.props.columnNames;
-    filters.setOptions({ columnNames: filterColumns.filter((c) => c !== 'CDR Clothia') });
+    //const filterColumns = filters.props.columnNames;
+    //filters.setOptions({ columnNames: filterColumns.filter((c) => c !== 'CDR Clothia') });
 
     grok.events.onTooltipShown.subscribe((args) => {
       if (args.args.context instanceof DG.Column) {
@@ -154,8 +156,8 @@ export class MolecularLiabilityBrowser {
     this.mlbView.ribbonMenu.clear();
 
     this.mlbView.name = "Molecular Liability Browser";
-    this.mlbView.grid.columns.byName('ngl')!.width = 100;
-    this.mlbView.grid.columns.byName("ngl")!.cellType = 'html';
+    this.mlbView.grid.columns.byName(_STRUCTURE_COL_NAME)!.width = 100;
+    this.mlbView.grid.columns.byName(_STRUCTURE_COL_NAME)!.cellType = 'html';
 
     //table visual polishing
     for (let column of this.mlbTable.columns)
@@ -171,7 +173,7 @@ export class MolecularLiabilityBrowser {
     });
 
     this.mlbView.grid.onCellPrepare((gc) => {
-      if (gc.isTableCell && gc.gridColumn.name === 'ngl' && this.vids.includes(gc.cell.value.toString())) {
+      if (gc.isTableCell && gc.gridColumn.name === _STRUCTURE_COL_NAME && this.vids.includes(gc.cell.value.toString())) {
         //debugger;
         gc.style.element = ui.divV([
           ui.button("View", () => {
@@ -198,7 +200,7 @@ export class MolecularLiabilityBrowser {
       let a = this.mlbTable;
       a.rows.select((row) => this.vids.includes(row["v id"].toString()));
       grok.functions.call('CmdSelectionToFilter');
-    }), 'filter data for NGL viewer');
+    }), 'filter data for 3D view');
   }
 
   private setFilterIcon2 = (): void => {
@@ -252,12 +254,12 @@ export class MolecularLiabilityBrowser {
   }
 
   private setHideShowIcon = (): void => {
-    this.hideShowIcon = ui.iconFA('eye', () => {
+    this.hideShowIcon = ui.tooltip.bind(ui.iconFA('eye', () => {
       if (this.hideShowIcon.classList.value.includes('fa-eye-slash'))
         grok.events.fireCustomEvent("showAllDock", null);
       else
         grok.events.fireCustomEvent("closeAllDock", null);
-    });
+    }), 'show structure');
     this.hideShowIcon.classList.value = 'grok-icon fal fa-eye';
 
     grok.events.onCustomEvent("closeAllDock").subscribe((v) => {
@@ -297,6 +299,8 @@ export class MolecularLiabilityBrowser {
     this.mlbTable = (await grok.data.loadTable(_package.webRoot + 'src/examples/mlb.csv'));
     for (let column of this.mlbTable.columns)
       column.name = column.name.replaceAll("_", " ");
+    
+    this.mlbTable.columns.byName('ngl').name = _STRUCTURE_COL_NAME;
     // let vidsRaw = (await grok.functions.call('MolecularLiabilityBrowser:getVids'));
     this.vids = ["VR000000008", "VR000000043", "VR000000044"];
     this.vidsObsPTMs = ["VR000000044"];

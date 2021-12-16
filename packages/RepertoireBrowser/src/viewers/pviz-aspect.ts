@@ -5,189 +5,431 @@ import * as DG from "datagrok-api/dg";
 import mutcodes from "../externalData/mutcodes.json";
 import { MiscMethods } from "./misc.js"
 
-
 export class PvizAspect {
   ngl: any;
   pviz: any;
   pVizParams: any;
 
-  async init(view, inputs, ngl, json, jsonObs) {
+  json: any;
+  jsonObs: any;
+  colorScheme: any;
+  hostH: any;
+  hostL: any;
+  ptmChoices: any;
+  motChoices: any;
+  obsChoices: any;
+  cdrScheme: any;
+  paratopes: any;
+  ptmProb: any;
+  selection: any;
 
-    this.ngl = ngl
+  async init(json, jsonObs, colorScheme, pVizHostH, pVizHostL,
+    ptmChoices, ptmMotifChoices, ptmObsChoices, cdrScheme, paratopes, ptmProb, twinSelections) {
+
     //@ts-ignore
     this.pviz = window.pviz;
     this.pVizParams = {};
     this.pVizParams.seq = { 'H': json.heavy_seq, 'L': json.light_seq }
-    this.pVizParams.ptmMap = this.ptmMapping(inputs.ptmChoices.value, inputs.ptmProb.value, json)
+
+    this.json = json;
+    this.jsonObs = jsonObs;
+    this.colorScheme = colorScheme;
+    this.hostH = pVizHostH;
+    this.hostL = pVizHostL;
+
+    this.selection = twinSelections;
+
+    this.cdrMapping(cdrScheme);
+    this.parMapping(paratopes);
+    this.denMapping();
+    this.ptmMapping(ptmChoices, ptmProb);
+    this.motMapping(ptmMotifChoices, ptmProb);
+    if (this.jsonObs !== null) { this.obsMapping(ptmObsChoices); };
+
+    await this.render('H');
+
+    await this.resize('H');
+    await this.resize('L');
     //@ts-ignore
-    this.pVizParams.ptmMotifsMap = this.ptmMotifsMapping(inputs.ptmMotifChoices.value, inputs.ptmProb.value)
+    //return MiscMethods.setDockSize(view, inputs.nglNode, inputs.sequenceTabs, paratopes);
+  }
+
+  public async render(chain: string) {
+
+    let host = chain == "H" ? this.hostH : this.hostL;
+
     //@ts-ignore
-    if(jsonObs !== null){
-    this.pVizParams.ptmObsMap = this.ptmObsMapping(inputs.ptmObsChoices.value, jsonObs);
+    if ($(host).width() !== 0) {
+      let seq = this.pVizParams.seq[chain];
+
+      let seqEntry = new this.pviz.SeqEntry({
+        sequence: seq
+      });
+      new this.pviz.SeqEntryAnnotInteractiveView({
+        model: seqEntry,
+        collapsible: true,
+        el: host
+      }).render();
+
+      let ptmCodes = Object.keys(this.pVizParams.ptmMap[chain].ptm_color_obj);
+      let motCodes = Object.keys(this.pVizParams.motMap[chain].mot_color_obj);
+
+      let obsCodes = null;
+      if (this.jsonObs !== null) {
+        obsCodes = Object.keys(this.pVizParams.obsMap[chain].obs_color_obj);
+      }
+      let switchObj = this.selection;
+      let pVizParams = this.pVizParams;
+      let pv = this;
+
+      //adding all features
+      seqEntry.addFeatures(pVizParams.cdrMap[chain].cdr_feature_map);
+      if (this.paratopes.value === true) {
+        seqEntry.addFeatures(this.pVizParams.parMap[chain].par_feature_map);
+      }
+      seqEntry.addFeatures(this.pVizParams.denMap[chain].den_feature_map);
+      seqEntry.addFeatures(this.pVizParams.ptmMap[chain].ptm_feature_map);
+      seqEntry.addFeatures(this.pVizParams.motMap[chain].mot_feature_map);
+
+      //gradient coloring
+      if (this.paratopes.value === true) { this.applyGradient(this.pVizParams.parMap[chain].par_color_obj); }
+      if (this.jsonObs !== null) { seqEntry.addFeatures(this.pVizParams.obsMap[chain].obs_feature_map); }
+
+      this.applyGradient(this.pVizParams.denMap[chain].den_color_obj);
+      this.applyGradient(this.pVizParams.ptmMap[chain].ptm_color_obj);
+      this.applyGradient(this.pVizParams.motMap[chain].mot_color_obj);
+      if (this.jsonObs !== null) { this.applyGradient(this.pVizParams.obsMap[chain].obs_color_obj) };
+
+      await this.color(chain);
+
+      //mouse over handlers
+      this.pviz.FeatureDisplayer.addMouseoverCallback(['P'], async function (ft) {
+
+        let selectorStr = 'g.feature.data.P.Paratope_predictions rect.feature';
+        let el = document.querySelectorAll(selectorStr);
+        let el_lst = pVizParams.parMap[chain].par_el_obj;
+        let prob_lst = pVizParams.parMap[chain].par_prob_obj;
+        //@ts-ignore
+        el = el[el_lst.indexOf((ft.start).toString())];
+        let prob = prob_lst[el_lst.indexOf((ft.start).toString())];
+
+        ui.tooltip.show(
+          ui.span([`Probability: ${prob.toFixed(2)}`]),
+          //@ts-ignore
+          el.getBoundingClientRect().left + 10,
+          //@ts-ignore
+          el.getBoundingClientRect().top + 10
+        );
+
+      }).addMouseoutCallback(['P'], function (ft) {
+        ui.tooltip.hide();
+      });
+
+      this.pviz.FeatureDisplayer.addMouseoverCallback(['D'], async function (ft) {
+
+        let selectorStr = 'g.feature.data.D rect.feature';
+        let el = document.querySelectorAll(selectorStr);
+        let el_lst = pVizParams.denMap[chain].den_el_obj;
+        let prob_lst = pVizParams.denMap[chain].den_prob_obj;
+        let ptm_list = pVizParams.denMap[chain].den_ptm_arr;
+        //@ts-ignore
+        el = el[el_lst.indexOf(ft.start)];
+        let prob = prob_lst[el_lst.indexOf(ft.start)];
+        let ptmsArPoint = ptm_list[el_lst.indexOf(ft.start)];
+        let ptmsStr = "";
+
+        for (let i = 0; i < ptmsArPoint.length; i++) {
+          ptmsStr += "\n" + ptmsArPoint[i][0].replace("_", " ") + " probability  ~" + (ptmsArPoint[i][1] > 1 ? ptmsArPoint[i][1] / 100 : ptmsArPoint[i][1]).toFixed(2);
+        }
+
+        ui.tooltip.show(
+          ui.divText(`Probability: ${prob.toFixed(2)}${ptmsStr}`),
+          //@ts-ignore
+          el.getBoundingClientRect().left + 10,
+          //@ts-ignore
+          el.getBoundingClientRect().top + 10
+        );
+
+      }).addMouseoutCallback(['D'], function (ft) {
+        ui.tooltip.hide();
+      });
+
+      this.pviz.FeatureDisplayer.addMouseoverCallback(ptmCodes, async function (ft) {
+
+        let selectorStr = 'g.feature.' + mutcodes[ft.category.replaceAll(" ", "_")] + "."
+          + ft.category.replaceAll(" ", "_").replaceAll(")", "\\)").replaceAll("(", "\\(") + ' rect.feature';
+        let el = document.querySelectorAll(selectorStr);
+        let el_lst = pVizParams.ptmMap[chain].ptm_el_obj[mutcodes[ft.category.replaceAll(" ", "_")]];
+        //@ts-ignore
+        el = el[el_lst.indexOf(ft.start)];
+
+        ui.tooltip.show(
+          ui.span([`${ft.category}`]),
+          //@ts-ignore
+          el.getBoundingClientRect().left + 10,
+          //@ts-ignore
+          el.getBoundingClientRect().top + 10
+        );
+
+      }).addMouseoutCallback(ptmCodes, function (ft) {
+        ui.tooltip.hide();
+      });
+
+      this.pviz.FeatureDisplayer.addMouseoverCallback(motCodes, async function (ft) {
+
+        let selectorStr = 'g.feature.' + mutcodes[ft.category.replaceAll(" ", "_")] + "."
+          + ft.category.replaceAll(" ", "_").replaceAll(")", "\\)").replaceAll("(", "\\(") + ' rect.feature';
+        let el = document.querySelectorAll(selectorStr);
+        let el_lst = pVizParams.motMap[chain].mot_el_obj[mutcodes[ft.category.replaceAll(" ", "_")]];
+        //@ts-ignore
+        el = el[el_lst.indexOf(ft.start)];
+
+        ui.tooltip.show(
+          ui.span([`${ft.category}`]),
+          //@ts-ignore
+          el.getBoundingClientRect().left + 10,
+          //@ts-ignore
+          el.getBoundingClientRect().top + 10
+        );
+
+      }).addMouseoutCallback(motCodes, function (ft) {
+        ui.tooltip.hide();
+      });
+
+      this.pviz.FeatureDisplayer.addMouseoverCallback(obsCodes, async function (ft) {
+        let selectorStr = 'g.feature.' + ft.category.replaceAll(" ", "_") + "."
+          + ft.category.replaceAll(" ", "_") + ' rect.feature';
+
+        let el = document.querySelectorAll(selectorStr);
+        let el_lst = pVizParams.obsMap[chain].obs_el_obj[ft.category];
+        let types = pVizParams.obsMap[chain].obs_prob_obj[ft.start][0];
+        let probabilities = pVizParams.obsMap[chain].obs_prob_obj[ft.start][1];
+
+        //@ts-ignore
+        el = el[el_lst.indexOf(ft.start)];
+
+        let ptmsStr = "";
+
+        for (let i = 0; i < types.length; i++) {
+          let prob = probabilities[i] == 0 ? "NA" : (probabilities[i] == 0.01 ? 0 : probabilities[i].toFixed(2));
+          ptmsStr += "\n" + types[i] + " ~" + prob;
+        }
+
+        ui.tooltip.show(
+          ui.divText(`Probability: ${ptmsStr}`),
+          //@ts-ignore
+          el.getBoundingClientRect().left + 10,
+          //@ts-ignore
+          el.getBoundingClientRect().top + 10
+        );
+
+      }).addMouseoutCallback(obsCodes, function (ft) {
+        ui.tooltip.hide();
+      });
+
+      //mouse click handlers
+      this.pviz.FeatureDisplayer.addClickCallback(['D'], async function (ft) {
+        if (switchObj[chain][ft.start] === undefined) {
+          switchObj[chain][ft.start] = {};
+          switchObj[chain][ft.start]['state'] = true;
+        } else {
+          switchObj[chain][ft.start]['state'] = !switchObj[chain][ft.start]['state']
+        }
+        grok.events.fireCustomEvent("selectionChanged", null);
+        await pv.color(chain);
+      });
+
+      this.pviz.FeatureDisplayer.addClickCallback(ptmCodes, async function (ft) {
+        if (switchObj[chain][ft.start] === undefined) {
+          switchObj[chain][ft.start] = {};
+          switchObj[chain][ft.start]['state'] = true;
+        } else {
+          switchObj[chain][ft.start]['state'] = !switchObj[chain][ft.start]['state']
+        }
+        grok.events.fireCustomEvent("selectionChanged", null);
+        await pv.color(chain);
+      });
+
+      this.pviz.FeatureDisplayer.addClickCallback(motCodes, async function (ft) {
+        if (switchObj[chain][ft.start] === undefined) {
+          switchObj[chain][ft.start] = {};
+          switchObj[chain][ft.start]['state'] = true;
+        } else {
+          switchObj[chain][ft.start]['state'] = !switchObj[chain][ft.start]['state']
+        }
+        grok.events.fireCustomEvent("selectionChanged", null);
+        await pv.color(chain);
+      });
+
+      this.pviz.FeatureDisplayer.addClickCallback(obsCodes, async function (ft) {
+        if (switchObj[chain][ft.start] === undefined) {
+          switchObj[chain][ft.start] = {};
+          switchObj[chain][ft.start]['state'] = true;
+        } else {
+          switchObj[chain][ft.start]['state'] = !switchObj[chain][ft.start]['state']
+        }
+        grok.events.fireCustomEvent("selectionChanged", null);
+        await pv.color(chain);
+      });
     }
-    this.pVizParams.denMap = this.ptmDenMapping(json);
-    this.pVizParams.parMap = this.paratopeMapping(json);
-    this.pVizParams.cdrMap = this.cdrMapping(inputs.cdrScheme.value, json);
+  }
 
-    await this.loadSequence(inputs, 'H', json, jsonObs);
+  async color(chosenTracksChain) {
 
-    await this.pvizResize(inputs, 'H', json, jsonObs);
-    await this.pvizResize(inputs, 'L', json, jsonObs);
-    //@ts-ignore
-    return MiscMethods.setDockSize(view, inputs.nglNode, inputs.sequenceTabs, inputs.paratopes);
+    let switchObj = this.selection;
+    let pVizParams = this.pVizParams;
+
+    Object.keys(switchObj).forEach((keyChain) => {
+
+      let selectorStr = 'g.feature.data.D rect.feature';
+      let denElements = document.querySelectorAll(selectorStr);
+      let denNumbers = pVizParams.denMap[keyChain].den_el_obj;
+      Object.keys(switchObj[keyChain]).forEach((keyPosition) => {
+
+        let position = parseInt(keyPosition);
+
+        if (keyChain === chosenTracksChain) {
+          //densities
+          if (denNumbers.indexOf(position) !== -1) {
+            if (switchObj[keyChain][keyPosition]['state'] === false) {
+              //@ts-ignore
+              denElements[denNumbers.indexOf(position)].style.fill = pVizParams.denMap[keyChain].den_color_obj['D'][denNumbers.indexOf(position)];
+            } else {
+              //@ts-ignore
+              denElements[denNumbers.indexOf(position)].style.fill = 'black';
+            }
+          }
+
+          //predicted PTMS
+          let listsPredictedPtms = [];
+
+          this.ptmChoices.forEach(ptm => {
+            let selectorStrPTM = 'g.feature.' + ptm.replace(" ", "_") + ' rect.feature';
+            let elPTM = document.querySelectorAll(selectorStrPTM);
+            let el_lstPTM = pVizParams.ptmMap[chosenTracksChain].ptm_el_obj[mutcodes[ptm.replace(" ", "_")]];
+            listsPredictedPtms[ptm] = [elPTM, el_lstPTM];
+          });
+
+          Object.keys(listsPredictedPtms).forEach(ptm => {
+            let elPTM = listsPredictedPtms[ptm][0];
+            let el_lstPTM = listsPredictedPtms[ptm][1];
+            if (typeof el_lstPTM !== 'undefined' && el_lstPTM.indexOf(position) !== -1) {
+              if (switchObj[keyChain][position]['state'] === false) {
+                elPTM[el_lstPTM.indexOf(position)].style.fill = pVizParams.ptmMap[keyChain].ptm_color_obj[mutcodes[ptm.replace(" ", "_")]][el_lstPTM.indexOf(position)];
+              } else {
+                elPTM[el_lstPTM.indexOf(position)].style.fill = 'black';
+              }
+            }
+          });
+
+          //motif PTMS
+          let listsMotifsPtms = [];
+
+          this.motChoices.forEach(ptm => {
+            let selectorStrPTM = 'g.feature.' + mutcodes[ptm.replaceAll(" ", "_")] + "."
+              + ptm.replaceAll(" ", "_").replaceAll(")", "\\)").replaceAll("(", "\\(") + ' rect.feature';
+            let elPTM = document.querySelectorAll(selectorStrPTM);
+            let el_lstPTM = pVizParams.motMap[chosenTracksChain].mot_el_obj[mutcodes[ptm.replace(" ", "_")]];
+            listsMotifsPtms[ptm] = [elPTM, el_lstPTM];
+          });
+
+          Object.keys(listsMotifsPtms).forEach(ptm => {
+            let elPTM = listsMotifsPtms[ptm][0];
+            let el_lstPTM = listsMotifsPtms[ptm][1];
+            if (typeof el_lstPTM !== 'undefined' && el_lstPTM.indexOf(position) !== -1) {
+              if (switchObj[keyChain][position]['state'] === false) {
+                elPTM[el_lstPTM.indexOf(position)].style.fill = pVizParams.motMap[keyChain].mot_color_obj[mutcodes[ptm.replace(" ", "_")]][el_lstPTM.indexOf(position)];
+              } else {
+                elPTM[el_lstPTM.indexOf(position)].style.fill = 'black';
+              }
+            }
+          });
+
+          //observed PTMS
+          let listsObservedPtms = [];
+
+          this.obsChoices.forEach(ptm => {
+            let selectorStrPTM = 'g.feature.' + ptm.replaceAll(" ", "_") + "."
+              + ptm.replaceAll(" ", "_") + ' rect.feature';
+            let elPTM = document.querySelectorAll(selectorStrPTM);
+            let el_lstPTM = pVizParams.obsMap[chosenTracksChain].obs_el_obj[ptm.replace(" ", "_")];
+            listsObservedPtms[ptm] = [elPTM, el_lstPTM];
+          });
+
+          Object.keys(listsObservedPtms).forEach(ptm => {
+            let elPTM = listsObservedPtms[ptm][0];
+            let el_lstPTM = listsObservedPtms[ptm][1];
+            if (typeof el_lstPTM !== 'undefined' && el_lstPTM.indexOf(position) !== -1) {
+              if (switchObj[keyChain][position]['state'] === false) {
+                elPTM[el_lstPTM.indexOf(position)].style.fill = pVizParams.obsMap[keyChain].obs_color_obj[ptm.replace(" ", "_")][el_lstPTM.indexOf(position)];
+              } else {
+                elPTM[el_lstPTM.indexOf(position)].style.fill = 'black';
+              }
+            }
+          });
+        }
+      });
+    });
   }
 
   // mapping objects for sequence rendering
-  ptmMapping(ptm_choices, prob, json) {
-    let ptmMap = {}
+  cdrMapping(cdrScheme) {
+    this.cdrScheme = cdrScheme;
+    let cdrMap = {}
     let chains = Object.keys(this.pVizParams.seq);
     chains.forEach((chain) => {
-      let ptm_feature_map = [];
-      let ptm_color_obj = {};
-      let ptm_el_obj = {};
-      let ptm_prob_obj = {};
-      let palette = MiscMethods.interpolateColors('(255, 255, 0)', '(255, 0, 0)', 5);
-
-      ptm_choices.forEach(ptm => {
-        let ptm_array = json.ptm_predictions[chain][ptm.replace(" ", "_")];
-        if (ptm_array !== undefined) {
-
-          let ptm_color_arr = [];
-          let ptm_el_arr = [];
-          let ptm_prob_arr = [];
-          ptm_array.forEach(point => {
-            if (point[1] > prob) {
-
-              ptm_feature_map.push({
-                groupSet: 'Predicted PTMs',
-                category: ptm,
-                type: mutcodes[ptm.replace(" ", "_")],
-                start: point[0],
-                end: point[0],
-                text: ptm,
-                improbable: true
-              })
-              ptm_color_arr.push(palette[point[1] > 1 ? Math.round(point[1] * 4) / 100 : Math.round(point[1] * 4)]);
-              ptm_el_arr.push(point[0]);
-              ptm_prob_arr.push(point[1]);
-            }
+      let cdr_feature_map = [];
+      let cdr_ranges = this.json.cdr_ranges[this.cdrScheme.value + '_CDR' + chain + '_ranges']
+      if (this.cdrScheme.value !== 'default') {
+        Object.values(cdr_ranges).forEach((range) => {
+          cdr_feature_map.push({
+            category: 'CDR region',
+            type: 'CDR',
+            start: range[0],
+            end: range[1],
+            text: '',
+            improbable: true
           })
-          if (ptm_color_arr.length > 0) {
-            ptm_color_obj[mutcodes[ptm.replace(" ", "_")]] = ptm_color_arr;
-            ptm_el_obj[mutcodes[ptm.replace(" ", "_")]] = ptm_el_arr;
-            ptm_prob_obj[mutcodes[ptm.replace(" ", "_")]] = ptm_prob_arr;
-          }
-        }
-      })
-      ptmMap[chain] = {
-        ptm_feature_map: ptm_feature_map, ptm_color_obj: ptm_color_obj,
-        ptm_el_obj: ptm_el_obj, ptm_prob_obj: ptm_prob_obj
-      };
+        })
+      }
+      cdrMap[chain] = { cdr_feature_map: cdr_feature_map }
     })
 
-    return (ptmMap);
+    this.pVizParams.cdrMap = (cdrMap);
   }
 
-  ptmMotifsMapping(ptm_choices, prob, json) {
-    let ptmMotifsMap = {}
+  parMapping(paratopes) {
+    this.paratopes = paratopes;
+    let parMap = {}
     let chains = Object.keys(this.pVizParams.seq);
     chains.forEach((chain) => {
-      let ptm_feature_map = [];
-      let ptm_color_obj = {};
-      let ptm_el_obj = {};
-      let ptm_prob_obj = {};
-      let palette = MiscMethods.interpolateColors('(255, 255, 0)', '(255, 0, 0)', 5);
+      let par_feature_map = [];
+      let par_color_arr = [];
+      let par_el_obj = [];
+      let par_prob_obj = [];
+      let palette = MiscMethods.interpolateColors('(255, 255, 255)', '(255, 0, 255)', 100);
 
-      ptm_choices.forEach(ptm => {
-        let ptm_array = json.ptm_predictions[chain][ptm.replaceAll(" ", "_")];
-        if (ptm_array !== undefined) {
-
-          let ptm_color_arr = [];
-          let ptm_el_arr = [];
-          let ptm_prob_arr = [];
-          ptm_array.forEach(point => {
-            if (point[1] > prob) {
-
-              ptm_feature_map.push({
-                groupSet: 'Predicted PTMs',//'Motif PTMs',
-                category: ptm,
-                type: mutcodes[ptm.replaceAll(" ", "_")],
-                start: point[0],
-                end: point[0],
-                text: ptm,
-                improbable: true
-              })
-              ptm_color_arr.push(palette[point[1] > 1 ? Math.round(point[1] * 4) / 100 : Math.round(point[1] * 4)]);
-              ptm_el_arr.push(point[0]);
-              ptm_prob_arr.push(point[1]);
-            }
-          })
-          if (ptm_color_arr.length > 0) {
-            ptm_color_obj[mutcodes[ptm.replaceAll(" ", "_")]] = ptm_color_arr;
-            ptm_el_obj[mutcodes[ptm.replaceAll(" ", "_")]] = ptm_el_arr;
-            ptm_prob_obj[mutcodes[ptm.replaceAll(" ", "_")]] = ptm_prob_arr;
-          }
-        }
+      Object.keys(this.json.parapred_predictions[chain]).forEach((index) => {
+        par_feature_map.push({
+          category: 'Paratope predictions',
+          type: 'P',
+          start: index,
+          end: index,
+          text: '',
+          improbable: true
+        })
+        par_color_arr.push(palette[Math.round(this.json.parapred_predictions[chain][index] * 100)]);
+        par_el_obj.push(index);
+        par_prob_obj.push(this.json.parapred_predictions[chain][index]);
       })
-      ptmMotifsMap[chain] = {
-        ptm_feature_map: ptm_feature_map, ptm_color_obj: ptm_color_obj,
-        ptm_el_obj: ptm_el_obj, ptm_prob_obj: ptm_prob_obj
-      };
+
+      parMap[chain] = { par_feature_map: par_feature_map, par_color_obj: { 'P': par_color_arr }, par_el_obj: par_el_obj, par_prob_obj: par_prob_obj };
     })
 
-    return (ptmMotifsMap);
+    this.pVizParams.parMap = (parMap)
   }
 
-  ptmObsMapping(ptm_choices, json) {
-    let ptmMap = {}
-    let chains = Object.keys(this.pVizParams.seq);
-    chains.forEach((chain) => {
-      let ptm_feature_map = [];
-      let ptm_color_obj = {};
-      let ptm_el_obj = {};
-      let ptm_prob_obj = {};
-      let palette = MiscMethods.interpolateColors('(255, 255, 0)', '(255, 0, 0)', 5);
-
-      ptm_choices.forEach(ptm => {
-        let ptm_pair = json.ptm_observed[chain][ptm.replace(" ", "_")];
-        if (ptm_pair !== undefined) {
-
-          let ptm_color_arr = [];
-          let ptm_el_arr = [];
-          let ptm_prob_arr = [];
-
-          ptm_feature_map.push({
-                groupSet: 'Observed PTMs',
-                category: ptm,
-                type: 'O',
-                start: ptm_pair[0],
-                end: ptm_pair[0],
-                text: ptm,
-                improbable: true
-              })
-              ptm_color_arr.push(palette[ptm_pair[1] > 1 ? Math.round(ptm_pair[1] * 4) / 100 : Math.round(ptm_pair[1] * 4)]);
-              ptm_el_arr.push(ptm_pair[0]);
-              ptm_prob_arr.push(ptm_pair[1]);
- 
-
-
-          if (ptm_color_arr.length > 0) {
-            ptm_color_obj[mutcodes[ptm.replace(" ", "_")]] = ptm_color_arr;
-            ptm_el_obj[mutcodes[ptm.replace(" ", "_")]] = ptm_el_arr;
-            ptm_prob_obj[mutcodes[ptm.replace(" ", "_")]] = ptm_prob_arr;
-          }
-        }
-      })
-      ptmMap[chain] = {
-        ptm_feature_map: ptm_feature_map, ptm_color_obj: ptm_color_obj,
-        ptm_el_obj: ptm_el_obj, ptm_prob_obj: ptm_prob_obj
-      };
-    })
-
-    return (ptmMap);
-  }
-
-  ptmDenMapping(json) {
+  denMapping() {
     let denMap = {}
     let chains = Object.keys(this.pVizParams.seq);
     chains.forEach((chain) => {
@@ -196,9 +438,9 @@ export class PvizAspect {
       let den_ptm_arr = new Array(this.pVizParams.seq[chain].length).fill([]);
       let palette = MiscMethods.interpolateColors('(255, 255, 0)', '(255, 0, 0)', 5);
 
-      Object.keys(json.ptm_predictions[chain]).forEach((ptm) => {
-        if (json.ptm_predictions[chain][ptm][0][1] <= 1) {
-          json.ptm_predictions[chain][ptm].forEach(point => {
+      Object.keys(this.json.ptm_predictions[chain]).forEach((ptm) => {
+        if (this.json.ptm_predictions[chain][ptm][0][1] <= 1) {
+          this.json.ptm_predictions[chain][ptm].forEach(point => {
             if (!(den_feature_map.includes(point[0]))) {
               den_feature_map.push(point[0]);
             }
@@ -239,62 +481,183 @@ export class PvizAspect {
       denMap[chain] = { den_feature_map: den_feature_map, den_color_obj: { 'D': den_color_arr }, den_el_obj: den_el_obj, den_prob_obj: den_prob_obj, den_ptm_arr: den_ptm_arr };
     })
 
-    return (denMap)
+    this.pVizParams.denMap = (denMap)
   }
 
-  paratopeMapping(json) {
-    let parMap = {}
+  ptmMapping(ptmChoices, prob) {
+    this.ptmChoices = ptmChoices;
+    this.ptmProb = prob;
+
+    let ptmMap = {}
     let chains = Object.keys(this.pVizParams.seq);
     chains.forEach((chain) => {
-      let par_feature_map = [];
-      let par_color_arr = [];
-      let par_el_obj = [];
-      let par_prob_obj = [];
-      let palette = MiscMethods.interpolateColors('(255, 255, 255)', '(255, 0, 255)', 100);
+      let ptm_feature_map = [];
+      let ptm_color_obj = {};
+      let ptm_el_obj = {};
+      let ptm_prob_obj = {};
+      let palette = MiscMethods.interpolateColors('(255, 255, 0)', '(255, 0, 0)', 5);
 
-      Object.keys(json.parapred_predictions[chain]).forEach((index) => {
-        par_feature_map.push({
-          category: 'Paratope predictions',
-          type: 'P',
-          start: index,
-          end: index,
-          text: '',
-          improbable: true
-        })
-        par_color_arr.push(palette[Math.round(json.parapred_predictions[chain][index] * 100)]);
-        par_el_obj.push(index);
-        par_prob_obj.push(json.parapred_predictions[chain][index]);
-      })
+      this.ptmChoices.forEach(ptm => {
+        let ptm_array = this.json.ptm_predictions[chain][ptm.replace(" ", "_")];
+        if (ptm_array !== undefined) {
 
-      parMap[chain] = { par_feature_map: par_feature_map, par_color_obj: { 'P': par_color_arr }, par_el_obj: par_el_obj, par_prob_obj: par_prob_obj };
-    })
+          let ptm_color_arr = [];
+          let ptm_el_arr = [];
+          let ptm_prob_arr = [];
+          ptm_array.forEach(point => {
+            if (point[1] > prob) {
 
-    return (parMap)
-  }
-
-  cdrMapping(cdr_scheme, json) {
-
-    let cdrMap = {}
-    let chains = Object.keys(this.pVizParams.seq);
-    chains.forEach((chain) => {
-      let cdr_feature_map = [];
-      let cdr_ranges = json.cdr_ranges[cdr_scheme + '_CDR' + chain + '_ranges']
-      if (cdr_scheme !== 'default') {
-        Object.values(cdr_ranges).forEach((range) => {
-          cdr_feature_map.push({
-            category: 'CDR region',
-            type: 'CDR',
-            start: range[0],
-            end: range[1],
-            text: '',
-            improbable: true
+              ptm_feature_map.push({
+                groupSet: 'Predicted PTMs',
+                category: ptm,
+                type: mutcodes[ptm.replace(" ", "_")],
+                start: point[0],
+                end: point[0],
+                text: '',
+                improbable: true
+              })
+              ptm_color_arr.push(palette[point[1] > 1 ? Math.round(point[1] * 4) / 100 : Math.round(point[1] * 4)]);
+              ptm_el_arr.push(point[0]);
+              ptm_prob_arr.push(point[1]);
+            }
           })
-        })
-      }
-      cdrMap[chain] = { cdr_feature_map: cdr_feature_map }
+          if (ptm_color_arr.length > 0) {
+            ptm_color_obj[mutcodes[ptm.replace(" ", "_")]] = ptm_color_arr;
+            ptm_el_obj[mutcodes[ptm.replace(" ", "_")]] = ptm_el_arr;
+            ptm_prob_obj[mutcodes[ptm.replace(" ", "_")]] = ptm_prob_arr;
+          }
+        }
+      })
+      ptmMap[chain] = {
+        ptm_feature_map: ptm_feature_map, ptm_color_obj: ptm_color_obj,
+        ptm_el_obj: ptm_el_obj, ptm_prob_obj: ptm_prob_obj
+      };
     })
 
-    return (cdrMap)
+    this.pVizParams.ptmMap = (ptmMap);
+  }
+
+  motMapping(ptmChoices, prob) {
+    this.motChoices = ptmChoices;
+    let motMap = {}
+    let chains = Object.keys(this.pVizParams.seq);
+    chains.forEach((chain) => {
+      let ptm_feature_map = [];
+      let ptm_color_obj = {};
+      let ptm_el_obj = {};
+      let ptm_prob_obj = {};
+      let palette = MiscMethods.interpolateColors('(255, 255, 0)', '(255, 0, 0)', 5);
+
+      ptmChoices.forEach(ptm => {
+        let ptm_array = this.json.ptm_predictions[chain][ptm.replaceAll(" ", "_")];
+        if (ptm_array !== undefined) {
+
+          let ptm_color_arr = [];
+          let ptm_el_arr = [];
+          let ptm_prob_arr = [];
+          ptm_array.forEach(point => {
+            if (point[1] > prob) {
+
+              ptm_feature_map.push({
+                groupSet: 'Predicted PTMs',//'Motif PTMs',
+                category: ptm,
+                type: mutcodes[ptm.replaceAll(" ", "_")],
+                start: point[0],
+                end: point[0],
+                text: '',
+                improbable: true
+              })
+              ptm_color_arr.push(palette[point[1] > 1 ? Math.round(point[1] * 4) / 100 : Math.round(point[1] * 4)]);
+              ptm_el_arr.push(point[0]);
+              ptm_prob_arr.push(0.99);
+            }
+          })
+          if (ptm_color_arr.length > 0) {
+            ptm_color_obj[mutcodes[ptm.replaceAll(" ", "_")]] = ptm_color_arr;
+            ptm_el_obj[mutcodes[ptm.replaceAll(" ", "_")]] = ptm_el_arr;
+            ptm_prob_obj[mutcodes[ptm.replaceAll(" ", "_")]] = ptm_prob_arr;
+          }
+        }
+      })
+      motMap[chain] = {
+        mot_feature_map: ptm_feature_map, mot_color_obj: ptm_color_obj,
+        mot_el_obj: ptm_el_obj, mot_prob_obj: ptm_prob_obj
+      };
+    })
+
+    this.pVizParams.motMap = (motMap);
+  }
+
+  obsMapping(ptmChoices) {
+    this.obsChoices = ptmChoices;
+    let obsMap = {}
+    let chains = Object.keys(this.pVizParams.seq);
+    let palette = MiscMethods.interpolateColors('(255, 255, 0)', '(255, 0, 0)', 5);
+
+    chains.forEach((chain) => {
+      let obs_feature_map = [];
+      let obs_color_obj = {};
+      let obs_el_obj = {};
+      let obs_prob_obj = {};
+
+      ptmChoices.forEach(ptm => {
+        let ptm_tree = this.jsonObs.ptm_observed[chain][ptm.replace(" ", "_")];
+        if (ptm_tree !== undefined) {
+
+          let obs_color_arr = [];
+          let obs_el_arr = [];
+          let obs_types_arr = [];
+          let obs_types_probs_arr = [];
+
+          Object.keys(ptm_tree).forEach((type) => {
+            let point = this.jsonObs.ptm_observed[chain][ptm.replace(" ", "_")][type];
+            if (!obs_el_arr.includes(point[0])) {
+              obs_el_arr.push(point[0]);
+            }
+          });
+
+          obs_el_arr.forEach((position) => {
+            let types = [];
+            let types_probs = [];
+            let prob = -1;
+            Object.keys(ptm_tree).forEach((type) => {
+              let point = this.jsonObs.ptm_observed[chain][ptm][type];
+              if (point[0] === position) {
+                types.push(type);
+                types_probs.push(point[1]);
+                let addProb = point[1] == 0.01 ? 0 : point[1];
+                prob = prob == -1 ? addProb / 100 : 1 - (1 - prob) * (1 - addProb / 100);
+              }
+            });
+
+            obs_color_arr.push(palette[Math.round(prob * 4)]);
+            obs_types_arr.push(types);
+            obs_types_probs_arr.push(types_probs);
+
+            obs_feature_map.push({
+              groupSet: 'Observed PTMs',
+              category: ptm,
+              type: ptm,
+              start: position,
+              end: position,
+              text: ptm,
+              improbable: true
+            })
+
+            obs_color_obj[ptm.replace(" ", "_")] = obs_color_arr;
+            obs_el_obj[ptm.replace(" ", "_")] = obs_el_arr;
+            obs_prob_obj[position] = [types, types_probs];
+          });
+        }
+      });
+
+      obsMap[chain] = {
+        obs_feature_map: obs_feature_map, obs_color_obj: obs_color_obj,
+        obs_el_obj: obs_el_obj, obs_prob_obj: obs_prob_obj
+      };
+    });
+
+    this.pVizParams.obsMap = (obsMap);
   }
 
   applyGradient(gradient_obj) {
@@ -308,368 +671,12 @@ export class PvizAspect {
     })
   }
 
-  // main sequence rendering func
-  async loadSequence(inputs, chain, json, jsonObs, reLoad = false) {
-
-    let host = chain == "H" ? inputs.pVizHostH : inputs.pVizHostL;
-
-    //@ts-ignore
-    if ($(host).width() !== 0) {
-      let seq = this.pVizParams.seq[chain];
-
-      let seqEntry = new this.pviz.SeqEntry({
-        sequence: seq
-      });
-      new this.pviz.SeqEntryAnnotInteractiveView({
-        model: seqEntry,
-        collapsible: true,
-        el: host
-      }).render();
-      let mod_codes = Object.keys(this.pVizParams.ptmMap[chain].ptm_color_obj);
-      let mod_motifs_codes = Object.keys(this.pVizParams.ptmMotifsMap[chain].ptm_color_obj);
-
-      mod_codes.forEach((mod) => {
-        this.pviz.FeatureDisplayer.trackHeightPerCategoryType[mod] = 1.5;
-        this.pviz.FeatureDisplayer.setStrikeoutCategory(mod);
-      });
-
-      mod_motifs_codes.forEach((mod) => {
-        this.pviz.FeatureDisplayer.trackHeightPerCategoryType[mod] = 1.5;
-        this.pviz.FeatureDisplayer.setStrikeoutCategory(mod);
-      });
-
-      if(jsonObs !== null){
-        let mod_observed_codes = Object.keys(this.pVizParams.ptmObsMap[chain].ptm_color_obj);
-        mod_observed_codes.forEach((mod) => {
-          this.pviz.FeatureDisplayer.trackHeightPerCategoryType[mod] = 1.5;
-          this.pviz.FeatureDisplayer.setStrikeoutCategory(mod);
-        });
-      }
-
-      let switchObj = inputs.twinSelections;
-      let pVizParams = this.pVizParams;
-
-      let pv = this;
-
-      this.pviz.FeatureDisplayer.addClickCallback(mod_codes, async function (ft) {
-        if (switchObj[chain][ft.start] === undefined) {
-          switchObj[chain][ft.start] = {};
-          switchObj[chain][ft.start]['state'] = true;
-        } else {
-          switchObj[chain][ft.start]['state'] = !switchObj[chain][ft.start]['state']
-        }
-
-        await pv.consistentlyColorpVizNGL(inputs, chain, json, jsonObs, reLoad);
-      })
-
-      this.pviz.FeatureDisplayer.addClickCallback(mod_motifs_codes, async function (ft) {
-        if (switchObj[chain][ft.start] === undefined) {
-          switchObj[chain][ft.start] = {};
-          switchObj[chain][ft.start]['state'] = true;
-        } else {
-          switchObj[chain][ft.start]['state'] = !switchObj[chain][ft.start]['state']
-        }
-
-        await pv.consistentlyColorpVizNGL(inputs, chain, json, jsonObs, reLoad);
-      })
-
-      this.pviz.FeatureDisplayer.addClickCallback(['D'], async function (ft) {
-        if (switchObj[chain][ft.start] === undefined) {
-          switchObj[chain][ft.start] = {};
-          switchObj[chain][ft.start]['state'] = true;
-        } else {
-          switchObj[chain][ft.start]['state'] = !switchObj[chain][ft.start]['state']
-        }
-
-        await pv.consistentlyColorpVizNGL(inputs, chain, json, jsonObs, reLoad);
-      })
-
-      this.pviz.FeatureDisplayer.addMouseoverCallback(mod_motifs_codes, async function (ft) {
-
-        let selectorStr = 'g.feature.' + mutcodes[ft.category.replaceAll(" ", "_")] + "."
-          + ft.category.replaceAll(" ", "_").replaceAll(")", "\\)").replaceAll("(", "\\(");
-        let el = document.querySelectorAll(selectorStr);
-        let el_lst = pVizParams.ptmMotifsMap[chain].ptm_el_obj[mutcodes[ft.category.replaceAll(" ", "_")]];
-        //@ts-ignore
-        el = el[el_lst.indexOf(ft.start)];
-
-        ui.tooltip.show(
-          ui.span([`${ft.category}`]),
-          //@ts-ignore
-          el.getBoundingClientRect().left + 10,
-          //@ts-ignore
-          el.getBoundingClientRect().top + 10
-        );
-
-      }).addMouseoutCallback(mod_codes, function (ft) {
-        ui.tooltip.hide();
-      });
-
-      this.pviz.FeatureDisplayer.addMouseoverCallback(['D'], async function (ft) {
-
-        let selectorStr = 'g.feature.data.D rect.feature';
-        let el = document.querySelectorAll(selectorStr);
-        let el_lst = pVizParams.denMap[chain].den_el_obj;
-        let prob_lst = pVizParams.denMap[chain].den_prob_obj;
-        let ptm_list = pVizParams.denMap[chain].den_ptm_arr;
-        //@ts-ignore
-        el = el[el_lst.indexOf(ft.start)];
-        let prob = prob_lst[el_lst.indexOf(ft.start)];
-        let ptmsArPoint = ptm_list[el_lst.indexOf(ft.start)];
-        let ptmsStr = "";
-
-        for (let i = 0; i < ptmsArPoint.length; i++) {
-          ptmsStr += "\n" + ptmsArPoint[i][0].replace("_", " ") + " probability  ~" + (ptmsArPoint[i][1] > 1 ? ptmsArPoint[i][1] / 100 : ptmsArPoint[i][1]).toFixed(2);
-        }
-
-        ui.tooltip.show(
-          ui.divText(`Probability: ${prob.toFixed(2)}${ptmsStr}`),
-          //@ts-ignore
-          el.getBoundingClientRect().left + 10,
-          //@ts-ignore
-          el.getBoundingClientRect().top + 10
-        );
-
-      }).addMouseoutCallback(['D'], function (ft) {
-        ui.tooltip.hide();
-      });
-
-      this.pviz.FeatureDisplayer.addMouseoverCallback(['P'], async function (ft) {
-
-        let selectorStr = 'g.feature.data.P.Paratope_predictions rect.feature';
-        let el = document.querySelectorAll(selectorStr);
-        let el_lst = pVizParams.parMap[chain].par_el_obj;
-        let prob_lst = pVizParams.parMap[chain].par_prob_obj;
-        //@ts-ignore
-        el = el[el_lst.indexOf((ft.start).toString())];
-        let prob = prob_lst[el_lst.indexOf((ft.start).toString())];
-
-        ui.tooltip.show(
-          ui.span([`Probability: ${prob.toFixed(2)}`]),
-          //@ts-ignore
-          el.getBoundingClientRect().left + 10,
-          //@ts-ignore
-          el.getBoundingClientRect().top + 10
-        );
-
-      }).addMouseoutCallback(['P'], function (ft) {
-        ui.tooltip.hide();
-      });
-      
-      if (inputs.paratopes.value === true) {
-        seqEntry.addFeatures(this.pVizParams.parMap[chain].par_feature_map);
-      }
-      seqEntry.addFeatures(this.pVizParams.ptmMap[chain].ptm_feature_map);
-      seqEntry.addFeatures(this.pVizParams.ptmMotifsMap[chain].ptm_feature_map);
-      if(jsonObs !== null){seqEntry.addFeatures(this.pVizParams.ptmObsMap[chain].ptm_feature_map);}
-      seqEntry.addFeatures(this.pVizParams.denMap[chain].den_feature_map);
-      seqEntry.addFeatures(this.pVizParams.cdrMap[chain].cdr_feature_map);
-      this.applyGradient(this.pVizParams.ptmMap[chain].ptm_color_obj);
-      this.applyGradient(this.pVizParams.ptmMotifsMap[chain].ptm_color_obj);
-      if(jsonObs !== null){ this.applyGradient(this.pVizParams.ptmObsMap[chain].ptm_color_obj);}
-      this.applyGradient(this.pVizParams.denMap[chain].den_color_obj);
-      this.applyGradient(this.pVizParams.parMap[chain].par_color_obj);
-      this.consistentlyColorpVizNGL(inputs, chain, json, jsonObs, reLoad);
-    }
-  }
-
-  async consistentlyColorpVizNGL(inputs, chosenTracksChain, json, jsonObs, reLoad) {
-
-    let switchObj = inputs.twinSelections;
-    let pVizParams = this.pVizParams;
-    let colorScheme = inputs.colorScheme;
-    let ngl = this.ngl
-
-    let col_heavy_chain = colorScheme["col_heavy_chain"];
-    let col_light_chain = colorScheme["col_light_chain"];
-    let col_cdr = colorScheme["col_cdr"];
-    let col_para = colorScheme["col_para"];
-    let col_partopes_low = colorScheme["col_partopes_low"]; //col_para in rgb
-    let col_partopes_high = colorScheme["col_partopes_high"];
-    let col_highlight = (inputs.cdrScheme.value === 'default' || inputs.paratopes.value === true) ?
-      colorScheme["col_highlight"] : colorScheme["col_highlight_cdr"];
-
-    //highlights in NGL
-    let scheme_buffer = [];
-
-    Object.keys(switchObj).forEach((keyChain) => {
-      Object.keys(switchObj[keyChain]).forEach((keyFtStart) => {
-
-        let index = keyChain === "H" ? json.map_H[keyFtStart] : json.map_L[keyFtStart];
-        if (switchObj[keyChain][keyFtStart]['state'] === true) {
-          scheme_buffer.push([col_highlight, `${index} and :${keyChain}`]);
-        }
-      });
-    });
-
-    let schemeId;
-    if (inputs.paratopes.value === true) {
-      let palette = MiscMethods.interpolateColors(col_partopes_low, col_partopes_high, 100);
-      Object.keys(json.parapred_predictions).forEach((chain) => {
-        Object.keys(json.parapred_predictions[chain]).forEach((index) => {
-
-          let nindex = chain === "H" ? json.map_H[index] : json.map_L[index];
-
-          scheme_buffer.push([
-            palette[Math.round(json.parapred_predictions[chain][index] * 100)],
-            `${nindex} and :${chain}`
-          ]);
-        })
-
-      })
-      scheme_buffer.push([col_para, "* and :H"]);
-      scheme_buffer.push([col_para, "* and :L"]);
-      //@ts-ignore
-      schemeId = NGL.ColormakerRegistry.addSelectionScheme(scheme_buffer);
-    }
-    else {
-      if (inputs.cdrScheme.value === 'default') {
-        scheme_buffer.push([col_heavy_chain, "* and :H"]);
-        scheme_buffer.push([col_light_chain, "* and :L"]);
-        //@ts-ignore
-        schemeId = NGL.ColormakerRegistry.addSelectionScheme(scheme_buffer);
-      } else {
-        Object.keys(json.cdr_ranges).forEach((str) => {
-          if (str.includes(inputs.cdrScheme.value + '_CDRH')) {
-            let str_buffer = '';
-            for (let i = 0; i < Object.keys(json.cdr_ranges[str]).length; i++) {
-              let nindex1 = json.map_H[json.cdr_ranges[str][i][0]];
-              let nindex2 = json.map_H[json.cdr_ranges[str][i][1]];
-
-              str_buffer = str_buffer + ` or ${nindex1}-${nindex2} and :H`;
-            }
-            str_buffer = str_buffer.slice(4);
-            scheme_buffer.push([col_cdr, str_buffer]);
-            scheme_buffer.push([col_heavy_chain, "* and :H"]);
-
-          } else if (str.includes(inputs.cdrScheme.value + '_CDRL')) {
-            let str_buffer = ''
-            for (let i = 0; i < Object.keys(json.cdr_ranges[str]).length; i++) {
-              let nindex1 = json.map_L[json.cdr_ranges[str][i][0]];
-              let nindex2 = json.map_L[json.cdr_ranges[str][i][1]];
-
-              str_buffer = str_buffer + ` or ${nindex1}-${nindex2} and :L`;
-            }
-            str_buffer = str_buffer.slice(4);
-            scheme_buffer.push([col_cdr, str_buffer]);
-            scheme_buffer.push([col_light_chain, "* and :L"]);
-          }
-        });
-        //@ts-ignore
-        schemeId = NGL.ColormakerRegistry.addSelectionScheme(scheme_buffer);
-      }
-    }
-
-    if (reLoad) {
-      ngl.stage.removeAllComponents();
-      await ngl.loadPdb(ngl.pdbStr, inputs.repChoice, { color: schemeId });
-
-      //recovering ball and stick residual at cartoon view
-      if (inputs.repChoice.value === "cartoon") {
-        Object.keys(switchObj).forEach((keyChain) => {
-          Object.keys(switchObj[keyChain]).forEach((keyFtStart) => {
-
-            let index = keyChain === "H" ? json.map_H[keyFtStart] : json.map_L[keyFtStart];
-
-            let selection = `${index} and :${keyChain} and (not backbone or .CA or (PRO and .N))`;
-            let addedRepresentation = ngl.stage.compList[0].addRepresentation("ball+stick", { sele: selection });
-            switchObj[keyChain][keyFtStart]['representation'] = addedRepresentation;
-
-            if (switchObj[keyChain][keyFtStart]['state'] !== true) {
-              addedRepresentation.setVisibility(false);
-            }
-          });
-        });
-      }
-    } else {
-      ngl.stage.compList[0].addRepresentation(inputs.repChoice.value, { color: schemeId });
-
-      if (inputs.repChoice.value === "cartoon") {
-        Object.keys(switchObj).forEach((keyChain) => {
-          Object.keys(switchObj[keyChain]).forEach((keyFtStart) => {
-
-            let index = keyChain === "H" ? json.map_H[keyFtStart] : json.map_L[keyFtStart];
-
-            if (typeof switchObj[keyChain][keyFtStart]['representation'] === 'undefined') {
-              let selection = `${index} and :${keyChain} and (not backbone or .CA or (PRO and .N))`;
-              let addedRepresentation = ngl.stage.compList[0].addRepresentation("ball+stick", { sele: selection });
-              switchObj[keyChain][keyFtStart]['representation'] = addedRepresentation;
-            }
-
-            if (switchObj[keyChain][keyFtStart]['state'] !== true) {
-              switchObj[keyChain][keyFtStart]['representation'].setVisibility(false);
-            } else {
-              switchObj[keyChain][keyFtStart]['representation'].setVisibility(true);
-            }
-          });
-        });
-      }
-    }
-
-    //colors of selected pViz
-    let selectorStr = 'g.feature.data.D rect.feature';
-    let el = document.querySelectorAll(selectorStr);
-
-    let lists = [];
-
-    inputs.ptmChoices.value.forEach(ptm => {
-      let selectorStrPTM = 'g.feature.' + ptm.replace(" ", "_") + ' rect.feature';
-      let elPTM = document.querySelectorAll(selectorStrPTM);
-      let el_lstPTM = pVizParams.ptmMap[chosenTracksChain].ptm_el_obj[mutcodes[ptm.replace(" ", "_")]];
-      lists[ptm] = [elPTM, el_lstPTM];
-    });
-
-    Object.keys(switchObj).forEach((keyChain) => {
-      let el_lst = pVizParams.denMap[keyChain].den_el_obj;
-
-      Object.keys(switchObj[keyChain]).forEach((keyFtStart) => {
-        let position = parseInt(keyFtStart);
-
-        if (keyChain === chosenTracksChain) {
-          if (switchObj[keyChain][keyFtStart]['state'] === false) {
-            //@ts-ignore
-            el[el_lst.indexOf(position)].style.fill = pVizParams.denMap[keyChain].den_color_obj['D'][el_lst.indexOf(position)];
-          } else {
-            //@ts-ignore
-            el[el_lst.indexOf(position)].style.fill = 'black';
-          }
-
-          Object.keys(lists).forEach(ptm => {
-            let elPTM = lists[ptm][0];
-            let el_lstPTM = lists[ptm][1];
-            if (typeof el_lstPTM !== 'undefined' && el_lstPTM.indexOf(position) !== -1) {
-              if (switchObj[keyChain][position]['state'] === false) {
-                elPTM[el_lstPTM.indexOf(position)].style.fill = pVizParams.ptmMap[keyChain].ptm_color_obj[mutcodes[ptm.replace(" ", "_")]][el_lstPTM.indexOf(position)];
-              } else {
-                elPTM[el_lstPTM.indexOf(position)].style.fill = 'black';
-              }
-            }
-          });
-
-          if(jsonObs !== null){
-            Object.keys(lists).forEach(ptm => {
-              let elPTM = lists[ptm][0];
-              let el_lstPTM = lists[ptm][1];
-              if (typeof el_lstPTM !== 'undefined' && el_lstPTM.indexOf(position) !== -1) {
-                if (switchObj[keyChain][position]['state'] === false) {
-                  elPTM[el_lstPTM.indexOf(position)].style.fill = pVizParams.obsMap[keyChain].ptm_color_obj[mutcodes[ptm.replace(" ", "_")]][el_lstPTM.indexOf(position)];
-                } else {
-                  elPTM[el_lstPTM.indexOf(position)].style.fill = 'black';
-                }
-              }
-            });
-          }
-        }
-      });
-    });
-  }
-
   // resize handle
-  async pvizResize(inputs, chain, json, jsonObs) {
-    let host = chain == "H" ? inputs.pVizHostH : inputs.pVizHostL;
+  private async resize(chain: string) {
+    let host = chain == "H" ? this.hostH : this.hostL;
 
     ui.onSizeChanged(host).subscribe(async (_) => {
-      await this.loadSequence(inputs, chain, json, jsonObs)
+      await this.render(chain)
     });
   }
 }

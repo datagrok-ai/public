@@ -43,7 +43,50 @@ plugin whenever you call the viewer context menu command `To Script | To JavaScr
 
 ### Column selection heuristics
 
-The `Timelines` viewer can choose its parameters by [SDTM](https://www.cdisc.org/standards/foundational/sdtm) vocabulary.
-If you are working with a dataset representing an SDTM domain, the algorithm will first try to match the column names
-based on the naming conventions of this standard. In other cases, the columns will be selected according to the data type
-and such column statistics as the number of unique categories.
+The `Timelines` viewer can choose its parameters by [SDTM](https://www.cdisc.org/standards/foundational/sdtm)
+vocabulary. If you are working with a dataset representing an SDTM domain, the
+algorithm will first try to match the column names based on the naming
+conventions of this standard. In other cases, the columns will be selected
+according to the data type and such column statistics as the number of unique
+categories.
+
+## Chord
+
+Status: `experimental`
+Demo dataset: https://dev.datagrok.ai/f/Demo.TestJobs.Files.DemoFiles/energy_uk.csv
+
+![](./img/chord.gif)
+
+See also the `Chord` viewer in the [Viewers](https://github.com/datagrok-ai/public/tree/master/packages/Viewers) package.
+
+## Radar
+
+Radar charts are used on multivariate data to plot groups of values over several common variables.
+Demo dataset: https://dev.datagrok.ai/f/Demo.TestJobs.Files.DemoFiles/beer.csv
+
+![](./img/radar.gif)
+
+## Sankey
+
+Status: `experimental`
+Demo dataset: https://dev.datagrok.ai/f/Demo.TestJobs.Files.DemoFiles/energy_uk.csv
+
+![](./img/sankey.gif)
+
+## Common properties
+
+```js
+{
+  top: '5px',
+  left: '5px',
+  bottom: '5px',
+  right: '5px',
+  animationDuration: 500,
+  animationDurationUpdate: 750,
+}
+```
+
+See also:
+  - [ECharts](https://echarts.apache.org/en/index.html)
+  - [Viewers](https://datagrok.ai/help/visualize/viewers)
+  - [How to Develop Custom Viewers](https://datagrok.ai/help/develop/how-to/develop-custom-viewer)

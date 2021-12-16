@@ -132,7 +132,7 @@ export namespace chem {
 
       let funcs = Func.find({tags: ['moleculeSketcher']});
       if (funcs.length == 0)
-        throw 'Sketcher functions not found. Please install Chem, OpenChemLib, or MarvinJS package.';
+        throw 'Sketcher functions not found. Please install OpenChemLib, or MarvinJS package.';
 
       
       $(this.molInput).attr('placeholder', 'SMILES, Inchi, Inchi keys, ChEMBL id, etc');
@@ -250,7 +250,7 @@ export namespace chem {
    * @returns {Promise<DataFrame>}
    * */
   export function diversitySearch(column: Column, metric: SimilarityMetric = SIMILARITY_METRIC.TANIMOTO, limit: number = 10): Promise<DataFrame> {
-    return new Promise((resolve, reject) => api.grok_Chem_DiversitySearch(column.d, metric, limit, (mols: any) => resolve(mols), (e: any) => reject(e)));
+    return new Promise((resolve, reject) => api.grok_Chem_DiversitySearch(column.dart, metric, limit, (mols: any) => resolve(mols), (e: any) => reject(e)));
   }
 
   /**
@@ -337,7 +337,7 @@ export namespace chem {
    * @returns {Promise<DataFrame>}
    * */
   export function findSimilarServer(column: Column, molecule: string, metric: SimilarityMetric = SIMILARITY_METRIC.TANIMOTO, limit: number = 10, minScore: number = 0.7): Promise<DataFrame> {
-    return new Promise((resolve, reject) => api.grok_Chem_SimilaritySearch(column.d, molecule, metric,
+    return new Promise((resolve, reject) => api.grok_Chem_SimilaritySearch(column.dart, molecule, metric,
       limit, minScore, (t: any) => resolve(new DataFrame(t))));
   }
 
@@ -350,7 +350,7 @@ export namespace chem {
    * @returns {Promise<BitSet>}
    * */
   export function searchSubstructureServer(column: Column, pattern: string, isSmarts: boolean = true): Promise<BitSet> {
-    return new Promise((resolve, reject) => api.grok_Chem_SubstructureSearch(column.d, pattern, isSmarts, (bs: any) => resolve(new BitSet(bs))));
+    return new Promise((resolve, reject) => api.grok_Chem_SubstructureSearch(column.dart, pattern, isSmarts, (bs: any) => resolve(new BitSet(bs))));
   }
 
   /**
@@ -379,7 +379,7 @@ export namespace chem {
    * @returns {Promise<DataFrame>}
    * */
   export function rGroup(table: DataFrame, column: string, core: string): Promise<DataFrame> {
-    return new Promise((resolve, reject) => api.grok_Chem_RGroup(table.d, column, core, () => resolve(table), (e: any) => reject(e)));
+    return new Promise((resolve, reject) => api.grok_Chem_RGroup(table.dart, column, core, () => resolve(table), (e: any) => reject(e)));
   }
 
   /**
@@ -390,7 +390,7 @@ export namespace chem {
    * @returns {Promise<string>}
    * */
   export function mcs(column: Column): Promise<string> {
-    return new Promise((resolve, reject) => api.grok_Chem_MCS(column.d, (mcs: any) => resolve(mcs), (e: any) => reject(e)));
+    return new Promise((resolve, reject) => api.grok_Chem_MCS(column.dart, (mcs: any) => resolve(mcs), (e: any) => reject(e)));
   }
 
   /**
@@ -404,7 +404,7 @@ export namespace chem {
    * @returns {Promise<DataFrame>}
    * */
   export function descriptors(table: DataFrame, column: string, descriptors: string[]): Promise<DataFrame> {
-    return new Promise((resolve, reject) => api.grok_Chem_Descriptors(table.d, column, descriptors, () => resolve(table), (e: any) => reject(e)));
+    return new Promise((resolve, reject) => api.grok_Chem_Descriptors(table.dart, column, descriptors, () => resolve(table), (e: any) => reject(e)));
   }
 
   /**

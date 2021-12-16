@@ -1,6 +1,4 @@
-import {DockView, FunctionView, View, ViewBase} from "./view";
-import {ObjectHandler} from "../../ui";
-import {toJs} from "../wrappers";
+import {DockView, View, ViewBase} from "./view";
 import {TabControl, TabPane} from "../widgets";
 let api = <any>window;
 

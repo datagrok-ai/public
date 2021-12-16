@@ -184,7 +184,7 @@ export function chemGetMorganFingerprint(molString: string): BitArray {
   }
 }
 
-export async function chemGetMorganFingerprints(molStringsColumn: DG.Column) {
+export async function chemGetMorganFingerprints(molStringsColumn: DG.Column): Promise<BitArray[]> {
   const len = molStringsColumn.length;
   let fingerprints: BitArray[] = [];
   const fallbackCountForSyncExecution = 150;

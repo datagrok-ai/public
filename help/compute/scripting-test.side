@@ -579,12 +579,12 @@
       "id": "bc6bf3c8-dfb5-4db3-ba70-bad578741fbc",
       "comment": "",
       "command": "verifyElementPresent",
-      "target": "xpath=//pre[contains(.,'RScripts:ACF(\"TSLA\", [\"Date\", \"Open\", \"High\", \"Low\", \"Close\", \"Volume\", \"Adjusted\"])')]",
+      "target": "xpath=//pre[contains(.,'DemoScripts:ACF(\"TSLA\", [\"Date\", \"Open\", \"High\", \"Low\", \"Close\", \"Volume\", \"Adjusted\"])')]",
       "targets": [
         ["css=.d4-console-info:nth-child(8) > pre:nth-child(2)", "css:finder"],
         ["xpath=//div[@id='elementContent']/div/div[2]/div[8]/pre[2]", "xpath:idRelative"],
         ["xpath=//div[8]/pre[2]", "xpath:position"],
-        ["xpath=//pre[contains(.,'RScripts:ACF(\"TSLA\", [\"Date\", \"Open\", \"High\", \"Low\", \"Close\", \"Volume\", \"Adjusted\"])')]", "xpath:innerText"]
+        ["xpath=//pre[contains(.,'DemoScripts:ACF(\"TSLA\", [\"Date\", \"Open\", \"High\", \"Low\", \"Close\", \"Volume\", \"Adjusted\"])')]", "xpath:innerText"]
       ],
       "value": ""
     }, {
