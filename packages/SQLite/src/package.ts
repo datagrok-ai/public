@@ -9,7 +9,7 @@ export const _package = new DG.Package();
 //tags: file-handler
 //meta.ext: sqlite
 //input: list bytes
-//ouput: list tables
+//output: list tables
 export async function importSQLite(bytes: number[]) {
   //TODO: use web worker?
   const progress = DG.TaskBarProgressIndicator.create('Loading SQLite tables...');
