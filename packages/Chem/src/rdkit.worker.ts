@@ -3,7 +3,7 @@ import {RdKitServiceWorker as ServiceWorkerClass} from './rdkit_service_worker';
 // @ts-ignore
 import initRDKitModule from './RDKit_minimal.js';
 //@ts-ignore
-import rdkitLibVersion from './rdkitLibVersion';
+import rdkitLibVersion from './rdkit_lib_version';
 
 const ctx: Worker = self as any;
 let _rdKitModule: any | null = null;

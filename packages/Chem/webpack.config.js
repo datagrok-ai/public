@@ -1,5 +1,5 @@
 const path = require('path');
-const rdkitLibVersion = require('./src/rdkitLibVersion.js');
+const rdkitLibVersion = require('./src/rdkit_lib_version.js');
 
 module.exports = (env, options) => ({
   stats: {
