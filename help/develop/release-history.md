@@ -1,6 +1,32 @@
 <!-- TITLE: Release History -->
 <!-- SUBTITLE: -->
 
+# 2021-12-16 Dev build 0.103.0
+
+## Latest Docker Images
+
+* Datagrok: 
+  *  `docker pull datagrok/datagrok:0.103.0`
+  *  `docker pull datagrok/datagrok:latest`
+  
+* [Docker-Compose](admin/docker-compose.md)
+
+## Addressed Issues
+
+* Skip test: ddt.calculated_column.metadata presence after formula application 
+* (Bug) Tree Map: After selecting column for "Size" property, column selectors on the viewer are duplicated 
+* Chem: Support filters from packages (WIP)
+* (Bug) Grid: categorical color-coding cannot be switched on/off without opening 'Edit' menu in some cases 
+* Push version using the version in package.json file 
+* (Bug) Formula Lines: "=" in the column names breaks the formula lines 
+* (Bug) NPM repositories: add registry property (WIP)
+* Actions panel function names fix 
+* Added build all batch script 
+* Fixed name conflict (opacity) 
+* SQLite closes #47: fixed output error 
+* (Bug) Formula Lines: Browser crashes om some analysis 
+
+
 # 2021-12-14 Dev build 0.102.0
 
 ## Latest Docker Images
