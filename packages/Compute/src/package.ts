@@ -55,7 +55,7 @@ export function OutliersSelection() {
   return new OutliersSelectionViewer();
 }
 
-//name: export To Excel
+//name: Export to Excel
 //input: funccall call
 //tags: export
 export function exportToExcel(call: DG.FuncCall) {
