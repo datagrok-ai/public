@@ -1,7 +1,7 @@
 // This file will be used from Web Workers, so there
 // should be no imports from Datagrok or OCL
 //@ts-ignore
-import rdkitLibVersion from './rdkitLibVersion';
+import rdkitLibVersion from './rdkit_lib_version';
 import {RdKitService} from './rdkit_service';
 import {convertToRDKit} from './chem_rgroup_analysis';
 import BitArray from "@datagrok-libraries/utils/src/bit-array";
