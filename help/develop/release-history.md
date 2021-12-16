@@ -1,6 +1,22 @@
 <!-- TITLE: Release History -->
 <!-- SUBTITLE: -->
 
+# 2021-12-16 Dev build 0.104.0
+
+## Latest Docker Images
+
+* Datagrok: 
+  *  `docker pull datagrok/datagrok:0.104.0`
+  *  `docker pull datagrok/datagrok:latest`
+  
+* [Docker-Compose](admin/docker-compose.md)
+
+## Addressed Issues
+
+* Push version: generate release notes for minor release 
+* ElasticSearch log4j vulnerability CVE-2021-44228 
+
+
 # 2021-12-16 Dev build 0.103.0
 
 ## Latest Docker Images
