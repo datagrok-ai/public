@@ -80,17 +80,26 @@ In the first line we evaluate an expression and get the function that correspond
 
 ### Conda environments
 
-Each script can be associated with the specific package configuration that it depends on. 
-[Conda](https://docs.conda.io/en/latest/) is used as the environment management system. Environment configuration 
-is stored in the default Conda format and can be 
+Each script can be given a specific environment configuration that it depends on.
+[Conda](https://docs.conda.io/en/latest/) is used as the environment management system.
+Conda environment is specified as a yaml configuration file or string. In Datagrok, this
+confinugration can be specified either right inside the script, or as part of the package.
+The benefit of using a Conda environment is that it gives a completely sandboxed, controlled
+area for running scripts, and only takes time once to be pre-created and later be re-used
+directly with no libraries resolution and installations delays. 
+
+#### Specify in a package
+
+Environment configuration is stored in the default Conda yaml format and can be 
 [exported](https://docs.conda.io/projects/conda/en/latest/user-guide/tasks/manage-environments.html#creating-an-environment-from-an-environment-yml-file) 
 or [created manually](https://docs.conda.io/projects/conda/en/latest/user-guide/tasks/manage-environments.html#create-env-file-manually).
 
-Configurations are stored in the same repository with the script, in the folder called `environments`
-located under the repository root. Here is an 
+Configurations are stored in the same repository with the script, in the folder called
+`environments` located under the repository root. Here is an 
 [example of such configuration](https://github.com/datagrok-ai/public/tree/master/environments)
-for the [Datagrok public repository](https://github.com/datagrok-ai/public). Also, a package can define
-its own configurations as well ([see examples](https://github.com/datagrok-ai/public/tree/master/packages/DemoScripts)).
+for the [Datagrok public repository](https://github.com/datagrok-ai/public). Also, a package
+can define its own configurations as well (
+[see examples](https://github.com/datagrok-ai/public/tree/master/packages/DemoScripts)).
 
 If the `#environment` tag in the script header is not specified, the script uses the configuration
 defined in the `default.yaml`.  
@@ -100,6 +109,66 @@ This is how to define the "chemprop" environment in the script header:
 ```
 # Environment: chemprop
 ```
+
+Datagrok identifies and resolves environments by their names. If an environment referred in
+a script wasn't previously used, it will first be created on the
+[Datagrok Compute Server](../admin/compute-vm.md). This may take up to several minutes.
+If it was used at least once, a previously created environment will be re-used with no delay to
+run the script. 
+
+#### Specify in-place
+
+Set an `environment` parameter of the script to a one-liner yaml specifying the standard
+Conda yaml config, but omitting its name and enclosing braces `{}`. For example, we need
+to use the following Conda yaml config:
+
+```yaml
+name: envtest01
+channels:
+  - conda-forge
+dependencies:
+  - python=3.8
+  - glom
+  - pip:
+    - requests
+```
+
+To use it in any script, specify it as follows:
+
+```python
+#name: EnvTestInline
+#environment: channels: [conda-forge], dependencies: [python=3.8, glom, {pip: [requests]}]
+#language: python
+#output: string result
+
+import re, requests
+from glom import glom
+import pandas as pd
+
+target = {'a': {'b': {'c': 'd'}}}
+result = glom(target, 'a.b.c')  # returns 'd'
+```
+
+When the script runs first time, the environment will be created on the Datagrok
+[Compute Server](compute-vm.md), which may take some time, up to several minutes. However,
+on the second run and onwards this environment will simply be reused. If the environment string
+is changed in this script to some other environment which was previously created in same way even
+in some other script, this environment will also be picked up and reused. These environments
+are handeled by Datagrok using MD5 hashes of their body strings.
+
+#### Common practice with Conda environments
+
+It is a [known](https://github.com/conda/conda/issues/8051#issuecomment-464199791)
+[issue](https://github.com/conda/conda/issues/8051#issuecomment-631862928)
+[of Conda](https://github.com/conda/conda/issues/8051#issuecomment-808789923) that it
+tends to sometimes take a large time to resolve (set up) an environment. Datagrok will interrupt
+Conda environment creation if it takes more than 5 minutes.
+
+While we haven't found a workaround to this feature of Conda, we can recommend a way forward if you
+encounter a timing problem with your Conda environment. It is often possible to find
+an equivalent set of packages from `pip` repositories. Using `pip` via Conda environments doesn't
+have timing issues, and we advise to use the `pip` section of Conda yaml spec to set up your
+libraries of interest. 
 
 ### Renv environments
 
