@@ -3,6 +3,16 @@ import * as ui from 'datagrok-api/ui';
 import * as DG from 'datagrok-api/dg';
 import {Peptides} from '../peptides';
 
+/**
+ * Peptide analysis widget.
+ *
+ * @export
+ * @param {DG.Column} col Aligned sequence column.
+ * @param {DG.TableView} view Working view.
+ * @param {DG.Grid} tableGrid Working table grid.
+ * @param {DG.DataFrame} currentDf Working table.
+ * @return {Promise<DG.Widget>} Widget containing peptide analysis.
+ */
 export async function analyzePeptidesWidget(
   col: DG.Column, view: DG.TableView, tableGrid: DG.Grid, currentDf: DG.DataFrame,
 ): Promise<DG.Widget> {
@@ -16,7 +26,7 @@ export async function analyzePeptidesWidget(
   let hist: DG.Viewer;
 
   const activityScalingMethod = ui.choiceInput(
-    'Activity scaling',
+    'Scaling',
     'none',
     ['none', 'lg', '-lg'],
     async (currentMethod: string) => {
@@ -54,7 +64,7 @@ export async function analyzePeptidesWidget(
     activityScalingMethod.fireChanged();
   };
   const activityColumnChoice = ui.columnInput(
-    'Activity column',
+    'Activity',
     currentDf,
     defaultColumn,
     activityScalingMethodState,

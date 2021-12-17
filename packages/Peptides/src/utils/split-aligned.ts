@@ -1,5 +1,13 @@
 import * as DG from 'datagrok-api/dg';
 
+/**
+ * Split aligned sequence string into separate parts containing amino acid residues.
+ *
+ * @export
+ * @param {DG.Column} peptideColumn Column containing aligned sequences.
+ * @param {boolean} [filter=true] Filter out columns with all the same residues.
+ * @return {[DG.DataFrame, number[]]} DataFrame containing split sequence and a list of invalid indexes.
+ */
 export function splitAlignedPeptides(peptideColumn: DG.Column, filter: boolean = true): [DG.DataFrame, number[]] {
   const splitPeptidesArray: string[][] = [];
   let currentSplitPeptide: string[];

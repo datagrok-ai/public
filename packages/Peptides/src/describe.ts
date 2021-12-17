@@ -53,6 +53,7 @@ const groupDescription: {[key: string]: {'description': string, 'aminoAcids': st
   }
 }*/
 
+//TODO: decomposition!
 export async function describe(
   df: DG.DataFrame,
   activityColumn: string,

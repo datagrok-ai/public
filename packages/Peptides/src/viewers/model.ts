@@ -3,6 +3,11 @@ import * as DG from 'datagrok-api/dg';
 import {describe} from '../describe';
 import {Subject} from 'rxjs';
 
+/**
+ * Model class for SAR viewers that retrieves and stores data.
+ *
+ * @class SARViewerModel
+ */
 class SARViewerModel {
   private viewerGrid: Subject<DG.Grid> = new Subject<DG.Grid>();
   private viewerVGrid: Subject<DG.Grid> = new Subject<DG.Grid>();
@@ -21,6 +26,11 @@ class SARViewerModel {
   private isUpdating = false;
   grouping: boolean;
 
+  /**
+   * Creates an instance of SARViewerModel.
+   * 
+   * @memberof SARViewerModel
+   */
   constructor() {
     this.dataFrame = null;
     this.activityColumn = null;
@@ -35,6 +45,18 @@ class SARViewerModel {
     this.groupMapping$ = this.groupMapping.asObservable();
   }
 
+  /**
+   * Updates data with using specified parameters.
+   *
+   * @param {DG.DataFrame} df Working table.
+   * @param {string} activityCol Activity column name.
+   * @param {string} activityScaling Activity scaling method.
+   * @param {DG.Grid} sourceGrid Working table grid.
+   * @param {boolean} twoColorMode Bidirectional analysis enabled.
+   * @param {(DG.BitSet | null)} initialBitset Initial bitset.
+   * @param {boolean} grouping Grouping enabled.
+   * @memberof SARViewerModel
+   */
   async updateData(
     df: DG.DataFrame,
     activityCol: string,
@@ -54,6 +76,11 @@ class SARViewerModel {
     await this.updateDefault();
   }
 
+  /**
+   * Update data using current parameters.
+   *
+   * @memberof SARViewerModel
+   */
   async updateDefault() {
     if (
       this.dataFrame && this.activityColumn && this.activityScaling &&

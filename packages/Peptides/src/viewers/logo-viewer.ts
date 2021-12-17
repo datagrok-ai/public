@@ -7,6 +7,13 @@ import * as logojs from 'logojs-react';
 import {splitAlignedPeptides} from '../utils/split-aligned';
 import {ChemPalette} from '../utils/chem-palette';
 
+/**
+ * Logo viewer.
+ *
+ * @export
+ * @class Logo
+ * @extends {DG.JsViewer}
+ */
 export class Logo extends DG.JsViewer {
   initialized: boolean;
   option: any;
@@ -18,6 +25,11 @@ export class Logo extends DG.JsViewer {
   LET_COLORS: Array<any>;
   target: DG.DataFrame | undefined | null;
 
+  /**
+   * Creates an instance of Logo.
+   * 
+   * @memberof Logo
+   */
   constructor() {
     super();
     this.initialized = false;
@@ -59,6 +71,11 @@ export class Logo extends DG.JsViewer {
     ];
   }
 
+  /**
+   * Initializer function.
+   *
+   * @memberof Logo
+   */
   init() {
     this.initialized = true;
     console.log('INIT');
@@ -69,6 +86,11 @@ export class Logo extends DG.JsViewer {
     this.root.style.maxHeight = '200px';
   }
 
+  /**
+   * Function to execute when the table is attached.
+   *
+   * @memberof Logo
+   */
   onTableAttached() {
     if (typeof this.dataFrame !== 'undefined') {
       if (!this.initialized) {
@@ -83,16 +105,32 @@ export class Logo extends DG.JsViewer {
     this.render();
   }
 
+  /**
+   * Function that is executed when the viewer is detached.
+   *
+   * @memberof Logo
+   */
   detach() {
     this.subs.forEach((sub) => sub.unsubscribe());
   }
 
+  /**
+   * Function that is executed when the viewer property is changed.
+   *
+   * @param {DG.Property} property
+   * @memberof Logo
+   */
   onPropertyChanged(property: DG.Property) {
     super.onPropertyChanged(property);
 
     this.render();
   }
 
+  /**
+   * Function that renders the viewer.
+   *
+   * @memberof Logo
+   */
   async render() {
     const bits = this.dataFrame!.selection;
     let selected = false;
@@ -113,11 +151,21 @@ export class Logo extends DG.JsViewer {
     }
   }
 
+  /**
+   * Create logo.
+   *
+   * @memberof Logo
+   */
   async findLogo() {
     this.getInfoFromDf();
     logojs.embedProteinLogo(this.root, {alphabet: this.LET_COLORS, ppm: this.ppm});
   }
 
+  /**
+   * Retrieves information for building logo from the dataframe.
+   *
+   * @memberof Logo
+   */
   getInfoFromDf() {
     let index: number = 0;
     this.ppm = [];

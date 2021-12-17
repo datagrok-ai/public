@@ -3,7 +3,24 @@ import * as DG from 'datagrok-api/dg';
 import {createPeptideSimilaritySpaceViewer} from './utils/peptide-similarity-space';
 import {addViewerToHeader} from './viewers/stacked-barchart-viewer';
 
+/**
+ * Peptides controller class.
+ *
+ * @export
+ * @class Peptides
+ */
 export class Peptides {
+  /**
+   * Class initializer
+   *
+   * @param {DG.Grid} tableGrid Working talbe grid.
+   * @param {DG.TableView} view Working view.
+   * @param {DG.DataFrame} currentDf Working table.
+   * @param {{[key: string]: string}} options SAR viewer options
+   * @param {DG.Column} col Aligned sequences column.
+   * @param {string} activityColumnChoice Activity column name.
+   * @memberof Peptides
+   */
   async init(
     tableGrid: DG.Grid,
     view: DG.TableView,
@@ -13,10 +30,10 @@ export class Peptides {
     activityColumnChoice: string,
   ) {
     for (let i = 0; i < tableGrid.columns.length; i++) {
-      const col = tableGrid.columns.byIndex(i);
-      if (col &&
-          col.name &&
-          col.column?.semType != 'aminoAcids'
+      const aarCol = tableGrid.columns.byIndex(i);
+      if (aarCol &&
+          aarCol.name &&
+          aarCol.column?.semType != 'aminoAcids'
       ) {
         //@ts-ignore
         tableGrid.columns.byIndex(i)?.visible = false;
