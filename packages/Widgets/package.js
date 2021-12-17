@@ -1,7 +1,6 @@
 class WidgetsPackage extends DG.Package {
 
-  //name: RadioButtonFilter
-  //friendly-name: Single Choice
+  //name: Single Choice
   //description: A filter that lets you select exactly one category
   //tags: filter
   //output: filter result
@@ -9,8 +8,7 @@ class WidgetsPackage extends DG.Package {
     return new RadioButtonFilter();
   }
 
-  //name: MultiValueFilter
-  //friendly-name: Multi Choice
+  //name: Multi Choice
   //description: A filter that works with columns of multi-value cells (such as lists of identifiers)
   //tags: filter
   //output: filter result

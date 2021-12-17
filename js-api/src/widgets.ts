@@ -254,8 +254,15 @@ export class Filter extends Widget {
     this.host = this.root;
   }
 
-  saveState(): any { console.log('save state'); }
-  applyState(state: any): void { console.log('apply state'); }
+  saveState(): any {
+    console.log('save state');
+    return { columnName: this.columnName };
+  }
+
+  applyState(state: any): void {
+    this.columnName = state.columnName;
+    console.log('apply state');
+  }
 
   /** Gets called when a data frame is attached.
    * @param {DataFrame} dataFrame*/
