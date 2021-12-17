@@ -55,3 +55,8 @@ export const LAB_HI_LIM_N = 'LBSTNRHI';
 export const VS_TEST = 'VSTEST';
 export const VS_RES_N = 'VSSTRESN';
 export const VS_DAY = 'VSDY';
+//mh
+export const MH_DECOD_TERM = 'MHDECOD';
+export const MH_CATEGORY = 'MHCAT';
+export const MH_BODY_SYSTEM = 'MHBODSYS';
+export const MH_TERM = 'MHTERM';
