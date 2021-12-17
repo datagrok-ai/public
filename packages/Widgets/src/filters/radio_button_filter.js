@@ -17,6 +17,7 @@ class RadioButtonFilter extends DG.Filter {
   attach(dataFrame) {
     this.dataFrame = dataFrame;
     this.column = DG.Utils.firstOrNull(this.dataFrame.columns.categorical);
+    this.columnName = this.column.name;
 
     this.subs.push(this.dataFrame.onRowsFiltering.subscribe((_) => this.applyFilter()));
 
