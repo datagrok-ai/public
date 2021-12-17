@@ -6,6 +6,13 @@ import $ from 'cash-dom';
 
 import {model} from './model';
 
+/**
+ * Structure-activity relationship viewer.
+ *
+ * @export
+ * @class SARViewer
+ * @extends {DG.JsViewer}
+ */
 export class SARViewer extends DG.JsViewer {
   protected viewerGrid: DG.Grid | null;
   protected sourceGrid: DG.Grid | null;
@@ -25,6 +32,12 @@ export class SARViewer extends DG.JsViewer {
   // protected pValueThreshold: number;
   // protected amountOfBestAARs: number;
   // duplicatesHandingMethod: string;
+
+  /**
+   * Creates an instance of SARViewer.
+   * 
+   * @memberof SARViewer
+   */
   constructor() {
     super();
 
@@ -51,6 +64,11 @@ export class SARViewer extends DG.JsViewer {
     this.sourceGrid = null;
   }
 
+  /**
+   * Initializes SARViewer.
+   *
+   * @memberof SARViewer
+   */
   init() {
     this._initialBitset = this.dataFrame!.filter.clone();
     this.initialized = true;
@@ -63,16 +81,32 @@ export class SARViewer extends DG.JsViewer {
     this.subs.push(model.groupMapping$.subscribe((data) => this.groupMapping = data));
   }
 
+  /**
+   * Function that is executed when the table is attached.
+   *
+   * @memberof SARViewer
+   */
   onTableAttached() {
     this.sourceGrid = this.view.grid;
     this.sourceGrid?.dataFrame?.setTag('dataType', 'peptides');
     this.render();
   }
 
+  /**
+   * Function that is executed when the viewer is detached from the table.
+   *
+   * @memberof SARViewer
+   */
   detach() {
     this.subs.forEach((sub) => sub.unsubscribe());
   }
 
+  /**
+   * Function that is executed when the property is changed.
+   *
+   * @param {DG.Property} property New property.
+   * @memberof SARViewer
+   */
   onPropertyChanged(property: DG.Property) {
     super.onPropertyChanged(property);
 
@@ -97,6 +131,12 @@ export class SARViewer extends DG.JsViewer {
     this.render();
   }
 
+  /**
+   * Filtering/selecting sequences with the specified amino acid residue at specified position.
+   *
+   * @private
+   * @memberof SARViewer
+   */
   private applyBitset() {
     if (
       this.dataFrame &&
@@ -133,6 +173,12 @@ export class SARViewer extends DG.JsViewer {
     }
   }
 
+  /**
+   * Selecting/filtering sequences according to the current bitset.
+   *
+   * @private
+   * @memberof SARViewer
+   */
   private sourceFilteringFunc() {
     if (this.filterMode) {
       this.dataFrame!.selection.setAll(false, false);
@@ -143,6 +189,13 @@ export class SARViewer extends DG.JsViewer {
     }
   }
 
+  /**
+   * Property panel accordion construction function.
+   *
+   * @private
+   * @param {DG.Accordion} accordion Accordion.
+   * @memberof SARViewer
+   */
   private accordionFunc(accordion: DG.Accordion) {
     if (accordion.context instanceof DG.RowGroup) {
       const originalDf: DG.DataFrame = DG.toJs(accordion.context.dataFrame);
@@ -203,7 +256,13 @@ export class SARViewer extends DG.JsViewer {
     }
   }
 
-  syncGridsFunc(sourceVertical: boolean) { //TODO: refactor
+  /**
+   * Function for viewer girds synchronization.
+   *
+   * @param {boolean} sourceVertical Event source is vertical viewer.
+   * @memberof SARViewer
+   */
+  syncGridsFunc(sourceVertical: boolean) { //TODO: refactor, move
     if (this.viewerGrid && this.viewerGrid.dataFrame && this.viewerVGrid && this.viewerVGrid.dataFrame) {
       if (sourceVertical) {
         const dfCell = this.viewerVGrid.dataFrame.currentCell;
@@ -245,8 +304,13 @@ export class SARViewer extends DG.JsViewer {
       }
     }
   }
-  // argument compute data can be used to just redraw grids.
-  // Probably iirelevant since mostly grids are updating themselves, and render is only used to update data.
+
+  /**
+   * Viewer render function.
+   *
+   * @param {boolean} [computeData=true] Recalculate data.
+   * @memberof SARViewer
+   */
   async render(computeData = true) {
     if (!this.initialized) {
       return;
@@ -282,8 +346,21 @@ export class SARViewer extends DG.JsViewer {
   }
 }
 
+/**
+ * Vertical structure activity relationship viewer.
+ *
+ * @export
+ * @class SARViewerVertical
+ * @extends {DG.JsViewer}
+ */
 export class SARViewerVertical extends DG.JsViewer {
   viewerVGrid: DG.Grid | null;
+
+  /**
+   * Creates an instance of SARViewerVertical.
+   * 
+   * @memberof SARViewerVertical
+   */
   constructor() {
     super();
 
@@ -294,6 +371,11 @@ export class SARViewerVertical extends DG.JsViewer {
     }));
   }
 
+  /**
+   * Viewer render function.
+   *
+   * @memberof SARViewerVertical
+   */
   render() {
     if (this.viewerVGrid) {
       $(this.root).empty();

@@ -5,6 +5,13 @@ import $ from 'cash-dom';
 import {model} from '../viewers/model';
 import {splitAlignedPeptides} from '../utils/split-aligned';
 
+/**
+ * Manual sequence alignment widget.
+ * 
+ * @param {DG.Column} alignedSequenceCol Aligned sequence column.
+ * @param {DG.DataFrame} currentDf Working table.
+ * @returns {DG.Widget} Widget for manual sequence alignment.
+ */
 export function manualAlignmentWidget(alignedSequenceCol: DG.Column, currentDf: DG.DataFrame) {
   const sequenceInput = ui.textInput('', alignedSequenceCol.get(currentDf.currentRowIdx));
   (sequenceInput.input as HTMLElement).style.height = '50px';
