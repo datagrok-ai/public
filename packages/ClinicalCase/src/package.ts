@@ -23,6 +23,7 @@ import { AE_END_DATE, AE_END_DAY, AE_SEVERITY, AE_START_DAY, AE_TERM, SUBJECT_ID
 import { STUDY_ID } from './columns-constants';
 import { checkMissingColumns, checkMissingDomains } from './views/utils';
 import { TreeMapView } from './views/tree-map-view';
+import { MedicalHistoryView } from './views/medical-history-view';
 
 export let _package = new DG.Package();
 
@@ -160,6 +161,7 @@ export async function clinicalCaseApp(): Promise<any> {
   views.push(<MatrixesView>addView(new MatrixesView('Correlations')));
   views.push(<TimeProfileView>addView(new TimeProfileView('Time Profile')));
   //views.push(<TreeMapView>addView(new TreeMapView('Tree map')));
+  views.push(<MedicalHistoryView>addView(new MedicalHistoryView('Medical History')));
 
   let aeBrowserView;
   if (study.domains.ae) {
