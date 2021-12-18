@@ -24,9 +24,11 @@ class RadioButtonFilter extends DG.Filter {
     this.render();
   }
 
+  get filterSummary() { return this.root.querySelector("input[type='radio']:checked").value; }
+
   detach() {
-    console.log('detached!');
-    this.subs.forEach((s) => s.unsubscribe());
+    super.detach();
+    console.log('radio button filter detached');
   }
 
   applyFilter() {

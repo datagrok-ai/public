@@ -7,6 +7,7 @@ import {ColorType, Type} from "./const";
 import * as React from "react";
 import * as rxjs from "rxjs";
 import {Rect} from "./grid";
+import $ from "cash-dom";
 
 declare let grok: any;
 declare let DG: any;
@@ -252,13 +253,24 @@ export class Filter extends Widget {
     this.indicator = ui.div([], 'd4-filter-indicator');
     this.controls = ui.div([], 'd4-flex-row');
     this.host = this.root;
+
+    $(this.indicator).hide();
   }
 
+  /** Override to indicate whether the filter actually filters something (most don't in the initial state).
+   * This is used to minimize the number of unnecessary computations. */
+  get isFiltering(): boolean { return true; }
+
+  /** Override to provide short filter summary that might be shown on viewers or in the property panel. */
+  get filterSummary(): string { return ''; }
+
+  /** Override to save filter state. */
   saveState(): any {
     console.log('save state');
     return { columnName: this.columnName };
   }
 
+  /** Override to load filter state. */
   applyState(state: any): void {
     this.columnName = state.columnName;
     console.log('apply state');
@@ -267,6 +279,13 @@ export class Filter extends Widget {
   /** Gets called when a data frame is attached.
    * @param {DataFrame} dataFrame*/
   attach(dataFrame: DataFrame): void {}
+
+  detach() {
+    super.detach();
+
+    if (this.isFiltering)
+      this.dataFrame?.rows?.requestFilter();
+  }
 }
 
 
