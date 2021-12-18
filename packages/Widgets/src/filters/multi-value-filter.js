@@ -19,8 +19,8 @@ class MultiValueFilter extends DG.Filter {
   }
 
   detach() {
-    console.log('detached!');
-    this.subs.forEach((s) => s.unsubscribe());
+    super.detach();
+    console.log('multi filter detached');
   }
 
   applyFilter() {
