@@ -868,10 +868,14 @@ export class Column {
     return api.grok_Column_ToList(this.dart);
   }
 
-  /** Returns all unique strings in a sorted order. Applicable to string column only.
-   * @returns {string[]} */
+  /** Returns all unique strings in a sorted order. Applicable to string column only. */
   get categories(): string[] {
     return api.grok_Column_Categories(this.dart);
+  }
+
+  /** Returns i-th category. Applicable to string column only. */
+  getCategory(categoryIndex: number): string {
+    return api.grok_Column_GetCategory(this.dart, categoryIndex);
   }
 
   /** Sets order of categories
@@ -891,17 +895,11 @@ export class Column {
   get valueComparer(): Comparer | null { return api.grok_Column_Get_ValueComparer(this.dart); }
   set valueComparer( cmp: Comparer | null) { api.grok_Column_Set_ValueComparer(this.dart, cmp); }
 
-  /** Column's minimum value. The result is cached.
-   * @returns {number} */
-  get min(): number {
-    return api.grok_Column_Min(this.dart);
-  }
+  /** Column's minimum value. The result is cached. */
+  get min(): number { return api.grok_Column_Min(this.dart); }
 
-  /** Column's maximum value. The result is cached.
-   * @returns {number} */
-  get max(): number {
-    return api.grok_Column_Max(this.dart);
-  }
+  /** Column's maximum value. The result is cached. */
+  get max(): number { return api.grok_Column_Max(this.dart); }
 
   /** Checks whether the column passes the specified [filter].
    * [filter] can be either specific data [type] such as 'int' or 'string', more broadly - 'numerical', or 'categorical', or null for any columns.
@@ -910,11 +908,8 @@ export class Column {
     return api.grok_Column_Matches(this.dart, filter);
   }
 
-  /** Basic descriptive statistics. The result is cached.
-   * @returns {Stats} */
-  get stats(): Stats {
-    return Stats.fromColumn(this);
-  }
+  /** Basic descriptive statistics. The result is cached. */
+  get stats(): Stats { return Stats.fromColumn(this); }
 
   /** An iterator over all values in this column. */
   * values() {
