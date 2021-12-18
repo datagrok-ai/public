@@ -6,6 +6,7 @@ import {Cell, Column, DataFrame} from "./dataframe";
 import {ColorType, Type} from "./const";
 import * as React from "react";
 import * as rxjs from "rxjs";
+import { filter } from 'rxjs/operators';
 import {Rect} from "./grid";
 import $ from "cash-dom";
 
@@ -238,8 +239,10 @@ export class Widget {
 }
 
 
-/** Base class for DataFrame-bound filtering controls */
-export class Filter extends Widget {
+/** Base class for DataFrame-bound filtering controls.
+ * Supports collaborative filtering by efficiently working together with
+ * other filters. */
+export abstract class Filter extends Widget {
   dataFrame: DataFrame | null;
   indicator: HTMLDivElement;
   controls: HTMLDivElement;
@@ -259,10 +262,16 @@ export class Filter extends Widget {
 
   /** Override to indicate whether the filter actually filters something (most don't in the initial state).
    * This is used to minimize the number of unnecessary computations. */
-  get isFiltering(): boolean { return true; }
+  abstract get isFiltering(): boolean;
 
   /** Override to provide short filter summary that might be shown on viewers or in the property panel. */
-  get filterSummary(): string { return ''; }
+  abstract get filterSummary(): string;
+
+  /** Override to filter the dataframe.
+   * The method should work with `this.dataFrame.filter`, should disregard
+   * false values (these are filtered out already by other filters), and should
+   * filter out corresponding indexes. */
+  abstract applyFilter(): void;
 
   /** Override to save filter state. */
   saveState(): any {
@@ -277,8 +286,18 @@ export class Filter extends Widget {
   }
 
   /** Gets called when a data frame is attached.
+   * Make sure to call super.attach(dataFrame) when overriding.
    * @param {DataFrame} dataFrame*/
-  attach(dataFrame: DataFrame): void {}
+  attach(dataFrame: DataFrame): void {
+    this.dataFrame = dataFrame;
+    this.subs.push(this.dataFrame.onRowsFiltering
+      .pipe(filter((_) => this.isFiltering))
+      .subscribe((_) => {
+        this.applyFilter();
+        this.dataFrame!.rows.filters.push(`${this.columnName}: ${this.filterSummary}`);
+      })
+    );
+  }
 
   detach() {
     super.detach();
@@ -1405,6 +1424,7 @@ export class ColumnComboBox extends DartWidget {
   /** Occurs when the value is changed. */
   get onChanged(): rxjs.Observable<String> { return this.onEvent('d4-column-box-column-changed'); }
 }
+
 
 /** Column legend for viewers */
 export class Legend extends DartWidget {
