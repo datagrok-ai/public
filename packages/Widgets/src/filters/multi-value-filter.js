@@ -8,6 +8,10 @@ class MultiValueFilter extends DG.Filter {
     this.subs = [];
   }
 
+  get isFiltering() { return true; }
+
+  get filterSummary() { return 'foo'; }
+
   attach(dataFrame) {
     this.dataFrame = dataFrame;
     this.column = this.dataFrame.columns.byIndex(0);
