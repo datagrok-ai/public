@@ -1,7 +1,7 @@
 import {Balloon} from './widgets';
 import * as rxjs from 'rxjs';
 import {toDart, toJs} from './wrappers';
-import { Cell } from './dataframe';
+import {Cell, Row} from './dataframe';
 import $ from "cash-dom";
 
 let api = <any>window;
@@ -27,6 +27,42 @@ export class Utils {
 }
 
 
+/** A proxy to a Dart List<T>. */
+export class DartList<T> implements Iterable<T> {
+  dart: any;
+
+  /** Creates a proxy to an existing Dart list. */
+  static fromDart<T>(dart: any): DartList<T> {
+    let list = new DartList();
+    list.dart = dart;
+    return list as DartList<T>;
+  }
+
+  /** Returns the number of objects in this list. */
+  get length(): number { return api.grok_List_Get_Length(this.dart); }
+
+  /** Removes all objects from this list; the length of the list becomes zero. */
+  clear() { api.grok_List_Clear(this.dart); }
+
+  /** Sorts this list. */
+  sort() { api.grok_List_Sort(this.dart); }
+
+  /** Adds [value] to the end of this list, extending the length by one. */
+  push(value: T) { api.grok_List_Add(this.dart, value); }
+
+  /** Returns the object at the given [index] in the list. */
+  get(index: number): T { return api.grok_List_Get(this.dart, index); }
+
+  /** Sets the value at the given [index] in the list to [value]. */
+  set(index: number, value: T): T { return api.grok_List_Get(this.dart, index, value); }
+
+  * [Symbol.iterator](): Iterator<T> {
+    for (let i = 0; i < this.length; i++)
+      yield this.get(i);
+  }
+}
+
+
 /** Html-related utilities */
 export namespace HtmlUtils {
 
@@ -39,7 +75,6 @@ export namespace HtmlUtils {
 /**
  * Proxies a Dart Map, API-compliant to ES 2015+
  */
-
 export const MapProxy = new Proxy(class {
     dart: any;
     objectName: string | null;

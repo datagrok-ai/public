@@ -14,7 +14,7 @@ import {
 import {__obs, EventData, MapChangeArgs, observeStream} from "./events";
 import {toDart, toJs} from "./wrappers";
 import {SIMILARITY_METRIC} from "./const";
-import {MapProxy, _getIterator, _toIterable, _toJson} from "./utils";
+import {MapProxy, _getIterator, _toIterable, _toJson, DartList} from "./utils";
 import {Observable}  from "rxjs";
 import {filter} from "rxjs/operators";
 import {Widget} from "./widgets";
@@ -1225,7 +1225,7 @@ export class RowList {
   }
 
   /** List of textual descriptions of currently applied filters */
-  get filters(): string[] { return api.grok_RowList_Get_Filters(this.dart); }
+  get filters(): DartList<string> { return DartList.fromDart(api.grok_RowList_Get_Filters(this.dart)); }
 
   /** Removes specified rows
    * @param {number} idx
