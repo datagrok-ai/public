@@ -778,7 +778,9 @@ export class Column {
     return this;
   }
 
-  /** Returns the raw buffer containing data.
+  /** FOR EXPERT USE ONLY!
+   *
+   * Returns the raw buffer containing data.
    * Sample: {@link https://public.datagrok.ai/js/samples/data-frame/performance/access}
    * Return type depends on the column type:
    * {Int32Array} for ints, {@link INT_NULL} represents null.
@@ -789,7 +791,15 @@ export class Column {
    * {Uint32Array} bit array.
    * @returns {Array} */
   getRawData(): Int32Array | Float32Array | Float64Array | Uint32Array {
-    return api.grok_Column_GetRawData(this.dart);
+    // a hack that extracts the real underlying array from the Dart Column
+    const handle = api.grok_Column_GetRawData(this.dart);
+    const TypedArray = Object.getPrototypeOf(Uint8Array);
+    for (const k of Object.keys(handle)) {
+      const v = handle[k];
+      if (v instanceof TypedArray)
+        return v;
+    }
+    return api.grok_Column_GetRawDataDartium(this.dart);
   }
 
   setRawData(rawData: Int32Array | Float32Array | Float64Array | Uint32Array, notify: boolean = true): void {
