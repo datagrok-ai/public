@@ -8,7 +8,7 @@ let api = <any>window;
 
 export class Utils {
   /** @param {Iterable} iterable*/
-  static firstOrNull(iterable: Iterable<any>) {
+  static firstOrNull<T>(iterable: Iterable<T>): T | null {
     let first = iterable[Symbol.iterator]().next();
     return first.done ? null : first.value;
   }
