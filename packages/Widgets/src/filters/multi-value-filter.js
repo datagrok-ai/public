@@ -8,16 +8,13 @@ class MultiValueFilter extends DG.Filter {
     this.subs = [];
   }
 
-  get isFiltering() { return true; }
+  get isFiltering() { return this.root.querySelectorAll("input[type='checkbox']:not(:checked)"); }
 
-  get filterSummary() { return 'foo'; }
+  get filterSummary() { return `${this.getSelectedInputs().length}`; }
 
   attach(dataFrame) {
     this.dataFrame = dataFrame;
     this.column = this.dataFrame.columns.byIndex(0);
-    //this.column = DG.Utils.firstOrNull(this.dataFrame.columns.byTags({ 'multi-value-separator' : null }));
-
-    this.subs.push(this.dataFrame.onRowsFiltering.subscribe((_) => this.applyFilter()));
 
     this.render();
   }
@@ -27,10 +24,15 @@ class MultiValueFilter extends DG.Filter {
     console.log('multi filter detached');
   }
 
+  /** @return {NodeListOf<HTMLInputElement>} */
+  getSelectedInputs() {
+    return this.root.querySelectorAll("input[type='checkbox']:checked");
+  }
+
   applyFilter() {
     let separator = ' | ';
     let checkedValues = new Set();
-    let checkedNodes = this.root.querySelectorAll("input[type='checkbox']:checked");
+    let checkedNodes = this.getSelectedInputs();
     for (let i = 0; i < checkedNodes.length; i++) {
       let check = checkedNodes[i];
       checkedValues.add(check.getAttribute('name'));

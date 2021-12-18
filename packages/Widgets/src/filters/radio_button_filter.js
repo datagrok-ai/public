@@ -16,14 +16,17 @@ class RadioButtonFilter extends DG.Filter {
 
   get isFiltering() { return true; }
 
-  get filterSummary() { return this.root.querySelector("input[type='radio']:checked").value; }
+  get filterSummary() { return this.column.getCategory(this.checkedCategoryId); }
+
+  get checkedCategoryId() {
+    let checkedInput = this.root.querySelector("input[type='radio']:checked");
+    return parseInt(checkedInput.getAttribute('data-category-id'));
+  }
 
   attach(dataFrame) {
     super.attach(dataFrame);
     this.column = DG.Utils.firstOrNull(this.dataFrame.columns.categorical);
     this.columnName = this.column.name;
-
-    //this.subs.push(this.dataFrame.onRowsFiltering.subscribe((_) => this.applyFilter()));
 
     this.render();
   }
@@ -35,8 +38,7 @@ class RadioButtonFilter extends DG.Filter {
 
   applyFilter() {
     let indexes = this.column.getRawData();
-    let checked = this.root.querySelector("input[type='radio']:checked");
-    let categoryIdx = parseInt(checked.getAttribute('data-category-id'));
+    let categoryIdx = this.checkedCategoryId;
     const filter = this.dataFrame.filter;
     const rowCount = this.dataFrame.rowCount;
 
