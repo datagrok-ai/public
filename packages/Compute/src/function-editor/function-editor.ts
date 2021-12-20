@@ -3,7 +3,7 @@ import * as ui from 'datagrok-api/ui';
 import * as DG from 'datagrok-api/dg';
 import CodeMirror from 'codemirror';
 import 'codemirror/lib/codemirror.css';
-import {_package} from '../package';
+import {BehaviorSubject} from 'rxjs';
 
 const enum FUNC_PROPS_FIELDS {
   NAME = 'name',
@@ -33,7 +33,7 @@ const functionPropsLabels = (key: FUNC_PROPS_FIELDS) => {
   }
 };
 
-const functionPropsCode = (key: FUNC_PROPS_FIELDS) => {
+const functionPropsCode = (key: string) => {
   switch (key) {
   case FUNC_PROPS_FIELDS.NAME: return 'name';
   case FUNC_PROPS_FIELDS.DESCRIPTION: return 'description';
@@ -45,19 +45,7 @@ const functionPropsCode = (key: FUNC_PROPS_FIELDS) => {
   case FUNC_PROPS_FIELDS.ENVIRONMENT: return 'environment';
   case FUNC_PROPS_FIELDS.TAGS: return 'tags';
   }
-};
-
-type FuncPropsState = {
-  [FUNC_PROPS_FIELDS.NAME]: string | null,
-  [FUNC_PROPS_FIELDS.DESCRIPTION]: string | null,
-  [FUNC_PROPS_FIELDS.LANGUAGE]: string | null,
-  [FUNC_PROPS_FIELDS.HELP_URL]: string | null,
-  [FUNC_PROPS_FIELDS.REFERENCE]: string | null,
-  [FUNC_PROPS_FIELDS.LOGIN]: string | null,
-  [FUNC_PROPS_FIELDS.SAMPLE]: string | null,
-  [FUNC_PROPS_FIELDS.ENVIRONMENT]: string | null,
-  [FUNC_PROPS_FIELDS.TAGS]: string | null,
-}
+}; ;
 
 const funcParamTypes = [
   DG.TYPE.BOOL,
@@ -85,15 +73,19 @@ const enum DIRECTION {
   OUTPUT= 'output',
 }
 
-const functionParamsLabels = (key: FUNC_PARAM_FIELDS) => {
-  switch (key) {
-  case FUNC_PARAM_FIELDS.DIRECTION: return 'Direction';
-  case FUNC_PARAM_FIELDS.TYPE: return 'Type';
-  case FUNC_PARAM_FIELDS.NAME: return 'Name';
-  case FUNC_PARAM_FIELDS.DEFAULT_VALUE: return 'Default value';
-  case FUNC_PARAM_FIELDS.DESCRIPTION: return 'Description';
-  case FUNC_PARAM_FIELDS.CATEGORY: return 'Category';
-  }
+const functionParamsMapping = {
+  [FUNC_PARAM_FIELDS.DIRECTION]: 'Direction',
+  [FUNC_PARAM_FIELDS.TYPE]: 'Type',
+  [FUNC_PARAM_FIELDS.NAME]: 'Name',
+  [FUNC_PARAM_FIELDS.DEFAULT_VALUE]: 'Default value',
+  [FUNC_PARAM_FIELDS.DESCRIPTION]: 'Description',
+  [FUNC_PARAM_FIELDS.CATEGORY]: 'Category',
+  'Direction': FUNC_PARAM_FIELDS.DIRECTION,
+  'Type': FUNC_PARAM_FIELDS.TYPE,
+  'Name': FUNC_PARAM_FIELDS.NAME,
+  'Default value': FUNC_PARAM_FIELDS.DEFAULT_VALUE,
+  'Description': FUNC_PARAM_FIELDS.DESCRIPTION,
+  'Category': FUNC_PARAM_FIELDS.CATEGORY,
 };
 
 enum COMMON_TAG_NAME {
@@ -106,7 +98,6 @@ enum COMMON_TAG_NAME {
 
 enum OPTIONAL_TAG_NAME {
   COLUMNS = 'columns',
-  CATEGORICAL = 'categorical',
   TYPE = 'type',
   FORMAT = 'format',
   ALLOW_NULLS = 'allowNulls',
@@ -118,7 +109,7 @@ enum OPTIONAL_TAG_NAME {
   MAX = 'max',
 }
 
-type DF_TAG_NAME = COMMON_TAG_NAME | OPTIONAL_TAG_NAME.COLUMNS | OPTIONAL_TAG_NAME.CATEGORICAL;
+type DF_TAG_NAME = COMMON_TAG_NAME | OPTIONAL_TAG_NAME.COLUMNS;
 type COLUMN_TAG_NAME = COMMON_TAG_NAME |
                         OPTIONAL_TAG_NAME.COLUMNS | OPTIONAL_TAG_NAME.FORMAT |
                         OPTIONAL_TAG_NAME.ALLOW_NULLS | OPTIONAL_TAG_NAME.ACTION | OPTIONAL_TAG_NAME.SEM_TYPE
@@ -132,9 +123,8 @@ const COMMON_TAG_NAMES = [...Object.values(COMMON_TAG_NAME)];
 const DF_TAG_NAMES = [
   ...Object.values(COMMON_TAG_NAME),
   OPTIONAL_TAG_NAME.COLUMNS,
-  OPTIONAL_TAG_NAME.CATEGORICAL,
   OPTIONAL_TAG_NAME.ACTION];
-const COLUMN_TAG_NAMES = [...Object.values(COMMON_TAG_NAME), OPTIONAL_TAG_NAME.COLUMNS, OPTIONAL_TAG_NAME.FORMAT,
+const COLUMN_TAG_NAMES = [...Object.values(COMMON_TAG_NAME), OPTIONAL_TAG_NAME.TYPE, OPTIONAL_TAG_NAME.FORMAT,
   OPTIONAL_TAG_NAME.ALLOW_NULLS, OPTIONAL_TAG_NAME.ACTION, OPTIONAL_TAG_NAME.SEM_TYPE];
 const STRING_TAG_NAMES = [...Object.values(COMMON_TAG_NAME), OPTIONAL_TAG_NAME.CHOICES, OPTIONAL_TAG_NAME.SUGGESTIONS];
 const INT_TAG_NAMES = [...Object.values(COMMON_TAG_NAME), OPTIONAL_TAG_NAME.MIN, OPTIONAL_TAG_NAME.MAX];
@@ -148,11 +138,11 @@ type FuncParamBase = {
 
 type FuncParam =
   FuncParamBase & {
-  type: DG.TYPE.BOOL | DG.TYPE.DATE_TIME | DG.TYPE.FLOAT | DG.TYPE.GRAPHICS | DG.TYPE.INT
+  type: DG.TYPE.BOOL | DG.TYPE.DATE_TIME | DG.TYPE.FLOAT | DG.TYPE.GRAPHICS
   options?: {tag: COMMON_TAG_NAME, value: string}[]
 } | FuncParamBase & {
   type: DG.TYPE.INT
-  options?: {tag: COMMON_TAG_NAME, value: string}[]
+  options?: {tag: INT_TAG_NAME, value: string}[]
 } | FuncParamBase & {
   type: DG.TYPE.DATA_FRAME,
   options?: {tag: DF_TAG_NAME, value: string}[]
@@ -164,57 +154,103 @@ type FuncParam =
   options?: {tag: STRING_TAG_NAME, value: string}[]
 }
 
+const optionTags = ((param: DG.Property) => {
+  switch (param.propertyType) {
+  case DG.TYPE.INT:
+    return INT_TAG_NAMES;
+  case DG.TYPE.DATA_FRAME:
+    return DF_TAG_NAMES;
+  case DG.TYPE.COLUMN_LIST:
+  case DG.TYPE.COLUMN:
+    return COLUMN_TAG_NAMES;
+  case DG.TYPE.STRING:
+    return STRING_TAG_NAMES;
+  default:
+    return COMMON_TAG_NAMES;
+  }
+});
+
 const generateParamLine = (param: DG.Property, direction: string) => {
-  const optionTags = (() => {
-    switch (param.propertyType) {
-    case DG.TYPE.INT:
-      return INT_TAG_NAMES;
-    case DG.TYPE.DATA_FRAME:
-      return DF_TAG_NAMES;
-    case DG.TYPE.COLUMN_LIST:
-    case DG.TYPE.COLUMN:
-      return COLUMN_TAG_NAMES;
-    case DG.TYPE.STRING:
-      return STRING_TAG_NAMES;
-    default:
-      return COMMON_TAG_NAMES;
-    }
-  })();
-  const optionTagsPreview = optionTags
+  const optionTagsPreview = optionTags(param)
     .map((tag) => {
-      // console.log(param.name, tag, JSON.stringify(param.options), param.options[tag]);
       return {tag: tag, val: param.options[tag]};
     })
     .filter((value) => !!value.val)
-    .map(({tag, val}) => `${tag}:${val}`)
+    .map(({tag, val}) => `${tag}: ${val}`)
+    .concat(...param.category ? [`category: ${param.category}`]:[])
     .join('; ');
   const result =`#${direction}: ${param.propertyType} ${param.name? `${param.name} ` : ''}${param.defaultValue ? `= ${param.defaultValue} ` : ''}${!!optionTagsPreview.length ? `{${optionTagsPreview}} ` : ''}${param.description ? `[${param.description}]` : ''}\n`;
   return result;
 };
 
 export function _functionEditor(functionCode: string) {
-  const inputScript = DG.Script.create(functionCode);
+  const inputScriptCopy = DG.Script.create(functionCode);
 
   const editorView = DG.View.create();
   editorView.name = 'Function Editor';
 
-  const functionPropsCopy: FuncPropsState = {
-    [FUNC_PROPS_FIELDS.NAME]: inputScript.name || null,
-    [FUNC_PROPS_FIELDS.DESCRIPTION]: inputScript.description || null,
-    [FUNC_PROPS_FIELDS.LANGUAGE]: inputScript.language || null,
-    [FUNC_PROPS_FIELDS.HELP_URL]: inputScript.helpUrl || null,
-    [FUNC_PROPS_FIELDS.REFERENCE]: inputScript.reference || null,
-    [FUNC_PROPS_FIELDS.LOGIN]: inputScript.author?.login || null,
-    [FUNC_PROPS_FIELDS.SAMPLE]: inputScript.sample || null,
-    [FUNC_PROPS_FIELDS.ENVIRONMENT]: inputScript.environment || null,
-    [FUNC_PROPS_FIELDS.TAGS]: inputScript.tags?.join(' ') || null,
+  const updateFuncPropValue = (param: DG.Property, propName: string, v: any) => {
+    (inputScriptCopy as any)[propName] = v;
+    refreshPreview();
+  };
+
+  const functionProps = {
+    [functionPropsLabels(FUNC_PROPS_FIELDS.NAME)]: DG.Property.create(
+      FUNC_PROPS_FIELDS.NAME, DG.TYPE.STRING, (x: any) => x[FUNC_PROPS_FIELDS.NAME],
+      (x: any, v) => updateFuncPropValue(x, FUNC_PROPS_FIELDS.NAME, v),
+      '',
+    ),
+    [functionPropsLabels(FUNC_PROPS_FIELDS.DESCRIPTION)]: DG.Property.create(
+      FUNC_PROPS_FIELDS.DESCRIPTION, DG.TYPE.STRING, (x: any) => x[FUNC_PROPS_FIELDS.DESCRIPTION],
+      (x: any, v) => updateFuncPropValue(x, FUNC_PROPS_FIELDS.DESCRIPTION, v),
+      '',
+    ),
+    [functionPropsLabels(FUNC_PROPS_FIELDS.LANGUAGE)]: (() => {
+      const temp = DG.Property.create(
+        FUNC_PROPS_FIELDS.LANGUAGE, DG.TYPE.STRING, (x: any) => x[FUNC_PROPS_FIELDS.LANGUAGE],
+        (x: any, v) => updateFuncPropValue(x, FUNC_PROPS_FIELDS.LANGUAGE, v),
+        '');
+      temp.fromOptions({choices: ['javascript', 'python', 'r', 'julia', 'octave', 'nodejs', 'grok']});
+      return temp;
+    })(),
+    [functionPropsLabels(FUNC_PROPS_FIELDS.HELP_URL)]: DG.Property.create(
+      FUNC_PROPS_FIELDS.HELP_URL, DG.TYPE.STRING, (x: any) => x[FUNC_PROPS_FIELDS.HELP_URL],
+      (x: any, v) => updateFuncPropValue(x, FUNC_PROPS_FIELDS.HELP_URL, v),
+      '',
+    ),
+    [functionPropsLabels(FUNC_PROPS_FIELDS.REFERENCE)]: DG.Property.create(
+      FUNC_PROPS_FIELDS.REFERENCE, DG.TYPE.STRING, (x: any) => x[FUNC_PROPS_FIELDS.REFERENCE],
+      (x: any, v) => updateFuncPropValue(x, FUNC_PROPS_FIELDS.REFERENCE, v),
+      '',
+    ),
+    [functionPropsLabels(FUNC_PROPS_FIELDS.LOGIN)]: DG.Property.create(
+      FUNC_PROPS_FIELDS.LOGIN, DG.TYPE.STRING, (x: any) => x[FUNC_PROPS_FIELDS.LOGIN],
+      (x: any, v) => updateFuncPropValue(x, FUNC_PROPS_FIELDS.LOGIN, v),
+      '',
+    ),
+    [functionPropsLabels(FUNC_PROPS_FIELDS.SAMPLE)]: DG.Property.create(
+      FUNC_PROPS_FIELDS.SAMPLE, DG.TYPE.STRING, (x: any) => x[FUNC_PROPS_FIELDS.SAMPLE],
+      (x: any, v) => updateFuncPropValue(x, FUNC_PROPS_FIELDS.SAMPLE, v),
+      '',
+    ),
+    [functionPropsLabels(FUNC_PROPS_FIELDS.ENVIRONMENT)]: DG.Property.create(
+      FUNC_PROPS_FIELDS.ENVIRONMENT, DG.TYPE.STRING, (x: any) => x[FUNC_PROPS_FIELDS.ENVIRONMENT],
+      (x: any, v) => updateFuncPropValue(x, FUNC_PROPS_FIELDS.ENVIRONMENT, v),
+      '',
+    ),
+    [functionPropsLabels(FUNC_PROPS_FIELDS.TAGS)]: DG.Property.create(
+      FUNC_PROPS_FIELDS.TAGS, DG.TYPE.LIST,
+      (x: any) => x[FUNC_PROPS_FIELDS.TAGS],
+      (x: any, v) => updateFuncPropValue(x, FUNC_PROPS_FIELDS.TAGS, v),
+      [],
+    ),
   };
 
   const getNewProps = () => {
     const newProps = [];
-    for (const key of Object.keys(functionPropsCopy)) {
-      if (functionPropsCopy[key as keyof FuncPropsState] == null) {
-        newProps.push(key);
+    for (const prop of Object.values(functionProps)) {
+      if (!prop.get(inputScriptCopy) && !(inputScriptCopy as any)[prop.name]) {
+        newProps.push(prop);
       }
     }
     return newProps;
@@ -222,20 +258,40 @@ export function _functionEditor(functionCode: string) {
 
   let addButton = ui.div();
   let propsForm = ui.div();
-  let inputs = ui.div();
+  let inputs: HTMLElement = ui.div();
+
+
+  const functionPropsInput = (prop: DG.Property) => {
+    switch (prop.name) {
+    case FUNC_PROPS_FIELDS.LANGUAGE:
+      return ui.choiceInput(
+        functionPropsLabels(prop.name as FUNC_PROPS_FIELDS),
+        prop.get(inputScriptCopy) || (inputScriptCopy as any)[prop.name],
+        prop.choices,
+      );
+    // case FUNC_PROPS_FIELDS.TAGS:
+    //   return ui.multiChoiceInput(
+    //     functionPropsLabels(prop.name as FUNC_PROPS_FIELDS),
+    //     prop.get(inputScriptCopy) || (inputScriptCopy as any)[prop.name],
+    //     prop.choices,
+    //   );
+    default:
+      return ui.stringInput(functionPropsLabels(prop.name as FUNC_PROPS_FIELDS),
+        prop.get(inputScriptCopy) || (inputScriptCopy as any)[prop.name]);
+    }
+  };
 
   const renderAddPropButton = () => {
     if (!getNewProps().length) return ui.div();
 
-    const onItemClick = (item: string) => {
-      functionPropsCopy[item as keyof FuncPropsState] = '';
+    const onItemClick = (item: DG.Property) => {
+      item.set(inputScriptCopy, ' ');
       const newInputs = ui.inputs(
-        Object.keys(functionPropsCopy)
-          .filter((prop) => functionPropsCopy[prop as keyof FuncPropsState] !== null)
+        Object.values(functionProps)
+          .filter((prop) => !!prop.get(inputScriptCopy) || !!(inputScriptCopy as any)[prop.name])
           .map((prop) => addFullWidthInput(
-            ui.stringInput(
-              functionPropsLabels(prop as keyof FuncPropsState),
-              functionPropsCopy[prop as keyof FuncPropsState] || ''), prop,
+            functionPropsInput(prop),
+            prop,
           )),
       );
       inputs.replaceWith(newInputs);
@@ -245,9 +301,10 @@ export function _functionEditor(functionCode: string) {
       addButton.replaceWith(newAddButton);
       addButton = newAddButton;
     };
-    const menu = DG.Menu.popup().items(getNewProps().map(
-      (propName) => functionPropsLabels(propName as FUNC_PROPS_FIELDS),
-    ), onItemClick);
+    const menu = DG.Menu.popup();
+    getNewProps().forEach(
+      (prop) => menu.item(functionPropsLabels(prop.name as FUNC_PROPS_FIELDS), () => onItemClick(prop)),
+    );
 
     const shevron = ui.iconFA('chevron-down');
     const button = ui.button([ui.icons.add(()=>{}), shevron], () => {
@@ -259,15 +316,15 @@ export function _functionEditor(functionCode: string) {
     return div;
   };
 
-  const addFullWidthInput = (input: DG.InputBase, propName: string) => {
+  const addFullWidthInput = (input: DG.InputBase, prop: DG.Property) => {
     (input.root.lastChild as HTMLElement).style.cssText+='width: 400px; max-width: inherit;';
     input.onInput(() => {
-      functionPropsCopy[propName as keyof typeof functionPropsCopy] = input.stringValue;
+      prop.set(inputScriptCopy, input.stringValue);
       refreshPreview();
     });
     (input.root as HTMLInputElement).placeholder = 'Enter your value...';
     input.root.append(ui.button(ui.icons.delete(()=>{}), () => {
-      functionPropsCopy[propName as keyof typeof functionPropsCopy] = null;
+      prop.set(inputScriptCopy, prop.defaultValue);
       refreshPreview();
       input.root.remove();
       const newAddButton = renderAddPropButton();
@@ -275,7 +332,7 @@ export function _functionEditor(functionCode: string) {
       addButton = newAddButton;
     }));
     (input.root.lastChild as HTMLElement).style.cssText+='display: inline-flex; justify-content: center; flex-direction: column';
-    if (obligatoryFuncProps.includes(propName)) {
+    if (obligatoryFuncProps.includes(prop.name)) {
       input.root.style.cssText += 'padding-right: 35.375px';
       (input.root.lastChild as HTMLElement).style.cssText+='display: none;';
     }
@@ -286,12 +343,11 @@ export function _functionEditor(functionCode: string) {
     addButton = renderAddPropButton();
 
     inputs = ui.inputs(
-      Object.keys(functionPropsCopy)
-        .filter((prop) => !!functionPropsCopy[prop as keyof FuncPropsState])
+      Object.values(functionProps)
+        .filter((prop) => !!prop.get(inputScriptCopy) || !!(inputScriptCopy as any)[prop.name])
         .map((prop) => addFullWidthInput(
-          ui.stringInput(
-            functionPropsLabels(prop as keyof FuncPropsState),
-            functionPropsCopy[prop as keyof FuncPropsState] || ''), prop,
+          functionPropsInput(prop),
+          prop,
         )),
     );
     return ui.panel([
@@ -302,147 +358,132 @@ export function _functionEditor(functionCode: string) {
     ]);
   };
 
-  let functionInputParamsCopy = inputScript.inputs;
-  let functionOutputParamsCopy = inputScript.outputs;
+  const functionInputParamsCopy = inputScriptCopy.inputs;
+  const functionOutputParamsCopy = inputScriptCopy.outputs;
 
-  const iconsByTypes = (type: DG.TYPE) => {
-    switch (type) {
-    case DG.TYPE.BOOL: return ui.iconImage(DG.TYPE.BOOL, `${_package.webRoot}/icons/Bool.svg`);
-    case DG.TYPE.COLUMN_LIST: return ui.iconImage(DG.TYPE.BOOL, `${_package.webRoot}/icons/Column-list.svg`);
-    case DG.TYPE.COLUMN: return ui.iconImage(DG.TYPE.COLUMN, `${_package.webRoot}/icons/Column.svg`);
-    case DG.TYPE.DATA_FRAME: return ui.iconImage(DG.TYPE.DATA_FRAME, `${_package.webRoot}/icons/Dataframe.svg`);
-    case DG.TYPE.DATE_TIME: return ui.iconImage(DG.TYPE.COLUMN, `${_package.webRoot}/icons/Datetime.svg`);
-    case DG.TYPE.FLOAT: return ui.iconImage(DG.TYPE.FLOAT, `${_package.webRoot}/icons/Double.svg`);
-    case DG.TYPE.GRAPHICS: return ui.iconImage(DG.TYPE.GRAPHICS, `${_package.webRoot}/icons/Graphics.svg`);
-    case DG.TYPE.INT: return ui.iconImage(DG.TYPE.FLOAT, `${_package.webRoot}/icons/Int.svg`);
-    case DG.TYPE.STRING: return ui.iconImage(DG.TYPE.STRING, `${_package.webRoot}/icons/String.svg`);
-    default: return ui.iconImage('Blob', `${_package.webRoot}/icons/Blob.svg`);
+  const onFunctionParamClick = (paramName: string, direction: DIRECTION) => {
+    let paramIndex: number;
+    let param: DG.Property;
+
+    if (direction === DIRECTION.INPUT) {
+      paramIndex = functionInputParamsCopy.findIndex((input) => input.name === paramName);
+      param = functionInputParamsCopy[paramIndex];
+    } else {
+      paramIndex= functionOutputParamsCopy.findIndex((input) => input.name === paramName);
+      param = functionOutputParamsCopy[paramIndex];
     }
+
+    if (!param) return ui.div('');
+
+    const result = ui.input.form(param, optionalFuncParamsProps.filter(
+      (prop) => optionTags(param).includes(prop.name as OPTIONAL_TAG_NAME)),
+    );
+
+    grok.shell.o = ui.divV([ui.h1(`Param: ${paramName}`), ui.block75([result])]);
   };
 
-  const onFunctionParamClick = (paramName: string, card: HTMLElement, direction: DIRECTION) => {
-    const acc = ui.accordion();
-    acc.root.style.cssText += 'min-width: 400px';
-
-    acc.addPane('General', ()=> {
-      let paramIndex: number;
-      let param: DG.Property;
-
-      if (direction === DIRECTION.INPUT) {
-        paramIndex = functionInputParamsCopy.findIndex((input) => input.name === paramName);
-        param = functionInputParamsCopy[paramIndex];
-      } else {
-        paramIndex= functionOutputParamsCopy.findIndex((input) => input.name === paramName);
-        param = functionOutputParamsCopy[paramIndex];
-      }
-
-      if (!param) return ui.div('');
-
-      const updateCard = (propName: string, v: any) => {
-        (param as any)[propName] = v;
-        const newCard = renderCard(param, direction);
-        card.replaceWith(newCard);
-        card = newCard;
-        refreshPreview();
-      };
-
-      const funcParams: DG.Property[] = [
-        (() => {
-          const temp = DG.Property.create(FUNC_PARAM_FIELDS.DIRECTION, DG.TYPE.STRING, (x: any) => x[FUNC_PARAM_FIELDS.DIRECTION], (x: any, v) => updateCard(FUNC_PARAM_FIELDS.DIRECTION, v), '');
-          temp.options({choices: ['input', 'output']});
-          return temp;
-        })(),
-        (() => {
-          const temp = DG.Property.create(FUNC_PARAM_FIELDS.TYPE, DG.TYPE.STRING, (x: any) => x[FUNC_PARAM_FIELDS.TYPE], (x: any, v) => updateCard(FUNC_PARAM_FIELDS.TYPE, v), '');
-          temp.options({choices: funcParamTypes});
-          return temp;
-        })(),
-        DG.Property.create(FUNC_PARAM_FIELDS.NAME, DG.TYPE.STRING, (x: any) => x[FUNC_PARAM_FIELDS.NAME], (x: any, v) => updateCard(FUNC_PARAM_FIELDS.NAME, v), ''),
-        DG.Property.create(FUNC_PARAM_FIELDS.DEFAULT_VALUE, DG.TYPE.STRING, (x: any) => x[FUNC_PARAM_FIELDS.DEFAULT_VALUE], (x: any, v) => updateCard(FUNC_PARAM_FIELDS.DEFAULT_VALUE, v), ''),
-        (() => {
-          const temp = DG.Property.create(FUNC_PARAM_FIELDS.DESCRIPTION, DG.TYPE.STRING, (x: any) => x[FUNC_PARAM_FIELDS.DESCRIPTION], (x: any, v) => updateCard(FUNC_PARAM_FIELDS.DESCRIPTION, v), '');
-          temp.options({editor: 'textarea'});
-          return temp;
-        })(),
-        DG.Property.create(FUNC_PARAM_FIELDS.CATEGORY, DG.TYPE.STRING, (x: any) => x[FUNC_PARAM_FIELDS.CATEGORY], (x: any, v) => updateCard(FUNC_PARAM_FIELDS.CATEGORY, v), ''),
-      ];
-
-      const paramProps = funcParams
-        .filter((param) => param.name !== FUNC_PARAM_FIELDS.DIRECTION);
-
-      const result = ui.input.form(param, paramProps);
-
-      return ui.div(result);
-    });
-
-    acc.addPane('Tags', ()=> {
-      return ui.div();
-    });
-
-    grok.shell.o = ui.divV([ui.h1(`Param: ${paramName}`), acc.root]);
+  const updateValue = (param: DG.Property, propName: string, v: any) => {
+    (param as any)[propName] = v;
+    const globalParam = functionOutputParamsCopy.find((input) => input.name === param.name) ||
+    functionInputParamsCopy.find((input) => input.name === param.name);
+    if (globalParam) globalParam.options[propName] = v;
+    functionInputParamsState.next(functionInputParamsCopy);
+    functionOutputParamsState.next(functionOutputParamsCopy);
+    refreshPreview();
   };
 
-  const funcParams: DG.Property[] = [
-    DG.Property.jsString(FUNC_PARAM_FIELDS.DIRECTION),
-    DG.Property.jsString(FUNC_PARAM_FIELDS.TYPE),
-    DG.Property.jsString(FUNC_PARAM_FIELDS.NAME),
-    DG.Property.jsString(FUNC_PARAM_FIELDS.DEFAULT_VALUE),
-    DG.Property.jsString(FUNC_PARAM_FIELDS.DESCRIPTION),
-    DG.Property.jsString(FUNC_PARAM_FIELDS.CATEGORY),
+  const obligatoryFuncParamsProps: DG.Property[] = [
+    DG.Property.create(FUNC_PARAM_FIELDS.NAME, DG.TYPE.STRING, (x: any) => x[FUNC_PARAM_FIELDS.NAME],
+      (x: any, v) => updateValue(x, FUNC_PARAM_FIELDS.NAME, v), ''),
+    (() => {
+      const temp = DG.Property.create(FUNC_PARAM_FIELDS.TYPE, DG.TYPE.STRING, (x: any) => x[FUNC_PARAM_FIELDS.TYPE], (x: any, v) => updateValue(x, FUNC_PARAM_FIELDS.TYPE, v), '');
+      temp.fromOptions({choices: funcParamTypes});
+      return temp;
+    })(),
+    DG.Property.create(FUNC_PARAM_FIELDS.DEFAULT_VALUE, DG.TYPE.OBJECT, (x: any) => x[FUNC_PARAM_FIELDS.DEFAULT_VALUE], (x: any, v) => updateValue(x, FUNC_PARAM_FIELDS.DEFAULT_VALUE, v), ''),
+    (() => {
+      const temp = DG.Property.create(FUNC_PARAM_FIELDS.DESCRIPTION, DG.TYPE.STRING, (x: any) => x[FUNC_PARAM_FIELDS.DESCRIPTION], (x: any, v) => updateValue(x, FUNC_PARAM_FIELDS.DESCRIPTION, v), '');
+      temp.fromOptions({editor: 'textarea'});
+      return temp;
+    })(),
+    DG.Property.create(FUNC_PARAM_FIELDS.CATEGORY, DG.TYPE.STRING, (x: any) => x[FUNC_PARAM_FIELDS.CATEGORY], (x: any, v) => updateValue(x, FUNC_PARAM_FIELDS.CATEGORY, v), ''),
   ];
 
+  const optionalFuncParamsProps: DG.Property[] = [
+    DG.Property.create(OPTIONAL_TAG_NAME.ACTION, DG.TYPE.STRING,
+      (x: any) => x.options[OPTIONAL_TAG_NAME.ACTION],
+      (x: any, v) => updateValue(x, OPTIONAL_TAG_NAME.ACTION, v), ''),
 
-  const renderCard = (functionParam: DG.Property, direction: DIRECTION) => {
-    const iconStyle = {style: {
-      'display': 'flex',
-      'flex-direction': 'column',
-      'justify-content': 'center',
-      'width': '32.5px',
-      'align-items': 'center',
-    }};
+    DG.Property.create(OPTIONAL_TAG_NAME.ALLOW_NULLS, DG.TYPE.BOOL,
+      (x: any) => x.options[OPTIONAL_TAG_NAME.ALLOW_NULLS],
+      (x: any, v) => updateValue(x, OPTIONAL_TAG_NAME.ALLOW_NULLS, v), ''),
 
-    const editButtonDiv = ui.div(ui.button(ui.icons.edit(()=>{}), () =>{
-      onFunctionParamClick(functionParam.name, tempCard, direction);
-    }), {
-      style: {
-        ...iconStyle.style,
-        'visibility': 'hidden',
-      },
-    });
+    DG.Property.create(OPTIONAL_TAG_NAME.CHOICES, DG.TYPE.LIST,
+      (x: any) => x.options[OPTIONAL_TAG_NAME.CHOICES],
+      (x: any, v) => updateValue(x, OPTIONAL_TAG_NAME.CHOICES, v), ''),
 
-    const tempCard = ui.divH([
-      ui.div(iconsByTypes(functionParam.propertyType), iconStyle),
-      ui.divV([
-        ui.span([functionParam.name], {style: {'font-weight': 'bold'}}),
-        ui.span([funcParams
-          .filter((param) => param.name !== FUNC_PARAM_FIELDS.NAME)
-          .map((param) => (functionParam as any)[param.name])
-          .filter((paramValue) => !!paramValue).join(' | '),
-        ]),
-      ], {style: {'width': '100%', 'padding': '5px'}}),
-      editButtonDiv,
-      ui.div(ui.button(ui.icons.delete(()=>{}), () =>{
-        if (direction === DIRECTION.INPUT) {
-          functionInputParamsCopy = functionInputParamsCopy.filter((param) => param !== functionParam);
-        } else {
-          functionOutputParamsCopy = functionOutputParamsCopy.filter((param) => param !== functionParam);
-        }
-        refreshPreview();
-        tempCard.remove();
-      }), iconStyle),
-    ], {style: {'border-bottom': 'thin solid #ECEFF2'}});
-    tempCard.addEventListener('click', () => onFunctionParamClick(functionParam.name, tempCard, direction));
-    tempCard.addEventListener('mouseover', () => editButtonDiv.style.visibility = 'visible');
-    tempCard.addEventListener('mouseout', () => editButtonDiv.style.visibility = 'hidden');
-    return tempCard;
-  };
+    (() => {
+      const temp = DG.Property.create(OPTIONAL_TAG_NAME.COLUMNS, DG.TYPE.STRING,
+        (x: any) => x.options[OPTIONAL_TAG_NAME.COLUMNS],
+        (x: any, v) => updateValue(x, OPTIONAL_TAG_NAME.COLUMNS, v), '');
+      temp.fromOptions({choices: ['numerical', 'categorical']});
+      return temp;
+    })(),
 
-  let inputParamCards = ui.divV(
-    functionInputParamsCopy.map((functionParam) => renderCard(functionParam, DIRECTION.INPUT)),
-  );
-  const outputParamCards = ui.divV(
-    functionOutputParamsCopy.map((functionParam) => renderCard(functionParam, DIRECTION.OUTPUT)),
-  );
+    DG.Property.create(OPTIONAL_TAG_NAME.FORMAT, DG.TYPE.STRING,
+      (x: any) => x.options[OPTIONAL_TAG_NAME.FORMAT],
+      (x: any, v) => updateValue(x, OPTIONAL_TAG_NAME.FORMAT, v), ''),
+
+    DG.Property.create(OPTIONAL_TAG_NAME.MAX, DG.TYPE.INT,
+      (x: any) => x.options[OPTIONAL_TAG_NAME.MAX],
+      (x: any, v) => updateValue(x, OPTIONAL_TAG_NAME.MAX, v), ''),
+
+    DG.Property.create(OPTIONAL_TAG_NAME.MIN, DG.TYPE.INT,
+      (x: any) => x.options[OPTIONAL_TAG_NAME.MIN],
+      (x: any, v) => updateValue(x, OPTIONAL_TAG_NAME.MIN, v), ''),
+
+    DG.Property.create(OPTIONAL_TAG_NAME.SEM_TYPE, DG.TYPE.STRING,
+      (x: any) => x.options[OPTIONAL_TAG_NAME.SEM_TYPE],
+      (x: any, v) => updateValue(x, OPTIONAL_TAG_NAME.SEM_TYPE, v), ''),
+
+    DG.Property.create(OPTIONAL_TAG_NAME.SUGGESTIONS, DG.TYPE.STRING,
+      (x: any) => x.options[OPTIONAL_TAG_NAME.SUGGESTIONS],
+      (x: any, v) => updateValue(x, OPTIONAL_TAG_NAME.SUGGESTIONS, v), ''),
+
+    (() => {
+      const temp = DG.Property.create(OPTIONAL_TAG_NAME.TYPE, DG.TYPE.STRING,
+        (x: any) => x.options[OPTIONAL_TAG_NAME.TYPE],
+        (x: any, v) => updateValue(x, OPTIONAL_TAG_NAME.TYPE, v), '');
+      temp.fromOptions({choices: ['numerical', 'categorical', 'dateTime']});
+      return temp;
+    })(),
+  ];
+
+  const inputParamsDF = DG.DataFrame.create(functionInputParamsCopy.length);
+  for (const p of obligatoryFuncParamsProps) {
+    (inputParamsDF.columns as DG.ColumnList)
+      .addNew(functionParamsMapping[p.name as keyof typeof functionParamsMapping], p.propertyType as DG.ColumnType)
+      .init((i: number) => {
+        return p.get(functionInputParamsCopy[i]) || (p as any)[functionInputParamsCopy[i].name];
+      });
+  }
+  const inputParamGrid = DG.Grid.create(inputParamsDF);
+  inputParamGrid.root.style.width = '100%';
+  inputParamGrid.dataFrame?.getCol(functionParamsMapping[FUNC_PARAM_FIELDS.TYPE as keyof typeof functionParamsMapping])
+    .setTag(DG.TAGS.CHOICES, `["${funcParamTypes.join(`", "`)}"]`);
+  inputParamsDF.onCurrentRowChanged.subscribe(() => onFunctionParamClick((inputParamsDF.currentRow as any)['Name'], DIRECTION.INPUT));
+
+  const outputParamsDF = DG.DataFrame.create(functionOutputParamsCopy.length);
+  for (const p of obligatoryFuncParamsProps) {
+    (outputParamsDF.columns as DG.ColumnList)
+      .addNew(functionParamsMapping[p.name as keyof typeof functionParamsMapping], p.propertyType as DG.ColumnType)
+      .init((i: number) => p.get(functionInputParamsCopy[i]) || (p as any)[functionInputParamsCopy[i].name]);
+  }
+  const outputParamGrid = DG.Grid.create(outputParamsDF);
+  outputParamGrid.dataFrame?.getCol(functionParamsMapping[FUNC_PARAM_FIELDS.TYPE as keyof typeof functionParamsMapping])
+    .setTag(DG.TAGS.CHOICES, `["${funcParamTypes.join(`", "`)}"]`);
+  outputParamsDF.onCurrentRowChanged.subscribe(() => onFunctionParamClick((outputParamsDF.currentRow as any)['Name'], DIRECTION.OUTPUT));
+  outputParamGrid.root.style.width = '100%';
 
   const area = ui.textInput('', '');
   const myCM = CodeMirror.fromTextArea((area.input as HTMLTextAreaElement));
@@ -453,21 +494,22 @@ export function _functionEditor(functionCode: string) {
   propsForm = functionPropsForm();
 
   const renderAddParamButton = () => {
-    const paramProps = funcParams
+    const paramProps = obligatoryFuncParamsProps
       .filter((param) => param.name !== FUNC_PARAM_FIELDS.DIRECTION);
 
-    const newParam: DG.PropertyOptions = {};
+    const newParam = {
+      [FUNC_PARAM_FIELDS.NAME]: '',
+      [FUNC_PARAM_FIELDS.TYPE]: DG.TYPE.BOOL,
+      [FUNC_PARAM_FIELDS.DEFAULT_VALUE]: false,
+      [FUNC_PARAM_FIELDS.DESCRIPTION]: '',
+      [FUNC_PARAM_FIELDS.CATEGORY]: '',
+    };
 
     const onItemClick = () => {
       ui.dialog('Add parameter')
         .add(ui.input.form(newParam, paramProps))
         .onOK(() => {
-          functionInputParamsCopy.push(DG.Property.fromOptions(newParam));
-          const newInputParamsCards = ui.divV(
-            functionInputParamsCopy.map((functionParam) => renderCard(functionParam, DIRECTION.INPUT)),
-          );
-          inputParamCards.replaceWith(newInputParamsCards);
-          inputParamCards = newInputParamsCards;
+          inputParamsDF.rows.addNew(paramProps.map((prop) => prop.get(newParam)));
           refreshPreview();
         })
         .show();
@@ -490,10 +532,10 @@ export function _functionEditor(functionCode: string) {
     'PROPERTIES': propsForm,
     'PARAMETERS': ui.divV([
       ui.div(ui.h1('Input: '), {style: {'padding': '12px 12px 0px 12px'}}),
-      inputParamCards,
+      inputParamGrid.root,
       addInputButton,
       ui.div(ui.h1('Output: '), {style: {'padding': '12px 12px 0px 12px'}}),
-      outputParamCards,
+      outputParamGrid.root,
       addOutputButton,
     ]),
   });
@@ -518,9 +560,11 @@ export function _functionEditor(functionCode: string) {
 
   const refreshPreview = () => {
     let result = '';
-    Object.keys(functionPropsCopy).map((propField) => {
-      const propValue = functionPropsCopy[propField as keyof FuncPropsState];
-      if (propValue) result += `#${functionPropsCode(propField as keyof FuncPropsState)}: ${propValue}\n`;
+    Object.values(functionProps).map((propField) => {
+      const propValue = propField.get(inputScriptCopy) || (inputScriptCopy as any)[propField.name];
+      if (!!propValue && !!propValue.length) {
+        result += `#${functionPropsCode(propField.name as FUNC_PROPS_FIELDS)}: ${propValue}\n`;
+      }
     });
     functionInputParamsCopy.map((param) => {
       result += generateParamLine(param, DIRECTION.INPUT);
@@ -533,4 +577,39 @@ export function _functionEditor(functionCode: string) {
 
   grok.shell.addView(editorView);
   refreshPreview();
+
+  const functionInputParamsState = new BehaviorSubject(functionInputParamsCopy);
+  functionInputParamsState.subscribe(() => {
+    for (const p of obligatoryFuncParamsProps) {
+      (inputParamsDF.columns as DG.ColumnList)
+        .byName(functionParamsMapping[p.name as keyof typeof functionParamsMapping])
+        .init((i: number) => {
+          return p.get(functionInputParamsCopy[i]) || (functionInputParamsCopy[i] as any)[p.name];
+        });
+    }
+    refreshPreview();
+  });
+
+  const functionOutputParamsState = new BehaviorSubject(functionOutputParamsCopy);
+  functionOutputParamsState.subscribe(() => {
+    for (const p of obligatoryFuncParamsProps) {
+      (outputParamsDF.columns as DG.ColumnList)
+        .byName(functionParamsMapping[p.name as keyof typeof functionParamsMapping])
+        .init((i: number) => {
+          return p.get(functionOutputParamsCopy[i]) || (functionOutputParamsCopy[i] as any)[p.name];
+        });
+    }
+    refreshPreview();
+  });
+
+  inputParamGrid.onCellValueEdited.subscribe((editedCell)=> {
+    (functionInputParamsCopy[editedCell.cell.rowIndex] as any)
+      [functionParamsMapping[editedCell.cell.column.name as keyof typeof functionParamsMapping]] = editedCell.cell.value;
+    functionInputParamsState.next(functionInputParamsCopy);
+  });
+  outputParamGrid.onCellValueEdited.subscribe((editedCell)=> {
+    (functionOutputParamsCopy[editedCell.cell.rowIndex] as any)
+      [functionParamsMapping[editedCell.cell.column.name as keyof typeof functionParamsMapping]] = editedCell.cell.value;
+    functionOutputParamsState.next(functionOutputParamsCopy);
+  });
 }

@@ -376,7 +376,7 @@ interface FormulaLine {
   zindex?: number;
   min?: number;
   max?: number;
-  equation: string;
+  formula?: string;
 
   // Specific to lines:
   width?: number;

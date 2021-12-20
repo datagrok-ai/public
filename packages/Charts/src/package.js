@@ -2,7 +2,7 @@ import {TreeViewer} from './tree-viewer.js';
 import {TreeMapViewer} from './tree-map-viewer.js';
 import {SunburstViewer} from './sunburst-viewer.js';
 import {RadarViewer} from './radar-viewer.js';
-import {TimelinesViewer} from './timelines-viewer.js';
+import {TimelinesViewer} from './timelines/timelines-viewer.js';
 import {SankeyViewer} from './sankey-viewer.js';
 import {ChordViewer} from './chord-viewer.js';
 import { WordCloudViewer } from './word-cloud-viewer.js';
