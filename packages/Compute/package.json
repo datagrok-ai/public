@@ -10,6 +10,7 @@
 		"dayjs": "latest",
 		"exceljs": "^4.3.0",
 		"file-saver": "^2.0.5",
+		"rxjs": "^7.4.0",
 		"ts-loader": "latest",
 		"typescript": "latest",
 		"wu": "latest"
