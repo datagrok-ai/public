@@ -28,10 +28,13 @@ result = x * x
 ```
 
 In order to register a script, open `Functions | Scripts | New R Script`, paste the code above,
-and click `Save`. Congratulations, you've just written and published an R script and made it
-available to the whole community!
+and click `Save`. Congratulations, you've just written and published an R script! At that point,
+it is only visible to you. You can also make it available to the whole community! To do that,
+right-click on script's name in the `Scripts` part of the left panel and select `Share...`, then
+ type in `All Users` and confirm. (You may want to uncheck the `Send notifications` box).
 
-Use [Console](../overview/navigation.md#console) to execute it. Simply type "RSquare(3)":
+Use [Console](../overview/navigation.md#console) to execute it. Simply type
+`<YOUR_USER_NAME>:RSquare(3)`:
 ```
  > RSquare(3)
    result: 9
