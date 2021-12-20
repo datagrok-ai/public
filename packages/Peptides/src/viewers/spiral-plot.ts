@@ -50,7 +50,7 @@ export class SpiralPlot extends DG.ScatterPlotViewer {
       t = SpiralPlot.updateCoordinates(t, options);
       [options.x, options.y] = SpiralPlot.axesNames;
       options.color = options[SpiralPlot.valuesKey];
-      return new SpiralPlot(api.grok_Viewer_ScatterPlot(t.d, _toJson(options)));
+      return new SpiralPlot(api.grok_Viewer_ScatterPlot(t.dart, _toJson(options)));
     }
 }
 
