@@ -46,7 +46,12 @@ export class Peptides {
     const sarNode = view.dockManager.dock(sarViewer, DG.DOCK_TYPE.DOWN, null, 'SAR Viewer');
 
     const sarViewerVertical = view.addViewer('peptide-sar-viewer-vertical');
-    view.dockManager.dock(sarViewerVertical, DG.DOCK_TYPE.RIGHT, sarNode, 'SAR Vertical Viewer');
+    const sarVNode = view.dockManager.dock(sarViewerVertical, DG.DOCK_TYPE.RIGHT, sarNode, 'SAR Vertical Viewer');
+
+    const substViewer = view.addViewer(
+      'substitution-analysis-viewer', {'activityColumnName': options['activityColumnColumnName']},
+    );
+    // view.dockManager.dock(substViewer, DG.DOCK_TYPE.TOP, sarVNode, 'Substitution Analysis');
 
     const peptideSpaceViewer = await createPeptideSimilaritySpaceViewer(
       currentDf,

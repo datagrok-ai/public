@@ -8,7 +8,7 @@ import {setAARRenderer} from './utils/cell-renderer';
 
 const cp = new ChemPalette('grok');
 
-const aarGroups = {
+export const aarGroups = {
   'R': 'PC',
   'H': 'PC',
   'K': 'PC',
