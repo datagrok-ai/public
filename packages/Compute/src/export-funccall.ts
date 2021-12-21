@@ -254,6 +254,6 @@ export async function exportFuncCall(call: DG.FuncCall) {
 
   exportWorkbook.xlsx.writeBuffer().then((data) => {
     const blob = new Blob([data], {type: BLOB_TYPE});
-    saveAs(blob, call.func.name);
+    saveAs(blob, `${call.func.name} - ${new Date().toLocaleString()}`);
   });
 }
