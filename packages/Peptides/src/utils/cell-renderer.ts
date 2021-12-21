@@ -16,9 +16,9 @@ const cp = new ChemPalette('grok');
  * @param {number} [timeout=500] Timeout value.
  */
 export function expandColumn(
-    col: DG.Column, grid: DG.Grid, cellRenderSize: (cellVal: string) => number,
-    textSizeMult = 10, minSize = 30, maxSize = 650, timeout = 500
-  ) {
+  col: DG.Column, grid: DG.Grid, cellRenderSize: (cellVal: string) => number,
+  textSizeMult = 10, minSize = 30, maxSize = 650, timeout = 500,
+) {
   let maxLen = 0;
   col.categories.forEach((ent: string) => {
     const len = cellRenderSize(ent);
@@ -79,10 +79,10 @@ export function measureAAR(s: string): number {
  * @return {number} x coordinate to start printing at.
  */
 function printLeftOrCentered(
-    x: number, y: number, w: number, h: number,
-    g: CanvasRenderingContext2D, s: string, color = ChemPalette.undefinedColor,
-    pivot: number = 0, left = false, hideMod = false
-  ) {
+  x: number, y: number, w: number, h: number,
+  g: CanvasRenderingContext2D, s: string, color = ChemPalette.undefinedColor,
+  pivot: number = 0, left = false, hideMod = false,
+) {
   g.textAlign = 'start';
   let colorPart = pivot == -1 ? s.substring(0) : s.substring(0, pivot);
   if (colorPart.length == 1) {
@@ -179,7 +179,7 @@ export class AminoAcidsCellRenderer extends DG.GridCellRenderer {
 
     /**
      * Cell renderer function.
-     * 
+     *
      * @param {CanvasRenderingContext2D} g Canvas rendering context.
      * @param {number} x x coordinate on the canvas.
      * @param {number} y y coordinate on the canvas.

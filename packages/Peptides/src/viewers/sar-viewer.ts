@@ -35,7 +35,7 @@ export class SARViewer extends DG.JsViewer {
 
   /**
    * Creates an instance of SARViewer.
-   * 
+   *
    * @memberof SARViewer
    */
   constructor() {
@@ -358,7 +358,7 @@ export class SARViewerVertical extends DG.JsViewer {
 
   /**
    * Creates an instance of SARViewerVertical.
-   * 
+   *
    * @memberof SARViewerVertical
    */
   constructor() {

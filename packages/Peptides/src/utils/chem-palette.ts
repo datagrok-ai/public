@@ -13,7 +13,7 @@ export class ChemPalette {
 
   /**
    * Creates an instance of ChemPalette.
-   * 
+   *
    * @param {string} scheme Color scheme to use.
    * @param {boolean} [grouping=false] Is grouping enabled.
    * @memberof ChemPalette
@@ -26,9 +26,9 @@ export class ChemPalette {
 
   /**
    * Renders 2D representation of a amino acid residue in a tooltip.
-   * 
-   * @param {DG.GridCell} cell Grid cell to show tooltip over. 
-   * @param {number} x x coordinate of the mouse pointer. 
+   *
+   * @param {DG.GridCell} cell Grid cell to show tooltip over.
+   * @param {number} x x coordinate of the mouse pointer.
    * @param {number} y y coordinate of the mouse pointer.
    */
   showTooltip(cell: DG.GridCell, x: number, y: number) {
@@ -55,11 +55,11 @@ export class ChemPalette {
 
   /**
    * Get color for the provided amino acid residue.
-   * @param {string} c Amino acid residue string. 
+   * @param {string} c Amino acid residue string.
    * @returns {string} Color.
    */
-  getColor(c: string) {
-    const [color, ] = this.getColorPivot(c);
+  getColor(c: string): string {
+    const [color] = this.getColorPivot(c);
     return color;
   }
 
@@ -110,9 +110,9 @@ export class ChemPalette {
 
   /**
    * Get color pivot.
-   * 
-   * @param c 
-   * @returns 
+   *
+   * @param c
+   * @returns
    */
   getColorPivot(c = ''): [string, number] {
     //TODO: merge with getColorAAPivot?
@@ -191,11 +191,11 @@ export class ChemPalette {
 
   /**
    * Create palette.
-   * 
-   * @param dt 
+   *
+   * @param dt
    * @param simplified Is simplified.
    * @param grouping Is grouping enabled.
-   * @returns 
+   * @returns
    */
   static makePalette(dt: {[key: string]: string[]}, simplified = false, grouping = false) {
     const palette: { [key: string]: string } = {};
@@ -332,9 +332,9 @@ export class ChemPalette {
 
   /**
    * Get Datagrok palette.
-   * 
+   *
    * @param grouping Is grouping enabled?
-   * @returns 
+   * @returns
    */
   static getDatagrok(grouping = false) {
     return ChemPalette.makePalette(ChemPalette.grokGroups, false, grouping);
@@ -342,9 +342,9 @@ export class ChemPalette {
 
   /**
    * Get Lesk palette.
-   * 
+   *
    * @param grouping Is grouping enabled?
-   * @returns 
+   * @returns
    */
   static getLesk() {
     return ChemPalette.makePalette(ChemPalette.leskGroups);

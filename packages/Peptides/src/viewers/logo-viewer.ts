@@ -27,7 +27,7 @@ export class Logo extends DG.JsViewer {
 
   /**
    * Creates an instance of Logo.
-   * 
+   *
    * @memberof Logo
    */
   constructor() {
