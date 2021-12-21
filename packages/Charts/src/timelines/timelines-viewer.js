@@ -7,10 +7,11 @@ export class TimelinesViewer extends EChartViewer {
   constructor() {
     super();
 
-    this.subjectColumnName = this.string('subjectColumnName');
+    this.splitByColumnName = this.string('splitByColumnName');
     this.startColumnName = this.string('startColumnName');
     this.endColumnName = this.string('endColumnName');
     this.colorByColumnName = this.string('colorByColumnName');
+    this.showOpenIntervals = this.bool('showOpenIntervals', false);
     this.eventColumnName = this.string('eventColumnName');
     this.showEventInTooltip = this.bool('showEventInTooltip', true);
 
@@ -26,10 +27,11 @@ export class TimelinesViewer extends EChartViewer {
       { choices: ['cross', 'line', 'shadow', 'none'] });
     this.showZoomSliders = this.bool('showZoomSliders', true);
 
-    this.subjectRegex = /^USUBJID$|id/;
-    this.eventRegex = /^([A-Z]{2}(TERM|TEST|TRT|VAL)|(ACT)?ARM|MIDS(TYPE)?|VISIT)$|event/;
-    this.startRegex = /^((VISIT|[A-Z]{2}(ST)?)DY)$|start|begin/;
-    this.endRegex = /^((VISIT|[A-Z]{2}(EN)?)DY)$|stop|end/;
+    this.splitByRegexps = [/^USUBJID$/, /id/i];
+    this.colorByRegexps = [/^([A-Z]{2}(TERM|TEST|TRT|VAL)|(ACT)?ARM|MIDS(TYPE)?|VISIT)$/, /event/i];
+    this.eventRegexps = [/^event$/, ...this.colorByRegexps];
+    this.startRegexps = [/^((VISIT|[A-Z]{2}(ST)?)DY)$/, /start|begin/i];
+    this.endRegexps = [/^((VISIT|[A-Z]{2}(EN)?)DY)$/, /stop|end/i];
 
     this.defaultDateFormat = '{MMM} {d}';
     this.data = [];
@@ -60,9 +62,9 @@ export class TimelinesViewer extends EChartViewer {
       });
 
       this.chart.on('click', params => this.dataFrame.selection.handleClick((i) => {
-        if (params.componentType === 'yAxis') return this.getStrValue(this.columnData.subjectColumnName, i) === params.value;
+        if (params.componentType === 'yAxis') return this.getStrValue(this.columnData.splitByColumnName, i) === params.value;
         if (params.componentType === 'series') {
-          return params.value[0] === this.getStrValue(this.columnData.subjectColumnName, i) &&
+          return params.value[0] === this.getStrValue(this.columnData.splitByColumnName, i) &&
                  params.value[1] === this.getSafeValue(this.columnData.startColumnName, i) &&
                  params.value[2] === this.getSafeValue(this.columnData.endColumnName, i);
         }
@@ -108,9 +110,9 @@ export class TimelinesViewer extends EChartViewer {
       ui.tooltip.show(tooltipContent, x, y);
     } else {
       ui.tooltip.showRowGroup(this.dataFrame, (i) => {
-        if (params.componentType === 'yAxis') return this.getStrValue(this.columnData.subjectColumnName, i) === params.value;
+        if (params.componentType === 'yAxis') return this.getStrValue(this.columnData.splitByColumnName, i) === params.value;
         if (params.componentType === 'series') {
-          return params.value[0] === this.getStrValue(this.columnData.subjectColumnName, i) &&
+          return params.value[0] === this.getStrValue(this.columnData.splitByColumnName, i) &&
             params.value[1] === this.getSafeValue(this.columnData.startColumnName, i) &&
             params.value[2] === this.getSafeValue(this.columnData.endColumnName, i);
         }
@@ -137,14 +139,14 @@ export class TimelinesViewer extends EChartViewer {
     const intColumns = columns.filter(col => col.type === 'int')
       .sort((a, b) => a.stats.avg - b.stats.avg);
 
-    this.subjectColumnName = (this.findColumn(columns, this.subjectRegex) || strColumns[strColumns.length - 1]).name;
-    this.startColumnName = (this.findColumn(columns, this.startRegex, [DG.COLUMN_TYPE.INT, DG.COLUMN_TYPE.DATE_TIME]) || intColumns[0]).name;
-    this.endColumnName = (this.findColumn(columns, this.endRegex, [DG.COLUMN_TYPE.INT, DG.COLUMN_TYPE.DATE_TIME]) || intColumns[intColumns.length - 1]).name;
-    this.colorByColumnName = (this.findColumn(columns, this.eventRegex, [DG.COLUMN_TYPE.STRING]) || strColumns[0]).name;
-    this.eventColumnName = this.dataFrame.columns.contains('event') ? 'event' : this.colorByColumnName;
+    this.splitByColumnName = (this.findColumn(columns, this.splitByRegexps) || strColumns[strColumns.length - 1]).name;
+    this.startColumnName = (this.findColumn(columns, this.startRegexps, [DG.COLUMN_TYPE.INT, DG.COLUMN_TYPE.DATE_TIME]) || intColumns[0]).name;
+    this.endColumnName = (this.findColumn(columns, this.endRegexps, [DG.COLUMN_TYPE.INT, DG.COLUMN_TYPE.DATE_TIME]) || intColumns[intColumns.length - 1]).name;
+    this.colorByColumnName = (this.findColumn(columns, this.colorByRegexps, [DG.COLUMN_TYPE.STRING]) || strColumns[0]).name;
+    this.eventColumnName = (this.findColumn(columns, this.eventRegexps, [DG.COLUMN_TYPE.STRING]) || strColumns[0]).name;
 
-    const columnPropNames = ['subjectColumnName', 'startColumnName', 'endColumnName', 'colorByColumnName', 'eventColumnName'];
-    const columnNames = [this.subjectColumnName, this.startColumnName, this.endColumnName, this.colorByColumnName, this.eventColumnName];
+    const columnPropNames = ['splitByColumnName', 'startColumnName', 'endColumnName', 'colorByColumnName', 'eventColumnName'];
+    const columnNames = [this.splitByColumnName, this.startColumnName, this.endColumnName, this.colorByColumnName, this.eventColumnName];
 
     this.columnData = columnPropNames.reduce((map, v, i) => {
       const column = this.dataFrame.getCol(columnNames[i]);
@@ -270,12 +272,23 @@ export class TimelinesViewer extends EChartViewer {
     super.onTableAttached();
   }
 
-  findColumn(columns, regex, types = []) {
-    return columns.find((c) => (types.length ? types.includes(c.type) : true) && c.name.match(regex));
+  /** Find a column based on provided name patterns and types.
+   * The list of patterns should be sorted by priority in descending order. */
+  findColumn(columns, regexps, types = []) {
+    if (types.length) {
+      columns = columns.filter((c) => types.includes(c.type));
+    }
+    for (let regex of regexps) {
+      const column = columns.find((c) => c.name.match(regex));
+      if (column) return column;
+    }
+    return null;
   }
 
   updateColumnData(prop) {
-    const column = this.dataFrame.getCol(prop.get(this));
+    const column = this.dataFrame.col(prop.get(this));
+    if (column === null)
+      return null;
     this.columnData[prop.name] = {
       column,
       data: column.getRawData(),
@@ -321,14 +334,24 @@ export class TimelinesViewer extends EChartViewer {
       return this.getSafeValue(columnData, i);
     };
 
+    const getColumnMin = (column) => column.type === DG.COLUMN_TYPE.DATE_TIME ? new Date(column.min * 1e-3) : column.min;
+    const getColumnMax = (column) => column.type === DG.COLUMN_TYPE.DATE_TIME ? new Date(column.max * 1e-3) : column.max;
+
     const { categories: colorCategories, data: colorBuf } = this.columnData.colorByColumnName;
     const { categories: eventCategories, data: eventBuf } = this.columnData.eventColumnName;
+    const { column: startColumn } = this.columnData.startColumnName;
+    const { column: endColumn } = this.columnData.endColumnName;
 
     for (const i of this.dataFrame.filter.getSelectedIndexes()) {
-      const id = this.getStrValue(this.columnData.subjectColumnName, i);
-      const start = getTime(this.columnData.startColumnName, i);
-      const end = getTime(this.columnData.endColumnName, i);
+      const id = this.getStrValue(this.columnData.splitByColumnName, i);
+      let start = getTime(this.columnData.startColumnName, i);
+      let end = getTime(this.columnData.endColumnName, i);
       if (start === end && end === null) continue;
+      if (this.showOpenIntervals) {
+        // TODO: handle edge case of different column types
+        start = start ?? Math.min(getColumnMin(startColumn), getColumnMin(endColumn));
+        end = end ?? Math.max(getColumnMax(startColumn), getColumnMax(endColumn));
+      }
       const color = colorCategories[colorBuf[i]];
       const event = eventCategories[eventBuf[i]];
       const key = `${id}-${event}-${start}-${end}`;
