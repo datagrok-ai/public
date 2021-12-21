@@ -28,7 +28,7 @@ class SARViewerModel {
 
   /**
    * Creates an instance of SARViewerModel.
-   * 
+   *
    * @memberof SARViewerModel
    */
   constructor() {

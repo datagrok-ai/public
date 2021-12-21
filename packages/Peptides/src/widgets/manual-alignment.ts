@@ -7,7 +7,7 @@ import {splitAlignedPeptides} from '../utils/split-aligned';
 
 /**
  * Manual sequence alignment widget.
- * 
+ *
  * @param {DG.Column} alignedSequenceCol Aligned sequence column.
  * @param {DG.DataFrame} currentDf Working table.
  * @returns {DG.Widget} Widget for manual sequence alignment.
