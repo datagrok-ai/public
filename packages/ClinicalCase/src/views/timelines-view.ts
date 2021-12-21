@@ -29,7 +29,7 @@ let multichoiceTableDict = { 'Adverse events': 'ae', 'Concomitant medication int
 export class TimelinesView extends DG.ViewBase implements ILazyLoading {
 
   options = {
-    subjectColumnName: 'key',
+    splitByColumnName: 'key',
     startColumnName: 'start',
     endColumnName: 'end',
     colorByColumnName: 'domain',
@@ -140,7 +140,7 @@ export class TimelinesView extends DG.ViewBase implements ILazyLoading {
         paramOptions: JSON.stringify(this.options),
       }).then((v: any) => {
         v.setOptions({
-          subjectColumnName: 'key',
+          splitByColumnName: 'key',
           startColumnName: 'start',
           endColumnName: 'end',
           colorByColumnName: 'domain',
