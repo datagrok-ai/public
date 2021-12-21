@@ -18,7 +18,7 @@ export class SubstViewer extends DG.JsViewer {
     this.activityColumnName = this.string('activityColumnName');
 
     this.maxSubstitutions = this.int('maxSubstitutions', 1);
-    this.activityLimit = this.float('acitivityLimit', 0.8);
+    this.activityLimit = this.float('acitivityLimit', 2);
 
     this.viewerGrid = null;
   }
@@ -28,8 +28,6 @@ export class SubstViewer extends DG.JsViewer {
   }
 
   calcSubstitutions() {
-    // let maxSubstitutions: number = 1;
-    // let activityLimit = 0.2;
 
     const aarColName = 'AAR';
     let splitedMatrix: string[][];
@@ -41,7 +39,8 @@ export class SubstViewer extends DG.JsViewer {
     splitedMatrix = this.split(col);
 
     let tableValues: { [aar: string]: number[] } = {};
-    let tableFull: { [aar: string]: string[] } = {};
+    let tableTooltips: { [aar: string]: string[] } = {};
+    let tableCases: { [aar: string]: number[][] } = {};
 
     let nRows = splitedMatrix.length;
     let nCols = splitedMatrix[0].length;
@@ -67,23 +66,27 @@ export class SubstViewer extends DG.JsViewer {
             let aar = subst1[parseInt(pos)][0];
             if (!Object.keys(tableValues).includes(aar)) {
               tableValues[aar] = Array.apply(null, Array(nCols)).map(function () { return 0; });
-              tableFull[aar] = Array.apply(null, Array(nCols)).map(function () { return ""; });
-              tableFull[aar][parseInt(pos)] += "Substitution\tvalues\n";
+              tableTooltips[aar] = Array.apply(null, Array(nCols)).map(function () { return ""; });
+              tableCases[aar] = Array.apply(null, Array(nCols)).map(function () { return []; });
             }
 
             tableValues[aar][parseInt(pos)]++;
-            tableFull[aar][parseInt(pos)] += subst1[parseInt(pos)][1] + "\n";
+            tableTooltips[aar][parseInt(pos)] = tableTooltips[aar][parseInt(pos)] == "" ? "Substitution\tvalues\n" : tableTooltips[aar][parseInt(pos)];
+            tableTooltips[aar][parseInt(pos)] += subst1[parseInt(pos)][1] + "\n";
+            tableCases[aar][parseInt(pos)] = [i, j, delta];
           });
           Object.keys(subst2).forEach((pos) => {
             let aar = subst2[parseInt(pos)][0];
             if (!Object.keys(tableValues).includes(aar)) {
               tableValues[aar] = Array.apply(null, Array(nCols)).map(function () { return 0; });
-              tableFull[aar] = Array.apply(null, Array(nCols)).map(function () { return ""; });
-              tableFull[aar][parseInt(pos)] += "Substitution\tvalues\n";
+              tableTooltips[aar] = Array.apply(null, Array(nCols)).map(function () { return ""; });
+              tableCases[aar] = Array.apply(null, Array(nCols)).map(function () { return []; });
             }
 
             tableValues[aar][parseInt(pos)]++;
-            tableFull[aar][parseInt(pos)] += subst2[parseInt(pos)][1] + "\n";
+            tableTooltips[aar][parseInt(pos)] = tableTooltips[aar][parseInt(pos)] == "" ? "Substitution\tvalues\n" : tableTooltips[aar][parseInt(pos)];
+            tableTooltips[aar][parseInt(pos)] += subst2[parseInt(pos)][1] + "\n";
+            tableCases[aar][parseInt(pos)] = [j, i, -delta];
           });
         }
       }
@@ -110,7 +113,7 @@ export class SubstViewer extends DG.JsViewer {
           if (colName !== aarColName) {
             const aar = this.viewerGrid!.table.get(aarColName, gCell.tableRowIndex!);
             const pos: number = parseInt(colName);
-            const tooltipText = tableFull[aar][pos - 1];
+            const tooltipText = tableTooltips[aar][pos - 1];
             ui.tooltip.show(ui.divText(tooltipText ? tooltipText : 'No substitutions'), x, y);
           }
         }
