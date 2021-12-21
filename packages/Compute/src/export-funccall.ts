@@ -49,7 +49,7 @@ export async function exportFuncCall(call: DG.FuncCall) {
   if (scalarInputs.length) {
     const inputScalarsSheet = exportWorkbook.addWorksheet('Input scalars');
     scalarInputs.forEach((scalarInput) => {
-      inputScalarsSheet.addRow([scalarInput.options['caption'] || scalarInput.name, call.inputs[scalarInput.name]]);
+      inputScalarsSheet.addRow([scalarInput.options['caption'] || scalarInput.name, call.inputs[scalarInput.name], scalarInput.options['units'] || '']);
     });
   }
 
