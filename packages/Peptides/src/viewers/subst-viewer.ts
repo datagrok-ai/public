@@ -4,50 +4,40 @@ import * as DG from 'datagrok-api/dg';
 
 import $ from 'cash-dom';
 
-import { splitAlignedPeptides } from '../utils/split-aligned';
-
-const aarGroups = {
-  'R': 'PC',
-  'H': 'PC',
-  'K': 'PC',
-  'D': 'NC',
-  'E': 'NC',
-  'S': 'U',
-  'T': 'U',
-  'N': 'U',
-  'Q': 'U',
-  'C': 'SC',
-  'U': 'SC',
-  'G': 'SC',
-  'P': 'SC',
-  'A': 'H',
-  'V': 'H',
-  'I': 'H',
-  'L': 'H',
-  'M': 'H',
-  'F': 'H',
-  'Y': 'H',
-  'W': 'H',
-  '-': '-',
-};
+import { aarGroups } from '../describe';
 
 export class SubstViewer extends DG.JsViewer {
   viewerGrid: DG.Grid | null;
+  maxSubstitutions: number;
+  activityLimit: number;
+  activityColumnName: string;
 
   constructor() {
     super();
+
+    this.activityColumnName = this.string('activityColumnName');
+
+    this.maxSubstitutions = this.int('maxSubstitutions', 1);
+    this.activityLimit = this.float('acitivityLimit', 0.8);
+
     this.viewerGrid = null;
   }
 
-  onTableAttached() {
-    let maxSubstitutions: number = 1;
-    let activityLimit = 0.2;
+  onPropertyChanged(property: DG.Property): void {
+    this.calcSubstitutions();
+  }
 
+  calcSubstitutions() {
+    // let maxSubstitutions: number = 1;
+    // let activityLimit = 0.2;
+
+    const aarColName = 'AAR';
     let splitedMatrix: string[][];
     let df: DG.DataFrame = this.dataFrame!;
     const col: DG.Column = df.columns.bySemType('alignedSequence');
-    let values: number[] = df.columns.byName('IC50').toList();
-    values = values.map(x => -Math.log10(x));
+    // let values: number[] = df.columns.byName('IC50').toList();
+    const values = df.getCol(this.activityColumnName).toList().map(x => -Math.log10(x));
+    // values = values;
     splitedMatrix = this.split(col);
 
     let tableValues: { [aar: string]: number[] } = {};
@@ -64,14 +54,14 @@ export class SubstViewer extends DG.JsViewer {
         let delta = values[i] - values[j];
 
         for (let k = 0; k < nCols; k++) {
-          if (splitedMatrix[i][k] != splitedMatrix[j][k] && Math.abs(delta) >= activityLimit) {
+          if (splitedMatrix[i][k] != splitedMatrix[j][k] && Math.abs(delta) >= this.activityLimit) {
             substCounter++;
             subst1[k] = [splitedMatrix[i][k], splitedMatrix[i][k] + " -> " + splitedMatrix[j][k] + "\t" + values[i] + " -> " + values[j]];
             subst2[k] = [splitedMatrix[j][k], splitedMatrix[j][k] + " -> " + splitedMatrix[i][k] + "\t" + values[j] + " -> " + values[i]];
           }
         }
 
-        if (substCounter <= maxSubstitutions && substCounter > 0) {
+        if (substCounter <= this.maxSubstitutions && substCounter > 0) {
 
           Object.keys(subst1).forEach((pos) => {
             let aar = subst1[parseInt(pos)][0];
@@ -99,20 +89,40 @@ export class SubstViewer extends DG.JsViewer {
       }
     }
 
-
+    const cols = [...Array(nCols).keys()].map((v) => DG.Column.int((v + 1).toString()));
+    cols.splice(0, 0, DG.Column.string(aarColName));
+    let table = DG.DataFrame.fromColumns(cols);
+    for (const aar of Object.keys(tableValues)) {
+      table.rows.addNew([aar, ...tableValues[aar]]);
+    }
 
     let groupMapping: { [key: string]: string } = {};
 
     Object.keys(aarGroups).forEach((value) => groupMapping[value] = value);
 
 
-    //this.viewerGrid = matrixDf.plot.grid();
+    this.viewerGrid = table.plot.grid();
+
+    this.viewerGrid.onCellTooltip(
+      (gCell, x, y) => {
+        if (gCell.cell.value !== DG.INT_NULL) {
+          const colName = gCell.tableColumn!.name;
+          if (colName !== aarColName) {
+            const aar = this.viewerGrid!.table.get(aarColName, gCell.tableRowIndex!);
+            const pos: number = parseInt(colName);
+            const tooltipText = tableFull[aar][pos - 1];
+            ui.tooltip.show(ui.divText(tooltipText ? tooltipText : 'No substitutions'), x, y);
+          }
+        }
+        return true;
+      }
+    );
+
     this.render();
   }
 
-
-
-  async render() {
+  render() {
+    $(this.root).empty();
     this.root.appendChild(this.viewerGrid!.root);
   }
 

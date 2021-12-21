@@ -16,6 +16,7 @@ import {manualAlignmentWidget} from './widgets/manual-alignment';
 import {SARViewer, SARViewerVertical} from './viewers/sar-viewer';
 import {peptideMoleculeWidget} from './widgets/peptide-molecule';
 import {SpiralPlot} from './viewers/spiral-plot';
+import { SubstViewer } from './viewers/subst-viewer';
 
 export const _package = new DG.Package();
 let tableGrid: DG.Grid;
@@ -111,6 +112,14 @@ export function sar(): SARViewer {
 //output: viewer result
 export function sarVertical(): SARViewerVertical {
   return new SARViewerVertical();
+}
+
+//name: substitution-analysis-viewer
+//description: Substitution Analysis Viewer
+//tags: viewer
+//output: viewer result
+export function subst(): SubstViewer {
+  return new SubstViewer();
 }
 
 //name: StackedBarchart Widget
