@@ -18,7 +18,7 @@ export class SubstViewer extends DG.JsViewer {
     this.activityColumnName = this.string('activityColumnName');
 
     this.maxSubstitutions = this.int('maxSubstitutions', 1);
-    this.activityLimit = this.float('acitivityLimit', 2);
+    this.activityLimit = this.float('activityLimit', 2);
 
     this.viewerGrid = null;
   }
