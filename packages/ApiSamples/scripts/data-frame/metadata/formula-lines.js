@@ -22,7 +22,7 @@ demog.meta.addFormulaLine({
   zindex: -45,         // Line depth. The viewer's chart has a depth of 0.
   color: '#ff0000',    // Line color.
   visible: true,       // Visibility.
-  opacity: 0.8,        // Opacity [0..1], where 0 - invisible, 1 - opaque.
+  opacity: 80,        // Opacity [0..100], where 0 - invisible, 100 - opaque.
 
   // Line boundaries along the value axis. In this example, the line will be drawn for a "Weight" between 50 and 300 kg.
   min: 50,
@@ -62,7 +62,7 @@ demog.meta.addFormulaLine({
   formula: '${weight} = 180',
   color: '#0000ff',
   width: 4,
-  opacity: 0.5
+  opacity: 50
 });
 
 demog.meta.addFormulaLine({
@@ -107,7 +107,7 @@ demog.meta.addFormulaLine({
   zindex: -45,
   width: 1,
   visible: false,     // This line will not be displayed.
-  opacity: 0.8
+  opacity: 80
 });
 
 demog.meta.addFormulaLine({
@@ -152,7 +152,7 @@ demog.meta.addFormulaBand({
   column2: '${height}',
   zindex: -45,
   color: '#FFC0CB',
-  opacity: 0.3,
+  opacity: 30,
   min: 130
 });
 
@@ -164,7 +164,7 @@ demog.meta.addFormulaBand({
   column2: '${height}',
   zindex: -45,
   color: '#7FFFD4',
-  opacity: 0.3,
+  opacity: 30,
   max: 160
 });
 
