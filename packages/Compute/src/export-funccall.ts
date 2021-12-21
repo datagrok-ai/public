@@ -252,6 +252,10 @@ export async function exportFuncCall(call: DG.FuncCall) {
     });
   }
 
+  const metadataSheet = exportWorkbook.addWorksheet('Function run metadata');
+  metadataSheet.addRow(['Author', `${call.func.author.lastName} ${call.func.author.firstName}`]);
+  metadataSheet.addRow(['Login', call.func.author.toString()]);
+
   exportWorkbook.xlsx.writeBuffer().then((data) => {
     const blob = new Blob([data], {type: BLOB_TYPE});
     saveAs(blob, `${call.func.name} - ${new Date().toLocaleString()}`);
