@@ -1,6 +1,56 @@
 <!-- TITLE: Release History -->
 <!-- SUBTITLE: -->
 
+# 2021-12-21 Dev build 0.105.0
+
+## Latest Docker Images
+
+* Datagrok: 
+  *  `docker pull datagrok/datagrok:0.105.0`
+  *  `docker pull datagrok/datagrok:latest`
+  
+* [Docker-Compose](admin/docker-compose.md)
+
+## Addressed Issues
+
+* (Bug) ListInput: caption is not shown 
+* Filters: ability to add multiple filters (for the specified selected package filter) for selected columns 
+* Filters: ability to remove all filters (via the popup menu) 
+* (Bug) Formula Lines: Browser crashes om some analysis 
+* Scripting: in-place definition for environments 
+* (Bug) Viewer Filter: Scatter Plot doesn't refresh after Viewer filter changed 
+* H2O: log4j CVE-2021-44228 remediation 
+* Css fixes 
+* CSS Harmonization 
+* Changed default run section to condensed mode 
+* Fixed analyzer warning 
+* Formula Lines: Name harmonization \- core side (doesn't affect users) 
+* Formula Lines: Name harmonization \- js api side (affects users). Change property name: equation -> formula. Both options are valid, but equation is obsolete. 
+* (Bug) ColumnComboBox: allowDrop field is ignored 
+* (Bug) Filters: closing the viewer does not properly detach it (event subscriptions are leaking) 
+* (Bug) Widget.die() does not kill all descendants 
+* Filters: ability to drag-and-drop columns to the filter group 
+* (Bug) Formula Lines: No lines if plot was created from the script annotation (Pmax) 
+* Minor fixes and improvements 
+* Propertly detaching JS-based filters 
+* (Bug) Scatter Plot: Wrong scrollbar length when canvas resized 
+* JS API: Filters (WIP)
+* Bar Chart: Wrong scrollbar length when canvas resized 
+* JS API: ability to interop with Dart lists (no deep copy) 
+* Harmonize interop 
+* Minor code cleanup. 
+* JS API: getRawData should return real buffers (currently creates a copy) 
+* (Bug) Bar Chart: Exception when filtered table rows = 0 
+* SketcherFilter: provided filterType (will be retired soon, anyway) 
+* Seamless data loading to Function View 
+* Function View improvements 
+* Markers: Fixed bug with last marker in List 
+* Markers: Add new marker for outliers 
+* Python base image: remove boost artifacts from image 
+* Package repositories: unique scope check 
+* Datagrok: disable update certificates by environment variable 
+
+
 # 2021-12-16 Dev build 0.104.0
 
 ## Latest Docker Images
