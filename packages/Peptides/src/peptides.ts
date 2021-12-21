@@ -43,7 +43,7 @@ export class Peptides {
     const originalDfColumns = (currentDf.columns as DG.ColumnList).names();
 
     const substViewer = view.addViewer(
-      'substitution-analysis-viewer', {'activityColumnName': options['activityColumnColumnName']},
+      'substitution-analysis-viewer', {'activityColumnName': options['activityColumnName']},
     );
     view.dockManager.dock(substViewer, DG.DOCK_TYPE.RIGHT, null, 'Substitution Analysis');
 
