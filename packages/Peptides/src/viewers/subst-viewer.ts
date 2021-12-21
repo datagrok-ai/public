@@ -146,6 +146,8 @@ export class SubstViewer extends DG.JsViewer {
       }
     });
 
+    this.viewerGrid.props.allowEdit = false;
+
     table.onCurrentCellChanged.subscribe((_) => {
       if (table.currentCol !== null && table.currentCol.name !== aarColName && table.currentCell.value !== null) {
         const aar = table.get(aarColName, table.currentRowIdx);
@@ -168,6 +170,7 @@ export class SubstViewer extends DG.JsViewer {
         subsCol.semType = 'alignedSequence';
 
         this.casesGrid = tempDf.plot.grid();
+        this.casesGrid.props.allowEdit = false;
       } else {
         this.casesGrid = null;
       }

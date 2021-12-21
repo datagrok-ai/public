@@ -66,6 +66,7 @@ export class Peptides {
 
     const StackedBarchartProm = currentDf.plot.fromType('StackedBarChartAA');
     addViewerToHeader(tableGrid, StackedBarchartProm);
+    tableGrid.props.allowEdit = false;
 
     const hideIcon = ui.iconFA('window-close', () => { //undo?, times?
       const viewers = [];
@@ -88,6 +89,7 @@ export class Peptides {
 
       tableGrid.setOptions({'colHeaderHeight': 20});
       tableGrid.columns.setVisible(originalDfColumns);
+      tableGrid.props.allowEdit = true;
 
       view.setRibbonPanels(ribbonPanels);
     }, 'Close viewers and restore dataframe');
