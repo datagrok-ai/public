@@ -5,12 +5,14 @@ import * as DG from 'datagrok-api/dg';
 import $ from 'cash-dom';
 
 import { aarGroups } from '../describe';
+import { setAARRenderer } from '../utils/cell-renderer';
 
 export class SubstViewer extends DG.JsViewer {
   viewerGrid: DG.Grid | null;
   maxSubstitutions: number;
   activityLimit: number;
   activityColumnName: string;
+  casesGrid: DG.Grid | null;
 
   constructor() {
     super();
@@ -21,6 +23,7 @@ export class SubstViewer extends DG.JsViewer {
     this.activityLimit = this.float('activityLimit', 2);
 
     this.viewerGrid = null;
+    this.casesGrid = null;
   }
 
   onPropertyChanged(property: DG.Property): void {
@@ -28,7 +31,6 @@ export class SubstViewer extends DG.JsViewer {
   }
 
   calcSubstitutions() {
-
     const aarColName = 'AAR';
     let splitedMatrix: string[][];
     let df: DG.DataFrame = this.dataFrame!;
@@ -40,10 +42,11 @@ export class SubstViewer extends DG.JsViewer {
 
     let tableValues: { [aar: string]: number[] } = {};
     let tableTooltips: { [aar: string]: string[] } = {};
-    let tableCases: { [aar: string]: number[][] } = {};
+    let tableCases: { [aar: string]: number[][][] } = {};
 
     let nRows = splitedMatrix.length;
     let nCols = splitedMatrix[0].length;
+    const nColsArray = Array(nCols);
 
     for (let i = 0; i < nRows - 1; i++) {
       for (let j = i + 1; j < nRows; j++) {
@@ -53,67 +56,78 @@ export class SubstViewer extends DG.JsViewer {
         let delta = values[i] - values[j];
 
         for (let k = 0; k < nCols; k++) {
-          if (splitedMatrix[i][k] != splitedMatrix[j][k] && Math.abs(delta) >= this.activityLimit) {
+          const smik = splitedMatrix[i][k];
+          const smjk = splitedMatrix[j][k];
+          if (smik != smjk && Math.abs(delta) >= this.activityLimit) {
+            const vi = values[i].toFixed(2);
+            const vj = values[j].toFixed(2);
             substCounter++;
-            subst1[k] = [splitedMatrix[i][k], splitedMatrix[i][k] + " -> " + splitedMatrix[j][k] + "\t" + values[i] + " -> " + values[j]];
-            subst2[k] = [splitedMatrix[j][k], splitedMatrix[j][k] + " -> " + splitedMatrix[i][k] + "\t" + values[j] + " -> " + values[i]];
+            subst1[k] = [smik, `${smik} -> ${smjk}\t\t${vi} -> ${vj}`];
+            subst2[k] = [smjk, `${smjk} -> ${smik}\t\t${vj} -> ${vi}`];
           }
         }
 
         if (substCounter <= this.maxSubstitutions && substCounter > 0) {
 
           Object.keys(subst1).forEach((pos) => {
-            let aar = subst1[parseInt(pos)][0];
+            const posInt = parseInt(pos);
+            let aar = subst1[posInt][0];
             if (!Object.keys(tableValues).includes(aar)) {
-              tableValues[aar] = Array.apply(null, Array(nCols)).map(function () { return 0; });
-              tableTooltips[aar] = Array.apply(null, Array(nCols)).map(function () { return ""; });
-              tableCases[aar] = Array.apply(null, Array(nCols)).map(function () { return []; });
+              tableValues[aar] = Array.apply(null, nColsArray).map(function () { return DG.INT_NULL; });
+              tableTooltips[aar] = Array.apply(null, nColsArray).map(function () { return ""; });
+              tableCases[aar] = Array.apply(null, nColsArray).map(function () { return []; });
             }
 
-            tableValues[aar][parseInt(pos)]++;
-            tableTooltips[aar][parseInt(pos)] = tableTooltips[aar][parseInt(pos)] == "" ? "Substitution\tvalues\n" : tableTooltips[aar][parseInt(pos)];
-            tableTooltips[aar][parseInt(pos)] += subst1[parseInt(pos)][1] + "\n";
-            tableCases[aar][parseInt(pos)] = [i, j, delta];
+            tableValues[aar][posInt] = tableValues[aar][posInt] === DG.INT_NULL ? 1 : tableValues[aar][posInt] + 1;
+            tableTooltips[aar][posInt] = tableTooltips[aar][posInt] == "" ? "Substitution\tvalues\n" : tableTooltips[aar][posInt];
+            tableTooltips[aar][posInt] += subst1[posInt][1] + "\n";
+            tableCases[aar][posInt].push([i, j, delta]);
           });
           Object.keys(subst2).forEach((pos) => {
-            let aar = subst2[parseInt(pos)][0];
+            const posInt = parseInt(pos);
+            let aar = subst2[posInt][0];
             if (!Object.keys(tableValues).includes(aar)) {
-              tableValues[aar] = Array.apply(null, Array(nCols)).map(function () { return 0; });
-              tableTooltips[aar] = Array.apply(null, Array(nCols)).map(function () { return ""; });
-              tableCases[aar] = Array.apply(null, Array(nCols)).map(function () { return []; });
+              tableValues[aar] = Array.apply(null, nColsArray).map(function () { return DG.INT_NULL; });
+              tableTooltips[aar] = Array.apply(null, nColsArray).map(function () { return ""; });
+              tableCases[aar] = Array.apply(null, nColsArray).map(function () { return []; });
             }
 
-            tableValues[aar][parseInt(pos)]++;
-            tableTooltips[aar][parseInt(pos)] = tableTooltips[aar][parseInt(pos)] == "" ? "Substitution\tvalues\n" : tableTooltips[aar][parseInt(pos)];
-            tableTooltips[aar][parseInt(pos)] += subst2[parseInt(pos)][1] + "\n";
-            tableCases[aar][parseInt(pos)] = [j, i, -delta];
+            tableValues[aar][posInt] = tableValues[aar][posInt] === DG.INT_NULL ? 1 : tableValues[aar][posInt] + 1;
+            // tableValues[aar][posInt]++;
+            tableTooltips[aar][posInt] = tableTooltips[aar][posInt] == "" ? "Substitution\tValues\n" : tableTooltips[aar][posInt];
+            tableTooltips[aar][posInt] += subst2[posInt][1] + "\n";
+            tableCases[aar][posInt].push([j, i, -delta]);
           });
         }
       }
     }
 
-    const cols = [...Array(nCols).keys()].map((v) => DG.Column.int((v + 1).toString()));
-    cols.splice(0, 0, DG.Column.string(aarColName));
+    const cols = [...Array(nCols).keys()].map((v) => DG.Column.int(v.toString()));
+    const aarCol = DG.Column.string(aarColName);
+    cols.splice(0, 1, aarCol);
     let table = DG.DataFrame.fromColumns(cols);
     for (const aar of Object.keys(tableValues)) {
+      tableValues[aar].splice(0, 1);
       table.rows.addNew([aar, ...tableValues[aar]]);
     }
 
-    let groupMapping: { [key: string]: string } = {};
+    // let groupMapping: { [key: string]: string } = {};
 
-    Object.keys(aarGroups).forEach((value) => groupMapping[value] = value);
-
+    //TODO: enable grouping
+    // Object.keys(aarGroups).forEach((value) => groupMapping[value] = value);
 
     this.viewerGrid = table.plot.grid();
 
+    setAARRenderer(aarCol, this.viewerGrid);
+
     this.viewerGrid.onCellTooltip(
       (gCell, x, y) => {
-        if (gCell.cell.value !== DG.INT_NULL) {
-          const colName = gCell.tableColumn!.name;
+        if (gCell.cell.value !== DG.INT_NULL && gCell.tableColumn !== null && gCell.tableRowIndex !== null) {
+          const colName = gCell.tableColumn.name;
           if (colName !== aarColName) {
-            const aar = this.viewerGrid!.table.get(aarColName, gCell.tableRowIndex!);
-            const pos: number = parseInt(colName);
-            const tooltipText = tableTooltips[aar][pos - 1];
+            const aar = this.viewerGrid!.table.get(aarColName, gCell.tableRowIndex);
+            const pos = parseInt(colName);
+            const tooltipText = tableTooltips[aar][pos];
             ui.tooltip.show(ui.divText(tooltipText ? tooltipText : 'No substitutions'), x, y);
           }
         }
@@ -121,12 +135,53 @@ export class SubstViewer extends DG.JsViewer {
       }
     );
 
+    for (const col of table.columns.names()) {
+      this.viewerGrid.col(col)!.width = this.viewerGrid.props.rowHeight;
+    }
+
+    this.viewerGrid.onCellRender.subscribe((args) => {
+      if (args.cell.isRowHeader && args.cell.gridColumn.visible) {
+        args.cell.gridColumn.visible = false;
+        args.preventDefault();
+      }
+    });
+
+    table.onCurrentCellChanged.subscribe((_) => {
+      if (table.currentCol !== null && table.currentCol.name !== aarColName && table.currentCell.value !== null) {
+        const aar = table.get(aarColName, table.currentRowIdx);
+        const pos = parseInt(table.currentCol.name);
+        const currentCase = tableCases[aar][pos];
+        const initCol = DG.Column.string('Initial');
+        const subsCol = DG.Column.string('Substituted');
+
+        const tempDf = DG.DataFrame.fromColumns([
+          initCol,
+          subsCol,
+          DG.Column.float('Difference'),
+        ]);
+
+        for (const row of currentCase) {
+          tempDf.rows.addNew([col.get(row[0]), col.get(row[1]), row[2]]);
+        }
+
+        initCol.semType = 'alignedSequence';
+        subsCol.semType = 'alignedSequence';
+
+        this.casesGrid = tempDf.plot.grid();
+      } else {
+        this.casesGrid = null;
+      }
+      this.render();
+    });
+
     this.render();
   }
 
   render() {
     $(this.root).empty();
-    this.root.appendChild(this.viewerGrid!.root);
+    this.root.appendChild(this.casesGrid === null ?
+      this.viewerGrid!.root : ui.splitH([this.viewerGrid!.root, this.casesGrid.root])
+    );
   }
 
   split(peptideColumn: DG.Column, filter: boolean = true): string[][] {
