@@ -553,13 +553,18 @@ export class Column {
   public temp: any;
   public tags: any;
   private _dialogs: ColumnDialogHelper | undefined;
-  private _colors: ColumnColorHelper | undefined;
-  private _markers: ColumnMarkerHelper | undefined;
+  private _meta: ColumnMetaHelper | undefined;
 
   constructor(dart: any) {
     this.dart = dart;
     this.temp = new MapProxy(api.grok_Column_Get_Temp(this.dart));
     this.tags = new MapProxy(api.grok_Column_Get_Tags(this.dart));
+  }
+
+  get meta(): ColumnMetaHelper {
+    if (this._meta == undefined)
+      this._meta = new ColumnMetaHelper(this);
+    return this._meta;
   }
 
   /** Creates a {@link Column} from the list of string values
@@ -752,16 +757,14 @@ export class Column {
     return this._dialogs;
   }
 
+  // Obsolete. Recommended method is "meta.colors".
   get colors(): ColumnColorHelper {
-    if (this._colors == undefined)
-      this._colors = new ColumnColorHelper(this);
-    return this._colors;
+    return this.meta.colors;
   }
 
+  // Obsolete. Recommended method is "meta.markers".
   get markers(): ColumnMarkerHelper {
-    if (this._markers == undefined)
-      this._markers = new ColumnMarkerHelper(this);
-    return this._markers;
+    return this.meta.markers;
   }
 
   /**
@@ -2244,4 +2247,26 @@ export class ColumnMarkerHelper {
     jsonTxt = JSON.stringify(jsonMap);
     this.column.setTag(DG.TAGS.MARKER_CODING, jsonTxt);
   }
+}
+
+export class ColumnMetaHelper {
+  private readonly column: Column;
+  private _colors: ColumnColorHelper | undefined;
+  private _markers: ColumnMarkerHelper | undefined;
+
+  constructor(column: Column) {
+    this.column = column;
+  }
+
+  get colors(): ColumnColorHelper {
+    if (this._colors == undefined)
+      this._colors = new ColumnColorHelper(this.column);
+    return this._colors;
+  }
+
+  get markers(): ColumnMarkerHelper {
+    if (this._markers == undefined)
+      this._markers = new ColumnMarkerHelper(this.column);
+    return this._markers;
+  }  
 }
