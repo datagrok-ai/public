@@ -31,6 +31,11 @@ class RadioButtonFilter extends DG.Filter {
     this.render();
   }
 
+  applyState(state) {
+    super.applyState(state);
+    this.render();
+  }
+
   detach() {
     super.detach();
     console.log('radio button filter detached');

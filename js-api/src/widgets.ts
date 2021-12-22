@@ -243,11 +243,23 @@ export class Widget {
  * Supports collaborative filtering by efficiently working together with
  * other filters. */
 export abstract class Filter extends Widget {
-  dataFrame: DataFrame | null;
+
+  /** An indicator icon on the left of the filter header, before the name.
+   * A filter is responsible for hiding or showing it, depending on its state. */
   indicator: HTMLDivElement;
+
+  /** Group of control icons on the right of the filter header, after the name.
+   * FilterGroup takes care of its visibility. */
   controls: HTMLDivElement;
-  host: HTMLElement;
+
+  /** A DataFrame this filter is associated with. */
+  dataFrame: DataFrame | null;
+
+  /** A column this filter is associated with. */
+  column: Column | null = null;
+
   columnName?: string;
+
 
   constructor() {
     super(ui.div());
@@ -255,7 +267,6 @@ export abstract class Filter extends Widget {
     this.dataFrame = null;
     this.indicator = ui.div([], 'd4-filter-indicator');
     this.controls = ui.div([], 'd4-flex-row');
-    this.host = this.root;
 
     $(this.indicator).hide();
   }
@@ -282,6 +293,7 @@ export abstract class Filter extends Widget {
   /** Override to load filter state. */
   applyState(state: any): void {
     this.columnName = state.columnName;
+    this.column = this.columnName && this.dataFrame ? this.dataFrame.col(this.columnName) : null;
     console.log('apply state');
   }
 

@@ -79,6 +79,9 @@ export namespace chem {
   }
 
 
+  /**
+   * Molecule sketcher that supports multiple dynamically initialized implementations.
+   * */
   export class Sketcher extends Widget {
 
     molInput: HTMLInputElement = ui.element('input');
@@ -86,13 +89,14 @@ export namespace chem {
     /* molInputSubscription: Subscription | null = null; */
     changedSub: Subscription | null = null;
     sketcher: SketcherBase | null = null;
+    onChanged: Subject<any> = new Subject<any>();
     listeners: Function[] = [];
 
-    _smiles: string | null = null;
-    _molFile: string | null = null;
-    _smarts: string | null = null;
+    _smiles: string = '';
+    _molFile: string = '';
+    _smarts: string = '';
 
-    getSmiles(): string | null {
+    getSmiles(): string {
       return this.sketcher ? this.sketcher.smiles : this._smiles;
     }
 
@@ -102,7 +106,7 @@ export namespace chem {
         this.sketcher!.smiles = x;
     }
 
-    getMolFile(): string | null {
+    getMolFile(): string {
       return this.sketcher ? this.sketcher.molFile : this._molFile;
     }
 
@@ -200,6 +204,7 @@ export namespace chem {
       await ui.tools.waitForElementInDom(this.root);
       await this.sketcher!.init();
       this.changedSub = this.sketcher!.onChanged.subscribe((_: any) => {
+        this.onChanged.next(null);
         for (let callback of this.listeners)
           callback();
         grok.shell.o = SemanticValue.fromValueType(this.sketcher!.smiles, 'Molecule');
