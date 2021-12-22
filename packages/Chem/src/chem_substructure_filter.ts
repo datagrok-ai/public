@@ -12,7 +12,7 @@ export class SubstructureFilter extends DG.Filter {
 
   molfile: string = '';
   column: DG.Column | null = null;
-  _sketcher: HTMLElement;
+  _sketcher: grok.chem.Sketcher;
   readonly WHITE_MOL = `
   0  0  0  0  0  0  0  0  0  0999 V2000
 M  END
@@ -21,11 +21,12 @@ M  END
   constructor() {
     super();
     this.root = ui.divV([]);
-    this._sketcher = grok.chem.sketcher((_: any, molfile: string) => {
-      this.molfile = molfile;
+    this._sketcher = new grok.chem.Sketcher();
+    this._sketcher.setChangeListenerCallback(() => {
+      this.molfile = this._sketcher.getMolFile() ?? '';
       this.dataFrame?.rows.requestFilter();
     });
-    this.root.appendChild(this._sketcher);
+    this.root.appendChild(this._sketcher.root);
   }
 
   attach(dFrame: DG.DataFrame) {
@@ -66,5 +67,13 @@ M  END
   
   detach() {
     this.subs.forEach((s) => s.unsubscribe());
+  }
+
+  get filterSummary(): string {
+    return "";
+  }
+
+  get isFiltering(): boolean {
+    return false;
   }
 }
