@@ -16,7 +16,7 @@ import {manualAlignmentWidget} from './widgets/manual-alignment';
 import {SARViewer, SARViewerVertical} from './viewers/sar-viewer';
 import {peptideMoleculeWidget} from './widgets/peptide-molecule';
 import {SpiralPlot} from './viewers/spiral-plot';
-import { SubstViewer } from './viewers/subst-viewer';
+import {SubstViewer} from './viewers/subst-viewer';
 
 export const _package = new DG.Package();
 let tableGrid: DG.Grid;
