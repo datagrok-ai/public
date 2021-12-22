@@ -24,6 +24,9 @@ export async function callMVA(
     table: currentDf,
     features: encDf.columns.names(),
     prediction: scaledColName,
+    components: 10,
+    showScores: true,
+    showRegresCoefs: true,
   });
   console.log(res);
 }
