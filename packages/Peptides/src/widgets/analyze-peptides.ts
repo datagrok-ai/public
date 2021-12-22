@@ -76,8 +76,8 @@ export async function analyzePeptidesWidget(
     if (activityColumnChoice.value.type === DG.TYPE.FLOAT) {
       const progress = DG.TaskBarProgressIndicator.create('Loading SAR...');
       const options: {[key: string]: string} = {
-        'activityColumnColumnName': activityColumnChoice.value.name,
-        'activityScalingMethod': activityScalingMethod.value,
+        'activityColumnName': activityColumnChoice.value.name,
+        'scaling': activityScalingMethod.value,
       };
 
       const peptides = new Peptides();

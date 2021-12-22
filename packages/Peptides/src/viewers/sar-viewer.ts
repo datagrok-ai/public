@@ -16,8 +16,8 @@ import {model} from './model';
 export class SARViewer extends DG.JsViewer {
   protected viewerGrid: DG.Grid | null;
   protected sourceGrid: DG.Grid | null;
-  protected activityColumnColumnName: string;
-  protected activityScalingMethod: string;
+  protected activityColumnName: string;
+  protected scaling: string;
   protected bidirectionalAnalysis: boolean;
   protected filterMode: boolean;
   protected statsDf: DG.DataFrame | null;
@@ -51,9 +51,9 @@ export class SARViewer extends DG.JsViewer {
     this.viewGridInitialized = false;
     this.currentBitset = null;
 
-    //TODO: find a way to restrict activityColumnColumnName to accept only numerical columns (double even better)
-    this.activityColumnColumnName = this.string('activityColumnColumnName');
-    this.activityScalingMethod = this.string('activityScalingMethod', 'none', {choices: ['none', 'lg', '-lg']});
+    //TODO: find a way to restrict activityColumnName to accept only numerical columns (double even better)
+    this.activityColumnName = this.string('activityColumnName');
+    this.scaling = this.string('scaling', 'none', {choices: ['none', 'lg', '-lg']});
     this.filterMode = this.bool('filterMode', false);
     this.bidirectionalAnalysis = this.bool('bidirectionalAnalysis', false);
     this.grouping = this.bool('grouping', false);
@@ -115,14 +115,14 @@ export class SARViewer extends DG.JsViewer {
       return;
     }
 
-    if (property.name === 'activityScalingMethod' && typeof this.dataFrame !== 'undefined') {
+    if (property.name === 'scaling' && typeof this.dataFrame !== 'undefined') {
       const minActivity = DG.Stats.fromColumn(
-        this.dataFrame!.col(this.activityColumnColumnName)!,
+        this.dataFrame!.col(this.activityColumnName)!,
         this._initialBitset,
       ).min;
-      if (minActivity && minActivity <= 0 && this.activityScalingMethod !== 'none') {
-        grok.shell.warning(`Could not apply ${this.activityScalingMethod}: ` +
-          `activity column ${this.activityColumnColumnName} contains zero or negative values, falling back to 'none'.`);
+      if (minActivity && minActivity <= 0 && this.scaling !== 'none') {
+        grok.shell.warning(`Could not apply ${this.scaling}: ` +
+          `activity column ${this.activityColumnName} contains zero or negative values, falling back to 'none'.`);
         property.set(this, 'none');
         return;
       }
@@ -230,7 +230,7 @@ export class SARViewer extends DG.JsViewer {
           const hist = originalDf.clone(this._initialBitset).plot.histogram({
           // const hist = originalDf.plot.histogram({
             filteringEnabled: false,
-            valueColumnName: `${this.activityColumnColumnName}Scaled`,
+            valueColumnName: `${this.activityColumnName}Scaled`,
             splitColumnName: '~splitCol',
             legendVisibility: 'Never',
             showXAxis: true,
@@ -317,11 +317,11 @@ export class SARViewer extends DG.JsViewer {
     }
     //TODO: optimize. Don't calculate everything again if only view changes
     if (computeData) {
-      if (typeof this.dataFrame !== 'undefined' && this.activityColumnColumnName && this.sourceGrid) {
+      if (typeof this.dataFrame !== 'undefined' && this.activityColumnName && this.sourceGrid) {
         await model?.updateData(
           this.dataFrame!,
-          this.activityColumnColumnName,
-          this.activityScalingMethod,
+          this.activityColumnName,
+          this.scaling,
           this.sourceGrid,
           this.bidirectionalAnalysis,
           this._initialBitset,
