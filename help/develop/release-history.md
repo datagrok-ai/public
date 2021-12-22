@@ -1,6 +1,22 @@
 <!-- TITLE: Release History -->
 <!-- SUBTITLE: -->
 
+# 2021-12-21 Dev build 0.106.0
+
+## Latest Docker Images
+
+* Datagrok: 
+  *  `docker pull datagrok/datagrok:0.106.0`
+  *  `docker pull datagrok/datagrok:latest`
+  
+* [Docker-Compose](admin/docker-compose.md)
+
+## Addressed Issues
+
+* Function View: markup improvements 
+* Datagrok: disable update certificates by environment variable 
+
+
 # 2021-12-21 Dev build 0.105.0
 
 ## Latest Docker Images

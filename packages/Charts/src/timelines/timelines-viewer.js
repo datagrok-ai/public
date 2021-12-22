@@ -349,8 +349,10 @@ export class TimelinesViewer extends EChartViewer {
       if (start === end && end === null) continue;
       if (this.showOpenIntervals) {
         // TODO: handle edge case of different column types
-        start = start ?? Math.min(getColumnMin(startColumn), getColumnMin(endColumn));
-        end = end ?? Math.max(getColumnMax(startColumn), getColumnMax(endColumn));
+        if (start == null)
+          start = Math.min(getColumnMin(startColumn), getColumnMin(endColumn));
+        if (end == null)
+          end = Math.max(getColumnMax(startColumn), getColumnMax(endColumn));
       }
       const color = colorCategories[colorBuf[i]];
       const event = eventCategories[eventBuf[i]];

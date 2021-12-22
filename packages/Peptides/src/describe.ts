@@ -431,5 +431,8 @@ export async function describe(
     SARVgrid.col(aminoAcidResidue)!.name = 'Groups';
   }
 
+  SARgrid.props.allowEdit = false;
+  SARVgrid.props.allowEdit = false;
+
   return [SARgrid, SARVgrid, statsDf, groupMapping];
 }

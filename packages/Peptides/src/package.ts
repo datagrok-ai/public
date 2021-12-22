@@ -64,25 +64,18 @@ export function Peptides() {
     'Use and analyse peptide sequence data to support your research:',
   );
 
-  const annotationViewerDiv = ui.div();
-
   const windows = grok.shell.windows;
   windows.showToolbox = false;
   windows.showHelp = false;
   windows.showProperties = false;
 
-  const mainDiv = ui.div();
   grok.shell.newView('Peptides', [
     appDescription,
     ui.info([textLink]),
-    ui.div([
-      ui.block25([
-        ui.button('Open peptide sequences demonstration set', () => main('aligned.csv'), ''),
-        ui.button('Open complex case demo', () => main('aligned_2.csv'), ''),
-      ]),
-      ui.block75([annotationViewerDiv]),
+    ui.divH([
+      ui.button('Open peptide sequences demonstration set', () => main('aligned.csv'), ''),
+      ui.button('Open complex case demo', () => main('aligned_2.csv'), ''),
     ]),
-    mainDiv,
   ]);
 }
 
