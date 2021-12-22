@@ -95,15 +95,21 @@ by the parameter's name.
 
 ### Conda environments
 
-Each script can be given a specific environment configuration that it depends on.
-[Conda](https://docs.conda.io/en/latest/) is used as the environment management system.
-Conda environment is specified as a yaml configuration file or string. In Datagrok, this
-confinugration can be specified either right inside the script, or as part of the package.
-The benefit of using a Conda environment is that it gives a completely sandboxed, controlled
-area for running scripts, and only takes time once to be pre-created and later be re-used
-directly with no libraries resolution and installations delays. 
+Each script can be given a specific environment configuration under which it will run,
+including the language verison and a set of libraries. [Conda](https://docs.conda.io/en/latest/)
+is used as the environment management system. Conda environment is specified as a yaml
+configuration file or a string.
+ 
+The benefit of using a Conda environment is that it gives a completely sandboxed, controlled area
+for running scripts, and only takes time once to be pre-created and later be re-used by a reference
+with no delay for resolving dependencies and installing language versions.
 
-#### Specify in a package
+In Datagrok, Conda environment confinugration can be specified either right inside the script,
+or as part of a [package](../develop/develop.md#packages). The package can be both the one
+containing the script or any other deployed package with specified environment and available
+under your current user.
+
+#### Specify environment in a package
 
 Environment configuration is stored in the default Conda yaml format and can be 
 [exported](https://docs.conda.io/projects/conda/en/latest/user-guide/tasks/manage-environments.html#creating-an-environment-from-an-environment-yml-file) 
@@ -117,13 +123,17 @@ can define its own configurations as well (
 [see examples](https://github.com/datagrok-ai/public/tree/master/packages/DemoScripts)).
 
 If the `#environment` tag in the script header is not specified, the script uses the configuration
-defined in the `default.yaml`.  
+defined in 
+[`default.yaml`](https://github.com/datagrok-ai/public/blob/master/environments/default.yaml).  
 
-This is how to define the "chemprop" environment in the script header: 
+This is how to define the "Chemprop" environment in the script header: 
 
 ```
-# Environment: chemprop
+# Environment: Chemprop
 ```
+
+In this case, the environment `Chemprop` should be specified in a file
+`environments/Chemprop.yaml` inside the package where this script belongs.
 
 Datagrok identifies and resolves environments by their names. If an environment referred in
 a script wasn't previously used, it will first be created on the
@@ -131,7 +141,7 @@ a script wasn't previously used, it will first be created on the
 If it was used at least once, a previously created environment will be re-used with no delay to
 run the script. 
 
-#### Specify in-place
+#### Specify environment in-place
 
 Set an `environment` parameter of the script to a one-liner yaml specifying the standard
 Conda yaml config, but omitting its name and enclosing braces `{}`. For example, we need
@@ -171,7 +181,35 @@ is changed in this script to some other environment which was previously created
 in some other script, this environment will also be picked up and reused. These environments
 are handeled by Datagrok using MD5 hashes of their body strings.
 
-#### Common practice with Conda environments
+#### Reference an environment from another package
+
+An environment `SomeEnv` specified in a package `SomePackage` is available from all scripts
+in the platform for referencing as `SomePackage:SomeEnv`. If the package `SomePackage` is
+available to the current user, the reference will work. Such environment reference is
+abailable in both package scripts and ad-hoc scripts created in the platform UI.
+
+#### Global environments
+
+Environment referencing is a handy way to organize global (organization-wide) environments.
+This will let an administrator version such common environments through a dedicated package,
+and exactly one physical environment will be re-used by many users, which is more space
+and time efficient.
+
+Do the following steps:
+
+1. Agree that one package, say, `GlobalEnvs` will now contain global environments
+2. Choose a common prefix to name these global environments with, say, `Global`
+3. Name all global environments in this package with the chosen prefix: `Global<ENVIRONMENT_NAME>`
+4. Publish `GlobalEnvs` platform as `--release` to the platform and share it to `All Users`,
+or to the group of users you want to have access to these environments
+5. Let other users know these environments are now available as
+`GlobalEnvs:Global<ENVIRONMENT_NAME>`
+
+In the future, a script editor will be provided in Datagrok. For the property `#environment: `
+of the script, it will enumerate in a dropdown list all available environments for the current
+user and the current script.
+
+#### Common practices with Conda environments
 
 It is a [known](https://github.com/conda/conda/issues/8051#issuecomment-464199791)
 [issue](https://github.com/conda/conda/issues/8051#issuecomment-631862928)
