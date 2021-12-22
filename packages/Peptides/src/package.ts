@@ -16,7 +16,7 @@ import {manualAlignmentWidget} from './widgets/manual-alignment';
 import {SARViewer, SARViewerVertical} from './viewers/sar-viewer';
 import {peptideMoleculeWidget} from './widgets/peptide-molecule';
 import {SpiralPlot} from './viewers/spiral-plot';
-import { SubstViewer } from './viewers/subst-viewer';
+import {SubstViewer} from './viewers/subst-viewer';
 
 export const _package = new DG.Package();
 let tableGrid: DG.Grid;
@@ -84,6 +84,9 @@ export function Peptides() {
 //input: column col {semType: alignedSequence}
 //output: widget result
 export async function peptidesPanel(col: DG.Column): Promise<DG.Widget> {
+  if (col.getTag('isAnalysisApplicable') === 'false') {
+    return new DG.Widget(ui.divText('Analysis is not applicable'));
+  }
   view = (grok.shell.v as DG.TableView);
   tableGrid = view.grid;
   currentDf = col.dataFrame;
