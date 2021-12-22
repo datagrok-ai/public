@@ -178,7 +178,7 @@ export async function describe(
 
   //calculate p-values based on t-test
   let position: string;
-  let AAR: string;
+  let aar: string;
   let currentActivity: number[];
   let otherActivity: number[];
   let testResult;
@@ -190,17 +190,17 @@ export async function describe(
   const pValCol: DG.Column = matrixDf.columns.addNewFloat('pValue');
   for (let i = 0; i < matrixDf.rowCount; i++) {
     position = matrixDf.get(positionColName, i);
-    AAR = matrixDf.get(aminoAcidResidue, i);
+    aar = matrixDf.get(aminoAcidResidue, i);
 
     //@ts-ignore
-    splitSeqDf.rows.select((row) => groupMapping[row[position]] === AAR);
+    splitSeqDf.rows.select((row) => groupMapping[row[position]] === aar);
     currentActivity = splitSeqDf
       .clone(splitSeqDf.selection, [activityColumnScaled])
       .getCol(activityColumnScaled)
       .toList();
 
     //@ts-ignore
-    splitSeqDf.rows.select((row) => groupMapping[row[position]] !== AAR);
+    splitSeqDf.rows.select((row) => groupMapping[row[position]] !== aar);
     otherActivity = splitSeqDf
       .clone(splitSeqDf.selection, [activityColumnScaled])
       .getCol(activityColumnScaled)
@@ -271,23 +271,23 @@ export async function describe(
   renderColNames.push('Mean difference');
 
   // !!! DRAWING PHASE !!!
-  const SARgrid = matrixDf.plot.grid();
-  SARgrid.sort([aminoAcidResidue]);
-  SARgrid.columns.setOrder([aminoAcidResidue].concat(positionColumns));
+  const sarGrid = matrixDf.plot.grid();
+  sarGrid.sort([aminoAcidResidue]);
+  sarGrid.columns.setOrder([aminoAcidResidue].concat(positionColumns));
 
-  const SARVgrid = sequenceDf.plot.grid();
-  SARVgrid.sort([positionColName]);
-  SARVgrid.col('pValue')!.format = 'four digits after comma';
-  SARVgrid.col('pValue')!.name = 'P-Value';
+  const sarVGrid = sequenceDf.plot.grid();
+  sarVGrid.sort([positionColName]);
+  sarVGrid.col('pValue')!.format = 'four digits after comma';
+  sarVGrid.col('pValue')!.name = 'P-Value';
 
   if (!grouping) {
     let tempCol = matrixDf.columns.byName(aminoAcidResidue);
     if (tempCol) {
-      setAARRenderer(tempCol, SARgrid);
+      setAARRenderer(tempCol, sarGrid);
     }
     tempCol = sequenceDf.columns.byName(aminoAcidResidue);
     if (tempCol) {
-      setAARRenderer(tempCol, SARgrid);
+      setAARRenderer(tempCol, sarGrid);
     }
   }
 
@@ -358,8 +358,8 @@ export async function describe(
     }
     args.g.restore();
   };
-  SARgrid.onCellRender.subscribe(cellRendererFunc);
-  SARVgrid.onCellRender.subscribe(cellRendererFunc);
+  sarGrid.onCellRender.subscribe(cellRendererFunc);
+  sarVGrid.onCellRender.subscribe(cellRendererFunc);
 
   // show all the statistics in a tooltip over cell
   const onCellTooltipFunc = function(cell: DG.GridCell, x: number, y: number) {
@@ -412,8 +412,8 @@ export async function describe(
     }
     return true;
   };
-  SARgrid.onCellTooltip(onCellTooltipFunc);
-  SARVgrid.onCellTooltip(onCellTooltipFunc);
+  sarGrid.onCellTooltip(onCellTooltipFunc);
+  sarVGrid.onCellTooltip(onCellTooltipFunc);
 
   sourceGrid.onCellPrepare((cell: DG.GridCell) => {
     const currentRowIndex = cell.tableRowIndex;
@@ -423,16 +423,16 @@ export async function describe(
   });
 
   for (const col of matrixDf.columns.names()) {
-    SARgrid.col(col)!.width = SARgrid.props.rowHeight;
+    sarGrid.col(col)!.width = sarGrid.props.rowHeight;
   }
 
   if (grouping) {
-    SARgrid.col(aminoAcidResidue)!.name = 'Groups';
-    SARVgrid.col(aminoAcidResidue)!.name = 'Groups';
+    sarGrid.col(aminoAcidResidue)!.name = 'Groups';
+    sarVGrid.col(aminoAcidResidue)!.name = 'Groups';
   }
 
-  SARgrid.props.allowEdit = false;
-  SARVgrid.props.allowEdit = false;
+  sarGrid.props.allowEdit = false;
+  sarVGrid.props.allowEdit = false;
 
-  return [SARgrid, SARVgrid, statsDf, groupMapping];
+  return [sarGrid, sarVGrid, statsDf, groupMapping];
 }

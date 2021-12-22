@@ -2,6 +2,7 @@ import * as ui from 'datagrok-api/ui';
 import * as DG from 'datagrok-api/dg';
 import {createPeptideSimilaritySpaceViewer} from './utils/peptide-similarity-space';
 import {addViewerToHeader} from './viewers/stacked-barchart-viewer';
+// import $ from 'cash-dom';
 
 /**
  * Peptides controller class.
@@ -41,6 +42,7 @@ export class Peptides {
     }
 
     const originalDfColumns = (currentDf.columns as DG.ColumnList).names();
+    const originalDfName = currentDf.name;
 
     const substViewer = view.addViewer(
       'substitution-analysis-viewer', {'activityColumnName': options['activityColumnName']},
@@ -62,7 +64,9 @@ export class Peptides {
       view,
       `${activityColumnChoice}Scaled`,
     );
-    view.dockManager.dock(peptideSpaceViewer, DG.DOCK_TYPE.LEFT, sarNode, 'Peptide Space Viewer', 0.3);
+    const psNode = view.dockManager.dock(peptideSpaceViewer, DG.DOCK_TYPE.LEFT, sarNode, 'Peptide Space Viewer', 0.3);
+    // const sarDockNodes = [sarNode, sarVNode, psNode];
+    // const sarViewers = [sarViewer, sarViewerVertical, peptideSpaceViewer];
 
     const StackedBarchartProm = currentDf.plot.fromType('StackedBarChartAA');
     addViewerToHeader(tableGrid, StackedBarchartProm);
@@ -90,9 +94,45 @@ export class Peptides {
       tableGrid.setOptions({'colHeaderHeight': 20});
       tableGrid.columns.setVisible(originalDfColumns);
       tableGrid.props.allowEdit = true;
+      currentDf.name = originalDfName;
 
       view.setRibbonPanels(ribbonPanels);
     }, 'Close viewers and restore dataframe');
+
+    // let substViewer: DG.Viewer | null = null;
+    // let substNode: DG.DockNode | null = null;
+    // let isSA = false;
+    // let viewLayout1: DG.ViewLayout | null = null;
+    // let viewLayout2: DG.ViewLayout | null = null;
+    // const switchViewers = ui.iconFA('toggle-on', () => {
+    //   if (isSA) {
+    //     viewLayout2 = view.saveLayout();
+    //     // view.dockManager.close(substNode!);
+    //     substViewer?.close();
+
+    //     view.loadLayout(viewLayout1!);
+
+    //     $(switchViewers).removeClass('fa-toggle-off');
+    //     $(switchViewers).addClass('fa-toggle-on');
+    //   } else {
+    //     viewLayout1 = view.saveLayout();
+    //     // sarDockNodes.forEach((node) => view.dockManager.close(node));
+    //     sarViewers.forEach((v) => v.close());
+
+    //     if (viewLayout2 === null) {
+    //       substViewer = view.addViewer(
+    //         'substitution-analysis-viewer', {'activityColumnName': options['activityColumnName']},
+    //       );
+    //       substNode = view.dockManager.dock(substViewer, DG.DOCK_TYPE.DOWN, null, 'Substitution Analysis');
+    //     } else {
+    //       view.loadLayout(viewLayout2);
+    //     }
+
+    //     $(switchViewers).removeClass('fa-toggle-on');
+    //     $(switchViewers).addClass('fa-toggle-off');
+    //   }
+    //   isSA = !isSA;
+    // });
 
     const ribbonPanels = view.getRibbonPanels();
     view.setRibbonPanels([[hideIcon]]);

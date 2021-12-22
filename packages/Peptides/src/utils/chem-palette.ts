@@ -56,7 +56,7 @@ export class ChemPalette {
   /**
    * Get color for the provided amino acid residue.
    * @param {string} c Amino acid residue string.
-   * @returns {string} Color.
+   * @return {string} Color.
    */
   getColor(c: string): string {
     const [color] = this.getColorPivot(c);
@@ -66,7 +66,7 @@ export class ChemPalette {
   /**
    * Get color for the provided amino acid residue pivot
    * @param {string} [c=''] Amino acid residue string.
-   * @returns {[string, string, number]}
+   * @return {[string, string, number]}
    */
   getColorAAPivot(c: string = ''): [string, string, number] {
     if (c.length == 1 || c[1] == '(') {
