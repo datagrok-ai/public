@@ -1,6 +1,26 @@
 <!-- TITLE: Release History -->
 <!-- SUBTITLE: -->
 
+# 2021-12-22 Dev build 0.107.0
+
+## Latest Docker Images
+
+* Datagrok: 
+  *  `docker pull datagrok/datagrok:0.107.0`
+  *  `docker pull datagrok/datagrok:latest`
+  
+* [Docker-Compose](admin/docker-compose.md)
+
+## Addressed Issues
+
+* (Bug) NPM repositories: add registry property 
+* Formula Lines: Property harmonization (opacity) 
+* JS API: Moved properties (column.colors => column.meta.colors, column.markers => column.meta.markers) 
+* Scripting: global named conda environments (WIP)
+* JS API: Users API (WIP)
+* CSS Fix 
+
+
 # 2021-12-21 Dev build 0.106.0
 
 ## Latest Docker Images
