@@ -1,0 +1,42 @@
+--name: UniqueUsers
+--input: string date { pattern: datetime }
+--input: list users
+--connection: System:DatagrokAdmin
+select t.date::date, count(t.id) as user_count from (
+	select distinct on (date(e.event_time), u.id) u.id, e.event_time as date
+	from events e
+	inner join users_sessions s on e.session_id = s.id
+	inner join users u on u.id = s.user_id
+	where @date(e.event_time)
+	and (u.login = any(@users) or @users = ARRAY['all'])
+) t
+group by t.date::date;
+--end
+
+--name: UniqueSessions
+--input: string date { pattern: datetime }
+--input: list users
+--connection: System:DatagrokAdmin
+select t.date::date, count(t.id) as user_count from (
+	select distinct on (date(e.event_time), u.id) u.id, e.event_time as date
+	from events e
+	join users_sessions s on e.session_id = s.id
+	left join users u on u.id = s.user_id
+	where @date(e.event_time)
+	and (u.login = any(@users) or @users = ARRAY['all'])
+) t
+group by t.date::date;
+--end
+
+--name: Usage
+--input: string date { pattern: datetime }
+--input: list users
+--connection: System:DatagrokAdmin
+select u.login as user, u.id as user_id, t.name, t.source, e.id as event_id, e.event_time, e.description from events e
+inner join event_types t on e.event_type_id = t.id
+inner join users_sessions s on e.session_id = s.id
+inner join users u on u.id = s.user_id
+where @date(e.event_time)
+and (u.login = any(@users) or @users = ARRAY['all'])
+order by e.event_time desc
+--end

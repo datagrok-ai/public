@@ -2,16 +2,24 @@ import * as grok from 'datagrok-api/grok';
 import * as ui from 'datagrok-api/ui';
 import * as DG from 'datagrok-api/dg';
 import $ from 'cash-dom';
-import { UsageAnalysisView } from './usage-view';
+import { EventsView } from './views/events-view';
 import { UsageWidget } from "./usage-widget";
 import '../css/usage_analysis.css';
+import {UaToolbox} from "./ua-toolbox";
+import {ErrorsView} from "./views/errors-view";
+import {UsersView} from "./views/users-view";
+import {OverviewView} from "./views/overview-view";
 
 export let _package = new DG.Package();
 
 //name: UsageAnalysis
 //tags: app
 export function usageAnalysisApp(): void {
-  grok.shell.addView(new UsageAnalysisView('Usage Analysis'));
+  let toolbox = new UaToolbox();
+  grok.shell.addView(new EventsView(toolbox));
+  grok.shell.addView(new ErrorsView(toolbox));
+  grok.shell.addView(new UsersView(toolbox));
+  grok.shell.addView(new OverviewView(toolbox));
 }
 
 //output: widget result
