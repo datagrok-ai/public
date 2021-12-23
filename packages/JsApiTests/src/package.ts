@@ -3,13 +3,13 @@ import * as grok from 'datagrok-api/grok';
 import * as ui from 'datagrok-api/ui';
 import * as DG from 'datagrok-api/dg';
 import './dataframe/df';
-import {category, tests} from "./test";
+import {tests} from "./test";
 
 export let _package = new DG.Package();
 
 //name: test
 export async function test() {
-  grok.shell.info(_package.webRoot);
+
   let results = tests.map(async (t) => {
     let r: {category?: String, name?: String, success: boolean, result: String};
     try {
