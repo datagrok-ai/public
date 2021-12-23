@@ -177,39 +177,31 @@ export async function describe(
   await matrixDf.columns.addNewCalculated('Ratio', '${count}/'.concat(`${peptidesCount}`));
 
   //calculate p-values based on t-test
-  let position: string;
-  let aar: string;
-  let currentActivity: number[];
-  let otherActivity: number[];
-  let testResult;
-  let currentMeanDiff: number;
   let pvalues: Float32Array = new Float32Array(matrixDf.rowCount).fill(1);
-  let pvalue = 1.;
-
   const mdCol: DG.Column = matrixDf.columns.addNewFloat('Mean difference');
   const pValCol: DG.Column = matrixDf.columns.addNewFloat('pValue');
   for (let i = 0; i < matrixDf.rowCount; i++) {
-    position = matrixDf.get(positionColName, i);
-    aar = matrixDf.get(aminoAcidResidue, i);
+    const position = matrixDf.get(positionColName, i);
+    const aar = matrixDf.get(aminoAcidResidue, i);
 
     //@ts-ignore
     splitSeqDf.rows.select((row) => groupMapping[row[position]] === aar);
-    currentActivity = splitSeqDf
+    const currentActivity: number[] = splitSeqDf
       .clone(splitSeqDf.selection, [activityColumnScaled])
       .getCol(activityColumnScaled)
       .toList();
 
     //@ts-ignore
     splitSeqDf.rows.select((row) => groupMapping[row[position]] !== aar);
-    otherActivity = splitSeqDf
+    const otherActivity: number[] = splitSeqDf
       .clone(splitSeqDf.selection, [activityColumnScaled])
       .getCol(activityColumnScaled)
       .toList();
 
-    testResult = tTest(currentActivity, otherActivity);
+    const testResult = tTest(currentActivity, otherActivity);
     // testResult = uTest(currentActivity, otherActivity);
-    currentMeanDiff = testResult['Mean difference']!;
-    pvalue = testResult[currentMeanDiff >= 0 ? 'p-value more' : 'p-value less'];
+    const currentMeanDiff = testResult['Mean difference']!;
+    const pvalue = testResult[currentMeanDiff >= 0 ? 'p-value more' : 'p-value less'];
 
     mdCol.set(i, currentMeanDiff);
     pvalues[i] = pvalue;
