@@ -47,7 +47,10 @@ export class Peptides {
     const substViewer = view.addViewer(
       'substitution-analysis-viewer', {'activityColumnName': options['activityColumnName']},
     );
-    view.dockManager.dock(substViewer, DG.DOCK_TYPE.RIGHT, null, 'Substitution Analysis');
+    const substNode = view.dockManager.dock(substViewer, DG.DOCK_TYPE.RIGHT, null, 'Substitution Analysis');
+
+    // const layout1 = view.saveLayout();
+    // view.dockManager.close(substNode);
 
     const sarViewer = view.addViewer('peptide-sar-viewer', options);
     const sarNode = view.dockManager.dock(sarViewer, DG.DOCK_TYPE.DOWN, null, 'SAR Viewer');
@@ -65,8 +68,8 @@ export class Peptides {
       `${activityColumnChoice}Scaled`,
     );
     const psNode = view.dockManager.dock(peptideSpaceViewer, DG.DOCK_TYPE.LEFT, sarNode, 'Peptide Space Viewer', 0.3);
-    // const sarDockNodes = [sarNode, sarVNode, psNode];
-    // const sarViewers = [sarViewer, sarViewerVertical, peptideSpaceViewer];
+
+    // const layout2 = view.saveLayout();
 
     const StackedBarchartProm = currentDf.plot.fromType('StackedBarChartAA');
     addViewerToHeader(tableGrid, StackedBarchartProm);
@@ -99,35 +102,14 @@ export class Peptides {
       view.setRibbonPanels(ribbonPanels);
     }, 'Close viewers and restore dataframe');
 
-    // let substViewer: DG.Viewer | null = null;
-    // let substNode: DG.DockNode | null = null;
     // let isSA = false;
-    // let viewLayout1: DG.ViewLayout | null = null;
-    // let viewLayout2: DG.ViewLayout | null = null;
     // const switchViewers = ui.iconFA('toggle-on', () => {
     //   if (isSA) {
-    //     viewLayout2 = view.saveLayout();
-    //     // view.dockManager.close(substNode!);
-    //     substViewer?.close();
-
-    //     view.loadLayout(viewLayout1!);
-
+    //     view.loadLayout(layout1);
     //     $(switchViewers).removeClass('fa-toggle-off');
     //     $(switchViewers).addClass('fa-toggle-on');
     //   } else {
-    //     viewLayout1 = view.saveLayout();
-    //     // sarDockNodes.forEach((node) => view.dockManager.close(node));
-    //     sarViewers.forEach((v) => v.close());
-
-    //     if (viewLayout2 === null) {
-    //       substViewer = view.addViewer(
-    //         'substitution-analysis-viewer', {'activityColumnName': options['activityColumnName']},
-    //       );
-    //       substNode = view.dockManager.dock(substViewer, DG.DOCK_TYPE.DOWN, null, 'Substitution Analysis');
-    //     } else {
-    //       view.loadLayout(viewLayout2);
-    //     }
-
+    //     view.loadLayout(layout2);
     //     $(switchViewers).removeClass('fa-toggle-on');
     //     $(switchViewers).addClass('fa-toggle-off');
     //   }
@@ -135,6 +117,7 @@ export class Peptides {
     // });
 
     const ribbonPanels = view.getRibbonPanels();
+    // view.setRibbonPanels([[hideIcon, switchViewers]]);
     view.setRibbonPanels([[hideIcon]]);
   }
 }

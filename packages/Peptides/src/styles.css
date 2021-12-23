@@ -35,3 +35,12 @@
   height: 50px;
   overflow: hidden;
 }
+
+#pep-hist-host #center {
+  height: 131px;
+}
+
+#pep-hist-host > #root {
+  height: unset;
+  width: 100%;
+}
