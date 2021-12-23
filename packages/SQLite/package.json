@@ -2,7 +2,7 @@
 	"name": "@datagrok/sqlite",
 	"beta": false,
 	"friendlyName": "SQLite",
-	"version": "0.0.2",
+	"version": "0.0.3",
 	"description": "",
 	"dependencies": {
 		"cash-dom": "latest",
@@ -13,6 +13,7 @@
 		"typescript": "latest"
 	},
 	"devDependencies": {
+		"@types/sql.js": "latest",
 		"@typescript-eslint/eslint-plugin": "latest",
 		"@typescript-eslint/parser": "latest",
 		"eslint": "latest",
