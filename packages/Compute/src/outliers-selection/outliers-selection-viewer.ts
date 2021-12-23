@@ -50,7 +50,7 @@ export class OutliersSelectionViewer extends DG.JsViewer {
       (inputData.columns as DG.ColumnList).addNew(FLUX, 'double').init((index) => (inputData.cell(index, 'time (min)').value/60.0) / ((inputData.cell(index, 'filtrate volume (mL)').value/1000.0) / (DEFAULT_TEST_AREA / 10000.0)));
     }
 
-    const initialData = inputData.clone();
+    inputData.col(IS_OUTLIER_COL_LABEL)?.markers.assign('true', DG.MARKER_TYPE.OUTLIER);
 
     const clearTable = () => {
       return DG.DataFrame.fromColumns([
