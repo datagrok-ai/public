@@ -65,8 +65,8 @@ export class TimelinesViewer extends EChartViewer {
         if (params.componentType === 'yAxis') return this.getStrValue(this.columnData.splitByColumnName, i) === params.value;
         if (params.componentType === 'series') {
           return params.value[0] === this.getStrValue(this.columnData.splitByColumnName, i) &&
-                 params.value[1] === this.getSafeValue(this.columnData.startColumnName, i) &&
-                 params.value[2] === this.getSafeValue(this.columnData.endColumnName, i);
+                 this.isSameDate(params.value[1], this.getSafeValue(this.columnData.startColumnName, i)) &&
+                 this.isSameDate(params.value[2], this.getSafeValue(this.columnData.endColumnName, i));
         }
         return false;
       }, params.event.event));
@@ -113,8 +113,8 @@ export class TimelinesViewer extends EChartViewer {
         if (params.componentType === 'yAxis') return this.getStrValue(this.columnData.splitByColumnName, i) === params.value;
         if (params.componentType === 'series') {
           return params.value[0] === this.getStrValue(this.columnData.splitByColumnName, i) &&
-            params.value[1] === this.getSafeValue(this.columnData.startColumnName, i) &&
-            params.value[2] === this.getSafeValue(this.columnData.endColumnName, i);
+            this.isSameDate(params.value[1], this.getSafeValue(this.columnData.startColumnName, i)) &&
+            this.isSameDate(params.value[2], this.getSafeValue(this.columnData.endColumnName, i));
         }
         return false;
       }, x, y);
@@ -133,10 +133,10 @@ export class TimelinesViewer extends EChartViewer {
 
     const columns = this.dataFrame.columns.toList();
 
-    const strColumns = columns.filter(col => col.type === 'string')
+    const strColumns = columns.filter(col => col.type === DG.COLUMN_TYPE.STRING)
       .sort((a, b) => a.categories.length - b.categories.length);
 
-    const intColumns = columns.filter(col => col.type === 'int')
+    const intColumns = columns.filter(col => col.type === DG.COLUMN_TYPE.INT)
       .sort((a, b) => a.stats.avg - b.stats.avg);
 
     this.splitByColumnName = (this.findColumn(columns, this.splitByRegexps) || strColumns[strColumns.length - 1]).name;
@@ -289,6 +289,9 @@ export class TimelinesViewer extends EChartViewer {
     const column = this.dataFrame.col(prop.get(this));
     if (column === null)
       return null;
+    if (prop.name === 'startColumnName' || prop.name === 'endColumnName') {
+      column.type === DG.COLUMN_TYPE.DATE_TIME ? this.addTimeOptions() : this.removeTimeOptions();
+    }
     this.columnData[prop.name] = {
       column,
       data: column.getRawData(),
@@ -312,27 +315,21 @@ export class TimelinesViewer extends EChartViewer {
   getSafeValue(columnData, idx) {
     const { column, data } = columnData;
     return column.isNone(idx) ? null : column.type === DG.COLUMN_TYPE.DATE_TIME ?
-      new Date(`${column.get(idx)}`) : data[idx];
+      new Date(data[idx] * 1e-3) : data[idx];
+  }
+
+  isSameDate(x, y) {
+    if (x instanceof Date && y instanceof Date) {
+      return x.getTime() === y.getTime();
+    } else if (typeof x === typeof y && typeof x === 'number') {
+      return x === y;
+    }
+    grok.shell.warning('The columns of different types cannot be used for representing dates.');
   }
 
   getSeriesData() {
     this.data.length = 0;
     let tempObj = {};
-
-    const getTime = (columnData, i) => {
-      const { column } = columnData;
-      if (column.type === DG.COLUMN_TYPE.DATE_TIME) {
-        if (this.dateFormat === null) {
-          this.props.dateFormat = this.defaultDateFormat;
-        }
-        this.option.xAxis = {
-          type: 'time',
-          boundaryGap: ['5%', '5%'],
-          axisLabel: { formatter: this.dateFormat }
-        };
-      }
-      return this.getSafeValue(columnData, i);
-    };
 
     const getColumnMin = (column) => column.type === DG.COLUMN_TYPE.DATE_TIME ? new Date(column.min * 1e-3) : column.min;
     const getColumnMax = (column) => column.type === DG.COLUMN_TYPE.DATE_TIME ? new Date(column.max * 1e-3) : column.max;
@@ -344,8 +341,8 @@ export class TimelinesViewer extends EChartViewer {
 
     for (const i of this.dataFrame.filter.getSelectedIndexes()) {
       const id = this.getStrValue(this.columnData.splitByColumnName, i);
-      let start = getTime(this.columnData.startColumnName, i);
-      let end = getTime(this.columnData.endColumnName, i);
+      let start = this.getSafeValue(this.columnData.startColumnName, i);
+      let end = this.getSafeValue(this.columnData.endColumnName, i);
       if (start === end && end === null) continue;
       if (this.showOpenIntervals) {
         // TODO: handle edge case of different column types
@@ -378,7 +375,35 @@ export class TimelinesViewer extends EChartViewer {
     return this.data;
   }
 
+  addTimeOptions() {
+    if (this.dateFormat === null) {
+      this.props.dateFormat = this.defaultDateFormat;
+    }
+    this.option.xAxis = {
+      type: 'time',
+      boundaryGap: ['5%', '5%'],
+      axisLabel: { formatter: this.dateFormat },
+    };
+  }
+
+  removeTimeOptions() {
+    this.props.dateFormat = null;
+    this.option.xAxis = {
+      type: 'value',
+      boundaryGap: ['0%', '0%'],
+      axisLabel: { formatter: null },
+    };
+  }
+
+  showErrorMessage(msg) {
+    this.root.appendChild(ui.divText(msg, 'd4-viewer-error'));
+  }
+
   render() {
+    if (this.splitByColumnName == null || !(this.startColumnName || this.endColumnName)) {
+      this.showErrorMessage('Not enough data to produce the result.');
+      return;
+    }
     this.option.series[0].data = this.getSeriesData();
     this.updateZoom();
     this.chart.setOption(this.option);
