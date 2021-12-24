@@ -129,7 +129,7 @@ defined in
 This is how to define the "Chemprop" environment in the script header: 
 
 ```
-# Environment: Chemprop
+#environment: Chemprop
 ```
 
 In this case, the environment `Chemprop` should be specified in a file
