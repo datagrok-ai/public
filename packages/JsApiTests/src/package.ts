@@ -10,6 +10,7 @@ import './dapi/files';
 import './dapi/fetch';
 import './dapi/admin';
 import './dapi/groups';
+import './ui/inputs';
 
 import {runTests} from "./test";
 export let _package = new DG.Package();
