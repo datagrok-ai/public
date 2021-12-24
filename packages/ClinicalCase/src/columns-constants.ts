@@ -60,3 +60,5 @@ export const MH_DECOD_TERM = 'MHDECOD';
 export const MH_CATEGORY = 'MHCAT';
 export const MH_BODY_SYSTEM = 'MHBODSYS';
 export const MH_TERM = 'MHTERM';
+//sv
+export const VISIT_START_DATE = 'SVSTDTC';

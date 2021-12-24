@@ -321,5 +321,24 @@ export const requiredColumnsByView = {
                         }
 
                 }
-        }
+        },
+        'Visits': {
+                'req_domains': {
+                        'tv': {
+                                'req': [
+                                        sdtmCols.VISIT_DAY,
+                                        sdtmCols.VISIT_NAME
+                                ]
+                        },
+                        'sv': {
+                                'req': [
+                                        sdtmCols.SUBJECT_ID,
+                                        sdtmCols.VISIT_START_DATE,
+                                        sdtmCols.VISIT_DAY,
+                                        sdtmCols.VISIT_NAME
+                                ]
+                        },
+
+                }
+        },
 }
