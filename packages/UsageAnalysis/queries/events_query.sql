@@ -8,7 +8,8 @@ join users_sessions s on e.session_id = s.id
 join users u on u.id = s.user_id
 where @date(e.event_time)
 and (u.login = any(@users) or @users = ARRAY['all'])
-and et.source = 'function' group by et.name
+and et.source = 'function'
+group by et.name
 --end
 
 --name: TopPackageFunctions

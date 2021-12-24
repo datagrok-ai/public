@@ -20,6 +20,7 @@ export function usageAnalysisApp(): void {
   grok.shell.addView(new ErrorsView(toolbox));
   grok.shell.addView(new UsersView(toolbox));
   grok.shell.addView(new OverviewView(toolbox));
+  grok.shell.addView(new DataView(toolbox));
 }
 
 //output: widget result
