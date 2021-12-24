@@ -6,6 +6,10 @@ import './dataframe/df';
 import './shell/shell';
 import './shell/windows';
 import './viewer/viewer';
+import './dapi/files';
+import './dapi/fetch';
+import './dapi/admin';
+import './dapi/groups';
 
 import {runTests} from "./test";
 export let _package = new DG.Package();
