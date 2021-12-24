@@ -52,7 +52,7 @@ export class EventsView extends UaView {
         this.viewers.push(topSourcesViewer);
 
         this.root.append(ui.divV([
-                // ui.divH([ui.block([eventsViewer.root])]),
+                ui.divH([ui.block([eventsViewer.root])]),
                 ui.divH([ui.block50([topPackagesViewer.root]), ui.block50([topPackageFunctionsViewer.root])]),
                 ui.divH([ui.block50([topFunctionsViewer.root]), ui.block50([topSourcesViewer.root])])
             ])
