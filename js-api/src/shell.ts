@@ -196,7 +196,7 @@ export class Shell {
    * @returns {TableView} */
   //Obsolete
   getTableView(tableName: string): TableView {
-    return new TableView(api.grok_GetTableView(tableName));
+    return toJs(api.grok_GetTableView(tableName));
   }
 
   /** Closes everything (views, tables, projects) and returns the platform to the initial state. */

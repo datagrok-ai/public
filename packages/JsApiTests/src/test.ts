@@ -23,6 +23,11 @@ export function test(name: string, test: () => Promise<any>): void {
   tests[currentCategory].tests!.push(new Test(currentCategory, name , test));
 }
 
+export function expect(a: any, b: any) {
+  if (a != b)
+    throw `Value "${a}" is not equal. Expected "${b}"`;
+}
+
 export function category(category: string, tests: () => void): void {
   currentCategory = category;
   tests();
@@ -79,4 +84,8 @@ export async function runTests() {
   }
 
   return results;
+}
+
+export async function delay(ms: number) {
+  await  new Promise(r => setTimeout(r, ms));
 }

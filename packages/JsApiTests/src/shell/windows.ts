@@ -1,46 +1,46 @@
-import {after, before, category, test} from "../test";
+import {after, before, category, delay, test} from "../test";
 import * as grok from 'datagrok-api/grok';
 import * as ui from 'datagrok-api/ui';
 import * as DG from 'datagrok-api/dg';
 
 let v: DG.TableView;
 
-category('Shell', () => {
+category('Shell - Windows', () => {
   before(async () => {
     v = grok.shell.addTableView(grok.data.demo.demog());
   });
 
-  test('Windows - ShowColumns', async () => {
+  test('ShowColumns', async () => {
     await checkSwitch('showColumns', '.d4-root.d4-column-grid');
   })
-  test('Windows - ShowHelp', async () => {
+  test('ShowHelp', async () => {
     await checkSwitch('showHelp', '.grok-help-host > .grok-help');
   });
-  test('Windows - ShowConsole', async () => {
+  test('ShowConsole', async () => {
     await checkSwitch('showConsole', '.d4-console-wrapper > .d4-console-header');
   });
-  test('Windows - ShowProperties', async () => {
+  test('ShowProperties', async () => {
     await checkSwitch('showProperties', '.grok-prop-panel');
   });
-  test('Windows - ShowRibbon', async () => {
+  test('ShowRibbon', async () => {
     await checkSwitch('showRibbon', '.d4-ribbon');
   });
-  test('Windows - ShowSidebar', async () => {
+  test('ShowSidebar', async () => {
     await checkSwitch('showSidebar', '.layout-sidebar');
   });
-  test('Windows - ShowTables', async () => {
+  test('ShowTables', async () => {
     await checkSwitch('showTables', '.grok-tables-manager');
   });
-  test('Windows - ShowToolbox', async ()=> {
+  test('ShowToolbox', async ()=> {
     await checkSwitch('showToolbox', '.d4-app-root:not(.d4-toolbox-hidden)');
   });
-  test('Windows - ShowVariables', async () => {
+  test('ShowVariables', async () => {
     await checkSwitch('showVariables', '.grok-view-variables.grok-variables-pane');
   });
-  test('Windows - PresentationMode', async () => {
+  test('PresentationMode', async () => {
     await checkSwitch('presentationMode', '.d4-app-root.presentation');
   });
-  test('Windows - SimpleMode', async () => {
+  test('SimpleMode', async () => {
     await checkSwitch('simpleMode', '.d4-app-root:not(.d4-show-menu)');
   });
 
@@ -73,6 +73,6 @@ async function checkSwitch(sw: string, selector: string) {
     throw x;
   } finally {
     (<any>grok.shell.windows)[sw] = state;
-    await new Promise(r => setTimeout(r, 10));
+    await delay(10);
   }
 }
