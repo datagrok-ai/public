@@ -1,6 +1,6 @@
 
 export let tests: Test[] = [];
-export let preconditions: {[key: string]: {before?: () => Promise<void>, after?: () => Promise<void>}} = {};
+export let preconditions: {[key: string]: {before?: () => Promise<void>, after?: () => Promise<void>, status?: string}} = {};
 
 export let currentCategory: string;
 
@@ -39,9 +39,14 @@ export function after(after: () => Promise<void>): void {
 
 
 export async function runTests() {
+
   for (const [key, value] of Object.entries(preconditions)) {
-    if (value.before)
-      await value.before();
+    try {
+      if (value.before)
+        await value.before();
+    } catch (x: any) {
+       value.status = x.toString();
+    }
   }
   let results = tests.map(async (t) => {
     let r: { category?: string, name?: string, success: boolean, result: string };
@@ -58,8 +63,17 @@ export async function runTests() {
   let data = await Promise.all(results);
 
   for (const [key, value] of Object.entries(preconditions)) {
-    if (value.after)
-      await value.after();
+    try {
+      if (value.after)
+        await value.after();
+    } catch (x: any) {
+      value.status = x.toString();
+    }
+  }
+
+  for (const [key, value] of Object.entries(preconditions)) {
+    if (value.status)
+      data.push({category: key, name: 'init', result: value.status, success: false});
   }
   return data;
 }

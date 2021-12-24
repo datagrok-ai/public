@@ -3,8 +3,11 @@ import * as grok from 'datagrok-api/grok';
 import * as ui from 'datagrok-api/ui';
 import * as DG from 'datagrok-api/dg';
 
+let v: DG.View;
+
 category('Shell', () => {
   before(async () => {
+    v = grok.shell.addTableView(grok.data.demo.demog());
     grok.shell.windows.showColumns;
     grok.shell.windows.showHelp;
     grok.shell.windows.showConsole;
@@ -20,14 +23,23 @@ category('Shell', () => {
 
 
   test('Windows - ShowColumns', async () => {
-    checkSwitch((value) => grok.shell.windows.showColumns = value, '.layout-dockarea > .view-tabs > .splitter-container-row > .panel-base.splitter-container-horizontal > .panel-content > .d4-root.d4-column-grid');
+    checkSwitch((value) => grok.shell.windows.showColumns = value, '.d4-root.d4-column-grid');
   })
   test('Windows - ShowHelp', async ()=> {
-    checkSwitch((value) => grok.shell.windows.showHelp = value, '.layout-dockarea > .view-tabs > .splitter-container-row > .panel-base.splitter-container-horizontal > .panel-content > .d4-root.d4-column-grid');
+    checkSwitch((value) => grok.shell.windows.showHelp = value, '.grok-help-host > .grok-help');
+  });
+  test('Windows - ShowConsole', async ()=> {
+    checkSwitch((value) => grok.shell.windows.showConsole = value, '.d4-console-wrapper .d4-console-header');
+  });
+  test('Windows - ShowProperties', async ()=> {
+    checkSwitch((value) => grok.shell.windows.showProperties = value, '.grok-prop-panel');
+  });
+  test('Windows - ShowRibbon', async ()=> {
+    checkSwitch((value) => grok.shell.windows.showRibbon = value, '.d4-ribbon');
   });
 
   after(async () => {
-    console.log('hi');
+    v.close();
   });
 
 });
@@ -36,7 +48,7 @@ function checkElementVisible(selector: string, exists: boolean = true):void {
   let e = document.body.querySelector(selector);
   if (e == undefined && exists)
     throw `Element "${selector}" not found`;
-  if (e != undefined && !exists)
+  if ((e != undefined && e instanceof HTMLElement && e.offsetParent != undefined) && !exists)
     throw `Element "${selector}" found`;
 }
 
