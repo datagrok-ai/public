@@ -4,13 +4,10 @@ import * as ui from 'datagrok-api/ui';
 import * as DG from 'datagrok-api/dg';
 import './dataframe/df';
 import './shell/shell';
-<<<<<<< Updated upstream
-import './viewer/viewer';
-=======
 import './shell/windows';
->>>>>>> Stashed changes
-import {runTests} from "./test";
+import './viewer/viewer';
 
+import {runTests} from "./test";
 export let _package = new DG.Package();
 
 

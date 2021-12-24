@@ -11,7 +11,6 @@ category('Shell', () => {
   });
 
   test('AddView', async () => {
-    expect(grok.shell.v, null);
     let v = grok.shell.addTableView(demog);
     expect(grok.shell.v, v);
     expect(grok.shell.v instanceof DG.TableView, true);
