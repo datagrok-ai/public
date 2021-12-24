@@ -13,7 +13,6 @@ export const _package = new DG.Package();
 //output: list tables
 export async function importSQLite(bytes: number[]) {
   //TODO: use web worker?
-  const progress = DG.TaskBarProgressIndicator.create('Loading SQLite tables...');
   const SQL: sql.SqlJsStatic = await initSqlJs({locateFile: () => _package.webRoot + 'dist/sql-wasm.wasm'});
   const db = new SQL.Database(Uint8Array.from(bytes));
   const tableList = db.exec('SELECT `name` FROM `sqlite_master` WHERE type=\'table\';')[0].values;
@@ -33,7 +32,6 @@ export async function importSQLite(bytes: number[]) {
     result.push(currentDf);
   }
   db.close();
-  progress.close();
 
   return result;
 }
