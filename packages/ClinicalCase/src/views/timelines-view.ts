@@ -44,6 +44,7 @@ export class TimelinesView extends DG.ViewBase implements ILazyLoading {
   filtersDiv = ui.box();
   resultTables: DG.DataFrame;
   aeBrowserHelper: AEBrowserHelper;
+  filterColumns = [];
 
   constructor(name) {
     super({});
@@ -61,6 +62,7 @@ export class TimelinesView extends DG.ViewBase implements ILazyLoading {
 
   createView(): void {
     let existingTables = study.domains.all().map(it => it.name);
+    Object.keys(filters).forEach(domain => this.filterColumns = this.filterColumns.concat(Object.keys(filters[ domain ])));
     this.multichoiceTableOptions = {};
     this.multichoiceTableOptions = Object.fromEntries(Object.entries(multichoiceTableDict).filter(([k,v]) => existingTables.includes(v)));
     this.selectedOptions =  [ Object.keys(this.multichoiceTableOptions)[ 0 ] ];
@@ -113,7 +115,7 @@ export class TimelinesView extends DG.ViewBase implements ILazyLoading {
     let info = links[ domain.name ];
     let df = study.domains[ domain.name ];
     let t = df.clone(null, Object.keys(info).map(e => info[ e ]));
-    let filterCols = filters[domain.name]
+    let filterCols = filters[domain.name];
     Object.keys(filterCols).forEach(key => {t.columns.addNewString(key).init((i) => df.get(filterCols[key], i));})
     t.columns.addNew('domain', DG.TYPE.STRING).init(domain.name.toLocaleLowerCase());
     t.columns.addNewFloat('rowNum').init((i) => i);
@@ -166,11 +168,9 @@ export class TimelinesView extends DG.ViewBase implements ILazyLoading {
   }
 
   private getFilters() {
-    let filterColumns = [];
-    Object.keys(filters).forEach(domain => filterColumns = filterColumns.concat(Object.keys(filters[ domain ])))
     let chart = DG.Viewer.fromType('Filters', this.resultTables, {
-      'columnNames': filterColumns,
-      'showContextMenu': false,
+      'columnNames': this.filterColumns,
+      'showContextMenu': true,
     }).root;
     chart.style.overflowY = 'scroll';
     return chart
