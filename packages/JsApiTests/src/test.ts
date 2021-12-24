@@ -1,6 +1,5 @@
 
-export let tests: Test[] = [];
-export let preconditions: {[key: string]: {before?: () => Promise<void>, after?: () => Promise<void>, status?: string}} = {};
+export let tests: {[key: string]: {tests?: Test[], before?: () => Promise<void>, after?: () => Promise<void>, beforeStatus?: string, afterStatus?: string}} = {};
 
 export let currentCategory: string;
 
@@ -17,7 +16,11 @@ export class Test {
 }
 
 export function test(name: string, test: () => Promise<any>): void {
-  tests.push(new Test(currentCategory, name , test));
+  if (tests[currentCategory] == undefined)
+    tests[currentCategory] = {};
+  if (tests[currentCategory].tests == undefined)
+    tests[currentCategory].tests = [];
+  tests[currentCategory].tests!.push(new Test(currentCategory, name , test));
 }
 
 export function category(category: string, tests: () => void): void {
@@ -26,54 +29,54 @@ export function category(category: string, tests: () => void): void {
 }
 
 export function before(before: () => Promise<void>): void {
-  if (preconditions[currentCategory] == undefined)
-    preconditions[currentCategory] = {};
-  preconditions[currentCategory].before = before;
+  if (tests[currentCategory] == undefined)
+    tests[currentCategory] = {};
+  tests[currentCategory].before = before;
 }
 
 export function after(after: () => Promise<void>): void {
-  if (preconditions[currentCategory] == undefined)
-    preconditions[currentCategory] = {};
-  preconditions[currentCategory].after = after;
+  if (tests[currentCategory] == undefined)
+    tests[currentCategory] = {};
+  tests[currentCategory].after = after;
 }
 
 
 export async function runTests() {
+  let results: { category?: string, name?: string, success: boolean, result: string}[] = [];
 
-  for (const [key, value] of Object.entries(preconditions)) {
+  for (const [key, value] of Object.entries(tests)) {
     try {
       if (value.before)
         await value.before();
     } catch (x: any) {
-       value.status = x.toString();
+       value.beforeStatus = x.toString();
     }
-  }
-  let results = tests.map(async (t) => {
-    let r: { category?: string, name?: string, success: boolean, result: string };
-    try {
-      r = {success: true, result: await t.test() ?? 'OK'};
-    } catch (x: any) {
-      r = {success: false, result: x.toString()};
-    }
-    r.category = t.category;
-    r.name = t.name;
-    return r;
-  });
+    let t = value.tests ?? [];
+    let res = t.map(async (t) => {
+      let r: { category?: string, name?: string, success: boolean, result: string };
+      try {
+        r = {success: true, result: await t.test() ?? 'OK'};
+      } catch (x: any) {
+        r = {success: false, result: x.toString()};
+      }
+      r.category = t.category;
+      r.name = t.name;
+      return r;
+    });
 
-  let data = await Promise.all(results);
-
-  for (const [key, value] of Object.entries(preconditions)) {
+    let data = await Promise.all(res);
     try {
       if (value.after)
         await value.after();
     } catch (x: any) {
-      value.status = x.toString();
+      value.afterStatus = x.toString();
     }
+    if (value.afterStatus)
+      data.push({category: key, name: 'init', result: value.afterStatus, success: false});
+    if (value.beforeStatus)
+      data.push({category: key, name: 'init', result: value.beforeStatus, success: false});
+    results.push(...data);
   }
 
-  for (const [key, value] of Object.entries(preconditions)) {
-    if (value.status)
-      data.push({category: key, name: 'init', result: value.status, success: false});
-  }
-  return data;
+  return results;
 }
