@@ -9,6 +9,7 @@ import {UaToolbox} from "./ua-toolbox";
 import {ErrorsView} from "./views/errors-view";
 import {UsersView} from "./views/users-view";
 import {OverviewView} from "./views/overview-view";
+import {DataView} from "./views/data-view";
 
 export let _package = new DG.Package();
 
