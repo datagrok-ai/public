@@ -40,3 +40,28 @@ where @date(e.event_time)
 and (u.login = any(@users) or @users = ARRAY['all'])
 order by e.event_time desc
 --end
+
+--name: TopPackagesByUsers
+--input: string date { pattern: datetime }
+--input: list users
+--connection: System:DatagrokAdmin
+select t.name, count(t.id) from (
+	select pp.name, u.id from event_types et
+	join published_packages pp on et.package_id = pp.id
+	join events e on e.event_type_id = et.id
+	join users_sessions s on e.session_id = s.id
+	join users u on u.id = s.user_id
+	where et.source = 'function-package'
+	and NOT EXISTS (
+		SELECT
+		FROM tags t
+		WHERE t.entity_id = et.id
+		and t.tag = 'autostart'
+	)
+	and @date(e.event_time)
+    and (u.login = any(@users) or @users = ARRAY['all'])
+	group by pp.name, u.id
+) t
+group by t.name
+limit 50;
+

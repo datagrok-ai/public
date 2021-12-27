@@ -36,9 +36,17 @@ export class UsersView extends UaView {
         );
         this.viewers.push(usageViewer);
 
+        let topPackagesByUsers = new UaFilterableViewer(
+            'Top Packages By Users',
+            'TopPackagesByUsers',
+            (t: DG.DataFrame) => DG.Viewer.scatterPlot(t, {'color': 'user'}).root
+        );
+        this.viewers.push(topPackagesByUsers);
+
         this.root.append(ui.divV([
             ui.divH([ui.block([usageViewer.root])]),
             ui.divH([ui.block50([uniqueUsersViewer.root]), ui.block50([uniqueSessionsViewer.root])]),
+            ui.divH([ui.block([usageViewer.root])]),
         ]));
 
     }
