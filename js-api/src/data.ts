@@ -114,7 +114,7 @@ export class Data {
   }
 
   getDemoTable(path: string): Promise<DataFrame> {
-    return new Promise((resolve, reject) => api.grok_GetDemoTable(path, (t: any) => resolve(toJs(t)), (e: any) => reject(e)));
+    return api.grok_GetDemoTable(path);
   }
 
   /**
