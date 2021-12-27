@@ -11,6 +11,13 @@ import './dapi/fetch';
 import './dapi/admin';
 import './dapi/groups';
 import './ui/inputs';
+import './dapi/dapi';
+import './dapi/entities';
+import './dapi/layouts';
+import './dapi/projects';
+import './dapi/tables';
+import './dapi/user-data-storage';
+import './dapi/users';
 
 import {runTests} from "./test";
 export let _package = new DG.Package();
