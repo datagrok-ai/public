@@ -161,7 +161,7 @@ export async function clinicalCaseApp(): Promise<any> {
   views.push(<BoxPlotsView>addView(new BoxPlotsView('Distributions')));
   views.push(<MatrixesView>addView(new MatrixesView('Correlations')));
   views.push(<TimeProfileView>addView(new TimeProfileView('Time Profile')));
-  //views.push(<TreeMapView>addView(new TreeMapView('Tree map')));
+  views.push(<TreeMapView>addView(new TreeMapView('Tree map')));
   views.push(<MedicalHistoryView>addView(new MedicalHistoryView('Medical History')));
   views.push(<VisitsView>addView(new VisitsView('Visits')));
 
