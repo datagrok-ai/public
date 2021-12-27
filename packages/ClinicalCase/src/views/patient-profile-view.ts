@@ -68,7 +68,7 @@ export class PatientProfileView extends DG.ViewBase implements ILazyLoading {
           options: study.domains.lb ? Array.from(getUniqueValues(study.domains.lb, LAB_TEST)) : [],
           selectedValues: [],
           editValue: 'category',
-          updateTitle: true
+          updateTitle: false
         },
         comboEdit: {
           options: ['From BL', 'Min/Max', 'Related to ref'],

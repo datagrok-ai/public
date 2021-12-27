@@ -7,6 +7,9 @@ import { createPropertyPanel } from "../panels/panels-service";
 export class AEBrowserHelper{
 
     domains = ['ae', 'ex', 'cm'];
+    dyDomains = ['vs', 'lb'];
+    domainsWithoutVisitDays = ['mh'];
+    domainsToExclude = ['dm', 'tv', 'sv'];
     additionalDomains = [];
     selectedAdditionalDomains = [];
     aeToSelect: DG.DataFrame;
@@ -19,7 +22,7 @@ export class AEBrowserHelper{
         let presentDomains = [];
         this.aeToSelect = dataFrame;
         study.domains.all().forEach(it => {
-            if(it.name !== 'dm'){
+            if(!this.domainsToExclude.includes(it.name)){
                 this[ it.name ] = study.domains[ it.name ].clone();
                 presentDomains.push(it.name);
                 if (!this.domains.includes(it.name)){
@@ -32,14 +35,16 @@ export class AEBrowserHelper{
 
     updateDomains() {
         this.domains.concat(this.selectedAdditionalDomains).forEach(domain => {
-                const condition = domain === 'lb' ?
-                `${SUBJECT_ID} = ${this.currentSubjId} and ${domain.toUpperCase()}DY < ${this.currentAeDay} and ${domain.toUpperCase()}DY > ${this.currentAeDay - this.daysPriorAe}` :
-                `${SUBJECT_ID} = ${this.currentSubjId} and ${domain.toUpperCase()}STDY < ${this.currentAeDay} and ${domain.toUpperCase()}ENDY > ${this.currentAeDay - this.daysPriorAe}`;
-                this[ domain ] = study.domains[ domain ]
-                    .clone()
-                    .groupBy(study.domains[ domain ].columns.names())
-                    .where(`${condition}`)
-                    .aggregate();
+            const condition = this.domainsWithoutVisitDays.includes(domain) ?
+                `${SUBJECT_ID} = ${this.currentSubjId}` :
+                this.dyDomains.includes(domain) ?
+                    `${SUBJECT_ID} = ${this.currentSubjId} and ${domain.toUpperCase()}DY < ${this.currentAeDay} and ${domain.toUpperCase()}DY > ${this.currentAeDay - this.daysPriorAe}` :
+                    `${SUBJECT_ID} = ${this.currentSubjId} and ${domain.toUpperCase()}STDY < ${this.currentAeDay} and ${domain.toUpperCase()}ENDY > ${this.currentAeDay - this.daysPriorAe}`;
+            this[domain] = study.domains[domain]
+                .clone()
+                .groupBy(study.domains[domain].columns.names())
+                .where(`${condition}`)
+                .aggregate();
         })
     }
 
