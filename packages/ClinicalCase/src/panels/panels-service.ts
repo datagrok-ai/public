@@ -69,7 +69,7 @@ export async function studyVisitPanel(studyVisit: StudyVisit) {
         return df ? df.rowCount === 1 && df.getCol(SUBJECT_ID).isNone(0) ? 0 : df.rowCount : 0;
     }
 
-    acc.addPane('Drug exposure summary', () => {
+    acc.addPane('Drug exposure', () => {
         if (!getRowNumber(studyVisit.exAtVisit)) {
             return ui.divText('No records found');
         }
@@ -110,28 +110,29 @@ export async function studyVisitPanel(studyVisit: StudyVisit) {
             if (!getRowNumber(df)) {
                 return ui.divText('No records found');
             }
-            let boxPlots = [];
+            let categoriesAcc = ui.accordion();
             df.getCol(catCol).categories.forEach(cat => {
-                let valueDf = df.groupBy(df.columns.names())
-                .where(`${catCol} = ${cat}`)
-                .aggregate();
-                const plot = DG.Viewer.boxPlot(valueDf, {
-                    value: `${valCol}`,
-                    category: `${catCol}`,
-                    labelOrientation: 'Horz',
-                    showCategorySelector: false,
-                    showValueSelector: false,
-                    showPValue: true
-                  });
-                  boxPlots.push(ui.block([plot.root]));
+                categoriesAcc.addPane(`${cat}`, () => {
+                    let valueDf = df.groupBy(df.columns.names())
+                    .where(`${catCol} = ${cat}`)
+                    .aggregate();
+                    const plot = DG.Viewer.boxPlot(valueDf, {
+                        value: `${valCol}`,
+                        category: `${catCol}`,
+                        labelOrientation: 'Horz',
+                        showCategorySelector: false,
+                        showValueSelector: false,
+                        showPValue: true
+                      });
+                    return plot.root;
+                })
             })
-            return ui.block(boxPlots);
-    
+            return categoriesAcc.root;   
         })
     } 
 
-    createDistributionPane('Laboratory summary', studyVisit.lbAtVisit, LAB_TEST, LAB_RES_N);
-    createDistributionPane('Vital signs summary', studyVisit.vsAtVisit, VS_TEST, VS_RES_N);
+    createDistributionPane('Laboratory', studyVisit.lbAtVisit, LAB_TEST, LAB_RES_N);
+    createDistributionPane('Vital signs', studyVisit.vsAtVisit, VS_TEST, VS_RES_N);
 
     panelDiv.append(acc.root);
 
