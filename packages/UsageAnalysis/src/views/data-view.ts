@@ -32,9 +32,17 @@ export class DataView extends UaView {
         );
         this.viewers.push(topConnectionsViewer);
 
+        let topDataSourcesViewer = new UaFilterableViewer(
+            'Top Data Sources',
+            'TopDataSources',
+            (t: DG.DataFrame) => DG.Viewer.barChart(t, this.defaultBarchartOptions).root
+        );
+        this.viewers.push(topDataSourcesViewer);
+
         this.root.append(ui.divV([
             ui.divH([ui.block([queriesViewer.root])]),
             ui.divH([ui.block50([topQueriesViewer.root]), ui.block50([topConnectionsViewer.root])]),
+            ui.divH([ui.block50([topDataSourcesViewer.root])]),
         ]));
 
     }

@@ -37,3 +37,16 @@ where @date(e.event_time)
 and (u.login = any(@users) or @users = ARRAY['all'])
 group by c.name
 --end
+
+--name: TopDataSources
+--input: string date { pattern: datetime }
+--input: list users
+--connection: System:DatagrokAdmin
+select c.data_source, count(1) from events e
+join queries q on e.event_type_id = q.id
+join connections c on c.id = q.connection_id
+join users_sessions s on e.session_id = s.id
+join users u on u.id = s.user_id
+where @date(e.event_time)
+and (u.login = any(@users) or @users = ARRAY['all'])
+group by c.data_source
