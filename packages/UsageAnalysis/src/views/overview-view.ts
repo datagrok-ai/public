@@ -8,7 +8,6 @@ import {UaView} from "./ua-view";
 import {UaFilter} from "../filter2";
 import {UaFilterableViewer} from "../viewers/ua-filterable-viewer";
 import {UaDataFrameViewer} from "../viewers/ua-data-frame-viewer";
-import {UaViewer} from "../viewers/ua-viewer";
 
 export class OverviewView extends UaView {
 
