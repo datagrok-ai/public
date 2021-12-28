@@ -6,6 +6,7 @@ import './dataframe/data_frame';
 import './shell/shell';
 import './shell/windows';
 import './viewer/viewer';
+import './views/layouts';
 import './dapi/files';
 import './dapi/fetch';
 import './dapi/admin';
