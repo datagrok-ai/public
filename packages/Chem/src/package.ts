@@ -16,6 +16,7 @@ import {structure3dWidget} from './widgets/structure3d';
 import {toxicityWidget} from './widgets/toxicity';
 import {OCLCellRenderer} from './ocl_cell_renderer';
 import {chemSpace} from './analysis/chem_space';
+import {getActivityCliffs} from './analysis/activity-cliffs';
 import {getDescriptorsSingle} from './descriptors/descriptors_calculation';
 import {addDescriptors} from './descriptors/descriptors_calculation';
 import {getDescriptorsApp} from './descriptors/descriptors_calculation';
@@ -270,6 +271,17 @@ export function saveAsSdf() {
 
 
 //#region Top menu
+
+//top-menu: Chem | Activity Cliffs...
+//name: Activity Cliffs
+//description: detect activity cliffs
+//input: dataframe df [Input data table]
+//input: column smiles {type:categorical; semType: Molecule} [Molecules, in SMILES format]
+//input: column activities
+//input: double similarity = 80 [Similarity cutoff]
+export async function activityCliffs(dataframe: DG.DataFrame, smiles: DG.Column, activities: DG.Column, similarity: number) {
+  await getActivityCliffs(dataframe, smiles, activities, similarity);
+}
 
 //top-menu: Chem | Chemical Space...
 //name: Chem Space
