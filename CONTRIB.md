@@ -22,10 +22,13 @@ In particular:
    and [trailing commas](https://google.github.io/styleguide/jsguide.html#features-arrays-trailing-comma).
 
 5. When creating a package, use the `--eslint` flag to get an
-   up-to-date [configuration file](https://github.com/datagrok-ai/public/blob/master/tools/package-template/.eslintrc.json)
-   .
+   up-to-date [configuration file](https://github.com/datagrok-ai/public/blob/master/tools/package-template/.eslintrc.json).
 
 6. **Do not** delete `package-lock.json` from the repository. Update it when needed.
+
+7. Document your code when there is a need for it, but do not overdo it. For instance,
+   there is no reason to include information that is already in the function/class signature,
+   such as types of parameters. Often, a one-liner is enough.
 
 If you are using WebStorm IDE, we recommend you to stick to its defaults for JS/TS formatting, except for the spaces
 settings: change its default value of 4 to 2.
