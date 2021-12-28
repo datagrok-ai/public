@@ -18,6 +18,7 @@ import './dapi/projects';
 import './dapi/tables';
 import './dapi/user-data-storage';
 import './dapi/users';
+import './shell/ml';
 
 import {runTests} from "./test";
 export let _package = new DG.Package();
