@@ -21,6 +21,7 @@ category('UI: Inputs', () => {
     'textInput': ui.textInput('', ''),
     'searchInput': ui.searchInput('', ''),
     'columnInput': ui.columnInput('', t, t.col('age')),
+    'columnsInput': ui.columnsInput('', t),
     'tableInput': ui.tableInput('', tables[0], tables, (table: any) => grok.shell.info(table.name))
   };
 
@@ -70,11 +71,34 @@ category('UI: Inputs', () => {
   });
 
   function stringValue(name: string, input: DG.InputBase, selector: string): void {
+    v.root.innerHTML = '';
     v.append(input.root);
     let value: string;
     try {
-      value = (<HTMLInputElement>v.root.querySelector(selector)).value;
-      expect(input.stringValue, value)
+      switch (name) {
+        case 'multiChoiceInput':
+          let node = v.root.querySelectorAll('.ui-input-multi-choice-checks>div');
+          value = (<HTMLInputElement>v.root.querySelector('.ui-input-label')).innerText;
+          for (let i = 0; i < node.length; i++) {
+            let input = (<HTMLInputElement>node[i].querySelector('input'));
+            if (input.checked)
+              value = value.concat((<HTMLInputElement>node[i].querySelector('.ui-label')).innerText)
+          }
+          expect(input.stringValue, value);
+          break;
+        case 'columnInput':
+          value = (<HTMLInputElement>v.root.querySelector('.d4-column-selector-column')).innerText;
+          expect(input.stringValue, value);
+          break;
+        case 'columnsInput':
+          value = (<HTMLInputElement>v.root.querySelector('.ui-input-column-names')).innerText.substring(3);
+          expect(input.stringValue, value);
+          break;
+        default:
+          value = (<HTMLInputElement>v.root.querySelector(selector)).value;
+          expect(input.stringValue, value);
+          break;
+      }
     }
     catch (x) {
       throw name + ': ' + x;
