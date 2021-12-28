@@ -3,6 +3,10 @@ import {UaToolbox} from "../ua-toolbox";
 import {UaFilterableViewer} from "../viewers/ua-filterable-viewer";
 import * as DG from "datagrok-api/dg";
 import * as ui from "datagrok-api/ui";
+import * as grok from "datagrok-api/grok";
+import {UaDataFrameViewer} from "../viewers/ua-data-frame-viewer";
+import {UaQueryViewer} from "../viewers/ua-query-viewer";
+import {TopDataSourcesViewer} from "../drilldown_viewers/top-data-sources-viewer";
 
 export class DataView extends UaView {
 
@@ -14,29 +18,25 @@ export class DataView extends UaView {
         let queriesViewer = new UaFilterableViewer(
             'Queries',
             'Queries1',
-            (t: DG.DataFrame) => DG.Viewer.lineChart(t).root
+            (t: DG.DataFrame) => DG.Viewer.lineChart(t, UaQueryViewer.defaultChartOptions).root
         );
         this.viewers.push(queriesViewer);
 
         let topQueriesViewer = new UaFilterableViewer(
             'Top Queries',
             'TopQueries',
-            (t: DG.DataFrame) => DG.Viewer.barChart(t, this.defaultBarchartOptions).root
+            (t: DG.DataFrame) => DG.Viewer.barChart(t, UaQueryViewer.defaultBarchartOptions).root
         );
         this.viewers.push(topQueriesViewer);
 
         let topConnectionsViewer = new UaFilterableViewer(
             'Top Connections',
             'TopConnections',
-            (t: DG.DataFrame) => DG.Viewer.barChart(t, this.defaultBarchartOptions).root
+            (t: DG.DataFrame) => DG.Viewer.barChart(t, UaQueryViewer.defaultBarchartOptions).root
         );
         this.viewers.push(topConnectionsViewer);
 
-        let topDataSourcesViewer = new UaFilterableViewer(
-            'Top Data Sources',
-            'TopDataSources',
-            (t: DG.DataFrame) => DG.Viewer.barChart(t, this.defaultBarchartOptions).root
-        );
+        let topDataSourcesViewer = new TopDataSourcesViewer();
         this.viewers.push(topDataSourcesViewer);
 
         this.root.append(ui.divV([

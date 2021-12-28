@@ -7,6 +7,7 @@ import {UaToolbox} from "../ua-toolbox";
 import {UaView} from "./ua-view";
 import {UaFilter} from "../filter2";
 import {UaFilterableViewer} from "../viewers/ua-filterable-viewer";
+import {UaQueryViewer} from "../viewers/ua-query-viewer";
 
 export class EventsView extends UaView {
 
@@ -19,35 +20,35 @@ export class EventsView extends UaView {
         let topFunctionsViewer = new UaFilterableViewer(
             'Top Functions',
             'TopFunctions',
-            (t: DG.DataFrame) => DG.Viewer.barChart(t, this.defaultBarchartOptions).root
+            (t: DG.DataFrame) => DG.Viewer.barChart(t, UaQueryViewer.defaultBarchartOptions).root
         );
         this.viewers.push(topFunctionsViewer);
 
         let topPackageFunctionsViewer = new UaFilterableViewer(
             'Top Package Functions',
             'TopPackageFunctions',
-            (t: DG.DataFrame) => DG.Viewer.barChart(t, this.defaultBarchartOptions).root
+            (t: DG.DataFrame) => DG.Viewer.barChart(t, UaQueryViewer.defaultBarchartOptions).root
         );
         this.viewers.push(topPackageFunctionsViewer);
 
         let topPackagesViewer = new UaFilterableViewer(
             'Top Packages',
             'TopPackages',
-            (t: DG.DataFrame) => DG.Viewer.barChart(t, this.defaultBarchartOptions).root
+            (t: DG.DataFrame) => DG.Viewer.barChart(t, UaQueryViewer.defaultBarchartOptions).root
         );
         this.viewers.push(topPackagesViewer);
 
         let eventsViewer = new UaFilterableViewer(
             'Events',
             'Events1',
-            (t: DG.DataFrame) => DG.Viewer.lineChart(t).root
+            (t: DG.DataFrame) => DG.Viewer.lineChart(t, UaQueryViewer.defaultChartOptions).root
         );
         this.viewers.push(eventsViewer);
 
         let topSourcesViewer = new UaFilterableViewer(
             'Top Sources',
             'TopSources',
-            (t: DG.DataFrame) => DG.Viewer.barChart(t, this.defaultBarchartOptions).root
+            (t: DG.DataFrame) => DG.Viewer.barChart(t, UaQueryViewer.defaultBarchartOptions).root
         )
         this.viewers.push(topSourcesViewer);
 

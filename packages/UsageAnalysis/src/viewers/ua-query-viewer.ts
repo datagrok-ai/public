@@ -8,6 +8,7 @@ export abstract class UaQueryViewer {
     queryName: string;
     viewerFunction: Function;
     setStyle: Function = null as any;
+    staticFilter: Object = null as any;
 
     static splineStyle: Object = {
         "aggrType": "count",
@@ -27,13 +28,24 @@ export abstract class UaQueryViewer {
         "Title":"Users"
     };
 
-    protected constructor(name: string, queryName: string, viewerFunction: Function, setStyle?: Function) {
+    static defaultBarchartOptions: Object = {
+        valueAggrType: 'avg',
+        style: 'dashboard'
+    };
+
+    static defaultChartOptions: Object = {
+        style: 'dashboard'
+    };
+
+    protected constructor(name: string, queryName: string, viewerFunction: Function, setStyle?: Function, staticFilter?: Object) {
         this.root = ui.div();
         this.name = name;
         this.queryName = queryName;
         this.viewerFunction = viewerFunction;
         if (setStyle)
             this.setStyle = setStyle;
+        if (staticFilter)
+            this.staticFilter = staticFilter;
         this.init();
     }
 
@@ -54,6 +66,9 @@ export abstract class UaQueryViewer {
         host.appendChild(ui.h1(cardName));
         let loader = ui.loader();
         host.appendChild(loader);
+
+        if (this.staticFilter)
+            filter = {...filter, ...this.staticFilter}
 
         grok.data.query('UsageAnalysis:' + queryName, filter).then((dataFrame) => {
             // if (cardName === 'Errors')

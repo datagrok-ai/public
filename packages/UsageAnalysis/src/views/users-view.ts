@@ -7,6 +7,7 @@ import {UaToolbox} from "../ua-toolbox";
 import {UaView} from "./ua-view";
 import {UaFilter} from "../filter2";
 import {UaFilterableViewer} from "../viewers/ua-filterable-viewer";
+import {UaQueryViewer} from "../viewers/ua-query-viewer";
 
 export class UsersView extends UaView {
 
@@ -18,28 +19,28 @@ export class UsersView extends UaView {
         let uniqueUsersViewer = new UaFilterableViewer(
             'Unique Users',
             'UniqueUsers',
-            (t: DG.DataFrame) => DG.Viewer.lineChart(t).root
+            (t: DG.DataFrame) => DG.Viewer.lineChart(t, UaQueryViewer.defaultChartOptions).root
         );
         this.viewers.push(uniqueUsersViewer);
 
         let uniqueSessionsViewer = new UaFilterableViewer(
             'Unique Sessions',
             'UniqueSessions',
-            (t: DG.DataFrame) => DG.Viewer.lineChart(t).root
+            (t: DG.DataFrame) => DG.Viewer.lineChart(t, UaQueryViewer.defaultChartOptions).root
         );
         this.viewers.push(uniqueSessionsViewer);
 
         let usageViewer = new UaFilterableViewer(
             'Usage',
             'Usage',
-            (t: DG.DataFrame) => DG.Viewer.scatterPlot(t, {'color': 'user'}).root
+            (t: DG.DataFrame) => DG.Viewer.scatterPlot(t, UaQueryViewer.defaultChartOptions).root
         );
         this.viewers.push(usageViewer);
 
         let topPackagesByUsers = new UaFilterableViewer(
             'Top Packages By Users',
             'TopPackagesByUsers',
-            (t: DG.DataFrame) => DG.Viewer.scatterPlot(t, {'color': 'user'}).root
+            (t: DG.DataFrame) => DG.Viewer.scatterPlot(t, UaQueryViewer.defaultChartOptions).root
         );
         this.viewers.push(topPackagesByUsers);
 
