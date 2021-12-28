@@ -6,7 +6,6 @@ import {UaToolbox} from "../ua-toolbox";
 import {UaFilterableViewer} from "../viewers/ua-filterable-viewer";
 
 export abstract class UaView extends DG.ViewBase {
-    defaultBarchartOptions: Object = {valueAggrType: 'avg'};
     uaToolbox: UaToolbox;
     viewers: UaFilterableViewer[] = [];
 

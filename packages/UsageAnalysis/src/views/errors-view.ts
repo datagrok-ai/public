@@ -7,6 +7,7 @@ import {UaToolbox} from "../ua-toolbox";
 import {UaView} from "./ua-view";
 import {UaFilter} from "../filter2";
 import {UaFilterableViewer} from "../viewers/ua-filterable-viewer";
+import {UaQueryViewer} from "../viewers/ua-query-viewer";
 
 export class ErrorsView extends UaView {
 
@@ -18,21 +19,21 @@ export class ErrorsView extends UaView {
         let errorsViewer = new UaFilterableViewer(
             'Errors',
             'Errors1',
-            (t: DG.DataFrame) => DG.Viewer.lineChart(t).root
+            (t: DG.DataFrame) => DG.Viewer.lineChart(t, UaQueryViewer.defaultChartOptions).root
         );
         this.viewers.push(errorsViewer);
 
         let topErrorsViewer = new UaFilterableViewer(
             'Top Errors',
             'TopErrors',
-            (t: DG.DataFrame) => DG.Viewer.barChart(t, this.defaultBarchartOptions).root
+            (t: DG.DataFrame) => DG.Viewer.barChart(t, UaQueryViewer.defaultBarchartOptions).root
         );
         this.viewers.push(topErrorsViewer);
 
         let topErrorSourcesViewer = new UaFilterableViewer(
             'Top Error Sources',
             'TopErrorSources',
-            (t: DG.DataFrame) => DG.Viewer.barChart(t, this.defaultBarchartOptions).root
+            (t: DG.DataFrame) => DG.Viewer.barChart(t, UaQueryViewer.defaultBarchartOptions).root
         );
         this.viewers.push(topErrorSourcesViewer);
 
