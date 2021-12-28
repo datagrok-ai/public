@@ -395,18 +395,6 @@ export async function properties(smiles: string) {
   return smiles ? propertiesWidget(smiles) : new DG.Widget(ui.divText('SMILES is empty'));
 }
 
-//name: RDKit Info
-//tags: panel, chem, widgets
-//input: string smiles {semType: Molecule}
-//output: widget result
-export function rdkitInfoPanel(smiles: string) {
-  let mol = getRdKitModuleLocal().get_mol(smiles);
-  return new DG.Widget(ui.divV([
-    _svgDiv(mol),
-    ui.divText(`${getCLogP(smiles)}`)
-  ]));
-}
-
 //name: Structural Alerts
 //description: Screening drug candidates against structural alerts, i.e. chemical fragments associated to a toxicological response
 //help-url: /help/domains/chem/info-panels/structural-alerts.md
