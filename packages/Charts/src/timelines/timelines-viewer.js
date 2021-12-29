@@ -1,4 +1,5 @@
 import * as echarts from 'echarts';
+import { format } from 'echarts/lib/util/time';
 import { EChartViewer } from '../echart-viewer';
 import { options, deepCopy } from './echarts-options';
 
@@ -97,6 +98,10 @@ export class TimelinesViewer extends EChartViewer {
     this.render();
   }
 
+  formatDate(value) {
+    return value instanceof Date ? format(value, this.dateFormat, false) : value;
+  }
+
   getTooltip(params) {
     const x = params.event.event.x + this.tooltipOffset;
     const y = params.event.event.y + this.tooltipOffset;
@@ -104,8 +109,8 @@ export class TimelinesViewer extends EChartViewer {
       let tooltipContent = params.componentType === 'yAxis' ? ui.div(`${params.value}`) :
         ui.divV([ui.div(`key: ${params.value[0]}`),
         ui.div(`event: ${params.value[4]}`),
-        ui.div(`start: ${params.value[1]}`),
-        ui.div(`end: ${params.value[2]}`),
+        ui.div(`start: ${this.formatDate(params.value[1])}`),
+        ui.div(`end: ${this.formatDate(params.value[2])}`),
         ])
       ui.tooltip.show(tooltipContent, x, y);
     } else {
@@ -136,12 +141,15 @@ export class TimelinesViewer extends EChartViewer {
     const strColumns = columns.filter(col => col.type === DG.COLUMN_TYPE.STRING)
       .sort((a, b) => a.categories.length - b.categories.length);
 
+    const numColumns = [...this.dataFrame.columns.numerical];
+    const numericalTypes = [DG.COLUMN_TYPE.INT, DG.COLUMN_TYPE.FLOAT, DG.COLUMN_TYPE.DATE_TIME];
+
     const intColumns = columns.filter(col => col.type === DG.COLUMN_TYPE.INT)
       .sort((a, b) => a.stats.avg - b.stats.avg);
 
     this.splitByColumnName = (this.findColumn(columns, this.splitByRegexps) || strColumns[strColumns.length - 1]).name;
-    this.startColumnName = (this.findColumn(columns, this.startRegexps, [DG.COLUMN_TYPE.INT, DG.COLUMN_TYPE.DATE_TIME]) || intColumns[0]).name;
-    this.endColumnName = (this.findColumn(columns, this.endRegexps, [DG.COLUMN_TYPE.INT, DG.COLUMN_TYPE.DATE_TIME]) || intColumns[intColumns.length - 1]).name;
+    this.startColumnName = (this.findColumn(columns, this.startRegexps, numericalTypes) || numColumns[0]).name;
+    this.endColumnName = (this.findColumn(columns, this.endRegexps, numericalTypes) || numColumns[numColumns.length - 1]).name;
     this.colorByColumnName = (this.findColumn(columns, this.colorByRegexps, [DG.COLUMN_TYPE.STRING]) || strColumns[0]).name;
     this.eventColumnName = (this.findColumn(columns, this.eventRegexps, [DG.COLUMN_TYPE.STRING]) || strColumns[0]).name;
 
@@ -289,9 +297,6 @@ export class TimelinesViewer extends EChartViewer {
     const column = this.dataFrame.col(prop.get(this));
     if (column === null)
       return null;
-    if (prop.name === 'startColumnName' || prop.name === 'endColumnName') {
-      column.type === DG.COLUMN_TYPE.DATE_TIME ? this.addTimeOptions() : this.removeTimeOptions();
-    }
     this.columnData[prop.name] = {
       column,
       data: column.getRawData(),
@@ -321,7 +326,7 @@ export class TimelinesViewer extends EChartViewer {
   isSameDate(x, y) {
     if (x instanceof Date && y instanceof Date) {
       return x.getTime() === y.getTime();
-    } else if (typeof x === typeof y && typeof x === 'number') {
+    } else if ((typeof x === typeof y && typeof x === 'number') || (x == null || y == null)) {
       return x === y;
     }
     grok.shell.warning('The columns of different types cannot be used for representing dates.');
@@ -338,6 +343,8 @@ export class TimelinesViewer extends EChartViewer {
     const { categories: eventCategories, data: eventBuf } = this.columnData.eventColumnName;
     const { column: startColumn } = this.columnData.startColumnName;
     const { column: endColumn } = this.columnData.endColumnName;
+    (startColumn.type !== DG.COLUMN_TYPE.DATE_TIME || endColumn.type !== DG.COLUMN_TYPE.DATE_TIME) ?
+      this.removeTimeOptions() : this.addTimeOptions();
 
     for (const i of this.dataFrame.filter.getSelectedIndexes()) {
       const id = this.getStrValue(this.columnData.splitByColumnName, i);
@@ -387,7 +394,6 @@ export class TimelinesViewer extends EChartViewer {
   }
 
   removeTimeOptions() {
-    this.props.dateFormat = null;
     this.option.xAxis = {
       type: 'value',
       boundaryGap: ['0%', '0%'],

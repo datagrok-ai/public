@@ -15,8 +15,8 @@ export const options = {
   animation: false,
   xAxis: {
     type: 'value',
-    // min: (value) => value.min - 1,
-    // max: (value) => value.max + 1,
+    min: 'dataMin',
+    max: 'dataMax',
   },
   yAxis: {
     type: 'category',
