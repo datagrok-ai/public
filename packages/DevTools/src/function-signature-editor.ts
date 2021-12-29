@@ -613,7 +613,6 @@ function openFse(v: DG.View, functionCode: string) {
     editorView.box = true;
     editorView.setRibbonPanels([
       [
-        ui.bigButton('Save', () => grok.shell.info('plus')),
         ui.iconFA('eye', () => {
           previewDiv.hidden ? previewDiv.hidden = false : previewDiv.hidden = true;
         }),
