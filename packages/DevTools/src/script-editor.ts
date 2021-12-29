@@ -16,7 +16,7 @@ export async function scriptEditor(view: DG.View) {
             editor.setCursor({line: 6, ch: 0});
             editor.setFocus();
         }
-        }, 1000);  
+        }, 300);  
 }
 
 function setScriptRibbon(v:DG.View, doc:any){
@@ -448,16 +448,17 @@ function setScriptRibbon(v:DG.View, doc:any){
     componentsBtn.addEventListener("click", componentsMenu); 
     
     let panels = v.getRibbonPanels();
-
-    v.setRibbonPanels([
-        
-          ...panels,
-         
-        [
-            ui.tooltip.bind(viewBtn,'Views'),
-            ui.tooltip.bind(layoutsBtn,'Layouts'),
-            ui.tooltip.bind(elementsBtn,'Elements'),
-            ui.tooltip.bind(componentsBtn,'Components')
-        ]
-    ])
+    const newPanels = [
+      ui.tooltip.bind(viewBtn,'Views'),
+      ui.tooltip.bind(layoutsBtn,'Layouts'),
+      ui.tooltip.bind(elementsBtn,'Elements'),
+      ui.tooltip.bind(componentsBtn,'Components')
+    ]
+    
+    if (JSON.stringify(newPanels) !== JSON.stringify(panels[panels.length-2])) {
+      v.setRibbonPanels([
+        ...panels,
+        newPanels
+      ])
+    }
 }
