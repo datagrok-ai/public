@@ -49,8 +49,8 @@ export class Peptides {
     );
     const substNode = view.dockManager.dock(substViewer, DG.DOCK_TYPE.RIGHT, null, 'Substitution Analysis');
 
-    // const layout1 = view.saveLayout();
-    // view.dockManager.close(substNode);
+    const layout1 = view.saveLayout();
+    view.dockManager.close(substNode);
 
     const sarViewer = view.addViewer('peptide-sar-viewer', options);
     const sarNode = view.dockManager.dock(sarViewer, DG.DOCK_TYPE.DOWN, null, 'SAR Viewer');
@@ -69,7 +69,7 @@ export class Peptides {
     );
     const psNode = view.dockManager.dock(peptideSpaceViewer, DG.DOCK_TYPE.LEFT, sarNode, 'Peptide Space Viewer', 0.3);
 
-    // const layout2 = view.saveLayout();
+    const layout2 = view.saveLayout();
 
     const StackedBarchartProm = currentDf.plot.fromType('StackedBarChartAA');
     addViewerToHeader(tableGrid, StackedBarchartProm);
@@ -102,19 +102,19 @@ export class Peptides {
       view.setRibbonPanels(ribbonPanels);
     }, 'Close viewers and restore dataframe');
 
-    // let isSA = false;
-    // const switchViewers = ui.iconFA('toggle-on', () => {
-    //   if (isSA) {
-    //     view.loadLayout(layout1);
-    //     $(switchViewers).removeClass('fa-toggle-off');
-    //     $(switchViewers).addClass('fa-toggle-on');
-    //   } else {
-    //     view.loadLayout(layout2);
-    //     $(switchViewers).removeClass('fa-toggle-on');
-    //     $(switchViewers).addClass('fa-toggle-off');
-    //   }
-    //   isSA = !isSA;
-    // });
+    let isSA = false;
+    const switchViewers = ui.iconFA('toggle-on', () => {
+      if (isSA) {
+        view.loadLayout(layout1);
+        $(switchViewers).removeClass('fa-toggle-off');
+        $(switchViewers).addClass('fa-toggle-on');
+      } else {
+        view.loadLayout(layout2);
+        $(switchViewers).removeClass('fa-toggle-on');
+        $(switchViewers).addClass('fa-toggle-off');
+      }
+      isSA = !isSA;
+    });
 
     const ribbonPanels = view.getRibbonPanels();
     // view.setRibbonPanels([[hideIcon, switchViewers]]);
