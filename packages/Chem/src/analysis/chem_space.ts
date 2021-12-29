@@ -11,6 +11,7 @@ export async function chemSpace(table: DG.DataFrame, molColumn: DG.Column) {
     const myWorker = new Worker(getRdKitWebRoot() + 'src/analysis/chem_stochastic_proximity_embedding.js');
     const fpBuffers = new Array(fpColumn.length);
     for (let i = 0; i < fpColumn.length; ++i) {
+      //@ts-ignore
       const buffer = fpColumn[i].getRawData();
       fpBuffers[i] = buffer;
     }

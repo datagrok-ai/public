@@ -17,6 +17,7 @@ export class SubstructureFilter extends DG.Filter {
   readonly WHITE_MOL = '\n  0  0  0  0  0  0  0  0  0  0999 V2000\nM  END\n';
 
   get filterSummary(): string {
+    //@ts-ignore
     return this.sketcher.getSmiles();
   }
 
@@ -27,6 +28,7 @@ export class SubstructureFilter extends DG.Filter {
   constructor() {
     super();
     this.root = ui.divV([]);
+    //@ts-ignore
     this.sketcher.onChanged.subscribe((_) => this.dataFrame?.rows.requestFilter());
     this.root.appendChild(this.sketcher.root);
   }
@@ -47,6 +49,7 @@ export class SubstructureFilter extends DG.Filter {
   }
 
   applyFilter() {
+    //@ts-ignore
     if (!this.sketcher.getMolFile() || this.sketcher.getMolFile().endsWith(this.WHITE_MOL)) {
       this.reset();
       return;

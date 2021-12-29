@@ -67,7 +67,7 @@ class ChemspacePackage extends DG.Package {
 
   //name: Chemspace Samples
   //description: Chemspace Samples
-  //tags: widgets
+  //tags: panel, widgets
   //input: string smiles {semType: Molecule}
   //output: widget result
   //condition: true
