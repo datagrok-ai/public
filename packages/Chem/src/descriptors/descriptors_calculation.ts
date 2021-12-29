@@ -7,19 +7,13 @@ import { getDescriptorsTree, getDescriptorsPy } from '../scripts-api';
 const _STORAGE_NAME = 'rdkit_descriptors';
 const _KEY = 'selected';
 
-/**
- * Adds descriptors to table
- * @export
- * @param {DG.Column} smiles column with smiles.
- * @param {DG.DataFrame} viewTable current view table.
- */
+/** Adds descriptors to table*/
 export async function addDescriptors(smiles: DG.Column, viewTable: DG.DataFrame): Promise<void> {
 
   openDescriptorsDialog(await getSelected(), async (selected: any) => {
     await grok.dapi.userDataStorage.postValue(_STORAGE_NAME, _KEY, JSON.stringify(selected));
     getSelected().then(selected => {
       let pi = DG.TaskBarProgressIndicator.create('Calculating descriptors');
-      //grok.chem.descriptors(DG.DataFrame.fromColumns([smiles]), smiles.name, selected).then((table: any) => {
       getDescriptorsPy(smiles.name, DG.DataFrame.fromColumns([smiles]), 'selected', DG.DataFrame.fromColumns([DG.Column.fromList('string', 'selected', selected)])
       ).then((table: any) => {
         addResultColumns(table, viewTable);
@@ -29,11 +23,7 @@ export async function addDescriptors(smiles: DG.Column, viewTable: DG.DataFrame)
   });
 }
 
-/**
- * calculates descriptors for single entry
- * @export
- * @param {DG.Column} smiles column with smiles.
- */
+/** Calculates descriptors for single entry*/
 export function getDescriptorsSingle(smiles: string) {
   let widget = new DG.Widget(ui.div());
   let result = ui.div();
@@ -51,7 +41,6 @@ export function getDescriptorsSingle(smiles: string) {
     getSelected().then(selected => {
       getDescriptorsPy('smiles', DG.DataFrame.fromCsv(`smiles\n${smiles}`), 'selected', DG.DataFrame.fromColumns([DG.Column.fromList('string', 'selected', selected)])
       ).then((table: any) => {
-      //grok.chem.descriptors(DG.DataFrame.fromCsv(`smiles\n${smiles}`), 'smiles', selected).then((table: any) => {
         removeChildren(result);
         let map: { [_: string]: any } = {};
         for (let descriptor of selected)
@@ -69,10 +58,7 @@ export function getDescriptorsSingle(smiles: string) {
   return widget;
 }
 
-/**
- * demo application for descriptor calculation
- * @export
- */
+/** demo application for descriptor calculation*/
 export function getDescriptorsApp() {
   let defaultSmiles = 'O=C1CN=C(c2ccccc2N1)C3CCCCC3';
   let sketcherValue = defaultSmiles;

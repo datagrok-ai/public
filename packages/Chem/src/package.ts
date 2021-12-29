@@ -28,6 +28,7 @@ import {rGroupAnalysis} from './analysis/r_group';
 import {chemLock, chemUnlock} from './chem_common';
 import {MoleculeViewer} from './chem_similarity_search';
 import { identifiersWidget } from './widgets/identifiers';
+import { updateGetAccessor } from 'typescript';
 
 const getRdKitModuleLocal = chemCommonRdKit.getRdKitModule;
 const initRdKitService = chemCommonRdKit.initRdKitService;
@@ -296,7 +297,7 @@ export async function chemSpaceTopMenu(table: DG.DataFrame, smiles: DG.Column) {
 }
 
 //name: R-Groups Analysis
-//top-menu: Chem | R-Groups Analysis
+//top-menu: Chem | R-Groups Analysis...
 export function rGroupsAnalysisMenu() {
   const col = grok.shell.t.columns.bySemType(DG.SEMTYPE.MOLECULE);
   if (col === null) {
@@ -317,6 +318,14 @@ export async function chemSimilaritySearch() {
 
 //#region Molecule column property panel
 
+//name: Chem | Substructure search Port...
+//friendly-name: Chem | Substructure search Port...
+//tags: panel, chem
+//input: column smiles { semType: Molecule }
+export async function substructurePanel(smiles: DG.Column) {
+  grok.shell.warning("ss");
+}
+
 //name: Chem | Descriptors Port...
 //friendly-name: Chem | Descriptors Port...
 //tags: panel, chem
@@ -325,14 +334,6 @@ export async function chemSimilaritySearch() {
 export async function descriptorsPanel(smiles: DG.Column) {
   let table: DG.DataFrame = grok.shell.t;
   addDescriptors(smiles, table);
-}
-
-//name: Chem | R-Groups Analysis Port
-//friendly-name: Chem | R-Groups Analysis Port
-//tags: panel, chem
-//input: column col {semType: Molecule}
-export function rGroupsAnalysisPanel(col: DG.Column) {
-  rGroupAnalysis(col);
 }
 
 //name: Chem | Find MCS Port

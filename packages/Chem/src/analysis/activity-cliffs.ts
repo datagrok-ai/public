@@ -2,6 +2,7 @@ import * as grok from 'datagrok-api/grok';
 import * as ui from 'datagrok-api/ui';
 import * as DG from 'datagrok-api/dg';
 
+/** Searches for activity cliffs in a chemical dataset by selected cutoff*/
 export async function getActivityCliffs(df: DG.DataFrame, smiles: DG.Column, activities: DG.Column, similarity: number) {
 
   function renderLines(sp: DG.Viewer, n1: number[], n2: number[]) {
