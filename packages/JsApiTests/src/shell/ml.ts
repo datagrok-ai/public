@@ -4,18 +4,18 @@ import * as ui from 'datagrok-api/ui';
 import * as DG from 'datagrok-api/dg';
 
 category('ML', () => {
-  test('Apply Model', async () => {
-    const data = grok.data.demo.demog();
-    const resultDf = await grok.ml.applyModel(
-      // 'Demo:PredictSexByBasicDemographics',
-      'Donufriienko:PredictSEXByAGEHEIGHTWEIGHTUsingDistributedRandomForest',
-      data,
-      {'SEX': 'SEX', 'AGE': 'AGE', 'HEIGHT': 'HEIGHT', 'WEIGHT': 'WEIGHT'},
-      true,
-    );
+  // test('Apply Model', async () => {
+  //   const data = grok.data.demo.demog();
+  //   const resultDf = await grok.ml.applyModel(
+  //     // 'Demo:PredictSexByBasicDemographics',
+  //     'Donufriienko:PredictSEXByAGEHEIGHTWEIGHTUsingDistributedRandomForest',
+  //     data,
+  //     {'SEX': 'SEX', 'AGE': 'AGE', 'HEIGHT': 'HEIGHT', 'WEIGHT': 'WEIGHT'},
+  //     true,
+  //   );
 
-    expect((resultDf.columns as DG.ColumnList).names().includes('outcome'), true);
-  });
+  //   expect((resultDf.columns as DG.ColumnList).names().includes('outcome'), true);
+  // });
 
   test('Cluster', async () => {
     const data = await grok.data.loadTable('https://public.datagrok.ai/demo/xclara.csv');

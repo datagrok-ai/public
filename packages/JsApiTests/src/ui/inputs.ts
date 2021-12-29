@@ -2,7 +2,7 @@ import { after, before, category, delay, expect, test } from "../test";
 import * as grok from 'datagrok-api/grok';
 import * as ui from 'datagrok-api/ui';
 import * as DG from 'datagrok-api/dg';
-import { caption, enabled, HTMLElement } from './utils';
+import { caption, enabled, checkHTMLElement } from './utils';
 
 
 category('UI: Inputs', () => {
@@ -31,19 +31,19 @@ category('UI: Inputs', () => {
 
   test('input.root', async () => {
     for (const [key, value] of Object.entries(inputs)) {
-      HTMLElement(key, value, v, '.ui-input-root');
+      checkHTMLElement(key, value.root, v, '.ui-input-root');
     }
   })
 
   test('input.input', async () => {
     for (const [key, value] of Object.entries(inputs)) {
-      HTMLElement(key, value, v, '.ui-input-editor');
+      checkHTMLElement(key, value.root, v, '.ui-input-editor');
     }
   })
 
   test('input.captionLabel', async () => {
     for (const [key, value] of Object.entries(inputs)) {
-      HTMLElement(key, value, v, '.ui-input-label');
+      checkHTMLElement(key, value.root, v, '.ui-input-label');
     }
   })
 
