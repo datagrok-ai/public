@@ -4,11 +4,18 @@ import * as DG from 'datagrok-api/dg';
 import $ from 'cash-dom';
 import {model} from '../viewers/model';
 import {splitAlignedPeptides} from '../utils/split-aligned';
+import '../styles.css';
 
+/**
+ * Manual sequence alignment widget.
+ *
+ * @param {DG.Column} alignedSequenceCol Aligned sequence column.
+ * @param {DG.DataFrame} currentDf Working table.
+ * @return {DG.Widget} Widget for manual sequence alignment.
+ */
 export function manualAlignmentWidget(alignedSequenceCol: DG.Column, currentDf: DG.DataFrame) {
   const sequenceInput = ui.textInput('', alignedSequenceCol.get(currentDf.currentRowIdx));
-  (sequenceInput.input as HTMLElement).style.height = '50px';
-  (sequenceInput.input as HTMLElement).style.overflow = 'hidden';
+  $(sequenceInput.root).addClass('pep-textinput');
 
   const applyChangesBtn = ui.button('Apply', async () => {
     const newSequence = sequenceInput.value;
@@ -30,7 +37,7 @@ export function manualAlignmentWidget(alignedSequenceCol: DG.Column, currentDf: 
     () => sequenceInput.value = alignedSequenceCol.get(currentDf.currentRowIdx),
     'Reset',
   );
-  $(resetBtn).addClass('dt-snippet-editor-icon dt-reset-icon');
+  $(resetBtn).addClass('pep-snippet-editor-icon pep-reset-icon');
 
-  return new DG.Widget(ui.divV([resetBtn, sequenceInput.root, applyChangesBtn], 'dt-textarea-box'));
+  return new DG.Widget(ui.divV([resetBtn, sequenceInput.root, applyChangesBtn], 'pep-textarea-box'));
 }

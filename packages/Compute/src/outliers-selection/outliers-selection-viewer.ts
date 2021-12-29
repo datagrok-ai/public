@@ -50,7 +50,7 @@ export class OutliersSelectionViewer extends DG.JsViewer {
       (inputData.columns as DG.ColumnList).addNew(FLUX, 'double').init((index) => (inputData.cell(index, 'time (min)').value/60.0) / ((inputData.cell(index, 'filtrate volume (mL)').value/1000.0) / (DEFAULT_TEST_AREA / 10000.0)));
     }
 
-    const initialData = inputData.clone();
+    inputData.col(IS_OUTLIER_COL_LABEL)?.markers.assign('true', DG.MARKER_TYPE.OUTLIER);
 
     const clearTable = () => {
       return DG.DataFrame.fromColumns([
@@ -63,6 +63,7 @@ export class OutliersSelectionViewer extends DG.JsViewer {
 
     const groupsListGrid = DG.Viewer.grid(clearTable());
     groupsListGrid.root.style.width = '100%';
+    groupsListGrid.root.style.minWidth = '230px';
     groupsListGrid.columns.setVisible([OUTLIER_RATIONALE_COL_LABEL, OUTLIER_COUNT_COL_LABEL, 'Actions']);
 
     groupsListGrid.onCellPrepare((gc) => {
@@ -178,85 +179,22 @@ export class OutliersSelectionViewer extends DG.JsViewer {
       }
     });
 
-    const resetSelectedBtn = ui.button(
-      'RESET SELECTED',
-      () => {
-        inputData.selection.getSelectedIndexes().forEach((selectedIndex: number) => {
-          inputData.set(IS_OUTLIER_COL_LABEL, selectedIndex, false);
-          inputData.set(OUTLIER_RATIONALE_COL_LABEL, selectedIndex, '');
-        });
-        inputData.selection.setAll(false);
-      },
-      'Remove the selected points from oultiers list',
-    );
-
-    const resetAllBtn = ui.button(
-      'RESET ALL',
-      () => {
-        (inputData.columns as DG.ColumnList).byName(IS_OUTLIER_COL_LABEL).init(
-          (index) => initialData.get(IS_OUTLIER_COL_LABEL, index),
-        );
-        (inputData.columns as DG.ColumnList).byName(OUTLIER_RATIONALE_COL_LABEL).init(
-          (index) => initialData.get(OUTLIER_RATIONALE_COL_LABEL, index),
-        );
-      },
-      'Cancel all changes',
-    );
-
-    const autoOutlierGroupBtn = ui.button(
-      'AUTO DETECT...',
-      () => {
-        const intInput = ui.intInput('N', 3);
-        const columnInput = ui.columnInput('Column', inputData, null);
-        ui.dialog('Detect outliers automatically')
-          .add(columnInput.root)
-          .add(intInput.root)
-          .onOK(()=>{
-            const meanValue = (columnInput.value as DG.Column).stats.avg;
-            const stddev = (columnInput.value as DG.Column).stats.stdev;
-            inputData.selection.init((index)=>
-              Math.abs(meanValue - (columnInput.value as DG.Column).get(index)) > stddev*intInput.value,
-            );
-            inputData.selection.getSelectedIndexes().forEach((selectedIndex: number) => {
-              inputData.set(IS_OUTLIER_COL_LABEL, selectedIndex, true);
-              inputData.set(OUTLIER_RATIONALE_COL_LABEL, selectedIndex, `${intInput.value}x stddev rule`);
-            });
-            inputData.selection.setAll(false);
-          })
-          .show();
-      },
-      'Detect outliers automatically',
-    );
-
     inputData.selection.setAll(false);
 
-    inputData.onSelectionChanged.subscribe(() => {
-      if (inputData.selection.trueCount === 0) {
-        resetSelectedBtn.classList.add('disabled');
-      } else {
-        resetSelectedBtn.classList.remove('disabled');
-      }
-    });
-
     updateGroupsTable();
-    resetSelectedBtn.classList.add('disabled');
 
-    const info = ui.info(
-      ui.div([
-        ui.p('Hold the “SHIFT” key and start to draw a freehand selection on the plot area'),
-      ], {style: {'white-space': 'pre-wrap'}}),
-    );
-    info.style.marginBottom = '0px';
+    // const info = ui.info(
+    //   ui.div([
+    //     ui.p('Hold the “SHIFT” key and start to draw a freehand selection on the plot area'),
+    //   ], {style: {'white-space': 'pre-wrap'}}),
+    // );
+    // info.style.marginBottom = '0px';
 
     this.root.replaceWith(
       ui.divV([
-        info,
         ui.divV([
-          ui.divH([
-            resetSelectedBtn, resetAllBtn, autoOutlierGroupBtn,
-          ], {style: {'text-align': 'center', 'justify-content': 'center'}}),
           groupsListGrid.root,
         ], {style: {'height': '75%'}}),
-      ], {style: {'height': '100%', 'min-width': '230px'}}));
+      ], {style: {'height': '100%'}}));
   }
 }

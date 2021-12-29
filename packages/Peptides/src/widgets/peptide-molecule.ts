@@ -3,6 +3,13 @@ import * as ui from 'datagrok-api/ui';
 import * as DG from 'datagrok-api/dg';
 import {ChemPalette} from '../utils/chem-palette';
 
+/**
+ * 3D representation widget of peptide molecule.
+ *
+ * @export
+ * @param {string} pep Peptide string.
+ * @return {Promise<DG.Widget>} Widget.
+ */
 export async function peptideMoleculeWidget(pep: string): Promise<DG.Widget> {
   const pi = DG.TaskBarProgressIndicator.create('Creating NGL view');
 

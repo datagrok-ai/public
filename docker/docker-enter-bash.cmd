@@ -1,0 +1,1 @@
+docker exec -u root -it datagrok-jupyter_kernel_gateway-1 bash

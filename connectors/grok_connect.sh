@@ -79,7 +79,7 @@ else
     cd $GROK_SRC/public/connectors || exit 1
     ZIP_TMP_DIR=${TARGET_DIR}/grok_connect
     mkdir ${ZIP_TMP_DIR}
-    echo "java -Xmx4g -classpath lib/*:${GROK_CONNECT} grok_connect.GrokConnect" > ${ZIP_TMP_DIR}/run_grok_connect.sh
+    echo "java -Xmx4g -classpath ${GROK_CONNECT}:lib/* grok_connect.GrokConnect" > ${ZIP_TMP_DIR}/run_grok_connect.sh
     cp ${TARGET_DIR}/${GROK_CONNECT} ${ZIP_TMP_DIR}/${GROK_CONNECT}
     cp -R ${GROK_CONNECT_DIR}/lib ${ZIP_TMP_DIR}/lib
     CUR_DIR=$(pwd)
@@ -90,6 +90,6 @@ else
 
     # Run connector server with shared libraries
     if [ "$1" == "run" ]; then
-        java -Xmx4g -classpath ${GROK_CONNECT_DIR}/lib/*:${TARGET_DIR}/${GROK_CONNECT} grok_connect.GrokConnect
+        java -Xmx4g -classpath ${TARGET_DIR}/${GROK_CONNECT}:${GROK_CONNECT_DIR}/lib/* grok_connect.GrokConnect
     fi
 fi

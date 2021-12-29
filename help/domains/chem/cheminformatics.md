@@ -191,7 +191,7 @@ with an interpretation of how different sub-structure fragments contribute to th
 
 In addition to these pre-defined info panels, users can develop their own using any
 [scripting language](../../compute/scripting.md) supported by the Grok platform. For example, 
-#{x.demo:pythonscripts:GasteigerPartialCharges}. 
+#{x.demo:demoscripts:GasteigerPartialCharges}. 
  
 ## In-memory substructure search
 
@@ -236,7 +236,7 @@ molecule, index information, and the reactant molecules that were used.
 the combinatorial expansion of the reactants. If not checked, reactants 1 and 2 will be combined 
 sequentially, with the longer list determining the number of output rows.
 
-Corresponding function: #{x.demo:pythonscripts:TwoComponentReaction} 
+Corresponding function: #{x.demo:demoscripts:TwoComponentReaction} 
 
 See details [here](functions/reactions.md).
 

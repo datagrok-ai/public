@@ -1,18 +1,17 @@
 {
-	"name": "sqlite",
-	"beta": true,
+	"name": "@datagrok/sqlite",
+	"beta": false,
 	"friendlyName": "SQLite",
-	"version": "0.0.1",
+	"version": "0.0.4",
 	"description": "",
 	"dependencies": {
-		"cash-dom": "latest",
 		"datagrok-api": "latest",
-		"dayjs": "latest",
-		"file-loader": "^6.2.0",
+		"file-loader": "latest",
 		"ts-loader": "latest",
 		"typescript": "latest"
 	},
 	"devDependencies": {
+		"@types/sql.js": "latest",
 		"@typescript-eslint/eslint-plugin": "latest",
 		"@typescript-eslint/parser": "latest",
 		"eslint": "latest",

@@ -14,7 +14,7 @@ import {
 import {__obs, EventData, MapChangeArgs, observeStream} from "./events";
 import {toDart, toJs} from "./wrappers";
 import {SIMILARITY_METRIC} from "./const";
-import {MapProxy, _getIterator, _toIterable, _toJson} from "./utils";
+import {MapProxy, _getIterator, _toIterable, _toJson, DartList} from "./utils";
 import {Observable}  from "rxjs";
 import {filter} from "rxjs/operators";
 import {Widget} from "./widgets";
@@ -553,13 +553,18 @@ export class Column {
   public temp: any;
   public tags: any;
   private _dialogs: ColumnDialogHelper | undefined;
-  private _colors: ColumnColorHelper | undefined;
-  private _markers: ColumnMarkerHelper | undefined;
+  private _meta: ColumnMetaHelper | undefined;
 
   constructor(dart: any) {
     this.dart = dart;
     this.temp = new MapProxy(api.grok_Column_Get_Temp(this.dart));
     this.tags = new MapProxy(api.grok_Column_Get_Tags(this.dart));
+  }
+
+  get meta(): ColumnMetaHelper {
+    if (this._meta == undefined)
+      this._meta = new ColumnMetaHelper(this);
+    return this._meta;
   }
 
   /** Creates a {@link Column} from the list of string values
@@ -752,16 +757,14 @@ export class Column {
     return this._dialogs;
   }
 
+  // Obsolete. Recommended method is "meta.colors".
   get colors(): ColumnColorHelper {
-    if (this._colors == undefined)
-      this._colors = new ColumnColorHelper(this);
-    return this._colors;
+    return this.meta.colors;
   }
 
+  // Obsolete. Recommended method is "meta.markers".
   get markers(): ColumnMarkerHelper {
-    if (this._markers == undefined)
-      this._markers = new ColumnMarkerHelper(this);
-    return this._markers;
+    return this.meta.markers;
   }
 
   /**
@@ -778,7 +781,9 @@ export class Column {
     return this;
   }
 
-  /** Returns the raw buffer containing data.
+  /** FOR EXPERT USE ONLY!
+   *
+   * Returns the raw buffer containing data.
    * Sample: {@link https://public.datagrok.ai/js/samples/data-frame/performance/access}
    * Return type depends on the column type:
    * {Int32Array} for ints, {@link INT_NULL} represents null.
@@ -789,7 +794,15 @@ export class Column {
    * {Uint32Array} bit array.
    * @returns {Array} */
   getRawData(): Int32Array | Float32Array | Float64Array | Uint32Array {
-    return api.grok_Column_GetRawData(this.dart);
+    // a hack that extracts the real underlying array from the Dart Column
+    const handle = api.grok_Column_GetRawData(this.dart);
+    const TypedArray = Object.getPrototypeOf(Uint8Array);
+    for (const k of Object.keys(handle)) {
+      const v = handle[k];
+      if (v instanceof TypedArray)
+        return v;
+    }
+    return api.grok_Column_GetRawDataDartium(this.dart);
   }
 
   setRawData(rawData: Int32Array | Float32Array | Float64Array | Uint32Array, notify: boolean = true): void {
@@ -868,10 +881,14 @@ export class Column {
     return api.grok_Column_ToList(this.dart);
   }
 
-  /** Returns all unique strings in a sorted order. Applicable to string column only.
-   * @returns {string[]} */
+  /** Returns all unique strings in a sorted order. Applicable to string column only. */
   get categories(): string[] {
     return api.grok_Column_Categories(this.dart);
+  }
+
+  /** Returns i-th category. Applicable to string column only. */
+  getCategory(categoryIndex: number): string {
+    return api.grok_Column_GetCategory(this.dart, categoryIndex);
   }
 
   /** Sets order of categories
@@ -891,17 +908,11 @@ export class Column {
   get valueComparer(): Comparer | null { return api.grok_Column_Get_ValueComparer(this.dart); }
   set valueComparer( cmp: Comparer | null) { api.grok_Column_Set_ValueComparer(this.dart, cmp); }
 
-  /** Column's minimum value. The result is cached.
-   * @returns {number} */
-  get min(): number {
-    return api.grok_Column_Min(this.dart);
-  }
+  /** Column's minimum value. The result is cached. */
+  get min(): number { return api.grok_Column_Min(this.dart); }
 
-  /** Column's maximum value. The result is cached.
-   * @returns {number} */
-  get max(): number {
-    return api.grok_Column_Max(this.dart);
-  }
+  /** Column's maximum value. The result is cached. */
+  get max(): number { return api.grok_Column_Max(this.dart); }
 
   /** Checks whether the column passes the specified [filter].
    * [filter] can be either specific data [type] such as 'int' or 'string', more broadly - 'numerical', or 'categorical', or null for any columns.
@@ -910,11 +921,8 @@ export class Column {
     return api.grok_Column_Matches(this.dart, filter);
   }
 
-  /** Basic descriptive statistics. The result is cached.
-   * @returns {Stats} */
-  get stats(): Stats {
-    return Stats.fromColumn(this);
-  }
+  /** Basic descriptive statistics. The result is cached. */
+  get stats(): Stats { return Stats.fromColumn(this); }
 
   /** An iterator over all values in this column. */
   * values() {
@@ -1225,7 +1233,7 @@ export class RowList {
   }
 
   /** List of textual descriptions of currently applied filters */
-  get filters(): string[] { return api.grok_RowList_Get_Filters(this.dart); }
+  get filters(): DartList<string> { return DartList.fromDart(api.grok_RowList_Get_Filters(this.dart)); }
 
   /** Removes specified rows
    * @param {number} idx
@@ -2048,7 +2056,7 @@ interface FormulaLine {
   zindex?: number;
   min?: number;
   max?: number;
-  equation: string;
+  formula?: string;
 
   // Specific to lines:
   width?: number;
@@ -2239,4 +2247,26 @@ export class ColumnMarkerHelper {
     jsonTxt = JSON.stringify(jsonMap);
     this.column.setTag(DG.TAGS.MARKER_CODING, jsonTxt);
   }
+}
+
+export class ColumnMetaHelper {
+  private readonly column: Column;
+  private _colors: ColumnColorHelper | undefined;
+  private _markers: ColumnMarkerHelper | undefined;
+
+  constructor(column: Column) {
+    this.column = column;
+  }
+
+  get colors(): ColumnColorHelper {
+    if (this._colors == undefined)
+      this._colors = new ColumnColorHelper(this.column);
+    return this._colors;
+  }
+
+  get markers(): ColumnMarkerHelper {
+    if (this._markers == undefined)
+      this._markers = new ColumnMarkerHelper(this.column);
+    return this._markers;
+  }  
 }

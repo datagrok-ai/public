@@ -374,6 +374,7 @@ export enum MARKER_TYPE {
   SQUARE_BORDER = "square border",
   CROSS_BORDER = "cross border",
   CROSS_X_BORDER = "cross x border",
+  OUTLIER = "outlier",
   DIAMOND = "diamond",
   DIAMOND_BORDER = "diamond border",
   TRIANGLE_TOP = "triangle top",

@@ -1,6 +1,7 @@
 //Example "Link table" dialog layout
 
 let table = grok.data.testData('demog', 10000);
+grok.shell.addTableView(table);
 let tables = grok.shell.tables;
 
 let linkTablesDlg = ui.dialog('Link Tables');

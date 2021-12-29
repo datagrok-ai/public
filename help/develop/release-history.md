@@ -1,6 +1,213 @@
 <!-- TITLE: Release History -->
 <!-- SUBTITLE: -->
 
+# 2021-12-22 Dev build 0.107.0
+
+## Latest Docker Images
+
+* Datagrok: 
+  *  `docker pull datagrok/datagrok:0.107.0`
+  *  `docker pull datagrok/datagrok:latest`
+  
+* [Docker-Compose](admin/docker-compose.md)
+
+## Addressed Issues
+
+* (Bug) NPM repositories: add registry property 
+* Formula Lines: Property harmonization (opacity) 
+* JS API: Moved properties (column.colors => column.meta.colors, column.markers => column.meta.markers) 
+* Scripting: global named conda environments (WIP)
+* JS API: Users API (WIP)
+* CSS Fix 
+
+
+# 2021-12-21 Dev build 0.106.0
+
+## Latest Docker Images
+
+* Datagrok: 
+  *  `docker pull datagrok/datagrok:0.106.0`
+  *  `docker pull datagrok/datagrok:latest`
+  
+* [Docker-Compose](admin/docker-compose.md)
+
+## Addressed Issues
+
+* Function View: markup improvements 
+* Datagrok: disable update certificates by environment variable 
+
+
+# 2021-12-21 Dev build 0.105.0
+
+## Latest Docker Images
+
+* Datagrok: 
+  *  `docker pull datagrok/datagrok:0.105.0`
+  *  `docker pull datagrok/datagrok:latest`
+  
+* [Docker-Compose](admin/docker-compose.md)
+
+## Addressed Issues
+
+* (Bug) ListInput: caption is not shown 
+* Filters: ability to add multiple filters (for the specified selected package filter) for selected columns 
+* Filters: ability to remove all filters (via the popup menu) 
+* (Bug) Formula Lines: Browser crashes om some analysis 
+* Scripting: in-place definition for environments 
+* (Bug) Viewer Filter: Scatter Plot doesn't refresh after Viewer filter changed 
+* H2O: log4j CVE-2021-44228 remediation 
+* Css fixes 
+* CSS Harmonization 
+* Changed default run section to condensed mode 
+* Fixed analyzer warning 
+* Formula Lines: Name harmonization \- core side (doesn't affect users) 
+* Formula Lines: Name harmonization \- js api side (affects users). Change property name: equation -> formula. Both options are valid, but equation is obsolete. 
+* (Bug) ColumnComboBox: allowDrop field is ignored 
+* (Bug) Filters: closing the viewer does not properly detach it (event subscriptions are leaking) 
+* (Bug) Widget.die() does not kill all descendants 
+* Filters: ability to drag-and-drop columns to the filter group 
+* (Bug) Formula Lines: No lines if plot was created from the script annotation (Pmax) 
+* Minor fixes and improvements 
+* Propertly detaching JS-based filters 
+* (Bug) Scatter Plot: Wrong scrollbar length when canvas resized 
+* JS API: Filters (WIP)
+* Bar Chart: Wrong scrollbar length when canvas resized 
+* JS API: ability to interop with Dart lists (no deep copy) 
+* Harmonize interop 
+* Minor code cleanup. 
+* JS API: getRawData should return real buffers (currently creates a copy) 
+* (Bug) Bar Chart: Exception when filtered table rows = 0 
+* SketcherFilter: provided filterType (will be retired soon, anyway) 
+* Seamless data loading to Function View 
+* Function View improvements 
+* Markers: Fixed bug with last marker in List 
+* Markers: Add new marker for outliers 
+* Python base image: remove boost artifacts from image 
+* Package repositories: unique scope check 
+* Datagrok: disable update certificates by environment variable 
+
+
+# 2021-12-16 Dev build 0.104.0
+
+## Latest Docker Images
+
+* Datagrok: 
+  *  `docker pull datagrok/datagrok:0.104.0`
+  *  `docker pull datagrok/datagrok:latest`
+  
+* [Docker-Compose](admin/docker-compose.md)
+
+## Addressed Issues
+
+* Push version: generate release notes for minor release 
+* ElasticSearch log4j vulnerability CVE-2021-44228 
+
+
+# 2021-12-16 Dev build 0.103.0
+
+## Latest Docker Images
+
+* Datagrok: 
+  *  `docker pull datagrok/datagrok:0.103.0`
+  *  `docker pull datagrok/datagrok:latest`
+  
+* [Docker-Compose](admin/docker-compose.md)
+
+## Addressed Issues
+
+* Skip test: ddt.calculated_column.metadata presence after formula application 
+* (Bug) Tree Map: After selecting column for "Size" property, column selectors on the viewer are duplicated 
+* Chem: Support filters from packages (WIP)
+* (Bug) Grid: categorical color-coding cannot be switched on/off without opening 'Edit' menu in some cases 
+* Push version using the version in package.json file 
+* (Bug) Formula Lines: "=" in the column names breaks the formula lines 
+* (Bug) NPM repositories: add registry property (WIP)
+* Actions panel function names fix 
+* Added build all batch script 
+* Fixed name conflict (opacity) 
+* SQLite closes #47: fixed output error 
+* (Bug) Formula Lines: Browser crashes om some analysis 
+
+
+# 2021-12-14 Dev build 0.102.0
+
+## Latest Docker Images
+
+* Datagrok: 
+  *  `docker pull datagrok/datagrok:0.102.0`
+  *  `docker pull datagrok/datagrok:latest`
+  
+* [Docker-Compose](admin/docker-compose.md)
+
+## Addressed Issues
+
+* Function View: Ability to show grid 
+* NPM repositories: new package manager UI (WIP)
+* Compute: Vmax: Pmax: rounding values, convenient naming objects, transposing tables 
+* Compute: export improved 
+* Compute: made OutSel buttons flexible 
+* (Bug) Grid: "Show row header" property does not have any effect 
+* Compute: removed buttons from OutSel 
+* Compute: Vmax: remove titles 
+
+
+# 2021-12-14 Dev build 0.101.0
+
+## Latest Docker Images
+
+* Datagrok: 
+  *  `docker pull datagrok/datagrok:0.101.0`
+  *  `docker pull datagrok/datagrok:latest`
+  
+* [Docker-Compose](admin/docker-compose.md)
+
+## Addressed Issues
+
+* Function View: Ability to show grid 
+* Compute: Vmax: transposing tables(WIP) 
+* Release notes: ignore GitHub Actions commits 
+* Added isolatesCount to GROK_PARAMETERS 
+* Added pool settings to GROK_PARAMETERS 
+* Peptides #93: Add spiral projection viewer. 
+
+
+# 2021-12-14 Dev build 0.100.0
+
+## Latest Docker Images
+
+* Datagrok: 
+  *  `docker pull datagrok/datagrok:0.100.0`
+  *  `docker pull datagrok/datagrok:latest`
+  
+* [Docker-Compose](admin/docker-compose.md)
+
+## Addressed Issues
+
+* GitHub Actions: Update js-api/package-lock.json 
+* Compute: Vmax: consistent capitalization, Update regression line in Input tab after selecting new outliers 
+* Timelines: improve column selection heuristics 
+* SQLite #47: added missing file 
+* Compute: Vmax: flux decay multiaxis linechart 
+* Timelines: selection color is missing 
+* Scatter Plot: an option to follow global filter 
+* Viewers: Unification of properties (alpha/opacity/opaque) 
+* Added an SQLite demo file 
+* SQLite: improved documentation 
+* (Bug) datagrok-tools: `grok api` creates invalid function declarations 
+* GitHub Actions: Update tools/package-lock.json 
+* Move scripts into DemoPackages 
+* Compute: Vmax and Pmax enhancements 
+* GitHub Actions: Update packages/Compute/package-lock.json 
+* Grok connect: NPE when settings in schemas, schema, and query_table_sql are null  
+* Formula lines: Fixed name conflict 
+* NPM repositories: add check for deprecated versions 
+* NPM repositories: improve package search for given scope (WIP)
+* Compute: Vmax: flux decay plot outliers bug fix 
+* Terraform configuration for CVM 
+* Function View: Viewer positioning tags 
+* Function View: Ability to show grid 
+
+
 # 2021-12-09 Dev build 0.99.0
 
 ## Latest Docker Images

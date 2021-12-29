@@ -1,7 +1,7 @@
 {
 	"name": "@datagrok/charts",
 	"fullName": "Charts",
-	"version": "0.0.5",
+	"version": "0.0.8",
 	"description": "",
 	"dependencies": {
 		"datagrok-api": ">0.94.10",

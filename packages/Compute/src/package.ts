@@ -3,7 +3,6 @@ import * as grok from 'datagrok-api/grok';
 import * as ui from 'datagrok-api/ui';
 import * as DG from 'datagrok-api/dg';
 import {ModelHandler} from './model-handler';
-import {selectOutliersManually} from './outliers-selection/outliers-selection';
 import {exportFuncCall} from './export-funccall';
 import {_functionParametersGrid} from './function-views/function-parameters-grid';
 import {ModelCatalogView} from './model-catalog-view';
@@ -19,34 +18,6 @@ export function test() {
   grok.shell.info(_package.webRoot);
 }
 
-//name: manualOutlierDetectionDialog
-//input: dataframe inputData
-//output: dataframe augmentedInput
-//output: dataframe editedInput
-export async function manualOutlierSelectionDialog(inputData: DG.DataFrame) {
-  const call = grok.functions.getCurrentCall();
-
-  const IS_OUTLIER_COL_LABEL = 'isOutlier';
-  const OUTLIER_REASON_COL_LABEL = 'Rationale';
-
-  if (call.options['interactive']) {
-    const {augmentedInput, editedInput} = await selectOutliersManually(inputData);
-    return {augmentedInput, editedInput};
-  }
-  return new Promise<{augmentedInput: DG.DataFrame, editedInput: DG.DataFrame}>((resolve, reject) => {
-    if (!inputData.columns.byName(IS_OUTLIER_COL_LABEL)) {
-      inputData.columns
-        .add(DG.Column.fromBitSet(IS_OUTLIER_COL_LABEL, DG.BitSet.create(inputData.rowCount, () => false)));
-    }
-
-    if (!inputData.columns.byName(OUTLIER_REASON_COL_LABEL)) {
-      inputData.columns
-        .add(DG.Column.fromStrings(OUTLIER_REASON_COL_LABEL, Array.from({length: inputData.rowCount}, () => '')));
-    }
-    resolve({augmentedInput: inputData, editedInput: inputData});
-  });
-}
-
 //name: OutliersSelectionViewer
 //description: Creates an outliers selection viewer
 //tags: viewer
@@ -55,7 +26,7 @@ export function OutliersSelection() {
   return new OutliersSelectionViewer();
 }
 
-//name: export To Excel
+//name: Export to Excel
 //input: funccall call
 //tags: export
 export function exportToExcel(call: DG.FuncCall) {
@@ -71,16 +42,16 @@ export function functionEditor() {
   #language: python
   #sample: chem/smiles_coordinates.csv
   #tags: demo, chem, rdkit
-  #input: dataframe t1 {columns:numerical} [first input data table]
-  #input: dataframe t2 {columns:numerical} [second input data table]
-  #input: column x {type:numerical; table:t1} [x axis column name]
-  #input: column y {type:numerical} [y axis column name]
-  #input: column date {type:datetime; format:mm/dd/yyyy} [date column name]
-  #input: column_list numdata {type:numerical; table:t1} [numerical columns names]
-  #input: int numcomp = 2 {range:2-7} [number of components]
+  #input: dataframe t1 {columns: numerical; category: test} [first input data table]
+  #input: dataframe t2 {columns: numerical} [second input data table]
+  #input: column x {type: numerical; table: t1} [x axis column name]
+  #input: column y {type: numerical} [y axis column name]
+  #input: column date {type: datetime; format: mm/dd/yyyy} [date column name]
+  #input: column_list numdata {type :numerical; table:t1} [numerical columns names]
+  #input: int numcomp = 2 {min: 2; max: 7; units: mm} [number of components]
   #input: bool center = true [number of components]
   #input: string type = high {choices: ["high", "low"]} [type of filter]
-  #output: dataframe result {action:join(t1)} [pca components]
+  #output: dataframe result {action: join(t1)} [pca components]
   #output: graphics scatter [scatter plot]
   
   import numba
