@@ -6,7 +6,6 @@ category('Viewer', () => {
   let df: DG.DataFrame;
   let tv: DG.TableView;
   const coreViewerTypes = Object.values(DG.VIEWER).filter((v) => v !== DG.VIEWER.TIMELINES && v !== DG.VIEWER.GLOBE);
-  const coreViewers: DG.Viewer[] = [];
 
   before(async () => {
     df = grok.data.demo.demog();
@@ -14,18 +13,25 @@ category('Viewer', () => {
   });
 
   test('TableView.addViewer(ViewerType)', async () => {
-    for (let viewerType of coreViewerTypes) {
-      const viewer = tv.addViewer(viewerType);
-      if (!(viewer instanceof DG.Viewer))
-        throw `TableView.addViewer('${viewerType}') should add a Viewer instance`;
-    }
-    const attachedViewers = Array.from(tv.viewers);
-    if (attachedViewers.length - 1 !== coreViewerTypes.length)
-      throw 'TableView.addViewer failed to attach some viewers to the table view';
+    try {
+      for (let viewerType of coreViewerTypes) {
+        const viewer = tv.addViewer(viewerType);
+        if (!(viewer instanceof DG.Viewer))
+          throw `TableView.addViewer('${viewerType}') should add a Viewer instance`;
+      }
+      const attachedViewers = Array.from(tv.viewers);
+      if (attachedViewers.length - 1 !== coreViewerTypes.length)
+        throw 'TableView.addViewer failed to attach some viewers to the table view';
+    } finally {
+      closeViewers(tv);
+    }    
   });
 
   test('Viewer.close()', async () => {
-    Array.from(tv.viewers).slice(1).forEach(v => v.close());
+    tv.scatterPlot();
+    tv.barChart();
+    expect(Array.from(tv.viewers).length, 3);
+    closeViewers(tv);
     expect(Array.from(tv.viewers).length, 1);
   });
 
@@ -44,9 +50,37 @@ category('Viewer', () => {
   });
 
   test('TableView.addViewer(Viewer)', async () => {
-    coreViewers.forEach((v) => tv.addViewer(v));
-    if (Array.from(tv.viewers).length - 1 !== coreViewers.length)
-      throw 'TableView.addViewer failed to attach some viewers to the table view';
+    try {
+      coreViewerTypes.forEach((t) => tv.addViewer(DG.Viewer.fromType(t, df)));
+      if (Array.from(tv.viewers).length - 1 !== coreViewerTypes.length)
+        throw 'TableView.addViewer failed to attach some viewers to the table view';
+    } finally {
+      closeViewers(tv);
+    }
+  });
+
+
+  test('ScatterPlotViewer.zoom', async () => {
+    const sp = DG.Viewer.scatterPlot(df);
+    tv.addViewer(sp);
+    try {
+      sp.zoom(10, 10, 100, 100);
+    } finally {
+      sp.close();
+    }
+  });
+
+  test('ScatterPlotViewer.onZoomed', async () => {
+    const sp = DG.Viewer.scatterPlot(df);
+    tv.addViewer(sp);
+    try {
+      let rectangle: any;
+      sp.onZoomed.subscribe((r) => rectangle = r);
+      sp.zoom(10, 10, 100, 100);
+      expect(rectangle instanceof DG.Rect, true);
+    } finally {
+      sp.close();
+    }
   });
 
   after(async () => {
@@ -54,3 +88,7 @@ category('Viewer', () => {
     grok.shell.closeTable(df);
   });
 });
+
+function closeViewers(view: DG.TableView) {
+  Array.from(view.viewers).slice(1).forEach((v) => v.close());
+}
