@@ -6,6 +6,7 @@ import './dataframe/data_frame';
 import './shell/shell';
 import './shell/windows';
 import './viewer/viewer';
+import './views/layouts';
 import './dapi/files';
 import './dapi/fetch';
 import './dapi/admin';
@@ -18,6 +19,8 @@ import './dapi/projects';
 import './dapi/tables';
 import './dapi/user-data-storage';
 import './dapi/users';
+import './shell/ml';
+import './ui/divs';
 
 import {runTests} from "./test";
 export let _package = new DG.Package();
