@@ -27,22 +27,14 @@ enum RCSBRESTAPI {
 /**
  * Can be used to retrieve primary, secondary, and tertiary structure
  * of polymers from RCSB PDB. Primarily designed for proteins.
- *
- * @export
- * @class PDBViewerHelper
  */
-export class PDBViewerHelper {
+export class PdbEntry {
   protected RCSB = RCSBRESTAPI;
   protected secondaryKinds = ['SHEET', 'HELIX_P'];
   protected pdbID: string;
   protected pdbBody: string;
   protected items: Entity[];
 
-  /**
-   * Creates an instance of PDBViewerHelper.
-   * @param {string} pdbID PDB ID of a polymer.
-   * @memberof PDBViewerHelper
-   */
   constructor(pdbID: string) {
     this.pdbID = pdbID.toLocaleLowerCase();
     this.pdbBody = '';
