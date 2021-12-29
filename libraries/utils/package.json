@@ -4,7 +4,7 @@
 		"access": "public"
 	},
 	"fullName": "Utils",
-	"version": "0.0.13",
+	"version": "0.0.14",
 	"description": "Common utilities",
 	"dependencies": {
 		"@keckelt/tsne": "^1.0.2",
