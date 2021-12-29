@@ -72,7 +72,7 @@ export class MolecularLiabilityBrowser {
     } else {
       this.twinPviewer.reset(jsonStr, pdbStr, jsonStrObsPtm);
     }
-    this.twinPviewer.twin(this.mlbView);
+    this.twinPviewer.show(this.mlbView);
     this.twinPviewer.open(this.mlbView);
 
 

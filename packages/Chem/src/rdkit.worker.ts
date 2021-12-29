@@ -1,7 +1,9 @@
 import {WORKER_CALL} from './rdkit_service_worker_api';
 import {RdKitServiceWorker as ServiceWorkerClass} from './rdkit_service_worker';
 // @ts-ignore
-import {createRDKit} from './RDKit_minimal_2021.03_18.js';
+import initRDKitModule from './RDKit_minimal.js';
+//@ts-ignore
+import rdkitLibVersion from './rdkit_lib_version';
 
 const ctx: Worker = self as any;
 let _rdKitModule: any | null = null;
@@ -12,7 +14,9 @@ ctx.addEventListener("message", async (e: any) => {
   let port = e.ports[0];
   if (op === 'module::init') {
     const webRoot = args[0];
-    _rdKitModule = await createRDKit(webRoot);
+    _rdKitModule = await initRDKitModule({
+      locateFile: () => `${webRoot}/dist/${rdkitLibVersion}.wasm`,
+    });
     console.log("RDKit (worker) initialized");
     _rdkitServiceWorker = new ServiceWorkerClass(_rdKitModule, webRoot);
     port.postMessage({op: op, retval: null});

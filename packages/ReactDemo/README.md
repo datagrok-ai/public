@@ -1,1 +1,0 @@
-Demonstrates the use of the React library within Datagrok.

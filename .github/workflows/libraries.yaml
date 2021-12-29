@@ -1,4 +1,4 @@
-name: Datagrok Packages
+name: Datagrok Libraries
 on:
   workflow_dispatch: {}
   push:

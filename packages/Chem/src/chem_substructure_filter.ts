@@ -7,29 +7,32 @@
 import * as grok from 'datagrok-api/grok';
 import * as ui from 'datagrok-api/ui';
 import * as DG from 'datagrok-api/dg';
+import {chem} from "datagrok-api/grok";
+import Sketcher = chem.Sketcher;
 
 export class SubstructureFilter extends DG.Filter {
 
-  molfile: string = '';
   column: DG.Column | null = null;
-  _sketcher: HTMLElement;
-  readonly WHITE_MOL = `
-  0  0  0  0  0  0  0  0  0  0999 V2000
-M  END
-`;
+  sketcher: Sketcher = new Sketcher();
+  readonly WHITE_MOL = '\n  0  0  0  0  0  0  0  0  0  0999 V2000\nM  END\n';
+
+  get filterSummary(): string {
+    return this.sketcher.getSmiles();
+  }
+
+  get isFiltering(): boolean {
+    return this.sketcher.getSmiles() !== '';
+  }
 
   constructor() {
     super();
     this.root = ui.divV([]);
-    this._sketcher = grok.chem.sketcher((_: any, molfile: string) => {
-      this.molfile = molfile;
-      this.dataFrame?.rows.requestFilter();
-    });
-    this.root.appendChild(this._sketcher);
+    this.sketcher.onChanged.subscribe((_) => this.dataFrame?.rows.requestFilter());
+    this.root.appendChild(this.sketcher.root);
   }
 
-  attach(dFrame: DG.DataFrame) {
-    this.dataFrame = dFrame;
+  attach(dataFrame: DG.DataFrame) {
+    this.dataFrame = dataFrame;
     this.column = this.dataFrame.columns.bySemType(DG.SEMTYPE.MOLECULE);
     this.subs.push(this.dataFrame.onRowsFiltering.subscribe((_: any) => { this.applyFilter(); } ));
   }
@@ -44,27 +47,23 @@ M  END
   }
 
   applyFilter() {
-    if (!this.molfile || this.molfile.endsWith(this.WHITE_MOL)) {
+    if (!this.sketcher.getMolFile() || this.sketcher.getMolFile().endsWith(this.WHITE_MOL)) {
       this.reset();
       return;
     }
     grok.functions.call('Chem:searchSubstructure', {
       'molStringsColumn' : this.column,
-      'molString': this.molfile,
+      'molString': this.sketcher.getMolFile(),
       'substructLibrary': true,
       'molStringSmarts': ''
     })
     .then((bitset_col) => {
       this.dataFrame?.filter.and(bitset_col.get(0));
-      this.column!.temp['chem-scaffold-filter'] = this.molfile; // not sure if !
+      this.column!.temp['chem-scaffold-filter'] = this.sketcher.getMolFile(); // not sure if !
       this.dataFrame?.filter.fireChanged();
     }).catch((e) => {
       console.warn(e);
       this.reset();
     })
-  }
-  
-  detach() {
-    this.subs.forEach((s) => s.unsubscribe());
   }
 }

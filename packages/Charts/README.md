@@ -16,7 +16,7 @@ in particular, for clinical data visualization (see a usage example in the
 
 ```js
 grok.shell.v.addViewer(DG.VIEWER.TIMELINES, {
-  subjectColumnName: "USUBJID",  // Subject identifier (a categorical column displayed on the Y axis)
+  splitByColumnName: "USUBJID",  // Subject identifier (a categorical column displayed on the Y axis)
   startColumnName: "AESTDY",     // Start date of event (an integer/datetime column)
   endColumnName: "AEENDY",       // End date of event (an integer/datetime column)
   colorByColumnName: "AETERM",   // Color criterion (a categorical column with non-unique values to visually group the events)
@@ -50,6 +50,13 @@ conventions of this standard. In other cases, the columns will be selected
 according to the data type and such column statistics as the number of unique
 categories.
 
+## Radar
+
+Radar charts are used on multivariate data to plot groups of values over several common variables.
+Demo dataset: https://dev.datagrok.ai/f/Demo.TestJobs.Files.DemoFiles/beer.csv
+
+![](./img/radar.gif)
+
 ## Chord
 
 Status: `experimental`
@@ -59,19 +66,50 @@ Demo dataset: https://dev.datagrok.ai/f/Demo.TestJobs.Files.DemoFiles/energy_uk.
 
 See also the `Chord` viewer in the [Viewers](https://github.com/datagrok-ai/public/tree/master/packages/Viewers) package.
 
-## Radar
-
-Radar charts are used on multivariate data to plot groups of values over several common variables.
-Demo dataset: https://dev.datagrok.ai/f/Demo.TestJobs.Files.DemoFiles/beer.csv
-
-![](./img/radar.gif)
-
 ## Sankey
 
 Status: `experimental`
 Demo dataset: https://dev.datagrok.ai/f/Demo.TestJobs.Files.DemoFiles/energy_uk.csv
 
 ![](./img/sankey.gif)
+
+## Sunburst
+
+Status: `experimental`
+Demo dataset: https://dev.datagrok.ai/f/Demo.TestJobs.Files.DemoFiles/demog.csv
+
+![](./img/sunburst.gif)
+
+## TreeMap
+
+Status: `experimental`
+Demo dataset: https://dev.datagrok.ai/f/Demo.TestJobs.Files.DemoFiles/demog.csv
+
+![](./img/tree-map.gif)
+
+## TreeViewer
+
+Status: `experimental`
+Demo dataset: https://dev.datagrok.ai/f/Demo.TestJobs.Files.DemoFiles/demog.csv
+
+![](./img/tree-viewer.gif)
+
+### Properties
+
+```js
+{
+  edgeShape: "curve",       // 'curve' | 'polyline'
+  expandAndCollapse: true,  //
+  layout: "orthogonal",     // 'orthogonal' | 'radial'
+  orient: "LR",             // 'LR' | 'RL' | 'TB' | 'BT'
+  symbol: "emptyCircle",    // Tree node symbol shape
+  symbolSize: 7,            // Tree node symbol size
+}
+```
+
+## WordCloud
+
+![](./img/word-cloud.gif)
 
 ## Common properties
 

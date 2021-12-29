@@ -1,7 +1,6 @@
 import {ColumnType, ScriptLanguage, SemType, Type, TYPE} from "./const";
 import { FuncCall } from "./functions";
 import {toJs} from "./wrappers";
-import {DataFrame} from "./dataframe";
 import {FileSource} from "./dapi";
 import {MapProxy} from "./utils";
 
@@ -91,18 +90,22 @@ export class User extends Entity {
     super(dart);
   }
 
+  static create(): User {return new User(api.grok_User_From_Id(null)); };
   static fromId(id: string): User { return new User(api.grok_User_From_Id(id)); }
 
   static current(): User { return new User(api.grok_User()); }
 
   /** First name */
   get firstName(): string { return api.grok_User_Get_FirstName(this.dart); }
+  set firstName(name: string) {api.grok_User_Set_FirstName(this.dart, name);}
 
-  /** Last name */
+    /** Last name */
   get lastName(): string { return api.grok_User_Get_LastName(this.dart); }
+  set lastName(name: string) {api.grok_User_Set_LastName(this.dart, name);}
 
   /** Email */
   get email(): string | null { return api.grok_User_Get_Email(this.dart); }
+  set email(email: string | null) {api.grok_User_Set_Email(this.dart, email);}
 
   /** Picture URL */
   get picture(): string | object { return api.grok_User_Get_Picture(this.dart); }
@@ -115,6 +118,7 @@ export class User extends Entity {
 
   /** Login */
   get login(): string { return api.grok_User_Get_Login(this.dart); }
+  set login(login: string) {api.grok_User_Set_Login(this.dart, login);}
 
   toMarkup(): string { return api.grok_User_ToMarkup(this.dart); }
 

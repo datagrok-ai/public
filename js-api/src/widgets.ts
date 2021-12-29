@@ -6,7 +6,9 @@ import {Cell, Column, DataFrame} from "./dataframe";
 import {ColorType, Type} from "./const";
 import * as React from "react";
 import * as rxjs from "rxjs";
+import { filter } from 'rxjs/operators';
 import {Rect} from "./grid";
+import $ from "cash-dom";
 
 declare let grok: any;
 declare let DG: any;
@@ -237,28 +239,84 @@ export class Widget {
 }
 
 
-/** Base class for DataFrame-bound filtering controls */
-export class Filter extends Widget {
-  dataFrame: DataFrame | null;
+/** Base class for DataFrame-bound filtering controls.
+ * Supports collaborative filtering by efficiently working together with
+ * other filters. */
+export abstract class Filter extends Widget {
+
+  /** An indicator icon on the left of the filter header, before the name.
+   * A filter is responsible for hiding or showing it, depending on its state. */
   indicator: HTMLDivElement;
+
+  /** Group of control icons on the right of the filter header, after the name.
+   * FilterGroup takes care of its visibility. */
   controls: HTMLDivElement;
-  host: HTMLElement;
+
+  /** A DataFrame this filter is associated with. */
+  dataFrame: DataFrame | null;
+
+  /** A column this filter is associated with. */
+  column: Column | null = null;
+
+  columnName?: string;
+
 
   constructor() {
     super(ui.div());
 
     this.dataFrame = null;
-    this.indicator = ui.divText('i');
-    this.controls = ui.divText('c');
-    this.host = this.root;
+    this.indicator = ui.div([], 'd4-filter-indicator');
+    this.controls = ui.div([], 'd4-flex-row');
+
+    $(this.indicator).hide();
   }
 
-  saveState(): any { console.log('save state'); }
-  applyState(state: any): void { console.log('apply state'); }
+  /** Override to indicate whether the filter actually filters something (most don't in the initial state).
+   * This is used to minimize the number of unnecessary computations. */
+  abstract get isFiltering(): boolean;
+
+  /** Override to provide short filter summary that might be shown on viewers or in the property panel. */
+  abstract get filterSummary(): string;
+
+  /** Override to filter the dataframe.
+   * The method should work with `this.dataFrame.filter`, should disregard
+   * false values (these are filtered out already by other filters), and should
+   * filter out corresponding indexes. */
+  abstract applyFilter(): void;
+
+  /** Override to save filter state. */
+  saveState(): any {
+    console.log('save state');
+    return { columnName: this.columnName };
+  }
+
+  /** Override to load filter state. */
+  applyState(state: any): void {
+    this.columnName = state.columnName;
+    this.column = this.columnName && this.dataFrame ? this.dataFrame.col(this.columnName) : null;
+    console.log('apply state');
+  }
 
   /** Gets called when a data frame is attached.
+   * Make sure to call super.attach(dataFrame) when overriding.
    * @param {DataFrame} dataFrame*/
-  attach(dataFrame: DataFrame): void {}
+  attach(dataFrame: DataFrame): void {
+    this.dataFrame = dataFrame;
+    this.subs.push(this.dataFrame.onRowsFiltering
+      .pipe(filter((_) => this.isFiltering))
+      .subscribe((_) => {
+        this.applyFilter();
+        this.dataFrame!.rows.filters.push(`${this.columnName}: ${this.filterSummary}`);
+      })
+    );
+  }
+
+  detach() {
+    super.detach();
+
+    if (this.isFiltering)
+      this.dataFrame?.rows?.requestFilter();
+  }
 }
 
 
@@ -1378,6 +1436,7 @@ export class ColumnComboBox extends DartWidget {
   /** Occurs when the value is changed. */
   get onChanged(): rxjs.Observable<String> { return this.onEvent('d4-column-box-column-changed'); }
 }
+
 
 /** Column legend for viewers */
 export class Legend extends DartWidget {

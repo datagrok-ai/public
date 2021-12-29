@@ -4,9 +4,9 @@
 
 // Calling "RDup" function that belongs to the "RSrcipts" package
 // It is implemented in R and returns a duplicated string
-// https://github.com/datagrok-ai/public/blob/master/packages/RScripts/scripts/r_dup.R
+// https://github.com/datagrok-ai/public/blob/master/packages/DemoScripts/scripts/r/r_dup.R
 grok.functions
-  .call("RScripts:RDup", {s: "Foo"})
+  .call("DemoScripts:RDup", {s: "Foo"})
   .then((res) => {
     grok.shell.info(res);
   });

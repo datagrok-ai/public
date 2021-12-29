@@ -1,10 +1,12 @@
 // This file will be used from Web Workers, so there
 // should be no imports from Datagrok or OCL
+//@ts-ignore
+import rdkitLibVersion from './rdkit_lib_version';
 import {RdKitService} from './rdkit_service';
 import {convertToRDKit} from './chem_rgroup_analysis';
 import BitArray from "@datagrok-libraries/utils/src/bit-array";
 //@ts-ignore
-import {createRDKit} from "./RDKit_minimal_2021.03_18.js";
+import initRDKitModule from './RDKit_minimal.js';
 
 export let _rdKitModule: any = null;
 export let _rdKitService: RdKitService | null = null;
@@ -14,7 +16,9 @@ let initialized = false;
 export async function initRdKitService(webRootValue: string) {
   if (!initialized) {
     _webRoot = webRootValue;
-    _rdKitModule = await createRDKit(_webRoot);
+    _rdKitModule = await initRDKitModule({
+      locateFile: () => `${_webRoot}/dist/${rdkitLibVersion}.wasm`,
+    });
     console.log('RDKit module package instance was initialized');
     _rdKitService = new RdKitService();
     await _rdKitService.init(_webRoot);
