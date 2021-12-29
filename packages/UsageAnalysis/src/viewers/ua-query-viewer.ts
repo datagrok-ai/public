@@ -8,7 +8,8 @@ export abstract class UaQueryViewer {
     queryName: string;
     viewerFunction: Function;
     setStyle: Function = null as any;
-    staticFilter: Object = null as any;
+    staticFilter: Object = {};
+    filter: Object = {};
 
     static splineStyle: Object = {
         "aggrType": "count",
@@ -37,15 +38,19 @@ export abstract class UaQueryViewer {
         style: 'dashboard'
     };
 
-    protected constructor(name: string, queryName: string, viewerFunction: Function, setStyle?: Function, staticFilter?: Object) {
+    protected constructor(name: string, queryName: string, viewerFunction: Function, setStyle?: Function, staticFilter?: Object, filter?: UaFilter) {
         this.root = ui.div();
         this.name = name;
         this.queryName = queryName;
         this.viewerFunction = viewerFunction;
+
         if (setStyle)
             this.setStyle = setStyle;
         if (staticFilter)
             this.staticFilter = staticFilter;
+        if (filter)
+            this.filter = filter;
+
         this.init();
     }
 
@@ -59,24 +64,24 @@ export abstract class UaQueryViewer {
     //     return host;
     // }
 
-    addCardWithFilters(cardName: string, queryName: string, filter: UaFilter, viewer:any) {
+    reloadViewer() {
+        this.root.innerHTML = '';
         let host = ui.block([]);
         if (this.setStyle)
             this.setStyle(host);
-        host.appendChild(ui.h1(cardName));
+        host.appendChild(ui.h1(this.name));
         let loader = ui.loader();
         host.appendChild(loader);
 
-        if (this.staticFilter)
-            filter = {...filter, ...this.staticFilter}
+        let filter = {...this.filter, ...this.staticFilter}
 
-        grok.data.query('UsageAnalysis:' + queryName, filter).then((dataFrame) => {
+        grok.data.query('UsageAnalysis:' + this.queryName, filter).then((dataFrame) => {
             // if (cardName === 'Errors')
             //     grok.data.detectSemanticTypes(dataFrame);
-            host.appendChild(viewer(dataFrame));
+            host.appendChild(this.viewerFunction(dataFrame));
             host.removeChild(loader);
         });
-        return host;
+        this.root.append(host);
     }
 
     init() : void {
