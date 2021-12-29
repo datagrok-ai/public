@@ -2,7 +2,7 @@
 	"name": "@datagrok/dev-tools",
 	"beta": false,
 	"friendlyName": "DevTools",
-	"version": "1.0.2",
+	"version": "1.1.0",
 	"description": "",
 	"dependencies": {
 		"@types/codemirror": "^5.60.5",
