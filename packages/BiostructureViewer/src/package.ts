@@ -3,16 +3,17 @@ import * as grok from 'datagrok-api/grok';
 import * as ui from 'datagrok-api/ui';
 import * as DG from 'datagrok-api/dg';
 
-import {PDBViewerHelper} from './pdb-viewer-helper';
+import {BioStructureViewer } from './biostructure-viewer'
+import { PdbEntry } from './pdb-entry';
 
 export const _package = new DG.Package();
 
-//name: testPDB
-export async function test() {
-  const h = new PDBViewerHelper('2v0a');
+//name: BioStructure Viewer
+//tags: app
+export async function biostructureApp() {
 
-  await h.fetchInfo();
-
-  console.log(h.body);
-  console.log(h.entities);
+  let pi = DG.TaskBarProgressIndicator.create('Opening BioStructure Viewer');
+  let app = new BioStructureViewer();
+  await app.init();
+  pi.close();
 }
