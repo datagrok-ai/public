@@ -36,7 +36,7 @@ export class DataView extends UaView {
         );
         this.viewers.push(topConnectionsViewer);
 
-        let topDataSourcesViewer = new TopDataSourcesViewer();
+        let topDataSourcesViewer = new TopDataSourcesViewer(this.uaToolbox.getFilter());
         this.viewers.push(topDataSourcesViewer);
 
         this.root.append(ui.divV([

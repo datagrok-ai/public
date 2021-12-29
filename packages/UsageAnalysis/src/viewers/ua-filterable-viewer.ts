@@ -8,15 +8,8 @@ export class UaFilterableViewer extends UaQueryViewer {
     }
 
     reload(filter: UaFilter) {
-        this.root.innerHTML = '';
-        this.root.append(
-            this.addCardWithFilters(
-                this.name,
-                this.queryName,
-                filter,
-                this.viewerFunction
-            )
-        );
+        this.filter = filter;
+        this.reloadViewer();
     }
 
 }
