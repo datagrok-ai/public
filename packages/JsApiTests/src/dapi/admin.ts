@@ -5,9 +5,9 @@ import * as DG from 'datagrok-api/dg';
 
 category('Dapi: admin', () => {
 
-    test('Dapi: admin - getServiceInfos', async () => {
-        if((await grok.dapi.admin.getServiceInfos()).length == 0)
-            throw 'No services';
-    });
+  test('Dapi: admin - getServiceInfos', async () => {
+    if((await grok.dapi.admin.getServiceInfos()).length == 0)
+      throw 'No services';
+  });
 
 });

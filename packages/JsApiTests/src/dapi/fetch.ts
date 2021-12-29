@@ -6,31 +6,31 @@ import * as DG from 'datagrok-api/dg';
 
 category('Dapi: fetch', () => {
 
-    test('Dapi: fetch - post', async () => {
-        const url = 'https://jsonplaceholder.typicode.com/posts';
-        const data = { name: 'username', password: 'password' };
+  test('Dapi: fetch - post', async () => {
+    const url = 'https://jsonplaceholder.typicode.com/posts';
+    const data = { name: 'username', password: 'password' };
 
-        let res = await grok.dapi.fetchProxy(url, {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify(data)
-        });
-
-        if (!res.ok)
-            throw 'Post failed';
-
+    let res = await grok.dapi.fetchProxy(url, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(data)
     });
 
-    test('Dapi: fetch - get', async () => {
-        let url = 'https://public.datagrok.ai/demo/demog.csv';
+    if (!res.ok)
+      throw 'Post failed';
 
-        let res = await grok.dapi.fetchProxy(url);
-        let resText = await res.text();
+  });
 
-        if (resText.length == 0)
-            throw 'Response text is empty';
+  test('Dapi: fetch - get', async () => {
+    let url = 'https://public.datagrok.ai/demo/demog.csv';
 
-        DG.DataFrame.fromCsv(resText);
-    });
+    let res = await grok.dapi.fetchProxy(url);
+    let resText = await res.text();
+
+    if (resText.length == 0)
+      throw 'Response text is empty';
+
+    DG.DataFrame.fromCsv(resText);
+  });
 
 });
