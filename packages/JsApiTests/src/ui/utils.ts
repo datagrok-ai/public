@@ -19,11 +19,16 @@ export function caption(name: string, input: DG.InputBase, view: DG.View, select
   }
 }
 
-export function checkHTMLElement(name: string, root: HTMLElement, v: DG.View, selector: string): void {
+export function checkHTMLElement(name: string, root: HTMLElement, v: DG.View, selectors: string | string[]): void {
+  if (typeof selectors === 'string') {
+    selectors = [selectors];
+  }
   v.append(root);
-  let e = v.root.querySelector(selector);
-  if (e == undefined)
-    throw `"${name}": Element "${selector}" not found`;
+  selectors.forEach((selector) => {
+    let e = v.root.querySelector(selector);
+    if (e == undefined)
+      throw `"${name}": Element "${selector}" not found`;
+  });
   root.remove();
 }
 
