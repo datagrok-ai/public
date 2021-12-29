@@ -375,7 +375,7 @@ function openFse(v: DG.View, functionCode: string) {
         refreshPreview();
       });
       (input.root as HTMLInputElement).placeholder = 'Enter your value...';
-      input.root.append(ui.button(ui.icons.delete(()=>{}), () => {
+      input.root.appendChild(ui.button(ui.icons.delete(()=>{}), () => {
         prop.set(inputScriptCopy, prop.defaultValue);
         refreshPreview();
         input.root.remove();
