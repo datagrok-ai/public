@@ -7,22 +7,27 @@ import {checkHTMLElement} from "./utils";
 category('UI - div', () => {
   const htmlElement = ui.divText('test');
   let v: DG.View;
-  const divs = {
-    'block': ui.block([htmlElement]),
-    'block25': ui.block25([htmlElement]),
-    'block50': ui.block50([htmlElement]),
-    'block75': ui.block75([htmlElement]),
-    'box': ui.box(htmlElement),
-    'boxFixed': ui.boxFixed(htmlElement),
-    'card': ui.card(htmlElement),
-    'div': ui.div([htmlElement]),
-    'divH': ui.divH([htmlElement, htmlElement]),
-    'divText': ui.divText('test'),
-    'divV': ui.divV([htmlElement, htmlElement]),
-    'info': ui.info(htmlElement),
-    'panel': ui.panel([htmlElement]),
-    'splitH': ui.splitH([htmlElement, htmlElement]),
-    'splitV': ui.splitV([htmlElement, htmlElement]),
+  const divs: {[key: string]: {'element': HTMLDivElement, 'selectors': string[]}} = {
+    'block': {'element': ui.block([htmlElement]), 'selectors': ['.ui-div', '.ui-block']},
+    'block25': {'element': ui.block25([htmlElement]), 'selectors': ['.ui-div', '.ui-block', '.ui-block-25']},
+    'block50': {'element': ui.block50([htmlElement]), 'selectors': ['.ui-div', '.ui-block', '.ui-block-50']},
+    'block75': {'element': ui.block75([htmlElement]), 'selectors': ['.ui-div', '.ui-block', '.ui-block-75']},
+    'box': {'element': ui.box(htmlElement), 'selectors': ['.ui-box']},
+    'boxFixed': {'element': ui.boxFixed(htmlElement), 'selectors': ['.ui-box', '.ui-box-fixed']},
+    'card': {'element': ui.card(htmlElement), 'selectors': ['.d4-item-card', '.ui-div']},
+    'div': {'element': ui.div([htmlElement]), 'selectors': ['.ui-div']},
+    'divH': {'element': ui.divH([htmlElement, htmlElement]), 'selectors': ['.d4-flex-row', '.ui-div']}, 
+    'divText': {'element': ui.divText('test'), 'selectors': ['div']},
+    'divV': {'element': ui.divV([htmlElement, htmlElement]), 'selectors': ['.d4-flex-col', '.ui-div']},
+    'info': {'element': ui.info(htmlElement), 'selectors': ['.grok-info-bar-container', '.ui-div']},
+    'panel': {'element': ui.panel([htmlElement]), 'selectors': ['.ui-div', '.ui-panel']},
+    'splitH': {'element': ui.splitH([htmlElement, htmlElement]), 'selectors': ['.ui-box', '.ui-split-h']},
+    'splitV': {'element': ui.splitV([htmlElement, htmlElement]), 'selectors': ['.ui-box', '.ui-split-v']},
+    'buttonsInput': {'element': ui.buttonsInput(), 'selectors': ['.ui-input-root', '.ui-input-buttons']},
+    'form': {'element': ui.form(), 'selectors': ['.ui-form']},
+    'image': {'element': ui.image('https://dev.datagrok.ai/favicon.png', 42, 42), 'selectors': ['.ui-image']},
+    'inputs': {'element': ui.inputs([ui.floatInput('test', 42)]), 'selectors': ['.ui-form']},
+    'narrowForm': {'element': ui.narrowForm(), 'selectors': ['.ui-form', '.ui-form-condensed']},
   };
 
   before(async () => {
@@ -31,7 +36,7 @@ category('UI - div', () => {
 
   test('div.root', async () => {
     for (const [key, value] of Object.entries(divs)) {
-      checkHTMLElement(key, value, v, '.ui-div');
+      checkHTMLElement(key, value['element'], v, value['selectors']);
     }
   });
 
