@@ -2,24 +2,26 @@
 	"name": "biostructureviewer",
 	"beta": true,
 	"friendlyName": "BiostructureViewer",
-	"version": "0.0.1",
+	"version": "0.0.2",
 	"description": "",
 	"dependencies": {
-		"datagrok-api": "latest",
+		"datagrok-api": ">=0.95.11",
+		"@datagrok-libraries/utils": ">=0.0.12",
 		"cash-dom": "latest",
-		"dayjs": "latest",
-		"ts-loader": "latest",
-		"typescript": "latest"
+		"dayjs": "latest"
 	},
 	"devDependencies": {
+		"typescript": "^4.4.4",
+		"ts-loader": "^9.2.5",
 		"webpack": "latest",
 		"webpack-cli": "latest",
-		"eslint": "latest",
-		"eslint-config-google": "latest",
-		"@typescript-eslint/eslint-plugin": "latest",
-		"@typescript-eslint/parser": "latest"
+		"@typescript-eslint/eslint-plugin": "^4.29.1",
+		"@typescript-eslint/parser": "^4.29.1",
+		"eslint": "^7.32.0",
+		"eslint-config-google": "^0.14.0"
 	},
 	"scripts": {
+		"link-utils": "npm link @datagrok-libraries/utils",
 		"debug-biostructureviewer": "grok publish --rebuild",
 		"release-biostructureviewer": "grok publish --rebuild --release",
 		"build-biostructureviewer": "webpack",

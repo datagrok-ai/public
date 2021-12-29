@@ -1,32 +1,22 @@
+import {genRange} from '@datagrok-libraries/utils/src/operations';
+
 type Tracks = {[kind: string]: number[]};
 type _Tracks = {[kind: string]: Set<number>};
 
-/**
- * Polymer entity instance (a.k.a chain) data.
- *
- * @interface Instance
- */
-interface Instance {
+/** Polymer entity instance (a.k.a chain) data. */
+interface Chain {
   id: string,
   tracks: Tracks;
 }
 
-/**
- * Polymer entity data.
- *
- * @interface Entity
- */
-interface Entity {
+/** Polymer entity data. */
+ interface Entity {
   id: string;
   sequence: string;
-  instances: Instance[];
+  chains: Chain[];
 }
 
-/**
- * RCSB REST API URLs.
- *
- * @enum {number}
- */
+/** RCSB REST API URLs. */
 enum RCSBRESTAPI {
   file = 'https://files.rcsb.org/download/{entry_id}.pdb',
   entry = 'https://data.rcsb.org/rest/v1/core/entry/{entry_id}',
@@ -59,11 +49,7 @@ export class PDBViewerHelper {
     this.items = [];
   }
 
-  /**
-   * Fetches all pieces of data.
-   *
-   * @memberof PDBViewerHelper
-   */
+  /** Fetches all pieces of data. */
   async fetchInfo() {
     this.pdbBody = await this._getPDBAsText();
 
@@ -73,37 +59,21 @@ export class PDBViewerHelper {
     this.items = await this._cycleThroughPDBEntities(entityIDs);
   }
 
-  /**
-   * Downloads structure file as a string.
-   *
-   * @protected
-   * @return {Promise<string>} String containing structure file.
-   * @memberof PDBViewerHelper
-   */
+  /** Downloads structure file as a string. */
   protected async _getPDBAsText(): Promise<string> {
     const link = this.RCSB.file.replace('{entry_id}', this.pdbID);
     return await _fetchTextFromURL(link);
   }
 
-  /**
-   * Downloads information on PDB entry.
-   *
-   * @protected
-   * @return {Promise<any>} PDB entry object.
-   * @memberof PDBViewerHelper
-   */
+  /** Downloads information on the PDB entry and returns a PDB entry object. */
   protected async _getPDBEntry(): Promise<any> {
     const link = this.RCSB.entry.replace('{entry_id}', this.pdbID);
     return await _fetchTextFromURL(link, true);
   }
 
   /**
-   * Downloads PDB entity information.
-   *
-   * @protected
+   * Downloads PDB entity information and returns Entity object.
    * @param {string} entityID ID of an entity.
-   * @return {Promise<any>} Entity object.
-   * @memberof PDBViewerHelper
    */
   protected async _getPDBEntity(entityID: string): Promise<any> {
     const link = this.RCSB.entity
@@ -113,12 +83,8 @@ export class PDBViewerHelper {
   }
 
   /**
-   * Iterates over entities to obtain primary and secondary structure.
-   *
-   * @protected
+   * Iterates over entities and returns primary and secondary structure.
    * @param {string[]} entityIDs Entities' ID.
-   * @return {Promise<Entity[]>} Entities with polymer sequence and secondary structure.
-   * @memberof PDBViewerHelper
    */
   protected async _cycleThroughPDBEntities(entityIDs: string[]): Promise<Entity[]> {
     const entities: Entity[] = [];
@@ -128,25 +94,21 @@ export class PDBViewerHelper {
 
       const asymIDs = entity['rcsb_polymer_entity_container_identifiers']['asym_ids'];
       const seq = entity['entity_poly']['pdbx_seq_one_letter_code'];
-      const instances: Instance[] = [];
+      const chains: Chain[] = [];
 
       for (const asymID of asymIDs) {
         const tracks = await this._filterPDBPolymerEntityInstances(asymID);
-        instances.push({id: asymID, tracks: tracks});
+        chains.push({id: asymID, tracks: tracks});
       }
 
-      entities.push({id: entityID, sequence: seq, instances: instances});
+      entities.push({id: entityID, sequence: seq, chains: chains});
     }
     return entities;
   }
 
   /**
-   * Filters polymer chains instance to get sheet and helix tracks.
-   *
-   * @protected
+   * Filters polymer chains and returns hositions with secondary structure information assigned.
    * @param {string} asymID Chain ID of an entity.
-   * @return {Promise<Tracks>} Positions with secondary structure information assigned.
-   * @memberof PDBViewerHelper
    */
   protected async _filterPDBPolymerEntityInstances(asymID: string): Promise<Tracks> {
     const link = this.RCSB.instance
@@ -154,8 +116,8 @@ export class PDBViewerHelper {
       .replace('{asym_id}', asymID);
     const instance = await _fetchTextFromURL(link, true);
 
-    const tracks: Tracks = {};
-    const _tracks: _Tracks = {};
+    const tracks: Tracks = {}; // Original tracks.
+    const _tracks: _Tracks = {}; // Tracks with container as a Set to collect unique numbers.
 
     for (const annot of instance['rcsb_polymer_instance_feature']) {
       const annotType = annot['type'];
@@ -164,7 +126,7 @@ export class PDBViewerHelper {
         _tracks[annotType] = _tracks[annotType] ? _tracks[annotType] : new Set();
 
         for (const pos of annot['feature_positions']) {
-          const range = _genRange(pos['beg_seq_id'], pos['end_seq_id']);
+          const range = genRange(pos['beg_seq_id'], pos['end_seq_id']);
 
           for (const i of range) {
             _tracks[annotType].add(i);
@@ -173,19 +135,14 @@ export class PDBViewerHelper {
       }
     }
 
+    // Format tracks as sorted numbers.
     for (const [k, v] of Object.entries(_tracks)) {
       tracks[k] = Array.from(v.values()).sort((a: number, b: number) => a - b);
     }
     return tracks;
   }
 
-  /**
-   * Tertiary structure as a string.
-   *
-   * @readonly
-   * @type {string}
-   * @memberof PDBViewerHelper
-   */
+  /** Tertiary structure as a string. */
   get body(): string {
     if (this.pdbBody.length == 0) {
       throw new Error('Call fetchInfo before getting file body.');
@@ -193,14 +150,11 @@ export class PDBViewerHelper {
     return this.pdbBody;
   }
 
-  /**
-   * Primary and secondary structure.
-   *
-   * @readonly
-   * @type {Entity[]}
-   * @memberof PDBViewerHelper
-   */
+  /** Primary and secondary structure. */
   get entities(): Entity[] {
+    if (this.items.length == 0) {
+      throw new Error('Call fetchInfo before getting entities.');
+    }
     return this.items;
   }
 }
@@ -208,23 +162,11 @@ export class PDBViewerHelper {
 /**
  * Helper function to request information by URL.
  *
- * @param {string} url
- * @param {boolean} [asJSON=false]
- * @return {*}  {(Promise<string | any>)}
+ * @param {string} url URL to request.
+ * @param {boolean} [asJSON=false] Whether to reply with JSIN or simple string.
+ * @return {(Promise<string | any>)} Result of the request.
  */
 async function _fetchTextFromURL(url: string, asJSON = false): Promise<string | any> {
   const response = await fetch(url);
   return await (asJSON ? response.json() : response.text());
-}
-
-/**
- * Generates array from a range.
- *
- * @param {number} begin First position to include.
- * @param {number} end Last position to include.
- * @return {number[]} Array corresponding the range given.
- */
-function _genRange(begin: number, end: number): number[] {
-  const nItems = end - begin;
-  return new Array(nItems).fill(0).map((_, i) => begin + i);
 }
