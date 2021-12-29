@@ -12,10 +12,7 @@ function addFseRibbon(v: DG.View){
     setTimeout(() => {
       const panels = v.getRibbonPanels();
       // @ts-ignore
-      const editor = v.root.lastChild.lastChild.CodeMirror as CodeMirror;
-      const doc = editor.getDoc().getValue() as string;
-      const iconFse = ui.iconFA('magic', () => openFse(v, doc),'Open Signature Editor');
-      console.log(panels)
+      const iconFse = ui.iconFA('magic', () => openFse(v, v.root.lastChild.lastChild.CodeMirror.getDoc().getValue()),'Open Signature Editor');
       if (!panels.some((panel) => panel.some((icon) => {
         return (icon.firstChild as HTMLElement).outerHTML === iconFse.outerHTML
       }))) 
@@ -192,18 +189,29 @@ const optionTags = ((param: DG.Property) => {
   }
 });
 
-const generateParamLine = (param: DG.Property, direction: string) => {
-  const optionTagsPreview = optionTags(param)
-    .map((tag) => {
-      return {tag: tag, val: param.options[tag]};
-    })
-    .filter((value) => !!value.val)
-    .map(({tag, val}) => `${tag}: ${val}`)
-    .concat(...(param.category && param.category!== DEFAULT_CATEGORY)? [`category: ${param.category}`]:[])
-    .join('; ');
-  const result =`#${direction}: ${param.propertyType} ${param.name? `${param.name} ` : ''}${param.defaultValue ? `= ${param.defaultValue} ` : ''}${!!optionTagsPreview.length ? `{${optionTagsPreview}} ` : ''}${param.description ? `[${param.description}]` : ''}\n`;
-  return result;
-};
+enum LANGUAGE {
+  JS = 'javascript', 
+  PYTHON = 'python', 
+  R = 'r', 
+  JULIA = 'julia', 
+  OCTAVE = 'octave',
+  NODEJS = 'nodejs',
+  GROK = 'grok'
+}
+const languages = ['javascript', 'python', 'r', 'julia', 'octave', 'nodejs', 'grok']
+const commentSign = (lang: LANGUAGE) => {
+  switch(lang) {
+    case LANGUAGE.JS:
+    case LANGUAGE.NODEJS:
+      return '//';
+    case LANGUAGE.R:
+    case LANGUAGE.GROK:
+    case LANGUAGE.JULIA:
+    case LANGUAGE.PYTHON:
+    case LANGUAGE.OCTAVE:
+      return '#'
+  }
+}
 
 function openFse(v: DG.View, functionCode: string) {
     const inputScriptCopy = DG.Script.create(functionCode);
@@ -214,11 +222,28 @@ function openFse(v: DG.View, functionCode: string) {
     const openScript = () => {
       editorView.close();
       grok.shell.addView(v);
+      // @ts-ignore
+      let editor = v.root.lastChild.lastChild.CodeMirror;
+      let doc = editor.getDoc();
+      doc.setValue(myCM.getDoc().getValue());
     }
   
     const updateFuncPropValue = (propName: string, v: any) => {
       (inputScriptCopy as any)[propName] = v;
       refreshPreview();
+    };
+
+    const generateParamLine = (param: DG.Property, direction: string) => {
+      const optionTagsPreview = optionTags(param)
+        .map((tag) => {
+          return {tag: tag, val: param.options[tag]};
+        })
+        .filter((value) => !!value.val)
+        .map(({tag, val}) => `${tag}: ${val}`)
+        .concat(...(param.category && param.category!== DEFAULT_CATEGORY)? [`category: ${param.category}`]:[])
+        .join('; ');
+      const result =`${commentSign(inputScriptCopy.language as LANGUAGE)}${direction}: ${param.propertyType} ${param.name? `${param.name} ` : ''}${param.defaultValue ? `= ${param.defaultValue} ` : ''}${!!optionTagsPreview.length ? `{${optionTagsPreview}} ` : ''}${param.description ? `[${param.description}]` : ''}\n`;
+      return result;
     };
   
     const functionProps = {
@@ -237,7 +262,7 @@ function openFse(v: DG.View, functionCode: string) {
           FUNC_PROPS_FIELDS.LANGUAGE, DG.TYPE.STRING, (x: any) => x[FUNC_PROPS_FIELDS.LANGUAGE],
           (x: any, v) => updateFuncPropValue(FUNC_PROPS_FIELDS.LANGUAGE, v),
           '');
-        temp.fromOptions({choices: ['javascript', 'python', 'r', 'julia', 'octave', 'nodejs', 'grok']});
+        temp.fromOptions({choices: languages});
         return temp;
       })(),
       [functionPropsLabels(FUNC_PROPS_FIELDS.HELP_URL)]: DG.Property.create(
@@ -601,12 +626,13 @@ function openFse(v: DG.View, functionCode: string) {
       Object.values(functionProps).map((propField) => {
         const propValue = propField.get(inputScriptCopy) || (inputScriptCopy as any)[propField.name];
         if (!!propValue && !!propValue.length) {
-          result += `#${functionPropsCode(propField.name as FUNC_PROPS_FIELDS)}: ${propValue}\n`;
+          result += `${commentSign(inputScriptCopy.language as LANGUAGE)}${functionPropsCode(propField.name as FUNC_PROPS_FIELDS)}: ${propValue}\n`;
         }
       });
       functionParamsCopy.map((param) => {
         result += generateParamLine(param, param.options.direction);
       });
+      result += inputScriptCopy.script.substring(inputScriptCopy.script.indexOf('\n',inputScriptCopy.script.lastIndexOf(commentSign(inputScriptCopy.language as LANGUAGE)))+1);
       myCM.setValue(result);
     };
   
