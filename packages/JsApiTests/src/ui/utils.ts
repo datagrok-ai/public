@@ -19,12 +19,12 @@ export function caption(name: string, input: DG.InputBase, view: DG.View, select
   }
 }
 
-export function HTMLElement(name: string, input: DG.InputBase, v: DG.View, selector: string): void {
-  v.append(input.root);
+export function checkHTMLElement(name: string, root: HTMLElement, v: DG.View, selector: string): void {
+  v.append(root);
   let e = v.root.querySelector(selector);
   if (e == undefined)
     throw `"${name}": Element "${selector}" not found`;
-  input.root.remove();
+  root.remove();
 }
 
 export function enabled(name: string, input: DG.InputBase, v: DG.View, selector: string): void {
