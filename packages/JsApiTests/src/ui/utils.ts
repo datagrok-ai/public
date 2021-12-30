@@ -45,6 +45,7 @@ export function enabled(name: string, input: DG.InputBase, v: DG.View, selector:
     throw name + ': ' + x;
   }
   finally {
+    input.enabled = true;
     input.root.remove();
   }
 }
