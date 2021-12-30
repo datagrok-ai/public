@@ -8,6 +8,8 @@ import {UaView} from "./ua-view";
 import {UaFilter} from "../filter2";
 import {UaFilterableViewer} from "../viewers/ua-filterable-viewer";
 import {UaQueryViewer} from "../viewers/ua-query-viewer";
+import {TopErrorsViewer} from "../drilldown_viewers/errors/top-errors-viewer";
+import {TopErrorSourcesViewer} from "../drilldown_viewers/errors/top-error-sources-viewer";
 
 export class ErrorsView extends UaView {
 
@@ -24,20 +26,10 @@ export class ErrorsView extends UaView {
     );
     this.viewers.push(errorsViewer);
 
-    let topErrorsViewer = new UaFilterableViewer(
-        this.uaToolbox.filterStream,
-        'Top Errors',
-        'TopErrors',
-        (t: DG.DataFrame) => DG.Viewer.barChart(t, UaQueryViewer.defaultBarchartOptions).root
-    );
+    let topErrorsViewer = new TopErrorsViewer(this.uaToolbox.filterStream);
     this.viewers.push(topErrorsViewer);
 
-    let topErrorSourcesViewer = new UaFilterableViewer(
-        this.uaToolbox.filterStream,
-        'Top Error Sources',
-        'TopErrorSources',
-        (t: DG.DataFrame) => DG.Viewer.barChart(t, UaQueryViewer.defaultBarchartOptions).root
-    );
+    let topErrorSourcesViewer = new TopErrorSourcesViewer(this.uaToolbox.filterStream);
     this.viewers.push(topErrorSourcesViewer);
 
     this.root.append(ui.divV([
