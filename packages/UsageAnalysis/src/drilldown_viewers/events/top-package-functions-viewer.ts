@@ -23,7 +23,7 @@ export class TopPackageFunctionsViewer extends UaFilterableViewer {
             let pp = new PropertyPanel([
               new UaDataFrameViewer(
                   'Function Info',
-                  'FunctionInfo',
+                  'FunctionInfoByName',
                   (t: DG.DataFrame) => DG.Viewer.grid(t).root,
                   null as any,
                   {name: cats[0]},

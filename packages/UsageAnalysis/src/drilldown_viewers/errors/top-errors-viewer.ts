@@ -9,35 +9,26 @@ import {PropertyPanel} from "../../property-panel";
 import {UaDataFrameViewer} from "../../viewers/ua-data-frame-viewer";
 import {BehaviorSubject} from "rxjs"
 
-export class TopFunctionsViewer extends UaFilterableViewer {
+export class TopErrorsViewer extends UaFilterableViewer {
 
   public constructor(filterStream: BehaviorSubject<UaFilter>) {
     super(
         filterStream,
-        'Top Functions',
-        'TopFunctions',
+        'Top Errors',
+        'TopErrors',
         (t: DG.DataFrame) => {
           let viewer = DG.Viewer.barChart(t, UaQueryViewer.defaultBarchartOptions);
           viewer.onEvent('d4-bar-chart-on-category-clicked').subscribe((cats: string[]) => {
-
             let pp = new PropertyPanel([
               new UaDataFrameViewer(
-                  'Function Info',
-                  'FunctionInfoByName',
+                  'Errors Info',
+                  'FunctionInfoByFriendlyName',
                   (t: DG.DataFrame) => DG.Viewer.grid(t).root,
                   null as any,
                   {name: cats[0]},
                   filterStream.getValue()
-              ),
-              new UaDataFrameViewer(
-                  'Top Users Of Function',
-                  'TopUsersOfFunction',
-                  (t: DG.DataFrame) => DG.Viewer.barChart(t, UaQueryViewer.defaultBarchartOptions).root,
-                  null as any,
-                  {name: cats[0]},
-                  filterStream.getValue()
               )
-            ], 'TopPackageFunctions');
+            ], 'TopErrors');
 
             grok.shell.o = pp.getRoot();
           });
