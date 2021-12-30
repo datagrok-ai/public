@@ -9,6 +9,9 @@ import {UaFilter} from "../filter2";
 import {UaFilterableViewer} from "../viewers/ua-filterable-viewer";
 import {UaQueryViewer} from "../viewers/ua-query-viewer";
 import {TopPackagesViewer} from "../drilldown_viewers/events/top-packages-viewer";
+import {TopPackageFunctionsViewer} from "../drilldown_viewers/events/top-package-functions-viewer";
+import {TopFunctionsViewer} from "../drilldown_viewers/events/top-functions-viewer";
+import {TopSourcesViewer} from "../drilldown_viewers/events/top-sources-viewer";
 
 export class EventsView extends UaView {
   constructor(uaToolbox: UaToolbox) {
@@ -16,20 +19,10 @@ export class EventsView extends UaView {
   }
 
   async initViewers() : Promise<void> {
-    let topFunctionsViewer = new UaFilterableViewer(
-        this.uaToolbox.filterStream,
-        'Top Functions',
-        'TopFunctions',
-        (t: DG.DataFrame) => DG.Viewer.barChart(t, UaQueryViewer.defaultBarchartOptions).root
-    );
+    let topFunctionsViewer = new TopFunctionsViewer(this.uaToolbox.filterStream);
     this.viewers.push(topFunctionsViewer);
 
-    let topPackageFunctionsViewer = new UaFilterableViewer(
-        this.uaToolbox.filterStream,
-        'Top Package Functions',
-        'TopPackageFunctions',
-        (t: DG.DataFrame) => DG.Viewer.barChart(t, UaQueryViewer.defaultBarchartOptions).root
-    );
+    let topPackageFunctionsViewer = new TopPackageFunctionsViewer(this.uaToolbox.filterStream);
     this.viewers.push(topPackageFunctionsViewer);
 
     let topPackagesViewer = new TopPackagesViewer(this.uaToolbox.filterStream);
@@ -43,12 +36,7 @@ export class EventsView extends UaView {
     );
     this.viewers.push(eventsViewer);
 
-    let topSourcesViewer = new UaFilterableViewer(
-        this.uaToolbox.filterStream,
-        'Top Sources',
-        'TopSources',
-        (t: DG.DataFrame) => DG.Viewer.barChart(t, UaQueryViewer.defaultBarchartOptions).root
-    )
+    let topSourcesViewer = new TopSourcesViewer(this.uaToolbox.filterStream);
     this.viewers.push(topSourcesViewer);
 
     this.root.append(ui.divV([
