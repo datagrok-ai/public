@@ -141,11 +141,13 @@ export class TimelinesViewer extends EChartViewer {
     const strColumns = columns.filter(col => col.type === DG.COLUMN_TYPE.STRING)
       .sort((a, b) => a.categories.length - b.categories.length);
 
-    const numColumns = [...this.dataFrame.columns.numerical];
+    const numColumns = [...this.dataFrame.columns.numerical].sort((a, b) => a.stats.avg - b.stats.avg);
     const numericalTypes = [DG.COLUMN_TYPE.INT, DG.COLUMN_TYPE.FLOAT, DG.COLUMN_TYPE.DATE_TIME];
 
-    const intColumns = columns.filter(col => col.type === DG.COLUMN_TYPE.INT)
-      .sort((a, b) => a.stats.avg - b.stats.avg);
+    if (strColumns.length < 1 || numColumns.length < 1) {
+      this.showErrorMessage('Not enough data to produce the result.');
+      return;
+    }
 
     this.splitByColumnName = (this.findColumn(columns, this.splitByRegexps) || strColumns[strColumns.length - 1]).name;
     this.startColumnName = (this.findColumn(columns, this.startRegexps, numericalTypes) || numColumns[0]).name;
@@ -295,7 +297,7 @@ export class TimelinesViewer extends EChartViewer {
 
   updateColumnData(prop) {
     const column = this.dataFrame.col(prop.get(this));
-    if (column === null)
+    if (column == null)
       return null;
     this.columnData[prop.name] = {
       column,
@@ -406,7 +408,7 @@ export class TimelinesViewer extends EChartViewer {
   }
 
   render() {
-    if (this.splitByColumnName == null || !(this.startColumnName || this.endColumnName)) {
+    if (!this.splitByColumnName || !this.startColumnName || !this.endColumnName) {
       this.showErrorMessage('Not enough data to produce the result.');
       return;
     }
