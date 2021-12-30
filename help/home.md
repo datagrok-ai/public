@@ -97,4 +97,4 @@ Turn your data into actionable insights by using state-of-the art machine learni
   ** Tutorials (go to [Datagrok Public](https://public.datagrok.ai/), find "Help" section and select "Tutorials")
   ** [Video lessons](video-lessons.md)
   ** Video platform overviews (full [Table of Contents](video-contents.md), selection [for developers](develop/getting-started.md#datagrok-video-walkthrough))
-  ** [Exercises for developers](develop/exercises.md)
+  ** [Exercises for developers](develop/exercises/exercises.md)

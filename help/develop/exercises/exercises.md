@@ -51,11 +51,11 @@ querying, predictive models, integration with the external utilities, data augme
 Prerequisites: basic JavaScript knowledge.
 
 1. Install the necessary tools (Node.js, npm, webpack, datagrok-tools) following
-   [these instructions](develop.md#getting-started)
+   [these instructions](../develop.md#getting-started)
 2. Get a dev key for https://dev.datagrok.ai (you will work with this server) and add it by running `grok config`
 3. Create a default package [called](https://datagrok.ai/help/develop/develop#naming-conventions)
    `<yourFirstName>-sequence` using datagrok-tools: `grok create <yourFirstName>-sequence`
-4. Upload it to the server: `grok publish dev --rebuild` (see other options [here](develop.md#deployment-modes))
+4. Upload it to the server: `grok publish dev --rebuild` (see other options [here](../develop.md#deployment-modes))
 5. Launch the platform and run the package's `test` function using different methods: 
     * via the [Functions](https://dev.datagrok.ai/functions?q=test) view
     * via the [Packages](https://dev.datagrok.ai/packages?) menu (find your package, click on it and run `test`
@@ -67,8 +67,8 @@ Prerequisites: basic JavaScript knowledge.
 
 Prerequisites: basic TypeScript or JavaScript knowledge.
 
-Details: [How to define semantic type detectors](how-to/define-semantic-type-detectors.md),
-[How to add an info panel](how-to/add-info-panel.md).
+Details: [How to define semantic type detectors](../how-to/define-semantic-type-detectors.md),
+[How to add an info panel](../how-to/add-info-panel.md).
 
 You will learn: how to write semantic type detectors, how to develop context-specific data augmentation.  
 
@@ -132,7 +132,7 @@ You will learn: how to write semantic type detectors, how to develop context-spe
    Alternatively, you can 
    find this information if you click on the column and expand the 'Details' pane in the property panel on the right.
    
-7. Now transform the previously created `complement` function into an [info panel](how-to/add-info-panel.md):
+7. Now transform the previously created `complement` function into an [info panel](../how-to/add-info-panel.md):
    tag it with `panel` and `widgets` tags and change the output type to `widget` (see an example [here][014]).
    This will instruct the platform to use the `complement` function for providing additional information for
    string values of the `dna_nucleotide` semantic type. To test it, simply open our test file, click on any cell
@@ -425,7 +425,7 @@ nested script.
 _Prerequisites:_ basic SQL knowledge
 
 _Details:_ [Connecting to Databases](https://www.youtube.com/watch?v=dKrCk38A1m8&t=1048s),
-[How to Access Data](how-to/access-data.md)
+[How to Access Data](../how-to/access-data.md)
 
 _Note:_ Editing an existing data query requires the respective access permission. You might need to request one.
 
@@ -459,7 +459,7 @@ is accessible from our server.
     * Open console by pressing `~` key, see the results of the previous invocations. Copy-paste the corresponding
       command and run it from the console.
 9. Now, let's add this query to our package. Create a connection by running `grok add connection <yourFirstName>`,
-   then, as instructed [here](how-to/access-data.md#creating-queries), create the '.sql' file under the `queries`
+   then, as instructed [here](../how-to/access-data.md#creating-queries), create the '.sql' file under the `queries`
    folder, and paste our query there. Give it a name by adding the `--name: ordersByCountry` line on top of it.
 10. Deploy the package, launch the platform, find the query in the package, and run it.
 11. Create a JavaScript function (in `src/package.js`) that has no parameters and returns a dataframe with 
@@ -472,7 +472,7 @@ is accessible from our server.
     }
     ```
     There is another way to pass a country name to the query: you can provide a default value for the input parameter
-    (see examples in the article [Parameterized Queries](../access/parameterized-queries.md)).
+    (see examples in the article [Parameterized Queries](../../access/parameterized-queries.md)).
 
 ## Creating a scripting viewer
 
@@ -641,7 +641,7 @@ _Prerequisites:_ exercises ["Setting up the environment"](#setting-up-the-enviro
    
 ## Accessing web services with OpenAPI
 
-_Details:_ [OpenAPI access](../access/open-api.md)
+_Details:_ [OpenAPI access](../../access/open-api.md)
 
 Web services often provide their API specs in an [OpenAPI (Swagger)](access/open-api.md) format
 in a JSON or a yaml file.
@@ -820,7 +820,7 @@ A simple keyword search in the ENA database (with navigation)
 
 -->
 
-[014]: how-to/add-info-panel.md#functions "How to add an info panel"
+[014]: ../how-to/add-info-panel.md#functions "How to add an info panel"
 [015]: https://youtu.be/p7_qOU_IzLM?t=724 "Dev Meeting 1: Getting Started – First-class functions"
 [`CountSubsequencePython`]: #scripting-with-server-functions "Scripting with server functions"
 [016]: https://matplotlib.org/api/_as_gen/matplotlib.pyplot.hist.html "Matplotlib Histogram"
