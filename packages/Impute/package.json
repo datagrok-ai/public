@@ -20,5 +20,7 @@
 		"upload-debug": "webpack && grok publish https://dev.datagrok.ai/api ",
 		"upload-deploy": "webpack && grok publish https://dev.datagrok.ai/api --release",
 		"build": "webpack"
-	}
+	},
+	"canEdit": [ "Developers" ],
+	"canView": [ "All users" ]
 }

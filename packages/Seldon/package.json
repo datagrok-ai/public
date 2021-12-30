@@ -22,5 +22,7 @@
 		"release-seldon-dev": "grok publish dev --rebuild --release",
 		"debug-seldon-public": "grok publish public --rebuild",
 		"release-seldon-public": "grok publish public --rebuild --release"
-	}
+	},
+	"canEdit": [ "Developers" ],
+	"canView": [ "All users" ]
 }

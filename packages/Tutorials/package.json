@@ -38,5 +38,7 @@
 		"release-tutorials-local": "grok publish local --rebuild --release",
 		"debug-tutorials-localhost": "grok publish localhost --rebuild",
 		"release-tutorials-localhost": "grok publish localhost --rebuild --release"
-	}
+	},
+	"canEdit": [ "Developers" ],
+	"canView": [ "All users" ]
 }

@@ -28,5 +28,7 @@
 	},
 	"canEdit": [
 		"Arcadia"
-	]
+	],
+	"canEdit": [ "Developers" ],
+	"canView": [ "All users" ]
 }

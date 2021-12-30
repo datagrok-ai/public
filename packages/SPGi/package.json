@@ -8,5 +8,7 @@
   },
   "sources": [
     "css/spgi.css"
-  ]
+  ],
+  "canEdit": [ "Developers" ],
+  "canView": [ "All users" ]
 }
