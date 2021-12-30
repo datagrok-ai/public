@@ -1,6 +1,7 @@
 import {UaFilterableViewer} from "./viewers/ua-filterable-viewer";
 import {UaQueryViewer} from "./viewers/ua-query-viewer";
 import * as DG from "datagrok-api/dg";
+import * as ui from "datagrok-api/ui";
 
 export class PropertyPanel {
   private viewers: UaQueryViewer[];
@@ -17,7 +18,7 @@ export class PropertyPanel {
   }
 
   public getRoot() {
-    return this.acc.root;
+    return ui.block([this.acc.root]);
   }
 
 }

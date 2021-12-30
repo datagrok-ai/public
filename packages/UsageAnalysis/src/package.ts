@@ -27,11 +27,13 @@ export function usageAnalysisApp(): void {
       });
 
   let toolbox = new UaToolbox();
+  let overviewView = new OverviewView(toolbox);
+  grok.shell.addView(overviewView);
   grok.shell.addView(new EventsView(toolbox));
   grok.shell.addView(new ErrorsView(toolbox));
   grok.shell.addView(new UsersView(toolbox));
-  grok.shell.addView(new OverviewView(toolbox));
   grok.shell.addView(new DataView(toolbox));
+  grok.shell.v = overviewView;
 }
 
 //output: widget result
