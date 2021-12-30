@@ -15,14 +15,14 @@ category('UI: Inputs', () => {
     'floatInput': ui.floatInput('', 0.00),
     'boolInput': ui.boolInput('', true),
     'switchInput': ui.switchInput('', true),
-    'choiceInput': ui.choiceInput('', '', []),
+    'choiceInput': ui.choiceInput('', '1', ['1', '2', '3']),
     'multiChoiceInput': ui.multiChoiceInput('', [], []),
     'dateInput': ui.dateInput('', DG.DateTime.fromDate(new Date(2000, 1, 1))),
     'textInput': ui.textInput('', ''),
     'searchInput': ui.searchInput('', ''),
     'columnInput': ui.columnInput('', t, t.col('age')),
     'columnsInput': ui.columnsInput('', t),
-    'tableInput': ui.tableInput('', tables[0], tables, (table: any) => grok.shell.info(table.name))
+    'tableInput': ui.tableInput('', tables[0], tables)
   };
 
   before(async () => {
@@ -63,6 +63,46 @@ category('UI: Inputs', () => {
     for (const [key, value] of Object.entries(inputs)) {
       enabled(key, value, v, '.ui-input-root');
     }
+  })
+
+  test('input.readOnly', async () => {
+    for (const [key, value] of Object.entries(inputs)) {
+      readonly(key, value, 'input[readonly], input[disabled]');
+    }
+  })
+
+  test('input.onChanged', async () => {
+    for (const [key, value] of Object.entries(inputs)) {
+      switch (key) {
+        case 'stringInput': case 'textInput': case 'searchInput':
+          onChanged(key, value, 'test')
+          break;
+        case 'intInput': case 'floatInput':
+          onChanged(key, value, 100)
+          break;
+        case 'boolInput': case 'switchInput':
+          onChanged(key, value, false)
+          break;
+        case 'dateInput': case 'switchInput':
+          onChanged(key, value, DG.DateTime.fromDate(new Date()))
+          break;
+        case 'choiceInput': case 'switchInput':
+          onChanged(key, value, '2')
+          break;
+        case 'columnInput': case 'switchInput':
+          onChanged(key, value, t.col('height'))
+          break;
+        case 'columnsInput': case 'switchInput':
+          onChanged(key, value, [t.col('height'), t.col('weight')])
+          break;
+        case 'tableInput': case 'switchInput':
+          grok.shell.addTableView(grok.data.demo.demog());
+          grok.shell.addTableView(grok.data.demo.randomWalk());
+          onChanged(key, value, [t.col('height'), t.col('weight')])
+          break;
+      }
+    }
+
   })
 
   after(async () => {
@@ -106,6 +146,46 @@ category('UI: Inputs', () => {
     finally {
       input.root.remove();
     }
+  }
+
+  function readonly(name: string, input: DG.InputBase, selector: string): void {
+    v.append(input.root);
+    let value: boolean = false;
+    input.readOnly = true;
+    try {
+      if (input.input.tagName == 'INPUT') {
+        if (v.root.querySelector(selector))
+          value = true;
+        expect(input.readOnly, value);
+      }
+    }
+    catch (x) {
+      throw name + ': ' + x;
+    }
+    finally {
+      input.readOnly = false;
+      input.root.remove();
+    }
+  }
+
+  function onChanged(name: string, input: DG.InputBase, newVal: any): void {
+    v.append(input.root);
+    let value = input.value;
+
+    let changed = false;
+    input.value = newVal;
+    input.onChanged(function () {
+      changed = true;
+    })
+
+    input.fireChanged();
+
+    if (changed == false)
+      throw `"${name}": OnChange value error`;
+
+    input.value = value;
+    input.fireChanged();
+    input.root.remove();
   }
 
 });
