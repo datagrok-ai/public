@@ -5,6 +5,15 @@ select * from packages
 where name = @name;
 --end
 
+
+--name: FunctionInfoByName
+--input: string name
+--connection: System:DatagrokAdmin
+select * from event_types et
+where name = @name;
+--end
+
+
 --name: TopUsersOfPackage
 --input: string name
 --input: string date { pattern: datetime }
@@ -54,6 +63,7 @@ group by et.name
 limit 50;
 --end
 
+
 --name: TopErrorsOfPackage
 --input: string date { pattern: datetime }
 --input: list users
@@ -76,14 +86,6 @@ limit 50;
 --end
 
 
---name: FunctionInfo
---input: string name
---connection: System:DatagrokAdmin
-select * from event_types et
-where name = @name;
---end
-
-
 --name: TopUsersOfFunction
 --input: string name
 --input: string date { pattern: datetime }
@@ -100,6 +102,7 @@ and et.name = @name
 group by u.name
 limit 50
 --end
+
 
 --name: TopFunctionsOfSource
 --input: string name
