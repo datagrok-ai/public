@@ -6,5 +6,7 @@
   "sources": [
     "css/ngl.css",
     "common/ngl_viewer/ngl.js"
-  ]
+  ],
+  "canEdit": [ "Developers" ],
+  "canView": [ "All users" ]
 }

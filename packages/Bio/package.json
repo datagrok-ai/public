@@ -25,5 +25,6 @@
 		"release-sequences1-public": "grok publish public --rebuild --release",
 		"debug-sequences1-local": "grok publish local --rebuild",
 		"release-sequences1-local": "grok publish local --rebuild --release"
-	}
+	},
+	"canEdit": [ "Developers" ]
 }

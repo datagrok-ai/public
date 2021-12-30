@@ -23,5 +23,7 @@
   "devDependencies": {
     "webpack": "^4.44.2",
     "webpack-cli": "^3.3.12"
-  }
+  },
+  "canEdit": [ "Developers" ],
+  "canView": [ "All users" ]
 }

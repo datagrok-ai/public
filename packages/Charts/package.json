@@ -19,5 +19,7 @@
 		"release-charts-dev": "grok publish dev --rebuild --release",
 		"debug-charts-public": "grok publish public --rebuild",
 		"release-charts-public": "grok publish public --rebuild --release"
-	}
+	},
+	"canEdit": [ "Developers" ],
+	"canView": [ "All users" ]
 }

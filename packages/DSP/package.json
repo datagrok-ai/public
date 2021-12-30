@@ -17,5 +17,7 @@
 	},
 	"sources": [
 		"src/dspWasm.js"
-	]
+	],
+	"canEdit": [ "Developers" ],
+	"canView": [ "All users" ]
 }

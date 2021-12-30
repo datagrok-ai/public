@@ -7,5 +7,7 @@
   "scripts": {
     "samples-upload": "datagrok-upload http://localhost:8082 deploy",
     "publish samples local": "grok publish local"
-  }
+  },
+  "canEdit": [ "Developers" ],
+  "canView": [ "All users" ]
 }
