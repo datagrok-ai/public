@@ -10,40 +10,43 @@ import {TopDataSourcesViewer} from "../drilldown_viewers/top-data-sources-viewer
 
 export class DataView extends UaView {
 
-    constructor(uaToolbox: UaToolbox) {
-        super('Data', uaToolbox);
-    }
+  constructor(uaToolbox: UaToolbox) {
+    super('Data', uaToolbox);
+  }
 
-    async initViewers() : Promise<void> {
-        let queriesViewer = new UaFilterableViewer(
-            'Queries',
-            'Queries1',
-            (t: DG.DataFrame) => DG.Viewer.lineChart(t, UaQueryViewer.defaultChartOptions).root
-        );
-        this.viewers.push(queriesViewer);
+  async initViewers() : Promise<void> {
+    let queriesViewer = new UaFilterableViewer(
+        this.uaToolbox.filterStream,
+        'Queries',
+        'Queries1',
+        (t: DG.DataFrame) => DG.Viewer.lineChart(t, UaQueryViewer.defaultChartOptions).root
+    );
+    this.viewers.push(queriesViewer);
 
-        let topQueriesViewer = new UaFilterableViewer(
-            'Top Queries',
-            'TopQueries',
-            (t: DG.DataFrame) => DG.Viewer.barChart(t, UaQueryViewer.defaultBarchartOptions).root
-        );
-        this.viewers.push(topQueriesViewer);
+    let topQueriesViewer = new UaFilterableViewer(
+        this.uaToolbox.filterStream,
+        'Top Queries',
+        'TopQueries',
+        (t: DG.DataFrame) => DG.Viewer.barChart(t, UaQueryViewer.defaultBarchartOptions).root
+    );
+    this.viewers.push(topQueriesViewer);
 
-        let topConnectionsViewer = new UaFilterableViewer(
-            'Top Connections',
-            'TopConnections',
-            (t: DG.DataFrame) => DG.Viewer.barChart(t, UaQueryViewer.defaultBarchartOptions).root
-        );
-        this.viewers.push(topConnectionsViewer);
+    let topConnectionsViewer = new UaFilterableViewer(
+        this.uaToolbox.filterStream,
+        'Top Connections',
+        'TopConnections',
+        (t: DG.DataFrame) => DG.Viewer.barChart(t, UaQueryViewer.defaultBarchartOptions).root
+    );
+    this.viewers.push(topConnectionsViewer);
 
-        let topDataSourcesViewer = new TopDataSourcesViewer(this.uaToolbox.getFilter());
-        this.viewers.push(topDataSourcesViewer);
+    let topDataSourcesViewer = new TopDataSourcesViewer(this.uaToolbox.filterStream);
+    this.viewers.push(topDataSourcesViewer);
 
-        this.root.append(ui.divV([
-            ui.divH([ui.block([queriesViewer.root])]),
-            ui.divH([ui.block50([topQueriesViewer.root]), ui.block50([topConnectionsViewer.root])]),
-            ui.divH([ui.block50([topDataSourcesViewer.root])]),
-        ]));
+    this.root.append(ui.divV([
+      ui.divH([ui.block([queriesViewer.root])]),
+      ui.divH([ui.block50([topQueriesViewer.root]), ui.block50([topConnectionsViewer.root])]),
+      ui.divH([ui.block50([topDataSourcesViewer.root])]),
+    ]));
 
-    }
+  }
 }

@@ -8,56 +8,55 @@ import {UaView} from "./ua-view";
 import {UaFilter} from "../filter2";
 import {UaFilterableViewer} from "../viewers/ua-filterable-viewer";
 import {UaQueryViewer} from "../viewers/ua-query-viewer";
+import {TopPackagesViewer} from "../drilldown_viewers/events/top-packages-viewer";
 
 export class EventsView extends UaView {
+  constructor(uaToolbox: UaToolbox) {
+    super('Events', uaToolbox);
+  }
 
+  async initViewers() : Promise<void> {
+    let topFunctionsViewer = new UaFilterableViewer(
+        this.uaToolbox.filterStream,
+        'Top Functions',
+        'TopFunctions',
+        (t: DG.DataFrame) => DG.Viewer.barChart(t, UaQueryViewer.defaultBarchartOptions).root
+    );
+    this.viewers.push(topFunctionsViewer);
 
-    constructor(uaToolbox: UaToolbox) {
-        super('Events', uaToolbox);
-    }
+    let topPackageFunctionsViewer = new UaFilterableViewer(
+        this.uaToolbox.filterStream,
+        'Top Package Functions',
+        'TopPackageFunctions',
+        (t: DG.DataFrame) => DG.Viewer.barChart(t, UaQueryViewer.defaultBarchartOptions).root
+    );
+    this.viewers.push(topPackageFunctionsViewer);
 
-    async initViewers() : Promise<void> {
-        let topFunctionsViewer = new UaFilterableViewer(
-            'Top Functions',
-            'TopFunctions',
-            (t: DG.DataFrame) => DG.Viewer.barChart(t, UaQueryViewer.defaultBarchartOptions).root
-        );
-        this.viewers.push(topFunctionsViewer);
+    let topPackagesViewer = new TopPackagesViewer(this.uaToolbox.filterStream);
+    this.viewers.push(topPackagesViewer);
 
-        let topPackageFunctionsViewer = new UaFilterableViewer(
-            'Top Package Functions',
-            'TopPackageFunctions',
-            (t: DG.DataFrame) => DG.Viewer.barChart(t, UaQueryViewer.defaultBarchartOptions).root
-        );
-        this.viewers.push(topPackageFunctionsViewer);
+    let eventsViewer = new UaFilterableViewer(
+        this.uaToolbox.filterStream,
+        'Events',
+        'Events1',
+        (t: DG.DataFrame) => DG.Viewer.lineChart(t, UaQueryViewer.defaultChartOptions).root
+    );
+    this.viewers.push(eventsViewer);
 
-        let topPackagesViewer = new UaFilterableViewer(
-            'Top Packages',
-            'TopPackages',
-            (t: DG.DataFrame) => DG.Viewer.barChart(t, UaQueryViewer.defaultBarchartOptions).root
-        );
-        this.viewers.push(topPackagesViewer);
+    let topSourcesViewer = new UaFilterableViewer(
+        this.uaToolbox.filterStream,
+        'Top Sources',
+        'TopSources',
+        (t: DG.DataFrame) => DG.Viewer.barChart(t, UaQueryViewer.defaultBarchartOptions).root
+    )
+    this.viewers.push(topSourcesViewer);
 
-        let eventsViewer = new UaFilterableViewer(
-            'Events',
-            'Events1',
-            (t: DG.DataFrame) => DG.Viewer.lineChart(t, UaQueryViewer.defaultChartOptions).root
-        );
-        this.viewers.push(eventsViewer);
-
-        let topSourcesViewer = new UaFilterableViewer(
-            'Top Sources',
-            'TopSources',
-            (t: DG.DataFrame) => DG.Viewer.barChart(t, UaQueryViewer.defaultBarchartOptions).root
-        )
-        this.viewers.push(topSourcesViewer);
-
-        this.root.append(ui.divV([
-                ui.divH([ui.block([eventsViewer.root])]),
-                ui.divH([ui.block50([topPackagesViewer.root]), ui.block50([topPackageFunctionsViewer.root])]),
-                ui.divH([ui.block50([topFunctionsViewer.root]), ui.block50([topSourcesViewer.root])])
-            ])
-        );
-    }
+    this.root.append(ui.divV([
+          ui.divH([ui.block([eventsViewer.root])]),
+          ui.divH([ui.block50([topPackagesViewer.root]), ui.block50([topPackageFunctionsViewer.root])]),
+          ui.divH([ui.block50([topFunctionsViewer.root]), ui.block50([topSourcesViewer.root])])
+        ])
+    );
+  }
 
 }

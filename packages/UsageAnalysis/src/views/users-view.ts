@@ -11,44 +11,48 @@ import {UaQueryViewer} from "../viewers/ua-query-viewer";
 
 export class UsersView extends UaView {
 
-    constructor(uaToolbox: UaToolbox) {
-        super('Users', uaToolbox);
-    }
+  constructor(uaToolbox: UaToolbox) {
+    super('Users', uaToolbox);
+  }
 
-    async initViewers(): Promise<void> {
-        let uniqueUsersViewer = new UaFilterableViewer(
-            'Unique Users',
-            'UniqueUsers',
-            (t: DG.DataFrame) => DG.Viewer.lineChart(t, UaQueryViewer.defaultChartOptions).root
-        );
-        this.viewers.push(uniqueUsersViewer);
+  async initViewers(): Promise<void> {
+    let uniqueUsersViewer = new UaFilterableViewer(
+        this.uaToolbox.filterStream,
+        'Unique Users',
+        'UniqueUsers',
+        (t: DG.DataFrame) => DG.Viewer.lineChart(t, UaQueryViewer.defaultChartOptions).root
+    );
+    this.viewers.push(uniqueUsersViewer);
 
-        let uniqueSessionsViewer = new UaFilterableViewer(
-            'Unique Sessions',
-            'UniqueSessions',
-            (t: DG.DataFrame) => DG.Viewer.lineChart(t, UaQueryViewer.defaultChartOptions).root
-        );
-        this.viewers.push(uniqueSessionsViewer);
+    let uniqueSessionsViewer = new UaFilterableViewer(
+        this.uaToolbox.filterStream,
+        'Unique Sessions',
+        'UniqueSessions',
+        (t: DG.DataFrame) => DG.Viewer.lineChart(t, UaQueryViewer.defaultChartOptions).root
+    );
+    this.viewers.push(uniqueSessionsViewer);
 
-        let usageViewer = new UaFilterableViewer(
-            'Usage',
-            'Usage',
-            (t: DG.DataFrame) => DG.Viewer.scatterPlot(t, UaQueryViewer.defaultChartOptions).root
-        );
-        this.viewers.push(usageViewer);
+    let usageViewer = new UaFilterableViewer(
+        this.uaToolbox.filterStream,
+        'Usage',
+        'Usage',
+        (t: DG.DataFrame) => DG.Viewer.scatterPlot(t, UaQueryViewer.defaultChartOptions).root
+    );
+    this.viewers.push(usageViewer);
 
-        let topPackagesByUsers = new UaFilterableViewer(
-            'Top Packages By Users',
-            'TopPackagesByUsers',
-            (t: DG.DataFrame) => DG.Viewer.scatterPlot(t, UaQueryViewer.defaultChartOptions).root
-        );
-        this.viewers.push(topPackagesByUsers);
+    let topPackagesByUsers = new UaFilterableViewer(
+        this.uaToolbox.filterStream,
+        'Top Packages By Users',
+        'TopPackagesByUsers',
+        (t: DG.DataFrame) => DG.Viewer.scatterPlot(t, UaQueryViewer.defaultChartOptions).root
+    );
+    this.viewers.push(topPackagesByUsers);
 
-        this.root.append(ui.divV([
-            ui.divH([ui.block([usageViewer.root])]),
-            ui.divH([ui.block50([uniqueUsersViewer.root]), ui.block50([uniqueSessionsViewer.root])]),
-            ui.divH([ui.block([usageViewer.root])]),
-        ]));
+    this.root.append(ui.divV([
+      ui.divH([ui.block([usageViewer.root])]),
+      ui.divH([ui.block50([uniqueUsersViewer.root]), ui.block50([uniqueSessionsViewer.root])]),
+      ui.divH([ui.block([usageViewer.root])]),
+    ]));
 
-    }
+  }
 }
