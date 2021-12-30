@@ -64,4 +64,19 @@ select t.name, count(t.id) from (
 ) t
 group by t.name
 limit 50;
+--end
 
+
+--name: TopUsers
+--input: string date { pattern: datetime }
+--input: list users
+--connection: System:DatagrokAdmin
+select u.login, count(1) from events e
+inner join event_types t on e.event_type_id = t.id
+inner join users_sessions s on e.session_id = s.id
+inner join users u on u.id = s.user_id
+where
+@date(e.event_time)
+and (u.login = any(@users) or @users = ARRAY['all'])
+group by u.login
+--end

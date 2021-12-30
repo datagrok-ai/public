@@ -8,6 +8,7 @@ import {UaView} from "./ua-view";
 import {UaFilter} from "../filter2";
 import {UaFilterableViewer} from "../viewers/ua-filterable-viewer";
 import {UaQueryViewer} from "../viewers/ua-query-viewer";
+import {TopUsersViewer} from "../drilldown_viewers/users/top-users-viewer";
 
 export class UsersView extends UaView {
 
@@ -24,13 +25,8 @@ export class UsersView extends UaView {
     );
     this.viewers.push(uniqueUsersViewer);
 
-    let uniqueSessionsViewer = new UaFilterableViewer(
-        this.uaToolbox.filterStream,
-        'Unique Sessions',
-        'UniqueSessions',
-        (t: DG.DataFrame) => DG.Viewer.lineChart(t, UaQueryViewer.defaultChartOptions).root
-    );
-    this.viewers.push(uniqueSessionsViewer);
+    let topUsersViewer = new TopUsersViewer(this.uaToolbox.filterStream);
+    this.viewers.push(topUsersViewer);
 
     let usageViewer = new UaFilterableViewer(
         this.uaToolbox.filterStream,
@@ -49,9 +45,9 @@ export class UsersView extends UaView {
     this.viewers.push(topPackagesByUsers);
 
     this.root.append(ui.divV([
+      ui.divH([ui.block([topUsersViewer.root])]),
       ui.divH([ui.block([usageViewer.root])]),
-      ui.divH([ui.block50([uniqueUsersViewer.root]), ui.block50([uniqueSessionsViewer.root])]),
-      ui.divH([ui.block([usageViewer.root])]),
+      ui.divH([ui.block([uniqueUsersViewer.root])])
     ]));
 
   }
