@@ -3,90 +3,90 @@ import {UaFilter} from "../filter2";
 import * as grok from "datagrok-api/grok";
 
 export abstract class UaQueryViewer {
-    root: HTMLElement;
-    name: string;
-    queryName: string;
-    viewerFunction: Function;
-    setStyle: Function = null as any;
-    staticFilter: Object = {};
-    filter: Object = {};
+  root: HTMLElement;
+  name: string;
+  queryName: string;
+  viewerFunction: Function;
+  setStyle: Function = null as any;
+  staticFilter: Object = {};
+  filter: Object = {};
 
-    static splineStyle: Object = {
-        "aggrType": "count",
-        "innerChartMarginTop": 0,
-        "innerChartMarginBottom": 0,
-        "outerChartMarginTop": 5,
-        "outerChartMarginBottom": 0,
-        "yGlobalScale": false,
-        "showTopPanel": false,
-        "showMouseOverRowLine": false,
-        "showXSelector": false,
-        "showYSelectors": false,
-        "showAggrSelectors": false,
-        "showSplitSelector": false,
-        "showYAxis": false,
-        "showMarkers": "Never",
-        "Title":"Users"
-    };
+  static splineStyle: Object = {
+    "aggrType": "count",
+    "innerChartMarginTop": 0,
+    "innerChartMarginBottom": 0,
+    "outerChartMarginTop": 5,
+    "outerChartMarginBottom": 0,
+    "yGlobalScale": false,
+    "showTopPanel": false,
+    "showMouseOverRowLine": false,
+    "showXSelector": false,
+    "showYSelectors": false,
+    "showAggrSelectors": false,
+    "showSplitSelector": false,
+    "showYAxis": false,
+    "showMarkers": "Never",
+    "Title":"Users"
+  };
 
-    static defaultBarchartOptions: Object = {
-        valueAggrType: 'avg',
-        style: 'dashboard'
-    };
+  static defaultBarchartOptions: Object = {
+    valueAggrType: 'avg',
+    style: 'dashboard'
+  };
 
-    static defaultChartOptions: Object = {
-        style: 'dashboard'
-    };
+  static defaultChartOptions: Object = {
+    style: 'dashboard'
+  };
 
-    protected constructor(name: string, queryName: string, viewerFunction: Function, setStyle?: Function, staticFilter?: Object, filter?: UaFilter) {
-        this.root = ui.div();
-        this.name = name;
-        this.queryName = queryName;
-        this.viewerFunction = viewerFunction;
+  protected constructor(name: string, queryName: string, viewerFunction: Function, setStyle?: Function, staticFilter?: Object, filter?: UaFilter) {
+    this.root = ui.div();
+    this.name = name;
+    this.queryName = queryName;
+    this.viewerFunction = viewerFunction;
 
-        if (setStyle)
-            this.setStyle = setStyle;
-        if (staticFilter)
-            this.staticFilter = staticFilter;
-        if (filter)
-            this.filter = filter;
+    if (setStyle)
+      this.setStyle = setStyle;
+    if (staticFilter)
+      this.staticFilter = staticFilter;
+    if (filter)
+      this.filter = filter;
 
-        this.init();
-    }
+    this.init();
+  }
 
-    // addCardUsingDataframe(cardName: string, dataFrame: DG.DataFrame, viewer:any, supportUsers = true) {
-    //     let host = ui.block([],'d4-item-card card');
-    //     host.appendChild(ui.h1(cardName));
-    //
-    //     // if (cardName === 'Errors')
-    //     //     grok.data.detectSemanticTypes(dataFrame);
-    //     host.appendChild(viewer(dataFrame));
-    //     return host;
-    // }
+  // addCardUsingDataframe(cardName: string, dataFrame: DG.DataFrame, viewer:any, supportUsers = true) {
+  //     let host = ui.block([],'d4-item-card card');
+  //     host.appendChild(ui.h1(cardName));
+  //
+  //     // if (cardName === 'Errors')
+  //     //     grok.data.detectSemanticTypes(dataFrame);
+  //     host.appendChild(viewer(dataFrame));
+  //     return host;
+  // }
 
-    reloadViewer() {
-        this.root.innerHTML = '';
-        let host = ui.block([]);
-        if (this.setStyle)
-            this.setStyle(host);
-        host.appendChild(ui.h1(this.name));
-        let loader = ui.loader();
-        host.appendChild(loader);
+  reloadViewer() {
+    this.root.innerHTML = '';
+    let host = ui.block([]);
+    if (this.setStyle)
+      this.setStyle(host);
+    host.appendChild(ui.h1(this.name));
+    let loader = ui.loader();
+    host.appendChild(loader);
 
-        let filter = {...this.filter, ...this.staticFilter}
+    let filter = {...this.filter, ...this.staticFilter}
 
-        grok.data.query('UsageAnalysis:' + this.queryName, filter).then((dataFrame) => {
-            // if (cardName === 'Errors')
-            //     grok.data.detectSemanticTypes(dataFrame);
-            host.appendChild(this.viewerFunction(dataFrame));
-            host.removeChild(loader);
-        });
-        this.root.append(host);
-    }
+    grok.data.query('UsageAnalysis:' + this.queryName, filter).then((dataFrame) => {
+      // if (cardName === 'Errors')
+      //     grok.data.detectSemanticTypes(dataFrame);
+      host.appendChild(this.viewerFunction(dataFrame));
+      host.removeChild(loader);
+    });
+    this.root.append(host);
+  }
 
-    init() : void {
-    }
+  init() : void {
+  }
 
-    reload(filter: UaFilter) {
-    };
+  reload(filter: UaFilter) {
+  };
 }

@@ -16,6 +16,16 @@ export let _package = new DG.Package();
 //name: UsageAnalysis
 //tags: app
 export function usageAnalysisApp(): void {
+
+  let arr = ['Events', 'Errors', 'Users', 'Overview', 'Data'];
+
+  grok.events.onEvent('d4-current-view-changed').subscribe(
+      () => {
+        grok.shell.info(grok.shell.v.name);
+        arr.indexOf(grok.shell.v.name);
+        grok.shell.v.path = grok.shell.v.name;
+      });
+
   let toolbox = new UaToolbox();
   grok.shell.addView(new EventsView(toolbox));
   grok.shell.addView(new ErrorsView(toolbox));

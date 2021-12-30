@@ -11,36 +11,39 @@ import {UaQueryViewer} from "../viewers/ua-query-viewer";
 
 export class ErrorsView extends UaView {
 
-    constructor(uaToolbox: UaToolbox) {
-        super('Errors', uaToolbox);
-    }
+  constructor(uaToolbox: UaToolbox) {
+    super('Errors', uaToolbox);
+  }
 
-    async initViewers() : Promise<void> {
-        let errorsViewer = new UaFilterableViewer(
-            'Errors',
-            'Errors1',
-            (t: DG.DataFrame) => DG.Viewer.lineChart(t, UaQueryViewer.defaultChartOptions).root
-        );
-        this.viewers.push(errorsViewer);
+  async initViewers() : Promise<void> {
+    let errorsViewer = new UaFilterableViewer(
+        this.uaToolbox.filterStream,
+        'Errors',
+        'Errors1',
+        (t: DG.DataFrame) => DG.Viewer.lineChart(t, UaQueryViewer.defaultChartOptions).root
+    );
+    this.viewers.push(errorsViewer);
 
-        let topErrorsViewer = new UaFilterableViewer(
-            'Top Errors',
-            'TopErrors',
-            (t: DG.DataFrame) => DG.Viewer.barChart(t, UaQueryViewer.defaultBarchartOptions).root
-        );
-        this.viewers.push(topErrorsViewer);
+    let topErrorsViewer = new UaFilterableViewer(
+        this.uaToolbox.filterStream,
+        'Top Errors',
+        'TopErrors',
+        (t: DG.DataFrame) => DG.Viewer.barChart(t, UaQueryViewer.defaultBarchartOptions).root
+    );
+    this.viewers.push(topErrorsViewer);
 
-        let topErrorSourcesViewer = new UaFilterableViewer(
-            'Top Error Sources',
-            'TopErrorSources',
-            (t: DG.DataFrame) => DG.Viewer.barChart(t, UaQueryViewer.defaultBarchartOptions).root
-        );
-        this.viewers.push(topErrorSourcesViewer);
+    let topErrorSourcesViewer = new UaFilterableViewer(
+        this.uaToolbox.filterStream,
+        'Top Error Sources',
+        'TopErrorSources',
+        (t: DG.DataFrame) => DG.Viewer.barChart(t, UaQueryViewer.defaultBarchartOptions).root
+    );
+    this.viewers.push(topErrorSourcesViewer);
 
-        this.root.append(ui.divV([
-            ui.divH([ui.block([errorsViewer.root])]),
-            ui.divH([ui.block50([topErrorsViewer.root]), ui.block50([topErrorSourcesViewer.root])]),
-        ]));
+    this.root.append(ui.divV([
+      ui.divH([ui.block([errorsViewer.root])]),
+      ui.divH([ui.block50([topErrorsViewer.root]), ui.block50([topErrorSourcesViewer.root])]),
+    ]));
 
-    }
+  }
 }
