@@ -100,4 +100,4 @@ extensions.
 [viewers]: https://github.com/datagrok-ai/public/tree/master/packages/Viewers
 [filters]: https://github.com/datagrok-ai/public/blob/master/packages/Widgets/src/filters/radio_button_filter.js
 [datagrok-tools README]: https://github.com/datagrok-ai/public/tree/master/tools#datagrok-tools
-[JavaScript exercises]: ./exercises.md
+[JavaScript exercises]: exercises/exercises.md
