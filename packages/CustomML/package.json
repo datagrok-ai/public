@@ -1,5 +1,6 @@
 {
 	"name": "@datagrok/custom-ml",
+	"beta": true,
 	"friendlyName": "CustomML",
 	"version": "0.0.3",
 	"description": "",
