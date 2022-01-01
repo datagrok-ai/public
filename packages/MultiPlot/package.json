@@ -30,6 +30,10 @@
 		"webpack": "^5.45.1",
 		"webpack-cli": "^4.7.2"
 	},
-	"canEdit": [ "Developers" ],
-	"canView": [ "All users" ]
+	"canEdit": [
+		"Developers"
+	],
+	"canView": [
+		"All users"
+	]
 }
