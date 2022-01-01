@@ -27,8 +27,9 @@ import {runTests} from "./test";
 export let _package = new DG.Package();
 
 
-//name: test
-export async function test() {
+//name: testJsApi
+//top-menu: Tools | Dev | JS API Tests
+export async function testJsApi() {
   let data = await runTests();
   grok.shell.addTableView(DG.DataFrame.fromObjects(data)!);
 }
