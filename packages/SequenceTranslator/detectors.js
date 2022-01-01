@@ -8,6 +8,7 @@ class SequenceTranslatorPackageDetectors extends DG.Package {
   isSiRnaGcrs(sequence) {return /^[fmpsACGU]{6,}$/.test(sequence);} // TODO: insert into detectNucleotides
   isGcrs(sequence) {return /^[fmpsACGU]{6,}$/.test(sequence);}
   isMermade12(sequence) {return /^[IiJjKkLlEeFfGgHhQq]{6,}$/.test(sequence);}
+
   //tags: semTypeDetector
   //input: column col
   //output: string semType
