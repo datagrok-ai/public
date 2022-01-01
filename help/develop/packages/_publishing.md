@@ -50,7 +50,7 @@ To publish a package from your repository:
 3. Click **Load Package Metadata** to get the package name and description.
 4. Select **Publish on Startup**, and then select **Ok**.
 
-![](../git-publishing.png)
+![](../img/git-publishing.png)
 
 ## Continuous integration
 

@@ -50,7 +50,7 @@ Manage availability, usability, integrity and security of your data, all in one 
 
 Our unique technology lets you explore datasets faster and more efficiently than ever, allowing to find patterns that were previously impossible to spot, resulting in the acceleration of data-driven decisions.
 
-  * [Proprietary in-memory database](develop/performance.md) technology allows to handle tens of millions of rows in the browser
+  * [Proprietary in-memory database](develop/advanced/performance.md) technology allows to handle tens of millions of rows in the browser
   * [30+ high-performance interactive viewers](visualize/viewers.md)
   * [Powerful integration with any visualizations available in R, Python, or Julia languages](visualize/viewers/scripting-viewer.md)
   * Built-in viewers: [regression lines](visualize/viewers/scatter-plot.md), confidence intervals, correlations, [statistical tests](learn/data-science.md)

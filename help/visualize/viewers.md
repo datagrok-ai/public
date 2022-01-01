@@ -4,7 +4,7 @@
 # Viewers
 
 A viewer is a visual component associated with a [table](../overview/table.md). Unlike
-other products, our viewers are [super fast](../develop/performance.md#viewers),
+other products, our viewers are [super fast](../develop/advanced/performance.md#viewers),
 completely interactive, and are capable of handling tens of millions of rows (or millions of columns).
 
 Viewers belonging to the same [view](../overview/table-view.md) all share the same

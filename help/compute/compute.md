@@ -2,7 +2,7 @@
 
 A next-generation environment for scientific computing that 
 leverages core Datagrok features, such as 
-[in-memory data engine](../develop/performance.md#in-memory-database),
+[in-memory data engine](../develop/advanced/performance.md#in-memory-database),
 [interactive visualizations](../explore/exploratory-data-analysis.md),
 [data access](../home.md#access),
 [machine learning](../home.md#learn),

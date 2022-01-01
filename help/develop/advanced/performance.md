@@ -71,7 +71,7 @@ exploratory data analysis, interactive visualizations, and machine learning.
 
 ## Viewers
 
-Just like the in-memory database, our [viewers](../visualize/viewers.md) were built from scratch for the purpose of being able to 
+Just like the in-memory database, our [viewers](../../visualize/viewers.md) were built from scratch for the purpose of being able to 
 interactively work with millions of data points at once. All of them make heavy use of the in-memory database. 
 The ability to use that engine unlocks unique possibilities for viewers, such as easy data 
 aggregations or passing data to web workers for multithreaded rendering. All viewers access 
@@ -174,9 +174,9 @@ have the same look and feel and usage patterns, and cooperate in certain tasks.
 
 ### Videos
 
-[![Perfomance](../uploads/youtube/visualizations1.png "Open on Youtube")](https://www.youtube.com/watch?v=wAfEqAMOZzw&t=907s)
+[![Perfomance](../../uploads/youtube/visualizations1.png "Open on Youtube")](https://www.youtube.com/watch?v=wAfEqAMOZzw&t=907s)
 
 See also:
 
-  * [Exploratory data analysis](../explore/exploratory-data-analysis.md) 
-  * [Viewers](../visualize/viewers.md)
+  * [Exploratory data analysis](../../explore/exploratory-data-analysis.md) 
+  * [Viewers](../../visualize/viewers.md)
