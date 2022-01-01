@@ -24,7 +24,7 @@ module.exports = {
   },
   output: {
     filename: '[name].js',
-    library: 'jsapitests',
+    library: 'apitests',
     libraryTarget: 'var',
     path: path.resolve(__dirname, 'dist'),
   },

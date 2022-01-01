@@ -1,7 +1,7 @@
 {
-	"name": "js-api-tests",
+	"name": "api-tests",
 	"beta": true,
-	"friendlyName": "js-api-tests",
+	"friendlyName": "API Tests",
 	"version": "0.0.1",
 	"description": "",
 	"dependencies": {
