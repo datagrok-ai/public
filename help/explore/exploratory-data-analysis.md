@@ -19,7 +19,7 @@ From the ground up, Datagrok has been designed to enable interactive exploratory
 data analysis on big datasets. [Importing data](../access/importing-data.md) is 
 seamless and fast. Multiple interactive tools exist for the 
 [data cleanup and preparation](../transform/data-wrangling.md). A rich set 
-of [high-performance](../develop/performance.md), interactive [viewers](../visualize/viewers.md) 
+of [high-performance](../develop/advanced/performance.md), interactive [viewers](../visualize/viewers.md) 
 let you filter and visualize data in any possible way; some of them directly support 
 EDA-related features such as [regression lines](../visualize/viewers/scatter-plot.md#regression-line), 
 or [hypothesis testing](../visualize/viewers/box-plot.md#t-test). A number of pre-defined statistical
@@ -32,5 +32,5 @@ interactively or through a pipeline, is easy and [secure](../govern/security.md)
 
 See also:
 * [Viewers](../visualize/viewers.md)
-* [Performance](../develop/performance.md) 
+* [Performance](../develop/advanced/performance.md) 
 * [Wikipedia: Exploratory data analysis](https://en.wikipedia.org/wiki/Exploratory_data_analysis)

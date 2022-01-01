@@ -223,7 +223,7 @@
 * GitHub Actions: Update js-api/package-lock.json 
 * Dev-tools: version bump 
 * GitHub Actions: Update packages/DevTools/package-lock.json 
-* #228 Chem: descriptors, incho, inchi keys, mcs refactoring and polishing, bug fixes 
+* 228 Chem: descriptors, incho, inchi keys, mcs refactoring and polishing, bug fixes 
 * Compute: Vmax: editable input tab and transposed output tables 
 * Compute: removed margin after info block in SelOut 
 * Compute: centered the buttons in OutSel 
@@ -310,10 +310,10 @@
 * (Bug) Bar chart: When "Axis Type" = "logarithmic", numbers on the axis get merged 
 * Chem: R Group Analysis fix 
 * NPM repositories: new package manager UI (WIP)
-* #228 Chem: MCS panel 
+* hem: MCS panel 
 * Compute: Pmax: add polynomial regression lines (WIP)
 * JS API: add Property options 
-* #228 Chem: panels Inci, Inch Keys 
+* Chem: panels Inchi, Inchi Keys 
 * Compute: added outliers selection viewer 
 * Compute: marked the outliers selection dialog as deprecated 
 * Compute: minor version bump 

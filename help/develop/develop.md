@@ -321,7 +321,7 @@ When developing a package with your team, it's a good idea to commit code to the
 
 To publish a package from the repository, you need to open `Manage | Packages | Add new package` first. Once the window appears, choose `Git` as the source type, enter the URL to your repository, and specify the package directory relative to its root. Click on `LOAD PACKAGE METADATA` to get the package name and description.
 
-![](git-publishing.png)
+![](img/git-publishing.png)
 
 If necessary, you can specify additional settings and then publish the package.
 

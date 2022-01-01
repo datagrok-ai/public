@@ -194,7 +194,7 @@ to inspect event parameters. To simplify the development process, we also genera
 JavaScript code for handling this particular event, copy-paste it from the
 property panel into your code if needed. 
 
-![](inspector-events.png)
+![](tools/inspector-events.png)
 
 ## User-defined types
 

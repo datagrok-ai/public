@@ -79,7 +79,7 @@ extensions.
 [Extending and customizing Datagrok]: extending-and-customizing.md
 [Building an application]: how-to/build-an-app.md
 [Building a UI]: ui.md
-[Performance]: performance.md
+[Performance]: advanced/performance.md
 [Demo]: https://www.youtube.com/watch?v=tVwpRB8fikQ
 [Platform overview]: ../video-contents.md#getting-started
 [JS API overview]: ../video-contents.md#javascript-api
