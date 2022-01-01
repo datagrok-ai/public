@@ -504,7 +504,7 @@ export function link(
 }
 
 /** Creates a [Dialog]. */
-export function dialog(options: { title?: string, helpUrl?: string }): Dialog {
+export function dialog(options?: { title?: string, helpUrl?: string } | string): Dialog {
   return Dialog.create(options);
 }
 
