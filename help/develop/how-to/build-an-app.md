@@ -3,21 +3,34 @@
 
 <!-- This is a developer's view on the Datagrok applications -->
 
-# Building Datagrok applications
+# Applications
 
-Applications are built on top of the Datagrok platform. The Datagrok application serves a targeted
-need around a particular problem or an area. This may be a bioreactor modeling application,
-an application for working with and understanding molecular sequence data, a molecular database browser,
-a Covid-19 or weather info panel, and so forth.
+Applications are built on top of the Datagrok platform and typically provide a fit-for-purpose solution for a
+particular problem. They are written in JavaScript or TypeScript, and use [JS API](js-api.md) to
+control the platform, including executing database queries, accessing web services, or running
+[scripts written in R or Python](../compute/scripting.md). Here are some examples of Datagrok applications:
 
-Datagrok applications are developed in JavaScript / TypeScript using our rich [Datagrok JavaScript API](../js-api.md),
-often with utilizing a range of the [scripting languages](../scripting.md) we support,
-such as R or Python, connecting to third-party data sources and services
-for data integration and orchestration, and re-using self-made or third-party Datagrok extensions.
+* [Exploratory data analysis of SDTM clinical data](https://github.com/datagrok-ai/public/tree/master/packages/ClinicalCase)
+* [Structure-activity relationship analysis for peptides](https://github.com/datagrok-ai/public/tree/master/packages/Peptides)
+* [Enamine molecule browser](https://github.com/datagrok-ai/public/tree/master/packages/EnamineStore)
+* [Chembl browser](https://github.com/datagrok-ai/public/tree/master/packages/ChemblBrowser)
 
-Technically, applications are [functions](../../overview/functions/function.md) tagged with the `#app` tag.
-In this function, you take control over what the platform will let the user do and see next, after the app is
-launched. Think of it as of the application's entry point, such as a `Main` function in a C# console app.
+From the technical perspective, an app is a [function](../../overview/functions/function.md)
+that resides in a [package](../develop.md#packages) and is tagged with the `#app` tag. 
+Similarly to the `main` function in C++, this is an entry point that gets executed when the 
+app is [launched](#launching-applications).
+
+A [Datagrok package](develop.md#packages) may contain any number of applications; an application is
+just a function tagged as `app`. Learn more about developing applications [here](how-to/build-an-app.md).
+
+# Launching applications
+
+Open `Functions | Apps`, or use a [direct link](https://public.datagrok.ai/apps) 
+to see a list of available applications. Double-click on the app to launch it.
+To give a direct link to a particular app: 
+* `https://public.datagrok.ai/apps/<APP_NAME>` - if there is only one app in the package
+* `https://public.datagrok.ai/apps/<PACKAGE_NAME>/<APP_NAME>` - if there are several apps in the package
+
 
 ## The entry point
 
@@ -411,7 +424,7 @@ The data resides in the storage as a set of stores, each identified by a unique 
 with a key-value map placed in each store. There are several _asyncronous_ methods for storing
 and retrieving data from the user storage, such as `grok.dapi.userDataStorage.postValue`
 for posting a single value, or `grok.dapi.userDataStorage.get` for getting the whole map.
-Learn of all these methods [here](../user-data-storage.md), also check a complete example
+Learn of all these methods [here](user-data-storage.md), also check a complete example
 in [API Samples](https://github.com/datagrok-ai/public/blob/master/packages/ApiSamples/scripts/misc/user-data-storage.js).
 
 As the name assumes, the storage is only seen to the user. However, it's possible to create
@@ -420,7 +433,7 @@ a boolean `currentUser`, which is set to `true` by default.
 
 *References:*
 
-* User data storage [reference](../user-data-storage.md)
+* User data storage [reference](user-data-storage.md)
 * User data storage [sample](https://github.com/datagrok-ai/public/blob/master/packages/ApiSamples/scripts/misc/user-data-storage.js)
 
 ### Storing dataframes

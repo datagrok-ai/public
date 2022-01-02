@@ -387,7 +387,7 @@ for the data access control.
 
 ## Exploratory data analysis
 
-Perhaps the most commonly used data structure in computing is [DataFrame](../develop/dataframe.md).
+Perhaps the most commonly used data structure in computing is [DataFrame](../develop/advanced/data-frame.md).
 To analyze either input or output dataframe, click on the `+` ("Add to workspace") 
 icon. This will open the dataframe in the [exploratory data analysis](../explore/exploratory-data-analysis.md)
 mode, allowing to [visualize](../visualize/viewers.md) the data,
