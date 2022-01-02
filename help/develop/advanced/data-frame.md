@@ -1,8 +1,9 @@
 <!-- TITLE: Dataframe -->
 
-# Dataframe
+# DataFrame
 
-Dataframe is a tabular structure with strongly-typed columns of various types. A dataframe class `DG.DataFrame`
+DataFrame is a tabular structure with strongly-typed columns of various types. A dataframe class 
+[DG.DataFrame](https://datagrok.ai/js-api/classes/dg.dataframe)
 is used in virtually any Datagrok extension or application. It operates via a columnar in-memory data engine
 which Datagrok implemented from scratch to support highly efficient operation with data in a modern browser
 together with fast in-browser data visualizations. 
@@ -624,7 +625,7 @@ JavaScript property setter).
 [107]: overview/table-view.md "Table Views"
 [108]: discover/tags.md#format "Values of a format tag"
 [109]: discover/semantic-types.md "Semantic types"
-[110]: domains/chem/cheminformatics.md "Cheminformatics overview"
+[110]: ../domains/chem/cheminformatics.md "Cheminformatics overview"
 [111]: https://github.com/datagrok-ai/public/blob/1393df83ef2eea80dc2c19b5e6e541cb35d60f91/packages/Chem/detectors.js#L6 "Chem Molecule detector"
 [112]: https://github.com/datagrok-ai/public/tree/master/packages/Chem "Chem package"
 [113]: develop/how-to/define-semantic-type-detectors.md "Defining semantic types detectors"
@@ -638,7 +639,7 @@ JavaScript property setter).
 [121]: https://public.datagrok.ai/files/demo.testjobs.files.demofiles/ "Demo files"
 [122]: #construct-from-in-place-content "Construct a dataframe from in-place content"
 [123]: https://public.datagrok.ai/js/samples/data-frame/find-columns "Find columns"
-[124]: how-to/customize-grid.md#color-coding "Color coding"
+[124]: ../how-to/customize-grid.md#color-coding "Color coding"
 [125]: #numerical-and-categotical-columns "Numerical and categorical columns"
 [126]: https://public.datagrok.ai/js/samples/data-frame/modification/manipulate "Manipulating dataframes"
 [127]: https://public.datagrok.ai/js/samples/data-frame/advanced/custom-category-order "Custom categories order"

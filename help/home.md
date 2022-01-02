@@ -77,7 +77,7 @@ Turn your data into actionable insights by using state-of-the art machine learni
 
 ## Apply
 
-  * Build [custom applications](develop/applications.md) on top of the platform
+  * Build [custom applications](develop/how-to/build-an-app.md) on top of the platform
   * [Cheminformatics](domains/chem/cheminformatics.md)
   * Text analytics, [natural language processing](https://github.com/datagrok-ai/public/tree/master/packages/NLP) with cloud-based machine translation
   * [Location Analytics](https://github.com/datagrok-ai/public/tree/master/packages/Leaflet)

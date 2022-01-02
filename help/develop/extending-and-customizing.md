@@ -21,8 +21,8 @@ to display, which grid lines to present, and even add [conditional color coding]
 
 With using our [JavaScript API](js-api.md), you can create your own:
 
-* [functions](../overview/functions/function.md), which may be written in any [scripting language we support]
-  (compute/scripting.md), and later be reused in various contexts, including other functions, or called directly
+* [functions](../overview/functions/function.md), which may be written in any 
+  [scripting language we support](../compute/scripting.md), and later be reused in various contexts, including other functions, or called directly
   from Datagrok UI or the [console](../overview/navigation.md#console)  
 * [visualizations](../visualize/viewers.md) — to visualize data in new ways, in addition to our 30+ core viewers
 * [file viewers](how-to/custom-file-viewers.md) — to support new data formats in addition to many

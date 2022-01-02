@@ -289,7 +289,7 @@ Your package might contain the following additional folders, depending on your n
 [a few valuable scripts]: https://github.com/datagrok-ai/public/tree/master/tools#commands
 [alternative to Moment.js]: https://www.npmjs.com/package/dayjs
 [annotated functions]: ../../overview/functions/function.md
-[applications]: ../applications.md "An application is an advanced package that provides a series of views and extended functionality."
+[applications]: ../how-to/build-an-app.md#applications 
 [competitor for jQuery]: https://www.npmjs.com/package/cash-dom
 [connections]: ../../access/data-connection.md "A data connection is a configuration in Datagrok that lets you access data in a data source such as GitHub repository or local file system."
 [custom viewer built with D3.js]: https://github.com/datagrok-ai/public/tree/master/packages/Viewers
