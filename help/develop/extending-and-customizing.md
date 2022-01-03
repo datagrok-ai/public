@@ -66,103 +66,15 @@ Beside a regular CSS-based customization, here are some of the things which you 
   to provide for completely custom layouts composed inside the Datagrok platform, tailored to your specific use cases. Learn
   more about Datagrok's composable UI [here](ui.md)
 
-## Get started
-
-Let's get a feel of plugin development with a simple extension which embeds to Datagrok as an
-[info panel](how-to/add-info-panel.md) displaying some simple statistics for a text in a selected grid cell.
-
-### Create a package
-
-If you haven't already set up your local development environment, go though the steps described [in this article](develop.md#getting-started).
-
-Let's create a package:
- ```
- grok create TextStats
- ```
-This creates a folder `TextStats` with the package structure in it.
-
-The package may contain one or more , such as [info panels](), [viewers](),
-[scripts]() and [functions](), [cell renderers](), one or several [Datagrok applications](),
-and so forth.
-
-For the newly created package, you have to install the dependencies, that's typical for any `webpack` package.
-Get into your `TextStats` folder and do:
-
-```
-npm install
-```
-
-### The panel function
-
-Add the actual panel's code at `TextStats/src/package.js`:
-
-```
-//name: Text Stats
-//tags: panel, widgets
-//input: string str
-//output: widget result
-textStats(str) {
-  // for 'gattaca', produces {"g": 1, "a": 3, "t": 2, "c": 1}
-  const symbolCounts = Array.from(str).reduce((counts, ch) => {
-    counts[ch] = (counts[ch] || 0) + 1;
-    return counts;
-  }, Object.create(null));
-  return new DG.Widget(ui.divV([
-    ui.divText("Counting characters:"),
-    ui.divText(`${JSON.stringify(symbolCounts)}`)
-  ]));
-}
-```
-
-That's it! What creates a panel is this function plus the annotation contained in the comments preceding it.
-Datagrok recognizes these comments and makes the function `textStats` become a `panel` producing a `widget`,
-taking a `string` as an input.
-
-### Deploy the plugin
-
-What's left is to deploy the package with your first plugin and see it in action.
-
-Inside your `TextStats` package folder, do what's typically done for a regular `webpack` package:
-
-```
-webpack
-grok publish public
-
-```
-
-The return code should be `0` to indicate a successful deployment.
-
-Now go to Datagrok and open any data file with string columns. This could be a `demog` dataset from our demo datasets.
-Navigate to a text cell and find your freshly added panel with text stats on the right side of Datagrok UI.
-
-We have completed the deployment. Let's navigate to `Manage | Packages` and find your package in the list. Note it has
-your name prefixed with a `v.`, which means it's only published for you. This is called a Debug mode. To make it
-available to the user or a group of interest, you can `Share` it to the group via right-click menu on the package.
-Don't forget to publish the package as `grok publish public --release`: this now makes this package _released_
-for these groups of interest.
-
-### Overview of the API
-
-[This document](js-api.md) gives a great overview of our JS API, skim through it
-to get an idea, it isn't long. In general, there are three entry points to the API:  **grok** for easy discoverability 
-of the functionality,  **ui** for building user interfaces, and  **DG** for instantiating classes directly. 
-You'd find them included in `src/package.js`.
-
-### Overview of the examples
-
-The great source of what Datagrok can do is available here:
-[https://public.datagrok.ai/js](https://public.datagrok.ai/js) under "JavaScript API Examples".
-This will become your daily source of knowledge about many aspects of the platform. You'd
-run these examples in our JS Fiddler, which supports `async/await` and IntelliSense, immediately getting results in the platform.
-
-The more complex examples are at our public repo: [https://github.com/datagrok-ai/public](https://github.com/datagrok-ai/public). 
-Find there [custom viewers](), [custom cell renderers](), and so forth. Use built-in github search to navigate, searching by the inclusions
-of `tags` may be very useful for your needs!
-
 ### What's next
 
 Learn more about the platform by watching our educational content and hands-on practicing:
 
-* [Getting Started Video Walkthrough](getting-started.md#6-videos) to watch about many important aspects of Datagrok
+* [Getting Started Video Walkthrough](getting-started.md#6-videos)
 * [Development Exercises](exercises/exercises.md) to practice developing on Datagrok in a good sequence and through an interesting story
 * [Community forum](https://community.datagrok.ai/) to discuss anything
+
+See also:
+* [JS API](js-api.md)
+* [JS API Samples](https://public.datagrok.ai/js) (expand "JavaScript API Examples")
+* [Public package repository](https://github.com/datagrok-ai/public)

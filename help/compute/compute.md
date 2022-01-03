@@ -407,7 +407,7 @@ scatter plot, histogram, or correlation plot.
 #### Open-source, curated repository of scientific methods
 
 We will be creating and maintaining a 
-[repository of popular scientific methods](../develop/public-repository.md)
+[repository of popular scientific methods](../collaborate/public-repository.md)
 available to everyone under the MIT license.
 
 WebAssembly-compiled pure functions (implemented in C++ or Rust) will be of particular

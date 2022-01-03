@@ -511,7 +511,7 @@ export function initPackage() {
 }
 ```
 
-The [`autostart`](../develop.md#pre-run-functions) function prompts the package to initialize,
+The [`autostart`](../function-roles.md#pre-run-functions) function prompts the package to initialize,
 which is why a viewer can be obtained synchronously.
 
 ## Examples

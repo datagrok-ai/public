@@ -63,7 +63,7 @@ Opening the above link triggers the `StoresInState` query execution, with the `s
 
 ## Applications
 
-Remarkably, routing works for [applications](../develop/develop.md#applications). They are shipped as part of a [package](../develop/develop.md) and used by developers as a means to extend the Datagrok platform. An application link has the following form:
+Remarkably, routing works for [applications](../develop/how-to/build-an-app.md). They are shipped as part of a [package](../develop/develop.md) and used by developers as a means to extend the Datagrok platform. An application link has the following form:
 
 *https://public.datagrok.ai/apps/{package.name}/{application.name}*
 
