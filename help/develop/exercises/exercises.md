@@ -558,7 +558,7 @@ _You will learn:_ how to join and union dataframes using the knowledge of semant
          length `N` in _all_ the sequences of `col2`
        * symmetrically, same for each row from `df2`  
          — consider this as a fuzzy, programmatic JOIN of the two dataframes; use
-         [`df.columns.addNew`](https://public.datagrok.ai/js/samples/data-frame/manipulate),
+         [`df.columns.addNew`](https://public.datagrok.ai/js/samples/data-frame/modification/manipulate),
          [`col.set(i, value)`](https://public.datagrok.ai/js/samples/data-frame/advanced/data-frames-in-columns) on
          a newly created column
    * displays `df` with [`grok.shell.addTableView`](https://public.datagrok.ai/js/samples/data-frame/test-tables)

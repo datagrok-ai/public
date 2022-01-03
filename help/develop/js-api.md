@@ -93,7 +93,7 @@ demog.selection.findNext(0, false);
 ```
 
 DataFrame code snippets:
-* [DataFrame manipulation](https://public.datagrok.ai/js/samples/data-frame/manipulate)
+* [DataFrame manipulation](https://public.datagrok.ai/js/samples/data-frame/modification/manipulate)
 * [DataFrame events](https://public.datagrok.ai/js/samples/data-frame/events)
 
 ## Views
