@@ -1,8 +1,6 @@
 <!-- TITLE: Build an application -->
 <!-- SUBTITLE: -->
 
-<!-- This is a developer's view on the Datagrok applications -->
-
 # Applications
 
 Applications are built on top of the Datagrok platform and typically provide a fit-for-purpose solution for a
@@ -21,7 +19,12 @@ Similarly to the `main` function in C++, this is an entry point that gets execut
 app is [launched](#launching-applications).
 
 A [Datagrok package](develop.md#packages) may contain any number of applications; an application is
-just a function tagged as `app`. Learn more about developing applications [here](how-to/build-an-app.md).
+just a function tagged as `app`. To get the template for an `app` function, use the following `datagrok-tools` command from your package directory:
+
+```
+grok add app <name>
+```
+
 
 # Launching applications
 
@@ -837,6 +840,6 @@ this is done in `launch.json`.
 See also:
 
   * [Datagrok JS development](../develop.md)
-  * [Developing Datagrok applications](../develop.md#applications)
+  * [Developing Datagrok applications](../how-to/build-an-app.md)
   * [Applications on Datagrok Public](https://public.datagrok.ai/apps)
   * [Development Samples Gallery](https://public.datagrok.ai/js)

@@ -4,5 +4,5 @@ It ships a playground app "Discovery" which we use for trying out and showcasing
 See also: 
 
   * [Grok API](https://datagrok.ai/help/develop/js-api)
-  * [Grok App](https://datagrok.ai/help/develop/develop#applications)
+  * [Grok App](https://datagrok.ai/help/develop/how-to/build-an-app)
   * [Packages](https://datagrok.ai/help/develop/develop#packages)

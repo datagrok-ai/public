@@ -3,28 +3,20 @@
 
 # JavaScript development
 
-Datagrok was designed to be as extensible as possible, so naturally JavaScript-based development is the preferred way to
-develop user-facing applications on top of the platform. Use [Grok API](js-api.md) to control pretty much anything
+JavaScript or TypeScript-based development is the preferred way to
+develop user-facing applications on top of the platform. Use the [JS API](js-api.md) to control pretty much anything
 within Datagrok, including [data manipulation](js-api.md#data-manipulation), adding [views](js-api.md#views)
 or [viewers](how-to/manipulate-viewers),
 [developing custom viewers](how-to/develop-custom-viewer),
 [registering functions](js-api.md#registering-functions), training and
 applying [predictive models](../learn/predictive-modeling.md), and even [building custom apps](#applications).
 
-There are two options to run custom JavaScript code. For ad-hoc [scripts](scripting.md), use the built-in JavaScript
-editor (`Functions | Scripts | New JavaScript Script`). For reusable functions, viewers, and applications, use the
-packaging mechanism, which is the focus of this article.
+There are two options to run custom JavaScript code. For ad-hoc [scripts](../compute/scripting.md), 
+use the built-in JavaScript editor (`Functions | Scripts | New JavaScript Script`). 
+For reusable functions, viewers, and applications, use the packaging mechanism, which is the focus of this article.
 
-Table of contents
-
-* [Packages](#packages)
-* [Getting Started](#getting-started)
-* [Package Structure](#package-structure)
-* [Development](#development)
-* [Publishing](#publishing)
-* [Debugging](#debugging)
-* [Function Types](#function-types)
-* [Documentation](#documentation)
+This article describes what a [package](#packages) is, as well as techniques for [developing](#development),
+[debugging](#debugging), [publishing](#publishing) and using [documentation](#documentation).
 
 ## Packages
 
@@ -35,54 +27,10 @@ package might contain different things:
   , [widgets](../visualize/widgets.md), [applications](#applications)
 * [Scripts](scripting.md) written in R, Python, Octave, Grok, Julia, JavaScript, NodeJS, or Java
 * [Queries](../access/data-query.md) and [connections](../access/data-connection.md)
-* [Tables](../access/connectors/files.md#supported-tabular-formats)
+* [Tables](../access/connectors/files.md#supported-tabular-formats), files, and other objects
 
-See our [GitHub repository](https://github.com/datagrok-ai/public/tree/master/packages) for examples.
-
-## Getting started
-
-To develop a package on the Datagrok platform, you will need [Node.js](https://nodejs.org/en/)
-and [npm](https://www.npmjs.com/get-npm) installed. To avoid permission issues when installing packages globally (`-g`),
-use a version manager to install both `Node.js` and `npm` (here are
-the [instructions](https://docs.npmjs.com/downloading-and-installing-node-js-and-npm#using-a-node-version-manager-to-install-nodejs-and-npm)
-.
-
-Also, install [Webpack](https://webpack.js.org/guides/installation/) to be able to build your package locally and debug
-it using `Webpack DevServer`. Optionally, you can use `Babel`, `React` as well as other advanced JavaScript frameworks.
-
-Here are the first steps to get you started:
-
-1. Install `datagrok-tools` utility for managing packages:
-   ```
-   npm install datagrok-tools -g
-   ```
-   On macOS and Unix systems, you may also need to use `sudo` at the beginning of the installation command and enter the
-   root password if prompted.
-
-2. Configure your environment with the following command:
-   ```
-   grok config
-   ```
-   Enter developer keys and set the default server. Your credentials will be stored locally in `config.yaml`. Once
-   created, this file will be used for publishing all your packages. The developer key can be retrieved by opening your
-   user profile (see it on public: [https://public.datagrok.ai/u](https://public.datagrok.ai/u)) and clicking
-   on `Developer key`. Administrators can manage existing keys and grant or revoke privileges.
-
-3. Create a new package by running this command:
-   ```
-   grok create <packageName> <options>
-   ```
-   A new folder `MyPackage` will be created automatically as well as its contents. Datagrok CLI supports TypeScript,
-   ESLint and VSCode boilerplates out-of-the-box. We highly recommend use TypeScript and ESLint, specially if you are
-   commiting to [public Datagrok repository](https://github.com/datagrok-ai/public). Type `grok create --help` to see
-   all possible package creation options.
-
-4. Once you've completed the work on your package, upload it by running:
-   ```
-   grok publish
-   ```
-
-Run `grok` for instructions and `grok <command> --help` to get help on a particular command.
+See our [GitHub repository](https://github.com/datagrok-ai/public/tree/master/packages) for examples,
+or follow the [step-by-step guide](how-to/create-package.md) for creating your own package.
 
 ## Package structure
 
@@ -96,6 +44,30 @@ A simplest JavaScript package consists of the following files:
 | [webpack.config.js](#webpack.config.js) | webpack configuration |
 | README.md                               | package summary       |
 | package.png                             | package icon          |
+
+In addition to that, it might contain the following folders:
+
+* `environments`: [environment configurations](scripting.md#environments) for [scripts](scripting.md).
+  Examples: [DemoScripts](https://github.com/datagrok-ai/public/tree/master/packages/DemoScripts)
+* `scripts`: a collection of [scripts](scripting.md) used for computations.
+  Examples: [ChemScripts](https://github.com/datagrok-ai/public/tree/master/packages/ChemScripts)
+  , [DemoScripts](https://github.com/datagrok-ai/public/tree/master/packages/DemoScripts)
+  , [Impute](https://github.com/datagrok-ai/public/tree/master/packages/Impute)
+* `swaggers`: REST APIs in [Swagger/OpenAPI](../access/open-api.md) format.
+  Examples: [EnamineStore](https://github.com/datagrok-ai/public/tree/master/packages/EnamineStore)
+  , [Swaggers](https://github.com/datagrok-ai/public/tree/master/packages/Swaggers)
+* `connections` and `queries`: [connections](../access/data-connection.md) and [queries](../access/data-query.md) for
+  data retrieval. Examples: [Chembl](https://github.com/datagrok-ai/public/tree/master/packages/Chembl)
+  , [UsageAnalysis](https://github.com/datagrok-ai/public/tree/master/packages/UsageAnalysis)
+* `css`: CSS files for custom styling.
+  Examples: [Notebooks](https://github.com/datagrok-ai/public/tree/master/packages/Notebooks)
+  , [Discovery](https://github.com/datagrok-ai/public/tree/master/packages/Discovery)
+* `tables` and `data-samples`: data for demonstration and testing.
+  Examples: [Chem](https://github.com/datagrok-ai/public/tree/master/packages/Chem)
+  , [Sunburst](https://github.com/datagrok-ai/public/tree/master/packages/Sunburst)
+* `layouts`: `json` files with table view [layouts](how-to/layouts.md)
+* `schemas`: `yaml` files with property schemas
+* `jobs`: [data jobs](../access/data-job.md)
 
 ### <a href="#" id="package.json"></a>package.json
 
@@ -243,32 +215,6 @@ consider:
   or `detectRDSmiles`
 * File names can be written in lower case, with dashes between words: `tika-extractor.py` and `chord-viewer.js`
 
-### Structuring package sources
-
-Apart from the files included in the standard template, let's briefly consider what else can be distributed as part of a
-package. Depending on your needs, the package may contain some of the following additional folders:
-
-* `environments`: [environment configurations](scripting.md#environments) for [scripts](scripting.md).
-  Examples: [DemoScripts](https://github.com/datagrok-ai/public/tree/master/packages/DemoScripts)
-* `scripts`: a collection of [scripts](scripting.md) used for computations.
-  Examples: [ChemScripts](https://github.com/datagrok-ai/public/tree/master/packages/ChemScripts)
-  , [DemoScripts](https://github.com/datagrok-ai/public/tree/master/packages/DemoScripts)
-  , [Impute](https://github.com/datagrok-ai/public/tree/master/packages/Impute)
-* `swaggers`: REST APIs in [Swagger/OpenAPI](../access/open-api.md) format.
-  Examples: [EnamineStore](https://github.com/datagrok-ai/public/tree/master/packages/EnamineStore)
-  , [Swaggers](https://github.com/datagrok-ai/public/tree/master/packages/Swaggers)
-* `connections` and `queries`: [connections](../access/data-connection.md) and [queries](../access/data-query.md) for
-  data retrieval. Examples: [Chembl](https://github.com/datagrok-ai/public/tree/master/packages/Chembl)
-  , [UsageAnalysis](https://github.com/datagrok-ai/public/tree/master/packages/UsageAnalysis)
-* `css`: CSS files for custom styling.
-  Examples: [Notebooks](https://github.com/datagrok-ai/public/tree/master/packages/Notebooks)
-  , [Discovery](https://github.com/datagrok-ai/public/tree/master/packages/Discovery)
-* `tables` and `data-samples`: data for demonstration and testing.
-  Examples: [Chem](https://github.com/datagrok-ai/public/tree/master/packages/Chem)
-  , [Sunburst](https://github.com/datagrok-ai/public/tree/master/packages/Sunburst)
-* `layouts`: `json` files with table view [layouts](how-to/layouts.md)
-* `schemas`: `yaml` files with property schemas
-* `jobs`: [data jobs](../access/data-job.md)
 
 ## Development
 
@@ -324,7 +270,7 @@ will no longer exist after the developer releases their package.
 
 ### Deployment modes
 
-You can use the following flags to specify who can access your package:
+Use the following flags to specify who can access your package:
 
 * In `--debug` mode, packages are accessible by the developer only (default).
 * In `--release` mode, packages are accessible by everyone who has the privilege.
@@ -367,7 +313,7 @@ the [Package Browser](https://public.datagrok.ai/packages) (`Manage | Packages |
 When developing a package with your team, it's a good idea to commit code to the repository first and then publish your
 package from there. Our [public GitHub repository](https://github.com/datagrok-ai/public/tree/master/packages) is a
 telling example of this workflow. We also welcome contributions, which you can learn more about
-in [this article](https://datagrok.ai/help/develop/public-repository).
+in [this article](https://datagrok.ai/help/collaborate/public-repository).
 
 To publish a package from the repository, you need to open `Manage | Packages | Add new package` first. Once the window
 appears, choose `Git` as the source type, enter the URL to your repository, and specify the package directory relative
@@ -619,105 +565,6 @@ const props = await _package.getProperties();
 The above call outputs an object where the keys are property names and the values are serialized property values. It's
 possible to customize the editor's appearance by defining a special [editor function](#settings-editors).
 
-## Function types
-
-A package can contain a variety of functions, so it will be appropriate to give an overview of the most common ones.
-Typically, each function type has a special tag denoting what the function does, for example:
-
-* `#app` for [applications](#applications)
-* `#dashboard` for [dashboards](#dashboards)
-* `#panel` for [info panels](#info-panels)
-* `#init` and `#autostart` for [pre-run functions](#pre-run-functions)
-* `#semTypeDetector` for [semantic types detectors](#semantic-type-detectors)
-* `#cellRenderer` for custom [cell renderers](#cell-renderers)
-* `#fileViewer` and `#fileExporter` for [file viewers](#file-viewers) and [exporters](#file-exporters)
-* `#packageSettingsEditor` for [settings editors](#settings-editors)
-
-You can use these tags to search for certain functions either from the platform's interface
-([https://public.datagrok.ai/functions?q](https://public.datagrok.ai/functions?q)) or from within your code:
-
-**TIP** To disable all package functions (for debug purposes), use the
-`initPackageFunctions=false` flag in the start URL, such as
-`https://public.datagrok.ai?initPackageFunctions=false`
-
-```js
-const applications = DG.Func.find({tags: [DG.FUNC_TYPES.APP]});
-```
-
-### Applications
-
-Applications are [functions](../overview/functions/function.md) tagged with the `#app` tag. A package might contain
-zero, one, or more apps. See our [GitHub repository](https://github.com/datagrok-ai/public/tree/master/packages) for
-application examples, such
-as [Enamine Store application](https://github.com/datagrok-ai/public/tree/master/packages/EnamineStore).
-
-To open the application launcher, click on `Functions | Apps`, or follow [this link](https://public.datagrok.ai/apps)
-from outside the platform. To launch a particular app automatically, open the following
-URL: `https://public.datagrok.ai/apps/<APP_NAME>`.
-
-To get the template for an `app` function, use the following `datagrok-tools` command from your package directory:
-
-```
-grok add app <name>
-```
-
-*Details:* [How to Build an Application](how-to/build-an-app.md)
-
-### Pre-run functions
-
-The purpose of pre-run functions is to prepare the main package code for execution. This includes fetching specific
-pieces of data, subscribing to global events, changing the user interface right after the platform starts, connecting to
-external services with refined configuration parameters, and so on.
-
-There are two types of functions serving this purpose: `init` and `autostart`. The function tagged with `init` gets
-invoked when the containing package is initialized. This typically happens the first time any of the functions in the
-package is called. It is guaranteed that this function gets invoked _once_ before the execution of the rest of the code
-and will not be re-executed on subsequent calls. The `autostart` functions are similar to the first type, but differ
-from it in a few aspects. Firstly, these functions are called at the platform startup, not necessarily when some package
-function is invoked. Moreover, if you decide to call a regular function from your package, there is no guarantee that
-its code will wait until the `autostart` completes. Another caveat is that the whole package will get initialized along
-with `autostart`, so use this type of functions wisely. If possible, stick to the `init` tag while developing your
-programs.
-
-To get the template for an `init` function, use the following `datagrok-tools`
-command from your package directory:
-
-```
-grok add function init <packageName>Init
-```
-
-### Semantic type detectors
-
-To get the template for a detector function, use the following `datagrok-tools`
-command from your package directory:
-
-```
-grok add detector <semantic-type-name>
-```
-
-*Details:* [How to Define Semantic Type Detectors](how-to/define-semantic-type-detectors.md)
-
-### File viewers
-
-File viewers are used in Datagrok's [file share browser](../access/file-shares.md). The platform provides a way to
-define custom viewers (or editors) in addition to the native ones. These functions work on files with a specific
-extension, which is derived from the `fileViewer-<extension>` tag.
-
-*Details:* [How to Develop Custom File Viewers](how-to/custom-file-viewers.md)
-
-### File exporters
-
-A file exporter is a function used for loading data from the platform. It is annotated with the `#fileExporter` tag.
-Exporters reside in the platform's top menu "export" section.
-
-*Details:* [How to Create File Exporters](how-to/file-exporters.md)
-
-### Settings editors
-
-Settings editors work with [package properties](#package-settings) and define how they will be displayed in
-the `Settings` pane of the property panel. An editor function should return a widget (`DG.Widget`) and be tagged as
-`#packageSettingsEditor`.
-
 ## Documentation
 
 According to [this study](http://sigdoc.acm.org/wp-content/uploads/2019/01/CDQ18002_Meng_Steinhardt_Schubert.pdf), in
@@ -738,14 +585,12 @@ productive.
   community wiki, where users will be contributing to the content. The same web pages are used as an interactive help
   within the platform (you see help on the currently selected object).
 
-Additionally, there are a few ways to connect with fellow developers:
-
-* [Datagrok community](https://community.datagrok.ai/)
-* [Slack space](https://datagrok.slack.com)
+Also, you can connect with fellow developers on either 
+[community forum](https://community.datagrok.ai/) or [slack](https://datagrok.slack.com).
 
 See also:
 
 * [Grok API](js-api.md)
-* [Scripting](scripting.md)
+* [Scripting](../compute/scripting.md)
 * [Packages from our GitHub repository](https://github.com/datagrok-ai/public/tree/master/packages)
 * [How Developers Use API Documentation: An Observation Study](http://sigdoc.acm.org/wp-content/uploads/2019/01/CDQ18002_Meng_Steinhardt_Schubert.pdf)
