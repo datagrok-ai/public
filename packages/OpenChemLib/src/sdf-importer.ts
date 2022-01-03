@@ -26,6 +26,7 @@ export function _importSdf(bytes: Uint8Array): DG.DataFrame[] {
   for (let field of ['molecule'].concat(fieldNames))
     df.columns.add(DG.Column.fromStrings(field, data[field]));
   df.col('molecule')!.semType = DG.SEMTYPE.MOLECULE;
+  df.col('molecule')!.tags[DG.TAGS.UNITS] = DG.UNITS.Molecule.MOLBLOCK;
 
   return [df];
 }
