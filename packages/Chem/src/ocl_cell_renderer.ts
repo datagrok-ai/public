@@ -8,7 +8,7 @@ import * as DG from 'datagrok-api/dg';
 import * as OCL from 'openchemlib/full.js';
 
 export class OCLCellRenderer extends DG.GridCellRenderer {
-  molCahe: DG.LruCache;
+  molCaсhe: DG.LruCache = new DG.LruCache();
   static _canvas: HTMLCanvasElement = ui.canvas();
   get name() { return 'OCL cell renderer'; }
   get cellType() { return DG.SEMTYPE.MOLECULE; }
@@ -17,7 +17,6 @@ export class OCLCellRenderer extends DG.GridCellRenderer {
 
   constructor() {
     super();
-    this.molCahe = new DG.LruCache();
   }
 
   static _createMol(molString: string) {
@@ -40,10 +39,10 @@ export class OCLCellRenderer extends DG.GridCellRenderer {
     const molString: string = gridCell.cell.value;
     let mol: OCL.Molecule;
     try {
-      if (molString === null) {
+      if (molString === null)
         return;
-      }
-      mol = this.molCahe.getOrCreate(molString, () => OCLCellRenderer._createMol(molString));
+
+      mol = this.molCaсhe.getOrCreate(molString, () => OCLCellRenderer._createMol(molString));
       OCLCellRenderer._canvas.width = w;
       OCLCellRenderer._canvas.height = h;
       OCL.StructureView.drawMolecule(OCLCellRenderer._canvas, mol);
