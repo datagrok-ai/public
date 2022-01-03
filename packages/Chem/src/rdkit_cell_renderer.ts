@@ -15,22 +15,21 @@ M  END
 `;
   rdKitModule: any;
   canvasCounter: number;
-  molCache: DG.LruCache | null;
-  rendersCache: DG.LruCache | null;
+  molCache: DG.LruCache = new DG.LruCache();
+  rendersCache: DG.LruCache = new DG.LruCache();
 
   constructor(rdKitModule: any) {
-
     super();
     this.rdKitModule = rdKitModule;
     this.canvasCounter = 0;
-    this.molCache = new DG.LruCache();
+
     this.molCache.onItemEvicted = function (obj: {[_ : string]: any} | null) {
       obj!.mol?.delete();
       obj!.mol = null;
       obj!.substruct = null;
       obj = null; // ? GC definitely delete
     };
-    this.rendersCache = new DG.LruCache();
+
     this.rendersCache.onItemEvicted = function (obj: {[_ : string]: any} | null) {
       obj!.canvas = null;
       obj = null; // ? GC definitely delete
@@ -43,13 +42,10 @@ M  END
   get defaultHeight() { return 100; }
 
   _isMolBlock(molString: string) {
-
     return molString.includes('M  END');
-
   }
 
   _fetchMolGetOrCreate(molString: string, scaffoldMolString: string, molRegenerateCoords: boolean) {
-
     let mol = null;
     let substructJson = "{}";
 
@@ -105,13 +101,13 @@ M  END
     molRegenerateCoords: boolean, scaffoldRegenerateCoords: boolean) {
     const name = molString + " || " + scaffoldMolString + " || "
       + molRegenerateCoords + " || " + scaffoldRegenerateCoords;
-    return this.molCache!.getOrCreate(name, (_: any) =>
+    return this.molCache.getOrCreate(name, (_: any) =>
       this._fetchMolGetOrCreate(molString, scaffoldMolString, molRegenerateCoords));
   }
   
   _rendererGetOrCreate(
-    width: number, height: number, molString: string, scaffoldMolString: string,
-    highlightScaffold: boolean, molRegenerateCoords: boolean, scaffoldRegenerateCoords: boolean) {
+        width: number, height: number, molString: string, scaffoldMolString: string,
+        highlightScaffold: boolean, molRegenerateCoords: boolean, scaffoldRegenerateCoords: boolean) {
 
     let fetchMolObj = this._fetchMol(molString, scaffoldMolString, molRegenerateCoords, scaffoldRegenerateCoords);
     let rdkitMol = fetchMolObj.mol;
@@ -122,7 +118,8 @@ M  END
     this.canvasCounter++;
     if (rdkitMol != null) {
       this._drawMoleculeToCanvas(rdkitMol, width, height, canvas, substruct, highlightScaffold);
-    } else {
+    }
+    else {
       let ctx = canvas.getContext("2d");
       ctx!.lineWidth = 1;
       ctx!.strokeStyle = '#EFEFEF';
@@ -136,25 +133,23 @@ M  END
       ctx!.stroke();
     }
     return {canvas: canvas};
-
   }
 
   _fetchRender(
-    width: number, height: number, molString: string, scaffoldMolString: string,
-    highlightScaffold: boolean, molRegenerateCoords: boolean, scaffoldRegenerateCoords: boolean) {
+        width: number, height: number, molString: string, scaffoldMolString: string,
+        highlightScaffold: boolean, molRegenerateCoords: boolean, scaffoldRegenerateCoords: boolean) {
 
     const name = width + " || " + height + " || "
       + molString + " || " + scaffoldMolString  + " || " + highlightScaffold + " || "
       + molRegenerateCoords + " || " + scaffoldRegenerateCoords;
-    return this.rendersCache!.getOrCreate(name, (_: any) =>
+    return this.rendersCache.getOrCreate(name, (_: any) =>
       this._rendererGetOrCreate(width, height,
         molString, scaffoldMolString, highlightScaffold, molRegenerateCoords, scaffoldRegenerateCoords));
-
   }
 
   _drawMoleculeToCanvas(
-    rdkitMol: any, w: number, h: number, canvas: OffscreenCanvas,
-    substruct: Object, highlightScaffold: boolean) {
+        rdkitMol: any, w: number, h: number, canvas: OffscreenCanvas,
+        substruct: Object, highlightScaffold: boolean) {
     let opts = {
       "clearBackground": false,
       "offsetx": 0, "offsety": 0,
@@ -180,8 +175,6 @@ M  END
   _drawMolecule(x: number, y: number, w: number, h: number, onscreenCanvas: HTMLCanvasElement,
                 molString: string, scaffoldMolString: string, highlightScaffold: boolean,
                 molRegenerateCoords: boolean, scaffoldRegenerateCoords: boolean) {
-
-
     const r = window.devicePixelRatio;
     x = r * x; y = r * y;
     w = r * w; h = r * h;
@@ -194,7 +187,6 @@ M  END
   }
 
   _initScaffoldString(colTemp: any, tagName: string) {
-
     let scaffoldString = colTemp ? colTemp[tagName] : null;
     if (scaffoldString?.endsWith(this.WHITE_MOLBLOCK_SUFFIX)) {
       scaffoldString = null;
@@ -203,7 +195,6 @@ M  END
       }
     }
     return scaffoldString;
-
   }
 
   render(g: any, x: number, y: number, w: number, h: number, gridCell: DG.GridCell, cellStyle: any) {
@@ -226,13 +217,10 @@ M  END
     // TODO: make both filtering scaffold and single highlight scaffold appear
     
     if (singleScaffoldMolString) {
-
-
       this._drawMolecule(x, y, w, h, g.canvas,
         molString, singleScaffoldMolString, true, false, false);
-
-    } else {
-
+    }
+    else {
       let molRegenerateCoords = colTemp && colTemp['regenerate-coords'] === 'true';
       let scaffoldRegenerateCoords = false;
       let df = gridCell.cell.dataFrame;
