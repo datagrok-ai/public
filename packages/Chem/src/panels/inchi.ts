@@ -1,23 +1,24 @@
 import * as ui from 'datagrok-api/ui';
 import * as grok from 'datagrok-api/grok';
 import * as DG from 'datagrok-api/dg';
-import { getRdKitModule } from '../chem_common_rdkit';
+import {getRdKitModule} from '../chem_common_rdkit';
 
 /**
  * Adds InchI identifiers to dataframe.
  * @export
  * @param {DG.Column} col column with smiles.
  */
-export function addInchis(col: DG.Column): void{
-  let pi = DG.TaskBarProgressIndicator.create('Getting Inchi');
+export function addInchis(col: DG.Column): void {
+  const pi = DG.TaskBarProgressIndicator.create('Getting Inchi');
   const rdKitModule = getRdKitModule();
-  let inchis = new Array(col.length);
-  for(let i = 0; i < inchis.length; i++)
+  const inchis = new Array(col.length);
+  for (let i = 0; i < inchis.length; i++) {
     inchis[i] = rdKitModule.get_mol(col.get(i)).get_inchi();
-  
-  let name = getName("inchi", col.dataFrame.columns.names());
+  }
 
-  col.dataFrame.columns.add(DG.Column.fromList("string", name, inchis));
+  const name = getName('inchi', col.dataFrame.columns.names());
+
+  col.dataFrame.columns.add(DG.Column.fromList('string', name, inchis));
   pi.close();
 }
 
@@ -26,26 +27,27 @@ export function addInchis(col: DG.Column): void{
  * @export
  * @param {DG.Column} col column with smiles.
  */
- export function addInchiKeys(col: DG.Column): void{
-  let pi = DG.TaskBarProgressIndicator.create('Getting Inchi Keys');
+export function addInchiKeys(col: DG.Column): void {
+  const pi = DG.TaskBarProgressIndicator.create('Getting Inchi Keys');
   const rdKitModule = getRdKitModule();
-  let inchiKeys = new Array(col.length);
-  for(let i = 0; i < inchiKeys.length; i++)
+  const inchiKeys = new Array(col.length);
+  for (let i = 0; i < inchiKeys.length; i++) {
     inchiKeys[i] = rdKitModule.get_inchikey_for_inchi(rdKitModule.get_mol(col.get(i)).get_inchi());
-  
-  let name = getName("inchi_key", col.dataFrame.columns.names());
+  }
 
-  col.dataFrame.columns.add(DG.Column.fromList("string", name, inchiKeys));
+  const name = getName('inchi_key', col.dataFrame.columns.names());
+
+  col.dataFrame.columns.add(DG.Column.fromList('string', name, inchiKeys));
   pi.close();
 }
 
-function getName(initialName: string, existingNames: string[]){
-  if(!existingNames.includes(initialName)){
+function getName(initialName: string, existingNames: string[]) {
+  if (!existingNames.includes(initialName)) {
     return initialName;
-  } else{
+  } else {
     let counter: number = 1;
     let newName: string = (' ' + initialName + '_' + counter).slice(1);
-    while(existingNames.includes(newName)){
+    while (existingNames.includes(newName)) {
       counter++;
       newName = (' ' + initialName + '_' + counter).slice(1);
     }

@@ -2,11 +2,11 @@
 import * as ui from 'datagrok-api/ui';
 import * as DG from 'datagrok-api/dg';
 // The file is imported from a WebWorker. Don't use Datagrok imports
-import { getRdKitModule, drawMoleculeToCanvas } from '../chem_common_rdkit';
+import {getRdKitModule, drawMoleculeToCanvas} from '../chem_common_rdkit';
 
 let _alertsSmarts: string[] = [];
 let _alertsDescriptions: string[] = [];
-let _smartsMap: Map<string, any> = new Map();
+const _smartsMap: Map<string, any> = new Map();
 let _data: string[] | null = null;
 
 

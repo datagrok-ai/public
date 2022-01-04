@@ -1,44 +1,63 @@
 import * as grok from 'datagrok-api/grok';
 import * as ui from 'datagrok-api/ui';
 import * as DG from 'datagrok-api/dg';
-import { mcsgetter } from '../scripts-api';
-import { getRGroups } from '../chem_rgroup_analysis';
+import {mcsgetter, rgroupGetter} from '../scripts-api';
+// import {getRGroups} from '../chem_rgroup_analysis';
 
+export function convertToRDKit(smiles: string | null): string | null {
+  if (smiles !== null) {
+    const regexConv: RegExp = /(\[)(R)(\d+)(\])/g;
+    const match = regexConv.exec(smiles);
+    if (match !== null) {
+      smiles = smiles.replace(regexConv, `${match[1]}*:${match[3]}${match[4]}`);
+    }
+  }
+  return smiles;
+}
+
+/**
+ * R-Group Analysis
+ *
+ * @export
+ * @param {DG.Column} col Column contaning SMILES
+ */
 export function rGroupAnalysis(col: DG.Column) {
-  let sketcher = new grok.chem.Sketcher();
-  let columnPrefixInput = ui.stringInput('Column prefix', 'R');
-  let visualAnalysisCheck = ui.boolInput('Visual analysis', true);
+  const sketcher = new grok.chem.Sketcher();
+  const columnPrefixInput = ui.stringInput('Column prefix', 'R');
+  const visualAnalysisCheck = ui.boolInput('Visual analysis', true);
 
-  let mcsButton = ui.button('MCS', async () => {
-    let smiles: string = await mcsgetter(col.name, col.dataFrame);
+  const mcsButton = ui.button('MCS', async () => {
+    const smiles: string = await mcsgetter(col.name, col.dataFrame);
     sketcher.setSmiles(smiles);
   });
-  ui.tooltip.bind(mcsButton, "Most Common Substructure");
-  let mcsButtonHost = ui.div([mcsButton]);
+  ui.tooltip.bind(mcsButton, 'Most Common Substructure');
+  const mcsButtonHost = ui.div([mcsButton]);
   mcsButtonHost.style.display = 'flex';
   mcsButtonHost.style.justifyContent = 'center';
 
-  let dlg = ui.dialog({
+  const dlg = ui.dialog({
     title: 'R-Groups Analysis',
-    helpUrl: '/help/domains/chem/cheminformatics.md#r-group-analysis'
-    })
+    helpUrl: '/help/domains/chem/cheminformatics.md#r-group-analysis',
+  })
     .add(ui.div([
       sketcher,
       mcsButtonHost,
       columnPrefixInput,
-      visualAnalysisCheck
+      visualAnalysisCheck,
     ]))
     .onOK(async () => {
       const core = sketcher.getSmiles();
       if (core !== null) {
-        let res = await getRGroups(col, core, columnPrefixInput.value);
-        for (let resCol of res.columns) {
+        // const res = await getRGroups(col, core, columnPrefixInput.value);
+        const res = await rgroupGetter(col.name, col.dataFrame, core, columnPrefixInput.value);
+        for (const resCol of res.columns) {
           resCol.semType = DG.SEMTYPE.MOLECULE;
           col.dataFrame.columns.add(resCol);
         }
-        if (res.columns.length == 0)
-          grok.shell.error("None R-Groups were found");
-        let view = grok.shell.getTableView(col.dataFrame.name);
+        if (res.columns.length == 0) {
+          grok.shell.error('None R-Groups were found');
+        }
+        const view = grok.shell.getTableView(col.dataFrame.name);
         if (visualAnalysisCheck.value && view) {
           view.trellisPlot({
             xColumnNames: [res.columns[0].name],

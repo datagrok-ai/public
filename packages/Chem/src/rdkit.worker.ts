@@ -9,15 +9,15 @@ const ctx: Worker = self as any;
 let _rdKitModule: any | null = null;
 let _rdkitServiceWorker: ServiceWorkerClass | null = null;
 
-ctx.addEventListener("message", async (e: any) => {
+ctx.addEventListener('message', async (e: any) => {
   const {op, args} = e.data;
-  let port = e.ports[0];
+  const port = e.ports[0];
   if (op === 'module::init') {
     const webRoot = args[0];
     _rdKitModule = await initRDKitModule({
       locateFile: () => `${webRoot}/dist/${rdkitLibVersion}.wasm`,
     });
-    console.log("RDKit (worker) initialized");
+    console.log('RDKit (worker) initialized');
     _rdkitServiceWorker = new ServiceWorkerClass(_rdKitModule, webRoot);
     port.postMessage({op: op, retval: null});
   } else if (op === WORKER_CALL.INIT_MOLECULES_STRUCTURES) {

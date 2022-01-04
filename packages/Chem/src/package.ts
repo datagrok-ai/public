@@ -14,7 +14,6 @@ import {initStructuralAlertsContext, structuralAlertsWidget} from './widgets/str
 import {structure2dWidget} from './widgets/structure2d';
 import {structure3dWidget} from './widgets/structure3d';
 import {toxicityWidget} from './widgets/toxicity';
-import {OCLCellRenderer} from './ocl_cell_renderer';
 import {chemSpace} from './analysis/chem_space';
 import {getActivityCliffs} from './analysis/activity-cliffs';
 import {getDescriptorsSingle} from './descriptors/descriptors_calculation';
@@ -27,9 +26,7 @@ import * as chemCommonRdKit from './chem_common_rdkit';
 import {rGroupAnalysis} from './analysis/r_group';
 import {chemLock, chemUnlock} from './chem_common';
 import {MoleculeViewer} from './chem_similarity_search';
-import { identifiersWidget } from './widgets/identifiers';
-import { updateGetAccessor } from 'typescript';
-import {convertToRDKit} from "./chem_rgroup_analysis";
+import {identifiersWidget} from './widgets/identifiers';
 
 const getRdKitModuleLocal = chemCommonRdKit.getRdKitModule;
 const initRdKitService = chemCommonRdKit.initRdKitService;
@@ -51,7 +48,7 @@ export function getRdKitModule() {
   return getRdKitModuleLocal();
 }
 
-export let _package: any = new DG.Package();
+export const _package: any = new DG.Package();
 
 //name: initChem
 export async function initChem() {
@@ -67,8 +64,9 @@ export async function initChem() {
 
 //tags: init
 export async function init() {
-  if (!initialized)
+  if (!initialized) {
     await initChem();
+  }
   initialized = true;
 }
 
@@ -88,7 +86,7 @@ export function substructureFilter() {
 }
 
 export function _svgDiv(mol: any) {
-  let root = ui.div();
+  const root = ui.div();
   root.innerHTML = mol.get_svg();
   return root;
 }
@@ -111,7 +109,7 @@ export function canvasMol(
 //input: string smiles {semType: Molecule}
 //output: double cLogP
 export function getCLogP(smiles: string) {
-  let mol = getRdKitModuleLocal().get_mol(smiles);
+  const mol = getRdKitModuleLocal().get_mol(smiles);
   return JSON.parse(mol.get_descriptors()).CrippenClogP;
 }
 
@@ -126,14 +124,6 @@ export async function rdkitCellRenderer() {
   //}
 }
 
-//name: oclCellRenderer
-//tags: cellRenderer, cellRenderer-Molecule
-//meta-cell-renderer-sem-type: Molecule
-//output: grid_cell_renderer result
-export async function oclCellRenderer() {
-  return new OCLCellRenderer();
-}
-
 //name: getSimilarities
 //input: column molStringsColumn
 //input: string molString
@@ -141,14 +131,14 @@ export async function oclCellRenderer() {
 export async function getSimilarities(molStringsColumn: DG.Column, molString: string) {
   chemLock('getSimilarities');
   try {
-    if (molStringsColumn === null || molString === null) throw "An input was null";
+    if (molStringsColumn === null || molString === null) throw 'An input was null';
     // TODO: Make in the future so that the return type is always one
     const result = (await chemSearches.chemGetSimilarities(molStringsColumn, molString)) as unknown; // TODO: !
     // TODO: get rid of a wrapping DataFrame and be able to return Columns
     chemUnlock('getSimilarities');
     return result ? DG.DataFrame.fromColumns([result as DG.Column]) : DG.DataFrame.create();
   } catch (e: any) {
-    console.error("In getSimilarities: " + e.toString());
+    console.error('In getSimilarities: ' + e.toString());
     throw e;
   }
   chemUnlock('getSimilarities');
@@ -188,12 +178,12 @@ export function getMorganFingerprint(molString: string) {
 export async function findSimilar(molStringsColumn: DG.Column, molString: string, aLimit: number, aCutoff: number) {
   chemLock('chemFindSimilar');
   try {
-    if (molStringsColumn === null || molString === null || aLimit === null || aCutoff === null) throw "An input was null";
-    let result = await chemSearches.chemFindSimilar(molStringsColumn, molString, {limit: aLimit, cutoff: aCutoff});
+    if (molStringsColumn === null || molString === null || aLimit === null || aCutoff === null) throw 'An input was null';
+    const result = await chemSearches.chemFindSimilar(molStringsColumn, molString, {limit: aLimit, cutoff: aCutoff});
     chemUnlock('chemFindSimilar');
     return result ? result : DG.DataFrame.create();
   } catch (e: any) {
-    console.error("In getSimilarities: " + e.toString());
+    console.error('In getSimilarities: ' + e.toString());
     throw e;
   }
   chemUnlock('chemFindSimilar');
@@ -208,16 +198,17 @@ export async function findSimilar(molStringsColumn: DG.Column, molString: string
 export async function searchSubstructure(molStringsColumn: DG.Column, molString: string, substructLibrary: boolean, molStringSmarts: string) {
   chemLock('searchSubstructure');
   try {
-    if (molStringsColumn === null || molString === null || substructLibrary === null || molStringSmarts === null)
-      throw "An input was null";
-    let result =
+    if (molStringsColumn === null || molString === null || substructLibrary === null || molStringSmarts === null) {
+      throw 'An input was null';
+    }
+    const result =
       substructLibrary ?
         await chemSearches.chemSubstructureSearchLibrary(molStringsColumn, molString, molStringSmarts/*, webRoot*/) :
         chemSearches.chemSubstructureSearchGraph(molStringsColumn, molString);
     chemUnlock('searchSubstructure');
     return DG.Column.fromList('object', 'bitset', [result]);
   } catch (e: any) {
-    console.error("In substructureSearch: " + e.toString());
+    console.error('In substructureSearch: ' + e.toString());
     throw e;
   }
   chemUnlock('searchSubstructure');
@@ -231,8 +222,9 @@ export function descriptorsApp(context: any) {
 
 //description: Removes all children from node
 function removeChildren(node: any) {
-  while (node.firstChild)
+  while (node.firstChild) {
     node.removeChild(node.firstChild);
+  }
 }
 
 //name: saveAsSdf
@@ -244,31 +236,33 @@ export function saveAsSdf() {
   //todo: UI for choosing structure column if necessary
   //todo: UI for choosing columns with properties
 
-  let table = grok.shell.t;
-  let structureColumn = table.columns.bySemType('Molecule');
-  if (structureColumn == null)
+  const table = grok.shell.t;
+  const structureColumn = table.columns.bySemType('Molecule');
+  if (structureColumn == null) {
     return;
+  }
 
   let result = '';
 
   for (let i = 0; i < table.rowCount; i++) {
     try {
-      let mol = OCL.Molecule.fromSmiles(structureColumn.get(i));
+      const mol = OCL.Molecule.fromSmiles(structureColumn.get(i));
       result += `\n${mol.toMolfile()}\n`;
 
       // properties
-      for (let col of table.columns)
+      for (const col of table.columns) {
         if (col !== structureColumn) {
           result += `>  <${col.name}>\n${col.get(i)}\n\n`;
         }
+      }
 
-      result += '$$$$'
+      result += '$$$$';
     } catch (error) {
       console.error(error);
     }
   }
 
-  var element = document.createElement('a');
+  const element = document.createElement('a');
   element.setAttribute('href', 'data:text/plain;charset=utf-8,' + encodeURIComponent(result));
   element.setAttribute('download', table.name + '.sdf');
   element.click();
@@ -305,7 +299,7 @@ export async function chemSpaceTopMenu(table: DG.DataFrame, smiles: DG.Column) {
 export function rGroupsAnalysisMenu() {
   const col = grok.shell.t.columns.bySemType(DG.SEMTYPE.MOLECULE);
   if (col === null) {
-    grok.shell.error('Current table does not contain molecules')
+    grok.shell.error('Current table does not contain molecules');
     return;
   }
   rGroupAnalysis(col);
@@ -327,7 +321,7 @@ export async function chemSimilaritySearch() {
 //tags: panel, chem
 //input: column smiles { semType: Molecule }
 export async function substructurePanel(smiles: DG.Column) {
-  grok.shell.warning("ss");
+  grok.shell.warning('ss');
 }
 
 //name: Chem | Descriptors Port...
@@ -336,7 +330,7 @@ export async function substructurePanel(smiles: DG.Column) {
 //input: column smiles { semType: Molecule }
 //output: string result
 export async function descriptorsPanel(smiles: DG.Column) {
-  let table: DG.DataFrame = grok.shell.t;
+  const table: DG.DataFrame = grok.shell.t;
   addDescriptors(smiles, table);
 }
 
@@ -468,17 +462,20 @@ export function convertMolecule(molecule: string, from: string, to: string): str
   let mol;
   try {
     mol = getRdKitModule().get_mol(molecule);
-    if (to === 'molblock')
+    if (to === 'molblock') {
       return mol.get_molblock();
-    if (to === 'smiles')
+    }
+    if (to === 'smiles') {
       return mol.get_smiles();
-    if (to === 'v3Kmolblock')
+    }
+    if (to === 'v3Kmolblock') {
       return mol.get_v3Kmolblock();
-    if (to == 'inchi')
+    }
+    if (to == 'inchi') {
       return mol.get_inchi();
+    }
     throw `Failed to convert molecule: unknown target unit: "${to}"`;
-  }
-  finally {
+  } finally {
     mol.delete();
   }
 }

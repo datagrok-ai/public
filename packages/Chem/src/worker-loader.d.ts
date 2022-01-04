@@ -1,4 +1,4 @@
-declare module "*.worker.ts" {
+declare module '*.worker.ts' {
   class WebpackWorker extends Worker {
     constructor();
   }
