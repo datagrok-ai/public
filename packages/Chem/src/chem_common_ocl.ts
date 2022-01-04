@@ -6,16 +6,20 @@ import * as OCL from 'openchemlib/full.js';
 import {chemLock, chemUnlock} from './chem_common';
 
 export function renderDescription(description: OCL.IParameterizedString[]) {
-  const host = ui.divV([]);
+  const host = ui.div([], 'd4-flex-wrap');
   const width = 200;
   const height = 150;
+  let lastMolCanvas = null;
   for (const entry of description) {
     if (entry.type == 2 || entry.type == 3) {
-      host.append(ui.label(entry.value));
+      host.append(ui.div(
+        [ui.label(entry.value), lastMolCanvas],
+        lastMolCanvas === null ? {} : {classes: 'd4-flex-col', style: {margin: '5px'}},
+      ));
     }
     if (entry.type == 1) {
       const mol = OCL.Molecule.fromIDCode(entry.value);
-      host.append(_molToCanvas(mol, width, height));
+      lastMolCanvas = _molToCanvas(mol, width, height);
     }
   }
   return host;
