@@ -2,9 +2,10 @@ import * as ui from 'datagrok-api/ui';
 import * as DG from 'datagrok-api/dg';
 import * as OCL from 'openchemlib/full.js';
 import { renderDescription } from '../chem_common_ocl';
+import {oclMol} from "./drug-likeness";
 
 export function toxicityWidget(smiles: string) {
-  const mol = OCL.Molecule.fromSmiles(smiles);
+  const mol = oclMol(smiles);
   const riskTypes: {[index: number]: string} = {
     0: 'Mutagenicity',
     1: 'Tumorigenicity',

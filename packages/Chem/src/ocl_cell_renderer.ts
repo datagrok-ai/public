@@ -6,9 +6,10 @@ import * as grok from 'datagrok-api/grok';
 import * as ui from 'datagrok-api/ui';
 import * as DG from 'datagrok-api/dg';
 import * as OCL from 'openchemlib/full.js';
+import {oclMol} from "./widgets/drug-likeness";
 
 export class OCLCellRenderer extends DG.GridCellRenderer {
-  molCaсhe: DG.LruCache = new DG.LruCache();
+  molCache: DG.LruCache = new DG.LruCache();
   static _canvas: HTMLCanvasElement = ui.canvas();
   get name() { return 'OCL cell renderer'; }
   get cellType() { return DG.SEMTYPE.MOLECULE; }
@@ -17,10 +18,6 @@ export class OCLCellRenderer extends DG.GridCellRenderer {
 
   constructor() {
     super();
-  }
-
-  static _createMol(molString: string) {
-    return molString.endsWith('M  END', 10) ? OCL.Molecule.fromMolfile(molString) : OCL.Molecule.fromSmiles(molString);
   }
 
   //TODO: sdf
@@ -42,7 +39,7 @@ export class OCLCellRenderer extends DG.GridCellRenderer {
       if (molString === null)
         return;
 
-      mol = this.molCaсhe.getOrCreate(molString, () => OCLCellRenderer._createMol(molString));
+      mol = this.molCache.getOrCreate(molString, () => oclMol(molString));
       OCLCellRenderer._canvas.width = w;
       OCLCellRenderer._canvas.height = h;
       OCL.StructureView.drawMolecule(OCLCellRenderer._canvas, mol);
