@@ -1,6 +1,6 @@
 import * as DG from 'datagrok-api/dg';
 
-import {describe} from '../describe';
+import {describe} from './describe';
 import {Subject} from 'rxjs';
 
 /**

@@ -2,6 +2,7 @@ import * as ui from 'datagrok-api/ui';
 import * as DG from 'datagrok-api/dg';
 import {createPeptideSimilaritySpaceViewer} from './utils/peptide-similarity-space';
 import {addViewerToHeader} from './viewers/stacked-barchart-viewer';
+import {model} from './model';
 // import $ from 'cash-dom';
 
 /**
@@ -11,6 +12,12 @@ import {addViewerToHeader} from './viewers/stacked-barchart-viewer';
  * @class Peptides
  */
 export class Peptides {
+  private static _model = model;
+
+  static async recalculate() {
+    await Peptides._model.updateDefault();
+  }
+
   /**
    * Class initializer
    *
