@@ -29,12 +29,14 @@ import {chemLock, chemUnlock} from './chem_common';
 import {MoleculeViewer} from './chem_similarity_search';
 import { identifiersWidget } from './widgets/identifiers';
 import { updateGetAccessor } from 'typescript';
+import {convertToRDKit} from "./chem_rgroup_analysis";
 
 const getRdKitModuleLocal = chemCommonRdKit.getRdKitModule;
 const initRdKitService = chemCommonRdKit.initRdKitService;
 const getRdKitService = chemCommonRdKit.getRdKitService;
 const getRdKitWebRoot = chemCommonRdKit.getRdKitWebRoot;
 const drawMoleculeToCanvas = chemCommonRdKit.drawMoleculeToCanvas;
+let initialized: boolean = false;
 
 /**
 * Usage:
@@ -65,7 +67,9 @@ export async function initChem() {
 
 //tags: init
 export async function init() {
-  await initChem();
+  if (!initialized)
+    await initChem();
+  initialized = true;
 }
 
 //name: initChemAutostart
@@ -452,6 +456,31 @@ export function toxicity(smiles: string) {
 //output: widget result
 export async function identifiers(smiles: string) {
   return smiles ? await identifiersWidget(smiles) : new DG.Widget(ui.divText('SMILES is empty'));
+}
+
+//name: convertMolecule
+//tags: unitConverter
+//input: string molecule {semType: Molecule}
+//input: string from {choices:["smiles", "molblock", "inchi", "v3Kmolblock"]}
+//input: string to {choices:["smiles", "molblock", "inchi", "v3Kmolblock"]}
+//output: string result {semType: Molecule}
+export function convertMolecule(molecule: string, from: string, to: string): string {
+  let mol;
+  try {
+    mol = getRdKitModule().get_mol(molecule);
+    if (to === 'molblock')
+      return mol.get_molblock();
+    if (to === 'smiles')
+      return mol.get_smiles();
+    if (to === 'v3Kmolblock')
+      return mol.get_v3Kmolblock();
+    if (to == 'inchi')
+      return mol.get_inchi();
+    throw `Failed to convert molecule: unknown target unit: "${to}"`;
+  }
+  finally {
+    mol.delete();
+  }
 }
 
 //#endregion
