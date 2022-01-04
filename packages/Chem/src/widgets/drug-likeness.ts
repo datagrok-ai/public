@@ -10,7 +10,7 @@ export function oclMol(mol: string): OCL.Molecule {
     return OCL.Molecule.fromSmiles(mol);
 }
 
-export function drugLikenessWidget(molString: string) {
+export function drugLikenessWidget(molString: string): DG.Widget {
   const mol = oclMol(molString);
   const dlp = new OCL.DruglikenessPredictor();
   return new DG.Widget(ui.divV([
