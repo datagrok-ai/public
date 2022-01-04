@@ -14,7 +14,6 @@ export function oclMol(mol: string): OCL.Molecule {
 const _dlp = new OCL.DruglikenessPredictor();
 
 export function drugLikenessWidget(molString: string): DG.Widget {
-  console.log('predict!');
   const mol = oclMol(molString);
   return new DG.Widget(ui.divV([
     ui.label(`Score: ${_dlp.assessDruglikeness(mol)}`),
