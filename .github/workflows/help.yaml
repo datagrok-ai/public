@@ -1,0 +1,24 @@
+name: Help deployment
+
+on:
+  workflow_dispatch: {}
+  push:
+    paths:
+      - 'help/**'
+jobs:
+  convert_md_to_html:
+    runs-on: ubuntu-20.04
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v2
+      - name: Create file list
+        id: files_list
+        run: |
+          mkdir output
+          echo "::set-output name=files::$(printf '"%s" ' help/**/*.md)"
+      - uses: docker://pandoc/core:latest
+        run: |
+          mkdir output
+          echo "::set-output name=files::$(printf '"%s" ' help/**/*.md)"
+        with:
+          entrypoint: for file in ${{ steps.files_list.outputs.files }}; do pandoc --output=output/${file%.*} ${file}; done

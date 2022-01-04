@@ -1,19 +1,19 @@
 # Data access
 
 Understanding the data starts with retrieving that data in some way. This is where Datagrok helps
-you. In short, Datagrok provides access to anything that is machine-readable. That includes all
-sort of major databases, relational databases, non-relational and NoSQL databases, flat files
-from a local computer, network file shares and cloud storages such as Dropbox.
+you. In short, Datagrok provides access to anything that is machine-readable. That includes all sort
+of major databases, relational databases, non-relational and NoSQL databases, flat files from a
+local computer, network file shares and cloud storages such as Dropbox.
 
 Additionally, Datagrok can easily connect to web services. That could be done in multiple flavors.
-If a web services with an [OpenAPI][] support is provided, Datagrok can connect to it
-automatically. For anything else, writing some custom JavaScript is required to connect using
-REST API and other transports.
+If a web services with an [OpenAPI][] support is provided, Datagrok can connect to it automatically.
+For anything else, writing some custom JavaScript is required to connect using REST API and other
+transports.
 
 Datagrok works natively with lots of existing popular data formats, such as CSV, TXT, JSON, and
 others. It can also work with tons of scientific formats. The platform has a system that can
-natively extend it to understand the very custom formats. This is very handy especially in the
-areas of life sciences, such as bioinformatics.
+natively extend it to understand the very custom formats. This is very handy especially in the areas
+of life sciences, such as bioinformatics.
 
 For relational databases, Datagrok allows to connect to them visually, interrogate their schema,
 browse the content of the database, and visually build queries (SQL or SparQL). Datagrok can also
