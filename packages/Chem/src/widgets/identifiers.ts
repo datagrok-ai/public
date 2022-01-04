@@ -1,8 +1,8 @@
 import * as grok from 'datagrok-api/grok';
 import * as ui from 'datagrok-api/ui';
 import * as DG from 'datagrok-api/dg';
-import { getRdKitModule } from '../chem_common_rdkit';
-import { _package } from '../package';
+import {getRdKitModule} from '../chem_common_rdkit';
+import {_package} from '../package';
 
 class UniChemSource {
   id: number;
@@ -52,13 +52,13 @@ class UniChemSource {
     38: 'rhea',
     39: 'chemicalbook',
     41: 'swisslipids',
-    43: 'gsrs'
+    43: 'gsrs',
   };
 
   constructor(
-      id: number, name: string, fullName:string, labelName: string,
-      baseUrl: string, homePage: string, description: string
-    ) {
+    id: number, name: string, fullName:string, labelName: string,
+    baseUrl: string, homePage: string, description: string,
+  ) {
     this.id = id;
     this.name = name;
     this.fullName = fullName;
@@ -113,7 +113,7 @@ export async function identifiersWidget(smiles: string) {
   await UniChemSource.refreshSources();
 
   for (const [source, id] of Object.entries(idMap)) {
-    idMap[source] = ui.link(id, () => window.open(UniChemSource.byName(source)!.baseUrl + id))
+    idMap[source] = ui.link(id, () => window.open(UniChemSource.byName(source)!.baseUrl + id));
   }
 
   return new DG.Widget(ui.tableFromMap(idMap));

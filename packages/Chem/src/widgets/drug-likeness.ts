@@ -4,10 +4,11 @@ import * as OCL from 'openchemlib/full.js';
 import {renderDescription} from '../chem_common_ocl';
 
 export function oclMol(mol: string): OCL.Molecule {
-  if (mol.includes('M  END'))
+  if (mol.includes('M  END')) {
     return OCL.Molecule.fromMolfile(mol);
-  else
+  } else {
     return OCL.Molecule.fromSmiles(mol);
+  }
 }
 
 export function drugLikenessWidget(molString: string): DG.Widget {

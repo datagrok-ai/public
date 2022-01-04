@@ -23,16 +23,16 @@ export class MoleculeViewer extends DG.JsViewer {
     this.sketchButton = ui.button('Sketch', () => {
       let mol = '';
       this.isEditedFromSketcher = true;
-      let sketcher = grok.chem.sketcher((_: any, molfile: string) => {
-          mol = molfile;
-          if (this.hotSearch) {
-            // this._search(mol).then();
-          }
+      const sketcher = grok.chem.sketcher((_: any, molfile: string) => {
+        mol = molfile;
+        if (this.hotSearch) {
+          // this._search(mol).then();
         }
+      },
       );
-      let dialog = ui.dialog()
-      .add(sketcher)
-      if(!this.hotSearch){
+      const dialog = ui.dialog()
+        .add(sketcher);
+      if (!this.hotSearch) {
         dialog.onOK(() => {
           // this._search(mol).then();
         });
@@ -55,9 +55,9 @@ export class MoleculeViewer extends DG.JsViewer {
 
     if (this.dataFrame) {
       this.subs.push(DG.debounce(this.dataFrame.onCurrentRowChanged, 50).subscribe(async (_) => await this.render()));
-      this.subs.push(DG.debounce(this.dataFrame.selection.onChanged, 50).subscribe(async (_) => await  this.render(false)));
-      this.subs.push(DG.debounce(this.dataFrame.filter.onChanged, 50).subscribe(async (_) => await  this.render()));
-      this.subs.push(DG.debounce(ui.onSizeChanged(this.root), 50).subscribe(async (_) => await  this.render(false)));
+      this.subs.push(DG.debounce(this.dataFrame.selection.onChanged, 50).subscribe(async (_) => await this.render(false)));
+      this.subs.push(DG.debounce(this.dataFrame.filter.onChanged, 50).subscribe(async (_) => await this.render()));
+      this.subs.push(DG.debounce(ui.onSizeChanged(this.root), 50).subscribe(async (_) => await this.render(false)));
     }
 
     await this.render();
@@ -65,7 +65,7 @@ export class MoleculeViewer extends DG.JsViewer {
 
   // Cancel subscriptions when the viewer is detached
   detach() {
-    this.subs.forEach(sub => sub.unsubscribe());
+    this.subs.forEach((sub) => sub.unsubscribe());
   }
 
   onPropertyChanged(property: Property): void {
@@ -73,21 +73,22 @@ export class MoleculeViewer extends DG.JsViewer {
     if (this.initialized) {
       if (property.name === 'moleculeColumnName' &&
           this.dataFrame?.getCol(this.moleculeColumnName).type !== property.propertyType) {
-            grok.shell.error('Wrong property type');
-            return;
+        grok.shell.error('Wrong property type');
+        return;
       }
       this.render();
     }
     this.render();
   }
-  
+
   async render(computeData = true): Promise<void> {
     if (!this.initialized) {
       return;
     }
     if (this.dataFrame && computeData) {
-      if (this.root.hasChildNodes())
+      if (this.root.hasChildNodes()) {
         this.root.removeChild(this.root.childNodes[0]);
+      }
 
       const curIdx = this.dataFrame.currentRowIdx;
       const df = await chemSimilaritySearch(this.dataFrame, this.dataFrame?.getCol(this.moleculeColumnName),
@@ -96,15 +97,15 @@ export class MoleculeViewer extends DG.JsViewer {
       const molCol = df.getCol('smiles');
       const idxs = df.getCol('indexes');
       const scores = df.getCol('score');
-      let g = [], cnt = 0;
+      const g = []; let cnt = 0;
       g[cnt++] = ui.h1('SVG rendering');
       g[cnt++] = this.sketchButton;
       for (let i = 0; i < molCol.length; ++i) {
-        let mol = grok.chem.svgMol(molCol?.get(i), 250, 100);
+        const mol = grok.chem.svgMol(molCol?.get(i), 250, 100);
         const text = ui.p(`${scores.get(i).toPrecision(3)}`);
 
-        let grid = ui.div([mol, text]);
-        grid.addEventListener("click", (event: Event) => {
+        const grid = ui.div([mol, text]);
+        grid.addEventListener('click', (event: Event) => {
           if (this.dataFrame) {
             this.dataFrame.currentRowIdx = idxs.get(i);
           }
@@ -146,10 +147,12 @@ export async function chemSimilaritySearch(
   const distances: number[] = [];
 
   let fpSim = tanimoto;
-  let webWorker = false;
-  if(webWorker){
+  const webWorker = false;
+  if (webWorker) {
     //todo: implement
-    fpSim = () => {throw new Error('Not Impemented yet')};
+    fpSim = () => {
+      throw new Error('Not Impemented yet');
+    };
   }
 
   for (let row = 0; row < fingerprintCol.length; row++) {
@@ -158,20 +161,20 @@ export async function chemSimilaritySearch(
   }
 
   function range(end: number) {
-    return Array(end).fill(0).map((_, idx) => idx)
+    return Array(end).fill(0).map((_, idx) => idx);
   }
 
   function compare(i1: number, i2: number) {
-    if (distances[i1] > distances[i2]){
+    if (distances[i1] > distances[i2]) {
       return -1;
     }
-    if (distances[i1] < distances[i2]){
+    if (distances[i1] < distances[i2]) {
       return 1;
     }
     return 0;
   }
 
-  let indexes = range(table.rowCount)
+  const indexes = range(table.rowCount)
     .filter((idx) => fingerprintCol[idx] != null)
     .sort(compare);
   const molsList = [];
@@ -188,9 +191,9 @@ export async function chemSimilaritySearch(
     molsList[n] = smiles.get(idx);
     scoresList[n] = score;
   }
-  const mols = DG.Column.fromList(DG.COLUMN_TYPE.STRING,'smiles',molsList);
+  const mols = DG.Column.fromList(DG.COLUMN_TYPE.STRING, 'smiles', molsList);
   mols.semType = DG.SEMTYPE.MOLECULE;
-  const scores = DG.Column.fromList(DG.COLUMN_TYPE.FLOAT,'score',scoresList);
-  const new_indexes = DG.Column.fromList(DG.COLUMN_TYPE.INT,'indexes',molsIdxs);
+  const scores = DG.Column.fromList(DG.COLUMN_TYPE.FLOAT, 'score', scoresList);
+  const new_indexes = DG.Column.fromList(DG.COLUMN_TYPE.INT, 'indexes', molsIdxs);
   return DG.DataFrame.fromColumns([mols, scores, new_indexes]);
 }

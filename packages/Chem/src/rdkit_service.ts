@@ -1,8 +1,7 @@
 import {RdKitServiceWorkerClient} from './rdkit_service_worker_client';
-import BitArray from "@datagrok-libraries/utils/src/bit-array";
+import BitArray from '@datagrok-libraries/utils/src/bit-array';
 
 export class RdKitService {
-
   readonly _nJobWorkers = 1; // only 1 for now
   _nParallelWorkers: number;
   _jobWorkers: RdKitServiceWorkerClient[] = [];
@@ -18,11 +17,12 @@ export class RdKitService {
   async init(webRoot: string): Promise<void> {
     this._parallelWorkers = [];
     this._jobWorkers = [];
-    let initWaiters = [];
+    const initWaiters = [];
     for (let i = 0; i < this._nParallelWorkers; ++i) {
-      let workerClient = new RdKitServiceWorkerClient();
-      if (i < this._nJobWorkers)
+      const workerClient = new RdKitServiceWorkerClient();
+      if (i < this._nJobWorkers) {
         this._jobWorkers[i] = workerClient;
+      }
       this._parallelWorkers[i] = workerClient;
       initWaiters.push(workerClient.moduleInit(webRoot));
     }
@@ -31,17 +31,17 @@ export class RdKitService {
   }
 
   async _doParallel(fooScatter: any, fooGather = (d: any) => []): Promise<any> {
-    let promises = [];
+    const promises = [];
     const nWorkers = this._nParallelWorkers;
     for (let i = 0; i < nWorkers; i++) {
       promises[i] = fooScatter(i, nWorkers);
     }
-    let data = await Promise.all(promises);
+    const data = await Promise.all(promises);
     return fooGather(data);
   }
 
   async _initParallelWorkers(dict: string[], func: any, postFunc: any): Promise<any> {
-    let t = this;
+    const t = this;
     return this._doParallel(
       (i: number, nWorkers: number) => {
         const length = dict.length;
@@ -52,24 +52,24 @@ export class RdKitService {
           dict.slice(i * segmentLength, length);
         return func(i, segment);
       },
-      postFunc
+      postFunc,
     );
   }
 
   async initMoleculesStructures(dict: string[]): Promise<any> {
     return this._initParallelWorkers(dict, (i: number, segment: any) =>
       this._parallelWorkers[i].initMoleculesStructures(segment),
-      (resultArray: any[]) => resultArray.reduce((acc: any, item: any) => {
-        item = item || {molIdxToHash: [], hashToMolblock: {}};
-        return {
-          molIdxToHash: [...acc.molIdxToHash, ...item.molIdxToHash],
-          hashToMolblock: {...acc.hashToMolblock, ...item.hashToMolblock}
-        }
-      }, {molIdxToHash: [], hashToMolblock: {}}));
+    (resultArray: any[]) => resultArray.reduce((acc: any, item: any) => {
+      item = item || {molIdxToHash: [], hashToMolblock: {}};
+      return {
+        molIdxToHash: [...acc.molIdxToHash, ...item.molIdxToHash],
+        hashToMolblock: {...acc.hashToMolblock, ...item.hashToMolblock},
+      };
+    }, {molIdxToHash: [], hashToMolblock: {}}));
   }
 
   async searchSubstructure(query: string, querySmarts: string) {
-    let t = this;
+    const t = this;
     return this._doParallel(
       (i: number, nWorkers: number) => {
         return t._parallelWorkers[i].searchSubstructure(query, querySmarts);
@@ -87,12 +87,14 @@ export class RdKitService {
     return this._doParallel(
       (i: number, nWorkers: number) => {
         return this._parallelWorkers[i].initMorganFingerprints();
-      }, (_: any) => { return []}
+      }, (_: any) => {
+        return [];
+      },
     );
   }
 
   async getMorganFingerprints() {
-    let t = this;
+    const t = this;
     return (await this._doParallel(
       (i: number, nWorkers: number) => {
         return t._parallelWorkers[i].getMorganFingerprints();
@@ -100,10 +102,9 @@ export class RdKitService {
       (data: any) => {
         return [].concat.apply([], data);
       })).map(
-        (obj: any) =>
-          // We deliberately choose Uint32Array over DG.BitSet here
-          //@ts-ignore
-          new BitArray(new Uint32Array(obj.data), obj.length));
+      (obj: any) =>
+      // We deliberately choose Uint32Array over DG.BitSet here
+      //@ts-ignore
+        new BitArray(new Uint32Array(obj.data), obj.length));
   }
-
 }

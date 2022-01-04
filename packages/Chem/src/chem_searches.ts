@@ -2,25 +2,25 @@ import * as DG from 'datagrok-api/dg';
 import {getRdKitModule, getRdKitService} from './chem_common_rdkit';
 import {rdKitFingerprintToBitArray, tanimoto,
   defaultMorganFpRadius, defaultMorganFpLength} from './chem_common';
-import BitArray from "@datagrok-libraries/utils/src/bit-array";
+import BitArray from '@datagrok-libraries/utils/src/bit-array';
 
 async function _chemFindSimilar(molStringsColumn: DG.Column,
-    queryMolString: string, settings: { [name: string]: any }) {
+  queryMolString: string, settings: { [name: string]: any }) {
   const len = molStringsColumn.length;
-  const distances =  await _chemGetSimilarities(queryMolString);
+  const distances = await _chemGetSimilarities(queryMolString);
   const limit = Math.min((settings.hasOwnProperty('limit') ? settings.limit : len), len);
   const minScore = settings.hasOwnProperty('minScore') ? settings.minScore : 0.0;
-  let sortedIndices = Array.from(Array(len).keys()).sort((i1, i2) => {
+  const sortedIndices = Array.from(Array(len).keys()).sort((i1, i2) => {
     const a1 = distances[i1];
     const a2 = distances[i2];
     if (a2 < a1) return -1;
     if (a2 > a1) return +1;
     return 0; // a2.compareTo(a1)
   });
-  let sortedMolStrings = DG.Column.fromType(DG.TYPE.STRING, 'molecule', limit);
-  let sortedMolInd = DG.Column.fromType(DG.TYPE.INT, 'index', limit);
+  const sortedMolStrings = DG.Column.fromType(DG.TYPE.STRING, 'molecule', limit);
+  const sortedMolInd = DG.Column.fromType(DG.TYPE.INT, 'index', limit);
   sortedMolStrings.semType = DG.SEMTYPE.MOLECULE;
-  let sortedScores = DG.Column.fromType(DG.TYPE.FLOAT, 'score', limit);
+  const sortedScores = DG.Column.fromType(DG.TYPE.FLOAT, 'score', limit);
   for (let n = 0; n < limit; n++) {
     const idx = sortedIndices[n];
     const score = distances[idx];
@@ -39,7 +39,7 @@ async function _chemFindSimilar(molStringsColumn: DG.Column,
 // Only this function receives {sorted} in settings
 async function _chemGetSimilarities(queryMolString: string) {
   const fingerprints = _chemCache.morganFingerprints!;
-  let distances = new Array(fingerprints.length).fill(0.0);
+  const distances = new Array(fingerprints.length).fill(0.0);
   const sample = chemGetMorganFingerprint(queryMolString);
   for (let i = 0; i < fingerprints.length; ++i) {
     distances[i] = tanimoto(fingerprints[i], sample);
@@ -64,10 +64,10 @@ const cacheParamsDefaults: CacheParams = {
   query: null,
   moleculesWereIndexed: false,
   morganFingerprintsWereIndexed: false,
-  morganFingerprints: null
+  morganFingerprints: null,
 };
 
-let _chemCache = { ...cacheParamsDefaults };
+const _chemCache = {...cacheParamsDefaults};
 
 async function _invalidate(molStringsColumn: DG.Column, queryMolString: string | null, includeFingerprints: boolean) {
   const sameColumnAndVersion = () =>
@@ -82,8 +82,8 @@ async function _invalidate(molStringsColumn: DG.Column, queryMolString: string |
   }
   if (sameColumnAndVersion() && !_chemCache.moleculesWereIndexed) {
     // TODO: avoid creating an additional array here
-    const { molIdxToHash, hashToMolblock }
-      = await getRdKitService().initMoleculesStructures(molStringsColumn.toList());
+    const {molIdxToHash, hashToMolblock} =
+      await getRdKitService().initMoleculesStructures(molStringsColumn.toList());
     let i = 0;
     let needsUpdate = false;
     for (const item of molIdxToHash) {
@@ -120,17 +120,17 @@ async function _invalidate(molStringsColumn: DG.Column, queryMolString: string |
 // see https://github.com/rdkit/rdkit/blob/master/Code/MinimalLib/minilib.h
 
 export async function chemGetSimilarities(
-    molStringsColumn: DG.Column, queryMolString = "",
-    settings: { [name: string]: any } = {}) {
+  molStringsColumn: DG.Column, queryMolString = '',
+  settings: { [name: string]: any } = {}) {
   await _invalidate(molStringsColumn, queryMolString, true);
   const result = queryMolString.length != 0 ?
     await DG.Column.fromList(DG.COLUMN_TYPE.FLOAT, 'distances',
-      await _chemGetSimilarities(queryMolString))  : null;
+      await _chemGetSimilarities(queryMolString)) : null;
   return result;
 }
 
 export async function chemFindSimilar(
-    molStringsColumn: DG.Column, queryMolString = "", settings: { [name: string]: any } = {}) {
+  molStringsColumn: DG.Column, queryMolString = '', settings: { [name: string]: any } = {}) {
   await _invalidate(molStringsColumn, queryMolString, true);
   const result = queryMolString.length != 0 ?
     _chemFindSimilar(molStringsColumn, queryMolString, settings) : null;
@@ -139,22 +139,23 @@ export async function chemFindSimilar(
 
 export function chemSubstructureSearchGraph(molStringsColumn: DG.Column, molString: string) {
   const len = molStringsColumn.length;
-  let result = DG.BitSet.create(len);
+  const result = DG.BitSet.create(len);
   if (molString.length == 0) {
     return result;
   }
-  let subMol = getRdKitModule().get_mol(molString);
+  const subMol = getRdKitModule().get_mol(molString);
   for (let i = 0; i < len; ++i) {
-    let item = molStringsColumn.get(i);
+    const item = molStringsColumn.get(i);
     try {
-      let mol = getRdKitModule().get_mol(item);
-      let match = mol.get_substruct_match(subMol);
-      if (match !== "{}")
+      const mol = getRdKitModule().get_mol(item);
+      const match = mol.get_substruct_match(subMol);
+      if (match !== '{}') {
         result.set(i, true, false);
+      }
       mol.delete();
     } catch (e) {
       console.error(
-        "Possibly a malformed molString: `" + item + "`");
+        'Possibly a malformed molString: `' + item + '`');
       // Won't rethrow
     }
   }
@@ -163,13 +164,14 @@ export function chemSubstructureSearchGraph(molStringsColumn: DG.Column, molStri
 }
 
 export async function chemSubstructureSearchLibrary(
-    molStringsColumn: DG.Column, molString: string, molStringSmarts: string) {
+  molStringsColumn: DG.Column, molString: string, molStringSmarts: string) {
   await _invalidate(molStringsColumn, molString, false);
-  let result = DG.BitSet.create(molStringsColumn.length);
+  const result = DG.BitSet.create(molStringsColumn.length);
   if (molString.length != 0) {
     const matches = await getRdKitService().searchSubstructure(molString, molStringSmarts);
-    for (let match of matches)
+    for (const match of matches) {
       result.set(match, true, false);
+    }
   }
   return result;
 }

@@ -3,7 +3,7 @@ import * as ui from 'datagrok-api/ui';
 import * as DG from 'datagrok-api/dg';
 // TODO: clean up this module
 import {chemGetMorganFingerprints} from '../chem_searches';
-import {getRdKitWebRoot} from '../chem_common_rdkit'
+import {getRdKitWebRoot} from '../chem_common_rdkit';
 
 export async function chemSpace(table: DG.DataFrame, molColumn: DG.Column) {
   const fpColumn = await chemGetMorganFingerprints(molColumn);

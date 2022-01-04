@@ -1,10 +1,9 @@
 import {RdKitServiceWorkerBase} from './rdkit_service_worker_base';
 import BitArray from '@datagrok-libraries/utils/src/bit-array';
 import {rdKitFingerprintToBitArray, tanimoto} from './chem_common';
-import {defaultMorganFpLength, defaultMorganFpRadius} from "./chem_common";
+import {defaultMorganFpLength, defaultMorganFpRadius} from './chem_common';
 
 export class RdKitServiceWorkerSimilarity extends RdKitServiceWorkerBase {
-
   _rdKitMols: any[] | null = null;
   _tanimotoFps: BitArray[] | null = null;
   _sample: BitArray;
@@ -23,7 +22,7 @@ export class RdKitServiceWorkerSimilarity extends RdKitServiceWorkerBase {
     }
     this._tanimotoFps = [];
     for (let i = 0; i < this._rdKitMols.length; ++i) {
-      let item = this._rdKitMols[i];
+      const item = this._rdKitMols[i];
       let arr = new BitArray(this._fpLength);
       try {
         const fp = this._rdKitMols[i].get_morgan_fp(this._fpRadius, this._fpLength);
@@ -39,12 +38,13 @@ export class RdKitServiceWorkerSimilarity extends RdKitServiceWorkerBase {
     if (this._tanimotoFps === null) {
       return [];
     }
-    return this._tanimotoFps!.map((e: any) => {return {data: e.getRawData().buffer, length: e.length}});
+    return this._tanimotoFps!.map((e: any) => {
+      return {data: e.getRawData().buffer, length: e.length};
+    });
   }
 
   freeMorganFingerprints() {
     this._tanimotoFps = null;
     this._sample = new BitArray(this._fpLength);
   }
-
 }
