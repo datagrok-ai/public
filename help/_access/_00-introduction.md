@@ -22,11 +22,11 @@ growing.
 
 Finally, everything could be automated. For instance, there is a macro that is being generated
 automatically while you operate in the platform, and can be replayed at any time, so that all the
-data ingestion and transformation steps that you are performing could be scripted and replayed
-back at any time.
+data ingestion and transformation steps that you are performing could be scripted and replayed back
+at any time.
 
-There is also a concept of a data job, so that the data transformation steps on the way to a
-visual dashboard could be neatly arranged as a diagram and later managed and extended.
+There is also a concept of a data job, so that the data transformation steps on the way to a visual
+dashboard could be neatly arranged as a diagram and later managed and extended.
 
-Generating data from arbitrary functions or scripts in Python and R, which are in turn functions
-as well, is also possible.
+Generating data from arbitrary functions or scripts in Python and R, which are in turn functions as
+well, is also possible.

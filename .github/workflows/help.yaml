@@ -11,14 +11,16 @@ jobs:
     steps:
       - name: Checkout
         uses: actions/checkout@v2
-      - name: Create file list
-        id: files_list
+      - name: Create entrypoint for pandoc
         run: |
-          mkdir output
-          echo "::set-output name=files::$(printf '"%s" ' help/**/*.md)"
+          echo '#!/bin/sh' > entrypoint.sh;
+          for f in help/**/*.md; do
+            mkdir -p output/$(dirname ${f});
+            echo "pandoc -f gfm -t html --output=/github/workspace/output/${f/.md/.html} \"${f}\"" >> entrypoint.sh;
+          done;
+          cat entrypoint.sh;
+          ls -lah output;
       - uses: docker://pandoc/core:latest
-        run: |
-          mkdir output
-          echo "::set-output name=files::$(printf '"%s" ' help/**/*.md)"
         with:
-          entrypoint: for file in ${{ steps.files_list.outputs.files }}; do pandoc --output=output/${file%.*} ${file}; done
+          entrypoint: /bin/sh
+          args: /github/workspace/entrypoint.sh

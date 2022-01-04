@@ -26,16 +26,17 @@ We wrap lines in `.md` files at 100 characters.
 We capitalize proper names of distinct UI functional elements:
 
 * **Not correct**: Navigate to a property panel
-* **Acceptable**: Navigate to the Property Panel 
+* **Acceptable**: Navigate to the Property Panel
 * **Correct**: Navigate to Property Panel
-    
+
 We don't capitalize functional elements which can exist in plurality:
 
 * **Not correct**: Open Information Panel
-* **Correct**: Open an information panel, in the information panel select
-  an item
+* **Correct**: Open an information panel, in the information panel select an item
 
-Read more on capitalization of proper nouns in [Microsoft Style Guide](https://docs.microsoft.com/en-us/style-guide/grammar/nouns-pronouns).
+Read more on capitalization of proper nouns
+in [Microsoft Style Guide](https://docs.microsoft.com/en-us/style-guide/grammar/nouns-pronouns).
 
 [100]: https://docs.microsoft.com/en-us/style-guide/welcome/
+
 [101]: https://docs.microsoft.com/en-us/style-guide/text-formatting/using-type/use-sentence-style-capitalization
