@@ -1363,9 +1363,8 @@ export class Cell {
 
   /** Cell value.
    * @returns {*} */
-  get value(): any {
-    return api.grok_Cell_Get_Value(this.dart);
-  }
+  get value(): any { return api.grok_Cell_Get_Value(this.dart); }
+  set value(x: any) { api.grok_Cell_Set_Value(this.dart, x); }
 
   /** @returns {string} */
   toString(): string {
