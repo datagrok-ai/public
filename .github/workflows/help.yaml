@@ -6,21 +6,73 @@ on:
     paths:
       - 'help/**'
 jobs:
-  convert_md_to_html:
+  convert:
     runs-on: ubuntu-20.04
+    environment: Help
     steps:
       - name: Checkout
         uses: actions/checkout@v2
-      - name: Create entrypoint for pandoc
+      - name: Create Lua Filters for Pandoc
+        run: |
+          cat <<EOT > links-to-html.lua
+          function Link(el)
+            el.target = string.gsub(el.target, "%.md", ".html")
+            return el
+          end
+          EOT
+          cat <<EOT > table-id.lua
+          function Table(el)
+            el.attr.identifier = "help-table"
+            return el
+          end
+          EOT
+      - name: Create entrypoint for Pandoc
+        working-directory: ./help
         run: |
           echo '#!/bin/sh' > entrypoint.sh;
-          for f in help/**/*.md; do
-            mkdir -p output/$(dirname ${f});
-            echo "pandoc -f gfm -t html --output=/github/workspace/output/${f/.md/.html} \"${f}\"" >> entrypoint.sh;
+          for f in $(find . -type f -name '*.md' -printf '%P '); do
+            mkdir -p output/help/$(dirname ${f});
+            echo "cd /github/workspace/help/output/help/$(dirname ${f})" >> entrypoint.sh;
+            echo "pandoc -f gfm -t html --extract-media=. --resource-path=.:/github/workspace/help/$(dirname ${f}) --lua-filter=/github/workspace/links-to-html.lua --lua-filter=/github/workspace/table-id.lua --output=/github/workspace/help/output/help/${f/.md/.html} \"/github/workspace/help/${f}\"" >> entrypoint.sh;
           done;
-          cat entrypoint.sh;
-          ls -lah output;
-      - uses: docker://pandoc/core:latest
+      - name: Convert Mardown to HTML
+        uses: docker://pandoc/core:latest
         with:
           entrypoint: /bin/sh
-          args: /github/workspace/entrypoint.sh
+          args: /github/workspace/help/entrypoint.sh
+      - name: Apply internal styles to HTML which is not supported by pandoc yet
+        working-directory: ./help
+        run: |
+          for f in output/help/**/*.html; do
+            sed -i -e '0,/<p>/s//<p class="d4-help-info">/' $f;
+          done;
+      - name: 'Upload Artifact'
+        uses: actions/upload-artifact@v2
+        with:
+          name: help_html_pages
+          path: help/output
+          retention-days: 7
+
+  deploy:
+    needs: convert
+    runs-on: ubuntu-20.04
+    environment: Help
+    steps:
+      - name: Download artifact
+        uses: actions/download-artifact@v2
+        with:
+          name: help_html_pages
+      - name: Deploy to server
+        shell: bash
+        run: |
+          mkdir -p ~/.ssh/
+          echo "$SSH_PRIVATE_KEY" > ~/.ssh/id_rsa
+          sudo chmod 400 ~/.ssh/id_rsa
+          echo "$SSH_KNOWN_HOSTS" > ~/.ssh/known_hosts
+          rsync -rltgoDzvO "help/" $REMOTE_USER@$REMOTE_HOST:$TARGET
+        env:
+          SSH_PRIVATE_KEY: ${{ secrets.HELP_SSH_KEY }}
+          SSH_KNOWN_HOSTS: ${{ secrets.HELP_KNOWN_HOST }}
+          REMOTE_HOST: ${{ secrets.HELP_HOST }}
+          REMOTE_USER: ${{ secrets.HELP_USER }}
+          TARGET: ${{ secrets.WIKI_DOCS_TARGET }}

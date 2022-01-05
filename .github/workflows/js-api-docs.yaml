@@ -1,0 +1,41 @@
+name: Help deployment
+
+on:
+  workflow_dispatch: {}
+  push:
+    paths:
+      - 'js-api/package.json'
+
+jobs:
+  doc:
+    runs-on: ubuntu-20.04
+    environment: Help
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v2
+      - name: Setup Node
+        uses: actions/setup-node@v2
+        with:
+          node-version: '12.x'
+          registry-url: 'https://registry.npmjs.org'
+      - name: Upgrade npm
+        run: npm install -g npm@latest
+      - run: npm version
+      - run: npm install
+        working-directory: ./js-api
+      - run: npm run typedoc
+        working-directory: ./js-api
+      - name: Deploy to server
+        shell: bash
+        run: |
+          mkdir -p ~/.ssh/
+          echo "$SSH_PRIVATE_KEY" > ../private.key
+          sudo chmod 600 ../private.key
+          echo "$SSH_KNOWN_HOSTS" > ~/.ssh/known_hosts
+          rsync -rltgoDzvO "js-api/docs/" $REMOTE_USER@$REMOTE_HOST:$TARGET
+        env:
+          SSH_PRIVATE_KEY: ${{ secrets.HELP_SSH_KEY }}
+          SSH_KNOWN_HOSTS: ${{ secrets.HELP_KNOWN_HOST }}
+          REMOTE_HOST: ${{ secrets.HELP_HOST }}
+          REMOTE_USER: ${{ secrets.HELP_USER }}
+          TARGET: ${{ secrets.JS_API_DOCS_TARGET }}

@@ -193,33 +193,37 @@ actions (such as upgrading database schema) if needed.
 The current procedure for updating a ComputeVM is via spinning out a new AMI image.
 
 In the future, we are planning to improve the update mechanism in a few ways:
+
 * Web-based administration
-* Automatic updates 
+* Automatic updates
 
 ## User management
 
-Open `Admin | Users` to see a list of currently registered users. To add new users,
-use one of the following links located on the left panel:
+Open `Admin | Users` to see a list of currently registered users. To add new users, use one of the
+following links located on the left panel:
+
 * `Add User...`, followed by `Set password` - create a user with the specified login/password.
 * `Invite a Friend` - send an invitation email with the self-registration link.
 
-For enterprise deployments, ActiveDirectory authentication is supported. Documentation on that
-will be available soon. 
+For enterprise deployments, ActiveDirectory authentication is supported. Documentation on that will
+be available soon.
 
-Please reach out to us regarding single sign on options, if this is your preferred authentication 
+Please reach out to us regarding single sign on options, if this is your preferred authentication
 method.
 
 ## Command-line interface
 
 ---------------------------------------------------------------
-Action    | Command                   | Description
-----------|---------------------------|------------------------
-Start     | dart server.dart start    | Datlas starts listening to incoming connections
-Stop      | dart server.dart stop     | 
-Restart   | dart server.dart restart  | 
-Run tasks | dart server.dart deploy -c <config>  | 
+
+| Action    | Command                             | Description                                     |
+|-----------|-------------------------------------|-------------------------------------------------|
+| Start     | dart server.dart start              | Datlas starts listening to incoming connections |
+| Stop      | dart server.dart stop               |                                                 |
+| Restart   | dart server.dart restart            |                                                 |
+| Run tasks | dart server.dart deploy -c <config> |                                                 |
 
 For instance, to start "prod" and "test" instances:
+
 ```
 dart server.dart -c prod start
 dart server.dart -c test start
