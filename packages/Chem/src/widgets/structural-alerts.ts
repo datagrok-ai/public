@@ -1,8 +1,9 @@
 // This file may not be used in
 import * as ui from 'datagrok-api/ui';
+import * as grok from 'datagrok-api/grok';
 import * as DG from 'datagrok-api/dg';
 // The file is imported from a WebWorker. Don't use Datagrok imports
-import {getRdKitModule, drawMoleculeToCanvas} from '../chem_common_rdkit';
+import {getRdKitModule, drawMoleculeToCanvas, getRdKitWebRoot} from '../chem_common_rdkit';
 
 let _alertsSmarts: string[] = [];
 let _alertsDescriptions: string[] = [];
@@ -35,7 +36,7 @@ function getStructuralAlerts(smiles: string) {
   return alerts;
 }
 
-export async function initStructuralAlertsContext(
+export function initStructuralAlertsContext(
   alertsSmarts: string[], alertsDescriptions: string[]) {
   _alertsSmarts = alertsSmarts;
   _alertsDescriptions = alertsDescriptions;
@@ -43,7 +44,18 @@ export async function initStructuralAlertsContext(
   // await getRdKitService().initStructuralAlerts(_alertsSmarts);
 }
 
-export function structuralAlertsWidget(smiles: string) {
+async function loadSADataset() {
+  const path = getRdKitWebRoot() + 'data-samples/alert_collection.csv';
+  const table = await grok.data.loadTable(path);
+  const alertsSmartsList = table.columns['smarts'].toList();
+  const alertsDescriptionsList = table.columns['description'].toList();
+  initStructuralAlertsContext(alertsSmartsList, alertsDescriptionsList);
+}
+
+export async function structuralAlertsWidget(smiles: string) {
+  if (_data === null) {
+    await loadSADataset();
+  }
   const alerts = getStructuralAlerts(smiles);
   // await getRdKitService().getStructuralAlerts(smiles); // getStructuralAlerts(smiles);
   const width = 200;

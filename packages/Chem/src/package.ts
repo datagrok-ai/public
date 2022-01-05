@@ -57,11 +57,11 @@ export const _package: any = new DG.Package();
 export async function initChem() {
   chemLock('initChem');
   await initRdKitService(_package.webRoot);
-  const path = getRdKitWebRoot() + 'data-samples/alert_collection.csv';
-  const table = await grok.data.loadTable(path);
-  const alertsSmartsList = table.columns['smarts'].toList();
-  const alertsDescriptionsList = table.columns['description'].toList();
-  await initStructuralAlertsContext(alertsSmartsList, alertsDescriptionsList);
+  // const path = getRdKitWebRoot() + 'data-samples/alert_collection.csv';
+  // const table = await grok.data.loadTable(path);
+  // const alertsSmartsList = table.columns['smarts'].toList();
+  // const alertsDescriptionsList = table.columns['description'].toList();
+  // await initStructuralAlertsContext(alertsSmartsList, alertsDescriptionsList);
   chemUnlock('initChem');
 }
 
