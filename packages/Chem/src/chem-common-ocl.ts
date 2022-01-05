@@ -5,6 +5,7 @@ import * as ui from 'datagrok-api/ui';
 import * as OCL from 'openchemlib/full.js';
 import {chemLock, chemUnlock} from './chem-common';
 import {drawMoleculeToCanvas} from './chem-common-rdkit';
+import {isMolBlock} from "./chem-utils";
 
 export function renderDescription(description: OCL.IParameterizedString[], smiles: string | null = null) {
   const host = ui.div([], 'd4-flex-wrap');
@@ -47,10 +48,8 @@ function _molToCanvas(mol: OCL.Molecule, width=200, height=100) {
   return canvas;
 }
 
-export function oclMol(mol: string): OCL.Molecule {
-  if (mol.includes('M  END')) {
-    return OCL.Molecule.fromMolfile(mol);
-  } else {
-    return OCL.Molecule.fromSmiles(mol);
-  }
+export function oclMol(molStr: string): OCL.Molecule {
+  return isMolBlock(molStr)
+    ? OCL.Molecule.fromMolfile(molStr)
+    : OCL.Molecule.fromSmiles(molStr);
 }

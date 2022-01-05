@@ -7,6 +7,7 @@ import * as ui from 'datagrok-api/ui';
 import * as DG from 'datagrok-api/dg';
 import {convertToRDKit} from './analysis/r-group-analysis';
 import {RDMol} from "./rdkit-api";
+import {isMolBlock} from "./chem-utils";
 
 export class RDKitCellRenderer extends DG.GridCellRenderer {
   readonly WHITE_MOLBLOCK_SUFFIX = `
@@ -36,22 +37,10 @@ M  END
     };
   }
 
-  get name() {
-    return 'RDKit cell renderer';
-  }
-  get cellType() {
-    return DG.SEMTYPE.MOLECULE;
-  }
-  get defaultWidth() {
-    return 200;
-  }
-  get defaultHeight() {
-    return 100;
-  }
-
-  _isMolBlock(molString: string) {
-    return molString.includes('M  END');
-  }
+  get name() { return 'RDKit cell renderer'; }
+  get cellType() { return DG.SEMTYPE.MOLECULE; }
+  get defaultWidth() { return 200; }
+  get defaultHeight() { return 100; }
 
   _fetchMolGetOrCreate(molString: string, scaffoldMolString: string, molRegenerateCoords: boolean) {
     let mol: RDMol | null = null;
@@ -72,7 +61,7 @@ M  END
     if (mol) {
       try {
         if (mol.is_valid()) {
-          const scaffoldIsMolBlock = this._isMolBlock(scaffoldMolString);
+          const scaffoldIsMolBlock = isMolBlock(scaffoldMolString);
           if (scaffoldIsMolBlock) {
             const rdkitScaffoldMol = this._fetchMol(scaffoldMolString, '', molRegenerateCoords, false).mol;
             if (rdkitScaffoldMol && rdkitScaffoldMol.is_valid()) {

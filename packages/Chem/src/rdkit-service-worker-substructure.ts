@@ -1,4 +1,5 @@
 import {RdKitServiceWorkerSimilarity} from './rdkit-service-worker-similarity';
+import {isMolBlock} from "./chem-utils";
 
 export class RdkitServiceWorkerSubstructure extends RdKitServiceWorkerSimilarity {
   // _patternFps: BitArray[] | null = null;
@@ -26,7 +27,7 @@ export class RdkitServiceWorkerSubstructure extends RdKitServiceWorkerSimilarity
         mol = this._rdKitModule.get_mol(item);
         // const fp = mol.get_pattern_fp(this._patternFpLength);
         // arr = this.stringFpToArrBits(fp, arr, this._patternFpLength);
-        if (item.includes('M  END')) {
+        if (isMolBlock(item)) {
           item = mol.normalize_2d_molblock();
           mol.straighten_2d_layout();
           if (!hashToMolblock[item]) {

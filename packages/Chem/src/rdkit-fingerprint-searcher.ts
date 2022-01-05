@@ -1,4 +1,5 @@
 import {BitSetFixedArray} from './bitset-fixed-array';
+import {isMolBlock} from "./chem-utils";
 
 export class RdKitFingerprintSearcher {
   rdKitModule: any | null;
@@ -50,7 +51,7 @@ this.sample!.setFalse(0, j);
       let mol;
       try {
         mol = this.rdKitModule.get_mol(item);
-        if (item.includes('M  END')) {
+        if (isMolBlock(item)) {
           item = mol.normalize_2d_molblock();
           mol.straighten_2d_layout();
           if (!hashToMolblock[item]) {
