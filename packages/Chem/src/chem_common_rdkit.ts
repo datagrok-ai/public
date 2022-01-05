@@ -95,5 +95,6 @@ export function drawMoleculeToCanvas(
   const image = offscreenCanvas!.getContext('2d')!.getImageData(0, 0, w, h);
   const context = onscreenCanvas.getContext('2d');
   context!.putImageData(image, x, y);
-  offscreenCanvas = null; // ? GC definitely
+  offscreenCanvas = null; // GC?
+  mol.delete();
 }
