@@ -103,7 +103,6 @@ export namespace chem {
     }
 
     setSmiles(x: string) {
-      console.log('set smiles ' + x);
       this._smiles = x;
       if (this.sketcher != null)
         this.sketcher!.smiles = x;
@@ -114,7 +113,6 @@ export namespace chem {
     }
 
     setMolFile(x: string) {
-      console.log('set molblock ' + x);
       this._molFile = x;
       if (this.sketcher != null)
         this.sketcher!.molFile = x;

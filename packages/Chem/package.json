@@ -70,6 +70,10 @@
     "lint-fix": "eslint \"./src/**/*.ts\" --fix",
     "test": "set HOST=dev && jest"
   },
-  "canEdit": [ "Developers" ],
-  "canView": [ "All users" ]
+  "canEdit": [
+    "Developers"
+  ],
+  "canView": [
+    "All users"
+  ]
 }
