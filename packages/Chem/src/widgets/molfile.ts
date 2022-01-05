@@ -2,9 +2,11 @@ import * as ui from 'datagrok-api/ui';
 import * as DG from 'datagrok-api/dg';
 import * as OCL from 'openchemlib/full.js';
 import $ from 'cash-dom';
+import {isMolBlock} from "../chem-utils";
+import {oclMol} from "./drug-likeness";
 
-export function molfileWidget(smiles: string) {
-  const molfileStr = OCL.Molecule.fromSmiles(smiles).toMolfile();
+export function molfileWidget(molStr: string): DG.Widget {
+  const molfileStr = isMolBlock(molStr) ? molStr : oclMol(molStr).toMolfile();
 
   const molfileInput = ui.textInput('', molfileStr);
   (molfileInput.input as HTMLElement).style.height = '300px';
