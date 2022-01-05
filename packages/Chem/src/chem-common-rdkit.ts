@@ -2,8 +2,8 @@
 // should be no imports from Datagrok or OCL
 //@ts-ignore
 import rdkitLibVersion from './rdkit_lib_version';
-import {RdKitService} from './rdkit_service';
-import {convertToRDKit} from './analysis/r_group';
+import {RdKitService} from './rdkit-service';
+import {convertToRDKit} from './analysis/r-group-analysis';
 import BitArray from '@datagrok-libraries/utils/src/bit-array';
 //@ts-ignore
 import initRDKitModule from './RDKit_minimal.js';

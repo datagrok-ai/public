@@ -1,4 +1,4 @@
-import {RdKitServiceWorkerSimilarity} from './rdkit_service_worker_similarity';
+import {RdKitServiceWorkerSimilarity} from './rdkit-service-worker-similarity';
 
 export class RdkitServiceWorkerSubstructure extends RdKitServiceWorkerSimilarity {
   // _patternFps: BitArray[] | null = null;

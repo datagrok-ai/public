@@ -1,10 +1,10 @@
 // OCL requires same kind of loading as we do for RdKit
 // Therefore, this cannot be currently used from WebWorkers
-import {RdKitService} from './rdkit_service';
+import {RdKitService} from './rdkit-service';
 import * as ui from 'datagrok-api/ui';
 import * as OCL from 'openchemlib/full.js';
-import {chemLock, chemUnlock} from './chem_common';
-import {drawMoleculeToCanvas} from './chem_common_rdkit';
+import {chemLock, chemUnlock} from './chem-common';
+import {drawMoleculeToCanvas} from './chem-common-rdkit';
 
 export function renderDescription(description: OCL.IParameterizedString[], smiles: string | null = null) {
   const host = ui.div([], 'd4-flex-wrap');

@@ -1,5 +1,5 @@
-import {WORKER_CALL} from './rdkit_service_worker_api';
-import {RdKitServiceWorker as ServiceWorkerClass} from './rdkit_service_worker';
+import {WORKER_CALL} from './rdkit-service-worker-api';
+import {RdKitServiceWorker as ServiceWorkerClass} from './rdkit-service-worker';
 // @ts-ignore
 import initRDKitModule from './RDKit_minimal.js';
 //@ts-ignore
