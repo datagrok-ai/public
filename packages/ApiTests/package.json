@@ -6,6 +6,7 @@
 	"description": "",
 	"dependencies": {
 		"datagrok-api": "latest",
+		"rxjs": "^6.6.7",
 		"ts-loader": "latest",
 		"typescript": "latest"
 	},

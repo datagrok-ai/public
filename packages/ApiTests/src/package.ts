@@ -7,6 +7,7 @@ import './dataframe/calculated-columns';
 import './shell/shell';
 import './shell/windows';
 import './viewer/viewer';
+import './views/events';
 import './views/layouts';
 import './dapi/files';
 import './dapi/fetch';
