@@ -174,6 +174,8 @@ export namespace chem {
       let optionsIcon = ui.iconFA('bars', () => {
         Menu
           .popup()
+          .item('Copy as SMILES', () => navigator.clipboard.writeText(this.sketcher!.smiles))
+          .item('Copy as MOLBLOCK', () => navigator.clipboard.writeText(this.sketcher!.molFile))
           .item('Add to favorites', () => console.log(this.sketcher!.molFile))
           .separator()
           .items(funcs.map((f) => f.name), (name: string) => this.setSketcher(name))
