@@ -65,3 +65,21 @@ In this public repo, we follow some Git best practices.
 6. Do not mix "refactoring" with a new feature
 7. Do not create unnecessary merge loops. To pull changes after commit creation use `git pull --rebase`.
 8. Push one commit at a time to avoid unexpected GitHub Actions behavior.
+
+
+## Performance recommendations
+
+### DataFrame
+
+Do not use row-based access for iterating over rows when [performance](help/develop/advanced/performance.md)
+matters (pretty much anytime when the size of the
+dataset is not known in advance). Each call to `row(i)` creates a `Row` object that is 
+unnecessary, since the underlying storage is columnar. Only use it for passing a reference to 
+a particular row. Prefer using `column.get(i)` methods, instead.
+
+### Iterables
+
+When working with iterables, **DO NOT** create arrays for the sole purpose of iterating 
+over their elements, this is wasteful. Consider using [wu](https://github.com/fitzgen/wu.js/) instead,
+it is already included with Datagrok. For instance, instead of 
+using `Array.from(values).length` use `wu(values).length`.
