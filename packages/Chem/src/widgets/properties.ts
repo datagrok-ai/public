@@ -2,7 +2,7 @@ import * as grok from 'datagrok-api/grok';
 import * as ui from 'datagrok-api/ui';
 import * as DG from 'datagrok-api/dg';
 import * as OCL from 'openchemlib/full.js';
-import {oclMol} from './drug-likeness';
+import {oclMol} from '../chem_common_ocl';
 
 export async function propertiesWidget(smiles: string) {
   const mol = oclMol(smiles);

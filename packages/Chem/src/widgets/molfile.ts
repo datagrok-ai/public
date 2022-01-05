@@ -1,9 +1,9 @@
 import * as ui from 'datagrok-api/ui';
 import * as DG from 'datagrok-api/dg';
-import * as OCL from 'openchemlib/full.js';
 import $ from 'cash-dom';
-import {isMolBlock} from "../chem-utils";
-import {oclMol} from "./drug-likeness";
+import {isMolBlock} from '../chem-utils';
+import {oclMol} from '../chem_common_ocl';
+import '../../css/chem.css';
 
 export function molfileWidget(molStr: string): DG.Widget {
   const molfileStr = isMolBlock(molStr) ? molStr : oclMol(molStr).toMolfile();
@@ -22,10 +22,10 @@ export function molfileWidget(molStr: string): DG.Widget {
     }, 1000);
   }, 'Copy');
   clipboardBtn.style.right = '30px';
-  $(clipboardBtn).addClass('dt-snippet-editor-icon');
+  $(clipboardBtn).addClass('chem-snippet-editor-icon');
 
   const resetBtn = ui.button(ui.iconFA('redo'), () => molfileInput.value = molfileStr, 'Reset');
-  $(resetBtn).addClass('dt-snippet-editor-icon dt-reset-icon');
+  $(resetBtn).addClass('chem-snippet-editor-icon dt-reset-icon');
 
-  return new DG.Widget(ui.divV([clipboardBtn, resetBtn, molfileInput.root], 'dt-textarea-box'));
+  return new DG.Widget(ui.divV([clipboardBtn, resetBtn, molfileInput.root], 'chem-textarea-box'));
 }

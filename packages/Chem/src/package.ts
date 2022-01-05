@@ -23,13 +23,16 @@ import {addMcs} from './panels/find-mcs';
 import {addInchis} from './panels/inchi';
 import {addInchiKeys} from './panels/inchi';
 import * as chemCommonRdKit from './chem_common_rdkit';
-import {rGroupAnalysis} from './analysis/r_group';
+import {convertToRDKit, rGroupAnalysis} from './analysis/r_group';
 import {chemLock, chemUnlock} from './chem_common';
 import {MoleculeViewer} from './chem_similarity_search';
 import {identifiersWidget} from './widgets/identifiers';
 import {chem} from "datagrok-api/grok";
 import sketcher = chem.sketcher;
 import Sketcher = chem.Sketcher;
+import {oclMol} from './chem_common_ocl';
+import $ from 'cash-dom';
+import '../css/chem.css';
 
 const getRdKitModuleLocal = chemCommonRdKit.getRdKitModule;
 const initRdKitService = chemCommonRdKit.initRdKitService;
@@ -106,6 +109,82 @@ export function canvasMol(
   x: number, y: number, w: number, h: number, canvas: HTMLCanvasElement,
   molString: string, scaffoldMolString: string | null = null) {
   drawMoleculeToCanvas(x, y, w, h, canvas, molString, scaffoldMolString == '' ? null : scaffoldMolString);
+}
+
+namespace RDKit {
+  //TODO: eventually make RDKit types from it
+  export type Molecule = {
+    draw_to_canvas: (c: HTMLCanvasElement, w: number, h: number) => void,
+    get_smiles: () => string,
+    get_molblock: () => string,
+  };
+}
+
+
+export function renderMolecule(
+  mol: string | OCL.Molecule | RDKit.Molecule,
+  options: {renderer: 'rdkit' | 'ocl', width?: number, height?: number} = {renderer: 'ocl'},
+) {
+  if (typeof mol === 'string') {
+    switch (options.renderer) {
+    case 'rdkit':
+      mol = getRdKitModuleLocal().get_mol(convertToRDKit(mol)) as RDKit.Molecule;
+      break;
+    case 'ocl':
+      mol = oclMol(mol);
+      break;
+    default:
+      throw new Error(`Renderer '${options.renderer}' is not supported.`);
+    }
+  }
+  options.width ??= 200;
+  options.height ??= 150;
+  const moleculeHost = ui.canvas(options.width, options.height);
+  $(moleculeHost).addClass('chem-canvas');
+
+  switch (options.renderer) {
+  case 'rdkit':
+    (mol as RDKit.Molecule).draw_to_canvas(moleculeHost, options.width, options.height);
+    break;
+  case 'ocl':
+    OCL.StructureView.drawMolecule(moleculeHost, mol as OCL.Molecule);
+    break;
+  default:
+    throw new Error(`Renderer '${options.renderer}' is not supported.`);
+  }
+
+  const moreBtn = ui.button(
+    ui.iconFA('ellipsis-v'),
+    () => {
+      const smiles =
+        options.renderer === 'ocl' ? (mol as OCL.Molecule).toSmiles() : (mol as RDKit.Molecule).get_smiles();
+      const menu = DG.Menu.popup();
+      menu.item('Copy SMILES', () => {
+        navigator.clipboard.writeText(smiles);
+        grok.shell.info('SMILES copied!');
+      });
+      if (options.renderer === 'rdkit') {
+        // OCL does not support Molblock yet?
+        menu.item('Copy Molblock', () => {
+          navigator.clipboard.writeText((mol as RDKit.Molecule).get_molblock());
+          grok.shell.info('Molblock copied!');
+        });
+      }
+      menu.item('Sketch', () => {
+        const sketcher = new Sketcher();
+        sketcher.setSmiles(smiles);
+        ui.dialog()
+          .add(sketcher)
+          .show();
+      });
+      // menu.item('Explore', () => );
+      menu.show();
+    },
+    'More',
+  );
+  $(moreBtn).addClass('chem-mol-view-icon pep-more-icon');
+
+  return ui.divV([moreBtn, moleculeHost], 'chem-mol-box');
 }
 
 //name: getCLogP
