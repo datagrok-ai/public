@@ -27,6 +27,9 @@ import {rGroupAnalysis} from './analysis/r_group';
 import {chemLock, chemUnlock} from './chem_common';
 import {MoleculeViewer} from './chem_similarity_search';
 import {identifiersWidget} from './widgets/identifiers';
+import {chem} from "datagrok-api/grok";
+import sketcher = chem.sketcher;
+import Sketcher = chem.Sketcher;
 
 const getRdKitModuleLocal = chemCommonRdKit.getRdKitModule;
 const initRdKitService = chemCommonRdKit.initRdKitService;
@@ -462,22 +465,30 @@ export function convertMolecule(molecule: string, from: string, to: string): str
   let mol;
   try {
     mol = getRdKitModule().get_mol(molecule);
-    if (to === 'molblock') {
+    if (to === 'molblock')
       return mol.get_molblock();
-    }
-    if (to === 'smiles') {
+    if (to === 'smiles')
       return mol.get_smiles();
-    }
-    if (to === 'v3Kmolblock') {
+    if (to === 'v3Kmolblock')
       return mol.get_v3Kmolblock();
-    }
-    if (to == 'inchi') {
+    if (to == 'inchi')
       return mol.get_inchi();
-    }
     throw `Failed to convert molecule: unknown target unit: "${to}"`;
-  } finally {
-    mol.delete();
+  }
+  finally {
+    mol?.delete();
   }
 }
 
-//#endregion
+//tags: cellEditor
+//description: Molecule
+//input: grid_cell cell
+export function editMoleculeCell(cell: DG.GridCell) {
+  const sketcher = new Sketcher();
+  sketcher.setMolecule(cell.cell.value);
+
+  ui.dialog()
+    .add(sketcher)
+    .onOK(() => cell.cell.value = sketcher.getMolFile())
+    .show();
+}

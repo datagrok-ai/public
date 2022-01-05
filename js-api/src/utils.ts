@@ -24,6 +24,14 @@ export class Utils {
   static replaceAll(string: string, search: string, replace: string) {
     return string.split(search).join(replace);
   }
+
+  static isEmpty(s?: string) {
+    return !s || s === '';
+  }
+
+  static nullIfEmpty(s?: string) {
+    return Utils.isEmpty(s) ? null : s;
+  }
 }
 
 
