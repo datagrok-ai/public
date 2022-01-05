@@ -23,7 +23,6 @@ export class OCLCellRenderer extends DG.GridCellRenderer {
     super();
   }
 
-  //TODO: sdf
   render(
     g: CanvasRenderingContext2D,
     x: number,
@@ -33,16 +32,15 @@ export class OCLCellRenderer extends DG.GridCellRenderer {
     gridCell: DG.GridCell,
     cellStyle: DG.GridCellStyle,
   ) {
-    if (w < 5 || h < 5) {
+    if (w < 5 || h < 5)
       return;
-    }
-    const molString: string = gridCell.cell.value;
-    let mol: OCL.Molecule;
-    try {
-      if (molString === null)
-        return;
 
-      mol = this.molCache.getOrCreate(molString, () => oclMol(molString));
+    const molString: string = gridCell.cell.value;
+    if (molString === null)
+      return;
+
+    try {
+      let mol: OCL.Molecule = this.molCache.getOrCreate(molString, () => oclMol(molString));
       OCLCellRenderer._canvas.width = w;
       OCLCellRenderer._canvas.height = h;
       // @ts-ignore

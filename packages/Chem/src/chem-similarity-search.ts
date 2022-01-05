@@ -76,7 +76,6 @@ export class MoleculeViewer extends DG.JsViewer {
         grok.shell.error('Wrong property type');
         return;
       }
-      this.render();
     }
     this.render();
   }

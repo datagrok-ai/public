@@ -13,6 +13,7 @@ import {SemanticValue} from "./grid";
 import $ from "cash-dom";
 import {element} from "../ui";
 import {Utils} from "./utils";
+import {isMolBlock} from "../../packages/Chem/src/chem-utils";
 
 let api = <any>window;
 declare let grok: any;
@@ -120,7 +121,7 @@ export namespace chem {
 
     /** Sets the molecule, supports either SMILES or MOLBLOCK formats */
     setMolecule(molString: string) {
-      if (molString.includes('M  END'))
+      if (isMolBlock(molString))
         this.setMolFile(molString)
       else
         this.setSmiles(molString);
