@@ -1,7 +1,7 @@
 import * as ui from 'datagrok-api/ui';
 import * as grok from 'datagrok-api/grok';
 import * as DG from 'datagrok-api/dg';
-import {getRdKitModule} from '../chem_common_rdkit';
+import {getRdKitModule} from '../chem-common-rdkit';
 
 /**
  * Adds InchI identifiers to dataframe.

@@ -1,4 +1,4 @@
-import {RdKitServiceWorkerClient} from './rdkit_service_worker_client';
+import {RdKitServiceWorkerClient} from './rdkit-service-worker-client';
 import BitArray from '@datagrok-libraries/utils/src/bit-array';
 
 export class RdKitService {

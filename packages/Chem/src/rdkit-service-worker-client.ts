@@ -1,5 +1,5 @@
 import RdKitWorkerClass from './rdkit.worker.ts'; // .ts!
-import {WORKER_CALL} from './rdkit_service_worker_api';
+import {WORKER_CALL} from './rdkit-service-worker-api';
 import {WorkerMessageBusClient} from './worker-message-bus-client';
 
 export class RdKitServiceWorkerClient extends WorkerMessageBusClient {

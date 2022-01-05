@@ -3,8 +3,8 @@ import * as ui from 'datagrok-api/ui';
 import * as DG from 'datagrok-api/dg';
 import {GridCellRenderArgs, Property, Widget} from 'datagrok-api/dg';
 // import {getMorganFingerprint, getMorganFingerprints} from './package';
-import * as chemSearches from './chem_searches';
-import {tanimoto} from './chem_common';
+import * as chemSearches from './chem-searches';
+import {tanimoto} from './chem-common';
 
 export class MoleculeViewer extends DG.JsViewer {
   private moleculeColumnName: string;

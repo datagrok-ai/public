@@ -1,7 +1,7 @@
 import * as DG from 'datagrok-api/dg';
-import {getRdKitModule, getRdKitService} from './chem_common_rdkit';
+import {getRdKitModule, getRdKitService} from './chem-common-rdkit';
 import {rdKitFingerprintToBitArray, tanimoto,
-  defaultMorganFpRadius, defaultMorganFpLength} from './chem_common';
+  defaultMorganFpRadius, defaultMorganFpLength} from './chem-common';
 import BitArray from '@datagrok-libraries/utils/src/bit-array';
 
 async function _chemFindSimilar(molStringsColumn: DG.Column,
