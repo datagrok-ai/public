@@ -30,7 +30,9 @@
     "rxjs": "latest",
     "ts-loader": "latest",
     "typescript": "latest",
-    "worker-loader": "latest"
+    "worker-loader": "latest",
+    "style-loader": "latest",
+    "css-loader": "latest"
   },
   "devDependencies": {
     "datagrok-api": ">0.94.10",
