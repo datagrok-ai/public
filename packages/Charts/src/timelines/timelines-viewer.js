@@ -1,5 +1,6 @@
 import * as echarts from 'echarts';
 import { format } from 'echarts/lib/util/time';
+import $ from 'cash-dom';
 import { EChartViewer } from '../echart-viewer';
 import { options, deepCopy } from './echarts-options';
 
@@ -77,6 +78,9 @@ export class TimelinesViewer extends EChartViewer {
       this.chart.on('mouseout', () => ui.tooltip.hide());
 
       this.option.tooltip.axisPointer.type = this.axisPointer;
+
+      this.legendDiv = ui.div();
+      this.root.appendChild(this.legendDiv);
       this.initialized = true;
     }
   }
@@ -93,6 +97,7 @@ export class TimelinesViewer extends EChartViewer {
       const columnData = this.updateColumnData(property);
       if (property.name === 'colorByColumnName') {
         this.colorMap = this.getColorMap(columnData.categories);
+        this.updateLegend(columnData.column);
       }
     }
     this.render();
@@ -168,7 +173,8 @@ export class TimelinesViewer extends EChartViewer {
       return map;
     }, {});
 
-    this.colorMap = this.getColorMap(this.dataFrame.getCol(this.colorByColumnName).categories);
+    this.colorMap = this.getColorMap(this.columnData.colorByColumnName.categories);
+    this.updateLegend(this.columnData.colorByColumnName.column);
 
     let prevSubj = null;
 
@@ -312,6 +318,13 @@ export class TimelinesViewer extends EChartViewer {
       z.start = this.zoomState[i][0];
       z.end = this.zoomState[i][1];
     });
+  }
+
+  updateLegend(column) {
+    $(this.legendDiv).empty();
+    const legend = DG.Legend.create(column);
+    this.legendDiv.appendChild(legend.root);
+    $(legend.root).addClass('charts-legend');
   }
 
   getStrValue(columnData, idx) {
