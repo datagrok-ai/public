@@ -1,0 +1,7 @@
+.charts-legend {
+  position: absolute;
+  top: 5px;
+  right: 20px;
+  margin: 15px;
+  background-color: transparent;
+}
