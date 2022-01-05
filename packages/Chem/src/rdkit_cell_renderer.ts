@@ -6,6 +6,7 @@ import * as grok from 'datagrok-api/grok';
 import * as ui from 'datagrok-api/ui';
 import * as DG from 'datagrok-api/dg';
 import {convertToRDKit} from './analysis/r_group';
+import {RDMol} from "./rdkit-api";
 
 export class RDKitCellRenderer extends DG.GridCellRenderer {
   readonly WHITE_MOLBLOCK_SUFFIX = `
@@ -53,7 +54,7 @@ M  END
   }
 
   _fetchMolGetOrCreate(molString: string, scaffoldMolString: string, molRegenerateCoords: boolean) {
-    let mol = null;
+    let mol: RDMol | null = null;
     let substructJson = '{}';
 
     try {
@@ -67,6 +68,7 @@ M  END
         mol = null;
       }
     }
+
     if (mol) {
       try {
         if (mol.is_valid()) {
@@ -85,15 +87,14 @@ M  END
             mol = this.rdKitModule.get_mol(molBlock);
           }
           if (!scaffoldIsMolBlock || molRegenerateCoords) {
-            mol.normalize_2d_molblock();
-            mol.straighten_2d_layout();
+            mol!.normalize_2d_molblock();
+            mol!.straighten_2d_layout();
           }
         }
-        if (!mol.is_valid()) {
+        if (!mol!.is_valid()) {
           console.error(
             'In _fetchMolGetOrCreate: RDKit mol is invalid on a molString molecule: `' + molString + '`');
-          mol.delete();
-          mol = null;
+          mol!.delete();
         }
       } catch (e) {
         console.error(

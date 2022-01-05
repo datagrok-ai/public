@@ -69,16 +69,17 @@ In this public repo, we follow some Git best practices.
 
 ## Performance recommendations
 
-General recommendations on writing high-performance JavaScript code
+Some general recommendations on writing high-performance JavaScript code:
 * [Writing Fast, Memory-Efficient JavaScript](https://www.smashingmagazine.com/2012/11/writing-fast-memory-efficient-javascript/)
 * [JavaScript Performance](https://developer.mozilla.org/en-US/docs/Learn/Performance/javascript_performance) 
 
+Below, we will discuss some performance-related topics important to building solutions with Datagrok.
 However, nothing beats common sense, benchmarks, and eventually developing an intuition of
 how fast or slow a particular method would work, and why. 
 
 ### DataFrame
 
-Do not use row-based access for iterating over rows when [performance](help/develop/advanced/performance.md)
+**DO NOT** use row-based access for iterating over rows when [performance](help/develop/advanced/performance.md)
 matters (pretty much anytime when the size of the
 dataset is not known in advance). Each call to `row(i)` creates a `Row` object that is 
 unnecessary, since the underlying storage is columnar. Only use it for passing a reference to 
@@ -86,7 +87,7 @@ a particular row. Prefer using `column.get(i)` methods, instead.
 
 ### Iterables and arrays
 
-**STRONGLY PREFER** using [typed arrays](https://developer.mozilla.org/en-US/docs/Web/JavaScript/Typed_arrays)
+**PREFER** using [typed arrays](https://developer.mozilla.org/en-US/docs/Web/JavaScript/Typed_arrays)
 instead of the standard JS lists when working with numbers or bitsets, if possible. 
 
 When working with iterables, **DO NOT** create arrays for the sole purpose of iterating 
