@@ -6,7 +6,20 @@ on:
     paths:
       - 'help/**'
 jobs:
+  lint:
+    runs-on: ubuntu-20.04
+    environment: Help
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v2
+      - name: Lint
+        uses: docker://markdownlint/markdownlint:latest
+        with:
+          args: --style /github/workspace/markdownlint.rb /github/workspace/help
+
   convert:
+    needs: lint
+    if: github.ref == 'refs/heads/master'
     runs-on: ubuntu-20.04
     environment: Help
     steps:
@@ -55,6 +68,7 @@ jobs:
 
   deploy:
     needs: convert
+    if: github.ref == 'refs/heads/master'
     runs-on: ubuntu-20.04
     environment: Help
     steps:
