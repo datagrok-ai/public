@@ -1,0 +1,39 @@
+{
+	"name": "@datagrok-libraries/bio",
+	"beta": true,
+	"friendlyName": "Datagrok bio library",
+	"version": "0.0.1",
+	"description": "",
+	"dependencies": {
+		"datagrok-api": ">=0.95.8",
+		"@datagrok-libraries/utils": ">=0.0.13",
+		"cash-dom": "latest",
+		"dayjs": "latest"
+	},
+	"devDependencies": {
+		"typescript": "^4.2.3",
+		"ts-loader": "^9.2.6",
+		"webpack": "latest",
+		"webpack-cli": "latest",
+		"@typescript-eslint/eslint-plugin": "^4.29.1",
+		"@typescript-eslint/parser": "^4.29.1",
+		"eslint": "^7.32.0",
+		"eslint-config-google": "^0.14.0"
+	},
+	"scripts": {
+		"link": "npm link",
+		"link-api": "npm link datagrok-api",
+		"link-utils": "npm link @datagrok-libraries/utils",
+		"link-all": "npm link datagrok-api @datagrok-libraries/utils",
+		"debug-bio": "grok publish --rebuild",
+		"release-bio": "grok publish --rebuild --release",
+		"build-bio": "webpack",
+		"build": "webpack",
+		"debug-bio-public": "grok publish public --rebuild",
+		"release-bio-public": "grok publish public --rebuild --release",
+		"debug-bio-local": "grok publish local --rebuild",
+		"release-bio-local": "grok publish local --rebuild --release",
+		"lint": "eslint src --ext .ts",
+		"lint-fix": "eslint src --ext .ts --fix"
+	}
+}

@@ -3,9 +3,9 @@ import * as ui from 'datagrok-api/ui';
 import * as DG from 'datagrok-api/dg';
 
 import {getSequenceMolecularWeight} from './molecular-measure';
-import {AlignedSequenceEncoder} from '@datagrok-libraries/utils/src/sequence-encoder';
-import {DimensionalityReducer} from '@datagrok-libraries/utils/src/reduce-dimensionality';
-import {Measurer} from '@datagrok-libraries/utils/src/string-measure';
+import {AlignedSequenceEncoder} from '@datagrok-libraries/bio/src/sequence-encoder';
+import {DimensionalityReducer} from '@datagrok-libraries/ml/src/reduce-dimensionality';
+import {StringMeasure} from '@datagrok-libraries/ml/src/string-measure';
 import {Coordinates} from '@datagrok-libraries/utils/src/type-declarations';
 
 /**
@@ -157,7 +157,7 @@ export class PeptideSimilaritySpaceWidget {
    */
   constructor(alignedSequencesColumn: DG.Column, view: DG.TableView) {
     this.availableMethods = DimensionalityReducer.availableMethods;
-    this.availableMetrics = Measurer.availableMeasures;
+    this.availableMetrics = StringMeasure.availableMeasures;
     this.method = this.availableMethods[0];
     this.metrics = this.availableMetrics[0];
     this.currentDf = alignedSequencesColumn.dataFrame;
