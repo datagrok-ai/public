@@ -1,7 +1,7 @@
 {
 	"name": "@datagrok/compute",
 	"friendlyName": "Compute",
-	"version": "0.6.8",
+	"version": "0.7.0",
 	"description": "",
 	"dependencies": {
 		"cash-dom": "latest",
@@ -42,5 +42,7 @@
 		"release-compute-localhost": "grok publish localhost --rebuild --release",
 		"debug-compute-compose": "grok publish compose --rebuild",
 		"release-compute-compose": "grok publish compose --rebuild --release"
-	}
+	},
+	"canEdit": [ "Developers" ],
+	"canView": [ "All users" ]
 }

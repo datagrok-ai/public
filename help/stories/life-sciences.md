@@ -20,7 +20,7 @@ While no single computer is capable of working with datasets of unlimited size, 
 been engineered to efficiently work with as big datasets as possible. It offers two modes:
 
 * **Local data**—the whole dataset is loaded into the browser memory. Thanks to our proprietary 
-  [in-memory database](../develop/performance.md#in-memory-database), the platform can efficiently
+  [in-memory database](../develop/advanced/performance.md#in-memory-database), the platform can efficiently
   work with billions of rows or millions of columns. This is the preferred way of working with data
   since it offers interactive visualizations and instant access to all underlying data points.
   Most of the datasets fall into that category.

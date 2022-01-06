@@ -61,7 +61,7 @@ and [Charts](https://github.com/datagrok-ai/public/tree/master/packages/Charts).
 For scientific applications, you may find useful such projects as
 [NGL](https://www.npmjs.com/package/ngl), [RDKit](https://www.npmjs.com/package/@rdkit/rdkit),
 and [OpenChemLib](https://www.npmjs.com/package/openchemlib), but first look at what solutions
-already exist to integrate with them (see the [Cheminformatics](../cheminformatics.md) page).
+already exist to integrate with them (see the [Cheminformatics](../domains/chem/cheminformatics.md) page).
 
 _Links:_
   - [d3](https://www.npmjs.com/package/d3)

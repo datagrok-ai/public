@@ -1,0 +1,279 @@
+.seq-entry-annot-interactive {
+	width: 100% !important;
+}
+
+g.feature.ADA rect.feature {
+}
+
+g.feature.ADA:hover rect.feature {
+	fill: black !important;
+	fill-opacity: 0.8;
+	stroke-opacity: 1;
+}
+
+g.feature.ADA text {
+	font-weight: bold;
+	font-variant: small-caps;
+}
+
+g.feature.AI rect.feature {
+}
+g.feature.AI:hover rect.feature {
+	fill: black !important;
+	fill-opacity: 0.8;
+	stroke-opacity: 1;
+}
+
+g.feature.AI text {
+	font-weight: bold;
+	font-variant: small-caps;
+}
+
+g.feature.FR rect.feature {
+}
+g.feature.FR:hover rect.feature {
+	fill: black !important;
+	fill-opacity: 0.8;
+	stroke-opacity: 1;
+}
+
+g.feature.FR text {
+	font-weight: bold;
+	font-variant: small-caps;
+}
+
+g.feature.HYL rect.feature {
+}
+g.feature.HYL:hover rect.feature {
+	fill: black !important;
+	fill-opacity: 0.8;
+	stroke-opacity: 1;
+}
+
+g.feature.HYL text {
+	font-weight: bold;
+	font-variant: small-caps;
+}
+
+g.feature.HYP rect.feature {
+}
+g.feature.HYP:hover rect.feature {
+	fill: black !important;
+	fill-opacity: 0.8;
+	stroke-opacity: 1;
+}
+
+g.feature.HYP text {
+	font-weight: bold;
+	font-variant: small-caps;
+}
+
+g.feature.LG rect.feature {
+}
+g.feature.LG:hover rect.feature {
+	fill: black !important;
+	fill-opacity: 0.8;
+	stroke-opacity: 1;
+}
+
+g.feature.LG text {
+	font-weight: bold;
+	font-variant: small-caps;
+}
+
+g.feature.MA rect.feature {
+}
+g.feature.MA:hover rect.feature {
+	fill: black !important;
+	fill-opacity: 0.8;
+	stroke-opacity: 1;
+}
+
+g.feature.MA text {
+	font-weight: bold;
+	font-variant: small-caps;
+}
+
+g.feature.MLY rect.feature {
+}
+g.feature.MLY:hover rect.feature {
+	fill: black !important;
+	fill-opacity: 0.8;
+	stroke-opacity: 1;
+}
+
+g.feature.MLY text {
+	font-weight: bold;
+	font-variant: small-caps;
+}
+
+g.feature.MeO rect.feature {
+}
+g.feature.MeO:hover rect.feature {
+	fill: black !important;
+	fill-opacity: 0.8;
+	stroke-opacity: 1;
+}
+
+g.feature.MeO text {
+	font-weight: bold;
+	font-variant: small-caps;
+}
+
+g.feature.N6AL rect.feature {
+}
+g.feature.N6AL:hover rect.feature {
+	fill: black !important;
+	fill-opacity: 0.8;
+	stroke-opacity: 1;
+}
+
+g.feature.N6AL text {
+	font-weight: bold;
+	font-variant: small-caps;
+}
+
+
+g.feature.NG rect.feature {
+}
+g.feature.NG:hover rect.feature {
+	fill: black !important;
+	fill-opacity: 0.8;
+	stroke-opacity: 1;
+}
+
+g.feature.NG text {
+	font-weight: bold;
+	font-variant: small-caps;
+}
+
+g.feature.NtG rect.feature {
+}
+g.feature.NtG:hover rect.feature {
+	fill: black !important;
+	fill-opacity: 0.8;
+	stroke-opacity: 1;
+}
+
+g.feature.NtG text {
+	font-weight: bold;
+	font-variant: small-caps;
+}
+
+g.feature.OlG rect.feature {
+}
+g.feature.OlG:hover rect.feature {
+	fill: black !important;
+	fill-opacity: 0.8;
+	stroke-opacity: 1;
+}
+
+g.feature.OlG text {
+	font-weight: bold;
+	font-variant: small-caps;
+}
+
+g.feature.PP rect.feature {
+}
+g.feature.PP:hover rect.feature {
+	fill: black !important;
+	fill-opacity: 0.8;
+	stroke-opacity: 1;
+}
+
+g.feature.PP text {
+	font-weight: bold;
+	font-variant: small-caps;
+}
+
+g.feature.PTB rect.feature {
+}
+g.feature.PTB:hover rect.feature {
+	fill: black !important;
+	fill-opacity: 0.8;
+	stroke-opacity: 1;
+}
+
+g.feature.PTB text {
+	font-weight: bold;
+	font-variant: small-caps;
+}
+
+g.feature.PCA rect.feature {
+}
+g.feature.PCA:hover rect.feature {
+	fill: black !important;
+	fill-opacity: 0.8;
+	stroke-opacity: 1;
+}
+
+g.feature.PCA text {
+	font-weight: bold;
+	font-variant: small-caps;
+}
+
+g.feature.SPC rect.feature {
+}
+
+g.feature.SPC:hover rect.feature {
+	fill: black !important;
+	fill-opacity: 0.8;
+	stroke-opacity: 1;
+}
+
+g.feature.SPC text {
+	font-weight: bold;
+	font-variant: small-caps;
+}
+
+g.feature.SUMO rect.feature {
+}
+g.feature.SUMO:hover rect.feature {
+	fill: black !important;
+	fill-opacity: 0.8;
+	stroke-opacity: 1;
+}
+
+g.feature.SUMO text {
+	font-weight: bold;
+	font-variant: small-caps;
+}
+
+g.feature.TO rect.feature {
+}
+g.feature.TO:hover rect.feature {
+	fill: black !important;
+	fill-opacity: 0.8;
+	stroke-opacity: 1;
+}
+
+g.feature.TO text {
+	font-weight: bold;
+	font-variant: small-caps;
+}
+
+g.feature.UB rect.feature {
+}
+
+g.feature.UB:hover rect.feature {
+	fill: black !important;
+	fill-opacity: 0.8;
+	stroke-opacity: 1;
+}
+
+g.feature.UB text {
+	font-weight: bold;
+	font-variant: small-caps;
+}
+
+g.feature.D rect.feature {
+}
+g.feature.P rect.feature {
+}
+
+
+g.feature.alpha rect.feature {
+	fill: red;
+}
+
+

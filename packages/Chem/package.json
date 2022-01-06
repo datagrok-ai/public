@@ -2,7 +2,7 @@
   "name": "@datagrok/chem",
   "friendlyName": "Chem",
   "fullName": "Chem",
-  "version": "0.41.0",
+  "version": "0.42.1",
   "description": "Cheminformatics support: \n\n* RDKit-based rendering \n* Molecule sketching \n*",
   "properties": [
     {
@@ -30,7 +30,9 @@
     "rxjs": "latest",
     "ts-loader": "latest",
     "typescript": "latest",
-    "worker-loader": "latest"
+    "worker-loader": "latest",
+    "style-loader": "latest",
+    "css-loader": "latest"
   },
   "devDependencies": {
     "datagrok-api": ">0.94.10",
@@ -64,8 +66,14 @@
     "link-api": "npm link datagrok-api",
     "link-utils": "npm link @datagrok-libraries/utils",
     "build": "webpack",
-    "lint": "eslint ./src/*.ts",
-    "lint-fix": "eslint ./src/*.ts --fix",
+    "lint": "eslint \"./src/**/*.ts\"",
+    "lint-fix": "eslint \"./src/**/*.ts\" --fix",
     "test": "set HOST=dev && jest"
-  }
+  },
+  "canEdit": [
+    "Developers"
+  ],
+  "canView": [
+    "All users"
+  ]
 }

@@ -1,6 +1,6 @@
 import * as ui from 'datagrok-api/ui';
 import * as DG from 'datagrok-api/dg';
-import { smilesTo3DCoordinates } from '../scripts-api';
+import {smilesTo3DCoordinates} from '../scripts-api';
 
 export async function structure3dWidget(smiles: string) {
   const sdf = (await smilesTo3DCoordinates(smiles)).replaceAll('\\n', '\n');
@@ -19,6 +19,6 @@ export async function structure3dWidget(smiles: string) {
     comp.addRepresentation('ball+stick');
     comp.autoView();
   });
-  
+
   return new DG.Widget(nglHost);
 }

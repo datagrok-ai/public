@@ -9,7 +9,7 @@ like: `MAJOR.MINOR.TEST`.
 ### Major release
 
 A major release is made every time the code is released on [public.datagrok.ai](https://public.datagrok.ai). Before the
-release, the new version goes through all [quality assurance](quality-assurance.md) operations, including manual testing
+release, the new version goes through all [quality assurance](admin/quality-assurance.md) operations, including manual testing
 of critical changes by the QA Engineer.
 
 It may contain changes that break backward compatibility with previous versions or represent fundamental changes to
@@ -21,7 +21,7 @@ to zero.
 ### Minor release
 
 Minor releases are the most common type of release which has the most recent features and bug fixes. Every release is
-tested on the dev environment and passes all [quality assurance](quality-assurance.md) requirements.
+tested on the dev environment and passes all [quality assurance](admin/quality-assurance.md) requirements.
 
 For a minor release, the `MINOR` component must be incremented by one, and the `TEST` component must be set to zero.
 The `MAJOR` component must remain unchanged.

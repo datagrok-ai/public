@@ -154,6 +154,15 @@ export const SEMTYPE = {
   FILE: 'File',
 }
 
+export const UNITS = {
+  Molecule : {
+    SMILES: 'smiles',
+    MOLBLOCK: 'molblock',
+    V3K_MOLBLOCK: 'v3Kmolblock',
+    INCHI: 'inchi'
+  }
+}
+
 /////// Stats
 
 /** @enum {STATS} */
@@ -207,6 +216,8 @@ export const TAGS = {
   /** Set on a dataframe column; used to format column contents in grids, CSV export, passing to scripts */
   FORMAT: 'format',
   FORMULA: 'formula',
+
+  UNITS: 'units',  // see DG.UNITS
 }
 
 export const FUNC_TYPES = {

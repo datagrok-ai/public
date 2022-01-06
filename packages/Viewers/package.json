@@ -30,5 +30,7 @@
 		"release-viewers-local": "grok publish local --rebuild --release",
 		"debug-viewers-localhost": "grok publish localhost --rebuild",
 		"release-viewers-localhost": "grok publish localhost --rebuild --release"
-	}
+	},
+	"canEdit": [ "Developers" ],
+	"canView": [ "All users" ]
 }

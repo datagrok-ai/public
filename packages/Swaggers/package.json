@@ -4,5 +4,7 @@
   "fullName": "Swaggers",
   "description": "Collection of Swagger",
   "sources": [
-  ]
+  ],
+  "canEdit": [ "Developers" ],
+  "canView": [ "All users" ]
 }

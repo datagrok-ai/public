@@ -26,7 +26,7 @@ export class TutorialWidget extends DG.Widget {
         this.totalTracks = runners.length;
         let i = 0;
 
-        while(runners){
+        while(i < this.totalTracks){
         
             let complete = await runners[i].getCompleted(runners[i].track.tutorials);
             let total = runners[i].track.tutorials.length;

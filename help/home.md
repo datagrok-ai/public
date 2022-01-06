@@ -50,7 +50,7 @@ Manage availability, usability, integrity and security of your data, all in one 
 
 Our unique technology lets you explore datasets faster and more efficiently than ever, allowing to find patterns that were previously impossible to spot, resulting in the acceleration of data-driven decisions.
 
-  * [Proprietary in-memory database](develop/performance.md) technology allows to handle tens of millions of rows in the browser
+  * [Proprietary in-memory database](develop/advanced/performance.md) technology allows to handle tens of millions of rows in the browser
   * [30+ high-performance interactive viewers](visualize/viewers.md)
   * [Powerful integration with any visualizations available in R, Python, or Julia languages](visualize/viewers/scripting-viewer.md)
   * Built-in viewers: [regression lines](visualize/viewers/scatter-plot.md), confidence intervals, correlations, [statistical tests](learn/data-science.md)
@@ -77,7 +77,7 @@ Turn your data into actionable insights by using state-of-the art machine learni
 
 ## Apply
 
-  * Build [custom applications](develop/applications.md) on top of the platform
+  * Build [custom applications](develop/how-to/build-an-app.md) on top of the platform
   * [Cheminformatics](domains/chem/cheminformatics.md)
   * Text analytics, [natural language processing](https://github.com/datagrok-ai/public/tree/master/packages/NLP) with cloud-based machine translation
   * [Location Analytics](https://github.com/datagrok-ai/public/tree/master/packages/Leaflet)
@@ -97,4 +97,4 @@ Turn your data into actionable insights by using state-of-the art machine learni
   ** Tutorials (go to [Datagrok Public](https://public.datagrok.ai/), find "Help" section and select "Tutorials")
   ** [Video lessons](video-lessons.md)
   ** Video platform overviews (full [Table of Contents](video-contents.md), selection [for developers](develop/getting-started.md#datagrok-video-walkthrough))
-  ** [Exercises for developers](develop/exercises.md)
+  ** [Exercises for developers](develop/exercises/exercises.md)

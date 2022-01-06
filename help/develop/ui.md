@@ -1,11 +1,17 @@
-<!-- TITLE: Grok UI -->
+<!-- TITLE: Datagrok UI -->
 <!-- SUBTITLE: -->
-
-<!-- This is a user-centric view on the Datagrok applications UI development-->
 
 # Datagrok UI
 
-This article describes the routines for building a user interface in Datagrok.
+This article describes the routines for building a user interface in Datagrok. 
+See [JS API class reference](https://datagrok.ai/js-api/modules/ui) for details. 
+
+The UI library provides primitives (buttons, dialogs, accordions, popups, etc), as well as
+[input controls](ui.md),
+[spreadsheets](ui.md#grid),
+and viewers such as [scatter plots](../visualize/viewers/scatter-plot.md).
+See [UI class reference](https://datagrok.ai/js-api/modules/ui) for details.
+
 
 ## Live examples
 

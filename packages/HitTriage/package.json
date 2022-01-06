@@ -24,5 +24,7 @@
 		"release-hittriage-dev": "grok publish dev --rebuild --release",
 		"debug-hittriage-public": "grok publish public --rebuild",
 		"release-hittriage-public": "grok publish public --rebuild --release"
-	}
+	},
+	"canEdit": [ "Developers" ],
+	"canView": [ "All users" ]
 }

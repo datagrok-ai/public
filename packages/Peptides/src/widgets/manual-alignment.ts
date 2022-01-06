@@ -2,7 +2,7 @@ import * as ui from 'datagrok-api/ui';
 import * as DG from 'datagrok-api/dg';
 
 import $ from 'cash-dom';
-import {model} from '../viewers/model';
+import {Peptides} from '../peptides';
 import {splitAlignedPeptides} from '../utils/split-aligned';
 import '../styles.css';
 
@@ -29,7 +29,8 @@ export function manualAlignmentWidget(alignedSequenceCol: DG.Column, currentDf: 
       }
     }
 
-    await model.updateDefault();
+    // await model.updateDefault();
+    await Peptides.recalculate();
   });
 
   const resetBtn = ui.button(

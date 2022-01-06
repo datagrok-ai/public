@@ -123,6 +123,6 @@ See also:
 
   - [View layout](../../visualize/view-layout.md)
   - [Table view](../../overview/table-view.md)
-  - [User data storage](../user-data-storage.md)
+  - [User data storage](user-data-storage.md)
   - [JavaScript API Samples: Layout permissions and metadata](https://public.datagrok.ai/js/samples/dapi/layouts-and-permissions)
   - [JavaScript API Samples: Saving layouts to user data storage](https://public.datagrok.ai/js/samples/ui/views/layouts)

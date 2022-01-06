@@ -1,6 +1,9 @@
 {
   "name": "@datagrok/schemas-demo",
+  "beta": true,
   "version": "1.0.0",
   "description": "Demonstrates relations between schemas, properties, files, and functions",
-  "sources": [ ]
+  "sources": [ ],
+  "canEdit": [ "Developers" ],
+  "canView": [ "All users" ]
 }

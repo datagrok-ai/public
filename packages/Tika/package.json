@@ -4,5 +4,7 @@
   "fullName": "Apache Tika",
   "description": "Apache Tika CLI tools integration",
   "sources": [
-  ]
+  ],
+  "canEdit": [ "Developers" ],
+  "canView": [ "All users" ]
 }

@@ -1,12 +1,13 @@
 // This file may not be used in
 import * as ui from 'datagrok-api/ui';
+import * as grok from 'datagrok-api/grok';
 import * as DG from 'datagrok-api/dg';
 // The file is imported from a WebWorker. Don't use Datagrok imports
-import { getRdKitModule, drawMoleculeToCanvas } from '../chem_common_rdkit';
+import {getRdKitModule, drawMoleculeToCanvas, getRdKitWebRoot} from '../chem-common-rdkit';
 
 let _alertsSmarts: string[] = [];
 let _alertsDescriptions: string[] = [];
-let _smartsMap: Map<string, any> = new Map();
+const _smartsMap: Map<string, any> = new Map();
 let _data: string[] | null = null;
 
 
@@ -18,7 +19,7 @@ function loadAlertsCollection(smarts: string[]) {
   }
 }
 
-function getStructuralAlerts(smiles: string) {
+function getStructuralAlerts(smiles: string): number[] {
   const alerts: number[] = [];
   const mol = getRdKitModule().get_mol(smiles);
   //TODO: use SustructLibrary and count_matches instead. Currently throws an error on rule id 221
@@ -32,10 +33,11 @@ function getStructuralAlerts(smiles: string) {
       alerts.push(i);
     }
   }
+  mol.delete();
   return alerts;
 }
 
-export async function initStructuralAlertsContext(
+export function initStructuralAlertsContext(
   alertsSmarts: string[], alertsDescriptions: string[]) {
   _alertsSmarts = alertsSmarts;
   _alertsDescriptions = alertsDescriptions;
@@ -43,7 +45,18 @@ export async function initStructuralAlertsContext(
   // await getRdKitService().initStructuralAlerts(_alertsSmarts);
 }
 
-export function structuralAlertsWidget(smiles: string) {
+async function loadSADataset() {
+  const path = getRdKitWebRoot() + 'data-samples/alert_collection.csv';
+  const table = await grok.data.loadTable(path);
+  const alertsSmartsList = table.columns['smarts'].toList();
+  const alertsDescriptionsList = table.columns['description'].toList();
+  initStructuralAlertsContext(alertsSmartsList, alertsDescriptionsList);
+}
+
+export async function structuralAlertsWidget(smiles: string) {
+  if (_data === null) {
+    await loadSADataset();
+  }
   const alerts = getStructuralAlerts(smiles);
   // await getRdKitService().getStructuralAlerts(smiles); // getStructuralAlerts(smiles);
   const width = 200;

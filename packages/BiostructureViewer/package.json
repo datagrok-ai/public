@@ -1,9 +1,15 @@
 {
 	"name": "biostructureviewer",
-	"beta": true,
+	"beta": false,
 	"friendlyName": "BiostructureViewer",
-	"version": "0.0.2",
+	"version": "0.1.0",
 	"description": "",
+	"sources": [
+		"css/ngl.css",
+		"css/pviz-core.css",
+		"css/additionalStyles.css",
+		"src/viewers/pviz-bundle.min.js"
+	],
 	"dependencies": {
 		"datagrok-api": ">=0.95.11",
 		"@datagrok-libraries/utils": ">=0.0.12",
@@ -26,11 +32,19 @@
 		"release-biostructureviewer": "grok publish --rebuild --release",
 		"build-biostructureviewer": "webpack",
 		"build": "webpack",
+		"debug-biostructureviewer-dev": "grok publish dev --rebuild",
+		"release-biostructureviewer-dev": "grok publish dev --rebuild --release",
 		"debug-biostructureviewer-public": "grok publish public --rebuild",
 		"release-biostructureviewer-public": "grok publish public --rebuild --release",
 		"debug-biostructureviewer-local": "grok publish local --rebuild",
 		"release-biostructureviewer-local": "grok publish local --rebuild --release",
 		"lint": "eslint src --ext .ts",
 		"lint-fix": "eslint src --ext .ts --fix"
-	}
+	},
+	"canEdit": [
+		"Developers"
+	],
+	"canView": [
+		"All users"
+	]
 }

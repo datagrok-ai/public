@@ -79,7 +79,7 @@ extensions.
 [Extending and customizing Datagrok]: extending-and-customizing.md
 [Building an application]: how-to/build-an-app.md
 [Building a UI]: ui.md
-[Performance]: performance.md
+[Performance]: advanced/performance.md
 [Demo]: https://www.youtube.com/watch?v=tVwpRB8fikQ
 [Platform overview]: ../video-contents.md#getting-started
 [JS API overview]: ../video-contents.md#javascript-api
@@ -100,4 +100,4 @@ extensions.
 [viewers]: https://github.com/datagrok-ai/public/tree/master/packages/Viewers
 [filters]: https://github.com/datagrok-ai/public/blob/master/packages/Widgets/src/filters/radio_button_filter.js
 [datagrok-tools README]: https://github.com/datagrok-ai/public/tree/master/tools#datagrok-tools
-[JavaScript exercises]: ./exercises.md
+[JavaScript exercises]: exercises/exercises.md

@@ -3,7 +3,7 @@
 #help-url: https://datagrok.ai/help/domains/chem/functions/mutate
 #language: python
 #tags: demo, chem, rdkit
-#top-menu: Chem | Mutate
+#top-menu: Chem | Mutate...
 #input: string smiles = CN1C(CC(O)C1=O)C1=CN=CC=C1 {semType: Molecule} [Molecule, in SMILES format]
 #input: int steps = 1 [Number of mutation steps]
 #input: bool randomize = true [Randomize mutations]

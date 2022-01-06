@@ -31,7 +31,7 @@ that allows for easy analysis of event parameters (See the following tables: `ev
  
 ## Client-based activity
 
-Due to the unique technology used in Datagrok (such as [in-memory database](../develop/performance.md#in-memory-database))
+Due to the unique technology used in Datagrok (such as [in-memory database](../develop/advanced/performance.md#in-memory-database))
 , a significant part of the users activity happens completely on the client side, not using the server at all.
 This includes things like opening local files, aggregating tables, adding [viewers](../visualize/viewers.md), etc.
 Still, each action a user performs generates an internal named event in the platform. These events are used for

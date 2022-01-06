@@ -2,19 +2,22 @@
 	"name": "@datagrok/dev-tools",
 	"beta": false,
 	"friendlyName": "DevTools",
-	"version": "1.0.2",
+	"version": "1.1.2",
 	"description": "",
 	"dependencies": {
-		"datagrok-api": ">=0.95.8"
+		"@types/codemirror": "^5.60.5",
+		"codemirror": "^5.65.0",
+		"datagrok-api": ">=0.99.0",
+		"rxjs": "^7.5.1"
 	},
 	"devDependencies": {
-		"webpack": "latest",
-		"webpack-cli": "latest",
+		"cash-dom": "^8.1.0",
 		"css-loader": "^5.2.4",
 		"style-loader": "^2.0.0",
 		"ts-loader": "^9.2.3",
 		"typescript": "^4.3.5",
-		"cash-dom": "^8.1.0"
+		"webpack": "latest",
+		"webpack-cli": "latest"
 	},
 	"scripts": {
 		"link-api": "npm link datagrok-api",
@@ -26,5 +29,7 @@
 		"release-dev-tools-public": "grok publish public --rebuild --release",
 		"debug-dev-tools-local": "grok publish local --rebuild",
 		"release-dev-tools-local": "grok publish local --rebuild --release"
-	}
+	},
+	"canEdit": [ "Developers" ],
+	"canView": [ "All users" ]
 }
