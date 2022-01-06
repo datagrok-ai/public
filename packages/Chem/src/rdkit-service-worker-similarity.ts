@@ -17,9 +17,9 @@ export class RdKitServiceWorkerSimilarity extends RdKitServiceWorkerBase {
 
   initMorganFingerprints() {
     this.freeMorganFingerprints();
-    if (this._rdKitMols === null) {
+    if (this._rdKitMols === null)
       return;
-    }
+
     this._tanimotoFps = [];
     for (let i = 0; i < this._rdKitMols.length; ++i) {
       const item = this._rdKitMols[i];
@@ -35,9 +35,9 @@ export class RdKitServiceWorkerSimilarity extends RdKitServiceWorkerBase {
   }
 
   getMorganFingerprints() {
-    if (this._tanimotoFps === null) {
+    if (this._tanimotoFps === null)
       return [];
-    }
+
     return this._tanimotoFps!.map((e: any) => {
       return {data: e.getRawData().buffer, length: e.length};
     });

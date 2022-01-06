@@ -13,7 +13,9 @@ export async function addDescriptors(smiles: DG.Column, viewTable: DG.DataFrame)
     await grok.dapi.userDataStorage.postValue(_STORAGE_NAME, _KEY, JSON.stringify(selected));
     getSelected().then((selected) => {
       const pi = DG.TaskBarProgressIndicator.create('Calculating descriptors');
-      getDescriptorsPy(smiles.name, DG.DataFrame.fromColumns([smiles]), 'selected', DG.DataFrame.fromColumns([DG.Column.fromList('string', 'selected', selected)]),
+      getDescriptorsPy(
+        smiles.name, DG.DataFrame.fromColumns([smiles]), 'selected',
+        DG.DataFrame.fromColumns([DG.Column.fromList('string', 'selected', selected)]),
       ).then((table: any) => {
         addResultColumns(table, viewTable);
       });
@@ -38,13 +40,15 @@ export function getDescriptorsSingle(smiles: string) {
     removeChildren(result);
     result.appendChild(ui.loader());
     getSelected().then((selected) => {
-      getDescriptorsPy('smiles', DG.DataFrame.fromCsv(`smiles\n${smiles}`), 'selected', DG.DataFrame.fromColumns([DG.Column.fromList('string', 'selected', selected)]),
+      getDescriptorsPy(
+        'smiles', DG.DataFrame.fromCsv(`smiles\n${smiles}`), 'selected',
+        DG.DataFrame.fromColumns([DG.Column.fromList('string', 'selected', selected)]),
       ).then((table: any) => {
         removeChildren(result);
         const map: { [_: string]: any } = {};
-        for (const descriptor of selected) {
+        for (const descriptor of selected)
           map[descriptor] = table.col(descriptor).get(0);
-        }
+
         result.appendChild(ui.tableFromMap(map));
       });
     });
@@ -82,7 +86,9 @@ export function getDescriptorsApp() {
   }, defaultSmiles);
   const addButton = ui.bigButton('ADD', async () => {
     getSelected().then((selected) => {
-      getDescriptorsPy('smiles', DG.DataFrame.fromCsv(`smiles\n${sketcherValue}`), 'selected', DG.DataFrame.fromColumns([DG.Column.fromList('string', 'selected', selected)]),
+      getDescriptorsPy(
+        'smiles', DG.DataFrame.fromCsv(`smiles\n${sketcherValue}`), 'selected',
+        DG.DataFrame.fromColumns([DG.Column.fromList('string', 'selected', selected)]),
       ).then((t) => {
       //grok.chem.descriptors(DG.DataFrame.fromCsv(`smiles\n${sketcherValue}`), 'smiles', selected).then(t => {
         const columnNames = table.columns.names();
@@ -90,9 +96,8 @@ export function getDescriptorsApp() {
           table = DG.DataFrame.create();
           table.name = 'Descriptors';
           view.dataFrame = table;
-          for (const col of t.columns.toList()) {
+          for (const col of t.columns.toList())
             table.columns.addNew(col.name, col.type);
-          }
         }
         table.rows.addNew(t.columns.toList().map((c: any) => c.get(0)));
       });
@@ -124,7 +129,7 @@ function openDescriptorsDialog(selected: any, onOK: any) {
     const items: DG.TreeViewNode[] = [];
 
     const checkAll = (val: boolean) => {
-      for (const g in groups) groups[g].checked = val;
+      for (const g of Object.values(groups)) g.checked = val;
       for (const i of items) i.checked = val;
     };
 
@@ -138,16 +143,16 @@ function openDescriptorsDialog(selected: any, onOK: any) {
     countLabel.style.display = 'inline-flex';
 
     const keys = Object.keys(descriptors);
-    for (const groupName in keys) {
-      const group = tree.group(keys[groupName], null, false);
+    for (const groupName of keys) {
+      const group = tree.group(groupName, null, false);
       group.enableCheckBox();
-      groups[keys[groupName]] = group;
+      groups[groupName] = group;
 
       group.checkBox!.onchange = (e) => {
         countLabel.textContent = `${items.filter((i) => i.checked).length} checked`;
       };
 
-      for (const descriptor of descriptors[keys[groupName]]['descriptors']) {
+      for (const descriptor of descriptors[groupName]['descriptors']) {
         const item = group.item(descriptor['name'], descriptor);
         item.enableCheckBox(selected.includes(descriptor['name']));
         items.push(item);
@@ -173,7 +178,8 @@ async function getSelected() {
   const str = await grok.dapi.userDataStorage.getValue(_STORAGE_NAME, _KEY);
   let selected = (str != null && str !== '') ? JSON.parse(str) : [];
   if (selected.length === 0) {
-    //selected = (await grok.chem.descriptorsTree() as any)['Lipinski']['descriptors'].slice(0, 3).map((p: any) => p['name']);
+    //selected =
+    //  (await grok.chem.descriptorsTree() as any)['Lipinski']['descriptors'].slice(0, 3).map((p: any) => p['name']);
     selected = (await getDescriptorsTree() as any)['Lipinski']['descriptors'].slice(0, 3).map((p: any) => p['name']);
     await grok.dapi.userDataStorage.postValue(_STORAGE_NAME, _KEY, JSON.stringify(selected));
   }
@@ -182,9 +188,8 @@ async function getSelected() {
 
 //description: Removes all children from node
 function removeChildren(node: any) {
-  while (node.firstChild) {
+  while (node.firstChild)
     node.removeChild(node.firstChild);
-  }
 }
 
 //description: add columns into table.
@@ -201,9 +206,9 @@ function addResultColumns(table: DG.DataFrame, viewTable: DG.DataFrame): void {
 }
 
 function getName(initialName: string, existingNames: string[]) {
-  if (!existingNames.includes(initialName)) {
+  if (!existingNames.includes(initialName))
     return initialName;
-  } else {
+  else {
     let counter: number = 1;
     let newName: string = (' ' + initialName + '_' + counter).slice(1);
     while (existingNames.includes(newName)) {

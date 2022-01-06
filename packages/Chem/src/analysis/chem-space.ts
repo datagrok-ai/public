@@ -36,7 +36,6 @@ export async function chemSpace(table: DG.DataFrame, molColumn: DG.Column) {
         reject(error.message);
       };
     });
-  } else {
+  } else
     throw new Error('Your browser doesn\'t support web workers.');
-  }
 }

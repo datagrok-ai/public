@@ -33,9 +33,9 @@ export function addInchiKeys(col: DG.Column): void {
   const pi = DG.TaskBarProgressIndicator.create('Getting Inchi Keys');
   const rdKitModule = getRdKitModule();
   const inchiKeys = new Array(col.length);
-  for (let i = 0; i < inchiKeys.length; i++) {
+  for (let i = 0; i < inchiKeys.length; i++)
     inchiKeys[i] = rdKitModule.get_inchikey_for_inchi(rdKitModule.get_mol(col.get(i)).get_inchi());
-  }
+
 
   const name = getName('inchi_key', col.dataFrame.columns.names());
 
@@ -44,9 +44,9 @@ export function addInchiKeys(col: DG.Column): void {
 }
 
 function getName(initialName: string, existingNames: string[]) {
-  if (!existingNames.includes(initialName)) {
+  if (!existingNames.includes(initialName))
     return initialName;
-  } else {
+  else {
     let counter: number = 1;
     let newName: string = (' ' + initialName + '_' + counter).slice(1);
     while (existingNames.includes(newName)) {

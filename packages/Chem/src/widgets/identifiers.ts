@@ -82,9 +82,8 @@ class UniChemSource {
 
   static byName(name: string) {
     for (const source of Object.values(this._sources)) {
-      if (source.name === name) {
+      if (source.name === name)
         return source;
-      }
     }
     return null;
   }
@@ -114,9 +113,9 @@ export async function identifiersWidget(smiles: string) {
   const idMap = await getCompoundsIds(inchiKey);
   await UniChemSource.refreshSources();
 
-  for (const [source, id] of Object.entries(idMap)) {
+  for (const [source, id] of Object.entries(idMap))
     idMap[source] = ui.link(id, () => window.open(UniChemSource.byName(source)!.baseUrl + id));
-  }
+
 
   return new DG.Widget(ui.tableFromMap(idMap));
 }

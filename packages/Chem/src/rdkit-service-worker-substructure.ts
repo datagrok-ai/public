@@ -1,5 +1,5 @@
 import {RdKitServiceWorkerSimilarity} from './rdkit-service-worker-similarity';
-import {isMolBlock} from "./chem-utils";
+import {isMolBlock} from './chem-utils';
 
 export class RdkitServiceWorkerSubstructure extends RdKitServiceWorkerSimilarity {
   // _patternFps: BitArray[] | null = null;
@@ -12,9 +12,9 @@ export class RdkitServiceWorkerSubstructure extends RdKitServiceWorkerSimilarity
   initMoleculesStructures(dict: string[]) {
     this.freeMoleculesStructures();
     this.freeMorganFingerprints();
-    if (dict.length === 0) {
+    if (dict.length === 0)
       return;
-    }
+
     this._rdKitMols = [];
     // this._patternFps = [];
     const hashToMolblock: {[_:string] : any} = {};
@@ -30,9 +30,8 @@ export class RdkitServiceWorkerSubstructure extends RdKitServiceWorkerSimilarity
         if (isMolBlock(item)) {
           item = mol.normalize_2d_molblock();
           mol.straighten_2d_layout();
-          if (!hashToMolblock[item]) {
+          if (!hashToMolblock[item])
             hashToMolblock[item] = mol.get_molblock();
-          }
         }
       } catch (e) {
         console.error(
@@ -63,18 +62,15 @@ export class RdkitServiceWorkerSubstructure extends RdKitServiceWorkerSimilarity
           if (querySmarts !== null && querySmarts !== '') {
             console.log('Cannot parse a MolBlock. Switching to SMARTS');
             queryMol = this._rdKitModule.get_qmol(querySmarts);
-          } else {
+          } else
             throw 'SMARTS not set';
-          }
         }
         if (queryMol) {
           if (queryMol.is_valid()) {
-            for (let i = 0; i < this._rdKitMols!.length; ++i)
+            for (let i = 0; i < this._rdKitMols!.length; ++i) {
             // if (arr.equals(this._patternFps![i].and(arr)))
-            {
-              if (this._rdKitMols![i]!.get_substruct_match(queryMol) !== '{}') {
+              if (this._rdKitMols![i]!.get_substruct_match(queryMol) !== '{}')
                 matches.push(i);
-              }
             }
           }
           queryMol.delete();

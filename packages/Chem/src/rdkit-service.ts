@@ -20,9 +20,9 @@ export class RdKitService {
     const initWaiters = [];
     for (let i = 0; i < this._nParallelWorkers; ++i) {
       const workerClient = new RdKitServiceWorkerClient();
-      if (i < this._nJobWorkers) {
+      if (i < this._nJobWorkers)
         this._jobWorkers[i] = workerClient;
-      }
+
       this._parallelWorkers[i] = workerClient;
       initWaiters.push(workerClient.moduleInit(webRoot));
     }
@@ -33,9 +33,9 @@ export class RdKitService {
   async _doParallel(fooScatter: any, fooGather = (d: any) => []): Promise<any> {
     const promises = [];
     const nWorkers = this._nParallelWorkers;
-    for (let i = 0; i < nWorkers; i++) {
+    for (let i = 0; i < nWorkers; i++)
       promises[i] = fooScatter(i, nWorkers);
-    }
+
     const data = await Promise.all(promises);
     return fooGather(data);
   }

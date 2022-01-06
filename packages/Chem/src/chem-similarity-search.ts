@@ -81,13 +81,13 @@ export class MoleculeViewer extends DG.JsViewer {
   }
 
   async render(computeData = true): Promise<void> {
-    if (!this.initialized) {
+    if (!this.initialized)
       return;
-    }
+
     if (this.dataFrame && computeData) {
-      if (this.root.hasChildNodes()) {
+      if (this.root.hasChildNodes())
         this.root.removeChild(this.root.childNodes[0]);
-      }
+
 
       const curIdx = this.dataFrame.currentRowIdx;
       const df = await chemSimilaritySearch(this.dataFrame, this.dataFrame?.getCol(this.moleculeColumnName),
@@ -105,9 +105,8 @@ export class MoleculeViewer extends DG.JsViewer {
 
         const grid = ui.div([mol, text]);
         grid.addEventListener('click', (event: Event) => {
-          if (this.dataFrame) {
+          if (this.dataFrame)
             this.dataFrame.currentRowIdx = idxs.get(i);
-          }
         });
         g[cnt++] = grid;
       }
@@ -164,12 +163,12 @@ export async function chemSimilaritySearch(
   }
 
   function compare(i1: number, i2: number) {
-    if (distances[i1] > distances[i2]) {
+    if (distances[i1] > distances[i2])
       return -1;
-    }
-    if (distances[i1] < distances[i2]) {
+
+    if (distances[i1] < distances[i2])
       return 1;
-    }
+
     return 0;
   }
 
@@ -183,9 +182,9 @@ export async function chemSimilaritySearch(
   for (let n = 0; n < limit; n++) {
     const idx = indexes[n];
     const score = distances[idx];
-    if (score < minScore) {
+    if (score < minScore)
       break;
-    }
+
     molsIdxs[n] = idx;
     molsList[n] = smiles.get(idx);
     scoresList[n] = score;
@@ -193,6 +192,6 @@ export async function chemSimilaritySearch(
   const mols = DG.Column.fromList(DG.COLUMN_TYPE.STRING, 'smiles', molsList);
   mols.semType = DG.SEMTYPE.MOLECULE;
   const scores = DG.Column.fromList(DG.COLUMN_TYPE.FLOAT, 'score', scoresList);
-  const new_indexes = DG.Column.fromList(DG.COLUMN_TYPE.INT, 'indexes', molsIdxs);
-  return DG.DataFrame.fromColumns([mols, scores, new_indexes]);
+  const newIndexes = DG.Column.fromList(DG.COLUMN_TYPE.INT, 'indexes', molsIdxs);
+  return DG.DataFrame.fromColumns([mols, scores, newIndexes]);
 }
