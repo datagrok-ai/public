@@ -33,6 +33,7 @@ function getStructuralAlerts(smiles: string): number[] {
       alerts.push(i);
     }
   }
+  mol.delete();
   return alerts;
 }
 
