@@ -6,8 +6,8 @@ import * as grok from 'datagrok-api/grok';
 import * as ui from 'datagrok-api/ui';
 import * as DG from 'datagrok-api/dg';
 import {convertToRDKit} from './analysis/r-group-analysis';
-import {RDMol} from "./rdkit-api";
-import {isMolBlock} from "./chem-utils";
+import {RDMol} from './rdkit-api';
+import {isMolBlock} from './chem-utils';
 
 export class RDKitCellRenderer extends DG.GridCellRenderer {
   readonly WHITE_MOLBLOCK_SUFFIX = `
@@ -37,10 +37,10 @@ M  END
     };
   }
 
-  get name() { return 'RDKit cell renderer'; }
-  get cellType() { return DG.SEMTYPE.MOLECULE; }
-  get defaultWidth() { return 200; }
-  get defaultHeight() { return 100; }
+  get name() {return 'RDKit cell renderer';}
+  get cellType() {return DG.SEMTYPE.MOLECULE;}
+  get defaultWidth() {return 200;}
+  get defaultHeight() {return 100;}
 
   _fetchMolGetOrCreate(molString: string, scaffoldMolString: string, molRegenerateCoords: boolean) {
     let mol: RDMol | null = null;
@@ -66,9 +66,8 @@ M  END
             const rdkitScaffoldMol = this._fetchMol(scaffoldMolString, '', molRegenerateCoords, false).mol;
             if (rdkitScaffoldMol && rdkitScaffoldMol.is_valid()) {
               substructJson = mol.generate_aligned_coords(rdkitScaffoldMol, true, true, false);
-              if (substructJson === '') {
+              if (substructJson === '')
                 substructJson = '{}';
-              }
             }
           } else if (molRegenerateCoords) {
             const molBlock = mol.get_new_coords(true);
@@ -112,9 +111,9 @@ M  END
     const canvasId = '_canvas-rdkit-' + this.canvasCounter;
     const canvas = new OffscreenCanvas(width, height);
     this.canvasCounter++;
-    if (rdkitMol != null) {
+    if (rdkitMol != null)
       this._drawMoleculeToCanvas(rdkitMol, width, height, canvas, substruct, highlightScaffold);
-    } else {
+    else {
       const ctx = canvas.getContext('2d');
       ctx!.lineWidth = 1;
       ctx!.strokeStyle = '#EFEFEF';
@@ -160,9 +159,9 @@ M  END
         17: [0.0, 0.498, 0.0],
       },
     };
-    if (highlightScaffold) {
+    if (highlightScaffold)
       Object.assign(opts, substruct);
-    }
+
     rdkitMol.draw_to_canvas_with_highlights(canvas, JSON.stringify(opts));
   }
 
@@ -184,18 +183,17 @@ M  END
     let scaffoldString = colTemp ? colTemp[tagName] : null;
     if (scaffoldString?.endsWith(this.WHITE_MOLBLOCK_SUFFIX)) {
       scaffoldString = null;
-      if (colTemp[tagName]) {
+      if (colTemp[tagName])
         delete colTemp[tagName];
-      }
     }
     return scaffoldString;
   }
 
   render(g: any, x: number, y: number, w: number, h: number, gridCell: DG.GridCell, cellStyle: any) {
     const molString = convertToRDKit(gridCell.cell.value);
-    if (molString == null || molString === '') {
+    if (molString == null || molString === '')
       return;
-    }
+
 
     // value-based drawing (coming from HtmlCellRenderer.renderValue)
     if (gridCell.cell.column == null) {

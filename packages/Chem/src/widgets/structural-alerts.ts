@@ -29,9 +29,8 @@ function getStructuralAlerts(smiles: string): number[] {
     const subMol = _smartsMap.get(_data![i]);
     // lib.count_matches(subMol);
     const matches = mol.get_substruct_matches(subMol);
-    if (matches !== '{}') {
+    if (matches !== '{}')
       alerts.push(i);
-    }
   }
   mol.delete();
   return alerts;
@@ -54,9 +53,9 @@ async function loadSADataset() {
 }
 
 export async function structuralAlertsWidget(smiles: string) {
-  if (_data === null) {
+  if (_data === null)
     await loadSADataset();
-  }
+
   const alerts = getStructuralAlerts(smiles);
   // await getRdKitService().getStructuralAlerts(smiles); // getStructuralAlerts(smiles);
   const width = 200;
@@ -69,8 +68,8 @@ export async function structuralAlertsWidget(smiles: string) {
     host.style.margin = '5px';
     return host;
   }), 'd4-flex-wrap');
-  if (!alerts.length) {
+  if (!alerts.length)
     list.innerText = 'No Alerts';
-  }
+
   return new DG.Widget(list);
 }
