@@ -1,12 +1,10 @@
 import * as umj from 'umap-js';
 import {TSNE} from '@keckelt/tsne';
 
-import {Options, DistanceMetric, Coordinates, Vector, Vectors, Matrix} from './type-declarations';
-import {calcDistanceMatrix, transposeMatrix} from './operations';
+import {Options, DistanceMetric, Coordinates, Vector, Vectors} from '@datagrok-libraries/utils/src/type-declarations';
+import {calcDistanceMatrix, transposeMatrix, assert} from '@datagrok-libraries/utils/src/operations';
 import {SPEBase, PSPEBase} from './spe';
-import {Measurer} from './string-measure';
-import {AlignedSequenceEncoder} from './sequence-encoder';
-import {assert} from './operations';
+import {StringMeasure} from './string-measure';
 
 /**
  * Abstract dimensionality reducer.
@@ -81,7 +79,6 @@ class TSNEReducer extends Reducer {
  */
 class UMAPReducer extends Reducer {
   protected reducer: umj.UMAP;
-  protected encoder: AlignedSequenceEncoder;
   protected distanceFn: Function;
   protected vectors: number[][];
 
@@ -95,7 +92,6 @@ class UMAPReducer extends Reducer {
 
     assert('distanceFn' in options);
 
-    this.encoder = new AlignedSequenceEncoder();
     this.distanceFn = options.distanceFn;
     this.vectors = [];
     options.distanceFn = this._encodedDistance.bind(this);
@@ -200,6 +196,16 @@ class PSPEReducer extends Reducer {
   }
 }
 
+const AvailableReducers = {
+  'UMAP': UMAPReducer,
+  't-SNE': TSNEReducer,
+  'SPE': SPEReducer,
+  'pSPE': PSPEReducer,
+};
+
+export type KnownMethods = keyof typeof AvailableReducers;
+
+
 /**
  * Unified class implementing different dimensionality reduction methods.
  *
@@ -208,8 +214,7 @@ class PSPEReducer extends Reducer {
  */
 export class DimensionalityReducer {
   private reducer: Reducer | undefined;
-  public static methods: string[] = ['UMAP', 't-SNE', 'SPE', 'pSPE'];
-  private measurer: Measurer;
+  private measurer: StringMeasure;
 
   /**
    * Creates an instance of DimensionalityReducer.
@@ -219,31 +224,31 @@ export class DimensionalityReducer {
    * @param {Options} [options] Options to pass to the implementing embedders.
    * @memberof DimensionalityReducer
    */
-  constructor(data: any[], method: string, metric: string, options?: Options) {
-    assert(DimensionalityReducer.availableMethods.includes(method), `The method '${method}' is not supported`);
-
-    this.measurer = new Measurer(metric);
-    const measure = this.measurer.getMeasure()
+  constructor(data: any[], method: KnownMethods, metric: string, options?: Options) {
+    this.measurer = new StringMeasure(metric);
+    const measure = this.measurer.getMeasure();
+    let specOptions = {};
 
     if (method == 'UMAP') {
-      this.reducer = new UMAPReducer({
-        ...{data: data}, 
-        ...{distanceFn: measure}, 
+      specOptions = {
+        ...{data: data},
+        ...{distanceFn: measure},
         ...{nEpochs: options?.cycles},
-        ...options
-      });
+        ...options,
+      };
     } else if (method == 't-SNE') {
-      this.reducer = new TSNEReducer({
+      specOptions = {
         ...{data: data},
         ...{distance: measure},
         ...{iterations: options?.cycles ?? undefined},
         ...options,
-      });
+      };
     } else if (method == 'SPE') {
-      this.reducer = new SPEReducer({...{data: data}, ...{distance: measure}, ...options});
+      specOptions = {...{data: data}, ...{distance: measure}, ...options};
     } else {
-      this.reducer = new PSPEReducer({...{data: data}, ...{distance: measure}, ...options});
+      specOptions = {...{data: data}, ...{distance: measure}, ...options};
     }
+    this.reducer = new AvailableReducers[method](specOptions);
   }
 
   /**
@@ -273,6 +278,6 @@ export class DimensionalityReducer {
    * @memberof DimensionalityReducer
    */
   static get availableMethods() {
-    return DimensionalityReducer.methods;
+    return Object.keys(AvailableReducers);
   }
 }
