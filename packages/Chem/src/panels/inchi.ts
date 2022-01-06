@@ -13,7 +13,9 @@ export function addInchis(col: DG.Column): void {
   const rdKitModule = getRdKitModule();
   const inchis = new Array(col.length);
   for (let i = 0; i < inchis.length; i++) {
-    inchis[i] = rdKitModule.get_mol(col.get(i)).get_inchi();
+    const mol = rdKitModule.get_mol(col.get(i));
+    inchis[i] = mol.get_inchi();
+    mol.delete();
   }
 
   const name = getName('inchi', col.dataFrame.columns.names());
