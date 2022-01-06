@@ -3,9 +3,9 @@
 
 # Molecular descriptors
 
-The molecular descriptor is the final result of a logic and mathematical procedure which 
-transforms chemical information encoded within a symbolic representation of a molecule 
-into a useful number or the result of some standardized experiment.
+The molecular descriptor is the final result of a logic and mathematical procedure which transforms chemical information
+encoded within a symbolic representation of a molecule into a useful number or the result of some standardized
+experiment.
 
 ![](descriptors.gif)
 
@@ -13,7 +13,7 @@ into a useful number or the result of some standardized experiment.
 
 ### EState.EState_VSA
 
-Hybrid EState-VSA descriptors (like the MOE VSA descriptors) 
+Hybrid EState-VSA descriptors (like the MOE VSA descriptors)
 
 | Descriptor | Description |
 |------------|-------------|
@@ -39,8 +39,7 @@ Hybrid EState-VSA descriptors (like the MOE VSA descriptors)
 | VSA_EState8 | VSA EState Descriptor 8 ( 6.45 <= x < 7.00) | 
 | VSA_EState9 | VSA EState Descriptor 9 ( 7.00 <= x < 11.00) | 
 
-
-### QED 
+### QED
 
 QED stands for quantitative estimation of drug-likeness
 
@@ -48,10 +47,9 @@ QED stands for quantitative estimation of drug-likeness
 |------------|-------------|
 | qed | Weighted sum of ADS mapped properties | 
 
+### GraphDescriptors
 
-### GraphDescriptors 
-
-Topological/topochemical descriptors 
+Topological/topochemical descriptors
 
 | Descriptor | Description |
 |------------|-------------|
@@ -63,7 +61,7 @@ Topological/topochemical descriptors
 | Chi1 | From equations (1),(11) and (12) of Rev. Comp. Chem. vol 2, 367-422, (1991) | 
 | Chi1n | Similar to Hall Kier Chi1v, but uses nVal instead of valence | 
 | Chi1v | From equations (5),(11) and (12) of Rev. Comp. Chem. vol 2, 367-422, (1991) | 
-| Chi2n | Similar to Hall Kier Chi2v, but uses nVal instead of valence.  This makes a big difference after we get out of the first row | 
+| Chi2n | Similar to Hall Kier Chi2v, but uses nVal instead of valence. This makes a big difference after we get out of the first row | 
 | Chi2v | From equations (5),(15) and (16) of Rev. Comp. Chem. vol 2, 367-422, (1991) | 
 | Chi3n | Similar to Hall Kier Chi3v, but uses nVal instead of valence. This makes a big difference after we get out of the first row | 
 | Chi3v | From equations (5),(15) and (16) of Rev. Comp. Chem. vol 2, 367-422, (1991) | 
@@ -75,10 +73,9 @@ Topological/topochemical descriptors
 | Kappa2 | Hall-Kier Kappa2 value | 
 | Kappa3 | Hall-Kier Kappa3 value | 
 
+### Descriptors
 
-### Descriptors 
-
-General descriptors 
+General descriptors
 
 | Descriptor | Description |
 |------------|-------------|
@@ -95,8 +92,7 @@ General descriptors
 | NumValenceElectrons | The number of valence electrons the molecule has | 
 | MaxPartialCharge | Maximum partial charge | 
 
-
-### Crippen 
+### Crippen
 
 Atom-based calculation of LogP and MR using Crippen's approach
 
@@ -105,8 +101,7 @@ Atom-based calculation of LogP and MR using Crippen's approach
 | MolLogP | Wildman-Crippen LogP value | 
 | MolMR | Wildman-Crippen MR value | 
 
-
-### MolSurf 
+### MolSurf
 
 MOE-like approximate molecular surface area descriptors
 
@@ -151,8 +146,8 @@ MOE-like approximate molecular surface area descriptors
 | SlogP_VSA9 | MOE logP VSA Descriptor 9 ( 0.30 <= x < 0.40) | 
 | TPSA | The polar surface area of a molecule based upon fragments. | 
 
-
 ### Descriptors3D
+
 Descriptors derived from a molecule's 3D structure
 
 | Descriptor | Description |
@@ -168,7 +163,6 @@ Descriptors derived from a molecule's 3D structure
 | Asphericity | Molecular asphericity | 
 | SpherocityIndex | Molecular spherocity index | 
 
-
 ### EState.EState
 
 Basic EState descriptors
@@ -180,10 +174,9 @@ Basic EState descriptors
 | MinEStateIndex | Minimum EState index | 
 | MinAbsEStateIndex | Minimum absolute EState index | 
 
-
 ### Fragments
 
-Bunch of fragment descriptors from a file 
+Bunch of fragment descriptors from a file
 
 | Descriptor | Description |
 |------------|-------------|
@@ -273,10 +266,9 @@ Bunch of fragment descriptors from a file
 | fr_unbrch_alkane | Number of unbranched alkanes of at least 4 members (excludes halogenated alkanes) | 
 | fr_urea | Number of urea groups | 
 
-
 ### Lipinski
 
-Lipinski parameters for molecules 
+Lipinski parameters for molecules
 
 | Descriptor | Description |
 |------------|-------------|
@@ -299,8 +291,7 @@ Lipinski parameters for molecules
 | NumSaturatedRings | The number of saturated rings for a molecule | 
 | RingCount | Ring count | 
 
-
 See also:
 
-  * [Molecular descriptor](https://en.wikipedia.org/wiki/Molecular_descriptor)
-  * [RDKit](http://rdkit.org)
+* [Molecular descriptor](https://en.wikipedia.org/wiki/Molecular_descriptor)
+* [RDKit](http://rdkit.org)

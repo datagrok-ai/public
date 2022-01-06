@@ -3,10 +3,11 @@
 
 # Aggregation functions
 
-The same set of aggregation functions is used across the whole platform in different context 
-(["Aggregate Rows" dialog](aggregate-rows.md), transformations, [markup](../overview/markup.md)) 
+The same set of aggregation functions is used across the whole platform in different context
+(["Aggregate Rows" dialog](aggregate-rows.md), transformations, [markup](../overview/markup.md))
 
 ## Common
+
 | Function | Description|
 |----------|------------|
 | first    | first (any) value                              |
@@ -15,8 +16,8 @@ The same set of aggregation functions is used across the whole platform in diffe
 | #unique  | number of unique values                        |
 | #nulls   | number of missing values                       |
 
-
 ## Numerical
+
 | Function | Description|
 |----------|------------|
 | min      |            |
@@ -33,6 +34,7 @@ The same set of aggregation functions is used across the whole platform in diffe
 | q3       | third quartile, the median of the upper half |
 
 ## Textual
+
 | Function | Description|
 |----------|------------|
 | min      |            |
@@ -50,11 +52,12 @@ The same set of aggregation functions is used across the whole platform in diffe
 
 ## User-defined functions
 
-Datagrok API provides a way to register custom aggregation functions; once registered, they will
-automatically appear in UI across the whole platform. 
+Datagrok API provides a way to register custom aggregation functions; once registered, they will automatically appear in
+UI across the whole platform.
 
 Markup syntax for referring to aggregations: `t.stats.avg(AGE)`
 
 See also:
-  * [Aggregate rows](aggregate-rows.md)
+
+* [Aggregate rows](aggregate-rows.md)
  

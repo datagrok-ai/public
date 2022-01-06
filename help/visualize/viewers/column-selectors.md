@@ -10,9 +10,9 @@ A combo box for selecting a column
 **Start typing** to filter columns.   
 **Esc** to reset column filter, or hide popup.   
 **Enter** to accept current choice.   
-**Space** to pop up column selector.   
+**Space** to pop up column selector.
 
-See also: 
-  
-  * [Viewers](../viewers.md)
-  * [Table View](../../overview/table-view.md)
+See also:
+
+* [Viewers](../viewers.md)
+* [Table View](../../overview/table-view.md)

@@ -4,22 +4,31 @@
 
 Dataframe and viewer can contain information about lines and bands.
 
-These figures are used by some viewers to draw additional lines on the charts. These can be reference lines, highlighting different areas of the chart and data, etc.
+These figures are used by some viewers to draw additional lines on the charts. These can be reference lines,
+highlighting different areas of the chart and data, etc.
 
 ![Example of formula lines](../../uploads/viewers/formula-lines-example.png)
 
-Lines information is stored in a special storage in a dataframe or viewer. The viewer automatically reads storages when it connects to the dataframe.
+Lines information is stored in a special storage in a dataframe or viewer. The viewer automatically reads storages when
+it connects to the dataframe.
 
-You can create and modify information about lines and bands by changing the `.formula-lines` dataframe tag or by changing the `formulaLines` property of the viewer. The content of these storages is a JSON string.
+You can create and modify information about lines and bands by changing the `.formula-lines`
+dataframe tag or by changing the `formulaLines` property of the viewer. The content of these storages is a JSON string.
 
 There is a more convenient ways to create lines:
 
 - method `dataframe.meta.addFormulaLine()` - for creating and saving a line in a dataframe
 - method `viewer.meta.addFormulaLine()` - for creating and saving a line in a viewer
 
-To completely remove lines from dataframe or viewer use methods `dataframe.meta.removeFormulaLines()` or `viewer.meta.removeFormulaLines()`. Calling these methods without parameters will delete all lines from the storage. You can also remove only specific lines by listing their IDs, for example: `viewer.meta.removeFormulaLines('123', 'abc')`. If a complete removal is not necessary, then you can simply hide the unnecessary line using the `visible` attribute.
+To completely remove lines from dataframe or viewer use methods `dataframe.meta.removeFormulaLines()`
+or `viewer.meta.removeFormulaLines()`. Calling these methods without parameters will delete all lines from the storage.
+You can also remove only specific lines by listing their IDs, for
+example: `viewer.meta.removeFormulaLines('123', 'abc')`. If a complete removal is not necessary, then you can simply
+hide the unnecessary line using the `visible`
+attribute.
 
-Lines saved in the dataframe will be displayed on all viewers in the same way. Lines saved in the viewer are displayed only in this viewer and do not affect other viewers.
+Lines saved in the dataframe will be displayed on all viewers in the same way. Lines saved in the viewer are displayed
+only in this viewer and do not affect other viewers.
 
 An example of creating and displaying a line in this way:
 
@@ -63,13 +72,17 @@ plot.meta.addFormulaLine({
 
 ```
 
-A similar methods is used to create bands - `dataframe.meta.addFormulaBand()` or `viewer.meta.addFormulaBand()`. Most of the parameters for lines and bands are the same. But there are also some parameters that are specific for lines and bands. See them in the description of the parameters for lines and bands.
+A similar methods is used to create bands - `dataframe.meta.addFormulaBand()`
+or `viewer.meta.addFormulaBand()`. Most of the parameters for lines and bands are the same. But there are also some
+parameters that are specific for lines and bands. See them in the description of the parameters for lines and bands.
 
-More examples of creating lines and bands can be found [here](https://public.datagrok.ai/js/samples/data-frame/metadata/formula-lines).
+More examples of creating lines and bands can be
+found [here](https://public.datagrok.ai/js/samples/data-frame/metadata/formula-lines).
 
 ## Line parameters
 
-Method to create a line: `dataframe.meta.addFormulaLine(parameters)` or `viewer.meta.addFormulaLine(parameters)`
+Method to create a line: `dataframe.meta.addFormulaLine(parameters)`
+or `viewer.meta.addFormulaLine(parameters)`
 
 Only one parameter ("formula") is required. All other parameters have their default values.
 
@@ -91,7 +104,8 @@ Only one parameter ("formula") is required. All other parameters have their defa
 
 ## Band parameters
 
-Method to create a band: `dataframe.meta.addFormulaBand(parameters)` or `viewer.meta.addFormulaBand(parameters)`
+Method to create a band: `dataframe.meta.addFormulaBand(parameters)`
+or `viewer.meta.addFormulaBand(parameters)`
 
 Only 3 parameters ("formula", "column" and "column2") are required. All other parameters have their default values.
 

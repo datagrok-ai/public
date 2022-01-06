@@ -4,25 +4,22 @@
 # Cheminformatics development
 
 In addition to being a general-purpose extensible platform for scientific computing, Datagrok provides multiple options
-for developing cheminformatics solutions on top of it. Depending on your needs, use one or more of the following
-ones, or come up with your own solution. 
+for developing cheminformatics solutions on top of it. Depending on your needs, use one or more of the following ones,
+or come up with your own solution.
 
-* For **Typical tasks** such as calculating descriptors,
-substructure or similarity search, finding MCS or performing an R-group analysis, consider
-using the [Datagrok JS API](#grok-js-api).
+* For **Typical tasks** such as calculating descriptors, substructure or similarity search, finding MCS or performing an
+  R-group analysis, consider using the [Datagrok JS API](#grok-js-api).
 * For **custom client-side computations**, consider using either [OpenChemLib.JS](#openchemlib.js),
-or [RDKit built for WebAssembly](#rdkit-in-webassembly).
+  or [RDKit built for WebAssembly](#rdkit-in-webassembly).
 * For **custom server-side computations**, a popular option is using
-[RDKit in Python](#rdkit-in-python). Python scripts can be seamlessly embedded into Datagrok
-via [Scripting](scripting.md).
+  [RDKit in Python](#rdkit-in-python). Python scripts can be seamlessly embedded into Datagrok
+  via [Scripting](scripting.md).
 
 ## Datagrok JS API
 
-For convenience, some of the commonly used functions are exposed via the [JS API](../../js-api.md). Use `grok.chem` instance
-to invoke the methods below. Note that most of them are asynchronous, since behind the scenes they either use a
+For convenience, some of the commonly used functions are exposed via the [JS API](../../js-api.md). Use `grok.chem`
+instance to invoke the methods below. Note that most of them are asynchronous, since behind the scenes they either use a
 server-side assist, or a browser's separate Web Worker to call [RDKit-JS](https://github.com/rdkit/RDKitjs) functions.
-
-
 
 ```
 searchSubstructure(column, pattern, settings = { substructLibrary: true });
@@ -42,7 +39,7 @@ modes for these functions in the future, while the API remains as described belo
 
 `searchSubstructure(column, pattern = null, settings = { substructLibrary: true })`
 
-This function performs substructure search using RDKit, and returns a result as a [BitSet](../../js-api.md#bitset), 
+This function performs substructure search using RDKit, and returns a result as a [BitSet](../../js-api.md#bitset),
 where the i-th bit is set to 1 when the i-th element of the input `column` contains a substructure given by a `pattern`,
 and all other bits there are set to 0.
 
@@ -57,9 +54,9 @@ The `settings` object allows passing the following parameters:
   using [`get_substruct_match`](https://www.rdkit.org/docs/source/rdkit.Chem.rdchem.html) method of
   RDKit (`substructLibrary: false`
   , [code sample 1](https://public.datagrok.ai/js/samples/domains/chem/substructure-search-simple)
-  , [code sample 2](https://public.datagrok.ai/js/samples/domains/chem/substructure-search-library)), or
-  a [`substructLibrary`](http://rdkit.blogspot.com/2018/02/introducing-substructlibrary.html) from
-  RDKit (`substructLibrary: true`
+  , [code sample 2](https://public.datagrok.ai/js/samples/domains/chem/substructure-search-library))
+  , or a [`substructLibrary`](http://rdkit.blogspot.com/2018/02/introducing-substructlibrary.html)
+  from RDKit (`substructLibrary: true`
   , [code sample](https://public.datagrok.ai/js/samples/domains/chem/substructure-search-library)). The default value
   is `true`.
 
@@ -113,7 +110,8 @@ columns ([code sample](https://public.datagrok.ai/js/samples/domains/chem/simila
 Produces a Datagrok [`DataFrame`](https://datagrok.ai/js-api/classes/dg.dataframe) with a
 single [`Column`](https://datagrok.ai/js-api/classes/dg.column), where the i-th element contains a similarity score for
 the i-th element of the
-input `Column` ([code sample](https://public.datagrok.ai/js/samples/domains/chem/similarity-scoring-scores)).
+input `Column` ([code sample](https://public.datagrok.ai/js/samples/domains/chem/similarity-scoring-scores))
+.
 
 Similarly to the substructure-library based method of `searchSubstructure`, these functions maintain a cache of
 pre-computed fingerprints. Once the function `findSimilar` or `getSimilarities` meets the `column` previously unmet, it
@@ -201,10 +199,10 @@ in the public repository.
 ## Rdkit in webassembly
 
 Recently, Greg Landrum, the author of RDKit, has introduced
-[a way to compile its C++ code to WebAssembly](http://rdkit.blogspot.com/2019/11/introducing-new-rdkit-javascript.html),
-thus allowing to combine the performance and efficiency of the carefully crafted C++ codebase with the ability to run it
-in the browser. This approach fits perfectly with Datagrok's philosophy of performing as much computations on the client
-as possible, so naturally we've jumped on that opportunity!
+[a way to compile its C++ code to WebAssembly](http://rdkit.blogspot.com/2019/11/introducing-new-rdkit-javascript.html)
+, thus allowing to combine the performance and efficiency of the carefully crafted C++ codebase with the ability to run
+it in the browser. This approach fits perfectly with Datagrok's philosophy of performing as much computations on the
+client as possible, so naturally we've jumped on that opportunity!
 
 Here is an [example of a package](https://github.com/datagrok-ai/public/tree/master/packages/RDKitDemo)
 that exposes two functions. One of them, "rdKitInfoPanel", demonstrates how functions can be dynamically discovered and

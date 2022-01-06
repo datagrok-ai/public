@@ -69,12 +69,13 @@ docker run -it -d \
   datagrok/datagrok:latest
 ```
 
-9. Check if Datagrok started successfully: `http://<DATAGROK_HOST_NAME>:8080`, login to Datagrok using username "`admin`" and
-   password "`admin`".
+9. Check if Datagrok started successfully: `http://<DATAGROK_HOST_NAME>:8080`, login to Datagrok using
+   username "`admin`" and password "`admin`".
 
 10. Edit settings in the Datagrok (Tools | Settings...). Do not forget to click Apply to save new settings.
-    * Connectors
-        * External Host: `grok_connect`
+
+* Connectors
+  * External Host: `grok_connect`
 
 ### Deploy using Docker Compose
 
@@ -88,7 +89,8 @@ All steps are intended to run the remote Datagrok virtual machine. To run steps 
 Deployment instruction:
 
 1. Download Docker Compose yaml
-   file: [link](https://github.com/datagrok-ai/public/blob/master/docker/localhost.docker-compose.yaml).
+   file: [link](https://github.com/datagrok-ai/public/blob/master/docker/localhost.docker-compose.yaml)
+   .
 2. Replace in `GROK_PARAMETERS` value with
 
 ```json
@@ -105,12 +107,13 @@ Deployment instruction:
 
 3. Run Datagrok deploy. Wait for the deployment process to complete.
    `docker-compose --project-name datagrok --profile datagrok up -d`
-4. Check if Datagrok started successfully: `http://<DATAGROK_HOST_NAME>:8080`, login to Datagrok using username "`admin`" and
-   password "`admin`".
+4. Check if Datagrok started successfully: `http://<DATAGROK_HOST_NAME>:8080`, login to Datagrok using
+   username "`admin`" and password "`admin`".
 
 5. Edit settings in the Datagrok (Tools | Settings...). Do not forget to click Apply to save new settings.
-    * Connectors
-        * External Host: `grok_connect`
+
+* Connectors
+  * External Host: `grok_connect`
 
 ## Setup Compute Virtual Machine
 
@@ -169,16 +172,17 @@ docker run -it -d \
 ```
 
 4. Edit settings in the Datagrok (Tools | Settings...). Do not forget to click Apply to save new settings.
-    * Scripting:
-        * CVM Url: `http://<CVM_HOST_NAME>:8090`
-        * CVM Url Client: `http://<CVM_HOST_NAME>:8090`
-        * H2o Url: `http://<CVM_HOST_NAME>:54321`
-        * Api Url: `http://<DATAGROK_HOST_NAME>:8080/api`
-        * Cvm Split: `true`
-    * Dev:
-        * CVM Url: `http://<CVM_HOST_NAME>:8090`
-        * Cvm Split: `true`
-        * Api Url: `http://<DATAGROK_HOST_NAME>:8080/api`
+
+* Scripting:
+  * CVM Url: `http://<CVM_HOST_NAME>:8090`
+  * CVM Url Client: `http://<CVM_HOST_NAME>:8090`
+  * H2o Url: `http://<CVM_HOST_NAME>:54321`
+  * Api Url: `http://<DATAGROK_HOST_NAME>:8080/api`
+  * Cvm Split: `true`
+* Dev:
+  * CVM Url: `http://<CVM_HOST_NAME>:8090`
+  * Cvm Split: `true`
+  * Api Url: `http://<DATAGROK_HOST_NAME>:8080/api`
 
 ### Deploy using Docker Compose
 
@@ -192,20 +196,22 @@ All steps are intended to run the remote Datagrok virtual machine. To run steps 
 Deployment instruction:
 
 1. Download Docker Compose yaml
-   file: [link](https://github.com/datagrok-ai/public/blob/master/docker/localhost.docker-compose.yaml).
+   file: [link](https://github.com/datagrok-ai/public/blob/master/docker/localhost.docker-compose.yaml)
+   .
 2. Run Datagrok deploy. Wait for the deployment process to complete.
    `docker-compose --project-name cvm --profile cvm up -d`
 3. Edit settings in the Datagrok (Tools | Settings...). Do not forget to click Apply to save new settings.
-   * Scripting:
-      * CVM Url: `http://<CVM_HOST_NAME>:8090`
-      * CVM Url Client: `http://<CVM_HOST_NAME>:8090`
-      * H2o Url: `http://<CVM_HOST_NAME>:54321`
-      * Api Url: `http://<DATAGROK_HOST_NAME>:8080/api`
-      * Cvm Split: `true`
-   * Dev:
-      * CVM Url: `http://<CVM_HOST_NAME>:8090`
-      * Cvm Split: `true`
-      * Api Url: `http://<DATAGROK_HOST_NAME>:8080/api`
+
+* Scripting:
+  * CVM Url: `http://<CVM_HOST_NAME>:8090`
+  * CVM Url Client: `http://<CVM_HOST_NAME>:8090`
+  * H2o Url: `http://<CVM_HOST_NAME>:54321`
+  * Api Url: `http://<DATAGROK_HOST_NAME>:8080/api`
+  * Cvm Split: `true`
+* Dev:
+  * CVM Url: `http://<CVM_HOST_NAME>:8090`
+  * Cvm Split: `true`
+  * Api Url: `http://<DATAGROK_HOST_NAME>:8080/api`
 
 See also:
 

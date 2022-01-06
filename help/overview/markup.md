@@ -3,8 +3,8 @@
 
 # Markup
 
-A powerful mechanism that allows to embed platform-specific visual elements right into 
-the HTML document. Simply embed the expression like that: `#{expression}` 
+A powerful mechanism that allows to embed platform-specific visual elements right into the HTML document. Simply embed
+the expression like that: `#{expression}`
 
 ## Expressions
 
@@ -34,28 +34,32 @@ the HTML document. Simply embed the expression like that: `#{expression}`
 
 Shows any platform entity.
 
-Format: 
+Format:
+
 ```
 x.<type>.<id>."<name>"
 ```
 
 ### Function
 
-Shows function. 
+Shows function.
 
 Format:
+
 ```
 x.Func.<name>.<option>
 ```
 
-Options: 
+Options:
+
 * **run** - runs action by click.
 
 ### Aggregations
 
 Shows aggregated value of defined column.
 
-Format: 
+Format:
+
 ```
 t.aggr<aggregation>($<column name>)
 ```
@@ -83,7 +87,8 @@ t.aggr<aggregation>($<column name>)
 
 Shows current date and time.
 
-Format: 
+Format:
+
 ```
 date
 ```
@@ -92,7 +97,8 @@ date
 
 Shows table name.
 
-Format: 
+Format:
+
 ```
 t.name
 ```
@@ -101,7 +107,8 @@ t.name
 
 Shows table tag.
 
-Format: 
+Format:
+
 ```
 t.tags[<tag name>]
 ```
@@ -110,7 +117,8 @@ t.tags[<tag name>]
 
 Shows number of rows.
 
-Format: 
+Format:
+
 ```
 t.rowCount
 ```
@@ -119,7 +127,8 @@ t.rowCount
 
 Shows number of selected rows.
 
-Format: 
+Format:
+
 ```
 t.selection.trueCount
 ```
@@ -128,34 +137,38 @@ t.selection.trueCount
 
 Shows number of filtered rows.
 
-Format: 
+Format:
+
 ```
 t.filter.trueCount
 ```
 
-### Current filters 
+### Current filters
 
-Shows list of selected filters. 
+Shows list of selected filters.
 
-Format: 
+Format:
+
 ```
 t.rows.filters
 ```
 
-### Current row 
+### Current row
 
 Shows current row index.
 
-Format: 
+Format:
+
 ```
 t.currentRow
 ```
- 
+
 ### Current column
 
 Shows current column index.
 
-Format: 
+Format:
+
 ```
 t.currentCol
 ```
@@ -164,7 +177,8 @@ t.currentCol
 
 Shows current cell value.
 
-Format: 
+Format:
+
 ```
 t.currentCell
 ```
@@ -173,16 +187,18 @@ t.currentCell
 
 Shows current row value in selected column.
 
-Format: 
+Format:
+
 ```
 t.row[<column name>]
 ```
 
 ### Color
 
-Shows column's color in HEX format (32 bits). 
+Shows column's color in HEX format (32 bits).
 
-Format: 
+Format:
+
 ```
 color(<column name>)
 ```
@@ -191,7 +207,8 @@ color(<column name>)
 
 Shows result of defined formula, see formulas format [there](../transform/add-new-column.md).
 
-Format: 
+Format:
+
 ```
 formula(<formula>)
 ```
@@ -200,7 +217,8 @@ formula(<formula>)
 
 Shows text input of specified column in selected row.
 
-Format: 
+Format:
+
 ```
 t.editor[<column name>] 
 ```
@@ -209,7 +227,8 @@ t.editor[<column name>]
 
 Shows aggregated value of defined column.
 
-Format: 
+Format:
+
 ```
 t.stats.<statistics>(<column name>)
 ```
@@ -235,47 +254,48 @@ t.stats.<statistics>(<column name>)
 
 ### Chart
 
-Chart markup allows to embed any of [Viewers](../visualize/viewers.md) into page. 
+Chart markup allows to embed any of [Viewers](../visualize/viewers.md) into page.
 
-Format: 
+Format:
+
 ```
 chart{"type":"<chart type>","look":{<chart parameters>}}
 ```
 
 Chart types:
 
-  * Scatter plot
-  * Line chart
-  * Bar chart
-  * Density plot
-  * Tree map
-  * Matrix plot
-  * Histogram
-  * Filters
-  * 3d scatter plot
-  * Grid
-  * Column viewer
-  * Calendar
-  * Trellis plot
-  * Box plot
-  * Pie chart
-  * Heat map
-  * PC Plot
-  * Statistics
-  * Correlation plot
-  * Map
-  * Google Map
-  * Form designer
-  * Web viewer
-  * Markup Viewer
-  * Word cloud
-  * Network diagram
-  * Protein viewer
-  * Globe
-  * Card
-  * Viewer host
-  * R Viewer
+* Scatter plot
+* Line chart
+* Bar chart
+* Density plot
+* Tree map
+* Matrix plot
+* Histogram
+* Filters
+* 3d scatter plot
+* Grid
+* Column viewer
+* Calendar
+* Trellis plot
+* Box plot
+* Pie chart
+* Heat map
+* PC Plot
+* Statistics
+* Correlation plot
+* Map
+* Google Map
+* Form designer
+* Web viewer
+* Markup Viewer
+* Word cloud
+* Network diagram
+* Protein viewer
+* Globe
+* Card
+* Viewer host
+* R Viewer
 
-See also: 
+See also:
 
-  * [Markup viewer](../visualize/viewers/markup.md)
+* [Markup viewer](../visualize/viewers/markup.md)

@@ -1,4 +1,4 @@
-name: Help deployment
+name: Help
 
 on:
   workflow_dispatch: {}

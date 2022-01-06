@@ -3,7 +3,7 @@
 
 # OData
 
-Provides access to [OData](https://www.odata.org/) based service. 
+Provides access to [OData](https://www.odata.org/) based service.
 
 ## Connection parameters
 
@@ -16,5 +16,5 @@ Provides access to [OData](https://www.odata.org/) based service.
 
 See also:
 
-  * [Data connection](../data-connection.md)
-  * [OData](https://www.odata.org/)
+* [Data connection](../data-connection.md)
+* [OData](https://www.odata.org/)

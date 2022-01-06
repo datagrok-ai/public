@@ -3,8 +3,7 @@
 
 # Tests: Color coding
 
-Platform provide ability to display different columns values in different colors. This is called
-color coding.
+Platform provide ability to display different columns values in different colors. This is called color coding.
 
 ## Testing scenario
 

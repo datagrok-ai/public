@@ -1,4 +1,4 @@
-name: Help deployment
+name: JS API Documentation
 
 on:
   workflow_dispatch: {}

@@ -18,8 +18,8 @@ We wrap lines in `.md` files at 100 characters.
 **Motivation:**
 
 1. Explicit wrapping helps track changes in commits and diffs
-2. 100 characters limit helps fit the two `.md` files side-by-side on a 1080p screen in a diff
-   window or when making synchronous edits in two files
+2. 100 characters limit helps fit the two `.md` files side-by-side on a 1080p screen in a diff window or when making
+   synchronous edits in two files
 
 ## Proper names
 

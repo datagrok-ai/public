@@ -3,8 +3,7 @@
 
 # Git
 
-Provides access to [Git](https://git-scm.com/) repository as [file share](files.md).
-Works with any Git repository.
+Provides access to [Git](https://git-scm.com/) repository as [file share](files.md). Works with any Git repository.
 
 ## Connection parameters
 
@@ -19,6 +18,6 @@ Works with any Git repository.
 
 See also:
 
-  * [Data connection](../data-connection.md)
-  * [Git](https://git-scm.com/)
-  * [Files](files.md)
+* [Data connection](../data-connection.md)
+* [Git](https://git-scm.com/)
+* [Files](files.md)

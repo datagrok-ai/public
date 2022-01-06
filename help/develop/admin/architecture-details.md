@@ -12,7 +12,8 @@ Datagrok installation consists of two virtual machines:
 
 Also, it needs [database](#database) and [persistent file storage](#storage). Both of the virtual machines includes
 several docker containers and can be deployed in
-[AWS EC2](deploy-amazon-ec2.md), [AWS ESC](deploy-amazon-ecs.md) or [regular host machine](deploy-regular.md).
+[AWS EC2](deploy-amazon-ec2.md), [AWS ESC](deploy-amazon-ecs.md)
+or [regular host machine](deploy-regular.md).
 
 All docker containers are based on Ubuntu 20.04 and use the latest software available.
 
@@ -40,7 +41,8 @@ Ports:
 * `8443` for SSL mode
 * `8083` for CLI
 
-Datagrok supports several deployment schemas, which can be configured using `GROK_MODE` and `GROK_PARAMETERS`
+Datagrok supports several deployment schemas, which can be configured using `GROK_MODE`
+and `GROK_PARAMETERS`
 environment variables.
 
 `GROK_MODE` possible values:
@@ -53,11 +55,15 @@ environment variables.
 
 | Option              | Required      | Default | Description                                                       |
 |---------------------|---------------|---------|-------------------------------------------------------------------|
-| dbServer            | **Required**  |         | Postgres database server.                                         |
+| dbServer            | **
+Required**  |         | Postgres database server.                                         |
 | dbPort              | Optional      | 5432    | Postgres database server port                                     |
-| db                  | **Required**  |         | Datagrok database name                                            |
-| dbLogin             | **Required**  |         | Username to connect to database                                   |
-| dbPassword          | **Required**  |         | Password to connect to database                                   |
+| db                  | **
+Required**  |         | Datagrok database name                                            |
+| dbLogin             | **
+Required**  |         | Username to connect to database                                   |
+| dbPassword          | **
+Required**  |         | Password to connect to database                                   |
 | dbSsl               | Optional      | false   | If set to true, TLS connection will be used to connect to database|
 | dbAdminLogin        | Optional      |         | Postgres admin username to create user and database for Datagrok  |
 | dbAdminPassword     | Optional      |         | Postgres admin password to create user and database for Datagrok  |
@@ -127,8 +133,8 @@ Grok Helper exposes API for the following features:
 
 * Jupyter Notebooks converter (HTML, PDF, etc.)
 * Utilities
-    - Cache entities managing
-    - Python environments managing
+  - Cache entities managing
+  - Python environments managing
 
 ### Jupyter Kernel Gateway
 

@@ -3,15 +3,15 @@
 
 # Search patterns
 
-Search patterns let you use a commonly accepted notation to specify conditions in free text. Use the same
-syntax to query in-memory datasets via the [search mechanism](data-search.md), and to query external 
-databases with [parameterized queries](../access/parameterized-queries.md). When querying databases, 
-behind the scenes the platform will parse the free-text query, and then execute a parameterized, safe, 
-provider-specific SQL query on the backend.
+Search patterns let you use a commonly accepted notation to specify conditions in free text. Use the same syntax to
+query in-memory datasets via the [search mechanism](data-search.md), and to query external databases
+with [parameterized queries](../access/parameterized-queries.md). When querying databases, behind the scenes the
+platform will parse the free-text query, and then execute a parameterized, safe, provider-specific SQL query on the
+backend.
 
-For searching within the in-memory table, patterns can be preceded with column name 
-(example: "age > 21"). External query patterns do not allow the column name to be specified, as 
-the column name is already specified at the query level.
+For searching within the in-memory table, patterns can be preceded with column name
+(example: "age > 21"). External query patterns do not allow the column name to be specified, as the column name is
+already specified at the query level.
 
 ## Numerical patterns
 
@@ -19,7 +19,7 @@ the column name is already specified at the query level.
 |------------------------|------------|
 | Exact value            | 5          |
 | Greater than           | > 5        | 
-| Greater than or equals | >= 5       | 
+| Greater than or equals | > = 5       | 
 | Less than              | < 5        |
 | Less than or equals    | <= 5       |
 | Range (inclusive)      | 10-20      |
@@ -37,8 +37,7 @@ If the input does not match above-mentioned patterns, 'exact value' search is us
 | regex                  | regex .*\[0-9\]+    | 
 | in                     | in (5, 10)          |
 
-String matching is case-insensitive.
-If the input does not match above-mentioned patterns, 'exact value' search is used.
+String matching is case-insensitive. If the input does not match above-mentioned patterns, 'exact value' search is used.
 
 ## Datetime patterns
 
@@ -86,8 +85,8 @@ If the input does not match above-mentioned patterns, 'exact value' search is us
 | SPARQL                 | +       |   
 | SAP                    |         |
 | SAS                    |         |
- 
 
 See also:
-  * [Data search](data-search.md)
-  * [Parameterized queries](../access/parameterized-queries.md)
+
+* [Data search](data-search.md)
+* [Parameterized queries](../access/parameterized-queries.md)

@@ -3,14 +3,13 @@
 
 # Viewers
 
-A viewer is a visual component associated with a [table](../overview/table.md). Unlike
-other products, our viewers are [super fast](../develop/advanced/performance.md#viewers),
-completely interactive, and are capable of handling tens of millions of rows (or millions of columns).
+A viewer is a visual component associated with a [table](../overview/table.md). Unlike other products, our viewers
+are [super fast](../develop/advanced/performance.md#viewers), completely interactive, and are capable of handling tens
+of millions of rows (or millions of columns).
 
-Viewers belonging to the same [view](../overview/table-view.md) all share the same
-row selection and filter. Viewers are saved as part of the [project](../overview/project.md).
-Also, it is possible to save viewers and views individually, and reuse them (or
-share with teammates) later on.
+Viewers belonging to the same [view](../overview/table-view.md) all share the same row selection and filter. Viewers are
+saved as part of the [project](../overview/project.md). Also, it is possible to save viewers and views individually, and
+reuse them (or share with teammates) later on.
 
 * [Creating](#creating)
 * [Docking](#docking)
@@ -29,12 +28,11 @@ share with teammates) later on.
 
 ## Creating
 
-Once a table is open, click on the icons shown on the left pane to open the corresponding
-viewer.
+Once a table is open, click on the icons shown on the left pane to open the corresponding viewer.
 
-Viewers are docked within a view. To rearrange it, start dragging viewer's header. Drop zone
-indicators will appear; move the mouse cursor to one of them and release the mouse button to
-dock the viewer at that spot. To resize the viewer, drag the viewer's border.
+Viewers are docked within a view. To rearrange it, start dragging viewer's header. Drop zone indicators will appear;
+move the mouse cursor to one of them and release the mouse button to dock the viewer at that spot. To resize the viewer,
+drag the viewer's border.
 
 ![](viewers-interaction-main.gif)
 
@@ -44,8 +42,8 @@ dock the viewer at that spot. To resize the viewer, drag the viewer's border.
 
 ## Selection
 
-All viewers share the same row selection and filtered state, which can be manipulated
-in a consistent way across all viewers:
+All viewers share the same row selection and filtered state, which can be manipulated in a consistent way across all
+viewers:
 
 |                  |                 |
 |------------------|-----------------|
@@ -56,7 +54,7 @@ in a consistent way across all viewers:
 | Shift+Click      | Select point or group |
 | Ctrl+Shift+Click | Deselect point or group |
 
-To select rows in the [grid](viewers/grid.md):  
+To select rows in the [grid](viewers/grid.md):
 
 |                                 |                    |
 |---------------------------------|--------------------|
@@ -75,11 +73,17 @@ To select rows in the [grid](viewers/grid.md):
 
 ## Current rows
 
-Rows in a grid can not only be selected or filtered, in addition to that, the grid keeps track of a current row and highlights it in green. This indication is a neat and lightweight way to update information related to the current value and lets users explore and compare rows with ease.
+Rows in a grid can not only be selected or filtered, in addition to that, the grid keeps track of a current row and
+highlights it in green. This indication is a neat and lightweight way to update information related to the current value
+and lets users explore and compare rows with ease.
 
-To make a row current, simply click on it, or navigate up and down the grid using the cursor up and down keys. Info panels in the property panel get synchronized with the current cell.
+To make a row current, simply click on it, or navigate up and down the grid using the cursor up and down keys. Info
+panels in the property panel get synchronized with the current cell.
 
-It is also integrated into Datagrok's visualizations and cheminformatics functionality, e.g., similarity search, so as you move from one row to another you immediately see where the row values belong on the chart or which molecules have the most similar structure to the reference. This also works the other way around: by first clicking on a visual element, you will see the row it represents in the grid.
+It is also integrated into Datagrok's visualizations and cheminformatics functionality, e.g., similarity search, so as
+you move from one row to another you immediately see where the row values belong on the chart or which molecules have
+the most similar structure to the reference. This also works the other way around: by first clicking on a visual
+element, you will see the row it represents in the grid.
 
 ![](current-rows-2.gif "Current rows")
 
@@ -95,48 +99,51 @@ Alternatively, click on the column's "hamburger icon" to filter by the individua
 
 ## Viewers as filters
 
-By default, clicking on a segment that represents multiple rows will select these rows. However,
-some viewers, such as [Bar Chart](viewers/bar-chart.md) and [Pie Chart](viewers/pie-chart.md),
-could be also used for filtering of the underlying table. Such viewers are a popular choice
-for interactive dashboards.
+By default, clicking on a segment that represents multiple rows will select these rows. However, some viewers, such
+as [Bar Chart](viewers/bar-chart.md) and [Pie Chart](viewers/pie-chart.md), could be also used for filtering of the
+underlying table. Such viewers are a popular choice for interactive dashboards.
 
 [![Filters](../uploads/youtube/visualizations1.png "Open on Youtube")](https://www.youtube.com/watch?v=wAfEqAMOZzw&t=4201s)
 
-To control that behavior, click on the viewer's hamburger icon, open "On click" and choose the
-desired mode. Internally, this sets two different [properties](#properties) of a viewer:
+To control that behavior, click on the viewer's hamburger icon, open "On click" and choose the desired mode. Internally,
+this sets two different [properties](#properties) of a viewer:
+
 * `row source` - specifies which rows should be visualized on the viewer (all | filtered | selected)
 * `on click` - specifies what happens when user click on a group of rows (select | filter).
 
-By setting these properties manually, it is possible to achieve different combination of
-interactivity (for instance, a viewer that shows only selected rows)  
+By setting these properties manually, it is possible to achieve different combination of interactivity (for instance, a
+viewer that shows only selected rows)
 
 ![](viewers-as-filters.gif)
 
 ## Embedding
 
-Each viewer created in Datagrok can be embedded into an external web-site as an iframe. It remains fully interactive and will be bound to the data for which it was created inside the platform. To generate an iframe for a viewer, open its context menu, then go to the **Viewer** submenu and select **Embed**:
+Each viewer created in Datagrok can be embedded into an external web-site as an iframe. It remains fully interactive and
+will be bound to the data for which it was created inside the platform. To generate an iframe for a viewer, open its
+context menu, then go to the **Viewer** submenu and select **Embed**:
 
 ![Viewers Embedding](../uploads/viewers/embedding.png "Viewers Embedding")
 
-Now you can copy the generated iframe and use it in your website. The only thing you need to remember is that this feature works only for data uploaded as a project to the server.
+Now you can copy the generated iframe and use it in your website. The only thing you need to remember is that this
+feature works only for data uploaded as a project to the server.
 
 ## Interaction
 
 All visualizations are tightly coupled. Hover, selection, filtering on one viewer is displayed on the rest:
 
-![Viewers Interaction](../uploads/gifs/viewers-interaction.gif "Viewers Interaction")      
+![Viewers Interaction](../uploads/gifs/viewers-interaction.gif "Viewers Interaction")
 
-For example, filtering on a [histogram](viewers/histogram.md) affects the [scatter plot](viewers/scatter-plot.md):    
+For example, filtering on a [histogram](viewers/histogram.md) affects the [scatter plot](viewers/scatter-plot.md):
 
-![Viewers Interaction 2](../uploads/gifs/sp-hist.gif "Viewers Interaction 2")   
+![Viewers Interaction 2](../uploads/gifs/sp-hist.gif "Viewers Interaction 2")
 
 ## Properties
 
 Each viewer has a set of properties associated with it that define either the appearance
-(such as "Back Color" or "Font"), or data (such as "Value" or "Split"). The most important
-data properties (usually columns to visualize) are exposed as combo boxes on top of the viewer.
-To edit the rest of the properties, either click on the "gear" icon on top of the viewer,
-or press F4 when the viewer has focus, or right-click and select `Viewer | Properties`.
+(such as "Back Color" or "Font"), or data (such as "Value" or "Split"). The most important data properties (usually
+columns to visualize) are exposed as combo boxes on top of the viewer. To edit the rest of the properties, either click
+on the "gear" icon on top of the viewer, or press F4 when the viewer has focus, or right-click and
+select `Viewer | Properties`.
 
 [![Properties](../uploads/youtube/visualizations1.png "Open on Youtube")](https://www.youtube.com/watch?v=wAfEqAMOZzw&t=804s)
 
@@ -152,9 +159,9 @@ Many viewers support the following:
 | Alt+drag        | Zoom            |
 | Mouse drag      | Pan             |
 
-All of the common actions are available from the context menu. To bring it up, either
-right-click, or click on the "hamburger" menu in the top left corner. The icons in the
-viewer header are only visible when the mouse is hovering over the viewer.
+All of the common actions are available from the context menu. To bring it up, either right-click, or click on the "
+hamburger" menu in the top left corner. The icons in the viewer header are only visible when the mouse is hovering over
+the viewer.
 
 The following commands are the most common:
 
@@ -185,7 +192,7 @@ Style-related commands reside under the **Style** submenu:
 | Set as Default       | Use style settings for new viewers of that type. The viewer's properties will be changed automatically to match the ones from the remembered style |
 | Reset Default        | Clear default settings |
 
-![Pick up](../uploads/gifs/pickupstyle.gif "Pick up") 
+![Pick up](../uploads/gifs/pickupstyle.gif "Pick up")
 
 Tooltip-related settings reside under the **Tooltip** submenu:
 
@@ -196,21 +203,21 @@ Tooltip-related settings reside under the **Tooltip** submenu:
 | Remove Group Tooltip | Stop using this viewer as a group tooltip |
 | Set Default Tooltip  | Set up tooltip settings common to most viewers |
 
-The commands from the **To Script** submenu produce code that can be used to build a similar visualization using R or Python:
+The commands from the **To Script** submenu produce code that can be used to build a similar visualization using R or
+Python:
 
 |                      |                 |
 |----------------------|-----------------|
 | to R                 | Open the visualization preview and get the code snippet in R      |
 | to Python            | Open the visualization preview and get the code snippet in Python |
 
-
 ## Group tooltips
 
-One of the unique features of the Datagrok platform is the ability to quickly visualize multiple rows
-in a tooltip, using the settings of another viewer.  
+One of the unique features of the Datagrok platform is the ability to quickly visualize multiple rows in a tooltip,
+using the settings of another viewer.
 
-Once the "Use as Group Tooltip" command is executed, the original viewer is no longer required,
-and it is safe to close it if you choose so.
+Once the "Use as Group Tooltip" command is executed, the original viewer is no longer required, and it is safe to close
+it if you choose so.
 
 The following picture illustrates the concept:
 
@@ -218,16 +225,16 @@ The following picture illustrates the concept:
 
 ## Trellis
 
-Trellis plots are useful for finding the structure and patterns in complex data.
-A Trellis plot is a layout of smaller charts in a grid with consistent scales. Each smaller chart
-represents rows that belong to a corresponding category.  The grid layout looks similar to a garden trellis,
-hence the name Trellis Chart.
+Trellis plots are useful for finding the structure and patterns in complex data. A Trellis plot is a layout of smaller
+charts in a grid with consistent scales. Each smaller chart represents rows that belong to a corresponding category. The
+grid layout looks similar to a garden trellis, hence the name Trellis Chart.
 
 There are two ways to add a trellis plot:
-* click on the "Trellis Plot" icon in the toolbox, and then customize the inner chart by clicking
-  on the "gear" icon on the left
-* create a viewer that you want to eventually become an inner chart, customize it the way you like,
-  and then click on `Viewer | Use in Trellis`  
+
+* click on the "Trellis Plot" icon in the toolbox, and then customize the inner chart by clicking on the "gear" icon on
+  the left
+* create a viewer that you want to eventually become an inner chart, customize it the way you like, and then click
+  on `Viewer | Use in Trellis`
 
 See [Trellis Plot](viewers/trellis-plot.md) for more details.
 
@@ -237,26 +244,32 @@ See [Trellis Plot](viewers/trellis-plot.md) for more details.
 
 To help users analyze their data in depth, our visualizations include a number of statistical features:
 
-  * Box plots show [p-value](viewers/box-plot.md#t-test), which allows to determine whether the findings are statistically significant
-  * Scatter plots can display a [regression line](viewers/scatter-plot.md#regression-line) along with its equation; moreover, it is possible to plot multiple regression lines by encoding categories with color
-  * The values of Pearson's correlation coefficient computed for [correlation plots](viewers/correlation-plot.md) are highlighted, which makes it easy to trace the strength of relationship between given variables
-  * Statistics viewer gives a concise summary of commonly used [measures](viewers/statistics.md#statistical-measures) for selected columns
-  * The platform's viewers offer two commands, `To Script | To Python` and `To Script | To R`, that can be used to [reproduce charts](https://www.youtube.com/watch?v=seAgx5TbrzI&t=258s) with Python or R code respectively
+* Box plots show [p-value](viewers/box-plot.md#t-test), which allows to determine whether the findings are statistically
+  significant
+* Scatter plots can display a [regression line](viewers/scatter-plot.md#regression-line) along with its equation;
+  moreover, it is possible to plot multiple regression lines by encoding categories with color
+* The values of Pearson's correlation coefficient computed for [correlation plots](viewers/correlation-plot.md) are
+  highlighted, which makes it easy to trace the strength of relationship between given variables
+* Statistics viewer gives a concise summary of commonly used [measures](viewers/statistics.md#statistical-measures) for
+  selected columns
+* The platform's viewers offer two commands, `To Script | To Python` and `To Script | To R`, that can be used
+  to [reproduce charts](https://www.youtube.com/watch?v=seAgx5TbrzI&t=258s) with Python or R code respectively
 
 [![Statistical hypothesis testing](../uploads/youtube/visualizations1.png "Open on Youtube")](https://www.youtube.com/watch?v=wAfEqAMOZzw&t=4810s)
 
-
 ## Layouts
 
-View Layout contains relative positions of [viewers](../visualize/viewers.md) in a [table view](../overview/table-view.md),
-along with the viewers' properties. By separating layouts from the actual data displayed, it's possible to
-save current layout (**View | Layout | Save to Gallery**) and later apply it to a different dataset
+View Layout contains relative positions of [viewers](../visualize/viewers.md) in
+a [table view](../overview/table-view.md), along with the viewers' properties. By separating layouts from the actual
+data displayed, it's possible to save current layout (**View | Layout | Save to Gallery**) and later apply it to a
+different dataset
 (**View | Layout | Open Gallery**).
 
-Saved layouts that are [applicable](view-layout.md#layout-applicability) to the current table are shown in the "Layouts" pane, see picture below.
+Saved layouts that are [applicable](view-layout.md#layout-applicability) to the current table are shown in the "Layouts"
+pane, see picture below.
 
-To clone current view, either do **View | Layout | Clone**, or click on the plus sign on the view header strip,
-and choose **Clone**.
+To clone current view, either do **View | Layout | Clone**, or click on the plus sign on the view header strip, and
+choose **Clone**.
 
 ![](layout-suggestions.gif)
 
@@ -266,13 +279,11 @@ and choose **Clone**.
 |---------------------------|------------------------|
 | ![Scatter Plot](../uploads/gifs/scatter-plot.gif "Scatter plot")             | A scatter plot (also called a scatter graph, scatter chart, scattergram, or scatter diagram) is a type of plot or mathematical diagram using Cartesian coordinates to display values for typically two variables for a set of data. If the points are color-coded you can increase the number of displayed variables to three. The data is displayed as a collection of points, each having the value of one variable determining the position on the horizontal axis and the value of the other variable determining the position on the vertical axis. <br> [Scatter Plot](viewers/scatter-plot.md) |
 
-
 ## 3d scatter plot
 
 |                           |                        |
 |---------------------------|------------------------|
 | ![3D Scatter Plot](../uploads/gifs/3d-scatter-plot.gif "3D scatter plot")       | Use 3D scatter plot to plot data points on three axes to show the relationship between three variables. Each row in the data table is represented by a marker whose position depends on its values in the columns set on the X, Y, and Z axes. Additionally, you can color-code and size-code points, as well as display labels next to markers.<br>[3D Scatter Plot](viewers/3d-scatter-plot.md) |
-
 
 ## Histogram
 
@@ -322,7 +333,6 @@ and choose **Clone**.
 |---------------------------|------------------------|
 | ![Form](../uploads/gifs/form.gif "Form")    | Form allows you to customize the appearance of the row by manually positioning the fields, and adding other visual elements, such as pictures or panels. A form can be used either as a stand-alone viewer, or as a row template of the Tile Viewer.<br>[Form](viewers/form.md) |
 
-
 ## Calendar
 
 |                           |                        |
@@ -334,8 +344,6 @@ and choose **Clone**.
 |                           |                        |
 |---------------------------|------------------------|
 | ![Google Map](../uploads/viewers/google-map.png "Google Map")  | Google Map Viewer overlays latitude/longitude data from the corresponding table on top of the Google Map.<br>[Google Map](viewers/google-map.md) |
-
-
 
 ## Shape map
 
@@ -373,7 +381,6 @@ and choose **Clone**.
 |---------------------------|------------------------|
 | ![Pie Chart](../uploads/viewers/pie-chart.png "Pie Chart")        | Pie chart is useful for reflecting numerical proportions.<br>[Pie Chart](viewers/pie-chart.md) |
 
-
 ## Word cloud
 
 |                           |                        |
@@ -409,12 +416,14 @@ and choose **Clone**.
 |                           |                        |
 |---------------------------|------------------------|
 | ![Tile viewer](../uploads/gifs/tile-viewer.gif "Tile Viewer")  | Visualizes rows as a collection of forms that are positioned as tiles.<br>[Tile Viewer](viewers/tile-viewer.md)
-  |
+|
 
 ## Statistics
+
 Provides specified descriptive [Statistics](viewers/statistics.md) for the chosen columns.
 
 ## Globe
+
 Visualizes magnitude and color for data on 3D globe using: latitude, longitude. Details: [Globe](viewers/globe.md)
 
 ### Videos

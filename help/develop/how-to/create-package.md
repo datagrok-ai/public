@@ -1,6 +1,6 @@
 <!-- TITLE: Creating a package -->
 
-This documents explains how to create a simple package that contains an 
+This documents explains how to create a simple package that contains an
 [info panel](add-info-panel.md) displaying some simple statistics for a text in a selected grid cell.
 
 ### 1. Create a package
@@ -8,12 +8,13 @@ This documents explains how to create a simple package that contains an
 Before we start, [set up development environment](set-up-environment.md) if you haven't done it already.
 
 Now, let's create a package:
+
  ```
  grok create TextStats
  ```
-This creates a folder `TextStats` with the default [package structure](../develop.md#package-structure).
-For the newly created package, you have to install the dependencies. 
-Run this from the `TextStats` folder:
+
+This creates a folder `TextStats` with the default [package structure](../develop.md#package-structure). For the newly
+created package, you have to install the dependencies. Run this from the `TextStats` folder:
 
 ```
 npm install
@@ -41,9 +42,9 @@ textStats(str) {
 }
 ```
 
-That's it! What creates a panel is this function plus the annotation contained in the comments preceding it.
-Datagrok recognizes these comments and makes the function `textStats` become a `panel` producing a `widget`,
-taking a `string` as an input.
+That's it! What creates a panel is this function plus the annotation contained in the comments preceding it. Datagrok
+recognizes these comments and makes the function `textStats` become a `panel`
+producing a `widget`, taking a `string` as an input.
 
 ### 3. Build
 
@@ -70,9 +71,10 @@ Navigate to a text cell and find your freshly added panel with text stats on the
 
 We have completed the deployment. Let's navigate to `Manage | Packages` and find your package in the list. Note it has
 your name prefixed with a `v.`, which means it's only published for you. This is called a Debug mode. To make it
-available to the user or a group of interest, you can `Share` it to the group via right-click menu on the package.
-Don't forget to publish the package as `grok publish public --release`: this now makes this package _released_
+available to the user or a group of interest, you can `Share` it to the group via right-click menu on the package. Don't
+forget to publish the package as `grok publish public --release`: this now makes this package _released_
 for these groups of interest.
 
 See also:
+
 * [Datagrok JavaScript development](../develop.md)

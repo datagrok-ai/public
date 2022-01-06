@@ -3,13 +3,13 @@
 
 # Table View
 
-A default view for the interactive exploration of [tables](table.md) that might contain
-multiple different [viewers](../visualize/viewers.md), all sharing the same row filter and row selection.
+A default view for the interactive exploration of [tables](table.md) that might contain multiple
+different [viewers](../visualize/viewers.md), all sharing the same row filter and row selection.
 
 ## Selection and filter
 
-All viewers share the same row selection and filtered state, which can be manipulated
-in a consistent way across all viewers:
+All viewers share the same row selection and filtered state, which can be manipulated in a consistent way across all
+viewers:
 
 |                  |                 |
 |------------------|-----------------|
@@ -20,9 +20,9 @@ in a consistent way across all viewers:
 | Shift+Click      | Select point or group |
 | Ctrl+Shift+Click | Deselect point or group |
 
-## Layout 
+## Layout
 
-Contains gallery of published [projects](project.md). 
+Contains gallery of published [projects](project.md).
 
 ## Videos
 
@@ -30,6 +30,6 @@ Contains gallery of published [projects](project.md).
 
 See also:
 
-  * [Table](table.md)
-  * [Table Manager](table-manager.md)
-  * [Column Manager](../explore/column-manager.md)
+* [Table](table.md)
+* [Table Manager](table-manager.md)
+* [Column Manager](../explore/column-manager.md)

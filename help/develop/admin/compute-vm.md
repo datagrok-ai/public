@@ -38,7 +38,8 @@ or [Kubernetes](https://kubernetes.io/) services.
 ## Scalability
 
 Compute VM is easy scalable in horizontal direction. For example: in case of setup in
-[AWS ECS](https://aws.amazon.com/ecs/) cluster [Application Load Balancer](https://aws.amazon.com/elasticloadbalancing/)
+[AWS ECS](https://aws.amazon.com/ecs/)
+cluster [Application Load Balancer](https://aws.amazon.com/elasticloadbalancing/)
 can be used.
 
 At the moment some limitations are exists:

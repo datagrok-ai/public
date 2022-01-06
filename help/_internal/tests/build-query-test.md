@@ -12,28 +12,35 @@
 1. Expand ```PosgteSQL -> northwind -> Tables```
 
 1. Open [Build Query](../dialogs/query-builder.md) dialog for **employees** DB table (from it's context menu)
-   * [Build Query](../dialogs/query-builder.md) dialog is open
-   * Context help switched to [Build Query](../dialogs/query-builder.md)
+
+* [Build Query](../dialogs/query-builder.md) dialog is open
+* Context help switched to [Build Query](../dialogs/query-builder.md)
 
 1. Select all columns from **employees** table for query
-   * SQL query added to dialog field (*)
-   * Result preview is shown in dialog
+
+* SQL query added to dialog field (*)
+* Result preview is shown in dialog
 
 1. Click on "Save as query" from dialog menu (v)
-   * Added "Query View", in which query from [Query Builder](../dialogs/query-builder.md)
-   * "Name" field matches DB table name (*employees*)
+
+* Added "Query View", in which query from [Query Builder](../dialogs/query-builder.md)
+* "Name" field matches DB table name (*employees*)
 
 1. Click on "Add result to workspace" from dialog menu (v)
-   * Result table of query from [Query Builder](../dialogs/query-builder.md) has been added to workspace
+
+* Result table of query from [Query Builder](../dialogs/query-builder.md) has been added to workspace
 
 1. Return to view with [Source Tree](../entities/data-source)
 
 1. Click on "Get All" from context menu of **employees** DB table
-   * Table "*employees*" with all values ​​and columns added to workspace
 
-1. Repeat previous steps for **PostgresNet**, **MySql**, **MS SQL**, **MariaDB**, **ORACLE** providers
+* Table "*employees*" with all values ​​and columns added to workspace
+
+1. Repeat previous steps for **PostgresNet**, **MySql**, **MS SQL**, **MariaDB**, **ORACLE**
+   providers
 
 (*):
+
 ```
 select 
   employees.address,
@@ -58,7 +65,8 @@ from
   employees
   
 ```
+
 See also:
 
- * [Data Sourse test](../tests/data-source-test.md)
- * [Data Query](../entities/data-query.md)
+* [Data Sourse test](../tests/data-source-test.md)
+* [Data Query](../entities/data-query.md)

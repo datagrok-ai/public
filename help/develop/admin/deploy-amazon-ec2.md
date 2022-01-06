@@ -66,8 +66,9 @@ docker run -it -d \
    and password "admin"
 
 7. Edit settings in the Datagrok (Tools | Settings...). Do not forget to click Apply to save new settings.
-    * Connectors
-        * External Host: `grok_connect`
+
+* Connectors
+  * External Host: `grok_connect`
 
 ## Setup Compute Virtual Machine
 
@@ -122,16 +123,17 @@ docker run -it -d \
 4. Check if CVM started successfully: `http://<CVM_DNS>/jupyter/helper/info`
 
 5. Edit settings in the Datagrok (Tools | Settings...). Do not forget to click Apply to save new settings.
-   * Scripting:
-      * CVM Url: `http://<CVM_DNS>`
-      * CVM Url Client: `http://<CVM_DNS>`
-      * H2o Url: `http://<CVM_DNS>:54321`
-      * Api Url: `http://<DATAGROK_DNS>/api`
-      * Cvm Split: `true`
-   * Dev:
-      * CVM Url: `http://<CVM_DNS>`
-      * Cvm Split: `true`
-      * Api Url: `http://<DATAGROK_DNS>/api`
+
+* Scripting:
+  * CVM Url: `http://<CVM_DNS>`
+  * CVM Url Client: `http://<CVM_DNS>`
+  * H2o Url: `http://<CVM_DNS>:54321`
+  * Api Url: `http://<DATAGROK_DNS>/api`
+  * Cvm Split: `true`
+* Dev:
+  * CVM Url: `http://<CVM_DNS>`
+  * Cvm Split: `true`
+  * Api Url: `http://<DATAGROK_DNS>/api`
 
 See also:
 

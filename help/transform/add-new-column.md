@@ -3,15 +3,21 @@
 
 # Adding new columns
 
-Adds a column of the specified type to the current table, and initializes it using the specified expression (mathematical function, constants, platform objects properties and functions).
+Adds a column of the specified type to the current table, and initializes it using the specified expression (
+mathematical function, constants, platform objects properties and functions).
 
 To add new columns, you can use data from existing columns as follows:
 
-- To reference each row of a column, specify its name in the curly brackets, preceded by the dollar sign: `${Width}`. For example you can use this expression in function like that: `Round(${Width})`.
+- To reference each row of a column, specify its name in the curly brackets, preceded by the dollar sign: `${Width}`.
+  For example you can use this expression in function like that: `Round(${Width})`
+  .
 
-- To reference a whole column, specify its name in the square brackets, preceded by the dollar sign: `$[Width]`. For example you can use this expression in function like that: `Avg($[Width])`.
+- To reference a whole column, specify its name in the square brackets, preceded by the dollar sign: `$[Width]`. For
+  example you can use this expression in function like that: `Avg($[Width])`.
 
-While editing the formula, press '$' to opens up a column list popup; use arrows and Enter to select it. You can also use the Drag-n-Drop mechanism to drag and drop the desired column directly into the text of the formula. To do this, grab the column heading and drag it to the formula window.
+While editing the formula, press '$' to opens up a column list popup; use arrows and Enter to select it. You can also
+use the Drag-n-Drop mechanism to drag and drop the desired column directly into the text of the formula. To do this,
+grab the column heading and drag it to the formula window.
 
 For formulas where row index is required, `row` variable is available.
 
@@ -27,7 +33,8 @@ To treat data as strings use quotes, for example:
 "Police" + "man"    // "Policeman"
 ```
 
-The platform supports a large number of functions, constants and operators. You can find out about them in the corresponding sections of the help system:
+The platform supports a large number of functions, constants and operators. You can find out about them in the
+corresponding sections of the help system:
 
 - [Binning functions](functions/binning-functions.md)
 - [Constants](functions/constants.md)

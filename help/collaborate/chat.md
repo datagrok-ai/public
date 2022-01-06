@@ -5,8 +5,8 @@
 
 Use [markdown](../features/markdown.md) for rich formatting.
 
-To reference an [object](../overview/objects.md) (such as a user, project, table) in
-a message, drag-and-drop into the message area.
+To reference an [object](../overview/objects.md) (such as a user, project, table) in a message, drag-and-drop into the
+message area.
 
 Shortcuts:
 
@@ -19,4 +19,5 @@ Shortcuts:
 Click **Help | Community Forums** to see list of all topics.
 
 See also:
+
 * [Community forums](forum.md)

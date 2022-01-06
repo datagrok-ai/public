@@ -22,7 +22,8 @@ check [Deployment on a regular machine](deploy-regular.md).
 ## Instructions
 
 1. Download a Docker Compose YAML
-   file: [link](https://github.com/datagrok-ai/public/blob/master/docker/localhost.docker-compose.yaml).
+   file: [link](https://github.com/datagrok-ai/public/blob/master/docker/localhost.docker-compose.yaml)
+   .
 
 2. To start up Datagrok, run this command:
    ```bash
@@ -30,7 +31,8 @@ check [Deployment on a regular machine](deploy-regular.md).
    ```  
    Datagrok will deploy a new database automatically.
 
-   In case you get an error on Windows running `docker compose up` related to a `WriteFile` function, try running `cmd`
+   In case you get an error on Windows running `docker compose up` related to a `WriteFile`
+   function, try running `cmd`
    in Administrator mode (this is a [known issue](https://github.com/docker/compose/issues/4531) of Docker on some
    computers).
 
@@ -57,18 +59,19 @@ check [Deployment on a regular machine](deploy-regular.md).
    command, as opposed to `docker-compose down`, does not remove the network and the stopped containers after use.
 
 6. Check the settings in the Datagrok (Tools | Settings...).
-    * Connectors
-        * External Host: grok_connect
-    * Scripting:
-        * CVM Url: `http://cvm:8090`
-        * CVM Url Client: `http://localhost:8090`
-        * H2o Url: `http://h2o:54321`
-        * Api Url: `http://datagrok:8080/api`
-        * Cvm Split: `true`
-    * Dev:
-        * CVM Url: `http://localhost:8090`
-        * Cvm Split: `true`
-        * Api Url: `http://datagrok:8080/api`
+
+* Connectors
+  * External Host: grok_connect
+* Scripting:
+  * CVM Url: `http://cvm:8090`
+  * CVM Url Client: `http://localhost:8090`
+  * H2o Url: `http://h2o:54321`
+  * Api Url: `http://datagrok:8080/api`
+  * Cvm Split: `true`
+* Dev:
+  * CVM Url: `http://localhost:8090`
+  * Cvm Split: `true`
+  * Api Url: `http://datagrok:8080/api`
 
 See also:
 

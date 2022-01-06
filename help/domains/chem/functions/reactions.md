@@ -3,9 +3,9 @@
 
 # Reactions
 
-Enumeration of many molecules with template reaction and building blocks are useful for library generation.
-Reaction template is in [SMARTS](http://www.daylight.com/dayhtml/doc/theory/theory.smarts.html) format. 
-Reactants can be combined from two sets, or sequentially depending from **matrixExpansion** flag.
+Enumeration of many molecules with template reaction and building blocks are useful for library generation. Reaction
+template is in [SMARTS](http://www.daylight.com/dayhtml/doc/theory/theory.smarts.html) format. Reactants can be combined
+from two sets, or sequentially depending from **matrixExpansion** flag.
 
 ![Reactions](../../../uploads/chem/reactions.png "Reactions")
 

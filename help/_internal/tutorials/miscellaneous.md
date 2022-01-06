@@ -3,7 +3,7 @@
 
 # Use cases: Miscelleneous
 
-## Auto-named selections 
+## Auto-named selections
 
 1. Open demog.csv
 2. Make RACE:Asian the default cell
@@ -18,6 +18,5 @@
 4. Link content | demog
 5. Submit
 
-‘Subject’ thread appears in the ‘feedback’ sub-forum
-Demog.csv gets uploaded to a server as a table
-Audit record gets created (links demog with forum post)
+‘Subject’ thread appears in the ‘feedback’ sub-forum Demog.csv gets uploaded to a server as a table Audit record gets
+created (links demog with forum post)
