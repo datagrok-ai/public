@@ -33,7 +33,7 @@ import Sketcher = chem.Sketcher;
 import {oclMol} from './chem-common-ocl';
 import $ from 'cash-dom';
 import '../css/chem.css';
-import { RDMol } from './rdkit-api';
+import {RDMol} from './rdkit-api';
 
 const getRdKitModuleLocal = chemCommonRdKit.getRdKitModule;
 const initRdKitService = chemCommonRdKit.initRdKitService;
@@ -148,7 +148,7 @@ export function renderMolecule(
     ui.iconFA('ellipsis-v'),
     () => {
       const smiles =
-        options.renderer === 'ocl' ? (mol as OCL.Molecule).toSmiles() : (mol as RDKit.Molecule).get_smiles();
+        options.renderer === 'ocl' ? (mol as OCL.Molecule).toSmiles() : (mol as RDMol).get_smiles();
       const menu = DG.Menu.popup();
       menu.item('Copy SMILES', () => {
         navigator.clipboard.writeText(smiles);
@@ -157,7 +157,7 @@ export function renderMolecule(
       if (options.renderer === 'rdkit') {
         // OCL does not support Molblock yet?
         menu.item('Copy Molblock', () => {
-          navigator.clipboard.writeText((mol as RDKit.Molecule).get_molblock());
+          navigator.clipboard.writeText((mol as RDMol).get_molblock());
           grok.shell.info('Molblock copied!');
         });
       }
