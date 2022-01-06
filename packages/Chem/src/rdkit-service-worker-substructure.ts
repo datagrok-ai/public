@@ -41,7 +41,6 @@ export class RdkitServiceWorkerSubstructure extends RdKitServiceWorkerSimilarity
         // Won't rethrow
       }
       this._rdKitMols.push(mol);
-      mol.delete();
       // this._patternFps.push(arr);
       molIdxToHash.push(item);
     }
