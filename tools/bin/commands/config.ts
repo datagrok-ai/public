@@ -26,13 +26,42 @@ function generateKeyQ(server: string, url: string): Indexable {
   const question = {
     name: server,
     type: 'input',
-    message: `Developer key (get it from ${origin}/u):`,
+    message: `Developer key (get it from ${origin}/u or press ENTER to skip):`,
     validate: validateKey
   };
   if (server.startsWith('local')) {
-    question.message = `Developer key for ${origin}`;
+    question.message = `Developer key for ${origin} (press ENTER to skip):`;
   }
   return question;
+}
+
+async function addNewServer(config: Config) {
+  while (true) {
+    const addServer = (await inquirer.prompt({
+      name: 'add-server',
+      type: 'confirm',
+      message: 'Do you want to add a server?',
+      default: false,
+    }))['add-server'];
+    if (addServer) {
+      const name = (await inquirer.prompt({
+        name: 'server-name',
+        type: 'input',
+        message: 'Enter a name:',
+      }))['server-name'];
+
+      const url = (await inquirer.prompt({
+        name: 'server-url',
+        type: 'input',
+        message: 'Enter a URL:',
+      }))['server-url'];
+
+      const key = (await inquirer.prompt(generateKeyQ(name, url)) as Indexable)[name];
+      config.servers[name] = { url, key };
+    } else {
+      break;
+    }
+  }
 }
 
 export function config(args: { _: string[], reset?: boolean }) {
@@ -69,6 +98,7 @@ export function config(args: { _: string[], reset?: boolean }) {
             const devKey: Indexable = await inquirer.prompt(question);
             config['servers'][server]['key'] = devKey[server];
           }
+          await addNewServer(config);
           const defaultServer = await inquirer.prompt({
             name: 'default-server',
             type: 'input',
