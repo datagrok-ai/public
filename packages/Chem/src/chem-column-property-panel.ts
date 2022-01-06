@@ -6,11 +6,11 @@ let subscr: any = null;
 export function getMolColumnPropertyPanel(col: DG.Column) {
   const NONE = 'None';
   let scaffoldColName = null;
-  if (col?.temp && col.temp['scaffold-col']) {
+  if (col?.temp && col.temp['scaffold-col'])
     scaffoldColName = col.temp['scaffold-col'];
-  } else {
+  else
     scaffoldColName = NONE;
-  }
+
   // TODO: replace with an efficient version, bySemTypesExact won't help; GROK-8094
   const columnsList = Array.from(col.dataFrame.columns).filter(
     (c: any) => c.semType === DG.SEMTYPE.MOLECULE).map((c: any) => c.name);
@@ -46,13 +46,12 @@ export function getMolColumnPropertyPanel(col: DG.Column) {
   };
 
   const matchDropdownToMoleculeFiltering = (v: string) => {
-    if (v === 'Categorical') {
+    if (v === 'Categorical')
       col.temp['.molecule-filtering'] = 'categorical';
-    } else if (v === 'Sketching') {
+    else if (v === 'Sketching')
       col.temp['.molecule-filtering'] = 'sketching';
-    } else {
+    else
       col.temp.delete('.molecule-filtering');
-    }
   };
 
   const moleculeFilteringChoice = ui.choiceInput('Filter Type',
@@ -70,11 +69,11 @@ export function getMolColumnPropertyPanel(col: DG.Column) {
     const scaffoldColumnTag = col.temp && col.temp['scaffold-col'] ? col.temp['scaffold-col'] : NONE;
     if (scaffoldColumnChoiceValue !== scaffoldColumnTag) {
       const htmlSelectElement = scaffoldColumnChoice.root.children[1] as HTMLSelectElement;
-      if (scaffoldColumnTag === NONE) {
+      if (scaffoldColumnTag === NONE)
         htmlSelectElement.value = NONE;
-      } else if (columnsSet.has(scaffoldColumnTag)) {
+      else if (columnsSet.has(scaffoldColumnTag))
         htmlSelectElement.value = scaffoldColumnTag;
-      } else {
+      else {
         // TODO: handle a selection of a non-molecule column
       }
     }
@@ -82,23 +81,22 @@ export function getMolColumnPropertyPanel(col: DG.Column) {
     const highlightScaffoldsCheckboxValue = highlightScaffoldsCheckbox.value;
     const highlightScaffoldsTagPresent = col.temp && col.temp['highlight-scaffold'] === 'true';
     const highlightScaffoldsCheckboxElement = highlightScaffoldsCheckbox.root.children[1] as HTMLInputElement;
-    if (highlightScaffoldsCheckboxValue != highlightScaffoldsTagPresent) {
+    if (highlightScaffoldsCheckboxValue != highlightScaffoldsTagPresent)
       highlightScaffoldsCheckboxElement.checked = highlightScaffoldsTagPresent;
-    }
+
     // handling regenerate coords selection
     const regenerateCoordsCheckboxValue = regenerateCoordsCheckbox.value;
     const regenerateCoordsTagPresent = col.temp && col.temp['regenerate-coords'] === 'true';
     const regenerateCoordsCheckboxElement = regenerateCoordsCheckbox.root.children[1] as HTMLInputElement;
-    if (regenerateCoordsCheckboxValue != regenerateCoordsTagPresent) {
+    if (regenerateCoordsCheckboxValue != regenerateCoordsTagPresent)
       regenerateCoordsCheckboxElement.checked = regenerateCoordsTagPresent;
-    }
+
     // handling molecule filtering choice value
     const moleculeFilteringChoiceValue = moleculeFilteringChoice.stringValue;
     const moleculeFilteringTag = matchMoleculeFilteringToDropdown(col?.temp['.molecule-filtering']);
     const moleculeFilteringChoiceElement = moleculeFilteringChoice.root.children[1] as HTMLSelectElement;
-    if (moleculeFilteringChoiceValue != moleculeFilteringTag) {
+    if (moleculeFilteringChoiceValue != moleculeFilteringTag)
       moleculeFilteringChoiceElement.value = moleculeFilteringTag;
-    }
   });
 
   const widget = new DG.Widget(ui.div([

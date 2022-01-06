@@ -43,9 +43,9 @@ export class SubstructureFilter extends DG.Filter {
   // TODO: this needs to be triggered
   reset() {
     // this.dataFrame.filter.setAll(true, false);
-    if (this.column?.temp['chem-scaffold-filter']) {
+    if (this.column?.temp['chem-scaffold-filter'])
       delete this.column.temp['chem-scaffold-filter'];
-    }
+
     // this._sketcher?.setSmiles('');
     // this.dataFrame.filter.fireChanged();
   }
@@ -62,8 +62,8 @@ export class SubstructureFilter extends DG.Filter {
       'substructLibrary': true,
       'molStringSmarts': '',
     })
-      .then((bitset_col) => {
-        this.dataFrame?.filter.and(bitset_col.get(0));
+      .then((bitsetCol) => {
+        this.dataFrame?.filter.and(bitsetCol.get(0));
       this.column!.temp['chem-scaffold-filter'] = this.sketcher.getMolFile(); // not sure if !
       this.dataFrame?.filter.fireChanged();
       }).catch((e) => {

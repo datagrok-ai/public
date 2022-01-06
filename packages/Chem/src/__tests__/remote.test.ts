@@ -49,9 +49,8 @@ async function _testSearchSubstructure(csv: string, pattern: string, trueIndices
     expect(bitset[trueIndices[k]] === '1').toBe(true);
     bitset[trueIndices[k]] = '0';
   }
-  for (let i = 0; i < bitset.length; ++i) {
+  for (let i = 0; i < bitset.length; ++i)
     expect(bitset[i] === '0').toBe(true);
-  }
 }
 
 async function _testSearchSubstructureSARSmall(params: any | null = null) {
