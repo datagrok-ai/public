@@ -82,6 +82,8 @@ export const replacers: Indexable = {
 };
 
 export class TemplateBuilder {
+  static sep = '\n';
+  static indentSize = 2;
   template: string;
   constructor(template: string) {
     this.template = template;
@@ -92,7 +94,13 @@ export class TemplateBuilder {
     return this;
   }
 
-  build() {
+  build(indent: number = 0) {
+    if (indent) {
+      this.template = this.template
+        .split(TemplateBuilder.sep)
+        .map((line) => ' '.repeat(indent * TemplateBuilder.indentSize) + line)
+        .join(TemplateBuilder.sep);
+    }
     return this.template;
   }
 }
@@ -177,6 +185,7 @@ export const queryWrapperTemplate = `export async function #{FUNC_NAME_LOWERCASE
   return await grok.data.query('#{PACKAGE_NAMESPACE}:#{FUNC_NAME}', #{PARAMS_OBJECT});
 }`;
 
+export const namespaceTemplate = `export namespace #{PACKAGE_NAMESPACE} {\n#{NAME}\n}`;
 
 export interface Config {
   servers: {
