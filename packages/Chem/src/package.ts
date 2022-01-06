@@ -33,6 +33,7 @@ import Sketcher = chem.Sketcher;
 import {oclMol} from './chem-common-ocl';
 import $ from 'cash-dom';
 import '../css/chem.css';
+import { RDMol } from './rdkit-api';
 
 const getRdKitModuleLocal = chemCommonRdKit.getRdKitModule;
 const initRdKitService = chemCommonRdKit.initRdKitService;
@@ -111,24 +112,14 @@ export function canvasMol(
   drawMoleculeToCanvas(x, y, w, h, canvas, molString, scaffoldMolString == '' ? null : scaffoldMolString);
 }
 
-namespace RDKit {
-  //TODO: eventually make RDKit types from it
-  export type Molecule = {
-    draw_to_canvas: (c: HTMLCanvasElement, w: number, h: number) => void,
-    get_smiles: () => string,
-    get_molblock: () => string,
-  };
-}
-
-
 export function renderMolecule(
-  mol: string | OCL.Molecule | RDKit.Molecule,
+  mol: string | OCL.Molecule | RDMol,
   options: {renderer: 'rdkit' | 'ocl', width?: number, height?: number} = {renderer: 'ocl'},
 ) {
   if (typeof mol === 'string') {
     switch (options.renderer) {
     case 'rdkit':
-      mol = getRdKitModuleLocal().get_mol(convertToRDKit(mol)) as RDKit.Molecule;
+      mol = getRdKitModuleLocal().get_mol(convertToRDKit(mol)) as RDMol;
       break;
     case 'ocl':
       mol = oclMol(mol);
@@ -144,7 +135,7 @@ export function renderMolecule(
 
   switch (options.renderer) {
   case 'rdkit':
-    (mol as RDKit.Molecule).draw_to_canvas(moleculeHost, options.width, options.height);
+    (mol as RDMol).draw_to_canvas(moleculeHost, options.width, options.height);
     break;
   case 'ocl':
     OCL.StructureView.drawMolecule(moleculeHost, mol as OCL.Molecule);
