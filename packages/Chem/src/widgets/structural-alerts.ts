@@ -19,7 +19,7 @@ function loadAlertsCollection(smarts: string[]) {
   }
 }
 
-function getStructuralAlerts(smiles: string) {
+function getStructuralAlerts(smiles: string): number[] {
   const alerts: number[] = [];
   const mol = getRdKitModule().get_mol(smiles);
   //TODO: use SustructLibrary and count_matches instead. Currently throws an error on rule id 221
