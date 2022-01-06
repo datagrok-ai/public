@@ -1,5 +1,11 @@
-import {Options, Coordinates, Vectors, DistanceMetric} from './type-declarations';
-import {calculateEuclideanDistance, calcDistanceMatrix, fillRandomMatrix, vectorAdd, randomInt} from './operations';
+import {Options, Coordinates, Vectors, DistanceMetric} from '@datagrok-libraries/utils/src/type-declarations';
+import {
+  calculateEuclideanDistance,
+  calcDistanceMatrix,
+  fillRandomMatrix,
+  vectorAdd,
+  randomInt,
+} from '@datagrok-libraries/utils/src/operations';
 
 /**
  * Implements stochastic proximity embedding.
@@ -55,7 +61,7 @@ export class SPEBase {
 
   /**
    * Calculates distance between the two vectors given.
-   * 
+   *
    * @param {Vectors} vectors Set of vectors to calculate distances between.
    * @param {number} index1 Index of the first vector of the pair.
    * @param {number} index2 Index of the second vector of the pair.
@@ -67,7 +73,7 @@ export class SPEBase {
 
   /**
    * Embeds the vectors given into a two-dimensional space.
-   * 
+   *
    * @param {Vectors} vectors D-dimensional coordinates.
    * @return {Coordinates} SPE coordinates in D space.
    */
@@ -124,10 +130,10 @@ export class SPEBase {
  * @class PSPEBase
  * @link doi:10.1016/S1093-3263(03)00155-4
  */
- export class PSPEBase extends SPEBase {
+export class PSPEBase extends SPEBase {
   /**
    * Embeds the vectors given into a two-dimensional space using a modified update rule.
-   * 
+   *
    * @param {Vectors} vectors D-dimensional coordinates.
    * @return {Coordinates} SPE coordinates in D space.
    */
