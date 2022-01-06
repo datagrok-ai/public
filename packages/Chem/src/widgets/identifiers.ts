@@ -97,9 +97,9 @@ async function getCompoundsIds(inchiKey: string) {
   const response = await grok.dapi.fetchProxy(url, params);
   const sources: {[key: string]: any}[] = (await response.json()).filter((s: {[key: string]: string | number}) => {
     //@ts-ignore: it's a string at this point 100%
-    const src_id = parseInt(s['src_id']);
-    s['src_id'] = src_id;
-    return src_id in UniChemSource.idNames;
+    const srcId = parseInt(s['src_id']);
+    s['src_id'] = srcId;
+    return srcId in UniChemSource.idNames;
   });
 
   return response.status !== 200 ?
@@ -108,7 +108,9 @@ async function getCompoundsIds(inchiKey: string) {
 
 export async function identifiersWidget(smiles: string) {
   const rdKitModule = getRdKitModule();
-  const inchiKey = rdKitModule.get_inchikey_for_inchi(rdKitModule.get_mol(smiles).get_inchi());
+  const mol = rdKitModule.get_mol(smiles);
+  const inchiKey = rdKitModule.get_inchikey_for_inchi(mol.get_inchi());
+  mol.delete();
   const idMap = await getCompoundsIds(inchiKey);
   await UniChemSource.refreshSources();
 
