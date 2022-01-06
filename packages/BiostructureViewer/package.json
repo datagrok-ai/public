@@ -12,7 +12,7 @@
 	],
 	"dependencies": {
 		"datagrok-api": ">=0.95.11",
-		"@datagrok-libraries/utils": ">=0.0.12",
+		"@datagrok-libraries/utils": ">=0.0.15",
 		"cash-dom": "latest",
 		"dayjs": "latest"
 	},
