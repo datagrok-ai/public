@@ -1,7 +1,7 @@
 import * as ui from 'datagrok-api/ui';
 import * as DG from 'datagrok-api/dg';
 import {drawMoleculeToCanvas} from '../chem-common-rdkit';
-import { renderMolecule } from '../package';
+import {renderMolecule} from '../package';
 
 export function structure2dWidget(smiles: string) {
   const width = 200;
