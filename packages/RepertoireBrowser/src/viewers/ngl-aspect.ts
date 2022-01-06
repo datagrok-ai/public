@@ -1,10 +1,7 @@
 import * as grok from 'datagrok-api/grok';
 import * as ui from 'datagrok-api/ui';
 import * as DG from "datagrok-api/dg";
-import { MiscMethods } from "./misc.js"
-
-
-// export let _package = new DG.Package();
+import { MiscMethods } from "./misc"
 
 export class NglAspect {
 
@@ -13,14 +10,14 @@ export class NglAspect {
   pdbStr: string;
   json: any;
   colorScheme: any;
-  nglHost: any;
-  repChoice: any;
-  cdrScheme: any;
-  paratopes: any;
+  nglHost: HTMLElement;
+  repChoice: DG.InputBase;
+  cdrScheme: DG.InputBase;
+  paratopes: DG.InputBase;
   selection: any;
 
-  public async init(view, pdbStr, json, colorScheme, nglHost,
-    repChoice, cdrScheme, paratopes, twinSelections) {
+  public async init(view: DG.TableView, pdbStr: string, json: any, colorScheme: any, nglHost: HTMLElement,
+    repChoice: DG.InputBase, cdrScheme: DG.InputBase, paratopes: DG.InputBase, twinSelections: any) {
 
     this.colorScheme = colorScheme;
     let col_background = this.colorScheme["col_background"];
@@ -39,21 +36,6 @@ export class NglAspect {
     this.nglResize(nglHost);
   }
 
-  // public changeRepChoice(repChoice){
-  //   this.repChoice = repChoice;
-  //   this.render(true);
-  // }
-
-  // public changeCdrScheme(cdrScheme){
-  //   this.cdrScheme = cdrScheme;
-  //   this.render(false);
-  // }
-
-  // public changeParatopes(paratopes){
-  //   this.paratopes = paratopes;
-  //   this.render(false);
-  // }
-
   public async render(reload: boolean) {
     let switchObj = this.selection;
 
@@ -67,7 +49,7 @@ export class NglAspect {
       this.colorScheme["col_highlight"] : this.colorScheme["col_highlight_cdr"];
 
     //highlights in NGL
-    let scheme_buffer = [];
+    let scheme_buffer: string[][] = [];
 
     Object.keys(switchObj).forEach((keyChain) => {
       Object.keys(switchObj[keyChain]).forEach((keyFtStart) => {
@@ -185,23 +167,23 @@ export class NglAspect {
   }
 
   // load the 3D model
-  private async loadPdb(pdbStr, repChoice, schemeObj) {
+  private async loadPdb(pdbStr: string, repChoice: DG.InputBase, schemeObj: any) {
     var stringBlob = new Blob([pdbStr], { type: 'text/plain' });
-    await this.stage.loadFile(stringBlob, { ext: "pdb" }).then(function (o) {
+    await this.stage.loadFile(stringBlob, { ext: "pdb" }).then(function (o: any) {
       o.addRepresentation(repChoice.value, schemeObj);
       o.autoView();
     });
   }
 
   // viewer resize
-  private _resize(host) {
+  private _resize(host: HTMLElement) {
     let canvas = host.querySelector('canvas');
-    canvas.width = Math.floor(host.clientWidth * window.devicePixelRatio);
-    canvas.height = Math.floor(host.clientHeight * window.devicePixelRatio);
+    canvas!.width = Math.floor(host.clientWidth * window.devicePixelRatio);
+    canvas!.height = Math.floor(host.clientHeight * window.devicePixelRatio);
     this.stage.handleResize();
   }
 
-  private nglResize(host) {
+  private nglResize(host: HTMLElement) {
     ui.onSizeChanged(host).subscribe((_) => this._resize(host));
     this._resize(host);
   }
