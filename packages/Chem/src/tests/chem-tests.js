@@ -39,11 +39,9 @@ async function testRendering() {
 async function testRenderingCanvas() {
   let root = ui.div();
   const width = 300; const height = 200;
-  let canvas1 = document.createElement('canvas');
-  canvas1.width = width; canvas1.height = height;
+  let canvas1 = ui.canvas(width, height);
   canvas1.id = 'canvas1';
-  let canvas2 = document.createElement('canvas');
-  canvas2.width = width; canvas2.height = height;
+  let canvas2 = ui.canvas(width, height);
   canvas2.id = 'canvas2';
   root.appendChild(canvas1);
   root.appendChild(canvas2);

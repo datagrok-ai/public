@@ -14,11 +14,9 @@ from rdkit.Chem import rdDepictor
 from rdkit.Chem import Descriptors
 from rdkit.Chem import Descriptors3D
 from rdkit.Chem.Draw import rdMolDraw2D
-import re
-import os
-import io
 import numpy as np
 import pandas as pd
+import multiprocessing
 
 smiles = df1[smiles]
 descriptors = df2[selected]

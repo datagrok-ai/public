@@ -2,7 +2,7 @@
 
 A next-generation environment for scientific computing that 
 leverages core Datagrok features, such as 
-[in-memory data engine](../develop/performance.md#in-memory-database),
+[in-memory data engine](../develop/advanced/performance.md#in-memory-database),
 [interactive visualizations](../explore/exploratory-data-analysis.md),
 [data access](../home.md#access),
 [machine learning](../home.md#learn),
@@ -387,7 +387,7 @@ for the data access control.
 
 ## Exploratory data analysis
 
-Perhaps the most commonly used data structure in computing is [DataFrame](../develop/dataframe.md).
+Perhaps the most commonly used data structure in computing is [DataFrame](../develop/advanced/data-frame.md).
 To analyze either input or output dataframe, click on the `+` ("Add to workspace") 
 icon. This will open the dataframe in the [exploratory data analysis](../explore/exploratory-data-analysis.md)
 mode, allowing to [visualize](../visualize/viewers.md) the data,
@@ -407,7 +407,7 @@ scatter plot, histogram, or correlation plot.
 #### Open-source, curated repository of scientific methods
 
 We will be creating and maintaining a 
-[repository of popular scientific methods](../develop/public-repository.md)
+[repository of popular scientific methods](../collaborate/public-repository.md)
 available to everyone under the MIT license.
 
 WebAssembly-compiled pure functions (implemented in C++ or Rust) will be of particular

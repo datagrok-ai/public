@@ -503,9 +503,8 @@ export function link(
   return link;
 }
 
-/** Creates a [Dialog].
- * @returns {Dialog} */
-export function dialog(options: any = ''): Dialog {
+/** Creates a [Dialog]. */
+export function dialog(options?: { title?: string, helpUrl?: string } | string): Dialog {
   return Dialog.create(options);
 }
 

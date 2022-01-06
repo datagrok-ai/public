@@ -1,0 +1,34 @@
+.d4-ngl-viewer {
+    position: relative;
+    width: 100%;
+    height: 100%;
+}
+
+.d4-accordion-pane .d4-ngl-viewer {
+    min-width: 300px;
+    min-height: 300px;
+}
+
+.d4-ngl-viewer canvas {
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+}
+
+#sequence-viewer-h .fastaSeq {
+    -webkit-user-select: text;
+    user-select: text;
+    -moz-user-select: text;
+    -khtml-user-select: text;
+    -ms-user-select: text;
+}
+
+#sequence-viewer-l .fastaSeq {
+    -webkit-user-select: text;
+    user-select: text;
+    -moz-user-select: text;
+    -khtml-user-select: text;
+    -ms-user-select: text;
+}

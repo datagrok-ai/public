@@ -65,3 +65,39 @@ In this public repo, we follow some Git best practices.
 6. Do not mix "refactoring" with a new feature
 7. Do not create unnecessary merge loops. To pull changes after commit creation use `git pull --rebase`.
 8. Push one commit at a time to avoid unexpected GitHub Actions behavior.
+
+
+## Performance recommendations
+
+Some general recommendations on writing high-performance JavaScript code:
+* [Writing Fast, Memory-Efficient JavaScript](https://www.smashingmagazine.com/2012/11/writing-fast-memory-efficient-javascript/)
+* [JavaScript Performance](https://developer.mozilla.org/en-US/docs/Learn/Performance/javascript_performance) 
+
+Below, we will discuss some performance-related topics important to building solutions with Datagrok.
+However, nothing beats common sense, benchmarks, and eventually developing an intuition of
+how fast or slow a particular method would work, and why. 
+
+### DataFrame
+
+**DO NOT** use row-based access for iterating over rows when [performance](help/develop/advanced/performance.md)
+matters (pretty much anytime when the size of the
+dataset is not known in advance). Each call to `row(i)` creates a `Row` object that is 
+unnecessary, since the underlying storage is columnar. Only use it for passing a reference to 
+a particular row. Prefer using `column.get(i)` methods, instead.
+
+### Iterables and arrays
+
+**PREFER** using [typed arrays](https://developer.mozilla.org/en-US/docs/Web/JavaScript/Typed_arrays)
+instead of the standard JS lists when working with numbers or bitsets, if possible. 
+
+When working with iterables, **DO NOT** create arrays for the sole purpose of iterating 
+over their elements, this is wasteful. Consider using [wu](https://github.com/fitzgen/wu.js/) instead,
+it is already included with Datagrok. For instance, instead of 
+using `Array.from(values).length` use `wu(values).length`.
+
+**DO NOT** use temporary arrays for implementing a generic functionality as a one-liner. Instead, consider
+developing or finding a utility function for that. The following code is wasteful (unnecessary allocation) 
+, slow (use of lambdas) and inefficient (likely a typed array would perform better). 
+`new Array(nItems).fill(0).map((_, i) => begin + i)`. A better way would be a specialized 
+utility function if a real array is needed, or [wu.count](https://fitzgen.github.io/wu.js/#count) if you only need to
+iterate over indexes.

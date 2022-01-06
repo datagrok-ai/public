@@ -13,7 +13,7 @@ let browser: puppeteer.Browser;
 let page: puppeteer.Page;
 
 beforeAll(async () => {
-  let out = await utils.getBrowserPage(puppeteer);
+  const out = await utils.getBrowserPage(puppeteer);
   browser = out.browser;
   page = out.page;
 }, P_START_TIMEOUT);
@@ -22,9 +22,9 @@ afterAll(async () => {
   await browser.close();
 });
 
-let fs = require('fs');
+const fs = require('fs');
 function requireTextRequire(name: string, require: any) {
-   return fs.readFileSync(require.resolve(name)).toString();
+  return fs.readFileSync(require.resolve(name)).toString();
 };
 function requireText(name: string) {
   return requireTextRequire(name, require);
@@ -34,17 +34,17 @@ function requireText(name: string) {
 // 'O=C1CN=C(C2CCCCC2)C2:C:C:C:C:C:2N1'
 
 async function _testSearchSubstructure(csv: string, pattern: string, trueIndices: number[], params: any | null = null) {
-  let testOutput = await page.evaluate(async (csv: string, pattern: string, trueIndices: number[], params: any) => {
+  const testOutput = await page.evaluate(async (csv: string, pattern: string, trueIndices: number[], params: any) => {
     // await grok.functions.call('Chem:initChem');
     const df = DG.DataFrame.fromCsv(csv);
     const col = df.columns[0];
     const bitset: DG.BitSet = (params !== null) ?
       (await grok.chem.searchSubstructure(col, pattern, params)) :
       (await grok.chem.searchSubstructure(col, pattern));
-    let bitsetString = bitset.toBinaryString();
+    const bitsetString = bitset.toBinaryString();
     return {bitsetString};
   }, csv, pattern, trueIndices, params);
-  let bitset = [...testOutput.bitsetString];
+  const bitset = [...testOutput.bitsetString];
   for (let k = 0; k < trueIndices.length; ++k) {
     expect(bitset[trueIndices[k]] === '1').toBe(true);
     bitset[trueIndices[k]] = '0';
@@ -55,7 +55,7 @@ async function _testSearchSubstructure(csv: string, pattern: string, trueIndices
 }
 
 async function _testSearchSubstructureSARSmall(params: any | null = null) {
-  let fileSARSmall = requireText("./sar_small.csv");
+  const fileSARSmall = requireText('./sar_small.csv');
   const testOutput = await page.evaluate(async (file: string, params: any) => {
     // await grok.functions.call('Chem:initChem');
     const df = DG.DataFrame.fromCsv(file);
@@ -75,7 +75,7 @@ async function _testSearchSubstructureAllParameters(foo: any) {
   await foo({substructLibrary: false});
   await foo({substructLibrary: true});
   await foo({});
-  await foo(); 
+  await foo();
 }
 
 // 90 hits out of 200 on sar_small.csv
@@ -88,10 +88,10 @@ it('chem.searchSubstructure.sar_small', async () => {
 it('chem.searchSubstructure.5_rows', async () => {
   const targetSmiles = [
     'CCOC(=O)c1oc2cccc(OCCNCc3cccnc3)c2c1C4CC4',
-    'Fc1cc2C(=O)C(=CN(C3CC3)c2cc1N4CCNCC4)c5oc(COc6ccccc6)nn5'
+    'Fc1cc2C(=O)C(=CN(C3CC3)c2cc1N4CCNCC4)c5oc(COc6ccccc6)nn5',
   ];
   const substructureSmiles = 'C1CC1';
-  const csv = 
+  const csv =
 `smiles
 ${targetSmiles[0]}
 COc1ccc2cc(ccc2c1)C(C)C(=O)Oc3ccc(C)cc3OC
@@ -101,19 +101,19 @@ COc1ccc2c(c1)c(CC(=O)N3CCCC3C(=O)Oc4ccc(C)cc4OC)c(C)n2C(=O)c5ccc(Cl)cc5
 `;
   await _testSearchSubstructureAllParameters(
     async (params: any) => await _testSearchSubstructure(
-      csv, substructureSmiles, [0, 2], params
-    )
+      csv, substructureSmiles, [0, 2], params,
+    ),
   );
 });
 
 it('chem.findSimilar.sar_small', async () => {
-  let fileSARSmall = requireText("./sar_small.csv");
+  const fileSARSmall = requireText('./sar_small.csv');
   const testOutput = await page.evaluate(async (file: string) => {
     //await grok.functions.call('Chem:initChem');
     const dfInput = DG.DataFrame.fromCsv(file);
     const colInput = dfInput.columns[0];
     const dfResult: DG.DataFrame = // shouldn't be null
-      (await grok.chem.findSimilar(colInput, 'O=C1CN=C(C2CCCCC2)C2:C:C:C:C:C:2N1'))!; 
+      (await grok.chem.findSimilar(colInput, 'O=C1CN=C(C2CCCCC2)C2:C:C:C:C:C:2N1'))!;
     const numRowsOriginal = dfInput.rowCount;
     const numRows = dfResult.rowCount;
     const columnNames = [

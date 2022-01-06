@@ -24,5 +24,7 @@
 		"release-openchemlib-dev": "grok publish dev --rebuild --release",
 		"debug-openchemlib-public": "grok publish public --rebuild",
 		"release-openchemlib-public": "grok publish public --rebuild --release"
-	}
+	},
+	"canEdit": [ "Developers" ],
+	"canView": [ "All users" ]
 }

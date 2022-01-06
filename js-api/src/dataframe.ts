@@ -28,8 +28,7 @@ let api = <any>window;
 type RowPredicate = (row: Row) => boolean;
 type Comparer = (a: any, b: any) => number;
 
-/** Proxy wrapper for ColumnList
- */
+/** Proxy wrapper for ColumnList */
 const ColumnListProxy = new Proxy(class {
       columnList: ColumnList;
       constructor(columnList: any) {
@@ -84,7 +83,10 @@ const ColumnListProxy = new Proxy(class {
  * strongly-typed columns of different types.
  *
  * In the API, the terms "Table" and "DataFrame" are used interchangeably.
- * See usage samples: {@link https://public.datagrok.ai/js/samples/data-frame/manipulate}
+ *
+ * Usage samples: {@link https://public.datagrok.ai/js/samples/data-frame/manipulate}
+ * Usage details: {@link https://datagrok.ai/help/develop/advanced/data-frame}
+ * Implementation details: {@link https://datagrok.ai/help/develop/admin/architecture#in-memory-database}
  */
 export class DataFrame {
   public readonly dart: any;
@@ -106,25 +108,50 @@ export class DataFrame {
     this.tags = new MapProxy(api.grok_DataFrame_Get_Tags(this.dart), 'tags', 'string');
   }
 
-  /** Creates a {@link DataFrame} with the specified number of rows and no columns.
-   * @param {number} rowCount
-   * @returns {DataFrame} */
+  /** Creates a {@link DataFrame} with the specified number of rows and no columns. */
   static create(rowCount: number = 0): DataFrame {
     return new DataFrame(api.grok_DataFrame(rowCount));
   }
 
-  /** Creates a {@link DataFrame} from the specified columns. All columns should be of the same length.
-   * @param {Column[]} columns
-   * @returns {DataFrame} */
+  /** Creates a {@link DataFrame} from the specified columns. All columns should be of the same length. */
   static fromColumns(columns: Column[]): DataFrame {
     return new DataFrame(api.grok_DataFrame_FromColumns(columns.map((c) => c.dart)));
   }
 
+  /** Creates a {@link DataFrame} from the specified properties with the specified row count. */
   static fromProperties(properties: Property[], rows: number = 0) {
     let df = DataFrame.create(rows);
     for (let p of properties)
       df.columns.addNew(p.name, p.propertyType);
     return df;
+  }
+
+  /** Creates a [DataFrame] from a list of objects by using object keys as column names,
+   * and object values as values.
+   *
+   * NOTE: The implementation converts the values to strings first and then parses it,
+   * so do not use this method in performance-critical paths (for instance when the
+   * number of objects could be big), consider using {@link fromColumns} instead.
+   *
+   * @param {object[]} list - List of objects.
+   * @returns {DataFrame}
+   * {@link https://dev.datagrok.ai/script/samples/javascript/data-frame/construction/create-from-objects}
+   * */
+  static fromObjects(list: object[]): DataFrame | undefined {
+    let table = DataFrame.create(list.length);
+    if (list.length === 0)
+      return;
+
+    let names = Object.keys(list[0]);
+    for (let name of names) {
+      let strings = list.map((x: any) => {
+        let value = x[<any>name];
+        return value === null ? '':  `${value}`;
+      });
+      table.columns.add(Column.fromStrings(name, strings));
+    }
+
+    return table;
   }
 
   /** Constructs {@link DataFrame} from a comma-separated values string
@@ -146,12 +173,14 @@ export class DataFrame {
     return new DataFrame(api.grok_DataFrame_FromJson(json));
   }
 
+  /** A helper to conveniently access certain metadata properties stored in {@link tags} */
   get meta(): DataFrameMetaHelper {
     if (this._meta == undefined)
       this._meta = new DataFrameMetaHelper(this);
     return this._meta;
   }
 
+  /** A helper for creating plots for this dataframe */
   get plot(): DataFramePlotHelper {
     if (this._plot == undefined)
       this._plot = new DataFramePlotHelper(this);
@@ -164,27 +193,19 @@ export class DataFrame {
     return this._dialogs;
   }
 
-  /** Returns number of rows in the table.
-   * @returns {number} */
+  /** Returns number of rows in the table. */
   get rowCount(): number {
     return api.grok_DataFrame_RowCount(this.dart);
   }
 
-  /** Returns a {@link BitSet} with selected rows.
-   * @returns {BitSet} */
+  /** Returns a {@link BitSet} with selected rows. */
   get selection(): BitSet {
     return new BitSet(api.grok_DataFrame_Get_Selection(this.dart));
   }
 
-  /** Name of the dataframe.
-   * @returns {string} */
-  get name(): string {
-    return api.grok_DataFrame_Get_Name(this.dart);
-  }
-
-  set name(s: string) {
-    api.grok_DataFrame_Set_Name(this.dart, s);
-  }
+  /** Name of the dataframe.  */
+  get name(): string { return api.grok_DataFrame_Get_Name(this.dart); }
+  set name(s: string) { api.grok_DataFrame_Set_Name(this.dart, s); }
 
   /** Returns the value of the specified tag, or null if it does not exist.
    * @returns {string} */
@@ -205,10 +226,9 @@ export class DataFrame {
   }
 
   /** Returns i-th row.
-   * @param {number} i - Row index.
-   * @returns {Row} */
-  row(i: number): Row {
-    return new Row(this, i);
+   * _NOTE_: Do not use in performance-critical paths, consider accessing values via the {@link Column} instance. */
+  row(rowIndex: number): Row {
+    return new Row(this, rowIndex);
   }
 
   /** Returns idx-th value of the specified columns.
@@ -307,30 +327,6 @@ export class DataFrame {
    * Sample: {@link https://public.datagrok.ai/js/samples/data-frame/events/current-elements} */
   set currentCell(cell: Cell) {
     api.grok_DataFrame_Set_CurrentCell(this.dart, cell.dart);
-  }
-
-  /** Creates a [DataFrame] from a list of objects by using object keys as column names,
-   * and object values as values.
-   *
-   * @param {object[]} list - List of objects.
-   * @returns {DataFrame}
-   * {@link https://dev.datagrok.ai/script/samples/javascript/data-frame/construction/create-from-objects}
-   * */
-  static fromObjects(list: object[]): DataFrame | undefined {
-    let table = DataFrame.create(list.length);
-    if (list.length === 0)
-      return;
-
-    let names = Object.keys(list[0]);
-    for (let name of names) {
-      let strings = list.map((x: any) => {
-        let value = x[<any>name];
-        return value === null ? '':  `${value}`;
-      });
-      table.columns.add(Column.fromStrings(name, strings));
-    }
-
-    return table;
   }
 
   /** Converts a column with the specified name to [newType],
@@ -1367,9 +1363,8 @@ export class Cell {
 
   /** Cell value.
    * @returns {*} */
-  get value(): any {
-    return api.grok_Cell_Get_Value(this.dart);
-  }
+  get value(): any { return api.grok_Cell_Get_Value(this.dart); }
+  set value(x: any) { api.grok_Cell_Set_Value(this.dart, x); }
 
   /** @returns {string} */
   toString(): string {

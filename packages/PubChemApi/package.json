@@ -24,5 +24,7 @@
 		"release-pubchemapi-dev": "grok publish dev --rebuild --release",
 		"debug-pubchemapi-local": "grok publish local --rebuild",
 		"release-pubchemapi-local": "grok publish local --rebuild --release"
-	}
+	},
+	"canEdit": [ "Developers" ],
+	"canView": [ "All users" ]
 }

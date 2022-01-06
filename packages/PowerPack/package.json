@@ -50,5 +50,7 @@
 			"defaultValue": true,
 			"nullable": false
 		}
-	]
+	],
+	"canEdit": [ "Developers" ],
+	"canView": [ "All users" ]
 }

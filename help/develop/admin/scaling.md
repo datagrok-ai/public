@@ -16,7 +16,7 @@ application, and some to the ecosystem we are building.
 By keeping metadata separately from data and utilizing scalable storage for both of them (Postgres for metadata, and S3
 for data) Datagrok is capable of storing many datasets, both in terms of numbers and volume.
 
-By utilizing our proprietary [in-memory data engine](../performance.md#in-memory-database)
+By utilizing our proprietary [in-memory data engine](../advanced/performance.md#in-memory-database)
 on both the client and server sides, we can transfer datasets between tiers a lot faster than other systems.
 
 The recommended metadata engine for enterprises is RDS.
@@ -91,4 +91,4 @@ for evolving the ecosystem on a global scale:
 
 See also:
 
-* [Performance](../performance.md)
+* [Performance](../advanced/performance.md)

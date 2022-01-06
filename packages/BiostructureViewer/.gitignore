@@ -27,6 +27,3 @@ dist/
 .idea/**/dictionaries
 .idea/**/shelf
 .idea/codeStyles/
-
-# Emitted *.js files
-src/**/*.js

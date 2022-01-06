@@ -57,4 +57,4 @@ Though it might seem that cheminformatics covers all molecular needs, it has its
 
 See also:
 * [Cheminformatics in Datagrok](https://datagrok.ai/cheminformatics)
-* [Cheminformatics API](../../cheminformatics.md)
+* [Cheminformatics API](cheminformatics.md)

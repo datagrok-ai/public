@@ -4,7 +4,7 @@
  * */
 
 import {BitSet, Column, DataFrame} from './dataframe';
-import {SIMILARITY_METRIC, SimilarityMetric, TYPE} from './const';
+import {SEMTYPE, SIMILARITY_METRIC, SimilarityMetric, TYPE, UNITS} from './const';
 import {Observable, Subject, Subscription} from "rxjs";
 import {Menu, Widget} from "./widgets";
 import {Func} from "./entities";
@@ -12,6 +12,8 @@ import * as ui from "../ui";
 import {SemanticValue} from "./grid";
 import $ from "cash-dom";
 import {element} from "../ui";
+import {Utils} from "./utils";
+import {isMolBlock} from "../../packages/Chem/src/chem-utils";
 
 let api = <any>window;
 declare let grok: any;
@@ -90,6 +92,7 @@ export namespace chem {
     changedSub: Subscription | null = null;
     sketcher: SketcherBase | null = null;
     onChanged: Subject<any> = new Subject<any>();
+    syncCurrentObject: boolean = true;
     listeners: Function[] = [];
 
     _smiles: string = '';
@@ -116,6 +119,14 @@ export namespace chem {
         this.sketcher!.molFile = x;
     }
 
+    /** Sets the molecule, supports either SMILES or MOLBLOCK formats */
+    setMolecule(molString: string) {
+      if (isMolBlock(molString))
+        this.setMolFile(molString)
+      else
+        this.setSmiles(molString);
+    }
+
     get supportedExportFormats(): string[] {
       return this.sketcher ? this.sketcher.supportedExportFormats : [];
     }
@@ -138,29 +149,32 @@ export namespace chem {
       if (funcs.length == 0)
         throw 'Sketcher functions not found. Please install OpenChemLib, or MarvinJS package.';
 
-      
       $(this.molInput).attr('placeholder', 'SMILES, Inchi, Inchi keys, ChEMBL id, etc');
-      const smilesInputHandler = (e: any) => {
+
+      const applyInput = (e: any) => {
         const newSmilesValue: string = (e?.target as HTMLTextAreaElement).value;
-        if (this.getSmiles() !== newSmilesValue) {
+
+        if (this.getSmiles() !== newSmilesValue)
           this.setSmiles(newSmilesValue);
-        }
+
         const currentSmiles = this.getSmiles();
-        if (currentSmiles !== newSmilesValue) {
+
+        if (currentSmiles !== newSmilesValue)
           (e?.target as HTMLTextAreaElement).value = currentSmiles ?? '';
-        }
       };
-      this.molInput.addEventListener('focusout', (e) => {
-        smilesInputHandler(e);
-      });
+
       this.molInput.addEventListener('keydown', (e) => {
-        if (e.keyCode == 13)
-          smilesInputHandler(e);
+        if (e.key == 'Enter') {
+          applyInput(e);
+          e.stopImmediatePropagation();
+        }
       });
 
       let optionsIcon = ui.iconFA('bars', () => {
         Menu
           .popup()
+          .item('Copy as SMILES', () => navigator.clipboard.writeText(this.sketcher!.smiles))
+          .item('Copy as MOLBLOCK', () => navigator.clipboard.writeText(this.sketcher!.molFile))
           .item('Add to favorites', () => console.log(this.sketcher!.molFile))
           .separator()
           .items(funcs.map((f) => f.name), (name: string) => this.setSketcher(name))
@@ -189,17 +203,10 @@ export namespace chem {
       ui.empty(this.host);
       this.changedSub?.unsubscribe();
 
-      let molFile = this.sketcher?.molFile ?? this._molFile;
-      let smiles = this.sketcher?.smiles ?? this._smiles;
+      let oldMolFile = this.sketcher?.molFile;
 
       let f = Func.find({name: name})[0];
       this.sketcher = await f.apply();
-      /*
-      // A backward connection from the sketched molecule to the text
-      this.molInputSubscription?.unsubscribe();
-      this.molInputSubscription = this.sketcher!.onChanged.subscribe((_) => {
-        this.molInput.value = this.getSmiles() ?? ''; });
-      */
       this.host.appendChild(this.sketcher!.root);
       await ui.tools.waitForElementInDom(this.root);
       await this.sketcher!.init();
@@ -207,13 +214,16 @@ export namespace chem {
         this.onChanged.next(null);
         for (let callback of this.listeners)
           callback();
-        grok.shell.o = SemanticValue.fromValueType(this.sketcher!.smiles, 'Molecule');
+        if (this.syncCurrentObject)
+          grok.shell.o = SemanticValue.fromValueType(this.sketcher!.molFile, SEMTYPE.MOLECULE, UNITS.Molecule.MOLBLOCK);
       });
 
-      if (molFile != null)
-        this.sketcher!.molFile = molFile;
-      else if (smiles != null)
-        this.sketcher!.smiles = smiles;
+      if (!Utils.isEmpty(oldMolFile))
+        this.sketcher!.molFile
+      else if (!Utils.isEmpty(this._molFile))
+        this.sketcher!.molFile = this._molFile;
+      else if (!Utils.isEmpty(this._smiles))
+        this.sketcher!.smiles = this._smiles;
     }
   }
 
@@ -233,7 +243,6 @@ export namespace chem {
    * @returns {Promise<DataFrame>, if sorted; Promise<Column>, otherwise}
    * */
   export async function similarityScoring(column: Column, molecule: string = '', settings: { sorted?: boolean } = {sorted: false}) {
-
     const result = await grok.functions.call('Chem:similarityScoring', {
       'molStringsColumn': column,
       'molString': molecule,
@@ -242,7 +251,6 @@ export namespace chem {
     if (molecule.length != 0) {
       return settings.sorted ? result : result.columns.byIndex(0);
     }
-
   }
 
   /**
@@ -491,37 +499,8 @@ export namespace chem {
   }
 
   export async function showSketcherDialog() {
-
     ui.dialog()
       .add(new Sketcher().root)
       .show();
-    return;
-
-    /*
-    let funcs = Func.find({tags: ['moleculeSketcher']});
-    let host = ui.box(null, {style: {width: '500px', height: '500px'}});
-    let changedSub: Subscription | null = null;
-    let sketcher: SketcherBase | null = null;
-
-    async function setSketcher(name: string) {
-      ui.empty(host);
-      changedSub?.unsubscribe();
-      let molFile = sketcher?.molFile;
-      let f = Func.find({name: name})[0];
-      sketcher = await f.apply();
-      host.appendChild(sketcher!.root);
-      await sketcher!.init();
-      changedSub = sketcher!.onChanged.subscribe((_) => grok.shell.o = SemanticValue.fromValueType(sketcher!.smiles, 'Molecule'));
-      if (molFile != null)
-        sketcher!.molFile = molFile;
-    }
-
-    ui.dialog()
-      .add(ui.choiceInput('Sketcher', funcs[0].name, funcs.map((f) => f.name), setSketcher))
-      .add(host)
-      .show();
-
-    await setSketcher(funcs[0].name);
-    */
   }
 }

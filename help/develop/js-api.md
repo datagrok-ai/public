@@ -3,8 +3,8 @@
 
 # JavaScript API
 
-[Grok JS API](js-api.md) allows to control all aspects of the Datagrok platform. The API
-can be used either from ad-hoc [scripts](scripting.md) (`Functions | Scripts | New JavaScript Script`) 
+[Datagrok JS API](https://datagrok.ai/js-api) allows to control all aspects of the Datagrok platform. The API
+can be used either from ad-hoc [scripts](../compute/scripting.md) (`Functions | Scripts | New JavaScript Script`) 
 or from [packages](develop.md#packages). 
 
 This document covers the following areas:
@@ -23,9 +23,9 @@ This document covers the following areas:
 ## API structure
 
 There are three entry points to the API: 
-**grok** for easy discoverability of the functionality, 
-**ui** for building user interfaces, and 
-**DG** for instantiating classes directly.
+* [**grok**](https://datagrok.ai/js-api/modules/grok) for easy discoverability of the functionality, 
+* [**ui**](https://datagrok.ai/js-api/modules/ui) for building user interfaces, and 
+* [**DG**](https://datagrok.ai/js-api/modules/dg) for instantiating classes directly.
 
 ### Grok
 
@@ -55,7 +55,7 @@ ui.dialog('Windows')
   .show();
 ``` 
 
-### Dg
+### DG
 
 Check out [JS API Class Reference](https://datagrok.ai/js-api/) 
 
@@ -81,7 +81,7 @@ demog.set('age', 1, 44);
 
 ``` 
 
-### Bitset
+### BitSet
 
 Each [DataFrame](/js-api/classes/dg.dataframe) is associated with two [bitsets](/js-api/classes/dg.bitset): selection and filter.
 
@@ -93,7 +93,7 @@ demog.selection.findNext(0, false);
 ```
 
 DataFrame code snippets:
-* [DataFrame manipulation](https://public.datagrok.ai/js/samples/data-frame/manipulate)
+* [DataFrame manipulation](https://public.datagrok.ai/js/samples/data-frame/modification/manipulate)
 * [DataFrame events](https://public.datagrok.ai/js/samples/data-frame/events)
 
 ## Views
@@ -194,7 +194,7 @@ to inspect event parameters. To simplify the development process, we also genera
 JavaScript code for handling this particular event, copy-paste it from the
 property panel into your code if needed. 
 
-![](inspector-events.png)
+![](tools/inspector-events.png)
 
 ## User-defined types
 

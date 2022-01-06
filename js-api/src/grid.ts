@@ -624,12 +624,18 @@ export class SemanticValue {
     this.dart = dart;
   }
 
-  static fromValueType(value: any, semType: SemType | null) {
-    return new SemanticValue(api.grok_SemanticValue(value, semType));
+  static fromValueType(value: any, semType: SemType | null, units?: string) {
+    const v = new SemanticValue(api.grok_SemanticValue(value, semType));
+    if (units)
+      v.units = units;
+    return v;
   }
 
   get value(): any { return api.grok_SemanticValue_Get_Value(this.dart); }
   set value(x: any) { api.grok_SemanticValue_Set_Value(this.dart, x); }
+
+  get units(): any { return api.grok_SemanticValue_Get_Units(this.dart); }
+  set units(x: any) { api.grok_SemanticValue_Set_Units(this.dart, x); }
 
   get semType(): string { return api.grok_SemanticValue_Get_SemType(this.dart); }
   set semType(x: string) { api.grok_SemanticValue_Set_SemType(this.dart, x); }

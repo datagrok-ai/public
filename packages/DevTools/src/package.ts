@@ -17,6 +17,7 @@ import {
 import './styles.css';
 import * as tests from "./tests/test-examples";
 import {testPackages} from "./package-testing";
+import { functionSignatureEditor } from './function-signature-editor';
 
 export const _package = new DG.Package();
 let minifiedClassNameMap: { [index: string]: string[] } = {};
@@ -182,6 +183,15 @@ export function _scriptEditor(): void {
   grok.events.onViewAdded.subscribe((view) => {
     if (view.type == 'ScriptView')
     scriptEditor(view);
+  });
+}
+
+//description: FunctionSignatureEditor
+//tags: autostart
+export function _functionSignatureEditor(): void { 
+  grok.events.onViewAdded.subscribe((view) => {
+    if (view.type == 'ScriptView')
+    functionSignatureEditor(view);
   });
 }
 
