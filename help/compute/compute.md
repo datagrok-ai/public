@@ -1,3 +1,6 @@
+<!-- TITLE: Compute -->
+<!-- SUBTITLE: -->
+
 # Compute
 
 A next-generation environment for scientific computing that leverages core Datagrok features, such as

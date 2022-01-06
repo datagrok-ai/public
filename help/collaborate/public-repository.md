@@ -1,4 +1,4 @@
-<!-- TITLE: Self-learning platform -->
+<!-- TITLE: Datagrok package repository -->
 <!-- SUBTITLE: -->
 
 # Datagrok package repository

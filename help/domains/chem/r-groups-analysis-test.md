@@ -30,4 +30,4 @@ Gets R-groups of each molecule from input list in SMILES format around core.
 See also:
 
 * [Substructure search test](substructure-search-test.md)
-* [Chem Sketcher test](chem-sketсher-test.md)
+* [Chem Sketcher test](chem-sketcher-test.md)

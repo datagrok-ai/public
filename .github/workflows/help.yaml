@@ -17,10 +17,8 @@ jobs:
           args: --style /github/workspace/markdownlint.rb /github/workspace/help
 
   convert:
-    needs: lint
-    if: ${{ always() }}
-
-    #    if: github.ref == 'refs/heads/master'
+#    needs: lint
+#    if: github.ref == 'refs/heads/master'
     runs-on: ubuntu-20.04
     environment: Help
     steps:
@@ -63,12 +61,18 @@ jobs:
           done;
 
       - name: Set up Dart SDK
-        uses: dart-lang/setup-dart@v2
-      - name: Run Dart script to create menu
+        uses: dart-lang/setup-dart@v1
+        with:
+          sdk: stable
+      - uses: actions/cache@v1
+        with:
+          path: /opt/hostedtoolcache/dart-sdk
+          key: dart-install-cache
+      - name: Install Dart dependencies
         run: dart pub get
         working-directory: ./help/_internal
       - name: Run Dart script to create menu
-        run: dart generate_menu.dart -s ../output/ -d ../output/
+        run: dart generate_menu.dart -s ../output/help/ -d ../output/help/
         working-directory: ./help/_internal
 
       - name: 'Upload Artifact'
@@ -80,7 +84,7 @@ jobs:
 
   deploy:
     needs: convert
-    if: github.ref == 'refs/heads/master'
+#    if: github.ref == 'refs/heads/master'
     runs-on: ubuntu-20.04
     environment: Help
     steps:

@@ -199,7 +199,8 @@ Heatmap: [Improved adaptive rendering of the column names in the heatmap](https:
 
 ## Bug fixes
 
-* Histogram: [duplicated Y axis](https://community.datagrok.ai/t/cannot-easily-change-the-aggregation-of-the-histogram/509/4)
+*
+Histogram: [duplicated Y axis](https://community.datagrok.ai/t/cannot-easily-change-the-aggregation-of-the-histogram/509/4)
 * User can't login with OpenId if someone shared something to him by email
 * Detectors load on each table open
 * dapi.log.events returns empty array
@@ -252,14 +253,16 @@ Heatmap: [Improved adaptive rendering of the column names in the heatmap](https:
 * Bar Chart: tooltips on category labels
 * Bar Chart: disable zoom on the X axis
 * [Filters: split categories containing a list of values by pipes](https://community.datagrok.ai/t/visualization-related-updates/521/11)
-* Conditional Color Coding: Ranges "20-30" and ">40" are always automatically determined for any numeric columns
+* Conditional Color Coding: Ranges "20-30" and ">40" are always automatically determined for any
+  numeric columns
 
 *Note:* this summary accumulates updates after 0.89.27.
 
 # Future release
 
 Multiple marker shapes https://community.datagrok.ai/t/visualization-related-updates/521/20
-JS API making drag-and-droppable objects https://community.datagrok.ai/t/visualization-related-updates/521/15?u=dskatov
+JS API making drag-and-droppable
+objects https://community.datagrok.ai/t/visualization-related-updates/521/15?u=dskatov
 
 ## Highlights
 
