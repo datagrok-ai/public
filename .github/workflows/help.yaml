@@ -69,7 +69,25 @@ jobs:
           echo "$SSH_PRIVATE_KEY" > ~/.ssh/id_rsa
           sudo chmod 400 ~/.ssh/id_rsa
           echo "$SSH_KNOWN_HOSTS" > ~/.ssh/known_hosts
-          rsync -rltgoDzvO "help/" $REMOTE_USER@$REMOTE_HOST:$TARGET
+          rsync \
+            --recursive \
+            --links \
+            --times \
+            --omit-dir-times \
+            --group --owner \
+            --chown=grok:grok \
+            --perms --executability --acls --xattrs \
+            --devices --specials \
+            --checksum \
+            --delete-after \
+            --compress \
+            --update \
+            --verbose \
+            --progress \
+            --itemize-changes \
+            --stats \
+            --human-readable \
+            "help/" $REMOTE_USER@$REMOTE_HOST:$TARGET
         env:
           SSH_PRIVATE_KEY: ${{ secrets.HELP_SSH_KEY }}
           SSH_KNOWN_HOSTS: ${{ secrets.HELP_KNOWN_HOST }}
