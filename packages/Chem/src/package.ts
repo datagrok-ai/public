@@ -10,7 +10,7 @@ import * as OCL from 'openchemlib/full.js';
 import {drugLikenessWidget} from './widgets/drug-likeness';
 import {molfileWidget} from './widgets/molfile';
 import {propertiesWidget} from './widgets/properties';
-import {initStructuralAlertsContext, structuralAlertsWidget} from './widgets/structural-alerts';
+import {structuralAlertsWidget} from './widgets/structural-alerts';
 import {structure2dWidget} from './widgets/structure2d';
 import {structure3dWidget} from './widgets/structure3d';
 import {toxicityWidget} from './widgets/toxicity';
