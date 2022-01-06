@@ -25,14 +25,49 @@ jobs:
         working-directory: ./js-api
       - run: npm run typedoc
         working-directory: ./js-api
+      - name: 'Upload Artifact'
+        uses: actions/upload-artifact@v2
+        with:
+          name: js_api_docs
+          path: js-api/docs
+          retention-days: 7
+
+  deploy:
+    needs: doc
+    runs-on: ubuntu-20.04
+    environment: Help
+    steps:
+      - name: Download artifact
+        uses: actions/download-artifact@v2
+        with:
+          name: js_api_docs
+          path: js_api_docs
       - name: Deploy to server
         shell: bash
         run: |
           mkdir -p ~/.ssh/
-          echo "$SSH_PRIVATE_KEY" > ../private.key
-          sudo chmod 600 ../private.key
+          echo "$SSH_PRIVATE_KEY" > ~/.ssh/id_rsa
+          sudo chmod 400 ~/.ssh/id_rsa
           echo "$SSH_KNOWN_HOSTS" > ~/.ssh/known_hosts
-          rsync -rltgoDzvO "js-api/docs/" $REMOTE_USER@$REMOTE_HOST:$TARGET
+          rsync \
+            --recursive \
+            --links \
+            --times \
+            --omit-dir-times \
+            --group --owner \
+            --chown=grok:grok \
+            --perms --executability --acls --xattrs \
+            --devices --specials \
+            --checksum \
+            --delete-after \
+            --compress \
+            --update \
+            --verbose \
+            --progress \
+            --itemize-changes \
+            --stats \
+            --human-readable \
+            "js_api_docs/" $REMOTE_USER@$REMOTE_HOST:$TARGET
         env:
           SSH_PRIVATE_KEY: ${{ secrets.HELP_SSH_KEY }}
           SSH_KNOWN_HOSTS: ${{ secrets.HELP_KNOWN_HOST }}
