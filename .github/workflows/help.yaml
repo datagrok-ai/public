@@ -8,7 +8,6 @@ on:
 jobs:
   lint:
     runs-on: ubuntu-20.04
-    environment: Help
     steps:
       - name: Checkout
         uses: actions/checkout@v2
@@ -19,12 +18,15 @@ jobs:
 
   convert:
     needs: lint
-    if: github.ref == 'refs/heads/master'
+    if: ${{ always() }}
+
+    #    if: github.ref == 'refs/heads/master'
     runs-on: ubuntu-20.04
     environment: Help
     steps:
       - name: Checkout
         uses: actions/checkout@v2
+
       - name: Create Lua Filters for Pandoc
         run: |
           cat <<EOT > links-to-html.lua
@@ -43,7 +45,7 @@ jobs:
         working-directory: ./help
         run: |
           echo '#!/bin/sh' > entrypoint.sh;
-          for f in $(find . -type f -name '*.md' -printf '%P '); do
+          for f in $(find . -type f -name '*.md' -not -path "*/_*" -not -name '*-test.md' -printf '%P '); do
             mkdir -p output/help/$(dirname ${f});
             echo "cd /github/workspace/help/output/help/$(dirname ${f})" >> entrypoint.sh;
             echo "pandoc -f gfm -t html --extract-media=. --resource-path=.:/github/workspace/help/$(dirname ${f}) --lua-filter=/github/workspace/links-to-html.lua --lua-filter=/github/workspace/table-id.lua --output=/github/workspace/help/output/help/${f/.md/.html} \"/github/workspace/help/${f}\"" >> entrypoint.sh;
@@ -59,6 +61,16 @@ jobs:
           for f in output/help/**/*.html; do
             sed -i -e '0,/<p>/s//<p class="d4-help-info">/' $f;
           done;
+
+      - name: Set up Dart SDK
+        uses: dart-lang/setup-dart@v2
+      - name: Run Dart script to create menu
+        run: dart pub get
+        working-directory: ./help/_internal
+      - name: Run Dart script to create menu
+        run: dart generate_menu.dart -s ../output/ -d ../output/
+        working-directory: ./help/_internal
+
       - name: 'Upload Artifact'
         uses: actions/upload-artifact@v2
         with:
