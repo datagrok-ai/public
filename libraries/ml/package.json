@@ -2,7 +2,7 @@
 	"name": "@datagrok-libraries/ml",
 	"beta": true,
 	"friendlyName": "Datagrok ML library",
-	"version": "0.0.3",
+	"version": "0.0.4",
 	"description": "Machine learning supporting utilities",
 	"dependencies": {
 		"datagrok-api": ">=0.95.8",
