@@ -17,4 +17,4 @@ first matching pattern. This option is mostly useful when categories do not over
 to **SAVE MATRIX**.
 
 **SAVE MATRIX** For each category, adds a column that indicates whether the row matches any of the patterns of that
-category. This is useful when categories overlap. 
+category. This is useful when categories overlap.

@@ -19,11 +19,11 @@ and more. Besides, scripting viewers must be part of a package in order to run t
 Table of contents
 
 * [JavaScript-Based Viewers](#javascript-based-viewers)
-  * [External Dependencies](#external-dependencies)
-  * [Properties](#properties)
-  * [Preparing Data](#preparing-data)
-  * [Rendering](#rendering)
-  * [Events](#events)
+    * [External Dependencies](#external-dependencies)
+    * [Properties](#properties)
+    * [Preparing Data](#preparing-data)
+    * [Rendering](#rendering)
+    * [Events](#events)
 * [Scripting Viewers](#scripting-viewers)
 * [Registering Viewers](#registering-viewers)
 * [Examples](#examples)
@@ -158,7 +158,7 @@ events that have impact on the visualization's size.
 ```javascript
 export class AwesomeViewer extends DG.JsViewer {
   constructor() {...}
-  
+
   // Additional chart settings
   init() {
     this.margin = { top: 10, right: 30, bottom: 30, left: 90 };
@@ -311,7 +311,7 @@ class AwesomeViewer extends DG.JsViewer {
       .attr("transform", `translate(0, ${innerHeight})`);
     xAxis.selectAll(".tick line").attr("stroke", "#d4d4d4");
     xAxis.select(".domain").remove();
-    
+
     // Create bars
     let bars = g.append("g").selectAll("rect")
       .data(this.data)
@@ -397,7 +397,7 @@ the following script:
 # input: column splitColumnName {type: categorical}
 # input: column valueColumnName {type: numerical}
 # input: string valueAggrType = mean {choices: ["mean", "count", "sum"]}
-# input: string color = steelblue {choices: ["darkcyan", "seagreen", "steelblue"]} 
+# input: string color = steelblue {choices: ["darkcyan", "seagreen", "steelblue"]}
 # output: graphics
 
 import matplotlib.pyplot as plt
@@ -511,19 +511,19 @@ viewer can be obtained synchronously.
 You can find more inspiring examples in our [public repository](https://github.com/datagrok-ai/public):
 
 * JavaScript-based viewers:
-  * [Charts](https://github.com/datagrok-ai/public/tree/master/packages/Charts): constructs graphs of various types
-    using the [Echarts](http://echarts.apache.org) framework
-  * [Leaflet](https://github.com/datagrok-ai/public/tree/master/packages/Leaflet): integrates with
-    the [Leaflet](https://leafletjs.com/) library to build interactive maps
-  * [Sunburst](https://github.com/datagrok-ai/public/tree/master/packages/Sunburst): uses the [D3](https://d3js.org/)
-    library for a sunburst chart
-  * [Viewers](https://github.com/datagrok-ai/public/tree/master/packages/Viewers): showcases creating JavaScript viewers
-    using various visualization libraries
+    * [Charts](https://github.com/datagrok-ai/public/tree/master/packages/Charts): constructs graphs of various types
+      using the [Echarts](http://echarts.apache.org) framework
+    * [Leaflet](https://github.com/datagrok-ai/public/tree/master/packages/Leaflet): integrates with
+      the [Leaflet](https://leafletjs.com/) library to build interactive maps
+    * [Sunburst](https://github.com/datagrok-ai/public/tree/master/packages/Sunburst): uses the [D3](https://d3js.org/)
+      library for a sunburst chart
+    * [Viewers](https://github.com/datagrok-ai/public/tree/master/packages/Viewers): showcases creating JavaScript
+      viewers using various visualization libraries
 * Scripting viewers (R, Python, Julia):
-  * [ChaRPy](https://github.com/datagrok-ai/public/tree/master/packages/ChaRPy): translates a Datagrok viewer to Python
-    and R code using scripting viewers for the respective programming languages
-  * [DemoScripts](https://github.com/datagrok-ai/public/tree/master/packages/DemoScripts):
-    demonstrates the scripting functionality, including visualizations, for Python, R, and Julia
+    * [ChaRPy](https://github.com/datagrok-ai/public/tree/master/packages/ChaRPy): translates a Datagrok viewer to
+      Python and R code using scripting viewers for the respective programming languages
+    * [DemoScripts](https://github.com/datagrok-ai/public/tree/master/packages/DemoScripts):
+      demonstrates the scripting functionality, including visualizations, for Python, R, and Julia
 
   Most of these scripts are also available by the `viewers` tag in the script
   browser: [https://public.datagrok.ai/scripts?q=%23viewers](https://public.datagrok.ai/scripts?q=%23viewers)

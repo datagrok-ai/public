@@ -37,20 +37,20 @@ Those privileges can be given to individuals or to groups (which can be defined 
 
 You can use these fields to filter queries with [smart search](../overview/smart-search.md):
 
-| Field       | Description                                        |
-|-------------|----------------------------------------------------|
-| id          |                                                    |
-| name        |                                                    |
-| query       |                                                    |
-| runs        | list of [FuncCall](../overview/functions/function-call.md) object      |
-| connection  | [DataConnection](data-connection.md) object        |
-| jobs        | [DataJob](data-job.md) object                      |
-| createdOn   |                                                    |
-| updatedOn   |                                                    | 
-| author      | [User](../govern/user.md) object                             |
-| starredBy   | [User](../govern/user.md) object                             |
-| commentedBy | [User](../govern/user.md) object                             |
-| usedBy      | [User](../govern/user.md) object                             |
+| Field       | Description                                                       |
+|-------------|-------------------------------------------------------------------|
+| id          |                                                                   |
+| name        |                                                                   |
+| query       |                                                                   |
+| runs        | list of [FuncCall](../overview/functions/function-call.md) object |
+| connection  | [DataConnection](data-connection.md) object                       |
+| jobs        | [DataJob](data-job.md) object                                     |
+| createdOn   |                                                                   |
+| updatedOn   |                                                                   |
+| author      | [User](../govern/user.md) object                                  |
+| starredBy   | [User](../govern/user.md) object                                  |
+| commentedBy | [User](../govern/user.md) object                                  |
+| usedBy      | [User](../govern/user.md) object                                  |
 
 See also:
 

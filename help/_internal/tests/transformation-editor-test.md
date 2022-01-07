@@ -93,7 +93,7 @@ users.
 
 * Table contains *"Address"*, *"latitude"* and *"longitude"* columns described in query transformation
 
-(\*) While the algorithm is being executed (transformation step is being executed), step is highlighted in blue.   
+(\*) While the algorithm is being executed (transformation step is being executed), step is highlighted in blue.
 (\**)
 Script: ```AddNewColumn("StoresInState", "${street_address}, ${city}, ${state}", "Address", "auto", false)
 AddressToCoordinates("StoresInState", "Address")```

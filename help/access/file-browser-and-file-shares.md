@@ -8,9 +8,9 @@
 * [Security](#security)
 * [Indexing](#indexing)
 * [Adding a file share](#adding-a-file-share)
-  * [File share options](#file-share-options)
+    * [File share options](#file-share-options)
 * [Sharing a file](#sharing-a-file)
-  * [Sharing a file as table (dataframe)](#sharing-a-file-as-a-table-dataframe)
+    * [Sharing a file as table (dataframe)](#sharing-a-file-as-a-table-dataframe)
 
 ## Overview
 
@@ -82,27 +82,27 @@ when [adding a file share](#adding-a-file-share). You can also turn on indexing 
 
 Datagrok's indexing mechanism understands the following file formats:
 
-| Extension       | Description                                      | 
-| --------------- | ------------------------------------------------ |
-| .txt            | Plain text                                       |
-| .csv            | Comma-separated values                           |
-| .tsv            | Tab-separated values                             |
-| .xml            | Extensible Markup Language                       |
-| .json           | JavaScript Object Notation                       |
-| .html           | HyperText Markup Language                        |
-| .xlsx           | Excel                                            |
-| .edf            | European Data Format                             |
-| .sas7bdat       | SAS database file                                |
-| .kml, .kmz      | Keyhole Markup Language (geographic annotations) |
-| .rds, .rda      | R Data Format                                    |
-| .h5             | Hierarchical Data Format                         |
-| .nc             | NetCDF                                           |
-| .mat            | MATLAB MAT                                       |
-| .d42            | Datagrok project                                 |
-| .zip            | ZIP archive                                      |
-| .gz, .gzip      | gzip                                             |
-| .tar            | Tape archive                                     |
-| .ipynb          | Jupyter Notebook                                 |
+| Extension  | Description                                      |
+|------------|--------------------------------------------------|
+| .txt       | Plain text                                       |
+| .csv       | Comma-separated values                           |
+| .tsv       | Tab-separated values                             |
+| .xml       | Extensible Markup Language                       |
+| .json      | JavaScript Object Notation                       |
+| .html      | HyperText Markup Language                        |
+| .xlsx      | Excel                                            |
+| .edf       | European Data Format                             |
+| .sas7bdat  | SAS database file                                |
+| .kml, .kmz | Keyhole Markup Language (geographic annotations) |
+| .rds, .rda | R Data Format                                    |
+| .h5        | Hierarchical Data Format                         |
+| .nc        | NetCDF                                           |
+| .mat       | MATLAB MAT                                       |
+| .d42       | Datagrok project                                 |
+| .zip       | ZIP archive                                      |
+| .gz, .gzip | gzip                                             |
+| .tar       | Tape archive                                     |
+| .ipynb     | Jupyter Notebook                                 |
 
 ## Adding a file share
 

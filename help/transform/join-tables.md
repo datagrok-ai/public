@@ -23,13 +23,13 @@ and some dissimilar data from tables.
 'Key Columns' section contains not matched statistics (Number of not matched key rows / Total number of rows)
 for each table and values selection buttons:
 
-- Filter not matching rows in both tables
-- Select all not matching rows in both tables
-- Clear selection.
+* Filter not matching rows in both tables
+* Select all not matching rows in both tables
+* Clear selection.
 
 If no keys specified in 'Keys Columns' joining in performed by row indexes.
 
-### Videos
+## Videos
 
 [![Join Tables](../uploads/youtube/join_tables.png "Open on Youtube")](https://www.youtube.com/watch?v=dlbK2Zo-eng)
 
@@ -39,4 +39,4 @@ Samples:
 
 See also:
 
-* [Link Tables](../explore/link-tables.md) 
+* [Link Tables](../explore/link-tables.md)

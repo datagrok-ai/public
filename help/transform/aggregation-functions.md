@@ -8,8 +8,8 @@ The same set of aggregation functions is used across the whole platform in diffe
 
 ## Common
 
-| Function | Description|
-|----------|------------|
+| Function | Description                                    |
+|----------|------------------------------------------------|
 | first    | first (any) value                              |
 | count    | total number of all values (including missing) |
 | #values  | number of non-missing values                   |
@@ -18,36 +18,36 @@ The same set of aggregation functions is used across the whole platform in diffe
 
 ## Numerical
 
-| Function | Description|
-|----------|------------|
-| min      |            |
-| max      |            |
-| sum      |            |
-| med      |            |
-| avg      |            |
-| stdev    |            |
-| variance |            |
-| skew     | skewness   |
-| kurt     | kurtosis   |
+| Function | Description                                  |
+|----------|----------------------------------------------|
+| min      |                                              |
+| max      |                                              |
+| sum      |                                              |
+| med      |                                              |
+| avg      |                                              |
+| stdev    |                                              |
+| variance |                                              |
+| skew     | skewness                                     |
+| kurt     | kurtosis                                     |
 | q1       | first quartile, the median of the lower half |
-| q2       | second quartile, same as med           |
+| q2       | second quartile, same as med                 |
 | q3       | third quartile, the median of the upper half |
 
 ## Textual
 
-| Function | Description|
-|----------|------------|
-| min      |            |
-| max      |            |
-| sum      |            |
-| med      |            |
-| avg      |            |
-| stdev    |            |
-| variance |            |
-| skew     | skewness   |
-| kurt     | kurtosis   |
+| Function | Description                                  |
+|----------|----------------------------------------------|
+| min      |                                              |
+| max      |                                              |
+| sum      |                                              |
+| med      |                                              |
+| avg      |                                              |
+| stdev    |                                              |
+| variance |                                              |
+| skew     | skewness                                     |
+| kurt     | kurtosis                                     |
 | q1       | first quartile, the median of the lower half |
-| q2       | second quartile, same as med           |
+| q2       | second quartile, same as med                 |
 | q3       | third quartile, the median of the upper half |
 
 ## User-defined functions
@@ -60,4 +60,3 @@ Markup syntax for referring to aggregations: `t.stats.avg(AGE)`
 See also:
 
 * [Aggregate rows](aggregate-rows.md)
- 

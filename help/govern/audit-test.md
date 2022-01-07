@@ -332,7 +332,8 @@ See also:
 
 (**):
 
- ```#name: t-test
+```
+#name: t-test
 #description: Welch's t-test
 #help-url: https://en.wikipedia.org/wiki/welch%27s_t-test
 #language: r
@@ -342,9 +343,9 @@ See also:
 #input: column x {type:numerical} [X axis column name]
 #input: column y {type:numerical} [Y axis column name]
 #output: double pvalue [P-value of t-statistics]
-    
+
     require(stats)
-    
+
     ttest = t.test(data[[x]], data[[y]])
     pValue = ttest$p.value
 ```

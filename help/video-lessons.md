@@ -5,7 +5,7 @@
 
 Check out our [YouTube channel](https://www.youtube.com/channel/UCXPHEjOd4gyZ6m6Ji-iOBYg) for more videos.
 
-<div class="help-video-list" style="display:flex;flex-wrap:wrap;"> 
+<div class="help-video-list" style="display:flex;flex-wrap:wrap;">
 
 <div class="card" style="width:512px;">
 <iframe src="https://www.youtube.com/embed/67LzPsdNrEc?vq=hd1080&rel=0&color=white&autohide=0" width="512" height="288" frameborder="0"></iframe>
@@ -97,7 +97,6 @@ Check out our [YouTube channel](https://www.youtube.com/channel/UCXPHEjOd4gyZ6m6
   </div>
 </div>
 
-
 <div class="card" style="width:512px;">
 <iframe src="https://www.youtube.com/embed/dlbK2Zo-eng?vq=hd1080&rel=0&color=white&autohide=0" width="512" height="288" frameborder="0"></iframe>
   <div class="card-body">
@@ -108,7 +107,6 @@ Check out our [YouTube channel](https://www.youtube.com/channel/UCXPHEjOd4gyZ6m6
   </div>
 </div>
 
-
 <div class="card" style="width:512px;">
 <iframe src="https://www.youtube.com/embed/rUHFwO1iQUg?vq=hd1080&rel=0&color=white&autohide=0" width="512" height="288" frameborder="0"></iframe>
   <div class="card-body">
@@ -118,7 +116,6 @@ Check out our [YouTube channel](https://www.youtube.com/channel/UCXPHEjOd4gyZ6m6
     </p>
   </div>
 </div>
-
 
 <div class="card" style="width:512px;">
 <iframe src="https://www.youtube.com/embed/PDcXLMsu6UM?vq=hd1080&rel=0&color=white&autohide=0" width="512" height="288" frameborder="0"></iframe>

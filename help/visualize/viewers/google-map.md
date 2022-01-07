@@ -19,14 +19,14 @@ as #{cmd(AddressToCoordinates)}.
 
 ## Videos
 
-[![Google Map](../../uploads/youtube/visualizations2.png "Open on Youtube")](https://www.youtube.com/watch?v=7MBXWzdC0-I&t=3392s)
+[![Google Map Video](../../uploads/youtube/visualizations2.png "Open on Youtube")](https://www.youtube.com/watch?v=7MBXWzdC0-I&t=3392s)
 
 See also:
 
 * [Geographical functions]()
-* # {cmd(AddressToCoordinates)}
-* # {cmd(IpToCoordinates)}
-* # {cmd(AddressToCoordinates)}
+* \#{cmd(AddressToCoordinates)}
+* \#{cmd(IpToCoordinates)}
+* \#{cmd(AddressToCoordinates)}
 * [Viewers](../viewers.md)
 * [Table View](../../overview/table-view.md)
 * [JS API: Google Map](https://public.datagrok.ai/js/samples/ui/viewers/types/google-map)

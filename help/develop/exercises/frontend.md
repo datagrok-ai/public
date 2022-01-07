@@ -12,8 +12,8 @@ make sure you are ready for it:
 is a great resource for that.
 
 **Learn the [CSS basics](https://developer.mozilla.org/en-US/docs/Learn/Getting_started_with_the_web/CSS_basics)**
-. You should be able to use Chrome's inspector (F12), understand where elements' visual properties  
-come from, create your own CSS classes, and apply selectors.
+. You should be able to use Chrome's inspector (F12), understand where elements' visual properties come from, create
+your own CSS classes, and apply selectors.
 
 **Explore the collection of standard code snippets**. Go to [JS API examples](https://public.datagrok.ai/js), and browse
 and run each snippet (F5, or '>'

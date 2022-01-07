@@ -29,9 +29,8 @@ TODO: Add the "interpetation" section for each test results section
 For stress testing, we use a number of differently setup environments to test different aspects of the Datagrok
 platform.
 
-* **"Medium"**: single mid-range server, no auto scaling.  
-  Designed to demonstrate the platform's performance when running on a single server, and identify platform limitations.
-  Suitable for medium-size companies.
+* **"Medium"**: single mid-range server, no auto scaling. Designed to demonstrate the platform's performance when
+  running on a single server, and identify platform limitations. Suitable for medium-size companies.
 * **"Big"**: powerful servers, auto-scaling capability. Suitable for enterprises. Designed to demonstrate scalability
   under load.
 * **"Global"**: tens of thousands of concurrent users representing global community.

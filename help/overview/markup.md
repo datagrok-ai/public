@@ -8,10 +8,10 @@ the expression like that: `#{expression}`
 
 ## Expressions
 
-| Description         | Expression                                                 |  Output                    |
+| Description         | Expression                                                 | Output                     |
 |---------------------|------------------------------------------------------------|----------------------------|
-| Any entity          | x.User.196900d0-f9e0-11e7-c473-6fef20f86714."Andrew"       | Andrew                     | 
-| Function         | x.Func.MissingValuesImputation                             | MissingValuesImputation    |
+| Any entity          | x.User.196900d0-f9e0-11e7-c473-6fef20f86714."Andrew"       | Andrew                     |
+| Function            | x.Func.MissingValuesImputation                             | MissingValuesImputation    |
 | Aggregations        | t.aggr.sum($AGE)                                           | 267266.00                  |
 | Date                | date                                                       | 2018-03-07 22:53:01.423700 |
 | Table name          | t.name                                                     | demog                      |
@@ -66,7 +66,7 @@ t.aggr<aggregation>($<column name>)
 
 | Aggregations | Description               |
 |--------------|---------------------------|
-| count        | Number of rows            | 
+| count        | Number of rows            |
 | #values      | Number of not null values |
 | #unique      | Number of unique values   |
 | #nulls       | Number of nulls           |
@@ -220,7 +220,7 @@ Shows text input of specified column in selected row.
 Format:
 
 ```
-t.editor[<column name>] 
+t.editor[<column name>]
 ```
 
 ### Statistics
@@ -235,7 +235,7 @@ t.stats.<statistics>(<column name>)
 
 | Statistics   | Description               |
 |--------------|---------------------------|
-| count        | Number of rows            | 
+| count        | Number of rows            |
 | #values      | Number of not null values |
 | #unique      | Number of unique values   |
 | #nulls       | Number of nulls           |

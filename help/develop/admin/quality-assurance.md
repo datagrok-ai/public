@@ -22,7 +22,7 @@ around the proactive identification of defects.
 
 Here are some of the main components of our development infrastructure:
 
-## Continuous integration system
+# Continuous integration system
 
 Whenever a new code is checked into our source code repository, several tasks get executed automatically:
 

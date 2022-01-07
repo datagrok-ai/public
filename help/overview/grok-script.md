@@ -30,7 +30,7 @@ Grok script supports all common features and operators, such as:
 Assigning a variable:
 
 ```
-x = 5 
+x = 5
 ```
 
 ### Math operators
@@ -97,7 +97,7 @@ Symbols '"', '{' and '}' should be replaced as '^^', '<\[' and ']>'.
 
 You can run any system [action](functions/function.md) by calling it from [console](navigation.md#console)
 
-## Try it!
+## Try it
 
 Open [console](navigation.md#console) by pressing ~ (tilde) or **Tools | Console**. and try to make some actions:
 run [query](../access/data-query.md) or [job](../access/data-job.md). Every step you take will be recorded, so you can

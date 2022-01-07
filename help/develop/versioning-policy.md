@@ -1,7 +1,7 @@
 <!-- TITLE: Versioning policy -->
 <!-- SUBTITLE: -->
 
-## Versioning policy
+# Versioning policy
 
 The Datagrok versioning policy requires to include a major, minor, and test version number and look
 like: `MAJOR.MINOR.TEST`.

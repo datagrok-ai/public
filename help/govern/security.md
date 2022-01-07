@@ -66,7 +66,7 @@ credentials. For that reason, it makes sense to administer these systems separat
 If a specialized credential vault already stores sensitive credentials for your organization, the Datagrok platform
 should be set up to take advantage of it.
 
-![Credentials retrieving process diagram](../uploads/security/credentials-fetch-diagram.png "Credentials retrieving process diagram")  
+![Credentials retrieving process diagram](../uploads/security/credentials-fetch-diagram.png "Credentials retrieving process diagram")
 *Credentials retrieving process diagram* ([drawio](../uploads/security/credentials-fetch-diagram.drawio))
 
 Working with credentials storage,

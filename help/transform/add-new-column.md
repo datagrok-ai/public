@@ -46,7 +46,7 @@ corresponding sections of the help system:
 - [Text functions](functions/text-functions.md)
 - [TimeSpan functions](functions/timespan-functions.md)
 
-### Videos
+## Videos
 
 [![Add New Columns](../uploads/youtube/add_new_columns.png "Open on Youtube")](https://www.youtube.com/watch?v=-yTTaS_WOU4)
 

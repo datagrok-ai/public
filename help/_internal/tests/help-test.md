@@ -1,7 +1,7 @@
 <!-- TITLE: Tests: Help -->
 <!-- SUBTITLE: -->
 
-## Help view
+# Help view
 
 1. Open "Welcome" view
 

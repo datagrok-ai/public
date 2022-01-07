@@ -8,18 +8,18 @@ Data job defines all actions that are needed to produce a dashboard.
 Each data job consists of the following parts that are executed to produce a dataset:
 
 * Data queries (each with the corresponding connection)
-  * Cross-database querying
+    * Cross-database querying
 * Transformations applied to the data
-  * Standard, can be defined via UI (such as "Remove rows where $AGE is null")
-  * Out-of-the box domain-specific analyses
-    * Statistical process control
-    * Credit card transactions: fraud detection
-    * NLP: Sentiment analysis
-    * DSP: Spectral analysis
-    * ... and hundreds of other algorithms
-  * Dart scripts
-  * R / Python / Julia scripts
-  * External programs
+    * Standard, can be defined via UI (such as "Remove rows where $AGE is null")
+    * Out-of-the box domain-specific analyses
+        * Statistical process control
+        * Credit card transactions: fraud detection
+        * NLP: Sentiment analysis
+        * DSP: Spectral analysis
+        * ... and hundreds of other algorithms
+    * Dart scripts
+    * R / Python / Julia scripts
+    * External programs
 * Visual layouts applied to the tables
 * Definition of the summary page
 
@@ -44,18 +44,18 @@ Those privileges can be given to individuals or to groups (which can be defined 
 
 You can use these fields to filter jobs using [smart search](../overview/smart-search.md):
 
-| Field       | Description                                        |
-|-------------|----------------------------------------------------|
-| id          |                                                    |
-| name        |                                                    |
+| Field       | Description                                                            |
+|-------------|------------------------------------------------------------------------|
+| id          |                                                                        |
+| name        |                                                                        |
 | runs        | list of [DataActionRun](../overview/functions/function-call.md) object |
-| queries     | list of [DataJob](data-job.md) object              |
-| createdOn   |                                                    |
-| updatedOn   |                                                    | 
-| author      | [User](../govern/user.md) object                             |
-| starredBy   | [User](../govern/user.md) object                             |
-| commentedBy | [User](../govern/user.md) object                             |
-| usedBy      | [User](../govern/user.md) object                             |
+| queries     | list of [DataJob](data-job.md) object                                  |
+| createdOn   |                                                                        |
+| updatedOn   |                                                                        |
+| author      | [User](../govern/user.md) object                                       |
+| starredBy   | [User](../govern/user.md) object                                       |
+| commentedBy | [User](../govern/user.md) object                                       |
+| usedBy      | [User](../govern/user.md) object                                       |
 
 See also:
 

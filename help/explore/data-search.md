@@ -24,15 +24,15 @@ changes.
 
 See [search patterns](data-search-patterns.md) for all supported queries
 
-|                             |       |
-|-----------------------------|-------|
-| > 5                         | all numeric cells with value > 5    |
-| age > 21                    | "age" column > 21   | 
-| disease contains disorder   | "disease" column contains "disorder" substring | 
-| disease ends with  disorder | "disease" column ends with "disorder"  | 
-| after 9/21/2019             | All dates after 9/21/2019  |
-| 2014-2020                   | All dates with years 2014-2020  |
-| open yesterday              | "open" column: yesterday  |
+|                             |                                                |
+|-----------------------------|------------------------------------------------|
+| > 5                         | all numeric cells with value > 5               |
+| age > 21                    | "age" column > 21                              |
+| disease contains disorder   | "disease" column contains "disorder" substring |
+| disease ends with  disorder | "disease" column ends with "disorder"          |
+| after 9/21/2019             | All dates after 9/21/2019                      |
+| 2014-2020                   | All dates with years 2014-2020                 |
+| open yesterday              | "open" column: yesterday                       |
 
 See also:
 

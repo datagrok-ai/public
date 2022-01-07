@@ -65,13 +65,13 @@ You can use these fields to filter groups with [smart search](../overview/smart-
 | parents     | GroupRelation object (see below)                   |
 | children    | GroupRelation object (see below)                   |
 | createdOn   |                                                    |
-| updatedOn   |                                                    | 
+| updatedOn   |                                                    |
 | user        | [User](user.md) object: User, if group is personal |
 
 ### Grouprelation
 
 | Field       | Description                                        |
-  |-------------|----------------------------------------------------|
+|-------------|----------------------------------------------------|
 | isAdmin     |                                                    |
 | parent      | Group object                                       |
 | child       | Group object                                       |

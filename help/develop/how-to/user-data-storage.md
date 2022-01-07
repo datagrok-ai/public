@@ -11,30 +11,24 @@ Table of contents:
 
 * [General Structure](#general-structure)
 * [JavaScript API](#javascript-api)
-  * [Saving](#saving)
-  * [Loading](#loading)
-  * [Exploring](#exploring)
-  * [Deleting](#deleting)
+    * [Saving](#saving)
+    * [Loading](#loading)
+    * [Exploring](#exploring)
+    * [Deleting](#deleting)
 * [Examples and Use Cases](#examples-and-use-cases)
 
 ## General structure
 
 The main class `grok.dapi.userDataStorage` is extended by the following 6 methods:
 
-|Method        |Parameters  |Function  |
-|--------------|------------|----------|
-| `.postValue()`|**name**: *string*, **key**: *string*, **value**: *string*, **currentUser**: *
-boolean*| Saves a single value to User Data Storage|
-| `.post()`     |**name**: *string*, **data**: *Map*, **currentUser**: *
-boolean*|Saves a map to User Data Storage, will be appended to existing data|
-| `.put()`      |**name**: *string*, **data**: *Map*, **currentUser**: *
-boolean*|Saves a map to User Data Storage, will replace existing data|
-| `.get()`      |**name**: *string*, **currentUser**: *
-boolean*|Retrieves a map from User Data Storage|
-| `.getValue()` |**name**: *string*, **key**: *string*, **currentUser**: *
-boolean*|Retrieves a single value from User Data Storage|
-| `.remove()`   |**name**: *string*, **key**: *string*, **currentUser**: *
-boolean*|Removes a single value from User Data Storage|
+| Method         | Parameters                                                                             | Function                                                            |
+|----------------|----------------------------------------------------------------------------------------|---------------------------------------------------------------------|
+| `.postValue()` | **name**: *string*, **key**: *string*, **value**: *string*, **currentUser**: *boolean* | Saves a single value to User Data Storage                           |
+| `.post()`      | **name**: *string*, **data**: *Map*, **currentUser**: *boolean*                        | Saves a map to User Data Storage, will be appended to existing data |
+| `.put()`       | **name**: *string*, **data**: *Map*, **currentUser**: *boolean*                        | Saves a map to User Data Storage, will replace existing data        |
+| `.get()`       | **name**: *string*, **currentUser**: *boolean*                                         | Retrieves a map from User Data Storage                              |
+| `.getValue()`  | **name**: *string*, **key**: *string*, **currentUser**: *boolean*                      | Retrieves a single value from User Data Storage                     |
+| `.remove()`    | **name**: *string*, **key**: *string*, **currentUser**: *boolean*                      | Removes a single value from User Data Storage                       |
 
 Each of the above methods returns a **Promise** which has to be handled in one of the following ways:
 
@@ -85,7 +79,7 @@ To return values, we execute the following code:
 grok.dapi.userDataStorage.getValue('coordinate-storage','coordinates').then((entry) => {
     let outputObj = JSON.parse(entry);
     //at this point outputObj === inputObj from the previous example
-    //all follow up operations can be performed inside current then() statement 
+    //all follow up operations can be performed inside current then() statement
 });
 ```
 
@@ -99,7 +93,7 @@ grok.dapi.userDataStorage.get('coordinate-storage').then((entries) => {
     Object.keys(entries).forEach((key) => {
         let entry = JSON.parse(entries[key]);
         //from here we can view the content of each record
-    }); 
+    });
 });
 ```
 
@@ -109,7 +103,7 @@ We can clear a specific value from storage by executing:
 
 ```js
 await grok.dapi.userDataStorage.remove('coordinate-storage', 'coordinates');
-```  
+```
 
 or wipe the storage completely by running:
 

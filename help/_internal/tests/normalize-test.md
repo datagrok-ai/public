@@ -41,4 +41,3 @@ Performs numerical column normalization (min-max, z-scores)
 1. Execute command "Normalize("demog", "Weight")" in console
 
 * *"Weight"* column values ​​are normalized by min-max method
-  

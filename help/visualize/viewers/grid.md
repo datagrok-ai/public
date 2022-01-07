@@ -3,24 +3,24 @@
 
 # Grid
 
-### Selection
+## Selection
 
-|                                 |                    |
-|---------------------------------|--------------------|
-| Shift+Mouse Drag                | Select rows        |
-| Ctrl+Shift+Mouse Drag           | Deselect rows      |
-| Mouse Drag row headers          | Select rows        |
-| Shift+drag column headers       | Select columns     |
-| Ctrl+click column headers       | Select columns     |
-| Ctrl+Shift+click column headers | Deselect columns   |
-| (Ctrl+) Shift + ↑↓               | (Un)select rows    |
-| (Ctrl+) Shift + ←→              | (Un)select columns |
-| (Ctrl+) Shift + mouse-drag       | (Un)select rows    |
-| (Ctrl+) Shift + ENTER            | (Un)Select rows with the current value  |
-| Ctrl + Shift + Home             | Select rows above current |
-| Ctrl + Shift + End              | Select rows below current |
+|                                 |                                        |
+|---------------------------------|----------------------------------------|
+| Shift+Mouse Drag                | Select rows                            |
+| Ctrl+Shift+Mouse Drag           | Deselect rows                          |
+| Mouse Drag row headers          | Select rows                            |
+| Shift+drag column headers       | Select columns                         |
+| Ctrl+click column headers       | Select columns                         |
+| Ctrl+Shift+click column headers | Deselect columns                       |
+| (Ctrl+) Shift + ↑↓              | (Un)select rows                        |
+| (Ctrl+) Shift + ←→              | (Un)select columns                     |
+| (Ctrl+) Shift + mouse-drag      | (Un)select rows                        |
+| (Ctrl+) Shift + ENTER           | (Un)Select rows with the current value |
+| Ctrl + Shift + Home             | Select rows above current              |
+| Ctrl + Shift + End              | Select rows below current              |
 
-### Navigation
+## Navigation
 
 | []()                  |                      |
 |-----------------------|----------------------|
@@ -31,14 +31,14 @@
 | Home                  | Jump to first column |
 | End                   | Jump to last column  |
 
-### Sorting
+## Sorting
 
 | []()                                |      |
 |-------------------------------------|------|
 | Double-click column header          | Sort |
 | Menu \| Current Column \| Sort      | Sort |
 
-### Editing
+## Editing
 
 | []()         |                         |
 |--------------|-------------------------|
@@ -48,16 +48,16 @@
 | Ctrl+click   | Invert column selection |
 | ≡            | Open column filter      |
 
-### Resizing and reordering
+## Resizing and reordering
 
-| []()         |                         |
-|--------------|-------------------------|
-| Drag column header        | Reorder columns         |
-| Drag column header border | Resize columns          |
-| Drag row header border    | Copy cell               |
-| Menu -> Column sizing     | Batch sizing options    |
+| []()                      |                      |
+|---------------------------|----------------------|
+| Drag column header        | Reorder columns      |
+| Drag column header border | Resize columns       |
+| Drag row header border    | Copy cell            |
+| Menu -> Column sizing     | Batch sizing options |
 
-### Formatting
+## Formatting
 
 |                                                |                         |
 |------------------------------------------------|-------------------------|
@@ -67,7 +67,7 @@
 
 ![](grid-formatting.gif "Date and number formatting")
 
-### Color-coding
+## Color-coding
 
 |              |                         |
 |--------------|-------------------------|
@@ -76,7 +76,7 @@
 
 ![](grid-color-coding.gif "Color-coding")
 
-### Row summary columns
+## Row summary columns
 
 Summary columns is a way to visualize multiple values numerical across the row. This feature is useful for quick visual
 profiling of values. In the following picture, each inline viewer visualizes the values of five numerical columns, which

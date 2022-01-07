@@ -39,7 +39,7 @@ your data.
 Use simple function called "grok". Example:
 
 ```python
-    grok(<table>)
+    grok( < table >)
 ```
 
 where table in a Pandas dataframe.

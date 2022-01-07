@@ -16,38 +16,38 @@ expression (mathematical function, constants, platform objects properties and fu
 
 * Column name changed to *"test_column"* in preview
 
-1. Enter ```1``` to *"Formula"* field
+1. Enter `1` to *"Formula"* field
 
 * Type of new column is automatically determined as *int*
 * All cells of new column were filled with value "1" in preview
 
-1. Enter ```1.5``` to *"Formula"* field
+1. Enter `1.5` to *"Formula"* field
 
 * Type of new column is automatically determined as *double*
 * All cells of new column were filled with value "1.5" in preview
 
-1. Enter ```test``` to *"Formula"* field
+1. Enter `test` to *"Formula"* field
 
 * Type of new column is automatically determined as *string*
 * All cells of new column were filled with value "test" in preview
 
-1. Enter ```true``` to *"Formula"* field
+1. Enter `true` to *"Formula"* field
 
 * Type of new column is automatically determined as *bool*
 * All cells of new column were filled with value "true" in preview
 
-1. Enter ```1+1.5``` to *"Formula"* field
+1. Enter `1+1.5` to *"Formula"* field
 
 * Type of new column is automatically determined as *double*
 * All cells of new column were filled with value "2.5" in preview
 
-1. Forcibly change type of new column from *double* to *int* in *"Type"* field. (```1+1.5``` entered in *"Formula"*
+1. Forcibly change type of new column from *double* to *int* in *"Type"* field. (`1+1.5` entered in *"Formula"*
    field)
 
 * New column type changed to *int*
 * All cells values of new column rounded to 3 in preview
 
-1. Change type of new column to *string* to *"Type"* field. (```1+1.5``` entered in *"Formula"*
+1. Change type of new column to *string* to *"Type"* field. (`1+1.5` entered in *"Formula"*
    field)
 
 * New column type changed to *string*
@@ -68,7 +68,7 @@ expression (mathematical function, constants, platform objects properties and fu
 * Values ​​of new column are equal to values ​​of *"Height"* column in preview
 * *"Name"* field is automatically filled by entered in *"Formula"* field
 
-1. Enter ```$HEIGHT+${WEIGHT}``` to *"Formula"* field
+1. Enter `$HEIGHT+${WEIGHT}` to *"Formula"* field
 
 * Each row of new column is equal to sum of corresponding rows of *"Height"* and *"Weight"*
   columns
@@ -91,13 +91,13 @@ expression (mathematical function, constants, platform objects properties and fu
 1. Enter non-correct formula in appropriate fields
 
 * Preview is empty
-* ```OK``` not active for clicking
+* `OK` not active for clicking
 
-1. Register new function ```norm2```(*) using JavaScript (**Tools | Scripting | JavaScript**)
+1. Register new function `norm2`(*) using JavaScript (**Tools | Scripting | JavaScript**)
 
 1.
 
-Enter ```(norm2(Demo:DemoScripts:BMI($HEIGHT, $WEIGHT), $AGE)+norm2(Demo:DemoScripts:BSA($HEIGHT, $WEIGHT), $AGE))*100```
+Enter `(norm2(Demo:DemoScripts:BMI($HEIGHT, $WEIGHT), $AGE)+norm2(Demo:DemoScripts:BSA($HEIGHT, $WEIGHT), $AGE))*100`
 to *"Formula"* field and execute dialog
 
 * New column added to table witch result of entered formula

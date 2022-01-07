@@ -43,7 +43,7 @@ require(ggplot2)
 data <- data.frame(x=t[[xColumnName]], y=t[[yColumnName]], color=t[[colorColumnName]])
 
 # Plots
-plotScatter <- ggplot(data, 
+plotScatter <- ggplot(data,
   aes(x, y, colour=color), xlab=x, ylab=y) +
   labs(x=xColumnName, y=yColumnName) +
   geom_point()

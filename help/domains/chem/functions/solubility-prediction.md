@@ -32,4 +32,4 @@ See also:
 References:
 
 * [RDKit](https://www.rdkit.org)
-* [MoleculeNet: A benchmark for molecular machine learning](https://arxiv.org/abs/1703.00564)        
+* [MoleculeNet: A benchmark for molecular machine learning](https://arxiv.org/abs/1703.00564)

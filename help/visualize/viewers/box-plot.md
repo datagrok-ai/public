@@ -14,13 +14,13 @@ General:
 
 ![Box Plot](../../uploads/viewers/box-plot.png "Box Plot")
 
-### T-test
+## T-test
 
 When the "category" column contains exactly two categories, press "T" to perform
 [Welch's t-test](https://en.wikipedia.org/wiki/Welch%27s_t-test). The resulting p-value will then be shown on top of the
 box plot.
 
-### Inverted whiskers
+## Inverted whiskers
 
 On certain datasets, you would see whiskers extending inside the box plot. This is not a rendering bug. The bottom of
 the box is at the 1st quartile (Q1), and the top is at the 3rd quartile (Q3)

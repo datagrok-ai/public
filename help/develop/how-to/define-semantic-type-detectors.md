@@ -20,7 +20,7 @@ and add one or more detectors:
 
 ```javascript
 class SequencePackageDetectors extends DG.Package {
-    
+
   //tags: semTypeDetector
   //input: column col
   //output: string semType

@@ -78,12 +78,12 @@ Learn more about semantic types in this article: [Link][109].
 
 ### Construct a column
 
-* The most common way is to use a method `.fromList`, explicitly specifying a type and a column name:  
+* The most common way is to use a method `.fromList`, explicitly specifying a type and a column name:
   ```let col = DG.Column.fromList(DG.COLUMN_TYPE.INT, 'Column Name', [1, 2, 3])```
-* The method `.fromStrings` recognizes and automatically assigns a type:  
+* The method `.fromStrings` recognizes and automatically assigns a type:
   ```let col = DG.Column.fromStrings('Column Name', ['3.14', '2.71']); // col.type === DG.COLUMN_TYPES.FLOAT```
-* To create a column with [`NULL` values][116] of a pre-specified length, use `.fromType` or concrete types shortcuts:  
-  ```let col = DG.Column.fromType(DG.COLUMN_TYPE.INT, 'Name', 3); // col.get(0) === DG.INT_NULL```  
+* To create a column with [`NULL` values][116] of a pre-specified length, use `.fromType` or concrete types shortcuts:
+  ```let col = DG.Column.fromType(DG.COLUMN_TYPE.INT, 'Name', 3); // col.get(0) === DG.INT_NULL```
   ```let col = DG.Column.string('Name', 5); // col.get(2) === ""```
 
 The column, once constructed, may later be [added to a dataframe]().
@@ -231,7 +231,7 @@ An empty string is an equivalent of a Datagrok `NULL`:
 let col = DG.Column.fromList(DG.COLUMN_TYPE.STRING, 'Name', [null, '']);
 grok.shell.info(col.isNone(0)); // shows 'true'
 grok.shell.info(col.isNone(1)); // shows 'true'
-``` 
+```
 
 ##### `undefined` and `NaN` values
 
@@ -481,10 +481,10 @@ for (const row of df.rows) {
 To add, remove or replace columns in a dataframe:
 
 * for an existing instance `column` of `Column`:
-  * `.add(column)` adds it as a last column of the dataframe
-  * `.insert(column, index)` adds it _before_ the column position which is currently at position `index`, starting count
-    from `0`. The default value of `index` is `null`, which corresponds to adding the column at the end of the columns
-    list
+    * `.add(column)` adds it as a last column of the dataframe
+    * `.insert(column, index)` adds it _before_ the column position which is currently at position `index`, starting
+      count from `0`. The default value of `index` is `null`, which corresponds to adding the column at the end of the
+      columns list
 * `.addNew` adds a new empty column at the end of the column list
 * `.addNew<TypeName>(name)` (`.addNewInt`, `.addNewString` etc) adds a new empty column of a [type][105]
   `<TypeName>` at the end of the column list

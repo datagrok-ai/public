@@ -21,7 +21,7 @@ watch icon in the left bottom corner) to access previously used aggregation opti
 
 ![Aggregation](../uploads/gifs/aggregate.gif "Aggregation")
 
-### Videos
+## Videos
 
 [![Aggregate Rows](../uploads/youtube/aggregate.png "Open on Youtube")](https://www.youtube.com/watch?v=1EI1w2HECrM)
 

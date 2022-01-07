@@ -26,8 +26,7 @@ a dataframe.
 
 ### Data types
 
----------------------------------------------
-
+---
 
 Use [DataFrame](/js-api/classes/dg.dataframe), [Column](/js-api/classes/dg.column)
 , [ColumnList](/js-api/classes/dg.columnlist), and [Row](/js-api/classes/dg.row) classes for table manipulation.
@@ -45,7 +44,7 @@ demog.rows.addNew().subj = 'Iron Man';
 foo.set(1, 777);
 demog.set('age', 1, 44);
 
-``` 
+```
 
 ## Best practices
 

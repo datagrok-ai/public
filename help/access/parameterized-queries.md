@@ -45,7 +45,7 @@ All parameters are optional.
 The following format is used for query input parameters:
 
 ```sql
---input: <type> <name> = <value> {<option>: <value>; ...} [<description>]  
+--input: <type> <name> = <value> {<option>: <value>; ...} [<description>]
 ```
 
 #### Supported types
@@ -91,10 +91,10 @@ Learn more about using the lists feature in this video: [link](https://www.youtu
 
 Options for supported types are described in the [Scripting](../compute/scripting.md) section.
 
-| Option        | Description                                                                        |
-|---------------|------------------------------------------------------------------------------------|
+| Option        | Description                                                                       |
+|---------------|-----------------------------------------------------------------------------------|
 | `choices`     | A comma-separated list of values, a name of the query, or the actual SQL query    |
-| `suggestions` | Name of the query to be called to generate suggestion as the user types the value  |     
+| `suggestions` | Name of the query to be called to generate suggestion as the user types the value |
 
 Examples:
 
@@ -156,7 +156,7 @@ select * from orders where @orderDate(orderDate)
 #### Patterns summary
 
 | Type               | Value         | Description or Example       |
-|--------------------|---------------|------------------------------| 
+|--------------------|---------------|------------------------------|
 | `num, int, double` | `=`           | `= 100`                      |
 |                    | `>`           | `> 1.02`                     |
 |                    | `>=`          | `>= 4.1`                     |

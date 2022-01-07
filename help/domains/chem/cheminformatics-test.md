@@ -62,4 +62,3 @@ See also:
 
 * [Cheminformatics](../domains/chem/cheminformatics.md)
 * [Chem info panels test](../domains/chem/chem-info-panels-test.md)
-  

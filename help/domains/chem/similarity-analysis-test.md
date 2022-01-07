@@ -1,7 +1,7 @@
 <!-- TITLE: Tests: Similarity analysis -->
 <!-- SUBTITLE: -->
 
-## Testing scenarios
+# Testing scenarios
 
 1. Open *smiles.csv* file
 

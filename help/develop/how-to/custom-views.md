@@ -32,13 +32,13 @@ class NotebookView extends DG.ViewBase {
         this.TYPE = 'Notebook';
         this.PATH = '/notebook';
     }
-    
+
     // Override basic methods
     get type() { return this.TYPE };
     get helpUrl() { return '/help/compute/jupyter-notebook.md'; }
     get name() { return 'Notebook' };
     get path() { return `${this.PATH}/${this.notebookId}` };
-    
+
     // Icon
     getIcon() {
         let img = document.createElement('img');
@@ -51,13 +51,13 @@ class NotebookView extends DG.ViewBase {
     // View state serialization/deserialization
     saveStateMap() { return {'notebookId': this.notebookId }; }
     loadStateMap(stateMap) { open(stateMap['notebookId']); }
-    
+
     // URL path handler
     handlePath(path) {
         let id = path.replace(`${this.PATH}/`, '');
         open(id);
     }
-    
+
     // URL path checker
     acceptsPath(path) { return path.startsWith(this.PATH); }
 }

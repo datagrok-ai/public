@@ -1,33 +1,48 @@
 <!-- TITLE: Architecture Details -->
 <!-- SUBTITLE: -->
 
-## Architecture
+# Architecture
+
+Datagrok installation consists of two big blocks:
+
+* [Datagrok](#datagrok-virtual-machine)
+    * [Datlas](#datlas)
+    * [Database](#database)
+    * [Persistent file storage](#storage)
+    * [ElasticSearch](#elasticsearch)
+    * [Credentials Management Service](../../govern/security.md#credentials). Can be installed as a separate service in
+      separate container with a separate database.
+    * [Grok Connect](../../access/data-connection.md). Separate container with Java-based data connectors to 20+
+      databases.
+    * Web application
+    * Nginx server
+* [Compute Virtual Machine](#compute-virtual-machine)
+    * [Load balancer](#load-balancer)
+    * [Grok Helper](#grok-helper)
+    * [Jupyter Kernel Gateway](#jupyter-kernel-gateway)
+    * [Jupyter Notebook](#jupyter-notebook)
+    * [H2O](#h2o)
+    * [GrokCompute](grok-compute.md)
+
+All docker containers are based on Ubuntu 20.04 and use the latest software available. It can be deployed in any cloud
+or on a regular machine.
 
 ![](network-diagram1.png)
 
-Datagrok installation consists of two virtual machines:
+## Datagrok components
 
-* [Datagrok Virtual Machine](#datagrok-virtual-machine)
-* [Compute Virtual Machine](#compute-virtual-machine)
+This is the heart of the platform and is required for all activities.
 
-Also, it needs [database](#database) and [persistent file storage](#storage). Both of the virtual machines includes
-several docker containers and can be deployed in
-[AWS EC2](deploy-amazon-ec2.md), [AWS ESC](deploy-amazon-ecs.md)
-or [regular host machine](deploy-regular.md).
-
-All docker containers are based on Ubuntu 20.04 and use the latest software available.
-
-## Datagrok virtual machine
-
-This machine is the heart of the platform and is required for all activities.
-
-Datagrok Virtual machine components are:
+Datagrok components are:
 
 * [Datlas](#datlas)
+* [Database](#database)
+* [Persistent file storage](#storage)
 * [ElasticSearch](#elasticsearch)
 * [Credentials Management Service](../../govern/security.md#credentials). Can be installed as a separate service in
   separate container with a separate database.
-* [Grok Connect](../../access/data-connection.md). Separate container with Java-based data connectors to 20+ databases.
+* [Grok Connect](../../access/data-connection.md). Separate container with Java-based data connectors to 20+
+  databases.
 * Web application
 * Nginx server
 
@@ -53,31 +68,31 @@ environment variables.
 
 `GROK_PARAMETERS` is a JSON-formatted string with options:
 
-| Option              | Required      | Default | Description                                                       |
-|---------------------|---------------|---------|-------------------------------------------------------------------|
-| dbServer            | **
-Required**  |         | Postgres database server.                                         |
-| dbPort              | Optional      | 5432    | Postgres database server port                                     |
-| db                  | **
-Required**  |         | Datagrok database name                                            |
-| dbLogin             | **
-Required**  |         | Username to connect to database                                   |
-| dbPassword          | **
-Required**  |         | Password to connect to database                                   |
-| dbSsl               | Optional      | false   | If set to true, TLS connection will be used to connect to database|
-| dbAdminLogin        | Optional      |         | Postgres admin username to create user and database for Datagrok  |
-| dbAdminPassword     | Optional      |         | Postgres admin password to create user and database for Datagrok  |
-| googleStorageCert   | Optional      |         | Access certificate to Google Cloud Storage. If set, GCS will be used for persistent data storage| 
-| amazonStorageRegion | Optional      |         | S3 region                                                         |
-| amazonStorageBucket | Optional      |         | S3 bucket name                                                    |
-| amazonStorageId     | Optional      |         | S3 credential ID, Datagrok will resolve EC2 role if empty         |
-| amazonStorageKey    | Optional      |         | S3 credential secret key, Datagrok will resolve EC2 role if empty |
-| adminPassword       | Optional      |         | Datagrok admin user password which will be created on first start |
-| debug               | Optional      | false   | Extended logging and saving stack traces                          |
-| useSSL              | Optional      | false   | If set to true, Datlas serves TLS connections                     |
-| certPath            | Optional      |         | Path to the TLS certificate                                       |
-| certKeyPath         | Optional      |         | Path to the TLS certificate key                                   |
-| certKeyPwd          | Optional      |         | Password to the TLS certificate key                               |
+| Option              | Required | Default                         | Description                                                                                      |
+|---------------------|----------|---------------------------------|--------------------------------------------------------------------------------------------------|
+| dbServer            | **       |                                 |                                                                                                  |
+| Required**          |          | Postgres database server.       |                                                                                                  |
+| dbPort              | Optional | 5432                            | Postgres database server port                                                                    |
+| db                  | **       |                                 |                                                                                                  |
+| Required**          |          | Datagrok database name          |                                                                                                  |
+| dbLogin             | **       |                                 |                                                                                                  |
+| Required**          |          | Username to connect to database |                                                                                                  |
+| dbPassword          | **       |                                 |                                                                                                  |
+| Required**          |          | Password to connect to database |                                                                                                  |
+| dbSsl               | Optional | false                           | If set to true, TLS connection will be used to connect to database                               |
+| dbAdminLogin        | Optional |                                 | Postgres admin username to create user and database for Datagrok                                 |
+| dbAdminPassword     | Optional |                                 | Postgres admin password to create user and database for Datagrok                                 |
+| googleStorageCert   | Optional |                                 | Access certificate to Google Cloud Storage. If set, GCS will be used for persistent data storage |
+| amazonStorageRegion | Optional |                                 | S3 region                                                                                        |
+| amazonStorageBucket | Optional |                                 | S3 bucket name                                                                                   |
+| amazonStorageId     | Optional |                                 | S3 credential ID, Datagrok will resolve EC2 role if empty                                        |
+| amazonStorageKey    | Optional |                                 | S3 credential secret key, Datagrok will resolve EC2 role if empty                                |
+| adminPassword       | Optional |                                 | Datagrok admin user password which will be created on first start                                |
+| debug               | Optional | false                           | Extended logging and saving stack traces                                                         |
+| useSSL              | Optional | false                           | If set to true, Datlas serves TLS connections                                                    |
+| certPath            | Optional |                                 | Path to the TLS certificate                                                                      |
+| certKeyPath         | Optional |                                 | Path to the TLS certificate key                                                                  |
+| certKeyPwd          | Optional |                                 | Password to the TLS certificate key                                                              |
 
 ### ElasticSearch
 
@@ -93,17 +108,14 @@ Compute Virtual Machine is used for performing on-server computations.
 
 Compute Virtual machine components are:
 
+* [Load balancer](#load-balancer) in front of the components to manage the routing and balancing
+* [Grok Helper](#grok-helper) in every container
 * [Jupyter Kernel Gateway](#jupyter-kernel-gateway)
 * [Jupyter Notebook](#jupyter-notebook)
 * [H2O](#h2o)
 * [GrokCompute](grok-compute.md)
 
 All components work in separate docker containers.
-
-Also, it needs [Grok Helper](#grok-helper) in every container and
-[load balancer](#load-balancer) in front of the components to manage the routing and balancing.
-
-See also: [Compute VM](compute-vm.md)
 
 ### Load Balancer
 
@@ -133,8 +145,8 @@ Grok Helper exposes API for the following features:
 
 * Jupyter Notebooks converter (HTML, PDF, etc.)
 * Utilities
-  - Cache entities managing
-  - Python environments managing
+    * Cache entities managing
+    * Python environments managing
 
 ### Jupyter Kernel Gateway
 
@@ -179,7 +191,7 @@ Most of the metadata associated with users, datasets, algorithms, predictive mod
 the [relational database](#database).
 
 The actual tabular data (which can be uploaded or created via other means) is stored externally, in the highly
-optimized [d42 format](architecture-design.md#in-memory-database), on file storage chosen by the company. Datagrok
+optimized [d42 format](architecture.md#in-memory-database), on file storage chosen by the company. Datagrok
 supports the following storages:
 
 * Local File System
@@ -204,55 +216,55 @@ Datagrok supports a TLS connection to connect to the database.
 
 The schema has the following tables:
 
-| Table                | Comments                                | 
-|------------------    |-----------------------------------------|
-| chats                | Chats                                   | 
-| chats_reads          | Topics read by users                    | 
-| chats_watch          | Topics watched by users                 | 
-| comment_votes        | Upvoted comments                        | 
-| comments             | Chat comments                           | 
-| connections          | Data connections                        | 
-| db_queries           | History of the database queries         | 
-| db_ups               | History of database upgrades            | 
-| email_history        | Sent emails                             | 
-| entities             | System entities (base table)            | 
-| entities_chats       | Entity-related chats                    | 
-| entities_types       | Descriptions of entity classes          | 
-| entities_types_permissions | Sets of permissions specific to entity classes | 
-| event_parameter_values     | Parameter values              | 
-| event_parameters     | Event parameters                        | 
-| event_types          | Event types                             | 
-| events               | Events                                  | 
-| favorites            | Entities marked as favorites            | 
-| files                | Files indexed by the platform           | 
-| groups               | User groups                             | 
-| groups_relations     | Nested groups                           | 
-| groups_requests      | Requests to join groups                 | 
-| jobs                 | Jobs                                    | 
-| keys                 | Key for encrypted data connections passwords| 
-| meta_params          | Dynamic entity parameters               | 
-| models               | Predictive models                       | 
-| notebooks            | Jupyter notebooks                       | 
-| notebooks_tables     | Notebooks applied to tables             | 
-| notification_preferences | User notification preferences   | 
-| notification_types   | Notification types              | 
-| notifications        | Notifications                           | 
-| permissions          | Permissions, that set to objects        | 
-| pm_input_columns     | Predictive model inputs                 | 
-| pm_output_columns    | Predictive model outputs                | 
-| project_layouts      | View layouts in projects                | 
-| project_relations    | Projects and entities relations         | 
-| projects             | Projects                                | 
-| queries              | Database queries                        | 
-| scripts              | Scripts                                 | 
-| table_columns        | Columns in a table                      | 
-| table_queries        | Structured table queries                | 
-| tables               | Table infos (note that the data resides externally) | 
-| tags                 | Entity tags                             | 
-| users                | Users                                   | 
-| users_sessions       | User sessions                           | 
-| view_layouts         | View layouts                            | 
-| view_layouts_columns | Columns referenced by layouts (used for layout suggestions) | 
+| Table                      | Comments                                                    |
+|----------------------------|-------------------------------------------------------------|
+| chats                      | Chats                                                       |
+| chats_reads                | Topics read by users                                        |
+| chats_watch                | Topics watched by users                                     |
+| comment_votes              | Upvoted comments                                            |
+| comments                   | Chat comments                                               |
+| connections                | Data connections                                            |
+| db_queries                 | History of the database queries                             |
+| db_ups                     | History of database upgrades                                |
+| email_history              | Sent emails                                                 |
+| entities                   | System entities (base table)                                |
+| entities_chats             | Entity-related chats                                        |
+| entities_types             | Descriptions of entity classes                              |
+| entities_types_permissions | Sets of permissions specific to entity classes              |
+| event_parameter_values     | Parameter values                                            |
+| event_parameters           | Event parameters                                            |
+| event_types                | Event types                                                 |
+| events                     | Events                                                      |
+| favorites                  | Entities marked as favorites                                |
+| files                      | Files indexed by the platform                               |
+| groups                     | User groups                                                 |
+| groups_relations           | Nested groups                                               |
+| groups_requests            | Requests to join groups                                     |
+| jobs                       | Jobs                                                        |
+| keys                       | Key for encrypted data connections passwords                |
+| meta_params                | Dynamic entity parameters                                   |
+| models                     | Predictive models                                           |
+| notebooks                  | Jupyter notebooks                                           |
+| notebooks_tables           | Notebooks applied to tables                                 |
+| notification_preferences   | User notification preferences                               |
+| notification_types         | Notification types                                          |
+| notifications              | Notifications                                               |
+| permissions                | Permissions, that set to objects                            |
+| pm_input_columns           | Predictive model inputs                                     |
+| pm_output_columns          | Predictive model outputs                                    |
+| project_layouts            | View layouts in projects                                    |
+| project_relations          | Projects and entities relations                             |
+| projects                   | Projects                                                    |
+| queries                    | Database queries                                            |
+| scripts                    | Scripts                                                     |
+| table_columns              | Columns in a table                                          |
+| table_queries              | Structured table queries                                    |
+| tables                     | Table infos (note that the data resides externally)         |
+| tags                       | Entity tags                                                 |
+| users                      | Users                                                       |
+| users_sessions             | User sessions                                               |
+| view_layouts               | View layouts                                                |
+| view_layouts_columns       | Columns referenced by layouts (used for layout suggestions) |
 
 See also:
 

@@ -32,7 +32,7 @@ windows from the sidebar
 |    Menu Option         |      Shortcut               |         Action                |
 |------------------------|-----------------------------|-------------------------------|
 | Windows | Toolbox      | Alt + X                     | Show/hide the toolbox         |
-| Windows | Properties   | F4                          | Show/hide the property panel  | 
+| Windows | Properties   | F4                          | Show/hide the property panel  |
 | Windows | Context Help | F1                          | Show/hide the context help    |
 
 In addition to the design modularity, these panels can be resized and docked.
@@ -96,8 +96,6 @@ and, if available, [tables](../access/db-table-info.md) from the database.
 
 ### Queries
 
-### Projects
-
 ### Text
 
 ## Functions
@@ -120,8 +118,6 @@ startup, tweak your user's [general settings](https://public.datagrok.ai/setting
 (`Settings | General`).
 
 ### Menu
-
-### Tables
 
 ### Columns
 

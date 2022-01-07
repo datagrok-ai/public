@@ -76,5 +76,3 @@ See also:
 
 * [Prject](project.md)
 * [Projects tutorial](../_internal/tutorials/projects.md)
-* [Project browser test](../tests/project-browser-test.md)
- 

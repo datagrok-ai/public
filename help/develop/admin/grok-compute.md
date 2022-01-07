@@ -11,23 +11,23 @@ GrokCompute is a server for scientific computations that is distributed as part 
 GrokCompute exposes API for the following features:
 
 * Cheminformatics (RDKit-based)
-  - Substructure search
-  - Descriptors
-  - Parse SDF
-  - Find MCS
-  - Get R-Groups
-  - Smiles to 3d coordinates
-  - Smiles to fingerprints
-  - Smiles to InChI
-  - Smiles to InChI key
-  - InChI to InChI key
-  - InChI to smiles
-  - Smiles to Canonical
-  - Draw molecule
-  - Draw reaction
+    - Substructure search
+    - Descriptors
+    - Parse SDF
+    - Find MCS
+    - Get R-Groups
+    - Smiles to 3d coordinates
+    - Smiles to fingerprints
+    - Smiles to InChI
+    - Smiles to InChI key
+    - InChI to InChI key
+    - InChI to smiles
+    - Smiles to Canonical
+    - Draw molecule
+    - Draw reaction
 * Modeling (concept only)
-  - Train
-  - Apply
+    - Train
+    - Apply
 
 See also:
 

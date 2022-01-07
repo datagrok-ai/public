@@ -50,7 +50,7 @@ They will introduce a more advanced usage of the API and help better understand 
 
 Check out the following spaces and documents for more information about Datagrok:
 
-1. [Community forum] and [meetings]  
+1. [Community forum] and [meetings]
    To join a meeting, go to the [Community Forum] and ask for a Zoom link.
 2. [Release notes]
 3. [Architecture]

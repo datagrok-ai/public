@@ -262,9 +262,9 @@ additional metadata (such as publication date). Typically, only one version of a
 Administrators can manage published packages and decide which versions should be used. It is possible to roll back to an
 older version, or assign a particular version to a particular group of users.
 
-Importantly, if the version changes, there will be an independent instance of each package asset.  
-Multiple versions of a package can be deployed at one moment, and the administrator can switch between them. All users
-will only see objects that belong to the current package version.
+Importantly, if the version changes, there will be an independent instance of each package asset. Multiple versions of a
+package can be deployed at one moment, and the administrator can switch between them. All users will only see objects
+that belong to the current package version.
 
 There is a special `debug` version that can be deployed for each package. If the developer applies it, it becomes active
 for the current package until the developer deletes it or changes their developer key. In this case, the developer can

@@ -11,29 +11,29 @@ electrodes).
 
 1. Open "ua_population" dataset
 
-1. Add [Shape Map](../visualize/viewers/shape-map.md) viewer
+2. Add [Shape Map](../viewers/shape-map.md) viewer
 
 * Viewer added
 * Map of Ukraine regions is drawn on viewer
 
-1. Change aggregation in selector on viewer
+3. Change aggregation in selector on viewer
 
 * Aggregations changes affect colors on the map
 
-1. Click on region on map
+4. Click on region on map
 
 * Row (s) selected
 
-1. Select not matching rows (from viewer context menu or from "hamburger" menu)
+5. Select not matching rows (from viewer context menu or from "hamburger" menu)
 
 * One row ("Kiev City 1") selected
 
-1. Change display color (from viewer context menu or from "hamburger" menu)
+6. Change display color (from viewer context menu or from "hamburger" menu)
 
 * Color changes according to the selected palette
 
-1. Test common features for viewers ([viewers-test](../visualize/viewers/viewers-test.md))
+7. Test common features for viewers ([viewers-test](../viewers/viewers-test.md))
 
 See also:
 
-* [Shape map](../visualize/viewers/shape-map.md)  
+* [Shape map](../viewers/shape-map.md)

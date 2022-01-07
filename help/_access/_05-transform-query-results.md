@@ -8,5 +8,3 @@ You can switch between transformation steps, edit the parameters, delete steps.
 The list of functions is curated, we only show actions suitable for the current domain.
 
 ## Select columns as parameters
-
-##     

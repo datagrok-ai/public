@@ -16,15 +16,15 @@ Features: creating project, accessing data, creating query, post-processing, Jup
 
 * Open "Connect to Data" view (File | Connect to Data...)
 * Create new connection (Context menu on PostgresSQL or PostgresNet | Add connection
-  * Name: Starbucks
-  * server: reddata.org
-  * db: starbucks
-  * login: TBD
-  * password: TBD
+    * Name: Starbucks
+    * server: reddata.org
+    * db: starbucks
+    * login: TBD
+    * password: TBD
 * Create new Data Query (Context menu on "Starbucks" Data Connection | Add query)
-  * Name: Get Starbucks US
-  * Query: select * from starbucks_us
-  * To get data click: "RUN" of (Context menu on "Get Starbucks US" Data Query | Run)
+    * Name: Get Starbucks US
+    * Query: select * from starbucks_us
+    * To get data click: "RUN" of (Context menu on "Get Starbucks US" Data Query | Run)
 
 4. Select only NY state rows (State | Column category button "≡" | Select "NY") and open as separate table
    (Property panel | Extract rows (or Keep rows))
@@ -38,9 +38,9 @@ Features: creating project, accessing data, creating query, post-processing, Jup
 6. Convert new Column to coordinates
 
 * Rename Column "${street_address}, ${city}, ${state}" to "Address"
-  * Open context menu on column header
-  * Click "Rename"
-  * Rename to "Address"
+    * Open context menu on column header
+    * Click "Rename"
+    * Rename to "Address"
 * Open context menu on column header
 * Click "Address to coordinates"
 
@@ -88,7 +88,7 @@ Features: creating project, accessing data, creating query, post-processing, Jup
 * Open "Predictive Modelling" dialog (Tools | Predictive modeling | Train)
 * Select "Method": "Distributed Random Forest"
 * Select "Features": "population_density", "us_population_low_income", "us_housing_units_one_person"
-  + some more
+    + some more
 * Select "Predict": "Sales"
 * Click "Train" button
 

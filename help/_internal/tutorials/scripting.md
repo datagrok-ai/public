@@ -46,4 +46,3 @@ See also:
 
 * [Data wrangling](../../transform/data-wrangling.md)
 * [Scripting](../../compute/scripting.md)
-  

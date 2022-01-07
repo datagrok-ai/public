@@ -42,9 +42,9 @@ You can use these fields to filter action runs with [smart search](../smart-sear
 | parentRun   | [FuncCall](function-call.md) object                |
 | status      |                                                    |
 | started     |                                                    |
-| finished    |                                                    | 
+| finished    |                                                    |
 | createdOn   |                                                    |
-| updatedOn   |                                                    | 
+| updatedOn   |                                                    |
 
 See also:
 

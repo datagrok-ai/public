@@ -170,7 +170,7 @@ example:
 //name: test1
 //output: string s1
 export function test1() {
-    // Your logic goes here... 
+    // Your logic goes here...
     return 'a';
 }
 //name: test2

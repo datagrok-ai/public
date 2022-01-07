@@ -23,17 +23,17 @@ It is possible to use metadata as a search criteria in the [Projects](../overvie
 
 You can use these fields to filter tables with [smart search](smart-search.md):
 
-| Field       | Description                                        |
-|-------------|----------------------------------------------------|
-| id          |                                                    |
-| name        |                                                    |
-| rowCount    |                                                    |
-| colCount    |                                                    |
-| createdOn   |                                                    |
-| updatedOn   |                                                    | 
-| author      | [User](../govern/user.md) object                             |
-| starredBy   | [User](../govern/user.md) object                             |
-| commentedBy | [User](../govern/user.md) object                             |
+| Field       | Description                      |
+|-------------|----------------------------------|
+| id          |                                  |
+| name        |                                  |
+| rowCount    |                                  |
+| colCount    |                                  |
+| createdOn   |                                  |
+| updatedOn   |                                  |
+| author      | [User](../govern/user.md) object |
+| starredBy   | [User](../govern/user.md) object |
+| commentedBy | [User](../govern/user.md) object |
 
 See also:
 

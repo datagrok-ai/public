@@ -25,8 +25,8 @@ Expand 'Elements' pane to add gadgets such as a picture, panel, button, etc.
 ## Custom code
 
 Certain gadgets lets you define code that is executed as a reaction to an event, which is typically triggered by a user.
-For instance, if you set  
-Button's 'OnClick' property to `Info("foo")` script, a "foo" message will be shown when user clicks on that button.
+For instance, if you set Button's 'OnClick' property to `Info("foo")` script, a "foo" message will be shown when user
+clicks on that button.
 
 ## Form designer
 

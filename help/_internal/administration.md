@@ -131,7 +131,7 @@ each server startup. Typically, only one "updateDb" step should be used for a no
 
 All values have default "false" values.
 
-----------------------------------
+---
 
 | Parameter                 | Description                                                                                    |
 |---------------------------|------------------------------------------------------------------------------------------------|
@@ -204,7 +204,7 @@ Please reach out to us regarding single sign on options, if this is your preferr
 
 ## Command-line interface
 
----------------------------------------------------------------
+---
 
 | Action    | Command                             | Description                                     |
 |-----------|-------------------------------------|-------------------------------------------------|

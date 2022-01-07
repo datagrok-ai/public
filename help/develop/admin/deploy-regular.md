@@ -75,7 +75,7 @@ docker run -it -d \
 10. Edit settings in the Datagrok (Tools | Settings...). Do not forget to click Apply to save new settings.
 
 * Connectors
-  * External Host: `grok_connect`
+    * External Host: `grok_connect`
 
 ### Deploy using Docker Compose
 
@@ -113,7 +113,7 @@ Deployment instruction:
 5. Edit settings in the Datagrok (Tools | Settings...). Do not forget to click Apply to save new settings.
 
 * Connectors
-  * External Host: `grok_connect`
+    * External Host: `grok_connect`
 
 ## Setup Compute Virtual Machine
 
@@ -146,8 +146,8 @@ docker run -it -d \
 docker run -it -d \
   --network cvm \
   --network-alias h2o \
-  -p 54321:54321 
-  -p 5005:5005 
+  -p 54321:54321 \
+  -p 5005:5005 \
   --restart unless-stopped \
   datagrok/h2o:latest
 # JKG
@@ -166,7 +166,7 @@ docker run -it -d \
 docker run -it -d \
   --network cvm \
   --network-alias cvm \
-  -p 8090:8090 
+  -p 8090:8090 \
   --restart unless-stopped \
   datagrok/cvm_nginx:latest
 ```
@@ -174,15 +174,15 @@ docker run -it -d \
 4. Edit settings in the Datagrok (Tools | Settings...). Do not forget to click Apply to save new settings.
 
 * Scripting:
-  * CVM Url: `http://<CVM_HOST_NAME>:8090`
-  * CVM Url Client: `http://<CVM_HOST_NAME>:8090`
-  * H2o Url: `http://<CVM_HOST_NAME>:54321`
-  * Api Url: `http://<DATAGROK_HOST_NAME>:8080/api`
-  * Cvm Split: `true`
+    * CVM Url: `http://<CVM_HOST_NAME>:8090`
+    * CVM Url Client: `http://<CVM_HOST_NAME>:8090`
+    * H2o Url: `http://<CVM_HOST_NAME>:54321`
+    * Api Url: `http://<DATAGROK_HOST_NAME>:8080/api`
+    * Cvm Split: `true`
 * Dev:
-  * CVM Url: `http://<CVM_HOST_NAME>:8090`
-  * Cvm Split: `true`
-  * Api Url: `http://<DATAGROK_HOST_NAME>:8080/api`
+    * CVM Url: `http://<CVM_HOST_NAME>:8090`
+    * Cvm Split: `true`
+    * Api Url: `http://<DATAGROK_HOST_NAME>:8080/api`
 
 ### Deploy using Docker Compose
 
@@ -203,15 +203,15 @@ Deployment instruction:
 3. Edit settings in the Datagrok (Tools | Settings...). Do not forget to click Apply to save new settings.
 
 * Scripting:
-  * CVM Url: `http://<CVM_HOST_NAME>:8090`
-  * CVM Url Client: `http://<CVM_HOST_NAME>:8090`
-  * H2o Url: `http://<CVM_HOST_NAME>:54321`
-  * Api Url: `http://<DATAGROK_HOST_NAME>:8080/api`
-  * Cvm Split: `true`
+    * CVM Url: `http://<CVM_HOST_NAME>:8090`
+    * CVM Url Client: `http://<CVM_HOST_NAME>:8090`
+    * H2o Url: `http://<CVM_HOST_NAME>:54321`
+    * Api Url: `http://<DATAGROK_HOST_NAME>:8080/api`
+    * Cvm Split: `true`
 * Dev:
-  * CVM Url: `http://<CVM_HOST_NAME>:8090`
-  * Cvm Split: `true`
-  * Api Url: `http://<DATAGROK_HOST_NAME>:8080/api`
+    * CVM Url: `http://<CVM_HOST_NAME>:8090`
+    * Cvm Split: `true`
+    * Api Url: `http://<DATAGROK_HOST_NAME>:8080/api`
 
 See also:
 

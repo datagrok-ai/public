@@ -17,53 +17,53 @@ Once implemented, custom models can be chosen from the list of model engines.
 
 ## Train
 
-#### Header parameters
+### Train header parameters
 
-- `#meta.mlname: CustomName` – Name of the custom train function
-- `#meta.mlrole: train` – Action (train or apply)
-- `#description: Custom ML train function for KNN algorithm` – Description of the function
-- `#language: Python` – Language (Python, R, Julia)
+* `#meta.mlname: CustomName` – Name of the custom train function
+* `#meta.mlrole: train` – Action (train or apply)
+* `#description: Custom ML train function for KNN algorithm` – Description of the function
+* `#language: Python` – Language (Python, R, Julia)
 
-#### Input data parameters
+### Train input data parameters
 
-- `#input: dataframe df` – Dataframe for training
-- `#input: string predict_column` – List of features/column names separated by a comma
+* `#input: dataframe df` – Dataframe for training
+* `#input: string predict_column` – List of features/column names separated by a comma
 
-#### Input model parameters
+### Train input model parameters
 
-- `#input: int parm1 {category: group1}` - Parameter 1 to build a model. Category is used for input parameters grouping
+* `#input: int parm1 {category: group1}` - Parameter 1 to build a model. Category is used for input parameters grouping
   within the UI
 
-#### Output model parameters
+### Train output model parameters
 
-- `#output: blob modelName` – Trained model object name. Complete trained model with an absolute path address is stored
+* `#output: blob modelName` – Trained model object name. Complete trained model with an absolute path address is stored
   as a blob object to be retrieved and applied by the Apply function
 
 ## Apply
 
-#### Header parameters
+### Apply header parameters
 
-- `#meta.mlname: CustomName` – Name of the custom apply function (should match corresponding train function name)
-- `#meta.mlrole: apply` – Action (train or apply)
-- `#description: Custom ML apply function for KNN algorithm` – Description of the function
-- `#language: Python` – Language (Python, R, Julia)
+* `#meta.mlname: CustomName` – Name of the custom apply function (should match corresponding train function name)
+* `#meta.mlrole: apply` – Action (train or apply)
+* `#description: Custom ML apply function for KNN algorithm` – Description of the function
+* `#language: Python` – Language (Python, R, Julia)
 
-#### Input model parameters
+### Apply input model parameters
 
-- `#input: blob model` – Trained model object name. Complete trained model with an absolute path address saved by the
+* `#input: blob model` – Trained model object name. Complete trained model with an absolute path address saved by the
   Train function.
 
-#### Input data parameters
+### Apply input data parameters
 
-- `#input: dataframe df` - dataframe for prediction (contains only prediction features)
-- `#input: string namesKeys` – optional list of original features/column names separated by comma
-- `#input: string namesValues` – optional list of new features/column names separated by comma. If both `namesKeys`
+* `#input: dataframe df` - dataframe for prediction (contains only prediction features)
+* `#input: string namesKeys` – optional list of original features/column names separated by comma
+* `#input: string namesValues` – optional list of new features/column names separated by comma. If both `namesKeys`
   and `namesValues` are supplied, `namesKeys` will replace corresponding namesValues feature names before accessing the
   dataframe
 
-#### Output parameters
+### Apply output parameters
 
-- `#output: dataframe data_out` – single-column dataframe of predicted values
+* `#output: dataframe data_out` – single-column dataframe of predicted values
 
 ## Example
 
@@ -84,7 +84,7 @@ Once implemented, custom models can be chosen from the list of model engines.
 #input: string metric = minkowski {category: Parameters; choices: ["euclidean", "manhattan", "chebyshev", "minkowski"]}
 #input: string algorithm = auto {category: Parameters; choices: ["auto","ball_tree", "kd_tree", "brute"]}
 #output: blob model
- 
+
 # Import necessary packages
 import numpy as np
 import pickle
@@ -96,12 +96,12 @@ trainY = np.asarray (df[predict_column])
 
 # Build and train model
 trained_model = KNeighborsClassifier(
-	n_neighbors = n_neighbors,
-	weights = weights,
-	leaf_size= leaf_size,
-	p = p,
-	metric = metric,
-	algorithm = algorithm
+    n_neighbors = n_neighbors,
+    weights = weights,
+    leaf_size= leaf_size,
+    p = p,
+    metric = metric,
+    algorithm = algorithm
 )
 trained_model.fit(trainX, trainY)
 
@@ -131,9 +131,9 @@ import pickle
 namesKeys = namesKeys.split(",")
 namesValues = namesValues.split(",")
 if len(namesKeys) > 0:
-	 featuresNames = list(df)
-	 for i in range(len(namesKeys)):
-		df = df.rename(columns = {namesValues[i]: namesKeys[i]})
+    featuresNames = list(df)
+    for i in range(len(namesKeys)):
+        df = df.rename(columns = {namesValues[i]: namesKeys[i]})
 
 testX = np.asarray(df)
 

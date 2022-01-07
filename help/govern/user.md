@@ -9,14 +9,14 @@ Represents the identity of a person, and is used for [group](group.md) and role 
 
 Within the users view, you can use these fields to filter users with [smart search](../overview/smart-search.md):
 
-| Field       | Description                                        |
-|-------------|----------------------------------------------------|
-| id          |                                                    |
-| name        |                                                    |
-| login       |                                                    |
-| email       |                                                    |
-| createdOn   |                                                    |
-| updatedOn   |                                                    | 
+| Field       | Description                                            |
+|-------------|--------------------------------------------------------|
+| id          |                                                        |
+| name        |                                                        |
+| login       |                                                        |
+| email       |                                                        |
+| createdOn   |                                                        |
+| updatedOn   |                                                        |
 | group       | [Group](group.md) object: User personal security group |
 | author      | [User](user.md) object                                 |
 | starredBy   | [User](user.md) object                                 |

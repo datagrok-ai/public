@@ -19,5 +19,4 @@ Here are the parts that can be extracted:
 * \#day of week - number of day (1-7)
 * day of week - (Sunday, Monday, etc)
 * minutes since midnight (0-1439)
-* age - number of years (integer) between now and the original date. 
-   
+* age - number of years (integer) between now and the original date.

@@ -42,7 +42,7 @@
 (*):
 
 ```
-select 
+select
   employees.address,
   employees.birthdate,
   employees.city,
@@ -63,7 +63,6 @@ select
   employees.titleofcourtesy
 from
   employees
-  
 ```
 
 See also:

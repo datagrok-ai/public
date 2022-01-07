@@ -7,7 +7,7 @@ Matches the specified regular expression against the content of the specified co
 
 To split column RegExp groups are used. Groups are added as new columns.
 
-### Example:
+## Example
 
 RegExp: (.\*)-(.\*)
 

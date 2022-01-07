@@ -124,7 +124,7 @@ and specify the `meta.cache` and `meta.invalidate` fields:
 --input: string department
 --meta.cache: true
 --meta.invalidate: 0 0 1 * * ?
-select distinct name from products p 
+select distinct name from products p
 where p.department = @department
 ```
 

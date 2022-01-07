@@ -30,11 +30,11 @@ Let's start with Python script and it's parameters:
 * now you can run script using "Run" button on toolbar
 
 ```python
-#name: Example
-#language: python
-#input: string country
-#input: string vegetable
-#input: double saltiness
+# name: Example
+# language: python
+# input: string country
+# input: string vegetable
+# input: double saltiness
 ```
 
 This is how parameters dialog looks like:
@@ -43,9 +43,9 @@ This is how parameters dialog looks like:
 
 ## 2. annotating the python script
 
-Every function parameter in Datagrok has [options](../../compute/scripting.md#options) where  
-validators, choices and suggestions functions can be specified. For "country", we want to call a function that suggests
-country based on the already entered text (jsSuggestCountryName). For "
+Every function parameter in Datagrok has [options](../../compute/scripting.md#options) where validators, choices and
+suggestions functions can be specified. For "country", we want to call a function that suggests country based on the
+already entered text (jsSuggestCountryName). For "
 vegetable", we will register function that returns list of vegetables (jsVeggies). For "saltiness", we need a validator
 to check if the parameter value falls in the specified range. Also, we want to add the default values to each parameter.
 

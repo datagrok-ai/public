@@ -214,8 +214,8 @@ A short action list for accessing a database from your application:
 * Prepare database [queries](access-data.md#queries) in one or several files in package's `queries`
   folder, for each query referring to the corresponding database
 * Consider caching the database query results:
-  * `"cache results": true` in connection's JSON `""parameters"` section
-  * `--meta.cache: true` to the preamble of each query you want to be cached
+    * `"cache results": true` in connection's JSON `""parameters"` section
+    * `--meta.cache: true` to the preamble of each query you want to be cached
 * After the package is deployed, verify you've delivered database [credentials](access-data.md#managing-credentials)
 * [Invoke](access-data.md#executing-queries) the query in JavaScript code
   by `await grok.data.query("<PACKAGE_NAME>:<QUERY_NAME>", { ... })` with a dictionary of query arguments as the second
@@ -247,7 +247,7 @@ a namespace for it.
 
 1. Right-click on the connection and select `Add to Project`.
 2. Proceed to the `Projects` section in the Datagrok's left sidebar. Find that the selected connection is now part of
-   the `Scratchpad` project. This is an "unsaved" project, which should save with the `UPLOAD` button.  
+   the `Scratchpad` project. This is an "unsaved" project, which should save with the `UPLOAD` button.
    _Note:_ alternatively to p.1, you could drag-and-drop the connection onto the `Projects` list.
 3. Give the project a name, say, `NewNamespace`, hit `Ok`. Share it to the groups and users of interest.
 4. Now, without leaving the `Projects` pane, left-click on the project's name, `NewNamespace`. You'd see the property
@@ -470,10 +470,10 @@ the "Demo Files" section of the platform through the `Data` pane opened by the "
 folder" button on the left side of the Datagrok's window. Then let's run the below:
 
 ```python
-#name: SimpleTestPython
-#language: python
-#input: dataframe table [data table]
-#output: int count [number of cells in table]
+# name: SimpleTestPython
+# language: python
+# input: dataframe table [data table]
+# output: int count [number of cells in table]
 count = table.shape[0] * table.shape[1]
 ```
 

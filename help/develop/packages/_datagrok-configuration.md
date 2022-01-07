@@ -29,7 +29,7 @@ The server specified as _default_ in `config.yaml` must have an up-to-date key.
 It's possible to set the key and default server when you run `grok publish`;
 
 ```shell
-grok publish 
+grok publish
 ```
 
 ## See more

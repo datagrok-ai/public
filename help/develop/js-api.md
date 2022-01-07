@@ -52,7 +52,7 @@ ui.dialog('Windows')
   .add(ui.span(['People of Earth, your attention, please… ']))
   .onOK(() => { grok.shell.info('OK!'); })
   .show();
-``` 
+```
 
 ### DG
 
@@ -78,7 +78,7 @@ demog.rows.addNew().subj = 'Iron Man';
 foo.set(1, 777);
 demog.set('age', 1, 44);
 
-``` 
+```
 
 ### BitSet
 
@@ -130,8 +130,8 @@ grok.functions.register({
     run: (foo, bar) => `${foo}_${bar}`});
 ```
 
-The code below registers two functions, "jsWidget" and "jsSuggestCountryName".  
-To test jsWidget, create a new Dashboard, and click on "Widget" under "Widgets".
+The code below registers two functions, "jsWidget" and "jsSuggestCountryName". To test jsWidget, create a new Dashboard,
+and click on "Widget" under "Widgets".
 
 ```javascript
 grok.functions.register({
@@ -175,13 +175,13 @@ subscribe to either global, or instance-related events:
 
 ```javascript
    // global event when user changes the current project
-   grok.events.onCurrentProjectChanged.subscribe(_ => 
+   grok.events.onCurrentProjectChanged.subscribe(_ =>
        grok.shell.info(`Current project changed: ${grok.shell.project.name}`));
 
    // subscribing to DataFrame events
    demog = grok.data.testData('demog', 5000);
    demog.onValuesChanged.subscribe((_) => grok.shell.info('values changed'));
-``` 
+```
 
 Event-related code snippets:
 

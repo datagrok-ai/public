@@ -44,7 +44,7 @@ applied with data similar in structure to training
 
        Name: {method_name}_H2o_Test
        Description: Test model with using method {method_name} on H2o server
-       
+
        Remaining parameters is default
 
 1. Use all available methods for training new models on OpenCPU server. When creating new models, use the following

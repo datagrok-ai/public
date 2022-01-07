@@ -14,9 +14,9 @@ choose **Clone**.
 
 # Viewer layout
 
-Similarly to view layout, it is possible to reuse the settings of individual [viewers](../visualize/viewers.md).   
-Under the 'Viewer' menu (either right-click on the viewer, or click on the 'hamburger' menu on the top left), you will
-find the following layout-specific commands:
+Similarly to view layout, it is possible to reuse the settings of individual [viewers](../visualize/viewers.md). Under
+the 'Viewer' menu (either right-click on the viewer, or click on the 'hamburger' menu on the top left), you will find
+the following layout-specific commands:
 
 * Clone
 * Save to Gallery

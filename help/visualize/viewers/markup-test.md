@@ -43,11 +43,10 @@ most casees, the viewer will auto-detect content type. Use the "mode" property t
 
 (*):
 
-```
+```html
 <iframe fremeborder="0" id="iframe_opkomst" src="https://dirkmjk.nl/files/articles/2016/opkomst/en.html"
 width="100%" height="100%">
 </iframe>
-  
 ```
 
 See also:

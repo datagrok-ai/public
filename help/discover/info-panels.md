@@ -38,9 +38,9 @@ right in the script, or set externally in the [global permissions](../govern/glo
 To specify the condition in the script, use the 'user' variable in the following way:
 
 ```
-# condition: user.name == "john doe" || user.name == "jack smith" 
-# condition: user.hasrole("chemist") 
-# condition: user.inteam("high-throuput screening") 
+# condition: user.name == "john doe" || user.name == "jack smith"
+# condition: user.hasrole("chemist")
+# condition: user.inteam("high-throuput screening")
 ```
 
 ### Dataset condition
@@ -50,7 +50,7 @@ Certain info panels only make sense when applied to data that was retrieved from
 To specify the condition in the script, use the 'table' variable in the following way:
 
 ```
-# condition: table.gettag("database") == "northwind" 
+# condition: table.gettag("database") == "northwind"
 ```
 
 ### Context condition
@@ -61,7 +61,7 @@ name ("x" in the example below):
 
 ```
 #input: column x
-#condition: x.isnumerical && x.name == "f3" && x.stats.missingvaluecount > 0 
+#condition: x.isnumerical && x.name == "f3" && x.stats.missingvaluecount > 0
 ```
 
 ### User preferences
@@ -128,7 +128,7 @@ See the following info panel (spectrogram-panel.grok) in action by opening (proj
 #condition: "F3" == signal.name
 
 pic = Spectrogram("eeg", signal, 256.0, 1024, 0.1, true)
-``` 
+```
 
 ### Actions
 

@@ -68,8 +68,8 @@ Simple steps to link CSVs with Athena and get results in Datagrok:
 - Secret Key: <secret>
 
   Notes:
-  * Server has the following format: "athena.<region>.amazonaws.com"
-  * Do not forget "/" at "S3 Output Location" parameter end
+    * Server has the following format: "athena.<region>.amazonaws.com"
+    * Do not forget "/" at "S3 Output Location" parameter end
 
 5. Create a [data query](../data-query.md) under the new connection. For example:
    ```sql
@@ -85,4 +85,3 @@ See also:
 * [Data connection](../data-connection.md)
 * [Data query](../data-query.md)
 * [Amazon Athena](https://docs.aws.amazon.com/athena/latest/ug/what-is.html)
- 

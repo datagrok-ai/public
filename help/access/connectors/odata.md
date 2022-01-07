@@ -12,7 +12,7 @@ Provides access to [OData](https://www.odata.org/) based service.
   "requiresServer": true,
   "serviceUrl": ""
 }
-``` 
+```
 
 See also:
 

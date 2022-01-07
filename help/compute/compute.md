@@ -41,9 +41,9 @@ are [functions](https://datagrok.ai/help/overview/functions/function)
 with the following features:
 
 * Advanced support for input and output parameters
-  * Typed (cross-language support for scalars, vectors, dataframes, images)
-  * Introspectable
-  * Metadata-annotated
+    * Typed (cross-language support for scalars, vectors, dataframes, images)
+    * Introspectable
+    * Metadata-annotated
 * Dynamic discovery
 * Polymorphic execution (platform doesn't care which language the function is implemented in)
 * Annotated with [metadata](#metadata) both on the function and on the parameter level
@@ -160,10 +160,10 @@ its parameters with the metadata. This is what it looks like for the `PKPD` `R`-
 #language: r
 #tags: model
 #meta.domain: PKPD
-#input: double dosage = 1000 {category: Dosing options} 
-#input: string compartments {category: PK model; choices: ['2 compartment PK', '1 compartment PK']} 
-#input: double clearance = 2 {category: PK parameters} 
-#input: double interRate = 1 {category: PK parameters} [intercompartmental rate] 
+#input: double dosage = 1000 {category: Dosing options}
+#input: string compartments {category: PK model; choices: ['2 compartment PK', '1 compartment PK']}
+#input: double clearance = 2 {category: PK parameters}
+#input: double interRate = 1 {category: PK parameters} [intercompartmental rate]
 #input: double effRate = 0.2 {category: PD parameters} [effective compartment rate]
 #input: double effect = 8 {category: PD parameters} [EC50]
 #output: graphics PKPD
@@ -433,7 +433,7 @@ Part of the [Compute](https://github.com/datagrok-ai/public/tree/master/packages
 * Step-by-step wizard for onboarding new models
 * Model renderers
 * Function views
-  * Function parameter grid
+    * Function parameter grid
 
 #### Outlier detection
 
@@ -444,9 +444,9 @@ Automatic outliers detection Manual outliers markup and annotation Used as an in
 #### Sensitivity analysis
 
 * Sample inputs:
-  * by specified number of samples
-  * by a specified distribution or within a range
-  * for a specified set of scalar inputs and/or columns of the matrix input
+    * by specified number of samples
+    * by a specified distribution or within a range
+    * for a specified set of scalar inputs and/or columns of the matrix input
 * Produce variability analysis for outputs based on the sampled inputs
 * Visualize the results of analysis with Datagrok viewers
 

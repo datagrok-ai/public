@@ -1,6 +1,6 @@
 <!-- TITLE: Function roles-->
 
-## Function roles
+# Function roles
 
 A package can contain a variety of functions, so it will be appropriate to give an overview of the most common ones.
 Typically, each function type has a special tag denoting what the function does, for example:

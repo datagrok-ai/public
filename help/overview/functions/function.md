@@ -75,17 +75,17 @@ corresponding audit record will contain a reference to it.
 
 You can use these fields to filter functions with [smart search](../smart-search.md):
 
-| Field       | Description                                        |
-|-------------|----------------------------------------------------|
-| id          |                                                    |
-| name        |                                                    |
-| runs        | list of [FuncCall](function-call.md) object      |
-| createdOn   |                                                    |
-| updatedOn   |                                                    | 
-| author      | [User](../../govern/user.md) object                             |
-| starredBy   | [User](../../govern/user.md) object                             |
-| commentedBy | [User](../../govern/user.md) object                             |
-| usedBy      | [User](../../govern/user.md) object                             |
+| Field       | Description                                 |
+|-------------|---------------------------------------------|
+| id          |                                             |
+| name        |                                             |
+| runs        | list of [FuncCall](function-call.md) object |
+| createdOn   |                                             |
+| updatedOn   |                                             |
+| author      | [User](../../govern/user.md) object         |
+| starredBy   | [User](../../govern/user.md) object         |
+| commentedBy | [User](../../govern/user.md) object         |
+| usedBy      | [User](../../govern/user.md) object         |
 
 ## Videos
 

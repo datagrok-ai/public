@@ -151,16 +151,16 @@ dependencies:
   - python=3.8
   - glom
   - pip:
-    - requests
+      - requests
 ```
 
 To use it in any script, specify it as follows:
 
 ```python
-#name: EnvTestInline
-#environment: channels: [conda-forge], dependencies: [python=3.8, glom, {pip: [requests]}]
-#language: python
-#output: string result
+# name: EnvTestInline
+# environment: channels: [conda-forge], dependencies: [python=3.8, glom, {pip: [requests]}]
+# language: python
+# output: string result
 
 import re, requests
 from glom import glom
@@ -198,9 +198,8 @@ Do the following steps:
 5. Let other users know these environments are now available as
    `GlobalEnvs:Global<ENVIRONMENT_NAME>`
 
-In the future, a script editor will be provided in Datagrok. For the property `#environment: `
-of the script, it will enumerate in a dropdown list all available environments for the current user and the current
-script.
+In the future, a script editor will be provided in Datagrok. For the property `#environment:` of the script, it will
+enumerate in a dropdown list all available environments for the current user and the current script.
 
 #### Common practices with Conda environments
 
@@ -276,11 +275,11 @@ grok.functions.register({
 ```
 
 ```python
-#name: Numbers
-#language: python
-#input: int count1 {validators: ["jsval1", "jsval2"]} [Number of cells in table]
-#input: int count2 {validators: ["jsval1"]} [Number of cells in table]
-#input: int count3 {validators: ["jsval2"]} [Number of cells in table]
+# name: Numbers
+# language: python
+# input: int count1 {validators: ["jsval1", "jsval2"]} [Number of cells in table]
+# input: int count2 {validators: ["jsval1"]} [Number of cells in table]
+# input: int count3 {validators: ["jsval2"]} [Number of cells in table]
 ```
 
 ![Script Parameter Validators](../uploads/features/script-param-validators.gif "Script Parameter Validators")
@@ -321,9 +320,9 @@ Suggestions work only for string parameters.
 The following example helps user enter a country name by dynamically retrieving a list of names from a web service:
 
 ```python
-#name: Sales by country
-#language: python
-#input: string country = uk {suggestions: jsSuggestCountryName}
+# name: Sales by country
+# language: python
+# input: string country = uk {suggestions: jsSuggestCountryName}
 ```
 
 ```js
@@ -331,7 +330,7 @@ grok.functions.register({
   signature: 'List<String> jsSuggestCountryName(String text)',
   isAsync: true,
   run: async function(text) {
-    let response = await fetch('https://restcountries.eu/rest/v2/name/' + text); 
+    let response = await fetch('https://restcountries.eu/rest/v2/name/' + text);
     return response.status === 200 ? (await response.json()).map(country => country['name']) : [];
   }
 });
@@ -361,20 +360,20 @@ check the output before starting the script.
 
 ## Header parameters
 
-| Parameter   | Description                        |
-|-------------|------------------------------------|
-| name        | Name                               |
-| description | Description                        |
+| Parameter   | Description                                                                         |
+|-------------|-------------------------------------------------------------------------------------|
+| name        | Name                                                                                |
+| description | Description                                                                         |
 | language    | Script language (see the [list of supported languages](#supported-languages) below) |
-| help-url    | Datagrok's Wiki URL                |
+| help-url    | Datagrok's Wiki URL                                                                 |
 | reference   | Reference to a research paper, Wikipedia article, Git repository, etc.              |
-| top-menu    | Top menu path separated with pipes (`|`) |
-| tags        | Tags                               |
-| sample      | Name of a sample file              |
-| input       | Input parameter                    |
-| output      | Output parameter                   |
-| environment | Environment name                   |
-| condition   | Script applicability conditions    |
+| top-menu    | Top menu path separated with pipes (`                                               |`) |
+| tags        | Tags                                                                                |
+| sample      | Name of a sample file                                                               |
+| input       | Input parameter                                                                     |
+| output      | Output parameter                                                                    |
+| environment | Environment name                                                                    |
+| condition   | Script applicability conditions                                                     |
 
 Also it is possible to add custom parameter using "meta." prefix.
 
@@ -392,7 +391,7 @@ Also it is possible to add custom parameter using "meta." prefix.
 ### Format template for 'input' and 'output':
 
 ```
-#<direction>: <type> <name> = <value> {<option tag>:<value>; ...} [<description>]  
+#<direction>: <type> <name> = <value> {<option tag>:<value>; ...} [<description>]
 ```
 
 **direction** - parameter direction:
@@ -452,21 +451,21 @@ otherwise.
 
 #### For "column" and "column_list" types
 
-| Option     | Value                           | Description                                                  |
-|------------|---------------------------------|--------------------------------------------------------------|
-| type       | numerical                       | In dialog will be showed only numerical types columns        |
-| type       | categorical                     | In dialog will be showed only categorical types columns      | 
-| type       | dateTime                        | In dialog will be showed only dateTime columns               |
-| format     | MM/dd/yyyy                      | Datetime format, for dateTime columns and datetime type only |
-| allowNulls | true/false                      | Adds validation of missing values presents                   |
-| action     | join("table parameter name")    | Joins result to specified table, for output parameters only                 | 
-| action     | replace("table parameter name") | Replaces result with columns in specified table, for output parameters only | 
+| Option     | Value                           | Description                                                                 |
+|------------|---------------------------------|-----------------------------------------------------------------------------|
+| type       | numerical                       | In dialog will be showed only numerical types columns                       |
+| type       | categorical                     | In dialog will be showed only categorical types columns                     |
+| type       | dateTime                        | In dialog will be showed only dateTime columns                              |
+| format     | MM/dd/yyyy                      | Datetime format, for dateTime columns and datetime type only                |
+| allowNulls | true/false                      | Adds validation of missing values presents                                  |
+| action     | join("table parameter name")    | Joins result to specified table, for output parameters only                 |
+| action     | replace("table parameter name") | Replaces result with columns in specified table, for output parameters only |
 
 #### For "string" type
 
-| Option      | Value                     | Description                          |
-|-------------|---------------------------|--------------------------------------|
-| choices     | List separated with comma, or function name that returns list of strings | List of choices for string parameter |
+| Option      | Value                                                                                      | Description                              |
+|-------------|--------------------------------------------------------------------------------------------|------------------------------------------|
+| choices     | List separated with comma, or function name that returns list of strings                   | List of choices for string parameter     |
 | suggestions | Function name that returns list of strings with string input corresponding to script input | List of suggestions for string parameter |
 
 Header line examples:
@@ -498,17 +497,17 @@ Header line examples:
 
 You can use these fields to filter scripts with [smart search](../overview/smart-search.md):
 
-| Field       | Description                     |
-|-------------|---------------------------------|
-| id          |                                 |
-| name        |                                 |
-| runs        | list of [FuncCall](../overview/functions/function-call.md) object|
-| createdOn   |                                 |
-| updatedOn   |                                 | 
-| author      | [User](../govern/user.md) object |
-| starredBy   | [User](../govern/user.md) object |
-| commentedBy | [User](../govern/user.md) object |
-| usedBy      | [User](../govern/user.md) object |
+| Field       | Description                                                       |
+|-------------|-------------------------------------------------------------------|
+| id          |                                                                   |
+| name        |                                                                   |
+| runs        | list of [FuncCall](../overview/functions/function-call.md) object |
+| createdOn   |                                                                   |
+| updatedOn   |                                                                   |
+| author      | [User](../govern/user.md) object                                  |
+| starredBy   | [User](../govern/user.md) object                                  |
+| commentedBy | [User](../govern/user.md) object                                  |
+| usedBy      | [User](../govern/user.md) object                                  |
 
 ## Videos
 

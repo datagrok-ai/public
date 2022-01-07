@@ -18,7 +18,7 @@ well as on the old value:
   randomization factor_ **r**. The actual formula is:
   ```
   newValue = col[i] * math.pow(10, 2 * r * rnd.nextDouble() - r)
-  ``` 
+  ```
 
 For selecting a random subset of the (possibly already anonymized) dataset,
 see [Selecting random rows](../explore/select-random-rows.md).
