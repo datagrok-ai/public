@@ -28,7 +28,7 @@
 		"All users"
 	],
 	"devDependencies": {
-		"css-loader": "^6.5.1",
-		"style-loader": "^3.3.1"
+		"css-loader": "^5.2.7",
+		"style-loader": "^2.0.0"
 	}
 }
