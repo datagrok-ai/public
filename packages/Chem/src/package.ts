@@ -25,10 +25,8 @@ import {addInchiKeys} from './panels/inchi';
 import * as chemCommonRdKit from './chem-common-rdkit';
 import {convertToRDKit, rGroupAnalysis} from './analysis/r-group-analysis';
 import {chemLock, chemUnlock} from './chem-common';
-import {MoleculeViewer} from './chem-similarity-search';
 import {identifiersWidget} from './widgets/identifiers';
-import {chem} from "datagrok-api/grok";
-import sketcher = chem.sketcher;
+import {chem} from 'datagrok-api/grok';
 import Sketcher = chem.Sketcher;
 import {oclMol} from './chem-common-ocl';
 import $ from 'cash-dom';
@@ -71,9 +69,9 @@ export async function initChem() {
 
 //tags: init
 export async function init() {
-  if (!initialized) {
+  if (!initialized)
     await initChem();
-  }
+
   initialized = true;
 }
 
@@ -271,9 +269,9 @@ export async function findSimilar(molStringsColumn: DG.Column, molString: string
 export async function searchSubstructure(molStringsColumn: DG.Column, molString: string, substructLibrary: boolean, molStringSmarts: string) {
   chemLock('searchSubstructure');
   try {
-    if (molStringsColumn === null || molString === null || substructLibrary === null || molStringSmarts === null) {
+    if (molStringsColumn === null || molString === null || substructLibrary === null || molStringSmarts === null)
       throw 'An input was null';
-    }
+
     const result =
       substructLibrary ?
         await chemSearches.chemSubstructureSearchLibrary(molStringsColumn, molString, molStringSmarts/*, webRoot*/) :
@@ -295,9 +293,8 @@ export function descriptorsApp(context: any) {
 
 //description: Removes all children from node
 function removeChildren(node: any) {
-  while (node.firstChild) {
+  while (node.firstChild)
     node.removeChild(node.firstChild);
-  }
 }
 
 //name: saveAsSdf
@@ -311,9 +308,9 @@ export function saveAsSdf() {
 
   const table = grok.shell.t;
   const structureColumn = table.columns.bySemType('Molecule');
-  if (structureColumn == null) {
+  if (structureColumn == null)
     return;
-  }
+
 
   let result = '';
 
@@ -324,9 +321,8 @@ export function saveAsSdf() {
 
       // properties
       for (const col of table.columns) {
-        if (col !== structureColumn) {
+        if (col !== structureColumn)
           result += `>  <${col.name}>\n${col.get(i)}\n\n`;
-        }
       }
 
       result += '$$$$';
@@ -544,13 +540,12 @@ export function convertMolecule(molecule: string, from: string, to: string): str
     if (to == 'inchi')
       return mol.get_inchi();
     throw `Failed to convert molecule: unknown target unit: "${to}"`;
-  }
-  finally {
+  } finally {
     mol?.delete();
   }
 }
 
-//tags: cellEditor
+/*//tags: cellEditor
 //description: Molecule
 //input: grid_cell cell
 export function editMoleculeCell(cell: DG.GridCell) {
@@ -562,3 +557,4 @@ export function editMoleculeCell(cell: DG.GridCell) {
     .onOK(() => cell.cell.value = sketcher.getMolFile())
     .show();
 }
+*/

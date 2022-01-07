@@ -16,9 +16,7 @@ let initialized = false;
 export async function initRdKitService(webRootValue: string) {
   if (!initialized) {
     _webRoot = webRootValue;
-    _rdKitModule = await initRDKitModule({
-      locateFile: () => `${_webRoot}/dist/${rdkitLibVersion}.wasm`,
-    });
+    _rdKitModule = await initRDKitModule({locateFile: () => `${_webRoot}/dist/${rdkitLibVersion}.wasm`});
     console.log('RDKit module package instance was initialized');
     _rdKitService = new RdKitService();
     await _rdKitService.init(_webRoot);
@@ -29,23 +27,23 @@ export async function initRdKitService(webRootValue: string) {
 }
 
 export function getRdKitModule() {
-  if (!initialized) {
+  if (!initialized)
     throw ('RdKit Module is not initialized');
-  }
+
   return _rdKitModule!;
 }
 
 export function getRdKitService() {
-  if (!initialized) {
+  if (!initialized)
     throw ('RdKit Service is not initialized');
-  }
+
   return _rdKitService!;
 }
 
 export function getRdKitWebRoot() {
-  if (!initialized) {
+  if (!initialized)
     throw ('WebRoot for RdKit is not initialized');
-  }
+
   return _webRoot;
 }
 
@@ -63,9 +61,8 @@ export function drawMoleculeToCanvas(
   let substructJson = '{}';
   if (scaffoldMol) {
     substructJson = mol.get_substruct_match(scaffoldMol);
-    if (substructJson === '') {
+    if (substructJson === '')
       substructJson = '{}';
-    }
   }
   // TODO: make this an optional parameter, AND a system-wide setting
   const opts = {
