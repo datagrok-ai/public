@@ -15,10 +15,15 @@ jobs:
         uses: docker://markdownlint/markdownlint:latest
         with:
           args: --style /github/workspace/markdownlint.rb /github/workspace/help
+      - name: Check Markdown links
+        uses: gaurav-nelson/github-action-markdown-link-check@v1
+        with:
+          use-verbose-mode: 'yes'
+          folder-path: 'help/'
 
   convert:
 #    needs: lint
-#    if: github.ref == 'refs/heads/master'
+    if: github.ref == 'refs/heads/master'
     runs-on: ubuntu-20.04
     environment: Help
     steps:
@@ -84,7 +89,7 @@ jobs:
 
   deploy:
     needs: convert
-#    if: github.ref == 'refs/heads/master'
+    if: github.ref == 'refs/heads/master'
     runs-on: ubuntu-20.04
     environment: Help
     steps:
