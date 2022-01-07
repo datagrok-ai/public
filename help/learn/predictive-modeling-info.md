@@ -106,4 +106,4 @@ See also:
 * [Receiver operating characteristic (ROC)](https://en.wikipedia.org/wiki/Receiver_operating_characteristic)
 * [Confusion matrix](https://en.wikipedia.org/wiki/Confusion_matrix)
 * [Gini coefficient](https://en.wikipedia.org/wiki/Gini_coefficient)
-* [Log Loss](http://wiki.fast.ai/index.php/Log_Loss)
+* [Log Loss](https://en.wikipedia.org/wiki/Loss_functions_for_classification#Logistic_loss)

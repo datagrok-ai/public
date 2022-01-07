@@ -12,7 +12,7 @@ configuration files used by the platform.
 
 ## Overview
 
-![](architecture-diagram.png)
+![](../develop/admin/architecture-diagram1.png)
 
 Datagrok AMI images consist of two virtual machines, "DatagrokVM" and "ComputeVM". DatagrokVM is a server that contains
 everything necessary to run the platform. ComputeVM is a scalable service for scientific computations.
@@ -228,4 +228,4 @@ dart server.dart deploy -c prod_deploy
 
 See also:
 
-* [Architecture](architecture.md)
+* [Architecture](../develop/admin/architecture.md)

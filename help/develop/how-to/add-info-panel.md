@@ -11,9 +11,9 @@ and [visibility conditions](#visibility-conditions) will be re-evaluated wheneve
 ## Development
 
 Info panels are added as part of a [package](../develop.md). There are two ways of developing them for Datagrok: either
-as panel [scripts](../scripting.md) or as JavaScript panel [functions](../overview/functions/function.md). Panel scripts
+as panel [scripts](../../compute/scripting.md) or as JavaScript panel [functions](../../overview/functions/function.md). Panel scripts
 can be written in any language supported by the platform (the full list of supported languages is
-available [here](../scripting.md#supported-languages)). In this case, the main difference between the two
+available [here](../../compute/scripting.md#supported-languages)). In this case, the main difference between the two
 implementations pertains to where the code is executed. Panel functions defined in the package entry point will run on
 the client side, whereas panel scripts get executed on the server.
 
@@ -102,6 +102,6 @@ See also:
 * [Datagrok JavaScript API](../js-api.md)
 * [JavaScript API Samples](https://public.datagrok.ai/js/samples/functions/info-panels/info-panels)
 * [JavaScript development](../develop.md)
-* [Scripting](../scripting.md)
-* [Functions](../overview/functions/function.md)
+* [Scripting](../../compute/scripting.md)
+* [Functions](../../overview/functions/function.md)
 * [Semantic types](../../discover/semantic-types.md)

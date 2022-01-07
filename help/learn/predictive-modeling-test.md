@@ -16,7 +16,7 @@ applied with data similar in structure to training
 1. Use "[Select Random](../explore/select-random-rows.md)" for select 50% random values. Extract 50% random values to
    new table. Rename this table to "Train Data"
 
-* 50% of the random values ​​are extracted into a new table with name "Train Data"
+* 50% of the random values are extracted into a new table with name "Train Data"
 
 1. Delete extracted rows from table "demog" and rename this table to "Test Data"
 
@@ -64,8 +64,7 @@ applied with data similar in structure to training
 See also:
 
 * [Predictive modeling](predictive-modeling.md)
-* [Predictive modeling browser test](../tests/predictive-models-browser-test.md)
+* [Predictive modeling browser test](predictive-modeling-browser-test.md)
 * [Predictive modeling tutorial](../_internal/tutorials/predictive-modeling.md)
 * [OpenCPU](https://www.opencpu.org/)
 * [H2O](http://h2o.ai/)
-  s

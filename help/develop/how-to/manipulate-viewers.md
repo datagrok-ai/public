@@ -225,7 +225,7 @@ Examples:
 
 ## Adding viewers to views
 
-You can add a viewer to any container, such as a [main application view](/develop/how-to/build-an-app.md#the-main-view)
+You can add a viewer to any container, such as a [main application view](build-an-app.md#the-main-view)
 or a [dialog window](https://public.datagrok.ai/js/samples/ui/dialogs/dialogs).
 
 Here is how to create a new [view](custom-views.md) and add a plot to it:

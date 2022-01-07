@@ -25,7 +25,7 @@ Datagrok runs them remotely.
 Datagrok provides two options to run the JavaScript code:
 
 * Use the built-in JavaScript editor: On the [Datagrok Public site], go to **Functions** > **
-  Scripts** > **New JavaScript Script**. The [Scripting section](../scripting.md) provides more details on using
+  Scripts** > **New JavaScript Script**. The [Scripting section](../../compute/scripting.md) provides more details on using
   Datagrok's Javascript editor.
 * For reusable functions, viewers, and applications, you can [develop packages].
 
@@ -56,7 +56,7 @@ Datagrok comes with two environments:
 * [Public][datagrok-production-environment]. Use this environment to publish your package for all Datagrok users.
 * [Dev][datagrok-development-environment]. Use this environment to develop a package for Datagrok.
 
-To configure the Datagrok servers that you use, refer to the [Datagrok configuration section](datagrok-config.md). After
+To configure the Datagrok servers that you use, refer to the [Datagrok configuration section](_datagrok-configuration.md). After
 you configure the development server, use the `dev` scripts in your `package.json` to run the package on the
 **Dev** environment.
 

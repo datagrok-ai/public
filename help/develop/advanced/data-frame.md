@@ -14,8 +14,8 @@ Dataframe stores data as list of columns. Constructing, modifying and efficientl
 both [`DG.Column`][101] and [`DG.DataFrame`][100] classes. Event handling, visual aspects of working with dataframes,
 fast column selection, handy construction methods and row-based access are provided in
 [`DG.DataFrame`][100]. Instances of [`DG.ColumnList`][099], [`DG.RowList`][098],
-[`DG.Row`](/js-api/classes/dg.row) and [`DG.Cell`](/js-api/classes/dg.cell) are used as related properties or functions
-return values of `DG.Column` and `DG.DataFrame`.
+[`DG.Row`](https://datagrok.ai/js-api/classes/dg.row) and [`DG.Cell`](https://datagrok.ai/js-api/classes/dg.cell) are
+used as related properties or functions return values of `DG.Column` and `DG.DataFrame`.
 
 ## Dataframe design
 
@@ -147,7 +147,7 @@ grok.shell.addTableView(df);
 #### Access performance
 
 To learn the typical times it takes to run various column access patterns, run
-[this example]((https://public.datagrok.ai/js/samples/data-frame/performance/access)). In summary, it is advised to
+[this example](https://public.datagrok.ai/js/samples/data-frame/performance/access). In summary, it is advised to
 explicitly get a column and its length as separate variables before looping through:
 
 ```javascript
@@ -626,11 +626,11 @@ property setter).
 
 [099]: https://github.com/datagrok-ai/public/blob/e444332f49d6672c0fc93ad54dcbc601d3f332a1/js-api/src/dataframe.ts#L136 "Class ColumnList"
 
-[100]: #dg-datagrame "Dataframe"
+[100]: #dataframe "Dataframe"
 
-[101]: #dg-column "Dataframe column"
+[101]: #dataframe-design "Dataframe design"
 
-[102]: visualize/viewers.md "Datagrok Viewers"
+[102]: ../../visualize/viewers.md "Datagrok Viewers"
 
 [103]: https://github.com/datagrok-ai/public/blob/c4b913ef931e457144f773b1d8c55430c509657e/js-api/src/const.ts#L50 "DG.COLUMN_TYPE"
 
@@ -638,13 +638,13 @@ property setter).
 
 [105]: #column-data-types "Column data types"
 
-[106]: #accessing-and-modifying-column-values "Accessing and modifying column values"
+[106]: #access-and-modify-column-values "Accessing and modifying column values"
 
-[107]: overview/table-view.md "Table Views"
+[107]: ../../overview/table-view.md "Table Views"
 
-[108]: discover/tags.md#format "Values of a format tag"
+[108]: ../../discover/tags.md#format "Values of a format tag"
 
-[109]: discover/semantic-types.md "Semantic types"
+[109]: ../../discover/semantic-types.md "Semantic types"
 
 [110]: ../domains/chem/cheminformatics.md "Cheminformatics overview"
 
@@ -652,21 +652,19 @@ property setter).
 
 [112]: https://github.com/datagrok-ai/public/tree/master/packages/Chem "Chem package"
 
-[113]: develop/how-to/define-semantic-type-detectors.md "Defining semantic types detectors"
+[113]: ../../develop/how-to/define-semantic-type-detectors.md "Defining semantic types detectors"
 
 [114]: #tags-and-temp-collections "Tags and Temp collections"
 
-[115]: visualize/viewers/grid.md "Grid"
+[115]: ../../visualize/viewers/grid.md "Grid"
 
 [116]: #null-values-for-numeric-types "NULL values for numeric types"
 
-[117]: #constructing-a-column
+[117]: #construct-a-column
 
 [118]: https://day.js.org/
 
-[119]: visualize/viewers/grid.md
-
-[120]: link
+[119]: ../../visualize/viewers/grid.md
 
 [121]: https://public.datagrok.ai/files/demo.testjobs.files.demofiles/ "Demo files"
 
@@ -689,8 +687,6 @@ property setter).
 [130]: https://github.com/datagrok-ai/public/blob/be5486c9c761947bd916202343fad0adb2deaef3/js-api/src/dataframe.ts#L1669
 
 [131]: https://public.datagrok.ai/js/samples/data-frame/modification/calculated-columns
-
-[132]: overview/functions.md
 
 [133]: https://public.datagrok.ai/js/samples/data-frame/modification/add-columns
 

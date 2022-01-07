@@ -166,7 +166,7 @@
 
 See also:
 
-* [Data source test](../tests/data-source-test.md)
-* [Data job test](../tests/data-job-test.md)
-* [Data queries test](../tests/data-query-test.md)
+* [Data source test](data-source-test.md)
+* [Data job test](data-job-test.md)
+* [Data queries test](data-query-test.md)
 * [Data connection](data-connection.md)

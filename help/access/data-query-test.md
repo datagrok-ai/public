@@ -124,7 +124,7 @@ SELECT * FROM Orders WHERE (employeeId = @employeeId)
 
 See also:
 
-* [Data connections test](../tests/data-connection-test.md)
-* [Data job test](../tests/data-job-test.md)
-* [Data source test](../tests/data-source-test.md)
+* [Data connections test](data-connection-test.md)
+* [Data job test](data-job-test.md)
+* [Data source test](data-source-test.md)
 * [Data query](data-query.md)

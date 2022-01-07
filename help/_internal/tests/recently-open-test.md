@@ -101,7 +101,3 @@ History of open views is saved in platform. This history is available on "Welcom
 1. Open each view from the "Recently Opened" section on toolbox
 
 * When you open view, the corresponding tab opens.
-
-See also:
-
-* [View Layout Test](../entities/view-layout-browser-test.md)

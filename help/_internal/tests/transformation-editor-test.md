@@ -3,17 +3,17 @@
 
 # Tests: Transformation editor
 
-[Recipe Editor](../features/recipe-editor) lets you define data
-transformations. [Transformations](../features/recipe-editor.md) can be used as a post-run step for data queries and
-data jobs, or can be executed separately. You can also share [Transformations](../features/recipe-editor.md) with other
+[Recipe Editor](../../transform/recipe-editor.md) lets you define data
+transformations. [Transformations](../../transform/recipe-editor.md) can be used as a post-run step for data queries and
+data jobs, or can be executed separately. You can also share [Transformations](../../transform/recipe-editor.md) with other
 users.
 
 ## Testing scenario
 
-1. Open [Transformations Editor](../features/recipe-editor.md) for *stores in @state* query. (*
+1. Open [Transformations Editor](../../transform/recipe-editor.md) for *stores in @state* query. (*
    PostgreSQL* provider, *starbucks* connection)
 
-* New view [Transformations Editor](../features/recipe-editor.md) is added for *stores in @state*
+* New view [Transformations Editor](../../transform/recipe-editor.md) is added for *stores in @state*
   query
 * First step of transformation is selection of query parameters.
 * Table preview is empty because no parameters are defined.
@@ -68,7 +68,7 @@ users.
 * "AddressToCoordinates" action step is highlighted in green
 * New columns *"latitude"* and *"longitude"* are added to table preview
 
-1. Click on first step in [Transformation](../features/recipe-editor.md)
+1. Click on first step in [Transformation](../../transform/recipe-editor.md)
 
 * Table preview was transferred to original
 
@@ -82,12 +82,12 @@ users.
 * "AddNewColumn" action step is executed and highlighted in green
 * "AddressToCoordinates" action step is executed and highlighted in green (*)
 
-1. Close [Transformations Editor](../features/recipe-editor).md view, go to "Connect to data" view
+1. Close [Transformations Editor](../../transform/recipe-editor.md).md view, go to "Connect to data" view
 
 1. Select *stores in @state* query. (*PostgreSQL* provider, *starbucks* connection)
-   in [Property Panel](../overview/navigation.md#properties)
+   in [Property Panel](../../overview/navigation.md#properties)
 
-* "transformation" tab of [Property Panel](../overview/navigation.md#properties) shows the script created earlier (**)
+* "transformation" tab of [Property Panel](../../overview/navigation.md#properties) shows the script created earlier (**)
 
 1. Run *stores in @state* query with value ```NY``` for @state parameter
 
@@ -100,6 +100,6 @@ AddressToCoordinates("StoresInState", "Address")```
 
 See also:
 
-* [Recipe Editor](../../transform/features/recipe-editor.md)
+* [Recipe Editor](../../transform/recipe-editor.md)
 * [Console](../../overview/navigation.md#console)
 * [Console Test](../../overview/console-test.md)

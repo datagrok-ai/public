@@ -73,6 +73,6 @@ Pre-requisites: an admin has to have the privilege to add new users.
 
 See also:
 
-* [User](../govern/user.md)
-* [Authentication](../govern/authentication.md)
-* [Authorization](../govern/authorization.md)
+* [User](../../govern/user.md)
+* [Authentication](../../govern/authentication.md)
+* [Authorization](../../govern/authorization.md)

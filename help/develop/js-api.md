@@ -62,8 +62,8 @@ Check out [JS API Class Reference](https://datagrok.ai/js-api/)
 
 ### Dataframe
 
-Use [DataFrame](/js-api/classes/dg.dataframe), [Column](/js-api/classes/dg.column)
-, [ColumnList](/js-api/classes/dg.columnlist), and [Row](/js-api/classes/dg.row) classes for table manipulation.
+Use [DataFrame](https://datagrok.ai/js-api/classes/dg.dataframe), [Column](https://datagrok.ai/js-api/classes/dg.column)
+, [ColumnList](https://datagrok.ai/js-api/classes/dg.columnlist), and [Row](https://datagrok.ai/js-api/classes/dg.row) classes for table manipulation.
 
 ```javascript
 demog = grok.testData('demog', 5000);
@@ -82,7 +82,7 @@ demog.set('age', 1, 44);
 
 ### BitSet
 
-Each [DataFrame](/js-api/classes/dg.dataframe) is associated with two [bitsets](/js-api/classes/dg.bitset): selection
+Each [DataFrame](https://datagrok.ai/js-api/classes/dg.dataframe) is associated with two [bitsets](https://datagrok.ai/js-api/classes/dg.bitset): selection
 and filter.
 
 ```javascript
@@ -116,7 +116,7 @@ grok.shell.dockElement(e, 'JS', 'left', 0.5);
 ## Registering functions
 
 Pretty much anything in Datagrok is a [function](../overview/functions/function.md), it is a concept that connects
-together [scripts](scripting.md) written in different languages, predictive models, statistical functions, query
+together [scripts](../compute/scripting.md) written in different languages, predictive models, statistical functions, query
 transformations, data flows, and many other features.
 
 The following code registers a "jsConcat" function that becomes a first-class citizen in the platform (i.e., it can be
@@ -170,7 +170,7 @@ Code snippets:
 ## Events
 
 We are exposing events coming out of the platform as a stream via the
-[Rx.JS](rxjs.dev) library that makes it easy to compose asynchronous or callback-based code. The API makes easy to
+[Rx.JS](https://rxjs.dev/) library that makes it easy to compose asynchronous or callback-based code. The API makes easy to
 subscribe to either global, or instance-related events:
 
 ```javascript

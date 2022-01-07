@@ -57,7 +57,7 @@ Here is an example of molecule-related info panels in action. Whenever a user cl
 panels get shown (collapsed by default). In a picture, we see a panel with the predicted toxicity properties, predicted
 solubility, and a visualization of the atom charges. All of these results get calculated or rendered dynamically. These
 info panels can be implemented externally as scripts; for instance, here is the
-[source code](https://github.com/datagrok-ai/public/blob/master/packages/ChemScripts/scripts/python/gasteiger_charges.py)
+[source code](https://github.com/datagrok-ai/public/blob/master/packages/Chem/scripts/gasteiger_charges.py)
 of the "Gasteiger Partial Charges" panel. See [public repository](../collaborate/public-repository.md) for details on
 how to contribute to the public repository of scientific functions.
 

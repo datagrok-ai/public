@@ -135,8 +135,8 @@ In this case, the environment `Chemprop` should be specified in a file
 
 Datagrok identifies and resolves environments by their names. If an environment referred in a script wasn't previously
 used, it will first be created on the
-[Datagrok Compute Server](../admin/compute-vm.md). This may take up to several minutes. If it was used at least once, a
-previously created environment will be re-used with no delay to run the script.
+[Compute Virtual Machine](../develop/admin/architecture-details.md#compute-virtual-machine). This may take up to several
+minutes. If it was used at least once, a previously created environment will be re-used with no delay to run the script.
 
 #### Specify environment in-place
 
@@ -170,11 +170,12 @@ target = {'a': {'b': {'c': 'd'}}}
 result = glom(target, 'a.b.c')  # returns 'd'
 ```
 
-When the script runs first time, the environment will be created on the Datagrok
-[Compute Server](compute-vm.md), which may take some time, up to several minutes. However, on the second run and onwards
-this environment will simply be reused. If the environment string is changed in this script to some other environment
-which was previously created in same way even in some other script, this environment will also be picked up and reused.
-These environments are handeled by Datagrok using MD5 hashes of their body strings.
+When the script runs first time, the environment will be created on
+the [Compute Virtual Machine](../develop/admin/architecture-details.md#compute-virtual-machine), which may take some
+time, up to several minutes. However, on the second run and onwards this environment will simply be reused. If the
+environment string is changed in this script to some other environment which was previously created in same way even in
+some other script, this environment will also be picked up and reused. These environments are handeled by Datagrok using
+MD5 hashes of their body strings.
 
 #### Reference an environment from another package
 
@@ -367,7 +368,7 @@ check the output before starting the script.
 | language    | Script language (see the [list of supported languages](#supported-languages) below) |
 | help-url    | Datagrok's Wiki URL                                                                 |
 | reference   | Reference to a research paper, Wikipedia article, Git repository, etc.              |
-| top-menu    | Top menu path separated with pipes (`                                               |`) |
+| top-menu    | Top menu path separated with pipes (`\|`)                                           |
 | tags        | Tags                                                                                |
 | sample      | Name of a sample file                                                               |
 | input       | Input parameter                                                                     |
@@ -377,7 +378,7 @@ check the output before starting the script.
 
 Also it is possible to add custom parameter using "meta." prefix.
 
-### <a href="#" id="supported-languages"></a>Supported Languages
+### Supported Languages
 
 | Language parameter value | Description    |
 |--------------------------|----------------|

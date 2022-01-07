@@ -64,7 +64,7 @@ Project browser allows you to view previously created [projects](project.md), vi
 1. Open the "Shared with" tab in [Property Panel](../overview/navigation.md#properties)
 
 * "Shared with" tab is open
-* Display [users](../govern/user.md) and users [groups](../govern/group.md.md) which this [project](project.md) is
+* Display [users](../govern/user.md) and users [groups](../govern/group.md) which this [project](project.md) is
   available for view or edit
 
 1. Open the "Resources" tab in [Property Panel](../overview/navigation.md#properties)
@@ -102,6 +102,6 @@ Project browser allows you to view previously created [projects](project.md), vi
 
 See also:
 
-* [Project upload test](../dialogs/upload-project-test.md)
+* [Project upload test](../overview/upload-project-test.md)
 * [Project](project.md)
 * [Projects tutorial](../_internal/tutorials/projects.md)

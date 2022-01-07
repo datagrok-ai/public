@@ -62,7 +62,7 @@ consists of the following parts that are executed to produce a dataset.
 
 See also:
 
-* [Data connections test](../tests/data-connection-test.md)
+* [Data connections test](data-connection-test.md)
 * [Data query test](data-query-test.md)
-* [Data source test](../tests/data-source-test.md)
+* [Data source test](data-source-test.md)
 * [Data job](data-job.md)

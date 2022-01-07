@@ -84,7 +84,7 @@ commands, refer to the [Datagrok Tools section].
 ## Package structure
 
 | File                                    | Description                                               |
-|-----------------------------------------|---------------------------------------------------------- |
+|-----------------------------------------|-----------------------------------------------------------|
 | node_modules                            | Node.js modules                                           |
 | [src/package.js](#package.js)           | The Datagrok package's entry point                        |
 | .gitignore                              | Files and folders ignored by Git                          |
@@ -141,7 +141,7 @@ the terminal, run `npm run <script-name>`.
 To install the dependencies, run `npm install` from the terminal or run the provided script `install-dependencies` from
 your IDE. You can install other NPM packages (such as React or Babel) using `npm install <npm package>`.
 
-### <a href="#" id="package.js"></a>src/package.js
+### <a href="#" id="package.js"></a>package.js
 
 The `src/package.js` file (or `src/package.ts` if you created a TypeScript package) imports three key Datagrok modules
 &mdash; `datagrok-api/grok`, `datagrok-api/ui`, and `datagrok-api/dg`.
@@ -273,15 +273,15 @@ Follow these naming conventions when working on your packages:
 
 Your package might contain the following additional folders, depending on your needs:
 
-| Folder       | Description                            | Documentation               | Package Examples                    |
-|------------- | -------------------------------------- | --------------------------- | ----------------------------------- |
-| environments | Environment configurations             | [Scripting > Environments]  | [DemoScripts]                     |
-| scripts      | Collection of scripts for computations | [Scripting]                 | [ChemScripts], [DemoScripts], [Impute] |
-| swaggers     | OpenAPI specifications                 | [Access > OpenAPI]          | [EnamineStore], [Swaggers]          |
-| connections  | Database connections                   | [Access > Data Connections] | [Chembl], [UsageAnalysis]           |
-| queries      | Database queries                       | [Access > Data Queries]     | [Chembl], [UsageAnalysis]           |
-| css          | CSS files with custom styles           | -                           | [Notebooks], [Discovery]            |
-| data-samples | Data for demo and testing              | -                           | [Chem], [Sunburst]                  |
+| Folder       | Description                            | Documentation               | Package Examples                        |
+|--------------|----------------------------------------|-----------------------------|-----------------------------------------|
+| environments | Environment configurations             | [Scripting > Environments]  | [DemoScripts]                           |
+| scripts      | Collection of scripts for computations | [Scripting]                 | [Chem/scripts], [DemoScripts], [Impute] |
+| swaggers     | OpenAPI specifications                 | [Access > OpenAPI]          | [EnamineStore], [Swaggers]              |
+| connections  | Database connections                   | [Access > Data Connections] | [Chembl], [UsageAnalysis]               |
+| queries      | Database queries                       | [Access > Data Queries]     | [Chembl], [UsageAnalysis]               |
+| css          | CSS files with custom styles           | -                           | [Notebooks], [Discovery]                |
+| data-samples | Data for demo and testing              | -                           | [Chem], [Sunburst]                      |
 
 ## What's next?
 
@@ -303,7 +303,7 @@ Your package might contain the following additional folders, depending on your n
 
 [database queries]: ../../access/data-query.md "A data query extract data from a source. A data query can be an SQL query or a query to an Excel file."
 
-[Datagrok configuration section]: ./datagrok-configuration.md
+[Datagrok configuration section]: _datagrok-configuration.md
 
 [Datagrok tools section]: https://github.com/datagrok-ai/public/tree/master/tools#datagrok-tools
 
@@ -319,7 +319,7 @@ Your package might contain the following additional folders, depending on your n
 
 [grok CLI section]: https://github.com/datagrok-ai/public/tree/master/tools#datagrok-tools
 
-[header parameters]: ../scripting.md#header-parameters
+[header parameters]: ../../compute/scripting.md#header-parameters
 
 [javaScript API]: https://datagrok.ai/help/develop/js-api
 
@@ -343,11 +343,11 @@ Your package might contain the following additional folders, depending on your n
 
 [publish the package]: _publishing.md
 
-[script for Cheminformatics]: https://github.com/datagrok-ai/public/tree/master/packages/ChemScripts
+[script for Cheminformatics]: https://github.com/datagrok-ai/public/tree/master/packages/Chem/scripts
 
-[scripts]: ../scripting.md "Scripting combines fast interactive visualizations and other features of the Datagrok platform with statistical packages and visualizations available in R, Python, Octave, Julia, and JavaScript."
+[scripts]: ../../compute/scripting.md "Scripting combines fast interactive visualizations and other features of the Datagrok platform with statistical packages and visualizations available in R, Python, Octave, Julia, and JavaScript."
 
-[semantic type detectors]: ../how-to/semantic-type-detector.md
+[semantic type detectors]: ../how-to/define-semantic-type-detectors.md
 
 [sequence package]: https://github.com/datagrok-ai/public/tree/master/packages/Sequence
 

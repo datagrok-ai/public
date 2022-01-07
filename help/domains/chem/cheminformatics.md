@@ -239,28 +239,28 @@ See details [here](functions/reactions.md).
 
 The following cheminformatics-related [functions](../../overview/functions/function.md) are exposed:
 
-* # {x.ChemSubstructureSearch}
-* # {x.ChemFindMCS}
-* # {x.ChemDescriptors}
-* # {x.ChemGetRGroups}
-* # {x.ChemFingerprints}
-* # {x.ChemSimilaritySPE}
-* # {x.ChemSmilesToInchi}
-* # {x.ChemSmilesToCanonical}
-* # {x.ChemMapIdentifiers}
+* \#{x.ChemSubstructureSearch}
+* \#{x.ChemFindMCS}
+* \#{x.ChemDescriptors}
+* \#{x.ChemGetRGroups}
+* \#{x.ChemFingerprints}
+* \#{x.ChemSimilaritySPE}
+* \#{x.ChemSmilesToInchi}
+* \#{x.ChemSmilesToCanonical}
+* \#{x.ChemMapIdentifiers}
 
 Lot of chemical analysis is implemented using [scripting](../../compute/scripting.md) functionality:
 
-* # {x.ChemScripts:ButinaMoleculesClustering}
-* # {x.ChemScripts:FilterByCatalogs}
-* # {x.ChemScripts:GasteigerPartialCharges}
-* # {x.ChemScripts:MurckoScaffolds}
-* # {x.ChemScripts:SaltStripper}
-* # {x.ChemScripts:SimilarityMapsUsingFingerprints}
-* # {x.ChemScripts:ChemicalSpaceUsingtSNE}
-* # {x.ChemScripts:TwoComponentReaction}
-* # {x.ChemScripts:ChemicalSpaceUsingUMAP}
-* # {x.ChemScripts:USRCAT}
+* \#{x.ChemScripts:ButinaMoleculesClustering}
+* \#{x.ChemScripts:FilterByCatalogs}
+* \#{x.ChemScripts:GasteigerPartialCharges}
+* \#{x.ChemScripts:MurckoScaffolds}
+* \#{x.ChemScripts:SaltStripper}
+* \#{x.ChemScripts:SimilarityMapsUsingFingerprints}
+* \#{x.ChemScripts:ChemicalSpaceUsingtSNE}
+* \#{x.ChemScripts:TwoComponentReaction}
+* \#{x.ChemScripts:ChemicalSpaceUsingUMAP}
+* \#{x.ChemScripts:USRCAT}
 
 # Performance
 
@@ -300,8 +300,8 @@ See [DB Substructure and similarity search](db-substructure-similarity-search.md
 
 ## Public datasets deployed on our servers
 
-* [ChEMBL](ftp://ftp.ebi.ac.uk/pub/databases/chembl/ChEMBLdb/latest/) (Postgres)
-* [UniChem](ftp://ftp.ebi.ac.uk/pub/databases/chembl/UniChem/) (Postgres)
+* [ChEMBL](https://ftp.ebi.ac.uk/pub/databases/chembl/ChEMBLdb/latest/) (Postgres)
+* [UniChem](https://ftp.ebi.ac.uk/pub/databases/chembl/UniChem/) (Postgres)
 * TODO: cheminformatics training/demo datasets
 
 ### Videos
@@ -316,7 +316,7 @@ See also:
 * [Fingerprints](fingerprints.md)
 * [Similarity SPE](similarity-spe.md)
 * [Info panels](../../discover/info-panels.md)
-* [GrokCompute](../../develop/admin/grok-compute.md)
+* [GrokCompute](../../develop/admin/architecture-details.md#grok-compute)
 
 References:
 

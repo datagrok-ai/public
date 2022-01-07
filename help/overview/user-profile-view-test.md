@@ -29,4 +29,3 @@ names.
 See also:
 
 * [User](../govern/user.md)
-* [Registration test](../tests/registration-test.md)

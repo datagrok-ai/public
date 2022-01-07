@@ -10,8 +10,8 @@ two columns that represent longitude and latitude. To control marker settings, c
 Marker settings".
 
 In case the dataset contains geographical data (such as addresses), but does not contain longitude and latitude
-coordinates, you might want to extract coordinates using one of the [geographical functions](/functions?q=%23geo), such
-as #{cmd(AddressToCoordinates)}.
+coordinates, you might want to extract coordinates using one of
+the [geographical functions](https://public.datagrok.ai/functions?q=%23geo), such as #{cmd(AddressToCoordinates)}.
 
 ![Google Map](../../uploads/viewers/google-map.png "Google Map")
 

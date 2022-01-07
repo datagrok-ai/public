@@ -5,8 +5,8 @@
 
 [Workspace](workspace.md) is a collection of currently opened [projects](project.md).
 
-[Workspace](../features/workspace) Tree is a hierarchical viewer that is used for navigating and
-managing [projects](../entities/project),
+[Workspace](workspace.md) Tree is a hierarchical viewer that is used for navigating and
+managing [projects](project.md),
 [tables](table.md), [connections](../access/data-connection.md), and other entities.
 
 ## Testing scenarios
@@ -15,7 +15,7 @@ managing [projects](../entities/project),
 
 1. Open "[Workspace](workspace.md)" via **View | Workspace** (or ```Alt + W```)
 
-* [Workspace](workspace.md) is opened, in which empty [Skrachpad](../entities.md) and *"
+* [Workspace](workspace.md) is opened, in which empty Skrachpad and *"
   demog"* [project](project.md)
 
 1. Expand *"demog"* in [Workspace](workspace.md)

@@ -66,7 +66,7 @@ parameters to be specified:
 | Data Source                                            | Server  | Port    | DB      | Cache Schema | Cache Results | SSL     | Connection String | Login   | Password | Other Parameters                                                             |
 |--------------------------------------------------------|---------|---------|---------|--------------|---------------|---------|-------------------|---------|----------|------------------------------------------------------------------------------|
 | [Access](../../access/connectors/access.md)            |         |         | &check; |              |               |         | &check;           | &check; | &check;  |                                                                              |
-| [Athena](../../access/connectors/athena.md)            | &check; | &check; | &check; |              |               |         | &check;           |         |          | [See the list](../../access/connectors/athena.md#parameters)                 |
+| [Athena](../../access/connectors/athena.md)            | &check; | &check; | &check; |              |               |         | &check;           |         |          | [See the list](../../access/connectors/athena.md)                            |
 | [BigQuery](../../access/connectors/bigquery.md)        |         |         |         |              |               |         | &check;           | &check; | &check;  | [See the list](../../access/connectors/bigquery.md#connection-parameters)    |
 | [Cassandra](../../access/connectors/cassandra.md)      | &check; | &check; | &check; | &check;      | &check;       | &check; | &check;           | &check; | &check;  |                                                                              |
 | [DB2](../../access/connectors/db2.md)                  | &check; | &check; | &check; | &check;      | &check;       | &check; | &check;           | &check; | &check;  |                                                                              |
@@ -174,7 +174,7 @@ select * from protein_classification
 --end
 ```
 
-SQL statements are annotated with comments, just like [scripts](../scripting.md), since the underlying mechanism is
+SQL statements are annotated with comments, just like [scripts](../../compute/scripting.md), since the underlying mechanism is
 essentially the same (read more on the concept of [functions](../../overview/functions/function.md)). Here we have two
 header parameters: the query `name` and the `connection` to use. In fact, this particular query could have been even
 simpler: there is no need to specify `connection` if the package only has one. Similarly, the tag `end` is not required
@@ -346,7 +346,7 @@ Finally, let's walk through other methods that can be used to open files from Ja
   , this creates a number of opportunities. First, you can call `file.readAsBytes()`
   or `file.readAsString()` methods on it. For instance, if you pass an obtained string
   to `grok.data.parseCsv(csv, options)`, it is possible to fine-tune the construction of dataframe from comma-separated
-  values. Alternatively, you can pass a file to a [script](../scripting.md) to compute something and get the results
+  values. Alternatively, you can pass a file to a [script](../../compute/scripting.md) to compute something and get the results
   back to your application's code.
 * The method `grok.data.openTable(id)` might come in handy when you are reproducing a process and need to open a
   specific table by its id. See an [example](https://public.datagrok.ai/js/samples/data-access/open-table-by-id).

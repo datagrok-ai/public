@@ -427,7 +427,7 @@ Visualizes magnitude and color for data on 3D globe using: latitude, longitude. 
 
 ### Videos
 
-[![Viewers](../uploads/youtube/visualizations1.png "Open on Youtube")](hhttps://www.youtube.com/watch?v=67LzPsdNrEc)
+[![Viewers](../uploads/youtube/visualizations1.png "Open on Youtube")](https://www.youtube.com/watch?v=67LzPsdNrEc)
 
 See also:
 

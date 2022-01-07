@@ -66,5 +66,5 @@ them.
 See also:
 
 * [Predictive modeling](predictive-modeling.md)
-* [Predictive modeling test](../tests/predictive-models-test.md)
+* [Predictive modeling test](predictive-modeling-test.md)
 * [Predictive modeling tutorial](../_internal/tutorials/predictive-modeling.md)

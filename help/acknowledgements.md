@@ -21,7 +21,7 @@ We are using a number of great open-source projects in our platform. Here they a
 * [NGL Viewer](http://nglviewer.org/) - web-based molecular graphics
 * [Chemprop](http://chemprop.csail.mit.edu/) - machine learning for molecular property prediction
 * [Deepchem](https://deepchem.io/) - deep learning for drug discovery
-* [MoleculeNet](http://moleculenet.ai/) - a benchmark for molecular machine learning
+* [MoleculeNet](https://moleculenet.org/) - a benchmark for molecular machine learning
 
 ## Miscellaneous
 

@@ -120,7 +120,7 @@ extensions.
 
 [Natural Language Processing]: https://github.com/datagrok-ai/public/tree/master/packages/NLP
 
-[Cell renderers]:https://github.com/datagrok-ai/public/blob/master/packages/Chem/src/rdkit_cell_renderer.js
+[Cell renderers]:https://github.com/datagrok-ai/public/blob/master/packages/Chem/src/rdkit-cell-renderer.ts
 
 [viewers]: https://github.com/datagrok-ai/public/tree/master/packages/Viewers
 

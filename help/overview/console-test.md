@@ -26,7 +26,7 @@
 * Commands for opening all windows were written to the console.
 
 1. Use "Data" and "Tools" menus items for operations with data. ([Split column](../transform/text-to-columns.md),
-   [Categorize](../dialogs/categorize-data), [Anonymize](../transform/anonymize-data.md)
+   [Categorize](../transform/categorize-data.md), [Anonymize](../transform/anonymize-data.md)
    , [Cluster](../explore/cluster-data.md), etc.)
 
 * Commands for opening dialogs and data operations (with parameters) were written to the console.
@@ -67,4 +67,4 @@
 See also:
 
 * [Console](../overview/navigation.md#console)
-* [Scripting](../scripting.md)
+* [Scripting](../compute/scripting.md)

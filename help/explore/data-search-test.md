@@ -18,7 +18,7 @@ datetime types. It is possible to select and filter the values found
 
 1. Enter alternately *"50"*, *"Caucasian"*, *"1990"*, *"true"* in the [search](data-search.md) field
 
-* When entering data, the values ​​in the columns of the corresponding types are highlighted
+* When entering data, the values in the columns of the corresponding types are highlighted
 
 1. Enter *"50"* in the [search](data-search.md) field. Press ```↓``` and ```↑``` keys on keyboard
 
@@ -35,7 +35,7 @@ datetime types. It is possible to select and filter the values found
 
 * All rows in which the values found are selected are added to [filter](../visualize/viewers/filters.md)
 
-1. Clear the [search](../features/data-search) field. Choose "Auto-select" item from [search](data-search.md)
+1. Clear the [search](data-search.md) field. Choose "Auto-select" item from [search](data-search.md)
    menu (˅) and then enter *"50"* in the [search](data-search.md) field
 
 * After entering a value in the [search](data-search.md) field, rows with the found cells are selected automatically
@@ -49,27 +49,26 @@ datetime types. It is possible to select and filter the values found
 1. Use search [patterns](data-search-patterns.md)  for numerical values (*">"*, *"<"*. *"<="*, *">
    ="*, *"range"*)
 
-* Numerical values ​​found correspond to the entered [pattern](data-search-patterns.md)
+* Numerical values found correspond to the entered [pattern](data-search-patterns.md)
 
 1. Use search [patterns](data-search-patterns.md)  for string values (*"starts with"*, *"ends with"*
    . *"contains"*, *"regex"*)
 
-* String values ​​found correspond to the entered [pattern](data-search-patterns.md)
+* String values found correspond to the entered [pattern](data-search-patterns.md)
 
-1. Use search [patterns](../features/data-search-patterns)  for datetime values (eg, *"1990-1991"*,
+1. Use search [patterns](data-search-patterns.md)  for datetime values (eg, *"1990-1991"*,
    *"June 1990"*. *"Oct 17, 1990"*, *"before 10/17/1990"*, *"after 10/17/1990"*, *"today"*, "this week", *"regex"*,
    *"yesterday"* and etc. )
 
-* Datetime values ​​found correspond to the entered [pattern](data-search-patterns.md)
+* Datetime values found correspond to the entered [pattern](data-search-patterns.md)
 
 1. Enter alternately *"Age = 50"*, *"Race contains as"*, *"Starred after 8/1/1990"*, *"Control true"* in
    the [search](data-search.md) field
 
-* Values ​​are searched only for the specified column in the [search](data-search.md) field
+* Values are searched only for the specified column in the [search](data-search.md) field
 
 See also:
 
 * [Search](data-search.md)
 * [Search patterns](data-search-patterns.md)
 * [Smart search](../overview/smart-search.md)
-* [Search auto test](../selenium/data-search-test.side)

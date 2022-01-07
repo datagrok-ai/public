@@ -127,7 +127,7 @@ project in *d42* format or in ZIP-archive that will contain *csv* files of all p
 * *PNG* files are saved for each created viewers on table layout.
 
 1. Add new column to *"demog"* table (corresponding icon on toolbar). For new column use math formulas and
-   constants ([Add new column](../dialogs/add-new-column.md))
+   constants ([Add new column](../../transform/add-new-column.md))
 
 1. Check correctness of export with new column by repeating steps **2-35**.
 

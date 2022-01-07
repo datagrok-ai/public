@@ -139,4 +139,3 @@ See also:
 
 * [Architecture](architecture.md#application)
 * [Architecture Details](architecture-details.md)
-* [Compute VM](compute-vm.md)

@@ -21,12 +21,12 @@ other assets with other users.
 
 * Actions "Open", "Share", "Copy Link", "Details", "Delete Project" are available from context menu
 
-1. Choose "Demog" project for [Properties Panel](../overview/navigation.md#properties)
+1. Choose "Demog" project for [Properties Panel](../../overview/navigation.md#properties)
 
 * Tabs "Details", "Connections", "Queries", "Activity", "Shared with", "Published in" and "Chats"
-  are present on [Properties Panel](../overview/navigation.md#properties)
+  are present on [Properties Panel](../../overview/navigation.md#properties)
 
-1. Click on "Created by me" filter on [Toolbox](../overview/navigation.md#toolbox)
+1. Click on "Created by me" filter on [Toolbox](../../overview/navigation.md#toolbox)
 
 * Only projects created by current user are displayed in browser
 * Search field filled with pre-defined query *author = @current*

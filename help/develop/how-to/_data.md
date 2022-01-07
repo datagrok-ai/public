@@ -10,8 +10,8 @@ work with huge datasets in the browser. Essentially, it is a columnar in-memory 
 scratch and optimized for the purpose of exploratory data analysis, interactive visualizations, and machine learning.
 
 Note that Datagrok dataframes live and operate entirely inside the browser, but not on our
-[compute server](../admin/compute-vm.md). However, it's possible to pass dataframes to scripts (in Python, R and others)
-which run on the server, and [get dataframes in return](#computations).
+[compute server](../admin/architecture-details.md#compute-virtual-machine). However, it's possible to pass dataframes to scripts (in Python, R and others)
+which run on the server, and get dataframes in return.
 
 You get dataframes within your application in various ways. Dataframe may be a table rendered by a table view, a new
 dataframe constructed from a set columns, a dataframe constructed from a file in a file share, a CSV file uploaded to a
@@ -28,8 +28,8 @@ a dataframe.
 
 ---
 
-Use [DataFrame](/js-api/classes/dg.dataframe), [Column](/js-api/classes/dg.column)
-, [ColumnList](/js-api/classes/dg.columnlist), and [Row](/js-api/classes/dg.row) classes for table manipulation.
+Use [DataFrame](https://datagrok.ai/js-api/classes/dg.dataframe), [Column](https://datagrok.ai/js-api/classes/dg.column)
+, [ColumnList](https://datagrok.ai/js-api/classes/dg.columnlist), and [Row](https://datagrok.ai/js-api/classes/dg.row) classes for table manipulation.
 
 ```javascript
 demog = grok.testData('demog', 5000);

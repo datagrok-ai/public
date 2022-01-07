@@ -3,7 +3,7 @@
 
 # Composing a message
 
-Use [markdown](../features/markdown.md) for rich formatting.
+Use [markdown](../overview/markdown.md) for rich formatting.
 
 To reference an [object](../overview/objects.md) (such as a user, project, table) in a message, drag-and-drop into the
 message area.

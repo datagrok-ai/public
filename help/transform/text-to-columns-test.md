@@ -34,5 +34,4 @@ Splits textual data from the specified column into other columns, based on the s
 See also:
 
 * [Split column](text-to-columns.md)
-* [Split column by RegExp test](../tests/split-column-regexp-test.md)
 * [Split columns Auto Test](text-to-columns-test.side)

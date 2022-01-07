@@ -10,23 +10,23 @@ most casees, the viewer will auto-detect content type. Use the "mode" property t
 
 1. Open "demog" dataset
 
-1. Add [Markup viewer](../visualize/viewers/markup.md) (from "Viewers" section
+1. Add [Markup viewer](markup.md) (from "Viewers" section
    on [Toolbox](../../overview/navigation.md#toolbox), "Add" menu or list on Toolbar)
 
-* [Markup viewer](../visualize/viewers/markup.md) is added on layout
-* Help switched to [Markup viewer](../visualize/viewers/markup.md) page
-* Sample text present on [markup](../visualize/viewers/markup.md)
+* [Markup viewer](markup.md) is added on layout
+* Help switched to [Markup viewer](markup.md) page
+* Sample text present on [markup](markup.md)
 
-1. Open "Edit content" dialog from [Markup viewer](../visualize/viewers/markup.md) menu
+1. Open "Edit content" dialog from [Markup viewer](markup.md) menu
 
 * "Edit" dialog is open
 * Sample text is present in the dialog input field
 
-1. Enter [Markup](../visualize/viewers/markup.md) text to the input field *
+1. Enter [Markup](markup.md) text to the input field *
 
 1. Click "OK" button
 
-* [Markup](../visualize/viewers/markup.md) appeared viewer from an external source
+* [Markup](markup.md) appeared viewer from an external source
 * All external viewer functionality is available inside the platform
 
 1. Add "Markup view" from "+" menu
@@ -39,7 +39,7 @@ most casees, the viewer will auto-detect content type. Use the "mode" property t
 
 * Viewer from an external source displayed on markup view
 * All external viewer functionality is available inside the platform1. Return to view
-  with [Source Tree](../entities/data-source)
+  with [Source Tree](../../access/data-source.md)
 
 (*):
 
@@ -52,4 +52,4 @@ width="100%" height="100%">
 See also:
 
 * [Viewers](../viewers.md)
-* [Viewers test](../visualize/viewers/viewers-test.md)
+* [Viewers test](viewers-test.md)

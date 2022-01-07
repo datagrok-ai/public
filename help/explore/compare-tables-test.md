@@ -34,4 +34,4 @@ Instrument to compare the content of two tables
 See also:
 
 * [Сompare tables](compare-tables.md)
-* [Join tables test](../tests/join-tables-test.md)
+* [Join tables test](../transform/join-tables-test.md)

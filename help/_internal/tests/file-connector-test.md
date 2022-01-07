@@ -19,7 +19,7 @@ indexed and can be browsed.
 
 * There is files and directories from ```.../data/demo```
 
-1. Select "northwind" folder for the [Property Panle](../overview/navigation.md#properties)
+1. Select "northwind" folder for the [Property Panle](../../overview/navigation.md#properties)
 
 * "Details" tab shows file location relative to connection, size, date of creation and modification
 * In "Actions" tab folder can be downloaded locally as zip-archive
@@ -32,11 +32,11 @@ indexed and can be browsed.
 
 * There is structured list of files and folders inside "northwind" folder
 
-1. Select "Northwind.xslx" file for the [Property Panle](../overview/navigation.md#properties)
+1. Select "Northwind.xslx" file for the [Property Panle](../../overview/navigation.md#properties)
 
 * "Details" tab shows file location relative to connection, size, date of creation and modification
 * In "Actions" tab file can be downloaded locally, downloaded as zip-archive or opened
-  in [Workspace](../overview/workspace.md)
+  in [Workspace](../../overview/workspace.md)
 
 1. Click "Download" action
 
@@ -48,7 +48,7 @@ indexed and can be browsed.
 
 1. Click "Open" action
 
-* File opened in [Workspace](../overview/workspace.md)
+* File opened in [Workspace](../../overview/workspace.md)
 * Each sheet is opened as separate table
 
 1. Expand "Northwind.xslx" file in Source tree
@@ -56,19 +56,19 @@ indexed and can be browsed.
 * There is list of sheets inside file
 * Each sheet presented as separate table
 
-1. Select "Categories" sheet for the [Property Panle](../overview/navigation.md#properties)
+1. Select "Categories" sheet for the [Property Panle](../../overview/navigation.md#properties)
 
 * "Details" tab shows number of rows and columns
-* In "Actions" tab sheet can be opened as separate table in [Workspace](../overview/workspace.md)
+* In "Actions" tab sheet can be opened as separate table in [Workspace](../../overview/workspace.md)
 
 1. Click "Open" action
 
-* "Categories" table opened in [Workspace](../overview/workspace.md)
+* "Categories" table opened in [Workspace](../../overview/workspace.md)
 
 1. Expand "Categories" sheet in Source tree
 
 * There is list of columns in "Categories" table
-* You can find columns data type selecting it on [Property Panle](../overview/navigation.md#properties)
+* You can find columns data type selecting it on [Property Panle](../../overview/navigation.md#properties)
 
 ## Connection creating
 
@@ -123,14 +123,14 @@ indexed and can be browsed.
 
 1. Run "Test Query" from Source Tree (by double-clicking)
 
-* "Products" table is added to [Workspace](../overview/workspace.md)
+* "Products" table is added to [Workspace](../../overview/workspace.md)
 
 ## Common scenarios
 
 1. Test functionality from previous sections with different file types. Supported file types can be found
-   in [importing-data.md](../access/importing-data.md) file
+   in [importing-data.md](../../access/importing-data.md) file
 
-1. Check common functionality for all data sources ([data-query-test](../entities/data-query-test.md))
+1. Check common functionality for all data sources ([data-query-test](../../access/data-query-test.md))
 
 1. Test transformations in this provider ([transformations-editor-test](../tests/transformation-editor-test.md))
 
@@ -138,8 +138,8 @@ indexed and can be browsed.
 
 See also:
 
-* [Files](../entities/connect/files.md)
-* [Data connection](../entities/data-connection.md)
-* [Data connection Test](../entities/data-connection-test.md)
-* [Data query](../entities/data-query.md)
-* [Data query-test](../entities/data-query-test.md)
+* [Files](../../access/connectors/files.md)
+* [Data connection](../../access/data-connection.md)
+* [Data connection Test](../../access/data-connection-test.md)
+* [Data query](../../access/data-query.md)
+* [Data query-test](../../access/data-query-test.md)

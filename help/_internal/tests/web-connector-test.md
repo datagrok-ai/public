@@ -50,7 +50,7 @@ Web connector allows ability to connect to API services that provide external so
 
 See also:
 
-* [Data connection](../entities/data-connection.md)
-* [Data connection Test](../entities/data-connection-test.md)
-* [Data query](../entities/data-query.md)
-* [Data query-test](../entities/data-query-test.md)
+* [Data connection](../../access/data-connection.md)
+* [Data connection Test](../../access/data-connection-test.md)
+* [Data query](../../access/data-query.md)
+* [Data query-test](../../access/data-query-test.md)

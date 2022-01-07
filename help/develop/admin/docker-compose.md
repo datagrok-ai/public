@@ -37,7 +37,7 @@ check [Deployment on a regular machine](deploy-regular.md).
    computers).
 
 3. Once the server is up and running, the Login page should be available
-   at [`http://localhost:8080`](http://localhost:8080). For a quick setup, login to Datagrok using a username `admin`
+   at `http://localhost:8080`. For a quick setup, login to Datagrok using a username `admin`
    and a password `admin`. To change your password, pass a key-value pair `"adminPassword": "yourPassword"` to the JSON
    string `GROK_PARAMETERS`.
 

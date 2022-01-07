@@ -29,5 +29,4 @@ columns.
 See also:
 
 * [Split column by RegExp](extract-regexp.md)
-* [Split column test](../tests/split-columns-test.md)
 * [About RegExps](http://www.regular-expressions.info)

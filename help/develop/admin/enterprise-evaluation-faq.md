@@ -39,8 +39,7 @@
 * Scalability and Performance
     * Maximum dataset sizes
     * Stability under concurrent user load
-    * Scaling and stability under load
-      [ComputeVM Scaling](compute-vm.md#scalability)
+    * [Scaling and stability under load](architecture-details.md#architecture)
 
 * Extensibility
     * [Creating custom visualizations](https://github.com/datagrok-ai/public/tree/master/packages/Sequence)

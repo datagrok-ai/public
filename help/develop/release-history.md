@@ -1005,7 +1005,6 @@
 * Compute: Readme.md, continued.
 * JS API: add more specific types
 * update tu
-* Revert "Merge branch 'master' of https://github.com/datagrok-ai/public"
 * Pubchem: Search panels
 * implemented legend and switching type of linechart in multiplot. Implemented study summary property panel
 * HitTriage: initial commit
@@ -2508,7 +2507,6 @@
 * JS API: add more specific types
 * update tu
 * Filters: graceful handling of column removal
-* Revert "Merge branch 'master' of https://github.com/datagrok-ai/public"
 * Pubchem: Search panels
 * implemented legend and switching type of linechart in multiplot. Implemented study summary property panel
 * HitTriage: initial commit
@@ -2944,7 +2942,6 @@
 * update tu
 * Updated public token
 * Filters: graceful handling of column removal
-* Revert "Merge branch 'master' of https://github.com/datagrok-ai/public"
 * Pubchem: Search panels
 * implemented legend and switching type of linechart in multiplot. Implemented study summary property panel
 * Color-coding: support multiple color representations (hex, rgb) in tags for categorical and linear coloring (WIP)
@@ -6961,8 +6958,8 @@ as [tooltips and tile viewers](https://community.datagrok.ai/t/cheminformatics-u
 also [new viewers](https://community.datagrok.ai/t/visualization-related-updates/521/4)
 , [several bar chart](https://community.datagrok.ai/t/bar-chart-color-by-category/516) [features](https://community.datagrok.ai/t/visualization-related-updates/521/10)
 , [color coding features](https://dev.datagrok.ai/js/samples/grid/color-coding-conditional), and a few dozen
-of [JS API]((https://datagrok.ai/help/govern/audit#javascript-api)) [enhancements](https://community.datagrok.ai/t/javascript-api-updates/526/8)
-and [bug fixes](##bug-fixes).
+of [JS API](https://datagrok.ai/help/govern/audit#javascript-api) [enhancements](https://community.datagrok.ai/t/javascript-api-updates/526/8)
+and [bug fixes](#bug-fixes).
 
 ## Highlights
 
@@ -7971,11 +7968,9 @@ to [biosignal processing](https://community.datagrok.ai/t/biosignals-package/443
 * Datagrok (new):
     * `766822877060.dkr.ecr.us-east-2.amazonaws.com/datagrok:1.0.82-75b821b`
     * `docker pull datagrok/datagrok:1.0.82-75b821b`
-    * [download](https://dev.datagrok.ai/docker_images/datagrok-1.0.82-75b821b.tar)
 * CVM (new):
     * `766822877060.dkr.ecr.us-east-2.amazonaws.com/cvm:1.0.82-75b821b`
     * `docker pull datagrok/cvm:1.0.82-75b821b`
-    * [download](https://dev.datagrok.ai/docker_images/cvm-1.0.82-75b821b.tar)
 
 * [Docker-Compose](admin/docker-compose.md)
 
@@ -8058,11 +8053,9 @@ to [biosignal processing](https://community.datagrok.ai/t/biosignals-package/443
 * Datagrok (new):
     * `766822877060.dkr.ecr.us-east-2.amazonaws.com/datagrok:1.0.80-71eb62e`
     * `docker pull datagrok/datagrok:1.0.80-71eb62e`
-    * [download](https://dev.datagrok.ai/docker_images/datagrok-1.0.80-71eb62e.tar)
 * CVM (new):
     * `766822877060.dkr.ecr.us-east-2.amazonaws.com/cvm:1.0.80-71eb62e`
     * `docker pull datagrok/cvm:1.0.80-71eb62e`
-    * [download](https://dev.datagrok.ai/docker_images/cvm-1.0.80-71eb62e.tar)
 
 ## Addressed issues
 
@@ -8205,11 +8198,9 @@ to [biosignal processing](https://community.datagrok.ai/t/biosignals-package/443
 * Datagrok (new):
     * `766822877060.dkr.ecr.us-east-2.amazonaws.com/datagrok:1.0.79-93dc7bd`
     * `docker pull datagrok/datagrok:1.0.79-93dc7bd`
-    * [download](https://dev.datagrok.ai/docker_images/datagrok-1.0.79-93dc7bd.tar)
 * CVM (new):
     * `766822877060.dkr.ecr.us-east-2.amazonaws.com/cvm:1.0.77-c1d42b4`
     * `docker pull datagrok/cvm:1.0.79-93dc7bd`
-    * [download](https://dev.datagrok.ai/docker_images/cvm-1.0.79-93dc7bd.tar)
 
 # 2020.05.27 Stable version
 
@@ -8241,13 +8232,13 @@ Please, refer to the [JavaScript examples](https://public.datagrok.ai/js) to mig
 
 ### New scripting demos
 
-* [image classification](https://github.com/datagrok-ai/public/blob/master/packages/PythonScripts/scripts/image_classification.py)
-* [cell imaging segmentation](https://github.com/datagrok-ai/public/blob/master/packages/PythonScripts/scripts/cell_imaging_segmentation.py)
+* [image classification](https://github.com/datagrok-ai/public/blob/master/packages/DemoScripts/scripts/python/image_classification.py)
+* [cell imaging segmentation](https://github.com/datagrok-ai/public/blob/master/packages/DemoScripts/scripts/python/cell_imaging_segmentation.py)
 
 ### File metadata extractors
 
 * [Tika](https://github.com/datagrok-ai/public/tree/master/packages/Tika)
-* [EXIF](https://github.com/datagrok-ai/public/blob/master/packages/PythonScripts/scripts/exif.py)
+* [EXIF](https://github.com/datagrok-ai/public/blob/master/packages/DemoScripts/scripts/python/exif.py)
 
 ### First class support of Command Line Interface tools for Linux in scripting:
 
@@ -8259,9 +8250,9 @@ Please, refer to the [JavaScript examples](https://public.datagrok.ai/js) to mig
 ## Latest docker images
 
 * Datagrok (
-  new): `766822877060.dkr.ecr.us-east-2.amazonaws.com/datagrok:1.0.77-c1d42b4` [download](https://dev.datagrok.ai/docker_images/datagrok-1.0.77-c1d42b4.tar)
+  new): `766822877060.dkr.ecr.us-east-2.amazonaws.com/datagrok:1.0.77-c1d42b4`
 * CVM (
-  new): `766822877060.dkr.ecr.us-east-2.amazonaws.com/grok_cvm:1.0.77-c1d42b4` [download](https://dev.datagrok.ai/docker_images/grok_cvm-1.0.77-c1d42b4.tar)
+  new): `766822877060.dkr.ecr.us-east-2.amazonaws.com/grok_cvm:1.0.77-c1d42b4`
 
 ## Addressed issues
 
@@ -8357,9 +8348,9 @@ Please, refer to the [JavaScript examples](https://public.datagrok.ai/js) to mig
 ## Latest docker images
 
 * Datagrok (
-  new): `766822877060.dkr.ecr.us-east-2.amazonaws.com/datagrok:1.0.75-e7d5cbd` [download](https://dev.datagrok.ai/docker_images/datagrok-1.0.75-e7d5cbd.tar)
+  new): `766822877060.dkr.ecr.us-east-2.amazonaws.com/datagrok:1.0.75-e7d5cbd`
 * CVM (
-  new): `766822877060.dkr.ecr.us-east-2.amazonaws.com/grok_cvm:1.0.75-e7d5cbd` [download](https://dev.datagrok.ai/docker_images/grok_cvm-1.0.75-e7d5cbd.tar)
+  new): `766822877060.dkr.ecr.us-east-2.amazonaws.com/grok_cvm:1.0.75-e7d5cbd`
 
 ## Addressed issues
 
@@ -8480,9 +8471,9 @@ Please, refer to the [JavaScript examples](https://public.datagrok.ai/js) to mig
 ## Latest docker images
 
 * Datagrok (
-  new): `766822877060.dkr.ecr.us-east-2.amazonaws.com/datagrok-1.0.73-9f58f01` [download](https://dev.datagrok.ai/docker_images/datagrok-1.0.73-9f58f01.tar)
+  new): `766822877060.dkr.ecr.us-east-2.amazonaws.com/datagrok-1.0.73-9f58f01`
 * CVM (
-  old): `766822877060.dkr.ecr.us-east-2.amazonaws.com/grok_cvm-1.0.72-23064a3` [download](https://dev.datagrok.ai/docker_images/grok_cvm-1.0.72-23064a3.tar)
+  old): `766822877060.dkr.ecr.us-east-2.amazonaws.com/grok_cvm-1.0.72-23064a3`
 
 ## Addressed issues
 
@@ -8516,9 +8507,9 @@ Please, refer to the [JavaScript examples](https://public.datagrok.ai/js) to mig
 ## Latest docker images
 
 * Datagrok (
-  new): `766822877060.dkr.ecr.us-east-2.amazonaws.com/datagrok-1.0.72-23064a3` [download](https://dev.datagrok.ai/docker_images/datagrok-1.0.72-23064a3.tar)
+  new): `766822877060.dkr.ecr.us-east-2.amazonaws.com/datagrok-1.0.72-23064a3`
 * CVM (
-  new): `766822877060.dkr.ecr.us-east-2.amazonaws.com/grok_cvm-1.0.72-23064a3` [download](https://dev.datagrok.ai/docker_images/grok_cvm-1.0.72-23064a3.tar)
+  new): `766822877060.dkr.ecr.us-east-2.amazonaws.com/grok_cvm-1.0.72-23064a3`
 
 ## Addressed issues
 
@@ -8580,9 +8571,9 @@ Please, refer to the [JavaScript examples](https://public.datagrok.ai/js) to mig
 ## Latest docker images
 
 * Datagrok (
-  new): `766822877060.dkr.ecr.us-east-2.amazonaws.com/datagrok:1.0.71-d0b9043` [download](https://dev.datagrok.ai/docker_images/datagrok-1.0.71-d0b9043.tar)
+  new): `766822877060.dkr.ecr.us-east-2.amazonaws.com/datagrok:1.0.71-d0b9043`
 * CVM (
-  old): `766822877060.dkr.ecr.us-east-2.amazonaws.com/grok_cvm:1.0.69-83c6f08` [download](https://dev.datagrok.ai/docker_images/grok_cvm-1.0.69-83c6f08.tar)
+  old): `766822877060.dkr.ecr.us-east-2.amazonaws.com/grok_cvm:1.0.69-83c6f08`
 
 ## Addressed issues
 
@@ -8651,9 +8642,9 @@ Please, refer to the [JavaScript examples](https://public.datagrok.ai/js) to mig
 ## Latest docker images
 
 * Datagrok (
-  new): `766822877060.dkr.ecr.us-east-2.amazonaws.com/datagrok:1.0.69-83c6f08` [download](https://dev.datagrok.ai/docker_images/datagrok-1.0.69-83c6f08.tar)
+  new): `766822877060.dkr.ecr.us-east-2.amazonaws.com/datagrok:1.0.69-83c6f08`
 * CVM (
-  new): `766822877060.dkr.ecr.us-east-2.amazonaws.com/grok_cvm:1.0.69-83c6f08` [download](https://dev.datagrok.ai/docker_images/grok_cvm-1.0.69-83c6f08.tar)
+  new): `766822877060.dkr.ecr.us-east-2.amazonaws.com/grok_cvm:1.0.69-83c6f08`
 
 ## Addressed issues
 

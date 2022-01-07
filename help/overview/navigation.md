@@ -64,7 +64,7 @@ and subfolders, rename and move files. The [tree map](../visualize/viewers/tree-
 component indicates how much space different files occupy in a shared folder, similar to disk partitions. Once the user
 selects a file, this area changes to a preview where, depending on the extension, you may see a table, image, or text.
 
-![](../uploads/navigation/file-browser.png "File Browser")
+[//]: # (![]&#40;../uploads/navigation/file-browser.png "File Browser"&#41;)
 
 The ribbon menu on top contains icons that highlight open views (a caret pointing down), control item
 selection (`Select all`, `Select none`, `Invert selection`), update the file view (`Refresh`)

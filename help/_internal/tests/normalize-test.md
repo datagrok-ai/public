@@ -10,7 +10,7 @@ Performs numerical column normalization (min-max, z-scores)
 1. Open "demog" table
 
 1. Open "Normalize..." dialog for *"Age"* column (from it's context menu or from "Actions" tab
-   on [Property Panel](../overview/navigation.md#properties))
+   on [Property Panel](../../overview/navigation.md#properties))
 
 * "Normalize" dialog is open
 
@@ -22,16 +22,16 @@ Performs numerical column normalization (min-max, z-scores)
 
 1. Select *"Age"* in *Column* field and leave default method (min-max) and execute dialog
 
-* *"Age"* column values ​​are normalized by min-max method
+* *"Age"* column values are normalized by min-max method
 
 1. Open "Normalize..." dialog for *"Height"* column (from it's context menu or from "Actions" tab
-   on [Property Panel](../overview/navigation.md#properties))
+   on [Property Panel](../../overview/navigation.md#properties))
 
 * "Normalize" dialog is open
 
 1. Select "z-scores" for *Method* field and execute dialog
 
-* *"Height"* column values ​​are normalized by z-scores method
+* *"Height"* column values are normalized by z-scores method
 
 1. Open **Tools | Console** (or use hotkey "~")
 
@@ -40,4 +40,4 @@ Performs numerical column normalization (min-max, z-scores)
 
 1. Execute command "Normalize("demog", "Weight")" in console
 
-* *"Weight"* column values ​​are normalized by min-max method
+* *"Weight"* column values are normalized by min-max method

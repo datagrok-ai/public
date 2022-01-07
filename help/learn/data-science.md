@@ -32,7 +32,7 @@ upon.
 
 ## Data pipelines
 
-[Data pipelines](access/data-pipeline.md)  is a core component of the Datagrok platform designed to let end users define
+[Data pipelines](../access/data-pipeline.md)  is a core component of the Datagrok platform designed to let end users define
 jobs that would get data from disparate data sources, clean or merge the data if needed, run transformations, build
 interactive dashboards based on the retrieved data, and publish these dashboards.
 

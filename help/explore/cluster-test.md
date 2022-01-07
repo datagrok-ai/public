@@ -24,7 +24,7 @@
 
 1. Click on "Cancel" button in "Cluster" dialog
 
-* Column "clusters" and [scatter plot](../visualize/viewers/scatter-plot) disappeared
+* Column "clusters" and [scatter plot](../visualize/viewers/scatter-plot.md) disappeared
 
 1. Add all available columns to field "Features"
 

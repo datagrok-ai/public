@@ -68,7 +68,7 @@
 1. Click on "Clone and detach" button on context help window
 
 * Current page ([Scripting](../../compute/scripting.md)) is fixed by separate window
-  on [Property Panel](../overview/navigation.md#properties)
+  on [Property Panel](../../overview/navigation.md#properties)
 
 1. Open **Admin | Data Queries**
 
@@ -85,5 +85,5 @@
 1. Click on "Open in new window" button on context help window
 
 * "Help view" is open
-* [Toolbox](../overview/navigation.md#toolbox) shows help structure in tree
+* [Toolbox](../../overview/navigation.md#toolbox) shows help structure in tree
 * Current page of context help is highlighted in tree

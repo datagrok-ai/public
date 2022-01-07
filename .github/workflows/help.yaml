@@ -18,8 +18,10 @@ jobs:
       - name: Check Markdown links
         uses: gaurav-nelson/github-action-markdown-link-check@v1
         with:
+          use-quiet-mode: 'yes'
           use-verbose-mode: 'yes'
           folder-path: 'help/'
+          config-file: 'help/_internal/mlc_config.json'
 
   convert:
 #    needs: lint

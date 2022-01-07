@@ -29,7 +29,7 @@ With using our [JavaScript API](js-api.md), you can create your own:
 * [visualizations](../visualize/viewers.md) — to visualize data in new ways, in addition to our 30+ core viewers
 * [file viewers](how-to/custom-file-viewers.md) — to support new data formats in addition to many we already recognize
 * [cell renderers](../visualize/viewers/grid.md#custom-cell-renderers) — to visualize certain semantic types, such
-  as [molecules](https://github.com/datagrok-ai/public/blob/master/packages/Chem/src/rdkit_cell_renderer.js)
+  as [molecules](https://github.com/datagrok-ai/public/blob/master/packages/Chem/src/rdkit-cell-renderer.ts)
   or [nucleotide sequences](https://github.com/datagrok-ai/public/tree/master/packages/Sequence/web-logo-viewer)
   , in their native-looking renders, inside contexts such as a grid cell, a tooltip, or an axis label in a viewer
 * [semantic type detectors](how-to/define-semantic-type-detectors.md) — to attach semantic types to columns of

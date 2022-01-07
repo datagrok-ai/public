@@ -55,10 +55,10 @@ export function test() {
 }
 ```
 
-To make this run on Datagrok, follow these `grok create` [steps](../develop.md#getting-started)
+To make this run on Datagrok, follow these `grok create` [steps](../develop.md#development)
 to prepare our simple package and deploy it.
 
-1. Install the [prerequisites](../develop.md#getting-started):
+1. Install the [prerequisites](../develop.md#development):
 
 * A regular [Node.js](https://nodejs.org/en/download/)
   and [npm](https://docs.npmjs.com/about-npm) (comes with Node.js)
@@ -66,7 +66,7 @@ to prepare our simple package and deploy it.
 * `npm install webpack-cli -g`
 * `npm install datagrok-tools -g`
 
-2. [Create a new package](../develop.md#getting-started):
+2. [Create a new package](../develop.md#packages):
 
 * Make a new folder for the package
 * In this folder, call `grok create <PACKAGE_NAME> --ide=vscode`
@@ -96,8 +96,7 @@ case it's called a [table view](../../overview/table-view.md). However, essentia
 anything.
 
 Imagine you are composing an application. You likely start with the root / main view, add logical blocks to it either
-through simple [div-s](https://github.com/datagrok-ai/public/blob/master/packages/ApiSamples/scripts/ui/sidebar.js)
-, or
+through simple div-s , or
 through [`splitH`/`splitV`](https://github.com/datagrok-ai/public/blob/master/packages/ApiSamples/scripts/ui/layouts/splitters.js)
 , populate these blocks with visualizations and controls, maybe add a sidebar, add event handlers, and so forth. Our
 internal application [Usage Analysis](https://github.com/datagrok-ai/public/tree/master/packages/UsageAnalysis)
@@ -164,7 +163,7 @@ at https://community.datagrok.ai/.
 
 There's a variety of data sources which Datagrok can handle out of the box:
 
-* Web Services (REST endpoints) specified via Swagger / OpenAPI ([link](../access/open-api.md))
+* Web Services (REST endpoints) specified via Swagger / OpenAPI ([link](../../access/open-api.md))
 * Arbitrary REST APIs (including these outside host's domain) ([link](access-data.md#rest-endpoints))
 * Access a file from the Datagrok server space (either shared or Home) ([link](access-data.md#file-shares))
 * Reading from databases: Datagrok supports more than 30 ([link](access-data.md#parameters))
@@ -284,7 +283,8 @@ from scratch and optimized for the purpose of exploratory data analysis, interac
 learning.
 
 Note that Datagrok dataframes live and operate entirely inside the browser, but not on
-our [compute server](../admin/compute-vm.md). However, it's possible to pass dataframes to scripts (
+our [Compute VM](../admin/architecture-details.md#compute-virtual-machine). However, it's possible to pass dataframes to
+scripts (
 in Python, R and others) which run on the server, and [get dataframes in return](#computations).
 
 You get dataframes within your application in various ways. Dataframe may be a table rendered by a table view, a new
@@ -517,13 +517,13 @@ with a name, as we did [here](#the-entry-point), and a typed signature.
 
 * [Datagrok architecture](../admin/architecture.md)
 * [Exercises](../exercises/exercises.md)
-* [Scripting](../scripting.md)
+* [Scripting](../../compute/scripting.md)
 
 ### Datagrok functions
 
-You could notice in ["Scripting"](../scripting.md) and ["Accessing databases"](access-data.md) that many entities in
-Datagrok are callable functions. In fact, everything in Datagrok is a function. This gives powerful compositionality.
-Let's see how this paradigm allows composing scripts in Datagrok applications.
+You could notice in ["Scripting"](../../compute/scripting.md) and ["Accessing databases"](access-data.md) that many
+entities in Datagrok are callable functions. In fact, everything in Datagrok is a function. This gives powerful
+compositionality. Let's see how this paradigm allows composing scripts in Datagrok applications.
 
 ### Composing functions
 
@@ -545,7 +545,7 @@ our `SimpleFunctionJS` in exact same way with `grok.functions.call`.
 
 *References:*
 
-* [Running a script](../scripting.md#running-a-script)
+* [Running a script](../../compute/scripting.md#running-a-script)
 * [Functions](../../overview/functions/function.md)
 
 ## Visualizations
@@ -570,7 +570,7 @@ Viewers are either supplied with their own dataframes, or (more typical for the 
 are linked to the dataframes objects which are re-used through the application's code.
 
 [This example](https://github.com/datagrok-ai/public/blob/master/packages/ApiSamples/scripts/ui/viewers/create-viewers.js)
-shows how to add a viewer to a [view](#the-main-vew).
+shows how to add a viewer to a [view](#the-main-view).
 
 *References:*
 
@@ -602,7 +602,6 @@ and other package entities shared to the group.
 *References:*
 
 * [Sharing](../../collaborate/sharing.md)
-* [Groups](../../govern/groups.md)
 * [Security](../../govern/security.md)
 * [Authorization](../../govern/authorization.md)
 
@@ -662,7 +661,7 @@ section.
 *References:*
 
 * [Package credentials](manage-credentials.md#package-credentials)
-* [Managing credentials](develop/how-to/manage-credentials.md)
+* [Managing credentials](manage-credentials.md)
 
 ## Ui and ux
 
@@ -694,9 +693,9 @@ subject.
 
 ## Subscribing to events
 
-We are exposing events coming out of the platform as a stream via the [Rx.JS](rxjs.dev) library that makes it easy to
-compose asynchronous or callback-based code. The API makes easy to subscribe to either global, or instance-related
-events:
+We are exposing events coming out of the platform as a stream via the [Rx.JS](https://rxjs.dev) library that makes it
+easy to compose asynchronous or callback-based code. The API makes easy to subscribe to either global, or
+instance-related events:
 
 ```javascript
 let v = grok.shell.newView('Range Slider');

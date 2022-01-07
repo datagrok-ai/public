@@ -31,5 +31,4 @@ Joins two tables, using the specified key columns. Сan be used inner join, oute
 See also:
 
 * [Join tables](join-tables.md)
-* [Compare tables test](../tests/compare-tables-test.md)
-* [Join tables Auto Test](../selenium/join-tables-test.side)
+* [Compare tables test](../explore/compare-tables-test.md)

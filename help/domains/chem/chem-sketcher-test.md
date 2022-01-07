@@ -64,6 +64,4 @@ Sketcher is tool for drawing molecule structure or describing it in form of smil
 
 See also:
 
-* [Get R Groups Test](../tests/get-r-groups-test.md)
-* [Chem Descriptors Test](../tests/chem-descriptors-test.md)
-* [Cheminformatics Tes](../tests/cheminformatics-test.md)
+* [Cheminformatics Test](cheminformatics-test.md)

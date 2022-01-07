@@ -54,7 +54,7 @@ predictive models, integration with the external utilities, data augmentation, a
 Prerequisites: basic JavaScript knowledge.
 
 1. Install the necessary tools (Node.js, npm, webpack, datagrok-tools) following
-   [these instructions](../develop.md#getting-started)
+   [these instructions](../develop.md#development)
 2. Get a dev key for https://dev.datagrok.ai (you will work with this server) and add it by running `grok config`
 3. Create a default package [called](https://datagrok.ai/help/develop/develop#naming-conventions)
    `<yourFirstName>-sequence` using datagrok-tools: `grok create <yourFirstName>-sequence`
@@ -64,7 +64,7 @@ Prerequisites: basic JavaScript knowledge.
 * via the [Functions](https://dev.datagrok.ai/functions?q=test) view
 * via the [Packages](https://dev.datagrok.ai/packages?) menu (find your package, click on it and run `test`
   from the `Functions` pane in the property panel on the left)
-* via the [console](overview/navigation.md#console): press `~` key anywhere inside Datagrok, the Console will appear to
+* via the [console](../../overview/navigation.md#console): press `~` key anywhere inside Datagrok, the Console will appear to
   the right; execute `<yourFirstName>Sequence:test()` there
 
 ## Semantic types
@@ -151,7 +151,7 @@ You will learn: how to write semantic type detectors, how to develop context-spe
 
 _Prerequisites:_ basic Python knowledge.
 
-_Details:_ [Scripting](compute/scripting.md), [Dev Meeting 1 | First-class functions][015]
+_Details:_ [Scripting](../../compute/scripting.md), [Dev Meeting 1 | First-class functions][015]
 
 _You will learn:_ how to create and invoke Datagrok scripts in data science languages like R and Python.
 
@@ -161,7 +161,7 @@ In this exercise, we will count occurrences of a given subsequence in a nucleoti
 2. Observe a default script created for you. All script attributes are specified in the beginning in comments. There we
    have the script name, language, one input value of type [`dataframe`](), and one output value of type `int`. The
    script simply computes number of cells in the dataframe.
-   [Dataframe](develop/how-to/build-an-app.md) is a high-performance, easy to use tabular structure with strongly-typed
+   [Dataframe](../how-to/build-an-app.md) is a high-performance, easy to use tabular structure with strongly-typed
    columns of different types (supported types are: `string`, `bool`, `int`
    , `bigint`,
    `double`, `qnum` and `datetime`). In this exercise, we only see a dataframe as is in the default script; there
@@ -173,19 +173,13 @@ In this exercise, we will count occurrences of a given subsequence in a nucleoti
    you could see the console's command to execute the script. Enter it again to the console to get the same result.
 5. Let's modify the script to solve the task of counting sequence occurrences. Add a new preamble:
    (use any `#description` you like):
-   ```python
-
+```python
 # name: CountSubsequencePython
-
 # language: python
-
 # input: string sequence
-
 # input: string subsequence
-
 # output: int count
-
-   ```
+```
    In the body, implement a Python function counting all occurrences of a given `subsequence` in a `sequence`. Return
    a `count` the same way as in the default script from p. 2.
 6. Run the script function, provide input values in the dialog and get to the console to see the result. Now run the
@@ -222,14 +216,14 @@ repeat what we've achieved in the last point of the previous exercise, now with 
 1. Let's create a different kind of our `CountSubsequencePython` function, now called `CountSubsequencePythonDataframe`.
    While the original function could only operate on a single row, the new function shall operate on the entire
    dataframe. To start with, the function's Datagrok signature should look as follows:
-   ```python
+```python
 # name: CountSubsequencePythonDataframe
 # language: python
 # input: dataframe sequences
 # input: column columnName
 # input: string subsequence = acc
 # output: dataframe result {action:join(sequences)}
-   ```
+```
 
 This function takes as an input a dataframe with a column containing nucleotide sequences, named as a value of
 `columnName`, a nucleotide subsequence `subsequence` being sought, and outputs an input dataframe with a new column
@@ -296,11 +290,11 @@ _You will learn:_ how to create and invoke Datagrok JavaScript scripts.
 3. Run `CountSubsequenceJS` using the `Play` button; using the console. From same console, run `CountSubsequencePython`
    yet again. You can notice that both Python and JS versions of our function, implemented as scripts, are homogeneous
    functions in Datagrok. It's also possible to call them in a uniform
-   fashion [using our JavaScript API](scripting.md#running-a-script).
+   fashion [using our JavaScript API](../../compute/scripting.md#running-a-script).
 4. Don't forget to save these two scripts. We would re-use parts of them in the following exercises.
 
 The difference between the two scripts is that the first, `CountSubsequencePython`, runs on our server by
-a [compute virtual machine](develop/admin/architecture#compute-virtual-machine), whereas the
+a [compute virtual machine](../admin/architecture.md#compute-virtual-machine), whereas the
 second, `CountSubsequenceJS`, runs directly in the browser. To run `CountSubsequencePython`, Datagrok passes the script
 arguments over the network and fetches back the result to the browser.
 
@@ -493,8 +487,8 @@ from our server.
 
 _Prerequisites:_ basic Python knowledge, [matplotlib](https://matplotlib.org/) or a similar library
 
-_Details:_ [Scripting](compute/scripting.md)
-, [Scripting Viewer](visualize/viewers/scripting-viewer.md),
+_Details:_ [Scripting](../../compute/scripting.md)
+, [Scripting Viewer](../../visualize/viewers/scripting-viewer.md),
 [Creating a scripting viewer (video)](https://www.youtube.com/embed/jHRpOnhBAz4).
 
 *Amino acids counting task.* In this exercise, we'd use a Python script to generate a histogram
@@ -617,7 +611,7 @@ _Prerequisites:_ exercises ["Setting up the environment"](#setting-up-the-enviro
 * use `fusioncharts-smartlabel` to break the original sequence in the current cell into lines which fit into a cell's
   canvas rectangle; learn [here][017] how to do it, consider `SmartLabel.textToLines(...).lines`
   as a target array of lines to render
-* Datagrok [grid](visualize/viewers/grid.md) is rendered through an
+* Datagrok [grid](../../visualize/viewers/grid.md) is rendered through an
   [HTML5 Canvas](https://en.wikipedia.org/wiki/Canvas_element). The grid's canvas is `g.canvas`. Iterate through the
   resulting lines and bring them to a `g.canvas` in the `render` method with `g.canvas.getContext("2d").fillText`; learn
   more about HTML Canvas if it's new for you
@@ -662,7 +656,7 @@ _Prerequisites:_ exercises ["Setting up the environment"](#setting-up-the-enviro
 
 _Details:_ [OpenAPI access](../../access/open-api.md)
 
-Web services often provide their API specs in an [OpenAPI (Swagger)](access/open-api.md) format in a JSON or a yaml
+Web services often provide their API specs in an [OpenAPI (Swagger)](../../access/open-api.md) format in a JSON or a yaml
 file. Because OpenAPI spec file is standardized, the API may now be directly loaded and later queried. Datagrok provides
 for connecting to API data sources and fetching API querying results as dataframes. In this lesson we will connect to
 the [European Nucleotide Archive (ENA)](https://www.ebi.ac.uk/ena/) and fetch some nucleotide data regarding
@@ -722,7 +716,7 @@ contained in a currently selected grid cell.
    }
    ```
 
-2. Use [`fetchProxy`](develop/how-to/access-data.md#rest-endpoints) to get a sequence for the potential corresponding
+2. Use [`fetchProxy`](../how-to/access-data.md#rest-endpoints) to get a sequence for the potential corresponding
    ENA ID in fasta format. For example, this GET fetches the sequence for the `ID=AA046425`:
    [`https://www.ebi.ac.uk/ena/browser/api/fasta/AA046425`](https://www.ebi.ac.uk/ena/browser/api/fasta/AA046425)
    Use the following structure for the into panel function in your `src/package.js`:
@@ -825,7 +819,6 @@ Re-use twice the `_fetchENASequence` function you've prepared previously.
    example, you can use the `offset` parameter of the `GET` query.
 
 <!---
-
 Search for a keyword to form a table with limits
 https://www.ebi.ac.uk/ena/browser/api/
 
@@ -836,8 +829,7 @@ Saving the search parameters
 ## Creating an application
 
 A simple keyword search in the ENA database (with navigation)
-
--->
+--->
 
 [014]: ../how-to/add-info-panel.md#functions "How to add an info panel"
 
@@ -851,10 +843,11 @@ A simple keyword search in the ENA database (with navigation)
 
 [018]: https://www.ebi.ac.uk/ena/browser/api "ENA API Navigator"
 
-[019]: https://www.ebi.ac.uk/ena/browser/api "Swagger API Tester"
- <!-- TODO: Verify 019 -->
+<!--- TODO: Verify 019 --->
 
-[020]: access/open-api.md#Troubleshooting "OpenAPI connections troubleshooting"
+[019]: https://www.ebi.ac.uk/ena/browser/api "Swagger API Tester"
+
+[020]: ../../access/open-api.md#Troubleshooting "OpenAPI connections troubleshooting"
 
 [021]: https://github.com/datagrok-ai/public/tree/master/packages/Swaggers/swaggers "Datagrok Swaggers samples"
 

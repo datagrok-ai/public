@@ -19,5 +19,4 @@ The system allows you to invite a friend by e-mail.
 
 See also:
 
-* [Authentication test](../tests/authentication-test.md)
 * [Registration test](../tests/registration-test.md)

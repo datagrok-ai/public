@@ -38,6 +38,6 @@
 
 See also:
 
-* [Data connections test](../tests/data-connection-test.md)
-* [Data job test](../tests/data-job-test.md)
-* [Data queries test](../tests/data-query-test.md)
+* [Data connections test](data-connection-test.md)
+* [Data job test](data-job-test.md)
+* [Data queries test](data-query-test.md)

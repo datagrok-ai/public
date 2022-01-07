@@ -22,7 +22,7 @@ Datagrok installation consists of two big blocks:
     * [Jupyter Kernel Gateway](#jupyter-kernel-gateway)
     * [Jupyter Notebook](#jupyter-notebook)
     * [H2O](#h2o)
-    * [GrokCompute](grok-compute.md)
+    * [GrokCompute](#grok-compute)
 
 All docker containers are based on Ubuntu 20.04 and use the latest software available. It can be deployed in any cloud
 or on a regular machine. It can be easy scalable using [Amazon ECS](https://aws.amazon.com/ecs/)
@@ -166,6 +166,9 @@ Ports:
 * `8889` - Jupyter Kernel Gateway
 * `5005` - Grok Helper
 
+See also:
+* [Scripting](../../compute/scripting.md)
+
 ### Jupyter Notebook
 
 [Jupyter Notebook](../../compute/jupyter-notebook.md) works in the docker container along with other applications. It
@@ -179,6 +182,9 @@ Ports:
 * `8888` - Jupyter Notebook
 * `5005` - Grok Helper
 
+See also:
+* [Jupyter Notebook](../../compute/jupyter-notebook.md)
+
 ### H2O
 
 H2O is a Java fully open-source application, which supports the most widely used statistical and machine learning
@@ -191,6 +197,9 @@ Ports:
 
 * `54321` - H2O
 * `5005` - Grok Helper
+
+See also:
+* [Predictive Modeling](../../learn/predictive-modeling.md)
 
 ### Grok Compute
 

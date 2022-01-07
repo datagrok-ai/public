@@ -16,7 +16,7 @@ added, removed, and changed.
 
 ### Videos
 
-[![Compare Tables](../uploads/youtube/compare_tables.png "Open on Youtube")](hhttps://www.youtube.com/watch?v=rUHFwO1iQUg)
+[![Compare Tables](../uploads/youtube/compare_tables.png "Open on Youtube")](https://www.youtube.com/watch?v=rUHFwO1iQUg)
 
 See also:
 
