@@ -607,16 +607,16 @@ export class LogEventParameterValue extends Entity {
  * Represents a package, which is a unit of distribution of content in the Datagrok platform.
  */
 export class Package extends Entity {
-  public webRoot: string | undefined;
-  public version: string;
+  public webRoot: string = '';
+  public version: string = '';
 
   constructor(dart: any | undefined = undefined) {
     super(dart);
+
     if (typeof dart === 'string') {
       this.webRoot = dart;
       this.dart = null;
     }
-    this.version = "";
   }
 
   /** Override init() method to provide package-specific initialization.
