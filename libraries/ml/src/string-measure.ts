@@ -8,7 +8,7 @@ const AvailableMetrics: {[name: string]: DistanceMetric} = {
   'Jaro-Winkler': jaroWinkler,
 };
 
-type KnownMetrics = keyof typeof AvailableMetrics;
+export type KnownMetrics = keyof typeof AvailableMetrics;
 
 /** Unified class implementing different string measures. */
 export class StringMeasure {
