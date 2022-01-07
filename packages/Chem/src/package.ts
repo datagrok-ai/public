@@ -25,10 +25,8 @@ import {addInchiKeys} from './panels/inchi';
 import * as chemCommonRdKit from './chem-common-rdkit';
 import {convertToRDKit, rGroupAnalysis} from './analysis/r-group-analysis';
 import {chemLock, chemUnlock} from './chem-common';
-import {MoleculeViewer} from './chem-similarity-search';
 import {identifiersWidget} from './widgets/identifiers';
 import {chem} from 'datagrok-api/grok';
-import sketcher = chem.sketcher;
 import Sketcher = chem.Sketcher;
 import {oclMol} from './chem-common-ocl';
 import $ from 'cash-dom';
@@ -547,7 +545,7 @@ export function convertMolecule(molecule: string, from: string, to: string): str
   }
 }
 
-//tags: cellEditor
+/*//tags: cellEditor
 //description: Molecule
 //input: grid_cell cell
 export function editMoleculeCell(cell: DG.GridCell) {
@@ -559,3 +557,4 @@ export function editMoleculeCell(cell: DG.GridCell) {
     .onOK(() => cell.cell.value = sketcher.getMolFile())
     .show();
 }
+*/
