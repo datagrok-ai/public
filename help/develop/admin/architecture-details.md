@@ -5,7 +5,7 @@
 
 Datagrok installation consists of two big blocks:
 
-* [Datagrok](#datagrok-virtual-machine)
+* [Datagrok](#datagrok-components)
     * [Datlas](#datlas)
     * [Database](#database)
     * [Persistent file storage](#storage)
@@ -25,7 +25,8 @@ Datagrok installation consists of two big blocks:
     * [GrokCompute](grok-compute.md)
 
 All docker containers are based on Ubuntu 20.04 and use the latest software available. It can be deployed in any cloud
-or on a regular machine.
+or on a regular machine. It can be easy scalable using [Amazon ECS](https://aws.amazon.com/ecs/)
+or [Kubernetes](https://kubernetes.io/) services.
 
 ![](network-diagram1.png)
 
@@ -41,8 +42,7 @@ Datagrok components are:
 * [ElasticSearch](#elasticsearch)
 * [Credentials Management Service](../../govern/security.md#credentials). Can be installed as a separate service in
   separate container with a separate database.
-* [Grok Connect](../../access/data-connection.md). Separate container with Java-based data connectors to 20+
-  databases.
+* [Grok Connect](../../access/data-connection.md). Separate container with Java-based data connectors to 20+ databases.
 * Web application
 * Nginx server
 
@@ -66,7 +66,9 @@ environment variables.
 * deploy - Datlas will perform the full deploy
 * auto - Datlas will check the existing database and storage and perform deployment only if needed
 
-`GROK_PARAMETERS` is a JSON-formatted string with options:
+#### Datlas configuration
+
+`GROK_PARAMETERS` is a JSON-formatted environment variable with the Datlas configuration options :
 
 | Option              | Required | Default                         | Description                                                                                      |
 |---------------------|----------|---------------------------------|--------------------------------------------------------------------------------------------------|
@@ -104,7 +106,8 @@ does not need to be exposed outside the Datagrok docker container.
 
 ## Compute virtual machine
 
-Compute Virtual Machine is used for performing on-server computations.
+Compute Virtual Machine is used for performing on-server computations. All components can work separately and can be
+installed based on needs.
 
 Compute Virtual machine components are:
 
@@ -113,9 +116,13 @@ Compute Virtual machine components are:
 * [Jupyter Kernel Gateway](#jupyter-kernel-gateway)
 * [Jupyter Notebook](#jupyter-notebook)
 * [H2O](#h2o)
-* [GrokCompute](grok-compute.md)
+* [GrokCompute](#grok-compute)
 
 All components work in separate docker containers.
+
+See also:
+
+* [Compute](../../compute/compute.md)
 
 ### Load Balancer
 
@@ -185,14 +192,27 @@ Ports:
 * `54321` - H2O
 * `5005` - Grok Helper
 
+### Grok Compute
+
+GrokCompute is a Python-based server for scientific computations which exposes API for Cheminformatics (RDKit-based) and
+Modeling.
+
+At the moment some limitations are exists:
+
+* "Substructure search" and "Descriptors" API in Grok Compute should not be used in cache mode.
+
+See also:
+
+* [Cheminformatics](../../domains/chem/cheminformatics.md)
+
 ## Storage
 
 Most of the metadata associated with users, datasets, algorithms, predictive models, etc. is kept in
 the [relational database](#database).
 
 The actual tabular data (which can be uploaded or created via other means) is stored externally, in the highly
-optimized [d42 format](architecture.md#in-memory-database), on file storage chosen by the company. Datagrok
-supports the following storages:
+optimized [d42 format](architecture.md#in-memory-database), on file storage chosen by the company. Datagrok supports the
+following storages:
 
 * Local File System
 * Network shares
