@@ -13,7 +13,7 @@ import { _package } from "../package";
 export class TwinPviewer {
   root: HTMLElement;
   nglHost: HTMLElement;
-  pVizHosts: {[key: string]: HTMLDivElement};
+  pVizHosts: { [key: string]: HTMLDivElement };
   repChoice: DG.InputBase;
   sequenceTabs: DG.TabControl;
   accOptions: DG.Accordion;
@@ -21,7 +21,7 @@ export class TwinPviewer {
   nglNode: DG.DockNode;
   sequenceNode: DG.DockNode;
 
-  twinSelections: {[key: string]: {}};
+  twinSelections: { [key: string]: {} };
   colorScheme = {
     "col_background": 'white',
     "col_chain": '#0069a7',
@@ -33,14 +33,16 @@ export class TwinPviewer {
   pViz: PvizAspect;
 
   entry: PdbEntry;
+  ligandSelection: { [key: string]: any }
 
-  public init(entry: PdbEntry, bsView: DG.TableView) {
+  public init(entry: PdbEntry, bsView: DG.TableView, ligandSelection: { [key: string]: boolean }) {
     // ---- SIDEPANEL REMOVAL ----
     let windows = grok.shell.windows;
     windows.showProperties = false;
     windows.showHelp = false;
     windows.showConsole = false;
     this.entry = entry;
+    this.ligandSelection = ligandSelection;
 
     // ---- INPUTS ----
     const representations = ['cartoon', 'backbone', 'ball+stick', 'licorice', 'hyperball', 'surface'];
@@ -97,27 +99,31 @@ export class TwinPviewer {
         this.pViz.render(chain.id);
       });
 
-      this.ngl.render(val);
+      this.ngl.render(val, this.ligandSelection);
       MiscMethods.setDockSize(bsView, this.nglNode, this.sequenceTabs);
     };
 
-    await this.ngl.init(bsView, this.entry, this.colorScheme, this.nglHost, this.repChoice, this.twinSelections);
+    await this.ngl.init(bsView, this.entry, this.colorScheme, this.nglHost, this.repChoice, this.twinSelections, this.ligandSelection);
     await this.pViz.init(this.entry, this.colorScheme, this.pVizHosts, this.twinSelections);
 
     MiscMethods.setDockSize(bsView, this.nglNode, this.sequenceTabs);
 
-    grok.events.onCustomEvent("selectionChanged").subscribe((v) => { this.ngl.render(false); });
+    grok.events.onCustomEvent("selectionChanged").subscribe((v) => { this.ngl.render(false, this.ligandSelection); });
 
     this.repChoice.onChanged(async () => {
       this.ngl.repChoice = this.repChoice;
       reload(true);
     });
+  }
 
-    // this.cdrScheme.onChanged(async () => {
-    //   this.ngl.cdrScheme = this.cdrScheme;
-    //   this.pViz.cdrMapping(this.cdrScheme);
-    //   reload(false);
-    // });
+  public async changeLigands(bsView: DG.TableView, ligandSelection: { [key: string]: boolean }) {
+    ligandSelection = ligandSelection;
+    let reload = async (val: boolean) => {
+      this.ngl.render(val, ligandSelection);
+      MiscMethods.setDockSize(bsView, this.nglNode, this.sequenceTabs);
+    };
+
+    reload(false);
   }
 
   private changeChoices(): void {
