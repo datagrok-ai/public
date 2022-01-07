@@ -2,9 +2,14 @@ import * as umj from 'umap-js';
 import {TSNE} from '@keckelt/tsne';
 
 import {Options, DistanceMetric, Coordinates, Vector, Vectors} from '@datagrok-libraries/utils/src/type-declarations';
-import {calcDistanceMatrix, transposeMatrix, assert} from '@datagrok-libraries/utils/src/operations';
+import {
+  calcDistanceMatrix,
+  transposeMatrix,
+  calculateEuclideanDistance,
+  assert,
+} from '@datagrok-libraries/utils/src/operations';
 import {SPEBase, PSPEBase} from './spe';
-import {StringMeasure} from './string-measure';
+import {StringMeasure, KnownMetrics} from './string-measure';
 
 /**
  * Abstract dimensionality reducer.
@@ -214,19 +219,17 @@ export type KnownMethods = keyof typeof AvailableReducers;
  */
 export class DimensionalityReducer {
   private reducer: Reducer | undefined;
-  private measurer: StringMeasure;
 
   /**
    * Creates an instance of DimensionalityReducer.
    * @param {any[]} data Vectors to embed.
-   * @param {string} method Embedding method to be applied
-   * @param {string} metric Distance metric to be computed between each of the vectors.
+   * @param {KnownMethods} method Embedding method to be applied
+   * @param {KnownMetrics?} metric Distance metric to be computed between each of the vectors.
    * @param {Options} [options] Options to pass to the implementing embedders.
    * @memberof DimensionalityReducer
    */
-  constructor(data: any[], method: KnownMethods, metric: string, options?: Options) {
-    this.measurer = new StringMeasure(metric);
-    const measure = this.measurer.getMeasure();
+  constructor(data: any[], method: KnownMethods, metric?: KnownMetrics, options?: Options) {
+    const measure = metric ? new StringMeasure(metric).getMeasure() : calculateEuclideanDistance;
     let specOptions = {};
 
     if (method == 'UMAP') {
