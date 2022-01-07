@@ -81,6 +81,7 @@ export class TimelinesViewer extends EChartViewer {
 
       this.legendDiv = ui.div();
       this.root.appendChild(this.legendDiv);
+      this.chart.getDom().style.marginRight = '100px';
       this.initialized = true;
     }
   }
