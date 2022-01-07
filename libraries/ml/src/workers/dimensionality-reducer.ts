@@ -1,4 +1,4 @@
-import {DimensionalityReducer, KnownMethods} from './reduce-dimensionality';
+import {DimensionalityReducer, KnownMethods} from '../reduce-dimensionality';
 import {Coordinates} from '@datagrok-libraries/utils/src/type-declarations';
 
 /**

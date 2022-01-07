@@ -545,7 +545,7 @@ export function convertMolecule(molecule: string, from: string, to: string): str
   }
 }
 
-//tags: cellEditor
+/*//tags: cellEditor
 //description: Molecule
 //input: grid_cell cell
 export function editMoleculeCell(cell: DG.GridCell) {
@@ -557,3 +557,4 @@ export function editMoleculeCell(cell: DG.GridCell) {
     .onOK(() => cell.cell.value = sketcher.getMolFile())
     .show();
 }
+*/
