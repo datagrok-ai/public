@@ -8,9 +8,8 @@ export function convertToRDKit(smiles: string | null): string | null {
   if (smiles !== null) {
     const regexConv: RegExp = /(\[)(R)(\d+)(\])/g;
     const match = regexConv.exec(smiles);
-    if (match !== null) {
+    if (match !== null)
       smiles = smiles.replace(regexConv, `${match[1]}*:${match[3]}${match[4]}`);
-    }
   }
   return smiles;
 }
@@ -54,18 +53,18 @@ export function rGroupAnalysis(col: DG.Column) {
           resCol.semType = DG.SEMTYPE.MOLECULE;
           col.dataFrame.columns.add(resCol);
         }
-        if (res.columns.length == 0) {
+        if (res.columns.length == 0)
           grok.shell.error('None R-Groups were found');
-        }
+
         const view = grok.shell.getTableView(col.dataFrame.name);
         if (visualAnalysisCheck.value && view) {
           view.trellisPlot({
             xColumnNames: [res.columns[0].name],
-            yColumnNames: [res.columns[1].name]});
+            yColumnNames: [res.columns[1].name],
+          });
         }
-      } else {
+      } else
         grok.shell.error('No core was provided');
-      }
     });
   dlg.show();
   dlg.initDefaultHistory();

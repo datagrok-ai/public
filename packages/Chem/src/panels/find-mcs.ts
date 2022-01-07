@@ -26,9 +26,9 @@ export async function addMcs(col: DG.Column): Promise<void> {
 }
 
 function getName(initialName: string, existingNames: string[]) {
-  if (!existingNames.includes(initialName)) {
+  if (!existingNames.includes(initialName))
     return initialName;
-  } else {
+  else {
     let counter: number = 1;
     let newName: string = (' ' + initialName + '_' + counter).slice(1);
     while (existingNames.includes(newName)) {

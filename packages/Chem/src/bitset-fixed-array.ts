@@ -50,18 +50,17 @@ export class BitSetFixedArray {
     const len = this._wordsPerItem;
     let i = item * len;
     for (; i < item * len + len - 1; i++) {
-      for (let k = this._words[i]; k != 0; k >>>= 8) {
+      for (let k = this._words[i]; k != 0; k >>>= 8)
         _selectedCount += BitSetFixedArray._onBitCount[k & 0xff];
-      }
     }
     let k = this._words[i];
     const remainingBits = this._bitsPerItem! & 0x1f;
-    if (remainingBits != 0) {
+    if (remainingBits != 0)
       k &= ~((4294967295) << remainingBits);
-    }
-    for (; k != 0; k >>>= 8) {
+
+    for (; k != 0; k >>>= 8)
       _selectedCount += BitSetFixedArray._onBitCount[k & 0xff];
-    }
+
     return _selectedCount;
   }
 
@@ -70,18 +69,17 @@ export class BitSetFixedArray {
     const len = this._wordsPerItem;
     let i = item * len; let j = 0;
     for (; i < item * len + len - 1; i++, j++) {
-      for (let k = this._words[i] & other._words[j]; k != 0; k >>>= 8) {
+      for (let k = this._words[i] & other._words[j]; k != 0; k >>>= 8)
         _selectedCount += BitSetFixedArray._onBitCount[k & 0xff];
-      }
     }
     let k = this._words[i] & other._words[j];
     const remainingBits = this._bitsPerItem! & 0x1f;
-    if (remainingBits != 0) {
+    if (remainingBits != 0)
       k &= ~((4294967295) << remainingBits);
-    }
-    for (; k != 0; k >>>= 8) {
+
+    for (; k != 0; k >>>= 8)
       _selectedCount += BitSetFixedArray._onBitCount[k & 0xff];
-    }
+
     return _selectedCount;
   }
 
@@ -89,9 +87,8 @@ export class BitSetFixedArray {
     const len = this._wordsPerItem;
     let i = item * len; let j = 0;
     for (; i < item * len + len; i++, j++) {
-      if ((other._words[j] & this._words[i]) !== other._words[j]) {
+      if ((other._words[j] & this._words[i]) !== other._words[j])
         return false;
-      }
     }
     return true;
   }
