@@ -200,8 +200,8 @@ export class Func extends Entity {
   }
 
   /** Returns functions with the specified attributes. */
-  static find(params?: { package?: string, name?: string, tags?: string[], returnType?: string}): Func[] {
-    return api.grok_Func_Find(params?.package, params?.name, params?.tags, params?.returnType);
+  static find(params?: { package?: string, name?: string, tags?: string[], meta?: any, returnType?: string}): Func[] {
+    return api.grok_Func_Find(params?.package, params?.name, params?.tags, params?.meta, params?.returnType);
   }
 
   /** Returns functions (including these) with the specified attributes. */
