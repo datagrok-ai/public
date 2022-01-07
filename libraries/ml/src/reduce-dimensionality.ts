@@ -301,7 +301,7 @@ export function createDimensinalityReducingWorker(
   cyclesCount?: number,
 ): Promise<unknown> {
   return new Promise(function(resolve) {
-    const worker = new Worker(new URL('../workers/dimensionality-reducer.ts', import.meta.url));
+    const worker = new Worker(new URL('./workers/dimensionality-reducer.ts', import.meta.url));
     worker.postMessage({
       columnData: columnData,
       method: method,
