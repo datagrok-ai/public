@@ -32,6 +32,7 @@ import {oclMol} from './chem-common-ocl';
 import $ from 'cash-dom';
 import '../css/chem.css';
 import {RDMol} from './rdkit-api';
+import {Func, GridCellRenderer} from "datagrok-api/dg";
 
 const getRdKitModuleLocal = chemCommonRdKit.getRdKitModule;
 const initRdKitService = chemCommonRdKit.initRdKitService;
@@ -53,33 +54,17 @@ export function getRdKitModule() {
   return getRdKitModuleLocal();
 }
 
-export const _package: any = new DG.Package();
-
-//name: initChem
-export async function initChem() {
-  chemLock('initChem');
-  await initRdKitService(_package.webRoot);
-  // const path = getRdKitWebRoot() + 'data-samples/alert_collection.csv';
-  // const table = await grok.data.loadTable(path);
-  // const alertsSmartsList = table.columns['smarts'].toList();
-  // const alertsDescriptionsList = table.columns['description'].toList();
-  // await initStructuralAlertsContext(alertsSmartsList, alertsDescriptionsList);
-  chemUnlock('initChem');
-}
+export const _package: DG.Package = new DG.Package();
 
 //tags: init
-export async function init() {
-  if (!initialized)
-    await initChem();
-
-  initialized = true;
+export async function initChem() {
+  await initRdKitService(_package.webRoot);
+  _properties = await _package.getProperties();
+  console.log(_properties);
 }
 
-//name: initChemAutostart
 //tags: autostart
-export async function initChemAutostart() {
-  await initChem();
-}
+export async function initChemAutostart() { }
 
 //name: SubstructureFilter
 //description: RDKit-based substructure filter
@@ -184,15 +169,58 @@ export function getCLogP(smiles: string) {
   return JSON.parse(mol.get_descriptors()).CrippenClogP;
 }
 
+export class GridCellRendererProxy extends GridCellRenderer {
+  renderer: GridCellRenderer;
+  _cellType: string;
+
+  constructor(renderer: GridCellRenderer, cellType: string) {
+    super();
+    this.renderer = renderer;
+    this._cellType = cellType;
+  }
+
+  get defaultWidth(): number | null { return this.renderer.defaultWidth;  }
+  get defaultHeight(): number | null { return this.renderer.defaultHeight; }
+
+  get name(): string { return this.renderer.name; }
+  get cellType(): string { return this._cellType; }
+
+  renderInternal(g: CanvasRenderingContext2D, x: number, y: number, w: number, h: number, gridCell: DG.GridCell, cellStyle: DG.GridCellStyle) {
+    this.renderer.renderInternal(g, x, y, w, h, gridCell, cellStyle);
+  }
+}
+
+let _rdRenderer = new RDKitCellRenderer(getRdKitModuleLocal());
+let _renderer = new GridCellRendererProxy(_rdRenderer, 'Molecule');
+let _renderers: Map<string, DG.GridCellRenderer> = new Map();
+let _properties: any = {};
+
 //name: rdkitCellRenderer
+//output: grid_cell_renderer result
+//meta.chemRendererName: RDKit
+export async function rdkitCellRenderer() {
+  return new RDKitCellRenderer(getRdKitModuleLocal());
+}
+
+//name: chemCellRenderer
 //tags: cellRenderer, cellRenderer-Molecule
 //meta-cell-renderer-sem-type: Molecule
 //output: grid_cell_renderer result
-export async function rdkitCellRenderer() {
-  //let props = DG.toJs(await this.getProperties());
-  // if (props?.Renderer && props.Renderer === 'RDKit') {
-  return new RDKitCellRenderer(getRdKitModuleLocal());
-  //}
+export async function chemCellRenderer() {
+  const renderer = _properties.Renderer ?? 'RDKit';
+  if (!_renderers.has(renderer)) {
+    let renderFunctions = Func.find({meta: {chemRendererName: renderer}});
+    if (renderFunctions.length > 0) {
+      const r = await renderFunctions[0].apply();
+      _renderers.set(_properties.Renderer, r);
+      return r;
+    }
+  }
+
+  _renderer.renderer = renderer ?? _renderer.renderer;
+  return _renderer;
+
+  //return _renderers.get(renderer) ?? new RDKitCellRenderer(getRdKitModuleLocal());
 }
 
 //name: getSimilarities
@@ -291,11 +319,6 @@ export function descriptorsApp(context: any) {
   getDescriptorsApp();
 }
 
-//description: Removes all children from node
-function removeChildren(node: any) {
-  while (node.firstChild)
-    node.removeChild(node.firstChild);
-}
 
 //name: saveAsSdf
 //description: Save as SDF

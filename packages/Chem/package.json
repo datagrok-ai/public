@@ -9,8 +9,8 @@
       "name": "Renderer",
       "propertyType": "string",
       "choices": [
-        "OCL",
-        "RDKit"
+        "RDKit",
+        "OpenChemLib"
       ],
       "defaultValue": "RDKit",
       "nullable": false
@@ -20,11 +20,11 @@
     "common/ngl_viewer/ngl.js"
   ],
   "dependencies": {
+    "datagrok-api": ">0.94.10",
     "@datagrok-libraries/ml": ">=0.0.5",
     "@datagrok-libraries/utils": ">=0.0.12",
     "cash-dom": "latest",
     "css-loader": "latest",
-    "datagrok-api": ">0.94.10",
     "dayjs": "latest",
     "file-loader": "latest",
     "offscreen-canvas": "latest",
@@ -43,7 +43,6 @@
     "@typescript-eslint/eslint-plugin": "^5.3.0",
     "@typescript-eslint/parser": "^5.3.0",
     "cash-dom": "latest",
-    "datagrok-api": ">0.94.10",
     "eslint": "^8.1.0",
     "eslint-config-google": "^0.14.0",
     "file-loader": "latest",
