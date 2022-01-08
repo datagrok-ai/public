@@ -35,9 +35,8 @@ export function importSdf(bytes: Uint8Array) {
 }
 
 //name: oclCellRenderer
-//tags: cellRenderer, cellRenderer-Molecule
-//meta-cell-renderer-sem-type: Molecule
 //output: grid_cell_renderer result
+//meta.chemRendererName: OpenChemLib
 export async function oclCellRenderer() {
   return new OCLCellRenderer();
 }
