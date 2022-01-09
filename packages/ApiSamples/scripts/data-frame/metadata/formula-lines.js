@@ -22,7 +22,7 @@ demog.meta.addFormulaLine({
   zindex: -45,         // Line depth. The viewer's chart has a depth of 0.
   color: '#ff0000',    // Line color.
   visible: true,       // Visibility.
-  opacity: 80,        // Opacity [0..100], where 0 - invisible, 100 - opaque.
+  opacity: 80,         // Opacity [0..100], where 0 - invisible, 100 - opaque.
 
   // Line boundaries along the value axis. In this example, the line will be drawn for a "Weight" between 50 and 300 kg.
   min: 50,
@@ -51,10 +51,11 @@ demog.meta.addFormulaBand({
   zindex: -15,             // Line depth. The viewer's chart has a depth of 0.
   color: '#FFD700',        // Band background color.
   max: 160,                // Maximum band size.
+  opacity: 100,            // Opacity [0..100], where 0 - invisible, 100 - opaque.
 
   // Parameters specific to Bands:
   column: '${height}',     // Column for which the band is set.
-  column2: '${weight}'    // Second column for which the band will be drawn.
+  column2: '${weight}'     // Second column for which the band will be drawn.
 });
 
 demog.meta.addFormulaLine({
