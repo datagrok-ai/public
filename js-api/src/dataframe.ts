@@ -2040,7 +2040,7 @@ export class Qnum {
   }
 }
 
-interface FormulaLine {
+export interface FormulaLine {
   id?: string;
   type?: string;
   title?: string;
@@ -2090,7 +2090,7 @@ export class DataFrameMetaHelper {
   }
 
   addFormulaItem(item: FormulaLine): void {
-    this.formulaLines.push(item);
+    this.formulaLines.push(toJs(api.grok_FormulaLineHelper_AddDefaults(item)));
     this.addFormulaLines(this.formulaLines);
   }
 
@@ -2115,6 +2115,10 @@ export class DataFrameMetaHelper {
         item.id == undefined || ids.indexOf(item.id) == -1);
 
     this.addFormulaLines(this.formulaLines);
+  }
+
+  getFormulaLineAxes(item: FormulaLine): String[] {
+    return api.grok_FormulaLineHelper_GetAxes(item.formula);
   }
 }
 
@@ -2263,5 +2267,5 @@ export class ColumnMetaHelper {
     if (this._markers == undefined)
       this._markers = new ColumnMarkerHelper(this.column);
     return this._markers;
-  }  
+  }
 }
