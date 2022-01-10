@@ -32,7 +32,7 @@ import {oclMol} from './chem-common-ocl';
 import $ from 'cash-dom';
 import '../css/chem.css';
 import {RDMol} from './rdkit-api';
-import {Func, GridCellRenderer} from "datagrok-api/dg";
+import {isMolBlock} from './chem-utils';
 
 const getRdKitModuleLocal = chemCommonRdKit.getRdKitModule;
 const initRdKitService = chemCommonRdKit.initRdKitService;
@@ -55,12 +55,19 @@ export function getRdKitModule() {
 }
 
 export const _package: DG.Package = new DG.Package();
+let _rdRenderer: RDKitCellRenderer;
+let _renderer: GridCellRendererProxy;
+let _renderers: Map<string, DG.GridCellRenderer>;
+let _properties: any;
 
 //tags: init
 export async function initChem() {
   await initRdKitService(_package.webRoot);
   _properties = await _package.getProperties();
-  console.log(_properties);
+  _rdRenderer = new RDKitCellRenderer(getRdKitModuleLocal());
+  _renderer = new GridCellRendererProxy(_rdRenderer, 'Molecule');
+  _renderers = new Map();
+  _properties = {};
 }
 
 //tags: autostart
@@ -96,62 +103,57 @@ export function canvasMol(
 }
 
 export function renderMolecule(
-  mol: string | OCL.Molecule | RDMol,
-  options: {renderer: 'rdkit' | 'ocl', width?: number, height?: number} = {renderer: 'ocl'},
+  molStr: string,
+  options: {renderer?: 'RDKit' | 'OpenChemLib', width?: number, height?: number},
 ) {
-  if (typeof mol === 'string') {
-    switch (options.renderer) {
-    case 'rdkit':
-      mol = getRdKitModuleLocal().get_mol(convertToRDKit(mol)) as RDMol;
-      break;
-    case 'ocl':
-      mol = oclMol(mol);
-      break;
-    default:
-      throw new Error(`Renderer '${options.renderer}' is not supported.`);
-    }
-  }
+  options.renderer ??= _properties.Renderer as 'RDKit' | 'OpenChemLib';
   options.width ??= 200;
   options.height ??= 150;
+
+  let mol: OCL.Molecule | RDMol;
+  let molFile: string;
+  let smiles: string;
+  isMolBlock(molStr) ? molFile = molStr : smiles = molStr;
+
   const moleculeHost = ui.canvas(options.width, options.height);
   $(moleculeHost).addClass('chem-canvas');
 
   switch (options.renderer) {
-  case 'rdkit':
+  case 'RDKit':
+    mol = getRdKitModuleLocal().get_mol(convertToRDKit(molStr));
     (mol as RDMol).draw_to_canvas(moleculeHost, options.width, options.height);
+    molFile ??= (mol as RDMol).get_molblock();
+    smiles ??= (mol as RDMol).get_smiles();
     break;
-  case 'ocl':
+  case 'OpenChemLib':
+    mol = oclMol(molStr);
     OCL.StructureView.drawMolecule(moleculeHost, mol as OCL.Molecule);
+    molFile ??= mol.toMolfile();
+    smiles ??= mol.toSmiles();
     break;
   default:
     throw new Error(`Renderer '${options.renderer}' is not supported.`);
   }
 
-  const moreBtn = ui.button(
-    ui.iconFA('ellipsis-v'),
+  const moreBtn = ui.iconFA(
+    'ellipsis-v',
     () => {
-      const smiles =
-        options.renderer === 'ocl' ? (mol as OCL.Molecule).toSmiles() : (mol as RDMol).get_smiles();
       const menu = DG.Menu.popup();
       menu.item('Copy SMILES', () => {
         navigator.clipboard.writeText(smiles);
         grok.shell.info('SMILES copied!');
       });
-      if (options.renderer === 'rdkit') {
-        // OCL does not support Molblock yet?
-        menu.item('Copy Molblock', () => {
-          navigator.clipboard.writeText((mol as RDMol).get_molblock());
-          grok.shell.info('Molblock copied!');
-        });
-      }
+      menu.item('Copy Molfile', () => {
+        navigator.clipboard.writeText(molFile);
+        grok.shell.info('Molfile copied!');
+      });
       menu.item('Sketch', () => {
         const sketcher = new Sketcher();
-        sketcher.setSmiles(smiles);
+        isMolBlock(molStr) ? sketcher.setMolFile(molStr) : sketcher.setSmiles(molStr);
         ui.dialog()
           .add(sketcher)
           .show();
       });
-      // menu.item('Explore', () => );
       menu.show();
     },
     'More',
@@ -169,11 +171,11 @@ export function getCLogP(smiles: string) {
   return JSON.parse(mol.get_descriptors()).CrippenClogP;
 }
 
-export class GridCellRendererProxy extends GridCellRenderer {
-  renderer: GridCellRenderer;
+export class GridCellRendererProxy extends DG.GridCellRenderer {
+  renderer: DG.GridCellRenderer;
   _cellType: string;
 
-  constructor(renderer: GridCellRenderer, cellType: string) {
+  constructor(renderer: DG.GridCellRenderer, cellType: string) {
     super();
     this.renderer = renderer;
     this._cellType = cellType;
@@ -185,15 +187,12 @@ export class GridCellRendererProxy extends GridCellRenderer {
   get name(): string { return this.renderer.name; }
   get cellType(): string { return this._cellType; }
 
-  renderInternal(g: CanvasRenderingContext2D, x: number, y: number, w: number, h: number, gridCell: DG.GridCell, cellStyle: DG.GridCellStyle) {
+  renderInternal(
+    g: CanvasRenderingContext2D, x: number, y: number, w: number, h: number,
+    gridCell: DG.GridCell, cellStyle: DG.GridCellStyle) {
     this.renderer.renderInternal(g, x, y, w, h, gridCell, cellStyle);
   }
 }
-
-let _rdRenderer = new RDKitCellRenderer(getRdKitModuleLocal());
-let _renderer = new GridCellRendererProxy(_rdRenderer, 'Molecule');
-let _renderers: Map<string, DG.GridCellRenderer> = new Map();
-let _properties: any = {};
 
 //name: rdkitCellRenderer
 //output: grid_cell_renderer result
@@ -209,7 +208,7 @@ export async function rdkitCellRenderer() {
 export async function chemCellRenderer() {
   const renderer = _properties.Renderer ?? 'RDKit';
   if (!_renderers.has(renderer)) {
-    let renderFunctions = Func.find({meta: {chemRendererName: renderer}});
+    const renderFunctions = DG.Func.find({meta: {chemRendererName: renderer}});
     if (renderFunctions.length > 0) {
       const r = await renderFunctions[0].apply();
       _renderers.set(_properties.Renderer, r);
