@@ -96,6 +96,9 @@ jobs:
 
   deploy:
     needs: convert
+    concurrency:
+      group: help-deploy-${{ github.ref }}
+      cancel-in-progress: true
     if: github.ref == 'refs/heads/master'
     runs-on: ubuntu-20.04
     environment: Help
