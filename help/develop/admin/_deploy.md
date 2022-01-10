@@ -5,19 +5,40 @@
 
 This document contains instructions to deploy Datagrok.
 
+* [What is Datagrok?](../../home.md)
+* [Architecture](architecture.md)
+* [Infrastructure explanation](infrastructure.md)
+
 ## Prerequisites
 
-1. Provide required [resources for every component](infrastructure.md#resources)
-2. Both [Compute](infrastructure.md#compute-components) and [Datagrok](infrastructure.md#datagrok-components) engines
-   should be accessible by users. The easiest way is to create DNS endpoints pointing to load balancers in front of the
-   services:
-   `datagrok.example` and `cvm.example`.
-3. Configure [database](infrastructure.md#database) and [storage](infrastructure.md#storage), which should be available
-   for [Datlas](infrastructure.md#datlas). If you use local setup with local file storage and local database, skip this
-   step.
-4. [Install Docker](https://docs.docker.com/get-docker/).
-5. Install [Docker Compose](https://docs.docker.com/compose/). If you do not have it, follow
-   these [installation instructions](https://docs.docker.com/compose/install/) for your operating system.
+### 1. Deployment Software
+
+[Install Docker](https://docs.docker.com/get-docker/). Install [Docker Compose](https://docs.docker.com/compose/). If
+you do not have it, follow these [installation instructions](https://docs.docker.com/compose/install/) for your
+operating system.
+
+### 2. Resources
+
+Provide required [resources for every component](infrastructure.md#resources)
+
+### 3. Database
+
+Create [database](infrastructure.md#database) and [storage](infrastructure.md#storage), which should be available
+for [Datlas](infrastructure.md#datlas). If you use local setup with local file storage and local database, skip this
+step.
+
+### 4. Storage
+
+Create [database](infrastructure.md#database) and [storage](infrastructure.md#storage), which should be available
+for [Datlas](infrastructure.md#datlas). If you use local setup with local file storage and local database, skip this
+step.
+
+### 5. Endpoints
+
+Both [Compute](infrastructure.md#compute-components) and [Datagrok](infrastructure.md#datagrok-components) engines
+should be accessible by users. The easiest way is to create DNS endpoints pointing to load balancers in front of the
+services:
+`datagrok.example` and `cvm.example`.
 
 ## Cloud providers deployment
 
@@ -36,7 +57,7 @@ There are multiple Infrastructure as a Code examples can be found:
 
 * [CloudFormation template](deploy/cloudformation.yaml) to deploy to AWS ECS
 * [Terraform scripts](deploy/terraform.tf) to deploy to AWS ECS
-* [Docker Compose for ECS deployment](../../_internal/deploy/deploy-amazon-ecs.md)
+* [Docker Compose for ECS deployment](deploy-amazon-ecs.md)
 
 ## Deployment
 
