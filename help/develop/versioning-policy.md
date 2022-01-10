@@ -1,7 +1,7 @@
 <!-- TITLE: Versioning policy -->
 <!-- SUBTITLE: -->
 
-# Versioning policy
+## Docker Image Versioning policy
 
 The Datagrok versioning policy requires to include a major, minor, and test version number and look
 like: `MAJOR.MINOR.TEST`.
@@ -36,7 +36,7 @@ the features that are already in other versions.
 For a test release, the `TEST` component must be incremented by one, and the `MINOR` and `MAJOR`
 components must remain unchanged.
 
-## Version information
+### Version information in Docker image
 
 Every Docker container has information about version and branch it was build on:
 
