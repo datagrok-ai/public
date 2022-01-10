@@ -1,7 +1,7 @@
 name: Help
 
 on:
-  workflow_dispatch: {}
+  workflow_dispatch: { }
   push:
     paths:
       - 'help/**'
@@ -29,7 +29,7 @@ jobs:
           config-file: 'help/_internal/mlc_config.json'
 
   convert:
-    needs: [lint, link_check]
+    needs: [ lint, link_check ]
     if: github.ref == 'refs/heads/master'
     runs-on: ubuntu-20.04
     environment: Help

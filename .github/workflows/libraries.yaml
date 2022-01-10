@@ -46,7 +46,16 @@ jobs:
                 test='true'
               fi
           
-              MATRIX_INCLUDE_JSON+="{\"project\": \"${DIR}\", \"build\": \"${build}\", \"test\": \"${test}\"}"
+              name=$(jq .name ${DIR}/package.json | sed 's/"//g')
+              latest_version="$(curl https://registry.npmjs.org/${name}/latest | jq .version)"
+              current_version=$(jq .version ${DIR}/package.json | sed 's/"//g')
+              if [[ $latest_version == $current_version ]]; then
+                CHANGED_VERSION='false'
+              else
+                CHANGED_VERSION='true'
+              fi
+          
+              MATRIX_INCLUDE_JSON+="{\"project\": \"${DIR}\", \"build\": \"${build}\", \"test\": \"${test}\", \"changed_version\": \"${CHANGED_VERSION}\"}"
             fi
           done
 
@@ -64,7 +73,7 @@ jobs:
 
   build:
     needs: metadata
-    if: needs.metadata.outputs.continue == 'yes'
+    if: needs.metadata.outputs.continue == 'yes' && matrix.changed_version == 'true'
     runs-on: ubuntu-latest
     environment: Prod
     strategy:

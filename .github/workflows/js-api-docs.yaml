@@ -1,8 +1,10 @@
 name: JS API Documentation
 
 on:
-  workflow_dispatch: {}
+  workflow_dispatch: { }
   push:
+    branches:
+      - 'master'
     paths:
       - 'js-api/package.json'
 
