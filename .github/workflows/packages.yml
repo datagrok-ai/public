@@ -9,7 +9,6 @@ on:
 jobs:
   metadata:
     runs-on: ubuntu-20.04
-    environment: Prod
     outputs:
       matrix: ${{ steps.generate-matrix.outputs.matrix }}
       continue: ${{ steps.generate-matrix.outputs.continue }}
@@ -61,7 +60,7 @@ jobs:
 
               name=$(jq .name ${DIR}/package.json | sed 's/"//g')
               latest_version="$(curl https://registry.npmjs.org/${name}/latest | jq .version)"
-              current_version=$(jq .version ${DIR}/package.json | sed 's/"//g')
+              current_version=$(jq .version ${DIR}/package.json)
               if [[ $latest_version == $current_version ]]; then
                 CHANGED_VERSION='false'
               else

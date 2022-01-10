@@ -1,7 +1,7 @@
 {
   "name": "datagrok-api",
   "version": "0.107.0",
-  "description": "",
+  "description": "Datagrok JS API package",
   "dependencies": {
     "cash-dom": "^8.0.0",
     "dayjs": "latest",

@@ -32,7 +32,6 @@ jobs:
     needs: [ lint, link_check ]
     if: github.ref == 'refs/heads/master'
     runs-on: ubuntu-20.04
-    environment: Help
     steps:
       - name: Checkout
         uses: actions/checkout@v2
