@@ -3,7 +3,28 @@
 
 # Deployment
 
+Datagrok consist of Docker containers which can be installed on any platform including but not limited to bare-metal
+machine, on-premise virtual machine or virtual machine in cloud provider, for
+example [AWS EC2](https://aws.amazon.com/ec2/), on-premise Kubernetes cluster or Kubernetes service in cloud provider,
+for example [AWS EKS](https://aws.amazon.com/eks/), and container services in cloud provides, for
+example [AWS ECS](https://aws.amazon.com/ecs/).
+
+Also, Datagrok server requires [PostgreSQL database](infrastructure.md#database).
+As [database](infrastructure.md#database)
+Datagrok supports any PostgreSQL cluster out-of-the-box, including cloud solutions for PostgreSQL database, for
+example [AWS RDS](https://aws.amazon.com/rds/). We recommend to use scalable and highly reliable solutions for database
+and avoid single database instance setup to prevent datagrok internal information loss such as created users, created
+connections, etc. User data won't be affected anyhow on Datagrok database crash.
+
+For [persistent file storage](infrastructure.md#storage) Datagrok supports Local File System, Network shares or cloud
+solutions, for example [AWS S3](https://aws.amazon.com/s3/) or [Google Cloud Storage](https://cloud.google.com/storage).
+We recommend to use scalable and highly reliable solutions for storage and avoid local file system setup to prevent
+datagrok internal information loss, such as projects, settings, etc. User data won't be affected anyhow on Datagrok
+storage loss.
+
 This document contains instructions to deploy Datagrok.
+
+More information:
 
 * [What is Datagrok?](../../home.md)
 * [Architecture](architecture.md)
