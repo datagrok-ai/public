@@ -64,63 +64,86 @@ async function addNewServer(config: Config) {
   }
 }
 
-export function config(args: { _: string[], reset?: boolean }) {
+export function config(args: ConfigArgs) {
   const nOptions = Object.keys(args).length - 1;
-  if (args['_'].length === 1 && (nOptions < 1 || nOptions === 1 && args.reset)) {
-    if (!fs.existsSync(grokDir)) {
-      fs.mkdirSync(grokDir);
-    }
-    if (!fs.existsSync(confPath) || args.reset) {
-      fs.writeFileSync(confPath, yaml.dump(confTemplate));
-    }
-    const config = yaml.load(fs.readFileSync(confPath, { encoding: 'utf-8' })) as Config;
-    console.log(`Your config file (${confPath}):`);
-    console.log(config);
-    const valRes = validateConf(config);
-    if (!config || !valRes.value) {
-      console.log(valRes.message);
+  const interactiveMode = args['_'].length === 1 && (nOptions < 1 || nOptions === 1 && args.reset);
+  const hasAddServerCommand = args['_'].length === 2 && args['_'][1] === 'add' && nOptions === 3 && args.server && args.key && args.k;
+  if (!interactiveMode && !hasAddServerCommand) return false;
+
+  if (!fs.existsSync(grokDir)) {
+    fs.mkdirSync(grokDir);
+  }
+  if (!fs.existsSync(confPath) || args.reset) {
+    fs.writeFileSync(confPath, yaml.dump(confTemplate));
+  }
+  const config = yaml.load(fs.readFileSync(confPath, { encoding: 'utf-8' })) as Config;
+
+  if (hasAddServerCommand) {
+    try {
+      const hostName = new URL(args.server!).hostname;
+      config.servers[hostName] = { url: args.server!, key: args.key! };
+    } catch (error) {
+      console.error('URL parsing error. Please, provide a valid server URL.');
       return false;
     }
-    if (valRes.warnings!.length) console.log(valRes.warnings!.join('\n')); 
-    (async () => {
-      try {
-        const answers = await inquirer.prompt({
-          name: 'edit-config',
-          type: 'confirm',
-          message: 'Do you want to edit it?',
-          default: false
-        });
-        if (answers['edit-config']) {
-          for (const server in config.servers) {
-            const url = config['servers'][server]['url'];
-            const question = generateKeyQ(server, url);
-            question.default = config['servers'][server]['key'];
-            const devKey: Indexable = await inquirer.prompt(question);
-            config['servers'][server]['key'] = devKey[server];
-          }
-          await addNewServer(config);
-          const defaultServer = await inquirer.prompt({
-            name: 'default-server',
-            type: 'input',
-            message: 'Your default server:',
-            validate: function (server) {
-              if (server in config.servers) {
-                return true;
-              } else {
-                return 'Only one of the specified servers may be chosen as default';
-              }
-            },
-            default: config.default
-          });
-          config.default = defaultServer['default-server'];
-          fs.writeFileSync(confPath, yaml.dump(config));
-        }
-      } catch (err) {
-        console.error('The file is corrupted. Please run `grok config --reset` to restore the default template');
-        console.error(err);
-        return false;
-      }
-    })()
-    return true;
+    console.log('Successfully added the server.');
   }
+
+  console.log(`Your config file (${confPath}):`);
+  console.log(config);
+  const valRes = validateConf(config);
+  if (!config || !valRes.value) {
+    console.log(valRes.message);
+    return false;
+  }
+  if (valRes.warnings!.length) console.log(valRes.warnings!.join('\n'));
+  (async () => {
+    try {
+      const answers = await inquirer.prompt({
+        name: 'edit-config',
+        type: 'confirm',
+        message: 'Do you want to edit it?',
+        default: false
+      });
+      if (answers['edit-config']) {
+        for (const server in config.servers) {
+          const url = config['servers'][server]['url'];
+          const question = generateKeyQ(server, url);
+          question.default = config['servers'][server]['key'];
+          const devKey: Indexable = await inquirer.prompt(question);
+          config['servers'][server]['key'] = devKey[server];
+        }
+        await addNewServer(config);
+        const defaultServer = await inquirer.prompt({
+          name: 'default-server',
+          type: 'input',
+          message: 'Your default server:',
+          validate: function (server) {
+            if (server in config.servers) {
+              return true;
+            } else {
+              return 'Only one of the specified servers may be chosen as default';
+            }
+          },
+          default: config.default
+        });
+        config.default = defaultServer['default-server'];
+        // fs.writeFileSync(confPath, yaml.dump(config));
+      }
+    } catch (err) {
+      console.error('The file is corrupted. Please run `grok config --reset` to restore the default template');
+      console.error(err);
+      return false;
+    }
+  })();
+  fs.writeFileSync(confPath, yaml.dump(config));
+  return true;
+}
+
+interface ConfigArgs {
+  _: string[],
+  reset?: boolean,
+  server?: string,
+  key?: string,
+  k?: string,
 }

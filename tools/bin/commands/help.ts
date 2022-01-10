@@ -53,9 +53,11 @@ Usage: grok config
 Create or update a configuration file
 
 Options:
-[--reset]
+[--reset] [--server] [--key]
 
 --reset     Restore the default config file template
+--server    Use to add a server to the config (\`grok config add --server url --key key\`) 
+--key       Use in conjunction with the \`server\` option
 `;
 
 const HELP_CREATE = `
