@@ -2,7 +2,7 @@ import * as echarts from 'echarts';
 import { format } from 'echarts/lib/util/time';
 import $ from 'cash-dom';
 import { EChartViewer } from '../echart-viewer';
-import { options, deepCopy } from './echarts-options';
+import { options, deepCopy, VISIBILITY_MODE } from './echarts-options';
 
 
 export class TimelinesViewer extends EChartViewer {
@@ -28,6 +28,7 @@ export class TimelinesViewer extends EChartViewer {
     this.axisPointer = this.string('axisPointer', 'shadow',
       { choices: ['cross', 'line', 'shadow', 'none'] });
     this.showZoomSliders = this.bool('showZoomSliders', true);
+    this.legendVisibility = this.string('legendVisibility', VISIBILITY_MODE.AUTO, { choices: Object.values(VISIBILITY_MODE) });
 
     this.splitByRegexps = [/^USUBJID$/, /id/i];
     this.colorByRegexps = [/^([A-Z]{2}(TERM|TEST|TRT|VAL)|(ACT)?ARM|MIDS(TYPE)?|VISIT)$/, /event/i];
@@ -81,7 +82,6 @@ export class TimelinesViewer extends EChartViewer {
 
       this.legendDiv = ui.div();
       this.root.appendChild(this.legendDiv);
-      this.chart.getDom().style.marginRight = '100px';
       this.initialized = true;
     }
   }
@@ -100,6 +100,8 @@ export class TimelinesViewer extends EChartViewer {
         this.colorMap = this.getColorMap(columnData.categories);
         this.updateLegend(columnData.column);
       }
+    } else if (property.name === 'legendVisibility') {
+      this.switchLegendVisibility(property.get(this));
     }
     this.render();
   }
@@ -176,6 +178,7 @@ export class TimelinesViewer extends EChartViewer {
 
     this.colorMap = this.getColorMap(this.columnData.colorByColumnName.categories);
     this.updateLegend(this.columnData.colorByColumnName.column);
+    this.switchLegendVisibility(this.legendVisibility);
 
     let prevSubj = null;
 
@@ -326,6 +329,26 @@ export class TimelinesViewer extends EChartViewer {
     const legend = DG.Legend.create(column);
     this.legendDiv.appendChild(legend.root);
     $(legend.root).addClass('charts-legend');
+  }
+
+  showLegend() {
+    $(this.legendDiv).show();
+    $(this.chart.getDom()).css('marginRight', '100px');
+  }
+
+  hideLegend() {
+    $(this.legendDiv).hide();
+    $(this.chart.getDom()).css('marginRight', '');
+  }
+
+  switchLegendVisibility(mode) {
+    const { column, categories } = this.columnData.colorByColumnName;
+    const autoShow = column.matches(DG.TYPE.CATEGORICAL) && categories.length < 100;
+    if (mode === VISIBILITY_MODE.ALWAYS || (mode === VISIBILITY_MODE.AUTO && autoShow)) {
+      this.showLegend();
+    } else {
+      this.hideLegend();
+    }
   }
 
   getStrValue(columnData, idx) {
