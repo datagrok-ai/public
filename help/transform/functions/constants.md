@@ -3,7 +3,8 @@
 
 # Constants
 
-The use of constants optimizes the readability, speed, and accuracy of calculations. You can use these constants in any mathematical expressions and [functions](math-functions.md) simply by specifying the name of the constant like this:
+The use of constants optimizes the readability, speed, and accuracy of calculations. You can use these constants in any
+mathematical expressions and [functions](math-functions.md) simply by specifying the name of the constant like this:
 
 ```javascript
 1.57 * ${WEIGHT} / ${HEIGHT} - ln(${IC50} * LN10)

@@ -1,6 +1,6 @@
-name: Datagrok Libraries
+name: Libraries
 on:
-  workflow_dispatch: {}
+  workflow_dispatch: { }
   push:
     branches:
       - 'master'
@@ -8,7 +8,8 @@ on:
       - 'libraries/*/package.json'
 jobs:
   metadata:
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-20.04
+    environment: Prod
     outputs:
       matrix: ${{ steps.generate-matrix.outputs.matrix }}
       continue: ${{ steps.generate-matrix.outputs.continue }}
@@ -31,20 +32,22 @@ jobs:
           MATRIX_INCLUDE_JSON="["
 
           for DIR in ${CHANGED_DIRS}; do
-            scripts=$(jq  '. | select( has("scripts") == true ).scripts' ${DIR}/package.json)
-
-            if [ -z "$(jq  '. | select( has("build") == true )' <<< $scripts)" ]; then
-              build='false'
-            else
-              build='true'
+            if [ -f "${DIR}/package.json" ]; then
+              scripts=$(jq  '. | select( has("scripts") == true ).scripts' ${DIR}/package.json)
+          
+              if [ -z "$(jq  '. | select( has("build") == true )' <<< $scripts)" ]; then
+                build='false'
+              else
+                build='true'
+              fi
+              if [ -z "$(jq  '. | select( has("test") == true )' <<< $scripts)" ]; then
+                test='false'
+              else
+                test='true'
+              fi
+          
+              MATRIX_INCLUDE_JSON+="{\"project\": \"${DIR}\", \"build\": \"${build}\", \"test\": \"${test}\"}"
             fi
-            if [ -z "$(jq  '. | select( has("test") == true )' <<< $scripts)" ]; then
-              test='false'
-            else
-              test='true'
-            fi
-
-            MATRIX_INCLUDE_JSON+="{\"project\": \"${DIR}\", \"build\": \"${build}\", \"test\": \"${test}\"}"
           done
 
           MATRIX_INCLUDE_JSON="${MATRIX_INCLUDE_JSON//\}\{/\}, \{}"

@@ -1,4 +1,4 @@
-name: Datagrok Tools Package
+name: Tools Package
 on:
   workflow_dispatch: {}
   push:
@@ -8,7 +8,7 @@ on:
       - 'tools/package.json'
 jobs:
   build:
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-20.04
     environment: Prod
     steps:
       - uses: actions/checkout@v2

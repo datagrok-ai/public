@@ -3,10 +3,10 @@
 
 # Packages
 
-A Datagrok package is a JavaScript or TypeScript application that introduces a new functionality to Datagrok or extends 
+A Datagrok package is a JavaScript or TypeScript application that introduces a new functionality to Datagrok or extends
 the existing one. You can extend Datagrok with _packages_ that you build using the [JavaScript API].
 
-For example, you package might be a [custom viewer built with D3.js], [script for Cheminformatics], and similar. Check 
+For example, you package might be a [custom viewer built with D3.js], [script for Cheminformatics], and similar. Check
 out the [public repository] for more examples of Datagrok packages.
 
 ## Table of contents
@@ -26,7 +26,7 @@ A package typically contains the following elements:
 
 ## Creating a package
 
-To develop a package, install the [LTS version of Node.js]. We recommend that you install Node.js using [NVM] to avoid 
+To develop a package, install the [LTS version of Node.js]. We recommend that you install Node.js using [NVM] to avoid
 permission issues when running NPM packages globally. Check out the [NPM instructions] for more details.
 
 Now, let's create a package:
@@ -37,12 +37,12 @@ Now, let's create a package:
   npm i datagrok-tools -g
   ```
 
-  > **Note**: On macOS and Linux, you may also need to install `datagrok-tools` globally with `sudo`: `sudo npm i datagrok-tools -g` . 
-  > When prompted, enter your password.
+> **Note**: On macOS and Linux, you may also need to install `datagrok-tools` globally with `sudo`: `sudo npm i datagrok-tools -g` .
+> When prompted, enter your password.
 
 2. Go to your [user profile on Datagrok] and obtain the developer key.
 
-> **Note**: Datagrok has the [public] and [development servers]. Use the key from the development server. If you're 
+> **Note**: Datagrok has the [public] and [development servers]. Use the key from the development server. If you're
 > using Docker to run a package, refer to the [Deployment with Docker Compose section].
 
 3. Configure your environment:
@@ -64,7 +64,7 @@ Datagrok Tools also outputs the `config.yaml` file and the directory it's stored
   grok create <package-name>
   ```
 
-  > **Note**: If you want to create a TypeScript package, pass the `--ts` option to the command.
+> **Note**: If you want to create a TypeScript package, pass the `--ts` option to the command.
 
 5. Cd into the package directory and install other dependencies:
 
@@ -78,13 +78,13 @@ Datagrok Tools also outputs the `config.yaml` file and the directory it's stored
   grok publish
   ```
 
-  Note that by running this command, only you will see the package in Datagrok. For more information about the available
-  commands, refer to the [Datagrok Tools section].
+Note that by running this command, only you will see the package in Datagrok. For more information about the available
+commands, refer to the [Datagrok Tools section].
 
 ## Package structure
 
 | File                                    | Description                                               |
-|-----------------------------------------|---------------------------------------------------------- |
+|-----------------------------------------|-----------------------------------------------------------|
 | node_modules                            | Node.js modules                                           |
 | [src/package.js](#package.js)           | The Datagrok package's entry point                        |
 | .gitignore                              | Files and folders ignored by Git                          |
@@ -98,8 +98,8 @@ We discuss the key files in detail in their own sections that follow.
 
 ### <a href="#" id="package.json"></a>package.json
 
-The `package.json` file contains the project metadata, including the scripts to build or publish the package, dependencies,
-and other data.
+The `package.json` file contains the project metadata, including the scripts to build or publish the package,
+dependencies, and other data.
 
 ```json
 {
@@ -131,7 +131,7 @@ and other data.
 }
 ```
 
-The package includes the `datagrok-api` dependency &mdash; the JavaScript API you will use to develop the package. 
+The package includes the `datagrok-api` dependency &mdash; the JavaScript API you will use to develop the package.
 `dayjs` is an [alternative to Moment.js], and `cash-dom` is a [competitor for jQuery]. Additionally, the CLI includes
 `webpack` and `webpack-cli` as development dependencies to build the package.
 
@@ -141,7 +141,7 @@ the terminal, run `npm run <script-name>`.
 To install the dependencies, run `npm install` from the terminal or run the provided script `install-dependencies` from
 your IDE. You can install other NPM packages (such as React or Babel) using `npm install <npm package>`.
 
-### <a href="#" id="package.js"></a>src/package.js
+### <a href="#" id="package.js"></a>package.js
 
 The `src/package.js` file (or `src/package.ts` if you created a TypeScript package) imports three key Datagrok modules
 &mdash; `datagrok-api/grok`, `datagrok-api/ui`, and `datagrok-api/dg`.
@@ -159,18 +159,18 @@ export function test() {
 }
 ```
 
-`package.js` typically contains the [annotated functions] that implement a functionality. Each function needs to be 
-annotated with respective [header parameters] that define the function metadata. The parameters help Datagrok to 
+`package.js` typically contains the [annotated functions] that implement a functionality. Each function needs to be
+annotated with respective [header parameters] that define the function metadata. The parameters help Datagrok to
 register viewers, widgets, renderers, and other [function types].
 
-If a function has more than one output, it must return a JavaScript object `{prop1: value1, prop2: value2}`, for 
+If a function has more than one output, it must return a JavaScript object `{prop1: value1, prop2: value2}`, for
 example:
 
 ```js
 //name: test1
 //output: string s1
 export function test1() {
-    // Your logic goes here... 
+    // Your logic goes here...
     return 'a';
 }
 //name: test2
@@ -188,7 +188,7 @@ The `detectors.js` file must define a `<packageName>PackageDetectors` class that
 (For more information about this class, refer to the [Package section] in JavaScript API documentation.)
 
 `detectors.js` is similar to `package.js` but is intended for smaller functions called _[semantic type detectors]_,
-which are loaded separately from the rest of the package. Semantic type detectors are called each time a user opens a 
+which are loaded separately from the rest of the package. Semantic type detectors are called each time a user opens a
 table in Datagrok and are used to quickly inspect the data and determine the semantic type of the columns.
 
 Tagging the semantic types allows Datagrok to offer specific functions for data of a particular type.
@@ -211,7 +211,7 @@ class SequencePackageDetectors extends DG.Package {
 }
 ```
 
-Once registered by Datagrok, this function becomes available across the whole platform and can be used for semantic type 
+Once registered by Datagrok, this function becomes available across the whole platform and can be used for semantic type
 detection.
 
 ### <a href="#" id="webpack.config.js"></a>webpack.config.js
@@ -254,7 +254,7 @@ module.exports = {
 
 Refer to the [webpack documentation] to modify or extend the provided configuration.
 
-> **Note**: 
+> **Note**:
 
 ## Naming conventions
 
@@ -264,7 +264,8 @@ Follow these naming conventions when working on your packages:
   > **Note**: Package names that comply with the [NPM package naming rules], e.g., `api-samples` and `octave-scripts`,
   > are accepted as well. If you write the desired name in the `friendlyName` field of `package.json`, it will be shown
   > in the UI as the package name.
-* Postfix the [views] and [viewers] classes with `~View` and `~Viewer` respectively: `NotebookView`, `DumbbellViewer`
+* Postfix the [views] and [viewers] classes with `~View` and `~Viewer` respectively: `NotebookView`
+  , `DumbbellViewer`
 * Prefix the names of semantic type detectors with `detect~`: `detectNucleotides`, `detectRDSmiles`
 * Use lowercase letters for files, separate words by dashes: `tika-extractor.py`, `chord-viewer.js`
 
@@ -272,55 +273,92 @@ Follow these naming conventions when working on your packages:
 
 Your package might contain the following additional folders, depending on your needs:
 
-| Folder       | Description                            | Documentation               | Package Examples                    |
-|------------- | -------------------------------------- | --------------------------- | ----------------------------------- |
-| environments | Environment configurations             | [Scripting > Environments]  | [DemoScripts]                     |
-| scripts      | Collection of scripts for computations | [Scripting]                 | [ChemScripts], [DemoScripts], [Impute] |
-| swaggers     | OpenAPI specifications                 | [Access > OpenAPI]          | [EnamineStore], [Swaggers]          |
-| connections  | Database connections                   | [Access > Data Connections] | [Chembl], [UsageAnalysis]           |
-| queries      | Database queries                       | [Access > Data Queries]     | [Chembl], [UsageAnalysis]           |
-| css          | CSS files with custom styles           | -                           | [Notebooks], [Discovery]            |
-| data-samples | Data for demo and testing              | -                           | [Chem], [Sunburst]                  |
+| Folder       | Description                            | Documentation               | Package Examples                        |
+|--------------|----------------------------------------|-----------------------------|-----------------------------------------|
+| environments | Environment configurations             | [Scripting > Environments]  | [DemoScripts]                           |
+| scripts      | Collection of scripts for computations | [Scripting]                 | [Chem/scripts], [DemoScripts], [Impute] |
+| swaggers     | OpenAPI specifications                 | [Access > OpenAPI]          | [EnamineStore], [Swaggers]              |
+| connections  | Database connections                   | [Access > Data Connections] | [Chembl], [UsageAnalysis]               |
+| queries      | Database queries                       | [Access > Data Queries]     | [Chembl], [UsageAnalysis]               |
+| css          | CSS files with custom styles           | -                           | [Notebooks], [Discovery]                |
+| data-samples | Data for demo and testing              | -                           | [Chem], [Sunburst]                      |
 
 ## What's next?
 
 * [Publishing a package]
 
 [a few valuable scripts]: https://github.com/datagrok-ai/public/tree/master/tools#commands
+
 [alternative to Moment.js]: https://www.npmjs.com/package/dayjs
+
 [annotated functions]: ../../overview/functions/function.md
-[applications]: ../how-to/build-an-app.md#applications 
+
+[applications]: ../how-to/build-an-app.md#applications
+
 [competitor for jQuery]: https://www.npmjs.com/package/cash-dom
+
 [connections]: ../../access/data-connection.md "A data connection is a configuration in Datagrok that lets you access data in a data source such as GitHub repository or local file system."
+
 [custom viewer built with D3.js]: https://github.com/datagrok-ai/public/tree/master/packages/Viewers
+
 [database queries]: ../../access/data-query.md "A data query extract data from a source. A data query can be an SQL query or a query to an Excel file."
-[Datagrok configuration section]: ./datagrok-configuration.md
+
+[Datagrok configuration section]: _datagrok-configuration.md
+
 [Datagrok tools section]: https://github.com/datagrok-ai/public/tree/master/tools#datagrok-tools
+
 [debug]: ./_debugging.md
+
 [deployment with Docker Compose section]: https://datagrok.ai/help/develop/admin/docker-compose
+
 [development servers]: https://dev.datagrok.ai/u
+
 [functions]: ../../overview/functions/function.md "A function can be used to query a database, delete a column from a table, applying predictive model to a dataset and other things."
+
 [function types]: ./_package-function-types.md
+
 [grok CLI section]: https://github.com/datagrok-ai/public/tree/master/tools#datagrok-tools
-[header parameters]: ../scripting.md#header-parameters
+
+[header parameters]: ../../compute/scripting.md#header-parameters
+
 [javaScript API]: https://datagrok.ai/help/develop/js-api
+
 [LTS version of Node.js]: https://nodejs.org/en/download/
+
 [node.js > os homedir section]: https://nodejs.org/api/os.html#os_os_homedir
+
 [npm instructions]: https://docs.npmjs.com/downloading-and-installing-node-js-and-npm
+
 [npm package naming rules]: https://docs.npmjs.com/cli/v6/configuring-npm/package-json#name
+
 [npm]: https://docs.npmjs.com/downloading-and-installing-node-js-and-npm
+
 [nvm]: https://github.com/nvm-sh/nvm#installing-and-updating
+
 [package section]: https://datagrok.ai/js-api/classes/dg.package
+
 [public repository]: https://github.com/datagrok-ai/public/tree/master/packages
+
 [public]: https://public.datagrok.ai/u
+
 [publish the package]: _publishing.md
-[script for Cheminformatics]: https://github.com/datagrok-ai/public/tree/master/packages/ChemScripts
-[scripts]: ../scripting.md "Scripting combines fast interactive visualizations and other features of the Datagrok platform with statistical packages and visualizations available in R, Python, Octave, Julia, and JavaScript."
-[semantic type detectors]: ../how-to/semantic-type-detector.md
+
+[script for Cheminformatics]: https://github.com/datagrok-ai/public/tree/master/packages/Chem/scripts
+
+[scripts]: ../../compute/scripting.md "Scripting combines fast interactive visualizations and other features of the Datagrok platform with statistical packages and visualizations available in R, Python, Octave, Julia, and JavaScript."
+
+[semantic type detectors]: ../how-to/define-semantic-type-detectors.md
+
 [sequence package]: https://github.com/datagrok-ai/public/tree/master/packages/Sequence
+
 [tables]: ../../access/connectors/files.md#supported-tabular-formats
+
 [user profile on Datagrok]: https://dev.datagrok.ai/u
+
 [viewers]: ../../visualize/viewers.md "A viewer is a visual component associated with a table."
+
 [views]: ../how-to/custom-views.md
+
 [webpack documentation]: https://webpack.js.org/configuration/
+
 [widgets]: ../../visualize/widgets.md "Widgets are various UI elements that together comprise the platform's user interface."
