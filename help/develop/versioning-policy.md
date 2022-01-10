@@ -1,6 +1,8 @@
 <!-- TITLE: Versioning policy -->
 <!-- SUBTITLE: -->
 
+# Versioning policy
+
 ## Docker Image Versioning policy
 
 The Datagrok versioning policy requires to include a major, minor, and test version number and look

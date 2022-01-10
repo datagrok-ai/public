@@ -1,14 +1,33 @@
 name: Tools Package
 on:
-  workflow_dispatch: {}
+  workflow_dispatch: { }
   push:
     branches:
       - 'master'
     paths:
       - 'tools/package.json'
 jobs:
+jobs:
+  check:
+    runs-on: ubuntu-20.04
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v2
+      - name: Check version was changed
+        run: |
+          name=$(jq .name package.json | sed 's/"//g')
+          latest_version="$(curl https://registry.npmjs.org/${name}/latest | jq .version)"
+          current_version=$(jq .version package.json | sed 's/"//g')
+          if [[ $latest_version == $current_version ]]; then
+            changed_version=false
+          else
+            changed_version=true
+          fi
+          echo "::set-output name=changed_version::${changed_version}"
+
   build:
     runs-on: ubuntu-20.04
+    if: needs.metadata.outputs.changed_version == 'true'
     environment: Prod
     steps:
       - uses: actions/checkout@v2
@@ -23,10 +42,10 @@ jobs:
         run: npm version
       - run: npm install
         working-directory: ./tools
-#      - run: npm publish
-#        working-directory: ./tools
-#        env:
-#          NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
+      #      - run: npm publish
+      #        working-directory: ./tools
+      #        env:
+      #          NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
       - name: Commit package-lock.json
         run: |
           if [ ! -z "$(git status -s tools/package-lock.json)" ]; then

@@ -1,6 +1,6 @@
 name: Packages
 on:
-  workflow_dispatch: {}
+  workflow_dispatch: { }
   push:
     branches:
       - 'master'
@@ -34,7 +34,7 @@ jobs:
           for DIR in ${CHANGED_DIRS}; do
             if [ -f "${DIR}/package.json" ]; then
               scripts=$(jq  '. | select( has("scripts") == true ).scripts' ${DIR}/package.json)
-  
+          
               if [ -z "$(jq  '. | select( has("build") == true )' <<< $scripts)" ]; then
                 build='false'
               else
@@ -45,9 +45,9 @@ jobs:
               else
                 test='true'
               fi
-  
+          
               dependencies=$(jq  '(. | select( has("dependencies") == true ).dependencies) * (. | select( has("devDependencies") == true ).devDependencies)' ${DIR}/package.json)
-  
+          
               if [ -z "$(jq  '. | select( has("datagrok-api") == true )' <<< $dependencies)" ]; then
                 install_jsapi='false'
               else
@@ -58,7 +58,17 @@ jobs:
               else
                 install_tools='true'
               fi
-              MATRIX_INCLUDE_JSON+="{\"project\": \"${DIR}\", \"build\": \"${build}\", \"test\": \"${test}\", \"install_jsapi\": \"${install_jsapi}\", \"install_tools\": \"${install_tools}\"}"
+
+              name=$(jq .name ${DIR}/package.json | sed 's/"//g')
+              latest_version="$(curl https://registry.npmjs.org/${name}/latest | jq .version)"
+              current_version=$(jq .version ${DIR}/package.json | sed 's/"//g')
+              if [[ $latest_version == $current_version ]]; then
+                CHANGED_VERSION='false'
+              else
+                CHANGED_VERSION='true'
+              fi
+
+              MATRIX_INCLUDE_JSON+="{\"project\": \"${DIR}\", \"build\": \"${build}\", \"test\": \"${test}\", \"install_jsapi\": \"${install_jsapi}\", \"install_tools\": \"${install_tools}\", \"changed_version\": \"${CHANGED_VERSION}\"}"
             fi
           done
 
@@ -76,7 +86,7 @@ jobs:
 
   build:
     needs: metadata
-    if: needs.metadata.outputs.continue == 'yes'
+    if: needs.metadata.outputs.continue == 'yes' && matrix.changed_version == 'true'
     runs-on: ubuntu-latest
     environment: Prod
     strategy:
