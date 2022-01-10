@@ -1,4 +1,4 @@
-name: Datagrok Packages
+name: Packages
 on:
   workflow_dispatch: {}
   push:
@@ -8,7 +8,8 @@ on:
       - 'packages/*/package.json'
 jobs:
   metadata:
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-20.04
+    environment: Prod
     outputs:
       matrix: ${{ steps.generate-matrix.outputs.matrix }}
       continue: ${{ steps.generate-matrix.outputs.continue }}
@@ -31,32 +32,34 @@ jobs:
           MATRIX_INCLUDE_JSON="["
 
           for DIR in ${CHANGED_DIRS}; do
-            scripts=$(jq  '. | select( has("scripts") == true ).scripts' ${DIR}/package.json)
-
-            if [ -z "$(jq  '. | select( has("build") == true )' <<< $scripts)" ]; then
-              build='false'
-            else
-              build='true'
+            if [ -f "${DIR}/package.json" ]; then
+              scripts=$(jq  '. | select( has("scripts") == true ).scripts' ${DIR}/package.json)
+  
+              if [ -z "$(jq  '. | select( has("build") == true )' <<< $scripts)" ]; then
+                build='false'
+              else
+                build='true'
+              fi
+              if [ -z "$(jq  '. | select( has("test") == true )' <<< $scripts)" ]; then
+                test='false'
+              else
+                test='true'
+              fi
+  
+              dependencies=$(jq  '(. | select( has("dependencies") == true ).dependencies) * (. | select( has("devDependencies") == true ).devDependencies)' ${DIR}/package.json)
+  
+              if [ -z "$(jq  '. | select( has("datagrok-api") == true )' <<< $dependencies)" ]; then
+                install_jsapi='false'
+              else
+                install_jsapi='true'
+              fi
+              if [ -z "$(jq  '. | select( has("datagrok-tools") == true )' <<< $dependencies)" ]; then
+                install_tools='false'
+              else
+                install_tools='true'
+              fi
+              MATRIX_INCLUDE_JSON+="{\"project\": \"${DIR}\", \"build\": \"${build}\", \"test\": \"${test}\", \"install_jsapi\": \"${install_jsapi}\", \"install_tools\": \"${install_tools}\"}"
             fi
-            if [ -z "$(jq  '. | select( has("test") == true )' <<< $scripts)" ]; then
-              test='false'
-            else
-              test='true'
-            fi
-
-            dependencies=$(jq  '(. | select( has("dependencies") == true ).dependencies) * (. | select( has("devDependencies") == true ).devDependencies)' ${DIR}/package.json)
-
-            if [ -z "$(jq  '. | select( has("datagrok-api") == true )' <<< $dependencies)" ]; then
-              install_jsapi='false'
-            else
-              install_jsapi='true'
-            fi
-            if [ -z "$(jq  '. | select( has("datagrok-tools") == true )' <<< $dependencies)" ]; then
-              install_tools='false'
-            else
-              install_tools='true'
-            fi
-            MATRIX_INCLUDE_JSON+="{\"project\": \"${DIR}\", \"build\": \"${build}\", \"test\": \"${test}\", \"install_jsapi\": \"${install_jsapi}\", \"install_tools\": \"${install_tools}\"}"
           done
 
           MATRIX_INCLUDE_JSON="${MATRIX_INCLUDE_JSON//\}\{/\}, \{}"

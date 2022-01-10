@@ -3,8 +3,8 @@
 
 # Twitter
 
-Provides ability to run search via [Twitter](https://twitter.com/) posts by 
-search key and geocode parameters and return results in tabular form.
+Provides ability to run search via [Twitter](https://twitter.com/) posts by search key and geocode parameters and return
+results in tabular form.
 
 ## Connection parameters
 
@@ -19,5 +19,5 @@ search key and geocode parameters and return results in tabular form.
 
 See also:
 
-  * [Data connection](../data-connection.md)
-  * [Twitter](https://twitter.com/)
+* [Data connection](../data-connection.md)
+* [Twitter](https://twitter.com/)

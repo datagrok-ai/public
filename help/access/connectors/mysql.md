@@ -3,11 +3,10 @@
 
 # MySQL
 
-Provides access to [MySQL](https://www.mysql.com/) database
-using SQL queries via JDBC driver. 
+Provides access to [MySQL](https://www.mysql.com/) database using SQL queries via JDBC driver.
 
 See also:
 
-  * [Data connection](../data-connection.md)
-  * [MySQL](https://www.mysql.com/)
-  * [MySQL Wiki](https://ru.wikipedia.org/wiki/MySQL)
+* [Data connection](../data-connection.md)
+* [MySQL](https://www.mysql.com/)
+* [MySQL Wiki](https://ru.wikipedia.org/wiki/MySQL)

@@ -3,17 +3,17 @@
 
 # JavaScript development
 
-JavaScript or TypeScript-based development is the preferred way to
-develop user-facing applications on top of the platform. Use the [JS API](js-api.md) to control pretty much anything
-within Datagrok, including [data manipulation](js-api.md#data-manipulation), adding [views](js-api.md#views)
-or [viewers](how-to/manipulate-viewers),
-[developing custom viewers](how-to/develop-custom-viewer),
+JavaScript or TypeScript-based development is the preferred way to develop user-facing applications on top of the
+platform. Use the [JS API](js-api.md) to control pretty much anything within Datagrok,
+including [data manipulation](js-api.md#data-manipulation), adding [views](js-api.md#views)
+or [viewers](how-to/manipulate-viewers.md),
+[developing custom viewers](how-to/develop-custom-viewer.md),
 [registering functions](js-api.md#registering-functions), training and
 applying [predictive models](../learn/predictive-modeling.md), and even [building custom apps](#applications).
 
-There are two options to run custom JavaScript code. For ad-hoc [scripts](../compute/scripting.md), 
-use the built-in JavaScript editor (`Functions | Scripts | New JavaScript Script`). 
-For reusable functions, viewers, and applications, use the packaging mechanism, which is the focus of this article.
+There are two options to run custom JavaScript code. For ad-hoc [scripts](../compute/scripting.md), use the built-in
+JavaScript editor (`Functions | Scripts | New JavaScript Script`). For reusable functions, viewers, and applications,
+use the packaging mechanism, which is the focus of this article.
 
 This article describes what a [package](#packages) is, as well as techniques for [developing](#development),
 [debugging](#debugging), [publishing](#publishing) and using [documentation](#documentation).
@@ -25,12 +25,12 @@ package might contain different things:
 
 * JavaScript [functions](../overview/functions/function.md), [viewers](../visualize/viewers.md)
   , [widgets](../visualize/widgets.md), [applications](#applications)
-* [Scripts](scripting.md) written in R, Python, Octave, Grok, Julia, JavaScript, NodeJS, or Java
+* [Scripts](../compute/scripting.md) written in R, Python, Octave, Grok, Julia, JavaScript, NodeJS, or Java
 * [Queries](../access/data-query.md) and [connections](../access/data-connection.md)
 * [Tables](../access/connectors/files.md#supported-tabular-formats), files, and other objects
 
-See our [GitHub repository](https://github.com/datagrok-ai/public/tree/master/packages) for examples,
-or follow the [step-by-step guide](how-to/create-package.md) for creating your own package.
+See our [GitHub repository](https://github.com/datagrok-ai/public/tree/master/packages) for examples, or follow
+the [step-by-step guide](how-to/create-package.md) for creating your own package.
 
 ## Package structure
 
@@ -47,17 +47,19 @@ A simplest JavaScript package consists of the following files:
 
 In addition to that, it might contain the following folders:
 
-* `environments`: [environment configurations](scripting.md#environments) for [scripts](scripting.md).
+* `environments`: [environment configurations](../compute/scripting.md#environments)
+  for [scripts](../compute/scripting.md).
   Examples: [DemoScripts](https://github.com/datagrok-ai/public/tree/master/packages/DemoScripts)
-* `scripts`: a collection of [scripts](scripting.md) used for computations.
-  Examples: [ChemScripts](https://github.com/datagrok-ai/public/tree/master/packages/ChemScripts)
+* `scripts`: a collection of [scripts](../compute/scripting.md) used for computations.
+  Examples: [Chem](https://github.com/datagrok-ai/public/tree/master/packages/Chem)
   , [DemoScripts](https://github.com/datagrok-ai/public/tree/master/packages/DemoScripts)
   , [Impute](https://github.com/datagrok-ai/public/tree/master/packages/Impute)
 * `swaggers`: REST APIs in [Swagger/OpenAPI](../access/open-api.md) format.
   Examples: [EnamineStore](https://github.com/datagrok-ai/public/tree/master/packages/EnamineStore)
   , [Swaggers](https://github.com/datagrok-ai/public/tree/master/packages/Swaggers)
-* `connections` and `queries`: [connections](../access/data-connection.md) and [queries](../access/data-query.md) for
-  data retrieval. Examples: [Chembl](https://github.com/datagrok-ai/public/tree/master/packages/Chembl)
+* `connections` and `queries`: [connections](../access/data-connection.md)
+  and [queries](../access/data-query.md) for data retrieval.
+  Examples: [Chembl](https://github.com/datagrok-ai/public/tree/master/packages/Chembl)
   , [UsageAnalysis](https://github.com/datagrok-ai/public/tree/master/packages/UsageAnalysis)
 * `css`: CSS files for custom styling.
   Examples: [Notebooks](https://github.com/datagrok-ai/public/tree/master/packages/Notebooks)
@@ -94,7 +96,8 @@ In addition to that, it might contain the following folders:
 The package template first includes only one dependency — `datagrok-api`. You can add more packages to the dependencies
 list and install them via `npm install`.
 
-The file `package.json` also contains `scripts` for [debugging and publishing your package](#publishing).
+The file `package.json` also contains `scripts`
+for [debugging and publishing your package](#publishing).
 
 ### <a href="#" id="package.js"></a>package.js
 
@@ -119,10 +122,10 @@ file. If you choose to include other files, such as CSS, in your package, import
 
 During the [publishing step](#publishing), the contents of `package.js` get parsed, and functions with the properly
 formatted
-[headers](scripting.md#header) are registered as Grok [functions](../overview/functions/function.md). By annotating
-functions in a specific way, it is possible to register custom viewers, widgets, renderers, converters, validators,
-suggestions, info panels, and semantic type detectors. If function has more than one output, it must return JS
-object `{param1: value, param2: value}`:
+[headers](../compute/scripting.md#header) are registered as Grok [functions](../overview/functions/function.md)
+. By annotating functions in a specific way, it is possible to register custom viewers, widgets, renderers, converters,
+validators, suggestions, info panels, and semantic type detectors. If function has more than one output, it must return
+JS object `{param1: value, param2: value}`:
 
 ```js
 //name: test
@@ -135,11 +138,11 @@ export function test() {
 
 ### <a href="#" id="detectors.js"></a>detectors.js
 
-`detectors.js` is a JavaScript file. It should define a class named `<package_name>PackageDetectors` that
-subclasses `DG.Package`. It is similar to `package.js` but intended for smaller functions — semantic type detectors.
-Datagrok calls these functions each time the user opens a table. Detectors will be uploaded separately from the rest of
-the package and used to quickly inspect the data and determine the semantic type of the columns. Semantic type tagging
-allows the platform to offer specific functions for data of a particular type.
+`detectors.js` is a JavaScript file. It should define a class named `<package_name>PackageDetectors`
+that subclasses `DG.Package`. It is similar to `package.js` but intended for smaller functions — semantic type
+detectors. Datagrok calls these functions each time the user opens a table. Detectors will be uploaded separately from
+the rest of the package and used to quickly inspect the data and determine the semantic type of the columns. Semantic
+type tagging allows the platform to offer specific functions for data of a particular type.
 
 Below, there is an example of a package `Sequence` containing a single detector `detectNucleotides`:
 
@@ -193,12 +196,12 @@ module.exports = {
 
 Have a look at the [Webpack documentation](https://webpack.js.org/configuration/) in case you need to modify or extend
 the provided options. For instance, you can add CSS and other file [loaders](https://webpack.js.org/loaders/)
-to `module.rules`. When the package is loaded, the output gets assigned to a variable (type `window.<package_name>`,
-e.g. `window.sequence`, in the browser's console just to check). Finally, note that the package name have reoccurred in
-multiple files, including this one. This might become important if you are going to introduce changes to the code or,
-for example, rename the package without creating it from scratch. In this case, make sure the name is accurately
-substituted: set the `name` field in `package.json` and `library` in `webpack.config.js` to the desired name in lower
-case, and rename a class `<package_name>PackageDetectors` using camel case in `detectors.js`.
+to `module.rules`. When the package is loaded, the output gets assigned to a variable (
+type `window.<package_name>`, e.g. `window.sequence`, in the browser's console just to check). Finally, note that the
+package name have reoccurred in multiple files, including this one. This might become important if you are going to
+introduce changes to the code or, for example, rename the package without creating it from scratch. In this case, make
+sure the name is accurately substituted: set the `name` field in `package.json` and `library` in `webpack.config.js` to
+the desired name in lower case, and rename a class `<package_name>PackageDetectors` using camel case in `detectors.js`.
 
 ### Naming conventions
 
@@ -213,8 +216,8 @@ consider:
   postfixing your classes with `View` and `Viewer` respectively
 * The names of semantic type detectors typically start with the `detect` prefix, e.g., `detectNucleotides`
   or `detectRDSmiles`
-* File names can be written in lower case, with dashes between words: `tika-extractor.py` and `chord-viewer.js`
-
+* File names can be written in lower case, with dashes between words: `tika-extractor.py`
+  and `chord-viewer.js`
 
 ## Development
 
@@ -259,9 +262,9 @@ additional metadata (such as publication date). Typically, only one version of a
 Administrators can manage published packages and decide which versions should be used. It is possible to roll back to an
 older version, or assign a particular version to a particular group of users.
 
-Importantly, if the version changes, there will be an independent instance of each package asset.  
-Multiple versions of a package can be deployed at one moment, and the administrator can switch between them. All users
-will only see objects that belong to the current package version.
+Importantly, if the version changes, there will be an independent instance of each package asset. Multiple versions of a
+package can be deployed at one moment, and the administrator can switch between them. All users will only see objects
+that belong to the current package version.
 
 There is a special `debug` version that can be deployed for each package. If the developer applies it, it becomes active
 for the current package until the developer deletes it or changes their developer key. In this case, the developer can
@@ -315,9 +318,9 @@ package from there. Our [public GitHub repository](https://github.com/datagrok-a
 telling example of this workflow. We also welcome contributions, which you can learn more about
 in [this article](https://datagrok.ai/help/collaborate/public-repository).
 
-To publish a package from the repository, you need to open `Manage | Packages | Add new package` first. Once the window
-appears, choose `Git` as the source type, enter the URL to your repository, and specify the package directory relative
-to its root. Click on `LOAD PACKAGE METADATA` to get the package name and description.
+To publish a package from the repository, you need to open `Manage | Packages | Add new package`
+first. Once the window appears, choose `Git` as the source type, enter the URL to your repository, and specify the
+package directory relative to its root. Click on `LOAD PACKAGE METADATA` to get the package name and description.
 
 ![](img/git-publishing.png)
 
@@ -326,8 +329,8 @@ If necessary, you can specify additional settings and then publish the package.
 ### Continuous integration
 
 `Webpack` is required for your package source code to work successfully in the browser. The Datagrok platform can build
-a package on the server side, in which case, you need to specify `--rebuild` option in scripts from `package.json`. The
-script `"build": "webpack"` is reserved for server build.
+a package on the server side, in which case, you need to specify `--rebuild`
+option in scripts from `package.json`. The script `"build": "webpack"` is reserved for server build.
 
 Alternatively, it's possible to build your package on the client side using `Webpack`. To do that, run the
 script `"build": "webpack"` before publishing.
@@ -455,41 +458,42 @@ Below we use WebStorm IDE on Windows as an example, this practice should extrapo
 
 Open the `Edit Configurations...` dialog in WebStorm:
 
-![WebStorm: Edit Configurations](webstorm-debugging-01.png)
+![WebStorm: Edit Configurations](packages/webstorm-debugging-01.png)
 
 In this dialog, add a new `Shell Script` configuration by the `+` button:
 
-![WebStorm: Adding a Shell Script configuration](webstorm-debugging-02.png)
+![WebStorm: Adding a Shell Script configuration](packages/webstorm-debugging-02.png)
 
 Fill this configuration with the following:
 
-![WebStorm: Shell Script configuration content](webstorm-debugging-03.png)
+![WebStorm: Shell Script configuration content](packages/webstorm-debugging-03.png)
 
 _Note._ This configuration looks controversial, but this is so only to overcome the known problems in WebStorm. It turns
 out both interpreter and script parameters have to be specified. Omitting the script parameter will work if you run
-the `Webpack & Publish` configuration standalone, but _won't_ work as part of the other's configuration build step,
-which we'd need later. As for the trailing `echo`, it is simply due to the way this build step works in WebStorm:
+the `Webpack & Publish` configuration standalone, but _won't_
+work as part of the other's configuration build step, which we'd need later. As for the trailing `echo`, it is simply
+due to the way this build step works in WebStorm:
 it concatenates the interpreter line with the script call line, and we use it to suppress the redundant script call
 line.
 
 This `Webpack & Publish` configuration shall become a step running a webpack on your package and publishing it to a
-configuration of your choice. In the above screenshot we've chosen a `dev` configuration, declared in your grok config
-file at `%USERPROFILE%/.grok/config.yaml`:
+configuration of your choice. In the above screenshot we've chosen a `dev`
+configuration, declared in your grok config file at `%USERPROFILE%/.grok/config.yaml`:
 
-![grok config settings](webstorm-debugging-04.png)
+![grok config settings](packages/webstorm-debugging-04.png)
 
 Use the configuration of your choice in the `Shell Script` configuration instead of `dev`.
 
 Proceed to creating the actual JavaScript debug configuration. Using the same `+` button, add a `JavaScript Debug`
 configuration, and fill it with the following:
 
-![WebStorm: JavaScript Debug configuration content](webstorm-debugging-05.png)
+![WebStorm: JavaScript Debug configuration content](packages/webstorm-debugging-05.png)
 
-Basically, you need to add the previously created `Shell Script` configuration as a `Before Launch` step. After this
-step is executed on hitting the `Debug` button and displaying the `webpack` log and errors in the WebStorm tool output
-window, WebStorm will launch the browser in the debugging mode and let you hit your breakpoints:
+Basically, you need to add the previously created `Shell Script` configuration as a `Before Launch`
+step. After this step is executed on hitting the `Debug` button and displaying the `webpack` log and errors in the
+WebStorm tool output window, WebStorm will launch the browser in the debugging mode and let you hit your breakpoints:
 
-![WebStorm: a debugging session](webstorm-debugging-06.png)
+![WebStorm: a debugging session](packages/webstorm-debugging-06.png)
 
 *Troubleshooting.* Many users reported inability to employ any kind of JavaScript debugging from the WebStorm IDE after
 it initially worked. As of 2021, this is
@@ -532,7 +536,8 @@ Deploying such package locates it to the Datagrok host URI (such as `https://dev
 
 ### Troubleshooting debugging
 
-1. For webpack-based packages, make sure there is `devtool: 'inline-source-map'` in `module.exports =` section of
+1. For webpack-based packages, make sure there is `devtool: 'inline-source-map'`
+   in `module.exports =` section of
    `webpack.config.js`. Otherwise, source maps aren't generated and the IDE won't get source code locations.
 
 2. Make sure the required plugins / debuggers for Chrome debugging are installed in your IDE.
@@ -567,8 +572,8 @@ possible to customize the editor's appearance by defining a special [editor func
 
 ## Documentation
 
-According to [this study](http://sigdoc.acm.org/wp-content/uploads/2019/01/CDQ18002_Meng_Steinhardt_Schubert.pdf), in
-terms of the strategies used for understanding API documentation, different developers fall into several groups:
+According to [this study](http://sigdoc.acm.org/wp-content/uploads/2019/01/CDQ18002_Meng_Steinhardt_Schubert.pdf)
+, in terms of the strategies used for understanding API documentation, different developers fall into several groups:
 systematic, opportunistic and pragmatic. These findings are consistent with our experience. For Datagrok's
 documentation, we have established an approach that enables developers from either of the above-mentioned groups to be
 productive.
@@ -576,8 +581,9 @@ productive.
 * [Sample browser](https://public.datagrok.ai/js) (`Functions | Scripts | New JavaScript Script`) is an interactive tool
   for browsing, editing, and running JavaScript samples that come with the platform. Samples are grouped by domain, such
   as data manipulation, visualization, or cheminformatics. They are short, clean examples of the working code
-  using [Grok API](js-api.md) that can be copy-and-pasted into the existing solution. The samples are also cross-linked
-  with the [help](https://datagrok.ai/help) system.
+  using [Grok API](js-api.md)
+  that can be copy-and-pasted into the existing solution. The samples are also cross-linked with
+  the [help](https://datagrok.ai/help) system.
 * [Grok API](js-api.md) provides complete control over the platform.
   [JS documentation](https://public.datagrok.ai/js) is available.
 * [Platform help](https://datagrok.ai/help/) explains the functionality from the user's point of view. Where
@@ -585,7 +591,7 @@ productive.
   community wiki, where users will be contributing to the content. The same web pages are used as an interactive help
   within the platform (you see help on the currently selected object).
 
-Also, you can connect with fellow developers on either 
+Also, you can connect with fellow developers on either
 [community forum](https://community.datagrok.ai/) or [slack](https://datagrok.slack.com).
 
 See also:

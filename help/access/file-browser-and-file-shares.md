@@ -28,8 +28,8 @@ Datagrok supports file uploading not only from your computer, but also from othe
 * Google Cloud (Storage)
 * Amazon S3
 
-After you configure and connect a data source, the selected folder with files from the data source will appear
-in the File Browser. After that, you can double-click a file in that folder in Datagrok to view the content.
+After you configure and connect a data source, the selected folder with files from the data source will appear in the
+File Browser. After that, you can double-click a file in that folder in Datagrok to view the content.
 
 By default, Datagrok creates the root **Home** folder in the File Browser, but you can also create other folders.
 
@@ -43,8 +43,8 @@ Share.
 
 ## Security
 
-The files and folders that you connect to Datagrok from any data source are hidden from other users by default.
-You can create a [dedicated file share] to let selected users or user groups access your files.
+The files and folders that you connect to Datagrok from any data source are hidden from other users by default. You can
+create a [dedicated file share] to let selected users or user groups access your files.
 
 ## Indexing
 
@@ -66,8 +66,8 @@ Datagrok extracts the following information from the indexed file:
 * Number of rows and columns
 * Column-level information such as name, data type, and [semantic type](../discover/semantic-types.md)
 
-To turn on indexing for a file share, select **Index Files** when [adding a file share](#adding-a-file-share). You
-can also turn on indexing later via the context menu:
+To turn on indexing for a file share, select **Index Files**
+when [adding a file share](#adding-a-file-share). You can also turn on indexing later via the context menu:
 
 1. In the File Browser, right-click a file share, and then select **Edit**.
    > **Note**: You can turn on indexing only for a file share, not for a folder inside a file share.
@@ -82,27 +82,27 @@ can also turn on indexing later via the context menu:
 
 Datagrok's indexing mechanism understands the following file formats:
 
-| Extension       | Description                                      | 
-| --------------- | ------------------------------------------------ |
-| .txt            | Plain text                                       |
-| .csv            | Comma-separated values                           |
-| .tsv            | Tab-separated values                             |
-| .xml            | Extensible Markup Language                       |
-| .json           | JavaScript Object Notation                       |
-| .html           | HyperText Markup Language                        |
-| .xlsx           | Excel                                            |
-| .edf            | European Data Format                             |
-| .sas7bdat       | SAS database file                                |
-| .kml, .kmz      | Keyhole Markup Language (geographic annotations) |
-| .rds, .rda      | R Data Format                                    |
-| .h5             | Hierarchical Data Format                         |
-| .nc             | NetCDF                                           |
-| .mat            | MATLAB MAT                                       |
-| .d42            | Datagrok project                                 |
-| .zip            | ZIP archive                                      |
-| .gz, .gzip      | gzip                                             |
-| .tar            | Tape archive                                     |
-| .ipynb          | Jupyter Notebook                                 |
+| Extension  | Description                                      |
+|------------|--------------------------------------------------|
+| .txt       | Plain text                                       |
+| .csv       | Comma-separated values                           |
+| .tsv       | Tab-separated values                             |
+| .xml       | Extensible Markup Language                       |
+| .json      | JavaScript Object Notation                       |
+| .html      | HyperText Markup Language                        |
+| .xlsx      | Excel                                            |
+| .edf       | European Data Format                             |
+| .sas7bdat  | SAS database file                                |
+| .kml, .kmz | Keyhole Markup Language (geographic annotations) |
+| .rds, .rda | R Data Format                                    |
+| .h5        | Hierarchical Data Format                         |
+| .nc        | NetCDF                                           |
+| .mat       | MATLAB MAT                                       |
+| .d42       | Datagrok project                                 |
+| .zip       | ZIP archive                                      |
+| .gz, .gzip | gzip                                             |
+| .tar       | Tape archive                                     |
+| .ipynb     | Jupyter Notebook                                 |
 
 ## Adding a file share
 
@@ -127,8 +127,8 @@ Datagrok will add a new folder, and you can then create additional folders in it
 
 ### File share options
 
-While each data source requires its own configuration, most of the configuration options are similar across data sources.
-Refer to the next table for more information.
+While each data source requires its own configuration, most of the configuration options are similar across data
+sources. Refer to the next table for more information.
 
 | Option            | Description                                                                        |
 | ----------------- | ---------------------------------------------------------------------------------- |
@@ -154,12 +154,12 @@ To upload a file from your computer to Datagrok:
 Datagrok lets you share any file from the File Browser as long as the file is located in a file share. There are two
 ways to share a file:
 
-* Share a file from the data source.
-  In this case, you need to share a folder, where the file is located, then copy the direct link to the
-  file, and send this link to the needed user. The user will obtain access to the file in data source via Datagrok.
-* Share a file as table (a dataframe) from the Datagrok server.
-  In this case, you only need to share a folder with another user, and Datagrok will send a direct link
-  to the file in the folder. When the user follows the link, the file data will be loaded from the server.
+* Share a file from the data source. In this case, you need to share a folder, where the file is located, then copy the
+  direct link to the file, and send this link to the needed user. The user will obtain access to the file in data source
+  via Datagrok.
+* Share a file as table (a dataframe) from the Datagrok server. In this case, you only need to share a folder with
+  another user, and Datagrok will send a direct link to the file in the folder. When the user follows the link, the file
+  data will be loaded from the server.
 
 > **Note**: Datagrok doesn't share a file directly &mdash; you need to share a connection (a file share or a folder within
 > a file share) that contains the file. Avoid sharing the root **Home** folder, because the other Datagrok user will be
@@ -179,8 +179,8 @@ To share a file:
 ![](file-browser-and-file-shares-4.png)
 
 3. In the **Share file** dialog, select **Share folder as a new connection**, enter the email or name of the user or
-   group (1) you will share the file with, select the **Can view** or **Can edit** permission (2), optionally,
-   enter a description (3), and then select **Ok** (4).
+   group (1) you will share the file with, select the **Can view** or **Can edit** permission (2), optionally, enter a
+   description (3), and then select **Ok** (4).
    > You can optionally select **Send notifications** so that the user or group will receive a message in Datagrok after
    > you shared a connection with them.
 
@@ -194,8 +194,8 @@ server.
 
 To share a file as table:
 
-1. In the side panel on the left, select the **File** icon > **Files**, open the needed folder, and then select the
-   file to share.
+1. In the side panel on the left, select the **File** icon > **Files**, open the needed folder, and then select the file
+   to share.
 
 ![](file-browser-and-file-shares-3.png)
 
@@ -210,8 +210,8 @@ To share a file as table:
 
 ![](file-browser-and-file-shares-7.png)
 
-4. In the **Share {document type}** dialog, enter the email or name of the user or group (1) you will share the file with,
-   select the **Can view** or **Can edit** permission (2), enter an optional description of the file share (3),
+4. In the **Share {document type}** dialog, enter the email or name of the user or group (1) you will share the file
+   with, select the **Can view** or **Can edit** permission (2), enter an optional description of the file share (3),
    and then select **Ok** (4).
 
 ![](file-browser-and-file-shares-8.png)
@@ -223,6 +223,14 @@ To share a file as table:
 ## Related topics
 
 * [Data connection](data-connection.md)
-* [Dedicated file share]: #file-shares
-* [Data connection]: https://datagrok.ai/help/access/data-connection
-* [Uploading a project]: https://datagrok.ai/help/overview/project#uploading-a-project
+*
+
+[Dedicated file share]: #file-shares
+
+*
+
+[Data connection]: https://datagrok.ai/help/access/data-connection
+
+*
+
+[Uploading a project]: https://datagrok.ai/help/overview/project#uploading-a-project

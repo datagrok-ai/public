@@ -4,9 +4,9 @@
 # Column properties
 
 Dialog allows to change column properties.
-  
+
 # Properties
-  
+
 | Property         | Description                                        |
 |------------------|----------------------------------------------------|
 | New name         | New column name                                    |

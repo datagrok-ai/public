@@ -5,14 +5,14 @@
 
 A combo box for selecting a column
 
-**Mouse-over** to see column summary, as well as a viewer preview.   
-**[Drag a column](../../overview/drag-and-drop.md)** into a selector to change it.   
-**Start typing** to filter columns.   
-**Esc** to reset column filter, or hide popup.   
-**Enter** to accept current choice.   
-**Space** to pop up column selector.   
+**Mouse-over** to see column summary, as well as a viewer preview.
+**[Drag a column](../../overview/drag-and-drop.md)** into a selector to change it.
+**Start typing** to filter columns.
+**Esc** to reset column filter, or hide popup.
+**Enter** to accept current choice.
+**Space** to pop up column selector.
 
-See also: 
-  
-  * [Viewers](../viewers.md)
-  * [Table View](../../overview/table-view.md)
+See also:
+
+* [Viewers](../viewers.md)
+* [Table View](../../overview/table-view.md)

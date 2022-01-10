@@ -17,7 +17,7 @@ A semantic query language for databases.
 
 See also:
 
-  * [Data connection](../data-connection.md)
-  * [SPARQL](https://en.wikipedia.org/wiki/SPARQL)
-  * [SPARQL query](../sparql-query.md)
-  * [SPARQL endpoints](https://www.w3.org/wiki/SparqlEndpoints)
+* [Data connection](../data-connection.md)
+* [SPARQL](https://en.wikipedia.org/wiki/SPARQL)
+* [SPARQL query](../sparql-query.md)
+* [SPARQL endpoints](https://www.w3.org/wiki/SparqlEndpoints)
