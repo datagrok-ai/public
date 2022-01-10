@@ -518,7 +518,7 @@ The schema has the following tables:
 
 ## Useful links
 
-* [Deployment](deploy.md)
+* [Deployment](_deploy.md)
 * [Configuration](configuration.md)
 * [Continuous integration](continuous-integration.png)
 * [Versioning policy](../versioning-policy.md)
