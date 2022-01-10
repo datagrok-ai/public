@@ -7,7 +7,6 @@ on:
     paths:
       - 'tools/package.json'
 jobs:
-jobs:
   check:
     runs-on: ubuntu-20.04
     steps:

@@ -86,7 +86,7 @@ jobs:
 
   build:
     needs: metadata
-    if: needs.metadata.outputs.continue == 'yes' && matrix.changed_version == 'true'
+    if: needs.metadata.outputs.continue == 'yes'
     runs-on: ubuntu-latest
     environment: Prod
     strategy:
@@ -126,7 +126,9 @@ jobs:
         working-directory: ${{ matrix.project }}
         env:
           NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
+        if: ${{ matrix.changed_version == 'true' }}
       - name: Commit package-lock.json
+        if: ${{ matrix.changed_version == 'true' }}
         run: |
           if [ ! -z "$(git status -s ${{ matrix.project }}/package-lock.json)" ]; then
             git config --global user.name 'GitHub Actions'
