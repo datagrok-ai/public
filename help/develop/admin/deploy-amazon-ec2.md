@@ -137,5 +137,5 @@ docker run -it -d \
 
 See also:
 
-* [Architecture](../../develop/admin/architecture.md)
-* [Architecture Details](../../develop/admin/infrastructure.md)
+* [Architecture](architecture.md)
+* [Architecture Details](infrastructure.md)
