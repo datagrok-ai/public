@@ -118,5 +118,5 @@ docker-compose -f docker/localhost.docker-compose.yaml --project-name datagrok \
 
 * [Docker Compose](https://docs.docker.com/compose/)
 * [Infrastructure](infrastructure.md)
-* [Deployment](deploy.md)
+* [Deployment](_deploy.md)
 * [Configuration](configuration.md)
