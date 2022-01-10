@@ -34,3 +34,4 @@ dist/
 pubspec.lock
 .dart_tool
 .packages
+/docker/vm.docker-compose.yaml

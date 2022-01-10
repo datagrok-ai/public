@@ -67,7 +67,7 @@ If you want to jump-start with Datagrok on your local machine, we recommend this
 2. Check containers logs for any possible errors and report the problem if there is any
    ```bash
    docker-compose -f docker/localhost.docker-compose.yaml --project-name datagrok --profile all logs
-   ```  
+   ```
 3. Restart docker compose stand
     ```bash
     docker-compose -f docker/localhost.docker-compose.yaml --project-name datagrok --profile all stop
@@ -75,7 +75,7 @@ If you want to jump-start with Datagrok on your local machine, we recommend this
     ```
 4. For advanced service troubleshooting you can access the containers shell
     ```bash
-    # Replace <service> with one of the services: db, datagrok, grok_connect, grok_compute, jupyter_notebook, jupyter_kernel_gateway, h2o 
+    # Replace <service> with one of the services: db, datagrok, grok_connect, grok_compute, jupyter_notebook, jupyter_kernel_gateway, h2o
     docker-compose -f docker/localhost.docker-compose.yaml --project-name datagrok --profile all exec <service> /bin/sh
     ```
 

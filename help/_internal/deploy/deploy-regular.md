@@ -6,7 +6,7 @@
 This document contains instructions to deploy Datagrok on a regular machine without cloud-based hosting.
 
 In case you want to jump-start using Datagrok with minimum manual effort on a local machine,
-check [Deployment with Docker Compose](docker-compose.md). The below method gives more control and includes manual
+check [Deployment with Docker Compose](../../develop/admin/local-try-out.md). The below method gives more control and includes manual
 installation of a PostgreSQL instance along with locating Datagrok's working files on a host machine's file system.
 
 ## Prerequisites
@@ -215,5 +215,5 @@ Deployment instruction:
 
 See also:
 
-* [Architecture](architecture.md)
-* [Architecture Details](infrastructure.md)
+* [Architecture](../../develop/admin/architecture.md)
+* [Architecture Details](../../develop/admin/infrastructure.md)

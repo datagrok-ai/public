@@ -26,10 +26,6 @@ reuse them (or share with teammates) later on.
 * [Statistical hypothesis testing](#statistical-hypothesis-testing)
 * [Layouts](#layouts)
 
-## Design
-
-
-
 ## Creating
 
 Once a table is open, click on the icons shown on the left pane to open the corresponding viewer.

@@ -107,7 +107,9 @@ https://www.youtube.com/watch?v=oFs9RShkHT8
 
 Datagrok Docker containers are built using Jenkins, all software are upgraded and patched on every build.
 
-There are multiple options to deploy application:
-* [Docker Compose](deploy-amazon-ecs.md) deploy to AWS ECS
+Docker-compose manifest is used to describe and deploy Datagrok applications.
+
+Also, there are multiple advanced options to deploy application:
+
 * [CloudFormation template](deploy/cloudformation.yaml) to deploy to AWS ECS
 * [Terraform scripts](deploy/terraform.tf) to deploy to AWS ECS
