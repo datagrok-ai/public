@@ -40,7 +40,7 @@ The recommended data storage engine for enterprises is S3, which is inherently s
 ### Computations
 
 CVM is used for scientific computations. For high loads, it should be deployed with the auto-scaling mode enabled.
-See [Compute Virtual Machine](architecture.md#compute-virtual-machine) for details.
+See [Compute Virtual Machine](infrastructure.md#compute-components) for details.
 
 ## Application
 
@@ -51,7 +51,7 @@ required.
 ### Big datasets
 
 In order to work with big datasets right in the browser, we developed our
-proprietary [in-memory database](architecture.md#in-memory-database).
+proprietary [in-memory database](infrastructure.md#in-memory-database).
 
 ### Visualizations
 
@@ -61,7 +61,7 @@ objects in the browser's DOM tree. Second, since they were not designed for work
 of memory they allocate is sizable (usually, the data needs to be in JSON format, which is suboptimal).
 
 To address that, we had to bite the bullet and implement several
-[high-performance visualizations](architecture.md#viewers)
+[high-performance visualizations](infrastructure.md#viewers)
 from scratch. All performance-critical viewers use immediate-mode canvas-based rendering, thus solving the DOM issue.
 Moreover, they use our high-performance data engine. The data is not only efficiently stored, but viewers allocate no
 additional memory since they work directly with the data engine. Of course, that required a lot of work and meticulous

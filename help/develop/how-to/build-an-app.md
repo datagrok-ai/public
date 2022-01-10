@@ -283,7 +283,7 @@ from scratch and optimized for the purpose of exploratory data analysis, interac
 learning.
 
 Note that Datagrok dataframes live and operate entirely inside the browser, but not on
-our [Compute VM](../admin/architecture-details.md#compute-virtual-machine). However, it's possible to pass dataframes to
+our [Compute VM](../admin/infrastructure.md#compute-components). However, it's possible to pass dataframes to
 scripts (
 in Python, R and others) which run on the server, and [get dataframes in return](#computations).
 

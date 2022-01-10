@@ -316,7 +316,7 @@ See also:
 * [Fingerprints](fingerprints.md)
 * [Similarity SPE](similarity-spe.md)
 * [Info panels](../../discover/info-panels.md)
-* [GrokCompute](../../develop/admin/architecture-details.md#grok-compute)
+* [GrokCompute](../../develop/admin/infrastructure.md#grok-compute)
 
 References:
 

@@ -215,6 +215,5 @@ Deployment instruction:
 
 See also:
 
-* [Architecture](architecture.md#application)
-* [Architecture Details](architecture-details.md)
-* [Deployment with Docker Compose](docker-compose.md)
+* [Architecture](architecture.md)
+* [Architecture Details](infrastructure.md)

@@ -75,7 +75,7 @@ were previously impossible to spot, resulting in the acceleration of data-driven
 * Automatic detection of outliers, [missing values](transform/missing-values-imputation.md), wrong data types
 * Publish [dashboards](overview/dashboard.md)
 
-## Learn
+## Machine learning
 
 Turn your data into actionable insights by using state-of-the art machine learning and AI techniques.
 
@@ -112,10 +112,9 @@ Turn your data into actionable insights by using state-of-the art machine learni
 * Create [pipelines](transform/job-editor.md), schedule [jobs](access/data-job.md), and set up alerts
 * [Customizable by IT](develop/admin/it-customizations.md)
 * Easy to learn the platform with
-  ** [interactive help](overview/navigation.md#help),
-  ** [Community Forums](https://community.datagrok.ai/),
-  ** Tutorials (go to [Datagrok Public](https://public.datagrok.ai/), find "Help" section and select "Tutorials")
-  ** [Video lessons](video-lessons.md)
-  ** Video platform overviews (full [Table of Contents](video-contents.md),
-  selection [for developers](develop/getting-started.md#datagrok-video-walkthrough))
-  ** [Exercises for developers](develop/exercises/exercises.md)
+    * [Interactive help](overview/navigation.md#help),
+    * [Community forum](https://community.datagrok.ai/),
+    * Tutorials (go to [Datagrok Public](https://public.datagrok.ai/), find "Help" section and select "Tutorials")
+    * [Video lessons](video-lessons.md) and platform overviews (full [list of topics](video-contents.md), including
+      selection [for developers](develop/getting-started.md#6-videos)
+    * [Exercises for developers](develop/exercises/exercises.md)

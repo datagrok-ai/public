@@ -43,7 +43,15 @@ Future main(List<String> args) async {
       var _map = map;
       for (var p in path.split(relativePath)) {
         if (p.endsWith('.html'))
-          _map[title] = {'url': '/help/' + relativePath, 'title': title};
+          _map[title] = {
+            'url': '/help/' + relativePath,
+            'title': title,
+            'order': new RegExp(r'<!--( ?)ORDER:( ?)(.*)-->')
+                    .firstMatch(content)
+                    ?.group(3)
+                    ?.trim() ??
+                ''
+          };
         else {
           if (!_map.containsKey(p)) _map[p] = {};
           _map = _map[p];

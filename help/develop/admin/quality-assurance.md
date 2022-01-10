@@ -130,3 +130,4 @@ see [stress testing results](stress-testing-results.md).
 See also:
 
 * [Architecture](architecture.md)
+* [Architecture](infrastructure.md)

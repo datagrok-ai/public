@@ -135,7 +135,7 @@ In this case, the environment `Chemprop` should be specified in a file
 
 Datagrok identifies and resolves environments by their names. If an environment referred in a script wasn't previously
 used, it will first be created on the
-[Compute Virtual Machine](../develop/admin/architecture-details.md#compute-virtual-machine). This may take up to several
+[Compute Virtual Machine](../develop/admin/infrastructure.md#compute-components). This may take up to several
 minutes. If it was used at least once, a previously created environment will be re-used with no delay to run the script.
 
 #### Specify environment in-place
@@ -171,7 +171,7 @@ result = glom(target, 'a.b.c')  # returns 'd'
 ```
 
 When the script runs first time, the environment will be created on
-the [Compute Virtual Machine](../develop/admin/architecture-details.md#compute-virtual-machine), which may take some
+the [Compute Virtual Machine](../develop/admin/infrastructure.md#compute-components), which may take some
 time, up to several minutes. However, on the second run and onwards this environment will simply be reused. If the
 environment string is changed in this script to some other environment which was previously created in same way even in
 some other script, this environment will also be picked up and reused. These environments are handeled by Datagrok using

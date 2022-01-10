@@ -4,11 +4,11 @@
 # Viewers
 
 A viewer is a visual component associated with a [table](../overview/table.md). Unlike other products, our viewers
-are [super fast](../develop/advanced/performance.md#viewers), completely interactive, and are capable of handling tens
+are [superfast](../develop/advanced/performance.md#viewers), completely interactive, and are capable of handling tens
 of millions of rows (or millions of columns).
 
-Viewers belonging to the same [view](../overview/table-view.md) all share the same row selection and filter. Viewers are
-saved as part of the [project](../overview/project.md). Also, it is possible to save viewers and views individually, and
+Viewers belonging to the same [view](../overview/table-view.md) share the same row selection and filter. Viewers are
+saved as part of the [project](../overview/project.md). Also, it is possible to save viewers and views individually and
 reuse them (or share with teammates) later on.
 
 * [Creating](#creating)
@@ -25,6 +25,10 @@ reuse them (or share with teammates) later on.
 * [Trellis](#trellis)
 * [Statistical hypothesis testing](#statistical-hypothesis-testing)
 * [Layouts](#layouts)
+
+## Design
+
+
 
 ## Creating
 

@@ -39,7 +39,7 @@
 * Scalability and Performance
     * Maximum dataset sizes
     * Stability under concurrent user load
-    * [Scaling and stability under load](architecture-details.md#architecture)
+    * [Scaling and stability under load](infrastructure.md#scalability)
 
 * Extensibility
     * [Creating custom visualizations](https://github.com/datagrok-ai/public/tree/master/packages/Sequence)
@@ -78,18 +78,21 @@ For AWS deployment, we rely on Amazon's built-in encryption for
 and
 [S3 buckets](https://docs.aws.amazon.com/AmazonS3/latest/dev/bucket-encryption.html).
 
+## Encryption in transit
+
+All client-server communications use the [HTTPS](https://en.wikipedia.org/wiki/HTTPS) protocol, which means it is secure
+and encrypted.
+
 ## Server API
 
 Datagrok client side uses HTTP rest API to interact with server side. Authentication token must be passed to access all
 features.
 [Proof of concept video](https://www.youtube.com/watch?v=TjApCwd_3hw)
 
-## Encryption in transit
-
-All client-server communications use the [HTTPS](https://en.wikipedia.org/wiki/HTTPS) protocol, which means it is secure
-and encrypted.
-
 ## Logging and monitoring
+
+For AWS deployment, we rely on [Amazon CloudWatch](https://aws.amazon.com/cloudwatch/) service which provides a
+convenient way to collect and observe metrics and logs.
 
 ## Backup and restore
 
@@ -100,4 +103,11 @@ Amazon has scheduled backup for RDS and S3, but you can backup and restore RDS d
 Datagrok supports Docker installation, Amazon cluster will immediately restart failed instance
 https://www.youtube.com/watch?v=oFs9RShkHT8
 
-## Infrastructure as code
+## Infrastructure as a Code
+
+Datagrok Docker containers are built using Jenkins, all software are upgraded and patched on every build.
+
+There are multiple options to deploy application:
+* [Docker Compose](deploy-amazon-ecs.md) deploy to AWS ECS
+* [CloudFormation template](deploy/cloudformation.yaml) to deploy to AWS ECS
+* [Terraform scripts](deploy/terraform.tf) to deploy to AWS ECS

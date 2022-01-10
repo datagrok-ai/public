@@ -91,5 +91,5 @@ This document contains instructions to deploy Datagrok on [AWS ECS cluster](http
 
 See also:
 
-* [Architecture](architecture.md#application)
-* [Architecture Details](architecture-details.md)
+* [Architecture](architecture.md)
+* [Architecture Details](infrastructure.md)
