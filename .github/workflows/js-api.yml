@@ -11,6 +11,7 @@ jobs:
       - name: Checkout
         uses: actions/checkout@v2
       - name: Check version was changed
+        working-directory: ./js-api
         run: |
           name=$(jq .name package.json | sed 's/"//g')
           latest_version="$(curl https://registry.npmjs.org/${name}/latest | jq .version)"
