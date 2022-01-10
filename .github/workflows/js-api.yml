@@ -15,7 +15,7 @@ jobs:
         run: |
           name=$(jq .name package.json | sed 's/"//g')
           latest_version="$(curl https://registry.npmjs.org/${name}/latest | jq .version)"
-          current_version=$(jq .version package.json | sed 's/"//g')
+          current_version=$(jq .version package.json)
           if [[ $latest_version == $current_version ]]; then
             changed_version=false
           else
