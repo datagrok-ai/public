@@ -13,6 +13,23 @@
 
 ## Addressed Issues
 
+* Clinical Case: added Visits view 
+* Update the dialog design for developer keys (WIP)
+* Fixed analyzer warnings 
+
+
+# 2022-01-11 Dev build 0.108.0
+
+## Latest Docker Images
+
+* Datagrok: 
+  *  `docker pull datagrok/datagrok:0.108.0`
+  *  `docker pull datagrok/datagrok:latest`
+  
+* [Docker-Compose](admin/docker-compose.md)
+
+## Addressed Issues
+
 * NPM repositories: add registry property 
 * Formula Lines: Property harmonization (opacity) 
 * JS API: Moved properties (column.colors => column.meta.colors, column.markers => column.meta.markers) 
