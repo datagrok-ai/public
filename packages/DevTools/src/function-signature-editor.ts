@@ -677,9 +677,9 @@ async function openFse(v: DG.View, functionCode: string) {
       const rowIndex = functionParamsCopy.findIndex((param) => param.name === (editedCell.tableRow as any)['Name']);
       if (rowIndex) {
         (functionParamsCopy[rowIndex] as any)
-          [functionParamsMapping[editedCell.cell.column.name as keyof typeof functionParamsMapping]] = editedCell.cell.value;
+          [functionParamsMapping[editedCell.cell.column.name as keyof typeof functionParamsMapping]] = editedCell.cell.value || undefined;
         functionParamsCopy[rowIndex].options
-          [functionParamsMapping[editedCell.cell.column.name as keyof typeof functionParamsMapping]] = editedCell.cell.value;
+          [functionParamsMapping[editedCell.cell.column.name as keyof typeof functionParamsMapping]] = editedCell.cell.value || undefined;
         functionParamsState.next(functionParamsCopy);
       }
     });
