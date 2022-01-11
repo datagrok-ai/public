@@ -195,7 +195,7 @@ const commentSign = (lang: LANGUAGE) => {
   }
 }
 
-function openFse(v: DG.View, functionCode: string) {
+async function openFse(v: DG.View, functionCode: string) {
     const inputScriptCopy = DG.Script.create(functionCode);
 
     const editorView = DG.View.create();
@@ -543,12 +543,18 @@ function openFse(v: DG.View, functionCode: string) {
       }
     });
   
-    const area = ui.textInput('', '');
-    const myCM = CodeMirror.fromTextArea((area.input as HTMLTextAreaElement), { mode: highlightModeByLang(inputScriptCopy.language as LANGUAGE)});
-    console.log(myCM.getOption('mode'))
-  
-    const previewDiv = ui.panel([ui.divV([ui.h1('Code preview'), area])]);
-    previewDiv.style.flexGrow = '1';
+    const codeArea = ui.textInput('', '');
+    const myCM = CodeMirror.fromTextArea((codeArea.input as HTMLTextAreaElement), { mode: highlightModeByLang(inputScriptCopy.language as LANGUAGE)});
+    const uiArea = await inputScriptCopy.prepare().getEditor();
+
+    const previewTabs = ui.tabControl(
+      {
+        'CODE': ui.panel([codeArea.root]),
+        'UI': ui.panel([uiArea]),
+      }).root
+
+    previewTabs.style.width = '100%';
+    previewTabs.style.flexGrow = '3';
   
     propsForm = functionPropsForm();
   
@@ -573,37 +579,36 @@ function openFse(v: DG.View, functionCode: string) {
         t.description = newParam.description;
         functionParamsCopy.push(t);
         functionParamsState.next(functionParamsCopy);
-        refreshPreview();
       },
     );
   
-    const tabs = ui.tabControl({
+    const editorTabs = ui.tabControl({
       'PROPERTIES': propsForm,
       'PARAMETERS': ui.divV([
         addParamBtn(),
         paramsGrid.root,
       ]),
     });
-    tabs.root.style.width = '100%';
-    tabs.root.style.flexGrow = '3';
+    editorTabs.root.style.width = '100%';
+    editorTabs.root.style.flexGrow = '3';
   
     editorView.append(
       ui.divV([
-        tabs,
-        previewDiv,
+        editorTabs,
+        previewTabs,
       ]),
     );
     editorView.box = true;
     editorView.setRibbonPanels([
       [
         ui.iconFA('eye', () => {
-          previewDiv.hidden ? previewDiv.hidden = false : previewDiv.hidden = true;
+          previewTabs.hidden ? previewTabs.hidden = false : previewTabs.hidden = true;
         }),
         ui.iconFA('code', () => openScript(), 'Open function editor'),
       ],
     ]);
   
-    const refreshPreview = () => {
+    const refreshPreview = async () => {
       let result = '';
       Object.values(functionProps).map((propField) => {
         const propValue = propField.get(inputScriptCopy) || (inputScriptCopy as any)[propField.name];
@@ -617,6 +622,10 @@ function openFse(v: DG.View, functionCode: string) {
       result += inputScriptCopy.script.substring(inputScriptCopy.script.indexOf('\n',inputScriptCopy.script.lastIndexOf(commentSign(inputScriptCopy.language as LANGUAGE)))+1);
       myCM.setOption('mode', highlightModeByLang(inputScriptCopy.language as LANGUAGE))
       myCM.setValue(result);
+      myCM.setSize('100%', '100%');
+
+      const newUiArea = await inputScriptCopy.prepare().getEditor();
+      uiArea.replaceWith(newUiArea);
     };
   
     v.close()
