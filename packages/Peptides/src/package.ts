@@ -16,7 +16,7 @@ import {manualAlignmentWidget} from './widgets/manual-alignment';
 import {SARViewer, SARViewerVertical} from './viewers/sar-viewer';
 import {peptideMoleculeWidget} from './widgets/peptide-molecule';
 import {SubstViewer} from './viewers/subst-viewer';
-import {doMSA} from './utils/multiple-sequence-alignment';
+import {runKalign} from './utils/multiple-sequence-alignment';
 
 export const _package = new DG.Package();
 let tableGrid: DG.Grid;
@@ -183,13 +183,11 @@ export async function peptideSpacePanel(col: DG.Column): Promise<DG.Widget> {
   return await widget.draw();
 }
 //name: MSA
-//input: int gapopen = -20
-//input: int gapextend = -20
-export async function testMSA(gapopen: number, gapextend: number) {
+export async function testMSA() {
   view = (grok.shell.v as DG.TableView);
 
   const df = await grok.data.files.openTable('Demo:TestJobs:Files:DemoFiles/bio/peptides.csv');
-  const msaCol = await doMSA(df.getCol('AlignedSequence'), gapopen, gapextend);
+  const msaCol = await runKalign(df.getCol('AlignedSequence'), _package.webRoot);
 
   df.columns.add(msaCol);
   grok.shell.addTableView(df);

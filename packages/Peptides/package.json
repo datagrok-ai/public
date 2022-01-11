@@ -9,7 +9,7 @@
 		"dayjs": "latest",
 		"jstat": "^1.9.5",
 		"logojs-react": "^2.1.1",
-		"biomsa": "^0.2.4",
+		"file-loader": "^6.2.0",
 		"rxjs": "^6.5.5",
 		"@datagrok-libraries/utils": ">=0.0.13",
 		"@datagrok-libraries/statistics": ">=0.1.5",
@@ -28,7 +28,11 @@
 		"ts-loader": "^9.2.5",
 		"typescript": "^4.4.4",
 		"webpack": "latest",
-		"webpack-cli": "latest"
+		"webpack-cli": "latest",
+		"crypto-browserify": ">=3.12.0",
+		"path-browserify": ">=1.0.1",
+		"stream-browserify": ">=3.0.0",
+		"buffer": "6.0.3"
 	},
 	"sources": [
 		"files/aligned.csv",
