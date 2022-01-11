@@ -1,32 +1,32 @@
 {
-	"name": "@datagrok-libraries/statistics",
-	"publishConfig": {
-		"access": "public"
-	},
-	"friendlyName": "statistics",
-	"version": "0.1.5",
-	"description": "",
-	"dependencies": {
-		"datagrok-api": ">0.95.4",
-		"cash-dom": "latest",
-		"dayjs": "latest",
-		"jstat": "latest"
-	},
-	"devDependencies": {
-		"ts-loader": "^9.2.6",
-		"typescript": "^4.2.3",
-		"eslint": "latest",
-		"eslint-config-google": "latest",
-		"@typescript-eslint/eslint-plugin": "latest",
-		"@typescript-eslint/parser": "latest"
-	},
-	"scripts": {
-		"link": "npm link",
-		"debug-statistics": "grok publish --rebuild",
-		"release-statistics": "grok publish --rebuild --release",
-		"build-statistics": "tsc",
-		"build": "tsc",
-		"lint": "eslint src --ext .ts",
-		"lint-fix": "eslint src --ext .ts --fix"
-	}
+  "name": "@datagrok-libraries/statistics",
+  "publishConfig": {
+    "access": "public"
+  },
+  "friendlyName": "statistics",
+  "version": "0.1.5",
+  "description": "",
+  "dependencies": {
+    "datagrok-api": ">0.95.4",
+    "cash-dom": "latest",
+    "dayjs": "latest",
+    "jstat": "latest"
+  },
+  "devDependencies": {
+    "ts-loader": "^9.2.6",
+    "typescript": "^4.2.3",
+    "eslint": "latest",
+    "eslint-config-google": "latest",
+    "@typescript-eslint/eslint-plugin": "latest",
+    "@typescript-eslint/parser": "latest"
+  },
+  "scripts": {
+    "link": "npm link",
+    "debug-statistics": "grok publish --rebuild",
+    "release-statistics": "grok publish --rebuild --release",
+    "build-statistics": "tsc",
+    "build": "tsc",
+    "lint": "eslint src --ext .ts",
+    "lint-fix": "eslint src --ext .ts --fix"
+  }
 }

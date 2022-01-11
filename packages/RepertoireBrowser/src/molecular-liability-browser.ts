@@ -6,11 +6,16 @@ import { TwinPviewer } from "./viewers/twin-p-viewer"
 import { CompostionPviewer } from "./viewers/composition-p-viewer"
 import { _package } from "./package";
 
+const _STRUCTURE_COL_NAME = '3D view';
+
 export class MolecularLiabilityBrowser {
 
   mlbTable: DG.DataFrame;
   vids: string[];
   vidsObsPTMs: string[];
+  allVids: string[];
+  allIds: string[];
+  idMapping: { [key: string]: string[]; }
 
   mlbView: DG.TableView;
   vIdInput: DG.InputBase;
@@ -25,13 +30,23 @@ export class MolecularLiabilityBrowser {
 
   private changeVid = async (): Promise<void> => {
     if (!this.vids.includes(this.vIdInput.value)) {
-      grok.shell.warning("No PDB data data for associated v id");
-      return;
+      Object.keys(this.idMapping).every(vid => {
+        if (this.idMapping[vid].includes(this.vIdInput.value)) {
+          this.vIdInput.value = vid;
+          return false;
+        }
+        return true;
+      });
+
+      if (!this.vids.includes(this.vIdInput.value)) {
+        grok.shell.warning("No PDB data data for associated v id");
+        return;
+      }
     }
 
     this.mlbView.path = `/Table/${this.vIdInput.value}`;
     //hideShowIcon.classList.value = 'grok-icon fal fa-eye';
-    let pi = DG.TaskBarProgressIndicator.create('Creating NGL view');
+    let pi = DG.TaskBarProgressIndicator.create('Creating 3D view');
 
     ////////////////////////////////////////////////////
     let jsonStr = require("./examples/example.json");
@@ -40,7 +55,7 @@ export class MolecularLiabilityBrowser {
     let jsonN = require("./examples/exampleNums.json");
 
     let jsonStrObsPtm = null;
-    if(this.vidsObsPTMs.includes(this.vIdInput.value)){
+    if (this.vidsObsPTMs.includes(this.vIdInput.value)) {
       jsonStrObsPtm = require("./examples/exampleOptm.json");
     }
 
@@ -70,9 +85,9 @@ export class MolecularLiabilityBrowser {
     } else {
       this.twinPviewer.reset(jsonStr, pdbStr, jsonStrObsPtm);
     }
-    this.twinPviewer.twin(this.mlbView);
+    this.twinPviewer.show(this.mlbView);
     this.twinPviewer.open(this.mlbView);
-
+    this.hideShowIcon.classList.value = 'grok-icon fal fa-eye';
 
     pi.close();
   };
@@ -111,10 +126,10 @@ export class MolecularLiabilityBrowser {
     for (let i = 0; i < pf.names.length; i++)
       this.mlbTable.columns.byName(pf.names[i]).width = 150;
 
-    
+
     let filters = this.mlbView.addViewer(DG.VIEWER.FILTERS);
-    const filterColumns = filters.props.columnNames;
-    filters.setOptions({ columnNames: filterColumns.filter((c) => c !== 'CDR Clothia') });
+    //const filterColumns = filters.props.columnNames;
+    //filters.setOptions({ columnNames: filterColumns.filter((c) => c !== 'CDR Clothia') });
 
     grok.events.onTooltipShown.subscribe((args) => {
       if (args.args.context instanceof DG.Column) {
@@ -154,8 +169,8 @@ export class MolecularLiabilityBrowser {
     this.mlbView.ribbonMenu.clear();
 
     this.mlbView.name = "Molecular Liability Browser";
-    this.mlbView.grid.columns.byName('ngl')!.width = 100;
-    this.mlbView.grid.columns.byName("ngl")!.cellType = 'html';
+    this.mlbView.grid.columns.byName(_STRUCTURE_COL_NAME)!.width = 100;
+    this.mlbView.grid.columns.byName(_STRUCTURE_COL_NAME)!.cellType = 'html';
 
     //table visual polishing
     for (let column of this.mlbTable.columns)
@@ -171,7 +186,7 @@ export class MolecularLiabilityBrowser {
     });
 
     this.mlbView.grid.onCellPrepare((gc) => {
-      if (gc.isTableCell && gc.gridColumn.name === 'ngl' && this.vids.includes(gc.cell.value.toString())) {
+      if (gc.isTableCell && gc.gridColumn.name === _STRUCTURE_COL_NAME && this.vids.includes(gc.cell.value.toString())) {
         //debugger;
         gc.style.element = ui.divV([
           ui.button("View", () => {
@@ -198,7 +213,7 @@ export class MolecularLiabilityBrowser {
       let a = this.mlbTable;
       a.rows.select((row) => this.vids.includes(row["v id"].toString()));
       grok.functions.call('CmdSelectionToFilter');
-    }), 'filter data for NGL viewer');
+    }), 'filter data for 3D view');
   }
 
   private setFilterIcon2 = (): void => {
@@ -252,12 +267,12 @@ export class MolecularLiabilityBrowser {
   }
 
   private setHideShowIcon = (): void => {
-    this.hideShowIcon = ui.iconFA('eye', () => {
+    this.hideShowIcon = ui.tooltip.bind(ui.iconFA('eye', () => {
       if (this.hideShowIcon.classList.value.includes('fa-eye-slash'))
         grok.events.fireCustomEvent("showAllDock", null);
       else
         grok.events.fireCustomEvent("closeAllDock", null);
-    });
+    }), 'show structure');
     this.hideShowIcon.classList.value = 'grok-icon fal fa-eye';
 
     grok.events.onCustomEvent("closeAllDock").subscribe((v) => {
@@ -297,6 +312,8 @@ export class MolecularLiabilityBrowser {
     this.mlbTable = (await grok.data.loadTable(_package.webRoot + 'src/examples/mlb.csv'));
     for (let column of this.mlbTable.columns)
       column.name = column.name.replaceAll("_", " ");
+
+    this.mlbTable.columns.byName('ngl').name = _STRUCTURE_COL_NAME;
     // let vidsRaw = (await grok.functions.call('MolecularLiabilityBrowser:getVids'));
     this.vids = ["VR000000008", "VR000000043", "VR000000044"];
     this.vidsObsPTMs = ["VR000000044"];
@@ -305,6 +322,11 @@ export class MolecularLiabilityBrowser {
     //this.compostionPviewer = new CompostionPviewer();
 
     this.setView();
+    this.allVids= this.mlbTable.col("v id")!.toList();
+    this.allIds= this.mlbTable.col("gdb id mappings")!.toList();
+    this.idMapping = {};
+    for (let i = 0; i < this.allVids.length; i++)
+      this.idMapping[this.allVids[i]] = this.allIds[i].replaceAll(" ", "").split(",");
     this.setPropertiesFilters();
     this.setVidInput();
     this.setFilterIcon();
@@ -312,7 +334,7 @@ export class MolecularLiabilityBrowser {
     this.setQueryIcon();
     this.setHideShowIcon();
     this.setHideShowIcon2();
-    
+
     this.mlbView.setRibbonPanels([[this.vIdInput.root], [this.filterIcon, this.filterIcon2, this.queryIcon, this.hideShowIcon, this.hideShowIcon2]]);
 
     if (urlVid != null)

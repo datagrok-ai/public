@@ -12,10 +12,10 @@ let api = <any>window;
  *
  */
 export class CardView extends View {
-  d: any;
+  dart: any;
 
-  constructor(d: any) {
-    super(d);
+  constructor(dart: any) {
+    super(dart);
   }
 
   /** Creates a new CardView object with the specifed options. */
@@ -26,28 +26,28 @@ export class CardView extends View {
   /**
    * User-specified {@link https://datagrok.ai/help/overview/smart-search | filter expression}.
    * @type {string} */
-  get searchValue(): string { return api.grok_CardView_Get_SearchValue(this.d); }
-  set searchValue(s: string) { api.grok_CardView_Set_SearchValue(this.d, s); }
+  get searchValue(): string { return api.grok_CardView_Get_SearchValue(this.dart); }
+  set searchValue(s: string) { api.grok_CardView_Set_SearchValue(this.dart, s); }
 
   /** Object handler (instructions how to render, drag-and-drop, etc) */
-  get meta(): ObjectHandler { return api.grok_CardView_Get_Meta(this.d); }
-  set meta(s: ObjectHandler) { api.grok_CardView_Set_Meta(this.d, s); }
+  get meta(): ObjectHandler { return api.grok_CardView_Get_Meta(this.dart); }
+  set meta(s: ObjectHandler) { api.grok_CardView_Set_Meta(this.dart, s); }
 
   /** Semantic type of the items. */
-  get objectType(): string { return api.grok_CardView_Get_Type(this.d); }
-  set objectType(s: string) { api.grok_CardView_Set_Type(this.d, s); }
+  get objectType(): string { return api.grok_CardView_Get_Type(this.dart); }
+  set objectType(s: string) { api.grok_CardView_Set_Type(this.dart, s); }
 
-  get searchFields(): string[] { return toJs(api.grok_CardView_Get_SearchFields(this.d)); }
-  set searchFields(s: string[]) { api.grok_CardView_Set_SearchFields(this.d, s); }
+  get searchFields(): string[] { return toJs(api.grok_CardView_Get_SearchFields(this.dart)); }
+  set searchFields(s: string[]) { api.grok_CardView_Set_SearchFields(this.dart, s); }
 
   /** Programmatically defined invisible
    * {@link https://datagrok.ai/help/overview/smart-search | filter expression}.
    *  @type {string} */
-  get permanentFilter(): string { return api.grok_CardView_Get_PermanentFilter(this.d); }
-  set permanentFilter(s: string) { api.grok_CardView_Set_PermanentFilter(this.d, s); }
+  get permanentFilter(): string { return api.grok_CardView_Get_PermanentFilter(this.dart); }
+  set permanentFilter(s: string) { api.grok_CardView_Set_PermanentFilter(this.dart, s); }
 
-  get categoryFilters(): object { return toJs(api.grok_CardView_Get_CategoryFilters(this.d)); }
-  set categoryFilters(ff: object) { api.grok_CardView_Set_CategoryFilters(this.d, ff); }
+  get categoryFilters(): object { return toJs(api.grok_CardView_Get_CategoryFilters(this.dart)); }
+  set categoryFilters(ff: object) { api.grok_CardView_Set_CategoryFilters(this.dart, ff); }
 
 }
 
@@ -55,8 +55,8 @@ export class CardView extends View {
 /** Projects view */
 export class ProjectsView extends CardView {
   /** @constructs ProjectsView */
-  constructor(d: any) {
-    super(d);
+  constructor(dart: any) {
+    super(dart);
   }
 
   static create(params: object): ProjectsView {
@@ -68,8 +68,8 @@ export class ProjectsView extends CardView {
 /** Scripts view */
 export class ScriptsView extends CardView {
   /** @constructs ProjectsView */
-  constructor(d: any) {
-    super(d);
+  constructor(dart: any) {
+    super(dart);
   }
 
   static create(params: object): ScriptsView {

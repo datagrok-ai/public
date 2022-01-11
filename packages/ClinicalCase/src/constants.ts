@@ -307,5 +307,38 @@ export const requiredColumnsByView = {
                         }
 
                 }
-        }
+        },
+        'Medical History': {
+                'req_domains': {
+                        'mh': {
+                                'req': [
+                                        sdtmCols.SUBJECT_ID,
+                                        sdtmCols.MH_DECOD_TERM,
+                                        sdtmCols.MH_CATEGORY,
+                                        sdtmCols.MH_BODY_SYSTEM,
+                                        sdtmCols.MH_TERM
+                                ]
+                        }
+
+                }
+        },
+        'Visits': {
+                'req_domains': {
+                        'tv': {
+                                'req': [
+                                        sdtmCols.VISIT_DAY,
+                                        sdtmCols.VISIT_NAME
+                                ]
+                        },
+                        'sv': {
+                                'req': [
+                                        sdtmCols.SUBJECT_ID,
+                                        sdtmCols.VISIT_START_DATE,
+                                        sdtmCols.VISIT_DAY,
+                                        sdtmCols.VISIT_NAME
+                                ]
+                        },
+
+                }
+        },
 }

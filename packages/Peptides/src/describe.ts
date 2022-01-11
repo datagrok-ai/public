@@ -8,7 +8,7 @@ import {setAARRenderer} from './utils/cell-renderer';
 
 const cp = new ChemPalette('grok');
 
-const aarGroups = {
+export const aarGroups = {
   'R': 'PC',
   'H': 'PC',
   'K': 'PC',
@@ -45,27 +45,21 @@ const groupDescription: {[key: string]: {'description': string, 'aminoAcids': st
   '-': {'description': 'Unknown Amino Acid', 'aminoAcids': ['-']},
 };
 
-export async function describe(
+/*function customGridColumnHeader(cell: DG.GridCell) {
+  if (cell.isColHeader && cell.tableColumn != null) {
+    if (highlightedColumns.includes(parseInt(cell.tableColumn.name))) {
+      cell.style.backColor = 0xff1f77b4;
+    }
+  }
+}*/
+
+function joinDataFrames(
+  activityColumnScaled: string,
   df: DG.DataFrame,
+  positionColumns: string[],
+  splitSeqDf: DG.DataFrame,
   activityColumn: string,
-  activityScaling: string,
-  sourceGrid: DG.Grid,
-  twoColorMode: boolean,
-  initialBitset: DG.BitSet | null,
-  grouping: boolean,
-): Promise<[DG.Grid, DG.Grid, DG.DataFrame, {[key: string]: string}]> {
-  //Split the aligned sequence into separate AARs
-  let splitSeqDf: DG.DataFrame | undefined;
-  let invalidIndexes: number[];
-  const col: DG.Column = df.columns.bySemType('alignedSequence');
-  [splitSeqDf, invalidIndexes] = splitAlignedPeptides(col);
-  splitSeqDf.name = 'Split sequence';
-  const positionColumns = splitSeqDf.columns.names();
-  const activityColumnScaled = `${activityColumn}Scaled`;
-  const renderColNames: string[] = splitSeqDf.columns.names();
-
-  splitSeqDf.columns.add(df.getCol(activityColumn));
-
+) {
   if (df.col(activityColumnScaled)) {
     df.columns.remove(activityColumnScaled);
   }
@@ -80,13 +74,9 @@ export async function describe(
   if (!positionColumns.every((col: string) => dfColsSet.has(col))) {
     df.join(splitSeqDf, [activityColumn], [activityColumn], df.columns.names(), positionColumns, 'inner', true);
   }
+}
 
-  for (const col of df.columns) {
-    if (splitSeqDf.col(col.name) && col.name != activityColumn) {
-      setAARRenderer(col, sourceGrid);
-    }
-  }
-
+function sortSourceGrid(sourceGrid: DG.Grid) {
   if (sourceGrid) {
     const colNames:string[] = [];
     for (let i = 0; i < sourceGrid.columns.length; i++) {
@@ -106,8 +96,16 @@ export async function describe(
     });
     sourceGrid?.columns.setOrder(colNames);
   }
+}
 
-  // scale activity
+async function scaleActivity(
+  activityScaling: string,
+  activityColumn: string,
+  activityColumnScaled: string,
+  sourceGrid: DG.Grid,
+  splitSeqDf: DG.DataFrame,
+) {
+  const df = sourceGrid.dataFrame!;
   switch (activityScaling) {
   case 'lg':
     await df.columns.addNewCalculated(activityColumnScaled, 'Log10(${' + activityColumn + '})');
@@ -128,32 +126,17 @@ export async function describe(
     sourceGrid.columns.setOrder([`${activityColumn}`]);
     break;
   }
-  splitSeqDf = splitSeqDf.clone(initialBitset);
+}
 
-  const positionColName = 'Position';
-  const aminoAcidResidue = 'AAR';
-
-  //unpivot a table and handle duplicates
-  splitSeqDf = splitSeqDf.groupBy(positionColumns)
-    .add('med', activityColumnScaled, activityColumnScaled)
-    .aggregate();
-
-  const peptidesCount = splitSeqDf.getCol(activityColumnScaled).length;
-
-  let matrixDf = splitSeqDf.unpivot([activityColumnScaled], positionColumns, positionColName, aminoAcidResidue);
-
-  //TODO: move to chem palette
-  let groupMapping: {[key: string]: string} = {};
-  if (grouping) {
-    groupMapping = aarGroups;
-    const aarCol = matrixDf.getCol(aminoAcidResidue);
-    aarCol.init((index) => groupMapping[aarCol.get(index)[0]] ?? '-');
-    aarCol.compact();
-  } else {
-    Object.keys(aarGroups).forEach((value) => groupMapping[value] = value);
-  }
-
-  //statistics for specific AAR at a specific position
+async function calculateStatistics(
+  matrixDf: DG.DataFrame,
+  positionColName: string,
+  aminoAcidResidue: string,
+  activityColumnScaled: string,
+  peptidesCount: number,
+  splitSeqDf: DG.DataFrame,
+  groupMapping: {[key: string]: string},
+) {
   matrixDf = matrixDf.groupBy([positionColName, aminoAcidResidue])
     .add('count', activityColumnScaled, 'Count')
     .aggregate();
@@ -167,39 +150,31 @@ export async function describe(
   await matrixDf.columns.addNewCalculated('Ratio', '${count}/'.concat(`${peptidesCount}`));
 
   //calculate p-values based on t-test
-  let position: string;
-  let AAR: string;
-  let currentActivity: number[];
-  let otherActivity: number[];
-  let testResult;
-  let currentMeanDiff: number;
   let pvalues: Float32Array = new Float32Array(matrixDf.rowCount).fill(1);
-  let pvalue = 1.;
-
   const mdCol: DG.Column = matrixDf.columns.addNewFloat('Mean difference');
   const pValCol: DG.Column = matrixDf.columns.addNewFloat('pValue');
   for (let i = 0; i < matrixDf.rowCount; i++) {
-    position = matrixDf.get(positionColName, i);
-    AAR = matrixDf.get(aminoAcidResidue, i);
+    const position = matrixDf.get(positionColName, i);
+    const aar = matrixDf.get(aminoAcidResidue, i);
 
     //@ts-ignore
-    splitSeqDf.rows.select((row) => groupMapping[row[position]] === AAR);
-    currentActivity = splitSeqDf
+    splitSeqDf.rows.select((row) => groupMapping[row[position]] === aar);
+    const currentActivity: number[] = splitSeqDf
       .clone(splitSeqDf.selection, [activityColumnScaled])
       .getCol(activityColumnScaled)
       .toList();
 
     //@ts-ignore
-    splitSeqDf.rows.select((row) => groupMapping[row[position]] !== AAR);
-    otherActivity = splitSeqDf
+    splitSeqDf.rows.select((row) => groupMapping[row[position]] !== aar);
+    const otherActivity: number[] = splitSeqDf
       .clone(splitSeqDf.selection, [activityColumnScaled])
       .getCol(activityColumnScaled)
       .toList();
 
-    testResult = tTest(currentActivity, otherActivity);
+    const testResult = tTest(currentActivity, otherActivity);
     // testResult = uTest(currentActivity, otherActivity);
-    currentMeanDiff = testResult['Mean difference']!;
-    pvalue = testResult[currentMeanDiff >= 0 ? 'p-value more' : 'p-value less'];
+    const currentMeanDiff = testResult['Mean difference']!;
+    const pvalue = testResult[currentMeanDiff >= 0 ? 'p-value more' : 'p-value less'];
 
     mdCol.set(i, currentMeanDiff);
     pvalues[i] = pvalue;
@@ -213,17 +188,12 @@ export async function describe(
     pValCol.set(i, pvalues[i]);
   }
 
-  const statsDf = matrixDf.clone();
+  return matrixDf.clone();
+}
 
-  // SAR matrix table
-  //pivot a table to make it matrix-like
-  matrixDf = matrixDf.groupBy([aminoAcidResidue])
-    .pivot(positionColName)
-    .add('first', 'Mean difference', '')
-    .aggregate();
-  matrixDf.name = 'SAR';
-
-  // Setting category order
+async function setCategoryOrder(
+  twoColorMode: boolean, statsDf: DG.DataFrame, aminoAcidResidue: string, matrixDf: DG.DataFrame,
+) {
   const sortArgument = twoColorMode ? 'Absolute Mean difference' : 'Mean difference';
   if (twoColorMode) {
     await statsDf.columns.addNewCalculated('Absolute Mean difference', 'Abs(${Mean difference})');
@@ -238,8 +208,14 @@ export async function describe(
   aarList.sort((first, second) => getWeight(second) - getWeight(first));
 
   matrixDf.getCol(aminoAcidResidue).setCategoryOrder(aarList);
+}
 
-  // SAR vertical table (naive, choose best Mean difference from pVals <= 0.01)
+function createVerticalTable(
+  statsDf: DG.DataFrame,
+  aminoAcidResidue: string,
+  positionColName: string,
+  twoColorMode: boolean,
+) {
   // TODO: aquire ALL of the positions
   let sequenceDf = statsDf.groupBy(['Mean difference', aminoAcidResidue, positionColName, 'Count', 'Ratio', 'pValue'])
     .where('pValue <= 0.1')
@@ -258,30 +234,51 @@ export async function describe(
   sequenceDf = sequenceDf.clone(DG.BitSet.create(sequenceDf.rowCount, (i) => {
     return sequenceDf.get('Mean difference', i) === maxAtPos[sequenceDf.get(positionColName, i)];
   }));
-  renderColNames.push('Mean difference');
 
-  // !!! DRAWING PHASE !!!
-  const SARgrid = matrixDf.plot.grid();
-  SARgrid.sort([aminoAcidResidue]);
-  SARgrid.columns.setOrder([aminoAcidResidue].concat(positionColumns));
+  return sequenceDf;
+}
 
-  const SARVgrid = sequenceDf.plot.grid();
-  SARVgrid.sort([positionColName]);
-  SARVgrid.col('pValue')!.format = 'four digits after comma';
-  SARVgrid.col('pValue')!.name = 'P-Value';
+function createGrids(
+  matrixDf: DG.DataFrame,
+  aminoAcidResidue: string,
+  positionColumns: string[],
+  sequenceDf: DG.DataFrame,
+  positionColName: string,
+  grouping: boolean,
+) {
+  const sarGrid = matrixDf.plot.grid();
+  sarGrid.sort([aminoAcidResidue]);
+  sarGrid.columns.setOrder([aminoAcidResidue].concat(positionColumns));
+
+  const sarVGrid = sequenceDf.plot.grid();
+  sarVGrid.sort([positionColName]);
+  sarVGrid.col('pValue')!.format = 'four digits after comma';
+  sarVGrid.col('pValue')!.name = 'P-Value';
 
   if (!grouping) {
     let tempCol = matrixDf.columns.byName(aminoAcidResidue);
     if (tempCol) {
-      setAARRenderer(tempCol, SARgrid);
+      setAARRenderer(tempCol, sarGrid);
     }
     tempCol = sequenceDf.columns.byName(aminoAcidResidue);
     if (tempCol) {
-      setAARRenderer(tempCol, SARgrid);
+      setAARRenderer(tempCol, sarGrid);
     }
   }
 
-  //render column headers and AAR symbols centered
+  return [sarGrid, sarVGrid];
+}
+
+function setCellRendererFunc(
+  renderColNames: string[],
+  positionColName: string,
+  aminoAcidResidue: string,
+  statsDf: DG.DataFrame,
+  twoColorMode: boolean,
+  sarGrid: DG.Grid,
+  sarVGrid: DG.Grid,
+) {
+  const mdCol = statsDf.getCol('Mean difference');
   const cellRendererFunc = function(args: DG.GridCellRenderArgs) {
     args.g.save();
     args.g.beginPath();
@@ -348,10 +345,20 @@ export async function describe(
     }
     args.g.restore();
   };
-  SARgrid.onCellRender.subscribe(cellRendererFunc);
-  SARVgrid.onCellRender.subscribe(cellRendererFunc);
+  sarGrid.onCellRender.subscribe(cellRendererFunc);
+  sarVGrid.onCellRender.subscribe(cellRendererFunc);
+}
 
-  // show all the statistics in a tooltip over cell
+function setTooltipFunc(
+  renderColNames: string[],
+  statsDf: DG.DataFrame,
+  aminoAcidResidue: string,
+  positionColName: string,
+  peptidesCount: number,
+  grouping: boolean,
+  sarGrid: DG.Grid,
+  sarVGrid: DG.Grid,
+) {
   const onCellTooltipFunc = function(cell: DG.GridCell, x: number, y: number) {
     if (
       !cell.isRowHeader &&
@@ -402,10 +409,20 @@ export async function describe(
     }
     return true;
   };
-  SARgrid.onCellTooltip(onCellTooltipFunc);
-  SARVgrid.onCellTooltip(onCellTooltipFunc);
+  sarGrid.onCellTooltip(onCellTooltipFunc);
+  sarVGrid.onCellTooltip(onCellTooltipFunc);
+}
 
-  sourceGrid.onCellPrepare((cell) => {
+function postProcessGrids(
+  sourceGrid: DG.Grid,
+  invalidIndexes: number[],
+  matrixDf: DG.DataFrame,
+  grouping: boolean,
+  aminoAcidResidue: string,
+  sarGrid: DG.Grid,
+  sarVGrid: DG.Grid,
+) {
+  sourceGrid.onCellPrepare((cell: DG.GridCell) => {
     const currentRowIndex = cell.tableRowIndex;
     if (currentRowIndex && invalidIndexes.includes(currentRowIndex) && !cell.isRowHeader) {
       cell.style.backColor = DG.Color.lightLightGray;
@@ -413,13 +430,110 @@ export async function describe(
   });
 
   for (const col of matrixDf.columns.names()) {
-    SARgrid.col(col)!.width = SARgrid.props.rowHeight;
+    sarGrid.col(col)!.width = sarGrid.props.rowHeight;
   }
 
   if (grouping) {
-    SARgrid.col(aminoAcidResidue)!.name = 'Groups';
-    SARVgrid.col(aminoAcidResidue)!.name = 'Groups';
+    sarGrid.col(aminoAcidResidue)!.name = 'Groups';
+    sarVGrid.col(aminoAcidResidue)!.name = 'Groups';
   }
 
-  return [SARgrid, SARVgrid, statsDf, groupMapping];
+  sarGrid.props.allowEdit = false;
+  sarVGrid.props.allowEdit = false;
+}
+
+export async function describe(
+  df: DG.DataFrame,
+  activityColumn: string,
+  activityScaling: string,
+  sourceGrid: DG.Grid,
+  twoColorMode: boolean,
+  initialBitset: DG.BitSet | null,
+  grouping: boolean,
+): Promise<[DG.Grid, DG.Grid, DG.DataFrame, {[key: string]: string}]> {
+  //Split the aligned sequence into separate AARs
+  let splitSeqDf: DG.DataFrame | undefined;
+  let invalidIndexes: number[];
+  const col: DG.Column = df.columns.bySemType('alignedSequence');
+  [splitSeqDf, invalidIndexes] = splitAlignedPeptides(col);
+  splitSeqDf.name = 'Split sequence';
+
+  const positionColumns = splitSeqDf.columns.names();
+  const activityColumnScaled = `${activityColumn}Scaled`;
+  const renderColNames: string[] = splitSeqDf.columns.names();
+  const positionColName = 'Position';
+  const aminoAcidResidue = 'AAR';
+
+  splitSeqDf.columns.add(df.getCol(activityColumn));
+
+  joinDataFrames(activityColumnScaled, df, positionColumns, splitSeqDf, activityColumn);
+
+  for (const col of df.columns) {
+    if (splitSeqDf.col(col.name) && col.name != activityColumn) {
+      setAARRenderer(col, sourceGrid);
+    }
+  }
+
+  sortSourceGrid(sourceGrid);
+
+  await scaleActivity(activityScaling, activityColumn, activityColumnScaled, sourceGrid, splitSeqDf);
+  splitSeqDf = splitSeqDf.clone(initialBitset);
+
+  //unpivot a table and handle duplicates
+  splitSeqDf = splitSeqDf.groupBy(positionColumns)
+    .add('med', activityColumnScaled, activityColumnScaled)
+    .aggregate();
+
+  const peptidesCount = splitSeqDf.getCol(activityColumnScaled).length;
+
+  let matrixDf = splitSeqDf.unpivot([activityColumnScaled], positionColumns, positionColName, aminoAcidResidue);
+
+  //TODO: move to chem palette
+  let groupMapping: {[key: string]: string} = {};
+  if (grouping) {
+    groupMapping = aarGroups;
+    const aarCol = matrixDf.getCol(aminoAcidResidue);
+    aarCol.init((index) => groupMapping[aarCol.get(index)[0]] ?? '-');
+    aarCol.compact();
+  } else {
+    Object.keys(aarGroups).forEach((value) => groupMapping[value] = value);
+  }
+
+  //statistics for specific AAR at a specific position
+  const statsDf = await calculateStatistics(
+    matrixDf, positionColName, aminoAcidResidue, activityColumnScaled, peptidesCount, splitSeqDf, groupMapping,
+  );
+
+  // SAR matrix table
+  //pivot a table to make it matrix-like
+  matrixDf = statsDf.groupBy([aminoAcidResidue])
+    .pivot(positionColName)
+    .add('first', 'Mean difference', '')
+    .aggregate();
+  matrixDf.name = 'SAR';
+
+  // Setting category order
+  await setCategoryOrder(twoColorMode, statsDf, aminoAcidResidue, matrixDf);
+
+  // SAR vertical table (naive, choose best Mean difference from pVals <= 0.01)
+  const sequenceDf = createVerticalTable(statsDf, aminoAcidResidue, positionColName, twoColorMode);
+  renderColNames.push('Mean difference');
+
+  const [sarGrid, sarVGrid] = createGrids(
+    matrixDf, aminoAcidResidue, positionColumns, sequenceDf, positionColName, grouping,
+  );
+
+  setCellRendererFunc(
+    renderColNames, positionColName, aminoAcidResidue, statsDf, twoColorMode, sarGrid, sarVGrid,
+  );
+
+  // show all the statistics in a tooltip over cell
+  setTooltipFunc(
+    renderColNames, statsDf, aminoAcidResidue, positionColName, peptidesCount, grouping, sarGrid, sarVGrid,
+  );
+
+  postProcessGrids(sourceGrid, invalidIndexes, matrixDf, grouping, aminoAcidResidue, sarGrid, sarVGrid);
+
+  //TODO: return class instead
+  return [sarGrid, sarVGrid, statsDf, groupMapping];
 }

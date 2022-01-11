@@ -1,25 +1,26 @@
 {
 	"name": "@datagrok/peptides",
-	"version": "0.4.3",
+	"version": "0.7.1",
 	"description": "",
 	"dependencies": {
-		"@datagrok-libraries/statistics": ">=0.1.5",
-		"@datagrok-libraries/utils": ">=0.0.11",
-		"@keckelt/tsne": "^1.0.2",
-		"@types/d3": "^7.0.0",
-		"@types/jquery": "^3.5.6",
-		"biomsa": "^0.2.4",
 		"cash-dom": "latest",
 		"d3": "latest",
-		"datagrok-api": ">=0.95.11",
+		"datagrok-api": ">=0.104.0",
 		"dayjs": "latest",
-		"jaro-winkler-typescript": "^1.0.1",
 		"jstat": "^1.9.5",
 		"logojs-react": "^2.1.1",
+		"biomsa": "^0.2.4",
 		"rxjs": "^6.5.5",
-		"umap-js": "^1.3.3"
+		"@datagrok-libraries/utils": ">=0.0.13",
+		"@datagrok-libraries/statistics": ">=0.1.5",
+		"@datagrok-libraries/ml": ">=0.0.1",
+		"@datagrok-libraries/bio": ">=0.0.1",
+		"@types/d3": "^7.0.0",
+		"@types/jquery": "^3.5.6"
 	},
 	"devDependencies": {
+		"css-loader": "^5.2.4",
+		"style-loader": "^2.0.0",
 		"@typescript-eslint/eslint-plugin": "^4.29.1",
 		"@typescript-eslint/parser": "^4.29.1",
 		"eslint": "^7.32.0",
@@ -35,10 +36,12 @@
 		"common/ngl_viewer/ngl.js"
 	],
 	"scripts": {
+		"link-api": "npm link datagrok-api",
 		"link-utils": "npm link @datagrok-libraries/utils",
 		"link-statistics": "npm link @datagrok-libraries/statistics",
-		"link-api": "npm link datagrok-api",
-		"link-all": "npm link datagrok-api @datagrok-libraries/utils @datagrok-libraries/statistics",
+		"link-ml": "npm link @datagrok-libraries/ml",
+		"link-bio": "npm link @datagrok-libraries/bio",
+		"link-all": "npm link datagrok-api @datagrok-libraries/utils @datagrok-libraries/statistics link @datagrok-libraries/ml @datagrok-libraries/bio",
 		"install-dependencies": "npm install",
 		"debug-peptides": "grok publish --rebuild",
 		"release-peptides": "grok publish --rebuild --release",
@@ -52,5 +55,7 @@
 		"release-peptides-local": "grok publish local --rebuild --release",
 		"lint": "eslint \"./src/**/*.ts\"",
 		"lint-fix": "eslint \"./src/**/*.ts\" --fix"
-	}
+	},
+	"canEdit": [ "Developers" ],
+	"canView": [ "All users" ]
 }

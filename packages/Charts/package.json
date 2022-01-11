@@ -1,13 +1,14 @@
 {
 	"name": "@datagrok/charts",
 	"fullName": "Charts",
-	"version": "0.0.5",
+	"version": "0.1.0",
 	"description": "",
 	"dependencies": {
+		"cash-dom": "^8.1.0",
 		"datagrok-api": ">0.94.10",
-		"wu": "latest",
 		"echarts": "^5.0.0",
-		"echarts-wordcloud": "^2.0.0"
+		"echarts-wordcloud": "^2.0.0",
+		"wu": "latest"
 	},
 	"scripts": {
 		"link-api": "npm link datagrok-api",
@@ -19,5 +20,15 @@
 		"release-charts-dev": "grok publish dev --rebuild --release",
 		"debug-charts-public": "grok publish public --rebuild",
 		"release-charts-public": "grok publish public --rebuild --release"
+	},
+	"canEdit": [
+		"Developers"
+	],
+	"canView": [
+		"All users"
+	],
+	"devDependencies": {
+		"css-loader": "^5.2.7",
+		"style-loader": "^2.0.0"
 	}
 }

@@ -35,5 +35,11 @@
 		"release-ketcher-dev": "grok publish dev --rebuild --release",
 		"debug-ketcher-public": "grok publish public --rebuild",
 		"release-ketcher-public": "grok publish public --rebuild --release"
-	}
+	},
+	"canEdit": [
+		"Developers"
+	],
+	"canView": [
+		"All users"
+	]
 }

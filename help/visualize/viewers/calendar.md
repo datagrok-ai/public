@@ -16,14 +16,14 @@ General:
 | Click on month       | Filter by month       |
 | Click on week        | Filter by week        |
 
-![Calendar](../../uploads/viewers/calendar.png "Calendar") 
+![Calendar](../../uploads/viewers/calendar.png "Calendar")
 
 ## Videos
 
 [![Calendar](../../uploads/youtube/visualizations2.png "Open on Youtube")](https://www.youtube.com/watch?v=7MBXWzdC0-I&t=2920s)
 
-See also: 
-  
-  * [Viewers](../viewers.md)
-  * [Table View](../../overview/table-view.md)
-  * [JS API: Calendar](https://public.datagrok.ai/js/samples/ui/viewers/types/calendar)
+See also:
+
+* [Viewers](../viewers.md)
+* [Table View](../../overview/table-view.md)
+* [JS API: Calendar](https://public.datagrok.ai/js/samples/ui/viewers/types/calendar)

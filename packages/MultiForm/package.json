@@ -7,5 +7,7 @@
   "sources": [
     "src/multi_form.css",
     "src/multi_form.js"
-  ]
+  ],
+  "canEdit": [ "Developers" ],
+  "canView": [ "All users" ]
 }

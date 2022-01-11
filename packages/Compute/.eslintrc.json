@@ -21,7 +21,12 @@
             { "ignoreStrings": true }
         ],
         "require-jsdoc": "off",
-        "spaced-comment": "off"
+        "spaced-comment": "off",
+        "valid-jsdoc": [
+            "error", 
+            { "requireParamType": false,
+              "requireReturnType": false }
+        ]
     },
     "parser": "@typescript-eslint/parser",
     "plugins": [

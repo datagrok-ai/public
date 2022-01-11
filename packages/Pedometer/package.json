@@ -4,5 +4,7 @@
   "fullName": "Pedometer",
   "description": "Pedometer for accelerometer signals",
   "sources": [
-  ]
+  ],
+  "canEdit": [ "Developers" ],
+  "canView": [ "All users" ]
 }

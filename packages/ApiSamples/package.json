@@ -1,11 +1,13 @@
 {
   "name": "@datagrok/api-samples",
   "version": "1.0.1",
-  "fullName": "Grok API Examples",
-  "description": "Grok API Examples",
+  "fullName": "API Samples",
+  "description": "API Samples",
   "sources": [ ],
   "scripts": {
     "samples-upload": "datagrok-upload http://localhost:8082 deploy",
     "publish samples local": "grok publish local"
-  }
+  },
+  "canEdit": [ "Developers" ],
+  "canView": [ "All users" ]
 }

@@ -44,7 +44,7 @@ export class Shell {
   }
 
   set v(view: ViewBase) {
-    api.grok_Set_CurrentView(view.d);
+    api.grok_Set_CurrentView(view.dart);
   }
 
   /** Current project
@@ -56,13 +56,13 @@ export class Shell {
   /** Adds a table to the workspace.
    * @param {DataFrame} table*/
   addTable(table: DataFrame): void {
-    api.grok_AddTable(table.d);
+    api.grok_AddTable(table.dart);
   }
 
   /** Closes a table and removes from the workspace.
    * @param {DataFrame} table */
   closeTable(table: DataFrame): void {
-    api.grok_CloseTable(table.d);
+    api.grok_CloseTable(table.dart);
   }
 
   /** Current user
@@ -158,7 +158,7 @@ export class Shell {
     } else {
       if (context != null)
         v.parentCall = context;
-      api.grok_AddView(v.d, dockType, width);
+      api.grok_AddView(v.dart, dockType, width);
     }
     return v;
   }
@@ -186,7 +186,7 @@ export class Shell {
    * @param {number} width
    * @returns {TableView} */
   addTableView(table: DataFrame, dockType: DockType | null = DOCK_TYPE.FILL, width: number | null = null): TableView {
-    return toJs(api.grok_AddTableView(table.d, dockType, width));
+    return toJs(api.grok_AddTableView(table.dart, dockType, width));
   }
 
   /**
@@ -196,7 +196,7 @@ export class Shell {
    * @returns {TableView} */
   //Obsolete
   getTableView(tableName: string): TableView {
-    return new TableView(api.grok_GetTableView(tableName));
+    return toJs(api.grok_GetTableView(tableName));
   }
 
   /** Closes everything (views, tables, projects) and returns the platform to the initial state. */

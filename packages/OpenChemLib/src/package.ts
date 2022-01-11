@@ -4,6 +4,7 @@ import * as ui from 'datagrok-api/ui';
 import * as DG from 'datagrok-api/dg';
 import {OpenChemLibSketcher} from "./ocl-sketcher";
 import {_importSdf} from "./sdf-importer";
+import { OCLCellRenderer } from './ocl-cell-renderer';
 
 export let _package = new DG.Package();
 
@@ -31,4 +32,11 @@ export function openChemLibSketcher() {
 //output: list tables
 export function importSdf(bytes: Uint8Array) {
   return _importSdf(Uint8Array.from(bytes));
+}
+
+//name: oclCellRenderer
+//output: grid_cell_renderer result
+//meta.chemRendererName: OpenChemLib
+export async function oclCellRenderer() {
+  return new OCLCellRenderer();
 }

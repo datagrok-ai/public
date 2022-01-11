@@ -216,11 +216,11 @@ export class Dapi {
  * Can be extended with specific methods. (i.e. {@link UsersDataSource})
  */
 export class HttpDataSource<T> {
-  d: any;
+  dart: any;
 
   /** @constructs HttpDataSource */
   constructor(s: any) {
-    this.d = s;
+    this.dart = s;
   }
 
   /** Returns all entities that satisfy the filtering criteria (see {@link filter}).
@@ -235,13 +235,13 @@ export class HttpDataSource<T> {
       this.filter(options.filter);
     if (options.order !== undefined)
       this.order(options.order);
-    return new Promise((resolve, reject) => api.grok_DataSource_List(this.d, (q: any) => resolve(q.map(toJs)), (e: any) => reject(e)));
+    return new Promise((resolve, reject) => api.grok_DataSource_List(this.dart, (q: any) => resolve(q.map(toJs)), (e: any) => reject(e)));
   }
 
   /** Returns fist entity that satisfies the filtering criteria (see {@link filter}).
    *  @returns Promise<object>  */
   first(): Promise<T> {
-    return new Promise((resolve, reject) => api.grok_DataSource_First(this.d, (q: any) => resolve(toJs(q)), (e: any) => reject(e)));
+    return new Promise((resolve, reject) => api.grok_DataSource_First(this.dart, (q: any) => resolve(toJs(q)), (e: any) => reject(e)));
   }
 
   /** Returns an entity with the specified id.
@@ -250,27 +250,27 @@ export class HttpDataSource<T> {
    *  @param {string} id - GUID of the corresponding object
    *  @returns {Promise<object>} - entity. */
   find(id: string): Promise<T> {
-    return new Promise((resolve, reject) => api.grok_DataSource_Find(this.d, id, (q: any) => resolve(toJs(q)), (e: any) => reject(e)));
+    return new Promise((resolve, reject) => api.grok_DataSource_Find(this.dart, id, (q: any) => resolve(toJs(q)), (e: any) => reject(e)));
   }
 
   /** Saves an entity. */
   save(e: Entity): Promise<T> {
-    return new Promise((resolve, reject) => api.grok_DataSource_Save(this.d, e.d, (q: any) => resolve(toJs(q)), (e: any) => reject(e)));
+    return new Promise((resolve, reject) => api.grok_DataSource_Save(this.dart, e.dart, (q: any) => resolve(toJs(q)), (e: any) => reject(e)));
   }
 
   /** Deletes an entity. */
   delete(e: Entity): Promise<void> {
-    return new Promise((resolve, reject) => api.grok_DataSource_Delete(this.d, e.d, () => resolve(), (e: any) => reject(e)));
+    return new Promise((resolve, reject) => api.grok_DataSource_Delete(this.dart, e.dart, () => resolve(), (e: any) => reject(e)));
   }
 
   by(i: number): HttpDataSource<T> {
-    this.d = api.grok_DataSource_By(this.d, i);
+    this.dart = api.grok_DataSource_By(this.dart, i);
     return this;
   }
 
   /** Restricts results to the specified page number. See also {@link nextPage}. */
   page(i: number): HttpDataSource<T> {
-    this.d = api.grok_DataSource_Page(this.d, i);
+    this.dart = api.grok_DataSource_Page(this.dart, i);
     return this;
   }
 
@@ -279,7 +279,7 @@ export class HttpDataSource<T> {
    *  See examples: {@link https://public.datagrok.ai/js/samples/dapi/projects-list}
    *  @returns {HttpDataSource} */
   nextPage(): HttpDataSource<T> {
-    this.d = api.grok_DataSource_NextPage(this.d);
+    this.dart = api.grok_DataSource_NextPage(this.dart);
     return this;
   }
 
@@ -290,7 +290,7 @@ export class HttpDataSource<T> {
    *  @param {string} w
    *  @returns {HttpDataSource} */
   filter(w: string): HttpDataSource<T> {
-    this.d = api.grok_DataSource_WhereSmart(this.d, w);
+    this.dart = api.grok_DataSource_WhereSmart(this.dart, w);
     return this;
   }
 
@@ -299,7 +299,7 @@ export class HttpDataSource<T> {
    * @param {boolean} desc
    * @returns {HttpDataSource} */
   order(fieldName: string, desc: boolean = false): HttpDataSource<T> {
-    this.d = api.grok_DataSource_Order(this.d, fieldName, desc);
+    this.dart = api.grok_DataSource_Order(this.dart, fieldName, desc);
     return this;
   }
 
@@ -307,7 +307,7 @@ export class HttpDataSource<T> {
    * @param {string} include
    * @returns {HttpDataSource} */
   include(include: string): HttpDataSource<T> {
-    this.d = api.grok_DataSource_Include(this.d, _propsToDart(include));
+    this.dart = api.grok_DataSource_Include(this.dart, _propsToDart(include));
     return this;
   }
 }
@@ -328,29 +328,29 @@ export class UsersDataSource extends HttpDataSource<User> {
   /** Returns current user
    * @returns {Promise<User>} */
   current(): Promise<User> {
-    return toJs(api.grok_UsersDataSource_Current(this.d));
-    //return new Promise((resolve, reject) => api.grok_UsersDataSource_Current(this.d, (q: any) => resolve(s(q)), (e: any) => reject(e)));
+    return toJs(api.grok_UsersDataSource_Current(this.dart));
+    //return new Promise((resolve, reject) => api.grok_UsersDataSource_Current(this.dart, (q: any) => resolve(s(q)), (e: any) => reject(e)));
   }
 
   /** Returns current session
    * @returns {Promise<UserSession>} */
   currentSession(): Promise<UserSession> {
-    return new Promise((resolve, reject) => api.grok_UsersDataSource_CurrentSession(this.d, (q: any) => resolve(toJs(q)), (e: any) => reject(e)));
+    return api.grok_UsersDataSource_CurrentSession(this.dart);
   }
 }
 
 export class AdminDataSource {
-  d: any;
+  dart: any;
   /** @constructs AdminDataSource*/
-  constructor(d: any) {
-    this.d = d;
+  constructor(dart: any) {
+    this.dart = dart;
   }
 
   /** Returns information about the services.
    * Sample: {@link https://public.datagrok.ai/js/samples/dapi/admin}
    *  @returns {Promise<Map>} */
   getServiceInfos(): Promise<object[]> {
-    return new Promise((resolve, reject) => api.grok_Dapi_Admin_GetServiceInfos(this.d, (q: any) => resolve(toJs(q)), (e: any) => reject(e)));
+    return new Promise((resolve, reject) => api.grok_Dapi_Admin_GetServiceInfos(this.dart, (q: any) => resolve(toJs(q)), (e: any) => reject(e)));
   }
 }
 
@@ -377,7 +377,7 @@ export class GroupsDataSource extends HttpDataSource<Group> {
    *  @param {Group} group
    *  @returns {Promise<Group>} - Group. */
   getUser(group: Group): Promise<Group> {
-    return new Promise((resolve, reject) => api.grok_Dapi_Get_GroupUser(group.d, (q: any) => resolve(toJs(q)), (e: any) => reject(e)));
+    return api.grok_Dapi_Get_GroupUser(group.dart);
   }
 
   /** Adds a member to the group
@@ -445,7 +445,7 @@ export class GroupsDataSource extends HttpDataSource<Group> {
    *  @param {Group} e
    *  @returns {Promise<Group>} - Group. */
   saveRelations(e: Group): Promise<Group> {
-    return new Promise((resolve, reject) => api.grok_GroupsDataSource_Save(this.d, e.d, (q: any) => resolve(toJs(q)), (e: any) => reject(e)));
+    return api.grok_GroupsDataSource_Save(this.dart, e.dart);
   }
 
 }
@@ -466,21 +466,21 @@ export class EntitiesDataSource extends HttpDataSource<Entity> {
    * @param {Map[]} props
    * @returns {Promise} */
   saveProperties(props: Map<Property, any>): Promise<void> {
-    return new Promise((resolve, reject) => api.grok_EntitiesDataSource_SaveProperties(this.d, props, (_: any) => resolve(), (e: any) => reject(e)));
+    return new Promise((resolve, reject) => api.grok_EntitiesDataSource_SaveProperties(this.dart, props, (_: any) => resolve(), (e: any) => reject(e)));
   }
 
   /** Returns entity properties
    * @param {Entity} entity
    * @returns {Promise<Map>} props */
   getProperties(entity: Entity): Promise<Map<Property, any>> {
-    return new Promise((resolve, reject) => api.grok_EntitiesDataSource_GetProperties(this.d, entity.d, (p: Map<Property, any> | PromiseLike<Map<Property, any>>) => resolve(p), (e: any) => reject(e)));
+    return new Promise((resolve, reject) => api.grok_EntitiesDataSource_GetProperties(this.dart, entity.dart, (p: Map<Property, any> | PromiseLike<Map<Property, any>>) => resolve(p), (e: any) => reject(e)));
   }
 
   /** Deletes entity properties
    * @param {Map[]} props
    * @returns {Promise} */
   deleteProperties(props: Map<Property, any>): Promise<void> {
-    return new Promise((resolve, reject) => api.grok_EntitiesDataSource_DeleteProperties(this.d, props, (_: any) => resolve(), (e: any) => reject(e)));
+    return new Promise((resolve, reject) => api.grok_EntitiesDataSource_DeleteProperties(this.dart, props, (_: any) => resolve(), (e: any) => reject(e)));
   }
 }
 
@@ -500,7 +500,7 @@ export class CredentialsDataSource extends HttpDataSource<Credentials> {
    * @param {Entity} e
    * @returns {Promise<Credentials>} */
   forEntity(e: Entity): Promise<Credentials> {
-    return new Promise((resolve, reject) => api.grok_CredentialsDataSource_ForEntity(this.d, e.d, (c: any) => resolve(toJs(c)), (e: any) => reject(e)));
+    return new Promise((resolve, reject) => api.grok_CredentialsDataSource_ForEntity(this.dart, e.dart, (c: any) => resolve(toJs(c)), (e: any) => reject(e)));
   }
 }
 
@@ -519,7 +519,7 @@ export class LayoutsDataSource extends HttpDataSource<ViewLayout> {
    * @param {DataFrame} t
    * @returns {Promise<ViewLayout[]>} */
   getApplicable(t: DataFrame): Promise<ViewLayout[]> {
-    return new Promise((resolve, reject) => api.grok_LayoutsDataSource_Applicable(this.d, t.d, (q: any[]) => resolve(q.map((o) => toJs(o))), (e: any) => reject(e)));
+    return api.grok_LayoutsDataSource_Applicable(this.dart, t.dart);
   }
 }
 
@@ -534,7 +534,7 @@ export class PermissionsDataSource {
   // { [key:string]:number; }
   get(e: Entity): Promise<Map<string, Group[]>> {
     return new Promise((resolve, reject) =>
-      api.grok_Dapi_Get_Permissions(e.d, (data: any) => {
+      api.grok_Dapi_Get_Permissions(e.dart, (data: any) => {
         data.view = toJs(data.view);
         data.edit = toJs(data.edit);
         resolve(data);
@@ -549,7 +549,7 @@ export class PermissionsDataSource {
    * */
   grant(e: Entity, g: Group, edit: boolean): Promise<any> {
     return new Promise((resolve, reject) =>
-      api.grok_Dapi_Set_Permission(e.d, g.d, edit, (data: any) => resolve(data), (e: any) => reject(e)));
+      api.grok_Dapi_Set_Permission(e.dart, g.dart, edit, (data: any) => resolve(data), (e: any) => reject(e)));
   }
 
   /** Revokes permission on entity from the group
@@ -559,7 +559,7 @@ export class PermissionsDataSource {
    * */
   revoke(g: Group, e: Entity): Promise<any> {
     return new Promise((resolve, reject) =>
-      api.grok_Dapi_Delete_Permission(e.d, g.d, (data: any) => resolve(data), (e: any) => reject(e)));
+      api.grok_Dapi_Delete_Permission(e.dart, g.dart, (data: any) => resolve(data), (e: any) => reject(e)));
   }
 }
 
@@ -578,8 +578,7 @@ export class UserDataStorage {
    * @param {boolean} currentUser Value should be available only for current user
    * @returns {Promise}*/
   postValue(name: string, key: string, value: string, currentUser: boolean = true): Promise<void> {
-    return new Promise((resolve, reject) =>
-      api.grok_Dapi_UserDataStorage_PostValue(name, key, value, currentUser, () => resolve(), (e: any) => reject(e)));
+    return api.grok_Dapi_UserDataStorage_PostValue(name, key, value, currentUser);
   }
 
   /** Saves a map to Users Data Storage, will be appended to existing data
@@ -588,8 +587,7 @@ export class UserDataStorage {
    * @param {boolean} currentUser Value should be available only for current user
    * @returns {Promise}*/
   post(name: string, data: any, currentUser: boolean = true): Promise<void> {
-    return new Promise((resolve, reject) =>
-      api.grok_Dapi_UserDataStorage_Post(name, data, currentUser, () => resolve(), (e: any) => reject(e)));
+    return api.grok_Dapi_UserDataStorage_Post(name, data, currentUser);
   }
 
   /** Saves a map to Users Data Storage, will replace existing data
@@ -598,8 +596,7 @@ export class UserDataStorage {
    * @param {boolean} currentUser Value should be available only for current user
    * @returns {Promise}*/
   put(name: string, data: any, currentUser: boolean = true): Promise<void> {
-    return new Promise((resolve, reject) =>
-      api.grok_Dapi_UserDataStorage_Put(name, data, currentUser, () => resolve(), (e: any) => reject(e)));
+    return api.grok_Dapi_UserDataStorage_Put(name, data, currentUser);
   }
 
   /** Retrieves a map from Users Data Storage
@@ -607,8 +604,7 @@ export class UserDataStorage {
    * @param {boolean} currentUser - get a value from a current user storage
    * @returns {Promise<Map>} */
   get(name: string, currentUser: boolean = true): Promise<any> {
-    return new Promise((resolve, reject) =>
-      api.grok_Dapi_UserDataStorage_Get(name, currentUser, (data: any) => resolve(data), (e: any) => reject(e)));
+    return api.grok_Dapi_UserDataStorage_Get(name, currentUser);
   }
 
   /** Retrieves a single value from Users Data Storage
@@ -617,8 +613,7 @@ export class UserDataStorage {
    * @param {boolean} currentUser get a value from a current user storage
    * @returns {Promise<string>} */
   getValue(name: string, key: string, currentUser: boolean = true): Promise<string> {
-    return new Promise((resolve, reject) =>
-      api.grok_Dapi_UserDataStorage_GetValue(name, key, currentUser, (value: string | PromiseLike<string>) => resolve(value), (e: any) => reject(e)));
+    return api.grok_Dapi_UserDataStorage_GetValue(name, key, currentUser);
   }
 
   /** Removes a single value from Users Data Storage
@@ -627,8 +622,7 @@ export class UserDataStorage {
    * @param {boolean} currentUser get a value from a current user storage
    * @returns {Promise} */
   remove(name: string, key: string, currentUser: boolean = true): Promise<void> {
-    return new Promise((resolve, reject) =>
-      api.grok_Dapi_UserDataStorage_Delete(name, key, currentUser, () => resolve(), (e: any) => reject(e)));
+    return api.grok_Dapi_UserDataStorage_Delete(name, key, currentUser);
   }
 }
 
@@ -673,8 +667,7 @@ export class TablesDataSource extends HttpDataSource<TableInfo> {
    * @param {DataFrame} dataFrame
    * @returns {Promise<string>} */
   uploadDataFrame(dataFrame: DataFrame): Promise<string> {
-    return new Promise((resolve, reject) =>
-      api.grok_Dapi_TablesDataSource_UploadDataFrame(dataFrame.d, (id: string | PromiseLike<string>) => resolve(id), (e: any) => reject(e)));
+    return api.grok_Dapi_TablesDataSource_UploadDataFrame(dataFrame.dart);
   }
 
   /** Loads a dataframe by id.
@@ -682,8 +675,7 @@ export class TablesDataSource extends HttpDataSource<TableInfo> {
    * @param {string} id - dataframe id
    * @returns {Promise<DataFrame>} */
   getTable(id: string): Promise<DataFrame> {
-    return new Promise((resolve, reject) =>
-      api.grok_Dapi_TablesDataSource_GetTable(id, (df: any) => resolve(toJs(df)), (e: any) => reject(e)));
+    return api.grok_Dapi_TablesDataSource_GetTable(id);
   }
 
 }
@@ -700,9 +692,7 @@ export class FileSource {
    * @returns {Promise<Boolean>} */
   exists(file: FileInfo | string): Promise<boolean> {
     file = this.setRoot(file);
-
-    return new Promise((resolve, reject) =>
-        api.grok_Dapi_UserFiles_Exists(file, (data: boolean | PromiseLike<boolean>) => resolve(data), (e: any) => reject(e)));
+    return api.grok_Dapi_UserFiles_Exists(file);
   }
 
   private setRoot(file: FileInfo | string): string {
@@ -721,7 +711,7 @@ export class FileSource {
    * @returns {Promise} */
   delete(file: FileInfo | string): Promise<void> {
     file = this.setRoot(file);
-    return new Promise((resolve, reject) => api.grok_Dapi_UserFiles_Delete(file, () => resolve(), (e: any) => reject(e)));
+    return api.grok_Dapi_UserFiles_Delete(file);
   }
 
   /** Moves a file.
@@ -734,7 +724,7 @@ export class FileSource {
       files[i] = this.setRoot(files[i]);
     newPath = this.setRoot(newPath);
 
-    return new Promise((resolve, reject) => api.grok_Dapi_UserFiles_Move(files, newPath, () => resolve(), (e: any) => reject(e)));
+    return api.grok_Dapi_UserFiles_Move(files, newPath);
   }
 
   /** Renames a file.
@@ -746,7 +736,7 @@ export class FileSource {
     file = this.setRoot(file);
     newName = this.setRoot(newName);
 
-    return new Promise((resolve, reject) => api.grok_Dapi_UserFiles_Rename(file, newName, () => resolve(), (e: any) => reject(e)));
+    return api.grok_Dapi_UserFiles_Rename(file, newName);
   }
 
   /** Lists files according to a search pattern.
@@ -757,8 +747,7 @@ export class FileSource {
    * @returns {Promise<FileInfo[]>} */
   list(file: FileInfo | string, recursive: boolean, searchPattern: string | null = null): Promise<FileInfo[]> {
     file = this.setRoot(file);
-    return new Promise((resolve, reject) =>
-        api.grok_Dapi_UserFiles_List(file, recursive, searchPattern, this.root, (data: any) => resolve(toJs(data)), (e: any) => reject(e)));
+    return api.grok_Dapi_UserFiles_List(file, recursive, searchPattern, this.root);
   }
 
   /** Reads a file as string.
@@ -768,8 +757,7 @@ export class FileSource {
   readAsText(file: FileInfo | string): Promise<string> {
     file = this.setRoot(file);
 
-    return new Promise((resolve, reject) => 
-        api.grok_Dapi_UserFiles_ReadAsText(file, (data: string | PromiseLike<string>) => resolve(data), (e: any) => reject(e)));
+    return api.grok_Dapi_UserFiles_ReadAsText(file);
   }
 
   /** Reads a file as bytes.
@@ -779,8 +767,7 @@ export class FileSource {
   readAsBytes(file: FileInfo | string): Promise<Uint8Array> {
     file = this.setRoot(file);
 
-    return new Promise((resolve, reject) =>
-        api.grok_Dapi_UserFiles_ReadAsBytes(file, (data: any) => resolve(toJs(data)), (e: any) => reject(e)));
+    return api.grok_Dapi_UserFiles_ReadAsBytes(file);
   }
 
   /** Writes a file.
@@ -789,7 +776,7 @@ export class FileSource {
    * @param {Array<number>} blob
    * @returns {Promise} */
   write(file: FileInfo | string, blob: number[]): Promise<void> {
-    return new Promise((resolve, reject) => api.grok_Dapi_UserFiles_Write(file, blob, () => resolve(), (e: any) => reject(e)));
+    return api.grok_Dapi_UserFiles_Write(file, blob);
   }
 
   /** Writes a text file.
@@ -800,7 +787,7 @@ export class FileSource {
   writeAsText(file: FileInfo | string, data: string): Promise<void> {
     file = this.setRoot(file);
 
-    return new Promise((resolve, reject) => api.grok_Dapi_UserFiles_WriteAsText(file, data, () => resolve(), (e: any) => reject(e)));
+    return api.grok_Dapi_UserFiles_WriteAsText(file, data);
   }
 }
 

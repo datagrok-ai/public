@@ -6,7 +6,7 @@ import { ILazyLoading } from '../lazy-loading/lazy-loading';
 import { checkMissingDomains } from './utils';
 import { requiredColumnsByView } from '../constants';
 import { addDataFromDmDomain } from '../data-preparation/utils';
-import { AE_TERM, ETHNIC, RACE, SEX, TREATMENT_ARM } from '../columns-constants';
+import { ETHNIC, RACE, SEX, TREATMENT_ARM } from '../columns-constants';
 
 export class TreeMapView extends DG.ViewBase implements ILazyLoading {
 
@@ -39,20 +39,6 @@ export class TreeMapView extends DG.ViewBase implements ILazyLoading {
           });
           this.root.className = 'grok-view ui-box';
           this.root.appendChild(this.treeMap.root);
-
-       /*  this.aeDataframeWithDm.plot.fromType(DG.VIEWER.TREE_MAP,
-            {
-                "splitByColumnNames": [
-                    AE_TERM,
-                    ""
-                ],
-                "colorAggrType": "count"
-            }).then((v: any) => {
-                this.treeMap = v;
-                this.root.className = 'grok-view ui-box';
-                this.root.appendChild(this.treeMap.root);
-            }); */
-
 
     }
 }

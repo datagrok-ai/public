@@ -154,6 +154,15 @@ export const SEMTYPE = {
   FILE: 'File',
 }
 
+export const UNITS = {
+  Molecule : {
+    SMILES: 'smiles',
+    MOLBLOCK: 'molblock',
+    V3K_MOLBLOCK: 'v3Kmolblock',
+    INCHI: 'inchi'
+  }
+}
+
 /////// Stats
 
 /** @enum {STATS} */
@@ -197,6 +206,9 @@ export const TAGS = {
   COLOR_CODING_CATEGORICAL: '.color-coding-categorical',
   COLOR_CODING_LINEAR: '.color-coding-linear',
 
+  MARKER_CODING: '.marker-coding',
+  FORMULA_LINES: '.formula-lines',
+
   MULTI_VALUE_SEPARATOR: '.multi-value-separator',
   /** When a dataframe is loaded from a CSV, the maximum number of significant digits
    in the fractional part for each numeric column is determined  */
@@ -204,6 +216,8 @@ export const TAGS = {
   /** Set on a dataframe column; used to format column contents in grids, CSV export, passing to scripts */
   FORMAT: 'format',
   FORMULA: 'formula',
+
+  UNITS: 'units',  // see DG.UNITS
 }
 
 export const FUNC_TYPES = {
@@ -371,6 +385,7 @@ export enum MARKER_TYPE {
   SQUARE_BORDER = "square border",
   CROSS_BORDER = "cross border",
   CROSS_X_BORDER = "cross x border",
+  OUTLIER = "outlier",
   DIAMOND = "diamond",
   DIAMOND_BORDER = "diamond border",
   TRIANGLE_TOP = "triangle top",
@@ -427,6 +442,7 @@ export type SemType = string;
 export type SimilarityMetric = `${SIMILARITY_METRIC}`;
 export type ColorType = number;
 export type ColorCodingType = `${COLOR_CODING_TYPE}`;
+export type MarkerCodingType = `${MARKER_TYPE}`;
 export type DemoDatasetName = `${DEMO_DATASET}`;
 export type DockType = `${DOCK_TYPE}`;
 export type CsvImportOptions = { delimiter?: string, decimalSeparator?: string, thousandSeparator?: string };

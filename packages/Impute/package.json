@@ -1,24 +1,30 @@
 {
-	"name": "@datagrok/impute",
-	"fullName": "impute",
-	"version": "1.0.2",
-	"description": "",
-	"dependencies": {
-		"datagrok-api": ">0.94.10"
-	},
-	"devDependencies": {
-		"@babel/cli": "7.1.2",
-		"@babel/core": "7.1.2",
-		"@babel/polyfill": "7.0.0",
-		"@babel/preset-env": "7.1.0",
-		"babel-loader": "^8.1.0",
-		"webpack": "^4.44.1",
-		"webpack-cli": "^3.3.12"
-	},
-	"scripts": {
-		"upload-debug-local": "webpack && grok publish http://localhost:8082 ",
-		"upload-debug": "webpack && grok publish https://dev.datagrok.ai/api ",
-		"upload-deploy": "webpack && grok publish https://dev.datagrok.ai/api --release",
-		"build": "webpack"
-	}
+  "name": "@datagrok/impute",
+  "fullName": "impute",
+  "version": "1.0.2",
+  "description": "",
+  "dependencies": {
+    "datagrok-api": ">0.94.10"
+  },
+  "devDependencies": {
+    "@babel/cli": "7.1.2",
+    "@babel/core": "7.1.2",
+    "@babel/polyfill": "7.0.0",
+    "@babel/preset-env": "7.1.0",
+    "babel-loader": "^8.1.0",
+    "webpack": "^4.44.1",
+    "webpack-cli": "^3.3.12"
+  },
+  "scripts": {
+    "upload-debug-local": "webpack && grok publish http://localhost:8082 ",
+    "upload-debug": "webpack && grok publish https://dev.datagrok.ai/api ",
+    "upload-deploy": "webpack && grok publish https://dev.datagrok.ai/api --release",
+    "build": "webpack"
+  },
+  "canEdit": [
+    "Developers"
+  ],
+  "canView": [
+    "All users"
+  ]
 }

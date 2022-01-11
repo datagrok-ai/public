@@ -42,7 +42,9 @@ export function addViewerToHeader(grid: DG.Grid, viewer: Promise<DG.Widget>) {
             return true;
           } else {
             if (barchart.highlighted) {
-              ui.tooltip.show(ui.divV([ui.divText(barchart.highlighted.aaName)]), x, y);
+              let elements: HTMLElement[] = [];
+              elements = elements.concat([ui.divText(barchart.highlighted.aaName)]);
+              ui.tooltip.show(ui.divV(elements), x, y);
             }
             return true;
           }
@@ -54,6 +56,7 @@ export function addViewerToHeader(grid: DG.Grid, viewer: Promise<DG.Widget>) {
       args.g.beginPath();
       args.g.rect(args.bounds.x, args.bounds.y, args.bounds.width, args.bounds.height);
       args.g.clip();
+
       if (args.cell.isColHeader && barchart.aminoColumnNames.includes(args.cell.gridColumn.name)) {
         barchart.renderBarToCanvas(
           args.g,
@@ -251,7 +254,14 @@ export class StackedBarChart extends DG.JsViewer {
       this.max = df.filter.trueCount;
     }
 
-    renderBarToCanvas(g: CanvasRenderingContext2D, cell: DG.GridCell, x: number, y: number, w: number, h: number) {
+    renderBarToCanvas(
+      g: CanvasRenderingContext2D,
+      cell: DG.GridCell,
+      x: number,
+      y: number,
+      w: number,
+      h: number,
+    ) {
       const margin = 0.2;
       const innerMargin = 0.02;
       const selectLineRatio = 0.1;

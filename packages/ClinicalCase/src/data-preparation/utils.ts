@@ -107,24 +107,32 @@ export function dictToString(dict: any){
     return str;
 }
 
-export function getVisitNamesAndDays(df: DG.DataFrame){
+export function getVisitNamesAndDays(df: DG.DataFrame, allowNulls = false) {
     const data = df
-    .groupBy([VISIT_DAY, VISIT_NAME])
-    .aggregate();
+        .groupBy([VISIT_DAY, VISIT_NAME])
+        .aggregate();
     const visitsArray = [];
     let rowCount = data.rowCount;
-    for (let i = 0; i < rowCount; i++){
-        if (!data.getCol(VISIT_DAY).isNone(i) && !data.getCol(VISIT_NAME).isNone(i)){
-            visitsArray.push({day: data.get(VISIT_DAY, i), name: data.get(VISIT_NAME, i)})
+    for (let i = 0; i < rowCount; i++) {
+        if (allowNulls) {
+            visitsArray.push({ 
+                day: data.getCol(VISIT_DAY).isNone(i) ? null : data.get(VISIT_DAY, i), 
+                name: data.getCol(VISIT_NAME).isNone(i) ? null : data.get(VISIT_NAME, i) });
+        } else {
+            if (!data.getCol(VISIT_DAY).isNone(i) && !data.getCol(VISIT_NAME).isNone(i)) {
+                visitsArray.push({ day: data.get(VISIT_DAY, i), name: data.get(VISIT_NAME, i) });
+            }
         }
+
     }
-    return visitsArray.sort((a, b) => a.day - b.day);
-  }
+    //@ts-ignore
+    return visitsArray.sort((a, b) => {return (b.day !== null) - (a.day !== null) || a.day - b.day;});
+}
 
 
-  export function createPivotedDataframe(df: DG.DataFrame, pivotCol: string, aggregatedColName: string, splitBy: string[]) {
+  export function createPivotedDataframe(df: DG.DataFrame, groupByCols: string[], pivotCol: string, aggregatedColName: string, splitBy: string[]) {
     return df
-        .groupBy([ SUBJECT_ID, VISIT_DAY ].concat(splitBy))
+        .groupBy(groupByCols.concat(splitBy))
         .pivot(pivotCol)
         .avg(aggregatedColName)
         .aggregate();

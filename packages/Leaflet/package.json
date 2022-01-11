@@ -8,5 +8,7 @@
     "leaflet/leaflet.js",
     "leaflet/leaflet-heat.js",
     "leaflet/leaflet_viewer.js"
-  ]
+  ],
+  "canEdit": [ "Developers" ],
+  "canView": [ "All users" ]
 }

@@ -12,12 +12,15 @@ import {
   tags,
   viewerConst,
   EntityType,
+  supportedEntityTypes,
 } from './constants';
 import './styles.css';
 import * as tests from "./tests/test-examples";
 import {testPackages} from "./package-testing";
+import { functionSignatureEditor } from './function-signature-editor';
 
 export const _package = new DG.Package();
+let minifiedClassNameMap: { [index: string]: string[] } = {};
 
 function getGroupInput(type: string): HTMLElement {
   const items = tags[type];
@@ -80,7 +83,10 @@ export async function renderDevPanel(ent: EntityType): Promise<DG.Widget> {
     return DG.Widget.fromRoot(ui.divText('Entity does not exist.', { style: { color: 'var(--failure)' } }));
   }
 
-  const type = ent.constructor.name;
+  let type = ent.constructor.name;
+  if (!supportedEntityTypes.includes(type) && type in minifiedClassNameMap) {
+    type = minifiedClassNameMap[type].find((c) => ent instanceof eval(`DG.${c}`)) ?? type;
+  }
   const snippets = await loadSnippets(type,
     (ent instanceof DG.FileInfo && dfExts.includes(ent.extension)) ? 'dataframe'
     : (ent instanceof DG.DataFrame || ent instanceof DG.Column) ? tags[type][0] 
@@ -147,6 +153,12 @@ export async function renderDevPanel(ent: EntityType): Promise<DG.Widget> {
 
 //tags: autostart
 export function describeCurrentObj(): void {
+  minifiedClassNameMap = supportedEntityTypes.reduce((map, t) => {
+    const minClassName = eval(`DG.${t}.name`);
+    map[minClassName] = [...(map[minClassName] || []), t];
+    return map;
+  }, {});
+
   grok.events.onAccordionConstructed.subscribe((acc: DG.Accordion) => {
     const ent = acc.context;
     if (ent == null) return; 
@@ -171,6 +183,15 @@ export function _scriptEditor(): void {
   grok.events.onViewAdded.subscribe((view) => {
     if (view.type == 'ScriptView')
     scriptEditor(view);
+  });
+}
+
+//description: FunctionSignatureEditor
+//tags: autostart
+export function _functionSignatureEditor(): void { 
+  grok.events.onViewAdded.subscribe((view) => {
+    if (view.type == 'ScriptView')
+    functionSignatureEditor(view);
   });
 }
 

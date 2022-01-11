@@ -5,12 +5,14 @@ import { CLIN_TRIAL_GOV_SEARCH, HttpService } from '../services/http.service';
 import { addDataFromDmDomain, dictToString, getNullOrValue } from '../data-preparation/utils';
 import { study } from '../clinical-study';
 import { SEVERITY_COLOR_DICT, CLINICAL_TRIAL_GOV_FIELDS } from '../constants';
-import { SUBJECT_ID, TREATMENT_ARM, AGE, SEX, RACE, AE_TERM, AE_SEVERITY, AE_START_DAY, AE_END_DAY, AE_START_DATE, AE_END_DATE, DOMAIN, INV_DRUG_DOSE, INV_DRUG_DOSE_UNITS, CON_MED_DOSE, CON_MED_DOSE_UNITS, CON_MED_DOSE_FREQ, CON_MED_ROUTE, INV_DRUG_DOSE_FORM, INV_DRUG_DOSE_FREQ, INV_DRUG_ROUTE } from '../columns-constants';
+import { SUBJECT_ID, TREATMENT_ARM, AGE, SEX, RACE, AE_TERM, AE_SEVERITY, AE_START_DAY, AE_END_DAY, AE_START_DATE, AE_END_DATE, DOMAIN, INV_DRUG_DOSE, INV_DRUG_DOSE_UNITS, CON_MED_DOSE, CON_MED_DOSE_UNITS, CON_MED_DOSE_FREQ, CON_MED_ROUTE, INV_DRUG_DOSE_FORM, INV_DRUG_DOSE_FREQ, INV_DRUG_ROUTE, AE_DECOD_TERM, CON_MED_NAME, LAB_TEST, LAB_RES_N, VS_TEST, VS_RES_N } from '../columns-constants';
 import { updateDivInnerHTML } from '../views/utils';
 import $ from "cash-dom";
 import { getSubjectDmData } from '../data-preparation/data-preparation';
 import { AEBrowserHelper } from '../helpers/ae-browser-helper';
 import { LaboratoryView } from '../views/laboratory-view';
+import { PatientVisit } from '../model/patient-visit';
+import { StudyVisit } from '../model/study-visit';
 
 export async function createPropertyPanel(viewClass: any) {
     switch (viewClass.name) {
@@ -32,10 +34,161 @@ export async function createPropertyPanel(viewClass: any) {
             grok.shell.o = await laboratoryPanel(viewClass);
             break;
         }
+        case 'Patient Visit': {
+            grok.shell.o = await patientVisitPanel(viewClass);
+            break;
+        }
+        case 'Study Visit': {
+            grok.shell.o = await studyVisitPanel(viewClass);
+            break;
+        }
         default: {
             break;
         }
     }
+}
+
+export async function studyVisitPanel(studyVisit: StudyVisit) {
+    let panelDiv = ui.div();
+
+    let acc = ui.accordion('patient-visit-panel');
+    let accIcon = ui.element('i');
+    accIcon.className = 'grok-icon svg-icon svg-view-layout';
+    acc.addTitle(ui.span([accIcon, ui.label(studyVisit.currentVisitName)]));
+
+    acc.addPane(`Summary`, () => {
+        return ui.tableFromMap({
+            'Visit day': studyVisit.currentVisitDay,
+            'Total patients': studyVisit.totalPatients,
+            'Min visit date': studyVisit.minVisitDate,
+            'Max visit dae': studyVisit.maxVisitDate,
+        })
+    });
+
+    let getRowNumber = (df) => {
+        return df ? df.rowCount === 1 && df.getCol(SUBJECT_ID).isNone(0) ? 0 : df.rowCount : 0;
+    }
+
+    acc.addPane('Drug exposure', () => {
+        if (!getRowNumber(studyVisit.exAtVisit)) {
+            return ui.divText('No records found');
+        }
+        return DG.Viewer.fromType(DG.VIEWER.PIE_CHART, studyVisit.exAtVisit, {
+            category: studyVisit.extrtWithDoseColName,
+        }).root;
+    })
+
+    let createPane = (name, rowNum, df, splitCol) => {
+        acc.addCountPane(`${name}`, () => getPaneContent(df, splitCol, rowNum), () => rowNum);
+        let panel = acc.getPane(`${name}`);
+        //@ts-ignore
+        $(panel.root).css('display', 'flex');
+        //@ts-ignore
+        $(panel.root).css('opacity', '1');
+    }
+
+    let getPaneContent = (df, splitCol, rowNum) => {
+            if (!rowNum) {
+                return ui.divText('No records found');
+            } else {
+                return df.plot.bar({
+                    split: splitCol,
+                    style: 'dashboard',
+                    legendVisibility: 'Never'
+                }).root;
+            }
+    }
+
+    let aeRowNum = getRowNumber(studyVisit.aeSincePreviusVisit);
+    createPane('AEs since previous visit', aeRowNum, studyVisit.aeSincePreviusVisit, AE_DECOD_TERM);
+
+    let cmRowNum = getRowNumber(studyVisit.conmedSincePreviusVisit);
+    createPane('CONMEDs since previous visit', cmRowNum, studyVisit.conmedSincePreviusVisit, CON_MED_NAME);
+
+    let createDistributionPane = (name, df, catCol, valCol) => {
+        acc.addPane(name, () => {
+            if (!getRowNumber(df)) {
+                return ui.divText('No records found');
+            }
+            let categoriesAcc = ui.accordion();
+            df.getCol(catCol).categories.forEach(cat => {
+                categoriesAcc.addPane(`${cat}`, () => {
+                    let valueDf = df.groupBy(df.columns.names())
+                    .where(`${catCol} = ${cat}`)
+                    .aggregate();
+                    const plot = DG.Viewer.boxPlot(valueDf, {
+                        value: `${valCol}`,
+                        category: `${catCol}`,
+                        labelOrientation: 'Horz',
+                        showCategorySelector: false,
+                        showValueSelector: false,
+                        showPValue: true
+                      });
+                    return plot.root;
+                })
+            })
+            return categoriesAcc.root;   
+        })
+    } 
+
+    createDistributionPane('Laboratory', studyVisit.lbAtVisit, LAB_TEST, LAB_RES_N);
+    createDistributionPane('Vital signs', studyVisit.vsAtVisit, VS_TEST, VS_RES_N);
+
+    panelDiv.append(acc.root);
+
+    return panelDiv;
+
+}
+
+export async function patientVisitPanel(patientVisit: PatientVisit) {
+    let panelDiv = ui.div();
+
+    let acc = ui.accordion('patient-visit-panel');
+    let accIcon = ui.element('i');
+    accIcon.className = 'grok-icon svg-icon svg-view-layout';
+    acc.addTitle(ui.span([accIcon, ui.label(patientVisit.currentSubjId)]));
+
+    let getPaneContent = (it, rowNum) => {
+        if (it) {
+            if (!rowNum) {
+                return ui.divText('No records found');
+            } else {
+                let grid = patientVisit[it].plot.grid();
+                if (rowNum < 7) {
+                    grid.root.style.maxHeight = rowNum < 4 ? '100px' : '150px';
+                }
+                grid.root.style.width = '250px';
+                return ui.div(grid.root);
+            }
+        }
+    }
+
+    let createPane = (it, name, rowNum) => {
+        acc.addCountPane(`${name}`, () => getPaneContent(it, rowNum), () => rowNum);
+        let panel = acc.getPane(`${name}`);
+        //@ts-ignore
+        $(panel.root).css('display', 'flex');
+        //@ts-ignore
+        $(panel.root).css('opacity', '1');
+    }
+
+
+    let createAccordion = () => {
+        Object.keys(patientVisit.domainsNamesDict).forEach(key => {
+            let domain = patientVisit.domainsNamesDict[key];
+            const rowNum = patientVisit[domain] ?
+                patientVisit[domain].rowCount === 1 && patientVisit[domain].getCol(SUBJECT_ID).isNone(0) ?
+                    0 : patientVisit[domain].rowCount : 0
+            createPane(domain, key, rowNum);
+        })
+    }
+
+    createAccordion();
+
+    panelDiv.append(acc.root);
+
+    return panelDiv;
+
 }
 
 export async function laboratoryPanel(view: LaboratoryView){
