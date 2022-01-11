@@ -4,7 +4,6 @@ import {Observable, Subscription} from "rxjs";
 import {Func, Property, PropertyOptions} from "./entities";
 import {Cell, Column, DataFrame} from "./dataframe";
 import {ColorType, Type} from "./const";
-import * as React from "react";
 import * as rxjs from "rxjs";
 import { filter } from 'rxjs/operators';
 import {Rect} from "./grid";
@@ -228,14 +227,14 @@ export class Widget {
     return new Widget(root);
   }
 
-  /** Creates a {@see Widget} from the specified React component. */
-  // @ts-ignore
-  static react(reactComponent: React.DOMElement<any, any> | Array<React.DOMElement<any, any>> | React.CElement<any, any> | Array<React.CElement<any, any>> | React.ReactElement | Array<React.ReactElement>): Widget {
-    let widget = Widget.fromRoot(ui.div());
-    // @ts-ignore
-    ReactDOM.render(reactComponent, widget.root);
-    return widget;
-  }
+  // /** Creates a {@see Widget} from the specified React component. */
+  // // @ts-ignore
+  // static react(reactComponent: React.DOMElement<any, any> | Array<React.DOMElement<any, any>> | React.CElement<any, any> | Array<React.CElement<any, any>> | React.ReactElement | Array<React.ReactElement>): Widget {
+  //   let widget = Widget.fromRoot(ui.div());
+  //   // @ts-ignore
+  //   ReactDOM.render(reactComponent, widget.root);
+  //   return widget;
+  // }
 }
 
 

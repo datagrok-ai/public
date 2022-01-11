@@ -1,7 +1,9 @@
 import * as DG from 'datagrok-api/dg';
 import {getRdKitModule, getRdKitService} from './chem-common-rdkit';
-import {rdKitFingerprintToBitArray, tanimoto,
-  defaultMorganFpRadius, defaultMorganFpLength} from './chem-common';
+import {
+  rdKitFingerprintToBitArray, tanimoto,
+  defaultMorganFpRadius, defaultMorganFpLength,
+} from './chem-common';
 import BitArray from '@datagrok-libraries/utils/src/bit-array';
 
 async function _chemFindSimilar(molStringsColumn: DG.Column,
@@ -41,9 +43,9 @@ async function _chemGetSimilarities(queryMolString: string) {
   const fingerprints = _chemCache.morganFingerprints!;
   const distances = new Array(fingerprints.length).fill(0.0);
   const sample = chemGetMorganFingerprint(queryMolString);
-  for (let i = 0; i < fingerprints.length; ++i) {
+  for (let i = 0; i < fingerprints.length; ++i)
     distances[i] = tanimoto(fingerprints[i], sample);
-  }
+
   return distances;
 }
 
@@ -140,18 +142,18 @@ export async function chemFindSimilar(
 export function chemSubstructureSearchGraph(molStringsColumn: DG.Column, molString: string) {
   const len = molStringsColumn.length;
   const result = DG.BitSet.create(len);
-  if (molString.length == 0) {
+  if (molString.length == 0)
     return result;
-  }
+
   const subMol = getRdKitModule().get_mol(molString);
   for (let i = 0; i < len; ++i) {
     const item = molStringsColumn.get(i);
     try {
       const mol = getRdKitModule().get_mol(item);
       const match = mol.get_substruct_match(subMol);
-      if (match !== '{}') {
+      if (match !== '{}')
         result.set(i, true, false);
-      }
+
       mol.delete();
     } catch (e) {
       console.error(
@@ -169,9 +171,8 @@ export async function chemSubstructureSearchLibrary(
   const result = DG.BitSet.create(molStringsColumn.length);
   if (molString.length != 0) {
     const matches = await getRdKitService().searchSubstructure(molString, molStringSmarts);
-    for (const match of matches) {
+    for (const match of matches)
       result.set(match, true, false);
-    }
   }
   return result;
 }

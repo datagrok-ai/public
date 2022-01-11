@@ -3,258 +3,485 @@
   "version": "2.0",
   "name": "find-replace-test",
   "url": "https://dev.datagrok.ai/",
-  "tests": [{
-    "id": "f2f5c8f1-2e74-40d3-a768-7073e9951d7e",
-    "name": "find-replace-test",
-    "commands": [{
-      "id": "03be918d-8bdb-494f-a622-b857c07ccadf",
-      "comment": "",
-      "command": "open",
-      "target": "/projects?selenium=true&q=selenium",
-      "targets": [],
-      "value": ""
-    }, {
-      "id": "a1fd5274-3dc0-45a3-a4d0-82165499e57b",
-      "comment": "",
-      "command": "type",
-      "target": "xpath=//div[@id='signup-login-fields']/div/div/input",
-      "targets": [
-        ["id=login", "id"],
-        ["css=#login", "css"],
-        ["css=#login", "css:finder"],
-        ["xpath=//input[@id='login']", "xpath:attributes"],
-        ["xpath=//div[@id='rootDiv']/div/input", "xpath:idRelative"],
-        ["xpath=//input", "xpath:position"]
-      ],
-      "value": "selenium"
-    }, {
-      "id": "b5ab63d7-15bf-40c0-a98f-78755106918c",
-      "comment": "",
-      "command": "type",
-      "target": "xpath=//div[@id='signup-login-fields']/div/div[2]/input",
-      "targets": [
-        ["id=password", "id"],
-        ["css=#password", "css"],
-        ["css=#password", "css:finder"],
-        ["xpath=//input[@id='password']", "xpath:attributes"],
-        ["xpath=//div[@id='rootDiv']/div/input[2]", "xpath:idRelative"],
-        ["xpath=//input[2]", "xpath:position"]
-      ],
-      "value": "selenium"
-    }, {
-      "id": "6b269c8d-adac-499f-a870-800efef3ea1d",
-      "comment": "",
-      "command": "click",
-      "target": "xpath=//div[@id='signup-login-fields']/div[2]/button",
-      "targets": [
-        ["linkText=LOGIN", "linkText"],
-        ["css=a", "css"],
-        ["css=a", "css:finder"],
-        ["xpath=//a[contains(text(),'LOGIN')]", "xpath:link"],
-        ["xpath=//div[@id='rootDiv']/div/a", "xpath:idRelative"],
-        ["xpath=//a[contains(@href, '#')]", "xpath:href"],
-        ["xpath=//a", "xpath:position"]
-      ],
-      "value": ""
-    }, {
-      "id": "1223e27f-03d0-429b-b7cc-2140f552f093",
-      "comment": "",
-      "command": "verifyElementNotPresent",
-      "target": "css=i[name=\"icon-exclamation-circle\"]",
-      "targets": [
-        ["css=i[name=\"exclamation-circle\"]", "css"],
-        ["css=.fa-exclamation-circle", "css:finder"],
-        ["xpath=//i[@name='exclamation-circle']", "xpath:attributes"],
-        ["xpath=//div[@id='rootDiv']/div/div[2]/i", "xpath:idRelative"],
-        ["xpath=//div[2]/i", "xpath:position"]
-      ],
-      "value": ""
-    }, {
-      "id": "82de1932-4777-4e53-b635-4e1b219ab50e",
-      "comment": "",
-      "command": "pause",
-      "target": "4000",
-      "targets": [],
-      "value": ""
-    }, {
-      "id": "f59f2e8c-dfd9-45a2-8462-59f16fd0e874",
-      "comment": "",
-      "command": "doubleClick",
-      "target": "name=div-SeleniumTestDataP1",
-      "targets": [
-        ["css=.d4-current", "css:finder"],
-        ["name=div-SeleniumTestDataP1[2]", "xpath:attributes"],
-        ["xpath=//div[@id='datasets']/div/div[2]/div[4]", "xpath:idRelative"],
-        ["xpath=//div[3]/div/div/div/div/div[2]/div[4]", "xpath:position"]
-      ],
-      "value": ""
-    }, {
-      "id": "da1af433-35eb-4564-9f62-f85ccac19670",
-      "comment": "",
-      "command": "pause",
-      "target": "3000",
-      "targets": [],
-      "value": ""
-    }, {
-      "id": "7ca3d680-b40b-4037-ace9-923fcb997746",
-      "comment": "",
-      "command": "verifyElementNotPresent",
-      "target": "css=i[name=\"icon-exclamation-circle\"]",
-      "targets": [
-        ["name=icon-exclamation-triangle", "name"],
-        ["xpath=//i[@name='icon-exclamation-triangle']", "xpath:attributes"],
-        ["xpath=//i", "xpath:position"]
-      ],
-      "value": ""
-    }, {
-      "id": "0905c5f8-e20d-452d-a515-2fd675777f36",
-      "comment": "",
-      "command": "pause",
-      "target": "1000",
-      "targets": [],
-      "value": ""
-    }, {
-      "id": "6465dd03-03dd-49ce-bde0-4718df05c426",
-      "comment": "",
-      "command": "executeScript",
-      "target": "element=document.querySelector(\"[name=viewer-Grid] > canvas:nth-child(4)\"); event = new MouseEvent(\"click\", {     bubbles: true,     cancelable: false,     view: window,     button: 2,     buttons: 0,     clientX: element.getBoundingClientRect().x+280,     clientY: element.getBoundingClientRect().y+100}); element.dispatchEvent(event);",
-      "targets": [],
-      "value": ""
-    }, {
-      "id": "20907566-d50d-4f50-bc19-1bd96491730a",
-      "comment": "",
-      "command": "pause",
-      "target": "1000",
-      "targets": [],
-      "value": ""
-    }, {
-      "id": "55df6628-406e-4cc0-8f99-6de3891fed32",
-      "comment": "",
-      "command": "click",
-      "target": "xpath=(//div[@name='div-Edit'])[2]",
-      "targets": [
-        ["css=.d4-menu-item-hover:nth-child(2)", "css:finder"],
-        ["xpath=(//div[@name='div-Edit'])[2]", "xpath:attributes"],
-        ["xpath=//div[@id='rootDiv']/div/div[3]/div[3]/div/div/div/div/div[2]/div/div[4]/div/div/div[2]", "xpath:idRelative"],
-        ["xpath=//div[2]/div/div[4]/div/div/div[2]", "xpath:position"]
-      ],
-      "value": ""
-    }, {
-      "id": "257dab79-aeaa-4097-8d95-b5ad3a23179a",
-      "comment": "",
-      "command": "click",
-      "target": "xpath=(//div[@name='div-Edit---Find-and-Replace...'])[2]",
-      "targets": [
-        ["css=.d4-menu-item:nth-child(4) > .d4-menu-item-container-fixed > .d4-menu-item-container > .d4-menu-item:nth-child(2) > .d4-menu-item-container-fixed > .d4-menu-item-container > .d4-menu-item:nth-child(2)", "css:finder"],
-        ["xpath=(//div[@name='div-Edit---Find-and-Replace...'])[2]", "xpath:attributes"],
-        ["xpath=//div[@id='rootDiv']/div/div[3]/div[3]/div/div/div/div/div[2]/div/div[4]/div/div/div[2]/div/div/div[2]", "xpath:idRelative"],
-        ["xpath=//div[4]/div/div/div[2]/div/div/div[2]", "xpath:position"]
-      ],
-      "value": ""
-    }, {
-      "id": "8f152a76-f635-4e66-82f7-76e3ce4e5e84",
-      "comment": "",
-      "command": "pause",
-      "target": "1000",
-      "targets": [],
-      "value": ""
-    }, {
-      "id": "34c542d3-6894-4ba3-b5b9-62b6508ac4e1",
-      "comment": "",
-      "command": "verifyElementPresent",
-      "target": "xpath=//h1[@id='find-and-replace']",
-      "targets": [
-        ["id=find-and-replace", "id"],
-        ["css=#find-and-replace", "css:finder"],
-        ["xpath=//h1[@id='find-and-replace']", "xpath:attributes"],
-        ["xpath=//div[@id='elementContent']/div/span/h1", "xpath:idRelative"],
-        ["xpath=//h1", "xpath:position"],
-        ["xpath=//h1[contains(.,'Find and replace')]", "xpath:innerText"]
-      ],
-      "value": ""
-    }, {
-      "id": "52c3232c-3379-4ba8-a4b4-d34e15a76874",
-      "comment": "",
-      "command": "pause",
-      "target": "1000",
-      "targets": [],
-      "value": ""
-    }, {
-      "id": "5ba49c04-72ad-413f-9b8d-fbddaf05e63b",
-      "comment": "",
-      "command": "type",
-      "target": "name=input-Find-and-replace---Find-what-",
-      "targets": [
-        ["id=46", "id"],
-        ["name=input-Find-and-replace---Find-what-", "name"],
-        ["css=#\\34 6", "css:finder"],
-        ["xpath=//input[@id='46']", "xpath:attributes"],
-        ["xpath=//div[2]/div/input", "xpath:position"]
-      ],
-      "value": "F"
-    }, {
-      "id": "cac0624d-66f6-4f8a-9148-7ea78a38e685",
-      "comment": "",
-      "command": "pause",
-      "target": "1000",
-      "targets": [],
-      "value": ""
-    }, {
-      "id": "2086da9a-447e-4da0-ba03-ddb6f5089b9b",
-      "comment": "",
-      "command": "type",
-      "target": "name=input-Find-and-replace---Replace-with-",
-      "targets": [
-        ["id=47", "id"],
-        ["name=input-Find-and-replace---Replace-with-", "name"],
-        ["css=#\\34 7", "css:finder"],
-        ["xpath=//input[@id='47']", "xpath:attributes"],
-        ["xpath=//div[2]/input", "xpath:position"]
-      ],
-      "value": "T"
-    }, {
-      "id": "60213268-707c-4b02-8911-dc9239b0f978",
-      "comment": "",
-      "command": "pause",
-      "target": "1000",
-      "targets": [],
-      "value": ""
-    }, {
-      "id": "b29b8395-7df0-4df1-87a3-038a96db4fa4",
-      "comment": "",
-      "command": "click",
-      "target": "name=button-REPLACE",
-      "targets": [
-        ["name=button-REPLACE", "name"],
-        ["css=.ui-btn:nth-child(2)", "css:finder"],
-        ["xpath=//button[@name='button-REPLACE']", "xpath:attributes"],
-        ["xpath=//button[2]", "xpath:position"],
-        ["xpath=//button[contains(.,'REPLACE')]", "xpath:innerText"]
-      ],
-      "value": ""
-    }, {
-      "id": "0b5d90d9-5be7-402a-a72f-dc1773eab4c9",
-      "comment": "",
-      "command": "verifyElementNotPresent",
-      "target": "css=i[name=\"icon-exclamation-circle\"]",
-      "targets": [
-        ["css=i[name=\"exclamation-circle\"]", "css"],
-        ["css=.fa-exclamation-circle", "css:finder"],
-        ["xpath=//i[@name='exclamation-circle']", "xpath:attributes"],
-        ["xpath=//div[@id='rootDiv']/div/div[2]/i", "xpath:idRelative"],
-        ["xpath=//div[2]/i", "xpath:position"]
-      ],
-      "value": ""
-    }]
-  }],
-  "suites": [{
-    "id": "28cd5b22-f454-4a03-909e-e9502da8e7be",
-    "name": "find-replace-test",
-    "persistSession": false,
-    "parallel": false,
-    "timeout": 300,
-    "tests": ["f2f5c8f1-2e74-40d3-a768-7073e9951d7e"]
-  }],
-  "urls": ["https://dev.datagrok.ai/"],
+  "tests": [
+    {
+      "id": "f2f5c8f1-2e74-40d3-a768-7073e9951d7e",
+      "name": "find-replace-test",
+      "commands": [
+        {
+          "id": "03be918d-8bdb-494f-a622-b857c07ccadf",
+          "comment": "",
+          "command": "open",
+          "target": "/projects?selenium=true&q=selenium",
+          "targets": [],
+          "value": ""
+        },
+        {
+          "id": "a1fd5274-3dc0-45a3-a4d0-82165499e57b",
+          "comment": "",
+          "command": "type",
+          "target": "xpath=//div[@id='signup-login-fields']/div/div/input",
+          "targets": [
+            [
+              "id=login",
+              "id"
+            ],
+            [
+              "css=#login",
+              "css"
+            ],
+            [
+              "css=#login",
+              "css:finder"
+            ],
+            [
+              "xpath=//input[@id='login']",
+              "xpath:attributes"
+            ],
+            [
+              "xpath=//div[@id='rootDiv']/div/input",
+              "xpath:idRelative"
+            ],
+            [
+              "xpath=//input",
+              "xpath:position"
+            ]
+          ],
+          "value": "selenium"
+        },
+        {
+          "id": "b5ab63d7-15bf-40c0-a98f-78755106918c",
+          "comment": "",
+          "command": "type",
+          "target": "xpath=//div[@id='signup-login-fields']/div/div[2]/input",
+          "targets": [
+            [
+              "id=password",
+              "id"
+            ],
+            [
+              "css=#password",
+              "css"
+            ],
+            [
+              "css=#password",
+              "css:finder"
+            ],
+            [
+              "xpath=//input[@id='password']",
+              "xpath:attributes"
+            ],
+            [
+              "xpath=//div[@id='rootDiv']/div/input[2]",
+              "xpath:idRelative"
+            ],
+            [
+              "xpath=//input[2]",
+              "xpath:position"
+            ]
+          ],
+          "value": "selenium"
+        },
+        {
+          "id": "6b269c8d-adac-499f-a870-800efef3ea1d",
+          "comment": "",
+          "command": "click",
+          "target": "xpath=//div[@id='signup-login-fields']/div[2]/button",
+          "targets": [
+            [
+              "linkText=LOGIN",
+              "linkText"
+            ],
+            [
+              "css=a",
+              "css"
+            ],
+            [
+              "css=a",
+              "css:finder"
+            ],
+            [
+              "xpath=//a[contains(text(),'LOGIN')]",
+              "xpath:link"
+            ],
+            [
+              "xpath=//div[@id='rootDiv']/div/a",
+              "xpath:idRelative"
+            ],
+            [
+              "xpath=//a[contains(@href, '#')]",
+              "xpath:href"
+            ],
+            [
+              "xpath=//a",
+              "xpath:position"
+            ]
+          ],
+          "value": ""
+        },
+        {
+          "id": "1223e27f-03d0-429b-b7cc-2140f552f093",
+          "comment": "",
+          "command": "verifyElementNotPresent",
+          "target": "css=i[name=\"icon-exclamation-circle\"]",
+          "targets": [
+            [
+              "css=i[name=\"exclamation-circle\"]",
+              "css"
+            ],
+            [
+              "css=.fa-exclamation-circle",
+              "css:finder"
+            ],
+            [
+              "xpath=//i[@name='exclamation-circle']",
+              "xpath:attributes"
+            ],
+            [
+              "xpath=//div[@id='rootDiv']/div/div[2]/i",
+              "xpath:idRelative"
+            ],
+            [
+              "xpath=//div[2]/i",
+              "xpath:position"
+            ]
+          ],
+          "value": ""
+        },
+        {
+          "id": "82de1932-4777-4e53-b635-4e1b219ab50e",
+          "comment": "",
+          "command": "pause",
+          "target": "4000",
+          "targets": [],
+          "value": ""
+        },
+        {
+          "id": "f59f2e8c-dfd9-45a2-8462-59f16fd0e874",
+          "comment": "",
+          "command": "doubleClick",
+          "target": "name=div-SeleniumTestDataP1",
+          "targets": [
+            [
+              "css=.d4-current",
+              "css:finder"
+            ],
+            [
+              "name=div-SeleniumTestDataP1[2]",
+              "xpath:attributes"
+            ],
+            [
+              "xpath=//div[@id='datasets']/div/div[2]/div[4]",
+              "xpath:idRelative"
+            ],
+            [
+              "xpath=//div[3]/div/div/div/div/div[2]/div[4]",
+              "xpath:position"
+            ]
+          ],
+          "value": ""
+        },
+        {
+          "id": "da1af433-35eb-4564-9f62-f85ccac19670",
+          "comment": "",
+          "command": "pause",
+          "target": "3000",
+          "targets": [],
+          "value": ""
+        },
+        {
+          "id": "7ca3d680-b40b-4037-ace9-923fcb997746",
+          "comment": "",
+          "command": "verifyElementNotPresent",
+          "target": "css=i[name=\"icon-exclamation-circle\"]",
+          "targets": [
+            [
+              "name=icon-exclamation-triangle",
+              "name"
+            ],
+            [
+              "xpath=//i[@name='icon-exclamation-triangle']",
+              "xpath:attributes"
+            ],
+            [
+              "xpath=//i",
+              "xpath:position"
+            ]
+          ],
+          "value": ""
+        },
+        {
+          "id": "0905c5f8-e20d-452d-a515-2fd675777f36",
+          "comment": "",
+          "command": "pause",
+          "target": "1000",
+          "targets": [],
+          "value": ""
+        },
+        {
+          "id": "6465dd03-03dd-49ce-bde0-4718df05c426",
+          "comment": "",
+          "command": "executeScript",
+          "target": "element=document.querySelector(\"[name=viewer-Grid] > canvas:nth-child(4)\"); event = new MouseEvent(\"click\", {     bubbles: true,     cancelable: false,     view: window,     button: 2,     buttons: 0,     clientX: element.getBoundingClientRect().x+280,     clientY: element.getBoundingClientRect().y+100}); element.dispatchEvent(event);",
+          "targets": [],
+          "value": ""
+        },
+        {
+          "id": "20907566-d50d-4f50-bc19-1bd96491730a",
+          "comment": "",
+          "command": "pause",
+          "target": "1000",
+          "targets": [],
+          "value": ""
+        },
+        {
+          "id": "55df6628-406e-4cc0-8f99-6de3891fed32",
+          "comment": "",
+          "command": "click",
+          "target": "xpath=(//div[@name='div-Edit'])[2]",
+          "targets": [
+            [
+              "css=.d4-menu-item-hover:nth-child(2)",
+              "css:finder"
+            ],
+            [
+              "xpath=(//div[@name='div-Edit'])[2]",
+              "xpath:attributes"
+            ],
+            [
+              "xpath=//div[@id='rootDiv']/div/div[3]/div[3]/div/div/div/div/div[2]/div/div[4]/div/div/div[2]",
+              "xpath:idRelative"
+            ],
+            [
+              "xpath=//div[2]/div/div[4]/div/div/div[2]",
+              "xpath:position"
+            ]
+          ],
+          "value": ""
+        },
+        {
+          "id": "257dab79-aeaa-4097-8d95-b5ad3a23179a",
+          "comment": "",
+          "command": "click",
+          "target": "xpath=(//div[@name='div-Edit---Find-and-Replace...'])[2]",
+          "targets": [
+            [
+              "css=.d4-menu-item:nth-child(4) > .d4-menu-item-container-fixed > .d4-menu-item-container > .d4-menu-item:nth-child(2) > .d4-menu-item-container-fixed > .d4-menu-item-container > .d4-menu-item:nth-child(2)",
+              "css:finder"
+            ],
+            [
+              "xpath=(//div[@name='div-Edit---Find-and-Replace...'])[2]",
+              "xpath:attributes"
+            ],
+            [
+              "xpath=//div[@id='rootDiv']/div/div[3]/div[3]/div/div/div/div/div[2]/div/div[4]/div/div/div[2]/div/div/div[2]",
+              "xpath:idRelative"
+            ],
+            [
+              "xpath=//div[4]/div/div/div[2]/div/div/div[2]",
+              "xpath:position"
+            ]
+          ],
+          "value": ""
+        },
+        {
+          "id": "8f152a76-f635-4e66-82f7-76e3ce4e5e84",
+          "comment": "",
+          "command": "pause",
+          "target": "1000",
+          "targets": [],
+          "value": ""
+        },
+        {
+          "id": "34c542d3-6894-4ba3-b5b9-62b6508ac4e1",
+          "comment": "",
+          "command": "verifyElementPresent",
+          "target": "xpath=//h1[@id='find-and-replace']",
+          "targets": [
+            [
+              "id=find-and-replace",
+              "id"
+            ],
+            [
+              "css=#find-and-replace",
+              "css:finder"
+            ],
+            [
+              "xpath=//h1[@id='find-and-replace']",
+              "xpath:attributes"
+            ],
+            [
+              "xpath=//div[@id='elementContent']/div/span/h1",
+              "xpath:idRelative"
+            ],
+            [
+              "xpath=//h1",
+              "xpath:position"
+            ],
+            [
+              "xpath=//h1[contains(.,'Find and replace')]",
+              "xpath:innerText"
+            ]
+          ],
+          "value": ""
+        },
+        {
+          "id": "52c3232c-3379-4ba8-a4b4-d34e15a76874",
+          "comment": "",
+          "command": "pause",
+          "target": "1000",
+          "targets": [],
+          "value": ""
+        },
+        {
+          "id": "5ba49c04-72ad-413f-9b8d-fbddaf05e63b",
+          "comment": "",
+          "command": "type",
+          "target": "name=input-Find-and-replace---Find-what-",
+          "targets": [
+            [
+              "id=46",
+              "id"
+            ],
+            [
+              "name=input-Find-and-replace---Find-what-",
+              "name"
+            ],
+            [
+              "css=#\\34 6",
+              "css:finder"
+            ],
+            [
+              "xpath=//input[@id='46']",
+              "xpath:attributes"
+            ],
+            [
+              "xpath=//div[2]/div/input",
+              "xpath:position"
+            ]
+          ],
+          "value": "F"
+        },
+        {
+          "id": "cac0624d-66f6-4f8a-9148-7ea78a38e685",
+          "comment": "",
+          "command": "pause",
+          "target": "1000",
+          "targets": [],
+          "value": ""
+        },
+        {
+          "id": "2086da9a-447e-4da0-ba03-ddb6f5089b9b",
+          "comment": "",
+          "command": "type",
+          "target": "name=input-Find-and-replace---Replace-with-",
+          "targets": [
+            [
+              "id=47",
+              "id"
+            ],
+            [
+              "name=input-Find-and-replace---Replace-with-",
+              "name"
+            ],
+            [
+              "css=#\\34 7",
+              "css:finder"
+            ],
+            [
+              "xpath=//input[@id='47']",
+              "xpath:attributes"
+            ],
+            [
+              "xpath=//div[2]/input",
+              "xpath:position"
+            ]
+          ],
+          "value": "T"
+        },
+        {
+          "id": "60213268-707c-4b02-8911-dc9239b0f978",
+          "comment": "",
+          "command": "pause",
+          "target": "1000",
+          "targets": [],
+          "value": ""
+        },
+        {
+          "id": "b29b8395-7df0-4df1-87a3-038a96db4fa4",
+          "comment": "",
+          "command": "click",
+          "target": "name=button-REPLACE",
+          "targets": [
+            [
+              "name=button-REPLACE",
+              "name"
+            ],
+            [
+              "css=.ui-btn:nth-child(2)",
+              "css:finder"
+            ],
+            [
+              "xpath=//button[@name='button-REPLACE']",
+              "xpath:attributes"
+            ],
+            [
+              "xpath=//button[2]",
+              "xpath:position"
+            ],
+            [
+              "xpath=//button[contains(.,'REPLACE')]",
+              "xpath:innerText"
+            ]
+          ],
+          "value": ""
+        },
+        {
+          "id": "0b5d90d9-5be7-402a-a72f-dc1773eab4c9",
+          "comment": "",
+          "command": "verifyElementNotPresent",
+          "target": "css=i[name=\"icon-exclamation-circle\"]",
+          "targets": [
+            [
+              "css=i[name=\"exclamation-circle\"]",
+              "css"
+            ],
+            [
+              "css=.fa-exclamation-circle",
+              "css:finder"
+            ],
+            [
+              "xpath=//i[@name='exclamation-circle']",
+              "xpath:attributes"
+            ],
+            [
+              "xpath=//div[@id='rootDiv']/div/div[2]/i",
+              "xpath:idRelative"
+            ],
+            [
+              "xpath=//div[2]/i",
+              "xpath:position"
+            ]
+          ],
+          "value": ""
+        }
+      ]
+    }
+  ],
+  "suites": [
+    {
+      "id": "28cd5b22-f454-4a03-909e-e9502da8e7be",
+      "name": "find-replace-test",
+      "persistSession": false,
+      "parallel": false,
+      "timeout": 300,
+      "tests": [
+        "f2f5c8f1-2e74-40d3-a768-7073e9951d7e"
+      ]
+    }
+  ],
+  "urls": [
+    "https://dev.datagrok.ai/"
+  ],
   "plugins": []
 }

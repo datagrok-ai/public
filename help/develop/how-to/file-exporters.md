@@ -2,18 +2,17 @@
 
 # File exporters
 
-Part of Datagrok's functionality is built for easy file management. File
-exporters, along with [file viewers](custom-file-viewers.md), provide an example
-of such features. A file exporter is a function used for loading data from the
-platform. Once registered, it appears at the file's "export" menu:
+Part of Datagrok's functionality is built for easy file management. File exporters, along
+with [file viewers](custom-file-viewers.md), provide an example of such features. A file exporter is a function used for
+loading data from the platform. Once registered, it appears at the file's "
+export" menu:
 
 ![](file-exporter.gif "Save as SDF")
 
-To write an exporter function, add a `fileExporter` tag to its annotation. Make
-sure to specify the description: it will be used as the menu entry, e.g.,
-`As ${fileExtension}`. Unlike file viewers, exporters don't need an extension-specific
-tag, you start with an open table, modify it, and let the user download the converted version.
-Let's have a look at a function from the
+To write an exporter function, add a `fileExporter` tag to its annotation. Make sure to specify the description: it will
+be used as the menu entry, e.g.,
+`As ${fileExtension}`. Unlike file viewers, exporters don't need an extension-specific tag, you start with an open
+table, modify it, and let the user download the converted version. Let's have a look at a function from the
 [Chem](https://github.com/datagrok-ai/public/blob/73356b9c34e28fcd2278a8f60137c1c90684c8f3/packages/Chem/package.js)
 package that exports a dataframe in a special file format for chemical data:
 
@@ -53,12 +52,12 @@ saveAsSdf() {
 }
 ```
 
-In this function, we obtain a currently open table with `grok.shell.t`, work on
-the output format, create an anchor element with a filename in the `download`
-attribute, and lastly fire the element's click event. Note that we don't return
-anything from the exporter. After the package publication, the registered function
-will get attached to the file export menu at the platform's startup.
+In this function, we obtain a currently open table with `grok.shell.t`, work on the output format, create an anchor
+element with a filename in the `download`
+attribute, and lastly fire the element's click event. Note that we don't return anything from the exporter. After the
+package publication, the registered function will get attached to the file export menu at the platform's startup.
 
 See also:
-  * [JavaScript development](../develop.md)
-  * [How to develop custom file viewers](custom-file-viewers.md)
+
+* [JavaScript development](../develop.md)
+* [How to develop custom file viewers](custom-file-viewers.md)

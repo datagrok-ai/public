@@ -1,7 +1,9 @@
 <!-- TITLE: Versioning policy -->
 <!-- SUBTITLE: -->
 
-## Versioning policy
+# Versioning policy
+
+## Docker Image Versioning policy
 
 The Datagrok versioning policy requires to include a major, minor, and test version number and look
 like: `MAJOR.MINOR.TEST`.
@@ -9,14 +11,14 @@ like: `MAJOR.MINOR.TEST`.
 ### Major release
 
 A major release is made every time the code is released on [public.datagrok.ai](https://public.datagrok.ai). Before the
-release, the new version goes through all [quality assurance](admin/quality-assurance.md) operations, including manual testing
-of critical changes by the QA Engineer.
+release, the new version goes through all [quality assurance](admin/quality-assurance.md) operations, including manual
+testing of critical changes by the QA Engineer.
 
 It may contain changes that break backward compatibility with previous versions or represent fundamental changes to
 concepts.
 
-For a major release, the `MAJOR` component must be incremented by one, and the `MINOR` and `TEST` components must be set
-to zero.
+For a major release, the `MAJOR` component must be incremented by one, and the `MINOR` and `TEST`
+components must be set to zero.
 
 ### Minor release
 
@@ -33,10 +35,10 @@ Test releases are unstable. We do not recommend them for production usage.
 It may contain breaking changes, unstable features, serious errors, could cause crashes. Also, it may not include all
 the features that are already in other versions.
 
-For a test release, the `TEST` component must be incremented by one, and the `MINOR` and `MAJOR` components must remain
-unchanged.
+For a test release, the `TEST` component must be incremented by one, and the `MINOR` and `MAJOR`
+components must remain unchanged.
 
-## Version information
+### Version information in Docker image
 
 Every Docker container has information about version and branch it was build on:
 

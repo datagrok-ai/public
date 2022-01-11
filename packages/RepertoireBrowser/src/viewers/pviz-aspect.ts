@@ -3,7 +3,7 @@ import * as ui from 'datagrok-api/ui';
 import * as DG from "datagrok-api/dg";
 //@ts-ignore
 import mutcodes from "../externalData/mutcodes.json";
-import { MiscMethods } from "./misc.js"
+import { MiscMethods } from "./misc"
 
 export class PvizAspect {
   ngl: any;
@@ -348,25 +348,27 @@ export class PvizAspect {
           //observed PTMS
           let listsObservedPtms = [];
 
-          this.obsChoices.forEach(ptm => {
-            let selectorStrPTM = 'g.feature.' + ptm.replaceAll(" ", "_") + "."
-              + ptm.replaceAll(" ", "_") + ' rect.feature';
-            let elPTM = document.querySelectorAll(selectorStrPTM);
-            let el_lstPTM = pVizParams.obsMap[chosenTracksChain].obs_el_obj[ptm.replace(" ", "_")];
-            listsObservedPtms[ptm] = [elPTM, el_lstPTM];
-          });
-
-          Object.keys(listsObservedPtms).forEach(ptm => {
-            let elPTM = listsObservedPtms[ptm][0];
-            let el_lstPTM = listsObservedPtms[ptm][1];
-            if (typeof el_lstPTM !== 'undefined' && el_lstPTM.indexOf(position) !== -1) {
-              if (switchObj[keyChain][position]['state'] === false) {
-                elPTM[el_lstPTM.indexOf(position)].style.fill = pVizParams.obsMap[keyChain].obs_color_obj[ptm.replace(" ", "_")][el_lstPTM.indexOf(position)];
-              } else {
-                elPTM[el_lstPTM.indexOf(position)].style.fill = 'black';
+          if(this.jsonObs !== null){
+            this.obsChoices.forEach(ptm => {
+              let selectorStrPTM = 'g.feature.' + ptm.replaceAll(" ", "_") + "."
+                + ptm.replaceAll(" ", "_") + ' rect.feature';
+              let elPTM = document.querySelectorAll(selectorStrPTM);
+              let el_lstPTM = pVizParams.obsMap[chosenTracksChain].obs_el_obj[ptm.replace(" ", "_")];
+              listsObservedPtms[ptm] = [elPTM, el_lstPTM];
+            });
+  
+            Object.keys(listsObservedPtms).forEach(ptm => {
+              let elPTM = listsObservedPtms[ptm][0];
+              let el_lstPTM = listsObservedPtms[ptm][1];
+              if (typeof el_lstPTM !== 'undefined' && el_lstPTM.indexOf(position) !== -1) {
+                if (switchObj[keyChain][position]['state'] === false) {
+                  elPTM[el_lstPTM.indexOf(position)].style.fill = pVizParams.obsMap[keyChain].obs_color_obj[ptm.replace(" ", "_")][el_lstPTM.indexOf(position)];
+                } else {
+                  elPTM[el_lstPTM.indexOf(position)].style.fill = 'black';
+                }
               }
-            }
-          });
+            });
+          }
         }
       });
     });

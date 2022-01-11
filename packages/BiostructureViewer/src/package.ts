@@ -4,7 +4,6 @@ import * as ui from 'datagrok-api/ui';
 import * as DG from 'datagrok-api/dg';
 
 import {BioStructureViewer } from './biostructure-viewer'
-import { PdbEntry } from './pdb-entry';
 
 export const _package = new DG.Package();
 

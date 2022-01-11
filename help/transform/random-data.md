@@ -3,8 +3,8 @@
 
 # Random data
 
-Adds a numerical column with random data with the specified distribution with initial seed. 
-Parameters of the distribution can be edited as well.
+Adds a numerical column with random data with the specified distribution with initial seed. Parameters of the
+distribution can be edited as well.
 
 This can be useful for hypothesis testing, modeling, as well as for generating synthetic datasets.
 
@@ -19,6 +19,7 @@ Supported distributions and parameters:
 | uniform      | min, max   |
 
 See also:
-  * [Randomness](https://en.wikipedia.org/wiki/Randomness)
-  * [List of probability distributions](https://en.wikipedia.org/wiki/List_of_probability_distributions)
-  * JS API: [Random data](https://public.datagrok.ai/js/samples/domains/data-science/random-data)
+
+* [Randomness](https://en.wikipedia.org/wiki/Randomness)
+* [List of probability distributions](https://en.wikipedia.org/wiki/List_of_probability_distributions)
+* JS API: [Random data](https://public.datagrok.ai/js/samples/domains/data-science/random-data)

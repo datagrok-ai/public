@@ -8,7 +8,8 @@
 		"css/ngl.css",
 		"css/pviz-core.css",
 		"css/additionalStyles.css",
-		"src/viewers/pviz-bundle.min.js"
+		"src/viewers/pviz-bundle.min.js",
+		"common/ngl_viewer/ngl.js"
 	],
 	"dependencies": {
 		"datagrok-api": ">=0.95.11",

@@ -18,6 +18,6 @@ Use this dialog to change the data type of a column.
 | Not convertible | Navigation on not convertible values                                 |
 | Empty           | Navigation on empty values                                           |
 
-
 See also:
-  * [Column](../overview/table.md#Column)
+
+* [Column](../overview/table.md#Column)

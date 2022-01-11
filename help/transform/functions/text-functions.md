@@ -3,9 +3,11 @@
 
 # Text functions
 
-As parameters of the function, you can pass a regular string or a column name. To pass a regular string, it must be enclosed in double quotes, like `"my string"` or in apostrophes, like  `'my string'`. To pass a column cell, you can use the syntax `${columnName}`.
+As parameters of the function, you can pass a regular string or a column name. To pass a regular string, it must be
+enclosed in double quotes, like `"my string"` or in apostrophes, like  `'my string'`. To pass a column cell, you can use
+the syntax `${columnName}`.
 
->Note that character and substring indexing in strings and lists starts at 0.
+> Note that character and substring indexing in strings and lists starts at 0.
 
 *Function List:*
 
@@ -196,7 +198,8 @@ Returns the first `count` characters of the string `s`.
 
 If `s` is empty then the function returns empty string.
 
-`count` is of type integer. If `count` is negative, then the `count` number of characters will be removed from the right-hand side of the `s` string.
+`count` is of type integer. If `count` is negative, then the `count` number of characters will be removed from the
+right-hand side of the `s` string.
 
 ```javascript
 StrLeft("Daddy", 1)      // "D"
@@ -212,7 +215,8 @@ Returns the last `count` characters of the string `s`.
 
 If `s` is empty then the function returns empty string.
 
-`count` is of type integer. If `count` is negative, then the `count` number of characters will be removed from the left-hand side of the `s` string.
+`count` is of type integer. If `count` is negative, then the `count` number of characters will be removed from the
+left-hand side of the `s` string.
 
 ```javascript
 StrRight("Daddy", 1)      // "y"

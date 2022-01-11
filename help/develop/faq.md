@@ -1,4 +1,4 @@
-## Frequently asked questions
+# Frequently asked questions
 
 *Question:*
 How do I set up VS Code or WebStorm for debugging on Datagrok? Debugging doesn't work for me now.
@@ -11,7 +11,8 @@ debugging still doesn't work, ask our technical gurus on the [Community Forum].
 I've installed `npm` and `datagrok-tools` packages, but `grok` tools aren't available on my paths.
 
 *Answer:*
-It's likely that the `datagrok-tools` library wasn't installed globally. Install `datagrok-tools` globally:
+It's likely that the `datagrok-tools` library wasn't installed globally. Install `datagrok-tools`
+globally:
 
 ```sh
 # First, remove the locally installed package...

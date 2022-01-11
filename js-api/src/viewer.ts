@@ -1,6 +1,6 @@
 /** A viewer that is typically docked inside a [TableView]. */
 import {TYPE, VIEWER, ViewerPropertyType, ViewerType} from "./const";
-import {Column, DataFrame} from "./dataframe.js";
+import {Column, DataFrame, FormulaLine} from "./dataframe.js";
 import {DateTime, Property} from "./entities";
 import {Menu, ObjectPropertyBag, Widget} from "./widgets";
 import {_toJson} from "./utils";
@@ -365,29 +365,6 @@ export class ScatterPlotViewer extends Viewer {
   get onBeforeDrawScene(): rxjs.Observable<null> { return this.onEvent('d4-before-draw-scene'); }
 }
 
-interface FormulaLine {
-  id?: string;
-  type?: string;
-  title?: string;
-  description?: string;
-  color?: string;
-  visible?: boolean;
-  opacity?: number;
-  zindex?: number;
-  min?: number;
-  max?: number;
-  formula?: string;
-
-  // Specific to lines:
-  width?: number;
-  spline?: number;
-  style?: string;
-
-  // Specific to bands:
-  column?: string;
-  column2?: string;
-}
-
 export class ViewerMetaHelper {
   private readonly viewer: Viewer;
   private formulaLines: FormulaLine[] = [];
@@ -416,7 +393,7 @@ export class ViewerMetaHelper {
   }
 
   addFormulaItem(item: FormulaLine): void {
-    this.formulaLines.push(item);
+    this.formulaLines.push(toJs(api.grok_FormulaLineHelper_AddDefaults(item)));
     this.addFormulaLines(this.formulaLines);
   }
 
@@ -441,5 +418,9 @@ export class ViewerMetaHelper {
         item.id == undefined || ids.indexOf(item.id) == -1);
 
     this.addFormulaLines(this.formulaLines);
+  }
+
+  getFormulaLineAxes(item: FormulaLine): String[] {
+    return api.grok_FormulaLineHelper_GetAxes(item.formula);
   }
 }

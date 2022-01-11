@@ -3,6 +3,11 @@ import * as ui from 'datagrok-api/ui';
 import * as DG from 'datagrok-api/dg';
 import CodeMirror from 'codemirror';
 import {BehaviorSubject} from 'rxjs';
+import 'codemirror/mode/javascript/javascript'
+import 'codemirror/mode/python/python'
+import 'codemirror/mode/octave/octave'
+import 'codemirror/mode/r/r'
+import 'codemirror/mode/julia/julia'
 
 export async function functionSignatureEditor(view: DG.View) {
     addFseRibbon(view);
@@ -51,6 +56,18 @@ const functionPropsLabels = (key: FUNC_PROPS_FIELDS) => {
   }
 };
 
+const highlightModeByLang = (key: LANGUAGE) => {
+  switch (key) {
+  case LANGUAGE.JS:
+  case LANGUAGE.NODEJS: return 'javascript';
+  case LANGUAGE.PYTHON: 
+  case LANGUAGE.GROK: return 'python';
+  case LANGUAGE.OCTAVE: return 'octave';
+  case LANGUAGE.JULIA: return 'julia';
+  case LANGUAGE.R: return 'r';
+  }
+};
+
 const functionPropsCode = (key: string) => {
   switch (key) {
   case FUNC_PROPS_FIELDS.NAME: return 'name';
@@ -63,7 +80,7 @@ const functionPropsCode = (key: string) => {
   case FUNC_PROPS_FIELDS.ENVIRONMENT: return 'environment';
   case FUNC_PROPS_FIELDS.TAGS: return 'tags';
   }
-}; ;
+};
 
 const funcParamTypes = [
   DG.TYPE.BOOL,
@@ -127,16 +144,6 @@ enum OPTIONAL_TAG_NAME {
   MAX = 'max',
 }
 
-type DF_TAG_NAME = COMMON_TAG_NAME | OPTIONAL_TAG_NAME.COLUMNS;
-type COLUMN_TAG_NAME = COMMON_TAG_NAME |
-                        OPTIONAL_TAG_NAME.COLUMNS | OPTIONAL_TAG_NAME.FORMAT |
-                        OPTIONAL_TAG_NAME.ALLOW_NULLS | OPTIONAL_TAG_NAME.ACTION | OPTIONAL_TAG_NAME.SEM_TYPE
-
-type STRING_TAG_NAME = COMMON_TAG_NAME |
-                        OPTIONAL_TAG_NAME.CHOICES | OPTIONAL_TAG_NAME.SUGGESTIONS
-
-type INT_TAG_NAME = COMMON_TAG_NAME | OPTIONAL_TAG_NAME.MIN | OPTIONAL_TAG_NAME.MAX
-
 const COMMON_TAG_NAMES = [...Object.values(COMMON_TAG_NAME)];
 const DF_TAG_NAMES = [
   ...Object.values(COMMON_TAG_NAME),
@@ -147,31 +154,6 @@ const COLUMN_TAG_NAMES = [...Object.values(COMMON_TAG_NAME), OPTIONAL_TAG_NAME.T
 const STRING_TAG_NAMES = [...Object.values(COMMON_TAG_NAME),
   /*OPTIONAL_TAG_NAME.CHOICES ,*/ OPTIONAL_TAG_NAME.SUGGESTIONS];
 const INT_TAG_NAMES = [...Object.values(COMMON_TAG_NAME), OPTIONAL_TAG_NAME.MIN, OPTIONAL_TAG_NAME.MAX];
-
-type FuncParamBase = {
-  direction: DIRECTION,
-  name?: string,
-  defaultValue?: string,
-  description?: string
-}
-
-type FuncParam =
-  FuncParamBase & {
-  type: DG.TYPE.BOOL | DG.TYPE.DATE_TIME | DG.TYPE.FLOAT | DG.TYPE.GRAPHICS
-  options?: {tag: COMMON_TAG_NAME, value: string}[]
-} | FuncParamBase & {
-  type: DG.TYPE.INT
-  options?: {tag: INT_TAG_NAME, value: string}[]
-} | FuncParamBase & {
-  type: DG.TYPE.DATA_FRAME,
-  options?: {tag: DF_TAG_NAME, value: string}[]
-} | FuncParamBase & {
-  type: DG.TYPE.COLUMN_LIST | DG.TYPE.COLUMN,
-  options?: {tag: COLUMN_TAG_NAME, value: string}[]
-} | FuncParamBase & {
-  type: DG.TYPE.STRING
-  options?: {tag: STRING_TAG_NAME, value: string}[]
-}
 
 const optionTags = ((param: DG.Property) => {
   switch (param.propertyType) {
@@ -562,7 +544,8 @@ function openFse(v: DG.View, functionCode: string) {
     });
   
     const area = ui.textInput('', '');
-    const myCM = CodeMirror.fromTextArea((area.input as HTMLTextAreaElement));
+    const myCM = CodeMirror.fromTextArea((area.input as HTMLTextAreaElement), { mode: highlightModeByLang(inputScriptCopy.language as LANGUAGE)});
+    console.log(myCM.getOption('mode'))
   
     const previewDiv = ui.panel([ui.divV([ui.h1('Code preview'), area])]);
     previewDiv.style.flexGrow = '1';
@@ -632,6 +615,7 @@ function openFse(v: DG.View, functionCode: string) {
         result += generateParamLine(param, param.options.direction);
       });
       result += inputScriptCopy.script.substring(inputScriptCopy.script.indexOf('\n',inputScriptCopy.script.lastIndexOf(commentSign(inputScriptCopy.language as LANGUAGE)))+1);
+      myCM.setOption('mode', highlightModeByLang(inputScriptCopy.language as LANGUAGE))
       myCM.setValue(result);
     };
   

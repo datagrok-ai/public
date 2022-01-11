@@ -15,7 +15,7 @@ export class PvizAspect {
   jsonObs: any;
   colorScheme: any;
   hosts: { [key: string]: HTMLDivElement; };
-  selection: { [key: string]: {} };
+  selection: { [chain: string]: {[key: string]: any} };
 
   async init(entry: PdbEntry, colorScheme: any, pVizHosts: { [key: string]: HTMLDivElement; }, twinSelections: any) {
 
@@ -34,8 +34,8 @@ export class PvizAspect {
 
     this.selection = twinSelections;
 
-    this.helixMapping();
-
+    //this.helixMapping();
+    this.siteMapping();
     this.entry.entities[0].chains.forEach(async (chain) => {
       await this.render(chain.id);
       await this.resize(chain.id);
@@ -64,7 +64,9 @@ export class PvizAspect {
       let pv = this;
 
       //adding all features
-      seqEntry.addFeatures(pVizParams.helixMap[chain].helixFeatureMap);
+      //seqEntry.addFeatures(pVizParams.helixMap[chain].helixFeatureMap);
+      seqEntry.addFeatures(pVizParams.siteMap[chain].featureMap);
+
 
       //gradient coloring
       //if (this.paratopes.value === true) { this.applyGradient(this.pVizParams.parMap[chain].par_color_obj); }
@@ -74,12 +76,22 @@ export class PvizAspect {
       //mouse over handlers
 
       //mouse click handlers
+      this.pviz.FeatureDisplayer.addClickCallback(['active'], async function (ft: any) {
+        if (switchObj[chain][ft.start] === undefined) {
+          switchObj[chain][ft.start] = {};
+          switchObj[chain][ft.start]['state'] = true;
+        } else {
+          switchObj[chain][ft.start]['state'] = !switchObj[chain][ft.start]['state']
+        }
+        grok.events.fireCustomEvent("selectionChanged", null);
+        await pv.color(chain);
+      });
     }
   }
 
   helixMapping() {
 
-    let helixMap: {[key: string]: {}} = {};
+    let helixMap: { [key: string]: {} } = {};
 
     this.entry.entities[0].chains.forEach(async (chain) => {
       let helixFeatureMap: any[] = [];
@@ -102,114 +114,71 @@ export class PvizAspect {
     this.pVizParams.helixMap = (helixMap);
   }
 
-  // async color(chosenTracksChain) {
+  siteMapping() {
+    let siteMap: { [key: string]: any } = {};
+    let chains = ["A", "B"];
+    chains.forEach((chain) => {
+      let featureMap: any[] = [];
+      let siteArray: number[] = [24, 25, 26, 27, 28, 29, 48, 49, 50, 51, 52];
 
-  //   let switchObj = this.selection;
-  //   let pVizParams = this.pVizParams;
 
-  //   Object.keys(switchObj).forEach((keyChain) => {
+      siteArray.forEach(point => {
+        featureMap.push({
+          groupSet: 'Active site',
+          category: 'Active',
+          type: 'active',
+          start: point,
+          end: point,
+          text: '',
+          improbable: true
+        })
+      })
+      siteMap[chain] = { featureMap: featureMap, elObj: siteArray };
+    })
 
-  //     let selectorStr = 'g.feature.data.D rect.feature';
-  //     let denElements = document.querySelectorAll(selectorStr);
-  //     let denNumbers = pVizParams.denMap[keyChain].den_el_obj;
-  //     Object.keys(switchObj[keyChain]).forEach((keyPosition) => {
+    this.pVizParams.siteMap = (siteMap);
+  }
 
-  //       let position = parseInt(keyPosition);
+  async color(chosenTracksChain: string) {
 
-  //       if (keyChain === chosenTracksChain) {
-  //         //densities
-  //         if (denNumbers.indexOf(position) !== -1) {
-  //           if (switchObj[keyChain][keyPosition]['state'] === false) {
-  //             //@ts-ignore
-  //             denElements[denNumbers.indexOf(position)].style.fill = pVizParams.denMap[keyChain].den_color_obj['D'][denNumbers.indexOf(position)];
-  //           } else {
-  //             //@ts-ignore
-  //             denElements[denNumbers.indexOf(position)].style.fill = 'black';
-  //           }
-  //         }
+    let switchObj = this.selection;
+    let pVizParams = this.pVizParams;
 
-  //         //predicted PTMS
-  //         let listsPredictedPtms = [];
+    Object.keys(switchObj).forEach((keyChain) => {
 
-  //         this.ptmChoices.forEach(ptm => {
-  //           let selectorStrPTM = 'g.feature.' + ptm.replace(" ", "_") + ' rect.feature';
-  //           let elPTM = document.querySelectorAll(selectorStrPTM);
-  //           let el_lstPTM = pVizParams.ptmMap[chosenTracksChain].ptm_el_obj[mutcodes[ptm.replace(" ", "_")]];
-  //           listsPredictedPtms[ptm] = [elPTM, el_lstPTM];
-  //         });
+      let selectorStr = 'g.feature.data.active rect.feature';
+      let siteElements = document.querySelectorAll(selectorStr);
+      let siteNumbers = pVizParams.siteMap[keyChain].elObj;
+      Object.keys(switchObj[keyChain]).forEach((keyPosition) => {
 
-  //         Object.keys(listsPredictedPtms).forEach(ptm => {
-  //           let elPTM = listsPredictedPtms[ptm][0];
-  //           let el_lstPTM = listsPredictedPtms[ptm][1];
-  //           if (typeof el_lstPTM !== 'undefined' && el_lstPTM.indexOf(position) !== -1) {
-  //             if (switchObj[keyChain][position]['state'] === false) {
-  //               elPTM[el_lstPTM.indexOf(position)].style.fill = pVizParams.ptmMap[keyChain].ptm_color_obj[mutcodes[ptm.replace(" ", "_")]][el_lstPTM.indexOf(position)];
-  //             } else {
-  //               elPTM[el_lstPTM.indexOf(position)].style.fill = 'black';
-  //             }
-  //           }
-  //         });
+        let position = parseInt(keyPosition);
 
-  //         //motif PTMS
-  //         let listsMotifsPtms = [];
+        if (keyChain === chosenTracksChain) {
+          //densities
+          if (siteNumbers.indexOf(position) !== -1) {
+            if (switchObj[keyChain][keyPosition]['state'] === false) {
+              //@ts-ignore
+              siteElements[siteNumbers.indexOf(position)].style.fill = 'red';
+            } else {
+              //@ts-ignore
+              siteElements[siteNumbers.indexOf(position)].style.fill = 'black';
+            }
+          }
+        }
+      });
+    });
+  }
 
-  //         this.motChoices.forEach(ptm => {
-  //           let selectorStrPTM = 'g.feature.' + mutcodes[ptm.replaceAll(" ", "_")] + "."
-  //             + ptm.replaceAll(" ", "_").replaceAll(")", "\\)").replaceAll("(", "\\(") + ' rect.feature';
-  //           let elPTM = document.querySelectorAll(selectorStrPTM);
-  //           let el_lstPTM = pVizParams.motMap[chosenTracksChain].mot_el_obj[mutcodes[ptm.replace(" ", "_")]];
-  //           listsMotifsPtms[ptm] = [elPTM, el_lstPTM];
-  //         });
-
-  //         Object.keys(listsMotifsPtms).forEach(ptm => {
-  //           let elPTM = listsMotifsPtms[ptm][0];
-  //           let el_lstPTM = listsMotifsPtms[ptm][1];
-  //           if (typeof el_lstPTM !== 'undefined' && el_lstPTM.indexOf(position) !== -1) {
-  //             if (switchObj[keyChain][position]['state'] === false) {
-  //               elPTM[el_lstPTM.indexOf(position)].style.fill = pVizParams.motMap[keyChain].mot_color_obj[mutcodes[ptm.replace(" ", "_")]][el_lstPTM.indexOf(position)];
-  //             } else {
-  //               elPTM[el_lstPTM.indexOf(position)].style.fill = 'black';
-  //             }
-  //           }
-  //         });
-
-  //         //observed PTMS
-  //         let listsObservedPtms = [];
-
-  //         this.obsChoices.forEach(ptm => {
-  //           let selectorStrPTM = 'g.feature.' + ptm.replaceAll(" ", "_") + "."
-  //             + ptm.replaceAll(" ", "_") + ' rect.feature';
-  //           let elPTM = document.querySelectorAll(selectorStrPTM);
-  //           let el_lstPTM = pVizParams.obsMap[chosenTracksChain].obs_el_obj[ptm.replace(" ", "_")];
-  //           listsObservedPtms[ptm] = [elPTM, el_lstPTM];
-  //         });
-
-  //         Object.keys(listsObservedPtms).forEach(ptm => {
-  //           let elPTM = listsObservedPtms[ptm][0];
-  //           let el_lstPTM = listsObservedPtms[ptm][1];
-  //           if (typeof el_lstPTM !== 'undefined' && el_lstPTM.indexOf(position) !== -1) {
-  //             if (switchObj[keyChain][position]['state'] === false) {
-  //               elPTM[el_lstPTM.indexOf(position)].style.fill = pVizParams.obsMap[keyChain].obs_color_obj[ptm.replace(" ", "_")][el_lstPTM.indexOf(position)];
-  //             } else {
-  //               elPTM[el_lstPTM.indexOf(position)].style.fill = 'black';
-  //             }
-  //           }
-  //         });
-  //       }
-  //     });
-  //   });
-  // }
-
-  // applyGradient(gradient_obj) {
-  //   Object.keys(gradient_obj).forEach((ptm_track) => {
-  //     let selectorStr = 'g.feature.' + ptm_track + ' rect.feature';
-  //     let el = document.querySelectorAll(selectorStr);
-  //     for (let i = 0; i < el.length; i++) {
-  //       //@ts-ignore
-  //       el[i].style.fill = gradient_obj[ptm_track][i];
-  //     }
-  //   })
-  // }
+  applyGradient(gradient_obj: any) {
+    Object.keys(gradient_obj).forEach((ptm_track) => {
+      let selectorStr = 'g.feature.' + ptm_track + ' rect.feature';
+      let el = document.querySelectorAll(selectorStr);
+      for (let i = 0; i < el.length; i++) {
+        //@ts-ignore
+        el[i].style.fill = gradient_obj[ptm_track][i];
+      }
+    })
+  }
 
   // resize handle
   private async resize(chain: string) {
