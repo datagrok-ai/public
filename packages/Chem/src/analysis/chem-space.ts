@@ -5,7 +5,9 @@ import * as DG from 'datagrok-api/dg';
 import {chemGetMorganFingerprints} from '../chem-searches';
 //import {getRdKitWebRoot} from '../chem-common-rdkit';
 import {Coordinates} from '@datagrok-libraries/utils/src/type-declarations';
-import {createDimensinalityReducingWorker} from '@datagrok-libraries/ml/src/reduce-dimensionality';
+import {
+  createDimensinalityReducingWorker,
+} from '@datagrok-libraries/ml/src/workers/dimensionality-reducing-worker-creator';
 
 export async function chemSpace(table: DG.DataFrame, molColumn: DG.Column) {
   const fpColumn = await chemGetMorganFingerprints(molColumn);
