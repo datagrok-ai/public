@@ -546,10 +546,13 @@ async function openFse(v: DG.View, functionCode: string) {
     const codeArea = ui.textInput('', '');
     const myCM = CodeMirror.fromTextArea((codeArea.input as HTMLTextAreaElement), { mode: highlightModeByLang(inputScriptCopy.language as LANGUAGE)});
     const uiArea = await inputScriptCopy.prepare().getEditor();
+    const codePanel = ui.panel([codeArea.root]);
+    codePanel.style.height = '100%';
+    codeArea.root.style.height = '100%';
 
     const previewTabs = ui.tabControl(
       {
-        'CODE': ui.panel([codeArea.root]),
+        'CODE': codePanel,
         'UI': ui.panel([uiArea]),
       }).root
 
