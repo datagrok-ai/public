@@ -61,7 +61,7 @@ jobs:
 
               name=$(jq .name ${DIR}/package.json | sed 's/"//g')
               npm_json=$(curl --retry 3 https://registry.npmjs.org/${name}/latest)
-              if [[ $npm_json == "Not Found" ]]; then
+              if [[ $npm_json == "\"Not Found\"" ]]; then
                 CHANGED_VERSION='true'
               else
                 latest_version="$(jq .version <<<$npm_json)"
