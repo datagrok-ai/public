@@ -108,7 +108,6 @@ COc1ccc2c(c1)c(CC(=O)N3CCCC3C(=O)Oc4ccc(C)cc4OC)c(C)n2C(=O)c5ccc(Cl)cc5
 it('chem.findSimilar.sar_small', async () => {
   const fileSARSmall = requireText('./sar_small.csv');
   const testOutput = await page.evaluate(async (file: string) => {
-    //await grok.functions.call('Chem:initChem');
     const dfInput = DG.DataFrame.fromCsv(file);
     const colInput = dfInput.columns[0];
     const dfResult: DG.DataFrame = // shouldn't be null
@@ -120,35 +119,67 @@ it('chem.findSimilar.sar_small', async () => {
       dfResult.columns[1].name,
       dfResult.columns[2].name,
     ];
-    const first5Rows: any[] = [];
-    for (let i = 0; i < 5; ++i) {
+    const N = 6;
+    const firstNRows: any[] = [];
+    for (let i = 0; i < N; ++i) {
       const molecule: string = dfResult.columns[0].get(i);
       const score: number = dfResult.columns[1].get(i);
       const index: number = dfResult.columns[2].get(i);
       const obj = {molecule, score, index};
-      first5Rows[i] = obj;
+      firstNRows[i] = obj;
     }
-    return {numRowsOriginal, numRows, columnNames, first5Rows};
+    return {numRowsOriginal, numRows, columnNames, firstNRows};
   }, fileSARSmall);
   expect(testOutput.numRows).toBe(testOutput.numRowsOriginal);
   expect(testOutput.columnNames[0]).toBe('molecule');
   expect(testOutput.columnNames[1]).toBe('score');
   expect(testOutput.columnNames[2]).toBe('index');
   const areEqualFloat = (a: number, b: number) => Math.abs(a-b) < 0.001;
-  const arr = testOutput.first5Rows;
+  const arr = testOutput.firstNRows;
   expect(arr[0].molecule).toBe('O=C1CN=C(c2ccccc2N1)C3CCCCC3');
   expect(arr[1].molecule).toBe('O=C1CN=C(c2cc(I)ccc2N1)C3CCCCC3');
   expect(arr[2].molecule).toBe('O=C1CN=C(c2cc(Cl)ccc2N1)C3CCCCC3');
-  expect(arr[3].molecule).toBe('CN(C)c1ccc2NC(=O)CN=C(c2c1)C3CCCCC3');
+  expect(arr[3].molecule).toBe('O=C1CN=C(c2cc(F)ccc2N1)C3CCCCC3');
   expect(arr[4].molecule).toBe('O=C1CN=C(c2cc(Br)ccc2N1)C3CCCCC3');
+  expect(arr[5].molecule).toBe('CN(C)c1ccc2NC(=O)CN=C(c2c1)C3CCCCC3');
   expect(areEqualFloat(arr[0].score, 1.0000)).toBe(true);
-  expect(areEqualFloat(arr[1].score, 0.7813)).toBe(true);
-  expect(areEqualFloat(arr[2].score, 0.7429)).toBe(true);
-  expect(areEqualFloat(arr[3].score, 0.7429)).toBe(true);
-  expect(areEqualFloat(arr[4].score, 0.7429)).toBe(true);
+  expect(areEqualFloat(arr[1].score, 0.6905)).toBe(true);
+  expect(areEqualFloat(arr[2].score, 0.6744)).toBe(true);
+  expect(areEqualFloat(arr[3].score, 0.6744)).toBe(true);
+  expect(areEqualFloat(arr[4].score, 0.6744)).toBe(true);
+  expect(areEqualFloat(arr[5].score, 0.6444)).toBe(true);
   expect(arr[0].index).toBe(0);
   expect(arr[1].index).toBe(30);
   expect(arr[2].index).toBe(5);
-  expect(arr[3].index).toBe(15);
+  expect(arr[3].index).toBe(20);
   expect(arr[4].index).toBe(25);
+  expect(arr[5].index).toBe(15);
+});
+
+
+it('chem.getSimilarities.sar_small', async () => {
+  const fileSARSmall = requireText('./sar_small.csv');
+  const testOutput = await page.evaluate(async (file: string) => {
+    const dfInput = DG.DataFrame.fromCsv(file);
+    const colInput = dfInput.columns[0];
+    const colResult: DG.Column = // shouldn't be null
+      (await grok.chem.getSimilarities(colInput, 'O=C1CN=C(C2CCCCC2)C2:C:C:C:C:C:2N1'))!;
+    const numRowsOriginal = dfInput.rowCount;
+    const numRows = colResult.length;
+    const N = 6;
+    const firstNRows: any[] = [];
+    for (let i = 0; i < N; ++i) {
+      firstNRows[i] = colResult.get(i);
+    }
+    return {numRowsOriginal, numRows, firstNRows};
+  }, fileSARSmall);
+  const arr = testOutput.firstNRows;
+  expect(testOutput.numRows).toBe(testOutput.numRowsOriginal);
+  const areEqualFloat = (a: number, b: number) => Math.abs(a-b) < 0.001;
+  expect(areEqualFloat(arr[0], 1.0000)).toBe(true);
+  expect(areEqualFloat(arr[1], 0.5217)).toBe(true);
+  expect(areEqualFloat(arr[2], 0.4808)).toBe(true);
+  expect(areEqualFloat(arr[3], 0.4444)).toBe(true);
+  expect(areEqualFloat(arr[4], 0.4800)).toBe(true);
+  expect(areEqualFloat(arr[5], 0.6744)).toBe(true);
 });
