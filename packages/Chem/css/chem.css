@@ -1,3 +1,71 @@
 .grok-chem-substructure-filter {
 
 }
+
+.chem-mol-box {
+  position: relative;
+  width: min-content;
+}
+
+.chem-mol-box:hover .chem-mol-view-icon {
+  visibility: visible;
+}
+
+.chem-mol-view-icon {
+  position: absolute;
+  top: 5px;
+  visibility: hidden;
+  margin: 5px;
+  z-index: 1;
+}
+
+.pep-more-icon {
+  right: 10px;
+}
+
+.chem-mol-view-icon i {
+  font-size: 13px;
+}
+
+.chem-mol-view-icon:hover {
+  background-color: var(--steel-1);
+  border-radius: 2px;
+}
+
+.chem-canvas {
+  overflow: hidden;
+}
+
+.chem-textarea-box {
+  position: relative;
+}
+
+.chem-textarea-box:hover .chem-snippet-editor-icon {
+  visibility: visible;
+}
+
+.chem-snippet-editor-icon {
+  position: absolute;
+  top: 5px;
+  visibility: hidden;
+  margin: 5px;
+  z-index: 1;
+}
+
+.chem-reset-icon {
+  right: 10px;
+}
+
+.chem-snippet-editor-icon i {
+  font-size: 13px;
+}
+
+.chem-snippet-editor-icon:hover {
+  background-color: var(--steel-1);
+  border-radius: 2px;
+}
+
+.chem-textinput {
+  height: 50px;
+  overflow: hidden;
+}

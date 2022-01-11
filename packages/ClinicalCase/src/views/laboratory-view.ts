@@ -68,6 +68,9 @@ export class LaboratoryView extends DG.ViewBase implements ILazyLoading {
    
     let tabControl = ui.tabControl(null, false);
 
+    let hysLawGuide = ui.info('Please select values for ALT/AST and Bilirubin in a property panel', '', false);
+    updateDivInnerHTML(this.hysLawDiv, hysLawGuide);
+
     tabControl.addPane('Hy\'s law', () => this.hysLawDiv );
     tabControl.getPane('Hy\'s law').header.addEventListener('click', () => {
       createPropertyPanel(this);

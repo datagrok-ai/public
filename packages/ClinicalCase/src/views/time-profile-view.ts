@@ -165,14 +165,14 @@ export class TimeProfileView extends DG.ViewBase implements ILazyLoading {
     private createLaboratoryDataframe() {
         let df = this.filterDataFrameByDays(study.domains[this.selectedDomain].clone());
         let dfWithArm = addDataFromDmDomain(df, study.domains.dm, [ SUBJECT_ID, VISIT_DAY, VISIT_NAME].concat(Object.values(this.domainFields[this.selectedDomain])), this.splitBy);
-        this.laboratoryDataFrame = createPivotedDataframe(dfWithArm, this.domainFields[this.selectedDomain]['test'], this.domainFields[this.selectedDomain]['res'], this.splitBy);
+        this.laboratoryDataFrame = createPivotedDataframe(dfWithArm, [ SUBJECT_ID, VISIT_DAY ], this.domainFields[this.selectedDomain]['test'], this.domainFields[this.selectedDomain]['res'], this.splitBy);
     }
 
     private createrelativeChangeFromBlDataframe(){
         let df = this.filterDataFrameByDays(study.domains[this.selectedDomain].clone());
         dynamicComparedToBaseline(df, this.domainFields[this.selectedDomain]['test'], this.domainFields[this.selectedDomain]['res'], this.bl, VISIT_NAME, 'LAB_DYNAMIC_BL', true);
         let dfWithArm = addDataFromDmDomain(df, study.domains.dm, [ SUBJECT_ID, VISIT_DAY, VISIT_NAME, this.domainFields[this.selectedDomain]['test'], this.domainFields[this.selectedDomain]['res'] ], this.splitBy);
-        this.relativeChangeFromBlDataFrame = createPivotedDataframe(dfWithArm, this.domainFields[this.selectedDomain]['test'], this.domainFields[this.selectedDomain]['res'], this.splitBy);
+        this.relativeChangeFromBlDataFrame = createPivotedDataframe(dfWithArm, [ SUBJECT_ID, VISIT_DAY ], this.domainFields[this.selectedDomain]['test'], this.domainFields[this.selectedDomain]['res'], this.splitBy);
     }
 
 

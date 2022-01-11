@@ -1,6 +1,6 @@
 /** A viewer that is typically docked inside a [TableView]. */
 import {TYPE, VIEWER, ViewerPropertyType, ViewerType} from "./const";
-import {Column, DataFrame} from "./dataframe.js";
+import {Column, DataFrame, FormulaLine} from "./dataframe.js";
 import {DateTime, Property} from "./entities";
 import {Menu, ObjectPropertyBag, Widget} from "./widgets";
 import {_toJson} from "./utils";
@@ -16,17 +16,17 @@ declare let ui: any;
 let api = <any>window;
 
 export class TypedEventArgs<TData> {
-  d: any;
-  constructor(d: any) {
-    this.d = d;
+  dart: any;
+  constructor(dart: any) {
+    this.dart = dart;
   }
 
   get type(): string {
-    return api.grok_TypedEventArgs_Get_Type(this.d);
+    return api.grok_TypedEventArgs_Get_Type(this.dart);
   }
 
   get data(): TData {
-    let data = api.grok_TypedEventArgs_Get_Data(this.d);
+    let data = api.grok_TypedEventArgs_Get_Data(this.dart);
     return toJs(data);
   }
 }
@@ -52,13 +52,13 @@ export class Viewer extends Widget {
   private _meta: ViewerMetaHelper | undefined;
 
   /** @constructs Viewer */
-  constructor(d: any, root?: HTMLElement) {
-    super(root ?? api.grok_Viewer_Root(d));
-    this.d = d;
+  constructor(dart: any, root?: HTMLElement) {
+    super(root ?? api.grok_Viewer_Root(dart));
+    this.dart = dart;
 
-    if (d != null)
+    if (dart != null)
     /** @member {ObjectPropertyBag} */
-      this.props = new ObjectPropertyBag(this, api.grok_Viewer_Get_Look(this.d));
+      this.props = new ObjectPropertyBag(this, api.grok_Viewer_Get_Look(this.dart));
   }
 
   /** Creates a new viewer of the specified type.
@@ -67,7 +67,7 @@ export class Viewer extends Widget {
    * @param options
    * @returns {Viewer} */
   static fromType(viewerType: ViewerType, table: DataFrame, options: object | null = null): Viewer {
-    return toJs(api.grok_Viewer_FromType(viewerType, table.d, _toJson(options)));
+    return toJs(api.grok_Viewer_FromType(viewerType, table.dart, _toJson(options)));
   }
 
   static getViewerTypes(): ViewerType[] {
@@ -79,7 +79,7 @@ export class Viewer extends Widget {
    *  Sample: {@link https://public.datagrok.ai/js/samples/ui/viewers/types/scatter-plot}
    *  @param {object} map */
   setOptions(map: { type?: ViewerType, [key: string]: any }): void {
-    api.grok_Viewer_Options(this.d, JSON.stringify(map));
+    api.grok_Viewer_Options(this.dart, JSON.stringify(map));
   }
 
   /**
@@ -91,26 +91,26 @@ export class Viewer extends Widget {
    *  Sample: https://public.datagrok.ai/js/samples/ui/viewers/types/scatter-plot
    *  @returns {object} */
   getOptions(includeDefaults: boolean = false): {type: ViewerType} {
-    return JSON.parse(api.grok_Viewer_Serialize(this.d, includeDefaults));
+    return JSON.parse(api.grok_Viewer_Serialize(this.dart, includeDefaults));
   }
 
   getInfo(): object {
-    return api.grok_Viewer_GetInfo(this.d);
+    return api.grok_Viewer_GetInfo(this.dart);
   }
 
   getProperties(): Property[] {
-    return api.grok_Viewer_Get_Properties(this.d);
+    return api.grok_Viewer_Get_Properties(this.dart);
   }
 
   /** Closes and detaches the viewer. */
   close(): void {
-    api.grok_Viewer_Close(this.d);
+    api.grok_Viewer_Close(this.dart);
   }
 
   /** Visual root.
    * @type {HTMLElement} */
   get root(): HTMLElement {
-    return api.grok_Viewer_Root(this.d);
+    return api.grok_Viewer_Root(this.dart);
   }
 
   get meta(): ViewerMetaHelper {
@@ -126,29 +126,29 @@ export class Viewer extends Widget {
   }
 
   get table(): DataFrame {
-    return toJs(api.grok_Viewer_Get_DataFrame(this.d));
+    return toJs(api.grok_Viewer_Get_DataFrame(this.dart));
   }
 
   /** Returns a view this viewer is associated with, or null */
   get view(): any | null {
-    return toJs(api.grok_Viewer_Get_View(this.d));
+    return toJs(api.grok_Viewer_Get_View(this.dart));
   }
 
   /** @type {DataFrame} */
   get dataFrame(): DataFrame | undefined {
-    return toJs(api.grok_Viewer_Get_DataFrame(this.d));
+    return toJs(api.grok_Viewer_Get_DataFrame(this.dart));
   }
 
   set dataFrame(t: DataFrame | undefined) {
-    api.grok_Viewer_Set_DataFrame(this.d, t == null ? null : t.d);
+    api.grok_Viewer_Set_DataFrame(this.dart, t == null ? null : t.dart);
   }
 
   static grid(t: DataFrame, options: object | null = null): Grid {
-    return new DG.Grid(api.grok_Viewer_Grid(t.d, _toJson(options)));
+    return new DG.Grid(api.grok_Viewer_Grid(t.dart, _toJson(options)));
   }
 
   static histogram(t: DataFrame, options: object | null = null): Viewer {
-    return new Viewer(api.grok_Viewer_Histogram(t.d, _toJson(options)));
+    return new Viewer(api.grok_Viewer_Histogram(t.dart, _toJson(options)));
   }
 
   static barChart(t: DataFrame, options: object | null = null): Viewer {
@@ -160,19 +160,19 @@ export class Viewer extends Widget {
   }
 
   static boxPlot(t: DataFrame, options: object | null = null): Viewer {
-    return new Viewer(api.grok_Viewer_BoxPlot(t.d, _toJson(options)));
+    return new Viewer(api.grok_Viewer_BoxPlot(t.dart, _toJson(options)));
   }
 
   static filters(t: DataFrame, options: object | null = null): Viewer {
-    return new Viewer(api.grok_Viewer_Filters(t.d, _toJson(options)));
+    return new Viewer(api.grok_Viewer_Filters(t.dart, _toJson(options)));
   }
 
   static scatterPlot(t: DataFrame, options: object | null = null): ScatterPlotViewer {
-    return new ScatterPlotViewer(api.grok_Viewer_ScatterPlot(t.d, _toJson(options)));
+    return new ScatterPlotViewer(api.grok_Viewer_ScatterPlot(t.dart, _toJson(options)));
   }
 
   static lineChart(t: DataFrame, options: object | null = null): Viewer {
-    return new Viewer(api.grok_Viewer_LineChart(t.d, _toJson(options)));
+    return new Viewer(api.grok_Viewer_LineChart(t.dart, _toJson(options)));
   }
 
   static network(t: DataFrame, options: object | null = null): Viewer {
@@ -186,17 +186,17 @@ export class Viewer extends Widget {
   /** Observes platform events with the specified eventId. */
   onEvent(eventId: string | null = null): rxjs.Observable<any> {
     if (eventId !== null)
-      return __obs(eventId, this.d);
+      return __obs(eventId, this.dart);
 
-    let dartStream = api.grok_Viewer_Get_EventBus_Events(this.d);
+    let dartStream = api.grok_Viewer_Get_EventBus_Events(this.dart);
     return rxjs.fromEventPattern(
       function (handler) {
         return api.grok_Stream_Listen(dartStream, function (x: any) {
           handler(new TypedEventArgs(x));
         });
       },
-      function (handler, d) {
-        new StreamSubscription(d).cancel();
+      function (handler, dart) {
+        new StreamSubscription(dart).cancel();
       }
     );
   }
@@ -207,7 +207,7 @@ export class Viewer extends Widget {
  *  See an example on github: {@link https://github.com/datagrok-ai/public/tree/master/packages/Leaflet}
  *  */
 export class JsViewer extends Viewer {
-  public d: any;
+  public dart: any;
 
   subs: Subscription[];
   obs: rxjs.Observable<any>[];
@@ -334,58 +334,35 @@ export class JsViewer extends Viewer {
 
 /** 2D scatter plot */
 export class ScatterPlotViewer extends Viewer {
-  constructor(d: any) {
-    super(d);
+  constructor(dart: any) {
+    super(dart);
   }
 
   /** Row hit test using canvas coords */
   hitTest(x: number, y: number): number {
-    return api.grok_ScatterPlotViewer_HitTest(this.d, x, y);
+    return api.grok_ScatterPlotViewer_HitTest(this.dart, x, y);
   }
 
   /** Zoom using world coords */
   zoom(x1: number, y1: number, x2: number, y2: number) {
-    api.grok_ScatterPlotViewer_Zoom(this.d, x1, y1, x2, y2);
+    api.grok_ScatterPlotViewer_Zoom(this.dart, x1, y1, x2, y2);
   }
 
-  get viewBox(): Rect { return toJs(api.grok_ScatterPlotViewer_Get_ViewBox(this.d)); }
-  get xAxisBox(): Rect { return toJs(api.grok_ScatterPlotViewer_Get_XAxisBox(this.d)); }
-  get yAxisBox(): Rect { return toJs(api.grok_ScatterPlotViewer_Get_YAxisBox(this.d)); }
+  get viewBox(): Rect { return toJs(api.grok_ScatterPlotViewer_Get_ViewBox(this.dart)); }
+  get xAxisBox(): Rect { return toJs(api.grok_ScatterPlotViewer_Get_XAxisBox(this.dart)); }
+  get yAxisBox(): Rect { return toJs(api.grok_ScatterPlotViewer_Get_YAxisBox(this.dart)); }
 
-  get viewport(): Rect { return toJs(api.grok_ScatterPlotViewer_Get_Viewport(this.d)); }
-  set viewport(viewport: Rect) { api.grok_ScatterPlotViewer_Set_Viewport(this.d, viewport.x, viewport.y, viewport.width, viewport.height); }
+  get viewport(): Rect { return toJs(api.grok_ScatterPlotViewer_Get_Viewport(this.dart)); }
+  set viewport(viewport: Rect) { api.grok_ScatterPlotViewer_Set_Viewport(this.dart, viewport.x, viewport.y, viewport.width, viewport.height); }
 
   /** Converts world coords to screen coords */
-  worldToScreen(x: number, y: number): Point { return toJs(api.grok_ScatterPlotViewer_WorldToScreen(this.d, x, y)); }
+  worldToScreen(x: number, y: number): Point { return toJs(api.grok_ScatterPlotViewer_WorldToScreen(this.dart, x, y)); }
 
   get onZoomed(): rxjs.Observable<Rect> { return this.onEvent('d4-scatterplot-zoomed'); }
   get onResetView(): rxjs.Observable<null> { return this.onEvent('d4-scatterplot-reset-view'); }
   get onViewportChanged(): rxjs.Observable<Rect> { return this.onEvent('d4-viewport-changed'); }
   get onAfterDrawScene(): rxjs.Observable<null> { return this.onEvent('d4-after-draw-scene'); }
   get onBeforeDrawScene(): rxjs.Observable<null> { return this.onEvent('d4-before-draw-scene'); }
-}
-
-interface FormulaLine {
-  id?: string;
-  type?: string;
-  title?: string;
-  description?: string;
-  color?: string;
-  visible?: boolean;
-  opacity?: number;
-  zindex?: number;
-  min?: number;
-  max?: number;
-  equation: string;
-
-  // Specific to lines:
-  width?: number;
-  spline?: number;
-  style?: string;
-
-  // Specific to bands:
-  column?: string;
-  column2?: string;
 }
 
 export class ViewerMetaHelper {
@@ -416,7 +393,7 @@ export class ViewerMetaHelper {
   }
 
   addFormulaItem(item: FormulaLine): void {
-    this.formulaLines.push(item);
+    this.formulaLines.push(toJs(api.grok_FormulaLineHelper_AddDefaults(item)));
     this.addFormulaLines(this.formulaLines);
   }
 
@@ -441,5 +418,9 @@ export class ViewerMetaHelper {
         item.id == undefined || ids.indexOf(item.id) == -1);
 
     this.addFormulaLines(this.formulaLines);
+  }
+
+  getFormulaLineAxes(item: FormulaLine): String[] {
+    return api.grok_FormulaLineHelper_GetAxes(item.formula);
   }
 }

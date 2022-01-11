@@ -1,14 +1,14 @@
 import {Balloon} from './widgets';
 import * as rxjs from 'rxjs';
 import {toDart, toJs} from './wrappers';
-import { Cell } from './dataframe';
+import {Cell, Row} from './dataframe';
 import $ from "cash-dom";
 
 let api = <any>window;
 
 export class Utils {
   /** @param {Iterable} iterable*/
-  static firstOrNull(iterable: Iterable<any>) {
+  static firstOrNull<T>(iterable: Iterable<T>): T | null {
     let first = iterable[Symbol.iterator]().next();
     return first.done ? null : first.value;
   }
@@ -23,6 +23,50 @@ export class Utils {
 
   static replaceAll(string: string, search: string, replace: string) {
     return string.split(search).join(replace);
+  }
+
+  static isEmpty(s?: string) {
+    return !s || s === '';
+  }
+
+  static nullIfEmpty(s?: string) {
+    return Utils.isEmpty(s) ? null : s;
+  }
+}
+
+
+/** A proxy to a Dart List<T>. */
+export class DartList<T> implements Iterable<T> {
+  dart: any;
+
+  /** Creates a proxy to an existing Dart list. */
+  static fromDart<T>(dart: any): DartList<T> {
+    let list = new DartList();
+    list.dart = dart;
+    return list as DartList<T>;
+  }
+
+  /** Returns the number of objects in this list. */
+  get length(): number { return api.grok_List_Get_Length(this.dart); }
+
+  /** Removes all objects from this list; the length of the list becomes zero. */
+  clear() { api.grok_List_Clear(this.dart); }
+
+  /** Sorts this list. */
+  sort() { api.grok_List_Sort(this.dart); }
+
+  /** Adds [value] to the end of this list, extending the length by one. */
+  push(value: T) { api.grok_List_Add(this.dart, value); }
+
+  /** Returns the object at the given [index] in the list. */
+  get(index: number): T { return api.grok_List_Get(this.dart, index); }
+
+  /** Sets the value at the given [index] in the list to [value]. */
+  set(index: number, value: T): T { return api.grok_List_Get(this.dart, index, value); }
+
+  * [Symbol.iterator](): Iterator<T> {
+    for (let i = 0; i < this.length; i++)
+      yield this.get(i);
   }
 }
 
@@ -39,25 +83,24 @@ export namespace HtmlUtils {
 /**
  * Proxies a Dart Map, API-compliant to ES 2015+
  */
-
 export const MapProxy = new Proxy(class {
-    d: any;
+    dart: any;
     objectName: string | null;
     valueType: string | null;
-    constructor(d: any, objectName: string | null = null, valueType: string | null = null) {
-      this.d = d;
+    constructor(dart: any, objectName: string | null = null, valueType: string | null = null) {
+      this.dart = dart;
       this.objectName = objectName;
       this.valueType = valueType;
     }
     keys(): Iterable<any> {
-      return _toIterable(api.grok_Map_Keys(this.d));
+      return _toIterable(api.grok_Map_Keys(this.dart));
     }
     values() {
-      return _toIterable(api.grok_Map_Values(this.d));
+      return _toIterable(api.grok_Map_Values(this.dart));
     }
     * [Symbol.iterator] () {
       for (let key of this.keys()) {
-        const value = toJs(api.grok_Map_Get(this.d, key));
+        const value = toJs(api.grok_Map_Get(this.dart, key));
         yield [key, value];
       }
     }
@@ -70,23 +113,23 @@ export const MapProxy = new Proxy(class {
       }
     }
     delete(key: string) {
-      return toJs(api.grok_Map_Delete(this.d, toDart(key)));
+      return toJs(api.grok_Map_Delete(this.dart, toDart(key)));
     }
     get(key: any) {
-      return toJs(api.grok_Map_Get(this.d, key));
+      return toJs(api.grok_Map_Get(this.dart, key));
     }
     has(key: string) {
-      return api.grok_Map_Has(this.d, toDart(key));
+      return api.grok_Map_Has(this.dart, toDart(key));
     }
     set(key: string, value: any) {
-      api.grok_Map_Set(this.d, key, toDart(value));
+      api.grok_Map_Set(this.dart, key, toDart(value));
       return this;
     }
     clear() {
-      api.grok_Map_Clear(this.d);
+      api.grok_Map_Clear(this.dart);
     }
     size() {
-      return toJs(api.grok_Map_Size(this.d));
+      return toJs(api.grok_Map_Size(this.dart));
     }
   }, {
     construct(target, args) {
@@ -99,24 +142,24 @@ export const MapProxy = new Proxy(class {
               return val.apply(target, args);
             };
           } else {
-            return toJs(api.grok_Map_Get(target.d, prop));
+            return toJs(api.grok_Map_Get(target.dart, prop));
           }
         },
         set: function (target, prop, value) {
           const valueType = typeof(value);
           if (!target.valueType || target.valueType === valueType) {
-            api.grok_Map_Set(target.d, prop, toDart(value));
+            api.grok_Map_Set(target.dart, prop, toDart(value));
           } else {
             throw new Error(`Entries of ${target.objectName} require type '${target.valueType}', passed '${valueType}'`);
           }
           return true;
         },
         deleteProperty: function (target, prop) {
-          api.grok_Map_Delete(target.d, toDart(prop));
+          api.grok_Map_Delete(target.dart, toDart(prop));
           return true;
         },
         has: function (target, prop) {
-          return api.grok_Map_Has(target.d, toDart(prop));
+          return api.grok_Map_Has(target.dart, toDart(prop));
         },
         getOwnPropertyDescriptor(target, prop) {
           return {
@@ -133,26 +176,26 @@ export const MapProxy = new Proxy(class {
 );
 
 // export class PropProxy {
-//     constructor(d) {
-//         this.d = d;
+//     constructor(dart) {
+//         this.dart = dart;
 //         return new Proxy({}, {
-//             get: function(target, prop) { return DG.toJs(api.grok_PropMixin_Get(d, prop)); },
-//             set: function(target, prop, value) { api.grok_PropMixin_Set(d, prop, DG.toDart(value)); }
+//             get: function(target, prop) { return DG.toJs(api.grok_PropMixin_Get(dart, prop)); },
+//             set: function(target, prop, value) { api.grok_PropMixin_Set(dart, prop, DG.toDart(value)); }
 //         })
 //     }
 // }
 
 
-export function _toIterable(d: any): Iterable<any> {
+export function _toIterable(dart: any): Iterable<any> {
   let iterable = {};
   // @ts-ignore
-  iterable[Symbol.iterator] = () => _getIterator(d);
+  iterable[Symbol.iterator] = () => _getIterator(dart);
   // @ts-ignore
   return iterable;
 }
 
-export function _getIterator(d: any) {
-  let iterator = api.grok_Iterable_Get_Iterator(d);
+export function _getIterator(dart: any) {
+  let iterator = api.grok_Iterable_Get_Iterator(dart);
   return {
     next: function () {
       return api.grok_Iterator_MoveNext(iterator) ?

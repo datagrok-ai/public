@@ -5,5 +5,7 @@
   "description": "Chemspace API demo",
   "sources": [
     "css/chemspace.css"
-  ]
+  ],
+  "canEdit": [ "Developers" ],
+  "canView": [ "All users" ]
 }

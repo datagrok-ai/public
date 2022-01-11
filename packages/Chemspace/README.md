@@ -2,7 +2,7 @@ Chamspace is a [package](https://datagrok.ai/help/develop/develop#packages) for 
 platform that provides integration with the [Chemspace](https://chem-space.com/), a service for online
 shopping for the chemical building blocks.
 
-There are two ways to use it: as an [application](https://datagrok.ai/help/develop/develop#applications),
+There are two ways to use it: as an [application](https://datagrok.ai/help/develop/how-to/build-an-app),
 or as an [info panel](https://datagrok.ai/help/discover/infopanels) for chemical structures. 
  
 # Application

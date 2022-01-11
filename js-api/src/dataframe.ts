@@ -9,12 +9,12 @@ import {
   SimilarityMetric,
   AggregationType,
   CsvImportOptions,
-  IndexPredicate, FLOAT_NULL, ViewerType, ColorCodingType, ColorType
+  IndexPredicate, FLOAT_NULL, ViewerType, ColorCodingType, MarkerCodingType, ColorType
 } from "./const";
 import {__obs, EventData, MapChangeArgs, observeStream} from "./events";
 import {toDart, toJs} from "./wrappers";
 import {SIMILARITY_METRIC} from "./const";
-import {MapProxy, _getIterator, _toIterable, _toJson} from "./utils";
+import {MapProxy, _getIterator, _toIterable, _toJson, DartList} from "./utils";
 import {Observable}  from "rxjs";
 import {filter} from "rxjs/operators";
 import {Widget} from "./widgets";
@@ -28,8 +28,7 @@ let api = <any>window;
 type RowPredicate = (row: Row) => boolean;
 type Comparer = (a: any, b: any) => number;
 
-/** Proxy wrapper for ColumnList
- */
+/** Proxy wrapper for ColumnList */
 const ColumnListProxy = new Proxy(class {
       columnList: ColumnList;
       constructor(columnList: any) {
@@ -84,10 +83,13 @@ const ColumnListProxy = new Proxy(class {
  * strongly-typed columns of different types.
  *
  * In the API, the terms "Table" and "DataFrame" are used interchangeably.
- * See usage samples: {@link https://public.datagrok.ai/js/samples/data-frame/manipulate}
+ *
+ * Usage samples: {@link https://public.datagrok.ai/js/samples/data-frame/manipulate}
+ * Usage details: {@link https://datagrok.ai/help/develop/advanced/data-frame}
+ * Implementation details: {@link https://datagrok.ai/help/develop/admin/architecture#in-memory-database}
  */
 export class DataFrame {
-  public readonly d: any;
+  public readonly dart: any;
   public columns: ColumnList & any;
   public rows: RowList;
   public filter: BitSet;
@@ -97,29 +99,26 @@ export class DataFrame {
   private _plot: DataFramePlotHelper | undefined;
   private _dialogs: DataFrameDialogHelper | undefined;
 
-  constructor(d: any) {
-    this.d = d;
-    this.columns = new ColumnListProxy(toJs(api.grok_DataFrame_Columns(this.d)));
-    this.rows = new RowList(this, api.grok_DataFrame_Rows(this.d));
-    this.filter = new BitSet(api.grok_DataFrame_Get_Filter(this.d));
-    this.temp = new MapProxy(api.grok_DataFrame_Get_Temp(this.d), 'temp');
-    this.tags = new MapProxy(api.grok_DataFrame_Get_Tags(this.d), 'tags', 'string');
+  constructor(dart: any) {
+    this.dart = dart;
+    this.columns = new ColumnListProxy(toJs(api.grok_DataFrame_Columns(this.dart)));
+    this.rows = new RowList(this, api.grok_DataFrame_Rows(this.dart));
+    this.filter = new BitSet(api.grok_DataFrame_Get_Filter(this.dart));
+    this.temp = new MapProxy(api.grok_DataFrame_Get_Temp(this.dart), 'temp');
+    this.tags = new MapProxy(api.grok_DataFrame_Get_Tags(this.dart), 'tags', 'string');
   }
 
-  /** Creates a {@link DataFrame} with the specified number of rows and no columns.
-   * @param {number} rowCount
-   * @returns {DataFrame} */
+  /** Creates a {@link DataFrame} with the specified number of rows and no columns. */
   static create(rowCount: number = 0): DataFrame {
     return new DataFrame(api.grok_DataFrame(rowCount));
   }
 
-  /** Creates a {@link DataFrame} from the specified columns. All columns should be of the same length.
-   * @param {Column[]} columns
-   * @returns {DataFrame} */
+  /** Creates a {@link DataFrame} from the specified columns. All columns should be of the same length. */
   static fromColumns(columns: Column[]): DataFrame {
-    return new DataFrame(api.grok_DataFrame_FromColumns(columns.map((c) => c.d)));
+    return new DataFrame(api.grok_DataFrame_FromColumns(columns.map((c) => c.dart)));
   }
 
+  /** Creates a {@link DataFrame} from the specified properties with the specified row count. */
   static fromProperties(properties: Property[], rows: number = 0) {
     let df = DataFrame.create(rows);
     for (let p of properties)
@@ -127,190 +126,12 @@ export class DataFrame {
     return df;
   }
 
-  /** Constructs {@link DataFrame} from a comma-separated values string
-   * @param {string} csv - The content of the comma-separated values file.
-   * @param {CsvImportOptions} options
-   * @returns {DataFrame}
-   * {@link https://dev.datagrok.ai/script/samples/javascript/data-frame/construction/create-from-csv}
-   * */
-  static fromCsv(csv: string, options?: CsvImportOptions): DataFrame {
-    return grok.data.parseCsv(csv, options);
-  }
-
-  /** Constructs {@link DataFrame} from the specified JSON string.
-   * @param {string} json - JSON document.
-   * @returns {DataFrame}
-   * {@link https://dev.datagrok.ai/script/samples/javascript/data-frame/construction/create-from-json}
-   * */
-  static fromJson(json: string): DataFrame {
-    return new DataFrame(api.grok_DataFrame_FromJson(json));
-  }
-
-  get meta(): DataFrameMetaHelper {
-    if (this._meta == undefined)
-      this._meta = new DataFrameMetaHelper(this);
-    return this._meta;
-  }
-
-  get plot(): DataFramePlotHelper {
-    if (this._plot == undefined)
-      this._plot = new DataFramePlotHelper(this);
-    return this._plot;
-  }
-
-  get dialogs(): DataFrameDialogHelper {
-    if (this._dialogs == undefined)
-      this._dialogs = new DataFrameDialogHelper(this);
-    return this._dialogs;
-  }
-
-  /** Returns number of rows in the table.
-   * @returns {number} */
-  get rowCount(): number {
-    return api.grok_DataFrame_RowCount(this.d);
-  }
-
-  /** Returns a {@link BitSet} with selected rows.
-   * @returns {BitSet} */
-  get selection(): BitSet {
-    return new BitSet(api.grok_DataFrame_Get_Selection(this.d));
-  }
-
-  /** Name of the dataframe.
-   * @returns {string} */
-  get name(): string {
-    return api.grok_DataFrame_Get_Name(this.d);
-  }
-
-  set name(s: string) {
-    api.grok_DataFrame_Set_Name(this.d, s);
-  }
-
-  /** Returns the value of the specified tag, or null if it does not exist.
-   * @returns {string} */
-  getTag(tag: string): string | null {
-    return api.grok_DataFrame_Get_Tag(this.d, tag);
-  }
-
-  /** Sets a tag to the specified value.
-   * @param {string} tag - Key.
-   * @param {string} value - Value. */
-  setTag(tag: string, value: string): void {
-    const valueType: string = typeof(value);
-    if (valueType === 'string') {
-      api.grok_DataFrame_Set_Tag(this.d, tag, value);
-    } else {
-      throw new Error(`Tags must be strings, passed '${valueType}'`);
-    }
-  }
-
-  /** Returns i-th row.
-   * @param {number} i - Row index.
-   * @returns {Row} */
-  row(i: number): Row {
-    return new Row(this, i);
-  }
-
-  /** Returns idx-th value of the specified columns.
-   * @param {string} name - Column name.
-   * @param {number} idx - Row index. */
-  get(name: string, idx: number): any {
-    return this.getCol(name).get(idx);
-  }
-
-  /** Sets idx-th value of the specified columns.
-   * @param {string} name - Column name.
-   * @param {number} idx - Row index.
-   * @param value - Value. */
-  set(name: string, idx: number, value: any): void {
-    this.getCol(name).set(idx, value);
-  }
-
-  /** Returns a {@link Column} with the specified name.
-   * @param {string} name - Column name.
-   * @returns {Column} */
-  col(name: string): Column | null {
-    return toJs(api.grok_DataFrame_ColumnByName(this.d, name));
-  }
-
-  /** Returns a {@link Cell} with the specified name.
-   * @param {number} idx - Row index.
-   * @param {string} name - Column name.
-   * @returns {Cell} */
-  cell(idx: number, name: string): Cell {
-    return new Cell(api.grok_DataFrame_Cell(this.d, idx, name));
-  }
-
-  /** Same as {@link col}, but throws Error if column is not found
-   * @param {string} name - Column name.
-   * @returns {Column} */
-  getCol(name: string): Column {
-    let c = this.col(name);
-    if (c === null)
-      throw new Error(`No such column: ${name}`);
-    return c;
-  }
-
-  /** Exports the content to comma-separated-values format.
-   * @returns {string} */
-  toCsv(): string {
-    return api.grok_DataFrame_ToCsv(this.d);
-  }
-
-  /** Creates a new dataframe from the specified row mask and a list of columns.
-   * @param {BitSet} rowMask - Rows to include.
-   * @param {string[]} columnIds - Columns to include.
-   * @param {boolean} saveSelection - Whether selection should be saved. */
-  clone(rowMask: BitSet | null = null, columnIds: string[] | null = null, saveSelection: boolean = false): DataFrame {
-    return new DataFrame(api.grok_DataFrame_Clone(this.d, toDart(rowMask), columnIds, saveSelection));
-  }
-
-  /** Current row.
-   * Sample: {@link https://public.datagrok.ai/js/samples/data-frame/events/current-elements} */
-  get currentRow(): Row {
-    return new Row(this, api.grok_DataFrame_Get_CurrentRowIdx(this.d));
-  }
-
-  /** Current row.
-   * Sample: {@link https://public.datagrok.ai/js/samples/data-frame/events/current-elements} */
-  set currentRow(idx) {
-    api.grok_DataFrame_Set_CurrentRowIdx(this.d, idx);
-  }
-
-  /** Index of the current row. */
-  get currentRowIdx(): number { return api.grok_DataFrame_Get_CurrentRowIdx(this.d); }
-  set currentRowIdx(idx) { api.grok_DataFrame_Set_CurrentRowIdx(this.d, idx); }
-
-  /** Index of the mouse-over row. */
-  get mouseOverRowIdx(): number { return api.grok_DataFrame_Get_MouseOverRowIdx(this.d); }
-  set mouseOverRowIdx(idx) { api.grok_DataFrame_Set_MouseOverRowIdx(this.d, idx); }
-
-  /** Current column.
-   * Sample: {@link https://public.datagrok.ai/js/samples/data-frame/events/current-elements} */
-  get currentCol(): Column {
-    return toJs(api.grok_DataFrame_Get_CurrentCol(this.d));
-  }
-
-  /** Current column.
-   * Sample: {@link https://public.datagrok.ai/js/samples/data-frame/events/current-elements} */
-  set currentCol(col: Column) {
-    api.grok_DataFrame_Set_CurrentCol(this.d, col.d);
-  }
-
-  /** Current cell.
-   * Sample: {@link https://public.datagrok.ai/js/samples/data-frame/events/current-elements} */
-  get currentCell(): Cell {
-    return new Cell(api.grok_DataFrame_Get_CurrentCell(this.d));
-  }
-
-  /** Current cell.
-   * Sample: {@link https://public.datagrok.ai/js/samples/data-frame/events/current-elements} */
-  set currentCell(cell: Cell) {
-    api.grok_DataFrame_Set_CurrentCell(this.d, cell.d);
-  }
-
   /** Creates a [DataFrame] from a list of objects by using object keys as column names,
    * and object values as values.
+   *
+   * NOTE: The implementation converts the values to strings first and then parses it,
+   * so do not use this method in performance-critical paths (for instance when the
+   * number of objects could be big), consider using {@link fromColumns} instead.
    *
    * @param {object[]} list - List of objects.
    * @returns {DataFrame}
@@ -333,6 +154,181 @@ export class DataFrame {
     return table;
   }
 
+  /** Constructs {@link DataFrame} from a comma-separated values string
+   * @param {string} csv - The content of the comma-separated values file.
+   * @param {CsvImportOptions} options
+   * @returns {DataFrame}
+   * {@link https://dev.datagrok.ai/script/samples/javascript/data-frame/construction/create-from-csv}
+   * */
+  static fromCsv(csv: string, options?: CsvImportOptions): DataFrame {
+    return grok.data.parseCsv(csv, options);
+  }
+
+  /** Constructs {@link DataFrame} from the specified JSON string.
+   * @param {string} json - JSON document.
+   * @returns {DataFrame}
+   * {@link https://dev.datagrok.ai/script/samples/javascript/data-frame/construction/create-from-json}
+   * */
+  static fromJson(json: string): DataFrame {
+    return new DataFrame(api.grok_DataFrame_FromJson(json));
+  }
+
+  /** A helper to conveniently access certain metadata properties stored in {@link tags} */
+  get meta(): DataFrameMetaHelper {
+    if (this._meta == undefined)
+      this._meta = new DataFrameMetaHelper(this);
+    return this._meta;
+  }
+
+  /** A helper for creating plots for this dataframe */
+  get plot(): DataFramePlotHelper {
+    if (this._plot == undefined)
+      this._plot = new DataFramePlotHelper(this);
+    return this._plot;
+  }
+
+  get dialogs(): DataFrameDialogHelper {
+    if (this._dialogs == undefined)
+      this._dialogs = new DataFrameDialogHelper(this);
+    return this._dialogs;
+  }
+
+  /** Returns number of rows in the table. */
+  get rowCount(): number {
+    return api.grok_DataFrame_RowCount(this.dart);
+  }
+
+  /** Returns a {@link BitSet} with selected rows. */
+  get selection(): BitSet {
+    return new BitSet(api.grok_DataFrame_Get_Selection(this.dart));
+  }
+
+  /** Name of the dataframe.  */
+  get name(): string { return api.grok_DataFrame_Get_Name(this.dart); }
+  set name(s: string) { api.grok_DataFrame_Set_Name(this.dart, s); }
+
+  /** Returns the value of the specified tag, or null if it does not exist.
+   * @returns {string} */
+  getTag(tag: string): string | null {
+    return api.grok_DataFrame_Get_Tag(this.dart, tag);
+  }
+
+  /** Sets a tag to the specified value.
+   * @param {string} tag - Key.
+   * @param {string} value - Value. */
+  setTag(tag: string, value: string): void {
+    const valueType: string = typeof(value);
+    if (valueType === 'string') {
+      api.grok_DataFrame_Set_Tag(this.dart, tag, value);
+    } else {
+      throw new Error(`Tags must be strings, passed '${valueType}'`);
+    }
+  }
+
+  /** Returns i-th row.
+   * _NOTE_: Do not use in performance-critical paths, consider accessing values via the {@link Column} instance. */
+  row(rowIndex: number): Row {
+    return new Row(this, rowIndex);
+  }
+
+  /** Returns idx-th value of the specified columns.
+   * @param {string} name - Column name.
+   * @param {number} idx - Row index. */
+  get(name: string, idx: number): any {
+    return this.getCol(name).get(idx);
+  }
+
+  /** Sets idx-th value of the specified columns.
+   * @param {string} name - Column name.
+   * @param {number} idx - Row index.
+   * @param value - Value. */
+  set(name: string, idx: number, value: any): void {
+    this.getCol(name).set(idx, value);
+  }
+
+  /** Returns a {@link Column} with the specified name.
+   * @param {string} name - Column name.
+   * @returns {Column} */
+  col(name: string): Column | null {
+    return toJs(api.grok_DataFrame_ColumnByName(this.dart, name));
+  }
+
+  /** Returns a {@link Cell} with the specified name.
+   * @param {number} idx - Row index.
+   * @param {string} name - Column name.
+   * @returns {Cell} */
+  cell(idx: number, name: string): Cell {
+    return new Cell(api.grok_DataFrame_Cell(this.dart, idx, name));
+  }
+
+  /** Same as {@link col}, but throws Error if column is not found
+   * @param {string} name - Column name.
+   * @returns {Column} */
+  getCol(name: string): Column {
+    let c = this.col(name);
+    if (c === null)
+      throw new Error(`No such column: ${name}`);
+    return c;
+  }
+
+  /** Exports the content to comma-separated-values format.
+   * @returns {string} */
+  toCsv(): string {
+    return api.grok_DataFrame_ToCsv(this.dart);
+  }
+
+  /** Creates a new dataframe from the specified row mask and a list of columns.
+   * @param {BitSet} rowMask - Rows to include.
+   * @param {string[]} columnIds - Columns to include.
+   * @param {boolean} saveSelection - Whether selection should be saved. */
+  clone(rowMask: BitSet | null = null, columnIds: string[] | null = null, saveSelection: boolean = false): DataFrame {
+    return new DataFrame(api.grok_DataFrame_Clone(this.dart, toDart(rowMask), columnIds, saveSelection));
+  }
+
+  /** Current row.
+   * Sample: {@link https://public.datagrok.ai/js/samples/data-frame/events/current-elements} */
+  get currentRow(): Row {
+    return new Row(this, api.grok_DataFrame_Get_CurrentRowIdx(this.dart));
+  }
+
+  /** Current row.
+   * Sample: {@link https://public.datagrok.ai/js/samples/data-frame/events/current-elements} */
+  set currentRow(idx) {
+    api.grok_DataFrame_Set_CurrentRowIdx(this.dart, idx);
+  }
+
+  /** Index of the current row. */
+  get currentRowIdx(): number { return api.grok_DataFrame_Get_CurrentRowIdx(this.dart); }
+  set currentRowIdx(idx) { api.grok_DataFrame_Set_CurrentRowIdx(this.dart, idx); }
+
+  /** Index of the mouse-over row. */
+  get mouseOverRowIdx(): number { return api.grok_DataFrame_Get_MouseOverRowIdx(this.dart); }
+  set mouseOverRowIdx(idx) { api.grok_DataFrame_Set_MouseOverRowIdx(this.dart, idx); }
+
+  /** Current column.
+   * Sample: {@link https://public.datagrok.ai/js/samples/data-frame/events/current-elements} */
+  get currentCol(): Column {
+    return toJs(api.grok_DataFrame_Get_CurrentCol(this.dart));
+  }
+
+  /** Current column.
+   * Sample: {@link https://public.datagrok.ai/js/samples/data-frame/events/current-elements} */
+  set currentCol(col: Column) {
+    api.grok_DataFrame_Set_CurrentCol(this.dart, col.dart);
+  }
+
+  /** Current cell.
+   * Sample: {@link https://public.datagrok.ai/js/samples/data-frame/events/current-elements} */
+  get currentCell(): Cell {
+    return new Cell(api.grok_DataFrame_Get_CurrentCell(this.dart));
+  }
+
+  /** Current cell.
+   * Sample: {@link https://public.datagrok.ai/js/samples/data-frame/events/current-elements} */
+  set currentCell(cell: Cell) {
+    api.grok_DataFrame_Set_CurrentCell(this.dart, cell.dart);
+  }
+
   /** Converts a column with the specified name to [newType],
    * removes the original column from its dataframe and adds the new column to it.
    * @param {string|Column} column
@@ -340,7 +336,7 @@ export class DataFrame {
    * @param {string=} format
    * @returns {Column} */
   changeColumnType(column: string | Column, newType: ColumnType, format: string | null = null): Column {
-    return toJs(api.grok_DataFrame_ChangeColumnType(this.d, toDart(column), newType, format));
+    return toJs(api.grok_DataFrame_ChangeColumnType(this.dart, toDart(column), newType, format));
   }
 
   /**
@@ -353,7 +349,7 @@ export class DataFrame {
    * @returns {Int32Array}
    * */
   getSortedOrder(sortByColumnIds: object[], sortOrders: boolean[] | null = null, rowMask: BitSet | null = null): Int32Array {
-    return api.grok_DataFrame_GetSortedOrder(this.d, sortByColumnIds.map(toDart), sortOrders, toDart(rowMask));
+    return api.grok_DataFrame_GetSortedOrder(this.dart, sortByColumnIds.map(toDart), sortOrders, toDart(rowMask));
   }
 
   /** Begins building a query, using the specified columns as keys.
@@ -361,7 +357,7 @@ export class DataFrame {
    * @returns {GroupByBuilder}
    *  */
   groupBy(columnNames: string[] = []): GroupByBuilder {
-    return new GroupByBuilder(api.grok_DataFrame_GroupBy(this.d, columnNames));
+    return new GroupByBuilder(api.grok_DataFrame_GroupBy(this.dart, columnNames));
   }
 
   /**
@@ -373,7 +369,7 @@ export class DataFrame {
    * @param {String} valueColumnName
    * */
   unpivot(copyColumnNames: string[], mergeColumnNames: string[], categoryColumnName: string = 'Category', valueColumnName: string = 'Value'): DataFrame {
-    return new DataFrame(api.grok_DataFrame_Unpivot(this.d, copyColumnNames, mergeColumnNames, categoryColumnName, valueColumnName));
+    return new DataFrame(api.grok_DataFrame_Unpivot(this.dart, copyColumnNames, mergeColumnNames, categoryColumnName, valueColumnName));
   }
 
   /**
@@ -388,7 +384,7 @@ export class DataFrame {
    * @returns {DataFrame}
    * */
   join(t2: DataFrame, keyColumns1: string[], keyColumns2: string[], valueColumns1: string[], valueColumns2: string[], joinType: JoinType, inPlace: boolean): DataFrame {
-    return new DataFrame(api.grok_JoinTables(this.d, t2.d, keyColumns1, keyColumns2, valueColumns1, valueColumns2, joinType, inPlace));
+    return new DataFrame(api.grok_JoinTables(this.dart, t2.dart, keyColumns1, keyColumns2, valueColumns1, valueColumns2, joinType, inPlace));
   }
 
   /**
@@ -399,11 +395,11 @@ export class DataFrame {
    * @returns {DataFrame}
    * */
   append(t2: DataFrame, inPlace: boolean = false, columnsToAppend: string[] | null = null): DataFrame {
-    return new DataFrame(api.grok_DataFrame_Append(this.d, t2.d, inPlace, columnsToAppend));
+    return new DataFrame(api.grok_DataFrame_Append(this.dart, t2.dart, inPlace, columnsToAppend));
   }
 
   /** @returns {Observable} */ _event(event: string): Observable<any> {
-    return __obs(event, this.d);
+    return __obs(event, this.dart);
   }
 
   /** Sample: {@link https://public.datagrok.ai/js/samples/data-frame/events/events} */
@@ -479,12 +475,12 @@ export class DataFrame {
   get onFilterChanged(): Observable<any> { return this.filter.onChanged; }
 
   fireValuesChanged(): void {
-    api.grok_DataFrame_FireValuesChanged(this.d);
+    api.grok_DataFrame_FireValuesChanged(this.dart);
   }
 
   /** @returns {string} */
   toString(): string {
-    return api.grok_Object_ToString(this.d);
+    return api.grok_Object_ToString(this.dart);
   }
 
   /** Id of the dataframe.
@@ -498,7 +494,7 @@ export class DataFrame {
   }
 
   getDensity(xBins: number, yBins: number, xColName: string, yColName: string): Int32Array {
-    return api.grok_MathActions_GetDensity(this.d, xBins, yBins, xColName, yColName);
+    return api.grok_MathActions_GetDensity(this.dart, xBins, yBins, xColName, yColName);
   }
 }
 
@@ -535,7 +531,7 @@ export class Row {
     });
   }
 
-  get cells(): Iterable<Cell> { return _toIterable(api.grok_Row_Get_Cells(this.table.d, this.idx)); }
+  get cells(): Iterable<Cell> { return _toIterable(api.grok_Row_Get_Cells(this.table.dart, this.idx)); }
 
   /** Returns this row's value for the specified column
    * @param {string} columnName
@@ -544,22 +540,27 @@ export class Row {
     return this.table.getCol(columnName).get(this.idx);
   }
 
-  toDart(): any { return api.grok_Row(this.table.d, this.idx); }
+  toDart(): any { return api.grok_Row(this.table.dart, this.idx); }
 }
 
 /** Strongly-typed column. */
 export class Column {
-  public d: any;
+  public dart: any;
   public temp: any;
   public tags: any;
   private _dialogs: ColumnDialogHelper | undefined;
-  private _colors: ColumnColorHelper | undefined;
-  private _markers: ColumnMarkerHelper | undefined;
+  private _meta: ColumnMetaHelper | undefined;
 
-  constructor(d: any) {
-    this.d = d;
-    this.temp = new MapProxy(api.grok_Column_Get_Temp(this.d));
-    this.tags = new MapProxy(api.grok_Column_Get_Tags(this.d));
+  constructor(dart: any) {
+    this.dart = dart;
+    this.temp = new MapProxy(api.grok_Column_Get_Temp(this.dart));
+    this.tags = new MapProxy(api.grok_Column_Get_Tags(this.dart));
+  }
+
+  get meta(): ColumnMetaHelper {
+    if (this._meta == undefined)
+      this._meta = new ColumnMetaHelper(this);
+    return this._meta;
   }
 
   /** Creates a {@link Column} from the list of string values
@@ -614,7 +615,7 @@ export class Column {
    * @param {BitSet} bitset
    * @returns {Column} */
   static fromBitSet(name: string, bitset: BitSet): Column {
-    return toJs(api.grok_Column_FromBitSet(name, bitset.d));
+    return toJs(api.grok_Column_FromBitSet(name, bitset.dart));
   }
 
   /** Creates an integer column with the specified name and length.
@@ -690,60 +691,60 @@ export class Column {
   /** Column data type.
    * @type {string} */
   get type(): ColumnType {
-    return api.grok_Column_Get_Type(this.d);
+    return api.grok_Column_Get_Type(this.dart);
   }
 
   /** Is this column virtual
    * @type {boolean} */
   get isVirtual(): boolean {
-    return api.grok_Column_IsVirtual(this.d);
+    return api.grok_Column_IsVirtual(this.dart);
   }
 
   /** Number of elements
    * @type {number} */
   get length(): number {
-    return api.grok_Column_Get_Length(this.d);
+    return api.grok_Column_Get_Length(this.dart);
   }
 
   /** Parent table
    * @type {DataFrame} */
   get dataFrame(): DataFrame {
-    return toJs(api.grok_Column_Get_DataFrame(this.d));
+    return toJs(api.grok_Column_Get_DataFrame(this.dart));
   }
 
   /** Semantic type
    * @type {string} */
   get semType(): SemType {
-    return api.grok_Column_Get_SemType(this.d);
+    return api.grok_Column_Get_SemType(this.dart);
   }
 
   set semType(s: SemType) {
-    api.grok_Column_Set_SemType(this.d, s);
+    api.grok_Column_Set_SemType(this.dart, s);
   }
 
   /** Layout column ID
    @type {string} */
   get layoutColumnId(): string {
-    return api.grok_Column_Get_LayoutColumnId(this.d);
+    return api.grok_Column_Get_LayoutColumnId(this.dart);
   }
 
   set layoutColumnId(s: string) {
-    api.grok_Column_Set_LayoutColumnId(this.d, s);
+    api.grok_Column_Set_LayoutColumnId(this.dart, s);
   }
 
   /** @type {string} */
   get name(): string {
-    return api.grok_Column_Get_Name(this.d);
+    return api.grok_Column_Get_Name(this.dart);
   }
 
   set name(s: string) {
-    api.grok_Column_Set_Name(this.d, s);
+    api.grok_Column_Set_Name(this.dart, s);
   }
 
   /** Version of the column. Increases each time the column was changed
    * @returns {number} */
   get version(): number {
-    return api.grok_Column_Get_Version(this.d);
+    return api.grok_Column_Get_Version(this.dart);
   }
 
   get dialogs(): ColumnDialogHelper {
@@ -752,16 +753,14 @@ export class Column {
     return this._dialogs;
   }
 
+  // Obsolete. Recommended method is "meta.colors".
   get colors(): ColumnColorHelper {
-    if (this._colors == undefined)
-      this._colors = new ColumnColorHelper(this);
-    return this._colors;
+    return this.meta.colors;
   }
 
+  // Obsolete. Recommended method is "meta.markers".
   get markers(): ColumnMarkerHelper {
-    if (this._markers == undefined)
-      this._markers = new ColumnMarkerHelper(this);
-    return this._markers;
+    return this.meta.markers;
   }
 
   /**
@@ -772,13 +771,15 @@ export class Column {
   init(valueInitializer: string | number | boolean | ((ind: number) => any)): Column {
     let type = typeof valueInitializer;
     if (type === 'function')
-      api.grok_Column_Init(this.d, valueInitializer);
+      api.grok_Column_Init(this.dart, valueInitializer);
     else if (type === 'number' || type === 'string' || type === 'boolean')
-      api.grok_Column_SetAllValues(this.d, valueInitializer);
+      api.grok_Column_SetAllValues(this.dart, valueInitializer);
     return this;
   }
 
-  /** Returns the raw buffer containing data.
+  /** FOR EXPERT USE ONLY!
+   *
+   * Returns the raw buffer containing data.
    * Sample: {@link https://public.datagrok.ai/js/samples/data-frame/performance/access}
    * Return type depends on the column type:
    * {Int32Array} for ints, {@link INT_NULL} represents null.
@@ -789,18 +790,26 @@ export class Column {
    * {Uint32Array} bit array.
    * @returns {Array} */
   getRawData(): Int32Array | Float32Array | Float64Array | Uint32Array {
-    return api.grok_Column_GetRawData(this.d);
+    // a hack that extracts the real underlying array from the Dart Column
+    const handle = api.grok_Column_GetRawData(this.dart);
+    const TypedArray = Object.getPrototypeOf(Uint8Array);
+    for (const k of Object.keys(handle)) {
+      const v = handle[k];
+      if (v instanceof TypedArray)
+        return v;
+    }
+    return api.grok_Column_GetRawDataDartium(this.dart);
   }
 
   setRawData(rawData: Int32Array | Float32Array | Float64Array | Uint32Array, notify: boolean = true): void {
-    api.grok_Column_SetRawData(this.d, rawData, notify);
+    api.grok_Column_SetRawData(this.dart, rawData, notify);
   }
 
   /** Gets i-th value
    * @param {number} row - row index
    * @returns {object} - or null if isNone(i) */
   get(row: number): any {
-    return api.grok_Column_GetValue(this.d, row);
+    return api.grok_Column_GetValue(this.dart, row);
   }
 
   /** Returns i-th value as string, taking into account value format defined for the column.
@@ -808,7 +817,7 @@ export class Column {
    * @param {number} i
    * @returns {string} */
   getString(i: number): string {
-    return api.grok_Column_GetString(this.d, i);
+    return api.grok_Column_GetString(this.dart, i);
   }
 
   /** Attempts to set i-th value by converting a provided string to the corresponding strongly-typed value.
@@ -820,7 +829,7 @@ export class Column {
    * @param {boolean} notify
    * @returns {boolean} */
   setString(i: number, str: string, notify: boolean = true): boolean {
-    return api.grok_Column_SetString(this.d, i, str, notify);
+    return api.grok_Column_SetString(this.dart, i, str, notify);
   }
 
   /**
@@ -830,21 +839,21 @@ export class Column {
    * @param {boolean} notify
    */
   set(i: number, x: any, notify: boolean = true): void {
-    api.grok_Column_SetValue(this.d, i, toDart(x), notify);
+    api.grok_Column_SetValue(this.dart, i, toDart(x), notify);
   }
 
   /** Returns whether i-th value is missing.
    * @param {number} i - Row index.
    * @returns {boolean} */
   isNone(i: number): boolean {
-    return api.grok_Column_IsNone(this.d, i);
+    return api.grok_Column_IsNone(this.dart, i);
   }
 
   /** Gets the value of the specified tag.
    *  @param {string} tag
    *  @returns {string} */
   getTag(tag: string): string {
-    return api.grok_Column_Get_Tag(this.d, tag);
+    return api.grok_Column_Get_Tag(this.dart, tag);
   }
 
   /** Sets a tag to the specified value.
@@ -852,69 +861,64 @@ export class Column {
    * @param {string} value - Value.
    * @returns {Column}. * */
   setTag(tag: string, value: string): Column {
-    api.grok_Column_Set_Tag(this.d, tag, value);
+    api.grok_Column_Set_Tag(this.dart, tag, value);
     return this;
   }
 
   /** Compacts the internal column representation.
    *  Currently, it only affects string columns where values were modified. */
   compact() {
-    return api.grok_Column_Compact(this.d);
+    return api.grok_Column_Compact(this.dart);
   }
 
   /** Copies column values to an array.
    *  @returns {Array} */
   toList(): Array<any> {
-    return api.grok_Column_ToList(this.d);
+    return api.grok_Column_ToList(this.dart);
   }
 
-  /** Returns all unique strings in a sorted order. Applicable to string column only.
-   * @returns {string[]} */
+  /** Returns all unique strings in a sorted order. Applicable to string column only. */
   get categories(): string[] {
-    return api.grok_Column_Categories(this.d);
+    return api.grok_Column_Categories(this.dart);
+  }
+
+  /** Returns i-th category. Applicable to string column only. */
+  getCategory(categoryIndex: number): string {
+    return api.grok_Column_GetCategory(this.dart, categoryIndex);
   }
 
   /** Sets order of categories
    * @param {string[]} order */
   setCategoryOrder(order: string[]) {
-    api.grok_Column_SetCategoryOrder(this.d, order);
+    api.grok_Column_SetCategoryOrder(this.dart, order);
   }
 
   /** Gets order of categories */
-  getCategoryOrder(): string[] { return api.grok_Column_GetCategoryOrder(this.d); }
+  getCategoryOrder(): string[] { return api.grok_Column_GetCategoryOrder(this.dart); }
 
   /** Returns an array of indexes sorted using [valueComparer]. */
-  getSortedOrder(): Int32Array { return api.grok_Column_GetSortedOrder(this.d); }
+  getSortedOrder(): Int32Array { return api.grok_Column_GetSortedOrder(this.dart); }
 
   /** Value comparison function to be used for sorting. Null means default sorting.
    * Sample: {@link https://public.datagrok.ai/js/samples/data-frame/sorting/custom-comparer}  */
-  get valueComparer(): Comparer | null { return api.grok_Column_Get_ValueComparer(this.d); }
-  set valueComparer( cmp: Comparer | null) { api.grok_Column_Set_ValueComparer(this.d, cmp); }
+  get valueComparer(): Comparer | null { return api.grok_Column_Get_ValueComparer(this.dart); }
+  set valueComparer( cmp: Comparer | null) { api.grok_Column_Set_ValueComparer(this.dart, cmp); }
 
-  /** Column's minimum value. The result is cached.
-   * @returns {number} */
-  get min(): number {
-    return api.grok_Column_Min(this.d);
-  }
+  /** Column's minimum value. The result is cached. */
+  get min(): number { return api.grok_Column_Min(this.dart); }
 
-  /** Column's maximum value. The result is cached.
-   * @returns {number} */
-  get max(): number {
-    return api.grok_Column_Max(this.d);
-  }
+  /** Column's maximum value. The result is cached. */
+  get max(): number { return api.grok_Column_Max(this.dart); }
 
   /** Checks whether the column passes the specified [filter].
    * [filter] can be either specific data [type] such as 'int' or 'string', more broadly - 'numerical', or 'categorical', or null for any columns.
    * @returns {boolean} */
   matches(filter: ColumnType | 'numerical' | 'categorical' | null): boolean {
-    return api.grok_Column_Matches(this.d, filter);
+    return api.grok_Column_Matches(this.dart, filter);
   }
 
-  /** Basic descriptive statistics. The result is cached.
-   * @returns {Stats} */
-  get stats(): Stats {
-    return Stats.fromColumn(this);
-  }
+  /** Basic descriptive statistics. The result is cached. */
+  get stats(): Stats { return Stats.fromColumn(this); }
 
   /** An iterator over all values in this column. */
   * values() {
@@ -931,7 +935,7 @@ export class Column {
     if (type == null)
       type = this.type;
     return new Promise((resolve, reject) => api.grok_Column_ApplyFormula(
-      this.d, formula, type, treatAsString, (c: any) => resolve(toJs(c)), (e: any) => reject(e)));
+      this.dart, formula, type, treatAsString, (c: any) => resolve(toJs(c)), (e: any) => reject(e)));
   }
 
   /** Creates and returns a new column by converting [column] to the specified [newType].
@@ -939,34 +943,34 @@ export class Column {
    *  @param {string} format
    *  @returns {Column} */
   convertTo(newType: string, format: string | null = null): Column {
-    return toJs(api.grok_Column_ConvertTo(this.d, newType, format));
+    return toJs(api.grok_Column_ConvertTo(this.dart, newType, format));
   }
 
   /** @returns {string} */
   toString(): string {
-    return api.grok_Object_ToString(this.d);
+    return api.grok_Object_ToString(this.dart);
   }
 }
 
 /** Columns in a [DataFrame]. */
 export class ColumnList {
-  private readonly d: any;
+  private readonly dart: any;
 
-  constructor(d: any) {
-    this.d = d;
+  constructor(dart: any) {
+    this.dart = dart;
   }
 
   /** Number of elements in the column.
    * @returns {number} */
   get length(): number {
-    return api.grok_ColumnList_Length(this.d);
+    return api.grok_ColumnList_Length(this.dart);
   }
 
   /** Column with the corresponding name (case-insensitive).
    * @param {string} name - Column name
    * @returns {Column} */
   byName(name: string): Column {
-    return toJs(api.grok_ColumnList_ByName(this.d, name));
+    return toJs(api.grok_ColumnList_ByName(this.dart, name));
   }
 
   /** Maps names to columns.
@@ -980,13 +984,13 @@ export class ColumnList {
    * @param {number} index - Index of the column.
    * @returns {Column} */
   byIndex(index: number): Column {
-    return toJs(api.grok_ColumnList_ByIndex(this.d, index));
+    return toJs(api.grok_ColumnList_ByIndex(this.dart, index));
   }
 
   /** First column of [semType], or null.
    * @returns {Column} */
   bySemType(semType: SemType): Column | null {
-    let col = api.grok_ColumnList_BySemType(this.d, semType);
+    let col = api.grok_ColumnList_BySemType(this.dart, semType);
     return col == null ? null : toJs(col);
   }
 
@@ -1007,25 +1011,25 @@ export class ColumnList {
    * Pass null or undefined to match any value of a tag.
    * Sample: {@link https://public.datagrok.ai/js/samples/data-frame/find-columns} */
   byTags(tags: object): Iterable<Column> {
-    return _toIterable(api.grok_ColumnList_ByTags(this.d, tags));
+    return _toIterable(api.grok_ColumnList_ByTags(this.dart, tags));
   }
 
   /** Finds categorical columns.
    * Sample: {@link https://public.datagrok.ai/js/samples/data-frame/find-columns} */
   get categorical(): Iterable<Column> {
-    return _toIterable(api.grok_ColumnList_Categorical(this.d));
+    return _toIterable(api.grok_ColumnList_Categorical(this.dart));
   }
 
   /** Finds numerical columns.
    * Sample: {@link https://public.datagrok.ai/js/samples/data-frame/find-columns} */
   get numerical(): Iterable<Column> {
-    return _toIterable(api.grok_ColumnList_Numerical(this.d));
+    return _toIterable(api.grok_ColumnList_Numerical(this.dart));
   }
 
   /** Array containing column names.
    * @returns {string[]} */
   names(): string[] {
-    return api.grok_ColumnList_Names(this.d);
+    return api.grok_ColumnList_Names(this.dart);
   }
 
   /** Creates an array of columns.
@@ -1039,7 +1043,7 @@ export class ColumnList {
    * @param {boolean} notify
    * @returns {Column} */
   add(column: Column, notify: boolean = true): Column {
-    api.grok_ColumnList_Add(this.d, column.d, notify);
+    api.grok_ColumnList_Add(this.dart, column.dart, notify);
     return column;
   }
 
@@ -1049,7 +1053,7 @@ export class ColumnList {
    * @param {int} index
    * @returns {Column} */
   insert(column: Column, index: number | null = null, notify: boolean = true): Column {
-    api.grok_ColumnList_Insert(this.d, column.d, index, notify);
+    api.grok_ColumnList_Insert(this.dart, column.dart, index, notify);
     return column;
   }
 
@@ -1058,7 +1062,7 @@ export class ColumnList {
    * @param {ColumnType} type
    * @returns {Column} */
   addNew(name: string, type: ColumnType): Column {
-    return toJs(api.grok_ColumnList_AddNew(this.d, name, type));
+    return toJs(api.grok_ColumnList_AddNew(this.dart, name, type));
   }
 
   /** Adds calculated column.
@@ -1068,11 +1072,11 @@ export class ColumnList {
    * @param {bool} treatAsString
    * @returns {Column} */
   addNewCalculated(name: string, expression: string, type: ColumnType | 'auto' = 'auto', treatAsString: boolean = false): Promise<Column> {
-    return new Promise((resolve, reject) => api.grok_ColumnList_AddNewCalculated(this.d, name, expression, type, treatAsString, (c: any) => resolve(toJs(c)), (e: any) => reject(e)));
+    return new Promise((resolve, reject) => api.grok_ColumnList_AddNewCalculated(this.dart, name, expression, type, treatAsString, (c: any) => resolve(toJs(c)), (e: any) => reject(e)));
   }
 
   _getNewCalculated(name: string, expression: string, type: ColumnType | 'auto' = 'auto', treatAsString: boolean = false): Promise<Column> {
-    return new Promise((resolve, reject) => api.grok_ColumnList_GetNewCalculated(this.d, name, expression, type, treatAsString, (c: any) => resolve(toJs(c)), (e: any) => reject(e)));
+    return new Promise((resolve, reject) => api.grok_ColumnList_GetNewCalculated(this.dart, name, expression, type, treatAsString, (c: any) => resolve(toJs(c)), (e: any) => reject(e)));
   }
 
   /** Adds a string column
@@ -1124,19 +1128,19 @@ export class ColumnList {
    * {@link https://dev.datagrok.ai/script/samples/javascript/data-frame/advanced/virtual-columns}
    * */
   addNewVirtual(name: string, getValue: (ind: number) => any, type = TYPE.OBJECT): Column {
-    return toJs(api.grok_ColumnList_AddNewVirtual(this.d, name, getValue, type));
+    return toJs(api.grok_ColumnList_AddNewVirtual(this.dart, name, getValue, type));
   }
 
   /** Removes column by name (case-insensitive).*/
   remove(column: string, notify: boolean = true): ColumnList {
-    api.grok_ColumnList_Remove(this.d, column, notify);
+    api.grok_ColumnList_Remove(this.dart, column, notify);
     return this;
   }
 
   /** Checks whether this list contains a column with the specified name. The check is case-insensitive.
    * @returns {boolean} */
   contains(columnName: string): boolean {
-    return api.grok_ColumnList_Contains(this.d, columnName);
+    return api.grok_ColumnList_Contains(this.dart, columnName);
   }
 
   /** Replaces the column with the new column.
@@ -1144,19 +1148,19 @@ export class ColumnList {
    * @param {Column} newColumn
    * */
   replace(columnToReplace: Column | string, newColumn: Column): Column {
-    return toJs(api.grok_ColumnList_Replace(this.d, (typeof columnToReplace === 'string') ? columnToReplace:  columnToReplace.d, newColumn.d));
+    return toJs(api.grok_ColumnList_Replace(this.dart, (typeof columnToReplace === 'string') ? columnToReplace:  columnToReplace.dart, newColumn.dart));
   }
 
   /** Iterates over all columns.
    * @returns {Iterable.<Column>}
    * */
   [Symbol.iterator]() {
-    return _getIterator(this.d);
+    return _getIterator(this.dart);
   }
 
   /** @returns {string} */
   toString(): string {
-    return api.grok_Object_ToString(this.d);
+    return api.grok_Object_ToString(this.dart);
   }
 }
 
@@ -1165,15 +1169,15 @@ export class ColumnList {
  * Row matcher.
  * */
 export class RowMatcher {
-  private readonly d: any;
+  private readonly dart: any;
 
-  constructor(d: any) { this.d = d; }
+  constructor(dart: any) { this.dart = dart; }
 
-  select() { api.grok_RowMatcher_Select(this.d); }
-  filter() { api.grok_RowMatcher_Filter(this.d); }
-  highlight() { api.grok_RowMatcher_Highlight(this.d); }
+  select() { api.grok_RowMatcher_Select(this.dart); }
+  filter() { api.grok_RowMatcher_Filter(this.dart); }
+  highlight() { api.grok_RowMatcher_Highlight(this.dart); }
 
-  toDataFrame() { return toJs(api.grok_RowMatcher_ToDataFrame(this.d)); }
+  toDataFrame() { return toJs(api.grok_RowMatcher_ToDataFrame(this.dart)); }
 }
 
 /**
@@ -1181,12 +1185,12 @@ export class RowMatcher {
  * See usage example: {@link https://public.datagrok.ai/js/samples/data-frame/value-matching/value-matcher}
  * */
 export class ValueMatcher {
-  private readonly d: any;
+  private readonly dart: any;
 
-  constructor(d: any) { this.d = d; }
+  constructor(dart: any) { this.dart = dart; }
 
   static forColumn(column: Column, pattern: string) {
-    return new ValueMatcher(api.grok_ValueMatcher_ForColumn(column.d, pattern));
+    return new ValueMatcher(api.grok_ValueMatcher_ForColumn(column.dart, pattern));
   }
 
   /** @returns {ValueMatcher} */
@@ -1201,11 +1205,11 @@ export class ValueMatcher {
   /** @returns {ValueMatcher} */
   static bool(pattern: string) { return new ValueMatcher(api.grok_ValueMatcher_BoolMatcher(pattern)); }
 
-  get pattern() { return api.grok_ValueMatcher_Get_Pattern(this.d); }
-  get operator() { return api.grok_ValueMatcher_Get_Operator(this.d); }
+  get pattern() { return api.grok_ValueMatcher_Get_Pattern(this.dart); }
+  get operator() { return api.grok_ValueMatcher_Get_Operator(this.dart); }
 
-  match(value: any) { return api.grok_ValueMatcher_Match(this.d, value); }
-  validate(value: any) { return api.grok_ValueMatcher_Validate(this.d, value); }
+  match(value: any) { return api.grok_ValueMatcher_Match(this.dart, value); }
+  validate(value: any) { return api.grok_ValueMatcher_Validate(this.dart, value); }
 }
 
 /**
@@ -1215,24 +1219,24 @@ export class ValueMatcher {
  * To maximize performance, get values via [DataFrame.columns], instead.
  */
 export class RowList {
-  private readonly d: any;
+  private readonly dart: any;
   private readonly table: any;
 
-  constructor(table: DataFrame, d: any) {
+  constructor(table: DataFrame, dart: any) {
     /** @member {DataFrame} */
     this.table = table;
-    this.d = d;
+    this.dart = dart;
   }
 
   /** List of textual descriptions of currently applied filters */
-  get filters(): string[] { return api.grok_RowList_Get_Filters(this.d); }
+  get filters(): DartList<string> { return DartList.fromDart(api.grok_RowList_Get_Filters(this.dart)); }
 
   /** Removes specified rows
    * @param {number} idx
    * @param {number} [count=1] - Number of rows to remove.
    * @param notify - Whether a change notification should be fired. */
   removeAt(idx: number, count: number = 1, notify: boolean = true): void {
-    api.grok_RowList_RemoveAt(this.d, idx, count, notify);
+    api.grok_RowList_RemoveAt(this.dart, idx, count, notify);
   }
 
   /** Inserts empty rows at the specified position
@@ -1240,7 +1244,7 @@ export class RowList {
    * @param {number} [count=1] - Number of rows to insert.
    * @param notify - Whether a change notification should be fired. */
   insertAt(idx: number, count: number = 1, notify: boolean = true): void {
-    api.grok_RowList_InsertAt(this.d, idx, count, notify);
+    api.grok_RowList_InsertAt(this.dart, idx, count, notify);
   }
 
   /** Appends a new row with the specified values
@@ -1248,7 +1252,7 @@ export class RowList {
    * @param notify - Whether a change notification should be fired.
    * @returns {Row} */
   addNew(values: any[] | null = null, notify: boolean = true): Row {
-    return new Row(this.table, api.grok_RowList_AddNew(this.d, values, notify));
+    return new Row(this.table, api.grok_RowList_AddNew(this.dart, values, notify));
   }
 
   /** Iterates over all rows.
@@ -1263,7 +1267,7 @@ export class RowList {
    * @param {number} idx - Row index.
    * @param values - List of values (length and types should match columns) */
   setValues(idx: number, values: any[]): void {
-    api.grok_RowList_SetValues(this.d, idx, values);
+    api.grok_RowList_SetValues(this.dart, idx, values);
   }
 
   /**
@@ -1273,7 +1277,7 @@ export class RowList {
    * @returns {RowMatcher}
    * */
   match(query: string | object): RowMatcher {
-    return toJs(api.grok_RowList_Match(this.d, query));
+    return toJs(api.grok_RowList_Match(this.dart, query));
   }
 
   /**
@@ -1306,37 +1310,37 @@ export class RowList {
   /** Viewers that filter rows should subscribe to DataFrame.onRowsFiltering event.
    * When filtering conditions are changed, viewers should call requestFilter(). */
   requestFilter(): void {
-    api.grok_RowList_RequestFilter(this.d);
+    api.grok_RowList_RequestFilter(this.dart);
   }
 
   /** @returns {string} */
   toString(): string {
-    return api.grok_Object_ToString(this.d);
+    return api.grok_Object_ToString(this.dart);
   }
 }
 
 export class RowGroup {
-  private readonly d: any;
+  private readonly dart: any;
 
-  constructor(d: any) { this.d = d; }
+  constructor(dart: any) { this.dart = dart; }
 
   get dataFrame(): DataFrame {
-    return toJs(api.grok_RowGroup_Get_DataFrame(this.d));
+    return toJs(api.grok_RowGroup_Get_DataFrame(this.dart));
   }
 }
 
 /** Represents a table cell. */
 export class Cell {
-  public d: any;
+  public dart: any;
 
-  constructor(d: any) {
-    this.d = d;
+  constructor(dart: any) {
+    this.dart = dart;
   }
 
   /** Corresponding table.
    * @returns {DataFrame} */
   get dataFrame(): DataFrame {
-    return new DataFrame(api.grok_Cell_Get_DataFrame(this.d));
+    return new DataFrame(api.grok_Cell_Get_DataFrame(this.dart));
   }
 
   /** Corresponding row.
@@ -1348,24 +1352,23 @@ export class Cell {
   /** Index of the corresponding row.
    * @returns {number} */
   get rowIndex(): number {
-    return api.grok_Cell_Get_RowIndex(this.d);
+    return api.grok_Cell_Get_RowIndex(this.dart);
   }
 
   /** Corresponding column.
    * @returns {Column} */
   get column(): Column {
-    return toJs(api.grok_Cell_Get_Column(this.d));
+    return toJs(api.grok_Cell_Get_Column(this.dart));
   }
 
   /** Cell value.
    * @returns {*} */
-  get value(): any {
-    return api.grok_Cell_Get_Value(this.d);
-  }
+  get value(): any { return api.grok_Cell_Get_Value(this.dart); }
+  set value(x: any) { api.grok_Cell_Set_Value(this.dart, x); }
 
   /** @returns {string} */
   toString(): string {
-    return api.grok_Object_ToString(this.d);
+    return api.grok_Object_ToString(this.dart);
   }
 }
 
@@ -1374,11 +1377,11 @@ export class Cell {
  * See samples: {@link https://public.datagrok.ai/js/samples/data-frame/aggregation}
  */
 export class BitSet {
-  public d: any;
+  public dart: any;
 
   /** Creates a {BitSet} from the specified Dart object. */
-  constructor(d: any) {
-    this.d = d;
+  constructor(dart: any) {
+    this.dart = dart;
   }
 
   /** Creates a {BitSet} from the string representing the bitset.
@@ -1412,69 +1415,69 @@ export class BitSet {
   /** Returns the underlying storage. Be careful with the
    * direct manipulations, as some statistics (set count, etc) are cached. */
   getBuffer(): Int32Array {
-    return api.grok_BitSet_Get_Buffer(this.d);
+    return api.grok_BitSet_Get_Buffer(this.dart);
   }
 
   toBinaryString(): string {
-    return api.grok_BitSet_ToBinaryString(this.d);
+    return api.grok_BitSet_ToBinaryString(this.dart);
   }
 
   /** Number of bits in a bitset
    * @type {number} */
   get length(): number {
-    return api.grok_BitSet_Get_Length(this.d);
+    return api.grok_BitSet_Get_Length(this.dart);
   }
 
   /** Number of set bits
    * @type {number} */
   get trueCount(): number {
-    return api.grok_BitSet_Get_TrueCount(this.d);
+    return api.grok_BitSet_Get_TrueCount(this.dart);
   }
 
   /** Number of unset bits
    * @type {number}*/
   get falseCount(): number {
-    return api.grok_BitSet_Get_FalseCount(this.d);
+    return api.grok_BitSet_Get_FalseCount(this.dart);
   }
 
   /** Clones a bitset
    *  @returns {BitSet} */
   clone(): BitSet {
-    return new BitSet(api.grok_BitSet_Clone(this.d));
+    return new BitSet(api.grok_BitSet_Clone(this.dart));
   }
 
   /** Inverts a bitset.
    * @returns {BitSet} */
   invert(): BitSet {
-    api.grok_BitSet_Invert(this.d);
+    api.grok_BitSet_Invert(this.dart);
     return this;
   }
 
   /** Modifies this bitset by performing the bitwise AND operation against the
    *  specified bitset. Returns this. */
   and(other: BitSet, notify: boolean = true): BitSet {
-    api.grok_BitSet_And(this.d, other.d, notify);
+    api.grok_BitSet_And(this.dart, other.dart, notify);
     return this;
   }
 
   /** Modifies this bitset by performing the bitwise OR operation against the
    *  specified bitset. Returns this. */
   or(other: BitSet, notify: boolean = true): BitSet {
-    api.grok_BitSet_Or(this.d, other.d, notify);
+    api.grok_BitSet_Or(this.dart, other.dart, notify);
     return this;
   }
 
   /** Modifies this bitset by performing the bitwise XOR operation against the
    *  specified bitset. Returns this. */
   xor(other: BitSet, notify: boolean = true): BitSet {
-    api.grok_BitSet_Xor(this.d, other.d, notify);
+    api.grok_BitSet_Xor(this.dart, other.dart, notify);
     return this;
   }
 
   /** Modifies this bitset by performing the bitwise AND_NOT operation against the
    *  specified bitset. Returns this. */
   andNot(other: BitSet, notify: boolean = true): BitSet {
-    api.grok_BitSet_AndNot(this.d, other.d, notify);
+    api.grok_BitSet_AndNot(this.dart, other.dart, notify);
     return this;
   }
 
@@ -1483,7 +1486,7 @@ export class BitSet {
    * @param {boolean} notify
    * @returns {BitSet} */
   setAll(x: boolean, notify: boolean = true): BitSet {
-    api.grok_BitSet_SetAll(this.d, x, notify);
+    api.grok_BitSet_SetAll(this.dart, x, notify);
     return this;
   }
 
@@ -1492,7 +1495,7 @@ export class BitSet {
    * @param {boolean} x
    * @returns {number} */
   findNext(i: number, x: boolean): number {
-    return api.grok_BitSet_FindNext(this.d, i, x);
+    return api.grok_BitSet_FindNext(this.dart, i, x);
   }
 
   /** Finds the first index of value x, going forward from i-th position, or -1 if not found.
@@ -1500,14 +1503,14 @@ export class BitSet {
    * @param {boolean} x - Value to search for.
    * @returns {number} */
   findPrev(i: number, x: boolean): number {
-    return api.grok_BitSet_FindPrev(this.d, i, x);
+    return api.grok_BitSet_FindPrev(this.dart, i, x);
   }
 
   /** Gets i-th bit
    * @param {number} i
    * @returns {boolean} */
   get(i: number): boolean {
-    return api.grok_BitSet_GetBit(this.d, i);
+    return api.grok_BitSet_GetBit(this.dart, i);
   }
 
   /** Sets i-th bit to x
@@ -1515,12 +1518,12 @@ export class BitSet {
    * @param {boolean} x
    * @param {boolean} notify */
   set(i: number, x: boolean, notify: boolean = true): void {
-    api.grok_BitSet_SetBit(this.d, i, x, notify);
+    api.grok_BitSet_SetBit(this.dart, i, x, notify);
   }
 
   /** Sets [i]-th bit to [value], does not check bounds */
   // setFast(i: number, value: boolean): void {
-  //   let buf = api.grok_BitSet_GetBuffer(this.d);
+  //   let buf = api.grok_BitSet_GetBuffer(this.dart);
   //   let idx = (i | 0) / 0x20;
   //
   //   if (value)
@@ -1533,7 +1536,7 @@ export class BitSet {
    * @param {Function} f
    * @returns {BitSet} */
   init(f: IndexPredicate): BitSet {
-    let buf = api.grok_BitSet_Get_Buffer(this.d);
+    let buf = api.grok_BitSet_Get_Buffer(this.dart);
     let length = this.length;
 
     for (let i = 0; i < length; i++)
@@ -1545,7 +1548,7 @@ export class BitSet {
         buf[idx] |= 1 << (i & 0x1f);
     }
 
-    api.grok_BitSet_Set_Buffer(this.d, buf);
+    api.grok_BitSet_Set_Buffer(this.dart, buf);
     this.fireChanged();
     return this;
   }
@@ -1553,24 +1556,24 @@ export class BitSet {
   /** Indexes of all set bits. The result is cached.
    *  @returns {Int32Array} */
   getSelectedIndexes(): Int32Array {
-    return api.grok_BitSet_GetSelectedIndexes(this.d);
+    return api.grok_BitSet_GetSelectedIndexes(this.dart);
   }
 
   /** Copies the content from the other {BitSet}.
    * @param {BitSet} b - BitSet to copy from.
    * @returns {BitSet} */
   copyFrom(b: BitSet): BitSet {
-    api.grok_BitSet_CopyFrom(this.d, b.d);
+    api.grok_BitSet_CopyFrom(this.dart, b.dart);
     return this;
   }
 
   fireChanged(): void {
-    api.grok_BitSet_FireChanged(this.d);
+    api.grok_BitSet_FireChanged(this.dart);
   }
 
   /** @returns {Observable} - fires when the bitset gets changed. */
   get onChanged(): Observable<any> {
-    return observeStream(api.grok_BitSet_Changed(this.d));
+    return observeStream(api.grok_BitSet_Changed(this.dart));
   }
 
   /** Finds the value of similarity between two BitSets.
@@ -1578,16 +1581,16 @@ export class BitSet {
    * @param {SimilarityMetric} metric - similarity metric to use.
    * @returns {number} */
   similarityTo(b: BitSet, metric: SimilarityMetric = SIMILARITY_METRIC.TANIMOTO): number {
-    return api.grok_BitSet_SimilarityTo(this.d, b.d, metric);
+    return api.grok_BitSet_SimilarityTo(this.dart, b.dart, metric);
   }
 
   /** @returns {string} */
   toString(): string {
-    return api.grok_Object_ToString(this.d);
+    return api.grok_Object_ToString(this.dart);
   }
 
   handleClick(rowIndexPredicate: IndexPredicate, mouseEvent: any) {
-    api.grok_Utils_SelectRowsWhere(this.d, rowIndexPredicate, mouseEvent.ctrlKey, mouseEvent.shiftKey, mouseEvent.metaKey);
+    api.grok_Utils_SelectRowsWhere(this.dart, rowIndexPredicate, mouseEvent.ctrlKey, mouseEvent.shiftKey, mouseEvent.metaKey);
   }
 }
 
@@ -1595,10 +1598,10 @@ export class BitSet {
 /** Represents basic descriptive statistics calculated for a {Column}.
  *  See samples: {@link https://public.datagrok.ai/js/samples/data-frame/stats} */
 export class Stats {
-  private readonly d: any;
+  private readonly dart: any;
 
-  constructor(d: any) {
-    this.d = d;
+  constructor(dart: any) {
+    this.dart = dart;
   }
 
   /** Calculates statistics for the specified column.
@@ -1606,107 +1609,107 @@ export class Stats {
    * @param {BitSet} mask
    * @returns {Stats} */
   static fromColumn(col: Column, mask: BitSet | null = null): Stats {
-    return new Stats(api.grok_Stats_FromColumn(col.d, toDart(mask)));
+    return new Stats(api.grok_Stats_FromColumn(col.dart, toDart(mask)));
   }
 
   /** Total number of values (including missing values). */
   get totalCount(): number {
-    return api.grok_Stats_Get_TotalCount(this.d);
+    return api.grok_Stats_Get_TotalCount(this.dart);
   }
 
   /** Number of missing (empty) values. */
   get missingValueCount(): number {
-    return api.grok_Stats_Get_MissingValueCount(this.d);
+    return api.grok_Stats_Get_MissingValueCount(this.dart);
   }
 
   /** Number of unique values. */
   get uniqueCount(): number {
-    return api.grok_Stats_Get_UniqueCount(this.d);
+    return api.grok_Stats_Get_UniqueCount(this.dart);
   }
 
   /** Number of non-empty values. */
   get valueCount(): number {
-    return api.grok_Stats_Get_ValueCount(this.d);
+    return api.grok_Stats_Get_ValueCount(this.dart);
   }
 
   /** @returns {number} - minimum */
   get min(): number {
-    return api.grok_Stats_Get_Min(this.d);
+    return api.grok_Stats_Get_Min(this.dart);
   }
 
   /** @returns {number} - maximum */
   get max(): number {
-    return api.grok_Stats_Get_Max(this.d);
+    return api.grok_Stats_Get_Max(this.dart);
   }
 
   /** @returns {number} - sum */
   get sum(): number {
-    return api.grok_Stats_Get_Sum(this.d);
+    return api.grok_Stats_Get_Sum(this.dart);
   }
 
   /** @returns {number} - average */
   get avg(): number {
-    return api.grok_Stats_Get_Avg(this.d);
+    return api.grok_Stats_Get_Avg(this.dart);
   }
 
   /** @returns {number} - standard deviation */
   get stdev(): number {
-    return api.grok_Stats_Get_Stdev(this.d);
+    return api.grok_Stats_Get_Stdev(this.dart);
   }
 
   /** @returns {number} - variance */
   get variance(): number {
-    return api.grok_Stats_Get_Variance(this.d);
+    return api.grok_Stats_Get_Variance(this.dart);
   }
 
   /** @returns {number} - skewness */
   get skew(): number {
-    return api.grok_Stats_Get_Skew(this.d);
+    return api.grok_Stats_Get_Skew(this.dart);
   }
 
   /** @returns {number} - kurtosis */
   get kurt(): number {
-    return api.grok_Stats_Get_Kurt(this.d);
+    return api.grok_Stats_Get_Kurt(this.dart);
   }
 
   /** @returns {number} - median value */
   get med(): number {
-    return api.grok_Stats_Get_Med(this.d);
+    return api.grok_Stats_Get_Med(this.dart);
   }
 
   /** @returns {number} - first quartile */
   get q1(): number {
-    return api.grok_Stats_Get_Q1(this.d);
+    return api.grok_Stats_Get_Q1(this.dart);
   }
 
   /** @returns {number} - second quartile */
   get q2(): number {
-    return api.grok_Stats_Get_Q2(this.d);
+    return api.grok_Stats_Get_Q2(this.dart);
   }
 
   /** @returns {number} - third quartile */
   get q3(): number {
-    return api.grok_Stats_Get_Q3(this.d);
+    return api.grok_Stats_Get_Q3(this.dart);
   }
 
   /** Pearson correlation
    * @param {Column} otherColumn
    * @returns {number} */
-  corr(otherColumn: Column): number { return api.grok_Stats_Corr(this.d, otherColumn.d); }
+  corr(otherColumn: Column): number { return api.grok_Stats_Corr(this.dart, otherColumn.dart); }
 
   /** Spearman correlation
    * @param {Column} otherColumn
    * @returns {number} */
-  spearmanCorr(otherColumn: Column): number { return api.grok_Stats_SpearmanCorr(this.d, otherColumn.d); }
+  spearmanCorr(otherColumn: Column): number { return api.grok_Stats_SpearmanCorr(this.dart, otherColumn.dart); }
 
   /** Returns distributions of [valueColumn] for each category in [catColumn]. */
   static histogramsByCategories(valueColumn: Column, catColumn: Column): Int32Array[] {
-    return api.grok_Stats_HistogramsByCategories(valueColumn.d, catColumn.d);
+    return api.grok_Stats_HistogramsByCategories(valueColumn.dart, catColumn.dart);
   }
 
   /** @returns {string} */
   toString(): string {
-    return api.grok_Object_ToString(this.d);
+    return api.grok_Object_ToString(this.dart);
   }
 }
 
@@ -1728,16 +1731,16 @@ export class Stats {
  *   .aggregate();
  */
 export class GroupByBuilder {
-  private readonly d: any;
+  private readonly dart: any;
 
-  constructor(d: any) {
-    this.d = d;
+  constructor(dart: any) {
+    this.dart = dart;
   }
 
   /** Performs the aggregation
    *  @returns {DataFrame} */
   aggregate(): DataFrame {
-    return new DataFrame(api.grok_GroupByBuilder_Aggregate(this.d));
+    return new DataFrame(api.grok_GroupByBuilder_Aggregate(this.dart));
   }
 
   /**
@@ -1748,7 +1751,7 @@ export class GroupByBuilder {
    * @returns {GroupByBuilder}
    * */
   add(agg: AggregationType, colName?: string | null, resultColName?: string | null): GroupByBuilder {
-    api.grok_GroupByBuilder_Add(this.d, agg, colName, resultColName);
+    api.grok_GroupByBuilder_Add(this.dart, agg, colName, resultColName);
     return this;
   }
 
@@ -1911,7 +1914,7 @@ export class GroupByBuilder {
   /** Gets groups of DataFrames
    * @returns {Map} - where keys are stings in format 'columnName=value' and values are DataFrames */
   getGroups(): Map<string, DataFrame> {
-    return api.grok_GroupByBuilder_GetGroups(this.d);
+    return api.grok_GroupByBuilder_GetGroups(this.dart);
   }
 
   /**
@@ -1920,7 +1923,7 @@ export class GroupByBuilder {
    * @returns {GroupByBuilder}
    **/
   where(pattern: string | object): GroupByBuilder {
-    api.grok_GroupByBuilder_Where(this.d, pattern);
+    api.grok_GroupByBuilder_Where(this.dart, pattern);
     return this;
   }
 
@@ -1929,13 +1932,13 @@ export class GroupByBuilder {
    * @returns {GroupByBuilder} */
   whereRowMask(bitset: BitSet): GroupByBuilder {
     if (bitset != null)
-      api.grok_GroupByBuilder_WhereBitSet(this.d, bitset.d);
+      api.grok_GroupByBuilder_WhereBitSet(this.dart, bitset.dart);
     return this;
   }
 
   /** @returns {string} */
   toString(): string {
-    return api.grok_Object_ToString(this.d);
+    return api.grok_Object_ToString(this.dart);
   }
 }
 
@@ -2037,7 +2040,7 @@ export class Qnum {
   }
 }
 
-interface FormulaLine {
+export interface FormulaLine {
   id?: string;
   type?: string;
   title?: string;
@@ -2048,7 +2051,7 @@ interface FormulaLine {
   zindex?: number;
   min?: number;
   max?: number;
-  equation: string;
+  formula?: string;
 
   // Specific to lines:
   width?: number;
@@ -2063,7 +2066,6 @@ interface FormulaLine {
 export class DataFrameMetaHelper {
   private readonly df: DataFrame;
   private formulaLines: FormulaLine[] = [];
-  private formulaLinesTag: string = '.formula-lines';
 
   constructor(df: DataFrame) {
     this.df = df;
@@ -2071,7 +2073,7 @@ export class DataFrameMetaHelper {
   }
 
   getFormulaLines(): FormulaLine[] {
-    let json: string | null = this.df.getTag(this.formulaLinesTag);
+    let json: string | null = this.df.getTag(DG.TAGS.FORMULA_LINES);
     if (json)
       return JSON.parse(json);
 
@@ -2084,11 +2086,11 @@ export class DataFrameMetaHelper {
 
     let json: string | null = _toJson(items);
     if (json)
-      this.df.setTag(this.formulaLinesTag, json);
+      this.df.setTag(DG.TAGS.FORMULA_LINES, json);
   }
 
   addFormulaItem(item: FormulaLine): void {
-    this.formulaLines.push(item);
+    this.formulaLines.push(toJs(api.grok_FormulaLineHelper_AddDefaults(item)));
     this.addFormulaLines(this.formulaLines);
   }
 
@@ -2105,7 +2107,7 @@ export class DataFrameMetaHelper {
   removeFormulaLines(...ids: string[]): void {
     if (ids.length == 0) {
       this.formulaLines = [];
-      this.df.setTag('this.formulaLinesTag', '[]');
+      this.df.setTag(DG.TAGS.FORMULA_LINES, '[]');
       return;
     }
 
@@ -2113,6 +2115,10 @@ export class DataFrameMetaHelper {
         item.id == undefined || ids.indexOf(item.id) == -1);
 
     this.addFormulaLines(this.formulaLines);
+  }
+
+  getFormulaLineAxes(item: FormulaLine): String[] {
+    return api.grok_FormulaLineHelper_GetAxes(item.formula);
   }
 }
 
@@ -2123,7 +2129,7 @@ export class DataFramePlotHelper {
   }
 
   fromType(viewerType: ViewerType, options: object | null = null): Promise<Widget> {
-    return toJs(api.grok_Viewer_FromType_Async(viewerType, this.df.d, _toJson(options)));
+    return toJs(api.grok_Viewer_FromType_Async(viewerType, this.df.dart, _toJson(options)));
   }
   scatter(options: object | null = null): ScatterPlotViewer { return DG.Viewer.scatterPlot(this.df, options); }
   grid(options: object | null = null): Grid { return DG.Viewer.grid(this.df, options); }
@@ -2214,31 +2220,52 @@ export class ColumnColorHelper {
 
 export class ColumnMarkerHelper {
   private readonly column: Column;
-  private markerCodingTag: string = '.marker-coding';
 
   constructor(column: Column) {
     this.column = column;
   }
 
-  assign(category: string, marker: string): ColumnMarkerHelper {
+  assign(category: string, marker: MarkerCodingType): ColumnMarkerHelper {
     this.setMarkerCoding(category, marker);
     return this;
   }
 
-  default(marker: string): ColumnMarkerHelper {
+  default(marker: MarkerCodingType): ColumnMarkerHelper {
     return this.assign('~DEFAULT', marker);
   }
 
   reset(): ColumnMarkerHelper {
-    this.column.tags[this.markerCodingTag] = '{}';
+    this.column.tags[DG.TAGS.MARKER_CODING] = '{}';
     return this;
   }
 
   setMarkerCoding(category: string, marker: string): void {
-    let jsonTxt: string | null = this.column.getTag(this.markerCodingTag);
+    let jsonTxt: string | null = this.column.getTag(DG.TAGS.MARKER_CODING);
     let jsonMap: {[key: string]: string} = jsonTxt ? JSON.parse(jsonTxt) : {};
     jsonMap[category] = marker;
     jsonTxt = JSON.stringify(jsonMap);
-    this.column.setTag(this.markerCodingTag, jsonTxt);
+    this.column.setTag(DG.TAGS.MARKER_CODING, jsonTxt);
+  }
+}
+
+export class ColumnMetaHelper {
+  private readonly column: Column;
+  private _colors: ColumnColorHelper | undefined;
+  private _markers: ColumnMarkerHelper | undefined;
+
+  constructor(column: Column) {
+    this.column = column;
+  }
+
+  get colors(): ColumnColorHelper {
+    if (this._colors == undefined)
+      this._colors = new ColumnColorHelper(this.column);
+    return this._colors;
+  }
+
+  get markers(): ColumnMarkerHelper {
+    if (this._markers == undefined)
+      this._markers = new ColumnMarkerHelper(this.column);
+    return this._markers;
   }
 }

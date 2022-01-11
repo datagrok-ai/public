@@ -2,33 +2,44 @@ import * as grok from 'datagrok-api/grok';
 import * as ui from 'datagrok-api/ui';
 import * as DG from 'datagrok-api/dg';
 // @ts-ignore
-import {getMolColumnPropertyPanel} from './chem_column_property_panel';
-import * as chemSearches from './chem_searches';
-import {SubstructureFilter} from './chem_substructure_filter';
-import {RDKitCellRenderer} from './rdkit_cell_renderer';
+import {getMolColumnPropertyPanel} from './chem-column-property-panel';
+import * as chemSearches from './chem-searches';
+import {SubstructureFilter} from './chem-substructure-filter';
+import {RDKitCellRenderer} from './rdkit-cell-renderer';
 import * as OCL from 'openchemlib/full.js';
 import {drugLikenessWidget} from './widgets/drug-likeness';
 import {molfileWidget} from './widgets/molfile';
 import {propertiesWidget} from './widgets/properties';
-import {initStructuralAlertsContext, structuralAlertsWidget} from './widgets/structural-alerts';
+import {structuralAlertsWidget} from './widgets/structural-alerts';
 import {structure2dWidget} from './widgets/structure2d';
 import {structure3dWidget} from './widgets/structure3d';
 import {toxicityWidget} from './widgets/toxicity';
-import {OCLCellRenderer} from './ocl_cell_renderer';
-import {chemSpace} from './analysis/chem_space';
-import {getDescriptorsSingle} from './descriptors/descriptors_calculation';
-import {getDescriptors} from './descriptors/descriptors_calculation';
-import {getDescriptorsApp} from './descriptors/descriptors_calculation';
-import * as chemCommonRdKit from './chem_common_rdkit';
-import {rGroupAnalysis} from './analysis/r_group';
-import {chemLock, chemUnlock} from './chem_common';
-import {MoleculeViewer} from './chem_similarity_search';
+import {chemSpace} from './analysis/chem-space';
+import {getActivityCliffs} from './analysis/activity-cliffs';
+import {getDescriptorsSingle} from './descriptors/descriptors-calculation';
+import {addDescriptors} from './descriptors/descriptors-calculation';
+import {getDescriptorsApp} from './descriptors/descriptors-calculation';
+import {addMcs} from './panels/find-mcs';
+import {addInchis} from './panels/inchi';
+import {addInchiKeys} from './panels/inchi';
+import * as chemCommonRdKit from './chem-common-rdkit';
+import {convertToRDKit, rGroupAnalysis} from './analysis/r-group-analysis';
+import {chemLock, chemUnlock} from './chem-common';
+import {identifiersWidget} from './widgets/identifiers';
+import {chem} from 'datagrok-api/grok';
+import Sketcher = chem.Sketcher;
+import {oclMol} from './chem-common-ocl';
+import $ from 'cash-dom';
+import '../css/chem.css';
+import {RDMol} from './rdkit-api';
+import {isMolBlock} from './chem-utils';
 
 const getRdKitModuleLocal = chemCommonRdKit.getRdKitModule;
 const initRdKitService = chemCommonRdKit.initRdKitService;
 const getRdKitService = chemCommonRdKit.getRdKitService;
 const getRdKitWebRoot = chemCommonRdKit.getRdKitWebRoot;
 const drawMoleculeToCanvas = chemCommonRdKit.drawMoleculeToCanvas;
+let initialized: boolean = false;
 
 /**
 * Usage:
@@ -43,41 +54,36 @@ export function getRdKitModule() {
   return getRdKitModuleLocal();
 }
 
-export let _package: any = new DG.Package();
-
-//name: initChem
-export async function initChem() {
-  chemLock('initChem');
-  await initRdKitService(_package.webRoot);
-  const path = getRdKitWebRoot() + 'data-samples/alert_collection.csv';
-  const table = await grok.data.loadTable(path);
-  const alertsSmartsList = table.columns['smarts'].toList();
-  const alertsDescriptionsList = table.columns['description'].toList();
-  await initStructuralAlertsContext(alertsSmartsList, alertsDescriptionsList);
-  chemUnlock('initChem');
-}
+export const _package: DG.Package = new DG.Package();
+let _rdRenderer: RDKitCellRenderer;
+let _renderer: GridCellRendererProxy;
+let _renderers: Map<string, DG.GridCellRenderer>;
+let _properties: any;
 
 //tags: init
-export async function init() {
-  await initChem();
+export async function initChem() {
+  await initRdKitService(_package.webRoot);
+  _properties = await _package.getProperties();
+  _rdRenderer = new RDKitCellRenderer(getRdKitModuleLocal());
+  _renderer = new GridCellRendererProxy(_rdRenderer, 'Molecule');
+  _renderers = new Map();
+  _properties = {};
 }
 
-//name: initChemAutostart
 //tags: autostart
-export async function initChemAutostart() {
-  await initChem();
-}
+export async function initChemAutostart() { }
 
 //name: SubstructureFilter
 //description: RDKit-based substructure filter
 //tags: filter
 //output: filter result
+//meta.semType: Molecule
 export function substructureFilter() {
   return new SubstructureFilter();
 }
 
 export function _svgDiv(mol: any) {
-  let root = ui.div();
+  const root = ui.div();
   root.innerHTML = mol.get_svg();
   return root;
 }
@@ -96,31 +102,124 @@ export function canvasMol(
   drawMoleculeToCanvas(x, y, w, h, canvas, molString, scaffoldMolString == '' ? null : scaffoldMolString);
 }
 
+export function renderMolecule(
+  molStr: string,
+  options: {renderer?: 'RDKit' | 'OpenChemLib', width?: number, height?: number},
+) {
+  options.renderer ??= _properties.Renderer as 'RDKit' | 'OpenChemLib';
+  options.width ??= 200;
+  options.height ??= 150;
+
+  let mol: OCL.Molecule | RDMol;
+  let molFile: string;
+  let smiles: string;
+  isMolBlock(molStr) ? molFile = molStr : smiles = molStr;
+
+  const moleculeHost = ui.canvas(options.width, options.height);
+  $(moleculeHost).addClass('chem-canvas');
+
+  switch (options.renderer) {
+  case 'RDKit':
+    mol = getRdKitModuleLocal().get_mol(convertToRDKit(molStr));
+    (mol as RDMol).draw_to_canvas(moleculeHost, options.width, options.height);
+    molFile ??= (mol as RDMol).get_molblock();
+    smiles ??= (mol as RDMol).get_smiles();
+    break;
+  case 'OpenChemLib':
+    mol = oclMol(molStr);
+    OCL.StructureView.drawMolecule(moleculeHost, mol as OCL.Molecule);
+    molFile ??= mol.toMolfile();
+    smiles ??= mol.toSmiles();
+    break;
+  default:
+    throw new Error(`Renderer '${options.renderer}' is not supported.`);
+  }
+
+  const moreBtn = ui.iconFA(
+    'ellipsis-v',
+    () => {
+      const menu = DG.Menu.popup();
+      menu.item('Copy SMILES', () => {
+        navigator.clipboard.writeText(smiles);
+        grok.shell.info('SMILES copied!');
+      });
+      menu.item('Copy Molfile', () => {
+        navigator.clipboard.writeText(molFile);
+        grok.shell.info('Molfile copied!');
+      });
+      menu.item('Sketch', () => {
+        const sketcher = new Sketcher();
+        isMolBlock(molStr) ? sketcher.setMolFile(molStr) : sketcher.setSmiles(molStr);
+        ui.dialog()
+          .add(sketcher)
+          .show();
+      });
+      menu.show();
+    },
+    'More',
+  );
+  $(moreBtn).addClass('chem-mol-view-icon pep-more-icon');
+
+  return ui.divV([moreBtn, moleculeHost], 'chem-mol-box');
+}
+
 //name: getCLogP
 //input: string smiles {semType: Molecule}
 //output: double cLogP
 export function getCLogP(smiles: string) {
-  let mol = getRdKitModuleLocal().get_mol(smiles);
+  const mol = getRdKitModuleLocal().get_mol(smiles);
   return JSON.parse(mol.get_descriptors()).CrippenClogP;
 }
 
-//name: rdkitCellRenderer
-//tags: cellRenderer, cellRenderer-Molecule
-//meta-cell-renderer-sem-type: Molecule
-//output: grid_cell_renderer result
-export async function rdkitCellRenderer() {
-  //let props = DG.toJs(await this.getProperties());
-  // if (props?.Renderer && props.Renderer === 'RDKit') {
-  return new RDKitCellRenderer(getRdKitModuleLocal());
-  //}
+export class GridCellRendererProxy extends DG.GridCellRenderer {
+  renderer: DG.GridCellRenderer;
+  _cellType: string;
+
+  constructor(renderer: DG.GridCellRenderer, cellType: string) {
+    super();
+    this.renderer = renderer;
+    this._cellType = cellType;
+  }
+
+  get defaultWidth(): number | null { return this.renderer.defaultWidth;  }
+  get defaultHeight(): number | null { return this.renderer.defaultHeight; }
+
+  get name(): string { return this.renderer.name; }
+  get cellType(): string { return this._cellType; }
+
+  renderInternal(
+    g: CanvasRenderingContext2D, x: number, y: number, w: number, h: number,
+    gridCell: DG.GridCell, cellStyle: DG.GridCellStyle) {
+    this.renderer.renderInternal(g, x, y, w, h, gridCell, cellStyle);
+  }
 }
 
-//name: oclCellRenderer
+//name: rdkitCellRenderer
+//output: grid_cell_renderer result
+//meta.chemRendererName: RDKit
+export async function rdkitCellRenderer() {
+  return new RDKitCellRenderer(getRdKitModuleLocal());
+}
+
+//name: chemCellRenderer
 //tags: cellRenderer, cellRenderer-Molecule
 //meta-cell-renderer-sem-type: Molecule
 //output: grid_cell_renderer result
-export async function oclCellRenderer() {
-  return new OCLCellRenderer();
+export async function chemCellRenderer() {
+  const renderer = _properties.Renderer ?? 'RDKit';
+  if (!_renderers.has(renderer)) {
+    const renderFunctions = DG.Func.find({meta: {chemRendererName: renderer}});
+    if (renderFunctions.length > 0) {
+      const r = await renderFunctions[0].apply();
+      _renderers.set(_properties.Renderer, r);
+      return r;
+    }
+  }
+
+  _renderer.renderer = renderer ?? _renderer.renderer;
+  return _renderer;
+
+  //return _renderers.get(renderer) ?? new RDKitCellRenderer(getRdKitModuleLocal());
 }
 
 //name: getSimilarities
@@ -130,14 +229,14 @@ export async function oclCellRenderer() {
 export async function getSimilarities(molStringsColumn: DG.Column, molString: string) {
   chemLock('getSimilarities');
   try {
-    if (molStringsColumn === null || molString === null) throw "An input was null";
+    if (molStringsColumn === null || molString === null) throw 'An input was null';
     // TODO: Make in the future so that the return type is always one
     const result = (await chemSearches.chemGetSimilarities(molStringsColumn, molString)) as unknown; // TODO: !
     // TODO: get rid of a wrapping DataFrame and be able to return Columns
     chemUnlock('getSimilarities');
     return result ? DG.DataFrame.fromColumns([result as DG.Column]) : DG.DataFrame.create();
   } catch (e: any) {
-    console.error("In getSimilarities: " + e.toString());
+    console.error('In getSimilarities: ' + e.toString());
     throw e;
   }
   chemUnlock('getSimilarities');
@@ -177,12 +276,12 @@ export function getMorganFingerprint(molString: string) {
 export async function findSimilar(molStringsColumn: DG.Column, molString: string, aLimit: number, aCutoff: number) {
   chemLock('chemFindSimilar');
   try {
-    if (molStringsColumn === null || molString === null || aLimit === null || aCutoff === null) throw "An input was null";
-    let result = await chemSearches.chemFindSimilar(molStringsColumn, molString, {limit: aLimit, cutoff: aCutoff});
+    if (molStringsColumn === null || molString === null || aLimit === null || aCutoff === null) throw 'An input was null';
+    const result = await chemSearches.chemFindSimilar(molStringsColumn, molString, {limit: aLimit, cutoff: aCutoff});
     chemUnlock('chemFindSimilar');
     return result ? result : DG.DataFrame.create();
   } catch (e: any) {
-    console.error("In getSimilarities: " + e.toString());
+    console.error('In getSimilarities: ' + e.toString());
     throw e;
   }
   chemUnlock('chemFindSimilar');
@@ -198,15 +297,16 @@ export async function searchSubstructure(molStringsColumn: DG.Column, molString:
   chemLock('searchSubstructure');
   try {
     if (molStringsColumn === null || molString === null || substructLibrary === null || molStringSmarts === null)
-      throw "An input was null";
-    let result =
+      throw 'An input was null';
+
+    const result =
       substructLibrary ?
         await chemSearches.chemSubstructureSearchLibrary(molStringsColumn, molString, molStringSmarts/*, webRoot*/) :
         chemSearches.chemSubstructureSearchGraph(molStringsColumn, molString);
     chemUnlock('searchSubstructure');
     return DG.Column.fromList('object', 'bitset', [result]);
   } catch (e: any) {
-    console.error("In substructureSearch: " + e.toString());
+    console.error('In substructureSearch: ' + e.toString());
     throw e;
   }
   chemUnlock('searchSubstructure');
@@ -218,11 +318,6 @@ export function descriptorsApp(context: any) {
   getDescriptorsApp();
 }
 
-//description: Removes all children from node
-function removeChildren(node: any) {
-  while (node.firstChild)
-    node.removeChild(node.firstChild);
-}
 
 //name: saveAsSdf
 //description: Save as SDF
@@ -233,31 +328,32 @@ export function saveAsSdf() {
   //todo: UI for choosing structure column if necessary
   //todo: UI for choosing columns with properties
 
-  let table = grok.shell.t;
-  let structureColumn = table.columns.bySemType('Molecule');
+  const table = grok.shell.t;
+  const structureColumn = table.columns.bySemType('Molecule');
   if (structureColumn == null)
     return;
+
 
   let result = '';
 
   for (let i = 0; i < table.rowCount; i++) {
     try {
-      let mol = OCL.Molecule.fromSmiles(structureColumn.get(i));
+      const mol = OCL.Molecule.fromSmiles(structureColumn.get(i));
       result += `\n${mol.toMolfile()}\n`;
 
       // properties
-      for (let col of table.columns)
-        if (col !== structureColumn) {
+      for (const col of table.columns) {
+        if (col !== structureColumn)
           result += `>  <${col.name}>\n${col.get(i)}\n\n`;
-        }
+      }
 
-      result += '$$$$'
+      result += '$$$$';
     } catch (error) {
       console.error(error);
     }
   }
 
-  var element = document.createElement('a');
+  const element = document.createElement('a');
   element.setAttribute('href', 'data:text/plain;charset=utf-8,' + encodeURIComponent(result));
   element.setAttribute('download', table.name + '.sdf');
   element.click();
@@ -265,6 +361,17 @@ export function saveAsSdf() {
 
 
 //#region Top menu
+
+//top-menu: Chem | Activity Cliffs...
+//name: Activity Cliffs
+//description: detect activity cliffs
+//input: dataframe df [Input data table]
+//input: column smiles {type:categorical; semType: Molecule} [Molecules, in SMILES format]
+//input: column activities
+//input: double similarity = 80 [Similarity cutoff]
+export async function activityCliffs(dataframe: DG.DataFrame, smiles: DG.Column, activities: DG.Column, similarity: number) {
+  await getActivityCliffs(dataframe, smiles, activities, similarity);
+}
 
 //top-menu: Chem | Chemical Space...
 //name: Chem Space
@@ -279,11 +386,11 @@ export async function chemSpaceTopMenu(table: DG.DataFrame, smiles: DG.Column) {
 }
 
 //name: R-Groups Analysis
-//top-menu: Chem | R-Groups Analysis
+//top-menu: Chem | R-Groups Analysis...
 export function rGroupsAnalysisMenu() {
   const col = grok.shell.t.columns.bySemType(DG.SEMTYPE.MOLECULE);
   if (col === null) {
-    grok.shell.error('Current table does not contain molecules')
+    grok.shell.error('Current table does not contain molecules');
     return;
   }
   rGroupAnalysis(col);
@@ -300,21 +407,46 @@ export async function chemSimilaritySearch() {
 
 //#region Molecule column property panel
 
-//name: Chem | Descriptors...
+//name: Chem | Substructure search Port...
+//friendly-name: Chem | Substructure search Port...
+//tags: panel, chem
+//input: column smiles { semType: Molecule }
+export async function substructurePanel(smiles: DG.Column) {
+  grok.shell.warning('ss');
+}
+
+//name: Chem | Descriptors Port...
+//friendly-name: Chem | Descriptors Port...
 //tags: panel, chem
 //input: column smiles { semType: Molecule }
 //output: string result
-export async function descriptors(smiles: DG.Column) {
-  let table: DG.DataFrame = grok.shell.t;
-  getDescriptors(smiles, table);
+export async function descriptorsPanel(smiles: DG.Column) {
+  const table: DG.DataFrame = grok.shell.t;
+  addDescriptors(smiles, table);
 }
 
-//name: Chem | R-Groups Analysis
-//friendly-name: Chem | R-Groups Analysis
+//name: Chem | Find MCS Port
+//friendly-name: Chem | Find MCS Port
 //tags: panel, chem
 //input: column col {semType: Molecule}
-export function rGroupsAnalysisPanel(col: DG.Column) {
-  rGroupAnalysis(col);
+export function addMcsPanel(col: DG.Column) {
+  addMcs(col);
+}
+
+//name: Chem | To InchI Port
+//friendly-name: Chem | To InchI Port
+//tags: panel, chem
+//input: column col {semType: Molecule}
+export function addInchisPanel(col: DG.Column) {
+  addInchis(col);
+}
+
+//name: Chem | To InchI Keys Port
+//friendly-name: Chem | To InchI Keys Port
+//tags: panel, chem
+//input: column col {semType: Molecule}
+export function addInchisKeysPanel(col: DG.Column) {
+  addInchiKeys(col);
 }
 
 //name: RDKit Settings
@@ -365,18 +497,6 @@ export async function properties(smiles: string) {
   return smiles ? propertiesWidget(smiles) : new DG.Widget(ui.divText('SMILES is empty'));
 }
 
-//name: RDKit Info
-//tags: panel, chem, widgets
-//input: string smiles {semType: Molecule}
-//output: widget result
-export function rdkitInfoPanel(smiles: string) {
-  let mol = getRdKitModuleLocal().get_mol(smiles);
-  return new DG.Widget(ui.divV([
-    _svgDiv(mol),
-    ui.divText(`${getCLogP(smiles)}`)
-  ]));
-}
-
 //name: Structural Alerts
 //description: Screening drug candidates against structural alerts, i.e. chemical fragments associated to a toxicological response
 //help-url: /help/domains/chem/info-panels/structural-alerts.md
@@ -415,4 +535,48 @@ export function toxicity(smiles: string) {
   return smiles ? toxicityWidget(smiles) : new DG.Widget(ui.divText('SMILES is empty'));
 }
 
-//#endregion
+//name: Identifiers
+//tags: panel, chem, widgets
+//input: string smiles { semType: Molecule }
+//output: widget result
+export async function identifiers(smiles: string) {
+  return smiles ? await identifiersWidget(smiles) : new DG.Widget(ui.divText('SMILES is empty'));
+}
+
+//name: convertMolecule
+//tags: unitConverter
+//input: string molecule {semType: Molecule}
+//input: string from {choices:["smiles", "molblock", "inchi", "v3Kmolblock"]}
+//input: string to {choices:["smiles", "molblock", "inchi", "v3Kmolblock"]}
+//output: string result {semType: Molecule}
+export function convertMolecule(molecule: string, from: string, to: string): string {
+  let mol;
+  try {
+    mol = getRdKitModule().get_mol(molecule);
+    if (to === 'molblock')
+      return mol.get_molblock();
+    if (to === 'smiles')
+      return mol.get_smiles();
+    if (to === 'v3Kmolblock')
+      return mol.get_v3Kmolblock();
+    if (to == 'inchi')
+      return mol.get_inchi();
+    throw `Failed to convert molecule: unknown target unit: "${to}"`;
+  } finally {
+    mol?.delete();
+  }
+}
+
+/*//tags: cellEditor
+//description: Molecule
+//input: grid_cell cell
+export function editMoleculeCell(cell: DG.GridCell) {
+  const sketcher = new Sketcher();
+  sketcher.setMolecule(cell.cell.value);
+
+  ui.dialog()
+    .add(sketcher)
+    .onOK(() => cell.cell.value = sketcher.getMolFile())
+    .show();
+}
+*/

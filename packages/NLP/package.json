@@ -25,5 +25,7 @@
 		"release-nlp-local": "grok publish local --rebuild --release",
 		"debug-nlp-localhost": "webpack && grok publish localhost",
 		"release-nlp-localhost": "webpack && grok publish localhost --release"
-	}
+	},
+	"canEdit": [ "Developers" ],
+	"canView": [ "All users" ]
 }

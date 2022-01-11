@@ -1,7 +1,0 @@
-upload.keys.json
-node_modules/
-dist/
-dg_control.js
-watcher.js
-publisher.js
-wrapper.js

@@ -29,3 +29,9 @@ dist/
 # JSDoc
 /js-api/docs
 .DS_Store
+
+# Dart
+pubspec.lock
+.dart_tool
+.packages
+/docker/vm.docker-compose.yaml

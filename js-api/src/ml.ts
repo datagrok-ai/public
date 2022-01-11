@@ -19,7 +19,7 @@ export namespace ml {
    * */
   export function applyModel(name: string, table: DataFrame, columnNamesMap: object = {}, showProgress: boolean = true): Promise<DataFrame> {
     return new Promise((resolve, reject) =>
-      api.grok_ML_ApplyModel(name, table.d, (t: any) => resolve(new DataFrame(t)), (e: any) => reject(e), columnNamesMap, showProgress));
+      api.grok_ML_ApplyModel(name, table.dart, (t: any) => resolve(new DataFrame(t)), (e: any) => reject(e), columnNamesMap, showProgress));
   }
 
   /** Imputes missing values.
@@ -33,7 +33,7 @@ export namespace ml {
    * */
   export function missingValuesImputation(table: DataFrame, impute: string[], data: string[], nearestNeighbours: number): Promise<DataFrame> {
     return new Promise((resolve, reject) =>
-      api.grok_ML_MissingValuesImputation(table.d, impute, data, nearestNeighbours, () => resolve(table), (e: any) => reject(e)));
+      api.grok_ML_MissingValuesImputation(table.dart, impute, data, nearestNeighbours, () => resolve(table), (e: any) => reject(e)));
   }
 
   /** Clusters data.
@@ -46,7 +46,7 @@ export namespace ml {
    * */
   export function cluster(table: DataFrame, features: string[], clusters: number): Promise<DataFrame> {
     return new Promise((resolve, reject) =>
-      api.grok_ML_Cluster(table.d, features, clusters, () => resolve(table), (e: any) => reject(e)));
+      api.grok_ML_Cluster(table.dart, features, clusters, () => resolve(table), (e: any) => reject(e)));
   }
 
   /** Principal component analysis.
@@ -61,7 +61,7 @@ export namespace ml {
    * */
   export function pca(table: DataFrame, features: string[], components: number, center: boolean, scale: boolean): Promise<DataFrame> {
     return new Promise((resolve, reject) =>
-      api.grok_ML_PCA(table.d, features, components, center, scale, () => resolve(table), (e: any) => reject(e)));
+      api.grok_ML_PCA(table.dart, features, components, center, scale, () => resolve(table), (e: any) => reject(e)));
   }
 
   /** Creates a table with random values from the specified distribution.
@@ -76,6 +76,6 @@ export namespace ml {
    * */
   export function randomData(table: DataFrame, distribution: string, params: object, seed: number): Promise<DataFrame> {
     return new Promise((resolve, reject) =>
-      api.grok_ML_RandomData(table.d, distribution, params, seed, () => resolve(table), (e: any) => reject(e)));
+      api.grok_ML_RandomData(table.dart, distribution, params, seed, () => resolve(table), (e: any) => reject(e)));
   }
 }

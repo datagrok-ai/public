@@ -10,7 +10,6 @@ export class OpenChemLibSketcher extends grok.chem.SketcherBase {
   _sketcher: OCL.StructureEditor;
 
   constructor() {
-    console.log('OCL constructor');
     super();
   }
 
@@ -29,12 +28,12 @@ export class OpenChemLibSketcher extends grok.chem.SketcherBase {
 
   get smiles() { return this._sketcher.getSmiles(); }
   set smiles(s) {
-    console.log('set smiles');
+    console.log('s ' + s);
     this._sketcher.setSmiles(s); }
 
   get molFile() { return this._sketcher.getMolFile(); }
   set molFile(s) {
-    console.log('set molfile');
+    console.log('m ' + s);
     this._sketcher.setMolFile(s); }
   
   detach() {

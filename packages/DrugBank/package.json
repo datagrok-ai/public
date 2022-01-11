@@ -23,5 +23,7 @@
 		"release-drugbank-dev": "grok publish dev --rebuild --release",
 		"debug-drugbank-local": "grok publish local --rebuild",
 		"release-drugbank-local": "grok publish local --rebuild --release"
-	}
+	},
+	"canEdit": [ "Developers" ],
+	"canView": [ "All users" ]
 }

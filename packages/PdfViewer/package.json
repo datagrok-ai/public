@@ -7,5 +7,7 @@
   "sources": [
     "js/pdf.js",
     "js/pdf.worker.js"
-  ]
+  ],
+  "canEdit": [ "Developers" ],
+  "canView": [ "All users" ]
 }

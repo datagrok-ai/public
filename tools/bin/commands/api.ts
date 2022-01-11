@@ -32,8 +32,8 @@ function generateQueryWrappers(): void {
       const name = utils.getScriptName(q, utils.commentMap[utils.queryExtension]);
       if (!name) continue;
       let tb = new utils.TemplateBuilder(utils.queryWrapperTemplate)
-        .replace('QUERY_NAME', name)
-        .replace('QUERY_NAME_LOWERCASE', name)
+        .replace('FUNC_NAME', name)
+        .replace('FUNC_NAME_LOWERCASE', name)
         .replace('PACKAGE_NAMESPACE', _package.name);
 
       const inputs = utils.getScriptInputs(q, utils.commentMap[utils.queryExtension]);
@@ -47,13 +47,15 @@ function generateQueryWrappers(): void {
   }
 
   const srcDir = path.join(curDir, 'src');
-  const queryFilePath = path.join(fs.existsSync(srcDir) ? srcDir : curDir, 'queries-api.ts');
+  const queryFileName = 'queries-api.ts';
+  const queryFilePath = path.join(fs.existsSync(srcDir) ? srcDir : curDir, queryFileName);
   if (fs.existsSync(queryFilePath)) {
     console.log(`The file ${queryFilePath} already exists\nRewriting its contents...`);
   }
 
   const sep = '\n';
   fs.writeFileSync(queryFilePath, utils.dgImports + sep + wrappers.join(sep.repeat(2)) + sep, 'utf8');
+  console.log(`Successfully generated file ${queryFileName}${sep}`);
 }
 
 function generateScriptWrappers(): void {
@@ -95,17 +97,22 @@ function generateScriptWrappers(): void {
       .replace('TYPED_PARAMS', inputs)
       .replace('OUTPUT_TYPE', outputType);
 
-    wrappers.push(tb.build());
+    wrappers.push(tb.build(1));
   }
 
   const srcDir = path.join(curDir, 'src');
-  const funcFilePath = path.join(fs.existsSync(srcDir) ? srcDir : curDir, 'scripts-api.ts');
+  const funcFileName = 'scripts-api.ts';
+  const funcFilePath = path.join(fs.existsSync(srcDir) ? srcDir : curDir, funcFileName);
   if (fs.existsSync(funcFilePath)) {
     console.log(`The file ${funcFilePath} already exists\nRewriting its contents...`);
   }
 
   const sep = '\n';
-  fs.writeFileSync(funcFilePath, utils.dgImports + sep + wrappers.join(sep.repeat(2)) + sep, 'utf8');
+  const scriptApi = new utils.TemplateBuilder(utils.namespaceTemplate)
+    .replace('PACKAGE_NAMESPACE', _package.name)
+    .replace('NAME', wrappers.join(sep.repeat(2)));
+  fs.writeFileSync(funcFilePath, utils.dgImports + sep + scriptApi.build() + sep, 'utf8');
+  console.log(`Successfully generated file ${funcFileName}${sep}`);
 }
 
 export function api(args: { _: string[] }): boolean {

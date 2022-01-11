@@ -1,15 +1,16 @@
 {
 	"name": "@datagrok/compute",
 	"friendlyName": "Compute",
-	"version": "0.3.0",
+	"version": "0.7.0",
 	"description": "",
 	"dependencies": {
 		"cash-dom": "latest",
 		"codemirror": "^5.64.0",
-		"datagrok-api": ">=0.95.8",
+		"datagrok-api": ">=0.99.0",
 		"dayjs": "latest",
 		"exceljs": "^4.3.0",
 		"file-saver": "^2.0.5",
+		"rxjs": "^7.4.0",
 		"ts-loader": "latest",
 		"typescript": "latest",
 		"wu": "latest"
@@ -20,8 +21,10 @@
 		"@types/wu": "latest",
 		"@typescript-eslint/eslint-plugin": "^5.1.0",
 		"@typescript-eslint/parser": "^5.1.0",
+		"css-loader": "^6.5.1",
 		"eslint": "^8.0.1",
 		"eslint-config-google": "^0.14.0",
+		"style-loader": "^3.3.1",
 		"webpack": "latest",
 		"webpack-cli": "latest"
 	},
@@ -39,5 +42,7 @@
 		"release-compute-localhost": "grok publish localhost --rebuild --release",
 		"debug-compute-compose": "grok publish compose --rebuild",
 		"release-compute-compose": "grok publish compose --rebuild --release"
-	}
+	},
+	"canEdit": [ "Developers" ],
+	"canView": [ "All users" ]
 }

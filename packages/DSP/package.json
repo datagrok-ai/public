@@ -1,6 +1,7 @@
 {
 	"name": "@datagrok/dsp",
 	"fullName": "DSP",
+	"beta": true,
 	"version": "0.0.3",
 	"description": "A pack of various digital signal processing tools",
 	"dependencies": {
@@ -17,5 +18,7 @@
 	},
 	"sources": [
 		"src/dspWasm.js"
-	]
+	],
+	"canEdit": [ "Developers" ],
+	"canView": [ "All users" ]
 }

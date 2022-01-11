@@ -10,11 +10,10 @@ export class WorkerMessageBusClient {
       const channel = new MessageChannel();
       channel.port1.onmessage = ({data}) => {
         channel.port1.close();
-        if (data.error) {
+        if (data.error)
           rej(data.error);
-        } else {
+        else
           res(data.retval);
-        }
       };
       this._worker.postMessage({op: op, args: args}, [channel.port2]);
     });

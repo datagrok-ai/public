@@ -3,7 +3,6 @@
 
 # Content
 
-* [Butina cluster](butina_cluster.md)
 * [Filter by catalogs](filter-catalogs.md)
 * [Gasteiger partial charges](gasteiger-charges.md)
 * [Murcko scaffolds](murcko-scaffolds.md)

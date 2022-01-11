@@ -15,7 +15,7 @@ import {PeptideSimilaritySpaceWidget} from './utils/peptide-similarity-space';
 import {manualAlignmentWidget} from './widgets/manual-alignment';
 import {SARViewer, SARViewerVertical} from './viewers/sar-viewer';
 import {peptideMoleculeWidget} from './widgets/peptide-molecule';
-import {correlationAnalysisPlots} from './utils/correlation-analysis';
+import {SubstViewer} from './viewers/subst-viewer';
 import {doMSA} from './utils/multiple-sequence-alignment';
 
 export const _package = new DG.Package();
@@ -64,25 +64,18 @@ export function Peptides() {
     'Use and analyse peptide sequence data to support your research:',
   );
 
-  const annotationViewerDiv = ui.div();
-
   const windows = grok.shell.windows;
   windows.showToolbox = false;
   windows.showHelp = false;
   windows.showProperties = false;
 
-  const mainDiv = ui.div();
   grok.shell.newView('Peptides', [
     appDescription,
     ui.info([textLink]),
-    ui.div([
-      ui.block25([
-        ui.button('Open peptide sequences demonstration set', () => main('aligned.csv'), ''),
-        ui.button('Open complex case demo', () => main('aligned_2.csv'), ''),
-      ]),
-      ui.block75([annotationViewerDiv]),
+    ui.divH([
+      ui.button('Open peptide sequences demonstration set', () => main('aligned.csv'), ''),
+      ui.button('Open complex case demo', () => main('aligned_2.csv'), ''),
     ]),
-    mainDiv,
   ]);
 }
 
@@ -91,6 +84,9 @@ export function Peptides() {
 //input: column col {semType: alignedSequence}
 //output: widget result
 export async function peptidesPanel(col: DG.Column): Promise<DG.Widget> {
+  if (col.getTag('isAnalysisApplicable') === 'false') {
+    return new DG.Widget(ui.divText('Analysis is not applicable'));
+  }
   view = (grok.shell.v as DG.TableView);
   tableGrid = view.grid;
   currentDf = col.dataFrame;
@@ -112,6 +108,14 @@ export function sar(): SARViewer {
 //output: viewer result
 export function sarVertical(): SARViewerVertical {
   return new SARViewerVertical();
+}
+
+//name: substitution-analysis-viewer
+//description: Substitution Analysis Viewer
+//tags: viewer
+//output: viewer result
+export function subst(): SubstViewer {
+  return new SubstViewer();
 }
 
 //name: StackedBarchart Widget
@@ -178,19 +182,6 @@ export async function peptideSpacePanel(col: DG.Column): Promise<DG.Widget> {
   const widget = new PeptideSimilaritySpaceWidget(col, view ?? grok.shell.v);
   return await widget.draw();
 }
-
-//name: Correllation analysis
-export async function correlationAnalysis() {
-  view = (grok.shell.v as DG.TableView);
-
-  const df = await grok.data.files.openTable('Demo:TestJobs:Files:DemoFiles/bio/peptides.csv');
-  const tview = grok.shell.addTableView(df);
-  const [cpviewer, bpviewer] = correlationAnalysisPlots(df.getCol('AlignedSequence'));
-
-  tview.dockManager.dock(cpviewer, 'right');
-  tview.dockManager.dock(bpviewer, 'down');
-}
-
 //name: MSA
 //input: int gapopen = -20
 //input: int gapextend = -20

@@ -117,8 +117,9 @@ export class EChartViewer extends DG.JsViewer {
   }
 
   onTableAttached() {
-    this.subs.push(this.dataFrame.selection.onChanged.subscribe((_) => this.render()));
-    this.subs.push(this.dataFrame.filter.onChanged.subscribe((_) => this.render()));
+    this.subs.push(DG.debounce(this.dataFrame.selection.onChanged, 50).subscribe((_) => this.render()));
+    this.subs.push(DG.debounce(this.dataFrame.filter.onChanged, 50).subscribe((_) => this.render()));
+    this.subs.push(DG.debounce(this.dataFrame.onDataChanged, 50).subscribe((_) => this.render()));
 
     this.render();
   }

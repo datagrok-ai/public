@@ -23,5 +23,7 @@
   },
   "sources": [
     "css/style.css"
-  ]
+  ],
+  "canEdit": [ "Developers" ],
+  "canView": [ "All users" ]
 }

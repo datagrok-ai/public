@@ -1,9 +1,13 @@
 const path = require('path');
+const rdkitLibVersion = require('./src/rdkit_lib_version.js');
 
 module.exports = (env, options) => ({
+  stats: {
+    children: true
+  },
   mode: 'development',
   entry: {
-    package: ['./src/RDKit_minimal_2021.03_18.wasm', './src/package.ts']
+    package: [`./src/${rdkitLibVersion}.wasm`, './src/package.ts']
   },
   devtool: options.mode !== 'production' ? 'inline-source-map' : 'source-map',
   devServer: {

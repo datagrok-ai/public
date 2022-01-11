@@ -158,3 +158,30 @@ export function calcDistanceMatrix(data: Vectors, distance: DistanceMetric): Mat
   }
   return matrix;
 }
+
+/** Generates array from a range [begin; end]. */
+export function genRange(begin: number, end: number): Int32Array {
+  const nItems = end - begin;
+  const series = new Int32Array(nItems);
+
+  for (let i = 0; i < nItems + 1; ++i) {
+    series[i] = begin + i;
+  }
+  return series;
+}
+
+/**  
+ * Returns order of values as if they are sorted.
+ *
+ * @export
+ * @param {any[]} values Input array.
+ * @param {boolean} [reverse=false] Whether to return reversed order.
+ * @return {number[]} The order computed.
+ */
+export function argSort(values: any[], reverse = false): number[] {
+  const sortfn = reverse ? (a: any[], b: any[]) => (b[0] - a[0]) : (a: any[], b: any[]) => (a[0] - b[0]);
+  const decor = (v: any, i: number) => [v, i]; // set index to value
+  const undecor = (a: any[]) => a[1]; // leave only index
+  const _argsort = (arr: any[]) => arr.map(decor).sort(sortfn).map(undecor);
+  return _argsort(values);
+}
