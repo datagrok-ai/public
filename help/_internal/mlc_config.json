@@ -1,0 +1,11 @@
+{
+  "ignorePatterns": [
+    {
+      "pattern": "^http://localhost"
+    },
+    {
+      "pattern": "^https://intellij-support.jetbrains.com"
+    }
+  ],
+  "retryOn429": true
+}

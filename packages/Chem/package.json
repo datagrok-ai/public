@@ -2,15 +2,15 @@
   "name": "@datagrok/chem",
   "friendlyName": "Chem",
   "fullName": "Chem",
-  "version": "0.42.1",
+  "version": "0.42.2",
   "description": "Cheminformatics support: \n\n* RDKit-based rendering \n* Molecule sketching \n*",
   "properties": [
     {
       "name": "Renderer",
       "propertyType": "string",
       "choices": [
-        "OCL",
-        "RDKit"
+        "RDKit",
+        "OpenChemLib"
       ],
       "defaultValue": "RDKit",
       "nullable": false
@@ -21,35 +21,30 @@
   ],
   "dependencies": {
     "datagrok-api": ">0.94.10",
+    "@datagrok-libraries/ml": ">=0.0.8",
     "@datagrok-libraries/utils": ">=0.0.12",
     "cash-dom": "latest",
+    "css-loader": "latest",
     "dayjs": "latest",
     "file-loader": "latest",
     "offscreen-canvas": "latest",
     "openchemlib": "6.0.1",
     "rxjs": "latest",
+    "style-loader": "latest",
     "ts-loader": "latest",
     "typescript": "latest",
-    "worker-loader": "latest",
-    "style-loader": "latest",
-    "css-loader": "latest"
+    "worker-loader": "latest"
   },
   "devDependencies": {
-    "datagrok-api": ">0.94.10",
-    "@datagrok-libraries/utils": ">=0.0.12",
     "@types/jest": "^27.0.2",
     "@types/js-yaml": "^4.0.4",
     "@types/offscreencanvas": "latest",
     "@typescript-eslint/eslint-plugin": "^5.3.0",
     "@typescript-eslint/parser": "^5.3.0",
-    "cash-dom": "latest",
     "eslint": "^8.1.0",
     "eslint-config-google": "^0.14.0",
-    "file-loader": "latest",
     "jest": "^27.3.1",
-    "openchemlib": "6.0.1",
     "puppeteer": "latest",
-    "rxjs": "latest",
     "ts-jest": "^27.0.7",
     "webpack": "latest",
     "webpack-cli": "latest",
@@ -65,6 +60,8 @@
     "publish": "webpack & grok publish dev --release",
     "link-api": "npm link datagrok-api",
     "link-utils": "npm link @datagrok-libraries/utils",
+    "link-ml": "npm link @datagrok-libraries/ml",
+    "link-all": "npm link datagrok-api @datagrok-libraries/utils @datagrok-libraries/ml",
     "build": "webpack",
     "lint": "eslint \"./src/**/*.ts\"",
     "lint-fix": "eslint \"./src/**/*.ts\" --fix",

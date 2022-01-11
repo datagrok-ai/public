@@ -17,8 +17,8 @@ General:
 
 [![Matrix Plot](../../uploads/youtube/visualizations2.png "Open on Youtube")](https://www.youtube.com/watch?v=7MBXWzdC0-I&t=1653s)
 
-See also: 
-  
-  * [Viewers](../viewers.md)
-  * [Table view](../../overview/table-view.md)
-  * [JS API: Matrix plot](https://public.datagrok.ai/js/samples/ui/viewers/types/matrix-plot)
+See also:
+
+* [Viewers](../viewers.md)
+* [Table view](../../overview/table-view.md)
+* [JS API: Matrix plot](https://public.datagrok.ai/js/samples/ui/viewers/types/matrix-plot)

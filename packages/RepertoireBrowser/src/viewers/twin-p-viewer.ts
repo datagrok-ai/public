@@ -4,10 +4,9 @@ import * as DG from "datagrok-api/dg";
 
 import { NglAspect } from "./ngl-aspect"
 import { PvizAspect } from "./pviz-aspect"
-import { MiscMethods } from "./misc.js"
+import { MiscMethods } from "./misc"
 
 import { _package } from "../package";
-import { resolveModuleName } from "typescript";
 
 export class TwinPviewer {
   root: HTMLElement;
@@ -196,7 +195,7 @@ export class TwinPviewer {
 
     if (this.ptmObsChoices !== undefined) {
       this.ptmObsChoices.onChanged(async () => {
-       // this.pViz.obsMapping(this.ptmObsChoices.value)
+        this.pViz.obsMapping(this.ptmObsChoices.value)
         reload(false);
       });
     }

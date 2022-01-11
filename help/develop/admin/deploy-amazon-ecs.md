@@ -16,7 +16,8 @@ This document contains instructions to deploy Datagrok on [AWS ECS cluster](http
 ## Setup Datagrok virtual machine
 
 1. Download Docker Compose yaml
-   file: [link](https://github.com/datagrok-ai/public/blob/master/docker/ecs.datagrok.docker-compose.yaml).
+   file: [link](https://github.com/datagrok-ai/public/blob/master/docker/ecs.datagrok.docker-compose.yaml)
+   .
 2. Replace `GROK_PARAMETERS` placeholders in `ecs.datagrok.docker-compose.yaml` with actual credentials
 3. Use docker context for ECS:
    `docker context use ECS`
@@ -40,16 +41,19 @@ This document contains instructions to deploy Datagrok on [AWS ECS cluster](http
 
 8. Create CNAME DNS record <DATAGROK_DNS> to the newly created Application Load Balancer
 
-9. Go in the web browser to <DATAGROK_DNS>, login to Datagrok using username "admin" and password "admin"
+9. Go in the web browser to <DATAGROK_DNS>, login to Datagrok using username "admin" and password "
+   admin"
 
 10. Edit settings in the Datagrok (Tools | Settings...). Do not forget to click Apply to save new settings.
+
 * Connectors
     * External Host: `grok_connect`
 
 ## Setup Compute Virtual Machine
 
 1. Download Docker Compose yaml
-   file: [link](https://github.com/datagrok-ai/public/blob/master/docker/ecs.cvm.docker-compose.yaml).
+   file: [link](https://github.com/datagrok-ai/public/blob/master/docker/ecs.cvm.docker-compose.yaml)
+   .
 2. Use docker context for ECS:
    `docker context use ECS`
 3. Export environment variables for AWS
@@ -62,7 +66,7 @@ This document contains instructions to deploy Datagrok on [AWS ECS cluster](http
    `docker compose -p cvm -f ecs.cvm.docker-compose.yaml up -d`. It will create ECS cluster with tasks
    in [Fargate](https://aws.amazon.com/fargate/).
 
-5. Check deployment results.   
+5. Check deployment results.
    `docker compose -p cvm -f ecs.cvm.docker-compose.yaml ps`
 
 6. Switch back to default docker context
@@ -73,19 +77,19 @@ This document contains instructions to deploy Datagrok on [AWS ECS cluster](http
 8. Go in the web browser to <CVM_DNS>, login to Datagrok using username "admin" and password "admin"
 
 9. Edit settings in the Datagrok (Tools | Settings...). Do not forget to click Apply to save new settings.
-    * Scripting:
-        * CVM Url: `http://<CVM_DNS>`
-        * CVM Url Client: `http://<CVM_DNS>`
-        * H2o Url: `http://<CVM_DNS>:54321`
-        * Api Url: `http://<DATAGROK_DNS>/api`
-        * Cvm Split: `true`
-    * Dev:
-        * CVM Url: `http://<CVM_DNS>`
-        * Cvm Split: `true`
-        * Api Url: `http://<DATAGROK_DNS>/api`
+
+* Scripting:
+    * CVM Url: `http://<CVM_DNS>`
+    * CVM Url Client: `http://<CVM_DNS>`
+    * H2o Url: `http://<CVM_DNS>:54321`
+    * Api Url: `http://<DATAGROK_DNS>/api`
+    * Cvm Split: `true`
+* Dev:
+    * CVM Url: `http://<CVM_DNS>`
+    * Cvm Split: `true`
+    * Api Url: `http://<DATAGROK_DNS>/api`
 
 See also:
 
-* [Architecture](architecture.md#application)
-* [Architecture Details](architecture-details.md)
-* [Compute VM](compute-vm.md)
+* [Architecture](architecture.md)
+* [Architecture Details](infrastructure.md)

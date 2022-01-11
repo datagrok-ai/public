@@ -1,12 +1,32 @@
 name: JS API Package
 on:
-  workflow_dispatch: {}
+  workflow_dispatch: { }
   push:
     paths:
       - 'js-api/package.json'
 jobs:
+  check:
+    runs-on: ubuntu-20.04
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v2
+      - name: Check version was changed
+        working-directory: ./js-api
+        run: |
+          set -ex
+          name=$(jq .name package.json | sed 's/"//g')
+          latest_version="$(curl https://registry.npmjs.org/${name}/latest | jq .version)"
+          current_version=$(jq .version package.json)
+          if [[ $latest_version == $current_version ]]; then
+            changed_version=false
+          else
+            changed_version=true
+          fi
+          echo "::set-output name=changed_version::${changed_version}"
+
   build:
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-20.04
+    if: needs.metadata.outputs.changed_version == 'true'
     environment: Prod
     steps:
       - name: Checkout

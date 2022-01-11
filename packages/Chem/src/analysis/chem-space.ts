@@ -1,13 +1,31 @@
 import * as grok from 'datagrok-api/grok';
-import * as ui from 'datagrok-api/ui';
+//import * as ui from 'datagrok-api/ui';
 import * as DG from 'datagrok-api/dg';
 // TODO: clean up this module
 import {chemGetMorganFingerprints} from '../chem-searches';
-import {getRdKitWebRoot} from '../chem-common-rdkit';
+//import {getRdKitWebRoot} from '../chem-common-rdkit';
+import {Coordinates} from '@datagrok-libraries/utils/src/type-declarations';
+import {createDimensinalityReducingWorker} from '@datagrok-libraries/ml/src/reduce-dimensionality';
 
 export async function chemSpace(table: DG.DataFrame, molColumn: DG.Column) {
   const fpColumn = await chemGetMorganFingerprints(molColumn);
-  if (window.Worker) {
+  const coordinates = await createDimensinalityReducingWorker(fpColumn, 'UMAP') as Coordinates;
+  const axes = ['Embed_X', 'Embed_Y'];
+
+  for (let i = 0; i < axes.length; ++i) {
+    const name = axes[i];
+    const cols = (table.columns as DG.ColumnList);
+
+    if (table.col(name))
+      cols.remove(name);
+
+    cols.insert(DG.Column.fromFloat32Array(name, coordinates[i]));
+  }
+
+  const view = grok.shell.addTableView(table);
+  view.scatterPlot({x: axes[0], y: axes[1]});
+
+  /*if (window.Worker) {
     const myWorker = new Worker(getRdKitWebRoot() + 'src/analysis/chem-spe.js');
     const fpBuffers = new Array(fpColumn.length);
     for (let i = 0; i < fpColumn.length; ++i) {
@@ -36,7 +54,6 @@ export async function chemSpace(table: DG.DataFrame, molColumn: DG.Column) {
         reject(error.message);
       };
     });
-  } else {
-    throw new Error('Your browser doesn\'t support web workers.');
-  }
+  } else
+    throw new Error('Your browser doesn\'t support web workers.');*/
 }

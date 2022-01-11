@@ -1,5 +1,5 @@
 import {BitSetFixedArray} from './bitset-fixed-array';
-import {isMolBlock} from "./chem-utils";
+import {isMolBlock} from './chem-utils';
 
 export class RdKitFingerprintSearcher {
   rdKitModule: any | null;
@@ -18,21 +18,19 @@ export class RdKitFingerprintSearcher {
 
   _stringFpToArrBits(item: number, fp: string) {
     for (let j = 0; j < this.fp_length; ++j) {
-      if (fp[j] === '1') {
-this.arr!.setTrue(item, j);
-      } else if (fp[j] === '0') {
-this.arr!.setFalse(item, j);
-      }
+      if (fp[j] === '1')
+        this.arr!.setTrue(item, j);
+      else if (fp[j] === '0')
+        this.arr!.setFalse(item, j);
     }
   }
 
   _stringFpToSampleBits(fp: string) {
     for (let j = 0; j < this.fp_length; ++j) {
-      if (fp[j] === '1') {
-this.sample!.setTrue(0, j);
-      } else if (fp[j] === '0') {
-this.sample!.setFalse(0, j);
-      }
+      if (fp[j] === '1')
+        this.sample!.setTrue(0, j);
+      else if (fp[j] === '0')
+        this.sample!.setFalse(0, j);
     }
   }
 
@@ -54,9 +52,8 @@ this.sample!.setFalse(0, j);
         if (isMolBlock(item)) {
           item = mol.normalize_2d_molblock();
           mol.straighten_2d_layout();
-          if (!hashToMolblock[item]) {
+          if (!hashToMolblock[item])
             hashToMolblock[item] = mol.get_molblock();
-          }
         }
       } catch (e) {
         console.error(
@@ -87,9 +84,8 @@ this.sample!.setFalse(0, j);
           if (querySmarts !== null && querySmarts !== '') {
             console.log('Cannot parse a MolBlock. Switching to SMARTS');
             queryMol = this.rdKitModule.get_qmol(querySmarts);
-          } else {
+          } else
             throw 'SMARTS not set';
-          }
         }
         if (queryMol) {
           if (queryMol.is_valid()) {
@@ -97,9 +93,8 @@ this.sample!.setFalse(0, j);
             this._stringFpToSampleBits(fp);
             for (let i = 0; i < this.arr!.length; ++i) {
               if (this.arr!.entails(i, this.sample!)) {
-                if (this.mols![i]!.get_substruct_match(queryMol) !== '{}') {
+                if (this.mols![i]!.get_substruct_match(queryMol) !== '{}')
                   matches.push(i);
-                }
               }
             }
           }
