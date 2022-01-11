@@ -1,6 +1,111 @@
 <!-- TITLE: Release History -->
 <!-- SUBTITLE: -->
 
+# 2022-01-11 Dev build 0.108.0
+
+## Latest Docker Images
+
+* Datagrok: 
+  *  `docker pull datagrok/datagrok:0.108.0`
+  *  `docker pull datagrok/datagrok:latest`
+  
+* [Docker-Compose](admin/docker-compose.md)
+
+## Addressed Issues
+
+* NPM repositories: add registry property 
+* Formula Lines: Property harmonization (opacity) 
+* JS API: Moved properties (column.colors => column.meta.colors, column.markers => column.meta.markers) 
+* Scripting: global named conda environments 
+* JS API: Users API (WIP)
+* CSS Fix 
+* Formula Lines: Endless lines 
+* Result Header CSS Fix 
+* Formula Lines: Minor changes 
+* Minor code cleanup, switched to the thin barbell look 
+* Fixed a silly division by zero error 
+* JS API: Filters (WIP)
+* Fixed filtering and add minor fixes 
+* _JsBasedHandlers resulting tables names fix 
+* Bar Chart: Fixed "compact()" call on nullable "stackColAggr" 
+* Removed parentheses 
+* NPM repositories: new package manager UI (WIP)
+* (Bug) Line Chart: Fixed bug with "Y Global Scale" 
+* (Bug) Core: Sensitivity analysis won't work (WIP)
+* Line Chart: Added global Y-axis 
+* Line Chart: Added title for global Y-axis 
+* Octave: vectorization 
+* (Bug) Line Chart: X-selector overlaps the chart when the x-axis is auto-hidden 
+* (Bug) Line Chart: No X-axis in Multi Axis mode (if there are many lines) 
+* Line Chart: Show chevrons only on mouse hover 
+* Line Chart: Ability to set selectors legend position 
+* JS API: improve the registration of async functions (WIP)
+* (Bug) Grid: column popups: popup container left handing in the DOM tree after a popup is closed 
+* Filters API: passing the requester filter up the event chain 
+* (Bug) ui.wait() adds default 400x300 size to the container 
+* Filters in the column property panel 
+* Grid: column quick panel: ability to add as filter (WIP)
+* Bar chart: checkboxes "select" and "filter" in the context menu 
+* (Bug) Property panel: columns: clicking on the column does not change current object 
+* Added a comment on comments 
+* ClientPackageFunc: ability to run function synchronously once the package is loaded 
+* (Bug) Scatter Plot: programmatic zoom causes an error 
+* Untyped events since they clearly were not Stream<String> 
+* Bar chart: add categoryValueWidth property 
+* Chem: excludin duplicated features 
+* (Bug) Scatter Plot: onZoomed returns objects of different data types when the plot is zoomed manually and programmaticaly 
+* Provide Area \- interface for Rect, Polygon, etc. 
+* Line Chart: Auto margin for yAxisTitle (get rid of yGlobalMarginAxisLeft) 
+* (Bug) Line Chart: The top marker of each line is cut off 
+* Line Chart: Changed close-icon style of lines 
+* Line Chart: Place close buttons to the right of the y-selectors in MultiAxis mode 
+* Wiki harmonization \- WIP 
+* Minor CSS improvements 
+* Name harmonization: API Samples, API Tests 
+* Set some packages as beta. 
+* Packages: remove unneeded package detectors 
+* Dialog.create: made options really optionable :) 
+* Axes: Ability to display vertical axis on the right side of the chart 
+* Line Chart: 2 different y-axes when lines count = 2 
+* Documentation improvements 
+* Chem: move semantic type detectors to the Chem package 
+* (Bug) Chem: some panels (drug likeness, toxicity, etc) do not work with molblocks-encoded molecules 
+* Unit conversion \- WIP 
+* Chem: get rid of the Molecule-specific renderer tricks in the core 
+* Line Chart: Special y-selector visual mode for 1 and 2 lines 
+* Axes: Add more y-tickmarks (need for Line Chart) 
+* Reusing DruglikenessPredictor 
+* (Bug) Opening an SDF file results in writing a big binary array to Datagrok's console 
+* Made the accordion pane's left margin smaller 
+* (Bug) Info panel invocations end up cluttering Datagrok console 
+* Build fix 
+* JS API: Cell.value setter 
+* (Bug) Chem: double-clicking on a structure: move to the Chem package 
+* (Bug) Chem: double-clicking on a structure opens an empty sketcher 
+* (Bug) Chem: Molfile widget does not work with molblocks 
+* Implemented #243: Chem: sketcher: "Copy as SMILES" and "Copy as MOLBLOCK" context commands 
+* CSS fixes 
+* Code cleanup 
+* Chem: fixed two memory leaks (molecules not being disposed) 
+* CSS fix 
+* Chem: SDF importer: fixed a bug with 100 first rows being ignored 
+* Chem: removed unnecessary imports 
+* JS API: Func.find: ability to search by metadata (WIP)
+* Dart Sketcher: fixed an issue with smiles = null 
+* Chem: refactoring cell rendering \- WIP 
+* Formula Lines: Editor (WIP)
+* grok.shell tests fix 
+* (Bug) Octave: graphics won't work 
+* DevOps documentation 
+* Modified field length 
+* Update the dialog design for developer keys (WIP)
+* Help failed tests troubleshooting 
+* (Bug) Bar chart: scroll the page when BC scrolls are invisible  
+* #254 Chem: Lazy load for workers 
+* H2O: Grok Helper URL prefix 
+* #155 Chem: Package autotests. getSimilarities 
+
+
 # 2021-12-22 Dev build 0.107.0
 
 ## Latest Docker Images
