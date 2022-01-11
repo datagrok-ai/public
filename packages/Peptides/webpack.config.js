@@ -3,10 +3,20 @@ const path = require('path');
 module.exports = {
   mode: 'development',
   entry: {
-    package: './src/package.ts',
+    package: ['./src/package.ts'], //'./src/wasm/kalign.wasm',
   },
+  target: 'web',
   module: {
     rules: [
+      /*{
+        test: /\.(wasm)$/i,
+        type: 'javascript/auto',
+        loader: 'file-loader',
+        options: {
+          publicPath: 'dist/',
+          name: '[name].[ext]',
+        },
+      },*/
       {
         test: /\.ts?$/,
         use: 'ts-loader',
@@ -19,7 +29,13 @@ module.exports = {
     ],
   },
   resolve: {
-    extensions: ['.tsx', '.js', '.ts'],
+    extensions: [/*'.wasm', */'.mjs', '.js', '.json', '.ts', '.tsx'],
+    fallback: {
+      'crypto': require.resolve('crypto-browserify'),
+      'path': require.resolve('path-browserify'),
+      'stream': require.resolve('stream-browserify'),
+      'buffer': require.resolve('buffer/'),
+    },
   },
   devtool: 'inline-source-map',
   externals: {
@@ -35,5 +51,9 @@ module.exports = {
     library: 'peptides',
     libraryTarget: 'var',
     path: path.resolve(__dirname, 'dist'),
+  },
+  experiments: {
+    asyncWebAssembly: true,
+    topLevelAwait: true,
   },
 };
