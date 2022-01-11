@@ -5,37 +5,11 @@ import * as DG from 'datagrok-api/dg';
 import {getSequenceMolecularWeight} from './molecular-measure';
 import {AlignedSequenceEncoder} from '@datagrok-libraries/bio/src/sequence-encoder';
 import {DimensionalityReducer} from '@datagrok-libraries/ml/src/reduce-dimensionality';
+import {
+  createDimensinalityReducingWorker,
+} from '@datagrok-libraries/ml/src/workers/dimensionality-reducing-worker-creator';
 import {StringMeasure} from '@datagrok-libraries/ml/src/string-measure';
 import {Coordinates} from '@datagrok-libraries/utils/src/type-declarations';
-
-/**
- * A worker to perform dimensionality reduction.
- *
- * @param {any[]} columnData The data to process.
- * @param {string} method A method of dimensionality reduction.
- * @param {string} measure A distance metrics.
- * @param {number} cyclesCount Number of iterations to run.
- * @return {Promise<unknown>} Resulting embedding.
- */
-function createDimensinalityReducingWorker(
-  columnData: any[],
-  method: string,
-  measure: string,
-  cyclesCount: number,
-): Promise<unknown> {
-  return new Promise(function(resolve) {
-    const worker = new Worker(new URL('../workers/dimensionality-reducer.ts', import.meta.url));
-    worker.postMessage({
-      columnData: columnData,
-      method: method,
-      measure: measure,
-      cyclesCount: cyclesCount,
-    });
-    worker.onmessage = ({data: {embedding}}) => {
-      resolve(embedding);
-    };
-  });
-}
 
 /**
  * Finds a column with an activity.
