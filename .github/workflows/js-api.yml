@@ -31,7 +31,7 @@ jobs:
 
   build:
     runs-on: ubuntu-20.04
-    if: needs.metadata.outputs.changed_version == 'true'
+    if: needs.check.outputs.changed_version == 'true'
     environment: Prod
     steps:
       - name: Checkout
