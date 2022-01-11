@@ -41,7 +41,7 @@ export function initStructuralAlertsContext(
   _alertsSmarts = alertsSmarts;
   _alertsDescriptions = alertsDescriptions;
   loadAlertsCollection(_alertsSmarts);
-  // await getRdKitService().initStructuralAlerts(_alertsSmarts);
+  // await (await getRdKitService()).initStructuralAlerts(_alertsSmarts);
 }
 
 async function loadSADataset() {
@@ -57,7 +57,7 @@ export async function structuralAlertsWidget(smiles: string) {
     await loadSADataset();
 
   const alerts = getStructuralAlerts(smiles);
-  // await getRdKitService().getStructuralAlerts(smiles); // getStructuralAlerts(smiles);
+  // await (await getRdKitService()).getStructuralAlerts(smiles); // getStructuralAlerts(smiles);
   const width = 200;
   const height = 100;
   const list = ui.div(alerts.map((i) => {

@@ -8,7 +8,9 @@ import * as grok from 'datagrok-api/grok';
 import * as ui from 'datagrok-api/ui';
 import * as DG from 'datagrok-api/dg';
 import {chem} from 'datagrok-api/grok';
+import {initChem} from "./package";
 import Sketcher = chem.Sketcher;
+import {initRdKitService} from "./chem-common-rdkit";
 
 export class SubstructureFilter extends DG.Filter {
   column: DG.Column | null = null;
@@ -26,6 +28,7 @@ export class SubstructureFilter extends DG.Filter {
 
   constructor() {
     super();
+    /* No await! */ initRdKitService();
     this.root = ui.divV([]);
     //@ts-ignore
     this.sketcher.onChanged.subscribe((_) => this.dataFrame?.rows.requestFilter());
@@ -45,7 +48,6 @@ export class SubstructureFilter extends DG.Filter {
     // this.dataFrame.filter.setAll(true, false);
     if (this.column?.temp['chem-scaffold-filter'])
       delete this.column.temp['chem-scaffold-filter'];
-
     // this._sketcher?.setSmiles('');
     // this.dataFrame.filter.fireChanged();
   }

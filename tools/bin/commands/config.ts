@@ -67,7 +67,8 @@ async function addNewServer(config: Config) {
 export function config(args: ConfigArgs) {
   const nOptions = Object.keys(args).length - 1;
   const interactiveMode = args['_'].length === 1 && (nOptions < 1 || nOptions === 1 && args.reset);
-  const hasAddServerCommand = args['_'].length === 2 && args['_'][1] === 'add' && nOptions === 3 && args.server && args.key && args.k;
+  const hasAddServerCommand = args['_'].length === 2 && args['_'][1] === 'add' &&
+    args.server && args.key && args.k && args.alias && (nOptions === 4 || nOptions === 5 && args.default);
   if (!interactiveMode && !hasAddServerCommand) return false;
 
   if (!fs.existsSync(grokDir)) {
@@ -80,13 +81,17 @@ export function config(args: ConfigArgs) {
 
   if (hasAddServerCommand) {
     try {
-      const hostName = new URL(args.server!).hostname;
-      config.servers[hostName] = { url: args.server!, key: args.key! };
+      new URL(args.server!);
     } catch (error) {
       console.error('URL parsing error. Please, provide a valid server URL.');
       return false;
     }
+    config.servers[args.alias!] = { url: args.server!, key: args.key! };
     console.log('Successfully added the server.');
+    console.log(`Use this command to deploy packages: grok publish ${args.alias!}`);
+    if (args.default) {
+      config.default = args.alias!;
+    }
   }
 
   console.log(`Your config file (${confPath}):`);
@@ -142,6 +147,8 @@ export function config(args: ConfigArgs) {
 
 interface ConfigArgs {
   _: string[],
+  alias?: string,
+  default?: boolean,
   reset?: boolean,
   server?: string,
   key?: string,

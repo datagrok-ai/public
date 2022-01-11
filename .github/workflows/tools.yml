@@ -17,18 +17,23 @@ jobs:
         run: |
           set -ex
           name=$(jq .name package.json | sed 's/"//g')
-          latest_version="$(curl https://registry.npmjs.org/${name}/latest | jq .version)"
-          current_version=$(jq .version package.json)
-          if [[ $latest_version == $current_version ]]; then
-            changed_version=false
-          else
+          npm_json=$(curl --retry 3 https://registry.npmjs.org/${name}/latest)
+          if [[ $npm_json == "\"Not Found\"" ]]; then
             changed_version=true
+          else
+            latest_version="$(jq .version <<<$npm_json)"
+            current_version=$(jq .version package.json)
+            if [[ $latest_version == $current_version ]]; then
+              changed_version=false
+            else
+              changed_version=true
+            fi
           fi
           echo "::set-output name=changed_version::${changed_version}"
 
   build:
     runs-on: ubuntu-20.04
-    if: needs.metadata.outputs.changed_version == 'true'
+    if: needs.check.outputs.changed_version == 'true'
     environment: Prod
     steps:
       - uses: actions/checkout@v2

@@ -4,46 +4,60 @@
 import rdkitLibVersion from './rdkit_lib_version';
 import {RdKitService} from './rdkit-service';
 import {convertToRDKit} from './analysis/r-group-analysis';
-import BitArray from '@datagrok-libraries/utils/src/bit-array';
 //@ts-ignore
 import initRDKitModule from './RDKit_minimal.js';
 
 export let _rdKitModule: any = null;
 export let _rdKitService: RdKitService | null = null;
 export let _webRoot: string | null;
-let initialized = false;
+let serviceInitialized = false;
+let serviceBeingInitialized = false;
+let moduleInitialized = false;
 
-export async function initRdKitService(webRootValue: string) {
-  if (!initialized) {
-    _webRoot = webRootValue;
-    _rdKitModule = await initRDKitModule({locateFile: () => `${_webRoot}/dist/${rdkitLibVersion}.wasm`});
-    console.log('RDKit module package instance was initialized');
+export function setRdKitWebRoot(webRootValue: string) {
+  _webRoot = webRootValue;
+}
+
+export async function initRdKitModuleLocal() {
+  _rdKitModule = await initRDKitModule(
+    {locateFile: () => `${_webRoot}/dist/${rdkitLibVersion}.wasm`});
+  _rdKitModule.prefer_coordgen(false);
+  console.log('RDKit module package instance was initialized');
+  moduleInitialized = true;
+}
+
+export async function initRdKitService() {
+  if (!serviceBeingInitialized && !serviceInitialized) {
+    serviceBeingInitialized = true;
     _rdKitService = new RdKitService();
-    await _rdKitService.init(_webRoot);
+    await _rdKitService.init(_webRoot!);
     console.log('RDKit Service was initialized');
-    _rdKitModule.prefer_coordgen(false);
-    initialized = true;
+    serviceInitialized = true;
+    serviceBeingInitialized = false;
+  }
+}
+
+export async function waitInitRdKitService(timeout = 1) {
+  while (!serviceInitialized) {
+    await new Promise(resolve => setTimeout(resolve, timeout));
   }
 }
 
 export function getRdKitModule() {
-  if (!initialized)
+  if (!moduleInitialized)
     throw ('RdKit Module is not initialized');
-
   return _rdKitModule!;
 }
 
-export function getRdKitService() {
-  if (!initialized)
+export async function getRdKitService() {
+  initRdKitService();
+  await waitInitRdKitService();
+  if (!serviceInitialized)
     throw ('RdKit Service is not initialized');
-
   return _rdKitService!;
 }
 
 export function getRdKitWebRoot() {
-  if (!initialized)
-    throw ('WebRoot for RdKit is not initialized');
-
   return _webRoot;
 }
 
