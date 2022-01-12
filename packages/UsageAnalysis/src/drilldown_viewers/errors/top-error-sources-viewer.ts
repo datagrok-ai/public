@@ -19,8 +19,9 @@ export class TopErrorSourcesViewer extends UaFilterableViewer {
         (t: DG.DataFrame) => {
           let viewer = DG.Viewer.barChart(t, UaQueryViewer.defaultBarchartOptions);
           viewer.onEvent('d4-bar-chart-on-category-clicked').subscribe((args) => {
-            let pp = new PropertyPanel([
-              new UaDataFrameViewer(
+            let pp = new PropertyPanel(
+                  null,
+                  [new UaDataFrameViewer(
                   'Function Info By Source',
                   'FunctionInfoBySource',
                   (t: DG.DataFrame) => DG.Viewer.grid(t).root,

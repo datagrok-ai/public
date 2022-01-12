@@ -18,10 +18,11 @@ export class TopUsersViewer extends UaFilterableViewer {
         'TopUsers',
         (t: DG.DataFrame) => {
           let viewer = DG.Viewer.barChart(t, UaQueryViewer.defaultBarchartOptions);
-          viewer.onEvent('d4-bar-chart-on-category-clicked').subscribe((args) => {
-
-            let pp = new PropertyPanel([
-              new UaDataFrameViewer(
+          viewer.onEvent('d4-bar-chart-on-category-clicked').subscribe(async (args) => {
+            let entity = await grok.dapi.users.filter(`login = "${args.args.categories[0]}"`).first();
+            let pp = new PropertyPanel(
+                entity,
+                [new UaDataFrameViewer(
                   'Events Of User',
                   'TopEventsOfUser',
                   (t: DG.DataFrame) => DG.Viewer.barChart(t, UaQueryViewer.defaultBarchartOptions).root,
