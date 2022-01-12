@@ -256,7 +256,7 @@ export async function getSimilarities(molStringsColumn: DG.Column, molString: st
   if (molStringsColumn === null || molString === null)
     throw 'Chem: An input was null';
   try {
-    const result = (await chemSearches.chemGetSimilarities(molStringsColumn, molString)) as unknown;
+    const result = await chemSearches.chemGetSimilarities(molStringsColumn, molString);
     return result ? DG.DataFrame.fromColumns([result as DG.Column]) : DG.DataFrame.create();
   } catch (e: any) {
     console.error('Chem | Catch in getSimilarities: ' + e.toString());
