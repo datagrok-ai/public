@@ -1,10 +1,3 @@
-/* eslint-disable prefer-spread */
-/* eslint-disable prefer-rest-params */
-/* eslint-disable guard-for-in */
-/* eslint-disable no-unused-vars */
-/* eslint-disable camelcase */
-/* eslint-disable max-len */
-/* eslint-disable new-cap */
 const initKalign = (() => {
   const _scriptDir = typeof document !== 'undefined' && document.currentScript ? document.currentScript.src : undefined;
 
@@ -103,6 +96,67 @@ const initKalign = (() => {
         abort(text);
       }
     }
+    function getCFunc(ident) {
+      const func = Module['_' + ident];
+      return func;
+    }
+    function ccall(ident, returnType, argTypes, args, opts) {
+      const toC = {
+        string: function(str) {
+          let ret = 0;
+          if (str !== null && str !== undefined && str !== 0) {
+            const len = (str.length << 2) + 1;
+            ret = stackAlloc(len);
+            stringToUTF8(str, ret, len);
+          }
+          return ret;
+        },
+        array: function(arr) {
+          const ret = stackAlloc(arr.length);
+          writeArrayToMemory(arr, ret);
+          return ret;
+        },
+      };
+      function convertReturnValue(ret) {
+        if (returnType === 'string') return UTF8ToString(ret);
+        if (returnType === 'boolean') return Boolean(ret);
+        return ret;
+      }
+      const func = getCFunc(ident);
+      const cArgs = [];
+      let stack = 0;
+      if (args) {
+        for (let i = 0; i < args.length; i++) {
+          const converter = toC[argTypes[i]];
+          if (converter) {
+            if (stack === 0) stack = stackSave();
+            cArgs[i] = converter(args[i]);
+          } else {
+            cArgs[i] = args[i];
+          }
+        }
+      }
+      let ret = func.apply(null, cArgs);
+      function onDone(ret) {
+        if (stack !== 0) stackRestore(stack);
+        return convertReturnValue(ret);
+      }
+      ret = onDone(ret);
+      return ret;
+    }
+    function cwrap(ident, returnType, argTypes, opts) {
+      argTypes = argTypes || [];
+      const numericArgs = argTypes.every(function(type) {
+        return type === 'number';
+      });
+      const numericRet = returnType !== 'string';
+      if (numericRet && numericArgs && !opts) {
+        return getCFunc(ident);
+      }
+      return function() {
+        return ccall(ident, returnType, argTypes, arguments, opts);
+      };
+    }
     const UTF8Decoder = typeof TextDecoder !== 'undefined' ? new TextDecoder('utf8') : undefined;
     function UTF8ArrayToString(heap, idx, maxBytesToRead) {
       const endIdx = idx + maxBytesToRead;
@@ -111,7 +165,7 @@ const initKalign = (() => {
       if (endPtr - idx > 16 && heap.subarray && UTF8Decoder) {
         return UTF8Decoder.decode(heap.subarray(idx, endPtr));
       } else {
-        let str = '';
+        var str = '';
         while (idx < endPtr) {
           let u0 = heap[idx++];
           if (!(u0 & 128)) {
@@ -338,7 +392,7 @@ const initKalign = (() => {
         if (readBinary) {
           return readBinary(file);
         } else {
-          throw new Error('both async and sync fetching of the wasm failed');
+          throw 'both async and sync fetching of the wasm failed';
         }
       } catch (err) {
         abort(err);
@@ -350,7 +404,7 @@ const initKalign = (() => {
           return fetch(wasmBinaryFile, {credentials: 'same-origin'})
             .then(function(response) {
               if (!response['ok']) {
-                throw new Error('failed to load wasm binary file at \'' + wasmBinaryFile + '\'');
+                throw 'failed to load wasm binary file at \'' + wasmBinaryFile + '\'';
               }
               return response['arrayBuffer']();
             })
@@ -457,7 +511,7 @@ const initKalign = (() => {
       HEAP32[___errno_location() >> 2] = value;
       return value;
     }
-    const PATH = {
+    var PATH = {
       splitPath: function(filename) {
         const splitPathRe = /^(\/?|)([\s\S]*?)((?:\.{1,2}|[^\/]+?|)(\.[^.\/]*|))(?:[\/]*)$/;
         return splitPathRe.exec(filename).slice(1);
@@ -544,7 +598,7 @@ const initKalign = (() => {
         };
       }
     }
-    const PATH_FS = {
+    var PATH_FS = {
       resolve: function() {
         let resolvedPath = '';
         let resolvedAbsolute = false;
@@ -585,21 +639,21 @@ const initKalign = (() => {
         const toParts = trim(to.split('/'));
         const length = Math.min(fromParts.length, toParts.length);
         let samePartsLength = length;
-        for (let i = 0; i < length; i++) {
+        for (var i = 0; i < length; i++) {
           if (fromParts[i] !== toParts[i]) {
             samePartsLength = i;
             break;
           }
         }
         let outputParts = [];
-        for (let i = samePartsLength; i < fromParts.length; i++) {
+        for (var i = samePartsLength; i < fromParts.length; i++) {
           outputParts.push('..');
         }
         outputParts = outputParts.concat(toParts.slice(samePartsLength));
         return outputParts.join('/');
       },
     };
-    const TTY = {
+    var TTY = {
       ttys: [],
       init: function() {},
       shutdown: function() {},
@@ -628,7 +682,7 @@ const initKalign = (() => {
           }
           let bytesRead = 0;
           for (let i = 0; i < length; i++) {
-            let result;
+            var result;
             try {
               result = stream.tty.ops.get_char(stream.tty);
             } catch (e) {
@@ -651,7 +705,7 @@ const initKalign = (() => {
             throw new FS.ErrnoError(60);
           }
           try {
-            for (let i = 0; i < length; i++) {
+            for (var i = 0; i < length; i++) {
               stream.tty.ops.put_char(stream.tty, buffer[offset + i]);
             }
           } catch (e) {
@@ -720,7 +774,7 @@ const initKalign = (() => {
     function mmapAlloc(size) {
       abort();
     }
-    const MEMFS = {
+    var MEMFS = {
       ops_table: null,
       mount: function(mount) {
         return MEMFS.createNode(null, '/', 16384 | 511, 0);
@@ -1016,13 +1070,13 @@ const initKalign = (() => {
           if (onerror) {
             onerror();
           } else {
-            throw new Error('Loading data file "' + url + '" failed.');
+            throw 'Loading data file "' + url + '" failed.';
           }
         },
       );
       if (dep) addRunDependency(dep);
     }
-    const FS = {
+    var FS = {
       root: null,
       mounts: [],
       devices: {},
@@ -1507,10 +1561,11 @@ const initKalign = (() => {
         const new_dirname = PATH.dirname(new_path);
         const old_name = PATH.basename(old_path);
         const new_name = PATH.basename(new_path);
-        let lookup = FS.lookupPath(old_path, {parent: true});
-        const old_dir = lookup.node;
+        let lookup; let old_dir; let new_dir;
+        lookup = FS.lookupPath(old_path, {parent: true});
+        old_dir = lookup.node;
         lookup = FS.lookupPath(new_path, {parent: true});
-        const new_dir = lookup.node;
+        new_dir = lookup.node;
         if (!old_dir || !new_dir) throw new FS.ErrnoError(44);
         if (old_dir.mount !== new_dir.mount) {
           throw new FS.ErrnoError(75);
@@ -2112,12 +2167,12 @@ const initKalign = (() => {
       },
       analyzePath: function(path, dontResolveLastLink) {
         try {
-          const lookup = FS.lookupPath(path, {follow: !dontResolveLastLink});
+          var lookup = FS.lookupPath(path, {follow: !dontResolveLastLink});
           path = lookup.path;
         } catch (e) {}
         const ret = {isRoot: false, exists: false, error: 0, name: null, path: null, object: null, parentExists: false, parentPath: null, parentObject: null};
         try {
-          let lookup = FS.lookupPath(path, {parent: true});
+          var lookup = FS.lookupPath(path, {parent: true});
           ret.parentExists = true;
           ret.parentPath = lookup.path;
           ret.parentObject = lookup.node;
@@ -2139,7 +2194,7 @@ const initKalign = (() => {
         while (parts.length) {
           const part = parts.pop();
           if (!part) continue;
-          const current = PATH.join2(parent, part);
+          var current = PATH.join2(parent, part);
           try {
             FS.mkdir(current);
           } catch (e) {}
@@ -2187,7 +2242,7 @@ const initKalign = (() => {
           read: function(stream, buffer, offset, length, pos) {
             let bytesRead = 0;
             for (let i = 0; i < length; i++) {
-              let result;
+              var result;
               try {
                 result = input();
               } catch (e) {
@@ -2206,7 +2261,7 @@ const initKalign = (() => {
             return bytesRead;
           },
           write: function(stream, buffer, offset, length, pos) {
-            for (let i = 0; i < length; i++) {
+            for (var i = 0; i < length; i++) {
               try {
                 output(buffer[offset + i]);
               } catch (e) {
@@ -2303,7 +2358,7 @@ const initKalign = (() => {
           this.lengthKnown = true;
         };
         if (typeof XMLHttpRequest !== 'undefined') {
-          if (!ENVIRONMENT_IS_WORKER) throw new Error('Cannot do synchronous binary XHRs outside webworkers in modern browsers. Use --embed-file or --preload-file in emcc');
+          if (!ENVIRONMENT_IS_WORKER) throw 'Cannot do synchronous binary XHRs outside webworkers in modern browsers. Use --embed-file or --preload-file in emcc';
           const lazyArray = new LazyUint8Array();
           Object.defineProperties(lazyArray, {
             length: {
@@ -2323,9 +2378,9 @@ const initKalign = (() => {
               },
             },
           });
-          const properties = {isDevice: false, contents: lazyArray};
+          var properties = {isDevice: false, contents: lazyArray};
         } else {
-          const properties = {isDevice: false, url: url};
+          var properties = {isDevice: false, url: url};
         }
         const node = FS.createFile(parent, name, properties, canRead, canWrite);
         if (properties.contents) {
@@ -2356,11 +2411,11 @@ const initKalign = (() => {
           if (position >= contents.length) return 0;
           const size = Math.min(contents.length - position, length);
           if (contents.slice) {
-            for (let i = 0; i < size; i++) {
+            for (var i = 0; i < size; i++) {
               buffer[offset + i] = contents[position + i];
             }
           } else {
-            for (let i = 0; i < size; i++) {
+            for (var i = 0; i < size; i++) {
               buffer[offset + i] = contents.get(position + i);
             }
           }
@@ -2421,7 +2476,7 @@ const initKalign = (() => {
         onerror = onerror || function() {};
         const indexedDB = FS.indexedDB();
         try {
-          const openRequest = indexedDB.open(FS.DB_NAME(), FS.DB_VERSION);
+          var openRequest = indexedDB.open(FS.DB_NAME(), FS.DB_VERSION);
         } catch (e) {
           return onerror(e);
         }
@@ -2461,7 +2516,7 @@ const initKalign = (() => {
         onerror = onerror || function() {};
         const indexedDB = FS.indexedDB();
         try {
-          const openRequest = indexedDB.open(FS.DB_NAME(), FS.DB_VERSION);
+          var openRequest = indexedDB.open(FS.DB_NAME(), FS.DB_VERSION);
         } catch (e) {
           return onerror(e);
         }
@@ -2469,7 +2524,7 @@ const initKalign = (() => {
         openRequest.onsuccess = function openRequest_onsuccess() {
           const db = openRequest.result;
           try {
-            const transaction = db.transaction([FS.DB_STORE_NAME], 'readonly');
+            var transaction = db.transaction([FS.DB_STORE_NAME], 'readonly');
           } catch (e) {
             onerror(e);
             return;
@@ -2502,7 +2557,7 @@ const initKalign = (() => {
         openRequest.onerror = onerror;
       },
     };
-    const SYSCALLS = {
+    var SYSCALLS = {
       mappings: {},
       DEFAULT_POLLMASK: 5,
       calculateAt: function(dirfd, path, allowEmpty) {
@@ -2527,7 +2582,7 @@ const initKalign = (() => {
       },
       doStat: function(func, path, buf) {
         try {
-          const stat = func(path);
+          var stat = func(path);
         } catch (e) {
           if (e && e.node && PATH.normalize(path) !== PATH.normalize(FS.getPath(e.node))) {
             return -54;
@@ -2671,11 +2726,12 @@ const initKalign = (() => {
         const stream = SYSCALLS.getStreamFromFD(fd);
         switch (cmd) {
         case 0: {
-          const arg = SYSCALLS.get();
+          var arg = SYSCALLS.get();
           if (arg < 0) {
             return -28;
           }
-          const newStream = FS.open(stream.path, stream.flags, 0, arg);
+          let newStream;
+          newStream = FS.open(stream.path, stream.flags, 0, arg);
           return newStream.fd;
         }
         case 1:
@@ -2684,12 +2740,12 @@ const initKalign = (() => {
         case 3:
           return stream.flags;
         case 4: {
-          const arg = SYSCALLS.get();
+          var arg = SYSCALLS.get();
           stream.flags |= arg;
           return 0;
         }
         case 5: {
-          const arg = SYSCALLS.get();
+          var arg = SYSCALLS.get();
           const offset = 0;
           HEAP16[(arg + offset) >> 1] = 2;
           return 0;
@@ -2733,7 +2789,7 @@ const initKalign = (() => {
         }
         case 21519: {
           if (!stream.tty) return -59;
-          const argp = SYSCALLS.get();
+          var argp = SYSCALLS.get();
           HEAP32[argp >> 2] = 0;
           return 0;
         }
@@ -2742,7 +2798,7 @@ const initKalign = (() => {
           return -28;
         }
         case 21531: {
-          const argp = SYSCALLS.get();
+          var argp = SYSCALLS.get();
           return FS.ioctl(stream, op, argp);
         }
         case 21523: {
@@ -2811,12 +2867,12 @@ const initKalign = (() => {
       if (!getEnvStrings.strings) {
         const lang = ((typeof navigator === 'object' && navigator.languages && navigator.languages[0]) || 'C').replace('-', '_') + '.UTF-8';
         const env = {USER: 'web_user', LOGNAME: 'web_user', PATH: '/', PWD: '/', HOME: '/home/web_user', LANG: lang, _: getExecutableName()};
-        for (const x in ENV) {
+        for (var x in ENV) {
           if (ENV[x] === undefined) delete env[x];
           else env[x] = ENV[x];
         }
         const strings = [];
-        for (const x in env) {
+        for (var x in env) {
           strings.push(x + '=' + env[x]);
         }
         getEnvStrings.strings = strings;
@@ -3043,7 +3099,7 @@ const initKalign = (() => {
         '%OW': '%W',
         '%Oy': '%y',
       };
-      for (const rule in EXPANSION_RULES_1) {
+      for (var rule in EXPANSION_RULES_1) {
         pattern = pattern.replace(new RegExp(rule, 'g'), EXPANSION_RULES_1[rule]);
       }
       const WEEKDAYS = ['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'];
@@ -3237,7 +3293,7 @@ const initKalign = (() => {
           return '%';
         },
       };
-      for (const rule in EXPANSION_RULES_2) {
+      for (var rule in EXPANSION_RULES_2) {
         if (pattern.includes(rule)) {
           pattern = pattern.replace(new RegExp(rule, 'g'), EXPANSION_RULES_2[rule](date));
         }
@@ -3302,6 +3358,12 @@ const initKalign = (() => {
     });
     FS.FSNode = FSNode;
     FS.staticInit();
+    Module['FS_createPath'] = FS.createPath;
+    Module['FS_createDataFile'] = FS.createDataFile;
+    Module['FS_createPreloadedFile'] = FS.createPreloadedFile;
+    Module['FS_createLazyFile'] = FS.createLazyFile;
+    Module['FS_createDevice'] = FS.createDevice;
+    Module['FS_unlink'] = FS.unlink;
     function intArrayFromString(stringy, dontAddNull, length) {
       const len = length > 0 ? length : lengthBytesUTF8(stringy) + 1;
       const u8array = new Array(len);
@@ -3309,7 +3371,7 @@ const initKalign = (() => {
       if (dontAddNull) u8array.length = numBytesWritten;
       return u8array;
     }
-    const asmLibraryArg = {
+    var asmLibraryArg = {
       e: ___syscall_fcntl64,
       h: ___syscall_ioctl,
       i: ___syscall_open,
@@ -3332,30 +3394,47 @@ const initKalign = (() => {
       a: _time,
     };
     const asm = createWasm();
-    let ___wasm_call_ctors = (Module['___wasm_call_ctors'] = function() {
+    var ___wasm_call_ctors = (Module['___wasm_call_ctors'] = function() {
       return (___wasm_call_ctors = Module['___wasm_call_ctors'] = Module['asm']['v']).apply(null, arguments);
     });
-    let _main = (Module['_main'] = function() {
+    var _main = (Module['_main'] = function() {
       return (_main = Module['_main'] = Module['asm']['w']).apply(null, arguments);
     });
-    let _malloc = (Module['_malloc'] = function() {
+    var _malloc = (Module['_malloc'] = function() {
       return (_malloc = Module['_malloc'] = Module['asm']['x']).apply(null, arguments);
     });
-    let ___errno_location = (Module['___errno_location'] = function() {
+    var ___errno_location = (Module['___errno_location'] = function() {
       return (___errno_location = Module['___errno_location'] = Module['asm']['z']).apply(null, arguments);
     });
-    let __get_tzname = (Module['__get_tzname'] = function() {
+    var __get_tzname = (Module['__get_tzname'] = function() {
       return (__get_tzname = Module['__get_tzname'] = Module['asm']['A']).apply(null, arguments);
     });
-    let __get_daylight = (Module['__get_daylight'] = function() {
+    var __get_daylight = (Module['__get_daylight'] = function() {
       return (__get_daylight = Module['__get_daylight'] = Module['asm']['B']).apply(null, arguments);
     });
-    let __get_timezone = (Module['__get_timezone'] = function() {
+    var __get_timezone = (Module['__get_timezone'] = function() {
       return (__get_timezone = Module['__get_timezone'] = Module['asm']['C']).apply(null, arguments);
     });
-    let stackAlloc = (Module['stackAlloc'] = function() {
-      return (stackAlloc = Module['stackAlloc'] = Module['asm']['D']).apply(null, arguments);
+    var stackSave = (Module['stackSave'] = function() {
+      return (stackSave = Module['stackSave'] = Module['asm']['D']).apply(null, arguments);
     });
+    var stackRestore = (Module['stackRestore'] = function() {
+      return (stackRestore = Module['stackRestore'] = Module['asm']['E']).apply(null, arguments);
+    });
+    var stackAlloc = (Module['stackAlloc'] = function() {
+      return (stackAlloc = Module['stackAlloc'] = Module['asm']['F']).apply(null, arguments);
+    });
+    Module['ccall'] = ccall;
+    Module['cwrap'] = cwrap;
+    Module['addRunDependency'] = addRunDependency;
+    Module['removeRunDependency'] = removeRunDependency;
+    Module['FS_createPath'] = FS.createPath;
+    Module['FS_createDataFile'] = FS.createDataFile;
+    Module['FS_createPreloadedFile'] = FS.createPreloadedFile;
+    Module['FS_createLazyFile'] = FS.createLazyFile;
+    Module['FS_createDevice'] = FS.createDevice;
+    Module['FS_unlink'] = FS.unlink;
+    Module['ENV'] = ENV;
     Module['FS'] = FS;
     let calledRun;
     function ExitStatus(status) {
@@ -3444,7 +3523,7 @@ const initKalign = (() => {
         Module['preInit'].pop()();
       }
     }
-    let shouldRunNow = true;
+    var shouldRunNow = true;
     if (Module['noInitialRun']) shouldRunNow = false;
     run();
 
