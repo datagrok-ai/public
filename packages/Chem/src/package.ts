@@ -24,7 +24,6 @@ import {addInchis} from './panels/inchi';
 import {addInchiKeys} from './panels/inchi';
 import * as chemCommonRdKit from './chem-common-rdkit';
 import {convertToRDKit, rGroupAnalysis} from './analysis/r-group-analysis';
-import {chemBeginCriticalSection, chemEndCriticalSection} from './chem-common';
 import {identifiersWidget} from './widgets/identifiers';
 import {chem} from 'datagrok-api/grok';
 import Sketcher = chem.Sketcher;
@@ -225,7 +224,6 @@ export async function chemCellRenderer() {
 //output: column result [fingerprints]
 export async function getMorganFingerprints(molColumn: DG.Column) {
   if (molColumn === null) throw 'Chem: An input was null';
-  await chemBeginCriticalSection();
   try {
     const fingerprints = await chemSearches.chemGetMorganFingerprints(molColumn);
     const fingerprintsBitsets: DG.BitSet[] = [];
@@ -238,10 +236,7 @@ export async function getMorganFingerprints(molColumn: DG.Column) {
   } catch (e: any) {
     console.error('Chem | Catch in getMorganFingerprints: ' + e.toString());
     throw e;
-  } finally {
-    chemEndCriticalSection();
   }
-
 }
 
 //name: getMorganFingerprint
@@ -260,15 +255,12 @@ export function getMorganFingerprint(molString: string) {
 export async function getSimilarities(molStringsColumn: DG.Column, molString: string) {
   if (molStringsColumn === null || molString === null)
     throw 'Chem: An input was null';
-  await chemBeginCriticalSection();
   try {
     const result = (await chemSearches.chemGetSimilarities(molStringsColumn, molString)) as unknown;
     return result ? DG.DataFrame.fromColumns([result as DG.Column]) : DG.DataFrame.create();
   } catch (e: any) {
     console.error('Chem | Catch in getSimilarities: ' + e.toString());
     throw e;
-  } finally {
-    chemEndCriticalSection();
   }
 }
 
@@ -281,15 +273,12 @@ export async function getSimilarities(molStringsColumn: DG.Column, molString: st
 export async function findSimilar(molStringsColumn: DG.Column, molString: string, aLimit: number, aCutoff: number) {
   if (molStringsColumn === null || molString === null || aLimit === null || aCutoff === null)
     throw 'Chem: An input was null';
-  await chemBeginCriticalSection();
   try {
     const result = await chemSearches.chemFindSimilar(molStringsColumn, molString, {limit: aLimit, cutoff: aCutoff});
     return result ? result : DG.DataFrame.create();
   } catch (e: any) {
     console.error('Chem | In findSimilar: ' + e.toString());
     throw e;
-  } finally {
-    chemEndCriticalSection();
   }
 }
 
@@ -304,7 +293,6 @@ export async function searchSubstructure(
   substructLibrary: boolean, molStringSmarts: string) {
   if (molStringsColumn === null || molString === null || substructLibrary === null || molStringSmarts === null)
     throw 'Chem: An input was null';
-  await chemBeginCriticalSection();
   try {
     const result =
       substructLibrary ?
@@ -314,8 +302,6 @@ export async function searchSubstructure(
   } catch (e: any) {
     console.error('Chem | In substructureSearch: ' + e.toString());
     throw e;
-  } finally {
-    chemEndCriticalSection();
   }
 }
 
