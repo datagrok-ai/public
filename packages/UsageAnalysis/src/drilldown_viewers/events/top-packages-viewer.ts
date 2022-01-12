@@ -18,10 +18,11 @@ export class TopPackagesViewer extends UaFilterableViewer {
         'TopPackages',
         (t: DG.DataFrame) => {
           let viewer = DG.Viewer.barChart(t, UaQueryViewer.defaultBarchartOptions);
-          viewer.onEvent('d4-bar-chart-on-category-clicked').subscribe((args) => {
-
-            let pp = new PropertyPanel([
-              new UaDataFrameViewer(
+          viewer.onEvent('d4-bar-chart-on-category-clicked').subscribe(async (args) => {
+            let entity = await grok.dapi.packages.filter(`shortName = "${args.args.categories[0]}"`).first();
+            let pp = new PropertyPanel(
+                entity,
+                [new UaDataFrameViewer(
                   'Package Info',
                   'PackageInfo',
                   (t: DG.DataFrame) => DG.Viewer.grid(t).root,

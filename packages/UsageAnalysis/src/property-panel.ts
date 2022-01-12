@@ -4,28 +4,29 @@ import * as DG from "datagrok-api/dg";
 import * as ui from "datagrok-api/ui";
 
 export class PropertyPanel {
-  private header: string;
-  private viewers: UaQueryViewer[];
   private acc: DG.Accordion;
+  private root: HTMLElement;
 
-  public constructor(viewers: UaQueryViewer[], header: string, accordionKey: string) {
-    this.viewers = viewers;
-    this.header = header;
-
+  public constructor(entity: DG.Entity | null, viewers: UaQueryViewer[], header: string, accordionKey: string) {
     this.acc = DG.Accordion.create(accordionKey);
+
+    if (entity != null)
+      this.acc.addPane('Details', () => ui.render(entity));
 
     for(let viewer of viewers) {
       this.acc.addPane(viewer.name, () => viewer.root);
     }
-  }
 
-  public getRoot() {
-    return  ui.block([
+    this.root = ui.block([
       ui.divV([
-        ui.h1(this.header),
+        ui.h1(header),
         this.acc.root
       ])
     ]);
+  }
+
+  public getRoot(): HTMLElement {
+    return this.root;
   }
 
 }

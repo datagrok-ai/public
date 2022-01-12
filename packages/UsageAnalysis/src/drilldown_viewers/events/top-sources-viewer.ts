@@ -20,8 +20,9 @@ export class TopSourcesViewer extends UaFilterableViewer {
           let viewer = DG.Viewer.barChart(t, UaQueryViewer.defaultBarchartOptions);
           viewer.onEvent('d4-bar-chart-on-category-clicked').subscribe((args) => {
 
-            let pp = new PropertyPanel([
-              new UaDataFrameViewer(
+            let pp = new PropertyPanel(
+                null,
+                [new UaDataFrameViewer(
                   'Functions Of Source',
                   'TopFunctionsOfSource',
                   (t: DG.DataFrame) => DG.Viewer.barChart(t, UaQueryViewer.defaultBarchartOptions).root,
