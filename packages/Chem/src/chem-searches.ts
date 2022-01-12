@@ -71,7 +71,9 @@ const cacheParamsDefaults: CacheParams = {
 
 const _chemCache = {...cacheParamsDefaults};
 
-async function _invalidate(molStringsColumn: DG.Column, queryMolString: string | null, includeFingerprints: boolean) {
+async function _invalidate(
+  molStringsColumn: DG.Column, queryMolString: string | null,
+  includeFingerprints: boolean, endCriticalSection = true) {
   await chemBeginCriticalSection();
   try {
     const sameColumnAndVersion = () =>
@@ -118,7 +120,8 @@ async function _invalidate(molStringsColumn: DG.Column, queryMolString: string |
       }
     }
   } finally {
-    chemEndCriticalSection();
+    if (endCriticalSection)
+      chemEndCriticalSection();
   }
 }
 
@@ -147,37 +150,45 @@ export function chemSubstructureSearchGraph(molStringsColumn: DG.Column, molStri
   const result = DG.BitSet.create(len);
   if (molString.length == 0)
     return result;
-
-  const subMol = getRdKitModule().get_mol(molString);
-  for (let i = 0; i < len; ++i) {
-    const item = molStringsColumn.get(i);
-    try {
-      const mol = getRdKitModule().get_mol(item);
-      const match = mol.get_substruct_match(subMol);
-      if (match !== '{}')
-        result.set(i, true, false);
-
-      mol.delete();
-    } catch (e) {
-      console.error(
-        'Possibly a malformed molString: `' + item + '`');
-      // Won't rethrow
+  let subMol = null;
+  try {
+    subMol = getRdKitModule().get_mol(molString);
+    for (let i = 0; i < len; ++i) {
+      const item = molStringsColumn.get(i);
+      let mol = null;
+      try {
+        mol = getRdKitModule().get_mol(item);
+        const match = mol.get_substruct_match(subMol);
+        if (match !== '{}')
+          result.set(i, true, false);
+      } catch (e) {
+        console.error('Possibly a malformed molString: `' + item + '`');
+        // Explicitly won't rethrow
+      } finally {
+        mol?.delete();
+      }
     }
+    return result;
+  } finally {
+    subMol?.delete();
   }
-  subMol.delete();
-  return result;
 }
 
 export async function chemSubstructureSearchLibrary(
   molStringsColumn: DG.Column, molString: string, molStringSmarts: string) {
-  await _invalidate(molStringsColumn, molString, false);
-  const result = DG.BitSet.create(molStringsColumn.length);
-  if (molString.length != 0) {
-    const matches = await (await getRdKitService()).searchSubstructure(molString, molStringSmarts);
-    for (const match of matches)
-      result.set(match, true, false);
+  await _invalidate(molStringsColumn, molString, false, /* endCriticalSection = */ false);
+  try {
+    const result = DG.BitSet.create(molStringsColumn.length);
+    if (molString.length != 0) {
+      const matches = await (await getRdKitService()).searchSubstructure(molString, molStringSmarts);
+      for (const match of matches)
+        result.set(match, true, false);
+    }
+    return result;
+  } finally {
+    // we do this intentionally, as we are still searching inside workers
+    chemEndCriticalSection();
   }
-  return result;
 }
 
 export function chemGetMorganFingerprint(molString: string): BitArray {

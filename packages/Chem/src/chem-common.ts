@@ -28,11 +28,15 @@ export function criticalSectionEnd(key: string) {
 const CHEM_TOKEN = 'CHEM_TOKEN';
 
 export async function chemBeginCriticalSection() {
+  let warned = false;
   if (unlockFunctionForKey[CHEM_TOKEN]) {
-    console.warn('Chem already locked, trace:');
-    console.trace();
+    console.warn('Chem | Is already in a critical section, waiting...');
+    warned = true;
   }
   await criticalSectionBegin(CHEM_TOKEN);
+  if (warned) {
+    console.warn('Chem | Left the critical section');
+  }
 }
 
 export function chemEndCriticalSection() {
