@@ -23,6 +23,7 @@ import './dapi/user-data-storage';
 import './dapi/users';
 import './shell/ml';
 import './ui/divs';
+import './ui/buttons';
 
 import {runTests} from "./test";
 export let _package = new DG.Package();
