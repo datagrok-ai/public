@@ -1,7 +1,7 @@
 import * as grok from 'datagrok-api/grok';
 import * as DG from 'datagrok-api/dg';
 import { Subscription } from 'rxjs';
-import { after, category, expect, test } from '../test';
+import { after, category, expect, test } from "@datagrok-libraries/utils/src/test";
 
 
 category('DataFrame', () => {

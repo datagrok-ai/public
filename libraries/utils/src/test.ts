@@ -54,7 +54,7 @@ export async function runTests() {
       if (value.before)
         await value.before();
     } catch (x: any) {
-       value.beforeStatus = x.toString();
+      value.beforeStatus = x.toString();
     }
     let t = value.tests ?? [];
     let res = t.map(async (t) => {
