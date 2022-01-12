@@ -3,8 +3,6 @@
 import {RdKitService} from './rdkit-service';
 import * as ui from 'datagrok-api/ui';
 import * as OCL from 'openchemlib/full.js';
-import {chemLock, chemUnlock} from './chem-common';
-import {drawMoleculeToCanvas} from './chem-common-rdkit';
 import {isMolBlock} from './chem-utils';
 
 export function renderDescription(description: OCL.IParameterizedString[], smiles: string | null = null) {
