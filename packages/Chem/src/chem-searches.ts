@@ -121,9 +121,7 @@ async function _invalidate(molStringsColumn: DG.Column, queryMolString: string |
 // smiles, cxsmiles, molblock, v3Kmolblock, and inchi;
 // see https://github.com/rdkit/rdkit/blob/master/Code/MinimalLib/minilib.h
 
-export async function chemGetSimilarities(
-  molStringsColumn: DG.Column, queryMolString = '',
-  settings: { [name: string]: any } = {}) {
+export async function chemGetSimilarities(molStringsColumn: DG.Column, queryMolString = '') {
   await _invalidate(molStringsColumn, queryMolString, true);
   const result = queryMolString.length != 0 ?
     await DG.Column.fromList(DG.COLUMN_TYPE.FLOAT, 'distances',
