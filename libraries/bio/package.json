@@ -2,7 +2,7 @@
   "name": "@datagrok-libraries/bio",
   "beta": true,
   "friendlyName": "Datagrok bio library",
-  "version": "0.0.1",
+  "version": "0.0.2",
   "description": "",
   "dependencies": {
     "datagrok-api": ">=0.95.8",
