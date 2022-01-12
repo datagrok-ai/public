@@ -24,6 +24,7 @@ import './dapi/users';
 import './shell/ml';
 import './ui/divs';
 import './ui/buttons';
+// import './widgets/legend';
 
 import {runTests} from "./test";
 export let _package = new DG.Package();
