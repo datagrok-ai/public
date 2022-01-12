@@ -7,6 +7,8 @@ import {map} from "./map";
 
 export let _package = new DG.Package();
 
+const STORAGE_NAME = 'oligo-batch-calculator-storage';
+
 let weightsObj: {[code: string]: number} = {};
 let normalizedObj: {[code: string]: string} = {};
 for (let synthesizer of Object.keys(map))
@@ -15,9 +17,12 @@ for (let synthesizer of Object.keys(map))
       weightsObj[code] = map[synthesizer][technology][code].weight;
       normalizedObj[code] = map[synthesizer][technology][code].normalized;
     }
-      
 
-function sortByStringLengthInDescendingOrderToCheckForMatchWithLongerCodesFirst(array: string[]): string[] {
+async function postValueToUserDataStorage(storageName: string, obj: any) {
+  await grok.dapi.userDataStorage.postValue(storageName, obj.longName, JSON.stringify(obj), false);
+}
+
+function sortByStringLengthInDescendingOrder(array: string[]): string[] {
   return array.sort(function(a, b) { return b.length - a.length; });
 }
 
@@ -81,7 +86,7 @@ export function molecularMass(sequence: string, amount: number, outputUnits: str
 //input: string sequence
 //output: double molecularWeight
 export function molecularWeight(sequence: string): number {
-  const codes = sortByStringLengthInDescendingOrderToCheckForMatchWithLongerCodesFirst(Object.keys(weightsObj));
+  const codes = sortByStringLengthInDescendingOrder(Object.keys(weightsObj));
   let weight = 0, i = 0;
   while (i < sequence.length) {
     let matchedCode = codes.find((s) => s == sequence.slice(i, i + s.length))!;
@@ -125,7 +130,7 @@ export function extinctionCoefficient(sequence: string): number {
 }
 
 function normalizeSequence(sequence: string, synthesizer: string): string {
-  const codes = sortByStringLengthInDescendingOrderToCheckForMatchWithLongerCodesFirst(getAllCodesOfSynthesizer(synthesizer));
+  const codes = sortByStringLengthInDescendingOrder(getAllCodesOfSynthesizer(synthesizer));
   const re = new RegExp('(' + codes.join('|') + ')', 'g');
   return sequence.replace(re, function (code) {return normalizedObj[code]});
 }
@@ -262,7 +267,7 @@ export function OligoBatchCalculatorApp() {
       DG.Column.fromList('int', 'Ext. Coefficient', extinctionCoefficients)
     ]);
 
-    let grid = DG.Viewer.grid(table);
+    let grid = DG.Viewer.grid(table, { 'showRowHeader': false });
     let col = grid.columns.byName(nameOfColumnWithSequences);
     col!.cellType = 'html';
 
@@ -330,6 +335,47 @@ export function OligoBatchCalculatorApp() {
       .show();
   });
 
+  let addModificationButton = ui.button('ADD MODIFICATION', async() => {
+    let modifications: string[] = [];
+    await grok.dapi.userDataStorage.get(STORAGE_NAME).then((entries) => {
+      Object.keys(entries).forEach((key) => {
+        modifications.push(key);
+        // console.log('key = ' + JSON.parse(entries[key]));
+      });
+    });
+    console.log(modifications);
+    let longName = ui.stringInput('Long name', '');
+    ui.tooltip.bind(longName.root, "Examples: 'Inverted Abasic', 'Cyanine 3 CPG', '5-Methyl dC'");
+    let abbreviation = ui.stringInput('Abbreviation', '');
+    ui.tooltip.bind(abbreviation.root, "Examples: 'invabasic', 'Cy3', '5MedC'");
+    let molecularWeight = ui.floatInput('Molecular weight', 0);
+    let baseModification = ui.choiceInput('Base modification', 'NO', ['NO', 'rU', 'rA', 'rC', 'rG', 'dA', 'dC', 'dG', 'dT'], (v: string) => {
+      if (v != 'NO')
+        extinctionCoefficient.value = 'Base';
+      extinctionCoefficient.enabled = (v == 'NO');
+    });
+    let extinctionCoefficient = ui.stringInput('Extinction coefficient', '');
+    ui.dialog('Add Modification')
+      .add(ui.div([
+        longName.root,
+        abbreviation.root,
+        molecularWeight.root,
+        baseModification.root,
+        extinctionCoefficient.root,
+      ]))
+      .onOK(() => {
+        postValueToUserDataStorage(STORAGE_NAME, {
+          longName: longName.value,
+          abbreviation: abbreviation.value,
+          molecularWeight: molecularWeight.value,
+          extinctionCoefficient: extinctionCoefficient.value,
+          baseModification: baseModification.value,
+        })
+      //.then(() => grok.shell.info('Saved'))
+      })
+      .show();
+  });
+
   let title = ui.panel([ui.h1('Oligo Properties')], 'ui-panel ui-box');
   title.style.maxHeight = '45px';
   $(title).children('h1').css('margin', '0px');
@@ -341,13 +387,17 @@ export function OligoBatchCalculatorApp() {
           ui.h1('Yield Amount & Units'),
           ui.divH([
             yieldAmount.root,
-            units.root
+            units.root,
           ]),
           ui.h1('Input Sequences'),
           ui.div([
             inputSequences.root
           ],'inputSequence'),
-          clearSequences,
+          ui.divH([
+            clearSequences,
+            showCodesButton,
+            addModificationButton,
+          ])
         ]), {style:{maxHeight:'270px'}}
       ),
       ui.splitV([
@@ -356,10 +406,7 @@ export function OligoBatchCalculatorApp() {
       ]),
       ui.box(
         ui.panel([
-          ui.divH([
-            saveAsButton,
-            showCodesButton
-          ])
+          saveAsButton,
         ]), {style:{maxHeight:'60px'}}
       )
     ])

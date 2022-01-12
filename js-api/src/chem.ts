@@ -13,10 +13,13 @@ import {SemanticValue} from "./grid";
 import $ from "cash-dom";
 import {element} from "../ui";
 import {Utils} from "./utils";
-import {isMolBlock} from "../../packages/Chem/src/chem-utils";
 
 let api = <any>window;
 declare let grok: any;
+
+export function isMolBlock(s: string) {
+  return s.includes('M  END');
+}
 
 /** Cheminformatics-related routines */
 export namespace chem {

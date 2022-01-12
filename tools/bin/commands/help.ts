@@ -53,11 +53,13 @@ Usage: grok config
 Create or update a configuration file
 
 Options:
-[--reset] [--server] [--key]
+[--reset] [--server] [--alias] [--key]
 
 --reset     Restore the default config file template
---server    Use to add a server to the config (\`grok config add --server url --key key\`) 
---key       Use in conjunction with the \`server\` option
+--server    Use to add a server to the config (\`grok config add --alias alias --server url --key key\`)
+--alias     Use in conjunction with the \`server\` option to set the server name
+--key       Use in conjunction with the \`server\` option to set the developer key
+--default   Use in conjunction with the \`server\` option to set the added server as default
 `;
 
 const HELP_CREATE = `
