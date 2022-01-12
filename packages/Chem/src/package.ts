@@ -24,7 +24,7 @@ import {addInchis} from './panels/inchi';
 import {addInchiKeys} from './panels/inchi';
 import * as chemCommonRdKit from './chem-common-rdkit';
 import {convertToRDKit, rGroupAnalysis} from './analysis/r-group-analysis';
-import {chemLock, chemUnlock} from './chem-common';
+import {chemBeginCriticalSection, chemEndCriticalSection} from './chem-common';
 import {identifiersWidget} from './widgets/identifiers';
 import {chem} from 'datagrok-api/grok';
 import Sketcher = chem.Sketcher;
@@ -225,26 +225,26 @@ export async function chemCellRenderer() {
 //input: string molString
 //output: dataframe result
 export async function getSimilarities(molStringsColumn: DG.Column, molString: string) {
-  await chemLock();
+  await chemBeginCriticalSection();
   try {
     if (molStringsColumn === null || molString === null) throw 'An input was null';
     // TODO: Make in the future so that the return type is always one
     const result = (await chemSearches.chemGetSimilarities(molStringsColumn, molString)) as unknown; // TODO: !
     // TODO: get rid of a wrapping DataFrame and be able to return Columns
-    chemUnlock();
+    chemEndCriticalSection();
     return result ? DG.DataFrame.fromColumns([result as DG.Column]) : DG.DataFrame.create();
   } catch (e: any) {
     console.error('In getSimilarities: ' + e.toString());
     throw e;
   }
-  chemUnlock();
+  chemEndCriticalSection();
 }
 
 //name: getMorganFingerprints
 //input: column molColumn {semType: Molecule}
 //output: column result [fingerprints]
 export async function getMorganFingerprints(molColumn: DG.Column) {
-  await chemLock();
+  await chemBeginCriticalSection();
   const fingerprints = await chemSearches.chemGetMorganFingerprints(molColumn);
   const fingerprintsBitsets: DG.BitSet[] = [];
   for (let i = 0; i < fingerprints.length; ++i) {
@@ -252,7 +252,7 @@ export async function getMorganFingerprints(molColumn: DG.Column) {
     const fingerprint = DG.BitSet.fromBytes(fingerprints[i].getRawData().buffer, fingerprints[i].length);
     fingerprintsBitsets.push(fingerprint);
   }
-  chemUnlock();
+  chemEndCriticalSection();
   return DG.Column.fromList('object', 'fingerprints', fingerprintsBitsets);
 }
 
@@ -272,17 +272,17 @@ export function getMorganFingerprint(molString: string) {
 //input: int cutoff
 //output: dataframe result
 export async function findSimilar(molStringsColumn: DG.Column, molString: string, aLimit: number, aCutoff: number) {
-  await chemLock();
+  await chemBeginCriticalSection();
   try {
     if (molStringsColumn === null || molString === null || aLimit === null || aCutoff === null) throw 'An input was null';
     const result = await chemSearches.chemFindSimilar(molStringsColumn, molString, {limit: aLimit, cutoff: aCutoff});
-    chemUnlock();
+    chemEndCriticalSection();
     return result ? result : DG.DataFrame.create();
   } catch (e: any) {
     console.error('In getSimilarities: ' + e.toString());
     throw e;
   }
-  chemUnlock();
+  chemEndCriticalSection();
 }
 
 //name: searchSubstructure
@@ -292,7 +292,7 @@ export async function findSimilar(molStringsColumn: DG.Column, molString: string
 //input: string molStringSmarts
 //output: column result
 export async function searchSubstructure(molStringsColumn: DG.Column, molString: string, substructLibrary: boolean, molStringSmarts: string) {
-  await chemLock();
+  await chemBeginCriticalSection();
   try {
     if (molStringsColumn === null || molString === null || substructLibrary === null || molStringSmarts === null)
       throw 'An input was null';
@@ -301,13 +301,13 @@ export async function searchSubstructure(molStringsColumn: DG.Column, molString:
       substructLibrary ?
         await chemSearches.chemSubstructureSearchLibrary(molStringsColumn, molString, molStringSmarts/*, webRoot*/) :
         chemSearches.chemSubstructureSearchGraph(molStringsColumn, molString);
-    chemUnlock();
+    chemEndCriticalSection();
     return DG.Column.fromList('object', 'bitset', [result]);
   } catch (e: any) {
     console.error('In substructureSearch: ' + e.toString());
     throw e;
   }
-  chemUnlock();
+  chemEndCriticalSection();
 }
 
 //name: Descriptors App

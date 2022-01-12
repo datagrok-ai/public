@@ -27,7 +27,7 @@ export function criticalSectionEnd(key: string) {
 
 const CHEM_TOKEN = 'CHEM_TOKEN';
 
-export async function chemLock() {
+export async function chemBeginCriticalSection() {
   if (unlockFunctionForKey[CHEM_TOKEN]) {
     console.warn('Chem already locked, trace:');
     console.trace();
@@ -35,7 +35,7 @@ export async function chemLock() {
   await criticalSectionBegin(CHEM_TOKEN);
 }
 
-export function chemUnlock() {
+export function chemEndCriticalSection() {
   criticalSectionEnd(CHEM_TOKEN);
 }
 
