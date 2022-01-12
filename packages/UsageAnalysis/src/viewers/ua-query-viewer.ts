@@ -83,6 +83,7 @@ export abstract class UaQueryViewer {
     grok.data.query('UsageAnalysis:' + this.queryName, filter).then((dataFrame) => {
       // if (cardName === 'Errors')
       //     grok.data.detectSemanticTypes(dataFrame);
+      dataFrame.columns.byName('count').tags['format'] = '#';
       host.appendChild(this.viewerFunction(dataFrame));
       host.removeChild(loader);
     });
