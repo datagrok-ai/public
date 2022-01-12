@@ -519,27 +519,31 @@ async function openFse(v: DG.View, functionCode: string) {
       .setTag(DG.TAGS.CHOICES, `["${funcParamTypes.join(`", "`)}"]`);
     paramsGrid.dataFrame?.getCol(functionParamsMapping[FUNC_PARAM_FIELDS.DIRECTION as keyof typeof functionParamsMapping])
       .setTag(DG.TAGS.CHOICES, `["${[DIRECTION.INPUT, DIRECTION.OUTPUT].join(`", "`)}"]`);
+    
+      const col = paramsGrid.columns.byName('+');
+    col.cellType = 'html';
+    
     paramsGrid.onCellPrepare((gc) => {
+      if (gc.gridColumn.name !== '+') {
+        return
+      } 
+
       const deleteBtn = (name: string) => ui.div(
         ui.icons.delete(() => {
-          console.log('name to delete:', name);
           functionParamsCopy = functionParamsCopy.filter((param) => param.name !== name);
           functionParamsState.next(functionParamsCopy);
         }, 'Remove the param'), {style: {'text-align': 'center', 'margin': '6px'}},
       );
-  
-      if (gc.gridColumn.name === '+') {
-        gc.gridColumn.cellType = 'html';
-        if (gc.isTableCell) {
-          gc.style.element =
-          ui.divH([
-            deleteBtn(gc.grid.dataFrame?.get('Name', gc.gridRow)),
-          ]);
-        }
-  
-        if (gc.isColHeader) {
-          gc.customText = '';
-        }
+
+      if (gc.isTableCell) {
+        gc.style.element =
+        ui.divH([
+          deleteBtn(gc.grid.dataFrame?.get('Name', gc.gridRow)),
+        ]);
+      }
+
+      if (gc.isColHeader) {
+        gc.customText = '';
       }
     });
   
