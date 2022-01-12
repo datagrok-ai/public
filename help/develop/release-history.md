@@ -14,36 +14,7 @@
 ## Addressed Issues
 
 * Updated beta_users.csv 
-* Change release-history.md during release 
-
-
-# 2022-01-12 Dev build 0.109.0
-
-## Latest Docker Images
-
-* Datagrok: 
-  *  `docker pull datagrok/datagrok:0.109.0`
-  *  `docker pull datagrok/datagrok:latest`
-  
-* [Docker-Compose](admin/docker-compose.md)
-
-## Addressed Issues
-
-* Change release-history.md during release 
-
-
-# 2022-01-12 Dev build 0.108.0
-
-## Latest Docker Images
-
-* Datagrok: 
-  *  `docker pull datagrok/datagrok:0.108.0`
-  *  `docker pull datagrok/datagrok:latest`
-  
-* [Docker-Compose](admin/docker-compose.md)
-
-## Addressed Issues
-
+* Change release-history.md during release
 * (Bug) DataFrame.onCellValue event not fired when a value is deleted in a spreadsheet by pressing Del or Backspace 
 * Octave: vectorization 
 * Viewer in accordion has zero height 
@@ -60,38 +31,10 @@
 * #259 Chem: Serialized functions execution 
 * (Bug) JS API: Legend.create doesn't return an instance of DG.Legend class 
 * JS API: legend tests 
-* Add CodeMirror to sources 
-
-
-# 2022-01-11 Dev build 0.108.0
-
-## Latest Docker Images
-
-* Datagrok: 
-  *  `docker pull datagrok/datagrok:0.108.0`
-  *  `docker pull datagrok/datagrok:latest`
-  
-* [Docker-Compose](admin/docker-compose.md)
-
-## Addressed Issues
-
+* Add CodeMirror to sources
 * Clinical Case: added Visits view 
 * Update the dialog design for developer keys (WIP)
-* Fixed analyzer warnings 
-
-
-# 2022-01-11 Dev build 0.108.0
-
-## Latest Docker Images
-
-* Datagrok: 
-  *  `docker pull datagrok/datagrok:0.108.0`
-  *  `docker pull datagrok/datagrok:latest`
-  
-* [Docker-Compose](admin/docker-compose.md)
-
-## Addressed Issues
-
+* Fixed analyzer warnings
 * NPM repositories: add registry property 
 * Formula Lines: Property harmonization (opacity) 
 * JS API: Moved properties (column.colors => column.meta.colors, column.markers => column.meta.markers) 
@@ -183,7 +126,6 @@
 * #254 Chem: Lazy load for workers 
 * H2O: Grok Helper URL prefix 
 * #155 Chem: Package autotests. getSimilarities 
-
 
 # 2021-12-22 Dev build 0.107.0
 
