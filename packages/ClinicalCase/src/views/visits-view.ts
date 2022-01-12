@@ -11,8 +11,6 @@ import { PatientVisit } from '../model/patient-visit';
 import { StudyVisit } from '../model/study-visit';
 import { createPropertyPanel } from '../panels/panels-service';
 
-let domainColors = ['blue', 'green', 'yellow', 'orange', 'red'];
-
 export class VisitsView extends DG.ViewBase implements ILazyLoading {
 
     tv: DG.DataFrame;
@@ -23,8 +21,8 @@ export class VisitsView extends DG.ViewBase implements ILazyLoading {
     patientVisit = new PatientVisit();
     studyVisit = new StudyVisit();
     totalVisits = {};
-    proceduresAtVisit = { 'lb': {color: 'blue', column: LAB_RES_N}, 'ex': {color: 'green', column: INV_DRUG_NAME}, 'vs': {color: 'yellow', column: VS_RES_N} };
-    eventsSinceLastVisit = { 'ae': {color: 'orange', column: AE_START_DAY}, 'cm': {color: 'red', column: CON_MED_START_DAY} };
+    proceduresAtVisit = { 'lb': {column: LAB_RES_N}, 'ex': {column: INV_DRUG_NAME}, 'vs': {column: VS_RES_N} };
+    eventsSinceLastVisit = { 'ae': {column: AE_START_DAY}, 'cm': {column: CON_MED_START_DAY} };
     subjSet = new Set();
     existingDomains: string[];
     selectedDomain: string;
@@ -52,7 +50,7 @@ export class VisitsView extends DG.ViewBase implements ILazyLoading {
         this.existingDomains = Object.keys(this.proceduresAtVisit)
             .concat(Object.keys(this.eventsSinceLastVisit))
             .filter(it => study.domains[it] !== null);
-
+        this.assignColorsToDomains();
         this.tv = study.domains.tv.clone();
         this.sv = study.domains.sv.clone();
         filterNulls(this.sv, VISIT_DAY);
@@ -98,6 +96,14 @@ export class VisitsView extends DG.ViewBase implements ILazyLoading {
         this.setRibbonPanels(
             [ [switchGrid.root], [this.ribbonDiv] ] ,
           );
+    }
+
+    private assignColorsToDomains() {
+        this.existingDomains.forEach((domain, index) => {
+            this.proceduresAtVisit[domain] ?
+                this.proceduresAtVisit[domain]['color'] = DG.Color.toRgb(DG.Color.categoricalPalette[index]) :
+                this.eventsSinceLastVisit[domain]['color'] = DG.Color.toRgb(DG.Color.categoricalPalette[index]);
+        })
     }
 
     private createSwitchGridInput(){
@@ -179,6 +185,7 @@ export class VisitsView extends DG.ViewBase implements ILazyLoading {
         });
         df = addDataFromDmDomain(df, study.domains.dm, df.columns.names().filter(it => it !== TREATMENT_ARM), [TREATMENT_ARM]);
         df = df.clone(null, [SUBJECT_ID, TREATMENT_ARM].concat(this.sortedVisitNames));
+        this.setColorPaletteForHeatMap(df);
         df.onCurrentCellChanged.subscribe(() => {
             setTimeout(() => {
                 this.createVisitPropertyPanel(df);
@@ -187,6 +194,15 @@ export class VisitsView extends DG.ViewBase implements ILazyLoading {
 
         });
         return df;
+    }
+
+    private setColorPaletteForHeatMap(df: DG.DataFrame){
+        df.columns.names().forEach(col => {
+            if (col !== SUBJECT_ID && col !== TREATMENT_ARM) {
+                df.col(col).tags[DG.TAGS.COLOR_CODING_TYPE] = 'Linear';
+                df.col(col).tags[DG.TAGS.COLOR_CODING_LINEAR] = `[${DG.Color.white}, ${DG.Color.blue}]`;
+            }
+        });
     }
 
     private createVisitPropertyPanel(df: DG.DataFrame){
