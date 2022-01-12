@@ -38,7 +38,7 @@ export class UsersView extends UaView {
 
     let topPackagesByUsers = new UaFilterableViewer(
         this.uaToolbox.filterStream,
-        'Top Packages By Users',
+        'Packages By Users',
         'TopPackagesByUsers',
         (t: DG.DataFrame) => DG.Viewer.scatterPlot(t, UaQueryViewer.defaultChartOptions).root
     );

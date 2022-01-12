@@ -10,6 +10,7 @@ export abstract class UaQueryViewer {
   setStyle: Function = null as any;
   staticFilter: Object = {};
   filter: Object = {};
+  showName: boolean;
 
   static splineStyle: Object = {
     "aggrType": "count",
@@ -38,7 +39,8 @@ export abstract class UaQueryViewer {
     style: 'dashboard'
   };
 
-  protected constructor(name: string, queryName: string, viewerFunction: Function, setStyle?: Function, staticFilter?: Object, filter?: UaFilter) {
+  protected constructor(name: string, queryName: string, viewerFunction: Function,
+                        setStyle?: Function, staticFilter?: Object, filter?: UaFilter, showName: boolean = true) {
     this.root = ui.div();
     this.name = name;
     this.queryName = queryName;
@@ -50,6 +52,8 @@ export abstract class UaQueryViewer {
       this.staticFilter = staticFilter;
     if (filter)
       this.filter = filter;
+
+    this.showName = showName;
 
     this.init();
   }
@@ -69,7 +73,8 @@ export abstract class UaQueryViewer {
     let host = ui.block([]);
     if (this.setStyle)
       this.setStyle(host);
-    host.appendChild(ui.h1(this.name));
+    if (this.showName)
+      host.appendChild(ui.h1(this.name));
     let loader = ui.loader();
     host.appendChild(loader);
 

@@ -11,12 +11,12 @@ export class TopDataSourcesViewer extends UaFilterableViewer {
   public constructor(filterStream: BehaviorSubject<UaFilter>) {
     super(
         filterStream,
-        'Top Data Sources',
+        'Data Sources',
         'TopDataSources',
         (t: DG.DataFrame) => {
           let viewer = DG.Viewer.barChart(t, UaQueryViewer.defaultBarchartOptions);
-          viewer.onEvent('d4-bar-chart-on-category-clicked').subscribe((cats: string[]) => {
-            let viewer = new TopQueriesUsingDataSource(cats[0], filterStream);
+          viewer.onEvent('d4-bar-chart-on-category-clicked').subscribe((args) => {
+            let viewer = new TopQueriesUsingDataSource(args.args.categories[0], filterStream);
             grok.shell.o = ui.block([viewer.root]);
           });
           return viewer.root;

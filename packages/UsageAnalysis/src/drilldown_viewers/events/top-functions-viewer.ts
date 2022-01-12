@@ -14,11 +14,11 @@ export class TopFunctionsViewer extends UaFilterableViewer {
   public constructor(filterStream: BehaviorSubject<UaFilter>) {
     super(
         filterStream,
-        'Top Functions',
+        'Functions',
         'TopFunctions',
         (t: DG.DataFrame) => {
           let viewer = DG.Viewer.barChart(t, UaQueryViewer.defaultBarchartOptions);
-          viewer.onEvent('d4-bar-chart-on-category-clicked').subscribe((cats: string[]) => {
+          viewer.onEvent('d4-bar-chart-on-category-clicked').subscribe((args) => {
 
             let pp = new PropertyPanel([
               new UaDataFrameViewer(
@@ -26,16 +26,18 @@ export class TopFunctionsViewer extends UaFilterableViewer {
                   'FunctionInfoByName',
                   (t: DG.DataFrame) => DG.Viewer.grid(t).root,
                   null as any,
-                  {name: cats[0]},
-                  filterStream.getValue()
+                  {name: args.args.categories[0]},
+                  filterStream.getValue(),
+                  false
               ),
               new UaDataFrameViewer(
-                  'Top Users Of Function',
+                  'Users Of Function',
                   'TopUsersOfFunction',
                   (t: DG.DataFrame) => DG.Viewer.barChart(t, UaQueryViewer.defaultBarchartOptions).root,
                   null as any,
-                  {name: cats[0]},
-                  filterStream.getValue()
+                  {name: args.args.categories[0]},
+                  filterStream.getValue(),
+                  false
               )
             ], 'TopPackageFunctions');
 

@@ -25,7 +25,7 @@ export class DataView extends UaView {
 
     let topQueriesViewer = new UaFilterableViewer(
         this.uaToolbox.filterStream,
-        'Top Queries',
+        'Queries',
         'TopQueries',
         (t: DG.DataFrame) => DG.Viewer.barChart(t, UaQueryViewer.defaultBarchartOptions).root
     );
@@ -33,7 +33,7 @@ export class DataView extends UaView {
 
     let topConnectionsViewer = new UaFilterableViewer(
         this.uaToolbox.filterStream,
-        'Top Connections',
+        'Connections',
         'TopConnections',
         (t: DG.DataFrame) => DG.Viewer.barChart(t, UaQueryViewer.defaultBarchartOptions).root
     );

@@ -14,11 +14,11 @@ export class TopPackagesViewer extends UaFilterableViewer {
   public constructor(filterStream: BehaviorSubject<UaFilter>) {
     super(
         filterStream,
-        'Top Packages',
+        'Packages',
         'TopPackages',
         (t: DG.DataFrame) => {
           let viewer = DG.Viewer.barChart(t, UaQueryViewer.defaultBarchartOptions);
-          viewer.onEvent('d4-bar-chart-on-category-clicked').subscribe((cats: string[]) => {
+          viewer.onEvent('d4-bar-chart-on-category-clicked').subscribe((args) => {
 
             let pp = new PropertyPanel([
               new UaDataFrameViewer(
@@ -26,32 +26,36 @@ export class TopPackagesViewer extends UaFilterableViewer {
                   'PackageInfo',
                   (t: DG.DataFrame) => DG.Viewer.grid(t).root,
                   null as any,
-                  {name: cats[0]},
-                  filterStream.getValue()
+                  {name: args.args.categories[0]},
+                  filterStream.getValue(),
+                  false
               ),
               new UaDataFrameViewer(
-                  'Top Functions Of Package',
+                  'Functions Of Package',
                   'TopFunctionsOfPackage',
                   (t: DG.DataFrame) => DG.Viewer.barChart(t, UaQueryViewer.defaultBarchartOptions).root,
                   null as any,
-                  {name: cats[0]},
-                  filterStream.getValue()
+                  {name: args.args.categories[0]},
+                  filterStream.getValue(),
+                  false
               ),
               new UaDataFrameViewer(
-                  'Top Users Of Package',
+                  'Users Of Package',
                   'TopUsersOfPackage',
                   (t: DG.DataFrame) => DG.Viewer.barChart(t, UaQueryViewer.defaultBarchartOptions).root,
                   null as any,
-                  {name: cats[0]},
-                  filterStream.getValue()
+                  {name: args.args.categories[0]},
+                  filterStream.getValue(),
+                  false
               ),
               new UaDataFrameViewer(
-                  'Top Errors Of Package',
+                  'Errors Of Package',
                   'TopErrorsOfPackage',
                   (t: DG.DataFrame) => DG.Viewer.barChart(t, UaQueryViewer.defaultBarchartOptions).root,
                   null as any,
-                  {name: cats[0]},
-                  filterStream.getValue()
+                  {name: args.args.categories[0]},
+                  filterStream.getValue(),
+                  false
               ),
             ], 'TopPackagesViewer');
 

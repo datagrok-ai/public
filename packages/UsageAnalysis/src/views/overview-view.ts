@@ -16,8 +16,6 @@ export class OverviewView extends UaView {
   }
 
   async initViewers() : Promise<void> {
-    let servicesViewer = await this.getServices();
-
     let uniqueUsersViewer = new UaFilterableViewer(
         this.uaToolbox.filterStream,
         'Unique Users',
@@ -87,7 +85,6 @@ export class OverviewView extends UaView {
 
     this.root.append(ui.block25([
       ui.block([totalUsersViewer.root]),
-      ui.block([servicesViewer]),
       ui.block([uniqueUsersListViewer.root]),
     ]));
 
@@ -96,17 +93,6 @@ export class OverviewView extends UaView {
       ui.block([eventsViewer.root]),
       ui.block([errorsViewer.root])
     ]));
-  }
-
-
-  async getServices() : Promise<HTMLElement> {
-    let root = ui.div();
-    root.appendChild(ui.h2('Services'));
-    let serviceInfos = await grok.dapi.admin.getServiceInfos();
-    root.appendChild(ui.table(serviceInfos, (item, idx) =>
-        //@ts-ignore
-        [`${item.key}:`, $(ui.span([item.status])).addClass(`grok-plugin-status-${item.status.toLowerCase()}`)[0]]));
-    return root;
   }
 
 }
