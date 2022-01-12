@@ -141,7 +141,7 @@ M  END
   }
 
   _drawMoleculeToCanvas(
-    rdkitMol: any, w: number, h: number, canvas: OffscreenCanvas,
+    rdkitMol: any, w: number, h: number, offscreenCanvas: OffscreenCanvas,
     substruct: Object, highlightScaffold: boolean) {
     const opts = {
       'clearBackground': false,
@@ -161,8 +161,7 @@ M  END
     };
     if (highlightScaffold)
       Object.assign(opts, substruct);
-
-    rdkitMol.draw_to_canvas_with_highlights(canvas, JSON.stringify(opts));
+    rdkitMol.draw_to_canvas_with_highlights(offscreenCanvas, JSON.stringify(opts));
   }
 
   _drawMolecule(x: number, y: number, w: number, h: number, onscreenCanvas: HTMLCanvasElement,
