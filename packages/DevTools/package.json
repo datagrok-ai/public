@@ -30,6 +30,10 @@
 		"debug-dev-tools-local": "grok publish local --rebuild",
 		"release-dev-tools-local": "grok publish local --rebuild --release"
 	},
+	"sources": [
+		"common/codemirror/codemirror.js",
+		"common/codemirror/codemirror.css"
+	],
 	"canEdit": [ "Developers" ],
 	"canView": [ "All users" ]
 }
