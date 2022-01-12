@@ -1,6 +1,25 @@
 <!-- TITLE: Release History -->
 <!-- SUBTITLE: -->
 
+# 2022-01-12 Dev build 0.110.0
+
+## Latest Docker Images
+
+* Datagrok: 
+  *  `docker pull datagrok/datagrok:0.110.0`
+  *  `docker pull datagrok/datagrok:latest`
+  
+* [Docker-Compose](admin/docker-compose.md)
+
+## Addressed Issues
+
+* Usage analysis: added rendering of package and user meta 
+* Clinical Case: updated help, added help for Medical History and Visits views 
+* Bump all log4j components from 2.16.0 to 2.17.1 in /connectors/grok_connect 
+* Bump elasticsearch from 6.4.2 to 7.16.2 Elasticsearch release to upgrade Apache Log4j2 
+* JS-API: Packages test framework (WIP)
+
+
 # 2022-01-12 Dev build 0.109.0
 
 ## Latest Docker Images
