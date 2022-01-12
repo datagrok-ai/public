@@ -8,7 +8,8 @@ import * as utils from '@datagrok-libraries/utils/src/test-utils';
 // import * as publish from 'datagrok-tools/bin/commands/publish';
 import puppeteer from 'puppeteer';
 
-const P_START_TIMEOUT: number = 100000;
+const START_TIMEOUT: number = 100000;
+const DEFAULT_NAVIGATION_TIMEOUT = 60000;
 let browser: puppeteer.Browser;
 let page: puppeteer.Page;
 
@@ -16,7 +17,8 @@ beforeAll(async () => {
   const out = await utils.getBrowserPage(puppeteer);
   browser = out.browser;
   page = out.page;
-}, P_START_TIMEOUT);
+  page.setDefaultNavigationTimeout(DEFAULT_NAVIGATION_TIMEOUT);
+}, START_TIMEOUT);
 
 afterAll(async () => {
   await browser.close();

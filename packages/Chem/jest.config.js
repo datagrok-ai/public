@@ -18,5 +18,5 @@ module.exports = {
     "^.+\\.worker.[t|j]sx?$": "workerloader-jest-transformer"
   },
   transformIgnorePatterns: ['^.+\\.js$'],
-  testTimeout: 60000
+  testTimeout: 120000
 }
