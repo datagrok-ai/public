@@ -10,6 +10,7 @@ import { AE_START_DAY, CON_MED_START_DAY, INV_DRUG_NAME, LAB_RES_N, SUBJECT_ID, 
 import { PatientVisit } from '../model/patient-visit';
 import { StudyVisit } from '../model/study-visit';
 import { createPropertyPanel } from '../panels/panels-service';
+import { _package } from '../package';
 
 export class VisitsView extends DG.ViewBase implements ILazyLoading {
 
@@ -38,6 +39,7 @@ export class VisitsView extends DG.ViewBase implements ILazyLoading {
     constructor(name) {
         super({});
         this.name = name;
+        this.helpUrl = `${_package.webRoot}/views_help/visits.md`;
     }
 
     loaded: boolean;
@@ -286,20 +288,18 @@ export class VisitsView extends DG.ViewBase implements ILazyLoading {
                     let startDay = study.domains[domain].get(this.eventsSinceLastVisit[domain].column, i);
                     let subjId = study.domains[domain].get(SUBJECT_ID, i);
                     this.subjSet.add(subjId);
-                    for(let z = 0; z < this.sortedVisitNamesAndDays.length - 1; z++) {
-                        if(z > 0) {
-                            if (startDay > this.sortedVisitNamesAndDays[z].day && startDay < this.sortedVisitNamesAndDays[z+1].day){
-                                let visitName = this.sortedVisitNamesAndDays[z+1].name;
-                                if (this.totalVisits[visitName][subjId].eventsCount[domain]) {
-                                    this.totalVisits[visitName][subjId].eventsCount[domain] += 1;
-                                } else {
-                                    this.totalVisits[visitName][subjId].eventsCount[domain] = 1;
-                                }
-                                break;
+                    for (let z = 0; z < this.sortedVisitNamesAndDays.length - 1; z++) {
+                        if (startDay > this.sortedVisitNamesAndDays[z].day && startDay < this.sortedVisitNamesAndDays[z + 1].day) {
+                            let visitName = this.sortedVisitNamesAndDays[z + 1].name;
+                            if (this.totalVisits[visitName][subjId].eventsCount[domain]) {
+                                this.totalVisits[visitName][subjId].eventsCount[domain] += 1;
+                            } else {
+                                this.totalVisits[visitName][subjId].eventsCount[domain] = 1;
                             }
+                            break;
                         }
                     }
-                }               
+                }
             }
         })
     }

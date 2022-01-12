@@ -87,5 +87,5 @@ Future main(List<String> args) async {
   }
 
   var menuHtml = '<ul>${treeNodeHtml(links)}</ul>';
-  File(params['dest_path'] + '/menu.html').writeAsString(menuHtml);
+  new File(params['dest_path'] + '/menu.html').writeAsString(menuHtml);
 }

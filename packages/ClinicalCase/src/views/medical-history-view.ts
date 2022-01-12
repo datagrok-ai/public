@@ -6,6 +6,7 @@ import { ILazyLoading } from '../lazy-loading/lazy-loading';
 import { checkMissingDomains } from './utils';
 import { requiredColumnsByView } from '../constants';
 import { MH_BODY_SYSTEM, MH_CATEGORY, MH_DECOD_TERM, MH_TERM, SUBJECT_ID } from '../columns-constants';
+import { _package } from '../package';
 
 export class MedicalHistoryView extends DG.ViewBase implements ILazyLoading {
 
@@ -15,6 +16,7 @@ export class MedicalHistoryView extends DG.ViewBase implements ILazyLoading {
     constructor(name) {
         super({});
         this.name = name;
+        this.helpUrl = `${_package.webRoot}/views_help/medical_history.md`;
     }
 
     loaded: boolean;
