@@ -31,7 +31,9 @@ export class TopUsersViewer extends UaFilterableViewer {
                   false
               ),
 
-            ], 'TopUsers');
+            ],
+            `Users: ${args.args.categories[0]}`,
+            'Users');
 
             grok.shell.o = pp.getRoot();
           });
