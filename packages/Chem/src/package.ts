@@ -226,18 +226,17 @@ export async function chemCellRenderer() {
 //output: dataframe result
 export async function getSimilarities(molStringsColumn: DG.Column, molString: string) {
   await chemBeginCriticalSection();
+  if (molStringsColumn === null || molString === null)
+    throw 'Chem: An input was null';
   try {
-    if (molStringsColumn === null || molString === null) throw 'An input was null';
-    // TODO: Make in the future so that the return type is always one
-    const result = (await chemSearches.chemGetSimilarities(molStringsColumn, molString)) as unknown; // TODO: !
-    // TODO: get rid of a wrapping DataFrame and be able to return Columns
-    chemEndCriticalSection();
+    const result = (await chemSearches.chemGetSimilarities(molStringsColumn, molString)) as unknown;
     return result ? DG.DataFrame.fromColumns([result as DG.Column]) : DG.DataFrame.create();
   } catch (e: any) {
-    console.error('In getSimilarities: ' + e.toString());
+    console.error('Chem: catch in getSimilarities: ' + e.toString());
     throw e;
+  } finally {
+    chemEndCriticalSection();
   }
-  chemEndCriticalSection();
 }
 
 //name: getMorganFingerprints
