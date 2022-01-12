@@ -192,13 +192,15 @@ export async function chemSubstructureSearchLibrary(
 }
 
 export function chemGetMorganFingerprint(molString: string): BitArray {
+  let mol = null;
   try {
-    const mol = getRdKitModule().get_mol(molString);
+    mol = getRdKitModule().get_mol(molString);
     const fp = mol.get_morgan_fp(defaultMorganFpRadius, defaultMorganFpLength);
-    mol.delete();
     return rdKitFingerprintToBitArray(fp, defaultMorganFpLength);
   } catch {
-    throw new Error(`Possibly a malformed molString: ${molString}`);
+    throw new Error(`Chem | Possibly a malformed molString: ${molString}`);
+  } finally {
+    mol?.delete();
   }
 }
 
