@@ -1,6 +1,37 @@
 <!-- TITLE: Release History -->
 <!-- SUBTITLE: -->
 
+# 2022-01-12 Dev build 0.108.0
+
+## Latest Docker Images
+
+* Datagrok: 
+  *  `docker pull datagrok/datagrok:0.108.0`
+  *  `docker pull datagrok/datagrok:latest`
+  
+* [Docker-Compose](admin/docker-compose.md)
+
+## Addressed Issues
+
+* (Bug) DataFrame.onCellValue event not fired when a value is deleted in a spreadsheet by pressing Del or Backspace 
+* Octave: vectorization 
+* Viewer in accordion has zero height 
+* Fixed analyzer warnings 
+* Bar chart: pass information about is click was on the header  
+* Bar Chart: maxBarHeight property 
+* Bar Chart: verticalAlign property 
+* (Bug) Bar Chart: initial render cuts category names (WIP)
+* ML #248: Fix bio package to be published on npm. 
+* ML #248: Add missing changes. 
+* Clinical Case: changed color palette for heatmaps and grid in Visits view 
+* UI Tests buttons 
+* UI Tests add import to package.ts 
+* #259 Chem: Serialized functions execution 
+* (Bug) JS API: Legend.create doesn't return an instance of DG.Legend class 
+* JS API: legend tests 
+* Add CodeMirror to sources 
+
+
 # 2022-01-11 Dev build 0.108.0
 
 ## Latest Docker Images
