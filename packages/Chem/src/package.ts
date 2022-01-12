@@ -35,9 +35,6 @@ import {RDMol} from './rdkit-api';
 import {isMolBlock} from './chem-utils';
 
 const getRdKitModuleLocal = chemCommonRdKit.getRdKitModule;
-const initRdKitService = chemCommonRdKit.initRdKitService;
-const getRdKitService = chemCommonRdKit.getRdKitService;
-const getRdKitWebRoot = chemCommonRdKit.getRdKitWebRoot;
 const drawMoleculeToCanvas = chemCommonRdKit.drawMoleculeToCanvas;
 let initialized: boolean = false;
 
@@ -62,7 +59,8 @@ let _properties: any;
 
 //tags: init
 export async function initChem() {
-  await initRdKitService(_package.webRoot);
+  chemCommonRdKit.setRdKitWebRoot(_package.webRoot);
+  await chemCommonRdKit.initRdKitModuleLocal();
   _properties = await _package.getProperties();
   _rdRenderer = new RDKitCellRenderer(getRdKitModuleLocal());
   _renderer = new GridCellRendererProxy(_rdRenderer, 'Molecule');

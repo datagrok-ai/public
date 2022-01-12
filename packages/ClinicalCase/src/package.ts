@@ -19,12 +19,17 @@ import { createPropertyPanel } from './panels/panels-service';
 import { TimeProfileView } from './views/time-profile-view';
 import { AeBrowserView } from './views/adverse-events-browser';
 import { AEBrowserHelper } from './helpers/ae-browser-helper';
-import { AE_END_DATE, AE_END_DAY, AE_SEVERITY, AE_START_DAY, AE_TERM, SUBJECT_ID } from './columns-constants';
+import { AE_END_DATE, AE_END_DAY, AE_SEVERITY, AE_START_DAY, AE_TERM, SUBJECT_ID, VISIT_DAY, VISIT_NAME, VISIT_START_DATE } from './columns-constants';
 import { STUDY_ID } from './columns-constants';
 import { checkMissingColumns, checkMissingDomains } from './views/utils';
 import { TreeMapView } from './views/tree-map-view';
 import { MedicalHistoryView } from './views/medical-history-view';
 import { VisitsView } from './views/visits-view';
+import { VisitsViewHelper } from './helpers/visits-view-helper';
+import { GridCell, TableView } from 'datagrok-api/dg';
+import { addEmitHelper } from 'typescript';
+import { PatientVisit } from './model/patient-visit';
+import { dictToString } from './data-preparation/utils';
 
 export let _package = new DG.Package();
 
@@ -148,6 +153,51 @@ export async function clinicalCaseApp(): Promise<any> {
     return view;
   }
 
+  function createTableView(
+    requiredDomains: string [], 
+    columnsToCheck: any, 
+    domainsToCheck: any,
+    viewName: string,
+    helpUrl: string,
+    createViewHelper: (params: any) => any,
+    paramsForHelper = null) {
+    let tableView;
+    let viewHelper;
+    if (requiredDomains.every(it => study.domains[it] !== null)) {
+      tableView = DG.View.create();
+      if (checkMissingColumns(tableView, requiredDomains, columnsToCheck)) {
+        let { helper, df } = createViewHelper(paramsForHelper);
+        tableView = DG.TableView.create(df);
+        viewHelper = helper
+      }
+    } else {
+      tableView = DG.View.create();
+      checkMissingDomains(domainsToCheck, tableView);
+    }
+    tableView.name = viewName;
+    if (helpUrl) {
+      tableView.helpUrl = helpUrl;
+    }
+    return {helper: viewHelper, view: tableView};
+  }
+
+  function createAEBrowserHelper(timelinesView: TimelinesView): any {
+    const aeBrowserDf = study.domains.ae.clone();
+    const aeBrowserHelper = new AEBrowserHelper(aeBrowserDf);
+    timelinesView.aeBrowserHelper = aeBrowserHelper;
+    aeBrowserDf.onCurrentRowChanged.subscribe(() => {
+      aeBrowserHelper.currentSubjId = aeBrowserDf.get(SUBJECT_ID, aeBrowserDf.currentRowIdx);
+      aeBrowserHelper.currentAeDay = aeBrowserDf.get(AE_START_DAY, aeBrowserDf.currentRowIdx);
+      aeBrowserHelper.createAEBrowserPanel();
+    })
+    return {helper: aeBrowserHelper, df: aeBrowserDf};
+  }
+
+  function createVisitsViewHelper(): any {
+    const visitsViewHelper = new VisitsViewHelper();
+    return {helper: visitsViewHelper, df: visitsViewHelper.pivotedSv};
+  }
+
   const views = [];
 
   views.push(<StudySummaryView>addView(new StudySummaryView('Summary')));
@@ -165,33 +215,67 @@ export async function clinicalCaseApp(): Promise<any> {
   views.push(<MedicalHistoryView>addView(new MedicalHistoryView('Medical History')));
   views.push(<VisitsView>addView(new VisitsView('Visits')));
 
-  let aeBrowserView;
-  if (study.domains.ae) {
-    aeBrowserView = DG.View.create();
-    if (checkMissingColumns(aeBrowserView, ['ae'], { 'ae': {'req': [AE_TERM, AE_SEVERITY, AE_START_DAY, AE_END_DAY]} })) {
-      const aeBrowserDf = study.domains.ae.clone();
-      aeBrowserView = DG.TableView.create(aeBrowserDf);
-      const aeBrowserHelper = new AEBrowserHelper(aeBrowserDf);
-      timelinesView.aeBrowserHelper = aeBrowserHelper;
-      aeBrowserDf.onCurrentRowChanged.subscribe(() => {
-        aeBrowserHelper.currentSubjId = aeBrowserDf.get(SUBJECT_ID, aeBrowserDf.currentRowIdx);
-        aeBrowserHelper.currentAeDay = aeBrowserDf.get(AE_START_DAY, aeBrowserDf.currentRowIdx);
-        aeBrowserHelper.createAEBrowserPanel();
-      })
-    }
-  } else {
-    aeBrowserView = DG.View.create();
-    checkMissingDomains({
+  const aeBrowserView = createTableView(
+    ['ae'], 
+    { 'ae': { 'req': [AE_TERM, AE_SEVERITY, AE_START_DAY, AE_END_DAY] } },
+    {
       'req_domains': {
-        'ae': { 
-          'req': [AE_TERM, AE_SEVERITY, AE_START_DAY, AE_END_DAY] 
-        } 
+        'ae': {
+          'req': [AE_TERM, AE_SEVERITY, AE_START_DAY, AE_END_DAY]
+        }
       }
-    }, aeBrowserView);
-  }
-  aeBrowserView.name = 'AE browser';
-  aeBrowserView.helpUrl = 'https://raw.githubusercontent.com/datagrok-ai/public/master/packages/ClinicalCase/views_help/ae_browser.md';
-  views.push(addView(aeBrowserView));
+    },
+    'AE Browser',
+    'https://raw.githubusercontent.com/datagrok-ai/public/master/packages/ClinicalCase/views_help/ae_browser.md',
+    createAEBrowserHelper,
+    timelinesView
+  );
+  views.push(addView(aeBrowserView.view));
+
+/*   const visitsView = createTableView(
+    ['sv', 'tv'],
+    { 'tv': { 'req': [VISIT_DAY, VISIT_NAME] }, 'sv': { 'req': [SUBJECT_ID, VISIT_START_DATE, VISIT_DAY, VISIT_NAME] }, },
+    {
+      'req_domains': {
+        'tv': {
+          'req': [VISIT_DAY, VISIT_NAME]
+        },
+        'sv': {
+          'req': [SUBJECT_ID, VISIT_START_DATE, VISIT_DAY, VISIT_NAME]
+        },
+
+      }
+    },
+    'Visits',
+    '',
+    createVisitsViewHelper
+  )
+  views.push(addView(visitsView.view));
+
+   (visitsView.helper as VisitsViewHelper).pivotedSv.columns.names().forEach(colName => {
+      visitsView.view.grid.setOptions({'rowHeight': 20});
+  }); 
+ 
+   visitsView.view.grid.onCellRender.subscribe(function (args) {
+
+    let gc = args.cell;
+    if (gc.isTableCell && gc.gridColumn.name !== SUBJECT_ID) {  
+      let patientVisit = (visitsView.helper as VisitsViewHelper).totalVisits[gc.gridColumn.name][visitsView.helper.pivotedSv.get(SUBJECT_ID, gc.tableRowIndex)];
+      let delta = 30;
+      let x = args.bounds.x + 3;
+      let y = args.bounds.y + 15;
+      let domains = Object.values(patientVisit.domainsNamesDict);
+      args.g.fillStyle = 'blue';
+       domains.forEach(item => {
+        if(patientVisit.eventsCount[item]) {
+          args.g.fillText(patientVisit.eventsCount[item], x, y);
+        }
+        x+=delta;
+      }) 
+      args.preventDefault();
+    }
+
+  }); */
 
   DG.ObjectHandler.register(new AdverseEventHandler());
 
