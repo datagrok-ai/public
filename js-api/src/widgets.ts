@@ -1444,7 +1444,7 @@ export class Legend extends DartWidget {
   }
 
   static create(column: Column): Legend {
-    return api.grok_Legend(column.dart);
+    return toJs(api.grok_Legend(column.dart));
   }
 
   /** Column for the legend */
