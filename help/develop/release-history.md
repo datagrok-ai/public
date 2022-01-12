@@ -13,6 +13,22 @@
 
 ## Addressed Issues
 
+* Updated beta_users.csv 
+* Change release-history.md during release 
+
+
+# 2022-01-12 Dev build 0.109.0
+
+## Latest Docker Images
+
+* Datagrok: 
+  *  `docker pull datagrok/datagrok:0.109.0`
+  *  `docker pull datagrok/datagrok:latest`
+  
+* [Docker-Compose](admin/docker-compose.md)
+
+## Addressed Issues
+
 * Change release-history.md during release 
 
 
