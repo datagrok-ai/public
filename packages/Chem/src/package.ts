@@ -291,7 +291,9 @@ export async function findSimilar(molStringsColumn: DG.Column, molString: string
 //input: bool substructLibrary
 //input: string molStringSmarts
 //output: column result
-export async function searchSubstructure(molStringsColumn: DG.Column, molString: string, substructLibrary: boolean, molStringSmarts: string) {
+export async function searchSubstructure(
+  molStringsColumn: DG.Column, molString: string,
+  substructLibrary: boolean, molStringSmarts: string) {
   await chemBeginCriticalSection();
   try {
     if (molStringsColumn === null || molString === null || substructLibrary === null || molStringSmarts === null)
