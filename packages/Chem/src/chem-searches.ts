@@ -85,7 +85,7 @@ async function _invalidate(molStringsColumn: DG.Column, queryMolString: string |
   if (sameColumnAndVersion() && !_chemCache.moleculesWereIndexed) {
     // TODO: avoid creating an additional array here
     const {molIdxToHash, hashToMolblock} =
-      await getRdKitService().initMoleculesStructures(molStringsColumn.toList());
+      await (await getRdKitService()).initMoleculesStructures(molStringsColumn.toList());
     let i = 0;
     let needsUpdate = false;
     for (const item of molIdxToHash) {
@@ -109,9 +109,9 @@ async function _invalidate(molStringsColumn: DG.Column, queryMolString: string |
   }
   if (includeFingerprints) {
     if (sameColumnAndVersion() && !_chemCache.morganFingerprintsWereIndexed) {
-      await getRdKitService().initMorganFingerprints();
+      await (await getRdKitService()).initMorganFingerprints();
       _chemCache.morganFingerprintsWereIndexed = true;
-      _chemCache.morganFingerprints = await getRdKitService().getMorganFingerprints();
+      _chemCache.morganFingerprints = await (await getRdKitService()).getMorganFingerprints();
       console.log(`Morgan fingerprints for a dataset ${_chemCache.cachedForCol?.name} invalidated`);
     }
   }
@@ -170,7 +170,7 @@ export async function chemSubstructureSearchLibrary(
   await _invalidate(molStringsColumn, molString, false);
   const result = DG.BitSet.create(molStringsColumn.length);
   if (molString.length != 0) {
-    const matches = await getRdKitService().searchSubstructure(molString, molStringSmarts);
+    const matches = await (await getRdKitService()).searchSubstructure(molString, molStringSmarts);
     for (const match of matches)
       result.set(match, true, false);
   }
