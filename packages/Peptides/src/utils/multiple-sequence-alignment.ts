@@ -4,7 +4,8 @@ import * as DG from 'datagrok-api/dg';
 import {AlignedSequenceEncoder} from '@datagrok-libraries/bio/src/sequence-encoder';
 import {FSInjector} from './fs-injector';
 
-const initKalign = require('../wasm/kalign');
+// @ts-ignore
+import initKalign from '../wasm/kalign';
 
 export async function runKalign(col: DG.Column, webRootValue: string) : Promise<DG.Column> {
   const _webPath = `${webRootValue}dist/kalign.wasm`;
@@ -15,7 +16,10 @@ export async function runKalign(col: DG.Column, webRootValue: string) : Promise<
   console.log(initKalign);
   console.log(_webPath);
 
-  let kalign = await initKalign({locateFile: () => _webPath});
+  let kalign = await initKalign({
+    locateFile: () => _webPath,
+    noInitialRun: true,
+  });
 
   const Module = {
     preRun: function() {
