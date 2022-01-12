@@ -83,8 +83,8 @@ export function drawMoleculeToCanvas(
     // TODO: make this an optional parameter, AND a system-wide setting
     const opts = {
       'clearBackground': false,
-      'offsetx': Math.floor(x),
-      'offsety': Math.floor(y),
+      'offsetx': 0,
+      'offsety': 0,
       'width': Math.floor(w),
       'height': Math.floor(h),
       'bondLineWidth': 1,
@@ -103,12 +103,11 @@ export function drawMoleculeToCanvas(
       Object.assign(opts, substruct);
     }
     // we need the offscreen canvas first to not let the molecule scaffold skew on a real canvas
-    let offscreenCanvas: OffscreenCanvas | null = new OffscreenCanvas(w, h);
+    let offscreenCanvas = new OffscreenCanvas(w, h);
     mol.draw_to_canvas_with_highlights(offscreenCanvas, JSON.stringify(opts));
     const image = offscreenCanvas!.getContext('2d')!.getImageData(0, 0, w, h);
-    const context = onscreenCanvas.getContext('2d');
-    context!.putImageData(image, x, y);
-    offscreenCanvas = null; // GC?
+    const context = onscreenCanvas.getContext('2d')!;
+    context.putImageData(image, x, y);
   } finally {
     mol?.delete();
   }
