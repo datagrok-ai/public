@@ -84,13 +84,13 @@ jobs:
       - name: Set up Dart SDK
         uses: dart-lang/setup-dart@v1
         with:
-          sdk: stable
+          sdk: 1.24.3
       - uses: actions/cache@v1
         with:
           path: /opt/hostedtoolcache/dart-sdk
           key: dart-install-cache
       - name: Install Dart dependencies
-        run: dart pub get
+        run: pub get
         working-directory: ./help/_internal
       - name: Run Dart script to create menu
         run: dart generate_menu.dart -s ../output/help/ -d ../output/help/

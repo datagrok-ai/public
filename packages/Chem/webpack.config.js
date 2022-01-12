@@ -1,5 +1,7 @@
 const path = require('path');
 const rdkitLibVersion = require('./src/rdkit_lib_version.js');
+const PACKAGE = require('./package.json');
+const packageName = path.parse(PACKAGE.name).name.toLowerCase().replaceAll('-', '');
 
 module.exports = (env, options) => ({
   stats: {
@@ -7,7 +9,8 @@ module.exports = (env, options) => ({
   },
   mode: 'development',
   entry: {
-    package: [`./src/${rdkitLibVersion}.wasm`, './src/package.ts']
+    test: {filename: 'package-test.js', library: {type: 'var', name:`${packageName}_test`}, import: './src/package-test.ts'},
+    package: [`./src/${rdkitLibVersion}.wasm`, './src/package.ts'],
   },
   devtool: options.mode !== 'production' ? 'inline-source-map' : 'source-map',
   devServer: {
@@ -25,7 +28,7 @@ module.exports = (env, options) => ({
   },
   output: {
     filename: '[name].js',
-    library: 'chem',
+    library: packageName,
     libraryTarget: 'var',
     path: path.resolve(__dirname, 'dist'),
   },

@@ -26,13 +26,14 @@ import './ui/divs';
 import './ui/buttons';
 // import './widgets/legend';
 
-import {runTests} from "./test";
+import {runTests} from "@datagrok-libraries/utils/src/test";
 export let _package = new DG.Package();
 
 
 //name: testJsApi
+//output: dataframe result
 //top-menu: Tools | Dev | JS API Tests
-export async function testJsApi() {
+export async function testJsApi(): Promise<DG.DataFrame> {
   let data = await runTests();
-  grok.shell.addTableView(DG.DataFrame.fromObjects(data)!);
+  return DG.DataFrame.fromObjects(data)!;
 }
