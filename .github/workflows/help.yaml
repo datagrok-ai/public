@@ -16,7 +16,7 @@ jobs:
         run: |
           echo '#!/bin/bash' > entrypoint.sh;
           echo 'set -ex' >> entrypoint.sh;
-          for f in $(gfind . -type f -name '*.md' -not -name 'release-history.md' -printf '%P '); do
+          for f in $(find . -type f -name '*.md' -not -name 'release-history.md' -printf '%P '); do
             echo "mdl --style /github/workspace/markdownlint.rb /github/workspace/help/${f}" >> entrypoint.sh;
           done;
           cat entrypoint.sh
