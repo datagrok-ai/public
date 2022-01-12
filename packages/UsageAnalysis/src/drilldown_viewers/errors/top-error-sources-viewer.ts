@@ -14,19 +14,20 @@ export class TopErrorSourcesViewer extends UaFilterableViewer {
   public constructor(filterStream: BehaviorSubject<UaFilter>) {
     super(
         filterStream,
-        'Top Error Sources',
+        'Error Sources',
         'TopErrorSources',
         (t: DG.DataFrame) => {
           let viewer = DG.Viewer.barChart(t, UaQueryViewer.defaultBarchartOptions);
-          viewer.onEvent('d4-bar-chart-on-category-clicked').subscribe((cats: string[]) => {
+          viewer.onEvent('d4-bar-chart-on-category-clicked').subscribe((args) => {
             let pp = new PropertyPanel([
               new UaDataFrameViewer(
                   'Function Info By Source',
                   'FunctionInfoBySource',
                   (t: DG.DataFrame) => DG.Viewer.grid(t).root,
                   null as any,
-                  {name: cats[0]},
-                  filterStream.getValue()
+                  {name: args.args.categories[0]},
+                  filterStream.getValue(),
+                  false
               )
             ], 'TopErrorSources');
 

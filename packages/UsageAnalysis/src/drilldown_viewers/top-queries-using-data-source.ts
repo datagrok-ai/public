@@ -7,7 +7,7 @@ import {BehaviorSubject} from "rxjs"
 export class TopQueriesUsingDataSource extends UaDataFrameViewer {
   public constructor(dataSource: string, filterStream: BehaviorSubject<UaFilter>) {
     super(
-        'Top Queries Using Data Source',
+        'Queries Using Data Source',
         'TopQueriesUsingDataSource',
         (t: DG.DataFrame) => DG.Viewer.barChart(t, UaQueryViewer.defaultBarchartOptions).root,
         null as any,

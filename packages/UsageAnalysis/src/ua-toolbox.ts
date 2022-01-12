@@ -22,8 +22,8 @@ export class UaToolbox {
     this.dateInput.addPatternMenu('datetime');
     this.dateInput.setTooltip('Set the date period');
 
-    this.usersInput = ui.stringInput('User', 'all');
-    this.usersInput.setTooltip('Enter users login');
+    this.usersInput = ui.stringInput('Users', 'all');
+    this.usersInput.setTooltip('Comma-separated user logins');
 
     this.rootAccordion = ui.accordion();
 
