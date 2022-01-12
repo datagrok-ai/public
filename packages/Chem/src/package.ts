@@ -224,16 +224,24 @@ export async function chemCellRenderer() {
 //input: column molColumn {semType: Molecule}
 //output: column result [fingerprints]
 export async function getMorganFingerprints(molColumn: DG.Column) {
+  if (molColumn === null) throw 'Chem: An input was null';
   await chemBeginCriticalSection();
-  const fingerprints = await chemSearches.chemGetMorganFingerprints(molColumn);
-  const fingerprintsBitsets: DG.BitSet[] = [];
-  for (let i = 0; i < fingerprints.length; ++i) {
-    //@ts-ignore
-    const fingerprint = DG.BitSet.fromBytes(fingerprints[i].getRawData().buffer, fingerprints[i].length);
-    fingerprintsBitsets.push(fingerprint);
+  try {
+    const fingerprints = await chemSearches.chemGetMorganFingerprints(molColumn);
+    const fingerprintsBitsets: DG.BitSet[] = [];
+    for (let i = 0; i < fingerprints.length; ++i) {
+      //@ts-ignore
+      const fingerprint = DG.BitSet.fromBytes(fingerprints[i].getRawData().buffer, fingerprints[i].length);
+      fingerprintsBitsets.push(fingerprint);
+    }
+    return DG.Column.fromList('object', 'fingerprints', fingerprintsBitsets);
+  } catch (e: any) {
+    console.error('Chem | Catch in getMorganFingerprints: ' + e.toString());
+    throw e;
+  } finally {
+    chemEndCriticalSection();
   }
-  chemEndCriticalSection();
-  return DG.Column.fromList('object', 'fingerprints', fingerprintsBitsets);
+
 }
 
 //name: getMorganFingerprint
@@ -250,14 +258,14 @@ export function getMorganFingerprint(molString: string) {
 //input: string molString
 //output: dataframe result
 export async function getSimilarities(molStringsColumn: DG.Column, molString: string) {
-  await chemBeginCriticalSection();
   if (molStringsColumn === null || molString === null)
     throw 'Chem: An input was null';
+  await chemBeginCriticalSection();
   try {
     const result = (await chemSearches.chemGetSimilarities(molStringsColumn, molString)) as unknown;
     return result ? DG.DataFrame.fromColumns([result as DG.Column]) : DG.DataFrame.create();
   } catch (e: any) {
-    console.error('Chem: catch in getSimilarities: ' + e.toString());
+    console.error('Chem | Catch in getSimilarities: ' + e.toString());
     throw e;
   } finally {
     chemEndCriticalSection();
@@ -271,14 +279,14 @@ export async function getSimilarities(molStringsColumn: DG.Column, molString: st
 //input: int cutoff
 //output: dataframe result
 export async function findSimilar(molStringsColumn: DG.Column, molString: string, aLimit: number, aCutoff: number) {
-  await chemBeginCriticalSection();
   if (molStringsColumn === null || molString === null || aLimit === null || aCutoff === null)
     throw 'Chem: An input was null';
+  await chemBeginCriticalSection();
   try {
     const result = await chemSearches.chemFindSimilar(molStringsColumn, molString, {limit: aLimit, cutoff: aCutoff});
     return result ? result : DG.DataFrame.create();
   } catch (e: any) {
-    console.error('Chem: In findSimilar: ' + e.toString());
+    console.error('Chem | In findSimilar: ' + e.toString());
     throw e;
   } finally {
     chemEndCriticalSection();
@@ -294,22 +302,21 @@ export async function findSimilar(molStringsColumn: DG.Column, molString: string
 export async function searchSubstructure(
   molStringsColumn: DG.Column, molString: string,
   substructLibrary: boolean, molStringSmarts: string) {
+  if (molStringsColumn === null || molString === null || substructLibrary === null || molStringSmarts === null)
+    throw 'Chem: An input was null';
   await chemBeginCriticalSection();
   try {
-    if (molStringsColumn === null || molString === null || substructLibrary === null || molStringSmarts === null)
-      throw 'An input was null';
-
     const result =
       substructLibrary ?
-        await chemSearches.chemSubstructureSearchLibrary(molStringsColumn, molString, molStringSmarts/*, webRoot*/) :
+        await chemSearches.chemSubstructureSearchLibrary(molStringsColumn, molString, molStringSmarts) :
         chemSearches.chemSubstructureSearchGraph(molStringsColumn, molString);
-    chemEndCriticalSection();
-    return DG.Column.fromList('object', 'bitset', [result]);
+    return DG.Column.fromList('object', 'bitset', [result]); // TODO: should return a bitset itself
   } catch (e: any) {
-    console.error('In substructureSearch: ' + e.toString());
+    console.error('Chem | In substructureSearch: ' + e.toString());
     throw e;
+  } finally {
+    chemEndCriticalSection();
   }
-  chemEndCriticalSection();
 }
 
 //name: Descriptors App
