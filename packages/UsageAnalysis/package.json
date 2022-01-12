@@ -1,6 +1,6 @@
 {
 	"name": "@datagrok/usage-analysis",
-	"beta": true,
+	"beta": false,
 	"friendlyName": "Usage Analysis",
 	"version": "0.0.2",
 	"description": "Usage Analysis System",
