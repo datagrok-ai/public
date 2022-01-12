@@ -39,7 +39,9 @@ export class TopPackageFunctionsViewer extends UaFilterableViewer {
                   filterStream.getValue(),
                   false
               )
-            ], 'TopPackageFunctions');
+            ],
+            `Package Functions: ${args.args.categories[0]}`,
+            'Package Functions');
 
             grok.shell.o = pp.getRoot();
           });

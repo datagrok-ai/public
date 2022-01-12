@@ -39,7 +39,9 @@ export class TopSourcesViewer extends UaFilterableViewer {
                   filterStream.getValue(),
                   false
               )
-            ], 'TopSources');
+            ],
+            `Sources: ${args.args.categories[0]}`,
+            'Sources');
 
             grok.shell.o = pp.getRoot();
           });

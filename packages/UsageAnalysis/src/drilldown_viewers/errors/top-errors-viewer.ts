@@ -29,7 +29,9 @@ export class TopErrorsViewer extends UaFilterableViewer {
                   filterStream.getValue(),
                   false
               )
-            ], 'TopErrors');
+            ],
+            `Errors: ${args.args.categories[0]}`,
+            'Errors');
 
             grok.shell.o = pp.getRoot();
           });
