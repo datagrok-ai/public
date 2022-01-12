@@ -100,10 +100,10 @@ export async function studyVisitPanel(studyVisit: StudyVisit) {
     }
 
     let aeRowNum = getRowNumber(studyVisit.aeSincePreviusVisit);
-    createPane('AEs since previous visit', aeRowNum, studyVisit.aeSincePreviusVisit, AE_DECOD_TERM);
+    createPane('AEs since last visit', aeRowNum, studyVisit.aeSincePreviusVisit, AE_DECOD_TERM);
 
     let cmRowNum = getRowNumber(studyVisit.conmedSincePreviusVisit);
-    createPane('CONMEDs since previous visit', cmRowNum, studyVisit.conmedSincePreviusVisit, CON_MED_NAME);
+    createPane('CONMEDs since last visit', cmRowNum, studyVisit.conmedSincePreviusVisit, CON_MED_NAME);
 
     let createDistributionPane = (name, df, catCol, valCol) => {
         acc.addPane(name, () => {
@@ -121,8 +121,7 @@ export async function studyVisitPanel(studyVisit: StudyVisit) {
                         category: `${catCol}`,
                         labelOrientation: 'Horz',
                         showCategorySelector: false,
-                        showValueSelector: false,
-                        showPValue: true
+                        showValueSelector: false
                       });
                     return plot.root;
                 })
@@ -180,7 +179,7 @@ export async function patientVisitPanel(patientVisit: PatientVisit) {
                 patientVisit[domain].rowCount === 1 && patientVisit[domain].getCol(SUBJECT_ID).isNone(0) ?
                     0 : patientVisit[domain].rowCount : 0
             createPane(domain, key, rowNum);
-        })
+        });
     }
 
     createAccordion();
