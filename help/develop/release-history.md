@@ -1,6 +1,25 @@
 <!-- TITLE: Release History -->
 <!-- SUBTITLE: -->
 
+# 2022-01-13 Dev build 0.112.0
+
+## Latest Docker Images
+
+* Datagrok: 
+  *  `docker pull datagrok/datagrok:0.112.0`
+  *  `docker pull datagrok/datagrok:latest`
+  
+* [Docker-Compose](admin/docker-compose.md)
+
+## Addressed Issues
+
+* JKG: Allow gnuplot run on different platforms 
+* JS-API: Packages test framework (WIP)
+* Fixed versions constraints 
+* Fixed dependency 
+* Fix docker build for datagrok 
+
+
 # 2022-01-13 Dev build 0.111.0
 
 ## Latest Docker Images
