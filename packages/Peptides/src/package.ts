@@ -14,7 +14,7 @@ import {analyzePeptidesWidget} from './widgets/analyze-peptides';
 import {PeptideSimilaritySpaceWidget} from './utils/peptide-similarity-space';
 import {manualAlignmentWidget} from './widgets/manual-alignment';
 import {SARViewer, SARViewerVertical} from './viewers/sar-viewer';
-import {peptideMoleculeWidget} from './widgets/peptide-molecule';
+import {peptideMoleculeWidget, getMolecule} from './widgets/peptide-molecule';
 import {SubstViewer} from './viewers/subst-viewer';
 
 export const _package = new DG.Package();
@@ -180,4 +180,17 @@ export function manualAlignment(monomer: string) {
 export async function peptideSpacePanel(col: DG.Column): Promise<DG.Widget> {
   const widget = new PeptideSimilaritySpaceWidget(col, view ?? grok.shell.v);
   return await widget.draw();
+}
+
+//name: Peptide to SDF
+//tags: panel, widgets
+//input: string peptide { semType: alignedSequence }
+//output: widget result
+export function peptideToSDF(peptide: string): DG.Widget {
+  const smiles = getMolecule(peptide);
+  let widget: DG.Widget = new DG.Widget(ui.div());
+  grok.functions.call('Chem:molfileWidget', {'molStr': smiles}).then(function(result) {
+    widget = result;
+  });
+  return widget;
 }
