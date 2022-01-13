@@ -26,21 +26,24 @@ function _fastaToStrings(fasta: string): string[] {
 }
 
 export async function runKalign(col: DG.Column, webRootValue: string) : Promise<DG.Column> {
-  // eslint-disable-next-line max-len
-  // export EMCC_CFLAGS="-s ENVIRONMENT='web' -s MODULARIZE=1 -s 'EXTRA_EXPORTED_RUNTIME_METHODS=[\"FS\", \"callMain\"]' -s EXPORT_NAME='initKalign' -s FORCE_FILESYSTEM=1" && emmake make
   const _webPath = `${webRootValue}dist/kalign.wasm`;
   const sequences = col.toList().map((v: string, _) => AlignedSequenceEncoder.clean(v).replace(/\-/g, ''));
   const fasta = _stringsToFasta(sequences);
-
   const args = '-i input.fa -o output.fa'.split(' ');
+  // eslint-disable-next-line max-len
+  // export EMCC_CFLAGS="-s ENVIRONMENT='web' -s MODULARIZE=1 -s 'EXTRA_EXPORTED_RUNTIME_METHODS=[\"FS\", \"callMain\"]' -s EXPORT_NAME='initKalign' -s FORCE_FILESYSTEM=1" && emmake make
   const kalign = await initKalign({
     noInitialRun: true,
     locateFile: () => _webPath,
   });
+
   kalign.FS.writeFile('input.fa', fasta, {encoding: 'utf8'});
+
   const ret = kalign.callMain(args);
+
   console.log(`main(argc, argv) returned ${ret}`);
+
   const buf = kalign.FS.readFile('output.fa', {encoding: 'utf8'}) as string;
   const aligned = _fastaToStrings(buf).slice(0, sequences.length);
-  return DG.Column.fromStrings('aligned', aligned);
+  return DG.Column.fromStrings(`${col.name}aligned`, aligned);
 }
