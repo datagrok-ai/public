@@ -13,7 +13,7 @@
 		"@datagrok-libraries/utils": ">=0.0.13",
 		"@datagrok-libraries/statistics": ">=0.1.5",
 		"@datagrok-libraries/ml": ">=0.0.1",
-		"@datagrok-libraries/bio": ">=0.0.1",
+		"@datagrok-libraries/bio": ">=0.0.4",
 		"@types/d3": "^7.0.0",
 		"@types/jquery": "^3.5.6"
 	},
