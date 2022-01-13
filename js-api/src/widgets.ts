@@ -3,7 +3,7 @@ import {__obs, _sub, observeStream, StreamSubscription} from "./events";
 import {Observable, Subscription} from "rxjs";
 import {Func, Property, PropertyOptions} from "./entities";
 import {Cell, Column, DataFrame} from "./dataframe";
-import {ColorType, Type} from "./const";
+import {ColorType, LegendPosition, Type} from "./const";
 import * as rxjs from "rxjs";
 import { filter } from 'rxjs/operators';
 import {Rect} from "./grid";
@@ -1444,7 +1444,7 @@ export class Legend extends DartWidget {
   }
 
   static create(column: Column): Legend {
-    return api.grok_Legend(column.dart);
+    return toJs(api.grok_Legend(column.dart));
   }
 
   /** Column for the legend */
@@ -1456,8 +1456,8 @@ export class Legend extends DartWidget {
   set showNulls(show: Boolean) { api.grok_Legend_Set_ShowNulls(this.dart, show); }
 
   /** Position (left / right / top / bottom) */
-  get position(): String { return api.grok_Legend_Get_Position(this.dart); }
-  set position(pos: String) { api.grok_Legend_Set_Position(this.dart, pos); }
+  get position(): LegendPosition { return api.grok_Legend_Get_Position(this.dart); }
+  set position(pos: LegendPosition) { api.grok_Legend_Set_Position(this.dart, pos); }
 }
 
 

@@ -8,9 +8,9 @@ import * as grok from 'datagrok-api/grok';
 import * as ui from 'datagrok-api/ui';
 import * as DG from 'datagrok-api/dg';
 import {chem} from 'datagrok-api/grok';
-import {initChem} from "./package";
-import Sketcher = chem.Sketcher;
+import {searchSubstructure} from "./package";
 import {initRdKitService} from "./chem-common-rdkit";
+import Sketcher = chem.Sketcher;
 
 export class SubstructureFilter extends DG.Filter {
   column: DG.Column | null = null;
@@ -58,15 +58,11 @@ export class SubstructureFilter extends DG.Filter {
       this.reset();
       return;
     }
-    grok.functions.call('Chem:searchSubstructure', {
-      'molStringsColumn': this.column,
-      'molString': this.sketcher.getMolFile(),
-      'substructLibrary': true,
-      'molStringSmarts': '',
-    })
+
+    searchSubstructure(this.column!, this.sketcher.getMolFile(), true, '')
       .then((bitsetCol) => {
         this.dataFrame?.filter.and(bitsetCol.get(0));
-      this.column!.temp['chem-scaffold-filter'] = this.sketcher.getMolFile(); // not sure if !
+      this.column!.temp['chem-scaffold-filter'] = this.sketcher.getMolFile();
       this.dataFrame?.filter.fireChanged();
       }).catch((e) => {
         console.warn(e);

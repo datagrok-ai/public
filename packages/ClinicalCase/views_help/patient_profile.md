@@ -3,7 +3,7 @@
 Patient profile is useful for analyzing events related to particular patient.
 You can analyze data from laboratory, adverse events, dug exposure and concomitant medication domains in time and see relations between events. All graphs are linked to the same X axis representing study days and it can be zoomed in and out simultaneously. 
 
-Information about events is available in tooltips on mouse hover. For convenience domains can be collapsed or extended.
+Information about events is available in tooltips on mouse hover. For convenience graphs can be collapsed or extended.
 
 <img src="https://raw.githubusercontent.com/datagrok-ai/public/master/packages/ClinicalCase/img/patient_profile_zoom.gif" height="500" width='800'/>
 

@@ -10,8 +10,7 @@ import { AE_START_DAY, CON_MED_START_DAY, INV_DRUG_NAME, LAB_RES_N, SUBJECT_ID, 
 import { PatientVisit } from '../model/patient-visit';
 import { StudyVisit } from '../model/study-visit';
 import { createPropertyPanel } from '../panels/panels-service';
-
-let domainColors = ['blue', 'green', 'yellow', 'orange', 'red'];
+import { _package } from '../package';
 
 export class VisitsView extends DG.ViewBase implements ILazyLoading {
 
@@ -23,8 +22,8 @@ export class VisitsView extends DG.ViewBase implements ILazyLoading {
     patientVisit = new PatientVisit();
     studyVisit = new StudyVisit();
     totalVisits = {};
-    proceduresAtVisit = { 'lb': {color: 'blue', column: LAB_RES_N}, 'ex': {color: 'green', column: INV_DRUG_NAME}, 'vs': {color: 'yellow', column: VS_RES_N} };
-    eventsSinceLastVisit = { 'ae': {color: 'orange', column: AE_START_DAY}, 'cm': {color: 'red', column: CON_MED_START_DAY} };
+    proceduresAtVisit = { 'lb': {column: LAB_RES_N}, 'ex': {column: INV_DRUG_NAME}, 'vs': {column: VS_RES_N} };
+    eventsSinceLastVisit = { 'ae': {column: AE_START_DAY}, 'cm': {column: CON_MED_START_DAY} };
     subjSet = new Set();
     existingDomains: string[];
     selectedDomain: string;
@@ -40,6 +39,7 @@ export class VisitsView extends DG.ViewBase implements ILazyLoading {
     constructor(name) {
         super({});
         this.name = name;
+        this.helpUrl = `${_package.webRoot}/views_help/visits.md`;
     }
 
     loaded: boolean;
@@ -52,7 +52,7 @@ export class VisitsView extends DG.ViewBase implements ILazyLoading {
         this.existingDomains = Object.keys(this.proceduresAtVisit)
             .concat(Object.keys(this.eventsSinceLastVisit))
             .filter(it => study.domains[it] !== null);
-
+        this.assignColorsToDomains();
         this.tv = study.domains.tv.clone();
         this.sv = study.domains.sv.clone();
         filterNulls(this.sv, VISIT_DAY);
@@ -98,6 +98,14 @@ export class VisitsView extends DG.ViewBase implements ILazyLoading {
         this.setRibbonPanels(
             [ [switchGrid.root], [this.ribbonDiv] ] ,
           );
+    }
+
+    private assignColorsToDomains() {
+        this.existingDomains.forEach((domain, index) => {
+            this.proceduresAtVisit[domain] ?
+                this.proceduresAtVisit[domain]['color'] = DG.Color.toRgb(DG.Color.categoricalPalette[index]) :
+                this.eventsSinceLastVisit[domain]['color'] = DG.Color.toRgb(DG.Color.categoricalPalette[index]);
+        })
     }
 
     private createSwitchGridInput(){
@@ -179,6 +187,7 @@ export class VisitsView extends DG.ViewBase implements ILazyLoading {
         });
         df = addDataFromDmDomain(df, study.domains.dm, df.columns.names().filter(it => it !== TREATMENT_ARM), [TREATMENT_ARM]);
         df = df.clone(null, [SUBJECT_ID, TREATMENT_ARM].concat(this.sortedVisitNames));
+        this.setColorPaletteForHeatMap(df);
         df.onCurrentCellChanged.subscribe(() => {
             setTimeout(() => {
                 this.createVisitPropertyPanel(df);
@@ -187,6 +196,15 @@ export class VisitsView extends DG.ViewBase implements ILazyLoading {
 
         });
         return df;
+    }
+
+    private setColorPaletteForHeatMap(df: DG.DataFrame){
+        df.columns.names().forEach(col => {
+            if (col !== SUBJECT_ID && col !== TREATMENT_ARM) {
+                df.col(col).tags[DG.TAGS.COLOR_CODING_TYPE] = 'Linear';
+                df.col(col).tags[DG.TAGS.COLOR_CODING_LINEAR] = `[${DG.Color.white}, ${DG.Color.blue}]`;
+            }
+        });
     }
 
     private createVisitPropertyPanel(df: DG.DataFrame){
@@ -270,20 +288,18 @@ export class VisitsView extends DG.ViewBase implements ILazyLoading {
                     let startDay = study.domains[domain].get(this.eventsSinceLastVisit[domain].column, i);
                     let subjId = study.domains[domain].get(SUBJECT_ID, i);
                     this.subjSet.add(subjId);
-                    for(let z = 0; z < this.sortedVisitNamesAndDays.length - 1; z++) {
-                        if(z > 0) {
-                            if (startDay > this.sortedVisitNamesAndDays[z].day && startDay < this.sortedVisitNamesAndDays[z+1].day){
-                                let visitName = this.sortedVisitNamesAndDays[z+1].name;
-                                if (this.totalVisits[visitName][subjId].eventsCount[domain]) {
-                                    this.totalVisits[visitName][subjId].eventsCount[domain] += 1;
-                                } else {
-                                    this.totalVisits[visitName][subjId].eventsCount[domain] = 1;
-                                }
-                                break;
+                    for (let z = 0; z < this.sortedVisitNamesAndDays.length - 1; z++) {
+                        if (startDay > this.sortedVisitNamesAndDays[z].day && startDay < this.sortedVisitNamesAndDays[z + 1].day) {
+                            let visitName = this.sortedVisitNamesAndDays[z + 1].name;
+                            if (this.totalVisits[visitName][subjId].eventsCount[domain]) {
+                                this.totalVisits[visitName][subjId].eventsCount[domain] += 1;
+                            } else {
+                                this.totalVisits[visitName][subjId].eventsCount[domain] = 1;
                             }
+                            break;
                         }
                     }
-                }               
+                }
             }
         })
     }

@@ -8,7 +8,7 @@ const unlockFunctionForKey: any = {};
 
 // By https://github.com/mistval/locko
 
-export async function criticalSectionBegin(key: string = "CHEM_COMMON") {
+export async function criticalSectionBegin(key: string) {
   if (!lockPromiseForKey[key])
     lockPromiseForKey[key] = Promise.resolve();
   const takeLockPromise = lockPromiseForKey[key];
@@ -18,23 +18,29 @@ export async function criticalSectionBegin(key: string = "CHEM_COMMON") {
   return takeLockPromise;
 }
 
-export function criticalSectionEnd(key: string = "CHEM_COMMON") {
+export function criticalSectionEnd(key: string) {
   if (unlockFunctionForKey[key]) {
     unlockFunctionForKey[key]();
     delete unlockFunctionForKey[key];
   }
 }
 
-let _chemLocked = false;
+const CHEM_TOKEN = 'CHEM_TOKEN';
 
-export async function chemLock(token: string | null = null) {
-  if (_chemLocked)
-    throw (`RdKit Service usage locked:\n${(new Error()).stack}`);
-  _chemLocked = true;
+export async function chemBeginCriticalSection() {
+  let warned = false;
+  if (unlockFunctionForKey[CHEM_TOKEN]) {
+    console.warn('Chem | Is already in a critical section, waiting...');
+    warned = true;
+  }
+  await criticalSectionBegin(CHEM_TOKEN);
+  if (warned) {
+    console.warn('Chem | Left the critical section');
+  }
 }
 
-export async function chemUnlock(token: string | null = null) {
-  _chemLocked = false;
+export function chemEndCriticalSection() {
+  criticalSectionEnd(CHEM_TOKEN);
 }
 
 export function tanimoto(x: BitArray, y: BitArray) {

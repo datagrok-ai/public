@@ -11,7 +11,7 @@ Dataset can be further filtered.
 
 <img src="https://raw.githubusercontent.com/datagrok-ai/public/master/packages/ClinicalCase/img/survival_dataset.gif" height="500" width='800'/>
 
-- go to `Survival` tab. You will see Kaplan-Meier curve. You can modify confidence interval or choose strata(stratas will be available in dropdown list in case covariates for dataset are selected). After modifying parameters curve will be updated.
+- go to `Survival Chart` tab. You will see Kaplan-Meier curve. You can modify confidence interval or choose strata(stratas will be available in dropdown list in case covariates for dataset are selected). After modifying parameters curve will be updated.
 
 <img src="https://raw.githubusercontent.com/datagrok-ai/public/master/packages/ClinicalCase/img/survival_kaplan_meier.gif" height="500" width='800'/>
 
