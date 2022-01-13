@@ -5,9 +5,10 @@ import { after, before, category, expect, test } from "@datagrok-libraries/utils
 category('Viewer', () => {
   let df: DG.DataFrame;
   let tv: DG.TableView;
-  const coreViewerTypes = Object.values(DG.VIEWER).filter((v) => v !== DG.VIEWER.TIMELINES && v !== DG.VIEWER.GLOBE);
+  let coreViewerTypes: string[];
 
   before(async () => {
+    coreViewerTypes = Object.values(DG.VIEWER).filter((v) => v !== DG.VIEWER.TIMELINES && v !== DG.VIEWER.GLOBE);
     df = grok.data.demo.demog();
     tv = grok.shell.addTableView(df);
   });
