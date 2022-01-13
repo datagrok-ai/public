@@ -129,6 +129,7 @@ enum COMMON_TAG_NAME {
   POSTFIX = 'postfix',
   UNITS = 'units',
   EDITOR = 'editor',
+  SEM_TYPE = 'semType',
 }
 
 enum OPTIONAL_TAG_NAME {
@@ -139,7 +140,6 @@ enum OPTIONAL_TAG_NAME {
   ACTION = 'action',
   CHOICES = 'choices',
   SUGGESTIONS = 'suggestions',
-  SEM_TYPE = 'semType',
   MIN = 'min',
   MAX = 'max',
 }
@@ -150,7 +150,7 @@ const DF_TAG_NAMES = [
   OPTIONAL_TAG_NAME.COLUMNS,
   OPTIONAL_TAG_NAME.ACTION];
 const COLUMN_TAG_NAMES = [...Object.values(COMMON_TAG_NAME), OPTIONAL_TAG_NAME.TYPE, OPTIONAL_TAG_NAME.FORMAT,
-  OPTIONAL_TAG_NAME.ALLOW_NULLS, OPTIONAL_TAG_NAME.ACTION, OPTIONAL_TAG_NAME.SEM_TYPE];
+  OPTIONAL_TAG_NAME.ALLOW_NULLS, OPTIONAL_TAG_NAME.ACTION];
 const STRING_TAG_NAMES = [...Object.values(COMMON_TAG_NAME),
   /*OPTIONAL_TAG_NAME.CHOICES ,*/ OPTIONAL_TAG_NAME.SUGGESTIONS];
 const INT_TAG_NAMES = [...Object.values(COMMON_TAG_NAME), OPTIONAL_TAG_NAME.MIN, OPTIONAL_TAG_NAME.MAX];
@@ -407,9 +407,11 @@ async function openFse(v: DG.View, functionCode: string) {
   
       if (!param) return ui.div('');
   
-      const result = ui.input.form(param, optionalFuncParamsProps.filter(
-        (prop) => optionTags(param).includes(prop.name as OPTIONAL_TAG_NAME)),
-      );
+      const result = ui.input.form(param, 
+        [
+          ...obligatoryFuncParamsTags,
+          ...optionalFuncParamsTags.filter((prop) => optionTags(param).includes(prop.name as OPTIONAL_TAG_NAME))
+        ]);
   
       grok.shell.o = ui.divV([ui.h1(`Param: ${paramName}`), ui.block75([result])]);
     };
@@ -450,8 +452,30 @@ async function openFse(v: DG.View, functionCode: string) {
       DG.Property.create(FUNC_PARAM_FIELDS.CATEGORY, DG.TYPE.STRING, (x: any) => x[FUNC_PARAM_FIELDS.CATEGORY],
         (x: any, v) => updateValue(x, FUNC_PARAM_FIELDS.CATEGORY, v), ''),
     ];
+
+    const obligatoryFuncParamsTags: DG.Property[] = [
+      DG.Property.create(COMMON_TAG_NAME.CAPTION, DG.TYPE.STRING,
+        (x: any) => x.options[COMMON_TAG_NAME.CAPTION],
+        (x: any, v) => updateValue(x, COMMON_TAG_NAME.CAPTION, v), ''),
+
+      DG.Property.create(COMMON_TAG_NAME.UNITS, DG.TYPE.STRING,
+        (x: any) => x.options[COMMON_TAG_NAME.UNITS],
+        (x: any, v) => updateValue(x, COMMON_TAG_NAME.UNITS, v), ''),
+
+      DG.Property.create(COMMON_TAG_NAME.EDITOR, DG.TYPE.STRING,
+        (x: any) => x.options[COMMON_TAG_NAME.EDITOR],
+        (x: any, v) => updateValue(x, COMMON_TAG_NAME.EDITOR, v), ''),
+
+      DG.Property.create(COMMON_TAG_NAME.POSTFIX, DG.TYPE.STRING,
+        (x: any) => x.options[COMMON_TAG_NAME.POSTFIX],
+        (x: any, v) => updateValue(x, COMMON_TAG_NAME.POSTFIX, v), ''),
+
+      DG.Property.create(COMMON_TAG_NAME.SEM_TYPE, DG.TYPE.STRING,
+        (x: any) => x.options[COMMON_TAG_NAME.SEM_TYPE],
+        (x: any, v) => updateValue(x, COMMON_TAG_NAME.SEM_TYPE, v), ''),
+    ];
   
-    const optionalFuncParamsProps: DG.Property[] = [
+    const optionalFuncParamsTags: DG.Property[] = [
       DG.Property.create(OPTIONAL_TAG_NAME.ACTION, DG.TYPE.STRING,
         (x: any) => x.options[OPTIONAL_TAG_NAME.ACTION],
         (x: any, v) => updateValue(x, OPTIONAL_TAG_NAME.ACTION, v), ''),
@@ -483,10 +507,6 @@ async function openFse(v: DG.View, functionCode: string) {
       DG.Property.create(OPTIONAL_TAG_NAME.MIN, DG.TYPE.INT,
         (x: any) => x.options[OPTIONAL_TAG_NAME.MIN],
         (x: any, v) => updateValue(x, OPTIONAL_TAG_NAME.MIN, v), ''),
-  
-      DG.Property.create(OPTIONAL_TAG_NAME.SEM_TYPE, DG.TYPE.STRING,
-        (x: any) => x.options[OPTIONAL_TAG_NAME.SEM_TYPE],
-        (x: any, v) => updateValue(x, OPTIONAL_TAG_NAME.SEM_TYPE, v), ''),
   
       DG.Property.create(OPTIONAL_TAG_NAME.SUGGESTIONS, DG.TYPE.STRING,
         (x: any) => x.options[OPTIONAL_TAG_NAME.SUGGESTIONS],
