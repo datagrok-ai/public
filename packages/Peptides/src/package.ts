@@ -182,13 +182,14 @@ export async function peptideSpacePanel(col: DG.Column): Promise<DG.Widget> {
   const widget = new PeptideSimilaritySpaceWidget(col, view ?? grok.shell.v);
   return await widget.draw();
 }
+
 //name: MSA
-export async function testMSA() {
-  view = (grok.shell.v as DG.TableView);
-
-  const df = await grok.data.files.openTable('Demo:TestJobs:Files:DemoFiles/bio/peptides.csv');
-  const msaCol = await runKalign(df.getCol('AlignedSequence'), _package.webRoot);
-
-  df.columns.add(msaCol);
-  grok.shell.addTableView(df);
+//tags: viewer
+//input: dataframe table
+//input: column col {semType: alignedSequence}
+//output: dataframe result
+export async function doMSA(table: DG.DataFrame, col: DG.Column): Promise<DG.DataFrame> {
+  const msaCol = await runKalign(table.getCol('AlignedSequence'), _package.webRoot);
+  table.columns.add(msaCol);
+  return table;
 }
