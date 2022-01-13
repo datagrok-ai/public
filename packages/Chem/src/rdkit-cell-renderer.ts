@@ -6,6 +6,7 @@ import * as grok from 'datagrok-api/grok';
 import * as ui from 'datagrok-api/ui';
 import * as DG from 'datagrok-api/dg';
 import {convertToRDKit} from './analysis/r-group-analysis';
+import {drawRdKitMoleculeToOffscreenCanvas} from './chem-common-rdkit';
 import {RDMol} from './rdkit-api';
 import {isMolBlock} from './chem-utils';
 
@@ -45,7 +46,6 @@ M  END
   _fetchMolGetOrCreate(molString: string, scaffoldMolString: string, molRegenerateCoords: boolean) {
     let mol: RDMol | null = null;
     let substructJson = '{}';
-
     try {
       mol = this.rdKitModule.get_mol(molString);
     } catch (e) {
@@ -53,11 +53,10 @@ M  END
         mol = this.rdKitModule.get_mol(molString, '{"kekulize":false}');
       } catch (e2) {
         console.error(
-          'In _fetchMolGetOrCreate: RDKit .get_mol crashes on a molString: `' + molString + '`');
+          'Chem | In _fetchMolGetOrCreate: RDKit .get_mol crashes on a molString: `' + molString + '`');
         mol = null;
       }
     }
-
     if (mol) {
       try {
         if (mol.is_valid()) {
@@ -81,7 +80,7 @@ M  END
         }
         if (!mol!.is_valid()) {
           console.error(
-            'In _fetchMolGetOrCreate: RDKit mol is invalid on a molString molecule: `' + molString + '`');
+            'Chem | In _fetchMolGetOrCreate: RDKit mol is invalid on a molString molecule: `' + molString + '`');
           mol!.delete();
         }
       } catch (e) {
@@ -112,8 +111,9 @@ M  END
     const canvas = new OffscreenCanvas(width, height);
     this.canvasCounter++;
     if (rdkitMol != null)
-      this._drawMoleculeToCanvas(rdkitMol, width, height, canvas, substruct, highlightScaffold);
+      drawRdKitMoleculeToOffscreenCanvas(rdkitMol, width, height, canvas, highlightScaffold ? substruct : null);
     else {
+      // draw a crossed rectangle
       const ctx = canvas.getContext('2d');
       ctx!.lineWidth = 1;
       ctx!.strokeStyle = '#EFEFEF';
@@ -141,28 +141,16 @@ M  END
   }
 
   _drawMoleculeToCanvas(
-    rdkitMol: any, w: number, h: number, canvas: OffscreenCanvas,
+    rdkitMol: any, w: number, h: number, offscreenCanvas: OffscreenCanvas,
     substruct: Object, highlightScaffold: boolean) {
-    const opts = {
-      'clearBackground': false,
-      'offsetx': 0, 'offsety': 0,
-      'width': Math.floor(w),
-      'height': Math.floor(h),
-      'bondLineWidth': 1,
-      'fixedScale': 0.07,
-      'minFontSize': 9,
-      'highlightBondWidthMultiplier': 12,
-      'dummyIsotopeLabels': false,
-      'atomColourPalette': {
-        16: [0.498, 0.247, 0.0],
-        9: [0.0, 0.498, 0.0],
-        17: [0.0, 0.498, 0.0],
-      },
-    };
-    if (highlightScaffold)
-      Object.assign(opts, substruct);
 
-    rdkitMol.draw_to_canvas_with_highlights(canvas, JSON.stringify(opts));
+
+
+
+
+
+
+
   }
 
   _drawMolecule(x: number, y: number, w: number, h: number, onscreenCanvas: HTMLCanvasElement,

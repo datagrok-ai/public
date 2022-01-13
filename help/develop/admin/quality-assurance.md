@@ -30,6 +30,7 @@ Whenever a new code is checked into our source code repository, several tasks ge
 2. [Unit tests](#unit-tests)
 3. Compilation
 4. Packaging the platform in Docker containers
+5. [Snyk](https://snyk.io/) check for vulnerabilities
 
 Every time docker image is built, tasks get executed:
 

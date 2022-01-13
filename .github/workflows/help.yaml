@@ -11,10 +11,20 @@ jobs:
     steps:
       - name: Checkout
         uses: actions/checkout@v2
+      - name: Create entrypoint for markdownlint
+        working-directory: ./help
+        run: |
+          echo '#!/bin/bash' > entrypoint.sh;
+          echo 'set -ex' >> entrypoint.sh;
+          for f in $(find . -type f -name '*.md' -not -name 'release-history.md' -printf '%P '); do
+            echo "mdl --style /github/workspace/markdownlint.rb /github/workspace/help/${f}" >> entrypoint.sh;
+          done;
+          cat entrypoint.sh
       - name: Lint
         uses: docker://markdownlint/markdownlint:latest
         with:
-          args: --style /github/workspace/markdownlint.rb /github/workspace/help
+          entrypoint: /bin/bash
+          args: /github/workspace/help/entrypoint.sh
   link_check:
     runs-on: ubuntu-20.04
     steps:
@@ -74,13 +84,13 @@ jobs:
       - name: Set up Dart SDK
         uses: dart-lang/setup-dart@v1
         with:
-          sdk: stable
+          sdk: 1.24.3
       - uses: actions/cache@v1
         with:
           path: /opt/hostedtoolcache/dart-sdk
           key: dart-install-cache
       - name: Install Dart dependencies
-        run: dart pub get
+        run: pub get
         working-directory: ./help/_internal
       - name: Run Dart script to create menu
         run: dart generate_menu.dart -s ../output/help/ -d ../output/help/

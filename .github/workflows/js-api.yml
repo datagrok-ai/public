@@ -7,10 +7,13 @@ on:
 jobs:
   check:
     runs-on: ubuntu-20.04
+    outputs:
+      changed_version: ${{ steps.check-version.outputs.changed_version }}
     steps:
       - name: Checkout
         uses: actions/checkout@v2
       - name: Check version was changed
+        id: check-version
         working-directory: ./js-api
         run: |
           set -ex
@@ -22,15 +25,16 @@ jobs:
             latest_version="$(jq .version <<<$npm_json)"
             current_version=$(jq .version package.json)
             if [[ $latest_version == $current_version ]]; then
-              changed_version=false
+              changed_version='false'
             else
-              changed_version=true
+              changed_version='true'
             fi
           fi
           echo "::set-output name=changed_version::${changed_version}"
 
   build:
     runs-on: ubuntu-20.04
+    needs: check
     if: needs.check.outputs.changed_version == 'true'
     environment: Prod
     steps:

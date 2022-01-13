@@ -1,7 +1,7 @@
 {
   "name": "@datagrok/api-samples",
   "version": "1.0.1",
-  "fullName": "API Samples",
+  "friendlyName": "API Samples",
   "description": "API Samples",
   "sources": [ ],
   "scripts": {

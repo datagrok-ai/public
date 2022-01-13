@@ -1,35 +1,59 @@
 <!-- TITLE: Release History -->
 <!-- SUBTITLE: -->
 
-# 2022-01-11 Dev build 0.108.0
+# 2022-01-12 Dev build 0.110.0
 
 ## Latest Docker Images
 
 * Datagrok: 
-  *  `docker pull datagrok/datagrok:0.108.0`
+  *  `docker pull datagrok/datagrok:0.110.0`
   *  `docker pull datagrok/datagrok:latest`
   
 * [Docker-Compose](admin/docker-compose.md)
 
 ## Addressed Issues
 
+* Usage analysis: added rendering of package and user meta 
+* Clinical Case: updated help, added help for Medical History and Visits views 
+* Bump all log4j components from 2.16.0 to 2.17.1 in /connectors/grok_connect 
+* Bump elasticsearch from 6.4.2 to 7.16.2 Elasticsearch release to upgrade Apache Log4j2 
+* JS-API: Packages test framework (WIP)
+
+
+# 2022-01-12 Dev build 0.109.0
+
+## Latest Docker Images
+
+* Datagrok: 
+  *  `docker pull datagrok/datagrok:0.109.0`
+  *  `docker pull datagrok/datagrok:latest`
+  
+* [Docker-Compose](admin/docker-compose.md)
+
+## Addressed Issues
+
+* Updated beta_users.csv 
+* Change release-history.md during release
+* (Bug) DataFrame.onCellValue event not fired when a value is deleted in a spreadsheet by pressing Del or Backspace 
+* Octave: vectorization 
+* Viewer in accordion has zero height 
+* Fixed analyzer warnings 
+* Bar chart: pass information about is click was on the header  
+* Bar Chart: maxBarHeight property 
+* Bar Chart: verticalAlign property 
+* (Bug) Bar Chart: initial render cuts category names (WIP)
+* ML #248: Fix bio package to be published on npm. 
+* ML #248: Add missing changes. 
+* Clinical Case: changed color palette for heatmaps and grid in Visits view 
+* UI Tests buttons 
+* UI Tests add import to package.ts 
+* #259 Chem: Serialized functions execution 
+* (Bug) JS API: Legend.create doesn't return an instance of DG.Legend class 
+* JS API: legend tests 
+* Add CodeMirror to sources
 * Clinical Case: added Visits view 
 * Update the dialog design for developer keys (WIP)
-* Fixed analyzer warnings 
-
-
-# 2022-01-11 Dev build 0.108.0
-
-## Latest Docker Images
-
-* Datagrok: 
-  *  `docker pull datagrok/datagrok:0.108.0`
-  *  `docker pull datagrok/datagrok:latest`
-  
-* [Docker-Compose](admin/docker-compose.md)
-
-## Addressed Issues
-
+* Fixed analyzer warnings
 * NPM repositories: add registry property 
 * Formula Lines: Property harmonization (opacity) 
 * JS API: Moved properties (column.colors => column.meta.colors, column.markers => column.meta.markers) 
@@ -121,7 +145,6 @@
 * #254 Chem: Lazy load for workers 
 * H2O: Grok Helper URL prefix 
 * #155 Chem: Package autotests. getSimilarities 
-
 
 # 2021-12-22 Dev build 0.107.0
 
