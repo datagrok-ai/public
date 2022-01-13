@@ -28,17 +28,19 @@
 		"ts-loader": "^9.2.5",
 		"typescript": "^4.4.4",
 		"webpack": "latest",
-		"webpack-cli": "latest",
-		"crypto-browserify": ">=3.12.0",
-		"path-browserify": ">=1.0.1",
-		"stream-browserify": ">=3.0.0",
-		"buffer": "6.0.3"
+		"webpack-cli": "latest"
 	},
 	"sources": [
 		"files/aligned.csv",
 		"files/aligned_2.csv",
 		"common/ngl_viewer/ngl.js"
 	],
+	"browser": {
+		"stream": false,
+		"path": false,
+		"buffer": false,
+		"crypto": false
+	  },
 	"scripts": {
 		"link-api": "npm link datagrok-api",
 		"link-utils": "npm link @datagrok-libraries/utils",

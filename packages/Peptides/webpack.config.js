@@ -3,7 +3,10 @@ const path = require('path');
 module.exports = {
   mode: 'development',
   entry: {
-    package: ['./src/package.ts'], //'./src/wasm/kalign.wasm',
+    package: [/*'./src/wasm/kalign.wasm', */'./src/package.ts'],
+  },
+  devServer: {
+    contentBase: './dist',
   },
   target: 'web',
   module: {
@@ -30,12 +33,12 @@ module.exports = {
   },
   resolve: {
     extensions: [/*'.wasm', */'.mjs', '.js', '.json', '.ts', '.tsx'],
-    fallback: {
+    /*fallback: {
       'crypto': require.resolve('crypto-browserify'),
       'path': require.resolve('path-browserify'),
       'stream': require.resolve('stream-browserify'),
       'buffer': require.resolve('buffer/'),
-    },
+    },*/
   },
   devtool: 'inline-source-map',
   externals: {

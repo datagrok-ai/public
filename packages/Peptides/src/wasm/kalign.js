@@ -96,67 +96,6 @@ const initKalign = (() => {
         abort(text);
       }
     }
-    function getCFunc(ident) {
-      const func = Module['_' + ident];
-      return func;
-    }
-    function ccall(ident, returnType, argTypes, args, opts) {
-      const toC = {
-        string: function(str) {
-          let ret = 0;
-          if (str !== null && str !== undefined && str !== 0) {
-            const len = (str.length << 2) + 1;
-            ret = stackAlloc(len);
-            stringToUTF8(str, ret, len);
-          }
-          return ret;
-        },
-        array: function(arr) {
-          const ret = stackAlloc(arr.length);
-          writeArrayToMemory(arr, ret);
-          return ret;
-        },
-      };
-      function convertReturnValue(ret) {
-        if (returnType === 'string') return UTF8ToString(ret);
-        if (returnType === 'boolean') return Boolean(ret);
-        return ret;
-      }
-      const func = getCFunc(ident);
-      const cArgs = [];
-      let stack = 0;
-      if (args) {
-        for (let i = 0; i < args.length; i++) {
-          const converter = toC[argTypes[i]];
-          if (converter) {
-            if (stack === 0) stack = stackSave();
-            cArgs[i] = converter(args[i]);
-          } else {
-            cArgs[i] = args[i];
-          }
-        }
-      }
-      let ret = func.apply(null, cArgs);
-      function onDone(ret) {
-        if (stack !== 0) stackRestore(stack);
-        return convertReturnValue(ret);
-      }
-      ret = onDone(ret);
-      return ret;
-    }
-    function cwrap(ident, returnType, argTypes, opts) {
-      argTypes = argTypes || [];
-      const numericArgs = argTypes.every(function(type) {
-        return type === 'number';
-      });
-      const numericRet = returnType !== 'string';
-      if (numericRet && numericArgs && !opts) {
-        return getCFunc(ident);
-      }
-      return function() {
-        return ccall(ident, returnType, argTypes, arguments, opts);
-      };
-    }
     const UTF8Decoder = typeof TextDecoder !== 'undefined' ? new TextDecoder('utf8') : undefined;
     function UTF8ArrayToString(heap, idx, maxBytesToRead) {
       const endIdx = idx + maxBytesToRead;
@@ -3415,17 +3354,9 @@ const initKalign = (() => {
     var __get_timezone = (Module['__get_timezone'] = function() {
       return (__get_timezone = Module['__get_timezone'] = Module['asm']['C']).apply(null, arguments);
     });
-    var stackSave = (Module['stackSave'] = function() {
-      return (stackSave = Module['stackSave'] = Module['asm']['D']).apply(null, arguments);
-    });
-    var stackRestore = (Module['stackRestore'] = function() {
-      return (stackRestore = Module['stackRestore'] = Module['asm']['E']).apply(null, arguments);
-    });
     var stackAlloc = (Module['stackAlloc'] = function() {
-      return (stackAlloc = Module['stackAlloc'] = Module['asm']['F']).apply(null, arguments);
+      return (stackAlloc = Module['stackAlloc'] = Module['asm']['D']).apply(null, arguments);
     });
-    Module['ccall'] = ccall;
-    Module['cwrap'] = cwrap;
     Module['addRunDependency'] = addRunDependency;
     Module['removeRunDependency'] = removeRunDependency;
     Module['FS_createPath'] = FS.createPath;
@@ -3434,7 +3365,7 @@ const initKalign = (() => {
     Module['FS_createLazyFile'] = FS.createLazyFile;
     Module['FS_createDevice'] = FS.createDevice;
     Module['FS_unlink'] = FS.unlink;
-    Module['ENV'] = ENV;
+    Module['callMain'] = callMain;
     Module['FS'] = FS;
     let calledRun;
     function ExitStatus(status) {
