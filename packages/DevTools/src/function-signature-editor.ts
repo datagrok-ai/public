@@ -195,7 +195,7 @@ const commentSign = (lang: LANGUAGE) => {
   }
 }
 
-function openFse(v: DG.View, functionCode: string) {
+async function openFse(v: DG.View, functionCode: string) {
     const inputScriptCopy = DG.Script.create(functionCode);
 
     const editorView = DG.View.create();
@@ -519,36 +519,49 @@ function openFse(v: DG.View, functionCode: string) {
       .setTag(DG.TAGS.CHOICES, `["${funcParamTypes.join(`", "`)}"]`);
     paramsGrid.dataFrame?.getCol(functionParamsMapping[FUNC_PARAM_FIELDS.DIRECTION as keyof typeof functionParamsMapping])
       .setTag(DG.TAGS.CHOICES, `["${[DIRECTION.INPUT, DIRECTION.OUTPUT].join(`", "`)}"]`);
+    
+      const col = paramsGrid.columns.byName('+');
+    col.cellType = 'html';
+    
     paramsGrid.onCellPrepare((gc) => {
+      if (gc.gridColumn.name !== '+') {
+        return
+      } 
+
       const deleteBtn = (name: string) => ui.div(
         ui.icons.delete(() => {
-          console.log('name to delete:', name);
           functionParamsCopy = functionParamsCopy.filter((param) => param.name !== name);
           functionParamsState.next(functionParamsCopy);
         }, 'Remove the param'), {style: {'text-align': 'center', 'margin': '6px'}},
       );
-  
-      if (gc.gridColumn.name === '+') {
-        gc.gridColumn.cellType = 'html';
-        if (gc.isTableCell) {
-          gc.style.element =
-          ui.divH([
-            deleteBtn(gc.grid.dataFrame?.get('Name', gc.gridRow)),
-          ]);
-        }
-  
-        if (gc.isColHeader) {
-          gc.customText = '';
-        }
+
+      if (gc.isTableCell) {
+        gc.style.element =
+        ui.divH([
+          deleteBtn(gc.grid.dataFrame?.get('Name', gc.gridRow)),
+        ]);
+      }
+
+      if (gc.isColHeader) {
+        gc.customText = '';
       }
     });
   
-    const area = ui.textInput('', '');
-    const myCM = CodeMirror.fromTextArea((area.input as HTMLTextAreaElement), { mode: highlightModeByLang(inputScriptCopy.language as LANGUAGE)});
-    console.log(myCM.getOption('mode'))
-  
-    const previewDiv = ui.panel([ui.divV([ui.h1('Code preview'), area])]);
-    previewDiv.style.flexGrow = '1';
+    const codeArea = ui.textInput('', '');
+    const myCM = CodeMirror.fromTextArea((codeArea.input as HTMLTextAreaElement), { mode: highlightModeByLang(inputScriptCopy.language as LANGUAGE)});
+    const uiArea = await inputScriptCopy.prepare().getEditor();
+    const codePanel = ui.panel([codeArea.root]);
+    codePanel.style.height = '100%';
+    codeArea.root.style.height = '100%';
+
+    const previewTabs = ui.tabControl(
+      {
+        'CODE': codePanel,
+        'UI': ui.panel([uiArea]),
+      }).root
+
+    previewTabs.style.width = '100%';
+    previewTabs.style.flexGrow = '3';
   
     propsForm = functionPropsForm();
   
@@ -573,37 +586,36 @@ function openFse(v: DG.View, functionCode: string) {
         t.description = newParam.description;
         functionParamsCopy.push(t);
         functionParamsState.next(functionParamsCopy);
-        refreshPreview();
       },
     );
   
-    const tabs = ui.tabControl({
+    const editorTabs = ui.tabControl({
       'PROPERTIES': propsForm,
       'PARAMETERS': ui.divV([
         addParamBtn(),
         paramsGrid.root,
       ]),
     });
-    tabs.root.style.width = '100%';
-    tabs.root.style.flexGrow = '3';
+    editorTabs.root.style.width = '100%';
+    editorTabs.root.style.flexGrow = '3';
   
     editorView.append(
       ui.divV([
-        tabs,
-        previewDiv,
+        editorTabs,
+        previewTabs,
       ]),
     );
     editorView.box = true;
     editorView.setRibbonPanels([
       [
         ui.iconFA('eye', () => {
-          previewDiv.hidden ? previewDiv.hidden = false : previewDiv.hidden = true;
+          previewTabs.hidden ? previewTabs.hidden = false : previewTabs.hidden = true;
         }),
         ui.iconFA('code', () => openScript(), 'Open function editor'),
       ],
     ]);
   
-    const refreshPreview = () => {
+    const refreshPreview = async () => {
       let result = '';
       Object.values(functionProps).map((propField) => {
         const propValue = propField.get(inputScriptCopy) || (inputScriptCopy as any)[propField.name];
@@ -617,6 +629,10 @@ function openFse(v: DG.View, functionCode: string) {
       result += inputScriptCopy.script.substring(inputScriptCopy.script.indexOf('\n',inputScriptCopy.script.lastIndexOf(commentSign(inputScriptCopy.language as LANGUAGE)))+1);
       myCM.setOption('mode', highlightModeByLang(inputScriptCopy.language as LANGUAGE))
       myCM.setValue(result);
+      myCM.setSize('100%', '100%');
+
+      const newUiArea = await inputScriptCopy.prepare().getEditor();
+      uiArea.replaceWith(newUiArea);
     };
   
     v.close()
@@ -668,9 +684,9 @@ function openFse(v: DG.View, functionCode: string) {
       const rowIndex = functionParamsCopy.findIndex((param) => param.name === (editedCell.tableRow as any)['Name']);
       if (rowIndex) {
         (functionParamsCopy[rowIndex] as any)
-          [functionParamsMapping[editedCell.cell.column.name as keyof typeof functionParamsMapping]] = editedCell.cell.value;
+          [functionParamsMapping[editedCell.cell.column.name as keyof typeof functionParamsMapping]] = editedCell.cell.value || undefined;
         functionParamsCopy[rowIndex].options
-          [functionParamsMapping[editedCell.cell.column.name as keyof typeof functionParamsMapping]] = editedCell.cell.value;
+          [functionParamsMapping[editedCell.cell.column.name as keyof typeof functionParamsMapping]] = editedCell.cell.value || undefined;
         functionParamsState.next(functionParamsCopy);
       }
     });
