@@ -186,11 +186,8 @@ export async function peptideSpacePanel(col: DG.Column): Promise<DG.Widget> {
 //tags: panel, widgets
 //input: string peptide { semType: alignedSequence }
 //output: widget result
-export function peptideToSDF(peptide: string): DG.Widget {
+export async function peptideToSDF(peptide: string): Promise<DG.Widget> {
   const smiles = getMolecule(peptide);
-  let widget: DG.Widget = new DG.Widget(ui.div());
-  grok.functions.call('Chem:molfileWidget', {'molStr': smiles}).then(function(result) {
-    widget = result;
-  });
+  let widget = await grok.functions.call('Chem:molfile', {'smiles': smiles});
   return widget;
 }
