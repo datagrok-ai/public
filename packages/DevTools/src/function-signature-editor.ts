@@ -538,8 +538,9 @@ async function openFse(v: DG.View, functionCode: string) {
       .setTag(DG.TAGS.CHOICES, `["${funcParamTypes.join(`", "`)}"]`);
     paramsGrid.dataFrame?.getCol(functionParamsMapping[FUNC_PARAM_FIELDS.DIRECTION as keyof typeof functionParamsMapping])
       .setTag(DG.TAGS.CHOICES, `["${[DIRECTION.INPUT, DIRECTION.OUTPUT].join(`", "`)}"]`);
+    paramsGrid.setOptions({'showColumnGridlines': false});
     
-      const col = paramsGrid.columns.byName('+');
+    const col = paramsGrid.columns.byName('+');
     col.cellType = 'html';
     
     paramsGrid.onCellPrepare((gc) => {
@@ -559,6 +560,9 @@ async function openFse(v: DG.View, functionCode: string) {
         ui.divH([
           deleteBtn(gc.grid.dataFrame?.get('Name', gc.gridRow)),
         ]);
+        gc.style.element.style.display = "flex";
+        gc.style.element.style.justifyContent = "center";
+        gc.style.element.style.color = 'var(--blue-1)';
       }
 
       if (gc.isColHeader) {
