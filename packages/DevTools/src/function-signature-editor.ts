@@ -340,8 +340,7 @@ async function openFse(v: DG.View, functionCode: string) {
         (prop) => menu.item(functionPropsLabels(prop.name as FUNC_PROPS_FIELDS), () => onItemClick(prop)),
       );
   
-      const shevron = ui.iconFA('chevron-down');
-      const button = ui.button([ui.icons.add(()=>{}), shevron], () => {
+      const button = ui.button([ui.icons.add(()=>{})], () => {
         menu.show();
       });
   
