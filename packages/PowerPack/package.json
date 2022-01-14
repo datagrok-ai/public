@@ -51,6 +51,10 @@
 			"nullable": false
 		}
 	],
-	"canEdit": [ "Developers" ],
-	"canView": [ "All users" ]
+	"canEdit": [
+		"Developers"
+	],
+	"canView": [
+		"All users"
+	]
 }
