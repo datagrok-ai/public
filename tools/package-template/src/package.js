@@ -5,7 +5,7 @@ import * as DG from 'datagrok-api/dg';
 
 export const _package = new DG.Package();
 
-//name: test
-export function test() {
+//name: info
+export function info() {
   grok.shell.info(_package.webRoot);
 }

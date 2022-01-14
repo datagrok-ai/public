@@ -36,6 +36,7 @@
     "worker-loader": "latest"
   },
   "devDependencies": {
+    "path": "^0.12.7",
     "@types/jest": "^27.0.2",
     "@types/js-yaml": "^4.0.4",
     "@types/offscreencanvas": "latest",

@@ -22,9 +22,7 @@ export class TimelinesViewer extends EChartViewer {
     this.markerPosition = this.string('markerPosition', 'main line',
       { choices: ['main line', 'above main line', 'scatter'] });
     this.lineWidth = this.int('lineWidth', 3);
-    this.dateFormat = this.string('dateFormat', null, { choices: [
-      '{yyyy}-{MM}-{dd}', '{M}/{d}/{yyyy}', '{MMM} {d}', '{dd}', '{d}'
-    ]});
+    this.dateFormat = this.string('dateFormat');  // TODO: add an extendable dropdown
     this.axisPointer = this.string('axisPointer', 'shadow',
       { choices: ['cross', 'line', 'shadow', 'none'] });
     this.showZoomSliders = this.bool('showZoomSliders', true);

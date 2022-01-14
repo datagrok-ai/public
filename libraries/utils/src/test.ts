@@ -46,10 +46,14 @@ export function after(after: () => Promise<void>): void {
 }
 
 
-export async function runTests() {
+export async function runTests(options?: {category?: string, test?: string}) {
   let results: { category?: string, name?: string, success: boolean, result: string}[] = [];
 
   for (const [key, value] of Object.entries(tests)) {
+    if (options?.category != undefined) {
+      if (!key.toLowerCase().startsWith(options?.category.toLowerCase()))
+        continue;
+    }
     try {
       if (value.before)
         await value.before();
@@ -60,7 +64,10 @@ export async function runTests() {
     let res = t.map(async (t) => {
       let r: { category?: string, name?: string, success: boolean, result: string };
       try {
-        r = {success: true, result: await t.test() ?? 'OK'};
+        if (options?.test != undefined && (!t.name.toLowerCase().startsWith(options?.test.toLowerCase())))
+          r = {success: true, result: 'skipped'};
+        else
+          r = {success: true, result: await t.test() ?? 'OK'};
       } catch (x: any) {
         r = {success: false, result: x.toString()};
       }
@@ -69,7 +76,7 @@ export async function runTests() {
       return r;
     });
 
-    let data = await Promise.all(res);
+    let data = (await Promise.all(res)).filter((d) => d.result != 'skipped');
     try {
       if (value.after)
         await value.after();

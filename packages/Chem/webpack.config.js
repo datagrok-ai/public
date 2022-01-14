@@ -1,7 +1,6 @@
 const path = require('path');
 const rdkitLibVersion = require('./src/rdkit_lib_version.js');
-const PACKAGE = require('./package.json');
-const packageName = path.parse(PACKAGE.name).name.toLowerCase().replaceAll('-', '');
+const packageName = path.parse(require('./package.json').name).name.toLowerCase().replace(/-/g, '');
 
 module.exports = (env, options) => ({
   stats: {
