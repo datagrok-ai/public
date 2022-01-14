@@ -23,9 +23,10 @@ export function test(name: string, test: () => Promise<any>): void {
   tests[currentCategory].tests!.push(new Test(currentCategory, name , test));
 }
 
-export function expect(a: any, b: any) {
-  if (a != b)
-    throw `Value "${a}" is not equal. Expected "${b}"`;
+/** Tests two objects for equality, throws an exception if they are not equal. */
+export function expect(actual: any, expected: any) {
+  if (actual !== expected)
+    throw `Expected "${expected}", got "${"${actual}"}"`;
 }
 
 export function category(category: string, tests: () => void): void {
