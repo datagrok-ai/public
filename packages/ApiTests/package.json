@@ -5,7 +5,8 @@
 	"version": "0.0.1",
 	"description": "",
 	"dependencies": {
-		"datagrok-api": "latest",
+		"datagrok-api": "0.110.0",
+		"@datagrok-libraries/utils": ">=0.0.17",
 		"rxjs": "^6.6.7",
 		"ts-loader": "latest",
 		"typescript": "latest"
@@ -17,6 +18,7 @@
 	"scripts": {
 		"debug-js-api-tests": "webpack && grok publish localhost",
 		"release-js-api-tests": "grok publish --rebuild --release",
+		"link-utils": "npm link @datagrok-libraries/utils @datagrok-libraries/ml",
 		"build-js-api-tests": "webpack",
 		"build": "webpack",
 		"debug-js-api-tests-dev": "grok publish dev --rebuild",
@@ -26,6 +28,10 @@
 		"debug-js-api-tests-local": "grok publish local --rebuild",
 		"release-js-api-tests-local": "grok publish local --rebuild --release"
 	},
-	"canEdit": [ "Developers" ],
-    "canView": [ "All users" ]
+	"canEdit": [
+		"Developers"
+	],
+	"canView": [
+		"All users"
+	]
 }

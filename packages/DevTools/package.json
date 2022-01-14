@@ -2,7 +2,7 @@
 	"name": "@datagrok/dev-tools",
 	"beta": false,
 	"friendlyName": "DevTools",
-	"version": "1.1.2",
+	"version": "1.2.2",
 	"description": "",
 	"dependencies": {
 		"@types/codemirror": "^5.60.5",
@@ -30,6 +30,10 @@
 		"debug-dev-tools-local": "grok publish local --rebuild",
 		"release-dev-tools-local": "grok publish local --rebuild --release"
 	},
+	"sources": [
+		"common/codemirror/codemirror.js",
+		"common/codemirror/codemirror.css"
+	],
 	"canEdit": [ "Developers" ],
 	"canView": [ "All users" ]
 }

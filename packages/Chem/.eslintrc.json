@@ -25,6 +25,15 @@
     ],
     "require-jsdoc": "off",
     "spaced-comment": "off",
-    "linebreak-style": 0
+    "linebreak-style": 0,
+    "curly": [
+      "error",
+      "multi-or-nest"
+    ],
+    "brace-style": [
+      "error",
+      "1tbs",
+      { "allowSingleLine": true }
+    ]
   }
 }

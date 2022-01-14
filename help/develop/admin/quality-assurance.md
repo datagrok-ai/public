@@ -22,7 +22,7 @@ around the proactive identification of defects.
 
 Here are some of the main components of our development infrastructure:
 
-## Continuous integration system
+# Continuous integration system
 
 Whenever a new code is checked into our source code repository, several tasks get executed automatically:
 
@@ -30,6 +30,7 @@ Whenever a new code is checked into our source code repository, several tasks ge
 2. [Unit tests](#unit-tests)
 3. Compilation
 4. Packaging the platform in Docker containers
+5. [Snyk](https://snyk.io/) check for vulnerabilities
 
 Every time docker image is built, tasks get executed:
 
@@ -61,9 +62,10 @@ Results of the integration tests are kept in the [test tracking system](#test-tr
 
 ## JS API tests
 
-A separate suite of tests is devoted for the [JS API](../js-api.md). These tests are executed
-automatically on a server using a headless browser mode. The test suite is written in TypeScript, and is a regular Datagrok package. It is open-sourced
-and located [here](../../../packages/ApiTests); additions are welcome. Results are reported to the
+A separate suite of tests is devoted for the [JS API](../js-api.md). These tests are executed automatically on a server
+using a headless browser mode. The test suite is written in TypeScript, and is a regular Datagrok package. It is
+open-sourced and located [here](../../../packages/ApiTests)
+; additions are welcome. Results are reported to the
 [test tracking system](#test-tracking-system)
 
 ## UI tests
@@ -129,3 +131,4 @@ see [stress testing results](stress-testing-results.md).
 See also:
 
 * [Architecture](architecture.md)
+* [Architecture](infrastructure.md)

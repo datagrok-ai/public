@@ -3,9 +3,9 @@
 
 # Database table column
 
-This column resides in the database. To see quick summary of this column, 
-expand the 'Inspect' pane in the [property panel](../overview/navigation.md#properties).
-  
+This column resides in the database. To see quick summary of this column, expand the 'Inspect' pane in
+the [property panel](../overview/navigation.md#properties).
+
 See also:
 
 * [Database table](db-table-info.md)

@@ -23,14 +23,19 @@ import './dapi/user-data-storage';
 import './dapi/users';
 import './shell/ml';
 import './ui/divs';
+import './ui/buttons';
+import './widgets/legend';
 
-import {runTests} from "./test";
+import {runTests} from "@datagrok-libraries/utils/src/test";
 export let _package = new DG.Package();
 
 
-//name: testJsApi
+//name: test
+//input: string category {optional: true}
+//input: string test {optional: true}
+//output: dataframe result
 //top-menu: Tools | Dev | JS API Tests
-export async function testJsApi() {
-  let data = await runTests();
-  grok.shell.addTableView(DG.DataFrame.fromObjects(data)!);
+export async function test(category: string, test: string): Promise<DG.DataFrame> {
+  let data = await runTests({category, test});
+  return DG.DataFrame.fromObjects(data)!;
 }

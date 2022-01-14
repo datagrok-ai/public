@@ -7,9 +7,11 @@ Adverse events, investigational drug exposure and concomitant medication domains
 
 By zooming in and out you can drill down to particular patient and event or otherwise see the picture of events in general.
 
-Information about particular event is shown in tooltip on mouse hover.
-
 <img src="https://raw.githubusercontent.com/datagrok-ai/public/master/packages/ClinicalCase/img/timelines.gif" height="500" width='800'/>
+
+Information about particular event is available in tooltip on mouse hover or in a property panel by clicking on event. In case event is an AE you can go to Adverse event browser by clicking on AE name.
+
+<img src="https://raw.githubusercontent.com/datagrok-ai/public/master/packages/ClinicalCase/img/timelines_prop_panel.gif" height="500" width='800'/>
 
 Several domains can be shown simultaneously on the graph. For instance, the following screenshot shows severe general and cardiac disorders VS aspirin intake.
 

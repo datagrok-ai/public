@@ -9,9 +9,8 @@ const unlockFunctionForKey: any = {};
 // By https://github.com/mistval/locko
 
 export async function criticalSectionBegin(key: string) {
-  if (!lockPromiseForKey[key]) {
+  if (!lockPromiseForKey[key])
     lockPromiseForKey[key] = Promise.resolve();
-  }
   const takeLockPromise = lockPromiseForKey[key];
   lockPromiseForKey[key] = takeLockPromise.then(() => new Promise((fulfill) => {
     unlockFunctionForKey[key] = fulfill;
@@ -26,24 +25,28 @@ export function criticalSectionEnd(key: string) {
   }
 }
 
-let _chemLocked = false;
+const CHEM_TOKEN = 'CHEM_TOKEN';
 
-export async function chemLock(token: string | null = null) {
-  if (_chemLocked) {
-    throw (`RdKit Service usage locked:\n${(new Error()).stack}`);
+export async function chemBeginCriticalSection() {
+  let warned = false;
+  if (unlockFunctionForKey[CHEM_TOKEN]) {
+    console.warn('Chem | Is already in a critical section, waiting...');
+    warned = true;
   }
-  _chemLocked = true;
+  await criticalSectionBegin(CHEM_TOKEN);
+  if (warned) {
+    console.warn('Chem | Left the critical section');
+  }
 }
 
-export async function chemUnlock(token: string | null = null) {
-  _chemLocked = false;
+export function chemEndCriticalSection() {
+  criticalSectionEnd(CHEM_TOKEN);
 }
 
 export function tanimoto(x: BitArray, y: BitArray) {
   const total = x.trueCount() + y.trueCount();
-  if (total == 0) {
+  if (total == 0)
     return 1.0;
-  }
   const common = x.andWithCountBits(y, true);
   return common / (total - common);
 }
@@ -51,9 +54,8 @@ export function tanimoto(x: BitArray, y: BitArray) {
 export function rdKitFingerprintToBitArray(fp: string, fpLength: number) {
   const arr = new BitArray(fpLength);
   for (let j = 0; j < fpLength; ++j) {
-    if (fp[j] === '1') {
+    if (fp[j] === '1')
       arr.setTrue(j);
-    }
   }
   return arr;
 }

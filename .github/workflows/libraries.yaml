@@ -1,6 +1,6 @@
-name: Datagrok Libraries
+name: Libraries
 on:
-  workflow_dispatch: {}
+  workflow_dispatch: { }
   push:
     branches:
       - 'master'
@@ -8,7 +8,7 @@ on:
       - 'libraries/*/package.json'
 jobs:
   metadata:
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-20.04
     outputs:
       matrix: ${{ steps.generate-matrix.outputs.matrix }}
       continue: ${{ steps.generate-matrix.outputs.continue }}
@@ -20,6 +20,7 @@ jobs:
       - name: Generate matrix
         id: generate-matrix
         run: |
+          set -ex
           if [[ $(git log -n 1 --pretty=%B) == *"Merge branch 'master' of"* ]]; then
             commit=$(git log --format="%H" -n 1 --no-merges)
           else
@@ -31,20 +32,36 @@ jobs:
           MATRIX_INCLUDE_JSON="["
 
           for DIR in ${CHANGED_DIRS}; do
-            scripts=$(jq  '. | select( has("scripts") == true ).scripts' ${DIR}/package.json)
+            if [ -f "${DIR}/package.json" ]; then
+              scripts=$(jq  '. | select( has("scripts") == true ).scripts' ${DIR}/package.json)
+          
+              if [ -z "$(jq  '. | select( has("build") == true )' <<< $scripts)" ]; then
+                build='false'
+              else
+                build='true'
+              fi
+              if [ -z "$(jq  '. | select( has("test") == true )' <<< $scripts)" ]; then
+                test='false'
+              else
+                test='true'
+              fi
 
-            if [ -z "$(jq  '. | select( has("build") == true )' <<< $scripts)" ]; then
-              build='false'
-            else
-              build='true'
+              name=$(jq .name ${DIR}/package.json | sed 's/"//g')
+              npm_json=$(curl --retry 3 https://registry.npmjs.org/${name}/latest)
+              if [[ $npm_json == "\"Not Found\"" ]]; then
+                CHANGED_VERSION='true'
+              else
+                latest_version="$(jq .version <<<$npm_json)"
+                current_version=$(jq .version ${DIR}/package.json)
+                if [[ $latest_version == $current_version ]]; then
+                  CHANGED_VERSION='false'
+                else
+                  CHANGED_VERSION='true'
+                fi
+              fi
+          
+              MATRIX_INCLUDE_JSON+="{\"project\": \"${DIR}\", \"build\": \"${build}\", \"test\": \"${test}\", \"changed_version\": \"${CHANGED_VERSION}\"}"
             fi
-            if [ -z "$(jq  '. | select( has("test") == true )' <<< $scripts)" ]; then
-              test='false'
-            else
-              test='true'
-            fi
-
-            MATRIX_INCLUDE_JSON+="{\"project\": \"${DIR}\", \"build\": \"${build}\", \"test\": \"${test}\"}"
           done
 
           MATRIX_INCLUDE_JSON="${MATRIX_INCLUDE_JSON//\}\{/\}, \{}"
@@ -90,10 +107,12 @@ jobs:
         working-directory: ${{ matrix.project }}
         if: ${{ matrix.build == 'true' }}
       - run: npm publish --access public
+        if: ${{ matrix.changed_version == 'true' }}
         working-directory: ${{ matrix.project }}
         env:
           NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
       - name: Commit package-lock.json
+        if: ${{ matrix.changed_version == 'true' }}
         run: |
           if [ ! -z "$(git status -s ${{ matrix.project }}/package-lock.json)" ]; then
             git config --global user.name 'GitHub Actions'
