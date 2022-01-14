@@ -19,7 +19,7 @@ import {Observable}  from "rxjs";
 import {filter} from "rxjs/operators";
 import {Widget} from "./widgets";
 import {Grid} from "./grid";
-import {ScatterPlotViewer, TypedEventArgs, Viewer} from "./viewer";
+import {ScatterPlotViewer, Viewer} from "./viewer";
 import {Property} from "./entities";
 
 declare let grok: any;
@@ -112,6 +112,10 @@ export class DataFrame {
   /** Creates a {@link DataFrame} with the specified number of rows and no columns. */
   static create(rowCount: number = 0): DataFrame {
     return new DataFrame(api.grok_DataFrame(rowCount));
+  }
+
+  static fromByteArray(byteArray: Uint8Array): DataFrame {
+    return new DataFrame(api.grok_DataFrame_FromByteArray(byteArray));
   }
 
   /** Creates a {@link DataFrame} from the specified columns. All columns should be of the same length. */
@@ -2164,7 +2168,7 @@ export class ColumnDialogHelper {
   /** Opens an editor dialog with preview for a calculated column. */
   editFormula(): void {
     let formula = this.column.getTag('formula');
-    let df = this.column.dataFrame;
+    // let df = this.column.dataFrame;
     if (formula == null)
       formula = '';
     if (!(this.column.name && this.column.dataFrame?.columns.contains(this.column.name)))
