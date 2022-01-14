@@ -3,16 +3,15 @@ import * as grok from 'datagrok-api/grok';
 import * as ui from 'datagrok-api/ui';
 import * as DG from 'datagrok-api/dg';
 
-import {BioStructureViewer } from './biostructure-viewer'
+import {BioStructureViewer} from './biostructure-viewer';
 
 export const _package = new DG.Package();
 
 //name: BioStructure Viewer
 //tags: app
 export async function biostructureApp() {
-
-  let pi = DG.TaskBarProgressIndicator.create('Opening BioStructure Viewer');
-  let app = new BioStructureViewer();
+  const pi = DG.TaskBarProgressIndicator.create('Opening BioStructure Viewer');
+  const app = new BioStructureViewer();
   await app.init();
   pi.close();
 }
