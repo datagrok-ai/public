@@ -23,4 +23,23 @@ export async function _testRCSBAlive(pdbID = '2V0A') {
   expect(noException, true);
   expect(pdb.body.length > 0, true);
   expect(pdb.entities.length > 0, true);
+  expect(pdb.entities[0].chains.length > 0, true);
+}
+
+/** Test if parsing of a sample PDB id is done properly. */
+export async function _testParse2V0A() {
+  const pdb = new PdbEntry('2V0A');
+
+  await pdb.fetchInfo();
+
+  expect(pdb.entities.length == 1, true);
+  expect(pdb.entities[0].chains.length == 2, true);
+
+  for (const chain of pdb.entities[0].chains) {
+    const keys = Object.keys(chain.tracks);
+    expect(keys.includes('SHEET'), true);
+    expect(keys.includes('HELIX_P'), true);
+    expect(chain.tracks['SHEET'].length > 0, true);
+    expect(chain.tracks['HELIX_P'].length > 0, true);
+  }
 }

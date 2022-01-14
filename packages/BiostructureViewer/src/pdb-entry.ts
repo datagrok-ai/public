@@ -120,7 +120,9 @@ export class PdbEntry {
       const annotType = annot['type'];
 
       if (this.secondaryKinds.includes(annotType)) {
-        _tracks[annotType] = _tracks[annotType] ? _tracks[annotType] : new Set();
+        if (_tracks[annotType] === undefined) {
+          _tracks[annotType] = new Set();
+        }
 
         for (const pos of annot['feature_positions']) {
           const range = genRange(pos['beg_seq_id'], pos['end_seq_id']);
