@@ -20,6 +20,9 @@
     "common/ngl_viewer/ngl.js"
   ],
   "dependencies": {
+    "datagrok-api": ">0.94.10",
+    "@datagrok-libraries/ml": ">=0.0.8",
+    "@datagrok-libraries/utils": ">=0.0.16",
     "cash-dom": "latest",
     "css-loader": "latest",
     "dayjs": "latest",
