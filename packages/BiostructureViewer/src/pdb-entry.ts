@@ -17,10 +17,15 @@ interface Chain {
 }
 
 /** RCSB REST API URLs. */
+// eslint-disable-next-line no-unused-vars
 enum RCSBRESTAPI {
+  // eslint-disable-next-line no-unused-vars
   file = 'https://files.rcsb.org/download/{entry_id}.pdb',
+  // eslint-disable-next-line no-unused-vars
   entry = 'https://data.rcsb.org/rest/v1/core/entry/{entry_id}',
+  // eslint-disable-next-line no-unused-vars
   entity = 'https://data.rcsb.org/rest/v1/core/polymer_entity/{entry_id}/{entity_id}',
+  // eslint-disable-next-line no-unused-vars
   instance = 'https://data.rcsb.org/rest/v1/core/polymer_entity_instance/{entry_id}/{asym_id}',
 }
 
