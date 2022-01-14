@@ -1,7 +1,6 @@
 <!-- TITLE: Function roles-->
 
-
-## Function roles
+# Function roles
 
 A package can contain a variety of functions, so it will be appropriate to give an overview of the most common ones.
 Typically, each function type has a special tag denoting what the function does, for example:
@@ -12,7 +11,8 @@ Typically, each function type has a special tag denoting what the function does,
 * `#init` and `#autostart` for [pre-run functions](#pre-run-functions)
 * `#semTypeDetector` for [semantic types detectors](#semantic-type-detectors)
 * `#cellRenderer` for custom [cell renderers](#cell-renderers)
-* `#fileViewer` and `#fileExporter` for [file viewers](#file-viewers) and [exporters](#file-exporters)
+* `#fileViewer` and `#fileExporter` for [file viewers](#file-viewers)
+  and [exporters](#file-exporters)
 * `#packageSettingsEditor` for [settings editors](#settings-editors)
 
 You can use these tags to search for certain functions either from the platform's interface
@@ -28,8 +28,8 @@ const applications = DG.Func.find({tags: [DG.FUNC_TYPES.APP]});
 
 ### Applications
 
-Applications are [functions](../overview/functions/function.md) tagged with the `#app` tag.
-Learn more about building them [here](how-to/build-an-app.md).
+Applications are [functions](../overview/functions/function.md) tagged with the `#app` tag. Learn more about building
+them [here](how-to/build-an-app.md).
 
 ### Pre-run functions
 

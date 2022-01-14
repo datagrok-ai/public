@@ -1,4 +1,5 @@
 const path = require('path');
+const packageName = path.parse(require('./package.json').name).name.toLowerCase().replace(/-/g, '');
 
 module.exports = {
   mode: 'development',
@@ -19,7 +20,7 @@ module.exports = {
   },
   output: {
     filename: '[name].js',
-    library: '#{PACKAGE_NAME_LOWERCASE_WORD}',
+    library: packageName,
     libraryTarget: 'var',
     path: path.resolve(__dirname, 'dist'),
   },

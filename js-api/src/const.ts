@@ -353,6 +353,13 @@ export enum DOCK_TYPE {
   FILL = "fill",
 }
 
+export enum LEGEND_POSITION {
+  LEFT = "left",
+  RIGHT = "right",
+  TOP = "top",
+  BOTTOM = "bottom",
+}
+
 export enum COLOR_CODING_TYPE {
   CATEGORICAL = 'Categorical',
   CONDITIONAL = 'Conditional',
@@ -445,6 +452,7 @@ export type ColorCodingType = `${COLOR_CODING_TYPE}`;
 export type MarkerCodingType = `${MARKER_TYPE}`;
 export type DemoDatasetName = `${DEMO_DATASET}`;
 export type DockType = `${DOCK_TYPE}`;
+export type LegendPosition = `${LEGEND_POSITION}`;
 export type CsvImportOptions = { delimiter?: string, decimalSeparator?: string, thousandSeparator?: string };
 export type IndexPredicate = (ind: number) => boolean;
 export type StringPredicate = (str: string) => boolean;

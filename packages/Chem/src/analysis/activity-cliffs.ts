@@ -35,11 +35,11 @@ export async function getActivityCliffs(df: DG.DataFrame, smiles: DG.Column, act
   const VIEW_CYCLE_COUNT = 50000;
 
   let initialSimilarityLimit = 0;
-  if (automaticSimilarityLimit) {
+  if (automaticSimilarityLimit)
     initialSimilarityLimit = MIN_SIMILARITY;
-  } else {
+  else
     initialSimilarityLimit = similarity / 100;
-  }
+
 
   const colSmiles = DG.Column.fromList('string', 'smiles', smiles.toList());
   const dfSmiles = DG.DataFrame.fromColumns([colSmiles]);
@@ -76,11 +76,10 @@ export async function getActivityCliffs(df: DG.DataFrame, smiles: DG.Column, act
         simVals.push(sim);
         const diff = Math.abs(values[i] - values[j]);
         diffVals.push(diff);
-        if (sim != 1) {
+        if (sim != 1)
           saliVals.push(diff / (1 - sim));
-        } else {
+        else
           saliVals.push(Infinity);
-        }
       }
     }
   }
@@ -95,11 +94,10 @@ export async function getActivityCliffs(df: DG.DataFrame, smiles: DG.Column, act
     similarityCount[n1[i]] += simVals[i];
     similarityCount[n2[i]] += simVals[i];
     if (saliVals[i] != Infinity) {
-      if (values[n1[i]] > values[n2[i]]) {
+      if (values[n1[i]] > values[n2[i]])
         saliCount[n1[i]] += saliVals[i];
-      } else {
+      else
         saliCount[n2[i]] += saliVals[i];
-      }
     }
   }
 
@@ -113,13 +111,13 @@ export async function getActivityCliffs(df: DG.DataFrame, smiles: DG.Column, act
     my[i] = Math.random();
   }
 
-  let sorted_index = Array.from(Array(dim).keys()).sort(function(a, b) {
-    if (mx[a] < mx[b]) {
+  let sortedIndex = Array.from(Array(dim).keys()).sort(function(a, b) {
+    if (mx[a] < mx[b])
       return -1;
-    }
-    if (mx[a] > mx[b]) {
+
+    if (mx[a] > mx[b])
       return 1;
-    }
+
     return 0;
   });
 
@@ -155,16 +153,16 @@ export async function getActivityCliffs(df: DG.DataFrame, smiles: DG.Column, act
       if (shift > 0) {
         dx *= shift / distance;
         dy *= shift / distance;
-        if (neighboursCount[num1] > 4) {
+        if (neighboursCount[num1] > 4)
           neigbourFactor1 = 4.0 / neighboursCount[num1];
-        } else {
+        else
           neigbourFactor1 = 1.0;
-        }
-        if (neighboursCount[num2] > 4) {
+
+        if (neighboursCount[num2] > 4)
           neigbourFactor2 = 4.0 / neighboursCount[num2];
-        } else {
+        else
           neigbourFactor2 = 1;
-        }
+
 
         mDx[num1] = mDx[num1] + dx * attractionCycleFactor * neigbourFactor1;
         mDy[num1] = mDy[num1] + dy * attractionCycleFactor * neigbourFactor1;
@@ -175,13 +173,13 @@ export async function getActivityCliffs(df: DG.DataFrame, smiles: DG.Column, act
 
     for (let i = 0; i != dim; ++i) {
       for (let j = i + 1; j != dim; ++j) {
-        const num1 = sorted_index[i];
-        const num2 = sorted_index[j];
+        const num1 = sortedIndex[i];
+        const num2 = sortedIndex[j];
         let dx = mx[num2] - mx[num1];
 
-        if (Math.abs(dx) >= cycleMinDistance) {
+        if (Math.abs(dx) >= cycleMinDistance)
           break;
-        }
+
         let dy = my[num2] - my[num1];
         if (Math.abs(dy) < cycleMinDistance) {
           const distance = Math.sqrt(dx * dx + dy * dy);
@@ -211,24 +209,23 @@ export async function getActivityCliffs(df: DG.DataFrame, smiles: DG.Column, act
     }
   }
 
-  const vec_lengths = new Array(dim).fill(0);
-  for (let i = 0; i != dim; ++i) {
-    vec_lengths[i] = Math.sqrt((mx[i] - 0.5) * (mx[i] - 0.5) + (my[i] - 0.5) * (my[i] - 0.5));
-  }
+  const vecLengths = new Array(dim).fill(0);
+  for (let i = 0; i != dim; ++i)
+    vecLengths[i] = Math.sqrt((mx[i] - 0.5) * (mx[i] - 0.5) + (my[i] - 0.5) * (my[i] - 0.5));
 
 
-  sorted_index = Array.from(Array(dim).keys()).sort(function(a, b) {
-    if (vec_lengths[a] < vec_lengths[b]) {
+  sortedIndex = Array.from(Array(dim).keys()).sort(function(a, b) {
+    if (vecLengths[a] < vecLengths[b])
       return -1;
-    }
-    if (vec_lengths[a] > vec_lengths[b]) {
+
+    if (vecLengths[a] > vecLengths[b])
       return 1;
-    }
+
     return 0;
   });
 
   for (let i = 0; i != dim; ++i) {
-    const n = sorted_index[i];
+    const n = sortedIndex[i];
     const x = mx[n] - 0.5;
     const y = my[n] - 0.5;
     let a = 0;
@@ -236,18 +233,16 @@ export async function getActivityCliffs(df: DG.DataFrame, smiles: DG.Column, act
     if (y != 0) {
       a = Math.atan(x / y);
       if (y < 0) {
-        if (x < 0) {
+        if (x < 0)
           a -= Math.PI;
-        } else {
+        else
           a += Math.PI;
-        }
       }
     } else {
-      if (x > 0) {
+      if (x > 0)
         a = Math.PI / 2;
-      } else {
+      else
         a = -Math.PI / 2;
-      }
     }
 
     mx[n] = mx[n] * 2 - 1;
@@ -255,12 +250,12 @@ export async function getActivityCliffs(df: DG.DataFrame, smiles: DG.Column, act
   }
 
 
-  const x_coord = DG.Column.fromList('double', 'x_coord', mx);
-  const y_coord = DG.Column.fromList('double', 'y_coord', my);
+  const xCoord = DG.Column.fromList('double', 'x_coord', mx);
+  const yCoord = DG.Column.fromList('double', 'y_coord', my);
   const sali = DG.Column.fromList('double', 'sali', saliCount);
 
-  df.columns.insert(x_coord);
-  df.columns.insert(y_coord);
+  df.columns.insert(xCoord);
+  df.columns.insert(yCoord);
   df.columns.insert(sali);
 
   df.columns.byName('x_coord').name = '~x_coord';

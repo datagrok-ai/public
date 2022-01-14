@@ -6,8 +6,7 @@ module.exports = {
     "<rootDir>/src"
   ],
   "testMatch": [
-    "**/__tests__/**/*.+(ts|tsx)",
-    "**/?(*.)+(spec|test).+(ts|tsx)"
+    "**/__tests__/**/*.+(ts|tsx)"
   ],
   moduleFileExtensions: [
     'ts',
@@ -18,5 +17,5 @@ module.exports = {
     "^.+\\.worker.[t|j]sx?$": "workerloader-jest-transformer"
   },
   transformIgnorePatterns: ['^.+\\.js$'],
-  testTimeout: 30000
+  testTimeout: 120000
 }

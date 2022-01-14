@@ -9,9 +9,13 @@ Template of using binary operators: `<Operand A> <operator> <Operand B>`
 
 Template of using unary operators: `<operator> <Operand B>`
 
-As operands of the operators, you can pass numeric scalars, numeric functions, [math constants](constants.md), boolean scalars, boolean functions, or a column name. To pass a column cell, you can use the syntax `${columnName}`. Other ways to use operands: `true`, `false`, `PI`, `E` etc.
+As operands of the operators, you can pass numeric scalars, numeric functions, [math constants](constants.md), boolean
+scalars, boolean functions, or a column name. To pass a column cell, you can use the syntax `${columnName}`. Other ways
+to use operands: `true`
+, `false`, `PI`, `E` etc.
 
-Operators and functions can organize expressions as complex as you like. You can also use parentheses to change the standard sequence for evaluating operators. For example:
+Operators and functions can organize expressions as complex as you like. You can also use parentheses to change the
+standard sequence for evaluating operators. For example:
 
 ```javascript
 Sin(PI / 6) * (17 - ${LENGTH}) < 9    // The result is a boolean value

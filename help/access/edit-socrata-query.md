@@ -5,10 +5,10 @@
 
 Edit attributes of data SoQL query.
 
-SoQL statements are broken into "parameters" similar to clauses in SQL statements. 
-Each clause can be expressed either directly as a URL parameter or as a SoQL statement. 
-If a parameter is not specified, then the default is used. 
-See [Queries using SODA](https://dev.socrata.com/docs/queries) for more details:
+SoQL statements are broken into "parameters" similar to clauses in SQL statements. Each clause can be expressed either
+directly as a URL parameter or as a SoQL statement. If a parameter is not specified, then the default is used.
+See [Queries using SODA](https://dev.socrata.com/docs/queries)
+for more details:
 
 | Parameter | Description | Default | In query |
 |-----------|-------------|---------|-----------|
@@ -23,15 +23,14 @@ See [Queries using SODA](https://dev.socrata.com/docs/queries) for more details:
 | query     | A full SoQL query string, all as one parameter | N/A | N/A |
 | bom       | Prepends a UTF-8 Byte Order Mark to the beginning of CSV output | false | N/A |
 
-Note that for equality comparisons, the $where clause can be replaced with using the column 
-name as the query parameter.
+Note that for equality comparisons, the $where clause can be replaced with using the column name as the query parameter.
 
 See also:
 
-  * [Data query](data-query.md)
-  * [Queries using SODA](https://dev.socrata.com/docs/queries)
-  * [Data pipeline](data-pipeline.md)
-  * [Data connection](data-connection.md)
-  * [Data query](data-query.md)
-  * [Data job](data-job.md)
-  * [Function call](../overview/functions/function-call.md)
+* [Data query](data-query.md)
+* [Queries using SODA](https://dev.socrata.com/docs/queries)
+* [Data pipeline](data-pipeline.md)
+* [Data connection](data-connection.md)
+* [Data query](data-query.md)
+* [Data job](data-job.md)
+* [Function call](../overview/functions/function-call.md)

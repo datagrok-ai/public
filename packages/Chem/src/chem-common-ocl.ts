@@ -3,9 +3,7 @@
 import {RdKitService} from './rdkit-service';
 import * as ui from 'datagrok-api/ui';
 import * as OCL from 'openchemlib/full.js';
-import {chemLock, chemUnlock} from './chem-common';
-import {drawMoleculeToCanvas} from './chem-common-rdkit';
-import {isMolBlock} from "./chem-utils";
+import {isMolBlock} from './chem-utils';
 
 export function renderDescription(description: OCL.IParameterizedString[], smiles: string | null = null) {
   const host = ui.div([], 'd4-flex-wrap');
@@ -42,14 +40,12 @@ export function renderDescription(description: OCL.IParameterizedString[], smile
 
 function _molToCanvas(mol: OCL.Molecule, width=200, height=100) {
   const canvas = ui.canvas(width, height);
-  if (mol !== null) {
+  if (mol !== null)
     OCL.StructureView.drawMolecule(canvas, mol);
-  }
+
   return canvas;
 }
 
 export function oclMol(molStr: string): OCL.Molecule {
-  return isMolBlock(molStr)
-    ? OCL.Molecule.fromMolfile(molStr)
-    : OCL.Molecule.fromSmiles(molStr);
+  return isMolBlock(molStr) ? OCL.Molecule.fromMolfile(molStr) : OCL.Molecule.fromSmiles(molStr);
 }

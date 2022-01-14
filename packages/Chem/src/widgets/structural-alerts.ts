@@ -29,9 +29,8 @@ function getStructuralAlerts(smiles: string): number[] {
     const subMol = _smartsMap.get(_data![i]);
     // lib.count_matches(subMol);
     const matches = mol.get_substruct_matches(subMol);
-    if (matches !== '{}') {
+    if (matches !== '{}')
       alerts.push(i);
-    }
   }
   mol.delete();
   return alerts;
@@ -42,7 +41,7 @@ export function initStructuralAlertsContext(
   _alertsSmarts = alertsSmarts;
   _alertsDescriptions = alertsDescriptions;
   loadAlertsCollection(_alertsSmarts);
-  // await getRdKitService().initStructuralAlerts(_alertsSmarts);
+  // await (await getRdKitService()).initStructuralAlerts(_alertsSmarts);
 }
 
 async function loadSADataset() {
@@ -54,11 +53,11 @@ async function loadSADataset() {
 }
 
 export async function structuralAlertsWidget(smiles: string) {
-  if (_data === null) {
+  if (_data === null)
     await loadSADataset();
-  }
+
   const alerts = getStructuralAlerts(smiles);
-  // await getRdKitService().getStructuralAlerts(smiles); // getStructuralAlerts(smiles);
+  // await (await getRdKitService()).getStructuralAlerts(smiles); // getStructuralAlerts(smiles);
   const width = 200;
   const height = 100;
   const list = ui.div(alerts.map((i) => {
@@ -69,8 +68,8 @@ export async function structuralAlertsWidget(smiles: string) {
     host.style.margin = '5px';
     return host;
   }), 'd4-flex-wrap');
-  if (!alerts.length) {
+  if (!alerts.length)
     list.innerText = 'No Alerts';
-  }
+
   return new DG.Widget(list);
 }

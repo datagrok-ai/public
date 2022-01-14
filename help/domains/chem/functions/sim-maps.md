@@ -3,7 +3,8 @@
 
 # Similarity maps using fingerprints
 
-Similarity maps are a way to visualize the atomic contributions to the similarity between a molecule and a reference molecule.
+Similarity maps are a way to visualize the atomic contributions to the similarity between a molecule and a reference
+molecule.
 
 ![Similarity Maps Using Fingerprints](../../../uploads/chem/sim-maps.png "Similarity Maps Using Fingerprints")
 

@@ -607,7 +607,7 @@ export class GridCellRenderer extends CanvasRenderer {
     throw 'Not implemented';
   }
 
-  renderInternal(g: CanvasRenderingContext2D, x: number, y: number, w: number, h: number, gridCell: any, cellStyle: any): void {
+  renderInternal(g: CanvasRenderingContext2D, x: number, y: number, w: number, h: number, gridCell: GridCell, cellStyle: GridCellStyle): void {
     this.render(g, x, y, w, h, new GridCell(gridCell), new GridCellStyle(cellStyle));
   }
 

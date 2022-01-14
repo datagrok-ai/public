@@ -1,5 +1,5 @@
 import * as DG from 'datagrok-api/dg';
-import {category, test} from "../test";
+import {category, test} from "@datagrok-libraries/utils/src/test";
 
 category('DataFrame', () => {
   test('create from arrays', async () => {

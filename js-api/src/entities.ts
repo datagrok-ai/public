@@ -200,8 +200,8 @@ export class Func extends Entity {
   }
 
   /** Returns functions with the specified attributes. */
-  static find(params?: { package?: string, name?: string, tags?: string[], returnType?: string}): Func[] {
-    return api.grok_Func_Find(params?.package, params?.name, params?.tags, params?.returnType);
+  static find(params?: { package?: string, name?: string, tags?: string[], meta?: any, returnType?: string}): Func[] {
+    return api.grok_Func_Find(params?.package, params?.name, params?.tags, params?.meta, params?.returnType);
   }
 
   /** Returns functions (including these) with the specified attributes. */
@@ -607,16 +607,16 @@ export class LogEventParameterValue extends Entity {
  * Represents a package, which is a unit of distribution of content in the Datagrok platform.
  */
 export class Package extends Entity {
-  public webRoot: string | undefined;
-  public version: string;
+  public webRoot: string = '';
+  public version: string = '';
 
   constructor(dart: any | undefined = undefined) {
     super(dart);
+
     if (typeof dart === 'string') {
       this.webRoot = dart;
       this.dart = null;
     }
-    this.version = "";
   }
 
   /** Override init() method to provide package-specific initialization.

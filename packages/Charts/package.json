@@ -1,7 +1,7 @@
 {
 	"name": "@datagrok/charts",
 	"fullName": "Charts",
-	"version": "0.0.9",
+	"version": "0.1.0",
 	"description": "",
 	"dependencies": {
 		"cash-dom": "^8.1.0",
@@ -28,7 +28,7 @@
 		"All users"
 	],
 	"devDependencies": {
-		"css-loader": "^6.5.1",
-		"style-loader": "^3.3.1"
+		"css-loader": "^5.2.7",
+		"style-loader": "^2.0.0"
 	}
 }
