@@ -26,8 +26,8 @@ export class BioStructureViewer {
     await entry.fetchInfo();
 
     // TODO: declare property sbody if it is used anywhere.
-    //const pdbStr: string = _package.webRoot + 'pdb/1bdq.pdb';
-    //entry.sbody = pdbStr;
+    const pdbStr: string = _package.webRoot + 'pdb/1bdq.pdb';
+    entry.sbody = pdbStr;
 
     if (!this.twinPviewer) {
       this.twinPviewer = new TwinPviewer();
