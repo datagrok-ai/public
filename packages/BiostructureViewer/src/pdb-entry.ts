@@ -154,6 +154,11 @@ export class PdbEntry {
     }
     return this.items;
   }
+
+  //TODO: remove - demo use only
+  set sbody(pdb: string) {
+    this.pdbBody = pdb;
+  }
 }
 
 /**
