@@ -1,6 +1,6 @@
 {
   "name": "datagrok-api",
-  "version": "0.110.0",
+  "version": "0.112.0",
   "description": "",
   "dependencies": {
     "cash-dom": "^8.0.0",
@@ -29,7 +29,7 @@
   "scripts": {
     "link": "npm link",
     "build-ts": "tsc && eslint ./src/*.js ./dg.js ./ui.js ./grok.js --fix",
-    "build-js-api": "webpack",
+    "build-js-api": "tsc && webpack",
     "build": "tsc && webpack",
     "typedoc": "typedoc dg.ts grok.ts ui.ts --readme ../help/develop/js-api.md"
   }
