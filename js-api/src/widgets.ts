@@ -1449,7 +1449,7 @@ export class Legend extends DartWidget {
 
   /** Column for the legend */
   get column(): Column { return toJs(api.grok_Legend_Get_Column(this.dart)); }
-  set column(column: Column) { api.grok_Legend_Set_Column(this.dart, column); }
+  set column(column: Column) { api.grok_Legend_Set_Column(this.dart, column.dart); }
 
   /** Whether or not to show empty categories */
   get showNulls(): Boolean { return api.grok_Legend_Get_ShowNulls(this.dart); }
