@@ -741,9 +741,9 @@ export class FileSource {
 
   /** Lists files according to a search pattern.
    * Sample: {@link https://public.datagrok.ai/js/samples/dapi/files}
-   * @param {FileInfo | string} file
-   * @param {boolean} recursive
-   * @param {string} searchPattern
+   * @param {FileInfo | string} file - folder
+   * @param {boolean} recursive - whether to search in folders recursively
+   * @param {string} searchPattern - search pattern, such as "*.csv"
    * @returns {Promise<FileInfo[]>} */
   list(file: FileInfo | string, recursive: boolean, searchPattern: string | null = null): Promise<FileInfo[]> {
     file = this.setRoot(file);
