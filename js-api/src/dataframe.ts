@@ -27,6 +27,7 @@ declare let DG: any;
 let api = <any>window;
 type RowPredicate = (row: Row) => boolean;
 type Comparer = (a: any, b: any) => number;
+type IndexSetter = (index: number, value: any) => void;
 
 /** Proxy wrapper for ColumnList */
 const ColumnListProxy = new Proxy(class {
@@ -1127,8 +1128,11 @@ export class ColumnList {
    * {@link https://dev.datagrok.ai/script/samples/javascript/data-frame/advanced/virtual-int-column}
    * {@link https://dev.datagrok.ai/script/samples/javascript/data-frame/advanced/virtual-columns}
    * */
-  addNewVirtual(name: string, getValue: (ind: number) => any, type = TYPE.OBJECT): Column {
-    return toJs(api.grok_ColumnList_AddNewVirtual(this.dart, name, getValue, type));
+  addNewVirtual(
+      name: string,
+      getValue: (ind: number) => any, type = TYPE.OBJECT,
+      setValue: IndexSetter | null = null): Column {
+    return toJs(api.grok_ColumnList_AddNewVirtual(this.dart, name, getValue, setValue, type));
   }
 
   /** Removes column by name (case-insensitive).*/
