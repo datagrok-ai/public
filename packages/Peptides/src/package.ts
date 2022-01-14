@@ -182,7 +182,7 @@ export async function peptideSpacePanel(col: DG.Column): Promise<DG.Widget> {
   return await widget.draw();
 }
 
-//name: Peptide to SDF
+//name: Molfile
 //tags: panel, widgets
 //input: string peptide { semType: alignedSequence }
 //output: widget result
