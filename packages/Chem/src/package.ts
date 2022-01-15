@@ -443,7 +443,7 @@ export function addInchisKeysPanel(col: DG.Column) {
   addInchiKeys(col);
 }
 
-//name: RDKit Settings
+//name: Chem
 //input: column molColumn {semType: Molecule}
 //tags: panel
 //output: widget result
@@ -560,6 +560,7 @@ export function convertMolecule(molecule: string, from: string, to: string): str
     mol?.delete();
   }
 }
+
 
 /*//tags: cellEditor
 //description: Molecule
