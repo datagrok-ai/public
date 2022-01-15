@@ -3,12 +3,10 @@ import BitArray from '@datagrok-libraries/utils/src/bit-array';
 import {chemBeginCriticalSection, chemEndCriticalSection} from "./chem-common";
 
 export class RdKitService {
-  readonly _nJobWorkers = 1; // only 1 for now
   _nParallelWorkers: number;
   _initWaiters?: Promise<any>[];
   _timesInitialized = 0;
   _parallelWorkers: RdKitServiceWorkerClient[] = [];
-  _jobWorker: RdKitServiceWorkerClient | undefined;
   segmentLength: number = 0;
 
   constructor() {
@@ -16,28 +14,7 @@ export class RdKitService {
     this._nParallelWorkers = Math.max(1, cpuLogicalCores - 2);
   }
 
-  /* async init(webRoot: string): Promise<void> {
-    if (!this._initWaiters) {
-      this._initWaiters = [];
-      for (let i = 0; i < this._nParallelWorkers; ++i) {
-        const workerClient = new RdKitServiceWorkerClient();
-        if (i < this._nJobWorkers)
-          this._jobWorkers[i] = workerClient;
-        this._parallelWorkers[i] = workerClient;
-        this._initWaiters.push(workerClient.moduleInit(webRoot));
-      }
-      await Promise.all(this._initWaiters);
-      this._jobWorker = this._jobWorkers[0];
-      this._allResolved = true;
-      console.log('RDKit Service was initialized');
-    } else {
-      while (!this._allResolved) {
-        await new Promise(resolve => setTimeout(resolve, 1));
-      }
-    }
-  } */
-
-  async init(webRoot: string): Promise<void> {
+  async init(webRoot: string) {
     if (!this._initWaiters) {
       this._initWaiters = [];
       for (let i = 0; i < this._nParallelWorkers; ++i) {
@@ -46,7 +23,7 @@ export class RdKitService {
         this._initWaiters.push(workerClient.moduleInit(webRoot));
       }
     }
-    await Promise.all(this._initWaiters);
+    let t = await Promise.all(this._initWaiters);
     if (this._timesInitialized++ === 0)
       console.log('RDKit Service was initialized');
   }
