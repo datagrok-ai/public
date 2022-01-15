@@ -217,7 +217,12 @@ export const TAGS = {
   FORMAT: 'format',
   FORMULA: 'formula',
 
+  CELL_RENDERER: 'cell.renderer',
   UNITS: 'units',  // see DG.UNITS
+
+  CHEM: {
+    SCAFFOLD: 'chem-scaffold'
+  }
 }
 
 export const FUNC_TYPES = {
