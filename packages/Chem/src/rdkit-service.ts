@@ -23,7 +23,7 @@ export class RdKitService {
         this._initWaiters.push(workerClient.moduleInit(webRoot));
       }
     }
-    let t = await Promise.all(this._initWaiters);
+    await Promise.all(this._initWaiters);
     if (this._timesInitialized++ === 0)
       console.log('RDKit Service was initialized');
   }
