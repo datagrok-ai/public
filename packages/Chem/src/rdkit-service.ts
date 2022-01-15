@@ -1,10 +1,12 @@
 import {RdKitServiceWorkerClient} from './rdkit-service-worker-client';
 import BitArray from '@datagrok-libraries/utils/src/bit-array';
+import {chemBeginCriticalSection, chemEndCriticalSection} from "./chem-common";
 
 export class RdKitService {
   readonly _nJobWorkers = 1; // only 1 for now
   _nParallelWorkers: number;
-  _jobWorkers: RdKitServiceWorkerClient[] = [];
+  _initWaiters?: Promise<any>[];
+  _timesInitialized = 0;
   _parallelWorkers: RdKitServiceWorkerClient[] = [];
   _jobWorker: RdKitServiceWorkerClient | undefined;
   segmentLength: number = 0;
@@ -14,20 +16,39 @@ export class RdKitService {
     this._nParallelWorkers = Math.max(1, cpuLogicalCores - 2);
   }
 
-  async init(webRoot: string): Promise<void> {
-    this._parallelWorkers = [];
-    this._jobWorkers = [];
-    const initWaiters = [];
-    for (let i = 0; i < this._nParallelWorkers; ++i) {
-      const workerClient = new RdKitServiceWorkerClient();
-      if (i < this._nJobWorkers)
-        this._jobWorkers[i] = workerClient;
-
-      this._parallelWorkers[i] = workerClient;
-      initWaiters.push(workerClient.moduleInit(webRoot));
+  /* async init(webRoot: string): Promise<void> {
+    if (!this._initWaiters) {
+      this._initWaiters = [];
+      for (let i = 0; i < this._nParallelWorkers; ++i) {
+        const workerClient = new RdKitServiceWorkerClient();
+        if (i < this._nJobWorkers)
+          this._jobWorkers[i] = workerClient;
+        this._parallelWorkers[i] = workerClient;
+        this._initWaiters.push(workerClient.moduleInit(webRoot));
+      }
+      await Promise.all(this._initWaiters);
+      this._jobWorker = this._jobWorkers[0];
+      this._allResolved = true;
+      console.log('RDKit Service was initialized');
+    } else {
+      while (!this._allResolved) {
+        await new Promise(resolve => setTimeout(resolve, 1));
+      }
     }
-    await Promise.all(initWaiters);
-    this._jobWorker = this._jobWorkers[0];
+  } */
+
+  async init(webRoot: string): Promise<void> {
+    if (!this._initWaiters) {
+      this._initWaiters = [];
+      for (let i = 0; i < this._nParallelWorkers; ++i) {
+        const workerClient = new RdKitServiceWorkerClient();
+        this._parallelWorkers[i] = workerClient;
+        this._initWaiters.push(workerClient.moduleInit(webRoot));
+      }
+    }
+    await Promise.all(this._initWaiters);
+    if (this._timesInitialized++ === 0)
+      console.log('RDKit Service was initialized');
   }
 
   async _doParallel(fooScatter: any, fooGather = (d: any) => []): Promise<any> {

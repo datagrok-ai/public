@@ -6,13 +6,13 @@ import {RdKitService} from './rdkit-service';
 import {convertToRDKit} from './analysis/r-group-analysis';
 //@ts-ignore
 import initRDKitModule from './RDKit_minimal.js';
+import {chemBeginCriticalSection, chemEndCriticalSection} from "./chem-common";
 
 export let _rdKitModule: any = null;
 export let _rdKitService: RdKitService | null = null;
 export let _webRoot: string | null;
-let serviceInitialized = false;
-let serviceBeingInitialized = false;
 let moduleInitialized = false;
+let serviceBeingInitialized = false;
 
 export function setRdKitWebRoot(webRootValue: string) {
   _webRoot = webRootValue;
@@ -24,23 +24,11 @@ export async function initRdKitModuleLocal() {
   _rdKitModule.prefer_coordgen(false);
   console.log('RDKit module package instance was initialized');
   moduleInitialized = true;
+  _rdKitService = new RdKitService();
 }
 
 export async function initRdKitService() {
-  if (!serviceBeingInitialized && !serviceInitialized) {
-    serviceBeingInitialized = true;
-    _rdKitService = new RdKitService();
-    await _rdKitService.init(_webRoot!);
-    console.log('RDKit Service was initialized');
-    serviceInitialized = true;
-    serviceBeingInitialized = false;
-  }
-}
-
-export async function waitInitRdKitService(timeout = 1) {
-  while (!serviceInitialized) {
-    await new Promise(resolve => setTimeout(resolve, timeout));
-  }
+  await _rdKitService!.init(_webRoot!);
 }
 
 export function getRdKitModule() {
@@ -50,10 +38,7 @@ export function getRdKitModule() {
 }
 
 export async function getRdKitService() {
-  initRdKitService();
-  await waitInitRdKitService();
-  if (!serviceInitialized)
-    throw ('RdKit Service is not initialized');
+  await initRdKitService();
   return _rdKitService!;
 }
 
