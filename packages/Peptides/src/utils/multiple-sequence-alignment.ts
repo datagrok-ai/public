@@ -1,9 +1,7 @@
 import * as DG from 'datagrok-api/dg';
 
-import {AlignedSequenceEncoder} from '@datagrok-libraries/bio/src/sequence-encoder';
-
-// @ts-ignore
-import initKalign from '../wasm/kalign';
+//@ts-ignore
+import Aioli from '@biowasm/aioli';
 
 /**
  * Converts array of sequences into simple fasta string.
@@ -25,25 +23,22 @@ function _fastaToStrings(fasta: string): string[] {
   return fasta.replace(/>sample\d+(\r\n|\r|\n)/g, '').split('\n');
 }
 
-export async function runKalign(col: DG.Column, webRootValue: string) : Promise<DG.Column> {
-  const _webPath = `${webRootValue}dist/kalign.wasm`;
-  const sequences = col.toList().map((v: string, _) => AlignedSequenceEncoder.clean(v).replace(/\-/g, ''));
+/**
+ * Runs Aioli environment with kalign tool.
+ *
+ * @param {DG.Column} col Column with sequences.
+ * @return {Promise<DG.Column>} Aligned sequences.
+ */
+export async function runKalign(col: DG.Column) : Promise<DG.Column> {
+  const sequences = col.toList();
   const fasta = _stringsToFasta(sequences);
-  const args = '-i input.fa -o output.fa'.split(' ');
-  // eslint-disable-next-line max-len
-  // export EMCC_CFLAGS="-s ENVIRONMENT='web' -s MODULARIZE=1 -s 'EXTRA_EXPORTED_RUNTIME_METHODS=[\"FS\", \"callMain\"]' -s EXPORT_NAME='initKalign' -s FORCE_FILESYSTEM=1" && emmake make
-  const kalign = await initKalign({
-    noInitialRun: true,
-    locateFile: () => _webPath,
-  });
 
-  kalign.FS.writeFile('input.fa', fasta, {encoding: 'utf8'});
+  const CLI = await new Aioli('kalign/3.3.1');
+  await CLI.fs.writeFile('input.fa', fasta);
+  const output = await CLI.exec(`kalign input.fa -f fasta -o result.fasta`);
+  const buf = await CLI.cat('result.fasta');
+  console.warn(output);
 
-  const ret = kalign.callMain(args);
-
-  console.log(`main(argc, argv) returned ${ret}`);
-
-  const buf = kalign.FS.readFile('output.fa', {encoding: 'utf8'}) as string;
   const aligned = _fastaToStrings(buf).slice(0, sequences.length);
   return DG.Column.fromStrings(`${col.name}aligned`, aligned);
 }
