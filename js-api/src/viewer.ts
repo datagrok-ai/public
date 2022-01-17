@@ -143,6 +143,14 @@ export class Viewer extends Widget {
     api.grok_Viewer_Set_DataFrame(this.dart, t == null ? null : t.dart);
   }
 
+  get helpUrl(): string {
+    return api.grok_Viewer_Get_HelpUrl(this.dart);
+  }
+
+  set helpUrl(s: string) {
+    api.grok_Viewer_Set_HelpUrl(this.dart, s);
+  }
+
   static grid(t: DataFrame, options: object | null = null): Grid {
     return new DG.Grid(api.grok_Viewer_Grid(t.dart, _toJson(options)));
   }
