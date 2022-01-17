@@ -183,13 +183,13 @@ export async function peptideSpacePanel(col: DG.Column): Promise<DG.Widget> {
   return await widget.draw();
 }
 
-//name: MSA
+//name: Multiple sequence alignment
 //tags: viewer
 //input: dataframe table
-//input: column col {semType: alignedSequence}
+//input: column col
 //output: dataframe result
 export async function doMSA(table: DG.DataFrame, col: DG.Column): Promise<DG.DataFrame> {
-  const msaCol = await runKalign(table.getCol('AlignedSequence'), _package.webRoot);
+  const msaCol = await runKalign(col);
   table.columns.add(msaCol);
   return table;
 }
