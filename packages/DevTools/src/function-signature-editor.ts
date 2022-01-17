@@ -129,6 +129,7 @@ enum COMMON_TAG_NAME {
   POSTFIX = 'postfix',
   UNITS = 'units',
   EDITOR = 'editor',
+  SEM_TYPE = 'semType',
 }
 
 enum OPTIONAL_TAG_NAME {
@@ -139,7 +140,6 @@ enum OPTIONAL_TAG_NAME {
   ACTION = 'action',
   CHOICES = 'choices',
   SUGGESTIONS = 'suggestions',
-  SEM_TYPE = 'semType',
   MIN = 'min',
   MAX = 'max',
 }
@@ -150,7 +150,7 @@ const DF_TAG_NAMES = [
   OPTIONAL_TAG_NAME.COLUMNS,
   OPTIONAL_TAG_NAME.ACTION];
 const COLUMN_TAG_NAMES = [...Object.values(COMMON_TAG_NAME), OPTIONAL_TAG_NAME.TYPE, OPTIONAL_TAG_NAME.FORMAT,
-  OPTIONAL_TAG_NAME.ALLOW_NULLS, OPTIONAL_TAG_NAME.ACTION, OPTIONAL_TAG_NAME.SEM_TYPE];
+  OPTIONAL_TAG_NAME.ALLOW_NULLS, OPTIONAL_TAG_NAME.ACTION];
 const STRING_TAG_NAMES = [...Object.values(COMMON_TAG_NAME),
   /*OPTIONAL_TAG_NAME.CHOICES ,*/ OPTIONAL_TAG_NAME.SUGGESTIONS];
 const INT_TAG_NAMES = [...Object.values(COMMON_TAG_NAME), OPTIONAL_TAG_NAME.MIN, OPTIONAL_TAG_NAME.MAX];
@@ -181,7 +181,7 @@ enum LANGUAGE {
   GROK = 'grok'
 }
 const languages = ['javascript', 'python', 'r', 'julia', 'octave', 'nodejs', 'grok']
-const commentSign = (lang: LANGUAGE) => {
+const headerSign = (lang: LANGUAGE) => {
   switch(lang) {
     case LANGUAGE.JS:
     case LANGUAGE.NODEJS:
@@ -224,7 +224,7 @@ async function openFse(v: DG.View, functionCode: string) {
         .map(({tag, val}) => `${tag}: ${val}`)
         .concat(...(param.category && param.category!== DEFAULT_CATEGORY)? [`category: ${param.category}`]:[])
         .join('; ');
-      const result =`${commentSign(inputScriptCopy.language as LANGUAGE)}${direction}: ${param.propertyType} ${param.name? `${param.name} ` : ''}${param.defaultValue ? `= ${param.defaultValue} ` : ''}${!!optionTagsPreview.length ? `{${optionTagsPreview}} ` : ''}${param.description ? `[${param.description}]` : ''}\n`;
+      const result =`${headerSign(inputScriptCopy.language as LANGUAGE)}${direction}: ${param.propertyType} ${param.name? `${param.name} ` : ''}${param.defaultValue ? `= ${param.defaultValue} ` : ''}${!!optionTagsPreview.length ? `{${optionTagsPreview}} ` : ''}${param.description ? `[${param.description}]` : ''}\n`;
       return result;
     };
   
@@ -340,8 +340,7 @@ async function openFse(v: DG.View, functionCode: string) {
         (prop) => menu.item(functionPropsLabels(prop.name as FUNC_PROPS_FIELDS), () => onItemClick(prop)),
       );
   
-      const shevron = ui.iconFA('chevron-down');
-      const button = ui.button([ui.icons.add(()=>{}), shevron], () => {
+      const button = ui.button([ui.icons.add(()=>{})], () => {
         menu.show();
       });
   
@@ -407,9 +406,11 @@ async function openFse(v: DG.View, functionCode: string) {
   
       if (!param) return ui.div('');
   
-      const result = ui.input.form(param, optionalFuncParamsProps.filter(
-        (prop) => optionTags(param).includes(prop.name as OPTIONAL_TAG_NAME)),
-      );
+      const result = ui.input.form(param, 
+        [
+          ...obligatoryFuncParamsTags,
+          ...optionalFuncParamsTags.filter((prop) => optionTags(param).includes(prop.name as OPTIONAL_TAG_NAME))
+        ]);
   
       grok.shell.o = ui.divV([ui.h1(`Param: ${paramName}`), ui.block75([result])]);
     };
@@ -450,8 +451,30 @@ async function openFse(v: DG.View, functionCode: string) {
       DG.Property.create(FUNC_PARAM_FIELDS.CATEGORY, DG.TYPE.STRING, (x: any) => x[FUNC_PARAM_FIELDS.CATEGORY],
         (x: any, v) => updateValue(x, FUNC_PARAM_FIELDS.CATEGORY, v), ''),
     ];
+
+    const obligatoryFuncParamsTags: DG.Property[] = [
+      DG.Property.create(COMMON_TAG_NAME.CAPTION, DG.TYPE.STRING,
+        (x: any) => x.options[COMMON_TAG_NAME.CAPTION],
+        (x: any, v) => updateValue(x, COMMON_TAG_NAME.CAPTION, v), ''),
+
+      DG.Property.create(COMMON_TAG_NAME.UNITS, DG.TYPE.STRING,
+        (x: any) => x.options[COMMON_TAG_NAME.UNITS],
+        (x: any, v) => updateValue(x, COMMON_TAG_NAME.UNITS, v), ''),
+
+      DG.Property.create(COMMON_TAG_NAME.EDITOR, DG.TYPE.STRING,
+        (x: any) => x.options[COMMON_TAG_NAME.EDITOR],
+        (x: any, v) => updateValue(x, COMMON_TAG_NAME.EDITOR, v), ''),
+
+      DG.Property.create(COMMON_TAG_NAME.POSTFIX, DG.TYPE.STRING,
+        (x: any) => x.options[COMMON_TAG_NAME.POSTFIX],
+        (x: any, v) => updateValue(x, COMMON_TAG_NAME.POSTFIX, v), ''),
+
+      DG.Property.create(COMMON_TAG_NAME.SEM_TYPE, DG.TYPE.STRING,
+        (x: any) => x.options[COMMON_TAG_NAME.SEM_TYPE],
+        (x: any, v) => updateValue(x, COMMON_TAG_NAME.SEM_TYPE, v), ''),
+    ];
   
-    const optionalFuncParamsProps: DG.Property[] = [
+    const optionalFuncParamsTags: DG.Property[] = [
       DG.Property.create(OPTIONAL_TAG_NAME.ACTION, DG.TYPE.STRING,
         (x: any) => x.options[OPTIONAL_TAG_NAME.ACTION],
         (x: any, v) => updateValue(x, OPTIONAL_TAG_NAME.ACTION, v), ''),
@@ -484,10 +507,6 @@ async function openFse(v: DG.View, functionCode: string) {
         (x: any) => x.options[OPTIONAL_TAG_NAME.MIN],
         (x: any, v) => updateValue(x, OPTIONAL_TAG_NAME.MIN, v), ''),
   
-      DG.Property.create(OPTIONAL_TAG_NAME.SEM_TYPE, DG.TYPE.STRING,
-        (x: any) => x.options[OPTIONAL_TAG_NAME.SEM_TYPE],
-        (x: any, v) => updateValue(x, OPTIONAL_TAG_NAME.SEM_TYPE, v), ''),
-  
       DG.Property.create(OPTIONAL_TAG_NAME.SUGGESTIONS, DG.TYPE.STRING,
         (x: any) => x.options[OPTIONAL_TAG_NAME.SUGGESTIONS],
         (x: any, v) => updateValue(x, OPTIONAL_TAG_NAME.SUGGESTIONS, v), ''),
@@ -519,8 +538,9 @@ async function openFse(v: DG.View, functionCode: string) {
       .setTag(DG.TAGS.CHOICES, `["${funcParamTypes.join(`", "`)}"]`);
     paramsGrid.dataFrame?.getCol(functionParamsMapping[FUNC_PARAM_FIELDS.DIRECTION as keyof typeof functionParamsMapping])
       .setTag(DG.TAGS.CHOICES, `["${[DIRECTION.INPUT, DIRECTION.OUTPUT].join(`", "`)}"]`);
+    paramsGrid.setOptions({'showColumnGridlines': false});
     
-      const col = paramsGrid.columns.byName('+');
+    const col = paramsGrid.columns.byName('+');
     col.cellType = 'html';
     
     paramsGrid.onCellPrepare((gc) => {
@@ -540,6 +560,9 @@ async function openFse(v: DG.View, functionCode: string) {
         ui.divH([
           deleteBtn(gc.grid.dataFrame?.get('Name', gc.gridRow)),
         ]);
+        gc.style.element.style.display = "flex";
+        gc.style.element.style.justifyContent = "center";
+        gc.style.element.style.color = 'var(--blue-1)';
       }
 
       if (gc.isColHeader) {
@@ -620,13 +643,14 @@ async function openFse(v: DG.View, functionCode: string) {
       Object.values(functionProps).map((propField) => {
         const propValue = propField.get(inputScriptCopy) || (inputScriptCopy as any)[propField.name];
         if (!!propValue && !!propValue.length) {
-          result += `${commentSign(inputScriptCopy.language as LANGUAGE)}${functionPropsCode(propField.name as FUNC_PROPS_FIELDS)}: ${propValue}\n`;
+          result += `${headerSign(inputScriptCopy.language as LANGUAGE)}${functionPropsCode(propField.name as FUNC_PROPS_FIELDS)}: ${propValue}\n`;
         }
       });
       functionParamsCopy.map((param) => {
         result += generateParamLine(param, param.options.direction);
       });
-      result += inputScriptCopy.script.substring(inputScriptCopy.script.indexOf('\n',inputScriptCopy.script.lastIndexOf(commentSign(inputScriptCopy.language as LANGUAGE)))+1);
+      const regex = new RegExp(`^(${headerSign(inputScriptCopy.language as LANGUAGE)}.*\n)*`, 'g');
+      result += inputScriptCopy.script.substring(inputScriptCopy.script.match(regex)[0].length + 1);
       myCM.setOption('mode', highlightModeByLang(inputScriptCopy.language as LANGUAGE))
       myCM.setValue(result);
       myCM.setSize('100%', '100%');

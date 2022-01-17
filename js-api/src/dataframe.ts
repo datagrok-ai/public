@@ -19,7 +19,7 @@ import {Observable}  from "rxjs";
 import {filter} from "rxjs/operators";
 import {Widget} from "./widgets";
 import {Grid} from "./grid";
-import {ScatterPlotViewer, TypedEventArgs, Viewer} from "./viewer";
+import {ScatterPlotViewer, Viewer} from "./viewer";
 import {Property} from "./entities";
 
 declare let grok: any;
@@ -27,6 +27,7 @@ declare let DG: any;
 let api = <any>window;
 type RowPredicate = (row: Row) => boolean;
 type Comparer = (a: any, b: any) => number;
+type IndexSetter = (index: number, value: any) => void;
 
 /** Proxy wrapper for ColumnList */
 const ColumnListProxy = new Proxy(class {
@@ -111,6 +112,10 @@ export class DataFrame {
   /** Creates a {@link DataFrame} with the specified number of rows and no columns. */
   static create(rowCount: number = 0): DataFrame {
     return new DataFrame(api.grok_DataFrame(rowCount));
+  }
+
+  static fromByteArray(byteArray: Uint8Array): DataFrame {
+    return new DataFrame(api.grok_DataFrame_FromByteArray(byteArray));
   }
 
   /** Creates a {@link DataFrame} from the specified columns. All columns should be of the same length. */
@@ -1127,8 +1132,11 @@ export class ColumnList {
    * {@link https://dev.datagrok.ai/script/samples/javascript/data-frame/advanced/virtual-int-column}
    * {@link https://dev.datagrok.ai/script/samples/javascript/data-frame/advanced/virtual-columns}
    * */
-  addNewVirtual(name: string, getValue: (ind: number) => any, type = TYPE.OBJECT): Column {
-    return toJs(api.grok_ColumnList_AddNewVirtual(this.dart, name, getValue, type));
+  addNewVirtual(
+      name: string,
+      getValue: (ind: number) => any, type = TYPE.OBJECT,
+      setValue: IndexSetter | null = null): Column {
+    return toJs(api.grok_ColumnList_AddNewVirtual(this.dart, name, getValue, setValue, type));
   }
 
   /** Removes column by name (case-insensitive).*/
@@ -2160,7 +2168,7 @@ export class ColumnDialogHelper {
   /** Opens an editor dialog with preview for a calculated column. */
   editFormula(): void {
     let formula = this.column.getTag('formula');
-    let df = this.column.dataFrame;
+    // let df = this.column.dataFrame;
     if (formula == null)
       formula = '';
     if (!(this.column.name && this.column.dataFrame?.columns.contains(this.column.name)))

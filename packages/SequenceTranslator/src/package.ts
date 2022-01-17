@@ -2,7 +2,7 @@
 import * as grok from 'datagrok-api/grok';
 import * as ui from 'datagrok-api/ui';
 import * as DG from 'datagrok-api/dg';
-import * as OCL from 'openchemlib/full.js';
+import * as OCL from 'openchemlib/full';
 import $ from "cash-dom";
 import {defineAxolabsPattern} from "./defineAxolabsPattern";
 import {map, stadardPhosphateLinkSmiles, SYNTHESIZERS, TECHNOLOGIES} from "./map";
@@ -121,7 +121,7 @@ function isValid(sequence: string) {
       outputIndices[technologyIndex] += matchedCode.length;
     }
   });
-  
+
   const indexOfExpectedTechnology = Math.max.apply(Math, outputIndices);
   const expectedTechnology = possibleTechnologies[outputIndices.indexOf(indexOfExpectedTechnology)];
 
@@ -158,8 +158,8 @@ function sequenceToSmiles(sequence: string) {
     smiles += (links.includes(codesList[i]) || (i < codesList.length - 1 && links.includes(codesList[i + 1]))) ?
       obj[codesList[i]] :
       obj[codesList[i]] + stadardPhosphateLinkSmiles;
-  smiles = smiles.replace(/OO/g, 'O').replace(/SO/g, 'S');
-  smiles = smiles.replace(/@/g, ''); // Remove StereoChemistry on the Nucleic acid chain and remove the Chiral label
+  smiles = smiles.replace(/OO/g, 'O');
+  // smiles = smiles.replace(/@/g, ''); // Remove StereoChemistry on the Nucleic acid chain and remove the Chiral label
   return codesList[codesList.length - 1] == 'ps' ? smiles : smiles.slice(0, smiles.length - stadardPhosphateLinkSmiles.length + 1);
 }
 
@@ -181,8 +181,8 @@ export function sequenceTranslator() {
       let tableRows = [];
       for (let key of Object.keys(outputSequenceObj).slice(1)) {
         tableRows.push({
-          'key': key, 
-          'value': ("indexOfFirstNotValidCharacter" in outputSequenceObj) ? 
+          'key': key,
+          'value': ("indexOfFirstNotValidCharacter" in outputSequenceObj) ?
             ui.divH([
               ui.divText(sequence.slice(0, JSON.parse(outputSequenceObj.indexOfFirstNotValidCharacter!).indexOfFirstNotValidCharacter), {style: {color: "grey"}}),
               ui.tooltip.bind(
@@ -207,7 +207,7 @@ export function sequenceTranslator() {
   let semTypeOfInputSequence = ui.divText('');
   let moleculeSvgDiv = ui.block([]);
   let outputTableDiv = ui.div([], 'table');
-  let inputSequenceField = ui.textInput("", defaultInput, (sequence: string) => updateTableAndMolecule(sequence));  
+  let inputSequenceField = ui.textInput("", defaultInput, (sequence: string) => updateTableAndMolecule(sequence));
   updateTableAndMolecule(defaultInput);
 
   let tablesWithCodes = ui.divV([]);
@@ -229,7 +229,7 @@ export function sequenceTranslator() {
   let showCodesButton = ui.button('SHOW CODES', () => ui.dialog('Codes').add(tablesWithCodes).show());
 
   let saveMolFileButton = ui.bigButton('SAVE MOL FILE', () => {
-    let smiles = sequenceToSmiles(inputSequenceField.value.replace(/\s/g, '')); 
+    let smiles = sequenceToSmiles(inputSequenceField.value.replace(/\s/g, ''));
     let result = `${OCL.Molecule.fromSmiles(smiles).toMolfile()}\n`;
     var element = document.createElement('a');
     element.setAttribute('href', 'data:text/plain;charset=utf-8,' + encodeURIComponent(result));
@@ -345,7 +345,7 @@ function convertSequence(seq: string) {
       Nucleotides: siRnaGcrsToNucleotides(seq),
       BioSpring: siRnaGcrsToBioSpring(seq),
       Axolabs: siRnaGcrsToAxolabs(seq),
-      MM12: gcrsToMermade12(seq), 
+      MM12: gcrsToMermade12(seq),
       GCRS: seq
     };
   if (output.expectedType == SYNTHESIZERS.GCRS)

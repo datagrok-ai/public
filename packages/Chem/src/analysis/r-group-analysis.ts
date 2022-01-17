@@ -1,8 +1,7 @@
 import * as grok from 'datagrok-api/grok';
 import * as ui from 'datagrok-api/ui';
 import * as DG from 'datagrok-api/dg';
-import {mcsgetter, rgroupGetter} from '../scripts-api';
-// import {getRGroups} from '../chem_rgroup_analysis';
+import {findMCS, findRGroups} from '../scripts-api';
 
 export function convertToRDKit(smiles: string | null): string | null {
   if (smiles !== null) {
@@ -26,7 +25,7 @@ export function rGroupAnalysis(col: DG.Column) {
   const visualAnalysisCheck = ui.boolInput('Visual analysis', true);
 
   const mcsButton = ui.button('MCS', async () => {
-    const smiles: string = await mcsgetter(col.name, col.dataFrame);
+    const smiles: string = await findMCS(col.name, col.dataFrame);
     sketcher.setSmiles(smiles);
   });
   ui.tooltip.bind(mcsButton, 'Most Common Substructure');
@@ -47,8 +46,8 @@ export function rGroupAnalysis(col: DG.Column) {
     .onOK(async () => {
       const core = sketcher.getSmiles();
       if (core !== null) {
-        // const res = await getRGroups(col, core, columnPrefixInput.value);
-        const res = await rgroupGetter(col.name, col.dataFrame, core, columnPrefixInput.value);
+        // const res = await findRGroups(col, core, columnPrefixInput.value);
+        const res = await findRGroups(col.name, col.dataFrame, core, columnPrefixInput.value);
         for (const resCol of res.columns) {
           resCol.semType = DG.SEMTYPE.MOLECULE;
           col.dataFrame.columns.add(resCol);

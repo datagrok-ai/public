@@ -14,8 +14,9 @@
     "webpack-cli": "latest"
   },
   "scripts": {
-    "debug-#{PACKAGE_NAME_LOWERCASE}": "grok publish --rebuild",
-    "release-#{PACKAGE_NAME_LOWERCASE}": "grok publish --rebuild --release",
+    "link-all": "",
+    "debug-#{PACKAGE_NAME_LOWERCASE}": "webpack && grok publish ",
+    "release-#{PACKAGE_NAME_LOWERCASE}": "webpack && grok publish --release",
     "build-#{PACKAGE_NAME_LOWERCASE}": "webpack",
     "build": "webpack"
   }

@@ -1,5 +1,7 @@
 import * as ui from 'datagrok-api/ui';
 import * as DG from 'datagrok-api/dg';
+import {chem} from "datagrok-api/src/chem";
+import Sketcher = chem.Sketcher;
 
 let subscr: any = null;
 
@@ -99,15 +101,31 @@ export function getMolColumnPropertyPanel(col: DG.Column) {
       moleculeFilteringChoiceElement.value = moleculeFilteringTag;
   });
 
-  const widget = new DG.Widget(ui.div([
+  const showStructures = ui.boolInput('Show structures',
+    col.tags['cell.renderer'] == DG.SEMTYPE.MOLECULE,
+    (v: boolean) => col.tags['cell.renderer'] = v ? DG.SEMTYPE.MOLECULE : DG.TYPE.STRING);
+
+  const rdKitPane = ui.div([
     ui.inputs([
+      showStructures,
       scaffoldColumnChoice,
       highlightScaffoldsCheckbox,
       regenerateCoordsCheckbox,
       moleculeFilteringChoice,
     ]),
-  ]));
+  ])
 
+  const panes = ui.accordion('chem-settings');
+  panes.addPane('RDKit', () => rdKitPane);
+  panes.addPane('Scaffold', () => {
+    let sketcher = new Sketcher();
+    sketcher.syncCurrentObject = false;
+    sketcher.setMolFile(col.tags['chem-scaffold']);
+    sketcher.onChanged.subscribe((_) => col.tags['chem-scaffold'] = sketcher.getMolFile());
+    return sketcher.root;
+  });
+
+  const widget = new DG.Widget(panes.root);
   widget.subs.push(subscr);
 
   return widget;

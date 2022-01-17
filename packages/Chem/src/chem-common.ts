@@ -27,20 +27,20 @@ export function criticalSectionEnd(key: string) {
 
 const CHEM_TOKEN = 'CHEM_TOKEN';
 
-export async function chemBeginCriticalSection() {
+export async function chemBeginCriticalSection(token = CHEM_TOKEN) {
   let warned = false;
-  if (unlockFunctionForKey[CHEM_TOKEN]) {
+  if (unlockFunctionForKey[token]) {
     console.warn('Chem | Is already in a critical section, waiting...');
     warned = true;
   }
-  await criticalSectionBegin(CHEM_TOKEN);
+  await criticalSectionBegin(token);
   if (warned) {
     console.warn('Chem | Left the critical section');
   }
 }
 
-export function chemEndCriticalSection() {
-  criticalSectionEnd(CHEM_TOKEN);
+export function chemEndCriticalSection(token = CHEM_TOKEN) {
+  criticalSectionEnd(token);
 }
 
 export function tanimoto(x: BitArray, y: BitArray) {
@@ -51,9 +51,10 @@ export function tanimoto(x: BitArray, y: BitArray) {
   return common / (total - common);
 }
 
-export function rdKitFingerprintToBitArray(fp: string, fpLength: number) {
-  const arr = new BitArray(fpLength);
-  for (let j = 0; j < fpLength; ++j) {
+export function rdKitFingerprintToBitArray(fp: string) {
+  const length = fp.length;
+  const arr = new BitArray(length);
+  for (let j = 0; j < length; ++j) {
     if (fp[j] === '1')
       arr.setTrue(j);
   }

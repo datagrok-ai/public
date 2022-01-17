@@ -1,31 +1,38 @@
 import {RdKitServiceWorkerSimilarity} from './rdkit-service-worker-similarity';
+import {rdKitFingerprintToBitArray} from './chem-common';
+import BitArray from '@datagrok-libraries/utils/src/bit-array';
 import {isMolBlock} from './chem-utils';
 
 export class RdkitServiceWorkerSubstructure extends RdKitServiceWorkerSimilarity {
-  // _patternFps: BitArray[] | null = null;
-  // readonly _patternFpLength = 64;
+  _patternFps: BitArray[] | null = null;
+   readonly _patternFpLength = 2048;
 
-  constructor(module: Object, webRoot: string) {
+   constructor(module: Object, webRoot: string) {
     super(module, webRoot);
   }
 
-  initMoleculesStructures(dict: string[]) {
+  initMoleculesStructures(dict: string[], usePatternFingerprints: boolean) {
     this.freeMoleculesStructures();
     this.freeMorganFingerprints();
     if (dict.length === 0)
       return;
     this._rdKitMols = [];
-    // this._patternFps = [];
+    if (usePatternFingerprints)
+      this._patternFps = [];
     const hashToMolblock: {[_:string] : any} = {};
     const molIdxToHash = [];
     for (let i = 0; i < dict.length; ++i) {
       let item = dict[i];
-      // let arr = new BitArray(this._patternFpLength);
       let mol = null;
+      let fp: BitArray | null = null;
+      if (usePatternFingerprints)
+        fp = new BitArray(this._patternFpLength);
       try {
         mol = this._rdKitModule.get_mol(item);
-        // const fp = mol.get_pattern_fp(this._patternFpLength);
-        // arr = this.stringFpToArrBits(fp, arr, this._patternFpLength);
+        if (usePatternFingerprints) {
+          const fpRdKit = mol.get_pattern_fp(this._patternFpLength);
+          fp = rdKitFingerprintToBitArray(fpRdKit);
+        }
         if (isMolBlock(item)) {
           item = mol.normalize_2d_molblock();
           mol.straighten_2d_layout();
@@ -40,7 +47,9 @@ export class RdkitServiceWorkerSubstructure extends RdKitServiceWorkerSimilarity
         // Won't rethrow
       }
       this._rdKitMols.push(mol);
-      // this._patternFps.push(arr);
+      if (this._patternFps) {
+        this._patternFps.push(fp!);
+      }
       molIdxToHash.push(item);
     }
     return {molIdxToHash, hashToMolblock};
@@ -51,12 +60,9 @@ export class RdkitServiceWorkerSubstructure extends RdKitServiceWorkerSimilarity
     if (this._rdKitMols) {
       try {
         let queryMol = null;
-        // let arr = new BitArray(this._patternFpLength);
         try {
           try {
             queryMol = this._rdKitModule.get_mol(queryMolString, '{"mergeQueryHs":true}');
-            // const fp = queryMol.get_pattern_fp(this._patternFpLength);
-            // arr = this.stringFpToArrBits(fp, arr, this._patternFpLength);
           } catch (e2) {
             queryMol?.delete();
             queryMol = null;
@@ -66,13 +72,20 @@ export class RdkitServiceWorkerSubstructure extends RdKitServiceWorkerSimilarity
             } else
               throw new Error('Chem | SMARTS not set');
           }
-          if (queryMol) {
-            if (queryMol.is_valid()) {
-              for (let i = 0; i < this._rdKitMols!.length; ++i) {
-                // if (arr.equals(this._patternFps![i].and(arr)))
-                if (this._rdKitMols![i]!.get_substruct_match(queryMol) !== '{}')
-                  matches.push(i);
+          if (queryMol && queryMol.is_valid()) {
+            if (this._patternFps) {
+              const fpRdKit = queryMol.get_pattern_fp(this._patternFpLength);
+              const queryMolFp = rdKitFingerprintToBitArray(fpRdKit);
+              for (let i = 0; i < this._patternFps.length; ++i) {
+                const crossedFp = BitArray.fromAnd(this._patternFps[i], queryMolFp);
+                if (crossedFp.equals(queryMolFp))
+                  if (this._rdKitMols[i]!.get_substruct_match(queryMol) !== '{}') // Is patternFP iff?
+                    matches.push(i);
               }
+            } else {
+              for (let i = 0; i < this._rdKitMols!.length; ++i)
+                if (this._rdKitMols[i]!.get_substruct_match(queryMol) !== '{}')
+                  matches.push(i);
             }
           }
         } finally {
@@ -93,6 +106,6 @@ export class RdkitServiceWorkerSubstructure extends RdKitServiceWorkerSimilarity
         mol.delete();
       this._rdKitMols = null;
     }
-    // this._patternFps = null;
+    this._patternFps = null;
   }
 }
