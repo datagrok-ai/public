@@ -1,6 +1,41 @@
 <!-- TITLE: Release History -->
 <!-- SUBTITLE: -->
 
+# 2022-01-17 Dev build 0.113.0
+
+## Latest Docker Images
+
+* Datagrok: 
+  *  `docker pull datagrok/datagrok:0.113.0`
+  *  `docker pull datagrok/datagrok:latest`
+  
+* [Docker-Compose](admin/docker-compose.md)
+
+## Addressed Issues
+
+* (Bug) JS API: "Legend.column =" causes an exception 
+* NPM repositories: new package manager UI (WIP)
+* (Bug) Grid: virtual column of type bool renders as text 
+* 9913 displaying scalar query outputparams 
+* 9913 space by arrow 
+* DataFrame: editable virtual columns 
+* JS-API: Exposed DataFrame.fromByteArray and FileSource.readAsDataFrame methods 
+* JS API: updated js-api-common files 
+* (Bug) ui.wait() adds default 400x300 size to the container 
+* (Bug) Pivot table icon is missing 
+* JS API: readAsDataFrames renamed to readBinaryDataFrames 
+* Bar chart: click not on the bar to clear the filter 
+* PowerPack: added tests for widgets 
+* ApiTests: added a test for package files 
+* (Bug) Trellis Plot | Inner Viewer Settings throws an exception 
+* ParamCommand: default item comands ("open" for project, "details" for users, etc). Support for double-click 
+* Property panel: decreased the margin for nested accordions 
+* (Bug) Grid: renderer type is not automatically changed when it is set via column.tags['cell-renderer'] 
+* Resolves #266: Chem: molecule column property panel 
+* Dialogs: add missing wiki links (WIP)
+* Peptides #253: simple viewers switching 
+
+
 # 2022-01-13 Dev build 0.112.0
 
 ## Latest Docker Images
