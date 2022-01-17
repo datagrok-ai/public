@@ -51,9 +51,10 @@ export function tanimoto(x: BitArray, y: BitArray) {
   return common / (total - common);
 }
 
-export function rdKitFingerprintToBitArray(fp: string, fpLength: number) {
-  const arr = new BitArray(fpLength);
-  for (let j = 0; j < fpLength; ++j) {
+export function rdKitFingerprintToBitArray(fp: string) {
+  const length = fp.length;
+  const arr = new BitArray(length);
+  for (let j = 0; j < length; ++j) {
     if (fp[j] === '1')
       arr.setTrue(j);
   }
