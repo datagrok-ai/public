@@ -71,9 +71,8 @@ const cacheParamsDefaults: CacheParams = {
 
 const _chemCache = {...cacheParamsDefaults};
 
-async function _invalidate(
-  molStringsColumn: DG.Column, queryMolString: string | null,
-  includeFingerprints: boolean, endCriticalSection = true) {
+async function _invalidate(molStringsColumn: DG.Column, queryMolString: string | null, includeFingerprints: boolean) {
+  // TODO: implement a proper stopping mechanism instead
   await chemBeginCriticalSection();
   try {
     const sameColumnAndVersion = () =>
@@ -120,8 +119,7 @@ async function _invalidate(
       }
     }
   } finally {
-    if (endCriticalSection)
-      chemEndCriticalSection();
+    chemEndCriticalSection();
   }
 }
 
@@ -176,19 +174,14 @@ export function chemSubstructureSearchGraph(molStringsColumn: DG.Column, molStri
 
 export async function chemSubstructureSearchLibrary(
   molStringsColumn: DG.Column, molString: string, molStringSmarts: string) {
-  await _invalidate(molStringsColumn, molString, false, /* endCriticalSection = */ false);
-  try {
-    const result = DG.BitSet.create(molStringsColumn.length);
-    if (molString.length != 0) {
-      const matches = await (await getRdKitService()).searchSubstructure(molString, molStringSmarts);
-      for (const match of matches)
-        result.set(match, true, false);
-    }
-    return result;
-  } finally {
-    // we do this intentionally, as we are still searching inside workers
-    chemEndCriticalSection();
+  await _invalidate(molStringsColumn, molString, false);
+  const result = DG.BitSet.create(molStringsColumn.length);
+  if (molString.length != 0) {
+    const matches = await (await getRdKitService()).searchSubstructure(molString, molStringSmarts);
+    for (const match of matches)
+      result.set(match, true, false);
   }
+  return result;
 }
 
 export function chemGetMorganFingerprint(molString: string): BitArray {

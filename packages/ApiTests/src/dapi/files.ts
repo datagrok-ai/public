@@ -1,12 +1,13 @@
-import {after, before, category, test} from "@datagrok-libraries/utils/src/test";
+import {after, before, category, expect, test} from "@datagrok-libraries/utils/src/test";
 import * as grok from 'datagrok-api/grok';
 import * as ui from 'datagrok-api/ui';
 import * as DG from 'datagrok-api/dg';
+import {_package} from "../package";
 
 
 category('Dapi: files', () => {
   let filePrefix = 'Demo:TestJobs:Files:DemoFiles/';
-  let testTextFileName = 'js-api-testTextFile'
+  let testTextFileName = 'js-api-testTextFile';
   let testTextFilePath = filePrefix + testTextFileName;
 
   before(async () => {
@@ -47,8 +48,14 @@ category('Dapi: files', () => {
   });
 
   test('Dapi: files - search', async () => {
-    if((await grok.dapi.files.list(filePrefix, false, testTextFileName)).length !== 1)
+    if ((await grok.dapi.files.list(filePrefix, false, testTextFileName)).length !== 1)
       throw "Can't find the file";
+  });
+
+  test('Dapi: package files', async () => {
+    let files = await _package.files.list('', false, '*.csv');
+    expect(files.length > 0, true);
+    files.every((f) => expect(f.extension, 'csv'));
   });
 
   // test('Dapi: files - move', async () => {

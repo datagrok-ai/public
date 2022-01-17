@@ -159,12 +159,12 @@ export function calcDistanceMatrix(data: Vectors, distance: DistanceMetric): Mat
   return matrix;
 }
 
-/** Generates array from a range [begin; end]. */
-export function genRange(begin: number, end: number): Int32Array {
-  const nItems = end - begin;
+/** Generates array from a range [begin; end] or [begin; end) if endExclusive. */
+export function genRange(begin: number, end: number, endExclusive = false): Int32Array {
+  const nItems = end - begin + (endExclusive ? 0 : 1);
   const series = new Int32Array(nItems);
 
-  for (let i = 0; i < nItems + 1; ++i) {
+  for (let i = 0; i < nItems; ++i) {
     series[i] = begin + i;
   }
   return series;
