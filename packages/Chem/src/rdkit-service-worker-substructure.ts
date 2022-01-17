@@ -76,10 +76,12 @@ export class RdkitServiceWorkerSubstructure extends RdKitServiceWorkerSimilarity
             if (this._patternFps) {
               const fpRdKit = queryMol.get_pattern_fp(this._patternFpLength);
               const queryMolFp = rdKitFingerprintToBitArray(fpRdKit);
-              for (let i = 0; i < this._patternFps.length; ++i)
-                if (this._patternFps[i].and(queryMolFp).equals(queryMolFp))
-                  // if (this._rdKitMols[i]!.get_substruct_match(queryMol) !== '{}') // Is patternFP iff?
-                  matches.push(i);
+              for (let i = 0; i < this._patternFps.length; ++i) {
+                const crossedFp = BitArray.fromAnd(this._patternFps[i], queryMolFp);
+                if (crossedFp.equals(queryMolFp))
+                  if (this._rdKitMols[i]!.get_substruct_match(queryMol) !== '{}') // Is patternFP iff?
+                    matches.push(i);
+              }
             } else {
               for (let i = 0; i < this._rdKitMols!.length; ++i)
                 if (this._rdKitMols[i]!.get_substruct_match(queryMol) !== '{}')
