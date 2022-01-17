@@ -3,7 +3,7 @@ const path = require('path');
 module.exports = {
   mode: 'development',
   entry: {
-    package: [/*'./src/wasm/kalign.wasm', */'./src/package.ts'],
+    package: ['./src/package.ts'],
   },
   devServer: {
     contentBase: './dist',
@@ -11,15 +11,6 @@ module.exports = {
   target: 'web',
   module: {
     rules: [
-      /*{
-        test: /\.(wasm)$/i,
-        type: 'javascript/auto',
-        loader: 'file-loader',
-        options: {
-          publicPath: 'dist/',
-          name: '[name].[ext]',
-        },
-      },*/
       {
         test: /\.ts?$/,
         use: 'ts-loader',
@@ -32,13 +23,7 @@ module.exports = {
     ],
   },
   resolve: {
-    extensions: [/*'.wasm', */'.mjs', '.js', '.json', '.ts', '.tsx'],
-    /*fallback: {
-      'crypto': require.resolve('crypto-browserify'),
-      'path': require.resolve('path-browserify'),
-      'stream': require.resolve('stream-browserify'),
-      'buffer': require.resolve('buffer/'),
-    },*/
+    extensions: ['.mjs', '.js', '.json', '.ts', '.tsx'],
   },
   devtool: 'inline-source-map',
   externals: {
