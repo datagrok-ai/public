@@ -194,7 +194,7 @@ export function chemGetMorganFingerprint(molString: string): BitArray {
   try {
     mol = getRdKitModule().get_mol(molString);
     const fp = mol.get_morgan_fp(defaultMorganFpRadius, defaultMorganFpLength);
-    return rdKitFingerprintToBitArray(fp, defaultMorganFpLength);
+    return rdKitFingerprintToBitArray(fp);
   } catch {
     throw new Error(`Chem | Possibly a malformed molString: ${molString}`);
   } finally {
