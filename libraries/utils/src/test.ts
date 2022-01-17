@@ -26,7 +26,7 @@ export function test(name: string, test: () => Promise<any>): void {
 /** Tests two objects for equality, throws an exception if they are not equal. */
 export function expect(actual: any, expected: any) {
   if (actual !== expected)
-    throw `Expected "${expected}", got "${"${actual}"}"`;
+    throw `Expected "${expected}", got "${actual}"`;
 }
 
 /** Defines a test suite. */
