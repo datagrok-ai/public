@@ -381,13 +381,13 @@ export class Accordion extends DartWidget {
   }
 
   /** Adds a pane */
-  addPane(name: string, getContent: Function, expanded: boolean = false, before: AccordionPane | null = null): AccordionPane {
+  addPane(name: string, getContent: () => HTMLElement, expanded: boolean = false, before: AccordionPane | null = null): AccordionPane {
     return toJs(api.grok_Accordion_AddPane(this.dart, name, getContent, expanded, before !== null ? before.dart : null, null));
   }
 
   /** Adds a pane with the count indicator next to the title.
    * getCount() is executed immediately. */
-  addCountPane(name: string, getContent: Function, getCount: Function, expanded: boolean = false, before: AccordionPane | null = null): AccordionPane {
+  addCountPane(name: string, getContent: () => HTMLElement, getCount: () => number, expanded: boolean = false, before: AccordionPane | null = null): AccordionPane {
     return toJs(api.grok_Accordion_AddPane(this.dart, name, getContent, expanded, before !== null ? before.dart : null, getCount));
   }
 
@@ -1449,7 +1449,7 @@ export class Legend extends DartWidget {
 
   /** Column for the legend */
   get column(): Column { return toJs(api.grok_Legend_Get_Column(this.dart)); }
-  set column(column: Column) { api.grok_Legend_Set_Column(this.dart, column); }
+  set column(column: Column) { api.grok_Legend_Set_Column(this.dart, column.dart); }
 
   /** Whether or not to show empty categories */
   get showNulls(): Boolean { return api.grok_Legend_Get_ShowNulls(this.dart); }

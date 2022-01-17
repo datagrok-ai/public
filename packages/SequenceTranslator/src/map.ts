@@ -105,7 +105,7 @@ export const map: {[synthesizer: string]: {[technology: string]: {[code: string]
         "name": "ps linkage",
         "weight": 16.07,
         "normalized": "",
-        "SMILES": "OP(=O)(O)S"
+        "SMILES": "OP(=O)(S)O"
       },
       "A": {
         "name": "Adenine",
@@ -185,7 +185,7 @@ export const map: {[synthesizer: string]: {[technology: string]: {[code: string]
         "name": "ps linkage",
         "weight": 16.07,
         "normalized": "",
-        "SMILES": "OP(=O)(O)S"
+        "SMILES": "OP(=O)(S)O"
       }
     }
   },
@@ -243,7 +243,7 @@ export const map: {[synthesizer: string]: {[technology: string]: {[code: string]
         "name": "ps linkage",
         "weight": 16.07,
         "normalized": "",
-        "SMILES": "OP(=O)(O)S"
+        "SMILES": "OP(=O)(S)O"
       }
     }
   },
@@ -295,7 +295,7 @@ export const map: {[synthesizer: string]: {[technology: string]: {[code: string]
         "name": "ps linkage",
         "weight": 16.07,
         "normalized": "",
-        "SMILES": "OP(=O)(O)S"
+        "SMILES": "OP(=O)(S)O"
       },
       "A": {
         "name": "Adenine",
@@ -434,43 +434,43 @@ export const map: {[synthesizer: string]: {[technology: string]: {[code: string]
         "weight": 336.27,
         "normalized": "rU",
         "SMILES": "OC[C@H]1O[C@@H](N2C=CC(=O)NC2(=O))[C@H](OC)[C@@H]1OP(=O)(O)S"
-      }, 
+      },
       "g": {
         "name": "2'OMe-rG-ps",
         "weight": 375.31,
         "normalized": "rG",
         "SMILES": "OC[C@H]1O[C@@H](N2C3N=C(N)NC(=O)C=3N=C2)[C@H](OC)[C@@H]1OP(=O)(O)S"
-      }, 
+      },
       "f": {
         "name": "2'OMe-rC-ps",
         "weight": 335.28,
         "normalized": "rC",
         "SMILES": "OC[C@H]1O[C@@H](N2C=CC(N)=NC2(=O))[C@H](OC)[C@@H]1OP(=O)(O)S"
-      }, 
+      },
       "i": {
         "name": "2'-fluoro-A-ps",
         "weight": 347.27,
         "normalized": "rA",
         "SMILES": "OC[C@H]1O[C@@H](N2C3N=CN=C(N)C=3N=C2)[C@H](F)[C@@H]1OP(=O)(O)S"
-      }, 
+      },
       "l": {
         "name": "2'-fluoro-U-ps",
         "weight": 324.23,
         "normalized": "rU",
         "SMILES": "OC[C@H]1O[C@@H](N2C=CC(=O)NC2(=O))[C@H](F)[C@@H]1OP(=O)(O)S"
-      }, 
+      },
       "k": {
         "name": "2'-fluoro-G-ps",
         "weight": 363.26,
         "normalized": "rG",
         "SMILES": "OC[C@H]1O[C@@H](N2C3N=C(N)NC(=O)C=3N=C2)[C@H](F)[C@@H]1OP(=O)(O)S"
-      }, 
+      },
       "j": {
         "name": "2'-fluoro-C-ps",
         "weight": 323.25,
         "normalized": "rC",
         "SMILES": "OC[C@H]1O[C@@H](N2C=CC(N)=NC2(=O))[C@H](F)[C@@H]1OP(=O)(O)S"
-      }, 
+      },
       "L": {
         "name": "2'-fluoro-U",
         "weight": 308.16,
