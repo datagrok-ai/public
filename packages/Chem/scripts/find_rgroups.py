@@ -1,4 +1,4 @@
-#name: RGroupGetter
+#name: FindRGroups
 #language: python
 #input: string smiles
 #input: dataframe df1
