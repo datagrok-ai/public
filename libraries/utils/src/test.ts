@@ -23,22 +23,26 @@ export function test(name: string, test: () => Promise<any>): void {
   tests[currentCategory].tests!.push(new Test(currentCategory, name , test));
 }
 
-export function expect(a: any, b: any) {
-  if (a != b)
-    throw `Value "${a}" is not equal. Expected "${b}"`;
+/** Tests two objects for equality, throws an exception if they are not equal. */
+export function expect(actual: any, expected: any) {
+  if (actual !== expected)
+    throw `Expected "${expected}", got "${actual}"`;
 }
 
+/** Defines a test suite. */
 export function category(category: string, tests: () => void): void {
   currentCategory = category;
   tests();
 }
 
+/** Defines a function to be executed before the tests in this category are executed. */
 export function before(before: () => Promise<void>): void {
   if (tests[currentCategory] == undefined)
     tests[currentCategory] = {};
   tests[currentCategory].before = before;
 }
 
+/** Defines a function to be executed after the tests in this category are executed. */
 export function after(after: () => Promise<void>): void {
   if (tests[currentCategory] == undefined)
     tests[currentCategory] = {};

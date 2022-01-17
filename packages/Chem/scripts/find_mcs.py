@@ -1,7 +1,7 @@
-#name: MCSGetter
+#name: FindMCS
 #language: python
 #input: string smiles
-#input: dataframe df1
+#input: dataframe df
 #output: string result
 
 from rdkit import Chem
@@ -11,7 +11,7 @@ import numpy as np
 def np_none(shape):
   return np.full(shape, None, dtype=object)
 
-smiles = df1[smiles].tolist()
+smiles = df[smiles].tolist()
 length = len(smiles)
 mols = np_none(length)
 idx_err = []

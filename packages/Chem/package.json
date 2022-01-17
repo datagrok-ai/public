@@ -2,7 +2,7 @@
   "name": "@datagrok/chem",
   "friendlyName": "Chem",
   "fullName": "Chem",
-  "version": "0.46.2",
+  "version": "0.48.2",
   "description": "Cheminformatics support: \n\n* RDKit-based rendering \n* Molecule sketching \n*",
   "properties": [
     {
@@ -29,6 +29,7 @@
     "file-loader": "latest",
     "offscreen-canvas": "latest",
     "openchemlib": "6.0.1",
+    "path": "^0.12.7",
     "rxjs": "latest",
     "style-loader": "latest",
     "ts-loader": "latest",
@@ -36,7 +37,6 @@
     "worker-loader": "latest"
   },
   "devDependencies": {
-    "path": "^0.12.7",
     "@types/jest": "^27.0.2",
     "@types/js-yaml": "^4.0.4",
     "@types/offscreencanvas": "latest",
@@ -45,6 +45,7 @@
     "eslint": "^8.1.0",
     "eslint-config-google": "^0.14.0",
     "jest": "^27.3.1",
+    "path": "^0.12.7",
     "puppeteer": "latest",
     "ts-jest": "^27.0.7",
     "webpack": "latest",
@@ -58,7 +59,7 @@
     "crypto": false
   },
   "scripts": {
-    "publish": "webpack && grok publish localhost --release",
+    "publish": "webpack && grok publish",
     "link-api": "npm link datagrok-api",
     "link-utils": "npm link @datagrok-libraries/utils",
     "link-ml": "npm link @datagrok-libraries/ml",

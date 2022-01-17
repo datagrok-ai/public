@@ -95,7 +95,10 @@ export namespace chem {
     changedSub: Subscription | null = null;
     sketcher: SketcherBase | null = null;
     onChanged: Subject<any> = new Subject<any>();
+
+    /** Whether or not currently drawn molecule becomes the current object as you sketch it */
     syncCurrentObject: boolean = true;
+
     listeners: Function[] = [];
 
     _smiles: string = '';

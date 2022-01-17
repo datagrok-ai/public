@@ -1,7 +1,7 @@
 import * as ui from 'datagrok-api/ui';
 import * as grok from 'datagrok-api/grok';
 import * as DG from 'datagrok-api/dg';
-import {mcsgetter} from '../scripts-api';
+import {findMCS} from '../scripts-api';
 
 /**
  * Finds most common substructure in molecules column and adds to dataframe.
@@ -15,7 +15,7 @@ export async function addMcs(col: DG.Column): Promise<void> {
   }
 
   const pi = DG.TaskBarProgressIndicator.create('Estimating MCS');
-  const mcs: string = await mcsgetter(col.name, DG.DataFrame.fromColumns([col]));
+  const mcs: string = await findMCS(col.name, DG.DataFrame.fromColumns([col]));
   const name = getName('MCS', col.dataFrame.columns.names());
   const mcsCol = DG.Column.fromList('string', name, new Array(col.length).fill(mcs));
   mcsCol.semType = 'Molecule';

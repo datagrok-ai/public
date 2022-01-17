@@ -360,7 +360,9 @@ export class Grid extends Viewer {
   static fromProperties(items: any[], props: Property[]): Grid {
     const t = DataFrame.create(items.length);
     for (let p of props)
-      t.columns.addNewVirtual(p.name, (i: number) => p.get(items[i]), p.propertyType);
+      t.columns.addNewVirtual(p.name,
+        (i: number) => p.get(items[i]), p.propertyType,
+        p.set == null ? null : ((i: number, x: any) => p.set(items[i], x)));
     return Grid.create(t);
   }
 

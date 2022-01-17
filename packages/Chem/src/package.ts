@@ -33,7 +33,6 @@ import '../css/chem.css';
 import {RDMol} from './rdkit-api';
 import {isMolBlock} from './chem-utils';
 
-const getRdKitModuleLocal = chemCommonRdKit.getRdKitModule;
 const drawMoleculeToCanvas = chemCommonRdKit.drawMoleculeToCanvas;
 let initialized: boolean = false;
 
@@ -47,7 +46,7 @@ let initialized: boolean = false;
 //name: getRdKitModule
 //output: object module
 export function getRdKitModule() {
-  return getRdKitModuleLocal();
+  return chemCommonRdKit.getRdKitModule();
 }
 
 export const _package: DG.Package = new DG.Package();
@@ -61,7 +60,7 @@ export async function initChem() {
   chemCommonRdKit.setRdKitWebRoot(_package.webRoot);
   await chemCommonRdKit.initRdKitModuleLocal();
   _properties = await _package.getProperties();
-  _rdRenderer = new RDKitCellRenderer(getRdKitModuleLocal());
+  _rdRenderer = new RDKitCellRenderer(getRdKitModule());
   _renderer = new GridCellRendererProxy(_rdRenderer, 'Molecule');
   _renderers = new Map();
   _properties = {};
@@ -107,7 +106,7 @@ export function renderMolecule(
   options.width ??= 200;
   options.height ??= 150;
 
-  let mol: OCL.Molecule | RDMol;
+  let mol: OCL.Molecule | RDMol | null = null;
   let molFile: string;
   let smiles: string;
   isMolBlock(molStr) ? molFile = molStr : smiles = molStr;
@@ -117,10 +116,14 @@ export function renderMolecule(
 
   switch (options.renderer) {
   case 'RDKit':
-    mol = getRdKitModuleLocal().get_mol(convertToRDKit(molStr));
-    (mol as RDMol).draw_to_canvas(moleculeHost, options.width, options.height);
-    molFile ??= (mol as RDMol).get_molblock();
-    smiles ??= (mol as RDMol).get_smiles();
+    try {
+      mol = getRdKitModule().get_mol(convertToRDKit(molStr));
+      (mol as RDMol).draw_to_canvas(moleculeHost, options.width, options.height);
+      molFile ??= (mol as RDMol).get_molblock();
+      smiles ??= (mol as RDMol).get_smiles();
+    } finally {
+      (mol as RDMol)?.delete();
+    }
     break;
   case 'OpenChemLib':
     mol = oclMol(molStr);
@@ -164,7 +167,7 @@ export function renderMolecule(
 //input: string smiles {semType: Molecule}
 //output: double cLogP
 export function getCLogP(smiles: string) {
-  const mol = getRdKitModuleLocal().get_mol(smiles);
+  const mol = getRdKitModule().get_mol(smiles);
   return JSON.parse(mol.get_descriptors()).CrippenClogP;
 }
 
@@ -195,7 +198,7 @@ export class GridCellRendererProxy extends DG.GridCellRenderer {
 //output: grid_cell_renderer result
 //meta.chemRendererName: RDKit
 export async function rdkitCellRenderer() {
-  return new RDKitCellRenderer(getRdKitModuleLocal());
+  return new RDKitCellRenderer(getRdKitModule());
 }
 
 //name: chemCellRenderer
@@ -215,8 +218,6 @@ export async function chemCellRenderer() {
 
   _renderer.renderer = renderer ?? _renderer.renderer;
   return _renderer;
-
-  //return _renderers.get(renderer) ?? new RDKitCellRenderer(getRdKitModuleLocal());
 }
 
 //name: getMorganFingerprints
@@ -442,7 +443,7 @@ export function addInchisKeysPanel(col: DG.Column) {
   addInchiKeys(col);
 }
 
-//name: RDKit Settings
+//name: Chem
 //input: column molColumn {semType: Molecule}
 //tags: panel
 //output: widget result
@@ -559,6 +560,7 @@ export function convertMolecule(molecule: string, from: string, to: string): str
     mol?.delete();
   }
 }
+
 
 /*//tags: cellEditor
 //description: Molecule

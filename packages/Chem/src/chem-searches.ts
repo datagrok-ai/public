@@ -71,9 +71,8 @@ const cacheParamsDefaults: CacheParams = {
 
 const _chemCache = {...cacheParamsDefaults};
 
-async function _invalidate(
-  molStringsColumn: DG.Column, queryMolString: string | null,
-  includeFingerprints: boolean, endCriticalSection = true) {
+async function _invalidate(molStringsColumn: DG.Column, queryMolString: string | null, includeFingerprints: boolean, endSection = true) {
+  // TODO: implement a proper stopping mechanism instead
   await chemBeginCriticalSection();
   try {
     const sameColumnAndVersion = () =>
@@ -120,7 +119,7 @@ async function _invalidate(
       }
     }
   } finally {
-    if (endCriticalSection)
+    if (endSection)
       chemEndCriticalSection();
   }
 }
@@ -176,7 +175,7 @@ export function chemSubstructureSearchGraph(molStringsColumn: DG.Column, molStri
 
 export async function chemSubstructureSearchLibrary(
   molStringsColumn: DG.Column, molString: string, molStringSmarts: string) {
-  await _invalidate(molStringsColumn, molString, false, /* endCriticalSection = */ false);
+  await _invalidate(molStringsColumn, molString, false, false);
   try {
     const result = DG.BitSet.create(molStringsColumn.length);
     if (molString.length != 0) {
@@ -186,7 +185,6 @@ export async function chemSubstructureSearchLibrary(
     }
     return result;
   } finally {
-    // we do this intentionally, as we are still searching inside workers
     chemEndCriticalSection();
   }
 }
@@ -196,7 +194,7 @@ export function chemGetMorganFingerprint(molString: string): BitArray {
   try {
     mol = getRdKitModule().get_mol(molString);
     const fp = mol.get_morgan_fp(defaultMorganFpRadius, defaultMorganFpLength);
-    return rdKitFingerprintToBitArray(fp, defaultMorganFpLength);
+    return rdKitFingerprintToBitArray(fp);
   } catch {
     throw new Error(`Chem | Possibly a malformed molString: ${molString}`);
   } finally {

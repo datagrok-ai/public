@@ -59,11 +59,13 @@ export class SubstructureFilter extends DG.Filter {
       return;
     }
 
+    console.log('Substructure filtering is to be performed');
     searchSubstructure(this.column!, this.sketcher.getMolFile(), true, '')
       .then((bitsetCol) => {
+        console.log('Substructure filtering produced results');
         this.dataFrame?.filter.and(bitsetCol.get(0));
-      this.column!.temp['chem-scaffold-filter'] = this.sketcher.getMolFile();
-      this.dataFrame?.filter.fireChanged();
+        this.column!.temp['chem-scaffold-filter'] = this.sketcher.getMolFile();
+        this.dataFrame?.filter.fireChanged();
       }).catch((e) => {
         console.warn(e);
         this.reset();
