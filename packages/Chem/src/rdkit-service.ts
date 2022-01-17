@@ -54,7 +54,7 @@ export class RdKitService {
     );
   }
 
-  async initMoleculesStructures(dict: string[], usePatternFingerprints: boolean = true): Promise<any> {
+  async initMoleculesStructures(dict: string[], usePatternFingerprints: boolean = false): Promise<any> {
     return this._initParallelWorkers(dict, (i: number, segment: any) =>
       this._parallelWorkers[i].initMoleculesStructures(segment, usePatternFingerprints),
     (resultArray: any[]) => resultArray.reduce((acc: any, item: any) => {
