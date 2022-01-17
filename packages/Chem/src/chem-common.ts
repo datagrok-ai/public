@@ -51,6 +51,79 @@ export function tanimoto(x: BitArray, y: BitArray) {
   return common / (total - common);
 }
 
+export function dice(x: BitArray, y: BitArray) {
+  const total = x.trueCount() + y.trueCount();
+  if (total == 0)
+    return 1.0;
+
+  const common = x.andWithCountBits(y, true);
+  return 2 * common / total;
+}
+
+export function cosine(x: BitArray, y: BitArray) {
+  const total = x.trueCount() * y.trueCount();
+  if (total == 0)
+    return 1.0;
+
+  const common = x.andWithCountBits(y, true);
+  return common / Math.sqrt(total);
+}
+
+export function sokal(x: BitArray, y: BitArray) {
+  const total = x.trueCount() + y.trueCount();
+  if (total == 0)
+    return 1.0;
+
+  const common = x.andWithCountBits(y, true);
+  return common / (2 * total - 3 * common);
+}
+
+export function kulczynski(x: BitArray, y: BitArray) {
+  const totalProd = x.trueCount() * y.trueCount();
+  if (totalProd == 0)
+    return 1.0;
+
+  const common = x.andWithCountBits(y, true);
+  return (common * totalProd) / (2 * totalProd);
+}
+
+export function mcConnaughey(x: BitArray, y: BitArray) {
+  const total = x.trueCount() + y.trueCount();
+  const totalProd = x.trueCount() * y.trueCount();
+  if (totalProd == 0)
+    return 1.0;
+
+  const common = x.andWithCountBits(y, true);
+  return (common * total - totalProd) / totalProd;
+}
+
+export function asymmetric(x: BitArray, y: BitArray) {
+  const min = Math.min(x.trueCount(), y.trueCount());
+  if (min == 0)
+    return 1.0;
+
+  const common = x.andWithCountBits(y, true);
+  return common / min;
+}
+
+export function braunBlanquet(x: BitArray, y: BitArray) {
+  const max = Math.max(x.trueCount(), y.trueCount());
+  if (max == 0)
+    return 1.0;
+
+  const common = x.andWithCountBits(y, true);
+  return common / max;
+}
+
+export function russel(x: BitArray, y: BitArray) {
+  if (x.trueCount() == 0)
+    return 1.0;
+
+  const common = x.andWithCountBits(y, true);
+  return common / x.trueCount();
+}
+
+
 export function rdKitFingerprintToBitArray(fp: string, fpLength: number) {
   const arr = new BitArray(fpLength);
   for (let j = 0; j < fpLength; ++j) {
