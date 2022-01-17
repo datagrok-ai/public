@@ -1,4 +1,4 @@
-#name: smilesTo3DCoordinates
+#name: SmilesTo3DCoordinates
 #language: python
 #input: string smiles
 #output: string sdf

@@ -1,4 +1,4 @@
-#name: MCSGetter
+#name: FindMCS
 #language: python
 #input: string smiles
 #input: dataframe df1
