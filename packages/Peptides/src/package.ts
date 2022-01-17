@@ -16,6 +16,7 @@ import {manualAlignmentWidget} from './widgets/manual-alignment';
 import {SARViewer, SARViewerVertical} from './viewers/sar-viewer';
 import {peptideMoleculeWidget} from './widgets/peptide-molecule';
 import {SubstViewer} from './viewers/subst-viewer';
+import {runKalign} from './utils/multiple-sequence-alignment';
 
 export const _package = new DG.Package();
 let tableGrid: DG.Grid;
@@ -180,4 +181,15 @@ export function manualAlignment(monomer: string) {
 export async function peptideSpacePanel(col: DG.Column): Promise<DG.Widget> {
   const widget = new PeptideSimilaritySpaceWidget(col, view ?? grok.shell.v);
   return await widget.draw();
+}
+
+//name: Multiple sequence alignment
+//tags: viewer
+//input: dataframe table
+//input: column col
+//output: dataframe result
+export async function doMSA(table: DG.DataFrame, col: DG.Column): Promise<DG.DataFrame> {
+  const msaCol = await runKalign(col);
+  table.columns.add(msaCol);
+  return table;
 }
