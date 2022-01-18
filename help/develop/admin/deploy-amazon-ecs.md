@@ -12,9 +12,11 @@ This document contains instructions to deploy Datagrok on [AWS ECS cluster](http
 2. To perform AWS CLI commands provided in the document
     1. [Install AWS CLI](https://docs.aws.amazon.com/cli/latest/userguide/getting-started-install.html)
     2. [Configure authorization for AWS CLI](https://docs.aws.amazon.com/cli/latest/userguide/getting-started-quickstart.html)
-3. Check that your default VPC has three subnets with internet gateway routing for internet facing Application Load
-   Balancer
-4. Create S3 bucket. For security reasons, we recommend to:
+3. Check that your default [VPC](https://docs.aws.amazon.com/vpc/latest/userguide/VPC_Subnets.html) has three subnets
+   with [internet gateway routing](https://docs.aws.amazon.com/vpc/latest/userguide/VPC_Internet_Gateway.html) for
+   internet facing Application Load Balancer. By default, default VPC already has all the required settings.
+4. [Create S3 bucket](https://docs.aws.amazon.com/AmazonS3/latest/userguide/create-bucket-overview.html). For security
+   reasons, we recommend to:
     * Disable public access to bucket and objects
     * Enable encryption
     ```shell
@@ -32,8 +34,10 @@ This document contains instructions to deploy Datagrok on [AWS ECS cluster](http
        --bucket "$DATAGROK_S3_BUCKET_NAME" \
        --public-access-block-configuration "BlockPublicAcls=true,IgnorePublicAcls=true,BlockPublicPolicy=true,RestrictPublicBuckets=true"
     ```
-5. Create RDS database for Datagrok
-    * PostgreSQL 12
+5. [Create RDS database](https://docs.aws.amazon.com/AmazonRDS/latest/UserGuide/USER_CreateDBInstance.html) for Datagrok
+   with following parameters:
+    * Required engine: PostgreSQL 12
+    * Recommended DB instance class: db.t3.large
     * No publicly accessible
     ```shell
     #!/bin/sh
