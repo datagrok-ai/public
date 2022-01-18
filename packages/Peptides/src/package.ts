@@ -14,7 +14,7 @@ import {analyzePeptidesWidget} from './widgets/analyze-peptides';
 import {PeptideSimilaritySpaceWidget} from './utils/peptide-similarity-space';
 import {manualAlignmentWidget} from './widgets/manual-alignment';
 import {SARViewer, SARViewerVertical} from './viewers/sar-viewer';
-import {peptideMoleculeWidget} from './widgets/peptide-molecule';
+import {peptideMoleculeWidget, getMolecule} from './widgets/peptide-molecule';
 import {SubstViewer} from './viewers/subst-viewer';
 import {runKalign} from './utils/multiple-sequence-alignment';
 
@@ -183,13 +183,22 @@ export async function peptideSpacePanel(col: DG.Column): Promise<DG.Widget> {
   return await widget.draw();
 }
 
+//name: Molfile
+//tags: panel, widgets
+//input: string peptide { semType: alignedSequence }
+//output: widget result
+export async function peptideMolfile(peptide: string): Promise<DG.Widget> {
+  const smiles = getMolecule(peptide);
+  return await grok.functions.call('Chem:molfile', {'smiles': smiles});
+}
+
 //name: Multiple sequence alignment
-//tags: viewer
-//input: dataframe table
-//input: column col
+//tags: panel
+//input: column col {semType: alignedSequence}
 //output: dataframe result
-export async function doMSA(table: DG.DataFrame, col: DG.Column): Promise<DG.DataFrame> {
-  const msaCol = await runKalign(col);
+export async function multipleSequenceAlignment(col: DG.Column): Promise<DG.DataFrame> {
+  const msaCol = await runKalign(col, true);
+  const table = col.dataFrame;
   table.columns.add(msaCol);
   return table;
 }

@@ -31,7 +31,7 @@ export class MatrixesView extends DG.ViewBase implements ILazyLoading {
     this.helpUrl = `${_package.webRoot}/views_help/correlation_matrix.md`;
   }
 
-  loaded: boolean;
+  loaded = false;
 
   load(): void {
     checkMissingDomains(requiredColumnsByView[this.name], this);

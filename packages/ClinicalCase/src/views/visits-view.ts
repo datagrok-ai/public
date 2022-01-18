@@ -19,8 +19,8 @@ export class VisitsView extends DG.ViewBase implements ILazyLoading {
     pivotedSv: DG.DataFrame;
     sortedVisitNamesAndDays: any;
     sortedVisitNames: any;
-    patientVisit = new PatientVisit();
-    studyVisit = new StudyVisit();
+    patientVisit = new PatientVisit(study.domains);
+    studyVisit = new StudyVisit(study.domains);
     totalVisits = {};
     proceduresAtVisit = { 'lb': {column: LAB_RES_N}, 'ex': {column: INV_DRUG_NAME}, 'vs': {column: VS_RES_N} };
     eventsSinceLastVisit = { 'ae': {column: AE_START_DAY}, 'cm': {column: CON_MED_START_DAY} };
@@ -42,7 +42,7 @@ export class VisitsView extends DG.ViewBase implements ILazyLoading {
         this.helpUrl = `${_package.webRoot}/views_help/visits.md`;
     }
 
-    loaded: boolean;
+    loaded = false;
 
     load(): void {
         checkMissingDomains(requiredColumnsByView[this.name], this);
@@ -215,7 +215,7 @@ export class VisitsView extends DG.ViewBase implements ILazyLoading {
             } else {
                 let subjId = df.get(SUBJECT_ID, df.currentRowIdx);
                 let currentPatientVisit = this.totalVisits[df.currentCol.name][subjId]
-                currentPatientVisit.updateSubjectVisit();
+                currentPatientVisit.updateSubjectVisitDomains();
                 createPropertyPanel(currentPatientVisit);
             }
         }
@@ -256,11 +256,8 @@ export class VisitsView extends DG.ViewBase implements ILazyLoading {
                 this.totalVisits[colName] = {};
 
                 this.pivotedSv.getCol(SUBJECT_ID).categories.forEach(subjId => {
-                    this.totalVisits[colName][subjId] = new PatientVisit();
-                    this.totalVisits[colName][subjId].currentSubjId = subjId;
-                    this.totalVisits[colName][subjId].currentVisitDay = currentVisit.day;
-                    this.totalVisits[colName][subjId].currentVisitName = currentVisit.name;
-                    this.totalVisits[colName][subjId].previsousVisitDay = previousVisit ? previousVisit.day : null;
+                    this.totalVisits[colName][subjId] = new PatientVisit(study.domains);
+                    this.totalVisits[colName][subjId].updateSubjectVisit(subjId, currentVisit.day, currentVisit.name, previousVisit ? previousVisit.day : null);
                 });
             }
 

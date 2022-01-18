@@ -31,7 +31,7 @@ export class ValidationView extends DG.ViewBase implements ILazyLoading {
     this.helpUrl = `${_package.webRoot}/views_help/validation.md`;
   }
 
-  loaded: boolean;
+  loaded = false;
 
   load(): void {
     this.createView();
@@ -108,7 +108,6 @@ export class ValidationView extends DG.ViewBase implements ILazyLoading {
   
   private getViolatedRulesDataframe(rules: DG.DataFrame, uniqueViolatedRuleIds: any) {
     const res = createRulesDataFrame();
-    console.log(rules.columns.names());
     let column = rules.getCol(pinnacleRuleIdColumnName);
     let rowCount = rules.rowCount;
     for (let i = 0; i < rowCount; i++) {

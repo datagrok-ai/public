@@ -1,7 +1,7 @@
 import * as grok from 'datagrok-api/grok';
 import * as DG from 'datagrok-api/dg';
 import { ALT, AP, AST, BILIRUBIN } from '../constants';
-import { addDataFromDmDomain, dateDifferenceInDays, filterBooleanColumn, filterNulls, getUniqueValues } from './utils';
+import { addDataFromDmDomain, dataframeContentToRow, dateDifferenceInDays, filterBooleanColumn, filterNulls, getUniqueValues } from './utils';
 import { study } from '../clinical-study';
 import { AE_CAUSALITY, AE_REQ_HOSP, AE_SEQ, AE_SEVERITY, AE_START_DATE, AE_TERM, INV_DRUG_NAME, LAB_HI_LIM_N, LAB_LO_LIM_N, LAB_RES_N, LAB_TEST, SUBJECT_ID, SUBJ_REF_ENDT, SUBJ_REF_STDT, TREATMENT_ARM } from '../columns-constants';
 
@@ -91,13 +91,8 @@ export function createLabValuesByVisitDataframe(lb: DG.DataFrame, dm: DG.DataFra
   let joined =  grok.data.joinTables(lb, dm, [ SUBJECT_ID ], [ SUBJECT_ID ], [ SUBJECT_ID, LAB_RES_N, LAB_TEST, visitCol ],
   [ TREATMENT_ARM ], DG.JOIN_TYPE.LEFT, false);
   let filtered =  createFilteredDataframe(joined, condition, [ SUBJECT_ID, LAB_RES_N, TREATMENT_ARM, visitCol ], labValueNumCol, LAB_RES_N);
-  filtered.rows.filter((row) => row.visitdy != DG.INT_NULL && row.actarm == treatmentArm);
+  filtered.rows.filter((row) => row.visitdy !== DG.INT_NULL && row.actarm === treatmentArm);
   return filtered;
-}
-
-
-export function createKaplanMeierDataframe(){
-  return grok.shell.table('kaplan_meier_data');
 }
 
 
@@ -116,15 +111,15 @@ export function addColumnWithDrugPlusDosage(df: DG.DataFrame, drugCol: string, d
   return df;
 }
 
-export function createSurvivalData(endpoint: string, SDTMendpoint: string, covariates: string[]) {
-  let dm = study.domains.dm.clone();
+export function createSurvivalData(dmDf: DG.DataFrame, aeDF: DG.DataFrame, endpoint: string, SDTMendpoint: string, covariates: string[]) {
+  let dm = dmDf.clone();
   filterNulls(dm, SUBJ_REF_ENDT); // according to SDTMIG v3.3 RFENDTC is null for screen failures or unassigned subjects
   if (SDTMendpoint === AE_START_DATE) {
-    const ae = study.domains.ae.clone();
+    const ae = aeDF.clone();
     if(endpoint == 'HOSPITALIZATION'){
       filterBooleanColumn(ae, AE_REQ_HOSP, false);
     }
-    const condition = endpoint == 'DRUG RELATED AE' ? `${AE_CAUSALITY} not in (NONE, NOT RELATED)` : `${AE_SEVERITY} = SEVERE`;
+    const condition = endpoint == 'DRUG RELATED AE' ? `${AE_CAUSALITY} in (PROBABLE, POSSIBLE, RELATED, UNLIKELY RELATED, POSSIBLY RELATED, RELATED)` : `${AE_SEVERITY} = SEVERE`;
     const aeGrouped = ae.groupBy([ SUBJECT_ID ]).
       min(AE_SEQ).
       where(condition).
@@ -281,13 +276,17 @@ export function labDynamicComparedToMinMax(dataframe, newColName: string) {
 }
 
 
-export function labDynamicRelatedToRef(df: DG.DataFrame, newColName: string){
+export function labDynamicRelatedToRef(df: DG.DataFrame, newColName: string) {
   df.columns.addNewFloat(newColName)
     .init((i) => {
       const val = df.get(LAB_RES_N, i);
       const min = df.get(LAB_LO_LIM_N, i);
       const max = df.get(LAB_HI_LIM_N, i);
-      return val >= max ? val/max : val <= min ? 0 - min/val : ((val-min)/(max-min) - 0.5 )*2;
+      if (!val || !min || !max) {
+        return null;
+      } else {
+        return val >= max ? val / max : val <= min ? 0 - min / val : ((val - min) / (max - min) - 0.5) * 2;
+      }
     });
 }
 

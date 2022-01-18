@@ -20,7 +20,7 @@ category('Dapi: files', () => {
   });
 
   test('Dapi: files - write/read text', async () => {
-    let filePath = filePrefix + 'Dapi: files - write, read text.txt';
+    let filePath = filePrefix + 'Dapi. files - write, read text.txt';
     let fileText = 'testString';
 
     try {
@@ -34,7 +34,7 @@ category('Dapi: files', () => {
   });
 
   test('Dapi: files - write/read blob', async () => {
-    let filePath = filePrefix + 'Dapi: files - write, read blob.txt';
+    let filePath = filePrefix + 'Dapi. files - write, read blob.txt';
     let content = [0, 1, 2, 3];
 
     try {
@@ -76,7 +76,7 @@ category('Dapi: files', () => {
   // });
 
   test('Dapi: files - delete', async () => {
-    let filePath = filePrefix + 'Dapi: files - delete.txt';
+    let filePath = filePrefix + 'Dapi. files - delete.txt';
 
     try {
       await grok.dapi.files.writeAsText(filePath, 'testString');
