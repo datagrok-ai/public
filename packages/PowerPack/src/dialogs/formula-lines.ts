@@ -66,7 +66,7 @@ const ITEM_OPTIONS = {
     { name: 'title', type: 'string', caption: 'Title' },
     { name: 'formula', type: 'string', editor: 'textarea', caption: 'Formula' },
     { name: 'visible', type: 'bool', caption: 'Show' },
-    { name: 'new', type: 'string', caption: '+' }
+    { name: 'new', type: 'string', caption: 'new' }
   ]
 };
 
@@ -80,10 +80,10 @@ function propsFromOptions(options: any[]): DG.Property[] {
  * Reads, storages and saves Formula Lines to the host (DataFrame or Viewer).
  */
 class Host {
-  _src?: DG.DataFrame | DG.Viewer;
-  items?: DG.FormulaLine[];
+  _src: DG.DataFrame | DG.Viewer;
+  items: DG.FormulaLine[];
 
-  init(src: DG.DataFrame | DG.Viewer): void {
+  constructor(src: DG.DataFrame | DG.Viewer) {
     if (!src)
       throw 'Host table/viewer not found.';
 
@@ -92,8 +92,8 @@ class Host {
   }
 
   save(): void {
-    this._src!.meta.removeFormulaLines();
-    this._src!.meta.addFormulaLines(this.items);
+    this._src.meta.removeFormulaLines();
+    this._src.meta.addFormulaLines(this.items);
   }
 }
 
@@ -101,19 +101,20 @@ class Host {
  * Grid Helper for displaying and navigating Formula Lines list.
  */
 class Grid {
-  _grid?: DG.Grid;
+  _grid: DG.Grid;
   _props: DG.Property[] = propsFromOptions(ITEM_OPTIONS[FOR_GRID]);
 
-  get _onCurrentItemChanged(): Observable<any> { return this._grid!.dataFrame!.onCurrentRowChanged; }
+  get _onCurrentItemChanged(): Observable<any> { return this._grid.dataFrame!.onCurrentRowChanged; }
 
-  get _currentItemIdx(): number { return this._grid!.dataFrame!.currentRowIdx;}
-  set _currentItemIdx(rowIdx: number) { this._grid!.dataFrame!.currentRowIdx = rowIdx; }
+  get _currentItemIdx(): number { return this._grid.dataFrame!.currentRowIdx;}
+  set _currentItemIdx(rowIdx: number) { this._grid.dataFrame!.currentRowIdx = rowIdx; }
+
 
   currentItem?: DG.FormulaLine;
+  set height(x: number) { this._grid.root.style.height = `${x}px`; }
+  get root(): HTMLElement { return this._grid.root; }
 
-  get root(): HTMLElement { return this._grid!.root; }
-
-  init(items: DG.FormulaLine[], onCurrentItemChangedAction: Function): void {
+  constructor(items: DG.FormulaLine[], onCurrentItemChangedAction: Function) {
     this._grid = DG.Grid.fromProperties(items, this._props);
 
     this._grid.setOptions({
@@ -125,11 +126,12 @@ class Grid {
     });
 
     this._grid.columns.byName('title')!.width = 100;
-    this._grid.columns.byName('formula')!.width = 137;
+    this._grid.columns.byName('formula')!.width = 217;
     this._grid.columns.byName('visible')!.width = 50;
-    this._grid.columns.byName('new')!.width = 35;
 
-    this._grid.root.style.height = '210px';
+    let ctrlCol = this._grid.columns.byName('new')!;
+    ctrlCol.width = 35;
+    ctrlCol.cellType = 'html';
 
     // Shows "Delete" and "Add new" buttons:
     this._grid.onCellPrepare((cell) => {
@@ -170,7 +172,7 @@ class Grid {
   }
 
   refresh(): void {
-    this._grid?.invalidate();
+    this._grid.invalidate();
   }
 }
 
@@ -179,12 +181,13 @@ class Grid {
  * Scatter Plot viewer by default.
  */
 class Preview {
-  _scatterPlot?: DG.ScatterPlotViewer;
+  _scatterPlot: DG.ScatterPlotViewer;
   _table?: DG.DataFrame;
 
-  get root(): HTMLElement { return this._scatterPlot!.root; }
+  set height(x: number) { this._scatterPlot.root.style.height = `${x}px`; }
+  get root(): HTMLElement { return this._scatterPlot.root; }
 
-  init(src: DG.DataFrame | DG.Viewer): void {
+  constructor(src: DG.DataFrame | DG.Viewer) {
     // Extract data for Formula Lines:
     this._table =
           src instanceof DG.DataFrame ? src
@@ -209,7 +212,6 @@ class Preview {
       legendVisibility: 'Never',
       xAxisHeight: 25
     });
-    this._scatterPlot.root.style.height = '230px';
   }
 
   show(item: DG.FormulaLine): void {
@@ -237,7 +239,7 @@ class Preview {
  * Editor Helper for Formula Lines (form with corresponding inputs).
  */
 class Editor {
-  _form?: HTMLElement;
+  _form: HTMLElement;
 
   // Set of properties for different Formula Line types:
   _props = {
@@ -253,11 +255,10 @@ class Editor {
     return this._props[ITEM_TYPE.UNIVERSAL_LINE];
   }
 
-  get root(): HTMLElement { return this._form!; }
+  get root(): HTMLElement { return this._form; }
 
-  init(item?: DG.FormulaLine): void {
+  constructor() {
     this._form = ui.form();
-    this.show(item);
   }
 
   // Creates and fills editor for given Formula Line:
@@ -279,39 +280,43 @@ export class FormulaLinesDialog {
   title: string = 'Formula Lines';
   helpUrl: string = '/help/develop/how-to/show-formula-lines.md';
 
-  host: Host = new Host();
-  grid: Grid = new Grid();
-  preview: Preview = new Preview();
-  editor: Editor = new Editor();
-  dialog: DG.Dialog = ui.dialog({ title: this.title, helpUrl: this.helpUrl });
+  // Helpers:
+  host: Host;
+  preview: Preview;
+  editor: Editor;
+  grid: Grid;
+  dialog: DG.Dialog;
 
   /**
    * Initializes all parameters and opens the Dialog window.
    * @param {DG.DataFrame | DG.Viewer} src - the source where the Formula Lines will be read from.
    */
   constructor(src: DG.DataFrame | DG.Viewer) {
-    // Init helpers:
-    this.host.init(src);
-    this.preview.init(src);
-    this.editor.init(this.grid.currentItem);
-    this.grid.init(this.host.items!, this.onCurrentItemChangedAction.bind(this));
+    this.host = new Host(src);
+    this.preview = new Preview(src);
+    this.editor = new Editor();
+    this.grid = new Grid(this.host.items, this.onCurrentItemChangedAction.bind(this));
+    this.dialog = ui.dialog({ title: this.title, helpUrl: this.helpUrl });
 
     // Create Dialog window layout:
     let layout = ui.div([
       ui.block50([
-        ui.block([this.grid.root]),
-        ui.block([this.preview.root])
-      ], { style: { paddingRight: '20px' } }),
+        this.grid.root,
+        this.preview.root
+      ]),
       ui.block50([
-        ui.block([this.editor.root])
+        this.editor.root
       ])
     ]);
+
+    this.grid.height = 230;
+    this.preview.height = 300;
 
     // Setup and open the Dialog window:
     this.dialog
       .add(layout)
       .onOK(this.onOKAction.bind(this))
-      .show({width: 760, height: 560});
+      .show({width: 850, height: 650});
   }
 
   // The action will be executed when the current Formula Line of the Grid changes:
