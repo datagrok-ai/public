@@ -3,19 +3,43 @@
 
 # Deployment on AWS ECS Cluster
 
+Datagrok consist of Docker containers which can be installed on any platform including container services in cloud
+provides, for example [AWS ECS](https://aws.amazon.com/ecs/).
+
+As [database](infrastructure.md#database) Datagrok supports any PostgreSQL cluster out-of-the-box, including cloud
+solutions for PostgreSQL database, for example [AWS RDS](https://aws.amazon.com/rds/).
+
+For [persistent file storage](infrastructure.md#storage) Datagrok supports also cloud solutions, for
+example [AWS S3](https://aws.amazon.com/s3/).
+
 This document contains instructions to deploy Datagrok on [AWS ECS cluster](https://aws.amazon.com/ecs/).
+
+More information about Datagrok design and components:
+
+* [Architecture](architecture.md)
+* [Infrastructure](infrastructure.md)
 
 ## Prerequisites
 
-1. Install [Docker Compose](https://docs.docker.com/compose/). If you do not have it, follow
-   these [installation instructions](https://docs.docker.com/compose/install/) for your operating system.
-2. To perform AWS CLI commands provided in the document
-    1. [Install AWS CLI](https://docs.aws.amazon.com/cli/latest/userguide/getting-started-install.html)
-    2. [Configure authorization for AWS CLI](https://docs.aws.amazon.com/cli/latest/userguide/getting-started-quickstart.html)
-3. Check that your default [VPC](https://docs.aws.amazon.com/vpc/latest/userguide/VPC_Subnets.html) has three subnets
+1. We use native Docker compose commands to run applications in Amazon ECS. It simplifies multi-container application
+   development on Amazon ECS using familiar Compose files.
+    1. Download and install the latest version of [Docker Desktop](https://docs.docker.com/desktop/), with docker
+       compose included, following installation instructions
+       for [Windows](https://docs.docker.com/desktop/windows/install/)
+       or [Mac](https://docs.docker.com/desktop/mac/install/). Or install
+       the [Docker Compose CLI for Linux](https://docs.docker.com/cloud/ecs-integration/#install-the-docker-compose-cli-on-linux)
+       which also enables docker compose features
+    2. Check that you have [required permissions](https://docs.docker.com/cloud/ecs-integration/#requirements) on AWS
+       account to perform Docker containers deployment to ECS
+2. Additional components, such as database and storage, can be created using AWS CLI To perform AWS CLI commands
+   provided in the document
+    3. [Install AWS CLI](https://docs.aws.amazon.com/cli/latest/userguide/getting-started-install.html)
+    4. [Configure authorization for AWS CLI](https://docs.aws.amazon.com/cli/latest/userguide/getting-started-quickstart.html)
+3. To deploy Docker containers on ECS it is required to
+4. Check that your default [VPC](https://docs.aws.amazon.com/vpc/latest/userguide/VPC_Subnets.html) has three subnets
    with [internet gateway routing](https://docs.aws.amazon.com/vpc/latest/userguide/VPC_Internet_Gateway.html) for
    internet facing Application Load Balancer. By default, default VPC already has all the required settings.
-4. [Create S3 bucket](https://docs.aws.amazon.com/AmazonS3/latest/userguide/create-bucket-overview.html). For security
+5. [Create S3 bucket](https://docs.aws.amazon.com/AmazonS3/latest/userguide/create-bucket-overview.html). For security
    reasons, we recommend to:
     * Disable public access to bucket and objects
     * Enable encryption
@@ -34,7 +58,7 @@ This document contains instructions to deploy Datagrok on [AWS ECS cluster](http
        --bucket "$DATAGROK_S3_BUCKET_NAME" \
        --public-access-block-configuration "BlockPublicAcls=true,IgnorePublicAcls=true,BlockPublicPolicy=true,RestrictPublicBuckets=true"
     ```
-5. [Create RDS database](https://docs.aws.amazon.com/AmazonRDS/latest/UserGuide/USER_CreateDBInstance.html) for Datagrok
+6. [Create RDS database](https://docs.aws.amazon.com/AmazonRDS/latest/UserGuide/USER_CreateDBInstance.html) for Datagrok
    with following parameters:
     * Required engine: PostgreSQL 12
     * Recommended DB instance class: db.t3.large
@@ -62,7 +86,7 @@ This document contains instructions to deploy Datagrok on [AWS ECS cluster](http
       --tags Key=project,Value=datagrok \
       --region "$AWS_REGION"
     ```
-6. Create Docker ECS context: `docker context ecs create --from-env ECS`
+7. Create Docker ECS context: `docker context ecs create --from-env ECS`
 
 ## Setup Datagrok components
 
@@ -79,6 +103,14 @@ This document contains instructions to deploy Datagrok on [AWS ECS cluster](http
     ```
 3. Use docker context for ECS: `docker context use ECS`
 4. [Configure authorization for docker ECS context as for AWS CLI](https://docs.aws.amazon.com/cli/latest/userguide/getting-started-quickstart.html)
+   and export required credentials as environment variables.
+    ```shell
+    #!/bin/sh
+    export AWS_ACCESS_KEY_ID=<AWS_ACCESS_KEY_ID>
+    export AWS_SECRET_ACCESS_KEY=<AWS_SECRET_ACCESS_KEY>
+    export AWS_REGION=<AWS_REGION>
+    ```
+
 5. Run docker compose deploy to ECS: `docker compose -p datagrok -f ecs.datagrok.docker-compose.yaml up -d`. It will
    create ECS cluster with tasks in [Fargate](https://aws.amazon.com/fargate/).
 
@@ -101,15 +133,13 @@ This document contains instructions to deploy Datagrok on [AWS ECS cluster](http
 8. Datagrok starts to deploy the database immediately after startup, you can check the status by checking running task
    log in [CloudWatch](https://aws.amazon.com/cloudwatch/)
 
-8. Switch back to default docker context: `docker context use default`
+9. Switch back to default docker context: `docker context use default`
 
-9. Create CNAME DNS record <DATAGROK_DNS> to the newly created Application Load Balancer
+10. Create CNAME DNS record <DATAGROK_DNS> to the newly created Application Load Balancer
 
-10. Go in the web browser to <DATAGROK_DNS>, login to Datagrok using username "admin" and password "admin"
+11. Go in the web browser to <DATAGROK_DNS>, login to Datagrok using username "admin" and password "admin"
 
 [//]: # (11. Edit settings in the Datagrok &#40;Tools | Settings...&#41;. Do not forget to click Apply to save new settings.)
-
-[//]: # ()
 
 [//]: # (* Connectors)
 
@@ -147,7 +177,11 @@ This document contains instructions to deploy Datagrok on [AWS ECS cluster](http
     * Cvm Split: `true`
     * Api Url: `http://<DATAGROK_DNS>/api`
 
-See also:
+## Additional information
 
-* [Architecture](architecture.md)
-* [Architecture Details](infrastructure.md)
+This instruction will create all Datagrok components in ECS cluster including all related resources. However, the
+resulted Application Load Balancers use HTTP instead of HTTPS which is less secure. To improve security create HTTPS
+[Application Load Balancer listeners](https://docs.aws.amazon.com/elasticloadbalancing/latest/application/create-https-listener.html)
+with SSL certificate which matches newly created DNS names <CVM_DNS> and <DATAGROK_DNS>. And
+then [change the HTTP listeners](https://docs.aws.amazon.com/elasticloadbalancing/latest/application/listener-update-rules.html)
+to forward requests to the HTTPS ones.
