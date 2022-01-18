@@ -3,16 +3,21 @@
 
 # Deployment on AWS ECS Cluster
 
-Datagrok consist of Docker containers which can be installed on any platform including container services in cloud
-provides, for example [AWS ECS](https://aws.amazon.com/ecs/).
+Datagrok consist of Docker containers, [database](infrastructure.md#database)
+and [persistent file storage](infrastructure.md#storage).
+
+Docker containers allows installing Datagrok on any platform including container services in cloud providers, for
+example [AWS ECS](https://aws.amazon.com/ecs/).
 
 As [database](infrastructure.md#database) Datagrok supports any PostgreSQL cluster out-of-the-box, including cloud
 solutions for PostgreSQL database, for example [AWS RDS](https://aws.amazon.com/rds/).
 
-For [persistent file storage](infrastructure.md#storage) Datagrok supports also cloud solutions, for
-example [AWS S3](https://aws.amazon.com/s3/).
+For [persistent file storage](infrastructure.md#storage) Datagrok supports a lot of options, including cloud solutions,
+for example [AWS S3](https://aws.amazon.com/s3/).
 
-This document contains instructions to deploy Datagrok on [AWS ECS cluster](https://aws.amazon.com/ecs/).
+This document contains instructions to deploy Datagrok using [Docker Compose](https://docs.docker.com/compose/)
+on [AWS ECS cluster](https://aws.amazon.com/ecs/) with [AWS RDS](https://aws.amazon.com/rds/)
+and [AWS S3](https://aws.amazon.com/s3/).
 
 More information about Datagrok design and components:
 
@@ -24,13 +29,13 @@ More information about Datagrok design and components:
 1. We use native Docker compose commands to run applications in Amazon ECS. It simplifies multi-container application
    development on Amazon ECS using familiar Compose files.
     1. Download and install the latest version of [Docker Desktop](https://docs.docker.com/desktop/), with docker
-      compose included, following installation instructions
-      for [Windows](https://docs.docker.com/desktop/windows/install/)
-      or [Mac](https://docs.docker.com/desktop/mac/install/). Or install
-      the [Docker Compose CLI for Linux](https://docs.docker.com/cloud/ecs-integration/#install-the-docker-compose-cli-on-linux)
-      which also enables docker compose features
+       compose included, following installation instructions
+       for [Windows](https://docs.docker.com/desktop/windows/install/)
+       or [Mac](https://docs.docker.com/desktop/mac/install/). Or install
+       the [Docker Compose CLI for Linux](https://docs.docker.com/cloud/ecs-integration/#install-the-docker-compose-cli-on-linux)
+       which also enables docker compose features
     2. Check that you have [required permissions](https://docs.docker.com/cloud/ecs-integration/#requirements) on AWS
-      account to perform Docker containers deployment to ECS
+       account to perform Docker containers deployment to ECS
 2. Additional components, such as database and storage, can be created using AWS CLI. To perform AWS CLI commands
    provided in the document
     1. [Install AWS CLI](https://docs.aws.amazon.com/cli/latest/userguide/getting-started-install.html)
