@@ -8,7 +8,7 @@ import {
   calculateEuclideanDistance,
   assert,
 } from '@datagrok-libraries/utils/src/operations';
-import {SPEBase, PSPEBase} from './spe';
+import {SPEBase, PSPEBase, OriginalSPE} from './spe';
 import {StringMeasure, KnownMetrics} from './string-measure';
 
 /**
@@ -201,11 +201,40 @@ class PSPEReducer extends Reducer {
   }
 }
 
+/**
+ * Implements original SPE dimensionality reduction.
+ *
+ * @class OriginalSPEReducer
+ * @extends {Reducer}
+ */
+ class OriginalSPEReducer extends Reducer {
+  protected reducer: OriginalSPE;
+
+  /**
+   * Creates an instance of OriginalSPEReducer.
+   * @param {Options} options Options to pass to the constructor.
+   * @memberof OriginalSPEReducer
+   */
+  constructor(options: Options) {
+    super(options);
+    this.reducer = new OriginalSPE(options);
+  }
+
+  /**
+   * Embeds the data given into the two-dimensional space using the original SPE method.
+   * @return {Coordinates} Cartesian coordinate of this embedding.
+   */
+  public transform(): Coordinates {
+    return this.reducer.embed(this.data);
+  }
+}
+
 const AvailableReducers = {
   'UMAP': UMAPReducer,
   't-SNE': TSNEReducer,
   'SPE': SPEReducer,
   'pSPE': PSPEReducer,
+  'OriginalSPE': OriginalSPEReducer,
 };
 
 export type KnownMethods = keyof typeof AvailableReducers;
