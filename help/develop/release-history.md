@@ -1,6 +1,32 @@
 <!-- TITLE: Release History -->
 <!-- SUBTITLE: -->
 
+# 2022-01-18 Dev build 0.115.0
+
+## Latest Docker Images
+
+* Datagrok: 
+  *  `docker pull datagrok/datagrok:0.115.0`
+  *  `docker pull datagrok/datagrok:latest`
+  
+* [Docker-Compose](admin/docker-compose.md)
+
+## Addressed Issues
+
+* JBIO: fit tree viewer to real dataset (WIP)
+* Extend Help Deploy to ECS instructution: auto-deploy script 
+* JS API: add dapi tests (WIP)
+* Extend Help Deploy to ECS instructution: add links to AWS documentation 
+* Updated demo/bio peptides data 
+* Extend Help Deploy to ECS instructution: fix deploy script 
+* Formula Lines: Editor (WIP)
+* Extend Help Deploy to ECS instructution: additional information about HTTPS and SSL certificates 
+* Extend Help Deploy to ECS instructution: Add instructions how to install and configure AWS CLI 
+* Added ability to set code in ScriptView constructor 
+* Extend Help Deploy to ECS instructution: introductory 
+* Clinical case: added tests for open app, data preparation functions, study and patient visit objects 
+
+
 # 2022-01-18 Dev build 0.114.0
 
 ## Latest Docker Images
