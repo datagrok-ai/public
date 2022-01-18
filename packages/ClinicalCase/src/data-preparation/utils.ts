@@ -64,7 +64,7 @@ export function getUniqueValues(df: DG.DataFrame, colName: string) {
   export function dateDifferenceInDays(start: string, end: string) {
     const startDate = new Date(start) as any;
     const endDate = new Date(end) as any;
-    const diffTime = Math.abs(endDate - startDate);
+    const diffTime = endDate - startDate;
     return Math.ceil(diffTime / (1000 * 60 * 60 * 24)); 
   }
 

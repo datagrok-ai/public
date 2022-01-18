@@ -51,7 +51,7 @@ export class SurvivalAnalysisView extends DG.ViewBase implements ILazyLoading {
     this.helpUrl = `${_package.webRoot}/views_help/survival_analysis.md`;
   }
 
-  loaded: boolean;
+  loaded = false;
 
   load(): void {
     checkMissingDomains(requiredColumnsByView[this.name], this);
@@ -239,7 +239,7 @@ export class SurvivalAnalysisView extends DG.ViewBase implements ILazyLoading {
   }
 
   private refreshDataframe(){
-    this.survivalDataframe = createSurvivalData(this.endpoint, this.endpointOptions[this.endpoint], this.covariates);
+     this.survivalDataframe = createSurvivalData(study.domains.dm, study.domains.ae ?? null, this.endpoint, this.endpointOptions[this.endpoint], this.covariates);
      this.survivalColumns = this.survivalDataframe.columns.names();
      this.survivalOptions = [''].concat(this.survivalColumns.filter(it => it !== 'time' && it !== 'status' && it !== SUBJECT_ID));
      this.strata = '';
