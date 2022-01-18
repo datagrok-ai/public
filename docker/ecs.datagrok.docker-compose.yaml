@@ -13,15 +13,17 @@ services:
     environment:
       GROK_MODE: 'auto'
       GROK_PARAMETERS: "{
-        \"amazonStorageRegion\": \"<S3_BUCKET_REGION>\",
-        \"amazonStorageBucket\": \"<S3_BUCKET_NAME>\",
-        \"dbServer\": \"<RDS_ENDPOINT>\",
+        \"amazonStorageRegion\": \"${DATAGROK_S3_BUCKET_REGION}\",
+        \"amazonStorageBucket\": \"${DATAGROK_S3_BUCKET_NAME}\",
+        \"dbServer\": \"${DATAGROK_RDS_ENDPOINT}\",
         \"db\": \"datagrok\",
         \"dbLogin\": \"datagrok\",
         \"dbPassword\": \"SoMeVeRyCoMpLeXpAsSwOrD\",
         \"dbAdminLogin\": \"postgres\",
         \"dbAdminPassword\": \"postgres\",
-        \"dbSsl\": false
+        \"dbSsl\": false,
+        \"deployDemo\": false,
+        \"deployTestDemo\": false
       }"
     ports:
       - 80:80
