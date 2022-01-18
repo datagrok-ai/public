@@ -54,8 +54,8 @@ demog.meta.addFormulaBand({
   opacity: 100,            // Opacity [0..100], where 0 - invisible, 100 - opaque.
 
   // Parameters specific to Bands:
-  column: '${height}',     // Column for which the band is set.
-  column2: '${weight}'     // Second column for which the band will be drawn.
+  column: 'height',     // Column for which the band is set.
+  column2: 'weight'     // Second column for which the band will be drawn.
 });
 
 demog.meta.addFormulaLine({
@@ -148,9 +148,9 @@ demog.meta.addFormulaLine({
 demog.meta.addFormulaBand({
   title: 'Band 2',
   description: 'Second band',
-  column: '${weight}',
+  column: 'weight',
   formula: '< 80',
-  column2: '${height}',
+  column2: 'height',
   zindex: -45,
   color: '#FFC0CB',
   opacity: 30,
@@ -160,9 +160,9 @@ demog.meta.addFormulaBand({
 demog.meta.addFormulaBand({
   title: 'Band 3',
   description: 'Another band',
-  column: '${weight}',
+  column: 'weight',
   formula: '> max',
-  column2: '${height}',
+  column2: 'height',
   zindex: -45,
   color: '#7FFFD4',
   opacity: 30,
