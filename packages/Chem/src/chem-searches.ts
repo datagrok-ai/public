@@ -1,7 +1,7 @@
 import * as DG from 'datagrok-api/dg';
 import {getRdKitModule, getRdKitService} from './chem-common-rdkit';
 import {
-  rdKitFingerprintToBitArray, tanimoto,
+  rdKitFingerprintToBitArray, tanimotoSimilarity,
   defaultMorganFpRadius, defaultMorganFpLength,
   chemBeginCriticalSection, chemEndCriticalSection
 } from './chem-common';
@@ -45,7 +45,7 @@ function _chemGetSimilarities(queryMolString: string) {
   const distances = new Array(fingerprints.length).fill(0.0);
   const sample = chemGetMorganFingerprint(queryMolString);
   for (let i = 0; i < fingerprints.length; ++i)
-    distances[i] = tanimoto(fingerprints[i], sample);
+    distances[i] = tanimotoSimilarity(fingerprints[i], sample);
   return distances;
 }
 
