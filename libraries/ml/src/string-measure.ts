@@ -2,10 +2,12 @@ import * as fl from 'fastest-levenshtein';
 import {jaroWinkler} from 'jaro-winkler-typescript';
 
 import {DistanceMetric} from '@datagrok-libraries/utils/src/type-declarations';
+import { tanimoto } from './chem';
 
 const AvailableMetrics: {[name: string]: DistanceMetric} = {
   'Levenshtein': fl.distance,
   'Jaro-Winkler': jaroWinkler,
+  'Tanimoto': tanimoto,
 };
 
 export type KnownMetrics = keyof typeof AvailableMetrics;

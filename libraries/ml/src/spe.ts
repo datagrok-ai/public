@@ -34,7 +34,7 @@ export class SPEBase {
    */
   constructor(options?: Options) {
     this.steps = options?.steps ?? 0;
-    this.cycles = options?.cycles ?? 1e6;
+    this.cycles = options?.cycles ?? 1e3;
     // Select a cutoff distance {cutoff} and ...
     this.cutoff = options?.cutoff ?? 0;
     // ... an initial learning rate {lambda} > 0
@@ -170,6 +170,89 @@ export class PSPEBase extends SPEBase {
       // Decrease the learning rate {lambda} by a prescribed {dlambda}.
       lambda -= this.dlambda;
       if (lambda <= 0.) {
+        break;
+      }
+    }
+    return coordinates;
+  }
+}
+
+/**
+ * Implements modified stochastic proximity embedding.
+ *
+ * @export
+ * @class SPE
+ * @link doi:10.1002/jcc.10234
+ */
+export class OriginalSPE extends SPEBase {
+  /**
+   * Embeds the vectors given into a two-dimensional space using a modified update rule.
+   *
+   * @param {Vectors} vectors D-dimensional coordinates.
+   * @return {Coordinates} SPE coordinates in D space.
+   */
+  protected radiusPercent: number;
+  protected maxDistance: number;
+  protected maxDistanceSteps: number;
+
+  constructor(options?: Options) {
+    super(options);
+    this.steps = options?.steps ?? 100000;
+    this.radiusPercent = options?.radiusPercent ?? 1.0;
+    this.maxDistance = options?.maxDistance ?? null;
+    this.maxDistanceSteps = options?.maxDistanceSteps ?? null;
+  }
+
+  public embed(vectors: Vectors): Coordinates {
+    const nItems = vectors.length;
+    const areaWidth = 40;
+    // Initialize the D-dimensional coordinates of the N points.
+    const coordinates = fillRandomMatrix(nItems, OriginalSPE.dimension, areaWidth);
+
+    this.initDistance(vectors);
+
+    if (this.maxDistanceSteps == null)
+      this.maxDistanceSteps = nItems * Math.floor((nItems - 1) / 2);
+    if (this.maxDistance == null) {
+      this.maxDistance = -1e37;
+      for (var n = 0; n < this.maxDistanceSteps; n++) {
+        const i = randomInt(nItems); let j = randomInt(nItems);
+        while (i == j) j = randomInt(nItems);
+
+        var d = this.calcDistance(vectors, i, j);
+        if (d > this.maxDistance)
+          this.maxDistance = d;
+      }
+    }
+
+    let lambda = this.lambda;
+    let radius = (this.radiusPercent == 0.0) ? this.maxDistance : this.maxDistance * this.radiusPercent;
+
+    for (let cycle = 0; cycle < this.cycles; ++cycle) {
+      for (let step = 0; step < this.steps; ++step) {
+        // Select two points, i and j, at random, ...
+        const i = randomInt(nItems); let j = randomInt(nItems);
+        while (i == j) j = randomInt(nItems);
+
+        const rowi = coordinates[i]; const rowj = coordinates[j];
+
+        // ... retrieve (or evaluate) their proximity in the input space, rij and ...
+        const r = this.calcDistance(vectors, i, j);
+        // ... compute their Euclidean distance on the D-dimensional map, dij.
+        const d = calculateEuclideanDistance(rowi, rowj);
+
+        // If rij <= rc, or if rij > rc and dij < rij ...
+        if ((r <= radius) || (d < r)) {
+          const multiplier = lambda*0.5*(r-d)/(d+this.epsilon);
+          // ... update the coordinates xi and xj.
+          const diffIJ = vectorAdd(rowi, rowj, -1);
+          coordinates[i] = vectorAdd(rowi, diffIJ, multiplier);
+          coordinates[j] = vectorAdd(rowj, diffIJ, -multiplier);
+        }
+      }
+      // Decrease the learning rate {lambda} by a prescribed {dlambda}.
+      lambda -= ((this.lambda - this.dlambda) / (this.cycles - 1.0));;
+      if (lambda < this.dlambda) {
         break;
       }
     }
