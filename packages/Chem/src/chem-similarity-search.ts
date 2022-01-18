@@ -66,6 +66,7 @@ export class SimilaritySearch extends DG.JsViewer {
 
     if (this.dataFrame) {
       this.subs.push(DG.debounce(this.dataFrame.onMouseOverRowChanged, 50).subscribe(async (_) => await this.render()));
+      this.subs.push(DG.debounce(this.dataFrame.onRowsRemoved, 50).subscribe(async (_) => await this.render()));
       this.subs.push(DG.debounce(this.dataFrame.onCurrentRowChanged, 50).subscribe(async (_) => await this.render(false)));
       this.subs.push(DG.debounce(this.dataFrame.selection.onChanged, 50).subscribe(async (_) => await this.render(false)));
       this.subs.push(DG.debounce(ui.onSizeChanged(this.root), 50).subscribe(async (_) => await this.render(false)));
