@@ -140,5 +140,8 @@ CN1C(=O)CN=C(c2cc(Cl)ccc12)C3CCCCC3`);
       .show();
   });
 
-
+  test('testSimilaritySearchViewer', async() => {
+    let t = grok.data.demo.molecules(1000);
+    grok.shell.addTableView(t).addViewer('MySimilaritySearch');
+  });
 });
