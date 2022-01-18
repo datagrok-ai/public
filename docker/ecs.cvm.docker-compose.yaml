@@ -103,7 +103,7 @@ x-aws-cloudformation:
         Protocol: "HTTP"
     H2oTCP5005TargetGroup:
       Properties:
-        HealthCheckPath: /info
+        HealthCheckPath: /helper/info
         Matcher:
           HttpCode: 200
         TargetGroupAttributes:
