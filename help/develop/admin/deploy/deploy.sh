@@ -363,7 +363,7 @@ case $location in
 
 "ecs")
   docker context use datagrokAWS >/dev/null 2>&1
-  docker compose --project-name datagrok -f "datagrok.${location}.docker-compose.yaml" up
+  docker compose --project-name datagrok -f "datagrok.${location}.docker-compose.yaml" up || true
   if [[ $rds_create == 'yes' ]]; then
     ecs_sg=$(aws ecs describe-services \
       --cluster datagrok \
@@ -375,7 +375,7 @@ case $location in
       --vpc-security-group-ids "${ecs_sg}" \
       --apply-immediately --output text --query '[DBInstance.DBInstanceIdentifier, VpcSecurityGroups[]]'
   fi
-  docker compose --project-name datagrok-cvm -f "datagrok.cvm.${location}.docker-compose.yaml" up
+  docker compose --project-name datagrok-cvm -f "datagrok.cvm.${location}.docker-compose.yaml" up || true
   docker context use default >/dev/null 2>&1
   rm "datagrok.${location}.docker-compose.yaml" "datagrok.cvm.${location}.docker-compose.yaml"
   ;;
