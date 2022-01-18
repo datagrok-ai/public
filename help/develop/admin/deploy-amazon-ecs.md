@@ -9,35 +9,34 @@ This document contains instructions to deploy Datagrok on [AWS ECS cluster](http
 
 1. Install [Docker Compose](https://docs.docker.com/compose/). If you do not have it, follow
    these [installation instructions](https://docs.docker.com/compose/install/) for your operating system.
-2. Check that your default VPC has three subnets with internet gateway routing for internet facing Application Load
+2. To perform AWS CLI commands provided in the document
+    1. [Install AWS CLI](https://docs.aws.amazon.com/cli/latest/userguide/getting-started-install.html)
+    2. [Configure authorization for AWS CLI](https://docs.aws.amazon.com/cli/latest/userguide/getting-started-quickstart.html)
+3. Check that your default VPC has three subnets with internet gateway routing for internet facing Application Load
    Balancer
-3. Create S3 bucket with disabled public access to bucket and objects in it and enabled encryption.
+4. Create S3 bucket. For security reasons, we recommend to:
+    * Disable public access to bucket and objects
+    * Enable encryption
     ```shell
-   # Install AWS CLI
-   # https://docs.aws.amazon.com/cli/latest/userguide/getting-started-install.html
-   # Configure authorization for AWS CLI
-   # https://docs.aws.amazon.com/cli/latest/userguide/getting-started-quickstart.html
+    #!/bin/sh
 
-   DATAGROK_S3_BUCKET_NAME=example-unique-name-datagrok-s3
-   aws s3api create-bucket \
-      --bucket "$DATAGROK_S3_BUCKET_NAME" \
-      --create-bucket-configuration LocationConstraint="$AWS_REGION" \
-      --region "$AWS_REGION"
-   aws s3api put-bucket-encryption \
-      --bucket "$DATAGROK_S3_BUCKET_NAME" \
-      --server-side-encryption-configuration '{"Rules": [{"ApplyServerSideEncryptionByDefault": {"SSEAlgorithm": "AES256"}}]}'
-   aws s3api put-public-access-block \
-      --bucket "$DATAGROK_S3_BUCKET_NAME" \
-      --public-access-block-configuration "BlockPublicAcls=true,IgnorePublicAcls=true,BlockPublicPolicy=true,RestrictPublicBuckets=true"
+    DATAGROK_S3_BUCKET_NAME=example-unique-name-datagrok-s3
+    aws s3api create-bucket \
+       --bucket "$DATAGROK_S3_BUCKET_NAME" \
+       --create-bucket-configuration LocationConstraint="$AWS_REGION" \
+       --region "$AWS_REGION"
+    aws s3api put-bucket-encryption \
+       --bucket "$DATAGROK_S3_BUCKET_NAME" \
+       --server-side-encryption-configuration '{"Rules": [{"ApplyServerSideEncryptionByDefault": {"SSEAlgorithm": "AES256"}}]}'
+    aws s3api put-public-access-block \
+       --bucket "$DATAGROK_S3_BUCKET_NAME" \
+       --public-access-block-configuration "BlockPublicAcls=true,IgnorePublicAcls=true,BlockPublicPolicy=true,RestrictPublicBuckets=true"
     ```
-4. Create RDS database for Datagrok
+5. Create RDS database for Datagrok
     * PostgreSQL 12
     * No publicly accessible
     ```shell
-    # Install AWS CLI
-    # https://docs.aws.amazon.com/cli/latest/userguide/getting-started-install.html
-    # Configure authorization for AWS CLI
-    # https://docs.aws.amazon.com/cli/latest/userguide/getting-started-quickstart.html
+    #!/bin/sh
 
     aws rds create-db-instance \
       --db-instance-identifier "datagrok-rds" \
@@ -59,7 +58,7 @@ This document contains instructions to deploy Datagrok on [AWS ECS cluster](http
       --tags Key=project,Value=datagrok \
       --region "$AWS_REGION"
     ```
-5. Create Docker ECS context: `docker context ecs create --from-env ECS`
+6. Create Docker ECS context: `docker context ecs create --from-env ECS`
 
 ## Setup Datagrok components
 
@@ -75,13 +74,15 @@ This document contains instructions to deploy Datagrok on [AWS ECS cluster](http
     export DATAGROK_RDS_ENDPOINT=$(aws rds describe-db-instances --db-instance-identifier "datagrok-rds" --output text --query 'DBInstances[].Endpoint.Address')
     ```
 3. Use docker context for ECS: `docker context use ECS`
-4. [Configure authorization for AWS CLI](https://docs.aws.amazon.com/cli/latest/userguide/getting-started-quickstart.html)
+4. [Configure authorization for docker ECS context as for AWS CLI](https://docs.aws.amazon.com/cli/latest/userguide/getting-started-quickstart.html)
 5. Run docker compose deploy to ECS: `docker compose -p datagrok -f ecs.datagrok.docker-compose.yaml up -d`. It will
    create ECS cluster with tasks in [Fargate](https://aws.amazon.com/fargate/).
 
 6. Allow newly created ECS cluster connect to RDS database for Datagrok: add Datagrok ECS Service Security Group to RDS
    database for Datagrok
     ```shell
+    #!/bin/sh
+
     aws rds modify-db-instance \
       --db-instance-identifier "datagrok-rds" \
       --region "$AWS_REGION" \
