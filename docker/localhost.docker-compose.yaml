@@ -19,7 +19,16 @@ services:
   datagrok:
     image: datagrok/datagrok:latest
     environment:
-      GROK_PARAMETERS: "{\"deployDemo\": false, \"dbServer\": \"database\", \"db\": \"datagrok\", \"dbAdminLogin\": \"postgres\", \"dbAdminPassword\": \"postgres\", \"dbLogin\": \"dg\", \"dbPassword\": \"dg\", \"adminPassword\": \"admin\"}"
+      GROK_PARAMETERS: "{
+        \"deployDemo\": false,
+        \"dbServer\": \"database\",
+        \"db\": \"datagrok\",
+        \"dbAdminLogin\": \"postgres\",
+        \"dbAdminPassword\": \"postgres\",
+        \"dbLogin\": \"dg\",
+        \"dbPassword\": \"dg\",
+        \"adminPassword\": \"admin\"
+      }"
     ports:
       - "8080:8080/tcp"
     networks:

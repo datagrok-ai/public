@@ -26,7 +26,7 @@ export function test(name: string, test: () => Promise<any>): void {
 /** Tests two objects for equality, throws an exception if they are not equal. */
 export function expect(actual: any, expected: any) {
   if (actual !== expected)
-    throw `Expected "${expected}", got "${"${actual}"}"`;
+    throw `Expected "${expected}", got "${actual}"`;
 }
 
 /** Defines a test suite. */
@@ -65,20 +65,10 @@ export async function runTests(options?: {category?: string, test?: string}) {
       value.beforeStatus = x.toString();
     }
     let t = value.tests ?? [];
-    let res = t.map(async (t) => {
-      let r: { category?: string, name?: string, success: boolean, result: string };
-      try {
-        if (options?.test != undefined && (!t.name.toLowerCase().startsWith(options?.test.toLowerCase())))
-          r = {success: true, result: 'skipped'};
-        else
-          r = {success: true, result: await t.test() ?? 'OK'};
-      } catch (x: any) {
-        r = {success: false, result: x.toString()};
-      }
-      r.category = t.category;
-      r.name = t.name;
-      return r;
-    });
+    let res = [];
+    for(let i = 0; i < t.length; i++) {
+      res.push(await execTest(t[i], options?.test));
+    }
 
     let data = (await Promise.all(res)).filter((d) => d.result != 'skipped');
     try {
@@ -95,6 +85,21 @@ export async function runTests(options?: {category?: string, test?: string}) {
   }
 
   return results;
+}
+
+async function execTest(t: Test, predicate: string | undefined) {
+  let r: { category?: string, name?: string, success: boolean, result: string };
+  try {
+    if (predicate != undefined && (!t.name.toLowerCase().startsWith(predicate.toLowerCase())))
+      r = {success: true, result: 'skipped'};
+    else
+      r = {success: true, result: await t.test() ?? 'OK'};
+  } catch (x: any) {
+    r = {success: false, result: x.toString()};
+  }
+  r.category = t.category;
+  r.name = t.name;
+  return r;
 }
 
 export async function delay(ms: number) {

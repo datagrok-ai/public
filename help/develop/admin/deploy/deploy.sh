@@ -1,50 +1,66 @@
 #!/bin/bash
 
-#function input() {
-#  # Check users input
-#  # '<description>' '<question>' variable
-#  local description=$1
-#  local question=$2
-#
-#  echo "$description"
-#  while [[ $location != 'virtual machine' ]] || [[ $location != 'vm' ]] || [[ $location != 'kubernetes' ]] || [[ $location != 'k8s' ]] || [[ $location != 'ecs' ]] || [[ $location == '' ]]; do
-#    [[ $location == '' ]] || echo "Entered location '$location' is not supported"
-#    echo 'Insert one of the following options: Virtual Machine, Kubernetes, ECS'
-#    read -p 'Enter Datagrok location: ' -r location
-#    location=$(tr '[:upper:]' '[:lower:]' <<<"$location")
-#  done
-#}
+set -e
+#set -x
+
+function input() {
+  # Check users input
+  # '<secret>' '<description>' '<question>' '<options>' '<extra_values>'
+  local secret=$1
+  local description=$2
+  local question=$3
+  local options=$4
+  local extra_values=$5
+
+  [[ $extra_values == '' ]] && extra_values='not specified'
+
+  local result=''
+  [[ $description == '' ]] || echo -e "$description" >&2
+
+  while [[ ", ${options,,}, " != *", ${result,,}, "* ]] && [[ ", ${extra_values,,}, " != *", ${result,,}, "* ]] || [[ $result == '' ]]; do
+    [[ $result == '' ]] || echo "Entered value '$result' is not supported" >&2
+    [[ $options == '' ]] || echo "Insert one of the following options: $options" >&2
+    if [[ $secret == 'secret' ]]; then
+      read -s -p "$question: " -r result
+    else
+      read -p "$question: " -r result
+    fi
+    result=$(tr '[:upper:]' '[:lower:]' <<<"$result")
+    [[ $options == '' ]] && options=$result
+  done
+  echo "$result"
+}
+
+function check_aws_cli {
+  until aws --version >/dev/null 2>&1; do
+    echo 'AWS CLI is required to be installed'
+    echo 'Install AWS CLI following the official documentation'
+    echo 'https://docs.aws.amazon.com/cli/latest/userguide/getting-started-install.html'
+    echo 'Script will wait for 1 minute and check the installation again...'
+    sleep 60
+  done
+}
 
 echo 'Welcome to the Datagrok Deploy script!'
 echo 'It will guide you through the process of deploy and create a configuration based on your needs.'
 echo 'Answer the script questions and it will do the rest.'
-echo
 
-echo 'Where would you like to setup the Datagrok application?'
-while [[ $location != 'virtual machine' ]] && [[ $location != 'vm' ]] && [[ $location != 'kubernetes' ]] && [[ $location != 'k8s' ]] && [[ $location != 'ecs' ]] || [[ $location == '' ]]; do
-  [[ $location == '' ]] || echo "Entered location '$location' is not supported"
-  echo 'Enter one of the following options: Virtual Machine, Kubernetes, ECS'
-  read -p 'Datagrok location: ' -r location
-  location=$(tr '[:upper:]' '[:lower:]' <<<"$location")
-done
+echo -e "\n" >&2
+location=$(input '' "Where would you like to setup the Datagrok application?" \
+  'Datagrok location' \
+  'Virtual Machine, Kubernetes, ECS' \
+  'vm, k8s')
 
 case $location in
-"kubernetes")
+"kubernetes" | "k8s")
   k8s_enabled='true'
   ;;
-"k8s")
-  k8s_enabled='true'
-  ;;
-"virtual machine")
-  vm_enabled='true'
-  ;;
-"vm")
+"virtual machine" | "vm")
   vm_enabled='true'
   ;;
 "ecs")
   ecs_enabled='true'
   ;;
-
 *)
   echo "Something went wrong. Contact Datagrok support."
   echo "Entered location '$location' is not supported"
@@ -59,121 +75,314 @@ if [[ $k8s_enabled == 'true' ]]; then
 fi
 
 if [[ $ecs_enabled == 'true' ]]; then
-  echo 'ECS is not supported by the deploy script yet.'
-  echo 'Use the manual installation or reach out Datagrok support for more information.'
-  exit 0
+
+  echo -e "\n" >&2
+  #  r53=$(input '' "Do you use Route53 for DNS management?" \
+  #    'Route53 usage' \
+  #    'Yes, No')
+  database='rds'
+  storage='s3'
+  iam='role'
+
+  if ! docker context list | grep -q datagrokAWS; then
+    docker context create ecs --from-env datagrokAWS
+  fi
+
+  curl -s https://raw.githubusercontent.com/datagrok-ai/public/master/docker/ecs.datagrok.docker-compose.yaml \
+    -o "datagrok.${location}.docker-compose.yaml"
+  curl -s https://raw.githubusercontent.com/datagrok-ai/public/master/docker/ecs.cvm.docker-compose.yaml \
+    -o "datagrok.cvm.${location}.docker-compose.yaml"
 fi
 
 if [[ $vm_enabled == 'true' ]]; then
-  echo 'Would you like to setup Datagrok and Compute components on the same machine?'
-  echo 'We recommend separate machines for Datagrok and Compute components.'
-  while [[ $setup != 'same' ]] && [[ $setup != 'separate' ]] || [[ $setup == '' ]]; do
-    [[ $setup == '' ]] || echo "Entered location '$setup' is not supported"
-    echo 'Enter one of the following options: same, separate'
-    read -p 'Datagrok setup: ' -r setup
-    setup=$(tr '[:upper:]' '[:lower:]' <<<"$setup")
-  done
+  echo -e "\n" >&2
+  setup=$(input '' "Would you like to setup Datagrok and Compute components on the same machine?\nWe recommend separate machines for Datagrok and Compute components." \
+    'Datagrok setup' \
+    'same, separate')
 
-  read -p "Enter Datagrok host IP or hostname: " -r datagrok_host
-  echo 'To deploy application it is required:'
-  echo "1) To have access to the Datagrok host ($datagrok_host) through SSH using SSH keys"
-  echo "2) Your user should be in 'docker' group on this host"
-  while [[ $confirm != 'confirm' ]] || [[ $confirm == '' ]]; do
-    [[ $confirm == '' ]] || echo "Meet the requirements and come back."
-    echo 'Do you meet the requirements?'
-    read -p "Enter 'Confirm': " -r confirm
-    confirm=$(tr '[:upper:]' '[:lower:]' <<<"$confirm")
-  done
+  echo -e "\n" >&2
+  datagrok_host=$(input '' "" "Enter Datagrok host IP or hostname" "")
+
+  echo -e "\n" >&2
+  confirm=$(input '' "To deploy application it is required:\n1) To have access to the Datagrok host ($datagrok_host) through SSH using SSH keys\n2) Your user should be in 'docker' group on this host" \
+    "Do you meet the requirements? Enter 'Confirm'" \
+    'confirm')
   confirm=''
-  docker context create --docker "host=ssh://${datagrok_host}:22" datagrok
-  if [[ $setup == 'separate' ]]; then
-    read -p "Enter Compute host IP or hostname: " -r cvm_host
-    echo 'To deploy application it is required:'
-    echo "1) To have access to the Compute host ($cvm_host) through SSH using SSH keys"
-    echo "2) Your user should be in 'docker' group on this host"
-    while [[ $confirm != 'confirm' ]] || [[ $confirm == '' ]]; do
-      [[ $confirm == '' ]] || echo "Meet the requirements and come back."
-      echo 'Do you meet the requirements?'
-      read -p "Enter 'Confirm': " -r confirm
-      confirm=$(tr '[:upper:]' '[:lower:]' <<<"$confirm")
-    done
-    confirm=''
-    docker context create --docker "host=ssh://${cvm_host}:22" cvm
+
+  if ! docker context list | grep -q datagrok; then
+    docker context create --docker "host=ssh://${datagrok_host}:22" datagrok
   fi
 
-  while [[ $adminPassword == '' ]]; do
-    read -p "Enter Datagrok admin user password to access platform. It can not be empty: " -r adminPassword
-  done
+  if [[ $setup == 'separate' ]]; then
+    echo -e "\n" >&2
+    read -p "Enter Compute host IP or hostname: " -r cvm_host
 
-  echo 'Provide Datagrok internal PostgreSQL credentials'
-  echo 'Datagrok supports any PostgreSQL cluster, including cloud solutions, for example AWS RDS'
-  read -p 'Enter Datagrok internal database server address: ' -r dbServer
-  read -p 'Enter Datagrok internal database server port: ' -r dbPort
-  echo 'Provide Datagrok credentials to connect to internal database'
-  read -p 'Enter Datagrok username to connect to internal database: ' -r dbLogin
-  read -p 'Enter Datagrok password to connect to internal database: ' -r dbPassword
-  while [[ $confirm != 'yes' ]] && [[ $confirm != 'no' ]] || [[ $confirm == '' ]]; do
-    [[ $confirm == '' ]] || echo "Entered answer '$confirm' is not supported"
-    echo 'Is the connection to the internal Datagrok database TLS encrypted?'
-    read -p "Enter 'yes' or 'no': " -r confirm
-    confirm=$(tr '[:upper:]' '[:lower:]' <<<"$confirm")
-  done
-  dbSsl=confirm
-  confirm=''
-  echo 'Provide Datagrok admin credentials to connect to internal database'
-  echo 'It will be used once to create required schema for Datagrok application'
-  read -p 'Enter Postgres admin username: ' -r dbAdminLogin
-  read -p 'Enter Postgres admin password: ' -r dbAdminPassword
+    echo -e "\n" >&2
+    confirm=$(input '' "To deploy application it is required:\n1) To have access to the Datagrok host ($cvm_host) through SSH using SSH keys\n2) Your user should be in 'docker' group on this host" \
+      "Do you meet the requirements? Enter 'Confirm'" \
+      'confirm')
+    confirm=''
 
-  GROK_PARAMETERS="{\\\\\"dbServer\\\\\": \\\\\"${dbServer}\\\\\",\\\\\"db\\\\\": \\\\\"datagrok\\\\\",\\\\\"dbAdminLogin\\\\\":\\\\\"${dbAdminLogin}\\\\\",\\\\\"dbAdminPassword\\\\\": \\\\\"${dbAdminPassword}\\\\\",\\\\\"dbLogin\\\\\": \\\\\"${dbLogin}\\\\\",\\\\\"dbPassword\\\\\": \\\\\"${dbPassword}\\\\\",\\\\\"adminPassword\\\\\": \\\\\"${adminPassword}\\\\\""
-
-  echo 'What would you like to use as persistent storage?'
-  while [[ $storage != 'local' ]] && [[ $storage != 's3' ]] && [[ $storage != 'gcs' ]] || [[ $storage == '' ]]; do
-    [[ $storage == '' ]] || echo "Entered location '$location' is not supported"
-    echo 'Enter one of the following options: local, s3, gcs'
-    read -p 'Persistent storage location: ' -r storage
-    storage=$(tr '[:upper:]' '[:lower:]' <<<"$storage")
-  done
-
-  if [[ $storage == 's3' ]]; then
-    read -p "Enter S3 region: " -r amazonStorageRegion
-    read -p "Enter S3 bucket name: " -r amazonStorageBucket
-    GROK_PARAMETERS+=",\\\\\"amazonStorageRegion\\\\\": \\\\\"${amazonStorageRegion}\\\\\",\\\\\"amazonStorageBucket\\\\\": \\\\\"${amazonStorageBucket}\\\\\""
-    read -p "Enter S3 credential ID, Datagrok will resolve IAM role if empty: " -r amazonStorageId
-    read -p "Enter S3 credential secret key, Datagrok will resolve IAM role if empty: " -r amazonStorageKey
-
-    if [[ $amazonStorageId != '' ]] && [[ $amazonStorageKey != '' ]]; then
-      GROK_PARAMETERS+=",\\\\\"amazonStorageId\\\\\": \\\\\"${amazonStorageId}\\\\\",\\\\\"amazonStorageKey\\\\\": \\\\\"${amazonStorageKey}\\\\\""
+    if ! docker context list | grep -q cvm; then
+      docker context create --docker "host=ssh://${cvm_host}:22" cvm
     fi
   fi
 
-  if [[ $storage == 'gcs' ]]; then
-    read -p "Enter Access certificate to Google Cloud Storage: " -r googleStorageCert
-
-    GROK_PARAMETERS+=",\\\\\"googleStorageCert\\\\\": \\\\\"${googleStorageCert}\\\\\""
-  fi
-
-  echo
-  echo 'Creating Datagrok configuration from input data...'
-  echo
-  GROK_PARAMETERS+="}"
-
-  curl -O https://raw.githubusercontent.com/datagrok-ai/public/master/docker/localhost.docker-compose.yaml
-
-  if [[ "$OSTYPE" == "darwin"* ]]; then
-    sed -i '' -e "s%GROK_PARAMETERS: \".*\"%GROK_PARAMETERS: \"${GROK_PARAMETERS}\"%g" localhost.docker-compose.yaml
-  else
-    sed -i -e "s%GROK_PARAMETERS: \".*\"%GROK_PARAMETERS: \"${GROK_PARAMETERS}\"%g" localhost.docker-compose.yaml
-  fi
-
-  if [[ $setup == 'separate' ]]; then
-    docker context use datagrok
-    docker-compose --project-name datagrok --profile datagrok -f localhost.docker-compose.yaml up -d
-    docker context use cvm
-    docker-compose --project-name cvm --profile cvm up -d
-  else
-    docker context use datagrok
-    docker-compose --project-name datagrok --profile datagrok --profile cvm -f localhost.docker-compose.yaml up -d
-  fi
-  docker context use default
+  curl -s https://raw.githubusercontent.com/datagrok-ai/public/master/docker/localhost.docker-compose.yaml \
+    -o "datagrok.${location}.docker-compose.yaml"
 fi
+
+echo -e "\n" >&2
+adminPassword=$(input 'secret' "" "Enter Datagrok admin user password to access platform. It can not be empty" "")
+
+db='datagrok'
+
+if [[ $database == '' ]]; then
+  echo -e "\n" >&2
+  database=$(input '' 'What would you like to use as PostgreSQL database?\nDatagrok supports any PostgreSQL cluster, including cloud solutions, for example AWS RDS' \
+    'PostgreSQL database setup' \
+    'RDS, other')
+fi
+
+if [[ $database == 'rds' ]]; then
+  echo -e "\n" >&2
+  rds_create=$(input '' 'Would you like to create new RDS for Datagrok?' \
+    'Create new RDS' \
+    'Yes, No')
+fi
+
+if [[ $rds_create == 'yes' ]]; then
+  echo -e "\n" >&2
+  echo -e "Preparing RDS for Datagrok..." >&2
+
+  check_aws_cli
+
+  if [[ $AWS_ACCESS_KEY_ID == '' ]] || [[ $AWS_SECRET_ACCESS_KEY == '' ]]; then
+    read -p "Enter AWS access key associated with an IAM user to create S3 bucket: " -r AWS_ACCESS_KEY_ID
+    read -p "Enter AWS secret key associated with the access key to create S3 bucket: " -r AWS_SECRET_ACCESS_KEY
+    export AWS_ACCESS_KEY_ID
+    export AWS_SECRET_ACCESS_KEY
+  fi
+
+  echo -e "\n" >&2
+  if [[ $AWS_REGION == '' ]]; then
+    amazonRDSRegion=$(input '' "" "Enter RDS region" "")
+  else
+    amazonRDSRegion=$AWS_REGION
+  fi
+  amazonRDSName=$(input '' "" "Enter RDS name" "")
+
+  dbAdminLogin=$(input '' "" "Enter RDS admin username" "")
+  dbAdminPassword=$(input 'secret' "" "Enter RDS admin password" "")
+
+  dbPort=5432
+
+  echo -e "\n" >&2
+  echo -e "Creating RDS for Datagrok '$amazonRDSName'..." >&2
+  aws rds create-db-instance \
+    --db-instance-identifier "$amazonRDSName" \
+    --db-name "$db" \
+    --engine 'postgres' \
+    --engine-version '12.8' \
+    --auto-minor-version-upgrade \
+    --allocated-storage 50 \
+    --max-allocated-storage 100 \
+    --db-instance-class 'db.t3.large' \
+    --master-username "$dbAdminLogin" \
+    --master-user-password "$dbAdminPassword" \
+    --port "$dbPort" \
+    --multi-az \
+    --no-publicly-accessible \
+    --storage-encrypted \
+    --deletion-protection \
+    --backup-retention-period 3 \
+    --tags Key=project,Value=datagrok \
+    --region "${amazonRDSRegion}" \
+    --output text --query 'DBInstance.[DBInstanceIdentifier, DBInstanceStatus]' || {
+    rds=$(aws rds describe-db-instances --db-instance-identifier "$amazonRDSName" \
+      --output text --query 'DBInstances[].[DBInstanceStatus, Endpoint.Address]')
+    #    if [[ $rds == '' ]]; then
+    #      echo 'Something went wrong during RDS creation. Check the log above for an error.' >&2
+    #      exit 1
+    #    fi
+    rds_status=$(awk '{print $1}' <<<"$rds")
+    echo -e "\n" >&2
+    echo "RDS '$amazonRDSName' already exists" >&2
+  }
+  until [[ $rds_status == 'available' ]]; do
+    echo "Waiting 1 minute for RDS for Datagrok '$amazonRDSName' to become available..." >&2
+    rds=$(aws rds describe-db-instances --db-instance-identifier "$amazonRDSName" \
+      --output text --query 'DBInstances[].[DBInstanceStatus, Endpoint.Address]')
+    rds_status=$(awk '{print $1}' <<<"$rds")
+    sleep 60
+  done
+
+  dbServer=$(awk '{print $2}' <<<"$rds")
+else
+  echo -e "\n" >&2
+  echo 'Provide Datagrok internal PostgreSQL credentials' >&2
+  dbServer=$(input '' "" "Enter Datagrok internal database server address" "")
+  dbPort=$(input '' "" "Enter Datagrok internal database server port" "")
+
+  echo -e "\n" >&2
+  echo 'Provide Datagrok admin credentials to connect to internal database' >&2
+  echo 'It will be used once to create required schema for Datagrok application' >&2
+  dbAdminLogin=$(input '' "" "Enter Postgres admin username" "")
+  dbAdminPassword=$(input 'secret' "" "Enter Postgres admin password" "")
+fi
+
+#echo -e "\n" >&2
+#confirm=$(input "Is the connection to the internal Datagrok database TLS encrypted?" \
+#  "TLS encryption" \
+#  'yes, no')
+#dbSsl=$confirm
+#confirm=''
+
+echo -e "\n" >&2
+echo 'Choose Datagrok credentials to connect to internal database' >&2
+dbLogin=$(input '' "" "Enter Datagrok username to connect to internal database" "")
+dbPassword=$(input 'secret' "" "Enter Datagrok password to connect to internal database" "")
+
+GROK_PARAMETERS="{\\\\\"dbServer\\\\\": \\\\\"${dbServer}\\\\\",\\\\\"db\\\\\": \\\\\"${db}\\\\\",\\\\\"dbAdminLogin\\\\\":\\\\\"${dbAdminLogin}\\\\\",\\\\\"dbAdminPassword\\\\\": \\\\\"${dbAdminPassword}\\\\\",\\\\\"dbLogin\\\\\": \\\\\"${dbLogin}\\\\\",\\\\\"dbPassword\\\\\": \\\\\"${dbPassword}\\\\\",\\\\\"adminPassword\\\\\": \\\\\"${adminPassword}\\\\\""
+
+if [[ $storage == '' ]]; then
+  echo -e "\n" >&2
+  storage=$(input '' 'What would you like to use as persistent storage?' \
+    'Persistent storage location' \
+    'Local File System, S3, GCS' \
+    'local, fs, local fs, system, file system')
+fi
+
+if [[ $storage == 's3' ]]; then
+  echo -e "\n" >&2
+  s3_create=$(input '' 'Would you like to create new S3 bucket for Datagrok?' \
+    'Create new S3 bucket' \
+    'Yes, No')
+
+  echo -e "\n" >&2
+  if [[ $s3_create == 'no' ]]; then
+    amazonStorageRegion=$(input '' "" "Enter S3 region" "")
+  elif [[ $AWS_REGION == '' ]]; then
+    amazonStorageRegion=$(input '' "" "Enter S3 region" "")
+  else
+    amazonStorageRegion=$AWS_REGION
+  fi
+
+  amazonStorageBucket=$(input '' "" "Enter S3 bucket name" "")
+  GROK_PARAMETERS+=",\\\\\"amazonStorageRegion\\\\\": \\\\\"${amazonStorageRegion}\\\\\",\\\\\"amazonStorageBucket\\\\\": \\\\\"${amazonStorageBucket}\\\\\""
+
+  if [[ $s3_create == 'yes' ]]; then
+    echo -e "\n" >&2
+    echo -e "Creating S3 bucket for Datagrok..." >&2
+
+    check_aws_cli
+
+    if [[ $AWS_ACCESS_KEY_ID == '' ]] || [[ $AWS_SECRET_ACCESS_KEY == '' ]]; then
+      read -p "Enter AWS access key associated with an IAM user to create S3 bucket: " -r AWS_ACCESS_KEY_ID
+      read -p "Enter AWS secret key associated with the access key to create S3 bucket: " -r AWS_SECRET_ACCESS_KEY
+      export AWS_ACCESS_KEY_ID
+      export AWS_SECRET_ACCESS_KEY
+    fi
+
+    if aws s3api head-bucket --bucket "$amazonStorageBucket" 2>/dev/null; then
+      echo -e "\n" >&2
+      echo "'$amazonStorageBucket' S3 bucket already exists" >&2
+    else
+      aws s3api create-bucket \
+        --bucket "$amazonStorageBucket" \
+        --create-bucket-configuration LocationConstraint="$amazonStorageRegion" \
+        --region "$amazonStorageRegion"
+    fi
+    aws s3api put-bucket-encryption \
+      --bucket "$amazonStorageBucket" \
+      --server-side-encryption-configuration '{"Rules": [{"ApplyServerSideEncryptionByDefault": {"SSEAlgorithm": "AES256"}}]}'
+    aws s3api put-public-access-block \
+      --bucket "$amazonStorageBucket" \
+      --public-access-block-configuration "BlockPublicAcls=true,IgnorePublicAcls=true,BlockPublicPolicy=true,RestrictPublicBuckets=true"
+  fi
+
+  if [[ $iam == '' ]]; then
+    echo -e "\n" >&2
+    iam=$(input '' 'Would you like to use IAM credentials or IAM role for Datagrok to access S3 bucket?\nWe recommend to use IAM roles on AWS resources if possible.' \
+      'IAM role or IAM credentials' \
+      'IAM Role, IAM Credentials' \
+      'role, credentials')
+  fi
+
+  if [[ $iam == 'credentials' ]]; then
+    read -p "Enter S3 credential ID: " -r amazonStorageId
+    read -p "Enter S3 credential secret key: " -r amazonStorageKey
+
+    GROK_PARAMETERS+=",\\\\\"amazonStorageId\\\\\": \\\\\"${amazonStorageId}\\\\\",\\\\\"amazonStorageKey\\\\\": \\\\\"${amazonStorageKey}\\\\\""
+  fi
+fi
+
+if [[ $storage == 'gcs' ]]; then
+  echo -e "\n" >&2
+  googleStorageCert=$(input '' "" "Enter Access certificate to Google Cloud Storage" "")
+
+  GROK_PARAMETERS+=",\\\\\"googleStorageCert\\\\\": \\\\\"${googleStorageCert}\\\\\""
+fi
+
+echo
+echo 'Creating Datagrok configuration from input data...'
+echo
+GROK_PARAMETERS+="}"
+
+perl -i -p0e "s%GROK_PARAMETERS: \"{.*}\"%GROK_PARAMETERS: \"${GROK_PARAMETERS}\"%s" "datagrok.${location}.docker-compose.yaml"
+
+echo
+echo "Deploying Datagrok to ${location}..."
+echo
+
+case $location in
+"kubernetes" | "k8s")
+  echo 'K8S not supported yet'
+  ;;
+
+"virtual machine" | "vm")
+  if [[ $setup == 'separate' ]]; then
+    docker context use datagrok >/dev/null 2>&1
+    docker-compose --project-name datagrok \
+      --profile datagrok \
+      -f "datagrok.${location}.docker-compose.yaml" up -d
+    docker context use cvm >/dev/null 2>&1
+    docker-compose --project-name cvm \
+      --profile cvm \
+      -f "datagrok.${location}.docker-compose.yaml" up -d
+  else
+    docker context use datagrok >/dev/null 2>&1
+    docker-compose \
+      --project-name datagrok \
+      --profile datagrok --profile cvm \
+      -f "datagrok.${location}.docker-compose.yaml" up -d
+  fi
+  docker context use default >/dev/null 2>&1
+  rm "datagrok.${location}.docker-compose.yaml"
+  ;;
+
+"ecs")
+  docker context use datagrokAWS >/dev/null 2>&1
+  docker compose --project-name datagrok -f "datagrok.${location}.docker-compose.yaml" up || true
+  if [[ $rds_create == 'yes' ]]; then
+    ecs_sg=$(aws ecs describe-services \
+      --cluster datagrok \
+      --services "$(aws ecs list-services --cluster datagrok --output text --query 'serviceArns[0]')" \
+      --output text --query 'services[].networkConfiguration.awsvpcConfiguration.securityGroups[]')
+    aws rds modify-db-instance \
+      --db-instance-identifier "${amazonRDSName}" \
+      --region "${amazonRDSRegion}" \
+      --vpc-security-group-ids "${ecs_sg}" \
+      --apply-immediately --output text --query '[DBInstance.DBInstanceIdentifier, VpcSecurityGroups[]]'
+  fi
+  docker compose --project-name datagrok-cvm -f "datagrok.cvm.${location}.docker-compose.yaml" up || true
+  docker context use default >/dev/null 2>&1
+  rm "datagrok.${location}.docker-compose.yaml" "datagrok.cvm.${location}.docker-compose.yaml"
+  ;;
+
+*)
+  echo "Something went wrong. Contact Datagrok support."
+  echo "Entered location '$location' is not supported"
+  exit 1
+  ;;
+esac
