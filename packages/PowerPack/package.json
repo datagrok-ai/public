@@ -7,10 +7,10 @@
 	"version": "0.0.4",
 	"description": "",
 	"dependencies": {
+		"@datagrok-libraries/utils": ">=0.0.16",
 		"cash-dom": "latest",
 		"datagrok-api": ">=0.95.8",
-		"rxjs": "^6.5.5",
-		"@datagrok-libraries/utils": ">=0.0.16"
+		"rxjs": "^6.5.5"
 	},
 	"devDependencies": {
 		"@types/jest": "latest",
