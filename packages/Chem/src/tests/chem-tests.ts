@@ -139,7 +139,20 @@ CN1C(=O)CN=C(c2cc(Cl)ccc12)C3CCCCC3`);
   });
 
   test('testSimilaritySearchViewer', async() => {
-    let t = grok.data.demo.molecules(1000);
-    grok.shell.addTableView(t).addViewer('MySimilaritySearch');
+    let table = grok.data.demo.molecules(1000);
+    table.selection.set(0, true);
+    let view = grok.shell.addTableView(table);
+    let similaritySearchviewer = view.addViewer('MySimilaritySearch');
+    table.currentRowIdx = 5;
+    table.selection.set(2, true);
+    table.selection.set(6, true);
+    table.selection.set(5, true);
+    table.rows.removeAt(2, 10);
+    similaritySearchviewer.setOptions({
+      distanceMetric: 'dice',
+      limit: 100,
+      minScore: 0.5,
+      moleculeColumnName: 'smiles',
+    });
   });
 });
