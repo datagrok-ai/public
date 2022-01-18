@@ -16,8 +16,8 @@ export class VisitsViewHelper {
     pivotedSv: DG.DataFrame;
     sortedVisitNamesAndDays: any;
     sortedVisitNames: any;
-    patientVisit = new PatientVisit();
-    studyVisit = new StudyVisit();
+    patientVisit = new PatientVisit(study.domains);
+    studyVisit = new StudyVisit(study.domains);
     name = 'Visits';
     totalVisits = {};
     proceduresAtVisit = { 'lb': LAB_RES_N, 'ex': INV_DRUG_NAME, 'vs': VS_RES_N };
@@ -51,7 +51,7 @@ export class VisitsViewHelper {
                     } else {
                         let subjId = this.pivotedSv.get(SUBJECT_ID, this.pivotedSv.currentRowIdx);
                         let currentPatientVisit = this.totalVisits[this.pivotedSv.currentCol.name][subjId]
-                        currentPatientVisit.updateSubjectVisit();
+                        currentPatientVisit.updateSubjectVisitDomains();
                         createPropertyPanel(currentPatientVisit);
                     }
                 }
@@ -115,7 +115,7 @@ export class VisitsViewHelper {
                 this.totalVisits[colName] = {};
 
                 this.pivotedSv.getCol(SUBJECT_ID).categories.forEach(subjId => {
-                    this.totalVisits[colName][subjId] = new PatientVisit();
+                    this.totalVisits[colName][subjId] = new PatientVisit(study.domains);
                     this.totalVisits[colName][subjId].currentSubjId = subjId;
                     this.totalVisits[colName][subjId].currentVisitDay = currentVisit.day;
                     this.totalVisits[colName][subjId].currentVisitName = currentVisit.name;

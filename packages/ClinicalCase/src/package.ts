@@ -232,51 +232,6 @@ export async function clinicalCaseApp(): Promise<any> {
   );
   views.push(addView(aeBrowserView.view));
 
-/*   const visitsView = createTableView(
-    ['sv', 'tv'],
-    { 'tv': { 'req': [VISIT_DAY, VISIT_NAME] }, 'sv': { 'req': [SUBJECT_ID, VISIT_START_DATE, VISIT_DAY, VISIT_NAME] }, },
-    {
-      'req_domains': {
-        'tv': {
-          'req': [VISIT_DAY, VISIT_NAME]
-        },
-        'sv': {
-          'req': [SUBJECT_ID, VISIT_START_DATE, VISIT_DAY, VISIT_NAME]
-        },
-
-      }
-    },
-    'Visits',
-    '',
-    createVisitsViewHelper
-  )
-  views.push(addView(visitsView.view));
-
-   (visitsView.helper as VisitsViewHelper).pivotedSv.columns.names().forEach(colName => {
-      visitsView.view.grid.setOptions({'rowHeight': 20});
-  }); 
- 
-   visitsView.view.grid.onCellRender.subscribe(function (args) {
-
-    let gc = args.cell;
-    if (gc.isTableCell && gc.gridColumn.name !== SUBJECT_ID) {  
-      let patientVisit = (visitsView.helper as VisitsViewHelper).totalVisits[gc.gridColumn.name][visitsView.helper.pivotedSv.get(SUBJECT_ID, gc.tableRowIndex)];
-      let delta = 30;
-      let x = args.bounds.x + 3;
-      let y = args.bounds.y + 15;
-      let domains = Object.values(patientVisit.domainsNamesDict);
-      args.g.fillStyle = 'blue';
-       domains.forEach(item => {
-        if(patientVisit.eventsCount[item]) {
-          args.g.fillText(patientVisit.eventsCount[item], x, y);
-        }
-        x+=delta;
-      }) 
-      args.preventDefault();
-    }
-
-  }); */
-
   DG.ObjectHandler.register(new AdverseEventHandler());
 
   let summary = views.find(it => it.name === 'Summary');
@@ -293,11 +248,14 @@ export async function clinicalCaseApp(): Promise<any> {
   grok.events.onCurrentViewChanged.subscribe((v) => {
     setTimeout(() => {
       const obj = views.find(it => it.name === grok.shell.v.name);
-      if (!obj.loaded) {
-        obj.load();
-        obj.loaded = true;
+      if (obj) {
+        if (obj.hasOwnProperty('loaded') && !obj.loaded) {
+          obj.load();
+        }
+        if (obj.loaded) {
+        createPropertyPanel(obj);
+        }
       }
-      createPropertyPanel(obj);
     }, 100)
   });
 }
@@ -319,8 +277,7 @@ export async function clinicalCaseFolderLauncher(folder: DG.FileInfo, files: DG.
       ui.button('Run ClinicalCase', async () => {
         await Promise.all(files.map(async (file) => {
           if(domains.includes(file.fileName.toLowerCase())){
-            let df = await grok.data.files.openTable(`${folder.fullPath}/${file.fileName.toLowerCase()}`);
-            grok.shell.addTableView(df);
+            await grok.data.files.openTable(`${folder.fullPath}/${file.fileName.toLowerCase()}`);
           }
         }));
         grok.functions.call("Clinicalcase:clinicalCaseApp");

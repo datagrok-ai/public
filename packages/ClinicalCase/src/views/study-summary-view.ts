@@ -26,7 +26,7 @@ export class StudySummaryView extends DG.ViewBase implements ILazyLoading {
     this.path = '/summary';
   }
   
-  loaded: boolean;
+  loaded = false;
 
   load(): void {
     checkMissingDomains(requiredColumnsByView[this.name], this);
@@ -45,7 +45,7 @@ export class StudySummaryView extends DG.ViewBase implements ILazyLoading {
   async buildView() {
     let dateCol = SUBJ_REF_STDT;
     let cumulativeCol = 'CUMULATIVE_ENROLLMENT';
-    let subjsPerDay = cumulativeEnrollemntByDay(study.domains.dm, dateCol, SUBJECT_ID, cumulativeCol)
+    let subjsPerDay = cumulativeEnrollemntByDay(study.domains.dm, dateCol, SUBJECT_ID, cumulativeCol);
     let refStartCol = subjsPerDay.col(dateCol);
     let lc = DG.Viewer.lineChart(subjsPerDay);
     if (refStartCol.type != DG.TYPE.DATE_TIME) {

@@ -2,13 +2,14 @@
 	"name": "@datagrok/dev-tools",
 	"beta": false,
 	"friendlyName": "DevTools",
-	"version": "1.2.2",
+	"version": "1.2.3",
 	"description": "",
 	"dependencies": {
 		"@types/codemirror": "^5.60.5",
 		"codemirror": "^5.65.0",
 		"datagrok-api": ">=0.99.0",
-		"rxjs": "^7.5.1"
+		"rxjs": "^7.5.1",
+		"@datagrok-libraries/utils": "latest"
 	},
 	"devDependencies": {
 		"cash-dom": "^8.1.0",
