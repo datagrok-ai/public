@@ -1,6 +1,33 @@
 <!-- TITLE: Release History -->
 <!-- SUBTITLE: -->
 
+# 2022-01-18 Dev build 0.114.0
+
+## Latest Docker Images
+
+* Datagrok: 
+  *  `docker pull datagrok/datagrok:0.114.0`
+  *  `docker pull datagrok/datagrok:latest`
+  
+* [Docker-Compose](admin/docker-compose.md)
+
+## Addressed Issues
+
+* JS API: add Viewer.helpUrl parameter 
+* NPM repositories: new package manager UI (WIP)
+* Formula Lines: Editor (WIP)
+* Updated beta_users.csv 
+* Introduce Func.source constants 
+* (Bug) grok.dapi.files.delete(): NoSuchMethodError 
+* 9913 dataFame 
+* Update the dialog design for developer keys 
+* Fixed parameters names 
+* (Bug) Grid: categorical color-coding cannot be switched on/off without opening 'Edit' menu in some cases 
+* Extend Help Deploy to ECS instructution: how to create RDS and S3 
+* Extend Help Deploy to ECS instructution: remove HTTPS from sample compose file 
+* API: added getting and saving event types 
+
+
 # 2022-01-17 Dev build 0.113.0
 
 ## Latest Docker Images
