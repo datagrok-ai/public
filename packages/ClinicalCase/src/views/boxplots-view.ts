@@ -40,7 +40,7 @@ export class BoxPlotsView extends DG.ViewBase implements ILazyLoading {
     this.helpUrl = `${_package.webRoot}/views_help/biomarkers_distribution.md`;
   }
 
-  loaded: boolean;
+  loaded = false;
 
   load(): void {
     checkMissingDomains(requiredColumnsByView[this.name], this);
@@ -203,7 +203,6 @@ export class BoxPlotsView extends DG.ViewBase implements ILazyLoading {
   }
 
   getPValues(df: DG.DataFrame, domain: string, labVal: any, category: any, resColName: string){
-    let test = df.columns.names();
       const valueData = df
         .groupBy([ SUBJECT_ID, 'test', resColName, category ])
         .where(`test = ${labVal}`)

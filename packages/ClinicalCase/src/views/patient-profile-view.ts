@@ -174,7 +174,7 @@ export class PatientProfileView extends DG.ViewBase implements ILazyLoading {
     this.helpUrl = `${_package.webRoot}/views_help/patient_profile.md`;
   }
 
-  loaded: boolean;
+  loaded = false;
 
   load(): void {
     checkMissingDomains(requiredColumnsByView[this.name], this);

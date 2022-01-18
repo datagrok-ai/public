@@ -54,7 +54,7 @@ export class TimelinesView extends DG.ViewBase implements ILazyLoading {
     this.basePath = '/timelines';
   }
 
-  loaded: boolean;
+  loaded = false;
 
   load(): void {
     checkMissingDomains(requiredColumnsByView[this.name], this);
