@@ -24,17 +24,17 @@ More information about Datagrok design and components:
 1. We use native Docker compose commands to run applications in Amazon ECS. It simplifies multi-container application
    development on Amazon ECS using familiar Compose files.
     1. Download and install the latest version of [Docker Desktop](https://docs.docker.com/desktop/), with docker
-       compose included, following installation instructions
-       for [Windows](https://docs.docker.com/desktop/windows/install/)
-       or [Mac](https://docs.docker.com/desktop/mac/install/). Or install
-       the [Docker Compose CLI for Linux](https://docs.docker.com/cloud/ecs-integration/#install-the-docker-compose-cli-on-linux)
-       which also enables docker compose features
+      compose included, following installation instructions
+      for [Windows](https://docs.docker.com/desktop/windows/install/)
+      or [Mac](https://docs.docker.com/desktop/mac/install/). Or install
+      the [Docker Compose CLI for Linux](https://docs.docker.com/cloud/ecs-integration/#install-the-docker-compose-cli-on-linux)
+      which also enables docker compose features
     2. Check that you have [required permissions](https://docs.docker.com/cloud/ecs-integration/#requirements) on AWS
-       account to perform Docker containers deployment to ECS
-2. Additional components, such as database and storage, can be created using AWS CLI To perform AWS CLI commands
+      account to perform Docker containers deployment to ECS
+2. Additional components, such as database and storage, can be created using AWS CLI. To perform AWS CLI commands
    provided in the document
-    3. [Install AWS CLI](https://docs.aws.amazon.com/cli/latest/userguide/getting-started-install.html)
-    4. [Configure authorization for AWS CLI](https://docs.aws.amazon.com/cli/latest/userguide/getting-started-quickstart.html)
+    1. [Install AWS CLI](https://docs.aws.amazon.com/cli/latest/userguide/getting-started-install.html)
+    2. [Configure authorization for AWS CLI](https://docs.aws.amazon.com/cli/latest/userguide/getting-started-quickstart.html)
 3. To deploy Docker containers on ECS it is required to
 4. Check that your default [VPC](https://docs.aws.amazon.com/vpc/latest/userguide/VPC_Subnets.html) has three subnets
    with [internet gateway routing](https://docs.aws.amazon.com/vpc/latest/userguide/VPC_Internet_Gateway.html) for
