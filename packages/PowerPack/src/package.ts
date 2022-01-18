@@ -129,7 +129,7 @@ export function _usersSearch(s: string): Promise<any[]> {
 //description: Protein Data Bank
 //tags: search
 //input: string s
-//output: widget
+//output: widget w
 export function _pdbSearch(s: string): Promise<any> {
   return pdbSearch(s);
 }
@@ -137,7 +137,7 @@ export function _pdbSearch(s: string): Promise<any> {
 //description: PubChem
 //tags: search
 //input: string s
-//output: widget
+//output: widget w
 export function _pubChemSearch(s: string): Promise<any> {
   return pubChemSearch(s);
 }
@@ -145,7 +145,7 @@ export function _pubChemSearch(s: string): Promise<any> {
 //description: PubChem
 //tags: search
 //input: string s
-//output: widget
+//output: widget w
 export function _wikiSearch(s: string): Promise<any> {
   return wikiSearch(s);
 }
