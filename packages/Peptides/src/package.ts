@@ -193,12 +193,12 @@ export async function peptideMolfile(peptide: string): Promise<DG.Widget> {
 }
 
 //name: Multiple sequence alignment
-//tags: viewer
-//input: dataframe table
-//input: column col
+//tags: panel
+//input: column col {semType: alignedSequence}
 //output: dataframe result
-export async function doMSA(table: DG.DataFrame, col: DG.Column): Promise<DG.DataFrame> {
-  const msaCol = await runKalign(col);
+export async function multipleSequenceAlignment(col: DG.Column): Promise<DG.DataFrame> {
+  const msaCol = await runKalign(col, true);
+  const table = col.dataFrame;
   table.columns.add(msaCol);
   return table;
 }
