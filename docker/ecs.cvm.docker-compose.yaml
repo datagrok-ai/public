@@ -103,7 +103,7 @@ x-aws-cloudformation:
         Protocol: "HTTP"
     H2oTCP5005TargetGroup:
       Properties:
-        HealthCheckPath: /info
+        HealthCheckPath: /helper/info
         Matcher:
           HttpCode: 200
         TargetGroupAttributes:
@@ -235,9 +235,7 @@ x-aws-cloudformation:
                 - TargetGroupArn:
                     Ref: JupyterkernelgatewayTCP8888TargetGroup
             Type: forward
-        Protocol: "HTTPS"
-        Certificates:
-          - arn:aws:acm:us-east-2:766822877060:certificate/6bd7a4c0-7087-457a-8493-066389561e57
+        Protocol: "HTTP"
     JupyterkernelgatewayTCP8888ListenerRule:
       Properties:
         Priority: 4
@@ -311,9 +309,7 @@ x-aws-cloudformation:
                 - TargetGroupArn:
                     Ref: JupyternotebookTCP8889TargetGroup
             Type: forward
-        Protocol: "HTTPS"
-        Certificates:
-          - arn:aws:acm:us-east-2:766822877060:certificate/6bd7a4c0-7087-457a-8493-066389561e57
+        Protocol: "HTTP"
     JupyternotebookTCP8889ListenerRule:
       Properties:
         Priority: 6

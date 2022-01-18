@@ -71,7 +71,7 @@ const cacheParamsDefaults: CacheParams = {
 
 const _chemCache = {...cacheParamsDefaults};
 
-async function _invalidate(molStringsColumn: DG.Column, queryMolString: string | null, includeFingerprints: boolean) {
+async function _invalidate(molStringsColumn: DG.Column, queryMolString: string | null, includeFingerprints: boolean, endSection = true) {
   // TODO: implement a proper stopping mechanism instead
   await chemBeginCriticalSection();
   try {
@@ -119,7 +119,8 @@ async function _invalidate(molStringsColumn: DG.Column, queryMolString: string |
       }
     }
   } finally {
-    chemEndCriticalSection();
+    if (endSection)
+      chemEndCriticalSection();
   }
 }
 
@@ -174,14 +175,18 @@ export function chemSubstructureSearchGraph(molStringsColumn: DG.Column, molStri
 
 export async function chemSubstructureSearchLibrary(
   molStringsColumn: DG.Column, molString: string, molStringSmarts: string) {
-  await _invalidate(molStringsColumn, molString, false);
-  const result = DG.BitSet.create(molStringsColumn.length);
-  if (molString.length != 0) {
-    const matches = await (await getRdKitService()).searchSubstructure(molString, molStringSmarts);
-    for (const match of matches)
-      result.set(match, true, false);
+  await _invalidate(molStringsColumn, molString, false, false);
+  try {
+    const result = DG.BitSet.create(molStringsColumn.length);
+    if (molString.length != 0) {
+      const matches = await (await getRdKitService()).searchSubstructure(molString, molStringSmarts);
+      for (const match of matches)
+        result.set(match, true, false);
+    }
+    return result;
+  } finally {
+    chemEndCriticalSection();
   }
-  return result;
 }
 
 export function chemGetMorganFingerprint(molString: string): BitArray {
@@ -189,7 +194,7 @@ export function chemGetMorganFingerprint(molString: string): BitArray {
   try {
     mol = getRdKitModule().get_mol(molString);
     const fp = mol.get_morgan_fp(defaultMorganFpRadius, defaultMorganFpLength);
-    return rdKitFingerprintToBitArray(fp, defaultMorganFpLength);
+    return rdKitFingerprintToBitArray(fp);
   } catch {
     throw new Error(`Chem | Possibly a malformed molString: ${molString}`);
   } finally {

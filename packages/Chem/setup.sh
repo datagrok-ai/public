@@ -12,5 +12,4 @@ npm install
 npm link
 cd ../../packages/Chem
 npm install
-npm link datagrok-api @datagrok-libraries/utils @datagrok-libraries/ml
-npm run install 
+npm link datagrok-api @datagrok-libraries/utils @datagrok-libraries/ml 

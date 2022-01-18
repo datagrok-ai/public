@@ -143,6 +143,14 @@ export class Viewer extends Widget {
     api.grok_Viewer_Set_DataFrame(this.dart, t == null ? null : t.dart);
   }
 
+  get helpUrl(): string {
+    return api.grok_Viewer_Get_HelpUrl(this.dart);
+  }
+
+  set helpUrl(s: string) {
+    api.grok_Viewer_Set_HelpUrl(this.dart, s);
+  }
+
   static grid(t: DataFrame, options: object | null = null): Grid {
     return new DG.Grid(api.grok_Viewer_Grid(t.dart, _toJson(options)));
   }
@@ -421,6 +429,9 @@ export class ViewerMetaHelper {
   }
 
   getFormulaLineAxes(item: FormulaLine): String[] {
-    return api.grok_FormulaLineHelper_GetAxes(item.formula);
+    if (item.type == 'line')
+      return api.grok_FormulaLineHelper_GetAxes(item.formula);
+    else // if (item.type == 'band')
+      return [item.column!, item.column2!];
   }
 }

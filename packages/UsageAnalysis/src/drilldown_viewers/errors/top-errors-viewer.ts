@@ -34,7 +34,31 @@ export class TopErrorsViewer extends UaFilterableViewer {
             `Errors: ${args.args.categories[0]}`,
             'Errors');
 
-            grok.shell.o = pp.getRoot();
+            let id = t.rows.match({ friendly_name: args.args.categories[0]}).toDataFrame().get('id', 0);
+
+            let error = await grok.dapi.logTypes.include('message,isError').filter(`id = "${id}"`).first();
+
+            let isError = ui.boolInput('Is error', error.isError);
+            let comment = ui.stringInput('Comment', error.comment)
+
+            let acc = DG.Accordion.create('ErrorInfo');
+            acc.addPane('ErrorInfo', () => {
+
+              let button = ui.buttonsInput([ui.bigButton('Save', () => {
+                error.isError = isError.value;
+                error.comment = comment.value;
+                grok.dapi.logTypes.save(error);
+                grok.shell.info('Event type saved');
+              })])
+              return ui.divV([isError.root, comment.root, button]);
+            });
+
+            grok.shell.o = ui.divV([
+              pp.getRoot(),
+              acc
+            ]);
+
+
           });
           return viewer.root;
         }

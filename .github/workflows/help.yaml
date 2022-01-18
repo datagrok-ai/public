@@ -87,8 +87,8 @@ jobs:
           sdk: 1.24.3
       - uses: actions/cache@v1
         with:
-          path: /opt/hostedtoolcache/dart-sdk
-          key: dart-install-cache
+          path: /opt/hostedtoolcache/dart-sdk-1.24.3
+          key: dart-1.24.3-install-cache
       - name: Install Dart dependencies
         run: pub get
         working-directory: ./help/_internal

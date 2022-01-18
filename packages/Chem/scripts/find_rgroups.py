@@ -1,7 +1,7 @@
-#name: RGroupGetter
+#name: FindRGroups
 #language: python
 #input: string smiles
-#input: dataframe df1
+#input: dataframe df
 #input: string core
 #input: string prefix
 #output: dataframe result
@@ -11,7 +11,7 @@ import numpy as np
 import re
 
 result = {}
-smiles = df1[smiles].tolist()
+smiles = df[smiles].tolist()
 length = len(smiles)
 core = Chem.MolFromSmiles(core)
 if core is not None:
