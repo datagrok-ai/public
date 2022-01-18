@@ -17,7 +17,7 @@ This document contains instructions to deploy Datagrok on [AWS ECS cluster](http
    # https://docs.aws.amazon.com/cli/latest/userguide/getting-started-install.html
    # Configure authorization for AWS CLI
    # https://docs.aws.amazon.com/cli/latest/userguide/getting-started-quickstart.html
-   
+
    DATAGROK_S3_BUCKET_NAME=example-unique-name-datagrok-s3
    aws s3api create-bucket \
       --bucket "$DATAGROK_S3_BUCKET_NAME" \
@@ -69,7 +69,7 @@ This document contains instructions to deploy Datagrok on [AWS ECS cluster](http
    variables automatic substitution
     ```shell
     #!/bin/sh
-    
+
     export DATAGROK_S3_BUCKET_REGION=$AWS_REGION
     export DATAGROK_S3_BUCKET_NAME=example-unique-name-datagrok-s3
     export DATAGROK_RDS_ENDPOINT=$(aws rds describe-db-instances --db-instance-identifier "datagrok-rds" --output text --query 'DBInstances[].Endpoint.Address')
