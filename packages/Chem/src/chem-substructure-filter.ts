@@ -8,7 +8,7 @@ import * as grok from 'datagrok-api/grok';
 import * as ui from 'datagrok-api/ui';
 import * as DG from 'datagrok-api/dg';
 import {chem} from 'datagrok-api/grok';
-import {searchSubstructure} from "./package";
+import {chemSubstructureSearchLibrary} from "./chem-searches";
 import {initRdKitService} from "./chem-common-rdkit";
 import Sketcher = chem.Sketcher;
 
@@ -38,18 +38,18 @@ export class SubstructureFilter extends DG.Filter {
   attach(dataFrame: DG.DataFrame) {
     this.dataFrame = dataFrame;
     this.column = this.dataFrame.columns.bySemType(DG.SEMTYPE.MOLECULE);
-    this.subs.push(this.dataFrame.onRowsFiltering.subscribe((_: any) => {
-      this.applyFilter();
-    } ));
+    /*
+    const debounceMsec = 500;
+    this.subs.push(DG.debounce(this.dataFrame.onRowsFiltering, debounceMsec)
+      .subscribe((_: any) => this.applyFilter()));
+    */
+    this.subs.push(this.dataFrame.onRowsFiltering.subscribe((_: any) => this.applyFilter()));
   }
 
   // TODO: this needs to be triggered
   reset() {
-    // this.dataFrame.filter.setAll(true, false);
     if (this.column?.temp['chem-scaffold-filter'])
       delete this.column.temp['chem-scaffold-filter'];
-    // this._sketcher?.setSmiles('');
-    // this.dataFrame.filter.fireChanged();
   }
 
   applyFilter() {
@@ -58,17 +58,18 @@ export class SubstructureFilter extends DG.Filter {
       this.reset();
       return;
     }
-
     console.log('Substructure filtering is to be performed');
-    searchSubstructure(this.column!, this.sketcher.getMolFile(), true, '')
-      .then((bitsetCol) => {
-        console.log('Substructure filtering produced results');
-        this.dataFrame?.filter.and(bitsetCol.get(0));
-        this.column!.temp['chem-scaffold-filter'] = this.sketcher.getMolFile();
-        this.dataFrame?.filter.fireChanged();
-      }).catch((e) => {
+    (async() => {
+      await chemSubstructureSearchLibrary(this.column!, this.sketcher.getMolFile(), await this.sketcher.getSmarts())
+        .then((bitset) => {
+          console.log('Substructure filtering produced results');
+          this.dataFrame?.filter.and(bitset);
+          this.column!.temp['chem-scaffold-filter'] = this.sketcher.getMolFile();
+          this.dataFrame?.filter.fireChanged();
+        }).catch((e) => {
         console.warn(e);
         this.reset();
       });
+    })();
   }
 }
