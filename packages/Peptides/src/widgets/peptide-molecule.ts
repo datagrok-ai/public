@@ -13,19 +13,11 @@ import {ChemPalette} from '../utils/chem-palette';
 export async function peptideMoleculeWidget(pep: string): Promise<DG.Widget> {
   const pi = DG.TaskBarProgressIndicator.create('Creating NGL view');
 
-  const split = pep.split('-');
-  const mols = [];
-  for (let i = 1; i < split.length - 1; i++) {
-    if (split[i] in ChemPalette.AASmiles) {
-      const aar = ChemPalette.AASmiles[split[i]];
-      mols[i] = aar.substr(0, aar.length - 1);
-    } else if (!split[i] || split[i] == '-') {
-      mols[i] = '';
-    } else {
-      return new DG.Widget(ui.divH([]));
-    }
+  const smiles = getMolecule(pep);
+  if (smiles == '') {
+    return new DG.Widget(ui.divH([]));
   }
-  const smiles = mols.join('') + 'O';
+
   let molfileStr = (await grok.functions.call('Peptides:SmiTo3D', {smiles}));
 
   molfileStr = molfileStr.replaceAll('\\n', '\n'); ;
@@ -46,4 +38,21 @@ export async function peptideMoleculeWidget(pep: string): Promise<DG.Widget> {
   pi.close();
 
   return new DG.Widget(ui.div([panel, nglHost]));
+}
+
+export function getMolecule(pep: string): string {
+  const split = pep.split('-');
+  const mols = [];
+  for (let i = 1; i < split.length - 1; i++) {
+    if (split[i] in ChemPalette.AASmiles) {
+      const aar = ChemPalette.AASmiles[split[i]];
+      mols[i] = aar.substr(0, aar.length - 1);
+    } else if (!split[i] || split[i] == '-') {
+      mols[i] = '';
+    } else {
+      return '';
+    }
+  }
+  const smiles = mols.join('') + 'O';
+  return smiles;
 }
