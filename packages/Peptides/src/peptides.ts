@@ -35,7 +35,6 @@ export class Peptides {
     currentDf: DG.DataFrame,
     options: {[key: string]: string},
     col: DG.Column,
-    activityColumnChoice: string,
   ) {
     for (let i = 0; i < tableGrid.columns.length; i++) {
       const aarCol = tableGrid.columns.byIndex(i);
@@ -73,7 +72,7 @@ export class Peptides {
       'Levenshtein',
       100,
       view,
-      `${activityColumnChoice}Scaled`,
+      `${options['activityColumnChoice']}Scaled`,
     );
     const psNode = view.dockManager.dock(peptideSpaceViewer, DG.DOCK_TYPE.LEFT, sarNode, 'Peptide Space Viewer', 0.3);
 
@@ -139,7 +138,7 @@ export class Peptides {
         const sarVNode = view.dockManager.dock(sarViewerVertical, DG.DOCK_TYPE.RIGHT, sarNode, 'SAR Vertical Viewer');
 
         const peptideSpaceViewer = await createPeptideSimilaritySpaceViewer(
-          currentDf, col, 't-SNE', 'Levenshtein', 100, view, `${activityColumnChoice}Scaled`);
+          currentDf, col, 't-SNE', 'Levenshtein', 100, view, `${options['activityColumnChoice']}Scaled`);
         const psNode = view.dockManager.dock(
           peptideSpaceViewer, DG.DOCK_TYPE.LEFT, sarNode, 'Peptide Space Viewer', 0.3);
 

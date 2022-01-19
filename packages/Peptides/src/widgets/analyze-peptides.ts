@@ -83,7 +83,7 @@ export async function analyzePeptidesWidget(
       };
 
       const peptides = new Peptides();
-      await peptides.init(tableGrid, view, currentDf, options, col, activityColumnChoice.value.name);
+      await peptides.init(tableGrid, view, currentDf, options, col);
 
       progress.close();
     } else {
