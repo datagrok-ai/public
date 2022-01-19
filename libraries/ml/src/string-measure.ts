@@ -3,7 +3,7 @@ import {jaroWinkler} from 'jaro-winkler-typescript';
 
 import {DistanceMetric} from '@datagrok-libraries/utils/src/type-declarations';
 
-const AvailableMetrics: {[name: string]: DistanceMetric} = {
+export const AvailableMetrics: {[name: string]: DistanceMetric} = {
   'Levenshtein': fl.distance,
   'Jaro-Winkler': jaroWinkler,
 };

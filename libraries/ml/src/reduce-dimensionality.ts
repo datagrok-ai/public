@@ -9,7 +9,7 @@ import {
   assert,
 } from '@datagrok-libraries/utils/src/operations';
 import {SPEBase, PSPEBase} from './spe';
-import {StringMeasure, KnownMetrics} from './string-measure';
+import {StringMeasure, AvailableMetrics, KnownMetrics} from './string-measure';
 
 /**
  * Abstract dimensionality reducer.
@@ -210,7 +210,6 @@ const AvailableReducers = {
 
 export type KnownMethods = keyof typeof AvailableReducers;
 
-
 /**
  * Unified class implementing different dimensionality reduction methods.
  *
@@ -282,5 +281,15 @@ export class DimensionalityReducer {
    */
   static get availableMethods() {
     return Object.keys(AvailableReducers);
+  }
+
+  /**
+   * Returns metrics available.
+   *
+   * @readonly
+   * @memberof DimensionalityReducer
+   */
+  static get availableMetrics() {
+    return Object.keys(AvailableMetrics);
   }
 }
