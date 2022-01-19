@@ -13,8 +13,8 @@ import {initRdKitService} from "./chem-common-rdkit";
 import Sketcher = chem.Sketcher;
 
 export class SubstructureFilter extends DG.Filter {
-  column: DG.Column | null = null;
   sketcher: Sketcher = new Sketcher();
+  bitset: DG.BitSet | null = null;
   loader = ui.loader();
   readonly WHITE_MOL = '\n  0  0  0  0  0  0  0  0  0  0999 V2000\nM  END\n';
 
@@ -38,46 +38,35 @@ export class SubstructureFilter extends DG.Filter {
     this.loader.style.position = 'absolute';
     this.loader.style.right = '60px';
     this.loader.style.top = '4px';
-    this.sketcher.onChanged.subscribe((_) => this.dataFrame?.rows.requestFilter());
+    this.sketcher.onChanged.subscribe(async (_) => await this._onSketchChanged());
     this.root.appendChild(this.sketcher.root);
-    this.root!.firstChild!.firstChild!.firstChild!.appendChild(this.loader);
+    this.root.firstChild!.firstChild!.firstChild!.appendChild(this.loader);
   }
 
   attach(dataFrame: DG.DataFrame) {
-    this.dataFrame = dataFrame;
-    this.column = this.dataFrame.columns.bySemType(DG.SEMTYPE.MOLECULE);
-    /*
-    const debounceMsec = 500;
-    this.subs.push(DG.debounce(this.dataFrame.onRowsFiltering, debounceMsec)
-      .subscribe((_: any) => this.applyFilter()));
-    */
-    this.subs.push(this.dataFrame.onRowsFiltering.subscribe((_: any) => this.applyFilter()));
+    this.column = dataFrame.columns.bySemType(DG.SEMTYPE.MOLECULE);
+    super.attach(dataFrame);
   }
 
-  // TODO: this needs to be triggered
-  reset() {
-    if (this.column?.temp['chem-scaffold-filter'])
-      delete this.column.temp['chem-scaffold-filter'];
-  }
-
-  applyFilter() {
-    if (!this.sketcher.getMolFile() || this.sketcher.getMolFile().endsWith(this.WHITE_MOL)) {
-      this.reset();
-      return;
+  applyFilter(): void {
+    if (this.bitset) {
+      this.dataFrame?.filter.and(this.bitset);
+      this.column!.temp['chem-scaffold-filter'] = this.sketcher.getMolFile();
     }
+  }
 
-    this._indicateProgress();
-    (async() => {
-      await chemSubstructureSearchLibrary(this.column!, this.sketcher.getMolFile(), await this.sketcher.getSmarts())
-        .then((bitset) => {
-          this.dataFrame?.filter.and(bitset);
-          this.column!.temp['chem-scaffold-filter'] = this.sketcher.getMolFile();
-          this.dataFrame?.filter.fireChanged();
-          this._indicateProgress(false);
-        }).catch((e) => {
-        console.warn(e);
-        this.reset();
-      });
-    })();
+  async _onSketchChanged(): Promise<void> {
+    if (!this.sketcher.getMolFile() || this.sketcher.getMolFile().endsWith(this.WHITE_MOL)) {
+      if (this.column?.temp['chem-scaffold-filter'])
+        delete this.column.temp['chem-scaffold-filter'];
+      this.dataFrame?.filter.setAll(true);
+      this.bitset = null;
+    } else {
+      this._indicateProgress();
+      this.bitset = await chemSubstructureSearchLibrary(
+        this.column!, this.sketcher.getMolFile(), await this.sketcher.getSmarts());
+      this._indicateProgress(false);
+      this.dataFrame?.rows.requestFilter();
+    }
   }
 }
