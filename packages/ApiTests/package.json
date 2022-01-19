@@ -1,6 +1,5 @@
 {
 	"name": "api-tests",
-	"beta": true,
 	"friendlyName": "API Tests",
 	"version": "0.0.1",
 	"description": "",
