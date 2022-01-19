@@ -32,7 +32,7 @@ export class SubstructureFilter extends DG.Filter {
 
   constructor() {
     super();
-    /* No await! */ initRdKitService();
+    /* No await */ initRdKitService();
     this.root = ui.divV([]);
     this._indicateProgress(false);
     this.loader.style.position = 'absolute';
@@ -70,7 +70,6 @@ export class SubstructureFilter extends DG.Filter {
     (async() => {
       await chemSubstructureSearchLibrary(this.column!, this.sketcher.getMolFile(), await this.sketcher.getSmarts())
         .then((bitset) => {
-          // console.log('Substructure filtering produced results');
           this.dataFrame?.filter.and(bitset);
           this.column!.temp['chem-scaffold-filter'] = this.sketcher.getMolFile();
           this.dataFrame?.filter.fireChanged();
