@@ -497,7 +497,7 @@ export class Credentials extends Entity {
   }
 
   /** Collection of parameters: login, password, API key, etc. */
-  get parameters(): object { return api.grok_Credentials_Parameters(this.dart); }
+  get parameters(): Record<string, string> { return api.grok_Credentials_Parameters(this.dart); }
 }
 
 /** Represents a script environment */
