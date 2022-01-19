@@ -49,6 +49,9 @@ export class SubstructureFilter extends DG.Filter {
     this.column = dataFrame.columns.bySemType(DG.SEMTYPE.MOLECULE);
     this.columnName = this.column?.name;
     super.attach(dataFrame);
+
+    if (this.column?.temp['chem-scaffold-filter'])
+      this.sketcher.setMolFile(this.column?.temp['chem-scaffold-filter']);
   }
 
   applyFilter(): void {
