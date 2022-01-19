@@ -109,9 +109,8 @@ class Table {
   get _currentItemIdx(): number { return this._grid.dataFrame!.currentRowIdx;}
   set _currentItemIdx(rowIdx: number) { this._grid.dataFrame!.currentRowIdx = rowIdx; }
 
-
   currentItem?: DG.FormulaLine;
-  set height(x: number) { this._grid.root.style.height = `${x}px`; }
+  set height(h: number) { this._grid.root.style.height = `${h}px`; }
   get root(): HTMLElement { return this._grid.root; }
 
   constructor(items: DG.FormulaLine[], onCurrentItemChangedAction: Function) {
@@ -182,10 +181,34 @@ class Table {
  */
 class Preview {
   _scatterPlot: DG.ScatterPlotViewer;
+  _src: DG.DataFrame | DG.Viewer;
   dataFrame?: DG.DataFrame;
 
-  set height(x: number) { this._scatterPlot.root.style.height = `${x}px`; }
+  set height(h: number) { this._scatterPlot.root.style.height = `${h}px`; }
   get root(): HTMLElement { return this._scatterPlot.root; }
+
+  // Sets the corresponding axes:
+  _setAxes(item: DG.FormulaLine): void {
+    let [itemY, itemX] = this._scatterPlot.meta.getFormulaLineAxes(item);
+    let [previewY, previewX] = [itemY, itemX];
+
+    // If the source is a Scatter Plot, then we try to set similar axes:
+    if (this._src instanceof DG.ScatterPlotViewer) {
+      let [srcY, srcX] = [this._src.props.yColumnName, this._src.props.xColumnName];
+      [previewY, previewX] = [previewY ?? srcY, previewX ?? srcX];
+
+      if (previewX == srcY || previewY == srcX)
+        [previewY, previewX] = [previewX, previewY];
+
+      if (previewX == previewY)
+        previewY = srcY;
+    }
+
+    if (previewY)
+      this._scatterPlot.setOptions({y: previewY});
+    if (previewX)
+      this._scatterPlot.setOptions({x: previewX});
+  }
 
   constructor(src: DG.DataFrame | DG.Viewer) {
     // Extract data for Formula Lines:
@@ -194,8 +217,10 @@ class Preview {
         : src instanceof DG.Viewer ? src.dataFrame
         : undefined;
 
-    if (this.dataFrame == undefined)
+    if (!this.dataFrame)
       throw 'Host is not DataFrame or Viewer.';
+
+    this._src = src;
 
     this._scatterPlot = DG.Viewer.scatterPlot(this.dataFrame, {
       showDataframeFormulaLines: false,
@@ -225,13 +250,7 @@ class Preview {
     // Show the item:
     this._scatterPlot.meta.removeFormulaLines();
     this._scatterPlot.meta.addFormulaItem(previewItem);
-
-    // Set the corresponding axes:
-    let axes = this._scatterPlot.meta.getFormulaLineAxes(previewItem);
-    if (axes[0])
-      this._scatterPlot.setOptions({y: axes[0]});
-    if (axes[1])
-      this._scatterPlot.setOptions({x: axes[1]});
+    this._setAxes(previewItem);
   }
 }
 
