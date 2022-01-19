@@ -1,5 +1,0 @@
-name: ulmo
-dependencies:
-  - python=2.7
-  - pip:
-    - ulmo

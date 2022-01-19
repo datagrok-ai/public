@@ -1,0 +1,10 @@
+name: glom_global
+
+channels:
+  - conda-forge
+
+dependencies:
+  - python=3.8
+  - glom
+  - pip:
+      - requests

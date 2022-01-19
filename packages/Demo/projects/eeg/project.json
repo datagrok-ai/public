@@ -1,0 +1,15 @@
+{
+  "tags": [
+    "demo",
+    "default",
+    "eeg",
+    "markup-viewer"
+  ],
+  "description": "Interactive visualization of the electroencephalography (EEG) signal",
+  "tables": [
+    {
+      "path": "demo/sensors/eeg.csv",
+      "id": "dd025280-0b50-11e9-f986-29b6fdc7c743"
+    }
+  ]
+}
