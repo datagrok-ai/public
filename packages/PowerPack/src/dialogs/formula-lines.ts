@@ -10,7 +10,7 @@ const enum ITEM_TYPE {
   BAND = 'Band'
 }
 
-const FOR_GRID = 'For grid';
+const FOR_TABLE = 'For table';
 
 // Options for Formula Line types:
 const ITEM_OPTIONS = {
@@ -61,8 +61,8 @@ const ITEM_OPTIONS = {
     { name: 'max', type: 'int', caption: 'Max' }
   ],
 
-  // Options for displaying Formula Lines in the Grid:
-  [FOR_GRID]: [
+  // Options for displaying Formula Lines in the Table:
+  [FOR_TABLE]: [
     { name: 'title', type: 'string', caption: 'Title' },
     { name: 'formula', type: 'string', editor: 'textarea', caption: 'Formula' },
     { name: 'visible', type: 'bool', caption: 'Show' },
@@ -98,11 +98,11 @@ class Host {
 }
 
 /**
- * Grid Helper for displaying and navigating Formula Lines list.
+ * Table Helper for displaying and navigating Formula Lines list.
  */
-class Grid {
+class Table {
   _grid: DG.Grid;
-  _props: DG.Property[] = propsFromOptions(ITEM_OPTIONS[FOR_GRID]);
+  _props: DG.Property[] = propsFromOptions(ITEM_OPTIONS[FOR_TABLE]);
 
   get _onCurrentItemChanged(): Observable<any> { return this._grid.dataFrame!.onCurrentRowChanged; }
 
@@ -182,22 +182,22 @@ class Grid {
  */
 class Preview {
   _scatterPlot: DG.ScatterPlotViewer;
-  _table?: DG.DataFrame;
+  dataFrame?: DG.DataFrame;
 
   set height(x: number) { this._scatterPlot.root.style.height = `${x}px`; }
   get root(): HTMLElement { return this._scatterPlot.root; }
 
   constructor(src: DG.DataFrame | DG.Viewer) {
     // Extract data for Formula Lines:
-    this._table =
+    this.dataFrame =
           src instanceof DG.DataFrame ? src
         : src instanceof DG.Viewer ? src.dataFrame
         : undefined;
 
-    if (this._table == undefined)
+    if (this.dataFrame == undefined)
       throw 'Host is not DataFrame or Viewer.';
 
-    this._scatterPlot = DG.Viewer.scatterPlot(this._table, {
+    this._scatterPlot = DG.Viewer.scatterPlot(this.dataFrame, {
       showDataframeFormulaLines: false,
       showViewerFormulaLines: true,
       showSizeSelector: false,
@@ -284,7 +284,7 @@ export class FormulaLinesDialog {
   host: Host;
   preview: Preview;
   editor: Editor;
-  grid: Grid;
+  table: Table;
   dialog: DG.Dialog;
 
   /**
@@ -295,13 +295,13 @@ export class FormulaLinesDialog {
     this.host = new Host(src);
     this.preview = new Preview(src);
     this.editor = new Editor();
-    this.grid = new Grid(this.host.items, this.onCurrentItemChangedAction.bind(this));
+    this.table = new Table(this.host.items, this.onCurrentItemChangedAction.bind(this));
     this.dialog = ui.dialog({ title: this.title, helpUrl: this.helpUrl });
 
     // Create Dialog window layout:
     let layout = ui.div([
       ui.block50([
-        this.grid.root,
+        this.table.root,
         this.preview.root
       ]),
       ui.block50([
@@ -309,7 +309,7 @@ export class FormulaLinesDialog {
       ])
     ]);
 
-    this.grid.height = 230;
+    this.table.height = 230;
     this.preview.height = 300;
 
     // Setup and open the Dialog window:
@@ -319,7 +319,7 @@ export class FormulaLinesDialog {
       .show({width: 850, height: 650});
   }
 
-  // The action will be executed when the current Formula Line of the Grid changes:
+  // The action will be executed when the current Formula Line of the Table changes:
   onCurrentItemChangedAction(item: DG.FormulaLine) {
     this.preview.show(item);
     this.editor.show(item);
