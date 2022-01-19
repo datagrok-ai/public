@@ -39,6 +39,10 @@
 		"lint": "eslint src --ext .ts",
 		"lint-fix": "eslint src --ext .ts --fix"
 	},
-	"canEdit": [ "Developers" ],
-	"canView": [ "All users" ]
+	"canEdit": [
+		"Developers"
+	],
+	"canView": [
+		"All users"
+	]
 }
