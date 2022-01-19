@@ -1,18 +1,17 @@
-// This file will be used from Web Workers, so there
-// should be no imports from Datagrok or OCL
-//@ts-ignore
-import rdkitLibVersion from './rdkit_lib_version';
+// This file will be used from Web Workers
+// There should be no imports from Datagrok or OCL
+
 import {RdKitService} from './rdkit-service';
 import {convertToRDKit} from './analysis/r-group-analysis';
 //@ts-ignore
+import rdkitLibVersion from './rdkit_lib_version';
+//@ts-ignore
 import initRDKitModule from './RDKit_minimal.js';
-import {chemBeginCriticalSection, chemEndCriticalSection} from "./chem-common";
 
 export let _rdKitModule: any = null;
 export let _rdKitService: RdKitService | null = null;
 export let _webRoot: string | null;
 let moduleInitialized = false;
-let serviceBeingInitialized = false;
 
 export function setRdKitWebRoot(webRootValue: string) {
   _webRoot = webRootValue;

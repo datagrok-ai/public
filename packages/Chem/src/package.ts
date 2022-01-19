@@ -1,7 +1,6 @@
 import * as grok from 'datagrok-api/grok';
 import * as ui from 'datagrok-api/ui';
 import * as DG from 'datagrok-api/dg';
-// @ts-ignore
 import {getMolColumnPropertyPanel} from './chem-column-property-panel';
 import * as chemSearches from './chem-searches';
 import {SubstructureFilter} from './chem-substructure-filter';
@@ -16,25 +15,21 @@ import {structure3dWidget} from './widgets/structure3d';
 import {toxicityWidget} from './widgets/toxicity';
 import {chemSpace} from './analysis/chem-space';
 import {getActivityCliffs} from './analysis/activity-cliffs';
-import {getDescriptorsSingle} from './descriptors/descriptors-calculation';
-import {addDescriptors} from './descriptors/descriptors-calculation';
-import {getDescriptorsApp} from './descriptors/descriptors-calculation';
+import {getDescriptorsSingle, addDescriptors, getDescriptorsApp} from './descriptors/descriptors-calculation';
+import {addInchis, addInchiKeys} from './panels/inchi';
 import {addMcs} from './panels/find-mcs';
-import {addInchis} from './panels/inchi';
-import {addInchiKeys} from './panels/inchi';
 import * as chemCommonRdKit from './chem-common-rdkit';
 import {convertToRDKit, rGroupAnalysis} from './analysis/r-group-analysis';
 import {identifiersWidget} from './widgets/identifiers';
 import {chem} from 'datagrok-api/grok';
-import Sketcher = chem.Sketcher;
 import {oclMol} from './chem-common-ocl';
-import $ from 'cash-dom';
-import '../css/chem.css';
 import {RDMol} from './rdkit-api';
 import {isMolBlock} from './chem-utils';
+import Sketcher = chem.Sketcher;
+import $ from 'cash-dom';
+import '../css/chem.css';
 
 const drawMoleculeToCanvas = chemCommonRdKit.drawMoleculeToCanvas;
-let initialized: boolean = false;
 
 /**
 * Usage:

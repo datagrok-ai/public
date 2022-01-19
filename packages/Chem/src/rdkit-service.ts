@@ -102,7 +102,6 @@ export class RdKitService {
       })).map(
       (obj: any) =>
       // We deliberately choose Uint32Array over DG.BitSet here
-      //@ts-ignore
         new BitArray(new Uint32Array(obj.data), obj.length));
   }
 }

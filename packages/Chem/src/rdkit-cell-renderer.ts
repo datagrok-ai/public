@@ -29,12 +29,10 @@ M  END
       obj!.mol?.delete();
       obj!.mol = null;
       obj!.substruct = null;
-      obj = null; // ? GC definitely delete
     };
 
     this.rendersCache.onItemEvicted = function(obj: {[_ : string]: any} | null) {
       obj!.canvas = null;
-      obj = null; // ? GC definitely delete
     };
   }
 

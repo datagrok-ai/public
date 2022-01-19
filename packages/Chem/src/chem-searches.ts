@@ -49,30 +49,19 @@ function _chemGetSimilarities(queryMolString: string) {
   return distances;
 }
 
-interface CacheParams {
-  cachedForCol : DG.Column | null;
-  cachedForColVersion: number | null;
-  column: DG.Column | null;
-  query: string | null;
-  moleculesWereIndexed: boolean | null;
-  morganFingerprintsWereIndexed: boolean | null;
-  morganFingerprints: BitArray[] | null;
+class CacheParams {
+  cachedForCol : DG.Column | null = null;
+  cachedForColVersion: number | null = null;
+  column: DG.Column | null = null;
+  query: string | null = null;
+  moleculesWereIndexed: boolean | null = false;
+  morganFingerprintsWereIndexed: boolean | null = false;
+  morganFingerprints: BitArray[] | null = null;
 };
 
-const cacheParamsDefaults: CacheParams = {
-  cachedForCol: null,
-  cachedForColVersion: null,
-  column: null,
-  query: null,
-  moleculesWereIndexed: false,
-  morganFingerprintsWereIndexed: false,
-  morganFingerprints: null,
-};
-
-const _chemCache = {...cacheParamsDefaults};
+const _chemCache = new CacheParams();
 
 async function _invalidate(molStringsColumn: DG.Column, queryMolString: string | null, includeFingerprints: boolean, endSection = true) {
-  // TODO: implement a proper stopping mechanism instead
   await chemBeginCriticalSection();
   try {
     const sameColumnAndVersion = () =>
