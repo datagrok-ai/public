@@ -3,6 +3,7 @@ import * as DG from 'datagrok-api/dg';
 import {runTests} from '@datagrok-libraries/utils/src/test';
 
 import './tests/peptide-space-test';
+import './tests/peptides-tests';
 
 export const _package = new DG.Package();
 
