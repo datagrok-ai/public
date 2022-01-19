@@ -2129,7 +2129,7 @@ export class DataFrameMetaHelper {
     if (item.type == 'line')
       return api.grok_FormulaLineHelper_GetAxes(item.formula);
     else // if (item.type == 'band')
-      return [item.column!, item.column2!];
+      return [item.column2!, item.column!];
   }
 }
 
