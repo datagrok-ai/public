@@ -11,7 +11,7 @@ export class RdkitServiceWorkerSubstructure extends RdKitServiceWorkerSimilarity
     super(module, webRoot);
   }
 
-  initMoleculesStructures(dict: string[], usePatternFingerprints: boolean) {
+  initMoleculesStructures(dict: string[], normalizeCoordinates: boolean, usePatternFingerprints: boolean) {
     this.freeMoleculesStructures();
     this.freeMorganFingerprints();
     if (dict.length === 0)
@@ -33,11 +33,13 @@ export class RdkitServiceWorkerSubstructure extends RdKitServiceWorkerSimilarity
           const fpRdKit = mol.get_pattern_fp(this._patternFpLength);
           fp = rdKitFingerprintToBitArray(fpRdKit);
         }
-        if (isMolBlock(item)) {
-          item = mol.normalize_2d_molblock();
-          mol.straighten_2d_layout();
-          if (!hashToMolblock[item])
-            hashToMolblock[item] = mol.get_molblock();
+        if (normalizeCoordinates) {
+          if (isMolBlock(item)) {
+            item = mol.normalize_2d_molblock();
+            mol.straighten_2d_layout();
+            if (!hashToMolblock[item])
+              hashToMolblock[item] = mol.get_molblock();
+          }
         }
       } catch (e) {
         console.error('Chem | Possibly a malformed molString: `' + item + '`');
@@ -47,10 +49,10 @@ export class RdkitServiceWorkerSubstructure extends RdKitServiceWorkerSimilarity
         // Won't rethrow
       }
       this._rdKitMols.push(mol);
-      if (this._patternFps) {
+      if (this._patternFps)
         this._patternFps.push(fp!);
-      }
-      molIdxToHash.push(item);
+      if (normalizeCoordinates)
+        molIdxToHash.push(item);
     }
     return {molIdxToHash, hashToMolblock};
   }

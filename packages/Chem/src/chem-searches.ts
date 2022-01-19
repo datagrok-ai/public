@@ -90,20 +90,22 @@ async function _invalidate(molStringsColumn: DG.Column, queryMolString: string |
       const {molIdxToHash, hashToMolblock} =
         await (await getRdKitService()).initMoleculesStructures(molStringsColumn.toList());
       let i = 0;
-      let needsUpdate = false;
-      for (const item of molIdxToHash) {
-        const notify = (i === molIdxToHash.length - 1);
-        const molStr = hashToMolblock[item];
-        if (molStr) {
-          molStringsColumn.setString(i, molStr, notify);
-          needsUpdate = true;
+      if (molIdxToHash.length > 0) {
+        let needsUpdate = false;
+        for (const item of molIdxToHash) {
+          const notify = (i === molIdxToHash.length - 1);
+          const molStr = hashToMolblock[item];
+          if (molStr) {
+            molStringsColumn.setString(i, molStr, notify);
+            needsUpdate = true;
+          }
+          ++i;
         }
-        ++i;
-      }
-      if (needsUpdate) {
-        // This seems to be the only way to trigger re-calculation of categories
-        molStringsColumn.compact();
-        _chemCache.cachedForColVersion = molStringsColumn.version;
+        if (needsUpdate) {
+          // This seems to be the only way to trigger re-calculation of categories
+          molStringsColumn.compact();
+          _chemCache.cachedForColVersion = molStringsColumn.version;
+        }
       }
       _chemCache.moleculesWereIndexed = true;
       _chemCache.morganFingerprintsWereIndexed = false;
