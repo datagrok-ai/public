@@ -23,5 +23,7 @@
 		"release-demo-public": "grok publish public --rebuild --release",
 		"debug-demo-local": "grok publish local --rebuild",
 		"release-demo-local": "grok publish local --rebuild --release"
-	}
+	},
+	"canView": ["All users"],
+	"canEdit": ["Administators", "Developers"]
 }
