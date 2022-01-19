@@ -30,7 +30,7 @@
     "offscreen-canvas": "latest",
     "openchemlib": "6.0.1",
     "path": "^0.12.7",
-    "rxjs": "latest",
+    "rxjs": "^6.5.5",
     "style-loader": "latest",
     "ts-loader": "latest",
     "typescript": "latest",
