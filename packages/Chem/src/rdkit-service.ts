@@ -54,9 +54,9 @@ export class RdKitService {
     );
   }
 
-  async initMoleculesStructures(dict: string[], usePatternFingerprints: boolean = false): Promise<any> {
+  async initMoleculesStructures(dict: string[], normalizeCoordinates = false, usePatternFingerprints: boolean = false): Promise<any> {
     return this._initParallelWorkers(dict, (i: number, segment: any) =>
-      this._parallelWorkers[i].initMoleculesStructures(segment, usePatternFingerprints),
+      this._parallelWorkers[i].initMoleculesStructures(segment, normalizeCoordinates, usePatternFingerprints),
     (resultArray: any[]) => resultArray.reduce((acc: any, item: any) => {
       item = item || {molIdxToHash: [], hashToMolblock: {}};
       return {
