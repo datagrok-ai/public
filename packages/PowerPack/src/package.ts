@@ -155,6 +155,6 @@ grok.events.onContextMenu.subscribe((args) => {
   let src = args.args.context;
   if (src instanceof DG.ScatterPlotViewer) {
     let menu = args.args.menu.group('Formula Lines');
-    menu.item('Editor...',  async () => { formulaLinesDialog(src); });
+    menu.item('Editor...', () => { formulaLinesDialog(src); });
   }
 });
