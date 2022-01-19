@@ -28,6 +28,17 @@ function inferActivityColumnsName(table: DG.DataFrame): string | null {
 }
 
 /**
+ * Cast an aligned sequences column to clean sequences.
+ *
+ * @export
+ * @param {DG.Column} col Column to process.
+ * @return {Array<string>} Clean sequences array.
+ */
+export function cleanAlignedSequencesColumn(col: DG.Column): Array<string> {
+  return col.toList().map((v, _) => AlignedSequenceEncoder.clean(v));
+}
+
+/**
  * Creates scatter plot with sequences embeded.
  *
  * @export
@@ -49,7 +60,6 @@ export async function createPeptideSimilaritySpaceViewer(
   cyclesCount: number,
   view: DG.TableView | null,
   activityColumnName?: string | null,
-  zoom: boolean = false,
 ): Promise<DG.ScatterPlotViewer> {
   const pi = DG.TaskBarProgressIndicator.create('Creating embedding.');
 
@@ -155,7 +165,6 @@ export class PeptideSimilaritySpaceWidget {
       this.cycles,
       null,
       null,
-      true,
     );
     viewer.root.style.width = 'auto';
     return viewer;
