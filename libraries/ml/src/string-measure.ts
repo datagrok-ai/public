@@ -2,35 +2,22 @@ import * as fl from 'fastest-levenshtein';
 import {jaroWinkler} from 'jaro-winkler-typescript';
 
 import {DistanceMetric} from '@datagrok-libraries/utils/src/type-declarations';
-import * as metric from '@datagrok-libraries/utils/src/similarity-metrics';
+import {similarityMetric} from '@datagrok-libraries/utils/src/similarity-metrics';
 
 const AvailableMetrics: {[name: string]: DistanceMetric} = {
   'Levenshtein': fl.distance,
   'Jaro-Winkler': jaroWinkler,
-  'Tanimoto': metric.tanimotoSimilarity,
-  'Dice': metric.diceSimilarity,
-  'Asymmetric': metric.asymmetricSimilarity,
-  'Braun-Blanquet': metric.braunBlanquetSimilarity,
-  'Cosine': metric.cosineSimilarity,
-  'Kulczynski': metric.kulczynskiSimilarity,
-  'Mc-Connaughey': metric.mcConnaugheySimilarity,
-  'Rogot-Goldberg': metric.rogotGoldbergSimilarity,
-  'Russel': metric.russelSimilarity,
-  'Sokal': metric.sokalSimilarity,
+  'Tanimoto': similarityMetric['Tanimoto'],
+  'Dice': similarityMetric['Dice'],
+  'Asymmetric': similarityMetric['Asymmetric'],
+  'Braun-Blanquet': similarityMetric['Braun-Blanquet'],
+  'Cosine': similarityMetric['Cosine'],
+  'Kulczynski': similarityMetric['Kulczynski'],
+  'Mc-Connaughey': similarityMetric['Mc-Connaughey'],
+  'Rogot-Goldberg': similarityMetric['Rogot-Goldberg'],
+  'Russel': similarityMetric['Russel'],
+  'Sokal': similarityMetric['Sokal'],
 };
-
-export const BitArrayMetrics = [
-  'Tanimoto',
-  'Dice',
-  'Asymmetric',
-  'Braun-Blanquet',
-  'Cosine',
-  'Kulczynski',
-  'Mc-Connaughey',
-  'Rogot-Goldberg',
-  'Russel',
-  'Sokal',
-];
 
 export type KnownMetrics = keyof typeof AvailableMetrics;
 
