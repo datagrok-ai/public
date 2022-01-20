@@ -149,6 +149,9 @@ export function renderMolecule(
           .add(sketcher)
           .show();
       });
+      menu.item('Explore', () => {
+        grok.shell.o = DG.SemanticValue.fromValueType(molStr, 'Molecule')
+      });
       menu.show();
     },
     'More',
