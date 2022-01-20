@@ -9,9 +9,9 @@ import {
   createDimensinalityReducingWorker,
 } from '@datagrok-libraries/ml/src/workers/dimensionality-reducing-worker-creator';
 
-export async function chemSpace(table: DG.DataFrame, molColumn: DG.Column, methodName: string) {
+export async function chemSpace(table: DG.DataFrame, molColumn: DG.Column, methodName: string, similarityMetric: string) {
   const fpColumn = await chemGetMorganFingerprints(molColumn);
-  const coordinates = await createDimensinalityReducingWorker(fpColumn, methodName, 'Tanimoto') as Coordinates;
+  const coordinates = await createDimensinalityReducingWorker(fpColumn, methodName, similarityMetric) as Coordinates;
   const axes = ['Embed_X', 'Embed_Y'];
 
   for (let i = 0; i < axes.length; ++i) {

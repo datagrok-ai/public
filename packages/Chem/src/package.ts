@@ -372,10 +372,11 @@ export async function activityCliffs(dataframe: DG.DataFrame, smiles: DG.Column,
 //input: dataframe table
 //input: column smiles { semType: Molecule }
 //input: string methodName { choices:["UMAP", "t-SNE", "SPE", "pSPE", "OriginalSPE"] }
+//input: string similarityMetric { choices:["Levenshtein", "Jaro-Winkler", "Tanimoto", "Dice", "Asymmetric", "Braun-Blanquet", "Cosine", "Kulczynski", "Mc-Connaughey", "Rogot-Goldberg", "Russel", "Sokal"] }
 //output: viewer result
-export async function chemSpaceTopMenu(table: DG.DataFrame, smiles: DG.Column, methodName: string) {
+export async function chemSpaceTopMenu(table: DG.DataFrame, smiles: DG.Column, methodName: string, similarityMetric: string) {
   return new Promise<void>(async (resolve, reject) => {
-    await chemSpace(table, smiles, methodName);
+    await chemSpace(table, smiles, methodName, similarityMetric);
     resolve();
   });
 }

@@ -10,6 +10,8 @@ import {
 } from '@datagrok-libraries/utils/src/operations';
 import {SPEBase, PSPEBase, OriginalSPE} from './spe';
 import {StringMeasure, KnownMetrics} from './string-measure';
+import BitArray from '@datagrok-libraries/utils/src/bit-array';
+import {BitArrayMetrics} from './string-measure';
 
 /**
  * Abstract dimensionality reducer.
@@ -260,6 +262,12 @@ export class DimensionalityReducer {
   constructor(data: any[], method: KnownMethods, metric?: KnownMetrics, options?: Options) {
     const measure = metric ? new StringMeasure(metric).getMeasure() : calculateEuclideanDistance;
     let specOptions = {};
+
+    if (metric && BitArrayMetrics.includes(metric.toString())) {
+      for (let i = 0; i < data.length; ++i) {
+        data[i] = new BitArray(data[i]._data, data[i]._length);
+      }
+    }
 
     if (method == 'UMAP') {
       specOptions = {
