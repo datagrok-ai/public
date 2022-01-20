@@ -9,9 +9,10 @@ import * as DG from 'datagrok-api/dg';
 import {chem} from 'datagrok-api/grok';
 import {chemSubstructureSearchLibrary} from "./chem-searches";
 import {initRdKitService} from "./chem-common-rdkit";
-import {Observable, Subscription} from "rxjs";
+import {Subscription} from "rxjs";
 import {debounceTime} from 'rxjs/operators';
 import Sketcher = chem.Sketcher;
+import wu from 'wu';
 
 export class SubstructureFilter extends DG.Filter {
   sketcher: Sketcher = new Sketcher();
@@ -53,18 +54,18 @@ export class SubstructureFilter extends DG.Filter {
   }
 
   attach(dataFrame: DG.DataFrame): void {
-    if (this.onSketcherChangedSubs)
-      this.onSketcherChangedSubs.unsubscribe();
     this.column = dataFrame.columns.bySemType(DG.SEMTYPE.MOLECULE);
-    chemSubstructureSearchLibrary(this.column!, '', ''); // No await
     this.columnName = this.column?.name;
-    let onChangedEvent: Observable<any> = this.sketcher.onChanged;
-    const t = this._debounceTime;
-    if (t > 0)
-      onChangedEvent = onChangedEvent.pipe(debounceTime(t));
-    this.onSketcherChangedSubs = onChangedEvent
-      .subscribe(async _ => await this._onSketchChanged());
+    this.onSketcherChangedSubs?.unsubscribe();
+
+    // warmup
+    chemSubstructureSearchLibrary(this.column!, '', ''); // No await
+
+    let onChangedEvent: any = this.sketcher.onChanged;
+    onChangedEvent = onChangedEvent.pipe(debounceTime(this._debounceTime));
+    this.onSketcherChangedSubs = onChangedEvent.subscribe(async (_: any) => await this._onSketchChanged());
     super.attach(dataFrame);
+
     if (this.column?.temp['chem-scaffold-filter'])
       this.sketcher.setMolFile(this.column?.temp['chem-scaffold-filter']);
   }
@@ -81,7 +82,12 @@ export class SubstructureFilter extends DG.Filter {
       if (this.column?.temp['chem-scaffold-filter'])
         delete this.column.temp['chem-scaffold-filter'];
       this.bitset = null;
-    } else {
+    }
+    else if (wu(this.dataFrame!.rows.filters).has(`${this.columnName}: ${this.filterSummary}`)) {
+      // some other filter is already filtering for the exact same thing
+      return;
+    }
+    else {
       this._indicateProgress();
       try {
         this.bitset = await chemSubstructureSearchLibrary(
