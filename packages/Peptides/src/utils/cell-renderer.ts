@@ -246,16 +246,21 @@ export class AlignedSequenceCellRenderer extends DG.GridCellRenderer {
    * @param {DG.GridCellStyle} cellStyle Cell style.
    * @memberof AlignedSequenceCellRenderer
    */
-  render(g: CanvasRenderingContext2D, x: number, y: number, w: number, h: number,
-    gridCell: DG.GridCell, cellStyle: DG.GridCellStyle ) {
-    w = Math.min(gridCell.grid.canvas.width - x, w);
+  render(
+    g: CanvasRenderingContext2D, x: number, y: number, w: number, h: number,
+    gridCell: DG.GridCell, cellStyle: DG.GridCellStyle,
+  ) {
+    const grid = gridCell.dart.grid ? gridCell.grid : gridCell.dart.grid;
+    const cell = gridCell.cell;
+
+    w = grid ? Math.min(grid.canvas.width - x, w) : g.canvas.width - x;
     g.save();
     g.beginPath();
     g.rect(x, y, w, h);
     g.clip();
     g.font = '14px monospace';
     g.textBaseline = 'top';
-    const s: string = gridCell.cell.value ?? '';
+    const s: string = cell.value ?? '';
 
     //TODO: can this be replaced/merged with splitSequence?
     const subParts = s.split('-');
