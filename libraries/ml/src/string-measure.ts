@@ -2,13 +2,35 @@ import * as fl from 'fastest-levenshtein';
 import {jaroWinkler} from 'jaro-winkler-typescript';
 
 import {DistanceMetric} from '@datagrok-libraries/utils/src/type-declarations';
-import { tanimoto } from './chem';
+import * as metric from '@datagrok-libraries/utils/src/similarity-metrics';
 
 const AvailableMetrics: {[name: string]: DistanceMetric} = {
   'Levenshtein': fl.distance,
   'Jaro-Winkler': jaroWinkler,
-  'Tanimoto': tanimoto,
+  'Tanimoto': metric.tanimotoSimilarity,
+  'Dice': metric.diceSimilarity,
+  'Asymmetric': metric.asymmetricSimilarity,
+  'Braun-Blanquet': metric.braunBlanquetSimilarity,
+  'Cosine': metric.cosineSimilarity,
+  'Kulczynski': metric.kulczynskiSimilarity,
+  'Mc-Connaughey': metric.mcConnaugheySimilarity,
+  'Rogot-Goldberg': metric.rogotGoldbergSimilarity,
+  'Russel': metric.russelSimilarity,
+  'Sokal': metric.sokalSimilarity,
 };
+
+export const BitArrayMetrics = [
+  'Tanimoto',
+  'Dice',
+  'Asymmetric',
+  'Braun-Blanquet',
+  'Cosine',
+  'Kulczynski',
+  'Mc-Connaughey',
+  'Rogot-Goldberg',
+  'Russel',
+  'Sokal',
+]
 
 export type KnownMetrics = keyof typeof AvailableMetrics;
 
