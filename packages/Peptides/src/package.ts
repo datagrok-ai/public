@@ -17,8 +17,6 @@ import { SARViewer, SARViewerVertical } from './viewers/sar-viewer';
 import { peptideMoleculeWidget, getMolecule } from './widgets/peptide-molecule';
 import { SubstViewer } from './viewers/subst-viewer';
 import { runKalign } from './utils/multiple-sequence-alignment';
-import { MonomerLibrary } from './monomer-library';
-
 
 export const _package = new DG.Package();
 let tableGrid: DG.Grid;
@@ -45,10 +43,6 @@ async function main(chosenFile: string) {
 export async function Peptides() {
   const wikiLink = ui.link('wiki', 'https://github.com/datagrok-ai/public/blob/master/help/domains/bio/peptides.md');
   const textLink = ui.inlineText(['For more details, see our ', wikiLink, '.']);
-
-  let sdf = await _package.files.readAsText(`HELMMonomers_June10.sdf`);
-  let lib = new MonomerLibrary(sdf);
-
 
   const appDescription = ui.info(
     [
