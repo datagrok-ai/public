@@ -29,7 +29,6 @@ export function manualAlignmentWidget(alignedSequenceCol: DG.Column, currentDf: 
       }
     }
 
-    // await model.updateDefault();
     await Peptides.recalculate();
   });
 

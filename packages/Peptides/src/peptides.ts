@@ -152,7 +152,7 @@ export class Peptides {
         const substViewer = view.addViewer(
           'substitution-analysis-viewer', {'activityColumnName': options['activityColumnName']},
         );
-        nodeList.push(view.dockManager.dock(substViewer, DG.DOCK_TYPE.RIGHT, null, 'Substitution Analysis'));
+        nodeList.push(view.dockManager.dock(substViewer, DG.DOCK_TYPE.DOWN, null, 'Substitution Analysis'));
         $(switchViewers).removeClass('fa-toggle-on');
         $(switchViewers).addClass('fa-toggle-off');
       }

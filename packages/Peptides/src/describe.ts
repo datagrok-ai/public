@@ -440,6 +440,8 @@ function postProcessGrids(
 
   sarGrid.props.allowEdit = false;
   sarVGrid.props.allowEdit = false;
+
+  sarVGrid.col('Mean difference')!.name = 'Diff';
 }
 
 export async function describe(
