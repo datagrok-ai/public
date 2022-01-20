@@ -64,6 +64,15 @@ export class DartList<T> implements Iterable<T> {
   /** Sets the value at the given [index] in the list to [value]. */
   set(index: number, value: T): T { return api.grok_List_Get(this.dart, index, value); }
 
+  includes(item: T, start?: number) {
+    const length = this.length;
+    for (let i = (start ? start : 0); i < length; i++) {
+      if (this.get(i) === item)
+        return true;
+    }
+    return false;
+  }
+
   * [Symbol.iterator](): Iterator<T> {
     for (let i = 0; i < this.length; i++)
       yield this.get(i);
