@@ -34,7 +34,7 @@ export class SPEBase {
    */
   constructor(options?: Options) {
     this.steps = options?.steps ?? 0;
-    this.cycles = options?.cycles ?? 1e3;
+    this.cycles = options?.cycles ?? 1e6;
     // Select a cutoff distance {cutoff} and ...
     this.cutoff = options?.cutoff ?? 0;
     // ... an initial learning rate {lambda} > 0
@@ -197,6 +197,7 @@ export class OriginalSPE extends SPEBase {
 
   constructor(options?: Options) {
     super(options);
+    this.cycles = options?.cycles ?? 1e3;
     this.steps = options?.steps ?? 100000;
     this.radiusPercent = options?.radiusPercent ?? 1.0;
     this.maxDistance = options?.maxDistance ?? null;
