@@ -10,7 +10,6 @@ export class MonomerLibrary {
     [name: string]: {
       mol: string,
       type: string,
-      code: string,
       analogueCode: string,
       linkages: { [link: string]: { atomNumber: number, type: string } }
     }
@@ -37,7 +36,9 @@ export class MonomerLibrary {
         analogueCode: data.MonomerNaturalAnalogCode[i],
         linkages: linkData
       };
-      this.library[data.MonomerName[i]] = entry;
+
+      let name = data.MonomerCode[i] !== '.' ? data.MonomerCode[i] : data.MonomerName[i];
+      this.library[name] = entry;
       this.monomers.push(data.MonomerName[i]);
     }
   }
@@ -50,13 +51,13 @@ export class MonomerLibrary {
     return this.library[name];
   }
 
-  /** getting mol as string for monomers application*/
+  /** getting mol as string for monomer*/
   public getMonomerMol(name: string) {
     if (!this.monomers.includes(name))
       throw `Monomer library do not contain ${name} monomer`;
 
     let entry = this.library[name];
-    let monomerMol = entry.mol;
+    let monomerMol = entry.mol.replace(/M  RGP  .+\n/, '');
 
     //order matters
     let links = Object.keys(entry.linkages);
