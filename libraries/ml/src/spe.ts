@@ -181,7 +181,7 @@ export class PSPEBase extends SPEBase {
  * Implements modified stochastic proximity embedding.
  *
  * @export
- * @class SPE
+ * @class OriginalSPE
  * @link doi:10.1002/jcc.10234
  */
 export class OriginalSPE extends SPEBase {
@@ -244,16 +244,14 @@ export class OriginalSPE extends SPEBase {
         // ... compute their Euclidean distance on the D-dimensional map, dij.
         const d = calculateEuclideanDistance(rowi, rowj);
 
-        // If rij <= rc, or if rij > rc and dij < rij ...
         if ((r <= radius) || (d < r)) {
-          const multiplier = lambda*0.5*(r-d)/(d+this.epsilon);
+          const multiplier = lambda * 0.5 * (r - d) / (d + this.epsilon);
           // ... update the coordinates xi and xj.
           const diffIJ = vectorAdd(rowi, rowj, -1);
           coordinates[i] = vectorAdd(rowi, diffIJ, multiplier);
           coordinates[j] = vectorAdd(rowj, diffIJ, -multiplier);
         }
       }
-      // Decrease the learning rate {lambda} by a prescribed {dlambda}.
       lambda -= ((this.lambda - this.dlambda) / (this.cycles - 1.0)); ;
       if (lambda < this.dlambda) {
         break;
