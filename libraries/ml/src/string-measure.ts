@@ -30,7 +30,7 @@ export const BitArrayMetrics = [
   'Rogot-Goldberg',
   'Russel',
   'Sokal',
-]
+];
 
 export type KnownMetrics = keyof typeof AvailableMetrics;
 

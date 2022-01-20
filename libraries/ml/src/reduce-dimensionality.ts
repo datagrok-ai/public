@@ -209,7 +209,7 @@ class PSPEReducer extends Reducer {
  * @class OriginalSPEReducer
  * @extends {Reducer}
  */
- class OriginalSPEReducer extends Reducer {
+class OriginalSPEReducer extends Reducer {
   protected reducer: OriginalSPE;
 
   /**
