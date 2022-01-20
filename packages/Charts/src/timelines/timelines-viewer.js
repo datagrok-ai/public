@@ -36,6 +36,7 @@ export class TimelinesViewer extends EChartViewer {
 
     this.defaultDateFormat = '{MMM} {d}';
     this.data = [];
+    this.columnData = {};
     this.count = 0;
     this.selectionColor = DG.Color.toRgb(DG.Color.selectedRows);
     this.zoomState = [[0, 100], [0, 100], [0, 100], [0, 100]];
@@ -80,7 +81,9 @@ export class TimelinesViewer extends EChartViewer {
 
       this.option.tooltip.axisPointer.type = this.axisPointer;
 
+      this.titleDiv = ui.div();
       this.legendDiv = ui.div();
+      this.root.appendChild(this.titleDiv);
       this.root.appendChild(this.legendDiv);
       this.initialized = true;
     }
@@ -371,12 +374,17 @@ export class TimelinesViewer extends EChartViewer {
     grok.shell.warning('The columns of different types cannot be used for representing dates.');
   }
 
+  getColumnMin(column) {
+    return column.type === DG.COLUMN_TYPE.DATE_TIME ? new Date(column.min * 1e-3) : column.min;
+  }
+
+  getColumnMax(column) {
+    return column.type === DG.COLUMN_TYPE.DATE_TIME ? new Date(column.max * 1e-3) : column.max;
+  }
+
   getSeriesData() {
     this.data.length = 0;
     let tempObj = {};
-
-    const getColumnMin = (column) => column.type === DG.COLUMN_TYPE.DATE_TIME ? new Date(column.min * 1e-3) : column.min;
-    const getColumnMax = (column) => column.type === DG.COLUMN_TYPE.DATE_TIME ? new Date(column.max * 1e-3) : column.max;
 
     const { categories: colorCategories, data: colorBuf } = this.columnData.colorByColumnName;
     const { categories: eventCategories, data: eventBuf } = this.columnData.eventColumnName;
@@ -393,9 +401,9 @@ export class TimelinesViewer extends EChartViewer {
       if (this.showOpenIntervals) {
         // TODO: handle edge case of different column types
         if (start == null)
-          start = Math.min(getColumnMin(startColumn), getColumnMin(endColumn));
+          start = Math.min(this.getColumnMin(startColumn), this.getColumnMin(endColumn));
         if (end == null)
-          end = Math.max(getColumnMax(startColumn), getColumnMax(endColumn));
+          end = Math.max(this.getColumnMax(startColumn), this.getColumnMax(endColumn));
       }
       const color = colorCategories[colorBuf[i]];
       const event = eventCategories[eventBuf[i]];
@@ -441,10 +449,20 @@ export class TimelinesViewer extends EChartViewer {
   }
 
   showErrorMessage(msg) {
-    this.root.appendChild(ui.divText(msg, 'd4-viewer-error'));
+    this.titleDiv.innerText = msg;
+    $(this.titleDiv).addClass('d4-viewer-error');
+    $(this.legendDiv).hide();
+    $(this.chart.getDom()).hide();
+  }
+
+  updateContainers() {
+    $(this.titleDiv).removeClass().empty();
+    this.switchLegendVisibility(this.legendVisibility);
+    $(this.chart.getDom()).show();
   }
 
   render() {
+    this.updateContainers();
     if (!this.splitByColumnName || !this.startColumnName || !this.endColumnName) {
       this.showErrorMessage('Not enough data to produce the result.');
       return;
