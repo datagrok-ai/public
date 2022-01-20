@@ -89,7 +89,6 @@ export function rogotGoldbergSimilarity(x: BitArray, y: BitArray) {
   let total = x.countBits(true) + y.countBits(true);
   let len = x.length;
   let diff = len - total + common;
-  if ((common == len) || (diff == len))
-    return 1.0;
+  if ((common == len) || (diff == len)) return 1.0;
   else return common / total + diff / (2 * len - total);
 }
