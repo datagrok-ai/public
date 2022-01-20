@@ -20,9 +20,8 @@ import {Coordinates} from '@datagrok-libraries/utils/src/type-declarations';
 function inferActivityColumnsName(table: DG.DataFrame): string | null {
   const re = /activity|ic50/i;
   for (const name of table.columns.names()) {
-    if (name.match(re)) {
+    if (name.match(re))
       return name;
-    }
   }
   return null;
 }
@@ -100,17 +99,16 @@ export async function createPeptideSimilaritySpaceViewer(
         const v = newCol.get(i);
         table.set(axis, i, v);
       }
-    } else {
+    } else
       table.columns.insert(newCol);
-    }
   }
 
   const viewerOptions = {x: '~X', y: '~Y', color: activityColumnName ?? '~MW', size: '~MW'};
   const viewer = DG.Viewer.scatterPlot(table, viewerOptions);
 
-  if (view !== null) {
+  if (view !== null)
     view.addViewer(viewer);
-  }
+
 
   pi.close();
   return viewer;

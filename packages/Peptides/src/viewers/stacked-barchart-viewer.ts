@@ -13,9 +13,8 @@ export function addViewerToHeader(grid: DG.Grid, viewer: Promise<DG.Widget>) {
     rxjs.fromEvent(grid.overlay, 'mousemove').subscribe((mm:any) => {
       mm = mm as MouseEvent;
       const cell = grid.hitTest(mm.offsetX, mm.offsetY);
-      if (cell !== null && cell?.isColHeader && cell.tableColumn?.semType == 'aminoAcids') {
+      if (cell !== null && cell?.isColHeader && cell.tableColumn?.semType == 'aminoAcids')
         barchart.highlight(cell, mm.offsetX, mm.offsetY);
-      }
     });
 
     rxjs.fromEvent(grid.overlay, 'click').subscribe((mm:any) => {
@@ -118,9 +117,8 @@ export class StackedBarChart extends DG.JsViewer {
       let i = 0;
       for (const value of Object.values(groups)) {
         i++;
-        for (const obj of value) {
+        for (const obj of value)
           this.ord[obj] = i;
-        }
       }
       this.yScale = scaleLinear();
       this.xScale = scaleBand();
@@ -169,9 +167,9 @@ export class StackedBarChart extends DG.JsViewer {
       const buf2 = df.filter.getBuffer();
       const resbuf = new Int32Array(df.rowCount);
 
-      for (let i = 0; i < buf2.length; i++) {
+      for (let i = 0; i < buf2.length; i++)
         resbuf[i] = buf1[i] & buf2[i];
-      }
+
 
       //TODO: optimize it, why store so many tables?
       const mask = DG.BitSet.fromBytes(resbuf.buffer, df.rowCount);
@@ -187,9 +185,8 @@ export class StackedBarChart extends DG.JsViewer {
           const buf2 = df.filter.getBuffer();
           const resbuf = new Int32Array(df.rowCount);
 
-          for (let i = 0; i < buf2.length; i++) {
+          for (let i = 0; i < buf2.length; i++)
             resbuf[i] = buf1[i] & buf2[i];
-          }
 
 
           // @ts-ignore
@@ -225,9 +222,9 @@ export class StackedBarChart extends DG.JsViewer {
         for (let i = 0; i < df.rowCount; i++) {
           const amino = df.getCol(name).get(i);
           const aminoCount = df.getCol(`${name}_count`).get(i);
-          if ((!amino) || amino === this.dataEmptyAA) {
+          if ((!amino) || amino === this.dataEmptyAA)
             continue;
-          }
+
           const aminoObj = {'name': amino, 'count': aminoCount, 'selectedCount': 0};
           colObj['data'].push(aminoObj);
           for (let j = 0; j < this.aggregatedTablesUnselected[name].rowCount; j++) {
@@ -241,12 +238,12 @@ export class StackedBarChart extends DG.JsViewer {
           }
         }
         colObj['data'] = colObj['data'].sort((o1, o2) => {
-          if (this.ord[o1['name']] > this.ord[o2['name']]) {
+          if (this.ord[o1['name']] > this.ord[o2['name']])
             return -1;
-          }
-          if (this.ord[o1['name']] < this.ord[o2['name']]) {
+
+          if (this.ord[o1['name']] < this.ord[o2['name']])
             return 1;
-          }
+
 
           return 0;
         });
@@ -329,13 +326,12 @@ export class StackedBarChart extends DG.JsViewer {
 
     render(computeData = true) {
       const df = this.dataFrame!;
-      if (computeData) {
+      if (computeData)
         this.computeData(df);
-      }
+
       if (this.tableCanvas) {
-        for (const name of this.aminoColumnNames) {
+        for (const name of this.aminoColumnNames)
           this.renderBar(name);
-        }
       }
       return;
     }
@@ -350,16 +346,15 @@ export class StackedBarChart extends DG.JsViewer {
     }
 
     unregister(name: string) {
-      if (this.registered[name]) {
+      if (this.registered[name])
         delete this.registered[name];
-      }
     }
 
 
     renderBar(name: string) {
-      if (!(this.registered[name]) || !(this.tableCanvas)) {
+      if (!(this.registered[name]) || !(this.tableCanvas))
         return;
-      }
+
       const cell = this.registered[name];
       const rect = cell.bounds;
       this.renderBarToCanvas(this.tableCanvas.getContext('2d')!, cell, rect.x, rect.y, rect.width, rect.height);
@@ -367,9 +362,9 @@ export class StackedBarChart extends DG.JsViewer {
 
     highlight(cell: DG.GridCell, offsetX:number, offsetY:number) {
       const colName = cell.tableColumn?.name;
-      if (!colName) {
+      if (!colName)
         return;
-      }
+
       const margin = 0.2;
       const bound = cell.bounds;
       const x = bound.x + bound.width * margin;
@@ -403,9 +398,9 @@ export class StackedBarChart extends DG.JsViewer {
     }
 
     beginSelection(event:any) {
-      if (!this.highlighted || !this.dataFrame) {
+      if (!this.highlighted || !this.dataFrame)
         return;
-      }
+
       this.dataFrame!.selection.handleClick((i) => {
         // @ts-ignore
         return this.highlighted!['aaName'] === (this.dataFrame.getCol(this.highlighted!['colName']).get(i));

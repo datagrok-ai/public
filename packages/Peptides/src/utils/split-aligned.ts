@@ -37,12 +37,12 @@ export function splitAlignedPeptides(peptideColumn: DG.Column, filter: boolean =
     currentSplitPeptide = splitPeptidesArray[i];
     nTerminal = currentSplitPeptide.pop()!; // it is guaranteed that there will be at least one element
     currentLength = currentSplitPeptide.length;
-    if (currentLength !== modeMonomerCount) {
+    if (currentLength !== modeMonomerCount)
       invalidIndexes.push(i);
-    }
-    for (let j = 0; j < modeMonomerCount; j++) {
+
+    for (let j = 0; j < modeMonomerCount; j++)
       splitColumns[j].push(j < currentLength ? currentSplitPeptide[j] : '-');
-    }
+
     splitColumns[modeMonomerCount].push(nTerminal);
   }
   modeMonomerCount--; // minus C-terminal
@@ -56,9 +56,9 @@ export function splitAlignedPeptides(peptideColumn: DG.Column, filter: boolean =
   if (filter) {
     splitColumns = splitColumns.filter((positionArray, index) => {
       const isRetained = new Set(positionArray).size > 1;
-      if (!isRetained) {
+      if (!isRetained)
         columnNames.splice(index, 1);
-      }
+
       return isRetained;
     });
   }

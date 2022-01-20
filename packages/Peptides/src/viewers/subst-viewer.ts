@@ -160,9 +160,9 @@ export class SubstViewer extends DG.JsViewer {
       },
     );
 
-    for (const col of table.columns.names()) {
+    for (const col of table.columns.names())
       this.viewerGrid.col(col)!.width = this.viewerGrid.props.rowHeight;
-    }
+
 
     this.viewerGrid.onCellRender.subscribe((args) => {
       if (args.cell.isRowHeader && args.cell.gridColumn.visible) {
@@ -200,9 +200,9 @@ export class SubstViewer extends DG.JsViewer {
 
         this.casesGrid = tempDf.plot.grid();
         this.casesGrid.props.allowEdit = false;
-      } else {
+      } else
         this.casesGrid = null;
-      }
+
       this.render();
     });
 
@@ -245,12 +245,12 @@ export class SubstViewer extends DG.JsViewer {
       currentSplitPeptide = splitPeptidesArray[i];
       nTerminal = currentSplitPeptide.pop()!; // it is guaranteed that there will be at least one element
       currentLength = currentSplitPeptide.length;
-      if (currentLength !== modeMonomerCount) {
+      if (currentLength !== modeMonomerCount)
         invalidIndexes.push(i);
-      }
-      for (let j = 0; j < modeMonomerCount; j++) {
+
+      for (let j = 0; j < modeMonomerCount; j++)
         splitColumns[j].push(j < currentLength ? currentSplitPeptide[j] : '-');
-      }
+
       splitColumns[modeMonomerCount].push(nTerminal);
     }
     modeMonomerCount--; // minus C-terminal
@@ -264,9 +264,9 @@ export class SubstViewer extends DG.JsViewer {
     if (filter) {
       splitColumns = splitColumns.filter((positionArray, index) => {
         const isRetained = new Set(positionArray).size > 1;
-        if (!isRetained) {
+        if (!isRetained)
           columnNames.splice(index, 1);
-        }
+
         return isRetained;
       });
     }
