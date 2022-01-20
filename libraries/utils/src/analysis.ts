@@ -10,7 +10,7 @@ export function getDiverseSubset(length: number, n: number, dist: (i1: number, i
 
     for (const element of values) {
       let elementOrderBy = orderBy(element);
-      if (maxOrderBy == null || elementOrderBy <= maxOrderBy) {
+      if (maxOrderBy == null || elementOrderBy > maxOrderBy) {
         maxValue = element;
         maxOrderBy = elementOrderBy;
       }
@@ -27,25 +27,23 @@ export function getDiverseSubset(length: number, n: number, dist: (i1: number, i
     return res;
   }
 
-  function minId(array: number[], origArray: number[]) {
+  function min(array: number[]) {
     let mn = 1e9, id = 0;
     for (let i = 0; i < array.length; ++i) {
-      if (mn > array[i]) {
-        mn = array[i];
-        id = i;
-      }
+      mn = Math.min(mn, array[i]);
     }
-    return origArray[id];
+    return mn;
   }
 
   let subset = [randomInt(length - 1)];
   while (subset.length < n) {
     let idx = maxBy(
       includeRange(length, subset),
-      (i) => minId(subset.map(function (val, index) {
+      (i) => min(subset.map(function (val, index) {
         return dist(i, val); 
-      }), subset));
-    subset.push(idx ? idx : -1);
+      })));
+    if (idx)
+      subset.push(idx);
   }
   return subset;
 }
