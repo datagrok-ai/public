@@ -163,7 +163,9 @@ export function renderMolecule(
 //output: double cLogP
 export function getCLogP(smiles: string) {
   const mol = getRdKitModule().get_mol(smiles);
-  return JSON.parse(mol.get_descriptors()).CrippenClogP;
+  let res = JSON.parse(mol.get_descriptors()).CrippenClogP;
+  mol?.delete();
+  return res;
 }
 
 export class GridCellRendererProxy extends DG.GridCellRenderer {
