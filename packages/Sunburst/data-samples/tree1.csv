@@ -1,3 +1,10 @@
-version https://git-lfs.github.com/spec/v1
-oid sha256:399d760b5ecf3e2cd5a831455859d0c1739073fce36a138e63e7720936b06871
-size 154
+Root,Parent,Child,Lvl
+Eve,,,1
+Eve,Cain,,2
+Eve,Seth,,3
+Eve,Seth,Enos,5
+Eve,Seth,Noam,7
+Eve,Abel,,11
+Eve,Awan,,13
+Eve,Awan,Enoch,17
+Eve,Azura,,19
