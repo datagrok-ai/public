@@ -15,6 +15,7 @@ export class MonomerLibrary {
       linkages: { [link: string]: { atomNumber: number, type: string } }
     }
   } = {};
+  private monomers: string[] = [];
 
   constructor(sdf: string) {
     //sdf = sdf.replaceAll('\n\[', '\[');
@@ -37,7 +38,37 @@ export class MonomerLibrary {
         linkages: linkData
       };
       this.library[data.MonomerName[i]] = entry;
+      this.monomers.push(data.MonomerName[i]);
     }
+  }
+
+  /** getting full monomer information from monomer library*/
+  public getMonomerEntry(name: string) {
+    if (!this.monomers.includes(name))
+      throw `Monomer library do not contain ${name} monomer`;
+
+    return this.library[name];
+  }
+
+  /** getting mol as string for monomers application*/
+  public getMonomerMol(name: string) {
+    if (!this.monomers.includes(name))
+      throw `Monomer library do not contain ${name} monomer`;
+
+    let entry = this.library[name];
+    let monomerMol = entry.mol;
+
+    //order matters
+    let links = Object.keys(entry.linkages);
+    for (let i = 0; i < links.length; i++)
+      monomerMol = monomerMol.replace('R#', entry.linkages[links[i]].type + ' ');
+
+    return monomerMol;
+  }
+
+  /** getting the list of the minomers available in library*/
+  get monomerNames() {
+    return this.monomers;
   }
 
   private getLinkData(mol: string, caps: string, name: string) {
