@@ -4,7 +4,7 @@ import * as DG from 'datagrok-api/dg';
 import {GridCellRenderArgs, Property, Widget} from 'datagrok-api/dg';
 // import {getMorganFingerprint, getMorganFingerprints} from './package';
 import * as chemSearches from './chem-searches';
-import {tanimoto} from './chem-common';
+import {tanimotoSimilarity} from '@datagrok-libraries/utils/src/similarity-metrics';
 
 export class MoleculeViewer extends DG.JsViewer {
   private moleculeColumnName: string;
@@ -144,7 +144,7 @@ export async function chemSimilaritySearch(
   const fingerprintCol = await chemSearches.chemGetMorganFingerprints(smiles);
   const distances: number[] = [];
 
-  let fpSim = tanimoto;
+  let fpSim = tanimotoSimilarity;
   const webWorker = false;
   if (webWorker) {
     //todo: implement

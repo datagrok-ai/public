@@ -43,14 +43,6 @@ export function chemEndCriticalSection(token = CHEM_TOKEN) {
   criticalSectionEnd(token);
 }
 
-export function tanimoto(x: BitArray, y: BitArray) {
-  const total = x.trueCount() + y.trueCount();
-  if (total == 0)
-    return 1.0;
-  const common = x.andWithCountBits(y, true);
-  return common / (total - common);
-}
-
 export function rdKitFingerprintToBitArray(fp: string, fpLength: number) {
   const arr = new BitArray(fpLength);
   for (let j = 0; j < fpLength; ++j) {
