@@ -38,7 +38,7 @@ async function main(chosenFile: string) {
   pi.close();
 }
 
-//name: Peptides App
+//name: Peptides
 //tags: app
 export async function Peptides() {
   const wikiLink = ui.link('wiki', 'https://github.com/datagrok-ai/public/blob/master/help/domains/bio/peptides.md');
@@ -136,6 +136,15 @@ export async function peptideMolecule(peptide: string): Promise<DG.Widget> {
   return await peptideMoleculeWidget(peptide);
 }
 
+//name: Peptide Molecule
+//tags: panel, widgets
+//input: string aar {semType: aminoAcids}
+//output: widget result
+export async function peptideMolecule2(aar: string): Promise<DG.Widget> {
+  const peptide = alignedSequenceCol.get(currentDf.currentRowIdx);
+  return await peptideMolecule(peptide);
+}
+
 //name: StackedBarChartAA
 //tags: viewer
 //output: viewer result
@@ -171,6 +180,7 @@ export function logov() {
 //input: string monomer {semType: aminoAcids}
 //output: widget result
 export function manualAlignment(monomer: string) {
+  //TODO: recalculate Molfile and Molecule panels on sequence update
   return manualAlignmentWidget(alignedSequenceCol, currentDf);
 }
 
@@ -190,6 +200,15 @@ export async function peptideSpacePanel(col: DG.Column): Promise<DG.Widget> {
 export async function peptideMolfile(peptide: string): Promise<DG.Widget> {
   const smiles = getMolecule(peptide);
   return await grok.functions.call('Chem:molfile', { 'smiles': smiles });
+}
+
+//name: Molfile
+//tags: panel, widgets
+//input: string aar { semType: aminoAcids }
+//output: widget result
+export async function peptideMolfile2(aar: string): Promise<DG.Widget> {
+  const peptide = alignedSequenceCol.get(currentDf.currentRowIdx);
+  return await peptideMolfile(peptide);
 }
 
 //name: Multiple sequence alignment
