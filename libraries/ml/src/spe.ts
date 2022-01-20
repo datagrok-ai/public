@@ -212,22 +212,24 @@ export class OriginalSPE extends SPEBase {
 
     this.initDistance(vectors);
 
-    if (this.maxDistanceSteps == null)
+    if (this.maxDistanceSteps == null) {
       this.maxDistanceSteps = nItems * Math.floor((nItems - 1) / 2);
+    }
     if (this.maxDistance == null) {
       this.maxDistance = -1e37;
-      for (var n = 0; n < this.maxDistanceSteps; n++) {
+      for (let n = 0; n < this.maxDistanceSteps; n++) {
         const i = randomInt(nItems); let j = randomInt(nItems);
         while (i == j) j = randomInt(nItems);
 
-        var d = this.calcDistance(vectors, i, j);
-        if (d > this.maxDistance)
+        const d = this.calcDistance(vectors, i, j);
+        if (d > this.maxDistance) {
           this.maxDistance = d;
+        }
       }
     }
 
     let lambda = this.lambda;
-    let radius = (this.radiusPercent == 0.0) ? this.maxDistance : this.maxDistance * this.radiusPercent;
+    const radius = (this.radiusPercent == 0.0) ? this.maxDistance : this.maxDistance * this.radiusPercent;
 
     for (let cycle = 0; cycle < this.cycles; ++cycle) {
       for (let step = 0; step < this.steps; ++step) {
@@ -252,7 +254,7 @@ export class OriginalSPE extends SPEBase {
         }
       }
       // Decrease the learning rate {lambda} by a prescribed {dlambda}.
-      lambda -= ((this.lambda - this.dlambda) / (this.cycles - 1.0));;
+      lambda -= ((this.lambda - this.dlambda) / (this.cycles - 1.0)); ;
       if (lambda < this.dlambda) {
         break;
       }
