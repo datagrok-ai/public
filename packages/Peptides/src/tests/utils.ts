@@ -77,9 +77,8 @@ export async function _testPeptideSimilaritySpaceViewer(
     const axesNames = ['~X', '~Y', '~MW'];
     const axes = axesNames.map((v) => df?.getCol(v).getRawData() as Float32Array);
 
-    for (const ax of axes) {
+    for (const ax of axes)
       expect(ax.every((v) => v !== null && v !== NaN), true);
-    }
   } catch (error) {
     noException = false;
   }

@@ -1,15 +1,15 @@
-import {after, before, category, expect, test} from "@datagrok-libraries/utils/src/test";
-import {splitAlignedPeptides} from "../utils/split-aligned";
-import * as DG from "datagrok-api/dg";
-import * as grok from "datagrok-api/grok";
-import * as ui from "datagrok-api/ui";
-import { Peptides } from "../peptides";
-import { describe } from "../describe";
-import { analyzePeptidesWidget } from "../widgets/analyze-peptides";
-import { manualAlignmentWidget } from "../widgets/manual-alignment";
-import { peptideMoleculeWidget } from "../widgets/peptide-molecule";
+import {after, before, category, test} from '@datagrok-libraries/utils/src/test';
+import {splitAlignedPeptides} from '../utils/split-aligned';
+import * as DG from 'datagrok-api/dg';
+import * as grok from 'datagrok-api/grok';
+import {Peptides} from '../peptides';
+import {describe} from '../describe';
+import {analyzePeptidesWidget} from '../widgets/analyze-peptides';
+import {manualAlignmentWidget} from '../widgets/manual-alignment';
+import {peptideMoleculeWidget} from '../widgets/peptide-molecule';
+import * as P from '../package';
 
-export let _package = new DG.Package();
+// let _package = new DG.Package();
 
 category('peptides', async () => {
   let peptidesDf: DG.DataFrame;
@@ -19,7 +19,7 @@ category('peptides', async () => {
   let pepView: DG.TableView;
 
   before(async () => {
-    // peptidesDf = DG.DataFrame.fromCsv(await _package.files.readAsText('aligned.csv'));
+    // peptidesDf = DG.DataFrame.fromCsv(await P._package.files.readAsText('aligned.csv'));
     const csv = `ID,AlignedSequence,IC50
     1,NH2--A-Q-T-T-Y-K-N-Y-R-R-N-L-L--COOH,4.6411368455908086e-4
     2,NH2-M-A-N-T-T-Y-K-N-Y-R-N-N-L-L--COOH,0.003327324930165897
@@ -45,9 +45,9 @@ category('peptides', async () => {
       'activityColumnName': 'IC50',
       'scaling': '-lg',
     };
-    peptidesGrid = peptidesDf.plot.grid();
     asCol = peptidesDf.getCol('AlignedSequence');
     pepView = grok.shell.addTableView(peptidesDf);
+    peptidesGrid = pepView.grid;
   });
 
   test('utils.split-sequence', async () => {
@@ -56,13 +56,17 @@ category('peptides', async () => {
 
   test('describe', async () => {
     await describe(
-      peptidesDf, options['activityColumnName'], options['scaling'],  peptidesGrid, true,
+      peptidesDf, options['activityColumnName'], options['scaling'], peptidesGrid, true,
       DG.BitSet.create(peptidesDf.rowCount, (i) => i % 2 === 0), true);
   });
 
   test('Peptides-class', async () => {
     const peptides = new Peptides();
     peptides.init(peptidesGrid, pepView, peptidesDf, options, asCol);
+  });
+
+  test('panel.peptides', async () => {
+    await P.peptidesPanel(asCol);
   });
 
   test('widgets.analyze-peptides', async () => {
@@ -77,8 +81,40 @@ category('peptides', async () => {
     await peptideMoleculeWidget('NH2--A-N-T-T-Y-K-N-Y-R-S-N-L-L--COOH');
   });
 
+  test('widgets.molfile', async () => {
+    await P.peptideMolfile2('');
+  });
+
+  test('renderers.aligned-sequence-cell', async () => {
+    P.alignedSequenceCellRenderer();
+  });
+
+  test('renderers.amino-acids-cell', async () => {
+    P.aminoAcidsCellRenderer();
+  });
+
+  test('viewers.logo-viewer', async () => {
+    P.logov();
+  });
+
+  test('viewers.sar-viewer', async () => {
+    P.sar();
+  });
+
+  test('viewers.sar-vertical-viewer', async () => {
+    P.sarVertical();
+  });
+
+  test('viewers.stacked-barchart-viewer', async () => {
+    P.stackedBarChart();
+  });
+
+  test('viewers.subst-viewer', async () => {
+    P.subst();
+  });
+
   after(async () => {
     pepView.close();
     grok.shell.closeTable(peptidesDf);
-  })
+  });
 });

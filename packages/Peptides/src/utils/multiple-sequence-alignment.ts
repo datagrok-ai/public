@@ -53,9 +53,9 @@ function _stringsToAligned(alignment: string[]): string[] {
   const nItems = alignment.length;
   const aligned = new Array<string>(nItems);
 
-  for (let i = 0; i < nItems; ++i) {
+  for (let i = 0; i < nItems; ++i)
     aligned[i] = _castAligned(alignment[i]);
-  }
+
   return aligned;
 }
 
@@ -69,9 +69,9 @@ function _stringsToAligned(alignment: string[]): string[] {
 export async function runKalign(col: DG.Column, isAligned = false) : Promise<DG.Column> {
   let sequences = col.toList();
 
-  if (isAligned) {
+  if (isAligned)
     sequences = sequences.map((v: string, _) => AlignedSequenceEncoder.clean(v).replace(/\-/g, ''));
-  }
+
 
   const fasta = _stringsToFasta(sequences);
 

@@ -7,16 +7,16 @@ import {
   AlignedSequenceCellRenderer,
   AminoAcidsCellRenderer,
 } from './utils/cell-renderer';
-import { Logo } from './viewers/logo-viewer';
-import { StackedBarChart } from './viewers/stacked-barchart-viewer';
+import {Logo} from './viewers/logo-viewer';
+import {StackedBarChart} from './viewers/stacked-barchart-viewer';
 
-import { analyzePeptidesWidget } from './widgets/analyze-peptides';
-import { PeptideSimilaritySpaceWidget } from './utils/peptide-similarity-space';
-import { manualAlignmentWidget } from './widgets/manual-alignment';
-import { SARViewer, SARViewerVertical } from './viewers/sar-viewer';
-import { peptideMoleculeWidget, getMolecule } from './widgets/peptide-molecule';
-import { SubstViewer } from './viewers/subst-viewer';
-import { runKalign } from './utils/multiple-sequence-alignment';
+import {analyzePeptidesWidget} from './widgets/analyze-peptides';
+import {PeptideSimilaritySpaceWidget} from './utils/peptide-similarity-space';
+import {manualAlignmentWidget} from './widgets/manual-alignment';
+import {SARViewer, SARViewerVertical} from './viewers/sar-viewer';
+import {peptideMoleculeWidget, getMolecule} from './widgets/peptide-molecule';
+import {SubstViewer} from './viewers/subst-viewer';
+import {runKalign} from './utils/multiple-sequence-alignment';
 
 export const _package = new DG.Package();
 let tableGrid: DG.Grid;
@@ -84,9 +84,9 @@ export async function Peptides() {
 //input: column col {semType: alignedSequence}
 //output: widget result
 export async function peptidesPanel(col: DG.Column): Promise<DG.Widget> {
-  if (col.getTag('isAnalysisApplicable') === 'false') {
+  if (col.getTag('isAnalysisApplicable') === 'false')
     return new DG.Widget(ui.divText('Analysis is not applicable'));
-  }
+
   view = (grok.shell.v as DG.TableView);
   tableGrid = view.grid;
   currentDf = col.dataFrame;
@@ -199,7 +199,7 @@ export async function peptideSpacePanel(col: DG.Column): Promise<DG.Widget> {
 //output: widget result
 export async function peptideMolfile(peptide: string): Promise<DG.Widget> {
   const smiles = getMolecule(peptide);
-  return await grok.functions.call('Chem:molfile', { 'smiles': smiles });
+  return await grok.functions.call('Chem:molfile', {'smiles': smiles});
 }
 
 //name: Molfile

@@ -1,4 +1,5 @@
 import * as ui from 'datagrok-api/ui';
+import * as grok from 'datagrok-api/grok';
 import * as DG from 'datagrok-api/dg';
 
 import $ from 'cash-dom';
@@ -24,10 +25,12 @@ export function manualAlignmentWidget(alignedSequenceCol: DG.Column, currentDf: 
 
     alignedSequenceCol.set(affectedRowIndex, newSequence);
     for (const part of splitSequence.columns) {
-      if (currentDf.col(part.name) !== null) {
+      if (currentDf.col(part.name) !== null)
         currentDf.set(part.name, affectedRowIndex, part.get(0));
-      }
     }
+    const temp = grok.shell.o;
+    grok.shell.o = null;
+    grok.shell.o = temp;
 
     await Peptides.recalculate();
   });

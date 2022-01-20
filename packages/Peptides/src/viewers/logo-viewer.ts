@@ -93,9 +93,9 @@ export class Logo extends DG.JsViewer {
    */
   onTableAttached() {
     if (typeof this.dataFrame !== 'undefined') {
-      if (!this.initialized) {
+      if (!this.initialized)
         this.init();
-      }
+
 
       this.subs.push(DG.debounce(this.dataFrame.selection.onChanged, 50).subscribe((_: any) => this.render()));
       this.subs.push(DG.debounce(this.dataFrame.filter.onChanged, 50).subscribe((_: any) => this.render()));
@@ -141,14 +141,13 @@ export class Logo extends DG.JsViewer {
         .whereRowMask(this.dataFrame!.selection)
         .aggregate();
     }
-    if (selected) {
+    if (selected)
       [this.splitted] = splitAlignedPeptides(this.target!.columns.bySemType(this.colSemType));
-    } else [this.splitted] = splitAlignedPeptides(this.dataFrame!.columns.bySemType(this.colSemType));
+    else [this.splitted] = splitAlignedPeptides(this.dataFrame!.columns.bySemType(this.colSemType));
     $(this.root).empty();
 
-    if (typeof this.dataFrame !== 'undefined') {
+    if (typeof this.dataFrame !== 'undefined')
       this.findLogo();
-    }
   }
 
   /**
@@ -176,17 +175,16 @@ export class Logo extends DG.JsViewer {
       for (let i = 0; i < col.length; i++) {
         const c = col.get(i);
         if (c != '-') {
-          if (c[1] == '(') {
+          if (c[1] == '(')
             this.ppm[index][this.PROT_NUMS[c.substr(0, 1).toUpperCase()]] += 1 / size;
-          } else if (c.substr(0, 3) in ChemPalette.AAFullNames && (c.length == 3 || c.at(3) == '(')) {
+          else if (c.substr(0, 3) in ChemPalette.AAFullNames && (c.length == 3 || c.at(3) == '('))
             this.ppm[index][this.PROT_NUMS[ChemPalette.AAFullNames[c.substr(0, 3)]]] += 1 / size;
-          } else if (c.at(0)?.toLowerCase() == c.at(0) && c.substr(1, 3) in ChemPalette.AAFullNames &&
+          else if (c.at(0)?.toLowerCase() == c.at(0) && c.substr(1, 3) in ChemPalette.AAFullNames &&
             (c.length == 4 || c.at(4) == '(')
-          ) {
+          )
             this.ppm[index][this.PROT_NUMS[ChemPalette.AAFullNames[c.substr(1, 3)]]] += 1 / size;
-          } else {
+          else
             this.ppm[index][this.PROT_NUMS[c]] += 1 / size;
-          }
         }
       }
       index++;

@@ -87,17 +87,15 @@ export class Peptides {
     const hideIcon = ui.iconFA('window-close', () => { //undo?, times?
       const viewers = [];
       for (const viewer of view.viewers) {
-        if (viewer.type !== DG.VIEWER.GRID) {
+        if (viewer.type !== DG.VIEWER.GRID)
           viewers.push(viewer);
-        }
       }
       viewers.forEach((v) => v.close());
 
       const cols = (currentDf.columns as DG.ColumnList);
       for (const colName of cols.names()) {
-        if (!originalDfColumns.includes(colName)) {
+        if (!originalDfColumns.includes(colName))
           cols.remove(colName);
-        }
       }
 
       currentDf.selection.setAll(false);

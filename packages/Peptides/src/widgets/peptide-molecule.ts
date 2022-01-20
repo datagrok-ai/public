@@ -14,9 +14,9 @@ export async function peptideMoleculeWidget(pep: string): Promise<DG.Widget> {
   const pi = DG.TaskBarProgressIndicator.create('Creating NGL view');
 
   const smiles = getMolecule(pep);
-  if (smiles == '') {
+  if (smiles == '')
     return new DG.Widget(ui.divH([]));
-  }
+
 
   let molfileStr = (await grok.functions.call('Peptides:SmiTo3D', {smiles}));
 
@@ -47,11 +47,10 @@ export function getMolecule(pep: string): string {
     if (split[i] in ChemPalette.AASmiles) {
       const aar = ChemPalette.AASmiles[split[i]];
       mols[i] = aar.substr(0, aar.length - 1);
-    } else if (!split[i] || split[i] == '-') {
+    } else if (!split[i] || split[i] == '-')
       mols[i] = '';
-    } else {
+    else
       return '';
-    }
   }
   const smiles = mols.join('') + 'O';
   return smiles;
