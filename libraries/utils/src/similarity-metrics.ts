@@ -1,5 +1,18 @@
 import BitArray from './bit-array'
 
+export const similarityMetric: {[name: string]: (x: BitArray, y: BitArray) => number} = {
+  'Tanimoto': tanimotoSimilarity,
+  'Dice': diceSimilarity,
+  'Asymmetric': asymmetricSimilarity,
+  'Braun-Blanquet': braunBlanquetSimilarity,
+  'Cosine': cosineSimilarity,
+  'Kulczynski': kulczynskiSimilarity,
+  'Mc-Connaughey': mcConnaugheySimilarity,
+  'Rogot-Goldberg': rogotGoldbergSimilarity,
+  'Russel': russelSimilarity,
+  'Sokal': sokalSimilarity,
+}
+
 export function tanimotoSimilarity(x: BitArray, y: BitArray) {
   const total = x.trueCount() + y.trueCount();
   if (total == 0)
@@ -78,6 +91,5 @@ export function rogotGoldbergSimilarity(x: BitArray, y: BitArray) {
   let diff = len - total + common;
   if ((common == len) || (diff == len))
     return 1.0;
-  else
-    return common / total + diff / (2 * len - total);
+  else return common / total + diff / (2 * len - total);
 }

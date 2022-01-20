@@ -11,7 +11,7 @@ import {
 import {SPEBase, PSPEBase, OriginalSPE} from './spe';
 import {StringMeasure, KnownMetrics} from './string-measure';
 import BitArray from '@datagrok-libraries/utils/src/bit-array';
-import {BitArrayMetrics} from './string-measure';
+import {similarityMetric} from '@datagrok-libraries/utils/src/similarity-metrics';
 
 /**
  * Abstract dimensionality reducer.
@@ -263,7 +263,7 @@ export class DimensionalityReducer {
     const measure = metric ? new StringMeasure(metric).getMeasure() : calculateEuclideanDistance;
     let specOptions = {};
 
-    if (metric && BitArrayMetrics.includes(metric.toString())) {
+    if (metric && Object.keys(similarityMetric).includes(metric.toString())) {
       for (let i = 0; i < data.length; ++i) {
         data[i] = new BitArray(data[i]._data, data[i]._length);
       }
