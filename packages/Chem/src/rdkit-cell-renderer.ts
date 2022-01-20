@@ -138,19 +138,6 @@ M  END
         molString, scaffoldMolString, highlightScaffold, molRegenerateCoords, scaffoldRegenerateCoords));
   }
 
-  _drawMoleculeToCanvas(
-    rdkitMol: any, w: number, h: number, offscreenCanvas: OffscreenCanvas,
-    substruct: Object, highlightScaffold: boolean) {
-
-
-
-
-
-
-
-
-  }
-
   _drawMolecule(x: number, y: number, w: number, h: number, onscreenCanvas: HTMLCanvasElement,
     molString: string, scaffoldMolString: string, highlightScaffold: boolean,
     molRegenerateCoords: boolean, scaffoldRegenerateCoords: boolean) {
