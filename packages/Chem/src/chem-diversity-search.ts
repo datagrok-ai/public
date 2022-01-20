@@ -80,7 +80,7 @@ export class DiversitySearch extends DG.JsViewer {
 
     if (this.dataFrame) {
       if (computeData) {
-        this.renderMolIds = await chemDiversitySearch(this.dataFrame.getCol(this.moleculeColumnName), this.fpSim, this.dataFrame.rowCount);
+        this.renderMolIds = await chemDiversitySearch(this.dataFrame.getCol(this.moleculeColumnName), this.fpSim, this.limit);
       }
 
       if (this.root.hasChildNodes())
