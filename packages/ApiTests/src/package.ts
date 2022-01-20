@@ -25,6 +25,9 @@ import './shell/ml';
 import './ui/divs';
 import './ui/buttons';
 import './widgets/legend';
+import './ui/icons';
+import './ui/tables';
+import './ui/rangeSlider';
 
 import {runTests} from "@datagrok-libraries/utils/src/test";
 export let _package = new DG.Package();
