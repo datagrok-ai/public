@@ -1,5 +1,5 @@
 //name: AddMorganFPCache
-//description: Hello world script
+//description: Adds a column with Morgan fingerprints
 //language: javascript
 
 (async () => {
