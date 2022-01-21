@@ -576,7 +576,7 @@ export function editMoleculeCell(cell: DG.GridCell) {
 //name: SimilaritySearchViewer
 //tags: viewer
 //output: viewer result
-export function moleculeViewer() {
+export function similaritySearchViewer() {
   return new SimilaritySearch();
 }
 
@@ -591,7 +591,7 @@ export function similaritySearchTopMenu() {
 //name: DiversitySearchViewer
 //tags: viewer
 //output: viewer result
-export function moleculeViewer() {
+export function diversitySearchViewer() {
   return new DiversitySearch();
 }
 
@@ -599,7 +599,7 @@ export function moleculeViewer() {
 //name: diversitySearch
 //description: finds the most diverse molecules
 //output: viewer result
-export function similaritySearchTopMenu() {
+export function diversitySearchTopMenu() {
   (grok.shell.v as DG.TableView).addViewer('DiversitySearchViewer');
 }
 
