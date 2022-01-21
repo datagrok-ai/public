@@ -167,16 +167,16 @@ export async function chemSimilaritySearch(
   minScore: number,
 ) {
   const metrics: {[Key: string]: any} = {
-    'tanimoto': metric.tanimoto,
-    'dice': metric.dice,
-    'cosine': metric.cosine,
-    'sokal': metric.sokal,
-    'kulczynski': metric.kulczynski,
-    'mc-connaughey': metric.mcConnaughey,
-    'asymmetric': metric.asymmetric,
-    'braun-blanquet': metric.braunBlanquet,
-    'russel': metric.russel,
-    'rogot-goldberg': metric.russel,
+    'tanimoto': metric.tanimotoSimilarity,
+    'dice': metric.diceSimilarity,
+    'cosine': metric.cosineSimilarity,
+    'sokal': metric.sokalSimilarity,
+    'kulczynski': metric.kulczynskiSimilarity,
+    'mc-connaughey': metric.mcConnaugheySimilarity,
+    'asymmetric': metric.asymmetricSimilarity,
+    'braun-blanquet': metric.braunBlanquetSimilarity,
+    'russel': metric.russelSimilarity,
+    'rogot-goldberg': metric.rogotGoldbergSimilarity,
   }
   limit = Math.min(limit, smiles.length);
   const fingerprint = chemSearches.chemGetMorganFingerprint(molecule);
