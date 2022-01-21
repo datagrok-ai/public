@@ -1,4 +1,4 @@
-import {category, test} from '@datagrok-libraries/utils/src/test';
+import {/*before, after, */category, test} from '@datagrok-libraries/utils/src/test';
 import {
   _testViewerIsDrawing,
   _testDimensionalityReducer,
@@ -10,18 +10,34 @@ import {cleanAlignedSequencesColumn} from '../utils/peptide-similarity-space';
 import * as DG from 'datagrok-api/dg';
 import * as grok from 'datagrok-api/grok';
 
-//import {_package} from '../package';
+export const _package = new DG.Package();
+
+let table: DG.DataFrame;
+let view: DG.TableView;
+
+//const table = await grok.data.loadTable(`${_package.webRoot}files/aligned.csv`);
+//'/home/www/data/dev/packages/data/peptides/aligned.csv');
+//console.log(table);
+//const table = await grok.data.files.openTable('Demo:Files/bio/peptides.csv');
 
 category('peptides', async () => {
-  /*console.log([_package.files]);
-  const path = await _package.files.readAsText('aligned.csv');
-  console.log([path]);
-  const table = DG.DataFrame.fromCsv(path);*/
-  //const table = await grok.data.loadTable('/home/www/data/dev/packages/data/peptides/aligned.csv');
-  //`${_package.webRoot}files/aligned.csv`);
-  //console.log(table);
-  const table = await grok.data.files.openTable('Demo:Files/bio/peptides.csv');
-  const view = grok.shell.v as DG.TableView;
+  /*before(async () => {
+    console.log(['before']);
+    // const text = await _package.files.readAsText('aligned.csv');
+    // console.log([text]);
+    // table = DG.DataFrame.fromCsv(text);
+
+    // const path = `${_package.webRoot}files/aligned.csv`;
+    // console.log([path]);
+    // table = await grok.data.loadTable(path);
+    // console.log([table]);
+
+    table = await grok.data.files.openTable('Demo:Files/bio/peptides.csv');
+    view = grok.shell.addTableView(table);
+  });*/
+
+  table = await grok.data.files.openTable('Demo:Files/bio/peptides.csv');
+  view = grok.shell.addTableView(table);
 
   test('PeptideSimilaritySpaceWidget.is_drawing', async () => {
     await _testViewerIsDrawing(table, view);
@@ -45,4 +61,9 @@ category('peptides', async () => {
       });
     }
   }
+
+  /*after(async () => {
+    view.close();
+    grok.shell.closeTable(table!);
+  });*/
 });
