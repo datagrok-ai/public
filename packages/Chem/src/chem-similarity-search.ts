@@ -22,6 +22,7 @@ export class SimilaritySearch extends DG.JsViewer {
   private limit: number;
   private minScore: number;
   private fingerprint: string;
+  private gridSelect: boolean = false;
 
   constructor() {
     super();
@@ -69,7 +70,7 @@ export class SimilaritySearch extends DG.JsViewer {
     if (this.dataFrame) {
       this.subs.push(DG.debounce(this.dataFrame.onMouseOverRowChanged, 50).subscribe(async (_) => await this.render()));
       this.subs.push(DG.debounce(this.dataFrame.onRowsRemoved, 50).subscribe(async (_) => await this.render()));
-      this.subs.push(DG.debounce(this.dataFrame.onCurrentRowChanged, 50).subscribe(async (_) => await this.render(false)));
+      this.subs.push(DG.debounce(this.dataFrame.onCurrentRowChanged, 50).subscribe(async (_) => await this.render()));
       this.subs.push(DG.debounce(this.dataFrame.selection.onChanged, 50).subscribe(async (_) => await this.render(false)));
       this.subs.push(DG.debounce(ui.onSizeChanged(this.root), 50).subscribe(async (_) => await this.render(false)));
       for (const col of this.dataFrame.columns) {
@@ -102,13 +103,15 @@ export class SimilaritySearch extends DG.JsViewer {
       const targetMolecule = (this.isEditedFromSketcher ? this.sketchedMolecule : 
         this.dataFrame?.getCol(this.moleculeColumnName).get(this.curIdx));
 
-      if (computeData) {
+      if (computeData && !this.gridSelect) {
         const df = await chemSimilaritySearch(this.dataFrame, this.dataFrame?.getCol(this.moleculeColumnName),
                    targetMolecule, this.distanceMetric, this.limit, this.minScore, this.fingerprint);
 
         this.molCol = df.getCol('smiles');
         this.idxs = df.getCol('indexes');
         this.scores = df.getCol('score');
+      } else if (this.gridSelect) {
+        this.gridSelect = false;
       }
 
       if (this.root.hasChildNodes())
@@ -149,6 +152,7 @@ export class SimilaritySearch extends DG.JsViewer {
             } else {
               this.dataFrame.currentRowIdx = this.idxs.get(i);
               this.isEditedFromSketcher = false;
+              this.gridSelect = true;
             }
           }
         });
