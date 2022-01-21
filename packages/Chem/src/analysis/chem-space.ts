@@ -2,7 +2,7 @@ import * as grok from 'datagrok-api/grok';
 //import * as ui from 'datagrok-api/ui';
 import * as DG from 'datagrok-api/dg';
 // TODO: clean up this module
-import {chemGetMorganFingerprints} from '../chem-searches';
+import {chemGetFingerprints} from '../chem-searches';
 //import {getRdKitWebRoot} from '../chem-common-rdkit';
 import {Coordinates} from '@datagrok-libraries/utils/src/type-declarations';
 import {
@@ -13,7 +13,7 @@ import {MetricDataTypes} from '@datagrok-libraries/ml/src/string-measure'
 export async function chemSpace(table: DG.DataFrame, molColumn: DG.Column, methodName: string, similarityMetric: string) {
   let fpColumn = molColumn.toList();
   if (MetricDataTypes['BitArray'].includes(similarityMetric))
-    fpColumn = await chemGetMorganFingerprints(molColumn);
+    fpColumn = await chemGetFingerprints(molColumn, 'Morgan');
   const coordinates = await createDimensinalityReducingWorker(fpColumn, methodName, similarityMetric) as Coordinates;
   const axes = ['Embed_X', 'Embed_Y'];
 
