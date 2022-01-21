@@ -44,7 +44,7 @@ function _chemFindSimilar(molStringsColumn: DG.Column,
 function _chemGetSimilarities(queryMolString: string) {
   const fingerprints = _chemCache.morganFingerprints!;
   const distances = new Array(fingerprints.length).fill(0.0);
-  const sample = chemGetFingerprint(queryMolString, 'morgan');
+  const sample = chemGetFingerprint(queryMolString, 'Morgan');
   for (let i = 0; i < fingerprints.length; ++i)
     distances[i] = tanimotoSimilarity(fingerprints[i], sample);
   return distances;
@@ -186,11 +186,11 @@ export function chemGetFingerprint(molString: string, fingerprint: string): BitA
   try {
     mol = getRdKitModule().get_mol(molString);
     let fp;
-    if (fingerprint == 'morgan')
+    if (fingerprint == 'Morgan')
       fp = mol.get_morgan_fp(defaultMorganFpRadius, defaultMorganFpLength);
-    if (fingerprint == 'rdkit')
+    if (fingerprint == 'RDKit')
       fp = mol.get_rdkit_fp(defaultMorganFpRadius, defaultMorganFpLength);
-    if (fingerprint == 'pattern')
+    if (fingerprint == 'Pattern')
       fp = mol.get_pattern_fp(defaultMorganFpRadius, defaultMorganFpLength);
     return rdKitFingerprintToBitArray(fp);
   } catch {

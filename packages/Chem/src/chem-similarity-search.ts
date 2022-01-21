@@ -1,9 +1,9 @@
 import * as grok from 'datagrok-api/grok';
 import * as ui from 'datagrok-api/ui';
 import * as DG from 'datagrok-api/dg';
-import { GridCellRenderArgs, Property, SIMILARITY_METRIC, Widget } from 'datagrok-api/dg';
+import { Property } from 'datagrok-api/dg';
 import * as chemSearches from './chem-searches';
-import {tanimotoSimilarity} from '@datagrok-libraries/utils/src/similarity-metrics';
+import { similarityMetric } from '@datagrok-libraries/utils/src/similarity-metrics';
 import * as metric from './chem-common';
 import $ from 'cash-dom';
 
@@ -21,6 +21,7 @@ export class SimilaritySearch extends DG.JsViewer {
   private scores: DG.Column;
   private limit: number;
   private minScore: number;
+  private fingerprint: string;
 
   constructor() {
     super();
@@ -28,7 +29,8 @@ export class SimilaritySearch extends DG.JsViewer {
     this.moleculeColumnName = this.string('moleculeColumnName');
     this.limit = this.int('limit', 10);
     this.minScore = this.float('minScore', 0.1);
-    this.distanceMetric = this.string('distanceMetric', 'tanimoto', {choices: Object.values(SIMILARITY_METRIC)});
+    this.distanceMetric = this.string('distanceMetric', 'Tanimoto', {choices: Object.keys(similarityMetric)});
+    this.fingerprint = this.string('fingerprint', 'Morgan', {choices: ['Morgan', 'RDKit', 'Pattern']});
     this.hotSearch = this.bool('hotSearch', true);
     this.initialized = false;
     this.sketchButton = ui.button('Sketch', () => {
@@ -102,7 +104,7 @@ export class SimilaritySearch extends DG.JsViewer {
 
       if (computeData) {
         const df = await chemSimilaritySearch(this.dataFrame, this.dataFrame?.getCol(this.moleculeColumnName),
-                   targetMolecule, this.distanceMetric, this.limit, this.minScore);
+                   targetMolecule, this.distanceMetric, this.limit, this.minScore, this.fingerprint);
 
         this.molCol = df.getCol('smiles');
         this.idxs = df.getCol('indexes');
@@ -166,28 +168,17 @@ export async function chemSimilaritySearch(
   metricName: string,
   limit: number,
   minScore: number,
+  fingerprint: string
 ) {
-  const metrics: {[Key: string]: any} = {
-    'tanimoto': metric.tanimotoSimilarity,
-    'dice': metric.diceSimilarity,
-    'cosine': metric.cosineSimilarity,
-    'sokal': metric.sokalSimilarity,
-    'kulczynski': metric.kulczynskiSimilarity,
-    'mc-connaughey': metric.mcConnaugheySimilarity,
-    'asymmetric': metric.asymmetricSimilarity,
-    'braun-blanquet': metric.braunBlanquetSimilarity,
-    'russel': metric.russelSimilarity,
-    'rogot-goldberg': metric.rogotGoldbergSimilarity,
-  }
   limit = Math.min(limit, smiles.length);
-  const fingerprint = chemSearches.chemGetMorganFingerprint(molecule);
-  const fingerprintCol = await chemSearches.chemGetMorganFingerprints(smiles);
+  const targetFingerprint = chemSearches.chemGetFingerprint(molecule, fingerprint);
+  const fingerprintCol = await chemSearches.chemGetFingerprints(smiles, fingerprint);
   const distances: number[] = [];
 
-  let fpSim = metrics[metricName];
+  let fpSim = similarityMetric[metricName];
   for (let row = 0; row < fingerprintCol.length; row++) {
     const fp = fingerprintCol[row];
-    distances[row] = fp == null ? 100.0 : fpSim(fingerprint, fp);
+    distances[row] = fp == null ? 100.0 : fpSim(targetFingerprint, fp);
   }
 
   function range(end: number) {
