@@ -2,12 +2,11 @@ import * as grok from 'datagrok-api/grok';
 import * as ui from 'datagrok-api/ui';
 import * as DG from 'datagrok-api/dg';
 
-import * as metric from './chem-common'
-import { Property, SIMILARITY_METRIC } from 'datagrok-api/dg';
-import { randomInt } from '@datagrok-libraries/utils/src/operations'
+import { Property } from 'datagrok-api/dg';
 import BitArray from '@datagrok-libraries/utils/src/bit-array';
+import {similarityMetric} from '@datagrok-libraries/utils/src/similarity-metrics';
 import {getDiverseSubset} from '@datagrok-libraries/utils/src/analysis';
-import { chemGetMorganFingerprint, chemGetMorganFingerprints } from './chem-searches';
+import { chemGetFingerprints } from './chem-searches';
 import $ from 'cash-dom'
 
 export class DiversitySearch extends DG.JsViewer {
@@ -16,29 +15,19 @@ export class DiversitySearch extends DG.JsViewer {
   private distanceMetric: string;
   private limit: number;
   private renderMolIds: number[];
+  private fingerprint: string;
   private fpSim;
 
   constructor() {
     super();
 
     this.moleculeColumnName = this.string('moleculeColumnName');
+    this.fingerprint = this.string('fingerprint');
     this.limit = this.int('limit', 10);
-    this.distanceMetric = this.string('distanceMetric', 'tanimoto', {choices: Object.values(SIMILARITY_METRIC)});
+    this.distanceMetric = this.string('distanceMetric', 'Tanimoto', {choices: Object.keys(similarityMetric)});
     this.initialized = false;
     this.renderMolIds = [];
-    const metrics: {[Key: string]: any} = {
-      'tanimoto': metric.tanimotoSimilarity,
-      'dice': metric.diceSimilarity,
-      'cosine': metric.cosineSimilarity,
-      'sokal': metric.sokalSimilarity,
-      'kulczynski': metric.kulczynskiSimilarity,
-      'mc-connaughey': metric.mcConnaugheySimilarity,
-      'asymmetric': metric.asymmetricSimilarity,
-      'braun-blanquet': metric.braunBlanquetSimilarity,
-      'russel': metric.russelSimilarity,
-      'rogot-goldberg': metric.rogotGoldbergSimilarity,
-    }
-    this.fpSim = metrics[this.distanceMetric]
+    this.fpSim = similarityMetric[this.distanceMetric];
   }
 
   init(): void {
@@ -80,7 +69,7 @@ export class DiversitySearch extends DG.JsViewer {
 
     if (this.dataFrame) {
       if (computeData) {
-        this.renderMolIds = await chemDiversitySearch(this.dataFrame.getCol(this.moleculeColumnName), this.fpSim, this.limit);
+        this.renderMolIds = await chemDiversitySearch(this.dataFrame.getCol(this.moleculeColumnName), this.fpSim, this.limit, this.fingerprint);
       }
 
       if (this.root.hasChildNodes())
@@ -129,9 +118,9 @@ export class DiversitySearch extends DG.JsViewer {
   }
 }
 
-export async function chemDiversitySearch(smiles: DG.Column, fpSim: (a: BitArray, b: BitArray) => number, limit: number){
+export async function chemDiversitySearch(smiles: DG.Column, fpSim: (a: BitArray, b: BitArray) => number, limit: number, fingerprint: string){
   limit = Math.min(limit, smiles.length);
-  let fingerprintCol = await chemGetMorganFingerprints(smiles);
+  let fingerprintCol = await chemGetFingerprints(smiles, fingerprint);
   let indexes: number[] = [];
 
   for (let i = 0; i < fingerprintCol.length; ++i) {
