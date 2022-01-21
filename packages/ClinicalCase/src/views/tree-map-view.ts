@@ -20,7 +20,7 @@ export class TreeMapView extends DG.ViewBase implements ILazyLoading {
         this.name = name;
     }
 
-    loaded: boolean;
+    loaded = false;
 
     load(): void {
         checkMissingDomains(requiredColumnsByView[this.name], this);

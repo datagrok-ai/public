@@ -29,12 +29,10 @@ M  END
       obj!.mol?.delete();
       obj!.mol = null;
       obj!.substruct = null;
-      obj = null; // ? GC definitely delete
     };
 
     this.rendersCache.onItemEvicted = function(obj: {[_ : string]: any} | null) {
       obj!.canvas = null;
-      obj = null; // ? GC definitely delete
     };
   }
 
@@ -138,19 +136,6 @@ M  END
     return this.rendersCache.getOrCreate(name, (_: any) =>
       this._rendererGetOrCreate(width, height,
         molString, scaffoldMolString, highlightScaffold, molRegenerateCoords, scaffoldRegenerateCoords));
-  }
-
-  _drawMoleculeToCanvas(
-    rdkitMol: any, w: number, h: number, offscreenCanvas: OffscreenCanvas,
-    substruct: Object, highlightScaffold: boolean) {
-
-
-
-
-
-
-
-
   }
 
   _drawMolecule(x: number, y: number, w: number, h: number, onscreenCanvas: HTMLCanvasElement,

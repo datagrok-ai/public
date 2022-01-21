@@ -19,7 +19,7 @@ demog.meta.addFormulaLine({
   // The formula uses syntax and formulas similar to the "Add New Column" form.
   formula: '${height} = 0.69 * max($[weight])',
 
-  zindex: -45,         // Line depth. The viewer's chart has a depth of 0.
+  zIndex: -45,         // Line depth. The viewer's chart has a depth of 0.
   color: '#ff0000',    // Line color.
   visible: true,       // Visibility.
   opacity: 80,         // Opacity [0..100], where 0 - invisible, 100 - opaque.
@@ -48,14 +48,14 @@ demog.meta.addFormulaBand({
   // The numbers are specified in the units of the column. in this case in centimeters.
   formula: 'in(175, 185)',
 
-  zindex: -15,             // Line depth. The viewer's chart has a depth of 0.
+  zIndex: -15,             // Line depth. The viewer's chart has a depth of 0.
   color: '#FFD700',        // Band background color.
   max: 160,                // Maximum band size.
   opacity: 100,            // Opacity [0..100], where 0 - invisible, 100 - opaque.
 
   // Parameters specific to Bands:
-  column: '${height}',     // Column for which the band is set.
-  column2: '${weight}'     // Second column for which the band will be drawn.
+  column: 'height',     // Column for which the band is set.
+  column2: 'weight'     // Second column for which the band will be drawn.
 });
 
 demog.meta.addFormulaLine({
@@ -76,7 +76,7 @@ demog.meta.addFormulaLine({
 demog.meta.addFormulaLine({
   title: 'Parabola',
   formula: '${height} = 180 + 0.01 * ${weight} * ${weight} - 1.5 * ${weight}',
-  zindex: -30,
+  zIndex: -30,
   color: '#FFA500',
   width: 2,
   visible: true,
@@ -86,7 +86,7 @@ demog.meta.addFormulaLine({
 demog.meta.addFormulaLine({
   title: 'Green Line',
   formula: '${height} = 140 + ${weight} * 0',
-  zindex: -20,
+  zIndex: -20,
   color: '#00ff00',
   width: 6,
   max: 200
@@ -95,7 +95,7 @@ demog.meta.addFormulaLine({
 demog.meta.addFormulaLine({
   title: 'Sinusoid',
   formula: '${height} = 90 + max($[age]) + 4 * sin(0.2 * ${weight} + 60)',
-  zindex: -45,
+  zIndex: -45,
   color: '#00BFFF',
   width: 3,
   visible: true,
@@ -105,7 +105,7 @@ demog.meta.addFormulaLine({
 demog.meta.addFormulaLine({
   title: 'Hidden Line',
   formula: '${height} = 2 * ${weight}',
-  zindex: -45,
+  zIndex: -45,
   width: 1,
   visible: false,     // This line will not be displayed.
   opacity: 80
@@ -115,7 +115,7 @@ demog.meta.addFormulaLine({
   title: 'Circle Top',
   description: 'Description of circle',
   formula: '${height} = 181.2 + sqrt(pow(25, 2) - pow((${weight} - 108.75), 2)) * 0.34',
-  zindex: -40,
+  zIndex: -40,
   color: '#5F9EA0',
   width: 6
 });
@@ -123,7 +123,7 @@ demog.meta.addFormulaLine({
 demog.meta.addFormulaLine({
   title: 'Circle Bottom',
   formula: '${height} = 178.8 - sqrt(pow(25, 2) - pow((${weight} - 108.75), 2)) * 0.34',
-  zindex: -40,
+  zIndex: -40,
   color: '#5F9EA0',
   width: 6
 });
@@ -131,7 +131,7 @@ demog.meta.addFormulaLine({
 demog.meta.addFormulaLine({
   title: 'X Top',
   formula: '${height} = 115 + sqrt(pow(20, 2) - pow((${weight} - 188.95), 2)) * 1.0',
-  zindex: -45,
+  zIndex: -45,
   color: '#228B22',
   width: 4
 });
@@ -139,7 +139,7 @@ demog.meta.addFormulaLine({
 demog.meta.addFormulaLine({
   title: 'X Bottom',
   formula: '${height} = 147 - sqrt(pow(20, 2) - pow((${weight} - 188.95), 2)) * 1.0',
-  zindex: -45,
+  zIndex: -45,
   color: '#228B22',
   width: 20,
   style: 'dotted'
@@ -148,10 +148,10 @@ demog.meta.addFormulaLine({
 demog.meta.addFormulaBand({
   title: 'Band 2',
   description: 'Second band',
-  column: '${weight}',
+  column: 'weight',
   formula: '< 80',
-  column2: '${height}',
-  zindex: -45,
+  column2: 'height',
+  zIndex: -45,
   color: '#FFC0CB',
   opacity: 30,
   min: 130
@@ -160,10 +160,10 @@ demog.meta.addFormulaBand({
 demog.meta.addFormulaBand({
   title: 'Band 3',
   description: 'Another band',
-  column: '${weight}',
+  column: 'weight',
   formula: '> max',
-  column2: '${height}',
-  zindex: -45,
+  column2: 'height',
+  zIndex: -45,
   color: '#7FFFD4',
   opacity: 30,
   max: 160

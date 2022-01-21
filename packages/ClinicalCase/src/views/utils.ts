@@ -24,6 +24,7 @@ export function checkMissingDomains(requiredDomainsAndCols: any, obj: any) {
   if (!totalMissingDomains.length) {
     if (checkMissingColumns(obj, reqDomains.concat(presentOptDomains), requiredColumns)) {
       obj.createView();
+      obj.loaded = true;
     }
   } else {
     const errorsDiv = ui.divV([], { style: { margin: 'auto', textAlign: 'center' } });

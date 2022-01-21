@@ -139,9 +139,9 @@ export class SARViewer extends DG.JsViewer {
    * @memberof SARViewer
    */
   async render(computeData = true) {
-    if (!this.initialized) {
+    if (!this.initialized)
       return;
-    }
+
     //TODO: optimize. Don't calculate everything again if only view changes
     if (computeData) {
       if (typeof this.dataFrame !== 'undefined' && this.activityColumnName && this.sourceGrid) {
@@ -233,9 +233,9 @@ function syncGridsFunc(
   if (viewerGrid && viewerGrid.dataFrame && viewerVGrid && viewerVGrid.dataFrame) {
     if (sourceVertical) {
       const dfCell = viewerVGrid.dataFrame.currentCell;
-      if (dfCell.column === null || dfCell.column.name !== 'Mean difference') {
+      if (dfCell.column === null || dfCell.column.name !== 'Mean difference')
         return;
-      }
+
       const otherColName: string = viewerVGrid.dataFrame.get('Position', dfCell.rowIndex);
       const otherRowName: string = viewerVGrid.dataFrame.get(aminoAcidResidue, dfCell.rowIndex);
       let otherRowIndex = -1;
@@ -245,14 +245,13 @@ function syncGridsFunc(
           break;
         }
       }
-      if (otherRowIndex !== -1) {
+      if (otherRowIndex !== -1)
         viewerGrid.dataFrame.currentCell = viewerGrid.dataFrame.cell(otherRowIndex, otherColName);
-      }
     } else {
       const otherPos: string = viewerGrid.dataFrame.currentCol?.name;
-      if (typeof otherPos === 'undefined' && otherPos !== aminoAcidResidue) {
+      if (typeof otherPos === 'undefined' && otherPos !== aminoAcidResidue)
         return;
-      }
+
       const otherAAR: string =
         viewerGrid.dataFrame.get(aminoAcidResidue, viewerGrid.dataFrame.currentRowIdx);
       let otherRowIndex = -1;
@@ -265,9 +264,8 @@ function syncGridsFunc(
           break;
         }
       }
-      if (otherRowIndex !== -1) {
+      if (otherRowIndex !== -1)
         viewerVGrid.dataFrame.currentCell = viewerVGrid.dataFrame.cell(otherRowIndex, 'Mean difference');
-      }
     }
   }
 }
@@ -310,9 +308,9 @@ function applyBitset(
     const aarLabel = `${currentAAR === '-' ? 'Empty' : currentAAR} - ${currentPosition}`;
 
     let splitCol = dataFrame.col(splitColName);
-    if (!splitCol) {
+    if (!splitCol)
       splitCol = dataFrame.columns.addNew(splitColName, 'string');
-    }
+
 
     const isChosen = (i: number) => groupMapping[dataFrame!.get(currentPosition, i)] === currentAAR;
     splitCol!.init((i) => isChosen(i) ? aarLabel : otherLabel);
@@ -363,9 +361,9 @@ function accordionFunc(
       const elements: (HTMLLabelElement | HTMLElement)[] = [currentLabel, otherLabel];
 
       const distPane = accordion.getPane('Distribution');
-      if (distPane) {
+      if (distPane)
         accordion.removePane(distPane);
-      }
+
       accordion.addPane('Distribution', () => {
         const hist = originalDf.clone(initialBitset).plot.histogram({
         // const hist = originalDf.plot.histogram({

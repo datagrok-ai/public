@@ -1,0 +1,13 @@
+{
+  "tags": [
+    "demo",
+    "default"
+  ],
+  "description": "This dataset represents an IT network with objects like PCs, db servers, firewalls, routers, etc. Each row in a table represents a relation between the corresponding objects.",
+  "tables": [
+    {
+      "path": "demo/corp_net.csv",
+      "id": "bc697ab0-0b50-11e9-cde0-33a5f40c88d8"
+    }
+  ]
+}

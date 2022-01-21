@@ -5,49 +5,49 @@ import * as DG from 'datagrok-api/dg';
 import { caption, enabled, checkHTMLElement } from './utils';
 
 category('UI: Buttons', () => {
-    let v: DG.View;
-    const buttons = {
-      'button': ui.button('',()=>{}),
-      'bigButton': ui.bigButton('', ()=>{}),
-      'iconButton': ui.button(ui.iconFA(''), ()=>{}),
-    };
-  
-    before(async () => {
-      v = grok.shell.newView('');
-    });
+  let v: DG.View;
+  const buttons = {
+    'button': ui.button('', () => { }),
+    'bigButton': ui.bigButton('', () => { }),
+    'iconButton': ui.button(ui.iconFA(''), () => { }),
+  };
 
-    test('button.root', async () => {
-        for (const [key, value] of Object.entries(buttons)) {
-          checkHTMLElement(key, value, v, '.ui-btn');
-        }
-      })
+  before(async () => {
+    v = grok.shell.newView('');
+  });
 
-    test('button.click', async () => {
-      for (const [key, value] of Object.entries(buttons)) {
-          onClick(value);
-      }
-    })
+  test('button.root', async () => {
+    for (const [key, value] of Object.entries(buttons)) {
+      checkHTMLElement(key, value, v, '.ui-btn');
+    }
+  })
 
-    after(async () => {
-        v.close();
-        grok.shell.closeAll();
-      });
+  test('button.click', async () => {
+    for (const [key, value] of Object.entries(buttons)) {
+      onClick(value);
+    }
+  })
 
-    function onClick(root: HTMLElement): void {
+  after(async () => {
+    v.close();
+    grok.shell.closeAll();
+  });
+
+  function onClick(root: HTMLElement): void {
     v.append(root);
 
     let check = false;
-    root.addEventListener("click", function (){
-        check = true;
+    root.addEventListener("click", function () {
+      check = true;
     });
 
     root.click();
 
     if (check == false)
-        throw `"${root}": OnClick error`;
+      throw `"${root}": OnClick error`;
 
     root.remove();
-    }  
+  }
 
 });
 

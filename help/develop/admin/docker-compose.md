@@ -23,7 +23,7 @@ If you want to jump-start with Datagrok on your local machine, we recommend this
    file: [link](https://github.com/datagrok-ai/public/blob/master/docker/localhost.docker-compose.yaml).
 
 2. To start up Datagrok, run this command:
-   ```bash
+   ```shell
    docker-compose -f docker/localhost.docker-compose.yaml --project-name datagrok --profile all up -d
    ```
    Datagrok will deploy a new database automatically.
@@ -38,13 +38,13 @@ If you want to jump-start with Datagrok on your local machine, we recommend this
    and a password `admin`.
 
 4. After Datagrok is deployed for the first time, you can shut it down using command:
-   ```bash
+   ```shell
    docker-compose -f docker/localhost.docker-compose.yaml --project-name datagrok --profile all stop
    ```
    All the data will be saved in the [Docker volumes](https://docs.docker.com/storage/volumes/). If you want to reset
    Datagrok to factory settings, including all created users, projects, connections, etc., run the following command
    instead:
-   ```bash
+   ```shell
    docker-compose -f docker/localhost.docker-compose.yaml --project-name datagrok --profile all down --volumes
    ```
 
@@ -65,16 +65,16 @@ If you want to jump-start with Datagrok on your local machine, we recommend this
         * Api Url: `http://datagrok:8080/api`
 
 2. Check containers logs for any possible errors and report the problem if there is any
-   ```bash
+   ```shell
    docker-compose -f docker/localhost.docker-compose.yaml --project-name datagrok --profile all logs
    ```
 3. Restart docker compose stand
-    ```bash
+    ```shell
     docker-compose -f docker/localhost.docker-compose.yaml --project-name datagrok --profile all stop
     docker-compose -f docker/localhost.docker-compose.yaml --project-name datagrok --profile all up -d
     ```
 4. For advanced service troubleshooting you can access the containers shell
-    ```bash
+    ```shell
     # Replace <service> with one of the services: db, datagrok, grok_connect, grok_compute, jupyter_notebook, jupyter_kernel_gateway, h2o
     docker-compose -f docker/localhost.docker-compose.yaml --project-name datagrok --profile all exec <service> /bin/sh
     ```
@@ -82,37 +82,37 @@ If you want to jump-start with Datagrok on your local machine, we recommend this
 ## Advanced usage
 
 If you do not need CVM features you can run only Datagrok application containers:
-```bash
+```shell
 docker-compose -f docker/localhost.docker-compose.yaml --project-name datagrok --profile datagrok up -d
 ```
 
 To run Datagrok with exact CVM features, specify them in the command line using `--profile` flag
 * Cheminformatics
-```bash
-docker-compose -f docker/localhost.docker-compose.yaml --project-name datagrok --profile datagrok --profile chem up -d
-```
+   ```shell
+   docker-compose -f docker/localhost.docker-compose.yaml --project-name datagrok --profile datagrok --profile chem up -d
+   ```
 * Jupyter notebook
-```bash
-docker-compose -f docker/localhost.docker-compose.yaml --project-name datagrok --profile datagrok --profile jupyter_notebook up -d
-```
+   ```shell
+   docker-compose -f docker/localhost.docker-compose.yaml --project-name datagrok --profile datagrok --profile jupyter_notebook up -d
+   ```
 * Scripting
-```bash
-docker-compose -f docker/localhost.docker-compose.yaml --project-name datagrok --profile datagrok --profile scripting up -d
-```
+   ```shell
+   docker-compose -f docker/localhost.docker-compose.yaml --project-name datagrok --profile datagrok --profile scripting up -d
+   ```
 * Modeling
-```bash
-docker-compose -f docker/localhost.docker-compose.yaml --project-name datagrok --profile datagrok --profile modeling up -d
-```
+   ```shell
+   docker-compose -f docker/localhost.docker-compose.yaml --project-name datagrok --profile datagrok --profile modeling up -d
+   ```
 * Features can be enabled in any combination
-```bash
-docker-compose -f docker/localhost.docker-compose.yaml --project-name datagrok \
-  --profile datagrok \
-  --profile chem \
-  --profile scripting \
-  --profile jupyter_notebook \
-  --profile modeling \
-  up -d
-```
+   ```shell
+   docker-compose -f docker/localhost.docker-compose.yaml --project-name datagrok \
+     --profile datagrok \
+     --profile chem \
+     --profile scripting \
+     --profile jupyter_notebook \
+     --profile modeling \
+     up -d
+   ```
 
 ## Useful links
 

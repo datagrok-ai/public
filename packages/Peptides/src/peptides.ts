@@ -35,7 +35,6 @@ export class Peptides {
     currentDf: DG.DataFrame,
     options: {[key: string]: string},
     col: DG.Column,
-    activityColumnChoice: string,
   ) {
     for (let i = 0; i < tableGrid.columns.length; i++) {
       const aarCol = tableGrid.columns.byIndex(i);
@@ -48,16 +47,17 @@ export class Peptides {
       }
     }
 
+    const initialFiter = currentDf.filter.clone();
     const originalDfColumns = (currentDf.columns as DG.ColumnList).names();
     const originalDfName = currentDf.name;
 
-    const substViewer = view.addViewer(
-      'substitution-analysis-viewer', {'activityColumnName': options['activityColumnName']},
-    );
-    const substNode = view.dockManager.dock(substViewer, DG.DOCK_TYPE.RIGHT, null, 'Substitution Analysis');
+    // const substViewer = view.addViewer(
+    //   'substitution-analysis-viewer', {'activityColumnName': options['activityColumnName']},
+    // );
+    // const substNode = view.dockManager.dock(substViewer, DG.DOCK_TYPE.RIGHT, null, 'Substitution Analysis');
 
-    const layout1 = view.saveLayout();
-    view.dockManager.close(substNode);
+    // const layout1 = view.saveLayout();
+    // view.dockManager.close(substNode);
 
     const sarViewer = view.addViewer('peptide-sar-viewer', options);
     const sarNode = view.dockManager.dock(sarViewer, DG.DOCK_TYPE.DOWN, null, 'SAR Viewer');
@@ -72,11 +72,13 @@ export class Peptides {
       'Levenshtein',
       100,
       view,
-      `${activityColumnChoice}Scaled`,
+      `${options['activityColumnChoice']}Scaled`,
     );
     const psNode = view.dockManager.dock(peptideSpaceViewer, DG.DOCK_TYPE.LEFT, sarNode, 'Peptide Space Viewer', 0.3);
 
     const layout2 = view.saveLayout();
+
+    const nodeList = [sarNode, sarVNode, psNode];
 
     const StackedBarchartProm = currentDf.plot.fromType('StackedBarChartAA');
     addViewerToHeader(tableGrid, StackedBarchartProm);
@@ -85,17 +87,15 @@ export class Peptides {
     const hideIcon = ui.iconFA('window-close', () => { //undo?, times?
       const viewers = [];
       for (const viewer of view.viewers) {
-        if (viewer.type !== DG.VIEWER.GRID) {
+        if (viewer.type !== DG.VIEWER.GRID)
           viewers.push(viewer);
-        }
       }
       viewers.forEach((v) => v.close());
 
       const cols = (currentDf.columns as DG.ColumnList);
       for (const colName of cols.names()) {
-        if (!originalDfColumns.includes(colName)) {
+        if (!originalDfColumns.includes(colName))
           cols.remove(colName);
-        }
       }
 
       currentDf.selection.setAll(false);
@@ -110,13 +110,47 @@ export class Peptides {
     }, 'Close viewers and restore dataframe');
 
     let isSA = false;
-    const switchViewers = ui.iconFA('toggle-on', () => {
+    //TODO: fix layouts
+    // const switchViewers = ui.iconFA('toggle-on', () => {
+    //   if (isSA) {
+    //     view.loadLayout(layout1);
+    //     $(switchViewers).removeClass('fa-toggle-off');
+    //     $(switchViewers).addClass('fa-toggle-on');
+    //   } else {
+    //     view.loadLayout(layout2);
+    //     $(switchViewers).removeClass('fa-toggle-on');
+    //     $(switchViewers).addClass('fa-toggle-off');
+    //   }
+    //   isSA = !isSA;
+    // });
+    const switchViewers = ui.iconFA('toggle-on', async () => {
+      currentDf.filter.copyFrom(initialFiter);
+      currentDf.selection.setAll(false);
+      nodeList.forEach((node) => view.dockManager.close(node));
+      nodeList.length = 0;
       if (isSA) {
-        view.loadLayout(layout1);
+        const sarViewer = view.addViewer('peptide-sar-viewer', options);
+        const sarNode = view.dockManager.dock(sarViewer, DG.DOCK_TYPE.DOWN, null, 'SAR Viewer');
+
+        const sarViewerVertical = view.addViewer('peptide-sar-viewer-vertical');
+        const sarVNode = view.dockManager.dock(sarViewerVertical, DG.DOCK_TYPE.RIGHT, sarNode, 'SAR Vertical Viewer');
+
+        const peptideSpaceViewer = await createPeptideSimilaritySpaceViewer(
+          currentDf, col, 't-SNE', 'Levenshtein', 100, view, `${options['activityColumnChoice']}Scaled`);
+        const psNode = view.dockManager.dock(
+          peptideSpaceViewer, DG.DOCK_TYPE.LEFT, sarNode, 'Peptide Space Viewer', 0.3);
+
+        nodeList.push(sarNode);
+        nodeList.push(sarVNode);
+        nodeList.push(psNode);
+
         $(switchViewers).removeClass('fa-toggle-off');
         $(switchViewers).addClass('fa-toggle-on');
       } else {
-        view.loadLayout(layout2);
+        const substViewer = view.addViewer(
+          'substitution-analysis-viewer', {'activityColumnName': options['activityColumnName']},
+        );
+        nodeList.push(view.dockManager.dock(substViewer, DG.DOCK_TYPE.DOWN, null, 'Substitution Analysis'));
         $(switchViewers).removeClass('fa-toggle-on');
         $(switchViewers).addClass('fa-toggle-off');
       }
@@ -124,7 +158,7 @@ export class Peptides {
     });
 
     const ribbonPanels = view.getRibbonPanels();
-    // view.setRibbonPanels([[hideIcon, switchViewers]]);
-    view.setRibbonPanels([[hideIcon]]);
+    view.setRibbonPanels([[hideIcon, switchViewers]]);
+    // view.setRibbonPanels([[hideIcon]]);
   }
 }

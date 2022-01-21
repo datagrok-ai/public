@@ -1,0 +1,29 @@
+{
+	"name": "@datagrok/demo",
+	"friendlyName": "Demo",
+	"version": "0.0.2",
+	"description": "",
+	"dependencies": {
+		"datagrok-api": "latest",
+		"ts-loader": "latest",
+		"typescript": "latest"
+	},
+	"devDependencies": {
+		"webpack": "latest",
+		"webpack-cli": "latest"
+	},
+	"scripts": {
+		"debug-demo": "grok publish --rebuild",
+		"release-demo": "grok publish --release",
+		"build-demo": "webpack",
+		"build": "tsc && webpack",
+		"debug-demo-dev": "grok publish dev --rebuild",
+		"release-demo-dev": "grok publish dev --rebuild --release",
+		"debug-demo-public": "grok publish public --rebuild",
+		"release-demo-public": "grok publish public --rebuild --release",
+		"debug-demo-local": "grok publish local --rebuild",
+		"release-demo-local": "grok publish local --rebuild --release"
+	},
+	"canView": ["All users"],
+	"canEdit": ["Administators", "Developers"]
+}

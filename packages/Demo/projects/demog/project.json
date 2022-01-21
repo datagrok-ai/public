@@ -1,0 +1,14 @@
+{
+  "tags": [
+    "demo",
+    "default",
+    "demog"
+  ],
+  "description": "Demographics data analysis",
+  "tables": [
+    {
+      "path": "demo/demog.csv",
+      "id": "e1792340-bd30-11e8-ed33-716dfb17fcbb"
+    }
+  ]
+}

@@ -40,8 +40,8 @@ export class LaboratoryView extends DG.ViewBase implements ILazyLoading {
     this.name = name;
     this.helpUrl = `${_package.webRoot}/views_help/laboratory.md`;
  }
-  loaded: boolean;
-
+  loaded = false;
+  
   load(): void {
     checkMissingDomains(requiredColumnsByView[this.name], this);
  }

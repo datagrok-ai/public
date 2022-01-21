@@ -41,7 +41,7 @@ export class TimeProfileView extends DG.ViewBase implements ILazyLoading {
         this.helpUrl = `${_package.webRoot}/views_help/time_profile.md`;
     }
 
-    loaded: boolean;
+    loaded = false;
 
     load(): void {
         checkMissingDomains(requiredColumnsByView[this.name], this);
@@ -73,9 +73,7 @@ export class TimeProfileView extends DG.ViewBase implements ILazyLoading {
             if (this.visitNamesAndDays.findIndex(it => it.name === this.ep) === -1) {
                 this.ep = this.visitNamesAndDays[this.visitNamesAndDays.length-1].name;
             }
-            this.createValuesChoices();
-            this.createBlChoices();
-            this.createEpChoices();
+            this.createDropdownLists();
             this.updateTimeProfile();
         });
 
@@ -85,9 +83,7 @@ export class TimeProfileView extends DG.ViewBase implements ILazyLoading {
             this.updateTimeProfile();
         });
 
-        this.createValuesChoices();
-        this.createBlChoices();
-        this.createEpChoices();
+        this.createDropdownLists();
 
         this.root.className = 'grok-view ui-box';
         this.linechart = DG.Viewer.lineChart(this.laboratoryDataFrame, {
@@ -127,6 +123,12 @@ export class TimeProfileView extends DG.ViewBase implements ILazyLoading {
                 break;
             }
         }
+    }
+
+    private createDropdownLists() {
+        this.createValuesChoices();
+        this.createBlChoices();
+        this.createEpChoices();
     }
 
     private createValuesChoices(){

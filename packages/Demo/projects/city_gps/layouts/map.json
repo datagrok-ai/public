@@ -1,0 +1,147 @@
+{
+  "#type": "ViewLayout",
+  "type": "TableView",
+  "viewStateMap": {
+    "containerType": "horizontal",
+    "state": {
+      "width": 920,
+      "height": 683
+    },
+    "children": [
+      {
+        "containerType": "panel",
+        "state": {
+          "width": 166,
+          "height": 683,
+          "element": {
+            "id": "c1080860-e010-11ea-9306-29b338da7c03",
+            "type": "Filters",
+            "look": {
+              "columnNames": [
+                "dt_start",
+                "LON",
+                "LAT"
+              ]
+            },
+            "title": "Filters"
+          }
+        },
+        "children": []
+      },
+      {
+        "containerType": "fill",
+        "state": {
+          "width": 344,
+          "height": 683,
+          "documentManager": true
+        },
+        "children": [
+          {
+            "containerType": "panel",
+            "state": {
+              "width": 344,
+              "height": 683,
+              "element": {
+                "id": "c1087d90-e010-11ea-9042-217bfaee4411",
+                "type": "Grid",
+                "look": {
+                  "#type": "GridLook",
+                  "allowColumnMenu": true,
+                  "topLevelDefaultMenu": true,
+                  "columns": [
+                    {
+                      "width": 170,
+                      "columnName": "dt_start",
+                      "cellType": "number"
+                    },
+                    {
+                      "width": 53,
+                      "columnName": "LON",
+                      "cellType": "number"
+                    },
+                    {
+                      "width": 53,
+                      "columnName": "LAT",
+                      "cellType": "number"
+                    }
+                  ]
+                }
+              }
+            },
+            "children": []
+          }
+        ]
+      },
+      {
+        "containerType": "panel",
+        "state": {
+          "width": 392,
+          "height": 683,
+          "element": {
+            "id": "c108cbb0-e010-11ea-f876-f3e59a6f85e5",
+            "type": "Google map",
+            "look": {
+              "latitudeColumnName": "LAT",
+              "longitudeColumnName": "LON"
+            }
+          }
+        },
+        "children": []
+      }
+    ],
+    "tableId": "a2829ad0-5970-11e9-fc20-2b484b2c25b7"
+  },
+  "columns": [
+    {
+      "name": "LAT",
+      "type": "double",
+      "semType": "Latitude",
+      "id": "c109b610-e010-11ea-8c2b-95b9cf5ca02b",
+      "friendlyName": "LAT",
+      "entityTags": [
+        {
+          "tag": "quality",
+          "id": "c1098f00-e010-11ea-af03-adce72ad615d"
+        },
+        {
+          "tag": ".semantic-detection-duration",
+          "id": "c109b610-e010-11ea-c3b0-9d4e54d5ff45"
+        }
+      ],
+      "metaParams": {
+        "quality": "Latitude",
+        ".semantic-detection-duration": "0"
+      }
+    },
+    {
+      "name": "LON",
+      "type": "double",
+      "semType": "Longitude",
+      "id": "c10a0430-e010-11ea-9842-7bd277b9b8fa",
+      "friendlyName": "LON",
+      "entityTags": [
+        {
+          "tag": "quality",
+          "id": "c109dd20-e010-11ea-d179-3107ec9b9545"
+        },
+        {
+          "tag": ".semantic-detection-duration",
+          "id": "c10a0430-e010-11ea-9a4c-3b5782cb5555"
+        }
+      ],
+      "metaParams": {
+        "quality": "Longitude",
+        ".semantic-detection-duration": "1"
+      }
+    }
+  ],
+  "id": "a297f790-5970-11e9-f12f-01d623046644",
+  "namespace": "Demo:CityGPS:",
+  "name": "CityGps",
+  "friendlyName": "city_gps",
+  "author": {
+    "id": "3e32c5fa-ac9c-4d39-8b4b-4db3e576b3c3"
+  },
+  "createdOn": "2020-08-26T18:20:33.431Z",
+  "updatedOn": "2020-08-26T18:20:33.431Z"
+}

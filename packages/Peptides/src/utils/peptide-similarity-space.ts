@@ -20,11 +20,21 @@ import {Coordinates} from '@datagrok-libraries/utils/src/type-declarations';
 function inferActivityColumnsName(table: DG.DataFrame): string | null {
   const re = /activity|ic50/i;
   for (const name of table.columns.names()) {
-    if (name.match(re)) {
+    if (name.match(re))
       return name;
-    }
   }
   return null;
+}
+
+/**
+ * Cast an aligned sequences column to clean sequences.
+ *
+ * @export
+ * @param {DG.Column} col Column to process.
+ * @return {Array<string>} Clean sequences array.
+ */
+export function cleanAlignedSequencesColumn(col: DG.Column): Array<string> {
+  return col.toList().map((v, _) => AlignedSequenceEncoder.clean(v));
 }
 
 /**
@@ -49,7 +59,6 @@ export async function createPeptideSimilaritySpaceViewer(
   cyclesCount: number,
   view: DG.TableView | null,
   activityColumnName?: string | null,
-  zoom: boolean = false,
 ): Promise<DG.ScatterPlotViewer> {
   const pi = DG.TaskBarProgressIndicator.create('Creating embedding.');
 
@@ -90,17 +99,16 @@ export async function createPeptideSimilaritySpaceViewer(
         const v = newCol.get(i);
         table.set(axis, i, v);
       }
-    } else {
+    } else
       table.columns.insert(newCol);
-    }
   }
 
   const viewerOptions = {x: '~X', y: '~Y', color: activityColumnName ?? '~MW', size: '~MW'};
   const viewer = DG.Viewer.scatterPlot(table, viewerOptions);
 
-  if (view !== null) {
+  if (view !== null)
     view.addViewer(viewer);
-  }
+
 
   pi.close();
   return viewer;
@@ -155,7 +163,6 @@ export class PeptideSimilaritySpaceWidget {
       this.cycles,
       null,
       null,
-      true,
     );
     viewer.root.style.width = 'auto';
     return viewer;

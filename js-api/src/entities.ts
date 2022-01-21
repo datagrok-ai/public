@@ -530,6 +530,13 @@ export class LogEventType extends Entity {
 
   /** Friendly name of the event type */
   get name(): string { return api.grok_LogEventType_Get_Name(this.dart); }
+
+  get comment(): string { return api.grok_LogEventType_Get_Comment(this.dart); }
+  set comment(comment) { api.grok_LogEventType_Set_Comment(this.dart, comment); }
+
+  get isError(): boolean { return api.grok_LogEventType_Get_IsError(this.dart); }
+  set isError(isError) { api.grok_LogEventType_Set_IsError(this.dart, isError); }
+
 }
 
 export class LogEvent extends Entity {

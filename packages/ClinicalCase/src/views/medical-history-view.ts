@@ -19,7 +19,7 @@ export class MedicalHistoryView extends DG.ViewBase implements ILazyLoading {
         this.helpUrl = `${_package.webRoot}/views_help/medical_history.md`;
     }
 
-    loaded: boolean;
+    loaded = false;
 
     load(): void {
         checkMissingDomains(requiredColumnsByView[this.name], this);

@@ -2,7 +2,7 @@
   "name": "@datagrok/chem",
   "friendlyName": "Chem",
   "fullName": "Chem",
-  "version": "0.47.2",
+  "version": "0.48.2",
   "description": "Cheminformatics support: \n\n* RDKit-based rendering \n* Molecule sketching \n*",
   "properties": [
     {
@@ -23,6 +23,8 @@
     "datagrok-api": ">0.94.10",
     "@datagrok-libraries/ml": ">=0.0.8",
     "@datagrok-libraries/utils": ">=0.0.16",
+    "wu": "latest",
+    "@types/wu": "latest",
     "cash-dom": "latest",
     "css-loader": "latest",
     "dayjs": "latest",
@@ -30,7 +32,7 @@
     "offscreen-canvas": "latest",
     "openchemlib": "6.0.1",
     "path": "^0.12.7",
-    "rxjs": "latest",
+    "rxjs": "^6.5.5",
     "style-loader": "latest",
     "ts-loader": "latest",
     "typescript": "latest",

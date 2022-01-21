@@ -22,9 +22,8 @@ export function expandColumn(
   let maxLen = 0;
   col.categories.forEach((ent: string) => {
     const len = cellRenderSize(ent);
-    if (len > maxLen) {
+    if (len > maxLen)
       maxLen = len;
-    }
   });
   setTimeout(() => {
       grid.columns.byName(col.name)!.width = Math.min(Math.max(maxLen * textSizeMult, minSize), maxSize);
@@ -43,12 +42,11 @@ export function expandColumn(
 export function setAARRenderer(col: DG.Column, grid: DG.Grid | null = null, grouping = false) {
   col.semType = 'aminoAcids';
   col.setTag('cell.renderer', 'aminoAcids');
-  if (grouping) {
+  if (grouping)
     col.setTag('groups', `${grouping}`);
-  }
-  if (grid) {
+
+  if (grid)
     expandColumn(col, grid, (ent) => measureAAR(ent));
-  }
 }
 /**
  * A function to measure amino acid residue
@@ -85,29 +83,27 @@ function printLeftOrCentered(
 ) {
   g.textAlign = 'start';
   let colorPart = pivot == -1 ? s.substring(0) : s.substring(0, pivot);
-  if (colorPart.length == 1) {
+  if (colorPart.length == 1)
     colorPart = colorPart.toUpperCase();
-  }
+
   if (colorPart.length >= 3) {
-    if (colorPart.substring(0, 3) in ChemPalette.AAFullNames) {
+    if (colorPart.substring(0, 3) in ChemPalette.AAFullNames)
       colorPart = ChemPalette.AAFullNames[s.substring(0, 3)] + colorPart.substr(3);
-    } else if (colorPart.substring(1, 4) in ChemPalette.AAFullNames) {
+    else if (colorPart.substring(1, 4) in ChemPalette.AAFullNames)
       colorPart = colorPart[0] + ChemPalette.AAFullNames[s.substring(1, 4)] + colorPart.substr(4);
-    }
   }
   let grayPart = pivot == -1 ? '' : s.substr(pivot);
   if (hideMod) {
     let end = colorPart.lastIndexOf(')');
     let beg = colorPart.indexOf('(');
-    if (beg > -1 && end > -1 && end - beg > 2) {
+    if (beg > -1 && end > -1 && end - beg > 2)
       colorPart = colorPart.substr(0, beg) + '(+)' + colorPart.substr(end + 1);
-    }
+
 
     end = grayPart.lastIndexOf(')');
     beg = grayPart.indexOf('(');
-    if (beg > -1 && end > -1 && end - beg > 2) {
+    if (beg > -1 && end > -1 && end - beg > 2)
       grayPart = grayPart.substr(0, beg) + '(+)' + grayPart.substr(end + 1);
-    }
   }
   const textSize = g.measureText(colorPart + grayPart);
   const indent = 5;
@@ -190,9 +186,9 @@ export class AminoAcidsCellRenderer extends DG.GridCellRenderer {
      */
     render(g: CanvasRenderingContext2D, x: number, y: number, w: number, h: number,
       gridCell: DG.GridCell, cellStyle: DG.GridCellStyle) {
-      if (this.chemPalette === null) {
+      if (this.chemPalette === null)
         this.chemPalette = new ChemPalette('grok', gridCell.tableColumn?.getTag('groups') ? true : false);
-      }
+
       g.save();
       g.beginPath();
       g.rect(x, y, w, h);
@@ -246,16 +242,21 @@ export class AlignedSequenceCellRenderer extends DG.GridCellRenderer {
    * @param {DG.GridCellStyle} cellStyle Cell style.
    * @memberof AlignedSequenceCellRenderer
    */
-  render(g: CanvasRenderingContext2D, x: number, y: number, w: number, h: number,
-    gridCell: DG.GridCell, cellStyle: DG.GridCellStyle ) {
-    w = Math.min(gridCell.grid.canvas.width - x, w);
+  render(
+    g: CanvasRenderingContext2D, x: number, y: number, w: number, h: number,
+    gridCell: DG.GridCell, cellStyle: DG.GridCellStyle,
+  ) {
+    const grid = gridCell.dart.grid ? gridCell.grid : gridCell.dart.grid;
+    const cell = gridCell.cell;
+
+    w = grid ? Math.min(grid.canvas.width - x, w) : g.canvas.width - x;
     g.save();
     g.beginPath();
     g.rect(x, y, w, h);
     g.clip();
     g.font = '14px monospace';
     g.textBaseline = 'top';
-    const s: string = gridCell.cell.value ?? '';
+    const s: string = cell.value ?? '';
 
     //TODO: can this be replaced/merged with splitSequence?
     const subParts = s.split('-');
@@ -293,9 +294,9 @@ export function processSequence(subParts: string[]): [string[], boolean] {
   const text: string[] = [];
   const gap = simplified ? '' : ' ';
   subParts.forEach((amino: string, index) => {
-    if (index < subParts.length) {
+    if (index < subParts.length)
       amino += `${amino ? '' : '-'}${gap}`;
-    }
+
     text.push(amino);
   });
   return [text, simplified];

@@ -14,7 +14,7 @@ import {analyzePeptidesWidget} from './widgets/analyze-peptides';
 import {PeptideSimilaritySpaceWidget} from './utils/peptide-similarity-space';
 import {manualAlignmentWidget} from './widgets/manual-alignment';
 import {SARViewer, SARViewerVertical} from './viewers/sar-viewer';
-import {peptideMoleculeWidget} from './widgets/peptide-molecule';
+import {peptideMoleculeWidget, getMolecule} from './widgets/peptide-molecule';
 import {SubstViewer} from './viewers/subst-viewer';
 import {runKalign} from './utils/multiple-sequence-alignment';
 
@@ -38,9 +38,9 @@ async function main(chosenFile: string) {
   pi.close();
 }
 
-//name: Peptides App
+//name: Peptides
 //tags: app
-export function Peptides() {
+export async function Peptides() {
   const wikiLink = ui.link('wiki', 'https://github.com/datagrok-ai/public/blob/master/help/domains/bio/peptides.md');
   const textLink = ui.inlineText(['For more details, see our ', wikiLink, '.']);
 
@@ -73,8 +73,8 @@ export function Peptides() {
     appDescription,
     ui.info([textLink]),
     ui.divH([
-      ui.button('Open peptide sequences demonstration set', () => main('aligned.csv'), ''),
-      ui.button('Open complex case demo', () => main('aligned_2.csv'), ''),
+      ui.button('Simple demo', () => main('aligned.csv'), ''),
+      ui.button('Complex demo', () => main('aligned_2.csv'), ''),
     ]),
   ]);
 }
@@ -84,9 +84,9 @@ export function Peptides() {
 //input: column col {semType: alignedSequence}
 //output: widget result
 export async function peptidesPanel(col: DG.Column): Promise<DG.Widget> {
-  if (col.getTag('isAnalysisApplicable') === 'false') {
+  if (col.getTag('isAnalysisApplicable') === 'false')
     return new DG.Widget(ui.divText('Analysis is not applicable'));
-  }
+
   view = (grok.shell.v as DG.TableView);
   tableGrid = view.grid;
   currentDf = col.dataFrame;
@@ -136,6 +136,15 @@ export async function peptideMolecule(peptide: string): Promise<DG.Widget> {
   return await peptideMoleculeWidget(peptide);
 }
 
+//name: Peptide Molecule
+//tags: panel, widgets
+//input: string aar {semType: aminoAcids}
+//output: widget result
+export async function peptideMolecule2(aar: string): Promise<DG.Widget> {
+  const peptide = alignedSequenceCol.get(currentDf.currentRowIdx);
+  return await peptideMolecule(peptide);
+}
+
 //name: StackedBarChartAA
 //tags: viewer
 //output: viewer result
@@ -171,6 +180,7 @@ export function logov() {
 //input: string monomer {semType: aminoAcids}
 //output: widget result
 export function manualAlignment(monomer: string) {
+  //TODO: recalculate Molfile and Molecule panels on sequence update
   return manualAlignmentWidget(alignedSequenceCol, currentDf);
 }
 
@@ -183,13 +193,31 @@ export async function peptideSpacePanel(col: DG.Column): Promise<DG.Widget> {
   return await widget.draw();
 }
 
+//name: Molfile
+//tags: panel, widgets
+//input: string peptide { semType: alignedSequence }
+//output: widget result
+export async function peptideMolfile(peptide: string): Promise<DG.Widget> {
+  const smiles = getMolecule(peptide);
+  return await grok.functions.call('Chem:molfile', {'smiles': smiles});
+}
+
+//name: Molfile
+//tags: panel, widgets
+//input: string aar { semType: aminoAcids }
+//output: widget result
+export async function peptideMolfile2(aar: string): Promise<DG.Widget> {
+  const peptide = alignedSequenceCol.get(currentDf.currentRowIdx);
+  return await peptideMolfile(peptide);
+}
+
 //name: Multiple sequence alignment
-//tags: viewer
-//input: dataframe table
-//input: column col
+//tags: panel
+//input: column col {semType: alignedSequence}
 //output: dataframe result
-export async function doMSA(table: DG.DataFrame, col: DG.Column): Promise<DG.DataFrame> {
-  const msaCol = await runKalign(col);
+export async function multipleSequenceAlignment(col: DG.Column): Promise<DG.DataFrame> {
+  const msaCol = await runKalign(col, true);
+  const table = col.dataFrame;
   table.columns.add(msaCol);
   return table;
 }

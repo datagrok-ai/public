@@ -23,7 +23,17 @@
       "error",
       120
     ],
+    "require-jsdoc": "off",
     "spaced-comment": "off",
-    "require-jsdoc": "off"
+    "linebreak-style": "off",
+    "curly": [
+      "error",
+      "multi-or-nest"
+    ],
+    "brace-style": [
+      "error",
+      "1tbs",
+      { "allowSingleLine": true }
+    ]
   }
 }
