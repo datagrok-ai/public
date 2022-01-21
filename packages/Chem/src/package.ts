@@ -227,7 +227,7 @@ export async function chemCellRenderer() {
 export async function getMorganFingerprints(molColumn: DG.Column) {
   if (molColumn === null) throw 'Chem: An input was null';
   try {
-    const fingerprints = await chemSearches.chemGetMorganFingerprints(molColumn);
+    const fingerprints = await chemSearches.chemGetFingerprints(molColumn, 'morgan');
     const fingerprintsBitsets: DG.BitSet[] = [];
     for (let i = 0; i < fingerprints.length; ++i) {
       //@ts-ignore
@@ -245,7 +245,7 @@ export async function getMorganFingerprints(molColumn: DG.Column) {
 //input: string molString {semType: Molecule}
 //output: object fingerprintBitset [Fingerprints]
 export function getMorganFingerprint(molString: string) {
-  const bitArray = chemSearches.chemGetMorganFingerprint(molString);
+  const bitArray = chemSearches.chemGetFingerprint(molString, 'morgan');
   //@ts-ignore
   return DG.BitSet.fromBytes(bitArray.getRawData(), bitArray.length);
 }
@@ -572,7 +572,7 @@ export function editMoleculeCell(cell: DG.GridCell) {
 }
 */
 
-//name: MySimilaritySearch
+//name: SimilaritySearchViewer
 //tags: viewer
 //output: viewer result
 export function moleculeViewer() {
@@ -584,5 +584,5 @@ export function moleculeViewer() {
 //description: finds the most similar molecule
 //output: viewer result
 export function similaritySearchTopMenu() {
-  (grok.shell.v as DG.TableView).addViewer('MySimilaritySearch');
+  (grok.shell.v as DG.TableView).addViewer('SimilaritySearchViewer');
 }
