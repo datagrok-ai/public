@@ -25,10 +25,14 @@ import {chem} from 'datagrok-api/grok';
 import {oclMol} from './chem-common-ocl';
 import {RDMol} from './rdkit-api';
 import {isMolBlock} from './chem-utils';
+<<<<<<< HEAD
 import Sketcher = chem.Sketcher;
 import $ from 'cash-dom';
 import '../css/chem.css';
 import { SimilaritySearch } from './chem-similarity-search';
+=======
+import { DiversitySearch } from './chem-diversity-search';
+>>>>>>> Add the Diversity Search to the panel
 
 const drawMoleculeToCanvas = chemCommonRdKit.drawMoleculeToCanvas;
 
@@ -586,3 +590,19 @@ export function moleculeViewer() {
 export function similaritySearchTopMenu() {
   (grok.shell.v as DG.TableView).addViewer('SimilaritySearchViewer');
 }
+
+//name: DiversitySearchViewer
+//tags: viewer
+//output: viewer result
+export function moleculeViewer() {
+  return new DiversitySearch();
+}
+
+//top-menu: Chem | Diversity Search...
+//name: diversitySearch
+//description: finds the most diverse molecules
+//output: viewer result
+export function similaritySearchTopMenu() {
+  (grok.shell.v as DG.TableView).addViewer('DiversitySearchViewer');
+}
+
