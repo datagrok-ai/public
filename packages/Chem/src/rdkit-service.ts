@@ -1,6 +1,5 @@
 import {RdKitServiceWorkerClient} from './rdkit-service-worker-client';
 import BitArray from '@datagrok-libraries/utils/src/bit-array';
-import {chemBeginCriticalSection, chemEndCriticalSection} from "./chem-common";
 
 export class RdKitService {
   _nParallelWorkers: number;

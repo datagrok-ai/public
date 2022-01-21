@@ -3,7 +3,7 @@ import {rdKitFingerprintToBitArray} from './chem-common';
 import BitArray from '@datagrok-libraries/utils/src/bit-array';
 import {isMolBlock} from './chem-utils';
 
-export class RdkitServiceWorkerSubstructure extends RdKitServiceWorkerSimilarity {
+export class RdKitServiceWorkerSubstructure extends RdKitServiceWorkerSimilarity {
   _patternFps: BitArray[] | null = null;
    readonly _patternFpLength = 2048;
 

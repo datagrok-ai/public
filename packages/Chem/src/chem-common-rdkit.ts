@@ -4,7 +4,7 @@
 import {RdKitService} from './rdkit-service';
 import {convertToRDKit} from './analysis/r-group-analysis';
 //@ts-ignore
-import rdkitLibVersion from './rdkit_lib_version';
+import rdKitLibVersion from './rdkit_lib_version';
 //@ts-ignore
 import initRDKitModule from './RDKit_minimal.js';
 
@@ -19,7 +19,7 @@ export function setRdKitWebRoot(webRootValue: string) {
 
 export async function initRdKitModuleLocal() {
   _rdKitModule = await initRDKitModule(
-    {locateFile: () => `${_webRoot}/dist/${rdkitLibVersion}.wasm`});
+    {locateFile: () => `${_webRoot}/dist/${rdKitLibVersion}.wasm`});
   _rdKitModule.prefer_coordgen(false);
   console.log('RDKit module package instance was initialized');
   moduleInitialized = true;
@@ -46,7 +46,7 @@ export function getRdKitWebRoot() {
 }
 
 export function drawRdKitMoleculeToOffscreenCanvas(
-  rdkitMol: any, w: number, h: number, offscreenCanvas: OffscreenCanvas, substruct: Object | null) {
+  rdKitMol: any, w: number, h: number, offscreenCanvas: OffscreenCanvas, substruct: Object | null) {
   const opts = {
     'clearBackground': false,
     'offsetx': 0, 'offsety': 0,
@@ -64,7 +64,7 @@ export function drawRdKitMoleculeToOffscreenCanvas(
   };
   if (substruct)
     Object.assign(opts, substruct);
-  rdkitMol.draw_to_canvas_with_highlights(offscreenCanvas, JSON.stringify(opts));
+  rdKitMol.draw_to_canvas_with_highlights(offscreenCanvas, JSON.stringify(opts));
   // we need the offscreen canvas first to not let the molecule scaffold skew on a real canvas
 }
 

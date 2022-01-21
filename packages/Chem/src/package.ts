@@ -196,10 +196,10 @@ export class GridCellRendererProxy extends DG.GridCellRenderer {
   }
 }
 
-//name: rdkitCellRenderer
+//name: rdKitCellRenderer
 //output: grid_cell_renderer result
 //meta.chemRendererName: RDKit
-export async function rdkitCellRenderer() {
+export async function rdKitCellRenderer() {
   return new RDKitCellRenderer(getRdKitModule());
 }
 
