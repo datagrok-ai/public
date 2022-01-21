@@ -9,7 +9,7 @@ import {
   assert,
 } from '@datagrok-libraries/utils/src/operations';
 import {SPEBase, PSPEBase, OriginalSPE} from './spe';
-import {StringMeasure, KnownMetrics} from './string-measure';
+import {StringMeasure, KnownMetrics, MetricDataTypes} from './string-measure';
 import BitArray from '@datagrok-libraries/utils/src/bit-array';
 import {similarityMetric} from '@datagrok-libraries/utils/src/similarity-metrics';
 
@@ -259,8 +259,8 @@ export class DimensionalityReducer {
    * @param {Options} [options] Options to pass to the implementing embedders.
    * @memberof DimensionalityReducer
    */
-  constructor(data: any[], method: KnownMethods, metric?: KnownMetrics, options?: Options) {
-    const measure = metric ? new StringMeasure(metric).getMeasure() : calculateEuclideanDistance;
+  constructor(data: any[], method: KnownMethods, metric: KnownMetrics = 'EuclideanDistance', options?: Options) {
+    const measure = new StringMeasure(metric).getMeasure();
     let specOptions = {};
 
     if (metric && Object.keys(similarityMetric).includes(metric.toString())) {
@@ -268,6 +268,8 @@ export class DimensionalityReducer {
         data[i] = new BitArray(data[i]._data, data[i]._length);
       }
     }
+    
+    assert(MetricDataTypes[data[0].constructor.name].includes(metric.toString()), 'Data type of the data is incompatible with the given metric.');
 
     if (method == 'UMAP') {
       specOptions = {
