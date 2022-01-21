@@ -1,0 +1,9 @@
+{
+  "dataSource": "S3",
+  "parameters": {
+    "dir": "/packages/demo/files",
+    "region": "us-east-2",
+    "bucket": "datagrok-data",
+    "anonymous": true
+  }
+}
