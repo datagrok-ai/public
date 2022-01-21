@@ -14,6 +14,7 @@ import './dapi/fetch';
 import './dapi/admin';
 import './dapi/groups';
 import './ui/inputs';
+import './ui/forms';
 import './dapi/dapi';
 import './dapi/entities';
 import './dapi/layouts';
