@@ -60,38 +60,37 @@ function joinDataFrames(
   splitSeqDf: DG.DataFrame,
   activityColumn: string,
 ) {
-  if (df.col(activityColumnScaled)) {
+  if (df.col(activityColumnScaled))
     df.columns.remove(activityColumnScaled);
-  }
+
 
   //FIXME: this column usually duplicates, so remove it then
-  if (df.col(`${activityColumnScaled} (2)`)) {
+  if (df.col(`${activityColumnScaled} (2)`))
     df.columns.remove(`${activityColumnScaled} (2)`);
-  }
+
 
   // append splitSeqDf columns to source table and make sure columns are not added more than once
   const dfColsSet = new Set(df.columns.names());
-  if (!positionColumns.every((col: string) => dfColsSet.has(col))) {
+  if (!positionColumns.every((col: string) => dfColsSet.has(col)))
     df.join(splitSeqDf, [activityColumn], [activityColumn], df.columns.names(), positionColumns, 'inner', true);
-  }
 }
 
 function sortSourceGrid(sourceGrid: DG.Grid) {
   if (sourceGrid) {
     const colNames:string[] = [];
-    for (let i = 0; i < sourceGrid.columns.length; i++) {
+    for (let i = 0; i < sourceGrid.columns.length; i++)
       colNames.push(sourceGrid.columns.byIndex(i)!.name);
-    }
+
     colNames.sort((a, b)=>{
       if (sourceGrid.columns.byName(a)?.column?.semType == 'aminoAcids') {
-        if (sourceGrid.columns.byName(b)?.column?.semType == 'aminoAcids') {
+        if (sourceGrid.columns.byName(b)?.column?.semType == 'aminoAcids')
           return 0;
-        }
+
         return -1;
       }
-      if (sourceGrid.columns.byName(b)?.column?.semType == 'aminoAcids') {
+      if (sourceGrid.columns.byName(b)?.column?.semType == 'aminoAcids')
         return 1;
-      }
+
       return 0;
     });
     sourceGrid?.columns.setOrder(colNames);
@@ -180,13 +179,13 @@ async function calculateStatistics(
     pvalues[i] = pvalue;
   }
 
-  if (true) {
+  if (true)
     pvalues = fdrcorrection(pvalues)[1];
-  }
 
-  for (let i = 0; i < pvalues.length; ++i) {
+
+  for (let i = 0; i < pvalues.length; ++i)
     pValCol.set(i, pvalues[i]);
-  }
+
 
   return matrixDf.clone();
 }
@@ -195,9 +194,9 @@ async function setCategoryOrder(
   twoColorMode: boolean, statsDf: DG.DataFrame, aminoAcidResidue: string, matrixDf: DG.DataFrame,
 ) {
   const sortArgument = twoColorMode ? 'Absolute Mean difference' : 'Mean difference';
-  if (twoColorMode) {
+  if (twoColorMode)
     await statsDf.columns.addNewCalculated('Absolute Mean difference', 'Abs(${Mean difference})');
-  }
+
   const aarWeightsDf = statsDf.groupBy([aminoAcidResidue]).sum(sortArgument, 'weight').aggregate();
   const aarList = aarWeightsDf.getCol(aminoAcidResidue).toList();
   const getWeight = (aar: string) => aarWeightsDf
@@ -257,13 +256,12 @@ function createGrids(
 
   if (!grouping) {
     let tempCol = matrixDf.columns.byName(aminoAcidResidue);
-    if (tempCol) {
+    if (tempCol)
       setAARRenderer(tempCol, sarGrid);
-    }
+
     tempCol = sequenceDf.columns.byName(aminoAcidResidue);
-    if (tempCol) {
+    if (tempCol)
       setAARRenderer(tempCol, sarGrid);
-    }
   }
 
   return [sarGrid, sarVGrid];
@@ -308,15 +306,15 @@ function setCellRendererFunc(
 
         let coef;
         const variant = args.cell.cell.value < 0;
-        if (pVal < 0.01) {
+        if (pVal < 0.01)
           coef = variant && twoColorMode ? '#FF7900' : '#299617';
-        } else if (pVal < 0.05) {
+        else if (pVal < 0.05)
           coef = variant && twoColorMode ? '#FFA500' : '#32CD32';
-        } else if (pVal < 0.1) {
+        else if (pVal < 0.1)
           coef = variant && twoColorMode ? '#FBCEB1' : '#98FF98';
-        } else {
+        else
           coef = DG.Color.toHtml(DG.Color.lightLightGray);
-        }
+
 
         const chooseMin = () => twoColorMode ? 0 : mdCol.min;
         const chooseMax = () => twoColorMode ? Math.max(Math.abs(mdCol.min), mdCol.max) : mdCol.max;
@@ -380,11 +378,11 @@ function setTooltipFunc(
           const textNum = statsDf.groupBy([col]).where(query).aggregate().get(col, 0);
           let text = `${col === 'Count' ? textNum : textNum.toFixed(5)}`;
 
-          if (col === 'Count') {
+          if (col === 'Count')
             text += ` / ${peptidesCount}`;
-          } else if (col === 'pValue') {
+          else if (col === 'pValue')
             text = parseFloat(text) !== 0 ? text : '<0.01';
-          }
+
 
           tooltipMap[col === 'pValue' ? 'p-value' : col] = text;
         }
@@ -403,9 +401,8 @@ function setTooltipFunc(
         const currentGroup = groupDescription[cell.cell.value];
         const divText = ui.divText('Amino Acids in this group: ' + currentGroup['aminoAcids'].join(', '));
         ui.tooltip.show(ui.divV([ui.h3(currentGroup['description']), divText]), x, y);
-      } else {
+      } else
         cp.showTooltip(cell, x, y);
-      }
     }
     return true;
   };
@@ -424,14 +421,13 @@ function postProcessGrids(
 ) {
   sourceGrid.onCellPrepare((cell: DG.GridCell) => {
     const currentRowIndex = cell.tableRowIndex;
-    if (currentRowIndex && invalidIndexes.includes(currentRowIndex) && !cell.isRowHeader) {
+    if (currentRowIndex && invalidIndexes.includes(currentRowIndex) && !cell.isRowHeader)
       cell.style.backColor = DG.Color.lightLightGray;
-    }
   });
 
-  for (const col of matrixDf.columns.names()) {
+  for (const col of matrixDf.columns.names())
     sarGrid.col(col)!.width = sarGrid.props.rowHeight;
-  }
+
 
   if (grouping) {
     sarGrid.col(aminoAcidResidue)!.name = 'Groups';
@@ -440,6 +436,8 @@ function postProcessGrids(
 
   sarGrid.props.allowEdit = false;
   sarVGrid.props.allowEdit = false;
+
+  sarVGrid.col('Mean difference')!.name = 'Diff';
 }
 
 export async function describe(
@@ -469,9 +467,8 @@ export async function describe(
   joinDataFrames(activityColumnScaled, df, positionColumns, splitSeqDf, activityColumn);
 
   for (const col of df.columns) {
-    if (splitSeqDf.col(col.name) && col.name != activityColumn) {
+    if (splitSeqDf.col(col.name) && col.name != activityColumn)
       setAARRenderer(col, sourceGrid);
-    }
   }
 
   sortSourceGrid(sourceGrid);
@@ -495,9 +492,9 @@ export async function describe(
     const aarCol = matrixDf.getCol(aminoAcidResidue);
     aarCol.init((index) => groupMapping[aarCol.get(index)[0]] ?? '-');
     aarCol.compact();
-  } else {
+  } else
     Object.keys(aarGroups).forEach((value) => groupMapping[value] = value);
-  }
+
 
   //statistics for specific AAR at a specific position
   const statsDf = await calculateStatistics(

@@ -18,9 +18,9 @@ export async function analyzePeptidesWidget(
   col: DG.Column, view: DG.TableView, tableGrid: DG.Grid, currentDf: DG.DataFrame,
 ): Promise<DG.Widget> {
   let tempCol = null;
-  for (const column of currentDf.columns.numerical) {
+  for (const column of currentDf.columns.numerical)
     tempCol = column.type === DG.TYPE.FLOAT ? column : null;
-  }
+
   const defaultColumn: DG.Column = currentDf.col('activity') || currentDf.col('IC50') || tempCol;
   const histogramHost = ui.div([], {id: 'pep-hist-host'});
 
@@ -83,12 +83,11 @@ export async function analyzePeptidesWidget(
       };
 
       const peptides = new Peptides();
-      await peptides.init(tableGrid, view, currentDf, options, col, activityColumnChoice.value.name);
+      await peptides.init(tableGrid, view, currentDf, options, col);
 
       progress.close();
-    } else {
+    } else
       grok.shell.error('The activity column must be of floating point number type!');
-    }
   });
   startBtn.style.alignSelf = 'center';
 

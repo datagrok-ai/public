@@ -745,9 +745,9 @@ export class FileSource {
    * @param {boolean} recursive - whether to search in folders recursively
    * @param {string} searchPattern - search pattern, such as "*.csv"
    * @returns {Promise<FileInfo[]>} */
-  list(file: FileInfo | string, recursive: boolean, searchPattern: string | null = null): Promise<FileInfo[]> {
+  async list(file: FileInfo | string, recursive: boolean, searchPattern: string | null = null): Promise<FileInfo[]> {
     file = this.setRoot(file);
-    return api.grok_Dapi_UserFiles_List(file, recursive, searchPattern, this.root);
+    return toJs(await api.grok_Dapi_UserFiles_List(file, recursive, searchPattern, this.root));
   }
 
   /** Reads a file as string.

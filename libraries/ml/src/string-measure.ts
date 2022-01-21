@@ -5,7 +5,7 @@ import {DistanceMetric} from '@datagrok-libraries/utils/src/type-declarations';
 import {similarityMetric} from '@datagrok-libraries/utils/src/similarity-metrics';
 import {calculateEuclideanDistance} from '@datagrok-libraries/utils/src/operations';
 
-const AvailableMetrics: {[name: string]: DistanceMetric} = {
+export const AvailableMetrics: {[name: string]: DistanceMetric} = {
   'EuclideanDistance': calculateEuclideanDistance,
   'Levenshtein': fl.distance,
   'Jaro-Winkler': jaroWinkler,

@@ -22,7 +22,7 @@ export class AdverseEventsView extends DG.ViewBase implements ILazyLoading {
     this.basePath = '/adverse-events';
   }
 
-  loaded: boolean;
+  loaded = false;
 
   load(): void {
     checkMissingDomains(requiredColumnsByView[this.name], this);

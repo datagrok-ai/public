@@ -50,30 +50,19 @@ function _chemGetSimilarities(queryMolString: string) {
   return distances;
 }
 
-interface CacheParams {
-  cachedForCol : DG.Column | null;
-  cachedForColVersion: number | null;
-  column: DG.Column | null;
-  query: string | null;
-  moleculesWereIndexed: boolean | null;
-  morganFingerprintsWereIndexed: boolean | null;
-  morganFingerprints: BitArray[] | null;
+class CacheParams {
+  cachedForCol : DG.Column | null = null;
+  cachedForColVersion: number | null = null;
+  column: DG.Column | null = null;
+  query: string | null = null;
+  moleculesWereIndexed: boolean | null = false;
+  morganFingerprintsWereIndexed: boolean | null = false;
+  morganFingerprints: BitArray[] | null = null;
 };
 
-const cacheParamsDefaults: CacheParams = {
-  cachedForCol: null,
-  cachedForColVersion: null,
-  column: null,
-  query: null,
-  moleculesWereIndexed: false,
-  morganFingerprintsWereIndexed: false,
-  morganFingerprints: null,
-};
+const _chemCache = new CacheParams();
 
-const _chemCache = {...cacheParamsDefaults};
-
-async function _invalidate(molStringsColumn: DG.Column, queryMolString: string | null, includeFingerprints: boolean) {
-  // TODO: implement a proper stopping mechanism instead
+async function _invalidate(molStringsColumn: DG.Column, queryMolString: string | null, includeFingerprints: boolean, endSection = true) {
   await chemBeginCriticalSection();
   try {
     const sameColumnAndVersion = () =>
@@ -91,20 +80,22 @@ async function _invalidate(molStringsColumn: DG.Column, queryMolString: string |
       const {molIdxToHash, hashToMolblock} =
         await (await getRdKitService()).initMoleculesStructures(molStringsColumn.toList());
       let i = 0;
-      let needsUpdate = false;
-      for (const item of molIdxToHash) {
-        const notify = (i === molIdxToHash.length - 1);
-        const molStr = hashToMolblock[item];
-        if (molStr) {
-          molStringsColumn.setString(i, molStr, notify);
-          needsUpdate = true;
+      if (molIdxToHash.length > 0) {
+        let needsUpdate = false;
+        for (const item of molIdxToHash) {
+          const notify = (i === molIdxToHash.length - 1);
+          const molStr = hashToMolblock[item];
+          if (molStr) {
+            molStringsColumn.setString(i, molStr, notify);
+            needsUpdate = true;
+          }
+          ++i;
         }
-        ++i;
-      }
-      if (needsUpdate) {
-        // This seems to be the only way to trigger re-calculation of categories
-        molStringsColumn.compact();
-        _chemCache.cachedForColVersion = molStringsColumn.version;
+        if (needsUpdate) {
+          // This seems to be the only way to trigger re-calculation of categories
+          molStringsColumn.compact();
+          _chemCache.cachedForColVersion = molStringsColumn.version;
+        }
       }
       _chemCache.moleculesWereIndexed = true;
       _chemCache.morganFingerprintsWereIndexed = false;
@@ -120,7 +111,8 @@ async function _invalidate(molStringsColumn: DG.Column, queryMolString: string |
       }
     }
   } finally {
-    chemEndCriticalSection();
+    if (endSection)
+      chemEndCriticalSection();
   }
 }
 
@@ -175,14 +167,18 @@ export function chemSubstructureSearchGraph(molStringsColumn: DG.Column, molStri
 
 export async function chemSubstructureSearchLibrary(
   molStringsColumn: DG.Column, molString: string, molStringSmarts: string) {
-  await _invalidate(molStringsColumn, molString, false);
-  const result = DG.BitSet.create(molStringsColumn.length);
-  if (molString.length != 0) {
-    const matches = await (await getRdKitService()).searchSubstructure(molString, molStringSmarts);
-    for (const match of matches)
-      result.set(match, true, false);
+  await _invalidate(molStringsColumn, molString, false, false);
+  try {
+    const result = DG.BitSet.create(molStringsColumn.length);
+    if (molString.length != 0) {
+      const matches = await (await getRdKitService()).searchSubstructure(molString, molStringSmarts);
+      for (const match of matches)
+        result.set(match, true, false);
+    }
+    return result;
+  } finally {
+    chemEndCriticalSection();
   }
-  return result;
 }
 
 export function chemGetMorganFingerprint(molString: string): BitArray {
@@ -190,7 +186,7 @@ export function chemGetMorganFingerprint(molString: string): BitArray {
   try {
     mol = getRdKitModule().get_mol(molString);
     const fp = mol.get_morgan_fp(defaultMorganFpRadius, defaultMorganFpLength);
-    return rdKitFingerprintToBitArray(fp, defaultMorganFpLength);
+    return rdKitFingerprintToBitArray(fp);
   } catch {
     throw new Error(`Chem | Possibly a malformed molString: ${molString}`);
   } finally {

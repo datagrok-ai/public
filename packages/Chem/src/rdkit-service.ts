@@ -54,9 +54,9 @@ export class RdKitService {
     );
   }
 
-  async initMoleculesStructures(dict: string[]): Promise<any> {
+  async initMoleculesStructures(dict: string[], normalizeCoordinates = false, usePatternFingerprints: boolean = false): Promise<any> {
     return this._initParallelWorkers(dict, (i: number, segment: any) =>
-      this._parallelWorkers[i].initMoleculesStructures(segment),
+      this._parallelWorkers[i].initMoleculesStructures(segment, normalizeCoordinates, usePatternFingerprints),
     (resultArray: any[]) => resultArray.reduce((acc: any, item: any) => {
       item = item || {molIdxToHash: [], hashToMolblock: {}};
       return {
@@ -102,7 +102,6 @@ export class RdKitService {
       })).map(
       (obj: any) =>
       // We deliberately choose Uint32Array over DG.BitSet here
-      //@ts-ignore
         new BitArray(new Uint32Array(obj.data), obj.length));
   }
 }

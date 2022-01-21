@@ -2,8 +2,9 @@ import * as ui from "datagrok-api/ui";
 import * as grok from "datagrok-api/grok";
 import * as DG from "datagrok-api/dg";
 
-import { TwinPviewer } from "./viewers/twin-p-viewer"
-import { CompostionPviewer } from "./viewers/composition-p-viewer"
+import { TwinPviewer } from "./viewers/twin-p-viewer";
+import { CompostionPviewer } from "./viewers/composition-p-viewer";
+import { TreeBrowser } from './tree';
 import { _package } from "./package";
 
 const _STRUCTURE_COL_NAME = '3D view';
@@ -24,6 +25,7 @@ export class MolecularLiabilityBrowser {
   queryIcon: HTMLElement;
   hideShowIcon: HTMLElement;
   hideShowIcon2: HTMLElement;
+  treesIcon: HTMLElement;
 
   twinPviewer: TwinPviewer;
   compostionPviewer: CompostionPviewer;
@@ -306,6 +308,17 @@ export class MolecularLiabilityBrowser {
     });
   }
 
+  private setTreesIcon = (): void => {
+    this.treesIcon = ui.tooltip.bind(ui.iconFA('trees', async () => {
+      let path = _package.webRoot + 'src/examples/tree.csv';;
+      let df = await grok.data.loadTable(path);
+      if (df) {
+        let treeBrowser = new TreeBrowser();
+        await treeBrowser.init(df);
+      }
+    }), 'build phylogenic tree');
+  }
+
   public async init(urlVid: string | null) {
 
     ////////////////////////////////////////////////////
@@ -322,8 +335,8 @@ export class MolecularLiabilityBrowser {
     //this.compostionPviewer = new CompostionPviewer();
 
     this.setView();
-    this.allVids= this.mlbTable.col("v id")!.toList();
-    this.allIds= this.mlbTable.col("gdb id mappings")!.toList();
+    this.allVids = this.mlbTable.col("v id")!.toList();
+    this.allIds = this.mlbTable.col("gdb id mappings")!.toList();
     this.idMapping = {};
     for (let i = 0; i < this.allVids.length; i++)
       this.idMapping[this.allVids[i]] = this.allIds[i].replaceAll(" ", "").split(",");
@@ -334,8 +347,10 @@ export class MolecularLiabilityBrowser {
     this.setQueryIcon();
     this.setHideShowIcon();
     this.setHideShowIcon2();
+    this.setTreesIcon();
 
-    this.mlbView.setRibbonPanels([[this.vIdInput.root], [this.filterIcon, this.filterIcon2, this.queryIcon, this.hideShowIcon, this.hideShowIcon2]]);
+    this.mlbView.setRibbonPanels([[this.vIdInput.root],
+    [this.filterIcon, this.filterIcon2, this.queryIcon, this.hideShowIcon, this.hideShowIcon2, this.treesIcon]]);
 
     if (urlVid != null)
       this.vIdInput.value = urlVid;

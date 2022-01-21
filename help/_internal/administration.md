@@ -76,8 +76,7 @@ of the file, and "*" means that a parameter is mandatory.
 | certPath         |                           | Path to the TLS certificate. See also [useSSL].                                                                                   |
 | certKeyPath      |                           | Path to the TLS certificate key                                                                                                   |
 | certKeyPwd       |                           | Password to the TLS certificate key                                                                                               |
-| isolatesCount    | 1                         | Number of threads to use                                                                                                          |
-| deployDataPath   |                           | Path to additional deployment data, such as demo projects, connections, etc                                                       |
+| isolatesCount    | 1                         | Number of threads to use                                                                                           |
 | dataDir          |                           | Name of the data folder under GROK_ROOT                                                                                           |
 | storageCert      |                           | Access certificate to Google Cloud Storage. If set, GCS will be used for persistent data storage                                  |
 | dbConfig         | Database config file name |                                                                                                                                   |

@@ -240,7 +240,6 @@ const AvailableReducers = {
 
 export type KnownMethods = keyof typeof AvailableReducers;
 
-
 /**
  * Unified class implementing different dimensionality reduction methods.
  *
@@ -321,5 +320,15 @@ export class DimensionalityReducer {
    */
   static get availableMethods() {
     return Object.keys(AvailableReducers);
+  }
+
+  /**
+   * Returns metrics available.
+   *
+   * @readonly
+   * @memberof DimensionalityReducer
+   */
+  static get availableMetrics() {
+    return Object.keys(AvailableMetrics);
   }
 }

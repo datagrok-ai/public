@@ -19,9 +19,8 @@ export class ChemPalette {
    * @memberof ChemPalette
    */
   constructor(scheme: string, grouping = false) {
-    if (scheme == 'grok') {
+    if (scheme == 'grok')
       this.cp = ChemPalette.getDatagrok(grouping);
-    }
   }
 
   /**
@@ -36,12 +35,12 @@ export class ChemPalette {
     let toDisplay = [ui.divText(s)];
     const [, aar] = this.getColorAAPivot(s);
     if (aar in ChemPalette.AASmiles) {
-      if (s in ChemPalette.AANames) {
+      if (s in ChemPalette.AANames)
         toDisplay = [ui.divText(ChemPalette.AANames[s])];
-      }
-      if (s in ChemPalette.AAFullNames) {
+
+      if (s in ChemPalette.AAFullNames)
         toDisplay = [ui.divText(ChemPalette.AANames[ChemPalette.AAFullNames[s]])];
-      }
+
       const options = {
         autoCrop: true,
         autoCropMargin: 0,

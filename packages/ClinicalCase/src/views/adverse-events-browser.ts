@@ -24,7 +24,7 @@ export class AeBrowserView extends DG.ViewBase implements ILazyLoading {
         this.helpUrl = 'https://raw.githubusercontent.com/datagrok-ai/public/master/packages/ClinicalCase/views_help/ae_browser.md';
     }
 
-    loaded: boolean;
+    loaded = false;
     
     load(): void {
                study.domains.all().forEach(it => {

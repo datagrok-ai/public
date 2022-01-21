@@ -43,9 +43,10 @@ export function chemEndCriticalSection(token = CHEM_TOKEN) {
   criticalSectionEnd(token);
 }
 
-export function rdKitFingerprintToBitArray(fp: string, fpLength: number) {
-  const arr = new BitArray(fpLength);
-  for (let j = 0; j < fpLength; ++j) {
+export function rdKitFingerprintToBitArray(fp: string) {
+  const length = fp.length;
+  const arr = new BitArray(length);
+  for (let j = 0; j < length; ++j) {
     if (fp[j] === '1')
       arr.setTrue(j);
   }

@@ -34,7 +34,6 @@ COc1ccc2c(c1)c(CC(=O)N3CCCC3C(=O)Oc4ccc(C)cc4OC)c(C)n2C(=O)c5ccc(Cl)cc5
   });
 
   test('chem.findSimilar.sar_small', async () => {
-    //await grok.functions.call('Chem:initChem');
     const dfInput = DG.DataFrame.fromCsv(await requireText('sar_small.csv'));
     const colInput = dfInput.columns[0];
     const dfResult: DG.DataFrame = // shouldn't be null
@@ -53,7 +52,6 @@ COc1ccc2c(c1)c(CC(=O)N3CCCC3C(=O)Oc4ccc(C)cc4OC)c(C)n2C(=O)c5ccc(Cl)cc5
       const index: number = dfResult.columns[2].get(i);
       first5Rows[i] = {molecule, score, index};
     }
-
     expect(numRows, numRowsOriginal);
     expect(columnNames[0], 'molecule');
     expect(columnNames[1], 'score');
@@ -63,17 +61,17 @@ COc1ccc2c(c1)c(CC(=O)N3CCCC3C(=O)Oc4ccc(C)cc4OC)c(C)n2C(=O)c5ccc(Cl)cc5
     expect(arr[0].molecule, 'O=C1CN=C(c2ccccc2N1)C3CCCCC3');
     expect(arr[1].molecule, 'O=C1CN=C(c2cc(I)ccc2N1)C3CCCCC3');
     expect(arr[2].molecule, 'O=C1CN=C(c2cc(Cl)ccc2N1)C3CCCCC3');
-    expect(arr[3].molecule, 'CN(C)c1ccc2NC(=O)CN=C(c2c1)C3CCCCC3');
+    expect(arr[3].molecule, 'O=C1CN=C(c2cc(F)ccc2N1)C3CCCCC3');
     expect(arr[4].molecule, 'O=C1CN=C(c2cc(Br)ccc2N1)C3CCCCC3');
     expect(areEqualFloat(arr[0].score, 1.0000), true);
-    expect(areEqualFloat(arr[1].score, 0.7813), true);
-    expect(areEqualFloat(arr[2].score, 0.7429), true);
-    expect(areEqualFloat(arr[3].score, 0.7429), true);
-    expect(areEqualFloat(arr[4].score, 0.7429), true);
+    expect(areEqualFloat(arr[1].score, 0.6905), true);
+    expect(areEqualFloat(arr[2].score, 0.6744), true);
+    expect(areEqualFloat(arr[3].score, 0.6744), true);
+    expect(areEqualFloat(arr[4].score, 0.6744), true);
     expect(arr[0].index, 0);
     expect(arr[1].index, 30);
     expect(arr[2].index, 5);
-    expect(arr[3].index, 15);
+    expect(arr[3].index, 20);
     expect(arr[4].index, 25);
   });
 

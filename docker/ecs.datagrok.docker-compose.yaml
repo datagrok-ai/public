@@ -13,15 +13,17 @@ services:
     environment:
       GROK_MODE: 'auto'
       GROK_PARAMETERS: "{
-        \"amazonStorageRegion\": \"<S3_BUCKET_REGION>\",
-        \"amazonStorageBucket\": \"<S3_BUCKET_NAME>\",
-        \"dbServer\": \"<RDS_ENDPOINT>\",
+        \"amazonStorageRegion\": \"${DATAGROK_S3_BUCKET_REGION}\",
+        \"amazonStorageBucket\": \"${DATAGROK_S3_BUCKET_NAME}\",
+        \"dbServer\": \"${DATAGROK_RDS_ENDPOINT}\",
         \"db\": \"datagrok\",
         \"dbLogin\": \"datagrok\",
         \"dbPassword\": \"SoMeVeRyCoMpLeXpAsSwOrD\",
         \"dbAdminLogin\": \"postgres\",
         \"dbAdminPassword\": \"postgres\",
-        \"dbSsl\": false
+        \"dbSsl\": false,
+        \"deployDemo\": false,
+        \"deployTestDemo\": false
       }"
     ports:
       - 80:80
@@ -40,19 +42,19 @@ services:
           cpus: '2'
           memory: 2G
 
-  grok_connect:
-    image: datagrok/grok_connect:latest
-    networks:
-      - datagrok
-    deploy:
-      replicas: 1
-      resources:
-        limits:
-          cpus: '0.5'
-          memory: 400M
-        reservations:
-          cpus: '0.25'
-          memory: 200M
+#  grok_connect:
+#    image: datagrok/grok_connect:latest
+#    networks:
+#      - datagrok
+#    deploy:
+#      replicas: 1
+#      resources:
+#        limits:
+#          cpus: '0.5'
+#          memory: 400M
+#        reservations:
+#          cpus: '0.25'
+#          memory: 200M
 
 x-aws-cloudformation:
   Resources:
