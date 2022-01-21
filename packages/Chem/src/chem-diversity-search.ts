@@ -22,7 +22,7 @@ export class DiversitySearch extends DG.JsViewer {
     super();
 
     this.moleculeColumnName = this.string('moleculeColumnName');
-    this.fingerprint = this.string('fingerprint');
+    this.fingerprint = this.string('fingerprint', 'Morgan', {choices: ['Morgan', 'RDKit', 'Pattern']});
     this.limit = this.int('limit', 10);
     this.distanceMetric = this.string('distanceMetric', 'Tanimoto', {choices: Object.keys(similarityMetric)});
     this.initialized = false;
