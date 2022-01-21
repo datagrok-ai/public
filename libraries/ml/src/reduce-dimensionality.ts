@@ -269,7 +269,7 @@ export class DimensionalityReducer {
     }
 
     assert(MetricDataTypes[data[0].constructor.name].includes(metric.toString()),
-      'Data type of the data is incompatible with the given metric.');
+      'Data type of the data is incompatible with the metric given.');
 
     if (method == 'UMAP') {
       specOptions = {
