@@ -306,8 +306,8 @@ export class LruCache {
   private size: number;
   private head: number;
 
-  constructor() {
-    this.capacity = 100;
+  constructor(capacity: number = 100) {
+    this.capacity = capacity;
     this.forward = new Uint16Array(this.capacity);
     this.backward = new Uint16Array(this.capacity);
     this.V = new Array(this.capacity);
