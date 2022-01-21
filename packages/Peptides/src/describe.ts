@@ -61,12 +61,12 @@ function joinDataFrames(
   activityColumn: string,
 ) {
   if (df.col(activityColumnScaled))
-    df.columns.remove(activityColumnScaled);
+  (df.columns as DG.ColumnList).remove(activityColumnScaled);
 
 
   //FIXME: this column usually duplicates, so remove it then
   if (df.col(`${activityColumnScaled} (2)`))
-    df.columns.remove(`${activityColumnScaled} (2)`);
+    (df.columns as DG.ColumnList).remove(`${activityColumnScaled} (2)`);
 
 
   // append splitSeqDf columns to source table and make sure columns are not added more than once
@@ -77,23 +77,21 @@ function joinDataFrames(
 
 function sortSourceGrid(sourceGrid: DG.Grid) {
   if (sourceGrid) {
-    const colNames:string[] = [];
-    for (let i = 0; i < sourceGrid.columns.length; i++)
-      colNames.push(sourceGrid.columns.byIndex(i)!.name);
+    const colNames: DG.GridColumn[] = [];
+    for (let i = 1; i < sourceGrid.columns.length; i++)
+      colNames.push(sourceGrid.columns.byIndex(i)!);
 
     colNames.sort((a, b)=>{
-      if (sourceGrid.columns.byName(a)?.column?.semType == 'aminoAcids') {
-        if (sourceGrid.columns.byName(b)?.column?.semType == 'aminoAcids')
+      if (a.column!.semType == 'aminoAcids') {
+        if (b.column!.semType == 'aminoAcids')
           return 0;
-
         return -1;
       }
-      if (sourceGrid.columns.byName(b)?.column?.semType == 'aminoAcids')
+      if (b.column!.semType == 'aminoAcids')
         return 1;
-
       return 0;
     });
-    sourceGrid?.columns.setOrder(colNames);
+    sourceGrid.columns.setOrder(colNames.map((v) => v.name));
   }
 }
 

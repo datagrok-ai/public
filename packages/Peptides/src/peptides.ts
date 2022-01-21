@@ -59,10 +59,14 @@ export class Peptides {
     // const layout1 = view.saveLayout();
     // view.dockManager.close(substNode);
 
+    const helpUrl = '/help/domains/bio/peptides.md';
+
     const sarViewer = view.addViewer('peptide-sar-viewer', options);
+    sarViewer.helpUrl = helpUrl;
     const sarNode = view.dockManager.dock(sarViewer, DG.DOCK_TYPE.DOWN, null, 'SAR Viewer');
 
     const sarViewerVertical = view.addViewer('peptide-sar-viewer-vertical');
+    sarViewerVertical.helpUrl = helpUrl;
     const sarVNode = view.dockManager.dock(sarViewerVertical, DG.DOCK_TYPE.RIGHT, sarNode, 'SAR Vertical Viewer');
 
     const peptideSpaceViewer = await createPeptideSimilaritySpaceViewer(
@@ -130,9 +134,11 @@ export class Peptides {
       nodeList.length = 0;
       if (isSA) {
         const sarViewer = view.addViewer('peptide-sar-viewer', options);
+        sarViewer.helpUrl = helpUrl;
         const sarNode = view.dockManager.dock(sarViewer, DG.DOCK_TYPE.DOWN, null, 'SAR Viewer');
 
         const sarViewerVertical = view.addViewer('peptide-sar-viewer-vertical');
+        sarViewerVertical.helpUrl = helpUrl;
         const sarVNode = view.dockManager.dock(sarViewerVertical, DG.DOCK_TYPE.RIGHT, sarNode, 'SAR Vertical Viewer');
 
         const peptideSpaceViewer = await createPeptideSimilaritySpaceViewer(
@@ -150,6 +156,7 @@ export class Peptides {
         const substViewer = view.addViewer(
           'substitution-analysis-viewer', {'activityColumnName': options['activityColumnName']},
         );
+        substViewer.helpUrl = helpUrl;
         nodeList.push(view.dockManager.dock(substViewer, DG.DOCK_TYPE.DOWN, null, 'Substitution Analysis'));
         $(switchViewers).removeClass('fa-toggle-on');
         $(switchViewers).addClass('fa-toggle-off');

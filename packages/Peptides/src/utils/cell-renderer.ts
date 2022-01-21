@@ -184,10 +184,10 @@ export class AminoAcidsCellRenderer extends DG.GridCellRenderer {
      * @param {DG.GridCell} gridCell Grid cell.
      * @param {DG.GridCellStyle} cellStyle Cell style.
      */
-    render(g: CanvasRenderingContext2D, x: number, y: number, w: number, h: number,
-      gridCell: DG.GridCell, cellStyle: DG.GridCellStyle) {
-      if (this.chemPalette === null)
-        this.chemPalette = new ChemPalette('grok', gridCell.tableColumn?.getTag('groups') ? true : false);
+    render(
+      g: CanvasRenderingContext2D, x: number, y: number, w: number, h: number, gridCell: DG.GridCell,
+      cellStyle: DG.GridCellStyle) {
+      this.chemPalette ??= new ChemPalette('grok', gridCell.tableColumn?.getTag('groups') ? true : false);
 
       g.save();
       g.beginPath();
