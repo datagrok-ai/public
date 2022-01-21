@@ -276,7 +276,6 @@ export namespace chem {
    * Searches for a molecular pattern in a given column, returning a bitset with hits.
    * See example: {@link substructure-search}
    * @async
-   * @deprecated
    * @param {Column} column - Column with molecules to search
    * @param {string} pattern - Pattern, either one of which RDKit supports
    * @param settings
@@ -376,6 +375,7 @@ export namespace chem {
    * Searches for a molecular pattern in a given column, returning a bitset with hits.
    * See example: {@link https://public.datagrok.ai/js/samples/domains/chem/substructure-search}
    * @async
+   * @deprecated
    * @param {Column} column - Column with molecules to search
    * @param {string} molecule - Substructure being sought, either one of which RDKit supports:
    *   smiles, cxsmiles, molblock, v3Kmolblock, and inchi
