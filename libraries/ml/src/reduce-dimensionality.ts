@@ -8,7 +8,7 @@ import {
   assert,
 } from '@datagrok-libraries/utils/src/operations';
 import {SPEBase, PSPEBase, OriginalSPE} from './spe';
-import {StringMeasure, KnownMetrics, MetricDataTypes} from './string-measure';
+import {StringMeasure, KnownMetrics, MetricDataTypes, AvailableMetrics} from './string-measure';
 import BitArray from '@datagrok-libraries/utils/src/bit-array';
 import {similarityMetric} from '@datagrok-libraries/utils/src/similarity-metrics';
 
@@ -261,7 +261,7 @@ export class DimensionalityReducer {
     const measure = new StringMeasure(metric).getMeasure();
     let specOptions = {};
 
-    if (metric && Object.keys(similarityMetric).includes(metric.toString())) {
+    if (Object.keys(similarityMetric).includes(metric.toString())) {
       for (let i = 0; i < data.length; ++i) {
         data[i] = new BitArray(data[i]._data, data[i]._length);
       }
