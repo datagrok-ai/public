@@ -27,7 +27,7 @@ export const MetricDataTypes: {[name: string]: string[]} = {
   'Vector': ['EuclideanDistance'],
   'Number': [],
   'Object': [],
-}
+};
 
 export type KnownMetrics = keyof typeof AvailableMetrics;
 

@@ -5,7 +5,6 @@ import {Options, DistanceMetric, Coordinates, Vector, Vectors} from '@datagrok-l
 import {
   calcDistanceMatrix,
   transposeMatrix,
-  calculateEuclideanDistance,
   assert,
 } from '@datagrok-libraries/utils/src/operations';
 import {SPEBase, PSPEBase, OriginalSPE} from './spe';
@@ -268,8 +267,9 @@ export class DimensionalityReducer {
         data[i] = new BitArray(data[i]._data, data[i]._length);
       }
     }
-    
-    assert(MetricDataTypes[data[0].constructor.name].includes(metric.toString()), 'Data type of the data is incompatible with the given metric.');
+
+    assert(MetricDataTypes[data[0].constructor.name].includes(metric.toString()),
+      'Data type of the data is incompatible with the given metric.');
 
     if (method == 'UMAP') {
       specOptions = {
