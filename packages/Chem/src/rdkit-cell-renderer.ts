@@ -60,9 +60,9 @@ M  END
         if (mol.is_valid()) {
           const scaffoldIsMolBlock = isMolBlock(scaffoldMolString);
           if (scaffoldIsMolBlock) {
-            const rdkitScaffoldMol = this._fetchMol(scaffoldMolString, '', molRegenerateCoords, false).mol;
-            if (rdkitScaffoldMol && rdkitScaffoldMol.is_valid()) {
-              substructJson = mol.generate_aligned_coords(rdkitScaffoldMol, true, true, false);
+            const rdKitScaffoldMol = this._fetchMol(scaffoldMolString, '', molRegenerateCoords, false).mol;
+            if (rdKitScaffoldMol && rdKitScaffoldMol.is_valid()) {
+              substructJson = mol.generate_aligned_coords(rdKitScaffoldMol, true, true, false);
               if (substructJson === '')
                 substructJson = '{}';
             }
@@ -102,14 +102,14 @@ M  END
     width: number, height: number, molString: string, scaffoldMolString: string,
     highlightScaffold: boolean, molRegenerateCoords: boolean, scaffoldRegenerateCoords: boolean) {
     const fetchMolObj = this._fetchMol(molString, scaffoldMolString, molRegenerateCoords, scaffoldRegenerateCoords);
-    const rdkitMol = fetchMolObj.mol;
+    const rdKitMol = fetchMolObj.mol;
     const substruct = fetchMolObj.substruct;
 
     const canvasId = '_canvas-rdkit-' + this.canvasCounter;
     const canvas = new OffscreenCanvas(width, height);
     this.canvasCounter++;
-    if (rdkitMol != null)
-      drawRdKitMoleculeToOffscreenCanvas(rdkitMol, width, height, canvas, highlightScaffold ? substruct : null);
+    if (rdKitMol != null)
+      drawRdKitMoleculeToOffscreenCanvas(rdKitMol, width, height, canvas, highlightScaffold ? substruct : null);
     else {
       // draw a crossed rectangle
       const ctx = canvas.getContext('2d');
