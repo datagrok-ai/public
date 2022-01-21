@@ -1,5 +1,6 @@
 const path = require('path');
 const packageName = path.parse(require('./package.json').name).name.toLowerCase().replace(/-/g, '');
+const MiniCssExtractPlugin = require('mini-css-extract-plugin');
 
 module.exports = {
   mode: 'development',
@@ -13,12 +14,35 @@ module.exports = {
   },
   resolve: {
     extensions: ['.wasm', '.mjs', '.js', '.json', '.ts', '.tsx'],
+    fallback: {
+      'fs': false,
+      'path': false, //require.resolve('path-browserify'),
+      'crypto': false, // require.resolve('crypto-browserify'),
+    },
   },
   module: {
     rules: [
       {test: /\.tsx?$/, loader: 'ts-loader'},
+      {
+        test: /\.(html|ico)$/,
+        use: [{
+          loader: 'file-loader',
+          options: {name: '[name].[ext]'},
+        }],
+      },
+      {
+        test: /\.(s*)css$/,
+        use: [
+          MiniCssExtractPlugin.loader,
+          {loader: 'css-loader', options: {sourceMap: false}},
+          {loader: 'sass-loader', options: {sourceMap: false}},
+        ],
+      },
     ],
   },
+  plugins: [
+    new MiniCssExtractPlugin({filename: 'molstar.css'}),
+  ],
   devtool: 'inline-source-map',
   externals: {
     'datagrok-api/dg': 'DG',
