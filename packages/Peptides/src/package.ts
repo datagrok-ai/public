@@ -7,17 +7,17 @@ import {
   AlignedSequenceCellRenderer,
   AminoAcidsCellRenderer,
 } from './utils/cell-renderer';
-import { Logo } from './viewers/logo-viewer';
-import { StackedBarChart } from './viewers/stacked-barchart-viewer';
+import {Logo} from './viewers/logo-viewer';
+import {StackedBarChart} from './viewers/stacked-barchart-viewer';
 
-import { analyzePeptidesWidget } from './widgets/analyze-peptides';
-import { PeptideSimilaritySpaceWidget } from './utils/peptide-similarity-space';
-import { manualAlignmentWidget } from './widgets/manual-alignment';
-import { SARViewer, SARViewerVertical } from './viewers/sar-viewer';
-import { peptideMoleculeWidget, getMolecule } from './widgets/peptide-molecule';
-import { SubstViewer } from './viewers/subst-viewer';
-import { runKalign } from './utils/multiple-sequence-alignment';
-import { MonomerLibrary } from './monomer-library';
+import {analyzePeptidesWidget} from './widgets/analyze-peptides';
+import {PeptideSimilaritySpaceWidget} from './utils/peptide-similarity-space';
+import {manualAlignmentWidget} from './widgets/manual-alignment';
+import {SARViewer, SARViewerVertical} from './viewers/sar-viewer';
+import {peptideMoleculeWidget, getMolecule} from './widgets/peptide-molecule';
+import {SubstViewer} from './viewers/subst-viewer';
+import {runKalign} from './utils/multiple-sequence-alignment';
+//import {MonomerLibrary} from './monomer-library';
 
 
 export const _package = new DG.Package();
@@ -46,8 +46,8 @@ export async function Peptides() {
   const wikiLink = ui.link('wiki', 'https://github.com/datagrok-ai/public/blob/master/help/domains/bio/peptides.md');
   const textLink = ui.inlineText(['For more details, see our ', wikiLink, '.']);
 
-  let sdf = await _package.files.readAsText(`HELMMonomers_June10.sdf`);
-  let lib = new MonomerLibrary(sdf);
+  //const sdf = await _package.files.readAsText(`HELMMonomers_June10.sdf`);
+  //const lib = new MonomerLibrary(sdf);
 
 
   const appDescription = ui.info(
@@ -195,7 +195,7 @@ export async function peptideSpacePanel(col: DG.Column): Promise<DG.Widget> {
 //output: widget result
 export async function peptideMolfile(peptide: string): Promise<DG.Widget> {
   const smiles = getMolecule(peptide);
-  return await grok.functions.call('Chem:molfile', { 'smiles': smiles });
+  return await grok.functions.call('Chem:molfile', {'smiles': smiles});
 }
 
 //name: Multiple sequence alignment
