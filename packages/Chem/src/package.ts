@@ -25,14 +25,11 @@ import {chem} from 'datagrok-api/grok';
 import {oclMol} from './chem-common-ocl';
 import {RDMol} from './rdkit-api';
 import {isMolBlock} from './chem-utils';
-<<<<<<< HEAD
 import Sketcher = chem.Sketcher;
 import $ from 'cash-dom';
 import '../css/chem.css';
 import { SimilaritySearch } from './chem-similarity-search';
-=======
 import { DiversitySearch } from './chem-diversity-search';
->>>>>>> Add the Diversity Search to the panel
 
 const drawMoleculeToCanvas = chemCommonRdKit.drawMoleculeToCanvas;
 
