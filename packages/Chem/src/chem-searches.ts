@@ -188,10 +188,13 @@ export function chemGetFingerprint(molString: string, fingerprint: string): BitA
     let fp;
     if (fingerprint == 'Morgan')
       fp = mol.get_morgan_fp(defaultMorganFpRadius, defaultMorganFpLength);
-    if (fingerprint == 'RDKit')
+    else if (fingerprint == 'RDKit')
       fp = mol.get_rdkit_fp(defaultMorganFpRadius, defaultMorganFpLength);
-    if (fingerprint == 'Pattern')
+    else if (fingerprint == 'Pattern')
       fp = mol.get_pattern_fp(defaultMorganFpRadius, defaultMorganFpLength);
+    else {
+      throw new Error(`${fingerprint} does not match any fingerprint`);
+    }
     return rdKitFingerprintToBitArray(fp);
   } catch {
     throw new Error(`Chem | Possibly a malformed molString: ${molString}`);
