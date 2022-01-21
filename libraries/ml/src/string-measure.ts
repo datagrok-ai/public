@@ -3,8 +3,10 @@ import {jaroWinkler} from 'jaro-winkler-typescript';
 
 import {DistanceMetric} from '@datagrok-libraries/utils/src/type-declarations';
 import {similarityMetric} from '@datagrok-libraries/utils/src/similarity-metrics';
+import {calculateEuclideanDistance} from '@datagrok-libraries/utils/src/operations';
 
 const AvailableMetrics: {[name: string]: DistanceMetric} = {
+  'EuclideanDistance': calculateEuclideanDistance,
   'Levenshtein': fl.distance,
   'Jaro-Winkler': jaroWinkler,
   'Tanimoto': similarityMetric['Tanimoto'],
@@ -18,6 +20,14 @@ const AvailableMetrics: {[name: string]: DistanceMetric} = {
   'Russel': similarityMetric['Russel'],
   'Sokal': similarityMetric['Sokal'],
 };
+
+export const MetricDataTypes: {[name: string]: string[]} = {
+  'String': ['Levenshtein', 'Jaro-Winkler'],
+  'BitArray': Object.keys(similarityMetric),
+  'Vector': ['EuclideanDistance'],
+  'Number': [],
+  'Object': [],
+}
 
 export type KnownMetrics = keyof typeof AvailableMetrics;
 
