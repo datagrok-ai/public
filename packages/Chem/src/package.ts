@@ -28,6 +28,7 @@ import {isMolBlock} from './chem-utils';
 import Sketcher = chem.Sketcher;
 import $ from 'cash-dom';
 import '../css/chem.css';
+import { SimilaritySearch } from './chem-similarity-search';
 
 const drawMoleculeToCanvas = chemCommonRdKit.drawMoleculeToCanvas;
 
@@ -392,13 +393,6 @@ export function rGroupsAnalysisMenu() {
   rGroupAnalysis(col);
 }
 
-/*
-//top-menu: Chem | Similarity Search...
-export async function chemSimilaritySearch() {
-  // Shouldn't name it similaritySearch
-  grok.shell.addTableView(grok.data.demo.molecules(100)).addViewer(new MoleculeViewer());
-}
- */
 //#endregion
 
 //#region Molecule column property panel
@@ -577,3 +571,18 @@ export function editMoleculeCell(cell: DG.GridCell) {
     .show();
 }
 */
+
+//name: MySimilaritySearch
+//tags: viewer
+//output: viewer result
+export function moleculeViewer() {
+  return new SimilaritySearch();
+}
+
+//top-menu: Chem | Similarity Search...
+//name: similaritySearch
+//description: finds the most similar molecule
+//output: viewer result
+export function similaritySearchTopMenu() {
+  (grok.shell.v as DG.TableView).addViewer('MySimilaritySearch');
+}
