@@ -1,18 +1,15 @@
-//name: AddMorganFP
-//description: Adds a column with Morgan fingerprints
+//name: AddMorganFPCache
+//description: Hello world script
 //language: javascript
-//input: dataframe inDf
-//output: dataframe outDf
 
-let module = chem.getRdKitModule();
-let molecules = inDf.columns[0];
-const length = molecules.length;
-let bitset = DG.BitSet.create(100);
-bitset.setAll(true);
-let morganFpCol = DG.Column.fromType(DG.TYPE.OBJECT, 'cache_morganFP', length);
-for (let i = 0; i < length; ++i) {
-  morganFpCol.set(i, bitset.toBinaryString());
-}
-outDf = DG.DataFrame.create(length);
-outDf.columns.add(molecules);
-outDf.columns.add(morganFpCol);
+(async () => {
+  let inDf = grok.shell.tables[0];
+  let molCol = inDf.columns[0];
+  const length = molCol.length;
+  let fpCol = await chem.getMorganFingerprints(molCol);
+  let morganFpCol = DG.Column.fromType(DG.TYPE.STRING, 'cache_morganFP', length);
+  for (let i = 0; i < length; ++i) {
+    morganFpCol.set(i, fpCol.get(i).toBinaryString());
+  }
+  inDf.columns.add(morganFpCol);
+})();
