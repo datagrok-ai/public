@@ -8,10 +8,13 @@ import {Coordinates} from '@datagrok-libraries/utils/src/type-declarations';
 import {
   createDimensinalityReducingWorker,
 } from '@datagrok-libraries/ml/src/workers/dimensionality-reducing-worker-creator';
+import {MetricDataTypes} from '@datagrok-libraries/ml/src/string-measure'
 
-export async function chemSpace(table: DG.DataFrame, molColumn: DG.Column) {
-  const fpColumn = await chemGetMorganFingerprints(molColumn);
-  const coordinates = await createDimensinalityReducingWorker(fpColumn, 'UMAP') as Coordinates;
+export async function chemSpace(table: DG.DataFrame, molColumn: DG.Column, methodName: string, similarityMetric: string) {
+  let fpColumn = molColumn.toList();
+  if (MetricDataTypes['BitArray'].includes(similarityMetric))
+    fpColumn = await chemGetMorganFingerprints(molColumn);
+  const coordinates = await createDimensinalityReducingWorker(fpColumn, methodName, similarityMetric) as Coordinates;
   const axes = ['Embed_X', 'Embed_Y'];
 
   for (let i = 0; i < axes.length; ++i) {

@@ -9,7 +9,7 @@ import {DimensionalityReducer, KnownMethods} from '../reduce-dimensionality';
  * @param {number} cyclesCount Number of cycles to repeat.
  * @return {Coordinates} Embedding.
  */
-function onMessage(columnData: [], method: KnownMethods, measure?: string, cyclesCount?: number) {
+function onMessage(columnData: any[], method: KnownMethods, measure?: string, cyclesCount?: number) {
   const reducer = new DimensionalityReducer(
     columnData,
     method,
