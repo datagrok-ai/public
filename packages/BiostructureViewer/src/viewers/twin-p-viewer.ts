@@ -1,14 +1,11 @@
-import * as ui from "datagrok-api/ui";
-import * as grok from "datagrok-api/grok";
-import * as DG from "datagrok-api/dg";
+import * as ui from 'datagrok-api/ui';
+import * as grok from 'datagrok-api/grok';
+import * as DG from 'datagrok-api/dg';
 
-import { NglAspect } from "./ngl-aspect"
-import { PvizAspect } from "./pviz-aspect"
-import { MiscMethods } from "./misc"
-import { PdbEntry } from '../pdb-entry';
-
-import { _package } from "../package";
-
+import {NglAspect} from './ngl-aspect';
+import {PvizAspect} from './pviz-aspect';
+import {MiscMethods} from './misc';
+import {PdbEntry} from '../pdb-entry';
 
 export class TwinPviewer {
   root: HTMLElement;
@@ -23,10 +20,10 @@ export class TwinPviewer {
 
   twinSelections: { [key: string]: {} };
   colorScheme = {
-    "col_background": 'white',
-    "col_chain": '#0069a7',
-    "col_helix": 'red',
-    "col_highlight": '#45d145'
+    'col_background': 'white',
+    'col_chain': '#0069a7',
+    'col_helix': 'red',
+    'col_highlight': '#45d145',
   };
 
   ngl: NglAspect;
@@ -37,7 +34,7 @@ export class TwinPviewer {
 
   public init(entry: PdbEntry, bsView: DG.TableView, ligandSelection: { [key: string]: boolean }) {
     // ---- SIDEPANEL REMOVAL ----
-    let windows = grok.shell.windows;
+    const windows = grok.shell.windows;
     windows.showProperties = false;
     windows.showHelp = false;
     windows.showConsole = false;
@@ -54,7 +51,7 @@ export class TwinPviewer {
     this.nglHost = ui.div([], 'd4-ngl-viewer');
     this.pVizHosts = {};
     this.twinSelections = {};
-    this.entry.entities[0].chains.forEach(chain => {
+    this.entry.entities[0].chains.forEach((chain) => {
       this.pVizHosts[chain.id] = ui.box();
       this.twinSelections[chain.id] = {};
     });
@@ -75,27 +72,31 @@ export class TwinPviewer {
     this.entry = entry;
     this.twinSelections = {};
     this.pVizHosts = {};
-    entry.entities[0].chains.forEach(chain => {
+    entry.entities[0].chains.forEach((chain) => {
       this.twinSelections[chain.id] = {};
       this.pVizHosts[chain.id] = ui.box();
     });
 
-    let groups: { [_: string]: any } = {};
-    let items: DG.TreeViewNode[] = [];
+    const groups: { [_: string]: any } = {};
+    const items: DG.TreeViewNode[] = [];
 
-    for (let g in groups) groups[g].checked = false;
-    for (let i of items) i.checked = false;
+    for (const g in groups) {
+      if (Object.prototype.hasOwnProperty.call(groups, g)) {
+        groups[g].checked = false;
+      }
+    }
+    for (const i of items) i.checked = false;
 
     this.changeChoices();
 
-    if (!!this.ngl)
+    if (!!this.ngl) {
       this.ngl.stage.removeAllComponents();
+    }
   }
 
   public async show(bsView: DG.TableView) {
-
-    let reload = async (val: boolean) => {
-      this.entry.entities[0].chains.forEach(chain => {
+    const reload = async (val: boolean) => {
+      this.entry.entities[0].chains.forEach((chain) => {
         this.pViz.render(chain.id);
       });
 
@@ -103,12 +104,22 @@ export class TwinPviewer {
       MiscMethods.setDockSize(bsView, this.nglNode, this.sequenceTabs);
     };
 
-    await this.ngl.init(bsView, this.entry, this.colorScheme, this.nglHost, this.repChoice, this.twinSelections, this.ligandSelection);
+    await this.ngl.init(
+      bsView,
+      this.entry,
+      this.colorScheme,
+      this.nglHost,
+      this.repChoice,
+      this.twinSelections,
+      this.ligandSelection,
+    );
     await this.pViz.init(this.entry, this.colorScheme, this.pVizHosts, this.twinSelections);
 
     MiscMethods.setDockSize(bsView, this.nglNode, this.sequenceTabs);
 
-    grok.events.onCustomEvent("selectionChanged").subscribe((v) => { this.ngl.render(false, this.ligandSelection); });
+    grok.events.onCustomEvent('selectionChanged').subscribe((v) => {
+      this.ngl.render(false, this.ligandSelection);
+    });
 
     this.repChoice.onChanged(async () => {
       this.ngl.repChoice = this.repChoice;
@@ -118,7 +129,7 @@ export class TwinPviewer {
 
   public async changeLigands(bsView: DG.TableView, ligandSelection: { [key: string]: boolean }) {
     ligandSelection = ligandSelection;
-    let reload = async (val: boolean) => {
+    const reload = async (val: boolean) => {
       this.ngl.render(val, ligandSelection);
       MiscMethods.setDockSize(bsView, this.nglNode, this.sequenceTabs);
     };
@@ -127,7 +138,6 @@ export class TwinPviewer {
   }
 
   private changeChoices(): void {
-
     // ---- INPUTS PANEL ----
     if (!this.accOptions) {
       this.accOptions = ui.accordion();
