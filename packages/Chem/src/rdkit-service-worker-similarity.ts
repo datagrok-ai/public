@@ -5,13 +5,11 @@ import {defaultMorganFpLength, defaultMorganFpRadius} from './chem-common';
 
 export class RdKitServiceWorkerSimilarity extends RdKitServiceWorkerBase {
   _morganFps: BitArray[] | null = null;
-  _sample: BitArray;
   readonly _fpLength: number = defaultMorganFpLength;
   readonly _fpRadius: number = defaultMorganFpRadius;
 
   constructor(module: Object, webRoot: string) {
     super(module, webRoot);
-    this._sample = new BitArray(this._fpLength);
   }
 
   initMorganFingerprints() {
@@ -44,6 +42,5 @@ export class RdKitServiceWorkerSimilarity extends RdKitServiceWorkerBase {
 
   freeMorganFingerprints() {
     this._morganFps = null;
-    this._sample = new BitArray(this._fpLength);
   }
 }
