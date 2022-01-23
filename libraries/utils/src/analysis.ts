@@ -1,12 +1,10 @@
 import { randomInt } from "./operations";
 
 export function getDiverseSubset(length: number, n: number, dist: (i1: number, i2: number) => number) {
-  function maxBy(
-    values: number[], 
-    orderBy: (i: number) => number,
-  ) {
-    let maxValue;
-    let maxOrderBy;
+
+  function maxBy(values: number[], orderBy: (i: number) => number) {
+    let maxValue = null;
+    let maxOrderBy = null;
 
     for (const element of values) {
       let elementOrderBy = orderBy(element);
