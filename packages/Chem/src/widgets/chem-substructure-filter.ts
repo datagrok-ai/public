@@ -7,8 +7,8 @@
 import * as ui from 'datagrok-api/ui';
 import * as DG from 'datagrok-api/dg';
 import {chem} from 'datagrok-api/grok';
-import {chemSubstructureSearchLibrary} from "./chem-searches";
-import {initRdKitService} from "./chem-common-rdkit";
+import {chemSubstructureSearchLibrary} from "../chem-searches";
+import {initRdKitService} from "../utils/chem-common-rdkit";
 import {Subscription} from "rxjs";
 import {debounceTime} from 'rxjs/operators';
 import Sketcher = chem.Sketcher;

@@ -1,12 +1,13 @@
 import * as DG from 'datagrok-api/dg';
-import {getRdKitModule, getRdKitService} from './chem-common-rdkit';
+import {getRdKitModule, getRdKitService} from './utils/chem-common-rdkit';
 import {
   rdKitFingerprintToBitArray,
   defaultMorganFpRadius, defaultMorganFpLength,
   chemBeginCriticalSection, chemEndCriticalSection
-} from './chem-common';
+} from './utils/chem-common';
 import BitArray from '@datagrok-libraries/utils/src/bit-array';
 import {tanimotoSimilarity} from '@datagrok-libraries/utils/src/similarity-metrics';
+import {assure} from "@datagrok-libraries/utils/src/test";
 
 function _chemFindSimilar(molStringsColumn: DG.Column,
   queryMolString: string, settings: { [name: string]: any }) {
@@ -121,6 +122,9 @@ async function _invalidate(molStringsColumn: DG.Column, queryMolString: string |
 // see https://github.com/rdkit/rdkit/blob/master/Code/MinimalLib/minilib.h
 
 export async function chemGetSimilarities(molStringsColumn: DG.Column, queryMolString = '') {
+  assure.notNull(molStringsColumn, 'molStringsColumn');
+  assure.notNull(queryMolString, 'queryMolString');
+
   await _invalidate(molStringsColumn, queryMolString, true);
   const result = queryMolString.length != 0 ?
     DG.Column.fromList(DG.COLUMN_TYPE.FLOAT, 'distances',
@@ -129,7 +133,11 @@ export async function chemGetSimilarities(molStringsColumn: DG.Column, queryMolS
 }
 
 export async function chemFindSimilar(
-  molStringsColumn: DG.Column, queryMolString = '', settings: { [name: string]: any } = {}) {
+    molStringsColumn: DG.Column, queryMolString = '', settings: { [name: string]: any } = {}) {
+
+  assure.notNull(molStringsColumn, 'molStringsColumn');
+  assure.notNull(queryMolString, 'queryMolString');
+
   await _invalidate(molStringsColumn, queryMolString, true);
   const result = queryMolString.length != 0 ?
     _chemFindSimilar(molStringsColumn, queryMolString, settings) : null;

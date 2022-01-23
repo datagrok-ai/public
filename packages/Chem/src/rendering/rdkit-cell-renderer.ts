@@ -5,10 +5,10 @@
 import * as grok from 'datagrok-api/grok';
 import * as ui from 'datagrok-api/ui';
 import * as DG from 'datagrok-api/dg';
-import {convertToRDKit} from './analysis/r-group-analysis';
-import {drawRdKitMoleculeToOffscreenCanvas} from './chem-common-rdkit';
-import {RDMol} from './rdkit-api';
-import {isMolBlock} from './chem-utils';
+import {convertToRDKit} from '../analysis/r-group-analysis';
+import {drawRdKitMoleculeToOffscreenCanvas} from '../utils/chem-common-rdkit';
+import {RDMol} from '../rdkit-api';
+import {isMolBlock} from '../utils/chem-utils';
 
 export class RDKitCellRenderer extends DG.GridCellRenderer {
   readonly WHITE_MOLBLOCK_SUFFIX = `
