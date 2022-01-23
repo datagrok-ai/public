@@ -1,28 +1,27 @@
 import * as grok from 'datagrok-api/grok';
 import * as ui from 'datagrok-api/ui';
 import * as DG from 'datagrok-api/dg';
-import { Property } from 'datagrok-api/dg';
-import * as chemSearches from './chem-searches';
-import { similarityMetric } from '@datagrok-libraries/utils/src/similarity-metrics';
-import * as metric from './chem-common';
+import {Property} from 'datagrok-api/dg';
+import * as chemSearches from '../chem-searches';
+import {similarityMetric} from '@datagrok-libraries/utils/src/similarity-metrics';
 import $ from 'cash-dom';
 
-export class SimilaritySearch extends DG.JsViewer {
-  private moleculeColumnName: string;
-  private initialized: boolean;
-  private isEditedFromSketcher: boolean = false;
-  private hotSearch: boolean;
-  private sketchButton: HTMLButtonElement;
-  private sketchedMolecule: string = "";
-  private distanceMetric: string;
-  private curIdx: number;
-  private molCol: DG.Column;
-  private idxs: DG.Column;
-  private scores: DG.Column;
-  private limit: number;
-  private minScore: number;
-  private fingerprint: string;
-  private gridSelect: boolean = false;
+export class ChemSimilarityViewer extends DG.JsViewer {
+  moleculeColumnName: string;
+  initialized: boolean;
+  isEditedFromSketcher: boolean = false;
+  hotSearch: boolean;
+  sketchButton: HTMLButtonElement;
+  sketchedMolecule: string = "";
+  distanceMetric: string;
+  curIdx: number;
+  molCol: DG.Column;
+  idxs: DG.Column;
+  scores: DG.Column;
+  limit: number;
+  minScore: number;
+  fingerprint: string;
+  gridSelect: boolean = false;
 
   constructor() {
     super();
@@ -148,7 +147,7 @@ export class SimilaritySearch extends DG.JsViewer {
               this.dataFrame.selection.set(this.idxs.get(i), true);
             } else if (event.metaKey) {
               let selected = this.dataFrame.selection;
-              this.dataFrame.selection.set(this.idxs.get(i), selected.get(this.idxs.get(i)) != true);
+              this.dataFrame.selection.set(this.idxs.get(i), !selected.get(this.idxs.get(i)));
             } else {
               this.dataFrame.currentRowIdx = this.idxs.get(i);
               this.isEditedFromSketcher = false;
@@ -158,8 +157,7 @@ export class SimilaritySearch extends DG.JsViewer {
         });
         grids[cnt2++] = grid;
       }
-      const gridsDiv = ui.div(grids, {classes: 'd4-flex-wrap'});
-      panel[cnt++] = gridsDiv;
+      panel[cnt++] = ui.div(grids, {classes: 'd4-flex-wrap'});
       this.root.appendChild(ui.div(panel, {style: {margin: '5px'}}));
     }
   }

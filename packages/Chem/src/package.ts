@@ -1,7 +1,7 @@
 import * as grok from 'datagrok-api/grok';
 import * as ui from 'datagrok-api/ui';
 import * as DG from 'datagrok-api/dg';
-import {getMolColumnPropertyPanel} from './chem-column-property-panel';
+import {getMolColumnPropertyPanel} from './panels/chem-column-property-panel';
 import * as chemSearches from './chem-searches';
 import {SubstructureFilter} from './chem-substructure-filter';
 import {RDKitCellRenderer} from './rdkit-cell-renderer';
@@ -28,8 +28,8 @@ import {isMolBlock} from './chem-utils';
 import Sketcher = chem.Sketcher;
 import $ from 'cash-dom';
 import '../css/chem.css';
-import { SimilaritySearch } from './chem-similarity-search';
-import { DiversitySearch } from './chem-diversity-search';
+import { ChemSimilarityViewer } from './analysis/chem-similarity-viewer';
+import { ChemDiversityViewer } from './analysis/chem-diversity-viewer';
 
 const drawMoleculeToCanvas = chemCommonRdKit.drawMoleculeToCanvas;
 
@@ -577,7 +577,7 @@ export function editMoleculeCell(cell: DG.GridCell) {
 //tags: viewer
 //output: viewer result
 export function similaritySearchViewer() {
-  return new SimilaritySearch();
+  return new ChemSimilarityViewer();
 }
 
 //top-menu: Chem | Similarity Search...
@@ -592,7 +592,7 @@ export function similaritySearchTopMenu() {
 //tags: viewer
 //output: viewer result
 export function diversitySearchViewer() {
-  return new DiversitySearch();
+  return new ChemDiversityViewer();
 }
 
 //top-menu: Chem | Diversity Search...

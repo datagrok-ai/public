@@ -5,10 +5,11 @@ import {Property} from 'datagrok-api/dg';
 import BitArray from '@datagrok-libraries/utils/src/bit-array';
 import {similarityMetric} from '@datagrok-libraries/utils/src/similarity-metrics';
 import {getDiverseSubset} from '@datagrok-libraries/utils/src/analysis';
-import {chemGetFingerprints} from './chem-searches';
+import {chemGetFingerprints} from '../chem-searches';
 import $ from 'cash-dom'
+import {ArrayUtils} from "@datagrok-libraries/utils/src/array-utils";
 
-export class DiversitySearch extends DG.JsViewer {
+export class ChemDiversityViewer extends DG.JsViewer {
   moleculeColumnName: string;
   initialized: boolean;
   distanceMetric: string;
@@ -114,19 +115,15 @@ export class DiversitySearch extends DG.JsViewer {
   }
 }
 
-export async function chemDiversitySearch(smiles: DG.Column, fpSim: (a: BitArray, b: BitArray) => number, limit: number, fingerprint: string) {
+export async function chemDiversitySearch(smiles: DG.Column, similarity: (a: BitArray, b: BitArray) => number,
+                                          limit: number, fingerprint: string): Promise<number[]> {
+
   limit = Math.min(limit, smiles.length);
   let fingerprintCol = await chemGetFingerprints(smiles, fingerprint);
-  let indexes: number[] = [];
-
-  for (let i = 0; i < fingerprintCol.length; ++i) {
-    if (fingerprintCol[i] != null) {
-      indexes.push(i);
-    }
-  }
+  let indexes = ArrayUtils.indexesOf(fingerprintCol, (f) => f != null);
 
   let diverseIndexes = getDiverseSubset(indexes.length, limit,
-          (i1, i2) => 1 - fpSim(fingerprintCol[indexes[i1]], fingerprintCol[indexes[i2]]));
+          (i1, i2) => 1 - similarity(fingerprintCol[indexes[i1]], fingerprintCol[indexes[i2]]));
 
   let molIds: number[] = [];
   for (let i = 0; i < limit; i++)
