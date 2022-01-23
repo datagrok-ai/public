@@ -1,7 +1,7 @@
 import {RdKitServiceWorkerBase} from './rdkit-service-worker-base';
 import BitArray from '@datagrok-libraries/utils/src/bit-array';
-import {rdKitFingerprintToBitArray} from './chem-common';
-import {defaultMorganFpLength, defaultMorganFpRadius} from './chem-common';
+import {rdKitFingerprintToBitArray} from '../utils/chem-common';
+import {defaultMorganFpLength, defaultMorganFpRadius} from '../utils/chem-common';
 
 export class RdKitServiceWorkerSimilarity extends RdKitServiceWorkerBase {
   _morganFps: BitArray[] | null = null;

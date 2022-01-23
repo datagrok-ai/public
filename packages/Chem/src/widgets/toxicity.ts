@@ -1,8 +1,8 @@
 import * as ui from 'datagrok-api/ui';
 import * as DG from 'datagrok-api/dg';
 import * as OCL from 'openchemlib/full.js';
-import {renderDescription} from '../chem-common-ocl';
-import {oclMol} from '../chem-common-ocl';
+import {renderDescription} from '../utils/chem-common-ocl';
+import {oclMol} from '../utils/chem-common-ocl';
 
 export function toxicityWidget(smiles: string) {
   const mol = oclMol(smiles);

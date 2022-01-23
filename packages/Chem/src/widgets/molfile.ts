@@ -1,8 +1,8 @@
 import * as ui from 'datagrok-api/ui';
 import * as DG from 'datagrok-api/dg';
 import $ from 'cash-dom';
-import {isMolBlock} from '../chem-utils';
-import {oclMol} from '../chem-common-ocl';
+import {isMolBlock} from '../utils/chem-utils';
+import {oclMol} from '../utils/chem-common-ocl';
 import '../../css/chem.css';
 
 export function molfileWidget(molStr: string): DG.Widget {

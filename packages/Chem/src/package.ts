@@ -3,8 +3,8 @@ import * as ui from 'datagrok-api/ui';
 import * as DG from 'datagrok-api/dg';
 import {getMolColumnPropertyPanel} from './panels/chem-column-property-panel';
 import * as chemSearches from './chem-searches';
-import {SubstructureFilter} from './chem-substructure-filter';
-import {RDKitCellRenderer} from './rdkit-cell-renderer';
+import {SubstructureFilter} from './widgets/chem-substructure-filter';
+import {RDKitCellRenderer} from './rendering/rdkit-cell-renderer';
 import * as OCL from 'openchemlib/full.js';
 import {drugLikenessWidget} from './widgets/drug-likeness';
 import {molfileWidget} from './widgets/molfile';
@@ -18,18 +18,17 @@ import {getActivityCliffs} from './analysis/activity-cliffs';
 import {getDescriptorsSingle, addDescriptors, getDescriptorsApp} from './descriptors/descriptors-calculation';
 import {addInchis, addInchiKeys} from './panels/inchi';
 import {addMcs} from './panels/find-mcs';
-import * as chemCommonRdKit from './chem-common-rdkit';
+import * as chemCommonRdKit from './utils/chem-common-rdkit';
 import {convertToRDKit, rGroupAnalysis} from './analysis/r-group-analysis';
 import {identifiersWidget} from './widgets/identifiers';
-import {chem} from 'datagrok-api/grok';
-import {oclMol} from './chem-common-ocl';
+import {oclMol} from './utils/chem-common-ocl';
 import {RDMol} from './rdkit-api';
-import {isMolBlock} from './chem-utils';
-import Sketcher = chem.Sketcher;
+import {_convertMolecule, isMolBlock} from './utils/chem-utils';
 import $ from 'cash-dom';
 import '../css/chem.css';
 import { ChemSimilarityViewer } from './analysis/chem-similarity-viewer';
 import { ChemDiversityViewer } from './analysis/chem-diversity-viewer';
+import {_saveAsSdf} from "./utils/sdf-utils";
 
 const drawMoleculeToCanvas = chemCommonRdKit.drawMoleculeToCanvas;
 
@@ -47,10 +46,11 @@ export function getRdKitModule() {
 }
 
 export const _package: DG.Package = new DG.Package();
+export let _properties: any;
+
 let _rdRenderer: RDKitCellRenderer;
 let _renderer: GridCellRendererProxy;
 let _renderers: Map<string, DG.GridCellRenderer>;
-let _properties: any;
 
 //tags: init
 export async function initChem() {
@@ -95,73 +95,6 @@ export function canvasMol(
   drawMoleculeToCanvas(x, y, w, h, canvas, molString, scaffoldMolString == '' ? null : scaffoldMolString);
 }
 
-export function renderMolecule(
-  molStr: string,
-  options: {renderer?: 'RDKit' | 'OpenChemLib', width?: number, height?: number},
-) {
-  options.renderer ??= _properties.Renderer as 'RDKit' | 'OpenChemLib';
-  options.width ??= 200;
-  options.height ??= 150;
-
-  let mol: OCL.Molecule | RDMol | null = null;
-  let molFile: string;
-  let smiles: string;
-  isMolBlock(molStr) ? molFile = molStr : smiles = molStr;
-
-  const moleculeHost = ui.canvas(options.width, options.height);
-  $(moleculeHost).addClass('chem-canvas');
-
-  switch (options.renderer) {
-  case 'RDKit':
-    try {
-      mol = getRdKitModule().get_mol(convertToRDKit(molStr));
-      (mol as RDMol).draw_to_canvas(moleculeHost, options.width, options.height);
-      molFile ??= (mol as RDMol).get_molblock();
-      smiles ??= (mol as RDMol).get_smiles();
-    } finally {
-      (mol as RDMol)?.delete();
-    }
-    break;
-  case 'OpenChemLib':
-    mol = oclMol(molStr);
-    OCL.StructureView.drawMolecule(moleculeHost, mol as OCL.Molecule);
-    molFile ??= mol.toMolfile();
-    smiles ??= mol.toSmiles();
-    break;
-  default:
-    throw new Error(`Renderer '${options.renderer}' is not supported.`);
-  }
-
-  const moreBtn = ui.iconFA(
-    'ellipsis-v',
-    () => {
-      const menu = DG.Menu.popup();
-      menu.item('Copy SMILES', () => {
-        navigator.clipboard.writeText(smiles);
-        grok.shell.info('SMILES copied!');
-      });
-      menu.item('Copy Molfile', () => {
-        navigator.clipboard.writeText(molFile);
-        grok.shell.info('Molfile copied!');
-      });
-      menu.item('Sketch', () => {
-        const sketcher = new Sketcher();
-        isMolBlock(molStr) ? sketcher.setMolFile(molStr) : sketcher.setSmiles(molStr);
-        ui.dialog()
-          .add(sketcher)
-          .show();
-      });
-      menu.item('Explore', () => {
-        grok.shell.o = DG.SemanticValue.fromValueType(molStr, 'Molecule')
-      });
-      menu.show();
-    },
-    'More',
-  );
-  $(moreBtn).addClass('chem-mol-view-icon pep-more-icon');
-
-  return ui.divV([moreBtn, moleculeHost], 'chem-mol-box');
-}
 
 //name: getCLogP
 //input: string smiles {semType: Molecule}
@@ -256,8 +189,6 @@ export function getMorganFingerprint(molString: string) {
 //input: string molString
 //output: dataframe result
 export async function getSimilarities(molStringsColumn: DG.Column, molString: string) {
-  if (molStringsColumn === null || molString === null)
-    throw 'Chem: An input was null';
   try {
     const result = await chemSearches.chemGetSimilarities(molStringsColumn, molString);
     return result ? DG.DataFrame.fromColumns([result as DG.Column]) : DG.DataFrame.create();
@@ -273,11 +204,11 @@ export async function getSimilarities(molStringsColumn: DG.Column, molString: st
 //input: int limit
 //input: int cutoff
 //output: dataframe result
-export async function findSimilar(molStringsColumn: DG.Column, molString: string, aLimit: number, aCutoff: number) {
-  if (molStringsColumn === null || molString === null || aLimit === null || aCutoff === null)
+export async function findSimilar(molStringsColumn: DG.Column, molString: string, limit: number, cutoff: number) {
+  if (molStringsColumn === null || molString === null || limit === null || cutoff === null)
     throw 'Chem: An input was null';
   try {
-    const result = await chemSearches.chemFindSimilar(molStringsColumn, molString, {limit: aLimit, cutoff: aCutoff});
+    const result = await chemSearches.chemFindSimilar(molStringsColumn, molString, {limit: limit, cutoff: cutoff});
     return result ? result : DG.DataFrame.create();
   } catch (e: any) {
     console.error('Chem | In findSimilar: ' + e.toString());
@@ -318,42 +249,7 @@ export function descriptorsApp(context: any) {
 //name: saveAsSdf
 //description: Save as SDF
 //tags: fileExporter
-export function saveAsSdf() {
-  //todo: load OpenChemLib (or use RDKit?)
-  //todo: open dialog
-  //todo: UI for choosing structure column if necessary
-  //todo: UI for choosing columns with properties
-
-  const table = grok.shell.t;
-  const structureColumn = table.columns.bySemType('Molecule');
-  if (structureColumn == null)
-    return;
-
-
-  let result = '';
-
-  for (let i = 0; i < table.rowCount; i++) {
-    try {
-      const mol = OCL.Molecule.fromSmiles(structureColumn.get(i));
-      result += `\n${mol.toMolfile()}\n`;
-
-      // properties
-      for (const col of table.columns) {
-        if (col !== structureColumn)
-          result += `>  <${col.name}>\n${col.get(i)}\n\n`;
-      }
-
-      result += '$$$$';
-    } catch (error) {
-      console.error(error);
-    }
-  }
-
-  const element = document.createElement('a');
-  element.setAttribute('href', 'data:text/plain;charset=utf-8,' + encodeURIComponent(result));
-  element.setAttribute('download', table.name + '.sdf');
-  element.click();
-}
+export function saveAsSdf() { _saveAsSdf(); }
 
 
 //#region Top menu
@@ -541,21 +437,7 @@ export async function identifiers(smiles: string) {
 //input: string to {choices:["smiles", "molblock", "inchi", "v3Kmolblock"]}
 //output: string result {semType: Molecule}
 export function convertMolecule(molecule: string, from: string, to: string): string {
-  let mol;
-  try {
-    mol = getRdKitModule().get_mol(molecule);
-    if (to === 'molblock')
-      return mol.get_molblock();
-    if (to === 'smiles')
-      return mol.get_smiles();
-    if (to === 'v3Kmolblock')
-      return mol.get_v3Kmolblock();
-    if (to == 'inchi')
-      return mol.get_inchi();
-    throw `Failed to convert molecule: unknown target unit: "${to}"`;
-  } finally {
-    mol?.delete();
-  }
+  return _convertMolecule(molecule, to, from);
 }
 
 

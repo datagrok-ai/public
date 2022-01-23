@@ -1,4 +1,4 @@
-import {RDMol} from "./rdkit-api";
+import {RDMol} from "../rdkit-api";
 
 export class RdKitServiceWorkerBase {
   _rdKitModule: any;

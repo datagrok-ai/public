@@ -1,6 +1,6 @@
 // OCL requires same kind of loading as we do for RdKit
 // Therefore, this cannot be currently used from WebWorkers
-import {RdKitService} from './rdkit-service';
+import {RdKitService} from '../rdkit-service/rdkit-service';
 import * as ui from 'datagrok-api/ui';
 import * as OCL from 'openchemlib/full.js';
 import {isMolBlock} from './chem-utils';

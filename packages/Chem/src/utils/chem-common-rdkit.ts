@@ -1,12 +1,12 @@
 // This file will be used from Web Workers
 // There should be no imports from Datagrok or OCL
 
-import {RdKitService} from './rdkit-service';
-import {convertToRDKit} from './analysis/r-group-analysis';
+import {RdKitService} from '../rdkit-service/rdkit-service';
+import {convertToRDKit} from '../analysis/r-group-analysis';
 //@ts-ignore
-import rdKitLibVersion from './rdkit_lib_version';
+import rdKitLibVersion from '../rdkit_lib_version';
 //@ts-ignore
-import initRDKitModule from './RDKit_minimal.js';
+import initRDKitModule from '../RDKit_minimal.js';
 
 export let _rdKitModule: any = null;
 export let _rdKitService: RdKitService | null = null;
