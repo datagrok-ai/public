@@ -1,6 +1,7 @@
 import {expect} from '@datagrok-libraries/utils/src/test';
 import {_package} from '../package-test';
 import {PdbEntry} from '../pdb-entry';
+import {createViewer} from '../viewers/molstar-viewer';
 
 export async function requireText(name: string): Promise<string> {
   return await _package.files.readAsText(name);
@@ -27,7 +28,7 @@ export async function _testRCSBAlive(pdbID = '2V0A') {
 }
 
 /** Test if parsing of a sample PDB id is done properly. */
-export async function _testParse2V0A() {
+export async function _testParseExamplePDBFile() {
   const pdb = new PdbEntry('2V0A');
 
   await pdb.fetchInfo();
@@ -42,4 +43,16 @@ export async function _testParse2V0A() {
     expect(chain.tracks['SHEET'].length > 0, true);
     expect(chain.tracks['HELIX_P'].length > 0, true);
   }
+}
+
+/** Test if Mol* viewer is created without exceptions. */
+export async function _testMolstarViewerIsOpening() {
+  let noException = true;
+
+  try {
+    await createViewer();
+  } catch (error) {
+    noException = false;
+  }
+  expect(noException, true);
 }
