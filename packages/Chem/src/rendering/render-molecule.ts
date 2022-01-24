@@ -32,7 +32,7 @@ export function renderMolecule(
   switch (options.renderer) {
     case 'RDKit':
       try {
-        mol = getRdKitModule().get_mol(convertToRDKit(molStr));
+        mol = getRdKitModule().get_mol(convertToRDKit(molStr)!);
         (mol as RDMol).draw_to_canvas(moleculeHost, options.width, options.height);
         molFile ??= (mol as RDMol).get_molblock();
         smiles ??= (mol as RDMol).get_smiles();
@@ -79,4 +79,10 @@ export function renderMolecule(
   $(moreBtn).addClass('chem-mol-view-icon pep-more-icon');
 
   return ui.divV([moreBtn, moleculeHost], 'chem-mol-box');
+}
+
+export function _svgDiv(mol: any) {
+  const root = ui.div();
+  root.innerHTML = mol.get_svg();
+  return root;
 }

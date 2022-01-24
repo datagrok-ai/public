@@ -4,8 +4,7 @@ import * as DG from 'datagrok-api/dg';
 import {getMolColumnPropertyPanel} from './panels/chem-column-property-panel';
 import * as chemSearches from './chem-searches';
 import {SubstructureFilter} from './widgets/chem-substructure-filter';
-import {RDKitCellRenderer} from './rendering/rdkit-cell-renderer';
-import * as OCL from 'openchemlib/full.js';
+import {GridCellRendererProxy, RDKitCellRenderer} from './rendering/rdkit-cell-renderer';
 import {drugLikenessWidget} from './widgets/drug-likeness';
 import {molfileWidget} from './widgets/molfile';
 import {propertiesWidget} from './widgets/properties';
@@ -15,20 +14,21 @@ import {structure3dWidget} from './widgets/structure3d';
 import {toxicityWidget} from './widgets/toxicity';
 import {chemSpace} from './analysis/chem-space';
 import {getActivityCliffs} from './analysis/activity-cliffs';
-import {getDescriptorsSingle, addDescriptors, getDescriptorsApp} from './descriptors/descriptors-calculation';
-import {addInchis, addInchiKeys} from './panels/inchi';
+import {addDescriptors, getDescriptorsApp, getDescriptorsSingle} from './descriptors/descriptors-calculation';
+import {addInchiKeys, addInchis} from './panels/inchi';
 import {addMcs} from './panels/find-mcs';
 import * as chemCommonRdKit from './utils/chem-common-rdkit';
-import {convertToRDKit, rGroupAnalysis} from './analysis/r-group-analysis';
+import {rGroupAnalysis} from './analysis/r-group-analysis';
 import {identifiersWidget} from './widgets/identifiers';
-import {oclMol} from './utils/chem-common-ocl';
-import {RDMol} from './rdkit-api';
-import {_convertMolecule, isMolBlock} from './utils/chem-utils';
-import $ from 'cash-dom';
+import {_convertMolecule} from './utils/chem-utils';
 import '../css/chem.css';
-import { ChemSimilarityViewer } from './analysis/chem-similarity-viewer';
-import { ChemDiversityViewer } from './analysis/chem-diversity-viewer';
+import {ChemSimilarityViewer} from './analysis/chem-similarity-viewer';
+import {ChemDiversityViewer} from './analysis/chem-diversity-viewer';
 import {_saveAsSdf} from "./utils/sdf-utils";
+import {Fingerprint} from "./utils/chem-common";
+import {assure} from "@datagrok-libraries/utils/src/test";
+import {chem} from "datagrok-api/grok";
+import Sketcher = chem.Sketcher;
 
 const drawMoleculeToCanvas = chemCommonRdKit.drawMoleculeToCanvas;
 
@@ -75,12 +75,6 @@ export function substructureFilter() {
   return new SubstructureFilter();
 }
 
-export function _svgDiv(mol: any) {
-  const root = ui.div();
-  root.innerHTML = mol.get_svg();
-  return root;
-}
-
 //name: canvasMol
 //input: int x
 //input: int y
@@ -104,29 +98,6 @@ export function getCLogP(smiles: string) {
   let res = JSON.parse(mol.get_descriptors()).CrippenClogP;
   mol?.delete();
   return res;
-}
-
-export class GridCellRendererProxy extends DG.GridCellRenderer {
-  renderer: DG.GridCellRenderer;
-  _cellType: string;
-
-  constructor(renderer: DG.GridCellRenderer, cellType: string) {
-    super();
-    this.renderer = renderer;
-    this._cellType = cellType;
-  }
-
-  get defaultWidth(): number | null { return this.renderer.defaultWidth;  }
-  get defaultHeight(): number | null { return this.renderer.defaultHeight; }
-
-  get name(): string { return this.renderer.name; }
-  get cellType(): string { return this._cellType; }
-
-  renderInternal(
-    g: CanvasRenderingContext2D, x: number, y: number, w: number, h: number,
-    gridCell: DG.GridCell, cellStyle: DG.GridCellStyle) {
-    this.renderer.renderInternal(g, x, y, w, h, gridCell, cellStyle);
-  }
 }
 
 //name: rdKitCellRenderer
@@ -159,9 +130,10 @@ export async function chemCellRenderer() {
 //input: column molColumn {semType: Molecule}
 //output: column result [fingerprints]
 export async function getMorganFingerprints(molColumn: DG.Column) {
-  if (molColumn === null) throw 'Chem: An input was null';
+  assure.notNull(molColumn, 'molColumn');
+
   try {
-    const fingerprints = await chemSearches.chemGetFingerprints(molColumn, 'Morgan');
+    const fingerprints = await chemSearches.chemGetFingerprints(molColumn, Fingerprint.Morgan);
     const fingerprintsBitsets: DG.BitSet[] = [];
     for (let i = 0; i < fingerprints.length; ++i) {
       //@ts-ignore
@@ -179,7 +151,7 @@ export async function getMorganFingerprints(molColumn: DG.Column) {
 //input: string molString {semType: Molecule}
 //output: object fingerprintBitset [Fingerprints]
 export function getMorganFingerprint(molString: string) {
-  const bitArray = chemSearches.chemGetFingerprint(molString, 'Morgan');
+  const bitArray = chemSearches.chemGetFingerprint(molString, Fingerprint.Morgan);
   //@ts-ignore
   return DG.BitSet.fromBytes(bitArray.getRawData(), bitArray.length);
 }
@@ -223,8 +195,9 @@ export async function findSimilar(molStringsColumn: DG.Column, molString: string
 //input: string molStringSmarts
 //output: column result
 export async function searchSubstructure(
-  molStringsColumn: DG.Column, molString: string,
-  substructLibrary: boolean, molStringSmarts: string) {
+    molStringsColumn: DG.Column, molString: string,
+    substructLibrary: boolean, molStringSmarts: string) {
+
   if (molStringsColumn === null || molString === null || substructLibrary === null || molStringSmarts === null)
     throw 'Chem: An input was null';
   try {
@@ -344,10 +317,6 @@ export function molColumnPropertyPanel(molColumn: DG.Column) {
   return getMolColumnPropertyPanel(molColumn);
 }
 
-//#endregion
-
-//#region Single molecule property panel
-
 //name: Chem Descriptors
 //tags: panel, chem, widgets
 //input: string smiles { semType: Molecule }
@@ -441,7 +410,7 @@ export function convertMolecule(molecule: string, from: string, to: string): str
 }
 
 
-/*//tags: cellEditor
+//tags: cellEditor
 //description: Molecule
 //input: grid_cell cell
 export function editMoleculeCell(cell: DG.GridCell) {
@@ -453,7 +422,6 @@ export function editMoleculeCell(cell: DG.GridCell) {
     .onOK(() => cell.cell.value = sketcher.getMolFile())
     .show();
 }
-*/
 
 //name: SimilaritySearchViewer
 //tags: viewer
