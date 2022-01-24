@@ -36,14 +36,18 @@ jobs:
         uses: github/codeql-action/autobuild@v1
       - name: Perform CodeQL Analysis
         uses: github/codeql-action/analyze@v1
+      - name: Fail if any critical issues were found
+        run: ls -lah .
 
   anchore:
     runs-on: ubuntu-20.04
     name: Anchore vulnerability scan
     permissions:
       security-events: write
-#    env:
-#      GRYPE_FILE: ./anchore.results.json
+    strategy:
+      fail-fast: false
+      matrix:
+        target: [ 'connectors', 'packages', 'libraries', 'js-api', 'tools' ]
     steps:
       - name: Checkout
         uses: actions/checkout@v2
@@ -51,7 +55,7 @@ jobs:
         uses: anchore/scan-action@v3
         id: scan
         with:
-          path: "."
+          path: "./${{ matrix.target }}"
           fail-build: true
           severity-cutoff: high
           acs-report-enable: true
@@ -61,10 +65,14 @@ jobs:
         uses: github/codeql-action/upload-sarif@v1
         with:
           sarif_file: ${{ steps.scan.outputs.sarif }}
+          category: ${{ matrix.target }}
+#      - name: Create CSV report
+#        run: |
+
       - name: Upload Artifact
         if: always()
         uses: actions/upload-artifact@v2
         with:
-          name: anchore.sarif
+          name: ${{ matrix.target }}.anchore.sarif
           path: ${{ steps.scan.outputs.sarif }}
           retention-days: 7
