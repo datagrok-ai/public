@@ -1,0 +1,23 @@
+name: Vulnerabilities Scan
+on:
+  workflow_dispatch: {}
+  push: {}
+
+jobs:
+  vulnerability_scan:
+    runs-on: ubuntu-20.04
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v2
+      - name: Scan Grok Connect
+        uses: anchore/scan-action@v3
+        id: scan
+        with:
+          path: "."
+          fail-build: false
+          severity-cutoff: high
+          acs-report-enable: true
+      - name: upload Anchore scan SARIF report
+        uses: github/codeql-action/upload-sarif@v1
+        with:
+          sarif_file: ${{ steps.scan.outputs.sarif }}
