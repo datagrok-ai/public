@@ -6,4 +6,3 @@ quiet: false
 
 exclude:
   - '**/node_modules/**'
-
