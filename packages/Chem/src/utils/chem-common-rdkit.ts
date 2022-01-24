@@ -7,6 +7,7 @@ import {convertToRDKit} from '../analysis/r-group-analysis';
 import rdKitLibVersion from '../rdkit_lib_version';
 //@ts-ignore
 import initRDKitModule from '../RDKit_minimal.js';
+import {RDModule} from "../rdkit-api";
 
 export let _rdKitModule: any = null;
 export let _rdKitService: RdKitService | null = null;
@@ -30,7 +31,7 @@ export async function initRdKitService() {
   await _rdKitService!.init(_webRoot!);
 }
 
-export function getRdKitModule() {
+export function getRdKitModule(): RDModule {
   if (!moduleInitialized)
     throw ('RdKit Module is not initialized');
   return _rdKitModule!;
@@ -74,14 +75,14 @@ export function drawMoleculeToCanvas(
   onscreenCanvas: HTMLCanvasElement, molString: string, scaffoldMolString: string | null = null) {
   let mol = null;
   try {
-    mol = getRdKitModule().get_mol(convertToRDKit(molString));
+    mol = getRdKitModule().get_mol(convertToRDKit(molString)!);
     const molBlock = mol.get_new_coords(true);
     mol.delete();
     mol = getRdKitModule().get_mol(molBlock);
     mol.normalize_2d_molblock();
     mol.straighten_2d_layout();
     const scaffoldMol = scaffoldMolString == null ? null :
-      getRdKitModule().get_qmol(convertToRDKit(scaffoldMolString));
+      getRdKitModule().get_qmol(convertToRDKit(scaffoldMolString)!);
     let substructJson = '{}';
     if (scaffoldMol) {
       substructJson = mol.get_substruct_match(scaffoldMol);

@@ -10,6 +10,29 @@ import {drawRdKitMoleculeToOffscreenCanvas} from '../utils/chem-common-rdkit';
 import {RDMol} from '../rdkit-api';
 import {isMolBlock} from '../utils/chem-utils';
 
+export class GridCellRendererProxy extends DG.GridCellRenderer {
+  renderer: DG.GridCellRenderer;
+  _cellType: string;
+
+  constructor(renderer: DG.GridCellRenderer, cellType: string) {
+    super();
+    this.renderer = renderer;
+    this._cellType = cellType;
+  }
+
+  get defaultWidth(): number | null { return this.renderer.defaultWidth;  }
+  get defaultHeight(): number | null { return this.renderer.defaultHeight; }
+
+  get name(): string { return this.renderer.name; }
+  get cellType(): string { return this._cellType; }
+
+  renderInternal(
+    g: CanvasRenderingContext2D, x: number, y: number, w: number, h: number,
+    gridCell: DG.GridCell, cellStyle: DG.GridCellStyle) {
+    this.renderer.renderInternal(g, x, y, w, h, gridCell, cellStyle);
+  }
+}
+
 export class RDKitCellRenderer extends DG.GridCellRenderer {
   readonly WHITE_MOLBLOCK_SUFFIX = `
   0  0  0  0  0  0  0  0  0  0999 V2000
