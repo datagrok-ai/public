@@ -123,9 +123,59 @@ CN1C(=O)CN=C(c2cc(Cl)ccc12)C3CCCCC3`);
     let v = grok.shell.addTableView(t);
     P.addMcsPanel(t.columns['smiles']);
     v.close();
-    
-//const mcs: string = await findMCS('smiles', t);
-//t.columns.add(mcs);
+  });
+
+  test('testInchiPanel', async () => {
+    let t = DG.DataFrame.fromCsv(`smiles
+      COc1ccc(CN(Cc2ccccc2)Cc3ccc(Br)cc3)cc1O
+      COc1ccc(CN(CCc2ccc(Br)cc2)Cc3ccccc3)cc1O
+      CCCCCCCC(=O)NCCC1CC(CC)(CC)C(=O)O1
+      CC1=C(C(C(=C(C)N1)C(=O)OCc2ccccc2)c3csc(n3)c4ccc(Cl)cc4)C(=O)
+      CCCOC(=O)C1=C(C)NC(=C(C1c2csc(n2)c3ccc(Cl)cc3)C(=O)OCC)
+      CCOC(=O)C1=C(C)NC(=C(C1c2csc(n2)c3ccc(Cl)cc3)C(=O)OC(C)C)
+      CCOC(=O)C1=C(C)NC(=C(C1c2csc(n2)c3ccc(Cl)cc3)C(=O)OCC(C)C)`);
+
+    let v = grok.shell.addTableView(t);
+    P.addInchisPanel(t.columns['smiles']);
+    v.close();
+  });
+
+  test('testInchiKeysPanel', async () => {
+    let t = DG.DataFrame.fromCsv(`smiles
+      COc1ccc(CN(Cc2ccccc2)Cc3ccc(Br)cc3)cc1O
+      COc1ccc(CN(CCc2ccc(Br)cc2)Cc3ccccc3)cc1O
+      CCCCCCCC(=O)NCCC1CC(CC)(CC)C(=O)O1
+      CC1=C(C(C(=C(C)N1)C(=O)OCc2ccccc2)c3csc(n3)c4ccc(Cl)cc4)C(=O)
+      CCCOC(=O)C1=C(C)NC(=C(C1c2csc(n2)c3ccc(Cl)cc3)C(=O)OCC)
+      CCOC(=O)C1=C(C)NC(=C(C1c2csc(n2)c3ccc(Cl)cc3)C(=O)OC(C)C)
+      CCOC(=O)C1=C(C)NC(=C(C1c2csc(n2)c3ccc(Cl)cc3)C(=O)OCC(C)C)`);
+
+    let v = grok.shell.addTableView(t);
+    P.addInchisKeysPanel(t.columns['smiles']);
+    v.close();
+  });
+
+  test('testCurateTopMenu', async () => {
+    let t = DG.DataFrame.fromCsv(`Name,smiles
+    metal_non,CCC(=O)O[Na]
+    metal_st,CCC(=O)[O-].[Na+]
+    parent_non,[Na]OC(=O)c1ccccc1
+    parent_st,O=C([O-])c1ccccc1
+    norm_non,C[N+](C)=CC=C[O-]
+    norm_st,CN(C)C=CC=O
+    reion_non,C1=C(C=CC(=C1)[S]([O-])=O)[S](O)(=O)=O
+    reion_st,O=S(O)c1ccc(S(=O)(=O)[O-])cc1
+    charge_non,O=C([O-])c1ccccc1
+    charge_st,O=C(O)c1ccccc1
+    tau_non,C1(=CCCCC1)O
+    tau_st,O=C1CCCCC1
+    main_component_non,CCC1=C(C)C=CC(O)=N1.OC(=O)CCC(=O)O
+    main_component_non_st,CCC1=C(C)C=CC(O)=N1`);
+
+    let v = grok.shell.addTableView(t);
+    grok.functions.call('Chem:CurateChemStructures', {'data': t, 'smiles': 'smiles'})
+
+    v.close();
   });
 
   test('testRendering', async () => {
