@@ -6,6 +6,7 @@ on:
       - 'connectors/**'
 jobs:
   build:
+    name: Build Grok Connect package
     runs-on: ubuntu-20.04
     steps:
       - name: Checkout

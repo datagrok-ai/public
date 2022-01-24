@@ -7,6 +7,7 @@ on:
       - 'help/**'
 jobs:
   lint:
+    name: Lint markdown help files
     runs-on: ubuntu-20.04
     steps:
       - name: Checkout
@@ -26,6 +27,7 @@ jobs:
           entrypoint: /bin/bash
           args: /github/workspace/help/entrypoint.sh
   link_check:
+    name: Check links in help files
     runs-on: ubuntu-20.04
     steps:
       - name: Checkout
@@ -39,6 +41,7 @@ jobs:
           config-file: 'help/_internal/mlc_config.json'
 
   convert:
+    name: Convert help files to HTML pages
     needs: [ lint, link_check ]
     if: github.ref == 'refs/heads/master'
     runs-on: ubuntu-20.04
@@ -104,6 +107,7 @@ jobs:
           retention-days: 7
 
   deploy:
+    name: Deploy help HTML pages to server
     needs: convert
     concurrency:
       group: help-deploy-${{ github.ref }}
