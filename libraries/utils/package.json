@@ -4,7 +4,7 @@
     "access": "public"
   },
   "fullName": "Utils",
-  "version": "0.0.18",
+  "version": "0.0.19",
   "description": "Common utilities",
   "dependencies": {
     "@types/node": "^14.14.37",

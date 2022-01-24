@@ -1,0 +1,18 @@
+{
+  "#type": "DataConnection",
+  "name": "Northwind",
+  "parameters": {
+    "server": "$DEMO_DB_SERVER",
+    "port": 5432,
+    "db": "northwind"
+  },
+  "credentials" : {
+    "parameters" : {
+      "login": "northwind",
+      "password": "northwind"
+    }
+  },
+  "dataSource": "PostgreSQL",
+  "description": "Northwind sample database",
+  "tags": ["demo"]
+}

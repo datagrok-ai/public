@@ -3,6 +3,16 @@ export let tests: {[key: string]: {tests?: Test[], before?: () => Promise<void>,
 
 export let currentCategory: string;
 
+
+export namespace assure {
+
+  export function notNull(value: any, name?: string) {
+    if (value == null)
+      throw `${name == null ? 'Value' : name} not defined`;
+  }
+}
+
+
 export class Test {
   test: () => Promise<any>;
   name: string;
