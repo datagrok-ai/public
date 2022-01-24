@@ -8,6 +8,7 @@ import $ from 'cash-dom';
 import {Fingerprint} from "../utils/chem-common";
 import {chem} from "datagrok-api/grok";
 import Sketcher = chem.Sketcher;
+import {renderMolecule} from "../rendering/render-molecule";
 
 export class ChemSimilarityViewer extends DG.JsViewer {
   moleculeColumnName: string;
@@ -43,12 +44,12 @@ export class ChemSimilarityViewer extends DG.JsViewer {
     this.hotSearch = this.bool('hotSearch', true);
     this.initialized = false;
     this.sketchButton = ui.button('Sketch', () => {
-      this.isEditedFromSketcher = true;
       const sketcher = new Sketcher();
       sketcher.setMolecule(this.targetMolecule);
-      const dialog = ui.dialog()
+      ui.dialog()
         .add(sketcher.root)
         .onOK(() => {
+          this.isEditedFromSketcher = true;
             this.sketchedMolecule = sketcher.getMolFile();
             this.render();
           })
@@ -113,14 +114,16 @@ export class ChemSimilarityViewer extends DG.JsViewer {
       const grids = []; 
       let cnt = 0, cnt2 = 0;
       panel[cnt++] = ui.h1('Reference');
-      panel[cnt++] = grok.chem.svgMol(this.targetMolecule, 200, 100);
+      panel[cnt++] = renderMolecule(this.targetMolecule);
       panel[cnt++] = this.sketchButton;
       for (let i = 0; i < this.molCol.length; ++i) {
-        const mol = grok.chem.svgMol(this.molCol?.get(i), 200, 100);
-        const text = ui.label(`${this.scores.get(i).toPrecision(2)}`);
-        let grid = ui.div([mol, text], {style: {width: '200px', height: '120px', margin: '5px'}});
-        let divClass = 'd4-flex-col';
+        let grid = ui.div([
+          renderMolecule(this.molCol?.get(i)),
+          ui.label(`${this.scores.get(i).toPrecision(2)}`)],
+          {style: {width: '200px', height: '120px', margin: '5px'}}
+        );
 
+        let divClass = 'd4-flex-col';
         if (this.idxs.get(i) == this.curIdx) {
           divClass += ' d4-current';
           grid.style.backgroundColor = '#ddffd9';
