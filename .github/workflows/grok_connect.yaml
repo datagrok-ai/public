@@ -27,11 +27,16 @@ jobs:
           echo "::set-output name=version::$VERSION"
       - name: Scan Grok Connect JAR
         uses: anchore/scan-action@v3
+        id: scan
         with:
           path: "connectors/grok_connect/target/grok_connect-${{ steps.get_version.outputs.version }}.jar"
-          fail-build: true
+          fail-build: false
           severity-cutoff: critical
-          debug: true
+          acs-report-enable: true
+      - name: upload Anchore scan SARIF report
+        uses: github/codeql-action/upload-sarif@v1
+        with:
+          sarif_file: ${{ steps.scan.outputs.sarif }}
 
   check_libraries:
     runs-on: ubuntu-20.04
@@ -40,8 +45,13 @@ jobs:
         uses: actions/checkout@v2
       - name: Scan Grok Connect Libraries
         uses: anchore/scan-action@v3
+        id: scan
         with:
           path: "connectors/grok_connect/lib"
-          fail-build: true
+          fail-build: false
           severity-cutoff: critical
-          debug: true
+          acs-report-enable: true
+      - name: upload Anchore scan SARIF report
+        uses: github/codeql-action/upload-sarif@v1
+        with:
+          sarif_file: ${{ steps.scan.outputs.sarif }}
