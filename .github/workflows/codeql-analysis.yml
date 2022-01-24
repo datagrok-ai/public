@@ -42,8 +42,8 @@ jobs:
     name: Anchore vulnerability scan
     permissions:
       security-events: write
-    env:
-      GRYPE_FILE: ./anchore.results.json
+#    env:
+#      GRYPE_FILE: ./anchore.results.json
     steps:
       - name: Checkout
         uses: actions/checkout@v2
@@ -55,6 +55,7 @@ jobs:
           fail-build: true
           severity-cutoff: high
           acs-report-enable: true
+          debug: true
       - if: always()
         run: |
           ls -lah .
@@ -64,9 +65,9 @@ jobs:
         uses: github/codeql-action/upload-sarif@v1
         with:
           sarif_file: ${{ steps.scan.outputs.sarif }}
-      - name: Upload Artifact
-        uses: actions/upload-artifact@v2
-        with:
-          name: vulnerability.report.json
-          path: ${{ env.GRYPE_FILE }}
-          retention-days: 7
+#      - name: Upload Artifact
+#        uses: actions/upload-artifact@v2
+#        with:
+#          name: vulnerability.report.json
+#          path: ${{ env.GRYPE_FILE }}
+#          retention-days: 7
