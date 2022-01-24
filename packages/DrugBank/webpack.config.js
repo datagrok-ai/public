@@ -3,9 +3,25 @@ const path = require('path');
 module.exports = {
   mode: 'development',
   entry: {
-    package: './src/package.js'
+    package: './src/package.ts'
   },
   devtool: 'inline-source-map',
+  devServer: {
+    contentBase: './dist',
+  },
+  target: 'web',
+  module: {
+    rules: [
+      {
+        test: /\.ts?$/,
+        use: 'ts-loader',
+        exclude: /node_modules/,
+      },
+    ]
+  },
+  resolve: {
+    extensions: ['.mjs', '.js', '.json', '.ts', '.tsx'],
+  },
   externals: {
     'datagrok-api/dg': 'DG',
     'datagrok-api/grok': 'grok',
