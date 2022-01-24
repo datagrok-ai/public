@@ -10,7 +10,8 @@
     "npm": "^7.11.2",
     "save-svg-as-png": "^1.4.17",
     "ts-loader": "latest",
-    "typescript": "latest"
+    "typescript": "latest",
+    "openchemlib": "6.0.1"
   },
   "scripts": {
     "link-api": "npm link datagrok-api",
@@ -28,6 +29,10 @@
     "webpack": "^5.31.0",
     "webpack-cli": "^4.6.0"
   },
-  "canEdit": [ "Developers" ],
-  "canView": [ "All users" ]
+  "canEdit": [
+    "Developers"
+  ],
+  "canView": [
+    "All users"
+  ]
 }
