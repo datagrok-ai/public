@@ -7,10 +7,10 @@ import {convertToRDKit} from '../analysis/r-group-analysis';
 import rdKitLibVersion from '../rdkit_lib_version';
 //@ts-ignore
 import initRDKitModule from '../RDKit_minimal.js';
-import {RDModule} from "../rdkit-api";
+import {RDModule, RDMol} from "../rdkit-api";
 
-export let _rdKitModule: any = null;
-export let _rdKitService: RdKitService | null = null;
+export let _rdKitModule: RDModule;
+export let _rdKitService: RdKitService;
 export let _webRoot: string | null;
 let moduleInitialized = false;
 
@@ -21,6 +21,8 @@ export function setRdKitWebRoot(webRootValue: string) {
 export async function initRdKitModuleLocal() {
   _rdKitModule = await initRDKitModule(
     {locateFile: () => `${_webRoot}/dist/${rdKitLibVersion}.wasm`});
+  if (!_rdKitModule)
+    throw "RdKit Module is not loaded";
   _rdKitModule.prefer_coordgen(false);
   console.log('RDKit module package instance was initialized');
   moduleInitialized = true;
@@ -39,7 +41,9 @@ export function getRdKitModule(): RDModule {
 
 export async function getRdKitService() {
   await initRdKitService();
-  return _rdKitService!;
+  if (!_rdKitService)
+    throw "RdKit Service isn't initialized";
+  return _rdKitService;
 }
 
 export function getRdKitWebRoot() {
@@ -47,7 +51,7 @@ export function getRdKitWebRoot() {
 }
 
 export function drawRdKitMoleculeToOffscreenCanvas(
-  rdKitMol: any, w: number, h: number, offscreenCanvas: OffscreenCanvas, substruct: Object | null) {
+  rdKitMol: RDMol, w: number, h: number, offscreenCanvas: OffscreenCanvas, substruct: Object | null) {
   const opts = {
     'clearBackground': false,
     'offsetx': 0, 'offsety': 0,
@@ -65,7 +69,7 @@ export function drawRdKitMoleculeToOffscreenCanvas(
   };
   if (substruct)
     Object.assign(opts, substruct);
-  rdKitMol.draw_to_canvas_with_highlights(offscreenCanvas, JSON.stringify(opts));
+  rdKitMol.draw_to_canvas_with_highlights((offscreenCanvas as unknown) as HTMLCanvasElement, JSON.stringify(opts));
   // we need the offscreen canvas first to not let the molecule scaffold skew on a real canvas
 }
 

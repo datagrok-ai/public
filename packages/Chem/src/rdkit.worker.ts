@@ -4,9 +4,10 @@ import {RdKitServiceWorker as ServiceWorkerClass} from './rdkit-service/rdkit-se
 import initRDKitModule from './RDKit_minimal.js';
 //@ts-ignore
 import rdKitLibVersion from './rdkit_lib_version';
+import {RDModule} from './rdkit-api';
 
 const ctx: Worker = self as any;
-let _rdKitModule: any | null = null;
+let _rdKitModule: RDModule;
 let _rdKitServiceWorker: ServiceWorkerClass | null = null;
 
 ctx.addEventListener('message', async (e: any) => {
