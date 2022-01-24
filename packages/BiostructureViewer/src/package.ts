@@ -18,9 +18,10 @@ export async function biostructureApp() {
 }
 
 //name: Mol* BioStructure Viewer.
-//tags: app
-export async function molstarView() {
+//tags: viewer
+//input: string pdbID
+export async function molstarView(pdbID: string) {
   const pi = DG.TaskBarProgressIndicator.create('Opening BioStructure* Viewer');
-  await createViewer();
+  await createViewer(pdbID);
   pi.close();
 }

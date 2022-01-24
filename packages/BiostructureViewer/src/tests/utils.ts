@@ -7,12 +7,14 @@ export async function requireText(name: string): Promise<string> {
   return await _package.files.readAsText(name);
 }
 
+const _examplePDBID = '2V0A';
+
 /**
  * Tests if RCSB REST API returns any live data for a sample PDB id.
  *
- * @param {string} [pdbID='2V0A']
+ * @param {string} [pdbID=_examplePDBID]
  */
-export async function _testRCSBAlive(pdbID = '2V0A') {
+export async function _testRCSBAlive(pdbID = _examplePDBID) {
   const pdb = new PdbEntry(pdbID);
   let noException = true;
 
@@ -29,7 +31,7 @@ export async function _testRCSBAlive(pdbID = '2V0A') {
 
 /** Test if parsing of a sample PDB id is done properly. */
 export async function _testParseExamplePDBFile() {
-  const pdb = new PdbEntry('2V0A');
+  const pdb = new PdbEntry(_examplePDBID);
 
   await pdb.fetchInfo();
 
@@ -50,7 +52,7 @@ export async function _testMolstarViewerIsOpening() {
   let noException = true;
 
   try {
-    await createViewer();
+    await createViewer(_examplePDBID);
   } catch (error) {
     noException = false;
   }
