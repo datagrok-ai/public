@@ -15,20 +15,23 @@ jobs:
         with:
           java-version: '8'
           distribution: 'adopt'
+          cache: maven
       - name: Build with Maven
         working-directory: ./connectors
         run: mvn -Dmaven.test.skip=true package
       - name: Get version
         id: get_version
+        working-directory: ./connectors
         run: |
           VERSION=$(mvn help:evaluate -Dexpression=project.version -q -DforceStdout)
           echo "::set-output name=version::$VERSION"
       - name: Scan Grok Connect JAR
         uses: anchore/scan-action@v3
         with:
-          path: "connectors/grok_connect/target/grok_conect-${{ steps.get_version.outputs.version }}.jar"
+          path: "connectors/grok_connect/target/grok_connect-${{ steps.get_version.outputs.version }}.jar"
           fail-build: true
           severity-cutoff: critical
+          debug: true
 
   check_libraries:
     runs-on: ubuntu-20.04
@@ -41,3 +44,4 @@ jobs:
           path: "connectors/grok_connect/lib"
           fail-build: true
           severity-cutoff: critical
+          debug: true
