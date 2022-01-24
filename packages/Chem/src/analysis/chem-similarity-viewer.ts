@@ -5,6 +5,9 @@ import {Property} from 'datagrok-api/dg';
 import * as chemSearches from '../chem-searches';
 import {similarityMetric} from '@datagrok-libraries/utils/src/similarity-metrics';
 import $ from 'cash-dom';
+import {Fingerprint} from "../utils/chem-common";
+import {chem} from "datagrok-api/grok";
+import Sketcher = chem.Sketcher;
 
 export class ChemSimilarityViewer extends DG.JsViewer {
   moleculeColumnName: string;
@@ -23,6 +26,12 @@ export class ChemSimilarityViewer extends DG.JsViewer {
   fingerprint: string;
   gridSelect: boolean = false;
 
+  get targetMolecule(): string {
+    return this.isEditedFromSketcher
+      ? this.sketchedMolecule
+      : this.dataFrame?.getCol(this.moleculeColumnName).get(this.curIdx)
+  }
+
   constructor() {
     super();
 
@@ -34,21 +43,16 @@ export class ChemSimilarityViewer extends DG.JsViewer {
     this.hotSearch = this.bool('hotSearch', true);
     this.initialized = false;
     this.sketchButton = ui.button('Sketch', () => {
-      let mol = '';
       this.isEditedFromSketcher = true;
-      const sketcher = grok.chem.sketcher((smiles: string, molfile: string) => {
-        mol = smiles;
-        if (this.hotSearch) {
-          this.sketchedMolecule = mol;
-          this.render();
-        }
-      });
-      const dialog = ui.dialog().add(sketcher);
-      dialog.onOK(() => {
-        this.sketchedMolecule = mol;
-        this.render();
-      });
-      dialog.show();
+      const sketcher = new Sketcher();
+      sketcher.setMolecule(this.targetMolecule);
+      const dialog = ui.dialog()
+        .add(sketcher.root)
+        .onOK(() => {
+            this.sketchedMolecule = sketcher.getMolFile();
+            this.render();
+          })
+        .show();
     });
     this.sketchButton.id = 'reference';
     this.curIdx = 0;
@@ -72,18 +76,10 @@ export class ChemSimilarityViewer extends DG.JsViewer {
       this.subs.push(DG.debounce(this.dataFrame.onCurrentRowChanged, 50).subscribe(async (_) => await this.render()));
       this.subs.push(DG.debounce(this.dataFrame.selection.onChanged, 50).subscribe(async (_) => await this.render(false)));
       this.subs.push(DG.debounce(ui.onSizeChanged(this.root), 50).subscribe(async (_) => await this.render(false)));
-      for (const col of this.dataFrame.columns) {
-        if (col.semType == 'Molecule') {
-          this.moleculeColumnName = col.name;
-        }
-      }
+      this.moleculeColumnName = this.dataFrame.columns.bySemType(DG.SEMTYPE.MOLECULE).name;
     }
 
     await this.render();
-  }
-
-  detach() {
-    this.subs.forEach((sub) => sub.unsubscribe());
   }
 
   onPropertyChanged(property: Property): void {
@@ -99,19 +95,17 @@ export class ChemSimilarityViewer extends DG.JsViewer {
 
     if (this.dataFrame) {
       this.curIdx = this.dataFrame.currentRowIdx;
-      const targetMolecule = (this.isEditedFromSketcher ? this.sketchedMolecule : 
-        this.dataFrame?.getCol(this.moleculeColumnName).get(this.curIdx));
 
       if (computeData && !this.gridSelect) {
         const df = await chemSimilaritySearch(this.dataFrame, this.dataFrame?.getCol(this.moleculeColumnName),
-                   targetMolecule, this.distanceMetric, this.limit, this.minScore, this.fingerprint);
+                   this.targetMolecule, this.distanceMetric, this.limit, this.minScore, this.fingerprint as Fingerprint);
 
         this.molCol = df.getCol('smiles');
         this.idxs = df.getCol('indexes');
         this.scores = df.getCol('score');
-      } else if (this.gridSelect) {
-        this.gridSelect = false;
       }
+      else if (this.gridSelect)
+        this.gridSelect = false;
 
       if (this.root.hasChildNodes())
         this.root.removeChild(this.root.childNodes[0]);
@@ -119,9 +113,8 @@ export class ChemSimilarityViewer extends DG.JsViewer {
       const grids = []; 
       let cnt = 0, cnt2 = 0;
       panel[cnt++] = ui.h1('Reference');
-      panel[cnt++] = grok.chem.svgMol(targetMolecule, 200, 100);
+      panel[cnt++] = grok.chem.svgMol(this.targetMolecule, 200, 100);
       panel[cnt++] = this.sketchButton;
-      panel[cnt++] = ui.h1('Similar Structure');
       for (let i = 0; i < this.molCol.length; ++i) {
         const mol = grok.chem.svgMol(this.molCol?.get(i), 200, 100);
         const text = ui.label(`${this.scores.get(i).toPrecision(2)}`);
@@ -170,7 +163,7 @@ export async function chemSimilaritySearch(
   metricName: string,
   limit: number,
   minScore: number,
-  fingerprint: string
+  fingerprint: Fingerprint
 ) {
   limit = Math.min(limit, smiles.length);
   const targetFingerprint = chemSearches.chemGetFingerprint(molecule, fingerprint);

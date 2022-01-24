@@ -8,6 +8,7 @@ import {getDiverseSubset} from '@datagrok-libraries/utils/src/analysis';
 import {chemGetFingerprints} from '../chem-searches';
 import $ from 'cash-dom'
 import {ArrayUtils} from "@datagrok-libraries/utils/src/array-utils";
+import {Fingerprint} from "../utils/chem-common";
 
 export class ChemDiversityViewer extends DG.JsViewer {
   moleculeColumnName: string;
@@ -65,9 +66,8 @@ export class ChemDiversityViewer extends DG.JsViewer {
       return;
 
     if (this.dataFrame) {
-      if (computeData) {
-        this.renderMolIds = await chemDiversitySearch(this.dataFrame.getCol(this.moleculeColumnName), this.fpSim, this.limit, this.fingerprint);
-      }
+      if (computeData)
+        this.renderMolIds = await chemDiversitySearch(this.dataFrame.getCol(this.moleculeColumnName), this.fpSim, this.limit, this.fingerprint as Fingerprint);
 
       if (this.root.hasChildNodes())
         this.root.removeChild(this.root.childNodes[0]);
@@ -116,7 +116,7 @@ export class ChemDiversityViewer extends DG.JsViewer {
 }
 
 export async function chemDiversitySearch(smiles: DG.Column, similarity: (a: BitArray, b: BitArray) => number,
-                                          limit: number, fingerprint: string): Promise<number[]> {
+                                          limit: number, fingerprint: Fingerprint): Promise<number[]> {
 
   limit = Math.min(limit, smiles.length);
   let fingerprintCol = await chemGetFingerprints(smiles, fingerprint);
