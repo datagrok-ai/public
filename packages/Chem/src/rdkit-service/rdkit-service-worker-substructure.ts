@@ -31,7 +31,9 @@ export class RdKitServiceWorkerSubstructure extends RdKitServiceWorkerSimilarity
       try {
         mol = this._rdKitModule.get_mol(item);
         if (usePatternFingerprints) {
+          //TODO: get_pattern_fp doesn't work?
           const fpRdKit = mol.get_pattern_fp(this._patternFpLength);
+          //@ts-ignore: string is not uint8array
           fp = rdKitFingerprintToBitArray(fpRdKit);
         }
         if (normalizeCoordinates) {
@@ -77,7 +79,9 @@ export class RdKitServiceWorkerSubstructure extends RdKitServiceWorkerSimilarity
           }
           if (queryMol && queryMol.is_valid()) {
             if (this._patternFps) {
+              //TODO: get_pattern_fp doesn't work?
               const fpRdKit = queryMol.get_pattern_fp(this._patternFpLength);
+              //@ts-ignore: string is not uint8array
               const queryMolFp = rdKitFingerprintToBitArray(fpRdKit);
               for (let i = 0; i < this._patternFps.length; ++i) {
                 const crossedFp = BitArray.fromAnd(this._patternFps[i], queryMolFp);

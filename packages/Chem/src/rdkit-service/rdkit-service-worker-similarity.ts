@@ -23,7 +23,7 @@ export class RdKitServiceWorkerSimilarity extends RdKitServiceWorkerBase {
       const item = this._rdKitMols[i];
       let arr = new BitArray(this._fpLength);
       try {
-        const fp = this._rdKitMols[i].get_morgan_fp(this._fpRadius, this._fpLength);
+        const fp = this._rdKitMols[i].get_morgan_fp_as_uint8array(this._fpRadius, this._fpLength);
         arr = rdKitFingerprintToBitArray(fp);
       } catch (e) {
         // nothing to do, bit is already 0
