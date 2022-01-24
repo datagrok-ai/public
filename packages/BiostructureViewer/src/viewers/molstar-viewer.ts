@@ -33,13 +33,17 @@ const DefaultViewerOptions = {
   viewportShowControls: false,
 };
 
-/** Creates an instance of Mol* viewer. */
-export async function createViewer() {
+/**
+ * Creates an instance of Mol* viewer.
+ *
+ * @param {string} pdbID ID of an entity in PDB.
+ */
+export async function createViewer(pdbID: string) {
   const view = grok.shell.newView('Mol*');
   const viewerContainer = view.root;
   const v = new Viewer(viewerContainer, DefaultViewerOptions);
 
-  await v.loadPdb('2v0a');
+  await v.loadPdb(pdbID);
   //v.handleResize();
 }
 
