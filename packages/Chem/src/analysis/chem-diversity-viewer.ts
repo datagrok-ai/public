@@ -9,6 +9,7 @@ import {chemGetFingerprints} from '../chem-searches';
 import $ from 'cash-dom'
 import {ArrayUtils} from "@datagrok-libraries/utils/src/array-utils";
 import {Fingerprint} from "../utils/chem-common";
+import {renderMolecule} from "../rendering/render-molecule";
 
 export class ChemDiversityViewer extends DG.JsViewer {
   moleculeColumnName: string;
@@ -77,8 +78,10 @@ export class ChemDiversityViewer extends DG.JsViewer {
       let cnt = 0, cnt2 = 0;
       panel[cnt++] = ui.h1('Diverse structures');
       for (let i = 0; i < this.limit; ++i) {
-        const mol = grok.chem.svgMol(this.dataFrame.getCol(this.moleculeColumnName).get(this.renderMolIds[i]), 200, 100);
-        let grid = ui.div([mol], {style: {width: '200px', height: '100px', margin: '5px'}});
+        let grid = ui.div([
+          renderMolecule(this.dataFrame.getCol(this.moleculeColumnName).get(this.renderMolIds[i]))
+        ], {style: {width: '200px', height: '100px', margin: '5px'}});
+
         let divClass = 'd4-flex-col';
 
         if (this.renderMolIds[i] == this.dataFrame.currentRowIdx) {

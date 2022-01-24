@@ -26,6 +26,13 @@ export class GridCellRendererProxy extends DG.GridCellRenderer {
   get name(): string { return this.renderer.name; }
   get cellType(): string { return this._cellType; }
 
+  render(
+    g: CanvasRenderingContext2D, x: number, y: number, w: number, h: number,
+    gridCell: DG.GridCell, cellStyle: DG.GridCellStyle) {
+    this.renderer.render(g, x, y, w, h, gridCell, cellStyle);
+  }
+
+
   renderInternal(
     g: CanvasRenderingContext2D, x: number, y: number, w: number, h: number,
     gridCell: DG.GridCell, cellStyle: DG.GridCellStyle) {

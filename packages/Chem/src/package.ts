@@ -49,7 +49,7 @@ export const _package: DG.Package = new DG.Package();
 export let _properties: any;
 
 let _rdRenderer: RDKitCellRenderer;
-let _renderer: GridCellRendererProxy;
+export let renderer: GridCellRendererProxy;
 let _renderers: Map<string, DG.GridCellRenderer>;
 
 //tags: init
@@ -58,7 +58,7 @@ export async function initChem() {
   await chemCommonRdKit.initRdKitModuleLocal();
   _properties = await _package.getProperties();
   _rdRenderer = new RDKitCellRenderer(getRdKitModule());
-  _renderer = new GridCellRendererProxy(_rdRenderer, 'Molecule');
+  renderer = new GridCellRendererProxy(_rdRenderer, 'Molecule');
   _renderers = new Map();
   _properties = {};
 }
@@ -122,8 +122,8 @@ export async function chemCellRenderer() {
     }
   }
 
-  _renderer.renderer = renderer ?? _renderer.renderer;
-  return _renderer;
+  renderer.renderer = renderer ?? renderer.renderer;
+  return renderer;
 }
 
 //name: getMorganFingerprints
