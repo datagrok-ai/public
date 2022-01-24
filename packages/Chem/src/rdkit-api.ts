@@ -25,10 +25,8 @@ export interface RDMol {
   get_descriptors(): string;
 
   get_morgan_fp(radius?: number, len?: number): string;
-  get_morgan_fp_as_binary_text(radius?: number, len?: number): string;
-
-  get_rdkit_fp(radius?: number, len?: number): string;
-  get_pattern_fp(radius?: number, len?: number): string;
+  get_morgan_fp_as_uint8array(radius?: number, len?: number): string;
+  get_pattern_fp(len?: number): string;
 
   condense_abbreviations(maxCoverage?: number, useLinkers?: boolean): string;
   condense_abbreviations_from_defs(definitions: string, maxCoverage: number, areLinkers: boolean): string;
