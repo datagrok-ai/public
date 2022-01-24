@@ -1,1 +1,0 @@
-These sample files were taken from the NGLViewer repository for the demonstration purposes. The original location is https://github.com/nglviewer/ngl/tree/master/data

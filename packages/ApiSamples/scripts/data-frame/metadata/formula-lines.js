@@ -44,9 +44,9 @@ demog.meta.addFormulaBand({
   description: 'Band is a rectangle',  // Detailed description.
 
   // Band boundary formula.
-  // The formula can contain expressions of the form: "< 200", "> 50", "in(18, 60)", "in(q1, q3)".
+  // The formula can contain expressions of the form: "${colName} < 200", "${colName} > avg", "${colName} in(18, 60)", "${colName} in(q1, q3)".
   // The numbers are specified in the units of the column. in this case in centimeters.
-  formula: 'in(175, 185)',
+  formula: '${height} in(175, 185)',
 
   zIndex: -15,             // Line depth. The viewer's chart has a depth of 0.
   color: '#FFD700',        // Band background color.
@@ -54,7 +54,6 @@ demog.meta.addFormulaBand({
   opacity: 100,            // Opacity [0..100], where 0 - invisible, 100 - opaque.
 
   // Parameters specific to Bands:
-  column: 'height',     // Column for which the band is set.
   column2: 'weight'     // Second column for which the band will be drawn.
 });
 
@@ -148,8 +147,7 @@ demog.meta.addFormulaLine({
 demog.meta.addFormulaBand({
   title: 'Band 2',
   description: 'Second band',
-  column: 'weight',
-  formula: '< 80',
+  formula: '${weight} < 80',
   column2: 'height',
   zIndex: -45,
   color: '#FFC0CB',
@@ -160,8 +158,7 @@ demog.meta.addFormulaBand({
 demog.meta.addFormulaBand({
   title: 'Band 3',
   description: 'Another band',
-  column: 'weight',
-  formula: '> max',
+  formula: '${weight} > max',
   column2: 'height',
   zIndex: -45,
   color: '#7FFFD4',
