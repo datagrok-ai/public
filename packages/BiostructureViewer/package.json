@@ -2,7 +2,7 @@
 	"name": "biostructureviewer",
 	"beta": false,
 	"friendlyName": "BiostructureViewer",
-	"version": "0.2.2",
+	"version": "0.2.3",
 	"description": "",
 	"sources": [
 		"css/ngl.css",
