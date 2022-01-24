@@ -6,7 +6,7 @@ import {chemGetFingerprints} from '../chem-searches';
 //import {getRdKitWebRoot} from '../chem-common-rdkit';
 import {Coordinates} from '@datagrok-libraries/utils/src/type-declarations';
 import {createDimensinalityReducingWorker,} from '@datagrok-libraries/ml/src/workers/dimensionality-reducing-worker-creator';
-import {MetricDataTypes} from '@datagrok-libraries/ml/src/string-measure'
+import {MetricDataTypes} from '@datagrok-libraries/ml/src/string-measure';
 import {Fingerprint} from "../utils/chem-common";
 
 export async function chemSpace(table: DG.DataFrame, molColumn: DG.Column, methodName: string, similarityMetric: string) {
