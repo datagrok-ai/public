@@ -3,7 +3,7 @@ import * as ui from 'datagrok-api/ui';
 import * as grok from 'datagrok-api/grok';
 import * as DG from 'datagrok-api/dg';
 // The file is imported from a WebWorker. Don't use Datagrok imports
-import {getRdKitModule, drawMoleculeToCanvas, getRdKitWebRoot} from '../chem-common-rdkit';
+import {getRdKitModule, drawMoleculeToCanvas, getRdKitWebRoot} from '../utils/chem-common-rdkit';
 
 let _alertsSmarts: string[] = [];
 let _alertsDescriptions: string[] = [];

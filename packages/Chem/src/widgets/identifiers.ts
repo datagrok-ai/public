@@ -1,7 +1,7 @@
 import * as grok from 'datagrok-api/grok';
 import * as ui from 'datagrok-api/ui';
 import * as DG from 'datagrok-api/dg';
-import {getRdKitModule} from '../chem-common-rdkit';
+import {getRdKitModule} from '../utils/chem-common-rdkit';
 import {_package} from '../package';
 
 class UniChemSource {

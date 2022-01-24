@@ -78,6 +78,11 @@ export class GridCell {
     return new GridCell(api.grok_Grid_GetCell(grid.dart, columnName, gridRow));
   }
 
+  /** Returns a synthecic GridCell that only contains value but no row/col. Useful for rendering values. */
+  static fromValue(value: any): GridCell {
+    return new GridCell(api.grok_GridCell_FromValue(value));
+  }
+
   /** @returns {string} Cell type */
   get cellType(): string {
     return api.grok_GridCell_Get_CellType(this.dart);
@@ -594,7 +599,7 @@ export class CanvasRenderer {
    * @param {Object} value
    * @param {Object} context
    **/
-  render(g: CanvasRenderingContext2D, x: number, y: number, w: number, h: number, value: object, context: object): void {
+  render(g: CanvasRenderingContext2D, x: number, y: number, w: number, h: number, value: any, context: any): void {
     throw 'Not implemented';
   }
 }

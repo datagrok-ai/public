@@ -9,7 +9,7 @@ npm install
 npm link
 cd ../../libraries/ml
 npm install
-npm link
+npm link datagrok-api @datagrok-libraries/utils
 cd ../../packages/Chem
 npm install
 npm link datagrok-api @datagrok-libraries/utils @datagrok-libraries/ml 
