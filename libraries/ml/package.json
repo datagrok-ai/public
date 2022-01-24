@@ -8,7 +8,7 @@
   "description": "Machine learning supporting utilities",
   "dependencies": {
     "datagrok-api": ">=0.95.8",
-    "@datagrok-libraries/utils": ">=0.0.13",
+    "@datagrok-libraries/utils": ">=0.0.19",
     "cash-dom": "latest",
     "dayjs": "latest",
     "fastest-levenshtein": "^1.0.12",
