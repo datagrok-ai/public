@@ -8,6 +8,7 @@ on:
       - 'libraries/*/package.json'
 jobs:
   metadata:
+    name: Check version was changed
     runs-on: ubuntu-20.04
     outputs:
       matrix: ${{ steps.generate-matrix.outputs.matrix }}
@@ -77,6 +78,7 @@ jobs:
           echo "::set-output name=matrix::${MATRIX_JSON}"
 
   build:
+    name: Build and publish to npm
     needs: metadata
     if: needs.metadata.outputs.continue == 'yes'
     runs-on: ubuntu-latest

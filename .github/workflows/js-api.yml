@@ -6,6 +6,7 @@ on:
       - 'js-api/package.json'
 jobs:
   check:
+    name: Check version was changed
     runs-on: ubuntu-20.04
     outputs:
       changed_version: ${{ steps.check-version.outputs.changed_version }}
@@ -33,6 +34,7 @@ jobs:
           echo "::set-output name=changed_version::${changed_version}"
 
   build:
+    name: Build and publish to npm
     runs-on: ubuntu-20.04
     needs: check
     if: needs.check.outputs.changed_version == 'true'
