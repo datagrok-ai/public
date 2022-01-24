@@ -3,6 +3,8 @@ import {_testSearchSubstructure, _testSearchSubstructureAllParameters, _testSear
 import * as DG from "datagrok-api/dg";
 import * as grok from "datagrok-api/grok";
 import * as ui from "datagrok-api/ui";
+import {findMCS} from "../scripts-api";
+import * as P from '../package';
 
 category('chem', () => {
 
@@ -106,6 +108,24 @@ O=C1CN=C(c2ccccc2N1CC3CCCCC3)C4CCCCC4
 O=C1CN=C(c2cc(Cl)ccc2N1)C3CCCCC3
 CN1C(=O)CN=C(c2cc(Cl)ccc12)C3CCCCC3`);
     await grok.chem.mcs(t.col('smiles')!);
+  });
+
+  test('testMcsPanel', async () => {
+    let t = DG.DataFrame.fromCsv(`smiles
+      O=C1CN=C(c2ccccc2N1)C3CCCCC3
+      CN1C(=O)CN=C(c2ccccc12)C3CCCCC3
+      CCCCN1C(=O)CN=C(c2ccccc12)C3CCCCC3
+      CC(C)CCN1C(=O)CN=C(c2ccccc12)C3CCCCC3
+      O=C1CN=C(c2ccccc2N1CC3CCCCC3)C4CCCCC4
+      O=C1CN=C(c2cc(Cl)ccc2N1)C3CCCCC3
+      CN1C(=O)CN=C(c2cc(Cl)ccc12)C3CCCCC3`);
+
+    let v = grok.shell.addTableView(t);
+    P.addMcsPanel(t.columns['smiles']);
+    v.close();
+    
+//const mcs: string = await findMCS('smiles', t);
+//t.columns.add(mcs);
   });
 
   test('testRendering', async () => {

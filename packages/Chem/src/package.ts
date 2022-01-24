@@ -285,24 +285,24 @@ export async function descriptorsPanel(smiles: DG.Column) {
   addDescriptors(smiles, table);
 }
 
-//name: Chem | Find MCS Port
-//friendly-name: Chem | Find MCS Port
+//name: Chem | Find MCS
+//friendly-name: Chem | Find MCS
 //tags: panel, chem
 //input: column col {semType: Molecule}
 export function addMcsPanel(col: DG.Column) {
   addMcs(col);
 }
 
-//name: Chem | To InchI Port
-//friendly-name: Chem | To InchI Port
+//name: Chem | To InchI
+//friendly-name: Chem | To InchI
 //tags: panel, chem
 //input: column col {semType: Molecule}
 export function addInchisPanel(col: DG.Column) {
   addInchis(col);
 }
 
-//name: Chem | To InchI Keys Port
-//friendly-name: Chem | To InchI Keys Port
+//name: Chem | To InchI Keys
+//friendly-name: Chem | To InchI Keys
 //tags: panel, chem
 //input: column col {semType: Molecule}
 export function addInchisKeysPanel(col: DG.Column) {
