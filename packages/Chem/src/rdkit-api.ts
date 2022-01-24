@@ -69,3 +69,4 @@ export interface SubstructLibrary {
   get_matches(qmol: RDMol, useChirality?: boolean, numThreads?: number, maxResults?: number): string;
   count_matches(qmol: RDMol, useChirality?: boolean, numThreads?: number): number;
 }
+

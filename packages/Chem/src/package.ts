@@ -406,7 +406,7 @@ export async function identifiers(smiles: string) {
 //input: string to {choices:["smiles", "molblock", "inchi", "v3Kmolblock"]}
 //output: string result {semType: Molecule}
 export function convertMolecule(molecule: string, from: string, to: string): string {
-  return _convertMolecule(molecule, to, from);
+  return _convertMolecule(molecule, to, from, getRdKitModule());
 }
 
 
