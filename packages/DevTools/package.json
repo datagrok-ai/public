@@ -5,11 +5,11 @@
 	"version": "1.2.3",
 	"description": "",
 	"dependencies": {
+		"@datagrok-libraries/utils": "latest",
 		"@types/codemirror": "^5.60.5",
 		"codemirror": "^5.65.0",
 		"datagrok-api": ">=0.99.0",
-		"rxjs": "^7.5.1",
-		"@datagrok-libraries/utils": "latest"
+		"rxjs": "^7.5.1"
 	},
 	"devDependencies": {
 		"cash-dom": "^8.1.0",
@@ -35,6 +35,10 @@
 		"common/codemirror/codemirror.js",
 		"common/codemirror/codemirror.css"
 	],
-	"canEdit": [ "Developers" ],
-	"canView": [ "All users" ]
+	"canEdit": [
+		"Developers"
+	],
+	"canView": [
+		"All users"
+	]
 }
