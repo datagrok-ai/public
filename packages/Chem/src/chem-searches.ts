@@ -1,9 +1,12 @@
 import * as DG from 'datagrok-api/dg';
 import {getRdKitModule, getRdKitService} from './utils/chem-common-rdkit';
 import {
-  rdKitFingerprintToBitArray,
-  defaultMorganFpRadius, defaultMorganFpLength,
-  chemBeginCriticalSection, chemEndCriticalSection
+  chemBeginCriticalSection,
+  chemEndCriticalSection,
+  defaultMorganFpLength,
+  defaultMorganFpRadius,
+  Fingerprint,
+  rdKitFingerprintToBitArray
 } from './utils/chem-common';
 import BitArray from '@datagrok-libraries/utils/src/bit-array';
 import {tanimotoSimilarity} from '@datagrok-libraries/utils/src/similarity-metrics';
@@ -45,7 +48,7 @@ function _chemFindSimilar(molStringsColumn: DG.Column,
 function _chemGetSimilarities(queryMolString: string) {
   const fingerprints = _chemCache.morganFingerprints!;
   const distances = new Array(fingerprints.length).fill(0.0);
-  const sample = chemGetFingerprint(queryMolString, 'Morgan');
+  const sample = chemGetFingerprint(queryMolString, Fingerprint.Morgan);
   for (let i = 0; i < fingerprints.length; ++i)
     distances[i] = tanimotoSimilarity(fingerprints[i], sample);
   return distances;
@@ -59,7 +62,7 @@ class CacheParams {
   moleculesWereIndexed: boolean | null = false;
   morganFingerprintsWereIndexed: boolean | null = false;
   morganFingerprints: BitArray[] | null = null;
-};
+}
 
 const _chemCache = new CacheParams();
 
@@ -189,20 +192,20 @@ export async function chemSubstructureSearchLibrary(
   }
 }
 
-export function chemGetFingerprint(molString: string, fingerprint: string): BitArray {
+export function chemGetFingerprint(molString: string, fingerprint: Fingerprint): BitArray {
   let mol = null;
   try {
     mol = getRdKitModule().get_mol(molString);
     let fp;
-    if (fingerprint == 'Morgan')
+    if (fingerprint == Fingerprint.Morgan)
       fp = mol.get_morgan_fp(defaultMorganFpRadius, defaultMorganFpLength);
-    else if (fingerprint == 'RDKit')
+    else if (fingerprint == Fingerprint.RDKit)
       fp = mol.get_rdkit_fp(defaultMorganFpRadius, defaultMorganFpLength);
-    else if (fingerprint == 'Pattern')
+    else if (fingerprint == Fingerprint.Pattern)
       fp = mol.get_pattern_fp(defaultMorganFpRadius, defaultMorganFpLength);
-    else {
+    else
       throw new Error(`${fingerprint} does not match any fingerprint`);
-    }
+
     return rdKitFingerprintToBitArray(fp);
   } catch {
     throw new Error(`Chem | Possibly a malformed molString: ${molString}`);
@@ -211,7 +214,7 @@ export function chemGetFingerprint(molString: string, fingerprint: string): BitA
   }
 }
 
-export async function chemGetFingerprints(molStringsColumn: DG.Column, fingerprint: string): Promise<BitArray[]> {
+export async function chemGetFingerprints(molStringsColumn: DG.Column, fingerprint: Fingerprint): Promise<BitArray[]> {
   const len = molStringsColumn.length;
   let fingerprints: BitArray[] = [];
   const fallbackCountForSyncExecution = 150;

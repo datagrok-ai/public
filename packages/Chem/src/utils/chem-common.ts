@@ -6,6 +6,12 @@ export const defaultMorganFpLength = 2048;
 const lockPromiseForKey: any = {};
 const unlockFunctionForKey: any = {};
 
+export enum Fingerprint {
+  Morgan = 'Morgan',
+  RDKit = 'RDKit',
+  Pattern = 'Pattern'
+}
+
 // By https://github.com/mistval/locko
 
 export async function criticalSectionBegin(key: string) {
