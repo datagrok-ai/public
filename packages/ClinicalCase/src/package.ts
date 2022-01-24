@@ -277,7 +277,8 @@ export async function clinicalCaseFolderLauncher(folder: DG.FileInfo, files: DG.
       ui.button('Run ClinicalCase', async () => {
         await Promise.all(files.map(async (file) => {
           if(domains.includes(file.fileName.toLowerCase())){
-            await grok.data.files.openTable(`${folder.fullPath}/${file.fileName.toLowerCase()}`);
+            const df = await grok.data.files.openTable(`${folder.fullPath}/${file.fileName.toLowerCase()}`);
+            grok.shell.addTableView(df);
           }
         }));
         grok.functions.call("Clinicalcase:clinicalCaseApp");
