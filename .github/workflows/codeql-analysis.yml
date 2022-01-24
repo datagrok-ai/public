@@ -13,8 +13,6 @@ jobs:
     name: CodeQL static analysis
     runs-on: ubuntu-20.04
     permissions:
-      actions: read
-      contents: read
       security-events: write
     strategy:
       fail-fast: false
@@ -43,13 +41,11 @@ jobs:
     runs-on: ubuntu-20.04
     name: Anchore vulnerability scan
     permissions:
-      actions: read
-      contents: read
       security-events: write
     steps:
       - name: Checkout
         uses: actions/checkout@v2
-      - name: Scan Grok Connect
+      - name: Scan
         uses: anchore/scan-action@v3
         id: scan
         with:
@@ -57,6 +53,10 @@ jobs:
           fail-build: true
           severity-cutoff: high
           acs-report-enable: true
+      - if: always()
+        run: |
+          ls -lah .
+          ls -lah ${{ steps.scan.outputs.sarif }}
       - name: Upload Anchore scan SARIF report
         if: always()
         uses: github/codeql-action/upload-sarif@v1
