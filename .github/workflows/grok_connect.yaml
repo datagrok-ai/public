@@ -5,7 +5,7 @@ on:
     paths:
       - 'connectors/grok_connect/**'
 jobs:
-  check_grok_connnect:
+  check_jar:
     runs-on: ubuntu-20.04
     steps:
       - name: Checkout
@@ -16,6 +16,7 @@ jobs:
           java-version: '8'
           distribution: 'adopt'
       - name: Build with Maven
+        working-directory: ./connectors
         run: mvn -Dmaven.test.skip=true package
       - name: Get version
         id: get_version
@@ -29,7 +30,7 @@ jobs:
           fail-build: true
           severity-cutoff: critical
 
-  check_grok_connnect_libraries:
+  check_libraries:
     runs-on: ubuntu-20.04
     steps:
       - name: Checkout
