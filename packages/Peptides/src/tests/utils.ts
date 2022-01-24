@@ -32,8 +32,17 @@ export async function _testViewerIsDrawing(table: DG.DataFrame, view: DG.TableVi
  * @param {string} measure Measure to apply to a pair of strings.
  */
 export async function _testDimensionalityReducer(columnData: Array<string>, method: string, measure: string) {
+  let noException = true;
   const cyclesCount = 100;
-  const embcols = await createDimensinalityReducingWorker(columnData, method, measure, cyclesCount);
+  let embcols;
+
+  try {
+    embcols = await createDimensinalityReducingWorker(columnData, method, measure, cyclesCount);
+  } catch (error) {
+    noException = false;
+  }
+  expect(noException, true);
+
   const [X, Y] = embcols as Array<Float32Array>;
 
   expect(X.every((v) => v !== null && v !== NaN), true);
@@ -58,20 +67,28 @@ export async function _testPeptideSimilaritySpaceViewer(
   method: string,
   measure: string,
   cyclesCount: number,
-  //view: DG.TableView | null,
-  //activityColumnName?: string | null,
 ) {
-  const viewer = await createPeptideSimilaritySpaceViewer(
-    table,
-    alignedSequencesColumn,
-    method,
-    measure,
-    cyclesCount,
-    null, //    view,
-    //    activityColumnName,
-  );
-  const df = viewer.dataFrame;
   let noException = true;
+  let viewer;
+  let df: DG.DataFrame;
+
+  try {
+    viewer = await createPeptideSimilaritySpaceViewer(
+      table,
+      alignedSequencesColumn,
+      method,
+      measure,
+      cyclesCount,
+      null,
+    );
+    df = viewer.dataFrame!;
+  } catch (error) {
+    noException = false;
+  }
+
+  expect(noException, true);
+
+  noException = true;
 
   try {
     const axesNames = ['~X', '~Y', '~MW'];
