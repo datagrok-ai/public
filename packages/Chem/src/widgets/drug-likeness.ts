@@ -1,7 +1,7 @@
 import * as ui from 'datagrok-api/ui';
 import * as DG from 'datagrok-api/dg';
 import * as OCL from 'openchemlib/full.js';
-import {oclMol, renderDescription} from '../chem-common-ocl';
+import {oclMol, renderDescription} from '../utils/chem-common-ocl';
 
 const _dlp = new OCL.DruglikenessPredictor();
 

@@ -124,8 +124,8 @@ class Table {
       showContextMenu: false
     });
 
-    this._grid.columns.byName('title')!.width = 100;
-    this._grid.columns.byName('formula')!.width = 217;
+    this._grid.columns.byName('title')!.width = 140;
+    this._grid.columns.byName('formula')!.width = 240;
     this._grid.columns.byName('visible')!.width = 50;
 
     let ctrlCol = this._grid.columns.byName('new')!;
@@ -189,7 +189,7 @@ class Preview {
 
   // Sets the corresponding axes:
   _setAxes(item: DG.FormulaLine): void {
-    let [itemY, itemX] = this._scatterPlot.meta.getFormulaLineAxes(item);
+    let [itemY, itemX] = this._scatterPlot.meta.getFormulaLineAxes(item, this.dataFrame!);
     let [previewY, previewX] = [itemY, itemX];
 
     // If the source is a Scatter Plot, then we try to set similar axes:
@@ -259,6 +259,7 @@ class Preview {
  */
 class Editor {
   _form: HTMLElement;
+  _dataFrame: DG.DataFrame;
 
   // Set of properties for different Formula Line types:
   _props = {
@@ -276,8 +277,12 @@ class Editor {
 
   get root(): HTMLElement { return this._form; }
 
-  constructor() {
+  constructor(dataFrame?: DG.DataFrame) {
+    if (!dataFrame)
+      throw 'Undefined source DataFrame.';
+
     this._form = ui.form();
+    this._dataFrame = dataFrame;
   }
 
   // Creates and fills editor for given Formula Line:
@@ -285,10 +290,136 @@ class Editor {
     if (this._form == undefined)
       return;
 
-    let newForm = ui.input.form(item, this._getItemProps(item));
+    // let newForm = ui.input.form(item, this._getItemProps(item));
+    let newForm = this._createForm(item);
 
     this._form.replaceWith(newForm);
     this._form = newForm;
+  }
+
+  _inputFormula(formula?: string): HTMLElement {
+    let ibFormula = ui.textInput('', formula ?? '');
+    let elFormula = ibFormula.input as HTMLInputElement;
+        elFormula.placeholder = 'Formula';
+        elFormula.style.width = '320px';
+        elFormula.style.height = '170px';
+    ui.tools.initFormulaAccelerators(ibFormula, this._dataFrame);
+    return ibFormula.root;
+  }
+
+  _inputColor(color?: string): HTMLElement {
+    let ibColor = ui.stringInput('Color', color ?? '#000000');
+    let elColor = ibColor.input as HTMLInputElement;
+        elColor.style.maxWidth = 'none';
+        elColor.style.width = '204px';
+    return ui.divH([ibColor.root]);
+  }
+
+  _inputOpacity(opacity?: number): HTMLElement {
+    let ibOpacity = ui.element('input');
+        ibOpacity.type = 'range';
+        ibOpacity.min = 0;
+        ibOpacity.max = 100;
+        ibOpacity.value = opacity ?? 100;
+        ibOpacity.style.width = '204px';
+        ibOpacity.style.marginLeft = '0px';
+        ibOpacity.style.marginTop = '6px';
+    let label = ui.label('Opacity', 'ui-label ui-input-label');
+    return ui.divH([ui.div([label, ibOpacity], 'ui-input-root')]);
+  }
+
+  _inputStyle(style?: string, width?: number): HTMLElement {
+    let ibStyle = ui.choiceInput('Style', style ?? 'solid', ['solid', 'dotted', 'dashed', 'longdash', 'dotdash']);
+    let elStyle = ibStyle.input as HTMLInputElement;
+        elStyle.style.width = '135px';
+    let ibWidth = ui.intInput('', width ?? 1);
+    let elWidth = ibWidth.input as HTMLInputElement;
+        elWidth.style.width = '61px';
+        elWidth.style.paddingRight = '24px';
+    let unit = ui.divText('px', {style: {marginTop: '10px', marginLeft: '-24px', zIndex: '1000'} });
+    return ui.divH([ibStyle.root, ibWidth.root, unit]);
+  }
+
+  _inputRange(min?: number, max?: number): HTMLElement {
+    let ibMin = ui.stringInput('Range', `${min ?? ''}`);
+    let elMin = ibMin.input as HTMLInputElement;
+        elMin.placeholder = 'min';
+        elMin.style.width = '98px';
+    let ibMax = ui.stringInput('', `${max ?? ''}`);
+    let elMax = ibMax.input as HTMLInputElement;
+        elMax.placeholder = 'max';
+        elMax.style.width = '98px';
+    return ui.divH([ibMin.root, ibMax.root]);
+  }
+
+  _inputArrange(zIndex?: number): HTMLElement {
+    let ibArrange = ui.choiceInput('Arrange', zIndex && zIndex > 0 ? 'above markers' : 'below markers', ['above markers', 'below markers']);
+    let elArrange = ibArrange.input as HTMLInputElement;
+        elArrange.style.maxWidth = 'none';
+        elArrange.style.width = '204px';
+    return ui.divH([ibArrange.root]);
+  }
+
+  _inputTitle(title?: string): HTMLElement {
+    let ibTitle = ui.stringInput('Title', title ?? '');
+    let elTitle = ibTitle.input as HTMLInputElement;
+        elTitle.style.maxWidth = 'none';
+        elTitle.style.width = '204px';
+    return ui.divH([ibTitle.root]);
+  }
+
+  _inputDescription(description?: string): HTMLElement {
+    let ibDescription = ui.textInput('Description', description ?? '');
+    let elDescription = ibDescription.input as HTMLInputElement;
+        elDescription.style.width = '194px';
+        elDescription.style.height = '50px';
+        elDescription.style.paddingLeft = '6px';
+        elDescription.style.marginRight = '-8px';
+        elDescription.style.fontFamily = 'inherit';
+        elDescription.style.fontSize = 'inherit';
+    return ibDescription.root;
+  }
+
+  _inputColumn(column?: string): HTMLElement {
+    let ibColumn = ui.columnInput('Column', this._dataFrame, column ? this._dataFrame.col(column) : null);
+    let elColumn = ibColumn.input as HTMLInputElement;
+        elColumn.style.maxWidth = 'none';
+        elColumn.style.width = '204px';
+    return ui.divH([ibColumn.root]);
+  }
+
+  _inputColumn2(column2?: string): HTMLElement {
+    let ibColumn2 = ui.columnInput('Column', this._dataFrame, column2 ? this._dataFrame.col(column2) : null);
+    let elColumn2 = ibColumn2.input as HTMLInputElement;
+        elColumn2.style.maxWidth = 'none';
+        elColumn2.style.width = '204px';
+    return ui.divH([ibColumn2.root]);
+  }
+
+  _createForm(item?: DG.FormulaLine): HTMLElement {
+    let type = item?.type ?? 'line';
+
+    let inputFormula = this._inputFormula(item?.formula);
+
+    let formatPane = ui.div([], 'ui-form');
+        formatPane.style.marginLeft = '-60px';
+        formatPane.append(this._inputColor(item?.color));
+        formatPane.append(this._inputOpacity(item?.opacity));
+        if (type == 'line')
+          formatPane.append(this._inputStyle(item?.style, item?.width));
+        formatPane.append(this._inputRange(item?.min, item?.max));
+        formatPane.append(this._inputArrange(item?.zIndex));
+
+    let tooltipPane = ui.div([], 'ui-form');
+        tooltipPane.style.marginLeft = '-60px';
+        tooltipPane.append(this._inputTitle(item?.title));
+        tooltipPane.append(this._inputDescription(item?.description));
+
+    let accordion = ui.accordion();
+    accordion.addPane('Format', () => formatPane, true);
+    accordion.addPane('Tooltip', () => tooltipPane, true);
+
+    return ui.div([inputFormula, accordion.root]);
   }
 }
 
@@ -313,19 +444,19 @@ export class FormulaLinesDialog {
   constructor(src: DG.DataFrame | DG.Viewer) {
     this.host = new Host(src);
     this.preview = new Preview(src);
-    this.editor = new Editor();
+    this.editor = new Editor(this.preview.dataFrame);
     this.table = new Table(this.host.items, this.onCurrentItemChangedAction.bind(this));
     this.dialog = ui.dialog({ title: this.title, helpUrl: this.helpUrl });
 
     // Create Dialog window layout:
     let layout = ui.div([
-      ui.block50([
+      ui.block([
         this.table.root,
         this.preview.root
-      ]),
-      ui.block50([
+      ], { style: { width: '60%', paddingRight: '20px' } }),
+      ui.block([
         this.editor.root
-      ])
+      ], { style: { width: '40%' } })
     ]);
 
     this.table.height = 230;

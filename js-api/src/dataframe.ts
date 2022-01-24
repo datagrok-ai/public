@@ -2056,7 +2056,7 @@ export interface FormulaLine {
   color?: string;
   visible?: boolean;
   opacity?: number;
-  zindex?: number;
+  zIndex?: number;
   min?: number;
   max?: number;
   formula?: string;
@@ -2067,7 +2067,6 @@ export interface FormulaLine {
   style?: string;
 
   // Specific to bands:
-  column?: string;
   column2?: string;
 }
 
@@ -2098,7 +2097,7 @@ export class DataFrameMetaHelper {
   }
 
   addFormulaItem(item: FormulaLine): void {
-    this.formulaLines.push(toJs(api.grok_FormulaLineHelper_AddDefaults(item)));
+    this.formulaLines.push(toJs(api.grok_FormulaHelper_AddDefaults(item)));
     this.addFormulaLines(this.formulaLines);
   }
 
@@ -2125,11 +2124,9 @@ export class DataFrameMetaHelper {
     this.addFormulaLines(this.formulaLines);
   }
 
-  getFormulaLineAxes(item: FormulaLine): String[] {
-    if (item.type == 'line')
-      return api.grok_FormulaLineHelper_GetAxes(item.formula);
-    else // if (item.type == 'band')
-      return [item.column2!, item.column!];
+  getFormulaLineAxes(item: FormulaLine, dataFrame: DataFrame): String[] {
+    let axes: String[] = api.grok_FormulaHelper_GetAxes(item.formula, item.type, dataFrame.dart);
+    return item.type == 'line' ? axes : [item.column2!, axes[1]];
   }
 }
 
