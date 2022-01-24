@@ -699,6 +699,10 @@ export function textInput(name: string, value: string, onValueChanged: Function 
   return new InputBase(api.grok_TextInput(name, value), onValueChanged);
 }
 
+export function colorInput(name: string, value: string, onValueChanged: Function | null = null): InputBase {
+  return new InputBase(api.grok_ColorInput(name, value), onValueChanged);
+}
+
 /**
  * Sample: {@link https://public.datagrok.ai/js/samples/ui/ui-events}
  * @param {HTMLElement} element
