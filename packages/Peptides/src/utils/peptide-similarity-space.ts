@@ -175,9 +175,10 @@ export class PeptideSimilaritySpaceWidget {
    * @memberof PeptideSimilaritySpaceWidget
    */
   protected async updateViewer() {
-    this.viewer.lastChild?.remove();
     const viewer = await this.drawViewer();
+    this.viewer.lastChild?.remove();
     this.viewer.appendChild(viewer.root);
+    viewer.dataFrame?.fireValuesChanged();
   }
 
   /**
