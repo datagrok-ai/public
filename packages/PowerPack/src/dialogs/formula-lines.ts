@@ -379,7 +379,6 @@ class Editor {
     let ibColor = ui.colorInput('Color', item.color ?? '#000000', (value: string) => {
       item.color = value;
       this._onChangedAction(itemIdx);
-      console.log(value);
     });
 
     let elColor = ibColor.input as HTMLInputElement;
