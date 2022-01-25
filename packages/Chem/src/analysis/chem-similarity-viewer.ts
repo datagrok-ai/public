@@ -49,7 +49,7 @@ export class ChemSimilarityViewer extends DG.JsViewer {
       ui.dialog()
         .add(sketcher.root)
         .onOK(() => {
-          this.isEditedFromSketcher = true;
+            this.isEditedFromSketcher = true;
             this.sketchedMolecule = sketcher.getMolFile();
             this.render();
           })
@@ -90,6 +90,9 @@ export class ChemSimilarityViewer extends DG.JsViewer {
       return;
 
     if (this.dataFrame) {
+      if (!this.gridSelect && this.curIdx != this.dataFrame.currentRowIdx) {
+        this.isEditedFromSketcher = false;
+      }
       this.curIdx = this.dataFrame.currentRowIdx;
 
       if (computeData && !this.gridSelect) {
@@ -146,7 +149,6 @@ export class ChemSimilarityViewer extends DG.JsViewer {
                 this.dataFrame.selection.set(this.idxs.get(i), !selected.get(this.idxs.get(i)));
               } else {
                 this.dataFrame.currentRowIdx = this.idxs.get(i);
-                this.isEditedFromSketcher = false;
                 this.gridSelect = true;
               }
             }
