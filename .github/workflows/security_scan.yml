@@ -109,7 +109,7 @@ jobs:
             "Fixed Version",
             "From"
           ],
-            (.matches[] | [
+          (.matches | group_by(.vulnerability.severity)[][]| [
             .vulnerability.id,
             .vulnerability.dataSource,
             .vulnerability.severity,
