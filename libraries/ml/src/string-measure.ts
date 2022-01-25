@@ -52,6 +52,14 @@ export class StringMeasure {
     return AvailableMetrics[this.method];
   }
 
+  /**
+   * Returns custom string distance function specified.
+   * @return {string[]} Callback of the measure chosen.
+   */
+  public static getMetricByDataType(dataType: string): string[] {
+    return MetricDataTypes[dataType];
+  }
+
   /** Returns metric names available. */
   static get availableMeasures(): string[] {
     return Object.keys(AvailableMetrics);
