@@ -20,7 +20,7 @@ import {filter} from "rxjs/operators";
 import {Widget} from "./widgets";
 import {Grid} from "./grid";
 import {ScatterPlotViewer, Viewer} from "./viewer";
-import {Property} from "./entities";
+import {Property, TableInfo} from "./entities";
 
 declare let grok: any;
 declare let DG: any;
@@ -500,6 +500,10 @@ export class DataFrame {
 
   getDensity(xBins: number, yBins: number, xColName: string, yColName: string): Int32Array {
     return api.grok_MathActions_GetDensity(this.dart, xBins, yBins, xColName, yColName);
+  }
+
+  getTableInfo(): TableInfo {
+    return toJs(api.grok_DataFrame_Get_TableInfo(this.dart));
   }
 }
 

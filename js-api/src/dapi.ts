@@ -650,6 +650,14 @@ export class ProjectsDataSource extends HttpDataSource<Project> {
       .first()
       .then(p => p.open(options));
   }
+
+  /** Saves the Project */
+  save(e: Entity, options?: {saveRelations?: boolean}): Promise<Project> {
+    options ??= {};
+    options.saveRelations ??= true;
+    return toJs(api.grok_ProjectsDataSource_Save(this.dart, e.dart, options!.saveRelations));
+  }
+
 }
 
 /**
