@@ -8,9 +8,10 @@ import { ILazyLoading } from '../lazy-loading/lazy-loading';
 import { checkMissingDomains } from './utils';
 import { _package } from '../package';
 import { requiredColumnsByView } from '../constants';
+import { ClinicalCaseViewBase } from '../model/ClinicalCaseViewBase';
 
 
-export class AdverseEventsView extends DG.ViewBase implements ILazyLoading {
+export class AdverseEventsView extends ClinicalCaseViewBase {
 
   aeWithArm: DG.DataFrame;
 
@@ -21,12 +22,6 @@ export class AdverseEventsView extends DG.ViewBase implements ILazyLoading {
     //@ts-ignore
     this.basePath = '/adverse-events';
   }
-
-  loaded = false;
-
-  load(): void {
-    checkMissingDomains(requiredColumnsByView[this.name], this);
- }
 
   createView(): void {
     this.aeWithArm = addDataFromDmDomain(study.domains.ae.clone(), study.domains.dm, study.domains.ae.columns.names(), [TREATMENT_ARM]);

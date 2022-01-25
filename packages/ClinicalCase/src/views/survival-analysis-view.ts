@@ -4,12 +4,12 @@ import * as grok from 'datagrok-api/grok';
 import * as ui from "datagrok-api/ui";
 import { study } from "../clinical-study";
 import { AE_CAUSALITY, AE_REQ_HOSP, AE_SEQ, AE_SEVERITY, AE_START_DATE, AGE, DEATH_DATE, RACE, SEX, SUBJECT_ID, SUBJ_REF_ENDT, TREATMENT_ARM } from "../columns-constants";
-import { requiredColumnsByView, SURVIVAL_ANALYSIS_GUIDE } from "../constants";
+import { SURVIVAL_ANALYSIS_GUIDE } from "../constants";
 import { createSurvivalData } from "../data-preparation/data-preparation";
 import { dataframeContentToRow } from "../data-preparation/utils";
-import { ILazyLoading } from "../lazy-loading/lazy-loading";
+import { ClinicalCaseViewBase } from "../model/ClinicalCaseViewBase";
 import { _package } from "../package";
-import { checkMissingDomains, updateDivInnerHTML } from "./utils";
+import { updateDivInnerHTML } from "./utils";
 
 let colsRequiredForEndpoints = {
   'SAE': {'ae': [ AE_START_DATE, SUBJECT_ID, AE_SEVERITY, AE_SEQ] },
@@ -17,7 +17,7 @@ let colsRequiredForEndpoints = {
   'HOSPITALIZATION': {'ae': [ AE_START_DATE, SUBJECT_ID, AE_REQ_HOSP, AE_SEVERITY, AE_SEQ] },
   'DRUG RELATED AE': {'ae': [ AE_START_DATE, SUBJECT_ID, AE_CAUSALITY, AE_SEVERITY, AE_SEQ] },
 }
-export class SurvivalAnalysisView extends DG.ViewBase implements ILazyLoading {
+export class SurvivalAnalysisView extends ClinicalCaseViewBase {
 
   survivalPlotDiv = ui.box();
   covariatesPlotDiv = ui.box();
@@ -50,12 +50,6 @@ export class SurvivalAnalysisView extends DG.ViewBase implements ILazyLoading {
     this.name = name;
     this.helpUrl = `${_package.webRoot}/views_help/survival_analysis.md`;
   }
-
-  loaded = false;
-
-  load(): void {
-    checkMissingDomains(requiredColumnsByView[this.name], this);
- }
 
   createView(): void {
     this.updateEndpointOptions();

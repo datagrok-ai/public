@@ -2,15 +2,14 @@ import * as grok from 'datagrok-api/grok';
 import * as DG from "datagrok-api/dg";
 import * as ui from "datagrok-api/ui";
 import { study } from "../clinical-study";
-import { ILazyLoading } from '../lazy-loading/lazy-loading';
-import { checkMissingDomains, updateDivInnerHTML } from './utils';
+import { updateDivInnerHTML } from './utils';
 import { _package } from '../package';
 import { getUniqueValues } from '../data-preparation/utils';
 import { LAB_RES_N, LAB_TEST, VISIT_NAME, SUBJECT_ID, VS_TEST, VS_RES_N } from '../columns-constants';
-import { requiredColumnsByView } from '../constants';
+import { ClinicalCaseViewBase } from '../model/ClinicalCaseViewBase';
 
 
-export class MatrixesView extends DG.ViewBase implements ILazyLoading {
+export class MatrixesView extends ClinicalCaseViewBase {
 
   matrixPlot: any;
   martixPlotDiv = ui.box();
@@ -32,10 +31,6 @@ export class MatrixesView extends DG.ViewBase implements ILazyLoading {
   }
 
   loaded = false;
-
-  load(): void {
-    checkMissingDomains(requiredColumnsByView[this.name], this);
-  }
 
   createView(): void {
     this.domains = this.domains.filter(it => study.domains[it] !== null);

@@ -15,9 +15,7 @@ import {AERiskAssessmentView} from './views/ae-risk-assessment-view';
 import {SurvivalAnalysisView} from './views/survival-analysis-view';
 import { BoxPlotsView } from './views/boxplots-view';
 import { MatrixesView } from './views/matrixes-view';
-import { createPropertyPanel } from './panels/panels-service';
 import { TimeProfileView } from './views/time-profile-view';
-import { AeBrowserView } from './views/adverse-events-browser';
 import { AEBrowserHelper } from './helpers/ae-browser-helper';
 import { AE_END_DATE, AE_END_DAY, AE_SEVERITY, AE_START_DAY, AE_TERM, SUBJECT_ID, VISIT_DAY, VISIT_NAME, VISIT_START_DATE } from './columns-constants';
 import { STUDY_ID } from './columns-constants';
@@ -25,11 +23,6 @@ import { checkMissingColumns, checkMissingDomains } from './views/utils';
 import { TreeMapView } from './views/tree-map-view';
 import { MedicalHistoryView } from './views/medical-history-view';
 import { VisitsView } from './views/visits-view';
-import { VisitsViewHelper } from './helpers/visits-view-helper';
-import { GridCell, TableView } from 'datagrok-api/dg';
-import { addEmitHelper } from 'typescript';
-import { PatientVisit } from './model/patient-visit';
-import { dictToString } from './data-preparation/utils';
 
 export let _package = new DG.Package();
 
@@ -154,8 +147,8 @@ export async function clinicalCaseApp(): Promise<any> {
   }
 
   function createTableView(
-    requiredDomains: string [], 
-    columnsToCheck: any, 
+    requiredDomains: string[],
+    columnsToCheck: any,
     domainsToCheck: any,
     viewName: string,
     helpUrl: string,
@@ -178,7 +171,7 @@ export async function clinicalCaseApp(): Promise<any> {
     if (helpUrl) {
       tableView.helpUrl = helpUrl;
     }
-    return {helper: viewHelper, view: tableView};
+    return { helper: viewHelper, view: tableView };
   }
 
   function createAEBrowserHelper(timelinesView: TimelinesView): any {
@@ -188,14 +181,9 @@ export async function clinicalCaseApp(): Promise<any> {
     aeBrowserDf.onCurrentRowChanged.subscribe(() => {
       aeBrowserHelper.currentSubjId = aeBrowserDf.get(SUBJECT_ID, aeBrowserDf.currentRowIdx);
       aeBrowserHelper.currentAeDay = aeBrowserDf.get(AE_START_DAY, aeBrowserDf.currentRowIdx);
-      aeBrowserHelper.createAEBrowserPanel();
+      aeBrowserHelper.propertyPanel();
     })
-    return {helper: aeBrowserHelper, df: aeBrowserDf};
-  }
-
-  function createVisitsViewHelper(): any {
-    const visitsViewHelper = new VisitsViewHelper();
-    return {helper: visitsViewHelper, df: visitsViewHelper.pivotedSv};
+    return { helper: aeBrowserHelper, df: aeBrowserDf };
   }
 
   const views = [];
@@ -206,7 +194,7 @@ export async function clinicalCaseApp(): Promise<any> {
   views.push(<PatientProfileView>addView(new PatientProfileView('Patient Profile')));
   views.push(<AdverseEventsView>addView(new AdverseEventsView('Adverse Events')));
   views.push(<LaboratoryView>addView(new LaboratoryView('Laboratory')));
-  //views.push(<AERiskAssessmentView>addView(new AERiskAssessmentView('AE Risk Assessment')));
+  views.push(<AERiskAssessmentView>addView(new AERiskAssessmentView('AE Risk Assessment')));
   views.push(<SurvivalAnalysisView>addView(new SurvivalAnalysisView('Survival Analysis')));
   views.push(<BoxPlotsView>addView(new BoxPlotsView('Distributions')));
   views.push(<MatrixesView>addView(new MatrixesView('Correlations')));
@@ -216,7 +204,7 @@ export async function clinicalCaseApp(): Promise<any> {
   views.push(<VisitsView>addView(new VisitsView('Visits')));
 
   const aeBrowserView = createTableView(
-    ['ae'], 
+    ['ae'],
     { 'ae': { 'req': [AE_TERM, AE_SEVERITY, AE_START_DAY, AE_END_DAY] } },
     {
       'req_domains': {
@@ -245,6 +233,10 @@ export async function clinicalCaseApp(): Promise<any> {
     grok.shell.v = summary;
   }, 1000);
 
+  let setObj = async (obj) => {
+    grok.shell.o = await obj.propertyPanel();
+  }
+
   grok.events.onCurrentViewChanged.subscribe((v) => {
     setTimeout(() => {
       const obj = views.find(it => it.name === grok.shell.v.name);
@@ -253,7 +245,7 @@ export async function clinicalCaseApp(): Promise<any> {
           obj.load();
         }
         if (obj.loaded) {
-        createPropertyPanel(obj);
+          setObj(obj);
         }
       }
     }, 100)

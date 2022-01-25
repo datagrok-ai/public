@@ -3,7 +3,6 @@ import { DataFrame, DateTime } from "datagrok-api/dg";
 import { ClinicalDomains, ClinicalStudy} from '../clinical-study';
 import { INV_DRUG_DOSE, INV_DRUG_DOSE_UNITS, INV_DRUG_NAME, SUBJECT_ID, VISIT_DAY, VISIT_NAME, VISIT_START_DATE } from "../columns-constants";
 import { addColumnWithDrugPlusDosage } from "../data-preparation/data-preparation";
-import { createPropertyPanel } from "../panels/panels-service";
 
 export class StudyVisit {
 
@@ -57,11 +56,6 @@ export class StudyVisit {
             .aggregate();
         };
 
-    }
-
-    createStudyVisitPanel(visitDay: number, visitName: string, previsousVisitDay: number){
-        this.updateStudyVisit(visitDay, visitName, previsousVisitDay);
-        createPropertyPanel(this);
     }
 
     private createEventSincePeviousVisitDf(domain: string) {
