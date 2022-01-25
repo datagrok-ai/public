@@ -4,7 +4,7 @@ import * as DG from 'datagrok-api/dg';
 import {Property} from 'datagrok-api/dg';
 import BitArray from '@datagrok-libraries/utils/src/bit-array';
 import {similarityMetric} from '@datagrok-libraries/utils/src/similarity-metrics';
-import {getDiverseSubset} from '@datagrok-libraries/utils/src/analysis';
+import {getDiverseSubset} from '@datagrok-libraries/utils/src/diverse-subset';
 import {chemGetFingerprints} from '../chem-searches';
 import $ from 'cash-dom'
 import {ArrayUtils} from "@datagrok-libraries/utils/src/array-utils";
@@ -12,7 +12,7 @@ import {Fingerprint} from "../utils/chem-common";
 import {renderMolecule} from "../rendering/render-molecule";
 
 export class ChemDiversityViewer extends DG.JsViewer {
-  moleculeColumnName: string;
+  moleculeColumn: DG.Column;
   initialized: boolean;
   distanceMetric: string;
   limit: number;
@@ -23,7 +23,7 @@ export class ChemDiversityViewer extends DG.JsViewer {
   constructor() {
     super();
 
-    this.moleculeColumnName = this.string('moleculeColumnName');
+    this.moleculeColumn = this.column('moleculeColumnName');
     this.fingerprint = this.string('fingerprint', 'Morgan', {choices: ['Morgan', 'RDKit', 'Pattern']});
     this.limit = this.int('limit', 10);
     this.distanceMetric = this.string('distanceMetric', 'Tanimoto', {choices: Object.keys(similarityMetric)});
@@ -45,7 +45,7 @@ export class ChemDiversityViewer extends DG.JsViewer {
       this.subs.push(DG.debounce(this.dataFrame.selection.onChanged, 50).subscribe(async (_) => await this.render(false)));
       this.subs.push(DG.debounce(ui.onSizeChanged(this.root), 50).subscribe(async (_) => await this.render(false)));
 
-      this.moleculeColumnName = this.dataFrame.columns.bySemType(DG.SEMTYPE.MOLECULE)?.name;
+      this.moleculeColumn = this.dataFrame.columns.bySemType(DG.SEMTYPE.MOLECULE);
     }
 
     await this.render();
@@ -68,7 +68,7 @@ export class ChemDiversityViewer extends DG.JsViewer {
 
     if (this.dataFrame) {
       if (computeData)
-        this.renderMolIds = await chemDiversitySearch(this.dataFrame.getCol(this.moleculeColumnName), this.fpSim, this.limit, this.fingerprint as Fingerprint);
+        this.renderMolIds = await chemDiversitySearch(this.moleculeColumn, this.fpSim, this.limit, this.fingerprint as Fingerprint);
 
       if (this.root.hasChildNodes())
         this.root.removeChild(this.root.childNodes[0]);
@@ -76,10 +76,11 @@ export class ChemDiversityViewer extends DG.JsViewer {
       const panel = [];
       const grids = [];
       let cnt = 0, cnt2 = 0;
+
       panel[cnt++] = ui.h1('Diverse structures');
       for (let i = 0; i < this.limit; ++i) {
         let grid = ui.div([
-          renderMolecule(this.dataFrame.getCol(this.moleculeColumnName).get(this.renderMolIds[i]))
+          renderMolecule(this.moleculeColumn.get(this.renderMolIds[i]))
         ], {style: {width: '200px', height: '100px', margin: '5px'}});
 
         let divClass = 'd4-flex-col';
@@ -122,11 +123,11 @@ export async function chemDiversitySearch(smiles: DG.Column, similarity: (a: Bit
                                           limit: number, fingerprint: Fingerprint): Promise<number[]> {
 
   limit = Math.min(limit, smiles.length);
-  let fingerprintCol = await chemGetFingerprints(smiles, fingerprint);
-  let indexes = ArrayUtils.indexesOf(fingerprintCol, (f) => f != null);
+  let fingerprintArray = await chemGetFingerprints(smiles, fingerprint);
+  let indexes = ArrayUtils.indexesOf(fingerprintArray, (f) => f != null);
 
   let diverseIndexes = getDiverseSubset(indexes.length, limit,
-          (i1, i2) => 1 - similarity(fingerprintCol[indexes[i1]], fingerprintCol[indexes[i2]]));
+          (i1, i2) => 1 - similarity(fingerprintArray[indexes[i1]], fingerprintArray[indexes[i2]]));
 
   let molIds: number[] = [];
   for (let i = 0; i < limit; i++)
