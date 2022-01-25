@@ -4,7 +4,7 @@
     "access": "public"
   },
   "friendlyName": "Datagrok ML library",
-  "version": "0.0.10",
+  "version": "0.0.11",
   "description": "Machine learning supporting utilities",
   "dependencies": {
     "datagrok-api": ">=0.95.8",
