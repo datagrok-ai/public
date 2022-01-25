@@ -9,33 +9,33 @@ on:
       - 'dependabot/**'
 
 jobs:
-#  codeql:
-#    name: CodeQL static analysis
-#    runs-on: ubuntu-20.04
-#    permissions:
-#      security-events: write
-#    strategy:
-#      fail-fast: false
-#      matrix:
-#        language: [ 'java', 'javascript' ]
-#    steps:
-#      - name: Checkout repository
-#        uses: actions/checkout@v2
-#      - name: Set up JDK 8
-#        if: matrix.language == 'java'
-#        uses: actions/setup-java@v2
-#        with:
-#          java-version: '8'
-#          distribution: 'adopt'
-#          cache: maven
-#      - name: Initialize CodeQL
-#        uses: github/codeql-action/init@v1
-#        with:
-#          languages: ${{ matrix.language }}
-#      - name: Autobuild
-#        uses: github/codeql-action/autobuild@v1
-#      - name: Perform CodeQL Analysis
-#        uses: github/codeql-action/analyze@v1
+  codeql:
+    name: CodeQL static analysis
+    runs-on: ubuntu-20.04
+    permissions:
+      security-events: write
+    strategy:
+      fail-fast: false
+      matrix:
+        language: [ 'java', 'javascript' ]
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v2
+      - name: Set up JDK 8
+        if: matrix.language == 'java'
+        uses: actions/setup-java@v2
+        with:
+          java-version: '8'
+          distribution: 'adopt'
+          cache: maven
+      - name: Initialize CodeQL
+        uses: github/codeql-action/init@v1
+        with:
+          languages: ${{ matrix.language }}
+      - name: Autobuild
+        uses: github/codeql-action/autobuild@v1
+      - name: Perform CodeQL Analysis
+        uses: github/codeql-action/analyze@v1
 
   anchore:
     runs-on: ubuntu-20.04
