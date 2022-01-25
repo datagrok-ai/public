@@ -227,6 +227,6 @@ export async function multipleSequenceAlignment(col: DG.Column): Promise<DG.Data
 //input: dataframe table {semType: Substitution}
 //output: widget result
 export async function peptideSubstitution(table: DG.DataFrame): Promise<DG.Widget> {
-  return new DG.Widget(table ? ui.divH([table.plot.grid().root]) : 
-                       ui.label('No difference'));
+  return new DG.Widget(table ? ui.divH([table.plot.grid().root]) :
+    ui.label('No difference'));
 }
