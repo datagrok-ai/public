@@ -3,36 +3,30 @@ import * as DG from "datagrok-api/dg";
 import * as ui from "datagrok-api/ui";
 import { study } from "../clinical-study";
 import { cumulativeEnrollemntByDay } from "../data-preparation/data-preparation";
-import { CLINICAL_TRIAL_GOV_FIELDS, requiredColumnsByView } from "../constants";
-import { HttpService } from "../services/http.service";
-import { ILazyLoading } from "../lazy-loading/lazy-loading";
-import { checkMissingDomains } from "./utils";
+import { CLINICAL_TRIAL_GOV_FIELDS } from "../constants";
+import { CLIN_TRIAL_GOV_SEARCH, HttpService } from "../services/http.service";
 import { _package } from "../package";
 import { AGE, RACE, SEX, STUDY_ID, SUBJECT_ID, SUBJ_REF_STDT, TREATMENT_ARM } from "../columns-constants";
+import { ClinicalCaseViewBase } from "../model/ClinicalCaseViewBase";
+import $ from "cash-dom";
 
 
-export class StudySummaryView extends DG.ViewBase implements ILazyLoading {
+export class StudySummaryView extends ClinicalCaseViewBase {
 
- validationView: DG.ViewBase;
- errorsByDomain: any;
- errorsByDomainWithLinks: any;
- studyId: string;
- httpService = new HttpService();
+  validationView: DG.ViewBase;
+  errorsByDomain: any;
+  errorsByDomainWithLinks: any;
+  studyId: string;
+  httpService = new HttpService();
 
- constructor(name) {
+  constructor(name) {
     super({});
     this.name = name;
     this.helpUrl = `${_package.webRoot}/views_help/summary.md`;
     this.path = '/summary';
   }
-  
-  loaded = false;
 
-  load(): void {
-    checkMissingDomains(requiredColumnsByView[this.name], this);
-  }
-
-  createView(){
+  createView() {
     this.studyId = study.domains.dm.get(STUDY_ID, 0);
     const errorsMap = this.createErrorsMap();
     if (errorsMap) {
@@ -63,21 +57,25 @@ export class StudySummaryView extends DG.ViewBase implements ILazyLoading {
 
     let errorsSummary = this.errorsByDomainWithLinks ?
       ui.tableFromMap(this.errorsByDomainWithLinks) :
-      ui.divText('No errors found', {style: {marginTop: '8px', marginLeft: '5px'}});
+      ui.divText('No errors found', { style: { marginTop: '8px', marginLeft: '5px' } });
 
-    let summaryStyle = {style:{
-      'color':'var(--grey-6)',
-      'margin-top':'8px',
-      'margin-left': '5px',
-      'font-size':'16px',
-    }};
+    let summaryStyle = {
+      style: {
+        'color': 'var(--grey-6)',
+        'margin-top': '8px',
+        'margin-left': '5px',
+        'font-size': '16px',
+      }
+    };
 
-    let viewerTitle = {style:{
-      'color':'var(--grey-6)',
-      'margin':'12px 0px 6px 12px',
-      'font-size':'16px',
-    }};
-    
+    let viewerTitle = {
+      style: {
+        'color': 'var(--grey-6)',
+        'margin': '12px 0px 6px 12px',
+        'font-size': '16px',
+      }
+    };
+
     lc.root.prepend(ui.divText('Enrollment by day', viewerTitle));
 
     let arm = DG.Viewer.barChart(study.domains.dm, { split: TREATMENT_ARM, style: 'dashboard', barColor: DG.Color.lightBlue });
@@ -103,7 +101,7 @@ export class StudySummaryView extends DG.ViewBase implements ILazyLoading {
           ui.divText('Errors', summaryStyle),
           errorsSummary
         ]),
-      ], {style:{maxHeight:'105px'}}),
+      ], { style: { maxHeight: '105px' } }),
       lc.root,
       ui.splitH([
         arm.root,
@@ -117,21 +115,51 @@ export class StudySummaryView extends DG.ViewBase implements ILazyLoading {
   private createErrorsMap() {
     const errorsMap = {};
     const errorsMapWithCount = {};
-    if(study.validationResults.rowCount) {
-      const validationSummary = study.validationResults.groupBy([ 'Domain' ]).count().aggregate();
+    if (study.validationResults.rowCount) {
+      const validationSummary = study.validationResults.groupBy(['Domain']).count().aggregate();
       for (let i = 0; i < validationSummary.rowCount; ++i) {
         const domain = validationSummary.get('Domain', i);
         const errorsCount = validationSummary.get('count', i);
-        const link = ui.link(errorsCount, {}, '', {id: domain});
+        const link = ui.link(errorsCount, {}, '', { id: domain });
         link.addEventListener('click', (event) => {
           grok.shell.v = this.validationView;
           event.stopPropagation();
         });
-        errorsMap[ domain ] = link;
-        errorsMapWithCount[ domain ] = errorsCount;
+        errorsMap[domain] = link;
+        errorsMapWithCount[domain] = errorsCount;
       }
-      return {withCount: errorsMapWithCount, withLinks: errorsMap};
+      return { withCount: errorsMapWithCount, withLinks: errorsMap };
     }
     return null;
+  }
+
+  override async propertyPanel() {
+    const httpService = new HttpService();
+    //let clinTrialsGovInfo = await httpService.getStudyData('R01NS050536', Object.keys(CLINICAL_TRIAL_GOV_FIELDS));
+    let clinTrialsGovInfo = await httpService.getStudyData(this.studyId, Object.keys(CLINICAL_TRIAL_GOV_FIELDS));
+
+    let acc = this.createAccWithTitle(this.studyId)
+
+    if (clinTrialsGovInfo) {
+      const summaryDict = {};
+      Object.keys(clinTrialsGovInfo).forEach(key => {
+        summaryDict[CLINICAL_TRIAL_GOV_FIELDS[key]] = clinTrialsGovInfo[key];
+      })
+      let studyLink = `${CLIN_TRIAL_GOV_SEARCH}${summaryDict['NCT ID']}`
+      summaryDict[`Study link`] = ui.link('Go to study page', () => { window.open(studyLink, '_blank').focus(); })
+
+      let acctable = ui.tableFromMap(summaryDict);
+      acc.addPane('General', () => {
+        $(acctable).find('tr').css('vertical-align', 'top');
+        $(acctable).find('td').css('padding-bottom', '10px');
+        $(acctable).find('.d4-entity-list>span').css('margin', '0px');
+        return acctable
+      }, true)
+    } else {
+      acc.addPane('General', () => {
+        return ui.divText('Study not found on clinicaltrials.gov')
+      }, true)
+    }
+    return acc.root;
   }
 }
