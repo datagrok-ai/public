@@ -47,7 +47,7 @@ category('peptides', async () => {
   const columnData = cleanAlignedSequencesColumn(alignedSequencesColumn);
 
   for (const method of DimensionalityReducer.availableMethods) {
-    for (const measure of DimensionalityReducer.availableMetrics) {
+    for (const measure of DimensionalityReducer.metricDataTypes['String']) {
       test(`DimensinalityReducer.${method}.${measure}.is_numeric`, async () => {
         await _testDimensionalityReducer(columnData, method, measure);
       });
@@ -55,7 +55,7 @@ category('peptides', async () => {
   }
 
   for (const method of DimensionalityReducer.availableMethods) {
-    for (const measure of DimensionalityReducer.availableMetrics) {
+    for (const measure of DimensionalityReducer.metricDataTypes['String']) {
       test(`PeptideSimilaritySpaceViewer.${method}.${measure}.is_proper`, async () => {
         await _testPeptideSimilaritySpaceViewer(table, alignedSequencesColumn, method, measure, 100);//, view);
       });
