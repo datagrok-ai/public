@@ -45,7 +45,7 @@ jobs:
     steps:
       - name: Checkout
         uses: actions/checkout@v2
-      - name: Scan
+      - name: Scan for GitHub Secutiry
         uses: anchore/scan-action@v3
         id: scan
         with:
@@ -57,20 +57,59 @@ jobs:
         uses: github/codeql-action/upload-sarif@v1
         with:
           sarif_file: ${{ steps.scan.outputs.sarif }}
-#      - name: Scan
-#        uses: anchore/scan-action@v3
-#        id: scan
-#        env:
-#          GRYPE_OUTPUT: json
-#          GRYPE_FILE: ./anchore.json
-#        with:
-#          path: "."
-#          fail-build: false # Change to true after all fixes
-#          severity-cutoff: high
-#          acs-report-enable: true
-#      - name: Upload Artifact
-#        uses: actions/upload-artifact@v2
-#        with:
-#          name: anchore.json
-#          path: ${{ steps.scan.outputs.sarif }}
-#          retention-days: 7
+      - name: Scan for JSON report
+        uses: anchore/scan-action@v3
+        env:
+          GRYPE_OUTPUT: json
+          GRYPE_FILE: ./anchore.json
+        with:
+          path: "."
+          fail-build: false # Change to true after all fixes
+          severity-cutoff: high
+          acs-report-enable: false
+      - name: Upload Artifact
+        uses: actions/upload-artifact@v2
+        with:
+          name: anchore.json
+          path: anchore.json
+          retention-days: 7
+      - name: Create SBOM
+        uses: docker://anchore/syft:latest
+        with:
+          args: dir:. -o json=sbom.syft.json
+      - name: Scan SBOM
+        uses: docker://anchore/syft:latest
+        with:
+          args: sbom:./sbom.syft.json -o json --file anchore.grype.json
+      - name: Upload Artifact
+        uses: actions/upload-artifact@v2
+        with:
+          name: anchore.grype.json
+          path: anchore.grype.json
+          retention-days: 7
+      - name: Create CSV from JSON scan
+        run: |
+          jq -r '[
+            "CVE",
+            "Link",
+            "Severity",
+            "Package Name",
+            "Current version",
+            "Fixed Version",
+            "From"
+          ],
+            (.matches[] | [
+            .vulnerability.id,
+            .vulnerability.dataSource,
+            .vulnerability.severity,
+            .artifact.name,
+            .artifact.version,
+            (.vulnerability.fix.versions | join("\n")),
+            .artifact.locations[].path
+          ]) | @csv' anchore.grype.json > anchore.grype.csv
+      - name: Upload Artifact
+        uses: actions/upload-artifact@v2
+        with:
+          name: anchore.grype.csv
+          path: anchore.grype.csv
+          retention-days: 7
