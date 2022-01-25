@@ -1,14 +1,12 @@
 import * as grok from 'datagrok-api/grok';
 import * as DG from "datagrok-api/dg";
 import * as ui from "datagrok-api/ui";
-import { study, ClinRow } from "../clinical-study";
-import { ILazyLoading } from '../lazy-loading/lazy-loading';
-import { checkMissingDomains } from './utils';
-import { requiredColumnsByView } from '../constants';
+import { study } from "../clinical-study";
 import { addDataFromDmDomain } from '../data-preparation/utils';
 import { ETHNIC, RACE, SEX, TREATMENT_ARM } from '../columns-constants';
+import { ClinicalCaseViewBase } from '../model/ClinicalCaseViewBase';
 
-export class TreeMapView extends DG.ViewBase implements ILazyLoading {
+export class TreeMapView extends ClinicalCaseViewBase {
 
     aeDataframeWithDm: DG.DataFrame
     dmFields = [TREATMENT_ARM, SEX, RACE, ETHNIC];
@@ -18,12 +16,6 @@ export class TreeMapView extends DG.ViewBase implements ILazyLoading {
     constructor(name) {
         super({});
         this.name = name;
-    }
-
-    loaded = false;
-
-    load(): void {
-        checkMissingDomains(requiredColumnsByView[this.name], this);
     }
 
     createView(): void {
