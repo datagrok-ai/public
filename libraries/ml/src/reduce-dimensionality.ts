@@ -331,4 +331,14 @@ export class DimensionalityReducer {
   static get availableMetrics() {
     return Object.keys(AvailableMetrics);
   }
+
+  /**
+   * Returns metrics by their data type.
+   *
+   * @readonly
+   * @memberof DimensionalityReducer
+   */
+   static get metricDataTypes() {
+    return MetricDataTypes;
+  }
 }
