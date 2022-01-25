@@ -13,7 +13,7 @@ in pharmaceutical companies and academic settings in the process of drug discove
 chemical and allied industries in various other forms._
 
 But what does *in silico* actually means? It is counterposed to *in vitro* (undertaken in glass without cells) and *in
-vivo* (undertaken in cell cultures or organisms) biochemical experiments. So *in silico* was defined to imply a
+vivo* (undertaken in cell cultures or organisms) biochemical experiments. So, *in silico* was defined to imply a
 biochemical experiment performed via computational approaches (as silicon is the main component of modern CPU).
 
 Cheminformatics is an *in silico* discipline serving to handle chemical entities for a number of different purposes:
@@ -67,8 +67,8 @@ molecular [descriptors](https://www.youtube.com/watch?v=0j1Eeexd1ig&ab_channel=C
 Datagrok provides generation of different sets
 of [descriptors](https://github.com/datagrok-ai/public/blob/master/help/domains/chem/descriptors.md)
 and [fingerprints](https://github.com/datagrok-ai/public/blob/master/help/domains/chem/fingerprints.md)
-. The objective of these representations is to satisfy linear algeba requirements applied in the majority of ML methods
-and provide a vector of values decribing the molecule. Vector (linear) spaces based on molecular descriptors are calles
+. The objective of these representations is to satisfy linear algebra requirements applied in the majority of ML methods
+and provide a vector of values describing the molecule. Vector (linear) spaces based on molecular descriptors are called
 chemical spaces.
 
 Descriptors are frequently used for proceeding [similar](https://en.wikipedia.org/wiki/Chemical_similarity) chemical
@@ -77,7 +77,7 @@ in [similarity search](https://github.com/datagrok-ai/public/blob/master/help/do
 and [diversity search](https://github.com/datagrok-ai/public/blob/master/help/domains/chem/diversity-search.md)
 . In combination with clustering and self-organizing maps, methods such
 as [stochastic proximity embedding](https://github.com/datagrok-ai/public/blob/master/help/domains/chem/similarity-spe.md)
-alow to reduce dimentionality of used vectors and to separate the most significant features of the molecule. It helps us
+allow to reduce dimensionality of used vectors and to separate the most significant features of the molecule. It helps us
 to visualize the chemical space in [2D maps](https://public.datagrok.ai/script/c7e74227-ca12-5337-b7d0-8c4d1bacfbb9).
 
 Pharmaceutical needs demand wide use of cheminformatics methods for chemical datasets exploration analysis and following
@@ -104,7 +104,7 @@ at Datagrok in form of Python, C++ and JS code.
 
 To provide an opportunity of having up-to-date data for its users, Datagrok is connected
 to [Pubchem](https://pubchem.ncbi.nlm.nih.gov/), [ChEMBL](https://www.ebi.ac.uk/chembl/) and other databases that
-contain continuously updated chemical structures data associated with biological experimatal values.
+contain continuously updated chemical structures data associated with biological experimental values.
 
 ## Cheminformatics limitations
 

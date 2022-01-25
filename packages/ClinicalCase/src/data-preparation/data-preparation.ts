@@ -4,6 +4,8 @@ import { ALT, AP, AST, BILIRUBIN } from '../constants';
 import { addDataFromDmDomain, dataframeContentToRow, dateDifferenceInDays, filterBooleanColumn, filterNulls, getUniqueValues } from './utils';
 import { study } from '../clinical-study';
 import { AE_CAUSALITY, AE_REQ_HOSP, AE_SEQ, AE_SEVERITY, AE_START_DATE, AE_TERM, INV_DRUG_NAME, LAB_HI_LIM_N, LAB_LO_LIM_N, LAB_RES_N, LAB_TEST, SUBJECT_ID, SUBJ_REF_ENDT, SUBJ_REF_STDT, TREATMENT_ARM } from '../columns-constants';
+var { jStat } = require('jstat')
+
 
 export function createMaxValuesDataForHysLaw(dataframe, aggregatedColName, filerValue){ 
 	let condition = `${LAB_TEST} = ${filerValue}`; 
@@ -151,35 +153,46 @@ export function getSurvivalStatus(eventColumn: DG.Column, i: number) {
 export function createAERiskAssessmentDataframe(ae: DG.DataFrame, ex: DG.DataFrame, placeboArm: string, activeArm: string) {
 
   let subjArm = createUniqueCountDataframe(ex, [ INV_DRUG_NAME ], SUBJECT_ID, 'TOTALSUBJ');
-  let joinedAeEX = grok.data.joinTables(ae, ex, [ SUBJECT_ID ], [ SUBJECT_ID ], [ SUBJECT_ID, AE_TERM ], [ INV_DRUG_NAME ], DG.JOIN_TYPE.LEFT, false);
-  let subjAE = createUniqueCountDataframe(joinedAeEX, [ AE_TERM, INV_DRUG_NAME ], SUBJECT_ID, 'AECOUNT');
 
-  let tj = grok.data.joinTables(subjAE, subjArm, [ INV_DRUG_NAME ], [ INV_DRUG_NAME ], [ AE_TERM, INV_DRUG_NAME, 'AECOUNT' ], [ 'TOTALSUBJ' ], DG.JOIN_TYPE.LEFT, false);
+  let numberSubjPlaceboArm =  subjArm.groupBy(subjArm.columns.names())
+     .where(`${INV_DRUG_NAME} = ${placeboArm}`)
+    .aggregate()
+    .get('TOTALSUBJ', 0);
+  let numberSubjActiveArm =  subjArm.groupBy(subjArm.columns.names())
+     .where(`${INV_DRUG_NAME} = ${activeArm}`)
+    .aggregate()
+    .get('TOTALSUBJ', 0);
+  let totalSubj = numberSubjPlaceboArm + numberSubjActiveArm;
+
+  let joinedAeEX = grok.data.joinTables(ae, ex, [ SUBJECT_ID ], [ SUBJECT_ID ], [ SUBJECT_ID, AE_TERM ], [ INV_DRUG_NAME ], DG.JOIN_TYPE.LEFT, false);
+  let subjAE = createUniqueCountDataframe(joinedAeEX, [ AE_TERM, INV_DRUG_NAME ], SUBJECT_ID, 'TOTALSUBJ_WITH_AE');
+
+  let tj = grok.data.joinTables(subjAE, subjArm, [ INV_DRUG_NAME ], [ INV_DRUG_NAME ], [ AE_TERM, INV_DRUG_NAME, 'TOTALSUBJ_WITH_AE' ], [ 'TOTALSUBJ' ], DG.JOIN_TYPE.LEFT, false);
 
   tj.columns.addNewFloat('PERCENT')
-    .init((i) => parseFloat(tj.get('AECOUNT', i)) / parseFloat(tj.get('TOTALSUBJ', i)));
+    .init((i) => parseFloat(tj.get('TOTALSUBJ_WITH_AE', i)) / parseFloat(tj.get('TOTALSUBJ', i)));
 
-  let aeRiskRatioPlacebo = tj.groupBy([ AE_TERM, INV_DRUG_NAME, 'AECOUNT', 'TOTALSUBJ', 'PERCENT' ])
+  let aeRiskRatioPlacebo = tj.groupBy([ AE_TERM, INV_DRUG_NAME, 'TOTALSUBJ_WITH_AE', 'TOTALSUBJ', 'PERCENT' ])
     .where(`${INV_DRUG_NAME} = ${placeboArm}`)
     .aggregate();
 
-  let aeRiskRatioActive = tj.groupBy([ AE_TERM, INV_DRUG_NAME, 'AECOUNT', 'TOTALSUBJ', 'PERCENT' ])
+  let aeRiskRatioActive = tj.groupBy([ AE_TERM, INV_DRUG_NAME, 'TOTALSUBJ_WITH_AE', 'TOTALSUBJ', 'PERCENT' ])
     .where(`${INV_DRUG_NAME} = ${activeArm}`)
     .aggregate();
 
 
   let tj2 = grok.data.joinTables(aeRiskRatioActive, aeRiskRatioPlacebo, [ AE_TERM ], [ AE_TERM ],
-    [ AE_TERM, INV_DRUG_NAME, 'AECOUNT', 'TOTALSUBJ', 'PERCENT' ],
-    [ AE_TERM, INV_DRUG_NAME, 'AECOUNT', 'TOTALSUBJ', 'PERCENT' ], DG.JOIN_TYPE.OUTER, false);
+    [ AE_TERM, INV_DRUG_NAME, 'TOTALSUBJ_WITH_AE', 'TOTALSUBJ', 'PERCENT' ],
+    [ AE_TERM, INV_DRUG_NAME, 'TOTALSUBJ_WITH_AE', 'TOTALSUBJ', 'PERCENT' ], DG.JOIN_TYPE.OUTER, false);
 
 
 
   let column1 = tj2.columns.byName(`null.${AE_TERM}`);
   let percent1 = tj2.columns.byName('null.PERCENT');
-  let exposed1 = tj2.columns.byName('null.AECOUNT');
+  let exposed1 = tj2.columns.byName('null.TOTALSUBJ_WITH_AE');
   let column2 = tj2.columns.byName(`null.${AE_TERM} (2)`);
   let percent2 = tj2.columns.byName('null.PERCENT (2)');
-  let exposed2 = tj2.columns.byName('null.AECOUNT (2)');
+  let exposed2 = tj2.columns.byName('null.TOTALSUBJ_WITH_AE (2)');
   let totalExposed1;
   let totalExposed2;
 
@@ -207,22 +220,60 @@ export function createAERiskAssessmentDataframe(ae: DG.DataFrame, ex: DG.DataFra
       totalExposed2 = parseFloat(tj2.get('null.TOTALSUBJ (2)', i))
     }
   }
+  
 
 
   tj2.columns.addNewFloat('RELATIVE RISK')
     .init((i) => parseFloat(tj2.get('null.PERCENT', i)) / parseFloat(tj2.get('null.PERCENT (2)', i)));
 
+  tj2.columns.addNewFloat('RR')
+    .init((i) => {
+return (tj2.get('null.TOTALSUBJ_WITH_AE', i)*numberSubjPlaceboArm)/(tj2.get('null.TOTALSUBJ_WITH_AE (2)', i)*numberSubjActiveArm);
+    });
+
   tj2.columns.addNewFloat('RISK DIFF')
     .init((i) => parseFloat(tj2.get('null.PERCENT', i)) - parseFloat(tj2.get('null.PERCENT (2)', i)));
 
+    tj2.columns.addNewFloat('RD')
+    .init((i) => tj2.get('null.TOTALSUBJ_WITH_AE', i)/numberSubjActiveArm - tj2.get('null.TOTALSUBJ_WITH_AE (2)', i)/numberSubjPlaceboArm);
 
-  tj2.columns.addNewFloat('ODDS RATIO').init((i) => (parseFloat(tj2.get('null.AECOUNT', i)) * (totalExposed2 - parseFloat(tj2.get('null.AECOUNT (2)', i)))) /
-    (parseFloat(tj2.get('null.AECOUNT (2)', i)) * (totalExposed1 - parseFloat(tj2.get('null.AECOUNT', i)))));
+
+  tj2.columns.addNewFloat('ODDS RATIO').init((i) => (parseFloat(tj2.get('null.TOTALSUBJ_WITH_AE', i)) * (totalExposed2 - parseFloat(tj2.get('null.TOTALSUBJ_WITH_AE (2)', i)))) /
+    (parseFloat(tj2.get('null.TOTALSUBJ_WITH_AE (2)', i)) * (totalExposed1 - parseFloat(tj2.get('null.TOTALSUBJ_WITH_AE', i)))));
+    
+    tj2.columns.addNewFloat('OR').init((i) => {
+      const TE = tj2.get('null.TOTALSUBJ_WITH_AE', i);
+        const PE = tj2.get('null.TOTALSUBJ_WITH_AE (2)', i);
+        return  (TE*(numberSubjPlaceboArm - PE))/(PE*(numberSubjActiveArm - TE))
+      });
+
+    tj2.columns.addNewFloat('Z').init((i) => {
+      const TE = tj2.get('null.TOTALSUBJ_WITH_AE', i);
+      const TN = numberSubjActiveArm - TE;
+      const PE = tj2.get('null.TOTALSUBJ_WITH_AE (2)', i);
+      const PN = numberSubjPlaceboArm - TE;
+      const N = totalSubj;
+
+      const Z = (Math.pow(TE - (numberSubjActiveArm*(TE+PE))/N, 2)*Math.pow(N, 2)*(N-1))/
+      (numberSubjActiveArm*numberSubjPlaceboArm*(TE+PE)*(TN+PN));
+      return Z;
+    });
+
+    tj2.columns.addNewFloat('p-value').init((i) => {
+      const Z = tj2.get('Z', i);
+      const f = jStat.chisquare.cdf( Z, 1 );
+      return 1-f < f ? 1-f : f;
+    });
+
+    tj2.columns.addNewFloat('-log 10(p-value)').init((i) => (-Math.log10(tj2.get('p-value', i))));
+
 
   tj2.getCol(`null.${AE_TERM}`).name = AE_TERM;
 
-  return tj2.groupBy([ AE_TERM, 'RELATIVE RISK', 'RISK DIFF', 'ODDS RATIO'])
-    .aggregate();
+  return tj2;
+
+  /* return tj2.groupBy([ AE_TERM, 'RELATIVE RISK', 'RISK DIFF', 'ODDS RATIO'])
+    .aggregate(); */
 
 }
 

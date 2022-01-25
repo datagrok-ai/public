@@ -2,7 +2,7 @@
 import * as grok from 'datagrok-api/grok';
 import * as ui from 'datagrok-api/ui';
 import * as DG from 'datagrok-api/dg';
-import * as OCL from 'openchemlib/full';
+import * as OCL from 'openchemlib/full.js';
 import $ from "cash-dom";
 import {defineAxolabsPattern} from "./defineAxolabsPattern";
 import {map, stadardPhosphateLinkSmiles, SYNTHESIZERS, TECHNOLOGIES} from "./map";
@@ -149,13 +149,14 @@ function sequenceToSmiles(sequence: string) {
   const codes = sortByStringLengthInDescendingOrderToCheckForMatchWithLongerCodesFirst(Object.keys(obj));
   let i = 0, smiles = '', codesList = [];
   const links = ['s', 'ps', '*'];
+  const includesStandardLinkAlready = ["e", "h", "g", "f", "i", "l", "k", "j"];
   while (i < sequence.length) {
     let code = codes.find((s) => s == sequence.slice(i, i + s.length))!;
     i += code.length;
     codesList.push(code);
   }
   for (let i = 0; i < codesList.length; i++)
-    smiles += (links.includes(codesList[i]) || (i < codesList.length - 1 && links.includes(codesList[i + 1]))) ?
+    smiles += (links.includes(codesList[i]) || (includesStandardLinkAlready.includes(codesList[i])) || (i < codesList.length - 1 && links.includes(codesList[i + 1]))) ?
       obj[codesList[i]] :
       obj[codesList[i]] + stadardPhosphateLinkSmiles;
   smiles = smiles.replace(/OO/g, 'O');
@@ -197,8 +198,13 @@ export function sequenceTranslator() {
         ui.div([DG.HtmlTable.create(tableRows, (item: { key: string; value: string; }) => [item.key, item.value], ['Code', 'Sequence']).root], 'table')
       );
       semTypeOfInputSequence.textContent = 'Detected input type: ' + outputSequenceObj.type;
+
+      let width = $(window).width();
+      const canvas = ui.canvas(width, Math.round(width / 3));
+      let smiles = sequenceToSmiles(inputSequenceField.value.replace(/\s/g, ''));
+      OCL.StructureView.drawMolecule(canvas, OCL.Molecule.fromSmiles(smiles), {suppressChiralText: true});
       if (outputSequenceObj.type != undefinedInputSequence)
-        moleculeSvgDiv.append(grok.chem.svgMol(sequenceToSmiles(inputSequenceField.value.replace(/\s/g, '')), 900, 300));
+        moleculeSvgDiv.append(canvas);
     } finally {
       pi.close();
     }

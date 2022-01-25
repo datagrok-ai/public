@@ -1,16 +1,16 @@
 import * as grok from 'datagrok-api/grok';
 import * as ui from 'datagrok-api/ui';
 import * as DG from 'datagrok-api/dg';
-import {getRdKitModule} from "../package";
+import {RDModule} from "../rdkit-api";
 
 export function isMolBlock(s: string) {
   return s.includes('M  END');
 }
 
-export function _convertMolecule(molecule: string, from: string, to: string): string {
+export function _convertMolecule(molecule: string, from: string, to: string, module: RDModule): string {
   let mol;
   try {
-    mol = getRdKitModule().get_mol(molecule);
+    mol = module.get_mol(molecule);
     if (to === 'molblock')
       return mol.get_molblock();
     if (to === 'smiles')

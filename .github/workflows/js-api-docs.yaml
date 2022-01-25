@@ -10,6 +10,7 @@ on:
 
 jobs:
   doc:
+    name: Generate documentation
     runs-on: ubuntu-20.04
     steps:
       - name: Checkout
@@ -34,6 +35,7 @@ jobs:
           retention-days: 7
 
   deploy:
+    name: Deploy documentation to server
     needs: doc
     runs-on: ubuntu-20.04
     environment: Help

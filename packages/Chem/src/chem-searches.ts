@@ -198,11 +198,11 @@ export function chemGetFingerprint(molString: string, fingerprint: Fingerprint):
     mol = getRdKitModule().get_mol(molString);
     let fp;
     if (fingerprint == Fingerprint.Morgan)
-      fp = mol.get_morgan_fp(defaultMorganFpRadius, defaultMorganFpLength);
-    else if (fingerprint == Fingerprint.RDKit)
-      fp = mol.get_rdkit_fp(defaultMorganFpRadius, defaultMorganFpLength);
+      fp = mol.get_morgan_fp_as_uint8array(defaultMorganFpRadius, defaultMorganFpLength);
+    /*else if (fingerprint == Fingerprint.RDKit)
+      fp = mol.get_rdkit_fp(defaultMorganFpRadius, defaultMorganFpLength);*/
     else if (fingerprint == Fingerprint.Pattern)
-      fp = mol.get_pattern_fp(defaultMorganFpRadius, defaultMorganFpLength);
+      fp = mol.get_pattern_fp_as_uint8array();
     else
       throw new Error(`${fingerprint} does not match any fingerprint`);
 

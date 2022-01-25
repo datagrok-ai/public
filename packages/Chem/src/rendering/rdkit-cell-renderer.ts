@@ -7,7 +7,7 @@ import * as ui from 'datagrok-api/ui';
 import * as DG from 'datagrok-api/dg';
 import {convertToRDKit} from '../analysis/r-group-analysis';
 import {drawRdKitMoleculeToOffscreenCanvas} from '../utils/chem-common-rdkit';
-import {RDMol} from '../rdkit-api';
+import {RDModule, RDMol} from '../rdkit-api';
 import {isMolBlock} from '../utils/chem-utils';
 
 export class GridCellRendererProxy extends DG.GridCellRenderer {
@@ -45,12 +45,12 @@ export class RDKitCellRenderer extends DG.GridCellRenderer {
   0  0  0  0  0  0  0  0  0  0999 V2000
 M  END
 `;
-  rdKitModule: any;
+  rdKitModule: RDModule;
   canvasCounter: number;
   molCache: DG.LruCache = new DG.LruCache();
   rendersCache: DG.LruCache = new DG.LruCache();
 
-  constructor(rdKitModule: any) {
+  constructor(rdKitModule: RDModule) {
     super();
     this.rdKitModule = rdKitModule;
     this.canvasCounter = 0;

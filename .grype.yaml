@@ -1,0 +1,9 @@
+check-for-app-update: true
+
+fail-on-severity: 'high'
+
+quiet: false
+
+exclude:
+  - '**/node_modules/**'
+

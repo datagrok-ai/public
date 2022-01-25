@@ -1,5 +1,5 @@
 export interface RDModule {
-  get_mol(molString: string): RDMol;
+  get_mol(molString: string, options?: string): RDMol;
   get_qmol(smarts: string): RDMol;
   get_inchikey_for_inchi(input: string): string;
   version(): string;
@@ -25,10 +25,9 @@ export interface RDMol {
   get_descriptors(): string;
 
   get_morgan_fp(radius?: number, len?: number): string;
-  get_morgan_fp_as_binary_text(radius?: number, len?: number): string;
-
-  get_rdkit_fp(radius?: number, len?: number): string;
-  get_pattern_fp(radius?: number, len?: number): string;
+  get_morgan_fp_as_uint8array(radius?: number, len?: number): Uint8Array;
+  get_pattern_fp(len?: number): string;
+  get_pattern_fp_as_uint8array(len?: number): Uint8Array;
 
   condense_abbreviations(maxCoverage?: number, useLinkers?: boolean): string;
   condense_abbreviations_from_defs(definitions: string, maxCoverage: number, areLinkers: boolean): string;
@@ -50,7 +49,7 @@ export interface RDMol {
   remove_hs(): string;
   add_hs(): string;
 
-  normalize_2d_molblock(): void;
+  normalize_2d_molblock(): string;
   straighten_2d_layout(): void;
 
   /** Reclaims the memory used for that molecule. */
@@ -71,3 +70,4 @@ export interface SubstructLibrary {
   get_matches(qmol: RDMol, useChirality?: boolean, numThreads?: number, maxResults?: number): string;
   count_matches(qmol: RDMol, useChirality?: boolean, numThreads?: number): number;
 }
+

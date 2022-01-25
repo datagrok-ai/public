@@ -221,3 +221,12 @@ export async function multipleSequenceAlignment(col: DG.Column): Promise<DG.Data
   table.columns.add(msaCol);
   return table;
 }
+
+//name: Substitution
+//tags: panel, widgets
+//input: dataframe table {semType: Substitution}
+//output: widget result
+export async function peptideSubstitution(table: DG.DataFrame): Promise<DG.Widget> {
+  return new DG.Widget(table ? ui.divH([table.plot.grid().root]) : 
+                       ui.label('No difference'));
+}

@@ -52,7 +52,7 @@ export async function _testCumulativeEnrollment() {
   const df = await readDataframe('dm.csv');
   const cumulativeEnrDf = cumulativeEnrollemntByDay(df, SUBJ_REF_STDT, SUBJECT_ID, 'CUMULATIVE_ENROLLMENT');
   expect(cumulativeEnrDf.rowCount, 5);
-  expect(cumulativeEnrDf.get(SUBJ_REF_STDT, 0), '2012-08-04 23:00:00.000');
+  expect(cumulativeEnrDf.get(SUBJ_REF_STDT, 0).toString(), '2012-08-04 23:00:00.000');
   expect(cumulativeEnrDf.get('CUMULATIVE_ENROLLMENT', 4), 6);
 }
 

@@ -2,20 +2,22 @@
 	"name": "biostructureviewer",
 	"beta": false,
 	"friendlyName": "BiostructureViewer",
-	"version": "0.1.1",
+	"version": "0.2.3",
 	"description": "",
 	"sources": [
 		"css/ngl.css",
 		"css/pviz-core.css",
 		"css/additionalStyles.css",
 		"src/viewers/pviz-bundle.min.js",
-		"common/ngl_viewer/ngl.js"
+		"common/ngl_viewer/ngl.js",
+		"css/molstar.css"
 	],
 	"dependencies": {
 		"@datagrok-libraries/utils": ">=0.0.15",
 		"cash-dom": "latest",
 		"datagrok-api": ">=0.95.11",
-		"dayjs": "latest"
+		"dayjs": "latest",
+		"molstar": "^3.0.0-dev.4"
 	},
 	"devDependencies": {
 		"@types/jest": "^27.4.0",
@@ -25,6 +27,11 @@
 		"eslint-config-google": "^0.14.0",
 		"ts-jest": "^27.1.2",
 		"ts-loader": "^9.2.5",
+		"file-loader": "^6.2.0",
+		"css-loader": "^6.5.1",
+		"sass-loader": "^12.4.0",
+		"mini-css-extract-plugin": "^2.5.2",
+		"sass": "^1.49.0",
 		"typescript": "^4.4.4",
 		"webpack": "latest",
 		"webpack-cli": "latest"

@@ -25,9 +25,16 @@ export class AERiskAssessmentView extends DG.ViewBase implements ILazyLoading  {
   createView(): void {
     this.riskAssessmentDataframe = createAERiskAssessmentDataframe(study.domains.ae, study.domains.ex, 'PLACEBO', 'XANOMELINE');
     let grid = this.riskAssessmentDataframe.plot.grid();
+    let volcanoPlot = this.riskAssessmentDataframe.plot.scatter({
+      x: 'RD',
+      y: '-log 10(p-value)',
+    });
    
     this.root.className = 'grok-view ui-box';
-    this.root.appendChild(grid.root);
+    this.root.append(ui.splitV([
+      grid.root,
+      volcanoPlot.root
+    ]))
 
   }
 }

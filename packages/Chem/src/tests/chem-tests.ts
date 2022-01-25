@@ -1,18 +1,20 @@
-import {category, expect, test} from "@datagrok-libraries/utils/src/test";
+import {category, expect, expectFloat, test} from "@datagrok-libraries/utils/src/test";
 import {_testSearchSubstructure, _testSearchSubstructureAllParameters, _testSearchSubstructureSARSmall, requireText} from "./utils";
 import * as DG from "datagrok-api/dg";
 import * as grok from "datagrok-api/grok";
 import * as ui from "datagrok-api/ui";
+import {findMCS} from "../scripts-api";
+import * as P from '../package';
 
 category('chem', () => {
 
-  test('chem.searchSubstructure.sar_small', async () => {
+  test('searchSubstructure.sar_small', async () => {
     await _testSearchSubstructureAllParameters(
       _testSearchSubstructureSARSmall);
   });
 
 // Number of molecules is smaller than a number of threads
-  test('chem.searchSubstructure.5_rows', async () => {
+  test('searchSustructure.5_rows', async () => {
     const targetSmiles = [
       'CCOC(=O)c1oc2cccc(OCCNCc3cccnc3)c2c1C4CC4',
       'Fc1cc2C(=O)C(=CN(C3CC3)c2cc1N4CCNCC4)c5oc(COc6ccccc6)nn5',
@@ -33,7 +35,7 @@ COc1ccc2c(c1)c(CC(=O)N3CCCC3C(=O)Oc4ccc(C)cc4OC)c(C)n2C(=O)c5ccc(Cl)cc5
     );
   });
 
-  test('chem.findSimilar.sar_small', async () => {
+  test('findSimilar.sar_small', async () => {
     const dfInput = DG.DataFrame.fromCsv(await requireText('sar_small.csv'));
     const colInput = dfInput.columns[0];
     const dfResult: DG.DataFrame = // shouldn't be null
@@ -56,18 +58,17 @@ COc1ccc2c(c1)c(CC(=O)N3CCCC3C(=O)Oc4ccc(C)cc4OC)c(C)n2C(=O)c5ccc(Cl)cc5
     expect(columnNames[0], 'molecule');
     expect(columnNames[1], 'score');
     expect(columnNames[2], 'index');
-    const areEqualFloat = (a: number, b: number) => Math.abs(a - b) < 0.001;
     const arr = first5Rows;
     expect(arr[0].molecule, 'O=C1CN=C(c2ccccc2N1)C3CCCCC3');
     expect(arr[1].molecule, 'O=C1CN=C(c2cc(I)ccc2N1)C3CCCCC3');
     expect(arr[2].molecule, 'O=C1CN=C(c2cc(Cl)ccc2N1)C3CCCCC3');
     expect(arr[3].molecule, 'O=C1CN=C(c2cc(F)ccc2N1)C3CCCCC3');
     expect(arr[4].molecule, 'O=C1CN=C(c2cc(Br)ccc2N1)C3CCCCC3');
-    expect(areEqualFloat(arr[0].score, 1.0000), true);
-    expect(areEqualFloat(arr[1].score, 0.6905), true);
-    expect(areEqualFloat(arr[2].score, 0.6744), true);
-    expect(areEqualFloat(arr[3].score, 0.6744), true);
-    expect(areEqualFloat(arr[4].score, 0.6744), true);
+    expectFloat(arr[0].score, 1.0000);
+    expectFloat(arr[1].score, 0.6905);
+    expectFloat(arr[2].score, 0.6744);
+    expectFloat(arr[3].score, 0.6744);
+    expectFloat(arr[4].score, 0.6744);
     expect(arr[0].index, 0);
     expect(arr[1].index, 30);
     expect(arr[2].index, 5);
@@ -75,6 +76,16 @@ COc1ccc2c(c1)c(CC(=O)N3CCCC3C(=O)Oc4ccc(C)cc4OC)c(C)n2C(=O)c5ccc(Cl)cc5
     expect(arr[4].index, 25);
   });
 
+  test('getSimilarities.molecules', async () => {
+    let df = grok.data.demo.molecules();
+    const scores = (await grok.chem.getSimilarities(df.columns['smiles'], 'O=C1CN=C(C2CCCCC2)C2:C:C:C:C:C:2N1'))!;
+    expectFloat(scores.get(0), 0.1034);
+    expectFloat(scores.get(1), 0.07407);
+    expectFloat(scores.get(2), 0.11111);
+    expectFloat(scores.get(3), 0.11111);
+    expectFloat(scores.get(4), 0.07042);
+    expectFloat(scores.get(5), 0.06349);
+  });
 
   test('testSubstructureSearch', async () => {
     let t = grok.data.demo.molecules();
@@ -91,11 +102,6 @@ COc1ccc2c(c1)c(CC(=O)N3CCCC3C(=O)Oc4ccc(C)cc4OC)c(C)n2C(=O)c5ccc(Cl)cc5
     await grok.chem.diversitySearch(t.col('smiles')!);
   });
 
-  test('testSimilaritySearch', async () => {
-    let t = grok.data.demo.molecules();
-    let scores = await grok.chem.getSimilarities(t.col('smiles')!, 'O=C1CN=C(C2CCCCC2)C2:C:C:C:C:C:2N1');
-  });
-
   test('testMcs', async () => {
     let t = DG.DataFrame.fromCsv(`smiles
 O=C1CN=C(c2ccccc2N1)C3CCCCC3
@@ -106,6 +112,74 @@ O=C1CN=C(c2ccccc2N1CC3CCCCC3)C4CCCCC4
 O=C1CN=C(c2cc(Cl)ccc2N1)C3CCCCC3
 CN1C(=O)CN=C(c2cc(Cl)ccc12)C3CCCCC3`);
     await grok.chem.mcs(t.col('smiles')!);
+  });
+
+  test('testMcsPanel', async () => {
+    let t = DG.DataFrame.fromCsv(`smiles
+      O=C1CN=C(c2ccccc2N1)C3CCCCC3
+      CN1C(=O)CN=C(c2ccccc12)C3CCCCC3
+      CCCCN1C(=O)CN=C(c2ccccc12)C3CCCCC3
+      CC(C)CCN1C(=O)CN=C(c2ccccc12)C3CCCCC3
+      O=C1CN=C(c2ccccc2N1CC3CCCCC3)C4CCCCC4
+      O=C1CN=C(c2cc(Cl)ccc2N1)C3CCCCC3
+      CN1C(=O)CN=C(c2cc(Cl)ccc12)C3CCCCC3`);
+
+    let v = grok.shell.addTableView(t);
+    P.addMcsPanel(t.columns['smiles']);
+    v.close();
+  });
+
+  test('testInchiPanel', async () => {
+    let t = DG.DataFrame.fromCsv(`smiles
+      COc1ccc(CN(Cc2ccccc2)Cc3ccc(Br)cc3)cc1O
+      COc1ccc(CN(CCc2ccc(Br)cc2)Cc3ccccc3)cc1O
+      CCCCCCCC(=O)NCCC1CC(CC)(CC)C(=O)O1
+      CC1=C(C(C(=C(C)N1)C(=O)OCc2ccccc2)c3csc(n3)c4ccc(Cl)cc4)C(=O)
+      CCCOC(=O)C1=C(C)NC(=C(C1c2csc(n2)c3ccc(Cl)cc3)C(=O)OCC)
+      CCOC(=O)C1=C(C)NC(=C(C1c2csc(n2)c3ccc(Cl)cc3)C(=O)OC(C)C)
+      CCOC(=O)C1=C(C)NC(=C(C1c2csc(n2)c3ccc(Cl)cc3)C(=O)OCC(C)C)`);
+
+    let v = grok.shell.addTableView(t);
+    P.addInchisPanel(t.columns['smiles']);
+    v.close();
+  });
+
+  test('testInchiKeysPanel', async () => {
+    let t = DG.DataFrame.fromCsv(`smiles
+      COc1ccc(CN(Cc2ccccc2)Cc3ccc(Br)cc3)cc1O
+      COc1ccc(CN(CCc2ccc(Br)cc2)Cc3ccccc3)cc1O
+      CCCCCCCC(=O)NCCC1CC(CC)(CC)C(=O)O1
+      CC1=C(C(C(=C(C)N1)C(=O)OCc2ccccc2)c3csc(n3)c4ccc(Cl)cc4)C(=O)
+      CCCOC(=O)C1=C(C)NC(=C(C1c2csc(n2)c3ccc(Cl)cc3)C(=O)OCC)
+      CCOC(=O)C1=C(C)NC(=C(C1c2csc(n2)c3ccc(Cl)cc3)C(=O)OC(C)C)
+      CCOC(=O)C1=C(C)NC(=C(C1c2csc(n2)c3ccc(Cl)cc3)C(=O)OCC(C)C)`);
+
+    let v = grok.shell.addTableView(t);
+    P.addInchisKeysPanel(t.columns['smiles']);
+    v.close();
+  });
+
+  test('testCurateTopMenu', async () => {
+    let t = DG.DataFrame.fromCsv(`Name,smiles
+    metal_non,CCC(=O)O[Na]
+    metal_st,CCC(=O)[O-].[Na+]
+    parent_non,[Na]OC(=O)c1ccccc1
+    parent_st,O=C([O-])c1ccccc1
+    norm_non,C[N+](C)=CC=C[O-]
+    norm_st,CN(C)C=CC=O
+    reion_non,C1=C(C=CC(=C1)[S]([O-])=O)[S](O)(=O)=O
+    reion_st,O=S(O)c1ccc(S(=O)(=O)[O-])cc1
+    charge_non,O=C([O-])c1ccccc1
+    charge_st,O=C(O)c1ccccc1
+    tau_non,C1(=CCCCC1)O
+    tau_st,O=C1CCCCC1
+    main_component_non,CCC1=C(C)C=CC(O)=N1.OC(=O)CCC(=O)O
+    main_component_non_st,CCC1=C(C)C=CC(O)=N1`);
+
+    let v = grok.shell.addTableView(t);
+    grok.functions.call('Chem:CurateChemStructures', {'data': t, 'smiles': 'smiles'})
+
+    v.close();
   });
 
   test('testRendering', async () => {

@@ -21,7 +21,7 @@
   ],
   "dependencies": {
     "datagrok-api": ">0.94.10",
-    "@datagrok-libraries/ml": ">=0.0.8",
+    "@datagrok-libraries/ml": ">=0.0.10",
     "@datagrok-libraries/utils": ">=0.0.19",
     "wu": "latest",
     "@types/wu": "latest",

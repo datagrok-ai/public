@@ -2,12 +2,13 @@ import {RdKitServiceWorkerSimilarity} from './rdkit-service-worker-similarity';
 import {rdKitFingerprintToBitArray} from '../utils/chem-common';
 import BitArray from '@datagrok-libraries/utils/src/bit-array';
 import {isMolBlock} from '../utils/chem-utils';
+import {RDModule} from "../rdkit-api";
 
 export class RdKitServiceWorkerSubstructure extends RdKitServiceWorkerSimilarity {
   _patternFps: BitArray[] | null = null;
    readonly _patternFpLength = 2048;
 
-   constructor(module: Object, webRoot: string) {
+   constructor(module: RDModule, webRoot: string) {
     super(module, webRoot);
   }
 
@@ -30,7 +31,7 @@ export class RdKitServiceWorkerSubstructure extends RdKitServiceWorkerSimilarity
       try {
         mol = this._rdKitModule.get_mol(item);
         if (usePatternFingerprints) {
-          const fpRdKit = mol.get_pattern_fp(this._patternFpLength);
+          const fpRdKit = mol.get_pattern_fp_as_uint8array(this._patternFpLength);
           fp = rdKitFingerprintToBitArray(fpRdKit);
         }
         if (normalizeCoordinates) {
@@ -76,7 +77,7 @@ export class RdKitServiceWorkerSubstructure extends RdKitServiceWorkerSimilarity
           }
           if (queryMol && queryMol.is_valid()) {
             if (this._patternFps) {
-              const fpRdKit = queryMol.get_pattern_fp(this._patternFpLength);
+              const fpRdKit = queryMol.get_pattern_fp_as_uint8array(this._patternFpLength);
               const queryMolFp = rdKitFingerprintToBitArray(fpRdKit);
               for (let i = 0; i < this._patternFps.length; ++i) {
                 const crossedFp = BitArray.fromAnd(this._patternFps[i], queryMolFp);
