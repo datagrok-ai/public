@@ -1,4 +1,4 @@
-// import * as grok from 'datagrok-api/grok';
+import * as grok from 'datagrok-api/grok';
 import * as ui from 'datagrok-api/ui';
 import * as DG from 'datagrok-api/dg';
 
@@ -6,6 +6,7 @@ import $ from 'cash-dom';
 
 // import {aarGroups} from '../describe';
 import {setAARRenderer} from '../utils/cell-renderer';
+import { SemanticValue } from 'datagrok-api/dg';
 
 export class SubstViewer extends DG.JsViewer {
   viewerGrid: DG.Grid | null;
@@ -123,6 +124,7 @@ export class SubstViewer extends DG.JsViewer {
     const tableValuesKeys = Object.keys(tableValues);
     const dfLength = tableValuesKeys.length;
     const cols = [...nColsArray.keys()].map((v) => DG.Column.int(v.toString(), dfLength));
+    cols.forEach((col: DG.Column) => col.semType = 'Substitution');
     const aarCol = DG.Column.string(aarColName, dfLength);
     cols.splice(0, 1, aarCol);
     const table = DG.DataFrame.fromColumns(cols);
@@ -200,8 +202,11 @@ export class SubstViewer extends DG.JsViewer {
 
         this.casesGrid = tempDf.plot.grid();
         this.casesGrid.props.allowEdit = false;
-      } else
+        grok.shell.o = SemanticValue.fromValueType(tempDf, 'Substitution');
+      } else {
+        grok.shell.o = SemanticValue.fromValueType(null, 'Substitution');
         this.casesGrid = null;
+      }
 
       this.render();
     });
@@ -211,9 +216,7 @@ export class SubstViewer extends DG.JsViewer {
 
   render() {
     $(this.root).empty();
-    this.root.appendChild(this.casesGrid === null ?
-      this.viewerGrid!.root : ui.splitH([this.viewerGrid!.root, this.casesGrid.root]),
-    );
+    this.root.appendChild(this.viewerGrid!.root);
   }
 
   split(peptideColumn: DG.Column, filter: boolean = true): string[][] {

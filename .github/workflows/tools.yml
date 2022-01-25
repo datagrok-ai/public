@@ -9,6 +9,7 @@ on:
 jobs:
   check:
     runs-on: ubuntu-20.04
+    name: Check version was changed
     outputs:
       changed_version: ${{ steps.check-version.outputs.changed_version }}
     steps:
@@ -35,6 +36,7 @@ jobs:
           echo "::set-output name=changed_version::${changed_version}"
 
   build:
+    name: Build and publish to npm
     runs-on: ubuntu-20.04
     needs: check
     if: needs.check.outputs.changed_version == 'true'

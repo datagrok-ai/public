@@ -7,9 +7,12 @@
 	"dependencies": {
 		"datagrok-api": ">0.94.10",
 		"cash-dom": "latest",
-		"dayjs": "latest"
+		"dayjs": "latest",
+		"openchemlib": "latest"
 	},
 	"devDependencies": {
+		"ts-loader": "latest",
+		"typescript": "latest",
 		"webpack": "latest",
 		"webpack-cli": "latest"
 	},

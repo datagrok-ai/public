@@ -139,7 +139,7 @@ export class PeptideSimilaritySpaceWidget {
    */
   constructor(alignedSequencesColumn: DG.Column, view: DG.TableView) {
     this.availableMethods = DimensionalityReducer.availableMethods;
-    this.availableMetrics = StringMeasure.availableMeasures;
+    this.availableMetrics = StringMeasure.getMetricByDataType('String');
     this.method = this.availableMethods[0];
     this.metrics = this.availableMetrics[0];
     this.currentDf = alignedSequencesColumn.dataFrame;

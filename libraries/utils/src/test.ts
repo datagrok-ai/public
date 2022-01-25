@@ -34,9 +34,15 @@ export function test(name: string, test: () => Promise<any>): void {
 }
 
 /** Tests two objects for equality, throws an exception if they are not equal. */
-export function expect(actual: any, expected: any) {
+export function expect(actual: any, expected: any): void {
   if (actual !== expected)
     throw `Expected "${expected}", got "${actual}"`;
+}
+
+export function expectFloat(actual: number, expected: number, tolerance = 0.001): void {
+  const areEqual = Math.abs(actual - expected) < 0.001;
+  if (!areEqual)
+    throw `Expected ${expected}, got ${actual} (tolerance = ${tolerance})"`;
 }
 
 /** Defines a test suite. */
