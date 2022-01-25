@@ -11,38 +11,38 @@ import Sketcher = chem.Sketcher;
 import {renderMolecule} from "../rendering/render-molecule";
 
 export class ChemSimilarityViewer extends DG.JsViewer {
-  moleculeColumnName: string;
-  initialized: boolean;
+  moleculeColumn: DG.Column;
+  initialized: boolean = false;
   isEditedFromSketcher: boolean = false;
   hotSearch: boolean;
   sketchButton: HTMLButtonElement;
   sketchedMolecule: string = "";
   distanceMetric: string;
-  curIdx: number;
-  molCol: DG.Column;
-  idxs: DG.Column;
-  scores: DG.Column;
+  curIdx: number = 0;
+  molCol: DG.Column | null = null;
+  idxs: DG.Column | null = null;
+  scores: DG.Column | null = null;
   limit: number;
   minScore: number;
   fingerprint: string;
   gridSelect: boolean = false;
+  targetMoleculeIdx: number = 0;
 
   get targetMolecule(): string {
     return this.isEditedFromSketcher
       ? this.sketchedMolecule
-      : this.dataFrame?.getCol(this.moleculeColumnName).get(this.curIdx)
+      : this.moleculeColumn.get(this.targetMoleculeIdx);
   }
 
   constructor() {
     super();
 
-    this.moleculeColumnName = this.string('moleculeColumnName');
+    this.moleculeColumn = this.column('moleculeColumnName');
     this.limit = this.int('limit', 10);
     this.minScore = this.float('minScore', 0.1);
     this.distanceMetric = this.string('distanceMetric', 'Tanimoto', {choices: Object.keys(similarityMetric)});
     this.fingerprint = this.string('fingerprint', 'Morgan', {choices: ['Morgan', 'RDKit', 'Pattern']});
     this.hotSearch = this.bool('hotSearch', true);
-    this.initialized = false;
     this.sketchButton = ui.button('Sketch', () => {
       const sketcher = new Sketcher();
       sketcher.setMolecule(this.targetMolecule);
@@ -56,10 +56,6 @@ export class ChemSimilarityViewer extends DG.JsViewer {
         .show();
     });
     this.sketchButton.id = 'reference';
-    this.curIdx = 0;
-    this.molCol = DG.Column.fromList('string', 'foo', ['foo', 'boo']);
-    this.idxs = DG.Column.fromList('string', 'foo', ['foo', 'boo']);
-    this.scores = DG.Column.fromList('string', 'foo', ['foo', 'boo']);
   }
 
   init(): void {
@@ -72,12 +68,11 @@ export class ChemSimilarityViewer extends DG.JsViewer {
     this.init();
 
     if (this.dataFrame) {
-      this.subs.push(DG.debounce(this.dataFrame.onMouseOverRowChanged, 50).subscribe(async (_) => await this.render()));
       this.subs.push(DG.debounce(this.dataFrame.onRowsRemoved, 50).subscribe(async (_) => await this.render()));
       this.subs.push(DG.debounce(this.dataFrame.onCurrentRowChanged, 50).subscribe(async (_) => await this.render()));
       this.subs.push(DG.debounce(this.dataFrame.selection.onChanged, 50).subscribe(async (_) => await this.render(false)));
       this.subs.push(DG.debounce(ui.onSizeChanged(this.root), 50).subscribe(async (_) => await this.render(false)));
-      this.moleculeColumnName = this.dataFrame.columns.bySemType(DG.SEMTYPE.MOLECULE).name;
+      this.moleculeColumn = this.dataFrame.columns.bySemType(DG.SEMTYPE.MOLECULE);
     }
 
     await this.render();
@@ -98,7 +93,8 @@ export class ChemSimilarityViewer extends DG.JsViewer {
       this.curIdx = this.dataFrame.currentRowIdx;
 
       if (computeData && !this.gridSelect) {
-        const df = await chemSimilaritySearch(this.dataFrame, this.dataFrame?.getCol(this.moleculeColumnName),
+        this.targetMoleculeIdx = this.dataFrame.currentRowIdx;
+        const df = await chemSimilaritySearch(this.dataFrame, this.moleculeColumn,
                    this.targetMolecule, this.distanceMetric, this.limit, this.minScore, this.fingerprint as Fingerprint);
 
         this.molCol = df.getCol('smiles');
@@ -110,49 +106,55 @@ export class ChemSimilarityViewer extends DG.JsViewer {
 
       if (this.root.hasChildNodes())
         this.root.removeChild(this.root.childNodes[0]);
+
       const panel = [];
       const grids = []; 
       let cnt = 0, cnt2 = 0;
+
       panel[cnt++] = ui.h1('Reference');
       panel[cnt++] = renderMolecule(this.targetMolecule);
       panel[cnt++] = this.sketchButton;
-      for (let i = 0; i < this.molCol.length; ++i) {
-        let grid = ui.div([
-          renderMolecule(this.molCol?.get(i)),
-          ui.label(`${this.scores.get(i).toPrecision(2)}`)],
-          {style: {width: '200px', height: '120px', margin: '5px'}}
-        );
+      if (this.molCol && this.idxs && this.scores) {
+        for (let i = 0; i < this.molCol.length; ++i) {
+          let grid = ui.div([
+            renderMolecule(this.molCol?.get(i)),
+            ui.label(`${this.scores.get(i).toPrecision(2)}`)],
+            {style: {width: '200px', height: '120px', margin: '5px'}}
+          );
 
-        let divClass = 'd4-flex-col';
-        if (this.idxs.get(i) == this.curIdx) {
-          divClass += ' d4-current';
-          grid.style.backgroundColor = '#ddffd9';
-        } 
-        if (this.dataFrame.selection.get(this.idxs.get(i))) {
-          divClass += ' d4-selected';
-          if (divClass == 'd4-flex-col d4-selected')
-            grid.style.backgroundColor = '#f8f8df';
-          else 
-            grid.style.backgroundColor = '#d3f8bd';
-        }
+          let divClass = 'd4-flex-col';
 
-        $(grid).addClass(divClass);
-        grid.addEventListener('click', (event: MouseEvent) => {
-          if (this.dataFrame) {
-            if (event.shiftKey || event.altKey) {
-              this.dataFrame.selection.set(this.idxs.get(i), true);
-            } else if (event.metaKey) {
-              let selected = this.dataFrame.selection;
-              this.dataFrame.selection.set(this.idxs.get(i), !selected.get(this.idxs.get(i)));
-            } else {
-              this.dataFrame.currentRowIdx = this.idxs.get(i);
-              this.isEditedFromSketcher = false;
-              this.gridSelect = true;
-            }
+          if (this.idxs.get(i) == this.curIdx) {
+            divClass += ' d4-current';
+            grid.style.backgroundColor = '#ddffd9';
+          } 
+          if (this.dataFrame.selection.get(this.idxs.get(i))) {
+            divClass += ' d4-selected';
+            if (divClass == 'd4-flex-col d4-selected')
+              grid.style.backgroundColor = '#f8f8df';
+            else 
+              grid.style.backgroundColor = '#d3f8bd';
           }
-        });
-        grids[cnt2++] = grid;
+
+          $(grid).addClass(divClass);
+          grid.addEventListener('click', (event: MouseEvent) => {
+            if (this.dataFrame && this.idxs) {
+              if (event.shiftKey || event.altKey) {
+                this.dataFrame.selection.set(this.idxs.get(i), true);
+              } else if (event.metaKey) {
+                let selected = this.dataFrame.selection;
+                this.dataFrame.selection.set(this.idxs.get(i), !selected.get(this.idxs.get(i)));
+              } else {
+                this.dataFrame.currentRowIdx = this.idxs.get(i);
+                this.isEditedFromSketcher = false;
+                this.gridSelect = true;
+              }
+            }
+          });
+          grids[cnt2++] = grid;
+        }
       }
+
       panel[cnt++] = ui.div(grids, {classes: 'd4-flex-wrap'});
       this.root.appendChild(ui.div(panel, {style: {margin: '5px'}}));
     }
