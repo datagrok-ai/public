@@ -1,4 +1,4 @@
-import {category, expect, test} from "@datagrok-libraries/utils/src/test";
+import {category, expect, expectFloat, test} from "@datagrok-libraries/utils/src/test";
 import {_testSearchSubstructure, _testSearchSubstructureAllParameters, _testSearchSubstructureSARSmall, requireText} from "./utils";
 import * as DG from "datagrok-api/dg";
 import * as grok from "datagrok-api/grok";
@@ -8,13 +8,13 @@ import * as P from '../package';
 
 category('chem', () => {
 
-  test('chem.searchSubstructure.sar_small', async () => {
+  test('searchSubstructure.sar_small', async () => {
     await _testSearchSubstructureAllParameters(
       _testSearchSubstructureSARSmall);
   });
 
 // Number of molecules is smaller than a number of threads
-  test('chem.searchSubstructure.5_rows', async () => {
+  test('searchSustructure.5_rows', async () => {
     const targetSmiles = [
       'CCOC(=O)c1oc2cccc(OCCNCc3cccnc3)c2c1C4CC4',
       'Fc1cc2C(=O)C(=CN(C3CC3)c2cc1N4CCNCC4)c5oc(COc6ccccc6)nn5',
@@ -35,7 +35,7 @@ COc1ccc2c(c1)c(CC(=O)N3CCCC3C(=O)Oc4ccc(C)cc4OC)c(C)n2C(=O)c5ccc(Cl)cc5
     );
   });
 
-  test('chem.findSimilar.sar_small', async () => {
+  test('findSimilar.sar_small', async () => {
     const dfInput = DG.DataFrame.fromCsv(await requireText('sar_small.csv'));
     const colInput = dfInput.columns[0];
     const dfResult: DG.DataFrame = // shouldn't be null
@@ -58,18 +58,17 @@ COc1ccc2c(c1)c(CC(=O)N3CCCC3C(=O)Oc4ccc(C)cc4OC)c(C)n2C(=O)c5ccc(Cl)cc5
     expect(columnNames[0], 'molecule');
     expect(columnNames[1], 'score');
     expect(columnNames[2], 'index');
-    const areEqualFloat = (a: number, b: number) => Math.abs(a - b) < 0.001;
     const arr = first5Rows;
     expect(arr[0].molecule, 'O=C1CN=C(c2ccccc2N1)C3CCCCC3');
     expect(arr[1].molecule, 'O=C1CN=C(c2cc(I)ccc2N1)C3CCCCC3');
     expect(arr[2].molecule, 'O=C1CN=C(c2cc(Cl)ccc2N1)C3CCCCC3');
     expect(arr[3].molecule, 'O=C1CN=C(c2cc(F)ccc2N1)C3CCCCC3');
     expect(arr[4].molecule, 'O=C1CN=C(c2cc(Br)ccc2N1)C3CCCCC3');
-    expect(areEqualFloat(arr[0].score, 1.0000), true);
-    expect(areEqualFloat(arr[1].score, 0.6905), true);
-    expect(areEqualFloat(arr[2].score, 0.6744), true);
-    expect(areEqualFloat(arr[3].score, 0.6744), true);
-    expect(areEqualFloat(arr[4].score, 0.6744), true);
+    expectFloat(arr[0].score, 1.0000);
+    expectFloat(arr[1].score, 0.6905);
+    expectFloat(arr[2].score, 0.6744);
+    expectFloat(arr[3].score, 0.6744);
+    expectFloat(arr[4].score, 0.6744);
     expect(arr[0].index, 0);
     expect(arr[1].index, 30);
     expect(arr[2].index, 5);
@@ -77,6 +76,16 @@ COc1ccc2c(c1)c(CC(=O)N3CCCC3C(=O)Oc4ccc(C)cc4OC)c(C)n2C(=O)c5ccc(Cl)cc5
     expect(arr[4].index, 25);
   });
 
+  test('getSimilarities.molecules', async () => {
+    let df = grok.data.demo.molecules();
+    const scores = (await grok.chem.getSimilarities(df.columns['smiles'], 'O=C1CN=C(C2CCCCC2)C2:C:C:C:C:C:2N1'))!;
+    expectFloat(scores.get(0), 0.1034);
+    expectFloat(scores.get(1), 0.07407);
+    expectFloat(scores.get(2), 0.11111);
+    expectFloat(scores.get(3), 0.11111);
+    expectFloat(scores.get(4), 0.07042);
+    expectFloat(scores.get(5), 0.06349);
+  });
 
   test('testSubstructureSearch', async () => {
     let t = grok.data.demo.molecules();
@@ -91,11 +100,6 @@ COc1ccc2c(c1)c(CC(=O)N3CCCC3C(=O)Oc4ccc(C)cc4OC)c(C)n2C(=O)c5ccc(Cl)cc5
   test('testDiversitySearch', async () => {
     let t = grok.data.demo.molecules();
     await grok.chem.diversitySearch(t.col('smiles')!);
-  });
-
-  test('testSimilaritySearch', async () => {
-    let t = grok.data.demo.molecules();
-    let scores = await grok.chem.getSimilarities(t.col('smiles')!, 'O=C1CN=C(C2CCCCC2)C2:C:C:C:C:C:2N1');
   });
 
   test('testMcs', async () => {
