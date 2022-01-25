@@ -72,7 +72,6 @@ export async function runKalign(col: DG.Column, isAligned = false) : Promise<DG.
   if (isAligned)
     sequences = sequences.map((v: string, _) => AlignedSequenceEncoder.clean(v).replace(/\-/g, ''));
 
-
   const fasta = _stringsToFasta(sequences);
 
   const CLI = await new Aioli('kalign/3.3.1');

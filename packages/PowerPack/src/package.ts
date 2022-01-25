@@ -154,7 +154,7 @@ export function formulaLinesDialog(src: DG.DataFrame | DG.Viewer): FormulaLinesD
 grok.events.onContextMenu.subscribe((args) => {
   let src = args.args.context;
   if (src instanceof DG.ScatterPlotViewer) {
-    let menu = args.args.menu.group('Formula Lines');
-    menu.item('Editor...', () => { formulaLinesDialog(src); });
+    let menu = args.args.menu.find('Tools');
+    menu.item('Formula Lines...', () => { formulaLinesDialog(src); });
   }
 });
