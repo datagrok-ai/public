@@ -5,14 +5,13 @@ import { study } from "../clinical-study";
 import { addDataFromDmDomain, getUniqueValues } from '../data-preparation/utils';
 import { createBaselineEndpointDataframe } from '../data-preparation/data-preparation';
 import { ETHNIC, LAB_RES_N, LAB_TEST, VISIT_DAY, VISIT_NAME, RACE, SEX, SUBJECT_ID, TREATMENT_ARM, LAB_LO_LIM_N, LAB_HI_LIM_N, VS_TEST, VS_RES_N } from '../columns-constants';
-import { checkMissingDomains, updateDivInnerHTML } from './utils';
-import { ILazyLoading } from '../lazy-loading/lazy-loading';
+import { updateDivInnerHTML } from './utils';
 import { _package } from '../package';
-import { requiredColumnsByView } from '../constants';
+import { ClinicalCaseViewBase } from '../model/ClinicalCaseViewBase';
 var { jStat } = require('jstat')
 
 
-export class BoxPlotsView extends DG.ViewBase implements ILazyLoading {
+export class BoxPlotsView extends ClinicalCaseViewBase {
 
   domains = ['lb', 'vs'];
   domainFields = {'lb': {'test': LAB_TEST, 'res': LAB_RES_N}, 'vs': {'test': VS_TEST, 'res': VS_RES_N}};
@@ -39,12 +38,6 @@ export class BoxPlotsView extends DG.ViewBase implements ILazyLoading {
     this.name = name;
     this.helpUrl = `${_package.webRoot}/views_help/biomarkers_distribution.md`;
   }
-
-  loaded = false;
-
-  load(): void {
-    checkMissingDomains(requiredColumnsByView[this.name], this);
- }
 
   createView(): void {
 
