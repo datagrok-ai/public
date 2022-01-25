@@ -3,6 +3,7 @@ import { FuncCall } from "./functions";
 import {toJs} from "./wrappers";
 import {FileSource} from "./dapi";
 import {MapProxy} from "./utils";
+import {DataFrame} from "./dataframe";
 
 declare var grok: any;
 let api = <any>window;
@@ -225,26 +226,76 @@ export class Project extends Entity {
     super(dart);
   }
 
-  get pictureUrl(): string { return api.grok_PictureMixin_Get_PictureUrl(this.dart); }
-  get path(): string { return api.grok_Project_Get_Path(this.dart); }
-  get isOnServer(): string { return api.grok_Project_Get_IsOnServer(this.dart); }
-  get isLocal(): string { return api.grok_Project_Get_IsLocal(this.dart); }
+  static create(): Project {return toJs(api.grok_Project_From_Id(null)); };
+
+  get pictureUrl(): string {
+    return api.grok_PictureMixin_Get_PictureUrl(this.dart);
+  }
+
+  get path(): string {
+    return api.grok_Project_Get_Path(this.dart);
+  }
+
+  get isOnServer(): string {
+    return api.grok_Project_Get_IsOnServer(this.dart);
+  }
+
+  get isLocal(): string {
+    return api.grok_Project_Get_IsLocal(this.dart);
+  }
 
   /** Project description */
-  get description(): string { return api.grok_Project_Description(this.dart); }
+  get description(): string {
+    return api.grok_Project_Description(this.dart);
+  }
 
   /** Project changes flag */
-  get isDirty(): boolean { return api.grok_Project_IsDirty(this.dart); }
+  get isDirty(): boolean {
+    return api.grok_Project_IsDirty(this.dart);
+  }
 
   /** Project is empty flag */
-  get isEmpty(): boolean { return api.grok_Project_IsEmpty(this.dart); }
+  get isEmpty(): boolean {
+    return api.grok_Project_IsEmpty(this.dart);
+  }
 
-  toMarkup(): string { return api.grok_Project_ToMarkup(this.dart); }
+  toMarkup(): string {
+    return api.grok_Project_ToMarkup(this.dart);
+  }
 
   /** Opens the project in workspace */
-  open(options?: {closeAll: boolean}): Promise<Project> {
+  open(options?: { closeAll: boolean }): Promise<Project> {
     return api.grok_Project_Open(this.dart, options?.closeAll ?? false);
   }
+
+  get links(): Entity[] {
+    return toJs(api.grok_Project_GetRelations(this.dart, true));
+  }
+
+  get children(): Entity[] {
+    return toJs(api.grok_Project_GetRelations(this.dart, false));
+  }
+
+  addLink(entity: Entity | DataFrame): void {
+    if (entity instanceof DataFrame)
+      entity = entity.getTableInfo();
+    api.grok_Project_AddRelation(this.dart, entity.dart, true);
+  }
+
+  addChild(entity: Entity |DataFrame): void {
+    if (entity instanceof DataFrame)
+      entity = entity.getTableInfo();
+    api.grok_Project_AddRelation(this.dart, entity.dart, false);
+  }
+
+  removeLink(entity: Entity): void {
+    api.grok_Project_AddRelation(this.dart, entity.dart);
+  }
+
+  removeChild(entity: Entity): void {
+    api.grok_Project_AddRelation(this.dart, entity.dart);
+  }
+
 }
 
 /** Represents a data query
@@ -347,6 +398,11 @@ export class TableInfo extends Entity {
   constructor(dart: any) {
     super(dart);
   }
+
+  static fromDataFrame(t: DataFrame): TableInfo {return toJs(api.grok_DataFrame_Get_TableInfo(t.dart)); }
+
+  get dataFrame(): DataFrame { return api.grok_TableInfo_Get_DataFrame(this.dart); }
+
 }
 
 /** @extends Entity
