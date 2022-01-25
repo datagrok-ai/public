@@ -2124,9 +2124,8 @@ export class DataFrameMetaHelper {
     this.addFormulaLines(this.formulaLines);
   }
 
-  getFormulaLineAxes(item: FormulaLine, dataFrame: DataFrame): string[] {
-    let axes: string[] = api.grok_FormulaHelper_GetAxes(item.formula, item.type, dataFrame.dart);
-    return item.type == 'line' ? axes : [item.column2!, axes[1]];
+  getFormulaInfo(item: FormulaLine, dataFrame: DataFrame): string[] {
+    return api.grok_FormulaHelper_GetInfo(item.formula, item.type, dataFrame.dart);
   }
 }
 

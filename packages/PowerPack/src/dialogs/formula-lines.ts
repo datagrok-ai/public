@@ -218,17 +218,17 @@ class Table {
  * Scatter Plot viewer by default.
  */
 class Preview {
-  _scatterPlot: DG.ScatterPlotViewer;
+  scatterPlot: DG.ScatterPlotViewer;
+  dataFrame?: DG.DataFrame;
   _src: DG.DataFrame | DG.Viewer;
   _items: DG.FormulaLine[];
-  dataFrame?: DG.DataFrame;
 
-  set height(h: number) { this._scatterPlot.root.style.height = `${h}px`; }
-  get root(): HTMLElement { return this._scatterPlot.root; }
+  set height(h: number) { this.scatterPlot.root.style.height = `${h}px`; }
+  get root(): HTMLElement { return this.scatterPlot.root; }
 
   // Sets the corresponding axes:
   _setAxes(item: DG.FormulaLine): void {
-    let [itemY, itemX] = this._scatterPlot.meta.getFormulaLineAxes(item, this.dataFrame!);
+    let [itemY, itemX] = this.scatterPlot.meta.getFormulaInfo(item, this.dataFrame!);
     let [previewY, previewX] = [itemY, itemX];
 
     // If the source is a Scatter Plot, then we try to set similar axes:
@@ -245,11 +245,11 @@ class Preview {
 
     if (previewY)
       if (this.dataFrame!.getCol(previewY))
-        this._scatterPlot.setOptions({y: previewY});
+        this.scatterPlot.setOptions({y: previewY});
 
     if (previewX)
       if (this.dataFrame!.getCol(previewX))
-        this._scatterPlot.setOptions({x: previewX});
+        this.scatterPlot.setOptions({x: previewX});
   }
 
   constructor(items: DG.FormulaLine[], src: DG.DataFrame | DG.Viewer) {
@@ -265,7 +265,7 @@ class Preview {
 
     this._src = src;
 
-    this._scatterPlot = DG.Viewer.scatterPlot(this.dataFrame, {
+    this.scatterPlot = DG.Viewer.scatterPlot(this.dataFrame, {
       showDataframeFormulaLines: false,
       showViewerFormulaLines: true,
       showSizeSelector: false,
@@ -283,7 +283,7 @@ class Preview {
   }
 
   update(itemIdx: number): boolean {
-    if (this._scatterPlot == undefined)
+    if (this.scatterPlot == undefined)
       return false;
 
     // Duplicate the original item to display it even if it's hidden:
@@ -292,13 +292,13 @@ class Preview {
     previewItem.visible = true;
 
     // Show the item:
-    this._scatterPlot.meta.removeFormulaLines();
+    this.scatterPlot.meta.removeFormulaLines();
     try {
-      this._scatterPlot.meta.addFormulaItem(previewItem);
+      this.scatterPlot.meta.addFormulaItem(previewItem);
       this._setAxes(previewItem);
       return true;
     } catch {
-      this._scatterPlot.meta.removeFormulaLines();
+      this.scatterPlot.meta.removeFormulaLines();
       return false;
     }
   }
@@ -309,7 +309,7 @@ class Preview {
  */
 class Editor {
   _form: HTMLElement;
-  _dataFrame: DG.DataFrame;
+  _preview: Preview;
   _items: DG.FormulaLine[];
   _onChangedAction: Function;
 
@@ -329,13 +329,10 @@ class Editor {
 
   get root(): HTMLElement { return this._form; }
 
-  constructor(items: DG.FormulaLine[], dataFrame: DG.DataFrame, onChangedAction: Function) {
-    if (!dataFrame)
-      throw 'Undefined source DataFrame.';
-
+  constructor(items: DG.FormulaLine[], preview: Preview, onChangedAction: Function) {
     this._form = ui.form();
     this._items = items;
-    this._dataFrame = dataFrame;
+    this._preview = preview;
     this._onChangedAction = onChangedAction;
   }
 
@@ -368,7 +365,7 @@ class Editor {
         elFormula.style.height = '137px';
         elFormula.style.marginRight = '-6px';
 
-    ui.tools.initFormulaAccelerators(ibFormula, this._dataFrame);
+    ui.tools.initFormulaAccelerators(ibFormula, this._preview.dataFrame!);
 
     return ibFormula.root;
   }
@@ -511,7 +508,7 @@ class Editor {
   _inputColumn2(itemIdx: number): HTMLElement {
     let item = this._items[itemIdx];
 
-    let ibColumn2 = ui.columnInput('Adjacent column', this._dataFrame, item.column2 ? this._dataFrame.col(item.column2) : null, (value: DG.Column) => {
+    let ibColumn2 = ui.columnInput('Adjacent column', this._preview.dataFrame!, item.column2 ? this._preview.dataFrame!.col(item.column2) : null, (value: DG.Column) => {
       item!.column2 = value.name;
       this._onChangedAction(itemIdx);
     });
@@ -523,19 +520,56 @@ class Editor {
     return ui.divH([ibColumn2.root], {style: {marginLeft: '-8px'}});
   }
 
+  _inputConstant(itemIdx: number, colName: string, value: string): HTMLElement {
+    let item = this._items[itemIdx];
+
+    let ibColumn = ui.columnInput('Column', this._preview.dataFrame!, colName ? this._preview.dataFrame!.col(colName) : null, (value: DG.Column) => {
+      item!.formula = '${' + value + '} = ' + ibValue.value;
+      this._onChangedAction(itemIdx);
+    });
+
+    let elColumn = ibColumn.input as HTMLInputElement;
+        elColumn.style.maxWidth = 'none';
+        elColumn.style.width = '204px';
+
+    let ibValue = ui.stringInput('Value', value, (value: string) => {
+      item!.formula = '${' + ibColumn.value + '} = ' + value;
+      this._onChangedAction(itemIdx);
+    });
+    ibValue.nullable = false;
+
+    let elValue = ibValue.input as HTMLInputElement;
+        elValue.style.maxWidth = 'none';
+        elValue.style.width = '204px';
+
+    return ui.div([ibColumn.root, ibValue.root]);
+  }
+
   _createForm(itemIdx: number): HTMLElement {
-    let type = this._items[itemIdx]?.type ?? 'line';
+    let item = this._items[itemIdx];
+    let type = 'Band';
+    let itemY = '';
+    let itemX = '';
+    let expression = '';
+
+    if (item.type != 'band') {
+      [itemY, itemX, expression] = this._preview.scatterPlot.meta.getFormulaInfo(item, this._preview.dataFrame!);
+      type = itemX ? 'Line' : 'Constant Line';
+    }
 
     let mainPane = ui.div([], 'ui-form');
-        mainPane.append(this._inputFormula(itemIdx));
-        if (type == 'band')
+        if (type == 'Constant Line')
+          mainPane.append(this._inputConstant(itemIdx, itemY, expression));
+        else
+          mainPane.append(this._inputFormula(itemIdx));
+        if (type == 'Band')
           mainPane.append(this._inputColumn2(itemIdx));
 
     let formatPane = ui.div([], 'ui-form');
         formatPane.style.marginLeft = '-20px';
         formatPane.append(this._inputColor(itemIdx));
         formatPane.append(this._inputOpacity(itemIdx));
-        if (type == 'line')
+        if (type == 'Line')
           formatPane.append(this._inputStyle(itemIdx));
         formatPane.append(this._inputRange(itemIdx));
         formatPane.append(this._inputArrange(itemIdx));
@@ -546,7 +580,7 @@ class Editor {
         tooltipPane.append(this._inputDescription(itemIdx));
 
     let combinedPanels = ui.accordion();
-        combinedPanels.addPane(type == 'line' ? 'Line' : 'Band', () => mainPane, true);
+        combinedPanels.addPane(type, () => mainPane, true);
         combinedPanels.addPane('Format', () => formatPane, true);
         combinedPanels.addPane('Tooltip', () => tooltipPane, true);
 
@@ -575,7 +609,7 @@ export class FormulaLinesDialog {
   constructor(src: DG.DataFrame | DG.Viewer) {
     this.host = new Host(src);
     this.preview = new Preview(this.host.items, src);
-    this.editor = new Editor(this.host.items, this.preview.dataFrame!, (itemIdx: number): boolean => {
+    this.editor = new Editor(this.host.items, this.preview, (itemIdx: number): boolean => {
       this.table.update(itemIdx);
       return this.preview.update(itemIdx);
     });
