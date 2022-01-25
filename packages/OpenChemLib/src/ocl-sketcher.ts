@@ -26,15 +26,11 @@ export class OpenChemLibSketcher extends grok.chem.SketcherBase {
     return ['smiles', 'mol'];
   }
 
-  get smiles() { return this._sketcher.getSmiles(); }
-  set smiles(s) {
-    console.log('s ' + s);
-    this._sketcher.setSmiles(s); }
+  get smiles() { return this._sketcher ? this._sketcher.getSmiles() : ''; }
+  set smiles(s) { this._sketcher?.setSmiles(s); }
 
-  get molFile() { return this._sketcher.getMolFile(); }
-  set molFile(s) {
-    console.log('m ' + s);
-    this._sketcher.setMolFile(s); }
+  get molFile() { return this._sketcher ? this._sketcher.getMolFile() : ''; }
+  set molFile(s) { this._sketcher?.setMolFile(s); }
   
   detach() {
     console.log('OCL sketcher detached');
