@@ -2,7 +2,7 @@ import { randomInt } from "./operations";
 
 export function getDiverseSubset(length: number, n: number, dist: (i1: number, i2: number) => number) {
 
-  function maxBy(values: number[], orderBy: (i: number) => number) {
+  function maxBy(values: IterableIterator<number>, orderBy: (i: number) => number) {
     let maxValue = null;
     let maxOrderBy = null;
 
@@ -16,32 +16,24 @@ export function getDiverseSubset(length: number, n: number, dist: (i1: number, i
     return maxValue;  
   }
 
-  function includeRange(length: number, subset: number[]) {
-    let res = [];
-    for (let i = 0; i < length; ++i) {
-      if (!subset.includes(i))
-        res.push(i);
-    }
-    return res;
-  }
-
-  function min(array: number[]) {
-    let mn = 1e9, id = 0;
-    for (let i = 0; i < array.length; ++i) {
-      mn = Math.min(mn, array[i]);
-    }
-    return mn;
-  }
-
   let subset = [randomInt(length - 1)];
+  let complement = new Set();
+
+  for (let i = 0; i < length; ++i) {
+    if (!subset.includes(i))
+      complement.add(i);
+  }
+
   while (subset.length < n) {
     let idx = maxBy(
-      includeRange(length, subset),
-      (i) => min(subset.map(function (val, index) {
+      complement.values() as IterableIterator<number>,
+      (i) => Math.min.apply(Math, subset.map(function (val, index) {
         return dist(i, val); 
       })));
-    if (idx)
+    if (idx) {
       subset.push(idx);
+      complement.delete(idx);
+    }
   }
   return subset;
 }

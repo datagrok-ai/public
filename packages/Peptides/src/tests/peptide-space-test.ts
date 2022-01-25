@@ -3,9 +3,11 @@ import {
   _testViewerIsDrawing,
   _testDimensionalityReducer,
   _testPeptideSimilaritySpaceViewer,
+  _testTableIsNotEmpty,
 } from './utils';
 import {DimensionalityReducer} from '@datagrok-libraries/ml/src/reduce-dimensionality';
 import {cleanAlignedSequencesColumn} from '../utils/peptide-similarity-space';
+import {aligned1} from './test-data';
 
 import * as DG from 'datagrok-api/dg';
 import * as grok from 'datagrok-api/grok';
@@ -36,10 +38,15 @@ category('peptides', async () => {
     view = grok.shell.addTableView(table);
   });*/
 
-  table = await grok.data.files.openTable('Demo:Files/bio/peptides.csv');
+  //table = await grok.data.files.openTable('Demo:Files/bio/peptides.csv');
+  table = DG.DataFrame.fromCsv(aligned1);
   view = grok.shell.addTableView(table);
 
-  test('PeptideSimilaritySpaceWidget.is_drawing', async () => {
+  test('peptide_space.test_table.is_not_empty', async () => {
+    _testTableIsNotEmpty(table);
+  });
+
+  test('peptide_space.PeptideSimilaritySpaceWidget.is_drawing', async () => {
     await _testViewerIsDrawing(table, view);
   });
 
@@ -48,7 +55,7 @@ category('peptides', async () => {
 
   for (const method of DimensionalityReducer.availableMethods) {
     for (const measure of DimensionalityReducer.metricDataTypes['String']) {
-      test(`DimensinalityReducer.${method}.${measure}.is_numeric`, async () => {
+      test(`peptide_space.DimensinalityReducer.${method}.${measure}.is_numeric`, async () => {
         await _testDimensionalityReducer(columnData, method, measure);
       });
     }
@@ -56,7 +63,7 @@ category('peptides', async () => {
 
   for (const method of DimensionalityReducer.availableMethods) {
     for (const measure of DimensionalityReducer.metricDataTypes['String']) {
-      test(`PeptideSimilaritySpaceViewer.${method}.${measure}.is_proper`, async () => {
+      test(`peptide_space.PeptideSimilaritySpaceViewer.${method}.${measure}.is_proper`, async () => {
         await _testPeptideSimilaritySpaceViewer(table, alignedSequencesColumn, method, measure, 100);//, view);
       });
     }

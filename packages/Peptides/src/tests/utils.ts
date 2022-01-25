@@ -5,6 +5,16 @@ import {PeptideSimilaritySpaceWidget, createPeptideSimilaritySpaceViewer} from '
 import {
   createDimensinalityReducingWorker,
 } from '@datagrok-libraries/ml/src/workers/dimensionality-reducing-worker-creator';
+import {runKalign} from '../utils/multiple-sequence-alignment';
+
+/**
+ * Tests if a table has non zero rows and columns.
+ *
+ * @param {DG.DataFrame} table Target table.
+ */
+export function _testTableIsNotEmpty(table: DG.DataFrame) {
+  expect(table.columns.length > 0 && table.rowCount > 0, true);
+}
 
 /**
  * Tests if peptide space viewer is drawing without exceptions.
@@ -101,3 +111,15 @@ export async function _testPeptideSimilaritySpaceViewer(
   }
   expect(noException, true);
 }
+
+/**
+ * Tests if MSA works and returns consistent result.
+ *
+ * @export
+ * @param {DG.Column} col Aligned sequences column.
+ */
+export async function _testMSAIsCorrect(col: DG.Column) {
+  const msaCol = await runKalign(col, true);
+  expect(msaCol.toList().every((v, i) => v == col.get(i)), true);
+}
+
