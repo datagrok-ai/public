@@ -61,7 +61,6 @@
     "crypto": false
   },
   "scripts": {
-    "publish": "webpack && grok publish",
     "link-api": "npm link datagrok-api",
     "link-utils": "npm link @datagrok-libraries/utils",
     "link-ml": "npm link @datagrok-libraries/ml",
