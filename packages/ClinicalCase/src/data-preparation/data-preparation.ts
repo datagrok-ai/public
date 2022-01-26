@@ -1,9 +1,9 @@
 import * as grok from 'datagrok-api/grok';
 import * as DG from 'datagrok-api/dg';
-import { ALT, AP, AST, BILIRUBIN } from '../constants';
-import { addDataFromDmDomain,  dataframeContentToRow, dateDifferenceInDays, filterBooleanColumn, filterNulls, getUniqueValues } from './utils';
+import { ACTIVE_ARM_POSTTFIX, AE_COUNT, ALT, AP, AST, BILIRUBIN, LOG2_RISK_DIFFERENCE, NEG_LOG10_P_VALUE, ODDS_RATIO, PLACEBO_ARM_POSTTFIX, P_VALUE, RELATIVE_RISK, RISK_DIFFERENCE, SE_RD_WITH_SIGN_LEVEL, STANDARD_ERROR_RD } from '../constants';
+import { addDataFromDmDomain, dateDifferenceInDays, filterBooleanColumn, filterNulls } from './utils';
 import { study } from '../clinical-study';
-import { AE_CAUSALITY, AE_REQ_HOSP, AE_SEQ, AE_SEVERITY, AE_START_DATE, AE_TERM, INV_DRUG_NAME, LAB_HI_LIM_N, LAB_LO_LIM_N, LAB_RES_N, LAB_TEST, SUBJECT_ID, SUBJ_REF_ENDT, SUBJ_REF_STDT, TREATMENT_ARM } from '../columns-constants';
+import { AE_CAUSALITY, AE_REQ_HOSP, AE_SEQ, AE_SEVERITY, AE_START_DATE, AE_TERM, LAB_HI_LIM_N, LAB_LO_LIM_N, LAB_RES_N, LAB_TEST, SUBJECT_ID, SUBJ_REF_ENDT, SUBJ_REF_STDT, TREATMENT_ARM } from '../columns-constants';
 var { jStat } = require('jstat')
 
 
@@ -150,11 +150,14 @@ export function getSurvivalStatus(eventColumn: DG.Column, i: number) {
   return eventColumn.isNone(i) ? 0 : 1;
 }
 
-export function createAERiskAssessmentDataframe(ae: DG.DataFrame, dm: DG.DataFrame, placeboArm: string[], activeArm: string[]) {
+export function createAERiskAssessmentDataframe(ae: DG.DataFrame, dm: DG.DataFrame, placeboArm: string[], activeArm: string[], signLevel: number) {
 
-  let treatmentArmCol = 'TREATMENT_ARM_JOINED';
+  let TRTARM = 'TREATMENT_ARM';
+  let TOTALSUBJ = 'TOTALSUBJ';
+  let TOTALSUBJ_WITH_AE = 'TOTALSUBJ_WITH_AE';
+  let PERCENT = 'PERCENT';
 
-  dm.columns.addNewString(treatmentArmCol).init((i) => {
+  dm.columns.addNewString(TRTARM).init((i) => {
     if (placeboArm.includes(dm.get(TREATMENT_ARM, i))) {
       return placeboArm.join(',');
     }
@@ -164,111 +167,131 @@ export function createAERiskAssessmentDataframe(ae: DG.DataFrame, dm: DG.DataFra
     return dm.get(TREATMENT_ARM, i);
   })
 
-  let subjArm = createUniqueCountDataframe(dm, [treatmentArmCol], SUBJECT_ID, 'TOTALSUBJ');
+  let subjArm = createUniqueCountDataframe(dm, [TRTARM], SUBJECT_ID, TOTALSUBJ);
 
   let numberSubjPlaceboArm = subjArm.groupBy(subjArm.columns.names())
-    .where(`${treatmentArmCol} = ${placeboArm.join(',')}`)
+    .where(`${TRTARM} = ${placeboArm.join(',')}`)
     .aggregate()
-    .get('TOTALSUBJ', 0);
+    .get(TOTALSUBJ, 0);
   let numberSubjActiveArm = subjArm.groupBy(subjArm.columns.names())
-    .where(`${treatmentArmCol} = ${activeArm.join(',')}`)
+    .where(`${TRTARM} = ${activeArm.join(',')}`)
     .aggregate()
-    .get('TOTALSUBJ', 0);
+    .get(TOTALSUBJ, 0);
   let totalSubj = numberSubjPlaceboArm + numberSubjActiveArm;
 
-  let joinedAeEX = grok.data.joinTables(ae, dm, [SUBJECT_ID], [SUBJECT_ID], [SUBJECT_ID, AE_TERM], [treatmentArmCol], DG.JOIN_TYPE.LEFT, false);
-  let subjAE = createUniqueCountDataframe(joinedAeEX, [AE_TERM, treatmentArmCol], SUBJECT_ID, 'TOTALSUBJ_WITH_AE');
+  let joinedAeEX = grok.data.joinTables(ae, dm, [SUBJECT_ID], [SUBJECT_ID], [SUBJECT_ID, AE_TERM], [TRTARM], DG.JOIN_TYPE.LEFT, false);
+  let subjAE = createUniqueCountDataframe(joinedAeEX, [AE_TERM, TRTARM], SUBJECT_ID, TOTALSUBJ_WITH_AE);
 
-  let tj = grok.data.joinTables(subjAE, subjArm, [treatmentArmCol], [treatmentArmCol], [AE_TERM, treatmentArmCol, 'TOTALSUBJ_WITH_AE'], ['TOTALSUBJ'], DG.JOIN_TYPE.LEFT, false);
+  let subjTotalAndWithAE = grok.data.joinTables(subjAE, subjArm, [TRTARM], [TRTARM], [AE_TERM, TRTARM, TOTALSUBJ_WITH_AE], [TOTALSUBJ], DG.JOIN_TYPE.LEFT, false);
 
-  tj.columns.addNewFloat('PERCENT')
-    .init((i) => parseFloat(tj.get('TOTALSUBJ_WITH_AE', i)) / parseFloat(tj.get('TOTALSUBJ', i)));
+  subjTotalAndWithAE.columns.addNewFloat(PERCENT)
+    .init((i) => parseFloat(subjTotalAndWithAE.get(TOTALSUBJ_WITH_AE, i)) / parseFloat(subjTotalAndWithAE.get(TOTALSUBJ, i)));
 
-  let aeRiskRatioPlacebo = tj.groupBy([AE_TERM, treatmentArmCol, 'TOTALSUBJ_WITH_AE', 'TOTALSUBJ', 'PERCENT'])
-    .where(`${treatmentArmCol} = ${placeboArm}`)
+  let aeRiskRatioPlacebo = subjTotalAndWithAE.groupBy([AE_TERM, TRTARM, TOTALSUBJ_WITH_AE, TOTALSUBJ, PERCENT])
+    .where(`${TRTARM} = ${placeboArm}`)
     .aggregate();
 
-  let aeRiskRatioActive = tj.groupBy([AE_TERM, treatmentArmCol, 'TOTALSUBJ_WITH_AE', 'TOTALSUBJ', 'PERCENT'])
-    .where(`${treatmentArmCol} = ${activeArm}`)
+  let aeRiskRatioActive = subjTotalAndWithAE.groupBy([AE_TERM, TRTARM, TOTALSUBJ_WITH_AE, TOTALSUBJ, PERCENT])
+    .where(`${TRTARM} = ${activeArm}`)
     .aggregate();
 
+  let renameCols = (df: DG.DataFrame, columnNames: string[], arm: string) => {
+    columnNames.forEach(it => {
+      df.getCol(it).name = `${it}_${arm}`;
+    })
+  }
 
-  let tj2 = grok.data.joinTables(aeRiskRatioActive, aeRiskRatioPlacebo, [AE_TERM], [AE_TERM],
-    [AE_TERM, treatmentArmCol, 'TOTALSUBJ_WITH_AE', 'TOTALSUBJ', 'PERCENT'],
-    [AE_TERM, treatmentArmCol, 'TOTALSUBJ_WITH_AE', 'TOTALSUBJ', 'PERCENT'], DG.JOIN_TYPE.OUTER, false);
+  renameCols(aeRiskRatioPlacebo, [TRTARM, TOTALSUBJ_WITH_AE, TOTALSUBJ, PERCENT], PLACEBO_ARM_POSTTFIX)
+  renameCols(aeRiskRatioActive, [TRTARM, TOTALSUBJ_WITH_AE, TOTALSUBJ, PERCENT], ACTIVE_ARM_POSTTFIX)
+
+  let joinedFinal = grok.data.joinTables(aeRiskRatioActive, aeRiskRatioPlacebo, [AE_TERM], [AE_TERM],
+    [AE_TERM, `${TRTARM}_${ACTIVE_ARM_POSTTFIX}`, `${TOTALSUBJ_WITH_AE}_${ACTIVE_ARM_POSTTFIX}`, `${TOTALSUBJ}_${ACTIVE_ARM_POSTTFIX}`, `${PERCENT}_${ACTIVE_ARM_POSTTFIX}`],
+    [AE_TERM, `${TRTARM}_${PLACEBO_ARM_POSTTFIX}`, `${TOTALSUBJ_WITH_AE}_${PLACEBO_ARM_POSTTFIX}`, `${TOTALSUBJ}_${PLACEBO_ARM_POSTTFIX}`, `${PERCENT}_${PLACEBO_ARM_POSTTFIX}`], 
+    DG.JOIN_TYPE.OUTER, false);
 
 
+  joinedFinal.getCol(`null.${AE_TERM}`).name = `${AE_TERM}_${ACTIVE_ARM_POSTTFIX}`;
+  joinedFinal.getCol(`null.${AE_TERM} (2)`).name = `${AE_TERM}_${PLACEBO_ARM_POSTTFIX}`;
 
-  let column1 = tj2.columns.byName(`null.${AE_TERM}`);
-  let percent1 = tj2.columns.byName('null.PERCENT');
-  let exposed1 = tj2.columns.byName('null.TOTALSUBJ_WITH_AE');
-  let column2 = tj2.columns.byName(`null.${AE_TERM} (2)`);
-  let percent2 = tj2.columns.byName('null.PERCENT (2)');
-  let exposed2 = tj2.columns.byName('null.TOTALSUBJ_WITH_AE (2)');
 
-  let rowCount = tj2.rowCount;
-
-  for (let i = 0; i < rowCount; i++) {
-    if (column1.isNone(i)) {
-      const value = column2.get(i);
-      column1.set(i, value, false)
-      percent1.set(i, 0, false);
-      exposed1.set(i, 0, false);
+  let removeNulls = (rowCount, colToCheck, colWithWalue, percentCol, totalSubjWithAECol) => {
+    for (let i = 0; i < rowCount; i++) {
+      if (colToCheck.isNone(i)) {
+        const value = colWithWalue.get(i);
+        colToCheck.set(i, value, false)
+        percentCol.set(i, 0, false);
+        totalSubjWithAECol.set(i, 0, false);
+      }
     }
   }
 
+  removeNulls(joinedFinal.rowCount,
+    joinedFinal.col(`${AE_TERM}_${ACTIVE_ARM_POSTTFIX}`),
+    joinedFinal.col(`${AE_TERM}_${PLACEBO_ARM_POSTTFIX}`),
+    joinedFinal.col(`${PERCENT}_${ACTIVE_ARM_POSTTFIX}`),
+    joinedFinal.col(`${TOTALSUBJ_WITH_AE}_${ACTIVE_ARM_POSTTFIX}`));
 
-  for (let i = 0; i < rowCount; i++) {
-    if (column2.isNone(i)) {
-      const value = column1.get(i);
-      column2.set(i, value, false)
-      percent2.set(i, 0, false);
-      exposed2.set(i, 0, false);
-    } 
-  }
+  removeNulls(joinedFinal.rowCount,
+    joinedFinal.col(`${AE_TERM}_${PLACEBO_ARM_POSTTFIX}`),
+    joinedFinal.col(`${AE_TERM}_${ACTIVE_ARM_POSTTFIX}`),
+    joinedFinal.col(`${PERCENT}_${PLACEBO_ARM_POSTTFIX}`),
+    joinedFinal.col(`${TOTALSUBJ_WITH_AE}_${PLACEBO_ARM_POSTTFIX}`));
 
-  tj2.columns.addNewFloat('RR')
-    .init((i) => (tj2.get('null.TOTALSUBJ_WITH_AE', i) * numberSubjPlaceboArm) / (tj2.get('null.TOTALSUBJ_WITH_AE (2)', i) * numberSubjActiveArm));
+  joinedFinal.columns.addNewFloat(RELATIVE_RISK)
+    .init((i) => (joinedFinal.get(`${TOTALSUBJ_WITH_AE}_${ACTIVE_ARM_POSTTFIX}`, i) * numberSubjPlaceboArm) / (joinedFinal.get(`${TOTALSUBJ_WITH_AE}_${PLACEBO_ARM_POSTTFIX}`, i) * numberSubjActiveArm));
 
-  tj2.columns.addNewFloat('RD')
-    .init((i) => tj2.get('null.TOTALSUBJ_WITH_AE', i) / numberSubjActiveArm - tj2.get('null.TOTALSUBJ_WITH_AE (2)', i) / numberSubjPlaceboArm);
+  joinedFinal.columns.addNewFloat(RISK_DIFFERENCE)
+    .init((i) => joinedFinal.get(`${TOTALSUBJ_WITH_AE}_${ACTIVE_ARM_POSTTFIX}`, i) / numberSubjActiveArm - joinedFinal.get(`${TOTALSUBJ_WITH_AE}_${PLACEBO_ARM_POSTTFIX}`, i) / numberSubjPlaceboArm);
 
-  tj2.columns.addNewFloat('log2(RD)')
-    .init((i) =>  Math.log2(tj2.get('RD', i)));
+  joinedFinal.columns.addNewFloat(LOG2_RISK_DIFFERENCE)
+    .init((i) => Math.log2(joinedFinal.get(RISK_DIFFERENCE, i)));
 
-  tj2.columns.addNewFloat('OR').init((i) => {
-    const TE = tj2.get('null.TOTALSUBJ_WITH_AE', i);
-    const PE = tj2.get('null.TOTALSUBJ_WITH_AE (2)', i);
+  joinedFinal.columns.addNewFloat(ODDS_RATIO).init((i) => {
+    const TE = joinedFinal.get(`${TOTALSUBJ_WITH_AE}_${ACTIVE_ARM_POSTTFIX}`, i);
+    const PE = joinedFinal.get(`${TOTALSUBJ_WITH_AE}_${PLACEBO_ARM_POSTTFIX}`, i);
     return (TE * (numberSubjPlaceboArm - PE)) / (PE * (numberSubjActiveArm - TE))
   });
 
-  tj2.columns.addNewFloat('Z').init((i) => {
-    const TE = tj2.get('null.TOTALSUBJ_WITH_AE', i);
+  joinedFinal.columns.addNewFloat('Z').init((i) => {
+    const TE = joinedFinal.get(`${TOTALSUBJ_WITH_AE}_${ACTIVE_ARM_POSTTFIX}`, i);
     const TN = numberSubjActiveArm - TE;
-    const PE = tj2.get('null.TOTALSUBJ_WITH_AE (2)', i);
-    const PN = numberSubjPlaceboArm - TE;
+    const PE = joinedFinal.get(`${TOTALSUBJ_WITH_AE}_${PLACEBO_ARM_POSTTFIX}`, i);
+    const PN = numberSubjPlaceboArm - PE;
     const N = totalSubj;
-
     const Z = (Math.pow(TE - (numberSubjActiveArm * (TE + PE)) / N, 2) * Math.pow(N, 2) * (N - 1)) /
       (numberSubjActiveArm * numberSubjPlaceboArm * (TE + PE) * (TN + PN));
     return Z;
   });
 
-  tj2.columns.addNewFloat('p-value').init((i) => {
-    const Z = tj2.get('Z', i);
+  joinedFinal.columns.addNewFloat(P_VALUE).init((i) => {
+    const Z = joinedFinal.get('Z', i);
     const f = jStat.chisquare.cdf(Z, 1);
     return 1 - f < f ? 1 - f : f;
   });
 
-  tj2.columns.addNewFloat('-log10(p-value)').init((i) => (-Math.log10(tj2.get('p-value', i))));
+  joinedFinal.columns.addNewFloat(NEG_LOG10_P_VALUE).init((i) => (-Math.log10(joinedFinal.get(P_VALUE, i))));
 
-  tj2.getCol(`null.${AE_TERM}`).name = AE_TERM;
+   joinedFinal.columns.addNewFloat(STANDARD_ERROR_RD).init((i) => {
+    const TE = joinedFinal.get(`${TOTALSUBJ_WITH_AE}_${ACTIVE_ARM_POSTTFIX}`, i);
+    const TN = numberSubjActiveArm - TE;
+    const PE = joinedFinal.get(`${TOTALSUBJ_WITH_AE}_${PLACEBO_ARM_POSTTFIX}`, i);
+    const PN = numberSubjPlaceboArm - PE;
+    const SE = Math.sqrt((TE*TN/Math.pow(numberSubjActiveArm, 3) + PE*PN/Math.pow(numberSubjPlaceboArm, 3)));
+    return SE;
+  }); 
 
-  return tj2;
+  joinedFinal.columns.addNewFloat(SE_RD_WITH_SIGN_LEVEL).init((i) => {
+    const SE = joinedFinal.get(STANDARD_ERROR_RD, i);
+    const quantile = jStat.normal.inv(1 - signLevel, 0, 1);
+    return 2*quantile*SE;
+  }); 
 
-  /* return tj2.groupBy([ AE_TERM, 'RELATIVE RISK', 'RISK DIFF', 'ODDS RATIO'])
-    .aggregate(); */
+  const totalAENumbers = ae.groupBy([AE_TERM]).count().aggregate();
+  totalAENumbers.col(`count`).name = AE_COUNT;
 
+  joinedFinal = grok.data.joinTables(joinedFinal, totalAENumbers, [`${AE_TERM}_${ACTIVE_ARM_POSTTFIX}`], [AE_TERM], joinedFinal.columns.names(), [AE_COUNT], DG.JOIN_TYPE.LEFT, false);
+
+  return joinedFinal;
 }
 
 

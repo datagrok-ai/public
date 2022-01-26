@@ -5,7 +5,7 @@ export const ALT = 'ALT';
 export const AST = 'AST';
 export const BILIRUBIN = 'BLN';
 export const AP = 'AP';
-export const colorsForSurvivalChart = ['red', 'green', 'blue', 'yellow']
+export const colorsForSurvivalChart = ['red', 'green', 'blue', 'yellow'];
 export const SURVIVAL_ANALYSIS_GUIDE = `1. Select dataset parameters and click 'Create dataset'.
 2. Filter data if needed.
 3. Go to 'Survival Chart' tab to see Kaplan-Meier curve. You can modify the survival chart parameters - confidence interval and strata.
@@ -29,6 +29,18 @@ export const CLINICAL_TRIAL_GOV_FIELDS = {
         'CompletionDate':'Completion Date',
         'BriefSummary': 'Brief Summary'
 }
+
+export const ACTIVE_ARM_POSTTFIX = 'ACTIVE';
+export const PLACEBO_ARM_POSTTFIX = 'PLACEBO';
+export const RELATIVE_RISK = 'RR';
+export const RISK_DIFFERENCE = 'RD';
+export const LOG2_RISK_DIFFERENCE = 'log2(RD)';
+export const ODDS_RATIO = 'OR';
+export const P_VALUE = 'p-value';
+export const NEG_LOG10_P_VALUE = '-log10(p-value)';
+export const AE_COUNT = 'AE_COUNT';
+export const STANDARD_ERROR_RD = 'SE_RD';
+export const SE_RD_WITH_SIGN_LEVEL = 'SE_RD_SIGN_LEVEL';
 
 // req - all coulmns must be present, opt - at least one of the columns must be present
 // req_domains - all domains must be present, opt_domains - at least one of domains must be present
