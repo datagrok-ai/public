@@ -301,3 +301,103 @@ export function processSequence(subParts: string[]): [string[], boolean] {
   });
   return [text, simplified];
 }
+
+/**
+ * Aligned sequence difference cell renderer.
+ *
+ * @export
+ * @class AlignedSequenceDifferenceCellRenderer
+ * @extends {DG.GridCellRenderer}
+ */
+ export class AlignedSequenceDifferenceCellRenderer extends DG.GridCellRenderer {
+  /**
+   * Renderer name.
+   *
+   * @readonly
+   * @memberof AlignedSequenceDifferenceCellRenderer
+   */
+  get name() {
+    return 'alignedSequenceDifferenceCR';
+  }
+
+  /**
+   * Cell type.
+   *
+   * @readonly
+   * @memberof AlignedSequenceDifferenceCellRenderer
+   */
+  get cellType() {
+    return 'alignedSequenceDifference';
+  }
+
+  get defaultHeight() {
+    return 35;
+  }
+
+  /**
+   * Cell renderer function.
+   *
+   * @param {CanvasRenderingContext2D} g Canvas rendering context.
+   * @param {number} x x coordinate on the canvas.
+   * @param {number} y y coordinate on the canvas.
+   * @param {number} w width of the cell.
+   * @param {number} h height of the cell.
+   * @param {DG.GridCell} gridCell Grid cell.
+   * @param {DG.GridCellStyle} cellStyle Cell style.
+   * @memberof AlignedSequenceDifferenceCellRenderer
+   */
+  render(
+    g: CanvasRenderingContext2D, x: number, y: number, w: number, h: number,
+    gridCell: DG.GridCell, cellStyle: DG.GridCellStyle,
+  ) {
+    const grid = gridCell.dart.grid ? gridCell.grid : gridCell.dart.grid;
+    const cell = gridCell.cell;
+
+    w = grid ? Math.min(grid.canvas.width - x, w) : g.canvas.width - x;
+    y += 3;
+    g.save();
+    g.beginPath();
+    g.rect(x, y, w, h);
+    g.clip();
+    g.font = '14px monospace';
+    g.textBaseline = 'top';
+    const s: string = cell.value ?? '';
+
+    //TODO: can this be replaced/merged with splitSequence?
+    const [s1, s2] = s.split('#');
+    const subParts1 = s1.split('-');
+    const subParts2 = s2.split('-');
+    const [text, simplified] = processSequence(subParts1);
+    const textSize = g.measureText(text.join(''));
+    x = Math.max(x, x + (w - textSize.width) / 2);
+
+    subParts1.forEach((amino1: string, index) => {
+      let color, pivot;
+      let amino2 = subParts2[index];
+
+      if (amino1 != '')
+        [color, pivot] = cp.getColorPivot(amino1);
+      else
+        [color, pivot] = cp.getColorPivot(amino2);
+      
+      if (amino1 != amino2) {
+        let verticalShift = 10;
+
+        if (amino1 == '' || amino2 == '') {
+          verticalShift = 0;
+        }
+
+        let prev = x;
+
+        x = printLeftOrCentered(x, y - verticalShift, w, h, g, amino1, 'red', pivot, true);
+        if (amino2 != '') {
+          x = prev;
+          x = printLeftOrCentered(x, y + verticalShift, w, h, g, amino2, 'red', pivot, true);
+        }
+      } else {
+        x = printLeftOrCentered(x, y, w, h, g, amino1, 'gray', pivot, true);
+      } 
+    });
+    g.restore();
+  }
+}
