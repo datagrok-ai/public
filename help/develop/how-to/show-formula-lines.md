@@ -17,15 +17,11 @@ dataframe tag or by changing the `formulaLines` property of the viewer. The cont
 
 There is a more convenient ways to create lines:
 
-- method `dataframe.meta.addFormulaLine()` - for creating and saving a line in a dataframe
-- method `viewer.meta.addFormulaLine()` - for creating and saving a line in a viewer
+- method `dataframe.meta.formulaLines.addLine()` - for creating and saving a line in a dataframe
+- method `viewer.meta.formulaLines.addLine()` - for creating and saving a line in a viewer
 
-To completely remove lines from dataframe or viewer use methods `dataframe.meta.removeFormulaLines()`
-or `viewer.meta.removeFormulaLines()`. Calling these methods without parameters will delete all lines from the storage.
-You can also remove only specific lines by listing their IDs, for
-example: `viewer.meta.removeFormulaLines('123', 'abc')`. If a complete removal is not necessary, then you can simply
-hide the unnecessary line using the `visible`
-attribute.
+To completely remove lines from dataframe or viewer use method `dataframe.meta.formulaLines.clear()`
+or `viewer.meta.formulaLines.clear()`.
 
 Lines saved in the dataframe will be displayed on all viewers in the same way. Lines saved in the viewer are displayed
 only in this viewer and do not affect other viewers.
@@ -36,7 +32,7 @@ An example of creating and displaying a line in this way:
 let demog = grok.data.demo.demog(100);
 
 // Add line to dataframe:
-demog.meta.addFormulaLine({
+demog.meta.formulaLines.addLine({
   title: 'Parabola',
   formula: '${height} = 180 + 0.01 * ${weight} * ${weight} - 1.5 * ${weight}',
   zIndex: -30,
@@ -45,14 +41,27 @@ demog.meta.addFormulaLine({
   visible: true,
 });
 
-// Add another line to dataframe:
-demog.meta.addFormulaLine({
-  id: 'MyLine',
-  formula: '${height} = 200'
+// Add band to dataframe:
+demog.meta.formulaLines.addBand({
+  formula: '${height} in(150, 180)',
+  column2: 'age'
 });
 
-// Remove line with id = 'MyLine':
-demog.meta.removeFormulaLines('MyLine');
+// Add another line to dataframe.
+// This is a generalized method for adding lines.
+// To use it, you must specify the line type in the parameter list:
+demog.meta.formulaLines.add({
+  type: 'line'  // "line" or "band"
+  formula: '${height} = ${weight}',
+});
+
+// Add a list of lines to dataframe:
+let item1 = { type: 'line', formula: '${height} = 200' };
+let item2 = { type: 'band', formula: '${age} > 18', column2: 'sex' };
+demog.meta.formulaLines.addAll([item1, item2]);
+
+// Remove all lines:
+demog.meta.formulaLines.clear();
 
 let view = grok.shell.addTableView(demog);
 
@@ -64,7 +73,7 @@ let plot = view.scatterPlot({
 });
 
 // Add line to viewer:
-plot.meta.addFormulaLine({
+plot.meta.formulaLines.addLine({
   formula: '${weight} = 150',
   color: "#ff0000",
   width: 10
@@ -72,8 +81,8 @@ plot.meta.addFormulaLine({
 
 ```
 
-A similar methods is used to create bands - `dataframe.meta.addFormulaBand()`
-or `viewer.meta.addFormulaBand()`. Most of the parameters for lines and bands are the same. But there are also some
+A similar methods is used to create bands - `dataframe.meta.formulaLines.addBand()`
+or `viewer.meta.formulaLines.addBand()`. Most of the parameters for lines and bands are the same. But there are also some
 parameters that are specific for lines and bands. See them in the description of the parameters for lines and bands.
 
 More examples of creating lines and bands can be
@@ -81,14 +90,13 @@ found [here](https://public.datagrok.ai/js/samples/data-frame/metadata/formula-l
 
 ## Line parameters
 
-Method to create a line: `dataframe.meta.addFormulaLine(parameters)`
-or `viewer.meta.addFormulaLine(parameters)`
+Method to create a line: `dataframe.meta.formulaLines.addLine(parameters)`
+or `viewer.meta.formulaLines.addLine(parameters)`
 
 Only one parameter ("formula") is required. All other parameters have their default values.
 
 | Parameter     | Type    | Example                       | Default                                   | Description                                                                                                                                                                                                                                                                                                                                                                                                                        |
 |---------------|---------|-------------------------------|-------------------------------------------|------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|
-| `id`          | string  | '123'                         | Empty string                              | Line ID. Used to completely remove unnecessary line.                                                                                                                                                                                                                                                                                                                                                                               |
 | `title`       | string  | 'Reference line'              | Empty string                              | Short name of the line used when displaying the tooltip.                                                                                                                                                                                                                                                                                                                                                                           |
 | `description` | string  | 'Normal distribution of data' | Empty string                              | Detailed description of the line used when displaying the tooltip.                                                                                                                                                                                                                                                                                                                                                                 |
 | `formula`     | string  | '${height} = 2.2 * ${weight}' | Required parameter that must be specified | Formula for line. There should be one column to the left of the "=". And any formula using the second column on the right side. The formula uses syntax and formulas similar to the [Add New Column](../../transform/add-new-column.md) form.                                                                                                                                                                                      |
@@ -104,14 +112,13 @@ Only one parameter ("formula") is required. All other parameters have their defa
 
 ## Band parameters
 
-Method to create a band: `dataframe.meta.addFormulaBand(parameters)`
-or `viewer.meta.addFormulaBand(parameters)`
+Method to create a band: `dataframe.meta.formulaLines.addBand(parameters)`
+or `viewer.meta.formulaLines.addBand(parameters)`
 
-Only 3 parameters ("formula", "column" and "column2") are required. All other parameters have their default values.
+Only 2 parameters ("formula" and "column2") are required. All other parameters have their default values.
 
 | Parameter     | Type    | Example                 | Default                                   | Description                                                                                                                                                                                                                                                                                                                                                                                                                                            |
 |---------------|---------|-------------------------|-------------------------------------------|--------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|
-| `id`          | string  | '123'                   | Empty string                              | Line ID. Used to completely remove unnecessary line.                                                                                                                                                                                                                                                                                                                                                                                                   |
 | `title`       | string  | 'Clipping range'        | Empty string                              | Short name of the band used when displaying the tooltip.                                                                                                                                                                                                                                                                                                                                                                                               |
 | `description` | string  | 'Ignored range of data' | Empty string                              | Detailed description of the band used when displaying the tooltip.                                                                                                                                                                                                                                                                                                                                                                                     |
 | `formula`     | string  | '${height} > 170'       | Required parameter that must be specified | Band boundary formula. The formula can contain expressions of the form: "${colName} < 200", "${colName} > avg", "${colName} in(18, 60)", "${colName} in(q1, q3)", etc. The numbers are specified in the units of the column (in this case in centimeters).                                                                                                                                                                                                                                          |

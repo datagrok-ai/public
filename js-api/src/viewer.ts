@@ -1,6 +1,6 @@
 /** A viewer that is typically docked inside a [TableView]. */
 import {TYPE, VIEWER, ViewerPropertyType, ViewerType} from "./const";
-import {Column, DataFrame, FormulaLine} from "./dataframe.js";
+import {Column, DataFrame} from "./dataframe.js";
 import {DateTime, Property} from "./entities";
 import {Menu, ObjectPropertyBag, Widget} from "./widgets";
 import {_toJson} from "./utils";
@@ -10,6 +10,7 @@ import * as rxjs from "rxjs";
 import {Subscription} from "rxjs";
 import {map} from 'rxjs/operators';
 import {Grid, Point, Rect} from "./grid";
+import {FormulaLinesHelper} from "./helpers";
 
 declare let DG: any;
 declare let ui: any;
@@ -374,61 +375,24 @@ export class ScatterPlotViewer extends Viewer {
 }
 
 export class ViewerMetaHelper {
-  private readonly viewer: Viewer;
-  private formulaLines: FormulaLine[] = [];
-  private formulaLinesProp: string = 'formulaLines';
+  private readonly _viewer: Viewer;
+
+  readonly formulaLines: ViewerFormulaLinesHelper;
 
   constructor(viewer: Viewer) {
+    this._viewer = viewer;
+    this.formulaLines = new ViewerFormulaLinesHelper(this._viewer);
+  }
+}
+
+export class ViewerFormulaLinesHelper extends FormulaLinesHelper {
+  readonly viewer: Viewer;
+
+  get storage(): string { return this.viewer.props['formulaLines']; }
+  set storage(value: string) { this.viewer.props['formulaLines'] = value; }
+
+  constructor(viewer: Viewer) {
+    super();
     this.viewer = viewer;
-    this.formulaLines = this.getFormulaLines();
-  }
-
-  getFormulaLines(): FormulaLine[] {
-    let json: string | null = this.viewer.props[this.formulaLinesProp];
-    if (json)
-      return JSON.parse(json);
-
-    return [];
-  }
-
-  addFormulaLines(items: FormulaLine[] | null = null): void {
-    if (!items)
-      return;
-
-    let json: string | null = _toJson(items);
-    if (json)
-      this.viewer.props[this.formulaLinesProp] = json;
-  }
-
-  addFormulaItem(item: FormulaLine): void {
-    this.formulaLines.push(toJs(api.grok_FormulaHelper_AddDefaults(item)));
-    this.addFormulaLines(this.formulaLines);
-  }
-
-  addFormulaLine(item: FormulaLine): void {
-    item.type = 'line';
-    this.addFormulaItem(item);
-  }
-
-  addFormulaBand(item: FormulaLine): void {
-    item.type = 'band';
-    this.addFormulaItem(item);
-  }
-
-  removeFormulaLines(...ids: string[]): void {
-    if (ids.length == 0) {
-      this.formulaLines = [];
-      this.viewer.props[this.formulaLinesProp] = '[]';
-      return;
-    }
-
-    this.formulaLines = this.formulaLines.filter((item: FormulaLine) =>
-        item.id == undefined || ids.indexOf(item.id) == -1);
-
-    this.addFormulaLines(this.formulaLines);
-  }
-
-  getFormulaInfo(item: FormulaLine, dataFrame: DataFrame): string[] {
-    return api.grok_FormulaHelper_GetInfo(item.formula, item.type, dataFrame.dart);
   }
 }
