@@ -109,7 +109,6 @@ export async function createPeptideSimilaritySpaceViewer(
   if (view !== null)
     view.addViewer(viewer);
 
-
   pi.close();
   return viewer;
 }
@@ -223,6 +222,25 @@ export class PeptideSimilaritySpaceWidget {
    * @memberof PeptideSimilaritySpaceWidget
    */
   public async draw(): Promise<DG.Widget> {
-    return new DG.Widget(ui.divV([(await this.drawViewer()).root, await this.drawInputs()]));
+    const plot = await this.drawViewer();
+    const inputs = await this.drawInputs();
+    const elements = ui.divV([plot.root, inputs]);
+
+    // Move detaching scatterplot to the grid.
+    plot.onEvent('d4-viewer-detached').subscribe((args) => {
+      let found = false;
+
+      for (const v of this.view.viewers) {
+        const opts = v.getOptions() as {[name: string]: any};
+
+        if (opts.type == 'Scatter plot' && opts.look.xColumnName == '~X' && opts.look.yColumnName == '~Y')
+          found = true;
+      }
+
+      if (!found)
+        this.view.addViewer(plot);
+    });
+
+    return new DG.Widget(elements);
   }
 }
