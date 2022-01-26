@@ -5,6 +5,7 @@ import * as DG from 'datagrok-api/dg';
 
 import {
   AlignedSequenceCellRenderer,
+  AlignedSequenceDifferenceCellRenderer,
   AminoAcidsCellRenderer,
 } from './utils/cell-renderer';
 import {Logo} from './viewers/logo-viewer';
@@ -17,6 +18,7 @@ import {SARViewer, SARViewerVertical} from './viewers/sar-viewer';
 import {peptideMoleculeWidget, getMolecule} from './widgets/peptide-molecule';
 import {SubstViewer} from './viewers/subst-viewer';
 import {runKalign} from './utils/multiple-sequence-alignment';
+import { SemanticValue } from 'datagrok-api/dg';
 
 export const _package = new DG.Package();
 let tableGrid: DG.Grid;
@@ -227,6 +229,27 @@ export async function multipleSequenceAlignment(col: DG.Column): Promise<DG.Data
 //input: dataframe table {semType: Substitution}
 //output: widget result
 export async function peptideSubstitution(table: DG.DataFrame): Promise<DG.Widget> {
-  return new DG.Widget(table ? ui.divH([table.plot.grid().root]) :
-    ui.label('No difference'));
+  if (!table) {
+    return new DG.Widget(ui.label('No difference'));
+  }
+  let initialCol: DG.Column = table.columns.byName('Initial');
+  let substitutedCol: DG.Column = table.columns.byName('Substituted');
+
+  for (let i = 0; i < initialCol.length; ++i) {
+    let concat = initialCol.get(i) + '#' + substitutedCol.get(i);
+    initialCol.set(i, concat);
+  }
+  
+  initialCol.semType = 'alignedSequenceDifference';
+  initialCol.name = 'Difference';
+  table.columns.remove('Substituted');
+  return new DG.Widget(ui.divH([table.plot.grid().root]));
+}
+
+//name: alignedSequenceDifferenceCellRenderer
+//tags: cellRenderer, cellRenderer-alignedSequenceDifference
+//meta-cell-renderer-sem-type: alignedSequenceDifference
+//output: grid_cell_renderer result
+export function alignedSequenceDifferenceCellRenderer() {
+  return new AlignedSequenceDifferenceCellRenderer();
 }
