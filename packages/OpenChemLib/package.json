@@ -2,7 +2,7 @@
 	"name": "@datagrok/grokopenchemlib",
 	"beta": false,
 	"friendlyName": "OpenChemLib",
-	"version": "0.0.1",
+	"version": "0.0.2",
 	"description": "",
 	"dependencies": {
 		"datagrok-api": ">0.94.10",

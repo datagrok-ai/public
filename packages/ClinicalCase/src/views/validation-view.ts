@@ -5,10 +5,10 @@ import { study } from "../clinical-study";
 import { validationRulesList, _package } from "../package";
 import { pinnacleRuleIdColumnName, validationResultRuleIdColumn } from "../validation/constants";
 import { createRulesDataFrame } from '../validation/validation-utils';
-import { ILazyLoading } from '../lazy-loading/lazy-loading';
 import { getUniqueValues } from '../data-preparation/utils';
+import { ClinicalCaseViewBase } from '../model/ClinicalCaseViewBase';
 
-export class ValidationView extends DG.ViewBase implements ILazyLoading {
+export class ValidationView extends ClinicalCaseViewBase {
 
   resultsDataframe: DG.DataFrame;
   rulesDataframe: DG.DataFrame;
@@ -30,12 +30,6 @@ export class ValidationView extends DG.ViewBase implements ILazyLoading {
     }
     this.helpUrl = `${_package.webRoot}/views_help/validation.md`;
   }
-
-  loaded = false;
-
-  load(): void {
-    this.createView();
- }
 
   createView(): void {
     this.resultsDataframe = study.validationResults;

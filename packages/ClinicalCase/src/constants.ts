@@ -177,10 +177,10 @@ export const requiredColumnsByView = {
                                         sdtmCols.AE_TERM
                                 ]
                         },
-                        'ex': {
+                        'dm': {
                                 'req': [
                                         sdtmCols.SUBJECT_ID,
-                                        sdtmCols.INV_DRUG_NAME
+                                        sdtmCols.TREATMENT_ARM
                                 ]
                         }
                 }

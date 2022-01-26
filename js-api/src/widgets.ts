@@ -884,6 +884,11 @@ export class InputBase {
     api.grok_InputBase_AddCaption(this.dart, caption);
   };
 
+  /** Adds the specified postfix */
+  addPostfix(postfix: string): void {
+    api.grok_InputBase_AddPostfix(this.dart, postfix);
+  };
+
   /** Adds a usage example to the input's hamburger menu */
   addPatternMenu(pattern: any): void {
     api.grok_InputBase_AddPatternMenu(this.dart, pattern);

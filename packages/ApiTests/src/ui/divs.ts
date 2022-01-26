@@ -28,6 +28,9 @@ category('UI - div', () => {
     'image': {'element': ui.image('https://dev.datagrok.ai/favicon.png', 42, 42), 'selectors': ['.ui-image']},
     'inputs': {'element': ui.inputs([ui.floatInput('test', 42)]), 'selectors': ['.ui-form']},
     'narrowForm': {'element': ui.narrowForm(), 'selectors': ['.ui-form', '.ui-form-condensed']},
+    'loader': {'element': ui.loader(), 'selectors': ['.grok-loader']},
+    'wait': {'element': ui.wait(async ()=> ui.div()), 'selectors': ['.grok-wait']},
+    'waitBox': {'element': ui.waitBox(async ()=> ui.div()), 'selectors': ['.grok-wait', '.ui-box']},
   };
 
   before(async () => {
