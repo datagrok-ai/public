@@ -33,6 +33,16 @@ export function test(name: string, test: () => Promise<any>): void {
   tests[currentCategory].tests!.push(new Test(currentCategory, name , test));
 }
 
+export function testExpectFinish(name: string, foo: () => Promise<any>): void {
+  test(name, async (): Promise<any> => {
+    try {
+      await foo();
+    } catch (e: any) {
+      throw `Exception is not expected`;
+    }
+  });
+}
+
 /** Tests two objects for equality, throws an exception if they are not equal. */
 export function expect(actual: any, expected: any): void {
   if (actual !== expected)
