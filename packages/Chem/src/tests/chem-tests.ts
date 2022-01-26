@@ -3,8 +3,6 @@ import {_testSearchSubstructure, _testSearchSubstructureAllParameters, _testSear
 import * as DG from "datagrok-api/dg";
 import * as grok from "datagrok-api/grok";
 import * as ui from "datagrok-api/ui";
-import {findMCS} from "../scripts-api";
-import * as P from '../package';
 
 category('chem', () => {
 
@@ -123,9 +121,8 @@ CN1C(=O)CN=C(c2cc(Cl)ccc12)C3CCCCC3`);
       O=C1CN=C(c2ccccc2N1CC3CCCCC3)C4CCCCC4
       O=C1CN=C(c2cc(Cl)ccc2N1)C3CCCCC3
       CN1C(=O)CN=C(c2cc(Cl)ccc12)C3CCCCC3`);
-
     let v = grok.shell.addTableView(t);
-    P.addMcsPanel(t.columns['smiles']);
+    await grok.functions.call('Chem:addMcsPanel', {col: t.columns['smiles']});
     v.close();
   });
 
@@ -138,9 +135,8 @@ CN1C(=O)CN=C(c2cc(Cl)ccc12)C3CCCCC3`);
       CCCOC(=O)C1=C(C)NC(=C(C1c2csc(n2)c3ccc(Cl)cc3)C(=O)OCC)
       CCOC(=O)C1=C(C)NC(=C(C1c2csc(n2)c3ccc(Cl)cc3)C(=O)OC(C)C)
       CCOC(=O)C1=C(C)NC(=C(C1c2csc(n2)c3ccc(Cl)cc3)C(=O)OCC(C)C)`);
-
     let v = grok.shell.addTableView(t);
-    P.addInchisPanel(t.columns['smiles']);
+    await grok.functions.call('Chem:addInchisPanel', {col: t.columns['smiles']});
     v.close();
   });
 
@@ -153,9 +149,8 @@ CN1C(=O)CN=C(c2cc(Cl)ccc12)C3CCCCC3`);
       CCCOC(=O)C1=C(C)NC(=C(C1c2csc(n2)c3ccc(Cl)cc3)C(=O)OCC)
       CCOC(=O)C1=C(C)NC(=C(C1c2csc(n2)c3ccc(Cl)cc3)C(=O)OC(C)C)
       CCOC(=O)C1=C(C)NC(=C(C1c2csc(n2)c3ccc(Cl)cc3)C(=O)OCC(C)C)`);
-
     let v = grok.shell.addTableView(t);
-    P.addInchisKeysPanel(t.columns['smiles']);
+    await grok.functions.call('Chem:addInchisKeysPanel', {col: t.columns['smiles']});
     v.close();
   });
 
