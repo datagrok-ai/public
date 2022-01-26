@@ -10,7 +10,7 @@ let demog = grok.data.demo.demog(100);
  * Only one parameter ("formula") is required.
  * All other parameters have their default values.
  */
-demog.meta.addFormulaLine({
+demog.meta.formulaLines.addLine({
   title: 'Red Line',           // Short title.
   description: 'Description',  // Detailed description.
 
@@ -39,7 +39,7 @@ demog.meta.addFormulaLine({
  * There are two required parameters here - "column" and "formula".
  * All other parameters have their default values.
  */
-demog.meta.addFormulaBand({
+demog.meta.formulaLines.addBand({
   title: 'My first Band',              // Short title.
   description: 'Band is a rectangle',  // Detailed description.
 
@@ -57,7 +57,7 @@ demog.meta.addFormulaBand({
   column2: 'weight'     // Second column for which the band will be drawn.
 });
 
-demog.meta.addFormulaLine({
+demog.meta.formulaLines.addLine({
   title: 'Blue Line',
   formula: '${weight} = 180',
   color: '#0000ff',
@@ -65,14 +65,14 @@ demog.meta.addFormulaLine({
   opacity: 50
 });
 
-demog.meta.addFormulaLine({
+demog.meta.formulaLines.addLine({
   title: 'Y = X',
   description: 'Some description',
   formula: '${weight} = ${height}',
   width: 1
 });
 
-demog.meta.addFormulaLine({
+demog.meta.formulaLines.addLine({
   title: 'Parabola',
   formula: '${height} = 180 + 0.01 * ${weight} * ${weight} - 1.5 * ${weight}',
   zIndex: -30,
@@ -82,7 +82,7 @@ demog.meta.addFormulaLine({
   style: 'dotdash'
 });
 
-demog.meta.addFormulaLine({
+demog.meta.formulaLines.addLine({
   title: 'Green Line',
   formula: '${height} = 140 + ${weight} * 0',
   zIndex: -20,
@@ -91,7 +91,7 @@ demog.meta.addFormulaLine({
   max: 200
 });
 
-demog.meta.addFormulaLine({
+demog.meta.formulaLines.addLine({
   title: 'Sinusoid',
   formula: '${height} = 90 + max($[age]) + 4 * sin(0.2 * ${weight} + 60)',
   zIndex: -45,
@@ -101,7 +101,7 @@ demog.meta.addFormulaLine({
   max: 200
 });
 
-demog.meta.addFormulaLine({
+demog.meta.formulaLines.addLine({
   title: 'Hidden Line',
   formula: '${height} = 2 * ${weight}',
   zIndex: -45,
@@ -110,7 +110,7 @@ demog.meta.addFormulaLine({
   opacity: 80
 });
 
-demog.meta.addFormulaLine({
+demog.meta.formulaLines.addLine({
   title: 'Circle Top',
   description: 'Description of circle',
   formula: '${height} = 181.2 + sqrt(pow(25, 2) - pow((${weight} - 108.75), 2)) * 0.34',
@@ -119,7 +119,7 @@ demog.meta.addFormulaLine({
   width: 6
 });
 
-demog.meta.addFormulaLine({
+demog.meta.formulaLines.addLine({
   title: 'Circle Bottom',
   formula: '${height} = 178.8 - sqrt(pow(25, 2) - pow((${weight} - 108.75), 2)) * 0.34',
   zIndex: -40,
@@ -127,7 +127,7 @@ demog.meta.addFormulaLine({
   width: 6
 });
 
-demog.meta.addFormulaLine({
+demog.meta.formulaLines.addLine({
   title: 'X Top',
   formula: '${height} = 115 + sqrt(pow(20, 2) - pow((${weight} - 188.95), 2)) * 1.0',
   zIndex: -45,
@@ -135,7 +135,7 @@ demog.meta.addFormulaLine({
   width: 4
 });
 
-demog.meta.addFormulaLine({
+demog.meta.formulaLines.addLine({
   title: 'X Bottom',
   formula: '${height} = 147 - sqrt(pow(20, 2) - pow((${weight} - 188.95), 2)) * 1.0',
   zIndex: -45,
@@ -144,7 +144,7 @@ demog.meta.addFormulaLine({
   style: 'dotted'
 });
 
-demog.meta.addFormulaBand({
+demog.meta.formulaLines.addBand({
   title: 'Band 2',
   description: 'Second band',
   formula: '${weight} < 80',
@@ -155,7 +155,7 @@ demog.meta.addFormulaBand({
   min: 130
 });
 
-demog.meta.addFormulaBand({
+demog.meta.formulaLines.addBand({
   title: 'Band 3',
   description: 'Another band',
   formula: '${weight} > max',
@@ -171,14 +171,14 @@ let view = grok.shell.addTableView(demog);
 let plot = view.scatterPlot({
   x: 'weight',
   y: 'height',
-  showDataframeFormulaLines: true,    // Hide or show all lines stored in the dataframe.
-  showViewerFormulaLines: true        // Hide or show all lines stored in the viewer.
+  showDataframeFormulaLines: true,    // Show all lines stored in the dataframe.
+  showViewerFormulaLines: true        // Show all lines stored in the viewer.
 });
 
 /**
  * An example of adding a line to the viewer.
  */
-plot.meta.addFormulaLine({
+plot.meta.formulaLines.addLine({
   formula: '${weight} = 150',
   color: '#ff0000',
   width: 10

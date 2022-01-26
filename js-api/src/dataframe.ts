@@ -21,6 +21,7 @@ import {Widget} from "./widgets";
 import {Grid} from "./grid";
 import {ScatterPlotViewer, Viewer} from "./viewer";
 import {Property, TableInfo} from "./entities";
+import {FormulaLinesHelper} from "./helpers";
 
 declare let grok: any;
 declare let DG: any;
@@ -2052,84 +2053,26 @@ export class Qnum {
   }
 }
 
-export interface FormulaLine {
-  id?: string;
-  type?: string;
-  title?: string;
-  description?: string;
-  color?: string;
-  visible?: boolean;
-  opacity?: number;
-  zIndex?: number;
-  min?: number;
-  max?: number;
-  formula?: string;
-
-  // Specific to lines:
-  width?: number;
-  spline?: number;
-  style?: string;
-
-  // Specific to bands:
-  column2?: string;
-}
-
 export class DataFrameMetaHelper {
-  private readonly df: DataFrame;
-  private formulaLines: FormulaLine[] = [];
+  private readonly _df: DataFrame;
+
+  readonly formulaLines: DataFrameFormulaLinesHelper;
 
   constructor(df: DataFrame) {
+    this._df = df;
+    this.formulaLines = new DataFrameFormulaLinesHelper(this._df);
+  }
+}
+
+export class DataFrameFormulaLinesHelper extends FormulaLinesHelper {
+  readonly df: DataFrame;
+
+  get storage(): string { return this.df.getTag(DG.TAGS.FORMULA_LINES) ?? ''; }
+  set storage(value: string) { this.df.setTag(DG.TAGS.FORMULA_LINES, value); }
+
+  constructor(df: DataFrame) {
+    super();
     this.df = df;
-    this.formulaLines = this.getFormulaLines();
-  }
-
-  getFormulaLines(): FormulaLine[] {
-    let json: string | null = this.df.getTag(DG.TAGS.FORMULA_LINES);
-    if (json)
-      return JSON.parse(json);
-
-    return [];
-  }
-
-  addFormulaLines(items: FormulaLine[] | null = null): void {
-    if (!items)
-      return;
-
-    let json: string | null = _toJson(items);
-    if (json)
-      this.df.setTag(DG.TAGS.FORMULA_LINES, json);
-  }
-
-  addFormulaItem(item: FormulaLine): void {
-    this.formulaLines.push(toJs(api.grok_FormulaHelper_AddDefaults(item)));
-    this.addFormulaLines(this.formulaLines);
-  }
-
-  addFormulaLine(item: FormulaLine): void {
-    item.type = 'line';
-    this.addFormulaItem(item);
-  }
-
-  addFormulaBand(item: FormulaLine): void {
-    item.type = 'band';
-    this.addFormulaItem(item);
-  }
-
-  removeFormulaLines(...ids: string[]): void {
-    if (ids.length == 0) {
-      this.formulaLines = [];
-      this.df.setTag(DG.TAGS.FORMULA_LINES, '[]');
-      return;
-    }
-
-    this.formulaLines = this.formulaLines.filter((item: FormulaLine) =>
-        item.id == undefined || ids.indexOf(item.id) == -1);
-
-    this.addFormulaLines(this.formulaLines);
-  }
-
-  getFormulaInfo(item: FormulaLine, dataFrame: DataFrame): string[] {
-    return api.grok_FormulaHelper_GetInfo(item.formula, item.type, dataFrame.dart);
   }
 }
 
