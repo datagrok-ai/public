@@ -239,9 +239,9 @@ export async function peptideSubstitution(table: DG.DataFrame): Promise<DG.Widge
     let concat = initialCol.get(i) + '#' + substitutedCol.get(i);
     initialCol.set(i, concat);
   }
-  
+
   initialCol.semType = 'alignedSequenceDifference';
-  initialCol.name = 'Difference';
+  initialCol.name = 'Substitution';
   table.columns.remove('Substituted');
   return new DG.Widget(ui.divH([table.plot.grid().root]));
 }
