@@ -5,13 +5,12 @@ import { study } from "../clinical-study";
 import { addDataFromDmDomain, createPivotedDataframe, getUniqueValues, getVisitNamesAndDays } from '../data-preparation/utils';
 import { ETHNIC, LAB_RES_N, LAB_TEST, VISIT_DAY, VISIT_NAME, RACE, SEX, SUBJECT_ID, TREATMENT_ARM, VS_TEST, VS_RES_N } from '../columns-constants';
 import { dynamicComparedToBaseline } from '../data-preparation/data-preparation';
-import { ILazyLoading } from '../lazy-loading/lazy-loading';
-import { checkMissingDomains, updateDivInnerHTML } from './utils';
+import { updateDivInnerHTML } from './utils';
 import { _package } from '../package';
-import { requiredColumnsByView } from '../constants';
+import { ClinicalCaseViewBase } from '../model/ClinicalCaseViewBase';
 
 
-export class TimeProfileView extends DG.ViewBase implements ILazyLoading {
+export class TimeProfileView extends ClinicalCaseViewBase {
 
     blVisitChoices: DG.InputBase;
     epVisitChoices: DG.InputBase;
@@ -40,12 +39,6 @@ export class TimeProfileView extends DG.ViewBase implements ILazyLoading {
         this.name = name;
         this.helpUrl = `${_package.webRoot}/views_help/time_profile.md`;
     }
-
-    loaded = false;
-
-    load(): void {
-        checkMissingDomains(requiredColumnsByView[this.name], this);
-     }
 
     createView(): void {
         this.splitBy = this.splitBy.filter(it => study.domains.dm.columns.names().includes(it));

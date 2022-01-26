@@ -1,0 +1,126 @@
+name: "Security Scan"
+
+on:
+  push:
+    paths-ignore:
+      - '**/*.md'
+      - '**/*.txt'
+    branches-ignore:
+      - 'dependabot/**'
+
+jobs:
+  codeql:
+    name: CodeQL static analysis
+    runs-on: ubuntu-20.04
+    permissions:
+      security-events: write
+    strategy:
+      fail-fast: false
+      matrix:
+        language: [ 'java', 'javascript' ]
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v2
+      - name: Set up JDK 8
+        if: matrix.language == 'java'
+        uses: actions/setup-java@v2
+        with:
+          java-version: '8'
+          distribution: 'adopt'
+          cache: maven
+      - name: Initialize CodeQL
+        uses: github/codeql-action/init@v1
+        with:
+          languages: ${{ matrix.language }}
+      - name: Autobuild
+        uses: github/codeql-action/autobuild@v1
+      - name: Perform CodeQL Analysis
+        uses: github/codeql-action/analyze@v1
+
+  anchore:
+    runs-on: ubuntu-20.04
+    name: Anchore vulnerability scan
+    permissions:
+      security-events: write
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v2
+      - name: Scan for GitHub Secutiry
+        uses: anchore/scan-action@v3
+        id: scan
+        with:
+          path: "."
+          fail-build: false # Change to true after all fixes
+          severity-cutoff: high
+          acs-report-enable: true
+      - name: Upload Anchore scan SARIF report
+        uses: github/codeql-action/upload-sarif@v1
+        with:
+          sarif_file: ${{ steps.scan.outputs.sarif }}
+
+  report:
+    runs-on: ubuntu-20.04
+    name: Gererate vulnerability scan report
+    permissions:
+      security-events: write
+    strategy:
+      fail-fast: false
+      matrix:
+        target: [ 'connectors', 'packages', 'tools', 'js-api', 'libraries' ]
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v2
+      - name: Set up JDK 8
+        if: matrix.target == 'connectors'
+        uses: actions/setup-java@v2
+        with:
+          java-version: '8'
+          distribution: 'adopt'
+          cache: maven
+      - name: Build with Maven
+        if: matrix.target == 'connectors'
+        working-directory: ./${{ matrix.target }}
+        run: mvn -Dmaven.test.skip=true package
+      - name: Create SBOM by Syft
+        uses: docker://anchore/syft:latest
+        with:
+          args: dir:./${{ matrix.target }} -o json --file ${{ matrix.target }}.sbom.syft.json
+      - name: Scan SBOM by Grype
+        continue-on-error: true
+        env:
+          GRYPE_FAIL_ON_SEVERITY: critical
+        uses: docker://anchore/grype:latest
+        with:
+          args: sbom:./${{ matrix.target }}.sbom.syft.json -o json --file ${{ matrix.target }}.grype.json
+      - name: Upload Artifact
+        uses: actions/upload-artifact@v2
+        with:
+          name: ${{ matrix.target }}.grype.json
+          path: ${{ matrix.target }}.grype.json
+          retention-days: 7
+      - name: Create CSV from JSON scan
+        run: |
+          jq -r '[
+            "CVE",
+            "Link",
+            "Severity",
+            "Package Name",
+            "Current version",
+            "Fixed Version",
+            "From"
+          ],
+          (.matches | group_by(.vulnerability.severity)[][]| [
+            .vulnerability.id,
+            .vulnerability.dataSource,
+            .vulnerability.severity,
+            .artifact.name,
+            .artifact.version,
+            (.vulnerability.fix.versions | join("\n")),
+            .artifact.locations[].path
+          ]) | @csv' ${{ matrix.target }}.grype.json > ${{ matrix.target }}.report.csv
+      - name: Upload Artifact
+        uses: actions/upload-artifact@v2
+        with:
+          name: ${{ matrix.target }}.report.csv
+          path: ${{ matrix.target }}.report.csv
+          retention-days: 7

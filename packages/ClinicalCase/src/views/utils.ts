@@ -8,6 +8,15 @@ export function updateDivInnerHTML(div: HTMLDivElement, content: any){
   }
 
 export function checkMissingDomains(requiredDomainsAndCols: any, obj: any) {
+  let loadObject = (obj) => {
+    obj.createView();
+    obj.loaded = true;
+  }
+  
+  if(!requiredDomainsAndCols) {
+     loadObject(obj);
+     return;
+  }
   let reqDomains = requiredDomainsAndCols['req_domains'] ? Object.keys(requiredDomainsAndCols['req_domains']) : [];
   let optDomains = requiredDomainsAndCols['opt_domains'] ? Object.keys(requiredDomainsAndCols['opt_domains']) : [];
   let missingReqDomains = reqDomains.filter(it => study.domains[it] === null);
@@ -23,8 +32,7 @@ export function checkMissingDomains(requiredDomainsAndCols: any, obj: any) {
   });
   if (!totalMissingDomains.length) {
     if (checkMissingColumns(obj, reqDomains.concat(presentOptDomains), requiredColumns)) {
-      obj.createView();
-      obj.loaded = true;
+      loadObject(obj);
     }
   } else {
     const errorsDiv = ui.divV([], { style: { margin: 'auto', textAlign: 'center' } });

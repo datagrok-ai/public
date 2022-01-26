@@ -1,6 +1,58 @@
 <!-- TITLE: Release History -->
 <!-- SUBTITLE: -->
 
+# 2022-01-25 Dev build 0.116.0
+
+## Latest Docker Images
+
+* Datagrok: 
+  *  `docker pull datagrok/datagrok:0.116.0`
+  *  `docker pull datagrok/datagrok:latest`
+  
+* [Docker-Compose](admin/docker-compose.md)
+
+## Addressed Issues
+
+* NPM repositories: new package manager UI (WIP)
+* ViewFactories ScriptView construction enhancement 
+* Formula Lines: Editor (WIP)
+* Move all demo assets to packages (WIP)
+* (Bug)  JS-based file handlers are not invoked when you double-click on a file in file browser 
+* #277 Chem: Substructure filter: fixed collaborative filtering 
+* #277 Chem: Substructure filter: picking up current filter 
+* (Bug) DAPI: Filter returns incorrect query 
+* Fixed test 
+* (Bug) Grid: column tools: filter: add: there should be no other filters in the filter group 
+* Simplified the creation of the popup filter 
+* #277 Chem: Substructure filter: better integration for the filter group / popup filter / property panel filter 
+* Formula Lines: Fixed typo 
+* Update the beta users list 
+* API: added getting and saving event types 
+* Fix a css rule 
+* NPM repositories: package data caching (WIP)
+* Amazon S3 Adapter: Anonymous access 
+* Packages: Ability to store content in S3 
+* Code cleanup and harmonization 
+* Moved files to folders 
+* Removed default handlers for Function and Script 
+* JS API: GridCellRenderer: ability to render values (without GridCell / GridCellStyle) 
+* Chem: Similarity & Diversity: switched to the renderMolecule() method 
+* Add a grayed-out text color constant 
+* DataQueries: Support scalar results in setResult method (WIP)
+* UI: Condensed form, units after labels 
+* Bump Demo package version 
+* #155 Chem: Package autotests. expectFloat; adjust getSimilarities test 
+* Fix peptide space bug 
+* Fix bug in Peptide Space 
+* Add property metricDataTypes 
+* Add style fix and improve time complexity 
+* Add diversitySearch test 
+* added ScriptView.fromParams constructor 
+* Always create NPM repository 
+* Peptides #159: Add MSA tests. 
+* Peptides #159: insert missing file. 
+
+
 # 2022-01-18 Dev build 0.115.0
 
 ## Latest Docker Images

@@ -7,3 +7,7 @@ quiet: false
 exclude:
   - '**/node_modules/**'
 
+ignore:
+  - fix-state: unknown
+  - fix-state: not-fixed
+  - fix-state: wont-fix

@@ -1,7 +1,7 @@
 {
-	"name": "api-tests",
+	"name": "@datagrok/api-tests",
 	"friendlyName": "API Tests",
-	"version": "0.0.1",
+	"version": "0.0.2",
 	"description": "",
 	"dependencies": {
 		"datagrok-api": "0.110.0",

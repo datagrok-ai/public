@@ -5,12 +5,12 @@ import { AE_END_DAY, AE_START_DAY, AE_TERM, CON_MED_END_DAY, CON_MED_NAME, CON_M
 import { requiredColumnsByView } from "../constants";
 import { addColumnWithDrugPlusDosage, dynamicComparedToBaseline, labDynamicComparedToMinMax, labDynamicRelatedToRef } from "../data-preparation/data-preparation";
 import { getUniqueValues } from "../data-preparation/utils";
-import { ILazyLoading } from "../lazy-loading/lazy-loading";
+import { ClinicalCaseViewBase } from "../model/ClinicalCaseViewBase";
 import { _package } from "../package";
 import { checkMissingDomains } from "./utils";
 
 
-export class PatientProfileView extends DG.ViewBase implements ILazyLoading {
+export class PatientProfileView extends ClinicalCaseViewBase {
 
   options_lb_ae_ex_cm = {
     series: [
@@ -172,12 +172,6 @@ export class PatientProfileView extends DG.ViewBase implements ILazyLoading {
     super({});
     this.name = name;
     this.helpUrl = `${_package.webRoot}/views_help/patient_profile.md`;
-  }
-
-  loaded = false;
-
-  load(): void {
-    checkMissingDomains(requiredColumnsByView[this.name], this);
   }
 
   createView(): void {
