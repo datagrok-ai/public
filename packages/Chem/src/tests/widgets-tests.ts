@@ -1,3 +1,6 @@
+import * as DG from "datagrok-api/dg";
+import * as grok from "datagrok-api/grok";
+import * as ui from "datagrok-api/ui";
 import {category, test} from "@datagrok-libraries/utils/src/test";
 import {drugLikenessWidget} from '../widgets/drug-likeness';
 import {identifiersWidget} from '../widgets/identifiers';
@@ -32,11 +35,11 @@ category('Chem: Widgets', () => {
     });
 
     test('structure-2d', async () => {
-        structure2dWidget(molStr);
+        await grok.functions.call('structure2d', {smiles: molStr});
     });
 
     test('structure-3d', async () => {
-        structure3dWidget(molStr);
+        await grok.functions.call('structure3d', {smiles: molStr});
     });
 
     test('toxicity', async () => {
