@@ -330,6 +330,12 @@ export function processSequence(subParts: string[]): [string[], boolean] {
     return 'alignedSequenceDifference';
   }
 
+  /**
+   * Cell height.
+   *
+   * @readonly
+   * @memberof AlignedSequenceDifferenceCellRenderer
+   */
   get defaultHeight() {
     return 35;
   }
@@ -381,21 +387,18 @@ export function processSequence(subParts: string[]): [string[], boolean] {
         [color, pivot] = cp.getColorPivot(amino2);
       
       if (amino1 != amino2) {
-        let verticalShift = 10;
+        const verticalShift = 10;
 
-        if (amino1 == '' || amino2 == '') {
-          verticalShift = 0;
-        }
+        if (amino1 == '') 
+          amino1 = '-';
+        if (amino2 == '') 
+          amino2 = '-';
 
-        let prev = x;
-
-        x = printLeftOrCentered(x, y - verticalShift, w, h, g, amino1, 'red', pivot, true);
-        if (amino2 != '') {
-          x = prev;
-          x = printLeftOrCentered(x, y + verticalShift, w, h, g, amino2, 'red', pivot, true);
-        }
+        printLeftOrCentered(x, y - verticalShift, w, h, g, amino1, 'red', pivot, true);
+        printLeftOrCentered(x, y, w, h, g, '↓', 'black', pivot, true);
+        x = printLeftOrCentered(x, y + verticalShift, w, h, g, amino2, 'red', pivot, true);
       } else {
-        x = printLeftOrCentered(x, y, w, h, g, amino1, 'gray', pivot, true);
+        x = printLeftOrCentered(x, y, w, h, g, amino1, color, pivot, true);
       } 
     });
     g.restore();
