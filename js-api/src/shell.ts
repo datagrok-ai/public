@@ -67,7 +67,11 @@ export class Shell {
 
   /** Last error state */
   get lastError(): string {
-    return toJs(api.grok_Get_LastError());
+    return api.grok_Get_LastError();
+  }
+
+  set lastError(s: string) {
+    api.grok_Set_LastError(s);
   }
 
   /** Current user
