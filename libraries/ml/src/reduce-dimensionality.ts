@@ -8,9 +8,8 @@ import {
   assert,
 } from '@datagrok-libraries/utils/src/operations';
 import {SPEBase, PSPEBase, OriginalSPE} from './spe';
-import {StringMeasure, KnownMetrics, MetricDataTypes, AvailableMetrics} from './string-measure';
+import {Measure, KnownMetrics, AvailableMetrics, isBitArrayMetric, AvailableDataTypes} from './typed-metrics';
 import BitArray from '@datagrok-libraries/utils/src/bit-array';
-import {similarityMetric} from '@datagrok-libraries/utils/src/similarity-metrics';
 
 /**
  * Abstract dimensionality reducer.
@@ -253,22 +252,19 @@ export class DimensionalityReducer {
    * Creates an instance of DimensionalityReducer.
    * @param {any[]} data Vectors to embed.
    * @param {KnownMethods} method Embedding method to be applied
-   * @param {KnownMetrics?} metric Distance metric to be computed between each of the vectors.
+   * @param {KnownMetrics} metric Distance metric to be computed between each of the vectors.
    * @param {Options} [options] Options to pass to the implementing embedders.
    * @memberof DimensionalityReducer
    */
-  constructor(data: any[], method: KnownMethods, metric: KnownMetrics = 'EuclideanDistance', options?: Options) {
-    const measure = new StringMeasure(metric).getMeasure();
+  constructor(data: any[], method: KnownMethods, metric: KnownMetrics, options?: Options) {
+    const measure = new Measure(metric).getMeasure();
     let specOptions = {};
 
-    if (Object.keys(similarityMetric).includes(metric.toString())) {
+    if (isBitArrayMetric(metric)) {
       for (let i = 0; i < data.length; ++i) {
         data[i] = new BitArray(data[i]._data, data[i]._length);
       }
     }
-
-    assert(MetricDataTypes[data[0].constructor.name].includes(metric.toString()),
-      'Data type of the data is incompatible with the metric given.');
 
     if (method == 'UMAP') {
       specOptions = {
@@ -313,6 +309,17 @@ export class DimensionalityReducer {
   }
 
   /**
+   * Returns metrics available by type.
+   *
+   * @param {AvailableDataTypes} typeName type name
+   * @return {string[]} Metric names which expects the given data type
+   * @memberof DimensionalityReducer
+   */
+  static availableMetricsByType(typeName: AvailableDataTypes) {
+    return Object.keys(AvailableMetrics[typeName]);
+  }
+
+  /**
    * Returns dimensionality reduction methods available.
    *
    * @readonly
@@ -329,16 +336,11 @@ export class DimensionalityReducer {
    * @memberof DimensionalityReducer
    */
   static get availableMetrics() {
-    return Object.keys(AvailableMetrics);
-  }
-
-  /**
-   * Returns metrics by their data type.
-   *
-   * @readonly
-   * @memberof DimensionalityReducer
-   */
-   static get metricDataTypes() {
-    return MetricDataTypes;
+    let ans: string[] = [];
+    Object.values(AvailableMetrics).forEach((obj) => {
+      const array = Object.values(obj);
+      ans = [...ans, ...array];
+    });
+    return ans;
   }
 }

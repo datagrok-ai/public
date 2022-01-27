@@ -3,6 +3,7 @@ import * as ui from 'datagrok-api/ui';
 import * as DG from 'datagrok-api/dg';
 
 import $ from 'cash-dom';
+import {StringDictionary} from '@datagrok-libraries/utils/src/type-declarations';
 
 import {model} from '../model';
 
@@ -28,7 +29,7 @@ export class SARViewer extends DG.JsViewer {
   protected viewerVGrid: DG.Grid | null;
   protected currentBitset: DG.BitSet | null;
   grouping: boolean;
-  groupMapping: {[key: string]: string} | null;
+  groupMapping: StringDictionary | null;
   // protected pValueThreshold: number;
   // protected amountOfBestAARs: number;
   // duplicatesHandingMethod: string;
@@ -289,7 +290,7 @@ function applyBitset(
   dataFrame: DG.DataFrame,
   viewerGrid: DG.Grid,
   aminoAcidResidue: string,
-  groupMapping: {[key: string]: string},
+  groupMapping: StringDictionary,
   initialBitset: DG.BitSet,
   filterMode: boolean,
 ) {
@@ -378,7 +379,7 @@ function accordionFunc(
         hist.style.width = 'auto';
         elements.push(hist);
 
-        const tableMap: {[key: string]: string} = {'Statistics:': ''};
+        const tableMap: StringDictionary = {'Statistics:': ''};
         for (const colName of new Set(['Count', 'pValue', 'Mean difference'])) {
           const query = `${aminoAcidResidue} = ${currentAAR} and Position = ${currentPosition}`;
           const textNum = statsDf.groupBy([colName]).where(query).aggregate().get(colName, 0);
