@@ -46,16 +46,16 @@ export type KnownMetrics = StringMetrics | BitArrayMetrics | VectorMetrics;
 export type ValidTypes = {data: string[], metric: StringMetrics} | {data: Vector[], metric: VectorMetrics} |
                          {data: BitArray[], metric: BitArrayMetrics};
 
-export function isStringMetric(name: string) {
-  return Object.keys(AvailableMetrics['String']).some((metricName) => metricName == name);
+export function isStringMetric(name: KnownMetrics) {
+  return MetricToDataType[name] == 'String';
 }
 
-export function isBitArrayMetric(name: string) {
-  return Object.keys(AvailableMetrics['BitArray']).some((metricName) => metricName == name);
+export function isBitArrayMetric(name: KnownMetrics) {
+  return MetricToDataType[name] == 'BitArray';
 }
 
-export function isVectorMetric(name: string) {
-  return Object.keys(AvailableMetrics['Vector']).some((metricName) => metricName == name);
+export function isVectorMetric(name: KnownMetrics) {
+  return MetricToDataType[name] == 'Vector';
 }
 
 /** Unified class implementing different string measures. */
