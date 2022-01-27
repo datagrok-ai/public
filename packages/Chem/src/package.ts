@@ -244,10 +244,18 @@ export async function activityCliffs(dataframe: DG.DataFrame, smiles: DG.Column,
 //input: column smiles { semType: Molecule }
 //input: string methodName { choices:["UMAP", "t-SNE", "SPE", "pSPE", "OriginalSPE"] }
 //input: string similarityMetric { choices:["Levenshtein", "Jaro-Winkler", "Tanimoto", "Dice", "Asymmetric", "Braun-Blanquet", "Cosine", "Kulczynski", "Mc-Connaughey", "Rogot-Goldberg", "Russel", "Sokal"] }
+//input: boolean plotEmbeddings
 //output: viewer result
-export async function chemSpaceTopMenu(table: DG.DataFrame, smiles: DG.Column, methodName: string, similarityMetric: string) {
+export async function chemSpaceTopMenu(table: DG.DataFrame, smiles: DG.Column, methodName: string, similarityMetric: string, plotEmbeddings: boolean) {
   return new Promise<void>(async (resolve, reject) => {
-    await chemSpace(table, smiles, methodName, similarityMetric);
+    const embeddings = await chemSpace(table, smiles, methodName, similarityMetric);
+    let cols = table.columns as DG.ColumnList;
+    for (const col of embeddings) {
+      cols.add(col);
+    }
+    const view = grok.shell.addTableView(table);
+    if (plotEmbeddings)
+      view.scatterPlot({x: 'Embed_X', y: 'Embed_Y'});
     resolve();
   });
 }
