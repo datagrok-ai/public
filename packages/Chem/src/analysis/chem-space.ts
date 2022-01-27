@@ -10,7 +10,7 @@ import {BitArrayMetrics, isBitArrayMetric, KnownMetrics, StringMetrics} from '@d
 import {Fingerprint} from "../utils/chem-common";
 import BitArray from '@datagrok-libraries/utils/src/bit-array';
 
-export async function chemSpace(table: DG.DataFrame, molColumn: DG.Column, methodName: string, similarityMetric: string) {
+export async function chemSpace(table: DG.DataFrame, molColumn: DG.Column, methodName: string, similarityMetric: string): Promise<DG.ColumnList> {
   let fpColumn = molColumn.toList();
   let coordinates: Coordinates;
   if (isBitArrayMetric(similarityMetric as KnownMetrics)) {
@@ -20,17 +20,11 @@ export async function chemSpace(table: DG.DataFrame, molColumn: DG.Column, metho
     coordinates = await createDimensinalityReducingWorker({data: fpColumn as string[], metric: similarityMetric as StringMetrics}, methodName) as Coordinates;
   }
   const axes = ['Embed_X', 'Embed_Y'];
+  const cols: DG.Column[] = [];
 
   for (let i = 0; i < axes.length; ++i) {
     const name = axes[i];
-    const cols = (table.columns as DG.ColumnList);
-
-    if (table.col(name))
-      cols.remove(name);
-
-    cols.insert(DG.Column.fromFloat32Array(name, coordinates[i]));
+    cols[i] = (DG.Column.fromFloat32Array(name, coordinates[i]));
   }
-
-  const view = grok.shell.addTableView(table);
-  view.scatterPlot({x: axes[0], y: axes[1]});
+  return new DG.ColumnList(cols);
 }
