@@ -1,16 +1,16 @@
 import {DimensionalityReducer, KnownMethods} from '../reduce-dimensionality';
-import { KnownMetrics } from '../distance-measures';
+import {KnownMetrics} from '../typed-metrics';
 
 /**
  * Worker thread receiving data function.
  *
  * @param {any[]} columnData Samples to process.
- * @param {string} method Embedding method.
- * @param {string} measure Distance metric.
+ * @param {KnownMethods} method Embedding method.
+ * @param {KnownMetrics} measure Distance metric.
  * @param {number} cyclesCount Number of cycles to repeat.
  * @return {Coordinates} Embedding.
  */
-function onMessage(columnData: any[], method: KnownMethods, measure?: KnownMetrics, cyclesCount?: number) {
+function onMessage(columnData: any[], method: KnownMethods, measure: KnownMetrics, cyclesCount?: number) {
   const reducer = new DimensionalityReducer(
     columnData,
     method,

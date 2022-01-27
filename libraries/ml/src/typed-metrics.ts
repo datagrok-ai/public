@@ -26,8 +26,16 @@ export const AvailableMetrics = {
     'Rogot-Goldberg': similarityMetric['Rogot-Goldberg'],
     'Russel': similarityMetric['Russel'],
     'Sokal': similarityMetric['Sokal'],
-  }
+  },
 };
+
+export const MetricToDataType: {[key: string]: string} = Object.keys(AvailableMetrics)
+  .reduce((ret: {[Key: string]: string}, key) => {
+    for (const val of Object.keys(AvailableMetrics[key as AvailableDataTypes])) {
+      ret[val as AvailableDataTypes] = key;
+    }
+    return ret;
+  }, {});
 
 export type AvailableDataTypes = keyof typeof AvailableMetrics;
 export type StringMetrics = keyof typeof AvailableMetrics['String'];
@@ -35,57 +43,59 @@ export type BitArrayMetrics = keyof typeof AvailableMetrics['BitArray'];
 export type VectorMetrics = keyof typeof AvailableMetrics['Vector'];
 export type KnownMetrics = StringMetrics | BitArrayMetrics | VectorMetrics;
 
-export type ValidTypes = {data: string[], metric: StringMetrics} | {data: Vector[], metric: VectorMetrics} | 
+export type ValidTypes = {data: string[], metric: StringMetrics} | {data: Vector[], metric: VectorMetrics} |
                          {data: BitArray[], metric: BitArrayMetrics};
 
 export function isStringMetric(name: string) {
-  return Object.keys(AvailableMetrics['String']).some(metricName => metricName == name);
+  return Object.keys(AvailableMetrics['String']).some((metricName) => metricName == name);
 }
 
 export function isBitArrayMetric(name: string) {
-  return Object.keys(AvailableMetrics['BitArray']).some(metricName => metricName == name);
+  return Object.keys(AvailableMetrics['BitArray']).some((metricName) => metricName == name);
 }
 
 export function isVectorMetric(name: string) {
-  return Object.keys(AvailableMetrics['Vector']).some(metricName => metricName == name);
+  return Object.keys(AvailableMetrics['Vector']).some((metricName) => metricName == name);
 }
 
 /** Unified class implementing different string measures. */
-export class StringMeasure {
+export class Measure {
   protected method: KnownMetrics;
+  protected dataType: AvailableDataTypes;
 
   /**
-   * Creates an instance of StringMeasure with .
+   * Creates an instance of Measure with .
    * @param {string} method Method to calculate distance between strings.
    * @memberof Measurer
    */
   constructor(method: KnownMetrics) {
     this.method = method;
+    this.dataType = MetricToDataType[method] as AvailableDataTypes;
   }
 
   /**
    * Returns custom string distance function specified.
    * @return {DistanceMetric} Callback of the measure chosen.
+   * @memberof Measurer
    */
   public getMeasure(): DistanceMetric {
-    for (const key of Object.keys(AvailableMetrics)) {
-      const dict: {[name: string]: (v1: any, v2: any) => (number)} = AvailableMetrics[key as AvailableDataTypes];
-      if (this.method in dict) {
-        return dict[this.method];
-      }
-    }
-    return calculateEuclideanDistance;
+    const dict: {[key: string]: {[key2: string]: DistanceMetric}} = AvailableMetrics;
+    return dict[this.dataType][this.method];
   }
 
   /**
-   * Returns custom string distance function specified.
-   * @return {string[]} Callback of the measure chosen.
+   * Returns custom string distance by the given data type.
+   * @param {AvailableDataTypes} dataType Metric's data type
+   * @return {string[]} Metric names which expects the given data type
+   * @memberof Measurer
    */
   public static getMetricByDataType(dataType: AvailableDataTypes): string[] {
     return Object.keys(AvailableMetrics[dataType]);
   }
 
-  /** Returns metric names available. */
+  /** Returns metric names available.
+   * @memberof Measurer
+  */
   static get availableMeasures(): string[] {
     return Object.keys(AvailableMetrics);
   }
