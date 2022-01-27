@@ -65,6 +65,11 @@ export class Shell {
     api.grok_CloseTable(table.dart);
   }
 
+  /** Last error state */
+  get lastError(): string {
+    return toJs(api.grok_Get_LastError());
+  }
+
   /** Current user
    *  @type {User} */
   get user(): User {
