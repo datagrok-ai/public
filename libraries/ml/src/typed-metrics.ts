@@ -6,6 +6,7 @@ import {similarityMetric} from '@datagrok-libraries/utils/src/similarity-metrics
 import {calculateEuclideanDistance} from '@datagrok-libraries/utils/src/operations';
 import BitArray from '@datagrok-libraries/utils/src/bit-array';
 import {Vector} from '@datagrok-libraries/utils/src/type-declarations';
+import {StringDictionary} from '@datagrok-libraries/utils/src/type-declarations';
 
 export const AvailableMetrics = {
   'Vector': {
@@ -29,8 +30,8 @@ export const AvailableMetrics = {
   },
 };
 
-export const MetricToDataType: {[key: string]: string} = Object.keys(AvailableMetrics)
-  .reduce((ret: {[Key: string]: string}, key) => {
+export const MetricToDataType: StringDictionary = Object.keys(AvailableMetrics)
+  .reduce((ret: StringDictionary, key) => {
     for (const val of Object.keys(AvailableMetrics[key as AvailableDataTypes])) {
       ret[val as AvailableDataTypes] = key;
     }
