@@ -8,9 +8,8 @@ import {
   assert,
 } from '@datagrok-libraries/utils/src/operations';
 import {SPEBase, PSPEBase, OriginalSPE} from './spe';
-import {StringMeasure, KnownMetrics, AvailableMetrics, isBitArrayMetric, AvailableDataTypes} from './distance-measures';
+import {Measure, KnownMetrics, AvailableMetrics, isBitArrayMetric, AvailableDataTypes} from './typed-metrics';
 import BitArray from '@datagrok-libraries/utils/src/bit-array';
-import {similarityMetric} from '@datagrok-libraries/utils/src/similarity-metrics';
 
 /**
  * Abstract dimensionality reducer.
@@ -253,12 +252,12 @@ export class DimensionalityReducer {
    * Creates an instance of DimensionalityReducer.
    * @param {any[]} data Vectors to embed.
    * @param {KnownMethods} method Embedding method to be applied
-   * @param {KnownMetrics?} metric Distance metric to be computed between each of the vectors.
+   * @param {KnownMetrics} metric Distance metric to be computed between each of the vectors.
    * @param {Options} [options] Options to pass to the implementing embedders.
    * @memberof DimensionalityReducer
    */
-  constructor(data: any[], method: KnownMethods, metric: KnownMetrics = 'EuclideanDistance', options?: Options) {
-    const measure = new StringMeasure(metric).getMeasure();
+  constructor(data: any[], method: KnownMethods, metric: KnownMetrics, options?: Options) {
+    const measure = new Measure(metric).getMeasure();
     let specOptions = {};
 
     if (isBitArrayMetric(metric)) {
@@ -310,6 +309,17 @@ export class DimensionalityReducer {
   }
 
   /**
+   * Returns metrics available by type.
+   *
+   * @param {AvailableDataTypes} typeName type name
+   * @return {string[]} Metric names which expects the given data type
+   * @memberof DimensionalityReducer
+   */
+  static availableMetricsByType(typeName: AvailableDataTypes) {
+    return Object.keys(AvailableMetrics[typeName]);
+  }
+
+  /**
    * Returns dimensionality reduction methods available.
    *
    * @readonly
@@ -327,21 +337,10 @@ export class DimensionalityReducer {
    */
   static get availableMetrics() {
     let ans: string[] = [];
-    Object.values(AvailableMetrics).forEach(obj => {
+    Object.values(AvailableMetrics).forEach((obj) => {
       const array = Object.values(obj);
-      console.log(array);
       ans = [...ans, ...array];
     });
     return ans;
-  }
-
-  /**
-   * Returns metrics available by type.
-   *
-   * @readonly
-   * @memberof DimensionalityReducer
-   */
-   static availableMetricsByType(typeName: AvailableDataTypes) {
-    return Object.keys(AvailableMetrics[typeName]);
   }
 }

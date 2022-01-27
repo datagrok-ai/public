@@ -6,7 +6,7 @@ import {
   createDimensinalityReducingWorker,
 } from '@datagrok-libraries/ml/src/workers/dimensionality-reducing-worker-creator';
 import {runKalign} from '../utils/multiple-sequence-alignment';
-import { StringMetrics } from '@datagrok-libraries/ml/src/distance-measures';
+import { StringMetrics } from '@datagrok-libraries/ml/src/typed-metrics';
 
 /**
  * Tests if a table has non zero rows and columns.

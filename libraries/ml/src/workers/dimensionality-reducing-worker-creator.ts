@@ -1,11 +1,10 @@
-import { ValidTypes } from "../distance-measures";
+import {ValidTypes} from '../typed-metrics';
 
 /**
  * A worker to perform dimensionality reduction.
  *
- * @param {any[]} columnData The data to process.
+ * @param {ValidTypes} dataMetric The data to process.
  * @param {string} method A method of dimensionality reduction.
- * @param {string} measure A distance metrics.
  * @param {number} cyclesCount Number of iterations to run.
  * @return {Promise<unknown>} Resulting embedding.
  */
