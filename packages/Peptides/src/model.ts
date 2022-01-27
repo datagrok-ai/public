@@ -2,6 +2,7 @@ import * as DG from 'datagrok-api/dg';
 
 import {describe} from './describe';
 import {Subject} from 'rxjs';
+import {StringDictionary} from '@datagrok-libraries/utils/src/type-declarations';
 
 /**
  * Model class for SAR viewers that retrieves and stores data.
@@ -12,7 +13,7 @@ class SARViewerModel {
   private viewerGrid: Subject<DG.Grid> = new Subject<DG.Grid>();
   private viewerVGrid: Subject<DG.Grid> = new Subject<DG.Grid>();
   private statsDf: Subject<DG.DataFrame> = new Subject<DG.DataFrame>();
-  private groupMapping: Subject<{[key: string]: string}> = new Subject<{[key: string]: string}>();
+  private groupMapping: Subject<StringDictionary> = new Subject<StringDictionary>();
   public viewerGrid$;
   public viewerVGrid$;
   public statsDf$;

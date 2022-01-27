@@ -2,6 +2,8 @@ import * as grok from 'datagrok-api/grok';
 import * as ui from 'datagrok-api/ui';
 import * as DG from 'datagrok-api/dg';
 
+import {StringDictionary} from '@datagrok-libraries/utils/src/type-declarations';
+
 /**
  * Chem palette class.
  *
@@ -9,7 +11,7 @@ import * as DG from 'datagrok-api/dg';
  * @class ChemPalette
  */
 export class ChemPalette {
-  cp: {[key: string]: string} = {};
+  cp: StringDictionary = {};
 
   /**
    * Creates an instance of ChemPalette.
@@ -213,10 +215,10 @@ export class ChemPalette {
    * Amino acid residue names.
    *
    * @static
-   * @type {{[key: string]: string}}
+   * @type {StringDictionary}
    * @memberof ChemPalette
    */
-  static AANames: {[key: string]: string} = {
+  static AANames: StringDictionary = {
     'G': 'Glycine',
     'L': 'Leucine',
     'Y': 'Tyrosine',
@@ -243,10 +245,10 @@ export class ChemPalette {
    * Amino acid residue SMILES.
    *
    * @static
-   * @type {{[key: string]: string}}
+   * @type {StringDictionary}
    * @memberof ChemPalette
    */
-  static AASmiles: {[key: string]: string} = {
+  static AASmiles: StringDictionary = {
     'G': 'NCC(=O)O',
     'L': 'N[C@H](CC(C)C)C(=O)O',
     'Y': 'NC(CC1=CC=C(O)C=C1)C(=O)O',
@@ -273,10 +275,10 @@ export class ChemPalette {
    * Amino acid residue truncated SMILES.
    *
    * @static
-   * @type {{[key: string]: string}}
+   * @type {StringDictionary}
    * @memberof ChemPalette
    */
-  static AASmilesTruncated: {[key: string]: string} = {
+  static AASmilesTruncated: StringDictionary = {
     'G': '*C*',
     'L': 'CC(C)C[C@H](*)*',
     'Y': 'C1=CC(=CC=C1CC(*)*)O',
@@ -303,10 +305,10 @@ export class ChemPalette {
    * Amino acid residue full names.
    *
    * @static
-   * @type {{[key: string]: string}}
+   * @type {StringDictionary}
    * @memberof ChemPalette
    */
-  static AAFullNames: {[key: string]: string} = {
+  static AAFullNames: StringDictionary = {
     'Ala': 'A',
     'Arg': 'R',
     'Asn': 'N',
