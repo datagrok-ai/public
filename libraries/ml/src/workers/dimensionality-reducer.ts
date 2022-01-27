@@ -1,5 +1,5 @@
 import {DimensionalityReducer, KnownMethods} from '../reduce-dimensionality';
-import { KnownMetrics } from '../string-measure';
+import { KnownMetrics } from '../distance-measures';
 
 /**
  * Worker thread receiving data function.

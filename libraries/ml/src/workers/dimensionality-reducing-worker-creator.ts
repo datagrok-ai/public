@@ -1,4 +1,4 @@
-import { ValidTypes } from "../string-measure";
+import { ValidTypes } from "../distance-measures";
 
 /**
  * A worker to perform dimensionality reduction.
