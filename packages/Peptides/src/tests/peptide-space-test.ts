@@ -11,6 +11,7 @@ import {aligned1} from './test-data';
 
 import * as DG from 'datagrok-api/dg';
 import * as grok from 'datagrok-api/grok';
+import { StringMetrics } from '@datagrok-libraries/ml/src/string-measure';
 
 export const _package = new DG.Package();
 
@@ -54,15 +55,15 @@ category('peptides', async () => {
   const columnData = cleanAlignedSequencesColumn(alignedSequencesColumn);
 
   for (const method of DimensionalityReducer.availableMethods) {
-    for (const measure of DimensionalityReducer.metricDataTypes['String']) {
+    for (const measure of DimensionalityReducer.availableMetricsByType('String')) {
       test(`peptide_space.DimensinalityReducer.${method}.${measure}.is_numeric`, async () => {
-        await _testDimensionalityReducer(columnData, method, measure);
+        await _testDimensionalityReducer(columnData, method as StringMetrics, measure);
       });
     }
   }
 
   for (const method of DimensionalityReducer.availableMethods) {
-    for (const measure of DimensionalityReducer.metricDataTypes['String']) {
+    for (const measure of DimensionalityReducer.availableMetricsByType('String')) {
       test(`peptide_space.PeptideSimilaritySpaceViewer.${method}.${measure}.is_proper`, async () => {
         await _testPeptideSimilaritySpaceViewer(table, alignedSequencesColumn, method, measure, 100);//, view);
       });

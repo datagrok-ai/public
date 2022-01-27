@@ -1,4 +1,5 @@
 import {DimensionalityReducer, KnownMethods} from '../reduce-dimensionality';
+import { KnownMetrics } from '../string-measure';
 
 /**
  * Worker thread receiving data function.
@@ -9,7 +10,7 @@ import {DimensionalityReducer, KnownMethods} from '../reduce-dimensionality';
  * @param {number} cyclesCount Number of cycles to repeat.
  * @return {Coordinates} Embedding.
  */
-function onMessage(columnData: any[], method: KnownMethods, measure?: string, cyclesCount?: number) {
+function onMessage(columnData: any[], method: KnownMethods, measure?: KnownMetrics, cyclesCount?: number) {
   const reducer = new DimensionalityReducer(
     columnData,
     method,

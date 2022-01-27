@@ -6,6 +6,7 @@ import {
   createDimensinalityReducingWorker,
 } from '@datagrok-libraries/ml/src/workers/dimensionality-reducing-worker-creator';
 import {runKalign} from '../utils/multiple-sequence-alignment';
+import { StringMetrics } from '@datagrok-libraries/ml/src/string-measure';
 
 /**
  * Tests if a table has non zero rows and columns.
@@ -41,13 +42,13 @@ export async function _testViewerIsDrawing(table: DG.DataFrame, view: DG.TableVi
  * @param {string} method Embedding method.
  * @param {string} measure Measure to apply to a pair of strings.
  */
-export async function _testDimensionalityReducer(columnData: Array<string>, method: string, measure: string) {
+export async function _testDimensionalityReducer(columnData: Array<string>, method: StringMetrics, measure: string) {
   let noException = true;
   const cyclesCount = 100;
   let embcols;
 
   try {
-    embcols = await createDimensinalityReducingWorker(columnData, method, measure, cyclesCount);
+    embcols = await createDimensinalityReducingWorker({data: columnData, metric: measure as StringMetrics}, method, cyclesCount);
   } catch (error) {
     noException = false;
   }
