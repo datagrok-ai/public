@@ -58,6 +58,13 @@ ui.dialog('Windows')
 
 Check out [JS API Class Reference](https://datagrok.ai/js-api/)
 
+### Shell
+
+Datarok visual shell is used to get access to top-level views, tables, methods,
+and platform states.
+
+Learn more here: [Datagrok Shell reference](./shell.md)
+
 ## Data manipulation
 
 ### Dataframe
