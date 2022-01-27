@@ -395,7 +395,6 @@ export function processSequence(subParts: string[]): [string[], boolean] {
           amino2 = '-';
 
         printLeftOrCentered(x, y - verticalShift, w, h, g, amino1, 'red', pivot, true);
-        printLeftOrCentered(x, y, w, h, g, '↓', 'black', pivot, true);
         x = printLeftOrCentered(x, y + verticalShift, w, h, g, amino2, 'red', pivot, true);
       } else {
         x = printLeftOrCentered(x, y, w, h, g, amino1, color, pivot, true);
