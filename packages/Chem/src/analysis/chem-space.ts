@@ -6,7 +6,7 @@ import {chemGetFingerprints} from '../chem-searches';
 //import {getRdKitWebRoot} from '../chem-common-rdkit';
 import {Coordinates} from '@datagrok-libraries/utils/src/type-declarations';
 import {createDimensinalityReducingWorker,} from '@datagrok-libraries/ml/src/workers/dimensionality-reducing-worker-creator';
-import {BitArrayMetrics, isBitArrayMetric, StringMetrics} from '@datagrok-libraries/ml/src/string-measure';
+import {BitArrayMetrics, isBitArrayMetric, StringMetrics} from '@datagrok-libraries/ml/src/distance-measures';
 import {Fingerprint} from "../utils/chem-common";
 import BitArray from '@datagrok-libraries/utils/src/bit-array';
 

@@ -8,7 +8,7 @@ import {
   assert,
 } from '@datagrok-libraries/utils/src/operations';
 import {SPEBase, PSPEBase, OriginalSPE} from './spe';
-import {StringMeasure, KnownMetrics, AvailableMetrics, isBitArrayMetric, AvailableDataTypes} from './string-measure';
+import {StringMeasure, KnownMetrics, AvailableMetrics, isBitArrayMetric, AvailableDataTypes} from './distance-measures';
 import BitArray from '@datagrok-libraries/utils/src/bit-array';
 import {similarityMetric} from '@datagrok-libraries/utils/src/similarity-metrics';
 
