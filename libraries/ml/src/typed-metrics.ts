@@ -5,8 +5,7 @@ import {DistanceMetric} from '@datagrok-libraries/utils/src/type-declarations';
 import {similarityMetric} from '@datagrok-libraries/utils/src/similarity-metrics';
 import {calculateEuclideanDistance} from '@datagrok-libraries/utils/src/operations';
 import BitArray from '@datagrok-libraries/utils/src/bit-array';
-import {Vector} from '@datagrok-libraries/utils/src/type-declarations';
-import {StringDictionary} from '@datagrok-libraries/utils/src/type-declarations';
+import {Vector, StringDictionary} from '@datagrok-libraries/utils/src/type-declarations';
 
 export const AvailableMetrics = {
   'Vector': {
