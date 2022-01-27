@@ -8,7 +8,7 @@ import {
   assert,
 } from '@datagrok-libraries/utils/src/operations';
 import {SPEBase, PSPEBase, OriginalSPE} from './spe';
-import {StringMeasure, KnownMetrics, MetricDataTypes, AvailableMetrics} from './string-measure';
+import {StringMeasure, KnownMetrics, AvailableMetrics, isBitArrayMetric, AvailableDataTypes} from './string-measure';
 import BitArray from '@datagrok-libraries/utils/src/bit-array';
 import {similarityMetric} from '@datagrok-libraries/utils/src/similarity-metrics';
 
@@ -261,14 +261,11 @@ export class DimensionalityReducer {
     const measure = new StringMeasure(metric).getMeasure();
     let specOptions = {};
 
-    if (Object.keys(similarityMetric).includes(metric.toString())) {
+    if (isBitArrayMetric(metric)) {
       for (let i = 0; i < data.length; ++i) {
         data[i] = new BitArray(data[i]._data, data[i]._length);
       }
     }
-
-    assert(MetricDataTypes[data[0].constructor.name].includes(metric.toString()),
-      'Data type of the data is incompatible with the metric given.');
 
     if (method == 'UMAP') {
       specOptions = {
@@ -329,16 +326,22 @@ export class DimensionalityReducer {
    * @memberof DimensionalityReducer
    */
   static get availableMetrics() {
-    return Object.keys(AvailableMetrics);
+    let ans: string[] = [];
+    Object.values(AvailableMetrics).forEach(obj => {
+      const array = Object.values(obj);
+      console.log(array);
+      ans = [...ans, ...array];
+    });
+    return ans;
   }
 
   /**
-   * Returns metrics by their data type.
+   * Returns metrics available by type.
    *
    * @readonly
    * @memberof DimensionalityReducer
    */
-   static get metricDataTypes() {
-    return MetricDataTypes;
+   static availableMetricsByType(typeName: AvailableDataTypes) {
+    return Object.keys(AvailableMetrics[typeName]);
   }
 }

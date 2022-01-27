@@ -1,3 +1,5 @@
+import { ValidTypes } from "../string-measure";
+
 /**
  * A worker to perform dimensionality reduction.
  *
@@ -8,17 +10,16 @@
  * @return {Promise<unknown>} Resulting embedding.
  */
 export function createDimensinalityReducingWorker(
-  columnData: any[],
+  dataMetric: ValidTypes,
   method: string,
-  measure?: string,
   cyclesCount?: number,
 ): Promise<unknown> {
   return new Promise(function(resolve) {
     const worker = new Worker(new URL('./dimensionality-reducer', import.meta.url));
     worker.postMessage({
-      columnData: columnData,
+      columnData: dataMetric.data,
       method: method,
-      measure: measure,
+      measure: dataMetric.metric,
       cyclesCount: cyclesCount,
     });
     worker.onmessage = ({data: {embedding}}) => {
