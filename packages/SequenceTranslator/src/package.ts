@@ -229,7 +229,10 @@ export function sequenceTranslator() {
   let inputSequenceField = ui.textInput("", defaultInput, (sequence: string) => updateTableAndMolecule(sequence));
   updateTableAndMolecule(defaultInput);
 
-  let tablesWithCodes = ui.divV([]);
+  let tablesWithCodes = ui.divV([
+    DG.HtmlTable.create(Object.keys(MODIFICATIONS), (item: string) => [item], ['Overhang modification']).root,
+    ui.div([], {style: {height: '30px'}})
+  ]);
   for (let synthesizer of Object.keys(map)) {
     for (let technology of Object.keys(map[synthesizer])) {
       let tableRows = [];
@@ -246,7 +249,11 @@ export function sequenceTranslator() {
     }
   }
   let showCodesButton = ui.button('SHOW CODES', () => ui.dialog('Codes').add(tablesWithCodes).show());
-
+  let copySmiles = ui.button(
+    'COPY SMILES',
+    () => navigator.clipboard.writeText(sequenceToSmiles(inputSequenceField.value.replace(/\s/g, '')))
+      .then(() => grok.shell.info(sequenceWasCopied))
+  );
   let saveMolFileButton = ui.bigButton('SAVE MOL FILE', () => {
     let smiles = sequenceToSmiles(inputSequenceField.value.replace(/\s/g, ''));
     let result = `${OCL.Molecule.fromSmiles(smiles).toMolfile()}\n`;
@@ -283,7 +290,7 @@ export function sequenceTranslator() {
             outputTableDiv
           ]),
           moleculeSvgDiv,
-          ui.divH([saveMolFileButton, showCodesButton])
+          ui.divH([saveMolFileButton, showCodesButton, copySmiles])
         ], 'sequence')
       ]),
       'AXOLABS': defineAxolabsPattern()
