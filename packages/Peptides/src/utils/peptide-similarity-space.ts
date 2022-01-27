@@ -8,7 +8,7 @@ import {DimensionalityReducer} from '@datagrok-libraries/ml/src/reduce-dimension
 import {
   createDimensinalityReducingWorker,
 } from '@datagrok-libraries/ml/src/workers/dimensionality-reducing-worker-creator';
-import {StringMeasure} from '@datagrok-libraries/ml/src/string-measure';
+import {Measure, StringMetrics} from '@datagrok-libraries/ml/src/typed-metrics';
 import {Coordinates} from '@datagrok-libraries/utils/src/type-declarations';
 
 /**
@@ -67,7 +67,7 @@ export async function createPeptideSimilaritySpaceViewer(
   const axesNames = ['~X', '~Y', '~MW'];
   const columnData = alignedSequencesColumn.toList().map((v, _) => AlignedSequenceEncoder.clean(v));
 
-  const embcols = await createDimensinalityReducingWorker(columnData, method, measure, cyclesCount);
+  const embcols = await createDimensinalityReducingWorker({data: columnData, metric: measure as StringMetrics}, method, cyclesCount);
 
   const columns = Array.from(
     embcols as Coordinates,
@@ -138,7 +138,7 @@ export class PeptideSimilaritySpaceWidget {
    */
   constructor(alignedSequencesColumn: DG.Column, view: DG.TableView) {
     this.availableMethods = DimensionalityReducer.availableMethods;
-    this.availableMetrics = StringMeasure.getMetricByDataType('String');
+    this.availableMetrics = Measure.getMetricByDataType('String');
     this.method = this.availableMethods[0];
     this.metrics = this.availableMetrics[0];
     this.currentDf = alignedSequencesColumn.dataFrame;

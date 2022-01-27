@@ -3,6 +3,7 @@ import * as DG from 'datagrok-api/dg';
 import {createPeptideSimilaritySpaceViewer} from './utils/peptide-similarity-space';
 import {addViewerToHeader} from './viewers/stacked-barchart-viewer';
 import {model} from './model';
+import {StringDictionary} from '@datagrok-libraries/utils/src/type-declarations';
 // import $ from 'cash-dom';
 
 /**
@@ -24,7 +25,7 @@ export class Peptides {
    * @param {DG.Grid} tableGrid Working talbe grid.
    * @param {DG.TableView} view Working view.
    * @param {DG.DataFrame} currentDf Working table.
-   * @param {{[key: string]: string}} options SAR viewer options
+   * @param {StringDictionary} options SAR viewer options
    * @param {DG.Column} col Aligned sequences column.
    * @param {string} activityColumnChoice Activity column name.
    * @memberof Peptides
@@ -33,7 +34,7 @@ export class Peptides {
     tableGrid: DG.Grid,
     view: DG.TableView,
     currentDf: DG.DataFrame,
-    options: {[key: string]: string},
+    options: StringDictionary,
     col: DG.Column,
   ) {
     for (let i = 0; i < tableGrid.columns.length; i++) {

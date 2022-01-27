@@ -1,4 +1,5 @@
 import {after, before, category, test} from '@datagrok-libraries/utils/src/test';
+import {StringDictionary} from '@datagrok-libraries/utils/src/type-declarations';
 import {splitAlignedPeptides} from '../utils/split-aligned';
 import * as DG from 'datagrok-api/dg';
 import * as grok from 'datagrok-api/grok';
@@ -13,7 +14,7 @@ import * as P from '../package';
 
 category('peptides', async () => {
   let peptidesDf: DG.DataFrame;
-  let options: {[key: string]: string};
+  let options: StringDictionary;
   let peptidesGrid: DG.Grid;
   let asCol: DG.Column;
   let pepView: DG.TableView;

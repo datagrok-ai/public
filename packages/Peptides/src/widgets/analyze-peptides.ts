@@ -3,6 +3,7 @@ import * as ui from 'datagrok-api/ui';
 import * as DG from 'datagrok-api/dg';
 import {Peptides} from '../peptides';
 import '../styles.css';
+import {StringDictionary} from '@datagrok-libraries/utils/src/type-declarations';
 
 /**
  * Peptide analysis widget.
@@ -77,7 +78,7 @@ export async function analyzePeptidesWidget(
   const startBtn = ui.button('Launch SAR', async () => {
     if (activityColumnChoice.value.type === DG.TYPE.FLOAT) {
       const progress = DG.TaskBarProgressIndicator.create('Loading SAR...');
-      const options: {[key: string]: string} = {
+      const options: StringDictionary = {
         'activityColumnName': activityColumnChoice.value.name,
         'scaling': activityScalingMethod.value,
       };

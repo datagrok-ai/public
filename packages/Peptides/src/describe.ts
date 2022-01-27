@@ -3,6 +3,7 @@ import * as DG from 'datagrok-api/dg';
 import {splitAlignedPeptides} from './utils/split-aligned';
 import {tTest} from '@datagrok-libraries/statistics/src/tests';
 import {fdrcorrection} from '@datagrok-libraries/statistics/src/multiple-tests';
+import {StringDictionary} from '@datagrok-libraries/utils/src/type-declarations';
 import {ChemPalette} from './utils/chem-palette';
 import {setAARRenderer} from './utils/cell-renderer';
 
@@ -132,7 +133,7 @@ async function calculateStatistics(
   activityColumnScaled: string,
   peptidesCount: number,
   splitSeqDf: DG.DataFrame,
-  groupMapping: {[key: string]: string},
+  groupMapping: StringDictionary,
 ) {
   matrixDf = matrixDf.groupBy([positionColName, aminoAcidResidue])
     .add('count', activityColumnScaled, 'Count')
@@ -446,7 +447,7 @@ export async function describe(
   twoColorMode: boolean,
   initialBitset: DG.BitSet | null,
   grouping: boolean,
-): Promise<[DG.Grid, DG.Grid, DG.DataFrame, {[key: string]: string}]> {
+): Promise<[DG.Grid, DG.Grid, DG.DataFrame, StringDictionary]> {
   //Split the aligned sequence into separate AARs
   let splitSeqDf: DG.DataFrame | undefined;
   let invalidIndexes: number[];
@@ -484,7 +485,7 @@ export async function describe(
   let matrixDf = splitSeqDf.unpivot([activityColumnScaled], positionColumns, positionColName, aminoAcidResidue);
 
   //TODO: move to chem palette
-  let groupMapping: {[key: string]: string} = {};
+  let groupMapping: StringDictionary = {};
   if (grouping) {
     groupMapping = aarGroups;
     const aarCol = matrixDf.getCol(aminoAcidResidue);
