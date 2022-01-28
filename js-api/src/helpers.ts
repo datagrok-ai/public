@@ -44,36 +44,109 @@ export abstract class FormulaLinesHelper {
   abstract get storage(): string;
   abstract set storage(value: string);
 
+  private _isBuffering: boolean = false;
+  private _bufferedItems: FormulaLine[] = [];
+
   get items(): FormulaLine[] {
+    if (this._isBuffering)
+      return this._bufferedItems;
     let json = this.storage;
     return json ? JSON.parse(json) : [];
   }
 
-  set items(value: FormulaLine[]) { this.storage = JSON.stringify(value); }
-
-  add(item: FormulaLine): void {
-    let newItem = this.addDefaults(item);
-    this.items = this.items.concat(newItem);
+  set items(value: FormulaLine[]) {
+    if (this._isBuffering)
+      this._bufferedItems = value;
+    else
+      this.storage = JSON.stringify(value);
   }
 
-  addAll(items: FormulaLine[]): void {
-    let newItems = items.map((item) => { return this.addDefaults(item); });
-    this.items = this.items.concat(newItems);
+  add(item: FormulaLine) {
+    let newItem = this.setDefaults(item);
+    if (this._isBuffering)
+      this._bufferedItems.push(item);
+    else
+      this.items = this.items.concat(newItem);
   }
 
-  addLine(item: FormulaLine): void {
+  addAll(items: FormulaLine[]) {
+    let newItems = items.map((item) => { return this.setDefaults(item); });
+    if (this._isBuffering)
+      this._bufferedItems.push(...newItems);
+    else
+      this.items = this.items.concat(newItems);
+  }
+
+  addLine(item: FormulaLine) {
     item.type = 'line';
     this.add(item);
   }
 
-  addBand(item: FormulaLine): void {
+  addBand(item: FormulaLine) {
     item.type = 'band';
     this.add(item);
   }
 
-  clear(): void { this.items = []; }
+  updateAt(idx: number, value: FormulaLine) {
+    if (this._isBuffering)
+      this._bufferedItems[idx] = value;
+    else {
+      let newItems = this.items;
+      newItems[idx] = value;
+      this.items = newItems;
+    }
+  }
 
-  addDefaults(item: FormulaLine): FormulaLine { return toJs(api.grok_FormulaLineHelper_AddDefaultParams(item)); }
+  removeAt(idx: number, count: number = 1) {
+    if (this._isBuffering)
+      this._bufferedItems = this._bufferedItems.slice(idx, idx + count - 1);
+    else
+      this.items = this.items.slice(idx, idx + count - 1);
+  }
+
+  removeWhere(predicate: (value: FormulaLine, index: number, array: FormulaLine[]) => boolean) {
+    if (this._isBuffering)
+      this._bufferedItems = this._bufferedItems.filter(predicate);
+    else
+      this.items = this.items.filter(predicate);
+  }
+
+  clear() {
+    if (this._isBuffering)
+      this._bufferedItems = [];
+    else
+      this.items = [];
+  }
+
+  setDefaults(item: FormulaLine): FormulaLine { return toJs(api.grok_FormulaLineHelper_SetDefaultParams(item)); }
 
   getMeta(item: FormulaLine): FormulaLineMeta { return toJs(api.grok_FormulaLineHelper_GetMeta(item)); }
+
+  /**
+   * When buffering is enabled, all changes made are saved in the buffer.
+   * This increases the performance of the viewer, because it does not processing formulas immediately after changes.
+   * It is recommended to use buffering when the number of lines depends on the number of dataframe rows.
+   * Note: buffering is disabled by default. And any changes are immediately taken into processing by the viewer.
+   */
+  startBuffering() {
+    if (this._isBuffering)
+      return;
+    this._bufferedItems = this.items;
+    this._isBuffering = true;
+  }
+
+  /**
+   * Copies all changes made in the buffer to the Formula Lines store.
+   * From that moment, all changes are taken into processing by the viewer.
+   */
+  stopBuffering() {
+    if (!this._isBuffering)
+      return;
+    this._isBuffering = false;
+    this.items = this._bufferedItems;
+  }
+
+  cancelBuffering() {
+    this._isBuffering = false;
+  }
 }
