@@ -1,8 +1,8 @@
+import * as grok from "datagrok-api/grok";
 
 export let tests: {[key: string]: {tests?: Test[], before?: () => Promise<void>, after?: () => Promise<void>, beforeStatus?: string, afterStatus?: string}} = {};
 
 export let currentCategory: string;
-
 
 export namespace assure {
 
@@ -11,7 +11,6 @@ export namespace assure {
       throw `${name == null ? 'Value' : name} not defined`;
   }
 }
-
 
 export class Test {
   test: () => Promise<any>;
@@ -33,13 +32,29 @@ export function test(name: string, test: () => Promise<any>): void {
   tests[currentCategory].tests!.push(new Test(currentCategory, name , test));
 }
 
-export function testExpectFinish(name: string, foo: () => Promise<any>): void {
+/** Awaits for a while checking the error status of the platform */
+export async function testAssureNoError(ms: number): Promise<boolean> {
+  const timer = (ms: number) => new Promise(res => setTimeout(res, ms));
+  for (let i = 0; i < ms / 500; ++i) {
+    await timer(500);
+    if (grok.shell.lastError.length !== 0)
+      return false;
+  }
+  return true;
+}
+
+/** Does best effort to catch all exceptional situations. Currently doesn't catch "Uncaught in promise" */
+export async function testExpectFinish(name: string, foo: () => Promise<any>, ms: number = 5000): Promise<void> {
   test(name, async (): Promise<any> => {
     try {
+      grok.shell.lastError = '';
       await foo();
     } catch (e: any) {
-      throw `Exception is not expected`;
+      throw "Exception is not expected";
     }
+    let noError = await testAssureNoError(ms);
+    if (!noError)
+      throw "Exceptions while waiting for results";
   });
 }
 
