@@ -69,19 +69,19 @@ limit 50;
 --input: list users
 --input: string name
 --connection: System:DatagrokAdmin
-select et.friendly_name, count(1) from event_types et
+select e.error_message, count(1) from event_types et
 join published_packages pp on et.package_id = pp.id
 join events e on e.event_type_id = et.id
 join users_sessions s on e.session_id = s.id
 join users u on u.id = s.user_id
 where
-et.source = 'error'
+e.error_message is not null
 and et.friendly_name is not null
 and et.friendly_name != ''
 and pp.name = @name
 and @date(e.event_time)
 and (u.login = any(@users) or @users = ARRAY['all'])
-group by et.friendly_name
+group by e.error_message
 limit 50;
 --end
 
