@@ -31,6 +31,7 @@ export function usageAnalysisApp(): void {
   grok.shell.addView(overviewView);
   grok.shell.addView(new EventsView(toolbox));
   grok.shell.addView(new ErrorsView(toolbox));
+  grok.shell.addView(new FunctionErrorsView(toolbox));
   grok.shell.addView(new UsersView(toolbox));
   grok.shell.addView(new DataView(toolbox));
   grok.shell.v = overviewView;
