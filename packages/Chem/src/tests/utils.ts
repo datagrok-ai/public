@@ -25,7 +25,7 @@ export async function _testSearchSubstructure(csv: string, pattern: string, true
 }
 
 export async function _testSearchSubstructureSARSmall(params: any | null = null) {
-  const file = await requireText('sar_small.csv');
+  const file = await requireText('sar-small.csv');
 
   // await grok.functions.call('Chem:initChem');
   const df = DG.DataFrame.fromCsv(file);

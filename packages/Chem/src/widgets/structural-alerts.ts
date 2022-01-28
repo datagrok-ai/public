@@ -45,7 +45,7 @@ export function initStructuralAlertsContext(
 }
 
 async function loadSADataset() {
-  const path = getRdKitWebRoot() + 'data-samples/alert_collection.csv';
+  const path = getRdKitWebRoot() + 'files/alert-collection.csv';
   const table = await grok.data.loadTable(path);
   const alertsSmartsList = table.columns['smarts'].toList();
   const alertsDescriptionsList = table.columns['description'].toList();

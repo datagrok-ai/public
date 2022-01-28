@@ -6,7 +6,7 @@ import * as ui from "datagrok-api/ui";
 
 category('chem', () => {
 
-  testExpectFinish('searchSubstructure.sar_small', async () => {
+  testExpectFinish('searchSubstructure.sar-small', async () => {
     await _testSearchSubstructureAllParameters(
       _testSearchSubstructureSARSmall);
   });
@@ -33,8 +33,8 @@ COc1ccc2c(c1)c(CC(=O)N3CCCC3C(=O)Oc4ccc(C)cc4OC)c(C)n2C(=O)c5ccc(Cl)cc5
     );
   });
 
-  testExpectFinish('findSimilar.sar_small', async () => {
-    const dfInput = DG.DataFrame.fromCsv(await requireText('sar_small.csv'));
+  test('findSimilar.sar-small', async () => {
+    const dfInput = DG.DataFrame.fromCsv(await requireText('sar-small.csv'));
     const colInput = dfInput.columns[0];
     const dfResult: DG.DataFrame = // shouldn't be null
       (await grok.chem.findSimilar(colInput, 'O=C1CN=C(C2CCCCC2)C2:C:C:C:C:C:2N1'))!;
