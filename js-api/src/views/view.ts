@@ -1,7 +1,7 @@
 import {VIEW_TYPE, VIEWER, ViewerType} from '../const';
 import {DataFrame} from '../dataframe.js';
 import * as ui from '../../ui';
-import {ScatterPlotViewer, Viewer} from '../viewer';
+import {FilterGroup, ScatterPlotViewer, Viewer} from '../viewer';
 import {DockManager, DockNode} from '../docking';
 import {Grid} from '../grid';
 import {Menu, ToolboxPage} from '../widgets';
@@ -385,6 +385,9 @@ export class TableView extends View {
 
   /** Associated grid (spreadsheet). */
   get grid(): Grid { return toJs(api.grok_View_Get_Grid(this.dart)); }
+
+  /** Returns existing, or creates a new filter group. */
+  get filtersGroup(): FilterGroup { return toJs(api.grok_TableView_GetFilters(this.dart, true)); }
 
   get dataFrame(): DataFrame { return toJs(api.grok_View_Get_DataFrame(this.dart)); }
   set dataFrame(x: DataFrame) { api.grok_View_Set_DataFrame(this.dart, x.dart); }
