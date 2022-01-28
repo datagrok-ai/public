@@ -461,3 +461,13 @@ export function diversitySearchTopMenu() {
   (grok.shell.v as DG.TableView).addViewer('DiversitySearchViewer');
 }
 
+//input: string id
+//output: string smiles { semType: Molecule }
+//meta.role: converter
+//meta.inputRegexp: InChI\=.+
+export function inchiToSmiles(id: string) {
+  let mol = chemCommonRdKit.getRdKitModule().get_mol(id);
+  let smiles = mol.get_smiles();
+  mol.delete();
+  return smiles;
+}

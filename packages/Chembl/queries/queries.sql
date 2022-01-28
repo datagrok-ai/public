@@ -1,3 +1,13 @@
+--name: chemblIdToSmiles
+--connection: chembl
+--input: string id
+--output: string smiles { semType: molecule }
+select canonical_smiles from compound_structures s
+join molecule_dictionary d on s.molregno = d.molregno
+where d.chembl_id = @id
+--end
+
+
 --name: molregnoToSmiles
 --connection: chembl
 --input: int molregno

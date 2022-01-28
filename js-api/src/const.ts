@@ -290,8 +290,12 @@ export const FUNC_TYPES = {
   /**
    * Function analysis. Examples: sensitivity analysis, parameter editor
    * Func => View */
-  FUNCTION_ANALYSIS: 'functionAnalysis'
+  FUNCTION_ANALYSIS: 'functionAnalysis',
+
+  /** Converts values. Has one input and one output */
+  CONVERTER: 'converter'
 }
+
 
 ////// Viewers
 /** @enum {VIEWER} */
