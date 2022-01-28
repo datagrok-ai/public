@@ -201,12 +201,12 @@ export class Func extends Entity {
   }
 
   /** Returns functions with the specified attributes. */
-  static find(params?: { package?: string, name?: string, tags?: string[], meta?: any, returnType?: string}): Func[] {
-    return api.grok_Func_Find(params?.package, params?.name, params?.tags, params?.meta, params?.returnType);
+  static find(params?: { package?: string, name?: string, tags?: string[], meta?: any, returnType?: string, returnSemType?: string}): Func[] {
+    return api.grok_Func_Find(params?.package, params?.name, params?.tags, params?.meta, params?.returnType, params?.returnSemType);
   }
 
-  /** Returns functions (including these) with the specified attributes. */
-  static async findAll(params?: { package?: string, name?: string, tags?: string[], returnType?: string}): Promise<Func[]> {
+  /** Returns functions (including queries and scripts) with the specified attributes. */
+  static async findAll(params?: { package?: string, name?: string, tags?: string[], meta?: any, returnType?: string, returnSemType?: string}): Promise<Func[]> {
     let functions = Func.find(params);
     let queries = await grok.dapi.queries.include('params,connection').filter(`name="${params?.name}"`).list();
     let scripts = await grok.dapi.scripts.include('params').filter(`name="${params?.name}"`).list();
