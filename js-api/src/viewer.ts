@@ -341,6 +341,25 @@ export class JsViewer extends Viewer {
 }
 
 
+// export interface FilterState {
+//   type: FILTER_TYPE | string;
+//   column?: string;
+// }
+
+/** Represents a group of filters that are located together. */
+export class FilterGroup extends Viewer {
+  dart: any;
+
+  constructor(dart: any) {
+    super(dart);
+  }
+
+  add(state: string) {
+    api.grok_FilterGroup_Add(this.dart, state);
+  }
+}
+
+
 /** 2D scatter plot */
 export class ScatterPlotViewer extends Viewer {
   constructor(dart: any) {
