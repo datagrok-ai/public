@@ -260,6 +260,9 @@ export abstract class Filter extends Widget {
 
   columnName?: string;
 
+  /** Caption to be shown in the filter group. */
+  get caption(): string { return this.columnName ?? ''}
+
   constructor() {
     super(ui.div());
 
