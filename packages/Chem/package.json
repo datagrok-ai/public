@@ -68,7 +68,8 @@
     "build": "webpack",
     "lint": "eslint \"./src/**/*.ts\"",
     "lint-fix": "eslint \"./src/**/*.ts\" --fix",
-    "test": "set HOST=dev && jest"
+    "test": "set HOST=dev && jest",
+    "publish": "webpack && grok publish"
   },
   "canEdit": [
     "Developers"

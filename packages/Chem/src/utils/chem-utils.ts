@@ -7,7 +7,7 @@ export function isMolBlock(s: string) {
   return s.includes('M  END');
 }
 
-export function _convertMolecule(molecule: string, from: string, to: string, module: RDModule): string {
+export function convertMoleculeImpl(molecule: string, from: string, to: string, module: RDModule): string {
   let mol;
   try {
     mol = module.get_mol(molecule);
