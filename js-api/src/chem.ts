@@ -4,14 +4,13 @@
  * */
 
 import {BitSet, Column, DataFrame} from './dataframe';
-import {SEMTYPE, SIMILARITY_METRIC, SimilarityMetric, TYPE, UNITS} from './const';
-import {Observable, Subject, Subscription} from "rxjs";
+import {FUNC_TYPES, SEMTYPE, SIMILARITY_METRIC, SimilarityMetric, TYPE, UNITS} from './const';
+import {Subject, Subscription} from "rxjs";
 import {Menu, Widget} from "./widgets";
 import {Func} from "./entities";
 import * as ui from "../ui";
 import {SemanticValue} from "./grid";
 import $ from "cash-dom";
-import {element} from "../ui";
 import {Utils} from "./utils";
 
 let api = <any>window;
@@ -56,7 +55,7 @@ export namespace chem {
       return [];
     }
 
-    async exportStructure(format: string): Promise<string> {
+    async exportStructure(_format: string): Promise<string> {
       return 'dummy';
     }
 
@@ -148,6 +147,20 @@ export namespace chem {
         this.changedSub = this.sketcher.onChanged.subscribe((_: any) => callback());
     }
 
+    /** Sets SMILES, MOLBLOCK, or any other molecule representation */
+    setValue(x: string) {
+      const extractor = Func
+        .find({meta: {role: FUNC_TYPES.CONVERTER, inputRegexp: null}})
+        .find((f) => new RegExp(f.options['inputRegexp']).test(x));
+
+      if (extractor != null)
+        extractor
+          .apply({id: x})
+          .then((mol) => this.setMolecule(mol));
+      else
+        this.setMolecule(x);
+    }
+
     constructor() {
       super(ui.div());
 
@@ -155,13 +168,13 @@ export namespace chem {
       if (funcs.length == 0)
         throw 'Sketcher functions not found. Please install OpenChemLib, or MarvinJS package.';
 
-      $(this.molInput).attr('placeholder', 'SMILES, Inchi, Inchi keys, ChEMBL id, etc');
+      $(this.molInput).attr('placeholder', 'SMILES, MOLBLOCK, Inchi, ChEMBL id, etc');
 
       const applyInput = (e: any) => {
         const newSmilesValue: string = (e?.target as HTMLTextAreaElement).value;
 
         if (this.getSmiles() !== newSmilesValue)
-          this.setSmiles(newSmilesValue);
+          this.setValue(newSmilesValue);
 
         const currentSmiles = this.getSmiles();
 
@@ -274,7 +287,7 @@ export namespace chem {
 
   /**
    * Searches for a molecular pattern in a given column, returning a bitset with hits.
-   * See example: {@link substructure-search}
+   * See example: {@link https://public.datagrok.ai/js/samples/domains/chem/substructure-search-library}
    * @async
    * @param {Column} column - Column with molecules to search
    * @param {string} pattern - Pattern, either one of which RDKit supports
@@ -292,7 +305,6 @@ export namespace chem {
         !(settings?.hasOwnProperty('substructLibrary') && !settings.substructLibrary),
       'molStringSmarts': ''
     })).get(0);
-    
   }
 
   /**
@@ -324,8 +336,8 @@ export namespace chem {
    * @param {string} molecule - Reference molecule in one of formats supported by RDKit:
    *   smiles, cxsmiles, molblock, v3Kmolblock, and inchi
    * @param {Object} settings - Properties for the similarity function
-   * @param {int} limit - Would return top limit molecules based on the score
-   * @param {int} cutoff - Would drop molecules which score is lower than cutoff
+   * @param {int} settings.limit - Would return top limit molecules based on the score
+   * @param {int} settings.cutoff - Would drop molecules which score is lower than cutoff
    * @returns {Promise<DataFrame>} - DataFrame with 3 columns:
    *   - molecule: original molecules string representation from the input column
    *   - score: similarity scores within the range from 0.0 to 1.0;
@@ -355,7 +367,7 @@ export namespace chem {
    * @returns {Promise<DataFrame>}
    * */
   export function findSimilarServer(column: Column, molecule: string, metric: SimilarityMetric = SIMILARITY_METRIC.TANIMOTO, limit: number = 10, minScore: number = 0.7): Promise<DataFrame> {
-    return new Promise((resolve, reject) => api.grok_Chem_SimilaritySearch(column.dart, molecule, metric,
+    return new Promise((resolve, _reject) => api.grok_Chem_SimilaritySearch(column.dart, molecule, metric,
       limit, minScore, (t: any) => resolve(new DataFrame(t))));
   }
 
@@ -368,7 +380,7 @@ export namespace chem {
    * @returns {Promise<BitSet>}
    * */
   export function searchSubstructureServer(column: Column, pattern: string, isSmarts: boolean = true): Promise<BitSet> {
-    return new Promise((resolve, reject) => api.grok_Chem_SubstructureSearch(column.dart, pattern, isSmarts, (bs: any) => resolve(new BitSet(bs))));
+    return new Promise((resolve, _reject) => api.grok_Chem_SubstructureSearch(column.dart, pattern, isSmarts, (bs: any) => resolve(new BitSet(bs))));
   }
 
   /**
@@ -462,7 +474,6 @@ export namespace chem {
    * Renders a molecule to canvas (using RdKit)
    * TODO: should NOT be async
    * See example: {@link }
-   * @param {string} smiles - accepts smiles/molfile format
    * @param {number} x
    * @param {number} y
    * @param {number} w
