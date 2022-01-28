@@ -15,10 +15,17 @@ it connects to the dataframe.
 You can create and modify information about lines and bands by changing the `.formula-lines`
 dataframe tag or by changing the `formulaLines` property of the viewer. The content of these storages is a JSON string.
 
-There is a more convenient ways to create lines:
+There is a more convenient ways to create and modify lines. The examples use a viewer, but the dataframe has all the same methods:
 
-- method `dataframe.meta.formulaLines.addLine()` - for creating and saving a line in a dataframe
-- method `viewer.meta.formulaLines.addLine()` - for creating and saving a line in a viewer
+- `viewer.meta.formulaLines.addLine(itemParams)` - creates item with type line
+- `viewer.meta.formulaLines.addBand(itemParams)` - creates item with type band
+- `viewer.meta.formulaLines.add(itemParams)` - creates item, the line type (line or band) set up in the item params
+- `viewer.meta.formulaLines.addAll(itemParamList)` - creates multiple items at once
+- `viewer.meta.formulaLines.items` - returns the list of the all items
+- `viewer.meta.formulaLines.updateAt(index, itemParams)` - update the item at the index position with the new params
+- `viewer.meta.formulaLines.removeAt(index)` - removes the item at the index position
+- `viewer.meta.formulaLines.removeWhere(predicate)` - removes items that satisfy the condition
+- `viewer.meta.formulaLines.clear()` - removes all items
 
 To completely remove lines from dataframe or viewer use method `dataframe.meta.formulaLines.clear()`
 or `viewer.meta.formulaLines.clear()`.
