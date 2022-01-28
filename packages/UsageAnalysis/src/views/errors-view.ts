@@ -26,15 +26,19 @@ export class ErrorsView extends UaView {
     );
     this.viewers.push(errorsViewer);
 
-    let topErrorsViewer = new TopErrorsViewer(this.uaToolbox.filterStream);
+    let topErrorsViewer = new TopErrorsViewer('Errors', 'TopErrors', this.uaToolbox.filterStream);
     this.viewers.push(topErrorsViewer);
+
+    let topNotErrorsViewer = new TopErrorsViewer('Not Errors', 'TopNotErrors', this.uaToolbox.filterStream);
+    this.viewers.push(topNotErrorsViewer);
 
     let topErrorSourcesViewer = new TopErrorSourcesViewer(this.uaToolbox.filterStream);
     this.viewers.push(topErrorSourcesViewer);
 
     this.root.append(ui.divV([
-      ui.divH([ui.block([errorsViewer.root])]),
-      ui.divH([ui.block50([topErrorsViewer.root]), ui.block50([topErrorSourcesViewer.root])]),
+      ui.div([ui.block([errorsViewer.root])]),
+      ui.divH([ui.block50([topErrorsViewer.root]), ui.block50([topNotErrorsViewer.root])]),
+      ui.div([ui.block50([topErrorSourcesViewer.root])])
     ]));
 
   }
