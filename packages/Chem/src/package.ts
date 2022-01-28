@@ -20,7 +20,7 @@ import {addMcs} from './panels/find-mcs';
 import * as chemCommonRdKit from './utils/chem-common-rdkit';
 import {rGroupAnalysis} from './analysis/r-group-analysis';
 import {identifiersWidget} from './widgets/identifiers';
-import {_convertMolecule} from './utils/chem-utils';
+import {convertMoleculeImpl} from './utils/chem-utils';
 import '../css/chem.css';
 import {ChemSimilarityViewer} from './analysis/chem-similarity-viewer';
 import {ChemDiversityViewer} from './analysis/chem-diversity-viewer';
@@ -244,7 +244,7 @@ export async function activityCliffs(dataframe: DG.DataFrame, smiles: DG.Column,
 //input: column smiles { semType: Molecule }
 //input: string methodName { choices:["UMAP", "t-SNE", "SPE", "pSPE", "OriginalSPE"] }
 //input: string similarityMetric { choices:["Levenshtein", "Jaro-Winkler", "Tanimoto", "Dice", "Asymmetric", "Braun-Blanquet", "Cosine", "Kulczynski", "Mc-Connaughey", "Rogot-Goldberg", "Russel", "Sokal"] }
-//input: boolean plotEmbeddings
+//input: bool plotEmbeddings
 //output: viewer result
 export async function chemSpaceTopMenu(table: DG.DataFrame, smiles: DG.Column, methodName: string, similarityMetric: string, plotEmbeddings: boolean) {
   return new Promise<void>(async (resolve, reject) => {
@@ -414,7 +414,7 @@ export async function identifiers(smiles: string) {
 //input: string to {choices:["smiles", "molblock", "inchi", "v3Kmolblock"]}
 //output: string result {semType: Molecule}
 export function convertMolecule(molecule: string, from: string, to: string): string {
-  return _convertMolecule(molecule, to, from, getRdKitModule());
+  return convertMoleculeImpl(molecule, to, from, getRdKitModule());
 }
 
 
