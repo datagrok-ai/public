@@ -869,6 +869,14 @@ Range slider is a UI control that enables to select a value range within a prede
 ui.rangeSlider(0, 10, 2, 5);
 ```
 
+### Color picker
+
+UI element that lets a user specify a color, either by using a visual color picker interface or by entering the color into a text field in hexadecimal format.
+
+```javascript
+ui.colorInput('Hair color', '#ff0000');
+```
+
 ## Icons
 
 The icon control displays the icon from the FontAwesome library. Icon can used as a button control. Use FontAwesome
