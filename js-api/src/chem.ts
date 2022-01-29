@@ -194,7 +194,11 @@ export namespace chem {
           .popup()
           .item('Copy as SMILES', () => navigator.clipboard.writeText(this.sketcher!.smiles))
           .item('Copy as MOLBLOCK', () => navigator.clipboard.writeText(this.sketcher!.molFile))
-          .item('Add to favorites', () => console.log(this.sketcher!.molFile))
+          .group('Favorites')
+            .item('Add to favorites', () => Sketcher.addFavorite(this.sketcher!.molFile))
+            .separator()
+            .items(Sketcher.getFavorites().map((m) => ui.tools.click(svgMol(m, 200, 100), () => this.setMolecule(m))), () => {})
+            .endGroup()
           .separator()
           .items(funcs.map((f) => f.name), (name: string) => this.setSketcher(name))
           .show();
@@ -210,6 +214,17 @@ export namespace chem {
         this.host]));
 
       this.setSketcher(funcs[0].name);
+    }
+
+    static readonly FAVORITES_KEY = 'chem-molecule-favorites';
+
+    static getFavorites(): string[] {
+      return JSON.parse(localStorage.getItem(Sketcher.FAVORITES_KEY) ?? '[]');
+    }
+
+    static addFavorite(molecule: string) {
+      let s = JSON.stringify([...Sketcher.getFavorites().slice(-9), molecule]);
+      localStorage.setItem(Sketcher.FAVORITES_KEY, s);
     }
 
     detach() {
@@ -441,9 +456,6 @@ export namespace chem {
   /**
    * Returns available descriptors tree.
    * See example: {@link https://public.datagrok.ai/js/samples/domains/chem/descriptors}
-   *
-   * @async
-   * @returns {Promise<Object>}
    * */
   export function descriptorsTree(): Promise<object> {
     return new Promise((resolve, reject) => api.grok_Chem_DescriptorsTree((tree: any) => resolve(JSON.parse(tree)), (e: any) => reject(e)));
@@ -464,7 +476,7 @@ export namespace chem {
     ): HTMLDivElement {
     let root = document.createElement('div');
     import('openchemlib/full.js').then((OCL) => {
-      let m = smiles.endsWith("M END") ? OCL.Molecule.fromMolfile(smiles): OCL.Molecule.fromSmiles(smiles);
+      let m = smiles.includes("M  END") ? OCL.Molecule.fromMolfile(smiles): OCL.Molecule.fromSmiles(smiles);
       root.innerHTML = m.toSVG(width, height, undefined, options);
     });
     return root;
@@ -474,13 +486,6 @@ export namespace chem {
    * Renders a molecule to canvas (using RdKit)
    * TODO: should NOT be async
    * See example: {@link }
-   * @param {number} x
-   * @param {number} y
-   * @param {number} w
-   * @param {number} h
-   * @param {Object} canvas
-   * @param {string} molString
-   * @param {string} scaffoldMolString
    * */
   export async function canvasMol(
     x: number, y: number, w: number, h: number,

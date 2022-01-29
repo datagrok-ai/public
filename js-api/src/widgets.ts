@@ -756,12 +756,8 @@ export class Menu {
     return toJs(api.grok_Menu_Item(this.dart, text, onClick, order));
   }
 
-  /** For each item in items, adds a menu group with the specified text and handler.
-   * Returns this.
-   * @param {string[]} items
-   * @param {Function} onClick - a callback with one parameter
-   * @returns {Menu} */
-  items(items: string[], onClick: (item: string) => void): Menu {
+  /** For each item in items, adds a menu group with the specified text and handler. */
+  items(items: string[] | HTMLElement[], onClick: (item: string) => void): Menu {
     return toJs(api.grok_Menu_Items(this.dart, items, onClick));
   }
 
