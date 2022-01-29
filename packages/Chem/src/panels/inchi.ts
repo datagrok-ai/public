@@ -14,7 +14,7 @@ function addDerived(col: DG.Column, description: string, extract: (mol: RDMol) =
     mol.delete();
   }
 
-  const name = StringUtils.getUniqueName('inchi', col.dataFrame.columns.names());
+  const name = col.dataFrame.columns.getUnusedName('inchi');
   col.dataFrame.columns.add(DG.Column.fromList('string', name, result));
   pi.close();
 }

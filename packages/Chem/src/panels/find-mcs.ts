@@ -16,7 +16,7 @@ export async function addMcs(col: DG.Column): Promise<void> {
 
   const pi = DG.TaskBarProgressIndicator.create('Estimating MCS');
   const mcs: string = await findMCS(col.name, DG.DataFrame.fromColumns([col]));
-  const name = StringUtils.getUniqueName('MCS', col.dataFrame.columns.names());
+  const name = col.dataFrame.columns.getUnusedName('MCS');
   const mcsCol = DG.Column.fromList('string', name, new Array(col.length).fill(mcs));
   mcsCol.semType = 'Molecule';
   mcsCol.setTag('cell.renderer', 'Molecule');
