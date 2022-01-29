@@ -195,7 +195,7 @@ export namespace chem {
           .item('Copy as SMILES', () => navigator.clipboard.writeText(this.sketcher!.smiles))
           .item('Copy as MOLBLOCK', () => navigator.clipboard.writeText(this.sketcher!.molFile))
           .group('Favorites')
-            .item('Add to favorites', () => Sketcher.addFavorite(this.sketcher!.molFile))
+            .item('Add to Favorites', () => Sketcher.addFavorite(this.sketcher!.molFile))
             .separator()
             .items(Sketcher.getFavorites().map((m) => ui.tools.click(svgMol(m, 200, 100), () => this.setMolecule(m))), () => {})
             .endGroup()
