@@ -1,8 +1,8 @@
 import * as ui from 'datagrok-api/ui';
 import * as grok from 'datagrok-api/grok';
 import * as DG from 'datagrok-api/dg';
-import * as OCL from 'openchemlib/full.js';
 import {getDescriptorsTree, getDescriptorsPy} from '../scripts-api';
+import {StringUtils} from "@datagrok-libraries/utils/src/string-utils";
 
 const _STORAGE_NAME = 'rdkit_descriptors';
 const _KEY = 'selected';
@@ -79,7 +79,7 @@ export function getDescriptorsApp() {
   const dsDiv = ui.divV([], 'grok-prop-panel');
   dsDiv.appendChild(getDescriptorsSingle(defaultSmiles).root);
 
-  const sketcher = grok.chem.sketcher((smiles: string, molfile: string) => {
+  const sketcher = grok.chem.sketcher((smiles: string, _molfile: string) => {
     sketcherValue = smiles;
     removeChildren(dsDiv);
     dsDiv.appendChild(getDescriptorsSingle(smiles).root);
@@ -129,8 +129,10 @@ function openDescriptorsDialog(selected: any, onOK: any) {
     const items: DG.TreeViewNode[] = [];
 
     const checkAll = (val: boolean) => {
-      for (const g of Object.values(groups)) g.checked = val;
-      for (const i of items) i.checked = val;
+      for (const g of Object.values(groups))
+        g.checked = val;
+      for (const i of items)
+        i.checked = val;
     };
 
     const selectAll = ui.label('All', {classes: 'd4-link-label', onClick: () => checkAll(true)});
@@ -148,7 +150,7 @@ function openDescriptorsDialog(selected: any, onOK: any) {
       group.enableCheckBox();
       groups[groupName] = group;
 
-      group.checkBox!.onchange = (e) => {
+      group.checkBox!.onchange = (_e) => {
         countLabel.textContent = `${items.filter((i) => i.checked).length} checked`;
       };
 
@@ -157,7 +159,7 @@ function openDescriptorsDialog(selected: any, onOK: any) {
         item.enableCheckBox(selected.includes(descriptor['name']));
         items.push(item);
 
-        item.checkBox!.onchange = (e) => {
+        item.checkBox!.onchange = (_e) => {
           countLabel.textContent = `${items.filter((i) => i.checked).length} checked`;
         };
       }
@@ -199,23 +201,8 @@ function addResultColumns(table: DG.DataFrame, viewTable: DG.DataFrame): void {
 
     for (let i = 1; i < descriptors.length; i++) {
       const column: DG.Column = table.columns.byName(descriptors[i]);
-      column.name = getName(column.name, viewTable.columns.names());
+      column.name = StringUtils.getUniqueName(column.name, viewTable.columns.names());
       viewTable.columns.add(column);
     }
-  }
-}
-
-function getName(initialName: string, existingNames: string[]) {
-  if (!existingNames.includes(initialName))
-    return initialName;
-  else {
-    let counter: number = 1;
-    let newName: string = (' ' + initialName + '_' + counter).slice(1);
-    while (existingNames.includes(newName)) {
-      counter++;
-      newName = (' ' + initialName + '_' + counter).slice(1);
-    }
-
-    return newName;
   }
 }

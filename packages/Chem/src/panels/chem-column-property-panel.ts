@@ -7,7 +7,7 @@ let subscr: any = null;
 
 export function getMolColumnPropertyPanel(col: DG.Column) {
   const NONE = 'None';
-  let scaffoldColName = null;
+  let scaffoldColName;
   if (col?.temp && col.temp['scaffold-col'])
     scaffoldColName = col.temp['scaffold-col'];
   else
@@ -65,7 +65,7 @@ export function getMolColumnPropertyPanel(col: DG.Column) {
   });
 
   subscr?.unsubscribe();
-  subscr = col.dataFrame.onMetadataChanged.subscribe((a: any) => {
+  subscr = col.dataFrame.onMetadataChanged.subscribe((_) => {
     // Handling scaffold column
     const scaffoldColumnChoiceValue = scaffoldColumnChoice.stringValue;
     const scaffoldColumnTag = col.temp && col.temp['scaffold-col'] ? col.temp['scaffold-col'] : NONE;
