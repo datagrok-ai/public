@@ -201,7 +201,7 @@ function addResultColumns(table: DG.DataFrame, viewTable: DG.DataFrame): void {
 
     for (let i = 1; i < descriptors.length; i++) {
       const column: DG.Column = table.columns.byName(descriptors[i]);
-      column.name = StringUtils.getUniqueName(column.name, viewTable.columns.names());
+      column.name = viewTable.columns.getUnusedName(column.name);
       viewTable.columns.add(column);
     }
   }
