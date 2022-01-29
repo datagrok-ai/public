@@ -1189,6 +1189,13 @@ export let icons = {
   play: (handler: Function, tooltipMsg: string | null = null) => _iconFA('play', handler, tooltipMsg),
 }
 
+export namespace tools {
+  export function click<T extends HTMLElement>(e: T, handler: () => void): T {
+    e.addEventListener('click', handler);
+    return e;
+  }
+}
+
 export namespace cards {
 
   /** Two columns, with picture on the left and details on the right */
