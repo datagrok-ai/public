@@ -209,8 +209,6 @@ CN1C(=O)CN=C(c2cc(Cl)ccc12)C3CCCCC3`);
     let table = grok.data.demo.molecules(1000);
     table.selection.set(0, true);
     let view = grok.shell.addTableView(table);
-    const timer = (ms: number) => new Promise(res => setTimeout(res, ms));
-    await timer(5000);
     let similaritySearchviewer = view.addViewer('SimilaritySearchViewer');
     table.currentRowIdx = 5;
     table.selection.set(2, true);
@@ -218,12 +216,11 @@ CN1C(=O)CN=C(c2cc(Cl)ccc12)C3CCCCC3`);
     table.selection.set(5, true);
     table.rows.removeAt(2, 10);
     similaritySearchviewer.setOptions({
-      distanceMetric: 'dice',
+      distanceMetric: 'Dice',
       limit: 100,
       minScore: 0.5,
       moleculeColumnName: 'smiles',
     });
-    await timer(5000);
   });
 
   testExpectFinish('testDiversitySearchViewer', async () => {
