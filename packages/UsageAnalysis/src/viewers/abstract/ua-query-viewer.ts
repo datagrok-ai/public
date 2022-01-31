@@ -11,7 +11,7 @@ export abstract class UaQueryViewer extends UaViewer{
   filter: Object = {};
 
   protected constructor(name: string, queryName: string, viewerFunction: Function,
-                        setStyle?: Function, staticFilter?: Object, filter?: UaFilter, showName: boolean = true) {
+                        setStyle?: Function | null, staticFilter?: Object | null, filter?: UaFilter | null, showName: boolean = true) {
     super(name, setStyle, showName);
 
     this.queryName = queryName;

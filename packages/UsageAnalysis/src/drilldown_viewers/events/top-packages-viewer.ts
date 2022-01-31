@@ -8,6 +8,7 @@ import {UaFilter} from "../../filter2";
 import {PropertyPanel} from "../../property-panel";
 import {UaDataFrameQueryViewer} from "../../viewers/ua-data-frame-query-viewer";
 import {BehaviorSubject} from "rxjs"
+import {TopFunctionErrorsViewer} from "../function_errors/top-function-errors-viewer";
 
 export class TopPackagesViewer extends UaFilterableQueryViewer {
 
@@ -49,15 +50,7 @@ export class TopPackagesViewer extends UaFilterableQueryViewer {
                   filterStream.getValue(),
                   false
               ),
-              new UaDataFrameQueryViewer(
-                  'Errors Of Package',
-                  'TopErrorsOfPackage',
-                  (t: DG.DataFrame) => DG.Viewer.barChart(t, UaQueryViewer.defaultBarchartOptions).root,
-                  null as any,
-                  {name: args.args.categories[0]},
-                  filterStream.getValue(),
-                  false
-              ),
+              new TopFunctionErrorsViewer('Errors Of Package','TopErrorsOfPackage', filterStream, {name: args.args.categories[0]}, false),
             ],
             `Packages: ${args.args.categories[0]}`,
             'Packages');
