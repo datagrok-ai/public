@@ -247,7 +247,6 @@ export async function peptideSubstitution(table: DG.DataFrame): Promise<DG.Widge
 
     const initialAminos = initialPeptide.split('-');
     const substAminos = substPeptide.split('-');
-    const counts: {[key: string]: number} = {};
 
     for (let j = 0; j < peptideLength; ++j) {
       if (initialAminos[j] != substAminos[j])

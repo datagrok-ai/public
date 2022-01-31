@@ -11,10 +11,8 @@ import {Fingerprint} from "../utils/chem-common";
 import BitArray from '@datagrok-libraries/utils/src/bit-array';
 
 export async function chemSpace(molColumn: DG.Column, methodName: string, similarityMetric: string): Promise<DG.ColumnList> {
-  let fpColumn = molColumn.toList();
-  let coordinates: Coordinates;
-  fpColumn = await chemGetFingerprints(molColumn, Fingerprint.Morgan);
-  coordinates = await createDimensinalityReducingWorker({data: fpColumn as BitArray[], metric: similarityMetric as BitArrayMetrics}, methodName) as Coordinates;
+  const fpColumn = await chemGetFingerprints(molColumn, Fingerprint.Morgan);
+  const coordinates: Coordinates = await createDimensinalityReducingWorker({data: fpColumn as BitArray[], metric: similarityMetric as BitArrayMetrics}, methodName) as Coordinates;
   const axes = ['Embed_X', 'Embed_Y'];
   const cols: DG.Column[] = [];
 
