@@ -13,12 +13,14 @@ export class SubstViewer extends DG.JsViewer {
   maxSubstitutions: number;
   activityLimit: number;
   activityColumnName: string;
+  title: string;
   casesGrid: DG.Grid | null;
 
   constructor() {
     super();
 
     this.activityColumnName = this.string('activityColumnName');
+    this.title = this.string('title', 'Substitution analysis');
 
     this.maxSubstitutions = this.int('maxSubstitutions', 1);
     this.activityLimit = this.float('activityLimit', 2);
@@ -216,7 +218,11 @@ export class SubstViewer extends DG.JsViewer {
 
   render() {
     $(this.root).empty();
-    this.root.appendChild(this.viewerGrid!.root);
+    const title = ui.h1(this.title, {style: {'align-self': 'center'}});
+    const grid = this.viewerGrid!.root;
+    title.style.alignContent = 'center';
+    grid.style.width = 'auto';
+    this.root.appendChild(ui.divV([title, grid]));
   }
 
   split(peptideColumn: DG.Column, filter: boolean = true): string[][] {
