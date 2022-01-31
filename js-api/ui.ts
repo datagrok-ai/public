@@ -524,8 +524,8 @@ export function showPopup(element: HTMLElement, anchor: HTMLElement, vertical: b
   return api.grok_UI_ShowPopup(element, anchor, vertical);
 }
 
-export function rangeSlider(minRange: number, maxRange: number, min: number, max: number): RangeSlider {
-  let rs = RangeSlider.create();
+export function rangeSlider(minRange: number, maxRange: number, min: number, max: number, vertical: boolean = false): RangeSlider {
+  let rs = RangeSlider.create(vertical);
   rs.setValues(minRange, maxRange, min, max);
   return rs;
 }
