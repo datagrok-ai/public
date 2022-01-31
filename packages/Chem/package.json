@@ -22,7 +22,7 @@
   "dependencies": {
     "datagrok-api": ">=0.115.0",
     "@datagrok-libraries/ml": ">=0.0.12",
-    "@datagrok-libraries/utils": ">=0.0.20",
+    "@datagrok-libraries/utils": ">=0.0.22",
     "wu": "latest",
     "@types/wu": "latest",
     "cash-dom": "latest",

@@ -1,4 +1,4 @@
-import {genRange} from '@datagrok-libraries/utils/src/operations';
+import {genRange} from '@datagrok-libraries/utils/src/array-utils';
 
 type Tracks = {[kind: string]: number[]};
 type _Tracks = {[kind: string]: Set<number>};

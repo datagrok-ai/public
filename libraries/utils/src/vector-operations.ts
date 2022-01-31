@@ -1,4 +1,5 @@
 import {Matrix, Vector, Coordinates, Vectors, DistanceMetric} from './type-declarations';
+import {randomFloat} from './random';
 
 /**
  * Asserts a condition by throwing an Error.
@@ -12,17 +13,6 @@ export function assert(condition: boolean = false, message: string = 'Assertion 
   if (!condition) {
     throw new Error(message);
   }
-}
-
-/**
- * Generates single random integer from 0 to range.
- *
- * @export
- * @param {number} range Max generating value.
- * @return {number} A random integer generated.
- */
-export function randomInt(range: number): number {
-  return Math.floor(Math.random() * range);
 }
 
 /**
@@ -67,7 +57,7 @@ export function vectorAdd(p: Vector, q: Vector, multiplier: number = 1): Vector 
   let total = new Vector(nItems);
 
   for (let i = 0; i < p.length; ++i) {
-    total[i] = p[i]+multiplier*q[i];
+    total[i] = p[i] + multiplier * q[i];
   }
   return total;
 }
@@ -98,7 +88,7 @@ function vectorSquare(v: Vector): Vector {
   let total = new Vector(nItems);
 
   for (let i = 0; i < v.length; ++i) {
-    total[i] = v[i]*v[i];
+    total[i] = v[i] * v[i];
   }
   return total;
 }
@@ -117,7 +107,7 @@ export function fillRandomMatrix(dimension1: number, dimension2: number, scale: 
 
   for (let i = 0; i < dimension1; ++i) {
     for (let j = 0; j < dimension2; ++j) {
-      matrix[i][j] = Math.random() * scale;
+      matrix[i][j] = randomFloat(scale);
     }
   }
   return matrix;
@@ -148,7 +138,7 @@ export function calculateEuclideanDistance(p: Vector, q: Vector): number {
  */
 export function calcDistanceMatrix(data: Vectors, distance: DistanceMetric): Matrix {
   const nItems = data.length;
-  let matrix = initCoordinates(nItems, nItems, 0);
+  const matrix = initCoordinates(nItems, nItems, 0);
 
   for (let i = 0; i < nItems; ++i) {
     for (let j = i+1; j < nItems; ++j) {
@@ -157,31 +147,4 @@ export function calcDistanceMatrix(data: Vectors, distance: DistanceMetric): Mat
     }
   }
   return matrix;
-}
-
-/** Generates array from a range [begin; end] or [begin; end) if endExclusive. */
-export function genRange(begin: number, end: number, endExclusive = false): Int32Array {
-  const nItems = end - begin + (endExclusive ? 0 : 1);
-  const series = new Int32Array(nItems);
-
-  for (let i = 0; i < nItems; ++i) {
-    series[i] = begin + i;
-  }
-  return series;
-}
-
-/**  
- * Returns order of values as if they are sorted.
- *
- * @export
- * @param {any[]} values Input array.
- * @param {boolean} [reverse=false] Whether to return reversed order.
- * @return {number[]} The order computed.
- */
-export function argSort(values: any[], reverse = false): number[] {
-  const sortfn = reverse ? (a: any[], b: any[]) => (b[0] - a[0]) : (a: any[], b: any[]) => (a[0] - b[0]);
-  const decor = (v: any, i: number) => [v, i]; // set index to value
-  const undecor = (a: any[]) => a[1]; // leave only index
-  const _argsort = (arr: any[]) => arr.map(decor).sort(sortfn).map(undecor);
-  return _argsort(values);
 }
