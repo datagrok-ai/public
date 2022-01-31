@@ -231,3 +231,28 @@ export function getDiverseSubset(length: number, n: number, dist: (i1: number, i
   }
   return subset;
 }
+
+/**
+ * Returns normalized vector
+ * 
+ * @param data numerical array
+ */
+export function normalize(data: Vector): Vector {
+  let mean = 0;
+  let std = 0;
+
+  data.forEach((val) => {
+    mean += val;
+  });
+  mean /= data.length;
+
+  data.forEach((val) => {
+    std += (val - mean) * (val - mean);
+  });
+  std = Math.sqrt(std / data.length);
+
+  data.forEach((val, idx) => {
+    data[idx] = (val - mean) / std;
+  });
+  return data;
+}
