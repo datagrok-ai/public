@@ -123,7 +123,7 @@ export class Viewer extends Widget {
   /** Returns viewer type (see VIEWER constants)
    * @returns {string} */
   get type(): ViewerType {
-    return this.getOptions().type;
+    return api.grok_Viewer_Get_Type(this.dart);
   }
 
   get table(): DataFrame {
