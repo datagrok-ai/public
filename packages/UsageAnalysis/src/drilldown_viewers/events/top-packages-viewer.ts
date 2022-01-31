@@ -12,11 +12,11 @@ import {TopFunctionErrorsViewer} from "../function_errors/top-function-errors-vi
 
 export class TopPackagesViewer extends UaFilterableQueryViewer {
 
-  public constructor(filterStream: BehaviorSubject<UaFilter>) {
+  public constructor(name: string, queryName: string, filterStream: BehaviorSubject<UaFilter>) {
     super(
         filterStream,
-        'Packages',
-        'TopPackages',
+        name,
+        queryName,
         (t: DG.DataFrame) => {
           let viewer = DG.Viewer.barChart(t, UaQueryViewer.defaultBarchartOptions);
           viewer.onEvent('d4-bar-chart-on-category-clicked').subscribe(async (args) => {
