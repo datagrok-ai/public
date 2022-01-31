@@ -2,15 +2,14 @@
 	"name": "@datagrok/sqlite",
 	"beta": false,
 	"friendlyName": "SQLite",
-	"version": "0.1.0",
+	"version": "0.1.1",
 	"description": "",
 	"dependencies": {
 		"datagrok-api": "latest",
 		"@datagrok-libraries/utils": "latest",
 		"file-loader": "latest",
 		"ts-loader": "latest",
-		"typescript": "latest",
-		"set-operations": "latest"
+		"typescript": "latest"
 	},
 	"devDependencies": {
 		"@types/sql.js": "latest",
