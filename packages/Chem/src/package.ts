@@ -243,12 +243,12 @@ export async function activityCliffs(dataframe: DG.DataFrame, smiles: DG.Column,
 //input: dataframe table
 //input: column smiles { semType: Molecule }
 //input: string methodName { choices:["UMAP", "t-SNE", "SPE", "pSPE", "OriginalSPE"] }
-//input: string similarityMetric { choices:["Levenshtein", "Jaro-Winkler", "Tanimoto", "Dice", "Asymmetric", "Braun-Blanquet", "Cosine", "Kulczynski", "Mc-Connaughey", "Rogot-Goldberg", "Russel", "Sokal"] }
-//input: bool plotEmbeddings
+//input: string similarityMetric { choices:["Tanimoto", "Dice", "Asymmetric", "Braun-Blanquet", "Cosine", "Kulczynski", "Mc-Connaughey", "Rogot-Goldberg", "Russel", "Sokal"] }
+//input: bool plotEmbeddings = true
 //output: viewer result
-export async function chemSpaceTopMenu(table: DG.DataFrame, smiles: DG.Column, methodName: string, similarityMetric: string, plotEmbeddings: boolean) {
+export async function chemSpaceTopMenu(table: DG.DataFrame, smiles: DG.Column, methodName: string, similarityMetric: string = 'Tanimoto', plotEmbeddings: boolean) {
   return new Promise<void>(async (resolve, reject) => {
-    const embeddings = await chemSpace(table, smiles, methodName, similarityMetric);
+    const embeddings = await chemSpace(smiles, methodName, similarityMetric);
     let cols = table.columns as DG.ColumnList;
     for (const col of embeddings) {
       cols.add(col);
