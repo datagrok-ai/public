@@ -1,10 +1,10 @@
 import * as grok from 'datagrok-api/grok';
 import * as DG from 'datagrok-api/dg';
 
-import {searchResult} from './utils';
+import {drugBankSearchResult} from './utils';
 
 export async function drugBankSubstructureSearch(
-  molString: string, substructLibrary: boolean, dbdf: DG.DataFrame): Promise<searchResult> {
+  molString: string, substructLibrary: boolean, dbdf: DG.DataFrame): Promise<drugBankSearchResult> {
   const bitset = await grok.chem.searchSubstructure(
     dbdf!.getCol('SMILES'), molString, {'substructLibrary': substructLibrary});
 
@@ -16,7 +16,7 @@ export async function drugBankSubstructureSearch(
 }
 
 export async function drugBankSimilaritySearch(
-  molString: string, limit: number, cutoff: number, dbdf: DG.DataFrame): Promise<searchResult> {
+  molString: string, limit: number, cutoff: number, dbdf: DG.DataFrame): Promise<drugBankSearchResult> {
   const searchdf = await grok.chem.findSimilar(dbdf!.getCol('SMILES'), molString, {'limit': limit, 'cutoff': cutoff});
 
   if (searchdf == null)

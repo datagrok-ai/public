@@ -1,8 +1,8 @@
 import * as ui from 'datagrok-api/ui';
 import * as DG from 'datagrok-api/dg';
 
-export type searchTypes = 'similarity' | 'substructure';
-export type searchResult = DG.DataFrame | null;
+export type drugBankSearchTypes = 'similarity' | 'substructure';
+export type drugBankSearchResult = DG.DataFrame | null;
 
 export function getTooltip(value: string) {
   const props = {
