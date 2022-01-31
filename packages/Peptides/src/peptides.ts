@@ -27,7 +27,6 @@ export class Peptides {
    * @param {DG.DataFrame} currentDf Working table.
    * @param {StringDictionary} options SAR viewer options
    * @param {DG.Column} col Aligned sequences column.
-   * @param {string} activityColumnChoice Activity column name.
    * @memberof Peptides
    */
   async init(
@@ -53,7 +52,7 @@ export class Peptides {
     const originalDfName = currentDf.name;
 
     // const substViewer = view.addViewer(
-    //   'substitution-analysis-viewer', {'activityColumnName': options['activityColumnName']},
+    //   'substitution-analysis-viewer', {'activityColumnName': `${options['activityColumnName']}Scaled`},
     // );
     // const substNode = view.dockManager.dock(substViewer, DG.DOCK_TYPE.RIGHT, null, 'Substitution Analysis');
 
@@ -77,11 +76,11 @@ export class Peptides {
       'Levenshtein',
       100,
       view,
-      `${options['activityColumnChoice']}Scaled`,
+      `${options['activityColumnName']}Scaled`,
     );
     const psNode = view.dockManager.dock(peptideSpaceViewer, DG.DOCK_TYPE.LEFT, sarNode, 'Peptide Space Viewer', 0.3);
 
-    const layout2 = view.saveLayout();
+    // const layout2 = view.saveLayout();
 
     const nodeList = [sarNode, sarVNode, psNode];
 
@@ -143,7 +142,7 @@ export class Peptides {
         const sarVNode = view.dockManager.dock(sarViewerVertical, DG.DOCK_TYPE.RIGHT, sarNode, 'SAR Vertical Viewer');
 
         const peptideSpaceViewer = await createPeptideSimilaritySpaceViewer(
-          currentDf, col, 't-SNE', 'Levenshtein', 100, view, `${options['activityColumnChoice']}Scaled`);
+          currentDf, col, 't-SNE', 'Levenshtein', 100, view, `${options['activityColumnName']}Scaled`);
         const psNode = view.dockManager.dock(
           peptideSpaceViewer, DG.DOCK_TYPE.LEFT, sarNode, 'Peptide Space Viewer', 0.3);
 
@@ -155,7 +154,7 @@ export class Peptides {
         $(switchViewers).addClass('fa-toggle-on');
       } else {
         const substViewer = view.addViewer(
-          'substitution-analysis-viewer', {'activityColumnName': options['activityColumnName']},
+          'substitution-analysis-viewer', {'activityColumnName': `${options['activityColumnName']}Scaled`},
         );
         substViewer.helpUrl = helpUrl;
         nodeList.push(view.dockManager.dock(substViewer, DG.DOCK_TYPE.DOWN, null, 'Substitution Analysis'));

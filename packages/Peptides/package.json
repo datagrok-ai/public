@@ -5,9 +5,9 @@
 	"dependencies": {
 		"@biowasm/aioli": ">=2.4.0",
 		"@datagrok-libraries/bio": ">=0.0.4",
-		"@datagrok-libraries/ml": ">=0.0.10",
+		"@datagrok-libraries/ml": ">=0.0.14",
 		"@datagrok-libraries/statistics": ">=0.1.5",
-		"@datagrok-libraries/utils": ">=0.0.18",
+		"@datagrok-libraries/utils": ">=0.0.22",
 		"@types/d3": "^7.0.0",
 		"@types/jquery": "^3.5.6",
 		"cash-dom": "latest",

@@ -36,7 +36,7 @@ export class SubstViewer extends DG.JsViewer {
     const df: DG.DataFrame = this.dataFrame!;
     const col: DG.Column = df.columns.bySemType('alignedSequence');
     // let values: number[] = df.columns.byName('IC50').toList();
-    const values = df.getCol(this.activityColumnName).toList().map((x) => -Math.log10(x));
+    const values = df.getCol(this.activityColumnName).toList();
     // values = values;
     const splitedMatrix = this.split(col);
 
