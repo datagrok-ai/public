@@ -4,7 +4,7 @@ import * as DG from 'datagrok-api/dg';
 import {Property} from 'datagrok-api/dg';
 import BitArray from '@datagrok-libraries/utils/src/bit-array';
 import {similarityMetric} from '@datagrok-libraries/utils/src/similarity-metrics';
-import {getDiverseSubset} from '@datagrok-libraries/utils/src/diverse-subset';
+import {getDiverseSubset} from '@datagrok-libraries/utils/src/operations';
 import {chemGetFingerprints} from '../chem-searches';
 import $ from 'cash-dom'
 import {ArrayUtils} from "@datagrok-libraries/utils/src/array-utils";
