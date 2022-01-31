@@ -31,7 +31,7 @@ group by et.friendly_name, et.id
 limit 50;
 --end
 
---name: TopNotErrors
+--name: TopDisabledErrors
 --input: string date { pattern: datetime }
 --input: list users
 --connection: System:DatagrokAdmin

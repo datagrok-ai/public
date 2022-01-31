@@ -29,7 +29,7 @@ export class ErrorsView extends UaView {
     let topErrorsViewer = new TopErrorsViewer('Errors', 'TopErrors', this.uaToolbox.filterStream);
     this.viewers.push(topErrorsViewer);
 
-    let topNotErrorsViewer = new TopErrorsViewer('Not Errors', 'TopNotErrors', this.uaToolbox.filterStream);
+    let topNotErrorsViewer = new TopErrorsViewer('Disabled Errors', 'TopDisabledErrors', this.uaToolbox.filterStream);
     this.viewers.push(topNotErrorsViewer);
 
     let topErrorSourcesViewer = new TopErrorSourcesViewer(this.uaToolbox.filterStream);
