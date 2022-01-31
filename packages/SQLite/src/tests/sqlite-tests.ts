@@ -19,6 +19,7 @@ category('SQLite', () => {
       'invoice_items', 'media_types', 'playlists', 'playlist_track', 'tracks', 'sqlite_stat1',
     ];
 
-    expect(symmetricDifference(chinookTables, expectedTables, true).length, 0);
+    expect(chinookTables.length, expectedTables.length);
+    expect(chinookTables.filter((tableName) => !expectedTables.includes(tableName)).length, 0);
   });
 });
