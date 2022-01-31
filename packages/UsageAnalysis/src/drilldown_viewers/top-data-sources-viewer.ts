@@ -1,13 +1,13 @@
-import {UaFilterableViewer} from "../viewers/ua-filterable-viewer";
+import {UaFilterableQueryViewer} from "../viewers/ua-filterable-query-viewer";
 import {TopQueriesUsingDataSource} from "./top-queries-using-data-source";
 import * as DG from "datagrok-api/dg";
-import {UaQueryViewer} from "../viewers/ua-query-viewer";
+import {UaQueryViewer} from "../viewers/abstract/ua-query-viewer";
 import * as grok from "datagrok-api/grok";
 import * as ui from "datagrok-api/ui";
 import {UaFilter} from "../filter2";
 import {BehaviorSubject} from "rxjs"
 
-export class TopDataSourcesViewer extends UaFilterableViewer {
+export class TopDataSourcesViewer extends UaFilterableQueryViewer {
   public constructor(filterStream: BehaviorSubject<UaFilter>) {
     super(
         filterStream,

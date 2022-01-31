@@ -3,8 +3,8 @@ import * as ui from "datagrok-api/ui";
 import * as grok from "datagrok-api/grok";
 import {UaFilter} from "../filter2";
 import {UaToolbox} from "../ua-toolbox";
-import {UaFilterableViewer} from "../viewers/ua-filterable-viewer";
-import {UaQueryViewer} from "../viewers/ua-query-viewer";
+import {UaFilterableQueryViewer} from "../viewers/ua-filterable-query-viewer";
+import {UaQueryViewer} from "../viewers/abstract/ua-query-viewer";
 
 export abstract class UaView extends DG.ViewBase {
   uaToolbox: UaToolbox;

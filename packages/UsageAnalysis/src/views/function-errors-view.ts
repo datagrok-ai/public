@@ -5,8 +5,8 @@ import $ from 'cash-dom';
 import '../../css/usage_analysis.css';
 import {UaToolbox} from "../ua-toolbox";
 import {UaView} from "./ua-view";
-import {UaFilterableViewer} from "../viewers/ua-filterable-viewer";
-import {UaQueryViewer} from "../viewers/ua-query-viewer";
+import {UaFilterableQueryViewer} from "../viewers/ua-filterable-query-viewer";
+import {UaQueryViewer} from "../viewers/abstract/ua-query-viewer";
 import {TopFunctionErrorsViewer} from "../drilldown_viewers/function_errors/top-function-errors-viewer";
 
 export class FunctionErrorsView extends UaView {
@@ -16,7 +16,7 @@ export class FunctionErrorsView extends UaView {
   }
 
   async initViewers() : Promise<void> {
-    let functionErrorsViewer = new UaFilterableViewer(
+    let functionErrorsViewer = new UaFilterableQueryViewer(
         this.uaToolbox.filterStream,
         'Function Errors',
         'FunctionErrors',
