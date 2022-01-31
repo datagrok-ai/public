@@ -10,6 +10,7 @@ export class UaDataFrameViewer extends UaViewer {
     super(name, null, showName);
     this.dataFrame = dataFrame;
     this.viewerFunction = viewerFunction;
+    this.reloadViewer();
   }
 
   setViewer(loader: any, host: HTMLDivElement) {

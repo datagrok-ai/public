@@ -1,18 +1,16 @@
 import {UaFilterableQueryViewer} from "../../viewers/ua-filterable-query-viewer";
 import * as DG from "datagrok-api/dg";
 import {UaQueryViewer} from "../../viewers/abstract/ua-query-viewer";
-import {TopQueriesUsingDataSource} from "../top-queries-using-data-source";
 import * as grok from "datagrok-api/grok";
 import * as ui from "datagrok-api/ui";
 import {UaFilter} from "../../filter2";
 import {PropertyPanel} from "../../property-panel";
 import {BehaviorSubject} from "rxjs"
-import {ErrorMarkingPanel} from "../panels/error_marking_panel";
 import {UaDataFrameViewer} from "../../viewers/ua-data-frame-viewer";
 
 export class TopFunctionErrorsViewer extends UaFilterableQueryViewer {
 
-  public constructor(name: string, queryName: string, filterStream: BehaviorSubject<UaFilter>) {
+  public constructor(name: string, queryName: string, filterStream: BehaviorSubject<UaFilter>, staticFilter?: Object, showName?: boolean) {
     super(
         filterStream,
         name,
@@ -68,7 +66,10 @@ export class TopFunctionErrorsViewer extends UaFilterableQueryViewer {
 
           });
           return viewer.root;
-        }
+        },
+        null,
+        staticFilter,
+        showName
     );
   }
 
