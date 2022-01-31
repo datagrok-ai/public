@@ -11,10 +11,10 @@ export const _package = new DG.Package();
 //meta.ext: sqlite
 //input: list bytes
 //output: list tables
-export async function importSQLite(bytes: number[]) {
+export async function importSQLite(bytes: Uint8Array) {
   //TODO: use web worker?
   const SQL: sql.SqlJsStatic = await initSqlJs({locateFile: () => _package.webRoot + 'dist/sql-wasm.wasm'});
-  const db = new SQL.Database(Uint8Array.from(bytes));
+  const db = new SQL.Database(bytes);
   const tableList = db.exec('SELECT `name` FROM `sqlite_master` WHERE type=\'table\';')[0].values;
   const result = [];
 
@@ -22,9 +22,9 @@ export async function importSQLite(bytes: number[]) {
     const tableObjects = [];
     const statement = db.prepare(`SELECT * FROM ${tableName[0]};`);
 
-    while (statement.step()) {
+    while (statement.step())
       tableObjects.push(statement.getAsObject());
-    }
+
     statement.reset();
 
     const currentDf = DG.DataFrame.fromObjects(tableObjects);
