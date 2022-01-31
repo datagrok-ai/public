@@ -57,6 +57,6 @@ export type Options = {[name: string]: any};
  * Denotes a simple string to string dictionary.
  *
  * @export
- * @type Options
+ * @type StringDictionary
  */
  export type StringDictionary = {[key: string]: string};

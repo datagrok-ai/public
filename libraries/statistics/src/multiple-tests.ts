@@ -1,3 +1,5 @@
+import {ArrayUtils} from '@datagrok-libraries/utils/src/array-utils';
+
 /** @type {*} A dictionary of basic binary operations. */
 const _operations: {[name: string]: Function} = {
   '+': (a: number, b: number) => (a + b),
@@ -15,18 +17,9 @@ const _operations: {[name: string]: Function} = {
  * @return {Int32Array} Array of indices that sort values along the first axis.
  */
 function _argsort(values: Float32Array): Int32Array {
-  const v = Array.from(values);
-
-  const argsort = (arr: number[]) => arr
-    .map((v, i) => [v, i]) // Decorate with index
-    .sort((a, b) => (a[0] == b[0] ? 0 : (a[0] > b[0] ? 1 : -1)))
-    .map((v, _) => v[1]); // Undecorate
-
-  const forder = argsort(v);
-
-  return Int32Array.from(forder);
+  const array = Array.from(values);
+  return Int32Array.from(ArrayUtils.argSort(array));
 }
-
 
 /**
  * Take elements from an array.
