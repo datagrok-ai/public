@@ -234,8 +234,9 @@ export function saveAsSdf() { _saveAsSdf(); }
 //input: column smiles {type:categorical; semType: Molecule} [Molecules, in SMILES format]
 //input: column activities
 //input: double similarity = 80 [Similarity cutoff]
-export async function activityCliffs(dataframe: DG.DataFrame, smiles: DG.Column, activities: DG.Column, similarity: number) {
-  await getActivityCliffs(dataframe, smiles, activities, similarity);
+//input: string methodName { choices:["UMAP", "t-SNE", "SPE"] }
+export async function activityCliffs(dataframe: DG.DataFrame, smiles: DG.Column, activities: DG.Column, similarity: number, methodName: string) {
+  await getActivityCliffs(dataframe, smiles, activities, similarity, methodName);
 }
 
 //top-menu: Chem | Chemical Space...
