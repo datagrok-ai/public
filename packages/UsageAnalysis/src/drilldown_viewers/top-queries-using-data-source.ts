@@ -1,10 +1,10 @@
 import * as DG from "datagrok-api/dg";
-import {UaQueryViewer} from "../viewers/ua-query-viewer";
-import {UaDataFrameViewer} from "../viewers/ua-data-frame-viewer";
+import {UaQueryViewer} from "../viewers/abstract/ua-query-viewer";
+import {UaDataFrameQueryViewer} from "../viewers/ua-data-frame-query-viewer";
 import {UaFilter} from "../filter2";
 import {BehaviorSubject} from "rxjs"
 
-export class TopQueriesUsingDataSource extends UaDataFrameViewer {
+export class TopQueriesUsingDataSource extends UaDataFrameQueryViewer {
   public constructor(dataSource: string, filterStream: BehaviorSubject<UaFilter>) {
     super(
         'Queries Using Data Source',

@@ -1,15 +1,15 @@
-import {UaFilterableViewer} from "../../viewers/ua-filterable-viewer";
+import {UaFilterableQueryViewer} from "../../viewers/ua-filterable-query-viewer";
 import * as DG from "datagrok-api/dg";
-import {UaQueryViewer} from "../../viewers/ua-query-viewer";
+import {UaQueryViewer} from "../../viewers/abstract/ua-query-viewer";
 import {TopQueriesUsingDataSource} from "../top-queries-using-data-source";
 import * as grok from "datagrok-api/grok";
 import * as ui from "datagrok-api/ui";
 import {UaFilter} from "../../filter2";
 import {PropertyPanel} from "../../property-panel";
-import {UaDataFrameViewer} from "../../viewers/ua-data-frame-viewer";
+import {UaDataFrameQueryViewer} from "../../viewers/ua-data-frame-query-viewer";
 import {BehaviorSubject} from "rxjs"
 
-export class TopPackagesViewer extends UaFilterableViewer {
+export class TopPackagesViewer extends UaFilterableQueryViewer {
 
   public constructor(filterStream: BehaviorSubject<UaFilter>) {
     super(
@@ -22,7 +22,7 @@ export class TopPackagesViewer extends UaFilterableViewer {
             let entity = await grok.dapi.packages.filter(`shortName = "${args.args.categories[0]}"`).first();
             let pp = new PropertyPanel(
                 entity,
-                [new UaDataFrameViewer(
+                [new UaDataFrameQueryViewer(
                   'Package Info',
                   'PackageInfo',
                   (t: DG.DataFrame) => DG.Viewer.grid(t).root,
@@ -31,7 +31,7 @@ export class TopPackagesViewer extends UaFilterableViewer {
                   filterStream.getValue(),
                   false
               ),
-              new UaDataFrameViewer(
+              new UaDataFrameQueryViewer(
                   'Functions Of Package',
                   'TopFunctionsOfPackage',
                   (t: DG.DataFrame) => DG.Viewer.barChart(t, UaQueryViewer.defaultBarchartOptions).root,
@@ -40,7 +40,7 @@ export class TopPackagesViewer extends UaFilterableViewer {
                   filterStream.getValue(),
                   false
               ),
-              new UaDataFrameViewer(
+              new UaDataFrameQueryViewer(
                   'Users Of Package',
                   'TopUsersOfPackage',
                   (t: DG.DataFrame) => DG.Viewer.barChart(t, UaQueryViewer.defaultBarchartOptions).root,
@@ -49,7 +49,7 @@ export class TopPackagesViewer extends UaFilterableViewer {
                   filterStream.getValue(),
                   false
               ),
-              new UaDataFrameViewer(
+              new UaDataFrameQueryViewer(
                   'Errors Of Package',
                   'TopErrorsOfPackage',
                   (t: DG.DataFrame) => DG.Viewer.barChart(t, UaQueryViewer.defaultBarchartOptions).root,

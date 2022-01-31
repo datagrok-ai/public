@@ -1,8 +1,8 @@
 import {UaFilter} from "../filter2";
-import {UaQueryViewer} from "./ua-query-viewer";
+import {UaQueryViewer} from "./abstract/ua-query-viewer";
 import { BehaviorSubject  } from "rxjs";
 
-export class UaFilterableViewer extends UaQueryViewer {
+export class UaFilterableQueryViewer extends UaQueryViewer {
   private filterSubscription: BehaviorSubject<UaFilter>;
 
   public constructor(filterSubscription: BehaviorSubject<UaFilter>, name: string, queryName: string, viewerFunction: Function, setStyle?: Function, staticFilter?: Object) {
