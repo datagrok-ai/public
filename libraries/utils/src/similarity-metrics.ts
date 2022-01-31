@@ -13,7 +13,14 @@ export const similarityMetric: {[name: string]: (x: BitArray, y: BitArray) => nu
   'Sokal': sokalSimilarity,
 }
 
-export function tanimotoSimilarity(x: BitArray, y: BitArray) {
+/**
+ * Returns Tanimoto similarity between two BitArray's
+ * 
+ * @param {BitArray} x 
+ * @param {BitArray} y 
+ * @returns tanimoto similarity
+ */
+export function tanimotoSimilarity(x: BitArray, y: BitArray): number {
   const total = x.trueCount() + y.trueCount();
   if (total == 0)
     return 1.0;
@@ -21,7 +28,14 @@ export function tanimotoSimilarity(x: BitArray, y: BitArray) {
   return common / (total - common);
 }
 
-export function diceSimilarity(x: BitArray, y: BitArray) {
+/**
+ * Returns Dice similarity between two BitArray's
+ * 
+ * @param {BitArray} x 
+ * @param {BitArray} y 
+ * @returns dice similarity
+ */
+export function diceSimilarity(x: BitArray, y: BitArray): number {
   const total = x.trueCount() + y.trueCount();
   if (total == 0)
     return 0.0;
@@ -29,7 +43,14 @@ export function diceSimilarity(x: BitArray, y: BitArray) {
   return 2 * common / total;
 }
 
-export function cosineSimilarity(x: BitArray, y: BitArray) {
+/**
+ * Returns Cosine similarity between two BitArray's
+ * 
+ * @param {BitArray} x 
+ * @param {BitArray} y 
+ * @returns cosine similarity
+ */
+export function cosineSimilarity(x: BitArray, y: BitArray): number {
   const total = x.trueCount() * y.trueCount();
   if (total == 0)
     return 0.0;
@@ -37,13 +58,27 @@ export function cosineSimilarity(x: BitArray, y: BitArray) {
   return common / Math.sqrt(total);
 }
 
-export function sokalSimilarity(x: BitArray, y: BitArray) {
+/**
+ * Returns Sokal similarity between two BitArray's
+ * 
+ * @param {BitArray} x 
+ * @param {BitArray} y 
+ * @returns sokal similarity
+ */
+export function sokalSimilarity(x: BitArray, y: BitArray): number {
   const total = x.trueCount() + y.trueCount();
   const common = x.andWithCountBits(y, true);
   return common / (2 * total - 3 * common);
 }
 
-export function kulczynskiSimilarity(x: BitArray, y: BitArray) {
+/**
+ * Returns Kulczynski similarity between two BitArray's
+ * 
+ * @param {BitArray} x 
+ * @param {BitArray} y 
+ * @returns kulczynski similarity
+ */
+export function kulczynskiSimilarity(x: BitArray, y: BitArray): number {
   const total = x.trueCount() + y.trueCount();
   const totalProd = x.trueCount() * y.trueCount();
   if (totalProd == 0)
@@ -52,7 +87,14 @@ export function kulczynskiSimilarity(x: BitArray, y: BitArray) {
   return (common * total) / (2 * totalProd);
 }
 
-export function mcConnaugheySimilarity(x: BitArray, y: BitArray) {
+/**
+ * Returns McConnaughey similarity between two BitArray's
+ * 
+ * @param {BitArray} x 
+ * @param {BitArray} y 
+ * @returns mcConnaughey similarity
+ */
+export function mcConnaugheySimilarity(x: BitArray, y: BitArray): number {
   const total = x.trueCount() + y.trueCount();
   const totalProd = x.trueCount() * y.trueCount();
   if (totalProd == 0)
@@ -61,7 +103,14 @@ export function mcConnaugheySimilarity(x: BitArray, y: BitArray) {
   return (common * total - totalProd) / totalProd;
 }
 
-export function asymmetricSimilarity(x: BitArray, y: BitArray) {
+/**
+ * Returns Asymmetric similarity between two BitArray's
+ * 
+ * @param {BitArray} x 
+ * @param {BitArray} y 
+ * @returns asymmetric similarity
+ */
+export function asymmetricSimilarity(x: BitArray, y: BitArray): number {
   const min = Math.min(x.trueCount(), y.trueCount());
   if (min == 0)
     return 0.0;
@@ -69,7 +118,14 @@ export function asymmetricSimilarity(x: BitArray, y: BitArray) {
   return common / min;
 }
 
-export function braunBlanquetSimilarity(x: BitArray, y: BitArray) {
+/**
+ * Returns Braun-Blanquet similarity between two BitArray's
+ * 
+ * @param {BitArray} x 
+ * @param {BitArray} y 
+ * @returns braunBlanquet similarity
+ */
+export function braunBlanquetSimilarity(x: BitArray, y: BitArray): number {
   const max = Math.max(x.trueCount(), y.trueCount());
   if (max == 0)
     return 0.0;
@@ -77,14 +133,28 @@ export function braunBlanquetSimilarity(x: BitArray, y: BitArray) {
   return common / max;
 }
 
-export function russelSimilarity(x: BitArray, y: BitArray) {
+/**
+ * Returns Russel similarity between two BitArray's
+ * 
+ * @param {BitArray} x 
+ * @param {BitArray} y 
+ * @returns russel similarity
+ */
+export function russelSimilarity(x: BitArray, y: BitArray): number {
   if (x.length == 0)
     return 0.0;
   const common = x.andWithCountBits(y, true);
   return common / x.length;
 }
 
-export function rogotGoldbergSimilarity(x: BitArray, y: BitArray) {
+/**
+ * Returns Rogot-Goldberg similarity between two BitArray's
+ * 
+ * @param {BitArray} x 
+ * @param {BitArray} y 
+ * @returns rogotGoldberg similarity
+ */
+export function rogotGoldbergSimilarity(x: BitArray, y: BitArray): number {
   let common = x.andWithCountBits(y, true);
   let total = x.countBits(true) + y.countBits(true);
   let len = x.length;
