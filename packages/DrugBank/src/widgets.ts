@@ -4,10 +4,10 @@ import * as DG from 'datagrok-api/dg';
 import {drugBankSimilaritySearch, drugBankSubstructureSearch} from './searches';
 
 import * as OCL from 'openchemlib/full';
-import {searchTypes} from './utils';
+import {drugBankSearchTypes} from './utils';
 
 export async function drugBankSearchWidget(
-  molString: string, searchType: searchTypes, dbdf: DG.DataFrame): Promise<DG.Widget> {
+  molString: string, searchType: drugBankSearchTypes, dbdf: DG.DataFrame): Promise<DG.Widget> {
   const headerHost = ui.divH([]);
   const compsHost = ui.divH([]);
   const panel = ui.divV([compsHost]);

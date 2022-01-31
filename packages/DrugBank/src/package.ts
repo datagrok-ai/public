@@ -1,6 +1,6 @@
 import * as DG from 'datagrok-api/dg';
 
-import {drugBankSearchWidget} from './widget';
+import {drugBankSearchWidget} from './widgets';
 
 export const _package = new DG.Package();
 
