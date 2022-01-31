@@ -74,12 +74,13 @@ export function measureAAR(s: string): number {
  * @param {number} [pivot=0] Pirvot.
  * @param {boolean} [left=false] Is left aligned.
  * @param {boolean} [hideMod=false] Hide amino acid redidue modifications.
+ * @param {number} [transparencyRate=0.0] Transparency rate where 1.0 is fully transparent
  * @return {number} x coordinate to start printing at.
  */
 function printLeftOrCentered(
   x: number, y: number, w: number, h: number,
   g: CanvasRenderingContext2D, s: string, color = ChemPalette.undefinedColor,
-  pivot: number = 0, left = false, hideMod = false,
+  pivot: number = 0, left = false, hideMod = false, transparencyRate: number = 1.0
 ) {
   g.textAlign = 'start';
   let colorPart = pivot == -1 ? s.substring(0) : s.substring(0, pivot);
@@ -112,6 +113,7 @@ function printLeftOrCentered(
 
   function draw(dx1: number, dx2: number) {
     g.fillStyle = color;
+    g.globalAlpha = transparencyRate;
     g.fillText(
       colorPart,
       x + dx1,
@@ -231,6 +233,16 @@ export class AlignedSequenceCellRenderer extends DG.GridCellRenderer {
   }
 
   /**
+   * Cell width.
+   *
+   * @readonly
+   * @memberof AlignedSequenceCellRenderer
+   */
+   get defaultWidth() {
+    return 230;
+  }
+
+  /**
    * Cell renderer function.
    *
    * @param {CanvasRenderingContext2D} g Canvas rendering context.
@@ -337,7 +349,17 @@ export function processSequence(subParts: string[]): [string[], boolean] {
    * @memberof AlignedSequenceDifferenceCellRenderer
    */
   get defaultHeight() {
-    return 35;
+    return 30;
+  }
+
+  /**
+   * Cell width.
+   *
+   * @readonly
+   * @memberof AlignedSequenceDifferenceCellRenderer
+   */
+   get defaultWidth() {
+    return 200;
   }
 
   /**
@@ -360,7 +382,7 @@ export function processSequence(subParts: string[]): [string[], boolean] {
     const cell = gridCell.cell;
 
     w = grid ? Math.min(grid.canvas.width - x, w) : g.canvas.width - x;
-    y += 3;
+    y += 2;
     g.save();
     g.beginPath();
     g.rect(x, y, w, h);
@@ -387,17 +409,17 @@ export function processSequence(subParts: string[]): [string[], boolean] {
         [color, pivot] = cp.getColorPivot(amino2);
       
       if (amino1 != amino2) {
-        const verticalShift = 10;
+        const verticalShift = 7;
 
         if (amino1 == '') 
           amino1 = '-';
         if (amino2 == '') 
           amino2 = '-';
 
-        printLeftOrCentered(x, y - verticalShift, w, h, g, amino1, 'red', pivot, true);
-        x = printLeftOrCentered(x, y + verticalShift, w, h, g, amino2, 'red', pivot, true);
+        printLeftOrCentered(x, y - verticalShift, w, h, g, amino1, color, pivot, true);
+        x = printLeftOrCentered(x, y + verticalShift, w, h, g, amino2, color, pivot, true);
       } else {
-        x = printLeftOrCentered(x, y, w, h, g, amino1, color, pivot, true);
+        x = printLeftOrCentered(x, y, w, h, g, amino1, color, pivot, true, false, 0.5);
       } 
     });
     g.restore();
