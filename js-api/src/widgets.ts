@@ -1359,8 +1359,8 @@ export class TreeViewNode {
 /** A slider that lets user control both min and max values. */
 export class RangeSlider extends DartWidget {
 
-  static create(): RangeSlider {
-    return toJs(api.grok_RangeSlider());
+  static create(vertical: boolean = false): RangeSlider {
+    return toJs(api.grok_RangeSlider(vertical));
   }
 
   /** Minimum range value. */
