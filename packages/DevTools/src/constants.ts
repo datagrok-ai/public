@@ -1,7 +1,7 @@
 import * as DG from 'datagrok-api/dg';
 
 
-export type EntityType = DG.Entity | DG.DataFrame | DG.Column;
+export type EntityType = DG.Entity | DG.DataFrame | DG.Column | DG.ViewBase;
 
 export const supportedEntityTypes = [
   'FileInfo', 'DataConnection', 'DataQuery', 'User', 'Group', 'DataFrame',
