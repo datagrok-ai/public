@@ -10,15 +10,11 @@ import {BitArrayMetrics, isBitArrayMetric, KnownMetrics, StringMetrics} from '@d
 import {Fingerprint} from "../utils/chem-common";
 import BitArray from '@datagrok-libraries/utils/src/bit-array';
 
-export async function chemSpace(table: DG.DataFrame, molColumn: DG.Column, methodName: string, similarityMetric: string): Promise<DG.ColumnList> {
+export async function chemSpace(molColumn: DG.Column, methodName: string, similarityMetric: string): Promise<DG.ColumnList> {
   let fpColumn = molColumn.toList();
   let coordinates: Coordinates;
-  if (isBitArrayMetric(similarityMetric as KnownMetrics)) {
-    fpColumn = await chemGetFingerprints(molColumn, Fingerprint.Morgan);
-    coordinates = await createDimensinalityReducingWorker({data: fpColumn as BitArray[], metric: similarityMetric as BitArrayMetrics}, methodName) as Coordinates;
-  } else {
-    coordinates = await createDimensinalityReducingWorker({data: fpColumn as string[], metric: similarityMetric as StringMetrics}, methodName) as Coordinates;
-  }
+  fpColumn = await chemGetFingerprints(molColumn, Fingerprint.Morgan);
+  coordinates = await createDimensinalityReducingWorker({data: fpColumn as BitArray[], metric: similarityMetric as BitArrayMetrics}, methodName) as Coordinates;
   const axes = ['Embed_X', 'Embed_Y'];
   const cols: DG.Column[] = [];
 
