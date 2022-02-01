@@ -241,18 +241,18 @@ export function normalize(data: Vector): Vector {
   let mean = 0;
   let std = 0;
 
-  data.forEach((val) => {
-    mean += val;
-  });
+  for (let i = 0; i < data.length; ++i) {
+    mean += data[i];
+  }
   mean /= data.length;
 
-  data.forEach((val) => {
-    std += (val - mean) * (val - mean);
-  });
+  for (let i = 0; i < data.length; ++i) {
+    std += (data[i] - mean) * (data[i] - mean);
+  }
   std = Math.sqrt(std / data.length);
 
-  data.forEach((val, idx) => {
-    data[idx] = (val - mean) / std;
-  });
+  for (let i = 0; i < data.length; ++i) {
+    data[i] = (data[i] - mean) / std;
+  }
   return data;
 }
