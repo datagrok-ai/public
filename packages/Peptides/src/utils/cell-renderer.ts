@@ -260,7 +260,6 @@ export class AlignedSequenceCellRenderer extends DG.GridCellRenderer {
   ) {
     const grid = gridCell.dart.grid ? gridCell.grid : gridCell.dart.grid;
     const cell = gridCell.cell;
-
     w = grid ? Math.min(grid.canvas.width - x, w) : g.canvas.width - x;
     g.save();
     g.beginPath();
@@ -271,7 +270,40 @@ export class AlignedSequenceCellRenderer extends DG.GridCellRenderer {
     const s: string = cell.value ?? '';
 
     //TODO: can this be replaced/merged with splitSequence?
-    const subParts = s.split('-');
+    let rawSubParts = s.split('-');
+    let subParts = [];
+    for (let i = 0; i < rawSubParts.length; ++i) {
+      let isContent = false;
+      let isPreContent = true;
+      let content = '';
+      let preContent = '';
+
+      for (let j = 0; j < rawSubParts[i].length; ++j) {
+        if (rawSubParts[i][j] == '(') {
+          isContent = true;
+          isPreContent = false;
+        } else if (rawSubParts[i][j] == ')'){
+          isContent = false;
+        } else if (isContent) {
+          content += rawSubParts[i][j];
+        } else if (isPreContent) {
+          preContent += rawSubParts[i][j];
+        }
+      }
+
+      if (content === '') {
+        subParts.push(rawSubParts[i]);
+        continue;
+      }
+
+      if (!isNaN(parseInt(content))) {
+        subParts.push(preContent);
+      } else {
+        subParts.push(preContent);
+        subParts.push(content);
+      }
+    }
+
     const [text, simplified] = processSequence(subParts);
     const textSize = g.measureText(text.join(''));
     x = Math.max(x, x + (w - textSize.width) / 2);
