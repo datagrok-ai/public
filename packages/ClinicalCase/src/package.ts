@@ -205,11 +205,11 @@ export async function clinicalCaseApp(): Promise<any> {
 
   const aeBrowserView = createTableView(
     ['ae'],
-    { 'ae': { 'req': [AE_TERM, AE_SEVERITY, AE_START_DAY, AE_END_DAY] } },
+    { 'ae': { 'req': [AE_TERM, AE_START_DAY, AE_END_DAY] } },
     {
       'req_domains': {
         'ae': {
-          'req': [AE_TERM, AE_SEVERITY, AE_START_DAY, AE_END_DAY]
+          'req': [AE_TERM, AE_START_DAY, AE_END_DAY]
         }
       }
     },
