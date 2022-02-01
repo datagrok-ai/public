@@ -3,6 +3,8 @@ import * as ui from 'datagrok-api/ui';
 import * as DG from 'datagrok-api/dg';
 
 import {StringDictionary} from '@datagrok-libraries/utils/src/type-declarations';
+import {_package} from '../package';
+import {MonomerLibrary} from '../monomer-library';
 
 /**
  * Chem palette class.
@@ -12,7 +14,8 @@ import {StringDictionary} from '@datagrok-libraries/utils/src/type-declarations'
  */
 export class ChemPalette {
   cp: StringDictionary = {};
-
+  isInit: boolean = false;
+  monomerLib: MonomerLibrary | null = null;
   /**
    * Creates an instance of ChemPalette.
    *
@@ -32,11 +35,14 @@ export class ChemPalette {
    * @param {number} x x coordinate of the mouse pointer.
    * @param {number} y y coordinate of the mouse pointer.
    */
-  showTooltip(cell: DG.GridCell, x: number, y: number) {
+  async showTooltip(cell: DG.GridCell, x: number, y: number) {
+    if(!this.isInit)
+      this.monomerLib = new MonomerLibrary(await _package.files.readAsText(`HELMMonomers_June10.sdf`));
+
     const s = cell.cell.value as string;
     let toDisplay = [ui.divText(s)];
     const [, aar] = this.getColorAAPivot(s);
-    if (aar in ChemPalette.AASmiles) {
+    if (this.monomerLib!.monomerNames.includes(aar)) {
       if (s in ChemPalette.AANames)
         toDisplay = [ui.divText(ChemPalette.AANames[s])];
 
@@ -48,7 +54,7 @@ export class ChemPalette {
         autoCropMargin: 0,
         suppressChiralText: true,
       };
-      const sketch = grok.chem.svgMol(ChemPalette.AASmiles[aar], undefined, undefined, options);
+      const sketch = grok.chem.svgMol(this.monomerLib!.getMonomerMol(aar), undefined, undefined, options);
       toDisplay.push(sketch);
     }
     ui.tooltip.show(ui.divV(toDisplay), x, y);

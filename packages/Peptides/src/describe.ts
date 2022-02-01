@@ -356,7 +356,7 @@ function setTooltipFunc(
   sarGrid: DG.Grid,
   sarVGrid: DG.Grid,
 ) {
-  const onCellTooltipFunc = function(cell: DG.GridCell, x: number, y: number) {
+  const onCellTooltipFunc = async function(cell: DG.GridCell, x: number, y: number) {
     if (
       !cell.isRowHeader &&
       !cell.isColHeader &&
@@ -401,7 +401,7 @@ function setTooltipFunc(
         const divText = ui.divText('Amino Acids in this group: ' + currentGroup['aminoAcids'].join(', '));
         ui.tooltip.show(ui.divV([ui.h3(currentGroup['description']), divText]), x, y);
       } else
-        cp.showTooltip(cell, x, y);
+        await cp.showTooltip(cell, x, y);
     }
     return true;
   };
