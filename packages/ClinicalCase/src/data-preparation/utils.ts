@@ -114,19 +114,22 @@ export function getVisitNamesAndDays(df: DG.DataFrame, allowNulls = false) {
     const visitsArray = [];
     let rowCount = data.rowCount;
     for (let i = 0; i < rowCount; i++) {
+        const day = data.getCol(VISIT_DAY).isNone(i) ? null : data.get(VISIT_DAY, i);
+        const name = data.getCol(VISIT_NAME).isNone(i) ? null : data.get(VISIT_NAME, i);
         if (allowNulls) {
-            visitsArray.push({ 
-                day: data.getCol(VISIT_DAY).isNone(i) ? null : data.get(VISIT_DAY, i), 
-                name: data.getCol(VISIT_NAME).isNone(i) ? null : data.get(VISIT_NAME, i) });
+            if (!visitsArray.filter(it => it.day === day && it.name === name).length) {
+                visitsArray.push({day: day, name: name})
+            };
+
         } else {
-            if (!data.getCol(VISIT_DAY).isNone(i) && !data.getCol(VISIT_NAME).isNone(i)) {
-                visitsArray.push({ day: data.get(VISIT_DAY, i), name: data.get(VISIT_NAME, i) });
+            if (day && name) {
+                visitsArray.push({ day: day, name: name });
             }
         }
 
     }
     //@ts-ignore
-    return visitsArray.sort((a, b) => {return (b.day !== null) - (a.day !== null) || a.day - b.day;});
+    return visitsArray.sort((a, b) => { return (b.day !== null) - (a.day !== null) || a.day - b.day; });
 }
 
 
@@ -134,6 +137,15 @@ export function getVisitNamesAndDays(df: DG.DataFrame, allowNulls = false) {
     return df
         .groupBy(groupByCols.concat(splitBy))
         .pivot(pivotCol)
-        .avg(aggregatedColName)
+        .first(aggregatedColName)
         .aggregate();
+}
+
+export function checkDateFormat(colToCheck: DG.Column, rowCount: number) {
+    const rowsWithIncorrectDates = [];
+    for (let i = 0; i < rowCount; i++) {
+        if (!colToCheck.isNone(i) && isNaN(Date.parse(colToCheck.get(i))))
+            rowsWithIncorrectDates.push(i);
+    }
+    return rowsWithIncorrectDates;
 }

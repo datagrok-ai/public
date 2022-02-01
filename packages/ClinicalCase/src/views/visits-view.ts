@@ -3,12 +3,13 @@ import * as DG from "datagrok-api/dg";
 import * as ui from "datagrok-api/ui";
 import { study } from "../clinical-study";
 import { updateDivInnerHTML } from './utils';
-import { createPivotedDataframe, filterNulls, getVisitNamesAndDays, addDataFromDmDomain } from '../data-preparation/utils';
+import { createPivotedDataframe, filterNulls, getVisitNamesAndDays, addDataFromDmDomain, dataframeContentToRow } from '../data-preparation/utils';
 import { AE_DECOD_TERM, AE_START_DAY, CON_MED_NAME, CON_MED_START_DAY, INV_DRUG_NAME, LAB_RES_N, LAB_TEST, SUBJECT_ID, TREATMENT_ARM, VISIT_DAY, VISIT_NAME, VISIT_START_DATE, VS_RES_N, VS_TEST } from '../columns-constants';
 import { PatientVisit } from '../model/patient-visit';
 import { StudyVisit } from '../model/study-visit';
 import { _package } from '../package';
 import { ClinicalCaseViewBase } from '../model/ClinicalCaseViewBase';
+import { DockManager } from 'datagrok-api/dg';
 
 export class VisitsView extends ClinicalCaseViewBase {
 
@@ -20,7 +21,7 @@ export class VisitsView extends ClinicalCaseViewBase {
     patientVisit = new PatientVisit(study.domains);
     studyVisit = new StudyVisit(study.domains);
     totalVisits = {};
-    proceduresAtVisit = { 'lb': { column: LAB_RES_N }, 'ex': { column: INV_DRUG_NAME }, 'vs': { column: VS_RES_N } };
+    proceduresAtVisit = { 'lb': { column: LAB_TEST}, 'ex': { column: INV_DRUG_NAME }, 'vs': { column: VS_TEST } };
     eventsSinceLastVisit = { 'ae': { column: AE_START_DAY }, 'cm': { column: CON_MED_START_DAY } };
     subjSet = new Set();
     existingDomains: string[];
@@ -47,13 +48,13 @@ export class VisitsView extends ClinicalCaseViewBase {
         this.assignColorsToDomains();
         this.tv = study.domains.tv.clone();
         this.sv = study.domains.sv.clone();
-        filterNulls(this.sv, VISIT_DAY);
+        filterNulls(this.sv, VISIT_DAY); //remove unshc visits
         this.pivotedSv = createPivotedDataframe(this.sv, [SUBJECT_ID], VISIT_NAME, VISIT_START_DATE, []);
         this.pivotedSv.columns.names().forEach(col => {
-            if (this.pivotedSv.getCol(col).name !== SUBJECT_ID) {
+            if (this.pivotedSv.getCol(col).name !== VISIT_START_DATE) {
                 this.pivotedSv.getCol(col).tags.format = 'yyyy-MM-dd';
             }
-            this.pivotedSv.getCol(col).name = col.replace(` avg(${VISIT_START_DATE})`, '');
+            this.pivotedSv.getCol(col).name = col.replace(` avg(${SUBJECT_ID})`, '');
         });
         this.sortedVisitNamesAndDays = getVisitNamesAndDays(this.tv, true);
         this.sortedVisitNames = this.sortedVisitNamesAndDays.map(it => it.name);
@@ -164,7 +165,7 @@ export class VisitsView extends ClinicalCaseViewBase {
 
     private createHeatMapDf() {
         let df = DG.DataFrame.create();
-        df.columns.addNewString(SUBJECT_ID);
+        typeof(study.domains.dm.get(SUBJECT_ID, 0)) === 'number' ? df.columns.addNewInt(SUBJECT_ID) : df.columns.addNewString(SUBJECT_ID);
         this.pivotedSv.columns.names().forEach(col => {
             if (col !== SUBJECT_ID && col !== TREATMENT_ARM) {
                 df.columns.addNewInt(col);
@@ -178,6 +179,7 @@ export class VisitsView extends ClinicalCaseViewBase {
             })
         });
         df = addDataFromDmDomain(df, study.domains.dm, df.columns.names().filter(it => it !== TREATMENT_ARM), [TREATMENT_ARM]);
+        console.log(df.columns.names())
         df = df.clone(null, [SUBJECT_ID, TREATMENT_ARM].concat(this.sortedVisitNames));
         this.setColorPaletteForHeatMap(df);
         df.onCurrentCellChanged.subscribe(() => {
@@ -232,7 +234,7 @@ export class VisitsView extends ClinicalCaseViewBase {
     private datasetsWithNumberProceduresAtVisit() {
         let countDfs = {};
         Object.keys(this.proceduresAtVisit).forEach(domain => {
-            if (study.domains[domain]) {
+            if (study.domains[domain] && [SUBJECT_ID, VISIT_NAME, this.proceduresAtVisit[domain].column].every(it => study.domains[domain].columns.names().includes(it))) {
                 countDfs[domain] = study.domains[domain]
                     .groupBy([SUBJECT_ID, VISIT_NAME])
                     .count(this.proceduresAtVisit[domain].column)
@@ -275,18 +277,20 @@ export class VisitsView extends ClinicalCaseViewBase {
         Object.keys(this.eventsSinceLastVisit).forEach(domain => {
             if (study.domains[domain]) {
                 for (let i = 0; i < study.domains[domain].rowCount; i++) {
-                    let startDay = study.domains[domain].get(this.eventsSinceLastVisit[domain].column, i);
-                    let subjId = study.domains[domain].get(SUBJECT_ID, i);
-                    this.subjSet.add(subjId);
-                    for (let z = 0; z < this.sortedVisitNamesAndDays.length - 1; z++) {
-                        if (startDay > this.sortedVisitNamesAndDays[z].day && startDay < this.sortedVisitNamesAndDays[z + 1].day) {
-                            let visitName = this.sortedVisitNamesAndDays[z + 1].name;
-                            if (this.totalVisits[visitName][subjId].eventsCount[domain]) {
-                                this.totalVisits[visitName][subjId].eventsCount[domain] += 1;
-                            } else {
-                                this.totalVisits[visitName][subjId].eventsCount[domain] = 1;
+                    if (!study.domains[domain].col(this.eventsSinceLastVisit[domain].column).isNone(i)) {
+                        let startDay = study.domains[domain].get(this.eventsSinceLastVisit[domain].column, i);
+                        let subjId = study.domains[domain].get(SUBJECT_ID, i);
+                        this.subjSet.add(subjId);
+                        for (let z = 0; z < this.sortedVisitNamesAndDays.length - 1; z++) {
+                            if (startDay > this.sortedVisitNamesAndDays[z].day && startDay <= this.sortedVisitNamesAndDays[z + 1].day) {
+                                let visitName = this.sortedVisitNamesAndDays[z + 1].name;
+                                if (this.totalVisits[visitName][subjId].eventsCount[domain]) {
+                                    this.totalVisits[visitName][subjId].eventsCount[domain] += 1;
+                                } else {
+                                    this.totalVisits[visitName][subjId].eventsCount[domain] = 1;
+                                }
+                                break;
                             }
-                            break;
                         }
                     }
                 }
@@ -335,14 +339,16 @@ export class VisitsView extends ClinicalCaseViewBase {
             return df ? df.rowCount === 1 && df.getCol(SUBJECT_ID).isNone(0) ? 0 : df.rowCount : 0;
         }
 
-        acc.addPane('Drug exposure', () => {
-            if (!getRowNumber(this.studyVisit.exAtVisit)) {
-                return ui.divText('No records found');
-            }
-            return DG.Viewer.fromType(DG.VIEWER.PIE_CHART, this.studyVisit.exAtVisit, {
-                category: this.studyVisit.extrtWithDoseColName,
-            }).root;
-        })
+        if (this.studyVisit.exAtVisit && this.studyVisit.exAtVisit.columns.names().includes(this.studyVisit.exAtVisit)) {
+            acc.addPane('Drug exposure', () => {
+                if (!getRowNumber(this.studyVisit.exAtVisit)) {
+                    return ui.divText('No records found');
+                }
+                return DG.Viewer.fromType(DG.VIEWER.PIE_CHART, this.studyVisit.exAtVisit, {
+                    category: this.studyVisit.extrtWithDoseColName,
+                }).root;
+            })
+        }
 
         let createPane = (name, rowNum, df, splitCol) => {
             acc.addCountPane(`${name}`, () => getPaneContent(df, splitCol, rowNum), () => rowNum);
@@ -395,9 +401,12 @@ export class VisitsView extends ClinicalCaseViewBase {
                 return categoriesAcc.root;
             })
         }
-
-        createDistributionPane('Laboratory', this.studyVisit.lbAtVisit, LAB_TEST, LAB_RES_N);
-        createDistributionPane('Vital signs', this.studyVisit.vsAtVisit, VS_TEST, VS_RES_N);
+        if (this.studyVisit.lbAtVisit && [LAB_TEST, LAB_RES_N].every(it => this.studyVisit.lbAtVisit.columns.names().includes(it))) {
+            createDistributionPane('Laboratory', this.studyVisit.lbAtVisit, LAB_TEST, LAB_RES_N);
+        }
+        if (this.studyVisit.vsAtVisit && [VS_TEST, VS_RES_N].every(it => this.studyVisit.vsAtVisit.columns.names().includes(it))) {
+            createDistributionPane('Vital signs', this.studyVisit.vsAtVisit, VS_TEST, VS_RES_N);
+        }
 
         panelDiv.append(acc.root);
 
@@ -437,10 +446,12 @@ export class VisitsView extends ClinicalCaseViewBase {
         let createAccordion = () => {
             Object.keys(patientVisit.domainsNamesDict).forEach(key => {
                 let domain = patientVisit.domainsNamesDict[key];
-                const rowNum = patientVisit[domain] ?
-                    patientVisit[domain].rowCount === 1 && patientVisit[domain].getCol(SUBJECT_ID).isNone(0) ?
-                        0 : patientVisit[domain].rowCount : 0
-                createPane(domain, key, rowNum);
+                if (patientVisit[domain]) {
+                    const rowNum =
+                        patientVisit[domain].rowCount === 1 && patientVisit[domain].getCol(SUBJECT_ID).isNone(0) ?
+                            0 : patientVisit[domain].rowCount
+                    createPane(domain, key, rowNum);
+                }
             });
         }
 

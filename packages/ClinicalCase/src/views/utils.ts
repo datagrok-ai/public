@@ -1,11 +1,24 @@
 import { study } from "../clinical-study";
 import * as ui from "datagrok-api/ui";
-import { domains } from "../sdtm-meta";
+import * as DG from 'datagrok-api/dg';
+import { DependencyGraph } from "ts-loader/dist/interfaces";
 
 export function updateDivInnerHTML(div: HTMLDivElement, content: any){
     div.innerHTML = '';
     div.append(content);
   }
+
+export function checkRequiredColumns(df: DG.DataFrame, columns: string[], viwerName: string) {
+  if (columns.filter(it => !df.columns.names().includes(it)).length) {
+    return `Columns ${columns.join(',')} are required for ${viwerName} viewer`;
+  }
+  return null;
+}
+
+export function checkColumnsAndCreateViewer(df: DG.DataFrame, columns: string[], div: HTMLDivElement, createViewer : () => any, viewerName: string ) {
+  const message = checkRequiredColumns(df, columns, viewerName);
+  message ? updateDivInnerHTML(div, ui.info(`${message}`)) : createViewer();
+}
 
 export function checkMissingDomains(requiredDomainsAndCols: any, obj: any) {
   let loadObject = (obj) => {

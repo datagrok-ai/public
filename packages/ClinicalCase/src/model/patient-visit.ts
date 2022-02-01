@@ -36,7 +36,7 @@ export class PatientVisit {
 
     updateSubjectVisitDomains() {
         this.atVisit.forEach(it => {
-            if (this.domains[it]) {
+            if (this.domains[it] && this.domains[it].columns.names().includes(VISIT_NAME)) {
                 this[it] = this.domains[it]
                     .groupBy(this.domains[it].columns.names())
                     .where(`${SUBJECT_ID} = ${this.currentSubjId} and ${VISIT_NAME} = ${this.currentVisitName}`)
@@ -45,7 +45,7 @@ export class PatientVisit {
         });
 
         this.sinceLastVisit.forEach(it => {
-            if (this.domains[it] && this.previousVisitDay) {
+            if (this.domains[it] && this.previousVisitDay && this.domains[it].columns.names().includes(`${it.toUpperCase()}STDY`)) {
                 this[it] = this.domains[it]
                     .groupBy(this.domains[it].columns.names())
                     .where(`${SUBJECT_ID} = ${this.currentSubjId} and ${it.toUpperCase()}STDY > ${this.previousVisitDay} and ${it.toUpperCase()}STDY <= ${this.currentVisitDay}`)
