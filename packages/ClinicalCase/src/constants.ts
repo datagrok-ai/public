@@ -63,9 +63,7 @@ export const requiredColumnsByView = {
                                         sdtmCols.SUBJECT_ID,
                                         sdtmCols.AE_START_DAY,
                                         sdtmCols.AE_END_DAY,
-                                        sdtmCols.AE_TERM,
-                                        sdtmCols.AE_SEVERITY,
-                                        sdtmCols.AE_BODY_SYSTEM
+                                        sdtmCols.AE_TERM
                                 ],
                         },
                         'cm': {

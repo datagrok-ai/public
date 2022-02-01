@@ -21,14 +21,14 @@ export class AEBrowserHelper {
     currentAeDay: number;
     name = 'AE Browser';
 
-    constructor(dataFrame: DG.DataFrame){
+    constructor(dataFrame: DG.DataFrame) {
         let presentDomains = [];
         this.aeToSelect = dataFrame;
         study.domains.all().forEach(it => {
-            if(!this.domainsToExclude.includes(it.name)){
-                this[ it.name ] = study.domains[ it.name ].clone();
+            if (!this.domainsToExclude.includes(it.name)) {
+                this[it.name] = study.domains[it.name].clone();
                 presentDomains.push(it.name);
-                if (!this.domains.includes(it.name)){
+                if (!this.domains.includes(it.name)) {
                     this.additionalDomains.push(it.name);
                 }
             }
@@ -51,68 +51,73 @@ export class AEBrowserHelper {
         })
     }
 
-    async propertyPanel(){
+    async propertyPanel() {
         this.updateDomains();
-        grok.shell.o = await this.aeBrowserPanel();      
+        grok.shell.o = await this.aeBrowserPanel();
     }
 
     async aeBrowserPanel() {
 
-        let panelDiv = ui.div();    
+        let panelDiv = ui.div();
         let accae = ui.accordion(`${this.name} panel`);
         let accIcon = ui.element('i');
         accIcon.className = 'grok-icon svg-icon svg-view-layout';
-    
-        if(this.aeToSelect.currentRowIdx !== -1){
+
+        if (this.aeToSelect.currentRowIdx !== -1) {
             let subjId = this.aeToSelect.get(SUBJECT_ID, this.aeToSelect.currentRowIdx);
             let title = ui.tooltip.bind(ui.label(subjId), dictToString(getSubjectDmData(subjId, [AGE, SEX, RACE, TREATMENT_ARM])));
             let description = ui.divH([ui.divText(String(this.aeToSelect.get(AE_TERM, this.aeToSelect.currentRowIdx).toLowerCase()))]);
-            let severity = this.aeToSelect.get(AE_SEVERITY, this.aeToSelect.currentRowIdx);
-            let severityStyle = {style:{
-                color: `${SEVERITY_COLOR_DICT[severity.toUpperCase()]}`,
-                  marginRight: '5px',
-                  fontWeight: 'bold'
-            }}
-    
+
+            if (this.aeToSelect.columns.names().includes(AE_SEVERITY)) {
+                let severity = this.aeToSelect.get(AE_SEVERITY, this.aeToSelect.currentRowIdx);
+                let severityStyle = {
+                    style: {
+                        color: `${SEVERITY_COLOR_DICT[severity.toUpperCase()]}`,
+                        marginRight: '5px',
+                        fontWeight: 'bold'
+                    }
+                }
+                description.prepend(ui.divText(severity, severityStyle));
+            }
+
             accae.addTitle(ui.span([accIcon, title]));
-    
-            description.prepend(ui.divText(severity, severityStyle));
+
             let startEndDays = ui.tooltip.bind(
-                ui.label(`${getNullOrValue(this.aeToSelect, AE_START_DAY, this.aeToSelect.currentRowIdx)} - ${getNullOrValue(this.aeToSelect, AE_END_DAY, this.aeToSelect.currentRowIdx)}`), 
+                ui.label(`${getNullOrValue(this.aeToSelect, AE_START_DAY, this.aeToSelect.currentRowIdx)} - ${getNullOrValue(this.aeToSelect, AE_END_DAY, this.aeToSelect.currentRowIdx)}`),
                 `${getNullOrValue(this.aeToSelect, AE_START_DATE, this.aeToSelect.currentRowIdx)} - ${getNullOrValue(this.aeToSelect, AE_END_DATE, this.aeToSelect.currentRowIdx)}`);
-           
-    
+
+
             let daysInput = ui.intInput('Prior AE', this.daysPriorAe);
             daysInput.onChanged((v) => {
                 this.daysPriorAe = daysInput.value;
                 this.updateDomains();
                 updateAccordion();
-              });
-              startEndDays.innerHTML = 'Days ' + startEndDays.innerHTML;
-              startEndDays.style.marginTop = '5px';
-              //@ts-ignore
-              accae.header = ui.div([
+            });
+            startEndDays.innerHTML = 'Days ' + startEndDays.innerHTML;
+            startEndDays.style.marginTop = '5px';
+            //@ts-ignore
+            accae.header = ui.div([
                 description,
                 startEndDays,
                 //@ts-ignore
-                ui.divH([ui.divText('Days prior AE'), daysInput.input], {style: {alignItems: 'center', gap: '5px'}}),
-              ])
-    
+                ui.divH([ui.divText('Days prior AE'), daysInput.input], { style: { alignItems: 'center', gap: '5px' } }),
+            ])
+
             let getPaneContent = (it, rowNum) => {
                 if (it) {
-                    if(!rowNum){
+                    if (!rowNum) {
                         return ui.divText('No records found');
                     } else {
-                        let grid = this[ it ].plot.grid();
-                        if(rowNum < 7){
-                            grid.root.style.maxHeight = rowNum < 4 ? '100px' : '150px' ;
+                        let grid = this[it].plot.grid();
+                        if (rowNum < 7) {
+                            grid.root.style.maxHeight = rowNum < 4 ? '100px' : '150px';
                         }
                         grid.root.style.width = '250px';
                         return ui.div(grid.root);
                     }
                 }
             }
-    
+
             let createPane = (it, rowNum) => {
                 accae.addCountPane(`${it}`, () => getPaneContent(it, rowNum), () => rowNum);
                 let panel = accae.getPane(`${it}`);
@@ -121,9 +126,9 @@ export class AEBrowserHelper {
                 //@ts-ignore
                 $(panel.root).css('opacity', '1');
             }
-    
+
             let updateAccordion = () => {
-                const totalDomains =  this.domains.concat(this.selectedAdditionalDomains);
+                const totalDomains = this.domains.concat(this.selectedAdditionalDomains);
                 const panesToRemove = accae.panes.filter(it => !totalDomains.includes(it.name));
                 panesToRemove.forEach(it => accae.removePane(it));
                 totalDomains.forEach(it => {
@@ -139,31 +144,31 @@ export class AEBrowserHelper {
                     }
                 })
             }
-    
+
             let createAccordion = () => {
                 this.domains.concat(this.selectedAdditionalDomains).forEach(it => {
-                    const rowNum = this[ it ].rowCount === 1 && this[ it ].getCol(SUBJECT_ID).isNone(0) ? 0 : this[ it ].rowCount;
+                    const rowNum = this[it].rowCount === 1 && this[it].getCol(SUBJECT_ID).isNone(0) ? 0 : this[it].rowCount;
                     createPane(it, rowNum);
                 })
             }
-            
-            let addButton =  ui.button(ui.icons.add(() => {}), ()=>{
+
+            let addButton = ui.button(ui.icons.add(() => { }), () => {
                 let domainsMultiChoices = ui.multiChoiceInput('', this.selectedAdditionalDomains, this.additionalDomains)
                 ui.dialog({ title: 'Select domains' })
-                  .add(ui.div([ domainsMultiChoices ]))
-                  .onOK(() => {
-                    this.selectedAdditionalDomains = domainsMultiChoices.value;
-                    this.updateDomains();
-                    updateAccordion();
-                  })
-                  //@ts-ignore
-                .show({centerAt: addButton});
+                    .add(ui.div([domainsMultiChoices]))
+                    .onOK(() => {
+                        this.selectedAdditionalDomains = domainsMultiChoices.value;
+                        this.updateDomains();
+                        updateAccordion();
+                    })
+                    //@ts-ignore
+                    .show({ centerAt: addButton });
             });
             createAccordion();
-            
+
             panelDiv.append(accae.root);
             panelDiv.append(addButton);
-    
+
             return panelDiv;
         }
         return accae.root;
