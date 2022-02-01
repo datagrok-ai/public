@@ -1,6 +1,6 @@
 {
 	"name": "@datagrok/peptides",
-	"version": "0.8.7",
+	"version": "0.8.8",
 	"description": "",
 	"dependencies": {
 		"@biowasm/aioli": ">=2.4.0",
@@ -32,8 +32,6 @@
 		"webpack-cli": "latest"
 	},
 	"sources": [
-		"files/aligned.csv",
-		"files/aligned_2.csv",
 		"common/ngl_viewer/ngl.js"
 	],
 	"scripts": {

@@ -16,7 +16,6 @@ export class MonomerLibrary {
   private monomers: string[] = [];
 
   constructor(sdf: string) {
-    //sdf = sdf.replaceAll('\n\[', '\[');
     const sdfReader = new SDFReader();
     const data = sdfReader.get_colls(sdf);
     this.monomerFields.forEach((f) => {
@@ -39,7 +38,7 @@ export class MonomerLibrary {
 
       const name = data.MonomerCode[i] !== '.' ? data.MonomerCode[i] : data.MonomerName[i];
       this.library[name] = entry;
-      this.monomers.push(data.MonomerName[i]);
+      this.monomers.push(name);
     }
   }
 
