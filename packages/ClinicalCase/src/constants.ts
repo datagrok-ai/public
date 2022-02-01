@@ -34,11 +34,10 @@ export const ACTIVE_ARM_POSTTFIX = 'ACTIVE';
 export const PLACEBO_ARM_POSTTFIX = 'PLACEBO';
 export const RELATIVE_RISK = 'RR';
 export const RISK_DIFFERENCE = 'RD';
-export const LOG2_RISK_DIFFERENCE = 'log2(RD)';
 export const ODDS_RATIO = 'OR';
 export const P_VALUE = 'p-value';
 export const NEG_LOG10_P_VALUE = '-log10(p-value)';
-export const AE_COUNT = 'AE_COUNT';
+export const AE_PERCENT = 'AE_PERCENT';
 export const STANDARD_ERROR_RD = 'SE_RD';
 export const SE_RD_WITH_SIGN_LEVEL = 'SE_RD_SIGN_LEVEL';
 
@@ -51,12 +50,7 @@ export const requiredColumnsByView = {
                         'dm': {
                                 'req': [
                                         sdtmCols.STUDY_ID,
-                                        sdtmCols.SUBJECT_ID,
-                                        sdtmCols.AGE,
-                                        sdtmCols.SEX,
-                                        sdtmCols.RACE,
-                                        sdtmCols.TREATMENT_ARM,
-                                        sdtmCols.SUBJ_REF_STDT
+                                        sdtmCols.SUBJECT_ID
                                 ]
                         }
                 }    

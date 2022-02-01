@@ -38,19 +38,25 @@ export class StudyVisit {
         this.maxVisitDate = new Date(this.visitDataframe.getCol(VISIT_START_DATE).stats.max * 1e-3).toLocaleDateString();
         this.aeSincePreviusVisit = this.createEventSincePeviousVisitDf('ae');
         this.conmedSincePreviusVisit = this.createEventSincePeviousVisitDf('cm');
-        if (this.domains.ex) {
+        if (this.domains.ex && this.domains.ex.columns.names().includes(VISIT_NAME)) {
             let ex = this.domains.ex.clone();
-            addColumnWithDrugPlusDosage(ex, INV_DRUG_NAME, INV_DRUG_DOSE, INV_DRUG_DOSE_UNITS, this.extrtWithDoseColName);
+            if (ex.columns.names().includes(INV_DRUG_NAME)) {
+                if ([INV_DRUG_DOSE, INV_DRUG_DOSE_UNITS].every(it => ex.columns.names().includes(it))) {
+                    addColumnWithDrugPlusDosage(ex, INV_DRUG_NAME, INV_DRUG_DOSE, INV_DRUG_DOSE_UNITS, this.extrtWithDoseColName);
+                } else {
+                    ex.col(INV_DRUG_NAME).name = this.extrtWithDoseColName;
+                }
+            }
             this.exAtVisit = ex.groupBy(ex.columns.names())
             .where(`${VISIT_NAME} = ${this.currentVisitName}`)
             .aggregate();
         };
-        if (this.domains.lb) {
+        if (this.domains.lb && this.domains.lb.columns.names().includes(VISIT_NAME)) {
             this.lbAtVisit = this.domains.lb.groupBy(this.domains.lb.columns.names())
             .where(`${VISIT_NAME} = ${this.currentVisitName}`)
             .aggregate();
         };
-        if (this.domains.vs) {
+        if (this.domains.vs && this.domains.vs.columns.names().includes(VISIT_NAME)) {
             this.vsAtVisit = this.domains.vs.groupBy(this.domains.vs.columns.names())
             .where(`${VISIT_NAME} = ${this.currentVisitName}`)
             .aggregate();
