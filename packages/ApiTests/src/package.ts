@@ -32,6 +32,10 @@ import './ui/tables';
 import './ui/rangeSlider';
 import './ui/accordion';
 import './ui/tabControl';
+import './ui/list';
+import './ui/image';
+import './ui/viewers'
+import './ui/grid'
 
 import {runTests} from "@datagrok-libraries/utils/src/test";
 export let _package = new DG.Package();
