@@ -71,9 +71,9 @@ function joinDataFrames(
 
 
   // append splitSeqDf columns to source table and make sure columns are not added more than once
-  const dfColsSet = new Set(df.columns.names());
+  const dfColsSet = new Set((df.columns as DG.ColumnList).names());
   if (!positionColumns.every((col: string) => dfColsSet.has(col)))
-    df.join(splitSeqDf, [activityColumn], [activityColumn], df.columns.names(), positionColumns, 'inner', true);
+    df.join(splitSeqDf, [activityColumn], [activityColumn], (df.columns as DG.ColumnList).names(), positionColumns, 'inner', true);
 }
 
 function sortSourceGrid(sourceGrid: DG.Grid) {
@@ -104,26 +104,29 @@ async function scaleActivity(
   splitSeqDf: DG.DataFrame,
 ) {
   const df = sourceGrid.dataFrame!;
+  let formula = '${' + activityColumn + '}';
+  let newColName = activityColumn;
   switch (activityScaling) {
+  case 'none':
+    break;
   case 'lg':
-    await df.columns.addNewCalculated(activityColumnScaled, 'Log10(${' + activityColumn + '})');
-    splitSeqDf.columns.add(df.getCol(activityColumnScaled));
-    sourceGrid.col(activityColumnScaled)!.name = `Log10(${activityColumn})`;
-    sourceGrid.columns.setOrder([`Log10(${activityColumn})`]);
+    formula = `Log10(${formula})`;
+    newColName = `Log10(${newColName})`;
     break;
   case '-lg':
-    await df.columns.addNewCalculated(activityColumnScaled, '-1*Log10(${' + activityColumn + '})');
-    splitSeqDf.columns.add(df.getCol(activityColumnScaled));
-    sourceGrid.col(activityColumnScaled)!.name = `-Log10(${activityColumn})`;
-    sourceGrid.columns.setOrder([`-Log10(${activityColumn})`]);
+    formula = `-1*Log10(${formula})`;
+    newColName = `-Log10(${newColName})`;
     break;
   default:
-    await df.columns.addNewCalculated(activityColumnScaled, '${' + activityColumn + '}');
-    splitSeqDf.columns.add(df.getCol(activityColumnScaled));
-    sourceGrid.col(activityColumnScaled)!.name = `${activityColumn}`;
-    sourceGrid.columns.setOrder([`${activityColumn}`]);
-    break;
+    throw new Error(`ScalingError: method \`${activityScaling}\` is not available.`);
   }
+
+  await (df.columns as DG.ColumnList).addNewCalculated(activityColumnScaled, formula);
+  (splitSeqDf.columns as DG.ColumnList).add(df.getCol(activityColumnScaled));
+  sourceGrid.col(activityColumnScaled)!.name = newColName;
+  if (newColName === activityColumn)
+    sourceGrid.col(activityColumn)!.name = '~original';
+  sourceGrid.columns.setOrder([newColName]);
 }
 
 async function calculateStatistics(
@@ -145,12 +148,12 @@ async function calculateStatistics(
   matrixDf = matrixDf.clone(matrixDf.filter);
 
   // calculate additional stats
-  await matrixDf.columns.addNewCalculated('Ratio', '${count}/'.concat(`${peptidesCount}`));
+  await (matrixDf.columns as DG.ColumnList).addNewCalculated('Ratio', '${count}/'.concat(`${peptidesCount}`));
 
   //calculate p-values based on t-test
   let pvalues: Float32Array = new Float32Array(matrixDf.rowCount).fill(1);
-  const mdCol: DG.Column = matrixDf.columns.addNewFloat('Mean difference');
-  const pValCol: DG.Column = matrixDf.columns.addNewFloat('pValue');
+  const mdCol: DG.Column = (matrixDf.columns as DG.ColumnList).addNewFloat('Mean difference');
+  const pValCol: DG.Column = (matrixDf.columns as DG.ColumnList).addNewFloat('pValue');
   for (let i = 0; i < matrixDf.rowCount; i++) {
     const position = matrixDf.get(positionColName, i);
     const aar = matrixDf.get(aminoAcidResidue, i);
@@ -194,7 +197,7 @@ async function setCategoryOrder(
 ) {
   const sortArgument = twoColorMode ? 'Absolute Mean difference' : 'Mean difference';
   if (twoColorMode)
-    await statsDf.columns.addNewCalculated('Absolute Mean difference', 'Abs(${Mean difference})');
+    await (statsDf.columns as DG.ColumnList).addNewCalculated('Absolute Mean difference', 'Abs(${Mean difference})');
 
   const aarWeightsDf = statsDf.groupBy([aminoAcidResidue]).sum(sortArgument, 'weight').aggregate();
   const aarList = aarWeightsDf.getCol(aminoAcidResidue).toList();
@@ -254,11 +257,11 @@ function createGrids(
   sarVGrid.col('pValue')!.name = 'P-Value';
 
   if (!grouping) {
-    let tempCol = matrixDf.columns.byName(aminoAcidResidue);
+    let tempCol = (matrixDf.columns as DG.ColumnList).byName(aminoAcidResidue);
     if (tempCol)
       setAARRenderer(tempCol, sarGrid);
 
-    tempCol = sequenceDf.columns.byName(aminoAcidResidue);
+    tempCol = (sequenceDf.columns as DG.ColumnList).byName(aminoAcidResidue);
     if (tempCol)
       setAARRenderer(tempCol, sarGrid);
   }
@@ -367,7 +370,7 @@ function setTooltipFunc(
     ) {
       const tooltipMap: { [index: string]: string } = {};
 
-      for (const col of statsDf.columns.names()) {
+      for (const col of (statsDf.columns as DG.ColumnList).names()) {
         if (col !== aminoAcidResidue && col !== positionColName) {
           const currentPosition = cell.tableColumn.name !== 'Mean difference' ?
             cell.tableColumn.name : cell.grid.table.get(positionColName, cell.tableRowIndex);
@@ -424,7 +427,7 @@ function postProcessGrids(
       cell.style.backColor = DG.Color.lightLightGray;
   });
 
-  for (const col of matrixDf.columns.names())
+  for (const col of (matrixDf.columns as DG.ColumnList).names())
     sarGrid.col(col)!.width = sarGrid.props.rowHeight;
 
 
@@ -451,21 +454,21 @@ export async function describe(
   //Split the aligned sequence into separate AARs
   let splitSeqDf: DG.DataFrame | undefined;
   let invalidIndexes: number[];
-  const col: DG.Column = df.columns.bySemType('alignedSequence');
+  const col: DG.Column = (df.columns as DG.ColumnList).bySemType('alignedSequence')!;
   [splitSeqDf, invalidIndexes] = splitAlignedPeptides(col);
   splitSeqDf.name = 'Split sequence';
 
-  const positionColumns = splitSeqDf.columns.names();
+  const positionColumns = (splitSeqDf.columns as DG.ColumnList).names();
   const activityColumnScaled = `${activityColumn}Scaled`;
-  const renderColNames: string[] = splitSeqDf.columns.names();
+  const renderColNames: string[] = (splitSeqDf.columns as DG.ColumnList).names();
   const positionColName = 'Position';
   const aminoAcidResidue = 'AAR';
 
-  splitSeqDf.columns.add(df.getCol(activityColumn));
+  (splitSeqDf.columns as DG.ColumnList).add(df.getCol(activityColumn));
 
   joinDataFrames(activityColumnScaled, df, positionColumns, splitSeqDf, activityColumn);
 
-  for (const col of df.columns) {
+  for (const col of (df.columns as DG.ColumnList)) {
     if (splitSeqDf.col(col.name) && col.name != activityColumn)
       setAARRenderer(col, sourceGrid);
   }
