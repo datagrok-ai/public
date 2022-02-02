@@ -1,4 +1,4 @@
-<!-- TITLE: Deployment on AWS ECS Cluster using CloudFormation -->
+<!-- TITLE: Deployment on AWS ECS using CloudFormation -->
 <!-- SUBTITLE: -->
 
 # Deployment on AWS ECS Cluster using CloudFormation
