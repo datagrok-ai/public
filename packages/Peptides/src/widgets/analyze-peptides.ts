@@ -34,21 +34,22 @@ export async function analyzePeptidesWidget(
     async (currentMethod: string) => {
       const currentActivityCol = activityColumnChoice.value.name;
       const tempDf = currentDf.clone(currentDf.filter, [currentActivityCol]);
+      const scaledActivityColumnName = 'scaledActivity';
       //TODO: merge with scaling in describe
       switch (currentMethod) {
       case 'lg':
-        await tempDf.columns.addNewCalculated('scaledActivity', 'Log10(${' + currentActivityCol + '})');
+        await tempDf.columns.addNewCalculated(scaledActivityColumnName, 'Log10(${' + currentActivityCol + '})');
         break;
       case '-lg':
-        await tempDf.columns.addNewCalculated('scaledActivity', '-1*Log10(${' + currentActivityCol + '})');
+        await tempDf.columns.addNewCalculated(scaledActivityColumnName, '-1*Log10(${' + currentActivityCol + '})');
         break;
       default:
-        await tempDf.columns.addNewCalculated('scaledActivity', '${' + currentActivityCol + '}');
+        await tempDf.columns.addNewCalculated(scaledActivityColumnName, '${' + currentActivityCol + '}');
         break;
       }
       hist = tempDf.plot.histogram({
         filteringEnabled: false,
-        valueColumnName: 'scaledActivity',
+        valueColumnName: scaledActivityColumnName,
         legendVisibility: 'Never',
         showXAxis: true,
         showColumnSelector: false,
@@ -76,8 +77,8 @@ export async function analyzePeptidesWidget(
   activityScalingMethod.fireChanged();
 
   const startBtn = ui.button('Launch SAR', async () => {
+    const progress = DG.TaskBarProgressIndicator.create('Loading SAR...');
     if (activityColumnChoice.value.type === DG.TYPE.FLOAT) {
-      const progress = DG.TaskBarProgressIndicator.create('Loading SAR...');
       const options: StringDictionary = {
         'activityColumnName': activityColumnChoice.value.name,
         'scaling': activityScalingMethod.value,
@@ -85,10 +86,9 @@ export async function analyzePeptidesWidget(
 
       const peptides = new Peptides();
       await peptides.init(tableGrid, view, currentDf, options, col);
-
-      progress.close();
     } else
       grok.shell.error('The activity column must be of floating point number type!');
+    progress.close();
   });
   startBtn.style.alignSelf = 'center';
 
