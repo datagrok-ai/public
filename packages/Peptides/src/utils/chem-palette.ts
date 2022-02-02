@@ -98,11 +98,7 @@ export class ChemPalette {
       }
     }
 
-    if (!isNaN(parseInt(inner))) {
-      return [outer, ''];
-    } else {
-      return [outer, inner];
-    }  
+    return !isNaN(parseInt(inner)) ? [outer, ''] : [outer, inner];
   }
 
   /**
