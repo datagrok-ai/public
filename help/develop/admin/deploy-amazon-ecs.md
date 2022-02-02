@@ -1,4 +1,4 @@
-<!-- TITLE: Deployment on AWS ECS Cluster using Docker Compose -->
+<!-- TITLE: Deployment on AWS ECS using Docker Compose -->
 <!-- SUBTITLE: -->
 
 # Deployment on AWS ECS Cluster using Docker Compose
