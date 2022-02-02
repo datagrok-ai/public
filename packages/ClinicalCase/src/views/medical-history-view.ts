@@ -4,11 +4,15 @@ import { study } from "../clinical-study";
 import { MH_BODY_SYSTEM, MH_CATEGORY, MH_DECOD_TERM, MH_TERM } from '../columns-constants';
 import { _package } from '../package';
 import { ClinicalCaseViewBase } from '../model/ClinicalCaseViewBase';
+import { checkColumnsAndCreateViewer, updateDivInnerHTML } from "./utils";
 
 export class MedicalHistoryView extends ClinicalCaseViewBase {
 
     mh: DG.DataFrame;
     mhReplacedTermColName = 'mh_term';
+    mhCategoryPie = ui.box();
+    mhDecodTermChart = ui.box();
+    mhBodySystemChart = ui.box();
 
     constructor(name) {
         super({});
@@ -19,7 +23,11 @@ export class MedicalHistoryView extends ClinicalCaseViewBase {
     createView(): void {
 
         this.mh = study.domains.mh.clone();
-        this.replaceNaDecodeTerm();
+        if (this.mh.col(MH_DECOD_TERM) && this.mh.col(MH_TERM)) {
+            this.replaceNaDecodeTermWihTerm();
+        } else {
+            this.mhReplacedTermColName = MH_DECOD_TERM;
+        }
 
         let viewerTitle = {
             style: {
@@ -29,44 +37,77 @@ export class MedicalHistoryView extends ClinicalCaseViewBase {
             }
         };
 
-
         let grid = this.mh.plot.grid();
 
-        let mhCategoryPie = DG.Viewer.fromType(DG.VIEWER.PIE_CHART, this.mh, {
-            category: MH_CATEGORY,
-        });
-        mhCategoryPie.root.prepend(ui.divText('By category', viewerTitle));
+        checkColumnsAndCreateViewer(
+            study.domains.mh,
+            [MH_CATEGORY],
+            this.mhCategoryPie, () => {
+                this.createMhCategoryPie(viewerTitle);
+            },
+            'By category');
 
-        let mhDecodTermChart = this.mh.plot.bar({
-            split: this.mhReplacedTermColName,
-            style: 'dashboard',
-            legendVisibility: 'Never'
-        }).root;
-        mhDecodTermChart.prepend(ui.divText('By term', viewerTitle));
+        checkColumnsAndCreateViewer(
+            study.domains.mh,
+            [MH_DECOD_TERM],
+            this.mhDecodTermChart, () => {
+                this.createDecodeTermChart(viewerTitle);
+            },
+            'By term');
 
-        let mhBodySystemChart = this.mh.plot.bar({
-            split: MH_BODY_SYSTEM,
-            style: 'dashboard',
-            legendVisibility: 'Never'
-        }).root;
-        mhBodySystemChart.prepend(ui.divText('By body system', viewerTitle));
+        checkColumnsAndCreateViewer(
+            study.domains.mh,
+            [MH_BODY_SYSTEM],
+            this.mhBodySystemChart, () => {
+                this.createBodySystemChart(viewerTitle);
+            },
+            'By body system');
 
         this.root.className = 'grok-view ui-box';
         this.root.append(ui.splitV([
             ui.splitH([
-                mhDecodTermChart,
-                mhBodySystemChart
+                this.mhDecodTermChart,
+                this.mhBodySystemChart
             ]),
             ui.splitH([
-                mhCategoryPie.root,
+                this.mhCategoryPie,
                 grid.root
             ])
         ]))
 
     }
 
-    private replaceNaDecodeTerm() {
+    private replaceNaDecodeTermWihTerm() {
         this.mh.columns.addNewString(this.mhReplacedTermColName)
             .init((i) => this.mh.getCol(MH_DECOD_TERM).isNone(i) ? this.mh.get(MH_TERM, i) : this.mh.get(MH_DECOD_TERM, i));
+    }
+
+    private createMhCategoryPie(viewerTitle: any) {
+
+        let mhCategoryPie = DG.Viewer.fromType(DG.VIEWER.PIE_CHART, this.mh, {
+            category: MH_CATEGORY,
+        });
+        mhCategoryPie.root.prepend(ui.divText('By category', viewerTitle));
+        updateDivInnerHTML(this.mhCategoryPie, mhCategoryPie.root);
+    }
+
+    private createDecodeTermChart(viewerTitle: any) {
+        let mhDecodTermChart = this.mh.plot.bar({
+            split: this.mhReplacedTermColName,
+            style: 'dashboard',
+            legendVisibility: 'Never'
+        }).root;
+        mhDecodTermChart.prepend(ui.divText('By term', viewerTitle));
+        updateDivInnerHTML(this.mhDecodTermChart, mhDecodTermChart);
+    }
+
+    private createBodySystemChart(viewerTitle: any) {
+        let mhBodySystemChart = this.mh.plot.bar({
+            split: MH_BODY_SYSTEM,
+            style: 'dashboard',
+            legendVisibility: 'Never'
+        }).root;
+        mhBodySystemChart.prepend(ui.divText('By body system', viewerTitle));
+        updateDivInnerHTML(this.mhBodySystemChart, mhBodySystemChart);
     }
 }

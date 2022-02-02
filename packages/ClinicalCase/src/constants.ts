@@ -231,20 +231,6 @@ export const requiredColumnsByView = {
                 }
         },
         'Time Profile': {
-                'req_domains': {
-                        'dm': {
-                                'req': [
-                                        sdtmCols.SUBJECT_ID,
-                                ],
-                                'opt': [
-                                        sdtmCols.ETHNIC,
-                                        sdtmCols.SEX,
-                                        sdtmCols.RACE,
-                                        sdtmCols.TREATMENT_ARM
-                                ]
-        
-                        },
-                },
                 'opt_domains': {
                         'lb': {
                                 'req': [
@@ -291,11 +277,6 @@ export const requiredColumnsByView = {
                 'req_domains': {
                         'mh': {
                                 'req': [
-                                        sdtmCols.SUBJECT_ID,
-                                        sdtmCols.MH_DECOD_TERM,
-                                        sdtmCols.MH_CATEGORY,
-                                        sdtmCols.MH_BODY_SYSTEM,
-                                        sdtmCols.MH_TERM
                                 ]
                         }
 
