@@ -1,7 +1,7 @@
 import * as DG from "datagrok-api/dg";
 import * as grok from "datagrok-api/grok";
 import * as ui from "datagrok-api/ui";
-import {category, test} from "@datagrok-libraries/utils/src/test";
+import {category, test, testExpectFinish} from "@datagrok-libraries/utils/src/test";
 import {drugLikenessWidget} from '../widgets/drug-likeness';
 import {identifiersWidget} from '../widgets/identifiers';
 import {molfileWidget} from '../widgets/molfile';
@@ -44,5 +44,24 @@ category('Chem: Widgets', () => {
 
     test('toxicity', async () => {
         toxicityWidget(molStr);
+    });
+
+    testExpectFinish('manual-substructure-filter', async () => {
+        let df = grok.data.demo.molecules(1000);
+        await grok.data.detectSemanticTypes(df);
+        // previously: let filter = await grok.functions.call("Chem:substructureFilter");
+        //@ts-ignore
+        let filter = chem.substructureFilter();
+        filter.attach(df);
+        grok.shell.addTableView(df);
+        let colChoice = ui.columnInput('Column', filter.dataFrame, filter.column, (col: DG.Column) => {
+            filter.column = col;
+            filter.dataFrame.filter.setAll(true, false);
+            filter.dataFrame.rows.requestFilter();
+        });
+        ui.dialog({title: 'Chem Filter'})
+          .add(colChoice)
+          .add(filter.root)
+          .show();
     });
 });
