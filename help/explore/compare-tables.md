@@ -14,12 +14,10 @@ added, removed, and changed.
 ![Compare tables](../uploads/dialogs/compare-tables.png "Compare tables")
 ![Compare tables](../uploads/gifs/compare-tables.gif "Compare tables")
 
-### Videos
+## Videos
 
 [![Compare Tables](../uploads/youtube/compare_tables.png "Open on Youtube")](https://www.youtube.com/watch?v=rUHFwO1iQUg)
 
 See also:
 
 * [JS API: Compare Tables](https://public.datagrok.ai/js/samples/data-frame/compare-tables)
-
-

@@ -22,7 +22,7 @@ components must be set to zero.
 
 ### Minor release
 
-Minor releases are the most common type of release which has the most recent features and bug fixes. Every release is
+Minor releases are the most common type of release which has the most recent features and bugfixes. Every release is
 tested on the dev environment and passes all [quality assurance](admin/quality-assurance.md) requirements.
 
 For a minor release, the `MINOR` component must be incremented by one, and the `TEST` component must be set to zero.
@@ -44,23 +44,23 @@ Every Docker container has information about version and branch it was build on:
 
 1. In Docker Labels
 
-```bash
-docker inspect <image>:<version> --format '{{ json .Config.Labels }}'
-{
-  "branch": "<branch>",
-  "commit-main": "<commit>",
-  "commit-public": "<commit>"
-}
-```
+    ```bash
+    docker inspect <image>:<version> --format '{{ json .Config.Labels }}'
+    {
+      "branch": "<branch>",
+      "commit-main": "<commit>",
+      "commit-public": "<commit>"
+    }
+    ```
 
 2. In Docker container file system
 
-```bash
-cat /home/grok/git-info.txt
-Branch main: <branch>
-Commit main: <commit>
-Commit public: <commit>
-```
+    ```bash
+    cat /home/grok/git-info.txt
+    Branch main: <branch>
+    Commit main: <commit>
+    Commit public: <commit>
+    ```
 
 See also:
 

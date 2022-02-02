@@ -21,33 +21,33 @@ Table of contents:
 
 The main class `grok.dapi.userDataStorage` is extended by the following 6 methods:
 
-| Method         | Parameters                                                                             | Function                                                            |
-|----------------|----------------------------------------------------------------------------------------|---------------------------------------------------------------------|
-| `.postValue()` | **name**: *string*, **key**: *string*, **value**: *string*, **currentUser**: *boolean* | Saves a single value to User Data Storage                           |
-| `.post()`      | **name**: *string*, **data**: *Map*, **currentUser**: *boolean*                        | Saves a map to User Data Storage, will be appended to existing data |
-| `.put()`       | **name**: *string*, **data**: *Map*, **currentUser**: *boolean*                        | Saves a map to User Data Storage, will replace existing data        |
-| `.get()`       | **name**: *string*, **currentUser**: *boolean*                                         | Retrieves a map from User Data Storage                              |
-| `.getValue()`  | **name**: *string*, **key**: *string*, **currentUser**: *boolean*                      | Retrieves a single value from User Data Storage                     |
-| `.remove()`    | **name**: *string*, **key**: *string*, **currentUser**: *boolean*                      | Removes a single value from User Data Storage                       |
+| Method         | Parameters                                                                                                             | Function                                                            |
+|----------------|------------------------------------------------------------------------------------------------------------------------|---------------------------------------------------------------------|
+| `.postValue()` | <b>name</b>: <i>string</i>, <b>key</b>: <i>string</i>, <b>value</b>: <i>string</i>, <b>currentUser</b>: <i>boolean</i> | Saves a single value to User Data Storage                           |
+| `.post()`      | <b>name</b>: <i>string</i>, <b>data</b>: <i>Map</i>, <b>currentUser</b>: <i>boolean</i>                                | Saves a map to User Data Storage, will be appended to existing data |
+| `.put()`       | <b>name</b>: <i>string</i>, <b>data</b>: <i>Map</i>, <b>currentUser</b>: <i>boolean</i>                                | Saves a map to User Data Storage, will replace existing data        |
+| `.get()`       | <b>name</b>: <i>string</i>, <b>currentUser</b>: <i>boolean</i>                                                         | Retrieves a map from User Data Storage                              |
+| `.getValue()`  | <b>name</b>: <i>string</i>, <b>key</b>: <i>string</i>, <b>currentUser</b>: <i>boolean</i>                              | Retrieves a single value from User Data Storage                     |
+| `.remove()`    | <b>name</b>: <i>string</i>, <b>key</b>: <i>string</i>, <b>currentUser</b>: <i>boolean</i>                              | Removes a single value from User Data Storage                       |
 
 Each of the above methods returns a **Promise** which has to be handled in one of the following ways:
 
 1. By `.then()` method
 
-```js
-grok.dapi.userDataStorage.method().then(() => {
-    //continue your code
-})
-```
+    ```js
+    grok.dapi.userDataStorage.method().then(() => {
+        //continue your code
+    })
+    ```
 
 2. By an `await` operator
 
-```js
-async function fun() {
-    let val = await grok.dapi.userDataStorage.method();
-    return val;
-}
-```
+    ```js
+    async function fun() {
+        let val = await grok.dapi.userDataStorage.method();
+        return val;
+    }
+    ```
 
 ## JavaScript API
 

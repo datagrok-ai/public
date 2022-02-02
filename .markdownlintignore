@@ -1,0 +1,5 @@
+help/overview/markdown.md
+help/develop/release-history.md
+help/video-lessons.md
+help/_*/**/*.md
+help/**/_*.md

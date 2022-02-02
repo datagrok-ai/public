@@ -47,7 +47,7 @@ required parameters. Here is an example:
 }
 ```
 
-The field `name` is optional, if omitted, the file name (without the extension) will be used as the connection name. In
+The field `name` is optional, if omitted, the filename (without the extension) will be used as the connection name. In
 any case, remember that you should not rely on letter case to distinguish between connections, since their names are not
 case-sensitive. Giving parameters for the connection in `json` is completely equivalent to what you can do from the
 platform's interface: you would go to `Data | Databases` and right-click on the data source `PostgreSQL` to add such a
@@ -174,12 +174,12 @@ select * from protein_classification
 --end
 ```
 
-SQL statements are annotated with comments, just like [scripts](../../compute/scripting.md), since the underlying mechanism is
-essentially the same (read more on the concept of [functions](../../overview/functions/function.md)). Here we have two
-header parameters: the query `name` and the `connection` to use. In fact, this particular query could have been even
-simpler: there is no need to specify `connection` if the package only has one. Similarly, the tag `end` is not required
-if there is only one query per file: the parser needs it to understand where the current query ends and the next one
-begins. So safely omit the name of `connection` and/or the `end` tag if these conditions are met.
+SQL statements are annotated with comments, just like [scripts](../../compute/scripting.md), since the underlying
+mechanism is essentially the same (read more on the concept of [functions](../../overview/functions/function.md)). Here
+we have two header parameters: the query `name` and the `connection` to use. In fact, this particular query could have
+been even simpler: there is no need to specify `connection` if the package only has one. Similarly, the tag `end` is not
+required if there is only one query per file: the parser needs it to understand where the current query ends and the
+next one begins. So safely omit the name of `connection` and/or the `end` tag if these conditions are met.
 
 To use an existing connection in a query, specify its name along with the namespace in the `connection` parameter. For
 example, the above `chembl` connection that lives in the `Chembl`
@@ -260,7 +260,7 @@ we will cover the part that you will often use to deliver data to your applicati
 
 If you want to access data that resides within your package (e.g. open a `csv` table), load it from URL, as you would do
 with other [external files](https://public.datagrok.ai/js/samples/data-access/external/stock-prices). The package root
-for client side can be found with `webRoot` property. The example shown below gets the `test.csv` table from
+for client-side can be found with `webRoot` property. The example shown below gets the `test.csv` table from
 the `data-samples` subdirectory and opens a table view for it:
 
 ```javascript
@@ -339,17 +339,17 @@ provides a full understanding of the `files` API.
 
 ### Other ways for reading files
 
-Finally, let's walk through other methods that can be used to open files from JavaScript:
+Finally, let's walkthrough other methods that can be used to open files from JavaScript:
 
 * If you define a function that takes an input of `file` type (also
   see [FileInfo](https://github.com/datagrok-ai/public/blob/14eb2acd6e36b33f64c4a0d108e940f7624af479/js-api/src/entities.js#L317))
   , this creates a number of opportunities. First, you can call `file.readAsBytes()`
   or `file.readAsString()` methods on it. For instance, if you pass an obtained string
   to `grok.data.parseCsv(csv, options)`, it is possible to fine-tune the construction of dataframe from comma-separated
-  values. Alternatively, you can pass a file to a [script](../../compute/scripting.md) to compute something and get the results
-  back to your application's code.
+  values. Alternatively, you can pass a file to a [script](../../compute/scripting.md) to compute something and get the
+  results back to your application's code.
 * The method `grok.data.openTable(id)` might come in handy when you are reproducing a process and need to open a
-  specific table by its id. See an [example](https://public.datagrok.ai/js/samples/data-access/open-table-by-id).
+  specific table by its ID. See an [example](https://public.datagrok.ai/js/samples/data-access/open-table-by-id).
 
 See also:
 

@@ -15,7 +15,7 @@ Info panels could be developed in any language supported by the platform.
 
 ## What gets shown and when?
 
-There are thousands (ok slight exaggeration :) of info panels currently available in the Datagrok platform, and
+There are thousands (OK slight exaggeration :) of info panels currently available in the Datagrok platform, and
 certainly we do not want to overwhelm users by showing all of them to everyone. To solve this issue, we designed a
 powerful, easy-to-use mechanism that allows us to show panels exactly to the people that need it, when they need it. In
 order for the panel to be shown, the following conditions have to be satisfied:
@@ -79,13 +79,13 @@ dynamically retrieved and visualized in a different pane. Perhaps the most famou
 where you would click on a subject in order for the content to appear in another pane. Typically, implementing such a
 feature would require coding - but this can be done in a minute using the Datagrok platform.
 
-### Using pre-defined visualizations
+### Using predefined visualizations
 
 Oftentimes, it is beneficial to show users an interactive plot, pre-customized based on the structure of the table that
 is currently open.
 
 See the following info panel (viewer-scatter.grok) in action by opening (project:demog). It creates
-a [Scatter Plot](../visualize/viewers/scatter-plot.md), sets the axes to the pre-defined columns, and adds a regression
+a [Scatter Plot](../visualize/viewers/scatter-plot.md), sets the axes to the predefined columns, and adds a regression
 line.
 
 ```
@@ -153,7 +153,7 @@ actions = "#{button("Flag as suspicious", "http.Post(myserver, row.transactionId
 The following panel calculates different molecular properties of a given chemical structure. It appears whenever user
 clicks on a structure.
 
-# {x.ChemScripts:SolubilityPrediction}
+`#{x.ChemScripts:SolubilityPrediction}`
 
 ```
 #name: Solubility prediction

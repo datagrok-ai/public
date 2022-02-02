@@ -30,7 +30,7 @@ the [property panel](../overview/navigation.md#properties).
 In case you want to retrieve only some of the columns, select them (Shift+click) in the schema, and then use context
 actions that appear in the property panel
 
-![](db-exploration-get-columns.png)
+![Get Columns](db-exploration-get-columns.png)
 
 ### Videos
 

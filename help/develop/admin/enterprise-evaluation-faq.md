@@ -4,7 +4,7 @@
 # FAQ
 
 * [Architecture](architecture.md)
-    * [Data flows]()
+    * Data flows
     * [Deployment](architecture.md#deployment)
 
 * Security
@@ -20,10 +20,10 @@
     * [Infrastructure as code](#infrastructure-as-code) (ability to deploy using standard DevOps tools)
 
 * Interoperability
-    * Calling web services from client and server with proper auth and integrate that data with Datagrok api
+    * Calling web services from client and server with proper auth and integrate that data with Datagrok API
     * Interacting with Datagrok
-        * [server api](#server-api)
-        * [client api](../js-api.md)
+        * [server API](#server-api)
+        * [client API](../js-api.md)
     * Connecting to common data sources
         * [relational databases](https://youtu.be/YJmSvh3_uCM)
         * [local files](https://datagrok.ai/img/slides/access-file-formats.mp4)
@@ -43,7 +43,7 @@
 
 * Extensibility
     * [Creating custom visualizations](https://github.com/datagrok-ai/public/tree/master/packages/Sequence)
-    * [Creating custom server side components](https://github.com/datagrok-ai/public/tree/master/packages/Pedometer)
+    * [Creating custom server-side components](https://github.com/datagrok-ai/public/tree/master/packages/Pedometer)
     * [Creating custom scripts](https://datagrok.ai/help/compute/scripting) and utilizing them in other components
     * [Ability to reskin Datagrok to appear as a fit-for-purpose web application](https://public.datagrok.ai/apps/spgi)
     * [Ability to build custom application including data entry, workflow, data model, state management, persistence, etc](https://github.com/datagrok-ai/public/tree/master/packages)
@@ -85,7 +85,7 @@ and encrypted.
 
 ## Server API
 
-Datagrok client side uses HTTP rest API to interact with server side. Authentication token must be passed to access all
+Datagrok client-side uses HTTP rest API to interact with server-side. Authentication token must be passed to access all
 features.
 [Proof of concept video](https://www.youtube.com/watch?v=TjApCwd_3hw)
 
@@ -100,8 +100,7 @@ Amazon has scheduled backup for RDS and S3, but you can backup and restore RDS d
 
 ## Disaster recovery
 
-Datagrok supports Docker installation, Amazon cluster will immediately restart failed instance
-https://www.youtube.com/watch?v=oFs9RShkHT8
+[Datagrok supports Docker installation, Amazon cluster will immediately restart failed instance](https://www.youtube.com/watch?v=oFs9RShkHT8)
 
 ## Infrastructure as a Code
 
@@ -111,5 +110,5 @@ Docker-compose manifest is used to describe and deploy Datagrok applications.
 
 Also, there are multiple advanced options to deploy application:
 
-* [CloudFormation template](deploy/cloudformation.yaml) to deploy to AWS ECS
+* [CloudFormation template](deploy/cloudformation/cloudformation.json) to deploy to AWS ECS
 * [Terraform scripts](deploy/terraform.tf) to deploy to AWS ECS

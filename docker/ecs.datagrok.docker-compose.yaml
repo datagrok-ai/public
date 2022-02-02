@@ -1,5 +1,7 @@
 version: "3"
 
+x-aws-logs_retention: 14
+
 networks:
   datagrok:
 
@@ -91,3 +93,6 @@ x-aws-cloudformation:
             ContainerPort: 8080
             TargetGroupArn:
               Ref: DatagrokTCP8080TargetGroup
+        NetworkConfiguration:
+          AwsvpcConfiguration:
+            AssignPublicIp: DISABLED

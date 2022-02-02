@@ -7,13 +7,13 @@ A set of controls for quick filtering, selection, and visual assessment of colum
 
 General:
 
-| []()              |                         |
+|                   |                         |
 |-------------------|-------------------------|
 | 1st column click  | Toggle filter           |
 | 2nd column click  | Toggle selection        |
 | Name column click | Filter by that category |
 | Up / down         | Filter by that category |
-| Esc               |  Reset filter           |
+| Esc               | Reset filter            |
 
 ![Filter](../../uploads/gifs/filter.gif "Filter")
 
@@ -36,7 +36,7 @@ their choice.
 
 Drag-and-drop columns right from the grid to add the corresponding filters:
 
-![](filters-drag-column.gif)
+![filters-drag-column](filters-drag-column.gif)
 
 See also:
 

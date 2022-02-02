@@ -19,8 +19,7 @@ The system allows to create your own scripts, open scripts saved locally, and al
 1. Click on the "Open template script" icon
 
 * Script creation template is open
-* The template has fields "#name", "#description", "#help", "#language", "#tags", "#input", "
-  # output"
+* The template has fields "#name", "#description", "#help", "#language", "#tags", "#input", "#output"
 
 1. Click on the "Clear script" icon
 

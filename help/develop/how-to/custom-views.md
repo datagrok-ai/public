@@ -22,8 +22,8 @@ icons, buttons, or side panels. See how it works (and looks!) in
 the [full example](https://public.datagrok.ai/js/samples/ui/views/views).
 
 As simple and easy as this method may seem, it is still more suitable for ad-hoc experiments. To implement a view from a
-package, you would need to extend the [ViewBase](https://datagrok.ai/js-api/classes/dg.viewbase.html) class. For instance, the following
-part of code defines a new view for Jupyter Notebooks:
+package, you would need to extend the [ViewBase](https://datagrok.ai/js-api/classes/dg.viewbase.html) class. For
+instance, the following part of code defines a new view for Jupyter Notebooks:
 
 ```javascript
 class NotebookView extends DG.ViewBase {

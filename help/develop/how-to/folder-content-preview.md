@@ -22,7 +22,7 @@ export function clinicalCaseFolderLauncher(folder: DG.FileInfo, files: DG.FileIn
 
 This is what you would see when you open a folder that contains "demog.csv":
 
-![](folder-content-preview.png)
+![folder-content-preview](folder-content-preview.png)
 
 See also
 

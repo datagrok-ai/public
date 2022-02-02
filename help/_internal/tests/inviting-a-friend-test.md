@@ -3,7 +3,7 @@
 
 # Tests: Inviting a friend
 
-The system allows you to invite a friend by e-mail.
+The system allows you to invite a friend by email.
 
 ## Testing scenarios
 

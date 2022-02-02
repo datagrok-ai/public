@@ -32,7 +32,7 @@ In the "Upload project" dialog, a "Data sync" option appears next to the tables 
 This option determines whether the data should be stored as a static snapshot, or as a generation script. In the latter
 case, the function will be re-executed whenever the project is opened.
 
-![](project-upload-data-sync.png)
+![project-upload-data-sync](project-upload-data-sync.png)
 
 ## Project types
 
@@ -59,7 +59,7 @@ Click on the context menu to the left of the search box to control sort order, a
 
 Controls:
 
-| []()         |                        |
+|              |                        |
 |--------------|------------------------|
 | Click        | Show in property panel |
 | Right click  | Context menu           |

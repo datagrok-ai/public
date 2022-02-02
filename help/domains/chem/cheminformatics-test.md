@@ -5,7 +5,7 @@
 
 Performs conversion from smiles to InChi and InChi key formats
 
-## Testing scenario
+## Testing scenario: inchi
 
 1. Open *"smiles"* table
 
@@ -29,12 +29,13 @@ Performs conversion from smiles to InChi and InChi key formats
 
 Retrieves chemical identifiers for the specified source, using UniChem database.
 
-## Testing scenario
+## Testing scenario: map
 
 1. Open *"smiles"* table
 
 1. Open "Map Identifiers" dialog from context menu of *smiles* column - **Chem | Map Identifiers**
-   (or **Chem | Map Identifiers** action in *"Actions"* tab on [Property Panel](../../overview/navigation.md#properties))
+   (or **Chem | Map Identifiers** action in *"Actions"* tab
+   on [Property Panel](../../overview/navigation.md#properties))
    for *smiles* column)
 
 * "Get Identifiers" dialog is open
@@ -45,7 +46,7 @@ Retrieves chemical identifiers for the specified source, using UniChem database.
 
 * Process bar shows process
 * New column *actor* added to table
-* *actor* column contains matching chem ids for molecules in table
+* *actor* column contains matching chem IDs for molecules in table
 * If row is empty, then corresponding molecule is missing in source database
 
 1. Repeat step 2 for all available sources

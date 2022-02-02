@@ -46,7 +46,7 @@ You can use these fields to filter jobs using [smart search](../overview/smart-s
 
 | Field       | Description                                                            |
 |-------------|------------------------------------------------------------------------|
-| id          |                                                                        |
+| ID          |                                                                        |
 | name        |                                                                        |
 | runs        | list of [DataActionRun](../overview/functions/function-call.md) object |
 | queries     | list of [DataJob](data-job.md) object                                  |

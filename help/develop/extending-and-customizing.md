@@ -17,7 +17,7 @@ our [guides](develop.md), [API samples](https://public.datagrok.ai/js)
 Both the existing extensions and your own-made ones are intended highly customizable. For instance, look at some
 properties of the [grid viewer](../visualize/viewers/grid.md), where you can set which tooltips to display, which grid
 lines to present, and even add [conditional color coding](../visualize/viewers/grid.md#color-coding)! Datagrok also
-provides for introducing your own [custom properties]() specific to your plugins.
+provides for introducing your own custom properties specific to your plugins.
 
 ## What can be extended
 
@@ -29,7 +29,7 @@ With using our [JavaScript API](js-api.md), you can create your own:
 * [visualizations](../visualize/viewers.md) — to visualize data in new ways, in addition to our 30+ core viewers
 * [file viewers](how-to/custom-file-viewers.md) — to support new data formats in addition to many we already recognize
 * [cell renderers](../visualize/viewers/grid.md#custom-cell-renderers) — to visualize certain semantic types, such
-  as [molecules](https://github.com/datagrok-ai/public/blob/master/packages/Chem/src/rdkit-cell-renderer.ts)
+  as [molecules](https://github.com/datagrok-ai/public/blob/master/packages/Chem/src/rdkit-api.ts)
   or [nucleotide sequences](https://github.com/datagrok-ai/public/tree/master/packages/Sequence/web-logo-viewer)
   , in their native-looking renders, inside contexts such as a grid cell, a tooltip, or an axis label in a viewer
 * [semantic type detectors](how-to/define-semantic-type-detectors.md) — to attach semantic types to columns of
@@ -43,7 +43,6 @@ With using our [JavaScript API](js-api.md), you can create your own:
   on-the-fly
 * [connections](../access/data-connection.md), to add new public or in-house data sources, such
   as [Chembl](https://www.ebi.ac.uk/chembl/) or [ENA](https://www.ebi.ac.uk/ena/browser/),
-*
 
 custom [filters](https://github.com/datagrok-ai/public/blob/master/packages/Widgets/src/filters/radio_button_filter.js)
 , which allow adding a filtering mask to an active dataset; in addition, viewers themselves may act as filters, and

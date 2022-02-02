@@ -15,7 +15,7 @@ different [entity types](../overview/objects.md)
 (such as '[query](../access/data-query.md) `ran_by` [user](../govern/user.md)') and restricted by different constraints.
 
 When enabled, the self-learning component uses various AI techniques to spot patterns in usage, and provide users with
-actionable insights. These might include suggestions to [visualize currently open dataset in a specific way](), predict
+actionable insights. These might include suggestions to visualize currently open dataset in a specific way, predict
 properties based on [prediction model](predictive-modeling.md) trained by someone else, create a derived column (such as
 BMI in case your dataset contains weight and height), or many other actions. Note that the platform would give you
 suggestions that are based not solely on your activity, but on the activity of other users as well. This facilitates

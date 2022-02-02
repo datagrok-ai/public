@@ -11,9 +11,9 @@ the [Security](../govern/security.md) article for details on how to manage group
 To share an object, either right-click on it and choose `Share...`, or expand the `Sharing` section in the object's
 property panel and choose `Share...` there.
 
-![](share-connection.gif)
+![Share Connection](share-connection.gif)
 
-![](property-panel-share.png)
+![Property Panel Share](property-panel-share.png)
 
 ## Sharing connections and queries
 

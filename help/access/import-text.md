@@ -14,7 +14,7 @@ Ctrl+O)** command.
 
 Options and commands:
 
-|[]()                 |                                                                |
+|                     |                                                                |
 |---------------------|----------------------------------------------------------------|
 | Delimiter           | Field separator                                                |
 | New line            | New line                                                       |

@@ -9,6 +9,9 @@
     {
       "pattern": "^https://medium.com"
     },
+    {
+      "pattern": "^https://www.nginx.com"
+    }
   ],
   "retryOn429": true
 }

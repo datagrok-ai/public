@@ -23,7 +23,6 @@ the [geographical functions](https://public.datagrok.ai/functions?q=%23geo), suc
 
 See also:
 
-* [Geographical functions]()
 * \#{cmd(AddressToCoordinates)}
 * \#{cmd(IpToCoordinates)}
 * \#{cmd(AddressToCoordinates)}

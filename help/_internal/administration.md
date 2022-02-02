@@ -56,7 +56,7 @@ On the standard Datagrok AMI image, this folder is /home/datagrok/data
 
 It is possible to run more than one instance of Datagrok, each one associated with its own database, storage, users,
 configurations, etc. These instances are completely isolated from each other. Refer to
-the [command line interface](#command-line-interface) section for information on how to start a particular instance.
+the [command-line interface](#command-line-interface) section for information on how to start a particular instance.
 
 On the standard Datagrok AMI image, there is only one 'prod' instance. In cases if a company is doing custom development
 on top of the Datagrok platform, it is common to have three environments:
@@ -79,12 +79,12 @@ of the file, and "*" means that a parameter is mandatory.
 | isolatesCount    | 1                         | Number of threads to use                                                                                           |
 | dataDir          |                           | Name of the data folder under GROK_ROOT                                                                                           |
 | storageCert      |                           | Access certificate to Google Cloud Storage. If set, GCS will be used for persistent data storage                                  |
-| dbConfig         | Database config file name |                                                                                                                                   |
+| dbConfig         | Database config filename |                                                                                                                                   |
 | deployConfig     |                           | Deployment steps configuration file                                                                                               |
 | debug            | false                     | Extended logging and saving stack traces                                                                                          |
 | webRoot          |                           | Http address to client-side, as users see it. Used for generating links in emails, etc.                                           |
 | apiRoot          |                           | Http address to Datlas API, as client sees it.                                                                                    |
-| packagesPath     |                           | Path to a folder where Datlas stores user-generated JavaScript packages. It must be exposed to the client side as /grok_packages. |
+| packagesPath     |                           | Path to a folder where Datlas stores user-generated JavaScript packages. It must be exposed to the client-side as /grok_packages. |
 | processSchedule  | false                     | Processing of scheduled tasks (such as DataJobs)                                                                                  |
 | checkHealth      | false                     | Periodical self-health-check requests.                                                                                            |
 | postTestTracking |                           | Post unit test results to public.datagrok.ai                                                                                      |

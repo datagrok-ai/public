@@ -15,7 +15,7 @@ points represented by R-groups.
 for the specified molecular column, executing R-group decomposition, and visually analyzing the results in
 the [Trellis Plot](../../visualize/viewers/trellis-plot.md).
 
-### Specifying common core
+## Specifying common core
 
 There are two ways to specify a scaffold:
 
@@ -24,13 +24,13 @@ There are two ways to specify a scaffold:
 
 ### Visual analysis of R-group decomposition
 
-![](r-group-analysis.gif)
+![r-group-analysis](r-group-analysis.gif)
 
 Related functions:
 
-* # {x.ChemFindMCS}
-* # {x.ChemMurckoScaffolds}
-* # {x.ChemGetRGroups}
+* \#{x.ChemFindMCS}
+* \#{x.ChemMurckoScaffolds}
+* \#{x.ChemGetRGroups}
 
 See also:
 
