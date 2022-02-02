@@ -38,7 +38,7 @@ export class SubstViewer extends DG.JsViewer {
     const df: DG.DataFrame = this.dataFrame!;
     const col: DG.Column = df.columns.bySemType('alignedSequence');
     // let values: number[] = df.columns.byName('IC50').toList();
-    const values = df.getCol(this.activityColumnName).toList();
+    const values: number[] = df.getCol(this.activityColumnName).toList();
     // values = values;
     const splitedMatrix = this.split(col);
 
@@ -49,6 +49,10 @@ export class SubstViewer extends DG.JsViewer {
     const nRows = splitedMatrix.length;
     const nCols = splitedMatrix[0].length;
     const nColsArray = Array(nCols);
+    // let activityDiffDict: {[key: string]: []} = {}
+    // activityDiffDict['diff'] = [];
+    // activityDiffDict['key'] = [];
+    // activityDiffDict['value'] = [];
 
     for (let i = 0; i < nRows - 1; i++) {
       for (let j = i + 1; j < nRows; j++) {
@@ -63,6 +67,7 @@ export class SubstViewer extends DG.JsViewer {
           if (smik != smjk && Math.abs(delta) >= this.activityLimit) {
             const vi = values[i].toFixed(2);
             const vj = values[j].toFixed(2);
+            // activityDiffDict['diff'].push(Math.abs(vi - vj));
             substCounter++;
             subst1[k] = [
               smik,
