@@ -193,9 +193,10 @@ export class AminoAcidsCellRenderer extends DG.GridCellRenderer {
 
       g.save();
       g.beginPath();
+      h -= 2;
       g.rect(x, y, w, h);
       g.clip();
-      g.font = `14px monospace`;
+      g.font = `12px monospace`;
       g.textBaseline = 'top';
       const s: string = gridCell.cell.value ? gridCell.cell.value : '-';
       let [color, outerS, innerS, pivot] = cp.getColorAAPivot(s);
@@ -264,11 +265,12 @@ export class AlignedSequenceCellRenderer extends DG.GridCellRenderer {
     const grid = gridCell.dart.grid ? gridCell.grid : gridCell.dart.grid;
     const cell = gridCell.cell;
     w = grid ? Math.min(grid.canvas.width - x, w) : g.canvas.width - x;
+    h -= 2;
     g.save();
     g.beginPath();
     g.rect(x, y, w, h);
     g.clip();
-    g.font = '14px monospace';
+    g.font = '12px monospace';
     g.textBaseline = 'top';
     const s: string = cell.value ?? '';
 
@@ -385,11 +387,12 @@ export function processSequence(subParts: string[]): [string[], boolean] {
 
     w = grid ? Math.min(grid.canvas.width - x, w) : g.canvas.width - x;
     y += 2;
+    h -= 2;
     g.save();
     g.beginPath();
     g.rect(x, y, w, h);
     g.clip();
-    g.font = '14px monospace';
+    g.font = '12px monospace';
     g.textBaseline = 'top';
     const s: string = cell.value ?? '';
 
@@ -418,10 +421,10 @@ export function processSequence(subParts: string[]): [string[], boolean] {
 
         const x1 = printLeftOrCentered(x, y - verticalShift, w, h, g, amino1, color1, pivot, true);
         x = printLeftOrCentered(x, y + verticalShift, w, h, g, amino2, color2, pivot, true);
-        x = Math.max(x, x1);
+        x = Math.max(x, x1) + 4;
       } else {
         amino1 = amino1Outer + (amino1Inner !== '' ? '(+)' : '');
-        x = printLeftOrCentered(x, y, w, h, g, amino1 ? amino1 : '-', color1, pivot, true, false, 0.5);
+        x = printLeftOrCentered(x, y, w, h, g, amino1 ? amino1 : '-', color1, pivot, true, false, 0.5) + 4;
       } 
     });
     g.restore();
