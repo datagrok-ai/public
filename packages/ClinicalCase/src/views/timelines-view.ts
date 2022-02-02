@@ -120,8 +120,8 @@ export class TimelinesView extends ClinicalCaseViewBase {
     let info = links[domain.name];
     let df = study.domains[domain.name];
     let t = df.clone(null, Object.keys(info).map(e => info[e]));
-    let filterCols = Object.keys(filters[domain.name]).filter(it => df.columns.names().includes(it));
-    filterCols.forEach(key => { t.columns.addNewString(key).init((i) => df.get(filterCols[key], i)); })
+    let filterCols = Object.keys(filters[domain.name]).filter(it => df.columns.names().includes(filters[domain.name][it]));
+    filterCols.forEach(key => { t.columns.addNewString(key).init((i) => df.get(filters[domain.name][key], i)); })
     t.columns.addNew('domain', DG.TYPE.STRING).init(domain.name.toLocaleLowerCase());
     t.columns.addNewFloat('rowNum').init((i) => i);
     for (let name in info)

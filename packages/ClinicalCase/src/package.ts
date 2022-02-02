@@ -224,7 +224,6 @@ export async function clinicalCaseApp(): Promise<any> {
 
   let summary = views.find(it => it.name === 'Summary');
   summary.load();
-  summary.loaded = true;
   let valView = addView(new ValidationView(summary.errorsByDomain, 'Validation'));
   summary.validationView = valView;
   views.push(valView);

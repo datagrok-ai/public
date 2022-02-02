@@ -31,8 +31,10 @@ export function createHysLawDataframe(lb: DG.DataFrame, dm: DG.DataFrame, altNam
   let joined = grok.data.joinTables(bln, alt, [SUBJECT_ID], [SUBJECT_ID], [SUBJECT_ID, BILIRUBIN], [ALT], DG.JOIN_TYPE.LEFT, false);
   joined = grok.data.joinTables(joined, ast, [SUBJECT_ID], [SUBJECT_ID], [SUBJECT_ID, ALT, BILIRUBIN], [AST], DG.JOIN_TYPE.LEFT, false);
   //joined = grok.data.joinTables(joined, ap, [ SUBJECT_ID ], [ SUBJECT_ID ], [ SUBJECT_ID, ALT, BILIRUBIN, AST ], [ AP ], DG.JOIN_TYPE.LEFT, false);
-  let withTreatmentArm = addDataFromDmDomain(joined, dm, [SUBJECT_ID, ALT, BILIRUBIN, AST], [TREATMENT_ARM]);
-  return withTreatmentArm;
+  if (dm && dm.col(TREATMENT_ARM)) {
+    joined = addDataFromDmDomain(joined, dm, [SUBJECT_ID, ALT, BILIRUBIN, AST], [TREATMENT_ARM]);
+  }
+  return joined;
 }
 
 
@@ -79,8 +81,10 @@ export function createBaselineEndpointDataframe(df: DG.DataFrame,
     finalDf = filteredDataBaseline;
     columnsToEXtract = [SUBJECT_ID, blNumColumn, testCol].concat(additionalCols);
   }
-  let withDmData = addDataFromDmDomain(finalDf, dm, columnsToEXtract, columnToExtractFromDm);
-  return withDmData;
+  if (dm && columnToExtractFromDm.every(it => dm.columns.names().includes(it))) {
+    finalDf = addDataFromDmDomain(finalDf, dm, columnsToEXtract, columnToExtractFromDm);
+  }
+  return finalDf;
 }
 
 
@@ -90,10 +94,13 @@ export function createLabValuesByVisitDataframe(lb: DG.DataFrame, dm: DG.DataFra
   labValueNumCol: string,
   visitCol: string) {
   let condition = `${LAB_TEST} = ${labValue}`;
-  let joined = grok.data.joinTables(lb, dm, [SUBJECT_ID], [SUBJECT_ID], [SUBJECT_ID, LAB_RES_N, LAB_TEST, visitCol],
-    [TREATMENT_ARM], DG.JOIN_TYPE.LEFT, false);
-  let filtered = createFilteredDataframe(joined, condition, [SUBJECT_ID, LAB_RES_N, TREATMENT_ARM, visitCol], labValueNumCol, LAB_RES_N);
-  filtered.rows.filter((row) => row.visitdy !== DG.INT_NULL && row.actarm === treatmentArm);
+  let filtered = createFilteredDataframe(lb, condition, [SUBJECT_ID, LAB_RES_N, visitCol], labValueNumCol, LAB_RES_N);
+  if (dm && dm.col(TREATMENT_ARM)) {
+    filtered = addDataFromDmDomain(filtered, dm, filtered.columns.names(), [TREATMENT_ARM]);
+    filtered.rows.filter((row) => row.visitdy !== DG.INT_NULL && row[TREATMENT_ARM] === treatmentArm);
+  } else {
+    filtered.rows.filter((row) => row.visitdy !== DG.INT_NULL);
+  } 
   return filtered;
 }
 
