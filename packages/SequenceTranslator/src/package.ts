@@ -26,7 +26,14 @@ function getListOfPossibleSynthesizersByFirstMatchedCode(sequence: string): stri
   let synthesizers: string[] = [];
   Object.keys(map).forEach((synthesizer: string) => {
     const codes = getAllCodesOfSynthesizer(synthesizer);
-    if (codes.some((s) => s == sequence.slice(0, s.length)))
+    //TODO: get first non-dropdown code when there are two modifications
+    let start = 0;
+    for (let i = 0; i < sequence.length; i++)
+      if (sequence[i] == ')') {
+        start = i + 1;
+        break;
+      }
+    if (codes.some((s: string) => s == sequence.slice(start, start + s.length)))
       synthesizers.push(synthesizer);
   });
   return synthesizers;
@@ -35,7 +42,7 @@ function getListOfPossibleSynthesizersByFirstMatchedCode(sequence: string): stri
 function getListOfPossibleTechnologiesByFirstMatchedCode(sequence: string, synthesizer: string): string[] {
   let technologies: string[] = [];
   Object.keys(map[synthesizer]).forEach((technology: string) => {
-    const codes = Object.keys(map[synthesizer][technology]);
+    const codes = Object.keys(map[synthesizer][technology]).concat(Object.keys(MODIFICATIONS));
     if (codes.some((s) => s == sequence.slice(0, s.length)))
       technologies.push(technology);
   });
@@ -263,7 +270,7 @@ export function sequenceTranslator() {
   let saveMolFileButton = ui.bigButton('SAVE MOL FILE', () => {
     let smiles = sequenceToSmiles(inputSequenceField.value.replace(/\s/g, ''));
     let result = `${OCL.Molecule.fromSmiles(smiles).toMolfile()}\n`;
-    var element = document.createElement('a');
+    let element = document.createElement('a');
     element.setAttribute('href', 'data:text/plain;charset=utf-8,' + encodeURIComponent(result));
     element.setAttribute('download', inputSequenceField.value.replace(/\s/g, '') + '.mol');
     element.click();
@@ -317,25 +324,9 @@ export function sequenceTranslator() {
     .css('width','100%');
 }
 
-function getRangeIndices(text: string) {
-  let start = 0, end = text.length;
-  for (let i = 0; i < text.length; i++)
-    if (text[i] == ')') {
-      start = (i + 1 == text.length) ? 0 : i + 1;
-      break;
-    }
-  for (let i = start; i < text.length; i++)
-    if (text[i] == '(') {
-      end = (i == 0) ? text.length : i;
-      break;
-    }
-  return [start, end];
-}
-
 function convertSequence(text: string) {
   text = text.replace(/\s/g, '');
-  let indices = getRangeIndices(text);
-  let seq = text.slice(indices[0], indices[1]);
+  let seq = text;
   let output = isValidSequence(seq);
   if (output.indexOfFirstNotValidCharacter != -1)
     return {
