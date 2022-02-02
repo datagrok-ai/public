@@ -131,8 +131,8 @@ function isValidSequence(sequence: string) {
   };
 }
 
-function sortByStringLengthInDescendingOrderToCheckForMatchWithLongerCodesFirst(array: string[]): string[] {
-  return array.sort(function(a, b) { return b.length - a.length; });
+function sortByStringLengthInDescendingOrder(array: string[]): string[] {
+  return array.sort(function(a: string, b: string) { return b.length - a.length; });
 }
 
 function getObjectWithCodesAndSmiles() {
@@ -141,39 +141,45 @@ function getObjectWithCodesAndSmiles() {
     for (let technology of Object.keys(map[synthesizer]))
       for (let code of Object.keys(map[synthesizer][technology]))
         obj[code] = map[synthesizer][technology][code].SMILES;
-  for (let dropdown of Object.keys(MODIFICATIONS))
-    obj[dropdown] = MODIFICATIONS[dropdown].left;
   return obj;
 }
 
 function sequenceToSmiles(sequence: string) {
   const obj = getObjectWithCodesAndSmiles();
-  const codes = sortByStringLengthInDescendingOrderToCheckForMatchWithLongerCodesFirst(Object.keys(obj));
+  let codes = sortByStringLengthInDescendingOrder(Object.keys(obj));
   let i = 0, smiles = '', codesList = [];
   const links = ['s', 'ps', '*'];
   const includesStandardLinkAlready = ["e", "h", "g", "f", "i", "l", "k", "j"];
   const dropdowns = Object.keys(MODIFICATIONS);
+  codes = codes.concat(dropdowns);
   while (i < sequence.length) {
-    let code = codes.find((s) => s == sequence.slice(i, i + s.length))!;
+    let code = codes.find((s: string) => s == sequence.slice(i, i + s.length))!;
     i += code.length;
     codesList.push(code);
   }
   for (let i = 0; i < codesList.length; i++) {
     if (dropdowns.includes(codesList[i])) {
-      smiles += (i > codesList.length / 2) ?
+      smiles += (i >= codesList.length / 2) ?
         MODIFICATIONS[codesList[i]].right :
         MODIFICATIONS[codesList[i]].left;
-      if (i < codesList.length - 1 && !links.includes(codesList[i + 1]))
-        smiles += stadardPhosphateLinkSmiles;
     } else {
-      smiles += (links.includes(codesList[i]) || (includesStandardLinkAlready.includes(codesList[i])) || (i < codesList.length - 1 && links.includes(codesList[i + 1]))) ?
+      smiles += (
+        links.includes(codesList[i]) ||
+        includesStandardLinkAlready.includes(codesList[i]) ||
+        (i < codesList.length - 1 && (links.includes(codesList[i + 1]) || dropdowns.includes(codesList[i + 1])))
+      ) ?
         obj[codesList[i]] :
         obj[codesList[i]] + stadardPhosphateLinkSmiles;
     }
   }
   smiles = smiles.replace(/OO/g, 'O');
-  // smiles = smiles.replace(/@/g, ''); // Remove StereoChemistry on the Nucleic acid chain and remove the Chiral label
-  return links.includes(codesList[codesList.length - 1]) ? smiles : smiles.slice(0, smiles.length - stadardPhosphateLinkSmiles.length + 1);
+  return (
+    links.includes(codesList[codesList.length - 1]) ||
+    dropdowns.includes(codesList[codesList.length - 1]) ||
+    includesStandardLinkAlready.includes(codesList[codesList.length - 1])
+  ) ?
+    smiles :
+    smiles.slice(0, smiles.length - stadardPhosphateLinkSmiles.length + 1);
 }
 
 //name: Sequence Translator
