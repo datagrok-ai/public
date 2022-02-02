@@ -2,7 +2,7 @@ import * as grok from 'datagrok-api/grok';
 import * as ui from 'datagrok-api/ui';
 import * as DG from 'datagrok-api/dg';
 
-import {chemSpace} from './chem-space'
+import {chemSpace} from './chem-space';
 import * as chemSearches from '../chem-searches';
 
 /** Searches for activity cliffs in a chemical dataset by selected cutoff*/
