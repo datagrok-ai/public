@@ -133,42 +133,17 @@ export const requiredColumnsByView = {
         },
         'Adverse Events': {
                 'req_domains': {
-                        'dm': {
-                                'req': [
-                                        sdtmCols.SUBJECT_ID,
-                                        sdtmCols.TREATMENT_ARM,
-                                ]
-                        },
                         'ae': {
                                 'req': [
-                                        sdtmCols.SUBJECT_ID,
-                                        sdtmCols.AE_DECOD_TERM,
-                                        sdtmCols.AE_BODY_SYSTEM,
-                                        sdtmCols.AE_CAUSALITY,
-                                        sdtmCols.AE_OUTCOME,
-                                        sdtmCols.AE_START_DAY,
-                                        sdtmCols.AE_SEVERITY
                                 ]
                         }
                 }
         },
         'Laboratory': {
                 'req_domains': {
-                        'dm': {
-                                'req': [
-                                        sdtmCols.SUBJECT_ID,
-                                        sdtmCols.TREATMENT_ARM
-                                ]
-                        },
                         'lb': {
                                 'req': [
-                                        sdtmCols.SUBJECT_ID,
-                                        sdtmCols.LAB_TEST,
-                                        sdtmCols.VISIT_NAME,
-                                        sdtmCols.VISIT_DAY,
-                                        sdtmCols.LAB_RES_N,
-                                        sdtmCols.LAB_LO_LIM_N,
-                                        sdtmCols.LAB_HI_LIM_N
+
                                 ]
                         }
                 }
