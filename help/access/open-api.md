@@ -63,32 +63,33 @@ paths:
 grok-datetime-format: yyyy-MM-dd
 parameters:
   distance:
-     name: distance
-     in: query
-     required: false
-     description: If no reporting area is associated with the specified Zip Code, return a forecast from a nearby reporting area within this distance (in miles).
-     type: integer
-     format: int32
+    name: distance
+    in: query
+    required: false
+    description: |
+      If no reporting area is associated with the specified Zip Code, 
+      return a forecast from a nearby reporting area within this distance (in miles).
+    type: integer
+    format: int32
   latitude:
-     name: latitude
-     in: query
-     description: Latitude in decimal degrees.
-     required: true
-     type: number
-     format: float
+    name: latitude
+    in: query
+    description: Latitude in decimal degrees.
+    required: true
+    type: number
+    format: float
   longitude:
-     name: longitude
-     in: query
-     required: true
-     description: Longitude in decimal degrees.
-     type: number
-     format: float
+    name: longitude
+    in: query
+    required: true
+    description: Longitude in decimal degrees.
+    type: number
+    format: float
 securityDefinitions:
   api_key:
     type: apiKey
     name: API_KEY
     in: query
-
 ```
 
 You can also find all connections created for OpenAPI in
@@ -107,7 +108,7 @@ Let's consider how Datagrok interprets individual attributes of a Swagger file:
 In some cases, the standard attributes of Swagger format are not enough to import file to Datagrok.
 
 For example, for the correct interpretation of datetime format in the corresponding parameters, an
-additional ```grok-datetime-format``` field inside the Swagger file is used, which is not part of the standard Swagger
+additional `grok-datetime-format` field inside the Swagger file is used, which is not part of the standard Swagger
 format, but is used only for correct import into Datagrok in some cases.
 
 As we can see from the Swagger file example above, this field can be used at the level of entire Swagger file and be
@@ -154,7 +155,7 @@ paths:
           type: string
           format: date-time
           grok-datetime-format: yyyy-MM-ddT00-0000
- ...
+  ...
 ```
 
 ## Parameters
@@ -169,11 +170,9 @@ It is important to mention that Datagrok can work with both parameterized querie
 
 In addition, there are no restrictions in Datagrok on the use of parameters in different places, such as:
 
-- path parameters, such as `/users/{id}`
-
-- query parameters, such as `/users?role=admin`
-
-- header parameters, such as `X-MyHeader: Value`
+* path parameters, such as `/users/{id}`
+* query parameters, such as `/users?role=admin`
+* header parameters, such as `X-MyHeader: Value`
 
 ## Credentials
 
@@ -189,16 +188,13 @@ securityDefinitions:
     type: apiKey
     name: API_KEY
     in: query
-
 ```
 
 Datagrok works great with all types of secret access that the Swagger format supports:
 
-- Basic authentication
-
-- API key (as a header or a query string parameter)
-
-- OAuth 2 common flows (authorization code, implicit, resource owner password credentials, client credentials)
+* Basic authentication
+* API key (as a header or a query string parameter)
+* OAuth 2 common flows (authorization code, implicit, resource owner password credentials, client credentials)
 
 After you have imported the Swagger file into Datagrok, you need to specify your access in the settings of a
 corresponding [data connection](data-connection.md). To do this, find your connection in the connections tree (or in
@@ -273,6 +269,7 @@ steps can help.
 
 1. If Datagrok loads the Swagger file successfully, but the `basePath`or `host` aren't present along with the Swagger
    icon, add the following section to the file:
+
    ```
    "schemes": [
      "https",
@@ -284,6 +281,7 @@ steps can help.
 
 3. If Postman or Datagrok cannot open the file, add a `"version"` section with an arbitrary version to the `"info"`
    section, if the `"version"` isn't present:
+
    ```
    "version": "1.0.0"
    ```

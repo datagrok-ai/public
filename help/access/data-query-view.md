@@ -16,10 +16,10 @@ below:
 | Data source          | Query      |
 |----------------------|------------|
 | Relational databases | SQL        |
-| File share           | File name  |
+| File share           | Filename  |
 | Excel file           | Sheet name |
 | Linked data          | SPARQL     |
-| Box                  | File name  |
+| Box                  | Filename  |
 
 ![Add query](../uploads/gifs/query-add.gif "Add query")
 

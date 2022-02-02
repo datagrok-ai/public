@@ -57,12 +57,12 @@ that this is an internal tool for developers.
 When an action does something on a server that modifies the server's state in any way, in addition to the log file it
 gets recorded in the audit. This is what you see under the "Activity" tab in the property panel.
 
-![](usage-analysis-pp-activity.png)
+![usage-analysis-pp-activity](usage-analysis-pp-activity.png)
 
 By default, each [script](../compute/scripting.md) execution gets logged, along with the parameter values. High-level
 overview of the usage is available under the "Usage" tag:
 
-![](usage-analysis-pp-usage.png)
+![usage-analysis-pp-usage](usage-analysis-pp-usage.png)
 
 ## Usage analysis application
 
@@ -74,4 +74,4 @@ our [public git repository](https://github.com/datagrok-ai/public/tree/master/pa
 
 To run it (assuming you have the right privileges), open our app store (`Admin | Apps`), and launch "Usage Analysis".
 
-![](usage-analysis-app.png)
+![usage-analysis-app](usage-analysis-app.png)

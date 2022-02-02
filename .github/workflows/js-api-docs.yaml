@@ -70,7 +70,7 @@ jobs:
             --itemize-changes \
             --stats \
             --human-readable \
-            "js_api_docs/" $REMOTE_USER@$REMOTE_HOST:$TARGET
+            "js_api_docs/" "$REMOTE_USER@$REMOTE_HOST:$TARGET"
         env:
           SSH_PRIVATE_KEY: ${{ secrets.HELP_SSH_KEY }}
           SSH_KNOWN_HOSTS: ${{ secrets.HELP_KNOWN_HOST }}

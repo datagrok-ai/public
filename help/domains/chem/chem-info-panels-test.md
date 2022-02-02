@@ -29,7 +29,7 @@ on [Property Panel](../../overview/navigation.md#properties) for specific smiles
 
 1. Expand "3D" tab on [Property Panel](../../overview/navigation.md#properties)
 
-* Tab shows molecular structure in 3d space
+* Tab shows molecular structure in 3D space
 * Available rotation of the molecule in all axes
 * Zoom in and out are available
 

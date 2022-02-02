@@ -6,7 +6,7 @@
 Datagrok supports several deployment schemas which can be configured using `GROK_MODE` and `GROK_PARAMETERS` environment
 variables.
 
-#### Datlas configuration
+## Datlas configuration
 
 `GROK_PARAMETERS` is a JSON-formatted environment variable with the Datlas configuration options :
 
@@ -32,7 +32,7 @@ variables.
 | certKeyPath         | Optional        |         | Path to the TLS certificate key                                                                  |
 | certKeyPwd          | Optional        |         | Password to the TLS certificate key                                                              |
 
-# Datlas startup mode
+## Datlas startup mode
 
 `GROK_MODE` possible values:
 

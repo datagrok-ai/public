@@ -185,7 +185,7 @@ you can choose the command `To JavaScript` to get a snippet that adds an identic
 UI-first approach is to save the layout of a table view along with its viewers and their positions. Find more detailed
 instructions on the [dedicated page](layouts.md).
 
-![](dev-tools-viewer.gif "Get a snippet with selected viewer properties")
+![Get a snippet with selected viewer properties](dev-tools-viewer.gif "Get a snippet with selected viewer properties")
 
 However, in some cases you may want to derive more details about certain viewer properties. To access them directly, use
 the `getProperties` method:
@@ -204,7 +204,7 @@ grok.shell.info(descriptions);
 It returns an array of `Property` objects, which are used to construct descriptions. Here is what you can obtain given a
 property:
 
-- `choices`: an array of pre-defined values that a property accepts, e.g., all possible aggregation functions you can
+- `choices`: an array of predefined values that a property accepts, e.g., all possible aggregation functions you can
   use for the `Value` column in a bar chart; choices are given in a drop-down list in the property panel
 - `columnFilter`: an indication of allowed data types, it is only relevant to column properties, e.g., the `Value`
   column of a box plot has a *numerical* filter; acceptable values are *numerical*
@@ -271,9 +271,9 @@ grok.shell.dockManager.dock(viewer, DG.DOCK_TYPE.RIGHT);
 
 Examples:
 
-* [Docking viewers](https://public.datagrok.ai/js/samples/ui/docking/docking-table-view)
+- [Docking viewers](https://public.datagrok.ai/js/samples/ui/docking/docking-table-view)
 
 See also:
 
-* [Viewers](../../visualize/viewers.md)
-* [How to develop a custom viewer](develop-custom-viewer.md)
+- [Viewers](../../visualize/viewers.md)
+- [How to develop a custom viewer](develop-custom-viewer.md)

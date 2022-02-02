@@ -361,7 +361,7 @@ class AwesomeViewer extends DG.JsViewer {
 }
 ```
 
-With these tooltips, users will immediately see the rows that match pre-defined criteria, e.g. rows containing the
+With these tooltips, users will immediately see the rows that match predefined criteria, e.g. rows containing the
 corresponding category, and will be able to select them on click (pay attention to the `handleClick` function in the
 example). Plus, other open viewers will highlight the elements that represent the respective row group as you move the
 mouse pointer over the current viewer (you don't need to configure anything, read more about Datagrok's efficient
@@ -419,19 +419,19 @@ same convention with `camelCase` and the `ColumnName` suffix. This has to do wit
 panel. In this respect, scripting viewers have an interesting feature — the platform provides a set of properties in
 addition to the defined ones:
 
-- `Refresh on Filter` binds the visualization with the standard filters (true by default)
-- `Title` places a caption on top
-- `Description` adds a text where one can give more details
-- `Description Position`: left, right, top, bottom, center
-- `Description Visibility Mode`: auto, always, never
+* `Refresh on Filter` binds the visualization with the standard filters (true by default)
+* `Title` places a caption on top
+* `Description` adds a text where one can give more details
+* `Description Position`: left, right, top, bottom, center
+* `Description Visibility Mode`: auto, always, never
 
 In terms of annotation, there are certain syntax constructs worthy of note:
 
-- default values are set via assignment `string color = steelblue`
-- column properties have a type selector (indicating the type will guarantee a sane initial value and tailor the
+* default values are set via assignment `string color = steelblue`
+* column properties have a type selector (indicating the type will guarantee a sane initial value and tailor the
   contents of the drop-down list to match the type). Supported types include
   *numerical, categorical, dateTime*
-- for string properties, `{choices: ["mean", "count", "sum"]}` lists possible options
+* for string properties, `{choices: ["mean", "count", "sum"]}` lists possible options
 
 This kind of annotation is typical for scripts, so refer to the [dedicated article](../../compute/scripting.md)
 for further explanation. The last parameter to mention is the output: scripting viewers must return
@@ -464,7 +464,7 @@ Tagging scripts or functions as `viewers` registers them within the platform. Re
 the top menu and enables common viewer operations, such as cloning, docking, embedding, and switching to full screen
 mode. This also means that users can persist this viewer as part of a [project](../../overview/project.md).
 
-![](top-menu-add-viewer.gif "Add a viewer")
+![top-menu-add-viewer](top-menu-add-viewer.gif "Add a viewer")
 
 From a developer's point of view, there are two ways to register a viewer. Here is the one we have seen earlier:
 
@@ -522,8 +522,7 @@ You can find more inspiring examples in our [public repository](https://github.c
 * Scripting viewers (R, Python, Julia):
     * [ChaRPy](https://github.com/datagrok-ai/public/tree/master/packages/ChaRPy): translates a Datagrok viewer to
       Python and R code using scripting viewers for the respective programming languages
-    * [DemoScripts](https://github.com/datagrok-ai/public/tree/master/packages/DemoScripts):
-      demonstrates the scripting functionality, including visualizations, for Python, R, and Julia
+    * [DemoScripts]: demonstrates the scripting functionality, including visualizations, for Python, R, and Julia
 
   Most of these scripts are also available by the `viewers` tag in the script
   browser: [https://public.datagrok.ai/scripts?q=%23viewers](https://public.datagrok.ai/scripts?q=%23viewers)
@@ -540,3 +539,5 @@ See also:
 * [JavaScript development](../develop.md)
 * [Viewers](../../visualize/viewers.md)
 * [Scripting viewers](../../visualize/viewers/scripting-viewer.md)
+
+[DemoScripts]: https://github.com/datagrok-ai/public/blob/master/packages/Demo/projects/scripts/

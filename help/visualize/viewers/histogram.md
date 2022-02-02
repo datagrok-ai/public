@@ -7,13 +7,13 @@ A histogram is a graphical representation of the distribution of numerical data.
 
 General:
 
-| []()           |              |
-|----------------|--------------|
-| Right click    | Context menu |
-| Bin: click | Select bin exclusively        |
-| Bin: ctrl+click | Invert bin selection         |
-| Bin: shift+click | Select bin         |
-| Shift+Mouse drag | Select bins         |
+|                  |                        |
+|------------------|------------------------|
+| Right click      | Context menu           |
+| Bin: click       | Select bin exclusively |
+| Bin: ctrl+click  | Invert bin selection   |
+| Bin: shift+click | Select bin             |
+| Shift+Mouse drag | Select bins            |
 
 ![Histogram](../../uploads/gifs/histogram.gif "Histogram")
 

@@ -5,7 +5,7 @@
 
 General:
 
-| []()                  |                 |
+|                       |                 |
 |-----------------------|-----------------|
 | Right click           | Context menu    |
 | Alt+Mouse Drag        | Zoom            |

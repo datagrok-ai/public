@@ -1,5 +1,7 @@
 version: "3"
 
+x-aws-logs_retention: 14
+
 networks:
   cvm:
 
@@ -135,6 +137,12 @@ x-aws-cloudformation:
           - Key: stickiness.lb_cookie.duration_seconds
             Value: 86400
 
+    H2oService:
+      Properties:
+        NetworkConfiguration:
+          AwsvpcConfiguration:
+            AssignPublicIp: DISABLED
+
     GrokcomputeTCP80TargetGroup:
     GrokcomputeTCP80Listener:
       Properties:
@@ -184,6 +192,10 @@ x-aws-cloudformation:
             ContainerPort: 5005
             TargetGroupArn:
               Ref: GrokcomputeTCP5005TargetGroup
+        NetworkConfiguration:
+          AwsvpcConfiguration:
+            AssignPublicIp: DISABLED
+
 
     JupyterkernelgatewayTCP5005Listener:
     JupyterkernelgatewayTCP5005ListenerRule:
@@ -258,6 +270,10 @@ x-aws-cloudformation:
         - JupyterkernelgatewayTCP5005ListenerRule
         - JupyterkernelgatewayTCP8888Listener
         - JupyterkernelgatewayTCP8888ListenerRule
+      Properties:
+        NetworkConfiguration:
+          AwsvpcConfiguration:
+            AssignPublicIp: DISABLED
 
     JupyternotebookTCP5005Listener:
     JupyternotebookTCP5005ListenerRule:
@@ -332,6 +348,10 @@ x-aws-cloudformation:
         - JupyternotebookTCP5005ListenerRule
         - JupyternotebookTCP8889Listener
         - JupyternotebookTCP8889ListenerRule
+      Properties:
+        NetworkConfiguration:
+          AwsvpcConfiguration:
+            AssignPublicIp: DISABLED
 
     JupyterkernelgatewayTaskDefinition:
       Properties:

@@ -36,18 +36,18 @@ predictive models, integration with the external utilities, data augmentation, a
 * [Creating an info panel with a REST web service](#creating-an-info-panel-with-a-rest-web-service)
 * [Enhancing Datagrok with dialog-based functions](#enhancing-datagrok-with-dialog-based-functions)
 
-  <!---
-  * Creating an application
-  * Accessing Web services in JavaScript with REST
-  * Creating a custom JavaScript viewer
-  * Optimizing a custom cell renderer with a cache
-  * Extending Datagrok with info panels
-  * Customize packages with properties
-  * Persisting user sessions and tables
-  * Using WebAssembly with Datagrok functions
-  * Webpack packages with WebAssembly
-  * Using Web Workers for background computations
-  --->
+<!---
+* Creating an application
+* Accessing Web services in JavaScript with REST
+* Creating a custom JavaScript viewer
+* Optimizing a custom cell renderer with a cache
+* Extending Datagrok with info panels
+* Customize packages with properties
+* Persisting user sessions and tables
+* Using WebAssembly with Datagrok functions
+* Webpack packages with WebAssembly
+* Using Web Workers for background computations
+--->
 
 ## Setting up the environment
 
@@ -55,7 +55,8 @@ Prerequisites: basic JavaScript knowledge.
 
 1. Install the necessary tools (Node.js, npm, webpack, datagrok-tools) following
    [these instructions](../develop.md#development)
-2. Get a dev key for https://dev.datagrok.ai (you will work with this server) and add it by running `grok config`
+2. Get a dev key for [Dev Server](https://dev.datagrok.ai) (you will work with this server) and add it by
+   running `grok config`
 3. Create a default package [called](https://datagrok.ai/help/develop/develop#naming-conventions)
    `<yourFirstName>-sequence` using datagrok-tools: `grok create <yourFirstName>-sequence`
 4. Upload it to the server: `grok publish dev --rebuild` (see other options [here](../develop.md#deployment-modes))
@@ -64,8 +65,8 @@ Prerequisites: basic JavaScript knowledge.
 * via the [Functions](https://dev.datagrok.ai/functions?q=test) view
 * via the [Packages](https://dev.datagrok.ai/packages?) menu (find your package, click on it and run `test`
   from the `Functions` pane in the property panel on the left)
-* via the [console](../../overview/navigation.md#console): press `~` key anywhere inside Datagrok, the Console will appear to
-  the right; execute `<yourFirstName>Sequence:test()` there
+* via the [console](../../overview/navigation.md#console): press `~` key anywhere inside Datagrok, the Console will
+  appear to the right; execute `<yourFirstName>Sequence:test()` there
 
 ## Semantic types
 
@@ -77,7 +78,8 @@ Details: [How to define semantic type detectors](../how-to/define-semantic-type-
 You will learn: how to write semantic type detectors, how to develop context-specific data augmentation.
 
 1. Create a `complement` function in `src/package.ts` which takes a nucleotide string and returns its complement:
-   ```javascript
+
+    ```javascript
     //name: complement
     //input: string nucleotides
     //output: string result
@@ -85,21 +87,25 @@ You will learn: how to write semantic type detectors, how to develop context-spe
         // your code goes here
     }
     ```
+
    Essentially, change each character to the complementary one: `A <=> T`, `G <=> C`. Run it and check whether
    everything works fine.
 
 2. Now, let's specify that this function is meant to accept not any string, but nucleotides only, and to return a
    nucleotide string as well. In order to do that, let's annotate both input and output parameters with
    the `dna_nucleotide` semantic type:
-   ```javascript
+
+    ```javascript
     //input: string nucleotides {semType: dna_nucleotide}
     //output: string result {semType: dna_nucleotide}
    ```
+
    At this point, `dna_nucleotide` string does not have any meaning, but we will connect the dots later.
 
 3. <a name="detectors"></a> Define a `detectNucleotides` semantic type detector function as part of the special
    `detectors.js` file.
-   ```javascript
+
+    ```javascript
    class <yourFirstName>SequencePackageDetectors extends DG.Package {
 
      //tags: semTypeDetector
@@ -110,6 +116,7 @@ You will learn: how to write semantic type detectors, how to develop context-spe
      }
    }
    ```
+
    It should check whether a column is a string column, and whether each string represents a nucleotide. If condition is
    met, it should return `"dna_nucleotide"` string.
 
@@ -126,24 +133,25 @@ You will learn: how to write semantic type detectors, how to develop context-spe
 
 6. Test your implementation by opening the following CSV or TXT file (or go to `📁 (Data) | Text`
    and paste it there). Make sure you click on DONE (this will trigger semantic types detection):
-   ```
+
+    ```
    sequence, id
    GATTACA, 1997
    ATTCGGA, 1984
    TTTAGGC, 2021
    ```
+
    Hover over the `sequence` column header after the data is imported — if everything is done correctly, you will
    see `quality: dna_nucleotide` in the bottom of the tooltip:
-   ![](exercises-semantic-tooltip.png)
+   ![exercises-semantic-tooltip](exercises-semantic-tooltip.png)
    Alternatively, you can find this information if you click on the column and expand the 'Details' pane in the property
    panel on the right.
-
 7. Now transform the previously created `complement` function into an [info panel](../how-to/add-info-panel.md):
    tag it with `panel` and `widgets` tags and change the output type to `widget` (see an example [here][014]). This will
    instruct the platform to use the `complement` function for providing additional information for string values of
    the `dna_nucleotide` semantic type. To test it, simply open our test file, click on any cell in the `sequence`
    column, and find the `complement` property in the panel on the right as it is shown on screenshot:
-   ![](exercises-complement-data-panel.png)
+   ![exercises-complement-data-panel](exercises-complement-data-panel.png)
 
 ## Scripting and functions
 
@@ -159,13 +167,13 @@ In this exercise, we will count occurrences of a given subsequence in a nucleoti
 
 1. Open Datagrok and navigate to `Functions | Scripts | Actions | New Python Script`.
 2. Observe a default script created for you. All script attributes are specified in the beginning in comments. There we
-   have the script name, language, one input value of type [`dataframe`](), and one output value of type `int`. The
-   script simply computes number of cells in the dataframe.
+   have the script name, language, one input value of type `dataframe`, and one output value of type `int`. The script
+   simply computes number of cells in the dataframe.
    [Dataframe](../how-to/build-an-app.md) is a high-performance, easy to use tabular structure with strongly-typed
    columns of different types (supported types are: `string`, `bool`, `int`
    , `bigint`,
-   `double`, `qnum` and `datetime`). In this exercise, we only see a dataframe as is in the default script; there
-   is [another exercise]() to learn manipulating dataframes in JavaScript.
+   `double`, `qnum` and `datetime`). In this exercise, we only see a dataframe as is in the default script; there is
+   another exercise to learn manipulating dataframes in JavaScript.
 3. Run the script to get a hint for creating an input file. An attribute `#sample: cars.csv`
    is responsible for it. To open a default input file `cars`, click the `Star` icon in the top menu.
 4. Run the script again and proceed to the Datagrok's console. As in Quake, it's available by pressing a `~` button
@@ -173,15 +181,18 @@ In this exercise, we will count occurrences of a given subsequence in a nucleoti
    you could see the console's command to execute the script. Enter it again to the console to get the same result.
 5. Let's modify the script to solve the task of counting sequence occurrences. Add a new preamble:
    (use any `#description` you like):
-```python
-# name: CountSubsequencePython
-# language: python
-# input: string sequence
-# input: string subsequence
-# output: int count
-```
+
+    ```python
+    # name: CountSubsequencePython
+    # language: python
+    # input: string sequence
+    # input: string subsequence
+    # output: int count
+    ```
+
    In the body, implement a Python function counting all occurrences of a given `subsequence` in a `sequence`. Return
    a `count` the same way as in the default script from p. 2.
+
 6. Run the script function, provide input values in the dialog and get to the console to see the result. Now run the
    script function again through the console completely, passing different arguments values:
    ```<yourLogin>:CountSubsequencePython('ATGATC', 'A')```. You can find your login inside the profile page between name
@@ -191,14 +202,13 @@ In this exercise, we will count occurrences of a given subsequence in a nucleoti
    for `sars-cov-2.csv`. Navigate to `Data | Files` and open
    `Demo Files / bio / sars-cov-2.csv`. Navigate to a menu item `Edit | Add New Column...`
    and click it. Type in your expression using the function you've just previously created:
-   ![](exercises-add-new-column.png)
+   ![exercises-add-new-column](exercises-add-new-column.png)
    Observe how the `Preview Result Columns` change while you are modifying the expression. There, notice a
    namespace `<yourLogin>` as part of a qualified function name `<yourLogin>:<functionName>`,
    `JDoe:CountSubseqnecePython` in this case. Namepaces are used through Datagrok very commonly. In general, there shall
    be no case where you would call a function without specifying a namespace. Datagrok namespaces originate from the
    names of packages, projects, and users, and always qualify a resource name, be it a package, a function, a connection
-   or a query.
-   Now hit "Ok" and have the new column inserted to the dataframe.
+   or a query. Now hit "Ok" and have the new column inserted to the dataframe.
 
 <!-- TODO: Update the dialog -->
 
@@ -216,35 +226,37 @@ repeat what we've achieved in the last point of the previous exercise, now with 
 1. Let's create a different kind of our `CountSubsequencePython` function, now called `CountSubsequencePythonDataframe`.
    While the original function could only operate on a single row, the new function shall operate on the entire
    dataframe. To start with, the function's Datagrok signature should look as follows:
-```python
-# name: CountSubsequencePythonDataframe
-# language: python
-# input: dataframe sequences
-# input: column columnName
-# input: string subsequence = acc
-# output: dataframe result {action:join(sequences)}
-```
 
-This function takes as an input a dataframe with a column containing nucleotide sequences, named as a value of
-`columnName`, a nucleotide subsequence `subsequence` being sought, and outputs an input dataframe with a new column
-_appended_ to it, containing numbers of subsequence occurrences in the nucleotide sequences. Say, for a table on the
-left the following table on the right should be produced for a subsequence `acc` being sought:
-<table>
-<tr><td>
+    ```python
+    # name: CountSubsequencePythonDataframe
+    # language: python
+    # input: dataframe sequences
+    # input: column columnName
+    # input: string subsequence = acc
+    # output: dataframe result {action:join(sequences)}
+    ```
 
-| GenBank    | ID         |
-|------------|------------|
-| MT079845.1 | ctacaagaga |
-| MT079851.1 | attaaaggtt |
-| MT326187.1 | gttctctaaa |
+   This function takes as an input a dataframe with a column containing nucleotide sequences, named as a value of
+   `columnName`, a nucleotide subsequence `subsequence` being sought, and outputs an input dataframe with a new column
+   _appended_ to it, containing numbers of subsequence occurrences in the nucleotide sequences. Say, for a table on the
+   left the following table on the right should be produced for a subsequence `acc` being sought:
+
+    <table>
+    <tr><td>
+
+   | GenBank    | ID         |
+                                                            |------------|------------|
+   | MT079845.1 | ctacaagaga |
+   | MT079851.1 | attaaaggtt |
+   | MT326187.1 | gttctctaaa |
 
     </td><td>
 
-| GenBank    | ID         | N(acc) |
-|------------|------------|--------|
-| MT079845.1 | ctaccagaga | 1      |
-| MT079851.1 | attaaaggtt | 0      |
-| MT326187.1 | gttctctacc | 1      |
+   | GenBank    | ID         | N(acc) |
+                                                            |------------|------------|--------|
+   | MT079845.1 | ctaccagaga | 1      |
+   | MT079851.1 | attaaaggtt | 0      |
+   | MT326187.1 | gttctctacc | 1      |
 
     </td></tr>
     </table>
@@ -254,13 +266,12 @@ left the following table on the right should be produced for a subsequence `acc`
    the `join` instruction, `result` will be  _appended_ to the existing input dataframe `sequences`. As this is
    performed purely on the client, we save the bandwidth without needing to return a copy of a dataframe which we
    already passed to the server.
-
-* Use Pandas dataframes as `pd` to access the input dataframe and create an output dataframe
-* You don't need to import `pandas`, Datagrok does this automatically: to each Python script it adds a preamble with
-  most popular imports (`os`, `io`, `json`, `pandas as pd`, `requests`
-  , `datetime`, `timedelta`)
-* Note that the `column inputColName` is just a string with a column name passed to a script, not an actual column
-  content
+    * Use Pandas dataframes as `pd` to access the input dataframe and create an output dataframe
+    * You don't need to import `pandas`, Datagrok does this automatically: to each Python script it adds a preamble with
+      most popular imports (`os`, `io`, `json`, `pandas as pd`, `requests`
+      , `datetime`, `timedelta`)
+    * Note that the `column inputColName` is just a string with a column name passed to a script, not an actual column
+      content
 
 3. Run the function with a "Play" button on top of the function window. THe dialog will prompt you to select a
    dataframe. Navigate to a "Data" view (first button on the left sidebar) and open a file with nucleotide sequences
@@ -294,9 +305,9 @@ _You will learn:_ how to create and invoke Datagrok JavaScript scripts.
 4. Don't forget to save these two scripts. We would re-use parts of them in the following exercises.
 
 The difference between the two scripts is that the first, `CountSubsequencePython`, runs on our server by
-a [compute virtual machine](../admin/architecture.md#compute-virtual-machine), whereas the
-second, `CountSubsequenceJS`, runs directly in the browser. To run `CountSubsequencePython`, Datagrok passes the script
-arguments over the network and fetches back the result to the browser.
+a [compute virtual machine](../admin/architecture.md#compute-virtual-machine), whereas the second, `CountSubsequenceJS`,
+runs directly in the browser. To run `CountSubsequencePython`, Datagrok passes the script arguments over the network and
+fetches back the result to the browser.
 
 <!-- Redo with a simpler stance
 
@@ -447,6 +458,7 @@ from our server.
 4. Execute the query and make sure it returns results.
 5. Modify the query to accept a `country` parameter, and return the sum of freights for the specified country, grouped
    by `customerid`:
+
    ```sql
    --input: string country
    select customerid, sum(freight)
@@ -454,18 +466,18 @@ from our server.
    where shipcountry = @country
    group by customerid
    ```
+
 6. Run the query, enter one of the countries in the input box (such as `USA`, without quotation marks or apostrophes).
    Run it the second time, notice that previously entered parameters could be quickly reused by clicking on the watch
    icon in the left bottom corner of the dialog window.
 7. Rename this query from your name to `ordersByCountry`, and save it.
 8. Try different ways to execute it:
-
-* Right-click on `Data | Databases | PostgreSQL | northwind | ordersByCountry`, select `Run` from the context menu,
-  enter the country name, and run it
-* Click on `Data | Databases | PostgreSQL | northwind | ordersByCountry`, expand the `Run` pane on the right, enter the
-  country name and run it
-* Open console by pressing `~` key, see the results of the previous invocations. Copy-paste the corresponding command
-  and run it from the console.
+    * Right-click on `Data | Databases | PostgreSQL | northwind | ordersByCountry`, select `Run` from the context menu,
+      enter the country name, and run it
+    * Click on `Data | Databases | PostgreSQL | northwind | ordersByCountry`, expand the `Run` pane on the right, enter
+      the country name and run it
+    * Open console by pressing `~` key, see the results of the previous invocations. Copy-paste the corresponding
+      command and run it from the console.
 
 9. Now, let's add this query to our package. Create a connection by running `grok add connection <yourFirstName>`, then,
    as instructed [here](../how-to/access-data.md#creating-queries), create the '.sql' file under the `queries`
@@ -473,6 +485,7 @@ from our server.
 10. Deploy the package, launch the platform, find the query in the package, and run it.
 11. Create a JavaScript function (in `src/package.js`) that has no parameters and returns a dataframe with the results
     of the `ordersByCountry('USA')` call:
+
     ```javascript
     //name: getOrders
     //output: dataframe df
@@ -480,6 +493,7 @@ from our server.
       return await grok.data.query(`${packageName}:${queryName}`, { country: 'USA'});
     }
     ```
+
     There is another way to pass a country name to the query: you can provide a default value for the input parameter
     (see examples in the article [Parameterized Queries](../../access/parameterized-queries.md)).
 
@@ -507,8 +521,8 @@ to the offset 2 and get: `TAA`, `...`, `TGA`. In the histogram we'd count for al
 First, let's explore how scripting viewer works.
 
 1. Open a `demog` demo file with demographic data. It is located at `Data | Files | Demo Files | demog.csv`.
-   `Data` corresponds to the first button from the top of the Datagrok [sidebar](). Make sure the table view with the
-   data appears.
+   `Data` corresponds to the first button from the top of the Datagrok sidebar. Make sure the table view with the data
+   appears.
 2. Activate the top menu from the sidebar, using a `Windows | Menu` switch.
 3. In this menu, hit `Add | Scripting Viewers | Python | Scatter Plot`.
 4. See that the viewer appeared on the right, telling though it is "Unable to plot with current settings".
@@ -516,17 +530,16 @@ First, let's explore how scripting viewer works.
 6. Make sure the chosen values for "Data" are `HEIGHT` for `X`, `WEIGHT` for `Y`, and `AGE`
    for `Color`. After checking this you should see a nice scatter plot for `WEIGHT` and `HEIGHT`
    with the color corresponding to `AGE`:
-   ![](exercises-scripting-viewer.png)
+   ![exercises-scripting-viewer](exercises-scripting-viewer.png)
 7. In the property panel, proceed to modify the value of the "Script" field by clicking on a "..."
    icon in the text field.
-8. The Python code you see is what renders the scatter plot form p.6 on the Datagrok server. Let's walk through this
+8. The Python code you see is what renders the scatter plot form p.6 on the Datagrok server. Let's walkthrough this
    code.
-
-* The script takes as inputs the original dataframe and the three columns. Remember form p.6 there were selectors
-  for `X`, `Y`, and `Color` in the property panel. In fact, these three property names are declared with the
-  notation `<propertyName>ColumnName` in the names of the three `#input` columns.
-* The script produces an `#output` of type `graphics`. It is important the graphics appear in the end of the Python
-  script. This is exactly what happens with the `plt.show()` in the last line of the script.
+    * The script takes as inputs the original dataframe and the three columns. Remember form p.6 there were selectors
+      for `X`, `Y`, and `Color` in the property panel. In fact, these three property names are declared with the
+      notation `<propertyName>ColumnName` in the names of the three `#input` columns.
+    * The script produces an `#output` of type `graphics`. It is important the graphics appear in the end of the Python
+      script. This is exactly what happens with the `plt.show()` in the last line of the script.
 
 9. Modify the name of `colorColumnName` to a `temperatureColumnName`, hit `Apply` in the bottom of the window, and check
    what happens to the `Color` field in the property panel.
@@ -553,6 +566,7 @@ _You will learn:_ how to join and union dataframes using the knowledge of semant
    called `<yourFirstName>-sequence` Assure the package carries a relevant semantic type detector from the
    exercise ["Semantic Types"](#semantic-types).
 2. Add a function to the package as follows:
+
    ```javascript
    //name: fuzzyJoin
    //input: dataframe df1
@@ -560,30 +574,31 @@ _You will learn:_ how to join and union dataframes using the knowledge of semant
    //input: int N
    ...
    ```
+
 3. Implement a `fuzzyJoin` function which takes two dataframes `df1` and `df2`, and does the following:
+    * takes a first column in `df1` which has a semantic type of `dna_nucleotide`, let's say it is `col1`
+    * takes a first column in `df2` which has a semantic type of `dna_nucleotide`, let's say it is `col2`
+    * creates a dataframe `df` out of `df1` and `df2` in the following way:
+        * the content of `df2` goes after `df1`, and all columns of `df1` and `df2` are preserved — this is a UNION
+          operation for dataframes, as in SQL; use the
+          dataframe's [`.append`](https://public.datagrok.ai/js/samples/data-frame/append) method
+        * a new column `Counts` appears in `df`, which contains:
+            * for each row `R` from `df1`, `R.counts` is a number of matches of all the subsequences in `R.col1` of
+              length `N`in _all_ the sequences of `col2`
+            * symmetrically, same for each row from `df2` — consider this as a fuzzy, programmatic JOIN of the two
+              dataframes;
+              use[`df.columns.addNew`](https://public.datagrok.ai/js/samples/data-frame/modification/manipulate)
+              , [`col.set(i, value)`](https://public.datagrok.ai/js/samples/data-frame/advanced/data-frames-in-columns)
+              on a newly created column
+    * displays `df` with [`grok.shell.addTableView`](https://public.datagrok.ai/js/samples/data-frame/test-tables)
 
-* takes a first column in `df1` which has a semantic type of `dna_nucleotide`, let's say it is `col1`
-* takes a first column in `df2` which has a semantic type of `dna_nucleotide`, let's say it is `col2`
-* creates a dataframe `df` out of `df1` and `df2` in the following way:
-    * the content of `df2` goes after `df1`, and all columns of `df1` and `df2` are preserved — this is a UNION
-      operation for dataframes, as in SQL; use the
-      dataframe's [`.append`](https://public.datagrok.ai/js/samples/data-frame/append) method
-    * a new column `Counts` appears in `df`, which contains:
-        * for each row `R` from `df1`, `R.counts` is a number of matches of all the subsequences in `R.col1` of
-          length `N`in _all_ the sequences of `col2`
-        * symmetrically, same for each row from `df2` — consider this as a fuzzy, programmatic JOIN of the two
-          dataframes; use[`df.columns.addNew`](https://public.datagrok.ai/js/samples/data-frame/modification/manipulate)
-          , [`col.set(i, value)`](https://public.datagrok.ai/js/samples/data-frame/advanced/data-frames-in-columns) on a
-          newly created column
-* displays `df` with [`grok.shell.addTableView`](https://public.datagrok.ai/js/samples/data-frame/test-tables)
-
-6. Deploy the package with `webpack` and `grok publish dev`. Unlike with the [first excercise](), where the package was
-   built on the Datagrok server, in this one we locally build the package before sending it. In addition, Webpack output
-   helps find some syntactic errors in JavaScript.
-7. Launch the platform, open the two files from `"Demo files"`: `sars-cov-2.csv` and `a-h1n1.csv`, and run the
+4. Deploy the package with `webpack` and `grok publish dev`. Unlike with the first exercise, where the package was built
+   on the Datagrok server, in this one we locally build the package before sending it. In addition, webpack output helps
+   find some syntactic errors in JavaScript.
+5. Launch the platform, open the two files from `"Demo files"`: `sars-cov-2.csv` and `a-h1n1.csv`, and run the
    package's `fuzzyJoin` function using one of the methods you've learned. The result for N=3 should look similar to:
-   ![](exercises-transforming-dataframes.png)
-8. Read more about joining dataframes through the case reviewed at our
+   ![exercises-transforming-dataframes](exercises-transforming-dataframes.png)
+6. Read more about joining dataframes through the case reviewed at our
    [Community Forum](https://community.datagrok.ai/t/table-to-table-augmentation/493/4), and with
    [a sample](https://public.datagrok.ai/js/samples/data-frame/join-tables).
 
@@ -602,41 +617,43 @@ _Prerequisites:_ exercises ["Setting up the environment"](#setting-up-the-enviro
    screen. We need to render each nucleotide sequence with a monospace font in small letter sizing, fitting into a
    rectangular cell area and adding ellipsis to the end of the string if it won't fit. This is a basis for a very useful
    nucleotide sequence representation in bioscience applications. Let's use a 3-rd party JavaScript
-   library [`fusioncharts-smartlabel`]() to compute the text fit. Add it to your package by navigating in its folder and
+   library `fusioncharts-smartlabel` to compute the text fit. Add it to your package by navigating in its folder and
    calling:
    `npm install fusioncharts-smartlabel --save`
    The `--save` key updates `package.json` to add this library to your package dependencies.
 3. Add a class to `src/package.js` for the new cell renderer:
 
-* use `fusioncharts-smartlabel` to break the original sequence in the current cell into lines which fit into a cell's
-  canvas rectangle; learn [here][017] how to do it, consider `SmartLabel.textToLines(...).lines`
-  as a target array of lines to render
-* Datagrok [grid](../../visualize/viewers/grid.md) is rendered through an
-  [HTML5 Canvas](https://en.wikipedia.org/wiki/Canvas_element). The grid's canvas is `g.canvas`. Iterate through the
-  resulting lines and bring them to a `g.canvas` in the `render` method with `g.canvas.getContext("2d").fillText`; learn
-  more about HTML Canvas if it's new for you
-* Hint: pay attention to managing `line-height` both at computing the box and rendering text lines
-  ```javascript
-  class NucleotideBoxCellRenderer extends DG.GridCellRenderer {
-    get name() { return 'Nucleotide cell renderer'; }
-    get cellType() { return 'dna_nucleotide'; }
-    render(g, x, y, w, h, gridCell, cellStyle) {
-      let seq = gridCell.cell.value;
-      const sl = new SmartLabel('id', true);
-      sl.setStyle({/* ... */});
-      // ...
-      let ctx = g.canvas.getContext("2d");
-      ctx.font = '11px courier';
-      // ...
-      const lines = labelObj.lines;
-      for (let i = 0; i < lines.length; i++)
-        ctx.fillText(/* ... */);
-    }
-  }
-  ```
+    * use `fusioncharts-smartlabel` to break the original sequence in the current cell into lines which fit into a
+      cell's canvas rectangle; learn [here][017] how to do it, consider `SmartLabel.textToLines(...).lines`
+      as a target array of lines to render
+    * Datagrok [grid](../../visualize/viewers/grid.md) is rendered through an
+      [HTML5 Canvas](https://en.wikipedia.org/wiki/Canvas_element). The grid's canvas is `g.canvas`. Iterate through the
+      resulting lines and bring them to a `g.canvas` in the `render` method with `g.canvas.getContext("2d").fillText`;
+      learn more about HTML Canvas if it's new for you
+    * Hint: pay attention to managing `line-height` both at computing the box and rendering text lines
+
+      ```javascript
+      class NucleotideBoxCellRenderer extends DG.GridCellRenderer {
+        get name() { return 'Nucleotide cell renderer'; }
+        get cellType() { return 'dna_nucleotide'; }
+        render(g, x, y, w, h, gridCell, cellStyle) {
+          let seq = gridCell.cell.value;
+          const sl = new SmartLabel('id', true);
+          sl.setStyle({/* ... */});
+          // ...
+          let ctx = g.canvas.getContext("2d");
+          ctx.font = '11px courier';
+          // ...
+          const lines = labelObj.lines;
+          for (let i = 0; i < lines.length; i++)
+            ctx.fillText(/* ... */);
+        }
+      }
+      ```
 
 4. Add the below to `src/package.js` to make the new cell renderer part of the package:
-    ```javascript
+
+   ```javascript
     //name: nucleotideBoxCellRenderer
     //tags: cellRenderer, cellRenderer-dna_nucleotide
     //output: grid_cell_renderer result
@@ -644,10 +661,11 @@ _Prerequisites:_ exercises ["Setting up the environment"](#setting-up-the-enviro
       return new NucleotideBoxCellRenderer();
     }
     ```
+
 5. Deploy the package as usual with `grok publish dev --rebuild`. In [Datagrok](https://public.datagrok.ai), navigate to
    a file with nucleotide sequences from `"Demo files"`, such as `sars-cov-2.csv`. Verify you get the desired result, it
    should look similar to this:
-   ![](exercises-custom-cell-renderer.png)
+   ![exercises-custom-cell-renderer](exercises-custom-cell-renderer.png)
    Change the "Sequence" column width and rows heights with a mouse to see how things adujst.
 6. (*) Implement a colored nucleotide sequence box where backgrounds of `A`, `G`, `C`, `T` vary. Choose one of the
    popular coloring conventions, following [this link](https://www.biostars.org/p/171056/).
@@ -656,10 +674,10 @@ _Prerequisites:_ exercises ["Setting up the environment"](#setting-up-the-enviro
 
 _Details:_ [OpenAPI access](../../access/open-api.md)
 
-Web services often provide their API specs in an [OpenAPI (Swagger)](../../access/open-api.md) format in a JSON or a yaml
-file. Because OpenAPI spec file is standardized, the API may now be directly loaded and later queried. Datagrok provides
-for connecting to API data sources and fetching API querying results as dataframes. In this lesson we will connect to
-the [European Nucleotide Archive (ENA)](https://www.ebi.ac.uk/ena/) and fetch some nucleotide data regarding
+Web services often provide their API specs in an [OpenAPI (Swagger)](../../access/open-api.md) format in a JSON or a
+yaml file. Because OpenAPI spec file is standardized, the API may now be directly loaded and later queried. Datagrok
+provides for connecting to API data sources and fetching API querying results as dataframes. In this lesson we will
+connect to the [European Nucleotide Archive (ENA)](https://www.ebi.ac.uk/ena/) and fetch some nucleotide data regarding
 coronavirus.
 
 1. Obtain a ENA's Swagger JSON file for the [ENA Browser](https://www.ebi.ac.uk/ena/browser),
@@ -670,19 +688,20 @@ coronavirus.
    understand the API through its [Swagger API tester][019]. Follow recommendations [here][020]. In particular, modify
    the connection's `Name` to `ENA`, `Url` to
    `https://www.ebi.ac.uk/ena/browser/api/`. Save this file to a desktop with a name, say, `ENA.json`.
-3. Load the Swagger into Datarok by drag-and-dropping it into the platform window.
-5. Check the connection is valid with the `Test` button, and hit `Ok` to save the edit.
-6. In the expanded view of the `ENA` connection, locate `Perform a text search and download data in XML format`
+2. Load the Swagger into Datarok by drag-and-dropping it into the platform window.
+3. Check the connection is valid with the `Test` button, and hit `Ok` to save the edit.
+4. In the expanded view of the `ENA` connection, locate `Perform a text search and download data in XML format`
    and hit `Run` or double-click it.
-7. Enter the parameter values: set `Query` to `coronavirus`, `Result` to `assembly`. Hit `Ok`. As a result, you'd find a
+5. Enter the parameter values: set `Query` to `coronavirus`, `Result` to `assembly`. Hit `Ok`. As a result, you'd find a
    table, which was prepared from the received XML file by Datagrok.
-8. Close the table, locate the saved query in the list and run it.
-9. Bring the connection to the package:
+6. Close the table, locate the saved query in the list and run it.
+7. Bring the connection to the package:
 
 * Put the Swagger file in a `swaggers` folder of the package. Make sure the swagger contains the correct `basePath`
   and `host`, in some Swaggers it isn't always the case.
 * Add the following function to `package.js`:
-  ```
+
+   ```
   //name: testENASwagger
   export async function testENASwagger() {
     let data = await grok.data.query('<yourFirstName>sequence:PerformATextSearchAndDownloadDataInXMLFormat',
@@ -690,6 +709,7 @@ coronavirus.
     grok.shell.addTableView(data);
   }
   ```
+
 * Note how the Swagger's query name translates into a package query name.
 * You can obtain this query name with the Datagrok UI. Click on the query of interest,
   `"Perform a text search and download data in XML format"` in our case, and find a `Links...`
@@ -716,8 +736,8 @@ contained in a currently selected grid cell.
    }
    ```
 
-2. Use [`fetchProxy`](../how-to/access-data.md#rest-endpoints) to get a sequence for the potential corresponding
-   ENA ID in fasta format. For example, this GET fetches the sequence for the `ID=AA046425`:
+2. Use [`fetchProxy`](../how-to/access-data.md#rest-endpoints) to get a sequence for the potential corresponding ENA ID
+   in fasta format. For example, this GET fetches the sequence for the `ID=AA046425`:
    [`https://www.ebi.ac.uk/ena/browser/api/fasta/AA046425`](https://www.ebi.ac.uk/ena/browser/api/fasta/AA046425)
    Use the following structure for the into panel function in your `src/package.js`:
 
@@ -765,26 +785,28 @@ be `coronavirus`, `influenza` etc.
    result we want is always of type `sequence`. Create a function `_fetchENASequence` which takes as parameters
    a `query` ad a `limit` and returns a dataframe with two string columns `ID` and `Sequence`. Use this structure for
    dataframe construction:
-    ```javascript
+
+   ```javascript
     df = DG.DataFrame.fromColumns([
       DG.Column.fromList(DG.COLUMN_TYPE.STRING, 'ID', [ /* a list of IDs you've parsed from a ENA output */ ]),
       DG.Column.fromList(DG.COLUMN_TYPE.STRING, 'Sequence', [ /* corresponding list of sequences */ ])
     ]);
     ```
+
    The output from `ebi.ac.uk` is a raw text, and you need to parse it to get the desired pieces. Trim the sequence so
    that isn't longer than 60 characters. Use your previous knowledge about [`fetchProxy`][022] to do the `GET` query.
 
 2. Make a function `formENADataTable` which constructs a dialog giving the user a two-step process for constructing a
    dataframe with ENA sequence data in it.
 
-* First, the user can type in the query (`coronavirus` is the default setting) and see the first 10 results in the grid
-  right in this window after clicking the "Search" button. Consider this as a preview before the actual dataframe is
-  produced.
-* Second, when the user is happy with what's in the preview, he/she proceeds to the "Ok" button to get the actual
-  dataframe with the ENA data on the screen in the Datagrok's grid view. This table shall consist of the number of rows
-  the user chooses (`100` set as a default).
+    * First, the user can type in the query (`coronavirus` is the default setting) and see the first 10 results in the
+      grid right in this window after clicking the "Search" button. Consider this as a preview before the actual
+      dataframe is produced.
+    * Second, when the user is happy with what's in the preview, he/she proceeds to the "Ok" button to get the actual
+      dataframe with the ENA data on the screen in the Datagrok's grid view. This table shall consist of the number of
+      rows the user chooses (`100` set as a default).
 
-Here is the code scaffold for the `formENADataTable` function:
+   Here is the code scaffold for the `formENADataTable` function:
 
     ```javascript
     let grid = DG.Viewer.grid(df);
@@ -808,7 +830,7 @@ Here is the code scaffold for the `formENADataTable` function:
       .show();
     ```
 
-Re-use twice the `_fetchENASequence` function you've prepared previously.
+   Re-use twice the `_fetchENASequence` function you've prepared previously.
 
 3. In this first version we fetched `60` characters for a sequence. Add a new text field called `Sequece length`
    to let the user specify this trim length, set it `60` as a default.

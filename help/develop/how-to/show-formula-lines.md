@@ -15,7 +15,8 @@ it connects to the dataframe.
 You can create and modify information about lines and bands by changing the `.formula-lines`
 dataframe tag or by changing the `formulaLines` property of the viewer. The content of these storages is a JSON string.
 
-There is a more convenient ways to create and modify lines. The examples use a viewer, but the dataframe has all the same methods:
+There is a more convenient ways to create and modify lines. The examples use a viewer, but the dataframe has all the
+same methods:
 
 - `viewer.meta.formulaLines.addLine(itemParams)` - creates item with type line
 - `viewer.meta.formulaLines.addBand(itemParams)` - creates item with type band
@@ -89,8 +90,9 @@ plot.meta.formulaLines.addLine({
 ```
 
 A similar methods is used to create bands - `dataframe.meta.formulaLines.addBand()`
-or `viewer.meta.formulaLines.addBand()`. Most of the parameters for lines and bands are the same. But there are also some
-parameters that are specific for lines and bands. See them in the description of the parameters for lines and bands.
+or `viewer.meta.formulaLines.addBand()`. Most of the parameters for lines and bands are the same. But there are also
+some parameters that are specific for lines and bands. See them in the description of the parameters for lines and
+bands.
 
 More examples of creating lines and bands can be
 found [here](https://public.datagrok.ai/js/samples/data-frame/metadata/formula-lines).

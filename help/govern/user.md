@@ -11,7 +11,7 @@ Within the users view, you can use these fields to filter users with [smart sear
 
 | Field       | Description                                            |
 |-------------|--------------------------------------------------------|
-| id          |                                                        |
+| ID          |                                                        |
 | name        |                                                        |
 | login       |                                                        |
 | email       |                                                        |

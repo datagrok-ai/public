@@ -25,7 +25,7 @@ You can use these fields to filter tables with [smart search](smart-search.md):
 
 | Field       | Description                      |
 |-------------|----------------------------------|
-| id          |                                  |
+| ID          |                                  |
 | name        |                                  |
 | rowCount    |                                  |
 | colCount    |                                  |

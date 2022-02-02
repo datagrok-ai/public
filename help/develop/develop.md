@@ -43,16 +43,15 @@ A simplest JavaScript package consists of the following files:
 | [detectors.js](#detectors.js)           | detectors file        |
 | [webpack.config.js](#webpack.config.js) | webpack configuration |
 | README.md                               | package summary       |
-| package.png                             | package icon          |
+| package.PNG                             | package icon          |
 
 In addition to that, it might contain the following folders:
 
 * `environments`: [environment configurations](../compute/scripting.md#environments)
-  for [scripts](../compute/scripting.md).
-  Examples: [DemoScripts](https://github.com/datagrok-ai/public/tree/master/packages/DemoScripts)
+  for [scripts](../compute/scripting.md). Examples: [DemoScripts]
 * `scripts`: a collection of [scripts](../compute/scripting.md) used for computations.
   Examples: [Chem](https://github.com/datagrok-ai/public/tree/master/packages/Chem)
-  , [DemoScripts](https://github.com/datagrok-ai/public/tree/master/packages/DemoScripts)
+  , [DemoScripts]
   , [Impute](https://github.com/datagrok-ai/public/tree/master/packages/Impute)
 * `swaggers`: REST APIs in [Swagger/OpenAPI](../access/open-api.md) format.
   Examples: [EnamineStore](https://github.com/datagrok-ai/public/tree/master/packages/EnamineStore)
@@ -117,7 +116,7 @@ export function test() {
 ```
 
 Note that `Datagrok API` modules are already imported. They are also set as external modules, so that `Webpack` will not
-include them to the output. You can include other libraries or packages, as all of them will be built in a single bundle
+include them to the output. You can include other libraries or packages, as all of them will be built-in a single bundle
 file. If you choose to include other files, such as CSS, in your package, import them into `package.js` as well.
 
 During the [publishing step](#publishing), the contents of `package.js` get parsed, and functions with the properly
@@ -216,7 +215,7 @@ consider:
   postfixing your classes with `View` and `Viewer` respectively
 * The names of semantic type detectors typically start with the `detect` prefix, e.g., `detectNucleotides`
   or `detectRDSmiles`
-* File names can be written in lower case, with dashes between words: `tika-extractor.py`
+* Filenames can be written in lower case, with dashes between words: `tika-extractor.py`
   and `chord-viewer.js`
 
 ## Development
@@ -322,7 +321,7 @@ To publish a package from the repository, you need to open `Manage | Packages | 
 first. Once the window appears, choose `Git` as the source type, enter the URL to your repository, and specify the
 package directory relative to its root. Click on `LOAD PACKAGE METADATA` to get the package name and description.
 
-![](img/git-publishing.png)
+![Git Publish](img/git-publishing.png)
 
 If necessary, you can specify additional settings and then publish the package.
 
@@ -332,7 +331,7 @@ If necessary, you can specify additional settings and then publish the package.
 a package on the server side, in which case, you need to specify `--rebuild`
 option in scripts from `package.json`. The script `"build": "webpack"` is reserved for server build.
 
-Alternatively, it's possible to build your package on the client side using `Webpack`. To do that, run the
+Alternatively, it's possible to build your package on the client-side using `Webpack`. To do that, run the
 script `"build": "webpack"` before publishing.
 
 Package publication is compatible with automation tools. You can pass your server URL and developer key explicitly
@@ -600,3 +599,5 @@ See also:
 * [Scripting](../compute/scripting.md)
 * [Packages from our GitHub repository](https://github.com/datagrok-ai/public/tree/master/packages)
 * [How Developers Use API Documentation: An Observation Study](http://sigdoc.acm.org/wp-content/uploads/2019/01/CDQ18002_Meng_Steinhardt_Schubert.pdf)
+
+[DemoScripts]: https://github.com/datagrok-ai/public/blob/master/packages/Demo/projects/scripts/

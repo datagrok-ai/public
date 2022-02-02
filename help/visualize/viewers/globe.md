@@ -26,7 +26,7 @@ Properties:
 | Magnitude      | Selects the magnitude column (determines the beam height)|
 | Color By       | Selects a column for color-coding                        |
 
-![](../../uploads/gifs/globe.gif)
+![globe](../../uploads/gifs/globe.gif)
 
 See also:
 

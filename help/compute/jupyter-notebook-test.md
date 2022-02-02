@@ -88,7 +88,7 @@ equations, visualizations and narrative text.
 1. Click on "Created by me" filter on [Toolbox](../overview/navigation.md#toolbox)
 
 * Only notebooks created by current user are displayed in browser
-* Search field filled with pre-defined query *author = @current*
+* Search field filled with predefined query *author = @current*
 
 1. Test other filters
 

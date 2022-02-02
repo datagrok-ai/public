@@ -61,7 +61,7 @@ Pre-requisites: an admin has to have the privilege to add new users.
 1. Enter valid Email and then click ```OK```
 
 * New user setup page is open
-* Since, "Login" field was not filled, login corresponds to first part of e-mail
+* Since, "Login" field was not filled, login corresponds to first part of email
 
 1. Click on "groups". Select group to add new user to it. (there must be corresponding global privileges)
 

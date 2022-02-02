@@ -45,10 +45,10 @@ in [groups](../govern/group.md), start chat with other members, view [group](../
 
 1. Switch role back to "Admin"
 
-1. Start typing user name in search field
+1. Start typing username in search field
 
 * Drop-down list shows the users found
-* If found user is not in [group](group.md), you can add it (next to user name will be button ```+``` )
+* If found user is not in [group](group.md), you can add it (next to username will be button ```+``` )
 * If found user is already a [group](group.md) member you can change its role or delete it from [group](group.md)
 
 1. Start typing name of another [group](group.md) in search field
@@ -62,13 +62,13 @@ in [groups](../govern/group.md), start chat with other members, view [group](../
 
 1. Change your role to "user", and roles of other members to "admin"
 
-1. Click on delete user icon next to user name ( ```X``` ) of another user in "Edit members" dialog, then
+1. Click on delete user icon next to username ( ```X``` ) of another user in "Edit members" dialog, then
    click ```SAVE``` button
 
 * User was not deleted
 * Warning massage "Insufficient privileges"
 
-1. Click on delete user icon next to self user name ( ```X``` ) in "Edit members" dialog, then click ```SAVE``` button
+1. Click on delete user icon next to self username ( ```X``` ) in "Edit members" dialog, then click ```SAVE``` button
 
 * You left the group "test"
 

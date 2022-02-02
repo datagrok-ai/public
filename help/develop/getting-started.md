@@ -27,7 +27,7 @@ Here are a few examples of the said packages and plugins:
 
 ## 3. Tooling for local development
 
-Datagrok comes with the `datagrok-tools` NPM package to help you scaffold a package, an application, or a project on
+Datagrok comes with the `datagrok-tools` npm package to help you scaffold a package, an application, or a project on
 your local environment. You will also use `datagrok-tools` to build and publish your code. For more information, check
 out the [datagrok-tools README].
 
@@ -54,10 +54,10 @@ Check out the following spaces and documents for more information about Datagrok
    To join a meeting, go to the [Community Forum] and ask for a Zoom link.
 2. [Release notes]
 3. [Architecture]
-5. [Extending and customizing Datagrok]
-6. [Building an application]
-7. [Building a UI]
-8. [Performance]
+4. [Extending and customizing Datagrok]
+5. [Building an application]
+6. [Building a UI]
+7. [Performance]
 
 ## 6. Videos
 
@@ -120,7 +120,7 @@ extensions.
 
 [Natural Language Processing]: https://github.com/datagrok-ai/public/tree/master/packages/NLP
 
-[Cell renderers]:https://github.com/datagrok-ai/public/blob/master/packages/Chem/src/rdkit-cell-renderer.ts
+[Cell renderers]:https://github.com/datagrok-ai/public/blob/master/packages/Chem/src/rdkit-api.ts
 
 [viewers]: https://github.com/datagrok-ai/public/tree/master/packages/Viewers
 

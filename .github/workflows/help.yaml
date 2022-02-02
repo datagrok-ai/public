@@ -12,20 +12,27 @@ jobs:
     steps:
       - name: Checkout
         uses: actions/checkout@v2
-      - name: Create entrypoint for markdownlint
-        working-directory: ./help
-        run: |
-          echo '#!/bin/bash' > entrypoint.sh;
-          echo 'set -ex' >> entrypoint.sh;
-          for f in $(find . -type f -name '*.md' -not -name 'release-history.md' -printf '%P '); do
-            echo "mdl --style /github/workspace/markdownlint.rb /github/workspace/help/${f}" >> entrypoint.sh;
-          done;
-          cat entrypoint.sh
-      - name: Lint
-        uses: docker://markdownlint/markdownlint:latest
         with:
-          entrypoint: /bin/bash
-          args: /github/workspace/help/entrypoint.sh
+          # Full git history is needed to get a proper list of changed files within `super-linter`
+          fetch-depth: 0
+      - name: Lint Code Base
+        uses: github/super-linter/slim@v4
+        env:
+          MARKDOWN_CONFIG_FILE: .markdownlint.yaml
+          JSCPD_CONFIG_FILE: .jscpd.json
+          NATURAL_LANGUAGE_CONFIG_FILE: .textlintrc
+          VALIDATE_ALL_CODEBASE: true
+          VALIDATE_MARKDOWN: true
+          VALIDATE_NATURAL_LANGUAGE: true
+          VALIDATE_HTML: true
+          FILTER_REGEX_INCLUDE: $GITHUB_WORKSPACE/help/.*
+          USE_FIND_ALGORITHM: true
+          ERROR_ON_MISSING_EXEC_BIT: true
+          IGNORE_GITIGNORED_FILES: true
+          DEFAULT_BRANCH: master
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          DISABLE_ERRORS: false
+
   link_check:
     name: Check links in help files
     runs-on: ubuntu-20.04
@@ -38,7 +45,7 @@ jobs:
           use-quiet-mode: 'yes'
           use-verbose-mode: 'yes'
           folder-path: 'help/'
-          config-file: 'help/_internal/mlc_config.json'
+          config-file: '.github/linters/mlc_config.json'
 
   convert:
     name: Convert help files to HTML pages
@@ -67,10 +74,11 @@ jobs:
         working-directory: ./help
         run: |
           echo '#!/bin/sh' > entrypoint.sh;
-          for f in $(find . -type f -name '*.md' -not -path "*/_*" -not -name '*-test.md' -printf '%P '); do
-            mkdir -p output/help/$(dirname ${f});
-            echo "cd /github/workspace/help/output/help/$(dirname ${f})" >> entrypoint.sh;
-            echo "pandoc -f gfm -t html --extract-media=. --resource-path=.:/github/workspace/help/$(dirname ${f}) --lua-filter=/github/workspace/links-to-html.lua --lua-filter=/github/workspace/table-id.lua --output=/github/workspace/help/output/help/${f/.md/.html} \"/github/workspace/help/${f}\"" >> entrypoint.sh;
+          files="$(find . -type f -name '*.md' -not -path "*/_*" -not -name '*-test.md' -printf '%P ')"
+          for f in $files; do
+            mkdir -p "output/help/$(dirname "${f}")";
+            echo "cd /github/workspace/help/output/help/$(dirname "${f}")" >> entrypoint.sh;
+            echo "pandoc -f gfm -t html --extract-media=. --resource-path=.:/github/workspace/help/$(dirname "${f}") --lua-filter=/github/workspace/links-to-html.lua --lua-filter=/github/workspace/table-id.lua --output=/github/workspace/help/output/help/${f/.md/.html} \"/github/workspace/help/${f}\"" >> entrypoint.sh;
           done;
       - name: Convert Mardown to HTML
         uses: docker://pandoc/core:latest
@@ -81,7 +89,7 @@ jobs:
         working-directory: ./help
         run: |
           for f in output/help/**/*.html; do
-            sed -i -e '0,/<p>/s//<p class="d4-help-info">/' $f;
+            sed -i -e '0,/<p>/s//<p class="d4-help-info">/' "$f";
           done;
 
       - name: Set up Dart SDK
@@ -145,7 +153,7 @@ jobs:
             --itemize-changes \
             --stats \
             --human-readable \
-            "help/" $REMOTE_USER@$REMOTE_HOST:$TARGET
+            "help/" "$REMOTE_USER@$REMOTE_HOST:$TARGET"
         env:
           SSH_PRIVATE_KEY: ${{ secrets.HELP_SSH_KEY }}
           SSH_KNOWN_HOSTS: ${{ secrets.HELP_KNOWN_HOST }}
