@@ -126,7 +126,7 @@ Datagrok supports the following descriptor sets: Lipinski, Crippen, EState, ESta
 See [molecular descriptors](descriptors.md) for more details and a demo about descriptors.
 
 Datagrok supports the following fingerprints: RDKFingerprint, MACCSKeys, AtomPair, TopologicalTorsion, Morgan/Circular.
-See [molecular fingerpints](fingerpints.md) for more details and a demo about fingerprints.
+See [molecular fingerprints](fingerprints.md) for more details and a demo about fingerprints.
 
 ## Descriptor based tools
 
