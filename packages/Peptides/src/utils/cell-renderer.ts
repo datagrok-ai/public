@@ -402,33 +402,19 @@ export function processSequence(subParts: string[]): [string[], boolean] {
     x = Math.max(x, x + (w - textSize.width) / 2);
 
     subParts1.forEach((amino1: string, index) => {
-      let color1, color2, pivot1, pivot2, pivot;
-      let amino1Outer, amino1Inner, amino2Outer, amino2Inner;
+      let pivot;
       let amino2 = subParts2[index];
-
-      [color1, amino1Outer, amino1Inner, pivot1] = cp.getColorAAPivot(amino1);
-      [color2, amino2Outer, amino2Inner, pivot2] = cp.getColorAAPivot(amino2);
+      let [color1, amino1Outer, amino1Inner, pivot1] = cp.getColorAAPivot(amino1);
+      let [color2, amino2Outer, amino2Inner, pivot2] = cp.getColorAAPivot(amino2);
       
       if (amino1 != amino2) {
         const verticalShift = 7;
 
-        if (amino1Inner !== '') 
-          amino1 = amino1Outer + '(' + amino1Inner + ')';
-        else 
-          amino1 = amino1Outer;
-        if (amino2Inner !== '') 
-          amino2 = amino2Outer + '(' + amino2Inner + ')';
-        else
-          amino2 = amino2Outer;
-
-        if (amino1 == '') {
-          amino1 = '-'; 
-          pivot = pivot1;
-        }
-        if (amino2 == '') { 
-          amino2 = '-';
-          pivot = pivot2;
-        }
+        amino1 = amino1Outer + (amino1Inner !== '' ? '(' + amino1Inner + ')' : '');
+        amino2 = amino2Outer + (amino2Inner !== '' ? '(' + amino2Inner + ')' : '');
+        amino1 = amino1 === '' ? '-' : amino1;
+        amino2 = amino2 === '' ? '-' : amino2;
+        pivot = (amino1 == '-') ? pivot2 : pivot1;
 
         const x1 = printLeftOrCentered(x, y - verticalShift, w, h, g, amino1, color1, pivot, true);
         x = printLeftOrCentered(x, y + verticalShift, w, h, g, amino2, color2, pivot, true);
