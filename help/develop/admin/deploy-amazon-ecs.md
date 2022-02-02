@@ -1,7 +1,7 @@
 <!-- TITLE: Deployment on AWS ECS using Docker Compose -->
 <!-- SUBTITLE: -->
 
-# Deployment on AWS ECS Cluster using Docker Compose
+# Deployment on AWS ECS using Docker Compose
 
 Datagrok consist of Docker containers, [database](infrastructure.md#database)
 and [persistent file storage](infrastructure.md#storage).
