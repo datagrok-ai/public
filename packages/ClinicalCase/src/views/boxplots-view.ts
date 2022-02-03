@@ -76,19 +76,20 @@ export class BoxPlotsView extends ClinicalCaseViewBase {
       this.uniqueValues[it] = Array.from(getUniqueValues(study.domains[it], this.domainFields[it]['test']));
     });
 
-    let minLabVisit = this.distrDataframe.getCol(VISIT_DAY).stats[ 'min' ];
+    /* let minLabVisit = this.distrDataframe.getCol(VISIT_DAY).stats[ 'min' ];
     let minVisitName = this.distrDataframe
       .groupBy([ VISIT_DAY, VISIT_NAME ])
       .where(`${VISIT_DAY} = ${minLabVisit}`)
       .aggregate()
       .get(VISIT_NAME, 0);
-    this.bl = minVisitName;
+    this.bl = minVisitName; */
 
     this.uniqueVisits = Array.from(getUniqueValues(this.distrDataframe, VISIT_NAME));
+    this.bl = this.uniqueVisits[0];
     this.distrWithDmData = addDataFromDmDomain(this.distrDataframe, study.domains.dm, [ SUBJECT_ID, VISIT_DAY, VISIT_NAME, 'test', 'res' ], this.splitBy);
     this.distrWithDmData = this.distrWithDmData
       .groupBy(this.distrWithDmData.columns.names())
-      .where(`${VISIT_DAY} = ${minLabVisit}`)
+      .where(`${VISIT_NAME} = ${this.bl}`)
       .aggregate();
     this.getTopPValues(4);
 

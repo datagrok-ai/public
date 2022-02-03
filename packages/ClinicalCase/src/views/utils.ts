@@ -76,7 +76,7 @@ export function checkMissingColumns(obj: any, reqDomains: string[], requiredDoma
   return noMissingCols;
 }
 
-function createMissingDataDiv(div: HTMLDivElement, missingDomainsOrCols: string[], header: string){
+export function createMissingDataDiv(div: HTMLDivElement, missingDomainsOrCols: string[], header: string){
   let domainsDiv = ui.div();
   missingDomainsOrCols.forEach(it => {domainsDiv.append(ui.divText(it))})
   div.append(ui.div([
