@@ -86,3 +86,17 @@ export async function runKalign(col: DG.Column, isAligned = false) : Promise<DG.
   alignedCol.semType = SEMTYPE.ALIGNED;
   return alignedCol;
 }
+
+export async function testMSAEnoughMemory(col: DG.Column) {
+  const sequencesCount = col.length;
+  const delta = sequencesCount/10;
+
+  for (let i = delta; i < sequencesCount; i += delta) {
+    try {
+      await runKalign(DG.Column.fromStrings(col.name, col.toList().slice(0, Math.round(i))));
+      console.log(`runKalign succeeded on ${i}`);
+    } catch (error) {
+      console.log(`runKalign failed on ${i} with '${error}'`);
+    }
+  }
+}
