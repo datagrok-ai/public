@@ -78,4 +78,4 @@ some component, and our load balancer will take care of dispatching computations
 
 * [Enterprise evaluation FAQ](enterprise-evaluation-faq.md)
 * [Infrastructure](infrastructure.md) with detailed description of every component
-* [Deployment](_deploy.md) instruction to install and try Datagrok
+* [Deployment](deploy.md) instruction to install and try Datagrok

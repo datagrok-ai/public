@@ -60,27 +60,27 @@ to prepare our simple package and deploy it.
 
 1. Install the [prerequisites](../develop.md#development):
 
-* A regular [Node.js](https://nodejs.org/en/download/)
-  and [npm](https://docs.npmjs.com/about-npm) (comes with Node.js)
-* `npm install webpack -g` (`-g` will make `webpack` globally available, that's convenient for further development)
-* `npm install webpack-cli -g`
-* `npm install datagrok-tools -g`
+    * A regular [Node.js](https://nodejs.org/en/download/)
+      and [npm](https://docs.npmjs.com/about-npm) (comes with Node.js)
+    * `npm install webpack -g` (`-g` will make `webpack` globally available, that's convenient for further development)
+    * `npm install webpack-cli -g`
+    * `npm install datagrok-tools -g`
 
 2. [Create a new package](../develop.md#packages):
 
-* Make a new folder for the package
-* In this folder, call `grok create <PACKAGE_NAME> --ide=vscode`
-* The `--ide` key will create a setup
-  for [debugging the package with VS Code](../develop.md#one-click-debugging-with-visual-studio-code) (
-  currently only works on Windows)
-* If you run this for the first time, you'd be prompted to enter your developer keys for our Datagrok instances. Find
-  this key in your user profile section in the Datagrok UI,
-  e.g. [https://public.datagrok.ai/u](https://public.datagrok.ai/u)
+    * Make a new folder for the package
+    * In this folder, call `grok create <PACKAGE_NAME> --ide=vscode`
+    * The `--ide` key will create a setup
+      for [debugging the package with VS Code](../develop.md#one-click-debugging-with-visual-studio-code) (
+      currently only works on Windows)
+    * If you run this for the first time, you'd be prompted to enter your developer keys for our Datagrok instances.
+      Find this key in your user profile section in the Datagrok UI,
+      e.g. [https://public.datagrok.ai/u](https://public.datagrok.ai/u)
 
 3. Add an app to the package by `grok add app <APP_NAME>`, or just copy-paste the above JS snippet into `src/package.js`
 
 After deploying this package to `https://public.datagrok.ai`, you'd find the `Test App` app via `Functions | Apps`
-in the Datagrok's [sidebar](). Run the app and notice the tooltip. You may also call this entry point by a
+in the Datagrok's sidebar. Run the app and notice the tooltip. You may also call this entry point by a
 URL: `https://public.datagrok.ai/apps/TestApp`. Note that in case there is only one application `<APP>` defined in the
 package, the corresponding URL is simply `https://public.datagrok.ai/apps/<APP>`, but has the form of
 `https://public.datagrok.ai/apps/<PACKAGE_NAME>/<APP_NAME>` for 2 and more apps in one package.
@@ -115,13 +115,13 @@ shows how to add a [viewer](#visualizations) to a view.
 ## Working with intellisense
 
 We recommend restoring the package dependencies before starting development with an IDE. After the package is created,
-simply invoke `npm install` inside the package folder. This will bring NPM modules with the Datagrok API.
+simply invoke `npm install` inside the package folder. This will bring npm modules with the Datagrok API.
 
 An alternative way to IntelliSense capability for Datagrok classes is by cloning the
-entire [public repo](https://github.com/datagrok-ai/public) and opening its whole folder in the IDE. This is suitable
-when you develop a package which is a [part](https://github.com/datagrok-ai/public/tree/master/packages) of our public
-repo. The folder `js-api` in the root of the public repo is a source of our JS API, that's how IDE discovers needed
-IntelliSense information.
+entire [public repository](https://github.com/datagrok-ai/public) and opening its whole folder in the IDE. This is
+suitable when you develop a package which is a [part](https://github.com/datagrok-ai/public/tree/master/packages) of our
+public repository. The folder `js-api` in the root of the public repository is a source of our JS API, that's how IDE
+discovers needed IntelliSense information.
 
 # Application development
 
@@ -143,10 +143,12 @@ the further details.
 
 We provide a diverse set of code snippets of the API use, and sample packages with viewers, applications, and so forth.
 
-* For short samples of using API, go to https://public.datagrok.ai/js and observe a "Samples" block, or alternatively —
-  access it via the "Help" button at the bottom of the Datagrok's sidebar, and then follow to `JavaScript API Samples`
+* For short samples of using API, go to [https://public.datagrok.ai/js](https://public.datagrok.ai/js) and observe a "
+  Samples" block, or alternatively — access it via the "Help" button at the bottom of the Datagrok's sidebar, and then
+  follow to `JavaScript API Samples`
 
-* The sources of these snippets are all located at https://github.com/datagrok-ai/public/tree/master/packages/ApiSamples
+* The sources of these snippets are all located
+  at [GitHub](https://github.com/datagrok-ai/public/tree/master/packages/ApiSamples)
 
 * Check all our demo codes at `https://github.com/datagrok-ai/public/tree/master/packages`. For instance, you may find
   there a package [Viewers](https://github.com/datagrok-ai/public/tree/master/packages/Viewers) which showcases a
@@ -156,8 +158,7 @@ We provide a diverse set of code snippets of the API use, and sample packages wi
 
 As some experience was shared to us, the samples above became a major source of knowledge for newcomers' daily work with
 the platform. We recommend you to use these locations in resolving your daily technical questions, in addition to
-posting questions and suggestions on our [Community Forum](https://community.datagrok.ai/)
-at https://community.datagrok.ai/.
+posting questions and suggestions on our [Community Forum](https://community.datagrok.ai/).
 
 ## Data access
 
@@ -173,7 +174,7 @@ Connections to databases, respective database queries, and file shares connectio
 as [entities](../../overview/objects.md). These may be published to only you, the package author, or to any specific
 user group. Main code works for accessing databases are concentrated around `grok.data.query`
 method ([a sample](https://public.datagrok.ai/js/samples/data-access/parameterized-query)), whereas accessing files from
-file shares and servers is made by `grok.functions.eval('OpenServerFile("...")')` ([a sample]()).
+file shares and servers is made by `grok.functions.eval('OpenServerFile("...")')`.
 
 When it comes to connections, we encourage you not to store their credentials directly inside your application packages.
 The chapter ["Managing privileges"](#managing-privileges) discusses credentials management in detail.
@@ -191,7 +192,7 @@ of Swagger-based connections are further explained in the
 It's common for JavaScript applications to query external REST endpoints. Due to
 [CORS](https://en.wikipedia.org/wiki/Cross-origin_resource_sharing), the Web application won't be allowed to GET/POST
 with resources on different hosts. To overcome this, you don't need to move data querying to the backend server
-yourself. Datagrok provides for a proxy server to work with such REST end-points. The method `fetchProxy` has an
+yourself. Datagrok provides for a proxy server to work with such REST endpoints. The method `fetchProxy` has an
 interface similar to the standard `fetch` API and is described
 [here](access-data.md#rest-endpoints)
 in detail.
@@ -274,8 +275,8 @@ as part of the package deployment process.
 ### Creating and working with dataframes
 
 Dataframes are at the heart of Datagrok. Dataframe is a high-performance, easy to use tabular structure with
-strongly-typed columns of different types. Supported types are: string, int, float, bool, DateTime, bigint and
-[qualified numbers]().
+strongly-typed columns of different types. Supported types are: string, int, float, bool, DateTime, bigint and qualified
+numbers.
 
 Datagrok dataframes are highly optimized. They are implemented with the proprietary, unique technology allowing to
 efficiently work with huge datasets in the browser. Essentially, it is a columnar in-memory database that was engineered
@@ -283,8 +284,7 @@ from scratch and optimized for the purpose of exploratory data analysis, interac
 learning.
 
 Note that Datagrok dataframes live and operate entirely inside the browser, but not on
-our [Compute VM](../admin/infrastructure.md#compute-components). However, it's possible to pass dataframes to
-scripts (
+our [Compute VM](../admin/infrastructure.md#compute-components). However, it's possible to pass dataframes to scripts (
 in Python, R and others) which run on the server, and [get dataframes in return](#computations).
 
 You get dataframes within your application in various ways. Dataframe may be a table rendered by a table view, a new
@@ -293,8 +293,8 @@ browser, a dataframe returned by a script, and so forth. You can add and delete 
 it in a table view and let viewer be attached to it to render. Dataframes can also be calculated on the flight for
 aggregations.
 
-Dataframes are comprised of [columns](). Columns may be used as Datagrok functions arguments. For columns, it's possible
-to get its underlying dataframe. In return, columns are comprised of cells, and it's possible to get a cell's underlying
+Dataframes are comprised of columns. Columns may be used as Datagrok functions arguments. For columns, it's possible to
+get its underlying dataframe. In return, columns are comprised of cells, and it's possible to get a cell's underlying
 column. There is also a diverse [system of events](https://datagrok.ai/js-api/classes/dg.dataframe) one can subscribe on
 a dataframe.
 
@@ -356,12 +356,12 @@ tags and semantic types are of particular interest in application development an
 #### Column tags
 
 Each column in a Datagrok dataframe has a `.tags` property, which is a JS `Map` you can read and write to. You could use
-these `.tags` for any package-specific activity needed. For example, if you have a pair of columns
-containing [smiles strings]() of molecules, and one column serves as a scaffold to which the other column should be
-aligned to, it is sensible to put a `scaffold-col` tag on a column being aligned, referencing a column with the
-scaffold. The Datagrok's [custom cell renderer]() would make use of this tag.
+these `.tags` for any package-specific activity needed. For example, if you have a pair of columns containing smiles
+strings of molecules, and one column serves as a scaffold to which the other column should be aligned to, it is sensible
+to put a `scaffold-col` tag on a column being aligned, referencing a column with the scaffold. The Datagrok's custom
+cell renderer would make use of this tag.
 
-It's possible to [add and remove tags]() from the Datagrok UI. To edit column's metadata, right-click on it and select "
+It's possible to add and remove tags from the Datagrok UI. To edit column's metadata, right-click on it and select "
 Properties..." (or press F2 in the grid).
 
 *References:*
@@ -374,13 +374,13 @@ Unlike in Excel, table columns in Datagrok are strongly-typed. In addition to th
 type associated with it. Semantic type identifies the meaning of the data. For instance, a column could be of the data
 type "string", but the semantic type would be "country".
 
-Semantic types are used in several ways. For example, OpenChemLib or RDKit [are used]()
-for rendering string columns of a semantic type `'Molecule'`. Some viewers, such as [Map](), use the semantic type to
-determine whether a viewer can be visualized against specific datasets. Function parameters [could be annotated]() with
-the semantic type. This is used for automatic suggestions of applicable functions.
+Semantic types are used in several ways. For example, OpenChemLib or RDKit are used for rendering string columns of a
+semantic type `'Molecule'`. Some viewers, such as Map, use the semantic type to determine whether a viewer can be
+visualized against specific datasets. Function parameters could be annotated with the semantic type. This is used for
+automatic suggestions of applicable functions.
 
 Semantic type is a special kind of a [column tag](../../discover/tags.md#quality). It could be either detected
-automatically by column [semantic type detectors](), or set manually in the JavaScript code with `.semType` property.
+automatically by column semantic type detectors, or set manually in the JavaScript code with `.semType` property.
 
 *References:*
 
@@ -457,7 +457,7 @@ Datagrok UI.
 
 ### Scripting
 
-Beside application logic enabled on the client side (in the browser) with the Datagrok JavaScript API, Datagrok provides
+Beside application logic enabled on the client-side (in the browser) with the Datagrok JavaScript API, Datagrok provides
 scripting, a mechanism for integration with languages for statistical/mathematical computing. Scripting combines fast
 interactive visualizations and other features of the Datagrok platform with thousands of statistical packages and
 visualizations available in  [R](https://www.r-project.org/about.html),
@@ -499,8 +499,9 @@ SimpleTestPython("demog")
 When the script is run, here is what happens under the hood:
 
 * The dataframe and all other input parameters are serialized and sent to the Datagrok server
-* The Datagrok server is hosting a so-called [compute virtual machine]() with a ready-to-execute instance of
-  a [Jupyter Kernel]() for Python, as well as for [other]() supported scripting languages
+* The Datagrok server is hosting a so-called [compute virtual machine](../../compute/compute.md) with a ready-to-execute
+  instance of a [Jupyter Kernel](../../compute/scripting.md) for Python, as well as for other supported scripting
+  languages
 * When the request to execute a script arrives to the server along with its parameters, CVM loads scripts' code from its
   storage and runs it with these parameters
 * The output values are assigned anywhere along the script
@@ -677,8 +678,7 @@ relying on one of the existing frameworks.
 For most HTML elements such as buttons or dropdowns, our library is very lightweight, our classes such as
 `ui.button` or `ui.choiceInput` are just tiny wrappers around regular DOM elements. In fact, you can always access an
 underlying DOM object of our UI element with the `.root` property. There are also more advanced controls not available
-in browsers out of the box, such as [panes](), [accordions]()
-and [dock views]().
+in browsers out of the box, such as panes, accordions and dock views.
 
 With that being said, our customers do use other frameworks, such as React and Bootstrap, in their applications built on
 Datagrok. The final choice is up to the developer building on top of Datagrok.
@@ -807,7 +807,7 @@ export function test02() {
 
 That would be an overkill to structure these super-trivial apps this way, though it is a highly desired practice for
 anything real-life built for production use. Notice how we include parts of Datagrok API for the corresponding features
-in `src/test-app-01.js`. You may find this `datagrok-api` is a pre-defined location, as per `webpack.config.js`.
+in `src/test-app-01.js`. You may find this `datagrok-api` is a predefined location, as per `webpack.config.js`.
 
 ## Application lifecycle
 

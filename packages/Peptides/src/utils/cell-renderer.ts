@@ -193,13 +193,17 @@ export class AminoAcidsCellRenderer extends DG.GridCellRenderer {
 
       g.save();
       g.beginPath();
+      h -= 2;
       g.rect(x, y, w, h);
       g.clip();
-      g.font = `14px monospace`;
+      g.font = `12px monospace`;
       g.textBaseline = 'top';
       const s: string = gridCell.cell.value ? gridCell.cell.value : '-';
-      const [color, pivot] = cp.getColorPivot(s);
-      printLeftOrCentered(x, y, w, h, g, s, color, pivot, false, true);
+      let [color, outerS, innerS, pivot] = cp.getColorAAPivot(s);
+      if (innerS) 
+        outerS = s;
+
+      printLeftOrCentered(x, y, w, h, g, outerS, color, pivot, false, true);
       g.restore();
     }
 }
@@ -261,61 +265,29 @@ export class AlignedSequenceCellRenderer extends DG.GridCellRenderer {
     const grid = gridCell.dart.grid ? gridCell.grid : gridCell.dart.grid;
     const cell = gridCell.cell;
     w = grid ? Math.min(grid.canvas.width - x, w) : g.canvas.width - x;
+    h -= 2;
     g.save();
     g.beginPath();
     g.rect(x, y, w, h);
     g.clip();
-    g.font = '14px monospace';
+    g.font = '12px monospace';
     g.textBaseline = 'top';
     const s: string = cell.value ?? '';
 
     //TODO: can this be replaced/merged with splitSequence?
-    let rawSubParts = s.split('-');
-    let subParts = [];
-    for (let i = 0; i < rawSubParts.length; ++i) {
-      let isContent = false;
-      let isPreContent = true;
-      let content = '';
-      let preContent = '';
-
-      for (let j = 0; j < rawSubParts[i].length; ++j) {
-        if (rawSubParts[i][j] == '(') {
-          isContent = true;
-          isPreContent = false;
-        } else if (rawSubParts[i][j] == ')'){
-          isContent = false;
-        } else if (isContent) {
-          content += rawSubParts[i][j];
-        } else if (isPreContent) {
-          preContent += rawSubParts[i][j];
-        }
-      }
-
-      if (content === '') {
-        subParts.push(rawSubParts[i]);
-        continue;
-      }
-
-      if (!isNaN(parseInt(content))) {
-        subParts.push(preContent);
-      } else {
-        subParts.push(preContent);
-        subParts.push(content);
-      }
-    }
-
+    let subParts = s.split('-');
     const [text, simplified] = processSequence(subParts);
     const textSize = g.measureText(text.join(''));
     x = Math.max(x, x + (w - textSize.width) / 2);
 
     subParts.forEach((amino: string, index) => {
-      const [color, pivot] = cp.getColorPivot(amino);
+      let [color, outerAmino,, pivot] = cp.getColorAAPivot(amino);
       g.fillStyle = ChemPalette.undefinedColor;
       if (index + 1 < subParts.length) {
         const gap = simplified?'':' ';
-        amino += `${amino?'':'-'}${gap}`;
+        outerAmino += `${outerAmino?'':'-'}${gap}`;
       }
-      x = printLeftOrCentered(x, y, w, h, g, amino, color, pivot, true);
+      x = printLeftOrCentered(x, y, w, h, g, outerAmino, color, pivot, true);
     });
 
     g.restore();
@@ -415,11 +387,12 @@ export function processSequence(subParts: string[]): [string[], boolean] {
 
     w = grid ? Math.min(grid.canvas.width - x, w) : g.canvas.width - x;
     y += 2;
+    h -= 2;
     g.save();
     g.beginPath();
     g.rect(x, y, w, h);
     g.clip();
-    g.font = '14px monospace';
+    g.font = '12px monospace';
     g.textBaseline = 'top';
     const s: string = cell.value ?? '';
 
@@ -432,26 +405,26 @@ export function processSequence(subParts: string[]): [string[], boolean] {
     x = Math.max(x, x + (w - textSize.width) / 2);
 
     subParts1.forEach((amino1: string, index) => {
-      let color, pivot;
+      let pivot;
       let amino2 = subParts2[index];
-
-      if (amino1 != '')
-        [color, pivot] = cp.getColorPivot(amino1);
-      else
-        [color, pivot] = cp.getColorPivot(amino2);
+      let [color1, amino1Outer, amino1Inner, pivot1] = cp.getColorAAPivot(amino1);
+      let [color2, amino2Outer, amino2Inner, pivot2] = cp.getColorAAPivot(amino2);
       
       if (amino1 != amino2) {
         const verticalShift = 7;
 
-        if (amino1 == '') 
-          amino1 = '-';
-        if (amino2 == '') 
-          amino2 = '-';
+        amino1 = amino1Outer + (amino1Inner !== '' ? '(' + amino1Inner + ')' : '');
+        amino2 = amino2Outer + (amino2Inner !== '' ? '(' + amino2Inner + ')' : '');
+        amino1 = amino1 === '' ? '-' : amino1;
+        amino2 = amino2 === '' ? '-' : amino2;
+        pivot = (amino1 == '-') ? pivot2 : pivot1;
 
-        printLeftOrCentered(x, y - verticalShift, w, h, g, amino1, color, pivot, true);
-        x = printLeftOrCentered(x, y + verticalShift, w, h, g, amino2, color, pivot, true);
+        const x1 = printLeftOrCentered(x, y - verticalShift, w, h, g, amino1, color1, pivot, true);
+        x = printLeftOrCentered(x, y + verticalShift, w, h, g, amino2, color2, pivot, true);
+        x = Math.max(x, x1) + 4;
       } else {
-        x = printLeftOrCentered(x, y, w, h, g, amino1, color, pivot, true, false, 0.5);
+        amino1 = amino1Outer + (amino1Inner !== '' ? '(+)' : '');
+        x = printLeftOrCentered(x, y, w, h, g, amino1 ? amino1 : '-', color1, pivot, true, false, 0.5) + 4;
       } 
     });
     g.restore();

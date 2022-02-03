@@ -55,7 +55,7 @@ When dealing with sensitive data, it is important to understand its flow. It is 
 enterprise version of the Datagrok platform in a virtual private cloud, but it might be a bigger issue when using the
 public environment.
 
-While we try to do as many computations on the client side (in the browser) as possible, certain operations, such as
+While we try to do as many computations on the client-side (in the browser) as possible, certain operations, such as
 [training a predictive model](../../learn/predictive-modeling.md),
 [running an R script](../../compute/scripting.md), or
 [computing chemical descriptors](../../domains/chem/cheminformatics.md#chemical-properties-and-descriptors)
@@ -77,7 +77,7 @@ You can use these fields to filter functions with [smart search](../smart-search
 
 | Field       | Description                                 |
 |-------------|---------------------------------------------|
-| id          |                                             |
+| ID          |                                             |
 | name        |                                             |
 | runs        | list of [FuncCall](function-call.md) object |
 | createdOn   |                                             |

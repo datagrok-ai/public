@@ -23,42 +23,37 @@ jobs:
         run: |
           set -ex
           if [[ $(git log -n 1 --pretty=%B) == *"Merge branch 'master' of"* ]]; then
-            commit=$(git log --format="%H" -n 1 --no-merges)
+            commit="$(git log --format="%H" -n 1 --no-merges)"
           else
             commit=${{ github.sha }}
           fi
 
-          CHANGED_DIRS=$(git diff-tree --no-commit-id --name-only -r $(echo -n $commit) 'libraries/*/package.json' | xargs -I {} dirname {})
+          CHANGED_DIRS="$(git diff-tree --no-commit-id --name-only -r "$(echo -n "$commit")" 'libraries/*/package.json' | xargs -I {} dirname {})"
 
           MATRIX_INCLUDE_JSON="["
 
           for DIR in ${CHANGED_DIRS}; do
             if [ -f "${DIR}/package.json" ]; then
-              scripts=$(jq  '. | select( has("scripts") == true ).scripts' ${DIR}/package.json)
+              scripts="$(jq  '. | select( has("scripts") == true ).scripts' "${DIR}/package.json")"
           
-              if [ -z "$(jq  '. | select( has("build") == true )' <<< $scripts)" ]; then
+              if [ -z "$(jq  '. | select( has("build") == true )' <<< "$scripts")" ]; then
                 build='false'
               else
                 build='true'
               fi
-              if [ -z "$(jq  '. | select( has("test") == true )' <<< $scripts)" ]; then
+              if [ -z "$(jq  '. | select( has("test") == true )' <<< "$scripts")" ]; then
                 test='false'
               else
                 test='true'
               fi
 
-              name=$(jq .name ${DIR}/package.json | sed 's/"//g')
-              npm_json=$(curl --retry 3 https://registry.npmjs.org/${name}/latest)
-              if [[ $npm_json == "\"Not Found\"" ]]; then
+              name="$(jq .name "${DIR}/package.json" | sed 's/"//g')"
+              current_version="$(jq .version "${DIR}/package.json" | sed 's/"//g')"
+              npm_json="$(curl --retry 3 "https://registry.npmjs.org/${name}/${current_version}")"
+              if [[ $npm_json == "\"version not found: ${current_version}\"" ]]; then
                 CHANGED_VERSION='true'
               else
-                latest_version="$(jq .version <<<$npm_json)"
-                current_version=$(jq .version ${DIR}/package.json)
-                if [[ $latest_version == $current_version ]]; then
-                  CHANGED_VERSION='false'
-                else
-                  CHANGED_VERSION='true'
-                fi
+                CHANGED_VERSION='false'
               fi
           
               MATRIX_INCLUDE_JSON+="{\"project\": \"${DIR}\", \"build\": \"${build}\", \"test\": \"${test}\", \"changed_version\": \"${CHANGED_VERSION}\"}"
@@ -116,7 +111,7 @@ jobs:
       - name: Commit package-lock.json
         if: ${{ matrix.changed_version == 'true' }}
         run: |
-          if [ ! -z "$(git status -s ${{ matrix.project }}/package-lock.json)" ]; then
+          if [ -n "$(git status -s ${{ matrix.project }}/package-lock.json)" ]; then
             git config --global user.name 'GitHub Actions'
             git config --global user.email 'githubactions@datagrok.ai'
             git pull

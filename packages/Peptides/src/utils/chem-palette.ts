@@ -41,21 +41,26 @@ export class ChemPalette {
 
     const s = cell.cell.value as string;
     let toDisplay = [ui.divText(s)];
-    const [, aar] = this.getColorAAPivot(s);
-    if (this.monomerLib!.monomerNames.includes(aar)) {
-      if (s in ChemPalette.AANames)
-        toDisplay = [ui.divText(ChemPalette.AANames[s])];
-
-      if (s in ChemPalette.AAFullNames)
-        toDisplay = [ui.divText(ChemPalette.AANames[ChemPalette.AAFullNames[s]])];
-
-      const options = {
-        autoCrop: true,
-        autoCropMargin: 0,
-        suppressChiralText: true,
-      };
-      const sketch = grok.chem.svgMol(this.monomerLib!.getMonomerMol(aar), undefined, undefined, options);
-      toDisplay.push(sketch);
+    const [, aarOuter, aarInner, ] = this.getColorAAPivot(s);
+    for (const aar of [aarOuter, aarInner]) {
+      if (this.monomerLib!.monomerNames.includes(aar)) {
+        if (aar in ChemPalette.AANames)
+          toDisplay = [ui.divText(ChemPalette.AANames[aar])];
+  
+        if (aar in ChemPalette.AAFullNames)
+          toDisplay = [ui.divText(ChemPalette.AANames[ChemPalette.AAFullNames[aar]])];
+  
+        const options = {
+          autoCrop: true,
+          autoCropMargin: 0,
+          suppressChiralText: true,
+        };
+        const sketch = grok.chem.svgMol(this.monomerLib!.getMonomerMol(aar), undefined, undefined, options);
+        if (toDisplay.length == 2) {
+          toDisplay.push(ui.divText('Modified'));
+        }
+        toDisplay.push(sketch);
+      }
     }
     ui.tooltip.show(ui.divV(toDisplay), x, y);
   }
@@ -71,24 +76,54 @@ export class ChemPalette {
   }
 
   /**
+   * Retursn divided amino with its content in the bracket, if the conetent is number, then its omitted
+   * 
+   * @param {string} c raw amino
+   * @returns {[string, string]} outer and inner content
+   */
+  private getInnerOuter(c: string): [string, string] {
+    let isInner = false;
+    let inner = '';
+    let outer = '';
+
+    for (let i = 0; i < c.length; ++i) {
+      if (c[i] == '(') {
+        isInner = true;
+      } else if (c[i] == ')'){
+        isInner = false;
+      } else if (isInner) {
+        inner += c[i];
+      } else {
+        outer += c[i];
+      }
+    }
+
+    return !isNaN(parseInt(inner)) ? [outer, ''] : [outer, inner];
+  }
+
+  /**
    * Get color for the provided amino acid residue pivot
    * @param {string} [c=''] Amino acid residue string.
    * @return {[string, string, number]}
    */
-  getColorAAPivot(c: string = ''): [string, string, number] {
+  getColorAAPivot(c: string = ''): [string, string, string, number] {
+    let [outerC, innerC] = this.getInnerOuter(c);
+    outerC = (outerC.length > 6 ? outerC.slice(0, 3) + '...' : outerC);
+    innerC = (innerC.length > 6 ? innerC.slice(0, 3) + '...' : innerC);
+
     if (c.length == 1 || c[1] == '(') {
       const amino = c[0]?.toUpperCase()!;
       return amino in this.cp?
-        [this.cp[amino], amino, 1]:
-        [ChemPalette.undefinedColor, '', 1];
+        [this.cp[amino], amino, innerC, 1]:
+        [ChemPalette.undefinedColor, outerC, innerC, 1];
     }
 
     if (c[0] == 'd' && c[1]! in this.cp) {
       if (c.length == 2 || c[2] == '(') {
         const amino = c[1]?.toUpperCase()!;
         return amino in this.cp?
-          [this.cp[amino], amino, 2]:
-          [ChemPalette.undefinedColor, '', 2];
+          [this.cp[amino], amino, innerC, 2]:
+          [ChemPalette.undefinedColor, outerC, innerC, 2];
       }
     }
 
@@ -96,8 +131,8 @@ export class ChemPalette {
       if (c.length == 3 || c[3] == '(') {
         const amino = ChemPalette.AAFullNames[c.substr(0, 3)];
         return amino in this.cp?
-          [this.cp[amino], amino, 3]:
-          [ChemPalette.undefinedColor, '', 3];
+          [this.cp[amino], amino, innerC, 3]:
+          [ChemPalette.undefinedColor, outerC, innerC, 3];
       }
     }
 
@@ -106,13 +141,13 @@ export class ChemPalette {
         if (c.length == 4 || c[4] == '(') {
           const amino = ChemPalette.AAFullNames[c.substr(1, 3)];
           return amino in this.cp?
-            [this.cp[amino], amino, 4]:
-            [ChemPalette.undefinedColor, '', 4];
+            [this.cp[amino], amino, innerC, 4]:
+            [ChemPalette.undefinedColor, outerC, innerC, 4];
         }
       }
     }
 
-    return [ChemPalette.undefinedColor, '', 0];
+    return [ChemPalette.undefinedColor, outerC, innerC, 0];
   }
 
   /**
@@ -123,7 +158,7 @@ export class ChemPalette {
    */
   getColorPivot(c = ''): [string, number] {
     //TODO: merge with getColorAAPivot?
-    const [color,, pivot] = this.getColorAAPivot(c);
+    const [color,,,pivot] = this.getColorAAPivot(c);
     return [color, pivot];
   };
 

@@ -17,7 +17,7 @@
 Datagrok features a File Browser to let you access the files that you uploaded or that were shared with you by other
 users. The File Browser shows a tree view of folders with files.
 
-![](file-browser-and-file-shares-9.png)
+![File Browser](file-browser-and-file-shares-9.png)
 
 Datagrok supports file uploading not only from your computer, but also from other data sources:
 
@@ -61,7 +61,7 @@ providers at once.
 
 Datagrok extracts the following information from the indexed file:
 
-* File name
+* Filename
 * File size, in bytes
 * Number of rows and columns
 * Column-level information such as name, data type, and [semantic type](../discover/semantic-types.md)
@@ -71,12 +71,10 @@ when [adding a file share](#adding-a-file-share). You can also turn on indexing 
 
 1. In the File Browser, right-click a file share, and then select **Edit**.
    > **Note**: You can turn on indexing only for a file share, not for a folder inside a file share.
+   ![Edit File Browser](file-browser-and-file-shares-10.png)
 
-![](file-browser-and-file-shares-10.png)
-
-2. In the **Edit Connection** dialog, select **Index Files**, and then select **Ok**.
-
-![](file-browser-and-file-shares-11.png)
+2. In the **Edit Connection** dialog, select **Index Files**, and then select **OK**.
+   ![Index Files File Browser](file-browser-and-file-shares-11.png)
 
 ### Supported tabular formats
 
@@ -89,7 +87,7 @@ Datagrok's indexing mechanism understands the following file formats:
 | .tsv       | Tab-separated values                             |
 | .xml       | Extensible Markup Language                       |
 | .json      | JavaScript Object Notation                       |
-| .html      | HyperText Markup Language                        |
+| .HTML      | HyperText Markup Language                        |
 | .xlsx      | Excel                                            |
 | .edf       | European Data Format                             |
 | .sas7bdat  | SAS database file                                |
@@ -113,15 +111,13 @@ to **Home**.
 To create a new file share:
 
 1. In the side panel on the left, select the **File** icon > **Files** > **Actions** > **New File Share**.
-
-   ![](file-browser-and-file-shares-1.png)
+   ![New File Share](file-browser-and-file-shares-1.png)
 
 2. In the **New File Share** dialog, select the needed data source, enter a name for the file share, and then select
-   **Ok**.
+   **OK**.
    > **NOTE**: To verify if Datagrok has established the connection to the selected data source, select **Test**. In the
    > dedicated dialog, Datagrok will show if the connection was created.
-
-   ![](file-browser-and-file-shares-2.png)
+   ![New File Share Data Source](file-browser-and-file-shares-2.png)
 
 Datagrok will add a new folder, and you can then create additional folders in it to structure your files.
 
@@ -171,20 +167,17 @@ To share a file:
 
 1. In the sidebar on the left, select the **File** icon > **Files**, open the needed folder, and then double-click the
    needed file.
-
-![](file-browser-and-file-shares-3.png)
+   ![Files](file-browser-and-file-shares-3.png)
 
 2. In the sidebar on the left, select the **Share** icon, and then select **File**.
-
-![](file-browser-and-file-shares-4.png)
+   ![Share File](file-browser-and-file-shares-4.png)
 
 3. In the **Share file** dialog, select **Share folder as a new connection**, enter the email or name of the user or
    group (1) you will share the file with, select the **Can view** or **Can edit** permission (2), optionally, enter a
-   description (3), and then select **Ok** (4).
+   description (3), and then select **OK** (4).
    > You can optionally select **Send notifications** so that the user or group will receive a message in Datagrok after
    > you shared a connection with them.
-
-![](file-browser-and-file-shares-5.png)
+   ![Share folder as a new connection](file-browser-and-file-shares-5.png)
 
 ### Sharing a file as a table (dataframe)
 
@@ -196,25 +189,21 @@ To share a file as table:
 
 1. In the side panel on the left, select the **File** icon > **Files**, open the needed folder, and then select the file
    to share.
-
-![](file-browser-and-file-shares-3.png)
+   ![File as table](file-browser-and-file-shares-3.png)
 
 2. In the side panel on the left, select the **Share** icon, and then select **Data**.
    > **Note**: If you need to share your file as a data table, select the *Data* option.
+   ![Share File Data](file-browser-and-file-shares-6.png)
 
-![](file-browser-and-file-shares-6.png)
-
-3. In the **Upload project** dialog, select **Ok**.
+3. In the **Upload project** dialog, select **OK**.
    > **Note**: You can also enter an optional description, remove the sheets or pages that you don't need to share, and
    > turn on **Data sync**.
-
-![](file-browser-and-file-shares-7.png)
+   ![Upload project](file-browser-and-file-shares-7.png)
 
 4. In the **Share {document type}** dialog, enter the email or name of the user or group (1) you will share the file
    with, select the **Can view** or **Can edit** permission (2), enter an optional description of the file share (3),
-   and then select **Ok** (4).
-
-![](file-browser-and-file-shares-8.png)
+   and then select **OK** (4).
+   ![Share permissions](file-browser-and-file-shares-8.png)
 
 ## Videos
 
@@ -223,14 +212,12 @@ To share a file as table:
 ## Related topics
 
 * [Data connection](data-connection.md)
-*
+* [Dedicated file share]
+* [Data connection]
+* [Uploading a project]
 
 [Dedicated file share]: #file-shares
 
-*
-
 [Data connection]: https://datagrok.ai/help/access/data-connection
-
-*
 
 [Uploading a project]: https://datagrok.ai/help/overview/project#uploading-a-project

@@ -4,11 +4,10 @@
 # Solubility prediction
 
 Solubility is one of basic physical chemistry properties important for understanding how molecules interact with
-solvents. Following script allows to predict solubility by molecular descriptors.
-
-# {x.18b704d0-0b50-11e9-b846-1fa94a4da5d1."Predict Solubility"} model was trained using
-
-# {x.Demo:SolubilityTrain."Solubility Train"} dataset on H2O modelling engine. Modelling method is "Generalized Linear Modeling".
+solvents. Following script allows to predict solubility by molecular
+descriptors. `#{x.18b704d0-0b50-11e9-b846-1fa94a4da5d1."Predict Solubility"}` model was trained
+using `#{x.Demo:SolubilityTrain."Solubility Train"}` dataset on H2O modelling engine. Modelling method is "Generalized
+Linear Modeling"
 
 Molecular Descriptors used in model:
 

@@ -1,11 +1,11 @@
 <!-- TITLE: Extract RegExp -->
 <!-- SUBTITLE: -->
 
-# Extract RegExp
+# Extract regular expression
 
 Matches the specified regular expression against the content of the specified column.
 
-To split column RegExp groups are used. Groups are added as new columns.
+To split column regular expression groups are used. Groups are added as new columns.
 
 ## Example
 

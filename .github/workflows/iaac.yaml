@@ -1,0 +1,24 @@
+name: "IaaC script Security Scan"
+
+on:
+  push:
+    paths:
+      - 'help/develop/admin/deploy/cloudformation.json'
+    branches:
+      - 'master'
+jobs:
+  iac:
+    runs-on: ubuntu-20.04
+    name: Security check for IaaC scripts
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v2
+      - name: Run contract with Snyk to check Infrastructure as Code files for issues
+        uses: snyk/actions/iac@master
+        env:
+          SNYK_TOKEN: ${{ secrets.SNYK_TOKEN }}
+        with:
+          args: --severity-threshold=high
+      - uses: github/codeql-action/upload-sarif@v1
+        with:
+          sarif_file: snyk.sarif

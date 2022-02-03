@@ -56,4 +56,3 @@ Analysis of mixtures or salts is rarely used so one may prefer to proceed only w
 widely used in combination with neutralization.
 
 ![Main fragment](chem_curate_main.png "Main fragment")
- 

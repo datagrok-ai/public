@@ -1,7 +1,7 @@
 <!-- TITLE: Tests: Split columns by RegExp -->
 <!-- SUBTITLE: -->
 
-# Tests: Split columns by RegExp
+# Tests: Split columns by regular expression
 
 Matches the specified regular expression against the content of the specified column. Matched groups are added as new
 columns.
@@ -9,7 +9,7 @@ columns.
 ## Testing scenarios
 
 1. Split the column using different regular expressions (
-   about [RegExps](http://www.regular-expressions.info))
+   about [Regular expressions](http://www.regular-expressions.info))
 
 * The result is shown in the dialog box "Results dialogs". After clicking the "OK" button new columns are created in the
   table
@@ -28,5 +28,5 @@ columns.
 
 See also:
 
-* [Split column by RegExp](extract-regexp.md)
-* [About RegExps](http://www.regular-expressions.info)
+* [Split column by regular expression](extract-regexp.md)
+* [About regular expressions](http://www.regular-expressions.info)

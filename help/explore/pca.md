@@ -24,4 +24,3 @@ See also:
 
 * [Principal component analysis](https://en.wikipedia.org/wiki/Principal_component_analysis)
 * JS API: [PCA](https://public.datagrok.ai/js/samples/domains/data-science/pca)
-

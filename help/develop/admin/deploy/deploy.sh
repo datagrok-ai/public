@@ -92,6 +92,48 @@ if [[ $ecs_enabled == 'true' ]]; then
     -o "datagrok.${location}.docker-compose.yaml"
   curl -s https://raw.githubusercontent.com/datagrok-ai/public/master/docker/ecs.cvm.docker-compose.yaml \
     -o "datagrok.cvm.${location}.docker-compose.yaml"
+
+  vpc_create=$(input '' 'Would you like to create new VPC for Datagrok?' \
+    'Create new VPC' \
+    'Yes, No')
+
+  if [[ $vpc_create == 'yes' ]]; then
+    DATAGROK_VPC_ID=$(aws ec2 create-vpc --cidr-block '10.0.0.0/17' \
+      --tag-specifications ResourceType=vpc,Tags='[{Key=Name,Value="Datagrok"}]' \
+      --output text --query Vpc.VpcId)
+    echo "Created VPC Datagrok: ${DATAGROK_VPC_ID}"
+    igw=$(aws ec2 create-internet-gateway --output text --query InternetGateway.InternetGatewayId)
+    aws ec2 attach-internet-gateway --vpc-id "${DATAGROK_VPC_ID}" --internet-gateway-id "$igw" >/dev/null 2>&1
+
+    rtb=$(aws ec2 create-route-table --vpc-id "${DATAGROK_VPC_ID}" --output text --query RouteTable.RouteTableId)
+
+    aws ec2 create-route --route-table-id "$rtb" --destination-cidr-block 0.0.0.0/0 --gateway-id "$igw" >/dev/null 2>&1
+
+    sb1=$(aws ec2 create-subnet --vpc-id "${DATAGROK_VPC_ID}" --cidr-block '10.0.0.0/24' \
+      --tag-specifications ResourceType=subnet,Tags='[{Key=Name,Value="Datagrok Subnet 1"}]' \
+      --output text --query Subnet.SubnetId)
+    aws ec2 associate-route-table --subnet-id "$sb1" --route-table-id "$rtb" >/dev/null 2>&1
+    sb2=$(aws ec2 create-subnet --vpc-id "${DATAGROK_VPC_ID}" --cidr-block '10.0.1.0/24' \
+      --tag-specifications ResourceType=subnet,Tags='[{Key=Name,Value="Datagrok Subnet 2"}]' \
+      --output text --query Subnet.SubnetId)
+    aws ec2 associate-route-table --subnet-id "$sb2" --route-table-id "$rtb" >/dev/null 2>&1
+    sb3=$(aws ec2 create-subnet --vpc-id "${DATAGROK_VPC_ID}" --cidr-block '10.0.2.0/24' \
+      --tag-specifications ResourceType=subnet,Tags='[{Key=Name,Value="Datagrok Subnet 3"}]' \
+      --output text --query Subnet.SubnetId)
+    aws ec2 associate-route-table --subnet-id "$sb3" --route-table-id "$rtb" >/dev/null 2>&1
+  else
+    echo -e "\n" >&2
+    vpc_default=$(input '' 'Would you like to use default VPC for Datagrok?' \
+      'Default VPC' \
+      'Yes, No')
+    if [[ $vpc_default == 'yes' ]]; then
+      DATAGROK_VPC_ID=$(aws ec2 describe-vpcs --filters 'Name=is-default,Values=true' \
+        --output text --query 'Vpcs[].VpcId')
+    else
+      echo -e "\n" >&2
+      DATAGROK_VPC_ID=$(input '' "" "Enter VPC ID" "")
+    fi
+  fi
 fi
 
 if [[ $vm_enabled == 'true' ]]; then
@@ -104,10 +146,9 @@ if [[ $vm_enabled == 'true' ]]; then
   datagrok_host=$(input '' "" "Enter Datagrok host IP or hostname" "")
 
   echo -e "\n" >&2
-  confirm=$(input '' "To deploy application it is required:\n1) To have access to the Datagrok host ($datagrok_host) through SSH using SSH keys\n2) Your user should be in 'docker' group on this host" \
+  input '' "To deploy application it is required:\n1) To have access to the Datagrok host ($datagrok_host) through SSH using SSH keys\n2) Your user should be in 'docker' group on this host" \
     "Do you meet the requirements? Enter 'Confirm'" \
-    'confirm')
-  confirm=''
+    'confirm'
 
   if ! docker context list | grep -q datagrok; then
     docker context create --docker "host=ssh://${datagrok_host}:22" datagrok
@@ -118,10 +159,9 @@ if [[ $vm_enabled == 'true' ]]; then
     read -p "Enter Compute host IP or hostname: " -r cvm_host
 
     echo -e "\n" >&2
-    confirm=$(input '' "To deploy application it is required:\n1) To have access to the Datagrok host ($cvm_host) through SSH using SSH keys\n2) Your user should be in 'docker' group on this host" \
+    input '' "To deploy application it is required:\n1) To have access to the Datagrok host ($cvm_host) through SSH using SSH keys\n2) Your user should be in 'docker' group on this host" \
       "Do you meet the requirements? Enter 'Confirm'" \
-      'confirm')
-    confirm=''
+      'confirm'
 
     if ! docker context list | grep -q cvm; then
       docker context create --docker "host=ssh://${cvm_host}:22" cvm
@@ -139,7 +179,7 @@ db='datagrok'
 
 if [[ $database == '' ]]; then
   echo -e "\n" >&2
-  database=$(input '' 'What would you like to use as PostgreSQL database?\nDatagrok supports any PostgreSQL cluster, including cloud solutions, for example AWS RDS' \
+  database=$(input '' 'What would you like to use as PostgreSQL database?\nDatagrok supports any PostgreSQL databse, including cloud solutions, for example AWS RDS' \
     'PostgreSQL database setup' \
     'RDS, other')
 fi
@@ -170,7 +210,8 @@ if [[ $rds_create == 'yes' ]]; then
   else
     amazonRDSRegion=$AWS_REGION
   fi
-  amazonRDSName=$(input '' "" "Enter RDS name" "")
+  #  amazonRDSName=$(input '' "" "Enter RDS name" "")
+  amazonRDSName='datagrok-rds'
 
   dbAdminLogin=$(input '' "" "Enter RDS admin username" "")
   dbAdminPassword=$(input 'secret' "" "Enter RDS admin password" "")
@@ -179,6 +220,10 @@ if [[ $rds_create == 'yes' ]]; then
 
   echo -e "\n" >&2
   echo -e "Creating RDS for Datagrok '$amazonRDSName'..." >&2
+  aws rds create-db-subnet-group \
+    --db-subnet-group-name "$amazonRDSName" \
+    --db-subnet-group-description "DB subnet group for $amazonRDSName" \
+    --subnet-ids "['${sb1}','${sb2}','${sb3}']"
   aws rds create-db-instance \
     --db-instance-identifier "$amazonRDSName" \
     --db-name "$db" \
@@ -191,7 +236,6 @@ if [[ $rds_create == 'yes' ]]; then
     --master-username "$dbAdminLogin" \
     --master-user-password "$dbAdminPassword" \
     --port "$dbPort" \
-    --multi-az \
     --no-publicly-accessible \
     --storage-encrypted \
     --deletion-protection \
@@ -260,9 +304,7 @@ if [[ $storage == 's3' ]]; then
     'Yes, No')
 
   echo -e "\n" >&2
-  if [[ $s3_create == 'no' ]]; then
-    amazonStorageRegion=$(input '' "" "Enter S3 region" "")
-  elif [[ $AWS_REGION == '' ]]; then
+  if [[ $s3_create == 'no' ]] || [[ $AWS_REGION == '' ]]; then
     amazonStorageRegion=$(input '' "" "Enter S3 region" "")
   else
     amazonStorageRegion=$AWS_REGION
@@ -364,16 +406,18 @@ case $location in
 "ecs")
   docker context use datagrokAWS >/dev/null 2>&1
   docker compose --project-name datagrok -f "datagrok.${location}.docker-compose.yaml" up || true
-  if [[ $rds_create == 'yes' ]]; then
+  if [[ $database == 'rds' ]]; then
     ecs_sg=$(aws ecs describe-services \
       --cluster datagrok \
       --services "$(aws ecs list-services --cluster datagrok --output text --query 'serviceArns[0]')" \
       --output text --query 'services[].networkConfiguration.awsvpcConfiguration.securityGroups[]')
+    old_sg=$(aws rds describe-db-instances --db-instance-identifier "$(awk -F'.' '{print $1}' <<<"${dbServer}")" \
+      --output text --query 'DBInstances[].[VpcSecurityGroups[].VpcSecurityGroupId]')
     aws rds modify-db-instance \
-      --db-instance-identifier "${amazonRDSName}" \
-      --region "${amazonRDSRegion}" \
-      --vpc-security-group-ids "${ecs_sg}" \
-      --apply-immediately --output text --query '[DBInstance.DBInstanceIdentifier, VpcSecurityGroups[]]'
+      --db-instance-identifier "$(awk -F'.' '{print $1}' <<<"${dbServer}")" \
+      --region "$(awk -F'.' '{print $3}' <<<"${dbServer}")" \
+      --vpc-security-group-ids "${ecs_sg}" "${old_sg}" \
+      --apply-immediately --output text --query 'DBInstance.[DBInstanceIdentifier, VpcSecurityGroups[]]' >&2
   fi
   docker compose --project-name datagrok-cvm -f "datagrok.cvm.${location}.docker-compose.yaml" up || true
   docker context use default >/dev/null 2>&1

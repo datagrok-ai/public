@@ -49,7 +49,7 @@ Sketcher is tool for drawing molecule structure or describing it in form of smil
 
 * Molecule was drawn in editor corresponding to entered InCHI
 
-1. Repeat step 9 with Inchi Key, ChEMBL id and etc.
+1. Repeat step 9 with Inchi Key, ChEMBL ID and etc.
 
 1. Select arbitrary molecule in table and add its to "Favorites" (**Property Panel | Actions | Add to favorites**)
 

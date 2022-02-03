@@ -81,14 +81,16 @@ There are many ways to specify credentials for a database connection, namely:
   provider. More generally, a data connection can be created from `Actions | Add New Connection`. Credentials can be
   passed along with other parameters in the UI.
 * An equivalent way to establish a connection is to configure parameters in a `json` file. It contains a special field:
+
   ```json
-  "credentials" : {
+  "credentials": {
     "parameters": {
       "login": "login",
       "password": "password"
     }
   }
   ```
+
   What is less noticeable from the interface, and becomes apparent here, is that credentials as parameters form a
   distinct group. You can store them in this file, the only shortcoming appears when you want to share it with others,
   e.g., push it to the repository: you have to make sure first that only your team can see these credentials there and

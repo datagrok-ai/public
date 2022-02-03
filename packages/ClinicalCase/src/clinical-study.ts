@@ -106,7 +106,9 @@ export class ClinicalStudy {
 
   private process(): void {
     if (this.domains.ae != null) {
-      this.domains.ae.columns.addNewCalculated('week', `floor(\${${AE_START_DAY}} / 7)`);
+      if (this.domains.ae.col(AE_START_DAY)) {
+        this.domains.ae.columns.addNewCalculated('week', `floor(\${${AE_START_DAY}} / 7)`);
+      }
     }
   }
 

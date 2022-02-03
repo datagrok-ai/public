@@ -10,7 +10,7 @@ pressing F4 or by clicking on the gear icon in the top right corner):
 
 Properties:
 
-| []()      |         |
+|           |         |
 |-----------|---------|
 | Word      | RACE    |
 | Size      |         |
@@ -20,9 +20,9 @@ Properties:
 
 General:
 
-| []()                  |                 |
-|-----------------------|-----------------|
-| Right click           | Context menu    |
+|             |              |
+|-------------|--------------|
+| Right click | Context menu |
 
 ![Word Cloud](../../uploads/viewers/word-cloud.png "Word Cloud")
 

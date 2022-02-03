@@ -4,8 +4,8 @@
 # Viewers
 
 A viewer is a visual component associated with a [table](../overview/table.md). Unlike other products, our viewers
-are [superfast](../develop/advanced/performance.md#viewers), completely interactive, and are capable of handling tens
-of millions of rows (or millions of columns).
+are [superfast](../develop/advanced/performance.md#viewers), completely interactive, and are capable of handling tens of
+millions of rows (or millions of columns).
 
 Viewers belonging to the same [view](../overview/table-view.md) share the same row selection and filter. Viewers are
 saved as part of the [project](../overview/project.md). Also, it is possible to save viewers and views individually and
@@ -34,7 +34,7 @@ Viewers are docked within a view. To rearrange it, start dragging viewer's heade
 move the mouse cursor to one of them and release the mouse button to dock the viewer at that spot. To resize the viewer,
 drag the viewer's border.
 
-![](viewers-interaction-main.gif)
+![viewers-interaction-main](viewers-interaction-main.gif)
 
 ## Docking
 
@@ -69,7 +69,7 @@ To select rows in the [grid](viewers/grid.md):
 | (Ctrl+) Shift + mouse-drag      | (Un)select rows                        |
 | (Ctrl+) Shift + ENTER           | (Un)Select rows with the current value |
 
-![](viewers-selection.gif)
+![viewers-selection](viewers-selection.gif)
 
 ## Current rows
 
@@ -85,17 +85,17 @@ you move from one row to another you immediately see where the row values belong
 the most similar structure to the reference. This also works the other way around: by first clicking on a visual
 element, you will see the row it represents in the grid.
 
-![](current-rows-2.gif "Current rows")
+![current-rows](current-rows-2.gif "Current rows")
 
 ## Filter
 
 To open filter group, click on the funnel icon in the toolbox:
 
-![](viewers/filters.gif)
+![filters](viewers/filters.gif)
 
 Alternatively, click on the column's "hamburger icon" to filter by the individual column:
 
-![](viewers/grid-column-filter.png)
+![grid-column-filter](viewers/grid-column-filter.png)
 
 ## Viewers as filters
 
@@ -114,17 +114,17 @@ this sets two different [properties](#properties) of a viewer:
 By setting these properties manually, it is possible to achieve different combination of interactivity (for instance, a
 viewer that shows only selected rows)
 
-![](viewers-as-filters.gif)
+![viewers-as-filters](viewers-as-filters.gif)
 
 ## Embedding
 
-Each viewer created in Datagrok can be embedded into an external web-site as an iframe. It remains fully interactive and
+Each viewer created in Datagrok can be embedded into an external site as an iframe. It remains fully interactive and
 will be bound to the data for which it was created inside the platform. To generate an iframe for a viewer, open its
 context menu, then go to the **Viewer** submenu and select **Embed**:
 
 ![Viewers Embedding](../uploads/viewers/embedding.png "Viewers Embedding")
 
-Now you can copy the generated iframe and use it in your website. The only thing you need to remember is that this
+Now you can copy the generated iframe and use it in your site. The only thing you need to remember is that this
 feature works only for data uploaded as a project to the server.
 
 ## Interaction
@@ -147,7 +147,7 @@ select `Viewer | Properties`.
 
 [![Properties](../uploads/youtube/visualizations1.png "Open on Youtube")](https://www.youtube.com/watch?v=wAfEqAMOZzw&t=804s)
 
-![](viewers/viewer-property-panel.gif)
+![viewer-property-panel](viewers/viewer-property-panel.gif)
 
 ## Common actions
 
@@ -179,7 +179,7 @@ General commands are available under the **General** submenu:
 | Close           | Close the viewer                                                               |
 | Use in Trellis  | Add a [Trellis plot](viewers/trellis-plot.md), using this viewer as a renderer |
 | Save to Gallery | Saves this viewer to a [gallery](view-layout.md#layout-suggestions)            |
-| Embed           | Create HTML code that can be embedded in an external website                   |
+| Embed           | Create HTML code that can be embedded in an external site                   |
 
 Style-related commands reside under the **Style** submenu:
 
@@ -238,7 +238,7 @@ There are two ways to add a trellis plot:
 
 See [Trellis Plot](viewers/trellis-plot.md) for more details.
 
-![](viewers-as-trellis.gif)
+![viewers-as-trellis](viewers-as-trellis.gif)
 
 ## Statistical hypothesis testing
 
@@ -271,7 +271,7 @@ pane, see picture below.
 To clone current view, either do **View | Layout | Clone**, or click on the plus sign on the view header strip, and
 choose **Clone**.
 
-![](layout-suggestions.gif)
+![layout-suggestions](layout-suggestions.gif)
 
 ## Scatter plot
 
@@ -279,7 +279,7 @@ choose **Clone**.
 |------------------------------------------------------------------|-------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|
 | ![Scatter Plot](../uploads/gifs/scatter-plot.gif "Scatter plot") | A scatter plot (also called a scatter graph, scatter chart, scattergram, or scatter diagram) is a type of plot or mathematical diagram using Cartesian coordinates to display values for typically two variables for a set of data. If the points are color-coded you can increase the number of displayed variables to three. The data is displayed as a collection of points, each having the value of one variable determining the position on the horizontal axis and the value of the other variable determining the position on the vertical axis. <br> [Scatter Plot](viewers/scatter-plot.md) |
 
-## 3d scatter plot
+## 3D scatter plot
 
 |                                                                           |                                                                                                                                                                                                                                                                                                                                                                                                   |
 |---------------------------------------------------------------------------|---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|
@@ -367,7 +367,7 @@ choose **Clone**.
 
 |                                                                              |                                                                                                                                                                                                                                                                                                                                               |
 |------------------------------------------------------------------------------|-----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|
-| ![Network Diagram](../uploads/viewers/network-diagram.png "Network Diagram") | Network diagram is used to visualize graphs, where values of the specified two columns become nodes, and rows become edges. It is possible to color-code and size-code nodes and columns by choosing the aggregate function that would apply to the values that represent an edge or a node.<br>[Network Diagram](viewers/network-diagram.md) |
+| ![Network Diagram](../uploads/viewers/network-diagram.png "Network Diagram") | Network diagram is used to visualize graphs, where values of the specified two columns become nodes, and rows become edges. It is possible to color-code and size-code nodes and columns by choosing the aggregate function that would apply to the values that represent an edge or a Node.js.<br>[Network Diagram](viewers/network-diagram.md) |
 
 ## Parallel coordinates plot
 

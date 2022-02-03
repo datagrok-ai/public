@@ -60,8 +60,7 @@ Check out [JS API Class Reference](https://datagrok.ai/js-api/)
 
 ### Shell
 
-Datarok visual shell is used to get access to top-level views, tables, methods,
-and platform states.
+Datarok visual shell is used to get access to top-level views, tables, methods, and platform states.
 
 Learn more here: [Datagrok Shell reference](./shell.md)
 
@@ -70,7 +69,8 @@ Learn more here: [Datagrok Shell reference](./shell.md)
 ### Dataframe
 
 Use [DataFrame](https://datagrok.ai/js-api/classes/dg.dataframe), [Column](https://datagrok.ai/js-api/classes/dg.column)
-, [ColumnList](https://datagrok.ai/js-api/classes/dg.columnlist), and [Row](https://datagrok.ai/js-api/classes/dg.row) classes for table manipulation.
+, [ColumnList](https://datagrok.ai/js-api/classes/dg.columnlist), and [Row](https://datagrok.ai/js-api/classes/dg.row)
+classes for table manipulation.
 
 ```javascript
 demog = grok.testData('demog', 5000);
@@ -89,8 +89,8 @@ demog.set('age', 1, 44);
 
 ### BitSet
 
-Each [DataFrame](https://datagrok.ai/js-api/classes/dg.dataframe) is associated with two [bitsets](https://datagrok.ai/js-api/classes/dg.bitset): selection
-and filter.
+Each [DataFrame](https://datagrok.ai/js-api/classes/dg.dataframe) is associated with
+two [bitsets](https://datagrok.ai/js-api/classes/dg.bitset): selection and filter.
 
 ```javascript
 // bit set (same applies to filter)
@@ -123,8 +123,8 @@ grok.shell.dockElement(e, 'JS', 'left', 0.5);
 ## Registering functions
 
 Pretty much anything in Datagrok is a [function](../overview/functions/function.md), it is a concept that connects
-together [scripts](../compute/scripting.md) written in different languages, predictive models, statistical functions, query
-transformations, data flows, and many other features.
+together [scripts](../compute/scripting.md) written in different languages, predictive models, statistical functions,
+query transformations, data flows, and many other features.
 
 The following code registers a "jsConcat" function that becomes a first-class citizen in the platform (i.e., it can be
 used from console, gets registered in help, there could be an optional audit trail associated with the invocations, etc)
@@ -177,8 +177,8 @@ Code snippets:
 ## Events
 
 We are exposing events coming out of the platform as a stream via the
-[Rx.JS](https://rxjs.dev/) library that makes it easy to compose asynchronous or callback-based code. The API makes easy to
-subscribe to either global, or instance-related events:
+[Rx.JS](https://rxjs.dev/) library that makes it easy to compose asynchronous or callback-based code. The API makes easy
+to subscribe to either global, or instance-related events:
 
 ```javascript
    // global event when user changes the current project
@@ -200,7 +200,7 @@ Log" tab, and perform the action that you want to intercept. In the panel, you w
 on them to inspect event parameters. To simplify the development process, we also generate JavaScript code for handling
 this particular event, copy-paste it from the property panel into your code if needed.
 
-![](tools/inspector-events.png)
+![inspector-events](tools/inspector-events.png)
 
 ## User-defined types
 

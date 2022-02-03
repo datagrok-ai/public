@@ -18,7 +18,7 @@ by [uploading a project](../overview/project.md#uploading-a-project).
 | csv, tsv, txt | Comma-separated file     |
 | xml           | XML                      |
 | json          | JSON                     |
-| html          | HTML                     |
+| HTML          | HTML                     |
 | xlsx          | Excel file               |
 | edf           | European Data Format     |
 | sas7bdat      | SAS                      |

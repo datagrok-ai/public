@@ -39,7 +39,7 @@ You can use these fields to filter queries with [smart search](../overview/smart
 
 | Field       | Description                                                       |
 |-------------|-------------------------------------------------------------------|
-| id          |                                                                   |
+| ID          |                                                                   |
 | name        |                                                                   |
 | query       |                                                                   |
 | runs        | list of [FuncCall](../overview/functions/function-call.md) object |

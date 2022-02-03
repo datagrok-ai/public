@@ -48,7 +48,7 @@ important to academia:
 
 For academic collaborations, please email `info@datagrok.ai`.
 
-# See also:
+# See also
 
 * [Datagrok home](https://datagrok.ai/)
 * [JavaScript development](https://datagrok.ai/help/develop/develop)

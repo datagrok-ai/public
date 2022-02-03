@@ -9,8 +9,7 @@
   "description": "One hour of GPS coordinates of a group of people",
   "tables": [
     {
-      "path": "demo/geo/city_gps.csv",
-      "id": "a2829ad0-5970-11e9-fc20-2b484b2c25b7"
+      "path": "demo/geo/city_gps.csv"
     }
   ]
 }

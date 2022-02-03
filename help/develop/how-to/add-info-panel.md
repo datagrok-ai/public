@@ -11,8 +11,8 @@ and [visibility conditions](#visibility-conditions) will be re-evaluated wheneve
 ## Development
 
 Info panels are added as part of a [package](../develop.md). There are two ways of developing them for Datagrok: either
-as panel [scripts](../../compute/scripting.md) or as JavaScript panel [functions](../../overview/functions/function.md). Panel scripts
-can be written in any language supported by the platform (the full list of supported languages is
+as panel [scripts](../../compute/scripting.md) or as JavaScript panel [functions](../../overview/functions/function.md).
+Panel scripts can be written in any language supported by the platform (the full list of supported languages is
 available [here](../../compute/scripting.md#supported-languages)). In this case, the main difference between the two
 implementations pertains to where the code is executed. Panel functions defined in the package entry point will run on
 the client side, whereas panel scripts get executed on the server.
@@ -26,12 +26,12 @@ specific [semantic type](../../discover/semantic-types.md). To make use of detec
 specify a relevant semantic type either from a script or from a panel function written in JavaScript.
 
 ```python
-#name: string length
-#language: python
-#tags: panel
-#input: string s {semtype: text}
-#output: int length
-#condition: true
+# name: string length
+# language: python
+# tags: panel
+# input: string s {semtype: text}
+# output: int length
+# condition: true
 
 length = len(s)
 ```
@@ -60,13 +60,13 @@ To create a panel script, you should tag it as `panel` and specify conditions fo
 the `condition` header parameter:
 
 ```python
-#name: DetectCats
-#description: Detects cats on image
-#language: python
-#input: file file
-#output: bool hascats
-#tags: demo, files, panel, ml, opencv
-#condition: file.isfile && file.size < 1e6 && file.path.contains("/cats/") && (file.name.endsWith("jpg") || file.name.endswith("jpeg"))
+# name: DetectCats
+# description: Detects cats on image
+# language: python
+# input: file file
+# output: bool hascats
+# tags: demo, files, panel, ml, opencv
+# condition: file.isfile && file.size < 1e6 && file.path.contains("/cats/") && (file.name.endsWith("jpg") || file.name.endswith("jpeg"))
 
 import cv2
 

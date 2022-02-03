@@ -24,10 +24,10 @@ import {convertMoleculeImpl} from './utils/chem-utils';
 import '../css/chem.css';
 import {ChemSimilarityViewer} from './analysis/chem-similarity-viewer';
 import {ChemDiversityViewer} from './analysis/chem-diversity-viewer';
-import {_saveAsSdf} from "./utils/sdf-utils";
-import {Fingerprint} from "./utils/chem-common";
-import {assure} from "@datagrok-libraries/utils/src/test";
-import {chem} from "datagrok-api/grok";
+import {_saveAsSdf} from './utils/sdf-utils';
+import {Fingerprint} from './utils/chem-common';
+import {assure} from '@datagrok-libraries/utils/src/test';
+import {chem} from 'datagrok-api/grok';
 import Sketcher = chem.Sketcher;
 
 const drawMoleculeToCanvas = chemCommonRdKit.drawMoleculeToCanvas;
@@ -84,8 +84,8 @@ export function substructureFilter() {
 //input: string molString
 //input: string scaffoldMolString
 export function canvasMol(
-  x: number, y: number, w: number, h: number, canvas: HTMLCanvasElement,
-  molString: string, scaffoldMolString: string | null = null) {
+    x: number, y: number, w: number, h: number, canvas: HTMLCanvasElement,
+    molString: string, scaffoldMolString: string | null = null) {
   drawMoleculeToCanvas(x, y, w, h, canvas, molString, scaffoldMolString == '' ? null : scaffoldMolString);
 }
 
@@ -95,7 +95,7 @@ export function canvasMol(
 //output: double cLogP
 export function getCLogP(smiles: string) {
   const mol = getRdKitModule().get_mol(smiles);
-  let res = JSON.parse(mol.get_descriptors()).CrippenClogP;
+  const res = JSON.parse(mol.get_descriptors()).CrippenClogP;
   mol?.delete();
   return res;
 }
@@ -177,8 +177,11 @@ export async function getSimilarities(molStringsColumn: DG.Column, molString: st
 //input: int cutoff
 //output: dataframe result
 export async function findSimilar(molStringsColumn: DG.Column, molString: string, limit: number, cutoff: number) {
-  if (molStringsColumn === null || molString === null || limit === null || cutoff === null)
-    throw 'Chem: An input was null';
+  assure.notNull(molStringsColumn, 'molStringsColumn');
+  assure.notNull(molString, 'molString');
+  assure.notNull(limit, 'limit');
+  assure.notNull(cutoff, 'cutoff');
+
   try {
     const result = await chemSearches.chemFindSimilar(molStringsColumn, molString, {limit: limit, cutoff: cutoff});
     return result ? result : DG.DataFrame.create();
@@ -197,9 +200,11 @@ export async function findSimilar(molStringsColumn: DG.Column, molString: string
 export async function searchSubstructure(
     molStringsColumn: DG.Column, molString: string,
     substructLibrary: boolean, molStringSmarts: string) {
+  assure.notNull(molStringsColumn, 'molStringsColumn');
+  assure.notNull(molString, 'molString');
+  assure.notNull(substructLibrary, 'substructLibrary');
+  assure.notNull(molStringSmarts, 'molStringSmarts');
 
-  if (molStringsColumn === null || molString === null || substructLibrary === null || molStringSmarts === null)
-    throw 'Chem: An input was null';
   try {
     const result =
       substructLibrary ?
@@ -218,12 +223,10 @@ export function descriptorsApp(context: any) {
   getDescriptorsApp();
 }
 
-
 //name: saveAsSdf
 //description: Save as SDF
 //tags: fileExporter
 export function saveAsSdf() { _saveAsSdf(); }
-
 
 //#region Top menu
 

@@ -11,7 +11,9 @@ the results of statistical functions.
 
 You can also use expressions such as `[${Width}, 270, ${Height}]` to pass row values as numbers in a list.
 
-> By default, real numbers in a new column show only 2 digits after the integer part. You can change this behavior by setting the appropriate format for displaying the data in the column. To do this, click on the column heading and in the opened context menu select "Format" option.
+> By default, real numbers in a new column show only 2 digits after the integer part.
+> You can change this behavior by setting the appropriate format for displaying the data in the column.
+> To do this, click on the column heading and in the opened context menu select "Format" option.
 
 *Function List:*
 

@@ -16,6 +16,7 @@ well as on the old value:
   has to be imported before opening data anonymization dialog.
 * **Numerical.** The number gets randomly changed. The scale of the change depends on the specified _number
   randomization factor_ **r**. The actual formula is:
+
   ```
   newValue = col[i] * math.pow(10, 2 * r * rnd.nextDouble() - r)
   ```

@@ -30,7 +30,7 @@ editable. Some properties are common for all [entities](../overview/objects.md),
 
 Common properties:
 
-* id
+* ID
 * name
 * author
 * createdOn

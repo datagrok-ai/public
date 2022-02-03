@@ -1,0 +1,6 @@
+output: "json"
+quiet: false
+check-for-app-update: true
+exclude:
+  - '**/node_modules/**'
+

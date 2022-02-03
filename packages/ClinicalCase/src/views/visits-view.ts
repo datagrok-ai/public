@@ -54,7 +54,7 @@ export class VisitsView extends ClinicalCaseViewBase {
             if (this.pivotedSv.getCol(col).name !== VISIT_START_DATE) {
                 this.pivotedSv.getCol(col).tags.format = 'yyyy-MM-dd';
             }
-            this.pivotedSv.getCol(col).name = col.replace(` avg(${SUBJECT_ID})`, '');
+            this.pivotedSv.getCol(col).name = col.replace(` first(${SUBJECT_ID})`, '');
         });
         this.sortedVisitNamesAndDays = getVisitNamesAndDays(this.tv, true);
         this.sortedVisitNames = this.sortedVisitNamesAndDays.map(it => it.name);

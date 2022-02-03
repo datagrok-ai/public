@@ -294,9 +294,11 @@ export class StackedBarChart extends DG.JsViewer {
         if (h * margin / 2 <= sBarHeight - gapSize && h * margin / 2 <= w) {
           g.fillStyle = 'rgb(0,0,0)';
           g.font = `${h * margin / 2}px`;
-          const [, aar] = cp.getColorAAPivot(obj['name']);
-          g.fillText(aar,
-            x + w / 2 - h * margin / 8,
+          const [, aarOuter, aarInner, ] = cp.getColorAAPivot(obj['name']);
+          const textSize = g.measureText(aarOuter);
+          const leftMargin = (w - textSize.width) / 2;
+          g.fillText(aarOuter,
+            x + leftMargin,
             y + h * (this.max - sum + curSum) / this.max + gapSize / 2 + (sBarHeight - gapSize)/2 - h * margin / 8);
         }
 

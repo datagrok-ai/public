@@ -19,9 +19,10 @@ We are using a number of great open-source projects in our platform. Here they a
 * [OpenChemLib JS](https://github.com/cheminfo/openchemlib-js) -
   client-side [cheminformatics](domains/chem/cheminformatics.md)
 * [NGL Viewer](http://nglviewer.org/) - web-based molecular graphics
-* [Chemprop](http://chemprop.csail.mit.edu/) - machine learning for molecular property prediction
 * [Deepchem](https://deepchem.io/) - deep learning for drug discovery
 * [MoleculeNet](https://moleculenet.org/) - a benchmark for molecular machine learning
+
+[//]: # (* [Chemprop]&#40;http://chemprop.csail.mit.edu/&#41; - machine learning for molecular property prediction)
 
 ## Miscellaneous
 
@@ -34,7 +35,7 @@ We are using a number of great open-source projects in our platform. Here they a
 * [Shelf](https://github.com/dart-lang/shelf) - web server
 * [Dock Spawn](https://github.com/coderespawn/dock-spawn) - window docking
 * [Archive](https://github.com/brendan-duncan/archive) - compression
-* [Markdown](https://github.com/dart-lang/markdown) - markdown rendering
+* [Markdown](https://github.com/dart-lang/markdown) - Markdown rendering
 * [Image](https://github.com/brendan-duncan/image) - image processing
 * [three.js](https://threejs.org) - WebGL-powered 3D graphics
 * [Font Awesome](http://fontawesome.io/) - icons

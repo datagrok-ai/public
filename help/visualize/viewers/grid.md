@@ -22,7 +22,7 @@
 
 ## Navigation
 
-| []()                  |                      |
+|                       |                      |
 |-----------------------|----------------------|
 | Up, Down, Left, Right | Navigate             |
 | Page Up, Page Down    | Navigate             |
@@ -33,14 +33,14 @@
 
 ## Sorting
 
-| []()                                |      |
-|-------------------------------------|------|
-| Double-click column header          | Sort |
-| Menu \| Current Column \| Sort      | Sort |
+|                           |                |
+|---------------------------|----------------|
+| Double-click column header | Sort           |
+| Menu\| Current Column\ |Sort      | Sort |
 
 ## Editing
 
-| []()         |                         |
+|              |                         |
 |--------------|-------------------------|
 | Double-click | Edit cell               |
 | Ctrl+C       | Copy cell               |
@@ -50,7 +50,7 @@
 
 ## Resizing and reordering
 
-| []()                      |                      |
+|                           |                      |
 |---------------------------|----------------------|
 | Drag column header        | Reorder columns      |
 | Drag column header border | Resize columns       |
@@ -65,7 +65,7 @@
 | Right-click cell \|  Current column \|  Format |  Change datetime format |
 | Column Properties (F2) \|  Tags \|  format     |  Change datetime format |
 
-![](grid-formatting.gif "Date and number formatting")
+![Date and number formatting](grid-formatting.gif "Date and number formatting")
 
 ## Color-coding
 
@@ -74,7 +74,7 @@
 | Menu \|  Color coding \|  On/Off  | Turn color-coding on/off for all columns  |
 | Menu \|  Color coding \|  Color scheme  | Select a palette  |
 
-![](grid-color-coding.gif "Color-coding")
+![Color-coding](grid-color-coding.gif "Color-coding")
 
 ## Row summary columns
 
@@ -121,7 +121,7 @@ you move from one row to another you immediately see where the row values belong
 the most similar structure to the reference. This also works the other way around: by first clicking on a visual
 element, you will see the row it represents in the grid.
 
-![](../current-rows-2.gif "Current rows")
+![Current rows](../current-rows-2.gif "Current rows")
 
 ## Videos
 

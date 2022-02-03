@@ -61,11 +61,10 @@ info panels can be implemented externally as scripts; for instance, here is the
 of the "Gasteiger Partial Charges" panel. See [public repository](../collaborate/public-repository.md) for details on
 how to contribute to the public repository of scientific functions.
 
-![](../uploads/gifs/chem-model-augment.gif)
+![chem-model-augment](../uploads/gifs/chem-model-augment.gif)
 
 See also:
 
 * [Info panels](info-panels.md)
-* [Self-learning platform]()
 * [Predictive modeling](../learn/predictive-modeling.md)
 * [Public repository](../collaborate/public-repository.md)

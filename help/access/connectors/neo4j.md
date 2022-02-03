@@ -27,7 +27,7 @@ concept that allows Cypher queries to be used as
 
 See [query editor](../data-query-view.md) for details.
 
-![](../../uploads/gifs/query-add.gif "Add query")
+![Add query](../../uploads/gifs/query-add.gif "Add query")
 
 ## Using a query
 

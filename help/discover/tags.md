@@ -178,13 +178,13 @@ Applicable to columns. A database column, in the form on "db.schema.table.column
 retrieved from. Used for data augmentation and impact analysis. See also [db](#db), [db-schema](#db-schema)
 , [db-table](#db-table), [db-column](#db-column).
 
-## Id
+## ID
 
 Entity id, as it is stored in the database. Applicable to tables, columnms, and other entities.
 
 ## Data-connection-id
 
-Id of the [data connection](../access/data-connection.md) that was used to populate the table. Applicable to tables.
+ID of the [data connection](../access/data-connection.md) that was used to populate the table. Applicable to tables.
 
 ## .history
 
