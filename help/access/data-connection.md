@@ -73,8 +73,9 @@ programmatically.
 Note that the platform supports [caching](#caching) of results.
 
 ## Credentials
-Credentials are required to access data sources should be defined in the setup connection.
-[Credentials](data-connection-credentials.md) About credentials.
+
+Credentials required to access data sources should be defined in the setup connection.
+Read more about credentials here: [Credentials](data-connection-credentials.md).
 
 ## Access control
 
