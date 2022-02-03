@@ -44,7 +44,7 @@ export async function testAssureNoError(ms: number): Promise<boolean> {
 }
 
 /** Does best effort to catch all exceptional situations. Currently doesn't catch "Uncaught in promise" */
-export async function testExpectFinish(name: string, foo: () => Promise<any>, ms: number = 5000): Promise<void> {
+export function testExpectFinish(name: string, foo: () => Promise<any>, ms: number = 5000): void {
   test(name, async (): Promise<any> => {
     try {
       grok.shell.lastError = '';
