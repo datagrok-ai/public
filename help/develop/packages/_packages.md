@@ -27,7 +27,7 @@ A package typically contains the following elements:
 ## Creating a package
 
 To develop a package, install the [LTS version of Node.js]. We recommend that you install Node.js using [NVM] to avoid
-permission issues when running NPM packages globally. Check out the [NPM instructions] for more details.
+permission issues when running npm packages globally. Check out the [NPM instructions] for more details.
 
 Now, let's create a package:
 
@@ -90,7 +90,7 @@ commands, refer to the [Datagrok Tools section].
 | .gitignore                              | Files and folders ignored by Git                          |
 | [detectors.js](#detectors)              | File with detectors                                       |
 | [package.json](#package.json)           | Package metadata with predefined dependencies and scripts |
-| package.png                             | Package icon                                              |
+| package.PNG                             | Package icon                                              |
 | README.md                               | Summary of the package                                    |
 | [webpack.config.js](#webpack.config.js) | webpack configuration for development                     |
 
@@ -139,7 +139,7 @@ The package includes the `datagrok-api` dependency &mdash; the JavaScript API yo
 the terminal, run `npm run <script-name>`.
 
 To install the dependencies, run `npm install` from the terminal or run the provided script `install-dependencies` from
-your IDE. You can install other NPM packages (such as React or Babel) using `npm install <npm package>`.
+your IDE. You can install other npm packages (such as React or Babel) using `npm install <npm package>`.
 
 ### <a href="#" id="package.js"></a>package.js
 
@@ -280,7 +280,7 @@ Your package might contain the following additional folders, depending on your n
 | swaggers     | OpenAPI specifications                 | [Access > OpenAPI]          | [EnamineStore], [Swaggers]              |
 | connections  | Database connections                   | [Access > Data Connections] | [Chembl], [UsageAnalysis]               |
 | queries      | Database queries                       | [Access > Data Queries]     | [Chembl], [UsageAnalysis]               |
-| css          | CSS files with custom styles           | -                           | [Notebooks], [Discovery]                |
+| CSS          | CSS files with custom styles           | -                           | [Notebooks], [Discovery]                |
 | data-samples | Data for demo and testing              | -                           | [Chem], [Sunburst]                      |
 
 ## What's next?

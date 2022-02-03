@@ -11,7 +11,7 @@ scatter plot. The grid is sortable. Select columns in the view by selecting corr
 
 General:
 
-| []()                |              |
+|                     |              |
 |---------------------|--------------|
 | Right click         | Context menu |
 | Header double-click | Sort column  |

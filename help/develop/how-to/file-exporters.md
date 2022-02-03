@@ -7,7 +7,7 @@ with [file viewers](custom-file-viewers.md), provide an example of such features
 loading data from the platform. Once registered, it appears at the file's "
 export" menu:
 
-![](file-exporter.gif "Save as SDF")
+![Save as SDF](file-exporter.gif "Save as SDF")
 
 To write an exporter function, add a `fileExporter` tag to its annotation. Make sure to specify the description: it will
 be used as the menu entry, e.g.,

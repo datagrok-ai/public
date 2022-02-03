@@ -272,7 +272,7 @@ Chart types:
 * Matrix plot
 * Histogram
 * Filters
-* 3d scatter plot
+* 3D scatter plot
 * Grid
 * Column viewer
 * Calendar

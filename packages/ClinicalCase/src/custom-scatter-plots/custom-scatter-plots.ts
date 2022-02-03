@@ -5,7 +5,7 @@ export function createHysLawScatterPlot(dataframe, xColumn, yColumn, colorColumn
   const sp = DG.Viewer.scatterPlot(dataframe, {
     x: xColumn,
     y: yColumn,
-    color: colorColumn,
+    color: dataframe.col(colorColumn) ? colorColumn : '',
     legendPosition: 'Right'
   });
 
@@ -18,7 +18,7 @@ export function createBaselineEndpointScatterPlot(dataframe, xColumn, yColumn, c
   const sp = DG.Viewer.scatterPlot(dataframe, {
     x: xColumn,
     y: yColumn,
-    color: colorColumn,
+    color: dataframe.col(colorColumn) ? colorColumn : '',
     legendPosition: 'Right'
   });
 

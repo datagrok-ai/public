@@ -25,14 +25,14 @@ Datagrok server installation consists of two big blocks:
 All Docker containers are based on Ubuntu 20.04 and use the latest software available. It can be deployed in any cloud
 or on a regular machine.
 
-![](network-diagram1.png)
+![Infrastructure diagram](network-diagram1.png)
 
 ## Resources
 
 There are different requirements for every application. In general:
 
-* Datagrok components require 2 vCPU and 4 GiB RAM.
-* Compute components require 4 vCPU and 8 GiB RAM.
+* Datagrok components require 2 vCPU and 4 GB RAM.
+* Compute components require 4 vCPU and 8 GB RAM.
 
 ## Deployment
 
@@ -51,7 +51,7 @@ example [AWS EC2](https://aws.amazon.com/ec2/), on-premise Kubernetes cluster or
 for example [AWS EKS](https://aws.amazon.com/eks/), and container services in cloud provides, for
 example [AWS ECS](https://aws.amazon.com/ecs/).
 
-As [database](#database) Datagrok supports any PostgreSQL cluster out-of-the-box, including cloud solutions for
+As [database](#database) Datagrok supports any PostgreSQL database out-of-the-box, including cloud solutions for
 PostgreSQL database, for example [AWS RDS](https://aws.amazon.com/rds/). We recommend to use scalable and highly
 reliable solutions for database and avoid single database instance setup to prevent datagrok internal information loss
 such as created users, created connections, etc. User data won't be affected anyhow on Datagrok database crash.
@@ -61,7 +61,7 @@ example [AWS S3](https://aws.amazon.com/s3/) or [Google Cloud Storage](https://c
 to use scalable and highly reliable solutions for storage and avoid local file system setup to prevent datagrok internal
 information loss, such as projects, settings, etc. User data won't be affected anyhow on Datagrok storage loss.
 
-Check [How to deploy datagrok?](_deploy.md) for details.
+Check [How to deploy datagrok?](deploy.md) for details.
 
 ## Scalability
 
@@ -292,7 +292,7 @@ of our coding conventions, is fit and tuned for our goals, and lets us do the fo
 * Use either SQL or API for working with DB entities
 * Avoid all boilerplate code for CRUD operations
 * Use the same models on both server-side and client-side
-* Work with property metadata and use it to optimize queries in run-time
+* Work with property metadata and use it to optimize queries in runtime
 * Free-text filtering (SQL-like language)
 * ORM can extract object fields from a database without mapping them to objects
 
@@ -518,7 +518,7 @@ The schema has the following tables:
 
 ## Useful links
 
-* [Deployment](_deploy.md)
+* [Deployment](deploy.md)
 * [Configuration](configuration.md)
 * [Continuous integration](continuous-integration.png)
 * [Versioning policy](../versioning-policy.md)

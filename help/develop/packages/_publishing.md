@@ -48,7 +48,7 @@ To publish a package from your repository:
 2. In the **Add new package dialog**, select **Git** as the source type, enter the URL to your repository on GitHub,
    GitLab, or Bitbucket, and specify the package directory relative to its root.
 3. Click **Load Package Metadata** to get the package name and description.
-4. Select **Publish on Startup**, and then select **Ok**.
+4. Select **Publish on Startup**, and then select **OK**.
 
 ![](../img/git-publishing.png)
 

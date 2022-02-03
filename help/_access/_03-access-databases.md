@@ -23,7 +23,7 @@ Let's look at what we could do on the exploration side.
 
 ### Preview the table data
 
-Under each connection we see a node called `Tables`. It all depends on the provider, where some providers also
+Under each connection we see a Node.js called `Tables`. It all depends on the provider, where some providers also
 support `Schemas`. The simplest way is to simply click on the table and expand contents of it. By default, it shows the
 first 50 rows, so it isn't going to take a lot of time to load the data preview. We find it a very useful tool for just
 checking what is in the database. The content is in our dataframes and data spreadsheet, so that you can already do some

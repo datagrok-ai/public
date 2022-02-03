@@ -32,7 +32,7 @@ time of debugging.
 
 **See more**: [Debugging with VS Code video]
 
-## Debugging with jetbrains ides
+## Debugging with JetBrains ides
 
 ### Debugging with a shell script
 
@@ -53,7 +53,7 @@ To configure debugging with a shell script on WebStorm:
 This script publishes your package to the development server. To publish the package to the public server or run the
 package locally in a Docker container, configure additional scripts.
 
-### Javascript debug configuration
+### JavaScript debug configuration
 
 To configure JS Debug on WebStorm:
 

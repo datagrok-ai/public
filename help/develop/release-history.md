@@ -5,380 +5,371 @@
 
 ## Latest Docker Images
 
-* Datagrok: 
-  *  `docker pull datagrok/datagrok:0.119.0`
-  *  `docker pull datagrok/datagrok:latest`
-  
+* Datagrok:
+    * `docker pull datagrok/datagrok:0.119.0`
+    * `docker pull datagrok/datagrok:latest`
+
 * [Docker-Compose](admin/docker-compose.md)
 
 ## Addressed Issues
 
-* CI: Vulnerability scan 
-
+* CI: Vulnerability scan
 
 # 2022-01-26 Dev build 0.118.0
 
 ## Latest Docker Images
 
-* Datagrok: 
-  *  `docker pull datagrok/datagrok:0.118.0`
-  *  `docker pull datagrok/datagrok:latest`
-  
+* Datagrok:
+    * `docker pull datagrok/datagrok:0.118.0`
+    * `docker pull datagrok/datagrok:latest`
+
 * [Docker-Compose](admin/docker-compose.md)
 
 ## Addressed Issues
 
-* Chem: Fixing package tests, continued 
-* Wiki: cheminformatics help enhancement iteration 1 
-* Embedding viewer should embed Guest User session 
-* Wiki: Chemonformatics fixes 
-* Chem: Fixing package tests; process exceptions 
-* CI: Vulnerability scan 
-
+* Chem: Fixing package tests, continued
+* Wiki: cheminformatics help enhancement iteration 1
+* Embedding viewer should embed Guest User session
+* Wiki: Chemonformatics fixes
+* Chem: Fixing package tests; process exceptions
+* CI: Vulnerability scan
 
 # 2022-01-26 Dev build 0.117.0
 
 ## Latest Docker Images
 
-* Datagrok: 
-  *  `docker pull datagrok/datagrok:0.117.0`
-  *  `docker pull datagrok/datagrok:latest`
-  
+* Datagrok:
+    * `docker pull datagrok/datagrok:0.117.0`
+    * `docker pull datagrok/datagrok:latest`
+
 * [Docker-Compose](admin/docker-compose.md)
 
 ## Addressed Issues
 
-* NPM repositories: new package manager UI 
+* NPM repositories: new package manager UI
 * JS API: Projects API (WIP)
-* Updated public token 
-* Remove redundant deployDataPath 
-* Peptides #275: Patch peptide space detached on point click bug. 
-* Enabled Chem | Descriptors 
-* Add peptide difference cell renderer 
-
+* Updated public token
+* Remove redundant deployDataPath
+* Peptides #275: Patch peptide space detached on point click bug.
+* Enabled Chem | Descriptors
+* Add peptide difference cell renderer
 
 # 2022-01-25 Dev build 0.116.0
 
 ## Latest Docker Images
 
-* Datagrok: 
-  *  `docker pull datagrok/datagrok:0.116.0`
-  *  `docker pull datagrok/datagrok:latest`
-  
+* Datagrok:
+    * `docker pull datagrok/datagrok:0.116.0`
+    * `docker pull datagrok/datagrok:latest`
+
 * [Docker-Compose](admin/docker-compose.md)
 
 ## Addressed Issues
 
 * NPM repositories: new package manager UI (WIP)
-* ViewFactories ScriptView construction enhancement 
+* ViewFactories ScriptView construction enhancement
 * Formula Lines: Editor (WIP)
 * Move all demo assets to packages (WIP)
-* (Bug)  JS-based file handlers are not invoked when you double-click on a file in file browser 
-* #277 Chem: Substructure filter: fixed collaborative filtering 
-* #277 Chem: Substructure filter: picking up current filter 
-* (Bug) DAPI: Filter returns incorrect query 
-* Fixed test 
-* (Bug) Grid: column tools: filter: add: there should be no other filters in the filter group 
-* Simplified the creation of the popup filter 
-* #277 Chem: Substructure filter: better integration for the filter group / popup filter / property panel filter 
-* Formula Lines: Fixed typo 
-* Update the beta users list 
-* API: added getting and saving event types 
-* Fix a css rule 
+* (Bug)  JS-based file handlers are not invoked when you double-click on a file in file browser
+* # 277 Chem: Substructure filter: fixed collaborative filtering
+* # 277 Chem: Substructure filter: picking up current filter
+* (Bug) DAPI: Filter returns incorrect query
+* Fixed test
+* (Bug) Grid: column tools: filter: add: there should be no other filters in the filter group
+* Simplified the creation of the popup filter
+* # 277 Chem: Substructure filter: better integration for the filter group / popup filter / property panel filter
+* Formula Lines: Fixed typo
+* Update the beta users list
+* API: added getting and saving event types
+* Fix a CSS rule
 * NPM repositories: package data caching (WIP)
-* Amazon S3 Adapter: Anonymous access 
-* Packages: Ability to store content in S3 
-* Code cleanup and harmonization 
-* Moved files to folders 
-* Removed default handlers for Function and Script 
-* JS API: GridCellRenderer: ability to render values (without GridCell / GridCellStyle) 
-* Chem: Similarity & Diversity: switched to the renderMolecule() method 
-* Add a grayed-out text color constant 
+* Amazon S3 Adapter: Anonymous access
+* Packages: Ability to store content in S3
+* Code cleanup and harmonization
+* Moved files to folders
+* Removed default handlers for Function and Script
+* JS API: GridCellRenderer: ability to render values (without GridCell / GridCellStyle)
+* Chem: Similarity & Diversity: switched to the renderMolecule() method
+* Add a grayed-out text color constant
 * DataQueries: Support scalar results in setResult method (WIP)
-* UI: Condensed form, units after labels 
-* Bump Demo package version 
-* #155 Chem: Package autotests. expectFloat; adjust getSimilarities test 
-* Fix peptide space bug 
-* Fix bug in Peptide Space 
-* Add property metricDataTypes 
-* Add style fix and improve time complexity 
-* Add diversitySearch test 
-* added ScriptView.fromParams constructor 
-* Always create NPM repository 
-* Peptides #159: Add MSA tests. 
-* Peptides #159: insert missing file. 
-
+* UI: Condensed form, units after labels
+* Bump Demo package version
+* # 155 Chem: Package autotests. expectFloat; adjust getSimilarities test
+* Fix peptide space bug
+* Fix bug in Peptide Space
+* Add property metricDataTypes
+* Add style fix and improve time complexity
+* Add diversitySearch test
+* added ScriptView.fromParams constructor
+* Always create npm repository
+* Peptides #159: Add MSA tests.
+* Peptides #159: insert missing file.
 
 # 2022-01-18 Dev build 0.115.0
 
 ## Latest Docker Images
 
-* Datagrok: 
-  *  `docker pull datagrok/datagrok:0.115.0`
-  *  `docker pull datagrok/datagrok:latest`
-  
+* Datagrok:
+    * `docker pull datagrok/datagrok:0.115.0`
+    * `docker pull datagrok/datagrok:latest`
+
 * [Docker-Compose](admin/docker-compose.md)
 
 ## Addressed Issues
 
 * JBIO: fit tree viewer to real dataset (WIP)
-* Extend Help Deploy to ECS instructution: auto-deploy script 
+* Extend Help Deploy to ECS instructution: auto-deploy script
 * JS API: add dapi tests (WIP)
-* Extend Help Deploy to ECS instructution: add links to AWS documentation 
-* Updated demo/bio peptides data 
-* Extend Help Deploy to ECS instructution: fix deploy script 
+* Extend Help Deploy to ECS instructution: add links to AWS documentation
+* Updated demo/bio peptides data
+* Extend Help Deploy to ECS instructution: fix deploy script
 * Formula Lines: Editor (WIP)
-* Extend Help Deploy to ECS instructution: additional information about HTTPS and SSL certificates 
-* Extend Help Deploy to ECS instructution: Add instructions how to install and configure AWS CLI 
-* Added ability to set code in ScriptView constructor 
-* Extend Help Deploy to ECS instructution: introductory 
-* Clinical case: added tests for open app, data preparation functions, study and patient visit objects 
-
+* Extend Help Deploy to ECS instructution: additional information about HTTPS and SSL certificates
+* Extend Help Deploy to ECS instructution: Add instructions how to install and configure AWS CLI
+* Added ability to set code in ScriptView constructor
+* Extend Help Deploy to ECS instructution: introductory
+* Clinical case: added tests for open app, data preparation functions, study and patient visit objects
 
 # 2022-01-18 Dev build 0.114.0
 
 ## Latest Docker Images
 
-* Datagrok: 
-  *  `docker pull datagrok/datagrok:0.114.0`
-  *  `docker pull datagrok/datagrok:latest`
-  
+* Datagrok:
+    * `docker pull datagrok/datagrok:0.114.0`
+    * `docker pull datagrok/datagrok:latest`
+
 * [Docker-Compose](admin/docker-compose.md)
 
 ## Addressed Issues
 
-* JS API: add Viewer.helpUrl parameter 
+* JS API: add Viewer.helpUrl parameter
 * NPM repositories: new package manager UI (WIP)
 * Formula Lines: Editor (WIP)
-* Updated beta_users.csv 
-* Introduce Func.source constants 
-* (Bug) grok.dapi.files.delete(): NoSuchMethodError 
-* 9913 dataFame 
-* Update the dialog design for developer keys 
-* Fixed parameters names 
-* (Bug) Grid: categorical color-coding cannot be switched on/off without opening 'Edit' menu in some cases 
-* Extend Help Deploy to ECS instructution: how to create RDS and S3 
-* Extend Help Deploy to ECS instructution: remove HTTPS from sample compose file 
-* API: added getting and saving event types 
-
+* Updated beta_users.csv
+* Introduce Func.source constants
+* (Bug) grok.dapi.files.delete(): NoSuchMethodError
+* 9913 dataFame
+* Update the dialog design for developer keys
+* Fixed parameters names
+* (Bug) Grid: categorical color-coding cannot be switched on/off without opening 'Edit' menu in some cases
+* Extend Help Deploy to ECS instructution: how to create RDS and S3
+* Extend Help Deploy to ECS instructution: remove HTTPS from sample compose file
+* API: added getting and saving event types
 
 # 2022-01-17 Dev build 0.113.0
 
 ## Latest Docker Images
 
-* Datagrok: 
-  *  `docker pull datagrok/datagrok:0.113.0`
-  *  `docker pull datagrok/datagrok:latest`
-  
+* Datagrok:
+    * `docker pull datagrok/datagrok:0.113.0`
+    * `docker pull datagrok/datagrok:latest`
+
 * [Docker-Compose](admin/docker-compose.md)
 
 ## Addressed Issues
 
-* (Bug) JS API: "Legend.column =" causes an exception 
+* (Bug) JS API: "Legend.column =" causes an exception
 * NPM repositories: new package manager UI (WIP)
-* (Bug) Grid: virtual column of type bool renders as text 
-* 9913 displaying scalar query outputparams 
-* 9913 space by arrow 
-* DataFrame: editable virtual columns 
-* JS-API: Exposed DataFrame.fromByteArray and FileSource.readAsDataFrame methods 
-* JS API: updated js-api-common files 
-* (Bug) ui.wait() adds default 400x300 size to the container 
-* (Bug) Pivot table icon is missing 
-* JS API: readAsDataFrames renamed to readBinaryDataFrames 
-* Bar chart: click not on the bar to clear the filter 
-* PowerPack: added tests for widgets 
-* ApiTests: added a test for package files 
-* (Bug) Trellis Plot | Inner Viewer Settings throws an exception 
-* ParamCommand: default item comands ("open" for project, "details" for users, etc). Support for double-click 
-* Property panel: decreased the margin for nested accordions 
-* (Bug) Grid: renderer type is not automatically changed when it is set via column.tags['cell-renderer'] 
-* Resolves #266: Chem: molecule column property panel 
+* (Bug) Grid: virtual column of type bool renders as text
+* 9913 displaying scalar query outputparams
+* 9913 space by arrow
+* DataFrame: editable virtual columns
+* JS-API: Exposed DataFrame.fromByteArray and FileSource.readAsDataFrame methods
+* JS API: updated js-api-common files
+* (Bug) ui.wait() adds default 400x300 size to the container
+* (Bug) Pivot table icon is missing
+* JS API: readAsDataFrames renamed to readBinaryDataFrames
+* Bar chart: click not on the bar to clear the filter
+* PowerPack: added tests for widgets
+* ApiTests: added a test for package files
+* (Bug) Trellis Plot | Inner Viewer Settings throws an exception
+* ParamCommand: default item comands ("open" for project, "details" for users, etc). Support for double-click
+* Property panel: decreased the margin for nested accordions
+* (Bug) Grid: renderer type is not automatically changed when it is set via column.tags['cell-renderer']
+* Resolves #266: Chem: molecule column property panel
 * Dialogs: add missing wiki links (WIP)
-* Peptides #253: simple viewers switching 
-
+* Peptides #253: simple viewers switching
 
 # 2022-01-13 Dev build 0.112.0
 
 ## Latest Docker Images
 
-* Datagrok: 
-  *  `docker pull datagrok/datagrok:0.112.0`
-  *  `docker pull datagrok/datagrok:latest`
-  
+* Datagrok:
+    * `docker pull datagrok/datagrok:0.112.0`
+    * `docker pull datagrok/datagrok:latest`
+
 * [Docker-Compose](admin/docker-compose.md)
 
 ## Addressed Issues
 
-* JKG: Allow gnuplot run on different platforms 
+* JKG: Allow gnuplot run on different platforms
 * JS-API: Packages test framework (WIP)
-* Fixed versions constraints 
-* Fixed dependency 
-* Fix docker build for datagrok 
-
+* Fixed versions constraints
+* Fixed dependency
+* Fix docker build for datagrok
 
 # 2022-01-13 Dev build 0.111.0
 
 ## Latest Docker Images
 
-* Datagrok: 
-  *  `docker pull datagrok/datagrok:0.111.0`
-  *  `docker pull datagrok/datagrok:latest`
-  
+* Datagrok:
+    * `docker pull datagrok/datagrok:0.111.0`
+    * `docker pull datagrok/datagrok:latest`
+
 * [Docker-Compose](admin/docker-compose.md)
 
 ## Addressed Issues
 
-* Bar chart: add filtering by clicking a category label in the stacked BC  
-* Bar chart: fixed bar border line 
-* (Bug) JS API: "Legend.column =" causes an exception 
-* Timelines: document supported date formats 
-* Bump elasticsearch from 6.4.2 to 7.16.2 Elasticsearch release to upgrade Apache Log4j2 
-
+* Bar chart: add filtering by clicking a category label in the stacked BC
+* Bar chart: fixed bar border line
+* (Bug) JS API: "Legend.column =" causes an exception
+* Timelines: document supported date formats
+* Bump elasticsearch from 6.4.2 to 7.16.2 Elasticsearch release to upgrade Apache Log4j2
 
 # 2022-01-12 Dev build 0.110.0
 
 ## Latest Docker Images
 
-* Datagrok: 
-  *  `docker pull datagrok/datagrok:0.110.0`
-  *  `docker pull datagrok/datagrok:latest`
-  
+* Datagrok:
+    * `docker pull datagrok/datagrok:0.110.0`
+    * `docker pull datagrok/datagrok:latest`
+
 * [Docker-Compose](admin/docker-compose.md)
 
 ## Addressed Issues
 
-* Usage analysis: added rendering of package and user meta 
-* Clinical Case: updated help, added help for Medical History and Visits views 
-* Bump all log4j components from 2.16.0 to 2.17.1 in /connectors/grok_connect 
-* Bump elasticsearch from 6.4.2 to 7.16.2 Elasticsearch release to upgrade Apache Log4j2 
+* Usage analysis: added rendering of package and user meta
+* Clinical Case: updated help, added help for Medical History and Visits views
+* Bump all log4j components from 2.16.0 to 2.17.1 in /connectors/grok_connect
+* Bump elasticsearch from 6.4.2 to 7.16.2 Elasticsearch release to upgrade Apache Log4j2
 * JS-API: Packages test framework (WIP)
-
 
 # 2022-01-12 Dev build 0.109.0
 
 ## Latest Docker Images
 
-* Datagrok: 
-  *  `docker pull datagrok/datagrok:0.109.0`
-  *  `docker pull datagrok/datagrok:latest`
-  
+* Datagrok:
+    * `docker pull datagrok/datagrok:0.109.0`
+    * `docker pull datagrok/datagrok:latest`
+
 * [Docker-Compose](admin/docker-compose.md)
 
 ## Addressed Issues
 
-* Updated beta_users.csv 
+* Updated beta_users.csv
 * Change release-history.md during release
-* (Bug) DataFrame.onCellValue event not fired when a value is deleted in a spreadsheet by pressing Del or Backspace 
-* Octave: vectorization 
-* Viewer in accordion has zero height 
-* Fixed analyzer warnings 
-* Bar chart: pass information about is click was on the header  
-* Bar Chart: maxBarHeight property 
-* Bar Chart: verticalAlign property 
+* (Bug) DataFrame.onCellValue event not fired when a value is deleted in a spreadsheet by pressing Del or Backspace
+* Octave: vectorization
+* Viewer in accordion has zero height
+* Fixed analyzer warnings
+* Bar chart: pass information about is click was on the header
+* Bar Chart: maxBarHeight property
+* Bar Chart: verticalAlign property
 * (Bug) Bar Chart: initial render cuts category names (WIP)
-* ML #248: Fix bio package to be published on npm. 
-* ML #248: Add missing changes. 
-* Clinical Case: changed color palette for heatmaps and grid in Visits view 
-* UI Tests buttons 
-* UI Tests add import to package.ts 
-* #259 Chem: Serialized functions execution 
-* (Bug) JS API: Legend.create doesn't return an instance of DG.Legend class 
-* JS API: legend tests 
+* ML #248: Fix bio package to be published on npm.
+* ML #248: Add missing changes.
+* Clinical Case: changed color palette for heatmaps and grid in Visits view
+* UI Tests buttons
+* UI Tests add import to package.ts
+* # 259 Chem: Serialized functions execution
+* (Bug) JS API: Legend.create doesn't return an instance of DG.Legend class
+* JS API: legend tests
 * Add CodeMirror to sources
-* Clinical Case: added Visits view 
+* Clinical Case: added Visits view
 * Update the dialog design for developer keys (WIP)
 * Fixed analyzer warnings
-* NPM repositories: add registry property 
-* Formula Lines: Property harmonization (opacity) 
-* JS API: Moved properties (column.colors => column.meta.colors, column.markers => column.meta.markers) 
-* Scripting: global named conda environments 
+* NPM repositories: add registry property
+* Formula Lines: Property harmonization (opacity)
+* JS API: Moved properties (column.colors => column.meta.colors, column.markers => column.meta.markers)
+* Scripting: global named conda environments
 * JS API: Users API (WIP)
-* CSS Fix 
-* Formula Lines: Endless lines 
-* Result Header CSS Fix 
-* Formula Lines: Minor changes 
-* Minor code cleanup, switched to the thin barbell look 
-* Fixed a silly division by zero error 
+* CSS Fix
+* Formula Lines: Endless lines
+* Result Header CSS Fix
+* Formula Lines: Minor changes
+* Minor code cleanup, switched to the thin barbell look
+* Fixed a silly division by zero error
 * JS API: Filters (WIP)
-* Fixed filtering and add minor fixes 
-* _JsBasedHandlers resulting tables names fix 
-* Bar Chart: Fixed "compact()" call on nullable "stackColAggr" 
-* Removed parentheses 
+* Fixed filtering and add minor fixes
+* _JsBasedHandlers resulting tables names fix
+* Bar Chart: Fixed "compact()" call on nullable "stackColAggr"
+* Removed parentheses
 * NPM repositories: new package manager UI (WIP)
-* (Bug) Line Chart: Fixed bug with "Y Global Scale" 
+* (Bug) Line Chart: Fixed bug with "Y Global Scale"
 * (Bug) Core: Sensitivity analysis won't work (WIP)
-* Line Chart: Added global Y-axis 
-* Line Chart: Added title for global Y-axis 
-* Octave: vectorization 
-* (Bug) Line Chart: X-selector overlaps the chart when the x-axis is auto-hidden 
-* (Bug) Line Chart: No X-axis in Multi Axis mode (if there are many lines) 
-* Line Chart: Show chevrons only on mouse hover 
-* Line Chart: Ability to set selectors legend position 
+* Line Chart: Added global Y-axis
+* Line Chart: Added title for global Y-axis
+* Octave: vectorization
+* (Bug) Line Chart: X-selector overlaps the chart when the x-axis is auto-hidden
+* (Bug) Line Chart: No X-axis in Multi Axis mode (if there are many lines)
+* Line Chart: Show chevrons only on mouse hover
+* Line Chart: Ability to set selectors legend position
 * JS API: improve the registration of async functions (WIP)
-* (Bug) Grid: column popups: popup container left handing in the DOM tree after a popup is closed 
-* Filters API: passing the requester filter up the event chain 
-* (Bug) ui.wait() adds default 400x300 size to the container 
-* Filters in the column property panel 
+* (Bug) Grid: column popups: popup container left handing in the DOM tree after a popup is closed
+* Filters API: passing the requester filter up the event chain
+* (Bug) ui.wait() adds default 400x300 size to the container
+* Filters in the column property panel
 * Grid: column quick panel: ability to add as filter (WIP)
-* Bar chart: checkboxes "select" and "filter" in the context menu 
-* (Bug) Property panel: columns: clicking on the column does not change current object 
-* Added a comment on comments 
-* ClientPackageFunc: ability to run function synchronously once the package is loaded 
-* (Bug) Scatter Plot: programmatic zoom causes an error 
-* Untyped events since they clearly were not Stream<String> 
-* Bar chart: add categoryValueWidth property 
-* Chem: excludin duplicated features 
-* (Bug) Scatter Plot: onZoomed returns objects of different data types when the plot is zoomed manually and programmaticaly 
-* Provide Area \- interface for Rect, Polygon, etc. 
-* Line Chart: Auto margin for yAxisTitle (get rid of yGlobalMarginAxisLeft) 
-* (Bug) Line Chart: The top marker of each line is cut off 
-* Line Chart: Changed close-icon style of lines 
-* Line Chart: Place close buttons to the right of the y-selectors in MultiAxis mode 
-* Wiki harmonization \- WIP 
-* Minor CSS improvements 
-* Name harmonization: API Samples, API Tests 
-* Set some packages as beta. 
-* Packages: remove unneeded package detectors 
-* Dialog.create: made options really optionable :) 
-* Axes: Ability to display vertical axis on the right side of the chart 
-* Line Chart: 2 different y-axes when lines count = 2 
-* Documentation improvements 
-* Chem: move semantic type detectors to the Chem package 
-* (Bug) Chem: some panels (drug likeness, toxicity, etc) do not work with molblocks-encoded molecules 
-* Unit conversion \- WIP 
-* Chem: get rid of the Molecule-specific renderer tricks in the core 
-* Line Chart: Special y-selector visual mode for 1 and 2 lines 
-* Axes: Add more y-tickmarks (need for Line Chart) 
-* Reusing DruglikenessPredictor 
-* (Bug) Opening an SDF file results in writing a big binary array to Datagrok's console 
-* Made the accordion pane's left margin smaller 
-* (Bug) Info panel invocations end up cluttering Datagrok console 
-* Build fix 
-* JS API: Cell.value setter 
-* (Bug) Chem: double-clicking on a structure: move to the Chem package 
-* (Bug) Chem: double-clicking on a structure opens an empty sketcher 
-* (Bug) Chem: Molfile widget does not work with molblocks 
-* Implemented #243: Chem: sketcher: "Copy as SMILES" and "Copy as MOLBLOCK" context commands 
-* CSS fixes 
-* Code cleanup 
-* Chem: fixed two memory leaks (molecules not being disposed) 
-* CSS fix 
-* Chem: SDF importer: fixed a bug with 100 first rows being ignored 
-* Chem: removed unnecessary imports 
+* Bar chart: checkboxes "select" and "filter" in the context menu
+* (Bug) Property panel: columns: clicking on the column does not change current object
+* Added a comment on comments
+* ClientPackageFunc: ability to run function synchronously once the package is loaded
+* (Bug) Scatter Plot: programmatic zoom causes an error
+* Untyped events since they clearly were not Stream<String>
+* Bar chart: add categoryValueWidth property
+* Chem: excludin duplicated features
+* (Bug) Scatter Plot: onZoomed returns objects of different data types when the plot is zoomed manually and
+  programmaticaly
+* Provide Area \- interface for Rect, Polygon, etc.
+* Line Chart: Auto margin for yAxisTitle (get rid of yGlobalMarginAxisLeft)
+* (Bug) Line Chart: The top marker of each line is cut off
+* Line Chart: Changed close-icon style of lines
+* Line Chart: Place close buttons to the right of the y-selectors in MultiAxis mode
+* Wiki harmonization \- WIP
+* Minor CSS improvements
+* Name harmonization: API Samples, API Tests
+* Set some packages as beta.
+* Packages: remove unneeded package detectors
+* Dialog.create: made options really optionable :)
+* Axes: Ability to display vertical axis on the right side of the chart
+* Line Chart: 2 different y-axes when lines count = 2
+* Documentation improvements
+* Chem: move semantic type detectors to the Chem package
+* (Bug) Chem: some panels (drug likeness, toxicity, etc) do not work with molblocks-encoded molecules
+* Unit conversion \- WIP
+* Chem: get rid of the Molecule-specific renderer tricks in the core
+* Line Chart: Special y-selector visual mode for 1 and 2 lines
+* Axes: Add more y-tickmarks (need for Line Chart)
+* Reusing DruglikenessPredictor
+* (Bug) Opening an SDF file results in writing a big binary array to Datagrok's console
+* Made the accordion pane's left margin smaller
+* (Bug) Info panel invocations end up cluttering Datagrok console
+* Build fix
+* JS API: Cell.value setter
+* (Bug) Chem: double-clicking on a structure: move to the Chem package
+* (Bug) Chem: double-clicking on a structure opens an empty sketcher
+* (Bug) Chem: Molfile widget does not work with molblocks
+* Implemented #243: Chem: sketcher: "Copy as SMILES" and "Copy as MOLBLOCK" context commands
+* CSS fixes
+* Code cleanup
+* Chem: fixed two memory leaks (molecules not being disposed)
+* CSS fix
+* Chem: SDF importer: fixed a bug with 100 first rows being ignored
+* Chem: removed unnecessary imports
 * JS API: Func.find: ability to search by metadata (WIP)
-* Dart Sketcher: fixed an issue with smiles = null 
-* Chem: refactoring cell rendering \- WIP 
+* Dart Sketcher: fixed an issue with smiles = null
+* Chem: refactoring cell rendering \- WIP
 * Formula Lines: Editor (WIP)
-* grok.shell tests fix 
-* (Bug) Octave: graphics won't work 
-* DevOps documentation 
-* Modified field length 
+* grok.shell tests fix
+* (Bug) Octave: graphics won't work
+* DevOps documentation
+* Modified field length
 * Update the dialog design for developer keys (WIP)
-* Help failed tests troubleshooting 
-* (Bug) Bar chart: scroll the page when BC scrolls are invisible  
-* #254 Chem: Lazy load for workers 
-* H2O: Grok Helper URL prefix 
-* #155 Chem: Package autotests. getSimilarities 
+* Help failed tests troubleshooting
+* (Bug) Bar chart: scroll the page when BC scrolls are invisible
+* # 254 Chem: Lazy load for workers
+* H2O: Grok Helper URL prefix
+* # 155 Chem: Package autotests. getSimilarities
 
 # 2021-12-22 Dev build 0.107.0
 
@@ -392,7 +383,7 @@
 
 ## Addressed Issues
 
-* (Bug) NPM repositories: add registry property
+* (Bug) npm repositories: add registry property
 * Formula Lines: Property harmonization (opacity)
 * JS API: Moved properties (column.colors => column.meta.colors, column.markers =>
   column.meta.markers)
@@ -434,12 +425,12 @@
 * Scripting: in-place definition for environments
 * (Bug) Viewer Filter: Scatter Plot doesn't refresh after Viewer filter changed
 * H2O: log4j CVE-2021-44228 remediation
-* Css fixes
+* CSS fixes
 * CSS Harmonization
 * Changed default run section to condensed mode
 * Fixed analyzer warning
 * Formula Lines: Name harmonization \- core side (doesn't affect users)
-* Formula Lines: Name harmonization \- js api side (affects users). Change property name: equation -> formula. Both
+* Formula Lines: Name harmonization \- js API side (affects users). Change property name: equation -> formula. Both
   options are valid, but equation is obsolete.
 * (Bug) ColumnComboBox: allowDrop field is ignored
 * (Bug) Filters: closing the viewer does not properly detach it (event subscriptions are leaking)
@@ -498,7 +489,7 @@
 * (Bug) Grid: categorical color-coding cannot be switched on/off without opening 'Edit' menu in some cases
 * Push version using the version in package.json file
 * (Bug) Formula Lines: "=" in the column names breaks the formula lines
-* (Bug) NPM repositories: add registry property (WIP)
+* (Bug) npm repositories: add registry property (WIP)
 * Actions panel function names fix
 * Added build all batch script
 * Fixed name conflict (opacity)
@@ -576,7 +567,7 @@
 * Formula lines: Fixed name conflict
 * NPM repositories: add check for deprecated versions
 * NPM repositories: improve package search for given scope (WIP)
-* Compute: Vmax: flux decay plot outliers bug fix
+* Compute: Vmax: flux decay plot outliers bugfix
 * Terraform configuration for CVM
 * Function View: Viewer positioning tags
 * Function View: Ability to show grid
@@ -596,7 +587,7 @@
 * GitHub Actions: Update js-api/package-lock.json
 * Dev-tools: version bump
 * GitHub Actions: Update packages/DevTools/package-lock.json
-* 228 Chem: descriptors, incho, inchi keys, mcs refactoring and polishing, bug fixes
+* 228 Chem: descriptors, incho, inchi keys, mcs refactoring and polishing, bugfixes
 * Compute: Vmax: editable input tab and transposed output tables
 * Compute: removed margin after info block in SelOut
 * Compute: centered the buttons in OutSel
@@ -696,7 +687,7 @@
 * (Bug) Calculated column with numeric type and empty formula leaves no formula tag
 * Ability to show multiple viewers in Function View
 * Function View: Show table inputs if there are viewers set
-* small css adjustment
+* small CSS adjustment
 
 # 2021-12-02 Dev build 0.96.0
 
@@ -799,7 +790,7 @@
 * GitHub Actions: Update packages/Compute/package-lock.json
 * Fixed addNewColumn layout
 * Chem: returning locks to the package functions
-* Unit tests: exclude and include components from command line
+* Unit tests: exclude and include components from command-line
 * Compute: Vmax: Pmax: output parameters joined in tables
 * (Bug) Grok connect: NPE after dev deploy
 * Updated dev environment v2 for Linux users
@@ -941,7 +932,7 @@
 * Chem: similarity search port
 * Chem: fixes
 * Peptides: package restructuring
-* Chem: 3d coordinates script optimization
+* Chem: 3D coordinates script optimization
 * Compute: added additional column of flux
 * Remove a utility function
 * (Bug) datagrok-tools: `grok add` inserts invalid import statements
@@ -964,8 +955,8 @@
 * Compute: changed reason to rationale term
 * Tutorials: Add sticky header
 * Tutorials: add chevron icon for step
-* Tutorials: update css
-* Fixed css
+* Tutorials: update CSS
+* Fixed CSS
 * (Bug) Multiple FuncCall.onCancel subscriptions (WIP)
 * Additional debug lines
 
@@ -989,7 +980,7 @@
 * Compute: minor UI improvements
 * Compute: help: embedding as iframe
 * OnViewAdding event
-* Added a gif on how to share a connection
+* Added a GIF on how to share a connection
 * Compute: documentation
 
 # 2021-11-21 Dev build 0.95.5
@@ -1119,7 +1110,7 @@
 * Lines by equations: Ability to remove lines from storage
 * Datlas: keep trying to connect to Grok connect
 * Removed relative paths to datagrok-api
-* MultiView css fix
+* MultiView CSS fix
 * GitHub Actions: Update packages/Ketcher/package-lock.json
 * GitHub Actions: Update packages/ScatterPlot3D/package-lock.json
 * Compute: documentation \- WIP
@@ -1219,7 +1210,7 @@
 * Wiki: Custom machine learning models. Links
 * Charts: fix a package publication error
 * JS API: update MapChangeArgs interface
-* # 53 Tutorials package: change node placement
+* # 53 Tutorials package: change Node.js placement
 * # 53 Tutorials package: EDA: viewers (WIP)
 * JS API: add event args types to onViewerAdded/onViewerClosed
 * Oligo Batch Calculator: detect errors when code table contains one-char and two-chars codes
@@ -1247,7 +1238,7 @@
 * aligned sequence split function
 * fixed splitAlignedPeptides function
 * added splitAlignedSequence panel function
-* closes #113 datagrok-tools: package template: add eslint config file
+* closes #113 datagrok-tools: package template: add ESLint config file
 * Update CONTRIB.md
 * Peptides: compile the initial dataset, detect sequence, split
 * rewrite Peptides package in TypeScript
@@ -1289,7 +1280,7 @@
 * Peptides: scaling method replace ln -> lg
 * Fixed Analyzer warning
 * Removed old dependency
-* lock files
+* lockfiles
 * Barchart: Font changed to serif-sans, column numeration changed, current row highlighting added
 * Peptides: renderer fix
 * Peptides: added histogram and updated stats, scaling fix
@@ -1322,7 +1313,7 @@
 * # 53 Tutorials package: code clean-up
 * # 53 Tutorials package: helpers for working with view inputs
 * Update icons for packages
-* Update package.png
+* Update package.PNG
 * Update Laboratory view
 * Peptides: color coding optimization
 * # 53 Tutorials package: openViewByType method
@@ -1354,11 +1345,11 @@
 * # 53 Tutorials package: change the storage structure (refactoring, WIP)
 * # 53 Tutorials package: a proper way to access a tutorial's track (refactoring, WIP)
 * Closes #119 Chem: Alignment differs for same MolBlocks with different offsets
-* # 53 Tutorials package: css files (refactoring, WIP)
+* # 53 Tutorials package: CSS files (refactoring, WIP)
 * Closes #120 Chem: Rotation flicker when using alignment
 * Peptides: AA render in sar viewer
 * # 117: PowerPack: PowerSearch: search templates
-* update tutorials. Add css style
+* update tutorials. Add CSS style
 * tutorials images
 * update tutorials
 * Closes #121 (+ #77). Chem: Support SMARTS
@@ -1503,7 +1494,7 @@
 * Fixes #136: Client-side SDF file reader
 * Removed the sdf file reader from Chem (since it is now part of the OpenChemLib)
 * Peptides: minor improvements
-* Help: Change youtube video to screenshots (WIP)
+* Help: Change YouTube video to screenshots (WIP)
 * # 53 Tutorials package: chem: update datasets
 * # 132 Chem: Move Substructure Filter panel to the package
 * Removed debug printout
@@ -1520,13 +1511,13 @@
 * added summary view description to readme
 * summary view screenshots
 * updated images links
-* added gif of summary view
-* added summary gif
-* set gif width and height
+* added GIF of summary view
+* added summary GIF
+* set GIF width and height
 * timelines view description
 * corrected typo
 * patient profile view description
-* correced markdown
+* correced Markdown
 * All dependent columns should be recalculated after new formula was applied (WIP)
 * Molecular Liability Browser: refactor to handle common actions in NGL and pViz
 * adverse events view description
@@ -1560,7 +1551,7 @@
 * add chemSimilarityAnalysis
 * added validation view description, fixed bug with time profile view
 * # 53 Tutorials package: add missing titles
-* updated ae browser gif
+* updated ae browser GIF
 * Connection pool test
 * Clinical Case: update property panel
 * View: helpUrl setter
@@ -1610,7 +1601,7 @@
 * Added manual outliers detection
 * Peptides: removing lock
 * Sequence Translator: option to be able to view just users’ pattern
-* Added eslint config and formatted all existing files
+* Added ESLint config and formatted all existing files
 * # 53 Tutorials package: chem: virtual screening
 * SequenceTranslator: minor code simplification
 * Oligo Batch Calculator: assume sequence representation by it's first valid code
@@ -1631,8 +1622,8 @@
 * Lasso tool is enabled by default
 * Fixed typo in ui.list example
 * added help for summary view
-* added help urls for views
-* moved seting of help urls to constructors
+* added help URLs for views
+* moved seting of help URLs to constructors
 * Lesser fixes for tutorials
 * use byteArray type as fingerprint in similarityAnalysis function
 * Fixed scatterPlot width
@@ -1746,14 +1737,14 @@
 * Fixed lists' names
 * Missing package-lock files.
 * Added a dummy simulation example
-* add a bug fix
+* add a bugfix
 * add another code style fix
 * Wiki: minor corrections
 * Release Notes: 2021-10-14 Build 0.94.0 (cleanup)
 * change the function name and add style fix
 * Minor fixes
 * # 178: Compute: Function analyzers: Function parameters grid \- WIP
-* Added missing lock files
+* Added missing lockfiles
 * Grok connect: improve Hikari idle connections timeout
 * Chem: SA optimization and other minor improvements
 * Removed obsolete packages.
@@ -1881,7 +1872,7 @@
 * GitHub Actions: Update packages/Peptides/package-lock.json
 * GitHub Actions: Update packages/SequenceTranslator/package-lock.json
 * GitHub Actions: Update packages/Tutorials/package-lock.json
-* Chem: 3d structure panel fix
+* Chem: 3D structure panel fix
 * GitHub Actions: Discovery and Forms packages
 * GitHub Actions: Update packages/Discovery/package-lock.json
 * GitHub Actions: Update packages/Forms/package-lock.json
@@ -1901,8 +1892,8 @@
 * js-api package-lock.json new version
 * Removing an extra line
 * Chem: To #PR 39. Invalidate categories
-* Peptides: RegEx catastrophic backtracking fix
-* Peptides: string trimming befor regexp testing
+* Peptides: regular expression catastrophic backtracking fix
+* Peptides: string trimming befor regular expression testing
 * Chem: version bump
 * Compute: changed 'reason' term to 'rationale'
 * Update .gitignore.
@@ -2013,7 +2004,7 @@
 * Fixes #136: Client-side SDF file reader
 * Removed the sdf file reader from Chem (since it is now part of the OpenChemLib)
 * Peptides: minor improvements
-* Help: Change youtube video to screenshots (WIP)
+* Help: Change YouTube video to screenshots (WIP)
 * \#53 Tutorials package: chem: update datasets
 * \#132 Chem: Move Substructure Filter panel to the package
 * Removed debug printout
@@ -2033,14 +2024,14 @@
 * added summary view description to readme
 * summary view screenshots
 * updated images links
-* added gif of summary view
-* added summary gif
-* set gif width and height
+* added GIF of summary view
+* added summary GIF
+* set GIF width and height
 * timelines view description
 * corrected typo
 * Fixed JS-API deploy
 * patient profile view description
-* correced markdown
+* correced Markdown
 * All dependent columns should be recalculated after new formula was applied (WIP)
 * Molecular Liability Browser: refactor to handle common actions in NGL and pViz
 * adverse events view description
@@ -2080,7 +2071,7 @@
 * (Bug) Grid: column reordering throws an error
 * added validation view description, fixed bug with time profile view
 * \#53 Tutorials package: add missing titles
-* updated ae browser gif
+* updated ae browser GIF
 * Clinical Case: update property panel
 * View: helpUrl setter
 * \#53 Tutorials package: chem: renaming
@@ -2133,7 +2124,7 @@
 * Peptides: removing lock
 * Fixed analyzer warnings
 * Sequence Translator: option to be able to view just users’ pattern
-* Added eslint config and formatted all existing files
+* Added ESLint config and formatted all existing files
 * \#53 Tutorials package: chem: virtual screening
 * (Bug) Filters: date format is not correctly displayed in a tooltip
 * SequenceTranslator: minor code simplification
@@ -2154,7 +2145,7 @@
 * Added promise resolve on dialog closing
 * Added RemoveOutlier button
 * Added column existence check before the column insertion
-* Removed debug line, Fixed css
+* Removed debug line, Fixed CSS
 * Harmonize scalar outputs in function view (WIP)
 * Removed debug
 * Fixed backgroundColor option to be optional
@@ -2163,8 +2154,8 @@
 * Fixed typo in ui.list example
 * Add demo files
 * added help for summary view
-* added help urls for views
-* moved seting of help urls to constructors
+* added help URLs for views
+* moved seting of help URLs to constructors
 * Lesser fixes for tutorials
 * Fixed scatterPlot width
 * Changed non-mutating outlier selection on mutating
@@ -2259,7 +2250,7 @@
 * Grok script: add timing to log
 * Harmonize scalar outputs in function view (WIP)
 * Help & JS Examples: Add info about lines & band in a Scatter Plot (WIP)
-* Help: Change youtube video to screenshots (WIP)
+* Help: Change YouTube video to screenshots (WIP)
 * JS-API: Accordion.addTitle method
 * JS-API: Accordion.addTitle method (WIP)
 * JS-API: AccordionPane.root property
@@ -2325,7 +2316,7 @@
 * Modified Patient Profele View, added AE Risk Assessment View
 * Molecular Liability Browser: refactor to handle common actions in NGL and pViz
 * moved reading of validation rules table to clinicalCaseApp() function
-* moved seting of help urls to constructors
+* moved seting of help URLs to constructors
 * Multi linechart with variable number of charts
 * MultiPlot: add category selection to the mulit linechart
 * MultiPlot: added file extension
@@ -2390,7 +2381,7 @@
 * Chem | Similarity Analysis: Execution process does not end. Errors in the console
 * Core: FileInfo.readAsString returns undefined
 * DataSync: Do not set .query tag if no query was loaded
-* Exception on publishing NPM repo
+* Exception on publishing npm repository
 * Filter resets when user recalculates column formula
 * Filters: date format is not correctly displayed in a tooltip
 * Filters: Histogram: synchronization issue
@@ -2509,7 +2500,7 @@
 * Create toolbar.js
 * Update icons.js
 * New widgets styling
-* Update power-pack.css
+* Update power-pack.CSS
 * toolbox example
 * Update toolbox.js
 * \- if RdKitSubstructLibrary.search() is passed an invalid query, return no matches rather than crashing \- the
@@ -2537,7 +2528,7 @@
 * added widget ordering
 * image thumbnails for learn widget
 * df.dialogs.addNewColumn fix
-* update learn widget, add new css
+* update learn widget, add new CSS
 * \#53 Tutorials package
 * (Bug) Tools: False breakpoints in VS Code debugging (WIP)
 * (Bug) Grok connect: batch mode sometimes returns the first data frame instead of the last
@@ -2658,7 +2649,7 @@
 * Wiki: Custom machine learning models. Links
 * Charts: fix a package publication error
 * JS API: update MapChangeArgs interface
-* \#53 Tutorials package: change node placement
+* \#53 Tutorials package: change Node.js placement
 * \#53 Tutorials package: EDA: viewers (WIP)
 * JS API: add event args types to onViewerAdded/onViewerClosed
 * Oligo Batch Calculator: detect errors when code table contains one-char and two-chars codes
@@ -2696,7 +2687,7 @@
 * aligned sequence split function
 * fixed splitAlignedPeptides function
 * added splitAlignedSequence panel function
-* closes #113 datagrok-tools: package template: add eslint config file
+* closes #113 datagrok-tools: package template: add ESLint config file
 * Update CONTRIB.md
 * Peptides: compile the initial dataset, detect sequence, split
 * Added a demo file with peptide sequences.
@@ -2730,7 +2721,7 @@
 * added ability to select values for y axe in multiplot, updated patient profile and timelines views
 * Peptide Cell renderer
 * \#53 Tutorials package: ML (predictive modeling tutorial): missing values imputation
-* PackageView and Package PP: show github URL
+* PackageView and Package PP: show GitHub URL
 * Clinical Cases UI update
 * (Bug) Add new package: impossible to add a package without description
 * (Bug) Apps: App button goes to common heap instead of separate tab
@@ -2749,7 +2740,7 @@
 * Fixed Analyzer warning
 * Fixed typo
 * Removed old dependency
-* lock files
+* lockfiles
 * Barchart: Font changed to serif-sans, column numeration changed, current row highlighting added
 * Peptides: renderer fix
 * Package Settings: don't show the settings editor when there are no properties to edit
@@ -2787,7 +2778,7 @@
 * Bar chart: add int column as split and stack column
 * \#53 Tutorials package: helpers for working with view inputs
 * Update icons for packages
-* Update package.png
+* Update package.PNG
 * Update Laboratory view
 * Peptides: color coding optimization
 * \#53 Tutorials package: openViewByType method
@@ -2833,13 +2824,13 @@
 * \#53 Tutorials package: change the storage structure (refactoring, WIP)
 * \#53 Tutorials package: a proper way to access a tutorial's track (refactoring, WIP)
 * Closes #119 Chem: Alignment differs for same MolBlocks with different offsets
-* \#53 Tutorials package: css files (refactoring, WIP)
+* \#53 Tutorials package: CSS files (refactoring, WIP)
 * Closes #120 Chem: Rotation flicker when using alignment
 * Peptides: AA render in sar viewer
 * (Bug) Package environment file deploy does not work
 * \#117: PowerPack: PowerSearch: search templates
 * Support npm repositories
-* update tutorials. Add css style
+* update tutorials. Add CSS style
 * Packages: Ignore JS files if TS present
 * tutorials images
 * update tutorials
@@ -2991,7 +2982,7 @@
 * (Bug) JS: Property setter doesn't work on FuncCall
 * Package files: Remove path prefix
 * CSS fix
-* (Bug) Exception on publishing NPM repo
+* (Bug) Exception on publishing npm repository
 * update learning widget
 * Peptides: Initial table columns are hidden& Full AAname added to tooltip
 * Revert "Better typing"
@@ -3031,7 +3022,7 @@
 * Fixes #136: Client-side SDF file reader
 * Removed the sdf file reader from Chem (since it is now part of the OpenChemLib)
 * Peptides: minor improvements
-* Help: Change youtube video to screenshots (WIP)
+* Help: Change YouTube video to screenshots (WIP)
 * \#53 Tutorials package: chem: update datasets
 * \#132 Chem: Move Substructure Filter panel to the package
 * Removed debug printout
@@ -3050,14 +3041,14 @@
 * added summary view description to readme
 * summary view screenshots
 * updated images links
-* added gif of summary view
-* added summary gif
-* set gif width and height
+* added GIF of summary view
+* added summary GIF
+* set GIF width and height
 * timelines view description
 * corrected typo
 * Fixed JS-API deploy
 * patient profile view description
-* correced markdown
+* correced Markdown
 * All dependent columns should be recalculated after new formula was applied (WIP)
 * Molecular Liability Browser: refactor to handle common actions in NGL and pViz
 * adverse events view description
@@ -3096,7 +3087,7 @@
 * (Bug) Grid: column reordering throws an error
 * added validation view description, fixed bug with time profile view
 * \#53 Tutorials package: add missing titles
-* updated ae browser gif
+* updated ae browser GIF
 * Clinical Case: update property panel
 * View: helpUrl setter
 * \#53 Tutorials package: chem: renaming
@@ -3147,7 +3138,7 @@
 * Added manual outliers detection
 * Peptides: removing lock
 * Sequence Translator: option to be able to view just users’ pattern
-* Added eslint config and formatted all existing files
+* Added ESLint config and formatted all existing files
 * \#53 Tutorials package: chem: virtual screening
 * (Bug) Filters: date format is not correctly displayed in a tooltip
 * SequenceTranslator: minor code simplification
@@ -3168,7 +3159,7 @@
 * Added column existence check before the column insertion
 * Added protection from multiple dialog opening
 * Added promise resolve on dialog closing
-* Removed debug line, Fixed css
+* Removed debug line, Fixed CSS
 * Harmonize scalar outputs in function view (WIP)
 * Removed debug
 * Fixed backgroundColor option to be optional
@@ -3176,8 +3167,8 @@
 * Lasso tool is enabled by default
 * Fixed typo in ui.list example
 * added help for summary view
-* added help urls for views
-* moved seting of help urls to constructors
+* added help URLs for views
+* moved seting of help URLs to constructors
 * Lesser fixes for tutorials
 * Fixed scatterPlot width
 * Changed non-mutating outlier selection on mutating
@@ -3284,7 +3275,7 @@
 * (Bug) JS: Property setter doesn't work on FuncCall
 * Package files: Remove path prefix
 * CSS fix
-* (Bug) Exception on publishing NPM repo
+* (Bug) Exception on publishing npm repository
 * update learning widget
 * Peptides: Initial table columns are hidden& Full AAname added to tooltip
 * Revert "Better typing"
@@ -3408,11 +3399,11 @@
 * \#53 Tutorials package: change the storage structure (refactoring, WIP)
 * \#53 Tutorials package: a proper way to access a tutorial's track (refactoring, WIP)
 * Closes #119 Chem: Alignment differs for same MolBlocks with different offsets
-* \#53 Tutorials package: css files (refactoring, WIP)
+* \#53 Tutorials package: CSS files (refactoring, WIP)
 * Closes #120 Chem: Rotation flicker when using alignment
 * Peptides: AA render in sar viewer
 * \#117: PowerPack: PowerSearch: search templates
-* update tutorials. Add css style
+* update tutorials. Add CSS style
 * tutorials images
 * update tutorials
 * Closes #121 (+ #77). Chem: Support SMARTS
@@ -3546,7 +3537,7 @@
 * \#53 Tutorials package: code clean-up
 * \#53 Tutorials package: helpers for working with view inputs
 * Update icons for packages
-* Update package.png
+* Update package.PNG
 * Update Laboratory view
 * Peptides: color coding optimization
 * \#53 Tutorials package: openViewByType method
@@ -3615,7 +3606,7 @@
 * Fixed Analyzer warning
 * Fixed typo
 * Removed old dependency
-* lock files
+* lockfiles
 * Barchart: Font changed to serif-sans, column numeration changed, current row highlighting added
 * Peptides: renderer fix
 * Updated public token
@@ -3669,7 +3660,7 @@
 * added ability to select values for y axe in multiplot, updated patient profile and timelines views
 * Peptide Cell renderer
 * \#53 Tutorials package: ML (predictive modeling tutorial): missing values imputation
-* PackageView and Package PP: show github URL (WIP)
+* PackageView and Package PP: show GitHub URL (WIP)
 * Clinical Cases UI update
 * Update package.ts
 * (Bug) Add new package: impossible to add a package without description
@@ -3721,7 +3712,7 @@
 * aligned sequence split function
 * fixed splitAlignedPeptides function
 * added splitAlignedSequence panel function
-* closes #113 datagrok-tools: package template: add eslint config file
+* closes #113 datagrok-tools: package template: add ESLint config file
 * Update CONTRIB.md
 * Peptides: compile the initial dataset, detect sequence, split
 * Added a demo file with peptide sequences.
@@ -3776,7 +3767,7 @@
 
 * Charts: fix a package publication error
 * JS API: update MapChangeArgs interface
-* \#53 Tutorials package: change node placement
+* \#53 Tutorials package: change Node.js placement
 * \#53 Tutorials package: EDA: viewers (WIP)
 * JS API: add event args types to onViewerAdded/onViewerClosed
 * Selenium: Add attributes "name" to elements of the new AddNewColumn dialog
@@ -3811,7 +3802,7 @@
 * Wiki: Dataframe (WIP)
 * updated survival analysis view
 * Defaulted showPropeties to true.
-* Css fix
+* CSS fix
 * (Bug) New “marker-by” scatterplot feature fails rendering with many data points
 * Fixed typos
 * \#104 Wiki: Library tour
@@ -4005,7 +3996,7 @@
 * Wiki: JS API table of contents update
 * Typedoc installed
 * Merge commits
-* Typedoc instead of JsDoc
+* Typedoc instead of JSDoc
 * Custom ML: add custom engines from JS functions
 * Change endpoints to use new divided cvm images (WIP)
 * Typedoc styling
@@ -4185,7 +4176,7 @@
 * image thumbnails for learn widget
 * df.dialogs.addNewColumn fix
 * Wiki: Dataframe (WIP)
-* update learn widget, add new css
+* update learn widget, add new CSS
 * Change endpoints to use new divided cvm images (WIP)
 
 # 2021-08-12 Dev build 0.93.7
@@ -4267,7 +4258,7 @@
 * Create toolbar.js
 * Update icons.js
 * New widgets styling
-* Update power-pack.css
+* Update power-pack.CSS
 * toolbox example
 * Update toolbox.js
 * Change endpoints to use new divided cvm images (WIP)
@@ -4513,7 +4504,7 @@
 * Functions: function search won't work on packages
 * Grid: drag-and-drop column reordering: provide drop zones
 * Grid: empty space on the right
-* Grid: html cells are not re-rendered after sorting a column
+* Grid: HTML cells are not re-rendered after sorting a column
 * Grid: switching global coloring on / off removes linear color-coding
 * Grok connect: "No suitable driver found for..."
 * Grok connect: "The method execute() cannot take arguments" error with query parameters
@@ -4576,7 +4567,7 @@
 * DevTools: add the `Snippets` pane
 * JS API: add Grid.getVisibleCells
 * Datagrok API and system samples, add cross linking to improve connectivity (WIP)
-* BioSignals: Add url routing for Physionet records
+* BioSignals: Add URL routing for Physionet records
 * (Bug) JS Samples: to-hierarchy.js example does not work
 * NGL viewer (WIP)
 * UI: Ability to set dialog background (WIP)
@@ -4639,7 +4630,7 @@
 * Update README.md
 * Wiki: How to manipulate viewers (WIP)
 * fetchProxy: better typing.
-* JS API: ui.link(text, url | action, tooltip?)
+* JS API: ui.link(text, URL | action, tooltip?)
 * Power Pack: Community Widget
 * JS API: ui.iframe(src)
 * Power Pack: WebWidget
@@ -4655,7 +4646,7 @@
 * Charts: Tree Viewer (WIP)
 * info page polishing
 * chem Cureate: info page polishing
-* chem Curate: jpg files changed to png
+* chem Curate: jpg files changed to PNG
 * PLOT3D: import three.js and show scene
 * Added beta flag to the old Usage analysis
 * (Bug) JS API: JsViewerHostCore is returned instead of Viewer instance
@@ -4689,7 +4680,7 @@
 * UsageAnalysis harmonization (WIP)
 * Reordering ui samples files
 * JS wrap for activity cliffs script
-* JS API: add ui.markdown
+* JS API: add ui.Markdown
 * PLOT3D: transparecy, some props, fixed filter
 * (Bug) Sequence Translator | Main: If you enter the wrong input value, then many balloons with stacktraces will appear
 * (Bug) Sequence Translator | AXOLABS: Name of an existing pattern is not displayed
@@ -4792,7 +4783,7 @@
 * JS API: Viewer.onContextMenu event
 * Added reuseList function
 * Chem Activity cliffs \- visulisation polishing
-* Added solution for git push to public repo issue
+* Added solution for git push to public repository issue
 * Removed an annotation comment from samples opened in JS editor
 * (Bug) Grok Script: Syntax error: "abc".trim().toUpperCase()
 * Wiki: details on color-coding
@@ -4870,7 +4861,7 @@
 * Add statistical functions
 * Types.getCommonElementType \- provided a description (still needs a good implementation)
 * Minor changes to the environment setup instructions. Added a couple of the potentially useful scripts.
-* Harmonize file names (data_actions -> functions, data_action -> func)
+* Harmonize filenames (data_actions -> functions, data_action -> func)
 * Ddt: harmonize folder structure
 * (Bug) Functions: Unexpected behavior of some statistical functions
 * Removed duplicate import
@@ -4998,7 +4989,7 @@
 * JS API: DataFrame.plot.fromType return type correction
 * (Bug) Scripts: "suggestions" and "choices" don't work
 * Revert "Normalize and prettify 2D layouts"
-* Same as #PR 39 but with a bug fix for failures in reduce
+* Same as #PR 39 but with a bugfix for failures in reduce
 * Adde pubspec to speed-up packages resolving
 * Custom ML functions
 * \- do not add molecules twice to substructure library \- no need to overwrite cells if SMILES
@@ -5092,7 +5083,7 @@
 * (Bug) JSViewer: TypeError: v.setOptions is not a function
 * Custom ML: add hyperparameters
 * Intersection types for props (ObjectPropertyBag & any)
-* Add sourcemap files to .gitignore
+* Add source map files to .gitignore
 * MultiPlot: restore status chart
 * (Bug) Grok connect: "No suitable driver found for..."
 * datagrok-tools: allow skipping questions in `grok config`
@@ -5360,7 +5351,7 @@
 * JS API: tableInput
 * Custom ML: add hyperparameters
 * Intersection types for props (ObjectPropertyBag & any)
-* Add sourcemap files to .gitignore
+* Add source map files to .gitignore
 * MultiPlot: restore status chart (WIP)
 
 # 2021-07-22 Dev build 0.92.23
@@ -5575,7 +5566,7 @@
 ## Addressed Issues
 
 * Revert "Normalize and prettify 2D layouts"
-* Same as #PR 39 but with a bug fix for failures in reduce
+* Same as #PR 39 but with a bugfix for failures in reduce
 * Chem, RDKit-based (WIP)
 * Updated public token
 
@@ -5664,7 +5655,7 @@
 * Add statistical functions
 * Types.getCommonElementType \- provided a description (still needs a good implementation)
 * Minor changes to the environment setup instructions. Added a couple of the potentially useful scripts.
-* Harmonize file names (data_actions -> functions, data_action -> func)
+* Harmonize filenames (data_actions -> functions, data_action -> func)
 * Ddt: harmonize folder structure
 * (Bug) Functions: Unexpected behavior of some statistical functions
 * Removed duplicate import
@@ -5873,7 +5864,7 @@
 * JS API: Viewer.onContextMenu event
 * Added reuseList function
 * Chem Activity cliffs \- visulisation polishing
-* Added solution for git push to public repo issue
+* Added solution for git push to public repository issue
 * Removed an annotation comment from samples opened in JS editor
 * (Bug) Grok Script: Syntax error: "abc".trim().toUpperCase()
 * Wiki: details on color-coding
@@ -6033,7 +6024,7 @@
 * UsageAnalysis harmonization (WIP)
 * Reordering ui samples files
 * JS wrap for activity cliffs script
-* JS API: add ui.markdown
+* JS API: add ui.Markdown
 * Deploy: test connections migration (WIP)
 * SequenceTranslator: flexible Axolabs sequence conversion (WIP)
 * Power Search: community-curated, template-based, widget-driven search engine (WIP)
@@ -6094,7 +6085,7 @@
 * (Bug) UsageAnalysis hangs backend (WIP)
 * JS API: dialog.clear()
 * Add string name indexing for columns
-* GrokML: integrate WASM calls with Dart (pearsonsR for the correlation plot) (WIP)
+* GrokML: integrate Wasm calls with Dart (pearsonsR for the correlation plot) (WIP)
 * WIP
 * PLOT3D: refactor
 * JS API: View.createByName('functions', {search: '#math'}): a way to create standard Dart views
@@ -6156,7 +6147,7 @@
 * JsWidgetBase: getJsObject now returns jsWidget
 * JS API:  add a possibility to use custom ScatterPlot renderer (WIP)
 * fetchProxy: better typing.
-* JS API: ui.link(text, url | action, tooltip?)
+* JS API: ui.link(text, URL | action, tooltip?)
 * Power Pack: Community Widget
 * JS API: ui.iframe(src)
 * Power Pack: WebWidget
@@ -6174,7 +6165,7 @@
 * Charts: Tree Viewer (WIP)
 * info page polishing
 * chem Cureate: info page polishing
-* chem Curate: jpg files changed to png
+* chem Curate: jpg files changed to PNG
 * Help: Ordering in chapters
 * PLOT3D: import three.js and show scene
 * Added beta flag to the old Usage analysis
@@ -6206,7 +6197,7 @@
 * Help: Ordering in chapters
 * DevTools: add the `Snippets` pane (WIP)
 * Dialog should have ui-panel class
-* Javascript vectorization
+* JavaScript vectorization
 * SequenceTranslator: Conversion to Axolabs sense/antisense strands
 * (Bug) Radiobutton throws exception when created
 * DeleteConnectionCache harmonization
@@ -6301,7 +6292,7 @@
 * JS API: context is sometimes missing in onAccordionConstructed()
 * JS API: add Grid.getVisibleCells
 * Datagrok API and system samples, add cross linking to improve connectivity (WIP)
-* BioSignals: Add url routing for Physionet records
+* BioSignals: Add URL routing for Physionet records
 * (Bug) JS Samples: to-hierarchy.js example does not work (WIP)
 * NGL viewer (WIP)
 * Scripting: Ability to set custom name for parameter
@@ -6338,7 +6329,7 @@
 * (Bug) Events: onViewerAdded and onViewerClosed are sent twice
 * JS API: add square brackets for columns
 * Prevent DG disk space usage inside docker container
-* (Bug) Invalid session message when running second node of DG
+* (Bug) Invalid session message when running second Node.js of DG
 * (Bug) Exceptions are not handled during DG start
 * Increase Func socket timeout
 * Handle AWS "SlowDown" exception
@@ -6355,7 +6346,7 @@
 * Update ui.ts
 * UI: Copyright 2019 -> 2021.
 * (Bug) Chem: Tile Viewer issue (WIP)
-* GrokML: integrate WASM calls with Dart (pearsonsR for the correlation plot) (WIP)
+* GrokML: integrate Wasm calls with Dart (pearsonsR for the correlation plot) (WIP)
 * (Bug) JS API: ColumnListProxy:  Cannot convert a Symbol value to a number
 * Dialog should have ui-panel class
 * Dataframe: Detect column max significant digits in CSV loading (WIP)
@@ -6423,8 +6414,8 @@
 * RepertoireBrowser: added debouncing
 * Updated public toke
 * BioSignals: add possibility to enter sampling frequency for local files
-* Update package.png
-* (Bug) Grid: html cells are not re-rendered after sorting a column
+* Update package.PNG
+* (Bug) Grid: HTML cells are not re-rendered after sorting a column
 * Connectors: add default schema to providers and use as condition for schema browsing
 * Prevent socket memory consuming
 * RepertoireBrowser: gff annotations
@@ -6443,7 +6434,7 @@
 * BioSignals: AnnotatorViewer: round values and change tooltip formatter
 * JS API: ui.info for a yellow info bar (WIP)
 * Docs: how to run Chrome with CORS disabled.
-* Docs: info about Labs repo and importDemoPackages setting for dev.datagrok.ai.
+* Docs: info about Labs repository and importDemoPackages setting for dev.datagrok.ai.
 * (Bug) Chem: several molecule filters won't work together (WIP)
 * (Bug) Core: default tooltip config is no longer saved with layout
 * (Bug) JS Viewer: Incorrect height calculation
@@ -6468,7 +6459,7 @@
 * RepertoireBrowser: MSA tabs (WIP)
 * Wiki: Harmonization (WIP)
 * Dataframe: Detect column max significant digits in CSV loading (WIP)
-* (Bug) Api Samples: "db-master-details-manual" example does not work
+* (Bug) API Samples: "db-master-details-manual" example does not work
 * RepertoireBrowser: code formatting
 * Data: fixed demog redundant precision
 * JS API: add Column.isVirtual
@@ -6590,7 +6581,7 @@
 * BioSignals: AnnotatorViewer: round values and change tooltip formatter
 * JS API: ui.info for a yellow info bar
 * Docs: how to run Chrome with CORS disabled.
-* Docs: info about Labs repo and importDemoPackages setting for dev.datagrok.ai.
+* Docs: info about Labs repository and importDemoPackages setting for dev.datagrok.ai.
 * (Bug) Chem: several molecule filters won't work together (WIP)
 
 # 2021-04-30 Dev build 0.91.5
@@ -6627,8 +6618,8 @@
 
 ## Addressed Issues
 
-* Update package.png
-* (Bug) Grid: html cells are not re-rendered after sorting a column
+* Update package.PNG
+* (Bug) Grid: HTML cells are not re-rendered after sorting a column
 * Connectors: add default schema to providers and use as condition for schema browsing  (WIP)
 * Prevent socket memory consuming (WIP)
 
@@ -6815,7 +6806,7 @@
 * Charts package (WIP)
 * Support renv
 * Updated onSizeChanged method
-* Versioned RDKit + wasm caching
+* Versioned RDKit + Wasm caching
 * JS API: DataFrame.getSortedOrder
 * Charts: Tree Viewer (WIP)
 * (Bug) Dialog.showModal doesn't work
@@ -6838,7 +6829,7 @@
 * Added TablesClient.uploadDataFrame() and getTable() snippet
 * Adjust RDKit default molecule look
 * SDTM metadata \- WIP
-* RDKit WASM load on first use or explicitly
+* RDKit Wasm load on first use or explicitly
 * Updated webpack.config
 * Dumbbell Viewer
 * JS API: add getDensity method for dataframe
@@ -6882,7 +6873,7 @@
 * JS API: added accordion persistence key
 * Simplified phrasing and linked to the main article
 * Better phrasing
-* DataFrame: JSDocs for append and unpivot.
+* DataFrame: JSDoc for append and unpivot.
 * JS API: DataFrame.append: ability to specify columns and rows to append (WIP)
 * Wiki: how-to build an app. WIP: dataframe, credentials
 * Added new package ChemblBrowser
@@ -6936,7 +6927,7 @@
   JSON if successful and empty string if not, so no need to to call get_substruct_match beforehand \* get_new_coords is
   used to generate new coordinates rather than roundtripping through SMILES. This is more efficient and ensures that
   CoordGen is used for coordinate generation
-* delete the WASM object before reassignment
+* delete the Wasm object before reassignment
 * (Bug) Chem: Keep mol rendering on a malformed scaffold
 * if generate_aligned_coords() returns "" and mol has no coordinates, fall back to get_new_coords()
 * (Bug) Chem: Single scaffold and column scaffolds interfere
@@ -6988,7 +6979,7 @@
 * Chord Diagram: `include nulls` property
 * (Bug) files method rename doesnt work properly
 * GROK: quality-of-life updates
-* GROK: repo cleanup
+* GROK: repository cleanup
 * Clinical Case: validate values on column level (WIP)
 * Chem: docs updates.
 * Chem package version 0.9.0, bump.
@@ -7029,7 +7020,7 @@
 * datagrok-tools: package templates compatibility
 * (Bug) BioSignals: executes extractor with alphabetically first name, instead of chosen
 * Wiki: link fix
-* JS API: Migrate to Typescript
+* JS API: Migrate to TypeScript
 * Code formatting
 * Utils: table content validation engine (WIP)
 * datagrok-tools: version bump
@@ -7039,7 +7030,7 @@
 * (Bug) Trellis Plot: can't select a column with 100+ categories from the column menu
 * Made colorcoding-related tags hidden (prefixed with '.').
 * Tags: make `color-coding-type` and `color-coding-conditional` private
-* update images format jpg to png
+* update images format jpg to PNG
 * TextArea inside the ui.inputs: Fix the ui.textArea left-margin size
 * Fixed warnings
 * Biosignals: possibility to add custom script
@@ -7064,7 +7055,7 @@
 * Sequence package: work in progress
 * Grid: API: onColumnResized / onRowsResized events
 * Added missing react import
-* added missing WASM file
+* added missing Wasm file
 * Chem package version 0.9.1, bump.
 * Create sequenceTranslator
 * Added new example on how to subscribe to resize events
@@ -7105,7 +7096,7 @@
 * Bar Chart: tooltips on category labels
 * Bar Chart: disable zoom on the X axis
 * NGL viewer (WIP)
-* Prepare a proposal for WASM use and adoption in Datagrok core (WIP)
+* Prepare a proposal for Wasm use and adoption in Datagrok core (WIP)
 * [Filters: split categories containing a list of values by pipes](https://community.datagrok.ai/t/visualization-related-updates/521/11)
 * (Bug) Color Coding | Conditional: Ranges "20-30" and ">40" are always automatically determined for any numeric columns
 * Create sequenceTranslator app with instructions
@@ -7231,7 +7222,7 @@
 * description of "current rows"
 * update titles for "current rows"
 * update "current rows"
-* JS API: Migrate to Typescript
+* JS API: Migrate to TypeScript
 * Wiki: headings harmonization
 * (Bug) Postgres type Numeric converts to int when using PostgresNet (WIP)
 * Chem: don't attempt to .delete() null-molecules (no-render)
@@ -7257,7 +7248,7 @@
 * Sequence: better detection of nucleotide sequences
 * Detector.sampleCategories: performance fix: return false immediately if a column is not a string column
 * Create sequenceTranslator app with instructions
-* Prepare a proposal for WASM use and adoption in Datagrok core (WIP)
+* Prepare a proposal for Wasm use and adoption in Datagrok core (WIP)
 * Wiki: Onboarding Content (WIP)
 * Power Pack: a set of commonly used Datagrok tools (WIP)
 * NwkViewer: JS-based phylogenetic tree visualisation (WIP)
@@ -7300,7 +7291,7 @@
 * Edit tooltip: close the dialog when "Sketch form" is clicked
 * CVM: adopting the newer version of Miniconda
 * NwkViewer: JS-based phylogenetic tree visualisation (WIP)
-* Prepare a proposal for WASM use and adoption in Datagrok core (WIP)
+* Prepare a proposal for Wasm use and adoption in Datagrok core (WIP)
 * (Bug) Filters: categorical column filters still handle "selection.changed" event after being manually detached
 * (Bug) Filters: significant performance degradation when resetting the filter (ESC key)
 * (Bug) Filters: clicking on a category name does not always select it
@@ -7330,7 +7321,7 @@
 
 # 2021-04-14 Dev build 0.89.36
 
-In this release, we've focused on enriching both the experience of the platform end-users and on-platform developers, as
+In this release, we've focused on enriching both the experience of the platform end users and on-platform developers, as
 well as on connecting these two groups. For instance, custom-built cell renderers, useful for displaying molecules,
 nucleotide sequences or experiments results, now expand the platform in many places such
 as [tooltips and tile viewers](https://community.datagrok.ai/t/cheminformatics-updates/457/8). There are
@@ -7338,7 +7329,7 @@ also [new viewers](https://community.datagrok.ai/t/visualization-related-updates
 , [several bar chart](https://community.datagrok.ai/t/bar-chart-color-by-category/516) [features](https://community.datagrok.ai/t/visualization-related-updates/521/10)
 , [color coding features](https://dev.datagrok.ai/js/samples/grid/color-coding-conditional), and a few dozen
 of [JS API](https://datagrok.ai/help/govern/audit#javascript-api) [enhancements](https://community.datagrok.ai/t/javascript-api-updates/526/8)
-and [bug fixes](#bug-fixes).
+and [bugfixes](#bug-fixes).
 
 ## Highlights
 
@@ -7350,7 +7341,7 @@ and [bug fixes](#bug-fixes).
 * [Conditional color coding](https://dev.datagrok.ai/js/samples/grid/color-coding-conditional) for the grid, scatter
   plot, box plot
 * New [Timelines Viewer](https://community.datagrok.ai/t/visualization-related-updates/521/4)
-* JS API improvements: Typescript support, new [events](https://community.datagrok.ai/t/javascript-api-updates/526/8)
+* JS API improvements: TypeScript support, new [events](https://community.datagrok.ai/t/javascript-api-updates/526/8)
   and [methods](https://community.datagrok.ai/t/javascript-api-updates/526/5)
 * Better JS editing in the [JS fiddle](https://public.datagrok.ai/js) with IntelliSense and `async/await`
 
@@ -7367,7 +7358,7 @@ and [bug fixes](#bug-fixes).
 
 Heatmap: [Improved adaptive rendering of the column names in the heatmap](https://community.datagrok.ai/t/visualization-related-updates/521/9)
 
-* JS API: Migrate to Typescript
+* JS API: Migrate to TypeScript
 * JS API: [Log API](https://datagrok.ai/help/govern/audit#javascript-api)
 * JS API:
   Grid [onColumnResized / onRowsResized events](https://community.datagrok.ai/t/javascript-api-updates/526/8)
@@ -7388,7 +7379,7 @@ Heatmap: [Improved adaptive rendering of the column names in the heatmap](https:
 * Filter state is preserved when closing filter panel
 * Chem: 10x faster CoordGen-based alignment, flag to hide isotopic labels in RDKit rendering
 
-## Bug fixes
+## Bugfixes
 
 *
 
@@ -7471,7 +7462,7 @@ Histogram: [duplicated Y axis](https://community.datagrok.ai/t/cannot-easily-cha
 ## Addressed Issues
 
 * Demo data: added Chembl-4000 csv.
-* JS API: Migrate to Typescript
+* JS API: Migrate to TypeScript
 * Biosignals: use scripting capabilities dynamically (WIP)
 * JS: Ability to get HTML editor for function
 * display molecules or fragments that fail to kekulized with delocalized bonds rather than showing a cross
@@ -7493,7 +7484,7 @@ Histogram: [duplicated Y axis](https://community.datagrok.ai/t/cannot-easily-cha
 
 ## Addressed Issues
 
-* JS API: Migrate to Typescript
+* JS API: Migrate to TypeScript
 * JS: Ability to get HTML editor for function
 * Fixed analyzer warnings
 * Fixed NGL Viewer size
@@ -7518,7 +7509,7 @@ Histogram: [duplicated Y axis](https://community.datagrok.ai/t/cannot-easily-cha
 
 * (Bug) Bar Chart: cannot plot date columns on a categorical axis (WIP)
 * (Bug) Trellis Plot: error rendering empty molecules (empty strings)
-* JS API: Migrate to Typescript
+* JS API: Migrate to TypeScript
 * CVM: NLOpt temporarily off to investigate the resulting image first.
 
 # 2021-04-06 Dev build 0.89.32
@@ -7533,7 +7524,7 @@ Histogram: [duplicated Y axis](https://community.datagrok.ai/t/cannot-easily-cha
 
 ## Addressed Issues
 
-* JS API: Migrate to Typescript
+* JS API: Migrate to TypeScript
 * Wiki: Onboarding Content (WIP)
 * GROK:8349 Improved Bar Chart to allow date-time plotting as categorical
 * Logging: Ability to send nested JS Objects
@@ -7552,7 +7543,7 @@ Histogram: [duplicated Y axis](https://community.datagrok.ai/t/cannot-easily-cha
 * Tile Viewer and Form: integrate with dynamic renderers (WIP)
 * CVM: NLOpt legacy package from a .deb file
 * Usage Analysis \- New UI
-* Added TypeScript build before publish to NPM
+* Added TypeScript build before publish to npm
 
 # 2021-04-02 Dev build 0.89.31
 
@@ -7570,7 +7561,7 @@ Histogram: [duplicated Y axis](https://community.datagrok.ai/t/cannot-easily-cha
 * (Bug) View | Tooltip: After turning off all columns, the tooltip is still displayed (WIP)
 * Biosignals: possibility to add custom script
 * Custom HTML-based cell renderers: investigate performance issues (WIP)
-* JS API: Migrate to Typescript (WIP)
+* JS API: Migrate to TypeScript (WIP)
 * Aggregation: ability to specify value transformation function
 * Biosignals: get columns using tags instead of names
 * Biosignals: add possibility to change input Physionet record
@@ -7670,7 +7661,7 @@ Histogram: [duplicated Y axis](https://community.datagrok.ai/t/cannot-easily-cha
 * datagrok-tools: package templates compatibility
 * (Bug) BioSignals: executes extractor with alphabetically first name, instead of chosen
 * Wiki: link fix
-* JS API: Migrate to Typescript (WIP)
+* JS API: Migrate to TypeScript (WIP)
 * (Bug) Exception after adding Histogram to "TSLA" test dataset
 * Code formatting
 * Utils: table content validation engine (WIP)
@@ -7683,7 +7674,7 @@ Histogram: [duplicated Y axis](https://community.datagrok.ai/t/cannot-easily-cha
 * "Set default tooltip" menu item
 * Made colorcoding-related tags hidden (prefixed with '.').
 * Tags: make `color-coding-type` and `color-coding-conditional` private
-* update images format jpg to png
+* update images format jpg to PNG
 * (Bug) Bar Chart: unexpected indent on plots with many categories
 * NumericalMatcher: ability to match empty values
 * TextArea inside the ui.inputs: Fix the ui.textArea left-margin size
@@ -7745,7 +7736,7 @@ Histogram: [duplicated Y axis](https://community.datagrok.ai/t/cannot-easily-cha
 * (Bug) Saved function annotation doesn't delete old parameters from database
 * (Bug) Settings apply drops password parameters
 * GROK: quality-of-life updates
-* GROK: repo cleanup
+* GROK: repository cleanup
 * (Bug) User can't login with OpenId if someone shared something to him by email
 * Improved comments on DataFrameViewer::onFrameAttached(..)
 * Clinical Case: validate values on column level (WIP)
@@ -7914,7 +7905,7 @@ Histogram: [duplicated Y axis](https://community.datagrok.ai/t/cannot-easily-cha
       substructure JSON if successful and empty string if not, so no need to to call get_substruct_match beforehand *
       get_new_coords is used to generate new coordinates rather than roundtripping through SMILES. This is more
       efficient and ensures that CoordGen is used for coordinate generation
-* delete the WASM object before reassignment
+* delete the Wasm object before reassignment
 * Chem, RDKit-based (WIP)
 * (Bug) Chem: Keep mol rendering on a malformed scaffold
 * if generate_aligned_coords() returns "" and mol has no coordinates, fall back to get_new_coords()
@@ -7949,7 +7940,7 @@ Histogram: [duplicated Y axis](https://community.datagrok.ai/t/cannot-easily-cha
 * JS API: Ability to post audit record
 * (Bug) Filter: category not available as a Filter to add (world_mortality)
 * (Bug) Docking sizes/coordinates recalculation are incorrect after View is removed from a split
-* Small MD edits to remove ending dots and add notes on MacOS dev.setup
+* Small MD edits to remove ending dots and add notes on macOS dev.setup
 * added script to help run pub get for setup dev environment
 * MapProxy: Tags deletion; Falsish traps on read
 * Chem: Highlight a filtering scaffold
@@ -8073,7 +8064,7 @@ Histogram: [duplicated Y axis](https://community.datagrok.ai/t/cannot-easily-cha
 * JS API: added accordion persistence key
 * Simplified phrasing and linked to the main article
 * Better phrasing
-* DataFrame: JSDocs for append and unpivot.
+* DataFrame: JSDoc for append and unpivot.
 * JS API: DataFrame.append: ability to specify columns and rows to append (WIP)
 * Harmonize ui framework (WIP)
 * Wiki: how-to build an app. WIP: dataframe, credentials
@@ -8212,7 +8203,7 @@ to [biosignal processing](https://community.datagrok.ai/t/biosignals-package/443
 * Stata file handler
 * Chem: use LRU molecule cache to speed up rendering
 * JS API: an efficient LRU cache
-* [Grid: Not able to render custom html in cell if format tag is set](https://community.datagrok.ai/t/not-able-to-render-custom-html-in-cell-if-format-tag-is-set/451)
+* [Grid: Not able to render custom HTML in cell if format tag is set](https://community.datagrok.ai/t/not-able-to-render-custom-html-in-cell-if-format-tag-is-set/451)
 * JS API: add showPopup() function
 * JS API: add event on viewer axis click
 * JS API: CsvImportOptions
@@ -8238,7 +8229,7 @@ to [biosignal processing](https://community.datagrok.ai/t/biosignals-package/443
 * Error after opening a sample table from a script
 * [Virtual columns are broken](https://community.datagrok.ai/t/virtual-columns/382)
 * JS API: add onEvent method for viewers
-* JS API: ui library: ability to easily pass css parameters
+* JS API: ui library: ability to easily pass CSS parameters
 * JS API: Automatically get an iterator
 * JS-based cell renderers: ability to specify default width and height
 * JS-based cell renderers only work after the table is opened for the second time
@@ -8298,7 +8289,7 @@ to [biosignal processing](https://community.datagrok.ai/t/biosignals-package/443
 * Filters: global indicator: tooltip
 * Filters: categorical: in filtering mode, show blue checkboxes
 * Filters: categories: color-fill based on the filtered ratio
-* Filters: check boxes for category selection
+* Filters: checkboxes for category selection
 * Oracle NUMBER type handling
 * Normalization before clustering works well on dev/public, but throws exception locally on some columns
 * Generic Stochastic Proximity Embedding: all data types support
@@ -8395,7 +8386,7 @@ to [biosignal processing](https://community.datagrok.ai/t/biosignals-package/443
 * JS API Examples: "menu.js" does not work
 * If you add Tile Viewer and open the "Scatter Plot" panel for "demog" table, then extra balloons will be displayed
 * Tile Viewer: Viewer is displayed empty after editing its form
-* Rewrite datagrok-upload to nodeJs
+* Rewrite datagrok-upload to Node.js
 * Support typical shortcuts in Jupyter Notebook
 * Viewer embedding doesn't work
 * Ambiguous column name exception during package creation
@@ -8495,7 +8486,7 @@ to [biosignal processing](https://community.datagrok.ai/t/biosignals-package/443
 * Custom npm registry and proxy settings
 * Ability to skip webpack building on server
 * Empty error message when publishing webpack package
-* Use session token hash instead of token on the server side
+* Use session token hash instead of token on the server-side
 * Ability to add service user
 * Files: REST method to upload user file
 * Data sync: Project does not open if the table was created by "Get All"
@@ -8532,7 +8523,7 @@ to [biosignal processing](https://community.datagrok.ai/t/biosignals-package/443
 * DB Table Queries: After executing "Get All", "Get Top 100" and "Build a query" the table has name "result"
 * Benchmarks: "Benchmark Encoders" and "Benchmark Encoders + Archive" do not work
 * Upload dialog: Large indent between tables
-* Files View Url to connection not handled
+* Files View URL to connection not handled
 * Share dialog: User permissions selector is in the wrong place
 * Join Tables: Selecting or Filtering not matching rows selects the wrong rows
 * SPGi: After opening project, URL contains /SupData instead of /Main
@@ -8585,7 +8576,7 @@ to [biosignal processing](https://community.datagrok.ai/t/biosignals-package/443
 
 ## What's new
 
-### JavaScript API changed. Use `datagrok-api` NPM package as a code reference.
+### JavaScript API changed. Use `datagrok-api` npm package as a code reference.
 
 Now API have 3 entry points:
 
@@ -8611,15 +8602,15 @@ Please, refer to the [JavaScript examples](https://public.datagrok.ai/js) to mig
 
 ### New scripting demos
 
-* [image classification](https://github.com/datagrok-ai/public/blob/master/packages/DemoScripts/scripts/python/image_classification.py)
-* [cell imaging segmentation](https://github.com/datagrok-ai/public/blob/master/packages/DemoScripts/scripts/python/cell_imaging_segmentation.py)
+* [image classification](https://github.com/datagrok-ai/public/blob/master/packages/Demo/projects/scripts/projects/python/scripts/image_classification.py)
+* [cell imaging segmentation](https://github.com/datagrok-ai/public/blob/master/packages/Demo/projects/scripts/projects/python/scripts/cell_imaging_segmentation.py)
 
 ### File metadata extractors
 
 * [Tika](https://github.com/datagrok-ai/public/tree/master/packages/Tika)
-* [EXIF](https://github.com/datagrok-ai/public/blob/master/packages/DemoScripts/scripts/python/exif.py)
+* [EXIF](https://github.com/datagrok-ai/public/blob/master/packages/Demo/projects/scripts/projects/python/scripts/exif.py)
 
-### First class support of Command Line Interface tools for Linux in scripting:
+### First class support of command-line Interface tools for Linux in scripting:
 
 * [CLI](https://github.com/datagrok-ai/public/tree/master/packages/CLI)
 * [Tika](https://github.com/datagrok-ai/public/tree/master/packages/Tika)
@@ -8688,7 +8679,7 @@ Please, refer to the [JavaScript examples](https://public.datagrok.ai/js) to mig
 * File Browser: error in the "Sharing" panel
 * JS Examples: "predictive-model.js" samples does not work
 * JS API samples: viewers.js: Exception is thrown after closing the view of the script result
-* File: show file name in the tooltip
+* File: show filename in the tooltip
 * Package PP: make URL clickable
 * Predictive Models: Some models do not train on Caret server (demog, race(weight, height, age)
 * Add the "name" attribute for span with the table name (for the first, if there are several)
@@ -8713,7 +8704,7 @@ Please, refer to the [JavaScript examples](https://public.datagrok.ai/js) to mig
 * JS API samples: manipulating views
 * JS API: docking
 * Property panel: ability to inspect JS objects
-* Layouts: matching by column id if it is present
+* Layouts: matching by column ID if it is present
 * Tables view added from DB Table | Build Query is duplicated in the "Open" section under "
   Databases"
 * Demo: Image classification
@@ -8823,7 +8814,7 @@ Please, refer to the [JavaScript examples](https://public.datagrok.ai/js) to mig
 * Multivariate Analysis does not work
 * Missing Values Imputation does not work
 * OpenAPI: String list parameter escaping issue
-* Prevent browser caching for html files
+* Prevent browser caching for HTML files
 * "Time series" test dataset
 * EntityView: view name is empty
 * Bar chart: Alt + Clicking on an empty space throws an exception
@@ -8833,7 +8824,7 @@ Please, refer to the [JavaScript examples](https://public.datagrok.ai/js) to mig
 * ChemSpace integration
 * Scripts: "Test" script on R: Exception after execution
 * Scripts: R samples: "IIR Filter" does not work
-* S3 file shares: the first letter of the file name disappears in some cases
+* S3 file shares: the first letter of the filename disappears in some cases
 * Scripts: R samples: "LDA" does not work
 * Scripts: R samples: "Contour Plot" does not work
 * Notebooks: New Notebook throws an exception
@@ -8859,14 +8850,14 @@ Please, refer to the [JavaScript examples](https://public.datagrok.ai/js) to mig
 * Simplified UX
 * Entities parameters
 * OpenTextView
-* Files View Url to connection not handled
+* Files View URL to connection not handled
 * DataSourcesView
 * Ability to turn off new UI for selenium mode
 * Added 'JS' view under Help (new location to be determined)
 * WebConnector: Query with not required path param fails
 * SSO Support for Community
 * Web connector: Result table of the query is called "result" instead of the query name
-* Handle Javascript output parameters
+* Handle JavaScript output parameters
 * Correct dapi.root resolution
 * GrokApi: Add column and columns inputs
 * Phaedra demo
@@ -8893,7 +8884,7 @@ Please, refer to the [JavaScript examples](https://public.datagrok.ai/js) to mig
 ## Addressed issues
 
 * Auto GrokMode
-* Fixed long web api response issue
+* Fixed long web API response issue
 * PP: Actions tab: added both ParamCommands and Funcs to suggestions. Harmonizing handling of special function types -
   WIP
 * ObjectView: ability to select all / none / invert
@@ -8995,7 +8986,7 @@ Please, refer to the [JavaScript examples](https://public.datagrok.ai/js) to mig
 * Visual Queries do not run
 * Query Table: If you change parameters and then click on table tab, then "General" displays the old parameter values
 * Domino integration demo
-* Failed to get project by ID url
+* Failed to get project by ID URL
 * Ability to specify samba version
 * Algorithms section records duplicated
 * Balloon: copy message to clipboard icon
@@ -9127,18 +9118,18 @@ Please, refer to the [JavaScript examples](https://public.datagrok.ai/js) to mig
 * ProjectUploadView: "Sync" switch instead of icon
 * Queries get duplicated when saved
 * Query / View integration
-* Query Parameters: Wrong style of array parameters in web api queries
+* Query Parameters: Wrong style of array parameters in web API queries
 * Query: Improve parameter editor
 * Query-based info panels
 * Redesign project upload view
 * Rename disableLogging: true to saveLog: false
 * Renamed AmazonS3Cloud to S3
-* Replace news.html with about.html
+* Replace news.HTML with about.HTML
 * Repository publishing error
 * Repository publishing kills other packages
-* Routing: Project url like "/p/namespace:name/viewname"
+* Routing: Project URL like "/p/namespace:name/viewname"
 * Saving package drops connections information
-* Scripting fails with https request with self-signed certificate
+* Scripting fails with HTTPS request with self-signed certificate
 * Select Missing Values: Dialog has fixed size
 * Semantic type detector: text - added a very simplistic detector based on a number of words and max word length
 * Set SSL attribute in datagrok connection on deploy
@@ -9299,7 +9290,7 @@ Please, refer to the [JavaScript examples](https://public.datagrok.ai/js) to mig
 * Grid: custom cell editors
 * Amazon S3 Adapter: Fixed list() response, AES256 support
 * Packages: Made GrokPackage.init method asynchronous
-* Packages: An example of using RDKit (compiled to WebAssembly) on the client side
+* Packages: An example of using RDKit (compiled to WebAssembly) on the client-side
 * Postgres provider: bugs fixed
 * Notebooks: bugs fixed
 * Package upload bug
@@ -9324,7 +9315,7 @@ Addresses a number of issues identified during the technical evaluation.
 * Grid: custom cell editors
 * Amazon S3 Adapter: Fixed list() response, AES256 support
 * Packages: Made GrokPackage.init method asynchronous
-* Packages: An example of using RDKit (compiled to WebAssembly) on the client side
+* Packages: An example of using RDKit (compiled to WebAssembly) on the client-side
 * Postgres provider: bugs fixed
 * Notebooks: bugs fixed
 

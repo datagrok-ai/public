@@ -119,7 +119,7 @@ Configurations are stored in the same repository with the script, in the folder 
 [example of such configuration](https://github.com/datagrok-ai/public/tree/master/environments)
 for the [Datagrok public repository](https://github.com/datagrok-ai/public). Also, a package can define its own
 configurations as well (
-[see examples](https://github.com/datagrok-ai/public/tree/master/packages/DemoScripts)).
+[see examples](https://github.com/datagrok-ai/public/tree/master/packages/Demo/projects/scripts)).
 
 If the `#environment` tag in the script header is not specified, the script uses the configuration defined in
 [`default.yaml`](https://github.com/datagrok-ai/public/blob/master/environments/default.yaml).
@@ -222,7 +222,7 @@ script in a temporary folder with a unique name. This folder becomes an
 _renv_ project folder for the current run of the script.
 
 Start using _renv_ by initializing it and installing packages (see a
-[full example](https://github.com/datagrok-ai/public/tree/master/packages/DemoScripts/scripts/r/renv_spelling.R)):
+[full example](https://github.com/datagrok-ai/public/blob/master/packages/Demo/projects/scripts/projects/r/scripts/renv_spelling.R)):
 
 ```
 #language: r
@@ -387,9 +387,9 @@ Also it is possible to add custom parameter using "meta." prefix.
 | octave                   | Octave         |
 | julia                    | Julia          |
 | grok                     | Grok Scripting |
-| javascript               | JavaScript     |
+| JavaScript               | JavaScript     |
 
-### Format template for 'input' and 'output':
+### Format template for 'input' and 'output'
 
 ```
 #<direction>: <type> <name> = <value> {<option tag>:<value>; ...} [<description>]
@@ -478,7 +478,7 @@ Header line examples:
 #input: string option = int {suggestions: jssuggesttype}
 ```
 
-### Examples:
+### Examples
 
 ```
 #input: dataframe t1 {columns:numerical} [first input data table]
@@ -500,7 +500,7 @@ You can use these fields to filter scripts with [smart search](../overview/smart
 
 | Field       | Description                                                       |
 |-------------|-------------------------------------------------------------------|
-| id          |                                                                   |
+| ID          |                                                                   |
 | name        |                                                                   |
 | runs        | list of [FuncCall](../overview/functions/function-call.md) object |
 | createdOn   |                                                                   |

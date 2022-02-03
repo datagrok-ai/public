@@ -30,16 +30,16 @@ essential component of the FAIRification process.
 
 A1. (Meta)data are retrievable by their identifier using a standardised communications protocol
 
-#### A1.1 The protocol is open, free, and universally implementable
+### A1.1 The protocol is open, free, and universally implementable
 
-#### A1.2 The protocol is open, free, and universally implementable
+### A1.2 The protocol is open, free, and universally implementable
 
 ## Interoperable
 
 The data usually need to be integrated with other data. In addition, the data need to interoperate with applications or
 workflows for analysis, storage, and processing.
 
-### I1. (Meta)data use a formal, accessible, shared, and broadly applicable language for knowledge representation.
+### I1. (Meta)data use a formal, accessible, shared, and broadly applicable language for knowledge representation
 
 ### I2. (Meta)data use vocabularies that follow fair principles
 

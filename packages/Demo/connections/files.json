@@ -5,7 +5,6 @@
     "hiddenRoot": "${PACKAGE_ROOT}/files/demo",
     "indexFiles": true
   },
-  "id": "b02c4110-5970-11e9-ef80-3dbcb954c4d8",
   "name": "Files",
   "friendlyName": "Demo Files"
 }

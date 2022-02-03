@@ -86,7 +86,7 @@ certain tasks.
     * Picking up column metadata (formats, etc.)
     * Fast, extensible, annotated aggregation functions that work across all viewers
 * High-performance rendering
-    * Choosing the best option for rendering (html / canvas / svg / WebGL) based on the viewer’s distinctive features,
+    * Choosing the best option for rendering (HTML / canvas / svg / WebGL) based on the viewer’s distinctive features,
       without compromising performance. The stretch goal is for all viewers to be able to visualize billion rows (
       certain viewers will resort to auto-sampling in order to still be interactive during the data exploration stage).
       Many viewers utilize hybrid rendering systems, i.e. svg for high-level controls and canvas for performance and

@@ -5,7 +5,7 @@
 This documents explains how to create a simple package that contains an
 [info panel](add-info-panel.md) displaying some simple statistics for a text in a selected grid cell.
 
-### 1. Create a package
+## 1. Create a package
 
 Before we start, [set up development environment](set-up-environment.md) if you haven't done it already.
 
@@ -22,7 +22,7 @@ created package, you have to install the dependencies. Run this from the `TextSt
 npm install
 ```
 
-### 2. Implement the panel function
+## 2. Implement the panel function
 
 Add the actual panel's code at `TextStats/src/package.js`:
 
@@ -48,7 +48,7 @@ That's it! What creates a panel is this function plus the annotation contained i
 recognizes these comments and makes the function `textStats` become a `panel`
 producing a `widget`, taking a `string` as an input.
 
-### 3. Build
+## 3. Build
 
 Run webpack from the TextStats folder:
 
@@ -56,7 +56,7 @@ Run webpack from the TextStats folder:
 webpack
 ```
 
-### 4. Publish
+## 4. Publish
 
 Now, let's [publish](../develop.md#publishing) our package to the `dev` server:
 
@@ -66,7 +66,7 @@ grok publish dev
 
 The return code should be `0` to indicate a successful deployment.
 
-### 5. Test
+## 5. Test
 
 Now go to Datagrok and open any data file with string columns. This could be a `demog` dataset from our demo datasets.
 Navigate to a text cell and find your freshly added panel with text stats on the right side of Datagrok UI.

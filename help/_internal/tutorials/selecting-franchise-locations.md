@@ -33,7 +33,7 @@ Features: creating project, accessing data, creating query, post-processing, Jup
 * Open Columns View (View | Columns)
 * Open "Add new column" dialog (on Toolbar)
 * Drag-and-Drop corresponding columns and separate with commas
-* Ok
+* OK
 
 6. Convert new Column to coordinates
 

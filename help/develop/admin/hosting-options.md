@@ -5,7 +5,7 @@
 
 Depending on the needs of your organizations, choose the option that works best for your organization.
 
-## Saas
+## SaaS
 
 We take care of everything!
 

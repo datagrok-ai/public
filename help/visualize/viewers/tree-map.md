@@ -9,9 +9,9 @@ proportional to a specified dimension of the data.
 
 General:
 
-| []()                  |                 |
-|-----------------------|-----------------|
-| Right click           | Context menu    |
+|             |              |
+|-------------|--------------|
+| Right click | Context menu |
 
 ![Tree Map](../../uploads/viewers/tree-map.png "Tree Map")
 

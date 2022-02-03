@@ -18,7 +18,7 @@ Reference structure is by default synchronized with the current row. Click on 's
 
 ![Similarity search](../../uploads/gifs/similarity-search.gif "Similarity search")
 
-### Videos
+## Videos
 
 [Molecular similarity and diversity](https://www.youtube.com/watch?v=wCdzD64plEo)
 

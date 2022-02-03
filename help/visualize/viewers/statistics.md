@@ -7,7 +7,7 @@ Provides specified descriptive statistics for the chosen columns.
 
 Many options are available under the context menu.
 
-| []()                                    |                                                           |
+|                                     |                                                           |
 |-----------------------------------------|-----------------------------------------------------------|
 | Rows                                    | Choose which rows to include (All, Filtered, or Selected) |
 | Context menu \| Statistics \| Histogram | Show histogram                                            |

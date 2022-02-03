@@ -133,42 +133,17 @@ export const requiredColumnsByView = {
         },
         'Adverse Events': {
                 'req_domains': {
-                        'dm': {
-                                'req': [
-                                        sdtmCols.SUBJECT_ID,
-                                        sdtmCols.TREATMENT_ARM,
-                                ]
-                        },
                         'ae': {
                                 'req': [
-                                        sdtmCols.SUBJECT_ID,
-                                        sdtmCols.AE_DECOD_TERM,
-                                        sdtmCols.AE_BODY_SYSTEM,
-                                        sdtmCols.AE_CAUSALITY,
-                                        sdtmCols.AE_OUTCOME,
-                                        sdtmCols.AE_START_DAY,
-                                        sdtmCols.AE_SEVERITY
                                 ]
                         }
                 }
         },
         'Laboratory': {
                 'req_domains': {
-                        'dm': {
-                                'req': [
-                                        sdtmCols.SUBJECT_ID,
-                                        sdtmCols.TREATMENT_ARM
-                                ]
-                        },
                         'lb': {
                                 'req': [
-                                        sdtmCols.SUBJECT_ID,
-                                        sdtmCols.LAB_TEST,
-                                        sdtmCols.VISIT_NAME,
-                                        sdtmCols.VISIT_DAY,
-                                        sdtmCols.LAB_RES_N,
-                                        sdtmCols.LAB_LO_LIM_N,
-                                        sdtmCols.LAB_HI_LIM_N
+
                                 ]
                         }
                 }
@@ -256,20 +231,6 @@ export const requiredColumnsByView = {
                 }
         },
         'Time Profile': {
-                'req_domains': {
-                        'dm': {
-                                'req': [
-                                        sdtmCols.SUBJECT_ID,
-                                ],
-                                'opt': [
-                                        sdtmCols.ETHNIC,
-                                        sdtmCols.SEX,
-                                        sdtmCols.RACE,
-                                        sdtmCols.TREATMENT_ARM
-                                ]
-        
-                        },
-                },
                 'opt_domains': {
                         'lb': {
                                 'req': [
@@ -316,11 +277,6 @@ export const requiredColumnsByView = {
                 'req_domains': {
                         'mh': {
                                 'req': [
-                                        sdtmCols.SUBJECT_ID,
-                                        sdtmCols.MH_DECOD_TERM,
-                                        sdtmCols.MH_CATEGORY,
-                                        sdtmCols.MH_BODY_SYSTEM,
-                                        sdtmCols.MH_TERM
                                 ]
                         }
 

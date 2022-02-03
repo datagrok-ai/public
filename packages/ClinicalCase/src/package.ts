@@ -127,7 +127,7 @@ export async function clinicalCaseApp(): Promise<any> {
   let c: DG.FuncCall = grok.functions.getCurrentCall();
   validationRulesList = await grok.data.loadTable(`${_package.webRoot}tables/validation-rules.csv`);
 
-  if (Object.keys(meta.domains).every((name) => grok.shell.table(name) == null)) {
+  if (Object.keys(study.domains).every((name) => grok.shell.table(name) == null)) {
     let demoFiles = await grok.dapi.projects.filter('clin-demo-files-2').list();
     if (demoFiles.length) {
       await grok.dapi.projects.open('clin-demo-files-2');
@@ -224,7 +224,6 @@ export async function clinicalCaseApp(): Promise<any> {
 
   let summary = views.find(it => it.name === 'Summary');
   summary.load();
-  summary.loaded = true;
   let valView = addView(new ValidationView(summary.errorsByDomain, 'Validation'));
   summary.validationView = valView;
   views.push(valView);

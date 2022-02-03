@@ -18,7 +18,7 @@ datasets. [Importing data](../access/importing-data.md) is seamless and fast. Mu
 of [high-performance](../develop/advanced/performance.md), interactive [viewers](../visualize/viewers.md)
 let you filter and visualize data in any possible way; some of them directly support EDA-related features such
 as [regression lines](../visualize/viewers/scatter-plot.md#regression-line),
-or [hypothesis testing](../visualize/viewers/box-plot.md#t-test). A number of pre-defined statistical
+or [hypothesis testing](../visualize/viewers/box-plot.md#t-test). A number of predefined statistical
 [functions](../overview/functions/function.md) can be used for calculations. If that is not enough, new functions can be
 developed in [R, Python, or Julia](../compute/scripting.md).
 

@@ -7,7 +7,7 @@ The molecular descriptor is the final result of a logic and mathematical procedu
 encoded within a symbolic representation of a molecule into a useful number or the result of some standardized
 experiment.
 
-![](descriptors.gif)
+![descriptors](descriptors.gif)
 
 ## Available descriptors modules
 

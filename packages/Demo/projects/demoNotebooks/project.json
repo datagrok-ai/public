@@ -4,8 +4,7 @@
   "description": "Jupyter Notebooks collection",
   "tables": [
     {
-      "path": "demo/wells.csv",
-      "id": "d26fdc50-3260-11e9-bcd7-3b53b8a0f601"
+      "path": "demo/wells.csv"
     }
   ]
 }

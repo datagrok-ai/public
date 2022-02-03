@@ -26,12 +26,12 @@ You can use these tags to search for certain functions either from the platform'
 const applications = DG.Func.find({tags: [DG.FUNC_TYPES.APP]});
 ```
 
-### Applications
+## Applications
 
 Applications are [functions](../overview/functions/function.md) tagged with the `#app` tag. Learn more about building
 them [here](how-to/build-an-app.md).
 
-### Pre-run functions
+## Pre-run functions
 
 The purpose of pre-run functions is to prepare the main package code for execution. This includes fetching specific
 pieces of data, subscribing to global events, changing the user interface right after the platform starts, connecting to
@@ -54,7 +54,7 @@ command from your package directory:
 grok add function init <packageName>Init
 ```
 
-### Semantic type detectors
+## Semantic type detectors
 
 To get the template for a detector function, use the following `datagrok-tools`
 command from your package directory:
@@ -65,7 +65,7 @@ grok add detector <semantic-type-name>
 
 *Details:* [How to Define Semantic Type Detectors](how-to/define-semantic-type-detectors.md)
 
-### File viewers
+## File viewers
 
 File viewers are used in Datagrok's [file share browser](../access/file-shares.md). The platform provides a way to
 define custom viewers (or editors) in addition to the native ones. These functions work on files with a specific
@@ -73,14 +73,14 @@ extension, which is derived from the `fileViewer-<extension>` tag.
 
 *Details:* [How to Develop Custom File Viewers](how-to/custom-file-viewers.md)
 
-### File exporters
+## File exporters
 
 A file exporter is a function used for loading data from the platform. It is annotated with the `#fileExporter` tag.
 Exporters reside in the platform's top menu "export" section.
 
 *Details:* [How to Create File Exporters](how-to/file-exporters.md)
 
-### Settings editors
+## Settings editors
 
 Settings editors work with [package properties](#package-settings) and define how they will be displayed in
 the `Settings` pane of the property panel. An editor function should return a widget (`DG.Widget`) and be tagged as

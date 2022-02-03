@@ -35,7 +35,7 @@ This is it! Once a [package](../develop.md#packages) containing that function is
 automatically create the corresponding viewer when user selects the file with the specified extension. Here's how it
 looks:
 
-![](../../access/file-shares-file-viewers.gif)
+![file-shares-file-viewers](../../access/file-shares-file-viewers.gif)
 
 See also:
 

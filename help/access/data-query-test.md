@@ -46,7 +46,7 @@ would be sheet name, etc. The system allows you to create parameterized and non-
 1. Find in the list [queries](data-query.md) from the previous paragraphs
 
 * Queries are present in the list
-* The run time is correct
+* The runtime is correct
 * Queries with errors are marked with color coding
 
 1. Open the "Details" tab in [Property Panel](../overview/navigation.md#properties)

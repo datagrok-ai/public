@@ -5,7 +5,7 @@ import { ClinRow, study } from "../clinical-study";
 import { createBaselineEndpointDataframe, createHysLawDataframe, createLabValuesByVisitDataframe } from '../data-preparation/data-preparation';
 import { ALT, BILIRUBIN } from '../constants';
 import { createBaselineEndpointScatterPlot, createHysLawScatterPlot } from '../custom-scatter-plots/custom-scatter-plots';
-import { updateDivInnerHTML } from './utils';
+import { checkColumnsAndCreateViewer, updateDivInnerHTML } from './utils';
 import { _package } from '../package';
 import { getUniqueValues } from '../data-preparation/utils';
 import { LAB_HI_LIM_N, LAB_LO_LIM_N, LAB_TEST, VISIT_DAY, VISIT_NAME, SUBJECT_ID, TREATMENT_ARM, LAB_RES_N } from '../columns-constants';
@@ -42,16 +42,18 @@ export class LaboratoryView extends ClinicalCaseViewBase {
 
   createView(): void {
     this.lb = study.domains.lb.clone();
-    this.dm = study.domains.dm.clone();
+    if (study.domains.dm) {
+      this.dm = study.domains.dm.clone();
+    }
 
-    this.uniqueLabValues = Array.from(getUniqueValues(this.lb, LAB_TEST));
-    this.uniqueVisits = Array.from(getUniqueValues(this.lb, VISIT_NAME));
-    this.uniqueTreatmentArms = Array.from(getUniqueValues(this.dm, TREATMENT_ARM));
-    this.selectedLabBlEp = this.uniqueLabValues[0];
-    this.selectedBl = this.uniqueVisits[0];
-    this.selectedEp = this.uniqueVisits[1];
-    this.selectedLabDistr = this.uniqueLabValues[0];
-    this.selectedArm = this.uniqueTreatmentArms[0];
+    this.uniqueLabValues = this.lb.col(LAB_TEST) ? Array.from(getUniqueValues(this.lb, LAB_TEST)) : [];
+    this.uniqueVisits = this.lb.col(VISIT_NAME) ? Array.from(getUniqueValues(this.lb, VISIT_NAME)) : [];
+    this.uniqueTreatmentArms = this.dm && this.dm.col(TREATMENT_ARM) ? Array.from(getUniqueValues(this.dm, TREATMENT_ARM)) : [];
+    this.selectedLabBlEp = this.uniqueLabValues.length ? this.uniqueLabValues[0] : null;
+    this.selectedBl = this.uniqueVisits.length ? this.uniqueVisits[0] : null;
+    this.selectedEp = this.uniqueVisits.length ? this.uniqueVisits[1] : null;
+    this.selectedLabDistr = this.uniqueLabValues.length ? this.uniqueLabValues[0] : null;
+    this.selectedArm = this.uniqueTreatmentArms.length ? this.uniqueTreatmentArms[0] : null;
 
     let grid = this.lb.plot.grid();
     this.lb.onCurrentRowChanged.subscribe((_) => {
@@ -63,10 +65,33 @@ export class LaboratoryView extends ClinicalCaseViewBase {
     let tabControl = ui.tabControl(null, false);
 
     let hysLawGuide = ui.info('Please select values for ALT/AST and Bilirubin in a property panel', '', false);
-    updateDivInnerHTML(this.hysLawDiv, hysLawGuide);
+
+    checkColumnsAndCreateViewer(
+      study.domains.lb,
+      [SUBJECT_ID, LAB_RES_N, LAB_HI_LIM_N, LAB_TEST],
+      this.hysLawDiv, () => {
+        updateDivInnerHTML(this.hysLawDiv, hysLawGuide);
+      },
+      'Hy\'s Law');
+
+    checkColumnsAndCreateViewer(
+      study.domains.lb,
+      [SUBJECT_ID, LAB_TEST, LAB_RES_N, VISIT_NAME, LAB_LO_LIM_N, LAB_HI_LIM_N],
+      this.baselineEndpointDiv, () => {
+        this.updateBaselineEndpointPlot();
+      },
+      'Baseline endpoint');
+
+    checkColumnsAndCreateViewer(
+      study.domains.lb,
+      [SUBJECT_ID, LAB_TEST, LAB_RES_N, VISIT_DAY],
+      this.distributionDiv, () => {
+        this.updateDistributionPlot();
+      },
+      'Laboratory distribution');
 
     tabControl.addPane('Hy\'s law', () => this.hysLawDiv);
-    
+
     tabControl.addPane('Baseline endpoint', () => this.baselineEndpointDiv);
 
     tabControl.addPane('Laboratory distribution', () => this.distributionDiv);
@@ -76,8 +101,6 @@ export class LaboratoryView extends ClinicalCaseViewBase {
     this.root.appendChild(
       tabControl.root
     );
-    this.updateBaselineEndpointPlot();
-    this.updateDistributionPlot();
 
   }
 
@@ -91,12 +114,6 @@ export class LaboratoryView extends ClinicalCaseViewBase {
 
   private createHysLawScatterPlot() {
     let hysLawDataframe = createHysLawDataframe(this.lb, this.dm, this.selectedALT, this.selectedAST, this.selectedBLN);
-    grok.data.linkTables(this.lb, hysLawDataframe,
-      [SUBJECT_ID], [SUBJECT_ID],
-      [DG.SYNC_TYPE.CURRENT_ROW_TO_ROW, DG.SYNC_TYPE.CURRENT_ROW_TO_SELECTION]);
-    grok.data.linkTables(hysLawDataframe, this.lb,
-      [SUBJECT_ID], [SUBJECT_ID],
-      [DG.SYNC_TYPE.SELECTION_TO_SELECTION, DG.SYNC_TYPE.SELECTION_TO_SELECTION]);
     this.hysLawScatterPlot = createHysLawScatterPlot(hysLawDataframe, ALT, BILIRUBIN, TREATMENT_ARM);
   }
 
@@ -106,9 +123,6 @@ export class LaboratoryView extends ClinicalCaseViewBase {
     let epNumCol = `${this.selectedLabBlEp}_EP`;
     let baselineEndpointDataframe = createBaselineEndpointDataframe(this.lb, this.dm, [TREATMENT_ARM], LAB_TEST, LAB_RES_N,
       [LAB_LO_LIM_N, LAB_HI_LIM_N], this.selectedLabBlEp, this.selectedBl, this.selectedEp, visitCol, blNumCol, epNumCol);
-    grok.data.linkTables(this.lb, baselineEndpointDataframe,
-      [SUBJECT_ID], [SUBJECT_ID],
-      [DG.SYNC_TYPE.CURRENT_ROW_TO_ROW, DG.SYNC_TYPE.CURRENT_ROW_TO_SELECTION]);
     this.baselineEndpointPlot = createBaselineEndpointScatterPlot(baselineEndpointDataframe, blNumCol, epNumCol, TREATMENT_ARM,
       baselineEndpointDataframe.get(LAB_LO_LIM_N, 0), baselineEndpointDataframe.get(LAB_HI_LIM_N, 0));
     updateDivInnerHTML(this.baselineEndpointDiv, this.baselineEndpointPlot.root);
