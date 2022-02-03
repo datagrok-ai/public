@@ -42,9 +42,10 @@ export function renderInfoValue(info: anyObject, refs: anyObject): HTMLElement {
     result = null;
 
 
-  if (result instanceof HTMLElement && info['ReferenceNumber'])
+  if (result instanceof HTMLElement && info['ReferenceNumber']) {
+    //@ts-ignore: api types are wrong
     ui.tooltip.bind(result, () => ui.tableFromMap(refs[info['ReferenceNumber']]));
-
+  }
 
   return result ?? ui.divText('unknown');
 }
@@ -69,8 +70,10 @@ export function renderSection(section: anyObject, refs: anyObject): HTMLDivEleme
     for (const section of sections) {
       const paneName = section['TOCHeading'];
       const pane = acc.addPane(paneName, () => renderSection(section, refs));
-      if (section['Description'])
+      if (section['Description']) {
+        //@ts-ignore: api types are wrong
         ui.tooltip.bind(ui.divText(paneName), () => ui.div(section['Description']));
+      }
     }
     content.append(acc.root);
   }
