@@ -1,13 +1,10 @@
 {
 	"name": "@datagrok/pubchem-api",
-	"beta": true,
-	"friendlyName": "PubChemApi",
-	"version": "0.1.0",
+	"friendlyName": "PubChem",
+	"version": "0.2.0",
 	"description": "",
 	"dependencies": {
 		"datagrok-api": "latest",
-		"cash-dom": "latest",
-		"dayjs": "latest",
 		"@datagrok-libraries/utils": "^0.0.22"
 	},
 	"devDependencies": {
