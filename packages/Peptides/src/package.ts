@@ -224,18 +224,20 @@ export async function multipleSequenceAlignment(col: DG.Column): Promise<DG.Data
 }
 
 //name: Multiple sequence alignment for any column
-//tags: panel
+//input: dataframe table
 //input: column col
 //output: dataframe result
-export async function multipleSequenceAlignmentAny(col: DG.Column): Promise<DG.DataFrame> {
+export async function multipleSequenceAlignmentAny(table: DG.DataFrame, col: DG.Column): Promise<DG.DataFrame> {
   const msaCol = await runKalign(col, false);
-  const table = col.dataFrame;
   table.columns.add(msaCol);
   return table;
 }
 
 //name: Test multiple sequence alignment for any column
-export async function runTestMSAEnoughMemory(col: DG.Column) {
+//input: dataframe table
+//input: column col
+//output: column result
+export async function runTestMSAEnoughMemory(table: DG.DataFrame, col: DG.Column) {
   await testMSAEnoughMemory(col);
   return col;
 }
