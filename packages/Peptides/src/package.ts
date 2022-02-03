@@ -245,9 +245,9 @@ export async function runTestMSAEnoughMemory(col: DG.Column) {
 //input: dataframe table {semType: Substitution}
 //output: widget result
 export async function peptideSubstitution(table: DG.DataFrame): Promise<DG.Widget> {
-  if (!table) {
+  if (!table)
     return new DG.Widget(ui.label('No substitution'));
-  }
+
   const peptideLength = 17;
   const initialCol: DG.Column = table.columns.byName('Initial');
   const substitutedCol: DG.Column = table.columns.byName('Substituted');
