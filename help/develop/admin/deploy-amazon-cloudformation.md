@@ -23,6 +23,7 @@ More information about Datagrok design and components:
 1. Check that you
    have [required permissions](https://github.com/datagrok-ai/public/blob/master/help/develop/admin/deploy/cloudformation/iam.list)
    on AWS account to perform CloudFormation deployment to ECS.
+
 2. Create secret in [AWS Secret Manager](https://aws.amazon.com/secrets-manager/) with Docker Hub credentials
     1. [Create access token in Docker Hub](https://docs.docker.com/docker-hub/access-tokens/)
     2. [Create secret in Secret Manager](https://docs.aws.amazon.com/secretsmanager/latest/userguide/manage_create-basic-secret.html)
@@ -39,6 +40,7 @@ More information about Datagrok design and components:
 3. Come up with two endpoints: `DATAGROK_DNS`, `CVM_DNS`. Datagrok requires two endpoints: `DATAGROK_DNS` and `CVM_DNS`.
    Users will use `DATAGROK_DNS` to access Datagrok Web UI, and requests `CVM_DNS` will be sent automatically by
    Datagrok Client.
+
 4. Create RSA SSL certificate(s) for `DATAGROK_DNS`, `CVM_DNS`.
     * If you use AWS ACM service for SSL certificates
         1. [Generate ACM certificate in AWS](https://docs.aws.amazon.com/acm/latest/userguide/gs-acm-request-public.html)
@@ -56,22 +58,27 @@ More information about Datagrok design and components:
 1. Download CloudFormation
    Template: [link](https://github.com/datagrok-ai/public/blob/master/help/develop/admin/deploy/cloudformation/cloudformation.json)
    .
+
 2. Create CloudFormation stack
    using [AWS Console](https://docs.aws.amazon.com/AWSCloudFormation/latest/UserGuide/cfn-console-create-stack.html)
    or [AWS CLI](https://docs.aws.amazon.com/AWSCloudFormation/latest/UserGuide/using-cfn-cli-creating-stack.html)
-    1. As
-       [stack template](https://docs.aws.amazon.com/AWSCloudFormation/latest/UserGuide/cfn-using-console-create-stack-template.html)
-       use CloudFormation Template downloaded on the first step
+    1. Use CloudFormation Template downloaded on the first step
+       as [stack template](https://docs.aws.amazon.com/AWSCloudFormation/latest/UserGuide/cfn-using-console-create-stack-template.html)
+
     2. [Specify stack name](https://docs.aws.amazon.com/AWSCloudFormation/latest/UserGuide/cfn-using-console-create-stack-parameters.html)
        . It must be shorter than ten symbols to meet AWS naming requirements
+
     3. [Specify parameters](https://docs.aws.amazon.com/AWSCloudFormation/latest/UserGuide/cfn-using-console-create-stack-parameters.html)
        for the stack:
         1. `ArnCvmCertificate`: Specify AWS ACM ARN for `CVM_DNS` from the 4th prerequisites step. It can be the same as
            for `ArnDatagrokCertificate`.
+
         2. `ArnDatagrokCertificate`: Specify AWS ACM ARN for `DATAGROK_DNS` from the 4th prerequisites step. It can be
            the same as for `ArnCvmCertificate`.
+
         3. `ArnDockerHubCredential`: Specify AWS Secret Manager ARN for Docker Hub authorization from 3rd prerequisites
            step.
+
         4. All other parameters are for Datagrok Docker images tags. The default value is `latest`.
             1. [DatagrokVersion](https://hub.docker.com/r/datagrok/datagrok)
             2. [GrokComputeVersion](https://hub.docker.com/r/datagrok/grok_connect)
@@ -79,10 +86,13 @@ More information about Datagrok design and components:
             4. [JupyterKernelGatewayVersion](https://hub.docker.com/r/datagrok/jupyter_kernel_gateway)
             5. [JupyterNotebookVersion](https://hub.docker.com/r/datagrok/jupyter_notebook)
     4. You can skip stack options; the default values suit the needs.
+
 3. CloudFormation Stack creation takes around 10 minutes. It will create RDS, S3, ECS Cluster, and other required
    resources.
+
 4. After the Datagrok container starts, the Datagrok server will deploy the database. You can check the status by
    checking running task log in [CloudWatch](https://aws.amazon.com/cloudwatch/)
+
 5. Create `DATAGROK_DNS` and `CVM_DNS` DNS records which will route to the newly created Application Load Balancers.
 
 ## Configure Datagrok settings
