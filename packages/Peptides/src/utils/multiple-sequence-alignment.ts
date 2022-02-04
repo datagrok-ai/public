@@ -7,6 +7,8 @@ import {AlignedSequenceEncoder} from '@datagrok-libraries/bio/src/sequence-encod
 //@ts-ignore
 import {SEMTYPE} from '../semantics';
 
+// let CLI: any = undefined;
+
 /**
  * Converts array of sequences into simple fasta string.
  *
@@ -73,13 +75,28 @@ export async function runKalign(col: DG.Column, isAligned = false) : Promise<DG.
     sequences = sequences.map((v: string, _) => AlignedSequenceEncoder.clean(v).replace(/\-/g, ''));
 
   const fasta = _stringsToFasta(sequences);
+  const CLI = await new Aioli({
+    tool: 'kalign',
+    version: '3.3.1',
+    reinit: true,
+  });
 
-  const CLI = await new Aioli('kalign/3.3.1');
+  // if (!CLI) {
+  //   CLI = await new Aioli('kalign/3.3.1');
+  //   console.info('kalign CLI was first initialized.');
+  // } else
+  //   console.info('Initialized kalign CLI was reused.');
+
+  console.log(['fasta.length =', fasta.length]);
+
   await CLI.fs.writeFile('input.fa', fasta);
-  const output = await CLI.exec(`kalign input.fa -f fasta -o result.fasta`);
+  const output = await CLI.exec('kalign input.fa -f fasta -o result.fasta');
   const buf = await CLI.cat('result.fasta');
 
   console.warn(output);
+
+  // if (!buf)
+  //   console.warn(buf);
 
   const aligned = _fastaToStrings(buf).slice(0, sequences.length);
   const alignedCol = DG.Column.fromStrings(`(${col.name})msa`, _stringsToAligned(aligned));
@@ -89,7 +106,7 @@ export async function runKalign(col: DG.Column, isAligned = false) : Promise<DG.
 
 export async function testMSAEnoughMemory(col: DG.Column) {
   const sequencesCount = col.length;
-  const delta = sequencesCount/10;
+  const delta = sequencesCount/100;
 
   for (let i = delta; i < sequencesCount; i += delta) {
     try {
