@@ -1,7 +1,7 @@
 # Credentials
 
 Any used data source requires authentication to access the data. 
-Credentials (logins, passwords, etc) can be specified directly (Manually) or through integrating with secret manager services storing these credentials.
+Credentials (logins, passwords, etc) can be specified directly (Manual) or through integrating with secret manager services storing these credentials.
 
 #### Option "Manually"
 
