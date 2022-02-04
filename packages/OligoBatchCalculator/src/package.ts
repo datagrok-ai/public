@@ -18,10 +18,6 @@ for (let synthesizer of Object.keys(map))
       normalizedObj[code] = map[synthesizer][technology][code].normalized;
     }
 
-async function postValueToUserDataStorage(storageName: string, obj: any) {
-  await grok.dapi.userDataStorage.postValue(storageName, obj.longName, JSON.stringify(obj), false);
-}
-
 function sortByStringLengthInDescendingOrder(array: string[]): string[] {
   return array.sort(function(a, b) { return b.length - a.length; });
 }
@@ -335,28 +331,44 @@ export function OligoBatchCalculatorApp() {
       .show();
   });
 
-  let addModificationButton = ui.button('ADD MODIFICATION', async() => {
-    let modifications: string[] = [];
-    await grok.dapi.userDataStorage.get(STORAGE_NAME).then((entries) => {
+  async function loadAll() {
+    let modifications: any[] = [];
+    let entries = await grok.dapi.userDataStorage.get(STORAGE_NAME, false);
+    if (entries !== null && Object.keys(entries).length === 0)
+      grok.shell.info('Storage is empty. Try to post something to the storage');
+    else {
       Object.keys(entries).forEach((key) => {
-        modifications.push(key);
-        // console.log('key = ' + JSON.parse(entries[key]));
+        modifications.push(JSON.parse(entries[key]));
       });
-    });
-    console.log(modifications);
+    }
+    return modifications;
+  }
+
+  const baseModificationItems = ['NO', 'rU', 'rA', 'rC', 'rG', 'dA', 'dC', 'dG', 'dT'];
+  let addModificationButton = ui.button('ADD MODIFICATION',  async() => {
+    let modifications = await loadAll();
     let longName = ui.stringInput('Long name', '');
     ui.tooltip.bind(longName.root, "Examples: 'Inverted Abasic', 'Cyanine 3 CPG', '5-Methyl dC'");
     let abbreviation = ui.stringInput('Abbreviation', '');
     ui.tooltip.bind(abbreviation.root, "Examples: 'invabasic', 'Cy3', '5MedC'");
     let molecularWeight = ui.floatInput('Molecular weight', 0);
-    let baseModification = ui.choiceInput('Base modification', 'NO', ['NO', 'rU', 'rA', 'rC', 'rG', 'dA', 'dC', 'dG', 'dT'], (v: string) => {
+    let baseModification = ui.choiceInput('Base modification', 'NO', baseModificationItems, (v: string) => {
       if (v != 'NO')
         extinctionCoefficient.value = 'Base';
       extinctionCoefficient.enabled = (v == 'NO');
     });
     let extinctionCoefficient = ui.stringInput('Extinction coefficient', '');
     ui.dialog('Add Modification')
-      .add(ui.div([
+      .add(ui.block([
+        DG.Viewer.grid(
+          DG.DataFrame.fromColumns([
+            DG.Column.fromStrings(longName.caption, modifications.map((e) => e.longName)),
+            DG.Column.fromStrings(abbreviation.caption, modifications.map((e) => e.abbreviation)),    // @ts-ignore
+            DG.Column.fromFloat32Array(molecularWeight.caption, modifications.map((e) => (e.molecularWeight == undefined) ? 0 : e.molecularWeight)),
+            DG.Column.fromStrings(baseModification.caption, modifications.map((e) => e.baseModification)),
+            DG.Column.fromStrings(extinctionCoefficient.caption, modifications.map((e) => e.extinctionCoefficient))
+          ])
+        ).root,
         longName.root,
         abbreviation.root,
         molecularWeight.root,
@@ -364,16 +376,20 @@ export function OligoBatchCalculatorApp() {
         extinctionCoefficient.root,
       ]))
       .onOK(() => {
-        postValueToUserDataStorage(STORAGE_NAME, {
-          longName: longName.value,
-          abbreviation: abbreviation.value,
-          molecularWeight: molecularWeight.value,
-          extinctionCoefficient: extinctionCoefficient.value,
-          baseModification: baseModification.value,
-        })
-      //.then(() => grok.shell.info('Saved'))
+        grok.dapi.userDataStorage.postValue(
+          STORAGE_NAME,
+          longName.value,
+          JSON.stringify({
+            longName: longName.value,
+            abbreviation: abbreviation.value,
+            molecularWeight: molecularWeight.value,
+            extinctionCoefficient: extinctionCoefficient.value,
+            baseModification: baseModification.value,
+          }),
+          false
+        ).then(() => grok.shell.info('Posted'));
       })
-      .show();
+      .showModal(true);
   });
 
   let title = ui.panel([ui.h1('Oligo Properties')], 'ui-panel ui-box');

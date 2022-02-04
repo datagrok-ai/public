@@ -92,42 +92,6 @@ export const requiredColumnsByView = {
                                 'req': [
                                         sdtmCols.SUBJECT_ID  
                                 ]
-                        },
-                        'ae': {
-                                'req': [
-                                        sdtmCols.SUBJECT_ID,
-                                        sdtmCols.AE_START_DAY,
-                                        sdtmCols.AE_END_DAY,
-                                        sdtmCols.AE_TERM
-                                ]
-                        },
-                        'cm': {
-                                'req': [
-                                        sdtmCols.SUBJECT_ID,
-                                        sdtmCols.CON_MED_NAME,
-                                        sdtmCols.CON_MED_START_DAY,
-                                        sdtmCols.CON_MED_END_DAY
-                                ]
-                        },
-                        'ex': {
-                                'req': [
-                                        sdtmCols.SUBJECT_ID,
-                                        sdtmCols.INV_DRUG_NAME,
-                                        sdtmCols.INV_DRUG_START_DAY,
-                                        sdtmCols.INV_DRUG_END_DAY,
-                                        sdtmCols.INV_DRUG_DOSE,
-                                        sdtmCols.INV_DRUG_DOSE_UNITS
-                                ]
-                        },
-                        'lb': {
-                                'req': [
-                                        sdtmCols.SUBJECT_ID,
-                                        sdtmCols.LAB_DAY,
-                                        sdtmCols.LAB_HI_LIM_N,
-                                        sdtmCols.LAB_LO_LIM_N,
-                                        sdtmCols.LAB_RES_N,
-                                        sdtmCols.LAB_TEST
-                                ]
                         }
                 }
         },

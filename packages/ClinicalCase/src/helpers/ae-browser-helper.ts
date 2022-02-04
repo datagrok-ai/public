@@ -6,6 +6,7 @@ import * as ui from 'datagrok-api/ui';
 import { dictToString, getNullOrValue } from "../data-preparation/utils";
 import { getSubjectDmData } from "../data-preparation/data-preparation";
 import { SEVERITY_COLOR_DICT } from "../constants";
+import { updateDivInnerHTML } from "../views/utils";
 
 export class AEBrowserHelper {
 

@@ -41,11 +41,7 @@ export class StudyVisit {
         if (this.domains.ex && this.domains.ex.columns.names().includes(VISIT_NAME)) {
             let ex = this.domains.ex.clone();
             if (ex.columns.names().includes(INV_DRUG_NAME)) {
-                if ([INV_DRUG_DOSE, INV_DRUG_DOSE_UNITS].every(it => ex.columns.names().includes(it))) {
-                    addColumnWithDrugPlusDosage(ex, INV_DRUG_NAME, INV_DRUG_DOSE, INV_DRUG_DOSE_UNITS, this.extrtWithDoseColName);
-                } else {
-                    ex.col(INV_DRUG_NAME).name = this.extrtWithDoseColName;
-                }
+                addColumnWithDrugPlusDosage(ex, INV_DRUG_NAME, INV_DRUG_DOSE, INV_DRUG_DOSE_UNITS, this.extrtWithDoseColName);
             }
             this.exAtVisit = ex.groupBy(ex.columns.names())
             .where(`${VISIT_NAME} = ${this.currentVisitName}`)
