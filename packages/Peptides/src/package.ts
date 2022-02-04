@@ -21,10 +21,10 @@ import {runKalign} from './utils/multiple-sequence-alignment';
 import { SemanticValue } from 'datagrok-api/dg';
 
 export const _package = new DG.Package();
-let tableGrid: DG.Grid;
-let currentDf: DG.DataFrame;
-let alignedSequenceCol: DG.Column;
-let view: DG.TableView;
+let currentGrid: DG.Grid;
+let currentTable: DG.DataFrame;
+let alignedSequenceColumn: DG.Column;
+let currentView: DG.TableView;
 
 async function main(chosenFile: string) {
   const pi = DG.TaskBarProgressIndicator.create('Loading Peptides');
@@ -33,7 +33,7 @@ async function main(chosenFile: string) {
   peptides.name = 'Peptides';
   peptides.setTag('dataType', 'peptides');
   const view = grok.shell.addTableView(peptides);
-  tableGrid = view.grid;
+  currentGrid = view.grid;
   view.name = 'PeptidesView';
   grok.shell.windows.showProperties = true;
 
@@ -77,6 +77,7 @@ export async function Peptides() {
     ui.divH([
       ui.button('Simple demo', () => main('aligned.csv'), ''),
       ui.button('Complex demo', () => main('aligned_2.csv'), ''),
+      // ui.button('Real demo', () => main('aligned_21.csv'), ''),
     ]),
   ]);
 }
@@ -89,11 +90,9 @@ export async function peptidesPanel(col: DG.Column): Promise<DG.Widget> {
   if (col.getTag('isAnalysisApplicable') === 'false')
     return new DG.Widget(ui.divText('Analysis is not applicable'));
 
-  view = (grok.shell.v as DG.TableView);
-  tableGrid = view.grid;
-  currentDf = col.dataFrame;
-  alignedSequenceCol = col;
-  return await analyzePeptidesWidget(col, view, tableGrid, currentDf);
+  [currentView, currentGrid, currentTable, alignedSequenceColumn] =
+    getOrDefineWIP(currentView, currentGrid, currentTable, col);
+  return await analyzePeptidesWidget(col, currentView, currentGrid, currentTable);
 }
 
 //name: peptide-sar-viewer
@@ -143,7 +142,9 @@ export async function peptideMolecule(peptide: string): Promise<DG.Widget> {
 //input: string aar {semType: aminoAcids}
 //output: widget result
 export async function peptideMolecule2(aar: string): Promise<DG.Widget> {
-  const peptide = alignedSequenceCol.get(currentDf.currentRowIdx);
+  [currentView, currentGrid, currentTable, alignedSequenceColumn] =
+    getOrDefineWIP(currentView, currentGrid, currentTable, alignedSequenceColumn);
+  const peptide = alignedSequenceColumn.get(currentTable.currentRowIdx);
   return await peptideMolecule(peptide);
 }
 
@@ -182,8 +183,10 @@ export function logov() {
 //input: string monomer {semType: aminoAcids}
 //output: widget result
 export function manualAlignment(monomer: string) {
+  [currentView, currentGrid, currentTable, alignedSequenceColumn] =
+    getOrDefineWIP(currentView, currentGrid, currentTable, alignedSequenceColumn);
   //TODO: recalculate Molfile and Molecule panels on sequence update
-  return manualAlignmentWidget(alignedSequenceCol, currentDf);
+  return manualAlignmentWidget(alignedSequenceColumn, currentTable);
 }
 
 //name: Peptide Space
@@ -191,7 +194,9 @@ export function manualAlignment(monomer: string) {
 //input: column col {semType: alignedSequence}
 //output: widget result
 export async function peptideSpacePanel(col: DG.Column): Promise<DG.Widget> {
-  const widget = new PeptideSimilaritySpaceWidget(col, view ?? grok.shell.v);
+  [currentView, currentGrid, currentTable, alignedSequenceColumn] =
+    getOrDefineWIP(currentView, currentGrid, currentTable, col);
+  const widget = new PeptideSimilaritySpaceWidget(col, currentView);
   return await widget.draw();
 }
 
@@ -209,7 +214,9 @@ export async function peptideMolfile(peptide: string): Promise<DG.Widget> {
 //input: string aar { semType: aminoAcids }
 //output: widget result
 export async function peptideMolfile2(aar: string): Promise<DG.Widget> {
-  const peptide = alignedSequenceCol.get(currentDf.currentRowIdx);
+  [currentView, currentGrid, currentTable, alignedSequenceColumn] =
+    getOrDefineWIP(currentView, currentGrid, currentTable, alignedSequenceColumn);
+  const peptide = alignedSequenceColumn.get(currentTable.currentRowIdx);
   return await peptideMolfile(peptide);
 }
 
@@ -274,4 +281,17 @@ export async function peptideSubstitution(table: DG.DataFrame): Promise<DG.Widge
 //output: grid_cell_renderer result
 export function alignedSequenceDifferenceCellRenderer() {
   return new AlignedSequenceDifferenceCellRenderer();
+}
+
+function getOrDefineWIP(
+    view?: DG.TableView, grid?: DG.Grid, dataframe?: DG.DataFrame, column?: DG.Column | null,
+    ): [DG.TableView, DG.Grid, DG.DataFrame, DG.Column] {
+  view ??= (grok.shell.v as DG.TableView);
+  grid ??= view.grid;
+  dataframe ??= grok.shell.t;
+  column ??= (dataframe.columns as DG.ColumnList).bySemType('alignedSequence');
+  if (column === null)
+    throw new Error('Table does not contain aligned sequence columns');
+
+  return [view, grid, dataframe, column];
 }
