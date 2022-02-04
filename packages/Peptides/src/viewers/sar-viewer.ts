@@ -4,8 +4,7 @@ import * as DG from 'datagrok-api/dg';
 
 import $ from 'cash-dom';
 import {StringDictionary} from '@datagrok-libraries/utils/src/type-declarations';
-
-import {model} from '../model';
+import { PeptidesModel } from '../model';
 
 /**
  * Structure-activity relationship viewer.
@@ -30,6 +29,7 @@ export class SARViewer extends DG.JsViewer {
   protected currentBitset: DG.BitSet | null;
   grouping: boolean;
   groupMapping: StringDictionary | null;
+  model: PeptidesModel | null;
   // protected pValueThreshold: number;
   // protected amountOfBestAARs: number;
   // duplicatesHandingMethod: string;
@@ -51,6 +51,7 @@ export class SARViewer extends DG.JsViewer {
     this._initialBitset = null;
     this.viewGridInitialized = false;
     this.currentBitset = null;
+    this.model = null;
 
     //TODO: find a way to restrict activityColumnName to accept only numerical columns (double even better)
     this.activityColumnName = this.string('activityColumnName');
@@ -74,13 +75,6 @@ export class SARViewer extends DG.JsViewer {
     this._initialBitset = this.dataFrame!.filter.clone();
     this.currentBitset = this._initialBitset.clone();
     this.initialized = true;
-    this.subs.push(model.statsDf$.subscribe((data) => this.statsDf = data));
-    this.subs.push(model.viewerGrid$.subscribe((data) => {
-      this.viewerGrid = data;
-      this.render();
-    }));
-    this.subs.push(model.viewerVGrid$.subscribe((data) => this.viewerVGrid = data));
-    this.subs.push(model.groupMapping$.subscribe((data) => this.groupMapping = data));
   }
 
   /**
@@ -91,6 +85,16 @@ export class SARViewer extends DG.JsViewer {
   onTableAttached() {
     this.sourceGrid = this.view.grid;
     this.sourceGrid?.dataFrame?.setTag('dataType', 'peptides');
+    this.model = PeptidesModel.getOrInit(this.dataFrame!);
+    
+    this.subs.push(this.model.onStatsDataFrameChanged.subscribe(data => this.statsDf = data));
+    this.subs.push(this.model.onSARGridChanged.subscribe(data => {
+      this.viewerGrid = data;
+      this.render(false);
+    }));
+    this.subs.push(this.model.onSARVGridChanged.subscribe(data => this.viewerVGrid = data));
+    this.subs.push(this.model.onGroupMappingChanged.subscribe(data => this.groupMapping = data));
+
     this.render();
   }
 
@@ -144,9 +148,9 @@ export class SARViewer extends DG.JsViewer {
       return;
 
     //TODO: optimize. Don't calculate everything again if only view changes
-    if (computeData) {
-      if (typeof this.dataFrame !== 'undefined' && this.activityColumnName && this.sourceGrid) {
-        await model?.updateData(
+    if (typeof this.dataFrame !== 'undefined' && this.activityColumnName && this.sourceGrid) {
+      if (computeData)
+        await this.model!.updateData(
           this.dataFrame!,
           this.activityColumnName,
           this.scaling,
@@ -156,29 +160,28 @@ export class SARViewer extends DG.JsViewer {
           this.grouping,
         );
 
-        if (this.viewerGrid !== null && this.viewerVGrid !== null) {
-          $(this.root).empty();
-          this.root.appendChild(this.viewerGrid.root);
-          this.viewerGrid.dataFrame!.onCurrentCellChanged.subscribe((_) => {
-            this.currentBitset = applyBitset(
-              this.dataFrame!, this.viewerGrid!, this.aminoAcidResidue,
-              this.groupMapping!, this._initialBitset!, this.filterMode,
-            ) ?? this.currentBitset;
-            syncGridsFunc(false, this.viewerGrid!, this.viewerVGrid!, this.aminoAcidResidue);
-          });
-          this.viewerVGrid.dataFrame!.onCurrentCellChanged.subscribe((_) => {
-            syncGridsFunc(true, this.viewerGrid!, this.viewerVGrid!, this.aminoAcidResidue);
-          });
-          this.dataFrame!.onRowsFiltering.subscribe((_) => {
-            sourceFilteringFunc(this.filterMode, this.dataFrame!, this.currentBitset!, this._initialBitset!);
-          });
-          grok.events.onAccordionConstructed.subscribe((accordion: DG.Accordion) => {
-            accordionFunc(
-              accordion, this.viewerGrid!, this.aminoAcidResidue,
-              this._initialBitset!, this.activityColumnName, this.statsDf!,
-            );
-          });
-        }
+      if (this.viewerGrid !== null && this.viewerVGrid !== null) {
+        $(this.root).empty();
+        this.root.appendChild(this.viewerGrid.root);
+        this.viewerGrid.dataFrame!.onCurrentCellChanged.subscribe((_) => {
+          this.currentBitset = applyBitset(
+            this.dataFrame!, this.viewerGrid!, this.aminoAcidResidue,
+            this.groupMapping!, this._initialBitset!, this.filterMode,
+          ) ?? this.currentBitset;
+          syncGridsFunc(false, this.viewerGrid!, this.viewerVGrid!, this.aminoAcidResidue);
+        });
+        this.viewerVGrid.dataFrame!.onCurrentCellChanged.subscribe((_) => {
+          syncGridsFunc(true, this.viewerGrid!, this.viewerVGrid!, this.aminoAcidResidue);
+        });
+        this.dataFrame!.onRowsFiltering.subscribe((_) => {
+          sourceFilteringFunc(this.filterMode, this.dataFrame!, this.currentBitset!, this._initialBitset!);
+        });
+        grok.events.onAccordionConstructed.subscribe((accordion: DG.Accordion) => {
+          accordionFunc(
+            accordion, this.viewerGrid!, this.aminoAcidResidue,
+            this._initialBitset!, this.activityColumnName, this.statsDf!,
+          );
+        });
       }
     }
     //fixes viewers not rendering immediately after analyze.
@@ -195,6 +198,7 @@ export class SARViewer extends DG.JsViewer {
  */
 export class SARViewerVertical extends DG.JsViewer {
   viewerVGrid: DG.Grid | null;
+  model: PeptidesModel | null;
 
   /**
    * Creates an instance of SARViewerVertical.
@@ -205,7 +209,13 @@ export class SARViewerVertical extends DG.JsViewer {
     super();
 
     this.viewerVGrid = null;
-    this.subs.push(model.viewerVGrid$.subscribe((data) => {
+    this.model = null;
+  }
+
+  onTableAttached(): void {
+    this.model = PeptidesModel.getOrInit(this.dataFrame!);
+    
+    this.subs.push(this.model!.onSARVGridChanged.subscribe(data => {
       this.viewerVGrid = data;
       this.render();
     }));
