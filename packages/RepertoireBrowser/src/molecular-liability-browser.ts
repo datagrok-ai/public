@@ -30,6 +30,7 @@ function customFilter(
   const cdrLKeys = cdrKeys.filter((v) => v.includes('CDRL')).map((v) => normalizeCDRnames(v, 'L'));
 
   const createFilterGroup = (ptmNames: string[], cdrNames: string[], chainType: string) => {
+    cdrNames.unshift('None');
     //@ts-ignore: method api is wrong
     const ptmInput = ui.multiChoiceInput('PTM', [] as string[], ptmNames);
     const cdrInput = ui.choiceInput('CDR', cdrNames[0], cdrNames);
@@ -49,7 +50,7 @@ function customFilter(
       const cMin = parseFloat(probabilityInput.min.toFixed(3));
       const cMax = parseFloat(probabilityInput.max.toFixed(3));
       const ptmInputValue: string[] = ptmInput.value;
-      const currentCdr = cdrMap[normalizedCDRMap[`${chainType} ${cdrInput.stringValue}`]];
+      const currentCdr = cdrInput.stringValue === 'None'? 'max' :cdrMap[normalizedCDRMap[`${chainType} ${cdrInput.stringValue}`]];
 
       df.filter.init((index: number) => {
         for (const chosenPTM of ptmInputValue){

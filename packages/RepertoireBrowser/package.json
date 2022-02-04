@@ -12,7 +12,7 @@
 	],
 	"dependencies": {
 		"cash-dom": "latest",
-		"datagrok-api": ">=0.95.5",
+		"datagrok-api": ">=0.121.0",
 		"logojs-react": "^2.1.1",
 		"ts-loader": "^9.2.5"
 	},
