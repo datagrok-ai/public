@@ -171,7 +171,11 @@ function sequenceToSmiles(sequence: string) {
         MODIFICATIONS[codesList[i]].left;
     } else {
       smiles += (
-        links.includes(codesList[i]) ||
+        (
+          links.includes(codesList[i]) &&
+          codesList.length > 1 &&
+          !includesStandardLinkAlready.includes(codesList[i - 1])
+        ) ||
         includesStandardLinkAlready.includes(codesList[i]) ||
         (i < codesList.length - 1 && (links.includes(codesList[i + 1]) || dropdowns.includes(codesList[i + 1])))
       ) ?
@@ -181,7 +185,11 @@ function sequenceToSmiles(sequence: string) {
   }
   smiles = smiles.replace(/OO/g, 'O');
   return (
-    links.includes(codesList[codesList.length - 1]) ||
+    (
+      links.includes(codesList[codesList.length - 1]) &&
+      codesList.length > 1 &&
+      !includesStandardLinkAlready.includes(codesList[codesList.length - 2])
+    ) ||
     dropdowns.includes(codesList[codesList.length - 1]) ||
     includesStandardLinkAlready.includes(codesList[codesList.length - 1])
   ) ?
