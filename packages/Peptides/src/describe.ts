@@ -427,9 +427,15 @@ function postProcessGrids(
       cell.style.backColor = DG.Color.lightLightGray;
   });
 
+  let rowHeight = sarGrid.props.rowHeight;
   for (const col of (matrixDf.columns as DG.ColumnList).names())
-    sarGrid.col(col)!.width = sarGrid.props.rowHeight;
+    sarGrid.col(col)!.width = rowHeight;
 
+  rowHeight = sarVGrid.props.rowHeight;
+  const mdCol: DG.GridColumn = sarVGrid.col('Mean difference')!;
+  mdCol.name = 'Diff';
+  mdCol.width = rowHeight;
+  sarVGrid.col(aminoAcidResidue)!.width = rowHeight;
 
   if (grouping) {
     sarGrid.col(aminoAcidResidue)!.name = 'Groups';
@@ -438,8 +444,6 @@ function postProcessGrids(
 
   sarGrid.props.allowEdit = false;
   sarVGrid.props.allowEdit = false;
-
-  sarVGrid.col('Mean difference')!.name = 'Diff';
 }
 
 export async function describe(
