@@ -6,68 +6,71 @@ import * as rxjs from 'rxjs';
 const cp = new ChemPalette('grok');
 
 //TODO: the function should not accept promise. Await the parameters where it is used
-export function addViewerToHeader(grid: DG.Grid, viewer: Promise<DG.Widget>) {
-  viewer.then((viewer) => {
-    const barchart = viewer as StackedBarChart; //TODO: accept specifically StackedBarChart object
-    // The following event makes the barchart interactive
-    rxjs.fromEvent(grid.overlay, 'mousemove').subscribe((mm: any) => {
-      mm = mm as MouseEvent;
-      const cell = grid.hitTest(mm.offsetX, mm.offsetY);
-
-      if (cell !== null && cell?.isColHeader && cell.tableColumn?.semType == 'aminoAcids')
-        barchart.highlight(cell, mm.offsetX, mm.offsetY);
-      else
-        return;
-
-      if (cell?.isColHeader && cell.tableColumn?.semType == 'aminoAcids') 
-        barchart.beginSelection(mm);
-      else 
-        barchart.unhighlight();
-    });
-
-    rxjs.fromEvent(grid.overlay, 'mouseout').subscribe((_: any) => {
+export function addViewerToHeader(grid: DG.Grid, viewer: DG.Widget) {
+  const barchart = viewer as StackedBarChart; //TODO: accept specifically StackedBarChart object
+  // The following event makes the barchart interactive
+  rxjs.fromEvent<MouseEvent>(grid.overlay, 'mousemove').subscribe(mm => {
+    const cell = grid.hitTest(mm.offsetX, mm.offsetY);
+    if (cell !== null && cell?.isColHeader && cell.tableColumn?.semType == 'aminoAcids')
+      barchart.highlight(cell, mm.offsetX, mm.offsetY);
+    else
+      return;
+    
+    if (cell?.isColHeader && cell.tableColumn?.semType == 'aminoAcids') 
+      barchart.beginSelection(mm);
+    else 
       barchart.unhighlight();
-    });
+  });
 
-    barchart.tableCanvas = grid.canvas;
-    grid.setOptions({'colHeaderHeight': 130});
-    grid.onCellTooltip((cell, x, y) => {
-      if (cell.tableColumn) {
-        if (['aminoAcids', 'alignedSequence'].includes(cell.tableColumn.semType) ) {
-          if ( !cell.isColHeader) {
-            cp.showTooltip(cell, x, y);
-            return true;
-          } else {
-            if (barchart.highlighted) {
-              let elements: HTMLElement[] = [];
-              elements = elements.concat([ui.divText(barchart.highlighted.aaName)]);
-              ui.tooltip.show(ui.divV(elements), x, y);
-            }
-            return true;
+  // rxjs.fromEvent<MouseEvent>(grid.overlay, 'click').subscribe(mm => {
+  //   const cell = grid.hitTest(mm.offsetX, mm.offsetY);
+  //   if (cell?.isColHeader && cell.tableColumn?.semType == 'aminoAcids') {
+  //     barchart.beginSelection(mm);
+  //     return;
+  //   }
+  //   barchart.unhighlight();
+  // });
+  
+  rxjs.fromEvent(grid.overlay, 'mouseout').subscribe((_: any) => {
+    barchart.unhighlight();
+  });
+
+  barchart.tableCanvas = grid.canvas;
+  grid.setOptions({'colHeaderHeight': 130});
+  grid.onCellTooltip((cell, x, y) => {
+    if (cell.tableColumn) {
+      if (['aminoAcids', 'alignedSequence'].includes(cell.tableColumn.semType) ) {
+        if ( !cell.isColHeader) {
+          cp.showTooltip(cell, x, y);
+        } else {
+          if (barchart.highlighted) {
+            let elements: HTMLElement[] = [];
+            elements = elements.concat([ui.divText(barchart.highlighted.aaName)]);
+            ui.tooltip.show(ui.divV(elements), x, y);
           }
         }
+        return true;
       }
-    });
-    
-    grid.onCellRender.subscribe((args) => {
-      args.g.save();
-      args.g.beginPath();
-      args.g.rect(args.bounds.x, args.bounds.y, args.bounds.width, args.bounds.height);
-      args.g.clip();
+    }
+  });
+  grid.onCellRender.subscribe((args) => {
+    args.g.save();
+    args.g.beginPath();
+    args.g.rect(args.bounds.x, args.bounds.y, args.bounds.width, args.bounds.height);
+    args.g.clip();
 
-      if (args.cell.isColHeader && barchart.aminoColumnNames.includes(args.cell.gridColumn.name)) {
-        barchart.renderBarToCanvas(
-          args.g,
-          args.cell,
-          args.bounds.x,
-          args.bounds.y,
-          args.bounds.width,
-          args.bounds.height,
-        );
-        args.preventDefault();
-      }
-      args.g.restore();
-    });
+    if (args.cell.isColHeader && barchart.aminoColumnNames.includes(args.cell.gridColumn.name)) {
+      barchart.renderBarToCanvas(
+        args.g,
+        args.cell,
+        args.bounds.x,
+        args.bounds.y,
+        args.bounds.width,
+        args.bounds.height,
+      );
+      args.preventDefault();
+    }
+    args.g.restore();
   });
 }
 
