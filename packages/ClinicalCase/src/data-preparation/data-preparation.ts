@@ -116,7 +116,7 @@ export function createUniqueCountDataframe(df: DG.DataFrame, groupCol: string[],
 
 export function addColumnWithDrugPlusDosage(df: DG.DataFrame, drugCol: string, dosageCol: string, unitsCol: string, newCol: string) {
   df.columns.addNewString(newCol)
-    .init((i) => `${df.get(drugCol, i).toString()} ${df.get(dosageCol, i).toString()}${df.get(unitsCol, i).toString()}`);
+    .init((i) => `${df.col(drugCol) ? df.get(drugCol, i).toString() : ''} ${df.col(dosageCol) ? df.get(dosageCol, i).toString() : ''}${df.col(unitsCol) ? df.get(unitsCol, i).toString() : ''}`);
   return df;
 }
 

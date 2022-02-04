@@ -71,7 +71,7 @@ export function getUniqueValues(df: DG.DataFrame, colName: string) {
 
 export function addDataFromDmDomain(df: DG.DataFrame, dm: DG.DataFrame, columnsToExtract: string[], columnsToExtractFromDm: string[], subjIdColName = SUBJECT_ID) {
     let withArm = grok.data.joinTables(df, dm, [ subjIdColName ], [ SUBJECT_ID ], columnsToExtract, columnsToExtractFromDm, DG.JOIN_TYPE.LEFT, false);
-    columnsToExtractFromDm.forEach(it => changeEmptyStringsToUnknown(withArm, it));
+   // columnsToExtractFromDm.forEach(it => changeEmptyStringsToUnknown(withArm, it));
     return withArm;
 }
 
@@ -141,6 +141,14 @@ export function getVisitNamesAndDays(df: DG.DataFrame, allowNulls = false) {
         .aggregate();
 }
 
+export function createPivotedDataframeAvg(df: DG.DataFrame, groupByCols: string[], pivotCol: string, aggregatedColName: string, splitBy: string[]) {
+    return df
+        .groupBy(groupByCols.concat(splitBy))
+        .pivot(pivotCol)
+        .avg(aggregatedColName)
+        .aggregate();
+}
+
 export function checkDateFormat(colToCheck: DG.Column, rowCount: number) {
     const rowsWithIncorrectDates = [];
     for (let i = 0; i < rowCount; i++) {
@@ -148,4 +156,12 @@ export function checkDateFormat(colToCheck: DG.Column, rowCount: number) {
             rowsWithIncorrectDates.push(i);
     }
     return rowsWithIncorrectDates;
+}
+
+export function convertColToString(df: DG.DataFrame, col: string) {
+    if (df.col(col).type !== 'string') {
+        df.columns.addNewString(`${col}_s`).init((i) => df.get(col, i).toString())
+        df.columns.remove(col);
+        df.col(`${col}_s`).name = col;
+    }
 }

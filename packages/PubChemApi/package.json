@@ -1,17 +1,21 @@
 {
 	"name": "@datagrok/pubchem-api",
-	"beta": true,
-	"friendlyName": "PubChemApi",
-	"version": "0.1.0",
+	"friendlyName": "PubChem",
+	"version": "0.2.0",
 	"description": "",
 	"dependencies": {
 		"datagrok-api": "latest",
-		"cash-dom": "latest",
-		"dayjs": "latest"
+		"@datagrok-libraries/utils": "^0.0.22"
 	},
 	"devDependencies": {
+		"ts-loader": "latest",
+		"typescript": "latest",
 		"webpack": "latest",
-		"webpack-cli": "latest"
+		"webpack-cli": "latest",
+		"@typescript-eslint/eslint-plugin": "latest",
+		"@typescript-eslint/parser": "latest",
+		"eslint": "latest",
+		"eslint-config-google": "latest"
 	},
 	"scripts": {
 		"link-api": "npm link datagrok-api",
@@ -23,7 +27,9 @@
 		"debug-pubchemapi-dev": "grok publish dev --rebuild",
 		"release-pubchemapi-dev": "grok publish dev --rebuild --release",
 		"debug-pubchemapi-local": "grok publish local --rebuild",
-		"release-pubchemapi-local": "grok publish local --rebuild --release"
+		"release-pubchemapi-local": "grok publish local --rebuild --release",
+		"lint": "eslint src --ext .ts",
+		"lint-fix": "eslint src --ext .ts --fix"
 	},
 	"canEdit": [ "Developers" ],
 	"canView": [ "All users" ]

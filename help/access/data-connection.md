@@ -72,6 +72,11 @@ programmatically.
 
 Note that the platform supports [caching](#caching) of results.
 
+## Credentials
+
+Credentials required to access data sources should be defined in the setup connection.
+Read more about credentials here: [Credentials](data-connection-credentials.md).
+
 ## Access control
 
 Connections are first-class entities in the Datagrok platform, and as such are subjects to the standard checks and

@@ -151,12 +151,6 @@ More information about Datagrok design and components:
 
 11. Go in the web browser to <DATAGROK_DNS>, login to Datagrok using username "admin" and password "admin"
 
-[//]: # (11. Edit settings in the Datagrok &#40;Tools | Settings...&#41;. Do not forget to click Apply to save new settings.)
-
-[//]: # (* Connectors)
-
-[//]: # (    * External Host: `grok_connect`)
-
 ## Setup Compute Virtual Machine
 
 1. Download Docker Compose YAML

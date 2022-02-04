@@ -1,10 +1,10 @@
 {
 	"name": "@datagrok/phylotree-viewer",
 	"friendlyName": "PhyloTreeViewer",
-	"version": "0.0.3",
+	"version": "0.0.4",
 	"description": "",
 	"dependencies": {
-	  "datagrok-api": ">0.94.10"
+	  "datagrok-api": ">=0.121.0"
 	 },
 	"sources": [
     "phylotree/phylotree.css",
