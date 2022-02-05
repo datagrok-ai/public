@@ -80,7 +80,7 @@ export function measureAAR(s: string): number {
 function printLeftOrCentered(
   x: number, y: number, w: number, h: number,
   g: CanvasRenderingContext2D, s: string, color = ChemPalette.undefinedColor,
-  pivot: number = 0, left = false, hideMod = false, transparencyRate: number = 1.0
+  pivot: number = 0, left = false, hideMod = false, transparencyRate: number = 1.0,
 ) {
   g.textAlign = 'start';
   let colorPart = pivot == -1 ? s.substring(0) : s.substring(0, pivot);
@@ -220,7 +220,7 @@ export class AminoAcidsCellRenderer extends DG.GridCellRenderer {
       g.textBaseline = 'top';
       const s: string = gridCell.cell.value ? gridCell.cell.value : '-';
       let [color, outerS, innerS, pivot] = cp.getColorAAPivot(s);
-      if (innerS) 
+      if (innerS)
         outerS = s;
 
       printLeftOrCentered(x, y, w, h, g, outerS, color, pivot, false, true);
@@ -272,7 +272,7 @@ export class AlignedSequenceCellRenderer extends DG.GridCellRenderer {
    * @readonly
    * @memberof AlignedSequenceCellRenderer
    */
-   get defaultWidth() {
+  get defaultWidth() {
     return 230;
   }
 
@@ -304,7 +304,7 @@ export class AlignedSequenceCellRenderer extends DG.GridCellRenderer {
     const s: string = cell.value ?? '';
 
     //TODO: can this be replaced/merged with splitSequence?
-    let subParts = s.split('-');
+    const subParts = s.split('-');
     const [text, simplified] = processSequence(subParts);
     const textSize = g.measureText(text.join(''));
     x = Math.max(x, x + (w - textSize.width) / 2);
@@ -313,7 +313,7 @@ export class AlignedSequenceCellRenderer extends DG.GridCellRenderer {
       let [color, outerAmino,, pivot] = cp.getColorAAPivot(amino);
       g.fillStyle = ChemPalette.undefinedColor;
       if (index + 1 < subParts.length) {
-        const gap = simplified?'':' ';
+        const gap = simplified ? '' : ' ';
         outerAmino += `${outerAmino?'':'-'}${gap}`;
       }
       x = printLeftOrCentered(x, y, w, h, g, outerAmino, color, pivot, true);
@@ -354,7 +354,7 @@ export function processSequence(subParts: string[]): [string[], boolean] {
  * @class AlignedSequenceDifferenceCellRenderer
  * @extends {DG.GridCellRenderer}
  */
- export class AlignedSequenceDifferenceCellRenderer extends DG.GridCellRenderer {
+export class AlignedSequenceDifferenceCellRenderer extends DG.GridCellRenderer {
   /**
    * Renderer name.
    *
@@ -427,15 +427,15 @@ export function processSequence(subParts: string[]): [string[], boolean] {
     const [s1, s2] = s.split('#');
     const subParts1 = s1.split('-');
     const subParts2 = s2.split('-');
-    const [text, simplified] = processSequence(subParts1);
+    const [text] = processSequence(subParts1);
     const textSize = g.measureText(text.join(''));
     x = Math.max(x, x + (w - textSize.width) / 2);
 
     subParts1.forEach((amino1: string, index) => {
       let amino2 = subParts2[index];
-      let [color1, amino1Outer, amino1Inner, pivot1] = cp.getColorAAPivot(amino1);
-      let [color2, amino2Outer, amino2Inner, pivot2] = cp.getColorAAPivot(amino2);
-      
+      const [color1, amino1Outer, amino1Inner, pivot1] = cp.getColorAAPivot(amino1);
+      const [color2, amino2Outer, amino2Inner, pivot2] = cp.getColorAAPivot(amino2);
+
       if (amino1 != amino2) {
         const verticalShift = 7;
 

@@ -1,5 +1,5 @@
 import {DimensionalityReducer, KnownMethods} from '@datagrok-libraries/ml/src/reduce-dimensionality';
-import { KnownMetrics } from '@datagrok-libraries/ml/src/typed-metrics';
+import {KnownMetrics} from '@datagrok-libraries/ml/src/typed-metrics';
 import {Coordinates} from '@datagrok-libraries/utils/src/type-declarations';
 
 /**

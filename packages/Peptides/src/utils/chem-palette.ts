@@ -36,29 +36,29 @@ export class ChemPalette {
    * @param {number} y y coordinate of the mouse pointer.
    */
   async showTooltip(cell: DG.GridCell, x: number, y: number) {
-    if(!this.isInit)
+    if (!this.isInit)
       this.monomerLib = new MonomerLibrary(await _package.files.readAsText(`HELMMonomers_June10.sdf`));
 
     const s = cell.cell.value as string;
     let toDisplay = [ui.divText(s)];
-    const [, aarOuter, aarInner, ] = this.getColorAAPivot(s);
+    const [, aarOuter, aarInner] = this.getColorAAPivot(s);
     for (const aar of [aarOuter, aarInner]) {
       if (this.monomerLib!.monomerNames.includes(aar)) {
         if (aar in ChemPalette.AANames)
           toDisplay = [ui.divText(ChemPalette.AANames[aar])];
-  
+
         if (aar in ChemPalette.AAFullNames)
           toDisplay = [ui.divText(ChemPalette.AANames[ChemPalette.AAFullNames[aar]])];
-  
+
         const options = {
           autoCrop: true,
           autoCropMargin: 0,
           suppressChiralText: true,
         };
         const sketch = grok.chem.svgMol(this.monomerLib!.getMonomerMol(aar), undefined, undefined, options);
-        if (toDisplay.length == 2) {
+        if (toDisplay.length == 2)
           toDisplay.push(ui.divText('Modified'));
-        }
+
         toDisplay.push(sketch);
       }
     }
@@ -77,9 +77,9 @@ export class ChemPalette {
 
   /**
    * Retursn divided amino with its content in the bracket, if the conetent is number, then its omitted
-   * 
+   *
    * @param {string} c raw amino
-   * @returns {[string, string]} outer and inner content
+   * @return {[string, string]} outer and inner content
    */
   private getInnerOuter(c: string): [string, string] {
     let isInner = 0;
@@ -87,15 +87,14 @@ export class ChemPalette {
     let outer = '';
 
     for (let i = 0; i < c.length; ++i) {
-      if (c[i] == '(') {
+      if (c[i] == '(')
         isInner++;
-      } else if (c[i] == ')'){
+      else if (c[i] == ')')
         isInner--;
-      } else if (isInner) {
+      else if (isInner)
         inner += c[i];
-      } else {
+      else
         outer += c[i];
-      }
     }
 
     return !isNaN(parseInt(inner)) ? [outer, ''] : [outer, inner];
@@ -158,7 +157,7 @@ export class ChemPalette {
    */
   getColorPivot(c = ''): [string, number] {
     //TODO: merge with getColorAAPivot?
-    const [color,,,pivot] = this.getColorAAPivot(c);
+    const [color,,, pivot] = this.getColorAAPivot(c);
     return [color, pivot];
   };
 

@@ -62,7 +62,7 @@ function joinDataFrames(
   activityColumn: string,
 ) {
   if (df.col(activityColumnScaled))
-  (df.columns as DG.ColumnList).remove(activityColumnScaled);
+    (df.columns as DG.ColumnList).remove(activityColumnScaled);
 
 
   //FIXME: this column usually duplicates, so remove it then
@@ -72,8 +72,11 @@ function joinDataFrames(
 
   // append splitSeqDf columns to source table and make sure columns are not added more than once
   const dfColsSet = new Set((df.columns as DG.ColumnList).names());
-  if (!positionColumns.every((col: string) => dfColsSet.has(col)))
-    df.join(splitSeqDf, [activityColumn], [activityColumn], (df.columns as DG.ColumnList).names(), positionColumns, 'inner', true);
+  if (!positionColumns.every((col: string) => dfColsSet.has(col))) {
+    df.join(
+      splitSeqDf, [activityColumn], [activityColumn], (df.columns as DG.ColumnList).names(), positionColumns, 'inner',
+      true);
+  }
 }
 
 function sortSourceGrid(sourceGrid: DG.Grid) {

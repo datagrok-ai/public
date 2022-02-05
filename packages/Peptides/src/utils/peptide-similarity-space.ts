@@ -52,40 +52,30 @@ export function cleanAlignedSequencesColumn(col: DG.Column): Array<string> {
  * @return {Promise<DG.ScatterPlotViewer>} A viewer.
  */
 export async function createPeptideSimilaritySpaceViewer(
-  table: DG.DataFrame,
-  alignedSequencesColumn: DG.Column,
-  method: string,
-  measure: string,
-  cyclesCount: number,
-  view: DG.TableView | null,
-  activityColumnName?: string | null,
-): Promise<DG.ScatterPlotViewer> {
-  const pi = DG.TaskBarProgressIndicator.create('Creating embedding.');
+  table: DG.DataFrame, alignedSequencesColumn: DG.Column, method: string, measure: string, cyclesCount: number,
+  view: DG.TableView | null, activityColumnName?: string | null): Promise<DG.ScatterPlotViewer> {
+  const pi = DG.TaskBarProgressIndicator.create('Creating embedding...');
 
   activityColumnName = activityColumnName ?? inferActivityColumnsName(table);
 
   const axesNames = ['~X', '~Y', '~MW'];
   const columnData = alignedSequencesColumn.toList().map((v, _) => AlignedSequenceEncoder.clean(v));
 
-  const embcols = await createDimensinalityReducingWorker({data: columnData, metric: measure as StringMetrics}, method, cyclesCount);
+  const embcols = await createDimensinalityReducingWorker(
+    {data: columnData, metric: measure as StringMetrics}, method, cyclesCount);
 
   const columns = Array.from(
-    embcols as Coordinates,
-    (v: Float32Array, k) => (DG.Column.fromFloat32Array(axesNames[k], v)),
-  );
+    embcols as Coordinates, (v: Float32Array, k) => DG.Column.fromFloat32Array(axesNames[k], v));
 
-  function _getMW(sequences = columnData) {
-    const mw: Float32Array = new Float32Array(sequences.length).fill(0);
-    let currentSequence;
+  function _getMW(sequences: string[]) {
+    const mw: Float32Array = new Float32Array(sequences.length);
 
-    for (let i = 0; i < sequences.length; ++i) {
-      currentSequence = sequences[i];
-      mw[i] = currentSequence == null ? 0 : getSequenceMolecularWeight(currentSequence);
-    }
+    mw.map((_, index) => getSequenceMolecularWeight(sequences[index] ?? ''));
+
     return mw;
   }
 
-  columns.push(DG.Column.fromFloat32Array('~MW', _getMW()));
+  columns.push(DG.Column.fromFloat32Array('~MW', _getMW(columnData)));
 
   const edf = DG.DataFrame.fromColumns(columns);
 
