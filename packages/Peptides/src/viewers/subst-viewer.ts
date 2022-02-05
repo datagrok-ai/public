@@ -6,7 +6,8 @@ import $ from 'cash-dom';
 
 // import {aarGroups} from '../describe';
 import {setAARRenderer} from '../utils/cell-renderer';
-import { SemanticValue } from 'datagrok-api/dg';
+import {SemanticValue} from 'datagrok-api/dg';
+import {PeptidesModel} from '../model';
 
 export class SubstViewer extends DG.JsViewer {
   viewerGrid: DG.Grid | null;
@@ -15,6 +16,7 @@ export class SubstViewer extends DG.JsViewer {
   activityColumnName: string;
   title: string;
   casesGrid: DG.Grid | null;
+  model: PeptidesModel | null;
 
   constructor() {
     super();
@@ -27,10 +29,17 @@ export class SubstViewer extends DG.JsViewer {
 
     this.viewerGrid = null;
     this.casesGrid = null;
+    this.model = null;
   }
 
   onPropertyChanged(property: DG.Property): void {
     this.calcSubstitutions();
+  }
+
+  onTableAttached(): void {
+    this.model = PeptidesModel.getOrInit(this.dataFrame!);
+    this.model.updateData(this.dataFrame!, null, null, (grok.shell.v as DG.TableView).grid, null, null, null);
+    this.subs.push(this.model.onSubstFlagChanged.subscribe(() => this.calcSubstitutions()));
   }
 
   calcSubstitutions() {
@@ -67,7 +76,7 @@ export class SubstViewer extends DG.JsViewer {
             subst1[k] = [
               smik,
               {
-                key: `${smik === '-' ? 'Empty' : smik} → ${smjk === '-' ? 'Empty' : smjk}`, 
+                key: `${smik === '-' ? 'Empty' : smik} → ${smjk === '-' ? 'Empty' : smjk}`,
                 value: `${vi} → ${vj}`,
                 diff: values[j] - values[i],
               },
@@ -75,7 +84,7 @@ export class SubstViewer extends DG.JsViewer {
             subst2[k] = [
               smjk,
               {
-                key: `${smjk === '-' ? 'Empty' : smjk} → ${smik === '-' ? 'Empty' : smik}`, 
+                key: `${smjk === '-' ? 'Empty' : smjk} → ${smik === '-' ? 'Empty' : smik}`,
                 value: `${vj} → ${vi}`,
                 diff: values[i] - values[j],
               },
@@ -89,15 +98,9 @@ export class SubstViewer extends DG.JsViewer {
               const posInt = parseInt(pos);
               const aar = subst[posInt][0];
               if (!Object.keys(tableValues).includes(aar)) {
-                tableValues[aar] = Array.apply(null, nColsArray).map(function() {
-                  return DG.INT_NULL;
-                });
-                tableTooltips[aar] = Array.apply(null, nColsArray).map(function() {
-                  return [];
-                });
-                tableCases[aar] = Array.apply(null, nColsArray).map(function() {
-                  return [];
-                });
+                tableValues[aar] = Array(...nColsArray).map(() => DG.INT_NULL);
+                tableTooltips[aar] = Array(...nColsArray).map(() => []);
+                tableCases[aar] = Array(...nColsArray).map(() => []);
               }
 
               tableValues[aar][posInt] = tableValues[aar][posInt] === DG.INT_NULL ? 1 : tableValues[aar][posInt] + 1;
@@ -106,7 +109,7 @@ export class SubstViewer extends DG.JsViewer {
               tableTooltips[aar][posInt].push(subst[posInt][1]);
               if (subst == subst1)
                 tableCases[aar][posInt].push([i, j, delta]);
-              else 
+              else
                 tableCases[aar][posInt].push([j, i, -delta]);
             });
           }
@@ -218,9 +221,11 @@ export class SubstViewer extends DG.JsViewer {
         }
 
         initCol.semType = 'alignedSequence';
-        initCol.setTag('isAnalysisApplicable', 'false');
+        // initCol.setTag('isAnalysisApplicable', 'false');
+        initCol.temp['isAnalysisApplicable'] = false;
         subsCol.semType = 'alignedSequence';
-        subsCol.setTag('isAnalysisApplicable', 'false');
+        // subsCol.setTag('isAnalysisApplicable', 'false');
+        subsCol.temp['isAnalysisApplicable'] = false;
 
         this.casesGrid = tempDf.plot.grid();
         this.casesGrid.props.allowEdit = false;
@@ -239,10 +244,10 @@ export class SubstViewer extends DG.JsViewer {
   render() {
     $(this.root).empty();
     const title = ui.h1(this.title, {style: {'align-self': 'center'}});
-    const grid = this.viewerGrid!.root;
+    const gridRoot = this.viewerGrid!.root;
     title.style.alignContent = 'center';
-    grid.style.width = 'auto';
-    this.root.appendChild(ui.divV([title, grid]));
+    gridRoot.style.width = 'auto';
+    this.root.appendChild(ui.divV([title, gridRoot]));
   }
 
   split(peptideColumn: DG.Column, filter: boolean = true): string[][] {

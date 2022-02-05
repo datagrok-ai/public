@@ -3,12 +3,8 @@ import * as DG from 'datagrok-api/dg';
 import {describe} from './describe';
 import {Subject, Observable} from 'rxjs';
 import {StringDictionary} from '@datagrok-libraries/utils/src/type-declarations';
+import {addViewerToHeader, StackedBarChart} from './viewers/stacked-barchart-viewer';
 
-/**
- * Model class for SAR viewers that retrieves and stores data.
- *
- * @class SARViewerModel
- */
 export class PeptidesModel {
   // private _viewerGrid: DG.Grid;
   // private viewerVGrid: DG.Grid;
@@ -22,17 +18,14 @@ export class PeptidesModel {
   private initialBitset: DG.BitSet | null;
   private isUpdating: boolean = false;
   private grouping: boolean = false;
+  private substFlag = false;
   private statsDataFrameSubject = new Subject<DG.DataFrame>();
   private sarGridSubject = new Subject<DG.Grid>();
   private sarVGridSubject = new Subject<DG.Grid>();
   private groupMappingSubject = new Subject<StringDictionary>();
+  private substFlagSubject = new Subject<boolean>();
   private static _modelName = 'peptidesModel';
 
-  /**
-   * Creates an instance of SARViewerModel.
-   *
-   * @memberof SARViewerModel
-   */
   constructor() {
     this.dataFrame = null;
     this.activityColumn = null;
@@ -76,52 +69,49 @@ export class PeptidesModel {
     return this.groupMappingSubject.asObservable();
   }
 
-  /**
-   * Updates data with using specified parameters.
-   *
-   * @param {DG.DataFrame} df Working table.
-   * @param {string} activityCol Activity column name.
-   * @param {string} activityScaling Activity scaling method.
-   * @param {DG.Grid} sourceGrid Working table grid.
-   * @param {boolean} twoColorMode Bidirectional analysis enabled.
-   * @param {(DG.BitSet | null)} initialBitset Initial bitset.
-   * @param {boolean} grouping Grouping enabled.
-   * @memberof SARViewerModel
-   */
+  get onSubstFlagChanged(): Observable<boolean> {
+    return this.substFlagSubject.asObservable();
+  }
+
   async updateData(
-      df: DG.DataFrame, activityCol: string, activityScaling: string, sourceGrid: DG.Grid, twoColorMode: boolean,
-      initialBitset: DG.BitSet | null, grouping: boolean) {
-    this.dataFrame = df;
-    this.activityColumn = activityCol;
-    this.activityScaling = activityScaling;
-    this.sourceGrid = sourceGrid;
-    this.twoColorMode = twoColorMode;
-    this.initialBitset = initialBitset;
-    this.grouping = grouping;
+    df: DG.DataFrame | null, activityCol: string | null, activityScaling: string | null, sourceGrid: DG.Grid | null,
+    twoColorMode: boolean | null, initialBitset: DG.BitSet | null, grouping: boolean | null) {
+    this.dataFrame = df ?? this.dataFrame;
+    this.activityColumn = activityCol ?? this.activityColumn;
+    this.activityScaling = activityScaling ?? this.activityScaling;
+    this.sourceGrid = sourceGrid ?? this.sourceGrid;
+    this.twoColorMode = twoColorMode ?? this.twoColorMode;
+    this.initialBitset = initialBitset ?? this.initialBitset;
+    this.grouping = grouping ?? this.grouping;
     await this.updateDefault();
   }
 
-  /**
-   * Update data using current parameters.
-   *
-   * @memberof SARViewerModel
-   */
   async updateDefault() {
     if (this.dataFrame && this.activityColumn && this.activityScaling && this.sourceGrid &&
         this.twoColorMode !== null && !this.isUpdating) {
       this.isUpdating = true;
       const [viewerGrid, viewerVGrid, statsDf, groupMapping] = await describe(
-        this.dataFrame, this.activityColumn, this.activityScaling,
-        this.sourceGrid, this.twoColorMode, this.initialBitset, this.grouping,
-      );
+        this.dataFrame, this.activityColumn, this.activityScaling, this.sourceGrid, this.twoColorMode,
+        this.initialBitset, this.grouping);
       this.statsDataFrameSubject.next(statsDf);
       this.groupMappingSubject.next(groupMapping);
       this.sarGridSubject.next(viewerGrid);
       this.sarVGridSubject.next(viewerVGrid);
+      this.substFlag = !this.substFlag;
+      this.substFlagSubject.next(this.substFlag);
 
-      
+      await this.updateBarchart();
+
+      this.sourceGrid.invalidate();
+
       this.isUpdating = false;
     }
+  }
+
+  async updateBarchart() {
+    const stackedBarchart = await this.dataFrame?.plot.fromType('StackedBarChartAA') as StackedBarChart;
+    if (stackedBarchart && this.sourceGrid)
+      addViewerToHeader(this.sourceGrid, stackedBarchart);
   }
 
   static get modelName() {
