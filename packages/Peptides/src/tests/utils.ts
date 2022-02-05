@@ -6,7 +6,7 @@ import {
   createDimensinalityReducingWorker,
 } from '@datagrok-libraries/ml/src/workers/dimensionality-reducing-worker-creator';
 import {runKalign} from '../utils/multiple-sequence-alignment';
-import { StringMetrics } from '@datagrok-libraries/ml/src/typed-metrics';
+import {StringMetrics} from '@datagrok-libraries/ml/src/typed-metrics';
 
 /**
  * Tests if a table has non zero rows and columns.
@@ -48,7 +48,8 @@ export async function _testDimensionalityReducer(columnData: Array<string>, meth
   let embcols;
 
   try {
-    embcols = await createDimensinalityReducingWorker({data: columnData, metric: measure as StringMetrics}, method, cyclesCount);
+    embcols = await createDimensinalityReducingWorker(
+      {data: columnData, metric: measure as StringMetrics}, method, cyclesCount);
   } catch (error) {
     noException = false;
   }
