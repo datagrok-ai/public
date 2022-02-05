@@ -5,7 +5,7 @@ import * as DG from 'datagrok-api/dg';
 import $ from 'cash-dom';
 import {splitAlignedPeptides} from '../utils/split-aligned';
 import '../styles.css';
-import { PeptidesModel } from '../model';
+import {PeptidesModel} from '../model';
 
 /**
  * Manual sequence alignment widget.

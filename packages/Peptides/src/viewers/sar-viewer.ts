@@ -4,7 +4,7 @@ import * as DG from 'datagrok-api/dg';
 
 import $ from 'cash-dom';
 import {StringDictionary} from '@datagrok-libraries/utils/src/type-declarations';
-import { PeptidesModel } from '../model';
+import {PeptidesModel} from '../model';
 
 /**
  * Structure-activity relationship viewer.
@@ -66,43 +66,28 @@ export class SARViewer extends DG.JsViewer {
     this.sourceGrid = null;
   }
 
-  /**
-   * Initializes SARViewer.
-   *
-   * @memberof SARViewer
-   */
   init() {
     this._initialBitset = this.dataFrame!.filter.clone();
     this.currentBitset = this._initialBitset.clone();
     this.initialized = true;
   }
 
-  /**
-   * Function that is executed when the table is attached.
-   *
-   * @memberof SARViewer
-   */
   onTableAttached() {
     this.sourceGrid = this.view.grid;
     this.sourceGrid?.dataFrame?.setTag('dataType', 'peptides');
     this.model = PeptidesModel.getOrInit(this.dataFrame!);
-    
-    this.subs.push(this.model.onStatsDataFrameChanged.subscribe(data => this.statsDf = data));
-    this.subs.push(this.model.onSARGridChanged.subscribe(data => {
+
+    this.subs.push(this.model.onStatsDataFrameChanged.subscribe((data) => this.statsDf = data));
+    this.subs.push(this.model.onSARGridChanged.subscribe((data) => {
       this.viewerGrid = data;
       this.render(false);
     }));
-    this.subs.push(this.model.onSARVGridChanged.subscribe(data => this.viewerVGrid = data));
-    this.subs.push(this.model.onGroupMappingChanged.subscribe(data => this.groupMapping = data));
+    this.subs.push(this.model.onSARVGridChanged.subscribe((data) => this.viewerVGrid = data));
+    this.subs.push(this.model.onGroupMappingChanged.subscribe((data) => this.groupMapping = data));
 
     this.render();
   }
 
-  /**
-   * Function that is executed when the viewer is detached from the table.
-   *
-   * @memberof SARViewer
-   */
   detach() {
     this.subs.forEach((sub) => sub.unsubscribe());
   }
@@ -149,16 +134,10 @@ export class SARViewer extends DG.JsViewer {
 
     //TODO: optimize. Don't calculate everything again if only view changes
     if (typeof this.dataFrame !== 'undefined' && this.activityColumnName && this.sourceGrid) {
-      if (computeData)
-        await this.model!.updateData(
-          this.dataFrame!,
-          this.activityColumnName,
-          this.scaling,
-          this.sourceGrid,
-          this.bidirectionalAnalysis,
-          this._initialBitset,
-          this.grouping,
-        );
+      if (computeData) {
+        await this.model!.updateData(this.dataFrame!, this.activityColumnName, this.scaling, this.sourceGrid,
+          this.bidirectionalAnalysis, this._initialBitset, this.grouping);
+      }
 
       if (this.viewerGrid !== null && this.viewerVGrid !== null) {
         $(this.root).empty();
@@ -214,8 +193,8 @@ export class SARViewerVertical extends DG.JsViewer {
 
   onTableAttached(): void {
     this.model = PeptidesModel.getOrInit(this.dataFrame!);
-    
-    this.subs.push(this.model!.onSARVGridChanged.subscribe(data => {
+
+    this.subs.push(this.model!.onSARVGridChanged.subscribe((data) => {
       this.viewerVGrid = data;
       this.render();
     }));

@@ -18,7 +18,6 @@ import {SARViewer, SARViewerVertical} from './viewers/sar-viewer';
 import {peptideMoleculeWidget, getMolecule} from './widgets/peptide-molecule';
 import {SubstViewer} from './viewers/subst-viewer';
 import {runKalign} from './utils/multiple-sequence-alignment';
-import { SemanticValue } from 'datagrok-api/dg';
 
 export const _package = new DG.Package();
 let currentGrid: DG.Grid;
@@ -87,7 +86,7 @@ export async function Peptides() {
 //input: column col {semType: alignedSequence}
 //output: widget result
 export async function peptidesPanel(col: DG.Column): Promise<DG.Widget> {
-  if (col.getTag('isAnalysisApplicable') === 'false')
+  if (!(col.temp['isAnalysisApplicable'] ?? true))
     return new DG.Widget(ui.divText('Analysis is not applicable'));
 
   [currentView, currentGrid, currentTable, alignedSequenceColumn] =
@@ -236,9 +235,8 @@ export async function multipleSequenceAlignment(col: DG.Column): Promise<DG.Data
 //input: dataframe table {semType: Substitution}
 //output: widget result
 export async function peptideSubstitution(table: DG.DataFrame): Promise<DG.Widget> {
-  if (!table) {
+  if (!table)
     return new DG.Widget(ui.label('No substitution'));
-  }
   let initialCol: DG.Column = table.columns.byName('Initial');
   let substitutedCol: DG.Column = table.columns.byName('Substituted');
   // let substCounts = [];
@@ -284,8 +282,8 @@ export function alignedSequenceDifferenceCellRenderer() {
 }
 
 function getOrDefineWIP(
-    view?: DG.TableView, grid?: DG.Grid, dataframe?: DG.DataFrame, column?: DG.Column | null,
-    ): [DG.TableView, DG.Grid, DG.DataFrame, DG.Column] {
+  view?: DG.TableView, grid?: DG.Grid, dataframe?: DG.DataFrame, column?: DG.Column | null,
+): [DG.TableView, DG.Grid, DG.DataFrame, DG.Column] {
   view ??= (grok.shell.v as DG.TableView);
   grid ??= view.grid;
   dataframe ??= grok.shell.t;

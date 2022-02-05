@@ -5,19 +5,20 @@ import {ChemPalette} from '../utils/chem-palette';
 import * as rxjs from 'rxjs';
 const cp = new ChemPalette('grok');
 
-//TODO: the function should not accept promise. Await the parameters where it is used
-export function addViewerToHeader(grid: DG.Grid, viewer: DG.Widget) {
-  const barchart = viewer as StackedBarChart; //TODO: accept specifically StackedBarChart object
+export function addViewerToHeader(grid: DG.Grid, barchart: StackedBarChart) {
+  if (grid.temp['containsBarchart'])
+    return;
+
   // The following event makes the barchart interactive
-  rxjs.fromEvent<MouseEvent>(grid.overlay, 'mousemove').subscribe(mm => {
-    const cell = grid.hitTest(mm.offsetX, mm.offsetY);
+  rxjs.fromEvent<MouseEvent>(grid.overlay, 'mousemove').subscribe((mouseMove) => {
+    const cell = grid.hitTest(mouseMove.offsetX, mouseMove.offsetY);
     if (cell !== null && cell?.isColHeader && cell.tableColumn?.semType == 'aminoAcids')
-      barchart.highlight(cell, mm.offsetX, mm.offsetY);
+      barchart.highlight(cell, mouseMove.offsetX, mouseMove.offsetY);
     else
       return;
     
     if (cell?.isColHeader && cell.tableColumn?.semType == 'aminoAcids') 
-      barchart.beginSelection(mm);
+      barchart.beginSelection(mouseMove);
     else 
       barchart.unhighlight();
   });
@@ -30,48 +31,49 @@ export function addViewerToHeader(grid: DG.Grid, viewer: DG.Widget) {
   //   }
   //   barchart.unhighlight();
   // });
-  
-  rxjs.fromEvent(grid.overlay, 'mouseout').subscribe((_: any) => {
-    barchart.unhighlight();
-  });
+
+  rxjs.fromEvent<MouseEvent>(grid.overlay, 'mouseout').subscribe(() => barchart.unhighlight());
 
   barchart.tableCanvas = grid.canvas;
+
+  //Setting grid options
   grid.setOptions({'colHeaderHeight': 130});
+
   grid.onCellTooltip((cell, x, y) => {
-    if (cell.tableColumn) {
-      if (['aminoAcids', 'alignedSequence'].includes(cell.tableColumn.semType) ) {
-        if ( !cell.isColHeader) {
-          cp.showTooltip(cell, x, y);
-        } else {
-          if (barchart.highlighted) {
-            let elements: HTMLElement[] = [];
-            elements = elements.concat([ui.divText(barchart.highlighted.aaName)]);
-            ui.tooltip.show(ui.divV(elements), x, y);
-          }
+    if (cell.tableColumn && ['aminoAcids', 'alignedSequence'].includes(cell.tableColumn.semType) ) {
+      if (!cell.isColHeader)
+        cp.showTooltip(cell, x, y);
+      else {
+        if (barchart.highlighted) {
+          let elements: HTMLElement[] = [];
+          elements = elements.concat([ui.divText(barchart.highlighted.aaName)]);
+          ui.tooltip.show(ui.divV(elements), x, y);
         }
-        return true;
       }
+      return true;
     }
   });
-  grid.onCellRender.subscribe((args) => {
-    args.g.save();
-    args.g.beginPath();
-    args.g.rect(args.bounds.x, args.bounds.y, args.bounds.width, args.bounds.height);
-    args.g.clip();
 
-    if (args.cell.isColHeader && barchart.aminoColumnNames.includes(args.cell.gridColumn.name)) {
-      barchart.renderBarToCanvas(
-        args.g,
-        args.cell,
-        args.bounds.x,
-        args.bounds.y,
-        args.bounds.width,
-        args.bounds.height,
-      );
+  grid.onCellRender.subscribe((args) => {
+    const context = args.g;
+    const boundX = args.bounds.x;
+    const boundY = args.bounds.y;
+    const boundWidth = args.bounds.width;
+    const boundHeight = args.bounds.height;
+    const cell = args.cell;
+    context.save();
+    context.beginPath();
+    context.rect(boundX, boundY, boundWidth, boundHeight);
+    context.clip();
+
+    if (cell.isColHeader && barchart.aminoColumnNames.includes(cell.gridColumn.name)) {
+      barchart.renderBarToCanvas(context, cell, boundX, boundY, boundWidth, boundHeight);
       args.preventDefault();
     }
-    args.g.restore();
+    context.restore();
   });
+
+  grid.temp['containsBarchart'] = true;
 }
 
 
