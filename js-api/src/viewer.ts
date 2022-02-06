@@ -383,8 +383,9 @@ export class ScatterPlotViewer extends Viewer {
   get viewport(): Rect { return toJs(api.grok_ScatterPlotViewer_Get_Viewport(this.dart)); }
   set viewport(viewport: Rect) { api.grok_ScatterPlotViewer_Set_Viewport(this.dart, viewport.x, viewport.y, viewport.width, viewport.height); }
 
-  /** Converts world coords to screen coords */
+  /** Convert coords */
   worldToScreen(x: number, y: number): Point { return toJs(api.grok_ScatterPlotViewer_WorldToScreen(this.dart, x, y)); }
+  screenToWorld(x: number, y: number): Point { return toJs(api.grok_ScatterPlotViewer_ScreenToWorld(this.dart, x, y)); }
 
   get onZoomed(): rxjs.Observable<Rect> { return this.onEvent('d4-scatterplot-zoomed'); }
   get onResetView(): rxjs.Observable<null> { return this.onEvent('d4-scatterplot-reset-view'); }

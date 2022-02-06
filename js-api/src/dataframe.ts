@@ -1167,8 +1167,6 @@ export class ColumnList {
   /** Returns a name that does not exist in column list.
    * If column list does not contain column with [name], returns [name].
    * Otherwise, tries [choices], and if the names are taken already, returns a string in a form of 'name (i)'.
-   * @param {string} name
-   * @param {string[]} choices
    * */
   getUnusedName(name: string, choices?: string[]): string {
     return api.grok_ColumnList_GetUnusedName(this.dart, name, choices);
