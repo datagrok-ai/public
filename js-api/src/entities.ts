@@ -777,7 +777,7 @@ export interface PropertyOptions {
   validators?: string[];
 
   /** List of value validators (functions that take a value and return error message or null) */
-  valueValidators: ValueValidator<any>[];
+  valueValidators?: ValueValidator<any>[];
 
   /** Custom field caption shown in [PropertyGrid] */
   caption?: string;

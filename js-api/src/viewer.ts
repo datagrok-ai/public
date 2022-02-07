@@ -281,7 +281,7 @@ export class JsViewer extends Viewer {
    * @param {string} dataPropertyName
    * @param {object} options
    * @returns {Column} */
-  protected column(dataPropertyName: string, options: { [key: string]: string } & PropertyOptions | null): Column {
+  protected column(dataPropertyName: string, options: { [key: string]: object } & PropertyOptions | null = null): Column {
     return this.addProperty(`${dataPropertyName}ColumnName`, TYPE.STRING, null, options);
   }
 
@@ -290,7 +290,7 @@ export class JsViewer extends Viewer {
    * @param {number} defaultValue
    * @param {object} options
    * @returns {number} */
-  protected int(propertyName: ViewerPropertyType, defaultValue: number | null = null, options: { [key: string]: string } & PropertyOptions | null): number {
+  protected int(propertyName: ViewerPropertyType, defaultValue: number | null = null, options: { [key: string]: object } & PropertyOptions | null = null): number {
     return this.addProperty(propertyName, TYPE.INT, defaultValue, options);
   }
 
@@ -299,7 +299,7 @@ export class JsViewer extends Viewer {
    * @param {number} defaultValue
    * @param {object} options
    * @returns {number} */
-  protected float(propertyName: ViewerPropertyType, defaultValue: number | null = null, options: { [key: string]: string } & PropertyOptions | null): number {
+  protected float(propertyName: ViewerPropertyType, defaultValue: number | null = null, options: { [key: string]: object } & PropertyOptions | null = null): number {
     return this.addProperty(propertyName, TYPE.FLOAT, defaultValue, options);
   }
 
@@ -308,7 +308,7 @@ export class JsViewer extends Viewer {
    * @param {string} defaultValue
    * @param {object} options
    * @returns {string} */
-  protected string(propertyName: ViewerPropertyType, defaultValue: string | null = null, options: { [key: string]: string } & PropertyOptions | null): string {
+  protected string(propertyName: ViewerPropertyType, defaultValue: string | null = null, options: { [key: string]: object } & PropertyOptions | null = null): string {
     return this.addProperty(propertyName, TYPE.STRING, defaultValue, options);
   }
 
@@ -317,7 +317,7 @@ export class JsViewer extends Viewer {
    * @param {string[]} defaultValue
    * @param {object} options
    * @returns {string[]} */
-  protected stringList(propertyName: ViewerPropertyType, defaultValue: string[] | null = null, options: { [key: string]: string } & PropertyOptions | null): string[] {
+  protected stringList(propertyName: ViewerPropertyType, defaultValue: string[] | null = null, options: { [key: string]: object } & PropertyOptions | null = null): string[] {
     return this.addProperty(propertyName, TYPE.STRING_LIST, defaultValue, options);
   }
 
@@ -326,7 +326,7 @@ export class JsViewer extends Viewer {
    * @param {boolean} defaultValue
    * @param {object} options
    * @returns {boolean} */
-  protected bool(propertyName: ViewerPropertyType, defaultValue: boolean | null = null, options: { [key: string]: string } & PropertyOptions | null): boolean {
+  protected bool(propertyName: ViewerPropertyType, defaultValue: boolean | null = null, options: { [key: string]: object } & PropertyOptions | null = null): boolean {
     return this.addProperty(propertyName, TYPE.BOOL, defaultValue, options);
   }
 
@@ -335,7 +335,7 @@ export class JsViewer extends Viewer {
    * @param {DateTime} defaultValue
    * @param {object} options
    * @returns {DateTime} */
-  protected dateTime(propertyName: ViewerPropertyType, defaultValue: DateTime | null = null, options: { [key: string]: string } & PropertyOptions | null): DateTime {
+  protected dateTime(propertyName: ViewerPropertyType, defaultValue: DateTime | null = null, options: { [key: string]: object } & PropertyOptions | null = null): DateTime {
     return this.addProperty(propertyName, TYPE.DATE_TIME, defaultValue, options);
   }
 }
