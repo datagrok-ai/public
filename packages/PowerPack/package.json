@@ -4,12 +4,12 @@
 	"sources": [
 		"css/power-pack.css"
 	],
-	"version": "0.0.4",
+	"version": "0.0.5",
 	"description": "",
 	"dependencies": {
 		"@datagrok-libraries/utils": ">=0.0.16",
 		"cash-dom": "latest",
-		"datagrok-api": ">=0.117.0",
+		"datagrok-api": ">=0.119.0",
 		"rxjs": "^6.5.5"
 	},
 	"devDependencies": {
@@ -27,7 +27,7 @@
 		"link-api": "npm link datagrok-api ",
 		"link-tools": "npm link datagrok-tools",
 		"link-utils": "npm link @datagrok-libraries/utils",
-		"debug-powerpack": " grok publish localhost --rebuild",
+		"debug-powerpack": " grok publish dev --release",
 		"release-powerpack": "webpack && grok publish dev",
 		"build-powerpack": "webpack && grok publish",
 		"build": "webpack",
