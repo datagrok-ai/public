@@ -54,20 +54,14 @@ const groupDescription: {[key: string]: {'description': string, 'aminoAcids': st
   }
 }*/
 
-function joinDataFrames(
-  activityColumnScaled: string,
-  df: DG.DataFrame,
-  positionColumns: string[],
-  splitSeqDf: DG.DataFrame,
-  activityColumn: string,
-) {
-  if (df.col(activityColumnScaled))
-    (df.columns as DG.ColumnList).remove(activityColumnScaled);
+function joinDataFrames(df: DG.DataFrame, positionColumns: string[], splitSeqDf: DG.DataFrame, activityColumn: string) {
+  // if (df.col(activityColumnScaled))
+  //   (df.columns as DG.ColumnList).remove(activityColumnScaled);
 
 
   //FIXME: this column usually duplicates, so remove it then
-  if (df.col(`${activityColumnScaled} (2)`))
-    (df.columns as DG.ColumnList).remove(`${activityColumnScaled} (2)`);
+  // if (df.col(`${activityColumnScaled} (2)`))
+  //   (df.columns as DG.ColumnList).remove(`${activityColumnScaled} (2)`);
 
 
   // append splitSeqDf columns to source table and make sure columns are not added more than once
@@ -99,14 +93,12 @@ function sortSourceGrid(sourceGrid: DG.Grid) {
   }
 }
 
-async function scaleActivity(
-  activityScaling: string,
-  activityColumn: string,
-  activityColumnScaled: string,
-  sourceGrid: DG.Grid,
-  splitSeqDf: DG.DataFrame,
-) {
-  const df = sourceGrid.dataFrame!;
+export async function scaleActivity(
+    activityScaling: string, activityColumn: string, activityColumnScaled: string, df: DG.DataFrame,
+    ): Promise<[DG.DataFrame, string]> {
+  // const df = sourceGrid.dataFrame!;
+  const tempDf = df.clone(df.filter, [activityColumn]);
+
   let formula = '${' + activityColumn + '}';
   let newColName = activityColumn;
   switch (activityScaling) {
@@ -123,13 +115,10 @@ async function scaleActivity(
   default:
     throw new Error(`ScalingError: method \`${activityScaling}\` is not available.`);
   }
+  
+  await (tempDf.columns as DG.ColumnList).addNewCalculated(activityColumnScaled, formula);
 
-  await (df.columns as DG.ColumnList).addNewCalculated(activityColumnScaled, formula);
-  (splitSeqDf.columns as DG.ColumnList).add(df.getCol(activityColumnScaled));
-  sourceGrid.col(activityColumnScaled)!.name = newColName;
-  if (newColName === activityColumn)
-    sourceGrid.col(activityColumn)!.name = '~original';
-  sourceGrid.columns.setOrder([newColName]);
+  return [tempDf, newColName];
 }
 
 async function calculateStatistics(
@@ -478,7 +467,7 @@ export async function describe(
 
   (splitSeqDf.columns as DG.ColumnList).add(df.getCol(activityColumn));
 
-  joinDataFrames(activityColumnScaled, df, positionColumns, splitSeqDf, activityColumn);
+  joinDataFrames(df, positionColumns, splitSeqDf, activityColumn);
 
   for (const col of (df.columns as DG.ColumnList)) {
     if (splitSeqDf.col(col.name) && col.name != activityColumn)
@@ -487,7 +476,21 @@ export async function describe(
 
   sortSourceGrid(sourceGrid);
 
-  await scaleActivity(activityScaling, activityColumn, activityColumnScaled, sourceGrid, splitSeqDf);
+  const [scaledDf, newColName] = await scaleActivity(activityScaling, activityColumn, activityColumnScaled, df);
+  //TODO: make another func
+  const scaledCol = scaledDf.getCol(activityColumnScaled);
+  const oldScaledCol = df.getCol(activityColumnScaled);
+  const oldScaledColGridName = oldScaledCol.temp['gridName'];
+  const oldScaledGridCol = sourceGrid.col(oldScaledColGridName);
+  
+  (splitSeqDf.columns as DG.ColumnList).add(scaledCol);
+  (df.columns as DG.ColumnList).replace(oldScaledCol, scaledCol);
+  if (newColName === activityColumn)
+    sourceGrid.col(activityColumn)!.name = `~${activityColumn}`;
+  oldScaledGridCol!.name = newColName;
+  oldScaledGridCol!.visible = true;
+  sourceGrid.columns.setOrder([newColName]);
+
   splitSeqDf = splitSeqDf.clone(initialBitset);
 
   //unpivot a table and handle duplicates

@@ -72,9 +72,10 @@ export class SARViewer extends DG.JsViewer {
     this.initialized = true;
   }
 
+
   onTableAttached() {
-    this.sourceGrid = this.view.grid;
-    this.sourceGrid?.dataFrame?.setTag('dataType', 'peptides');
+    this.sourceGrid = this.view?.grid ?? (grok.shell.v as DG.TableView).grid;
+    this.dataFrame?.setTag('dataType', 'peptides');
     this.model = PeptidesModel.getOrInit(this.dataFrame!);
 
     this.subs.push(this.model.onStatsDataFrameChanged.subscribe((data) => this.statsDf = data));
