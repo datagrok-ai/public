@@ -10,6 +10,7 @@ let api = <any>window;
 
 type PropertyGetter = (a: object) => any;
 type PropertySetter = (a: object, value: any) => void;
+type ValueValidator<T> = (value: T) => string;
 
 /** @class
  * Base class for system objects stored in the database in a structured manner.
@@ -774,6 +775,9 @@ export interface PropertyOptions {
    * Signature: validator(x: DG.Type): string | null.
    * [null] indicates that the value is valid, [string] describes a validation error. */
   validators?: string[];
+
+  /** List of value validators (functions that take a value and return error message or null) */
+  valueValidators: ValueValidator<any>[];
 
   /** Custom field caption shown in [PropertyGrid] */
   caption?: string;
