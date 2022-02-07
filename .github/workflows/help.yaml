@@ -25,7 +25,7 @@ jobs:
           VALIDATE_MARKDOWN: true
           VALIDATE_NATURAL_LANGUAGE: true
           VALIDATE_HTML: true
-          FILTER_REGEX_INCLUDE: $GITHUB_WORKSPACE/help/.*
+          FILTER_REGEX_INCLUDE: ${{ github.workspace }}/help/.*
           USE_FIND_ALGORITHM: true
           ERROR_ON_MISSING_EXEC_BIT: true
           IGNORE_GITIGNORED_FILES: true
