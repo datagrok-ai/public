@@ -1,5 +1,6 @@
 import * as sdtmCols from "./columns-constants";
-import { sdtmSummaryPanel } from "./package";
+import { ADVERSE_EVENTS_VIEW_NAME, AE_RISK_ASSESSMENT_VIEW_NAME, CORRELATIONS_VIEW_NAME, DISTRIBUTIONS_VIEW_NAME, LABORATORY_VIEW_NAME, MEDICAL_HISTORY_VIEW_NAME, PATIENT_PROFILE_VIEW_NAME, SUMMARY_VIEW_NAME, SURVIVAL_ANALYSIS_VIEW_NAME, TIMELINES_VIEW_NAME, TIME_PROFILE_VIEW_NAME, TREE_MAP_VIEW_NAME, VISITS_VIEW_NAME } from "./view-names-constants";
+import { AE_TERM_FIELD, CON_MED_NAME_FIELD, INV_DRUG_NAME_FIELD, TRT_ARM_FIELD, VIEWS_CONFIG } from "./views-config";
 
 export const ALT = 'ALT';
 export const AST = 'AST';
@@ -45,7 +46,7 @@ export const SE_RD_WITH_SIGN_LEVEL = 'SE_RD_SIGN_LEVEL';
 // req_domains - all domains must be present, opt_domains - at least one of domains must be present
 
 export const requiredColumnsByView = {
-        'Summary': {
+        [SUMMARY_VIEW_NAME]: {
                 'req_domains': {
                         'dm': {
                                 'req': [
@@ -55,7 +56,7 @@ export const requiredColumnsByView = {
                         }
                 }    
         },
-        'Timelines': {
+        [TIMELINES_VIEW_NAME]: {
                 'opt_domains': {
                         'ae': {
                                 'req': [
@@ -63,14 +64,14 @@ export const requiredColumnsByView = {
                                         sdtmCols.SUBJECT_ID,
                                         sdtmCols.AE_START_DAY,
                                         sdtmCols.AE_END_DAY,
-                                        sdtmCols.AE_TERM
+                                        VIEWS_CONFIG[TIMELINES_VIEW_NAME][AE_TERM_FIELD]
                                 ],
                         },
                         'cm': {
                                 'req': [
                                         sdtmCols.DOMAIN,
                                         sdtmCols.SUBJECT_ID,
-                                        sdtmCols.CON_MED_NAME,
+                                        VIEWS_CONFIG[TIMELINES_VIEW_NAME][CON_MED_NAME_FIELD],
                                         sdtmCols.CON_MED_START_DAY,
                                         sdtmCols.CON_MED_END_DAY
                                 ]
@@ -79,14 +80,14 @@ export const requiredColumnsByView = {
                                 'req': [
                                         sdtmCols.DOMAIN,
                                         sdtmCols.SUBJECT_ID,
-                                        sdtmCols.INV_DRUG_NAME,
+                                        VIEWS_CONFIG[TIMELINES_VIEW_NAME][INV_DRUG_NAME_FIELD],
                                         sdtmCols.INV_DRUG_START_DAY,
                                         sdtmCols.INV_DRUG_END_DAY
                                 ]
                         }
                 }
         },
-        'Patient Profile': {
+        [PATIENT_PROFILE_VIEW_NAME]: {
                 'req_domains': {
                         'dm': {
                                 'req': [
@@ -95,7 +96,7 @@ export const requiredColumnsByView = {
                         }
                 }
         },
-        'Adverse Events': {
+        [ADVERSE_EVENTS_VIEW_NAME]: {
                 'req_domains': {
                         'ae': {
                                 'req': [
@@ -103,7 +104,7 @@ export const requiredColumnsByView = {
                         }
                 }
         },
-        'Laboratory': {
+        [LABORATORY_VIEW_NAME]: {
                 'req_domains': {
                         'lb': {
                                 'req': [
@@ -112,23 +113,23 @@ export const requiredColumnsByView = {
                         }
                 }
         },
-        'AE Risk Assessment': {
+        [AE_RISK_ASSESSMENT_VIEW_NAME]: {
                 'req_domains': {
                         'ae': {
                                 'req': [
                                         sdtmCols.SUBJECT_ID,
-                                        sdtmCols.AE_TERM
+                                        VIEWS_CONFIG[AE_RISK_ASSESSMENT_VIEW_NAME][AE_TERM_FIELD]
                                 ]
                         },
                         'dm': {
                                 'req': [
                                         sdtmCols.SUBJECT_ID,
-                                        sdtmCols.TREATMENT_ARM
+                                        VIEWS_CONFIG[AE_RISK_ASSESSMENT_VIEW_NAME][TRT_ARM_FIELD]
                                 ]
                         }
                 }
         },
-        'Survival Analysis': {
+        [SURVIVAL_ANALYSIS_VIEW_NAME]: {
                 'req_domains': {
                         'dm': {
                                 'req': [
@@ -139,7 +140,7 @@ export const requiredColumnsByView = {
                         }
                 }
         },
-        'Distributions': {
+        [DISTRIBUTIONS_VIEW_NAME]: {
                 'req_domains': {
                         'dm': {
                                 'req': [
@@ -149,7 +150,7 @@ export const requiredColumnsByView = {
                                         sdtmCols.ETHNIC,
                                         sdtmCols.SEX,
                                         sdtmCols.RACE,
-                                        sdtmCols.TREATMENT_ARM,
+                                        VIEWS_CONFIG[DISTRIBUTIONS_VIEW_NAME][TRT_ARM_FIELD]
                                 ]
                         },
                 },
@@ -174,7 +175,7 @@ export const requiredColumnsByView = {
                         }
                 }
         },
-        'Correlations': {
+        [CORRELATIONS_VIEW_NAME]: {
                 'opt_domains': {
                         'lb': {
                                 'req': [
@@ -194,7 +195,7 @@ export const requiredColumnsByView = {
                         },
                 }
         },
-        'Time Profile': {
+        [TIME_PROFILE_VIEW_NAME]: {
                 'opt_domains': {
                         'lb': {
                                 'req': [
@@ -216,7 +217,7 @@ export const requiredColumnsByView = {
                         }
                 }
         },
-        'Tree map': {
+        [TREE_MAP_VIEW_NAME]: {
                 'req_domains': {
                         'dm': {
                                 'req': [
@@ -226,7 +227,7 @@ export const requiredColumnsByView = {
                                         sdtmCols.ETHNIC,
                                         sdtmCols.SEX,
                                         sdtmCols.RACE,
-                                        sdtmCols.TREATMENT_ARM,
+                                        VIEWS_CONFIG[TREE_MAP_VIEW_NAME][TRT_ARM_FIELD]
                                 ]
                         },
                         'ae': {
@@ -237,7 +238,7 @@ export const requiredColumnsByView = {
 
                 }
         },
-        'Medical History': {
+        [MEDICAL_HISTORY_VIEW_NAME]: {
                 'req_domains': {
                         'mh': {
                                 'req': [
@@ -246,14 +247,8 @@ export const requiredColumnsByView = {
 
                 }
         },
-        'Visits': {
+        [VISITS_VIEW_NAME]: {
                 'req_domains': {
-                        'tv': {
-                                'req': [
-                                        sdtmCols.VISIT_DAY,
-                                        sdtmCols.VISIT_NAME
-                                ]
-                        },
                         'sv': {
                                 'req': [
                                         sdtmCols.SUBJECT_ID,

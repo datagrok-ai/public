@@ -1,0 +1,16 @@
+export const SUMMARY_VIEW_NAME = 'Summary';
+export const TIMELINES_VIEW_NAME = 'Timelines';
+export const LABORATORY_VIEW_NAME = 'Laboratory';
+export const PATIENT_PROFILE_VIEW_NAME = 'Patient Profile';
+export const ADVERSE_EVENTS_VIEW_NAME = 'Adverse Events';
+export const AE_RISK_ASSESSMENT_VIEW_NAME = 'AE Risk Assessment';
+export const SURVIVAL_ANALYSIS_VIEW_NAME = 'Survival Analysis';
+export const DISTRIBUTIONS_VIEW_NAME = 'Distributions';
+export const CORRELATIONS_VIEW_NAME = 'Correlations';
+export const TIME_PROFILE_VIEW_NAME = 'Time Profile';
+export const TREE_MAP_VIEW_NAME = 'Tree map';
+export const MEDICAL_HISTORY_VIEW_NAME = 'Medical History';
+export const VISITS_VIEW_NAME = 'Visits';
+export const STUDY_CONFIGURATIN_VIEW_NAME = 'Study configuration';
+export const VALIDATION_VIEW_NAME = 'Validation';
+export const AE_BROWSER_VIEW_NAME = 'AE Browser';

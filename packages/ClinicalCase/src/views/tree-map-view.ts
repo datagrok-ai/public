@@ -3,13 +3,15 @@ import * as DG from "datagrok-api/dg";
 import * as ui from "datagrok-api/ui";
 import { study } from "../clinical-study";
 import { addDataFromDmDomain } from '../data-preparation/utils';
-import { ETHNIC, RACE, SEX, TREATMENT_ARM } from '../columns-constants';
+import { ETHNIC, RACE, SEX } from '../columns-constants';
 import { ClinicalCaseViewBase } from '../model/ClinicalCaseViewBase';
+import { TRT_ARM_FIELD, VIEWS_CONFIG } from '../views-config';
+import { TIME_PROFILE_VIEW_NAME } from '../view-names-constants';
 
 export class TreeMapView extends ClinicalCaseViewBase {
 
     aeDataframeWithDm: DG.DataFrame
-    dmFields = [TREATMENT_ARM, SEX, RACE, ETHNIC];
+    dmFields: any;
     selectedSplitBy = '';
     treeMap: any;
 
@@ -19,7 +21,7 @@ export class TreeMapView extends ClinicalCaseViewBase {
     }
 
     createView(): void {
-        this.dmFields = this.dmFields.filter(it => study.domains.dm.columns.names().includes(it));
+        this.dmFields = [VIEWS_CONFIG[TIME_PROFILE_VIEW_NAME][TRT_ARM_FIELD], SEX, RACE, ETHNIC].filter(it => study.domains.dm.columns.names().includes(it));
         this.aeDataframeWithDm = addDataFromDmDomain(study.domains.ae, study.domains.dm, study.domains.ae.columns.names(), this.dmFields);
 
         this.treeMap = DG.Viewer.fromType(DG.VIEWER.TREE_MAP, this.aeDataframeWithDm, {

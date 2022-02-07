@@ -1,6 +1,6 @@
 import * as DG from "datagrok-api/dg";
 import * as grok from 'datagrok-api/grok';
-import { VISIT_DAY, VISIT_NAME, SUBJECT_ID, TREATMENT_ARM } from "../columns-constants";
+import { VISIT_DAY, VISIT_NAME, SUBJECT_ID } from "../columns-constants";
 
 export function getUniqueValues(df: DG.DataFrame, colName: string) {
     const uniqueIds = new Set();

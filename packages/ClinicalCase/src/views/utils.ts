@@ -10,7 +10,7 @@ export function updateDivInnerHTML(div: HTMLDivElement, content: any){
 
 export function checkRequiredColumns(df: DG.DataFrame, columns: string[], viwerName: string) {
   if (columns.filter(it => !df.columns.names().includes(it)).length) {
-    return `Columns ${columns.join(',')} are required for ${viwerName} viewer`;
+    return `The following columns are required for ${viwerName} viewer: ${columns.join(',')}`;
   }
   return null;
 }

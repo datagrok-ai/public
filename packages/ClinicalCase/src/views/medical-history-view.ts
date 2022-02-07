@@ -5,11 +5,11 @@ import { MH_BODY_SYSTEM, MH_CATEGORY, MH_DECOD_TERM, MH_TERM } from '../columns-
 import { _package } from '../package';
 import { ClinicalCaseViewBase } from '../model/ClinicalCaseViewBase';
 import { checkColumnsAndCreateViewer, updateDivInnerHTML } from "./utils";
+import { MH_TERM_FIELD, VIEWS_CONFIG } from "../views-config";
 
 export class MedicalHistoryView extends ClinicalCaseViewBase {
 
     mh: DG.DataFrame;
-    mhReplacedTermColName = 'mh_term';
     mhCategoryPie = ui.box();
     mhDecodTermChart = ui.box();
     mhBodySystemChart = ui.box();
@@ -23,11 +23,6 @@ export class MedicalHistoryView extends ClinicalCaseViewBase {
     createView(): void {
 
         this.mh = study.domains.mh.clone();
-        if (this.mh.col(MH_DECOD_TERM) && this.mh.col(MH_TERM)) {
-            this.replaceNaDecodeTermWihTerm();
-        } else {
-            this.mhReplacedTermColName = MH_DECOD_TERM;
-        }
 
         let viewerTitle = {
             style: {
@@ -73,14 +68,10 @@ export class MedicalHistoryView extends ClinicalCaseViewBase {
                 this.mhCategoryPie,
                 grid.root
             ])
-        ]))
+        ]));
 
     }
 
-    private replaceNaDecodeTermWihTerm() {
-        this.mh.columns.addNewString(this.mhReplacedTermColName)
-            .init((i) => this.mh.getCol(MH_DECOD_TERM).isNone(i) ? this.mh.get(MH_TERM, i) : this.mh.get(MH_DECOD_TERM, i));
-    }
 
     private createMhCategoryPie(viewerTitle: any) {
 
@@ -93,7 +84,7 @@ export class MedicalHistoryView extends ClinicalCaseViewBase {
 
     private createDecodeTermChart(viewerTitle: any) {
         let mhDecodTermChart = this.mh.plot.bar({
-            split: this.mhReplacedTermColName,
+            split: VIEWS_CONFIG[this.name][MH_TERM_FIELD],
             style: 'dashboard',
             legendVisibility: 'Never'
         }).root;

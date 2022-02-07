@@ -4,24 +4,24 @@ import * as ui from "datagrok-api/ui";
 import { study } from "../clinical-study";
 import { updateDivInnerHTML } from './utils';
 import { createPivotedDataframe, filterNulls, getVisitNamesAndDays, addDataFromDmDomain, dataframeContentToRow } from '../data-preparation/utils';
-import { AE_DECOD_TERM, AE_START_DAY, CON_MED_NAME, CON_MED_START_DAY, INV_DRUG_NAME, LAB_RES_N, LAB_TEST, SUBJECT_ID, TREATMENT_ARM, VISIT_DAY, VISIT_NAME, VISIT_START_DATE, VS_RES_N, VS_TEST } from '../columns-constants';
+import { AE_START_DAY, CON_MED_START_DAY, LAB_RES_N, LAB_TEST, SUBJECT_ID, VISIT_DAY, VISIT_NAME, VISIT_START_DATE, VS_RES_N, VS_TEST } from '../columns-constants';
 import { PatientVisit } from '../model/patient-visit';
 import { StudyVisit } from '../model/study-visit';
 import { _package } from '../package';
 import { ClinicalCaseViewBase } from '../model/ClinicalCaseViewBase';
-import { DockManager } from 'datagrok-api/dg';
+import { AE_TERM_FIELD, CON_MED_NAME_FIELD, INV_DRUG_NAME_FIELD, TRT_ARM_FIELD, VIEWS_CONFIG } from '../views-config';
+import { VISITS_VIEW_NAME } from '../view-names-constants';
 
 export class VisitsView extends ClinicalCaseViewBase {
 
-    tv: DG.DataFrame;
     sv: DG.DataFrame;
     pivotedSv: DG.DataFrame;
     sortedVisitNamesAndDays: any;
     sortedVisitNames: any;
-    patientVisit = new PatientVisit(study.domains);
-    studyVisit = new StudyVisit(study.domains);
+    patientVisit = new PatientVisit();
+    studyVisit = new StudyVisit();
     totalVisits = {};
-    proceduresAtVisit = { 'lb': { column: LAB_TEST}, 'ex': { column: INV_DRUG_NAME }, 'vs': { column: VS_TEST } };
+    proceduresAtVisit: any;
     eventsSinceLastVisit = { 'ae': { column: AE_START_DAY }, 'cm': { column: CON_MED_START_DAY } };
     subjSet = new Set();
     existingDomains: string[];
@@ -42,11 +42,11 @@ export class VisitsView extends ClinicalCaseViewBase {
     }
 
     createView(): void {
+        this.proceduresAtVisit = this.getProceduresAtVisitDict();
         this.existingDomains = Object.keys(this.proceduresAtVisit)
             .concat(Object.keys(this.eventsSinceLastVisit))
             .filter(it => study.domains[it] !== null);
         this.assignColorsToDomains();
-        this.tv = study.domains.tv.clone();
         this.sv = study.domains.sv.clone();
         filterNulls(this.sv, VISIT_DAY); //remove unshc visits
         this.pivotedSv = createPivotedDataframe(this.sv, [SUBJECT_ID], VISIT_NAME, VISIT_START_DATE, []);
@@ -56,14 +56,14 @@ export class VisitsView extends ClinicalCaseViewBase {
             }
             this.pivotedSv.getCol(col).name = col.replace(` first(${SUBJECT_ID})`, '');
         });
-        this.sortedVisitNamesAndDays = getVisitNamesAndDays(this.tv, true);
+        this.sortedVisitNamesAndDays = getVisitNamesAndDays(this.sv, true);
         this.sortedVisitNames = this.sortedVisitNamesAndDays.map(it => it.name);
         let missingCols = this.sortedVisitNames.filter(it => !this.pivotedSv.columns.names().includes(it));
         missingCols.forEach(it => {
             this.pivotedSv.columns.addNewDateTime(it).init((i) => null);
         })
-        this.pivotedSv = addDataFromDmDomain(this.pivotedSv, study.domains.dm, this.pivotedSv.columns.names(), [TREATMENT_ARM]);
-        this.pivotedSv = this.pivotedSv.clone(null, [SUBJECT_ID, TREATMENT_ARM].concat(this.sortedVisitNames));
+        this.pivotedSv = addDataFromDmDomain(this.pivotedSv, study.domains.dm, this.pivotedSv.columns.names(), [VIEWS_CONFIG[this.name][TRT_ARM_FIELD]]);
+        this.pivotedSv = this.pivotedSv.clone(null, [SUBJECT_ID, VIEWS_CONFIG[this.name][TRT_ARM_FIELD]].concat(this.sortedVisitNames));
         this.pivotedSv.onCurrentCellChanged.subscribe(() => {
             setTimeout(() => {
                 this.createVisitPropertyPanel(this.pivotedSv);
@@ -91,6 +91,10 @@ export class VisitsView extends ClinicalCaseViewBase {
         this.setRibbonPanels(
             [[switchGrid.root], [this.ribbonDiv]] ,
         );
+    }
+
+    private getProceduresAtVisitDict() {
+        return { 'lb': { column: LAB_TEST}, 'ex': { column: VIEWS_CONFIG[VISITS_VIEW_NAME][INV_DRUG_NAME_FIELD] }, 'vs': { column: VS_TEST } };
     }
 
     private assignColorsToDomains() {
@@ -167,7 +171,7 @@ export class VisitsView extends ClinicalCaseViewBase {
         let df = DG.DataFrame.create();
         typeof(study.domains.dm.get(SUBJECT_ID, 0)) === 'number' ? df.columns.addNewInt(SUBJECT_ID) : df.columns.addNewString(SUBJECT_ID);
         this.pivotedSv.columns.names().forEach(col => {
-            if (col !== SUBJECT_ID && col !== TREATMENT_ARM) {
+            if (col !== SUBJECT_ID && col !== VIEWS_CONFIG[this.name][TRT_ARM_FIELD]) {
                 df.columns.addNewInt(col);
             }
         });
@@ -178,9 +182,9 @@ export class VisitsView extends ClinicalCaseViewBase {
                 df.set(key, df.rowCount - 1, this.totalVisits[key][id].eventsCount[this.selectedDomain]);
             })
         });
-        df = addDataFromDmDomain(df, study.domains.dm, df.columns.names().filter(it => it !== TREATMENT_ARM), [TREATMENT_ARM]);
+        df = addDataFromDmDomain(df, study.domains.dm, df.columns.names().filter(it => it !== VIEWS_CONFIG[this.name][TRT_ARM_FIELD]), [VIEWS_CONFIG[this.name][TRT_ARM_FIELD]]);
         console.log(df.columns.names())
-        df = df.clone(null, [SUBJECT_ID, TREATMENT_ARM].concat(this.sortedVisitNames));
+        df = df.clone(null, [SUBJECT_ID, VIEWS_CONFIG[this.name][TRT_ARM_FIELD]].concat(this.sortedVisitNames));
         this.setColorPaletteForHeatMap(df);
         df.onCurrentCellChanged.subscribe(() => {
             setTimeout(() => {
@@ -194,7 +198,7 @@ export class VisitsView extends ClinicalCaseViewBase {
 
     private setColorPaletteForHeatMap(df: DG.DataFrame) {
         df.columns.names().forEach(col => {
-            if (col !== SUBJECT_ID && col !== TREATMENT_ARM) {
+            if (col !== SUBJECT_ID && col !== VIEWS_CONFIG[this.name][TRT_ARM_FIELD]) {
                 df.col(col).tags[DG.TAGS.COLOR_CODING_TYPE] = 'Linear';
                 df.col(col).tags[DG.TAGS.COLOR_CODING_LINEAR] = `[${DG.Color.white}, ${DG.Color.blue}]`;
             }
@@ -202,15 +206,15 @@ export class VisitsView extends ClinicalCaseViewBase {
     }
 
     private async createVisitPropertyPanel(df: DG.DataFrame) {
-        if (df.currentCol.name !== SUBJECT_ID && df.currentCol.name !== TREATMENT_ARM) {
+        if (df.currentCol.name !== SUBJECT_ID && df.currentCol.name !== VIEWS_CONFIG[this.name][TRT_ARM_FIELD]) {
             if (df.currentRowIdx === -1) {
                 let { current: currentVisit, previous: previousVisit } = this.getCurrentAndPreviousVisits(df.currentCol.name);
-                this.studyVisit.updateStudyVisit(currentVisit.day, currentVisit.name, previousVisit ? previousVisit.day : null);
+                this.studyVisit.updateStudyVisit(study.domains, currentVisit.day, currentVisit.name, previousVisit ? previousVisit.day : null);
                 grok.shell.o = await this.studyVisitPanel();
             } else {
                 let subjId = df.get(SUBJECT_ID, df.currentRowIdx);
                 let currentPatientVisit = this.totalVisits[df.currentCol.name][subjId]
-                currentPatientVisit.updateSubjectVisitDomains();
+                currentPatientVisit.updateSubjectVisitDomains(study.domains);
                 grok.shell.o = await this.patientVisitPanel(currentPatientVisit);
             }
         }
@@ -246,12 +250,12 @@ export class VisitsView extends ClinicalCaseViewBase {
 
     private createInitialTotalVisits() {
         this.pivotedSv.columns.names().forEach(colName => {
-            if (colName !== SUBJECT_ID && colName !== TREATMENT_ARM) {
+            if (colName !== SUBJECT_ID && colName !== VIEWS_CONFIG[this.name][TRT_ARM_FIELD]) {
                 let { current: currentVisit, previous: previousVisit } = this.getCurrentAndPreviousVisits(colName);
                 this.totalVisits[colName] = {};
 
                 this.pivotedSv.getCol(SUBJECT_ID).categories.forEach(subjId => {
-                    this.totalVisits[colName][subjId] = new PatientVisit(study.domains);
+                    this.totalVisits[colName][subjId] = new PatientVisit();
                     this.totalVisits[colName][subjId].updateSubjectVisit(subjId, currentVisit.day, currentVisit.name, previousVisit ? previousVisit.day : null);
                 });
             }
@@ -301,7 +305,7 @@ export class VisitsView extends ClinicalCaseViewBase {
     private renderVisitCell() {
         this.visitsGrid.onCellRender.subscribe((args) => {
             let gc = args.cell;
-            if (gc.isTableCell && gc.gridColumn.name !== SUBJECT_ID && gc.gridColumn.name !== TREATMENT_ARM) {
+            if (gc.isTableCell && gc.gridColumn.name !== SUBJECT_ID && gc.gridColumn.name !== VIEWS_CONFIG[this.name][TRT_ARM_FIELD]) {
                 let patientVisit = this.totalVisits[gc.gridColumn.name][this.visitsGrid.dataFrame.get(SUBJECT_ID, gc.tableRowIndex)];
                 let delta = 30;
                 let x = args.bounds.x + 10;
@@ -324,11 +328,11 @@ export class VisitsView extends ClinicalCaseViewBase {
 
     async studyVisitPanel() {
         let panelDiv = ui.div();
-        let acc = this.createAccWithTitle('Study visit panel', `${this.studyVisit.currentVisitName}`);
+        let acc = this.createAccWithTitle('Study visit panel', `${this.studyVisit.name}`);
 
         acc.addPane(`Summary`, () => {
             return ui.tableFromMap({
-                'Visit day': this.studyVisit.currentVisitDay,
+                'Visit day': this.studyVisit.day,
                 'Total patients': this.studyVisit.totalPatients,
                 'Min visit date': this.studyVisit.minVisitDate,
                 'Max visit dae': this.studyVisit.maxVisitDate,
@@ -372,10 +376,10 @@ export class VisitsView extends ClinicalCaseViewBase {
         }
 
         let aeRowNum = getRowNumber(this.studyVisit.aeSincePreviusVisit);
-        createPane('AEs since last visit', aeRowNum, this.studyVisit.aeSincePreviusVisit, AE_DECOD_TERM);
+        createPane('AEs since last visit', aeRowNum, this.studyVisit.aeSincePreviusVisit, VIEWS_CONFIG[this.name][AE_TERM_FIELD]);
 
         let cmRowNum = getRowNumber(this.studyVisit.conmedSincePreviusVisit);
-        createPane('CONMEDs since last visit', cmRowNum, this.studyVisit.conmedSincePreviusVisit, CON_MED_NAME);
+        createPane('CONMEDs since last visit', cmRowNum, this.studyVisit.conmedSincePreviusVisit, VIEWS_CONFIG[this.name][CON_MED_NAME_FIELD]);
 
         let createDistributionPane = (name, df, catCol, valCol) => {
             acc.addPane(name, () => {

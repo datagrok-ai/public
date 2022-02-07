@@ -1,12 +1,14 @@
 import * as DG from "datagrok-api/dg";
 import * as grok from 'datagrok-api/grok';
 import { study } from '../clinical-study';
-import { AE_END_DATE, AE_END_DAY, AE_SEVERITY, AE_START_DATE, AE_START_DAY, AE_TERM, AGE, RACE, SEX, SUBJECT_ID, TREATMENT_ARM } from "../columns-constants";
+import { AE_END_DATE, AE_END_DAY, AE_SEVERITY, AE_START_DATE, AE_START_DAY, AE_TERM, AGE, RACE, SEX, SUBJECT_ID } from "../columns-constants";
 import * as ui from 'datagrok-api/ui';
 import { dictToString, getNullOrValue } from "../data-preparation/utils";
 import { getSubjectDmData } from "../data-preparation/data-preparation";
 import { SEVERITY_COLOR_DICT } from "../constants";
 import { updateDivInnerHTML } from "../views/utils";
+import { TRT_ARM_FIELD, VIEWS_CONFIG } from "../views-config";
+import { AE_BROWSER_VIEW_NAME } from "../view-names-constants";
 
 export class AEBrowserHelper {
 
@@ -20,7 +22,7 @@ export class AEBrowserHelper {
     daysPriorAe = 5;
     currentSubjId = '';
     currentAeDay: number;
-    name = 'AE Browser';
+    name = AE_BROWSER_VIEW_NAME;
 
     constructor(dataFrame: DG.DataFrame) {
         let presentDomains = [];
@@ -66,7 +68,7 @@ export class AEBrowserHelper {
 
         if (this.aeToSelect.currentRowIdx !== -1) {
             let subjId = this.aeToSelect.get(SUBJECT_ID, this.aeToSelect.currentRowIdx);
-            let title = ui.tooltip.bind(ui.label(subjId), dictToString(getSubjectDmData(subjId, [AGE, SEX, RACE, TREATMENT_ARM])));
+            let title = ui.tooltip.bind(ui.label(subjId), dictToString(getSubjectDmData(subjId, [AGE, SEX, RACE, VIEWS_CONFIG[this.name][TRT_ARM_FIELD]])));
             let description = ui.divH([ui.divText(String(this.aeToSelect.get(AE_TERM, this.aeToSelect.currentRowIdx).toLowerCase()))]);
 
             if (this.aeToSelect.columns.names().includes(AE_SEVERITY)) {

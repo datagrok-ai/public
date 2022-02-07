@@ -6,7 +6,8 @@ export const SUBJECT_ID = 'USUBJID';
 export const VISIT_DAY = 'VISITDY';
 export const VISIT_NAME = 'VISIT';
 //dm
-export const TREATMENT_ARM = 'ACTARM';
+export const ACT_TRT_ARM = 'ACTARM';
+export const PLANNED_TRT_ARM = 'ARM';
 export const AGE = 'AGE';
 export const SEX = 'SEX';
 export const RACE = 'RACE';
@@ -31,7 +32,8 @@ export const AE_SERIOUS = 'AESER';
 //cm
 export const CON_MED_START_DAY = 'CMSTDY';
 export const CON_MED_END_DAY = 'CMENDY';
-export const CON_MED_NAME = 'CMTRT';
+export const CON_MED_TRT = 'CMTRT';
+export const CON_MED_DECOD = 'CMDECOD';
 export const CON_MED_DOSE = 'CMDOSE';
 export const CON_MED_DOSE_UNITS = 'CMDOSU';
 export const CON_MED_DOSE_FREQ = 'CMDOSFRQ';
@@ -40,6 +42,7 @@ export const CON_MED_ROUTE = 'CMROUTE';
 export const INV_DRUG_START_DAY = 'EXSTDY';
 export const INV_DRUG_END_DAY = 'EXENDY';
 export const INV_DRUG_NAME = 'EXTRT';
+export const INV_DRUG_ID = 'EXSPID';
 export const INV_DRUG_DOSE = 'EXDOSE';
 export const INV_DRUG_DOSE_UNITS = 'EXDOSU';
 export const INV_DRUG_DOSE_FORM = 'EXDOSFRM';
@@ -62,3 +65,4 @@ export const MH_BODY_SYSTEM = 'MHBODSYS';
 export const MH_TERM = 'MHTERM';
 //sv
 export const VISIT_START_DATE = 'SVSTDTC';
+

@@ -6,23 +6,11 @@ import { updateDivInnerHTML } from "./utils";
 import $ from "cash-dom";
 import { AEBrowserHelper } from "../helpers/ae-browser-helper";
 import { _package } from "../package";
-import { AE_BODY_SYSTEM, AE_END_DAY, AE_SEVERITY, AE_START_DAY, AE_TERM, CON_MED_DOSE, CON_MED_DOSE_FREQ, CON_MED_DOSE_UNITS, CON_MED_END_DAY, CON_MED_NAME, CON_MED_ROUTE, CON_MED_START_DAY, DOMAIN, INV_DRUG_DOSE, INV_DRUG_DOSE_FORM, INV_DRUG_DOSE_FREQ, INV_DRUG_DOSE_UNITS, INV_DRUG_END_DAY, INV_DRUG_NAME, INV_DRUG_ROUTE, INV_DRUG_START_DAY, SUBJECT_ID, TREATMENT_ARM } from "../columns-constants";
+import { AE_BODY_SYSTEM, AE_END_DAY, AE_SEVERITY, AE_START_DAY, CON_MED_DOSE, CON_MED_DOSE_FREQ, CON_MED_DOSE_UNITS, CON_MED_END_DAY, CON_MED_ROUTE, CON_MED_START_DAY, DOMAIN, INV_DRUG_DOSE, INV_DRUG_DOSE_FORM, INV_DRUG_DOSE_FREQ, INV_DRUG_DOSE_UNITS, INV_DRUG_END_DAY, INV_DRUG_ROUTE, INV_DRUG_START_DAY, SUBJECT_ID } from "../columns-constants";
 import { ClinicalCaseViewBase } from "../model/ClinicalCaseViewBase";
 import { addDataFromDmDomain, getNullOrValue } from "../data-preparation/utils";
-
-let links = {
-  ae: { key: SUBJECT_ID, start: AE_START_DAY, end: AE_END_DAY, event: AE_TERM },
-  cm: { key: SUBJECT_ID, start: CON_MED_START_DAY, end: CON_MED_END_DAY, event: CON_MED_NAME },
-  ex: { key: SUBJECT_ID, start: INV_DRUG_START_DAY, end: INV_DRUG_END_DAY, event: INV_DRUG_NAME },
-  //ex: { key: 'USUBJID', start: 'EXSTDY', end: 'EXENDY', event: 'EXTRT' },
-  //lb: { key: 'USUBJID', start: 'LBDY', event: 'LBTEST' }
-};
-
-let filters = {
-  ae: { 'AE severity': AE_SEVERITY, 'AE body system': AE_BODY_SYSTEM },
-  cm: { 'Concomitant medication': CON_MED_NAME },
-  ex: { 'Treatment arm': INV_DRUG_NAME }
-}
+import { AE_TERM_FIELD, CON_MED_NAME_FIELD, INV_DRUG_NAME_FIELD, TRT_ARM_FIELD, VIEWS_CONFIG } from "../views-config";
+import { TIMELINES_VIEW_NAME } from "../view-names-constants";
 
 let multichoiceTableDict = { 'Adverse events': 'ae', 'Concomitant medication intake': 'cm', 'Drug exposure': 'ex' }
 
@@ -45,6 +33,8 @@ export class TimelinesView extends ClinicalCaseViewBase {
   resultTables: DG.DataFrame;
   aeBrowserHelper: AEBrowserHelper;
   filterColumns = [];
+  filters: any;
+  links: any;
 
   constructor(name) {
     super({});
@@ -56,7 +46,9 @@ export class TimelinesView extends ClinicalCaseViewBase {
 
   createView(): void {
     let existingTables = study.domains.all().map(it => it.name);
-    Object.keys(filters).forEach(domain => this.filterColumns = this.filterColumns.concat(Object.keys(filters[domain])));
+    this.filters = this.getFilterFields();
+    this.links = this.getLinks();
+    Object.keys(this.filters).forEach(domain => this.filterColumns = this.filterColumns.concat(Object.keys(this.filters[domain])));
     this.multichoiceTableOptions = {};
     this.multichoiceTableOptions = Object.fromEntries(Object.entries(multichoiceTableDict).filter(([k, v]) => existingTables.includes(v)));
     this.selectedOptions = [Object.keys(this.multichoiceTableOptions)[0]];
@@ -117,11 +109,11 @@ export class TimelinesView extends ClinicalCaseViewBase {
   }
 
   private prepare(domain: DG.DataFrame) {
-    let info = links[domain.name];
+    let info = this.links[domain.name];
     let df = study.domains[domain.name];
     let t = df.clone(null, Object.keys(info).map(e => info[e]));
-    let filterCols = Object.keys(filters[domain.name]).filter(it => df.columns.names().includes(filters[domain.name][it]));
-    filterCols.forEach(key => { t.columns.addNewString(key).init((i) => df.get(filters[domain.name][key], i)); })
+    let filterCols = Object.keys(this.filters[domain.name]).filter(it => df.columns.names().includes(this.filters[domain.name][it]));
+    filterCols.forEach(key => { t.columns.addNewString(key).init((i) => df.get(this.filters[domain.name][key], i)); })
     t.columns.addNew('domain', DG.TYPE.STRING).init(domain.name.toLocaleLowerCase());
     t.columns.addNewFloat('rowNum').init((i) => i);
     for (let name in info)
@@ -192,24 +184,24 @@ export class TimelinesView extends ClinicalCaseViewBase {
 
     if (!selectedInd.length) {
       if (this.selectedDataframes.includes('ae')) {
-        const aeWithArm = addDataFromDmDomain(this.resultTables.clone(), study.domains.dm, this.resultTables.columns.names(), [TREATMENT_ARM], 'key');
-        const aeNumberByArm = aeWithArm.groupBy([TREATMENT_ARM]).where(`${DOMAIN} = ae`).count().aggregate();
-        const subjNumberByArm = study.domains.dm.groupBy([TREATMENT_ARM]).uniqueCount(SUBJECT_ID).aggregate();
+        const aeWithArm = addDataFromDmDomain(this.resultTables.clone(), study.domains.dm, this.resultTables.columns.names(), [VIEWS_CONFIG[this.name][TRT_ARM_FIELD]], 'key');
+        const aeNumberByArm = aeWithArm.groupBy([VIEWS_CONFIG[this.name][TRT_ARM_FIELD]]).where(`${DOMAIN} = ae`).count().aggregate();
+        const subjNumberByArm = study.domains.dm.groupBy([VIEWS_CONFIG[this.name][TRT_ARM_FIELD]]).uniqueCount(SUBJECT_ID).aggregate();
         const aeNumByArmDict = {};
         for (let i = 0; i < aeNumberByArm.rowCount; i++) {
-          aeNumByArmDict[aeNumberByArm.get(TREATMENT_ARM, i)] = aeNumberByArm.get('count', i) /
+          aeNumByArmDict[aeNumberByArm.get(VIEWS_CONFIG[this.name][TRT_ARM_FIELD], i)] = aeNumberByArm.get('count', i) /
             subjNumberByArm.
-              groupBy([TREATMENT_ARM, `unique(${SUBJECT_ID})`])
-              .where(`${TREATMENT_ARM} = ${aeNumberByArm.get(TREATMENT_ARM, i)}`)
+              groupBy([VIEWS_CONFIG[this.name][TRT_ARM_FIELD], `unique(${SUBJECT_ID})`])
+              .where(`${VIEWS_CONFIG[this.name][TRT_ARM_FIELD]} = ${aeNumberByArm.get(VIEWS_CONFIG[this.name][TRT_ARM_FIELD], i)}`)
               .aggregate()
               .get(`unique(${SUBJECT_ID})`, 0);
         }
 
         const aeTop5Dict = {};
-        const aeTop5 = aeWithArm.groupBy([TREATMENT_ARM, 'event']).where(`${DOMAIN} = ae`).count().aggregate();
-        const order = aeTop5.getSortedOrder([TREATMENT_ARM, 'event'] as any);
+        const aeTop5 = aeWithArm.groupBy([VIEWS_CONFIG[this.name][TRT_ARM_FIELD], 'event']).where(`${DOMAIN} = ae`).count().aggregate();
+        const order = aeTop5.getSortedOrder([VIEWS_CONFIG[this.name][TRT_ARM_FIELD], 'event'] as any);
         order.forEach(item => {
-          const arm = aeTop5.get(TREATMENT_ARM, item);
+          const arm = aeTop5.get(VIEWS_CONFIG[this.name][TRT_ARM_FIELD], item);
           if (Object.keys(aeTop5Dict).includes(arm) && aeTop5Dict[arm].length < 5) {
             aeTop5Dict[arm].push(aeTop5.get('event', item));
           } else {
@@ -323,6 +315,22 @@ export class TimelinesView extends ClinicalCaseViewBase {
       }
     }
 
+  }
+
+  private getFilterFields(){
+    return {
+      ae: { 'AE severity': AE_SEVERITY, 'AE body system': AE_BODY_SYSTEM },
+      cm: { 'Concomitant medication': VIEWS_CONFIG[TIMELINES_VIEW_NAME][CON_MED_NAME_FIELD] },
+      ex: { 'Treatment arm': VIEWS_CONFIG[TIMELINES_VIEW_NAME][INV_DRUG_NAME_FIELD] }
+    }
+  }
+
+  private getLinks() {
+    return {
+      ae: { key: SUBJECT_ID, start: AE_START_DAY, end: AE_END_DAY, event: VIEWS_CONFIG[TIMELINES_VIEW_NAME][AE_TERM_FIELD] },
+      cm: { key: SUBJECT_ID, start: CON_MED_START_DAY, end: CON_MED_END_DAY, event: VIEWS_CONFIG[TIMELINES_VIEW_NAME][CON_MED_NAME_FIELD] },
+      ex: { key: SUBJECT_ID, start: INV_DRUG_START_DAY, end: INV_DRUG_END_DAY, event: VIEWS_CONFIG[TIMELINES_VIEW_NAME][INV_DRUG_NAME_FIELD] }
+    };
   }
 
 }

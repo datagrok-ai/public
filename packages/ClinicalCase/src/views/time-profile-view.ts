@@ -3,11 +3,13 @@ import * as DG from "datagrok-api/dg";
 import * as ui from "datagrok-api/ui";
 import { study } from "../clinical-study";
 import { addDataFromDmDomain, convertColToString, createPivotedDataframe, createPivotedDataframeAvg, getUniqueValues, getVisitNamesAndDays } from '../data-preparation/utils';
-import { ETHNIC, LAB_RES_N, LAB_TEST, VISIT_DAY, VISIT_NAME, RACE, SEX, SUBJECT_ID, TREATMENT_ARM, VS_TEST, VS_RES_N } from '../columns-constants';
+import { ETHNIC, LAB_RES_N, LAB_TEST, VISIT_DAY, VISIT_NAME, RACE, SEX, SUBJECT_ID, VS_TEST, VS_RES_N } from '../columns-constants';
 import { dynamicComparedToBaseline } from '../data-preparation/data-preparation';
 import { updateDivInnerHTML } from './utils';
 import { _package } from '../package';
 import { ClinicalCaseViewBase } from '../model/ClinicalCaseViewBase';
+import { TRT_ARM_FIELD, VIEWS_CONFIG } from '../views-config';
+import { TIME_PROFILE_VIEW_NAME } from '../view-names-constants';
 
 
 export class TimeProfileView extends ClinicalCaseViewBase {
@@ -22,7 +24,7 @@ export class TimeProfileView extends ClinicalCaseViewBase {
     relativeChangeFromBlDataFrame: DG.DataFrame;
     uniqueLabValues: any;
     uniqueVisits: any;
-    splitBy = [ TREATMENT_ARM, SEX, RACE, ETHNIC ];
+    splitBy: any;
     types = ['Values', 'Changes'];
     domains = ['vs', 'lb'];
     domainFields = {'lb': {'test': LAB_TEST, 'res': LAB_RES_N}, 'vs': {'test': VS_TEST, 'res': VS_RES_N}};
@@ -41,7 +43,7 @@ export class TimeProfileView extends ClinicalCaseViewBase {
     }
 
     createView(): void {
-        this.splitBy = this.splitBy.filter(it => study.domains.dm && study.domains.dm.columns.names().includes(it));
+        this.splitBy = [ VIEWS_CONFIG[TIME_PROFILE_VIEW_NAME][TRT_ARM_FIELD], SEX, RACE, ETHNIC ].filter(it => study.domains.dm && study.domains.dm.columns.names().includes(it));
         this.domains = this.domains.filter(it => study.domains[it] !== null);
         this.selectedDomain = this.domains[0];
         this.uniqueLabValues = Array.from(getUniqueValues(study.domains[this.selectedDomain], this.domainFields[this.selectedDomain]['test']));
