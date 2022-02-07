@@ -1,6 +1,90 @@
 <!-- TITLE: Release History -->
 <!-- SUBTITLE: -->
 
+# 2022-02-07 Dev build 0.113.0
+
+## Latest Docker Images
+
+* Datagrok: 
+  *  `docker pull datagrok/datagrok:0.113.0`
+  *  `docker pull datagrok/datagrok:latest`
+  
+* [Docker-Compose](admin/docker-compose.md)
+
+## Addressed Issues
+
+* Formula Lines: Editor 
+* (Bug) Filters: the panel is reset when it is closed and re-opened 
+* JS API: Get last error state (WIP)
+* (Bug) Histogram: Opacity for bands has no effect 
+* (Bug) Line Chart: Exception while activating multiAxis & overviewType at the same time 
+* (Bug) Line Chart: Previous renders of the chart are visible on the canvas 
+* (Bug) Line Chart: X axis overlays on lines when { overviewType: "Line Chart" } 
+* UI: Condensed form, units after labels 
+* AppEvents.lastError: simplified the code and fixed a bug 
+* Updated package-locks. 
+* (Bug) Filters: show header property does not work 
+* JS API: Filters: fine-grained API (WIP)
+* Filters: ability to specify filtering criteria during construction 
+* JS API: JS Filters: ability to provide custom caption 
+* JS API: Help & Example for ui.colorInput() 
+* (Bug) Line Chart: Selectors indents (when count = 2) 
+* (Bug) Scatter plot: Erroneous ticks when zooming out 
+* JS API: Projects API 
+* Fixed analyzer error 
+* JS API: Added additional useful FLines methods 
+* Usage analysis: add Function errors tab 
+* Chem: minor fixes 
+* Func.find: fixed a bug with metadata search 
+* Func.find: ability to search for the result type/semantic type 
+* Implemented #138: Chem: Text search for molecules in the sketcher 
+* Chem: refactoring 
+* JS API: Added ColumnList.getUnusedName() 
+* (Bug) FLines: Constant lines do not take min-max into account 
+* credential manager prototype 
+* 10269 secret manager prototype 
+* JnJ: monitoring resources: RAM, CPU, HDD 
+* Implemented #304: Chem: Sketcher: Add to favorites 
+* (Bug) Filters: free-text input: emptying the input box throws an error 
+* Tooltip: ability to show multiple tooltips at once 
+* Filters: Histograms: Tooltips while dragging 
+* Css style fix for the checkbox in filters 
+* JS API: add vertical RangeSlider 
+* (Bug) Accessing .type in onViewerAdded event breaks filter 
+* Updated public token 
+* Canvas viewers: fixed fps calculation 
+* Scatter Plot: selected rows should be rendered on top 
+* Line Chart: logarithmic axes (WIP)
+* (Bug) Scatter Plot: area selector: null values are getting selected  
+* A quick way to move columns to the beginning/end of the spreadsheet 
+* Box Plot: support for log scale 
+* Chem: Filter won't appear 
+* Fixed analyzer warings 
+* Fixed wrong method 
+* (Bug) Demo files connection is missing 
+* Minor CSS fixes 
+* Fixed typo 
+* Upgrade H2O 
+* (Bug) Filters are not applied in some cases 
+* Peptides: vertical grid columns width fix 
+* (Bug) Function View: Add to Workspace button won't work (WIP)
+* (Bug) Function View: Dataframes selection from a file is buggy (WIP)
+* (Bug) Sequence Translator: two phosphate linkages in a row 
+* (Bug) Function View: Dataframes selection from a file is buggy (WIP)
+* SequenceTranslator: fix of SMILES concatenation logic for ps linkage 
+* RepertoireBrowser: refactoring and inverse PTM to CDR filters 
+* RepertoireBrowser: custom filters fix for Non CDR PTM values 
+* (Bug) Scatter Plot: column selectors should be enabled in the invalid state 
+* (Bug) Form: Structure in form viewer is not rendered after page reload 
+* (Bug) MoleculeInput: caption is not shown 
+* JS API: Inputs: validation (WIP)
+* Public token 
+* Api Test: grid (WIP)
+* Fixed analyzer warnings 
+* Help: Linter 
+* Fixed grok_shared build 
+
+
 # 2022-01-26 Dev build 0.119.0
 
 ## Latest Docker Images
