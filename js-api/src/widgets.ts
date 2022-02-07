@@ -204,7 +204,7 @@ export class Widget {
    * @returns {*}
    * @private
    */
-  addProperty(propertyName: string, propertyType: Type, defaultValue: any = null, options: { [key: string]: string } & PropertyOptions | null = null): any {
+  addProperty(propertyName: string, propertyType: Type, defaultValue: any = null, options: { [key: string]: object } & PropertyOptions | null = null): any {
     let obj = this;
     // @ts-ignore
     let p = Property.create(propertyName, propertyType, (_) => obj[propertyName], null, defaultValue);
