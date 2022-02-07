@@ -47,5 +47,3 @@ Important to select aws-sm-bio created at the previous step and specify the corr
 ![](data-connection-secret-p03.png)
 
 ##### 4. Click Ok. Saving setting.
-
-##
