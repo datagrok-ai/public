@@ -3,7 +3,7 @@ import * as DG from 'datagrok-api/dg';
 import { ACTIVE_ARM_POSTTFIX, AE_PERCENT, ALT, AP, AST, BILIRUBIN, NEG_LOG10_P_VALUE, ODDS_RATIO, PLACEBO_ARM_POSTTFIX, P_VALUE, RELATIVE_RISK, RISK_DIFFERENCE, SE_RD_WITH_SIGN_LEVEL, STANDARD_ERROR_RD } from '../constants';
 import { addDataFromDmDomain, dataframeContentToRow, dateDifferenceInDays, filterBooleanColumn, filterNulls } from './utils';
 import { study } from '../clinical-study';
-import { AE_CAUSALITY, AE_REQ_HOSP, AE_SEQ, AE_SEVERITY, AE_START_DATE, AE_TERM, LAB_HI_LIM_N, LAB_LO_LIM_N, LAB_RES_N, LAB_TEST, SUBJECT_ID, SUBJ_REF_ENDT, SUBJ_REF_STDT, TREATMENT_ARM } from '../columns-constants';
+import { AE_CAUSALITY, AE_REQ_HOSP, AE_SEQ, AE_SEVERITY, AE_START_DATE, LAB_HI_LIM_N, LAB_LO_LIM_N, LAB_RES_N, LAB_TEST, SUBJECT_ID, SUBJ_REF_ENDT, SUBJ_REF_STDT } from '../columns-constants';
 var { jStat } = require('jstat')
 
 
@@ -22,7 +22,7 @@ export function createMaxValuesDataForHysLaw(dataframe, aggregatedColName, filer
 }
 
 
-export function createHysLawDataframe(lb: DG.DataFrame, dm: DG.DataFrame, altName: string, astName: string, blnName: string) {
+export function createHysLawDataframe(lb: DG.DataFrame, dm: DG.DataFrame, altName: string, astName: string, blnName: string, trt_arm: string) {
   let alt = createMaxValuesDataForHysLaw(lb, ALT, altName);
   let bln = createMaxValuesDataForHysLaw(lb, BILIRUBIN, blnName);
   let ast = createMaxValuesDataForHysLaw(lb, AST, astName);
@@ -31,8 +31,8 @@ export function createHysLawDataframe(lb: DG.DataFrame, dm: DG.DataFrame, altNam
   let joined = grok.data.joinTables(bln, alt, [SUBJECT_ID], [SUBJECT_ID], [SUBJECT_ID, BILIRUBIN], [ALT], DG.JOIN_TYPE.LEFT, false);
   joined = grok.data.joinTables(joined, ast, [SUBJECT_ID], [SUBJECT_ID], [SUBJECT_ID, ALT, BILIRUBIN], [AST], DG.JOIN_TYPE.LEFT, false);
   //joined = grok.data.joinTables(joined, ap, [ SUBJECT_ID ], [ SUBJECT_ID ], [ SUBJECT_ID, ALT, BILIRUBIN, AST ], [ AP ], DG.JOIN_TYPE.LEFT, false);
-  if (dm && dm.col(TREATMENT_ARM)) {
-    joined = addDataFromDmDomain(joined, dm, [SUBJECT_ID, ALT, BILIRUBIN, AST], [TREATMENT_ARM]);
+  if (dm && dm.col(trt_arm)) {
+    joined = addDataFromDmDomain(joined, dm, [SUBJECT_ID, ALT, BILIRUBIN, AST], [trt_arm]);
   }
   return joined;
 }
@@ -90,14 +90,15 @@ export function createBaselineEndpointDataframe(df: DG.DataFrame,
 
 export function createLabValuesByVisitDataframe(lb: DG.DataFrame, dm: DG.DataFrame,
   labValue: string,
+  treatmentArmCol: string,
   treatmentArm: string,
   labValueNumCol: string,
   visitCol: string) {
   let condition = `${LAB_TEST} = ${labValue}`;
   let filtered = createFilteredDataframe(lb, condition, [SUBJECT_ID, LAB_RES_N, visitCol], labValueNumCol, LAB_RES_N);
-  if (dm && dm.col(TREATMENT_ARM)) {
-    filtered = addDataFromDmDomain(filtered, dm, filtered.columns.names(), [TREATMENT_ARM]);
-    filtered.rows.filter((row) => row.visitdy !== DG.INT_NULL && row[TREATMENT_ARM] === treatmentArm);
+  if (dm && dm.col(treatmentArmCol)) {
+    filtered = addDataFromDmDomain(filtered, dm, filtered.columns.names(), [treatmentArmCol]);
+    filtered.rows.filter((row) => row.visitdy !== DG.INT_NULL && row[treatmentArmCol] === treatmentArm);
   } else {
     filtered.rows.filter((row) => row.visitdy !== DG.INT_NULL);
   } 
@@ -157,7 +158,7 @@ export function getSurvivalStatus(eventColumn: DG.Column, i: number) {
   return eventColumn.isNone(i) ? 0 : 1;
 }
 
-export function createAERiskAssessmentDataframe(ae: DG.DataFrame, dm: DG.DataFrame, placeboArm: string[], activeArm: string[], signLevel: number) {
+export function createAERiskAssessmentDataframe(ae: DG.DataFrame, dm: DG.DataFrame, trtArmCol: string, aeTermCol: string, placeboArm: string[], activeArm: string[], signLevel: number) {
 
   let TRTARM = 'TREATMENT_ARM';
   let TOTALSUBJ = 'TOTALSUBJ';
@@ -165,13 +166,13 @@ export function createAERiskAssessmentDataframe(ae: DG.DataFrame, dm: DG.DataFra
   let PERCENT = 'PERCENT';
 
   dm.columns.addNewString(TRTARM).init((i) => {
-    if (placeboArm.includes(dm.get(TREATMENT_ARM, i))) {
+    if (placeboArm.includes(dm.get(trtArmCol, i))) {
       return placeboArm.join(',');
     }
-    if (activeArm.includes(dm.get(TREATMENT_ARM, i))) {
+    if (activeArm.includes(dm.get(trtArmCol, i))) {
       return activeArm.join(',');
     }
-    return dm.get(TREATMENT_ARM, i);
+    return dm.get(trtArmCol, i);
   })
 
   let subjArm = createUniqueCountDataframe(dm, [TRTARM], SUBJECT_ID, TOTALSUBJ);
@@ -186,20 +187,20 @@ export function createAERiskAssessmentDataframe(ae: DG.DataFrame, dm: DG.DataFra
     .get(TOTALSUBJ, 0);
   let totalSubj = numberSubjPlaceboArm + numberSubjActiveArm;
 
-  let joinedAeEX = grok.data.joinTables(ae, dm, [SUBJECT_ID], [SUBJECT_ID], [SUBJECT_ID, AE_TERM], [TRTARM], DG.JOIN_TYPE.LEFT, false);
-  let subjAE = createUniqueCountDataframe(joinedAeEX, [AE_TERM, TRTARM], SUBJECT_ID, TOTALSUBJ_WITH_AE);
+  let joinedAeEX = grok.data.joinTables(ae, dm, [SUBJECT_ID], [SUBJECT_ID], [SUBJECT_ID, aeTermCol], [TRTARM], DG.JOIN_TYPE.LEFT, false);
+  let subjAE = createUniqueCountDataframe(joinedAeEX, [aeTermCol, TRTARM], SUBJECT_ID, TOTALSUBJ_WITH_AE);
 
-  let subjTotalAndWithAE = grok.data.joinTables(subjAE, subjArm, [TRTARM], [TRTARM], [AE_TERM, TRTARM, TOTALSUBJ_WITH_AE], [TOTALSUBJ], DG.JOIN_TYPE.LEFT, false);
+  let subjTotalAndWithAE = grok.data.joinTables(subjAE, subjArm, [TRTARM], [TRTARM], [aeTermCol, TRTARM, TOTALSUBJ_WITH_AE], [TOTALSUBJ], DG.JOIN_TYPE.LEFT, false);
 
   subjTotalAndWithAE.columns.addNewFloat(PERCENT)
     .init((i) => parseFloat(subjTotalAndWithAE.get(TOTALSUBJ_WITH_AE, i)) / parseFloat(subjTotalAndWithAE.get(TOTALSUBJ, i)));
 
-  let aeRiskRatioPlacebo = subjTotalAndWithAE.groupBy([AE_TERM, TRTARM, TOTALSUBJ_WITH_AE, TOTALSUBJ, PERCENT])
+  let aeRiskRatioPlacebo = subjTotalAndWithAE.groupBy([aeTermCol, TRTARM, TOTALSUBJ_WITH_AE, TOTALSUBJ, PERCENT])
     .where({ [TRTARM]: `${placeboArm.join(',')}` })
     .aggregate();
   aeRiskRatioPlacebo.name = `${placeboArm.join(',')}`;
 
-  let aeRiskRatioActive = subjTotalAndWithAE.groupBy([AE_TERM, TRTARM, TOTALSUBJ_WITH_AE, TOTALSUBJ, PERCENT])
+  let aeRiskRatioActive = subjTotalAndWithAE.groupBy([aeTermCol, TRTARM, TOTALSUBJ_WITH_AE, TOTALSUBJ, PERCENT])
     .where({ [TRTARM]: `${activeArm.join(',')}` })
     .aggregate();
   aeRiskRatioActive.name = `${activeArm.join(',')}`;
@@ -213,14 +214,14 @@ export function createAERiskAssessmentDataframe(ae: DG.DataFrame, dm: DG.DataFra
   renameCols(aeRiskRatioPlacebo, [TRTARM, TOTALSUBJ_WITH_AE, TOTALSUBJ, PERCENT], PLACEBO_ARM_POSTTFIX)
   renameCols(aeRiskRatioActive, [TRTARM, TOTALSUBJ_WITH_AE, TOTALSUBJ, PERCENT], ACTIVE_ARM_POSTTFIX)
 
-  let joinedFinal = grok.data.joinTables(aeRiskRatioActive, aeRiskRatioPlacebo, [AE_TERM], [AE_TERM],
-    [AE_TERM, `${TRTARM}_${ACTIVE_ARM_POSTTFIX}`, `${TOTALSUBJ_WITH_AE}_${ACTIVE_ARM_POSTTFIX}`, `${TOTALSUBJ}_${ACTIVE_ARM_POSTTFIX}`, `${PERCENT}_${ACTIVE_ARM_POSTTFIX}`],
-    [AE_TERM, `${TRTARM}_${PLACEBO_ARM_POSTTFIX}`, `${TOTALSUBJ_WITH_AE}_${PLACEBO_ARM_POSTTFIX}`, `${TOTALSUBJ}_${PLACEBO_ARM_POSTTFIX}`, `${PERCENT}_${PLACEBO_ARM_POSTTFIX}`],
+  let joinedFinal = grok.data.joinTables(aeRiskRatioActive, aeRiskRatioPlacebo, [aeTermCol], [aeTermCol],
+    [aeTermCol, `${TRTARM}_${ACTIVE_ARM_POSTTFIX}`, `${TOTALSUBJ_WITH_AE}_${ACTIVE_ARM_POSTTFIX}`, `${TOTALSUBJ}_${ACTIVE_ARM_POSTTFIX}`, `${PERCENT}_${ACTIVE_ARM_POSTTFIX}`],
+    [aeTermCol, `${TRTARM}_${PLACEBO_ARM_POSTTFIX}`, `${TOTALSUBJ_WITH_AE}_${PLACEBO_ARM_POSTTFIX}`, `${TOTALSUBJ}_${PLACEBO_ARM_POSTTFIX}`, `${PERCENT}_${PLACEBO_ARM_POSTTFIX}`],
     DG.JOIN_TYPE.OUTER, false);
 
 
-  joinedFinal.getCol(`${activeArm.join(',')}.${AE_TERM}`).name = `${AE_TERM}_${ACTIVE_ARM_POSTTFIX}`;
-  joinedFinal.getCol(`${placeboArm.join(',')}.${AE_TERM}`).name = `${AE_TERM}_${PLACEBO_ARM_POSTTFIX}`;
+  joinedFinal.getCol(`${activeArm.join(',')}.${aeTermCol}`).name = `${aeTermCol}_${ACTIVE_ARM_POSTTFIX}`;
+  joinedFinal.getCol(`${placeboArm.join(',')}.${aeTermCol}`).name = `${aeTermCol}_${PLACEBO_ARM_POSTTFIX}`;
 
 
   let removeNulls = (rowCount, colToCheck, colWithWalue, percentCol, totalSubjWithAECol) => {
@@ -235,14 +236,14 @@ export function createAERiskAssessmentDataframe(ae: DG.DataFrame, dm: DG.DataFra
   }
 
   removeNulls(joinedFinal.rowCount,
-    joinedFinal.col(`${AE_TERM}_${ACTIVE_ARM_POSTTFIX}`),
-    joinedFinal.col(`${AE_TERM}_${PLACEBO_ARM_POSTTFIX}`),
+    joinedFinal.col(`${aeTermCol}_${ACTIVE_ARM_POSTTFIX}`),
+    joinedFinal.col(`${aeTermCol}_${PLACEBO_ARM_POSTTFIX}`),
     joinedFinal.col(`${PERCENT}_${ACTIVE_ARM_POSTTFIX}`),
     joinedFinal.col(`${TOTALSUBJ_WITH_AE}_${ACTIVE_ARM_POSTTFIX}`));
 
   removeNulls(joinedFinal.rowCount,
-    joinedFinal.col(`${AE_TERM}_${PLACEBO_ARM_POSTTFIX}`),
-    joinedFinal.col(`${AE_TERM}_${ACTIVE_ARM_POSTTFIX}`),
+    joinedFinal.col(`${aeTermCol}_${PLACEBO_ARM_POSTTFIX}`),
+    joinedFinal.col(`${aeTermCol}_${ACTIVE_ARM_POSTTFIX}`),
     joinedFinal.col(`${PERCENT}_${PLACEBO_ARM_POSTTFIX}`),
     joinedFinal.col(`${TOTALSUBJ_WITH_AE}_${PLACEBO_ARM_POSTTFIX}`));
 
@@ -292,14 +293,14 @@ export function createAERiskAssessmentDataframe(ae: DG.DataFrame, dm: DG.DataFra
     return 2 * quantile * SE;
   });
 
-  const aePercent = ae.groupBy([AE_TERM]).count().aggregate();
+  const aePercent = ae.groupBy([aeTermCol]).count().aggregate();
   const totalAeEvents = ae.rowCount;
   aePercent.columns.addNewFloat(AE_PERCENT).init((i) => {
     return aePercent.get(`count`, i) / totalAeEvents;
   });
   aePercent.columns.remove(`count`);
 
-  joinedFinal = grok.data.joinTables(joinedFinal, aePercent, [`${AE_TERM}_${ACTIVE_ARM_POSTTFIX}`], [AE_TERM], joinedFinal.columns.names(), [AE_PERCENT], DG.JOIN_TYPE.LEFT, false);
+  joinedFinal = grok.data.joinTables(joinedFinal, aePercent, [`${aeTermCol}_${ACTIVE_ARM_POSTTFIX}`], [aeTermCol], joinedFinal.columns.names(), [AE_PERCENT], DG.JOIN_TYPE.LEFT, false);
 
   return joinedFinal;
 }

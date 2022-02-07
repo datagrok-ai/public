@@ -3,12 +3,14 @@ import { InputBase } from "datagrok-api/dg";
 import * as grok from 'datagrok-api/grok';
 import * as ui from "datagrok-api/ui";
 import { study } from "../clinical-study";
-import { AE_CAUSALITY, AE_REQ_HOSP, AE_SEQ, AE_SEVERITY, AE_START_DATE, AGE, DEATH_DATE, RACE, SEX, SUBJECT_ID, SUBJ_REF_ENDT, TREATMENT_ARM } from "../columns-constants";
+import { AE_CAUSALITY, AE_REQ_HOSP, AE_SEQ, AE_SEVERITY, AE_START_DATE, AGE, DEATH_DATE, RACE, SEX, SUBJECT_ID, SUBJ_REF_ENDT } from "../columns-constants";
 import { SURVIVAL_ANALYSIS_GUIDE } from "../constants";
 import { createSurvivalData } from "../data-preparation/data-preparation";
 import { dataframeContentToRow } from "../data-preparation/utils";
 import { ClinicalCaseViewBase } from "../model/ClinicalCaseViewBase";
 import { _package } from "../package";
+import { SURVIVAL_ANALYSIS_VIEW_NAME } from "../view-names-constants";
+import { TRT_ARM_FIELD, VIEWS_CONFIG } from "../views-config";
 import { updateDivInnerHTML } from "./utils";
 
 let colsRequiredForEndpoints = {
@@ -35,7 +37,7 @@ export class SurvivalAnalysisView extends ClinicalCaseViewBase {
   survivalColumns = [];
   confIntervals = [ 0.7, 0.75, 0.8, 0.85, 0.9, 0.95, 0.99 ];
   survivalOptions = [''];
-  covariatesOptions = [ AGE, SEX, RACE, TREATMENT_ARM ];
+  covariatesOptions: any;
   endpointOptions = { 'RETAIN IN STUDY': SUBJ_REF_ENDT };
   confInterval = 0.7;
   strata = '';
@@ -53,7 +55,7 @@ export class SurvivalAnalysisView extends ClinicalCaseViewBase {
 
   createView(): void {
     this.updateEndpointOptions();
-    this.covariatesOptions = this.covariatesOptions.filter(it => study.domains.dm.columns.names().includes(it));
+    this.covariatesOptions = [ AGE, SEX, RACE, VIEWS_CONFIG[SURVIVAL_ANALYSIS_VIEW_NAME][TRT_ARM_FIELD] ].filter(it => study.domains.dm.columns.names().includes(it));
     this.endpoint = Object.keys(this.endpointOptions)[0];
     this.endpointChoices = ui.choiceInput('Endpoint', Object.keys(this.endpointOptions)[0], Object.keys(this.endpointOptions));
     this.endpointChoices.onChanged((v) => {

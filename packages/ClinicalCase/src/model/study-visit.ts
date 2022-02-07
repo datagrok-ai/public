@@ -6,11 +6,10 @@ import { addColumnWithDrugPlusDosage } from "../data-preparation/data-preparatio
 
 export class StudyVisit {
 
-    domains: ClinicalDomains;
-    currentVisitDay = null;
-    currentVisitName = '';
+    day = null;
+    name = '';
+    num: number;
     previsousVisitDay = null;
-    name = 'Study Visit';
     totalPatients = 0;
     minVisitDate: string;
     maxVisitDate: string;
@@ -22,48 +21,49 @@ export class StudyVisit {
     vsAtVisit: DG.DataFrame;
     extrtWithDoseColName = 'EXTRT_WITH_DOSE';
 
-    constructor(domains: ClinicalDomains) {
-        this.domains = domains;
+    constructor(name?: string, day?: string) {
+        this.name = name;
+        this.day = day;
     }
 
-    updateStudyVisit (visitDay: number, visitName: string, previsousVisitDay: number) {   
-        this.currentVisitDay = visitDay;
-        this.currentVisitName = visitName;
+    updateStudyVisit (domains: any, visitDay: number, visitName: string, previsousVisitDay: number) {   
+        this.day = visitDay;
+        this.name = visitName;
         this.previsousVisitDay = previsousVisitDay;    
-        this.visitDataframe = this.domains.sv.groupBy(this.domains.sv.columns.names())
-        .where(`${VISIT_NAME} = ${this.currentVisitName}`)
+        this.visitDataframe = domains.sv.groupBy(domains.sv.columns.names())
+        .where(`${VISIT_NAME} = ${this.name}`)
         .aggregate();
         this.totalPatients = this.visitDataframe.getCol(SUBJECT_ID).stats.uniqueCount;
         this.minVisitDate = new Date(this.visitDataframe.getCol(VISIT_START_DATE).stats.min * 1e-3).toLocaleDateString();
         this.maxVisitDate = new Date(this.visitDataframe.getCol(VISIT_START_DATE).stats.max * 1e-3).toLocaleDateString();
-        this.aeSincePreviusVisit = this.createEventSincePeviousVisitDf('ae');
-        this.conmedSincePreviusVisit = this.createEventSincePeviousVisitDf('cm');
-        if (this.domains.ex && this.domains.ex.columns.names().includes(VISIT_NAME)) {
-            let ex = this.domains.ex.clone();
+        this.aeSincePreviusVisit = this.createEventSincePeviousVisitDf(domains['ae']);
+        this.conmedSincePreviusVisit = this.createEventSincePeviousVisitDf(domains['cm']);
+        if (domains.ex && domains.ex.columns.names().includes(VISIT_NAME)) {
+            let ex = domains.ex.clone();
             if (ex.columns.names().includes(INV_DRUG_NAME)) {
                 addColumnWithDrugPlusDosage(ex, INV_DRUG_NAME, INV_DRUG_DOSE, INV_DRUG_DOSE_UNITS, this.extrtWithDoseColName);
             }
             this.exAtVisit = ex.groupBy(ex.columns.names())
-            .where(`${VISIT_NAME} = ${this.currentVisitName}`)
+            .where(`${VISIT_NAME} = ${this.name}`)
             .aggregate();
         };
-        if (this.domains.lb && this.domains.lb.columns.names().includes(VISIT_NAME)) {
-            this.lbAtVisit = this.domains.lb.groupBy(this.domains.lb.columns.names())
-            .where(`${VISIT_NAME} = ${this.currentVisitName}`)
+        if (domains.lb && domains.lb.columns.names().includes(VISIT_NAME)) {
+            this.lbAtVisit = domains.lb.groupBy(domains.lb.columns.names())
+            .where(`${VISIT_NAME} = ${this.name}`)
             .aggregate();
         };
-        if (this.domains.vs && this.domains.vs.columns.names().includes(VISIT_NAME)) {
-            this.vsAtVisit = this.domains.vs.groupBy(this.domains.vs.columns.names())
-            .where(`${VISIT_NAME} = ${this.currentVisitName}`)
+        if (domains.vs && domains.vs.columns.names().includes(VISIT_NAME)) {
+            this.vsAtVisit = domains.vs.groupBy(domains.vs.columns.names())
+            .where(`${VISIT_NAME} = ${this.name}`)
             .aggregate();
         };
 
     }
 
-    private createEventSincePeviousVisitDf(domain: string) {
-        if (this.domains[domain] && this.previsousVisitDay) {
-            return this.domains[domain].groupBy(this.domains[domain].columns.names())
-                .where(`${domain.toUpperCase()}STDY > ${this.previsousVisitDay} and ${domain.toUpperCase()}STDY <= ${this.currentVisitDay}`)
+    private createEventSincePeviousVisitDf(domain: any) {
+        if (domain && this.previsousVisitDay) {
+            return domain.groupBy(domain.columns.names())
+                .where(`${domain.name.toUpperCase()}STDY > ${this.previsousVisitDay} and ${domain.name.toUpperCase()}STDY <= ${this.day}`)
                 .aggregate();
         }
         return null;

@@ -2,16 +2,17 @@ import * as DG from "datagrok-api/dg";
 import * as grok from "datagrok-api/grok";
 import {delay, expect} from "@datagrok-libraries/utils/src/test";
 import {_package} from "../package-test";
-import { StudySummaryView } from "../views/study-summary-view";
-import { ClinicalDomains, study } from "../clinical-study";
+import { ClinicalDomains } from "../clinical-study";
 import { createBaselineEndpointDataframe, createHysLawDataframe, createLabValuesByVisitDataframe, createSurvivalData, cumulativeEnrollemntByDay, dynamicComparedToBaseline, labDynamicComparedToMinMax, labDynamicRelatedToRef } from "../data-preparation/data-preparation";
-import { AE_START_DATE, LAB_HI_LIM_N, LAB_LO_LIM_N, LAB_RES_N, LAB_TEST, SUBJECT_ID, SUBJ_REF_ENDT, SUBJ_REF_STDT, TREATMENT_ARM, VISIT_DAY, VISIT_NAME } from "../columns-constants";
+import { AE_START_DATE, LAB_HI_LIM_N, LAB_LO_LIM_N, LAB_RES_N, LAB_TEST, SUBJECT_ID, SUBJ_REF_ENDT, SUBJ_REF_STDT, VISIT_DAY, VISIT_NAME } from "../columns-constants";
 import { dataframeContentToRow } from "../data-preparation/utils";
 import { createValidationDataFrame } from "../validation/validation-utils";
 import { vaidateDMDomain } from "../validation/services/validation-service";
 import { ALT, BILIRUBIN } from "../constants";
 import { StudyVisit } from "../model/study-visit";
 import { PatientVisit } from "../model/patient-visit";
+import { TRT_ARM_FIELD, VIEWS_CONFIG } from "../views-config";
+import { LABORATORY_VIEW_NAME } from "../view-names-constants";
 
 export const allViews = [
   'Summary', 
@@ -67,7 +68,7 @@ export async function _testValidation() {
 export async function _testHysLaw() {
   const lb = await readDataframe('lb.csv');
   const dm = await readDataframe('dm.csv');
-  const hysLawDf = createHysLawDataframe(lb, dm, 'Alanine Aminotransferase', 'Aspartate Aminotransferase', 'Bilirubin');
+  const hysLawDf = createHysLawDataframe(lb, dm, 'Alanine Aminotransferase', 'Aspartate Aminotransferase', 'Bilirubin', VIEWS_CONFIG[LABORATORY_VIEW_NAME][TRT_ARM_FIELD]);
   expect(hysLawDf.rowCount, 6);
   testRowValues(hysLawDf, 0, {[SUBJECT_ID]: '01-701-1015', [ALT]: 3.5, [BILIRUBIN]: 3});
 }
@@ -75,7 +76,7 @@ export async function _testHysLaw() {
 export async function _testBaselineEndpoint() {
   const lb = await readDataframe('lb.csv');
   const dm = await readDataframe('dm.csv');
-  const baselineEndpointDataframe = createBaselineEndpointDataframe(lb, dm, [TREATMENT_ARM], LAB_TEST, LAB_RES_N, 
+  const baselineEndpointDataframe = createBaselineEndpointDataframe(lb, dm, [VIEWS_CONFIG[LABORATORY_VIEW_NAME][TRT_ARM_FIELD]], LAB_TEST, LAB_RES_N, 
     [LAB_LO_LIM_N, LAB_HI_LIM_N], 'Alkaline Phosphatase', 'SCREENING 1', 'WEEK 4', VISIT_NAME, 'BL', 'EP');
   expect(baselineEndpointDataframe.rowCount, 6);
   testRowValues(baselineEndpointDataframe, 0, {[SUBJECT_ID]: '01-701-1015', 'BL': 34, 'EP': 41});
@@ -84,7 +85,7 @@ export async function _testBaselineEndpoint() {
 export async function _testLabValuesByVisit() {
   const lb = await readDataframe('lb.csv');
   const dm = await readDataframe('dm.csv');
-  const labByVisitDataframe = createLabValuesByVisitDataframe(lb, dm, 'Alkaline Phosphatase', 
+  const labByVisitDataframe = createLabValuesByVisitDataframe(lb, dm, 'Alkaline Phosphatase', VIEWS_CONFIG[LABORATORY_VIEW_NAME][TRT_ARM_FIELD],
     'Placebo', 'Values', VISIT_DAY);
   expect(labByVisitDataframe.rowCount, 40);
   testRowValues(labByVisitDataframe, 0, {[SUBJECT_ID]: '01-701-1015', 'Values': 34, [VISIT_DAY]: -7});
@@ -126,8 +127,8 @@ export async function _testLabChangesRelatedToRef(){
 
 export async function _testStudyVisit(){
   const domains = await createClinicalDomains(['sv', 'lb', 'ae']);
-  const studyVisit = new StudyVisit(domains);
-  studyVisit.updateStudyVisit(28, 'WEEK 4', 14);
+  const studyVisit = new StudyVisit();
+  studyVisit.updateStudyVisit(domains, 28, 'WEEK 4', 14);
   expect(studyVisit.totalPatients, 6);
   expect(studyVisit.minVisitDate, '02.09.2012');
   expect(studyVisit.maxVisitDate, '29.07.2014');
@@ -137,9 +138,9 @@ export async function _testStudyVisit(){
 
 export async function _testPatientVisit(){
   const domains = await createClinicalDomains(['sv', 'lb', 'ae']);
-  const patientVisit = new PatientVisit(domains);
+  const patientVisit = new PatientVisit();
   patientVisit.updateSubjectVisit('01-701-1028', 28, 'WEEK 4', 14);
-  patientVisit.updateSubjectVisitDomains();
+  patientVisit.updateSubjectVisitDomains(domains);
   console.log(dataframeContentToRow(patientVisit['lb']));
   console.log(dataframeContentToRow(patientVisit['ae']));
   expect(patientVisit['lb'].rowCount, 30);

@@ -4,10 +4,12 @@ import * as ui from "datagrok-api/ui";
 import { study } from "../clinical-study";
 import { addDataFromDmDomain, getUniqueValues } from '../data-preparation/utils';
 import { createBaselineEndpointDataframe } from '../data-preparation/data-preparation';
-import { ETHNIC, LAB_RES_N, LAB_TEST, VISIT_DAY, VISIT_NAME, RACE, SEX, SUBJECT_ID, TREATMENT_ARM, LAB_LO_LIM_N, LAB_HI_LIM_N, VS_TEST, VS_RES_N } from '../columns-constants';
+import { ETHNIC, LAB_RES_N, LAB_TEST, VISIT_DAY, VISIT_NAME, RACE, SEX, SUBJECT_ID, VS_TEST, VS_RES_N } from '../columns-constants';
 import { updateDivInnerHTML } from './utils';
 import { _package } from '../package';
 import { ClinicalCaseViewBase } from '../model/ClinicalCaseViewBase';
+import { TRT_ARM_FIELD, VIEWS_CONFIG } from '../views-config';
+import { DISTRIBUTIONS_VIEW_NAME } from '../view-names-constants';
 var { jStat } = require('jstat')
 
 
@@ -23,10 +25,10 @@ export class BoxPlotsView extends ClinicalCaseViewBase {
   uniqueValues = {};
   selectedValuesByDomain = {};
   uniqueVisits: any;
-  splitBy =  [TREATMENT_ARM, SEX, RACE, ETHNIC];
+  splitBy: any;
 
   bl = '';
-  selectedSplitBy = TREATMENT_ARM;
+  selectedSplitBy = VIEWS_CONFIG[DISTRIBUTIONS_VIEW_NAME][TRT_ARM_FIELD];
 
   distrWithDmData: DG.DataFrame;
 
@@ -40,9 +42,9 @@ export class BoxPlotsView extends ClinicalCaseViewBase {
   }
 
   createView(): void {
-
+    this.selectedValuesByDomain = {};
     this.domains = this.domains.filter(it => study.domains[it] !== null);
-    this.splitBy = this.splitBy.filter(it => study.domains.dm.columns.names().includes(it));
+    this.splitBy =  [VIEWS_CONFIG[DISTRIBUTIONS_VIEW_NAME][TRT_ARM_FIELD], SEX, RACE, ETHNIC].filter(it => study.domains.dm.columns.names().includes(it));
     this.selectedSplitBy = this.splitBy[0];
     let viewerTitle = {
       style: {
