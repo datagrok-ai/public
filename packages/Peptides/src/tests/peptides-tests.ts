@@ -63,7 +63,7 @@ category('peptides', async () => {
 
   test('Peptides-class', async () => {
     const peptides = new Peptides();
-    peptides.init(peptidesGrid, pepView, peptidesDf, options, asCol);
+    peptides.init(peptidesGrid, pepView, peptidesDf, options, asCol, peptidesDf.columns.names());
   });
 
   test('panel.peptides', async () => {

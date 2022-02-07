@@ -94,10 +94,11 @@ export async function createPeptideSimilaritySpaceViewer(
   }
 
   const viewerOptions = {x: '~X', y: '~Y', color: activityColumnName ?? '~MW', size: '~MW'};
-  const viewer = DG.Viewer.scatterPlot(table, viewerOptions);
+  // const viewer = DG.Viewer.scatterPlot(table, viewerOptions);
+  const viewer = table.plot.scatter(viewerOptions);
 
-  if (view !== null)
-    view.addViewer(viewer);
+  // if (view !== null)
+  //   view.addViewer(viewer);
 
   pi.close();
   return viewer;

@@ -3,6 +3,8 @@ import * as DG from 'datagrok-api/dg';
 import {createPeptideSimilaritySpaceViewer} from './utils/peptide-similarity-space';
 import {PeptidesModel} from './model';
 import {StringDictionary} from '@datagrok-libraries/utils/src/type-declarations';
+import { SARViewer, SARViewerVertical } from './viewers/sar-viewer';
+import { SubstViewer } from './viewers/subst-viewer';
 // import $ from 'cash-dom';
 
 /**
@@ -28,6 +30,7 @@ export class Peptides {
     currentDf: DG.DataFrame,
     options: StringDictionary,
     col: DG.Column,
+    originalDfColumns: string[],
   ) {
 
     function adjustCellSize(grid: DG.Grid) {
@@ -50,7 +53,7 @@ export class Peptides {
     }
 
     const initialFiter = currentDf.filter.clone();
-    const originalDfColumns = (currentDf.columns as DG.ColumnList).names();
+    // const originalDfColumns = (currentDf.columns as DG.ColumnList).names();
     const originalDfName = currentDf.name;
 
     PeptidesModel.getOrInit(currentDf);
@@ -63,25 +66,50 @@ export class Peptides {
     // const layout1 = view.saveLayout();
     // view.dockManager.close(substNode);
 
+    const dockSAR = function (
+        sarViewer: SARViewer, sarViewerVertical: SARViewerVertical, peptideSpaceViewer: DG.ScatterPlotViewer) {
+      const sarNode = view.dockManager.dock(sarViewer, DG.DOCK_TYPE.DOWN, null, 'SAR Viewer');
+      const sarVNode = view.dockManager.dock(sarViewerVertical, DG.DOCK_TYPE.RIGHT, sarNode, 'SAR Vertical Viewer');
+      const psNode = view.dockManager.dock(peptideSpaceViewer, DG.DOCK_TYPE.LEFT, sarNode, 'Peptide Space Viewer', 0.3);
+
+      return [sarNode, sarVNode, psNode];
+    };
+
+    const dockSubst = function (substViewer: SubstViewer) {
+      const substNode = view.dockManager.dock(substViewer, DG.DOCK_TYPE.RIGHT, null, 'Substitution Analysis');
+
+      return [substNode];
+    }
+
     const helpUrl = '/help/domains/bio/peptides.md';
 
-    currentDf.temp['viewerGroup'] = 'SAR';
-    const sarViewer = view.addViewer('peptide-sar-viewer', options);
+    // currentDf.temp['viewerGroup'] = 'SAR';
+    // const sarViewer = view.addViewer('peptide-sar-viewer', options);
+    const sarViewer = await currentDf.plot.fromType('peptide-sar-viewer', options) as SARViewer;
     sarViewer.helpUrl = helpUrl;
     // const sarNode = view.dockManager.dock(sarViewer, DG.DOCK_TYPE.DOWN, null, 'SAR Viewer');
 
-    const sarViewerVertical = view.addViewer('peptide-sar-viewer-vertical');
+    // const sarViewerVertical = view.addViewer('peptide-sar-viewer-vertical');
+    const sarViewerVertical = await currentDf.plot.fromType('peptide-sar-viewer-vertical') as SARViewerVertical;
     sarViewerVertical.helpUrl = helpUrl;
     // const sarVNode = view.dockManager.dock(sarViewerVertical, DG.DOCK_TYPE.RIGHT, sarNode, 'SAR Vertical Viewer');
 
     const peptideSpaceViewer = await createPeptideSimilaritySpaceViewer(
       currentDf, col, 't-SNE', 'Levenshtein', 100, view, `${options['activityColumnName']}Scaled`);
-    //const psNode = view.dockManager.dock(peptideSpaceViewer, DG.DOCK_TYPE.LEFT, sarNode, 'Peptide Space Viewer', 0.3);
+    // const psNode = view.dockManager.dock(peptideSpaceViewer, DG.DOCK_TYPE.LEFT, sarNode, 'Peptide Space Viewer', 0.3);
+
+    // const layout1 = view.saveLayout();
+    // const nodeList = [sarNode, sarVNode];
+    let nodeList = dockSAR(sarViewer, sarViewerVertical, peptideSpaceViewer);
+
+    const substViewer = await currentDf.plot.fromType(
+      'substitution-analysis-viewer', {'activityColumnName': `${options['activityColumnName']}Scaled`}) as SubstViewer;
+    // const substNode = view.dockManager.dock(substViewer, DG.DOCK_TYPE.RIGHT, null, 'Substitution Analysis');
 
     // const layout2 = view.saveLayout();
+    // view.dockManager.close(substNode);
 
-    // const nodeList = [sarVNode, psNode, sarNode];
-    const viewerList = [sarViewer, sarViewerVertical, peptideSpaceViewer];
+    // const viewerList = [sarViewer, sarViewerVertical, peptideSpaceViewer];
     tableGrid.props.allowEdit = false;
     adjustCellSize(tableGrid);
 
@@ -112,18 +140,54 @@ export class Peptides {
 
     let isSA = false;
     //TODO: fix layouts
-    // const switchViewers = ui.iconFA('toggle-on', () => {
+    const switchViewers = ui.iconFA('toggle-on', () => {
+      $(switchViewers).toggleClass('fa-toggle-off').toggleClass('fa-toggle-on');
+      nodeList.forEach(node => view.dockManager.close(node));
+      nodeList = isSA ? dockSAR(sarViewer, sarViewerVertical, peptideSpaceViewer) : dockSubst(substViewer);
+      isSA = !isSA;
+    });
+    // const switchViewers = ui.iconFA('toggle-on', async () => {
+    //   currentDf.filter.copyFrom(initialFiter);
+    //   currentDf.selection.setAll(false);
+    //   // nodeList.forEach((node) => view.dockManager.close(node));
+    //   viewerList.forEach((viewer) => viewer.close());
+    //   viewerList.length = 0;
+    //   // nodeList.length = 0;
     //   if (isSA) {
-    //     view.loadLayout(layout1);
+    //     const sarViewer = view.addViewer('peptide-sar-viewer', options);
+    //     sarViewer.helpUrl = helpUrl;
+    //     // const sarNode = view.dockManager.dock(sarViewer, DG.DOCK_TYPE.DOWN, null, 'SAR Viewer');
+
+    //     const sarViewerVertical = view.addViewer('peptide-sar-viewer-vertical');
+    //     sarViewerVertical.helpUrl = helpUrl;
+    //     //const sarVNode = view.dockManager.dock(sarViewerVertical, DG.DOCK_TYPE.RIGHT, sarNode, 'SAR Vertical Viewer');
+
+    //     const peptideSpaceViewer = await createPeptideSimilaritySpaceViewer(
+    //       currentDf, col, 't-SNE', 'Levenshtein', 100, view, `${options['activityColumnName']}Scaled`);
+    //     // const psNode = view.dockManager.dock(
+    //     //   peptideSpaceViewer, DG.DOCK_TYPE.LEFT, sarNode, 'Peptide Space Viewer', 0.3);
+
+    //     // nodeList.push(sarVNode);
+    //     // nodeList.push(psNode);
+    //     // nodeList.push(sarNode);
+    //     viewerList.concat([sarViewer, sarViewerVertical, peptideSpaceViewer]);
+
     //     $(switchViewers).removeClass('fa-toggle-off');
     //     $(switchViewers).addClass('fa-toggle-on');
     //   } else {
-    //     view.loadLayout(layout2);
+    //     const substViewer = view.addViewer(
+    //       'substitution-analysis-viewer', {'activityColumnName': `${options['activityColumnName']}Scaled`},
+    //     );
+    //     substViewer.helpUrl = helpUrl;
+    //     // nodeList.push(view.dockManager.dock(substViewer, DG.DOCK_TYPE.DOWN, null, 'Substitution Analysis'));
+    //     viewerList.push(substViewer);
     //     $(switchViewers).removeClass('fa-toggle-on');
     //     $(switchViewers).addClass('fa-toggle-off');
     //   }
+    //   // currentDf.temp['viewerGroup'] = isSA ? 'SAR' : 'Subst';
     //   isSA = !isSA;
     // });
+<<<<<<< HEAD
     const switchViewers = ui.iconFA('toggle-on', async () => {
       currentDf.filter.copyFrom(initialFiter);
       currentDf.selection.setAll(false);
@@ -167,6 +231,8 @@ export class Peptides {
       // currentDf.temp['viewerGroup'] = isSA ? 'SAR' : 'Subst';
       isSA = !isSA;
     });
+=======
+>>>>>>> 392d245e8 (Peptides #255: create viewers with dataFrame .plot WIP)
 
     const ribbonPanels = view.getRibbonPanels();
     view.setRibbonPanels([[hideIcon, switchViewers]]);
