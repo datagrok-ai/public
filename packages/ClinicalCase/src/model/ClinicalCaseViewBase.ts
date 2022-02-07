@@ -1,7 +1,6 @@
 import * as DG from "datagrok-api/dg";
 import * as ui from "datagrok-api/ui";
-import { requiredColumnsByView } from "../constants";
-import { checkMissingDomains } from "../views/utils";
+import { checkMissingDomains, getRequiredColumnsByView } from "../views/utils";
 
 export class ClinicalCaseViewBase extends DG.ViewBase {
 
@@ -12,8 +11,9 @@ export class ClinicalCaseViewBase extends DG.ViewBase {
 
       loaded = false;
 
+
       load(): void {
-        checkMissingDomains(requiredColumnsByView[this.name], this);
+        checkMissingDomains(getRequiredColumnsByView()[this.name], this);
       }
 
       async propertyPanel() {

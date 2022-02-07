@@ -14,8 +14,8 @@ export class AERiskAssessmentView extends ClinicalCaseViewBase {
   volcanoPlotXAxis = '';
   volcanoPlotYAxis = NEG_LOG10_P_VALUE;
   volcanoPlotMarkerSize = '';
-  placeboArm = [];
-  activeArm = [];
+  placeboArm: string[];
+  activeArm: string[];
   treatmentArmOptions: string[];
   riskAssessmentDiv = ui.box();
   initialGuide: any;
@@ -31,6 +31,8 @@ export class AERiskAssessmentView extends ClinicalCaseViewBase {
   }
 
   createView(): void {
+    this.activeArm = [];
+    this.placeboArm = [];
     this.volcanoPlotXAxis = RISK_DIFFERENCE;
     this.volcanoPlotMarkerSize = Object.values(this.sizeOptions)[0];
     this.treatmentArmOptions = study.domains.dm.col(VIEWS_CONFIG[this.name][TRT_ARM_FIELD]).categories;
