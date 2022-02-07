@@ -3,7 +3,7 @@
 Any used data source requires authentication to access the data. 
 Credentials (logins, passwords, etc) can be specified directly (Manual) or through integrating with secret manager services storing these credentials.
 
-#### Option "Manually"
+#### Option "Manual"
 
 This basic option provides keeping encrypted credentials for any data sources in the protected service inside the Datagrok platform.
 
