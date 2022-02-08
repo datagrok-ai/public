@@ -36,6 +36,13 @@ export class Peptides {
     options: StringDictionary,
     col: DG.Column,
   ) {
+
+    function adjustCellSize(grid: DG.Grid) {
+      for (let i = 0; i < grid.columns.length; ++i) 
+      grid.columns.byIndex(i)!.width = 40;
+      grid.props.rowHeight = 20;
+    }
+
     for (let i = 0; i < tableGrid.columns.length; i++) {
       const aarCol = tableGrid.columns.byIndex(i);
       if (aarCol &&
@@ -87,6 +94,7 @@ export class Peptides {
     const StackedBarchartProm = currentDf.plot.fromType('StackedBarChartAA');
     addViewerToHeader(tableGrid, StackedBarchartProm);
     tableGrid.props.allowEdit = false;
+    adjustCellSize(tableGrid);
 
     const hideIcon = ui.iconFA('window-close', () => { //undo?, times?
       const viewers = [];
@@ -150,6 +158,8 @@ export class Peptides {
         nodeList.push(sarVNode);
         nodeList.push(psNode);
 
+        adjustCellSize(tableGrid);
+
         $(switchViewers).removeClass('fa-toggle-off');
         $(switchViewers).addClass('fa-toggle-on');
       } else {
@@ -158,6 +168,9 @@ export class Peptides {
         );
         substViewer.helpUrl = helpUrl;
         nodeList.push(view.dockManager.dock(substViewer, DG.DOCK_TYPE.DOWN, null, 'Substitution Analysis'));
+
+        adjustCellSize(tableGrid);
+
         $(switchViewers).removeClass('fa-toggle-on');
         $(switchViewers).addClass('fa-toggle-off');
       }

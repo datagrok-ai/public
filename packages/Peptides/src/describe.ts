@@ -537,6 +537,14 @@ export async function describe(
 
   postProcessGrids(sourceGrid, invalidIndexes, matrixDf, grouping, aminoAcidResidue, sarGrid, sarVGrid);
 
+  for (let i = 0; i < sarGrid.columns.length; ++i) {
+    sarGrid.columns.byIndex(i)!.width = 40;
+  }
+
+  for (let i = 0; i < sarVGrid.columns.length; ++i) {
+    sarVGrid.columns.byIndex(i)!.width = 40;
+  }
+
   //TODO: return class instead
   return [sarGrid, sarVGrid, statsDf, groupMapping];
 }

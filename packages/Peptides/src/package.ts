@@ -232,40 +232,40 @@ export async function peptideSubstitution(table: DG.DataFrame): Promise<DG.Widge
   if (!table) {
     return new DG.Widget(ui.label('No substitution'));
   }
-  const peptideLength = 17;
   let initialCol: DG.Column = table.columns.byName('Initial');
   let substitutedCol: DG.Column = table.columns.byName('Substituted');
-  let substCounts = [];
-  let cnt = 0;
+  // let substCounts = [];
+  // let cnt = 0;
 
   for (let i = 0; i < initialCol.length; ++i) {
     const initialPeptide: string = initialCol.get(i);
     const substPeptide: string = substitutedCol.get(i);
-    const concat = initialPeptide + '#' + substPeptide;
 
-    initialCol.set(i, concat);
+    initialCol.set(i, initialPeptide + '#' + substPeptide);
 
-    const initialAminos = initialPeptide.split('-');
-    const substAminos = substPeptide.split('-');
+    // const initialAminos = initialPeptide.split('-');
+    // const substAminos = substPeptide.split('-');
 
-    for (let j = 0; j < peptideLength; ++j) {
-      if (initialAminos[j] != substAminos[j])
-        substCounts[cnt++] = j;
-    }
+    // for (let j = 0; j < peptideLength; ++j) {
+    //   if (initialAminos[j] != substAminos[j])
+    //     substCounts[cnt++] = j;
+    // }
   }
 
-  const countCol = DG.Column.fromInt32Array('substCounts', substCounts as unknown as Int32Array);
-  const df = DG.DataFrame.fromColumns([countCol]);
-  const barchart = df.plot.histogram({value: 'substCounts'});
-  if (barchart) {
-    barchart.root.style.width = '200px';
-    barchart.root.style.marginLeft = '30px';
-  }
+  // const countCol = DG.Column.fromInt32Array('substCounts', substCounts as unknown as Int32Array);
+  // const df = DG.DataFrame.fromColumns([countCol]);
+  // const barchart = df.plot.histogram({value: 'substCounts'});
+  // if (barchart) {
+  //   barchart.root.style.width = '200px';
+  //   barchart.root.style.marginLeft = '30px';
+  // }
 
   initialCol.semType = 'alignedSequenceDifference';
   initialCol.name = 'Substitution';
   table.columns.remove('Substituted');
-  return new DG.Widget(ui.div([table.plot.grid().root]));
+  const grid = table.plot.grid().root;
+  grid.style.width = 'auto';
+  return new DG.Widget(ui.divV([grid]));
 }
 
 //name: alignedSequenceDifferenceCellRenderer
