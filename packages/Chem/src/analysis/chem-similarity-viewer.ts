@@ -80,7 +80,7 @@ export class ChemSimilarityViewer extends DG.JsViewer {
       if (!this.gridSelect && this.curIdx != this.dataFrame!.currentRowIdx) {
         this.isEditedFromSketcher = false;
       }
-      this.curIdx = this.dataFrame!.currentRowIdx;
+      this.curIdx = this.dataFrame!.currentRowIdx == -1 ? 0 : this.dataFrame!.currentRowIdx;
       if (computeData && !this.gridSelect) {
         this.targetMoleculeIdx = this.dataFrame!.currentRowIdx;
         const df = await chemSimilaritySearch(this.dataFrame!, this.moleculeColumn!,
