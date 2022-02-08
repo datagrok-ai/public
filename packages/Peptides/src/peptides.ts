@@ -38,8 +38,10 @@ export class Peptides {
   ) {
 
     function adjustCellSize(grid: DG.Grid) {
-      for (let i = 0; i < grid.columns.length; ++i) 
-      grid.columns.byIndex(i)!.width = 40;
+      for (let i = 0; i < grid.columns.length; ++i) {
+        const col = grid.columns.byIndex(i)!;
+        col.width = isNaN(parseInt(col.name)) ? 50 : 40;
+      }
       grid.props.rowHeight = 20;
     }
 
