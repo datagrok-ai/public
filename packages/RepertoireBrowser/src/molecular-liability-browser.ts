@@ -386,17 +386,6 @@ export class MolecularLiabilityBrowser {
     });
   }
 
-  setTreesIcon(): void {
-    this.treesIcon = ui.tooltip.bind(ui.iconFA('trees', async () => {
-      let path = _package.webRoot + 'src/examples/tree.csv';
-      let df = await grok.data.loadTable(path);
-      if (df) {
-        let treeBrowser = new TreeBrowser();
-        await treeBrowser.init(df);
-      }
-    }), 'build phylogenetic tree');
-  }
-
   async init(urlVid: string | null) {
     const pf = require("./externalData/properties.json");
     const pi = DG.TaskBarProgressIndicator.create('Loading data...');
@@ -429,22 +418,28 @@ export class MolecularLiabilityBrowser {
     for (let i = 0; i < this.allVids.length; i++)
       this.idMapping[this.allVids.get(i)] = this.allIds.get(i).replaceAll(" ", "").split(",");
 
-    this.setPropertiesFilters(ptmMap, cdrMap, referenceDf, indexes);
+    let path = _package.webRoot + 'src/examples/tree.csv';
+    let dfTree = await grok.data.loadTable(path);
+    if (dfTree) {
+      let treeBrowser = new TreeBrowser();
+      await treeBrowser.init(dfTree, this.mlbView);
+    }
+
     this.setVidInput();
     this.setFilterIcon();
     this.setFilterIcon2();
     this.setQueryIcon();
     this.setHideShowIcon();
     this.setHideShowIcon2();
-    this.setTreesIcon();
 
     this.mlbView.setRibbonPanels([[this.vIdInput.root],
-    [this.filterIcon, this.filterIcon2, this.queryIcon, this.hideShowIcon, this.hideShowIcon2, this.treesIcon]]);
+    [this.filterIcon, this.filterIcon2, this.queryIcon, this.hideShowIcon, this.hideShowIcon2]]);
 
     if (urlVid != null)
       this.vIdInput.value = urlVid;
 
     this.changeVid();
+    this.setPropertiesFilters(ptmMap, cdrMap, referenceDf, indexes);
 
     this.mlbTable.onFilterChanged.subscribe((_) => {
       this.compostionPviewer.do(this.mlbView);
