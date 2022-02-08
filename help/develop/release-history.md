@@ -1,6 +1,27 @@
 <!-- TITLE: Release History -->
 <!-- SUBTITLE: -->
 
+# 2022-02-08 Dev build 0.122.0
+
+## Latest Docker Images
+
+* Datagrok: 
+  *  `docker pull datagrok/datagrok:0.122.0`
+  *  `docker pull datagrok/datagrok:latest`
+  
+* [Docker-Compose](admin/docker-compose.md)
+
+## Addressed Issues
+
+* (Bug) Filters: After reopening filters, all columns appear deactivated in the "Select columns" dialog 
+* (Bug) Filters: Filters for multi-value columns are not saved after reopening the Filters 
+* (Bug) Filters: ​double-click on checkbox: weird characters are visible 
+* (Bug) Scatter Plot: Custom linear coloring is not propagated 
+* Push version from package.json for master branch 
+* CloudFormation required parameters 
+* RepertoireBrowser: viewers dislocation 
+
+
 # 2022-01-26 Dev build 0.119.0
 
 ## Latest Docker Images
