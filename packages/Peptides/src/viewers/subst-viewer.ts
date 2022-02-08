@@ -184,9 +184,11 @@ export class SubstViewer extends DG.JsViewer {
       },
     );
 
-    for (const col of table.columns.names())
+    this.viewerGrid.columns.rowHeader!.width = 30;
+    for (const col of table.columns.names()) {
       this.viewerGrid.col(col)!.width = this.viewerGrid.props.rowHeight;
-
+      this.viewerGrid.col(col)!.width = 30;
+    }
 
     this.viewerGrid.onCellRender.subscribe((args) => {
       if (args.cell.isRowHeader && args.cell.gridColumn.visible) {

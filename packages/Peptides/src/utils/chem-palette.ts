@@ -82,15 +82,15 @@ export class ChemPalette {
    * @returns {[string, string]} outer and inner content
    */
   private getInnerOuter(c: string): [string, string] {
-    let isInner = false;
+    let isInner = 0;
     let inner = '';
     let outer = '';
 
     for (let i = 0; i < c.length; ++i) {
       if (c[i] == '(') {
-        isInner = true;
+        isInner++;
       } else if (c[i] == ')'){
-        isInner = false;
+        isInner--;
       } else if (isInner) {
         inner += c[i];
       } else {
@@ -108,8 +108,8 @@ export class ChemPalette {
    */
   getColorAAPivot(c: string = ''): [string, string, string, number] {
     let [outerC, innerC] = this.getInnerOuter(c);
-    outerC = (outerC.length > 6 ? outerC.slice(0, 3) + '...' : outerC);
-    innerC = (innerC.length > 6 ? innerC.slice(0, 3) + '...' : innerC);
+    outerC = (outerC.length > 9 ? outerC.slice(0, 3) + '...' : outerC);
+    innerC = (innerC.length > 9 ? innerC.slice(0, 3) + '...' : innerC);
 
     if (c.length == 1 || c[1] == '(') {
       const amino = c[0]?.toUpperCase()!;

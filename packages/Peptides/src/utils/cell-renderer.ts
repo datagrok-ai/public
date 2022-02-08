@@ -168,6 +168,26 @@ export class AminoAcidsCellRenderer extends DG.GridCellRenderer {
     }
 
     /**
+     * Cell height.
+     *
+     * @readonly
+     * @memberof AminoAcidsCellRenderer
+     */
+    get defaultHeight() {
+      return 15;
+    } 
+
+    /**
+     * Cell width.
+     *
+     * @readonly
+     * @memberof AminoAcidsCellRenderer
+     */
+     get defaultWidth() {
+      return 30;
+    } 
+
+    /**
      * Constructor.
      */
     constructor() {
@@ -191,9 +211,9 @@ export class AminoAcidsCellRenderer extends DG.GridCellRenderer {
       cellStyle: DG.GridCellStyle) {
       this.chemPalette ??= new ChemPalette('grok', gridCell.tableColumn?.getTag('groups') ? true : false);
 
+      y -= 2;
       g.save();
       g.beginPath();
-      h -= 2;
       g.rect(x, y, w, h);
       g.clip();
       g.font = `12px monospace`;
@@ -237,6 +257,16 @@ export class AlignedSequenceCellRenderer extends DG.GridCellRenderer {
   }
 
   /**
+   * Cell height.
+   *
+   * @readonly
+   * @memberof AlignedSequenceCellRenderer
+   */
+   get defaultHeight() {
+    return 30;
+  }
+
+  /**
    * Cell width.
    *
    * @readonly
@@ -265,7 +295,6 @@ export class AlignedSequenceCellRenderer extends DG.GridCellRenderer {
     const grid = gridCell.dart.grid ? gridCell.grid : gridCell.dart.grid;
     const cell = gridCell.cell;
     w = grid ? Math.min(grid.canvas.width - x, w) : g.canvas.width - x;
-    h -= 2;
     g.save();
     g.beginPath();
     g.rect(x, y, w, h);
@@ -363,7 +392,7 @@ export function processSequence(subParts: string[]): [string[], boolean] {
    * @memberof AlignedSequenceDifferenceCellRenderer
    */
    get defaultWidth() {
-    return 200;
+    return 230;
   }
 
   /**
@@ -386,8 +415,6 @@ export function processSequence(subParts: string[]): [string[], boolean] {
     const cell = gridCell.cell;
 
     w = grid ? Math.min(grid.canvas.width - x, w) : g.canvas.width - x;
-    y += 2;
-    h -= 2;
     g.save();
     g.beginPath();
     g.rect(x, y, w, h);
@@ -405,7 +432,6 @@ export function processSequence(subParts: string[]): [string[], boolean] {
     x = Math.max(x, x + (w - textSize.width) / 2);
 
     subParts1.forEach((amino1: string, index) => {
-      let pivot;
       let amino2 = subParts2[index];
       let [color1, amino1Outer, amino1Inner, pivot1] = cp.getColorAAPivot(amino1);
       let [color2, amino2Outer, amino2Inner, pivot2] = cp.getColorAAPivot(amino2);
@@ -417,14 +443,12 @@ export function processSequence(subParts: string[]): [string[], boolean] {
         amino2 = amino2Outer + (amino2Inner !== '' ? '(' + amino2Inner + ')' : '');
         amino1 = amino1 === '' ? '-' : amino1;
         amino2 = amino2 === '' ? '-' : amino2;
-        pivot = (amino1 == '-') ? pivot2 : pivot1;
 
-        const x1 = printLeftOrCentered(x, y - verticalShift, w, h, g, amino1, color1, pivot, true);
-        x = printLeftOrCentered(x, y + verticalShift, w, h, g, amino2, color2, pivot, true);
+        const x1 = printLeftOrCentered(x, y - verticalShift, w, h, g, amino1, color1, pivot1, true);
+        x = printLeftOrCentered(x, y + verticalShift, w, h, g, amino2, color2, pivot2, true);
         x = Math.max(x, x1) + 4;
       } else {
-        amino1 = amino1Outer + (amino1Inner !== '' ? '(+)' : '');
-        x = printLeftOrCentered(x, y, w, h, g, amino1 ? amino1 : '-', color1, pivot, true, false, 0.5) + 4;
+        x = printLeftOrCentered(x, y, w, h, g, amino1 ? amino1 : '-', color1, pivot1, true, true, 0.5) + 4;
       } 
     });
     g.restore();
