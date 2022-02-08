@@ -9,8 +9,6 @@ import { _package } from "./package";
 
 import $ from 'cash-dom';
 
-const _STRUCTURE_COL_NAME = '3D view';
-
 function customFilter(
   df: DG.DataFrame, ptmMap: {[key: string]: string}, cdrMap: {[key: string]: string}, referenceDf: DG.DataFrame,
   indexes: Int32Array) {
@@ -249,12 +247,12 @@ export class MolecularLiabilityBrowser {
     this.mlbView.ribbonMenu.clear();
 
     this.mlbView.name = "Molecular Liability Browser";
-    this.mlbView.grid.columns.byName(_STRUCTURE_COL_NAME)!.width = 100;
-    this.mlbView.grid.columns.byName(_STRUCTURE_COL_NAME)!.cellType = 'html';
-
-    //table visual polishing
     for (let column of this.mlbTable.columns)
       column.name = column.name.replaceAll("_", " ");
+    this.mlbView.grid.columns.byName("v id")!.width = 120;
+    this.mlbView.grid.columns.byName("v id")!.cellType = 'html';
+
+    //table visual polishing
 
     this.mlbView.grid.onCellRender.subscribe(function (args) {
       if (args.cell.isColHeader) {
@@ -266,14 +264,19 @@ export class MolecularLiabilityBrowser {
     });
 
     this.mlbView.grid.onCellPrepare((gc) => {
-      if (gc.isTableCell && gc.gridColumn.name === _STRUCTURE_COL_NAME && this.vids.includes(gc.cell.value.toString())) {
-        //debugger;
-        gc.style.element = ui.divV([
-          ui.button("View", () => {
-            this.vIdInput.value = gc.cell.value;
-            this.changeVid();
-          })
-        ]);
+      if (gc.isTableCell && gc.gridColumn.name === "v id") {
+        if(this.vids.includes(gc.cell.value.toString())){
+          gc.style.element = ui.divV([
+            ui.link(gc.cell.value.toString(), () => {
+              this.vIdInput.value = gc.cell.value;
+              this.changeVid();
+            })
+          ], {style:{position: 'absolute', top:'calc(50% - 8px)', left: '5px'}})
+        } else{
+          gc.style.element = ui.divV([
+            ui.label(gc.cell.value.toString())
+          ], {style:{position: 'absolute', top:'calc(50% - 8px)', left: '5px'}});
+        }
       }
     });
   }
@@ -392,10 +395,10 @@ export class MolecularLiabilityBrowser {
 
     ////////////////////////////////////////////////////
     this.mlbTable = (await grok.data.loadTable(_package.webRoot + 'src/examples/mlb.csv'));
+    this.mlbTable.columns.remove('ngl');
     for (let column of this.mlbTable.columns)
       column.name = column.name.replaceAll("_", " ");
 
-    this.mlbTable.columns.byName('ngl').name = _STRUCTURE_COL_NAME;
     // let vidsRaw = (await grok.functions.call('MolecularLiabilityBrowser:getVids'));
     this.vids = ["VR000000008", "VR000000043", "VR000000044"];
     this.vidsObsPTMs = ["VR000000044"];
