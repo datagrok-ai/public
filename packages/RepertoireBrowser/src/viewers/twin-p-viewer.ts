@@ -114,10 +114,10 @@ export class TwinPviewer {
     // ---- DOCKING ----
     if (!this.isOpened) {
       this.isOpened = true;
-      this.panelNode = mlbView.dockManager.dock(this.root, 'right', null, 'NGL');
-      this.nglNode = mlbView.dockManager.dock(this.nglHost, 'left', this.panelNode, 'NGL');
+      this.panelNode = mlbView.dockManager.dock(this.root, DG.DOCK_TYPE.RIGHT, null, 'NGL', 0.2);
+      this.nglNode = mlbView.dockManager.dock(this.nglHost, DG.DOCK_TYPE.LEFT, this.panelNode, 'NGL', 0.3);
       //@ts-ignore
-      this.sequenceNode = mlbView.dockManager.dock(this.sequenceTabs, 'down', this.nglNode, 'Sequence', 0.225);
+      this.sequenceNode = mlbView.dockManager.dock(this.sequenceTabs, DG.DOCK_TYPE.DOWN, this.nglNode, 'Sequence', 0.225);
       MiscMethods.setDockSize(mlbView, this.nglNode, this.sequenceTabs);
     }
   }

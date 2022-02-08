@@ -4,7 +4,7 @@ import * as DG from "datagrok-api/dg";
 
 
 export class TreeBrowser {
-  async init(df) {
+  async init(df, mlbView: DG.TableView) {
     let treeCol = df.col('TREE');
     let cloneId = df.col('CLONE');
     let processed = null;
@@ -35,7 +35,7 @@ export class TreeBrowser {
     treeCol.semType = 'newick';
     df.currentRow = 1;
 
-    let view = grok.shell.addTableView(df);
+    //let view = grok.shell.addTableView(df);
     let grid = DG.Viewer.grid(processed);
     let tree = DG.Viewer.fromType('PhyloTree', df);
     let trees = DG.Viewer.fromType(DG.VIEWER.NETWORK_DIAGRAM, processed, {
@@ -44,12 +44,12 @@ export class TreeBrowser {
       edgeColorColumnName: 'edgeColor'
     });  
 
-    view.addViewer(tree);
-    view.dockManager.dock(tree, DG.DOCK_TYPE.RIGHT);
+    //view.addViewer(tree);
+    let treeNode = mlbView.dockManager.dock(tree, DG.DOCK_TYPE.DOWN);
 
-    view.addViewer(grid);
-    let gridNode = view.dockManager.dock(grid, DG.DOCK_TYPE.DOWN);
+    //mlbView.addViewer(grid);
+    //let gridNode = mlbView.dockManager.dock(grid, DG.DOCK_TYPE.DOWN);
 
-    view.dockManager.dock(trees, DG.DOCK_TYPE.RIGHT, gridNode);
+    mlbView.dockManager.dock(trees, DG.DOCK_TYPE.RIGHT, treeNode);
   }
 }
