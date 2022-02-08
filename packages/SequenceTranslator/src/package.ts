@@ -151,7 +151,7 @@ function getObjectWithCodesAndSmiles() {
   return obj;
 }
 
-function sequenceToSmiles(sequence: string) {
+export function sequenceToSmiles(sequence: string) {
   const obj = getObjectWithCodesAndSmiles();
   let codes = sortByStringLengthInDescendingOrder(Object.keys(obj));
   let i = 0, smiles = '', codesList = [];
