@@ -1,12 +1,16 @@
 import * as grok from 'datagrok-api/grok';
-import * as ui from 'datagrok-api/ui';
 import * as DG from 'datagrok-api/dg';
 
 import {chemSpace} from './chem-space';
 import * as chemSearches from '../chem-searches';
 
-/** Searches for activity cliffs in a chemical dataset by selected cutoff*/
-export async function getActivityCliffs(df: DG.DataFrame, smiles: DG.Column, activities: DG.Column, similarity: number, methodName: string) {
+// Searches for activity cliffs in a chemical dataset by selected cutoff
+export async function getActivityCliffs(
+  df: DG.DataFrame,
+  smiles: DG.Column,
+  activities: DG.Column,
+  similarity: number,
+  methodName: string) {
   const automaticSimilarityLimit = false;
   const MIN_SIMILARITY = 80;
 
@@ -16,25 +20,14 @@ export async function getActivityCliffs(df: DG.DataFrame, smiles: DG.Column, act
   else
     initialSimilarityLimit = similarity / 100;
 
-
-  const colSmiles = DG.Column.fromList('string', 'smiles', smiles.toList());
-  const dfSmiles = DG.DataFrame.fromColumns([colSmiles]);
-
-  const arrSmiles = smiles.toList();
-  const dim = arrSmiles.length;
-  let simArr: DG.Column[] = Array(dim -1);//[(dim*dim - dim/2)];
-
+  const dfSmiles = DG.DataFrame.fromColumns([DG.Column.fromList('string', 'smiles', smiles.toList())]);
+  const dim = smiles.length;
+  const simArr: DG.Column[] = Array(dim -1);
 
   for (let i = 0; i != dim - 1; ++i) {
-    const mol = arrSmiles[i];
-    const dfSmilesNew = dfSmiles.clone();
-    dfSmilesNew.rows.removeAt(0, i + 1, false);
-   //const tmp = await grok.chem.getSimilarities(dfSmilesNew.col('smiles')!, mol);
- 
-    // if(i == 4){
-    //   let a =5;
-    // } 
-    simArr[i] = (await chemSearches.chemGetSimilarities(dfSmilesNew.col('smiles')!, mol))!;
+    const mol = smiles.get(i);
+    dfSmiles.rows.removeAt(0, 1, false);
+    simArr[i] = (await chemSearches.chemGetSimilarities(dfSmiles.col('smiles')!, mol))!;
   }
 
   const optSimilarityLimit = initialSimilarityLimit;
@@ -47,12 +40,6 @@ export async function getActivityCliffs(df: DG.DataFrame, smiles: DG.Column, act
 
   for (let i = 0; i != dim - 1; ++i) {
     for (let j = 0; j != dim - 1 - i; ++j) {
-
-      if(i == 4 && j == 0){
-        let a =5;
-      } 
-  
-
       const sim: number = simArr[i].get(j);
 
       if (sim >= optSimilarityLimit) {
@@ -87,11 +74,11 @@ export async function getActivityCliffs(df: DG.DataFrame, smiles: DG.Column, act
   }
 
   const sali = DG.Column.fromList('double', 'sali', saliCount);
-  const coords = await chemSpace(smiles, methodName, "Tanimoto");
+  const coords = await chemSpace(smiles, methodName, 'Tanimoto');
 
   for (const col of coords)
     df.columns.add(col);
-  
+
   df.columns.add(sali);
 
   const view = grok.shell.getTableView(df.name);
@@ -126,7 +113,7 @@ function renderLines(sp: DG.Viewer, n1: number[], n2: number[]) {
 
     const num1 = n1[i];
     const num2 = n2[i];
-    
+
     //@ts-ignore
     const pointFrom = sp.worldToScreen(x.get(num1), y.get(num1));
     ctx.lineTo(pointFrom.x, pointFrom.y);

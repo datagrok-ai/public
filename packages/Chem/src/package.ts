@@ -84,8 +84,8 @@ export function substructureFilter() {
 //input: string molString
 //input: string scaffoldMolString
 export function canvasMol(
-    x: number, y: number, w: number, h: number, canvas: HTMLCanvasElement,
-    molString: string, scaffoldMolString: string | null = null) {
+  x: number, y: number, w: number, h: number, canvas: HTMLCanvasElement,
+  molString: string, scaffoldMolString: string | null = null) {
   drawMoleculeToCanvas(x, y, w, h, canvas, molString, scaffoldMolString == '' ? null : scaffoldMolString);
 }
 
@@ -198,8 +198,8 @@ export async function findSimilar(molStringsColumn: DG.Column, molString: string
 //input: string molStringSmarts
 //output: column result
 export async function searchSubstructure(
-    molStringsColumn: DG.Column, molString: string,
-    substructLibrary: boolean, molStringSmarts: string) {
+  molStringsColumn: DG.Column, molString: string,
+  substructLibrary: boolean, molStringSmarts: string) {
   assure.notNull(molStringsColumn, 'molStringsColumn');
   assure.notNull(molString, 'molString');
   assure.notNull(substructLibrary, 'substructLibrary');
@@ -226,7 +226,7 @@ export function descriptorsApp(context: any) {
 //name: saveAsSdf
 //description: Save as SDF
 //tags: fileExporter
-export function saveAsSdf() { _saveAsSdf(); }
+export function saveAsSdf() {_saveAsSdf();}
 
 //#region Top menu
 
@@ -238,8 +238,12 @@ export function saveAsSdf() { _saveAsSdf(); }
 //input: column activities
 //input: double similarity = 80 [Similarity cutoff]
 //input: string methodName { choices:["UMAP", "t-SNE", "SPE"] }
-export async function activityCliffs(dataframe: DG.DataFrame, smiles: DG.Column, activities: DG.Column, similarity: number, methodName: string) {
-  await getActivityCliffs(dataframe, smiles, activities, similarity, methodName);
+export async function activityCliffs(df: DG.DataFrame,
+  smiles: DG.Column,
+  activities: DG.Column,
+  similarity: number,
+  methodName: string) {
+  await getActivityCliffs(df, smiles, activities, similarity, methodName);
 }
 
 //top-menu: Chem | Chemical Space...
@@ -250,13 +254,17 @@ export async function activityCliffs(dataframe: DG.DataFrame, smiles: DG.Column,
 //input: string similarityMetric { choices:["Tanimoto", "Dice", "Asymmetric", "Braun-Blanquet", "Cosine", "Kulczynski", "Mc-Connaughey", "Rogot-Goldberg", "Russel", "Sokal"] }
 //input: bool plotEmbeddings = true
 //output: viewer result
-export async function chemSpaceTopMenu(table: DG.DataFrame, smiles: DG.Column, methodName: string, similarityMetric: string = 'Tanimoto', plotEmbeddings: boolean) {
+export async function chemSpaceTopMenu(table: DG.DataFrame,
+  smiles: DG.Column,
+  methodName: string,
+  similarityMetric: string = 'Tanimoto',
+  plotEmbeddings: boolean) {
   return new Promise<void>(async (resolve, reject) => {
     const embeddings = await chemSpace(smiles, methodName, similarityMetric);
-    let cols = table.columns as DG.ColumnList;
-    for (const col of embeddings) {
+    const cols = table.columns as DG.ColumnList;
+    for (const col of embeddings)
       cols.add(col);
-    }
+
     const view = grok.shell.addTableView(table);
     if (plotEmbeddings)
       view.scatterPlot({x: 'Embed_X', y: 'Embed_Y'});
@@ -470,8 +478,8 @@ export function diversitySearchTopMenu() {
 //meta.role: converter
 //meta.inputRegexp: InChI\=.+
 export function inchiToSmiles(id: string) {
-  let mol = chemCommonRdKit.getRdKitModule().get_mol(id);
-  let smiles = mol.get_smiles();
+  const mol = chemCommonRdKit.getRdKitModule().get_mol(id);
+  const smiles = mol.get_smiles();
   mol.delete();
   return smiles;
 }
