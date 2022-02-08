@@ -28,6 +28,8 @@ jobs:
           JSCPD_CONFIG_FILE: .jscpd.json
           MARKDOWN_CONFIG_FILE: .markdownlint.yaml
           NATURAL_LANGUAGE_CONFIG_FILE: .textlintrc
+          JAVASCRIPT_ES_CONFIG_FILE: ../../tools/package-template/.eslintrc.json
+          TYPESCRIPT_ES_CONFIG_FILE: ../../tools/package-template/.eslintrc.json
           VALIDATE_ALL_CODEBASE: false
           IGNORE_GITIGNORED_FILES: true
           VALIDATE_BASH: true
