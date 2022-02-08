@@ -252,7 +252,7 @@ export class StackedBarChart extends DG.JsViewer {
       barData.forEach((obj, index) => {
         const sBarHeight = h * obj['count'] / this.max;
         const gapSize = sBarHeight * innerMargin;
-        const [, aarOuter,,] = cp.getColorAAPivot(obj['name']);
+        const [color, aarOuter,,] = cp.getColorAAPivot(obj['name']);
         const textSize = g.measureText(aarOuter);
         const fontSize = 11;
         const leftMargin = (w - (aarOuter.length > 1 ? fontSize : textSize.width - 8)) / 2;
@@ -261,12 +261,17 @@ export class StackedBarChart extends DG.JsViewer {
         const absX = x + leftMargin;
         const absY = y + h * verticalShift + gapSize / 2 + subBartHeight / 2 + (aarOuter.length == 1 ? + 4 : 0);
 
-        g.strokeStyle = cp.getColor(obj['name']);
-        g.fillStyle = cp.getColor(obj['name']);
+        g.strokeStyle = color;
+        g.fillStyle = color;
         if (textSize.width <= subBartHeight) {
           const origTransform = g.getTransform();
 
-          g.strokeRect(x, y + h * verticalShift + gapSize / 2, w, subBartHeight);
+          if (color != ChemPalette.undefinedColor) {
+            g.fillRect(x, y + h * verticalShift + gapSize / 2, w, subBartHeight);
+            g.fillStyle = 'black';
+          }
+          else
+            g.strokeRect(x + 0.5, y + h * verticalShift + gapSize / 2, w - 1, subBartHeight);
 
           g.font = `${fontSize}px monospace`;
           g.textAlign = 'center';
@@ -287,7 +292,7 @@ export class StackedBarChart extends DG.JsViewer {
         if (this.selectionMode && obj['selectedCount'] > 0) {
           g.fillStyle = 'rgb(255,165,0)';
           g.fillRect(
-            x - w * selectLineRatio * 1.5,
+            x - w * selectLineRatio * 2,
             y + h * verticalShift + gapSize / 2,
             w * selectLineRatio,
             h * obj['selectedCount'] / this.max - gapSize
@@ -348,7 +353,7 @@ export class StackedBarChart extends DG.JsViewer {
       const margin = 0.2;
       const bound = cell.bounds;
       const x = bound.x + bound.width * margin;
-      const y = 130 * margin / 8 - 3;
+      const y = 130 * margin / 8;
       const w = bound.width - bound.width * margin * 2;
       const h = 130 - 130 * margin / 2;
       const barData = this.barStats[colName];
@@ -358,6 +363,7 @@ export class StackedBarChart extends DG.JsViewer {
         sum += obj['count'];
       });
 
+      this.highlighted = null;
       barData.forEach((obj, index) => {
         const sBarHeight = h * obj['count'] / this.max;
         const start = h * (this.max - sum) / this.max;
