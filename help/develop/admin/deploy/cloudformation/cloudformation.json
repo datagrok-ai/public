@@ -954,7 +954,7 @@
         }
       }
     },
-    "GrokcomputeService": {
+    "GrokComputeService": {
       "DependsOn": [
         "CvmTCP80Listener",
         "CvmTCP443Listener",
@@ -1419,7 +1419,7 @@
         ],
         "Tags": [
           {
-            "Key": "datarok.component",
+            "Key": "datagrok.component",
             "Value": "cvm"
           },
           {
