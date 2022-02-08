@@ -10,25 +10,25 @@
     "JupyterKernelGatewayVersion": {
       "Type": "String",
       "Default": "latest",
-      "AllowedPattern": "([0-9]+\\.[0-9]+\\.[0-9]+)|latest|stable",
+      "AllowedPattern": "([0-9]+\\.[0-9]+\\.[0-9]+)|latest",
       "Description": "Enter Datagrok Jupyter Kernel Gateway docker image version. Default is 'latest'."
     },
     "JupyterNotebookVersion": {
       "Type": "String",
       "Default": "latest",
-      "AllowedPattern": "([0-9]+\\.[0-9]+\\.[0-9]+)|latest|stable",
+      "AllowedPattern": "([0-9]+\\.[0-9]+\\.[0-9]+)|latest",
       "Description": "Enter Datagrok Jupyter Notebook docker image version. Default is 'latest'."
     },
     "GrokComputeVersion": {
       "Type": "String",
       "Default": "latest",
-      "AllowedPattern": "([0-9]+\\.[0-9]+\\.[0-9]+)|latest|stable",
+      "AllowedPattern": "([0-9]+\\.[0-9]+\\.[0-9]+)|latest",
       "Description": "Enter Grok Compute docker image version. Default is 'latest'."
     },
     "H2oVersion": {
       "Type": "String",
       "Default": "latest",
-      "AllowedPattern": "([0-9]+\\.[0-9]+\\.[0-9]+)|latest|stable",
+      "AllowedPattern": "([0-9]+\\.[0-9]+\\.[0-9]+)|latest",
       "Description": "Enter Datagrok H2O docker image version. Default is 'latest'."
     },
     "ArnDatagrokCertificate": {
