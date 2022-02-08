@@ -34,19 +34,16 @@
     "ArnDatagrokCertificate": {
       "Type": "String",
       "AllowedPattern": "(arn:([^:\\n]*):([^:\\n]*):([^:\\n]*):([^:\\n]*):(([^:\\/\\n]*)[:\\/])?(.*))?",
-      "Default": "",
       "Description": "AWS ACM certificate ARN for Datagrok ALB. Required parameter."
     },
     "ArnCvmCertificate": {
       "Type": "String",
       "AllowedPattern": "(arn:([^:\\n]*):([^:\\n]*):([^:\\n]*):([^:\\n]*):(([^:\\/\\n]*)[:\\/])?(.*))?",
-      "Default": "",
       "Description": "AWS ACM certificate ARN for CVM ALB. Required parameter."
     },
     "ArnDockerHubCredential": {
       "Type": "String",
       "AllowedPattern": "(arn:([^:\\n]*):([^:\\n]*):([^:\\n]*):([^:\\n]*):(([^:\\/\\n]*)[:\\/])?(.*))?",
-      "Default": "",
       "Description": "AWS Secret Manager ARN for Docker Hub secret. Required parameter."
     }
   },
