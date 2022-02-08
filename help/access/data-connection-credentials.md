@@ -1,3 +1,6 @@
+<!-- TITLE: Data connection credentials-->
+<!-- SUBTITLE: -->
+
 # Credentials
 
 Any used data source requires authentication to access the data. Credentials (logins, passwords, etc) can be specified
@@ -34,13 +37,13 @@ Secret with Name `biodb01` is created in AWS Secrets Manager using command:
 In Datagrok Platform we should perform the following actions:
 
 1. Create connection aws-sm-bio to AWS Secret Manager (later we can use this connection for other secret names)
-   ![](data-connection-secret-p01.png)
+   ![Create connection to AWS Secret Manager](data-connection-secret-p01.png)
 
 2. Create connection type Postgres to database biodb01 with name biodb01-connection. It is important to select
    aws-sm-bio created at the previous step and specify the correct secret name.  
-   ![](data-connection-secret-p02.png)
+   ![Add new Data connection](data-connection-secret-p02.png)
 
 3. Click test to ensure that secret name is correct.
-   ![](data-connection-secret-p03.png)
+   ![Test connection](data-connection-secret-p03.png)
 
 4. Click OK. Save setting.
