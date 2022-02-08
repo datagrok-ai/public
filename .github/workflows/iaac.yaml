@@ -3,7 +3,7 @@ name: "IaaC script Security Scan"
 on:
   push:
     paths:
-      - 'help/develop/admin/deploy/cloudformation.json'
+      - 'help/develop/admin/deploy/cloudformation/cloudformation.json'
     branches:
       - 'master'
 jobs:
