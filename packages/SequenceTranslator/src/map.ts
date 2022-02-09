@@ -15,8 +15,8 @@ export const TECHNOLOGIES = {
 // }
 export const MODIFICATIONS: {[index: string]: {left: string, right: string}} = {
   '(invabasic)': {
-    left: 'OC1CCOC1COP(=O)(S[H])O',
-    right: 'OP(=O)(S[H])OCC1OCCC1O',
+    left: 'O[C@@H]1C[C@@H]O[C@H]1CO',
+    right: 'O[C@@H]1C[C@@H]O[C@H]1CO',
   },
   '(GalNAc-2-JNJ)': {
     left: 'C(COCCC(=O)NCCCNC(=O)CCCCOC2OC(CO)C(O)C(O)C2NC(=O)C)' +
