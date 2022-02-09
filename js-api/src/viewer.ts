@@ -209,6 +209,10 @@ export class Viewer extends Widget {
       }
     );
   }
+
+  removeFromView() {
+    return toJs(api.grok_Viewer_Remove_From_View(this.dart));
+  }
 }
 
 
