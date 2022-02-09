@@ -144,9 +144,9 @@ function sortByStringLengthInDescendingOrder(array: string[]): string[] {
 }
 
 function getObjectWithCodesAndSmiles() {
-  let obj: {[code: string]: string} = {};
-  for (let synthesizer of Object.keys(map))
-    for (let technology of Object.keys(map[synthesizer]))
+  const obj: {[code: string]: string} = {};
+  for (const synthesizer of Object.keys(map))
+    for (const technology of Object.keys(map[synthesizer]))
       for (let code of Object.keys(map[synthesizer][technology]))
         obj[code] = map[synthesizer][technology][code].SMILES;
   return obj;
@@ -155,27 +155,35 @@ function getObjectWithCodesAndSmiles() {
 export function sequenceToSmiles(sequence: string) {
   const obj = getObjectWithCodesAndSmiles();
   let codes = sortByStringLengthInDescendingOrder(Object.keys(obj));
-  let i = 0, smiles = '', codesList = [];
+  let i = 0;
+  let smiles = '';
+  const codesList = [];
   const links = ['s', 'ps', '*'];
-  const includesStandardLinkAlready = ['e', 'h', 'g', 'f', 'i', 'l', 'k', 'j'];
+  const includesStandardLinkAlready = ['e', 'h', /*'g'*/, 'f', 'i', 'l', 'k', 'j'];
   const dropdowns = Object.keys(MODIFICATIONS);
   codes = codes.concat(dropdowns);
   while (i < sequence.length) {
-    let code = codes.find((s: string) => s == sequence.slice(i, i + s.length))!;
+    const code = codes.find((s: string) => s == sequence.slice(i, i + s.length))!;
     i += code.length;
     codesList.push(code);
   }
   for (let i = 0; i < codesList.length; i++) {
     if (dropdowns.includes(codesList[i])) {
-      smiles += (i >= codesList.length / 2) ?
-        MODIFICATIONS[codesList[i]].right :
-        MODIFICATIONS[codesList[i]].left;
+      if (i == codesList.length -1 || (i < codesList.length - 1 && links.includes(codesList[i + 1]))) {
+        smiles += (i >= codesList.length / 2) ?
+          MODIFICATIONS[codesList[i]].right:
+          MODIFICATIONS[codesList[i]].left;
+      } else if (i < codesList.length - 1) {
+        smiles += (i >= codesList.length / 2) ?
+          MODIFICATIONS[codesList[i]].right + stadardPhosphateLinkSmiles:
+          MODIFICATIONS[codesList[i]].left + stadardPhosphateLinkSmiles;
+      }
     } else {
       if (links.includes(codesList[i]) && i > 1 && !includesStandardLinkAlready.includes(codesList[i - 1]))
         smiles = smiles.slice(0, smiles.length - stadardPhosphateLinkSmiles.length + 1);
       else if (links.includes(codesList[i]) ||
         includesStandardLinkAlready.includes(codesList[i]) ||
-        (i < codesList.length - 1 && (links.includes(codesList[i + 1]) || dropdowns.includes(codesList[i + 1])))
+        (i < codesList.length - 1 && links.includes(codesList[i + 1]))
       )
         smiles += obj[codesList[i]];
       else
@@ -199,8 +207,7 @@ export function sequenceToSmiles(sequence: string) {
 //name: Sequence Translator
 //tags: app
 export function sequenceTranslator() {
-
-  let windows = grok.shell.windows;
+  const windows = grok.shell.windows;
   windows.showProperties = false;
   windows.showToolbox = false;
   windows.showHelp = false;
@@ -208,11 +215,11 @@ export function sequenceTranslator() {
   function updateTableAndMolecule(sequence: string) {
     moleculeSvgDiv.innerHTML = '';
     outputTableDiv.innerHTML = '';
-    let pi = DG.TaskBarProgressIndicator.create('Rendering table and molecule...');
+    const pi = DG.TaskBarProgressIndicator.create('Rendering table and molecule...');
     try {
-      let outputSequenceObj = convertSequence(sequence);
-      let tableRows = [];
-      for (let key of Object.keys(outputSequenceObj).slice(1)) {
+      const outputSequenceObj = convertSequence(sequence);
+      const tableRows = [];
+      for (const key of Object.keys(outputSequenceObj).slice(1)) {
         tableRows.push({
           'key': key,
           'value': ('indexOfFirstNotValidCharacter' in outputSequenceObj) ?
