@@ -482,8 +482,10 @@ export async function describe(
   (df.columns as DG.ColumnList).replace(oldScaledCol, scaledCol);
   if (newColName === activityColumn)
     sourceGrid.col(activityColumn)!.name = `~${activityColumn}`;
-  oldScaledGridCol!.name = newColName;
-  oldScaledGridCol!.visible = true;
+  if (oldScaledGridCol !== null) {
+    oldScaledGridCol.name = newColName;
+    oldScaledGridCol.visible = true;
+  }
   sourceGrid.columns.setOrder([newColName]);
 
   splitSeqDf = splitSeqDf.clone(initialBitset);
