@@ -366,7 +366,7 @@ export enum DEMO_DATASET {
 export enum DOCK_TYPE {
   LEFT = "left",
   RIGHT = "right",
-  TOP = "top",
+  TOP = "up",
   DOWN = "down",
   FILL = "fill",
 }
