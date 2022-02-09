@@ -89,6 +89,8 @@ export class Peptides {
       currentDf, col, 't-SNE', 'Levenshtein', 100, view, `${options['activityColumnName']}Scaled`);
     // const psNode = view.dockManager.dock(peptideSpaceViewer, DG.DOCK_TYPE.LEFT, sarNode, 'Peptide Space Viewer', 0.3);
 
+    let viewerGroup1 = [sarViewer, sarViewerVertical, peptideSpaceViewer];
+
     // const layout1 = view.saveLayout();
     // const nodeList = [sarNode, sarVNode];
     let nodeList = dockSAR(sarViewer, sarViewerVertical, peptideSpaceViewer);
@@ -96,6 +98,7 @@ export class Peptides {
     const substViewer = await currentDf.plot.fromType(
       'substitution-analysis-viewer', {'activityColumnName': `${options['activityColumnName']}Scaled`}) as SubstViewer;
     // const substNode = view.dockManager.dock(substViewer, DG.DOCK_TYPE.RIGHT, null, 'Substitution Analysis');
+    let viewerGroup2 = [substViewer];
 
     // const layout2 = view.saveLayout();
     // view.dockManager.close(substNode);
@@ -132,54 +135,16 @@ export class Peptides {
     //TODO: fix layouts
     const switchViewers = ui.iconFA('toggle-on', () => {
       $(switchViewers).toggleClass('fa-toggle-off').toggleClass('fa-toggle-on');
-      nodeList.forEach(node => view.dockManager.close(node));
+      nodeList.forEach(node => {
+        view.dockManager.close(node);
+        node.container.destroy();
+      });
+      (isSA ? viewerGroup2 : viewerGroup1).forEach((v) => v.removeFromView());
       nodeList = isSA ? dockSAR(sarViewer, sarViewerVertical, peptideSpaceViewer) : dockSubst(substViewer);
       isSA = !isSA;
-    });
-    // const switchViewers = ui.iconFA('toggle-on', async () => {
-    //   currentDf.filter.copyFrom(initialFiter);
-    //   currentDf.selection.setAll(false);
-    //   // nodeList.forEach((node) => view.dockManager.close(node));
-    //   viewerList.forEach((viewer) => viewer.close());
-    //   viewerList.length = 0;
-    //   // nodeList.length = 0;
-    //   if (isSA) {
-    //     const sarViewer = view.addViewer('peptide-sar-viewer', options);
-    //     sarViewer.helpUrl = helpUrl;
-    //     // const sarNode = view.dockManager.dock(sarViewer, DG.DOCK_TYPE.DOWN, null, 'SAR Viewer');
-
-    //     const sarViewerVertical = view.addViewer('peptide-sar-viewer-vertical');
-    //     sarViewerVertical.helpUrl = helpUrl;
-    //     //const sarVNode = view.dockManager.dock(sarViewerVertical, DG.DOCK_TYPE.RIGHT, sarNode, 'SAR Vertical Viewer');
-
-    //     const peptideSpaceViewer = await createPeptideSimilaritySpaceViewer(
-    //       currentDf, col, 't-SNE', 'Levenshtein', 100, view, `${options['activityColumnName']}Scaled`);
-    //     // const psNode = view.dockManager.dock(
-    //     //   peptideSpaceViewer, DG.DOCK_TYPE.LEFT, sarNode, 'Peptide Space Viewer', 0.3);
-
-    //     // nodeList.push(sarVNode);
-    //     // nodeList.push(psNode);
-    //     // nodeList.push(sarNode);
-    //     viewerList.concat([sarViewer, sarViewerVertical, peptideSpaceViewer]);
-
-    //     $(switchViewers).removeClass('fa-toggle-off');
-    //     $(switchViewers).addClass('fa-toggle-on');
-    //   } else {
-    //     const substViewer = view.addViewer(
-    //       'substitution-analysis-viewer', {'activityColumnName': `${options['activityColumnName']}Scaled`},
-    //     );
-    //     substViewer.helpUrl = helpUrl;
-    //     // nodeList.push(view.dockManager.dock(substViewer, DG.DOCK_TYPE.DOWN, null, 'Substitution Analysis'));
-    //     viewerList.push(substViewer);
-    //     $(switchViewers).removeClass('fa-toggle-on');
-    //     $(switchViewers).addClass('fa-toggle-off');
-    //   }
-    //   // currentDf.temp['viewerGroup'] = isSA ? 'SAR' : 'Subst';
-    //   isSA = !isSA;
-    // });
+    }, 'Toggle viewer group');
 
     const ribbonPanels = view.getRibbonPanels();
     view.setRibbonPanels([[hideIcon, switchViewers]]);
-    // view.setRibbonPanels([[hideIcon]]);
   }
 }
