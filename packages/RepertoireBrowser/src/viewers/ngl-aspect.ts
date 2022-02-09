@@ -17,7 +17,7 @@ export class NglAspect {
   public async init(view: DG.TableView, pdbStr: string, json: any, colorScheme: any, nglHost: HTMLElement,
     repChoice: DG.InputBase, cdrScheme: DG.InputBase, paratopes: DG.InputBase, twinSelections: any) {
     this.colorScheme = colorScheme;
-    nglHost.style.backgroundColor = this.colorScheme['col_background'];
+    nglHost.style.backgroundColor = this.colorScheme['colBackground'];
     view.box = true;
     this.pdbStr = pdbStr;
     this.json = json;
@@ -37,11 +37,11 @@ export class NglAspect {
     const colHeavyChain = this.colorScheme['colHeavyChain'];
     const colLightChain = this.colorScheme['colLightChain'];
     const colCdr = this.colorScheme['colCdr'];
-    const colPara = this.colorScheme['col_para'];
-    const colPartopesLow = this.colorScheme['col_partopes_low']; //col_para in rgb
-    const colPartopesHigh = this.colorScheme['col_partopes_high'];
+    const colPara = this.colorScheme['colPara'];
+    const colPartopesLow = this.colorScheme['colPartopesLow']; //col_para in rgb
+    const colPartopesHigh = this.colorScheme['colPartopesHigh'];
     const colHighlight = (this.cdrScheme.value === 'default' || this.paratopes.value === true) ?
-      this.colorScheme['col_highlight'] : this.colorScheme['col_highlight_cdr'];
+      this.colorScheme['colHighlight'] : this.colorScheme['colHighlightCdr'];
 
     //highlights in NGL
     const schemeBuffer: string[][] = [];
