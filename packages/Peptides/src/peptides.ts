@@ -145,16 +145,16 @@ export class Peptides {
       if (isSA) {
         const sarViewer = view.addViewer('peptide-sar-viewer', options);
         sarViewer.helpUrl = helpUrl;
-        const sarNode = view.dockManager.dock(sarViewer, DG.DOCK_TYPE.DOWN, null, 'SAR Viewer');
+        const sarNode = view.dockManager.dock(sarViewer, DG.DOCK_TYPE.DOWN, view.dockNode, 'SAR Viewer', 0.3);
 
         const sarViewerVertical = view.addViewer('peptide-sar-viewer-vertical');
         sarViewerVertical.helpUrl = helpUrl;
-        const sarVNode = view.dockManager.dock(sarViewerVertical, DG.DOCK_TYPE.RIGHT, sarNode, 'SAR Vertical Viewer');
+        const sarVNode = view.dockManager.dock(sarViewerVertical, DG.DOCK_TYPE.RIGHT, view.dockNode, 'SAR Vertical Viewer', 0.3);
 
         const peptideSpaceViewer = await createPeptideSimilaritySpaceViewer(
           currentDf, col, 't-SNE', 'Levenshtein', 100, view, `${options['activityColumnName']}Scaled`);
         const psNode = view.dockManager.dock(
-          peptideSpaceViewer, DG.DOCK_TYPE.LEFT, sarNode, 'Peptide Space Viewer', 0.3);
+          peptideSpaceViewer, DG.DOCK_TYPE.LEFT, view.dockNode, 'Peptide Space Viewer', 0.3);
 
         nodeList.push(sarNode);
         nodeList.push(sarVNode);
@@ -169,7 +169,7 @@ export class Peptides {
           'substitution-analysis-viewer', {'activityColumnName': `${options['activityColumnName']}Scaled`},
         );
         substViewer.helpUrl = helpUrl;
-        nodeList.push(view.dockManager.dock(substViewer, DG.DOCK_TYPE.DOWN, null, 'Substitution Analysis'));
+        nodeList.push(view.dockManager.dock(substViewer, DG.DOCK_TYPE.DOWN, view.dockNode, 'Substitution Analysis'));
 
         adjustCellSize(tableGrid);
 

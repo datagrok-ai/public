@@ -427,15 +427,20 @@ function postProcessGrids(
       cell.style.backColor = DG.Color.lightLightGray;
   });
 
-  let rowHeight = sarGrid.props.rowHeight;
-  for (const col of (matrixDf.columns as DG.ColumnList).names())
-    sarGrid.col(col)!.width = rowHeight;
-
-  rowHeight = sarVGrid.props.rowHeight;
   const mdCol: DG.GridColumn = sarVGrid.col('Mean difference')!;
   mdCol.name = 'Diff';
-  mdCol.width = rowHeight;
-  sarVGrid.col(aminoAcidResidue)!.width = rowHeight;
+
+  for (const grid of [sarGrid, sarVGrid]) {
+    grid.props.rowHeight = 20;
+    grid.columns.rowHeader!.width = 20;
+    for (let i = 0; i < grid.columns.length; ++i) {
+      const col = grid.columns.byIndex(i)!;
+      if (grid == sarVGrid && col.name !== 'Diff' && col.name !== 'AAR')
+        col.width = 45;
+      else
+        col.width = grid.props.rowHeight;
+    }
+  }
 
   if (grouping) {
     sarGrid.col(aminoAcidResidue)!.name = 'Groups';
@@ -536,13 +541,6 @@ export async function describe(
   );
 
   postProcessGrids(sourceGrid, invalidIndexes, matrixDf, grouping, aminoAcidResidue, sarGrid, sarVGrid);
-
-  for (const grid of [sarGrid, sarVGrid]) {
-    grid.props.rowHeight = 20;
-    for (let i = 0; i < grid.columns.length; ++i) {
-      grid.columns.byIndex(i)!.width = 40;
-    }
-  }
   
   //TODO: return class instead
   return [sarGrid, sarVGrid, statsDf, groupMapping];
