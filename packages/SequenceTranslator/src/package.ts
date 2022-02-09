@@ -3,36 +3,37 @@ import * as grok from 'datagrok-api/grok';
 import * as ui from 'datagrok-api/ui';
 import * as DG from 'datagrok-api/dg';
 import * as OCL from 'openchemlib/full.js';
-import $ from "cash-dom";
-import {defineAxolabsPattern} from "./defineAxolabsPattern";
-import {map, stadardPhosphateLinkSmiles, SYNTHESIZERS, TECHNOLOGIES, MODIFICATIONS} from "./map";
+import $ from 'cash-dom';
+import {defineAxolabsPattern} from './defineAxolabsPattern';
+import {map, stadardPhosphateLinkSmiles, SYNTHESIZERS, TECHNOLOGIES, MODIFICATIONS} from './map';
 
-export let _package = new DG.Package();
+export const _package = new DG.Package();
 
-const defaultInput = "AGGTCCTCTTGACTTAGGCC";
-const undefinedInputSequence = "Type of input sequence is undefined";
-const noTranslationTableAvailable = "No translation table available";
+const defaultInput = 'AGGTCCTCTTGACTTAGGCC';
+const undefinedInputSequence = 'Type of input sequence is undefined';
+const noTranslationTableAvailable = 'No translation table available';
 const sequenceWasCopied = 'Copied';
 const tooltipSequence = 'Copy sequence';
 
 function getAllCodesOfSynthesizer(synthesizer: string) {
   let codes: string[] = [];
-  for (let technology of Object.keys(map[synthesizer]))
+  for (const technology of Object.keys(map[synthesizer]))
     codes = codes.concat(Object.keys(map[synthesizer][technology]));
   return codes.concat(Object.keys(MODIFICATIONS));
 }
 
 function getListOfPossibleSynthesizersByFirstMatchedCode(sequence: string): string[] {
-  let synthesizers: string[] = [];
+  const synthesizers: string[] = [];
   Object.keys(map).forEach((synthesizer: string) => {
     const codes = getAllCodesOfSynthesizer(synthesizer);
     //TODO: get first non-dropdown code when there are two modifications
     let start = 0;
-    for (let i = 0; i < sequence.length; i++)
+    for (let i = 0; i < sequence.length; i++) {
       if (sequence[i] == ')') {
         start = i + 1;
         break;
       }
+    }
     if (codes.some((s: string) => s == sequence.slice(start, start + s.length)))
       synthesizers.push(synthesizer);
   });
@@ -40,7 +41,7 @@ function getListOfPossibleSynthesizersByFirstMatchedCode(sequence: string): stri
 }
 
 function getListOfPossibleTechnologiesByFirstMatchedCode(sequence: string, synthesizer: string): string[] {
-  let technologies: string[] = [];
+  const technologies: string[] = [];
   Object.keys(map[synthesizer]).forEach((technology: string) => {
     const codes = Object.keys(map[synthesizer][technology]).concat(Object.keys(MODIFICATIONS));
     if (codes.some((s) => s == sequence.slice(0, s.length)))
@@ -50,31 +51,31 @@ function getListOfPossibleTechnologiesByFirstMatchedCode(sequence: string, synth
 }
 
 function isValidSequence(sequence: string) {
-  let possibleSynthesizers = getListOfPossibleSynthesizersByFirstMatchedCode(sequence);
+  const possibleSynthesizers = getListOfPossibleSynthesizersByFirstMatchedCode(sequence);
   if (possibleSynthesizers.length == 0)
-    return { indexOfFirstNotValidCharacter: 0, expectedType: null };
+    return {indexOfFirstNotValidCharacter: 0, expectedType: null};
 
   let outputIndices = Array(possibleSynthesizers.length).fill(0);
 
-  const firstUniqueCharacters = ['r', 'd'], nucleotides = ["A", "U", "T", "C", "G"];
+  const firstUniqueCharacters = ['r', 'd'];
+  const nucleotides = ['A', 'U', 'T', 'C', 'G'];
 
   possibleSynthesizers.forEach((synthesizer, synthesizerIndex) => {
-    let codes = getAllCodesOfSynthesizer(synthesizer);
+    const codes = getAllCodesOfSynthesizer(synthesizer);
     while (outputIndices[synthesizerIndex] < sequence.length) {
-
-      let matchedCode = codes
+      const matchedCode = codes
         .find((c) => c == sequence.slice(outputIndices[synthesizerIndex], outputIndices[synthesizerIndex] + c.length));
 
       if (matchedCode == null)
         break;
 
-      if (  // for mistake pattern 'rAA'
+      if ( // for mistake pattern 'rAA'
         outputIndices[synthesizerIndex] > 1 &&
         nucleotides.includes(sequence[outputIndices[synthesizerIndex]]) &&
         firstUniqueCharacters.includes(sequence[outputIndices[synthesizerIndex] - 2])
       ) break;
 
-      if (  // for mistake pattern 'ArA'
+      if ( // for mistake pattern 'ArA'
         firstUniqueCharacters.includes(sequence[outputIndices[synthesizerIndex] + 1]) &&
         nucleotides.includes(sequence[outputIndices[synthesizerIndex]])
       ) {
@@ -111,7 +112,7 @@ function isValidSequence(sequence: string) {
       if (matchedCode == null)
         break;
 
-      if (  // for mistake pattern 'rAA'
+      if ( // for mistake pattern 'rAA'
         outputIndices[technologyIndex] > 1 &&
         nucleotides.includes(sequence[outputIndices[technologyIndex]]) &&
         firstUniqueCharacters.includes(sequence[outputIndices[technologyIndex] - 2])
@@ -156,7 +157,7 @@ export function sequenceToSmiles(sequence: string) {
   let codes = sortByStringLengthInDescendingOrder(Object.keys(obj));
   let i = 0, smiles = '', codesList = [];
   const links = ['s', 'ps', '*'];
-  const includesStandardLinkAlready = ["e", "h", "g", "f", "i", "l", "k", "j"];
+  const includesStandardLinkAlready = ['e', 'h', 'g', 'f', 'i', 'l', 'k', 'j'];
   const dropdowns = Object.keys(MODIFICATIONS);
   codes = codes.concat(dropdowns);
   while (i < sequence.length) {
@@ -205,8 +206,8 @@ export function sequenceTranslator() {
   windows.showHelp = false;
 
   function updateTableAndMolecule(sequence: string) {
-    moleculeSvgDiv.innerHTML = "";
-    outputTableDiv.innerHTML = "";
+    moleculeSvgDiv.innerHTML = '';
+    outputTableDiv.innerHTML = '';
     let pi = DG.TaskBarProgressIndicator.create('Rendering table and molecule...');
     try {
       let outputSequenceObj = convertSequence(sequence);
@@ -214,12 +215,12 @@ export function sequenceTranslator() {
       for (let key of Object.keys(outputSequenceObj).slice(1)) {
         tableRows.push({
           'key': key,
-          'value': ("indexOfFirstNotValidCharacter" in outputSequenceObj) ?
+          'value': ('indexOfFirstNotValidCharacter' in outputSequenceObj) ?
             ui.divH([
-              ui.divText(sequence.slice(0, JSON.parse(outputSequenceObj.indexOfFirstNotValidCharacter!).indexOfFirstNotValidCharacter), {style: {color: "grey"}}),
+              ui.divText(sequence.slice(0, JSON.parse(outputSequenceObj.indexOfFirstNotValidCharacter!).indexOfFirstNotValidCharacter), {style: {color: 'grey'}}),
               ui.tooltip.bind(
-                ui.divText(sequence.slice(JSON.parse(outputSequenceObj.indexOfFirstNotValidCharacter!).indexOfFirstNotValidCharacter), {style: {color: "red"}}),
-                "Expected format: " + JSON.parse(outputSequenceObj.indexOfFirstNotValidCharacter!).expectedType + ". Press 'SHOW CODES' button to see tables with valid codes"
+                ui.divText(sequence.slice(JSON.parse(outputSequenceObj.indexOfFirstNotValidCharacter!).indexOfFirstNotValidCharacter), {style: {color: 'red'}}),
+                'Expected format: ' + JSON.parse(outputSequenceObj.indexOfFirstNotValidCharacter!).expectedType + '. Press \'SHOW CODES\' button to see tables with valid codes'
               )
             ]) : //@ts-ignore
             ui.link(outputSequenceObj[key], () => navigator.clipboard.writeText(outputSequenceObj[key]).then(() => grok.shell.info(sequenceWasCopied)), tooltipSequence, '')
@@ -245,7 +246,7 @@ export function sequenceTranslator() {
   let semTypeOfInputSequence = ui.divText('');
   let moleculeSvgDiv = ui.block([]);
   let outputTableDiv = ui.div([], 'table');
-  let inputSequenceField = ui.textInput("", defaultInput, (sequence: string) => updateTableAndMolecule(sequence));
+  let inputSequenceField = ui.textInput('', defaultInput, (sequence: string) => updateTableAndMolecule(sequence));
   updateTableAndMolecule(defaultInput);
 
   let tablesWithCodes = ui.divV([
@@ -284,11 +285,11 @@ export function sequenceTranslator() {
 
   const appMainDescription = ui.info([
       ui.divText('\n How to convert one sequence:',{style:{'font-weight':'bolder'}}),
-      ui.divText("Paste sequence into the text field below"),
+      ui.divText('Paste sequence into the text field below'),
       ui.divText('\n How to convert many sequences:',{style:{'font-weight':'bolder'}}),
-      ui.divText("1. Drag & drop an Excel or CSV file with sequences into Datagrok. The platform will automatically detect columns with sequences"),
+      ui.divText('1. Drag & drop an Excel or CSV file with sequences into Datagrok. The platform will automatically detect columns with sequences'),
       ui.divText('2. Right-click on the column header, then see the \'Convert\' menu'),
-      ui.divText("This will add the result column to the right of the table"),
+      ui.divText('This will add the result column to the right of the table'),
     ], 'Convert oligonucleotide sequences between Nucleotides, BioSpring, Axolabs, Mermade 12 and GCRS representations.'
   );
 
@@ -325,7 +326,7 @@ export function sequenceTranslator() {
     .css('resize','none')
     .css('min-height','50px')
     .css('width','100%')
-    .attr("spellcheck", "false");
+    .attr('spellcheck', 'false');
   $('.sequenceInput select')
     .css('width','100%');
 }
@@ -419,12 +420,12 @@ function convertSequence(text: string) {
 //output: string result {semType: BioSpring / Gapmers}
 export function asoGapmersNucleotidesToBioSpring(nucleotides: string) {
   let count: number = -1;
-  const objForEdges: {[index: string]: string} = {"(invabasic)": "(invabasic)", "(GalNAc-2-JNJ)": "(GalNAc-2-JNJ)", "T": "5*", "A": "6*", "C": "7*", "G": "8*"};
-  const objForCenter: {[index: string]: string} = {"(invabasic)": "(invabasic)", "(GalNAc-2-JNJ)": "(GalNAc-2-JNJ)", "T": "T*", "A": "A*", "C": "9*", "G": "G*"};
+  const objForEdges: {[index: string]: string} = {'(invabasic)': '(invabasic)', '(GalNAc-2-JNJ)': '(GalNAc-2-JNJ)', 'T': '5*', 'A': '6*', 'C': '7*', 'G': '8*'};
+  const objForCenter: {[index: string]: string} = {'(invabasic)': '(invabasic)', '(GalNAc-2-JNJ)': '(GalNAc-2-JNJ)', 'T': 'T*', 'A': 'A*', 'C': '9*', 'G': 'G*'};
   return nucleotides.replace(/(\(invabasic\)|\(GalNAc-2-JNJ\)|A|T|C|G)/g, function (x: string) {
     count++;
     return (count > 4 && count < 15) ? objForCenter[x] : objForEdges[x];
-  }).slice(0, (nucleotides.endsWith("(invabasic)") || nucleotides.endsWith("(GalNAc-2-JNJ)")) ? nucleotides.length : 2 * count + 1);
+  }).slice(0, (nucleotides.endsWith('(invabasic)') || nucleotides.endsWith('(GalNAc-2-JNJ)')) ? nucleotides.length : 2 * count + 1);
 }
 
 //name: asoGapmersNucleotidesToGcrs
@@ -432,21 +433,21 @@ export function asoGapmersNucleotidesToBioSpring(nucleotides: string) {
 //output: string result {semType: GCRS / Gapmers}
 export function asoGapmersNucleotidesToGcrs(nucleotides: string) {
   let count: number = -1;
-  const objForEdges: {[index: string]: string} = {"(invabasic)": "(invabasic)", "(GalNAc-2-JNJ)": "(GalNAc-2-JNJ)", "T": "moeUnps", "A": "moeAnps", "C": "moe5mCnps", "G": "moeGnps"};
-  const objForCenter: {[index: string]: string} = {"(invabasic)": "(invabasic)", "(GalNAc-2-JNJ)": "(GalNAc-2-JNJ)", "C": "5mCps", "A": "Aps", "T": "Tps", "G": "Gps"};
+  const objForEdges: {[index: string]: string} = {'(invabasic)': '(invabasic)', '(GalNAc-2-JNJ)': '(GalNAc-2-JNJ)', 'T': 'moeUnps', 'A': 'moeAnps', 'C': 'moe5mCnps', 'G': 'moeGnps'};
+  const objForCenter: {[index: string]: string} = {'(invabasic)': '(invabasic)', '(GalNAc-2-JNJ)': '(GalNAc-2-JNJ)', 'C': '5mCps', 'A': 'Aps', 'T': 'Tps', 'G': 'Gps'};
   return nucleotides.replace(/(\(invabasic\)|\(GalNAc-2-JNJ\)|A|T|C|G)/g, function (x: string) {
     count++;
     if (count < 5) return (count == 4) ? objForEdges[x].slice(0, -3) + 'ps' : objForEdges[x];
     if (count < 15) return (count == 14) ? objForCenter[x].slice(0, -2) + 'nps' : objForCenter[x];
     return objForEdges[x];
-  }).slice(0, (nucleotides.endsWith("(invabasic)") || nucleotides.endsWith("(GalNAc-2-JNJ)")) ? nucleotides.length : -3);
+  }).slice(0, (nucleotides.endsWith('(invabasic)') || nucleotides.endsWith('(GalNAc-2-JNJ)')) ? nucleotides.length : -3);
 }
 
 //name: asoGapmersBioSpringToNucleotides
 //input: string nucleotides {semType: BioSpring / Gapmers}
 //output: string result {semType: DNA nucleotides}
 export function asoGapmersBioSpringToNucleotides(nucleotides: string) {
-  const obj: {[index: string]: string} = {"(invabasic)": "(invabasic)", "(GalNAc-2-JNJ)": "(GalNAc-2-JNJ)", "*": "", "5": "T", "6": "A", "7": "C", "8": "G", "9": "C"};
+  const obj: {[index: string]: string} = {'(invabasic)': '(invabasic)', '(GalNAc-2-JNJ)': '(GalNAc-2-JNJ)', '*': '', '5': 'T', '6': 'A', '7': 'C', '8': 'G', '9': 'C'};
   return nucleotides.replace(/(\(invabasic\)|\(GalNAc-2-JNJ\)|\*|5|6|7|8|9)/g, function (x: string) {return obj[x];});
 }
 
@@ -455,9 +456,9 @@ export function asoGapmersBioSpringToNucleotides(nucleotides: string) {
 //output: string result {semType: GCRS / Gapmers}
 export function asoGapmersBioSpringToGcrs(nucleotides: string) {
   let count: number = -1;
-  const obj: {[index: string]: string} = {"(invabasic)": "(invabasic)", "(GalNAc-2-JNJ)": "(GalNAc-2-JNJ)",
-    "5*": "moeUnps", "6*": "moeAnps", "7*": "moe5mCnps", "8*": "moeGnps", "9*": "5mCps", "A*": "Aps", "T*": "Tps",
-    "G*": "Gps", "C*": "Cps", "5": "moeU", "6": "moeA", "7": "moe5mC", "8": "moeG"
+  const obj: {[index: string]: string} = {'(invabasic)': '(invabasic)', '(GalNAc-2-JNJ)': '(GalNAc-2-JNJ)',
+    '5*': 'moeUnps', '6*': 'moeAnps', '7*': 'moe5mCnps', '8*': 'moeGnps', '9*': '5mCps', 'A*': 'Aps', 'T*': 'Tps',
+    'G*': 'Gps', 'C*': 'Cps', '5': 'moeU', '6': 'moeA', '7': 'moe5mC', '8': 'moeG'
   };
   return nucleotides.replace(/(\(invabasic\)|\(GalNAc-2-JNJ\)|5\*|6\*|7\*|8\*|9\*|A\*|T\*|G\*|C\*|5|6|7|8)/g, function (x: string) {
     count++;
@@ -469,8 +470,8 @@ export function asoGapmersBioSpringToGcrs(nucleotides: string) {
 //input: string nucleotides {semType: GCRS / Gapmers}
 //output: string result {semType: BioSpring / Gapmers}
 export function asoGapmersGcrsToBioSpring(nucleotides: string) {
-  const obj: {[index: string]: string} = {"(invabasic)": "(invabasic)", "(GalNAc-2-JNJ)": "(GalNAc-2-JNJ)",
-    "moeT": "5", "moeA": "6", "moe5mC": "7", "moeG": "8", "moeU": "5", "5mC": "9", "nps": "*", "ps": "*", "U": "T"
+  const obj: {[index: string]: string} = {'(invabasic)': '(invabasic)', '(GalNAc-2-JNJ)': '(GalNAc-2-JNJ)',
+    'moeT': '5', 'moeA': '6', 'moe5mC': '7', 'moeG': '8', 'moeU': '5', '5mC': '9', 'nps': '*', 'ps': '*', 'U': 'T'
   };
   return nucleotides.replace(/(\(invabasic\)|\(GalNAc-2-JNJ\)|moeT|moeA|moe5mC|moeG|moeU|5mC|nps|ps|U)/g, function (x: string) {return obj[x];});
 }
@@ -479,7 +480,7 @@ export function asoGapmersGcrsToBioSpring(nucleotides: string) {
 //input: string nucleotides {semType: GCRS / Gapmers}
 //output: string result {semType: DNA nucleotides}
 export function asoGapmersGcrsToNucleotides(nucleotides: string) {
-  const obj: {[index: string]: string} = {"(invabasic)": "(invabasic)", "(GalNAc-2-JNJ)": "(GalNAc-2-JNJ)", "moe": "", "5m": "", "n": "", "ps": "", "U": "T"};
+  const obj: {[index: string]: string} = {'(invabasic)': '(invabasic)', '(GalNAc-2-JNJ)': '(GalNAc-2-JNJ)', 'moe': '', '5m': '', 'n': '', 'ps': '', 'U': 'T'};
   return nucleotides.replace(/(\(invabasic\)|\(GalNAc-2-JNJ\)|moe|5m|n|ps|U)/g, function (x: string) {return obj[x];});
 }
 
@@ -487,7 +488,7 @@ export function asoGapmersGcrsToNucleotides(nucleotides: string) {
 //input: string nucleotides {semType: BioSpring / siRNA}
 //output: string result {semType: RNA nucleotides}
 export function siRnaBioSpringToNucleotides(nucleotides: string) {
-  const obj: {[index: string]: string} = {"(invabasic)": "(invabasic)", "(GalNAc-2-JNJ)": "(GalNAc-2-JNJ)", "1": "U", "2": "A", "3": "C", "4": "G", "5": "U", "6": "A", "7": "C", "8": "G", "*": ""};
+  const obj: {[index: string]: string} = {'(invabasic)': '(invabasic)', '(GalNAc-2-JNJ)': '(GalNAc-2-JNJ)', '1': 'U', '2': 'A', '3': 'C', '4': 'G', '5': 'U', '6': 'A', '7': 'C', '8': 'G', '*': ''};
   return nucleotides.replace(/(\(invabasic\)|\(GalNAc-2-JNJ\)|1|2|3|4|5|6|7|8|\*)/g, function (x: string) {return obj[x];});
 }
 
@@ -495,7 +496,7 @@ export function siRnaBioSpringToNucleotides(nucleotides: string) {
 //input: string nucleotides {semType: BioSpring / siRNA}
 //output: string result {semType: Axolabs / siRNA}
 export function siRnaBioSpringToAxolabs(nucleotides: string) {
-  const obj: {[index: string]: string} = {"(invabasic)": "(invabasic)", "(GalNAc-2-JNJ)": "(GalNAc-2-JNJ)", "1": "Uf", "2": "Af", "3": "Cf", "4": "Gf", "5": "u", "6": "a", "7": "c", "8": "g", "*": "s"};
+  const obj: {[index: string]: string} = {'(invabasic)': '(invabasic)', '(GalNAc-2-JNJ)': '(GalNAc-2-JNJ)', '1': 'Uf', '2': 'Af', '3': 'Cf', '4': 'Gf', '5': 'u', '6': 'a', '7': 'c', '8': 'g', '*': 's'};
   return nucleotides.replace(/(\(invabasic\)|\(GalNAc-2-JNJ\)|1|2|3|4|5|6|7|8|\*)/g, function (x: string) {return obj[x];});
 }
 
@@ -503,7 +504,7 @@ export function siRnaBioSpringToAxolabs(nucleotides: string) {
 //input: string nucleotides {semType: BioSpring / siRNA}
 //output: string result {semType: GCRS}
 export function siRnaBioSpringToGcrs(nucleotides: string) {
-  const obj: {[index: string]: string} = {"(invabasic)": "(invabasic)", "(GalNAc-2-JNJ)": "(GalNAc-2-JNJ)", "1": "fU", "2": "fA", "3": "fC", "4": "fG", "5": "mU", "6": "mA", "7": "mC", "8": "mG", "*": "ps"};
+  const obj: {[index: string]: string} = {'(invabasic)': '(invabasic)', '(GalNAc-2-JNJ)': '(GalNAc-2-JNJ)', '1': 'fU', '2': 'fA', '3': 'fC', '4': 'fG', '5': 'mU', '6': 'mA', '7': 'mC', '8': 'mG', '*': 'ps'};
   return nucleotides.replace(/(\(invabasic\)|\(GalNAc-2-JNJ\)|1|2|3|4|5|6|7|8|\*)/g, function (x: string) {return obj[x];});
 }
 
@@ -511,8 +512,8 @@ export function siRnaBioSpringToGcrs(nucleotides: string) {
 //input: string nucleotides {semType: Axolabs / siRNA}
 //output: string result {semType: GCRS}
 export function siRnaAxolabsToGcrs(nucleotides: string) {
-  const obj: {[index: string]: string} = {"(invabasic)": "(invabasic)", "(GalNAc-2-JNJ)": "(GalNAc-2-JNJ)",
-    "Uf": "fU", "Af": "fA", "Cf": "fC", "Gf": "fG", "u": "mU", "a": "mA", "c": "mC", "g": "mG", "s": "ps"
+  const obj: {[index: string]: string} = {'(invabasic)': '(invabasic)', '(GalNAc-2-JNJ)': '(GalNAc-2-JNJ)',
+    'Uf': 'fU', 'Af': 'fA', 'Cf': 'fC', 'Gf': 'fG', 'u': 'mU', 'a': 'mA', 'c': 'mC', 'g': 'mG', 's': 'ps'
   };
   return nucleotides.replace(/(\(invabasic\)|\(GalNAc-2-JNJ\)|Uf|Af|Cf|Gf|u|a|c|g|s)/g, function (x: string) {return obj[x];});
 }
@@ -521,8 +522,8 @@ export function siRnaAxolabsToGcrs(nucleotides: string) {
 //input: string nucleotides {semType: Axolabs / siRNA}
 //output: string result {semType: BioSpring / siRNA}
 export function siRnaAxolabsToBioSpring(nucleotides: string) {
-  const obj: {[index: string]: string} = {"(invabasic)": "(invabasic)", "(GalNAc-2-JNJ)": "(GalNAc-2-JNJ)",
-    "Uf": "1", "Af": "2", "Cf": "3", "Gf": "4", "u": "5", "a": "6", "c": "7", "g": "8", "s": "*"
+  const obj: {[index: string]: string} = {'(invabasic)': '(invabasic)', '(GalNAc-2-JNJ)': '(GalNAc-2-JNJ)',
+    'Uf': '1', 'Af': '2', 'Cf': '3', 'Gf': '4', 'u': '5', 'a': '6', 'c': '7', 'g': '8', 's': '*'
   };
   return nucleotides.replace(/(\(invabasic\)|\(GalNAc-2-JNJ\)|Uf|Af|Cf|Gf|u|a|c|g|s)/g, function (x: string) {return obj[x];});
 }
@@ -531,8 +532,8 @@ export function siRnaAxolabsToBioSpring(nucleotides: string) {
 //input: string nucleotides {semType: Axolabs / siRNA}
 //output: string result {semType: RNA nucleotides}
 export function siRnaAxolabsToNucleotides(nucleotides: string) {
-  const obj: {[index: string]: string} = {"(invabasic)": "(invabasic)", "(GalNAc-2-JNJ)": "(GalNAc-2-JNJ)",
-    "Uf": "U", "Af": "A", "Cf": "C", "Gf": "G", "u": "U", "a": "A", "c": "C", "g": "G", "s": ""
+  const obj: {[index: string]: string} = {'(invabasic)': '(invabasic)', '(GalNAc-2-JNJ)': '(GalNAc-2-JNJ)',
+    'Uf': 'U', 'Af': 'A', 'Cf': 'C', 'Gf': 'G', 'u': 'U', 'a': 'A', 'c': 'C', 'g': 'G', 's': ''
   };
   return nucleotides.replace(/(\(invabasic\)|\(GalNAc-2-JNJ\)|Uf|Af|Cf|Gf|u|a|c|g|s)/g, function (x: string) {return obj[x];});
 }
@@ -541,8 +542,8 @@ export function siRnaAxolabsToNucleotides(nucleotides: string) {
 //input: string nucleotides {semType: GCRS}
 //output: string result {semType: RNA nucleotides}
 export function siRnaGcrsToNucleotides(nucleotides: string) {
-  const obj: {[index: string]: string} = {"(invabasic)": "(invabasic)", "(GalNAc-2-JNJ)": "(GalNAc-2-JNJ)",
-    "fU": "U", "fA": "A", "fC": "C", "fG": "G", "mU": "U", "mA": "A", "mC": "C", "mG": "G", "ps": ""
+  const obj: {[index: string]: string} = {'(invabasic)': '(invabasic)', '(GalNAc-2-JNJ)': '(GalNAc-2-JNJ)',
+    'fU': 'U', 'fA': 'A', 'fC': 'C', 'fG': 'G', 'mU': 'U', 'mA': 'A', 'mC': 'C', 'mG': 'G', 'ps': ''
   };
   return nucleotides.replace(/(\(invabasic\)|\(GalNAc-2-JNJ\)|fU|fA|fC|fG|mU|mA|mC|mG|ps)/g, function (x: string) {return obj[x];});
 }
@@ -551,8 +552,8 @@ export function siRnaGcrsToNucleotides(nucleotides: string) {
 //input: string nucleotides {semType: GCRS}
 //output: string result {semType: BioSpring / siRNA}
 export function siRnaGcrsToBioSpring(nucleotides: string) {
-  const obj: {[index: string]: string} = {"(invabasic)": "(invabasic)", "(GalNAc-2-JNJ)": "(GalNAc-2-JNJ)",
-    "fU": "1", "fA": "2", "fC": "3", "fG": "4", "mU": "5", "mA": "6", "mC": "7", "mG": "8", "ps": "*"
+  const obj: {[index: string]: string} = {'(invabasic)': '(invabasic)', '(GalNAc-2-JNJ)': '(GalNAc-2-JNJ)',
+    'fU': '1', 'fA': '2', 'fC': '3', 'fG': '4', 'mU': '5', 'mA': '6', 'mC': '7', 'mG': '8', 'ps': '*'
   };
   return nucleotides.replace(/(\(invabasic\)|\(GalNAc-2-JNJ\)|fU|fA|fC|fG|mU|mA|mC|mG|ps)/g, function (x: string) {return obj[x];});
 }
@@ -561,8 +562,8 @@ export function siRnaGcrsToBioSpring(nucleotides: string) {
 //input: string nucleotides {semType: GCRS}
 //output: string result {semType: Axolabs / siRNA}
 export function siRnaGcrsToAxolabs(nucleotides: string) {
-  const obj: {[index: string]: string} = {"(invabasic)": "(invabasic)", "(GalNAc-2-JNJ)": "(GalNAc-2-JNJ)",
-    "fU": "Uf", "fA": "Af", "fC": "Cf", "fG": "Gf", "mU": "u", "mA": "a", "mC": "c", "mG": "g", "ps": "s"
+  const obj: {[index: string]: string} = {'(invabasic)': '(invabasic)', '(GalNAc-2-JNJ)': '(GalNAc-2-JNJ)',
+    'fU': 'Uf', 'fA': 'Af', 'fC': 'Cf', 'fG': 'Gf', 'mU': 'u', 'mA': 'a', 'mC': 'c', 'mG': 'g', 'ps': 's'
   };
   return nucleotides.replace(/(\(invabasic\)|\(GalNAc-2-JNJ\)|fU|fA|fC|fG|mU|mA|mC|mG|ps)/g, function (x: string) {return obj[x];});
 }
@@ -572,10 +573,10 @@ export function siRnaGcrsToAxolabs(nucleotides: string) {
 //output: string result {semType: BioSpring / siRNA}
 export function siRnaNucleotideToBioSpringSenseStrand(nucleotides: string) {
   let count: number = -1;
-  const objForLeftEdge: {[index: string]: string} = {"(invabasic)": "(invabasic)", "(GalNAc-2-JNJ)": "(GalNAc-2-JNJ)", "A": "6*", "U": "5*", "G": "8*", "C": "7*"};
-  const objForRightEdge: {[index: string]: string} = {"(invabasic)": "(invabasic)", "(GalNAc-2-JNJ)": "(GalNAc-2-JNJ)", "A": "*6", "U": "*5", "G": "*8", "C": "*7"};
-  const objForOddIndices: {[index: string]: string} = {"(invabasic)": "(invabasic)", "(GalNAc-2-JNJ)": "(GalNAc-2-JNJ)", "A": "6", "U": "5", "G": "8", "C": "7"};
-  const objForEvenIndices: {[index: string]: string} = {"(invabasic)": "(invabasic)", "(GalNAc-2-JNJ)": "(GalNAc-2-JNJ)", "A": "2", "U": "1", "G": "4", "C": "3"};
+  const objForLeftEdge: {[index: string]: string} = {'(invabasic)': '(invabasic)', '(GalNAc-2-JNJ)': '(GalNAc-2-JNJ)', 'A': '6*', 'U': '5*', 'G': '8*', 'C': '7*'};
+  const objForRightEdge: {[index: string]: string} = {'(invabasic)': '(invabasic)', '(GalNAc-2-JNJ)': '(GalNAc-2-JNJ)', 'A': '*6', 'U': '*5', 'G': '*8', 'C': '*7'};
+  const objForOddIndices: {[index: string]: string} = {'(invabasic)': '(invabasic)', '(GalNAc-2-JNJ)': '(GalNAc-2-JNJ)', 'A': '6', 'U': '5', 'G': '8', 'C': '7'};
+  const objForEvenIndices: {[index: string]: string} = {'(invabasic)': '(invabasic)', '(GalNAc-2-JNJ)': '(GalNAc-2-JNJ)', 'A': '2', 'U': '1', 'G': '4', 'C': '3'};
   return nucleotides.replace(/(\(invabasic\)|\(GalNAc-2-JNJ\)|A|U|G|C)/g, function (x: string) {
     count++;
     if (count < 2) return objForLeftEdge[x];
@@ -589,10 +590,10 @@ export function siRnaNucleotideToBioSpringSenseStrand(nucleotides: string) {
 //output: string result {semType: GCRS}
 export function siRnaNucleotidesToGcrs(nucleotides: string) {
   let count: number = -1;
-  const objForLeftEdge: {[index: string]: string} = {"(invabasic)": "(invabasic)", "(GalNAc-2-JNJ)": "(GalNAc-2-JNJ)", "A": "mAps", "U": "mUps", "G": "mGps", "C": "mCps"};
-  const objForRightEdge: {[index: string]: string} = {"(invabasic)": "(invabasic)", "(GalNAc-2-JNJ)": "(GalNAc-2-JNJ)", "A": "psmA", "U": "psmU", "G": "psmG", "C": "psmC"};
-  const objForEvenIndices: {[index: string]: string} = {"(invabasic)": "(invabasic)", "(GalNAc-2-JNJ)": "(GalNAc-2-JNJ)", "A": "fA", "U": "fU", "G": "fG", "C": "fC"};
-  const objForOddIndices: {[index: string]: string} = {"(invabasic)": "(invabasic)", "(GalNAc-2-JNJ)": "(GalNAc-2-JNJ)", "A": "mA", "U": "mU", "G": "mG", "C": "mC"};
+  const objForLeftEdge: {[index: string]: string} = {'(invabasic)': '(invabasic)', '(GalNAc-2-JNJ)': '(GalNAc-2-JNJ)', 'A': 'mAps', 'U': 'mUps', 'G': 'mGps', 'C': 'mCps'};
+  const objForRightEdge: {[index: string]: string} = {'(invabasic)': '(invabasic)', '(GalNAc-2-JNJ)': '(GalNAc-2-JNJ)', 'A': 'psmA', 'U': 'psmU', 'G': 'psmG', 'C': 'psmC'};
+  const objForEvenIndices: {[index: string]: string} = {'(invabasic)': '(invabasic)', '(GalNAc-2-JNJ)': '(GalNAc-2-JNJ)', 'A': 'fA', 'U': 'fU', 'G': 'fG', 'C': 'fC'};
+  const objForOddIndices: {[index: string]: string} = {'(invabasic)': '(invabasic)', '(GalNAc-2-JNJ)': '(GalNAc-2-JNJ)', 'A': 'mA', 'U': 'mU', 'G': 'mG', 'C': 'mC'};
   return nucleotides.replace(/(\(invabasic\)|\(GalNAc-2-JNJ\)|A|U|G|C)/g, function (x: string) {
     count++;
     if (count < 2) return objForLeftEdge[x];
@@ -606,9 +607,9 @@ export function siRnaNucleotidesToGcrs(nucleotides: string) {
 //output: string result {semType: Axolabs}
 export function siRnaNucleotideToAxolabsSenseStrand(nucleotides: string) {
   let count: number = -1;
-  const objForLeftEdge: {[index: string]: string} = {"(invabasic)": "(invabasic)", "(GalNAc-2-JNJ)": "(GalNAc-2-JNJ)", "A": "as", "U": "us", "G": "gs", "C": "cs"};
-  const objForSomeIndices: {[index: string]: string} = {"(invabasic)": "(invabasic)", "(GalNAc-2-JNJ)": "(GalNAc-2-JNJ)", "A": "Af", "U": "Uf", "G": "Gf", "C": "Cf"};
-  const obj: {[index: string]: string} = {"(invabasic)": "(invabasic)", "(GalNAc-2-JNJ)": "(GalNAc-2-JNJ)", "A": "a", "U": "u", "G": "g", "C": "c"};
+  const objForLeftEdge: {[index: string]: string} = {'(invabasic)': '(invabasic)', '(GalNAc-2-JNJ)': '(GalNAc-2-JNJ)', 'A': 'as', 'U': 'us', 'G': 'gs', 'C': 'cs'};
+  const objForSomeIndices: {[index: string]: string} = {'(invabasic)': '(invabasic)', '(GalNAc-2-JNJ)': '(GalNAc-2-JNJ)', 'A': 'Af', 'U': 'Uf', 'G': 'Gf', 'C': 'Cf'};
+  const obj: {[index: string]: string} = {'(invabasic)': '(invabasic)', '(GalNAc-2-JNJ)': '(GalNAc-2-JNJ)', 'A': 'a', 'U': 'u', 'G': 'g', 'C': 'c'};
   return nucleotides.replace(/(\(invabasic\)|\(GalNAc-2-JNJ\)|A|U|G|C)/g, function (x: string) {
     count++;
     if (count < 2) return objForLeftEdge[x];
@@ -623,10 +624,10 @@ export function siRnaNucleotideToAxolabsSenseStrand(nucleotides: string) {
 //output: string result {semType: Axolabs}
 export function siRnaNucleotideToAxolabsAntisenseStrand(nucleotides: string) {
   let count: number = -1;
-  const objForSmallLinkages: {[index: string]: string} = {"(invabasic)": "(invabasic)", "(GalNAc-2-JNJ)": "(GalNAc-2-JNJ)", "A": "as", "U": "us", "G": "gs", "C": "cs"};
-  const objForBigLinkages: {[index: string]: string} = {"(invabasic)": "(invabasic)", "(GalNAc-2-JNJ)": "(GalNAc-2-JNJ)", "A": "Afs", "U": "Ufs", "G": "Gfs", "C": "Cfs"};
-  const objForSomeIndices: {[index: string]: string} = {"(invabasic)": "(invabasic)", "(GalNAc-2-JNJ)": "(GalNAc-2-JNJ)", "A": "Af", "U": "Uf", "G": "Gf", "C": "Cf"};
-  const obj: {[index: string]: string} = {"(invabasic)": "(invabasic)", "(GalNAc-2-JNJ)": "(GalNAc-2-JNJ)", "A": "a", "U": "u", "G": "g", "C": "c"};
+  const objForSmallLinkages: {[index: string]: string} = {'(invabasic)': '(invabasic)', '(GalNAc-2-JNJ)': '(GalNAc-2-JNJ)', 'A': 'as', 'U': 'us', 'G': 'gs', 'C': 'cs'};
+  const objForBigLinkages: {[index: string]: string} = {'(invabasic)': '(invabasic)', '(GalNAc-2-JNJ)': '(GalNAc-2-JNJ)', 'A': 'Afs', 'U': 'Ufs', 'G': 'Gfs', 'C': 'Cfs'};
+  const objForSomeIndices: {[index: string]: string} = {'(invabasic)': '(invabasic)', '(GalNAc-2-JNJ)': '(GalNAc-2-JNJ)', 'A': 'Af', 'U': 'Uf', 'G': 'Gf', 'C': 'Cf'};
+  const obj: {[index: string]: string} = {'(invabasic)': '(invabasic)', '(GalNAc-2-JNJ)': '(GalNAc-2-JNJ)', 'A': 'a', 'U': 'u', 'G': 'g', 'C': 'c'};
   return nucleotides.replace(/(\(invabasic\)|\(GalNAc-2-JNJ\)|A|U|G|C)/g, function (x: string) {
     count++;
     if (count > 19 && count < 22) return objForSmallLinkages[x];
@@ -640,9 +641,9 @@ export function siRnaNucleotideToAxolabsAntisenseStrand(nucleotides: string) {
 //input: string nucleotides {semType: GCRS}
 //output: string result {semType: RNA nucleotides}
 export function gcrsToNucleotides(nucleotides: string) {
-  const obj: {[index: string]: string} = {"(invabasic)": "(invabasic)", "(GalNAc-2-JNJ)": "(GalNAc-2-JNJ)",
-    "mAps": "A", "mUps": "U", "mGps": "G", "mCps": "C", "fAps": "A", "fUps": "U", "fGps": "G", "fCps": "C",
-    "fU": "U", "fA": "A", "fC": "C", "fG": "G", "mU": "U", "mA": "A", "mC": "C", "mG": "G"
+  const obj: {[index: string]: string} = {'(invabasic)': '(invabasic)', '(GalNAc-2-JNJ)': '(GalNAc-2-JNJ)',
+    'mAps': 'A', 'mUps': 'U', 'mGps': 'G', 'mCps': 'C', 'fAps': 'A', 'fUps': 'U', 'fGps': 'G', 'fCps': 'C',
+    'fU': 'U', 'fA': 'A', 'fC': 'C', 'fG': 'G', 'mU': 'U', 'mA': 'A', 'mC': 'C', 'mG': 'G'
   };
   return nucleotides.replace(/(\(invabasic\)|\(GalNAc-2-JNJ\)|mAps|mUps|mGps|mCps|fAps|fUps|fGps|fCps|fU|fA|fC|fG|mU|mA|mC|mG)/g, function (x: string) {return obj[x];});
 }
@@ -651,9 +652,9 @@ export function gcrsToNucleotides(nucleotides: string) {
 //input: string nucleotides {semType: GCRS}
 //output: string result {semType: Mermade 12 / siRNA}
 export function gcrsToMermade12(nucleotides: string) {
-  const obj: {[index: string]: string} = {"(invabasic)": "(invabasic)", "(GalNAc-2-JNJ)": "(GalNAc-2-JNJ)",
-    "mAps": "e", "mUps": "h", "mGps": "g", "mCps": "f", "fAps": "i", "fUps": "l", "fGps": "k", "fCps": "j", "fU": "L",
-    "fA": "I", "fC": "J", "fG": "K", "mU": "H", "mA": "E", "mC": "F", "mG": "G"
+  const obj: {[index: string]: string} = {'(invabasic)': '(invabasic)', '(GalNAc-2-JNJ)': '(GalNAc-2-JNJ)',
+    'mAps': 'e', 'mUps': 'h', 'mGps': 'g', 'mCps': 'f', 'fAps': 'i', 'fUps': 'l', 'fGps': 'k', 'fCps': 'j', 'fU': 'L',
+    'fA': 'I', 'fC': 'J', 'fG': 'K', 'mU': 'H', 'mA': 'E', 'mC': 'F', 'mG': 'G'
   };
   return nucleotides.replace(/(\(invabasic\)|\(GalNAc-2-JNJ\)|mAps|mUps|mGps|mCps|fAps|fUps|fGps|fCps|fU|fA|fC|fG|mU|mA|mC|mG)/g, function (x: string) {return obj[x]});
 }
