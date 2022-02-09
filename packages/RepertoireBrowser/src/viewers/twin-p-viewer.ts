@@ -1,12 +1,10 @@
-import * as ui from "datagrok-api/ui";
-import * as grok from "datagrok-api/grok";
-import * as DG from "datagrok-api/dg";
+import * as ui from 'datagrok-api/ui';
+import * as grok from 'datagrok-api/grok';
+import * as DG from 'datagrok-api/dg';
 
-import { NglAspect } from "./ngl-aspect"
-import { PvizAspect } from "./pviz-aspect"
-import { MiscMethods } from "./misc"
-
-import { _package } from "../package";
+import {NglAspect} from './ngl-aspect';
+import {PvizAspect} from './pviz-aspect';
+import {MiscMethods} from './misc';
 
 export class TwinPviewer {
   root: HTMLElement;
@@ -31,17 +29,17 @@ export class TwinPviewer {
 
   // ptmPredictions: string[];
   // ptmMotifPredictions: string[];
-  twinSelections = { 'H': {}, 'L': {} };
+  twinSelections = {'H': {}, 'L': {}};
   colorScheme = {
-    "col_background": 'string',
-    "col_heavy_chain": '#0069a7',
-    "col_light_chain": '#f1532b',
-    "col_cdr": '#45d145',
-    "col_para": '#b0c4de',
-    "col_highlight": '#45d145',
-    "col_highlight_cdr": '#FFFF00',
-    "col_partopes_low": '(176,196,222)', //col_para in rgb
-    "col_partopes_high": '(255, 0, 255)'
+    'colBackground': 'string',
+    'colHeavyChain': '#0069a7',
+    'colLightChain': '#f1532b',
+    'colCdr': '#45d145',
+    'colPara': '#b0c4de',
+    'colHighlight': '#45d145',
+    'colHighlightCdr': '#FFFF00',
+    'colPartopes_low': '(176,196,222)', //col_para in rgb
+    'colPartopes_high': '(255, 0, 255)',
   };
 
   ngl: NglAspect;
@@ -54,7 +52,7 @@ export class TwinPviewer {
 
   public init(json: any, pdb: string, jsonObsPtm: any) {
     // ---- SIDEPANEL REMOVAL ----
-    let windows = grok.shell.windows;
+    const windows = grok.shell.windows;
     windows.showProperties = false;
     windows.showHelp = false;
     windows.showConsole = false;
@@ -67,8 +65,8 @@ export class TwinPviewer {
     const representations = ['cartoon', 'backbone', 'ball+stick', 'licorice', 'hyperball', 'surface'];
     this.repChoice = ui.choiceInput('Representation', 'cartoon', representations);
 
-    let schemes_lst = MiscMethods.extract_schemes(json);
-    this.cdrScheme = ui.choiceInput('CDR3 Scheme', 'default', schemes_lst);
+    const schemesLst = MiscMethods.extractSchemes(json);
+    this.cdrScheme = ui.choiceInput('CDR3 Scheme', 'default', schemesLst);
 
     this.root = ui.div();
     this.changeChoices();
@@ -84,7 +82,7 @@ export class TwinPviewer {
     //@ts-ignore
     this.sequenceTabs = ui.tabControl({
       'HEAVY': this.pVizHostH,
-      'LIGHT': this.pVizHostL
+      'LIGHT': this.pVizHostL,
     }).root;
 
     this.ngl = new NglAspect();
@@ -96,13 +94,14 @@ export class TwinPviewer {
     this.pdbStr = pdb;
     this.jsonObsPtm = jsonObsPtm;
 
-    this.twinSelections = { 'H': {}, 'L': {} };
+    this.twinSelections = {'H': {}, 'L': {}};
 
-    let groups: { [_: string]: any } = {};
-    let items: DG.TreeViewNode[] = [];
+    const groups: {[_: string]: any} = {};
+    const items: DG.TreeViewNode[] = [];
 
-    for (let g in groups) groups[g].checked = false;
-    for (let i of items) i.checked = false;
+    for (const g in groups)
+      if (groups[g].checked) groups[g].checked = false;
+    for (const i of items) i.checked = false;
 
     this.changeChoices();
 
@@ -116,14 +115,14 @@ export class TwinPviewer {
       this.isOpened = true;
       this.panelNode = mlbView.dockManager.dock(this.root, DG.DOCK_TYPE.RIGHT, null, 'NGL', 0.2);
       this.nglNode = mlbView.dockManager.dock(this.nglHost, DG.DOCK_TYPE.LEFT, this.panelNode, 'NGL', 0.3);
-      //@ts-ignore
-      this.sequenceNode = mlbView.dockManager.dock(this.sequenceTabs, DG.DOCK_TYPE.DOWN, this.nglNode, 'Sequence', 0.225);
+      this.sequenceNode =
+        //@ts-ignore
+        mlbView.dockManager.dock(this.sequenceTabs, DG.DOCK_TYPE.DOWN, this.nglNode, 'Sequence', 0.225);
       MiscMethods.setDockSize(mlbView, this.nglNode, this.sequenceTabs);
     }
   }
 
   public async close(mlbView: DG.TableView) {
-
     if (!!this.sequenceTabs)
       //@ts-ignore
       mlbView.dockManager.close(this.sequenceTabs);
@@ -141,10 +140,9 @@ export class TwinPviewer {
   }
 
   public async show(mlbView: DG.TableView) {
-
-    let reload = async (val: boolean) => {
-      this.pViz.render("H");
-      this.pViz.render("L");
+    const reload = async (val: boolean) => {
+      this.pViz.render('H');
+      this.pViz.render('L');
       this.ngl.render(val);
       MiscMethods.setDockSize(mlbView, this.nglNode, this.sequenceTabs);
     };
@@ -152,14 +150,15 @@ export class TwinPviewer {
     await this.ngl.init(mlbView, this.pdbStr, this.jsonStr, this.colorScheme, this.nglHost,
       this.repChoice, this.cdrScheme, this.paratopes, this.twinSelections);
 
-    let obsChoice = this.ptmObsChoices !== undefined ? this.ptmObsChoices.value : null;
+    const obsChoice = this.ptmObsChoices !== undefined ? this.ptmObsChoices.value : null;
 
     await this.pViz.init(this.jsonStr, this.jsonObsPtm, this.colorScheme, this.pVizHostH, this.pVizHostL,
-      this.ptmChoices.value, this.ptmMotifChoices.value, obsChoice, this.cdrScheme, this.paratopes, this.ptmProb.value, this.twinSelections);
+      this.ptmChoices.value, this.ptmMotifChoices.value, obsChoice, this.cdrScheme,
+      this.paratopes, this.ptmProb.value, this.twinSelections);
 
     MiscMethods.setDockSize(mlbView, this.nglNode, this.sequenceTabs);
 
-    grok.events.onCustomEvent("selectionChanged").subscribe((v) => { this.ngl.render(false); });
+    grok.events.onCustomEvent('selectionChanged').subscribe((v) => {this.ngl.render(false);});
 
     this.repChoice.onChanged(async () => {
       this.ngl.repChoice = this.repChoice;
@@ -195,27 +194,26 @@ export class TwinPviewer {
 
     if (this.ptmObsChoices !== undefined) {
       this.ptmObsChoices.onChanged(async () => {
-        this.pViz.obsMapping(this.ptmObsChoices.value)
+        this.pViz.obsMapping(this.ptmObsChoices.value);
         reload(false);
       });
     }
   }
 
   private changeChoices(): void {
-
-    let ptmKeys = [...new Set([...Object.keys(this.jsonStr.ptm_predictions.H), ...Object.keys(this.jsonStr.ptm_predictions.L)])];
-    let ptmPredictions: string[] = [];
-    let ptmMotifPredictions: string[] = [];
+    const ptmKeys =
+      [...new Set([...Object.keys(this.jsonStr.ptm_predictions.H), ...Object.keys(this.jsonStr.ptm_predictions.L)])];
+    const ptmPredictions: string[] = [];
+    const ptmMotifPredictions: string[] = [];
 
     for (let i = 0; i < ptmKeys.length; i++) {
-      let ptmH = this.jsonStr.ptm_predictions.H[ptmKeys[i]];
-      let ptmL = this.jsonStr.ptm_predictions.L[ptmKeys[i]];
+      const ptmH = this.jsonStr.ptm_predictions.H[ptmKeys[i]];
+      const ptmL = this.jsonStr.ptm_predictions.L[ptmKeys[i]];
 
-      if ((typeof (ptmH) != "undefined" && ptmH[0][1] > 1) || (typeof (ptmL) != "undefined" && ptmL[0][1] > 1)) {
-        ptmMotifPredictions.push(ptmKeys[i].replaceAll("_", " "));
-      } else {
-        ptmPredictions.push(ptmKeys[i].replaceAll("_", " "));
-      }
+      if ((typeof (ptmH) != 'undefined' && ptmH[0][1] > 1) || (typeof (ptmL) != 'undefined' && ptmL[0][1] > 1))
+        ptmMotifPredictions.push(ptmKeys[i].replaceAll('_', ' '));
+      else
+        ptmPredictions.push(ptmKeys[i].replaceAll('_', ' '));
     }
 
     //@ts-ignore
@@ -224,9 +222,9 @@ export class TwinPviewer {
     this.ptmMotifChoices = ui.multiChoiceInput('', [], ptmMotifPredictions);
 
     // ---- INPUTS PANEL ----
-    if (!this.accOptions) {
+    if (!this.accOptions)
       this.accOptions = ui.accordion();
-    } else {
+    else {
       this.accOptions.removePane(this.accOptions.getPane('3D model'));
       this.accOptions.removePane(this.accOptions.getPane('Sequence'));
       this.accOptions.removePane(this.accOptions.getPane('Predicted PTMs'));
@@ -242,12 +240,13 @@ export class TwinPviewer {
     this.accOptions.addPane('Motif PTMs', () => ui.div([this.ptmMotifChoices]));
 
     if (this.jsonObsPtm !== null) {
-      let obsPtmKeys = [...new Set([...Object.keys(this.jsonObsPtm.ptm_observed.H), ...Object.keys(this.jsonObsPtm.ptm_observed.L)])];
-      let obsPtmPredictions: string[] = [];
+      const obsPtmKeys =
+        [...new Set([...Object.keys(this.jsonObsPtm.ptm_observed.H), ...Object.keys(this.jsonObsPtm.ptm_observed.L)])];
+      const obsPtmPredictions: string[] = [];
 
-      for (let i = 0; i < obsPtmKeys.length; i++) {
-        obsPtmPredictions.push(obsPtmKeys[i].replaceAll("_", " "));
-      }
+      for (let i = 0; i < obsPtmKeys.length; i++)
+        obsPtmPredictions.push(obsPtmKeys[i].replaceAll('_', ' '));
+
       //@ts-ignore
       this.ptmObsChoices = ui.multiChoiceInput('', [], obsPtmPredictions);
       this.accOptions.addPane('Observed PTMs', () => ui.div([this.ptmObsChoices]));

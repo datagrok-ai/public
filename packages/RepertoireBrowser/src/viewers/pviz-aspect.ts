@@ -64,33 +64,33 @@ export class PvizAspect {
         collapsible: true,
         el: host}).render();
 
-      const ptmCodes = Object.keys(this.pVizParams.ptmMap[chain].ptm_color_obj);
-      const motCodes = Object.keys(this.pVizParams.motMap[chain].mot_color_obj);
+      const ptmCodes = Object.keys(this.pVizParams.ptmMap[chain].ptmColorObj);
+      const motCodes = Object.keys(this.pVizParams.motMap[chain].motColorObj);
 
       let obsCodes = null;
       if (this.jsonObs !== null)
-        obsCodes = Object.keys(this.pVizParams.obsMap[chain].obs_color_obj);
+        obsCodes = Object.keys(this.pVizParams.obsMap[chain].obsColorObj);
       const switchObj = this.selection;
       const pVizParams = this.pVizParams;
       const pv = this;
 
       //adding all features
-      seqEntry.addFeatures(pVizParams.cdrMap[chain].cdr_feature_map);
+      seqEntry.addFeatures(pVizParams.cdrMap[chain].cdrFeatureMap);
       if (this.paratopes.value === true)
-        seqEntry.addFeatures(this.pVizParams.parMap[chain].par_feature_map);
+        seqEntry.addFeatures(this.pVizParams.parMap[chain].parFeatureMap);
 
-      seqEntry.addFeatures(this.pVizParams.denMap[chain].den_feature_map);
-      seqEntry.addFeatures(this.pVizParams.ptmMap[chain].ptm_feature_map);
-      seqEntry.addFeatures(this.pVizParams.motMap[chain].mot_feature_map);
+      seqEntry.addFeatures(this.pVizParams.denMap[chain].denFeatureMap);
+      seqEntry.addFeatures(this.pVizParams.ptmMap[chain].ptmFeatureMap);
+      seqEntry.addFeatures(this.pVizParams.motMap[chain].motFeatureMap);
 
       //gradient coloring
-      if (this.paratopes.value === true) this.applyGradient(this.pVizParams.parMap[chain].par_color_obj);
-      if (this.jsonObs !== null) seqEntry.addFeatures(this.pVizParams.obsMap[chain].obs_feature_map);
+      if (this.paratopes.value === true) this.applyGradient(this.pVizParams.parMap[chain].parColorObj);
+      if (this.jsonObs !== null) seqEntry.addFeatures(this.pVizParams.obsMap[chain].obsFeatureMap);
 
-      this.applyGradient(this.pVizParams.denMap[chain].den_color_obj);
-      this.applyGradient(this.pVizParams.ptmMap[chain].ptm_color_obj);
-      this.applyGradient(this.pVizParams.motMap[chain].mot_color_obj);
-      if (this.jsonObs !== null) this.applyGradient(this.pVizParams.obsMap[chain].obs_color_obj);
+      this.applyGradient(this.pVizParams.denMap[chain].denColorObj);
+      this.applyGradient(this.pVizParams.ptmMap[chain].ptmColorObj);
+      this.applyGradient(this.pVizParams.motMap[chain].motColorObj);
+      if (this.jsonObs !== null) this.applyGradient(this.pVizParams.obsMap[chain].obsColorObj);
 
       await this.color(chain);
 
@@ -98,8 +98,8 @@ export class PvizAspect {
       this.pviz.FeatureDisplayer.addMouseoverCallback(['P'], async function(ft) {
         const selectorStr = 'g.feature.data.P.Paratope_predictions rect.feature';
         let el = document.querySelectorAll(selectorStr);
-        const elLst = pVizParams.parMap[chain].par_el_obj;
-        const probLst = pVizParams.parMap[chain].par_prob_obj;
+        const elLst = pVizParams.parMap[chain].parElObj;
+        const probLst = pVizParams.parMap[chain].parProbObj;
         //@ts-ignore
         el = el[elLst.indexOf((ft.start).toString())];
         const prob = probLst[elLst.indexOf((ft.start).toString())];
@@ -117,9 +117,9 @@ export class PvizAspect {
       this.pviz.FeatureDisplayer.addMouseoverCallback(['D'], async function(ft) {
         const selectorStr = 'g.feature.data.D rect.feature';
         let el = document.querySelectorAll(selectorStr);
-        const elLst = pVizParams.denMap[chain].den_el_obj;
-        const probLst = pVizParams.denMap[chain].den_prob_obj;
-        const ptmList = pVizParams.denMap[chain].den_ptm_arr;
+        const elLst = pVizParams.denMap[chain].denElObj;
+        const probLst = pVizParams.denMap[chain].denProbObj;
+        const ptmList = pVizParams.denMap[chain].denPtmArr;
         //@ts-ignore
         el = el[elLst.indexOf(ft.start)];
         const prob = probLst[elLst.indexOf(ft.start)];
@@ -145,7 +145,7 @@ export class PvizAspect {
         const selectorStr = 'g.feature.' + mutcodes[ft.category.replaceAll(' ', '_')] + '.' +
           ft.category.replaceAll(' ', '_').replaceAll(')', '\\)').replaceAll('(', '\\(') + ' rect.feature';
         let el = document.querySelectorAll(selectorStr);
-        const elLst = pVizParams.ptmMap[chain].ptm_el_obj[mutcodes[ft.category.replaceAll(' ', '_')]];
+        const elLst = pVizParams.ptmMap[chain].ptmElObj[mutcodes[ft.category.replaceAll(' ', '_')]];
         //@ts-ignore
         el = el[elLst.indexOf(ft.start)];
 
@@ -163,7 +163,7 @@ export class PvizAspect {
         const selectorStr = 'g.feature.' + mutcodes[ft.category.replaceAll(' ', '_')] + '.' +
           ft.category.replaceAll(' ', '_').replaceAll(')', '\\)').replaceAll('(', '\\(') + ' rect.feature';
         let el = document.querySelectorAll(selectorStr);
-        const elLst = pVizParams.motMap[chain].mot_el_obj[mutcodes[ft.category.replaceAll(' ', '_')]];
+        const elLst = pVizParams.motMap[chain].motElObj[mutcodes[ft.category.replaceAll(' ', '_')]];
         //@ts-ignore
         el = el[elLst.indexOf(ft.start)];
 
@@ -182,9 +182,9 @@ export class PvizAspect {
           ft.category.replaceAll(' ', '_') + ' rect.feature';
 
         let el = document.querySelectorAll(selectorStr);
-        const elLst = pVizParams.obsMap[chain].obs_el_obj[ft.category];
-        const types = pVizParams.obsMap[chain].obs_prob_obj[ft.start][0];
-        const probabilities = pVizParams.obsMap[chain].obs_prob_obj[ft.start][1];
+        const elLst = pVizParams.obsMap[chain].obsElObj[ft.category];
+        const types = pVizParams.obsMap[chain].obsProbObj[ft.start][0];
+        const probabilities = pVizParams.obsMap[chain].obsProbObj[ft.start][1];
 
         //@ts-ignore
         el = el[elLst.indexOf(ft.start)];
@@ -260,7 +260,7 @@ export class PvizAspect {
     Object.keys(switchObj).forEach((keyChain) => {
       const selectorStr = 'g.feature.data.D rect.feature';
       const denElements = document.querySelectorAll(selectorStr);
-      const denNumbers = pVizParams.denMap[keyChain].den_el_obj;
+      const denNumbers = pVizParams.denMap[keyChain].denElObj;
       Object.keys(switchObj[keyChain]).forEach((keyPosition) => {
         const position = parseInt(keyPosition);
 
@@ -270,7 +270,7 @@ export class PvizAspect {
             if (switchObj[keyChain][keyPosition]['state'] === false) {
               //@ts-ignore
               denElements[denNumbers.indexOf(position)].style.fill =
-                pVizParams.denMap[keyChain].den_color_obj['D'][denNumbers.indexOf(position)];
+                pVizParams.denMap[keyChain].denColorObj['D'][denNumbers.indexOf(position)];
             } else {
               //@ts-ignore
               denElements[denNumbers.indexOf(position)].style.fill = 'black';
@@ -283,7 +283,7 @@ export class PvizAspect {
           this.ptmChoices.forEach((ptm) => {
             const selectorStrPTM = 'g.feature.' + ptm.replace(' ', '_') + ' rect.feature';
             const elPTM = document.querySelectorAll(selectorStrPTM);
-            const elLstPTM = pVizParams.ptmMap[chosenTracksChain].ptm_el_obj[mutcodes[ptm.replace(' ', '_')]];
+            const elLstPTM = pVizParams.ptmMap[chosenTracksChain].ptmElObj[mutcodes[ptm.replace(' ', '_')]];
             listsPredictedPtms[ptm] = [elPTM, elLstPTM];
           });
 
@@ -293,7 +293,7 @@ export class PvizAspect {
             if (typeof elLstPTM !== 'undefined' && elLstPTM.indexOf(position) !== -1) {
               if (switchObj[keyChain][position]['state'] === false) {
                 elPTM[elLstPTM.indexOf(position)].style.fill =
-                  pVizParams.ptmMap[keyChain].ptm_color_obj[mutcodes[ptm.replace(' ', '_')]][elLstPTM.indexOf(position)];
+                  pVizParams.ptmMap[keyChain].ptmColorObj[mutcodes[ptm.replace(' ', '_')]][elLstPTM.indexOf(position)];
               } else
                 elPTM[elLstPTM.indexOf(position)].style.fill = 'black';
             }
@@ -306,7 +306,7 @@ export class PvizAspect {
             const selectorStrPTM = 'g.feature.' + mutcodes[ptm.replaceAll(' ', '_')] + '.' +
               ptm.replaceAll(' ', '_').replaceAll(')', '\\)').replaceAll('(', '\\(') + ' rect.feature';
             const elPTM = document.querySelectorAll(selectorStrPTM);
-            const elLstPTM = pVizParams.motMap[chosenTracksChain].mot_el_obj[mutcodes[ptm.replace(' ', '_')]];
+            const elLstPTM = pVizParams.motMap[chosenTracksChain].motElObj[mutcodes[ptm.replace(' ', '_')]];
             listsMotifsPtms[ptm] = [elPTM, elLstPTM];
           });
 
@@ -316,7 +316,8 @@ export class PvizAspect {
             if (typeof elLstPTM !== 'undefined' && elLstPTM.indexOf(position) !== -1) {
               if (switchObj[keyChain][position]['state'] === false) {
                 elPTM[elLstPTM.indexOf(position)].style.fill =
-                  pVizParams.motMap[keyChain].mot_color_obj[mutcodes[ptm.replace(' ', '_')]][elLstPTM.indexOf(position)];
+                  pVizParams.motMap[keyChain].
+                    motColorObj[mutcodes[ptm.replace(' ', '_')]][elLstPTM.indexOf(position)];
               } else
                 elPTM[elLstPTM.indexOf(position)].style.fill = 'black';
             }
@@ -330,7 +331,7 @@ export class PvizAspect {
               const selectorStrPTM = 'g.feature.' + ptm.replaceAll(' ', '_') + '.' +
                 ptm.replaceAll(' ', '_') + ' rect.feature';
               const elPTM = document.querySelectorAll(selectorStrPTM);
-              const elLstPTM = pVizParams.obsMap[chosenTracksChain].obs_el_obj[ptm.replace(' ', '_')];
+              const elLstPTM = pVizParams.obsMap[chosenTracksChain].obsElObj[ptm.replace(' ', '_')];
               listsObservedPtms[ptm] = [elPTM, elLstPTM];
             });
 
@@ -340,7 +341,7 @@ export class PvizAspect {
               if (typeof elLstPTM !== 'undefined' && elLstPTM.indexOf(position) !== -1) {
                 if (switchObj[keyChain][position]['state'] === false) {
                   elPTM[elLstPTM.indexOf(position)].style.fill =
-                    pVizParams.obsMap[keyChain].obs_color_obj[ptm.replace(' ', '_')][elLstPTM.indexOf(position)];
+                    pVizParams.obsMap[keyChain].obsColorObj[ptm.replace(' ', '_')][elLstPTM.indexOf(position)];
                 } else
                   elPTM[elLstPTM.indexOf(position)].style.fill = 'black';
               }
@@ -354,84 +355,89 @@ export class PvizAspect {
   // mapping objects for sequence rendering
   cdrMapping(cdrScheme) {
     this.cdrScheme = cdrScheme;
-    let cdrMap = {}
-    let chains = Object.keys(this.pVizParams.seq);
+    const cdrMap = {};
+    const chains = Object.keys(this.pVizParams.seq);
     chains.forEach((chain) => {
-      let cdr_feature_map = [];
-      let cdr_ranges = this.json.cdr_ranges[this.cdrScheme.value + '_CDR' + chain + '_ranges']
+      const cdrFeatureMap = [];
+      const cdrRanges = this.json.cdr_ranges[this.cdrScheme.value + '_CDR' + chain + '_ranges'];
       if (this.cdrScheme.value !== 'default') {
-        Object.values(cdr_ranges).forEach((range) => {
-          cdr_feature_map.push({
+        Object.values(cdrRanges).forEach((range) => {
+          cdrFeatureMap.push({
             category: 'CDR region',
             type: 'CDR',
             start: range[0],
             end: range[1],
             text: '',
-            improbable: true
-         })
-       })
-     }
-      cdrMap[chain] = {cdr_feature_map: cdr_feature_map}
-   })
+            improbable: true,
+          });
+        });
+      }
+      cdrMap[chain] = {cdrFeatureMap: cdrFeatureMap};
+    });
 
     this.pVizParams.cdrMap = (cdrMap);
- }
+  }
 
   parMapping(paratopes) {
     this.paratopes = paratopes;
-    let parMap = {}
-    let chains = Object.keys(this.pVizParams.seq);
+    const parMap = {};
+    const chains = Object.keys(this.pVizParams.seq);
     chains.forEach((chain) => {
-      let par_feature_map = [];
-      let par_color_arr = [];
-      let par_el_obj = [];
-      let par_prob_obj = [];
-      let palette = MiscMethods.interpolateColors('(255, 255, 255)', '(255, 0, 255)', 100);
+      const parFeatureMap = [];
+      const parColorArr = [];
+      const parElObj = [];
+      const parProbObj = [];
+      const palette = MiscMethods.interpolateColors('(255, 255, 255)', '(255, 0, 255)', 100);
 
       Object.keys(this.json.parapred_predictions[chain]).forEach((index) => {
-        par_feature_map.push({
+        parFeatureMap.push({
           category: 'Paratope predictions',
           type: 'P',
           start: index,
           end: index,
           text: '',
-          improbable: true
-       })
-        par_color_arr.push(palette[Math.round(this.json.parapred_predictions[chain][index] * 100)]);
-        par_el_obj.push(index);
-        par_prob_obj.push(this.json.parapred_predictions[chain][index]);
-     })
+          improbable: true,
+        });
+        parColorArr.push(palette[Math.round(this.json.parapred_predictions[chain][index] * 100)]);
+        parElObj.push(index);
+        parProbObj.push(this.json.parapred_predictions[chain][index]);
+      });
 
-      parMap[chain] = {par_feature_map: par_feature_map, par_color_obj: {'P': par_color_arr}, par_el_obj: par_el_obj, par_prob_obj: par_prob_obj};
-   })
+      parMap[chain] = {parFeatureMap: parFeatureMap,
+        parColorObj: {'P': parColorArr},
+        parElObj: parElObj,
+        parProbObj: parProbObj};
+    });
 
-    this.pVizParams.parMap = (parMap)
- }
+    this.pVizParams.parMap = (parMap);
+  };
 
   denMapping() {
-    let denMap = {}
-    let chains = Object.keys(this.pVizParams.seq);
+    const denMap = {};
+    const chains = Object.keys(this.pVizParams.seq);
     chains.forEach((chain) => {
-      let den_feature_map = [];
-      let den_color_arr = new Array(this.pVizParams.seq[chain].length).fill(-1);
-      let den_ptm_arr = new Array(this.pVizParams.seq[chain].length).fill([]);
-      let palette = MiscMethods.interpolateColors('(255, 255, 0)', '(255, 0, 0)', 5);
+      let denFeatureMap = [];
+      let denColorArr = new Array(this.pVizParams.seq[chain].length).fill(-1);
+      let denPtmArr = new Array(this.pVizParams.seq[chain].length).fill([]);
+      const palette = MiscMethods.interpolateColors('(255, 255, 0)', '(255, 0, 0)', 5);
 
       Object.keys(this.json.ptm_predictions[chain]).forEach((ptm) => {
         if (this.json.ptm_predictions[chain][ptm][0][1] <= 1) {
-          this.json.ptm_predictions[chain][ptm].forEach(point => {
-            if (!(den_feature_map.includes(point[0]))) {
-              den_feature_map.push(point[0]);
-           }
-            den_color_arr[point[0]] = den_color_arr[point[0]] == -1 ? (point[1] > 1 ? point[1] / 100 : point[1]) : 1 - (1 - den_color_arr[point[0]]) * (1 - (point[1] > 1 ? point[1] / 100 : point[1]));
-            den_ptm_arr[point[0]] = den_ptm_arr[point[0]].concat([[ptm, point[1]]]);
-         })
-       }
-     })
+          this.json.ptm_predictions[chain][ptm].forEach((point) => {
+            if (!(denFeatureMap.includes(point[0])))
+              denFeatureMap.push(point[0]);
 
-      den_feature_map.sort((a, b) => a - b);
-      let den_el_obj = den_feature_map.slice();
-      den_feature_map = den_feature_map.map(function(ft) {
+            denColorArr[point[0]] = denColorArr[point[0]] == -1 ?
+              (point[1] > 1 ? point[1] / 100 : point[1]) :
+              1 - (1 - denColorArr[point[0]]) * (1 - (point[1] > 1 ? point[1] / 100 : point[1]));
+            denPtmArr[point[0]] = denPtmArr[point[0]].concat([[ptm, point[1]]]);
+          });
+        }
+      });
+
+      denFeatureMap.sort((a, b) => a - b);
+      const denElObj = denFeatureMap.slice();
+      denFeatureMap = denFeatureMap.map(function(ft) {
         return {
           groupSet: 'Predicted PTM density',
           category: '',
@@ -439,224 +445,221 @@ export class PvizAspect {
           start: ft,
           end: ft,
           text: '',
-          improbable: true
-       }
-     });
+          improbable: true,
+        };
+      });
 
-      den_color_arr = den_color_arr.filter((x) => {
-        return x !== -1
-     });
+      denColorArr = denColorArr.filter((x) => {
+        return x !== -1;
+      });
 
-      den_ptm_arr = den_ptm_arr.filter((x) => {
-        return x.length > 0
-     });
+      denPtmArr = denPtmArr.filter((x) => {
+        return x.length > 0;
+      });
 
-      let den_prob_obj = den_color_arr.slice();
+      const denProbObj = denColorArr.slice();
 
-      for (let i = 0; i < den_color_arr.length; i++) {
-        den_color_arr[i] = palette[Math.round(den_color_arr[i] * 4)];
-     }
+      for (let i = 0; i < denColorArr.length; i++)
+        denColorArr[i] = palette[Math.round(denColorArr[i] * 4)];
 
-      denMap[chain] = {den_feature_map: den_feature_map, den_color_obj: {'D': den_color_arr}, den_el_obj: den_el_obj, den_prob_obj: den_prob_obj, den_ptm_arr: den_ptm_arr};
-   })
+      denMap[chain] = {denFeatureMap: denFeatureMap,
+        denColorObj: {'D': denColorArr},
+        denElObj: denElObj,
+        denProbObj: denProbObj,
+        denPtmArr: denPtmArr};
+    });
 
-    this.pVizParams.denMap = (denMap)
- }
+    this.pVizParams.denMap = (denMap);
+  }
 
   ptmMapping(ptmChoices, prob) {
     this.ptmChoices = ptmChoices;
     this.ptmProb = prob;
 
-    let ptmMap = {}
-    let chains = Object.keys(this.pVizParams.seq);
+    const ptmMap = {};
+    const chains = Object.keys(this.pVizParams.seq);
     chains.forEach((chain) => {
-      let ptm_feature_map = [];
-      let ptm_color_obj = {};
-      let ptm_el_obj = {};
-      let ptm_prob_obj = {};
-      let palette = MiscMethods.interpolateColors('(255, 255, 0)', '(255, 0, 0)', 5);
+      const ptmFeatureMap = [];
+      const ptmColorObj = {};
+      const ptmElObj = {};
+      const ptmProbObj = {};
+      const palette = MiscMethods.interpolateColors('(255, 255, 0)', '(255, 0, 0)', 5);
 
-      this.ptmChoices.forEach(ptm => {
-        let ptm_array = this.json.ptm_predictions[chain][ptm.replace(' ', '_')];
-        if (ptm_array !== undefined) {
-
-          let ptm_color_arr = [];
-          let ptm_el_arr = [];
-          let ptm_prob_arr = [];
-          ptm_array.forEach(point => {
+      this.ptmChoices.forEach((ptm) => {
+        const ptmArray = this.json.ptm_predictions[chain][ptm.replace(' ', '_')];
+        if (ptmArray !== undefined) {
+          const ptmColorArr = [];
+          const ptmElArr = [];
+          const ptmProbArr = [];
+          ptmArray.forEach((point) => {
             if (point[1] > prob) {
-
-              ptm_feature_map.push({
+              ptmFeatureMap.push({
                 groupSet: 'Predicted PTMs',
                 category: ptm,
                 type: mutcodes[ptm.replace(' ', '_')],
                 start: point[0],
                 end: point[0],
                 text: '',
-                improbable: true
-             })
-              ptm_color_arr.push(palette[point[1] > 1 ? Math.round(point[1] * 4) / 100 : Math.round(point[1] * 4)]);
-              ptm_el_arr.push(point[0]);
-              ptm_prob_arr.push(point[1]);
-           }
-         })
-          if (ptm_color_arr.length > 0) {
-            ptm_color_obj[mutcodes[ptm.replace(' ', '_')]] = ptm_color_arr;
-            ptm_el_obj[mutcodes[ptm.replace(' ', '_')]] = ptm_el_arr;
-            ptm_prob_obj[mutcodes[ptm.replace(' ', '_')]] = ptm_prob_arr;
-         }
-       }
-     })
+                improbable: true,
+              });
+              ptmColorArr.push(palette[point[1] > 1 ? Math.round(point[1] * 4) / 100 : Math.round(point[1] * 4)]);
+              ptmElArr.push(point[0]);
+              ptmProbArr.push(point[1]);
+            }
+          });
+          if (ptmColorArr.length > 0) {
+            ptmColorObj[mutcodes[ptm.replace(' ', '_')]] = ptmColorArr;
+            ptmElObj[mutcodes[ptm.replace(' ', '_')]] = ptmElArr;
+            ptmProbObj[mutcodes[ptm.replace(' ', '_')]] = ptmProbArr;
+          }
+        }
+      });
       ptmMap[chain] = {
-        ptm_feature_map: ptm_feature_map, ptm_color_obj: ptm_color_obj,
-        ptm_el_obj: ptm_el_obj, ptm_prob_obj: ptm_prob_obj
-     };
-   })
+        ptmFeatureMap: ptmFeatureMap, ptmColorObj: ptmColorObj,
+        ptmElObj: ptmElObj, ptmProbObj: ptmProbObj,
+      };
+    });
 
     this.pVizParams.ptmMap = (ptmMap);
- }
+  }
 
   motMapping(ptmChoices, prob) {
     this.motChoices = ptmChoices;
-    let motMap = {}
-    let chains = Object.keys(this.pVizParams.seq);
+    const motMap = {};
+    const chains = Object.keys(this.pVizParams.seq);
     chains.forEach((chain) => {
-      let ptm_feature_map = [];
-      let ptm_color_obj = {};
-      let ptm_el_obj = {};
-      let ptm_prob_obj = {};
-      let palette = MiscMethods.interpolateColors('(255, 255, 0)', '(255, 0, 0)', 5);
+      const ptmFeatureMap = [];
+      const ptmColorObj = {};
+      const ptmElObj = {};
+      const ptmProbObj = {};
+      const palette = MiscMethods.interpolateColors('(255, 255, 0)', '(255, 0, 0)', 5);
 
-      ptmChoices.forEach(ptm => {
-        let ptm_array = this.json.ptm_predictions[chain][ptm.replaceAll(' ', '_')];
-        if (ptm_array !== undefined) {
-
-          let ptm_color_arr = [];
-          let ptm_el_arr = [];
-          let ptm_prob_arr = [];
-          ptm_array.forEach(point => {
+      ptmChoices.forEach((ptm) => {
+        const ptmArray = this.json.ptm_predictions[chain][ptm.replaceAll(' ', '_')];
+        if (ptmArray !== undefined) {
+          const ptmColorArr = [];
+          const ptmElArr = [];
+          const ptmProbArr = [];
+          ptmArray.forEach((point) => {
             if (point[1] > prob) {
-
-              ptm_feature_map.push({
-                groupSet: 'Predicted PTMs',//'Motif PTMs',
+              ptmFeatureMap.push({
+                groupSet: 'Predicted PTMs',
                 category: ptm,
                 type: mutcodes[ptm.replaceAll(' ', '_')],
                 start: point[0],
                 end: point[0],
                 text: '',
-                improbable: true
-             })
-              ptm_color_arr.push(palette[point[1] > 1 ? Math.round(point[1] * 4) / 100 : Math.round(point[1] * 4)]);
-              ptm_el_arr.push(point[0]);
-              ptm_prob_arr.push(0.99);
-           }
-         })
-          if (ptm_color_arr.length > 0) {
-            ptm_color_obj[mutcodes[ptm.replaceAll(' ', '_')]] = ptm_color_arr;
-            ptm_el_obj[mutcodes[ptm.replaceAll(' ', '_')]] = ptm_el_arr;
-            ptm_prob_obj[mutcodes[ptm.replaceAll(' ', '_')]] = ptm_prob_arr;
-         }
-       }
-     })
+                improbable: true,
+              });
+              ptmColorArr.push(palette[point[1] > 1 ? Math.round(point[1] * 4) / 100 : Math.round(point[1] * 4)]);
+              ptmElArr.push(point[0]);
+              ptmProbArr.push(0.99);
+            }
+          });
+          if (ptmColorArr.length > 0) {
+            ptmColorObj[mutcodes[ptm.replaceAll(' ', '_')]] = ptmColorArr;
+            ptmElObj[mutcodes[ptm.replaceAll(' ', '_')]] = ptmElArr;
+            ptmProbObj[mutcodes[ptm.replaceAll(' ', '_')]] = ptmProbArr;
+          }
+        }
+      });
       motMap[chain] = {
-        mot_feature_map: ptm_feature_map, mot_color_obj: ptm_color_obj,
-        mot_el_obj: ptm_el_obj, mot_prob_obj: ptm_prob_obj
-     };
-   })
+        motFeatureMap: ptmFeatureMap, motColorObj: ptmColorObj,
+        motElObj: ptmElObj, motProbObj: ptmProbObj,
+      };
+    });
 
     this.pVizParams.motMap = (motMap);
- }
+  }
 
   obsMapping(ptmChoices) {
     this.obsChoices = ptmChoices;
-    let obsMap = {}
-    let chains = Object.keys(this.pVizParams.seq);
-    let palette = MiscMethods.interpolateColors('(255, 255, 0)', '(255, 0, 0)', 5);
+    const obsMap = {};
+    const chains = Object.keys(this.pVizParams.seq);
+    const palette = MiscMethods.interpolateColors('(255, 255, 0)', '(255, 0, 0)', 5);
 
     chains.forEach((chain) => {
-      let obs_feature_map = [];
-      let obs_color_obj = {};
-      let obs_el_obj = {};
-      let obs_prob_obj = {};
+      const obsFeatureMap = [];
+      const obsColorObj = {};
+      const obsElObj = {};
+      const obsProbObj = {};
 
-      ptmChoices.forEach(ptm => {
-        let ptm_tree = this.jsonObs.ptm_observed[chain][ptm.replace(' ', '_')];
-        if (ptm_tree !== undefined) {
+      ptmChoices.forEach((ptm) => {
+        const ptmTree = this.jsonObs.ptm_observed[chain][ptm.replace(' ', '_')];
+        if (ptmTree !== undefined) {
+          const obsColorArr = [];
+          const obsElArr = [];
+          const obsTypesArr = [];
+          const obsTypesProbsArr = [];
 
-          let obs_color_arr = [];
-          let obs_el_arr = [];
-          let obs_types_arr = [];
-          let obs_types_probs_arr = [];
+          Object.keys(ptmTree).forEach((type) => {
+            const point = this.jsonObs.ptm_observed[chain][ptm.replace(' ', '_')][type];
+            if (!obsElArr.includes(point[0]))
+              obsElArr.push(point[0]);
+          });
 
-          Object.keys(ptm_tree).forEach((type) => {
-            let point = this.jsonObs.ptm_observed[chain][ptm.replace(' ', '_')][type];
-            if (!obs_el_arr.includes(point[0])) {
-              obs_el_arr.push(point[0]);
-           }
-         });
-
-          obs_el_arr.forEach((position) => {
-            let types = [];
-            let types_probs = [];
+          obsElArr.forEach((position) => {
+            const types = [];
+            const typesProbs = [];
             let prob = -1;
-            Object.keys(ptm_tree).forEach((type) => {
-              let point = this.jsonObs.ptm_observed[chain][ptm][type];
+            Object.keys(ptmTree).forEach((type) => {
+              const point = this.jsonObs.ptm_observed[chain][ptm][type];
               if (point[0] === position) {
                 types.push(type);
-                types_probs.push(point[1]);
-                let addProb = point[1] == 0.01 ? 0 : point[1];
+                typesProbs.push(point[1]);
+                const addProb = point[1] == 0.01 ? 0 : point[1];
                 prob = prob == -1 ? addProb / 100 : 1 - (1 - prob) * (1 - addProb / 100);
-             }
-           });
+              }
+            });
 
-            obs_color_arr.push(palette[Math.round(prob * 4)]);
-            obs_types_arr.push(types);
-            obs_types_probs_arr.push(types_probs);
+            obsColorArr.push(palette[Math.round(prob * 4)]);
+            obsTypesArr.push(types);
+            obsTypesProbsArr.push(typesProbs);
 
-            obs_feature_map.push({
+            obsFeatureMap.push({
               groupSet: 'Observed PTMs',
               category: ptm,
               type: ptm,
               start: position,
               end: position,
               text: ptm,
-              improbable: true
-           })
+              improbable: true,
+            });
 
-            obs_color_obj[ptm.replace(' ', '_')] = obs_color_arr;
-            obs_el_obj[ptm.replace(' ', '_')] = obs_el_arr;
-            obs_prob_obj[position] = [types, types_probs];
-         });
-       }
-     });
+            obsColorObj[ptm.replace(' ', '_')] = obsColorArr;
+            obsElObj[ptm.replace(' ', '_')] = obsElArr;
+            obsProbObj[position] = [types, typesProbs];
+          });
+        }
+      });
 
       obsMap[chain] = {
-        obs_feature_map: obs_feature_map, obs_color_obj: obs_color_obj,
-        obs_el_obj: obs_el_obj, obs_prob_obj: obs_prob_obj
-     };
-   });
+        obsFeatureMap: obsFeatureMap, obsColorObj: obsColorObj,
+        obsElObj: obsElObj, obsProbObj: obsProbObj,
+      };
+    });
 
     this.pVizParams.obsMap = (obsMap);
- }
+  }
 
-  applyGradient(gradient_obj) {
-    Object.keys(gradient_obj).forEach((ptm_track) => {
-      let selectorStr = 'g.feature.' + ptm_track + ' rect.feature';
-      let el = document.querySelectorAll(selectorStr);
+  applyGradient(gradientObj) {
+    Object.keys(gradientObj).forEach((ptmTrack) => {
+      const selectorStr = 'g.feature.' + ptmTrack + ' rect.feature';
+      const el = document.querySelectorAll(selectorStr);
       for (let i = 0; i < el.length; i++) {
         //@ts-ignore
-        el[i].style.fill = gradient_obj[ptm_track][i];
-     }
-   })
- }
+        el[i].style.fill = gradientObj[ptmTrack][i];
+      }
+    });
+  }
 
   // resize handle
   private async resize(chain: string) {
-    let host = chain == 'H' ? this.hostH : this.hostL;
+    const host = chain == 'H' ? this.hostH : this.hostL;
 
     ui.onSizeChanged(host).subscribe(async (_) => {
-      await this.render(chain)
-   });
- }
+      await this.render(chain);
+    });
+  }
 }
 

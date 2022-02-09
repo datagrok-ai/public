@@ -49,7 +49,8 @@ function customFilter(
       const cMin = parseFloat(probabilityInput.min.toFixed(3));
       const cMax = parseFloat(probabilityInput.max.toFixed(3));
       const ptmInputValue: string[] = ptmInput.value;
-      const currentCdr = cdrInput.stringValue === 'None'? 'max' :cdrMap[normalizedCDRMap[`${chainType} ${cdrInput.stringValue}`]];
+      const currentCdr = cdrInput.stringValue === 'None'?
+        'max' :cdrMap[normalizedCDRMap[`${chainType} ${cdrInput.stringValue}`]];
 
       df.filter.init((index: number) => {
         for (const chosenPTM of ptmInputValue) {
@@ -192,8 +193,10 @@ export class MolecularLiabilityBrowser {
         pf.redLeft[i] + '-' + pf.yellowLeft[i] + '", "color": "#FFD700", "opacity": 15},' +
         '{"type": "band", "title":"BandYellowRight", "rule" : "' +
         pf.yellowRight[i] + '-' + pf.redRight[i] + '", "color": "#FFD700", "opacity": 15}, ' +
-        '{"type": "band", "title":"BandRedLeft", "rule" : "< ' + pf.redLeft[i] + '", "color": "#DC143C", "opacity": 15}, ' +
-        '{"type": "band", "title":"BandRedRight", "rule" : "> ' + pf.redRight[i] + '", "color": "#DC143C", "opacity": 15},' +
+        '{"type": "band", "title":"BandRedLeft", "rule" : "< ' + pf.redLeft[i] +
+          '", "color": "#DC143C", "opacity": 15}, ' +
+        '{"type": "band", "title":"BandRedRight", "rule" : "> ' + pf.redRight[i] +
+          '", "color": "#DC143C", "opacity": 15},' +
         '{ "type": "spline", "title": "TAP metrics", "y" : [' +
         pf.plotsY[i].toString() + '], "color": "#7570B3", "width": 1, "x" : [' +
         pf.plotsX[i].toString() + '], "normalize-y": true, "visible": true}' +
