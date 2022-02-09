@@ -10,7 +10,7 @@ export function addViewerToHeader(grid: DG.Grid, viewer: Promise<DG.Widget>) {
   viewer.then((viewer) => {
     const barchart = viewer as StackedBarChart; //TODO: accept specifically StackedBarChart object
     // The following event makes the barchart interactive
-    rxjs.fromEvent(grid.overlay, 'click').subscribe((mm: any) => {
+    rxjs.fromEvent(grid.overlay, 'mousemove').subscribe((mm: any) => {
       mm = mm as MouseEvent;
       const cell = grid.hitTest(mm.offsetX, mm.offsetY);
 
@@ -249,17 +249,18 @@ export class StackedBarChart extends DG.JsViewer {
       g.font = `${h * margin / 2}px`;
       g.fillText(name, x + (w - colNameSize) / 2, y + h + h * margin / 4);
 
-      barData.forEach((obj, index) => {
+      barData.forEach((obj) => {
         const sBarHeight = h * obj['count'] / this.max;
         const gapSize = sBarHeight * innerMargin;
+        const verticalShift = (this.max - sum) / this.max;
         const [color, aarOuter,,] = cp.getColorAAPivot(obj['name']);
         const textSize = g.measureText(aarOuter);
         const fontSize = 11;
         const leftMargin = (w - (aarOuter.length > 1 ? fontSize : textSize.width - 8)) / 2;
         const subBartHeight = sBarHeight - gapSize;
-        const verticalShift = (this.max - sum) / this.max;
+        const start = h * verticalShift + gapSize / 2;
         const absX = x + leftMargin;
-        const absY = y + h * verticalShift + gapSize / 2 + subBartHeight / 2 + (aarOuter.length == 1 ? + 4 : 0);
+        const absY = y + start + subBartHeight / 2 + (aarOuter.length == 1 ? + 4 : 0);
 
         g.strokeStyle = color;
         g.fillStyle = color;
@@ -267,11 +268,11 @@ export class StackedBarChart extends DG.JsViewer {
           const origTransform = g.getTransform();
 
           if (color != ChemPalette.undefinedColor) {
-            g.fillRect(x, y + h * verticalShift + gapSize / 2, w, subBartHeight);
+            g.fillRect(x, y + start, w, subBartHeight);
             g.fillStyle = 'black';
           }
           else
-            g.strokeRect(x + 0.5, y + h * verticalShift + gapSize / 2, w - 1, subBartHeight);
+            g.strokeRect(x + 0.5, y + start, w - 1, subBartHeight);
 
           g.font = `${fontSize}px monospace`;
           g.textAlign = 'center';
@@ -286,14 +287,14 @@ export class StackedBarChart extends DG.JsViewer {
           g.fillText(aarOuter, absX, absY);
           g.setTransform(origTransform);
         } else {
-          g.fillRect(x, y + h * verticalShift + gapSize / 2, w, subBartHeight);
+          g.fillRect(x, y + start, w, subBartHeight);
         }
 
         if (this.selectionMode && obj['selectedCount'] > 0) {
           g.fillStyle = 'rgb(255,165,0)';
           g.fillRect(
             x - w * selectLineRatio * 2,
-            y + h * verticalShift + gapSize / 2,
+            y + start,
             w * selectLineRatio,
             h * obj['selectedCount'] / this.max - gapSize
           );
@@ -302,7 +303,7 @@ export class StackedBarChart extends DG.JsViewer {
         // @ts-ignore
         if (this.dataFrame.currentRow[name] === obj['name']) {
           g.strokeStyle = 'rgb(0,0,0)';
-          g.strokeRect(x, y + h * verticalShift + gapSize / 2, w, subBartHeight);
+          g.strokeRect(x, y + start, w, subBartHeight);
         }
 
         sum -= obj['count'];
@@ -350,12 +351,14 @@ export class StackedBarChart extends DG.JsViewer {
         return;
         
       const colName = cell.tableColumn?.name;
+      const innerMargin = 0.02;
       const margin = 0.2;
       const bound = cell.bounds;
+      const height = 130;
       const x = bound.x + bound.width * margin;
-      const y = 130 * margin / 8;
+      const y = height * margin / 4;
       const w = bound.width - bound.width * margin * 2;
-      const h = 130 - 130 * margin / 2;
+      const h = height - height * margin;
       const barData = this.barStats[colName];
       let sum = 0;
 
@@ -364,14 +367,17 @@ export class StackedBarChart extends DG.JsViewer {
       });
 
       this.highlighted = null;
-      barData.forEach((obj, index) => {
+      barData.forEach((obj) => {
         const sBarHeight = h * obj['count'] / this.max;
-        const start = h * (this.max - sum) / this.max;
+        const gapSize = sBarHeight * innerMargin;
+        const verticalShift = (this.max - sum) / this.max;
+        const subBartHeight = sBarHeight - gapSize;
+        const start = h * verticalShift + gapSize / 2;
 
         if (offsetX >= x &&
             offsetY >= y + start &&
             offsetX <= x + w &&
-            offsetY <= y + start + sBarHeight) {
+            offsetY <= y + start + subBartHeight) {
           this.highlighted = {'colName': colName, 'aaName': obj['name']};
         }
         
@@ -381,6 +387,8 @@ export class StackedBarChart extends DG.JsViewer {
 
     unhighlight(): void {
       this.highlighted = null;
+      this.dataFrame?.selection.setAll(false);
+      this.render();
     }
 
     beginSelection(event:any): void {
@@ -390,6 +398,5 @@ export class StackedBarChart extends DG.JsViewer {
       this.dataFrame!.selection.handleClick((i) => {
         return this.highlighted!['aaName'] === (this.dataFrame!.getCol(this.highlighted!['colName']).get(i));
       }, event);
-      this.render(true);
     }
 }
