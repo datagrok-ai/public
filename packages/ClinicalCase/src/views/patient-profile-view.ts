@@ -60,7 +60,7 @@ export class PatientProfileView extends ClinicalCaseViewBase {
 
         this.multiplot_lb_ae_ex_cm = v;
         this.attachTablesToMultiplot(this.multiplot_lb_ae_ex_cm, this.options_lb_ae_ex_cm, ['lb', 'ae', 'ex', 'cm']);
-        let lab_scatter = this.getSeriesIndexByName('Lab values');
+        let lab_scatter = this.getSeriesIndexByName('Lab Values');
         if (lab_scatter !== -1) {
           this.multiplot_lb_ae_ex_cm.updatePlotByCategory(0, this.options_lb_ae_ex_cm.series[lab_scatter].multiEdit.selectedValues, false); //to clear scattr plot after creation
         };
@@ -115,7 +115,7 @@ export class PatientProfileView extends ClinicalCaseViewBase {
 
   private createLabBaselineVisitSelect() {
     if (study.domains.lb && [VISIT_DAY, VISIT_NAME].every(it => study.domains.lb.col(it) !== null)) {
-      this.visitNamesAndDays = getVisitNamesAndDays(study.domains.lb);
+      this.visitNamesAndDays = getVisitNamesAndDays(study.domains.lb, VISIT_NAME, VISIT_DAY);
       this.bl = this.visitNamesAndDays[0].name;
       this.uniqueLabVisits = Array.from(getUniqueValues(study.domains.lb, VISIT_NAME));
       let blVisitChoices = ui.choiceInput('Baseline', this.bl, this.uniqueLabVisits);
@@ -130,14 +130,14 @@ export class PatientProfileView extends ClinicalCaseViewBase {
   private updateMultiplot() {
     this.updateTablesToAttach(this.selectedPatientId);
       this.attachTablesToMultiplot(this.multiplot_lb_ae_ex_cm, this.options_lb_ae_ex_cm, ['lb', 'ae', 'ex', 'cm']);
-      let lab_line = this.getSeriesIndexByName('Lab values line chart');
+      let lab_line = this.getSeriesIndexByName('Lab Values Line Chart');
       if (lab_line !== -1) {
         this.multiplot_lb_ae_ex_cm.setAdditionalParams(lab_line, this.options_lb_ae_ex_cm.series[lab_line].comboEdit.additionalParams[this.options_lb_ae_ex_cm.series[lab_line].comboEdit.selectedValue])
         let updateTitle = this.options_lb_ae_ex_cm.series[lab_line].multiEdit.selectedValues.length ? true : false;
         this.multiplot_lb_ae_ex_cm.updatePlotByCategory(lab_line, this.options_lb_ae_ex_cm.series[lab_line].multiEdit.selectedValues, updateTitle);
         this.multiplot_lb_ae_ex_cm.updatePlotByYAxis(lab_line, this.options_lb_ae_ex_cm.series[lab_line].comboEdit.values[this.options_lb_ae_ex_cm.series[lab_line].comboEdit.selectedValue]);
       }
-      let lab_scatter = this.getSeriesIndexByName('Lab values');
+      let lab_scatter = this.getSeriesIndexByName('Lab Values');
       if (lab_scatter !== -1) {
         this.multiplot_lb_ae_ex_cm.updatePlotByCategory(0, this.options_lb_ae_ex_cm.series[lab_scatter].multiEdit.selectedValues, false);
       };
@@ -185,7 +185,7 @@ export class PatientProfileView extends ClinicalCaseViewBase {
     if (this.getSeriesIndexByName('Drug Exposure') !== -1) {
       addColumnWithDrugPlusDosage(this.tables['ex'], VIEWS_CONFIG[this.name][INV_DRUG_NAME_FIELD], INV_DRUG_DOSE, INV_DRUG_DOSE_UNITS, 'EXTRT_WITH_DOSE');
     }
-    if (this.getSeriesIndexByName('Lab values line chart') !== -1) {
+    if (this.getSeriesIndexByName('Lab Values Line Chart') !== -1) {
       dynamicComparedToBaseline(this.tables['lb'], LAB_TEST, LAB_RES_N, this.visitNamesAndDays.filter(it => it.name === this.bl)[0].day, VISIT_DAY, 'LAB_DYNAMIC_BL', false);
       labDynamicComparedToMinMax(this.tables['lb'], 'LAB_DYNAMIC_MIN_MAX');
       labDynamicRelatedToRef(this.tables['lb'], 'LAB_DYNAMIC_REF');
@@ -237,7 +237,7 @@ export class PatientProfileView extends ClinicalCaseViewBase {
         domain: 'lb',
         opts: {
           tableName: 'patient_lb',
-          title: 'Lab values',
+          title: 'Lab Values',
           type: 'scatter',
           x: LAB_DAY,
           y: LAB_TEST,
@@ -272,7 +272,7 @@ export class PatientProfileView extends ClinicalCaseViewBase {
         domain: 'lb',
         opts: {
           tableName: 'patient_lb',
-          title: 'Lab values line chart',
+          title: 'Lab Values Line Chart',
           type: 'line',
           multiLineFieldIndex: 2, //index of field by which to split multiple graphs
           x: LAB_DAY,
@@ -373,7 +373,7 @@ export class PatientProfileView extends ClinicalCaseViewBase {
         domain: 'cm',
         opts: {
           tableName: 'patient_cm',
-          title: 'Concomitant medication',
+          title: 'Concomitant Medication',
           type: 'timeLine',
           y: VIEWS_CONFIG[PATIENT_PROFILE_VIEW_NAME][CON_MED_NAME_FIELD],
           x: [CON_MED_START_DAY, CON_MED_END_DAY],

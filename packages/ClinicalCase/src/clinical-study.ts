@@ -79,7 +79,6 @@ export class ClinicalStudy {
   sitesCount: number;
   validationResults: DG.DataFrame;
   labDataForCorelationMatrix: DG.DataFrame;
-  visits: StudyVisit[] = [];
 
   initFromWorkspace(): void {
     for (let t of grok.shell.tables) {
@@ -105,8 +104,6 @@ export class ClinicalStudy {
 
     this.validate();
 
-    this.createStudyConfig();
-
   }
 
   private process(): void {
@@ -124,14 +121,6 @@ export class ClinicalStudy {
     }
     if (this.domains.dm != null) {
       vaidateDMDomain(study.domains.dm, this.validationResults);
-    }
-  }
-
-  private createStudyConfig() {
-    if (this.domains.sv) {
-      let visits = getVisitNamesAndDays(this.domains.sv, true);
-      visits.forEach(vis => this.visits.push(new StudyVisit(vis.name, vis.day)))
-      this.visits.forEach((it, index) => it.num = index + 1);
     }
   }
 }

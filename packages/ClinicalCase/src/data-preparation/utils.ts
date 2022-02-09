@@ -107,15 +107,15 @@ export function dictToString(dict: any){
     return str;
 }
 
-export function getVisitNamesAndDays(df: DG.DataFrame, allowNulls = false) {
+export function getVisitNamesAndDays(df: DG.DataFrame, nameCol: string, dayCol: string, allowNulls = false) {
     const data = df
-        .groupBy([VISIT_DAY, VISIT_NAME])
+        .groupBy([dayCol, nameCol])
         .aggregate();
     const visitsArray = [];
     let rowCount = data.rowCount;
     for (let i = 0; i < rowCount; i++) {
-        const day = data.getCol(VISIT_DAY).isNone(i) ? null : data.get(VISIT_DAY, i);
-        const name = data.getCol(VISIT_NAME).isNone(i) ? null : data.get(VISIT_NAME, i);
+        const day = data.getCol(dayCol).isNone(i) ? null : data.get(dayCol, i);
+        const name = data.getCol(nameCol).isNone(i) ? null : data.get(nameCol, i);
         if (allowNulls) {
             if (!visitsArray.filter(it => it.day === day && it.name === name).length) {
                 visitsArray.push({day: day, name: name})
