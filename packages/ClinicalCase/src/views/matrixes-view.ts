@@ -87,7 +87,7 @@ export class MatrixesView extends ClinicalCaseViewBase {
         //@ts-ignore
         valuesMultiChoices.input.style.maxHeight = '100%';
         multichoices[domain] = valuesMultiChoices;
-      })
+      });
 
       let acc = ui.accordion();
       this.domains.forEach(domain => {

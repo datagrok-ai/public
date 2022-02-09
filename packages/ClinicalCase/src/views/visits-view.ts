@@ -34,6 +34,7 @@ export class VisitsView extends ClinicalCaseViewBase {
     gridRibbonDiv: any;
     heatMapdomainChoices: any;
     selectedDomainsDiv = ui.div();
+    switchGrid: any;
 
     constructor(name) {
         super({});
@@ -47,21 +48,45 @@ export class VisitsView extends ClinicalCaseViewBase {
             .concat(Object.keys(this.eventsSinceLastVisit))
             .filter(it => study.domains[it] !== null);
         this.assignColorsToDomains();
+        this.sortedVisitNamesAndDays = getVisitNamesAndDays(study.domains.sv, VISIT_NAME, VISIT_DAY, true);
+        this.sortedVisitNames = this.sortedVisitNamesAndDays.map(it => it.name);
+
+        this.switchGrid = this.createSwitchGridInput();
+        this.createHeatMapRibbon();
+        this.createGridRibbon();
+        updateDivInnerHTML(this.ribbonDiv, this.gridRibbonDiv);
+
+        this.updateGridAndHeatMap();
+
+        this.root.className = 'grok-view ui-box';
+        this.root.append(this.div);
+
+        this.setRibbonPanels(
+            [[this.switchGrid.root], [this.ribbonDiv], [this.visitsConfig()]] ,
+        );
+    }
+
+    private updateGridAndHeatMap() {
+        this.createPivotedSv();
+        this.createTotalVisits();
+        this.visitsGrid = this.pivotedSv.plot.grid();
+        this.renderVisitCell();
+        this.heatMap = DG.Viewer.fromType(DG.VIEWER.HEAT_MAP, this.createHeatMapDf(), {
+            'colorCoding': 'All',
+        });
+        this.switchGrid.value = true;
+        updateDivInnerHTML(this.div, this.visitsGrid.root);
+    }
+
+    private createPivotedSv() {
         this.sv = study.domains.sv.clone();
-        filterNulls(this.sv, VISIT_DAY); //remove unshc visits
         this.pivotedSv = createPivotedDataframe(this.sv, [SUBJECT_ID], VISIT_NAME, VISIT_START_DATE, []);
         this.pivotedSv.columns.names().forEach(col => {
             if (this.pivotedSv.getCol(col).name !== VISIT_START_DATE) {
                 this.pivotedSv.getCol(col).tags.format = 'yyyy-MM-dd';
             }
-            this.pivotedSv.getCol(col).name = col.replace(` first(${SUBJECT_ID})`, '');
+            this.pivotedSv.getCol(col).name = col.replace(` first(${VISIT_START_DATE})`, '');
         });
-        this.sortedVisitNamesAndDays = getVisitNamesAndDays(this.sv, true);
-        this.sortedVisitNames = this.sortedVisitNamesAndDays.map(it => it.name);
-        let missingCols = this.sortedVisitNames.filter(it => !this.pivotedSv.columns.names().includes(it));
-        missingCols.forEach(it => {
-            this.pivotedSv.columns.addNewDateTime(it).init((i) => null);
-        })
         this.pivotedSv = addDataFromDmDomain(this.pivotedSv, study.domains.dm, this.pivotedSv.columns.names(), [VIEWS_CONFIG[this.name][TRT_ARM_FIELD]]);
         this.pivotedSv = this.pivotedSv.clone(null, [SUBJECT_ID, VIEWS_CONFIG[this.name][TRT_ARM_FIELD]].concat(this.sortedVisitNames));
         this.pivotedSv.onCurrentCellChanged.subscribe(() => {
@@ -71,30 +96,56 @@ export class VisitsView extends ClinicalCaseViewBase {
             }, 100);
 
         });
-        this.createTotalVisits();
-        this.visitsGrid = this.pivotedSv.plot.grid();
-        this.renderVisitCell();
-        let switchGrid = this.createSwitchGridInput();
-        this.createHeatMapRibbon();
-        this.createGridRibbon();
+    }
 
-        this.heatMap = DG.Viewer.fromType(DG.VIEWER.HEAT_MAP, this.createHeatMapDf(), {
-            'colorCoding': 'All',
+    private visitsConfig() {
+        let visitsConfig = ui.iconFA('cog', () => {
+            let div = ui.div();
+            let visitsDf = DG.DataFrame.create();
+            visitsDf.columns.addNewString('Name');
+            visitsDf.columns.addNewInt('Day');
+            visitsDf.columns.addNewString('Action');
+            this.sortedVisitNamesAndDays.forEach(visit => {
+                visitsDf.rows.addNew([visit.name, visit.day, ''], false);
+            });
+            let grid = visitsDf.plot.grid();
+            grid.setOptions({ allowRowSelection: false, extendLastColumn: true });
+            let col = grid.columns.byName('Action');
+            col.cellType = 'html';
+
+            grid.onCellPrepare(function (gc) {
+                if (gc.isTableCell && gc.tableColumn.name === 'Action') {
+                    let eventElement = ui.icons.delete(() => {}, 'Delete');
+                    gc.style.element = ui.button(eventElement, () => {
+                        gc.grid.dataFrame.rows.removeAt(gc.gridRow);
+                        let scrollTo = gc.grid.dataFrame.rowCount === gc.gridRow ? gc.gridRow - 1 : gc.gridRow;
+                        grid.scrollToCell('Action', scrollTo);
+                    });
+                    gc.style.element.style.paddingBottom = '7px';
+                    gc.style.element.style.paddingLeft = '15px';
+                }
+            });
+
+            let addButton = ui.button(ui.icons.add(() => { }), () => {
+                visitsDf.rows.addNew();
+            });
+            div.append(ui.div(grid.root));
+            div.append(addButton);
+            ui.dialog({ title: 'Visits' })
+                .add(div)
+                .onOK(() => {
+                    this.totalVisits = {};
+                    this.sortedVisitNamesAndDays = getVisitNamesAndDays(visitsDf, 'Name', 'Day', true);
+                    this.sortedVisitNames = this.sortedVisitNamesAndDays.map(it => it.name);
+                    this.updateGridAndHeatMap();
+                })
+                .show();
         });
-
-        updateDivInnerHTML(this.div, this.visitsGrid.root);
-        updateDivInnerHTML(this.ribbonDiv, this.gridRibbonDiv);
-
-        this.root.className = 'grok-view ui-box';
-        this.root.append(this.div);
-
-        this.setRibbonPanels(
-            [[switchGrid.root], [this.ribbonDiv]] ,
-        );
+        return visitsConfig;
     }
 
     private getProceduresAtVisitDict() {
-        return { 'lb': { column: LAB_TEST}, 'ex': { column: VIEWS_CONFIG[VISITS_VIEW_NAME][INV_DRUG_NAME_FIELD] }, 'vs': { column: VS_TEST } };
+        return { 'lb': { column: LAB_TEST }, 'ex': { column: VIEWS_CONFIG[VISITS_VIEW_NAME][INV_DRUG_NAME_FIELD] }, 'vs': { column: VS_TEST } };
     }
 
     private assignColorsToDomains() {
@@ -169,7 +220,7 @@ export class VisitsView extends ClinicalCaseViewBase {
 
     private createHeatMapDf() {
         let df = DG.DataFrame.create();
-        typeof(study.domains.dm.get(SUBJECT_ID, 0)) === 'number' ? df.columns.addNewInt(SUBJECT_ID) : df.columns.addNewString(SUBJECT_ID);
+        typeof (study.domains.dm.get(SUBJECT_ID, 0)) === 'number' ? df.columns.addNewInt(SUBJECT_ID) : df.columns.addNewString(SUBJECT_ID);
         this.pivotedSv.columns.names().forEach(col => {
             if (col !== SUBJECT_ID && col !== VIEWS_CONFIG[this.name][TRT_ARM_FIELD]) {
                 df.columns.addNewInt(col);
@@ -183,7 +234,6 @@ export class VisitsView extends ClinicalCaseViewBase {
             })
         });
         df = addDataFromDmDomain(df, study.domains.dm, df.columns.names().filter(it => it !== VIEWS_CONFIG[this.name][TRT_ARM_FIELD]), [VIEWS_CONFIG[this.name][TRT_ARM_FIELD]]);
-        console.log(df.columns.names())
         df = df.clone(null, [SUBJECT_ID, VIEWS_CONFIG[this.name][TRT_ARM_FIELD]].concat(this.sortedVisitNames));
         this.setColorPaletteForHeatMap(df);
         df.onCurrentCellChanged.subscribe(() => {
@@ -421,7 +471,7 @@ export class VisitsView extends ClinicalCaseViewBase {
     async patientVisitPanel(patientVisit: PatientVisit) {
         let panelDiv = ui.div();
         let acc = this.createAccWithTitle('Patient visit panel', `${patientVisit.currentSubjId}`);
-        
+
         let getPaneContent = (it, rowNum) => {
             if (it) {
                 if (!rowNum) {
@@ -464,7 +514,6 @@ export class VisitsView extends ClinicalCaseViewBase {
         panelDiv.append(acc.root);
 
         return panelDiv;
-
     }
 
 }

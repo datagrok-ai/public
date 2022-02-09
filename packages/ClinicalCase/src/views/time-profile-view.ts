@@ -50,7 +50,7 @@ export class TimeProfileView extends ClinicalCaseViewBase {
         this.uniqueVisits = Array.from(getUniqueValues(study.domains[this.selectedDomain], VISIT_NAME));
         this.selectedLabValue = this.uniqueLabValues[ 0 ] as string;
         this.selectedType = this.types[0];
-        this.visitNamesAndDays = getVisitNamesAndDays(study.domains[this.selectedDomain]);
+        this.visitNamesAndDays = getVisitNamesAndDays(study.domains[this.selectedDomain], VISIT_NAME, VISIT_DAY);
         this.bl = this.visitNamesAndDays[0].name;
         this.ep = this.visitNamesAndDays[this.visitNamesAndDays.length-1].name;
         this.createLaboratoryDataframe();
@@ -61,7 +61,7 @@ export class TimeProfileView extends ClinicalCaseViewBase {
             this.uniqueLabValues = Array.from(getUniqueValues(study.domains[this.selectedDomain], this.domainFields[this.selectedDomain]['test']));
             this.uniqueVisits = Array.from(getUniqueValues(study.domains[this.selectedDomain], VISIT_NAME));
             this.selectedLabValue = this.uniqueLabValues[ 0 ] as string;
-            this.visitNamesAndDays = getVisitNamesAndDays(study.domains[this.selectedDomain]);
+            this.visitNamesAndDays = getVisitNamesAndDays(study.domains[this.selectedDomain], VISIT_NAME, VISIT_DAY);
             if (this.visitNamesAndDays.findIndex(it => it.name === this.bl) === -1) {
                 this.bl = this.visitNamesAndDays[0].name;
             }

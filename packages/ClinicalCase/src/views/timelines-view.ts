@@ -192,7 +192,7 @@ export class TimelinesView extends ClinicalCaseViewBase {
           aeNumByArmDict[aeNumberByArm.get(VIEWS_CONFIG[this.name][TRT_ARM_FIELD], i)] = aeNumberByArm.get('count', i) /
             subjNumberByArm.
               groupBy([VIEWS_CONFIG[this.name][TRT_ARM_FIELD], `unique(${SUBJECT_ID})`])
-              .where(`${VIEWS_CONFIG[this.name][TRT_ARM_FIELD]} = ${aeNumberByArm.get(VIEWS_CONFIG[this.name][TRT_ARM_FIELD], i)}`)
+              .where({ [VIEWS_CONFIG[this.name][TRT_ARM_FIELD]]: `${aeNumberByArm.get(VIEWS_CONFIG[this.name][TRT_ARM_FIELD], i)}` })
               .aggregate()
               .get(`unique(${SUBJECT_ID})`, 0);
         }
