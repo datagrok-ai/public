@@ -8,11 +8,13 @@
 		"@datagrok-libraries/utils": ">=0.0.17",
 		"rxjs": "^6.6.7",
 		"ts-loader": "latest",
-		"typescript": "latest"
+		"typescript": "latest",
+		"wu": "latest"
 	},
 	"devDependencies": {
 		"webpack": "latest",
-		"webpack-cli": "latest"
+		"webpack-cli": "latest",
+		"@types/wu": "latest"
 	},
 	"scripts": {
 		"debug-js-api-tests": "webpack && grok publish localhost",
