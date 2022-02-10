@@ -92,9 +92,9 @@ category('Grid', () => {
             throw 'Column Controlled Values (Choices) error'
     });
 
-    /*after(async () => {
+    after(async () => {
         v.close();
         grok.shell.closeAll();
-    }); */
+    });
 
 });
