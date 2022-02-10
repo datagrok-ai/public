@@ -689,6 +689,11 @@ export class Dialog extends DartWidget {
   clear() {
     api.grok_Dialog_Clear(this.dart);
   }
+
+  /** Returns currently open dialogs. */
+  static getOpenDialogs(): Dialog[] {
+    return api.grok_Dialog_GetOpenDialogs();
+  }
 }
 
 /**
