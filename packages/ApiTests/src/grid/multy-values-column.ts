@@ -19,17 +19,18 @@ category('Grid: MultiValuesColumn', () => {
     before(async () => {
         v = grok.shell.addTableView(table);
     });
+
     test('grid.multiValuesColumn', async () => {
 
         let languageTags:string[] = Array.from(table.col('Languages')!.tags);
-        console.log('tags: ' + languageTags.toString());
+
         if (languageTags[0][0] != '.multi-value-separator')
            throw 'multi-value-separator not assigned to column'
     });
 
-    /*after(async () => {
+    after(async () => {
         v.close();
         grok.shell.closeAll();
-    }); */
+    });
 
 });
