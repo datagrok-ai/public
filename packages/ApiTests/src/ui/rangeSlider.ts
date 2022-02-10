@@ -42,7 +42,7 @@ category('UI: Range slider', () => {
     try {
       range.onValuesChanged.subscribe((_) => { check = true });
       range.setValues(1, 9, 3, 4);
-      if (check = false)
+      if (check == false)
         throw 'onValuesChanged error';
     }
     catch (x) {
