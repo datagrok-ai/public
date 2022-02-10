@@ -30,6 +30,7 @@ export class SARViewer extends DG.JsViewer {
   grouping: boolean;
   groupMapping: StringDictionary | null;
   model: PeptidesModel | null;
+  protected _name: string = 'Structure-Activity Relationship';
   // protected pValueThreshold: number;
   // protected amountOfBestAARs: number;
   // duplicatesHandingMethod: string;
@@ -59,11 +60,12 @@ export class SARViewer extends DG.JsViewer {
     this.filterMode = this.bool('filterMode', false);
     this.bidirectionalAnalysis = this.bool('bidirectionalAnalysis', false);
     this.grouping = this.bool('grouping', false);
-    // this.pValueThreshold = this.float('pValueThreshold', 0.1);
-    // this.amountOfBestAARs = this.int('amountOfBestAAR', 1);
-    // this.duplicatesHandingMethod = this.string('duplicatesHandlingMethod', 'median', {choices: ['median']});
 
     this.sourceGrid = null;
+  }
+
+  get name() {
+    return this._name;
   }
 
   init() {
@@ -71,7 +73,6 @@ export class SARViewer extends DG.JsViewer {
     this.currentBitset = this._initialBitset.clone();
     this.initialized = true;
   }
-
 
   onTableAttached() {
     this.sourceGrid = this.view?.grid ?? (grok.shell.v as DG.TableView).grid;
@@ -136,13 +137,16 @@ export class SARViewer extends DG.JsViewer {
     //TODO: optimize. Don't calculate everything again if only view changes
     if (typeof this.dataFrame !== 'undefined' && this.activityColumnName && this.sourceGrid) {
       if (computeData) {
-        await this.model!.updateData(this.dataFrame!, this.activityColumnName, this.scaling, this.sourceGrid,
+        await this.model!.updateData(this.dataFrame, this.activityColumnName, this.scaling, this.sourceGrid,
           this.bidirectionalAnalysis, this._initialBitset, this.grouping);
       }
 
       if (this.viewerGrid !== null && this.viewerVGrid !== null) {
         $(this.root).empty();
-        this.root.appendChild(this.viewerGrid.root);
+        const title = ui.h1(this._name, {style: {'align-self': 'center'}});
+        const gridRoot = this.viewerGrid.root;
+        gridRoot.style.width = 'auto';
+        this.root.appendChild(ui.divV([title, gridRoot]));
         this.viewerGrid.dataFrame!.onCurrentCellChanged.subscribe((_) => {
           this.currentBitset = applyBitset(
             this.dataFrame!, this.viewerGrid!, this.aminoAcidResidue,
@@ -153,7 +157,7 @@ export class SARViewer extends DG.JsViewer {
         this.viewerVGrid.dataFrame!.onCurrentCellChanged.subscribe((_) => {
           syncGridsFunc(true, this.viewerGrid!, this.viewerVGrid!, this.aminoAcidResidue);
         });
-        this.dataFrame!.onRowsFiltering.subscribe((_) => {
+        this.dataFrame.onRowsFiltering.subscribe((_) => {
           sourceFilteringFunc(this.filterMode, this.dataFrame!, this.currentBitset!, this._initialBitset!);
         });
         grok.events.onAccordionConstructed.subscribe((accordion: DG.Accordion) => {
@@ -179,12 +183,8 @@ export class SARViewer extends DG.JsViewer {
 export class SARViewerVertical extends DG.JsViewer {
   viewerVGrid: DG.Grid | null;
   model: PeptidesModel | null;
+  protected _name = 'Sequence-Activity relationship';
 
-  /**
-   * Creates an instance of SARViewerVertical.
-   *
-   * @memberof SARViewerVertical
-   */
   constructor() {
     super();
 
@@ -192,20 +192,19 @@ export class SARViewerVertical extends DG.JsViewer {
     this.model = null;
   }
 
+  get name() {
+    return this._name;
+  }
+
   onTableAttached(): void {
     this.model = PeptidesModel.getOrInit(this.dataFrame!);
 
-    this.subs.push(this.model!.onSARVGridChanged.subscribe((data) => {
+    this.subs.push(this.model.onSARVGridChanged.subscribe((data) => {
       this.viewerVGrid = data;
       this.render();
     }));
   }
 
-  /**
-   * Viewer render function.
-   *
-   * @memberof SARViewerVertical
-   */
   render() {
     if (this.viewerVGrid) {
       $(this.root).empty();
@@ -215,12 +214,8 @@ export class SARViewerVertical extends DG.JsViewer {
   }
 }
 
-function syncGridsFunc(
-  sourceVertical: boolean,
-  viewerGrid: DG.Grid,
-  viewerVGrid: DG.Grid,
-  aminoAcidResidue: string,
-) { //TODO: refactor, move
+//TODO: refactor, move
+function syncGridsFunc(sourceVertical: boolean, viewerGrid: DG.Grid, viewerVGrid: DG.Grid, aminoAcidResidue: string) {
   if (viewerGrid && viewerGrid.dataFrame && viewerVGrid && viewerVGrid.dataFrame) {
     if (sourceVertical) {
       const dfCell = viewerVGrid.dataFrame.currentCell;
@@ -262,11 +257,7 @@ function syncGridsFunc(
 }
 
 function sourceFilteringFunc(
-  filterMode: boolean,
-  dataFrame: DG.DataFrame,
-  currentBitset: DG.BitSet,
-  initialBitset: DG.BitSet,
-) {
+  filterMode: boolean, dataFrame: DG.DataFrame, currentBitset: DG.BitSet, initialBitset: DG.BitSet) {
   if (filterMode) {
     dataFrame.selection.setAll(false, false);
     dataFrame.filter.copyFrom(currentBitset);
@@ -277,13 +268,8 @@ function sourceFilteringFunc(
 }
 
 function applyBitset(
-  dataFrame: DG.DataFrame,
-  viewerGrid: DG.Grid,
-  aminoAcidResidue: string,
-  groupMapping: StringDictionary,
-  initialBitset: DG.BitSet,
-  filterMode: boolean,
-) {
+  dataFrame: DG.DataFrame, viewerGrid: DG.Grid, aminoAcidResidue: string, groupMapping: StringDictionary,
+  initialBitset: DG.BitSet, filterMode: boolean) {
   let currentBitset = null;
   if (
     viewerGrid.dataFrame &&
@@ -320,13 +306,8 @@ function applyBitset(
 }
 
 function accordionFunc(
-  accordion: DG.Accordion,
-  viewerGrid: DG.Grid,
-  aminoAcidResidue: string,
-  initialBitset: DG.BitSet,
-  activityColumnName: string,
-  statsDf: DG.DataFrame,
-) {
+  accordion: DG.Accordion, viewerGrid: DG.Grid, aminoAcidResidue: string, initialBitset: DG.BitSet,
+  activityColumnName: string, statsDf: DG.DataFrame) {
   if (accordion.context instanceof DG.RowGroup) {
     const originalDf: DG.DataFrame = DG.toJs(accordion.context.dataFrame);
     const viewerDf = viewerGrid.dataFrame;
