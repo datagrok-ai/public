@@ -4,7 +4,7 @@ import * as DG from 'datagrok-api/dg';
 import {Peptides} from '../peptides';
 import '../styles.css';
 import {StringDictionary} from '@datagrok-libraries/utils/src/type-declarations';
-import { scaleActivity } from '../describe';
+import {scaleActivity} from '../describe';
 
 /**
  * Peptide analysis widget.

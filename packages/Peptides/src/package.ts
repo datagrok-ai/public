@@ -18,7 +18,7 @@ import {SARViewer, SARViewerVertical} from './viewers/sar-viewer';
 import {peptideMoleculeWidget, getMolecule} from './widgets/peptide-molecule';
 import {SubstViewer} from './viewers/subst-viewer';
 import {runKalign} from './utils/multiple-sequence-alignment';
-import { substTableWidget } from './widgets/subst-table';
+import {substTableWidget} from './widgets/subst-table';
 
 export const _package = new DG.Package();
 let currentGrid: DG.Grid;
