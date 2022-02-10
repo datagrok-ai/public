@@ -18,6 +18,7 @@ import {SARViewer, SARViewerVertical} from './viewers/sar-viewer';
 import {peptideMoleculeWidget, getMolecule} from './widgets/peptide-molecule';
 import {SubstViewer} from './viewers/subst-viewer';
 import {runKalign} from './utils/multiple-sequence-alignment';
+import { substTableWidget } from './widgets/subst-table';
 
 export const _package = new DG.Package();
 let currentGrid: DG.Grid;
@@ -235,42 +236,7 @@ export async function multipleSequenceAlignment(col: DG.Column): Promise<DG.Data
 //input: dataframe table {semType: Substitution}
 //output: widget result
 export async function peptideSubstitution(table: DG.DataFrame): Promise<DG.Widget> {
-  if (!table)
-    return new DG.Widget(ui.label('No substitution'));
-  let initialCol: DG.Column = table.columns.byName('Initial');
-  let substitutedCol: DG.Column = table.columns.byName('Substituted');
-  // let substCounts = [];
-  // let cnt = 0;
-
-  for (let i = 0; i < initialCol.length; ++i) {
-    const initialPeptide: string = initialCol.get(i);
-    const substPeptide: string = substitutedCol.get(i);
-
-    initialCol.set(i, initialPeptide + '#' + substPeptide);
-
-    // const initialAminos = initialPeptide.split('-');
-    // const substAminos = substPeptide.split('-');
-
-    // for (let j = 0; j < peptideLength; ++j) {
-    //   if (initialAminos[j] != substAminos[j])
-    //     substCounts[cnt++] = j;
-    // }
-  }
-
-  // const countCol = DG.Column.fromInt32Array('substCounts', substCounts as unknown as Int32Array);
-  // const df = DG.DataFrame.fromColumns([countCol]);
-  // const barchart = df.plot.histogram({value: 'substCounts'});
-  // if (barchart) {
-  //   barchart.root.style.width = '200px';
-  //   barchart.root.style.marginLeft = '30px';
-  // }
-
-  initialCol.semType = 'alignedSequenceDifference';
-  initialCol.name = 'Substitution';
-  table.columns.remove('Substituted');
-  const grid = table.plot.grid().root;
-  grid.style.width = 'auto';
-  return new DG.Widget(ui.divV([grid]));
+  return substTableWidget(table);
 }
 
 //name: alignedSequenceDifferenceCellRenderer
