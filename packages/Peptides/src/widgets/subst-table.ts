@@ -2,16 +2,16 @@ import * as ui from 'datagrok-api/ui';
 import * as DG from 'datagrok-api/dg';
 
 export function substTableWidget(table: DG.DataFrame): DG.Widget {
-  if (!table) 
+  if (!table)
     return new DG.Widget(ui.label('No substitution'));
 
   const aminoInputFrom = ui.stringInput('from', '');
   const aminoInputTo = ui.stringInput('to', '');
   const fromToMap: {[key: string]: DG.BitSet} = {};
-  let aminoFrom = "";
-  let aminoTo = "";
-  let initialCol: DG.Column = table.columns.byName('Initial');
-  let substitutedCol: DG.Column = table.columns.byName('Substituted');
+  let aminoFrom = '';
+  let aminoTo = '';
+  const initialCol: DG.Column = table.columns.byName('Initial');
+  const substitutedCol: DG.Column = table.columns.byName('Substituted');
 
   for (let i = 0; i < initialCol.length; ++i) {
     const initialPeptide: string = initialCol.get(i);
@@ -34,7 +34,7 @@ export function substTableWidget(table: DG.DataFrame): DG.Widget {
       if (aminosFrom[j] != aminosTo[j]) {
         const idx = (aminosFrom[j] === '' ? '-' : aminosFrom[j]) + '#' + (aminosTo[j] === '' ? '-' : aminosTo[j]);
 
-        if (!(idx in fromToMap)) 
+        if (!(idx in fromToMap))
           fromToMap[idx] = DG.BitSet.create(substCol.length);
         fromToMap[idx].set(i, true);
       }
@@ -43,13 +43,13 @@ export function substTableWidget(table: DG.DataFrame): DG.Widget {
 
   aminoInputFrom.onInput(() => {
     aminoFrom = aminoInputFrom.value;
-    if (aminoFrom + '#' + aminoTo in fromToMap) 
+    if (aminoFrom + '#' + aminoTo in fromToMap)
       table.selection.copyFrom(fromToMap[aminoFrom + '#' + aminoTo]);
   });
 
   aminoInputTo.onInput(() => {
     aminoTo = aminoInputTo.value;
-    if (aminoFrom + '#' + aminoTo in fromToMap) 
+    if (aminoFrom + '#' + aminoTo in fromToMap)
       table.selection.copyFrom(fromToMap[aminoFrom + '#' + aminoTo]);
   });
 

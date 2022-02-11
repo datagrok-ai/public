@@ -1,0 +1,69 @@
+.viewer-gallery-root h1{
+    margin-left: 5px;
+}
+.viewer-gallery{
+    flex-wrap: wrap;
+}
+.viewer-gallery h1{
+    margin-left: 5px;
+}
+.vg-selection-text{
+    position:absolute;
+    left:15px;
+    color:var(--grey-4);
+}
+/*.vg-controls{
+    position: absolute;
+    top:0px;
+    background: white;
+    z-index: 1;
+}*/
+.vg-controls.grok-gallery-search-bar{
+    margin: 0;
+    padding: 0;
+}
+.vg-controls.grok-gallery-search-bar>.ui-div>input{
+    min-width:895px;
+    margin-left: 5px;;
+}
+
+.vg-card{
+    min-width: 280px;
+    min-height: 280px;
+    padding: 5px;
+    margin: 5px;
+}
+
+.vg-card-small{
+    max-width: 204.5px;
+    margin: 5px;
+    padding: 5px;
+    text-align: left;
+}
+
+.vg-card-small:hover{
+    cursor: pointer;
+}
+.vg-card:hover{
+    cursor: pointer;
+}
+
+.vg-card-small.svg-icon{
+    height: 36px;
+    width: 36px;
+}
+
+.d4-item-card.viewer-gallery .d4-flex-row {
+    align-items: center;
+}
+.d4-item-card.viewer-gallery button{
+    position: absolute;
+    right: 0;
+}
+
+.card-label{
+    margin: 5px;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}

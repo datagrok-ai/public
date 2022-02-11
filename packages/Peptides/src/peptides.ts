@@ -3,17 +3,12 @@ import * as DG from 'datagrok-api/dg';
 import {createPeptideSimilaritySpaceViewer} from './utils/peptide-similarity-space';
 import {PeptidesModel} from './model';
 import {StringDictionary} from '@datagrok-libraries/utils/src/type-declarations';
-import { SARViewer, SARViewerVertical } from './viewers/sar-viewer';
-import { SubstViewer } from './viewers/subst-viewer';
-// import $ from 'cash-dom';
+import {SARViewer, SARViewerVertical} from './viewers/sar-viewer';
+import {SubstViewer} from './viewers/subst-viewer';
 
-/**
- * Peptides controller class.
- *
- * @export
- * @class Peptides
- */
+type viewerTypes = SARViewer | SARViewerVertical | SubstViewer;
 export class Peptides {
+  private helpUrl = '/help/domains/bio/peptides.md';
   /**
    * Class initializer
    *
@@ -25,18 +20,13 @@ export class Peptides {
    * @memberof Peptides
    */
   async init(
-    tableGrid: DG.Grid,
-    view: DG.TableView,
-    currentDf: DG.DataFrame,
-    options: StringDictionary,
-    col: DG.Column,
-    originalDfColumns: string[],
-  ) {
-
+    tableGrid: DG.Grid, view: DG.TableView, currentDf: DG.DataFrame, options: StringDictionary, col: DG.Column,
+    originalDfColumns: string[]) {
     function adjustCellSize(grid: DG.Grid) {
-      for (let i = 0; i < grid.columns.length; ++i) {
-        const col = grid.columns.byIndex(i)!;
-        col.width = isNaN(parseInt(col.name)) ? 50 : 40;
+      const colNum = grid.columns.length;
+      for (let i = 0; i < colNum; ++i) {
+        const iCol = grid.columns.byIndex(i)!;
+        iCol.width = isNaN(parseInt(iCol.name)) ? 50 : 40;
       }
       grid.props.rowHeight = 20;
     }
@@ -52,71 +42,33 @@ export class Peptides {
       }
     }
 
-    const initialFiter = currentDf.filter.clone();
-    // const originalDfColumns = (currentDf.columns as DG.ColumnList).names();
     const originalDfName = currentDf.name;
+    const dockManager = view.dockManager;
 
     PeptidesModel.getOrInit(currentDf);
 
-    // const substViewer = view.addViewer(
-    //   'substitution-analysis-viewer', {'activityColumnName': `${options['activityColumnName']}Scaled`},
-    // );
-    // const substNode = view.dockManager.dock(substViewer, DG.DOCK_TYPE.RIGHT, null, 'Substitution Analysis');
-
-    // const layout1 = view.saveLayout();
-    // view.dockManager.close(substNode);
-
-    const dockSAR = function (
-        sarViewer: SARViewer, sarViewerVertical: SARViewerVertical, peptideSpaceViewer: DG.ScatterPlotViewer) {
-      const sarNode = view.dockManager.dock(sarViewer, DG.DOCK_TYPE.DOWN, null, 'SAR Viewer');
-      const sarVNode = view.dockManager.dock(sarViewerVertical, DG.DOCK_TYPE.RIGHT, sarNode, 'SAR Vertical Viewer');
-      const psNode = view.dockManager.dock(peptideSpaceViewer, DG.DOCK_TYPE.LEFT, sarNode, 'Peptide Space Viewer', 0.3);
-
-      return [sarNode, sarVNode, psNode];
-    };
-
-    const dockSubst = function (substViewer: SubstViewer) {
-      const substNode = view.dockManager.dock(substViewer, DG.DOCK_TYPE.RIGHT, null, 'Substitution Analysis');
-
-      return [substNode];
-    }
-
-    const helpUrl = '/help/domains/bio/peptides.md';
-
-    // currentDf.temp['viewerGroup'] = 'SAR';
-    // const sarViewer = view.addViewer('peptide-sar-viewer', options);
     const sarViewer = await currentDf.plot.fromType('peptide-sar-viewer', options) as SARViewer;
-    sarViewer.helpUrl = helpUrl;
-    // const sarNode = view.dockManager.dock(sarViewer, DG.DOCK_TYPE.DOWN, null, 'SAR Viewer');
+    sarViewer.helpUrl = this.helpUrl;
 
-    // const sarViewerVertical = view.addViewer('peptide-sar-viewer-vertical');
     const sarViewerVertical = await currentDf.plot.fromType('peptide-sar-viewer-vertical') as SARViewerVertical;
-    sarViewerVertical.helpUrl = helpUrl;
-    // const sarVNode = view.dockManager.dock(sarViewerVertical, DG.DOCK_TYPE.RIGHT, sarNode, 'SAR Vertical Viewer');
+    sarViewerVertical.helpUrl = this.helpUrl;
+
+    const sarViewersGroup: viewerTypes[] = [sarViewer, sarViewerVertical];
 
     const peptideSpaceViewer = await createPeptideSimilaritySpaceViewer(
       currentDf, col, 't-SNE', 'Levenshtein', 100, view, `${options['activityColumnName']}Scaled`);
-    // const psNode = view.dockManager.dock(peptideSpaceViewer, DG.DOCK_TYPE.LEFT, sarNode, 'Peptide Space Viewer', 0.3);
+    dockManager.dock(peptideSpaceViewer, DG.DOCK_TYPE.RIGHT, null, 'Peptide Space viewer');
 
-    let viewerGroup1 = [sarViewer, sarViewerVertical, peptideSpaceViewer];
-
-    // const layout1 = view.saveLayout();
-    // const nodeList = [sarNode, sarVNode];
-    let nodeList = dockSAR(sarViewer, sarViewerVertical, peptideSpaceViewer);
+    let nodeList = dockViewers(sarViewersGroup, DG.DOCK_TYPE.RIGHT, dockManager, DG.DOCK_TYPE.DOWN);
 
     const substViewer = await currentDf.plot.fromType(
       'substitution-analysis-viewer', {'activityColumnName': `${options['activityColumnName']}Scaled`}) as SubstViewer;
-    // const substNode = view.dockManager.dock(substViewer, DG.DOCK_TYPE.RIGHT, null, 'Substitution Analysis');
-    let viewerGroup2 = [substViewer];
+    const substViewersGroup = [substViewer];
 
-    // const layout2 = view.saveLayout();
-    // view.dockManager.close(substNode);
-
-    // const viewerList = [sarViewer, sarViewerVertical, peptideSpaceViewer];
     tableGrid.props.allowEdit = false;
     adjustCellSize(tableGrid);
 
-    const hideIcon = ui.iconFA('window-close', () => { //undo?, times?
+    const hideIcon = ui.iconFA('window-close', () => {
       const viewers = [];
       for (const viewer of view.viewers) {
         if (viewer.type !== DG.VIEWER.GRID)
@@ -142,19 +94,38 @@ export class Peptides {
     }, 'Close viewers and restore dataframe');
 
     let isSA = false;
-    //TODO: fix layouts
+    let currentViewersGroup: viewerTypes[];
     const switchViewers = ui.iconFA('toggle-on', () => {
       $(switchViewers).toggleClass('fa-toggle-off').toggleClass('fa-toggle-on');
-      nodeList.forEach(node => {
+      nodeList?.forEach((node) => {
         view.dockManager.close(node);
         node.container.destroy();
       });
-      (isSA ? viewerGroup2 : viewerGroup1).forEach((v) => v.removeFromView());
-      nodeList = isSA ? dockSAR(sarViewer, sarViewerVertical, peptideSpaceViewer) : dockSubst(substViewer);
+      currentViewersGroup = isSA ? substViewersGroup : sarViewersGroup;
+      currentViewersGroup.forEach((v) => v.removeFromView());
+      nodeList = dockViewers(currentViewersGroup, DG.DOCK_TYPE.LEFT, dockManager, DG.DOCK_TYPE.DOWN);
       isSA = !isSA;
     }, 'Toggle viewer group');
 
     const ribbonPanels = view.getRibbonPanels();
     view.setRibbonPanels([[hideIcon, switchViewers]]);
   }
+}
+
+function dockViewers(
+  viewerList: viewerTypes[], attachDirection: DG.DockType, dockManager: DG.DockManager,
+  initialAttachDirection?: DG.DockType): DG.DockNode[] | null {
+  const viewerListLength = viewerList.length;
+  if (viewerListLength === 0)
+    return null;
+
+  let currentViewer = viewerList[0];
+  const nodeList = [dockManager.dock(currentViewer, initialAttachDirection, null, currentViewer.name ?? '')];
+  const ratio = 1 / viewerListLength;
+
+  for (let i = 1; i < viewerListLength; i++) {
+    currentViewer = viewerList[i];
+    nodeList.push(dockManager.dock(currentViewer, attachDirection, nodeList[i - 1], currentViewer.name ?? '', ratio));
+  }
+  return nodeList;
 }

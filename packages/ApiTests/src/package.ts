@@ -8,6 +8,7 @@ import './dataframe/events';
 import './shell/shell';
 import './shell/windows';
 import './viewer/viewer';
+import './views/docking';
 import './views/events';
 import './views/layouts';
 import './dapi/files';

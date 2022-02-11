@@ -175,7 +175,7 @@ export class AminoAcidsCellRenderer extends DG.GridCellRenderer {
      */
     get defaultHeight() {
       return 15;
-    } 
+    }
 
     /**
      * Cell width.
@@ -183,9 +183,9 @@ export class AminoAcidsCellRenderer extends DG.GridCellRenderer {
      * @readonly
      * @memberof AminoAcidsCellRenderer
      */
-     get defaultWidth() {
+    get defaultWidth() {
       return 30;
-    } 
+    }
 
     /**
      * Constructor.
@@ -262,7 +262,7 @@ export class AlignedSequenceCellRenderer extends DG.GridCellRenderer {
    * @readonly
    * @memberof AlignedSequenceCellRenderer
    */
-   get defaultHeight() {
+  get defaultHeight() {
     return 30;
   }
 
@@ -391,7 +391,7 @@ export class AlignedSequenceDifferenceCellRenderer extends DG.GridCellRenderer {
    * @readonly
    * @memberof AlignedSequenceDifferenceCellRenderer
    */
-   get defaultWidth() {
+  get defaultWidth() {
     return 230;
   }
 
@@ -447,9 +447,8 @@ export class AlignedSequenceDifferenceCellRenderer extends DG.GridCellRenderer {
         const x1 = printLeftOrCentered(x, y - verticalShift, w, h, g, amino1, color1, pivot1, true);
         x = printLeftOrCentered(x, y + verticalShift, w, h, g, amino2, color2, pivot2, true);
         x = Math.max(x, x1) + 4;
-      } else {
+      } else
         x = printLeftOrCentered(x, y, w, h, g, amino1 ? amino1 : '-', color1, pivot1, true, true, 0.5) + 4;
-      } 
     });
     g.restore();
   }

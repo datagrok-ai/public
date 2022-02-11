@@ -1,6 +1,5 @@
 import * as DG from 'datagrok-api/dg';
 import * as ui from 'datagrok-api/ui';
-import {scaleBand, scaleLinear, text} from 'd3';
 import {ChemPalette} from '../utils/chem-palette';
 import * as rxjs from 'rxjs';
 const cp = new ChemPalette('grok');
@@ -16,10 +15,10 @@ export function addViewerToHeader(grid: DG.Grid, barchart: StackedBarChart) {
       barchart.highlight(cell, mouseMove.offsetX, mouseMove.offsetY);
     else
       return;
-    
-    if (cell?.isColHeader && cell.tableColumn?.semType == 'aminoAcids') 
+
+    if (cell?.isColHeader && cell.tableColumn?.semType == 'aminoAcids')
       barchart.beginSelection(mouseMove);
-    else 
+    else
       barchart.unhighlight();
   });
 
@@ -170,7 +169,7 @@ export class StackedBarChart extends DG.JsViewer {
           .whereRowMask(df.filter)
           .add('count', name, `${name}_count`)
           .aggregate();
-        
+
         if (mask.trueCount !== df.filter.trueCount) {
           const aggregatedMask = DG.BitSet.fromBytes(getSelectedFilteredBuffer(df), df.rowCount);
           this.aggregatedTablesUnselected[name] = df
@@ -178,7 +177,7 @@ export class StackedBarChart extends DG.JsViewer {
             .whereRowMask(aggregatedMask)
             .add('count', name, `${name}_count`)
             .aggregate();
-        } 
+        }
       });
 
       this.data = [];
@@ -191,7 +190,7 @@ export class StackedBarChart extends DG.JsViewer {
         } = {'name': name, 'data': []};
         this.barStats[colObj['name']] = colObj['data'];
         this.data.push(colObj);
-        
+
         for (let i = 0; i < df.rowCount; i++) {
           const amino = df.getCol(name).get(i);
           const aminoCount = df.getCol(`${name}_count`).get(i);
@@ -258,7 +257,7 @@ export class StackedBarChart extends DG.JsViewer {
         const sBarHeight = h * obj['count'] / this.max;
         const gapSize = sBarHeight * innerMargin;
         const verticalShift = (this.max - sum) / this.max;
-        const [color, aarOuter,,] = cp.getColorAAPivot(obj['name']);
+        const [color, aarOuter, , ] = cp.getColorAAPivot(obj['name']);
         const textSize = g.measureText(aarOuter);
         const fontSize = 11;
         const leftMargin = (w - (aarOuter.length > 1 ? fontSize : textSize.width - 8)) / 2;
@@ -275,8 +274,7 @@ export class StackedBarChart extends DG.JsViewer {
           if (color != ChemPalette.undefinedColor) {
             g.fillRect(x, y + start, w, subBartHeight);
             g.fillStyle = 'black';
-          }
-          else
+          } else
             g.strokeRect(x + 0.5, y + start, w - 1, subBartHeight);
 
           g.font = `${fontSize}px monospace`;
@@ -291,9 +289,9 @@ export class StackedBarChart extends DG.JsViewer {
 
           g.fillText(aarOuter, absX, absY);
           g.setTransform(origTransform);
-        } else {
+        } else
           g.fillRect(x, y + start, w, subBartHeight);
-        }
+
 
         if (this.selectionMode && obj['selectedCount'] > 0) {
           g.fillStyle = 'rgb(255,165,0)';
@@ -301,7 +299,7 @@ export class StackedBarChart extends DG.JsViewer {
             x - w * selectLineRatio * 2,
             y + start,
             w * selectLineRatio,
-            h * obj['selectedCount'] / this.max - gapSize
+            h * obj['selectedCount'] / this.max - gapSize,
           );
         }
 
@@ -354,7 +352,7 @@ export class StackedBarChart extends DG.JsViewer {
     highlight(cell: DG.GridCell, offsetX:number, offsetY:number): void {
       if (!cell.tableColumn?.name || !this.aminoColumnNames.includes(cell.tableColumn.name))
         return;
-        
+
       const colName = cell.tableColumn?.name;
       const innerMargin = 0.02;
       const margin = 0.2;
@@ -382,10 +380,10 @@ export class StackedBarChart extends DG.JsViewer {
         if (offsetX >= x &&
             offsetY >= y + start &&
             offsetX <= x + w &&
-            offsetY <= y + start + subBartHeight) {
+            offsetY <= y + start + subBartHeight)
           this.highlighted = {'colName': colName, 'aaName': obj['name']};
-        }
-        
+
+
         sum -= obj['count'];
       });
     }
