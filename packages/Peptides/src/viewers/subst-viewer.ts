@@ -4,9 +4,7 @@ import * as DG from 'datagrok-api/dg';
 
 import $ from 'cash-dom';
 
-// import {aarGroups} from '../describe';
 import {setAARRenderer} from '../utils/cell-renderer';
-import {SemanticValue} from 'datagrok-api/dg';
 import {PeptidesModel} from '../model';
 
 export class SubstViewer extends DG.JsViewer {
@@ -14,7 +12,7 @@ export class SubstViewer extends DG.JsViewer {
   maxSubstitutions: number;
   activityLimit: number;
   activityColumnName: string;
-  title: string;
+  private _name: string = 'Substitution analysis';
   casesGrid: DG.Grid | null;
   model: PeptidesModel | null;
 
@@ -22,7 +20,6 @@ export class SubstViewer extends DG.JsViewer {
     super();
 
     this.activityColumnName = this.string('activityColumnName');
-    this.title = this.string('title', 'Substitution analysis');
 
     this.maxSubstitutions = this.int('maxSubstitutions', 1);
     this.activityLimit = this.float('activityLimit', 2);
@@ -30,6 +27,10 @@ export class SubstViewer extends DG.JsViewer {
     this.viewerGrid = null;
     this.casesGrid = null;
     this.model = null;
+  }
+
+  get name() {
+    return this._name;
   }
 
   onPropertyChanged(property: DG.Property): void {
@@ -232,9 +233,9 @@ export class SubstViewer extends DG.JsViewer {
 
         this.casesGrid = tempDf.plot.grid();
         this.casesGrid.props.allowEdit = false;
-        grok.shell.o = SemanticValue.fromValueType(tempDf, 'Substitution');
+        grok.shell.o = DG.SemanticValue.fromValueType(tempDf, 'Substitution');
       } else {
-        grok.shell.o = SemanticValue.fromValueType(null, 'Substitution');
+        grok.shell.o = DG.SemanticValue.fromValueType(null, 'Substitution');
         this.casesGrid = null;
       }
 
@@ -246,7 +247,7 @@ export class SubstViewer extends DG.JsViewer {
 
   render() {
     $(this.root).empty();
-    const title = ui.h1(this.title, {style: {'align-self': 'center'}});
+    const title = ui.h1(this.name, {style: {'align-self': 'center'}});
     const gridRoot = this.viewerGrid!.root;
     title.style.alignContent = 'center';
     gridRoot.style.width = 'auto';

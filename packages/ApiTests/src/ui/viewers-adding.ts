@@ -29,16 +29,16 @@ category('UI: Viewers', () => {
 
     });
 
-    function viewerCheck(viewers:DG.Viewer[], viewer:string): void {
+    function viewerCheck(viewers:DG.Viewer[], viewerName:string): void {
         let check = false;
         for(let i:number = 0; i < viewers.length; i++){
-            if (viewers[i].type == viewer){
+            if (viewers[i].type == viewerName){
                 check = true;
                 break;
             }
         }
         if (check == false){
-            throw viewer + 'not found';
+            throw viewerName + 'not found';
         }
     }
 

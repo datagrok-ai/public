@@ -94,8 +94,8 @@ function sortSourceGrid(sourceGrid: DG.Grid) {
 }
 
 export async function scaleActivity(
-    activityScaling: string, activityColumn: string, activityColumnScaled: string, df: DG.DataFrame,
-    ): Promise<[DG.DataFrame, string]> {
+  activityScaling: string, activityColumn: string, activityColumnScaled: string, df: DG.DataFrame,
+): Promise<[DG.DataFrame, string]> {
   // const df = sourceGrid.dataFrame!;
   const tempDf = df.clone(df.filter, [activityColumn]);
 
@@ -115,7 +115,7 @@ export async function scaleActivity(
   default:
     throw new Error(`ScalingError: method \`${activityScaling}\` is not available.`);
   }
-  
+
   await (tempDf.columns as DG.ColumnList).addNewCalculated(activityColumnScaled, formula);
 
   return [tempDf, newColName];
@@ -482,7 +482,7 @@ export async function describe(
   const oldScaledCol = df.getCol(activityColumnScaled);
   const oldScaledColGridName = oldScaledCol.temp['gridName'];
   const oldScaledGridCol = sourceGrid.col(oldScaledColGridName);
-  
+
   (splitSeqDf.columns as DG.ColumnList).add(scaledCol);
   (df.columns as DG.ColumnList).replace(oldScaledCol, scaledCol);
   if (newColName === activityColumn)
@@ -549,7 +549,7 @@ export async function describe(
   );
 
   postProcessGrids(sourceGrid, invalidIndexes, matrixDf, grouping, aminoAcidResidue, sarGrid, sarVGrid);
-  
+
   //TODO: return class instead
   return [sarGrid, sarVGrid, statsDf, groupMapping];
 }

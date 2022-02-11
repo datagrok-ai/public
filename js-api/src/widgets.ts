@@ -586,6 +586,14 @@ export class Dialog extends DartWidget {
   /** Returns a list of the dialog's inputs. */
   get inputs(): InputBase[] { return api.grok_Dialog_Get_Inputs(this.dart); }
 
+  /** Returns an input with the specified caption, or throws an exception. */
+  input(caption: string): InputBase {
+    const input = this.inputs.find((f) => f.caption == caption);
+    if (!input)
+      throw `Input "${caption}" not found.`;
+    return input;
+  }
+
   /**
    * Sets the OK button handler, and shows the OK button
    * @param {Function} handler
@@ -688,6 +696,11 @@ export class Dialog extends DartWidget {
   /** Clears the content. */
   clear() {
     api.grok_Dialog_Clear(this.dart);
+  }
+
+  /** Returns currently open dialogs. */
+  static getOpenDialogs(): Dialog[] {
+    return api.grok_Dialog_GetOpenDialogs();
   }
 }
 
