@@ -1,30 +1,41 @@
 import * as grok from 'datagrok-api/grok';
 import * as ui from 'datagrok-api/ui';
-import * as DG from "datagrok-api/dg";
+import * as DG from 'datagrok-api/dg';
 
+export class TreeBrowser {// extends DG.JsViewer {
+  title: string;
+  phyloTreeViewer: DG.Viewer;
+  networkViewer: DG.Viewer;
 
-export class TreeBrowser {
-  async init(df, mlbView: DG.TableView) {
-    let treeCol = df.col('TREE');
-    let cloneId = df.col('CLONE');
+  // constructor() {
+  //   super();
+  //   this.title = this.string('title', 'Phylogenetic tree');
+  // }
+
+  async init(df: DG.DataFrame, mlbView: DG.TableView) {
+    const treeCol = df.col('TREE');
+    const cloneId = df.col('CLONE');
     let processed = null;
 
     for (let i = 1; i < treeCol.length; i++) {
-      if (DG.Func.find({name: '_newickToDf'}).length == 0) return grok.shell.warning('Newick parser is unavailable');
-      let t = await grok.functions.call('PhyloTreeViewer:_newickToDf', { newick: treeCol.get(i), filename: 'nwk' });
-      let p = t.col('parent');
-      let c = t.col('node');
+      if (DG.Func.find({name: '_newickToDf'}).length == 0)
+        return grok.shell.warning('Newick parser is unavailable');
 
-      let id = cloneId.get(i);
+      // TODO: switch call from system to local import.
+      const t = await grok.functions.call('PhyloTreeViewer:_newickToDf', {newick: treeCol.get(i), filename: 'nwk'});
+      const p = t.col('parent');
+      const c = t.col('node');
+
+      const id = cloneId.get(i);
       t.rows.removeAt(0);
       t.columns.addNewString('clone').init((_) => id);
       t.columns.addNewInt('edgeColor').init((_) => i);
 
       for (let k = 0; k < t.rowCount; k++) {
-        let n1 = p.get(k);
-        if (n1 == 'root') p.set(k, `root-${id}`)
+        const n1 = p.get(k);
+        if (n1 == 'root') p.set(k, `root-${id}`);
         else if (n1.startsWith('node-')) p.set(k, `${n1}-${id}`);
-        let n2 = c.get(k);
+        const n2 = c.get(k);
         if (n2.startsWith('node-')) c.set(k, `${n2}-${id}`);
       }
       if (processed == null) processed = t;
@@ -33,23 +44,32 @@ export class TreeBrowser {
 
     grok.data.linkTables(df, processed, ['clone'], ['clone'], [DG.SYNC_TYPE.CURRENT_ROW_TO_SELECTION]);
     treeCol.semType = 'newick';
-    df.currentRow = 1;
+    df.currentRowIdx = 1;
 
-    //let view = grok.shell.addTableView(df);
-    let grid = DG.Viewer.grid(processed);
-    let tree = DG.Viewer.fromType('PhyloTree', df);
-    let trees = DG.Viewer.fromType(DG.VIEWER.NETWORK_DIAGRAM, processed, {
+    const tree = DG.Viewer.fromType('PhyloTree', df);
+    const network = DG.Viewer.fromType(DG.VIEWER.NETWORK_DIAGRAM, processed, {
       node1: 'node',
       node2: 'parent',
-      edgeColorColumnName: 'edgeColor'
-    });  
+      edgeColorColumnName: 'edgeColor',
+    });
 
-    //view.addViewer(tree);
-    let treeNode = mlbView.dockManager.dock(tree, DG.DOCK_TYPE.DOWN);
+    const treeNode = mlbView.dockManager.dock(tree, DG.DOCK_TYPE.DOWN);
+    mlbView.dockManager.dock(network, DG.DOCK_TYPE.RIGHT, treeNode);
 
-    //mlbView.addViewer(grid);
-    //let gridNode = mlbView.dockManager.dock(grid, DG.DOCK_TYPE.DOWN);
+    network.onEvent('click').subscribe((args) => {
+      console.warn([args, typeof args]);
+    });
 
-    mlbView.dockManager.dock(trees, DG.DOCK_TYPE.RIGHT, treeNode);
+    // this.phyloTreeViewer = tree;
+    // this.networkViewer = network;
+  }
+
+  get root(): HTMLElement {
+    const title = ui.h1(this.title, {style: {'align-self': 'center', 'alignContent': 'center'}});
+    if (this.phyloTreeViewer && this.networkViewer) {
+      [this.phyloTreeViewer.root, this.networkViewer.root].forEach((v) => v.style.width = 'auto');
+      return ui.divV([title, ui.divH([this.phyloTreeViewer.root, this.networkViewer.root])]);
+    }
+    return title;
   }
 }

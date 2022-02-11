@@ -426,6 +426,7 @@ export class MolecularLiabilityBrowser {
     if (dfTree) {
       const treeBrowser = new TreeBrowser();
       await treeBrowser.init(dfTree, this.mlbView);
+      //this.mlbView.dockManager.dock(treeBrowser, DG.DOCK_TYPE.DOWN);
     }
 
     this.setVidInput();
