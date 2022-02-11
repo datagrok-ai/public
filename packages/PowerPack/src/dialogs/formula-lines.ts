@@ -1,14 +1,13 @@
-/*
 import * as ui from 'datagrok-api/ui';
 import * as DG from 'datagrok-api/dg';
 
-/!** Formula Line types *!/
+/** Formula Line types */
 const enum ITEM_TYPE {
   LINE = 'line',
   BAND = 'band'
 }
 
-/!** Formula Line captions *!/
+/** Formula Line captions */
 const enum ITEM_CAPTION {
   LINE = 'Line',
   BAND = 'Band',
@@ -19,17 +18,17 @@ const enum ITEM_CAPTION {
   VERT_BAND = 'Band - Vertical'
 }
 
-/!** Formula Line sources *!/
+/** Formula Line sources */
 const enum ITEM_SOURCE {
   VIEWER = 'Viewer',
   DATAFRAME = 'DataFrame'
 }
 
-/!**
+/**
  * Returns Formula Line type by its user-friendly [caption].
  * @param {ITEM_CAPTION} caption
  * @returns {ITEM_TYPE}
- *!/
+ */
 function getItemTypeByCaption(caption: string): string {
   switch (caption) {
     case ITEM_CAPTION.LINE:
@@ -44,10 +43,10 @@ function getItemTypeByCaption(caption: string): string {
   }
 }
 
-/!**
+/**
  * Formula Lines Host Helper.
  * Reads, storages and saves Formula Lines to the host (DataFrame and Viewer).
- *!/
+ */
 class Host {
   dframeItems?: DG.FormulaLine[];
   viewerItems?: DG.FormulaLine[];
@@ -87,9 +86,9 @@ class Host {
   }
 }
 
-/!**
+/**
  * Table Helper for displaying and navigating Formula Lines list.
- *!/
+ */
 class Table {
   _grid: DG.Grid;
   _onChangedAction: Function
@@ -100,7 +99,7 @@ class Table {
   get _currentItemIdx(): number { return this._dataFrame.currentRowIdx;}
   set _currentItemIdx(rowIdx: number) { this._dataFrame.currentRowIdx = rowIdx; }
 
-  /!** Creates "Delete" button *!/
+  /** Creates "Delete" button */
   _deleteBtn(itemIdx: number): HTMLElement {
     let btn = ui.button(ui.iconFA('trash-alt'), () => {
       this.items.splice(itemIdx, 1);
@@ -116,7 +115,7 @@ class Table {
     return btn;
   }
 
-  /!** Used to prevent onValuesChanged event when the grid changes itself *!/
+  /** Used to prevent onValuesChanged event when the grid changes itself */
   _notify: boolean = true;
 
   get root(): HTMLElement { return this._grid.root; }
@@ -133,7 +132,7 @@ class Table {
           DG.Column.fromList('bool', 'visible', [])
         ]);
 
-    /!** Column for "trash" buttons *!/
+    /** Column for "trash" buttons */
     const BTN_COL_NAME = 'deleteBtn';
     dataFrame.columns.addNewString(BTN_COL_NAME);
 
@@ -226,22 +225,22 @@ interface AxisColumns {
   x: DG.Column
 }
 
-/!**
+/**
  * Preview Helper for Formula Lines.
  * Scatter Plot viewer by default.
- *!/
+ */
 class Preview {
   scatterPlot: DG.ScatterPlotViewer;
   dataFrame: DG.DataFrame;
   items: DG.FormulaLine[];
 
-  /!** Source Scatter Plot axes *!/
+  /** Source Scatter Plot axes */
   _scrAxes?: AxisNames;
 
   set height(h: number) { this.scatterPlot.root.style.height = `${h}px`; }
   get root(): HTMLElement { return this.scatterPlot.root; }
 
-  /!** Returns the current columns pair of the preview Scatter Plot *!/
+  /** Returns the current columns pair of the preview Scatter Plot */
   get axisCols(): AxisColumns {
     return {
       y: this.dataFrame.getCol(this.scatterPlot.props.yColumnName),
@@ -249,7 +248,7 @@ class Preview {
     }
   }
 
-  /!** Sets the current axes of the preview Scatter Plot by column names *!/
+  /** Sets the current axes of the preview Scatter Plot by column names */
   set _axes(names: AxisNames) {
     if (names && names.y && this.dataFrame.getCol(names.y))
       this.scatterPlot.setOptions({y: names.y});
@@ -257,15 +256,15 @@ class Preview {
       this.scatterPlot.setOptions({x: names.x});
   }
 
-  /!**
+  /**
    * Extracts the axes names from the formula. If possible, adjusts the axes
    * of the formula to the axes of the original scatterplot.
-   *!/
+   */
   _getItemAxes(item: DG.FormulaLine): AxisNames {
     let itemMeta = DG.FormulaLinesHelper.getMeta(item);
     let [previewY, previewX] = [itemMeta.funcName, itemMeta.argName];
 
-    /!** If the source axes exist, then we try to set similar axes *!/
+    /** If the source axes exist, then we try to set similar axes */
     if (this._scrAxes) {
       [previewY, previewX] = [previewY ?? this._scrAxes.y, previewX ?? this._scrAxes.x];
 
@@ -307,10 +306,10 @@ class Preview {
       xAxisHeight: 25
     });
 
-    /!**
+    /**
      * Creates special context menu for preview Scatter Plot.
      * Before opening the menu, it calculates the world coordinates of the click point.
-     *!/
+     */
     this.scatterPlot.root.addEventListener('contextmenu', (event: MouseEvent) => {
       event.preventDefault();
       let worldPoint = this.scatterPlot.screenToWorld(event.offsetX, event.offsetY);
@@ -318,21 +317,21 @@ class Preview {
     });
   }
 
-  /!**
+  /**
    * Shows a line with [itemIdx] index on the Scatter Plot.
    * Returns true if the rendering was successful, false otherwise.
-   *!/
+   */
   update(itemIdx: number): boolean {
-    /!** If there are no lines, try to set the axes as in the original Scatter Plot. *!/
+    /** If there are no lines, try to set the axes as in the original Scatter Plot. */
     if (itemIdx < 0 && this._scrAxes)
       this._axes = this._scrAxes;
 
-    /!** Duplicate the original item to display it even if it's hidden *!/
+    /** Duplicate the original item to display it even if it's hidden */
     let item = this.items[itemIdx];
     let previewItem = Object.assign({}, item);
     previewItem.visible = true;
 
-    /!** Trying to show the item *!/
+    /** Trying to show the item */
     this.scatterPlot.meta.formulaLines.clear();
     try {
       this.scatterPlot.meta.formulaLines.add(previewItem);
@@ -345,9 +344,9 @@ class Preview {
   }
 }
 
-/!**
+/**
  * Editor Helper for Formula Lines (form with corresponding inputs).
- *!/
+ */
 class Editor {
   _form: HTMLElement;
   _dataFrame: DG.DataFrame;
@@ -363,7 +362,7 @@ class Editor {
     this._onChangedAction = onChangedAction;
   }
 
-  /!** Creates and fills editor for given Formula Line *!/
+  /** Creates and fills editor for given Formula Line */
   update(itemIdx: number) {
     let newForm = this._createForm(itemIdx);
     this._form.replaceWith(newForm);
@@ -386,14 +385,14 @@ class Editor {
     let tooltipPane = ui.div([], {classes: 'ui-form', style: {marginLeft: '-20px'}});
 
     if (itemIdx >= 0) {
-      /!** Preparing the "Main" panel *!/
+      /** Preparing the "Main" panel */
       mainPane.append(caption == ITEM_CAPTION.CONST_LINE
         ? this._inputConstant(itemIdx, itemY, expression)
         : this._inputFormula(itemIdx));
       if (caption == ITEM_CAPTION.BAND)
         mainPane.append(this._inputColumn2(itemIdx));
 
-      /!** Preparing the "Format" panel *!/
+      /** Preparing the "Format" panel */
       formatPane.append(this._inputColor(itemIdx));
       formatPane.append(this._inputOpacity(itemIdx));
       if (caption != ITEM_CAPTION.BAND)
@@ -401,12 +400,12 @@ class Editor {
       formatPane.append(this._inputRange(itemIdx));
       formatPane.append(this._inputArrange(itemIdx));
 
-      /!** Preparing the "Tooltip" panel *!/
+      /** Preparing the "Tooltip" panel */
       tooltipPane.append(this._inputTitle(itemIdx));
       tooltipPane.append(this._inputDescription(itemIdx));
     }
 
-    /!** Creating the accordion *!/
+    /** Creating the accordion */
     let combinedPanels = ui.accordion();
     combinedPanels.addPane(itemIdx >= 0 ? caption : ITEM_CAPTION.LINE, () => mainPane, true);
     combinedPanels.addPane('Format', () => formatPane, true);
@@ -415,7 +414,7 @@ class Editor {
     return ui.div([combinedPanels.root]);
   }
 
-  /!** Creates textarea for item formula *!/
+  /** Creates textarea for item formula */
   _inputFormula(itemIdx: number): HTMLElement {
     let item = this.items[itemIdx];
 
@@ -434,7 +433,7 @@ class Editor {
     return ibFormula.root;
   }
 
-  /!** Creates color picker for item color *!/
+  /** Creates color picker for item color */
   _inputColor(itemIdx: number): HTMLElement {
     let item = this.items[itemIdx];
 
@@ -450,7 +449,7 @@ class Editor {
     return ui.divH([ibColor.root]);
   }
 
-  /!** Creates range slider for item opacity *!/
+  /** Creates range slider for item opacity */
   _inputOpacity(itemIdx: number): HTMLElement {
     let item = this.items[itemIdx];
 
@@ -470,7 +469,7 @@ class Editor {
     return ui.divH([ui.div([label, elOpacity], 'ui-input-root')]);
   }
 
-  /!** Creates combobox for item line style and text input for item width *!/
+  /** Creates combobox for item line style and text input for item width */
   _inputStyle(itemIdx: number): HTMLElement {
     let item = this.items[itemIdx];
 
@@ -496,7 +495,7 @@ class Editor {
     return ui.divH([ibStyle.root, ibWidth.root, unit]);
   }
 
-  /!** Creates text inputs for min-max values of item *!/
+  /** Creates text inputs for min-max values of item */
   _inputRange(itemIdx: number): HTMLElement {
     let item = this.items[itemIdx];
 
@@ -521,7 +520,7 @@ class Editor {
     return ui.divH([ibMin.root, ibMax.root]);
   }
 
-  /!** Creates combobox for item position (z-index) *!/
+  /** Creates combobox for item position (z-index) */
   _inputArrange(itemIdx: number): HTMLElement {
     let item = this.items[itemIdx];
 
@@ -536,7 +535,7 @@ class Editor {
     return ui.divH([ibArrange.root]);
   }
 
-  /!** Creates text input for item title *!/
+  /** Creates text input for item title */
   _inputTitle(itemIdx: number): HTMLElement {
     let item = this.items[itemIdx];
 
@@ -551,7 +550,7 @@ class Editor {
     return ui.divH([ibTitle.root]);
   }
 
-  /!** Creates textarea for item description *!/
+  /** Creates textarea for item description */
   _inputDescription(itemIdx: number): HTMLElement {
     let item = this.items[itemIdx];
 
@@ -566,7 +565,7 @@ class Editor {
     return ibDescription.root;
   }
 
-  /!** Creates column input for band second column *!/
+  /** Creates column input for band second column */
   _inputColumn2(itemIdx: number): HTMLElement {
     let item = this.items[itemIdx];
 
@@ -581,7 +580,7 @@ class Editor {
     return ui.divH([ibColumn2.root]);
   }
 
-  /!** Creates column input and text input for constant item *!/
+  /** Creates column input and text input for constant item */
   _inputConstant(itemIdx: number, colName: string, value: string): HTMLElement {
     let item = this.items[itemIdx];
 
@@ -606,17 +605,17 @@ class Editor {
   }
 }
 
-/!**
+/**
  * Helper that implements the logic of creating a Formula Line item of a given type.
- *!/
+ */
 class CreationControl {
-  /!** Opens a popup menu with predefined new Formula Line item types *!/
+  /** Opens a popup menu with predefined new Formula Line item types */
   popupMenu: Function;
 
-  /!** Used to create constant lines passing through the mouse click point on the Scatter Plot *!/
+  /** Used to create constant lines passing through the mouse click point on the Scatter Plot */
   _getCols: Function;
 
-  /!** Creates a button and binds an item creation menu to it *!/
+  /** Creates a button and binds an item creation menu to it */
   get button(): HTMLElement {
     let btn = ui.bigButton('Add new', this.popupMenu);
     return ui.div([btn], {style: {width: '100%', textAlign: 'right'}});
@@ -631,13 +630,13 @@ class CreationControl {
         let colY = cols.y;
         let colX = cols.x;
 
-        /!** Create blank item with a given type *!/
+        /** Create blank item with a given type */
         let item: DG.FormulaLine = DG.FormulaLinesHelper.setDefaults({
           type: getItemTypeByCaption(itemCaption),
           title: 'New title'
         });
 
-        /!** Fill the item with the necessary data *!/
+        /** Fill the item with the necessary data */
         switch (itemCaption) {
           case ITEM_CAPTION.LINE:
             item.formula = '${' + colY.name + '} = ${' + colX.name + '}';
@@ -668,11 +667,11 @@ class CreationControl {
             break;
         }
 
-        /!** Used to update the Table, Preview and Editor states *!/
+        /** Used to update the Table, Preview and Editor states */
         onCreatedAction(item);
       }
 
-      /!** Construct popup menu *!/
+      /** Construct popup menu */
       DG.Menu.popup()
         .items([ITEM_CAPTION.LINE,
                 ITEM_CAPTION.VERT_LINE,
@@ -685,9 +684,9 @@ class CreationControl {
   }
 }
 
-/!**
+/**
  * A Dialog window with Formula Lines list, preview and editor.
- *!/
+ */
 export class FormulaLinesDialog {
   title: string = 'Formula Lines';
   helpUrl: string = '/help/develop/how-to/show-formula-lines.md';
@@ -702,19 +701,19 @@ export class FormulaLinesDialog {
   tabs: DG.TabControl;
   dialog: DG.Dialog;
 
-  /!** Returns the Table corresponding to the current tab in the tab control *!/
+  /** Returns the Table corresponding to the current tab in the tab control */
   get currentTable(): Table {
     return this.tabs.currentPane.name == ITEM_SOURCE.VIEWER
       ? this.viewerTable!
       : this.dframeTable!;
   }
 
-  /!** Initializes all parameters and opens the Dialog window *!/
+  /** Initializes all parameters and opens the Dialog window */
   constructor(src: DG.DataFrame | DG.Viewer) {
-    /!** Init Host *!/
+    /** Init Host */
     this.host = new Host(src);
 
-    /!** Init CreationControl *!/
+    /** Init CreationControl */
     this.creationControl = new CreationControl(
       () => this.preview.axisCols,
       (item: DG.FormulaLine) => {
@@ -723,11 +722,11 @@ export class FormulaLinesDialog {
         this.preview.update(0);
       });
 
-    /!** Init Preview *!/
+    /** Init Preview */
     this.preview = new Preview(this.host.viewerItems!, src, this.creationControl.popupMenu);
     this.preview.height = 300;
 
-    /!** Init Editor *!/
+    /** Init Editor */
     this.editor = new Editor(this.host.viewerItems!, this.preview.dataFrame, (itemIdx: number): boolean => {
       this.currentTable.update(itemIdx);
       return this.preview.update(itemIdx);
@@ -736,7 +735,7 @@ export class FormulaLinesDialog {
     this.tabs = DG.TabControl.create();
     this.tabs.root.style.height = '230px';
 
-    /!** Init Viewer Table (in the first tab) *!/
+    /** Init Viewer Table (in the first tab) */
     if (this.host.viewerItems)
       this.tabs.addPane(ITEM_SOURCE.VIEWER, () => {
         this.viewerTable = new Table(this.host.viewerItems!, (itemIdx: number): boolean => {
@@ -746,7 +745,7 @@ export class FormulaLinesDialog {
         return this.viewerTable.root;
       });
 
-    /!** Init DataFrame Table (in the second tab) *!/
+    /** Init DataFrame Table (in the second tab) */
     if (this.host.dframeItems)
       this.tabs.addPane(ITEM_SOURCE.DATAFRAME, () => {
         this.dframeTable = new Table(this.host.dframeItems!, (itemIdx: number): boolean => {
@@ -756,10 +755,10 @@ export class FormulaLinesDialog {
         return this.dframeTable.root;
       });
 
-    /!** Display "Add new" button *!/
+    /** Display "Add new" button */
     this.tabs.header.append(this.creationControl.button);
 
-    /!** Change data source when switching tabs *!/
+    /** Change data source when switching tabs */
     this.tabs.onTabChanged.subscribe((_) => {
       this.editor.items = this.currentTable.items;
       this.preview.items = this.currentTable.items;
@@ -768,7 +767,7 @@ export class FormulaLinesDialog {
 
     this.dialog = ui.dialog({ title: this.title, helpUrl: this.helpUrl });
 
-    /!** Init Dialog layout *!/
+    /** Init Dialog layout */
     let layout = ui.div([
       ui.block([
         this.tabs.root,
@@ -789,4 +788,3 @@ export class FormulaLinesDialog {
     this.host.save();
   }
 }
-*/
