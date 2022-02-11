@@ -1,7 +1,7 @@
 import * as DG from "datagrok-api/dg";
 import * as grok from "datagrok-api/grok";
 import * as ui from "datagrok-api/ui";
-import {category, test, testExpectFinish, expect} from "@datagrok-libraries/utils/src/test";
+import {category, test, expect, delay} from "@datagrok-libraries/utils/src/test";
 import {drugLikenessWidget} from '../widgets/drug-likeness';
 import {identifiersWidget} from '../widgets/identifiers';
 import {molfileWidget} from '../widgets/molfile';
@@ -46,7 +46,7 @@ category('Chem: Widgets', () => {
     toxicityWidget(molStr);
   });
 
-  testExpectFinish('substructure-filter-manual', async () => {
+  test('substructure-filter-manual', async () => {
     let df = grok.data.demo.molecules(1000);
     await grok.data.detectSemanticTypes(df);
     // previously: let filter = await grok.functions.call("Chem:substructureFilter");
@@ -65,41 +65,39 @@ category('Chem: Widgets', () => {
       .show();
   });
 
-  testExpectFinish('substructure-filter-panel', async () => {
-    const sleep = (ms = 100) => new Promise(resolve => setTimeout(resolve, ms));
+  test('substructure-filter-panel', async () => {
     let df = DG.DataFrame.fromColumns([grok.data.demo.molecules(1000).columns[0]]);
     let view = grok.shell.addTableView(df);
     view.filters();
-    await sleep();
+    await delay(100);
     (document.getElementsByClassName(
       'panel-titlebar disable-selection panel-titlebar-tabhost')[0].childNodes[0] as HTMLElement).click();
-    await sleep();
+    await delay(100);
     let menuItem = document.getElementsByClassName(
       'd4-menu-item-container d4-vert-menu d4-menu-popup')[0].childNodes[3];
-    menuItem.dispatchEvent(new MouseEvent('mouseenter')); await sleep();
-    menuItem.dispatchEvent(new MouseEvent('mousemove')); await sleep();
+    menuItem.dispatchEvent(new MouseEvent('mouseenter')); await delay(100);
+    menuItem.dispatchEvent(new MouseEvent('mousemove')); await delay(100);
     let submenuItem = menuItem.childNodes[0].childNodes[0].childNodes[1];
-    submenuItem.dispatchEvent(new MouseEvent('mouseenter')); await sleep();
-    submenuItem.dispatchEvent(new MouseEvent('mousedown')); await sleep();
+    submenuItem.dispatchEvent(new MouseEvent('mouseenter')); await delay(100);
+    submenuItem.dispatchEvent(new MouseEvent('mousedown')); await delay(100);
     // https://developer.chrome.com/docs/devtools/console/utilities/#getEventListeners-function
     let dialogContents = document.getElementsByClassName('d4-dialog-contents')[0];
     let allButton = dialogContents.childNodes[2].childNodes[1].childNodes[0];
     (allButton as HTMLElement).click();
     let dialogFooter = document.getElementsByClassName('d4-dialog-footer')[0];
     let okButton = dialogFooter.childNodes[0].childNodes[0];
-    (okButton as HTMLElement).click(); await sleep();
+    (okButton as HTMLElement).click(); await delay(100);
     let smilesInput = document.getElementsByClassName('grok-sketcher-input ui-div')[0].childNodes[0];
-    (smilesInput as HTMLInputElement).value = 'c1ccccc1'; await sleep();
-    smilesInput.dispatchEvent(new Event('focus')); await sleep();
+    (smilesInput as HTMLInputElement).value = 'c1ccccc1'; await delay(100);
+    smilesInput.dispatchEvent(new Event('focus')); await delay(100);
     // Only this combination of parameters worked:
     // https://tutorial.eyehunts.com/js/how-to-press-enter-key-programmatically-in-javascript-example-code/
     smilesInput.dispatchEvent(new KeyboardEvent('keydown', {
       altKey: false, bubbles: true, cancelable: true,
       charCode: 0, code: "Enter", composed: true, ctrlKey: false,
       detail: 0, isComposing: false, key: "Enter", keyCode: 13, location: 0,
-      metaKey: false, repeat: false, shiftKey: false,
-      which: 13}));
-    await sleep();
+      metaKey: false, repeat: false, shiftKey: false}));
+    await delay(100);
     expect(df.filter.trueCount, 700);
   });
 });
