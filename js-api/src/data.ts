@@ -77,6 +77,11 @@ export class DemoDatasets {
     return this.getDemoTable('geo', rows);
   }
 
+  /** Dose-response data */
+  doseResponse(rows: number = 10000): DataFrame {
+    return this.getDemoTable('dose-response', rows);
+  }
+
   /** Returns a demo dataset with the specified path (relative to the demo root)
    * @example
    * grok.data.getDemoTable("sensors/eeg.csv").then((t) => grok.shell.addTableView(t));
