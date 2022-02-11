@@ -1079,7 +1079,7 @@ export class ColumnList {
    * @param {string} name
    * @param {string} expression
    * @param {ColumnType} type
-   * @param {bool} treatAsString
+   * @param {bool} treatAsString - if true, [expression] is not evaluated as formula and is treated as a regular string value instead
    * @returns {Column} */
   addNewCalculated(name: string, expression: string, type: ColumnType | 'auto' = 'auto', treatAsString: boolean = false): Promise<Column> {
     return new Promise((resolve, reject) => api.grok_ColumnList_AddNewCalculated(this.dart, name, expression, type, treatAsString, (c: any) => resolve(toJs(c)), (e: any) => reject(e)));
