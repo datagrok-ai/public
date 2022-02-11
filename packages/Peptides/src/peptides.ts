@@ -94,17 +94,16 @@ export class Peptides {
     }, 'Close viewers and restore dataframe');
 
     let isSA = false;
-    let currentViewersGroup: viewerTypes[];
     const switchViewers = ui.iconFA('toggle-on', () => {
       $(switchViewers).toggleClass('fa-toggle-off').toggleClass('fa-toggle-on');
       nodeList?.forEach((node) => {
         view.dockManager.close(node);
         node.container.destroy();
       });
-      currentViewersGroup = isSA ? substViewersGroup : sarViewersGroup;
-      currentViewersGroup.forEach((v) => v.removeFromView());
-      nodeList = dockViewers(currentViewersGroup, DG.DOCK_TYPE.LEFT, dockManager, DG.DOCK_TYPE.DOWN);
+      const getCurrentViewerGroup = () => isSA ? substViewersGroup : sarViewersGroup;
+      getCurrentViewerGroup().forEach((v) => v.removeFromView());
       isSA = !isSA;
+      nodeList = dockViewers(getCurrentViewerGroup(), DG.DOCK_TYPE.LEFT, dockManager, DG.DOCK_TYPE.DOWN);
     }, 'Toggle viewer group');
 
     const ribbonPanels = view.getRibbonPanels();
