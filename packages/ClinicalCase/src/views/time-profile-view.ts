@@ -44,7 +44,7 @@ export class TimeProfileView extends ClinicalCaseViewBase {
 
     createView(): void {
         this.splitBy = [ VIEWS_CONFIG[TIME_PROFILE_VIEW_NAME][TRT_ARM_FIELD], SEX, RACE, ETHNIC ].filter(it => study.domains.dm && study.domains.dm.columns.names().includes(it));
-        this.domains = this.domains.filter(it => study.domains[it] !== null);
+        this.domains = this.domains.filter(it => study.domains[it] !== null && !this.optDomainsWithMissingCols.includes(it));
         this.selectedDomain = this.domains[0];
         this.uniqueLabValues = Array.from(getUniqueValues(study.domains[this.selectedDomain], this.domainFields[this.selectedDomain]['test']));
         this.uniqueVisits = Array.from(getUniqueValues(study.domains[this.selectedDomain], VISIT_NAME));

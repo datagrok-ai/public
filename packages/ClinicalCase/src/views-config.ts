@@ -29,7 +29,7 @@ export const VIEWS_CONFIG = {
     },
     [ADVERSE_EVENTS_VIEW_NAME]: {
         [TRT_ARM_FIELD]: ACT_TRT_ARM,
-        [AE_TERM_FIELD]: AE_DECOD_TERM,
+        [AE_TERM_FIELD]: AE_TERM,
     },
     [AE_RISK_ASSESSMENT_VIEW_NAME]: {
         [TRT_ARM_FIELD]: ACT_TRT_ARM,

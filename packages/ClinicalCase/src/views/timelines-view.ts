@@ -45,9 +45,11 @@ export class TimelinesView extends ClinicalCaseViewBase {
   }
 
   createView(): void {
-    let existingTables = study.domains.all().map(it => it.name);
-    this.filters = this.getFilterFields();
     this.links = this.getLinks();
+    let existingTables = study.domains.all()
+      .filter(it => !this.optDomainsWithMissingCols.includes(it.name))
+      .map(it => it.name);
+    this.filters = this.getFilterFields();
     Object.keys(this.filters).forEach(domain => this.filterColumns = this.filterColumns.concat(Object.keys(this.filters[domain])));
     this.multichoiceTableOptions = {};
     this.multichoiceTableOptions = Object.fromEntries(Object.entries(multichoiceTableDict).filter(([k, v]) => existingTables.includes(v)));
@@ -279,14 +281,14 @@ export class TimelinesView extends ClinicalCaseViewBase {
         })
 
         let acc2 = this.createAccWithTitle(`${this.name} patient`, `${this.resultTables.get('key', selectedInd[0])}`);
-  
+
         const eventTable = DG.DataFrame.fromObjects(eventArray);
         const eventGrid = eventTable.plot.grid();
         eventGrid.columns.byName('domain').width = 55;
         let col = eventGrid.columns.byName('event');
         col.width = 170;
         col.cellType = 'html';
-  
+
         eventGrid.onCellPrepare(function (gc) {
           if (gc.isTableCell && eventTable.get('Domain', gc.gridRow) === 'ae' && gc.gridColumn.name === 'Event') {
             let eventElement = ui.link(gc.cell.value, {}, '', { id: `${eventIndexesArray[gc.gridRow]}` });
@@ -302,14 +304,14 @@ export class TimelinesView extends ClinicalCaseViewBase {
           gc.style.element.style.paddingLeft = '7px';
           ui.tooltip.bind(gc.style.element, gc.cell.value);
         });
-  
+
         acc2.addPane('Events', () => {
           return ui.div(eventGrid.root);
         });
         const accPane = acc2.getPane('Events').root.getElementsByClassName('d4-accordion-pane-content')[0] as HTMLElement;
         accPane.style.margin = '0px';
         accPane.style.paddingLeft = '0px';
-  
+
         return acc2.root;
 
       }
@@ -317,7 +319,7 @@ export class TimelinesView extends ClinicalCaseViewBase {
 
   }
 
-  private getFilterFields(){
+  private getFilterFields() {
     return {
       ae: { 'AE severity': AE_SEVERITY, 'AE body system': AE_BODY_SYSTEM },
       cm: { 'Concomitant medication': VIEWS_CONFIG[TIMELINES_VIEW_NAME][CON_MED_NAME_FIELD] },
