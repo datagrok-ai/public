@@ -2,8 +2,8 @@ import * as grok from 'datagrok-api/grok';
 import * as ui from 'datagrok-api/ui';
 import * as DG from 'datagrok-api/dg';
 import $ from 'cash-dom';
-import { map, individualBases, nearestNeighbour } from "./map";
-import { isValid, getAllCodesOfSynthesizer } from "./validation"
+import { map, individualBases, nearestNeighbour, SYNTHESIZERS, TECHNOLOGIES } from "./map";
+import { isValidSequence, getAllCodesOfSynthesizer } from "./validation"
 
 export let _package = new DG.Package();
 
@@ -132,8 +132,8 @@ export function molecularWeight(sequence: string): number {
 //input: string sequence
 //output: double extinctionCoefficient
 export function extinctionCoefficient(sequence: string): number {
-  let output = isValid(sequence);
-  sequence = normalizeSequence(sequence, output.expectedSynthesizer!);
+  let output = isValidSequence(sequence);
+  sequence = normalizeSequence(sequence, output.expectedSynthesizer, output.expectedTechnology);
   let ec1 = 0, ec2 = 0;
   for (let i = 0; i < sequence.length - 2; i += 2)
     ec1 += (sequence[i] == sequence[i + 2]) ?
@@ -148,10 +148,13 @@ export function extinctionCoefficient(sequence: string): number {
   return ec1 - ec2;
 }
 
-function normalizeSequence(sequence: string, synthesizer: string): string {
-  const codes = sortByStringLengthInDescendingOrder(getAllCodesOfSynthesizer(synthesizer));
-  const re = new RegExp('(' + codes.join('|') + ')', 'g');
-  return sequence.replace(re, function (code) {return normalizedObj[code]});
+function normalizeSequence(sequence: string, synthesizer: string | null, technology: string | null): string {
+  const codes = (technology == null) ?
+    getAllCodesOfSynthesizer(synthesizer!) :
+    Object.keys(map[synthesizer!][technology]);
+  const sortedCodes = sortByStringLengthInDescendingOrder(codes);
+  const regExp = new RegExp('(' + sortedCodes.join('|') + ')', 'g');
+  return sequence.replace(regExp, function (code) { return normalizedObj[code] });
 }
 
 async function addModificationButton(modificationsDf: DG.DataFrame): Promise<void> {
@@ -268,6 +271,17 @@ function editOverhangModification(overhangModificationsDf: DG.DataFrame, rowInde
   });
 }
 
+function paintColumn(output: any, asoGapmersDf: DG.Grid, omeAndFluoroDf: DG.Grid): void {
+  let grid = (output.expectedTechnology == TECHNOLOGIES.ASO_GAPMERS) ? asoGapmersDf : omeAndFluoroDf;
+  const colName = output.expectedSynthesizer.slice(0, -6);
+  let col = grid.col(colName);
+  col!.cellType = 'html';
+  grid.onCellPrepare(function (gc) {
+    if (gc.isTableCell && gc.gridColumn.name == colName)
+      gc.style.backColor = 0xFFFF0000;
+  });
+}
+
 //name: Oligo Batch Calculator
 //tags: app
 export async function OligoBatchCalculatorApp(): Promise<void> {
@@ -280,20 +294,18 @@ export async function OligoBatchCalculatorApp(): Promise<void> {
 
     let indicesOfFirstNotValidCharacter = Array(sequences.length),
       normalizedSequences = Array(sequences.length),
-      molecularWeights = new Float32Array(sequences.length),
-      extinctionCoefficients = new Float32Array(sequences.length),
-      nMoles = new Float32Array(sequences.length),
-      opticalDensities = new Float32Array(sequences.length),
-      molecularMasses = new Float32Array(sequences.length),
-      reasonsOfError = Array(sequences.length),
-      expectedSynthesizers = Array(sequences.length);
+      molecularWeights = Array(sequences.length),
+      extinctionCoefficients = Array(sequences.length),
+      nMoles = Array(sequences.length),
+      opticalDensities = Array(sequences.length),
+      molecularMasses = Array(sequences.length),
+      reasonsOfError = Array(sequences.length);
 
     sequences.forEach((sequence, i) => {
-      let output = isValid(sequence);
+      let output = isValidSequence(sequence);
       indicesOfFirstNotValidCharacter[i] = output.indexOfFirstNotValidCharacter;
-      expectedSynthesizers[i] = output.expectedSynthesizer;
       if (indicesOfFirstNotValidCharacter[i] < 0) {
-        normalizedSequences[i] = normalizeSequence(sequence, expectedSynthesizers[i]);
+        normalizedSequences[i] = normalizeSequence(sequence, output.expectedSynthesizer, output.expectedTechnology);
         if (normalizedSequences[i].length > 2) {
           try {
             molecularWeights[i] = molecularWeight(sequence);
@@ -310,11 +322,13 @@ export async function OligoBatchCalculatorApp(): Promise<void> {
           reasonsOfError[i] = 'Sequence should contain at least two nucleotides';
           indicesOfFirstNotValidCharacter[i] = 0;
         }
-      } else if (expectedSynthesizers[i] == null)
+      } else if (output.expectedSynthesizer == null)
         reasonsOfError[i] = "Not valid input";
-      else
-        reasonsOfError[i] = "Sequence is expected to be in synthesizer format '" +  expectedSynthesizers[i] +
+      else {
+        paintColumn(output, asoGapmersGrid!, omeAndFluoroGrid!);
+        reasonsOfError[i] = "Sequence is expected to be in synthesizer '" +  output.expectedSynthesizer +
           "', please see table below to see list of valid codes";
+      }
     });
 
     const moleName1 = (units.value == 'µmole' || units.value == 'mg') ? 'µmole' : 'nmole',
@@ -326,13 +340,13 @@ export async function OligoBatchCalculatorApp(): Promise<void> {
       DG.Column.fromList('int', 'Item', Array(...Array(sequences.length + 1).keys()).slice(1)),
       DG.Column.fromStrings(NAME_OF_COLUMN_WITH_SEQUENCES, sequences),
       DG.Column.fromList('int', 'Length', normalizedSequences.map((s) => s.length / 2)),
-      DG.Column.fromFloat32Array('OD 260', opticalDensities),
-      DG.Column.fromFloat32Array(moleName1, nMoles),
-      DG.Column.fromFloat32Array('Mass (' + massName + ')', molecularMasses),
-      DG.Column.fromFloat32Array(moleName2 + '/OD', nMoles.map(function(n, i) {return coefficient * n / opticalDensities[i]})),
-      DG.Column.fromFloat32Array('µg/OD', molecularMasses.map(function(n, i) {return coefficient * n / opticalDensities[i]})),
-      DG.Column.fromFloat32Array('MW', molecularWeights),
-      DG.Column.fromFloat32Array('Ext. Coefficient', extinctionCoefficients)
+      DG.Column.fromList('double', 'OD 260', opticalDensities),
+      DG.Column.fromList('double', moleName1, nMoles),
+      DG.Column.fromList('double', 'Mass [' + massName + ']', molecularMasses),
+      DG.Column.fromList('double', moleName2 + '/OD', nMoles.map(function(n, i) {return coefficient * n / opticalDensities[i]})),
+      DG.Column.fromList('double', 'µg/OD', molecularMasses.map(function(n, i) {return coefficient * n / opticalDensities[i]})),
+      DG.Column.fromList('double', 'MW', molecularWeights),
+      DG.Column.fromList('double', 'Ext. Coefficient', extinctionCoefficients)
     ]);
 
     let grid = DG.Viewer.grid(table, { 'showRowHeader': false });
@@ -390,6 +404,8 @@ export async function OligoBatchCalculatorApp(): Promise<void> {
     { Name: "rG", BioSpring: "", "Janssen GCRS": "rG", Weight: 345.21 },
     { Name: "rU", BioSpring: "", "Janssen GCRS": "rU", Weight: 306.17 }
   ]);
+  let asoGapmersGrid = DG.Viewer.grid(asoGapmersDf!, { showRowHeader: false, showCellTooltip: false });
+
   const omeAndFluoroDf = DG.DataFrame.fromObjects([
     { Name: "2'-fluoro-U", BioSpring: "1", Axolabs: "Uf", "Janssen GCRS": "fU", Weight: 308.16 },
     { Name: "2'-fluoro-A", BioSpring: "2", Axolabs: "Af", "Janssen GCRS": "fA", Weight: 331.2 },
@@ -401,6 +417,7 @@ export async function OligoBatchCalculatorApp(): Promise<void> {
     { Name: "2'OMe-rG", BioSpring: "8", Axolabs: "g", "Janssen GCRS": "mG", Weight: 359.24 },
     { Name: "ps linkage", BioSpring: "*", Axolabs: "s", "Janssen GCRS": "ps", Weight: 16.07 }
   ]);
+  let omeAndFluoroGrid = DG.Viewer.grid(omeAndFluoroDf!, { showRowHeader: false, showCellTooltip: false });
   let overhangModificationsDf = await getOverhangModificationsDf();
 
   let overhangModificationsGrid = DG.Viewer.grid(overhangModificationsDf, { showRowHeader: false, showCellTooltip: false });
@@ -433,9 +450,9 @@ export async function OligoBatchCalculatorApp(): Promise<void> {
       ]),
       ui.splitV([
         ui.box(ui.h2('ASO Gapmers'), { style: {maxHeight: '40px'} }),
-        DG.Viewer.grid(asoGapmersDf!, { showRowHeader: false, showCellTooltip: false }).root,
+        asoGapmersGrid.root,
         ui.box(ui.h2("2'-OMe and 2'-F modifications"), { style: {maxHeight: '40px'} }),
-        DG.Viewer.grid(omeAndFluoroDf!, { showRowHeader: false, showCellTooltip: false }).root,
+        omeAndFluoroGrid.root,
         ui.box(ui.h2('Overhang modifications'), { style: {maxHeight: '40px'} }),
         overhangModificationsGrid.root
       ], { style: { maxWidth: '600px' } })
