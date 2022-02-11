@@ -30,25 +30,9 @@ export async function analyzePeptidesWidget(
   const histogramHost = ui.div([], {id: 'pep-hist-host'});
 
   const activityScalingMethod = ui.choiceInput(
-    'Scaling',
-    'none',
-    ['none', 'lg', '-lg'],
+    'Scaling', 'none', ['none', 'lg', '-lg'],
     async (currentMethod: string) => {
       const currentActivityCol = activityColumnChoice.value.name;
-      // const tempDf = currentDf.clone(currentDf.filter, [currentActivityCol]);
-      // const scaledActivityColumnName = 'scaledActivity';
-      // //TODO: merge with scaling in describe
-      // switch (currentMethod) {
-      // case 'lg':
-      //   await tempDf.columns.addNewCalculated(scaledActivityColumnName, 'Log10(${' + currentActivityCol + '})');
-      //   break;
-      // case '-lg':
-      //   await tempDf.columns.addNewCalculated(scaledActivityColumnName, '-1*Log10(${' + currentActivityCol + '})');
-      //   break;
-      // default:
-      //   await tempDf.columns.addNewCalculated(scaledActivityColumnName, '${' + currentActivityCol + '}');
-      //   break;
-      // }
 
       [tempDf, newScaledColName] = await scaleActivity(
         currentMethod, currentActivityCol, `${currentActivityCol}Scaled`, currentDf);
@@ -92,7 +76,6 @@ export async function analyzePeptidesWidget(
         'activityColumnName': activityColumn,
         'scaling': activityScalingMethod.value,
       };
-
 
       const scaledCol = tempDf.getCol(activityColumnScaled);
       (currentDf.columns as DG.ColumnList).add(scaledCol);

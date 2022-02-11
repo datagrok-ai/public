@@ -100,12 +100,12 @@ export class PeptidesModel {
       this.substFlag = !this.substFlag;
       this.substFlagSubject.next(this.substFlag);
 
-      await this.updateBarchart();
-
       this.sourceGrid.invalidate();
 
       this.isUpdating = false;
     }
+    
+    await this.updateBarchart();
   }
 
   async updateBarchart() {

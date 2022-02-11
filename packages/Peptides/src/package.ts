@@ -77,7 +77,6 @@ export async function Peptides() {
     ui.divH([
       ui.button('Simple demo', () => main('aligned.csv'), ''),
       ui.button('Complex demo', () => main('aligned_2.csv'), ''),
-      // ui.button('Real demo', () => main('aligned_21.csv'), ''),
     ]),
   ]);
 }

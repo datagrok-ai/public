@@ -97,7 +97,7 @@ export async function scaleActivity(
   activityScaling: string, activityColumn: string, activityColumnScaled: string, df: DG.DataFrame,
 ): Promise<[DG.DataFrame, string]> {
   // const df = sourceGrid.dataFrame!;
-  const tempDf = df.clone(df.filter, [activityColumn]);
+  const tempDf = df.clone(null, [activityColumn]);
 
   let formula = '${' + activityColumn + '}';
   let newColName = activityColumn;
