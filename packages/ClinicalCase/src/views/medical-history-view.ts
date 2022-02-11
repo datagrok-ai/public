@@ -44,7 +44,7 @@ export class MedicalHistoryView extends ClinicalCaseViewBase {
 
         checkColumnsAndCreateViewer(
             study.domains.mh,
-            [MH_DECOD_TERM],
+            [VIEWS_CONFIG[this.name][ MH_TERM_FIELD ]],
             this.mhDecodTermChart, () => {
                 this.createDecodeTermChart(viewerTitle);
             },

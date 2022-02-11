@@ -33,7 +33,7 @@ export class MatrixesView extends ClinicalCaseViewBase {
   loaded = false;
 
   createView(): void {
-    this.domains = this.domains.filter(it => study.domains[it] !== null);
+    this.domains = this.domains.filter(it => study.domains[it] !== null && !this.optDomainsWithMissingCols.includes(it));
     this.domains.forEach(it => {
       let df = study.domains[it].clone(null, [SUBJECT_ID, VISIT_NAME, this.domainFields[it]['test'], this.domainFields[it]['res']]);
       df.getCol(this.domainFields[it]['test']).name = 'test';

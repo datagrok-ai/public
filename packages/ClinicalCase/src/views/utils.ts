@@ -5,7 +5,7 @@ import { ADVERSE_EVENTS_VIEW_NAME, AE_RISK_ASSESSMENT_VIEW_NAME, CORRELATIONS_VI
 import * as sdtmCols from "../columns-constants";
 import { AE_TERM_FIELD, CON_MED_NAME_FIELD, INV_DRUG_NAME_FIELD, TRT_ARM_FIELD, VIEWS_CONFIG } from "../views-config";
 
-export function updateDivInnerHTML(div: HTMLDivElement, content: any) {
+export function updateDivInnerHTML(div: HTMLElement, content: any) {
   div.innerHTML = '';
   div.append(content);
 }
@@ -22,61 +22,23 @@ export function checkColumnsAndCreateViewer(df: DG.DataFrame, columns: string[],
   message ? updateDivInnerHTML(div, ui.info(`${message}`)) : createViewer();
 }
 
-export function checkMissingDomains(requiredDomainsAndCols: any, obj: any) {
-  let loadObject = (obj) => {
-    obj.createView();
-    obj.loaded = true;
+export function createValidationErrorsDiv(missingDomains: string[], missingColumnsInReqDomains: any, missingColumnsInOptDomains: any) {
+  const errorsDiv = ui.divV([], { style: { margin: 'auto', textAlign: 'center' } });
+  if (missingDomains.length) {
+    createMissingDataDiv(errorsDiv, missingDomains, 'Missing domains:');
   }
-
-  if (!requiredDomainsAndCols) {
-    loadObject(obj);
-    return;
-  }
-  let reqDomains = requiredDomainsAndCols['req_domains'] ? Object.keys(requiredDomainsAndCols['req_domains']) : [];
-  let optDomains = requiredDomainsAndCols['opt_domains'] ? Object.keys(requiredDomainsAndCols['opt_domains']) : [];
-  let missingReqDomains = reqDomains.filter(it => study.domains[it] === null);
-  let missingOptDomains = optDomains.some(it => study.domains[it] !== null) ? [] : optDomains;
-  let presentOptDomains = optDomains.filter(it => study.domains[it] !== null);
-  let totalMissingDomains = missingReqDomains.concat(missingOptDomains);
-  let requiredColumns = {};
-  reqDomains.forEach(domain => {
-    requiredColumns[domain] = requiredDomainsAndCols['req_domains'][domain];
-  });
-  optDomains.forEach(domain => {
-    requiredColumns[domain] = requiredDomainsAndCols['opt_domains'][domain];
-  });
-  if (!totalMissingDomains.length) {
-    if (checkMissingColumns(obj, reqDomains.concat(presentOptDomains), requiredColumns)) {
-      loadObject(obj);
-    }
-  } else {
-    const errorsDiv = ui.divV([], { style: { margin: 'auto', textAlign: 'center' } });
-    createMissingDataDiv(errorsDiv, totalMissingDomains, 'Missing domains:');
-    checkMissingColumns(errorsDiv, reqDomains.concat(optDomains), requiredColumns, true);
-    updateDivInnerHTML(obj.root, errorsDiv);
-  }
+  createMissingColumnsDiv(missingColumnsInReqDomains, errorsDiv);
+  createMissingColumnsDiv(missingColumnsInOptDomains, errorsDiv);
+  return errorsDiv;
 }
 
-export function checkMissingColumns(obj: any, reqDomains: string[], requiredDomainsAndCols: any, append?: boolean) {
-  const errorsDiv = ui.divV([], { style: { margin: 'auto', textAlign: 'center' } });
-  let noMissingCols = true;
-  reqDomains.forEach(domain => {
-    const domainColumns = study.domains[domain] ? study.domains[domain].columns.names() : [];
-    const reqCols = requiredDomainsAndCols[domain]['req'] ?? [];
-    const optCols = requiredDomainsAndCols[domain]['opt'] ?? []; //at least one of optional columns should exist in domain
-    const missingReqColumns = reqCols.filter(it => !domainColumns.includes(it));
-    const missingOptColumns = optCols.some(it => study.domains[it] !== null) ? [] : optCols.filter(it => !domainColumns.includes(it));
-    const missingColumns = missingReqColumns.concat(missingOptColumns);
-    if (missingColumns.length) {
-      noMissingCols = false;
-      createMissingDataDiv(errorsDiv, missingColumns, `Missing columns in ${domain}:`)
+
+export function  createMissingColumnsDiv(domainsWithMissingCols: any, div: HTMLDivElement){
+  Object.keys(domainsWithMissingCols).forEach(domain => {
+    if (domainsWithMissingCols[domain].length) {
+        createMissingDataDiv(div, domainsWithMissingCols[domain], `Missing columns in ${domain}:`);
     }
-  })
-  if (!noMissingCols) {
-    let root = obj.root ?? obj;
-    append ? root.append(errorsDiv) : updateDivInnerHTML(root, errorsDiv);
-  }
-  return noMissingCols;
+  });
 }
 
 export function createMissingDataDiv(div: HTMLDivElement, missingDomainsOrCols: string[], header: string) {
@@ -87,6 +49,7 @@ export function createMissingDataDiv(div: HTMLDivElement, missingDomainsOrCols: 
     domainsDiv
   ]));
 }
+
 
 export function getRequiredColumnsByView() {
   // req - all coulmns must be present, opt - at least one of the columns must be present
@@ -138,6 +101,42 @@ export function getRequiredColumnsByView() {
         'dm': {
           'req': [
             sdtmCols.SUBJECT_ID
+          ]
+        }
+      },
+      'opt_domains': {
+        'lb': {
+          'req': [
+            sdtmCols.SUBJECT_ID, 
+            sdtmCols.LAB_DAY, 
+            sdtmCols.LAB_TEST, 
+            sdtmCols.LAB_RES_N, 
+            sdtmCols.LAB_LO_LIM_N, 
+            sdtmCols.LAB_HI_LIM_N
+          ]
+        },
+        'ae': {
+          'req': [
+            sdtmCols.SUBJECT_ID, 
+            VIEWS_CONFIG[PATIENT_PROFILE_VIEW_NAME][AE_TERM_FIELD], 
+            sdtmCols.AE_START_DAY, 
+            sdtmCols.AE_END_DAY
+          ]
+        },
+        'ex': {
+          'req': [
+            sdtmCols.SUBJECT_ID, 
+            VIEWS_CONFIG[PATIENT_PROFILE_VIEW_NAME][INV_DRUG_NAME_FIELD], 
+            sdtmCols.INV_DRUG_START_DAY, 
+            sdtmCols.INV_DRUG_END_DAY
+          ]
+        },
+        'cm': {
+          'req': [
+            sdtmCols.SUBJECT_ID, 
+            VIEWS_CONFIG[PATIENT_PROFILE_VIEW_NAME][CON_MED_NAME_FIELD], 
+            sdtmCols.CON_MED_START_DAY, 
+            sdtmCols.CON_MED_END_DAY
           ]
         }
       }

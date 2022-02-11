@@ -19,13 +19,14 @@ import { TimeProfileView } from './views/time-profile-view';
 import { AEBrowserHelper } from './helpers/ae-browser-helper';
 import { AE_END_DAY, AE_START_DAY, SUBJECT_ID } from './columns-constants';
 import { STUDY_ID } from './columns-constants';
-import { checkMissingColumns, checkMissingDomains } from './views/utils';
+import { createValidationErrorsDiv, updateDivInnerHTML } from './views/utils';
 import { TreeMapView } from './views/tree-map-view';
 import { MedicalHistoryView } from './views/medical-history-view';
 import { VisitsView } from './views/visits-view';
-import { StudyConfigurationView } from './views/study-config';
+import { StudyConfigurationView } from './views/study-config-view';
 import { ADVERSE_EVENTS_VIEW_NAME, AE_BROWSER_VIEW_NAME, AE_RISK_ASSESSMENT_VIEW_NAME, CORRELATIONS_VIEW_NAME, DISTRIBUTIONS_VIEW_NAME, LABORATORY_VIEW_NAME, MEDICAL_HISTORY_VIEW_NAME, PATIENT_PROFILE_VIEW_NAME, STUDY_CONFIGURATIN_VIEW_NAME, SUMMARY_VIEW_NAME, SURVIVAL_ANALYSIS_VIEW_NAME, TIMELINES_VIEW_NAME, TIME_PROFILE_VIEW_NAME, TREE_MAP_VIEW_NAME, VALIDATION_VIEW_NAME, VISITS_VIEW_NAME } from './view-names-constants';
 import { AE_TERM_FIELD, VIEWS_CONFIG } from './views-config';
+import { ValidationHelper } from './helpers/validation-helper';
 
 export let _package = new DG.Package();
 
@@ -60,25 +61,21 @@ export async function clinicalCaseApp(): Promise<any> {
   }
 
   function createTableView(
-    requiredDomains: string[],
-    columnsToCheck: any,
-    domainsToCheck: any,
+    domainsAndColsToCheck: any,
     viewName: string,
     helpUrl: string,
     createViewHelper: (params: any) => any,
     paramsForHelper = null) {
     let tableView;
     let viewHelper;
-    if (requiredDomains.every(it => study.domains[it] !== null)) {
-      tableView = DG.View.create();
-      if (checkMissingColumns(tableView, requiredDomains, columnsToCheck)) {
-        let { helper, df } = createViewHelper(paramsForHelper);
-        tableView = DG.TableView.create(df);
-        viewHelper = helper
-      }
+    let validator = new ValidationHelper(domainsAndColsToCheck);
+    if(validator.validate()){
+      let { helper, df } = createViewHelper(paramsForHelper);
+      tableView = DG.TableView.create(df);
+      viewHelper = helper
     } else {
       tableView = DG.View.create();
-      checkMissingDomains(domainsToCheck, tableView);
+      updateDivInnerHTML(tableView.root, createValidationErrorsDiv(validator.missingDomains, validator.missingColumnsInReqDomains, validator.missingColumnsInOptDomains)); 
     }
     tableView.name = viewName;
     if (helpUrl) {
@@ -102,6 +99,7 @@ export async function clinicalCaseApp(): Promise<any> {
   const views = [];
 
   views.push(<StudySummaryView>addView(new StudySummaryView(SUMMARY_VIEW_NAME)));
+  views.push(<VisitsView>addView(new VisitsView(VISITS_VIEW_NAME)));
   const timelinesView = new TimelinesView(TIMELINES_VIEW_NAME);
   views.push(<TimelinesView>addView(timelinesView));
   views.push(<PatientProfileView>addView(new PatientProfileView(PATIENT_PROFILE_VIEW_NAME)));
@@ -114,11 +112,9 @@ export async function clinicalCaseApp(): Promise<any> {
   views.push(<TimeProfileView>addView(new TimeProfileView(TIME_PROFILE_VIEW_NAME)));
   views.push(<TreeMapView>addView(new TreeMapView(TREE_MAP_VIEW_NAME)));
   views.push(<MedicalHistoryView>addView(new MedicalHistoryView(MEDICAL_HISTORY_VIEW_NAME)));
-  views.push(<VisitsView>addView(new VisitsView(VISITS_VIEW_NAME)));
 
-  const aeBrowserView = createTableView(
-    ['ae'],
-    { 'ae': { 'req': [VIEWS_CONFIG[AE_BROWSER_VIEW_NAME][AE_TERM_FIELD], AE_START_DAY, AE_END_DAY] } },
+
+   const aeBrowserView = createTableView(
     {
       'req_domains': {
         'ae': {
@@ -131,7 +127,7 @@ export async function clinicalCaseApp(): Promise<any> {
     createAEBrowserHelper,
     timelinesView
   );
-  views.push(addView(aeBrowserView.view));
+  views.push(addView(aeBrowserView.view)); 
 
   DG.ObjectHandler.register(new AdverseEventHandler());
 
