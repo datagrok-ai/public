@@ -12,50 +12,57 @@ export namespace assure {
   }
 }
 
+export interface TestOptions {
+  timeout? : number;
+  unhandledExceptionTimeout? : number;
+}
+
 export class Test {
   test: () => Promise<any>;
   name: string;
   category: string;
+  options?: TestOptions;
 
-  constructor(category: string, name: string, test: () => Promise<any>) {
+  constructor(category: string, name: string, test: () => Promise<any>, options?: TestOptions) {
     this.category = category;
     this.name = name;
-    this.test = test;
+    options ??= {};
+    options.timeout ??= 30000;
+    options.unhandledExceptionTimeout ??= 2000;
+    this.options = options;
+    this.test = async (): Promise<any> => {
+      return new Promise(async (resolve, reject) => {
+        let result = '';
+        try {
+          grok.shell.lastError = '';
+          result = await test();
+        } catch (e: any) {
+          reject(e);
+        }
+        if (!(await assertNoError(options!.unhandledExceptionTimeout!)))
+          reject(`Unhandled exception during test: ${grok.shell.lastError}`);
+        resolve(result);
+      });
+    };
   }
 }
 
-export function test(name: string, test: () => Promise<any>): void {
+export function test(name: string, test: () => Promise<any>, options?: TestOptions): void {
   if (tests[currentCategory] == undefined)
     tests[currentCategory] = {};
   if (tests[currentCategory].tests == undefined)
     tests[currentCategory].tests = [];
-  tests[currentCategory].tests!.push(new Test(currentCategory, name , test));
+  tests[currentCategory].tests!.push(new Test(currentCategory, name, test, options));
 }
 
 /** Awaits for a while checking the error status of the platform */
-export async function testAssureNoError(ms: number): Promise<boolean> {
-  const timer = (ms: number) => new Promise(res => setTimeout(res, ms));
+export async function assertNoError(ms: number): Promise<boolean> {
   for (let i = 0; i < ms / 500; ++i) {
-    await timer(500);
+    await delay(500);
     if (grok.shell.lastError.length !== 0)
       return false;
   }
   return true;
-}
-
-/** Does best effort to catch all exceptional situations. Currently doesn't catch "Uncaught in promise" */
-export function testExpectFinish(name: string, foo: () => Promise<any>, ms: number = 5000): void {
-  test(name, async (): Promise<any> => {
-    try {
-      grok.shell.lastError = '';
-      await foo();
-    } catch (e: any) {
-      throw "Exception is not expected";
-    }
-    let noError = await testAssureNoError(ms);
-    if (!noError)
-      throw "Exceptions while waiting for results";
-  });
 }
 
 /** Tests two objects for equality, throws an exception if they are not equal. */
