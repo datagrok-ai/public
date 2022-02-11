@@ -1,7 +1,7 @@
 import {axolabsMap} from './axolabsMap';
 
 // https://uxdesign.cc/star-rating-make-svg-great-again-d4ce4731347e
-function getPointsToDrawStar(centerX: number, centerY: number) {
+function getPointsToDrawStar(centerX: number, centerY: number): string {
   const innerCirclePoints = 5; // a 5 point star
   const innerRadius = 15 / innerCirclePoints;
   const innerOuterRadiusRatio = 2; // outter circle is x2 the inner
@@ -42,7 +42,7 @@ function getTextInsideCircle(
     ['A', 'G', 'C', 'U', 'T'].includes(bases[index]) ? bases[index] : String(numberOfNucleotides - nucleotideCounter);
 }
 
-function getFontColorVisibleOnBackground(rgbString: string) {
+function getFontColorVisibleOnBackground(rgbString: string): string {
   const rgbIntList = rgbString.match(/\d+/g)!.map((e) => Number(e));
   return (rgbIntList[0] * 0.299 + rgbIntList[1] * 0.587 + rgbIntList[2] * 0.114) > 186 ? '#33333' : '#ffffff';
 }

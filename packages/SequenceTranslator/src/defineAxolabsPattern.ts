@@ -61,7 +61,7 @@ function translateSequence(
   ptoLinkages: any,
   startModification: any,
   endModification: any,
-  firstPtoExist: boolean) {
+  firstPtoExist: boolean): string {
   let counter: number = -1;
   let mainSequence = sequence.replace(/[AUGC]/g, function(x: string) {
     counter++;
@@ -221,7 +221,7 @@ export function defineAxolabsPattern() {
     }
   }
 
-  function updatePto(newPtoValue: boolean) {
+  function updatePto(newPtoValue: boolean): void {
     for (let i = 0; i < ssPtoLinkages.length; i++)
       ssPtoLinkages[i].value = newPtoValue;
 
@@ -231,7 +231,7 @@ export function defineAxolabsPattern() {
     updateSvgScheme();
   }
 
-  function updateBases(newBasisValue: string) {
+  function updateBases(newBasisValue: string): void {
     for (let i = 0; i < ssBases.length; i++)
       ssBases[i].value = newBasisValue;
 

@@ -15,7 +15,7 @@ const noTranslationTableAvailable = 'No translation table available';
 const sequenceWasCopied = 'Copied';
 const tooltipSequence = 'Copy sequence';
 
-function getAllCodesOfSynthesizer(synthesizer: string) {
+function getAllCodesOfSynthesizer(synthesizer: string): string[] {
   let codes: string[] = [];
   for (const technology of Object.keys(map[synthesizer]))
     codes = codes.concat(Object.keys(map[synthesizer][technology]));
@@ -152,7 +152,7 @@ function getObjectWithCodesAndSmiles() {
   return obj;
 }
 
-export function sequenceToSmiles(sequence: string) {
+export function sequenceToSmiles(sequence: string): string {
   const obj = getObjectWithCodesAndSmiles();
   let codes = sortByStringLengthInDescendingOrder(Object.keys(obj));
   let i = 0;
@@ -206,13 +206,13 @@ export function sequenceToSmiles(sequence: string) {
 
 //name: Sequence Translator
 //tags: app
-export function sequenceTranslator() {
+export function sequenceTranslator(): void {
   const windows = grok.shell.windows;
   windows.showProperties = false;
   windows.showToolbox = false;
   windows.showHelp = false;
 
-  function updateTableAndMolecule(sequence: string) {
+  function updateTableAndMolecule(sequence: string): void {
     moleculeSvgDiv.innerHTML = '';
     outputTableDiv.innerHTML = '';
     const pi = DG.TaskBarProgressIndicator.create('Rendering table and molecule...');
@@ -425,7 +425,7 @@ function convertSequence(text: string) {
 //name: asoGapmersNucleotidesToBioSpring
 //input: string nucleotides {semType: DNA nucleotides}
 //output: string result {semType: BioSpring / Gapmers}
-export function asoGapmersNucleotidesToBioSpring(nucleotides: string) {
+export function asoGapmersNucleotidesToBioSpring(nucleotides: string): string {
   let count: number = -1;
   const objForEdges: {[index: string]: string} = {'(invabasic)': '(invabasic)', '(GalNAc-2-JNJ)': '(GalNAc-2-JNJ)', 'T': '5*', 'A': '6*', 'C': '7*', 'G': '8*'};
   const objForCenter: {[index: string]: string} = {'(invabasic)': '(invabasic)', '(GalNAc-2-JNJ)': '(GalNAc-2-JNJ)', 'T': 'T*', 'A': 'A*', 'C': '9*', 'G': 'G*'};
@@ -438,7 +438,7 @@ export function asoGapmersNucleotidesToBioSpring(nucleotides: string) {
 //name: asoGapmersNucleotidesToGcrs
 //input: string nucleotides {semType: DNA nucleotides}
 //output: string result {semType: GCRS / Gapmers}
-export function asoGapmersNucleotidesToGcrs(nucleotides: string) {
+export function asoGapmersNucleotidesToGcrs(nucleotides: string): string {
   let count: number = -1;
   const objForEdges: {[index: string]: string} = {'(invabasic)': '(invabasic)', '(GalNAc-2-JNJ)': '(GalNAc-2-JNJ)', 'T': 'moeUnps', 'A': 'moeAnps', 'C': 'moe5mCnps', 'G': 'moeGnps'};
   const objForCenter: {[index: string]: string} = {'(invabasic)': '(invabasic)', '(GalNAc-2-JNJ)': '(GalNAc-2-JNJ)', 'C': '5mCps', 'A': 'Aps', 'T': 'Tps', 'G': 'Gps'};
@@ -453,7 +453,7 @@ export function asoGapmersNucleotidesToGcrs(nucleotides: string) {
 //name: asoGapmersBioSpringToNucleotides
 //input: string nucleotides {semType: BioSpring / Gapmers}
 //output: string result {semType: DNA nucleotides}
-export function asoGapmersBioSpringToNucleotides(nucleotides: string) {
+export function asoGapmersBioSpringToNucleotides(nucleotides: string): string {
   const obj: {[index: string]: string} = {'(invabasic)': '(invabasic)', '(GalNAc-2-JNJ)': '(GalNAc-2-JNJ)', '*': '', '5': 'T', '6': 'A', '7': 'C', '8': 'G', '9': 'C'};
   return nucleotides.replace(/(\(invabasic\)|\(GalNAc-2-JNJ\)|\*|5|6|7|8|9)/g, function (x: string) {return obj[x];});
 }
@@ -461,7 +461,7 @@ export function asoGapmersBioSpringToNucleotides(nucleotides: string) {
 //name: asoGapmersBioSpringToGcrs
 //input: string nucleotides {semType: BioSpring / Gapmers}
 //output: string result {semType: GCRS / Gapmers}
-export function asoGapmersBioSpringToGcrs(nucleotides: string) {
+export function asoGapmersBioSpringToGcrs(nucleotides: string): string {
   let count: number = -1;
   const obj: {[index: string]: string} = {'(invabasic)': '(invabasic)', '(GalNAc-2-JNJ)': '(GalNAc-2-JNJ)',
     '5*': 'moeUnps', '6*': 'moeAnps', '7*': 'moe5mCnps', '8*': 'moeGnps', '9*': '5mCps', 'A*': 'Aps', 'T*': 'Tps',
@@ -476,7 +476,7 @@ export function asoGapmersBioSpringToGcrs(nucleotides: string) {
 //name: asoGapmersGcrsToBioSpring
 //input: string nucleotides {semType: GCRS / Gapmers}
 //output: string result {semType: BioSpring / Gapmers}
-export function asoGapmersGcrsToBioSpring(nucleotides: string) {
+export function asoGapmersGcrsToBioSpring(nucleotides: string): string {
   const obj: {[index: string]: string} = {'(invabasic)': '(invabasic)', '(GalNAc-2-JNJ)': '(GalNAc-2-JNJ)',
     'moeT': '5', 'moeA': '6', 'moe5mC': '7', 'moeG': '8', 'moeU': '5', '5mC': '9', 'nps': '*', 'ps': '*', 'U': 'T'
   };
