@@ -12,11 +12,6 @@ import {OutliersSelectionViewer} from './outliers-selection/outliers-selection-v
 let initCompleted: boolean = false;
 export const _package = new DG.Package();
 
-//name: test
-export function test() {
-  grok.shell.info(_package.webRoot);
-}
-
 //name: OutliersSelectionViewer
 //description: Creates an outliers selection viewer
 //tags: viewer
