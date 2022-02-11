@@ -360,6 +360,7 @@ export enum DEMO_DATASET {
   RANDOM_WALK = 'random walk',
   GEO = 'geo',
   MOLECULES = 'molecules',
+  DOSE_RESPONSE = 'dose-response',
 }
 
 /** @enum {DOCK_TYPE} */
