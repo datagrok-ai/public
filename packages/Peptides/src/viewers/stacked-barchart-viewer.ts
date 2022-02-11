@@ -389,12 +389,13 @@ export class StackedBarChart extends DG.JsViewer {
       this.highlighted = [];
       this.dataFrame!.selection.setAll(false);
 
-      this.dataFrame!.selection.handleClick((i) => {
-        for (const high of this.fixedHighlighted) 
-          if (high['aaName'] === (this.dataFrame!.getCol(high['colName']).get(i)))
-            return true;
-        return false;
-      }, event);
+      if (this.fixedHighlighted.length != 0)
+        this.dataFrame!.selection.handleClick((i) => {
+          for (const high of this.fixedHighlighted) 
+            if (high['aaName'] === (this.dataFrame!.getCol(high['colName']).get(i)))
+              return true;
+          return false;
+        }, event);
 
       this.computeData(this.dataFrame!);
     }
