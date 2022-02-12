@@ -5,7 +5,11 @@
   "main": "index.js",
   "scripts": {
     "link": "npm link",
-    "test": "echo \"Error: no test specified\" && exit 1"
+    "test": "echo \"Error: no test specified\" && exit 1",
+    "build": "",
+    "link-api": "npm link datagrok-api",
+    "link-utils": "npm link @datagrok-libraries/utils",
+    "link-all": "npm link datagrok-api @datagrok-libraries/utils"
   },
   "author": "Datagrok",
   "license": "MIT",
