@@ -9,7 +9,7 @@ import { ClinicalCaseViewBase } from "../model/ClinicalCaseViewBase";
 import { _package } from "../package";
 import { PATIENT_PROFILE_VIEW_NAME } from '../view-names-constants';
 import { AE_TERM_FIELD, CON_MED_NAME_FIELD, INV_DRUG_NAME_FIELD, VIEWS_CONFIG } from '../views-config';
-import { checkMissingColumns, createMissingDataDiv } from "./utils";
+import {  } from "./utils";
 
 
 export class PatientProfileView extends ClinicalCaseViewBase {
@@ -53,7 +53,6 @@ export class PatientProfileView extends ClinicalCaseViewBase {
     let labBaselineSelect = this.createLabBaselineVisitSelect();
     this.updateTablesToAttach(this.selectedPatientId);
 
-    if (Object.keys(this.tables).length) {
       (Object.values(this.tables) as any[])[0].plot.fromType('MultiPlot', {
         paramOptions: JSON.stringify(this.options_lb_ae_ex_cm),
       }).then((v: any) => {
@@ -108,9 +107,7 @@ export class PatientProfileView extends ClinicalCaseViewBase {
           this.createMissingChartsInfo();
         }
       });
-    } else {
-      this.createMissingDomainsAndColsInfo();
-    }
+ 
   }
 
   private createLabBaselineVisitSelect() {
@@ -143,22 +140,6 @@ export class PatientProfileView extends ClinicalCaseViewBase {
       };
   }
 
-  private createMissingDomainsAndColsInfo() {
-    const missingData = {}
-    this.options.forEach(it => {
-      if (missingData[it.domain]) {
-        missingData[it.domain]['req'] = missingData[it.domain]['req'].concat(it.req_cols);
-      } else {
-        missingData[it.domain] = {};
-        missingData[it.domain]['req'] = it.req_cols;
-      }
-    });
-    const errorsDiv = ui.divV([], { style: { margin: 'auto', textAlign: 'center' } });
-    createMissingDataDiv(errorsDiv, Object.keys(missingData), 'Missing domains:');
-    checkMissingColumns(errorsDiv, Object.keys(missingData), missingData);
-    this.root.appendChild(errorsDiv);
-  }
-
   private attachTablesToMultiplot(plot: any, options: any, tableNames: string[]) {
     const tablesToAttach = {};
     tableNames.forEach(name => {
@@ -172,7 +153,7 @@ export class PatientProfileView extends ClinicalCaseViewBase {
 
   private updateTablesToAttach(myId: any) {
     Object.keys(this.tableNamesAndFields).forEach(name => {
-      if (study.domains[name]) {
+      if (study.domains[name] && !this.optDomainsWithMissingCols.includes(name)) {
         this.tables[name] = study.domains[name].clone()
           .groupBy(study.domains[name].columns.names())
           .where(`${SUBJECT_ID} = ${myId}`)
@@ -219,7 +200,7 @@ export class PatientProfileView extends ClinicalCaseViewBase {
   }
 
   private createMissingChartsInfo() {
-    let str = 'Load the following domains to create addiional charts: \n'
+    let str = 'Load the following domains to create additional charts: \n'
     Object.keys(this.missingDomainsAndCols).forEach(title => {
       str += `\"${title}\": ${this.missingDomainsAndCols[title]}\n`;
     })

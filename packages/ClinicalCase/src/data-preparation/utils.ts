@@ -117,8 +117,9 @@ export function getVisitNamesAndDays(df: DG.DataFrame, nameCol: string, dayCol: 
         const day = data.getCol(dayCol).isNone(i) ? null : data.get(dayCol, i);
         const name = data.getCol(nameCol).isNone(i) ? null : data.get(nameCol, i);
         if (allowNulls) {
-            if (!visitsArray.filter(it => it.day === day && it.name === name).length) {
-                visitsArray.push({day: day, name: name})
+            const nameStr = name ?? '';
+            if (!visitsArray.filter(it => it.day === day && it.name === nameStr).length) {
+                visitsArray.push({day: day, name: nameStr })
             };
 
         } else {

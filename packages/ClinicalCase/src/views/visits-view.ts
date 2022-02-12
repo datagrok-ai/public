@@ -11,6 +11,7 @@ import { _package } from '../package';
 import { ClinicalCaseViewBase } from '../model/ClinicalCaseViewBase';
 import { AE_TERM_FIELD, CON_MED_NAME_FIELD, INV_DRUG_NAME_FIELD, TRT_ARM_FIELD, VIEWS_CONFIG } from '../views-config';
 import { VISITS_VIEW_NAME } from '../view-names-constants';
+import { DOMAINS_COLOR_PALETTE } from '../constants';
 
 export class VisitsView extends ClinicalCaseViewBase {
 
@@ -149,10 +150,10 @@ export class VisitsView extends ClinicalCaseViewBase {
     }
 
     private assignColorsToDomains() {
-        this.existingDomains.forEach((domain, index) => {
+        this.existingDomains.forEach((domain) => {
             this.proceduresAtVisit[domain] ?
-                this.proceduresAtVisit[domain]['color'] = DG.Color.toRgb(DG.Color.categoricalPalette[index]) :
-                this.eventsSinceLastVisit[domain]['color'] = DG.Color.toRgb(DG.Color.categoricalPalette[index]);
+                this.proceduresAtVisit[domain]['color'] = DG.Color.toRgb(DOMAINS_COLOR_PALETTE[domain]) :
+                this.eventsSinceLastVisit[domain]['color'] = DG.Color.toRgb(DOMAINS_COLOR_PALETTE[domain]);
         })
     }
 

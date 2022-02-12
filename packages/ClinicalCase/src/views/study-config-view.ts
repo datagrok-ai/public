@@ -22,9 +22,7 @@ export class StudyConfigurationView extends ClinicalCaseViewBase {
     }
 
     createView(): void {
-        let div = ui.divV([
-            ui.h1('Parameters', { style: { marginLeft: '45px' } })
-        ]);
+        let div = ui.divV([]);
 
         let inputs = ui.inputs([]);
 
