@@ -43,7 +43,7 @@ export class BoxPlotsView extends ClinicalCaseViewBase {
 
   createView(): void {
     this.selectedValuesByDomain = {};
-    this.domains = this.domains.filter(it => study.domains[it] !== null);
+    this.domains = this.domains.filter(it => study.domains[it] !== null && !this.optDomainsWithMissingCols.includes(it));
     this.splitBy =  [VIEWS_CONFIG[DISTRIBUTIONS_VIEW_NAME][TRT_ARM_FIELD], SEX, RACE, ETHNIC].filter(it => study.domains.dm.columns.names().includes(it));
     this.selectedSplitBy = this.splitBy[0];
     let viewerTitle = {
