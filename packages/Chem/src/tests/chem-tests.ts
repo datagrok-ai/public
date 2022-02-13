@@ -1,17 +1,18 @@
-import {category, expect, expectFloat, test} from "@datagrok-libraries/utils/src/test";
-import {_testSearchSubstructure, _testSearchSubstructureAllParameters, _testSearchSubstructureSARSmall, requireText} from "./utils";
-import * as DG from "datagrok-api/dg";
-import * as grok from "datagrok-api/grok";
-import * as ui from "datagrok-api/ui";
+import {category, expect, expectFloat, test} from '@datagrok-libraries/utils/src/test';
+import {_testSearchSubstructure,
+  _testSearchSubstructureAllParameters,
+  _testSearchSubstructureSARSmall, requireText} from './utils';
+import * as DG from 'datagrok-api/dg';
+import * as grok from 'datagrok-api/grok';
+import * as ui from 'datagrok-api/ui';
 
 category('chem', () => {
-
   test('searchSubstructure.sar-small', async () => {
     await _testSearchSubstructureAllParameters(
       _testSearchSubstructureSARSmall);
   });
 
-// Number of molecules is smaller than a number of threads
+  //Number of molecules is smaller than a number of threads
   test('searchSustructure.5_rows', async () => {
     const targetSmiles = [
       'CCOC(=O)c1oc2cccc(OCCNCc3cccnc3)c2c1C4CC4',
@@ -75,7 +76,7 @@ COc1ccc2c(c1)c(CC(=O)N3CCCC3C(=O)Oc4ccc(C)cc4OC)c(C)n2C(=O)c5ccc(Cl)cc5
   });
 
   test('getSimilarities.molecules', async () => {
-    let df = grok.data.demo.molecules();
+    const df = grok.data.demo.molecules();
     const scores = (await grok.chem.getSimilarities(df.columns['smiles'], 'O=C1CN=C(C2CCCCC2)C2:C:C:C:C:C:2N1'))!;
     expectFloat(scores.get(0), 0.1034);
     expectFloat(scores.get(1), 0.07407);
@@ -86,22 +87,22 @@ COc1ccc2c(c1)c(CC(=O)N3CCCC3C(=O)Oc4ccc(C)cc4OC)c(C)n2C(=O)c5ccc(Cl)cc5
   });
 
   test('testSubstructureSearch', async () => {
-    let t = grok.data.demo.molecules();
+    const t = grok.data.demo.molecules();
     await grok.chem.searchSubstructure(t.col('smiles')!, 'O=C1CN=C(C2CCCCC2)C2:C:C:C:C:C:2N1');
   });
 
   test('testDescriptors', async () => {
-    let t = grok.data.demo.molecules();
-    let descriptors = await grok.chem.descriptors(t, 'smiles', ['MolWt', 'Lipinski']);
+    const t = grok.data.demo.molecules();
+    await grok.chem.descriptors(t, 'smiles', ['MolWt', 'Lipinski']);
   });
 
   test('testDiversitySearch', async () => {
-    let t = grok.data.demo.molecules();
+    const t = grok.data.demo.molecules();
     await grok.chem.diversitySearch(t.col('smiles')!);
   });
 
   test('testMcs', async () => {
-    let t = DG.DataFrame.fromCsv(`smiles
+    const t = DG.DataFrame.fromCsv(`smiles
 O=C1CN=C(c2ccccc2N1)C3CCCCC3
 CN1C(=O)CN=C(c2ccccc12)C3CCCCC3
 CCCCN1C(=O)CN=C(c2ccccc12)C3CCCCC3
@@ -113,7 +114,7 @@ CN1C(=O)CN=C(c2cc(Cl)ccc12)C3CCCCC3`);
   });
 
   test('testMcsPanel', async () => {
-    let t = DG.DataFrame.fromCsv(`smiles
+    const t = DG.DataFrame.fromCsv(`smiles
       O=C1CN=C(c2ccccc2N1)C3CCCCC3
       CN1C(=O)CN=C(c2ccccc12)C3CCCCC3
       CCCCN1C(=O)CN=C(c2ccccc12)C3CCCCC3
@@ -121,13 +122,13 @@ CN1C(=O)CN=C(c2cc(Cl)ccc12)C3CCCCC3`);
       O=C1CN=C(c2ccccc2N1CC3CCCCC3)C4CCCCC4
       O=C1CN=C(c2cc(Cl)ccc2N1)C3CCCCC3
       CN1C(=O)CN=C(c2cc(Cl)ccc12)C3CCCCC3`);
-    let v = grok.shell.addTableView(t);
+    const v = grok.shell.addTableView(t);
     await grok.functions.call('Chem:addMcsPanel', {col: t.columns['smiles']});
     v.close();
   });
 
   test('testInchiPanel', async () => {
-    let t = DG.DataFrame.fromCsv(`smiles
+    const t = DG.DataFrame.fromCsv(`smiles
       COc1ccc(CN(Cc2ccccc2)Cc3ccc(Br)cc3)cc1O
       COc1ccc(CN(CCc2ccc(Br)cc2)Cc3ccccc3)cc1O
       CCCCCCCC(=O)NCCC1CC(CC)(CC)C(=O)O1
@@ -135,13 +136,13 @@ CN1C(=O)CN=C(c2cc(Cl)ccc12)C3CCCCC3`);
       CCCOC(=O)C1=C(C)NC(=C(C1c2csc(n2)c3ccc(Cl)cc3)C(=O)OCC)
       CCOC(=O)C1=C(C)NC(=C(C1c2csc(n2)c3ccc(Cl)cc3)C(=O)OC(C)C)
       CCOC(=O)C1=C(C)NC(=C(C1c2csc(n2)c3ccc(Cl)cc3)C(=O)OCC(C)C)`);
-    let v = grok.shell.addTableView(t);
+    const v = grok.shell.addTableView(t);
     await grok.functions.call('Chem:addInchisPanel', {col: t.columns['smiles']});
     v.close();
   });
 
   test('testInchiKeysPanel', async () => {
-    let t = DG.DataFrame.fromCsv(`smiles
+    const t = DG.DataFrame.fromCsv(`smiles
       COc1ccc(CN(Cc2ccccc2)Cc3ccc(Br)cc3)cc1O
       COc1ccc(CN(CCc2ccc(Br)cc2)Cc3ccccc3)cc1O
       CCCCCCCC(=O)NCCC1CC(CC)(CC)C(=O)O1
@@ -149,13 +150,13 @@ CN1C(=O)CN=C(c2cc(Cl)ccc12)C3CCCCC3`);
       CCCOC(=O)C1=C(C)NC(=C(C1c2csc(n2)c3ccc(Cl)cc3)C(=O)OCC)
       CCOC(=O)C1=C(C)NC(=C(C1c2csc(n2)c3ccc(Cl)cc3)C(=O)OC(C)C)
       CCOC(=O)C1=C(C)NC(=C(C1c2csc(n2)c3ccc(Cl)cc3)C(=O)OCC(C)C)`);
-    let v = grok.shell.addTableView(t);
+    const v = grok.shell.addTableView(t);
     await grok.functions.call('Chem:addInchisKeysPanel', {col: t.columns['smiles']});
     v.close();
   });
 
   test('testCurateTopMenu', async () => {
-    let t = DG.DataFrame.fromCsv(`Name,smiles
+    const t = DG.DataFrame.fromCsv(`Name,smiles
     metal_non,CCC(=O)O[Na]
     metal_st,CCC(=O)[O-].[Na+]
     parent_non,[Na]OC(=O)c1ccccc1
@@ -170,8 +171,8 @@ CN1C(=O)CN=C(c2cc(Cl)ccc12)C3CCCCC3`);
     tau_st,O=C1CCCCC1
     main_component_non,CCC1=C(C)C=CC(O)=N1.OC(=O)CCC(=O)O
     main_component_non_st,CCC1=C(C)C=CC(O)=N1`);
-    let v = grok.shell.addTableView(t);
-    await grok.functions.call('Chem:CurateChemStructures', {'data': t, 'smiles': 'smiles'})
+    const v = grok.shell.addTableView(t);
+    await grok.functions.call('Chem:CurateChemStructures', {'data': t, 'smiles': 'smiles'});
     v.close();
   });
 
@@ -182,12 +183,12 @@ CN1C(=O)CN=C(c2cc(Cl)ccc12)C3CCCCC3`);
   });
 
   test('testRenderingCanvas', async () => {
-    let root = ui.div();
+    const root = ui.div();
     const width = 300;
     const height = 200;
-    let canvas1 = ui.canvas(width, height);
+    const canvas1 = ui.canvas(width, height);
     canvas1.id = 'canvas1';
-    let canvas2 = ui.canvas(width, height);
+    const canvas2 = ui.canvas(width, height);
     canvas2.id = 'canvas2';
     root.appendChild(canvas1);
     root.appendChild(canvas2);
@@ -206,10 +207,10 @@ CN1C(=O)CN=C(c2cc(Cl)ccc12)C3CCCCC3`);
   });
 
   test('testSimilaritySearchViewer', async () => {
-    let table = grok.data.demo.molecules(1000);
+    const table = grok.data.demo.molecules(1000);
     table.selection.set(0, true);
-    let view = grok.shell.addTableView(table);
-    let similaritySearchviewer = view.addViewer('SimilaritySearchViewer');
+    const view = grok.shell.addTableView(table);
+    const similaritySearchviewer = view.addViewer('SimilaritySearchViewer');
     table.currentRowIdx = 5;
     table.selection.set(2, true);
     table.selection.set(6, true);
@@ -224,10 +225,10 @@ CN1C(=O)CN=C(c2cc(Cl)ccc12)C3CCCCC3`);
   });
 
   test('testDiversitySearchViewer', async () => {
-    let table = grok.data.demo.molecules(1000);
+    const table = grok.data.demo.molecules(1000);
     table.selection.set(0, true);
-    let view = grok.shell.addTableView(table);
-    let similaritySearchviewer = view.addViewer('DiversitySearchViewer');
+    const view = grok.shell.addTableView(table);
+    const similaritySearchviewer = view.addViewer('DiversitySearchViewer');
     table.currentRowIdx = 5;
     table.selection.set(2, true);
     table.selection.set(6, true);
