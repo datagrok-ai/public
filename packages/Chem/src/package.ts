@@ -395,10 +395,14 @@ export function structure2d(smiles: string) {
 //name: Structure 3D
 //description: 3D molecule representation
 //tags: panel, chem, widgets
-//input: string smiles { semType: Molecule }
+//input: string molecule { semType: Molecule }
 //output: widget result
-export async function structure3d(smiles: string) {
-  return smiles ? structure3dWidget(smiles) : new DG.Widget(ui.divText('SMILES is empty'));
+export async function structure3d(molecule: string) {
+  const mol = getRdKitModule().get_mol(molecule);
+  molecule = mol.get_smiles();
+  mol?.delete();
+
+  return molecule ? structure3dWidget(molecule) : new DG.Widget(ui.divText('SMILES is empty'));
 }
 
 //name: Toxicity
