@@ -15,6 +15,24 @@ jobs:
           # Full git history is needed to get a proper list of changed files within `super-linter`
           fetch-depth: 0
 
+      - name: Setup Node
+        uses: actions/setup-node@v2
+        with:
+          node-version: '12.x'
+          registry-url: 'https://registry.npmjs.org'
+      - name: Upgrade npm
+        run: npm install -g npm@latest
+      - name: Check npm version
+        run: npm version
+      - name: Install JS linters
+        run: |
+          npm install -g \
+            eslint \
+            eslint-config-google \
+            typescript \
+            @typescript-eslint/parser \
+            @typescript-eslint/eslint-plugin
+
       - name: Lint Code Base
         uses: github/super-linter@v4
         env:
@@ -29,7 +47,7 @@ jobs:
           MARKDOWN_CONFIG_FILE: .markdownlint.yaml
           NATURAL_LANGUAGE_CONFIG_FILE: .textlintrc
           JAVASCRIPT_ES_CONFIG_FILE: ../../tools/package-template/.eslintrc.json
-          TYPESCRIPT_ES_CONFIG_FILE: ../../tools/package-template/.eslintrc.json
+          TYPESCRIPT_ES_CONFIG_FILE: ../../tools/package-template/.eslintrc.ts.json
           VALIDATE_ALL_CODEBASE: false
           IGNORE_GITIGNORED_FILES: true
           VALIDATE_BASH: true
