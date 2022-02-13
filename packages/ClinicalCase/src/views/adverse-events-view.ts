@@ -3,11 +3,11 @@ import * as DG from "datagrok-api/dg";
 import * as ui from "datagrok-api/ui";
 import { study, ClinRow } from "../clinical-study";
 import { addDataFromDmDomain } from '../data-preparation/utils';
-import { AE_BODY_SYSTEM, AE_CAUSALITY, AE_OUTCOME, AE_SEVERITY, AE_START_DAY, SUBJECT_ID } from '../columns-constants';
+import { AE_BODY_SYSTEM, AE_CAUSALITY, AE_OUTCOME, AE_SEVERITY, SUBJECT_ID } from '../columns-constants';
 import { checkColumnsAndCreateViewer, updateDivInnerHTML } from './utils';
 import { _package } from '../package';
 import { ClinicalCaseViewBase } from '../model/ClinicalCaseViewBase';
-import { AE_TERM_FIELD, TRT_ARM_FIELD, VIEWS_CONFIG } from '../views-config';
+import { AE_START_DAY_FIELD, AE_TERM_FIELD, TRT_ARM_FIELD, VIEWS_CONFIG } from '../views-config';
 
 
 export class AdverseEventsView extends ClinicalCaseViewBase {
@@ -80,7 +80,7 @@ export class AdverseEventsView extends ClinicalCaseViewBase {
 
     checkColumnsAndCreateViewer(
       study.domains.ae,
-      [AE_START_DAY],
+      [VIEWS_CONFIG[this.name][AE_START_DAY_FIELD]],
       this.eventsPerWeekPlot, () => {
         let bar = this.eventsPerWeek(viewerTitle);
         updateDivInnerHTML(this.eventsPerWeekPlot, bar);
@@ -89,7 +89,7 @@ export class AdverseEventsView extends ClinicalCaseViewBase {
 
     checkColumnsAndCreateViewer(
       study.domains.ae,
-      [SUBJECT_ID, AE_START_DAY],
+      [SUBJECT_ID, VIEWS_CONFIG[this.name][AE_START_DAY_FIELD]],
       this.allEventsPlot, () => {
         let bar = this.allEvents(viewerTitle);
         updateDivInnerHTML(this.allEventsPlot, bar);
@@ -153,7 +153,7 @@ export class AdverseEventsView extends ClinicalCaseViewBase {
 
   private allEvents(viewerTitle: any) {
     let scatterPlot = this.aeWithArm.plot.scatter({
-      x: AE_START_DAY,
+      x: VIEWS_CONFIG[this.name][AE_START_DAY_FIELD],
       y: SUBJECT_ID,
       color: this.aeWithArm.col(AE_SEVERITY) ? AE_SEVERITY : '',
       markerDefaultSize: 5,

@@ -3,7 +3,7 @@ import * as ui from "datagrok-api/ui";
 import * as DG from 'datagrok-api/dg';
 import { ADVERSE_EVENTS_VIEW_NAME, AE_RISK_ASSESSMENT_VIEW_NAME, CORRELATIONS_VIEW_NAME, DISTRIBUTIONS_VIEW_NAME, LABORATORY_VIEW_NAME, MEDICAL_HISTORY_VIEW_NAME, PATIENT_PROFILE_VIEW_NAME, SUMMARY_VIEW_NAME, SURVIVAL_ANALYSIS_VIEW_NAME, TIMELINES_VIEW_NAME, TIME_PROFILE_VIEW_NAME, TREE_MAP_VIEW_NAME, VISITS_VIEW_NAME } from "../view-names-constants";
 import * as sdtmCols from "../columns-constants";
-import { AE_TERM_FIELD, CON_MED_NAME_FIELD, INV_DRUG_NAME_FIELD, TRT_ARM_FIELD, VIEWS_CONFIG } from "../views-config";
+import { AE_END_DAY_FIELD, AE_START_DAY_FIELD, AE_TERM_FIELD, CON_MED_END_DAY_FIELD, CON_MED_NAME_FIELD, CON_MED_START_DAY_FIELD, INV_DRUG_END_DAY_FIELD, INV_DRUG_NAME_FIELD, INV_DRUG_START_DAY_FIELD, TRT_ARM_FIELD, VIEWS_CONFIG } from "../views-config";
 
 export function updateDivInnerHTML(div: HTMLElement, content: any) {
   div.innerHTML = '';
@@ -71,8 +71,8 @@ export function getRequiredColumnsByView() {
           'req': [
             sdtmCols.DOMAIN,
             sdtmCols.SUBJECT_ID,
-            sdtmCols.AE_START_DAY,
-            sdtmCols.AE_END_DAY,
+            VIEWS_CONFIG[TIMELINES_VIEW_NAME][AE_START_DAY_FIELD],
+            VIEWS_CONFIG[TIMELINES_VIEW_NAME][AE_END_DAY_FIELD],
             VIEWS_CONFIG[TIMELINES_VIEW_NAME][AE_TERM_FIELD]
           ],
         },
@@ -81,8 +81,8 @@ export function getRequiredColumnsByView() {
             sdtmCols.DOMAIN,
             sdtmCols.SUBJECT_ID,
             VIEWS_CONFIG[TIMELINES_VIEW_NAME][CON_MED_NAME_FIELD],
-            sdtmCols.CON_MED_START_DAY,
-            sdtmCols.CON_MED_END_DAY
+            VIEWS_CONFIG[TIMELINES_VIEW_NAME][CON_MED_START_DAY_FIELD],
+            VIEWS_CONFIG[TIMELINES_VIEW_NAME][CON_MED_END_DAY_FIELD]
           ]
         },
         'ex': {
@@ -90,8 +90,8 @@ export function getRequiredColumnsByView() {
             sdtmCols.DOMAIN,
             sdtmCols.SUBJECT_ID,
             VIEWS_CONFIG[TIMELINES_VIEW_NAME][INV_DRUG_NAME_FIELD],
-            sdtmCols.INV_DRUG_START_DAY,
-            sdtmCols.INV_DRUG_END_DAY
+            VIEWS_CONFIG[TIMELINES_VIEW_NAME][INV_DRUG_START_DAY_FIELD],
+            VIEWS_CONFIG[TIMELINES_VIEW_NAME][INV_DRUG_END_DAY_FIELD]
           ]
         }
       }
@@ -119,24 +119,24 @@ export function getRequiredColumnsByView() {
           'req': [
             sdtmCols.SUBJECT_ID, 
             VIEWS_CONFIG[PATIENT_PROFILE_VIEW_NAME][AE_TERM_FIELD], 
-            sdtmCols.AE_START_DAY, 
-            sdtmCols.AE_END_DAY
+            VIEWS_CONFIG[PATIENT_PROFILE_VIEW_NAME][AE_START_DAY_FIELD], 
+            VIEWS_CONFIG[PATIENT_PROFILE_VIEW_NAME][AE_END_DAY_FIELD]
           ]
         },
         'ex': {
           'req': [
             sdtmCols.SUBJECT_ID, 
             VIEWS_CONFIG[PATIENT_PROFILE_VIEW_NAME][INV_DRUG_NAME_FIELD], 
-            sdtmCols.INV_DRUG_START_DAY, 
-            sdtmCols.INV_DRUG_END_DAY
+            VIEWS_CONFIG[PATIENT_PROFILE_VIEW_NAME][INV_DRUG_START_DAY_FIELD],
+            VIEWS_CONFIG[PATIENT_PROFILE_VIEW_NAME][INV_DRUG_END_DAY_FIELD]
           ]
         },
         'cm': {
           'req': [
             sdtmCols.SUBJECT_ID, 
             VIEWS_CONFIG[PATIENT_PROFILE_VIEW_NAME][CON_MED_NAME_FIELD], 
-            sdtmCols.CON_MED_START_DAY, 
-            sdtmCols.CON_MED_END_DAY
+            VIEWS_CONFIG[PATIENT_PROFILE_VIEW_NAME][CON_MED_START_DAY_FIELD], 
+            VIEWS_CONFIG[PATIENT_PROFILE_VIEW_NAME][CON_MED_END_DAY_FIELD]
           ]
         }
       }
