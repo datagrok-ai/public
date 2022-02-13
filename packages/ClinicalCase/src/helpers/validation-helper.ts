@@ -1,5 +1,4 @@
 import { study } from "../clinical-study";
-import * as ui from "datagrok-api/ui";
 
 export class ValidationHelper {
 

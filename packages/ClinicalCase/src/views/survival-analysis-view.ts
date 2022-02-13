@@ -3,22 +3,16 @@ import { InputBase } from "datagrok-api/dg";
 import * as grok from 'datagrok-api/grok';
 import * as ui from "datagrok-api/ui";
 import { study } from "../clinical-study";
-import { AE_CAUSALITY, AE_REQ_HOSP, AE_SEQ, AE_SEVERITY, AE_START_DATE, AGE, DEATH_DATE, RACE, SEX, SUBJECT_ID, SUBJ_REF_ENDT } from "../columns-constants";
+import { AE_CAUSALITY, AE_REQ_HOSP, AE_SEQ, AE_SEVERITY, AGE, DEATH_DATE, RACE, SEX, SUBJECT_ID, SUBJ_REF_ENDT } from "../columns-constants";
 import { SURVIVAL_ANALYSIS_GUIDE } from "../constants";
 import { createSurvivalData } from "../data-preparation/data-preparation";
 import { dataframeContentToRow } from "../data-preparation/utils";
 import { ClinicalCaseViewBase } from "../model/ClinicalCaseViewBase";
 import { _package } from "../package";
 import { SURVIVAL_ANALYSIS_VIEW_NAME } from "../view-names-constants";
-import { TRT_ARM_FIELD, VIEWS_CONFIG } from "../views-config";
+import { AE_START_DAY_FIELD, TRT_ARM_FIELD, VIEWS_CONFIG } from "../views-config";
 import { updateDivInnerHTML } from "./utils";
 
-let colsRequiredForEndpoints = {
-  'SAE': {'ae': [ AE_START_DATE, SUBJECT_ID, AE_SEVERITY, AE_SEQ] },
-  'DEATH': {'dm': [DEATH_DATE] },
-  'HOSPITALIZATION': {'ae': [ AE_START_DATE, SUBJECT_ID, AE_REQ_HOSP, AE_SEVERITY, AE_SEQ] },
-  'DRUG RELATED AE': {'ae': [ AE_START_DATE, SUBJECT_ID, AE_CAUSALITY, AE_SEVERITY, AE_SEQ] },
-}
 export class SurvivalAnalysisView extends ClinicalCaseViewBase {
 
   survivalPlotDiv = ui.box();
@@ -46,6 +40,7 @@ export class SurvivalAnalysisView extends ClinicalCaseViewBase {
   survivalDataframe: DG.DataFrame;
   plotCovariates = [];
   filterChanged = false;
+  colsRequiredForEndpoints: any;
 
   constructor(name) {
     super({});
@@ -54,6 +49,7 @@ export class SurvivalAnalysisView extends ClinicalCaseViewBase {
   }
 
   createView(): void {
+    this.colsRequiredForEndpoints = this.getColsRequiredForEndpoints
     this.updateEndpointOptions();
     this.covariatesOptions = [ AGE, SEX, RACE, VIEWS_CONFIG[SURVIVAL_ANALYSIS_VIEW_NAME][TRT_ARM_FIELD] ].filter(it => study.domains.dm.columns.names().includes(it));
     this.endpoint = Object.keys(this.endpointOptions)[0];
@@ -152,18 +148,18 @@ export class SurvivalAnalysisView extends ClinicalCaseViewBase {
   }
 
   private updateEndpointOptions(){
-    Object.keys(colsRequiredForEndpoints).forEach(key => {
+    Object.keys(this.colsRequiredForEndpoints).forEach(key => {
       let missingCols = false;
-      let domains = Object.keys(colsRequiredForEndpoints[key]);
+      let domains = Object.keys(this.colsRequiredForEndpoints[key]);
       domains.forEach(dom => {
-        colsRequiredForEndpoints[key][dom].map(it => {
+        this.colsRequiredForEndpoints[key][dom].map(it => {
           if (!study.domains[dom] || !study.domains[dom].columns.names().includes(it)) {
             missingCols = true;
           }
         })
         if(!missingCols){
-          let domain = Object.keys(colsRequiredForEndpoints[key])[0]
-          this.endpointOptions[key] = colsRequiredForEndpoints[key][domain][0];
+          let domain = Object.keys(this.colsRequiredForEndpoints[key])[0]
+          this.endpointOptions[key] = this.colsRequiredForEndpoints[key][domain][0];
         }
       })
     })
@@ -258,6 +254,15 @@ export class SurvivalAnalysisView extends ClinicalCaseViewBase {
         this.updateCovariatesPlot();
       }
       this.filterChanged = false;
+    }
+  }
+
+  private getColsRequiredForEndpoints() {
+    return {
+      'SAE': { 'ae': [VIEWS_CONFIG[SURVIVAL_ANALYSIS_VIEW_NAME][AE_START_DAY_FIELD], SUBJECT_ID, AE_SEVERITY, AE_SEQ] },
+      'DEATH': { 'dm': [DEATH_DATE] },
+      'HOSPITALIZATION': { 'ae': [VIEWS_CONFIG[SURVIVAL_ANALYSIS_VIEW_NAME][AE_START_DAY_FIELD], SUBJECT_ID, AE_REQ_HOSP, AE_SEVERITY, AE_SEQ] },
+      'DRUG RELATED AE': { 'ae': [VIEWS_CONFIG[SURVIVAL_ANALYSIS_VIEW_NAME][AE_START_DAY_FIELD], SUBJECT_ID, AE_CAUSALITY, AE_SEVERITY, AE_SEQ] },
     }
   }
 }

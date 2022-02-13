@@ -6,10 +6,10 @@ import { updateDivInnerHTML } from "./utils";
 import $ from "cash-dom";
 import { AEBrowserHelper } from "../helpers/ae-browser-helper";
 import { _package } from "../package";
-import { AE_BODY_SYSTEM, AE_END_DAY, AE_SEVERITY, AE_START_DAY, CON_MED_DOSE, CON_MED_DOSE_FREQ, CON_MED_DOSE_UNITS, CON_MED_END_DAY, CON_MED_ROUTE, CON_MED_START_DAY, DOMAIN, INV_DRUG_DOSE, INV_DRUG_DOSE_FORM, INV_DRUG_DOSE_FREQ, INV_DRUG_DOSE_UNITS, INV_DRUG_END_DAY, INV_DRUG_ROUTE, INV_DRUG_START_DAY, SUBJECT_ID } from "../columns-constants";
+import { AE_BODY_SYSTEM, AE_SEVERITY, CON_MED_DOSE, CON_MED_DOSE_FREQ, CON_MED_DOSE_UNITS, CON_MED_ROUTE, DOMAIN, INV_DRUG_DOSE, INV_DRUG_DOSE_FORM, INV_DRUG_DOSE_FREQ, INV_DRUG_DOSE_UNITS, INV_DRUG_ROUTE, SUBJECT_ID } from "../columns-constants";
 import { ClinicalCaseViewBase } from "../model/ClinicalCaseViewBase";
 import { addDataFromDmDomain, getNullOrValue } from "../data-preparation/utils";
-import { AE_TERM_FIELD, CON_MED_NAME_FIELD, INV_DRUG_NAME_FIELD, TRT_ARM_FIELD, VIEWS_CONFIG } from "../views-config";
+import { AE_END_DAY_FIELD, AE_START_DAY_FIELD, AE_TERM_FIELD, CON_MED_END_DAY_FIELD, CON_MED_NAME_FIELD, CON_MED_START_DAY_FIELD, INV_DRUG_END_DAY_FIELD, INV_DRUG_NAME_FIELD, INV_DRUG_START_DAY_FIELD, TRT_ARM_FIELD, VIEWS_CONFIG } from "../views-config";
 import { TIMELINES_VIEW_NAME } from "../view-names-constants";
 
 let multichoiceTableDict = { 'Adverse events': 'ae', 'Concomitant medication intake': 'cm', 'Drug exposure': 'ex' }
@@ -329,9 +329,24 @@ export class TimelinesView extends ClinicalCaseViewBase {
 
   private getLinks() {
     return {
-      ae: { key: SUBJECT_ID, start: AE_START_DAY, end: AE_END_DAY, event: VIEWS_CONFIG[TIMELINES_VIEW_NAME][AE_TERM_FIELD] },
-      cm: { key: SUBJECT_ID, start: CON_MED_START_DAY, end: CON_MED_END_DAY, event: VIEWS_CONFIG[TIMELINES_VIEW_NAME][CON_MED_NAME_FIELD] },
-      ex: { key: SUBJECT_ID, start: INV_DRUG_START_DAY, end: INV_DRUG_END_DAY, event: VIEWS_CONFIG[TIMELINES_VIEW_NAME][INV_DRUG_NAME_FIELD] }
+      ae: {
+        key: SUBJECT_ID, 
+        start: VIEWS_CONFIG[TIMELINES_VIEW_NAME][AE_START_DAY_FIELD],
+        end: VIEWS_CONFIG[TIMELINES_VIEW_NAME][AE_END_DAY_FIELD],
+        event: VIEWS_CONFIG[TIMELINES_VIEW_NAME][AE_TERM_FIELD]
+      },
+      cm: {
+        key: SUBJECT_ID,
+        start: VIEWS_CONFIG[TIMELINES_VIEW_NAME][CON_MED_START_DAY_FIELD],
+        end: VIEWS_CONFIG[TIMELINES_VIEW_NAME][CON_MED_END_DAY_FIELD],
+        event: VIEWS_CONFIG[TIMELINES_VIEW_NAME][CON_MED_NAME_FIELD]
+      },
+      ex: {
+        key: SUBJECT_ID,
+        start: VIEWS_CONFIG[TIMELINES_VIEW_NAME][INV_DRUG_START_DAY_FIELD],
+        end: VIEWS_CONFIG[TIMELINES_VIEW_NAME][INV_DRUG_END_DAY_FIELD],
+        event: VIEWS_CONFIG[TIMELINES_VIEW_NAME][INV_DRUG_NAME_FIELD]
+      }
     };
   }
 
