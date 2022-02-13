@@ -170,10 +170,13 @@ M  END
 
   _drawMolecule(x: number, y: number, w: number, h: number, onscreenCanvas: HTMLCanvasElement,
     molString: string, scaffoldMolString: string, highlightScaffold: boolean,
-    molRegenerateCoords: boolean, scaffoldRegenerateCoords: boolean) {
-    const r = window.devicePixelRatio;
-    x = r * x; y = r * y;
-    w = r * w; h = r * h;
+    molRegenerateCoords: boolean, scaffoldRegenerateCoords: boolean, pixelRatioRecalculation: boolean = true) {
+    if (pixelRatioRecalculation) {
+      const r = window.devicePixelRatio;
+      x = r * x; y = r * y;
+      w = r * w; h = r * h;
+    }
+
     const renderObj = this._fetchRender(w, h,
       molString, scaffoldMolString, highlightScaffold, molRegenerateCoords, scaffoldRegenerateCoords);
     const offscreenCanvas = renderObj.canvas;
@@ -200,7 +203,7 @@ M  END
 
     // value-based drawing (coming from HtmlCellRenderer.renderValue)
     if (gridCell.cell.column == null) {
-      this._drawMolecule(x, y, w, h, g.canvas, molString, '', false, false, false);
+      this._drawMolecule(x, y, w, h, g.canvas, molString, '', false, false, false, false);
       return;
     }
 
