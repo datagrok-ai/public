@@ -90,23 +90,23 @@ function isValidSequence(sequence: string) {
   const indexOfExpectedSythesizer = Math.max.apply(Math, outputIndices);
   const indexOfFirstNotValidCharacter = (indexOfExpectedSythesizer == sequence.length) ? -1 : indexOfExpectedSythesizer;
   const expectedSynthesizer = possibleSynthesizers[outputIndices.indexOf(indexOfExpectedSythesizer)];
-  if (indexOfFirstNotValidCharacter != -1)
+  if (indexOfFirstNotValidCharacter != -1) {
     return {
       indexOfFirstNotValidCharacter: indexOfFirstNotValidCharacter,
-      expectedType: expectedSynthesizer
+      expectedType: expectedSynthesizer,
     };
+  }
 
-  let possibleTechnologies = getListOfPossibleTechnologiesByFirstMatchedCode(sequence, expectedSynthesizer);
+  const possibleTechnologies = getListOfPossibleTechnologiesByFirstMatchedCode(sequence, expectedSynthesizer);
   if (possibleTechnologies.length == 0)
-    return { indexOfFirstNotValidCharacter: 0, expectedRepresentation: null };
+    return {indexOfFirstNotValidCharacter: 0, expectedRepresentation: null};
 
   outputIndices = Array(possibleTechnologies.length).fill(0);
 
   possibleTechnologies.forEach((technology, technologyIndex) => {
-    let codes = Object.keys(map[expectedSynthesizer][technology]);
+    const codes = Object.keys(map[expectedSynthesizer][technology]);
     while (outputIndices[technologyIndex] < sequence.length) {
-
-      let matchedCode = codes
+      const matchedCode = codes
         .find((c) => c == sequence.slice(outputIndices[technologyIndex], outputIndices[technologyIndex] + c.length));
 
       if (matchedCode == null)
@@ -135,7 +135,7 @@ function isValidSequence(sequence: string) {
 
   return {
     indexOfFirstNotValidCharacter: indexOfFirstNotValidCharacter,
-    expectedType: expectedSynthesizer + ' ' + expectedTechnology
+    expectedType: expectedSynthesizer + ' ' + expectedTechnology,
   };
 }
 
@@ -179,9 +179,7 @@ export function sequenceToSmiles(sequence: string): string {
           MODIFICATIONS[codesList[i]].left + stadardPhosphateLinkSmiles;
       }
     } else {
-      if (links.includes(codesList[i]) && i > 1 && !includesStandardLinkAlready.includes(codesList[i - 1]))
-        smiles = smiles.slice(0, smiles.length - stadardPhosphateLinkSmiles.length + 1);
-      else if (links.includes(codesList[i]) ||
+      if (links.includes(codesList[i]) ||
         includesStandardLinkAlready.includes(codesList[i]) ||
         (i < codesList.length - 1 && links.includes(codesList[i + 1]))
       )
@@ -228,21 +226,21 @@ export function sequenceTranslator(): void {
               ui.tooltip.bind(
                 ui.divText(sequence.slice(JSON.parse(outputSequenceObj.indexOfFirstNotValidCharacter!).indexOfFirstNotValidCharacter), {style: {color: 'red'}}),
                 'Expected format: ' + JSON.parse(outputSequenceObj.indexOfFirstNotValidCharacter!).expectedType + '. Press \'SHOW CODES\' button to see tables with valid codes'
-              )
+              ),
             ]) : //@ts-ignore
             ui.link(outputSequenceObj[key], () => navigator.clipboard.writeText(outputSequenceObj[key]).then(() => grok.shell.info(sequenceWasCopied)), tooltipSequence, '')
-        })
+        });
       }
       outputTableDiv.append(
         ui.div([DG.HtmlTable.create(tableRows, (item: { key: string; value: string; }) => [item.key, item.value], ['Code', 'Sequence']).root], 'table')
       );
       semTypeOfInputSequence.textContent = 'Detected input type: ' + outputSequenceObj.type;
 
-      let width = $(window).width();
+      const width = $(window).width();
       const canvas = ui.canvas(width, Math.round(width / 2));
-      let smiles = sequenceToSmiles(inputSequenceField.value.replace(/\s/g, ''));
+      const smiles = sequenceToSmiles(inputSequenceField.value.replace(/\s/g, ''));
       // @ts-ignore
-      OCL.StructureView.drawMolecule(canvas, OCL.Molecule.fromSmiles(smiles), { suppressChiralText: true });
+      OCL.StructureView.drawMolecule(canvas, OCL.Molecule.fromSmiles(smiles), {suppressChiralText: true});
       if (outputSequenceObj.type != undefinedInputSequence)
         moleculeSvgDiv.append(canvas);
     } finally {
@@ -250,41 +248,41 @@ export function sequenceTranslator(): void {
     }
   }
 
-  let semTypeOfInputSequence = ui.divText('');
-  let moleculeSvgDiv = ui.block([]);
-  let outputTableDiv = ui.div([], 'table');
-  let inputSequenceField = ui.textInput('', defaultInput, (sequence: string) => updateTableAndMolecule(sequence));
+  const semTypeOfInputSequence = ui.divText('');
+  const moleculeSvgDiv = ui.block([]);
+  const outputTableDiv = ui.div([], 'table');
+  const inputSequenceField = ui.textInput('', defaultInput, (sequence: string) => updateTableAndMolecule(sequence));
   updateTableAndMolecule(defaultInput);
 
-  let tablesWithCodes = ui.divV([
+  const tablesWithCodes = ui.divV([
     DG.HtmlTable.create(Object.keys(MODIFICATIONS), (item: string) => [item], ['Overhang modification']).root,
-    ui.div([], {style: {height: '30px'}})
+    ui.div([], {style: {height: '30px'}}),
   ]);
-  for (let synthesizer of Object.keys(map)) {
-    for (let technology of Object.keys(map[synthesizer])) {
-      let tableRows = [];
-      for (let [key, value] of Object.entries(map[synthesizer][technology]))
+  for (const synthesizer of Object.keys(map)) {
+    for (const technology of Object.keys(map[synthesizer])) {
+      const tableRows = [];
+      for (const [key, value] of Object.entries(map[synthesizer][technology]))
         tableRows.push({'name': value.name, 'code': key});
       tablesWithCodes.append(
         DG.HtmlTable.create(
           tableRows,
           (item: {name: string; code: string;}) => [item['name'], item['code']],
-          [synthesizer + ' ' + technology, 'Code']
+          [synthesizer + ' ' + technology, 'Code'],
         ).root,
-        ui.div([], {style: {height: '30px'}})
+        ui.div([], {style: {height: '30px'}}),
       );
     }
   }
-  let showCodesButton = ui.button('SHOW CODES', () => ui.dialog('Codes').add(tablesWithCodes).show());
-  let copySmiles = ui.button(
+  const showCodesButton = ui.button('SHOW CODES', () => ui.dialog('Codes').add(tablesWithCodes).show());
+  const copySmiles = ui.button(
     'COPY SMILES',
     () => navigator.clipboard.writeText(sequenceToSmiles(inputSequenceField.value.replace(/\s/g, '')))
-      .then(() => grok.shell.info(sequenceWasCopied))
+      .then(() => grok.shell.info(sequenceWasCopied)),
   );
-  let saveMolFileButton = ui.bigButton('SAVE MOL FILE', () => {
-    let smiles = sequenceToSmiles(inputSequenceField.value.replace(/\s/g, ''));
-    let result = `${OCL.Molecule.fromSmiles(smiles).toMolfile()}\n`;
-    let element = document.createElement('a');
+  const saveMolFileButton = ui.bigButton('SAVE MOL FILE', () => {
+    const smiles = sequenceToSmiles(inputSequenceField.value.replace(/\s/g, ''));
+    const result = `${OCL.Molecule.fromSmiles(smiles).toMolfile()}\n`;
+    const element = document.createElement('a');
     element.setAttribute('href', 'data:text/plain;charset=utf-8,' + encodeURIComponent(result));
     element.setAttribute('download', inputSequenceField.value.replace(/\s/g, '') + '.mol');
     element.click();
