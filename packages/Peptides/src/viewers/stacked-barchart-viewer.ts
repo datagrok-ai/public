@@ -1,6 +1,5 @@
 import * as DG from 'datagrok-api/dg';
 import * as ui from 'datagrok-api/ui';
-import {scaleBand, scaleLinear, text} from 'd3';
 import {ChemPalette} from '../utils/chem-palette';
 import * as rxjs from 'rxjs';
 const cp = new ChemPalette('grok');
@@ -9,10 +8,10 @@ export function addViewerToHeader(grid: DG.Grid, barchart: StackedBarChart) {
   if (grid.temp['containsBarchart'])
     return;
 
-  function eventAction(mouseMove: MouseEvent, mouseType: string) {
+  function eventAction(mouseMove: MouseEvent) {
     const cell = grid.hitTest(mouseMove.offsetX, mouseMove.offsetY);
     if (cell !== null && cell?.isColHeader && cell.tableColumn?.semType == 'aminoAcids')
-      barchart.highlight(cell, mouseMove.offsetX, mouseMove.offsetY, mouseType);
+      barchart.highlight(cell, mouseMove.offsetX, mouseMove.offsetY, mouseMove);
     else
       return;
     
@@ -22,17 +21,9 @@ export function addViewerToHeader(grid: DG.Grid, barchart: StackedBarChart) {
       barchart.unhighlight();
   }
 
-  // The following event makes the barchart interactive
-  rxjs.fromEvent<MouseEvent>(grid.overlay, 'mousemove').subscribe((mouseMove: MouseEvent) => eventAction(mouseMove, 'mousemove'));
-  rxjs.fromEvent<MouseEvent>(grid.overlay, 'click').subscribe((mouseMove: MouseEvent) => 
-    eventAction(
-      mouseMove, 
-      'click' + 
-      (mouseMove.altKey ? ' alt' : '') + 
-      ((mouseMove.ctrlKey || mouseMove.metaKey) ? ' ctrl' : '') +
-      (mouseMove.shiftKey ? ' shift' : '')
-    )
-  );
+  // The following events makes the barchart interactive
+  rxjs.fromEvent<MouseEvent>(grid.overlay, 'mousemove').subscribe((mouseMove: MouseEvent) => eventAction(mouseMove));
+  rxjs.fromEvent<MouseEvent>(grid.overlay, 'click').subscribe((mouseMove: MouseEvent) => eventAction(mouseMove));
   rxjs.fromEvent<MouseEvent>(grid.overlay, 'mouseout').subscribe(() => barchart.unhighlight());
 
   barchart.tableCanvas = grid.canvas;
@@ -148,7 +139,6 @@ export class StackedBarChart extends DG.JsViewer {
     this.aggregatedTables = {};
     this.aggregatedHighlightedTables = {};
     this.aggregatedSelectedTables = {};
-    const selectedFilteredMask = this.dataFrame!.filter.clone().and(this.dataFrame!.selection);
     //TODO: optimize it, why store so many tables?
     this.aminoColumnNames.forEach((name) => {
       this.aggregatedTables[name] = this.dataFrame!
@@ -165,7 +155,7 @@ export class StackedBarChart extends DG.JsViewer {
 
       this.aggregatedSelectedTables[name] = this.dataFrame!
         .groupBy([name])
-        .whereRowMask(selectedFilteredMask)
+        .whereRowMask(this.dataFrame!.selection)
         .add('count', name, `${name}_count`)
         .aggregate();
     });
@@ -199,7 +189,7 @@ export class StackedBarChart extends DG.JsViewer {
             const highlightedAmino = aggHighlightedAminoCol.get(j);
             const selectedAmino = aggSelectedAminoCol.get(j);
             const curAmino = (col == aggHighlightedCountCol ? highlightedAmino : selectedAmino);
-            if (curAmino && curAmino != this.dataEmptyAA && curAmino == amino) {
+            if (curAmino == amino) {
               aminoObj[col == aggHighlightedCountCol ? 'highlightedCount' : 'selectedCount'] = col.get(j);
               break;
             }
@@ -319,7 +309,7 @@ export class StackedBarChart extends DG.JsViewer {
     return;
   }
 
-  highlight(cell: DG.GridCell, offsetX:number, offsetY:number, mouseType: string): void {
+  highlight(cell: DG.GridCell, offsetX:number, offsetY:number, mouseEvent: MouseEvent): void {
     if (!cell.tableColumn?.name || !this.aminoColumnNames.includes(cell.tableColumn.name))
       return;
       
@@ -362,20 +352,18 @@ export class StackedBarChart extends DG.JsViewer {
     if (!this.highlighted)
       return;
 
-    if (mouseType.startsWith('click')) {
+    if (mouseEvent.type == 'click') {
       let idx = -1;
 
       for (let i = 0; i < this.selected.length; ++i) 
         if (JSON.stringify(this.selected[i]) == JSON.stringify(this.highlighted))
           idx = i;
 
-      if (mouseType == 'click shift' && idx == -1) 
+      if (mouseEvent.shiftKey && idx == -1) 
         this.selected.push(this.highlighted);
 
-      if (mouseType == 'click ctrl shift' && idx != -1) 
+      if (mouseEvent.shiftKey && (mouseEvent.ctrlKey || mouseEvent.metaKey) && idx != -1) 
         this.selected.splice(idx, 1);
-
-      this.highlighted = null;
     } 
   }
 
@@ -385,7 +373,7 @@ export class StackedBarChart extends DG.JsViewer {
     this.computeData();
   }
 
-  beginSelection(event: any): void {
+  beginSelection(event: MouseEvent): void {
     if (!this.dataFrame)
       return;
 
