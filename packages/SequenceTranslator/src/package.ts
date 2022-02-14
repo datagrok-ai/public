@@ -50,10 +50,14 @@ function getListOfPossibleTechnologiesByFirstMatchedCode(sequence: string, synth
   return technologies;
 }
 
-function isValidSequence(sequence: string) {
+export function isValidSequence(sequence: string): {
+  indexOfFirstNotValidCharacter: number,
+  expectedSynthesizer: string | null,
+  expectedTechnology: string | null
+} {
   const possibleSynthesizers = getListOfPossibleSynthesizersByFirstMatchedCode(sequence);
   if (possibleSynthesizers.length == 0)
-    return {indexOfFirstNotValidCharacter: 0, expectedType: null};
+    return {indexOfFirstNotValidCharacter: 0, expectedSynthesizer: null, expectedTechnology: null};
 
   let outputIndices = Array(possibleSynthesizers.length).fill(0);
 
@@ -90,23 +94,24 @@ function isValidSequence(sequence: string) {
   const indexOfExpectedSythesizer = Math.max.apply(Math, outputIndices);
   const indexOfFirstNotValidCharacter = (indexOfExpectedSythesizer == sequence.length) ? -1 : indexOfExpectedSythesizer;
   const expectedSynthesizer = possibleSynthesizers[outputIndices.indexOf(indexOfExpectedSythesizer)];
-  if (indexOfFirstNotValidCharacter != -1) {
+  if (indexOfFirstNotValidCharacter != -1)
     return {
       indexOfFirstNotValidCharacter: indexOfFirstNotValidCharacter,
-      expectedType: expectedSynthesizer,
+      expectedSynthesizer: expectedSynthesizer,
+      expectedTechnology: null
     };
-  }
 
-  const possibleTechnologies = getListOfPossibleTechnologiesByFirstMatchedCode(sequence, expectedSynthesizer);
+  let possibleTechnologies = getListOfPossibleTechnologiesByFirstMatchedCode(sequence, expectedSynthesizer);
   if (possibleTechnologies.length == 0)
-    return {indexOfFirstNotValidCharacter: 0, expectedRepresentation: null};
+    return { indexOfFirstNotValidCharacter: 0, expectedSynthesizer: null, expectedTechnology: null };
 
   outputIndices = Array(possibleTechnologies.length).fill(0);
 
-  possibleTechnologies.forEach((technology, technologyIndex) => {
-    const codes = Object.keys(map[expectedSynthesizer][technology]);
+  possibleTechnologies.forEach((technology: string, technologyIndex: number) => {
+    let codes = Object.keys(map[expectedSynthesizer][technology]);
     while (outputIndices[technologyIndex] < sequence.length) {
-      const matchedCode = codes
+
+      let matchedCode = codes
         .find((c) => c == sequence.slice(outputIndices[technologyIndex], outputIndices[technologyIndex] + c.length));
 
       if (matchedCode == null)
@@ -135,7 +140,8 @@ function isValidSequence(sequence: string) {
 
   return {
     indexOfFirstNotValidCharacter: indexOfFirstNotValidCharacter,
-    expectedType: expectedSynthesizer + ' ' + expectedTechnology,
+    expectedSynthesizer: expectedSynthesizer,
+    expectedTechnology: expectedTechnology
   };
 }
 
@@ -143,23 +149,29 @@ function sortByStringLengthInDescendingOrder(array: string[]): string[] {
   return array.sort(function(a: string, b: string) { return b.length - a.length; });
 }
 
-function getObjectWithCodesAndSmiles() {
-  const obj: {[code: string]: string} = {};
+function getObjectWithCodesAndSmiles(sequence: string) {
+  const obj: { [code: string]: string } = {};
   for (const synthesizer of Object.keys(map))
     for (const technology of Object.keys(map[synthesizer]))
       for (let code of Object.keys(map[synthesizer][technology]))
         obj[code] = map[synthesizer][technology][code].SMILES;
+  // TODO: create object based from synthesizer type to avoid key(codes) duplicates
+  const output = isValidSequence(sequence);
+  if (output.expectedSynthesizer == SYNTHESIZERS.MERMADE_12)
+    obj['g'] = map[SYNTHESIZERS.MERMADE_12][TECHNOLOGIES.SI_RNA]['g'].SMILES;
+  else if (output.expectedSynthesizer == SYNTHESIZERS.AXOLABS)
+    obj['g'] = map[SYNTHESIZERS.AXOLABS][TECHNOLOGIES.SI_RNA]['g'].SMILES;
   return obj;
 }
 
 export function sequenceToSmiles(sequence: string): string {
-  const obj = getObjectWithCodesAndSmiles();
+  const obj = getObjectWithCodesAndSmiles(sequence);
   let codes = sortByStringLengthInDescendingOrder(Object.keys(obj));
   let i = 0;
   let smiles = '';
   const codesList = [];
   const links = ['s', 'ps', '*'];
-  const includesStandardLinkAlready = ['e', 'h', /*'g'*/, 'f', 'i', 'l', 'k', 'j'];
+  const includesStandardLinkAlready = ['e', 'h', /*'g',*/ 'f', 'i', 'l', 'k', 'j'];
   const dropdowns = Object.keys(MODIFICATIONS);
   codes = codes.concat(dropdowns);
   while (i < sequence.length) {
@@ -342,24 +354,25 @@ function convertSequence(text: string) {
   let output = isValidSequence(seq);
   if (output.indexOfFirstNotValidCharacter != -1)
     return {
+      // type: '',
       indexOfFirstNotValidCharacter: JSON.stringify(output),
       Error: undefinedInputSequence
     };
-  if (output.expectedType == SYNTHESIZERS.RAW_NUCLEOTIDES + ' ' + TECHNOLOGIES.DNA)
+  if (output.expectedSynthesizer == SYNTHESIZERS.RAW_NUCLEOTIDES && output.expectedTechnology == TECHNOLOGIES.DNA)
     return {
       type: SYNTHESIZERS.RAW_NUCLEOTIDES + ' ' +  TECHNOLOGIES.DNA,
       Nucleotides: seq,
       BioSpring: asoGapmersNucleotidesToBioSpring(seq),
       GCRS: asoGapmersNucleotidesToGcrs(seq)
     };
-  if (output.expectedType == SYNTHESIZERS.BIOSPRING + ' ' +  TECHNOLOGIES.ASO_GAPMERS)
+  if (output.expectedSynthesizer == SYNTHESIZERS.BIOSPRING && output.expectedTechnology == TECHNOLOGIES.ASO_GAPMERS)
     return {
       type: SYNTHESIZERS.BIOSPRING + ' ' +  TECHNOLOGIES.ASO_GAPMERS,
       Nucleotides: asoGapmersBioSpringToNucleotides(seq),
       BioSpring: seq,
       GCRS: asoGapmersBioSpringToGcrs(seq)
     };
-  if (output.expectedType == SYNTHESIZERS.GCRS + ' ' +  TECHNOLOGIES.ASO_GAPMERS)
+  if (output.expectedSynthesizer == SYNTHESIZERS.GCRS && output.expectedTechnology == TECHNOLOGIES.ASO_GAPMERS)
     return {
       type: SYNTHESIZERS.GCRS + ' ' +  TECHNOLOGIES.ASO_GAPMERS,
       Nucleotides: asoGapmersGcrsToNucleotides(seq),
@@ -367,7 +380,7 @@ function convertSequence(text: string) {
       Mermade12: gcrsToMermade12(seq),
       GCRS: seq
     };
-  if (output.expectedType == SYNTHESIZERS.RAW_NUCLEOTIDES + ' ' +  TECHNOLOGIES.RNA)
+  if (output.expectedSynthesizer == SYNTHESIZERS.RAW_NUCLEOTIDES && output.expectedTechnology == TECHNOLOGIES.RNA)
     return {
       type: SYNTHESIZERS.RAW_NUCLEOTIDES + ' ' +  TECHNOLOGIES.RNA,
       Nucleotides: seq,
@@ -375,7 +388,7 @@ function convertSequence(text: string) {
       Axolabs: siRnaNucleotideToAxolabsSenseStrand(seq),
       GCRS: siRnaNucleotidesToGcrs(seq)
     };
-  if (output.expectedType == SYNTHESIZERS.BIOSPRING + ' ' + TECHNOLOGIES.SI_RNA)
+  if (output.expectedSynthesizer == SYNTHESIZERS.BIOSPRING && output.expectedTechnology == TECHNOLOGIES.SI_RNA)
     return {
       type: SYNTHESIZERS.BIOSPRING + ' ' + TECHNOLOGIES.SI_RNA,
       Nucleotides: siRnaBioSpringToNucleotides(seq),
@@ -383,7 +396,7 @@ function convertSequence(text: string) {
       Axolabs: siRnaBioSpringToAxolabs(seq),
       GCRS: siRnaBioSpringToGcrs(seq)
     };
-  if (output.expectedType == SYNTHESIZERS.AXOLABS + ' ' + TECHNOLOGIES.SI_RNA)
+  if (output.expectedSynthesizer == SYNTHESIZERS.AXOLABS && output.expectedTechnology == TECHNOLOGIES.SI_RNA)
     return {
       type: SYNTHESIZERS.AXOLABS + ' ' + TECHNOLOGIES.SI_RNA,
       Nucleotides: siRnaAxolabsToNucleotides(seq),
@@ -391,7 +404,7 @@ function convertSequence(text: string) {
       Axolabs: seq,
       GCRS: siRnaAxolabsToGcrs(seq)
     };
-  if (output.expectedType == SYNTHESIZERS.GCRS + ' ' + TECHNOLOGIES.SI_RNA)
+  if (output.expectedSynthesizer == SYNTHESIZERS.GCRS && output.expectedTechnology == TECHNOLOGIES.SI_RNA)
     return {
       type: SYNTHESIZERS.GCRS + ' ' + TECHNOLOGIES.SI_RNA,
       Nucleotides: siRnaGcrsToNucleotides(seq),
@@ -400,14 +413,14 @@ function convertSequence(text: string) {
       MM12: gcrsToMermade12(seq),
       GCRS: seq
     };
-  if (output.expectedType == SYNTHESIZERS.GCRS)
+  if (output.expectedSynthesizer == SYNTHESIZERS.GCRS)
     return {
       type: SYNTHESIZERS.GCRS,
       Nucleotides: gcrsToNucleotides(seq),
       GCRS: seq,
       Mermade12: gcrsToMermade12(seq)
     }
-  if (output.expectedType == SYNTHESIZERS.MERMADE_12)
+  if (output.expectedSynthesizer == SYNTHESIZERS.MERMADE_12)
     return {
       type: SYNTHESIZERS.MERMADE_12,
       Nucleotides: noTranslationTableAvailable,
