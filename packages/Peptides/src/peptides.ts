@@ -5,10 +5,163 @@ import {PeptidesModel} from './model';
 import {StringDictionary} from '@datagrok-libraries/utils/src/type-declarations';
 import {SARViewer, SARViewerVertical} from './viewers/sar-viewer';
 import {SubstViewer} from './viewers/subst-viewer';
+import {ChemPalette} from './utils/chem-palette';
+import {Observable} from 'rxjs';
 
 type viewerTypes = SARViewer | SARViewerVertical | SubstViewer;
-export class Peptides {
+export class PeptidesController {
+  private static _controllerName: string = 'peptidesController';
   private helpUrl = '/help/domains/bio/peptides.md';
+  private _dataFrame: DG.DataFrame;
+  private _model: PeptidesModel;
+
+  private constructor(dataFrame: DG.DataFrame) {
+    this._dataFrame = dataFrame;
+    this._model = PeptidesModel.getOrInit(this._dataFrame);
+    // this.getOrInitModel(this._dataFrame);
+  }
+
+  static getInstance(dataFrame: DG.DataFrame): PeptidesController {
+    dataFrame.temp[PeptidesController.controllerName] ??= new PeptidesController(dataFrame);
+    return dataFrame.temp[PeptidesController.controllerName];
+  }
+
+  static get controllerName() {
+    return PeptidesController._controllerName;
+  }
+
+  // getOrInitModel(): PeptidesModel {
+  //   this._model ??= PeptidesModel.getOrInit(this._dataFrame);
+  //   return this._model;
+  // }
+
+  get onStatsDataFrameChanged(): Observable<DG.DataFrame> {
+    return this._model.onStatsDataFrameChanged;
+  }
+
+  get onSARGridChanged(): Observable<DG.Grid> {
+    return this._model.onSARGridChanged;
+  }
+
+  get onSARVGridChanged(): Observable<DG.Grid> {
+    return this._model.onSARVGridChanged;
+  }
+
+  get onGroupMappingChanged(): Observable<StringDictionary> {
+    return this._model.onGroupMappingChanged;
+  }
+
+  get onSubstFlagChanged(): Observable<boolean> {
+    return this._model.onSubstFlagChanged;
+  }
+
+  async updateDefault() {
+    await this._model.updateDefault();
+  }
+
+  async updateData(
+    dataFrame: DG.DataFrame | null, activityCol: string | null, activityScaling: string | null,
+    sourceGrid: DG.Grid | null, twoColorMode: boolean | null, initialBitset: DG.BitSet | null,
+    grouping: boolean | null) {
+    await this._model.updateData(
+      dataFrame, activityCol, activityScaling, sourceGrid, twoColorMode, initialBitset, grouping);
+  }
+
+  static async scaleActivity(
+    activityScaling: string, activityColumn: string, activityColumnScaled: string, df: DG.DataFrame,
+  ): Promise<[DG.DataFrame, string]> {
+    // const df = sourceGrid.dataFrame!;
+    const tempDf = df.clone(null, [activityColumn]);
+
+    let formula = '${' + activityColumn + '}';
+    let newColName = activityColumn;
+    switch (activityScaling) {
+    case 'none':
+      break;
+    case 'lg':
+      formula = `Log10(${formula})`;
+      newColName = `Log10(${newColName})`;
+      break;
+    case '-lg':
+      formula = `-1*Log10(${formula})`;
+      newColName = `-Log10(${newColName})`;
+      break;
+    default:
+      throw new Error(`ScalingError: method \`${activityScaling}\` is not available.`);
+    }
+
+    await (tempDf.columns as DG.ColumnList).addNewCalculated(activityColumnScaled, formula);
+
+    return [tempDf, newColName];
+  }
+
+  static splitAlignedPeptides(peptideColumn: DG.Column, filter: boolean = true): [DG.DataFrame, number[]] {
+    const splitPeptidesArray: string[][] = [];
+    let currentSplitPeptide: string[];
+    let modeMonomerCount = 0;
+    let currentLength;
+    const colLength = peptideColumn.length;
+
+    // splitting data
+    const monomerLengths: {[index: string]: number} = {};
+    for (let i = 0; i < colLength; i++) {
+      currentSplitPeptide = peptideColumn.get(i).split('-').map((value: string) => value ? value : '-');
+      splitPeptidesArray.push(currentSplitPeptide);
+      currentLength = currentSplitPeptide.length;
+      monomerLengths[currentLength + ''] =
+        monomerLengths[currentLength + ''] ? monomerLengths[currentLength + ''] + 1 : 1;
+    }
+    //@ts-ignore: what I do here is converting string to number the most effective way I could find. parseInt is slow
+    modeMonomerCount = 1 * Object.keys(monomerLengths).reduce((a, b) => monomerLengths[a] > monomerLengths[b] ? a : b);
+
+    // making sure all of the sequences are of the same size
+    // and marking invalid sequences
+    let nTerminal: string;
+    const invalidIndexes: number[] = [];
+    let splitColumns: string[][] = Array.from({length: modeMonomerCount}, (_) => []);
+    modeMonomerCount--; // minus N-terminal
+    for (let i = 0; i < colLength; i++) {
+      currentSplitPeptide = splitPeptidesArray[i];
+      nTerminal = currentSplitPeptide.pop()!; // it is guaranteed that there will be at least one element
+      currentLength = currentSplitPeptide.length;
+      if (currentLength !== modeMonomerCount)
+        invalidIndexes.push(i);
+
+      for (let j = 0; j < modeMonomerCount; j++)
+        splitColumns[j].push(j < currentLength ? currentSplitPeptide[j] : '-');
+
+      splitColumns[modeMonomerCount].push(nTerminal);
+    }
+    modeMonomerCount--; // minus C-terminal
+
+    //create column names list
+    const columnNames = Array.from({length: modeMonomerCount}, (_, index) => `${index + 1 < 10 ? 0 : ''}${index + 1 }`);
+    columnNames.splice(0, 0, 'N-terminal');
+    columnNames.push('C-terminal');
+
+    // filter out the columns with the same values
+    if (filter) {
+      splitColumns = splitColumns.filter((positionArray, index) => {
+        const isRetained = new Set(positionArray).size > 1;
+        if (!isRetained)
+          columnNames.splice(index, 1);
+
+        return isRetained;
+      });
+    }
+
+    return [
+      DG.DataFrame.fromColumns(splitColumns.map((positionArray, index) => {
+        return DG.Column.fromList('string', columnNames[index], positionArray);
+      })),
+      invalidIndexes,
+    ];
+  }
+
+  static getChemPalette() {
+    return ChemPalette;
+  }
+
   /**
    * Class initializer
    *
@@ -20,7 +173,7 @@ export class Peptides {
    * @memberof Peptides
    */
   async init(
-    tableGrid: DG.Grid, view: DG.TableView, currentDf: DG.DataFrame, options: StringDictionary, col: DG.Column,
+    tableGrid: DG.Grid, view: DG.TableView, options: StringDictionary, col: DG.Column,
     originalDfColumns: string[]) {
     function adjustCellSize(grid: DG.Grid) {
       const colNum = grid.columns.length;
@@ -42,26 +195,24 @@ export class Peptides {
       }
     }
 
-    const originalDfName = currentDf.name;
+    const originalDfName = this._dataFrame.name;
     const dockManager = view.dockManager;
 
-    PeptidesModel.getOrInit(currentDf);
-
-    const sarViewer = await currentDf.plot.fromType('peptide-sar-viewer', options) as SARViewer;
+    const sarViewer = await this._dataFrame.plot.fromType('peptide-sar-viewer', options) as SARViewer;
     sarViewer.helpUrl = this.helpUrl;
 
-    const sarViewerVertical = await currentDf.plot.fromType('peptide-sar-viewer-vertical') as SARViewerVertical;
+    const sarViewerVertical = await this._dataFrame.plot.fromType('peptide-sar-viewer-vertical') as SARViewerVertical;
     sarViewerVertical.helpUrl = this.helpUrl;
 
     const sarViewersGroup: viewerTypes[] = [sarViewer, sarViewerVertical];
 
     const peptideSpaceViewer = await createPeptideSimilaritySpaceViewer(
-      currentDf, col, 't-SNE', 'Levenshtein', 100, view, `${options['activityColumnName']}Scaled`);
+      this._dataFrame, col, 't-SNE', 'Levenshtein', 100, view, `${options['activityColumnName']}Scaled`);
     dockManager.dock(peptideSpaceViewer, DG.DOCK_TYPE.RIGHT, null, 'Peptide Space viewer');
 
     let nodeList = dockViewers(sarViewersGroup, DG.DOCK_TYPE.RIGHT, dockManager, DG.DOCK_TYPE.DOWN);
 
-    const substViewer = await currentDf.plot.fromType(
+    const substViewer = await this._dataFrame.plot.fromType(
       'substitution-analysis-viewer', {'activityColumnName': `${options['activityColumnName']}Scaled`}) as SubstViewer;
     const substViewersGroup = [substViewer];
 
@@ -76,19 +227,19 @@ export class Peptides {
       }
       viewers.forEach((v) => v.close());
 
-      const cols = (currentDf.columns as DG.ColumnList);
+      const cols = (this._dataFrame.columns as DG.ColumnList);
       for (const colName of cols.names()) {
         if (!originalDfColumns.includes(colName))
           cols.remove(colName);
       }
 
-      currentDf.selection.setAll(false);
-      currentDf.filter.setAll(true);
+      this._dataFrame.selection.setAll(false);
+      this._dataFrame.filter.setAll(true);
 
       tableGrid.setOptions({'colHeaderHeight': 20});
       tableGrid.columns.setVisible(originalDfColumns);
       tableGrid.props.allowEdit = true;
-      currentDf.name = originalDfName;
+      this._dataFrame.name = originalDfName;
 
       view.setRibbonPanels(ribbonPanels);
     }, 'Close viewers and restore dataframe');
