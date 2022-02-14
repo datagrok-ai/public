@@ -46,10 +46,11 @@ Functions. See [Grok Scripting](../overview/grok-script.md) for more details.
 
 ### Output values validation
 
-Any single run of the function shall always return the number of output values specified in the
-header, any Datagrok function will always have a single return type regardless of its input arguments.
-It is expected that the output values would be assigned throughout the script code. If for some reason
-this doesn't happen, the two things will follow:
+Any single run of the function shall always return as many output values as specified in the header,
+with corresponding types, and any Datagrok function will always have a single return type regardless
+of its input arguments. It is expected that the output values would be assigned throughout the script code,
+so that they are defined by the end of the script. If for some reason this doesn't happen,
+the two things will follow:
 
 1. The unset output values would still be returned, but valued as `null`-s.
 
