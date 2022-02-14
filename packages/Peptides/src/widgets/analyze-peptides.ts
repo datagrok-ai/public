@@ -1,10 +1,9 @@
 import * as grok from 'datagrok-api/grok';
 import * as ui from 'datagrok-api/ui';
 import * as DG from 'datagrok-api/dg';
-import {Peptides} from '../peptides';
+import {PeptidesController} from '../peptides';
 import '../styles.css';
 import {StringDictionary} from '@datagrok-libraries/utils/src/type-declarations';
-import {scaleActivity} from '../describe';
 
 /**
  * Peptide analysis widget.
@@ -34,7 +33,7 @@ export async function analyzePeptidesWidget(
     async (currentMethod: string) => {
       const currentActivityCol = activityColumnChoice.value.name;
 
-      [tempDf, newScaledColName] = await scaleActivity(
+      [tempDf, newScaledColName] = await PeptidesController.scaleActivity(
         currentMethod, currentActivityCol, `${currentActivityCol}Scaled`, currentDf);
 
       const hist = tempDf.plot.histogram({
@@ -85,8 +84,8 @@ export async function analyzePeptidesWidget(
         tableGrid.col(activityColumn)!.name = `~${activityColumn}`;
       tableGrid.columns.setOrder([newScaledColName]);
 
-      const peptides = new Peptides();
-      await peptides.init(tableGrid, view, currentDf, options, col, originalDfColumns);
+      const peptides = PeptidesController.getInstance(currentDf);
+      await peptides.init(tableGrid, view, options, col, originalDfColumns);
     } else
       grok.shell.error('The activity column must be of floating point number type!');
     progress.close();
