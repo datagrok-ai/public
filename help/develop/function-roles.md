@@ -39,7 +39,7 @@ external services with refined configuration parameters, and so on.
 
 There are two types of functions serving this purpose: `init` and `autostart`. The function tagged with `init` gets
 invoked when the containing package is initialized. This typically happens the first time any of the functions in the
-package is called. It is guaranteed that this function gets invoked _once_ before the execution of the rest of the code
+package is called. It is guaranteed that this function gets invoked *once* before the execution of the rest of the code
 and will not be re-executed on subsequent calls. The `autostart` functions are similar to the first type, but differ
 from it in a few aspects. Firstly, these functions are called at the platform startup, not necessarily when some package
 function is invoked. Moreover, if you decide to call a regular function from your package, there is no guarantee that

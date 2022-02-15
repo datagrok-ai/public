@@ -7,10 +7,10 @@ Please see the
 20-minute [cheminformatics introduction video](https://www.youtube.com/watch?v=yM0ums_ur78&ab_channel=JeremyYang-Datascience%2Cetc)
 .
 
-_[Wikipedia](https://en.wikipedia.org/wiki/Cheminformatics): Cheminformatics is the use of computer and informational
+*[Wikipedia](https://en.wikipedia.org/wiki/Cheminformatics): Cheminformatics is the use of computer and informational
 techniques applied to a range of problems in the field of chemistry. These in silico techniques are used, for example,
 in pharmaceutical companies and academic settings in the process of drug discovery. These methods can also be used in
-chemical and allied industries in various other forms._
+chemical and allied industries in various other forms.*
 
 But what does *in silico* actually means? It is counterposed to *in vitro* (undertaken in glass without cells) and *in
 vivo* (undertaken in cell cultures or organisms) biochemical experiments. So, *in silico* was defined to imply a

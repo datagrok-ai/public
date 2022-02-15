@@ -511,7 +511,7 @@ in WebStorm IDEs. We broke the run step into two steps intentionally to alleviat
 [no longer required](https://intellij-support.jetbrains.com/hc/en-us/community/posts/360010507240-where-is-JETBRAINS-IDE-SUPPORT-chrome-extension-it-cant-be-found-anywhere-now-on-the-internet)
 to debug JavaScript from JetBrains IDEs. In February 2021 JetBrains has removed this plugin from the Chrome store.
 
-_See also:_
+*See also:*
 
 * Debugging JavaScript in WebStorm ([1](https://www.youtube.com/watch?v=Qcqnmle6Wu8),
   [2](https://www.youtube.com/watch?v=YNNDMpoGV0w))
