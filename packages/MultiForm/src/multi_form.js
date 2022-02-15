@@ -76,7 +76,7 @@ class MultiFormViewer extends DG.JsViewer {
   render() {
     let dis = this;
     let indexes
-      = this.dataFrame.selection.anyTrue ? this.dataFrame.selection.getSelectedIndexes()
+      = this.dataFrame.selection.trueCount > 0 ? this.dataFrame.selection.getSelectedIndexes()
       : this.dataFrame.currentRowIdx > -1 ? [this.dataFrame.currentRowIdx]
       : this.dataFrame.rowCount > 0 ? [0]
       : [];
