@@ -257,7 +257,8 @@ it can be any virtual machine. Also, Load Balancers for each VM can be used inst
     ```
 
    > **_NOTE:_**  Datagrok provides demo databases with demo data for the full experience.
-   > If you want to try datagrok with demo data run the following command instead. 
+   > If you want to try datagrok with demo data run the following command instead.
+   >
    > ```shell
    > docker-compose --project-name datagrok --profile datagrok --profile demo up -d
    > ```
