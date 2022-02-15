@@ -14,7 +14,7 @@ export class SubstViewer extends DG.JsViewer {
   activityLimit: number;
   activityColumnName: string;
   private _name: string = 'Substitution analysis';
-  casesGrid: DG.Grid | null;
+  // casesGrid: DG.Grid | null;
   // model: PeptidesModel | null;
   controller: PeptidesController | null;
 
@@ -27,7 +27,7 @@ export class SubstViewer extends DG.JsViewer {
     this.activityLimit = this.float('activityLimit', 2);
 
     this.viewerGrid = null;
-    this.casesGrid = null;
+    // this.casesGrid = null;
     this.controller = null;
   }
 
@@ -125,7 +125,7 @@ export class SubstViewer extends DG.JsViewer {
     const tableValuesKeys = Object.keys(tableValues);
     const dfLength = tableValuesKeys.length;
     const cols = [...nColsArray.keys()].map((v) => DG.Column.int(v.toString(), dfLength));
-    cols.forEach((col: DG.Column) => col.semType = 'Substitution');
+    cols.forEach(currentCol => currentCol.semType = 'Substitution');
     const aarCol = DG.Column.string(aarColName, dfLength);
     cols.splice(0, 1, aarCol);
     const table = DG.DataFrame.fromColumns(cols);
@@ -228,6 +228,8 @@ export class SubstViewer extends DG.JsViewer {
           tempDf.rows.setValues(i, [col.get(row[0]), col.get(row[1]), row[2]]);
         }
 
+        tempDf.temp['isReal'] = true;
+
         initCol.semType = 'alignedSequence';
         // initCol.setTag('isAnalysisApplicable', 'false');
         initCol.temp['isAnalysisApplicable'] = false;
@@ -235,12 +237,12 @@ export class SubstViewer extends DG.JsViewer {
         // subsCol.setTag('isAnalysisApplicable', 'false');
         subsCol.temp['isAnalysisApplicable'] = false;
 
-        this.casesGrid = tempDf.plot.grid();
-        this.casesGrid.props.allowEdit = false;
+        // this.casesGrid = tempDf.plot.grid();
+        // this.casesGrid.props.allowEdit = false;
         grok.shell.o = DG.SemanticValue.fromValueType(tempDf, 'Substitution');
       } else {
         grok.shell.o = DG.SemanticValue.fromValueType(null, 'Substitution');
-        this.casesGrid = null;
+        // this.casesGrid = null;
       }
 
       this.render();
