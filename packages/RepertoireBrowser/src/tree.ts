@@ -56,8 +56,11 @@ export class TreeBrowser {// extends DG.JsViewer {
     const treeNode = mlbView.dockManager.dock(tree, DG.DOCK_TYPE.DOWN);
     mlbView.dockManager.dock(network, DG.DOCK_TYPE.RIGHT, treeNode);
 
-    network.onEvent('click').subscribe((args) => {
-      console.warn([args, typeof args]);
+    network.onEvent('d4-network-diagram-node-click').subscribe((args) => {
+      console.warn(['d4-network-diagram-node-click', args, typeof args]);
+    });
+    network.onEvent('d4-network-diagram-edge-click').subscribe((args) => {
+      console.warn(['d4-network-diagram-edge-click', args, typeof args]);
     });
 
     // this.phyloTreeViewer = tree;
