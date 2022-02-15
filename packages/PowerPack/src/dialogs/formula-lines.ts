@@ -142,7 +142,8 @@ class Table {
       showCellTooltip: false,
       showColumnTooltip: false,
       showCurrentCellOutline: false,
-      showContextMenu: false
+      showContextMenu: false,
+      showEditRow: false
     });
 
     this._grid.columns.setVisible(['title', 'formula', 'visible', BTN_COL_NAME]);
