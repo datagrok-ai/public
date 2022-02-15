@@ -44,6 +44,86 @@ services:
           cpus: '2'
           memory: 2G
 
+  northwind:
+    image: datagrok/demo_db:latest
+    environment:
+      POSTGRES_DB: northwind
+    networks:
+      datagrok:
+    deploy:
+      replicas: 1
+      resources:
+        limits:
+          cpus: '0.5'
+          memory: 500M
+        reservations:
+          cpus: '0.25'
+          memory: 250M
+
+  chembl:
+    image: datagrok/demo_db_chembl:latest
+    environment:
+      POSTGRES_DB: chembl
+    networks:
+      datagrok:
+    deploy:
+      replicas: 1
+      resources:
+        limits:
+          cpus: '1'
+          memory: 2G
+        reservations:
+          cpus: '0.25'
+          memory: 250M
+
+  unichem:
+    image: datagrok/demo_db_unichem:latest
+    environment:
+      POSTGRES_DB: unichem
+    networks:
+      datagrok:
+    deploy:
+      replicas: 1
+      resources:
+        limits:
+          cpus: '1'
+          memory: 2G
+        reservations:
+          cpus: '0.25'
+          memory: 250M
+
+  starbucks:
+    image: datagrok/demo_db:latest
+    environment:
+      POSTGRES_DB: starbucks
+    networks:
+      datagrok:
+    deploy:
+      replicas: 1
+      resources:
+        limits:
+          cpus: '0.5'
+          memory: 500M
+        reservations:
+          cpus: '0.25'
+          memory: 250M
+
+  world:
+    image: datagrok/demo_db:latest
+    environment:
+      POSTGRES_DB: world
+    networks:
+      datagrok:
+    deploy:
+      replicas: 1
+      resources:
+        limits:
+          cpus: '0.5'
+          memory: 500M
+        reservations:
+          cpus: '0.25'
+          memory: 250M
+
 #  grok_connect:
 #    image: datagrok/grok_connect:latest
 #    networks:
@@ -60,6 +140,14 @@ services:
 
 x-aws-cloudformation:
   Resources:
+    ChemblTaskDefinition:
+      Properties:
+        EphemeralStorage:
+          SizeInGiB: 55
+    UnichemTaskDefinition:
+      Properties:
+        EphemeralStorage:
+          SizeInGiB: 40
     DatagrokTCP8080Listener:
       Properties:
         DefaultActions:

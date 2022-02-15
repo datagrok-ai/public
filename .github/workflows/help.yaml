@@ -18,6 +18,7 @@ jobs:
       - name: Lint Code Base
         uses: github/super-linter/slim@v4
         env:
+          LOG_LEVEL: WARN
           MARKDOWN_CONFIG_FILE: .markdownlint.yaml
           JSCPD_CONFIG_FILE: .jscpd.json
           NATURAL_LANGUAGE_CONFIG_FILE: .textlintrc
