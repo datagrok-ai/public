@@ -231,8 +231,7 @@ it can be any virtual machine. Also, Load Balancers for each VM can be used inst
     ```
 
 10. Download Docker Compose YAML
-    file: [link](https://github.com/datagrok-ai/public/blob/master/docker/localhost.docker-compose.yaml)
-    .
+    file: [link](https://github.com/datagrok-ai/public/blob/master/docker/localhost.docker-compose.yaml).
 
 ## Setup Datagrok components
 
@@ -256,6 +255,12 @@ it can be any virtual machine. Also, Load Balancers for each VM can be used inst
     ```shell
     docker-compose --project-name datagrok --profile datagrok up -d
     ```
+
+   > **_NOTE:_**  Datagrok provides demo databases with demo data for the full experience.
+   > If you want to try datagrok with demo data run the following command instead. 
+   > ```shell
+   > docker-compose --project-name datagrok --profile datagrok --profile demo up -d
+   > ```
 
 4. Check if Datagrok started successfully: `http://<DATAGROK_VM_IP_ADDRESS>:8080`, login to Datagrok using the
    username "`admin`" and password "`admin`".

@@ -45,6 +45,25 @@
       "Type": "String",
       "AllowedPattern": "(arn:([^:\\n]*):([^:\\n]*):([^:\\n]*):([^:\\n]*):(([^:\\/\\n]*)[:\\/])?(.*))?",
       "Description": "AWS Secret Manager ARN for Docker Hub secret. Required parameter."
+    },
+    "CreateDemoData": {
+      "Type": "String",
+      "Default": "true",
+      "AllowedValues": [
+        "true",
+        "false"
+      ],
+      "Description": "Datagrok provides demo databases with demo data for the full experience. Do you want to install it?"
+    }
+  },
+  "Conditions": {
+    "CreateDemoDataCondition": {
+      "Fn::Equals": [
+        {
+          "Ref": "CreateDemoData"
+        },
+        "true"
+      ]
     }
   },
   "Resources": {
@@ -4124,6 +4143,1022 @@
           }
         }
       }
+    },
+    "ChemblService": {
+      "Properties": {
+        "Cluster": {
+          "Fn::GetAtt": [
+            "DatagrokCluster",
+            "Arn"
+          ]
+        },
+        "DeploymentConfiguration": {
+          "MaximumPercent": 200,
+          "MinimumHealthyPercent": 100
+        },
+        "DeploymentController": {
+          "Type": "ECS"
+        },
+        "DesiredCount": 1,
+        "LaunchType": "FARGATE",
+        "NetworkConfiguration": {
+          "AwsvpcConfiguration": {
+            "AssignPublicIp": "ENABLED",
+            "SecurityGroups": [
+              {
+                "Ref": "DatagrokSecurityGroup"
+              }
+            ],
+            "Subnets": [
+              {
+                "Ref": "DatagrokPrivateSubnet1"
+              },
+              {
+                "Ref": "DatagrokPrivateSubnet2"
+              }
+            ]
+          }
+        },
+        "PlatformVersion": "1.4.0",
+        "PropagateTags": "SERVICE",
+        "SchedulingStrategy": "REPLICA",
+        "ServiceRegistries": [
+          {
+            "RegistryArn": {
+              "Fn::GetAtt": [
+                "ChemblServiceDiscoveryEntry",
+                "Arn"
+              ]
+            }
+          }
+        ],
+        "Tags": [
+          {
+            "Key": "datagrok.component",
+            "Value": "datagrok"
+          },
+          {
+            "Key": "datagrok.service",
+            "Value": "chembl"
+          }
+        ],
+        "TaskDefinition": {
+          "Ref": "ChemblTaskDefinition"
+        }
+      },
+      "Type": "AWS::ECS::Service",
+      "Condition": "CreateDemoDataCondition"
+    },
+    "ChemblServiceDiscoveryEntry": {
+      "Properties": {
+        "Description": "\"chembl\" service discovery entry in Cloud Map",
+        "DnsConfig": {
+          "DnsRecords": [
+            {
+              "TTL": 60,
+              "Type": "A"
+            }
+          ],
+          "RoutingPolicy": "MULTIVALUE"
+        },
+        "HealthCheckCustomConfig": {
+          "FailureThreshold": 1
+        },
+        "Name": "chembl",
+        "NamespaceId": {
+          "Ref": "CloudMap"
+        }
+      },
+      "Type": "AWS::ServiceDiscovery::Service",
+      "Condition": "CreateDemoDataCondition"
+    },
+    "ChemblTaskDefinition": {
+      "Properties": {
+        "ContainerDefinitions": [
+          {
+            "Command": [
+              {
+                "Fn::Sub": "${AWS::Region}.compute.internal"
+              },
+              "datagrok.internal",
+              "datagrok.local"
+            ],
+            "Essential": false,
+            "Image": "docker/ecs-searchdomain-sidecar:1.0",
+            "LogConfiguration": {
+              "LogDriver": "awslogs",
+              "Options": {
+                "awslogs-group": {
+                  "Ref": "LogGroup"
+                },
+                "awslogs-region": {
+                  "Ref": "AWS::Region"
+                },
+                "awslogs-stream-prefix": "datagrok-demo"
+              }
+            },
+            "Name": "Chembl_ResolvConf_InitContainer"
+          },
+          {
+            "DependsOn": [
+              {
+                "Condition": "SUCCESS",
+                "ContainerName": "Chembl_ResolvConf_InitContainer"
+              }
+            ],
+            "Environment": [
+              {
+                "Name": "POSTGRES_DB",
+                "Value": "chembl"
+              }
+            ],
+            "Essential": true,
+            "Image": "docker.io/datagrok/demo_db_chembl:latest",
+            "LinuxParameters": {},
+            "LogConfiguration": {
+              "LogDriver": "awslogs",
+              "Options": {
+                "awslogs-group": {
+                  "Ref": "LogGroup"
+                },
+                "awslogs-region": {
+                  "Ref": "AWS::Region"
+                },
+                "awslogs-stream-prefix": "datagrok-demo"
+              }
+            },
+            "MemoryReservation": 250,
+            "Name": "chembl",
+            "RepositoryCredentials": {
+              "CredentialsParameter": {
+                "Ref": "ArnDockerHubCredential"
+              }
+            }
+          }
+        ],
+        "Cpu": "1024",
+        "ExecutionRoleArn": {
+          "Ref": "ChemblTaskExecutionRole"
+        },
+        "Family": "datagrok-chembl",
+        "Memory": "2048",
+        "NetworkMode": "awsvpc",
+        "RequiresCompatibilities": [
+          "FARGATE"
+        ],
+        "EphemeralStorage": {
+          "SizeInGiB": 55
+        }
+      },
+      "Type": "AWS::ECS::TaskDefinition",
+      "Condition": "CreateDemoDataCondition"
+    },
+    "ChemblTaskExecutionRole": {
+      "Properties": {
+        "AssumeRolePolicyDocument": {
+          "Statement": [
+            {
+              "Action": [
+                "sts:AssumeRole"
+              ],
+              "Condition": {},
+              "Effect": "Allow",
+              "Principal": {
+                "Service": "ecs-tasks.amazonaws.com"
+              }
+            }
+          ],
+          "Version": "2012-10-17"
+        },
+        "ManagedPolicyArns": [
+          {
+            "Ref": "DatagrokECSPolicy"
+          }
+        ],
+        "Tags": [
+          {
+            "Key": "datagrok.component",
+            "Value": "datagrok"
+          },
+          {
+            "Key": "datagrok.service",
+            "Value": "datagrok"
+          }
+        ]
+      },
+      "Type": "AWS::IAM::Role",
+      "Condition": "CreateDemoDataCondition"
+    },
+    "NorthwindService": {
+      "Properties": {
+        "Cluster": {
+          "Fn::GetAtt": [
+            "DatagrokCluster",
+            "Arn"
+          ]
+        },
+        "DeploymentConfiguration": {
+          "MaximumPercent": 200,
+          "MinimumHealthyPercent": 100
+        },
+        "DeploymentController": {
+          "Type": "ECS"
+        },
+        "DesiredCount": 1,
+        "LaunchType": "FARGATE",
+        "NetworkConfiguration": {
+          "AwsvpcConfiguration": {
+            "AssignPublicIp": "ENABLED",
+            "SecurityGroups": [
+              {
+                "Ref": "DatagrokSecurityGroup"
+              }
+            ],
+            "Subnets": [
+              {
+                "Ref": "DatagrokPrivateSubnet1"
+              },
+              {
+                "Ref": "DatagrokPrivateSubnet2"
+              }
+            ]
+          }
+        },
+        "PlatformVersion": "1.4.0",
+        "PropagateTags": "SERVICE",
+        "SchedulingStrategy": "REPLICA",
+        "ServiceRegistries": [
+          {
+            "RegistryArn": {
+              "Fn::GetAtt": [
+                "NorthwindServiceDiscoveryEntry",
+                "Arn"
+              ]
+            }
+          }
+        ],
+        "Tags": [
+          {
+            "Key": "datagrok.component",
+            "Value": "datagrok"
+          },
+          {
+            "Key": "datagrok.service",
+            "Value": "northwind"
+          }
+        ],
+        "TaskDefinition": {
+          "Ref": "NorthwindTaskDefinition"
+        }
+      },
+      "Type": "AWS::ECS::Service",
+      "Condition": "CreateDemoDataCondition"
+    },
+    "NorthwindServiceDiscoveryEntry": {
+      "Properties": {
+        "Description": "\"northwind\" service discovery entry in Cloud Map",
+        "DnsConfig": {
+          "DnsRecords": [
+            {
+              "TTL": 60,
+              "Type": "A"
+            }
+          ],
+          "RoutingPolicy": "MULTIVALUE"
+        },
+        "HealthCheckCustomConfig": {
+          "FailureThreshold": 1
+        },
+        "Name": "northwind",
+        "NamespaceId": {
+          "Ref": "CloudMap"
+        }
+      },
+      "Type": "AWS::ServiceDiscovery::Service",
+      "Condition": "CreateDemoDataCondition"
+    },
+    "NorthwindTaskDefinition": {
+      "Properties": {
+        "ContainerDefinitions": [
+          {
+            "Command": [
+              {
+                "Fn::Sub": "${AWS::Region}.compute.internal"
+              },
+              "datagrok.internal",
+              "datagrok.local"
+            ],
+            "Essential": false,
+            "Image": "docker/ecs-searchdomain-sidecar:1.0",
+            "LogConfiguration": {
+              "LogDriver": "awslogs",
+              "Options": {
+                "awslogs-group": {
+                  "Ref": "LogGroup"
+                },
+                "awslogs-region": {
+                  "Ref": "AWS::Region"
+                },
+                "awslogs-stream-prefix": "datagrok-demo"
+              }
+            },
+            "Name": "Northwind_ResolvConf_InitContainer"
+          },
+          {
+            "DependsOn": [
+              {
+                "Condition": "SUCCESS",
+                "ContainerName": "Northwind_ResolvConf_InitContainer"
+              }
+            ],
+            "Environment": [
+              {
+                "Name": "POSTGRES_DB",
+                "Value": "northwind"
+              }
+            ],
+            "Essential": true,
+            "Image": "docker.io/datagrok/demo_db:latest",
+            "LinuxParameters": {},
+            "LogConfiguration": {
+              "LogDriver": "awslogs",
+              "Options": {
+                "awslogs-group": {
+                  "Ref": "LogGroup"
+                },
+                "awslogs-region": {
+                  "Ref": "AWS::Region"
+                },
+                "awslogs-stream-prefix": "datagrok-demo"
+              }
+            },
+            "MemoryReservation": 250,
+            "Name": "northwind",
+            "RepositoryCredentials": {
+              "CredentialsParameter": {
+                "Ref": "ArnDockerHubCredential"
+              }
+            }
+          }
+        ],
+        "Cpu": "1024",
+        "ExecutionRoleArn": {
+          "Ref": "NorthwindTaskExecutionRole"
+        },
+        "Family": "datagrok-northwind",
+        "Memory": "2048",
+        "NetworkMode": "awsvpc",
+        "RequiresCompatibilities": [
+          "FARGATE"
+        ]
+      },
+      "Type": "AWS::ECS::TaskDefinition",
+      "Condition": "CreateDemoDataCondition"
+    },
+    "NorthwindTaskExecutionRole": {
+      "Properties": {
+        "AssumeRolePolicyDocument": {
+          "Statement": [
+            {
+              "Action": [
+                "sts:AssumeRole"
+              ],
+              "Condition": {},
+              "Effect": "Allow",
+              "Principal": {
+                "Service": "ecs-tasks.amazonaws.com"
+              }
+            }
+          ],
+          "Version": "2012-10-17"
+        },
+        "ManagedPolicyArns": [
+          {
+            "Ref": "DatagrokECSPolicy"
+          }
+        ],
+        "Tags": [
+          {
+            "Key": "datagrok.component",
+            "Value": "datagrok"
+          },
+          {
+            "Key": "datagrok.service",
+            "Value": "northwind"
+          }
+        ]
+      },
+      "Type": "AWS::IAM::Role",
+      "Condition": "CreateDemoDataCondition"
+    },
+    "StarbucksService": {
+      "Properties": {
+        "Cluster": {
+          "Fn::GetAtt": [
+            "DatagrokCluster",
+            "Arn"
+          ]
+        },
+        "DeploymentConfiguration": {
+          "MaximumPercent": 200,
+          "MinimumHealthyPercent": 100
+        },
+        "DeploymentController": {
+          "Type": "ECS"
+        },
+        "DesiredCount": 1,
+        "LaunchType": "FARGATE",
+        "NetworkConfiguration": {
+          "AwsvpcConfiguration": {
+            "AssignPublicIp": "ENABLED",
+            "SecurityGroups": [
+              {
+                "Ref": "DatagrokSecurityGroup"
+              }
+            ],
+            "Subnets": [
+              {
+                "Ref": "DatagrokPrivateSubnet1"
+              },
+              {
+                "Ref": "DatagrokPrivateSubnet2"
+              }
+            ]
+          }
+        },
+        "PlatformVersion": "1.4.0",
+        "PropagateTags": "SERVICE",
+        "SchedulingStrategy": "REPLICA",
+        "ServiceRegistries": [
+          {
+            "RegistryArn": {
+              "Fn::GetAtt": [
+                "StarbucksServiceDiscoveryEntry",
+                "Arn"
+              ]
+            }
+          }
+        ],
+        "Tags": [
+          {
+            "Key": "datagrok.component",
+            "Value": "datagrok"
+          },
+          {
+            "Key": "datagrok.service",
+            "Value": "starbucks"
+          }
+        ],
+        "TaskDefinition": {
+          "Ref": "StarbucksTaskDefinition"
+        }
+      },
+      "Type": "AWS::ECS::Service",
+      "Condition": "CreateDemoDataCondition"
+    },
+    "StarbucksServiceDiscoveryEntry": {
+      "Properties": {
+        "Description": "\"starbucks\" service discovery entry in Cloud Map",
+        "DnsConfig": {
+          "DnsRecords": [
+            {
+              "TTL": 60,
+              "Type": "A"
+            }
+          ],
+          "RoutingPolicy": "MULTIVALUE"
+        },
+        "HealthCheckCustomConfig": {
+          "FailureThreshold": 1
+        },
+        "Name": "starbucks",
+        "NamespaceId": {
+          "Ref": "CloudMap"
+        }
+      },
+      "Type": "AWS::ServiceDiscovery::Service",
+      "Condition": "CreateDemoDataCondition"
+    },
+    "StarbucksTaskDefinition": {
+      "Properties": {
+        "ContainerDefinitions": [
+          {
+            "Command": [
+              {
+                "Fn::Sub": "${AWS::Region}.compute.internal"
+              },
+              "datagrok.internal",
+              "datagrok.local"
+            ],
+            "Essential": false,
+            "Image": "docker/ecs-searchdomain-sidecar:1.0",
+            "LogConfiguration": {
+              "LogDriver": "awslogs",
+              "Options": {
+                "awslogs-group": {
+                  "Ref": "LogGroup"
+                },
+                "awslogs-region": {
+                  "Ref": "AWS::Region"
+                },
+                "awslogs-stream-prefix": "datagrok-demo"
+              }
+            },
+            "Name": "Starbucks_ResolvConf_InitContainer"
+          },
+          {
+            "DependsOn": [
+              {
+                "Condition": "SUCCESS",
+                "ContainerName": "Starbucks_ResolvConf_InitContainer"
+              }
+            ],
+            "Environment": [
+              {
+                "Name": "POSTGRES_DB",
+                "Value": "starbucks"
+              }
+            ],
+            "Essential": true,
+            "Image": "docker.io/datagrok/demo_db:latest",
+            "LinuxParameters": {},
+            "LogConfiguration": {
+              "LogDriver": "awslogs",
+              "Options": {
+                "awslogs-group": {
+                  "Ref": "LogGroup"
+                },
+                "awslogs-region": {
+                  "Ref": "AWS::Region"
+                },
+                "awslogs-stream-prefix": "datagrok-demo"
+              }
+            },
+            "MemoryReservation": 250,
+            "Name": "starbucks",
+            "RepositoryCredentials": {
+              "CredentialsParameter": {
+                "Ref": "ArnDockerHubCredential"
+              }
+            }
+          }
+        ],
+        "Cpu": "1024",
+        "ExecutionRoleArn": {
+          "Ref": "StarbucksTaskExecutionRole"
+        },
+        "Family": "datagrok-starbucks",
+        "Memory": "2048",
+        "NetworkMode": "awsvpc",
+        "RequiresCompatibilities": [
+          "FARGATE"
+        ]
+      },
+      "Type": "AWS::ECS::TaskDefinition",
+      "Condition": "CreateDemoDataCondition"
+    },
+    "StarbucksTaskExecutionRole": {
+      "Properties": {
+        "AssumeRolePolicyDocument": {
+          "Statement": [
+            {
+              "Action": [
+                "sts:AssumeRole"
+              ],
+              "Condition": {},
+              "Effect": "Allow",
+              "Principal": {
+                "Service": "ecs-tasks.amazonaws.com"
+              }
+            }
+          ],
+          "Version": "2012-10-17"
+        },
+        "ManagedPolicyArns": [
+          {
+            "Ref": "DatagrokECSPolicy"
+          }
+        ],
+        "Tags": [
+          {
+            "Key": "datagrok.component",
+            "Value": "datagrok"
+          },
+          {
+            "Key": "datagrok.service",
+            "Value": "starbucks"
+          }
+        ]
+      },
+      "Type": "AWS::IAM::Role",
+      "Condition": "CreateDemoDataCondition"
+    },
+    "UnichemService": {
+      "Properties": {
+        "Cluster": {
+          "Fn::GetAtt": [
+            "DatagrokCluster",
+            "Arn"
+          ]
+        },
+        "DeploymentConfiguration": {
+          "MaximumPercent": 200,
+          "MinimumHealthyPercent": 100
+        },
+        "DeploymentController": {
+          "Type": "ECS"
+        },
+        "DesiredCount": 1,
+        "LaunchType": "FARGATE",
+        "NetworkConfiguration": {
+          "AwsvpcConfiguration": {
+            "AssignPublicIp": "ENABLED",
+            "SecurityGroups": [
+              {
+                "Ref": "DatagrokSecurityGroup"
+              }
+            ],
+            "Subnets": [
+              {
+                "Ref": "DatagrokPrivateSubnet1"
+              },
+              {
+                "Ref": "DatagrokPrivateSubnet2"
+              }
+            ]
+          }
+        },
+        "PlatformVersion": "1.4.0",
+        "PropagateTags": "SERVICE",
+        "SchedulingStrategy": "REPLICA",
+        "ServiceRegistries": [
+          {
+            "RegistryArn": {
+              "Fn::GetAtt": [
+                "UnichemServiceDiscoveryEntry",
+                "Arn"
+              ]
+            }
+          }
+        ],
+        "Tags": [
+          {
+            "Key": "datagrok.component",
+            "Value": "datagrok"
+          },
+          {
+            "Key": "datagrok.service",
+            "Value": "unichem"
+          }
+        ],
+        "TaskDefinition": {
+          "Ref": "UnichemTaskDefinition"
+        }
+      },
+      "Type": "AWS::ECS::Service",
+      "Condition": "CreateDemoDataCondition"
+    },
+    "UnichemServiceDiscoveryEntry": {
+      "Properties": {
+        "Description": "\"unichem\" service discovery entry in Cloud Map",
+        "DnsConfig": {
+          "DnsRecords": [
+            {
+              "TTL": 60,
+              "Type": "A"
+            }
+          ],
+          "RoutingPolicy": "MULTIVALUE"
+        },
+        "HealthCheckCustomConfig": {
+          "FailureThreshold": 1
+        },
+        "Name": "unichem",
+        "NamespaceId": {
+          "Ref": "CloudMap"
+        }
+      },
+      "Type": "AWS::ServiceDiscovery::Service",
+      "Condition": "CreateDemoDataCondition"
+    },
+    "UnichemTaskDefinition": {
+      "Properties": {
+        "ContainerDefinitions": [
+          {
+            "Command": [
+              {
+                "Fn::Sub": "${AWS::Region}.compute.internal"
+              },
+              "datagrok.internal",
+              "datagrok.local"
+            ],
+            "Essential": false,
+            "Image": "docker/ecs-searchdomain-sidecar:1.0",
+            "LogConfiguration": {
+              "LogDriver": "awslogs",
+              "Options": {
+                "awslogs-group": {
+                  "Ref": "LogGroup"
+                },
+                "awslogs-region": {
+                  "Ref": "AWS::Region"
+                },
+                "awslogs-stream-prefix": "datagrok-demo"
+              }
+            },
+            "Name": "Unichem_ResolvConf_InitContainer"
+          },
+          {
+            "DependsOn": [
+              {
+                "Condition": "SUCCESS",
+                "ContainerName": "Unichem_ResolvConf_InitContainer"
+              }
+            ],
+            "Environment": [
+              {
+                "Name": "POSTGRES_DB",
+                "Value": "unichem"
+              }
+            ],
+            "Essential": true,
+            "Image": "docker.io/datagrok/demo_db_unichem:latest",
+            "LinuxParameters": {},
+            "LogConfiguration": {
+              "LogDriver": "awslogs",
+              "Options": {
+                "awslogs-group": {
+                  "Ref": "LogGroup"
+                },
+                "awslogs-region": {
+                  "Ref": "AWS::Region"
+                },
+                "awslogs-stream-prefix": "datagrok-demo"
+              }
+            },
+            "MemoryReservation": 250,
+            "Name": "unichem",
+            "RepositoryCredentials": {
+              "CredentialsParameter": {
+                "Ref": "ArnDockerHubCredential"
+              }
+            }
+          }
+        ],
+        "Cpu": "1024",
+        "ExecutionRoleArn": {
+          "Ref": "UnichemTaskExecutionRole"
+        },
+        "Family": "datagrok-unichem",
+        "Memory": "2048",
+        "NetworkMode": "awsvpc",
+        "RequiresCompatibilities": [
+          "FARGATE"
+        ],
+        "EphemeralStorage": {
+          "SizeInGiB": 40
+        }
+      },
+      "Type": "AWS::ECS::TaskDefinition",
+      "Condition": "CreateDemoDataCondition"
+    },
+    "UnichemTaskExecutionRole": {
+      "Properties": {
+        "AssumeRolePolicyDocument": {
+          "Statement": [
+            {
+              "Action": [
+                "sts:AssumeRole"
+              ],
+              "Condition": {},
+              "Effect": "Allow",
+              "Principal": {
+                "Service": "ecs-tasks.amazonaws.com"
+              }
+            }
+          ],
+          "Version": "2012-10-17"
+        },
+        "ManagedPolicyArns": [
+          {
+            "Ref": "DatagrokECSPolicy"
+          }
+        ],
+        "Tags": [
+          {
+            "Key": "datagrok.component",
+            "Value": "datagrok"
+          },
+          {
+            "Key": "datagrok.service",
+            "Value": "unichem"
+          }
+        ]
+      },
+      "Type": "AWS::IAM::Role",
+      "Condition": "CreateDemoDataCondition"
+    },
+    "WorldService": {
+      "Properties": {
+        "Cluster": {
+          "Fn::GetAtt": [
+            "DatagrokCluster",
+            "Arn"
+          ]
+        },
+        "DeploymentConfiguration": {
+          "MaximumPercent": 200,
+          "MinimumHealthyPercent": 100
+        },
+        "DeploymentController": {
+          "Type": "ECS"
+        },
+        "DesiredCount": 1,
+        "LaunchType": "FARGATE",
+        "NetworkConfiguration": {
+          "AwsvpcConfiguration": {
+            "AssignPublicIp": "ENABLED",
+            "SecurityGroups": [
+              {
+                "Ref": "DatagrokSecurityGroup"
+              }
+            ],
+            "Subnets": [
+              {
+                "Ref": "DatagrokPrivateSubnet1"
+              },
+              {
+                "Ref": "DatagrokPrivateSubnet2"
+              }
+            ]
+          }
+        },
+        "PlatformVersion": "1.4.0",
+        "PropagateTags": "SERVICE",
+        "SchedulingStrategy": "REPLICA",
+        "ServiceRegistries": [
+          {
+            "RegistryArn": {
+              "Fn::GetAtt": [
+                "WorldServiceDiscoveryEntry",
+                "Arn"
+              ]
+            }
+          }
+        ],
+        "Tags": [
+          {
+            "Key": "datagrok.component",
+            "Value": "datagrok"
+          },
+          {
+            "Key": "datagrok.service",
+            "Value": "world"
+          }
+        ],
+        "TaskDefinition": {
+          "Ref": "WorldTaskDefinition"
+        }
+      },
+      "Type": "AWS::ECS::Service",
+      "Condition": "CreateDemoDataCondition"
+    },
+    "WorldServiceDiscoveryEntry": {
+      "Properties": {
+        "Description": "\"world\" service discovery entry in Cloud Map",
+        "DnsConfig": {
+          "DnsRecords": [
+            {
+              "TTL": 60,
+              "Type": "A"
+            }
+          ],
+          "RoutingPolicy": "MULTIVALUE"
+        },
+        "HealthCheckCustomConfig": {
+          "FailureThreshold": 1
+        },
+        "Name": "world",
+        "NamespaceId": {
+          "Ref": "CloudMap"
+        }
+      },
+      "Type": "AWS::ServiceDiscovery::Service",
+      "Condition": "CreateDemoDataCondition"
+    },
+    "WorldTaskDefinition": {
+      "Properties": {
+        "ContainerDefinitions": [
+          {
+            "Command": [
+              {
+                "Fn::Sub": "${AWS::Region}.compute.internal"
+              },
+              "datagrok.internal",
+              "datagrok.local"
+            ],
+            "Essential": false,
+            "Image": "docker/ecs-searchdomain-sidecar:1.0",
+            "LogConfiguration": {
+              "LogDriver": "awslogs",
+              "Options": {
+                "awslogs-group": {
+                  "Ref": "LogGroup"
+                },
+                "awslogs-region": {
+                  "Ref": "AWS::Region"
+                },
+                "awslogs-stream-prefix": "datagrok-demo"
+              }
+            },
+            "Name": "World_ResolvConf_InitContainer"
+          },
+          {
+            "DependsOn": [
+              {
+                "Condition": "SUCCESS",
+                "ContainerName": "World_ResolvConf_InitContainer"
+              }
+            ],
+            "Environment": [
+              {
+                "Name": "POSTGRES_DB",
+                "Value": "world"
+              }
+            ],
+            "Essential": true,
+            "Image": "docker.io/datagrok/demo_db:latest",
+            "LinuxParameters": {},
+            "LogConfiguration": {
+              "LogDriver": "awslogs",
+              "Options": {
+                "awslogs-group": {
+                  "Ref": "LogGroup"
+                },
+                "awslogs-region": {
+                  "Ref": "AWS::Region"
+                },
+                "awslogs-stream-prefix": "datagrok-demo"
+              }
+            },
+            "MemoryReservation": 250,
+            "Name": "world",
+            "RepositoryCredentials": {
+              "CredentialsParameter": {
+                "Ref": "ArnDockerHubCredential"
+              }
+            }
+          }
+        ],
+        "Cpu": "1024",
+        "ExecutionRoleArn": {
+          "Ref": "WorldTaskExecutionRole"
+        },
+        "Family": "datagrok-world",
+        "Memory": "2048",
+        "NetworkMode": "awsvpc",
+        "RequiresCompatibilities": [
+          "FARGATE"
+        ]
+      },
+      "Type": "AWS::ECS::TaskDefinition",
+      "Condition": "CreateDemoDataCondition"
+    },
+    "WorldTaskExecutionRole": {
+      "Properties": {
+        "AssumeRolePolicyDocument": {
+          "Statement": [
+            {
+              "Action": [
+                "sts:AssumeRole"
+              ],
+              "Condition": {},
+              "Effect": "Allow",
+              "Principal": {
+                "Service": "ecs-tasks.amazonaws.com"
+              }
+            }
+          ],
+          "Version": "2012-10-17"
+        },
+        "ManagedPolicyArns": [
+          {
+            "Ref": "DatagrokECSPolicy"
+          }
+        ],
+        "Tags": [
+          {
+            "Key": "datagrok.component",
+            "Value": "datagrok"
+          },
+          {
+            "Key": "datagrok.service",
+            "Value": "world"
+          }
+        ]
+      },
+      "Type": "AWS::IAM::Role",
+      "Condition": "CreateDemoDataCondition"
     }
   }
 }
