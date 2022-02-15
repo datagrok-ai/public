@@ -6,7 +6,8 @@ import * as OCL from 'openchemlib/full.js';
 import {isMolBlock} from './chem-utils';
 
 export function renderDescription(description: OCL.IParameterizedString[], smiles: string | null = null) {
-  const host = ui.div([], 'd4-flex-wrap');
+  const host = ui.div([]);
+  const molsHost = ui.div([], 'd4-flex-wrap');
   const width = 200;
   const height = 150;
   let lastMolCanvas: null | HTMLCanvasElement = null;
@@ -17,15 +18,7 @@ export function renderDescription(description: OCL.IParameterizedString[], smile
         [ui.label(entry.value), lastMolCanvas],
         lastMolCanvas === null ? {} : {classes: 'd4-flex-col', style: {margin: '5px'}},
       );
-      // if (lastMolCanvas !== null && smiles !== null && scaffoldMolString !== null) {
-      //   //@ts-ignore
-      //   ui.tooltip.bind(divElement, () => {
-      //     const canvas = ui.canvas(200, 150);
-      //     drawMoleculeToCanvas(0, 0, 200, 150, canvas, smiles, scaffoldMolString);
-      //     return ui.div(canvas);
-      //   });
-      // }
-      host.append(divElement);
+      (lastMolCanvas ? molsHost : host).append(divElement);
       lastMolCanvas = null;
       scaffoldMolString = null;
     }
@@ -35,6 +28,7 @@ export function renderDescription(description: OCL.IParameterizedString[], smile
       lastMolCanvas = _molToCanvas(mol, width, height);
     }
   }
+  host.append(molsHost);
   return host;
 }
 
