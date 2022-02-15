@@ -1079,7 +1079,7 @@ export class ColumnList {
    * @param {string} name
    * @param {string} expression
    * @param {ColumnType} type
-   * @param {bool} treatAsString
+   * @param {bool} treatAsString - if true, [expression] is not evaluated as formula and is treated as a regular string value instead
    * @returns {Column} */
   addNewCalculated(name: string, expression: string, type: ColumnType | 'auto' = 'auto', treatAsString: boolean = false): Promise<Column> {
     return new Promise((resolve, reject) => api.grok_ColumnList_AddNewCalculated(this.dart, name, expression, type, treatAsString, (c: any) => resolve(toJs(c)), (e: any) => reject(e)));
@@ -1449,17 +1449,21 @@ export class BitSet {
     return api.grok_BitSet_Get_Length(this.dart);
   }
 
-  /** Number of set bits
-   * @type {number} */
+  /** Number of set bits */
   get trueCount(): number {
     return api.grok_BitSet_Get_TrueCount(this.dart);
   }
 
-  /** Number of unset bits
-   * @type {number}*/
+  /** Number of unset bits */
   get falseCount(): number {
     return api.grok_BitSet_Get_FalseCount(this.dart);
   }
+
+  /** Whether any bits are set to false. */
+  get anyTrue(): boolean { return this.trueCount > 0; }
+
+  /** Whether any bits are set to true. */
+  get anyFalse(): boolean { return this.trueCount > 0; }
 
   /** Clones a bitset
    *  @returns {BitSet} */

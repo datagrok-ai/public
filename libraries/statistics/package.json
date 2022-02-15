@@ -22,6 +22,9 @@
   },
   "scripts": {
     "link": "npm link",
+    "link-api": "npm link datagrok-api",
+    "link-utils": "npm link @datagrok-libraries/utils",
+    "link-all": "npm link datagrok-api @datagrok-libraries/utils",
     "debug-statistics": "grok publish --rebuild",
     "release-statistics": "grok publish --rebuild --release",
     "build-statistics": "tsc",

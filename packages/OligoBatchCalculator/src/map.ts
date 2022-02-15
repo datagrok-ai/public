@@ -1,3 +1,16 @@
+export const SYNTHESIZERS = {
+  RAW_NUCLEOTIDES: 'Raw Nucleotides',
+  BIOSPRING: 'BioSpring Codes',
+  GCRS: 'Janssen GCRS Codes',
+  AXOLABS: 'Axolabs Codes',
+  MERMADE_12: 'Mermade 12',
+};
+export const TECHNOLOGIES = {
+  DNA: 'DNA',
+  RNA: 'RNA',
+  ASO_GAPMERS: 'For ASO Gapmers',
+  SI_RNA: 'For 2\'-OMe and 2\'-F modified siRNA',
+};
 export const individualBases: {[index: string]: number} = {
   'dA': 15400, 'dC': 7400, 'dG': 11500, 'dT': 8700, 'rA': 15400, 'rC': 7200, 'rG': 11500, 'rU': 9900
 };
@@ -11,13 +24,13 @@ export const nearestNeighbour: {[firstBase: string]: {[secondBase: string]: numb
   'rG': { 'rA': 25200, 'rC': 17400, 'rG': 21600, 'rU': 21200, 'dA': 25200, 'dC': 17600, 'dG': 21600, 'dT': 20000 },
   'rU': { 'rA': 24600, 'rC': 17200, 'rG': 20000, 'rU': 19600, 'dA': 23400, 'dC': 16200, 'dG': 19000, 'dT': 16800 }
 };
-export const map: {[synthesizer: string]: {[technology: string]: {[code: string]: {"name": string, "weight": number, "normalized": string}}}} = {
+export const map: {[synthesizer: string]: {[technology: string]: {[code: string]: {name: string, weight: number, normalized: string}}}} = {
   "BioSpring Codes": {
     "For ASO Gapmers": {
       "5": {
-        "name": "2'MOE-5Me-rU",
-        "weight": 378.27,
-        "normalized": "rU"
+        name: "2'MOE-5Me-rU",
+        weight: 378.27,
+        normalized: "rU"
       },
       "6": {
         "name": "2'MOE-rA",
@@ -305,6 +318,11 @@ export const map: {[synthesizer: string]: {[technology: string]: {[code: string]
         "name": "2'OMe-rG",
         "weight": 359.24,
         "normalized": "rG"
+      },
+      "ps": {
+        "name": "ps linkage",
+        "weight": 16.07,
+        "normalized": ""
       }
     }
   }

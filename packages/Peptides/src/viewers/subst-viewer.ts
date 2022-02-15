@@ -5,7 +5,8 @@ import * as DG from 'datagrok-api/dg';
 import $ from 'cash-dom';
 
 import {setAARRenderer} from '../utils/cell-renderer';
-import {PeptidesModel} from '../model';
+import {PeptidesController} from '../peptides';
+// import {PeptidesModel} from '../model';
 
 export class SubstViewer extends DG.JsViewer {
   viewerGrid: DG.Grid | null;
@@ -14,7 +15,8 @@ export class SubstViewer extends DG.JsViewer {
   activityColumnName: string;
   private _name: string = 'Substitution analysis';
   casesGrid: DG.Grid | null;
-  model: PeptidesModel | null;
+  // model: PeptidesModel | null;
+  controller: PeptidesController | null;
 
   constructor() {
     super();
@@ -26,7 +28,7 @@ export class SubstViewer extends DG.JsViewer {
 
     this.viewerGrid = null;
     this.casesGrid = null;
-    this.model = null;
+    this.controller = null;
   }
 
   get name() {
@@ -37,10 +39,12 @@ export class SubstViewer extends DG.JsViewer {
     this.calcSubstitutions();
   }
 
-  onTableAttached(): void {
-    this.model = PeptidesModel.getOrInit(this.dataFrame!);
-    this.model.updateData(this.dataFrame!, null, null, (grok.shell.v as DG.TableView).grid, null, null, null);
-    this.subs.push(this.model.onSubstFlagChanged.subscribe(() => this.calcSubstitutions()));
+  async onTableAttached() {
+    // this.model = PeptidesModel.getOrInit(this.dataFrame!);
+    this.controller = PeptidesController.getInstance(this.dataFrame!);
+    await this.controller.updateData(
+      this.dataFrame!, null, null, (grok.shell.v as DG.TableView).grid, null, null, null);
+    this.subs.push(this.controller.onSubstFlagChanged.subscribe(() => this.calcSubstitutions()));
   }
 
   calcSubstitutions() {

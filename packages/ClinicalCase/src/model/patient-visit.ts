@@ -1,8 +1,4 @@
-import * as DG from "datagrok-api/dg";
-import { DataFrame } from "datagrok-api/dg";
-import { ClinicalDomains } from '../clinical-study';
-import { SUBJECT_ID, VISIT_DAY, VISIT_NAME } from "../columns-constants";
-import { dataframeContentToRow } from "../data-preparation/utils";
+import { SUBJECT_ID, VISIT_NAME } from "../columns-constants";
 
 export class PatientVisit {
 

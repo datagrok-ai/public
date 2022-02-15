@@ -1,7 +1,7 @@
 import * as DG from "datagrok-api/dg";
 import * as ui from "datagrok-api/ui";
 import { study } from "../clinical-study";
-import { MH_BODY_SYSTEM, MH_CATEGORY, MH_DECOD_TERM, MH_TERM } from '../columns-constants';
+import { MH_BODY_SYSTEM, MH_CATEGORY } from '../columns-constants';
 import { _package } from '../package';
 import { ClinicalCaseViewBase } from '../model/ClinicalCaseViewBase';
 import { checkColumnsAndCreateViewer, updateDivInnerHTML } from "./utils";
@@ -44,7 +44,7 @@ export class MedicalHistoryView extends ClinicalCaseViewBase {
 
         checkColumnsAndCreateViewer(
             study.domains.mh,
-            [MH_DECOD_TERM],
+            [VIEWS_CONFIG[this.name][ MH_TERM_FIELD ]],
             this.mhDecodTermChart, () => {
                 this.createDecodeTermChart(viewerTitle);
             },

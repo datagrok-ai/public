@@ -1,9 +1,9 @@
 import * as grok from 'datagrok-api/grok';
 import * as DG from 'datagrok-api/dg';
-import { ACTIVE_ARM_POSTTFIX, AE_PERCENT, ALT, AP, AST, BILIRUBIN, NEG_LOG10_P_VALUE, ODDS_RATIO, PLACEBO_ARM_POSTTFIX, P_VALUE, RELATIVE_RISK, RISK_DIFFERENCE, SE_RD_WITH_SIGN_LEVEL, STANDARD_ERROR_RD } from '../constants';
+import { ACTIVE_ARM_POSTTFIX, AE_PERCENT, ALT, AP, AST, BILIRUBIN, DOMAINS_WITH_EVENT_START_END_DAYS, NEG_LOG10_P_VALUE, ODDS_RATIO, PLACEBO_ARM_POSTTFIX, P_VALUE, RELATIVE_RISK, RISK_DIFFERENCE, SE_RD_WITH_SIGN_LEVEL, STANDARD_ERROR_RD } from '../constants';
 import { addDataFromDmDomain, dataframeContentToRow, dateDifferenceInDays, filterBooleanColumn, filterNulls } from './utils';
 import { study } from '../clinical-study';
-import { AE_CAUSALITY, AE_REQ_HOSP, AE_SEQ, AE_SEVERITY, AE_START_DATE, LAB_HI_LIM_N, LAB_LO_LIM_N, LAB_RES_N, LAB_TEST, SUBJECT_ID, SUBJ_REF_ENDT, SUBJ_REF_STDT } from '../columns-constants';
+import { AE_CAUSALITY, AE_REQ_HOSP, AE_SEQ, AE_SEVERITY, AE_START_DATE, LAB_HI_LIM_N, LAB_LO_LIM_N, LAB_RES_N, LAB_TEST, SUBJECT_ID, SUBJ_REF_ENDT, SUBJ_REF_STDT, VISIT_DAY, VISIT_START_DATE } from '../columns-constants';
 var { jStat } = require('jstat')
 
 
@@ -403,5 +403,42 @@ export function getSubjectDmData(subjId: string, columnsToReturn: string[]) {
     return dmDict;
   }
   return {};
+}
+
+
+export function createEventStartEndDaysCol() {
+  if (study.domains.sv != null) {
+    if (study.domains.sv.col(VISIT_START_DATE) && study.domains.sv.col(VISIT_DAY) && study.domains.sv.col(SUBJECT_ID)) {
+      const baselineDates = getSubjectBaselineDates();
+      DOMAINS_WITH_EVENT_START_END_DAYS.forEach(domain => {
+        if (study.domains[domain]) {
+          addCalculatedStudyDayColumn(domain, 'ST', baselineDates);
+          addCalculatedStudyDayColumn(domain, 'EN', baselineDates);
+        };
+      });
+    };
+  };
+}
+
+export function addCalculatedStudyDayColumn(domain: string, prefix: string, baselineDates: DG.DataFrame) {
+  if (study.domains[domain].col(`${domain.toUpperCase()}${prefix}DTC`)) {
+    grok.data.joinTables(study.domains[domain],
+      baselineDates, [SUBJECT_ID], [SUBJECT_ID], study.domains[domain].columns.names(), [VISIT_START_DATE], DG.JOIN_TYPE.LEFT, true);
+    study.domains[domain].columns.addNewInt(`${domain.toUpperCase()}${prefix}DY_CALCULATED`).init((i) => {
+      const baselineDate = study.domains[domain].get(VISIT_START_DATE, i);;
+      const startDate = study.domains[domain].get(`${domain.toUpperCase()}${prefix}DTC`, i);
+      const dateDiff = dateDifferenceInDays(baselineDate, startDate);
+      return dateDiff;
+    });
+    study.domains[domain].columns.remove(VISIT_START_DATE);
+    study.domains[domain].name = domain;
+  };
+}
+
+export function getSubjectBaselineDates() {
+  const subjBaselineDates = study.domains.sv.groupBy([SUBJECT_ID, VISIT_START_DATE, VISIT_DAY])
+    .where(`${VISIT_DAY} = 1`)
+    .aggregate();
+  return subjBaselineDates;
 }
 

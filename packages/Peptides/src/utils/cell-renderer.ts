@@ -145,57 +145,57 @@ function printLeftOrCentered(
  * @extends {DG.GridCellRenderer}
  */
 export class AminoAcidsCellRenderer extends DG.GridCellRenderer {
-    chemPalette: ChemPalette | null;
+  chemPalette: ChemPalette | null;
 
-    /**
+  /**
      * Renderer name.
      *
      * @readonly
      * @memberof AminoAcidsCellRenderer
      */
-    get name() {
-      return 'aminoAcidsCR';
-    }
+  get name() {
+    return 'aminoAcidsCR';
+  }
 
-    /**
+  /**
      * Cell type.
      *
      * @readonly
      * @memberof AminoAcidsCellRenderer
      */
-    get cellType() {
-      return 'aminoAcids';
-    }
+  get cellType() {
+    return 'aminoAcids';
+  }
 
-    /**
+  /**
      * Cell height.
      *
      * @readonly
      * @memberof AminoAcidsCellRenderer
      */
-    get defaultHeight() {
-      return 15;
-    }
+  get defaultHeight() {
+    return 15;
+  }
 
-    /**
+  /**
      * Cell width.
      *
      * @readonly
      * @memberof AminoAcidsCellRenderer
      */
-    get defaultWidth() {
-      return 30;
-    }
+  get defaultWidth() {
+    return 30;
+  }
 
-    /**
+  /**
      * Constructor.
      */
-    constructor() {
-      super();
-      this.chemPalette = null;
-    }
+  constructor() {
+    super();
+    this.chemPalette = null;
+  }
 
-    /**
+  /**
      * Cell renderer function.
      *
      * @param {CanvasRenderingContext2D} g Canvas rendering context.
@@ -206,26 +206,26 @@ export class AminoAcidsCellRenderer extends DG.GridCellRenderer {
      * @param {DG.GridCell} gridCell Grid cell.
      * @param {DG.GridCellStyle} cellStyle Cell style.
      */
-    render(
-      g: CanvasRenderingContext2D, x: number, y: number, w: number, h: number, gridCell: DG.GridCell,
-      cellStyle: DG.GridCellStyle) {
-      this.chemPalette ??= new ChemPalette('grok', gridCell.tableColumn?.getTag('groups') ? true : false);
+  render(
+    g: CanvasRenderingContext2D, x: number, y: number, w: number, h: number, gridCell: DG.GridCell,
+    cellStyle: DG.GridCellStyle) {
+    this.chemPalette ??= new ChemPalette('grok', gridCell.tableColumn?.getTag('groups') ? true : false);
 
-      y -= 2;
-      g.save();
-      g.beginPath();
-      g.rect(x, y, w, h);
-      g.clip();
-      g.font = `12px monospace`;
-      g.textBaseline = 'top';
-      const s: string = gridCell.cell.value ? gridCell.cell.value : '-';
-      let [color, outerS, innerS, pivot] = cp.getColorAAPivot(s);
-      if (innerS)
-        outerS = s;
+    y -= 2;
+    g.save();
+    g.beginPath();
+    g.rect(x, y, w, h);
+    g.clip();
+    g.font = `12px monospace`;
+    g.textBaseline = 'top';
+    const s: string = gridCell.cell.value ? gridCell.cell.value : '-';
+    let [color, outerS, innerS, pivot] = cp.getColorAAPivot(s);
+    if (innerS)
+      outerS = s;
 
-      printLeftOrCentered(x, y, w, h, g, outerS, color, pivot, false, true);
-      g.restore();
-    }
+    printLeftOrCentered(x, y, w, h, g, outerS, color, pivot, false, true);
+    g.restore();
+  }
 }
 
 /**

@@ -24,6 +24,7 @@ class MultiFormViewer extends DG.JsViewer {
 
     this.subs.push(DG.debounce(this.dataFrame.selection.onChanged, 20).subscribe((_) => this.render()));
     this.subs.push(DG.debounce(this.dataFrame.filter.onChanged, 50).subscribe((_) => this.render()));
+    this.subs.push(DG.debounce(this.dataFrame.filter.onChanged, 50).subscribe((_) => this.render()));
 
     this.render();
   }
@@ -41,7 +42,7 @@ class MultiFormViewer extends DG.JsViewer {
     for (let name of this.fields) {
       const columnLabel = ui.bind(this.dataFrame.col(name), ui.divText(name, 'd4-multi-form-column-name'));
       let formField = form.querySelector('[column="' + name + '"]');
-      columnLabel.style.top = `${formField.offsetTop}px`;
+      columnLabel.style.top = `${formField.offsetTop + 10}px`;
       this.columnHeadersDiv.appendChild(columnLabel);
     }
 
@@ -56,7 +57,7 @@ class MultiFormViewer extends DG.JsViewer {
         input.value = this.dataFrame.get(name, row);
 
         if (this.colorCode) {
-          const grid = this.view?.grid;
+          const grid = this.view.grid;
           const color = grid.cell(name, row).color;
           input.input.style.color = DG.Color.toHtml(DG.Color.getContrastColor(color));
           input.input.style.backgroundColor = DG.Color.toHtml(color);
@@ -75,7 +76,7 @@ class MultiFormViewer extends DG.JsViewer {
   render() {
     let dis = this;
     let indexes
-      = this.dataFrame.selection.anyTrue ? this.dataFrame.selection.getSelectedIndexes()
+      = this.dataFrame.selection.trueCount > 0 ? this.dataFrame.selection.getSelectedIndexes()
       : this.dataFrame.currentRowIdx > -1 ? [this.dataFrame.currentRowIdx]
       : this.dataFrame.rowCount > 0 ? [0]
       : [];

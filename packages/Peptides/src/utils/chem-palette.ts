@@ -189,7 +189,7 @@ export class ChemPalette {
     'gray': ['rgb(127,127,127)', 'rgb(199,199,199)', 'rgb(196,156,148)', 'rgb(222, 222, 180)'],
     'yellow': ['rgb(188,189,34)'],
     'white': ['rgb(230,230,230)'],
-  }
+  };
 
   /**
    * Grok color scheme groups.
@@ -205,7 +205,7 @@ export class ChemPalette {
     'light_blue': ['R', 'H', 'K'],
     'dark_blue': ['D', 'E'],
     'orange': ['S', 'T', 'N', 'Q'],
-  }
+  };
 
   /**
    * Lesk color scheme groups.
@@ -220,7 +220,7 @@ export class ChemPalette {
     'magenta': ['N', 'Q', 'H'],
     'red': ['D', 'E'],
     'all_blue': ['K', 'R'],
-  }
+  };
 
   /**
    * Undefined color.
@@ -279,7 +279,7 @@ export class ChemPalette {
     'I': 'Isoleucine',
     'M': 'Methionine',
     'T': 'Threonine',
-  }
+  };
 
   /**
    * Amino acid residue SMILES.
@@ -309,7 +309,7 @@ export class ChemPalette {
     'I': 'N[C@H]([C@H](C)CC)C(=O)O',
     'M': 'NC(CCSC)C(=O)O',
     'T': 'NC(C(O)C)C(=O)O',
-  }
+  };
 
   /**
    * Amino acid residue truncated SMILES.
@@ -339,7 +339,7 @@ export class ChemPalette {
     'I': 'CC[C@H](C)[C@H](*)*',
     'M': 'CSCCC(*)*',
     'T': 'CC(O)C(*)*',
-  }
+  };
 
   /**
    * Amino acid residue full names.
@@ -369,7 +369,7 @@ export class ChemPalette {
     'Trp': 'W',
     'Tyr': 'Y',
     'Val': 'V',
-  }
+  };
 
   /**
    * Get Datagrok palette.

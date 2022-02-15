@@ -17,8 +17,8 @@ import {manualAlignmentWidget} from './widgets/manual-alignment';
 import {SARViewer, SARViewerVertical} from './viewers/sar-viewer';
 import {peptideMoleculeWidget, getMolecule} from './widgets/peptide-molecule';
 import {SubstViewer} from './viewers/subst-viewer';
-import {runKalign} from './utils/multiple-sequence-alignment';
 import {substTableWidget} from './widgets/subst-table';
+import {msaWidget} from './widgets/multiple-sequence-alignment';
 
 export const _package = new DG.Package();
 let currentGrid: DG.Grid;
@@ -77,7 +77,6 @@ export async function Peptides() {
     ui.divH([
       ui.button('Simple demo', () => main('aligned.csv'), ''),
       ui.button('Complex demo', () => main('aligned_2.csv'), ''),
-      // ui.button('Real demo', () => main('aligned_21.csv'), ''),
     ]),
   ]);
 }
@@ -225,10 +224,7 @@ export async function peptideMolfile2(aar: string): Promise<DG.Widget> {
 //input: column col {semType: alignedSequence}
 //output: dataframe result
 export async function multipleSequenceAlignment(col: DG.Column): Promise<DG.DataFrame> {
-  const msaCol = await runKalign(col, true);
-  const table = col.dataFrame;
-  table.columns.add(msaCol);
-  return table;
+  return await msaWidget(col);
 }
 
 //name: Substitution

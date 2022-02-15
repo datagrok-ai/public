@@ -1,5 +1,4 @@
-import { ADVERSE_EVENTS_VIEW_NAME, AE_RISK_ASSESSMENT_VIEW_NAME, CORRELATIONS_VIEW_NAME, DISTRIBUTIONS_VIEW_NAME, LABORATORY_VIEW_NAME, MEDICAL_HISTORY_VIEW_NAME, PATIENT_PROFILE_VIEW_NAME, SUMMARY_VIEW_NAME, SURVIVAL_ANALYSIS_VIEW_NAME, TIMELINES_VIEW_NAME, TIME_PROFILE_VIEW_NAME, TREE_MAP_VIEW_NAME, VISITS_VIEW_NAME } from "./view-names-constants";
-import { AE_TERM_FIELD, CON_MED_NAME_FIELD, INV_DRUG_NAME_FIELD, TRT_ARM_FIELD, VIEWS_CONFIG } from "./views-config";
+import * as DG from "datagrok-api/dg";
 
 export const ALT = 'ALT';
 export const AST = 'AST';
@@ -40,3 +39,11 @@ export const NEG_LOG10_P_VALUE = '-log10(p-value)';
 export const AE_PERCENT = 'AE_PERCENT';
 export const STANDARD_ERROR_RD = 'SE_RD';
 export const SE_RD_WITH_SIGN_LEVEL = 'SE_RD_SIGN_LEVEL';
+export const DOMAINS_COLOR_PALETTE = {
+        'ae': DG.Color.red, 
+        'vs': DG.Color.green, 
+        'lb': DG.Color.blue,
+        'cm': DG.Color.orange,
+        'ex': DG.Color.purple
+};
+export const DOMAINS_WITH_EVENT_START_END_DAYS = ['ae', 'cm', 'ex']

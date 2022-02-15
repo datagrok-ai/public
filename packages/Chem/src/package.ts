@@ -20,7 +20,7 @@ import {addMcs} from './panels/find-mcs';
 import * as chemCommonRdKit from './utils/chem-common-rdkit';
 import {rGroupAnalysis} from './analysis/r-group-analysis';
 import {identifiersWidget} from './widgets/identifiers';
-import {convertMoleculeImpl} from './utils/chem-utils';
+import {convertMoleculeImpl, isMolBlock} from './utils/chem-utils';
 import '../css/chem.css';
 import {ChemSimilarityViewer} from './analysis/chem-similarity-viewer';
 import {ChemDiversityViewer} from './analysis/chem-diversity-viewer';
@@ -251,7 +251,7 @@ export async function activityCliffs(df: DG.DataFrame,
 //input: dataframe table
 //input: column smiles { semType: Molecule }
 //input: string methodName { choices:["UMAP", "t-SNE", "SPE", "pSPE", "OriginalSPE"] }
-//input: string similarityMetric { choices:["Tanimoto", "Dice", "Asymmetric", "Braun-Blanquet", "Cosine", "Kulczynski", "Mc-Connaughey", "Rogot-Goldberg", "Russel", "Sokal"] }
+//input: string similarityMetric { choices:["Tanimoto", "Asymmetric", "Cosine", "Sokal"] }
 //input: bool plotEmbeddings = true
 //output: viewer result
 export async function chemSpaceTopMenu(table: DG.DataFrame,
@@ -346,7 +346,7 @@ export function descriptorsWidget(smiles: string) {
 }
 
 //name: Drug Likeness
-//description: Drug Likeness score, with explanations on molecule fragments contributing to the score. Calculated by openchemlib
+//description: Drug Likeness score, with explanations on molecule fragments contributing to the score. OCL.
 //help-url: /help/domains/chem/info-panels/drug-likeness.md
 //tags: panel, chem, widgets
 //input: string smiles { semType: Molecule }
@@ -374,7 +374,7 @@ export async function properties(smiles: string) {
 }
 
 //name: Structural Alerts
-//description: Screening drug candidates against structural alerts, i.e. chemical fragments associated to a toxicological response
+//description: Screening drug candidates against structural alerts i.e. fragments associated to a toxicological response
 //help-url: /help/domains/chem/info-panels/structural-alerts.md
 //tags: panel, chem, widgets
 //input: string smiles { semType: Molecule }
@@ -395,10 +395,16 @@ export function structure2d(smiles: string) {
 //name: Structure 3D
 //description: 3D molecule representation
 //tags: panel, chem, widgets
-//input: string smiles { semType: Molecule }
+//input: string molecule { semType: Molecule }
 //output: widget result
-export async function structure3d(smiles: string) {
-  return smiles ? structure3dWidget(smiles) : new DG.Widget(ui.divText('SMILES is empty'));
+export async function structure3d(molecule: string) {
+  if (isMolBlock(molecule)) {
+    const mol = getRdKitModule().get_mol(molecule);
+    molecule = mol.get_smiles();
+    mol?.delete();
+  }
+
+  return molecule ? structure3dWidget(molecule) : new DG.Widget(ui.divText('SMILES is empty'));
 }
 
 //name: Toxicity
