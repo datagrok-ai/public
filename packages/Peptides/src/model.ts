@@ -26,8 +26,8 @@ export class PeptidesModel {
   private substFlagSubject = new Subject<boolean>();
   private static _modelName = 'peptidesModel';
 
-  constructor() {
-    this.dataFrame = null;
+  private constructor(dataFrame: DG.DataFrame) {
+    this.dataFrame = dataFrame;
     this.activityColumn = null;
     this.activityScaling = null;
     this.sourceGrid = null;
@@ -100,12 +100,12 @@ export class PeptidesModel {
       this.substFlag = !this.substFlag;
       this.substFlagSubject.next(this.substFlag);
 
-      await this.updateBarchart();
-
       this.sourceGrid.invalidate();
 
       this.isUpdating = false;
     }
+
+    await this.updateBarchart();
   }
 
   async updateBarchart() {
@@ -119,7 +119,7 @@ export class PeptidesModel {
   }
 
   static getOrInit(dataFrame: DG.DataFrame): PeptidesModel {
-    dataFrame.temp[PeptidesModel.modelName] ??= new PeptidesModel();
+    dataFrame.temp[PeptidesModel.modelName] ??= new PeptidesModel(dataFrame);
     return dataFrame.temp[PeptidesModel.modelName];
   }
 }

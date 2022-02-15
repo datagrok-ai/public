@@ -5,7 +5,7 @@ import * as DG from 'datagrok-api/dg';
 import { welcomeView } from "./welcome-view";
 import { compareColumns } from './compare-columns';
 import { AddNewColumnDialog } from './dialogs/add-new-column';
-//import { FormulaLinesDialog } from './dialogs/formula-lines';
+import { FormulaLinesDialog } from './dialogs/formula-lines';
 import { DistributionProfilerViewer } from './distribution-profiler';
 import { SystemStatusWidget } from "./widgets/system-status-widget";
 import { RecentProjectsWidget } from "./widgets/recent-projects-widget";
@@ -142,7 +142,6 @@ export function _pubChemSearch(s: string): Promise<any> {
 export function _wikiSearch(s: string): Promise<any> {
   return wikiSearch(s);
 }
-/*
 
 //name: formulaLinesEditor
 //input: dataframe src {optional: grok.shell.o}
@@ -159,4 +158,3 @@ grok.events.onContextMenu.subscribe((args) => {
     menu.item('Formula Lines...', () => { formulaLinesDialog(src); });
   }
 });
-*/

@@ -6,10 +6,10 @@ import { updateDivInnerHTML } from "./utils";
 import $ from "cash-dom";
 import { AEBrowserHelper } from "../helpers/ae-browser-helper";
 import { _package } from "../package";
-import { AE_BODY_SYSTEM, AE_END_DAY, AE_SEVERITY, AE_START_DAY, CON_MED_DOSE, CON_MED_DOSE_FREQ, CON_MED_DOSE_UNITS, CON_MED_END_DAY, CON_MED_ROUTE, CON_MED_START_DAY, DOMAIN, INV_DRUG_DOSE, INV_DRUG_DOSE_FORM, INV_DRUG_DOSE_FREQ, INV_DRUG_DOSE_UNITS, INV_DRUG_END_DAY, INV_DRUG_ROUTE, INV_DRUG_START_DAY, SUBJECT_ID } from "../columns-constants";
+import { AE_BODY_SYSTEM, AE_SEVERITY, CON_MED_DOSE, CON_MED_DOSE_FREQ, CON_MED_DOSE_UNITS, CON_MED_ROUTE, DOMAIN, INV_DRUG_DOSE, INV_DRUG_DOSE_FORM, INV_DRUG_DOSE_FREQ, INV_DRUG_DOSE_UNITS, INV_DRUG_ROUTE, SUBJECT_ID } from "../columns-constants";
 import { ClinicalCaseViewBase } from "../model/ClinicalCaseViewBase";
 import { addDataFromDmDomain, getNullOrValue } from "../data-preparation/utils";
-import { AE_TERM_FIELD, CON_MED_NAME_FIELD, INV_DRUG_NAME_FIELD, TRT_ARM_FIELD, VIEWS_CONFIG } from "../views-config";
+import { AE_END_DAY_FIELD, AE_START_DAY_FIELD, AE_TERM_FIELD, CON_MED_END_DAY_FIELD, CON_MED_NAME_FIELD, CON_MED_START_DAY_FIELD, INV_DRUG_END_DAY_FIELD, INV_DRUG_NAME_FIELD, INV_DRUG_START_DAY_FIELD, TRT_ARM_FIELD, VIEWS_CONFIG } from "../views-config";
 import { TIMELINES_VIEW_NAME } from "../view-names-constants";
 
 let multichoiceTableDict = { 'Adverse events': 'ae', 'Concomitant medication intake': 'cm', 'Drug exposure': 'ex' }
@@ -45,9 +45,11 @@ export class TimelinesView extends ClinicalCaseViewBase {
   }
 
   createView(): void {
-    let existingTables = study.domains.all().map(it => it.name);
-    this.filters = this.getFilterFields();
     this.links = this.getLinks();
+    let existingTables = study.domains.all()
+      .filter(it => !this.optDomainsWithMissingCols.includes(it.name))
+      .map(it => it.name);
+    this.filters = this.getFilterFields();
     Object.keys(this.filters).forEach(domain => this.filterColumns = this.filterColumns.concat(Object.keys(this.filters[domain])));
     this.multichoiceTableOptions = {};
     this.multichoiceTableOptions = Object.fromEntries(Object.entries(multichoiceTableDict).filter(([k, v]) => existingTables.includes(v)));
@@ -279,14 +281,14 @@ export class TimelinesView extends ClinicalCaseViewBase {
         })
 
         let acc2 = this.createAccWithTitle(`${this.name} patient`, `${this.resultTables.get('key', selectedInd[0])}`);
-  
+
         const eventTable = DG.DataFrame.fromObjects(eventArray);
         const eventGrid = eventTable.plot.grid();
         eventGrid.columns.byName('domain').width = 55;
         let col = eventGrid.columns.byName('event');
         col.width = 170;
         col.cellType = 'html';
-  
+
         eventGrid.onCellPrepare(function (gc) {
           if (gc.isTableCell && eventTable.get('Domain', gc.gridRow) === 'ae' && gc.gridColumn.name === 'Event') {
             let eventElement = ui.link(gc.cell.value, {}, '', { id: `${eventIndexesArray[gc.gridRow]}` });
@@ -302,14 +304,14 @@ export class TimelinesView extends ClinicalCaseViewBase {
           gc.style.element.style.paddingLeft = '7px';
           ui.tooltip.bind(gc.style.element, gc.cell.value);
         });
-  
+
         acc2.addPane('Events', () => {
           return ui.div(eventGrid.root);
         });
         const accPane = acc2.getPane('Events').root.getElementsByClassName('d4-accordion-pane-content')[0] as HTMLElement;
         accPane.style.margin = '0px';
         accPane.style.paddingLeft = '0px';
-  
+
         return acc2.root;
 
       }
@@ -317,7 +319,7 @@ export class TimelinesView extends ClinicalCaseViewBase {
 
   }
 
-  private getFilterFields(){
+  private getFilterFields() {
     return {
       ae: { 'AE severity': AE_SEVERITY, 'AE body system': AE_BODY_SYSTEM },
       cm: { 'Concomitant medication': VIEWS_CONFIG[TIMELINES_VIEW_NAME][CON_MED_NAME_FIELD] },
@@ -327,9 +329,24 @@ export class TimelinesView extends ClinicalCaseViewBase {
 
   private getLinks() {
     return {
-      ae: { key: SUBJECT_ID, start: AE_START_DAY, end: AE_END_DAY, event: VIEWS_CONFIG[TIMELINES_VIEW_NAME][AE_TERM_FIELD] },
-      cm: { key: SUBJECT_ID, start: CON_MED_START_DAY, end: CON_MED_END_DAY, event: VIEWS_CONFIG[TIMELINES_VIEW_NAME][CON_MED_NAME_FIELD] },
-      ex: { key: SUBJECT_ID, start: INV_DRUG_START_DAY, end: INV_DRUG_END_DAY, event: VIEWS_CONFIG[TIMELINES_VIEW_NAME][INV_DRUG_NAME_FIELD] }
+      ae: {
+        key: SUBJECT_ID, 
+        start: VIEWS_CONFIG[TIMELINES_VIEW_NAME][AE_START_DAY_FIELD],
+        end: VIEWS_CONFIG[TIMELINES_VIEW_NAME][AE_END_DAY_FIELD],
+        event: VIEWS_CONFIG[TIMELINES_VIEW_NAME][AE_TERM_FIELD]
+      },
+      cm: {
+        key: SUBJECT_ID,
+        start: VIEWS_CONFIG[TIMELINES_VIEW_NAME][CON_MED_START_DAY_FIELD],
+        end: VIEWS_CONFIG[TIMELINES_VIEW_NAME][CON_MED_END_DAY_FIELD],
+        event: VIEWS_CONFIG[TIMELINES_VIEW_NAME][CON_MED_NAME_FIELD]
+      },
+      ex: {
+        key: SUBJECT_ID,
+        start: VIEWS_CONFIG[TIMELINES_VIEW_NAME][INV_DRUG_START_DAY_FIELD],
+        end: VIEWS_CONFIG[TIMELINES_VIEW_NAME][INV_DRUG_END_DAY_FIELD],
+        event: VIEWS_CONFIG[TIMELINES_VIEW_NAME][INV_DRUG_NAME_FIELD]
+      }
     };
   }
 

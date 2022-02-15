@@ -17,7 +17,9 @@ export const SUBJ_REF_ENDT = 'RFENDTC';
 export const DEATH_DATE = 'DTHDTC';
 //ae
 export const AE_START_DAY = 'AESTDY';
+export const AE_START_DAY_CALCULATED = 'AESTDY_CALCULATED';
 export const AE_END_DAY = 'AEENDY';
+export const AE_END_DAY_CALCULATED = 'AEENDY_CALCULATED';
 export const AE_TERM = 'AETERM';
 export const AE_SEVERITY = 'AESEV';
 export const AE_BODY_SYSTEM = 'AEBODSYS';
@@ -31,7 +33,9 @@ export const AE_SEQ = 'AESEQ';
 export const AE_SERIOUS = 'AESER';
 //cm
 export const CON_MED_START_DAY = 'CMSTDY';
+export const CON_MED_START_DAY_CALCULATED = 'CMSTDY_CALCULATED';
 export const CON_MED_END_DAY = 'CMENDY';
+export const CON_MED_END_DAY_CALCULATED = 'CMENDY_CALCULATED';
 export const CON_MED_TRT = 'CMTRT';
 export const CON_MED_DECOD = 'CMDECOD';
 export const CON_MED_DOSE = 'CMDOSE';
@@ -40,7 +44,9 @@ export const CON_MED_DOSE_FREQ = 'CMDOSFRQ';
 export const CON_MED_ROUTE = 'CMROUTE';
 //ex
 export const INV_DRUG_START_DAY = 'EXSTDY';
+export const INV_DRUG_START_DAY_CALCULATED = 'EXSTDY_CALCULATED';
 export const INV_DRUG_END_DAY = 'EXENDY';
+export const INV_DRUG_END_DAY_CALCULATED = 'EXENDY_CALCULATED';
 export const INV_DRUG_NAME = 'EXTRT';
 export const INV_DRUG_ID = 'EXSPID';
 export const INV_DRUG_DOSE = 'EXDOSE';

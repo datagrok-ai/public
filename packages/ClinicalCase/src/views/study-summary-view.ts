@@ -11,7 +11,7 @@ import { ClinicalCaseViewBase } from "../model/ClinicalCaseViewBase";
 import $ from "cash-dom";
 import { checkDateFormat } from "../data-preparation/utils";
 import { checkColumnsAndCreateViewer, updateDivInnerHTML } from "./utils";
-import { TRT_ARM_FIELD, VIEWS_CONFIG } from "../views-config";
+import { AE_START_DAY_FIELD, TRT_ARM_FIELD, VIEWS_CONFIG } from "../views-config";
 
 
 export class StudySummaryView extends ClinicalCaseViewBase {
@@ -35,6 +35,11 @@ export class StudySummaryView extends ClinicalCaseViewBase {
   }
 
   createView() {
+    if (study.domains.ae != null) {
+      if (study.domains.ae.col(VIEWS_CONFIG[this.name][AE_START_DAY_FIELD])) {
+        study.domains.ae.columns.addNewCalculated('week', `floor(\${${VIEWS_CONFIG[this.name][AE_START_DAY_FIELD]}} / 7)`);
+      }
+    };
     this.studyId = study.domains.dm.get(STUDY_ID, 0);
     const errorsMap = this.createErrorsMap();
     if (errorsMap) {

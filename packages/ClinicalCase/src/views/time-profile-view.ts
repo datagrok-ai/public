@@ -2,7 +2,7 @@ import * as grok from 'datagrok-api/grok';
 import * as DG from "datagrok-api/dg";
 import * as ui from "datagrok-api/ui";
 import { study } from "../clinical-study";
-import { addDataFromDmDomain, convertColToString, createPivotedDataframe, createPivotedDataframeAvg, getUniqueValues, getVisitNamesAndDays } from '../data-preparation/utils';
+import { addDataFromDmDomain, createPivotedDataframeAvg, getUniqueValues, getVisitNamesAndDays } from '../data-preparation/utils';
 import { ETHNIC, LAB_RES_N, LAB_TEST, VISIT_DAY, VISIT_NAME, RACE, SEX, SUBJECT_ID, VS_TEST, VS_RES_N } from '../columns-constants';
 import { dynamicComparedToBaseline } from '../data-preparation/data-preparation';
 import { updateDivInnerHTML } from './utils';
@@ -44,7 +44,7 @@ export class TimeProfileView extends ClinicalCaseViewBase {
 
     createView(): void {
         this.splitBy = [ VIEWS_CONFIG[TIME_PROFILE_VIEW_NAME][TRT_ARM_FIELD], SEX, RACE, ETHNIC ].filter(it => study.domains.dm && study.domains.dm.columns.names().includes(it));
-        this.domains = this.domains.filter(it => study.domains[it] !== null);
+        this.domains = this.domains.filter(it => study.domains[it] !== null && !this.optDomainsWithMissingCols.includes(it));
         this.selectedDomain = this.domains[0];
         this.uniqueLabValues = Array.from(getUniqueValues(study.domains[this.selectedDomain], this.domainFields[this.selectedDomain]['test']));
         this.uniqueVisits = Array.from(getUniqueValues(study.domains[this.selectedDomain], VISIT_NAME));

@@ -1,11 +1,12 @@
 import * as ui from 'datagrok-api/ui';
 import * as DG from 'datagrok-api/dg';
-import {splitAlignedPeptides} from './utils/split-aligned';
+// import {splitAlignedPeptides} from './utils/split-aligned';
 import {tTest} from '@datagrok-libraries/statistics/src/tests';
 import {fdrcorrection} from '@datagrok-libraries/statistics/src/multiple-tests';
 import {StringDictionary} from '@datagrok-libraries/utils/src/type-declarations';
 import {ChemPalette} from './utils/chem-palette';
 import {setAARRenderer} from './utils/cell-renderer';
+import {PeptidesController} from './peptides';
 
 const cp = new ChemPalette('grok');
 
@@ -93,33 +94,33 @@ function sortSourceGrid(sourceGrid: DG.Grid) {
   }
 }
 
-export async function scaleActivity(
-  activityScaling: string, activityColumn: string, activityColumnScaled: string, df: DG.DataFrame,
-): Promise<[DG.DataFrame, string]> {
-  // const df = sourceGrid.dataFrame!;
-  const tempDf = df.clone(df.filter, [activityColumn]);
+// export async function scaleActivity(
+//   activityScaling: string, activityColumn: string, activityColumnScaled: string, df: DG.DataFrame,
+// ): Promise<[DG.DataFrame, string]> {
+//   // const df = sourceGrid.dataFrame!;
+//   const tempDf = df.clone(null, [activityColumn]);
 
-  let formula = '${' + activityColumn + '}';
-  let newColName = activityColumn;
-  switch (activityScaling) {
-  case 'none':
-    break;
-  case 'lg':
-    formula = `Log10(${formula})`;
-    newColName = `Log10(${newColName})`;
-    break;
-  case '-lg':
-    formula = `-1*Log10(${formula})`;
-    newColName = `-Log10(${newColName})`;
-    break;
-  default:
-    throw new Error(`ScalingError: method \`${activityScaling}\` is not available.`);
-  }
+//   let formula = '${' + activityColumn + '}';
+//   let newColName = activityColumn;
+//   switch (activityScaling) {
+//   case 'none':
+//     break;
+//   case 'lg':
+//     formula = `Log10(${formula})`;
+//     newColName = `Log10(${newColName})`;
+//     break;
+//   case '-lg':
+//     formula = `-1*Log10(${formula})`;
+//     newColName = `-Log10(${newColName})`;
+//     break;
+//   default:
+//     throw new Error(`ScalingError: method \`${activityScaling}\` is not available.`);
+//   }
 
-  await (tempDf.columns as DG.ColumnList).addNewCalculated(activityColumnScaled, formula);
+//   await (tempDf.columns as DG.ColumnList).addNewCalculated(activityColumnScaled, formula);
 
-  return [tempDf, newColName];
-}
+//   return [tempDf, newColName];
+// }
 
 async function calculateStatistics(
   matrixDf: DG.DataFrame,
@@ -456,7 +457,7 @@ export async function describe(
   let splitSeqDf: DG.DataFrame | undefined;
   let invalidIndexes: number[];
   const col: DG.Column = (df.columns as DG.ColumnList).bySemType('alignedSequence')!;
-  [splitSeqDf, invalidIndexes] = splitAlignedPeptides(col);
+  [splitSeqDf, invalidIndexes] = PeptidesController.splitAlignedPeptides(col);
   splitSeqDf.name = 'Split sequence';
 
   const positionColumns = (splitSeqDf.columns as DG.ColumnList).names();
@@ -476,7 +477,8 @@ export async function describe(
 
   sortSourceGrid(sourceGrid);
 
-  const [scaledDf, newColName] = await scaleActivity(activityScaling, activityColumn, activityColumnScaled, df);
+  const [scaledDf, newColName] = await PeptidesController.scaleActivity(
+    activityScaling, activityColumn, activityColumnScaled, df);
   //TODO: make another func
   const scaledCol = scaledDf.getCol(activityColumnScaled);
   const oldScaledCol = df.getCol(activityColumnScaled);

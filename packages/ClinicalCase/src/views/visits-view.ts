@@ -3,14 +3,15 @@ import * as DG from "datagrok-api/dg";
 import * as ui from "datagrok-api/ui";
 import { study } from "../clinical-study";
 import { updateDivInnerHTML } from './utils';
-import { createPivotedDataframe, filterNulls, getVisitNamesAndDays, addDataFromDmDomain, dataframeContentToRow } from '../data-preparation/utils';
-import { AE_START_DAY, CON_MED_START_DAY, LAB_RES_N, LAB_TEST, SUBJECT_ID, VISIT_DAY, VISIT_NAME, VISIT_START_DATE, VS_RES_N, VS_TEST } from '../columns-constants';
+import { createPivotedDataframe, getVisitNamesAndDays, addDataFromDmDomain } from '../data-preparation/utils';
+import { LAB_RES_N, LAB_TEST, SUBJECT_ID, VISIT_DAY, VISIT_NAME, VISIT_START_DATE, VS_RES_N, VS_TEST } from '../columns-constants';
 import { PatientVisit } from '../model/patient-visit';
 import { StudyVisit } from '../model/study-visit';
 import { _package } from '../package';
 import { ClinicalCaseViewBase } from '../model/ClinicalCaseViewBase';
-import { AE_TERM_FIELD, CON_MED_NAME_FIELD, INV_DRUG_NAME_FIELD, TRT_ARM_FIELD, VIEWS_CONFIG } from '../views-config';
+import { AE_START_DAY_FIELD, AE_TERM_FIELD, CON_MED_NAME_FIELD, CON_MED_START_DAY_FIELD, INV_DRUG_NAME_FIELD, TRT_ARM_FIELD, VIEWS_CONFIG } from '../views-config';
 import { VISITS_VIEW_NAME } from '../view-names-constants';
+import { DOMAINS_COLOR_PALETTE } from '../constants';
 
 export class VisitsView extends ClinicalCaseViewBase {
 
@@ -22,7 +23,7 @@ export class VisitsView extends ClinicalCaseViewBase {
     studyVisit = new StudyVisit();
     totalVisits = {};
     proceduresAtVisit: any;
-    eventsSinceLastVisit = { 'ae': { column: AE_START_DAY }, 'cm': { column: CON_MED_START_DAY } };
+    eventsSinceLastVisit: any;
     subjSet = new Set();
     existingDomains: string[];
     selectedDomain: string;
@@ -44,6 +45,7 @@ export class VisitsView extends ClinicalCaseViewBase {
 
     createView(): void {
         this.proceduresAtVisit = this.getProceduresAtVisitDict();
+        this.eventsSinceLastVisit = this.eventsSinceLastVisitCols();
         this.existingDomains = Object.keys(this.proceduresAtVisit)
             .concat(Object.keys(this.eventsSinceLastVisit))
             .filter(it => study.domains[it] !== null);
@@ -98,6 +100,10 @@ export class VisitsView extends ClinicalCaseViewBase {
         });
     }
 
+    private eventsSinceLastVisitCols() {
+        return { 'ae': { column: VIEWS_CONFIG[this.name][AE_START_DAY_FIELD] }, 'cm': { column: VIEWS_CONFIG[this.name][CON_MED_START_DAY_FIELD] } };
+    }
+
     private visitsConfig() {
         let visitsConfig = ui.iconFA('cog', () => {
             let div = ui.div();
@@ -149,10 +155,10 @@ export class VisitsView extends ClinicalCaseViewBase {
     }
 
     private assignColorsToDomains() {
-        this.existingDomains.forEach((domain, index) => {
+        this.existingDomains.forEach((domain) => {
             this.proceduresAtVisit[domain] ?
-                this.proceduresAtVisit[domain]['color'] = DG.Color.toRgb(DG.Color.categoricalPalette[index]) :
-                this.eventsSinceLastVisit[domain]['color'] = DG.Color.toRgb(DG.Color.categoricalPalette[index]);
+                this.proceduresAtVisit[domain]['color'] = DG.Color.toRgb(DOMAINS_COLOR_PALETTE[domain]) :
+                this.eventsSinceLastVisit[domain]['color'] = DG.Color.toRgb(DOMAINS_COLOR_PALETTE[domain]);
         })
     }
 

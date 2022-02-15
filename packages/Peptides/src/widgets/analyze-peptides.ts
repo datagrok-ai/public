@@ -1,10 +1,9 @@
 import * as grok from 'datagrok-api/grok';
 import * as ui from 'datagrok-api/ui';
 import * as DG from 'datagrok-api/dg';
-import {Peptides} from '../peptides';
+import {PeptidesController} from '../peptides';
 import '../styles.css';
 import {StringDictionary} from '@datagrok-libraries/utils/src/type-declarations';
-import {scaleActivity} from '../describe';
 
 /**
  * Peptide analysis widget.
@@ -30,27 +29,11 @@ export async function analyzePeptidesWidget(
   const histogramHost = ui.div([], {id: 'pep-hist-host'});
 
   const activityScalingMethod = ui.choiceInput(
-    'Scaling',
-    'none',
-    ['none', 'lg', '-lg'],
+    'Scaling', 'none', ['none', 'lg', '-lg'],
     async (currentMethod: string) => {
       const currentActivityCol = activityColumnChoice.value.name;
-      // const tempDf = currentDf.clone(currentDf.filter, [currentActivityCol]);
-      // const scaledActivityColumnName = 'scaledActivity';
-      // //TODO: merge with scaling in describe
-      // switch (currentMethod) {
-      // case 'lg':
-      //   await tempDf.columns.addNewCalculated(scaledActivityColumnName, 'Log10(${' + currentActivityCol + '})');
-      //   break;
-      // case '-lg':
-      //   await tempDf.columns.addNewCalculated(scaledActivityColumnName, '-1*Log10(${' + currentActivityCol + '})');
-      //   break;
-      // default:
-      //   await tempDf.columns.addNewCalculated(scaledActivityColumnName, '${' + currentActivityCol + '}');
-      //   break;
-      // }
 
-      [tempDf, newScaledColName] = await scaleActivity(
+      [tempDf, newScaledColName] = await PeptidesController.scaleActivity(
         currentMethod, currentActivityCol, `${currentActivityCol}Scaled`, currentDf);
 
       const hist = tempDf.plot.histogram({
@@ -93,7 +76,6 @@ export async function analyzePeptidesWidget(
         'scaling': activityScalingMethod.value,
       };
 
-
       const scaledCol = tempDf.getCol(activityColumnScaled);
       (currentDf.columns as DG.ColumnList).add(scaledCol);
       tableGrid.col(activityColumnScaled)!.name = newScaledColName;
@@ -102,8 +84,8 @@ export async function analyzePeptidesWidget(
         tableGrid.col(activityColumn)!.name = `~${activityColumn}`;
       tableGrid.columns.setOrder([newScaledColName]);
 
-      const peptides = new Peptides();
-      await peptides.init(tableGrid, view, currentDf, options, col, originalDfColumns);
+      const peptides = PeptidesController.getInstance(currentDf);
+      await peptides.init(tableGrid, view, options, col, originalDfColumns);
     } else
       grok.shell.error('The activity column must be of floating point number type!');
     progress.close();

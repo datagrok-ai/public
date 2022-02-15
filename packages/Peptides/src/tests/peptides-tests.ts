@@ -1,9 +1,9 @@
 import {after, before, category, test} from '@datagrok-libraries/utils/src/test';
 import {StringDictionary} from '@datagrok-libraries/utils/src/type-declarations';
-import {splitAlignedPeptides} from '../utils/split-aligned';
+// import {splitAlignedPeptides} from '../utils/split-aligned';
 import * as DG from 'datagrok-api/dg';
 import * as grok from 'datagrok-api/grok';
-import {Peptides} from '../peptides';
+import {PeptidesController} from '../peptides';
 import {describe} from '../describe';
 import {analyzePeptidesWidget} from '../widgets/analyze-peptides';
 import {manualAlignmentWidget} from '../widgets/manual-alignment';
@@ -52,7 +52,7 @@ category('peptides', async () => {
   });
 
   test('utils.split-sequence', async () => {
-    splitAlignedPeptides(peptidesDf.getCol('AlignedSequence'));
+    PeptidesController.splitAlignedPeptides(peptidesDf.getCol('AlignedSequence'));
   });
 
   test('describe', async () => {
@@ -61,9 +61,9 @@ category('peptides', async () => {
       DG.BitSet.create(peptidesDf.rowCount, (i) => i % 2 === 0), true);
   });
 
-  test('Peptides-class', async () => {
-    const peptides = new Peptides();
-    peptides.init(peptidesGrid, pepView, peptidesDf, options, asCol, peptidesDf.columns.names());
+  test('Peptides-controller', async () => {
+    const peptides = PeptidesController.getInstance(peptidesDf);
+    peptides.init(peptidesGrid, pepView, options, asCol, peptidesDf.columns.names());
   });
 
   test('panel.peptides', async () => {

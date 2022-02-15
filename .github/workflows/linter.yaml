@@ -14,7 +14,6 @@ jobs:
         with:
           # Full git history is needed to get a proper list of changed files within `super-linter`
           fetch-depth: 0
-
       - name: Lint Code Base
         uses: github/super-linter@v4
         env:
@@ -28,8 +27,8 @@ jobs:
           JSCPD_CONFIG_FILE: .jscpd.json
           MARKDOWN_CONFIG_FILE: .markdownlint.yaml
           NATURAL_LANGUAGE_CONFIG_FILE: .textlintrc
-          JAVASCRIPT_ES_CONFIG_FILE: ../../tools/package-template/.eslintrc.json
-          TYPESCRIPT_ES_CONFIG_FILE: ../../tools/package-template/.eslintrc.json
+          JAVASCRIPT_ES_CONFIG_FILE: .eslintrc.json
+          TYPESCRIPT_ES_CONFIG_FILE: .eslintrc.json
           VALIDATE_ALL_CODEBASE: false
           IGNORE_GITIGNORED_FILES: true
           VALIDATE_BASH: true

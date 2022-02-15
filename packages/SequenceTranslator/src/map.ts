@@ -451,12 +451,12 @@ export const map: {[synthesizer: string]:
             'normalized': 'rU',
             'SMILES': 'OC[C@H]1O[C@@H](N2C=CC(=O)NC2(=O))[C@H](OC)[C@@H]1OP(=O)(S)O',
           },
-          // 'g': {
-          //   'name': '2\'OMe-rG-ps',
-          //   'weight': 375.31,
-          //   'normalized': 'rG',
-          //   'SMILES': 'OC[C@H]1O[C@@H](N2C3N=C(N)NC(=O)C=3N=C2)[C@H](OC)[C@@H]1OP(=O)(S)O',
-          // },
+          'g': {
+            'name': '2\'OMe-rG-ps',
+            'weight': 375.31,
+            'normalized': 'rG',
+            'SMILES': 'OC[C@H]1O[C@@H](N2C3N=C(N)NC(=O)C=3N=C2)[C@H](OC)[C@@H]1OP(=O)(S)O',
+          },
           'f': {
             'name': '2\'OMe-rC-ps',
             'weight': 335.28,
