@@ -46,7 +46,6 @@ jobs:
           VALIDATE_HTML: true
           VALIDATE_JAVA: true
           VALIDATE_JAVASCRIPT_ES: true
-          VALIDATE_JAVASCRIPT_STANDARD: true
           VALIDATE_JSCPD: true
           VALIDATE_JSON: true
           VALIDATE_JSX: true
