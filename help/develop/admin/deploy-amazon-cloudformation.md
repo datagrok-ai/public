@@ -79,7 +79,10 @@ More information about Datagrok design and components:
         3. `ArnDockerHubCredential`: Specify AWS Secret Manager ARN for Docker Hub authorization from 3rd prerequisites
            step.
 
-        4. All other parameters are for Datagrok Docker images tags. The default value is `latest`.
+        4. `CreateDemoData`: Datagrok provides demo databases with demo data for the full experience. Choose `true` to
+           create demo databases near Datagrok.
+
+        5. All other parameters are for Datagrok Docker images tags. The default value is `latest`.
             1. [DatagrokVersion](https://hub.docker.com/r/datagrok/datagrok)
             2. [GrokComputeVersion](https://hub.docker.com/r/datagrok/grok_connect)
             3. [H2oVersion](https://hub.docker.com/r/datagrok/h2o)

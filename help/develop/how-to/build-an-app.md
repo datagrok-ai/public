@@ -236,7 +236,7 @@ proprietary. Or, sometimes your application is in public domain, but the custome
 
 Usually it isn't desired to handle customers' specifics in the shared application code. To handle these cases, we
 recommend you to use Datagrok's namespaces (also called "Root Projects"). As described below, this technique will
-provide for a unique `<NAMESPACE>` within one Datagrok instance, so that in your application code you'd now _always_
+provide for a unique `<NAMESPACE>` within one Datagrok instance, so that in your application code you'd now *always*
 refer to your `<CONNECTION>`
 as `<NAMESPACE>::<CONNECTION>`, in addition to always available `<PACKAGE>::<CONNECTION>`
 and `<YOUR_NAME>::<CONNECTION>`.
@@ -248,7 +248,7 @@ a namespace for it.
 1. Right-click on the connection and select `Add to Project`.
 2. Proceed to the `Projects` section in the Datagrok's left sidebar. Find that the selected connection is now part of
    the `Scratchpad` project. This is an "unsaved" project, which should save with the `UPLOAD` button.
-   _Note:_ alternatively to p.1, you could drag-and-drop the connection onto the `Projects` list.
+   *Note:* alternatively to p.1, you could drag-and-drop the connection onto the `Projects` list.
 3. Give the project a name, say, `NewNamespace`, hit `Ok`. Share it to the groups and users of interest.
 4. Now, without leaving the `Projects` pane, left-click on the project's name, `NewNamespace`. You'd see the property
    panel on the right. Find there `Convert to root project` command and left-click on it. Verify the status nearby the
@@ -422,7 +422,7 @@ available in Datagrok as user data storage — a Datagrok server storage which c
 which these entries can later be retrieved.
 
 The data resides in the storage as a set of stores, each identified by a unique name, with a key-value map placed in
-each store. There are several _asyncronous_ methods for storing and retrieving data from the user storage, such
+each store. There are several *asyncronous* methods for storing and retrieving data from the user storage, such
 as `grok.dapi.userDataStorage.postValue`
 for posting a single value, or `grok.dapi.userDataStorage.get` for getting the whole map. Learn of all these
 methods [here](user-data-storage.md), also check a complete example

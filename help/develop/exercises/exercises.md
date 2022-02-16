@@ -157,11 +157,11 @@ You will learn: how to write semantic type detectors, how to develop context-spe
 
 ### Scripting with server functions
 
-_Prerequisites:_ basic Python knowledge.
+*Prerequisites:* basic Python knowledge.
 
-_Details:_ [Scripting](../../compute/scripting.md), [Dev Meeting 1 | First-class functions][015]
+*Details:* [Scripting](../../compute/scripting.md), [Dev Meeting 1 | First-class functions][015]
 
-_You will learn:_ how to create and invoke Datagrok scripts in data science languages like R and Python.
+*You will learn:* how to create and invoke Datagrok scripts in data science languages like R and Python.
 
 In this exercise, we will count occurrences of a given subsequence in a nucleotide sequence, using Python.
 
@@ -214,9 +214,9 @@ In this exercise, we will count occurrences of a given subsequence in a nucleoti
 
 ### Modifying dataframes with scripts
 
-_Prerequisites:_ basic Python knowledge.
+*Prerequisites:* basic Python knowledge.
 
-_You will learn:_ how to manipulate tables, which we usually call dataframes, using a server scripting language, expand
+*You will learn:* how to manipulate tables, which we usually call dataframes, using a server scripting language, expand
 dataframes with newly computed values, and modify the dataframes.
 
 In the previous exercise we learnt a fast method to apply a function to a table and produce a new column in it. Another
@@ -238,14 +238,14 @@ repeat what we've achieved in the last point of the previous exercise, now with 
 
    This function takes as an input a dataframe with a column containing nucleotide sequences, named as a value of
    `columnName`, a nucleotide subsequence `subsequence` being sought, and outputs an input dataframe with a new column
-   _appended_ to it, containing numbers of subsequence occurrences in the nucleotide sequences. Say, for a table on the
+   *appended* to it, containing numbers of subsequence occurrences in the nucleotide sequences. Say, for a table on the
    left the following table on the right should be produced for a subsequence `acc` being sought:
 
     <table>
     <tr><td>
 
    | GenBank    | ID         |
-                                                            |------------|------------|
+   |------------|------------|
    | MT079845.1 | ctacaagaga |
    | MT079851.1 | attaaaggtt |
    | MT326187.1 | gttctctaaa |
@@ -253,7 +253,7 @@ repeat what we've achieved in the last point of the previous exercise, now with 
     </td><td>
 
    | GenBank    | ID         | N(acc) |
-                                                            |------------|------------|--------|
+   |------------|------------|--------|
    | MT079845.1 | ctaccagaga | 1      |
    | MT079851.1 | attaaaggtt | 0      |
    | MT326187.1 | gttctctacc | 1      |
@@ -263,7 +263,7 @@ repeat what we've achieved in the last point of the previous exercise, now with 
 
 2. Implement a function `CountSubsequencePythonDataframe`. Assume the `result` is a Python dataframe with just this one
    column `columnName`. After the `result` column is computed and returned from the server to the client, based on
-   the `join` instruction, `result` will be  _appended_ to the existing input dataframe `sequences`. As this is
+   the `join` instruction, `result` will be  *appended* to the existing input dataframe `sequences`. As this is
    performed purely on the client, we save the bandwidth without needing to return a copy of a dataframe which we
    already passed to the server.
     * Use Pandas dataframes as `pd` to access the input dataframe and create an output dataframe
@@ -290,9 +290,9 @@ repeat what we've achieved in the last point of the previous exercise, now with 
 
 ### Scripting with client functions
 
-_Prerequisites:_ basic JavaScript knowledge.
+*Prerequisites:* basic JavaScript knowledge.
 
-_You will learn:_ how to create and invoke Datagrok JavaScript scripts.
+*You will learn:* how to create and invoke Datagrok JavaScript scripts.
 
 1. Go to `Functions | Scripts` and hit `New JavaScript Script`.
 2. Implement the function `CountSubsequenceJS` in JavaScript, which does the same as
@@ -315,12 +315,12 @@ fetches back the result to the browser.
 
 ### Composing a JavaScript and a Python function
 
-_You will learn:_ how to invoke arbitrary Datagrok functions in JavaScript and augment tables.
+*You will learn:* how to invoke arbitrary Datagrok functions in JavaScript and augment tables.
 
 1. Open Datagrok and navigate to `Functions | Scripts | New Python Script`.
 
 3. Let's create a wrapping function `CountSubsequenceTableAugment` in JavaScript which would do all the technical
-   job. We would use it to give the new column with counts a proper name, and to _augment_ the input dataframe
+   job. We would use it to give the new column with counts a proper name, and to *augment* the input dataframe
    with the newly computed column. Make it look like this:
 
     ```javascript
@@ -440,12 +440,12 @@ nested script.
 
 ## Querying databases
 
-_Prerequisites:_ basic SQL knowledge
+*Prerequisites:* basic SQL knowledge
 
-_Details:_ [Connecting to Databases](https://www.youtube.com/watch?v=dKrCk38A1m8&t=1048s),
+*Details:* [Connecting to Databases](https://www.youtube.com/watch?v=dKrCk38A1m8&t=1048s),
 [How to Access Data](../how-to/access-data.md)
 
-_Note:_ Editing an existing data query requires the respective access permission. You might need to request one.
+*Note:* Editing an existing data query requires the respective access permission. You might need to request one.
 
 In this exercise, we will work with a `northwind` PostgreSQL database (in case the name sounds familiar, this is a demo
 database that Microsoft often uses for showcasing its technology). The database is already deployed and is accessible
@@ -499,9 +499,9 @@ from our server.
 
 ## Creating a scripting viewer
 
-_Prerequisites:_ basic Python knowledge, [matplotlib](https://matplotlib.org/) or a similar library
+*Prerequisites:* basic Python knowledge, [matplotlib](https://matplotlib.org/) or a similar library
 
-_Details:_ [Scripting](../../compute/scripting.md)
+*Details:* [Scripting](../../compute/scripting.md)
 , [Scripting Viewer](../../visualize/viewers/scripting-viewer.md),
 [Creating a scripting viewer (video)](https://www.youtube.com/embed/jHRpOnhBAz4).
 
@@ -514,7 +514,7 @@ We don't know at which starting point each nucleotide sequence was cut: it could
 or one-third or two-third of a triplet. Therefore, we'd count in our statistics for all three possible cuts, starting
 the reading frame off at offsets 0, 1, and 2 from the beginning of the nucleotide sequence.
 
-Say, we are given a sequence `TTTAATTACAGACCTGAA`. We start to count triplets _without overlap_ from an offset 0 first,
+Say, we are given a sequence `TTTAATTACAGACCTGAA`. We start to count triplets *without overlap* from an offset 0 first,
 getting: `TTT`, `AAT`, `TAC`, `...`, `GAA`. Then we move to the offset 1, getting: `TTA`, `...`, `CTG`. Lastly, we move
 to the offset 2 and get: `TAA`, `...`, `TGA`. In the histogram we'd count for all these triplets.
 
@@ -557,10 +557,10 @@ First, let's explore how scripting viewer works.
 
 ## Transforming dataframes
 
-_Prerequisites:_ exercises ["Setting up the environment"](#setting-up-the-environment),
+*Prerequisites:* exercises ["Setting up the environment"](#setting-up-the-environment),
 ["Semantic types"](#semantic-types).
 
-_You will learn:_ how to join and union dataframes using the knowledge of semantic types, and display the result.
+*You will learn:* how to join and union dataframes using the knowledge of semantic types, and display the result.
 
 1. Make sure the [prerequisites](#setting-up-the-environment) are prepared on your machine, including the package
    called `<yourFirstName>-sequence` Assure the package carries a relevant semantic type detector from the
@@ -584,7 +584,7 @@ _You will learn:_ how to join and union dataframes using the knowledge of semant
           dataframe's [`.append`](https://public.datagrok.ai/js/samples/data-frame/append) method
         * a new column `Counts` appears in `df`, which contains:
             * for each row `R` from `df1`, `R.counts` is a number of matches of all the subsequences in `R.col1` of
-              length `N`in _all_ the sequences of `col2`
+              length `N`in *all* the sequences of `col2`
             * symmetrically, same for each row from `df2` — consider this as a fuzzy, programmatic JOIN of the two
               dataframes;
               use[`df.columns.addNew`](https://public.datagrok.ai/js/samples/data-frame/modification/manipulate)
@@ -606,14 +606,14 @@ _You will learn:_ how to join and union dataframes using the knowledge of semant
 
 ## Custom cell renderers with 3-rd party js libraries
 
-_You will learn:_ reuse 3-rd party JavaScript libraries in your Datagrok packages; render cells by semantic types.
+*You will learn:* reuse 3-rd party JavaScript libraries in your Datagrok packages; render cells by semantic types.
 
-_Prerequisites:_ exercises ["Setting up the environment"](#setting-up-the-environment),
+*Prerequisites:* exercises ["Setting up the environment"](#setting-up-the-environment),
 ["Semantic types"](#semantic-types).
 
 1. Navigate into the folder with your `<yourFirstName>-sequence` package created in
    ["Setting up the environment"](#setting-up-the-environment).
-2. Let's add a custom cell renderer for a _nucleotide sequence box_ to represent our sequences in high density on the
+2. Let's add a custom cell renderer for a *nucleotide sequence box* to represent our sequences in high density on the
    screen. We need to render each nucleotide sequence with a monospace font in small letter sizing, fitting into a
    rectangular cell area and adding ellipsis to the end of the string if it won't fit. This is a basis for a very useful
    nucleotide sequence representation in bioscience applications. Let's use a 3-rd party JavaScript
@@ -672,7 +672,7 @@ _Prerequisites:_ exercises ["Setting up the environment"](#setting-up-the-enviro
 
 ## Accessing web services with OpenAPI
 
-_Details:_ [OpenAPI access](../../access/open-api.md)
+*Details:* [OpenAPI access](../../access/open-api.md)
 
 Web services often provide their API specs in an [OpenAPI (Swagger)](../../access/open-api.md) format in a JSON or a
 yaml file. Because OpenAPI spec file is standardized, the API may now be directly loaded and later queried. Datagrok

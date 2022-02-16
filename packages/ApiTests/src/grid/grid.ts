@@ -54,17 +54,17 @@ category('Grid', () => {
 
         //categorical RACE column check
         let raceTags:string[] = Array.from(demog.col('race')!.tags);
-        if (raceTags[0][0] != '.color-coding-categorical' || raceTags[0][1] != '{"Asian":4278190335,"Black":4286578816,"Caucasian":4278547786,"Other":4293188935}')
+        if (!hasTag(raceTags,'.color-coding-categorical') || !hasTag(raceTags,'{"Asian":4278190335,"Black":4286578816,"Caucasian":4278547786,"Other":4293188935}'))
             throw 'Categorical Color Coding error'
 
         //numerical HEIGHT column check for Conditional ColorCoding
         let heightTags:string[] = Array.from(demog.col('height')!.tags);
-        if (heightTags[0][0] != '.color-coding-type' || heightTags[0][1] != 'Conditional' || heightTags[1][0] != '.color-coding-conditional' || heightTags[1][1] != '{"20-170":"#00FF00","170-190":"#220505"}')
+        if (!hasTag(heightTags,'.color-coding-type') || !hasTag(heightTags,'Conditional') || !hasTag(heightTags,'.color-coding-conditional') || !hasTag(heightTags,'{"20-170":"#00FF00","170-190":"#220505"}'))
             throw 'Conditional Color Coding error'
 
         //numerical AGE column check for Linear ColorCoding
         let ageTags:string[] = Array.from(demog.col('age')!.tags);
-        if (ageTags[0][0] != '.color-coding-type' || ageTags[0][1] != 'Linear' || ageTags[1][0] != '.color-coding-linear' || ageTags[1][1] != '[4294944000, 4278255360]')
+        if (!hasTag(ageTags,'.color-coding-type') || !hasTag(ageTags,'Linear') || !hasTag(ageTags,'.color-coding-linear') || !hasTag(ageTags,'[4294944000, 4278255360]'))
             throw 'Linear Color Coding error'
     });
 
@@ -88,7 +88,7 @@ category('Grid', () => {
 
         let siteTags:string[] = Array.from(demog.col('site')!.tags);
 
-        if (siteTags[0][0] != '.choices' || siteTags[0][1] != '["New York", "Buffalo"]' || siteTags[1][0] !='.auto-choices' || siteTags[1][1] !='New York')
+        if (!hasTag(siteTags,'.choices') || !hasTag(siteTags,'["New York", "Buffalo"]') || !hasTag(siteTags,'.auto-choices') || !hasTag(siteTags,'New York'))
             throw 'Column Controlled Values (Choices) error'
     });
 
@@ -96,5 +96,16 @@ category('Grid', () => {
         v.close();
         grok.shell.closeAll();
     });
+
+    function hasTag(colTags:string[], colTagValue:string): boolean {
+        for (let i = 0; i < colTags.length; i++) {
+            for (let j = 0; j < colTags[i].length; j++) {
+                console.log('TAG Value: ' + colTags[i][j]);
+                if (colTags[i][j] == colTagValue)
+                    return true;
+            }
+        }
+        return false;
+    }
 
 });

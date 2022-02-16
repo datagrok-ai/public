@@ -206,13 +206,13 @@ Python:
 
 Tooltip-related settings reside under the **Tooltip** submenu:
 
-|                         |                                                                                  |
-|-------------------------|----------------------------------------------------------------------------------|
-| Hide                    | Hide the tooltip                                                                 |
-| Use as Group Tooltip    | Use this viewer in [tooltips that correspond to groups of rows](#group-tooltips) |
-| Remove Group Tooltip    | Stop using this viewer as a group tooltip                                        |
-| Set Default Tooltip...  | Set row tooltip settings for all viewers associated with the data frame          |
-| Set <Viewer> Tooltip... | Set a tooltip template for this specific viewer                                  |
+|                           |                                                                                  |
+|---------------------------|----------------------------------------------------------------------------------|
+| Hide                      | Hide the tooltip                                                                 |
+| Use as Group Tooltip      | Use this viewer in [tooltips that correspond to groups of rows](#group-tooltips) |
+| Remove Group Tooltip      | Stop using this viewer as a group tooltip                                        |
+| Set Default Tooltip...    | Set row tooltip settings for all viewers associated with the data frame          |
+| Set `<Viewer>` Tooltip... | Set a tooltip template for this specific viewer                                  |
 
 See also: [setting tooltips programmatically](https://public.datagrok.ai/js/samples/ui/viewers/viewew-tooltips)
 

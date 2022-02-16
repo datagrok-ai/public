@@ -100,6 +100,12 @@ More information about Datagrok design and components:
 
 1. Download Docker Compose yaml
    file: [link](https://github.com/datagrok-ai/public/blob/master/docker/ecs.datagrok.docker-compose.yaml).
+   > **_NOTE:_**  Datagrok provides demo databases with demo data for the full experience.
+   > If you want to try datagrok with demo data choose
+   > [Docker Compose Demo file](https://github.com/datagrok-ai/public/blob/master/docker/ecs.datagrok.demo.docker-compose.yaml)
+   > instead. Rename downloaded file to `ecs.datagrok.docker-compose.yaml` to use commands in the instruction below
+   > without any further changes
+
 2. Replace `GROK_PARAMETERS` variables in `ecs.datagrok.docker-compose.yaml` with actual values or use environment
    variables automatic substitution
 
