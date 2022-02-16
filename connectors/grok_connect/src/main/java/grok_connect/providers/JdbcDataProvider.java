@@ -39,7 +39,7 @@ public abstract class JdbcDataProvider extends DataProvider {
         return defaultConnectionProperties(conn);
     }
 
-    public boolean isParametrized() {
+    public boolean autoInterpolation() {
         return true;
     }
 
@@ -63,7 +63,7 @@ public abstract class JdbcDataProvider extends DataProvider {
         String res;
         try {
             sqlConnection = getConnection(conn);
-            if (sqlConnection.isClosed())
+            if (sqlConnection.isClosed() || !sqlConnection.isValid(30))
                 res = "Connection is not available";
             else
                 res = DataProvider.CONN_AVAILABLE;
@@ -117,7 +117,7 @@ public abstract class JdbcDataProvider extends DataProvider {
         if (dataQuery.inputParamsCount() > 0) {
             query = convertPatternParamsToQueryParams(queryRun, query);
 
-            if (isParametrized()) {
+            if (autoInterpolation()) {
                 // Parametrized func
                 StringBuilder queryBuffer = new StringBuilder();
                 List<String> names = getParameterNames(query, dataQuery, queryBuffer);
@@ -160,56 +160,7 @@ public abstract class JdbcDataProvider extends DataProvider {
                     resultSet = statement.getResultSet();
                 providerManager.queryMonitor.removeStatement(mainCallId);
             } else {
-                Pattern pattern = Pattern.compile("(?m)@(\\w+)");
-                // Put parameters into func
-                Matcher matcher = pattern.matcher(query);
-                StringBuilder queryBuffer = new StringBuilder();
-                int idx = 0;
-                while (matcher.find()) {
-                    String name = matcher.group().substring(1);
-                    queryBuffer.append(query.substring(idx, matcher.start()));
-                    for (FuncParam param: dataQuery.getInputParams()) {
-                        if (param.name.equals(name)) {
-                        System.out.println(param.propertyType);
-                        System.out.println(param.propertySubType);
-                            switch (param.propertyType) {
-                                case Types.DATE_TIME:
-                                    queryBuffer.append(castParamValueToSqlDateTime(param));
-                                    break;
-                                case Types.BOOL:
-                                    queryBuffer.append(((boolean) param.value) ? "1=1" : "1=0");
-                                    break;
-                                case Types.STRING: //todo: support escaping
-                                    queryBuffer.append("'");
-                                    queryBuffer.append(param.value.toString());
-                                    queryBuffer.append("'");
-                                    break;
-                                case Types.LIST: //todo: extract submethod
-                                    Object[] value = ((Object[])param.value);
-                                     for (int i = 0; i < value.length; i++) {
-                                      switch (param.propertySubType) {
-                                        case Types.STRING:
-                                            queryBuffer.append("'");
-                                            queryBuffer.append(value[i].toString());
-                                            queryBuffer.append("'");
-                                            break;
-                                        default:
-                                            queryBuffer.append(value[i].toString());
-                                        }
-                                        if (i < value.length - 1)
-                                            queryBuffer.append(",");
-                                      }
-                                    break;
-                                default:
-                                    queryBuffer.append(param.value.toString());
-                            }
-                            break;
-                        }
-                    }
-                    idx = matcher.end();
-                }
-                queryBuffer.append(query.substring(idx, query.length()));
-                query = queryBuffer.toString();
+                query = manualQueryInterpolation(query, dataQuery);
 
                 Statement statement = connection.createStatement();
                 providerManager.queryMonitor.addNewStatement(mainCallId, statement);
@@ -236,6 +187,64 @@ public abstract class JdbcDataProvider extends DataProvider {
             providerManager.queryMonitor.removeStatement(mainCallId);
         }
         return resultSet;
+    }
+
+    protected String manualQueryInterpolation(String query, DataQuery dataQuery) {
+        Pattern pattern = Pattern.compile("(?m)@(\\w+)");
+        // Put parameters into func
+        Matcher matcher = pattern.matcher(query);
+        StringBuilder queryBuffer = new StringBuilder();
+        int idx = 0;
+        while (matcher.find()) {
+            String name = matcher.group().substring(1);
+            queryBuffer.append(query.substring(idx, matcher.start()));
+            for (FuncParam param: dataQuery.getInputParams()) {
+                if (param.name.equals(name)) {
+                System.out.println(param.propertyType);
+                System.out.println(param.propertySubType);
+                    switch (param.propertyType) {
+                        case Types.DATE_TIME:
+                            queryBuffer.append(castParamValueToSqlDateTime(param));
+                            break;
+                        case Types.BOOL:
+                            queryBuffer.append(interpolateBool(param));
+                            break;
+                        case Types.STRING: //todo: support escaping
+                            queryBuffer.append(interpolateString(param));
+                            break;
+                        case Types.LIST: //todo: extract submethod
+                            Object[] value = ((Object[])param.value);
+                             for (int i = 0; i < value.length; i++) {
+                              switch (param.propertySubType) {
+                                case Types.STRING:
+                                    queryBuffer.append(interpolateString(param));
+                                    break;
+                                default:
+                                    queryBuffer.append(value[i].toString());
+                                }
+                                if (i < value.length - 1)
+                                    queryBuffer.append(",");
+                              }
+                            break;
+                        default:
+                            queryBuffer.append(param.value.toString());
+                    }
+                    break;
+                }
+            }
+            idx = matcher.end();
+        }
+        queryBuffer.append(query.substring(idx, query.length()));
+        query = queryBuffer.toString();
+        return query;
+    }
+
+    protected String interpolateString(FuncParam param) {
+        return String.format("'%s'", param.value.toString());
+    }
+
+    protected String interpolateBool(FuncParam param) {
+        return ((boolean) param.value) ? "1=1" : "1=0";
     }
 
     protected int setArrayParamValue(PreparedStatement statement, int n, FuncParam param) throws SQLException {
