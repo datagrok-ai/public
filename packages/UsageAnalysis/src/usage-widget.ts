@@ -112,7 +112,7 @@ export class UsageWidget extends DG.Widget {
       ui.box(
         ui.divH([
           period.root,
-          ui.link('Open Usage Analysis',()=>{grok.functions.call("UsageAnalysis:startApp")},'Open Usage Analysis application')        
+          ui.link('Open Usage Analysis',()=>{grok.functions.call("UsageAnalysis:usageAnalysisApp")},'Open Usage Analysis application')        
         ], {style:{justifyContent:'space-between', alignItems:'center', margin:'0 12px'}})
       , {style:{maxHeight:'40px', marginBottom:'12px'}}),
       users,
