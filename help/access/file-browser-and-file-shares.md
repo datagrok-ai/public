@@ -104,7 +104,7 @@ Datagrok's indexing mechanism understands the following file formats:
 
 ## Adding a file share
 
-While you _can_ use the default **Home** folder as a file share, it's best that you create a dedicated, individual
+While you *can* use the default **Home** folder as a file share, it's best that you create a dedicated, individual
 folder to share your files. You can either create a sub-folder under the root **Home** or create a new file share next
 to **Home**.
 

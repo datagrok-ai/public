@@ -263,14 +263,8 @@ function createGrids(
 }
 
 function setCellRendererFunc(
-  renderColNames: string[],
-  positionColName: string,
-  aminoAcidResidue: string,
-  statsDf: DG.DataFrame,
-  twoColorMode: boolean,
-  sarGrid: DG.Grid,
-  sarVGrid: DG.Grid,
-) {
+    renderColNames: string[], positionColName: string, aminoAcidResidue: string, statsDf: DG.DataFrame,
+    twoColorMode: boolean, sarGrid: DG.Grid, sarVGrid: DG.Grid) {
   const mdCol = statsDf.getCol('Mean difference');
   const cellRendererFunc = function(args: DG.GridCellRenderArgs) {
     args.g.save();
@@ -323,12 +317,8 @@ function setCellRendererFunc(
         args.g.beginPath();
         args.g.fillStyle = coef;
         args.g.arc(
-          args.bounds.x + args.bounds.width / 2,
-          args.bounds.y + args.bounds.height / 2,
-          radius < 3 ? 3 : radius,
-          0,
-          Math.PI * 2,
-          true,
+          args.bounds.x + args.bounds.width / 2, args.bounds.y + args.bounds.height / 2, radius < 3 ? 3 : radius, 0,
+          Math.PI * 2, true,
         );
         args.g.closePath();
 
@@ -343,24 +333,12 @@ function setCellRendererFunc(
 }
 
 function setTooltipFunc(
-  renderColNames: string[],
-  statsDf: DG.DataFrame,
-  aminoAcidResidue: string,
-  positionColName: string,
-  peptidesCount: number,
-  grouping: boolean,
-  sarGrid: DG.Grid,
-  sarVGrid: DG.Grid,
-) {
+    renderColNames: string[], statsDf: DG.DataFrame, aminoAcidResidue: string, positionColName: string,
+    peptidesCount: number, grouping: boolean, sarGrid: DG.Grid, sarVGrid: DG.Grid) {
   const onCellTooltipFunc = async function(cell: DG.GridCell, x: number, y: number) {
     if (
-      !cell.isRowHeader &&
-      !cell.isColHeader &&
-      cell.tableColumn !== null &&
-      cell.cell.value !== null &&
-      cell.tableRowIndex !== null &&
-      renderColNames.indexOf(cell.tableColumn.name) !== -1
-    ) {
+        !cell.isRowHeader && !cell.isColHeader && cell.tableColumn !== null && cell.cell.value !== null &&
+        cell.tableRowIndex !== null && renderColNames.indexOf(cell.tableColumn.name) !== -1) {
       const tooltipMap: { [index: string]: string } = {};
 
       for (const col of (statsDf.columns as DG.ColumnList).names()) {
@@ -408,7 +386,6 @@ function setTooltipFunc(
 function postProcessGrids(
   sourceGrid: DG.Grid,
   invalidIndexes: number[],
-  matrixDf: DG.DataFrame,
   grouping: boolean,
   aminoAcidResidue: string,
   sarGrid: DG.Grid,
@@ -463,7 +440,7 @@ export async function describe(
   const positionColumns = (splitSeqDf.columns as DG.ColumnList).names();
   const activityColumnScaled = `${activityColumn}Scaled`;
   const renderColNames: string[] = (splitSeqDf.columns as DG.ColumnList).names();
-  const positionColName = 'Position';
+  const positionColName = 'Pos';
   const aminoAcidResidue = 'AAR';
 
   (splitSeqDf.columns as DG.ColumnList).add(df.getCol(activityColumn));
@@ -550,7 +527,7 @@ export async function describe(
     renderColNames, statsDf, aminoAcidResidue, positionColName, peptidesCount, grouping, sarGrid, sarVGrid,
   );
 
-  postProcessGrids(sourceGrid, invalidIndexes, matrixDf, grouping, aminoAcidResidue, sarGrid, sarVGrid);
+  postProcessGrids(sourceGrid, invalidIndexes, grouping, aminoAcidResidue, sarGrid, sarVGrid);
 
   //TODO: return class instead
   return [sarGrid, sarVGrid, statsDf, groupMapping];

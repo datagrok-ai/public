@@ -1,34 +1,29 @@
 import * as DG from 'datagrok-api/dg';
-// import * as ui from 'datagrok-api/ui';
-// import {scaleBand, scaleLinear, text} from 'd3';
 import {ChemPalette} from '../utils/chem-palette';
 import * as rxjs from 'rxjs';
+import * as ui from 'datagrok-api/ui';
 const cp = new ChemPalette('grok');
 
 export function addViewerToHeader(grid: DG.Grid, barchart: StackedBarChart) {
   if (grid.temp['containsBarchart'])
     return;
 
-  function eventAction(mouseMove: MouseEvent, mouseType: string, fixed: boolean = false) {
+  function eventAction(mouseMove: MouseEvent) {
     const cell = grid.hitTest(mouseMove.offsetX, mouseMove.offsetY);
     if (cell !== null && cell?.isColHeader && cell.tableColumn?.semType == 'aminoAcids')
-      barchart.highlight(cell, mouseMove.offsetX, mouseMove.offsetY, mouseType);
+      barchart.highlight(cell, mouseMove.offsetX, mouseMove.offsetY, mouseMove);
     else
       return;
-
-    if (cell?.isColHeader && cell.tableColumn?.semType == 'aminoAcids')
-      barchart.beginSelection(mouseMove, fixed);
-    else
+    
+    if (cell?.isColHeader && cell.tableColumn?.semType == 'aminoAcids') 
+      barchart.beginSelection(mouseMove);
+    else 
       barchart.unhighlight();
   }
 
-  // The following event makes the barchart interactive
-  rxjs.fromEvent<MouseEvent>(grid.overlay, 'mousemove').subscribe((mouseMove: MouseEvent) =>
-    eventAction(mouseMove, 'mousemove'),
-  );
-  rxjs.fromEvent<MouseEvent>(grid.overlay, 'click').subscribe((mouseMove: MouseEvent) =>
-    eventAction(mouseMove, 'click' + (mouseMove.altKey ? ' alt' : ''), true),
-  );
+  // The following events makes the barchart interactive
+  rxjs.fromEvent<MouseEvent>(grid.overlay, 'mousemove').subscribe((mouseMove: MouseEvent) => eventAction(mouseMove));
+  rxjs.fromEvent<MouseEvent>(grid.overlay, 'click').subscribe((mouseMove: MouseEvent) => eventAction(mouseMove));
   rxjs.fromEvent<MouseEvent>(grid.overlay, 'mouseout').subscribe(() => barchart.unhighlight());
 
   barchart.tableCanvas = grid.canvas;
@@ -37,18 +32,18 @@ export function addViewerToHeader(grid: DG.Grid, barchart: StackedBarChart) {
   grid.setOptions({'colHeaderHeight': 130});
 
   grid.onCellTooltip((cell, x, y) => {
-    // if (cell.tableColumn && ['aminoAcids', 'alignedSequence'].includes(cell.tableColumn.semType) ) {
-    //   if (!cell.isColHeader)
-    //     cp.showTooltip(cell, x, y);
-    //   else {
-    //     if (barchart.highlighted != []) {
-    //       let elements: HTMLElement[] = [];
-    //       elements = elements.concat([ui.divText(barchart.highlighted![0].aaName)]);
-    //       ui.tooltip.show(ui.divV(elements), x, y);
-    //     }
-    //   }
-    //   return true;
-    // }
+    if (cell.tableColumn && ['aminoAcids', 'alignedSequence'].includes(cell.tableColumn.semType) ) {
+      if (!cell.isColHeader)
+        cp.showTooltip(cell, x, y);
+      else {
+        if (barchart.highlighted) {
+          let elements: HTMLElement[] = [];
+          elements = elements.concat([ui.divText(barchart.highlighted.aaName)]);
+          ui.tooltip.show(ui.divV(elements), x, y);
+        }
+      }
+      return true;
+    }
     return true;
   });
 
@@ -85,21 +80,18 @@ type bartStatsType = {
 
 export class StackedBarChart extends DG.JsViewer {
   public dataEmptyAA: string;
-  public highlighted: {'colName' : string, 'aaName' : string}[] = [];
+  public highlighted: {'colName' : string, 'aaName' : string} | null = null;
   public tableCanvas: HTMLCanvasElement | undefined;
   public aminoColumnNames: string[] = [];
   private ord: { [Key: string]: number; } = {};
-  private data: stackedBarChartDatatype = [];
-  private selectionMode: boolean = false;
   private aminoColumnIndices: {[Key: string]: number} = {};
   private aggregatedTables: {[Key: string]: DG.DataFrame} = {};
-  private aggregatedTablesUnselected: {[Key: string]: DG.DataFrame} = {};
+  private aggregatedHighlightedTables: {[Key: string]: DG.DataFrame} = {};
   private max = 0;
-  private barStats: bartStatsType = {};
-  private registered: {[Key: string]: DG.GridCell} = {};
-  private fixedHighlighted: {'colName' : string, 'aaName' : string}[] = [];
-  private fixedSelected: DG.BitSet | null = null;
-  private aggregatedTablesSelected: {[Key: string]: DG.DataFrame} = {};
+  private barStats: {[Key: string]: {'name': string, 'count': number, 'highlightedCount': number, 'selectedCount': number}[]} = {};
+  private selected: {'colName' : string, 'aaName' : string}[] = [];
+  private highlightedMask: DG.BitSet | null = null;
+  private aggregatedSelectedTables: {[Key: string]: DG.DataFrame} = {};
 
   constructor() {
     super();
@@ -116,13 +108,11 @@ export class StackedBarChart extends DG.JsViewer {
       'orange': ['S', 'T', 'N', 'Q'],
     };
     let i = 0;
-
-    for (const value of Object.values(groups)) {
+    
+    for (const value of Object.values(groups)) 
       for (const obj of value)
         this.ord[obj] = i++;
-    }
 
-    this.data = [];
     this.aminoColumnNames = [];
   }
 
@@ -130,17 +120,9 @@ export class StackedBarChart extends DG.JsViewer {
   onTableAttached(): void {
     this.init();
     if (this.dataFrame) {
-      this.subs.push(DG.debounce(this.dataFrame.selection.onChanged, 50).subscribe(() =>
-        this.computeData(this.dataFrame!),
-      ));
-      this.subs.push(DG.debounce(this.dataFrame.filter.onChanged, 50).subscribe(() =>
-        this.computeData(this.dataFrame!),
-      ));
-      this.subs.push(DG.debounce(this.dataFrame.onCurrentRowChanged, 50).subscribe(() =>
-        this.computeData(this.dataFrame!),
-      ));
-      this.fixedSelected = DG.BitSet.create(this.dataFrame.rowCount);
-      this.computeData(this.dataFrame);
+      this.subs.push(DG.debounce(this.dataFrame.selection.onChanged, 50).subscribe((_) => this.computeData()));
+      this.subs.push(DG.debounce(this.dataFrame.filter.onChanged, 50).subscribe((_) => this.computeData()));
+      this.highlightedMask = DG.BitSet.create(this.dataFrame.rowCount);
     }
   }
 
@@ -149,91 +131,78 @@ export class StackedBarChart extends DG.JsViewer {
     this.subs.forEach((sub) => sub.unsubscribe());
   }
 
-  computeData(df: DG.DataFrame): void {
-    this.data = [];
+  computeData(): void {
     this.aminoColumnNames = [];
     this.aminoColumnIndices = {};
 
-    df.columns.names().forEach((name: string) => {
-      if (df.getCol(name).semType === 'aminoAcids' &&
-            !df.getCol(name).categories.includes('COOH') &&
-            !df.getCol(name).categories.includes('NH2')) {
+    this.dataFrame!.columns.names().forEach((name: string) => {
+      if (this.dataFrame!.getCol(name).semType === 'aminoAcids' &&
+          !this.dataFrame!.getCol(name).categories.includes('COOH') &&
+          !this.dataFrame!.getCol(name).categories.includes('NH2')) {
         this.aminoColumnIndices[name] = this.aminoColumnNames.length + 1;
         this.aminoColumnNames.push(name);
       }
     });
 
-    function getSelectedFilteredBuffer(df: DG.DataFrame) {
-      const buf1 = df.selection.getBuffer();
-      const buf2 = df.filter.getBuffer();
-      const resbuf = new Int32Array(buf1.length);
-
-      for (let i = 0; i < buf2.length; i++)
-        resbuf[i] = buf1[i] & buf2[i];
-
-      return resbuf.buffer;
-    }
-
     this.aggregatedTables = {};
-    this.aggregatedTablesUnselected = {};
-    this.aggregatedTablesSelected = {};
+    this.aggregatedHighlightedTables = {};
+    this.aggregatedSelectedTables = {};
     //TODO: optimize it, why store so many tables?
-    const mask = DG.BitSet.fromBytes(getSelectedFilteredBuffer(df), df.rowCount);
-    this.selectionMode = mask.trueCount !== df.filter.trueCount;
     this.aminoColumnNames.forEach((name) => {
-      this.aggregatedTables[name] = df
+      this.aggregatedTables[name] = this.dataFrame!
         .groupBy([name])
-        .whereRowMask(df.filter)
+        .whereRowMask(this.dataFrame!.filter)
+        .add('count', name, `${name}_count`)
+        .aggregate();
+      
+      this.aggregatedHighlightedTables[name] = this.dataFrame!
+        .groupBy([name])
+        .whereRowMask(this.highlightedMask!)
         .add('count', name, `${name}_count`)
         .aggregate();
 
-      if (mask.trueCount !== df.filter.trueCount) {
-        const aggregatedMask = DG.BitSet.fromBytes(getSelectedFilteredBuffer(df), df.rowCount);
-        this.aggregatedTablesUnselected[name] = df
-          .groupBy([name])
-          .whereRowMask(aggregatedMask)
-          .add('count', name, `${name}_count`)
-          .aggregate();
-
-        this.aggregatedTablesSelected[name] = df
-          .groupBy([name])
-          .whereRowMask(this.fixedSelected!)
-          .add('count', name, `${name}_count`)
-          .aggregate();
-      }
+      this.aggregatedSelectedTables[name] = this.dataFrame!
+        .groupBy([name])
+        .whereRowMask(this.dataFrame!.selection)
+        .add('count', name, `${name}_count`)
+        .aggregate();
     });
 
-    this.data = [];
     this.barStats = {};
 
     for (const [name, df] of Object.entries(this.aggregatedTables)) {
       const colObj: {
-          'name': string,
-          'data': { 'name': string, 'count': number, 'selectedCount': number, 'fixedSelectedCount': number}[],
-        } = {'name': name, 'data': []};
+        'name': string,
+        'data': { 'name': string, 'count': number, 'highlightedCount': number, 'selectedCount': number}[],
+      } = {'name': name, 'data': []};
+      const aminoCol = df.getCol(name);
+      const aminoCountCol = df.getCol(`${name}_count`);
       this.barStats[colObj['name']] = colObj['data'];
-      this.data.push(colObj);
-
+      
       for (let i = 0; i < df.rowCount; i++) {
-        const amino = df.getCol(name).get(i);
-        const aminoCount = df.getCol(`${name}_count`).get(i);
-        const aminoObj = {'name': amino, 'count': aminoCount, 'selectedCount': 0, 'fixedSelectedCount': 0};
-        const aggUnselAminoCol = this.aggregatedTablesUnselected[name].getCol(`${name}`);
-        const aggUnselCountCol = this.aggregatedTablesUnselected[name].getCol(`${name}_count`);
-        const aggSelAminoCol = this.aggregatedTablesSelected[name].getCol(`${name}`);
-        const aggSelCountCol = this.aggregatedTablesSelected[name].getCol(`${name}_count`);
+        const amino = aminoCol.get(i);
+        const aminoCount = aminoCountCol.get(i);
+        const aminoObj = {'name': amino, 'count': aminoCount, 'highlightedCount': 0, 'selectedCount': 0};
+        const aggHighlightedAminoCol = this.aggregatedHighlightedTables[name].getCol(`${name}`);
+        const aggHighlightedCountCol = this.aggregatedHighlightedTables[name].getCol(`${name}_count`);
+        const aggSelectedAminoCol = this.aggregatedSelectedTables[name].getCol(`${name}`);
+        const aggSelectedCountCol = this.aggregatedSelectedTables[name].getCol(`${name}_count`);
 
         if (!amino || amino === this.dataEmptyAA)
           continue;
 
         colObj['data'].push(aminoObj);
-        for (let j = 0; j < this.aggregatedTablesUnselected[name].rowCount; j++) {
-          const unsAmino = aggUnselAminoCol.get(j);
-          const selAmino = aggSelAminoCol.get(j);
-          if (selAmino == amino)
-            aminoObj['fixedSelectedCount'] = aggSelCountCol.get(j);
-          if (unsAmino == amino)
-            aminoObj['selectedCount'] = aggUnselCountCol.get(j);
+
+        for (const col of [aggHighlightedCountCol, aggSelectedCountCol]) {
+          for (let j = 0; j < col.length; j++) {
+            const highlightedAmino = aggHighlightedAminoCol.get(j);
+            const selectedAmino = aggSelectedAminoCol.get(j);
+            const curAmino = (col == aggHighlightedCountCol ? highlightedAmino : selectedAmino);
+            if (curAmino == amino) {
+              aminoObj[col == aggHighlightedCountCol ? 'highlightedCount' : 'selectedCount'] = col.get(j);
+              break;
+            }
+          }
         }
       }
 
@@ -247,7 +216,8 @@ export class StackedBarChart extends DG.JsViewer {
         return 0;
       });
     }
-    this.max = df.filter.trueCount;
+
+    this.max = this.dataFrame!.filter.trueCount;
   }
 
   renderBarToCanvas(
@@ -272,8 +242,9 @@ export class StackedBarChart extends DG.JsViewer {
 
     x = x + w * margin;
     y = y + h * margin / 4;
-    w = w - w * margin * 2 - 10;
+    w = w - w * margin * 2;
     h = h - h * margin;
+    const barWidth = w - 10;
     g.fillStyle = 'black';
     g.textBaseline = 'top';
     g.font = `${h * margin / 2}px`;
@@ -283,14 +254,15 @@ export class StackedBarChart extends DG.JsViewer {
       const sBarHeight = h * obj['count'] / this.max;
       const gapSize = sBarHeight * innerMargin;
       const verticalShift = (this.max - sum) / this.max;
-      const [color, aarOuter] = cp.getColorAAPivot(obj['name']);
+      const [color, aarOuter,,] = cp.getColorAAPivot(obj['name']);
       const textSize = g.measureText(aarOuter);
       const fontSize = 11;
       const leftMargin = (w - (aarOuter.length > 1 ? fontSize : textSize.width - 8)) / 2;
       const subBartHeight = sBarHeight - gapSize;
-      const start = h * verticalShift + gapSize / 2;
+      const yStart = h * verticalShift + gapSize / 2;
+      const xStart = (w - barWidth) / 2;
       const absX = x + leftMargin;
-      const absY = y + start + subBartHeight / 2 + (aarOuter.length == 1 ? + 4 : 0);
+      const absY = y + yStart + subBartHeight / 2 + (aarOuter.length == 1 ? + 4 : 0);
       const eps = 0.1;
 
       g.strokeStyle = color;
@@ -299,10 +271,11 @@ export class StackedBarChart extends DG.JsViewer {
         const origTransform = g.getTransform();
 
         if (color != ChemPalette.undefinedColor) {
-          g.fillRect(x, y + start, w, subBartHeight);
+          g.fillRect(x + xStart, y + yStart, barWidth, subBartHeight);
           g.fillStyle = 'black';
-        } else
-          g.strokeRect(x + 0.5, y + start, w - 1, subBartHeight);
+        }
+        else
+          g.strokeRect(x + xStart + 0.5, y + yStart, barWidth - 1, subBartHeight);
 
         g.font = `${fontSize}px monospace`;
         g.textAlign = 'center';
@@ -316,29 +289,28 @@ export class StackedBarChart extends DG.JsViewer {
 
         g.fillText(aarOuter, absX, absY);
         g.setTransform(origTransform);
-      } else
-        g.fillRect(x, y + start, w, subBartHeight);
+      } else {
+        g.fillRect(x + xStart, y + yStart, barWidth, subBartHeight);
+      }
 
+      if (obj['selectedCount'] > eps) {
+        g.fillStyle = 'rgb(255,165,0)';
+        g.fillRect(
+          x + xStart - w * selectLineRatio * 2,
+          y + yStart,
+          barWidth * selectLineRatio,
+          h * obj['selectedCount'] / this.max - gapSize
+        );
+      } 
 
-      if (this.selectionMode && (obj['selectedCount'] > eps || obj['fixedSelectedCount'] > eps)) {
-        if (obj['fixedSelectedCount'] > eps) {
-          g.fillStyle = 'rgb(255,165,0)';
-          g.fillRect(
-            x - w * selectLineRatio * 2,
-            y + start,
-            w * selectLineRatio,
-            h * obj['fixedSelectedCount'] / this.max - gapSize,
-          );
-        }
-        if (obj['selectedCount'] > eps && obj['selectedCount'] > obj['fixedSelectedCount']) {
-          g.fillStyle = 'rgb(209,242,251)';
-          g.fillRect(
-            x - w * selectLineRatio * 2,
-            y + start + h * obj['fixedSelectedCount'] / this.max - gapSize,
-            w * selectLineRatio,
-            h * (obj['selectedCount'] - obj['fixedSelectedCount']) / this.max - gapSize,
-          );
-        }
+      if (obj['highlightedCount'] > eps && obj['highlightedCount'] > obj['selectedCount']) {
+        g.fillStyle = 'rgb(209,242,251)';
+        g.fillRect(
+          x + xStart - w * selectLineRatio * 2,
+          y + yStart + h * obj['selectedCount'] / this.max - gapSize,
+          barWidth * selectLineRatio,
+          h * (obj['highlightedCount'] - obj['selectedCount']) / this.max - gapSize
+        );
       }
 
       sum -= obj['count'];
@@ -346,10 +318,10 @@ export class StackedBarChart extends DG.JsViewer {
     return;
   }
 
-  highlight(cell: DG.GridCell, offsetX:number, offsetY:number, mouseType: string): void {
+  highlight(cell: DG.GridCell, offsetX:number, offsetY:number, mouseEvent: MouseEvent): void {
     if (!cell.tableColumn?.name || !this.aminoColumnNames.includes(cell.tableColumn.name))
       return;
-
+      
     const colName = cell.tableColumn?.name;
     const innerMargin = 0.02;
     const margin = 0.2;
@@ -357,87 +329,81 @@ export class StackedBarChart extends DG.JsViewer {
     const height = 130;
     const x = bound.x + bound.width * margin;
     const y = height * margin / 4;
-    const w = bound.width - bound.width * margin * 2 - 10;
+    const w = bound.width - bound.width * margin * 2;
     const h = height - height * margin;
     const barData = this.barStats[colName];
+    const barWidth = w - 10;
     let sum = 0;
 
     barData.forEach((obj) => {
       sum += obj['count'];
     });
 
-    this.highlighted = [];
+    this.highlighted = null;
     barData.forEach((obj) => {
       const sBarHeight = h * obj['count'] / this.max;
       const gapSize = sBarHeight * innerMargin;
       const verticalShift = (this.max - sum) / this.max;
       const subBartHeight = sBarHeight - gapSize;
-      const start = h * verticalShift + gapSize / 2;
+      const yStart = h * verticalShift + gapSize / 2;
+      const xStart = (w - barWidth) / 2;
 
-      if (offsetX >= x &&
-            offsetY >= y + start &&
-            offsetX <= x + w &&
-            offsetY <= y + start + subBartHeight)
-        this.highlighted = [{'colName': colName, 'aaName': obj['name']}];
-
-
+      if (offsetX >= x + xStart &&
+          offsetY >= y + yStart &&
+          offsetX <= x + xStart + barWidth &&
+          offsetY <= y + yStart + subBartHeight) {
+        this.highlighted = {'colName': colName, 'aaName': obj['name']};
+      }
+      
       sum -= obj['count'];
     });
 
-    if (mouseType == 'click') {
-      this.fixedHighlighted = [];
-      this.fixedHighlighted.push(this.highlighted[0]);
-    } else if (mouseType == 'click alt') {
+    if (!this.highlighted)
+      return;
+
+    if (mouseEvent.type == 'click') {
       let idx = -1;
 
-      for (let i = 0; i < this.fixedHighlighted.length; ++i) {
-        if (JSON.stringify(this.fixedHighlighted[i]) == JSON.stringify(this.highlighted[0]))
+      for (let i = 0; i < this.selected.length; ++i) 
+        if (JSON.stringify(this.selected[i]) == JSON.stringify(this.highlighted))
           idx = i;
-      }
 
-      if (idx != -1)
-        this.fixedHighlighted.splice(idx, 1);
-      else
-        this.fixedHighlighted.push(this.highlighted[0]);
-    }
+      if (mouseEvent.shiftKey && idx == -1) 
+        this.selected.push(this.highlighted);
+
+      if (mouseEvent.shiftKey && (mouseEvent.ctrlKey || mouseEvent.metaKey) && idx != -1) 
+        this.selected.splice(idx, 1);
+    } 
   }
 
   unhighlight(): void {
-    this.highlighted = [];
-      this.dataFrame!.selection.setAll(false);
-
-      if (this.fixedHighlighted.length != 0) {
-this.dataFrame!.selection.handleClick((i) => {
-  for (const high of this.fixedHighlighted) {
-    if (high['aaName'] === (this.dataFrame!.getCol(high['colName']).get(i)))
-      return true;
-  }
-  return false;
-}, event);
-      }
-
-      this.computeData(this.dataFrame!);
+    this.highlighted = null;
+    this.highlightedMask!.setAll(false);
+    this.computeData();
   }
 
-  beginSelection(event: any, fixed: boolean = false): void {
-    if (!this.highlighted || !this.dataFrame)
+  beginSelection(event: MouseEvent): void {
+    if (!this.dataFrame)
       return;
 
-      this.dataFrame!.selection.handleClick((i: number) => {
-        for (const obj of [this.fixedHighlighted, this.highlighted]) {
-          if (fixed && obj == this.highlighted)
-            continue;
-          for (const high of obj) {
-            if (high['aaName'] === (this.dataFrame!.getCol(high['colName']).get(i)))
-              return true;
-          }
-        }
+    this.highlightedMask!.setAll(false);
+
+    this.dataFrame.selection.handleClick((i: number) => {
+      for (const high of this.selected) 
+        if (high['aaName'] === (this.dataFrame!.getCol(high['colName']).get(i)))
+          return true;
+      return false;
+    }, event);
+    
+    if (this.highlighted) {
+      this.dataFrame.rows.match({[this.highlighted['colName']]: this.highlighted['aaName']}).highlight();
+      this.highlightedMask!.handleClick((i: number) => {
+        if (this.highlighted!['aaName'] === (this.dataFrame!.getCol(this.highlighted!['colName']).get(i)))
+          return true;
         return false;
       }, event);
+    } 
 
-      if (fixed)
-        this.fixedSelected!.copyFrom(this.dataFrame!.selection);
-
-      this.computeData(this.dataFrame!);
+    this.computeData();
   }
 }
