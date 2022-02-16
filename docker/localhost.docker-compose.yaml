@@ -94,7 +94,7 @@ services:
         \"dbPassword\": \"dg\",
         \"adminPassword\": \"admin\"
       }"
-      GROK_COMPONENTS: "${COMPOSE_PROFILES:?err}"
+#      GROK_COMPONENTS: "${COMPOSE_PROFILES:?err}"
     ports:
       - "8080:8080/tcp"
     networks:
