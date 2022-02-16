@@ -7,7 +7,7 @@ import grok_connect.connectors_info.*;
 
 
 public class SQLiteDataProvider extends JdbcDataProvider {
-    public boolean isParametrized() {
+    public boolean autoInterpolation() {
         return false;
     }
 
