@@ -353,6 +353,14 @@ class Editor {
   _dataFrame: DG.DataFrame;
   _onChangedAction: Function;
 
+  /** The title must be accessible from other inputs, because it may depend on the formula */
+  _ibTitle?: DG.InputBase;
+  setTitleIfEmpty(oldFormula: string, newFormula: string) {
+    if ((oldFormula == (this._ibTitle!.input as HTMLInputElement).placeholder) || oldFormula == 'z'
+      || newFormula == this._ibTitle!.value)
+      this._ibTitle!.value = newFormula;
+  }
+
   items: DG.FormulaLine[];
   get root(): HTMLElement { return this._form; }
 
@@ -420,9 +428,11 @@ class Editor {
     let item = this.items[itemIdx];
 
     let ibFormula = ui.textInput('', item.formula ?? '', (value: string) => {
+      let oldFormula = item.formula!;
       item.formula = value;
       let resultOk = this._onChangedAction(itemIdx);
-      (ibFormula.input as HTMLInputElement).classList.toggle('d4-forced-invalid', !resultOk)
+      elFormula.classList.toggle('d4-forced-invalid', !resultOk);
+      this.setTitleIfEmpty(oldFormula, item.formula);
     });
 
     let elFormula = ibFormula.input as HTMLInputElement;
@@ -540,15 +550,26 @@ class Editor {
   _inputTitle(itemIdx: number): HTMLElement {
     let item = this.items[itemIdx];
 
-    let ibTitle = ui.stringInput('Title', item.title ?? '', (value: string) => {
-      item.title = value;
+    function formTitleValue(value: string) {
+      if (value == '' || value == item.formula) {
+        elTitle.placeholder = item.formula!;
+        elTitle.value = '';
+        return item.formula!;
+      }
+      elTitle.placeholder = '';
+      return value;
+    }
+
+    this._ibTitle = ui.stringInput('Title', item.title ?? '', (value: string) => {
+      item.title = formTitleValue(value);
       this._onChangedAction(itemIdx);
     });
 
-    let elTitle = ibTitle.input as HTMLInputElement;
+    let elTitle = this._ibTitle.input as HTMLInputElement;
     elTitle.setAttribute('style', 'width: 204px; max-width: none;');
+    formTitleValue(elTitle.value);
 
-    return ui.divH([ibTitle.root]);
+    return ui.divH([this._ibTitle.root]);
   }
 
   /** Creates textarea for item description */
@@ -556,7 +577,7 @@ class Editor {
     let item = this.items[itemIdx];
 
     let ibDescription = ui.textInput('Description', item.description ?? '', (value: string) => {
-      item!.description = value;
+      item.description = value;
       this._onChangedAction(itemIdx);
     });
 
@@ -571,7 +592,7 @@ class Editor {
     let item = this.items[itemIdx];
 
     let ibColumn2 = ui.columnInput('Adjacent column', this._dataFrame, item.column2 ? this._dataFrame.col(item.column2) : null, (value: DG.Column) => {
-      item!.column2 = value.name;
+      item.column2 = value.name;
       this._onChangedAction(itemIdx);
     });
 
@@ -586,16 +607,20 @@ class Editor {
     let item = this.items[itemIdx];
 
     let ibColumn = ui.columnInput('Column', this._dataFrame, colName ? this._dataFrame.col(colName) : null, (value: DG.Column) => {
-      item!.formula = '${' + value + '} = ' + ibValue.value;
+      let oldFormula = item.formula!;
+      item.formula = '${' + value + '} = ' + ibValue.value;
       this._onChangedAction(itemIdx);
+      this.setTitleIfEmpty(oldFormula, item.formula);
     });
 
     let elColumn = ibColumn.input as HTMLInputElement;
     elColumn.setAttribute('style', 'width: 204px; max-width: none; margin-right: -10px;');
 
     let ibValue = ui.stringInput('Value', value, (value: string) => {
-      item!.formula = '${' + ibColumn.value + '} = ' + value;
+      let oldFormula = item.formula!;
+      item.formula = '${' + ibColumn.value + '} = ' + value;
       this._onChangedAction(itemIdx);
+      this.setTitleIfEmpty(oldFormula, item.formula);
     });
     ibValue.nullable = false;
 
@@ -632,10 +657,7 @@ class CreationControl {
         let colX = cols.x;
 
         /** Create blank item with a given type */
-        let item: DG.FormulaLine = DG.FormulaLinesHelper.setDefaults({
-          type: getItemTypeByCaption(itemCaption),
-          title: 'New title'
-        });
+        let item: DG.FormulaLine = { type: getItemTypeByCaption(itemCaption) };
 
         /** Fill the item with the necessary data */
         switch (itemCaption) {
@@ -667,6 +689,8 @@ class CreationControl {
             item.column2 = colX.name;
             break;
         }
+
+        item = DG.FormulaLinesHelper.setDefaults(item);
 
         /** Used to update the Table, Preview and Editor states */
         onCreatedAction(item);
