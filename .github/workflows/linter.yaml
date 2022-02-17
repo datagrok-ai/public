@@ -59,6 +59,5 @@ jobs:
           VALIDATE_TERRAFORM_TFLINT: true
           VALIDATE_TSX: true
           VALIDATE_TYPESCRIPT_ES: true
-          VALIDATE_TYPESCRIPT_STANDARD: true
           VALIDATE_XML: true
           VALIDATE_YAML: true
