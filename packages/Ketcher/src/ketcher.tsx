@@ -32,6 +32,7 @@ export class KetcherSketcher extends grok.chem.SketcherBase {
       onInit: (ketcher: Ketcher) => {
         this._ketcher = ketcher;
         (this._ketcher.editor as any).subscribe("change", (e: any) => {
+
           try {
             this._ketcher.getMolfile().then((molfile) => {
               this._molFile = molfile;
@@ -39,6 +40,7 @@ export class KetcherSketcher extends grok.chem.SketcherBase {
           } catch (ex) {
             console.log(ex);
           }
+          this.onChanged.next(null);
         });
       },
     };
