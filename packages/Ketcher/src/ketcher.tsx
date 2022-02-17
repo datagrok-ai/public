@@ -3,13 +3,13 @@ import * as ReactDOM from "react-dom";
 import * as grok from "datagrok-api/grok";
 import * as ui from "datagrok-api/ui";
 import * as DG from "datagrok-api/dg";
-import { _package } from "./package";
-import { Editor } from "ketcher-react";
-import { StandaloneStructServiceProvider } from "ketcher-standalone";
-import { Ketcher } from "ketcher-core";
+import {_package} from "./package";
+import {Editor} from "ketcher-react";
+import {StandaloneStructServiceProvider} from "ketcher-standalone";
+import {Ketcher} from "ketcher-core";
 import "ketcher-react/dist/index.css";
 import "./editor.css";
-import { _jsThen } from "datagrok-api/src/utils";
+import {_jsThen} from "datagrok-api/src/utils";
 
 let sketcherId = 0;
 
