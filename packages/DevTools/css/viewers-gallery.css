@@ -1,11 +1,17 @@
+.viewer-gallery-root{
+    padding: 12px 24px;
+}
+.viewer-gallery-root h3{
+    font-weight: normal;
+}
+
 .viewer-gallery-root h1{
-    margin-left: 5px;
+    font-weight: normal;
+    font-size: 16px;
+    color:var(--grey-6)
 }
 .viewer-gallery{
     flex-wrap: wrap;
-}
-.viewer-gallery h1{
-    margin-left: 5px;
 }
 .vg-selection-text{
     position:absolute;
@@ -23,22 +29,27 @@
     padding: 0;
 }
 .vg-controls.grok-gallery-search-bar>.ui-div>input{
-    min-width:895px;
-    margin-left: 5px;;
+    width:100%;
 }
 
 .vg-card{
     min-width: 280px;
     min-height: 280px;
     padding: 5px;
-    margin: 5px;
+    margin: 0 10px 10px 0;
+    box-sizing: border-box;
+    -moz-box-sizing: border-box;
+    -webkit-box-sizing: border-box;
 }
 
 .vg-card-small{
     max-width: 204.5px;
-    margin: 5px;
+    margin: 0 10px 10px 0;
     padding: 5px;
     text-align: left;
+    box-sizing: border-box;
+    -moz-box-sizing: border-box;
+    -webkit-box-sizing: border-box;
 }
 
 .vg-card-small:hover{
@@ -58,7 +69,12 @@
 }
 .d4-item-card.viewer-gallery button{
     position: absolute;
+    right: 20px;
+}
+.d4-item-card.viewer-gallery button:last-child{
+    position: absolute;
     right: 0;
+    color: var(--grey-3);
 }
 
 .card-label{
@@ -66,4 +82,27 @@
     white-space: nowrap;
     overflow: hidden;
     text-overflow: ellipsis;
+    max-width: 140px;
+}
+
+.vg-filter-panel label{
+    position: absolute;
+    left: 28px;
+}
+.vg-filter-panel input{
+    margin: 0px!important;
+}
+
+.vg-filter-panel div.ui-input-root{
+    padding: 0px;
+}
+.vg-filter-panel h3{
+    margin: 20px 0px 10px 5px;
+    color: var(--warm-grey-4);
+}
+.vg-filter-panel {
+    background-color: var(--warm-grey-1);
+    border-right: 1px solid var(--warm-grey-2);
+    padding: 12px;
+    padding-top: 0px;
 }
