@@ -193,10 +193,10 @@ dependencies:
 To use it in any script, specify it as follows:
 
 ```python
-# name: EnvTestInline
-# environment: channels: [conda-forge], dependencies: [python=3.8, glom, {pip: [requests]}]
-# language: python
-# output: string result
+#name: EnvTestInline
+#environment: channels: [conda-forge], dependencies: [python=3.8, glom, {pip: [requests]}]
+#language: python
+#output: string result
 
 import re, requests
 from glom import glom
