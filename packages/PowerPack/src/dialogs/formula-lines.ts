@@ -24,6 +24,12 @@ const enum ITEM_SOURCE {
   DATAFRAME = 'DataFrame'
 }
 
+const enum BTN_CAPTION {
+  ADD_NEW = 'Add new',
+  CLONE = 'Clone',
+  REMOVE = 'Remove'
+}
+
 /**
  * Returns Formula Line type by its user-friendly [caption].
  * @param {ITEM_CAPTION} caption
@@ -90,14 +96,20 @@ class Host {
  * Table Helper for displaying and navigating Formula Lines list.
  */
 class Table {
+  items: DG.FormulaLine[];
+  get currentItem(): DG.FormulaLine | null { return this._currentItemIdx < 0 ? null : this.items[this._currentItemIdx]; }
+  get root(): HTMLElement { return this._grid.root; }
+
   _grid: DG.Grid;
   _onChangedAction: Function
-  items: DG.FormulaLine[];
 
   get _dataFrame(): DG.DataFrame { return this._grid.dataFrame!; }
 
-  get _currentItemIdx(): number { return this._dataFrame.currentRowIdx;}
+  get _currentItemIdx(): number { return this._dataFrame.currentRowIdx; }
   set _currentItemIdx(rowIdx: number) { this._dataFrame.currentRowIdx = rowIdx; }
+
+  /** Used to prevent onValuesChanged event when the grid changes itself */
+  _notify: boolean = true;
 
   /** Creates "Delete" button */
   _deleteBtn(itemIdx: number): HTMLElement {
@@ -115,11 +127,6 @@ class Table {
     return btn;
   }
 
-  /** Used to prevent onValuesChanged event when the grid changes itself */
-  _notify: boolean = true;
-
-  get root(): HTMLElement { return this._grid.root; }
-
   constructor(items: DG.FormulaLine[], onChangedAction: Function) {
     this.items = items;
     this._onChangedAction = onChangedAction;
@@ -133,8 +140,7 @@ class Table {
         ]);
 
     /** Column for "trash" buttons */
-    const BTN_COL_NAME = 'deleteBtn';
-    dataFrame.columns.addNewString(BTN_COL_NAME);
+    dataFrame.columns.addNewString(BTN_CAPTION.REMOVE);
 
     this._grid = DG.Grid.create(dataFrame);
     this._grid.setOptions({
@@ -146,14 +152,14 @@ class Table {
       showEditRow: false
     });
 
-    this._grid.columns.setVisible(['title', 'formula', 'visible', BTN_COL_NAME]);
-    this._grid.columns.setOrder(['title', 'formula', 'visible', BTN_COL_NAME]);
+    this._grid.columns.setVisible(['title', 'formula', 'visible', BTN_CAPTION.REMOVE]);
+    this._grid.columns.setOrder(['title', 'formula', 'visible', BTN_CAPTION.REMOVE]);
 
     this._grid.col('title')!.width = 120;
     this._grid.col('formula')!.width = 220;
     this._grid.col('visible')!.width = 40;
 
-    let deleteBtnCol = this._grid.col(BTN_COL_NAME)!;
+    let deleteBtnCol = this._grid.col(BTN_CAPTION.REMOVE)!;
     deleteBtnCol.width = 35;
     deleteBtnCol.cellType = 'html';
 
@@ -163,9 +169,9 @@ class Table {
           case 'title': cell.customText = 'Title'; break;
           case 'formula': cell.customText = 'Formula'; break;
           case 'visible': cell.customText = 'Show'; break;
-          case BTN_COL_NAME: cell.style.textColor = 0; break;
+          case BTN_CAPTION.REMOVE: cell.style.textColor = 0; break;
         }
-      else if (cell.isTableCell && cell.gridColumn.name == BTN_COL_NAME)
+      else if (cell.isTableCell && cell.gridColumn.name == BTN_CAPTION.REMOVE)
         cell.style.element = this._deleteBtn(cell.gridRow);
     });
 
@@ -176,7 +182,7 @@ class Table {
     this._dataFrame.onValuesChanged.subscribe((_) => {
       if (!this._notify)
         return;
-      let item = this.items[this._currentItemIdx];
+      let item = this.currentItem!;
       item.title = this._dataFrame.get('title', this._currentItemIdx);
       item.formula = this._dataFrame.get('formula', this._currentItemIdx);
       item.visible = this._dataFrame.get('visible', this._currentItemIdx);
@@ -210,7 +216,7 @@ class Table {
       this._dataFrame.set('title', 0, item.title);
       this._dataFrame.set('formula', 0, item.formula);
       this._dataFrame.set('visible', 0, item.visible);
-      this._dataFrame.set('deleteBtn', 0, '');
+      this._dataFrame.set(BTN_CAPTION.REMOVE, 0, '');
     this._notify = true;
     this._currentItemIdx = 0;
   }
@@ -637,27 +643,27 @@ class Editor {
 class CreationControl {
   /** Opens a popup menu with predefined new Formula Line item types */
   popupMenu: Function;
-
   /** Used to create constant lines passing through the mouse click point on the Scatter Plot */
   _getCols: Function;
+  /** Used to create clone */
+  _getCurrentItem: Function;
 
   /** Creates a button and binds an item creation menu to it */
   get button(): HTMLElement {
-    let btn = ui.bigButton('Add new', this.popupMenu);
+    let btn = ui.bigButton(BTN_CAPTION.ADD_NEW, this.popupMenu);
     return ui.div([btn], {style: {width: '100%', textAlign: 'right'}});
   }
 
-  constructor(getCols: Function, onCreatedAction: Function) {
+  constructor(getCols: Function, getCurrentItem: Function, onCreatedAction: Function) {
     this._getCols = getCols;
+    this._getCurrentItem = getCurrentItem;
 
     this.popupMenu = (valY?: number, valX?: number) => {
       let onClickAction = (itemCaption: string) => {
         let cols: AxisColumns = this._getCols();
         let colY = cols.y;
         let colX = cols.x;
-
-        /** Create blank item with a given type */
-        let item: DG.FormulaLine = { type: getItemTypeByCaption(itemCaption) };
+        let item: DG.FormulaLine = {};
 
         /** Fill the item with the necessary data */
         switch (itemCaption) {
@@ -688,8 +694,13 @@ class CreationControl {
             item.formula = '${' + colY.name + '} in(' + bottom + ', ' + top + ')';
             item.column2 = colX.name;
             break;
+
+          case BTN_CAPTION.CLONE:
+            item = this._getCurrentItem();
+            break;
         }
 
+        item.type ??= getItemTypeByCaption(itemCaption);
         item = DG.FormulaLinesHelper.setDefaults(item);
 
         /** Used to update the Table, Preview and Editor states */
@@ -697,14 +708,16 @@ class CreationControl {
       }
 
       /** Construct popup menu */
-      DG.Menu.popup()
+      let menu = DG.Menu.popup()
         .items([ITEM_CAPTION.LINE,
                 ITEM_CAPTION.VERT_LINE,
-                ITEM_CAPTION.HORZ_LINE], onClickAction)
-        .separator()
-        .items([ITEM_CAPTION.VERT_BAND,
-                ITEM_CAPTION.HORZ_BAND], onClickAction)
-        .show();
+                ITEM_CAPTION.HORZ_LINE,
+                ITEM_CAPTION.VERT_BAND,
+                ITEM_CAPTION.HORZ_BAND], onClickAction);
+      /** Add "Clone" menu if the current table line exists. */
+      if (this._getCurrentItem())
+        menu.separator().items([BTN_CAPTION.CLONE], onClickAction);
+      menu.show();
     }
   }
 }
@@ -741,6 +754,7 @@ export class FormulaLinesDialog {
     /** Init CreationControl */
     this.creationControl = new CreationControl(
       () => this.preview.axisCols,
+      () => this.currentTable.currentItem,
       (item: DG.FormulaLine) => {
         this.currentTable.add(item);
         this.editor.update(0);
