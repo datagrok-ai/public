@@ -237,7 +237,7 @@ export namespace chem {
       ui.empty(this.host);
       this.changedSub?.unsubscribe();
 
-     // let oldMolFile = this.sketcher?.molFile; //A12 TODO ask 
+      if (this.sketcher?.molFile) this._molFile = this.sketcher?.molFile;
 
       let f = Func.find({name: name})[0];
       this.sketcher = await f.apply();
@@ -252,9 +252,6 @@ export namespace chem {
           grok.shell.o = SemanticValue.fromValueType(this.sketcher!.molFile, SEMTYPE.MOLECULE, UNITS.Molecule.MOLBLOCK);
       });
 
-     // if (!Utils.isEmpty(oldMolFile)) //A12 TODO ask
-     //   this.sketcher!.molFile
-     // else 
       if (!Utils.isEmpty(this._molFile))
         this.sketcher!.molFile = this._molFile;
       else if (!Utils.isEmpty(this._smiles))
