@@ -17,7 +17,7 @@ jobs:
       - name: Lint Code Base
         uses: github/super-linter@v4
         env:
-          DISABLE_ERRORS: false
+          DISABLE_ERRORS: true
           DEFAULT_BRANCH: master
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           MULTI_STATUS: true

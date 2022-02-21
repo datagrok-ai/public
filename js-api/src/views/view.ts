@@ -762,6 +762,9 @@ export class ViewLayout extends Entity {
   }
 }
 
+
+/** Represents a virtual view, where visual elements are created only when user
+ * scrolls them into view. */
 export class VirtualView {
   dart: any;
 
@@ -773,12 +776,19 @@ export class VirtualView {
     return new VirtualView(api.grok_VirtualItemView(verticalScroll, maxCols));
   }
 
+  /** Visual root. */
   get root(): HTMLElement {
     return api.grok_VirtualItemView_Get_Root(this.dart);
   }
 
+  /** Sets the number of elements, and a function that renders i-th element. */
   setData(length: number, renderer: any): void {
     api.grok_VirtualItemView_SetData(this.dart, length, renderer);
+  }
+
+  /** Refreshes i-th element without refreshing the whole view */
+  refreshItem(i: number): void {
+    api.grok_VirtualItemView_RefreshItem(this.dart, i);
   }
 }
 

@@ -16,7 +16,11 @@ export class OpenChemLibSketcher extends grok.chem.SketcherBase {
   async init() {
     let id = `ocl-sketcher-${sketcherId++}`;
     this.root.id = id;
-    this._sketcher = OCL.StructureEditor.createSVGEditor(id, 1);
+
+    let sketcherConentDiv =  document.querySelectorAll("div.ui-div > div.grok-sketcher.ui-box");
+    if (sketcherConentDiv[0])
+      sketcherConentDiv[0].setAttribute("style", "width: 335; height: 350;");
+     this._sketcher = OCL.StructureEditor.createSVGEditor(id, 1);
     this._sketcher.setChangeListenerCallback((id: any, molecule: any) => {
       this.onChanged.next(null);
     });
