@@ -1,16 +1,24 @@
-<!-- TITLE: Security assurance -->
+<!-- TITLE: Security -->
 <!-- SUBTITLE: -->
 
-# Security assurance
+# Security
 
-## Architecture
+Datagrok was designed with security as one of the primary objectives. The platform gives users
+complete control of their data, letting them decide exactly what is shared with whom, and using the best security 
+practices across the solution. At the same time, it empowers customers' IT to manage the platform.
 
-Datagrok was designed with the security as a main objective, we should be in complete control of the data.
+At the moment, most of the Datagrok customers are big pharma and biotech companies. Due to the nature of the
+platform (you get maximum value when it is integrated with multiple databases and internal systems), and
+the data it deals with (internal databases, often containing proprietary chemical compounds), 
+the preferred deployment method is always on-premises. On one hand, it makes the integration more 
+complicated due to the need to integrate with the internal IT systems and adhere to the established regulations.
+On the other hand, that makes security assessment easier since the platform is used in a controlled 
+environment using the systems chosen by the IT. 
 
 ### Credentials
 
 [Security credentials](../../govern/security.md#credentials) are used to gain access to external resources. For example,
-database connections typically require a pair of login and password.
+database connections typically requires a pair of login and password.
 
 Data connection credentials are managed
 using [Datagrok Credentials Management Service](../../govern/security.md#credentials). All credentials are encrypted and
@@ -18,7 +26,7 @@ stored securely in [storage](../../govern/security.md#credentials-storage)
 
 ### Authentication
 
-Datagrok supports different types of authentication including but not limited to login-password, OAUTH, LDAP.
+Datagrok supports different types of authentication including but not limited to login-password, OAUTH, and LDAP.
 
 Enterprise customers might prefer to use a custom SSO (single sign-on) scheme. We can accommodate these needs by
 developing a customer-specific integration.
@@ -36,7 +44,7 @@ connection. See
 
 ### Vulnerability remediation
 
-Datagrok platform is written in Dart, which is a language developed and supported by Google. We
+Datagrok server core is written in Dart, which is a language developed and supported by Google. We
 follow [Dart Security Best Practises](https://dart.dev/security#best-practices) to minimize the risk of introducing a
 vulnerability.
 
