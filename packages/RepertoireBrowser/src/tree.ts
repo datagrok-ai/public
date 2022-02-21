@@ -183,7 +183,7 @@ interface NodeClickArgs {
   nodeId: string;
 }
 interface EdgeClickArgs {
-  edgeId: any;
+  edgeId: number;
 }
 interface ClickEventData {
   dart: any;
