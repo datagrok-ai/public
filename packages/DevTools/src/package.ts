@@ -7,6 +7,7 @@ import { EntityType } from './constants';
 import './styles.css';
 import * as tests from "./tests/test-examples";
 import {testPackages} from "./package-testing";
+import {viewersGallery} from "./viewers-gallery";
 import { functionSignatureEditor } from './function-signature-editor';
 import { addToJSContextCommand, getMinifiedClassNameMap, _renderDevPanel } from './dev-panel';
 
@@ -54,6 +55,12 @@ export function _functionSignatureEditor(): void {
     if (view.type == 'ScriptView')
     functionSignatureEditor(view);
   });
+}
+
+//description: ViewerGallery
+//tags: autostart
+export function _viewerGallery(): void { 
+  grok.shell.topMenu.find('Add').separator().item('Add viewer...', ()=>viewersGallery())
 }
 
 //description: IconTool
