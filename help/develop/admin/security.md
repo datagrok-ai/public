@@ -10,19 +10,20 @@ practices across the solution. At the same time, it empowers customers' IT to ma
 At the moment, most of the Datagrok customers are big pharma and biotech companies. Due to the nature of the
 platform (you get maximum value when it is integrated with multiple databases and internal systems), and
 the data it deals with (internal databases, often containing proprietary chemical compounds), 
-the preferred deployment method is always on-premises. On one hand, it makes the integration more 
+our clients deploy Datagrok on-premises. On one hand, it makes the integration more 
 complicated due to the need to integrate with the internal IT systems and adhere to the established regulations.
 On the other hand, that makes security assessment easier since the platform is used in a controlled 
 environment using the systems chosen by the IT. 
 
-### Credentials
+Datagrok's revolutionary in-browser data processing makes it a lot more secure compared to other products. For
+instance, in other products when you work with local files you need to upload the dataset to the server first in order 
+to do anything meaningful, therefore introducing additional layer of complexity and the need to manage 
+that dataset on a server. With Datagrok, a lot could be achieved without having to use the server at all. 
+Another mode that Datagrok supports is when the algorithm (in a form of a plugin) goes to the dataset 
+already located in the browser - this is also a more secure way to work with data than the other way around.
 
-[Security credentials](../../govern/security.md#credentials) are used to gain access to external resources. For example,
-database connections typically requires a pair of login and password.
-
-Data connection credentials are managed
-using [Datagrok Credentials Management Service](../../govern/security.md#credentials). All credentials are encrypted and
-stored securely in [storage](../../govern/security.md#credentials-storage)
+The [apps](../develop.md) built on top of the platform end up a lot more secure than the traditional 
+web applications, since they reuse the existing security system and do not have to roll out their own.
 
 ### Authentication
 
@@ -32,11 +33,25 @@ Enterprise customers might prefer to use a custom SSO (single sign-on) scheme. W
 developing a customer-specific integration.
 
 More information about Datagrok authentication capabilities can be found
-on [Authentication](../../govern/authentication.md) page.
+on the [Authentication](../../govern/authentication.md) page.
+
+### Credentials
+
+[Security credentials](../../govern/security.md#credentials) are used to gain access to external resources. For example,
+database connections typically requires a pair of login and password.
+
+Data connection credentials are managed
+using [Datagrok Credentials Management Service](../../govern/security.md#credentials). 
+All credentials are [encrypted and stored securely](../../govern/security.md#credentials-storage).
+
+In case of AWS deployment, you can bypass Datagrok Credential Management Service and use
+[AWS Secret Manager](../../access/data-connection-credentials.md#secrets-managers) instead.
+
+Once a connection is set up, access to it (either `use` or `edit`) is subject to [user permissions](#user-permissions).
 
 ### User permissions
 
-The platform has a flexible access control mechanism that lets administrator define people (or groups of people) that
+The platform has a flexible access control mechanism that lets administrators define users (or groups of users) that
 are allowed to execute actions against different entities, based on the entity attributes. For instance, it is possible
 to define a group of people who would be able to open dashboards, but would not have access to the underlying
 connection. See
@@ -61,8 +76,8 @@ and [Grype](https://github.com/anchore/grype/) ([results are available publicly]
 
 ### Client-server interactions
 
-Datagrok client-side uses HTTP rest API to interact with server-side. Authentication token must be passed to access all
-features.
+Datagrok client-side uses HTTP rest API to interact with server-side. Authentication token is passed with
+each call, and the server checks its validity before proceeding.
 
 ## Infrastructure
 
@@ -74,6 +89,13 @@ and [persistent file storage](infrastructure.md#storage).
 All client-server communications use the [HTTPS](https://en.wikipedia.org/wiki/HTTPS) protocol, which means it is secure
 and encrypted.
 
+### Encryption at-rest
+
+For AWS deployment, we rely on Amazon's built-in encryption for
+[RDS](https://docs.aws.amazon.com/AmazonRDS/latest/UserGuide/Overview.Encryption.html)
+, [S3 buckets](https://docs.aws.amazon.com/AmazonS3/latest/dev/bucket-encryption.html),
+and [server-side encryption of ECS ephemeral storage](https://aws.amazon.com/blogs/containers/introducing-server-side-encryption-ephemeral-storage-using-aws-fargate-managed-keys-aws-fargate-platform-version-1-4/).
+
 ### On-premise deployment
 
 Enterprises typically prefer on-premise deployment for multiple reasons, such as security, ability to easily access
@@ -83,7 +105,7 @@ case of in-house deployment we rely on internal company policies.
 
 #### CloudFormation deployment
 
-To simplify deployment with all security policies taken into consideration we created
+To simplify deployment with all security policies taken into consideration, we created
 an [ECS CloudFormation deployment template](deploy-amazon-cloudformation.md).
 
 CloudFormation Template is tested by [Snyk](https://snyk.io/) on every change. The results
@@ -92,14 +114,6 @@ are [available publicly](https://github.com/datagrok-ai/public/security/code-sca
 In the resulted stand all communications are restricted
 by [Security Groups](https://docs.aws.amazon.com/vpc/latest/userguide/VPC_SecurityGroups.html), services can not be
 accessed directly, all requests goes through Application Load Balancer.
-
-#### Encryption at-rest
-
-For AWS deployment, we rely on Amazon's built-in encryption for
-[RDS](https://docs.aws.amazon.com/AmazonRDS/latest/UserGuide/Overview.Encryption.html)
-, [S3 buckets](https://docs.aws.amazon.com/AmazonS3/latest/dev/bucket-encryption.html),
-and [server-side encryption of ECS ephemeral storage](https://aws.amazon.com/blogs/containers/introducing-server-side-encryption-ephemeral-storage-using-aws-fargate-managed-keys-aws-fargate-platform-version-1-4/)
-.
 
 ## More information:
 
