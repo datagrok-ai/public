@@ -2,10 +2,15 @@ import * as grok from 'datagrok-api/grok';
 import * as ui from 'datagrok-api/ui';
 import * as DG from 'datagrok-api/dg';
 
+import {setDifference} from '@datagrok-libraries/utils/src/operations';
+
 export class TreeBrowser {// extends DG.JsViewer {
   title: string;
   phyloTreeViewer: DG.Viewer;
   networkViewer: DG.Viewer;
+  dataFrame: DG.DataFrame;
+  network: DG.DataFrame;
+  leafs: TreeLeafs = {};
 
   // constructor() {
   //   super();
@@ -37,21 +42,37 @@ export class TreeBrowser {// extends DG.JsViewer {
         );
         const p = t.col('parent');
         const c = t.col('node');
-
         const id = cloneId.get(i);
+
+        this.leafs[id] = {index: [i], items: setDifference(c.toList(), p.toList())};
+
         t.rows.removeAt(0);
         t.columns.addNewString('clone').init((_) => id);
         t.columns.addNewInt('edgeColor').init((_) => i);
 
         for (let k = 0; k < t.rowCount; k++) {
           const n1 = p.get(k);
-          if (n1 == 'root') p.set(k, `root-${id}`);
-          else if (n1.startsWith('node-')) p.set(k, `${n1}-${id}`);
+
+          if (n1 == 'root')
+            p.set(k, `root-${id}`);
+          else if (n1.startsWith('node-'))
+            p.set(k, `${n1}-${id}`);
+
           const n2 = c.get(k);
-          if (n2.startsWith('node-')) c.set(k, `${n2}-${id}`);
+
+          if (n2.startsWith('node-'))
+            c.set(k, `${n2}-${id}`);
+          else {
+            if (!this.leafs[n2])
+              this.leafs[n2] = {index: [], items: []};
+
+            this.leafs[n2]['index'].push(i);
+          }
         }
-        if (processed == null) processed = t;
-        else processed.append(t, true);
+        if (processed === undefined)
+          processed = t;
+        else
+          processed.append(t, true);
       }
     }
     return processed;
@@ -68,11 +89,14 @@ export class TreeBrowser {// extends DG.JsViewer {
    * @return {Promise<void>}
    */
   async init(df: DG.DataFrame, mlbView: DG.TableView): Promise<void> {
+    this.dataFrame = df;
+
     const treeCol = df.col('TREE');
     const cloneId = df.col('CLONE');
 
     const processed: DG.DataFrame = await this._unpackNewickTrees(treeCol, cloneId);
 
+    this.network = processed;
     grok.data.linkTables(df, processed, ['clone'], ['clone'], [DG.SYNC_TYPE.CURRENT_ROW_TO_SELECTION]);
     treeCol.semType = 'newick';
     df.currentRowIdx = 1;
@@ -95,24 +119,54 @@ export class TreeBrowser {// extends DG.JsViewer {
       this._onNetworkDiagramEdgeClick(args);
     });
 
-    // this.phyloTreeViewer = tree;
+    this.phyloTreeViewer = tree;
     // this.networkViewer = network;
+  }
+
+  selectTree(index: number) {
+    const maxIndex = this.dataFrame.rowCount;
+    this.dataFrame.currentRowIdx = index >= maxIndex ? maxIndex - 1 : (index < 0 ? 0 : index);
+    this.phyloTreeViewer.onFrameAttached(this.dataFrame);
+    console.warn(['selectTree', this.dataFrame.currentRow.idx, this.dataFrame.currentRowIdx]);
+  }
+
+  private _selectNode(nodeId: string) {
+    let cloneId: string | undefined;
+
+    if (nodeId.startsWith('node') || nodeId.startsWith('root')) {
+      const s = nodeId.split('-');
+      cloneId = s[s.length - 1];
+    }
+
+    const leafs = cloneId ? this.leafs[cloneId] : {index: this.leafs[nodeId], items: nodeId};
+
+    console.warn([nodeId, cloneId, leafs]);
+
+    this.selectTree(leafs['index'][0]);
   }
 
   /**
    * Called when mouse clicked a node on the network diagram.
-   * @param {ClickEventData} data Event data containing node id.
+   * @param {ClickEventData} data Event data containing the clicked node ID.
    */
   private _onNetworkDiagramNodeClick(data: ClickEventData) {
-    console.warn(data.args);
+    this._selectNode((data.args as NodeClickArgs).nodeId);
   }
 
   /**
    * Called when mouse clicked an edge on the network diagram.
-   * @param {ClickEventData} data Event data containing edge id.
+   * @param {ClickEventData} data Event data containing the clicked edge ID.
    */
   private _onNetworkDiagramEdgeClick(data: ClickEventData) {
-    console.warn(data.args);
+    const edgeId = (data.args as EdgeClickArgs).edgeId;
+
+    console.warn(['_onNetworkDiagramEdgeClick', edgeId]);
+
+    const parent = this.network.col('parent');
+    const nodeId = parent.get(edgeId);
+
+    this._selectNode(nodeId);
+    console.warn([edgeId, nodeId]);
   }
 
   get root(): HTMLElement {
@@ -129,9 +183,16 @@ interface NodeClickArgs {
   nodeId: string;
 }
 interface EdgeClickArgs {
-  edgeId: string;
+  edgeId: any;
 }
 interface ClickEventData {
   dart: any;
   args: NodeClickArgs | EdgeClickArgs;
 }
+
+interface TreeMap {
+  index: number[];
+  items: string[]
+}
+
+type TreeLeafs = {[key: string]: TreeMap};
