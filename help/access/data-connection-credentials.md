@@ -42,7 +42,7 @@ Then, let's do the following in Datagrok:
    ![Create connection to AWS Secret Manager](data-connection-secret-p01.png)
 
 2. Create a Postgres connection to database `biodb01` with name `biodb01-connection`. It is important to select
-   `aws-sm-bio` created at the previous step and specify the correct secret name.  
+   `aws-sm-bio` created at the previous step and specify the correct secret name.
    ![Add new Data connection](data-connection-secret-p02.png)
 
 3. Click test to ensure that secret name is correct.
