@@ -403,7 +403,7 @@ export class MolecularLiabilityBrowser {
     this.vidsObsPTMs = ['VR000000044'];
     ////////////////////////////////////////////////////
 
-    //this.compostionPviewer = new CompostionPviewer();
+    this.compostionPviewer = new CompostionPviewer();
     const ptmMap = JSON.parse(await _package.files.readAsText('ptm_map.json'));
     const cdrMap = JSON.parse(await _package.files.readAsText('cdr_map.json'));
     const referenceDf = (await _package.files.readBinaryDataFrames('ptm_in_cdr.d42'))[0];
