@@ -4,16 +4,16 @@
 	"version": "0.0.4",
 	"description": "",
 	"dependencies": {
-	  "datagrok-api": ">=0.121.0"
-	 },
+		"datagrok-api": ">=0.121.0"
+	},
 	"sources": [
-    "phylotree/phylotree.css",
+		"phylotree/phylotree.css",
 		"phylotree/jquery.js",
 		"phylotree/bootstrap.min.js",
 		"phylotree/d3.v3.min.js",
 		"phylotree/phylotree.js",
 		"phylotree/underscore-min.js"
-  ],
+	],
 	"scripts": {
 		"debug-phylotreeviewer": "grok publish --rebuild",
 		"release-phylotreeviewer": "grok publish --rebuild --release",
@@ -24,6 +24,13 @@
 		"debug-phylotreeviewer-local": "grok publish local --rebuild",
 		"release-phylotreeviewer-local": "grok publish local --rebuild --release"
 	},
-	"canEdit": [ "Developers" ],
-	"canView": [ "All users" ]
+	"canEdit": [
+		"Developers"
+	],
+	"canView": [
+		"All users"
+	],
+	"devDependencies": {
+		"webpack-cli": "^4.9.2"
+	}
 }

@@ -406,7 +406,7 @@ export class MolecularLiabilityBrowser {
     //this.compostionPviewer = new CompostionPviewer();
     const ptmMap = JSON.parse(await _package.files.readAsText('ptm_map.json'));
     const cdrMap = JSON.parse(await _package.files.readAsText('cdr_map.json'));
-    const referenceDf = (await _package.files.readBinaryDataFrames(`ptm_in_cdr.d42`))[0];
+    const referenceDf = (await _package.files.readBinaryDataFrames('ptm_in_cdr.d42'))[0];
 
     const tempDf = referenceDf.clone(null, ['v_id']);
     (tempDf.columns as DG.ColumnList).addNewInt('index').init((i) => i);
@@ -426,6 +426,7 @@ export class MolecularLiabilityBrowser {
     if (dfTree) {
       const treeBrowser = new TreeBrowser();
       await treeBrowser.init(dfTree, this.mlbView);
+      //this.mlbView.dockManager.dock(treeBrowser, DG.DOCK_TYPE.DOWN);
     }
 
     this.setVidInput();
