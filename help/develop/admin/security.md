@@ -100,8 +100,8 @@ and [server-side encryption of ECS ephemeral storage](https://aws.amazon.com/blo
 
 Enterprises typically prefer on-premise deployment for multiple reasons, such as security, ability to easily access
 internal data, and other features such as integration with the enterprise
-[authentication](../../govern/authentication.md) methods. Regarding Datagrok infrastructure it can be easily done. In
-case of in-house deployment we rely on internal company policies.
+[authentication](../../govern/authentication.md) methods. In case of on-premise deployment, we rely 
+on the internal company policies.
 
 #### CloudFormation deployment
 
