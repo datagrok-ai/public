@@ -651,7 +651,7 @@ export function choiceInput<T>(name: string, selected: T, items: T[], onValueCha
   return new InputBase(api.grok_ChoiceInput(name, selected, items), onValueChanged);
 }
 
-export function multiChoiceInput<T>(name: string, value: T, items: T[], onValueChanged: Function | null = null): InputBase {
+export function multiChoiceInput<T>(name: string, value: T[], items: T[], onValueChanged: Function | null = null): InputBase {
   return new InputBase(api.grok_MultiChoiceInput(name, value, items), onValueChanged);
 }
 
