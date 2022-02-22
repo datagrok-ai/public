@@ -45,7 +45,7 @@ export class KetcherSketcher extends grok.chem.SketcherBase {
       },
     };
 
-    let host = ui.div([], { style: { width: "fit-content" } });
+    let host = ui.div([], { style: { width: "700px", height: "500px" } });
 
     let component = React.createElement(Editor, props, null);
     ReactDOM.render(component, host);
