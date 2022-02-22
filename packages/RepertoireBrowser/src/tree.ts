@@ -127,22 +127,18 @@ export class TreeBrowser {// extends DG.JsViewer {
     const maxIndex = this.dataFrame.rowCount;
     this.dataFrame.currentRowIdx = index >= maxIndex ? maxIndex - 1 : (index < 0 ? 0 : index);
     this.phyloTreeViewer.onFrameAttached(this.dataFrame);
-    console.warn(['selectTree', this.dataFrame.currentRow.idx, this.dataFrame.currentRowIdx]);
   }
 
   private _selectNode(nodeId: string) {
-    let cloneId: string | undefined;
+    let cloneId: string;
 
     if (nodeId.startsWith('node') || nodeId.startsWith('root')) {
       const s = nodeId.split('-');
       cloneId = s[s.length - 1];
-    }
+    } else
+      cloneId = nodeId;
 
-    const leafs = cloneId ? this.leafs[cloneId] : {index: this.leafs[nodeId], items: nodeId};
-
-    console.warn([nodeId, cloneId, leafs]);
-
-    this.selectTree(leafs['index'][0]);
+    this.selectTree(this.leafs[cloneId]['index'][0]);
   }
 
   /**
@@ -159,14 +155,9 @@ export class TreeBrowser {// extends DG.JsViewer {
    */
   private _onNetworkDiagramEdgeClick(data: ClickEventData) {
     const edgeId = (data.args as EdgeClickArgs).edgeId;
-
-    console.warn(['_onNetworkDiagramEdgeClick', edgeId]);
-
     const parent = this.network.col('parent');
     const nodeId = parent.get(edgeId);
-
     this._selectNode(nodeId);
-    console.warn([edgeId, nodeId]);
   }
 
   get root(): HTMLElement {
