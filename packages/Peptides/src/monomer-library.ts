@@ -1,8 +1,11 @@
 /** HELM associated sdf libraries with monomer processing*/
 export class MonomerLibrary {
+  private static _name = 'monomerLibrary';
+
   private monomerFields: string[] = [
     'molecule', 'MonomerType', 'MonomerNaturalAnalogCode', 'MonomerName', 'MonomerCode', 'MonomerCaps', 'BranchMonomer',
   ];
+
   private library: {
     [name: string]: {
       mol: string,
@@ -11,6 +14,7 @@ export class MonomerLibrary {
       linkages: { [link: string]: { atomNumber: number, type: string } }
     }
   } = {};
+
   private monomers: string[] = [];
 
   constructor(sdf: string) {
@@ -70,6 +74,10 @@ export class MonomerLibrary {
   /** getting the list of the minomers available in library*/
   get monomerNames() {
     return this.monomers;
+  }
+
+  static get id(): string {
+    return MonomerLibrary._name;
   }
 
   private getLinkData(mol: string, caps: string, name: string) {

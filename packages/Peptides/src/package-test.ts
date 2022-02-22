@@ -6,7 +6,7 @@ import './tests/peptide-space-test';
 import './tests/peptides-tests';
 import './tests/msa-tests';
 
-export const _package = new DG.Package();
+export const _packageTest = new DG.Package();
 
 //name: test
 //input: string category {optional: true}
