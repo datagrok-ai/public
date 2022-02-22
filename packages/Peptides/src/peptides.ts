@@ -7,6 +7,8 @@ import {SARViewer, SARViewerVertical} from './viewers/sar-viewer';
 import {SubstViewer} from './viewers/subst-viewer';
 import {ChemPalette} from './utils/chem-palette';
 import {Observable} from 'rxjs';
+import { MonomerLibrary } from './monomer-library';
+import {_package} from './package';
 
 type viewerTypes = SARViewer | SARViewerVertical | SubstViewer;
 export class PeptidesController {
@@ -17,12 +19,16 @@ export class PeptidesController {
 
   private constructor(dataFrame: DG.DataFrame) {
     this._dataFrame = dataFrame;
-    this._model = PeptidesModel.getOrInit(this._dataFrame);
+    this._model = PeptidesModel.getInstance(this._dataFrame);
     // this.getOrInitModel(this._dataFrame);
   }
 
-  static getInstance(dataFrame: DG.DataFrame): PeptidesController {
+  static async getInstance(dataFrame: DG.DataFrame): Promise<PeptidesController> {
     dataFrame.temp[PeptidesController.controllerName] ??= new PeptidesController(dataFrame);
+    if (dataFrame.temp[MonomerLibrary.id] === null) {
+      const sdf = await _package.files.readAsText('HELMMonomers_June10.sdf');
+      dataFrame.temp[MonomerLibrary.id] ??= new MonomerLibrary(sdf);
+    }
     return dataFrame.temp[PeptidesController.controllerName];
   }
 
@@ -60,11 +66,11 @@ export class PeptidesController {
   }
 
   async updateData(
-    dataFrame: DG.DataFrame | null, activityCol: string | null, activityScaling: string | null,
-    sourceGrid: DG.Grid | null, twoColorMode: boolean | null, initialBitset: DG.BitSet | null,
-    grouping: boolean | null) {
+    activityCol: string | null, activityScaling: string | null, sourceGrid: DG.Grid | null,
+    twoColorMode: boolean | null, initialBitset: DG.BitSet | null, grouping: boolean | null,
+  ) {
     await this._model.updateData(
-      dataFrame, activityCol, activityScaling, sourceGrid, twoColorMode, initialBitset, grouping);
+      activityCol, activityScaling, sourceGrid, twoColorMode, initialBitset, grouping);
   }
 
   static async scaleActivity(

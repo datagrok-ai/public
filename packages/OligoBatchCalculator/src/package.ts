@@ -2,7 +2,7 @@ import * as grok from 'datagrok-api/grok';
 import * as ui from 'datagrok-api/ui';
 import * as DG from 'datagrok-api/dg';
 import $ from 'cash-dom';
-import { map, individualBases, nearestNeighbour, SYNTHESIZERS, TECHNOLOGIES } from "./map";
+import { map, individualBases, nearestNeighbour, TECHNOLOGIES } from "./map";
 import { isValidSequence, getAllCodesOfSynthesizer } from "./validation"
 
 export let _package = new DG.Package();
@@ -53,7 +53,7 @@ async function getOverhangModificationsDf(): Promise<DG.DataFrame> {
     DG.Column.fromStrings(OVERHANG_COL_NAMES.ABBREVIATION, modifications.map((e) => e.abbreviation)),    // @ts-ignore
     DG.Column.fromFloat32Array(OVERHANG_COL_NAMES.MOLECULAR_WEIGHT, modifications.map((e) => (e.molecularWeight == undefined) ? 0 : e.molecularWeight)),
     DG.Column.fromStrings(OVERHANG_COL_NAMES.BASE_MODIFICATION, modifications.map((e) => e.baseModification)),
-    DG.Column.fromStrings(OVERHANG_COL_NAMES.EXTINCTION_COEFFICIENT, modifications.map((e) => e.extinctionCoefficient)),
+    DG.Column.fromStrings(OVERHANG_COL_NAMES.EXTINCTION_COEFFICIENT, modifications.map((e) => String(e.extinctionCoefficient))),
     DG.Column.fromStrings(OVERHANG_COL_NAMES.ACTION, Array(modifications.length))
   ])!;
 }
@@ -427,6 +427,15 @@ export async function OligoBatchCalculatorApp(): Promise<void> {
   overhangModificationsGrid.col(OVERHANG_COL_NAMES.BASE_MODIFICATION)!.width = 110;
   overhangModificationsGrid.col(OVERHANG_COL_NAMES.EXTINCTION_COEFFICIENT)!.width = 100;
 
+  const codesTablesDiv = ui.splitV([
+    ui.box(ui.h2('ASO Gapmers'), { style: {maxHeight: '40px'} }),
+    asoGapmersGrid.root,
+    ui.box(ui.h2("2'-OMe and 2'-F modifications"), { style: {maxHeight: '40px'} }),
+    omeAndFluoroGrid.root,
+    ui.box(ui.h2('Overhang modifications'), { style: {maxHeight: '40px'} }),
+    overhangModificationsGrid.root
+  ], { style: { maxWidth: '600px' } });
+
   let view = grok.shell.newView('Oligo Batch Calculator', [
     ui.splitH([
       ui.splitV([
@@ -448,17 +457,15 @@ export async function OligoBatchCalculatorApp(): Promise<void> {
           gridDiv
         ])
       ]),
-      ui.splitV([
-        ui.box(ui.h2('ASO Gapmers'), { style: {maxHeight: '40px'} }),
-        asoGapmersGrid.root,
-        ui.box(ui.h2("2'-OMe and 2'-F modifications"), { style: {maxHeight: '40px'} }),
-        omeAndFluoroGrid.root,
-        ui.box(ui.h2('Overhang modifications'), { style: {maxHeight: '40px'} }),
-        overhangModificationsGrid.root
-      ], { style: { maxWidth: '600px' } })
+      codesTablesDiv
     ])
   ]);
   view.box = true;
+
+  const switchInput = ui.switchInput('Codes', true, (v: boolean) => (v) ?
+    $(codesTablesDiv).show() :
+    $(codesTablesDiv).hide()
+  );
 
   let col = overhangModificationsGrid.col(OVERHANG_COL_NAMES.ACTION)!;
   col.cellType = 'html';
@@ -473,7 +480,8 @@ export async function OligoBatchCalculatorApp(): Promise<void> {
   view.setRibbonPanels([[
     ui.iconFA('redo', () => inputSequences.value = ''),
     ui.iconFA('plus', () => addModificationButton(overhangModificationsDf)),
-    ui.iconFA('arrow-to-bottom', () => saveAsCsv(table))
+    ui.iconFA('arrow-to-bottom', () => saveAsCsv(table)),
+    switchInput.root
   ]]);
 
   $('.inputSequence textarea')
