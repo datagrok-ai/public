@@ -18,7 +18,7 @@ import {
   Package,
   UserSession,
   Property,
-  FileInfo, HistoryEntry
+  FileInfo, HistoryEntry, ProjectOpenOptions
 } from "./entities";
 import {ViewLayout} from "./views/view";
 import {toDart, toJs} from "./wrappers";
@@ -649,7 +649,7 @@ export class ProjectsDataSource extends HttpDataSource<Project> {
   }
 
   /** Opens the specified project. */
-  open(name: string, options?: {closeAll: boolean}): Promise<Project> {
+  open(name: string, options?: ProjectOpenOptions): Promise<Project> {
     return this
       .filter(name)
       .first()

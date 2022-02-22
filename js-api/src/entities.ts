@@ -221,6 +221,11 @@ export class Func extends Entity {
   }
 }
 
+export interface ProjectOpenOptions {
+  closeAll: boolean;
+  openViews: 'all' | 'saved' | 'none';
+}
+
 /** Represents a project */
 export class Project extends Entity {
   constructor(dart: any) {
@@ -269,8 +274,9 @@ export class Project extends Entity {
   }
 
   /** Opens the project in workspace */
-  open(options?: { closeAll: boolean }): Promise<Project> {
-    return api.grok_Project_Open(this.dart, options?.closeAll ?? false);
+  open(options?: ProjectOpenOptions): Promise<Project> {
+    let openViews = options?.openViews ?? 'all';
+    return api.grok_Project_Open(this.dart, options?.closeAll ?? false, openViews == 'all' || openViews == 'saved', openViews == 'all');
   }
 
   get links(): Entity[] {
