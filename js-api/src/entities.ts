@@ -225,7 +225,11 @@ export class Func extends Entity {
 export class Project extends Entity {
   constructor(dart: any) {
     super(dart);
+
+    this.options = new MapProxy(api.grok_Project_Get_Options(this.dart), 'options');
   }
+
+  public options: any;
 
   static create(): Project {return toJs(api.grok_Project_From_Id(null)); };
 
