@@ -9,8 +9,7 @@ import {analyzePeptidesWidget} from '../widgets/analyze-peptides';
 import {manualAlignmentWidget} from '../widgets/manual-alignment';
 import {peptideMoleculeWidget} from '../widgets/peptide-molecule';
 import * as P from '../package';
-
-// let _package = new DG.Package();
+import { _packageTest } from '../package-test';
 
 category('peptides', async () => {
   let peptidesDf: DG.DataFrame;
@@ -62,7 +61,7 @@ category('peptides', async () => {
   });
 
   test('Peptides-controller', async () => {
-    const peptides = PeptidesController.getInstance(peptidesDf);
+    const peptides = await PeptidesController.getInstance(peptidesDf);
     peptides.init(peptidesGrid, pepView, options, asCol, peptidesDf.columns.names());
   });
 

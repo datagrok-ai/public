@@ -2,7 +2,7 @@
 	"name": "@datagrok/ketcher",
 	"beta": false,
 	"friendlyName": "Ketcher",
-	"version": "0.0.27",
+	"version": "0.0.29",
 	"description": "",
 	"dependencies": {
 		"@types/react": "^17.0.39",

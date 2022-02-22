@@ -4,7 +4,7 @@ import * as DG from 'datagrok-api/dg';
 /** Formula Line types */
 const enum ITEM_TYPE {
   LINE = 'line',
-  BAND = 'band'
+  BAND = 'band',
 }
 
 /** Formula Line captions */
@@ -15,20 +15,25 @@ const enum ITEM_CAPTION {
   VERT_LINE = 'Line - Vertical',
   HORZ_LINE = 'Line - Horizontal',
   HORZ_BAND = 'Band - Horizontal',
-  VERT_BAND = 'Band - Vertical'
+  VERT_BAND = 'Band - Vertical',
 }
 
 /** Formula Line sources */
 const enum ITEM_SOURCE {
   VIEWER = 'Viewer',
-  DATAFRAME = 'DataFrame'
+  DATAFRAME = 'DataFrame',
 }
 
 const enum BTN_CAPTION {
   ADD_NEW = 'Add new',
   CLONE = 'Clone',
-  REMOVE = 'Remove'
+  REMOVE = 'Remove',
+  HISTORY = 'History',
+  EMPTY = 'Empty',
 }
+
+const HISTORY_KEY = 'formula-lines-dialog';
+const HISTORY_LENGTH = 12;
 
 /**
  * Returns Formula Line type by its user-friendly [caption].
@@ -102,7 +107,7 @@ class Table {
   }
 
   _grid: DG.Grid;
-  _onChangedAction: Function
+  _onItemChangedAction: Function;
 
   get _dataFrame(): DG.DataFrame { return this._grid.dataFrame!; }
 
@@ -120,16 +125,16 @@ class Table {
       if (this._currentItemIdx > itemIdx)
         this._currentItemIdx--;
       if (this._currentItemIdx >= 0)
-        this._onChangedAction(this._currentItemIdx);
+        this._onItemChangedAction(this._currentItemIdx);
     });
     btn.style.textAlign = 'center';
     btn.style.height = '20px';
     return btn;
   }
 
-  constructor(items: DG.FormulaLine[], onChangedAction: Function) {
+  constructor(items: DG.FormulaLine[], onItemChangedAction: Function) {
     this.items = items;
-    this._onChangedAction = onChangedAction;
+    this._onItemChangedAction = onItemChangedAction;
 
     const dataFrame = this.items.length > 0
       ? DG.DataFrame.fromObjects(this.items)!
@@ -175,9 +180,7 @@ class Table {
         cell.style.element = this._deleteBtn(cell.gridRow);
     });
 
-    this._dataFrame.onCurrentRowChanged.subscribe((_) => {
-      this._onChangedAction(this._currentItemIdx);
-    });
+    this._dataFrame.onCurrentRowChanged.subscribe((_) => this._onItemChangedAction(this._currentItemIdx));
 
     this._dataFrame.onValuesChanged.subscribe((_) => {
       if (!this._notify)
@@ -186,7 +189,7 @@ class Table {
       item.title = this._dataFrame.get('title', this._currentItemIdx);
       item.formula = this._dataFrame.get('formula', this._currentItemIdx);
       item.visible = this._dataFrame.get('visible', this._currentItemIdx);
-      this._onChangedAction(this._currentItemIdx);
+      this._onItemChangedAction(this._currentItemIdx);
     });
 
     this.setFirstItemAsCurrent();
@@ -195,9 +198,9 @@ class Table {
   setFirstItemAsCurrent() {
     if (this.items.length > 0) {
       this._currentItemIdx = 0;
-      this._onChangedAction(0);
+      this._onItemChangedAction(0);
     } else
-      this._onChangedAction(-1);
+      this._onItemChangedAction(-1);
   }
 
   update(itemIdx: number) {
@@ -353,26 +356,25 @@ class Preview {
  * Editor Helper for Formula Lines (form with corresponding inputs).
  */
 class Editor {
-  _form: HTMLElement;
-  _dataFrame: DG.DataFrame;
-  _onChangedAction: Function;
-
-  /** The title must be accessible from other inputs, because it may depend on the formula */
-  _ibTitle?: DG.InputBase;
-  setTitleIfEmpty(oldFormula: string, newFormula: string) {
-    if ((oldFormula == (this._ibTitle!.input as HTMLInputElement).placeholder) || oldFormula == 'z'
-      || newFormula == this._ibTitle!.value)
-      this._ibTitle!.value = newFormula;
-  }
-
   items: DG.FormulaLine[];
   get root(): HTMLElement { return this._form; }
 
-  constructor(items: DG.FormulaLine[], dataFrame: DG.DataFrame, onChangedAction: Function) {
+  _form: HTMLElement;
+  _dataFrame: DG.DataFrame;
+  _onItemChangedAction: Function;
+
+  /** The title must be accessible from other inputs, because it may depend on the formula */
+  _ibTitle?: DG.InputBase;
+  _setTitleIfEmpty(oldFormula: string, newFormula: string) {
+    if ((oldFormula == (this._ibTitle!.input as HTMLInputElement).placeholder) || newFormula == this._ibTitle!.value)
+      this._ibTitle!.value = newFormula;
+  }
+
+  constructor(items: DG.FormulaLine[], dataFrame: DG.DataFrame, onItemChangedAction: Function) {
     this._form = ui.form();
     this.items = items;
     this._dataFrame = dataFrame;
-    this._onChangedAction = onChangedAction;
+    this._onItemChangedAction = onItemChangedAction;
   }
 
   /** Creates and fills editor for given Formula Line */
@@ -435,9 +437,9 @@ class Editor {
       (value: string) => {
         let oldFormula = item.formula!;
         item.formula = value;
-        let resultOk = this._onChangedAction(itemIdx);
+        let resultOk = this._onItemChangedAction(itemIdx);
         elFormula.classList.toggle('d4-forced-invalid', !resultOk);
-        this.setTitleIfEmpty(oldFormula, item.formula);
+        this._setTitleIfEmpty(oldFormula, item.formula);
       });
 
     const elFormula = ibFormula.input as HTMLInputElement;
@@ -456,7 +458,7 @@ class Editor {
     const ibColor = ui.colorInput('Color', item.color ?? '#000000',
       (value: string) => {
         item.color = value;
-        this._onChangedAction(itemIdx);
+        this._onItemChangedAction(itemIdx);
       });
 
     const elColor = ibColor.input as HTMLInputElement;
@@ -477,7 +479,7 @@ class Editor {
     elOpacity.value = item.opacity ?? 100;
     elOpacity.addEventListener('input', () => {
       item.opacity = parseInt(elOpacity.value);
-      this._onChangedAction(itemIdx);
+      this._onItemChangedAction(itemIdx);
     });
     elOpacity.setAttribute('style', 'width: 204px; margin-top: 6px; margin-left: 0px;');
 
@@ -494,7 +496,7 @@ class Editor {
       ['solid', 'dotted', 'dashed', 'longdash', 'dotdash'],
       (value: string) => {
         item.style = value;
-        this._onChangedAction(itemIdx);
+        this._onItemChangedAction(itemIdx);
       });
 
     const elStyle = ibStyle.input as HTMLInputElement;
@@ -503,7 +505,7 @@ class Editor {
     const ibWidth = ui.intInput('', item.width ?? 1,
       (value: number) => {
         item.width = value;
-        this._onChangedAction(itemIdx);
+        this._onItemChangedAction(itemIdx);
       });
 
     const elWidth = ibWidth.input as HTMLInputElement;
@@ -522,7 +524,7 @@ class Editor {
     const ibMin = ui.stringInput('Range', `${item.min ?? ''}`,
       (value: string) => {
         item.min = value.length == 0 ? undefined : Number(value);
-        this._onChangedAction(itemIdx);
+        this._onItemChangedAction(itemIdx);
       });
 
     const elMin = ibMin.input as HTMLInputElement;
@@ -532,7 +534,7 @@ class Editor {
     const ibMax = ui.stringInput('', `${item.max ?? ''}`,
       (value: string) => {
         item.max = value.length == 0 ? undefined : Number(value);
-        this._onChangedAction(itemIdx);
+        this._onItemChangedAction(itemIdx);
       });
 
     const elMax = ibMax.input as HTMLInputElement;
@@ -550,7 +552,7 @@ class Editor {
       item.zIndex && item.zIndex > 0 ? 'above markers' : 'below markers', ['above markers', 'below markers'],
       (value: string) => {
         item.zIndex = value == 'above markers' ? 100 : -100;
-        this._onChangedAction(itemIdx);
+        this._onItemChangedAction(itemIdx);
       });
 
     const elArrange = ibArrange.input as HTMLInputElement;
@@ -576,7 +578,7 @@ class Editor {
     this._ibTitle = ui.stringInput('Title', item.title ?? '',
       (value: string) => {
         item.title = formTitleValue(value);
-        this._onChangedAction(itemIdx);
+        this._onItemChangedAction(itemIdx);
       });
 
     const elTitle = this._ibTitle.input as HTMLInputElement;
@@ -593,7 +595,7 @@ class Editor {
     const ibDescription = ui.textInput('Description', item.description ?? '',
       (value: string) => {
         item.description = value;
-        this._onChangedAction(itemIdx);
+        this._onItemChangedAction(itemIdx);
       });
 
     const elDescription = ibDescription.input as HTMLInputElement;
@@ -611,7 +613,7 @@ class Editor {
       item.column2 ? this._dataFrame.col(item.column2) : null,
       (value: DG.Column) => {
         item.column2 = value.name;
-        this._onChangedAction(itemIdx);
+        this._onItemChangedAction(itemIdx);
       });
 
     const elColumn2 = ibColumn2.input as HTMLInputElement;
@@ -628,8 +630,8 @@ class Editor {
       (value: DG.Column) => {
         const oldFormula = item.formula!;
         item.formula = '${' + value + '} = ' + ibValue.value;
-        this._onChangedAction(itemIdx);
-        this.setTitleIfEmpty(oldFormula, item.formula);
+        this._onItemChangedAction(itemIdx);
+        this._setTitleIfEmpty(oldFormula, item.formula);
       });
 
     const elColumn = ibColumn.input as HTMLInputElement;
@@ -638,8 +640,8 @@ class Editor {
     const ibValue = ui.stringInput('Value', value, (value: string) => {
       const oldFormula = item.formula!;
       item.formula = '${' + ibColumn.value + '} = ' + value;
-      this._onChangedAction(itemIdx);
-      this.setTitleIfEmpty(oldFormula, item.formula);
+      this._onItemChangedAction(itemIdx);
+      this._setTitleIfEmpty(oldFormula, item.formula);
     });
     ibValue.nullable = false;
 
@@ -654,12 +656,30 @@ class Editor {
  * Helper that implements the logic of creating a Formula Line item of a given type.
  */
 class CreationControl {
-  /** Opens a popup menu with predefined new Formula Line item types */
-  popupMenu: Function;
-  /** Used to create constant lines passing through the mouse click point on the Scatter Plot */
-  _getCols: Function;
-  /** Used to create clone */
-  _getCurrentItem: Function;
+  popupMenu: Function;        // Opens a popup menu with predefined new Formula Line item types
+  _getCols: Function;         // Used to create constant lines passing through the mouse click point on the Scatter Plot
+  _getCurrentItem: Function;  // Used to create clone
+
+  /** Items for History menu group */
+  _historyItems: DG.FormulaLine[];           // Stores session history
+  _justCreatedItems: DG.FormulaLine[] = [];  // Stores history of the currently open dialog
+
+  _loadHistory(): DG.FormulaLine[] { return localStorage[HISTORY_KEY] ? JSON.parse(localStorage[HISTORY_KEY]) : []; }
+
+  saveHistory() {
+    /** Remove duplicates from just created items (formula comparison) */
+    this._justCreatedItems = this._justCreatedItems.filter((val, ind, arr) =>
+      arr.findIndex((t) => (t.formula === val.formula) ) === ind);
+
+    /** Remove identical older items from history */
+    this._historyItems = this._historyItems.filter(arr =>
+      !this._justCreatedItems.find(val => (val.formula === arr.formula)));
+
+    let newHistoryItems = this._justCreatedItems.concat(this._historyItems);
+    newHistoryItems.splice(HISTORY_LENGTH);
+
+    localStorage[HISTORY_KEY] = JSON.stringify(newHistoryItems);
+  }
 
   /** Creates a button and binds an item creation menu to it */
   get button(): HTMLElement {
@@ -667,9 +687,10 @@ class CreationControl {
     return ui.div([btn], {style: {width: '100%', textAlign: 'right'}});
   }
 
-  constructor(getCols: Function, getCurrentItem: Function, onCreatedAction: Function) {
+  constructor(getCols: Function, getCurrentItem: Function, onItemCreatedAction: Function) {
     this._getCols = getCols;
     this._getCurrentItem = getCurrentItem;
+    this._historyItems = this._loadHistory();
 
     this.popupMenu = (valY?: number, valX?: number) => {
       const onClickAction = (itemCaption: string) => {
@@ -716,20 +737,48 @@ class CreationControl {
         item.type ??= getItemTypeByCaption(itemCaption);
         item = DG.FormulaLinesHelper.setDefaults(item);
 
-        /** Used to update the Table, Preview and Editor states */
-        onCreatedAction(item);
+        this._justCreatedItems.unshift(item);
+
+        /** Update the Table, Preview and Editor states */
+        onItemCreatedAction(item);
       }
 
       /** Construct popup menu */
-      const menu = DG.Menu.popup()
-        .items([ITEM_CAPTION.LINE,
-                ITEM_CAPTION.VERT_LINE,
-                ITEM_CAPTION.HORZ_LINE,
-                ITEM_CAPTION.VERT_BAND,
-                ITEM_CAPTION.HORZ_BAND], onClickAction);
-      /** Add "Clone" menu if the current table line exists. */
+      const menu = DG.Menu.popup().items([
+        ITEM_CAPTION.LINE,
+        ITEM_CAPTION.VERT_LINE,
+        ITEM_CAPTION.HORZ_LINE,
+        ITEM_CAPTION.VERT_BAND,
+        ITEM_CAPTION.HORZ_BAND
+      ], onClickAction);
+
+      /** Add separator only if other menu items exist */
+      if (this._getCurrentItem() || this._historyItems.length > 0)
+        menu.separator();
+
+      /**
+       * Add "Clone" menu if the current table line exists.
+       * TODO: The best option is to make the menu item enabled/disabled. But there is no such API yet.
+       */
       if (this._getCurrentItem())
-        menu.separator().items([BTN_CAPTION.CLONE], onClickAction);
+        menu.items([BTN_CAPTION.CLONE], onClickAction);
+
+      /**
+       * Add "History" menu group.
+       * TODO: The best option is to make the menu item enabled/disabled. But there is no such API yet.
+       */
+      if (this._historyItems.length > 0) {
+        const historyGroup = menu.group(BTN_CAPTION.HISTORY);
+        this._historyItems.forEach((item) => {
+          historyGroup.item(item.formula!, () => {
+            const newItem = Object.assign({}, item);
+            this._justCreatedItems.unshift(newItem);
+            onItemCreatedAction(newItem);
+          });
+        });
+        historyGroup.endGroup();
+      }
+
       menu.show();
     }
   }
@@ -739,21 +788,20 @@ class CreationControl {
  * A Dialog window with Formula Lines list, preview and editor.
  */
 export class FormulaLinesDialog {
-  title: string = 'Formula Lines';
-  helpUrl: string = '/help/develop/how-to/show-formula-lines.md';
-
+  dialog: DG.Dialog = ui.dialog({
+    title: 'Formula Lines',
+    helpUrl: '/help/develop/how-to/show-formula-lines.md',
+  });
   host: Host;
   preview: Preview;
   editor: Editor;
   viewerTable?: Table;
   dframeTable?: Table;
   creationControl: CreationControl;
-
   tabs: DG.TabControl;
-  dialog: DG.Dialog;
 
   /** Returns the Table corresponding to the current tab in the tab control */
-  get currentTable(): Table {
+  get _currentTable(): Table {
     return this.tabs.currentPane.name == ITEM_SOURCE.VIEWER
       ? this.viewerTable!
       : this.dframeTable!;
@@ -761,85 +809,97 @@ export class FormulaLinesDialog {
 
   /** Initializes all parameters and opens the Dialog window */
   constructor(src: DG.DataFrame | DG.Viewer) {
-    /** Init Host */
-    this.host = new Host(src);
+    /** Init Helpers */
+    this.host = this._initHost(src);
+    this.creationControl = this._initCreationControl();
+    this.preview = this._initPreview(src);
+    this.editor = this._initEditor();
+    this.tabs = this._initTabs();
 
-    /** Init CreationControl */
-    this.creationControl = new CreationControl(
+    /** Init Dialog layout */
+    const layout = ui.div([
+      ui.block([this.tabs.root, this.preview.root], {style: {width: '55%', paddingRight: '20px'}}),
+      ui.block([this.editor.root], {style: {width: '45%'}})
+    ]);
+
+    this.dialog
+      .add(layout)
+      .onOK(this._onOKAction.bind(this))
+      .show({width: 850, height: 650});
+  }
+
+  _initHost(src: DG.DataFrame | DG.Viewer): Host {
+    return new Host(src);
+  }
+
+  _initPreview(src: DG.DataFrame | DG.Viewer): Preview {
+    const preview = new Preview(this.host.viewerItems!, src, this.creationControl.popupMenu);
+    preview.height = 300;
+    return preview;
+  }
+
+  _initCreationControl(): CreationControl {
+    return new CreationControl(
       () => this.preview.axisCols,
-      () => this.currentTable.currentItem,
-      (item: DG.FormulaLine) => {
-        this.currentTable.add(item);
-        this.editor.update(0);
-        this.preview.update(0);
-      });
+      () => this._currentTable.currentItem,
+      (item: DG.FormulaLine) => this._onItemCreatedAction(item));
+  }
 
-    /** Init Preview */
-    this.preview = new Preview(this.host.viewerItems!, src, this.creationControl.popupMenu);
-    this.preview.height = 300;
-
-    /** Init Editor */
-    this.editor = new Editor(this.host.viewerItems!, this.preview.dataFrame,
+  _initEditor(): Editor {
+    return new Editor(this.host.viewerItems!, this.preview.dataFrame,
       (itemIdx: number): boolean => {
-        this.currentTable.update(itemIdx);
+        this._currentTable.update(itemIdx);
         return this.preview.update(itemIdx);
       });
+  }
 
-    this.tabs = DG.TabControl.create();
-    this.tabs.root.style.height = '230px';
+  _initTabs(): DG.TabControl {
+    const tabs = DG.TabControl.create();
+    tabs.root.style.height = '230px';
 
     /** Init Viewer Table (in the first tab) */
     if (this.host.viewerItems)
-      this.tabs.addPane(ITEM_SOURCE.VIEWER, () => {
-        this.viewerTable = new Table(this.host.viewerItems!,
-          (itemIdx: number): boolean => {
-            this.editor.update(itemIdx);
-            return this.preview.update(itemIdx);
-          });
+      tabs.addPane(ITEM_SOURCE.VIEWER, () => {
+        this.viewerTable = this._initTable(this.host.viewerItems!);
         return this.viewerTable.root;
       });
 
     /** Init DataFrame Table (in the second tab) */
     if (this.host.dframeItems)
-      this.tabs.addPane(ITEM_SOURCE.DATAFRAME, () => {
-        this.dframeTable = new Table(this.host.dframeItems!,
-          (itemIdx: number): boolean => {
-            this.editor.update(itemIdx);
-            return this.preview.update(itemIdx);
-          });
+      tabs.addPane(ITEM_SOURCE.DATAFRAME, () => {
+        this.dframeTable = this._initTable(this.host.dframeItems!);
         return this.dframeTable.root;
       });
 
     /** Display "Add new" button */
-    this.tabs.header.append(this.creationControl.button);
+    tabs.header.append(this.creationControl.button);
 
     /** Change data source when switching tabs */
-    this.tabs.onTabChanged.subscribe((_) => {
-      this.editor.items = this.currentTable.items;
-      this.preview.items = this.currentTable.items;
-      this.currentTable.setFirstItemAsCurrent();
+    tabs.onTabChanged.subscribe((_) => {
+      this.editor.items = this._currentTable.items;
+      this.preview.items = this._currentTable.items;
+      this._currentTable.setFirstItemAsCurrent();
     });
 
-    this.dialog = ui.dialog({ title: this.title, helpUrl: this.helpUrl });
-
-    /** Init Dialog layout */
-    const layout = ui.div([
-      ui.block([
-        this.tabs.root,
-        this.preview.root
-      ], { style: { width: '55%', paddingRight: '20px' } }),
-      ui.block([
-        this.editor.root
-      ], { style: { width: '45%' } })
-    ]);
-
-    this.dialog
-      .add(layout)
-      .onOK(this.onOKAction.bind(this))
-      .show({width: 850, height: 650});
+    return tabs;
   }
 
-  onOKAction() {
+  _initTable(items: DG.FormulaLine[]): Table {
+    return new Table(items,
+      (itemIdx: number): boolean => {
+        this.editor.update(itemIdx);
+        return this.preview.update(itemIdx);
+      });
+  }
+
+  _onOKAction() {
     this.host.save();
+    this.creationControl.saveHistory();
+  }
+
+  _onItemCreatedAction(item: DG.FormulaLine) {
+    this._currentTable.add(item);
+    this.editor.update(0);
+    this.preview.update(0);
   }
 }

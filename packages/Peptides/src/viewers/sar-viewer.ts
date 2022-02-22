@@ -80,7 +80,7 @@ export class SARViewer extends DG.JsViewer {
   async onTableAttached() {
     this.sourceGrid = this.view?.grid ?? (grok.shell.v as DG.TableView).grid;
     this.dataFrame?.setTag('dataType', 'peptides');
-    this.controller = PeptidesController.getInstance(this.dataFrame!);
+    this.controller = await PeptidesController.getInstance(this.dataFrame!);
     // this.model = PeptidesModel.getOrInit(this.dataFrame!);
     // this.model = this.controller.getOrInitModel();
 
@@ -142,7 +142,7 @@ export class SARViewer extends DG.JsViewer {
     //TODO: optimize. Don't calculate everything again if only view changes
     if (typeof this.dataFrame !== 'undefined' && this.activityColumnName && this.sourceGrid) {
       if (computeData) {
-        await this.controller!.updateData(this.dataFrame, this.activityColumnName, this.scaling, this.sourceGrid,
+        await this.controller!.updateData(this.activityColumnName, this.scaling, this.sourceGrid,
           this.bidirectionalAnalysis, this._initialBitset, this.grouping);
       }
 
@@ -202,9 +202,9 @@ export class SARViewerVertical extends DG.JsViewer {
     return this._name;
   }
 
-  onTableAttached(): void {
+  async onTableAttached() {
     // this.model = PeptidesModel.getOrInit(this.dataFrame!);
-    this.controller = PeptidesController.getInstance(this.dataFrame!);
+    this.controller = await PeptidesController.getInstance(this.dataFrame!);
 
     this.subs.push(this.controller.onSARVGridChanged.subscribe((data) => {
       this.viewerVGrid = data;

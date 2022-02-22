@@ -33,9 +33,8 @@ export function manualAlignmentWidget(alignedSequenceCol: DG.Column, currentDf: 
     grok.shell.o = null;
     grok.shell.o = temp;
 
-    // PeptidesModel.getOrInit(currentDf).updateDefault();
-    // Peptides.getOrInitModel(currentDf);
-    await PeptidesController.getInstance(currentDf).updateDefault();
+    const peptidesController = await PeptidesController.getInstance(currentDf);
+    peptidesController.updateDefault();
   });
 
   const resetBtn = ui.button(

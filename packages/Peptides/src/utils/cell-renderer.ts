@@ -1,8 +1,6 @@
 import {ChemPalette} from './chem-palette';
 import * as DG from 'datagrok-api/dg';
 
-const cp = new ChemPalette('grok');
-
 /**
  * A function to expand column size based on its contents.
  *
@@ -209,7 +207,7 @@ export class AminoAcidsCellRenderer extends DG.GridCellRenderer {
   render(
     g: CanvasRenderingContext2D, x: number, y: number, w: number, h: number, gridCell: DG.GridCell,
     cellStyle: DG.GridCellStyle) {
-    this.chemPalette ??= new ChemPalette('grok', gridCell.tableColumn?.getTag('groups') ? true : false);
+    // this.chemPalette ??= new ChemPalette('grok', gridCell.tableColumn?.getTag('groups') ? true : false);
 
     y -= 2;
     g.save();
@@ -219,7 +217,7 @@ export class AminoAcidsCellRenderer extends DG.GridCellRenderer {
     g.font = `12px monospace`;
     g.textBaseline = 'top';
     const s: string = gridCell.cell.value ? gridCell.cell.value : '-';
-    let [color, outerS, innerS, pivot] = cp.getColorAAPivot(s);
+    let [color, outerS, innerS, pivot] = ChemPalette.getColorAAPivot(s);
     if (innerS)
       outerS = s;
 
@@ -310,7 +308,7 @@ export class AlignedSequenceCellRenderer extends DG.GridCellRenderer {
     x = Math.max(x, x + (w - textSize.width) / 2);
 
     subParts.forEach((amino: string, index) => {
-      let [color, outerAmino,, pivot] = cp.getColorAAPivot(amino);
+      let [color, outerAmino,, pivot] = ChemPalette.getColorAAPivot(amino);
       g.fillStyle = ChemPalette.undefinedColor;
       if (index + 1 < subParts.length) {
         const gap = simplified ? '' : ' ';
@@ -433,8 +431,8 @@ export class AlignedSequenceDifferenceCellRenderer extends DG.GridCellRenderer {
 
     subParts1.forEach((amino1: string, index) => {
       let amino2 = subParts2[index];
-      const [color1, amino1Outer, amino1Inner, pivot1] = cp.getColorAAPivot(amino1);
-      const [color2, amino2Outer, amino2Inner, pivot2] = cp.getColorAAPivot(amino2);
+      const [color1, amino1Outer, amino1Inner, pivot1] = ChemPalette.getColorAAPivot(amino1);
+      const [color2, amino2Outer, amino2Inner, pivot2] = ChemPalette.getColorAAPivot(amino2);
 
       if (amino1 != amino2) {
         const verticalShift = 7;

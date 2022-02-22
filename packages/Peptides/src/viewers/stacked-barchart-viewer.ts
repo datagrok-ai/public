@@ -2,7 +2,7 @@ import * as DG from 'datagrok-api/dg';
 import {ChemPalette} from '../utils/chem-palette';
 import * as rxjs from 'rxjs';
 import * as ui from 'datagrok-api/ui';
-const cp = new ChemPalette('grok');
+import { MonomerLibrary } from '../monomer-library';
 
 export function addViewerToHeader(grid: DG.Grid, barchart: StackedBarChart) {
   if (grid.temp['containsBarchart'])
@@ -33,16 +33,16 @@ export function addViewerToHeader(grid: DG.Grid, barchart: StackedBarChart) {
 
   grid.onCellTooltip((cell, x, y) => {
     if (cell.tableColumn && ['aminoAcids', 'alignedSequence'].includes(cell.tableColumn.semType) ) {
-      if (!cell.isColHeader)
-        cp.showTooltip(cell, x, y);
-      else {
+      if (!cell.isColHeader) {
+        const monomerLib = cell.cell.dataFrame.temp[MonomerLibrary.id];
+        ChemPalette.showTooltip(cell, x, y, monomerLib);
+      } else {
         if (barchart.highlighted) {
           let elements: HTMLElement[] = [];
           elements = elements.concat([ui.divText(barchart.highlighted.aaName)]);
           ui.tooltip.show(ui.divV(elements), x, y);
         }
       }
-      return true;
     }
     return true;
   });
@@ -220,14 +220,7 @@ export class StackedBarChart extends DG.JsViewer {
     this.max = this.dataFrame!.filter.trueCount;
   }
 
-  renderBarToCanvas(
-    g: CanvasRenderingContext2D,
-    cell: DG.GridCell,
-    x: number,
-    y: number,
-    w: number,
-    h: number,
-  ): void {
+  renderBarToCanvas(g: CanvasRenderingContext2D, cell: DG.GridCell, x: number, y: number, w: number, h: number) {
     const name = cell.tableColumn!.name;
     const colNameSize = g.measureText(name).width;
     const barData = this.barStats[name];
@@ -254,7 +247,7 @@ export class StackedBarChart extends DG.JsViewer {
       const sBarHeight = h * obj['count'] / this.max;
       const gapSize = sBarHeight * innerMargin;
       const verticalShift = (this.max - sum) / this.max;
-      const [color, aarOuter,,] = cp.getColorAAPivot(obj['name']);
+      const [color, aarOuter] = ChemPalette.getColorAAPivot(obj['name']);
       const textSize = g.measureText(aarOuter);
       const fontSize = 11;
       const leftMargin = (w - (aarOuter.length > 1 ? fontSize : textSize.width - 8)) / 2;

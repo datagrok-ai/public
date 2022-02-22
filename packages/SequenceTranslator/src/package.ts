@@ -282,24 +282,24 @@ export function sequenceTranslator(): void {
       );
       semTypeOfInputSequence.textContent = 'Detected input type: ' + outputSequenceObj.type;
 
-      let canvas = ui.canvas(300, 180);
-      canvas.addEventListener("click", () => {
-        let canv = ui.canvas($(window).width(), $(window).height());
+      if (outputSequenceObj.type != undefinedInputSequence && outputSequenceObj.Error != undefinedInputSequence) {
+        let canvas = ui.canvas(300, 170);
+        canvas.addEventListener("click", () => {
+          let canv = ui.canvas($(window).width(), $(window).height());
+          const smiles = sequenceToSmiles(inputSequenceField.value.replace(/\s/g, ''));
+          // @ts-ignore
+          OCL.StructureView.drawMolecule(canv, OCL.Molecule.fromSmiles(smiles), { suppressChiralText: true });
+          ui.dialog('Molecule')
+            .add(canv)
+            .showModal(true);
+        });
+        $(canvas).on('mouseover', () => $(canvas).css('cursor', 'zoom-in'));
+        $(canvas).on('mouseout', () => $(canvas).css('cursor', 'default'));
         const smiles = sequenceToSmiles(inputSequenceField.value.replace(/\s/g, ''));
         // @ts-ignore
-        OCL.StructureView.drawMolecule(canv, OCL.Molecule.fromSmiles(smiles), { suppressChiralText: true });
-        ui.dialog('Molecule')
-          .add(canv)
-          .showModal(true);
-      });
-      $(canvas).on('mouseover', () => $(canvas).css('cursor', 'zoom-in'));
-      $(canvas).on('mouseout', () => $(canvas).css('cursor', 'default'));
-      const smiles = sequenceToSmiles(inputSequenceField.value.replace(/\s/g, ''));
-      // @ts-ignore
-      OCL.StructureView.drawMolecule(canvas, OCL.Molecule.fromSmiles(smiles), { suppressChiralText: true });
-      if (outputSequenceObj.type != undefinedInputSequence)
+        OCL.StructureView.drawMolecule(canvas, OCL.Molecule.fromSmiles(smiles), { suppressChiralText: true });
         moleculeSvgDiv.append(canvas);
-      else
+      } else
         moleculeSvgDiv.innerHTML = '';
     } finally {
       pi.close();
