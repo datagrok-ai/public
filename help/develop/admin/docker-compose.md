@@ -71,6 +71,12 @@ If you do not need CVM features, you can run only Datagrok application container
 docker-compose -f docker/localhost.docker-compose.yaml --project-name datagrok --profile datagrok up -d
 ```
 
+If you need CVM features only, you can run only CVM application containers:
+
+```shell
+docker-compose -f docker/localhost.docker-compose.yaml --project-name datagrok --profile cvm up -d
+```
+
 To run Datagrok with exact CVM features, specify them in the command-line using `--profile` flag
 
 * Cheminformatics
@@ -102,6 +108,17 @@ To run Datagrok with exact CVM features, specify them in the command-line using 
    ```shell
    docker-compose -f docker/localhost.docker-compose.yaml --project-name datagrok \
      --profile datagrok \
+     --profile chem \
+     --profile scripting \
+     --profile jupyter_notebook \
+     --profile modeling \
+     up -d
+   ```
+
+* Datagrok container is not required to be started for any feature
+
+   ```shell
+   docker-compose -f docker/localhost.docker-compose.yaml --project-name datagrok \
      --profile chem \
      --profile scripting \
      --profile jupyter_notebook \
