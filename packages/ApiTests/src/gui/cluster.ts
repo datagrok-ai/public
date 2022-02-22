@@ -3,7 +3,7 @@ import * as grok from 'datagrok-api/grok';
 import * as ui from 'datagrok-api/ui';
 import * as DG from 'datagrok-api/dg';
 import { checkHTMLElement } from '../ui/utils';
-import {isColumnPresent, isViewerPresent, isExceptionElement, isErrorBallon} from './gui-utils';
+import {isColumnPresent, isViewerPresent, isDialogPresent, returnDialog, setDialogInputValue} from './gui-utils';
 
 category('Dialog: Cluster', () => {
     let v: DG.TableView;
@@ -14,45 +14,63 @@ category('Dialog: Cluster', () => {
     });
 
    test('dialogs.cluster', async () => {
-        grok.shell.topMenu.find('Tools').find('Data Science').find('Cluster...').root.dispatchEvent(new MouseEvent('mousedown'));
-        grok.shell.topMenu.find('Tools').find('Data Science').find('Cluster...').root.dispatchEvent(new MouseEvent('mousedown'));
-        //isExceptionElement('Open Cluster Dialog (firs time)');
-        await delay(1000);
-        if (document.getElementsByClassName('d4-dialog').length == 0)
-            throw 'Cluster dialog was not opened (first time)'
+        //grok.shell.topMenu.find('Tools').find('Data Science').find('Cluster...').root.dispatchEvent(new MouseEvent('mousedown'));
+        grok.shell.topMenu.find('Tools').find('Data Science').find('Cluster...').root.dispatchEvent(new MouseEvent('mousedown')); await delay(1000);
+        isDialogPresent('Cluster Data');
 
         let okButton = document.getElementsByClassName('ui-btn ui-btn-ok enabled')[0] as HTMLElement;
         okButton!.click(); await delay(1000);
-        //isExceptionElement('Execute Cluster dialog (first time)');
 
         isColumnPresent(demog.columns, 'clusters');
 
-        grok.shell.topMenu.find('Tools').find('Data Science').find('Cluster...').root.dispatchEvent(new MouseEvent('mousedown'))
-        //isExceptionElement('Open Cluster Dialog (second time');
+        grok.shell.topMenu.find('Tools').find('Data Science').find('Cluster...').root.dispatchEvent(new MouseEvent('mousedown')); await delay(1000);
+        isDialogPresent('Cluster Data');
 
-        if (document.getElementsByClassName('d4-dialog').length == 0)
-            throw 'Cluster dialog was not opened (second time)';
+        returnDialog('Cluster Data')!.input('Show scatter plot').input.click(); await delay(2000);
 
-        let normalizeSelectorInput = document.getElementsByClassName('ui-input-choice ui-input-root')[1].childNodes[1] as HTMLSelectElement;
-        normalizeSelectorInput.value = 'Z-scores';
-        //isExceptionElement('Changed value of the Normalize field to Z-scores');
+        isViewerPresent(Array.from(v.viewers), 'Scatter plot');
+        isColumnPresent(demog.columns, 'clusters (2)');
 
-        let scatterPlotInput = document.getElementsByClassName('ui-input-bool ui-input-root')[0].childNodes[1] as HTMLElement;
-        scatterPlotInput.click(); await delay(2000);
-        //isExceptionElement('ScatterPlot field checked');
+        let cancelButton:HTMLElement;
+        let button;
+        for(let i=0; i<document.getElementsByClassName('ui-btn ui-btn-ok').length; i++){
+            button = document.getElementsByClassName('ui-btn ui-btn-ok')[i] as HTMLElement;
+            if(button.innerText == 'CANCEL') {
+                cancelButton = document.getElementsByClassName('ui-btn ui-btn-ok')[i] as HTMLElement;
+                cancelButton.click();
+            }
+        }
+
+        await delay(1000);
+
+        for(let i:number = 0; i < Array.from(v.viewers).length; i++){
+             if (Array.from(v.viewers)[i].type == 'Scatter Plot'){
+                throw 'Scatter Plot did not disappear after clicking on the "Cancel" button';
+             }
+        }
+
+        if (demog.columns.byName('clusters (2)') != null)
+            throw 'cluster (2) column did not disappear after clicking on the "Cancel" button';
+
+        grok.shell.topMenu.find('Tools').find('Data Science').find('Cluster...').root.dispatchEvent(new MouseEvent('mousedown')); await delay(1000);
+        isDialogPresent('Cluster Data');
+
+        setDialogInputValue('Cluster Data', 'Normalize', 'Z-scores'); await delay(500);
+        setDialogInputValue('Cluster Data', 'Clusters', 4); await delay(500);
+        setDialogInputValue('Cluster Data', 'Metric', 'Manhattan'); await delay(500);
+        returnDialog('Cluster Data')!.input('Show scatter plot').input.click(); await delay(2000);
 
         okButton = document.getElementsByClassName('ui-btn ui-btn-ok enabled')[0] as HTMLElement;
         okButton!.click(); await delay(1000);
-        //isExceptionElement('Execute Cluster dialog (second time)');
 
         isViewerPresent(Array.from(v.viewers), 'Scatter plot')
         isColumnPresent(demog.columns, 'clusters (2)');
 
    });
 
-    /* after(async () => {
+     after(async () => {
         v.close();
         grok.shell.closeAll();
-    }); */
+    });
 
 });
