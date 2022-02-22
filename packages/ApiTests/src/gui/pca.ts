@@ -34,7 +34,7 @@ category('Dialog: PCA', () => {
         setDialogInputValue('PCA','Features',featuresField);
 
         //Open ColumnSelector for Features field:
-        DG.Dialog.getOpenDialogs()[0].input('Features').input.dispatchEvent(new MouseEvent('click')); await delay(1000);
+        returnDialog('PCA')!.input('Features').input.dispatchEvent(new MouseEvent('click')); await delay(1000);
         let okButtonInSelectColumn = returnDialog('Select columns...')?.root.getElementsByClassName('ui-btn ui-btn-ok enabled')[0] as HTMLElement;
         okButtonInSelectColumn.click(); await delay(1000)
 

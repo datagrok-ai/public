@@ -88,5 +88,5 @@ category('Dialog: Random Data', () => {
     after(async () => {
         v.close();
         grok.shell.closeAll();
-    }); 
+    });
 });
