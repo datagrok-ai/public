@@ -7,8 +7,7 @@ import {StringDictionary} from '@datagrok-libraries/utils/src/type-declarations'
 import {ChemPalette} from './utils/chem-palette';
 import {setAARRenderer} from './utils/cell-renderer';
 import {PeptidesController} from './peptides';
-
-const cp = new ChemPalette('grok');
+import { MonomerLibrary } from './monomer-library';
 
 export const aarGroups = {
   'R': 'PC',
@@ -334,7 +333,7 @@ function setCellRendererFunc(
 
 function setTooltipFunc(
     renderColNames: string[], statsDf: DG.DataFrame, aminoAcidResidue: string, positionColName: string,
-    peptidesCount: number, grouping: boolean, sarGrid: DG.Grid, sarVGrid: DG.Grid) {
+    peptidesCount: number, grouping: boolean, sarGrid: DG.Grid, sarVGrid: DG.Grid, sourceDf: DG.DataFrame) {
   const onCellTooltipFunc = async function(cell: DG.GridCell, x: number, y: number) {
     if (
         !cell.isRowHeader && !cell.isColHeader && cell.tableColumn !== null && cell.cell.value !== null &&
@@ -374,8 +373,10 @@ function setTooltipFunc(
         const currentGroup = groupDescription[cell.cell.value];
         const divText = ui.divText('Amino Acids in this group: ' + currentGroup['aminoAcids'].join(', '));
         ui.tooltip.show(ui.divV([ui.h3(currentGroup['description']), divText]), x, y);
-      } else
-        await cp.showTooltip(cell, x, y);
+      } else {
+        const monomerLib = sourceDf.temp[MonomerLibrary.id];
+        ChemPalette.showTooltip(cell, x, y, monomerLib);
+      }
     }
     return true;
   };
@@ -524,7 +525,7 @@ export async function describe(
 
   // show all the statistics in a tooltip over cell
   setTooltipFunc(
-    renderColNames, statsDf, aminoAcidResidue, positionColName, peptidesCount, grouping, sarGrid, sarVGrid,
+    renderColNames, statsDf, aminoAcidResidue, positionColName, peptidesCount, grouping, sarGrid, sarVGrid, df,
   );
 
   postProcessGrids(sourceGrid, invalidIndexes, grouping, aminoAcidResidue, sarGrid, sarVGrid);

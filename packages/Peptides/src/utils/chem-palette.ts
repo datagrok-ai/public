@@ -3,19 +3,14 @@ import * as ui from 'datagrok-api/ui';
 import * as DG from 'datagrok-api/dg';
 
 import {StringDictionary} from '@datagrok-libraries/utils/src/type-declarations';
-import {_package} from '../package';
 import {MonomerLibrary} from '../monomer-library';
 
-/**
- * Chem palette class.
- *
- * @export
- * @class ChemPalette
- */
+
 export class ChemPalette {
   cp: StringDictionary = {};
   isInit: boolean = false;
   monomerLib: MonomerLibrary | null = null;
+
   /**
    * Creates an instance of ChemPalette.
    *
@@ -23,7 +18,7 @@ export class ChemPalette {
    * @param {boolean} [grouping=false] Is grouping enabled.
    * @memberof ChemPalette
    */
-  constructor(scheme: string, grouping = false) {
+  private constructor(scheme: string, grouping = false) {
     if (scheme == 'grok')
       this.cp = ChemPalette.getDatagrok(grouping);
   }
@@ -35,15 +30,20 @@ export class ChemPalette {
    * @param {number} x x coordinate of the mouse pointer.
    * @param {number} y y coordinate of the mouse pointer.
    */
-  async showTooltip(cell: DG.GridCell, x: number, y: number) {
-    if (!this.isInit)
-      this.monomerLib = new MonomerLibrary(await _package.files.readAsText(`HELMMonomers_June10.sdf`));
+  static showTooltip(cell: DG.GridCell, x: number, y: number, monomerLib: MonomerLibrary) {
+    // if (!this.isInit) {
+    //   const validPackage = _package ?? _packageTest;
+    //   if (!validPackage)
+    //     throw new Error('No package instance found');
+    //   this.monomerLib = new MonomerLibrary(await validPackage.files.readAsText(`HELMMonomers_June10.sdf`));
+    //   this.isInit = true;
+    // }
 
     const s = cell.cell.value as string;
     let toDisplay = [ui.divText(s)];
-    const [, aarOuter, aarInner] = this.getColorAAPivot(s);
+    const [, aarOuter, aarInner] = ChemPalette.getColorAAPivot(s);
     for (const aar of [aarOuter, aarInner]) {
-      if (this.monomerLib!.monomerNames.includes(aar)) {
+      if (monomerLib.monomerNames.includes(aar)) {
         if (aar in ChemPalette.AANames)
           toDisplay = [ui.divText(ChemPalette.AANames[aar])];
 
@@ -55,7 +55,7 @@ export class ChemPalette {
           autoCropMargin: 0,
           suppressChiralText: true,
         };
-        const sketch = grok.chem.svgMol(this.monomerLib!.getMonomerMol(aar), undefined, undefined, options);
+        const sketch = grok.chem.svgMol(monomerLib.getMonomerMol(aar), undefined, undefined, options);
         if (toDisplay.length == 2)
           toDisplay.push(ui.divText('Modified'));
 
@@ -66,108 +66,76 @@ export class ChemPalette {
   }
 
   /**
-   * Get color for the provided amino acid residue.
-   * @param {string} c Amino acid residue string.
-   * @return {string} Color.
-   */
-  getColor(c: string): string {
-    const [color] = this.getColorPivot(c);
-    return color;
-  }
-
-  /**
    * Retursn divided amino with its content in the bracket, if the conetent is number, then its omitted
    *
    * @param {string} c raw amino
    * @return {[string, string]} outer and inner content
    */
-  private getInnerOuter(c: string): [string, string] {
+  static getInnerOuter(c: string): [string, string] {
     let isInner = 0;
     let inner = '';
     let outer = '';
 
-    for (let i = 0; i < c.length; ++i) {
-      if (c[i] == '(')
+    for (const char of c) {
+      if (char == '(')
         isInner++;
-      else if (c[i] == ')')
+      else if (char == ')')
         isInner--;
       else if (isInner)
-        inner += c[i];
+        inner += char;
       else
-        outer += c[i];
+        outer += char;
     }
 
     return !isNaN(parseInt(inner)) ? [outer, ''] : [outer, inner];
   }
 
-  /**
-   * Get color for the provided amino acid residue pivot
-   * @param {string} [c=''] Amino acid residue string.
-   * @return {[string, string, number]}
-   */
-  getColorAAPivot(c: string = ''): [string, string, string, number] {
-    let [outerC, innerC] = this.getInnerOuter(c);
-    outerC = (outerC.length > 6 ? outerC.slice(0, 3) + '...' : outerC);
-    innerC = (innerC.length > 6 ? innerC.slice(0, 3) + '...' : innerC);
+  static getColorAAPivot(monomer: string = '', scheme: 'grok' = 'grok'): [string, string, string, number] {
+    // const chemPaletteInstance = ChemPalette.getDatagrok();
+    const chemPaletteInstance = ChemPalette.getPalette(scheme);
+    let [outerMonomer, innerMonomer] = ChemPalette.getInnerOuter(monomer);
+    outerMonomer = (outerMonomer.length > 6 ? `${outerMonomer.slice(0, 3)}...` : outerMonomer);
+    innerMonomer = (innerMonomer.length > 6 ? `${innerMonomer.slice(0, 3)}...` : innerMonomer);
 
-    if (c.length == 1 || c[1] == '(') {
-      const amino = c[0]?.toUpperCase()!;
-      return amino in this.cp?
-        [this.cp[amino], amino, innerC, 1]:
-        [ChemPalette.undefinedColor, outerC, innerC, 1];
+    if (monomer.length == 1 || monomer[1] == '(') {
+      const amino = monomer[0]?.toUpperCase()!;
+      return amino in chemPaletteInstance ?
+        [chemPaletteInstance[amino], amino, innerMonomer, 1]:
+        [ChemPalette.undefinedColor, outerMonomer, innerMonomer, 1];
     }
 
-    if (c[0] == 'd' && c[1]! in this.cp) {
-      if (c.length == 2 || c[2] == '(') {
-        const amino = c[1]?.toUpperCase()!;
-        return amino in this.cp?
-          [this.cp[amino], amino, innerC, 2]:
-          [ChemPalette.undefinedColor, outerC, innerC, 2];
+    if (monomer[0] == 'd' && monomer[1]! in chemPaletteInstance) {
+      if (monomer.length == 2 || monomer[2] == '(') {
+        const amino = monomer[1]?.toUpperCase()!;
+        return amino in chemPaletteInstance ?
+          [chemPaletteInstance[amino], amino, innerMonomer, 2]:
+          [ChemPalette.undefinedColor, outerMonomer, innerMonomer, 2];
       }
     }
 
-    if (c.substr(0, 3) in ChemPalette.AAFullNames) {
-      if (c.length == 3 || c[3] == '(') {
-        const amino = ChemPalette.AAFullNames[c.substr(0, 3)];
-        return amino in this.cp?
-          [this.cp[amino], amino, innerC, 3]:
-          [ChemPalette.undefinedColor, outerC, innerC, 3];
+    if (monomer.substring(0, 3) in ChemPalette.AAFullNames) {
+      if (monomer.length == 3 || monomer[3] == '(') {
+        const amino = ChemPalette.AAFullNames[monomer.substring(0, 3)];
+        return amino in chemPaletteInstance ?
+          [chemPaletteInstance[amino], amino, innerMonomer, 3]:
+          [ChemPalette.undefinedColor, outerMonomer, innerMonomer, 3];
       }
     }
 
-    if (c[0]?.toLowerCase() == c[0]) {
-      if (c.substr(1, 3) in ChemPalette.AAFullNames) {
-        if (c.length == 4 || c[4] == '(') {
-          const amino = ChemPalette.AAFullNames[c.substr(1, 3)];
-          return amino in this.cp?
-            [this.cp[amino], amino, innerC, 4]:
-            [ChemPalette.undefinedColor, outerC, innerC, 4];
+    if (monomer[0]?.toLowerCase() == monomer[0]) {
+      if (monomer.substring(1, 3) in ChemPalette.AAFullNames) {
+        if (monomer.length == 4 || monomer[4] == '(') {
+          const amino = ChemPalette.AAFullNames[monomer.substring(1, 3)];
+          return amino in chemPaletteInstance ?
+            [chemPaletteInstance[amino], amino, innerMonomer, 4]:
+            [ChemPalette.undefinedColor, outerMonomer, innerMonomer, 4];
         }
       }
     }
 
-    return [ChemPalette.undefinedColor, outerC, innerC, 0];
+    return [ChemPalette.undefinedColor, outerMonomer, innerMonomer, 0];
   }
 
-  /**
-   * Get color pivot.
-   *
-   * @param c
-   * @returns
-   */
-  getColorPivot(c = ''): [string, number] {
-    //TODO: merge with getColorAAPivot?
-    const [color,,, pivot] = this.getColorAAPivot(c);
-    return [color, pivot];
-  };
-
-  /**
-   * Color palette
-   *
-   * @static
-   * @type {{[key: string]: string[]}}
-   * @memberof ChemPalette
-   */
   static colourPalette: {[key: string]: string[]} = {
     'orange': ['rgb(255,187,120)', 'rgb(245,167,100)', 'rgb(235,137,70)', 'rgb(205, 111, 71)'],
     'all_green': ['rgb(44,160,44)', 'rgb(74,160,74)', 'rgb(23,103,57)', 'rgb(30,110,96)', 'rgb(60,131,95)',
@@ -191,13 +159,6 @@ export class ChemPalette {
     'white': ['rgb(230,230,230)'],
   };
 
-  /**
-   * Grok color scheme groups.
-   *
-   * @static
-   * @type {{[key: string]: string[]}}
-   * @memberof ChemPalette
-   */
   static grokGroups: {[key: string]: string[]} = {
     'yellow': ['C', 'U'],
     'red': ['G', 'P'],
@@ -207,38 +168,9 @@ export class ChemPalette {
     'orange': ['S', 'T', 'N', 'Q'],
   };
 
-  /**
-   * Lesk color scheme groups.
-   *
-   * @static
-   * @type {{[key: string]: string[]}}
-   * @memberof ChemPalette
-   */
-  static leskGroups: {[key: string]: string[]} = {
-    'orange': ['G', 'A', 'S', 'T'],
-    'all_green': ['C', 'V', 'I', 'L', 'P', 'F', 'Y', 'M', 'W'],
-    'magenta': ['N', 'Q', 'H'],
-    'red': ['D', 'E'],
-    'all_blue': ['K', 'R'],
-  };
-
-  /**
-   * Undefined color.
-   *
-   * @static
-   * @memberof ChemPalette
-   */
   static undefinedColor = 'rgb(100,100,100)';
 
-  /**
-   * Create palette.
-   *
-   * @param dt
-   * @param simplified Is simplified.
-   * @param grouping Is grouping enabled.
-   * @returns
-   */
-  static makePalette(dt: {[key: string]: string[]}, simplified = false, grouping = false) {
+  static makePalette(dt: {[key: string]: string[]}, simplified = false, grouping = false): StringDictionary {
     const palette: { [key: string]: string } = {};
     const groups = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ';
     let currentGroup = 0;
@@ -251,13 +183,6 @@ export class ChemPalette {
     return palette;
   }
 
-  /**
-   * Amino acid residue names.
-   *
-   * @static
-   * @type {StringDictionary}
-   * @memberof ChemPalette
-   */
   static AANames: StringDictionary = {
     'G': 'Glycine',
     'L': 'Leucine',
@@ -281,13 +206,6 @@ export class ChemPalette {
     'T': 'Threonine',
   };
 
-  /**
-   * Amino acid residue SMILES.
-   *
-   * @static
-   * @type {StringDictionary}
-   * @memberof ChemPalette
-   */
   static AASmiles: StringDictionary = {
     'G': 'NCC(=O)O',
     'L': 'N[C@H](CC(C)C)C(=O)O',
@@ -311,13 +229,6 @@ export class ChemPalette {
     'T': 'NC(C(O)C)C(=O)O',
   };
 
-  /**
-   * Amino acid residue truncated SMILES.
-   *
-   * @static
-   * @type {StringDictionary}
-   * @memberof ChemPalette
-   */
   static AASmilesTruncated: StringDictionary = {
     'G': '*C*',
     'L': 'CC(C)C[C@H](*)*',
@@ -341,13 +252,6 @@ export class ChemPalette {
     'T': 'CC(O)C(*)*',
   };
 
-  /**
-   * Amino acid residue full names.
-   *
-   * @static
-   * @type {StringDictionary}
-   * @memberof ChemPalette
-   */
   static AAFullNames: StringDictionary = {
     'Ala': 'A',
     'Arg': 'R',
@@ -371,23 +275,16 @@ export class ChemPalette {
     'Val': 'V',
   };
 
-  /**
-   * Get Datagrok palette.
-   *
-   * @param grouping Is grouping enabled?
-   * @returns
-   */
-  static getDatagrok(grouping = false) {
+  static getDatagrok(grouping = false): StringDictionary {
     return ChemPalette.makePalette(ChemPalette.grokGroups, false, grouping);
   }
 
-  /**
-   * Get Lesk palette.
-   *
-   * @param grouping Is grouping enabled?
-   * @returns
-   */
-  static getLesk() {
-    return ChemPalette.makePalette(ChemPalette.leskGroups);
+  static getPalette(scheme: 'grok'): StringDictionary {
+    switch (scheme) {
+      case 'grok':
+        return ChemPalette.getDatagrok();
+      default:
+        throw new Error(`ChemPalette: scheme \`${scheme}\` does not exist`);
+    }
   }
 }

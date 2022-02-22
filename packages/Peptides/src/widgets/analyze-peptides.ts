@@ -84,7 +84,7 @@ export async function analyzePeptidesWidget(
         tableGrid.col(activityColumn)!.name = `~${activityColumn}`;
       tableGrid.columns.setOrder([newScaledColName]);
 
-      const peptides = PeptidesController.getInstance(currentDf);
+      const peptides = await PeptidesController.getInstance(currentDf);
       await peptides.init(tableGrid, view, options, col, originalDfColumns);
     } else
       grok.shell.error('The activity column must be of floating point number type!');
