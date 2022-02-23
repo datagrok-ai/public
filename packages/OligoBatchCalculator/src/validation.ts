@@ -1,4 +1,5 @@
 import {map} from "./map";
+import { sortByStringLengthInDescendingOrder } from "./package";
 
 export function getAllCodesOfSynthesizer(synthesizer: string): string[] {
   let codes: string[] = [];
@@ -7,32 +8,38 @@ export function getAllCodesOfSynthesizer(synthesizer: string): string[] {
   return codes;
 }
 
-function getListOfPossibleSynthesizersByFirstMatchedCode(sequence: string): string[] {
+function getListOfPossibleSynthesizersByFirstMatchedCode(sequence: string, overhangCodes: string[]): string[] {
   let synthesizers: string[] = [];
   Object.keys(map).forEach((synthesizer: string) => {
+    let matched = overhangCodes.find((s) => s == sequence.slice(0, s.length));
+    let cutoffIndex = (matched == null) ? 0 : matched.length;
     const codes = getAllCodesOfSynthesizer(synthesizer);
-    if (codes.some((s) => s == sequence.slice(0, s.length)))
+    if (codes.some((s) => s == sequence.slice(cutoffIndex, cutoffIndex + s.length)))
       synthesizers.push(synthesizer);
   });
   return synthesizers;
 }
 
-function getListOfPossibleTechnologiesByFirstMatchedCode(sequence: string, synthesizer: string): string[] {
+function getListOfPossibleTechnologiesByFirstMatchedCode(sequence: string, synthesizer: string, overhangCodes: string[]): string[] {
   const technologies: string[] = [];
   Object.keys(map[synthesizer]).forEach((technology: string) => {
+    let matched = overhangCodes.find((s) => s == sequence.slice(0, s.length));
+    let cutoffIndex = (matched == null) ? 0 : matched.length;
     const codes = Object.keys(map[synthesizer][technology]);  // .concat(Object.keys(MODIFICATIONS));
-    if (codes.some((s) => s == sequence.slice(0, s.length)))
+    if (codes.some((s) => s == sequence.slice(cutoffIndex, cutoffIndex + s.length)))
       technologies.push(technology);
   });
   return technologies;
 }
 
-export function isValidSequence(sequence: string): {
+export function isValidSequence(sequence: string, overhangCodes: string[]): {
   indexOfFirstNotValidCharacter: number,
   expectedSynthesizer: string | null,
   expectedTechnology: string | null
 } {
-  const possibleSynthesizers = getListOfPossibleSynthesizersByFirstMatchedCode(sequence);
+  const sortedOverhangCodes = sortByStringLengthInDescendingOrder(overhangCodes);
+
+  const possibleSynthesizers = getListOfPossibleSynthesizersByFirstMatchedCode(sequence, sortedOverhangCodes);
   if (possibleSynthesizers.length == 0)
     return {indexOfFirstNotValidCharacter: 0, expectedSynthesizer: null, expectedTechnology: null};
 
@@ -42,7 +49,7 @@ export function isValidSequence(sequence: string): {
   const nucleotides = ['A', 'U', 'T', 'C', 'G'];
 
   possibleSynthesizers.forEach((synthesizer, synthesizerIndex) => {
-    const codes = getAllCodesOfSynthesizer(synthesizer);
+    const codes = sortByStringLengthInDescendingOrder(getAllCodesOfSynthesizer(synthesizer).concat(sortedOverhangCodes));//.concat(sorte);
     while (outputIndices[synthesizerIndex] < sequence.length) {
       const matchedCode = codes
         .find((c) => c == sequence.slice(outputIndices[synthesizerIndex], outputIndices[synthesizerIndex] + c.length));
@@ -78,14 +85,14 @@ export function isValidSequence(sequence: string): {
       expectedTechnology: null
     };
 
-  let possibleTechnologies = getListOfPossibleTechnologiesByFirstMatchedCode(sequence, expectedSynthesizer);
+  let possibleTechnologies = getListOfPossibleTechnologiesByFirstMatchedCode(sequence, expectedSynthesizer, sortedOverhangCodes);
   if (possibleTechnologies.length == 0)
     return { indexOfFirstNotValidCharacter: 0, expectedSynthesizer: null, expectedTechnology: null };
 
   outputIndices = Array(possibleTechnologies.length).fill(0);
 
   possibleTechnologies.forEach((technology: string, technologyIndex: number) => {
-    let codes = Object.keys(map[expectedSynthesizer][technology]);
+    let codes = sortByStringLengthInDescendingOrder(Object.keys(map[expectedSynthesizer][technology]).concat(sortedOverhangCodes));
     while (outputIndices[technologyIndex] < sequence.length) {
 
       let matchedCode = codes
