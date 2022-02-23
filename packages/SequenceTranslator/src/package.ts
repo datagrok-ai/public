@@ -5,6 +5,7 @@ import * as DG from 'datagrok-api/dg';
 import * as OCL from 'openchemlib/full.js';
 import $ from 'cash-dom';
 import {defineAxolabsPattern} from './defineAxolabsPattern';
+import {saveSenseAntiSense} from './save-sense-antisense';
 import {map, stadardPhosphateLinkSmiles, SYNTHESIZERS, TECHNOLOGIES, MODIFICATIONS} from './map';
 
 export const _package = new DG.Package();
@@ -164,7 +165,7 @@ function getObjectWithCodesAndSmiles(sequence: string) {
   return obj;
 }
 
-export function sequenceToSmiles(sequence: string): string {
+export function sequenceToSmiles(sequence: string, inverted: boolean = false): string {
   const obj = getObjectWithCodesAndSmiles(sequence);
   let codes = sortByStringLengthInDescendingOrder(Object.keys(obj));
   let i = 0;
@@ -177,7 +178,7 @@ export function sequenceToSmiles(sequence: string): string {
   while (i < sequence.length) {
     const code = codes.find((s: string) => s == sequence.slice(i, i + s.length))!;
     i += code.length;
-    codesList.push(code);
+    inverted ? codesList.unshift(code) : codesList.push(code);
   }
   for (let i = 0; i < codesList.length; i++) {
     if (dropdowns.includes(codesList[i])) {
@@ -385,21 +386,22 @@ export function sequenceTranslator(): void {
             ui.div([
               ui.h1('Input sequence'),
               ui.div([
-                inputSequenceField.root
-              ],'input-base')
+                inputSequenceField.root,
+              ], 'input-base'),
             ], 'sequenceInput'),
             semTypeOfInputSequence,
             ui.block([
               ui.h1('Output'),
-              outputTableDiv
+              outputTableDiv,
             ]),
-            moleculeSvgDiv
+            moleculeSvgDiv,
           ], 'sequence'),
         ]),
-        codesTablesDiv
-      ], { style: { height: '100%', width: '100%' } })
+        codesTablesDiv,
+      ], {style: {height: '100%', width: '100%'}}),
     ),
-    'AXOLABS': defineAxolabsPattern()
+    'AXOLABS': defineAxolabsPattern(),
+    'SDF': saveSenseAntiSense(),
   });
 
   let v = grok.shell.newView('Sequence Translator', [tabControl]);
@@ -423,10 +425,11 @@ export function sequenceTranslator(): void {
       navigator.clipboard.writeText(sequenceToSmiles(inputSequenceField.value.replace(/\s/g, '')))
         .then(() => grok.shell.info(sequenceWasCopied));
     }, 'Copy SMILES'),
-    switchInput.root
+    switchInput.root,
   ];
 
-  tabControl.onTabChanged.subscribe((_) => v.setRibbonPanels([(tabControl.currentPane.name == 'MAIN') ? topPanel : []]));
+  tabControl.onTabChanged.subscribe((_) =>
+    v.setRibbonPanels([(tabControl.currentPane.name == 'MAIN') ? topPanel : []]));
   v.setRibbonPanels([topPanel]);
 
   $('.sequence')
