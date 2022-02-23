@@ -248,6 +248,7 @@ export class PeptidesController {
       tableGrid.setOptions({'colHeaderHeight': 20});
       tableGrid.columns.setVisible(originalDfColumns);
       tableGrid.props.allowEdit = true;
+      tableGrid.temp['containsBarchart'] = false;
       this.dataFrame.name = originalDfName;
 
       view.setRibbonPanels(ribbonPanels);

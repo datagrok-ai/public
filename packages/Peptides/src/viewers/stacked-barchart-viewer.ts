@@ -67,6 +67,9 @@ export function addViewerToHeader(grid: DG.Grid, barchart: StackedBarChart) {
   });
 
   grid.temp['containsBarchart'] = true;
+  //FIXME: for some reason barchat didn't show when running analysis. This fixes it, but it's bad. Find a way to fix
+  // the problem
+  barchart.unhighlight();
 }
 
 type stackedBarChartDatatype = {
