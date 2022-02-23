@@ -1,6 +1,94 @@
 <!-- TITLE: Release History -->
 <!-- SUBTITLE: -->
 
+# 2022-02-23 Dev build 0.127.0
+
+## Latest Docker Images
+
+* Datagrok: 
+  *  `docker pull datagrok/datagrok:0.127.0`
+  *  `docker pull datagrok/datagrok:latest`
+  
+* [Docker-Compose](admin/docker-compose.md)
+
+## Addressed Issues
+
+* syft local image 
+* DockManager_Dock now attaches viewer to view 
+* Fixed #320: Filtering: 'Select columns' dialog for filter panel is showing currently selected columns incorrectly in some cases 
+* Fixed #319: Disabling/not disabling filtering behaviour on closing filter panel is inconsistent in some cases 
+* (Bug) JS API: incorrect constant in DG.DOCK_TYPE.TOP  
+* Fix datagro build 
+* Functions: help-url support for scripts in Function View 
+* Added Viewer_Remove_From_View function 
+* (Bug) Function View: Dataframes selection from a file is buggy 
+* js-api-common update 
+* Scripting: Better handle missing output variables (R, Python) 
+* Package description: add markdown rendering  
+* JS API: Dialog.getOpenDialogs() 
+* JS API: Dialog.input(caption): InputBase 
+* JS API: Grid: ability to get cell back color 
+* (Bug) Color coding: the editing dialog shows the black color for categories which color is set via hex codes 
+* (Bug) Line Chart: rightmost line segment is not always drawn 
+* New demo dataset: dose-response 
+* New sample script: charts-in-cells 
+* GridColumnMeta 
+* (Bug) Chem: double-clicking on an empty structure does not open a sketcher 
+* (Bug) Grid: an exception when resizing the window 
+* Wiki: Doc on running Dart tests locally 
+* Test file fixed precision 
+* (Bug) Grid scrolls to first row after adding/deleting row 
+* Grid: ability to easily add rows to the end 
+* #323: MultiForm: WIP 
+* JnJ: monitoring resources: RAM, CPU, HDD 
+* Fixed null exception 
+* (Bug) Parameter subquery is empty 
+* Harmonize viewer title 
+* NPM repositories: add an option to skip installation of deployed packages during repository publication 
+* Property panel: "Distributions" pane (WIP)
+* Fixed typo 
+* Core: delete the service jobs before the repository deletion 
+* bug fixed fro smiles string in example 
+* Formula lines improvements 
+* Update repository jobs: change user permissions (WIP) 
+* Error status style update (WIP) 
+* (Bug) BoxPlot Y axis labels overlapping with axis column name 
+* Harmonize PackagesView (WIP)
+* Filters: header should stay on top when you scroll down 
+* NPM repositories: new package manager UI 
+* (Bug) Input too large for RSA cipher exception during package deploy 
+* Avoid extra data copy 
+* update ref to head on public 
+* Porting Ketcher reading molfile in React to package (WIP)
+* DB: migrate test and demo DB to docker 
+* VirtualItemView.refreshItem 
+* Docking Manager: improve auto-docking algorithm when the initial split is vertical 
+* Improved the description of the connection string in the "add connection" dialog. 
+* Security: WIP 
+* (Bug) Color coding: missing values lose the reserved color when the rules for categorical color-coding are set 
+* Added Neptune logo 
+* Docs: create documentation for CVM connection from Local Dart stand 
+* Strong mode static checking 
+* (Bug) Scripting: Reset variables before script run (Python, R) 
+* Fix analyser warnings 
+* (Bug) Renv creates environments directories with nested UUIDs 
+* (Bug) Several functions broken in calculated columns 
+* Checkbox styling improvement 
+* (Bug) Chem: moleculeInput won't set smiles 
+* Expose additional map data structure to save meta information along with project entity #331 
+* Add additional options to configure the view loading behaviour to project.open() method #332 
+* Viewers: ability to specify default axis type (linear / logarithmic) 
+* PC Plot: log scaling for Y axis 
+* Grid: spacebar to toggle row selection 
+* Made analysis options less strict. 
+* Scatter Plot: ability to invert axes 
+* Bar Chart: fixed an issue with the initial viewport position 
+* Expose id property for tableView entitity #328 
+* Core: update OpenChemLib (WIP)
+* Peptides: barchart fix 
+* (Bug) Exception on reading credentials for package 
+
+
 # 2022-02-08 Dev build 0.122.0
 
 ## Latest Docker Images
