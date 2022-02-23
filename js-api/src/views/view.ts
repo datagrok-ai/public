@@ -262,6 +262,10 @@ export class View extends ViewBase {
     api.grok_View_Set_Path(this.dart, s);
   }
 
+  get id(): string {
+    return api.grok_View_Get_Id(this.dart);
+  }
+
   /**
    *  View type URI. Note that {@link path} is specific to the instance of the view.
    *  @type {string} */
