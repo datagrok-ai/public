@@ -2,11 +2,12 @@ import * as grok from 'datagrok-api/grok';
 import * as ui from 'datagrok-api/ui';
 import * as DG from 'datagrok-api/dg';
 
-import {setDifference} from '@datagrok-libraries/utils/src/operations';
+import {difference} from 'set-operations';
+import PhylocanvasGL, {TreeTypes} from '@phylocanvas/phylocanvas.gl';
 
 export class TreeBrowser {// extends DG.JsViewer {
   title: string;
-  phyloTreeViewer: DG.Viewer;
+  phyloTreeViewer: PhylocanvasGL;//DG.Viewer;
   networkViewer: DG.Viewer;
   dataFrame: DG.DataFrame;
   network: DG.DataFrame;
@@ -44,7 +45,7 @@ export class TreeBrowser {// extends DG.JsViewer {
         const c = t.col('node');
         const id = cloneId.get(i);
 
-        this.leafs[id] = {index: [i], items: setDifference(c.toList(), p.toList())};
+        this.leafs[id] = {index: [i], items: Array.from(difference(c.toList(), p.toList()))};
 
         t.rows.removeAt(0);
         t.columns.addNewString('clone').init((_) => id);
@@ -101,14 +102,19 @@ export class TreeBrowser {// extends DG.JsViewer {
     treeCol.semType = 'newick';
     df.currentRowIdx = 1;
 
-    const tree = DG.Viewer.fromType('PhyloTree', df);
+    // const phTree = new Phylotree(treeCol.get(df.currentRowIdx));
+    // console.warn(phTree);
+    const treeDiv = ui.div([]);
+
+    //const tree = DG.Viewer.fromType('PhyloTree', df);
     const network = DG.Viewer.fromType(DG.VIEWER.NETWORK_DIAGRAM, processed, {
       node1: 'node',
       node2: 'parent',
       edgeColorColumnName: 'edgeColor',
+      edgeWidthColumnName: 'distance',
     });
 
-    const treeNode = mlbView.dockManager.dock(tree, DG.DOCK_TYPE.DOWN);
+    const treeNode = mlbView.dockManager.dock(treeDiv, DG.DOCK_TYPE.DOWN);
     mlbView.dockManager.dock(network, DG.DOCK_TYPE.RIGHT, treeNode);
 
     network.onEvent('d4-network-diagram-node-click').subscribe((args) => {
@@ -119,14 +125,40 @@ export class TreeBrowser {// extends DG.JsViewer {
       this._onNetworkDiagramEdgeClick(args);
     });
 
-    this.phyloTreeViewer = tree;
-    // this.networkViewer = network;
+    const phTree = new PhylocanvasGL(treeDiv, {
+      interactive: true,
+      showLabels: true,
+      showLeafLabels: true,
+      nodeSize: -1,
+      //scaleLineAlpha: true,
+      //showPiecharts: true,
+      size: treeDiv.getBoundingClientRect(),
+      source: treeCol.get(df.currentRowIdx),
+      type: TreeTypes.Rectangular,
+    });
+
+    phTree.selectNode = this.selectNode;
+
+    this.phyloTreeViewer = phTree;
+    this.networkViewer = network;
+  }
+
+  selectNode(node: any) {
+    if (node) {
+      const nodeId: string = node?.label;
+      grok.shell.info(nodeId);
+      const df = this.networkViewer.dataFrame;
+      df.rows.match({node: nodeId}).select();
+      df.selection.fireChanged();
+    }
   }
 
   selectTree(index: number) {
     const maxIndex = this.dataFrame.rowCount;
     this.dataFrame.currentRowIdx = index >= maxIndex ? maxIndex - 1 : (index < 0 ? 0 : index);
-    this.phyloTreeViewer.onFrameAttached(this.dataFrame);
+    //this.phyloTreeViewer.onFrameAttached(this.dataFrame);
+    const nwk = this.dataFrame.col('TREE').get(this.dataFrame.currentRowIdx);
+    this.phyloTreeViewer.setProps({source: nwk});
   }
 
   private _selectNode(nodeId: string) {
