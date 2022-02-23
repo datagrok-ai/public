@@ -24,7 +24,7 @@ export function isViewerPresent(viewers:DG.Viewer[], viewerName:string): void {
         }
     }
     if (check == false){
-        throw viewerName + 'not found';
+        throw viewerName + ' not found';
     }
 }
 
@@ -35,4 +35,30 @@ export function  isErrorBallon(ballonText: string):void{
     if (exceptionElement.textContent != ballonText)
         throw 'Wrong error message on balloon';
     exceptionElement.click();
+}
+
+export function  isDialogPresent(dialogTitle:string):void{
+    let check = false;
+    for(let i=0; i < DG.Dialog.getOpenDialogs().length; i++){
+        if (DG.Dialog.getOpenDialogs()[i].title == dialogTitle){
+            check = true
+            break;
+        }
+    }
+    if (check == false)
+        throw 'Dialog ' + dialogTitle + ' not found'
+}
+
+export function  returnDialog(dialogTitle:string):DG.Dialog | undefined {
+    let dialog: DG.Dialog | undefined;
+    for (let i = 0; i < DG.Dialog.getOpenDialogs().length; i++) {
+        if (DG.Dialog.getOpenDialogs()[i].title == dialogTitle) {
+            dialog = DG.Dialog.getOpenDialogs()[i];
+            return dialog;
+        }
+    }
+}
+
+export function  setDialogInputValue(dialogTitle:string, inputName:string, value:string | number | boolean | DG.Column | DG.Column[]):void {
+    returnDialog(dialogTitle)!.input(inputName).value = value
 }

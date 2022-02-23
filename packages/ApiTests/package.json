@@ -5,7 +5,7 @@
 	"description": "",
 	"dependencies": {
 		"@datagrok-libraries/utils": "0.1.0",
-		"datagrok-api": ">=0.121.0",
+		"datagrok-api": ">=0.125.0",
 		"rxjs": "^6.6.7",
 		"wu": "latest"
 	},

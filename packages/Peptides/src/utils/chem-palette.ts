@@ -281,10 +281,10 @@ export class ChemPalette {
 
   static getPalette(scheme: 'grok'): StringDictionary {
     switch (scheme) {
-      case 'grok':
-        return ChemPalette.getDatagrok();
-      default:
-        throw new Error(`ChemPalette: scheme \`${scheme}\` does not exist`);
+    case 'grok':
+      return ChemPalette.getDatagrok();
+    default:
+      throw new Error(`ChemPalette: scheme \`${scheme}\` does not exist`);
     }
   }
 }
