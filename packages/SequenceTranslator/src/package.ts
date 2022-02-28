@@ -7,6 +7,7 @@ import $ from 'cash-dom';
 import {defineAxolabsPattern} from './defineAxolabsPattern';
 import {saveSenseAntiSense} from './save-sense-antisense';
 import {map, stadardPhosphateLinkSmiles, SYNTHESIZERS, TECHNOLOGIES, MODIFICATIONS} from './map';
+import {SALTS_CSV} from './salts';
 
 export const _package = new DG.Package();
 
@@ -30,7 +31,7 @@ function getListOfPossibleSynthesizersByFirstMatchedCode(sequence: string): stri
     //TODO: get first non-dropdown code when there are two modifications
     let start = 0;
     for (let i = 0; i < sequence.length; i++) {
-      if (sequence[i] == ')') {
+      if (sequence[i] == ')' && i != sequence.length - 1) {
         start = i + 1;
         break;
       }
@@ -290,7 +291,7 @@ export function sequenceTranslator(): void {
           const smiles = sequenceToSmiles(inputSequenceField.value.replace(/\s/g, ''));
           // @ts-ignore
           OCL.StructureView.drawMolecule(canv, OCL.Molecule.fromSmiles(smiles), { suppressChiralText: true });
-          ui.dialog('Molecule')
+          ui.dialog('Molecule: ' + inputSequenceField.value)
             .add(canv)
             .showModal(true);
         });
@@ -799,13 +800,6 @@ async function saveTableAsSdFile(table: DG.DataFrame) {
   element.click();
 }
 
-function parseNumber(saltName: string) {
-  let i = saltName.length;
-  while (saltName.length > -1 && saltName[i] != '(')
-    i--;
-  return parseInt(saltName.slice(i + 2));
-}
-
 //tags: autostart
 export function autostartOligoSdFileSubscription() {
   grok.events.onViewAdded.subscribe((v: any) => {
@@ -814,26 +808,10 @@ export function autostartOligoSdFileSubscription() {
   });
 }
 
-let weightsObj: {[code: string]: number} = {};
-for (let synthesizer of Object.keys(map))
-  for (let technology of Object.keys(map[synthesizer]))
-    for (let code of Object.keys(map[synthesizer][technology]))
-      weightsObj[code] = map[synthesizer][technology][code].weight;
-
-function molecularWeight(sequence: string): number {
-  const codes = sortByStringLengthInDescendingOrder(Object.keys(weightsObj));
-  let weight = 0, i = 0;
-  while (i < sequence.length) {
-    let matchedCode = codes.find((s) => s == sequence.slice(i, i + s.length))!;
-    weight += weightsObj[sequence.slice(i, i + matchedCode.length)];
-    i += matchedCode!.length;
-  }
-  return weight - 61.97;
-}
-
 export function oligoSdFile(table: DG.DataFrame) {
 
-  function addColumns(t: DG.DataFrame) {
+  const saltsDf = DG.DataFrame.fromCsv(SALTS_CSV);
+  function addColumns(t: DG.DataFrame, saltsDf: DG.DataFrame) {
     if (t.columns.contains('Compound Name'))
       return grok.shell.error('Columns already exist!');
 
@@ -849,8 +827,15 @@ export function oligoSdFile(table: DG.DataFrame) {
       sequence.getString(i) + '; duplex of SS: ' + sequence.getString(i - 2) + ' and AS: ' + sequence.getString(i - 1) :
       sequence.getString(i)
     );
-    t.columns.addNewFloat('Cpd MW').init((i: number) => ((i + 1) % 3 == 0) ? DG.FLOAT_NULL : molecularWeight(sequence.get(i)));
-    t.columns.addNewFloat('Salt mass').init((i: number) => parseNumber(salt.get(i)) * equivalents.get(i));
+    const chargeCol = saltsDf.col('CHARGE')!.toList();
+    const saltNames = saltsDf.col('DISPLAY')!.toList();
+    const molWeight = saltsDf.col('MOLWEIGHT')!.toList();
+    t.columns.addNewFloat('Cpd MW').init((i: number) => ((i + 1) % 3 == 0) ? DG.FLOAT_NULL : molWeight[i]);
+    t.columns.addNewFloat('Salt mass').init((i: number) => {
+      let v = chargeCol[saltNames.indexOf(salt.get(i))];
+      let n = (v == null) ? 0 : chargeCol[saltNames.indexOf(salt.get(i))];
+      return n * equivalents.get(i);
+    });
     t.columns.addNewCalculated('Batch MW', '${Cpd MW} + ${Salt mass}', DG.COLUMN_TYPE.FLOAT, false);
 
     addColumnsPressed = true;
@@ -867,7 +852,7 @@ export function oligoSdFile(table: DG.DataFrame) {
       d.innerHTML = '';
       d.append(
         ui.link('Add Columns', async () => {
-          await addColumns(table);
+          await addColumns(table, saltsDf);
           grok.shell.tableView(table.name).grid.columns.setOrder(columnsOrder);
         }, 'Add columns: Compound Name, Compound Components, Cpd MW, Salt mass, Batch MW', ''),
         ui.button('Save SD file', () => saveTableAsSdFile(addColumnsPressed ? newDf : table))
@@ -882,7 +867,9 @@ export function oligoSdFile(table: DG.DataFrame) {
           if (gc.gridColumn.name == 'Type')
             gc.style.element = ui.choiceInput('', gc.cell.value, ['AS', 'SS', 'Duplex']).root;
           else if (gc.gridColumn.name == 'Salt')
-            gc.style.element = ui.choiceInput('', gc.cell.value, ['Sodium (+1)', 'Sodium (+2)']).root;
+            gc.style.element = ui.choiceInput('', gc.cell.value, saltsDf.columns.byIndex(1).toList(), () => {
+              view.dataFrame.col('Salt')!.set(gc.gridRow, '');
+            }).root;
         }
       });
 
