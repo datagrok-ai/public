@@ -428,6 +428,13 @@ export enum MARKER_TYPE {
   GRADIENT = "gradient",
 }
 
+export enum USER_STATUS {
+  STATUS_NEW = "new",
+  STATUS_ACTIVE = "active",
+  STATUS_BLOCKED = "blocked",
+  STATUS_GUEST = "guest"
+}
+
 /**
  * @typedef {string} AggregationType
  * @typedef {string} SyncType

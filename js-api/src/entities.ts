@@ -1,4 +1,4 @@
-import {ColumnType, ScriptLanguage, SemType, Type, TYPE} from "./const";
+import {ColumnType, ScriptLanguage, SemType, Type, TYPE, USER_STATUS} from "./const";
 import { FuncCall } from "./functions";
 import {toJs} from "./wrappers";
 import {FileSource} from "./dapi";
@@ -101,9 +101,12 @@ export class User extends Entity {
   get firstName(): string { return api.grok_User_Get_FirstName(this.dart); }
   set firstName(name: string) {api.grok_User_Set_FirstName(this.dart, name);}
 
-    /** Last name */
+  /** Last name */
   get lastName(): string { return api.grok_User_Get_LastName(this.dart); }
   set lastName(name: string) {api.grok_User_Set_LastName(this.dart, name);}
+
+  get status(): string & USER_STATUS { return api.grok_User_Get_Status(this.dart); }
+  set status(name: string & USER_STATUS) {api.grok_User_Set_Status(this.dart, name);}
 
   /** Email */
   get email(): string | null { return api.grok_User_Get_Email(this.dart); }
