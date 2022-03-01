@@ -423,10 +423,14 @@ export class MolecularLiabilityBrowser {
 
     const path = _package.webRoot + 'src/examples/tree.csv';
     const dfTree = await grok.data.loadTable(path);
+
     if (dfTree) {
       const treeBrowser = new TreeBrowser();
       await treeBrowser.init(dfTree, this.mlbView);
       //this.mlbView.dockManager.dock(treeBrowser, DG.DOCK_TYPE.DOWN);
+      this.mlbView.dataFrame.onCurrentRowChanged.subscribe((args) => {
+        console.warn([this.mlbView.dataFrame.currentRowIdx]);
+      });
     }
 
     this.setVidInput();
