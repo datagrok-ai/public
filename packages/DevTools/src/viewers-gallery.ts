@@ -4,7 +4,44 @@ import * as DG from 'datagrok-api/dg';
 import $ from 'cash-dom';
 import '../css/viewers-gallery.css';
 import { filter } from 'rxjs';
-import { DataFrame, TableView } from 'datagrok-api/dg';let viewerOptions = {
+import { DataFrame, InputBase, TableView } from 'datagrok-api/dg';
+const cat_comparisons = [
+    'Bar chart',
+    'Radar viewer',
+    'Chord viewer',
+    'Matrix plot',
+    'Word cloud',
+    'Word cloud viewer',
+    'Pie chart',
+    'Tree map',
+    'Tree map viewer'
+];
+const cat_trends = [
+    'Line chart',
+    'Histogram',
+    'Box plot',
+    'Sunbrust viewer',
+];
+const cat_correlations = [
+    'Scatter plot',
+    'Density plot',
+    '3d scatter plot',
+    'PC plot',
+    'Correlation plot',
+    'Heat map',
+];
+const cat_relationships = [
+    'Sankey viewer',
+    'Network diagram',
+    'Tree viewer',
+    'Phylo tree'
+];
+const cat_maps = [
+    'Shape map',
+    'Google map',
+    'Globe',
+];
+const viewerOptions = {
     "showXAxis": false,
     "showYAxis": false,
     "showXSelector": false,
@@ -49,6 +86,25 @@ import { DataFrame, TableView } from 'datagrok-api/dg';let viewerOptions = {
   
   filterBox.style.maxWidth = '230px';
 
+  let dlgTitle;
+
+  let okBtn;
+  //let okBtn = ui.bigButton('ADD',()=>{});
+
+  let backBtn = ui.iconFA('arrow-left',()=>{
+    $('.vg-selection-text').html('Selected: ');
+    dlgTitle.text('Add viewer');
+    $(okBtn).hide();
+    $(backBtn).hide();
+    $(descriptionBox).hide();
+    $(contentBox).show();
+    $(filterBox).show();
+  })
+  backBtn.style.marginRight = '10px';
+  backBtn.style.fontSize = '16px';
+  backBtn.classList.remove('fal');
+  backBtn.classList.add('far');
+
 export async function viewersGallery() {
 
     let viewers = {};
@@ -59,21 +115,74 @@ export async function viewersGallery() {
     let recommends = ui.divH([],'viewer-gallery');
     let selectioText = ui.div(['Selected: '],'vg-selection-text');
     let cards = ui.divH([],'viewer-gallery');
-    
+
     let search = ui.searchInput('','',(value)=>{
         clearRoot([recommends]);
         clearRoot([cards]);
-        unSelectAll(viewers)
+        $(okBtn).hide();
+        tempName = '';
+        let filter_value = getFilter([filters_type, filters_cat], viewers);
+
+        if (filter_value.length === 0){
+            for (let i in viewers){
+                filter_value.push(viewers[i].name)
+            }
+        }
+
         if (value != ''){
             for (let i in viewers){
-                if (viewers[i].name.toLowerCase().includes(value.toLowerCase())){
+                if (filter_value.indexOf(viewers[i].name) != -1 && viewers[i].name.toLowerCase().includes(value.toLowerCase())){
                     if (viewers[i].recommend)
                         recommends.append(render(viewers[i],table))
                     else
                         cards.append(render(viewers[i],table));
                 }
             }
-        } else {
+        } 
+        else {
+            for (let i in viewers){
+                if (filter_value.indexOf(viewers[i].name) != -1){
+                    if (viewers[i].recommend)
+                        recommends.append(render(viewers[i],table))
+                    else
+                        cards.append(render(viewers[i],table));
+                }
+            }
+        }
+        $('.vg-selection-text').html('Selected: '+ $('.viewer-gallery').find('.fa-minus').length);   
+    });
+
+    //@ts-ignore
+    let filters_type = ui.multiChoiceInput('', [''], ['Viewer','Widget'], (value)=>{
+        getFilter([filters_type, filters_cat], viewers);
+        search.fireChanged();
+    });
+
+    //@ts-ignore
+    let filters_cat = ui.multiChoiceInput('', [''], ['Comparisons','Trends','Correlations','Relationships', 'Maps', 'Others'], (value)=>{
+        getFilter([filters_type, filters_cat], viewers);
+        search.fireChanged();
+        /*
+        search.value = '';
+        clearRoot([recommends]);
+        clearRoot([cards]);
+        $(okBtn).hide();
+        tempName = '';
+
+        if (value.length>0){
+            for (let i in viewers){
+                if (viewers[i].recommend){
+                    if (value.indexOf(viewers[i].category) != -1){
+                        recommends.append(render(viewers[i],table));
+                    }
+                }
+                else{
+                    if (value.indexOf(viewers[i].category) != -1){
+                        cards.append(render(viewers[i],table));
+                    }
+                }
+            }
+        }else{
             for (let i in viewers){
                 if (viewers[i].recommend)
                     recommends.append(render(viewers[i],table))
@@ -81,8 +190,10 @@ export async function viewersGallery() {
                     cards.append(render(viewers[i],table));
             }
         }
-        $('.vg-selection-text').html('Selected: '+ $('.viewer-gallery').find('.fa-minus').length);   
-    });
+        
+
+        $('.vg-selection-text').html('Selected: '+ $('.viewer-gallery').find('.fa-minus').length); */
+    })
 
     //@ts-ignore
     search.input.placeholder = 'Search by name or type';
@@ -98,12 +209,27 @@ export async function viewersGallery() {
             name: insertSpaces(DG.Viewer.getViewerTypes()[i]),
             type: 'Viewer',
             recommend: false,
-            dock: false
+            category: 'Other'
         }});
 
         if (i<7){
             viewers[i].recommend = true;
         }
+        
+        if (cat_comparisons.indexOf(viewers[i].name) != -1){
+            viewers[i].category = 'Comparisons';
+        }else if (cat_trends.indexOf(viewers[i].name) != -1){
+            viewers[i].category = 'Trends';
+        }else if (cat_correlations.indexOf(viewers[i].name) != -1){
+            viewers[i].category = 'Correlations';
+        }else if (cat_relationships.indexOf(viewers[i].name) != -1){
+            viewers[i].category = 'Relationships';
+        }else if (cat_maps.indexOf(viewers[i].name) != -1){
+            viewers[i].category = 'Maps';
+        }else{
+            viewers[i].category = 'Others';
+        }
+
         if(viewers[i].name.includes('widget')){
             viewers[i].type = 'Widget';
             viewers[i].icon = 'grok-icon svg-icon svg-project';
@@ -113,15 +239,16 @@ export async function viewersGallery() {
 
     filterBox.append(ui.divV([
         ui.h3('Type'),
-        ui.boolInput('Viewer',false),
-        ui.boolInput('Widget',false),
+        filters_type.root,
         ui.h3('Category'),
-        ui.boolInput('Comparison',false),
+        filters_cat.root
+       /* ui.boolInput('Comparison',false),
         ui.boolInput('Trends',false),
         ui.boolInput('Part to whole',false),
         ui.boolInput('Correlations',false),
         ui.boolInput('Relationships',false),
         ui.boolInput('Maps',false),
+       */ 
     ], 'vg-filter-panel'));
     
 
@@ -136,6 +263,9 @@ export async function viewersGallery() {
     );
 
     $(descriptionBox).hide();
+    $(backBtn).hide();
+    $(contentBox).show();
+    $(filterBox).show();
 
     //root.innerHTML = '';
     root = ui.splitH([
@@ -149,9 +279,12 @@ export async function viewersGallery() {
             //viewerRoot
         )
         .onOK(() => {
-            //clearRoot([root]) 
-            if(tempName!='')
-                view.addViewer(DG.Viewer.fromType(tempName, table))
+            if(tempName!=''){view.addViewer(DG.Viewer.fromType(tempName, table))}
+            clearRoot([filterBox,contentBox,descriptionBox]);
+            clearRoot([root]) 
+            clearRoot([recommends]);
+            clearRoot([cards]);
+            tempName = '';
         });
 
     $(dlg.root).find('.d4-dialog-contents').removeClass('ui-form');
@@ -161,8 +294,27 @@ export async function viewersGallery() {
     
     $(dlg.root).find('.d4-dialog-contents').css('padding','0px');
     $(dlg.root).find('.d4-dialog-header').css('border-bottom','1px solid var(--grey-2)');
+    $(dlg.root).find('.d4-dialog-header').prepend(backBtn);
+    
     $(dlg.root).find('.d4-command-bar').css('border-top','1px solid var(--grey-2)');
 
+    //$(dlg.root).find('.d4-command-bar').prepend(okBtn);
+    okBtn = $(dlg.root).find('.d4-command-bar > button').first();
+    okBtn.addClass('ui-btn-raised');
+    okBtn.text('ADD')
+    $(okBtn).hide();
+    /*
+    okBtn.addEventListener('click',()=>{
+        if(tempName!=''){view.addViewer(DG.Viewer.fromType(tempName, table))}
+        clearRoot([filterBox,contentBox,descriptionBox]);
+        clearRoot([root]) 
+        clearRoot([recommends]);
+        clearRoot([cards]);
+        tempName = '';
+    })
+    */
+
+    dlgTitle = $(dlg.root).find('.d4-dialog-header>.d4-dialog-title');
     if (grok.shell.v.type == 'TableView'){
         dlg.showModal(true)
     }
@@ -176,7 +328,28 @@ export async function viewersGallery() {
 
 }
 
-function insertSpaces(string) {
+function getFilter(inputs:InputBase[], viewers:any){
+    let arr = [];
+    let values = [];
+    for (let i in inputs){
+        arr = arr.concat(inputs[i].value);
+    }
+
+    if (arr.length>0){
+        for (let i in viewers){
+            if (arr.indexOf(viewers[i].category) != -1){
+                values.push(viewers[i].name);
+            }
+            if (arr.indexOf(viewers[i].type) != -1){
+                values.push(viewers[i].name);
+            }
+        }
+    }
+
+    return values;
+};
+
+function insertSpaces(string:string) {
     string = string.replace(/^(_|-)/g, '')
 	string = string.replace(/(_|-)/g, ' ');
     string = string.replace(/([a-z]\s)/g, m => m.toLowerCase());
@@ -200,32 +373,50 @@ function render(viewer:any, table:DG.DataFrame){
     let label = ui.div([viewer.name], 'card-label');
 
     let details = ui.button(ui.iconFA('list'), ()=>{
+
+        tempName = viewer.name;
+        $('.vg-selection-text').html('Selected: '+ viewer.name);
+
+        dlgTitle.text(viewer.name);
         //show details block
+        $(okBtn).show();
+        root.style.border = '1px solid var(--grey-2)';
+        $('.vg-selection-text').html('Selected: '+ viewer.name);
+
+        $(backBtn).show();
         $(descriptionBox).show();
         $(contentBox).hide();
-        //$(filterBox).hide();
-        clearRoot([descriptionBox]);
-        //$(descriptionBox).html('');
-        let markup  = ui.div();
+        $(filterBox).hide();
+        //clearRoot([descriptionBox]);
+        
+        //descriptionBox = ui.box();
+        let markup = ui.panel();
+        let options = ui.div();
+        let viewerbox = ui.box();
+        viewerbox.append(DG.Viewer.fromType(viewer.name, table).root);
+        let tabs = ui.box();
+        tabs.append(ui.tabControl({
+            'Description': ()=> markup,
+            'Options': ()=> options
+        }).root);
+        tabs.style.paddingLeft = '20px';
+        
+        clearRoot([descriptionBox])
+        //descriptionBox.innerHTML = '';
+        descriptionBox.append(ui.splitH([viewerbox,tabs], {style:{height:'100%'}}));   
+
         //@ts-ignore
         let link = DG.Viewer.fromType(viewer.name, table).helpUrl;
-        grok.dapi.fetchProxy('https://raw.githubusercontent.com/datagrok-ai/public/master/'+link)
+        grok.dapi.fetchProxy('https://raw.githubusercontent.com/datagrok-ai/public/master'+link)
             .then(response => response.text())
-            .then(data => markup.append(ui.markdown(data)));
+            .then(data => {
+                let res = data.replace(new RegExp('../../', 'g'), 'https://raw.githubusercontent.com/datagrok-ai/public/master/help/')
+                markup.append(ui.markdown(res));
+                $(markup).find('img').css('width','300px');
+            });
+           
+          
 
-        $(descriptionBox).append(ui.splitH([
-            ui.box(DG.Viewer.fromType(viewer.name, table).root),
-            ui.divV([
-                ui.button('back', ()=>{
-                    $(descriptionBox).hide();
-                    $(contentBox).show();
-                    //$(filterBox).show();
-                }),
-                
-                markup
-                //DG.Viewer.fromType('Web widget', table).root,
-            ])
-        ]))
     });
 
     if (viewer.recommend){
@@ -242,6 +433,7 @@ function render(viewer:any, table:DG.DataFrame){
         root.style.border = '1px solid var(--blue-1)';
         tempName = viewer.name;
         $('.vg-selection-text').html('Selected: '+ viewer.name);
+        $(okBtn).show();
     });
 
     return root;
