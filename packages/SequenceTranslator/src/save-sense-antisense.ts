@@ -11,12 +11,12 @@ export function saveSenseAntiSense() {
     const smiAS = sequenceToSmiles(asInput.value, true);
     let result: string;
     if (saveOption.value)
-      result = `${OCL.Molecule.fromSmiles(smiSS + '.' + smiAS).toMolfile()}\n\n$$$$\n`;
+      result = `${OCL.Molecule.fromSmiles(smiSS + '.' + smiAS).toMolfileV3()}\n\n$$$$\n`;
     else {
       result =
-      `${OCL.Molecule.fromSmiles(smiSS).toMolfile()}\n` +
+      `${OCL.Molecule.fromSmiles(smiSS).toMolfileV3()}\n` +
       `>  <Sequence>\nSense Strand\n\n$$$$\n` +
-      `${OCL.Molecule.fromSmiles(smiAS).toMolfile()}\n` +
+      `${OCL.Molecule.fromSmiles(smiAS).toMolfileV3()}\n` +
       `>  <Sequence>\nAnti Sense\n\n$$$$\n`;
     }
 
