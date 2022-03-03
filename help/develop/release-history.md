@@ -39,7 +39,7 @@
 * (Bug) Function View: Dataframes selection from a file is buggy 
 * js-api-common update 
 * Scripting: Better handle missing output variables (R, Python) 
-* Package description: add markdown rendering  
+* Package description: add Markdown rendering  
 * JS API: Dialog.getOpenDialogs() 
 * JS API: Dialog.input(caption): InputBase 
 * JS API: Grid: ability to get cell back color 
@@ -98,7 +98,7 @@
 * Made analysis options less strict. 
 * Scatter Plot: ability to invert axes 
 * Bar Chart: fixed an issue with the initial viewport position 
-* Expose id property for tableView entitity #328 
+* Expose ID property for tableView entitity #328 
 * Core: update OpenChemLib (WIP)
 * Peptides: barchart fix 
 * (Bug) Exception on reading credentials for package 
@@ -118,7 +118,7 @@
 
 * (Bug) Filters: After reopening filters, all columns appear deactivated in the "Select columns" dialog 
 * (Bug) Filters: Filters for multi-value columns are not saved after reopening the Filters 
-* (Bug) Filters: ​double-click on checkbox: weird characters are visible 
+* (Bug) Filters: double-click on checkbox: weird characters are visible 
 * (Bug) Scatter Plot: Custom linear coloring is not propagated 
 * Push version from package.json for master branch 
 * CloudFormation required parameters 
@@ -4421,7 +4421,7 @@
 * MultiPlot: minor bugs fix and add advanced example to Readme.md
 * MultiPlot: added file extension
 * Function parameter editor (WIP)
-* (Bug) Bar chart: null values ​​are not indicated
+* (Bug) Bar chart: null values are not indicated
 * Bar Chart \- minor code cleanup.
 * Exercises: Simplify Exercises (WIP)
 * JS API: Focus for opened dialogs
@@ -4479,7 +4479,7 @@
 
 ## Addressed Issues
 
-* (Bug) Bar chart: null values ​​are not indicated
+* (Bug) Bar chart: null values are not indicated
 * MultiPlot: change color of marker of the status chart according to value and min and max columns
 * (Bug) Scatter plot \- showSizeSelector
 * JS API: ui.image, redirects on the new page when the link doesn't provided
@@ -4957,7 +4957,7 @@
 * Fixed strict checking
 * Change 'link-external' icon
 * Change editor icon
-* Oligo Batch Calculator: nearest neighbor method for extinction coefficient (EC) calculation​
+* Oligo Batch Calculator: nearest neighbor method for extinction coefficient (EC) calculation
 * Ability to declare Script as App
 * Help indexing
 * Wiki: file exporter example
@@ -5751,7 +5751,7 @@
 * Fixed strict checking
 * Change 'link-external' icon
 * Change editor icon
-* Oligo Batch Calculator: nearest neighbor method for extinction coefficient (EC) calculation​
+* Oligo Batch Calculator: nearest neighbor method for extinction coefficient (EC) calculation
 * Ability to declare Script as App
 * Help indexing
 * Wiki: file exporter example
@@ -8241,7 +8241,7 @@ Histogram: [duplicated Y axis](https://community.datagrok.ai/t/cannot-easily-cha
 * (Bug) Grid: hiding columns leaves empty space on the right (WIP)
 * Biosignals (WIP)
 * (Bug) Viewers | Properties: Sliders move to the next row if width of the second properties is not enough
-* (Bug) Table | Tooltip: After sketching form, fill of the values ​​in tooltip becomes white and their font changes
+* (Bug) Table | Tooltip: After sketching form, fill of the values in tooltip becomes white and their font changes
 * (Bug) Viewers | Properties:  With long table name, the right column of properties is greatly expanded in width
 * Ability to store data in a layout (WIP)
 * Clearing grid's background (so that it will stay white even if cell renderer fails)
