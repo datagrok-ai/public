@@ -31,6 +31,10 @@ Datagrok comes with the `datagrok-tools` npm package to help you scaffold a pack
 your local environment. You will also use `datagrok-tools` to build and publish your code. For more information, check
 out the [datagrok-tools README].
 
+```shell
+npm install --global datagrok-tools
+```
+
 <!-- PS: You might want to start by creating a [package]. -->
 
 <!--
