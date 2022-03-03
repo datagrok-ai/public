@@ -546,6 +546,11 @@ export class Row {
   /** Returns this row's value for the specified column
    * @param {string} columnName
    * @returns {Object} */
+  [columnName: string]: any
+
+  /** Returns this row's value for the specified column
+   * @param {string} columnName
+   * @returns {Object} */
   get(columnName: string): any {
     return this.table.getCol(columnName).get(this.idx);
   }
