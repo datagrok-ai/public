@@ -230,19 +230,12 @@ export class SubstViewer extends DG.JsViewer {
         tempDf.temp['isReal'] = true;
 
         initCol.semType = 'alignedSequence';
-        // initCol.setTag('isAnalysisApplicable', 'false');
         initCol.temp['isAnalysisApplicable'] = false;
         subsCol.semType = 'alignedSequence';
-        // subsCol.setTag('isAnalysisApplicable', 'false');
         subsCol.temp['isAnalysisApplicable'] = false;
 
-        // this.casesGrid = tempDf.plot.grid();
-        // this.casesGrid.props.allowEdit = false;
         grok.shell.o = DG.SemanticValue.fromValueType(tempDf, 'Substitution');
-      } else
-        grok.shell.o = DG.SemanticValue.fromValueType(null, 'Substitution');
-        // this.casesGrid = null;
-
+      }
 
       this.render();
     });
