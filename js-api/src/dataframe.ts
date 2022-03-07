@@ -404,12 +404,16 @@ export class DataFrame {
     return new DataFrame(api.grok_DataFrame_Append(this.dart, t2.dart, inPlace, columnsToAppend));
   }
 
-  /** @returns {Observable} */ _event(event: string): Observable<any> {
+  _event(event: string): Observable<any> {
+    return __obs(event, this.dart);
+  }
+
+  onEvent(event: string): Observable<any> {
     return __obs(event, this.dart);
   }
 
   /** Sample: {@link https://public.datagrok.ai/js/samples/data-frame/events/events} */
-   get onValuesChanged(): Observable<any> { return this._event('ddt-values-changed'); }
+  get onValuesChanged(): Observable<any> { return this._event('ddt-values-changed'); }
 
   /** Sample: {@link https://public.datagrok.ai/js/samples/data-frame/events/current-elements} */
   get onCurrentRowChanged(): Observable<any> { return this._event('ddt-current-row-changed'); }
@@ -1135,7 +1139,8 @@ export class ColumnList {
 
   /** Adds a virtual column.
    * @param {string} name
-   * @param {Function} getValue - value constructor function that accepts int index and returns value
+   * @param getValue - value constructor function that accepts int index and returns value
+   * @param setValue - function that gets invoked when a column cell value is set
    * @param {String} type - column type
    * @returns {Column}
    *
