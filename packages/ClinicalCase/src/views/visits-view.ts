@@ -2,16 +2,16 @@ import * as grok from 'datagrok-api/grok';
 import * as DG from "datagrok-api/dg";
 import * as ui from "datagrok-api/ui";
 import { study } from "../clinical-study";
-import { updateDivInnerHTML } from './utils';
+import { updateDivInnerHTML } from '../utils/utils';
 import { createPivotedDataframe, getVisitNamesAndDays, addDataFromDmDomain } from '../data-preparation/utils';
-import { LAB_RES_N, LAB_TEST, SUBJECT_ID, VISIT_DAY, VISIT_NAME, VISIT_START_DATE, VS_RES_N, VS_TEST } from '../columns-constants';
+import { LAB_RES_N, LAB_TEST, SUBJECT_ID, VISIT_DAY, VISIT_NAME, VISIT_START_DATE, VS_RES_N, VS_TEST } from '../constants/columns-constants';
 import { PatientVisit } from '../model/patient-visit';
 import { StudyVisit } from '../model/study-visit';
 import { _package } from '../package';
 import { ClinicalCaseViewBase } from '../model/ClinicalCaseViewBase';
 import { AE_START_DAY_FIELD, AE_TERM_FIELD, CON_MED_NAME_FIELD, CON_MED_START_DAY_FIELD, INV_DRUG_NAME_FIELD, TRT_ARM_FIELD, VIEWS_CONFIG } from '../views-config';
-import { VISITS_VIEW_NAME } from '../view-names-constants';
-import { DOMAINS_COLOR_PALETTE } from '../constants';
+import { VISITS_VIEW_NAME } from '../constants/view-names-constants';
+import { DOMAINS_COLOR_PALETTE } from '../constants/constants';
 
 export class VisitsView extends ClinicalCaseViewBase {
 

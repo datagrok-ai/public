@@ -3,14 +3,15 @@ import * as DG from "datagrok-api/dg";
 import * as ui from "datagrok-api/ui";
 import { ClinRow, study } from "../clinical-study";
 import { createBaselineEndpointDataframe, createHysLawDataframe, createLabValuesByVisitDataframe } from '../data-preparation/data-preparation';
-import { ALT, BILIRUBIN } from '../constants';
+import { ALT, BILIRUBIN } from '../constants/constants';
 import { createBaselineEndpointScatterPlot, createHysLawScatterPlot } from '../custom-scatter-plots/custom-scatter-plots';
-import { checkColumnsAndCreateViewer, updateDivInnerHTML } from './utils';
+import { updateDivInnerHTML } from '../utils/utils';
 import { _package } from '../package';
 import { getUniqueValues } from '../data-preparation/utils';
-import { LAB_HI_LIM_N, LAB_LO_LIM_N, LAB_TEST, VISIT_DAY, VISIT_NAME, SUBJECT_ID, LAB_RES_N } from '../columns-constants';
+import { LAB_HI_LIM_N, LAB_LO_LIM_N, LAB_TEST, VISIT_DAY, VISIT_NAME, SUBJECT_ID, LAB_RES_N } from '../constants/columns-constants';
 import { ClinicalCaseViewBase } from '../model/ClinicalCaseViewBase';
 import { TRT_ARM_FIELD, VIEWS_CONFIG } from '../views-config';
+import { checkColumnsAndCreateViewer } from '../utils/views-validation-utils';
 
 export class LaboratoryView extends ClinicalCaseViewBase {
 

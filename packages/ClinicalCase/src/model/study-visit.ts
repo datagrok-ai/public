@@ -1,5 +1,5 @@
 import * as DG from "datagrok-api/dg";
-import { INV_DRUG_DOSE, INV_DRUG_DOSE_UNITS, INV_DRUG_NAME, SUBJECT_ID, VISIT_NAME, VISIT_START_DATE } from "../columns-constants";
+import { INV_DRUG_DOSE, INV_DRUG_DOSE_UNITS, INV_DRUG_NAME, SUBJECT_ID, VISIT_NAME, VISIT_START_DATE } from "../constants/columns-constants";
 import { addColumnWithDrugPlusDosage } from "../data-preparation/data-preparation";
 
 export class StudyVisit {
