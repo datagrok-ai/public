@@ -3,15 +3,15 @@ import { InputBase } from "datagrok-api/dg";
 import * as grok from 'datagrok-api/grok';
 import * as ui from "datagrok-api/ui";
 import { study } from "../clinical-study";
-import { AE_CAUSALITY, AE_REQ_HOSP, AE_SEQ, AE_SEVERITY, AGE, DEATH_DATE, RACE, SEX, SUBJECT_ID, SUBJ_REF_ENDT } from "../columns-constants";
-import { SURVIVAL_ANALYSIS_GUIDE } from "../constants";
+import { AE_CAUSALITY, AE_REQ_HOSP, AE_SEQ, AE_SEVERITY, AGE, DEATH_DATE, RACE, SEX, SUBJECT_ID, SUBJ_REF_ENDT } from "../constants/columns-constants";
+import { SURVIVAL_ANALYSIS_GUIDE } from "../constants/constants";
 import { createSurvivalData } from "../data-preparation/data-preparation";
 import { dataframeContentToRow } from "../data-preparation/utils";
 import { ClinicalCaseViewBase } from "../model/ClinicalCaseViewBase";
 import { _package } from "../package";
-import { SURVIVAL_ANALYSIS_VIEW_NAME } from "../view-names-constants";
+import { SURVIVAL_ANALYSIS_VIEW_NAME } from "../constants/view-names-constants";
 import { AE_START_DAY_FIELD, TRT_ARM_FIELD, VIEWS_CONFIG } from "../views-config";
-import { updateDivInnerHTML } from "./utils";
+import { updateDivInnerHTML } from "../utils/utils";
 
 export class SurvivalAnalysisView extends ClinicalCaseViewBase {
 
@@ -49,7 +49,7 @@ export class SurvivalAnalysisView extends ClinicalCaseViewBase {
   }
 
   createView(): void {
-    this.colsRequiredForEndpoints = this.getColsRequiredForEndpoints
+    this.colsRequiredForEndpoints = this.getColsRequiredForEndpoints();
     this.updateEndpointOptions();
     this.covariatesOptions = [ AGE, SEX, RACE, VIEWS_CONFIG[SURVIVAL_ANALYSIS_VIEW_NAME][TRT_ARM_FIELD] ].filter(it => study.domains.dm.columns.names().includes(it));
     this.endpoint = Object.keys(this.endpointOptions)[0];

@@ -4,15 +4,15 @@ import {delay, expect} from "@datagrok-libraries/utils/src/test";
 import {_package} from "../package-test";
 import { ClinicalDomains } from "../clinical-study";
 import { createBaselineEndpointDataframe, createHysLawDataframe, createLabValuesByVisitDataframe, createSurvivalData, cumulativeEnrollemntByDay, dynamicComparedToBaseline, labDynamicComparedToMinMax, labDynamicRelatedToRef } from "../data-preparation/data-preparation";
-import { AE_START_DATE, LAB_HI_LIM_N, LAB_LO_LIM_N, LAB_RES_N, LAB_TEST, SUBJECT_ID, SUBJ_REF_ENDT, SUBJ_REF_STDT, VISIT_DAY, VISIT_NAME } from "../columns-constants";
+import { AE_START_DATE, LAB_HI_LIM_N, LAB_LO_LIM_N, LAB_RES_N, LAB_TEST, SUBJECT_ID, SUBJ_REF_ENDT, SUBJ_REF_STDT, VISIT_DAY, VISIT_NAME } from "../constants/columns-constants";
 import { dataframeContentToRow } from "../data-preparation/utils";
-import { createValidationDataFrame } from "../validation/validation-utils";
-import { vaidateDMDomain } from "../validation/services/validation-service";
-import { ALT, BILIRUBIN } from "../constants";
+import { createValidationDataFrame } from "../sdtm-validation/validation-utils";
+import { vaidateDMDomain } from "../sdtm-validation/services/validation-service";
+import { ALT, BILIRUBIN } from "../constants/constants";
 import { StudyVisit } from "../model/study-visit";
 import { PatientVisit } from "../model/patient-visit";
 import { TRT_ARM_FIELD, VIEWS_CONFIG } from "../views-config";
-import { LABORATORY_VIEW_NAME } from "../view-names-constants";
+import { LABORATORY_VIEW_NAME } from "../constants/view-names-constants";
 
 export const allViews = [
   'Summary', 

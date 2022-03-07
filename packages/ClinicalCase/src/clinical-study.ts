@@ -1,9 +1,9 @@
 /* Do not change these import lines. Datagrok will import API library in exactly the same manner */
 import * as grok from 'datagrok-api/grok';
 import * as DG from 'datagrok-api/dg';
-import { vaidateAEDomain, vaidateDMDomain } from './validation/services/validation-service';
-import { createValidationDataFrame } from './validation/validation-utils';
-import { SITE_ID, STUDY_ID } from './columns-constants';
+import { vaidateAEDomain, vaidateDMDomain } from './sdtm-validation/services/validation-service';
+import { createValidationDataFrame } from './sdtm-validation/validation-utils';
+import { SITE_ID, STUDY_ID } from './constants/columns-constants';
 import { createEventStartEndDaysCol } from './data-preparation/data-preparation';
 
 export class ClinicalDomains {

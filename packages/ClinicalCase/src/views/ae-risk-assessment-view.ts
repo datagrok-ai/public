@@ -3,9 +3,9 @@ import * as DG from "datagrok-api/dg";
 import * as ui from "datagrok-api/ui";
 import { study } from "../clinical-study";
 import { createAERiskAssessmentDataframe } from '../data-preparation/data-preparation';
-import { updateDivInnerHTML } from './utils';
+import { updateDivInnerHTML } from '../utils/utils';
 import { ClinicalCaseViewBase } from '../model/ClinicalCaseViewBase';
-import { AE_PERCENT, NEG_LOG10_P_VALUE, RISK_DIFFERENCE, SE_RD_WITH_SIGN_LEVEL } from '../constants';
+import { AE_PERCENT, NEG_LOG10_P_VALUE, RISK_DIFFERENCE, SE_RD_WITH_SIGN_LEVEL } from '../constants/constants';
 import { AE_TERM_FIELD, TRT_ARM_FIELD, VIEWS_CONFIG } from '../views-config';
 
 export class AERiskAssessmentView extends ClinicalCaseViewBase {
@@ -63,7 +63,8 @@ export class AERiskAssessmentView extends ClinicalCaseViewBase {
       y: this.volcanoPlotYAxis,
       color: this.volcanoPlotXAxis,
       showViewerFormulaLines: true,
-      size: this.volcanoPlotMarkerSize
+      size: this.volcanoPlotMarkerSize,
+      rowTooltip: `${VIEWS_CONFIG[this.name][AE_TERM_FIELD]}_ACTIVE\n${RISK_DIFFERENCE}\n${NEG_LOG10_P_VALUE}\n${AE_PERCENT}`
     });
 
     let lines: DG.FormulaLine[] = [];

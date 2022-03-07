@@ -2,15 +2,15 @@ import * as DG from "datagrok-api/dg";
 import * as ui from "datagrok-api/ui";
 import * as grok from 'datagrok-api/grok';
 import { study } from "../clinical-study";
-import { updateDivInnerHTML } from "./utils";
+import { updateDivInnerHTML } from "../utils/utils";
 import $ from "cash-dom";
 import { AEBrowserHelper } from "../helpers/ae-browser-helper";
 import { _package } from "../package";
-import { AE_BODY_SYSTEM, AE_SEVERITY, CON_MED_DOSE, CON_MED_DOSE_FREQ, CON_MED_DOSE_UNITS, CON_MED_ROUTE, DOMAIN, INV_DRUG_DOSE, INV_DRUG_DOSE_FORM, INV_DRUG_DOSE_FREQ, INV_DRUG_DOSE_UNITS, INV_DRUG_ROUTE, SUBJECT_ID } from "../columns-constants";
+import { AE_BODY_SYSTEM, AE_SEVERITY, CON_MED_DOSE, CON_MED_DOSE_FREQ, CON_MED_DOSE_UNITS, CON_MED_ROUTE, DOMAIN, INV_DRUG_DOSE, INV_DRUG_DOSE_FORM, INV_DRUG_DOSE_FREQ, INV_DRUG_DOSE_UNITS, INV_DRUG_ROUTE, SUBJECT_ID } from "../constants/columns-constants";
 import { ClinicalCaseViewBase } from "../model/ClinicalCaseViewBase";
 import { addDataFromDmDomain, getNullOrValue } from "../data-preparation/utils";
 import { AE_END_DAY_FIELD, AE_START_DAY_FIELD, AE_TERM_FIELD, CON_MED_END_DAY_FIELD, CON_MED_NAME_FIELD, CON_MED_START_DAY_FIELD, INV_DRUG_END_DAY_FIELD, INV_DRUG_NAME_FIELD, INV_DRUG_START_DAY_FIELD, TRT_ARM_FIELD, VIEWS_CONFIG } from "../views-config";
-import { TIMELINES_VIEW_NAME } from "../view-names-constants";
+import { TIMELINES_VIEW_NAME } from "../constants/view-names-constants";
 
 let multichoiceTableDict = { 'Adverse events': 'ae', 'Concomitant medication intake': 'cm', 'Drug exposure': 'ex' }
 

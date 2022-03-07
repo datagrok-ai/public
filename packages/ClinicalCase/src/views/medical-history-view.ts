@@ -1,11 +1,12 @@
 import * as DG from "datagrok-api/dg";
 import * as ui from "datagrok-api/ui";
 import { study } from "../clinical-study";
-import { MH_BODY_SYSTEM, MH_CATEGORY } from '../columns-constants';
+import { MH_BODY_SYSTEM, MH_CATEGORY } from '../constants/columns-constants';
 import { _package } from '../package';
 import { ClinicalCaseViewBase } from '../model/ClinicalCaseViewBase';
-import { checkColumnsAndCreateViewer, updateDivInnerHTML } from "./utils";
+import { updateDivInnerHTML } from "../utils/utils";
 import { MH_TERM_FIELD, VIEWS_CONFIG } from "../views-config";
+import { checkColumnsAndCreateViewer } from "../utils/views-validation-utils";
 
 export class MedicalHistoryView extends ClinicalCaseViewBase {
 

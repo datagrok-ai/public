@@ -6,7 +6,7 @@ import { isRequired } from '../../sdtm-meta';
 import { seriousnessCriteriaVariables } from '../constants';
 import { validatePairOfVariables } from './common-validation-functions';
 import { endsWithAny } from '../utils';
-import { AE_SERIOUS, DOMAIN } from '../../columns-constants';
+import { AE_SERIOUS, DOMAIN } from '../../constants/columns-constants';
 
 
 export function validateRequiredVariables(df: DG.DataFrame, domain: string, ruleId: string, validationResults: DG.DataFrame){

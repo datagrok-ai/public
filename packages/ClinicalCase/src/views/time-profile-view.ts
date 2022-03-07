@@ -3,13 +3,13 @@ import * as DG from "datagrok-api/dg";
 import * as ui from "datagrok-api/ui";
 import { study } from "../clinical-study";
 import { addDataFromDmDomain, createPivotedDataframeAvg, getUniqueValues, getVisitNamesAndDays } from '../data-preparation/utils';
-import { ETHNIC, LAB_RES_N, LAB_TEST, VISIT_DAY, VISIT_NAME, RACE, SEX, SUBJECT_ID, VS_TEST, VS_RES_N } from '../columns-constants';
+import { ETHNIC, LAB_RES_N, LAB_TEST, VISIT_DAY, VISIT_NAME, RACE, SEX, SUBJECT_ID, VS_TEST, VS_RES_N } from '../constants/columns-constants';
 import { dynamicComparedToBaseline } from '../data-preparation/data-preparation';
-import { updateDivInnerHTML } from './utils';
+import { updateDivInnerHTML } from '../utils/utils';
 import { _package } from '../package';
 import { ClinicalCaseViewBase } from '../model/ClinicalCaseViewBase';
 import { TRT_ARM_FIELD, VIEWS_CONFIG } from '../views-config';
-import { TIME_PROFILE_VIEW_NAME } from '../view-names-constants';
+import { TIME_PROFILE_VIEW_NAME } from '../constants/view-names-constants';
 
 
 export class TimeProfileView extends ClinicalCaseViewBase {
