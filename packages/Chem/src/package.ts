@@ -30,6 +30,10 @@ import {assure} from '@datagrok-libraries/utils/src/test';
 import {chem} from 'datagrok-api/grok';
 import Sketcher = chem.Sketcher;
 
+import {OpenChemLibSketcher} from './open-chem/ocl-sketcher';
+import {_importSdf} from './open-chem/sdf-importer';
+import {OCLCellRenderer} from './open-chem/ocl-cell-renderer';
+
 const drawMoleculeToCanvas = chemCommonRdKit.drawMoleculeToCanvas;
 
 /**
@@ -488,4 +492,37 @@ export function inchiToSmiles(id: string) {
   const smiles = mol.get_smiles();
   mol.delete();
   return smiles;
+}
+
+//name: openChemLibSketch
+//description: Sketches a molecule
+//top-menu: Chem | OpenChemLib Sketch
+export function openChemLibSketch() {
+  ui.dialog()
+    .add(openChemLibSketcher().root)
+    .showModal(true);
+}
+
+//name: openChemLibSketcher
+//tags: moleculeSketcher
+//output: widget sketcher
+export function openChemLibSketcher() {
+  return new OpenChemLibSketcher();
+}
+
+//name: importSdfs
+//description: Opens SDF file
+//tags: file-handler
+//meta.ext: sdf
+//input: list bytes
+//output: list tables
+export function importSdf(bytes: Uint8Array) {
+  return _importSdf(Uint8Array.from(bytes));
+}
+
+//name: oclCellRenderer
+//output: grid_cell_renderer result
+//meta.chemRendererName: OpenChemLib
+export async function oclCellRenderer() {
+  return new OCLCellRenderer();
 }
