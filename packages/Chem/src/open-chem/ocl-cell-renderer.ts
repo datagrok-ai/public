@@ -2,7 +2,6 @@
  * OCL-based molecule cell renderer.
  * */
 
-import * as grok from 'datagrok-api/grok';
 import * as ui from 'datagrok-api/ui';
 import * as DG from 'datagrok-api/dg';
 import * as OCL from 'openchemlib/full.js';
@@ -14,10 +13,10 @@ function oclMol(mol: string): OCL.Molecule {
 export class OCLCellRenderer extends DG.GridCellRenderer {
   molCache: DG.LruCache = new DG.LruCache();
   static _canvas: HTMLCanvasElement = ui.canvas();
-  get name() { return 'OpenChemLib'; }
-  get cellType() { return DG.SEMTYPE.MOLECULE; }
-  get defaultWidth() { return 200; }
-  get defaultHeight() { return 100; }
+  get name() {return 'OpenChemLib';}
+  get cellType() {return DG.SEMTYPE.MOLECULE;}
+  get defaultWidth() {return 200;}
+  get defaultHeight() {return 100;}
 
   constructor() {
     super();
@@ -40,7 +39,7 @@ export class OCLCellRenderer extends DG.GridCellRenderer {
       return;
 
     try {
-      let mol: OCL.Molecule = this.molCache.getOrCreate(molString, () => oclMol(molString));
+      const mol: OCL.Molecule = this.molCache.getOrCreate(molString, () => oclMol(molString));
       OCLCellRenderer._canvas.width = w;
       OCLCellRenderer._canvas.height = h;
       // @ts-ignore
