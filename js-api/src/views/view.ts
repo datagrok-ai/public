@@ -679,6 +679,8 @@ export class TableView extends View {
 
   get syncCurrentObject(): boolean { return api.grok_TableView_Get_SyncCurrentObject(this.dart); }
   set syncCurrentObject(x: boolean) { api.grok_TableView_Set_SyncCurrentObject(this.dart, x); }
+
+
 }
 
 /** Script view */
