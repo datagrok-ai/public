@@ -1,11 +1,11 @@
 import * as ui from 'datagrok-api/ui';
-import {sequenceToSmiles} from './package';
+import {sequenceToSmiles} from '../structures-works/from-monomers';
 import * as OCL from 'openchemlib/full.js';
 
 export function saveSenseAntiSense() {
   const ssInput = ui.textInput('Sense Strand 5\' ->3\'', '');
   const asInput = ui.textInput('Anti Sense 3\' ->5\'', '');
-  const saveOption = ui.switchInput('save as one entity', false);
+  const saveOption = ui.switchInput('save as one entity', true);
   const saveBtn = ui.button('Save SDF', () => {
     const smiSS = sequenceToSmiles(ssInput.value);
     const smiAS = sequenceToSmiles(asInput.value, true);
