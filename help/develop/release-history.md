@@ -1,6 +1,40 @@
 <!-- TITLE: Release History -->
 <!-- SUBTITLE: -->
 
+# 2022-03-08 Dev build 0.129.0
+
+## Latest Docker Images
+
+* Datagrok: 
+  *  `docker pull datagrok/datagrok:0.129.0`
+  *  `docker pull datagrok/datagrok:latest`
+  
+* [Docker-Compose](admin/docker-compose.md)
+
+## Addressed Issues
+
+* Webstorm configs 
+* Ability to set Function as a default value 
+* WebStrom default configurations 
+* Viewers: legend: ability to reset"filter by category" 
+* (Bug) Newly created user failed to login (WIP)
+* Fixed #344: Miss configured in-visualisation filter kills the browser session 
+* Fixed the initial position of the filter 
+* Grid: Excel-style column resizing 
+* Grid: column rearrangement: fixed the "'offsetParent' was called on null" bug 
+* Grid: ability to reorder multiple columns at once 
+* Renamed images 
+* JnJ: monitoring resources: RAM, CPU, HDD 
+* Implement '!=' and 'NOT IN' operators for matching rows 
+* Fixed #348: HTML cells \- selection & scrolling issues 
+* EacapeSequences: R 
+* Updated help 
+* Line Chart: "Invert X Axis" property 
+* Exposed grok.events.onResetFilterRequest 
+* Scatter Plot: highlight the category on axis on mouse-over 
+* SequenceTranslator: refactoring 
+
+
 # 2022-02-24 Dev build 0.128.0
 
 ## Latest Docker Images
