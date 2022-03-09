@@ -138,10 +138,7 @@ export function defineAxolabsPattern() {
         updateSvgScheme();
         updateOutputExamples();
       });
-      let isOverhang = false;
-      if (asBases[i].value.slice(-3) == '(o)')
-        isOverhang = true;
-      else
+      if (asBases[i].value.slice(-3) != '(o)')
         nucleotideCounter++;
 
       asModificationItems.append(
@@ -184,10 +181,7 @@ export function defineAxolabsPattern() {
         updateSvgScheme();
         updateOutputExamples();
       });
-      let isOverhang = false;
-      if (ssBases[i].value.slice(-3) == '(o)')
-        isOverhang = true;
-      else
+      if (ssBases[i].value.slice(-3) != '(o)')
         nucleotideCounter++;
 
       ssModificationItems.append(

@@ -2,7 +2,7 @@ import * as grok from 'datagrok-api/grok';
 import * as ui from 'datagrok-api/ui';
 import * as DG from 'datagrok-api/dg';
 import { study, ClinRow } from "../clinical-study";
-import { AE_DECOD_TERM, AE_START_DATE, SUBJECT_ID } from '../columns-constants';
+import { AE_DECOD_TERM, AE_START_DATE, SUBJECT_ID } from '../constants/columns-constants';
 
 export class AdverseEventHandler extends DG.ObjectHandler {
   get type() { return 'Adverse Event' }

@@ -1,4 +1,4 @@
-import * as sdtmCols from "./columns-constants";
+import * as sdtmCols from "./constants/columns-constants";
 
 export const SDTM_VERSION = '1.7';
 export const SDTMIG_VERSION = '3.3';
@@ -9,7 +9,7 @@ export const enum isRequired {
   PERMITTED
 }
 
-export const classes = {
+export const SdtmClasses = {
   'Events': {
     'AE': 'Adverse Events',
     'CE': 'Clinical Events',

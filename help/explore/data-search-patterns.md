@@ -17,13 +17,16 @@ already specified at the query level.
 
 | Pattern                | Example    |
 |------------------------|------------|
-| Exact value            | 5          |
-| Greater than           | > 5        |
-| Greater than or equals | > = 5      |
-| Less than              | < 5        |
-| Less than or equals    | <= 5       |
-| Range (inclusive)      | 10-20      |
-| In                     | in (5, 10) |
+| equals                 | 5          |
+| equals                 | = 5        |
+| not equals             | != 5       |
+| greater than           | > 5        |
+| greater than or equals | >= 5       |
+| less than              | < 5        |
+| less than or equals    | <= 5       |
+| range (inclusive)      | 10-20      |
+| in                     | in (5, 10) |
+| not in                 | not in (5, 10) |
 
 If the input does not match above-mentioned patterns, 'exact value' search is used.
 
@@ -34,8 +37,9 @@ If the input does not match above-mentioned patterns, 'exact value' search is us
 | contains               | contains foo        |
 | starts with            | starts with Charles |
 | ends with              | ends with District  |
-| regular expression                  | regular expression .*\[0-9\]+    |
-| in                     | in (5, 10)          |
+| regular expression     |  .*\[0-9\]+         |
+| in                     | in (asian, other)   |
+| not in                 | not in (m, f)       |
 
 String matching is case-insensitive. If the input does not match above-mentioned patterns, 'exact value' search is used.
 
