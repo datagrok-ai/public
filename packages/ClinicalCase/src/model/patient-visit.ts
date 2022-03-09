@@ -1,4 +1,4 @@
-import { SUBJECT_ID, VISIT_NAME } from "../columns-constants";
+import { SUBJECT_ID, VISIT_NAME } from "../constants/columns-constants";
 
 export class PatientVisit {
 

@@ -1,31 +1,39 @@
 import * as grok from 'datagrok-api/grok';
 import * as DG from 'datagrok-api/dg';
-import { ACTIVE_ARM_POSTTFIX, AE_PERCENT, ALT, AP, AST, BILIRUBIN, DOMAINS_WITH_EVENT_START_END_DAYS, NEG_LOG10_P_VALUE, ODDS_RATIO, PLACEBO_ARM_POSTTFIX, P_VALUE, RELATIVE_RISK, RISK_DIFFERENCE, SE_RD_WITH_SIGN_LEVEL, STANDARD_ERROR_RD } from '../constants';
+import { ACTIVE_ARM_POSTTFIX, AE_PERCENT, ALT, AP, AST, BILIRUBIN, DOMAINS_WITH_EVENT_START_END_DAYS, NEG_LOG10_P_VALUE, ODDS_RATIO, PLACEBO_ARM_POSTTFIX, P_VALUE, RELATIVE_RISK, RISK_DIFFERENCE, SE_RD_WITH_SIGN_LEVEL, STANDARD_ERROR_RD } from '../constants/constants';
 import { addDataFromDmDomain, dataframeContentToRow, dateDifferenceInDays, filterBooleanColumn, filterNulls } from './utils';
 import { study } from '../clinical-study';
-import { AE_CAUSALITY, AE_REQ_HOSP, AE_SEQ, AE_SEVERITY, AE_START_DATE, LAB_HI_LIM_N, LAB_LO_LIM_N, LAB_RES_N, LAB_TEST, SUBJECT_ID, SUBJ_REF_ENDT, SUBJ_REF_STDT, VISIT_DAY, VISIT_START_DATE } from '../columns-constants';
+import { AE_CAUSALITY, AE_REQ_HOSP, AE_SEQ, AE_SEVERITY, AE_START_DATE, LAB_HI_LIM_N, LAB_LO_LIM_N, LAB_RES_N, LAB_TEST, SUBJECT_ID, SUBJ_REF_ENDT, SUBJ_REF_STDT, VISIT_DAY, VISIT_START_DATE } from '../constants/columns-constants';
 var { jStat } = require('jstat')
 
 
 export function createMaxValuesDataForHysLaw(dataframe, aggregatedColName, filerValue) {
+  let missingDataFlag = false;
   let condition = `${LAB_TEST} = ${filerValue}`;
   let grouped = dataframe.groupBy([SUBJECT_ID, LAB_RES_N, LAB_HI_LIM_N])
     .where(condition)
     .aggregate();
   grouped.columns.addNewFloat(aggregatedColName)
-    .init((i) => grouped.get(LAB_RES_N, i) / grouped.get(LAB_HI_LIM_N, i));
+    .init((i) => {
+      if(!grouped.col(LAB_RES_N).isNone(i) && !grouped.col(LAB_HI_LIM_N).isNone(i)) {
+        return grouped.get(LAB_RES_N, i) / grouped.get(LAB_HI_LIM_N, i)
+      } else {
+        missingDataFlag = true;
+        return 0;
+      }
+    });
   grouped = grouped.groupBy([SUBJECT_ID])
     .max(aggregatedColName)
     .aggregate();
   grouped.getCol(`max(${aggregatedColName})`).name = aggregatedColName;
-  return grouped;
+  return {df: grouped, missingData: missingDataFlag};
 }
 
 
 export function createHysLawDataframe(lb: DG.DataFrame, dm: DG.DataFrame, altName: string, astName: string, blnName: string, trt_arm: string) {
-  let alt = createMaxValuesDataForHysLaw(lb, ALT, altName);
-  let bln = createMaxValuesDataForHysLaw(lb, BILIRUBIN, blnName);
-  let ast = createMaxValuesDataForHysLaw(lb, AST, astName);
+  let {df: alt, missingData: missingDataAlt}  = createMaxValuesDataForHysLaw(lb, ALT, altName);
+  let {df: bln, missingData: missingDataBln} = createMaxValuesDataForHysLaw(lb, BILIRUBIN, blnName);
+  let {df: ast, missingData: missingDataAst} = createMaxValuesDataForHysLaw(lb, AST, astName);
   //let ap = createMaxValuesDataForHysLaw(lb, AP, 'Alkaline Phosphatase');
 
   let joined = grok.data.joinTables(bln, alt, [SUBJECT_ID], [SUBJECT_ID], [SUBJECT_ID, BILIRUBIN], [ALT], DG.JOIN_TYPE.LEFT, false);
@@ -33,6 +41,9 @@ export function createHysLawDataframe(lb: DG.DataFrame, dm: DG.DataFrame, altNam
   //joined = grok.data.joinTables(joined, ap, [ SUBJECT_ID ], [ SUBJECT_ID ], [ SUBJECT_ID, ALT, BILIRUBIN, AST ], [ AP ], DG.JOIN_TYPE.LEFT, false);
   if (dm && dm.col(trt_arm)) {
     joined = addDataFromDmDomain(joined, dm, [SUBJECT_ID, ALT, BILIRUBIN, AST], [trt_arm]);
+  }
+  if (missingDataAlt || missingDataAst || missingDataBln) {
+    grok.shell.error(`Some values were missing in ${LAB_RES_N} and/or ${LAB_HI_LIM_N}. The results should be reviewed manually.`)
   }
   return joined;
 }
@@ -427,7 +438,10 @@ export function addCalculatedStudyDayColumn(domain: string, prefix: string, base
     study.domains[domain].columns.addNewInt(`${domain.toUpperCase()}${prefix}DY_CALCULATED`).init((i) => {
       const baselineDate = study.domains[domain].get(VISIT_START_DATE, i);;
       const startDate = study.domains[domain].get(`${domain.toUpperCase()}${prefix}DTC`, i);
-      const dateDiff = dateDifferenceInDays(baselineDate, startDate);
+      let dateDiff = dateDifferenceInDays(baselineDate, startDate);
+      if (dateDiff >= 0) {
+        dateDiff += 1;
+      } 
       return dateDiff;
     });
     study.domains[domain].columns.remove(VISIT_START_DATE);

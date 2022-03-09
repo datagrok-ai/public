@@ -1,6 +1,6 @@
 import * as DG from "datagrok-api/dg";
 import * as grok from 'datagrok-api/grok';
-import { VISIT_DAY, VISIT_NAME, SUBJECT_ID } from "../columns-constants";
+import { VISIT_DAY, VISIT_NAME, SUBJECT_ID } from "../constants/columns-constants";
 
 export function getUniqueValues(df: DG.DataFrame, colName: string) {
     const uniqueIds = new Set();
@@ -29,6 +29,18 @@ export function getUniqueValues(df: DG.DataFrame, colName: string) {
     let rowCount = df.rowCount;
     for (let i = 0; i < rowCount; i++){
         if(column.isNone(i)){
+            df.rows.removeAt(i);
+            i--;
+            rowCount-=1;
+        }
+    }
+  }
+
+  export function filetrValueFromDf(df: DG.DataFrame, colName: string, value: any) {
+    let column = df.columns.byName(colName);
+    let rowCount = df.rowCount;
+    for (let i = 0; i < rowCount; i++){
+        if(column.get(i) === value){
             df.rows.removeAt(i);
             i--;
             rowCount-=1;
@@ -65,7 +77,7 @@ export function getUniqueValues(df: DG.DataFrame, colName: string) {
     const startDate = new Date(start) as any;
     const endDate = new Date(end) as any;
     const diffTime = endDate - startDate;
-    return Math.ceil(diffTime / (1000 * 60 * 60 * 24)); 
+    return Math.round(diffTime / (1000 * 60 * 60 * 24)); 
   }
 
 

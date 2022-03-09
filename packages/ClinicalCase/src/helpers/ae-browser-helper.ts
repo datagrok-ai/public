@@ -1,14 +1,14 @@
 import * as DG from "datagrok-api/dg";
 import * as grok from 'datagrok-api/grok';
 import { study } from '../clinical-study';
-import { AE_END_DATE, AE_SEVERITY, AE_START_DATE, AGE, RACE, SEX, SUBJECT_ID } from "../columns-constants";
+import { AE_END_DATE, AE_SEVERITY, AE_START_DATE, AGE, RACE, SEX, SUBJECT_ID } from "../constants/columns-constants";
 import * as ui from 'datagrok-api/ui';
 import { dictToString, getNullOrValue } from "../data-preparation/utils";
 import { getSubjectDmData } from "../data-preparation/data-preparation";
-import { SEVERITY_COLOR_DICT } from "../constants";
-import { updateDivInnerHTML } from "../views/utils";
+import { SEVERITY_COLOR_DICT } from "../constants/constants";
+import { updateDivInnerHTML } from "../utils/utils";
 import { AE_END_DAY_FIELD, AE_START_DAY_FIELD, AE_TERM_FIELD, TRT_ARM_FIELD, VIEWS_CONFIG } from "../views-config";
-import { AE_BROWSER_VIEW_NAME } from "../view-names-constants";
+import { AE_BROWSER_VIEW_NAME } from "../constants/view-names-constants";
 
 export class AEBrowserHelper {
 
@@ -44,13 +44,21 @@ export class AEBrowserHelper {
             const condition = this.domainsWithoutVisitDays.includes(domain) ?
                 `${SUBJECT_ID} = ${this.currentSubjId}` :
                 this.dyDomains.includes(domain) ?
-                    `${SUBJECT_ID} = ${this.currentSubjId} and ${domain.toUpperCase()}DY < ${this.currentAeDay} and ${domain.toUpperCase()}DY > ${this.currentAeDay - this.daysPriorAe}` :
-                    `${SUBJECT_ID} = ${this.currentSubjId} and ${domain.toUpperCase()}STDY < ${this.currentAeDay} and ${domain.toUpperCase()}ENDY > ${this.currentAeDay - this.daysPriorAe}`;
-            this[domain] = study.domains[domain]
+                    study.domains[domain].col(`${domain.toUpperCase()}DY`) ?
+                        `${SUBJECT_ID} = ${this.currentSubjId} and ${domain.toUpperCase()}DY < ${this.currentAeDay} and ${domain.toUpperCase()}DY > ${this.currentAeDay - this.daysPriorAe}` :
+                        null :
+                    [`${domain.toUpperCase()}STDY`, `${domain.toUpperCase()}ENDY`].every(it => study.domains[domain].col(it) !== null) ?
+                        `${SUBJECT_ID} = ${this.currentSubjId} and ${domain.toUpperCase()}STDY < ${this.currentAeDay} and ${domain.toUpperCase()}ENDY > ${this.currentAeDay - this.daysPriorAe}` :
+                        null;
+            if (condition) {
+                this[domain] = study.domains[domain]
                 .clone()
                 .groupBy(study.domains[domain].columns.names())
                 .where(`${condition}`)
                 .aggregate();
+            } else {
+                this[domain] = null;
+            }
         })
     }
 
@@ -85,9 +93,13 @@ export class AEBrowserHelper {
 
             accae.addTitle(ui.span([accIcon, title]));
 
+            let getAeDate = (col) => {
+                this.aeToSelect.col(col) ? getNullOrValue(this.aeToSelect, AE_START_DATE, this.aeToSelect.currentRowIdx) : 'null';
+            }
+
             let startEndDays = ui.tooltip.bind(
                 ui.label(`${getNullOrValue(this.aeToSelect, VIEWS_CONFIG[AE_BROWSER_VIEW_NAME][AE_START_DAY_FIELD], this.aeToSelect.currentRowIdx)} - ${getNullOrValue(this.aeToSelect, VIEWS_CONFIG[AE_BROWSER_VIEW_NAME][AE_END_DAY_FIELD], this.aeToSelect.currentRowIdx)}`),
-                `${getNullOrValue(this.aeToSelect, AE_START_DATE, this.aeToSelect.currentRowIdx)} - ${getNullOrValue(this.aeToSelect, AE_END_DATE, this.aeToSelect.currentRowIdx)}`);
+                `${getAeDate(AE_START_DATE)} - ${getAeDate(AE_END_DATE)}`);
 
 
             let daysInput = ui.intInput('Prior AE', this.daysPriorAe);
@@ -135,28 +147,32 @@ export class AEBrowserHelper {
                 const panesToRemove = accae.panes.filter(it => !totalDomains.includes(it.name));
                 panesToRemove.forEach(it => accae.removePane(it));
                 totalDomains.forEach(it => {
-                    const rowNum = this[it].rowCount === 1 && this[it].getCol(SUBJECT_ID).isNone(0) ? 0 : this[it].rowCount
-                    let pane = accae.getPane(`${it}`);
-                    if (pane) {
-                        //@ts-ignore
-                        updateDivInnerHTML(pane.root.lastChild, getPaneContent(it, rowNum));
-                        //@ts-ignore
-                        pane.root.firstChild.lastChild.innerText = rowNum;
-                    } else {
-                        createPane(it, rowNum);
+                    if (this[it]) {
+                        const rowNum = this[it].rowCount === 1 && this[it].getCol(SUBJECT_ID).isNone(0) ? 0 : this[it].rowCount
+                        let pane = accae.getPane(`${it}`);
+                        if (pane) {
+                            //@ts-ignore
+                            updateDivInnerHTML(pane.root.lastChild, getPaneContent(it, rowNum));
+                            //@ts-ignore
+                            pane.root.firstChild.lastChild.innerText = rowNum;
+                        } else {
+                            createPane(it, rowNum);
+                        }
                     }
                 })
             }
 
             let createAccordion = () => {
                 this.domains.concat(this.selectedAdditionalDomains).forEach(it => {
-                    const rowNum = this[it].rowCount === 1 && this[it].getCol(SUBJECT_ID).isNone(0) ? 0 : this[it].rowCount;
-                    createPane(it, rowNum);
+                    if (this[it]) {
+                        const rowNum = this[it].rowCount === 1 && this[it].getCol(SUBJECT_ID).isNone(0) ? 0 : this[it].rowCount;
+                        createPane(it, rowNum);
+                    }
                 })
             }
 
             let addButton = ui.button(ui.icons.add(() => { }), () => {
-                let domainsMultiChoices = ui.multiChoiceInput('', this.selectedAdditionalDomains, this.additionalDomains)
+                let domainsMultiChoices = ui.multiChoiceInput('', this.selectedAdditionalDomains, this.additionalDomains);
                 ui.dialog({ title: 'Select domains' })
                     .add(ui.div([domainsMultiChoices]))
                     .onOK(() => {

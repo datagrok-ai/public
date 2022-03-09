@@ -4,12 +4,12 @@ import * as ui from "datagrok-api/ui";
 import { study } from "../clinical-study";
 import { addDataFromDmDomain, getUniqueValues } from '../data-preparation/utils';
 import { createBaselineEndpointDataframe } from '../data-preparation/data-preparation';
-import { ETHNIC, LAB_RES_N, LAB_TEST, VISIT_DAY, VISIT_NAME, RACE, SEX, SUBJECT_ID, VS_TEST, VS_RES_N } from '../columns-constants';
-import { updateDivInnerHTML } from './utils';
+import { ETHNIC, LAB_RES_N, LAB_TEST, VISIT_DAY, VISIT_NAME, RACE, SEX, SUBJECT_ID, VS_TEST, VS_RES_N } from '../constants/columns-constants';
+import { updateDivInnerHTML } from '../utils/utils';
 import { _package } from '../package';
 import { ClinicalCaseViewBase } from '../model/ClinicalCaseViewBase';
 import { TRT_ARM_FIELD, VIEWS_CONFIG } from '../views-config';
-import { DISTRIBUTIONS_VIEW_NAME } from '../view-names-constants';
+import { DISTRIBUTIONS_VIEW_NAME } from '../constants/view-names-constants';
 var { jStat } = require('jstat')
 
 

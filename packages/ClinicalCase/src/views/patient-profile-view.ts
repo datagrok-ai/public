@@ -2,14 +2,14 @@ import { timeAsync } from 'datagrok-api/dg';
 import * as grok from 'datagrok-api/grok';
 import * as ui from "datagrok-api/ui";
 import { study } from "../clinical-study";
-import { INV_DRUG_DOSE, INV_DRUG_DOSE_UNITS, LAB_DAY, LAB_HI_LIM_N, LAB_LO_LIM_N, LAB_RES_N, LAB_TEST, SUBJECT_ID, VISIT_DAY, VISIT_NAME } from "../columns-constants";
+import { INV_DRUG_DOSE, INV_DRUG_DOSE_UNITS, LAB_DAY, LAB_HI_LIM_N, LAB_LO_LIM_N, LAB_RES_N, LAB_TEST, SUBJECT_ID, VISIT_DAY, VISIT_NAME } from "../constants/columns-constants";
 import { addColumnWithDrugPlusDosage, dynamicComparedToBaseline, labDynamicComparedToMinMax, labDynamicRelatedToRef } from "../data-preparation/data-preparation";
 import { getUniqueValues, getVisitNamesAndDays } from "../data-preparation/utils";
 import { ClinicalCaseViewBase } from "../model/ClinicalCaseViewBase";
 import { _package } from "../package";
-import { PATIENT_PROFILE_VIEW_NAME } from '../view-names-constants';
+import { PATIENT_PROFILE_VIEW_NAME } from '../constants/view-names-constants';
 import { AE_END_DAY_FIELD, AE_START_DAY_FIELD, AE_TERM_FIELD, CON_MED_END_DAY_FIELD, CON_MED_NAME_FIELD, CON_MED_START_DAY_FIELD, INV_DRUG_END_DAY_FIELD, INV_DRUG_NAME_FIELD, INV_DRUG_START_DAY_FIELD, VIEWS_CONFIG } from '../views-config';
-import {  } from "./utils";
+import {  } from "../utils/utils";
 
 
 export class PatientProfileView extends ClinicalCaseViewBase {

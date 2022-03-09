@@ -1,18 +1,18 @@
-import {map} from "./map";
-import { sortByStringLengthInDescendingOrder } from "./package";
+import {map} from './map';
+import {sortByStringLengthInDescendingOrder} from './package';
 
 export function getAllCodesOfSynthesizer(synthesizer: string): string[] {
   let codes: string[] = [];
-  for (let technology of Object.keys(map[synthesizer]))
+  for (const technology of Object.keys(map[synthesizer]))
     codes = codes.concat(Object.keys(map[synthesizer][technology]));
   return codes;
 }
 
 function getListOfPossibleSynthesizersByFirstMatchedCode(sequence: string, overhangCodes: string[]): string[] {
-  let synthesizers: string[] = [];
+  const synthesizers: string[] = [];
   Object.keys(map).forEach((synthesizer: string) => {
-    let matched = overhangCodes.find((s) => s == sequence.slice(0, s.length));
-    let cutoffIndex = (matched == null) ? 0 : matched.length;
+    const matched = overhangCodes.find((s) => s == sequence.slice(0, s.length));
+    const cutoffIndex = (matched == null) ? 0 : matched.length;
     const codes = getAllCodesOfSynthesizer(synthesizer);
     if (codes.some((s) => s == sequence.slice(cutoffIndex, cutoffIndex + s.length)))
       synthesizers.push(synthesizer);
@@ -20,12 +20,12 @@ function getListOfPossibleSynthesizersByFirstMatchedCode(sequence: string, overh
   return synthesizers;
 }
 
-function getListOfPossibleTechnologiesByFirstMatchedCode(sequence: string, synthesizer: string, overhangCodes: string[]): string[] {
+function possibleTechnologiesByFirstMatchedCode(sequence: string, synthesizer: string, overhangs: string[]): string[] {
   const technologies: string[] = [];
   Object.keys(map[synthesizer]).forEach((technology: string) => {
-    let matched = overhangCodes.find((s) => s == sequence.slice(0, s.length));
-    let cutoffIndex = (matched == null) ? 0 : matched.length;
-    const codes = Object.keys(map[synthesizer][technology]);  // .concat(Object.keys(MODIFICATIONS));
+    const matched = overhangs.find((s) => s == sequence.slice(0, s.length));
+    const cutoffIndex = (matched == null) ? 0 : matched.length;
+    const codes = Object.keys(map[synthesizer][technology]);
     if (codes.some((s) => s == sequence.slice(cutoffIndex, cutoffIndex + s.length)))
       technologies.push(technology);
   });
@@ -49,7 +49,8 @@ export function isValidSequence(sequence: string, overhangCodes: string[]): {
   const nucleotides = ['A', 'U', 'T', 'C', 'G'];
 
   possibleSynthesizers.forEach((synthesizer, synthesizerIndex) => {
-    const codes = sortByStringLengthInDescendingOrder(getAllCodesOfSynthesizer(synthesizer).concat(sortedOverhangCodes));//.concat(sorte);
+    const codes = sortByStringLengthInDescendingOrder(getAllCodesOfSynthesizer(synthesizer)
+      .concat(sortedOverhangCodes));
     while (outputIndices[synthesizerIndex] < sequence.length) {
       const matchedCode = codes
         .find((c) => c == sequence.slice(outputIndices[synthesizerIndex], outputIndices[synthesizerIndex] + c.length));
@@ -75,27 +76,29 @@ export function isValidSequence(sequence: string, overhangCodes: string[]): {
     }
   });
 
-  const indexOfExpectedSythesizer = Math.max.apply(Math, outputIndices);
+  const indexOfExpectedSythesizer = Math.max(...outputIndices); //Math.max.apply(Math, outputIndices);
   const indexOfFirstNotValidCharacter = (indexOfExpectedSythesizer == sequence.length) ? -1 : indexOfExpectedSythesizer;
   const expectedSynthesizer = possibleSynthesizers[outputIndices.indexOf(indexOfExpectedSythesizer)];
-  if (indexOfFirstNotValidCharacter != -1)
+  if (indexOfFirstNotValidCharacter != -1) {
     return {
       indexOfFirstNotValidCharacter: indexOfFirstNotValidCharacter,
       expectedSynthesizer: expectedSynthesizer,
-      expectedTechnology: null
+      expectedTechnology: null,
     };
+  }
 
-  let possibleTechnologies = getListOfPossibleTechnologiesByFirstMatchedCode(sequence, expectedSynthesizer, sortedOverhangCodes);
+  const possibleTechnologies = possibleTechnologiesByFirstMatchedCode(
+    sequence, expectedSynthesizer, sortedOverhangCodes);
   if (possibleTechnologies.length == 0)
-    return { indexOfFirstNotValidCharacter: 0, expectedSynthesizer: null, expectedTechnology: null };
+    return {indexOfFirstNotValidCharacter: 0, expectedSynthesizer: null, expectedTechnology: null};
 
   outputIndices = Array(possibleTechnologies.length).fill(0);
 
   possibleTechnologies.forEach((technology: string, technologyIndex: number) => {
-    let codes = sortByStringLengthInDescendingOrder(Object.keys(map[expectedSynthesizer][technology]).concat(sortedOverhangCodes));
+    const codes = sortByStringLengthInDescendingOrder(
+      Object.keys(map[expectedSynthesizer][technology]).concat(sortedOverhangCodes));
     while (outputIndices[technologyIndex] < sequence.length) {
-
-      let matchedCode = codes
+      const matchedCode = codes
         .find((c) => c == sequence.slice(outputIndices[technologyIndex], outputIndices[technologyIndex] + c.length));
 
       if (matchedCode == null)
@@ -107,7 +110,7 @@ export function isValidSequence(sequence: string, overhangCodes: string[]): {
         firstUniqueCharacters.includes(sequence[outputIndices[technologyIndex] - 2])
       ) break;
 
-      if (  // for mistake pattern 'ArA'
+      if ( // for mistake pattern 'ArA'
         firstUniqueCharacters.includes(sequence[outputIndices[technologyIndex] + 1]) &&
         nucleotides.includes(sequence[outputIndices[technologyIndex]])
       ) {
@@ -119,12 +122,12 @@ export function isValidSequence(sequence: string, overhangCodes: string[]): {
     }
   });
 
-  const indexOfExpectedTechnology = Math.max.apply(Math, outputIndices);
+  const indexOfExpectedTechnology = Math.max(...outputIndices); //Math.max.apply(Math, outputIndices);
   const expectedTechnology = possibleTechnologies[outputIndices.indexOf(indexOfExpectedTechnology)];
 
   return {
     indexOfFirstNotValidCharacter: indexOfFirstNotValidCharacter,
     expectedSynthesizer: expectedSynthesizer,
-    expectedTechnology: expectedTechnology
+    expectedTechnology: expectedTechnology,
   };
 }
