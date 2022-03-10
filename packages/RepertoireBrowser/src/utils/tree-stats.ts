@@ -1,64 +1,86 @@
 //@ts-ignore
 import {Utils, Newick} from '@phylocanvas/phylocanvas.gl';
 
-interface TreeNodeInfo {
-    branchLength: number,
-    id: string,
-    isLeaf: boolean,
-    name: string,
-}
-
-interface TreeStats {
-    totalLeaves: number;
-    leavesIntersected: number;
-    totalSubtreeLength: number;
-}
-
-type TreeStatsKeys = keyof TreeStats;
-// eslint-disable-next-line no-unused-vars
-type TreeStatColumns = {[key in TreeStatsKeys]: number[]};
-type IdParser = (name: string) => string;
-
+/**
+ * Analyses Newick-formatted strings containing phylogenetic trees.
+ */
 export class TreeAnalyzer {
-  protected items: Set<string>;
-  protected parseId: IdParser;
+  protected _newickRegEx = new RegExp(/^(\(*[^:]+:[^,]+\)*)+$/);
+  protected _items: Set<string>;
+  protected _inspectors: TreeNodeInspector[];
+  protected _isect: NodeIdsIntersection;
 
-  constructor(items: string[] = [], parser: IdParser = (s) => s) {
-    this.items = new Set(items);
-    this.parseId = parser;
+  /**
+   * Creates an instance of TreeAnalyzer.
+   * @param {string[]} [items=[]] Items to intersect tree leaves with.
+   * @param {TreeNodeInspector} [inspector] Callback to inspect/modify a tree node.
+   * @memberof TreeAnalyzer
+   */
+  constructor(items: string[] = [], inspector?: TreeNodeInspector) {
+    this._items = new Set(items);
+    this._isect = new NodeIdsIntersection(items);
+    this._inspectors = [];
+
+    if (inspector)
+      this._inspectors.push(inspector);
+
+    this._inspectors.push(this._isect.apply.bind(this._isect));
   }
 
-  protected _findIntersection(nodes: {[key: string]: TreeNodeInfo}): string[] {
-    const isect = [];
+  /**
+   * Traverses the tree and optionally calls node observing callbacks.
+   * @param {PhylocanvasTreeNode} root Root of the tree.
+   */
+  protected _traverseTree(root: PhylocanvasTreeNode) {
+    const traversal: PhylocanvasTreeTraversal = Utils.treeTraversal(root);
+    const nodes = traversal.postorderTraversal;
 
-    for (const [id, node] of Object.entries(nodes)) {
-      if (!node.isLeaf)
-        continue;
+    for (const node of nodes) {
+      let modifiedNode = node;
 
-      const parsedId = this.parseId(id);
-
-      if (this.items.has(parsedId))
-        isect.push(parsedId);
+      for (const obs of this._inspectors)
+        modifiedNode = obs(modifiedNode);
     }
-    return isect;
   }
 
-  private _traverseTree(nwk: string): TreeStats {
-    const tree = Newick.parse_newick(nwk);
-    const traverse = Utils.treeTraversal(tree);
-    const root = traverse.rootNode;
-    const isect = this._findIntersection(traverse.nodeById);
-    const stats = {
+  /**
+   * Calculates selected nodes statistics.
+   * @param {PhylocanvasTreeNode} root Root node to get total stats.
+   * @param {string[]} selectedIds List of nodes id to count.
+   * @return {TreeStats} Statistics.
+   */
+  private _calcStats(root: PhylocanvasTreeNode, selectedIds: string[]): TreeStats {
+    return {
       totalLeaves: root.totalLeaves,
-      leavesIntersected: isect.length,
+      leavesIntersected: selectedIds.length,
       totalSubtreeLength: root.totalSubtreeLength,
     };
+  }
+
+  /**
+   * Analyses a single tree read from Newick-formatted string.
+   * @param {string} nwk Newick string.
+   * @return  {TreeStats} Simple statistics on the tree nodes.
+   */
+  private _analyseTree(nwk: string): TreeStats {
+    let stats = _nullStats;
+
+    if (this._newickRegEx.test(nwk.trim())) {
+      const tree = Newick.parse_newick(nwk);
+
+      this._isect.reset();
+      this._traverseTree(tree);
+      stats = this._calcStats(tree, this._isect.result);
+    }
     return stats;
   }
 
+  /**
+   * Collects statistics on trees.
+   * @param {string[]} trees Trees in Newick format to anslyse.
+   * @return {TreeStatColumns} Tree statistics.
+   */
   analyze(trees: string[]): TreeStatColumns {
-    const regexp = new RegExp(/^(\(*[^:]+:[^,]+\)*)+$/);
-    // eslint-disable-next-line no-unused-vars
     const stats: TreeStatColumns = {
       totalLeaves: [],
       leavesIntersected: [],
@@ -66,11 +88,8 @@ export class TreeAnalyzer {
     };
     const statsKeys = Object.keys(stats);
 
-    for (const k of statsKeys)
-      stats[k] = [];
-
-    for (const nwk of trees) {
-      const s = regexp.test(nwk.trim()) ? this._traverseTree(nwk) : statsKeys;
+    for (const tree of trees) {
+      const s = this._analyseTree(tree);
 
       for (const k of statsKeys)
         stats[k].push(s[k]);
@@ -78,3 +97,97 @@ export class TreeAnalyzer {
     return stats;
   }
 }
+
+/**
+ * Calculates if a node id is found inside the given subset in lazy way.
+ * Collects each id found in the subset into a list.
+ */
+class NodeIdsIntersection {
+  private _isect: string[];
+  private _items: Set<string>;
+
+  /**
+   * Creates an instance of NodeIdsIntersection.
+   * @param {string[]} items Items to consider as the source set.
+   */
+  constructor(items: string[]) {
+    this._isect = [];
+    this._items = new Set<string>(items);
+  }
+
+  /**
+   * Resets intersection list.
+   */
+  reset() {
+    this._isect = [];
+  }
+
+  /**
+   * Performs test if the node is found in the source subset.
+   * @param {PhylocanvasTreeNode} node Node to test.
+   */
+  apply(node: PhylocanvasTreeNode) {
+    if (node.isLeaf && this._items.has(node.id))
+      this._isect.push(node.id);
+  }
+
+  /**
+   * Returns the resulting intersection.
+   */
+  get result(): string[] {
+    return this._isect;
+  }
+}
+
+// TODO: add test for these properties existing.
+/**
+ * Represents a single tree node.
+ */
+export interface PhylocanvasTreeNode {
+  branchLength: 0;
+  children: PhylocanvasTreeNode[];
+  id: string;
+  isCollapsed: boolean;
+  isHidden: boolean;
+  isLeaf: boolean
+  name: string;
+  postIndex: number;
+  preIndex: number;
+  totalLeaves: number;
+  totalNodes: number;
+  totalSubtreeLength: number;
+  visibleLeaves: number;
+}
+
+/**
+ * Represents simple tree statistics.
+ */
+interface TreeStats {
+  totalLeaves: number;
+  leavesIntersected: number;
+  totalSubtreeLength: number;
+}
+
+const _nullStats: TreeStats = {
+  totalLeaves: 0,
+  leavesIntersected: 0,
+  totalSubtreeLength: 0,
+};
+
+// TODO: add test for these properties existing.
+/**
+ * Represents tree traversal object.
+ * @interface PhylocanvasTreeTraversal
+ */
+interface PhylocanvasTreeTraversal{
+    nodeById: TreeNodeTraverseInfo;
+    rootNode: PhylocanvasTreeNode;
+    postorderTraversal: PhylocanvasTreeNode[];
+    preorderTraversal: PhylocanvasTreeNode[];
+}
+
+type TreeStatsKeys = keyof TreeStats;
+// eslint-disable-next-line no-unused-vars
+type TreeStatColumns = {[key in TreeStatsKeys]: number[]};
+type TreeNodeTraverseInfo = {[id: string]: PhylocanvasTreeNode};
+type TreeNodeInspector = (node: PhylocanvasTreeNode) => PhylocanvasTreeNode;
