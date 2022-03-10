@@ -82,6 +82,11 @@ export function getUniqueValues(df: DG.DataFrame, colName: string) {
 
 
 export function addDataFromDmDomain(df: DG.DataFrame, dm: DG.DataFrame, columnsToExtract: string[], columnsToExtractFromDm: string[], subjIdColName = SUBJECT_ID) {
+    const missingDmCols = columnsToExtractFromDm.filter(it => !dm.columns.names().includes(it));
+    if (missingDmCols.length) {
+        grok.shell.error(`Columns ${missingDmCols.join(',')} are missing in DM domain`);
+        return;
+    }
     let withArm = grok.data.joinTables(df, dm, [ subjIdColName ], [ SUBJECT_ID ], columnsToExtract, columnsToExtractFromDm, DG.JOIN_TYPE.LEFT, false);
    // columnsToExtractFromDm.forEach(it => changeEmptyStringsToUnknown(withArm, it));
     return withArm;
