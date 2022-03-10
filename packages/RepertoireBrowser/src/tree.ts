@@ -5,11 +5,11 @@ import * as DG from 'datagrok-api/dg';
 
 import {difference} from 'set-operations';
 import {PhylocanvasGL, TreeTypes, Shapes} from '@phylocanvas/phylocanvas.gl';
-import {TreeAnalyzer} from './utils/tree-stats';
+import {TreeAnalyzer, PhylocanvasTreeNode} from './utils/tree-stats';
 
 export class TreeBrowser {// extends DG.JsViewer {
   title: string;
-  phyloTreeViewer: any;//PhylocanvasGL;//DG.Viewer;
+  phyloTreeViewer: PhylocanvasGL;
   networkViewer: DG.Viewer;
   dataFrame: DG.DataFrame;
   mlbView: DG.TableView;
@@ -20,6 +20,11 @@ export class TreeBrowser {// extends DG.JsViewer {
 
   protected _extractTPP(id: string): string {
     return id.split('|')[0];
+  }
+
+  protected _modifyNodeId(node: PhylocanvasTreeNode): PhylocanvasTreeNode {
+    node.id = this._extractTPP(node.id);
+    return node;
   }
 
   // constructor() {
@@ -50,7 +55,7 @@ export class TreeBrowser {// extends DG.JsViewer {
           });
           console.warn([ctx.getBoundingClientRect(), phTree]);*/
           //console.warn(newickParser.parse_newick(nwk));
-          args.preventDefault();
+          //args.preventDefault();
         }
       }
     });
@@ -58,11 +63,15 @@ export class TreeBrowser {// extends DG.JsViewer {
     return grid;
   }
 
-  _addTreeGrid(): DG.Grid {
+  /**
+   * Adds a grid with simple tree statistics.
+   * @return  {DG.Grid} Grid with statistics.
+   */
+  private _addTreeGrid(): DG.Grid {
     const itemsToFind = Object.keys(this.idMappings);
     const trees = this.dataFrame.col('TREE').toList();
-    const parser = (v: string) => v.split('|')[0];
-    const stats = new TreeAnalyzer(itemsToFind, parser).analyze(trees);
+    const analyser = new TreeAnalyzer(itemsToFind, this._modifyNodeId.bind(this));
+    const stats = analyser.analyze(trees);
     const df = DG.DataFrame.fromColumns(['CLONE'].map((v) => this.dataFrame.col(v)));
 
     for (const k of Object.keys(stats)) {
@@ -88,8 +97,6 @@ export class TreeBrowser {// extends DG.JsViewer {
 
     this.idMappings = this._collectMappings();
 
-    // mlbView.dockManager.dock(this._addTreeGrid(), DG.DOCK_TYPE.DOWN);
-
     const treeCol = df.col('TREE');
     const cloneId = df.col('CLONE');
     const processed: DG.DataFrame = await this._unpackNewickTrees(treeCol, cloneId, this._leavesProcessor.bind(this));
@@ -106,29 +113,9 @@ export class TreeBrowser {// extends DG.JsViewer {
       this.selectTree(this.leaves[cloneId]['index'][0]);
     });
 
-    // const phTree = new Phylotree(treeCol.get(df.currentRowIdx));
-    // console.warn(phTree);
     const treeDiv = ui.div([]);
-
-    // const tree = DG.Viewer.fromType('PhyloTree', df);
-    // const network = DG.Viewer.fromType(DG.VIEWER.NETWORK_DIAGRAM, processed, {
-    //   node1: 'node',
-    //   node2: 'parent',
-    //   edgeColorColumnName: 'edgeColor',
-    //   edgeWidthColumnName: 'distance',
-    // });
-
     const treeNode = mlbView.dockManager.dock(treeDiv, DG.DOCK_TYPE.DOWN);
     mlbView.dockManager.dock(treeGrid, DG.DOCK_TYPE.RIGHT, treeNode);
-    // mlbView.dockManager.dock(network, DG.DOCK_TYPE.RIGHT, treeNode);
-
-    // network.onEvent('d4-network-diagram-node-click').subscribe((args) => {
-    //   this._onNetworkDiagramNodeClick(args);
-    // });
-
-    // network.onEvent('d4-network-diagram-edge-click').subscribe((args) => {
-    //   this._onNetworkDiagramEdgeClick(args);
-    // });
 
     const phTree = new PhylocanvasGL(treeDiv, {
       interactive: true,
@@ -139,13 +126,10 @@ export class TreeBrowser {// extends DG.JsViewer {
       source: treeCol.get(df.currentRowIdx),
       type: TreeTypes.Rectangular,
     });
-    // const phTree = new Phylotree(treeCol.get(df.currentRowIdx));
-    // const renderedTree = phTree.render({container: treeDiv});
 
     phTree.selectNode = this.selectNode.bind(this);
 
     this.phyloTreeViewer = phTree;
-    // this.networkViewer = network;
     this._matchMappings();
   }
 
@@ -262,7 +246,10 @@ export class TreeBrowser {// extends DG.JsViewer {
         const tppId = this._extractTPP(nodeId);
         const df = this.mlbView.dataFrame;
         const col = df.col('gdb id mappings');
-        df.rows.filter((row) => (col.get(row.idx) as string).includes(tppId));
+        //const isIntersected = (row) => (col.get(row.idx) as string).includes(tppId);
+        //df.rows.select(isIntersected);
+        df.selection.init((i) => (col.get(i) as string).includes(tppId));
+        //df.currentRowIdx = 1;
       }
     } else {
     }
@@ -271,7 +258,6 @@ export class TreeBrowser {// extends DG.JsViewer {
   selectTree(index: number) {
     const maxIndex = this.dataFrame.rowCount;
     this.dataFrame.currentRowIdx = index >= maxIndex ? maxIndex - 1 : (index < 0 ? 0 : index);
-    //this.phyloTreeViewer.onFrameAttached(this.dataFrame);
 
     const nwk = this.dataFrame.col('TREE').get(this.dataFrame.currentRowIdx);
     this.phyloTreeViewer.setProps({source: nwk});
@@ -306,25 +292,6 @@ export class TreeBrowser {// extends DG.JsViewer {
     this.selectTree(this.leaves[cloneId]['index'][0]);
   }
 
-  /**
-   * Called when mouse clicked a node on the network diagram.
-   * @param {ClickEventData} data Event data containing the clicked node ID.
-   */
-  private _onNetworkDiagramNodeClick(data: ClickEventData) {
-    this._selectNode((data.args as NodeClickArgs).nodeId);
-  }
-
-  /**
-   * Called when mouse clicked an edge on the network diagram.
-   * @param {ClickEventData} data Event data containing the clicked edge ID.
-   */
-  private _onNetworkDiagramEdgeClick(data: ClickEventData) {
-    const edgeId = (data.args as EdgeClickArgs).edgeId;
-    const parent = this.network.col('parent');
-    const nodeId = parent.get(edgeId);
-    this._selectNode(nodeId);
-  }
-
   // get root(): HTMLElement {
   //   const title = ui.h1(this.title, {style: {'align-self': 'center', 'alignContent': 'center'}});
   //   if (this.phyloTreeViewer && this.networkViewer) {
@@ -333,17 +300,6 @@ export class TreeBrowser {// extends DG.JsViewer {
   //   }
   //   return title;
   // }
-}
-
-interface NodeClickArgs {
-  nodeId: string;
-}
-interface EdgeClickArgs {
-  edgeId: number;
-}
-interface ClickEventData {
-  dart: any;
-  args: NodeClickArgs | EdgeClickArgs;
 }
 
 interface TreeMap {
