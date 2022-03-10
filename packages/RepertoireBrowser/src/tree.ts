@@ -18,13 +18,22 @@ export class TreeBrowser {// extends DG.JsViewer {
   treeLeaves: TreeLeavesMap = {};
   idMappings: TreeLeavesMap = {};
 
-  protected _extractTPP(id: string): string {
-    return id.split('|')[0];
+  protected _extractVRId(id: string): string {
+    return id.split('|')[2];
   }
 
   protected _modifyNodeId(node: PhylocanvasTreeNode): PhylocanvasTreeNode {
-    node.id = this._extractTPP(node.id);
+    node.id = this._extractVRId(node.id);
     return node;
+  }
+
+  protected _modifyTreeNodeIds(nwk: string): string {
+    //console.warn([nwk]);
+    return nwk.replaceAll(/([^|,:()]+)\|([^|,:()]+)\|([^|,:()]+)\|([^|,:()]+)/g, '$3');
+  }
+
+  protected _takeTreeAt(index: number, treeColumnName = 'TREE'): string {
+    return this._modifyTreeNodeIds(this.dataFrame.get(treeColumnName, index));
   }
 
   // constructor() {
@@ -123,7 +132,7 @@ export class TreeBrowser {// extends DG.JsViewer {
       showLeafLabels: true,
       shape: Shapes.Dot,
       size: treeDiv.getBoundingClientRect(),
-      source: treeCol.get(df.currentRowIdx),
+      source: this._takeTreeAt(df.currentRowIdx),
       type: TreeTypes.Rectangular,
     });
 
@@ -133,13 +142,18 @@ export class TreeBrowser {// extends DG.JsViewer {
     this._matchMappings();
   }
 
+  /**
+   * Maps tree leaf {node id} to a {list of indices} of tree which it is found in.
+   * @param {string} id Node id.
+   * @param {number} index Index of tree containing the node in trees column.
+   */
   private _leavesProcessor(id: string, index: number) {
     if (!this.leaves[id])
       this.leaves[id] = {index: [], items: []};
 
     this.leaves[id]['index'].push(index);
 
-    const leafId = this._extractTPP(id);
+    const leafId = this._extractVRId(id);
 
     if (!this.treeLeaves[leafId])
       this.treeLeaves[leafId] = [];
@@ -147,22 +161,31 @@ export class TreeBrowser {// extends DG.JsViewer {
     this.treeLeaves[leafId].push(index);
   }
 
-  private _collectMappings(columnName = 'gdb id mappings'): TreeLeavesMap {
+  /**
+   * Makes mapping of {tree node id} taken from column value to {list of indices} which it is found in.
+   * @param {string} [columnName='v id'] Source column name.
+   * @return {TreeLeavesMap} Mapping.
+   */
+  private _collectMappings(columnName = 'v id'): TreeLeavesMap {
     const col = this.mlbView.dataFrame.col(columnName);
     const mapper: TreeLeavesMap = {};
 
     for (let i = 0; i < col.length; ++i) {
-      const ids = (col.get(i) as string).split(', ');
+      const id: string = col.get(i);
 
-      for (const id of ids) {
-        if (!mapper[id])
-          mapper[id] = [];
-        mapper[id].push(i);
-      }
+      if (!mapper[id])
+        mapper[id] = [];
+
+      mapper[id].push(i);
     }
     return mapper;
   }
 
+  /**
+   * Matches node ids from initial table found within trees.
+   * Adds an auxiliary column containing clone ids of matched trees.
+   * @param {string} [columnName='clones'] Auxiliary column name.
+   */
   private _matchMappings(columnName = 'clones') {
     const df = this.mlbView.dataFrame;
     const col = (df.columns as DG.ColumnList).addNewString(columnName);
@@ -201,7 +224,7 @@ export class TreeBrowser {// extends DG.JsViewer {
       // TODO: switch call from system to local import.
         const t: DG.DataFrame = await grok.functions.call(
           'PhyloTreeViewer:_newickToDf',
-          {newick: treeCol.get(i), filename: 'nwk'},
+          {newick: this._takeTreeAt(i), filename: 'nwk'},
         );
         const p = t.col('parent');
         const c = t.col('node');
@@ -239,57 +262,58 @@ export class TreeBrowser {// extends DG.JsViewer {
     return processed;
   }
 
-  selectNode(node: any) {
+  /**
+   * Finds and selects tree node chosen.
+   * @param {*} node Node to consider.
+   * @param {string} [sourceColumnName='v id'] Column name to use to find selection.
+   */
+  selectNode(node: any, sourceColumnName: string = 'v id') {
     if (node) {
       if (node.label) {
         const nodeId: string = node?.label;
-        const tppId = this._extractTPP(nodeId);
+        const vId = this._extractVRId(nodeId);
         const df = this.mlbView.dataFrame;
-        const col = df.col('gdb id mappings');
-        //const isIntersected = (row) => (col.get(row.idx) as string).includes(tppId);
-        //df.rows.select(isIntersected);
-        df.selection.init((i) => (col.get(i) as string).includes(tppId));
+        const col = df.col(sourceColumnName);
+        df.selection.init((i) => (col.get(i) as string).includes(vId));
         //df.currentRowIdx = 1;
       }
     } else {
     }
   }
 
+  /**
+   * Selects a tree from the given index in the table.
+   * @param {number} index Index to take tree from.
+   */
   selectTree(index: number) {
     const maxIndex = this.dataFrame.rowCount;
-    this.dataFrame.currentRowIdx = index >= maxIndex ? maxIndex - 1 : (index < 0 ? 0 : index);
+    const currentIndex = index >= maxIndex ? maxIndex - 1 : (index < 0 ? 0 : index);
 
-    const nwk = this.dataFrame.col('TREE').get(this.dataFrame.currentRowIdx);
-    this.phyloTreeViewer.setProps({source: nwk});
+    this.dataFrame.currentRowIdx = currentIndex;
+    this.phyloTreeViewer.setProps({source: this._takeTreeAt(currentIndex)});
 
-    const treeItems = this.leaves[this.dataFrame.col('CLONE').get(this.dataFrame.currentRowIdx)].items;
-    let styles = {};
+    const treeItems = this.leaves[this.dataFrame.get('CLONE', currentIndex)].items;
 
-    for (const item of treeItems) {
-      const tpp = this._extractTPP(item);
-      const style = {};
+    /**
+     * Modifies node styles to mark intersected node ids.
+     */
+    const _modifyNodeStyles = function() {
+      let styles = {};
 
-      if (this.idMappings[tpp])
-        style[item] = {fillColour: '#0000ff'};
-      else
-        style[item] = {shape: Shapes.Dot};
+      for (const item of treeItems) {
+        // const id = this._extractVRId(item);
+        const style = {};
 
-      styles = {...styles, ...style};
-    }
-    this.phyloTreeViewer.setProps({styles: styles});
-    console.warn({styles: styles});
-  }
+        if (this.idMappings[item])
+          style[item] = {fillColour: '#0000ff'};
+        else
+          style[item] = {shape: Shapes.Dot};
 
-  private _selectNode(nodeId: string) {
-    let cloneId: string;
+        styles = {...styles, ...style};
+      }
+    }.bind(this);
 
-    if (nodeId.startsWith('node') || nodeId.startsWith('root')) {
-      const s = nodeId.split('-');
-      cloneId = s[s.length - 1];
-    } else
-      cloneId = nodeId;
-
-    this.selectTree(this.leaves[cloneId]['index'][0]);
+    this.phyloTreeViewer.setProps({styles: _modifyNodeStyles()});
   }
 
   // get root(): HTMLElement {
