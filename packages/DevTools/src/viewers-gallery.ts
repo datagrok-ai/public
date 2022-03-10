@@ -4,7 +4,7 @@ import * as DG from 'datagrok-api/dg';
 import $ from 'cash-dom';
 import '../css/viewers-gallery.css';
 import { filter } from 'rxjs';
-import { DataFrame, InputBase, TableView } from 'datagrok-api/dg';
+import { DataFrame, InputBase, TableView, View } from 'datagrok-api/dg';
 const cat_comparisons = [
     'Bar chart',
     'Radar viewer',
@@ -87,11 +87,15 @@ const viewerOptions = {
   filterBox.style.maxWidth = '230px';
 
   let dlgTitle;
+  let dlgFooter;
+  let dlg;
+  let view: DG.TableView;
 
   let okBtn;
   //let okBtn = ui.bigButton('ADD',()=>{});
 
   let backBtn = ui.iconFA('arrow-left',()=>{
+    dlgFooter.hide();
     $('.vg-selection-text').html('Selected: ');
     dlgTitle.text('Add viewer');
     $(okBtn).hide();
@@ -109,15 +113,15 @@ export async function viewersGallery() {
 
     let viewers = {};
     const table = grok.shell.t;
-    const view = grok.shell.tableView(table.name);
+    view = grok.shell.tableView(table.name);
     let root = ui.box();
     
-    let recommends = ui.divH([],'viewer-gallery');
+    let recommend = ui.divH([],'viewer-gallery');
     let selectioText = ui.div(['Selected: '],'vg-selection-text');
     let cards = ui.divH([],'viewer-gallery');
 
     let search = ui.searchInput('','',(value)=>{
-        clearRoot([recommends]);
+        clearRoot([recommend]);
         clearRoot([cards]);
         $(okBtn).hide();
         tempName = '';
@@ -133,7 +137,7 @@ export async function viewersGallery() {
             for (let i in viewers){
                 if (filter_value.indexOf(viewers[i].name) != -1 && viewers[i].name.toLowerCase().includes(value.toLowerCase())){
                     if (viewers[i].recommend)
-                        recommends.append(render(viewers[i],table))
+                        recommend.append(render(viewers[i],table))
                     else
                         cards.append(render(viewers[i],table));
                 }
@@ -143,7 +147,7 @@ export async function viewersGallery() {
             for (let i in viewers){
                 if (filter_value.indexOf(viewers[i].name) != -1){
                     if (viewers[i].recommend)
-                        recommends.append(render(viewers[i],table))
+                        recommend.append(render(viewers[i],table))
                     else
                         cards.append(render(viewers[i],table));
                 }
@@ -164,7 +168,7 @@ export async function viewersGallery() {
         search.fireChanged();
         /*
         search.value = '';
-        clearRoot([recommends]);
+        clearRoot([recommend]);
         clearRoot([cards]);
         $(okBtn).hide();
         tempName = '';
@@ -173,7 +177,7 @@ export async function viewersGallery() {
             for (let i in viewers){
                 if (viewers[i].recommend){
                     if (value.indexOf(viewers[i].category) != -1){
-                        recommends.append(render(viewers[i],table));
+                        recommend.append(render(viewers[i],table));
                     }
                 }
                 else{
@@ -185,7 +189,7 @@ export async function viewersGallery() {
         }else{
             for (let i in viewers){
                 if (viewers[i].recommend)
-                    recommends.append(render(viewers[i],table))
+                    recommend.append(render(viewers[i],table))
                 else
                     cards.append(render(viewers[i],table));
             }
@@ -209,7 +213,8 @@ export async function viewersGallery() {
             name: insertSpaces(DG.Viewer.getViewerTypes()[i]),
             type: 'Viewer',
             recommend: false,
-            category: 'Other'
+            category: 'Other',
+            disabled: false
         }});
 
         if (i<7){
@@ -235,8 +240,14 @@ export async function viewersGallery() {
             viewers[i].icon = 'grok-icon svg-icon svg-project';
         }
 
+        if (i>40){
+            viewers[i].disabled = true;
+        }
+
     }
 
+    console.log(viewers);
+    
     filterBox.append(ui.divV([
         ui.h3('Type'),
         filters_type.root,
@@ -255,8 +266,8 @@ export async function viewersGallery() {
     contentBox.append(
         ui.divV([
             searchBlock,
-            ui.h1('Recommends'),
-            recommends,
+            ui.h1('Recommend'),
+            recommend,
             ui.h1('All viewers'),
             cards,
         ], 'viewer-gallery-root')
@@ -273,8 +284,8 @@ export async function viewersGallery() {
         contentBox,
         descriptionBox
     ])
-    ui.dialog('Add viewer')
-    let dlg = ui.dialog('Add viewer')
+
+    dlg = ui.dialog('Add viewer')
         .add(root
             //viewerRoot
         )
@@ -282,7 +293,7 @@ export async function viewersGallery() {
             if(tempName!=''){view.addViewer(DG.Viewer.fromType(tempName, table))}
             clearRoot([filterBox,contentBox,descriptionBox]);
             clearRoot([root]) 
-            clearRoot([recommends]);
+            clearRoot([recommend]);
             clearRoot([cards]);
             tempName = '';
         });
@@ -308,22 +319,26 @@ export async function viewersGallery() {
         if(tempName!=''){view.addViewer(DG.Viewer.fromType(tempName, table))}
         clearRoot([filterBox,contentBox,descriptionBox]);
         clearRoot([root]) 
-        clearRoot([recommends]);
+        clearRoot([recommend]);
         clearRoot([cards]);
         tempName = '';
     })
     */
 
     dlgTitle = $(dlg.root).find('.d4-dialog-header>.d4-dialog-title');
+    dlgFooter = $(dlg.root).find('.d4-dialog-footer');
+    dlgFooter.hide();
+
     if (grok.shell.v.type == 'TableView'){
         dlg.showModal(true)
     }
 
     for (let i in viewers){
         if (viewers[i].recommend)
-            recommends.append(render(viewers[i],table))
-        else
-            cards.append(render(viewers[i],table));    
+            recommend.append(render(viewers[i],table))
+        else{
+            cards.append(render(viewers[i],table));
+        }  
     }
 
 }
@@ -372,7 +387,8 @@ function render(viewer:any, table:DG.DataFrame){
     icon.className = 'grok-icon svg-icon '+viewer.icon;
     let label = ui.div([viewer.name], 'card-label');
 
-    let details = ui.button(ui.iconFA('list'), ()=>{
+    let details = ui.button(ui.iconFA('info-circle'), ()=>{
+        dlgFooter.show();
 
         tempName = viewer.name;
         $('.vg-selection-text').html('Selected: '+ viewer.name);
@@ -425,15 +441,24 @@ function render(viewer:any, table:DG.DataFrame){
         root.append(ui.block([viewerRoot,ui.divH([label,details])]));
     }else{
         root.className = 'd4-item-card viewer-gallery vg-card-small';
+        if(viewer.disabled)
+            root.classList.add('disabled')
         root.append(ui.divH([icon,label,details]));
     }
     root.addEventListener('click', ()=>{
+        //view.addViewer(DG.Viewer.fromType(tempName, table))
+        if (root.classList.contains('disabled')!=true){
+        dockViewers(viewer.name, table, view);
+        dlg.close();
+        }
+        /*
         $('.vg-card').css('border','1px solid var(--grey-2)');
         $('.vg-card-small').css('border','1px solid var(--grey-2)');
         root.style.border = '1px solid var(--blue-1)';
         tempName = viewer.name;
         $('.vg-selection-text').html('Selected: '+ viewer.name);
         $(okBtn).show();
+        */
     });
 
     return root;
@@ -445,9 +470,12 @@ function unSelectAll(viewers:object){
     }
 }
 
-function dockViewers(viewers:object, table:DG.DataFrame, view: DG.TableView){
+function dockViewers(viewer:string, table:DG.DataFrame, view: DG.TableView){
+    view.addViewer(DG.Viewer.fromType(viewer, table));
+    /*
     for (let i in viewers){
         if(viewers[i].dock)
             view.addViewer(DG.Viewer.fromType(viewers[i].name, table));
     }
+    */
 }
