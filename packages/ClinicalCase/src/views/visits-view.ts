@@ -101,7 +101,11 @@ export class VisitsView extends ClinicalCaseViewBase {
     }
 
     private eventsSinceLastVisitCols() {
-        return { 'ae': { column: VIEWS_CONFIG[this.name][AE_START_DAY_FIELD] }, 'cm': { column: VIEWS_CONFIG[this.name][CON_MED_START_DAY_FIELD] } };
+        const eventsSinceLastVisit = { 'ae': { column: VIEWS_CONFIG[this.name][AE_START_DAY_FIELD] }, 'cm': { column: VIEWS_CONFIG[this.name][CON_MED_START_DAY_FIELD] } };
+        const filtered = Object.assign({}, ...
+            Object.entries(eventsSinceLastVisit).filter(([k,v]) => study.domains[k].col(v.column)).map(([k,v]) => ({[k]:v}))
+        );
+        return filtered;
     }
 
     private visitsConfig() {
@@ -189,8 +193,8 @@ export class VisitsView extends ClinicalCaseViewBase {
 
     private createGridRibbon() {
         this.selectedDomains = this.existingDomains;
-        let domainsButton = ui.button('Domains', () => {
-            //@ts-ignore
+        this.selectedDomainsDiv.addEventListener('click', (event) => {
+             //@ts-ignore
             let domainsMultiChoices = ui.multiChoiceInput('', this.selectedDomains, this.existingDomains);
             ui.dialog({ title: 'Select domains' })
                 .add(ui.div([domainsMultiChoices]))
@@ -201,10 +205,10 @@ export class VisitsView extends ClinicalCaseViewBase {
                 })
                 //@ts-ignore
                 .show();
-        });
+            event.stopPropagation();
+          });
 
         this.gridRibbonDiv = ui.divH([
-            domainsButton,
             this.selectedDomainsDiv
         ]);
         updateDivInnerHTML(this.selectedDomainsDiv, this.createSelectedDomainsDiv());
@@ -217,7 +221,7 @@ export class VisitsView extends ClinicalCaseViewBase {
             let domainName = ui.divText(`${it} `);
             domainName.style.color = this.proceduresAtVisit[it] ? this.proceduresAtVisit[it].color : this.eventsSinceLastVisit[it].color;
             domainName.style.paddingRight = '7px';
-            domainName.style.paddingTop = '10px';
+         //   domainName.style.paddingTop = '10px';
             selectedDomainsDiv.append(domainName);
         });
         return selectedDomainsDiv;
@@ -431,11 +435,15 @@ export class VisitsView extends ClinicalCaseViewBase {
             }
         }
 
-        let aeRowNum = getRowNumber(this.studyVisit.aeSincePreviusVisit);
-        createPane('AEs since last visit', aeRowNum, this.studyVisit.aeSincePreviusVisit, VIEWS_CONFIG[this.name][AE_TERM_FIELD]);
+        let createSinceLastVisitPane = (df, col, paneName) => {
+            if(df) {
+                let aeRowNum = getRowNumber(df);
+                createPane(paneName, aeRowNum, df, col);
+            }
+        }
 
-        let cmRowNum = getRowNumber(this.studyVisit.conmedSincePreviusVisit);
-        createPane('CONMEDs since last visit', cmRowNum, this.studyVisit.conmedSincePreviusVisit, VIEWS_CONFIG[this.name][CON_MED_NAME_FIELD]);
+        createSinceLastVisitPane(this.studyVisit.aeSincePreviusVisit, VIEWS_CONFIG[this.name][AE_TERM_FIELD], 'AEs since last visit');
+        createSinceLastVisitPane(this.studyVisit.conmedSincePreviusVisit, VIEWS_CONFIG[this.name][CON_MED_NAME_FIELD], 'CONMEDs since last visit');
 
         let createDistributionPane = (name, df, catCol, valCol) => {
             acc.addPane(name, () => {
