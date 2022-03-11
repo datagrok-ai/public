@@ -8,6 +8,7 @@ import {PhylocanvasGL, TreeTypes, Shapes} from '@phylocanvas/phylocanvas.gl';
 import {TreeAnalyzer, PhylocanvasTreeNode} from './utils/tree-stats';
 
 export class TreeBrowser {// extends DG.JsViewer {
+  idColumnName: string = 'v id';
   title: string;
   phyloTreeViewer: PhylocanvasGL;
   networkViewer: DG.Viewer;
@@ -17,6 +18,7 @@ export class TreeBrowser {// extends DG.JsViewer {
   leaves: TreeLeaves = {};
   treeLeaves: TreeLeavesMap = {};
   idMappings: TreeLeavesMap = {};
+  treeAnalyser: TreeAnalyzer;
 
   protected _extractVRId(id: string): string {
     return id.split('|')[2];
@@ -76,10 +78,22 @@ export class TreeBrowser {// extends DG.JsViewer {
    * @return  {DG.Grid} Grid with statistics.
    */
   private _addTreeGrid(): DG.Grid {
-    const itemsToFind = Object.keys(this.idMappings);
+    const calcFilteredItems = function() {
+      const filteredIndices = new Set(this.mlbView.dataFrame.filter.getSelectedIndexes());
+      const isntFiltered = (x: number) => filteredIndices.has(x);
+      return Object.keys(this.idMappings).filter((_, i) => isntFiltered(i));
+    }.bind(this);
+
+    const itemsToFind = calcFilteredItems();
+
+    this.treeAnalyser = new TreeAnalyzer(itemsToFind, this._modifyNodeId.bind(this));
+
+    this.mlbView.dataFrame.onRowsFiltered.subscribe((args) => {
+      this.treeAnalyser.items = calcFilteredItems();
+    });
+
     const trees = this.dataFrame.col('TREE').toList();
-    const analyser = new TreeAnalyzer(itemsToFind, this._modifyNodeId.bind(this));
-    const stats = analyser.analyze(trees);
+    const stats = this.treeAnalyser.analyze(trees);
     const df = DG.DataFrame.fromColumns(['CLONE'].map((v) => this.dataFrame.col(v)));
 
     for (const k of Object.keys(stats)) {
@@ -88,7 +102,7 @@ export class TreeBrowser {// extends DG.JsViewer {
     }
 
     // TODO: fix this ad hoc.
-    df.rows.removeAt(0);
+    // df.rows.removeAt(0);
 
     return DG.Viewer.grid(df);
   }
@@ -166,11 +180,10 @@ export class TreeBrowser {// extends DG.JsViewer {
 
   /**
    * Makes mapping of {tree node id} taken from column value to {list of indices} which it is found in.
-   * @param {string} [columnName='v id'] Source column name.
    * @return {TreeLeavesMap} Mapping.
    */
-  private _collectMappings(columnName = 'v id'): TreeLeavesMap {
-    const col = this.mlbView.dataFrame.col(columnName);
+  private _collectMappings(): TreeLeavesMap {
+    const col = this.mlbView.dataFrame.col(this.idColumnName);
     const mapper: TreeLeavesMap = {};
 
     for (let i = 0; i < col.length; ++i) {
@@ -268,17 +281,19 @@ export class TreeBrowser {// extends DG.JsViewer {
   /**
    * Finds and selects tree node chosen.
    * @param {*} node Node to consider.
-   * @param {string} [sourceColumnName='v id'] Column name to use to find selection.
    */
-  selectNode(node: any, sourceColumnName: string = 'v id') {
+  selectNode(node: any) {
     if (node) {
       if (node.label) {
         const nodeId: string = node?.label;
-        const vId = this._extractVRId(nodeId);
+        const vId = nodeId; // this._extractVRId(nodeId);
         const df = this.mlbView.dataFrame;
-        const col = df.col(sourceColumnName);
+        const col = df.col(this.idColumnName);
+
         df.selection.init((i) => (col.get(i) as string).includes(vId));
-        //df.currentRowIdx = 1;
+
+        if (df.selection.trueCount > 0)
+          df.currentRowIdx = df.selection.getSelectedIndexes()[0];
       }
     } else {
     }
@@ -308,9 +323,10 @@ export class TreeBrowser {// extends DG.JsViewer {
         // const id = this._extractVRId(item);
         const style = {};
 
-        if (this.idMappings[item])
-          style[item] = {fillColour: '#0000ff'};
-        else
+        if (this.idMappings[item]) {
+          const color = this.treeAnalyser.getItemsAsSet().has(item) ? '#0000ff' : '#ff0000';
+          style[item] = {fillColour: color};
+        } else
           style[item] = {shape: Shapes.Dot};
         styles = {...styles, ...style};
       }
