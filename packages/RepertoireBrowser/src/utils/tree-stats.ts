@@ -28,6 +28,22 @@ export class TreeAnalyzer {
   }
 
   /**
+   * Sets items which find against of.
+   * @param {string[]} items Items to intersect with.
+   */
+  set items(items: string[]) {
+    this._items = new Set(items);
+  }
+
+  /**
+   * Gets items which find against of.
+   * @return {Set<string>} Items.
+   */
+  getItemsAsSet(): Set<string> {
+    return this._items;
+  }
+
+  /**
    * Traverses the tree and optionally calls node observing callbacks.
    * @param {PhylocanvasTreeNode} root Root of the tree.
    */
