@@ -59,9 +59,10 @@ export class StudyVisit {
     }
 
     private createEventSincePeviousVisitDf(domain: any) {
-        if (domain && this.previsousVisitDay) {
+        const startDayColName = `${domain.name.toUpperCase()}STDY`;
+        if (domain && this.previsousVisitDay && domain.col(startDayColName)) {
             return domain.groupBy(domain.columns.names())
-                .where(`${domain.name.toUpperCase()}STDY > ${this.previsousVisitDay} and ${domain.name.toUpperCase()}STDY <= ${this.day}`)
+                .where(`${startDayColName} > ${this.previsousVisitDay} and ${startDayColName} <= ${this.day}`)
                 .aggregate();
         }
         return null;

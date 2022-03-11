@@ -4,7 +4,7 @@ import * as DG from 'datagrok-api/dg';
 import { vaidateAEDomain, vaidateDMDomain } from './sdtm-validation/services/validation-service';
 import { createValidationDataFrame } from './sdtm-validation/validation-utils';
 import { SITE_ID, STUDY_ID } from './constants/columns-constants';
-import { createEventStartEndDaysCol } from './data-preparation/data-preparation';
+import { addVisitDayFromTvDomain, createEventStartEndDaysCol } from './data-preparation/data-preparation';
 
 export class ClinicalDomains {
   ae: DG.DataFrame = null;
@@ -105,6 +105,7 @@ export class ClinicalStudy {
 
   private process(): void {
     createEventStartEndDaysCol();
+    addVisitDayFromTvDomain();
   }
 
 
