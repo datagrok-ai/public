@@ -28,7 +28,6 @@ export class TreeBrowser {// extends DG.JsViewer {
   }
 
   protected _modifyTreeNodeIds(nwk: string): string {
-    //console.warn([nwk]);
     return nwk.replaceAll(/([^|,:()]+)\|([^|,:()]+)\|([^|,:()]+)\|([^|,:()]+)/g, '$3');
   }
 
@@ -87,6 +86,10 @@ export class TreeBrowser {// extends DG.JsViewer {
       const dType = k.toLowerCase().includes('length') ? 'double' : 'int';
       (df.columns as DG.ColumnList).add(DG.Column.fromList(dType, k, stats[k]));
     }
+
+    // TODO: fix this ad hoc.
+    df.rows.removeAt(0);
+
     return DG.Viewer.grid(df);
   }
 
@@ -296,6 +299,7 @@ export class TreeBrowser {// extends DG.JsViewer {
 
     /**
      * Modifies node styles to mark intersected node ids.
+     * @return {any}
      */
     const _modifyNodeStyles = function() {
       let styles = {};
@@ -308,9 +312,9 @@ export class TreeBrowser {// extends DG.JsViewer {
           style[item] = {fillColour: '#0000ff'};
         else
           style[item] = {shape: Shapes.Dot};
-
         styles = {...styles, ...style};
       }
+      return styles;
     }.bind(this);
 
     this.phyloTreeViewer.setProps({styles: _modifyNodeStyles()});
