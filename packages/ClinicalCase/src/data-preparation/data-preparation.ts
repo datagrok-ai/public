@@ -1,9 +1,9 @@
 import * as grok from 'datagrok-api/grok';
 import * as DG from 'datagrok-api/dg';
 import { ACTIVE_ARM_POSTTFIX, AE_PERCENT, ALT, AP, AST, BILIRUBIN, DOMAINS_WITH_EVENT_START_END_DAYS, NEG_LOG10_P_VALUE, ODDS_RATIO, PLACEBO_ARM_POSTTFIX, P_VALUE, RELATIVE_RISK, RISK_DIFFERENCE, SE_RD_WITH_SIGN_LEVEL, STANDARD_ERROR_RD } from '../constants/constants';
-import { addDataFromDmDomain, dataframeContentToRow, dateDifferenceInDays, filterBooleanColumn, filterNulls } from './utils';
+import { addDataFromDmDomain, dataframeContentToRow, dateDifferenceInDays, filterBooleanColumn, filterNulls, getVisitNamesAndDays } from './utils';
 import { study } from '../clinical-study';
-import { AE_CAUSALITY, AE_REQ_HOSP, AE_SEQ, AE_SEVERITY, AE_START_DATE, LAB_HI_LIM_N, LAB_LO_LIM_N, LAB_RES_N, LAB_TEST, SUBJECT_ID, SUBJ_REF_ENDT, SUBJ_REF_STDT, VISIT_DAY, VISIT_START_DATE } from '../constants/columns-constants';
+import { AE_CAUSALITY, AE_REQ_HOSP, AE_SEQ, AE_SEVERITY, AE_START_DATE, LAB_HI_LIM_N, LAB_LO_LIM_N, LAB_RES_N, LAB_TEST, SUBJECT_ID, SUBJ_REF_ENDT, SUBJ_REF_STDT, VISIT_DAY, VISIT_NAME, VISIT_START_DATE } from '../constants/columns-constants';
 var { jStat } = require('jstat')
 
 
@@ -428,6 +428,19 @@ export function createEventStartEndDaysCol() {
         };
       });
     };
+  };
+}
+
+export function addVisitDayFromTvDomain() {
+  if (study.domains.tv != null && study.domains.tv.col(VISIT_DAY)) {
+    const visitNamesAndDays = study.domains.tv.groupBy([VISIT_NAME, VISIT_DAY]).aggregate();
+    study.domains.all().forEach(domain => {
+      if(domain.name !== 'tv' && domain.col(VISIT_NAME) && !domain.col(VISIT_DAY)) {
+        const tableName = domain.name;
+        grok.data.joinTables(domain, visitNamesAndDays, [VISIT_NAME], [VISIT_NAME], domain.columns.names(), [VISIT_DAY], DG.JOIN_TYPE.LEFT, true);
+        domain.name = tableName;
+      }
+    })
   };
 }
 
