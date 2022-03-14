@@ -5,26 +5,31 @@ import {Utils, Newick} from '@phylocanvas/phylocanvas.gl';
  * Analyses Newick-formatted strings containing phylogenetic trees.
  */
 export class TreeAnalyzer {
-  protected _newickRegEx = new RegExp(/^(\(*[^:]+:[^,]+\)*)+$/);
+  static newickRegEx = new RegExp(/^(\(*[^:]+:[^,]+\)*)+$/);
+
   protected _items: Set<string>;
   protected _inspectors: TreeNodeInspector[];
   protected _isect: NodeIdsIntersection;
+  protected _currentTreeIndex: number;
 
   /**
    * Creates an instance of TreeAnalyzer.
    * @param {string[]} [items=[]] Items to intersect tree leaves with.
-   * @param {TreeNodeInspector} [inspector] Callback to inspect/modify a tree node.
-   * @memberof TreeAnalyzer
    */
-  constructor(items: string[] = [], inspector?: TreeNodeInspector) {
+  constructor(items: string[] = []) {
     this._items = new Set(items);
-    this._isect = new NodeIdsIntersection(items);
     this._inspectors = [];
+    this._isect = new NodeIdsIntersection(items);
+    this._currentTreeIndex = 0;
+    this.addNodeInspector(this._isect.apply.bind(this._isect));
+  }
 
-    if (inspector)
-      this._inspectors.push(inspector);
-
-    this._inspectors.push(this._isect.apply.bind(this._isect));
+  /**
+   * Adds tree node inspector.
+   * @param {TreeNodeInspector} inspector Callback to inspect/modify a tree node.
+   */
+  addNodeInspector(inspector: TreeNodeInspector) {
+    this._inspectors.push(inspector);
   }
 
   /**
@@ -55,7 +60,7 @@ export class TreeAnalyzer {
       let modifiedNode = node;
 
       for (const obs of this._inspectors)
-        modifiedNode = obs(modifiedNode);
+        modifiedNode = obs(modifiedNode, this._currentTreeIndex);
     }
   }
 
@@ -75,13 +80,13 @@ export class TreeAnalyzer {
 
   /**
    * Analyses a single tree read from Newick-formatted string.
-   * @param {string} nwk Newick string.
-   * @return  {TreeStats} Simple statistics on the tree nodes.
+   * @param {string} nwk Newick string encoding phylogenetic tree.
+   * @return {TreeStats} Simple statistics on nodes of the parsed tree.
    */
   private _analyseTree(nwk: string): TreeStats {
     let stats = _nullStats;
 
-    if (this._newickRegEx.test(nwk.trim())) {
+    if (TreeAnalyzer.newickRegEx.test(nwk.trim())) {
       const tree = Newick.parse_newick(nwk);
 
       this._isect.reset();
@@ -104,8 +109,11 @@ export class TreeAnalyzer {
     };
     const statsKeys = Object.keys(stats);
 
-    for (const tree of trees) {
-      const s = this._analyseTree(tree);
+    for (let i = 0; i < trees.length; ++i) {
+      this._currentTreeIndex = i;
+
+      const nwk = trees[i];
+      const s = this._analyseTree(nwk);
 
       for (const k of statsKeys)
         stats[k].push(s[k]);
@@ -141,10 +149,13 @@ class NodeIdsIntersection {
   /**
    * Performs test if the node is found in the source subset.
    * @param {PhylocanvasTreeNode} node Node to test.
+   * @param {number} treeIndex Index of this node's tree.
+   * @return {PhylocanvasTreeNode} Modified node.
    */
-  apply(node: PhylocanvasTreeNode) {
+  apply(node: PhylocanvasTreeNode, treeIndex: number) {
     if (node.isLeaf && this._items.has(node.id))
       this._isect.push(node.id);
+    return node;
   }
 
   /**
@@ -206,4 +217,4 @@ type TreeStatsKeys = keyof TreeStats;
 // eslint-disable-next-line no-unused-vars
 type TreeStatColumns = {[key in TreeStatsKeys]: number[]};
 type TreeNodeTraverseInfo = {[id: string]: PhylocanvasTreeNode};
-type TreeNodeInspector = (node: PhylocanvasTreeNode) => PhylocanvasTreeNode;
+type TreeNodeInspector = (node: PhylocanvasTreeNode, treeIndex: number) => PhylocanvasTreeNode;
