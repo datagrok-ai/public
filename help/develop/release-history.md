@@ -1,6 +1,25 @@
 <!-- TITLE: Release History -->
 <!-- SUBTITLE: -->
 
+# 2022-03-14 Dev build 0.131.0
+
+## Latest Docker Images
+
+* Datagrok: 
+  *  `docker pull datagrok/datagrok:0.131.0`
+  *  `docker pull datagrok/datagrok:latest`
+  
+* [Docker-Compose](admin/docker-compose.md)
+
+## Addressed Issues
+
+* SequenceTranslator: macromolecule rendering 
+* Oligo Batch Calculator: use abbreviation as unique keys in User Data Storage 
+* RepertoireBrowser: Refactoring. 
+* JnJ: monitoring resources: RAM, CPU, HDD 
+* update viewers-gallery 
+
+
 # 2022-03-14 Dev build 0.130.0
 
 ## Latest Docker Images
