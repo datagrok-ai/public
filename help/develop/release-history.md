@@ -1,6 +1,29 @@
 <!-- TITLE: Release History -->
 <!-- SUBTITLE: -->
 
+# 2022-03-14 Dev build 0.130.0
+
+## Latest Docker Images
+
+* Datagrok: 
+  *  `docker pull datagrok/datagrok:0.130.0`
+  *  `docker pull datagrok/datagrok:latest`
+  
+* [Docker-Compose](admin/docker-compose.md)
+
+## Addressed Issues
+
+* Clinical case: extracting VISITDY from tv domain, handling missing ~STDY columns in visits view 
+* RepertoireBrowser: Refactor tree statistics collection. 
+* RepertoireBrowser: Fix tree node label. 
+* Sharing file connection must share credentials (WIP)
+* update viewer gallery 
+* RepertoireBrowser: Fix tree node label highlight. 
+* RepertoireBrowser: Add improved tree node label colouring. 
+* RepertoireBrowser: Refactoring. 
+* JnJ: monitoring resources: RAM, CPU, HDD 
+
+
 # 2022-03-08 Dev build 0.129.0
 
 ## Latest Docker Images
