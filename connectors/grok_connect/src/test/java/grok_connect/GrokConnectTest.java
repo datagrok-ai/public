@@ -17,7 +17,6 @@ import static org.junit.Assert.fail;
 
 
 public class GrokConnectTest {
-
     ConnectionPool cp = ConnectionPool.getInstance();
     String url = "jdbc:postgresql://localhost:5432/datagrok";
     String driverName = "org.postgresql.Driver";
