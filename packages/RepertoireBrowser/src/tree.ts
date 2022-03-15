@@ -87,26 +87,59 @@ export class TreeBrowser {// extends DG.JsViewer {
   }
 
   /**
+   * Returns filtered rows in MLB grid.
+   * @return {string[]} Rows is left after filtering.
+   */
+  private _calcFilteredItems(): string[] {
+    const filteredIndices = new Set(this.mlbView.dataFrame.filter.getSelectedIndexes());
+    const isntFiltered = (x: number) => filteredIndices.has(x);
+    return Object.keys(this.vIdIndex).filter((_, i) => isntFiltered(i));
+  }
+
+  /**
+   * Fires when MLB grid row was filtered.
+   * @param {*} args Unused.
+   */
+  private _onMLBGridRowsFiltered(args: any) {
+    const treeDf = this.treeGrid.dataFrame;
+    const sourceDf = this.mlbView.dataFrame;
+    const selectedVIdIndices = new Set(sourceDf.filter.getSelectedIndexes());
+
+    this.treeAnalyser.items = this._calcFilteredItems();
+
+    treeDf.rows.filter((row: DG.Row) => {
+      const cloneId = this._getCloneIdAt(row.idx);
+
+      if (this.cloneIndex[cloneId]) {
+        const cloneVIds = this.cloneIndex[cloneId].items;
+
+        for (const vId of cloneVIds) {
+          const indices = this.vIdIndex[vId];
+
+          if (indices) {
+            for (const i of indices) {
+              if (selectedVIdIndices.has(i))
+                return true;
+            }
+          }
+        }
+      }
+      return false;
+    });
+    //treeDf.rows.requestFilter
+  }
+
+  /**
    * Adds a grid with simple tree statistics.
    * @param {string} treesColumnName Column containing trees in Newick format.
    * @param {string[]} [baseColumnNames=[]] Columns to include into creating grid.
    * @return  {DG.Grid} Grid with statistics.
    */
   private _makeTreeGrid(treesColumnName: string, baseColumnNames: string[] = []): DG.Grid {
-    const _calcFilteredItems = function() {
-      const filteredIndices = new Set(this.mlbView.dataFrame.filter.getSelectedIndexes());
-      const isntFiltered = (x: number) => filteredIndices.has(x);
-      return Object.keys(this.vIdIndex).filter((_, i) => isntFiltered(i));
-    }.bind(this);
-
-    const itemsToFind = _calcFilteredItems();
+    const itemsToFind = this._calcFilteredItems();
 
     this.treeAnalyser = new TreeAnalyzer(itemsToFind);
     this.treeAnalyser.addNodeInspector(this._collectLeavesMapping.bind(this));
-
-    this.mlbView.dataFrame.onRowsFiltered.subscribe((args) => {
-      this.treeAnalyser.items = _calcFilteredItems();
-    });
 
     const treesColumn = this.dataFrame.col(treesColumnName);
     const stats = this.treeAnalyser.analyze(treesColumn.toList());
@@ -213,6 +246,7 @@ export class TreeBrowser {// extends DG.JsViewer {
     this.phyloTreeViewer.selectNode = this.selectNode.bind(this);
     this.treeGrid.dataFrame.onCurrentRowChanged.subscribe(this._onTreeGridCurrentRowChanged.bind(this));
     this.mlbView.dataFrame.onCurrentRowChanged.subscribe(this._onMLBGridCurrentRowChanged.bind(this));
+    this.mlbView.dataFrame.onRowsFiltered.subscribe(this._onMLBGridRowsFiltered.bind(this));
     this._matchMappings();
   }
 
