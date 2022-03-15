@@ -6,13 +6,13 @@ import * as OCL from 'openchemlib/full.js';
 import $ from 'cash-dom';
 import {defineAxolabsPattern} from './defineAxolabsPattern';
 import {saveSenseAntiSense} from './structures-works/save-sense-antisense';
-import {sequenceToSmiles} from './structures-works/from-monomers';
+import {sequenceToSmiles, sequenceToMolV3000} from './structures-works/from-monomers';
 import {convertSequence, undefinedInputSequence} from './structures-works/sequence-codes-tools';
 import {SALTS_CSV} from './salts';
 
 export const _package = new DG.Package();
 
-const defaultInput = 'AGGTCCTCTTGACTTAGGCC';
+const defaultInput = 'A';//'AGGTCCTCTTGACTTAGGCC';
 const sequenceWasCopied = 'Copied';
 const tooltipSequence = 'Copy sequence';
 
@@ -92,18 +92,18 @@ export function sequenceTranslator(): void {
         const canvas = ui.canvas(300, 170);
         canvas.addEventListener('click', () => {
           const canv = ui.canvas($(window).width(), $(window).height());
-          const smiles = sequenceToSmiles(inputSequenceField.value.replace(/\s/g, ''));
+          const mol = sequenceToMolV3000(inputSequenceField.value.replace(/\s/g, ''));
           // @ts-ignore
-          OCL.StructureView.drawMolecule(canv, OCL.Molecule.fromSmiles(smiles), {suppressChiralText: true});
+          OCL.StructureView.drawMolecule(canv, OCL.Molecule.fromMolfile(mol), {suppressChiralText: true});
           ui.dialog('Molecule: ' + inputSequenceField.value)
             .add(canv)
             .showModal(true);
         });
         $(canvas).on('mouseover', () => $(canvas).css('cursor', 'zoom-in'));
         $(canvas).on('mouseout', () => $(canvas).css('cursor', 'default'));
-        const smiles = sequenceToSmiles(inputSequenceField.value.replace(/\s/g, ''));
+        const mol = sequenceToMolV3000(inputSequenceField.value.replace(/\s/g, ''));
         // @ts-ignore
-        OCL.StructureView.drawMolecule(canvas, OCL.Molecule.fromSmiles(smiles), {suppressChiralText: true});
+        OCL.StructureView.drawMolecule(canvas, OCL.Molecule.fromMolfile(mol), {suppressChiralText: true});
         moleculeSvgDiv.append(canvas);
       } else
         moleculeSvgDiv.innerHTML = '';
