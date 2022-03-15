@@ -9,6 +9,9 @@ import {saveSenseAntiSense} from './structures-works/save-sense-antisense';
 import {sequenceToSmiles, sequenceToMolV3000} from './structures-works/from-monomers';
 import {convertSequence, undefinedInputSequence} from './structures-works/sequence-codes-tools';
 import {SALTS_CSV} from './salts';
+import {USERS_CSV} from './users';
+import {ICDS} from './ICDs';
+import {SOURCES} from './sources';
 
 export const _package = new DG.Package();
 
@@ -282,6 +285,9 @@ export function autostartOligoSdFileSubscription() {
 
 export function oligoSdFile(table: DG.DataFrame) {
   const saltsDf = DG.DataFrame.fromCsv(SALTS_CSV);
+  const usersDf = DG.DataFrame.fromCsv(USERS_CSV);
+  const sourcesDf = DG.DataFrame.fromCsv(SOURCES);
+  const icdsDf = DG.DataFrame.fromCsv(ICDS);
   function addColumns(t: DG.DataFrame, saltsDf: DG.DataFrame) {
     if (t.columns.contains('Compound Name'))
       return grok.shell.error('Columns already exist!');
@@ -323,24 +329,44 @@ export function oligoSdFile(table: DG.DataFrame) {
     ui.icons.edit(() => {
       d.innerHTML = '';
       d.append(
-        ui.link('Add Columns', async () => {
-          await addColumns(table, saltsDf);
+        ui.link('Add Columns', () => {
+          addColumns(table, saltsDf);
           grok.shell.tableView(table.name).grid.columns.setOrder(columnsOrder);
         }, 'Add columns: Compound Name, Compound Components, Cpd MW, Salt mass, Batch MW', ''),
         ui.button('Save SD file', () => saveTableAsSdFile(addColumnsPressed ? newDf : table)),
       );
       const view = grok.shell.getTableView(table.name);
-      const typeCol = view.grid.col('Type')!;
       const saltCol = view.grid.col('Salt')!;
+      const typeCol = view.grid.col('Type')!;
+      const ownerCol = view.grid.col('Owner')!;
+      const sourcesCol = view.grid.col('Source')!;
+      const icdsCol = view.grid.col('ICD')!;
       saltCol.cellType = 'html';
       typeCol.cellType = 'html';
+      ownerCol.cellType = 'html';
+      sourcesCol.cellType = 'html';
+      icdsCol.cellType = 'html';
       view.grid.onCellPrepare(function(gc: DG.GridCell) {
+        console.log('Start');
         if (gc.isTableCell) {
+          console.log(gc.gridColumn.name);
           if (gc.gridColumn.name == 'Type')
             gc.style.element = ui.choiceInput('', gc.cell.value, ['AS', 'SS', 'Duplex']).root;
-          else if (gc.gridColumn.name == 'Salt') {
+          else if (gc.gridColumn.name == 'Owner') {
+            gc.style.element = ui.choiceInput('', gc.cell.value, usersDf.columns.byIndex(0).toList(), () => {
+              view.dataFrame.col('Owner')!.set(gc.gridRow, '');
+            }).root;
+          } else if (gc.gridColumn.name == 'Salt') {
             gc.style.element = ui.choiceInput('', gc.cell.value, saltsDf.columns.byIndex(1).toList(), () => {
               view.dataFrame.col('Salt')!.set(gc.gridRow, '');
+            }).root;
+          } else if (gc.gridColumn.name == 'Source') {
+            gc.style.element = ui.choiceInput('', gc.cell.value, sourcesDf.columns.byIndex(0).toList(), () => {
+              view.dataFrame.col('Source')!.set(gc.gridRow, '');
+            }).root;
+          } else if (gc.gridColumn.name == 'ICD') {
+            gc.style.element = ui.choiceInput('', gc.cell.value, icdsDf.columns.byIndex(0).toList(), () => {
+              view.dataFrame.col('ICD')!.set(gc.gridRow, '');
             }).root;
           }
         }
