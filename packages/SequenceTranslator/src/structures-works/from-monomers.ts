@@ -1,5 +1,48 @@
 import {map, stadardPhosphateLinkSmiles, SYNTHESIZERS, TECHNOLOGIES, MODIFICATIONS} from './map';
 import {isValidSequence} from './sequence-codes-tools';
+import {getMol} from './mol-transformations';
+
+export function sequenceToMolV3000(sequence: string, inverted: boolean = false): string {
+  const obj = getObjectWithCodesAndSmiles(sequence);
+  let codes = sortByStringLengthInDescendingOrder(Object.keys(obj));
+  let i = 0;
+  const smilesCodes:string[] = [];
+  const codesList = [];
+  const links = ['s', 'ps', '*'];
+  const includesStandardLinkAlready = ['e', 'h', /*'g',*/ 'f', 'i', 'l', 'k', 'j'];
+  const dropdowns = Object.keys(MODIFICATIONS);
+  codes = codes.concat(dropdowns);
+  while (i < sequence.length) {
+    const code = codes.find((s: string) => s == sequence.slice(i, i + s.length))!;
+    i += code.length;
+    inverted ? codesList.unshift(code) : codesList.push(code);
+  }
+  for (let i = 0; i < codesList.length; i++) {
+    if (dropdowns.includes(codesList[i])) {
+      if (i == codesList.length -1 || (i < codesList.length - 1 && links.includes(codesList[i + 1]))) {
+        smilesCodes.push((i >= codesList.length / 2) ?
+          MODIFICATIONS[codesList[i]].right:
+          MODIFICATIONS[codesList[i]].left);
+      } else if (i < codesList.length - 1) {
+        smilesCodes.push((i >= codesList.length / 2) ?
+          MODIFICATIONS[codesList[i]].right : MODIFICATIONS[codesList[i]].left);
+        smilesCodes.push(stadardPhosphateLinkSmiles);
+      }
+    } else {
+      if (links.includes(codesList[i]) ||
+        includesStandardLinkAlready.includes(codesList[i]) ||
+        (i < codesList.length - 1 && links.includes(codesList[i + 1]))
+      )
+        smilesCodes.push(obj[codesList[i]]);
+      else {
+        smilesCodes.push(obj[codesList[i]]);
+        smilesCodes.push(stadardPhosphateLinkSmiles);
+      }
+    }
+  }
+
+  return getMol(smilesCodes);
+}
 
 export function sequenceToSmiles(sequence: string, inverted: boolean = false): string {
   const obj = getObjectWithCodesAndSmiles(sequence);

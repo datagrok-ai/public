@@ -16,6 +16,7 @@ const OVERHANG_COL_NAMES = {
   BASE_MODIFICATION: 'Base modification',
   EXTINCTION_COEFFICIENT: 'Ext. coefficient',
   ACTION: 'Action',
+  CHANGE_LOGS: 'Change logs',
 };
 const ADMIN_USERS = ['Baozhong Zhao', 'Sijin Guo', 'Saika Siddiqui', 'Vadym Kovadlo'];
 const NAME_OF_COLUMN_WITH_SEQUENCES = 'Sequence';
@@ -60,6 +61,7 @@ export async function getOverhangModificationsDf(): Promise<DG.DataFrame> {
     DG.Column.fromStrings(OVERHANG_COL_NAMES.BASE_MODIFICATION, modifications.map((e) => e.baseModification)),
     DG.Column.fromStrings(OVERHANG_COL_NAMES.EXTINCTION_COEFFICIENT, extinctionCoefList),
     DG.Column.fromStrings(OVERHANG_COL_NAMES.ACTION, Array(modifications.length)),
+    DG.Column.fromStrings(OVERHANG_COL_NAMES.CHANGE_LOGS, modifications.map((e) => e.changeLogs)),
   ])!;
 }
 
@@ -208,22 +210,25 @@ async function addModificationButton(modificationsDf: DG.DataFrame): Promise<voi
           if (abbreviation.value.length > 100)
             return grok.shell.warning('Abbreviation shouldn\'t contain more than 100 characters');
           const entries = await grok.dapi.userDataStorage.get(STORAGE_NAME, CURRENT_USER);
-          if (longName.value in entries)
-            return grok.shell.warning('Long name ' + longName.value + ' already exists');
+          if (abbreviation.value in entries)
+            return grok.shell.warning('Abbreviation ' + abbreviation.value + ' already exists');
+          const modifiedLogs = Date() + ' by ' + user.firstName + ' ' + user.lastName + '; ';
           grok.dapi.userDataStorage.postValue(
             STORAGE_NAME,
-            longName.value,
+            abbreviation.value,
             JSON.stringify({
               longName: longName.value,
               abbreviation: abbreviation.value,
               molecularWeight: molecularWeight.value,
               extinctionCoefficient: extCoefficient.value,
               baseModification: baseModification.value,
+              changeLogs: modifiedLogs,
             }),
             CURRENT_USER,
           ).then(() => grok.shell.info('Posted'));
           modificationsDf.rows.addNew([
-            longName.value, abbreviation.value, molecularWeight.value, extCoefficient.value, baseModification.value,
+            longName.value, abbreviation.value, molecularWeight.value,
+            extCoefficient.value, baseModification.value, modifiedLogs,
           ]);
         })
         .show();
@@ -233,13 +238,14 @@ async function addModificationButton(modificationsDf: DG.DataFrame): Promise<voi
 }
 
 function deleteOverhangModification(overhangModificationsDf: DG.DataFrame, rowIndex: number): void {
-  ui.dialog('Do you want to delete ' +
-    overhangModificationsDf.col(OVERHANG_COL_NAMES.ABBREVIATION)!.getString(rowIndex) + ' ?')
+  ui.dialog(
+    'Do you want to delete ' + overhangModificationsDf.col(OVERHANG_COL_NAMES.ABBREVIATION)!.getString(rowIndex) + ' ?',
+  )
     .onOK(() => {
       grok.dapi.users.current().then(async (user) => {
         if (ADMIN_USERS.includes(user.firstName + ' ' + user.lastName)) {
           overhangModificationsDf.rows.removeAt(rowIndex, 1, true);
-          const keyToDelete = overhangModificationsDf.col(OVERHANG_COL_NAMES.LONG_NAMES)!.get(rowIndex);
+          const keyToDelete = overhangModificationsDf.col(OVERHANG_COL_NAMES.ABBREVIATION)!.get(rowIndex);
           await grok.dapi.userDataStorage.remove(STORAGE_NAME, keyToDelete, CURRENT_USER);
         } else
           grok.shell.info('You don\'t have permission for this action');
@@ -251,11 +257,11 @@ function deleteOverhangModification(overhangModificationsDf: DG.DataFrame, rowIn
 function editOverhangModification(overhangModificationsDf: DG.DataFrame, rowIndex: number): void {
   grok.dapi.users.current().then(async (user) => {
     if (ADMIN_USERS.includes(user.firstName + ' ' + user.lastName)) {
-      const oldLongName = overhangModificationsDf.col(OVERHANG_COL_NAMES.LONG_NAMES)!.get(rowIndex);
-      const longName = ui.stringInput(OVERHANG_COL_NAMES.LONG_NAMES, oldLongName);
-      ui.tooltip.bind(longName.root, 'Examples: \'Inverted Abasic\', \'Cyanine 3 CPG\', \'5-Methyl dC\'');
-      const abbreviation = ui.stringInput(OVERHANG_COL_NAMES.ABBREVIATION,
+      const longName = ui.stringInput(OVERHANG_COL_NAMES.LONG_NAMES,
         overhangModificationsDf.col(OVERHANG_COL_NAMES.ABBREVIATION)!.get(rowIndex));
+      ui.tooltip.bind(longName.root, 'Examples: \'Inverted Abasic\', \'Cyanine 3 CPG\', \'5-Methyl dC\'');
+      const oldAbbreviation = overhangModificationsDf.col(OVERHANG_COL_NAMES.ABBREVIATION)!.get(rowIndex);
+      const abbreviation = ui.stringInput(OVERHANG_COL_NAMES.ABBREVIATION, oldAbbreviation);
       ui.tooltip.bind(abbreviation.root, 'Examples: \'invabasic\', \'Cy3\', \'5MedC\'');
       const molecularWeight = ui.floatInput(OVERHANG_COL_NAMES.MOLECULAR_WEIGHT,
         overhangModificationsDf.col(OVERHANG_COL_NAMES.MOLECULAR_WEIGHT)!.get(rowIndex));
@@ -267,6 +273,7 @@ function editOverhangModification(overhangModificationsDf: DG.DataFrame, rowInde
         });
       const extinctionCoefficient = ui.stringInput(OVERHANG_COL_NAMES.EXTINCTION_COEFFICIENT,
         overhangModificationsDf.col(OVERHANG_COL_NAMES.EXTINCTION_COEFFICIENT)!.get(rowIndex));
+      const changeLogsCol = overhangModificationsDf.col(OVERHANG_COL_NAMES.CHANGE_LOGS)!;
       ui.dialog('Add Modification')
         .add(ui.block([
           longName.root,
@@ -281,27 +288,30 @@ function editOverhangModification(overhangModificationsDf: DG.DataFrame, rowInde
           if (abbreviation.value.length > 100)
             return grok.shell.warning('Abbreviation shouldn\'t contain more than 100 characters');
           const entries = await grok.dapi.userDataStorage.get(STORAGE_NAME, CURRENT_USER);
-          if (longName.value in entries)
-            return grok.shell.warning('Long name ' + longName.value + ' already exists');
+          if (abbreviation.value in entries)
+            return grok.shell.warning('Abbreviation ' + abbreviation.value + ' already exists');
+          const newLog = changeLogsCol.get(rowIndex) + Date() + ' by ' + user.firstName + ' ' + user.lastName + '; ';
           await grok.dapi.userDataStorage.postValue(
             STORAGE_NAME,
-            longName.value,
+            abbreviation.value,
             JSON.stringify({
               longName: longName.value,
               abbreviation: abbreviation.value,
               molecularWeight: molecularWeight.value,
               extinctionCoefficient: extinctionCoefficient.value,
               baseModification: baseModification.value,
+              changeLogs: newLog,
             }),
             CURRENT_USER,
           );
-          if (oldLongName != longName.value)
-            await grok.dapi.userDataStorage.remove(STORAGE_NAME, oldLongName, CURRENT_USER);
+          if (oldAbbreviation != abbreviation.value)
+            await grok.dapi.userDataStorage.remove(STORAGE_NAME, oldAbbreviation, CURRENT_USER);
           overhangModificationsDf.set(OVERHANG_COL_NAMES.LONG_NAMES, rowIndex, longName.value);
           overhangModificationsDf.set(OVERHANG_COL_NAMES.ABBREVIATION, rowIndex, abbreviation.value);
           overhangModificationsDf.set(OVERHANG_COL_NAMES.MOLECULAR_WEIGHT, rowIndex, molecularWeight.value);
           overhangModificationsDf.set(OVERHANG_COL_NAMES.EXTINCTION_COEFFICIENT, rowIndex, extinctionCoefficient.value);
           overhangModificationsDf.set(OVERHANG_COL_NAMES.BASE_MODIFICATION, rowIndex, baseModification.value);
+          overhangModificationsDf.set(OVERHANG_COL_NAMES.CHANGE_LOGS, rowIndex, newLog);
         })
         .show();
     } else
@@ -376,7 +386,6 @@ export async function OligoBatchCalculatorApp(): Promise<void> {
       } else if (output.expectedSynthesizer == null)
         reasonsOfError[i] = 'Not valid input';
       else {
-        // paintColumn(output, asoGapmersGrid!, omeAndFluoroGrid!);
         reasonsOfError[i] = 'Sequence is expected to be in synthesizer \'' + output.expectedSynthesizer +
           '\', please see table below to see list of valid codes';
       }
