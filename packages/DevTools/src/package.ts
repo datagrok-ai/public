@@ -60,7 +60,20 @@ export function _functionSignatureEditor(): void {
 //description: ViewerGallery
 //tags: autostart
 export function _viewerGallery(): void { 
-  grok.shell.topMenu.find('Add').separator().item('Add viewer...', ()=>viewersGallery())
+  //grok.shell.topMenu.find('Add').separator().item('Add viewer...', ()=>viewersGallery())
+  grok.events.onViewAdded.subscribe((view) => {
+    if (view.type == 'TableView'){
+      let panel = view.getRibbonPanels();
+      panel[0][1].remove();
+      
+      let icon = ui.iconFA('', ()=>{viewersGallery()});
+      icon.className = 'grok-icon svg-icon svg-add-viewer';
+
+      let btn = ui.div([icon]);
+      btn.className = 'd4-ribbon-item';
+      panel[0][0].after(btn)
+    }
+  });
 }
 
 //description: IconTool

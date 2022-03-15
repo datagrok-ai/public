@@ -3,8 +3,8 @@ import * as DG from "datagrok-api/dg";
 import * as ui from "datagrok-api/ui";
 import { study } from "../clinical-study";
 import { validationRulesList, _package } from "../package";
-import { pinnacleRuleIdColumnName, validationResultRuleIdColumn } from "../validation/constants";
-import { createRulesDataFrame } from '../validation/validation-utils';
+import { pinnacleRuleIdColumnName, validationResultRuleIdColumn } from "../sdtm-validation/constants";
+import { createRulesDataFrame } from '../sdtm-validation/validation-utils';
 import { getUniqueValues } from '../data-preparation/utils';
 import { ClinicalCaseViewBase } from '../model/ClinicalCaseViewBase';
 

@@ -14,12 +14,10 @@ export function substTableWidget(table: DG.DataFrame): DG.Widget {
   const initialCol: DG.Column = table.columns.byName('Initial');
   const substitutedCol: DG.Column = table.columns.byName('Substituted');
 
-  // for (let i = 0; i < initialCol.length; ++i) {
-  //   const initialPeptide: string = initialCol.get(i);
-  //   const substPeptide: string = substitutedCol.get(i);
-
-  //   initialCol.set(i, initialPeptide + '#' + substPeptide);
-  // }
+  for (let i = 0; i < initialCol.length; ++i) {
+    const sequenceDifference = `${initialCol.get(i)}#${substitutedCol.get(i)}`;
+    initialCol.set(i, sequenceDifference);
+  }
 
   initialCol.semType = 'alignedSequenceDifference';
   initialCol.name = 'Substitution';

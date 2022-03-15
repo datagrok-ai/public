@@ -1,5 +1,5 @@
 import * as DG from "datagrok-api/dg";
-import { INV_DRUG_DOSE, INV_DRUG_DOSE_UNITS, INV_DRUG_NAME, SUBJECT_ID, VISIT_NAME, VISIT_START_DATE } from "../columns-constants";
+import { INV_DRUG_DOSE, INV_DRUG_DOSE_UNITS, INV_DRUG_NAME, SUBJECT_ID, VISIT_NAME, VISIT_START_DATE } from "../constants/columns-constants";
 import { addColumnWithDrugPlusDosage } from "../data-preparation/data-preparation";
 
 export class StudyVisit {
@@ -59,9 +59,10 @@ export class StudyVisit {
     }
 
     private createEventSincePeviousVisitDf(domain: any) {
-        if (domain && this.previsousVisitDay) {
+        const startDayColName = `${domain.name.toUpperCase()}STDY`;
+        if (domain && this.previsousVisitDay && domain.col(startDayColName)) {
             return domain.groupBy(domain.columns.names())
-                .where(`${domain.name.toUpperCase()}STDY > ${this.previsousVisitDay} and ${domain.name.toUpperCase()}STDY <= ${this.day}`)
+                .where(`${startDayColName} > ${this.previsousVisitDay} and ${startDayColName} <= ${this.day}`)
                 .aggregate();
         }
         return null;

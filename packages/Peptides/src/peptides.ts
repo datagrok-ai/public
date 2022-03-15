@@ -7,19 +7,19 @@ import {SARViewer, SARViewerVertical} from './viewers/sar-viewer';
 import {SubstViewer} from './viewers/subst-viewer';
 import {ChemPalette} from './utils/chem-palette';
 import {Observable} from 'rxjs';
-import { MonomerLibrary } from './monomer-library';
+import {MonomerLibrary} from './monomer-library';
 import {_package} from './package';
+import {setAARRenderer} from './utils/cell-renderer';
 
 type viewerTypes = SARViewer | SARViewerVertical | SubstViewer;
 export class PeptidesController {
   private static _controllerName: string = 'peptidesController';
   private helpUrl = '/help/domains/bio/peptides.md';
-  private _dataFrame: DG.DataFrame;
+
   private _model: PeptidesModel;
 
   private constructor(dataFrame: DG.DataFrame) {
-    this._dataFrame = dataFrame;
-    this._model = PeptidesModel.getInstance(this._dataFrame);
+    this._model = PeptidesModel.getInstance(dataFrame);
     // this.getOrInitModel(this._dataFrame);
   }
 
@@ -36,10 +36,13 @@ export class PeptidesController {
     return PeptidesController._controllerName;
   }
 
-  // getOrInitModel(): PeptidesModel {
-  //   this._model ??= PeptidesModel.getOrInit(this._dataFrame);
-  //   return this._model;
-  // }
+  get dataFrame() {
+    return this._model.dataFrame;
+  }
+
+  static setAARRenderer(col: DG.Column, grid: DG.Grid, grouping?: boolean) {
+    return setAARRenderer(col, grid, grouping);
+  }
 
   get onStatsDataFrameChanged(): Observable<DG.DataFrame> {
     return this._model.onStatsDataFrameChanged;
@@ -164,7 +167,7 @@ export class PeptidesController {
     ];
   }
 
-  static getChemPalette() {
+  static get chemPalette() {
     return ChemPalette;
   }
 
@@ -179,8 +182,8 @@ export class PeptidesController {
    * @memberof Peptides
    */
   async init(
-    tableGrid: DG.Grid, view: DG.TableView, options: StringDictionary, col: DG.Column,
-    originalDfColumns: string[]) {
+    tableGrid: DG.Grid, view: DG.TableView, options: StringDictionary, col: DG.Column, originalDfColumns: string[],
+  ) {
     function adjustCellSize(grid: DG.Grid) {
       const colNum = grid.columns.length;
       for (let i = 0; i < colNum; ++i) {
@@ -201,24 +204,24 @@ export class PeptidesController {
       }
     }
 
-    const originalDfName = this._dataFrame.name;
+    const originalDfName = this.dataFrame.name;
     const dockManager = view.dockManager;
 
-    const sarViewer = await this._dataFrame.plot.fromType('peptide-sar-viewer', options) as SARViewer;
+    const sarViewer = await this.dataFrame.plot.fromType('peptide-sar-viewer', options) as SARViewer;
     sarViewer.helpUrl = this.helpUrl;
 
-    const sarViewerVertical = await this._dataFrame.plot.fromType('peptide-sar-viewer-vertical') as SARViewerVertical;
+    const sarViewerVertical = await this.dataFrame.plot.fromType('peptide-sar-viewer-vertical') as SARViewerVertical;
     sarViewerVertical.helpUrl = this.helpUrl;
 
     const sarViewersGroup: viewerTypes[] = [sarViewer, sarViewerVertical];
 
     const peptideSpaceViewer = await createPeptideSimilaritySpaceViewer(
-      this._dataFrame, col, 't-SNE', 'Levenshtein', 100, view, `${options['activityColumnName']}Scaled`);
+      this.dataFrame, col, 't-SNE', 'Levenshtein', 100, view, `${options['activityColumnName']}Scaled`);
     dockManager.dock(peptideSpaceViewer, DG.DOCK_TYPE.RIGHT, null, 'Peptide Space viewer');
 
     let nodeList = dockViewers(sarViewersGroup, DG.DOCK_TYPE.RIGHT, dockManager, DG.DOCK_TYPE.DOWN);
 
-    const substViewer = await this._dataFrame.plot.fromType(
+    const substViewer = await this.dataFrame.plot.fromType(
       'substitution-analysis-viewer', {'activityColumnName': `${options['activityColumnName']}Scaled`}) as SubstViewer;
     const substViewersGroup = [substViewer];
 
@@ -233,19 +236,20 @@ export class PeptidesController {
       }
       viewers.forEach((v) => v.close());
 
-      const cols = (this._dataFrame.columns as DG.ColumnList);
+      const cols = (this.dataFrame.columns as DG.ColumnList);
       for (const colName of cols.names()) {
         if (!originalDfColumns.includes(colName))
           cols.remove(colName);
       }
 
-      this._dataFrame.selection.setAll(false);
-      this._dataFrame.filter.setAll(true);
+      this.dataFrame.selection.setAll(false);
+      this.dataFrame.filter.setAll(true);
 
       tableGrid.setOptions({'colHeaderHeight': 20});
       tableGrid.columns.setVisible(originalDfColumns);
       tableGrid.props.allowEdit = true;
-      this._dataFrame.name = originalDfName;
+      tableGrid.temp['containsBarchart'] = false;
+      this.dataFrame.name = originalDfName;
 
       view.setRibbonPanels(ribbonPanels);
     }, 'Close viewers and restore dataframe');

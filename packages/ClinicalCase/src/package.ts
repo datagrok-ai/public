@@ -16,29 +16,28 @@ import {SurvivalAnalysisView} from './views/survival-analysis-view';
 import { BoxPlotsView } from './views/boxplots-view';
 import { MatrixesView } from './views/matrixes-view';
 import { TimeProfileView } from './views/time-profile-view';
-import { AEBrowserHelper } from './helpers/ae-browser-helper';
-import { AE_END_DAY, AE_START_DAY, SUBJECT_ID } from './columns-constants';
-import { STUDY_ID } from './columns-constants';
-import { createValidationErrorsDiv, updateDivInnerHTML } from './views/utils';
+import { STUDY_ID } from './constants/columns-constants';
 import { TreeMapView } from './views/tree-map-view';
 import { MedicalHistoryView } from './views/medical-history-view';
 import { VisitsView } from './views/visits-view';
 import { StudyConfigurationView } from './views/study-config-view';
-import { ADVERSE_EVENTS_VIEW_NAME, AE_BROWSER_VIEW_NAME, AE_RISK_ASSESSMENT_VIEW_NAME, CORRELATIONS_VIEW_NAME, DISTRIBUTIONS_VIEW_NAME, LABORATORY_VIEW_NAME, MEDICAL_HISTORY_VIEW_NAME, PATIENT_PROFILE_VIEW_NAME, STUDY_CONFIGURATIN_VIEW_NAME, SUMMARY_VIEW_NAME, SURVIVAL_ANALYSIS_VIEW_NAME, TIMELINES_VIEW_NAME, TIME_PROFILE_VIEW_NAME, TREE_MAP_VIEW_NAME, VALIDATION_VIEW_NAME, VISITS_VIEW_NAME } from './view-names-constants';
-import { AE_TERM_FIELD, VIEWS_CONFIG } from './views-config';
-import { ValidationHelper } from './helpers/validation-helper';
+import { ADVERSE_EVENTS_VIEW_NAME, AE_RISK_ASSESSMENT_VIEW_NAME, COHORT_VIEW_NAME, CORRELATIONS_VIEW_NAME, DISTRIBUTIONS_VIEW_NAME, LABORATORY_VIEW_NAME, MEDICAL_HISTORY_VIEW_NAME, PATIENT_PROFILE_VIEW_NAME, STUDY_CONFIGURATIN_VIEW_NAME, SUMMARY_VIEW_NAME, SURVIVAL_ANALYSIS_VIEW_NAME, TIMELINES_VIEW_NAME, TIME_PROFILE_VIEW_NAME, TREE_MAP_VIEW_NAME, VALIDATION_VIEW_NAME, VISITS_VIEW_NAME } from './constants/view-names-constants';
+import { VIEWS } from './constants/constants';
+import { addView, createTableView, getTableViewsParams } from './utils/views-creation-utils';
+import { CohortView } from './views/cohort-view';
 
 export let _package = new DG.Package();
 
 export let validationRulesList = null;
 
 let domains = Object.keys(study.domains).map(it => `${it.toLocaleLowerCase()}.csv`);
+export let c: DG.FuncCall;
 
 
 //name: Clinical Case
 //tags: app
 export async function clinicalCaseApp(): Promise<any> {
-  let c: DG.FuncCall = grok.functions.getCurrentCall();
+  c = grok.functions.getCurrentCall();
   validationRulesList = await grok.data.loadTable(`${_package.webRoot}tables/validation-rules.csv`);
 
   if (Object.keys(study.domains).every((name) => grok.shell.table(name) == null)) {
@@ -52,92 +51,45 @@ export async function clinicalCaseApp(): Promise<any> {
 
   study.initFromWorkspace();
 
-  function addView(view: DG.ViewBase): DG.ViewBase {
-    view.box = true;
-    view.parentCall = c;
-    view.path = '/' + view.name;
-    grok.shell.addView(view);
-    return view;
-  }
+  VIEWS.push(<StudySummaryView>addView(new StudySummaryView(SUMMARY_VIEW_NAME)));
+  VIEWS.push(<VisitsView>addView(new VisitsView(VISITS_VIEW_NAME)));
+  VIEWS.push(<CohortView>addView(new CohortView(COHORT_VIEW_NAME)));
+  VIEWS.push(<TimelinesView>addView(new TimelinesView(TIMELINES_VIEW_NAME)));
+  VIEWS.push(<PatientProfileView>addView(new PatientProfileView(PATIENT_PROFILE_VIEW_NAME)));
+  VIEWS.push(<AdverseEventsView>addView(new AdverseEventsView(ADVERSE_EVENTS_VIEW_NAME)));
+  VIEWS.push(<LaboratoryView>addView(new LaboratoryView(LABORATORY_VIEW_NAME)));
+  VIEWS.push(<AERiskAssessmentView>addView(new AERiskAssessmentView(AE_RISK_ASSESSMENT_VIEW_NAME)));
+  VIEWS.push(<SurvivalAnalysisView>addView(new SurvivalAnalysisView(SURVIVAL_ANALYSIS_VIEW_NAME)));
+  VIEWS.push(<BoxPlotsView>addView(new BoxPlotsView(DISTRIBUTIONS_VIEW_NAME)));
+  VIEWS.push(<MatrixesView>addView(new MatrixesView(CORRELATIONS_VIEW_NAME)));
+  VIEWS.push(<TimeProfileView>addView(new TimeProfileView(TIME_PROFILE_VIEW_NAME)));
+  VIEWS.push(<TreeMapView>addView(new TreeMapView(TREE_MAP_VIEW_NAME)));
+  VIEWS.push(<MedicalHistoryView>addView(new MedicalHistoryView(MEDICAL_HISTORY_VIEW_NAME)));
 
-  function createTableView(
-    domainsAndColsToCheck: any,
-    viewName: string,
-    helpUrl: string,
-    createViewHelper: (params: any) => any,
-    paramsForHelper = null) {
-    let tableView;
-    let viewHelper;
-    let validator = new ValidationHelper(domainsAndColsToCheck);
-    if(validator.validate()){
-      let { helper, df } = createViewHelper(paramsForHelper);
-      tableView = DG.TableView.create(df);
-      viewHelper = helper
-    } else {
-      tableView = DG.View.create();
-      updateDivInnerHTML(tableView.root, createValidationErrorsDiv(validator.missingDomains, validator.missingColumnsInReqDomains, validator.missingColumnsInOptDomains)); 
-    }
-    tableView.name = viewName;
-    if (helpUrl) {
-      tableView.helpUrl = helpUrl;
-    }
-    return { helper: viewHelper, view: tableView };
-  }
+  const tableViewHelpers = {};
+  const tableViewsParams = getTableViewsParams();
 
-  function createAEBrowserHelper(timelinesView: TimelinesView): any {
-    const aeBrowserDf = study.domains.ae.clone();
-    const aeBrowserHelper = new AEBrowserHelper(aeBrowserDf);
-    timelinesView.aeBrowserHelper = aeBrowserHelper;
-    aeBrowserDf.onCurrentRowChanged.subscribe(() => {
-      aeBrowserHelper.currentSubjId = aeBrowserDf.get(SUBJECT_ID, aeBrowserDf.currentRowIdx);
-      aeBrowserHelper.currentAeDay = aeBrowserDf.get(AE_START_DAY, aeBrowserDf.currentRowIdx);
-      aeBrowserHelper.propertyPanel();
-    })
-    return { helper: aeBrowserHelper, df: aeBrowserDf };
-  }
-
-  const views = [];
-
-  views.push(<StudySummaryView>addView(new StudySummaryView(SUMMARY_VIEW_NAME)));
-  views.push(<VisitsView>addView(new VisitsView(VISITS_VIEW_NAME)));
-  const timelinesView = new TimelinesView(TIMELINES_VIEW_NAME);
-  views.push(<TimelinesView>addView(timelinesView));
-  views.push(<PatientProfileView>addView(new PatientProfileView(PATIENT_PROFILE_VIEW_NAME)));
-  views.push(<AdverseEventsView>addView(new AdverseEventsView(ADVERSE_EVENTS_VIEW_NAME)));
-  views.push(<LaboratoryView>addView(new LaboratoryView(LABORATORY_VIEW_NAME)));
-  views.push(<AERiskAssessmentView>addView(new AERiskAssessmentView(AE_RISK_ASSESSMENT_VIEW_NAME)));
-  views.push(<SurvivalAnalysisView>addView(new SurvivalAnalysisView(SURVIVAL_ANALYSIS_VIEW_NAME)));
-  views.push(<BoxPlotsView>addView(new BoxPlotsView(DISTRIBUTIONS_VIEW_NAME)));
-  views.push(<MatrixesView>addView(new MatrixesView(CORRELATIONS_VIEW_NAME)));
-  views.push(<TimeProfileView>addView(new TimeProfileView(TIME_PROFILE_VIEW_NAME)));
-  views.push(<TreeMapView>addView(new TreeMapView(TREE_MAP_VIEW_NAME)));
-  views.push(<MedicalHistoryView>addView(new MedicalHistoryView(MEDICAL_HISTORY_VIEW_NAME)));
-
-
-   const aeBrowserView = createTableView(
-    {
-      'req_domains': {
-        'ae': {
-          'req': [VIEWS_CONFIG[AE_BROWSER_VIEW_NAME][AE_TERM_FIELD], AE_START_DAY, AE_END_DAY]
-        }
-      }
-    },
-    AE_BROWSER_VIEW_NAME,
-    'https://raw.githubusercontent.com/datagrok-ai/public/master/packages/ClinicalCase/views_help/ae_browser.md',
-    createAEBrowserHelper,
-    timelinesView
-  );
-  views.push(addView(aeBrowserView.view)); 
+  Object.keys(tableViewsParams).forEach(it => {
+    const tableView = createTableView(
+      tableViewsParams[it].domainsAndColsToCheck,
+      it,
+      tableViewsParams[it].helpUrl,
+      tableViewsParams[it].createViewHelper,
+      tableViewsParams[it].paramsForHelper,
+    );
+    VIEWS.push(addView(tableView.view));
+    tableViewHelpers[it] = tableView.helper;
+  });
 
   DG.ObjectHandler.register(new AdverseEventHandler());
 
-  let summary = views.find(it => it.name === SUMMARY_VIEW_NAME);
+  let summary = VIEWS.find(it => it.name === SUMMARY_VIEW_NAME);
   summary.load();
   let valView = addView(new ValidationView(summary.errorsByDomain, VALIDATION_VIEW_NAME));
   summary.validationView = valView;
-  views.push(valView);
+  VIEWS.push(valView);
 
-  views.push(<StudyConfigurationView>addView(new StudyConfigurationView(STUDY_CONFIGURATIN_VIEW_NAME)));
+  VIEWS.push(<StudyConfigurationView>addView(new StudyConfigurationView(STUDY_CONFIGURATIN_VIEW_NAME)));
 
   setTimeout(() => {
     grok.shell.v = summary;
@@ -149,7 +101,7 @@ export async function clinicalCaseApp(): Promise<any> {
 
   grok.events.onCurrentViewChanged.subscribe((v) => {
     setTimeout(() => {
-      const obj = views.find(it => it.name === grok.shell.v.name);
+      let obj = VIEWS.find(it => it.name === grok.shell.v.name);
       if (obj) {
         if (obj.hasOwnProperty('loaded') && !obj.loaded) {
           obj.load();

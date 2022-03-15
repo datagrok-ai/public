@@ -1,6 +1,185 @@
 <!-- TITLE: Release History -->
 <!-- SUBTITLE: -->
 
+# 2022-03-14 Dev build 0.131.0
+
+## Latest Docker Images
+
+* Datagrok: 
+  *  `docker pull datagrok/datagrok:0.131.0`
+  *  `docker pull datagrok/datagrok:latest`
+  
+* [Docker-Compose](admin/docker-compose.md)
+
+## Addressed Issues
+
+* SequenceTranslator: macromolecule rendering 
+* Oligo Batch Calculator: use abbreviation as unique keys in User Data Storage 
+* RepertoireBrowser: Refactoring. 
+* JnJ: monitoring resources: RAM, CPU, HDD 
+* update viewers-gallery 
+
+
+# 2022-03-14 Dev build 0.130.0
+
+## Latest Docker Images
+
+* Datagrok: 
+  *  `docker pull datagrok/datagrok:0.130.0`
+  *  `docker pull datagrok/datagrok:latest`
+  
+* [Docker-Compose](admin/docker-compose.md)
+
+## Addressed Issues
+
+* Clinical case: extracting VISITDY from tv domain, handling missing ~STDY columns in visits view 
+* RepertoireBrowser: Refactor tree statistics collection. 
+* RepertoireBrowser: Fix tree node label. 
+* Sharing file connection must share credentials (WIP)
+* update viewer gallery 
+* RepertoireBrowser: Fix tree node label highlight. 
+* RepertoireBrowser: Add improved tree node label colouring. 
+* RepertoireBrowser: Refactoring. 
+* JnJ: monitoring resources: RAM, CPU, HDD 
+
+
+# 2022-03-08 Dev build 0.129.0
+
+## Latest Docker Images
+
+* Datagrok: 
+  *  `docker pull datagrok/datagrok:0.129.0`
+  *  `docker pull datagrok/datagrok:latest`
+  
+* [Docker-Compose](admin/docker-compose.md)
+
+## Addressed Issues
+
+* Webstorm configs 
+* Ability to set Function as a default value 
+* WebStrom default configurations 
+* Viewers: legend: ability to reset"filter by category" 
+* (Bug) Newly created user failed to login (WIP)
+* Fixed #344: Miss configured in-visualisation filter kills the browser session 
+* Fixed the initial position of the filter 
+* Grid: Excel-style column resizing 
+* Grid: column rearrangement: fixed the "'offsetParent' was called on null" bug 
+* Grid: ability to reorder multiple columns at once 
+* Renamed images 
+* JnJ: monitoring resources: RAM, CPU, HDD 
+* Implement '!=' and 'NOT IN' operators for matching rows 
+* Fixed #348: HTML cells \- selection & scrolling issues 
+* EacapeSequences: R 
+* Updated help 
+* Line Chart: "Invert X Axis" property 
+* Exposed grok.events.onResetFilterRequest 
+* Scatter Plot: highlight the category on axis on mouse-over 
+* SequenceTranslator: refactoring 
+
+
+# 2022-02-24 Dev build 0.128.0
+
+## Latest Docker Images
+
+* Datagrok: 
+  *  `docker pull datagrok/datagrok:0.128.0`
+  *  `docker pull datagrok/datagrok:latest`
+  
+* [Docker-Compose](admin/docker-compose.md)
+
+## Addressed Issues
+
+* Strong mode static checking (WIP)
+
+
+# 2022-02-23 Dev build 0.127.0
+
+## Latest Docker Images
+
+* Datagrok: 
+  *  `docker pull datagrok/datagrok:0.127.0`
+  *  `docker pull datagrok/datagrok:latest`
+  
+* [Docker-Compose](admin/docker-compose.md)
+
+## Addressed Issues
+
+* syft local image 
+* DockManager_Dock now attaches viewer to view 
+* Fixed #320: Filtering: 'Select columns' dialog for filter panel is showing currently selected columns incorrectly in some cases 
+* Fixed #319: Disabling/not disabling filtering behaviour on closing filter panel is inconsistent in some cases 
+* (Bug) JS API: incorrect constant in DG.DOCK_TYPE.TOP  
+* Fix datagro build 
+* Functions: help-url support for scripts in Function View 
+* Added Viewer_Remove_From_View function 
+* (Bug) Function View: Dataframes selection from a file is buggy 
+* js-api-common update 
+* Scripting: Better handle missing output variables (R, Python) 
+* Package description: add Markdown rendering  
+* JS API: Dialog.getOpenDialogs() 
+* JS API: Dialog.input(caption): InputBase 
+* JS API: Grid: ability to get cell back color 
+* (Bug) Color coding: the editing dialog shows the black color for categories which color is set via hex codes 
+* (Bug) Line Chart: rightmost line segment is not always drawn 
+* New demo dataset: dose-response 
+* New sample script: charts-in-cells 
+* GridColumnMeta 
+* (Bug) Chem: double-clicking on an empty structure does not open a sketcher 
+* (Bug) Grid: an exception when resizing the window 
+* Wiki: Doc on running Dart tests locally 
+* Test file fixed precision 
+* (Bug) Grid scrolls to first row after adding/deleting row 
+* Grid: ability to easily add rows to the end 
+* #323: MultiForm: WIP 
+* JnJ: monitoring resources: RAM, CPU, HDD 
+* Fixed null exception 
+* (Bug) Parameter subquery is empty 
+* Harmonize viewer title 
+* NPM repositories: add an option to skip installation of deployed packages during repository publication 
+* Property panel: "Distributions" pane (WIP)
+* Fixed typo 
+* Core: delete the service jobs before the repository deletion 
+* bug fixed fro smiles string in example 
+* Formula lines improvements 
+* Update repository jobs: change user permissions (WIP) 
+* Error status style update (WIP) 
+* (Bug) BoxPlot Y axis labels overlapping with axis column name 
+* Harmonize PackagesView (WIP)
+* Filters: header should stay on top when you scroll down 
+* NPM repositories: new package manager UI 
+* (Bug) Input too large for RSA cipher exception during package deploy 
+* Avoid extra data copy 
+* update ref to head on public 
+* Porting Ketcher reading molfile in React to package (WIP)
+* DB: migrate test and demo DB to docker 
+* VirtualItemView.refreshItem 
+* Docking Manager: improve auto-docking algorithm when the initial split is vertical 
+* Improved the description of the connection string in the "add connection" dialog. 
+* Security: WIP 
+* (Bug) Color coding: missing values lose the reserved color when the rules for categorical color-coding are set 
+* Added Neptune logo 
+* Docs: create documentation for CVM connection from Local Dart stand 
+* Strong mode static checking 
+* (Bug) Scripting: Reset variables before script run (Python, R) 
+* Fix analyser warnings 
+* (Bug) Renv creates environments directories with nested UUIDs 
+* (Bug) Several functions broken in calculated columns 
+* Checkbox styling improvement 
+* (Bug) Chem: moleculeInput won't set smiles 
+* Expose additional map data structure to save meta information along with project entity #331 
+* Add additional options to configure the view loading behaviour to project.open() method #332 
+* Viewers: ability to specify default axis type (linear / logarithmic) 
+* PC Plot: log scaling for Y axis 
+* Grid: spacebar to toggle row selection 
+* Made analysis options less strict. 
+* Scatter Plot: ability to invert axes 
+* Bar Chart: fixed an issue with the initial viewport position 
+* Expose ID property for tableView entitity #328 
+* Core: update OpenChemLib (WIP)
+* Peptides: barchart fix 
+* (Bug) Exception on reading credentials for package 
+
+
 # 2022-02-08 Dev build 0.122.0
 
 ## Latest Docker Images
@@ -15,7 +194,7 @@
 
 * (Bug) Filters: After reopening filters, all columns appear deactivated in the "Select columns" dialog 
 * (Bug) Filters: Filters for multi-value columns are not saved after reopening the Filters 
-* (Bug) Filters: ​double-click on checkbox: weird characters are visible 
+* (Bug) Filters: double-click on checkbox: weird characters are visible 
 * (Bug) Scatter Plot: Custom linear coloring is not propagated 
 * Push version from package.json for master branch 
 * CloudFormation required parameters 
@@ -4318,7 +4497,7 @@
 * MultiPlot: minor bugs fix and add advanced example to Readme.md
 * MultiPlot: added file extension
 * Function parameter editor (WIP)
-* (Bug) Bar chart: null values ​​are not indicated
+* (Bug) Bar chart: null values are not indicated
 * Bar Chart \- minor code cleanup.
 * Exercises: Simplify Exercises (WIP)
 * JS API: Focus for opened dialogs
@@ -4376,7 +4555,7 @@
 
 ## Addressed Issues
 
-* (Bug) Bar chart: null values ​​are not indicated
+* (Bug) Bar chart: null values are not indicated
 * MultiPlot: change color of marker of the status chart according to value and min and max columns
 * (Bug) Scatter plot \- showSizeSelector
 * JS API: ui.image, redirects on the new page when the link doesn't provided
@@ -4854,7 +5033,7 @@
 * Fixed strict checking
 * Change 'link-external' icon
 * Change editor icon
-* Oligo Batch Calculator: nearest neighbor method for extinction coefficient (EC) calculation​
+* Oligo Batch Calculator: nearest neighbor method for extinction coefficient (EC) calculation
 * Ability to declare Script as App
 * Help indexing
 * Wiki: file exporter example
@@ -5648,7 +5827,7 @@
 * Fixed strict checking
 * Change 'link-external' icon
 * Change editor icon
-* Oligo Batch Calculator: nearest neighbor method for extinction coefficient (EC) calculation​
+* Oligo Batch Calculator: nearest neighbor method for extinction coefficient (EC) calculation
 * Ability to declare Script as App
 * Help indexing
 * Wiki: file exporter example
@@ -8138,7 +8317,7 @@ Histogram: [duplicated Y axis](https://community.datagrok.ai/t/cannot-easily-cha
 * (Bug) Grid: hiding columns leaves empty space on the right (WIP)
 * Biosignals (WIP)
 * (Bug) Viewers | Properties: Sliders move to the next row if width of the second properties is not enough
-* (Bug) Table | Tooltip: After sketching form, fill of the values ​​in tooltip becomes white and their font changes
+* (Bug) Table | Tooltip: After sketching form, fill of the values in tooltip becomes white and their font changes
 * (Bug) Viewers | Properties:  With long table name, the right column of properties is greatly expanded in width
 * Ability to store data in a layout (WIP)
 * Clearing grid's background (so that it will stay white even if cell renderer fails)

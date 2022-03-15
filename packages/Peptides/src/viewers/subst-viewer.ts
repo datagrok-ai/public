@@ -124,7 +124,7 @@ export class SubstViewer extends DG.JsViewer {
     const tableValuesKeys = Object.keys(tableValues);
     const dfLength = tableValuesKeys.length;
     const cols = [...nColsArray.keys()].map((v) => DG.Column.int(v.toString(), dfLength));
-    cols.forEach(currentCol => currentCol.semType = 'Substitution');
+    cols.forEach((currentCol) => currentCol.semType = 'Substitution');
     const aarCol = DG.Column.string(aarColName, dfLength);
     cols.splice(0, 1, aarCol);
     const table = DG.DataFrame.fromColumns(cols);
@@ -230,18 +230,11 @@ export class SubstViewer extends DG.JsViewer {
         tempDf.temp['isReal'] = true;
 
         initCol.semType = 'alignedSequence';
-        // initCol.setTag('isAnalysisApplicable', 'false');
         initCol.temp['isAnalysisApplicable'] = false;
         subsCol.semType = 'alignedSequence';
-        // subsCol.setTag('isAnalysisApplicable', 'false');
         subsCol.temp['isAnalysisApplicable'] = false;
 
-        // this.casesGrid = tempDf.plot.grid();
-        // this.casesGrid.props.allowEdit = false;
         grok.shell.o = DG.SemanticValue.fromValueType(tempDf, 'Substitution');
-      } else {
-        grok.shell.o = DG.SemanticValue.fromValueType(null, 'Substitution');
-        // this.casesGrid = null;
       }
 
       this.render();

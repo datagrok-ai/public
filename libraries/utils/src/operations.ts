@@ -262,6 +262,6 @@ export function normalize(data: Vector): Vector {
  * @param {any[]} b The second list.
  */
 export function setDifference(a: any[], b: any[]): any[] {
-  const A = new Set(a), B = new Set(b);
-  return Array.from(new Set([...A].filter(x => !B.has(x))).values());
+  const bSet = new Set(b);
+  return Array.from(new Set(a.filter((x) => !bSet.has(x))).values());
 }

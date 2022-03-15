@@ -44,16 +44,16 @@ export async function peptideMoleculeWidget(pep: string): Promise<DG.Widget> {
 export function getMolecule(pep: string): string {
   const split = pep.split('-');
   const mols = [];
-  const chemPalette = PeptidesController.getChemPalette();
+  const chemPalette = PeptidesController.chemPalette;
   for (let i = 1; i < split.length - 1; i++) {
     if (split[i] in chemPalette.AASmiles) {
       const aar = chemPalette.AASmiles[split[i]];
-      mols[i] = aar.substr(0, aar.length - 1);
+      mols[i] = aar.substring(0, aar.length - 1);
     } else if (!split[i] || split[i] == '-')
       mols[i] = '';
     else
       return '';
   }
-  const smiles = mols.join('') + 'O';
-  return smiles;
+
+  return mols.join('') + 'O';
 }

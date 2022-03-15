@@ -120,6 +120,8 @@ export class Events {
 
   get onViewRenamed(): rxjs.Observable<View> { return __obs('grok-view-renamed'); }
 
+  get onResetFilterRequest(): rxjs.Observable<any> { return __obs('d4-reset-filter-request'); }
+
   /** Sample: {@link https://public.datagrok.ai/js/samples/events/layout-events} */
   get onViewLayoutGenerated(): rxjs.Observable<ViewLayout> { return __obs('d4-view-layout-generated'); }
 
