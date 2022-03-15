@@ -1,5 +1,5 @@
 import {category, expect, test} from '@datagrok-libraries/utils/src/test';
-import {sequenceToSmiles} from '../package';
+import {sequenceToSmiles} from '../structures-works/from-monomers';
 
 category('sequence-translator', () => {
   test('AGGTCCTCTTGACTTAGGCC', async () => {

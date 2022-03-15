@@ -1,16 +1,40 @@
-import * as grok from 'datagrok-api/grok';
+//(\(*[^:]+:[^,]+\)*)+
+// import * as grok from 'datagrok-api/grok';
 import * as ui from 'datagrok-api/ui';
 import * as DG from 'datagrok-api/dg';
 
-import {setDifference} from '@datagrok-libraries/utils/src/operations';
+import {PhylocanvasGL, TreeTypes, Shapes} from '@phylocanvas/phylocanvas.gl';
+import {TreeAnalyzer, PhylocanvasTreeNode} from './utils/tree-stats';
 
 export class TreeBrowser {// extends DG.JsViewer {
+  idColumnName: string = 'v id';
+  treeSemanticType = 'newick';
   title: string;
-  phyloTreeViewer: DG.Viewer;
-  networkViewer: DG.Viewer;
+  phyloTreeViewer: PhylocanvasGL;
   dataFrame: DG.DataFrame;
-  network: DG.DataFrame;
-  leafs: TreeLeafs = {};
+  mlbView: DG.TableView;
+  treeGrid: DG.Grid;
+
+  cloneIndex: TreeLeaves = {};
+  leavesIndex: TreeLeavesMap = {};
+  vIdIndex: TreeLeavesMap = {};
+
+  treeAnalyser: TreeAnalyzer;
+
+  protected _modifyTreeNodeIds(nwk: string): string {
+    if (TreeAnalyzer.newickRegEx.test(nwk.trim()))
+      return nwk.replaceAll(/([^|,:()]+)\|([^|,:()]+)\|([^|,:()]+)\|([^|,:()]+)/g, '$3');
+
+    return nwk;
+  }
+
+  protected _takeTreeAt(index: number, columnName = 'TREE'): string {
+    return this.dataFrame.get(columnName, index);
+  }
+
+  protected _getCloneIdAt(index: number, columnName = 'CLONE'): string {
+    return this.dataFrame.get(columnName, index);
+  }
 
   // constructor() {
   //   super();
@@ -18,64 +42,173 @@ export class TreeBrowser {// extends DG.JsViewer {
   // }
 
   /**
-   * Converts trees column into network diagram data frame.
-   * @param {DG.Column} treeCol Column with trees in newick format.
-   * @param {DG.Column} cloneId Clone ids.
-   * @return {(Promise<DG.DataFrame | undefined>)} Data frame or undefined if the newick converter was failed.
-   * node parent  distance  clone edgeColor
-   * node-0-349 root-349  0.00  349 1
-   * node-1-349 node-0-349  0.02  349 1
-   * node-2-349 node-1-349  0.01  349 1
-   * ...
+   * Maps tree leaf {node id} or {clone id} to a {list of indices} of tree which it is found in.
+   * @param {PhylocanvasTreeNode} node Node record.
+   * @param {number} treeIndex Index of tree containing the node in trees column.
+   * @return {PhylocanvasTreeNode} Modified node.
    */
-  private async _unpackNewickTrees(treeCol: DG.Column, cloneId: DG.Column): Promise<DG.DataFrame | undefined> {
-    let processed: DG.DataFrame | undefined;
+  private _collectLeavesMapping(node: PhylocanvasTreeNode, treeIndex: number) {
+    if (node.isLeaf) {
+      const id = node.id;
+      const cloneId = this._getCloneIdAt(treeIndex);
 
-    if (DG.Func.find({name: '_newickToDf'}).length == 0)
-      grok.shell.warning('Newick parser is unavailable');
-    else {
-      for (let i = 1; i < treeCol.length; i++) {
-      // TODO: switch call from system to local import.
-        const t: DG.DataFrame = await grok.functions.call(
-          'PhyloTreeViewer:_newickToDf',
-          {newick: treeCol.get(i), filename: 'nwk'},
-        );
-        const p = t.col('parent');
-        const c = t.col('node');
-        const id = cloneId.get(i);
+      if (!this.cloneIndex[cloneId])
+        this.cloneIndex[cloneId] = {index: [treeIndex], items: []};
 
-        this.leafs[id] = {index: [i], items: setDifference(c.toList(), p.toList())};
+      this.cloneIndex[cloneId].items.push(id);
 
-        t.rows.removeAt(0);
-        t.columns.addNewString('clone').init((_) => id);
-        t.columns.addNewInt('edgeColor').init((_) => i);
+      if (!this.leavesIndex[id])
+        this.leavesIndex[id] = [];
 
-        for (let k = 0; k < t.rowCount; k++) {
-          const n1 = p.get(k);
+      this.leavesIndex[id].push(treeIndex);
+    }
+    return node;
+  }
 
-          if (n1 == 'root')
-            p.set(k, `root-${id}`);
-          else if (n1.startsWith('node-'))
-            p.set(k, `${n1}-${id}`);
+  /**
+   * Fires when tree grid cell is rendered.
+   * @param {DG.GridCellRenderArgs} args Cell arguments.
+   */
+  private _onTreeGridCellRender(args: DG.GridCellRenderArgs) {
+    if (args.cell.isTableCell && args.cell.tableColumn.semType == this.treeSemanticType) {
+      const nwk: string = args.cell.cell.value;
 
-          const n2 = c.get(k);
-
-          if (n2.startsWith('node-'))
-            c.set(k, `${n2}-${id}`);
-          else {
-            if (!this.leafs[n2])
-              this.leafs[n2] = {index: [], items: []};
-
-            this.leafs[n2]['index'].push(i);
-          }
-        }
-        if (processed === undefined)
-          processed = t;
-        else
-          processed.append(t, true);
+      if (TreeAnalyzer.newickRegEx.test(nwk.trim())) {
+        //const ctx = args.g.canvas.getContext('webgl').canvas;
+        /*const phTree = new PhylocanvasGL(ctx, {
+          shape: Shapes.Dot,
+          size: ctx.getBoundingClientRect(),
+          source: nwk,
+          type: TreeTypes.Rectangular,
+        });*/
+        //args.preventDefault();
       }
     }
-    return processed;
+  }
+
+  /**
+   * Returns filtered rows in MLB grid.
+   * @return {string[]} Rows is left after filtering.
+   */
+  private _calcFilteredItems(): string[] {
+    const filteredIndices = new Set(this.mlbView.dataFrame.filter.getSelectedIndexes());
+    const isntFiltered = (x: number) => filteredIndices.has(x);
+    return Object.keys(this.vIdIndex).filter((_, i) => isntFiltered(i));
+  }
+
+  /**
+   * Fires when MLB grid row was filtered.
+   * @param {*} args Unused.
+   */
+  private _onMLBGridRowsFiltered(args: any) {
+    const treeDf = this.treeGrid.dataFrame;
+    const sourceDf = this.mlbView.dataFrame;
+    const selectedVIdIndices = new Set(sourceDf.filter.getSelectedIndexes());
+
+    this.treeAnalyser.items = this._calcFilteredItems();
+
+    treeDf.rows.filter((row: DG.Row) => {
+      const cloneId = this._getCloneIdAt(row.idx);
+
+      if (this.cloneIndex[cloneId]) {
+        const cloneVIds = this.cloneIndex[cloneId].items;
+
+        for (const vId of cloneVIds) {
+          const indices = this.vIdIndex[vId];
+
+          if (indices) {
+            for (const i of indices) {
+              if (selectedVIdIndices.has(i))
+                return true;
+            }
+          }
+        }
+      }
+      return false;
+    });
+    //treeDf.rows.requestFilter
+  }
+
+  /**
+   * Adds a grid with simple tree statistics.
+   * @param {string} treesColumnName Column containing trees in Newick format.
+   * @param {string[]} [baseColumnNames=[]] Columns to include into creating grid.
+   * @return  {DG.Grid} Grid with statistics.
+   */
+  private _makeTreeGrid(treesColumnName: string, baseColumnNames: string[] = []): DG.Grid {
+    const itemsToFind = this._calcFilteredItems();
+
+    this.treeAnalyser = new TreeAnalyzer(itemsToFind);
+    this.treeAnalyser.addNodeInspector(this._collectLeavesMapping.bind(this));
+
+    const treesColumn = this.dataFrame.col(treesColumnName);
+    const stats = this.treeAnalyser.analyze(treesColumn.toList());
+    const df = DG.DataFrame.fromColumns(baseColumnNames.map((v) => this.dataFrame.col(v)));
+
+    for (const k of Object.keys(stats)) {
+      const dType = k.toLowerCase().includes('length') ? 'double' : 'int';
+      (df.columns as DG.ColumnList).add(DG.Column.fromList(dType, k, stats[k]));
+    }
+
+    // TODO: fix this ad hoc.
+    // df.rows.removeAt(0);
+
+    (df.columns as DG.ColumnList).add(treesColumn);
+    df.col(treesColumnName).semType = this.treeSemanticType;
+
+    const grid = DG.Viewer.grid(df, {
+      rowHeight: 160,
+    });
+
+    grid.onCellRender.subscribe(this._onTreeGridCellRender.bind(this));
+    return grid;
+  }
+
+  /**
+   * Modifies trees by reducing leafs label.
+   * @param {DG.DataFrame} df Target data frame.
+   * @param {string} [treeColumnName='TREE'] Trees column name.
+   * @return {DG.DataFrame} Modified data frame.
+   */
+  private _modifyTreeColumn(df: DG.DataFrame, treeColumnName: string = 'TREE'): DG.DataFrame {
+    const treeCol = df.col(treeColumnName);
+    const trees = treeCol.toList().map((v) => this._modifyTreeNodeIds(v));
+    (df.columns as DG.ColumnList).replace(treeColumnName, DG.Column.fromStrings(treeColumnName, trees));
+    return df;
+  }
+
+  /**
+   * Fires when tree grid row is changed.
+   * @param {*} args Callback arguments.
+   */
+  private _onTreeGridCurrentRowChanged(args: any) {
+    const currentRowIdx = this.treeGrid.dataFrame.currentRowIdx;
+    const cloneId = this._getCloneIdAt(currentRowIdx);
+
+    if (this.cloneIndex[cloneId])
+      this.selectTree(this.cloneIndex[cloneId]['index'][0]);
+  }
+
+  /**
+   * Fires when MLB grid row is changed.
+   * @param {*} args Callback arguments.
+   */
+  private _onMLBGridCurrentRowChanged(args: any) {
+    const df = this.mlbView.dataFrame;
+    const currentRowIdx = df.currentRowIdx;
+    const clones: string = df.get('clones', currentRowIdx);
+
+    if (!clones || clones.length == 0)
+      return;
+
+    const cloneId = clones.split('|')[0];
+
+    if (this.cloneIndex[cloneId]) {
+      const index = this.cloneIndex[cloneId]['index'][0];
+
+      this.treeGrid.dataFrame.currentRowIdx = index;
+      this.selectTree(index);
+    }
   }
 
   /**
@@ -86,108 +219,144 @@ export class TreeBrowser {// extends DG.JsViewer {
    * 123 ... (Bovine:0.69395,(Gibbon:0.36079,(Orang:0.33636,(Gorilla:0.17147,(Chimp:0.19268, Human:0.11927):0.08386)...
    * 456 ... (Bovine:0.69395,(Hylobates:0.36079,(Pongo:0.33636,(G._Gorilla:0.17147, (P._paniscus:0.19268,H._sapiens:...
    * @param {DG.TableView} mlbView
-   * @return {Promise<void>}
    */
-  async init(df: DG.DataFrame, mlbView: DG.TableView): Promise<void> {
-    this.dataFrame = df;
+  init(df: DG.DataFrame, mlbView: DG.TableView) {
+    this.dataFrame = this._modifyTreeColumn(df);
+    this.mlbView = mlbView;
 
-    const treeCol = df.col('TREE');
-    const cloneId = df.col('CLONE');
+    this.vIdIndex = this._collectMappings();
+    this.treeGrid = this._makeTreeGrid('TREE', ['CLONE']);
 
-    const processed: DG.DataFrame = await this._unpackNewickTrees(treeCol, cloneId);
+    const treeDiv = ui.div([]);
+    const treeNode = mlbView.dockManager.dock(treeDiv, DG.DOCK_TYPE.DOWN);
 
-    this.network = processed;
-    grok.data.linkTables(df, processed, ['clone'], ['clone'], [DG.SYNC_TYPE.CURRENT_ROW_TO_SELECTION]);
-    treeCol.semType = 'newick';
-    df.currentRowIdx = 1;
+    mlbView.dockManager.dock(this.treeGrid, DG.DOCK_TYPE.RIGHT, treeNode);
+    this.treeGrid.dataFrame.currentRowIdx = 1;
 
-    const tree = DG.Viewer.fromType('PhyloTree', df);
-    const network = DG.Viewer.fromType(DG.VIEWER.NETWORK_DIAGRAM, processed, {
-      node1: 'node',
-      node2: 'parent',
-      edgeColorColumnName: 'edgeColor',
+    this.phyloTreeViewer = new PhylocanvasGL(treeDiv, {
+      interactive: true,
+      showLabels: true,
+      showLeafLabels: true,
+      shape: Shapes.Dot,
+      size: treeDiv.getBoundingClientRect(),
+      source: this._takeTreeAt(this.treeGrid.dataFrame.currentRowIdx),
+      type: TreeTypes.Rectangular,
     });
 
-    const treeNode = mlbView.dockManager.dock(tree, DG.DOCK_TYPE.DOWN);
-    mlbView.dockManager.dock(network, DG.DOCK_TYPE.RIGHT, treeNode);
-
-    network.onEvent('d4-network-diagram-node-click').subscribe((args) => {
-      this._onNetworkDiagramNodeClick(args);
-    });
-
-    network.onEvent('d4-network-diagram-edge-click').subscribe((args) => {
-      this._onNetworkDiagramEdgeClick(args);
-    });
-
-    this.phyloTreeViewer = tree;
-    // this.networkViewer = network;
+    this.phyloTreeViewer.selectNode = this.selectNode.bind(this);
+    this.treeGrid.dataFrame.onCurrentRowChanged.subscribe(this._onTreeGridCurrentRowChanged.bind(this));
+    this.mlbView.dataFrame.onCurrentRowChanged.subscribe(this._onMLBGridCurrentRowChanged.bind(this));
+    this.mlbView.dataFrame.onRowsFiltered.subscribe(this._onMLBGridRowsFiltered.bind(this));
+    this._matchMappings();
   }
 
+  /**
+   * Makes mapping of {tree node id} taken from column value to {list of indices} which it is found in.
+   * @return {TreeLeavesMap} Mapping.
+   */
+  private _collectMappings(): TreeLeavesMap {
+    const col = this.mlbView.dataFrame.col(this.idColumnName);
+    const mapper: TreeLeavesMap = {};
+
+    for (let i = 0; i < col.length; ++i) {
+      const id: string = col.get(i);
+
+      if (!mapper[id])
+        mapper[id] = [];
+
+      mapper[id].push(i);
+    }
+    return mapper;
+  }
+
+  /**
+   * Matches node ids from initial table found within trees.
+   * Adds an auxiliary column containing clone ids of matched trees.
+   * @param {string} [columnName='clones'] Auxiliary column name.
+   */
+  private _matchMappings(columnName = 'clones') {
+    const df = this.mlbView.dataFrame;
+    const col = (df.columns as DG.ColumnList).addNewString(columnName);
+
+    for (const [vId, indices] of Object.entries(this.vIdIndex)) {
+      if (this.leavesIndex[vId]) {
+        for (const i of indices) {
+          const values: string = col.get(i);
+          const unique = new Set(values ? values.split('|').filter((v) => v.length > 0) : []);
+
+          for (const v of this.leavesIndex[vId]) {
+            const cloneId = this._getCloneIdAt(v);
+            unique.add(cloneId);
+          }
+
+          col.set(i, Array.from(unique.values()).join('|'));
+        }
+      }
+    }
+  }
+
+  /**
+   * Finds and selects tree node chosen.
+   * @param {*} node Node to consider.
+   */
+  selectNode(node: any) {
+    if (node) {
+      if (node.label) {
+        const nodeId: string = node?.label;
+        const df = this.mlbView.dataFrame;
+        const col = df.col(this.idColumnName);
+
+        df.selection.init((i) => (col.get(i) as string).includes(nodeId));
+
+        if (df.selection.trueCount > 0)
+          df.currentRowIdx = df.selection.getSelectedIndexes()[0];
+      }
+    } else {
+    }
+  }
+
+  /**
+   * Selects a tree from the given index in the table.
+   * @param {number} index Index to take tree from.
+   */
   selectTree(index: number) {
-    const maxIndex = this.dataFrame.rowCount;
-    this.dataFrame.currentRowIdx = index >= maxIndex ? maxIndex - 1 : (index < 0 ? 0 : index);
-    this.phyloTreeViewer.onFrameAttached(this.dataFrame);
-    console.warn(['selectTree', this.dataFrame.currentRow.idx, this.dataFrame.currentRowIdx]);
+    const cloneId = this._getCloneIdAt(index);
+    const treeItems = this.cloneIndex[cloneId].items;
+
+    this.treeGrid.dataFrame.currentRowIdx = index;
+    this.phyloTreeViewer.setProps({source: this._takeTreeAt(index)});
+
+    /**
+     * Modifies node styles to mark intersected node ids.
+     * @return {any}
+     */
+    const _modifyNodeStyles = function() {
+      let styles = {};
+
+      for (const item of treeItems) {
+        const style = {};
+
+        if (this.vIdIndex[item]) {
+          const color = this.treeAnalyser.getItemsAsSet().has(item) ? '#0000ff' : '#ff0000';
+          style[item] = {fillColour: color};
+        } else
+          style[item] = {shape: Shapes.Dot};
+        styles = {...styles, ...style};
+      }
+      return styles;
+    }.bind(this);
+
+    this.phyloTreeViewer.setProps({styles: _modifyNodeStyles()});
   }
 
-  private _selectNode(nodeId: string) {
-    let cloneId: string | undefined;
-
-    if (nodeId.startsWith('node') || nodeId.startsWith('root')) {
-      const s = nodeId.split('-');
-      cloneId = s[s.length - 1];
-    }
-
-    const leafs = cloneId ? this.leafs[cloneId] : {index: this.leafs[nodeId], items: nodeId};
-
-    console.warn([nodeId, cloneId, leafs]);
-
-    this.selectTree(leafs['index'][0]);
-  }
-
-  /**
-   * Called when mouse clicked a node on the network diagram.
-   * @param {ClickEventData} data Event data containing the clicked node ID.
-   */
-  private _onNetworkDiagramNodeClick(data: ClickEventData) {
-    this._selectNode((data.args as NodeClickArgs).nodeId);
-  }
-
-  /**
-   * Called when mouse clicked an edge on the network diagram.
-   * @param {ClickEventData} data Event data containing the clicked edge ID.
-   */
-  private _onNetworkDiagramEdgeClick(data: ClickEventData) {
-    const edgeId = (data.args as EdgeClickArgs).edgeId;
-
-    console.warn(['_onNetworkDiagramEdgeClick', edgeId]);
-
-    const parent = this.network.col('parent');
-    const nodeId = parent.get(edgeId);
-
-    this._selectNode(nodeId);
-    console.warn([edgeId, nodeId]);
-  }
-
-  get root(): HTMLElement {
-    const title = ui.h1(this.title, {style: {'align-self': 'center', 'alignContent': 'center'}});
-    if (this.phyloTreeViewer && this.networkViewer) {
-      [this.phyloTreeViewer.root, this.networkViewer.root].forEach((v) => v.style.width = 'auto');
-      return ui.divV([title, ui.divH([this.phyloTreeViewer.root, this.networkViewer.root])]);
-    }
-    return title;
-  }
-}
-
-interface NodeClickArgs {
-  nodeId: string;
-}
-interface EdgeClickArgs {
-  edgeId: number;
-}
-interface ClickEventData {
-  dart: any;
-  args: NodeClickArgs | EdgeClickArgs;
+  // get root(): HTMLElement {
+  //   const title = ui.h1(this.title, {style: {'align-self': 'center', 'alignContent': 'center'}});
+  //   if (this.phyloTreeViewer && this.networkViewer) {
+  //     [this.phyloTreeViewer.root, this.networkViewer.root].forEach((v) => v.style.width = 'auto');
+  //     return ui.divV([title, ui.divH([this.phyloTreeViewer.root, this.networkViewer.root])]);
+  //   }
+  //   return title;
+  // }
 }
 
 interface TreeMap {
@@ -195,4 +364,5 @@ interface TreeMap {
   items: string[]
 }
 
-type TreeLeafs = {[key: string]: TreeMap};
+type TreeLeaves = {[key: string]: TreeMap};
+type TreeLeavesMap = {[key: string]: number[]};

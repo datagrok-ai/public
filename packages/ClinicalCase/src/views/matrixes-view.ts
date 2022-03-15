@@ -2,10 +2,10 @@ import * as grok from 'datagrok-api/grok';
 import * as DG from "datagrok-api/dg";
 import * as ui from "datagrok-api/ui";
 import { study } from "../clinical-study";
-import { updateDivInnerHTML } from './utils';
+import { updateDivInnerHTML } from '../utils/utils';
 import { _package } from '../package';
 import { getUniqueValues } from '../data-preparation/utils';
-import { LAB_RES_N, LAB_TEST, VISIT_NAME, SUBJECT_ID, VS_TEST, VS_RES_N } from '../columns-constants';
+import { LAB_RES_N, LAB_TEST, VISIT_NAME, SUBJECT_ID, VS_TEST, VS_RES_N } from '../constants/columns-constants';
 import { ClinicalCaseViewBase } from '../model/ClinicalCaseViewBase';
 
 

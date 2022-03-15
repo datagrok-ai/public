@@ -1,4 +1,4 @@
-import {ColumnType, ScriptLanguage, SemType, Type, TYPE} from "./const";
+import {ColumnType, ScriptLanguage, SemType, Type, TYPE, USER_STATUS} from "./const";
 import { FuncCall } from "./functions";
 import {toJs} from "./wrappers";
 import {FileSource} from "./dapi";
@@ -101,9 +101,12 @@ export class User extends Entity {
   get firstName(): string { return api.grok_User_Get_FirstName(this.dart); }
   set firstName(name: string) {api.grok_User_Set_FirstName(this.dart, name);}
 
-    /** Last name */
+  /** Last name */
   get lastName(): string { return api.grok_User_Get_LastName(this.dart); }
   set lastName(name: string) {api.grok_User_Set_LastName(this.dart, name);}
+
+  get status(): string & USER_STATUS { return api.grok_User_Get_Status(this.dart); }
+  set status(name: string & USER_STATUS) {api.grok_User_Set_Status(this.dart, name);}
 
   /** Email */
   get email(): string | null { return api.grok_User_Get_Email(this.dart); }
@@ -221,11 +224,20 @@ export class Func extends Entity {
   }
 }
 
+export interface ProjectOpenOptions {
+  closeAll: boolean;
+  openViews: 'all' | 'saved' | 'none';
+}
+
 /** Represents a project */
 export class Project extends Entity {
   constructor(dart: any) {
     super(dart);
+
+    this.options = new MapProxy(api.grok_Project_Get_Options(this.dart), 'options');
   }
+
+  public options: any;
 
   static create(): Project {return toJs(api.grok_Project_From_Id(null)); };
 
@@ -265,8 +277,9 @@ export class Project extends Entity {
   }
 
   /** Opens the project in workspace */
-  open(options?: { closeAll: boolean }): Promise<Project> {
-    return api.grok_Project_Open(this.dart, options?.closeAll ?? false);
+  open(options?: ProjectOpenOptions): Promise<Project> {
+    let openViews = options?.openViews ?? 'all';
+    return api.grok_Project_Open(this.dart, options?.closeAll ?? false, openViews == 'all' || openViews == 'saved', openViews == 'all');
   }
 
   get links(): Entity[] {
