@@ -22,7 +22,7 @@
     "svg-loader": "^0.0.2",
     "ts-loader": "^8.1.0",
     "tui-jsdoc-template": "^1.2.2",
-    "typedoc": "^0.22.11",
+    "typedoc": "0.21.x",
     "webpack": "^5.64.1",
     "webpack-cli": "^4.6.0"
   },
