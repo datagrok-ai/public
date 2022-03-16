@@ -287,10 +287,10 @@ export class AlignedSequenceCellRenderer extends DG.GridCellRenderer {
    * @memberof AlignedSequenceCellRenderer
    */
   render(
-    g: CanvasRenderingContext2D, x: number, y: number, w: number, h: number,
-    gridCell: DG.GridCell, cellStyle: DG.GridCellStyle,
+    g: CanvasRenderingContext2D, x: number, y: number, w: number, h: number, gridCell: DG.GridCell,
+    cellStyle: DG.GridCellStyle,
   ) {
-    const grid = gridCell.dart.grid ? gridCell.grid : gridCell.dart.grid;
+    const grid = gridCell.grid;
     const cell = gridCell.cell;
     w = grid ? Math.min(grid.canvas.width - x, w) : g.canvas.width - x;
     g.save();
@@ -305,16 +305,16 @@ export class AlignedSequenceCellRenderer extends DG.GridCellRenderer {
     const subParts = s.split('-');
     const [text, simplified] = processSequence(subParts);
     const textSize = g.measureText(text.join(''));
-    x = Math.max(x, x + (w - textSize.width) / 2);
+    let x_1 = Math.max(x, x + (w - textSize.width) / 2);
 
-    subParts.forEach((amino: string, index) => {
+    subParts.forEach((amino, index) => {
       let [color, outerAmino,, pivot] = ChemPalette.getColorAAPivot(amino);
       g.fillStyle = ChemPalette.undefinedColor;
       if (index + 1 < subParts.length) {
         const gap = simplified ? '' : ' ';
-        outerAmino += `${outerAmino?'':'-'}${gap}`;
+        outerAmino += `${outerAmino ? '' : '-'}${gap}`;
       }
-      x = printLeftOrCentered(x, y, w, h, g, outerAmino, color, pivot, true);
+      x_1 = printLeftOrCentered(x_1, y, w, h, g, outerAmino, color, pivot, true);
     });
 
     g.restore();
@@ -406,10 +406,10 @@ export class AlignedSequenceDifferenceCellRenderer extends DG.GridCellRenderer {
    * @memberof AlignedSequenceDifferenceCellRenderer
    */
   render(
-    g: CanvasRenderingContext2D, x: number, y: number, w: number, h: number,
-    gridCell: DG.GridCell, cellStyle: DG.GridCellStyle,
+    g: CanvasRenderingContext2D, x: number, y: number, w: number, h: number, gridCell: DG.GridCell,
+    cellStyle: DG.GridCellStyle,
   ) {
-    const grid = gridCell.dart.grid ? gridCell.grid : gridCell.dart.grid;
+    const grid = gridCell.grid;
     const cell = gridCell.cell;
 
     w = grid ? Math.min(grid.canvas.width - x, w) : g.canvas.width - x;
