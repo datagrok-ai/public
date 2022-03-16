@@ -22,7 +22,7 @@ icons, buttons, or side panels. See how it works (and looks!) in
 the [full example](https://public.datagrok.ai/js/samples/ui/views/views).
 
 As simple and easy as this method may seem, it is still more suitable for ad-hoc experiments. To implement a view from a
-package, you would need to extend the [ViewBase](https://datagrok.ai/js-api/classes/dg.viewbase.html) class. For
+package, you would need to extend the [ViewBase](https://datagrok.ai/js-api/classes/dg.ViewBase) class. For
 instance, the following part of code defines a new view for Jupyter Notebooks:
 
 ```javascript
@@ -91,8 +91,8 @@ the [Notebooks](https://public.datagrok.ai/notebooks?) browser).
 See also:
 
 * [JavaScript API](../js-api.md)
-* [JavaScript API: View](https://datagrok.ai/js-api/classes/dg.view)
-* [JavaScript API: ViewBase](https://datagrok.ai/js-api/classes/dg.viewbase)
+* [JavaScript API: View](https://datagrok.ai/js-api/classes/dg.View)
+* [JavaScript API: ViewBase](https://datagrok.ai/js-api/classes/dg.ViewBase)
 * [JavaScript API Samples: Custom view](https://public.datagrok.ai/js/samples/ui/views/views)
 * [JavaScript API Samples: Virtual view](https://public.datagrok.ai/js/samples/ui/virtual-view)
 * [Table view](../../overview/table-view.md)

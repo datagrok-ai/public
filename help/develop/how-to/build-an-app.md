@@ -295,7 +295,7 @@ aggregations.
 
 Dataframes are comprised of columns. Columns may be used as Datagrok functions arguments. For columns, it's possible to
 get its underlying dataframe. In return, columns are comprised of cells, and it's possible to get a cell's underlying
-column. There is also a diverse [system of events](https://datagrok.ai/js-api/classes/dg.dataframe) one can subscribe on
+column. There is also a diverse [system of events](https://datagrok.ai/js-api/classes/dg.DataFrame) one can subscribe on
 a dataframe.
 
 Let's create a dataframe and check what we can do with it.
@@ -322,12 +322,12 @@ There we create a new dataframe from columns, add a column and a row, delete a r
 
 A good overview of dataframes capabilities is available in our
 [API Samples](https://dev.datagrok.ai/js/samples/data-frame/). Also check the API reference
-at [this link](https://datagrok.ai/js-api/classes/dg.dataframe).
+at [this link](https://datagrok.ai/js-api/classes/dg.DataFrame).
 
 *References:*
 
 * [Dataframe API samples](https://dev.datagrok.ai/js/samples/data-frame/)
-* [Dataframe API reference](https://datagrok.ai/js-api/classes/dg.dataframe)
+* [Dataframe API reference](https://datagrok.ai/js-api/classes/dg.DataFrame)
 * [Datagrok JavaScript playground](https://public.datagrok.ai/js)
 
 ### Iterating over a dataframe
