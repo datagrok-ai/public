@@ -68,8 +68,8 @@ Learn more here: [Datagrok Shell reference](./shell.md)
 
 ### Dataframe
 
-Use [DataFrame](https://datagrok.ai/js-api/classes/dg.dataframe), [Column](https://datagrok.ai/js-api/classes/dg.column)
-, [ColumnList](https://datagrok.ai/js-api/classes/dg.columnlist), and [Row](https://datagrok.ai/js-api/classes/dg.row)
+Use [DataFrame](https://datagrok.ai/js-api/classes/dg.DataFrame), [Column](https://datagrok.ai/js-api/classes/dg.column)
+, [ColumnList](https://datagrok.ai/js-api/classes/dg.ColumnList), and [Row](https://datagrok.ai/js-api/classes/dg.row)
 classes for table manipulation.
 
 ```javascript
@@ -89,8 +89,8 @@ demog.set('age', 1, 44);
 
 ### BitSet
 
-Each [DataFrame](https://datagrok.ai/js-api/classes/dg.dataframe) is associated with
-two [bitsets](https://datagrok.ai/js-api/classes/dg.bitset): selection and filter.
+Each [DataFrame](https://datagrok.ai/js-api/classes/dg.DataFrame) is associated with
+two [bitsets](https://datagrok.ai/js-api/classes/dg.BitSet): selection and filter.
 
 ```javascript
 // bit set (same applies to filter)
@@ -230,7 +230,7 @@ Docking code snippets:
 Use `grok.dapi` entry point for managing server-based objects, such as datasets, connection, users, credentials, jobs,
 packages, etc.
 
-See also [HttpDataSource](https://datagrok.ai/js-api/classes/dg.httpdatasource) subclasses.
+See also [HttpDataSource](https://datagrok.ai/js-api/classes/dg.HttpDataSource) subclasses.
 
 Code snippets:
 
