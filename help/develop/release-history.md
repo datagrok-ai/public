@@ -1,6 +1,25 @@
 <!-- TITLE: Release History -->
 <!-- SUBTITLE: -->
 
+# 2022-03-16 Dev build 0.133.0
+
+## Latest Docker Images
+
+* Datagrok: 
+  *  `docker pull datagrok/datagrok:0.133.0`
+  *  `docker pull datagrok/datagrok:latest`
+  
+* [Docker-Compose](admin/docker-compose.md)
+
+## Addressed Issues
+
+* Grok connect: test commit 
+* Typedoc revert to 0.21.x version 
+* Fixed js-api links 
+* Updated public token 
+* (Bug) Unable to switch scatterplot axis to logarithmic mode 
+
+
 # 2022-03-15 Dev build 0.132.0
 
 ## Latest Docker Images
