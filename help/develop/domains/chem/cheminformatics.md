@@ -95,7 +95,7 @@ in any of the previous notations.
 The default settings are `{ limit: Number.MAX_VALUE, cutoff: 0.0 }`, thus the function ranks and sorts all molecules by
 similarity.
 
-Produces a Datagrok [`DataFrame`](https://datagrok.ai/js-api/classes/dg.dataframe) of three
+Produces a Datagrok [`DataFrame`](https://datagrok.ai/js-api/classes/dg.DataFrame) of three
 columns ([code sample](https://public.datagrok.ai/js/samples/domains/chem/similarity-scoring-sorted)):
 
 * The 1-st column, named `molecule`, contains the original molecules string representation from the input `column`
@@ -107,8 +107,8 @@ columns ([code sample](https://public.datagrok.ai/js/samples/domains/chem/simila
 
 `getSimilarities(column, molecule = null, settings = { sorted: false });`
 
-Produces a Datagrok [`DataFrame`](https://datagrok.ai/js-api/classes/dg.dataframe) with a
-single [`Column`](https://datagrok.ai/js-api/classes/dg.column), where the i-th element contains a similarity score for
+Produces a Datagrok [`DataFrame`](https://datagrok.ai/js-api/classes/dg.DataFrame) with a
+single [`Column`](https://datagrok.ai/js-api/classes/dg.Column), where the i-th element contains a similarity score for
 the i-th element of the
 input `Column` ([code sample](https://public.datagrok.ai/js/samples/domains/chem/similarity-scoring-scores))
 .

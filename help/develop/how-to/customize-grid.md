@@ -208,4 +208,4 @@ See also:
 
 * [Grid](../../visualize/viewers/grid.md)
 * [Table view](../../overview/table-view.md)
-* [JavaScript API: Grid](https://datagrok.ai/js-api/classes/dg.grid)
+* [JavaScript API: Grid](https://datagrok.ai/js-api/classes/dg.Grid)
