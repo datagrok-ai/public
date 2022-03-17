@@ -220,8 +220,7 @@ export function sequenceTranslator(): void {
 
   const topPanel = [
     ui.iconFA('download', () => {
-      const smiles = sequenceToSmiles(inputSequenceField.value.replace(/\s/g, ''));
-      const result = `${OCL.Molecule.fromSmiles(smiles).toMolfile()}\n`;
+      const result = sequenceToMolV3000(inputSequenceField.value.replace(/\s/g, ''));
       const element = document.createElement('a');
       element.setAttribute('href', 'data:text/plain;charset=utf-8,' + encodeURIComponent(result));
       element.setAttribute('download', inputSequenceField.value.replace(/\s/g, '') + '.mol');
@@ -260,8 +259,8 @@ async function saveTableAsSdFile(table: DG.DataFrame) {
   let result = '';
   for (let i = 0; i < table.rowCount; i++) {
     try {
-      const smiles = sequenceToSmiles(structureColumn.get(i));
-      const mol = OCL.Molecule.fromSmiles(smiles);
+      const molBlock = sequenceToMolV3000(structureColumn.get(i));
+      const mol = OCL.Molecule.fromMolfile(molBlock);
       result += `\n${mol.toMolfile()}\n`;
       for (const col of table.columns)
         result += `>  <${col.name}>\n${col.get(i)}\n\n`;
