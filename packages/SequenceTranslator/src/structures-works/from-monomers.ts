@@ -1,6 +1,6 @@
 import {map, stadardPhosphateLinkSmiles, SYNTHESIZERS, TECHNOLOGIES, MODIFICATIONS} from './map';
 import {isValidSequence} from './sequence-codes-tools';
-import {getMol} from './mol-transformations';
+import {getNucleotidesMol} from './mol-transformations';
 
 export function sequenceToMolV3000(sequence: string, inverted: boolean = false): string {
   const obj = getObjectWithCodesAndSmiles(sequence);
@@ -41,7 +41,7 @@ export function sequenceToMolV3000(sequence: string, inverted: boolean = false):
     }
   }
 
-  return getMol(smilesCodes);
+  return getNucleotidesMol(smilesCodes);
 }
 
 export function sequenceToSmiles(sequence: string, inverted: boolean = false): string {
