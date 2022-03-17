@@ -7,23 +7,17 @@ export class OutliersSelectionViewer extends DG.JsViewer {
     super();
   }
 
-  // override to handle property changes
-  onPropertyChanged(prop: any) {
-    grok.shell.info(`${prop.name}: ${prop.get(this)}`);
+  onFrameAttached(dataFrame: DG.DataFrame): void {
+    this.dataFrame = dataFrame;
+    this.render();
   }
 
-  onTableAttached() {
-    if (this.dataFrame) {
-      this.initialRender();
-    }
+  onTableAttached(): void {
+    this.render();
   }
 
   render() {
-
-  }
-
-  initialRender() {
-    if (!this.dataFrame) {
+    if (!this.dataFrame || this.dataFrame.rowCount <= 0) {
       this.root.innerHTML = '';
       return;
     }
