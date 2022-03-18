@@ -1,6 +1,26 @@
 <!-- TITLE: Release History -->
 <!-- SUBTITLE: -->
 
+# 2022-03-18 Dev build 0.134.0
+
+## Latest Docker Images
+
+* Datagrok: 
+  *  `docker pull datagrok/datagrok:0.134.0`
+  *  `docker pull datagrok/datagrok:latest`
+  
+* [Docker-Compose](admin/docker-compose.md)
+
+## Addressed Issues
+
+* Peptides: cell renderers fix 
+* SequenceTranslator: IDP column dropdown 
+* SequenceTranslator: fix for 3dx read 
+* Compute: OutliersSelectionViewer simplified 
+* Chem: working with mol 
+* (Bug) AddNewColumn: Vectorization doesn't work 
+
+
 # 2022-03-16 Dev build 0.133.0
 
 ## Latest Docker Images
