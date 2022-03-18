@@ -1,6 +1,25 @@
 <!-- TITLE: Release History -->
 <!-- SUBTITLE: -->
 
+# 2022-03-18 Dev build 0.135.0
+
+## Latest Docker Images
+
+* Datagrok: 
+  *  `docker pull datagrok/datagrok:0.135.0`
+  *  `docker pull datagrok/datagrok:latest`
+  
+* [Docker-Compose](admin/docker-compose.md)
+
+## Addressed Issues
+
+* Chem: working with mol 
+* (Bug) AddNewColumn: Vectorization doesn't work 
+* Chem: hiding old realizations of similarity 
+* Ability to search JS-models in Model Catalog (WIP)
+* (Bug) Unable to delete project 
+
+
 # 2022-03-18 Dev build 0.134.0
 
 ## Latest Docker Images
