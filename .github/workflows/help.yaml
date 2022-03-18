@@ -21,10 +21,8 @@ jobs:
           LOG_LEVEL: WARN
           MARKDOWN_CONFIG_FILE: .markdownlint.yaml
           JSCPD_CONFIG_FILE: .jscpd.json
-          NATURAL_LANGUAGE_CONFIG_FILE: .textlintrc
           VALIDATE_ALL_CODEBASE: true
           VALIDATE_MARKDOWN: true
-          VALIDATE_NATURAL_LANGUAGE: true
           VALIDATE_HTML: true
           FILTER_REGEX_INCLUDE: /github/workspace/help/.*
           USE_FIND_ALGORITHM: true

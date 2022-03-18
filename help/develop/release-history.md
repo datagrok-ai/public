@@ -119,7 +119,7 @@
 
 ## Addressed Issues
 
-* Webstorm configs 
+* WebStorm configs
 * Ability to set Function as a default value 
 * WebStrom default configurations 
 * Viewers: legend: ability to reset"filter by category" 
