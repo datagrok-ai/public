@@ -27,8 +27,6 @@ export class OutliersSelectionViewer extends DG.JsViewer {
     const OUTLIER_RATIONALE_COL_LABEL = 'Rationale';
     const OUTLIER_COUNT_COL_LABEL = 'Count';
     const IS_GROUP_CONFIRMED_LABEL = 'isConfirmed';
-    const FLUX = 't/V (hr/(L/m²))';
-    const DEFAULT_TEST_AREA = 3.5;
 
     if (!inputData.columns.byName(IS_OUTLIER_COL_LABEL)) {
       inputData.columns
@@ -40,9 +38,6 @@ export class OutliersSelectionViewer extends DG.JsViewer {
         .add(DG.Column.fromStrings(OUTLIER_RATIONALE_COL_LABEL, Array.from({length: inputData.rowCount}, () => '')));
     }
 
-    if (!inputData.columns.byName(FLUX)) {
-      (inputData.columns as DG.ColumnList).addNew(FLUX, 'double').init((index) => (inputData.cell(index, 'time (min)').value/60.0) / ((inputData.cell(index, 'filtrate volume (mL)').value/1000.0) / (DEFAULT_TEST_AREA / 10000.0)));
-    }
     //@ts-ignore
     inputData.col(IS_OUTLIER_COL_LABEL)?.markers.assign('true', DG.MARKER_TYPE.OUTLIER);
 
