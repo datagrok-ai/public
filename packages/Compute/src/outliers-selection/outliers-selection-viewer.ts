@@ -184,7 +184,8 @@ export class OutliersSelectionViewer extends DG.JsViewer {
     // );
     // info.style.marginBottom = '0px';
 
-    this.root.replaceWith(
+    this.root.innerHTML = '';
+    this.root.append(
       ui.divV([
         ui.divV([
           groupsListGrid.root,
