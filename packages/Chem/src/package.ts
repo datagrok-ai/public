@@ -291,24 +291,6 @@ export function rGroupsAnalysisMenu() {
 
 //#region Molecule column property panel
 
-//name: Chem | Substructure search Port...
-//friendly-name: Chem | Substructure search Port...
-//tags: panel, chem
-//input: column smiles { semType: Molecule }
-export async function substructurePanel(smiles: DG.Column) {
-  grok.shell.warning('ss');
-}
-
-//name: Chem | Descriptors Port...
-//friendly-name: Chem | Descriptors Port...
-//tags: panel, chem
-//input: column smiles { semType: Molecule }
-//output: string result
-export async function descriptorsPanel(smiles: DG.Column) {
-  const table: DG.DataFrame = grok.shell.t;
-  addDescriptors(smiles, table);
-}
-
 //name: Chem | Find MCS
 //friendly-name: Chem | Find MCS
 //tags: panel, chem
