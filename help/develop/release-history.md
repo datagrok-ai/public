@@ -1,6 +1,24 @@
 <!-- TITLE: Release History -->
 <!-- SUBTITLE: -->
 
+# 2022-03-20 Dev build 0.136.0
+
+## Latest Docker Images
+
+* Datagrok: 
+  *  `docker pull datagrok/datagrok:0.136.0`
+  *  `docker pull datagrok/datagrok:latest`
+  
+* [Docker-Compose](admin/docker-compose.md)
+
+## Addressed Issues
+
+* (Bug) Grok connect: Neptune doesn't work with scalar values without column names 
+* Viewers: ability to specify default axis type (linear / logarithmic) 
+* Grok Compute gunicorn workers 
+* PowerGrid: initial update 
+
+
 # 2022-03-18 Dev build 0.135.0
 
 ## Latest Docker Images
