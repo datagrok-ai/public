@@ -7,11 +7,11 @@ import {HyperlinkCellRenderer} from "./cell-types/hyperlink-cell-renderer";
 
 export const _package = new DG.Package();
 
-//name: imageCellRenderer
-//tags: cellRenderer, cellRenderer-Image
-//meta.cellType: Image
+//name: imageUrlCellRenderer
+//tags: cellRenderer, cellRenderer-ImageUrl
+//meta.cellType: ImageUrl
 //output: grid_cell_renderer result
-export function imageCellRenderer() {
+export function imageUrlCellRenderer() {
   return new ImageCellRenderer();
 }
 
