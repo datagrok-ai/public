@@ -430,7 +430,7 @@ export class LruCache {
    * @param  {Function} createFromKey - Function to create a new item.
    * @return {any}
    */
-  getOrCreate(key: any, createFromKey: any) {
+  getOrCreate(key: any, createFromKey: (key: any) => any) {
     let value = this.get(key);
     if (typeof value !== 'undefined')
       return value;

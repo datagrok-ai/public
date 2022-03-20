@@ -5,7 +5,7 @@
  * The class name is comprised of <PackageName> and the `PackageDetectors` suffix.
  * Follow this naming convention to ensure that your detectors are properly loaded.
  */
-class PowerGridPackageDetectors extends DG.Package {
+class PowergridPackageDetectors extends DG.Package {
 
   /** @param s {String} - string to check
    * @returns {boolean} */
@@ -21,7 +21,7 @@ class PowerGridPackageDetectors extends DG.Package {
   //input: column col
   //output: string semType
   detectImageColumn(col) {
-    if (DG.Detector.sampleCategories(col, (s) => PowerGridPackageDetectors.likelyImageUrl(s)))
-      return DG.SEMTYPE.IMAGE;
+    if (DG.Detector.sampleCategories(col, (s) => PowergridPackageDetectors.likelyImageUrl(s)))
+      return 'ImageUrl';
   }
 }
