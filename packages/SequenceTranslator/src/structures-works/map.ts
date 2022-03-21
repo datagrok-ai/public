@@ -49,7 +49,7 @@ export const map: {[synthesizer: string]:
             'name': 'Guanine',
             'weight': 329.21,
             'normalized': 'dG',
-            'SMILES': 'OC[C@H]1O[C@@H](N2C3N=C(N)NC(=O)C=3N=C2)C)[C@@H]1O',
+            'SMILES': 'OC[C@H]1O[C@@H](N2C3N=C(N)NC(=O)C=3N=C2)C[C@@H]1O',
           },
           'C': {
             'name': 'Cytosine',
@@ -75,7 +75,7 @@ export const map: {[synthesizer: string]:
             'name': 'Guanine',
             'weight': 329.21,
             'normalized': 'dG',
-            'SMILES': 'OC[C@H]1O[C@@H](N2C3N=C(N)NC(=O)C=3N=C2)C)[C@@H]1O',
+            'SMILES': 'OC[C@H]1O[C@@H](N2C3N=C(N)NC(=O)C=3N=C2)C[C@@H]1O',
           },
           'C': {
             'name': 'Cytosine',
@@ -139,7 +139,7 @@ export const map: {[synthesizer: string]:
             'name': 'Guanine',
             'weight': 329.21,
             'normalized': 'dG',
-            'SMILES': 'OC[C@H]1O[C@@H](N2C3N=C(N)NC(=O)C=3N=C2)C)[C@@H]1O',
+            'SMILES': 'OC[C@H]1O[C@@H](N2C3N=C(N)NC(=O)C=3N=C2)C[C@@H]1O',
           },
           'T': {
             'name': 'Tyrosine',
@@ -341,13 +341,13 @@ export const map: {[synthesizer: string]:
             'name': 'Guanine',
             'weight': 329.21,
             'normalized': 'dG',
-            'SMILES': 'OC[C@H]1O[C@@H](N2C3N=C(N)NC(=O)C=3N=C2)C)[C@@H]1O',
+            'SMILES': 'OC[C@H]1O[C@@H](N2C3N=C(N)NC(=O)C=3N=C2)C[C@@H]1O',
           },
           'dG': {
             'name': 'Guanine',
             'weight': 329.21,
             'normalized': 'dG',
-            'SMILES': 'OC[C@H]1O[C@@H](N2C3N=C(N)NC(=O)C=3N=C2)C)[C@@H]1O',
+            'SMILES': 'OC[C@H]1O[C@@H](N2C3N=C(N)NC(=O)C=3N=C2)C[C@@H]1O',
           },
           'T': {
             'name': 'Tyrosine',
