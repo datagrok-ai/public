@@ -80,6 +80,55 @@ const ColumnListProxy = new Proxy(class {
 );
 
 
+/** Column CSV export options */
+export interface ColumnCsvExportOptions {
+  /** Custom column format to be used */
+  format: string;
+
+  /** Additional options */
+  [index: string]: any;
+}
+
+
+/** Column name -> options */
+export interface ColumnsCsvExportOptions {
+  [index: string]: ColumnCsvExportOptions;
+}
+
+
+/** Csv export options to be used in {@link DataFrame.toCsv} */
+export interface CsvExportOptions {
+
+  /** Field delimiter; comma if not specified */
+  delimiter?: string;
+
+  /** New line character; \n if not specified */
+  newLine?: string;
+
+  /** Textual representation of the missing value. Empty string if not specified. */
+  missingValue?: string;
+
+  /** Whether the header row containing column names is included. True if not specified. */
+  includeHeader?: boolean;
+
+  /** Whether only selected columns are included. False if not specified. */
+  selectedColumnsOnly?: boolean;
+
+  /** Whether only filtered rows are included. Will be combined with [selectedRowsOnly]. */
+  filteredRowsOnly?: boolean;
+
+  /** Whether only selected rows are included. Will be combined with [filteredRowsOnly]. */
+  selectedRowsOnly?: boolean;
+
+  /** Column order */
+  columns?: string[];
+
+  /** Column-specific formats (column name -> format).
+      For format examples, see [dateTimeFormatters]. */
+  columnOptions?: ColumnsCsvExportOptions;
+}
+
+
 /**
  * DataFrame is a high-performance, easy to use tabular structure with
  * strongly-typed columns of different types.
@@ -259,7 +308,7 @@ export class DataFrame {
     return toJs(api.grok_DataFrame_ColumnByName(this.dart, name));
   }
 
-  /** Returns a {@link Cell} with the specified name.
+  /** Returns a {@link Cell} with the specified row and column.
    * @param {number} idx - Row index.
    * @param {string} name - Column name.
    * @returns {Cell} */
@@ -277,10 +326,9 @@ export class DataFrame {
     return c;
   }
 
-  /** Exports the content to comma-separated-values format.
-   * @returns {string} */
-  toCsv(): string {
-    return api.grok_DataFrame_ToCsv(this.dart);
+  /** Exports the content to comma-separated-values format. */
+  toCsv(options?: CsvExportOptions): string {
+    return api.grok_DataFrame_ToCsv(this.dart, options);
   }
 
   /** Creates a new dataframe from the specified row mask and a list of columns.
