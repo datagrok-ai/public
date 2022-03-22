@@ -187,7 +187,7 @@ export class CohortView extends ClinicalCaseViewBase {
         this.root.append(
             ui.splitV([
                 this.cohortsGrid.root,
-                ui.box(ui.divText('Inclusion crieria', viewerTitle), { style: { maxHeight: '45px' } }),
+                ui.box(ui.divText('Inclusion criteria', viewerTitle), { style: { maxHeight: '45px' } }),
                 this.inclusionCriteriaGrid.root,
             ])
         );

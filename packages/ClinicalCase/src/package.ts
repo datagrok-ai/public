@@ -21,10 +21,11 @@ import { TreeMapView } from './views/tree-map-view';
 import { MedicalHistoryView } from './views/medical-history-view';
 import { VisitsView } from './views/visits-view';
 import { StudyConfigurationView } from './views/study-config-view';
-import { ADVERSE_EVENTS_VIEW_NAME, AE_RISK_ASSESSMENT_VIEW_NAME, COHORT_VIEW_NAME, CORRELATIONS_VIEW_NAME, DISTRIBUTIONS_VIEW_NAME, LABORATORY_VIEW_NAME, MEDICAL_HISTORY_VIEW_NAME, PATIENT_PROFILE_VIEW_NAME, STUDY_CONFIGURATIN_VIEW_NAME, SUMMARY_VIEW_NAME, SURVIVAL_ANALYSIS_VIEW_NAME, TIMELINES_VIEW_NAME, TIME_PROFILE_VIEW_NAME, TREE_MAP_VIEW_NAME, VALIDATION_VIEW_NAME, VISITS_VIEW_NAME } from './constants/view-names-constants';
+import { ADVERSE_EVENTS_VIEW_NAME, AE_RISK_ASSESSMENT_VIEW_NAME, COHORT_VIEW_NAME, CORRELATIONS_VIEW_NAME, DISTRIBUTIONS_VIEW_NAME, LABORATORY_VIEW_NAME, MEDICAL_HISTORY_VIEW_NAME, PATIENT_PROFILE_VIEW_NAME, QUESTIONNAIRES_VIEW_NAME, STUDY_CONFIGURATIN_VIEW_NAME, SUMMARY_VIEW_NAME, SURVIVAL_ANALYSIS_VIEW_NAME, TIMELINES_VIEW_NAME, TIME_PROFILE_VIEW_NAME, TREE_MAP_VIEW_NAME, VALIDATION_VIEW_NAME, VISITS_VIEW_NAME } from './constants/view-names-constants';
 import { VIEWS } from './constants/constants';
 import { addView, createTableView, getTableViewsParams } from './utils/views-creation-utils';
 import { CohortView } from './views/cohort-view';
+import { QuestionnaiesView } from './views/questionnaires-view';
 
 export let _package = new DG.Package();
 
@@ -65,6 +66,7 @@ export async function clinicalCaseApp(): Promise<any> {
   VIEWS.push(<TimeProfileView>addView(new TimeProfileView(TIME_PROFILE_VIEW_NAME)));
   VIEWS.push(<TreeMapView>addView(new TreeMapView(TREE_MAP_VIEW_NAME)));
   VIEWS.push(<MedicalHistoryView>addView(new MedicalHistoryView(MEDICAL_HISTORY_VIEW_NAME)));
+  VIEWS.push(<QuestionnaiesView>addView(new QuestionnaiesView(QUESTIONNAIRES_VIEW_NAME)));
 
   const tableViewHelpers = {};
   const tableViewsParams = getTableViewsParams();

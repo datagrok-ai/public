@@ -15,3 +15,4 @@ export const STUDY_CONFIGURATIN_VIEW_NAME = 'Study Configuration';
 export const VALIDATION_VIEW_NAME = 'Validation';
 export const AE_BROWSER_VIEW_NAME = 'AE Browser';
 export const COHORT_VIEW_NAME = 'Cohort';
+export const QUESTIONNAIRES_VIEW_NAME = 'Questionnaires';

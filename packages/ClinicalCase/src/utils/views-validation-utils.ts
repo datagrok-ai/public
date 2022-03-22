@@ -2,7 +2,7 @@ import { study } from "../clinical-study";
 import * as grok from 'datagrok-api/grok';
 import * as ui from "datagrok-api/ui";
 import * as DG from 'datagrok-api/dg';
-import { ADVERSE_EVENTS_VIEW_NAME, AE_RISK_ASSESSMENT_VIEW_NAME, CORRELATIONS_VIEW_NAME, DISTRIBUTIONS_VIEW_NAME, LABORATORY_VIEW_NAME, MEDICAL_HISTORY_VIEW_NAME, PATIENT_PROFILE_VIEW_NAME, SUMMARY_VIEW_NAME, SURVIVAL_ANALYSIS_VIEW_NAME, TIMELINES_VIEW_NAME, TIME_PROFILE_VIEW_NAME, TREE_MAP_VIEW_NAME, VISITS_VIEW_NAME } from "../constants/view-names-constants";
+import { ADVERSE_EVENTS_VIEW_NAME, AE_RISK_ASSESSMENT_VIEW_NAME, CORRELATIONS_VIEW_NAME, DISTRIBUTIONS_VIEW_NAME, LABORATORY_VIEW_NAME, MEDICAL_HISTORY_VIEW_NAME, PATIENT_PROFILE_VIEW_NAME, QUESTIONNAIRES_VIEW_NAME, SUMMARY_VIEW_NAME, SURVIVAL_ANALYSIS_VIEW_NAME, TIMELINES_VIEW_NAME, TIME_PROFILE_VIEW_NAME, TREE_MAP_VIEW_NAME, VISITS_VIEW_NAME } from "../constants/view-names-constants";
 import * as sdtmCols from "../constants/columns-constants";
 import { AE_END_DAY_FIELD, AE_START_DAY_FIELD, AE_TERM_FIELD, CON_MED_END_DAY_FIELD, CON_MED_NAME_FIELD, CON_MED_START_DAY_FIELD, INV_DRUG_END_DAY_FIELD, INV_DRUG_NAME_FIELD, INV_DRUG_START_DAY_FIELD, TRT_ARM_FIELD, VIEWS_CONFIG } from "../views-config";
 import { updateDivInnerHTML } from "./utils";
@@ -296,6 +296,20 @@ export function getRequiredColumnsByView() {
               sdtmCols.VISIT_START_DATE,
               sdtmCols.VISIT_DAY,
               sdtmCols.VISIT_NAME
+            ]
+          },
+  
+        }
+      },
+      [QUESTIONNAIRES_VIEW_NAME]: {
+        'req_domains': {
+          'qs': {
+            'req': [
+              sdtmCols.SUBJECT_ID,
+              sdtmCols.QS_CATEGORY,
+              sdtmCols.QS_SUB_CATEGORY,
+              sdtmCols.QS_TEST,
+              sdtmCols.QS_RES
             ]
           },
   
