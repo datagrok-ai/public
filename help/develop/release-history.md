@@ -1,6 +1,24 @@
 <!-- TITLE: Release History -->
 <!-- SUBTITLE: -->
 
+# 2022-03-22 Dev build 0.138.0
+
+## Latest Docker Images
+
+* Datagrok: 
+  *  `docker pull datagrok/datagrok:0.138.0`
+  *  `docker pull datagrok/datagrok:latest`
+  
+* [Docker-Compose](admin/docker-compose.md)
+
+## Addressed Issues
+
+* Chem: hide fasr descriptors calculation 
+* Closes #372: JS API: expose CsvExportOptions 
+* Closes #350: Add option on toCsv() function to split QNum into two columns 
+* (Bug) Unable to call a function from AddNewColumn formula 
+
+
 # 2022-03-20 Dev build 0.136.0
 
 ## Latest Docker Images
