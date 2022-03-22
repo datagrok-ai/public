@@ -32,6 +32,16 @@ export class Utils {
   static nullIfEmpty(s?: string) {
     return Utils.isEmpty(s) ? null : s;
   }
+
+  /** Downloads the specified content locally */
+  static download(filename: string, content: BlobPart, contentType?: string) {
+    contentType = contentType ?? 'application/octet-stream';
+    const a = document.createElement('a');
+    const blob = new Blob([content], {'type':contentType});
+    a.href = window.URL.createObjectURL(blob);
+    a.download = filename;
+    a.click();
+  }
 }
 
 
