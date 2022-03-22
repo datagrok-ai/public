@@ -123,6 +123,9 @@ export interface CsvExportOptions {
   /** Column order */
   columns?: string[];
 
+  /** Expands qualified numbers into two columns: `sign(column)` and `column` */
+  qualifierAsColumn?: boolean;
+
   /** Column-specific formats (column name -> format).
       For format examples, see [dateTimeFormatters]. */
   columnOptions?: ColumnsCsvExportOptions;
