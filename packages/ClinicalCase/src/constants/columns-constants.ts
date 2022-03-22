@@ -5,6 +5,7 @@ export const DOMAIN = 'DOMAIN';
 export const SUBJECT_ID = 'USUBJID';
 export const VISIT_DAY = 'VISITDY';
 export const VISIT_NAME = 'VISIT';
+export const VISIT_NUM = 'VISITNUM';
 //dm
 export const ACT_TRT_ARM = 'ACTARM';
 export const PLANNED_TRT_ARM = 'ARM';
@@ -71,4 +72,10 @@ export const MH_BODY_SYSTEM = 'MHBODSYS';
 export const MH_TERM = 'MHTERM';
 //sv
 export const VISIT_START_DATE = 'SVSTDTC';
+//qs
+export const QS_CATEGORY = 'QSCAT';
+export const QS_SUB_CATEGORY = 'QSSCAT';
+export const QS_TEST = 'QSTEST';
+export const QS_RES = 'QSORRES';
+export const QS_RES_N = 'QSSTRESN';
 

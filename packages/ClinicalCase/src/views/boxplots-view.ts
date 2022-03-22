@@ -10,6 +10,7 @@ import { _package } from '../package';
 import { ClinicalCaseViewBase } from '../model/ClinicalCaseViewBase';
 import { TRT_ARM_FIELD, VIEWS_CONFIG } from '../views-config';
 import { DISTRIBUTIONS_VIEW_NAME } from '../constants/view-names-constants';
+import {tTest} from "@datagrok-libraries/statistics/src/tests";
 var { jStat } = require('jstat')
 
 
@@ -209,7 +210,7 @@ export class BoxPlotsView extends ClinicalCaseViewBase {
         const labResults = it.getCol(resColName).getRawData();
         dataForAnova.push(Array.from(labResults));
       })
-      const pValue = jStat.anovaftest(...dataForAnova);
+      const pValue = dataForAnova.length === 2 ? tTest(dataForAnova[0], dataForAnova[1])['p-value'] : jStat.anovaftest(...dataForAnova);
       this.pValuesArray.push({value: labVal, pValue: pValue, domain: domain});
   }
 }
