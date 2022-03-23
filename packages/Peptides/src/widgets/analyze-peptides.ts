@@ -1,6 +1,7 @@
 import * as grok from 'datagrok-api/grok';
 import * as ui from 'datagrok-api/ui';
 import * as DG from 'datagrok-api/dg';
+import {callMVA} from '../utils/multivariate-analysis';
 import {PeptidesController} from '../peptides';
 import '../styles.css';
 import {StringDictionary} from '@datagrok-libraries/utils/src/type-declarations';
@@ -91,6 +92,23 @@ export async function analyzePeptidesWidget(
     progress.close();
   });
   startBtn.style.alignSelf = 'center';
+
+  const startMVABtn = ui.button('Launch MVA', async () => {
+    if (activityColumnChoice.value.type === DG.TYPE.FLOAT) {
+      const progress = DG.TaskBarProgressIndicator.create('Loading MVA...');
+
+      const options: {[key: string]: string} = {
+        'activityColumnName': activityColumnChoice.value.name,
+        'scaling': activityScalingMethod.value,
+      };
+
+      await callMVA(tableGrid, view, currentDf, options, col);
+
+      progress.close();
+    } else
+      grok.shell.error('The activity column must be of floating point number type!');
+  });
+
 
   const viewer = await currentDf.plot.fromType('peptide-logo-viewer');
 
