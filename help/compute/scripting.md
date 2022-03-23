@@ -44,6 +44,42 @@ Use [Console](../overview/navigation.md#console) to execute it. Simply type
 The syntax for invoking the scripts is the same, regardless of the language used. In the same way, you can call Grok
 Functions. See [Grok Scripting](../overview/grok-script.md) for more details.
 
+### Output values validation
+
+Datagrok functions return zero, one or more typed arguments. Any single run of the function shall
+always return as many output values as specified in the header, all having corresponding types. It
+is expected that the output values would be assigned throughout the script code, so that they are
+defined by the end of the script. If for some reason this doesn't happen, the two things will
+follow:
+
+1. The unset output values would still be returned, but valued as `null`-s.
+
+2. A warning `Output value ${output.param.name} was not set` will be print to
+[Datagrok Console](../overview/navigation.md#console) (open it with `Ctrl-~`).
+
+In this script the value `c3` is missed to be set:
+
+```
+#name: TestMissingInputsR
+#language: r
+#output: int c1
+#output: int c2
+#output: int c3
+c1 <- 12
+c2 <- 15
+```
+
+Running the script produces the following output to the console:
+
+```
+Output value c3 was not set
+  c1: 12
+  c2: 15
+  c3: null
+```
+
+We recommend using the Datagrok Console while validating your scripts.
+
 ## Running a script
 
 First of all, a script can be executed right from the script editor (see picture below).
@@ -119,7 +155,7 @@ Configurations are stored in the same repository with the script, in the folder 
 [example of such configuration](https://github.com/datagrok-ai/public/tree/master/environments)
 for the [Datagrok public repository](https://github.com/datagrok-ai/public). Also, a package can define its own
 configurations as well (
-[see examples](https://github.com/datagrok-ai/public/tree/master/packages/DemoScripts)).
+[see examples](https://github.com/datagrok-ai/public/tree/master/packages/Demo/projects/scripts)).
 
 If the `#environment` tag in the script header is not specified, the script uses the configuration defined in
 [`default.yaml`](https://github.com/datagrok-ai/public/blob/master/environments/default.yaml).
@@ -157,10 +193,10 @@ dependencies:
 To use it in any script, specify it as follows:
 
 ```python
-# name: EnvTestInline
-# environment: channels: [conda-forge], dependencies: [python=3.8, glom, {pip: [requests]}]
-# language: python
-# output: string result
+#name: EnvTestInline
+#environment: channels: [conda-forge], dependencies: [python=3.8, glom, {pip: [requests]}]
+#language: python
+#output: string result
 
 import re, requests
 from glom import glom
@@ -222,7 +258,7 @@ script in a temporary folder with a unique name. This folder becomes an
 _renv_ project folder for the current run of the script.
 
 Start using _renv_ by initializing it and installing packages (see a
-[full example](https://github.com/datagrok-ai/public/tree/master/packages/DemoScripts/scripts/r/renv_spelling.R)):
+[full example](https://github.com/datagrok-ai/public/blob/master/packages/Demo/projects/scripts/projects/r/scripts/renv_spelling.R)):
 
 ```
 #language: r
@@ -387,9 +423,9 @@ Also it is possible to add custom parameter using "meta." prefix.
 | octave                   | Octave         |
 | julia                    | Julia          |
 | grok                     | Grok Scripting |
-| javascript               | JavaScript     |
+| JavaScript               | JavaScript     |
 
-### Format template for 'input' and 'output':
+### Format template for 'input' and 'output'
 
 ```
 #<direction>: <type> <name> = <value> {<option tag>:<value>; ...} [<description>]
@@ -478,7 +514,7 @@ Header line examples:
 #input: string option = int {suggestions: jssuggesttype}
 ```
 
-### Examples:
+### Examples
 
 ```
 #input: dataframe t1 {columns:numerical} [first input data table]
@@ -500,7 +536,7 @@ You can use these fields to filter scripts with [smart search](../overview/smart
 
 | Field       | Description                                                       |
 |-------------|-------------------------------------------------------------------|
-| id          |                                                                   |
+| ID          |                                                                   |
 | name        |                                                                   |
 | runs        | list of [FuncCall](../overview/functions/function-call.md) object |
 | createdOn   |                                                                   |

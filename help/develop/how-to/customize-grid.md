@@ -18,7 +18,7 @@ The Datagrok platform automatically sets the most appropriate format for numbers
 particular dataset. However, the way such columns look may be changed. The global formatting settings allow users to
 specify their default formats:
 
-![](../../uploads/navigation/user-settings-formatting.png "Settings | Format")
+![user-settings-formatting](../../uploads/navigation/user-settings-formatting.png "Settings | Format")
 
 In addition to that, users may change the format directly
 in [column properties](../../visualize/viewers/grid.md#formatting) of an open table. This is done by defining the value
@@ -208,4 +208,4 @@ See also:
 
 * [Grid](../../visualize/viewers/grid.md)
 * [Table view](../../overview/table-view.md)
-* [JavaScript API: Grid](https://datagrok.ai/js-api/classes/dg.grid)
+* [JavaScript API: Grid](https://datagrok.ai/js-api/classes/dg.Grid)

@@ -19,8 +19,8 @@ public class DbCredentials
     public static final String CACHE_INVALIDATE_SCHEDULE = "cacheInvalidateSchedule";
 
     public static final String DB_DESCRIPTION = "Database name";
-    public static final String CONNECTION_STRING_DESCRIPTION = "This string will be used for connection. " +
-            "All other parameters will be ignored except 'login' and 'password'";
+    public static final String CONNECTION_STRING_DESCRIPTION = "When specified, this connection string overrides " +
+            "all other parameters except 'login' and 'password'";
 
     public String server;
     public String port;

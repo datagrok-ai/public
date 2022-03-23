@@ -17,7 +17,7 @@ the commonly used routines:
 * [Change Type](change-column-type.md)
 * [Aggregate Rows](aggregate-rows.md)
 * [Compare Tables](../explore/compare-tables.md)
-* [Extract RegExp](extract-regexp.md)
+* [Extract regular expression](extract-regexp.md)
 * [Filter to Column](../explore/filter-to-column.md)
 * [Join Tables](join-tables.md)
 * [Impute Missing Values](missing-values-imputation.md)

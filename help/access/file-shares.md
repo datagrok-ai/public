@@ -17,19 +17,19 @@ needed. For the enterprise on-premises deployment, it is recommended to use a se
 
 To make this folder [indexable](#indexing), select the `Index files` checkbox.
 
-![](file-shares-add-new.png)
+![Add new File Share](file-shares-add-new.png)
 
 Once the connection to a file share is created, it is accessible by the creator only. To share it with others,
 right-click on the connection, and select "Share...".
 
-Expand the connection node to browse files.
+Expand the connection Node.js to browse files.
 
 ## Browsing files
 
 There are multiple ways to browse file shares. Open `File | Connect to Data...`, and expand the corresponding connection
 under the 'Files' section.
 
-![](file-shares-tree.png)
+![File Share Tree](file-shares-tree.png)
 
 Double-click on CSV file to open it in the platform, or right-click to see additional options, such as downloading the
 content as a ZIP file.
@@ -39,7 +39,7 @@ content as a ZIP file.
 Indexing the content of a file share will let users find datasets of interest easier, as indexed files appear in the
 file search results. The following information gets extracted from CSV files during the indexing:
 
-* File name
+* Filename
 * File size in bytes
 * Data dimensions (number of rows and columns)
 * Column-level information (name, data type, [semantic type](../discover/semantic-types.md))

@@ -12,6 +12,11 @@ const properties = [
     "semType": "Molecule"
   },
   {
+    "name": "weight",
+    "type": DG.TYPE.FLOAT,
+    "valueValidators": [(w) => w > 10]
+  },
+  {
     "name": "started",
     "type": DG.TYPE.DATE_TIME,
   },

@@ -16,13 +16,13 @@ The first thing you will see after launching the platform is Datagrok's welcome 
 ![Welcome Page](../uploads/navigation/main-page.png "Datagrok's Welcome Page (Public Version)")
 
 Here you can find an overview of the platform's key capabilities as well as the links to our
-[Wiki](https://datagrok.ai/help), [Community Forums](https://community.datagrok.ai), [Tutorials](),
+[Wiki](https://datagrok.ai/help), [Community Forums](https://community.datagrok.ai), Tutorials,
 [YouTube Channel](https://www.youtube.com/channel/UCXPHEjOd4gyZ6m6Ji-iOBYg),
 [API Samples](https://public.datagrok.ai/js), browse a gallery of publicly available
 [projects](project.md) and more.
 
 The welcome page consists of several visual components: a sidebar, [toolbox](#toolbox), main
-[view](), [property panel](#properties), and [context help](#context-help). Typically, the view resides in the center
+view, [property panel](#properties), and [context help](#context-help). Typically, the view resides in the center
 and occupies all available area in the screen. The sidebar and toolbox are placed on the left. The sidebar contains
 controls over the main functionality, while the toolbox displays options specific to the current view. The property
 panel and context help are docked to the right. This appearance is fully customizable, you can manage the displayed
@@ -254,7 +254,7 @@ functions defined in a [package](../develop/develop.md#packages).
 ### Context help
 
 Context help appears at the bottom right and shows additional information about objects you are currently working with.
-You can toggle this pane with the `F1` hot key or manage it from
+You can toggle this pane with the `F1` hotkey or manage it from
 `Windows | Context Help`. It is enabled by default to help you navigate the platform and get the hang of its core
 components.
 

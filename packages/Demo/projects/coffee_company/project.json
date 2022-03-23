@@ -8,8 +8,7 @@
   "description": "Coffeehouse chain with addresses and sales (US location)",
   "tables": [
     {
-      "path": "demo/geo/us_locations_with_sales.csv",
-      "id": "e1792340-bd30-11e8-ed33-916dfb17fcaa"
+      "path": "demo/geo/us_locations_with_sales.csv"
     }
   ]
 }

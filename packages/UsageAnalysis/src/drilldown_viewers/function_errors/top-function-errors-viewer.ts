@@ -1,18 +1,16 @@
-import {UaFilterableViewer} from "../../viewers/ua-filterable-viewer";
+import {UaFilterableQueryViewer} from "../../viewers/ua-filterable-query-viewer";
 import * as DG from "datagrok-api/dg";
-import {UaQueryViewer} from "../../viewers/ua-query-viewer";
-import {TopQueriesUsingDataSource} from "../top-queries-using-data-source";
+import {UaQueryViewer} from "../../viewers/abstract/ua-query-viewer";
 import * as grok from "datagrok-api/grok";
 import * as ui from "datagrok-api/ui";
 import {UaFilter} from "../../filter2";
 import {PropertyPanel} from "../../property-panel";
-import {UaDataFrameViewer} from "../../viewers/ua-data-frame-viewer";
 import {BehaviorSubject} from "rxjs"
-import {ErrorMarkingPanel} from "../panels/error_marking_panel";
+import {UaDataFrameViewer} from "../../viewers/ua-data-frame-viewer";
 
-export class TopFunctionErrorsViewer extends UaFilterableViewer {
+export class TopFunctionErrorsViewer extends UaFilterableQueryViewer {
 
-  public constructor(name: string, queryName: string, filterStream: BehaviorSubject<UaFilter>) {
+  public constructor(name: string, queryName: string, filterStream: BehaviorSubject<UaFilter>, staticFilter?: Object, showName?: boolean) {
     super(
         filterStream,
         name,
@@ -28,23 +26,21 @@ export class TopFunctionErrorsViewer extends UaFilterableViewer {
             let errorMessage = df.get('error_message', 0);
             let friendlyName = df.get('friendly_name', 0);
 
+            let eventInfo = await grok.data.query('UsageAnalysis:EventByErrorMessageAndFriendlyName',
+                {errorMessage: errorMessage, friendlyName: friendlyName});
+
             let pp = new PropertyPanel(
                 null,
                 [new UaDataFrameViewer(
                   'Errors Info',
-                  'EventByErrorMessageAndFriendlyName',
+                    eventInfo,
                   (t: DG.DataFrame) => DG.Viewer.grid(t).root,
-                  null as any,
-                  {errorMessage: errorMessage, friendlyName: friendlyName},
-                  filterStream.getValue(),
-                  false
-              )
-            ],
+                  false)],
             `Errors: ${args.args.categories[0]}`,
             'Errors');
 
-            let isError = ui.boolInput('Is error', df.get('is_error', 0));
-            let comment = ui.stringInput('Comment', df.get('comment', 0))
+            let isError = ui.boolInput('Is error', eventInfo.get('is_error', 0));
+            let comment = ui.stringInput('Comment', eventInfo.get('comment', 0))
 
             let acc = DG.Accordion.create('ErrorInfo');
             acc.addPane('ErrorInfo', () => {
@@ -70,7 +66,10 @@ export class TopFunctionErrorsViewer extends UaFilterableViewer {
 
           });
           return viewer.root;
-        }
+        },
+        null,
+        staticFilter,
+        showName
     );
   }
 

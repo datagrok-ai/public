@@ -10,15 +10,14 @@ changes.
 
 ## Shortcuts
 
-| []()        |                        |
-|-------------|------------------------|
-| Ctrl+F      | Activate search        |
-| Up          | Previous matching cell |
-| Down        | Next matching cell     |
-| Esc         | Close search           |
-| Enter       | Select matching rows   |
-| Alt+S       | Select matching rows   |
-| Alt+F       | Filter matching rows   |
+|        |                        |
+|--------|------------------------|
+| Ctrl+F | Activate search        |
+| Up     | Previous matching cell |
+| Down   | Next matching cell     |
+| Esc    | Close search           |
+| Enter or Alt+S  | Filter matching rows   |
+| Shift+Enter or Alt+F  | Filter matching rows   |
 
 ## Examples
 

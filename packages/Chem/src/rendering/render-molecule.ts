@@ -1,28 +1,28 @@
 import * as grok from 'datagrok-api/grok';
 import * as ui from 'datagrok-api/ui';
 import * as DG from 'datagrok-api/dg';
-import * as OCL from "openchemlib/full";
-import {RDMol} from "../rdkit-api";
-import {isMolBlock} from "../utils/chem-utils";
-import $ from "cash-dom";
-import {convertToRDKit} from "../analysis/r-group-analysis";
-import {oclMol} from "../utils/chem-common-ocl";
-import {_properties, getRdKitModule, renderer} from "../package";
+//import * as OCL from 'openchemlib/full';
+//import {RDMol} from '../rdkit-api';
+import {isMolBlock} from '../utils/chem-utils';
+import $ from 'cash-dom';
+//import {convertToRDKit} from '../analysis/r-group-analysis';
+//import {oclMol} from '../utils/chem-common-ocl';
+import {_properties, getRdKitModule, renderer} from '../package';
 import {chem} from 'datagrok-api/grok';
 import Sketcher = chem.Sketcher;
-import {GridCell, GridCellRenderer} from "datagrok-api/dg";
+import {GridCell, GridCellRenderer} from 'datagrok-api/dg';
 
 /** Renders the molecule and returns div with the canvas inside. */
 export function renderMolecule(
-    molStr: string,
-    options?: {renderer?: 'RDKit' | 'OpenChemLib', width?: number, height?: number}): HTMLElement {
-
+  molStr: string,
+  options?: {renderer?: 'RDKit' | 'OpenChemLib',
+  width?: number, height?: number}): HTMLElement {
   options ??= {};
   options.renderer ??= _properties.Renderer as 'RDKit' | 'OpenChemLib' ?? 'RDKit';
   options.width ??= 200;
   options.height ??= 100;
 
-  let mol: OCL.Molecule | RDMol | null = null;
+  //let mol: OCL.Molecule | RDMol | null = null;
   let molFile: string;
   let smiles: string;
   isMolBlock(molStr) ? molFile = molStr : smiles = molStr;
@@ -52,7 +52,7 @@ export function renderMolecule(
           .show();
       });
       menu.item('Explore', () => {
-        grok.shell.o = DG.SemanticValue.fromValueType(molStr, DG.SEMTYPE.MOLECULE)
+        grok.shell.o = DG.SemanticValue.fromValueType(molStr, DG.SEMTYPE.MOLECULE);
       });
       menu.show();
     },

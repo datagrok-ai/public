@@ -16,14 +16,14 @@ should receive warning about failed log in and log in should not be performed:
 * **"Login or E-mail"** - any data | **"Password"** - empty
 * **"Login or E-mail"** - empty | **"Password"** - any data
 * **"Login or E-mail"** - login that does not exist in system | **"Password"** - any data
-* **"Login or E-mail"** - registered user login or e-mail | **"Password"** - not correct for this login
+* **"Login or E-mail"** - registered user login or email | **"Password"** - not correct for this login
 
 When user enter existing and correct combination of login and password, successful login is performed. User enters
 the *"Welcome"* view and has access to entities according to their permissions.
 
 To log out, user must go to his profile and click on ```Logout``` button.
 
-User can use existing e-mail in combination with correct password to log in.
+User can use existing email in combination with correct password to log in.
 
 Also need testing possibility of logging using accounts from third-party services. In this case, if user agrees to use
 his Google (Facebook, GitHub) account to log in to platform, then he can be logged in.

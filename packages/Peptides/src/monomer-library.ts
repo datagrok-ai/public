@@ -1,10 +1,11 @@
-import * as ui from 'datagrok-api/ui';
-import * as DG from 'datagrok-api/dg';
-import * as grok from 'datagrok-api/grok';
-
 /** HELM associated sdf libraries with monomer processing*/
 export class MonomerLibrary {
-  private monomerFields: string[] = ['molecule', 'MonomerType', 'MonomerNaturalAnalogCode', 'MonomerName', 'MonomerCode', 'MonomerCaps', 'BranchMonomer'];
+  private static _name = 'monomerLibrary';
+
+  private monomerFields: string[] = [
+    'molecule', 'MonomerType', 'MonomerNaturalAnalogCode', 'MonomerName', 'MonomerCode', 'MonomerCaps', 'BranchMonomer',
+  ];
+
   private library: {
     [name: string]: {
       mol: string,
@@ -13,18 +14,18 @@ export class MonomerLibrary {
       linkages: { [link: string]: { atomNumber: number, type: string } }
     }
   } = {};
+
   private monomers: string[] = [];
 
   constructor(sdf: string) {
-    //sdf = sdf.replaceAll('\n\[', '\[');
     const sdfReader = new SDFReader();
-    const data = sdfReader.get_colls(sdf);
+    const data = sdfReader.getColls(sdf);
     this.monomerFields.forEach((f) => {
       if (!(f in data))
-        throw `Monomer library was not compiled: ${f} field is absent in provided file`;
+        throw new Error(`Monomer library was not compiled: ${f} field is absent in provided file`);
 
       if (data[f].length != data.molecule.length)
-        throw `Monomer library was not compiled: ${f} field is not presented for each monomer`;
+        throw new Error(`Monomer library was not compiled: ${f} field is not presented for each monomer`);
     });
 
     for (let i = 0; i < data.molecule.length; i++) {
@@ -39,14 +40,14 @@ export class MonomerLibrary {
 
       const name = data.MonomerCode[i] !== '.' ? data.MonomerCode[i] : data.MonomerName[i];
       this.library[name] = entry;
-      this.monomers.push(data.MonomerName[i]);
+      this.monomers.push(name);
     }
   }
 
   /** getting full monomer information from monomer library*/
   public getMonomerEntry(name: string) {
     if (!this.monomers.includes(name))
-      throw `Monomer library do not contain ${name} monomer`;
+      throw new Error(`Monomer library do not contain ${name} monomer`);
 
 
     return this.library[name];
@@ -55,7 +56,7 @@ export class MonomerLibrary {
   /** getting mol as string for monomer*/
   public getMonomerMol(name: string) {
     if (!this.monomers.includes(name))
-      throw `Monomer library do not contain ${name} monomer`;
+      throw new Error(`Monomer library do not contain ${name} monomer`);
 
 
     const entry = this.library[name];
@@ -75,10 +76,14 @@ export class MonomerLibrary {
     return this.monomers;
   }
 
+  static get id(): string {
+    return MonomerLibrary._name;
+  }
+
   private getLinkData(mol: string, caps: string, name: string) {
     const rawData = mol.match(/M  RGP  .+/);
     if (rawData === null)
-      throw `Monomer library was not compiled: ${name} entry has no RGP`;
+      throw new Error(`Monomer library was not compiled: ${name} entry has no RGP`);
 
 
     const types: { [code: string]: string } = {};
@@ -119,7 +124,7 @@ class SDFReader {
     this.dataColls = {'molecule': []};
   }
 
-  get_colls(content: string) {
+  getColls(content: string) {
     this.read(content);
     return this.dataColls;
   }

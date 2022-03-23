@@ -43,6 +43,7 @@ public class ProviderManager {
             add(new DenodoDataProvider(ProviderManager.this));
             add(new SnowflakeDataProvider(ProviderManager.this));
             add(new ClickHouseProvider(ProviderManager.this));
+            add(new NeptuneDataProvider(ProviderManager.this));
         }};
     }
 

@@ -1,1 +1,0 @@
-forfiles /S /M package.json /C "cmd /c npm install"

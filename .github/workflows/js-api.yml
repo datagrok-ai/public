@@ -18,18 +18,13 @@ jobs:
         working-directory: ./js-api
         run: |
           set -ex
-          name=$(jq .name package.json | sed 's/"//g')
-          npm_json=$(curl --retry 3 https://registry.npmjs.org/${name}/latest)
-          if [[ $npm_json == "\"Not Found\"" ]]; then
-            changed_version=true
+          name="$(jq .name package.json | sed 's/"//g')"
+          current_version="$(jq .version package.json | sed 's/"//g')"
+            npm_response="$(curl --retry 3 "https://registry.npmjs.org/${name}/${current_version}")"
+          if [[ $npm_response == "\"version not found: ${current_version}\"" ]]; then
+            changed_version='true'
           else
-            latest_version="$(jq .version <<<$npm_json)"
-            current_version=$(jq .version package.json)
-            if [[ $latest_version == $current_version ]]; then
-              changed_version='false'
-            else
-              changed_version='true'
-            fi
+            changed_version='false'
           fi
           echo "::set-output name=changed_version::${changed_version}"
 
@@ -63,7 +58,7 @@ jobs:
           NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
       - name: Commit package-lock.json
         run: |
-          if [ ! -z "$(git status -s js-api/package-lock.json)" ]; then
+          if [ -n "$(git status -s js-api/package-lock.json)" ]; then
             git config --global user.name 'GitHub Actions'
             git config --global user.email 'githubactions@datagrok.ai'
             git pull

@@ -17,7 +17,7 @@ category('UI: Accordion', () => {
     })
 
     test('accordion.addPane', async () => {
-        acc.addPane('New pane', ()=>{}, false);
+        acc.addPane('New pane', () => ui.div(), false);
         checkHTMLElement('accordion pane', acc.root, v, '.d4-accordion-pane')
     })
 

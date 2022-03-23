@@ -6,8 +6,8 @@ import '../../css/usage_analysis.css';
 import {UaToolbox} from "../ua-toolbox";
 import {UaView} from "./ua-view";
 import {UaFilter} from "../filter2";
-import {UaFilterableViewer} from "../viewers/ua-filterable-viewer";
-import {UaDataFrameViewer} from "../viewers/ua-data-frame-viewer";
+import {UaFilterableQueryViewer} from "../viewers/ua-filterable-query-viewer";
+import {UaDataFrameQueryViewer} from "../viewers/ua-data-frame-query-viewer";
 
 export class OverviewView extends UaView {
 
@@ -16,43 +16,43 @@ export class OverviewView extends UaView {
   }
 
   async initViewers() : Promise<void> {
-    let uniqueUsersViewer = new UaFilterableViewer(
+    let uniqueUsersViewer = new UaFilterableQueryViewer(
         this.uaToolbox.filterStream,
         'Unique Users',
         'UniqueUsers',
         (t: DG.DataFrame) => {
-          let viewer = DG.Viewer.lineChart(t, UaFilterableViewer.splineStyle).root;
+          let viewer = DG.Viewer.lineChart(t, UaFilterableQueryViewer.splineStyle).root;
           viewer.style.maxHeight = '150px';
           return viewer;
         }
     );
     this.viewers.push(uniqueUsersViewer);
 
-    let eventsViewer = new UaFilterableViewer(
+    let eventsViewer = new UaFilterableQueryViewer(
         this.uaToolbox.filterStream,
         'Events',
         'Events1',
         (t: DG.DataFrame) => {
-          let viewer = DG.Viewer.lineChart(t, UaFilterableViewer.splineStyle).root;
+          let viewer = DG.Viewer.lineChart(t, UaFilterableQueryViewer.splineStyle).root;
           viewer.style.maxHeight = '150px';
           return viewer;
         }
     );
     this.viewers.push(eventsViewer);
 
-    let errorsViewer = new UaFilterableViewer(
+    let errorsViewer = new UaFilterableQueryViewer(
         this.uaToolbox.filterStream,
         'Errors',
         'Errors1',
         (t: DG.DataFrame) => {
-          let viewer = DG.Viewer.lineChart(t, UaFilterableViewer.splineStyle).root;
+          let viewer = DG.Viewer.lineChart(t, UaFilterableQueryViewer.splineStyle).root;
           viewer.style.maxHeight = '150px';
           return viewer;
         }
     );
     this.viewers.push(errorsViewer);
 
-    let uniqueUsersListViewer = new UaFilterableViewer(
+    let uniqueUsersListViewer = new UaFilterableQueryViewer(
         this.uaToolbox.filterStream,
         'Unique Users List',
         'UniqueUsersList',
@@ -67,7 +67,7 @@ export class OverviewView extends UaView {
     );
     this.viewers.push(uniqueUsersListViewer);
 
-    let totalUsersViewer = new UaDataFrameViewer(
+    let totalUsersViewer = new UaDataFrameQueryViewer(
         'Total Users',
         'TotalUsersAndGroups',
         (t: DG.DataFrame) => {

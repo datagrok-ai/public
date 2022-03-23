@@ -1,7 +1,7 @@
 <!-- TITLE: JavaScript Development Overview -->
 <!-- ORDER: 0 -->
 
-# Javascript development overview
+# JavaScript development overview
 
 This document provides a high-level overview of JavaScript development on the Datagrok platform.
 Using [our feature-rich JavaScript API], you can develop packages to perform various tasks on Datagrok, namely:
@@ -26,7 +26,7 @@ Datagrok provides two options to run the JavaScript code:
 
 * Use the built-in JavaScript editor: On the [Datagrok Public site], go to **Functions** > **
   Scripts** > **New JavaScript Script**. The [Scripting section](../../compute/scripting.md) provides more details on using
-  Datagrok's Javascript editor.
+  Datagrok's JavaScript editor.
 * For reusable functions, viewers, and applications, you can [develop packages].
 
 While the built-in JavaScript editor is useful to quickly try out the Datagrok features, _packages_

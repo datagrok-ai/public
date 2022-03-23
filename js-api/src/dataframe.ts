@@ -80,6 +80,58 @@ const ColumnListProxy = new Proxy(class {
 );
 
 
+/** Column CSV export options */
+export interface ColumnCsvExportOptions {
+  /** Custom column format to be used */
+  format: string;
+
+  /** Additional options */
+  [index: string]: any;
+}
+
+
+/** Column name -> options */
+export interface ColumnsCsvExportOptions {
+  [index: string]: ColumnCsvExportOptions;
+}
+
+
+/** Csv export options to be used in {@link DataFrame.toCsv} */
+export interface CsvExportOptions {
+
+  /** Field delimiter; comma if not specified */
+  delimiter?: string;
+
+  /** New line character; \n if not specified */
+  newLine?: string;
+
+  /** Textual representation of the missing value. Empty string if not specified. */
+  missingValue?: string;
+
+  /** Whether the header row containing column names is included. True if not specified. */
+  includeHeader?: boolean;
+
+  /** Whether only selected columns are included. False if not specified. */
+  selectedColumnsOnly?: boolean;
+
+  /** Whether only filtered rows are included. Will be combined with [selectedRowsOnly]. */
+  filteredRowsOnly?: boolean;
+
+  /** Whether only selected rows are included. Will be combined with [filteredRowsOnly]. */
+  selectedRowsOnly?: boolean;
+
+  /** Column order */
+  columns?: string[];
+
+  /** Expands qualified numbers into two columns: `sign(column)` and `column` */
+  qualifierAsColumn?: boolean;
+
+  /** Column-specific formats (column name -> format).
+      For format examples, see [dateTimeFormatters]. */
+  columnOptions?: ColumnsCsvExportOptions;
+}
+
+
 /**
  * DataFrame is a high-performance, easy to use tabular structure with
  * strongly-typed columns of different types.
@@ -259,7 +311,7 @@ export class DataFrame {
     return toJs(api.grok_DataFrame_ColumnByName(this.dart, name));
   }
 
-  /** Returns a {@link Cell} with the specified name.
+  /** Returns a {@link Cell} with the specified row and column.
    * @param {number} idx - Row index.
    * @param {string} name - Column name.
    * @returns {Cell} */
@@ -277,10 +329,9 @@ export class DataFrame {
     return c;
   }
 
-  /** Exports the content to comma-separated-values format.
-   * @returns {string} */
-  toCsv(): string {
-    return api.grok_DataFrame_ToCsv(this.dart);
+  /** Exports the content to comma-separated-values format. */
+  toCsv(options?: CsvExportOptions): string {
+    return api.grok_DataFrame_ToCsv(this.dart, options);
   }
 
   /** Creates a new dataframe from the specified row mask and a list of columns.
@@ -404,12 +455,16 @@ export class DataFrame {
     return new DataFrame(api.grok_DataFrame_Append(this.dart, t2.dart, inPlace, columnsToAppend));
   }
 
-  /** @returns {Observable} */ _event(event: string): Observable<any> {
+  _event(event: string): Observable<any> {
+    return __obs(event, this.dart);
+  }
+
+  onEvent(event: string): Observable<any> {
     return __obs(event, this.dart);
   }
 
   /** Sample: {@link https://public.datagrok.ai/js/samples/data-frame/events/events} */
-   get onValuesChanged(): Observable<any> { return this._event('ddt-values-changed'); }
+  get onValuesChanged(): Observable<any> { return this._event('ddt-values-changed'); }
 
   /** Sample: {@link https://public.datagrok.ai/js/samples/data-frame/events/current-elements} */
   get onCurrentRowChanged(): Observable<any> { return this._event('ddt-current-row-changed'); }
@@ -542,6 +597,11 @@ export class Row {
   }
 
   get cells(): Iterable<Cell> { return _toIterable(api.grok_Row_Get_Cells(this.table.dart, this.idx)); }
+
+  /** Returns this row's value for the specified column
+   * @param {string} columnName
+   * @returns {Object} */
+  [columnName: string]: any
 
   /** Returns this row's value for the specified column
    * @param {string} columnName
@@ -1079,7 +1139,7 @@ export class ColumnList {
    * @param {string} name
    * @param {string} expression
    * @param {ColumnType} type
-   * @param {bool} treatAsString
+   * @param {bool} treatAsString - if true, [expression] is not evaluated as formula and is treated as a regular string value instead
    * @returns {Column} */
   addNewCalculated(name: string, expression: string, type: ColumnType | 'auto' = 'auto', treatAsString: boolean = false): Promise<Column> {
     return new Promise((resolve, reject) => api.grok_ColumnList_AddNewCalculated(this.dart, name, expression, type, treatAsString, (c: any) => resolve(toJs(c)), (e: any) => reject(e)));
@@ -1130,7 +1190,8 @@ export class ColumnList {
 
   /** Adds a virtual column.
    * @param {string} name
-   * @param {Function} getValue - value constructor function that accepts int index and returns value
+   * @param getValue - value constructor function that accepts int index and returns value
+   * @param setValue - function that gets invoked when a column cell value is set
    * @param {String} type - column type
    * @returns {Column}
    *
@@ -1167,8 +1228,6 @@ export class ColumnList {
   /** Returns a name that does not exist in column list.
    * If column list does not contain column with [name], returns [name].
    * Otherwise, tries [choices], and if the names are taken already, returns a string in a form of 'name (i)'.
-   * @param {string} name
-   * @param {string[]} choices
    * */
   getUnusedName(name: string, choices?: string[]): string {
     return api.grok_ColumnList_GetUnusedName(this.dart, name, choices);
@@ -1451,17 +1510,21 @@ export class BitSet {
     return api.grok_BitSet_Get_Length(this.dart);
   }
 
-  /** Number of set bits
-   * @type {number} */
+  /** Number of set bits */
   get trueCount(): number {
     return api.grok_BitSet_Get_TrueCount(this.dart);
   }
 
-  /** Number of unset bits
-   * @type {number}*/
+  /** Number of unset bits */
   get falseCount(): number {
     return api.grok_BitSet_Get_FalseCount(this.dart);
   }
+
+  /** Whether any bits are set to false. */
+  get anyTrue(): boolean { return this.trueCount > 0; }
+
+  /** Whether any bits are set to true. */
+  get anyFalse(): boolean { return this.trueCount > 0; }
 
   /** Clones a bitset
    *  @returns {BitSet} */

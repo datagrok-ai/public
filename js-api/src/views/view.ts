@@ -262,6 +262,10 @@ export class View extends ViewBase {
     api.grok_View_Set_Path(this.dart, s);
   }
 
+  get id(): string {
+    return api.grok_View_Get_Id(this.dart);
+  }
+
   /**
    *  View type URI. Note that {@link path} is specific to the instance of the view.
    *  @type {string} */
@@ -675,6 +679,8 @@ export class TableView extends View {
 
   get syncCurrentObject(): boolean { return api.grok_TableView_Get_SyncCurrentObject(this.dart); }
   set syncCurrentObject(x: boolean) { api.grok_TableView_Set_SyncCurrentObject(this.dart, x); }
+
+
 }
 
 /** Script view */
@@ -762,6 +768,9 @@ export class ViewLayout extends Entity {
   }
 }
 
+
+/** Represents a virtual view, where visual elements are created only when user
+ * scrolls them into view. */
 export class VirtualView {
   dart: any;
 
@@ -773,12 +782,19 @@ export class VirtualView {
     return new VirtualView(api.grok_VirtualItemView(verticalScroll, maxCols));
   }
 
+  /** Visual root. */
   get root(): HTMLElement {
     return api.grok_VirtualItemView_Get_Root(this.dart);
   }
 
+  /** Sets the number of elements, and a function that renders i-th element. */
   setData(length: number, renderer: any): void {
     api.grok_VirtualItemView_SetData(this.dart, length, renderer);
+  }
+
+  /** Refreshes i-th element without refreshing the whole view */
+  refreshItem(i: number): void {
+    api.grok_VirtualItemView_RefreshItem(this.dart, i);
   }
 }
 

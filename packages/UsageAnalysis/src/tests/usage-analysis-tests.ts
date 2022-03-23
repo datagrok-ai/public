@@ -7,7 +7,8 @@ category('usageAnalysis', () => {
   const allViewersToView: {[index: string] : string[]} = {
     'Overview': ['Total Users', 'Unique Users List', 'Unique Users', 'Events', 'Errors'],
     'Events': ['Events', 'Packages', 'Package Functions', 'Functions', 'Sources'],
-    'Errors': ['Errors', 'Errors', 'Error Sources'],
+    'Errors': ['Errors', 'Errors', 'Disabled Errors', 'Error Sources'],
+    'Function Errors': ['Function Errors', 'Function Errors', 'Function Disabled Errors', 'Packages By Errors'],
     'Users': ['Users', 'Usage', 'Unique Users'],
     'Data': ['Queries', 'Queries', 'Connections', 'Data Sources']
   }
@@ -16,6 +17,7 @@ category('usageAnalysis', () => {
     'Overview': {'d4-line-chart': 3},
     'Events': {'d4-line-chart': 1, 'd4-bar-chart': 4},
     'Errors': {'d4-line-chart': 1, 'd4-bar-chart': 3},
+    'Function Errors': {'d4-line-chart': 1, 'd4-bar-chart': 3},
     'Users': {'d4-line-chart': 1, 'd4-scatter-plot': 1, 'd4-bar-chart': 1},
     'Data': {'d4-line-chart': 1, 'd4-bar-chart': 3}
   }
