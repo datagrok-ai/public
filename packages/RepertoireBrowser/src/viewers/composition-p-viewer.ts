@@ -1,10 +1,9 @@
-import * as ui from "datagrok-api/ui";
-import * as grok from "datagrok-api/grok";
-import * as DG from "datagrok-api/dg";
+import * as ui from 'datagrok-api/ui';
+import * as grok from 'datagrok-api/grok';
+import * as DG from 'datagrok-api/dg';
 
-import { _package } from "../package";
-import { Logo } from "./ca-viewer-logo";
-//import { StackedBarChart } from "./ca-viewer-bar-chart";
+import {Logo} from './ca-viewer-logo';
+
 
 export class CompostionPviewer {
   root: HTMLElement;
@@ -35,9 +34,9 @@ export class CompostionPviewer {
       splitted = peptideStr.split('-');
 
       if (isFirstRun) {
-        for (let i = 0; i < splitted.length; i++) {
+        for (let i = 0; i < splitted.length; i++)
           splitPeptidesArray.push([]);
-        }
+
         isFirstRun = false;
       }
 
@@ -54,9 +53,9 @@ export class CompostionPviewer {
     // filter out the columns with the same values
     splitPeptidesArray = splitPeptidesArray.filter((positionArray, index) => {
       const isRetained = new Set(positionArray).size > 1;
-      if (!isRetained) {
+      if (!isRetained)
         columnNames.splice(index, 1);
-      }
+
       return isRetained;
     });
 
@@ -69,7 +68,7 @@ export class CompostionPviewer {
 
   open(mlbView: DG.TableView, mlbTable: DG.DataFrame) {
     // ---- SIDEPANEL REMOVAL ----
-    let windows = grok.shell.windows;
+    const windows = grok.shell.windows;
     windows.showProperties = false;
     windows.showHelp = false;
     windows.showConsole = false;
@@ -80,7 +79,7 @@ export class CompostionPviewer {
 
     // ---- INPUTS PANEL ----
     this.root = ui.div();
-    let accOptions = ui.accordion();
+    const accOptions = ui.accordion();
     accOptions.addPane('CDR3 Scheme', () => ui.inputs([this.cdrChoice]));
     this.root.append(accOptions.root);
 
@@ -108,23 +107,16 @@ export class CompostionPviewer {
   async close(mlbView: DG.TableView) {
     if (!!this.openPanels)
       this.openPanels.forEach((p) => mlbView.dockManager.close(p));
-      this.isOpen = false;
+    this.isOpen = false;
   }
 
-  do(view: DG.TableView){
-    if(this.isOpen){
-      let a = view.grid.dataFrame.clone(view.grid.dataFrame.filter);
-      let b = a.columns.byName('CDR Clothia')!;
-
-      if (typeof(b) == "undefined"){
-let d = 0;
-      }
+  do(view: DG.TableView) {
+    if (this.isOpen) {
+      const a = view.grid.dataFrame.clone(view.grid.dataFrame.filter);
+      const b = a.columns.byName('CDR Clothia')!;
 
       this.aligned = this.#splitAlignedPeptides(b);
       this.logo.render(this.aligned);
-
-
     }
   }
-
 }

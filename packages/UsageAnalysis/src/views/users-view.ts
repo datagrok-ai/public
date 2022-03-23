@@ -6,8 +6,8 @@ import '../../css/usage_analysis.css';
 import {UaToolbox} from "../ua-toolbox";
 import {UaView} from "./ua-view";
 import {UaFilter} from "../filter2";
-import {UaFilterableViewer} from "../viewers/ua-filterable-viewer";
-import {UaQueryViewer} from "../viewers/ua-query-viewer";
+import {UaFilterableQueryViewer} from "../viewers/ua-filterable-query-viewer";
+import {UaQueryViewer} from "../viewers/abstract/ua-query-viewer";
 import {TopUsersViewer} from "../drilldown_viewers/users/top-users-viewer";
 
 export class UsersView extends UaView {
@@ -17,7 +17,7 @@ export class UsersView extends UaView {
   }
 
   async initViewers(): Promise<void> {
-    let uniqueUsersViewer = new UaFilterableViewer(
+    let uniqueUsersViewer = new UaFilterableQueryViewer(
         this.uaToolbox.filterStream,
         'Unique Users',
         'UniqueUsers',
@@ -28,7 +28,7 @@ export class UsersView extends UaView {
     let topUsersViewer = new TopUsersViewer(this.uaToolbox.filterStream);
     this.viewers.push(topUsersViewer);
 
-    let usageViewer = new UaFilterableViewer(
+    let usageViewer = new UaFilterableQueryViewer(
         this.uaToolbox.filterStream,
         'Usage',
         'Usage',
@@ -36,7 +36,7 @@ export class UsersView extends UaView {
     );
     this.viewers.push(usageViewer);
 
-    let topPackagesByUsers = new UaFilterableViewer(
+    let topPackagesByUsers = new UaFilterableQueryViewer(
         this.uaToolbox.filterStream,
         'Packages By Users',
         'TopPackagesByUsers',

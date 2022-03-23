@@ -5,7 +5,7 @@
 
 Unpivoting transforms data from a short/wide to a tall/skinny format.
 
-![](unpivot.gif)
+![unpivot](unpivot.gif)
 
 ## Scripting
 
@@ -31,4 +31,3 @@ Unpivot("scores", ["student"], ["math", "english", "history", "science"])
 See also:
 
 * [Aggregation functions](aggregation-functions.md)
-

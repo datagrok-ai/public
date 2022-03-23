@@ -56,7 +56,7 @@ To create a new data connection, open the "Databases" pane (Open | Databases), r
 in the tree, and choose "Add connection...". Alternatively, click on "New Connection" under the
 "Actions" tab, and select the appropriate connector.
 
-![](data-connection-tree.png)
+![Data Connection Tree](data-connection-tree.png)
 
 ### Editing properties
 
@@ -65,12 +65,17 @@ attributes you can edit depends on the connector. Typically, for JDBC-based conn
 connection string (but do not enter login and password there, they will still be picked up from the corresponding
 fields).
 
-![](data-connection-create.png)
+![Create Data Connection](data-connection-create.png)
 
 Once a connection is set up, you are ready to start creating queries. There are multiple ways to do so: manually or
 programmatically.
 
 Note that the platform supports [caching](#caching) of results.
+
+## Credentials
+
+Credentials required to access data sources should be defined in the setup connection.
+Read more about credentials here: [Credentials](data-connection-credentials.md).
 
 ## Access control
 
@@ -134,7 +139,7 @@ You can use these fields to filter connections with [smart search](../overview/s
 
 | Field       | Description                                 |
 |-------------|---------------------------------------------|
-| id          |                                             |
+| ID          |                                             |
 | name        |                                             |
 | server      |                                             |
 | port        |                                             |

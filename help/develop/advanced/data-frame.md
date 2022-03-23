@@ -3,7 +3,7 @@
 # DataFrame
 
 DataFrame is a tabular structure with strongly-typed columns of various types. A dataframe class
-[DG.DataFrame](https://datagrok.ai/js-api/classes/dg.dataframe)
+[DG.DataFrame](https://datagrok.ai/js-api/classes/dg.DataFrame)
 is used in virtually any Datagrok extension or application. It operates via a columnar in-memory data engine which
 Datagrok implemented from scratch to support highly efficient operation with data in a modern browser together with fast
 in-browser data visualizations.
@@ -14,7 +14,7 @@ Dataframe stores data as list of columns. Constructing, modifying and efficientl
 both [`DG.Column`][101] and [`DG.DataFrame`][100] classes. Event handling, visual aspects of working with dataframes,
 fast column selection, handy construction methods and row-based access are provided in
 [`DG.DataFrame`][100]. Instances of [`DG.ColumnList`][099], [`DG.RowList`][098],
-[`DG.Row`](https://datagrok.ai/js-api/classes/dg.row) and [`DG.Cell`](https://datagrok.ai/js-api/classes/dg.cell) are
+[`DG.Row`](https://datagrok.ai/js-api/classes/dg.Row) and [`DG.Cell`](https://datagrok.ai/js-api/classes/dg.cell) are
 used as related properties or functions return values of `DG.Column` and `DG.DataFrame`.
 
 ## Dataframe design
@@ -86,7 +86,7 @@ Learn more about semantic types in this article: [Link][109].
   ```let col = DG.Column.fromType(DG.COLUMN_TYPE.INT, 'Name', 3); // col.get(0) === DG.INT_NULL```
   ```let col = DG.Column.string('Name', 5); // col.get(2) === ""```
 
-The column, once constructed, may later be [added to a dataframe]().
+The column, once constructed, may later be added to a dataframe.
 
 ### Manipulate column values
 
@@ -97,8 +97,7 @@ The column, once constructed, may later be [added to a dataframe]().
 
 A pair of methods `.getString`/`.setString` work similarly, but with formatting and parsing:
 
-* `.getString` returns a value converted to a string taking into account a column's
-  [tag `format`]()
+* `.getString` returns a value converted to a string taking into account a column's tag `format`
 * `.setString` attempts to set an `i`-th value by converting a provided string to the corresponding strongly-typed
   value, returns `true` if a text was successfully parsed and set, otherwise `false`
 
@@ -425,6 +424,7 @@ In addition to regular access to columns by index and name, there's a group of m
 [this example][123] for retrieving columns `Iterable` by a specific property:
 
 * With pre-specified [tags][114]:
+
   ```javascript
   let demog = grok.data.demo.demog();
   demog.getCol('race').setTag('tag1', 'value1').setTag('tag2', 'value2');
@@ -432,7 +432,9 @@ In addition to regular access to columns by index and name, there's a group of m
   for (let column of demog.columns.byTags({'tag1': 'value1', 'tag2': undefined}))
     grok.shell.info(column.name);
   ```
+
 * With [categorical or numerical][125] columns:
+
   ```javascript
   let demog = grok.data.demo.demog();
   for (let column of demog.columns.categorical) grok.shell.info(column.name);
@@ -491,7 +493,6 @@ To add, remove or replace columns in a dataframe:
 * `.addNewVirtual` adds a new [virtual column][135] at the end of the column list
 * `.replace(oldColumn, newColumn)`  substitutes inside a dataframe an `oldColumn` passed as an object with a `newColumn`
   . The column remains avaialble by `oldColumn`, but it is no longer part of the dataframe
-*
 
 Examples:
 
@@ -578,7 +579,7 @@ console.shell.info(table.get('idx', 11)); // displays '12'
 
 #### Virtual columns for objects
 
-In addition to scalar types, it is possible to store JavaScript objects in columns of type [Object](). However, if such
+In addition to scalar types, it is possible to store JavaScript objects in columns of type Object. However, if such
 object is a proxy, domain-specific representation of row's data, most often it is not desired to physically store such
 objects in the dataframe. A virtual column with a type of `DG.COLUMN_TYPE.OBJECT` (it is a default value for a type
 in `.addNewVirtual`) with a callback function returning a new object is a convenient alternative to an `OBJECT`

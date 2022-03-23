@@ -360,13 +360,14 @@ export enum DEMO_DATASET {
   RANDOM_WALK = 'random walk',
   GEO = 'geo',
   MOLECULES = 'molecules',
+  DOSE_RESPONSE = 'dose-response',
 }
 
 /** @enum {DOCK_TYPE} */
 export enum DOCK_TYPE {
   LEFT = "left",
   RIGHT = "right",
-  TOP = "top",
+  TOP = "up",
   DOWN = "down",
   FILL = "fill",
 }
@@ -425,6 +426,13 @@ export enum MARKER_TYPE {
   STAR = "star",
   DOT = "dot",
   GRADIENT = "gradient",
+}
+
+export enum USER_STATUS {
+  STATUS_NEW = "new",
+  STATUS_ACTIVE = "active",
+  STATUS_BLOCKED = "blocked",
+  STATUS_GUEST = "guest"
 }
 
 /**

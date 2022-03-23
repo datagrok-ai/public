@@ -6,7 +6,7 @@
 ## Testing scenario
 
 Platform provides feature for saving data in various formats (*csv*, *json*, *xlsx*). Also possible to save entire
-project in *d42* format or in ZIP-archive that will contain *csv* files of all project tables and *png* files
+project in *d42* format or in ZIP-archive that will contain *csv* files of all project tables and *PNG* files
 
 1. Open *demog.csv* file
 

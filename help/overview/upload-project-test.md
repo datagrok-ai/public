@@ -52,7 +52,7 @@ A [project](project.md) is a collection of different objects that you want to us
 
 1. Share project with all users
 
-* All users now have access to view project and received e-mails
+* All users now have access to view project and received emails
 
 1. Save project locally as ZIP-file
 

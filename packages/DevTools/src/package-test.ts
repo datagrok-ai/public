@@ -3,6 +3,7 @@ import * as grok from "datagrok-api/grok";
 import {runTests} from "@datagrok-libraries/utils/src/test";
 
 import "./tests/function-signature-editor-test";
+import './tests/dev-panel-test';
 
 export let _package = new DG.Package();
 

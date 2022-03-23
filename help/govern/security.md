@@ -47,10 +47,10 @@ this is typically a login/password pair. For web services, it is often a token, 
 
 Each credential is associated with a group and a connection. When a particular user accesses a resource, the system
 automatically chooses the appropriate credential. Depending on a connection, the call to the external service will be
-performed either on the server or on the client side. For client-side calls, the credential needs to be retrieved from
+performed either on the server or on the client-side. For client-side calls, the credential needs to be retrieved from
 the server first. Some systems are only meant to be accessible from the server side, so as an additional security
 measure, they should have the "server-side only" flag set to true, which prevents retrieval of that credential by the
-client side.
+client-side.
 
 Encrypted credentials are stored in the special [storage](#credentials-storage).
 
@@ -66,11 +66,12 @@ credentials. For that reason, it makes sense to administer these systems separat
 If a specialized credential vault already stores sensitive credentials for your organization, the Datagrok platform
 should be set up to take advantage of it.
 
-![Credentials retrieving process diagram](../uploads/security/credentials-fetch-diagram.png "Credentials retrieving process diagram")
+![Credentials retrieving process diagram](../uploads/security/credentials-fetch-diagram.png
+"Credentials retrieving process diagram")
 *Credentials retrieving process diagram* ([drawio](../uploads/security/credentials-fetch-diagram.drawio))
 
 Working with credentials storage,
-sample: [open at public repo](https://github.com/datagrok-ai/public/blob/master/packages/ApiSamples/scripts/misc/package-credentials.js)
+sample: [open at public repository](https://github.com/datagrok-ai/public/blob/master/packages/ApiSamples/scripts/misc/package-credentials.js)
 ; [open at Datagrok](https://public.datagrok.ai/e/ApiSamples:PackageCredentials).
 
 To store credentials in Datagrok's Credentials Storage programmatically, send a POST request

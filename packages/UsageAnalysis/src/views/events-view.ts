@@ -6,8 +6,8 @@ import '../../css/usage_analysis.css';
 import {UaToolbox} from "../ua-toolbox";
 import {UaView} from "./ua-view";
 import {UaFilter} from "../filter2";
-import {UaFilterableViewer} from "../viewers/ua-filterable-viewer";
-import {UaQueryViewer} from "../viewers/ua-query-viewer";
+import {UaFilterableQueryViewer} from "../viewers/ua-filterable-query-viewer";
+import {UaQueryViewer} from "../viewers/abstract/ua-query-viewer";
 import {TopPackagesViewer} from "../drilldown_viewers/events/top-packages-viewer";
 import {TopPackageFunctionsViewer} from "../drilldown_viewers/events/top-package-functions-viewer";
 import {TopFunctionsViewer} from "../drilldown_viewers/events/top-functions-viewer";
@@ -25,10 +25,10 @@ export class EventsView extends UaView {
     let topPackageFunctionsViewer = new TopPackageFunctionsViewer(this.uaToolbox.filterStream);
     this.viewers.push(topPackageFunctionsViewer);
 
-    let topPackagesViewer = new TopPackagesViewer(this.uaToolbox.filterStream);
+    let topPackagesViewer = new TopPackagesViewer('Packages', 'TopPackages', this.uaToolbox.filterStream);
     this.viewers.push(topPackagesViewer);
 
-    let eventsViewer = new UaFilterableViewer(
+    let eventsViewer = new UaFilterableQueryViewer(
         this.uaToolbox.filterStream,
         'Events',
         'Events1',

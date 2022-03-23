@@ -1,7 +1,7 @@
 version: "3"
 services:
   db:
-    image: postgres:12.4
+    image: postgres:12.9
     environment:
       POSTGRES_USER: postgres
       POSTGRES_PASSWORD: postgres
@@ -16,6 +16,71 @@ services:
     restart: on-failure
     profiles: [ "all", "db" ]
 
+  northwind:
+    image: datagrok/demo_db:latest
+    environment:
+      POSTGRES_DB: northwind
+    networks:
+      datagrok:
+        aliases:
+          - northwind
+    volumes:
+      - datagrok_postgres_northwind:/var/lib/postgresql/data
+    restart: on-failure
+    profiles: [ "demo", "postgres_northwind", "northwind" ]
+
+  chembl:
+    image: datagrok/demo_db_chembl:latest
+    environment:
+      POSTGRES_DB: chembl
+    networks:
+      datagrok:
+        aliases:
+          - chembl
+    volumes:
+      - datagrok_postgres_chembl:/var/lib/postgresql/data
+    restart: on-failure
+    profiles: [ "demo", "postgres_chembl", "chembl" ]
+
+  unichem:
+    image: datagrok/demo_db_unichem:latest
+    environment:
+      POSTGRES_DB: unichem
+    networks:
+      datagrok:
+        aliases:
+          - unichem
+    volumes:
+      - datagrok_postgres_unichem:/var/lib/postgresql/data
+    restart: on-failure
+    profiles: [ "demo", "postgres_unichem", "unichem" ]
+
+  starbucks:
+    image: datagrok/demo_db:latest
+    environment:
+      POSTGRES_DB: starbucks
+    networks:
+      datagrok:
+        aliases:
+          - starbucks
+    volumes:
+      - datagrok_postgres_starbucks:/var/lib/postgresql/data
+    restart: on-failure
+    profiles: [ "demo", "postgres_starbucks", "starbucks" ]
+
+  world:
+    image: datagrok/demo_db:latest
+    environment:
+      POSTGRES_DB: world
+    networks:
+      datagrok:
+        aliases:
+          - world
+    volumes:
+      - datagrok_postgres_world:/var/lib/postgresql/data
+    restart: on-failure
+    profiles: [ "demo", "postgres_world", "world" ]
+
   datagrok:
     image: datagrok/datagrok:latest
     environment:
@@ -29,6 +94,7 @@ services:
         \"dbPassword\": \"dg\",
         \"adminPassword\": \"admin\"
       }"
+#      GROK_COMPONENTS: "${COMPOSE_PROFILES:?err}"
     ports:
       - "8080:8080/tcp"
     networks:
@@ -107,6 +173,11 @@ volumes:
   datagrok_db:
   datagrok_data:
   datagrok_cfg:
+  datagrok_postgres_northwind:
+  datagrok_postgres_chembl:
+  datagrok_postgres_starbucks:
+  datagrok_postgres_world:
+  datagrok_postgres_unichem:
 
 networks:
   datagrok:

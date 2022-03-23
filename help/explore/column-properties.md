@@ -25,6 +25,6 @@ Dialog allows to change column properties.
 
 Allows to edit category colors. Available only for categorical columns.
 
-# Change type...
+# Change type
 
 Opens change type dialog.

@@ -24,7 +24,7 @@ efficiently work with as big datasets as possible. It offers two modes:
   visualizations and instant access to all underlying data points. Most of the datasets fall into that category.
 * **Remote data**—sometimes, it is impractical or impossible to download the whole dataset, but you still need to work
   with it. In this case, Datagrok offers several solutions that will transparently translate the necessary work to be
-  performed on the server side. Here are some of them:
+  performed on the server-side. Here are some of them:
     * [DB Exploration](../access/db-exploration.md) to explore database schemas
     * [DB Visual Query](../access/db-visual-query.md) to aggregate and pivot on the database side
 

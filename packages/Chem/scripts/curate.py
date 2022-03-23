@@ -5,7 +5,7 @@
 #sample: chem/chem_standards.csv
 #tags: demo, chem, rdkit
 #input: dataframe data [Input data table]
-#input: column smiles  {type:categorical; semType: Molecule} [Molecules, in SMILES format]
+#input: column molecules  {type:categorical; semType: Molecule}
 #input: bool kekulization = false
 #input: bool normalization = false
 #input: bool reionization = false
@@ -18,8 +18,8 @@ import numpy as np
 from rdkit import Chem
 from rdkit.Chem.MolStandardize import rdMolStandardize
 
-smiles = data[smiles]
-length = len(smiles)
+molecules = data[molecules]
+length = len(molecules)
 
 standardized = np.full(length, None, dtype=object)
 
@@ -41,7 +41,7 @@ if tautomerization:
     enumerator = rdMolStandardize.TautomerEnumerator()
 
 for n in range(0, length):
-    mol = Chem.MolFromSmiles(smiles[n], sanitize = True)
+    mol = Chem.MolFromMolBlock(molecules[n], sanitize = True) if ("M  END" in molecules[n]) else Chem.MolFromSmiles(molecules[n], sanitize = True)
 
     if mol is None or mol.GetNumAtoms() == 0:
         continue

@@ -34,7 +34,7 @@ Web connector allows ability to connect to API services that provide external so
 
 1. Open "Edit connection" dialog for "OpenWeatherMap_Test" connection
 
-1. Enter correct ApiKey to "Api Key" field and save changes
+1. Enter correct ApiKey to "API Key" field and save changes
 
 1. Run again "5 day/3 hour Forecast By City Name" query with default parameters
 

@@ -4,8 +4,9 @@ import * as DG from 'datagrok-api/dg';
 import $ from 'cash-dom';
 
 import * as logojs from 'logojs-react';
-import {splitAlignedPeptides} from '../utils/split-aligned';
+// import {splitAlignedPeptides} from '../utils/split-aligned';
 import {ChemPalette} from '../utils/chem-palette';
+import {PeptidesController} from '../peptides';
 
 /**
  * Logo viewer.
@@ -80,7 +81,7 @@ export class Logo extends DG.JsViewer {
     this.initialized = true;
     console.log('INIT');
     this.target = this.dataFrame;
-    [this.splitted] = splitAlignedPeptides(this.dataFrame!.columns.bySemType(this.colSemType));
+    [this.splitted] = PeptidesController.splitAlignedPeptides(this.dataFrame!.columns.bySemType(this.colSemType));
     this.root.style.width = 'auto';
     this.root.style.height = 'auto';
     this.root.style.maxHeight = '200px';
@@ -142,8 +143,8 @@ export class Logo extends DG.JsViewer {
         .aggregate();
     }
     if (selected)
-      [this.splitted] = splitAlignedPeptides(this.target!.columns.bySemType(this.colSemType));
-    else [this.splitted] = splitAlignedPeptides(this.dataFrame!.columns.bySemType(this.colSemType));
+      [this.splitted] = PeptidesController.splitAlignedPeptides(this.target!.columns.bySemType(this.colSemType));
+    else [this.splitted] = PeptidesController.splitAlignedPeptides(this.dataFrame!.columns.bySemType(this.colSemType));
     $(this.root).empty();
 
     if (typeof this.dataFrame !== 'undefined')

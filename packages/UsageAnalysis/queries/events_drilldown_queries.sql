@@ -69,7 +69,7 @@ limit 50;
 --input: list users
 --input: string name
 --connection: System:DatagrokAdmin
-select e.error_message, count(1) from event_types et
+select e.error_message || '(' || e.friendly_name || ')' as error_and_event, e.error_message, e.friendly_name, count(1) from event_types et
 join published_packages pp on et.package_id = pp.id
 join events e on e.event_type_id = et.id
 join users_sessions s on e.session_id = s.id
@@ -81,7 +81,8 @@ and et.friendly_name != ''
 and pp.name = @name
 and @date(e.event_time)
 and (u.login = any(@users) or @users = ARRAY['all'])
-group by e.error_message
+and e.is_error = true
+group by e.error_message, e.friendly_name
 limit 50;
 --end
 

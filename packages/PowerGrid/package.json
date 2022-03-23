@@ -1,0 +1,28 @@
+{
+	"name": "power-grid",
+	"beta": true,
+	"friendlyName": "PowerGrid",
+	"version": "0.0.1",
+	"description": "",
+	"dependencies": {
+		"datagrok-api": "latest",
+		"cash-dom": "latest",
+		"dayjs": "latest"
+	},
+	"devDependencies": {
+		"webpack": "latest",
+		"webpack-cli": "latest",
+		"ts-loader": "latest",
+		"typescript": "latest"
+	},
+	"scripts": {
+		"debug-powergrid": "grok publish --rebuild",
+		"release-powergrid": "grok publish --rebuild --release",
+		"build-powergrid": "webpack",
+		"build": "webpack",
+		"debug-powergrid-dev": "grok publish dev --rebuild",
+		"release-powergrid-dev": "grok publish dev --rebuild --release",
+		"debug-powergrid-public": "grok publish public --rebuild",
+		"release-powergrid-public": "grok publish public --rebuild --release"
+	}
+}

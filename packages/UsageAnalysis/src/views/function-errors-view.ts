@@ -5,9 +5,10 @@ import $ from 'cash-dom';
 import '../../css/usage_analysis.css';
 import {UaToolbox} from "../ua-toolbox";
 import {UaView} from "./ua-view";
-import {UaFilterableViewer} from "../viewers/ua-filterable-viewer";
-import {UaQueryViewer} from "../viewers/ua-query-viewer";
+import {UaFilterableQueryViewer} from "../viewers/ua-filterable-query-viewer";
+import {UaQueryViewer} from "../viewers/abstract/ua-query-viewer";
 import {TopFunctionErrorsViewer} from "../drilldown_viewers/function_errors/top-function-errors-viewer";
+import {TopPackagesViewer} from "../drilldown_viewers/events/top-packages-viewer";
 
 export class FunctionErrorsView extends UaView {
 
@@ -16,7 +17,7 @@ export class FunctionErrorsView extends UaView {
   }
 
   async initViewers() : Promise<void> {
-    let functionErrorsViewer = new UaFilterableViewer(
+    let functionErrorsViewer = new UaFilterableQueryViewer(
         this.uaToolbox.filterStream,
         'Function Errors',
         'FunctionErrors',
@@ -27,12 +28,16 @@ export class FunctionErrorsView extends UaView {
     let topFunctionErrorsViewer = new TopFunctionErrorsViewer('Function Errors', 'TopFunctionErrors', this.uaToolbox.filterStream);
     this.viewers.push(topFunctionErrorsViewer);
 
-    let topFunctionNotErrorsViewer = new TopFunctionErrorsViewer('Function Not Errors', 'TopFunctionNotErrors', this.uaToolbox.filterStream);
+    let topFunctionNotErrorsViewer = new TopFunctionErrorsViewer('Function Disabled Errors', 'TopFunctionDisabledErrors', this.uaToolbox.filterStream);
     this.viewers.push(topFunctionNotErrorsViewer);
+
+    let topPackagesByErrorsViewer = new TopPackagesViewer('Packages By Errors', 'TopPackagesByError', this.uaToolbox.filterStream);
+    this.viewers.push(topPackagesByErrorsViewer);
 
     this.root.append(ui.divV([
       ui.div([ui.block([functionErrorsViewer.root])]),
-      ui.div([ui.block50([topFunctionErrorsViewer.root]), ui.block50([topFunctionNotErrorsViewer.root])])
+      ui.div([ui.block50([topFunctionErrorsViewer.root]), ui.block50([topFunctionNotErrorsViewer.root])]),
+      ui.div([ui.block50([topPackagesByErrorsViewer.root])])
     ]));
 
   }

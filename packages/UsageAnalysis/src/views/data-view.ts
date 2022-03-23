@@ -1,11 +1,11 @@
 import {UaView} from "./ua-view";
 import {UaToolbox} from "../ua-toolbox";
-import {UaFilterableViewer} from "../viewers/ua-filterable-viewer";
+import {UaFilterableQueryViewer} from "../viewers/ua-filterable-query-viewer";
 import * as DG from "datagrok-api/dg";
 import * as ui from "datagrok-api/ui";
 import * as grok from "datagrok-api/grok";
-import {UaDataFrameViewer} from "../viewers/ua-data-frame-viewer";
-import {UaQueryViewer} from "../viewers/ua-query-viewer";
+import {UaDataFrameQueryViewer} from "../viewers/ua-data-frame-query-viewer";
+import {UaQueryViewer} from "../viewers/abstract/ua-query-viewer";
 import {TopDataSourcesViewer} from "../drilldown_viewers/top-data-sources-viewer";
 
 export class DataView extends UaView {
@@ -15,7 +15,7 @@ export class DataView extends UaView {
   }
 
   async initViewers() : Promise<void> {
-    let queriesViewer = new UaFilterableViewer(
+    let queriesViewer = new UaFilterableQueryViewer(
         this.uaToolbox.filterStream,
         'Queries',
         'Queries1',
@@ -23,7 +23,7 @@ export class DataView extends UaView {
     );
     this.viewers.push(queriesViewer);
 
-    let topQueriesViewer = new UaFilterableViewer(
+    let topQueriesViewer = new UaFilterableQueryViewer(
         this.uaToolbox.filterStream,
         'Queries',
         'TopQueries',
@@ -31,7 +31,7 @@ export class DataView extends UaView {
     );
     this.viewers.push(topQueriesViewer);
 
-    let topConnectionsViewer = new UaFilterableViewer(
+    let topConnectionsViewer = new UaFilterableQueryViewer(
         this.uaToolbox.filterStream,
         'Connections',
         'TopConnections',

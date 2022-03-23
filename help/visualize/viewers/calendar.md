@@ -7,7 +7,7 @@ Calendar lets you analyze longitudinal data. It needs at least one column of typ
 
 General:
 
-| []()                 |                       |
+|                      |                       |
 |----------------------|-----------------------|
 | Right click          | Context menu          |
 | Click on date        | Filter by date        |

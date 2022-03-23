@@ -1,11 +1,10 @@
 /* Do not change these import lines. Datagrok will import API library in exactly the same manner */
 import * as grok from 'datagrok-api/grok';
-import * as ui from 'datagrok-api/ui';
 import * as DG from 'datagrok-api/dg';
-import * as meta from './sdtm-meta';
-import { vaidateAEDomain, vaidateDMDomain } from './validation/services/validation-service';
-import { createValidationDataFrame } from './validation/validation-utils';
-import { AE_START_DAY, SITE_ID, STUDY_ID } from './columns-constants';
+import { vaidateAEDomain, vaidateDMDomain } from './sdtm-validation/services/validation-service';
+import { createValidationDataFrame } from './sdtm-validation/validation-utils';
+import { SITE_ID, STUDY_ID } from './constants/columns-constants';
+import { addVisitDayFromTvDomain, createEventStartEndDaysCol } from './data-preparation/data-preparation';
 
 export class ClinicalDomains {
   ae: DG.DataFrame = null;
@@ -105,10 +104,10 @@ export class ClinicalStudy {
   }
 
   private process(): void {
-    if (this.domains.ae != null) {
-      this.domains.ae.columns.addNewCalculated('week', `floor(\${${AE_START_DAY}} / 7)`);
-    }
+    createEventStartEndDaysCol();
+    addVisitDayFromTvDomain();
   }
+
 
   private validate(): void {
     this.validationResults = createValidationDataFrame();

@@ -6,7 +6,7 @@
 Datagrok can access any machine-readable data source and retrieve either structured or unstructured data in a safe,
 efficient, scalable, managed, and reproducible manner. Commonly supported data source types include
 [databases](data-connection.md#connectors),
-[file storages](file-shares.md), and [web services](). If anything is missing, it could be implemented as a platform
+[file storages](file-shares.md), and web services. If anything is missing, it could be implemented as a platform
 extension.
 
 No matter what the data source type is, you would need to create a data connection in order to access the data. Each

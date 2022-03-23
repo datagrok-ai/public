@@ -16,7 +16,7 @@ There are two ways to add a trellis plot, visualized below:
 
 ![Trellis Plot](../../uploads/gifs/trellis-plot.gif "Trellis Plot")
 
-![](../viewers-as-trellis.gif)
+![viewers-as-trellis](../viewers-as-trellis.gif)
 
 Typically, you want the data split by one or two columns. Use combo boxes on top of the control for that. Note that you
 can split data by one column per dimension.

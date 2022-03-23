@@ -1,8 +1,10 @@
 <!-- TITLE: Quality assurance -->
 <!-- SUBTITLE: -->
 
+# Quality assurance
+
 Datagrok is an incredibly powerful platform. To give users the best possible performance, we have created a number of
-unique, proprietary technologies such as [in-memory columnar database](architecture.md#in-memory-database) and fast
+unique, proprietary technologies such as [in-memory columnar database](architecture.md#data-engine) and fast
 [visualizations](architecture.md#viewers). To provide the seamless end-to-end-experience, we took ownership of
 [data access](../../home.md#access),
 [data governance](../../home.md#access),
@@ -30,7 +32,7 @@ Whenever a new code is checked into our source code repository, several tasks ge
 2. [Unit tests](#unit-tests)
 3. Compilation
 4. Packaging the platform in Docker containers
-5. [Snyk](https://snyk.io/) check for vulnerabilities
+5. [Snyk](https://snyk.io/) and [Grype](https://github.com/anchore/grype/) check for vulnerabilities
 
 Every time docker image is built, tasks get executed:
 
@@ -41,7 +43,7 @@ Every time docker image is built, tasks get executed:
 5. [Stress testing](#stress-testing)
 
 We use Jenkins for continuous integration. This is how our control panel looks like:
-![](continuous-integration.png)
+![CI](continuous-integration.png)
 
 ## Unit tests
 
@@ -105,7 +107,7 @@ stories by having the ability to quickly read them, execute, and report the comp
 quickly navigate to the corresponding JIRA issues (integration with JIRA was done using Datagrok's OpenAPI capabilities)
 .
 
-![](test-tracking-system.png)
+![Test Tracking System](test-tracking-system.png)
 
 ## Performance benchmarks
 

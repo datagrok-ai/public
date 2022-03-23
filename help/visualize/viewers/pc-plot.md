@@ -15,7 +15,7 @@ location.
 
 General:
 
-| []()               |                   |
+|                    |                   |
 |--------------------|-------------------|
 | Right click        | Context menu      |
 | Drag column name   | Rearrange columns |

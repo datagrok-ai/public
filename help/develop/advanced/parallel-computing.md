@@ -3,7 +3,7 @@
 # Parallel computing in a browser
 
 In this section we bring the best practices of using Web Workers in JavaScript/TypeScript code of your Datagrok
-packages. We recommend them as they help provide a more low-latency, high-performance experience for your end-users.
+packages. We recommend them as they help provide a more low-latency, high-performance experience for your end users.
 
 This article does not require you to have any background in Web Workers or parallel computing. After reading it, you
 will be able to use (with a good degree of convenience!) the power of parallel computation in a browser on Datagrok

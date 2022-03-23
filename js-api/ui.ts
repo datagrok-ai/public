@@ -524,8 +524,8 @@ export function showPopup(element: HTMLElement, anchor: HTMLElement, vertical: b
   return api.grok_UI_ShowPopup(element, anchor, vertical);
 }
 
-export function rangeSlider(minRange: number, maxRange: number, min: number, max: number): RangeSlider {
-  let rs = RangeSlider.create();
+export function rangeSlider(minRange: number, maxRange: number, min: number, max: number, vertical: boolean = false): RangeSlider {
+  let rs = RangeSlider.create(vertical);
   rs.setValues(minRange, maxRange, min, max);
   return rs;
 }
@@ -651,7 +651,7 @@ export function choiceInput<T>(name: string, selected: T, items: T[], onValueCha
   return new InputBase(api.grok_ChoiceInput(name, selected, items), onValueChanged);
 }
 
-export function multiChoiceInput<T>(name: string, value: T, items: T[], onValueChanged: Function | null = null): InputBase {
+export function multiChoiceInput<T>(name: string, value: T[], items: T[], onValueChanged: Function | null = null): InputBase {
   return new InputBase(api.grok_MultiChoiceInput(name, value, items), onValueChanged);
 }
 
@@ -815,7 +815,7 @@ export class Tooltip {
   }
 
   /** Associated the specified visual element with the corresponding item. */
-  bind(element: HTMLElement, tooltip?: string | null): HTMLElement {
+  bind(element: HTMLElement, tooltip?: string | null | (() => string | null)): HTMLElement {
     if (tooltip != null)
       api.grok_Tooltip_SetOn(element, tooltip);
     return element;

@@ -95,7 +95,7 @@ in any of the previous notations.
 The default settings are `{ limit: Number.MAX_VALUE, cutoff: 0.0 }`, thus the function ranks and sorts all molecules by
 similarity.
 
-Produces a Datagrok [`DataFrame`](https://datagrok.ai/js-api/classes/dg.dataframe) of three
+Produces a Datagrok [`DataFrame`](https://datagrok.ai/js-api/classes/dg.DataFrame) of three
 columns ([code sample](https://public.datagrok.ai/js/samples/domains/chem/similarity-scoring-sorted)):
 
 * The 1-st column, named `molecule`, contains the original molecules string representation from the input `column`
@@ -107,8 +107,8 @@ columns ([code sample](https://public.datagrok.ai/js/samples/domains/chem/simila
 
 `getSimilarities(column, molecule = null, settings = { sorted: false });`
 
-Produces a Datagrok [`DataFrame`](https://datagrok.ai/js-api/classes/dg.dataframe) with a
-single [`Column`](https://datagrok.ai/js-api/classes/dg.column), where the i-th element contains a similarity score for
+Produces a Datagrok [`DataFrame`](https://datagrok.ai/js-api/classes/dg.DataFrame) with a
+single [`Column`](https://datagrok.ai/js-api/classes/dg.Column), where the i-th element contains a similarity score for
 the i-th element of the
 input `Column` ([code sample](https://public.datagrok.ai/js/samples/domains/chem/similarity-scoring-scores))
 .
@@ -127,7 +127,7 @@ such unsupported molecule, the corresponding fingerprint of all zeroes is produc
 DataFrame) is *always* of the input `column`'s length (with the number of rows equal to `column`'s length, respectively)
 .
 
-Examples (see on [github](https://github.com/datagrok-ai/public/tree/master/packages/ApiSamples/scripts/domains/chem))
+Examples (see on [GitHub](https://github.com/datagrok-ai/public/tree/master/packages/ApiSamples/scripts/domains/chem))
 
 * [Calculating descriptors](https://public.datagrok.ai/js/samples/domains/chem/descriptors)
 * [Substructure search](https://public.datagrok.ai/js/samples/domains/chem/substructure-search)
@@ -173,7 +173,7 @@ ui
 
 The method is currently asynchronous due to technical limitations. It will be made synchronous in the future.
 
-Run the above example live here: [link]().
+Run the above example live here: [public.datagrok.ai](https://public.datagrok.ai).
 
 ## Openchemlib.js
 
@@ -196,7 +196,7 @@ Here are some RDKit in
 Python-based [cheminformatics-related scripts](https://github.com/datagrok-ai/public/tree/master/packages/Chem/scripts)
 in the public repository.
 
-## Rdkit in webassembly
+## Rdkit in WebAssembly
 
 Recently, Greg Landrum, the author of RDKit, has introduced
 [a way to compile its C++ code to WebAssembly](http://rdkit.blogspot.com/2019/11/introducing-new-rdkit-javascript.html)
@@ -209,7 +209,7 @@ that exposes two functions. One of them, "rdKitInfoPanel", demonstrates how func
 used as an info panels. Below is the result, the "RDKitInfo" panel on the right contains the structure that gets
 rendered as SVG using the RDKit library.
 
-![](rdkit-info-panel.png)
+![RDKit Info Panel](rdkit-info-panel.png)
 
 See also:
 

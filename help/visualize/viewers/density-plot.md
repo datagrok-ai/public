@@ -9,9 +9,9 @@ contains.
 
 General:
 
-| []()                  |                 |
-|-----------------------|-----------------|
-| Right click           | Context menu    |
+|             |              |
+|-------------|--------------|
+| Right click | Context menu |
 
 ![Density Plot](../../uploads/viewers/density-plot.png "Density Plot")
 

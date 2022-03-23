@@ -16,6 +16,7 @@ div.header {
 }
 
 div#main {
+    background: #eee;
 }
 footer {
     height: 2em;
@@ -45,7 +46,7 @@ g.axis-bubble rect {
     fill: white;
 }
 svg.pviz rect.background {
-    fill: #f5f5f5;
+    fill: white;
 }
 
 rect.layer-background {

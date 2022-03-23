@@ -59,7 +59,7 @@ You can use these fields to filter groups with [smart search](../overview/smart-
 
 | Field       | Description                                        |
 |-------------|----------------------------------------------------|
-| id          |                                                    |
+| ID          |                                                    |
 | name        |                                                    |
 | isPersonal  |                                                    |
 | parents     | GroupRelation object (see below)                   |

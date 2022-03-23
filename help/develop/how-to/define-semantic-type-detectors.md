@@ -85,7 +85,7 @@ Empty values deserve special attention: make sure you don't match them with your
 strings should not match your regular expressions. Otherwise, this type might be assigned to a column consisting solely
 of nulls, which won't add any helpful insights to the data profile.
 
-![](semantic-type-detectors.gif "Detected Types: Latitude, Longitude, Magnitude")
+![Detected Types: Latitude, Longitude, Magnitude](semantic-type-detectors.gif "Detected Types: Latitude, Longitude, Magnitude")
 
 See also:
 

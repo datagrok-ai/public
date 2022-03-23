@@ -8,13 +8,18 @@
 		"datagrok-api": ">0.94.10",
 		"cash-dom": "latest",
 		"dayjs": "latest",
-		"openchemlib": "latest"
+		"openchemlib": "latest",
+		"@datagrok-libraries/utils": "^0.0.22"
 	},
 	"devDependencies": {
 		"ts-loader": "latest",
 		"typescript": "latest",
 		"webpack": "latest",
-		"webpack-cli": "latest"
+		"webpack-cli": "latest",
+		"@typescript-eslint/eslint-plugin": "latest",
+		"@typescript-eslint/parser": "latest",
+		"eslint": "latest",
+		"eslint-config-google": "latest"
 	},
 	"scripts": {
 		"install-dependencies": "npm install",
@@ -25,7 +30,9 @@
 		"debug-drugbank-dev": "grok publish dev --rebuild",
 		"release-drugbank-dev": "grok publish dev --rebuild --release",
 		"debug-drugbank-local": "grok publish local --rebuild",
-		"release-drugbank-local": "grok publish local --rebuild --release"
+		"release-drugbank-local": "grok publish local --rebuild --release",
+		"lint": "eslint src --ext .ts",
+		"lint-fix": "eslint src --ext .ts --fix"
 	},
 	"canEdit": [ "Developers" ],
 	"canView": [ "All users" ]

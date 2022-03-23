@@ -1,0 +1,186 @@
+version: "3"
+
+x-aws-logs_retention: 14
+
+networks:
+  datagrok:
+
+services:
+
+  datagrok:
+    image: datagrok/datagrok:latest
+    x-aws-policies:
+      - "arn:aws:iam::aws:policy/service-role/AmazonECSTaskExecutionRolePolicy"
+      - "arn:aws:iam::aws:policy/AmazonS3FullAccess"
+    environment:
+      GROK_MODE: 'auto'
+      GROK_PARAMETERS: "{
+        \"amazonStorageRegion\": \"${DATAGROK_S3_BUCKET_REGION}\",
+        \"amazonStorageBucket\": \"${DATAGROK_S3_BUCKET_NAME}\",
+        \"dbServer\": \"${DATAGROK_RDS_ENDPOINT}\",
+        \"db\": \"datagrok\",
+        \"dbLogin\": \"datagrok\",
+        \"dbPassword\": \"SoMeVeRyCoMpLeXpAsSwOrD\",
+        \"dbAdminLogin\": \"postgres\",
+        \"dbAdminPassword\": \"postgres\",
+        \"dbSsl\": false,
+        \"deployDemo\": false,
+        \"deployTestDemo\": false
+      }"
+    ports:
+      - 80:80
+      - target: 8080
+        x-aws-protocol: http
+        protocol: tcp
+    networks:
+      - datagrok
+    deploy:
+      replicas: 1
+      resources:
+        limits:
+          cpus: '4'
+          memory: 6G
+        reservations:
+          cpus: '2'
+          memory: 2G
+
+  northwind:
+    image: datagrok/demo_db:latest
+    environment:
+      POSTGRES_DB: northwind
+    networks:
+      datagrok:
+    deploy:
+      replicas: 1
+      resources:
+        limits:
+          cpus: '0.5'
+          memory: 500M
+        reservations:
+          cpus: '0.25'
+          memory: 250M
+
+  chembl:
+    image: datagrok/demo_db_chembl:latest
+    environment:
+      POSTGRES_DB: chembl
+    networks:
+      datagrok:
+    deploy:
+      replicas: 1
+      resources:
+        limits:
+          cpus: '1'
+          memory: 2G
+        reservations:
+          cpus: '0.25'
+          memory: 250M
+
+  unichem:
+    image: datagrok/demo_db_unichem:latest
+    environment:
+      POSTGRES_DB: unichem
+    networks:
+      datagrok:
+    deploy:
+      replicas: 1
+      resources:
+        limits:
+          cpus: '1'
+          memory: 2G
+        reservations:
+          cpus: '0.25'
+          memory: 250M
+
+  starbucks:
+    image: datagrok/demo_db:latest
+    environment:
+      POSTGRES_DB: starbucks
+    networks:
+      datagrok:
+    deploy:
+      replicas: 1
+      resources:
+        limits:
+          cpus: '0.5'
+          memory: 500M
+        reservations:
+          cpus: '0.25'
+          memory: 250M
+
+  world:
+    image: datagrok/demo_db:latest
+    environment:
+      POSTGRES_DB: world
+    networks:
+      datagrok:
+    deploy:
+      replicas: 1
+      resources:
+        limits:
+          cpus: '0.5'
+          memory: 500M
+        reservations:
+          cpus: '0.25'
+          memory: 250M
+
+#  grok_connect:
+#    image: datagrok/grok_connect:latest
+#    networks:
+#      - datagrok
+#    deploy:
+#      replicas: 1
+#      resources:
+#        limits:
+#          cpus: '0.5'
+#          memory: 400M
+#        reservations:
+#          cpus: '0.25'
+#          memory: 200M
+
+x-aws-cloudformation:
+  Resources:
+    ChemblTaskDefinition:
+      Properties:
+        EphemeralStorage:
+          SizeInGiB: 55
+    UnichemTaskDefinition:
+      Properties:
+        EphemeralStorage:
+          SizeInGiB: 40
+    DatagrokTCP8080Listener:
+      Properties:
+        DefaultActions:
+          - ForwardConfig:
+              TargetGroups:
+                - TargetGroupArn:
+                    Ref: DatagrokTCP8080TargetGroup
+            Type: forward
+        Protocol: "HTTP"
+    DatagrokTCP8080TargetGroup:
+      Properties:
+        HealthCheckPath: /api/admin/health
+        HealthCheckIntervalSeconds: 60
+        UnhealthyThresholdCount: 5
+        Matcher:
+          HttpCode: 200
+    DatagrokTCP80Listener:
+      Properties:
+        DefaultActions:
+          - ForwardConfig:
+              TargetGroups:
+                - TargetGroupArn:
+                    Ref: DatagrokTCP8080TargetGroup
+            Type: forward
+        Protocol: "HTTP"
+    DatagrokTCP80TargetGroup:
+    DatagrokService:
+      Properties:
+        LoadBalancers:
+          - ContainerName: datagrok
+            ContainerPort: 8080
+            TargetGroupArn:
+              Ref: DatagrokTCP8080TargetGroup
+        NetworkConfiguration:
+          AwsvpcConfiguration:
+            AssignPublicIp: DISABLED

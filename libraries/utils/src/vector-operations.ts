@@ -1,5 +1,5 @@
 import {Matrix, Vector, Coordinates, Vectors, DistanceMetric} from './type-declarations';
-import {randomFloat} from './random';
+import {randomFloat, randomInt} from './random';
 
 /**
  * Asserts a condition by throwing an Error.
@@ -147,4 +147,111 @@ export function calcDistanceMatrix(data: Vectors, distance: DistanceMetric): Mat
     }
   }
   return matrix;
+}
+
+/** Generates array from a range [begin; end] or [begin; end) if endExclusive. */
+export function genRange(begin: number, end: number, endExclusive = false): Int32Array {
+  const nItems = end - begin + (endExclusive ? 0 : 1);
+  const series = new Int32Array(nItems);
+
+  for (let i = 0; i < nItems; ++i) {
+    series[i] = begin + i;
+  }
+  return series;
+}
+
+/**  
+ * Returns order of values as if they are sorted.
+ *
+ * @export
+ * @param {any[]} values Input array.
+ * @param {boolean} [reverse=false] Whether to return reversed order.
+ * @return {number[]} The order computed.
+ */
+export function argSort(values: any[], reverse = false): number[] {
+  const sortfn = reverse ? (a: any[], b: any[]) => (b[0] - a[0]) : (a: any[], b: any[]) => (a[0] - b[0]);
+  const decor = (v: any, i: number) => [v, i]; // set index to value
+  const undecor = (a: any[]) => a[1]; // leave only index
+  const _argsort = (arr: any[]) => arr.map(decor).sort(sortfn).map(undecor);
+  return _argsort(values);
+}
+
+/**
+ * Returns the indexes of the most diverse objects according to the dist function
+ * 
+ * @param {number} length total number of objects
+ * @param {number} n number of diverse elements to find 
+ * @param {(i1: number, i2: number) => number} dist a function which calculates distance between two objects using their indexes
+ * @returns {number[]} The indexes of the most diverse objects
+ */
+export function getDiverseSubset(length: number, n: number, dist: (i1: number, i2: number) => number): number[] {
+
+  function maxBy(values: IterableIterator<number>, orderBy: (i: number) => number) {
+    let maxValue = null;
+    let maxOrderBy = null;
+
+    for (const element of values) {
+      let elementOrderBy = orderBy(element);
+      if (maxOrderBy == null || elementOrderBy > maxOrderBy) {
+        maxValue = element;
+        maxOrderBy = elementOrderBy;
+      }
+    }
+    return maxValue;  
+  }
+
+  let subset = [randomInt(length - 1)];
+  let complement = new Set();
+
+  for (let i = 0; i < length; ++i) {
+    if (!subset.includes(i))
+      complement.add(i);
+  }
+
+  while (subset.length < n) {
+    let idx = maxBy(
+      complement.values() as IterableIterator<number>,
+      (i) => Math.min.apply(Math, subset.map(function (val, index) {
+        return dist(i, val); 
+      })));
+    if (idx) {
+      subset.push(idx);
+      complement.delete(idx);
+    }
+  }
+  return subset;
+}
+
+/**
+ * Returns normalized vector
+ * 
+ * @param data numerical array
+ */
+export function normalize(data: Vector): Vector {
+  let mean = 0;
+  let std = 0;
+
+  for (let i = 0; i < data.length; ++i) {
+    mean += data[i];
+  }
+  mean /= data.length;
+
+  for (let i = 0; i < data.length; ++i) {
+    std += (data[i] - mean) * (data[i] - mean);
+  }
+  std = Math.sqrt(std / data.length);
+
+  for (let i = 0; i < data.length; ++i) {
+    data[i] = (data[i] - mean) / std;
+  }
+  return data;
+}
+/**
+ * Finds set difference between two lists.
+ * @param {any[]} a The first list.
+ * @param {any[]} b The second list.
+ */
+export function setDifference(a: any[], b: any[]): any[] {
+  const bSet = new Set(b);
+  return Array.from(new Set(a.filter((x) => !bSet.has(x))).values());
 }

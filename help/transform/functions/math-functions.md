@@ -10,7 +10,9 @@ scalars, boolean functions, or a column name. To pass a column cell, you can use
 to use parameters: `true`
 , `false`, `PI`, `E` etc.
 
-> By default, real numbers in a column show only 2 digits after the integer part. You can change this behavior by setting the appropriate format for displaying the data in the column. To do this, click on the column heading and in the opened context menu select "Format" option.
+> By default, real numbers in a column show only 2 digits after the integer part.
+> You can change this behavior by setting the appropriate format for displaying the data in the column.
+> To do this, click on the column heading and in the opened context menu select "Format" option.
 
 *Function List:*
 

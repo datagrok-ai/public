@@ -39,7 +39,7 @@ The platform has browsers for the following entities:
 A [project](project.md) uploaded to the server can be opened via a direct URL. If a project has more than one table
 view, you can pass the name of a specific view to the URL so that you can see it after opening. Links to projects are
 generated according to the following
-rule: *https://public.datagrok.ai/p/{project.namespace}.{project.name}/{tableView.name}*
+rule: `https://public.datagrok.ai/p/{project.namespace}.{project.name}/{tableView.name}`
 
 Example: [https://public.datagrok.ai/p/demo.pic50/desc_canvas_aug30](https://public.datagrok.ai/p/demo.pic50/desc_canvas_aug30)
 
@@ -89,7 +89,7 @@ Once completed, it will output the resulting table.
 
 Remarkably, routing works for [applications](../develop/how-to/build-an-app.md). They are shipped as part of
 a [package](../develop/develop.md) and used by developers as a means to extend the Datagrok platform. An application
-link has the following form: *https://public.datagrok.ai/apps/{package.name}/{application.name}*
+link has the following form: `https://public.datagrok.ai/apps/{package.name}/{application.name}`
 
 The application name can be omitted, in which case it follows the same rule as for views, that is, the first application
 found in a package is launched. For example, the following

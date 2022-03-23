@@ -1,15 +1,15 @@
-import {UaFilterableViewer} from "../../viewers/ua-filterable-viewer";
+import {UaFilterableQueryViewer} from "../../viewers/ua-filterable-query-viewer";
 import * as DG from "datagrok-api/dg";
-import {UaQueryViewer} from "../../viewers/ua-query-viewer";
+import {UaQueryViewer} from "../../viewers/abstract/ua-query-viewer";
 import {TopQueriesUsingDataSource} from "../top-queries-using-data-source";
 import * as grok from "datagrok-api/grok";
 import * as ui from "datagrok-api/ui";
 import {UaFilter} from "../../filter2";
 import {PropertyPanel} from "../../property-panel";
-import {UaDataFrameViewer} from "../../viewers/ua-data-frame-viewer";
+import {UaDataFrameQueryViewer} from "../../viewers/ua-data-frame-query-viewer";
 import {BehaviorSubject} from "rxjs"
 
-export class TopErrorSourcesViewer extends UaFilterableViewer {
+export class TopErrorSourcesViewer extends UaFilterableQueryViewer {
 
   public constructor(filterStream: BehaviorSubject<UaFilter>) {
     super(
@@ -21,7 +21,7 @@ export class TopErrorSourcesViewer extends UaFilterableViewer {
           viewer.onEvent('d4-bar-chart-on-category-clicked').subscribe((args) => {
             let pp = new PropertyPanel(
                   null,
-                  [new UaDataFrameViewer(
+                  [new UaDataFrameQueryViewer(
                   'Function Info By Source',
                   'FunctionInfoBySource',
                   (t: DG.DataFrame) => DG.Viewer.grid(t).root,

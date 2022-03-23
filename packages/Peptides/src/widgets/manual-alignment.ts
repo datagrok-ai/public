@@ -3,9 +3,9 @@ import * as grok from 'datagrok-api/grok';
 import * as DG from 'datagrok-api/dg';
 
 import $ from 'cash-dom';
-import {Peptides} from '../peptides';
-import {splitAlignedPeptides} from '../utils/split-aligned';
+// import {splitAlignedPeptides} from '../utils/split-aligned';
 import '../styles.css';
+import {PeptidesController} from '../peptides';
 
 /**
  * Manual sequence alignment widget.
@@ -21,7 +21,8 @@ export function manualAlignmentWidget(alignedSequenceCol: DG.Column, currentDf: 
   const applyChangesBtn = ui.button('Apply', async () => {
     const newSequence = sequenceInput.value;
     const affectedRowIndex = currentDf.currentRowIdx;
-    const [splitSequence] = splitAlignedPeptides(DG.Column.fromStrings('splitSequence', [newSequence]), false);
+    const [splitSequence] = PeptidesController.splitAlignedPeptides(
+      DG.Column.fromStrings('splitSequence', [newSequence]), false);
 
     alignedSequenceCol.set(affectedRowIndex, newSequence);
     for (const part of splitSequence.columns) {
@@ -32,7 +33,8 @@ export function manualAlignmentWidget(alignedSequenceCol: DG.Column, currentDf: 
     grok.shell.o = null;
     grok.shell.o = temp;
 
-    await Peptides.recalculate();
+    const peptidesController = await PeptidesController.getInstance(currentDf);
+    peptidesController.updateDefault();
   });
 
   const resetBtn = ui.button(

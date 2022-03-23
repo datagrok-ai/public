@@ -49,9 +49,9 @@ when running on a single server, and identify platform limitations. Suitable for
 
 The **app server** is the following AWS ECS Cluster:
 
-- c5.xlarge
-- 4-core CPU (our app server takes advantage of all cores)
-- 8GB RAM
+* c5.xlarge
+* 4-core CPU (our app server takes advantage of all cores)
+* 8GB RAM
 
 The **database server** is a c5.xlarge AWS RDS Postgres
 

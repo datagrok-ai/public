@@ -10,7 +10,7 @@ import {
 } from './utils/chem-common';
 import BitArray from '@datagrok-libraries/utils/src/bit-array';
 import {tanimotoSimilarity} from '@datagrok-libraries/utils/src/similarity-metrics';
-import {assure} from "@datagrok-libraries/utils/src/test";
+import {assure} from '@datagrok-libraries/utils/src/test';
 
 function _chemFindSimilar(molStringsColumn: DG.Column,
   queryMolString: string, settings: { [name: string]: any }) {
@@ -66,7 +66,9 @@ class CacheParams {
 
 const _chemCache = new CacheParams();
 
-async function _invalidate(molStringsColumn: DG.Column, queryMolString: string | null, includeFingerprints: boolean, endSection = true) {
+async function _invalidate(
+  molStringsColumn: DG.Column, queryMolString: string | null,
+  includeFingerprints: boolean, endSection = true) {
   await chemBeginCriticalSection();
   try {
     const sameColumnAndVersion = () =>
@@ -136,8 +138,7 @@ export async function chemGetSimilarities(molStringsColumn: DG.Column, queryMolS
 }
 
 export async function chemFindSimilar(
-    molStringsColumn: DG.Column, queryMolString = '', settings: { [name: string]: any } = {}) {
-
+  molStringsColumn: DG.Column, queryMolString = '', settings: { [name: string]: any } = {}) {
   assure.notNull(molStringsColumn, 'molStringsColumn');
   assure.notNull(queryMolString, 'queryMolString');
 
