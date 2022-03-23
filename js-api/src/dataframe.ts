@@ -19,17 +19,18 @@ import {Observable}  from "rxjs";
 import {filter} from "rxjs/operators";
 import {Widget} from "./widgets";
 import {Grid} from "./grid";
-import {ScatterPlotViewer, TypedEventArgs, Viewer} from "./viewer";
-import {Property} from "./entities";
+import {ScatterPlotViewer, Viewer} from "./viewer";
+import {Property, TableInfo} from "./entities";
+import {FormulaLinesHelper} from "./helpers";
 
 declare let grok: any;
 declare let DG: any;
 let api = <any>window;
 type RowPredicate = (row: Row) => boolean;
 type Comparer = (a: any, b: any) => number;
+type IndexSetter = (index: number, value: any) => void;
 
-/** Proxy wrapper for ColumnList
- */
+/** Proxy wrapper for ColumnList */
 const ColumnListProxy = new Proxy(class {
       columnList: ColumnList;
       constructor(columnList: any) {
@@ -79,12 +80,67 @@ const ColumnListProxy = new Proxy(class {
 );
 
 
+/** Column CSV export options */
+export interface ColumnCsvExportOptions {
+  /** Custom column format to be used */
+  format: string;
+
+  /** Additional options */
+  [index: string]: any;
+}
+
+
+/** Column name -> options */
+export interface ColumnsCsvExportOptions {
+  [index: string]: ColumnCsvExportOptions;
+}
+
+
+/** Csv export options to be used in {@link DataFrame.toCsv} */
+export interface CsvExportOptions {
+
+  /** Field delimiter; comma if not specified */
+  delimiter?: string;
+
+  /** New line character; \n if not specified */
+  newLine?: string;
+
+  /** Textual representation of the missing value. Empty string if not specified. */
+  missingValue?: string;
+
+  /** Whether the header row containing column names is included. True if not specified. */
+  includeHeader?: boolean;
+
+  /** Whether only selected columns are included. False if not specified. */
+  selectedColumnsOnly?: boolean;
+
+  /** Whether only filtered rows are included. Will be combined with [selectedRowsOnly]. */
+  filteredRowsOnly?: boolean;
+
+  /** Whether only selected rows are included. Will be combined with [filteredRowsOnly]. */
+  selectedRowsOnly?: boolean;
+
+  /** Column order */
+  columns?: string[];
+
+  /** Expands qualified numbers into two columns: `sign(column)` and `column` */
+  qualifierAsColumn?: boolean;
+
+  /** Column-specific formats (column name -> format).
+      For format examples, see [dateTimeFormatters]. */
+  columnOptions?: ColumnsCsvExportOptions;
+}
+
+
 /**
  * DataFrame is a high-performance, easy to use tabular structure with
  * strongly-typed columns of different types.
  *
  * In the API, the terms "Table" and "DataFrame" are used interchangeably.
- * See usage samples: {@link https://public.datagrok.ai/js/samples/data-frame/manipulate}
+ *
+ * Usage samples: {@link https://public.datagrok.ai/js/samples/data-frame/manipulate}
+ * Usage details: {@link https://datagrok.ai/help/develop/advanced/data-frame}
+ * Implementation details: {@link https://datagrok.ai/help/develop/admin/architecture#in-memory-database}
  */
 export class DataFrame {
   public readonly dart: any;
@@ -106,25 +162,54 @@ export class DataFrame {
     this.tags = new MapProxy(api.grok_DataFrame_Get_Tags(this.dart), 'tags', 'string');
   }
 
-  /** Creates a {@link DataFrame} with the specified number of rows and no columns.
-   * @param {number} rowCount
-   * @returns {DataFrame} */
+  /** Creates a {@link DataFrame} with the specified number of rows and no columns. */
   static create(rowCount: number = 0): DataFrame {
     return new DataFrame(api.grok_DataFrame(rowCount));
   }
 
-  /** Creates a {@link DataFrame} from the specified columns. All columns should be of the same length.
-   * @param {Column[]} columns
-   * @returns {DataFrame} */
+  static fromByteArray(byteArray: Uint8Array): DataFrame {
+    return new DataFrame(api.grok_DataFrame_FromByteArray(byteArray));
+  }
+
+  /** Creates a {@link DataFrame} from the specified columns. All columns should be of the same length. */
   static fromColumns(columns: Column[]): DataFrame {
     return new DataFrame(api.grok_DataFrame_FromColumns(columns.map((c) => c.dart)));
   }
 
+  /** Creates a {@link DataFrame} from the specified properties with the specified row count. */
   static fromProperties(properties: Property[], rows: number = 0) {
     let df = DataFrame.create(rows);
     for (let p of properties)
       df.columns.addNew(p.name, p.propertyType);
     return df;
+  }
+
+  /** Creates a [DataFrame] from a list of objects by using object keys as column names,
+   * and object values as values.
+   *
+   * NOTE: The implementation converts the values to strings first and then parses it,
+   * so do not use this method in performance-critical paths (for instance when the
+   * number of objects could be big), consider using {@link fromColumns} instead.
+   *
+   * @param {object[]} list - List of objects.
+   * @returns {DataFrame}
+   * {@link https://dev.datagrok.ai/script/samples/javascript/data-frame/construction/create-from-objects}
+   * */
+  static fromObjects(list: object[]): DataFrame | undefined {
+    let table = DataFrame.create(list.length);
+    if (list.length === 0)
+      return;
+
+    let names = Object.keys(list[0]);
+    for (let name of names) {
+      let strings = list.map((x: any) => {
+        let value = x[<any>name];
+        return value === null ? '':  `${value}`;
+      });
+      table.columns.add(Column.fromStrings(name, strings));
+    }
+
+    return table;
   }
 
   /** Constructs {@link DataFrame} from a comma-separated values string
@@ -146,12 +231,14 @@ export class DataFrame {
     return new DataFrame(api.grok_DataFrame_FromJson(json));
   }
 
+  /** A helper to conveniently access certain metadata properties stored in {@link tags} */
   get meta(): DataFrameMetaHelper {
     if (this._meta == undefined)
       this._meta = new DataFrameMetaHelper(this);
     return this._meta;
   }
 
+  /** A helper for creating plots for this dataframe */
   get plot(): DataFramePlotHelper {
     if (this._plot == undefined)
       this._plot = new DataFramePlotHelper(this);
@@ -164,27 +251,19 @@ export class DataFrame {
     return this._dialogs;
   }
 
-  /** Returns number of rows in the table.
-   * @returns {number} */
+  /** Returns number of rows in the table. */
   get rowCount(): number {
     return api.grok_DataFrame_RowCount(this.dart);
   }
 
-  /** Returns a {@link BitSet} with selected rows.
-   * @returns {BitSet} */
+  /** Returns a {@link BitSet} with selected rows. */
   get selection(): BitSet {
     return new BitSet(api.grok_DataFrame_Get_Selection(this.dart));
   }
 
-  /** Name of the dataframe.
-   * @returns {string} */
-  get name(): string {
-    return api.grok_DataFrame_Get_Name(this.dart);
-  }
-
-  set name(s: string) {
-    api.grok_DataFrame_Set_Name(this.dart, s);
-  }
+  /** Name of the dataframe.  */
+  get name(): string { return api.grok_DataFrame_Get_Name(this.dart); }
+  set name(s: string) { api.grok_DataFrame_Set_Name(this.dart, s); }
 
   /** Returns the value of the specified tag, or null if it does not exist.
    * @returns {string} */
@@ -205,10 +284,9 @@ export class DataFrame {
   }
 
   /** Returns i-th row.
-   * @param {number} i - Row index.
-   * @returns {Row} */
-  row(i: number): Row {
-    return new Row(this, i);
+   * _NOTE_: Do not use in performance-critical paths, consider accessing values via the {@link Column} instance. */
+  row(rowIndex: number): Row {
+    return new Row(this, rowIndex);
   }
 
   /** Returns idx-th value of the specified columns.
@@ -233,7 +311,7 @@ export class DataFrame {
     return toJs(api.grok_DataFrame_ColumnByName(this.dart, name));
   }
 
-  /** Returns a {@link Cell} with the specified name.
+  /** Returns a {@link Cell} with the specified row and column.
    * @param {number} idx - Row index.
    * @param {string} name - Column name.
    * @returns {Cell} */
@@ -251,10 +329,9 @@ export class DataFrame {
     return c;
   }
 
-  /** Exports the content to comma-separated-values format.
-   * @returns {string} */
-  toCsv(): string {
-    return api.grok_DataFrame_ToCsv(this.dart);
+  /** Exports the content to comma-separated-values format. */
+  toCsv(options?: CsvExportOptions): string {
+    return api.grok_DataFrame_ToCsv(this.dart, options);
   }
 
   /** Creates a new dataframe from the specified row mask and a list of columns.
@@ -307,30 +384,6 @@ export class DataFrame {
    * Sample: {@link https://public.datagrok.ai/js/samples/data-frame/events/current-elements} */
   set currentCell(cell: Cell) {
     api.grok_DataFrame_Set_CurrentCell(this.dart, cell.dart);
-  }
-
-  /** Creates a [DataFrame] from a list of objects by using object keys as column names,
-   * and object values as values.
-   *
-   * @param {object[]} list - List of objects.
-   * @returns {DataFrame}
-   * {@link https://dev.datagrok.ai/script/samples/javascript/data-frame/construction/create-from-objects}
-   * */
-  static fromObjects(list: object[]): DataFrame | undefined {
-    let table = DataFrame.create(list.length);
-    if (list.length === 0)
-      return;
-
-    let names = Object.keys(list[0]);
-    for (let name of names) {
-      let strings = list.map((x: any) => {
-        let value = x[<any>name];
-        return value === null ? '':  `${value}`;
-      });
-      table.columns.add(Column.fromStrings(name, strings));
-    }
-
-    return table;
   }
 
   /** Converts a column with the specified name to [newType],
@@ -402,12 +455,16 @@ export class DataFrame {
     return new DataFrame(api.grok_DataFrame_Append(this.dart, t2.dart, inPlace, columnsToAppend));
   }
 
-  /** @returns {Observable} */ _event(event: string): Observable<any> {
+  _event(event: string): Observable<any> {
+    return __obs(event, this.dart);
+  }
+
+  onEvent(event: string): Observable<any> {
     return __obs(event, this.dart);
   }
 
   /** Sample: {@link https://public.datagrok.ai/js/samples/data-frame/events/events} */
-   get onValuesChanged(): Observable<any> { return this._event('ddt-values-changed'); }
+  get onValuesChanged(): Observable<any> { return this._event('ddt-values-changed'); }
 
   /** Sample: {@link https://public.datagrok.ai/js/samples/data-frame/events/current-elements} */
   get onCurrentRowChanged(): Observable<any> { return this._event('ddt-current-row-changed'); }
@@ -500,6 +557,10 @@ export class DataFrame {
   getDensity(xBins: number, yBins: number, xColName: string, yColName: string): Int32Array {
     return api.grok_MathActions_GetDensity(this.dart, xBins, yBins, xColName, yColName);
   }
+
+  getTableInfo(): TableInfo {
+    return toJs(api.grok_DataFrame_Get_TableInfo(this.dart));
+  }
 }
 
 /** Represents a row. Allows for quick property access like "row.height". */
@@ -536,6 +597,11 @@ export class Row {
   }
 
   get cells(): Iterable<Cell> { return _toIterable(api.grok_Row_Get_Cells(this.table.dart, this.idx)); }
+
+  /** Returns this row's value for the specified column
+   * @param {string} columnName
+   * @returns {Object} */
+  [columnName: string]: any
 
   /** Returns this row's value for the specified column
    * @param {string} columnName
@@ -1073,7 +1139,7 @@ export class ColumnList {
    * @param {string} name
    * @param {string} expression
    * @param {ColumnType} type
-   * @param {bool} treatAsString
+   * @param {bool} treatAsString - if true, [expression] is not evaluated as formula and is treated as a regular string value instead
    * @returns {Column} */
   addNewCalculated(name: string, expression: string, type: ColumnType | 'auto' = 'auto', treatAsString: boolean = false): Promise<Column> {
     return new Promise((resolve, reject) => api.grok_ColumnList_AddNewCalculated(this.dart, name, expression, type, treatAsString, (c: any) => resolve(toJs(c)), (e: any) => reject(e)));
@@ -1124,15 +1190,19 @@ export class ColumnList {
 
   /** Adds a virtual column.
    * @param {string} name
-   * @param {Function} getValue - value constructor function that accepts int index and returns value
+   * @param getValue - value constructor function that accepts int index and returns value
+   * @param setValue - function that gets invoked when a column cell value is set
    * @param {String} type - column type
    * @returns {Column}
    *
    * {@link https://dev.datagrok.ai/script/samples/javascript/data-frame/advanced/virtual-int-column}
    * {@link https://dev.datagrok.ai/script/samples/javascript/data-frame/advanced/virtual-columns}
    * */
-  addNewVirtual(name: string, getValue: (ind: number) => any, type = TYPE.OBJECT): Column {
-    return toJs(api.grok_ColumnList_AddNewVirtual(this.dart, name, getValue, type));
+  addNewVirtual(
+      name: string,
+      getValue: (ind: number) => any, type = TYPE.OBJECT,
+      setValue: IndexSetter | null = null): Column {
+    return toJs(api.grok_ColumnList_AddNewVirtual(this.dart, name, getValue, setValue, type));
   }
 
   /** Removes column by name (case-insensitive).*/
@@ -1153,6 +1223,14 @@ export class ColumnList {
    * */
   replace(columnToReplace: Column | string, newColumn: Column): Column {
     return toJs(api.grok_ColumnList_Replace(this.dart, (typeof columnToReplace === 'string') ? columnToReplace:  columnToReplace.dart, newColumn.dart));
+  }
+
+  /** Returns a name that does not exist in column list.
+   * If column list does not contain column with [name], returns [name].
+   * Otherwise, tries [choices], and if the names are taken already, returns a string in a form of 'name (i)'.
+   * */
+  getUnusedName(name: string, choices?: string[]): string {
+    return api.grok_ColumnList_GetUnusedName(this.dart, name, choices);
   }
 
   /** Iterates over all columns.
@@ -1367,9 +1445,8 @@ export class Cell {
 
   /** Cell value.
    * @returns {*} */
-  get value(): any {
-    return api.grok_Cell_Get_Value(this.dart);
-  }
+  get value(): any { return api.grok_Cell_Get_Value(this.dart); }
+  set value(x: any) { api.grok_Cell_Set_Value(this.dart, x); }
 
   /** @returns {string} */
   toString(): string {
@@ -1433,17 +1510,21 @@ export class BitSet {
     return api.grok_BitSet_Get_Length(this.dart);
   }
 
-  /** Number of set bits
-   * @type {number} */
+  /** Number of set bits */
   get trueCount(): number {
     return api.grok_BitSet_Get_TrueCount(this.dart);
   }
 
-  /** Number of unset bits
-   * @type {number}*/
+  /** Number of unset bits */
   get falseCount(): number {
     return api.grok_BitSet_Get_FalseCount(this.dart);
   }
+
+  /** Whether any bits are set to false. */
+  get anyTrue(): boolean { return this.trueCount > 0; }
+
+  /** Whether any bits are set to true. */
+  get anyFalse(): boolean { return this.trueCount > 0; }
 
   /** Clones a bitset
    *  @returns {BitSet} */
@@ -2045,81 +2126,26 @@ export class Qnum {
   }
 }
 
-interface FormulaLine {
-  id?: string;
-  type?: string;
-  title?: string;
-  description?: string;
-  color?: string;
-  visible?: boolean;
-  opacity?: number;
-  zindex?: number;
-  min?: number;
-  max?: number;
-  formula?: string;
-
-  // Specific to lines:
-  width?: number;
-  spline?: number;
-  style?: string;
-
-  // Specific to bands:
-  column?: string;
-  column2?: string;
-}
-
 export class DataFrameMetaHelper {
-  private readonly df: DataFrame;
-  private formulaLines: FormulaLine[] = [];
+  private readonly _df: DataFrame;
+
+  readonly formulaLines: DataFrameFormulaLinesHelper;
 
   constructor(df: DataFrame) {
+    this._df = df;
+    this.formulaLines = new DataFrameFormulaLinesHelper(this._df);
+  }
+}
+
+export class DataFrameFormulaLinesHelper extends FormulaLinesHelper {
+  readonly df: DataFrame;
+
+  get storage(): string { return this.df.getTag(DG.TAGS.FORMULA_LINES) ?? ''; }
+  set storage(value: string) { this.df.setTag(DG.TAGS.FORMULA_LINES, value); }
+
+  constructor(df: DataFrame) {
+    super();
     this.df = df;
-    this.formulaLines = this.getFormulaLines();
-  }
-
-  getFormulaLines(): FormulaLine[] {
-    let json: string | null = this.df.getTag(DG.TAGS.FORMULA_LINES);
-    if (json)
-      return JSON.parse(json);
-
-    return [];
-  }
-
-  addFormulaLines(items: FormulaLine[] | null = null): void {
-    if (!items)
-      return;
-
-    let json: string | null = _toJson(items);
-    if (json)
-      this.df.setTag(DG.TAGS.FORMULA_LINES, json);
-  }
-
-  addFormulaItem(item: FormulaLine): void {
-    this.formulaLines.push(item);
-    this.addFormulaLines(this.formulaLines);
-  }
-
-  addFormulaLine(item: FormulaLine): void {
-    item.type = 'line';
-    this.addFormulaItem(item);
-  }
-
-  addFormulaBand(item: FormulaLine): void {
-    item.type = 'band';
-    this.addFormulaItem(item);
-  }
-
-  removeFormulaLines(...ids: string[]): void {
-    if (ids.length == 0) {
-      this.formulaLines = [];
-      this.df.setTag(DG.TAGS.FORMULA_LINES, '[]');
-      return;
-    }
-
-    this.formulaLines = this.formulaLines.filter((item: FormulaLine) =>
-        item.id == undefined || ids.indexOf(item.id) == -1);
-
-    this.addFormulaLines(this.formulaLines);
   }
 }
 
@@ -2161,7 +2187,7 @@ export class ColumnDialogHelper {
   /** Opens an editor dialog with preview for a calculated column. */
   editFormula(): void {
     let formula = this.column.getTag('formula');
-    let df = this.column.dataFrame;
+    // let df = this.column.dataFrame;
     if (formula == null)
       formula = '';
     if (!(this.column.name && this.column.dataFrame?.columns.contains(this.column.name)))
@@ -2268,5 +2294,5 @@ export class ColumnMetaHelper {
     if (this._markers == undefined)
       this._markers = new ColumnMarkerHelper(this.column);
     return this._markers;
-  }  
+  }
 }

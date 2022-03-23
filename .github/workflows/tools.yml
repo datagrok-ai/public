@@ -1,14 +1,40 @@
-name: Datagrok Tools Package
+name: Tools Package
 on:
-  workflow_dispatch: {}
+  workflow_dispatch: { }
   push:
     branches:
       - 'master'
     paths:
       - 'tools/package.json'
 jobs:
+  check:
+    runs-on: ubuntu-20.04
+    name: Check version was changed
+    outputs:
+      changed_version: ${{ steps.check-version.outputs.changed_version }}
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v2
+      - name: Check version was changed
+        id: check-version
+        working-directory: ./tools
+        run: |
+          set -ex
+          name="$(jq .name package.json | sed 's/"//g')"
+          current_version="$(jq .version package.json | sed 's/"//g')"
+          npm_response="$(curl --retry 3 "https://registry.npmjs.org/${name}/${current_version}")"
+          if [[ $npm_response == "\"version not found: ${current_version}\"" ]]; then
+            changed_version='true'
+          else
+            changed_version='false'
+          fi
+          echo "::set-output name=changed_version::${changed_version}"
+
   build:
-    runs-on: ubuntu-latest
+    name: Build and publish to npm
+    runs-on: ubuntu-20.04
+    needs: check
+    if: needs.check.outputs.changed_version == 'true'
     environment: Prod
     steps:
       - uses: actions/checkout@v2
@@ -23,13 +49,13 @@ jobs:
         run: npm version
       - run: npm install
         working-directory: ./tools
-#      - run: npm publish
-#        working-directory: ./tools
-#        env:
-#          NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
+      - run: npm publish
+        working-directory: ./tools
+        env:
+          NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
       - name: Commit package-lock.json
         run: |
-          if [ ! -z "$(git status -s tools/package-lock.json)" ]; then
+          if [ -n "$(git status -s tools/package-lock.json)" ]; then
             git config --global user.name 'GitHub Actions'
             git config --global user.email 'githubactions@datagrok.ai'
             git pull

@@ -1,4 +1,5 @@
 const path = require('path');
+const webpack = require('webpack');
 
 module.exports = {
   mode: 'development',
@@ -13,7 +14,8 @@ module.exports = {
   module: {
     rules: [
       { test: /\.tsx?$/, loader: 'ts-loader' },
-      { test: /\.css$/, use: ['style-loader', 'css-loader'] }
+      { test: /\.css$/, use: ['style-loader', 'css-loader'] },
+      { test: /\.(jpe?g|gif|png|svg|sdf)$/, loader: "file-loader" }
     ],
   },
   devtool: 'inline-source-map',
@@ -31,4 +33,9 @@ module.exports = {
     libraryTarget: 'var',
     path: path.resolve(__dirname, 'dist'),
   },
+  plugins:[
+    new webpack.DefinePlugin({
+        process: {env: {}}
+    })
+  ]
 };

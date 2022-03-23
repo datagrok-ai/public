@@ -2,16 +2,17 @@ import * as grok from 'datagrok-api/grok';
 import * as DG from "datagrok-api/dg";
 import * as ui from "datagrok-api/ui";
 import { study } from "../clinical-study";
-import { addDataFromDmDomain, createPivotedDataframe, getUniqueValues, getVisitNamesAndDays } from '../data-preparation/utils';
-import { ETHNIC, LAB_RES_N, LAB_TEST, VISIT_DAY, VISIT_NAME, RACE, SEX, SUBJECT_ID, TREATMENT_ARM, VS_TEST, VS_RES_N } from '../columns-constants';
+import { addDataFromDmDomain, createPivotedDataframeAvg, getUniqueValues, getVisitNamesAndDays } from '../data-preparation/utils';
+import { ETHNIC, LAB_RES_N, LAB_TEST, VISIT_DAY, VISIT_NAME, RACE, SEX, SUBJECT_ID, VS_TEST, VS_RES_N } from '../constants/columns-constants';
 import { dynamicComparedToBaseline } from '../data-preparation/data-preparation';
-import { ILazyLoading } from '../lazy-loading/lazy-loading';
-import { checkMissingDomains, updateDivInnerHTML } from './utils';
+import { updateDivInnerHTML } from '../utils/utils';
 import { _package } from '../package';
-import { requiredColumnsByView } from '../constants';
+import { ClinicalCaseViewBase } from '../model/ClinicalCaseViewBase';
+import { TRT_ARM_FIELD, VIEWS_CONFIG } from '../views-config';
+import { TIME_PROFILE_VIEW_NAME } from '../constants/view-names-constants';
 
 
-export class TimeProfileView extends DG.ViewBase implements ILazyLoading {
+export class TimeProfileView extends ClinicalCaseViewBase {
 
     blVisitChoices: DG.InputBase;
     epVisitChoices: DG.InputBase;
@@ -23,7 +24,7 @@ export class TimeProfileView extends DG.ViewBase implements ILazyLoading {
     relativeChangeFromBlDataFrame: DG.DataFrame;
     uniqueLabValues: any;
     uniqueVisits: any;
-    splitBy = [ TREATMENT_ARM, SEX, RACE, ETHNIC ];
+    splitBy: any;
     types = ['Values', 'Changes'];
     domains = ['vs', 'lb'];
     domainFields = {'lb': {'test': LAB_TEST, 'res': LAB_RES_N}, 'vs': {'test': VS_TEST, 'res': VS_RES_N}};
@@ -41,21 +42,15 @@ export class TimeProfileView extends DG.ViewBase implements ILazyLoading {
         this.helpUrl = `${_package.webRoot}/views_help/time_profile.md`;
     }
 
-    loaded: boolean;
-
-    load(): void {
-        checkMissingDomains(requiredColumnsByView[this.name], this);
-     }
-
     createView(): void {
-        this.splitBy = this.splitBy.filter(it => study.domains.dm.columns.names().includes(it));
-        this.domains = this.domains.filter(it => study.domains[it] !== null);
+        this.splitBy = [ VIEWS_CONFIG[TIME_PROFILE_VIEW_NAME][TRT_ARM_FIELD], SEX, RACE, ETHNIC ].filter(it => study.domains.dm && study.domains.dm.columns.names().includes(it));
+        this.domains = this.domains.filter(it => study.domains[it] !== null && !this.optDomainsWithMissingCols.includes(it));
         this.selectedDomain = this.domains[0];
         this.uniqueLabValues = Array.from(getUniqueValues(study.domains[this.selectedDomain], this.domainFields[this.selectedDomain]['test']));
         this.uniqueVisits = Array.from(getUniqueValues(study.domains[this.selectedDomain], VISIT_NAME));
         this.selectedLabValue = this.uniqueLabValues[ 0 ] as string;
         this.selectedType = this.types[0];
-        this.visitNamesAndDays = getVisitNamesAndDays(study.domains[this.selectedDomain]);
+        this.visitNamesAndDays = getVisitNamesAndDays(study.domains[this.selectedDomain], VISIT_NAME, VISIT_DAY);
         this.bl = this.visitNamesAndDays[0].name;
         this.ep = this.visitNamesAndDays[this.visitNamesAndDays.length-1].name;
         this.createLaboratoryDataframe();
@@ -66,16 +61,14 @@ export class TimeProfileView extends DG.ViewBase implements ILazyLoading {
             this.uniqueLabValues = Array.from(getUniqueValues(study.domains[this.selectedDomain], this.domainFields[this.selectedDomain]['test']));
             this.uniqueVisits = Array.from(getUniqueValues(study.domains[this.selectedDomain], VISIT_NAME));
             this.selectedLabValue = this.uniqueLabValues[ 0 ] as string;
-            this.visitNamesAndDays = getVisitNamesAndDays(study.domains[this.selectedDomain]);
+            this.visitNamesAndDays = getVisitNamesAndDays(study.domains[this.selectedDomain], VISIT_NAME, VISIT_DAY);
             if (this.visitNamesAndDays.findIndex(it => it.name === this.bl) === -1) {
                 this.bl = this.visitNamesAndDays[0].name;
             }
             if (this.visitNamesAndDays.findIndex(it => it.name === this.ep) === -1) {
                 this.ep = this.visitNamesAndDays[this.visitNamesAndDays.length-1].name;
             }
-            this.createValuesChoices();
-            this.createBlChoices();
-            this.createEpChoices();
+            this.createDropdownLists();
             this.updateTimeProfile();
         });
 
@@ -85,13 +78,11 @@ export class TimeProfileView extends DG.ViewBase implements ILazyLoading {
             this.updateTimeProfile();
         });
 
-        this.createValuesChoices();
-        this.createBlChoices();
-        this.createEpChoices();
+        this.createDropdownLists();
 
         this.root.className = 'grok-view ui-box';
         this.linechart = DG.Viewer.lineChart(this.laboratoryDataFrame, {
-            splitColumnName: this.splitBy[0],
+            splitColumnName: this.splitBy.length ? this.splitBy[0] : '',
             xColumnName: VISIT_DAY,
             yColumnNames: [`${this.selectedLabValue} avg(${this.domainFields[this.selectedDomain]['res']})`],
             whiskersType: 'Med | Q1, Q3'
@@ -116,17 +107,29 @@ export class TimeProfileView extends DG.ViewBase implements ILazyLoading {
             case 'Values': {
                 this.createLaboratoryDataframe();
                 this.linechart.dataFrame = this.laboratoryDataFrame;
+                this.linechart.setOptions({
+                    yColumnNames: [`${this.selectedLabValue} avg(${this.domainFields[this.selectedDomain]['res']})`],
+                  });
                 break;
             }
             case 'Changes': {
                 this.createrelativeChangeFromBlDataframe();
                 this.linechart.dataFrame = this.relativeChangeFromBlDataFrame;
+                this.linechart.setOptions({
+                    yColumnNames: [`${this.selectedLabValue} avg(${this.domainFields[this.selectedDomain]['res']})`],
+                  });
                 break;
             }
             default: {
                 break;
             }
         }
+    }
+
+    private createDropdownLists() {
+        this.createValuesChoices();
+        this.createBlChoices();
+        this.createEpChoices();
     }
 
     private createValuesChoices(){
@@ -164,15 +167,19 @@ export class TimeProfileView extends DG.ViewBase implements ILazyLoading {
 
     private createLaboratoryDataframe() {
         let df = this.filterDataFrameByDays(study.domains[this.selectedDomain].clone());
-        let dfWithArm = addDataFromDmDomain(df, study.domains.dm, [ SUBJECT_ID, VISIT_DAY, VISIT_NAME].concat(Object.values(this.domainFields[this.selectedDomain])), this.splitBy);
-        this.laboratoryDataFrame = createPivotedDataframe(dfWithArm, this.domainFields[this.selectedDomain]['test'], this.domainFields[this.selectedDomain]['res'], this.splitBy);
+        if (this.splitBy.length) {
+            df = addDataFromDmDomain(df, study.domains.dm, [ SUBJECT_ID, VISIT_DAY, VISIT_NAME].concat(Object.values(this.domainFields[this.selectedDomain])), this.splitBy);
+        }
+        this.laboratoryDataFrame = createPivotedDataframeAvg(df, [ SUBJECT_ID, VISIT_DAY ], this.domainFields[this.selectedDomain]['test'], this.domainFields[this.selectedDomain]['res'], this.splitBy);
     }
 
     private createrelativeChangeFromBlDataframe(){
         let df = this.filterDataFrameByDays(study.domains[this.selectedDomain].clone());
         dynamicComparedToBaseline(df, this.domainFields[this.selectedDomain]['test'], this.domainFields[this.selectedDomain]['res'], this.bl, VISIT_NAME, 'LAB_DYNAMIC_BL', true);
-        let dfWithArm = addDataFromDmDomain(df, study.domains.dm, [ SUBJECT_ID, VISIT_DAY, VISIT_NAME, this.domainFields[this.selectedDomain]['test'], this.domainFields[this.selectedDomain]['res'] ], this.splitBy);
-        this.relativeChangeFromBlDataFrame = createPivotedDataframe(dfWithArm, this.domainFields[this.selectedDomain]['test'], this.domainFields[this.selectedDomain]['res'], this.splitBy);
+        if (this.splitBy.length) {
+            df = addDataFromDmDomain(df, study.domains.dm, [ SUBJECT_ID, VISIT_DAY, VISIT_NAME, this.domainFields[this.selectedDomain]['test'], this.domainFields[this.selectedDomain]['res'] ], this.splitBy);
+        }
+        this.relativeChangeFromBlDataFrame = createPivotedDataframeAvg(df, [ SUBJECT_ID, VISIT_DAY ], this.domainFields[this.selectedDomain]['test'], this.domainFields[this.selectedDomain]['res'], this.splitBy);
     }
 
 

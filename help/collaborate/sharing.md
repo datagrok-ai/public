@@ -8,12 +8,12 @@ shareable objects are called [entities](../overview/objects.md). When an object 
 a [privilege](../govern/authorization.md) (typically, 'view' or 'edit') to a grantee. See
 the [Security](../govern/security.md) article for details on how to manage groups and privileges.
 
-To share an object, either right-click on it and choose `Share...`, or expand
-the `Sharing` section in the object's property panel and choose `Share...` there.
+To share an object, either right-click on it and choose `Share...`, or expand the `Sharing` section in the object's
+property panel and choose `Share...` there.
 
-![](share-connection.gif)
+![Share Connection](share-connection.gif)
 
-![](property-panel-share.png)
+![Property Panel Share](property-panel-share.png)
 
 ## Sharing connections and queries
 

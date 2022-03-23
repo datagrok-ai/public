@@ -3,14 +3,16 @@
 
 # Pie chart
 
-Pie chart is useful for reflecting numerical proportions. Conceptually, it is similar to a bar chart in that it represents categorical values. A pie chart shows the relative size of a given category (a slice of the pie) compared to the entire dataset (the whole pie).
+Pie chart is useful for reflecting numerical proportions. Conceptually, it is similar to a bar chart in that it
+represents categorical values. A pie chart shows the relative size of a given category (a slice of the pie) compared to
+the entire dataset (the whole pie).
 
 Controls:
 
-| []()                  |                |
-|-----------------------|----------------|
-| Right click           | Context menu   |
-| Segment click         | Select segment |
+|               |                |
+|---------------|----------------|
+| Right click   | Context menu   |
+| Segment click | Select segment |
 
 ## Videos
 
@@ -18,7 +20,7 @@ Controls:
 
 See also:
 
-  * [Column Selectors](column-selectors.md) 
-  * [Viewers](../viewers.md)
-  * [Table view](../../overview/table-view.md)
-  * [JS API: Pie chart](https://public.datagrok.ai/js/samples/ui/viewers/types/pie-chart)
+* [Column Selectors](column-selectors.md)
+* [Viewers](../viewers.md)
+* [Table view](../../overview/table-view.md)
+* [JS API: Pie chart](https://public.datagrok.ai/js/samples/ui/viewers/types/pie-chart)

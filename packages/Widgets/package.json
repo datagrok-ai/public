@@ -9,5 +9,14 @@
     "src/widgets.css",
     "src/filters/radio_button_filter.js",
     "src/filters/multi-value-filter.js"
-  ]
+  ],
+  "canEdit": [
+    "Developers"
+  ],
+  "canView": [
+    "All users"
+  ],
+  "dependencies": {
+    "datagrok-tools": "^4.1.20"
+  }
 }

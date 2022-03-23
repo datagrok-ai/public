@@ -5,9 +5,14 @@
 
 This type of function includes math, trigonometric, and logic functions.
 
-As parameters of the function, you can pass numeric scalars, numeric functions, [math constants](constants.md), boolean scalars, boolean functions, or a column name. To pass a column cell, you can use the syntax `${columnName}`. Other ways to use parameters: `true`, `false`, `PI`, `E` etc.
+As parameters of the function, you can pass numeric scalars, numeric functions, [math constants](constants.md), boolean
+scalars, boolean functions, or a column name. To pass a column cell, you can use the syntax `${columnName}`. Other ways
+to use parameters: `true`
+, `false`, `PI`, `E` etc.
 
->By default, real numbers in a column show only 2 digits after the integer part. You can change this behavior by setting the appropriate format for displaying the data in the column. To do this, click on the column heading and in the opened context menu select "Format" option.
+> By default, real numbers in a column show only 2 digits after the integer part.
+> You can change this behavior by setting the appropriate format for displaying the data in the column.
+> To do this, click on the column heading and in the opened context menu select "Format" option.
 
 *Function List:*
 
@@ -63,7 +68,8 @@ Abs(-10)    // 10
 
 ## <a name="acos"></a>Acos(`x`)
 
-Returns the arccosine of a number [x] as an angle expressed in radians in the interval 0..PI. `x` must be in the interval -1..1.
+Returns the arccosine of a number [x] as an angle expressed in radians in the interval 0..PI. `x`
+must be in the interval -1..1.
 
 ```javascript
 Acos(0.5)    // 1.047197580337524
@@ -88,7 +94,8 @@ And(5 == 5, 10 < 20)    // true
 
 ## <a name="asin"></a>Asin(`x`)
 
-Returns the arcsine of a number `x` as an angle expressed in radians in the interval -PI/2..PI/2. `x` must be in the interval -1..1.
+Returns the arcsine of a number `x` as an angle expressed in radians in the interval -PI/2..PI/2. `x` must be in the
+interval -1..1.
 
 ```javascript
 Asin(0.5)    // 0.479425549507141
@@ -104,9 +111,12 @@ Atan(1)    // 0.785398185253143
 
 ## <a name="atan2"></a>Atan2(`x`, `y`)
 
-Returns the angle in radians between the positive X-axis and the vector (`y`,`x`). The result is in the range -PI..PI. If `y` is positive, this is the same as `Atan(x / y)`.
+Returns the angle in radians between the positive X-axis and the vector (`y`,`x`). The result is in the range -PI..PI.
+If `y` is positive, this is the same as `Atan(x / y)`.
 
-The result is negative when `x` is negative (including when `x` is -0.0). If `x` is equal to zero, the vector (`y`,`x`) is considered parallel to the X-axis, even if `y` is also equal to zero. The sign of `y` determines the direction of the vector along the X-axis.
+The result is negative when `x` is negative (including when `x` is -0.0). If `x` is equal to zero, the vector (`y`,`x`)
+is considered parallel to the X-axis, even if `y` is also equal to zero. The sign of `y` determines the direction of the
+vector along the X-axis.
 
 ```javascript
 Atan2(0, -0)    // 3.141592741012573

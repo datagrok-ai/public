@@ -1,0 +1,16 @@
+{
+  "#type": "DataConnection",
+  "parameters": {
+    "server": "$DEMO_DB_SERVER",
+    "port": 5432,
+    "db": "starbucks"
+  },
+  "dataSource": "PostgreSQL",
+  "description": "Coffee company demo db",
+  "credentials": {
+    "parameters" : {
+      "login": "starbucks",
+      "password": "starbucks"
+    }
+  }
+}

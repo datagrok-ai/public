@@ -1,8 +1,8 @@
 import * as grok from 'datagrok-api/grok';
 import * as ui from 'datagrok-api/ui';
 import * as DG from 'datagrok-api/dg';
-import { getRdKitModule } from '../chem_common_rdkit';
-import { _package } from '../package';
+import {getRdKitModule} from '../utils/chem-common-rdkit';
+import {_package} from '../package';
 
 class UniChemSource {
   id: number;
@@ -52,13 +52,13 @@ class UniChemSource {
     38: 'rhea',
     39: 'chemicalbook',
     41: 'swisslipids',
-    43: 'gsrs'
+    43: 'gsrs',
   };
 
   constructor(
-      id: number, name: string, fullName:string, labelName: string,
-      baseUrl: string, homePage: string, description: string
-    ) {
+    id: number, name: string, fullName:string, labelName: string,
+    baseUrl: string, homePage: string, description: string,
+  ) {
     this.id = id;
     this.name = name;
     this.fullName = fullName;
@@ -69,7 +69,7 @@ class UniChemSource {
   }
 
   static async refreshSources() {
-    const table = await grok.data.loadTable(_package.webRoot + 'data-samples/UniChemSources.csv');
+    const table = DG.DataFrame.fromCsv(await _package.files.readAsText('unichem-sources.csv'));
     const rowCount = table.rowCount;
     for (let i = 0; i < rowCount; i++) {
       const id = table.get('src_id', i);
@@ -82,9 +82,8 @@ class UniChemSource {
 
   static byName(name: string) {
     for (const source of Object.values(this._sources)) {
-      if (source.name === name) {
+      if (source.name === name)
         return source;
-      }
     }
     return null;
   }
@@ -97,9 +96,9 @@ async function getCompoundsIds(inchiKey: string) {
   const response = await grok.dapi.fetchProxy(url, params);
   const sources: {[key: string]: any}[] = (await response.json()).filter((s: {[key: string]: string | number}) => {
     //@ts-ignore: it's a string at this point 100%
-    const src_id = parseInt(s['src_id']);
-    s['src_id'] = src_id;
-    return src_id in UniChemSource.idNames;
+    const srcId = parseInt(s['src_id']);
+    s['src_id'] = srcId;
+    return srcId in UniChemSource.idNames;
   });
 
   return response.status !== 200 ?
@@ -108,13 +107,15 @@ async function getCompoundsIds(inchiKey: string) {
 
 export async function identifiersWidget(smiles: string) {
   const rdKitModule = getRdKitModule();
-  const inchiKey = rdKitModule.get_inchikey_for_inchi(rdKitModule.get_mol(smiles).get_inchi());
+  const mol = rdKitModule.get_mol(smiles);
+  const inchiKey = rdKitModule.get_inchikey_for_inchi(mol.get_inchi());
+  mol.delete();
   const idMap = await getCompoundsIds(inchiKey);
   await UniChemSource.refreshSources();
 
-  for (const [source, id] of Object.entries(idMap)) {
-    idMap[source] = ui.link(id, () => window.open(UniChemSource.byName(source)!.baseUrl + id))
-  }
+  for (const [source, id] of Object.entries(idMap))
+    idMap[source] = ui.link(id, () => window.open(UniChemSource.byName(source)!.baseUrl + id));
+
 
   return new DG.Widget(ui.tableFromMap(idMap));
 }

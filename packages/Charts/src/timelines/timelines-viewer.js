@@ -1,6 +1,8 @@
 import * as echarts from 'echarts';
+import { format } from 'echarts/lib/util/time';
+import $ from 'cash-dom';
 import { EChartViewer } from '../echart-viewer';
-import { options, deepCopy } from './echarts-options';
+import { options, deepCopy, VISIBILITY_MODE } from './echarts-options';
 
 
 export class TimelinesViewer extends EChartViewer {
@@ -20,12 +22,11 @@ export class TimelinesViewer extends EChartViewer {
     this.markerPosition = this.string('markerPosition', 'main line',
       { choices: ['main line', 'above main line', 'scatter'] });
     this.lineWidth = this.int('lineWidth', 3);
-    this.dateFormat = this.string('dateFormat', null, { choices: [
-      '{yyyy}-{MM}-{dd}', '{M}/{d}/{yyyy}', '{MMM} {d}', '{dd}', '{d}'
-    ]});
+    this.dateFormat = this.string('dateFormat');  // TODO: add an extendable dropdown
     this.axisPointer = this.string('axisPointer', 'shadow',
       { choices: ['cross', 'line', 'shadow', 'none'] });
     this.showZoomSliders = this.bool('showZoomSliders', true);
+    this.legendVisibility = this.string('legendVisibility', VISIBILITY_MODE.AUTO, { choices: Object.values(VISIBILITY_MODE) });
 
     this.splitByRegexps = [/^USUBJID$/, /id/i];
     this.colorByRegexps = [/^([A-Z]{2}(TERM|TEST|TRT|VAL)|(ACT)?ARM|MIDS(TYPE)?|VISIT)$/, /event/i];
@@ -35,6 +36,7 @@ export class TimelinesViewer extends EChartViewer {
 
     this.defaultDateFormat = '{MMM} {d}';
     this.data = [];
+    this.columnData = {};
     this.count = 0;
     this.selectionColor = DG.Color.toRgb(DG.Color.selectedRows);
     this.zoomState = [[0, 100], [0, 100], [0, 100], [0, 100]];
@@ -45,6 +47,8 @@ export class TimelinesViewer extends EChartViewer {
 
   init() {
     if (!this.initialized) {
+      this.helpUrl = 'https://raw.githubusercontent.com/datagrok-ai/public/master/packages/Charts/README.md#timelines';
+
       this.updateZoom();
       this.chart.on('dataZoom', () => {
         this.chart.getOption().dataZoom.forEach((z, i) => {
@@ -65,8 +69,8 @@ export class TimelinesViewer extends EChartViewer {
         if (params.componentType === 'yAxis') return this.getStrValue(this.columnData.splitByColumnName, i) === params.value;
         if (params.componentType === 'series') {
           return params.value[0] === this.getStrValue(this.columnData.splitByColumnName, i) &&
-                 params.value[1] === this.getSafeValue(this.columnData.startColumnName, i) &&
-                 params.value[2] === this.getSafeValue(this.columnData.endColumnName, i);
+                 this.isSameDate(params.value[1], this.getSafeValue(this.columnData.startColumnName, i)) &&
+                 this.isSameDate(params.value[2], this.getSafeValue(this.columnData.endColumnName, i));
         }
         return false;
       }, params.event.event));
@@ -76,6 +80,11 @@ export class TimelinesViewer extends EChartViewer {
       this.chart.on('mouseout', () => ui.tooltip.hide());
 
       this.option.tooltip.axisPointer.type = this.axisPointer;
+
+      this.titleDiv = ui.div();
+      this.legendDiv = ui.div();
+      this.root.appendChild(this.titleDiv);
+      this.root.appendChild(this.legendDiv);
       this.initialized = true;
     }
   }
@@ -92,9 +101,16 @@ export class TimelinesViewer extends EChartViewer {
       const columnData = this.updateColumnData(property);
       if (property.name === 'colorByColumnName') {
         this.colorMap = this.getColorMap(columnData.categories);
+        this.updateLegend(columnData.column);
       }
+    } else if (property.name === 'legendVisibility') {
+      this.switchLegendVisibility(property.get(this));
     }
     this.render();
+  }
+
+  formatDate(value) {
+    return value instanceof Date ? format(value, this.dateFormat, false) : value;
   }
 
   getTooltip(params) {
@@ -104,8 +120,8 @@ export class TimelinesViewer extends EChartViewer {
       let tooltipContent = params.componentType === 'yAxis' ? ui.div(`${params.value}`) :
         ui.divV([ui.div(`key: ${params.value[0]}`),
         ui.div(`event: ${params.value[4]}`),
-        ui.div(`start: ${params.value[1]}`),
-        ui.div(`end: ${params.value[2]}`),
+        ui.div(`start: ${this.formatDate(params.value[1])}`),
+        ui.div(`end: ${this.formatDate(params.value[2])}`),
         ])
       ui.tooltip.show(tooltipContent, x, y);
     } else {
@@ -113,8 +129,8 @@ export class TimelinesViewer extends EChartViewer {
         if (params.componentType === 'yAxis') return this.getStrValue(this.columnData.splitByColumnName, i) === params.value;
         if (params.componentType === 'series') {
           return params.value[0] === this.getStrValue(this.columnData.splitByColumnName, i) &&
-            params.value[1] === this.getSafeValue(this.columnData.startColumnName, i) &&
-            params.value[2] === this.getSafeValue(this.columnData.endColumnName, i);
+            this.isSameDate(params.value[1], this.getSafeValue(this.columnData.startColumnName, i)) &&
+            this.isSameDate(params.value[2], this.getSafeValue(this.columnData.endColumnName, i));
         }
         return false;
       }, x, y);
@@ -133,15 +149,20 @@ export class TimelinesViewer extends EChartViewer {
 
     const columns = this.dataFrame.columns.toList();
 
-    const strColumns = columns.filter(col => col.type === 'string')
+    const strColumns = columns.filter(col => col.type === DG.COLUMN_TYPE.STRING)
       .sort((a, b) => a.categories.length - b.categories.length);
 
-    const intColumns = columns.filter(col => col.type === 'int')
-      .sort((a, b) => a.stats.avg - b.stats.avg);
+    const numColumns = [...this.dataFrame.columns.numerical].sort((a, b) => a.stats.avg - b.stats.avg);
+    const numericalTypes = [DG.COLUMN_TYPE.INT, DG.COLUMN_TYPE.FLOAT, DG.COLUMN_TYPE.DATE_TIME];
+
+    if (strColumns.length < 1 || numColumns.length < 1) {
+      this.showErrorMessage('Not enough data to produce the result.');
+      return;
+    }
 
     this.splitByColumnName = (this.findColumn(columns, this.splitByRegexps) || strColumns[strColumns.length - 1]).name;
-    this.startColumnName = (this.findColumn(columns, this.startRegexps, [DG.COLUMN_TYPE.INT, DG.COLUMN_TYPE.DATE_TIME]) || intColumns[0]).name;
-    this.endColumnName = (this.findColumn(columns, this.endRegexps, [DG.COLUMN_TYPE.INT, DG.COLUMN_TYPE.DATE_TIME]) || intColumns[intColumns.length - 1]).name;
+    this.startColumnName = (this.findColumn(columns, this.startRegexps, numericalTypes) || numColumns[0]).name;
+    this.endColumnName = (this.findColumn(columns, this.endRegexps, numericalTypes) || numColumns[numColumns.length - 1]).name;
     this.colorByColumnName = (this.findColumn(columns, this.colorByRegexps, [DG.COLUMN_TYPE.STRING]) || strColumns[0]).name;
     this.eventColumnName = (this.findColumn(columns, this.eventRegexps, [DG.COLUMN_TYPE.STRING]) || strColumns[0]).name;
 
@@ -158,7 +179,9 @@ export class TimelinesViewer extends EChartViewer {
       return map;
     }, {});
 
-    this.colorMap = this.getColorMap(this.dataFrame.getCol(this.colorByColumnName).categories);
+    this.colorMap = this.getColorMap(this.columnData.colorByColumnName.categories);
+    this.updateLegend(this.columnData.colorByColumnName.column);
+    this.switchLegendVisibility(this.legendVisibility);
 
     let prevSubj = null;
 
@@ -287,7 +310,7 @@ export class TimelinesViewer extends EChartViewer {
 
   updateColumnData(prop) {
     const column = this.dataFrame.col(prop.get(this));
-    if (column === null)
+    if (column == null)
       return null;
     this.columnData[prop.name] = {
       column,
@@ -304,6 +327,33 @@ export class TimelinesViewer extends EChartViewer {
     });
   }
 
+  updateLegend(column) {
+    $(this.legendDiv).empty();
+    const legend = DG.Legend.create(column);
+    this.legendDiv.appendChild(legend.root);
+    $(legend.root).addClass('charts-legend');
+  }
+
+  showLegend() {
+    $(this.legendDiv).show();
+    $(this.chart.getDom()).css('marginRight', '100px');
+  }
+
+  hideLegend() {
+    $(this.legendDiv).hide();
+    $(this.chart.getDom()).css('marginRight', '');
+  }
+
+  switchLegendVisibility(mode) {
+    const { column, categories } = this.columnData.colorByColumnName;
+    const autoShow = column.matches(DG.TYPE.CATEGORICAL) && categories.length < 100;
+    if (mode === VISIBILITY_MODE.ALWAYS || (mode === VISIBILITY_MODE.AUTO && autoShow)) {
+      this.showLegend();
+    } else {
+      this.hideLegend();
+    }
+  }
+
   getStrValue(columnData, idx) {
     const { column, categories, data } = columnData;
     return column.type === DG.COLUMN_TYPE.STRING ? categories[data[idx]] : column.getString(idx);
@@ -312,45 +362,48 @@ export class TimelinesViewer extends EChartViewer {
   getSafeValue(columnData, idx) {
     const { column, data } = columnData;
     return column.isNone(idx) ? null : column.type === DG.COLUMN_TYPE.DATE_TIME ?
-      new Date(`${column.get(idx)}`) : data[idx];
+      new Date(data[idx] * 1e-3) : data[idx];
+  }
+
+  isSameDate(x, y) {
+    if (x instanceof Date && y instanceof Date) {
+      return x.getTime() === y.getTime();
+    } else if ((typeof x === typeof y && typeof x === 'number') || (x == null || y == null)) {
+      return x === y;
+    }
+    grok.shell.warning('The columns of different types cannot be used for representing dates.');
+  }
+
+  getColumnMin(column) {
+    return column.type === DG.COLUMN_TYPE.DATE_TIME ? new Date(column.min * 1e-3) : column.min;
+  }
+
+  getColumnMax(column) {
+    return column.type === DG.COLUMN_TYPE.DATE_TIME ? new Date(column.max * 1e-3) : column.max;
   }
 
   getSeriesData() {
     this.data.length = 0;
     let tempObj = {};
 
-    const getTime = (columnData, i) => {
-      const { column } = columnData;
-      if (column.type === DG.COLUMN_TYPE.DATE_TIME) {
-        if (this.dateFormat === null) {
-          this.props.dateFormat = this.defaultDateFormat;
-        }
-        this.option.xAxis = {
-          type: 'time',
-          boundaryGap: ['5%', '5%'],
-          axisLabel: { formatter: this.dateFormat }
-        };
-      }
-      return this.getSafeValue(columnData, i);
-    };
-
-    const getColumnMin = (column) => column.type === DG.COLUMN_TYPE.DATE_TIME ? new Date(column.min * 1e-3) : column.min;
-    const getColumnMax = (column) => column.type === DG.COLUMN_TYPE.DATE_TIME ? new Date(column.max * 1e-3) : column.max;
-
     const { categories: colorCategories, data: colorBuf } = this.columnData.colorByColumnName;
     const { categories: eventCategories, data: eventBuf } = this.columnData.eventColumnName;
     const { column: startColumn } = this.columnData.startColumnName;
     const { column: endColumn } = this.columnData.endColumnName;
+    (startColumn.type !== DG.COLUMN_TYPE.DATE_TIME || endColumn.type !== DG.COLUMN_TYPE.DATE_TIME) ?
+      this.removeTimeOptions() : this.addTimeOptions();
 
     for (const i of this.dataFrame.filter.getSelectedIndexes()) {
       const id = this.getStrValue(this.columnData.splitByColumnName, i);
-      let start = getTime(this.columnData.startColumnName, i);
-      let end = getTime(this.columnData.endColumnName, i);
+      let start = this.getSafeValue(this.columnData.startColumnName, i);
+      let end = this.getSafeValue(this.columnData.endColumnName, i);
       if (start === end && end === null) continue;
       if (this.showOpenIntervals) {
         // TODO: handle edge case of different column types
-        start = start ?? Math.min(getColumnMin(startColumn), getColumnMin(endColumn));
-        end = end ?? Math.max(getColumnMax(startColumn), getColumnMax(endColumn));
+        if (start == null)
+          start = Math.min(this.getColumnMin(startColumn), this.getColumnMin(endColumn));
+        if (end == null)
+          end = Math.max(this.getColumnMax(startColumn), this.getColumnMax(endColumn));
       }
       const color = colorCategories[colorBuf[i]];
       const event = eventCategories[eventBuf[i]];
@@ -376,7 +429,44 @@ export class TimelinesViewer extends EChartViewer {
     return this.data;
   }
 
+  addTimeOptions() {
+    if (this.dateFormat === null) {
+      this.props.dateFormat = this.defaultDateFormat;
+    }
+    this.option.xAxis = {
+      type: 'time',
+      boundaryGap: ['5%', '5%'],
+      axisLabel: { formatter: this.dateFormat },
+    };
+  }
+
+  removeTimeOptions() {
+    this.option.xAxis = {
+      type: 'value',
+      boundaryGap: ['0%', '0%'],
+      axisLabel: { formatter: null },
+    };
+  }
+
+  showErrorMessage(msg) {
+    this.titleDiv.innerText = msg;
+    $(this.titleDiv).addClass('d4-viewer-error');
+    $(this.legendDiv).hide();
+    $(this.chart.getDom()).hide();
+  }
+
+  updateContainers() {
+    $(this.titleDiv).removeClass().empty();
+    this.switchLegendVisibility(this.legendVisibility);
+    $(this.chart.getDom()).show();
+  }
+
   render() {
+    this.updateContainers();
+    if (!this.splitByColumnName || !this.startColumnName || !this.endColumnName) {
+      this.showErrorMessage('Not enough data to produce the result.');
+      return;
+    }
     this.option.series[0].data = this.getSeriesData();
     this.updateZoom();
     this.chart.setOption(this.option);

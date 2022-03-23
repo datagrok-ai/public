@@ -7,8 +7,8 @@ Owner: Andrey
 
 ## Basic
 
-Goal: show how easy it is to import files of different formats
-Features: file formats, drag-and-drop	, ‘Open text’, file shares, databases
+Goal: show how easy it is to import files of different formats Features: file formats, drag-and-drop , ‘Open text’, file
+shares, databases
 
 1. Drag-and-drop a csv file
 2. Drag-and-drop a zip file with xsls spreadsheets

@@ -4,5 +4,7 @@
   "description": "SDTM Viewer",
   "sources": [
     "css/sdtm.css"
-  ]
+  ],
+  "canEdit": [ "Developers" ],
+  "canView": [ "All users" ]
 }

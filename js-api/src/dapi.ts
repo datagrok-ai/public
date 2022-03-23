@@ -18,7 +18,7 @@ import {
   Package,
   UserSession,
   Property,
-  FileInfo, HistoryEntry
+  FileInfo, HistoryEntry, ProjectOpenOptions
 } from "./entities";
 import {ViewLayout} from "./views/view";
 import {toDart, toJs} from "./wrappers";
@@ -52,7 +52,7 @@ export class Dapi {
   /** Data Queries API endpoint
    *  @type {HttpDataSource<DataQuery>} */
   get queries(): HttpDataSource<DataQuery> {
-    return new HttpDataSource(api.grok_Dapi_Queries());
+    return new HttpDataSource(api.grok_Dapi_Queries(), 'Function');
   }
 
   /** Data Connections API endpoint
@@ -70,7 +70,7 @@ export class Dapi {
   /** Data Jobs API endpoint
    *  @type {HttpDataSource<DataJob>} */
   get jobs(): HttpDataSource<DataJob> {
-    return new HttpDataSource(api.grok_Dapi_Jobs());
+    return new HttpDataSource(api.grok_Dapi_Jobs(), 'Function');
   }
 
   /** Jupyter Notebooks API endpoint
@@ -112,7 +112,7 @@ export class Dapi {
   /** Groups API endpoint
    *  @type {GroupsDataSource} */
   get groups(): GroupsDataSource {
-    return new GroupsDataSource(api.grok_Dapi_Groups());
+    return new GroupsDataSource(api.grok_Dapi_Groups(), 'Group');
   }
 
   /** Permissions API endpoint
@@ -124,13 +124,13 @@ export class Dapi {
   /** Scripts API endpoint
    *  @type {HttpDataSource<Script>} */
   get scripts(): HttpDataSource<Script> {
-    return new HttpDataSource(api.grok_Dapi_Scripts());
+    return new HttpDataSource(api.grok_Dapi_Scripts(), 'Function');
   }
 
   /** Projects API endpoint
    *  @type {HttpDataSource<Project>} */
   get projects(): ProjectsDataSource {
-    return new ProjectsDataSource(api.grok_Dapi_Projects());
+    return new ProjectsDataSource(api.grok_Dapi_Projects(), 'Project');
   }
 
   /** Environments API endpoint
@@ -217,10 +217,12 @@ export class Dapi {
  */
 export class HttpDataSource<T> {
   dart: any;
+  clsName: string;
 
   /** @constructs HttpDataSource */
-  constructor(s: any) {
+  constructor(s: any, clsName?: string | null) {
     this.dart = s;
+    this.clsName = clsName ?? '';
   }
 
   /** Returns all entities that satisfy the filtering criteria (see {@link filter}).
@@ -307,7 +309,7 @@ export class HttpDataSource<T> {
    * @param {string} include
    * @returns {HttpDataSource} */
   include(include: string): HttpDataSource<T> {
-    this.dart = api.grok_DataSource_Include(this.dart, _propsToDart(include));
+    this.dart = api.grok_DataSource_Include(this.dart, _propsToDart(include, this.clsName));
     return this;
   }
 }
@@ -335,7 +337,7 @@ export class UsersDataSource extends HttpDataSource<User> {
   /** Returns current session
    * @returns {Promise<UserSession>} */
   currentSession(): Promise<UserSession> {
-    return new Promise((resolve, reject) => api.grok_UsersDataSource_CurrentSession(this.dart, (q: any) => resolve(toJs(q)), (e: any) => reject(e)));
+    return api.grok_UsersDataSource_CurrentSession(this.dart);
   }
 }
 
@@ -361,8 +363,10 @@ export class AdminDataSource {
  * */
 export class GroupsDataSource extends HttpDataSource<Group> {
   /** @constructs CredentialsDataSource*/
-  constructor(s: any) {
-    super(s);
+  constructor(s: any, clsName: string) {
+    super(s, clsName);
+    this.include('members');
+    this.include('memberships');
   }
 
   /** Creates a new group
@@ -377,7 +381,7 @@ export class GroupsDataSource extends HttpDataSource<Group> {
    *  @param {Group} group
    *  @returns {Promise<Group>} - Group. */
   getUser(group: Group): Promise<Group> {
-    return new Promise((resolve, reject) => api.grok_Dapi_Get_GroupUser(group.dart, (q: any) => resolve(toJs(q)), (e: any) => reject(e)));
+    return api.grok_Dapi_Get_GroupUser(group.dart);
   }
 
   /** Adds a member to the group
@@ -445,7 +449,7 @@ export class GroupsDataSource extends HttpDataSource<Group> {
    *  @param {Group} e
    *  @returns {Promise<Group>} - Group. */
   saveRelations(e: Group): Promise<Group> {
-    return new Promise((resolve, reject) => api.grok_GroupsDataSource_Save(this.dart, e.dart, (q: any) => resolve(toJs(q)), (e: any) => reject(e)));
+    return api.grok_GroupsDataSource_Save(this.dart, e.dart);
   }
 
 }
@@ -519,7 +523,7 @@ export class LayoutsDataSource extends HttpDataSource<ViewLayout> {
    * @param {DataFrame} t
    * @returns {Promise<ViewLayout[]>} */
   getApplicable(t: DataFrame): Promise<ViewLayout[]> {
-    return new Promise((resolve, reject) => api.grok_LayoutsDataSource_Applicable(this.dart, t.dart, (q: any[]) => resolve(q.map((o) => toJs(o))), (e: any) => reject(e)));
+    return api.grok_LayoutsDataSource_Applicable(this.dart, t.dart);
   }
 }
 
@@ -578,8 +582,7 @@ export class UserDataStorage {
    * @param {boolean} currentUser Value should be available only for current user
    * @returns {Promise}*/
   postValue(name: string, key: string, value: string, currentUser: boolean = true): Promise<void> {
-    return new Promise((resolve, reject) =>
-      api.grok_Dapi_UserDataStorage_PostValue(name, key, value, currentUser, () => resolve(), (e: any) => reject(e)));
+    return api.grok_Dapi_UserDataStorage_PostValue(name, key, value, currentUser);
   }
 
   /** Saves a map to Users Data Storage, will be appended to existing data
@@ -588,8 +591,7 @@ export class UserDataStorage {
    * @param {boolean} currentUser Value should be available only for current user
    * @returns {Promise}*/
   post(name: string, data: any, currentUser: boolean = true): Promise<void> {
-    return new Promise((resolve, reject) =>
-      api.grok_Dapi_UserDataStorage_Post(name, data, currentUser, () => resolve(), (e: any) => reject(e)));
+    return api.grok_Dapi_UserDataStorage_Post(name, data, currentUser);
   }
 
   /** Saves a map to Users Data Storage, will replace existing data
@@ -598,8 +600,7 @@ export class UserDataStorage {
    * @param {boolean} currentUser Value should be available only for current user
    * @returns {Promise}*/
   put(name: string, data: any, currentUser: boolean = true): Promise<void> {
-    return new Promise((resolve, reject) =>
-      api.grok_Dapi_UserDataStorage_Put(name, data, currentUser, () => resolve(), (e: any) => reject(e)));
+    return api.grok_Dapi_UserDataStorage_Put(name, data, currentUser);
   }
 
   /** Retrieves a map from Users Data Storage
@@ -607,8 +608,7 @@ export class UserDataStorage {
    * @param {boolean} currentUser - get a value from a current user storage
    * @returns {Promise<Map>} */
   get(name: string, currentUser: boolean = true): Promise<any> {
-    return new Promise((resolve, reject) =>
-      api.grok_Dapi_UserDataStorage_Get(name, currentUser, (data: any) => resolve(data), (e: any) => reject(e)));
+    return api.grok_Dapi_UserDataStorage_Get(name, currentUser);
   }
 
   /** Retrieves a single value from Users Data Storage
@@ -617,8 +617,7 @@ export class UserDataStorage {
    * @param {boolean} currentUser get a value from a current user storage
    * @returns {Promise<string>} */
   getValue(name: string, key: string, currentUser: boolean = true): Promise<string> {
-    return new Promise((resolve, reject) =>
-      api.grok_Dapi_UserDataStorage_GetValue(name, key, currentUser, (value: string | PromiseLike<string>) => resolve(value), (e: any) => reject(e)));
+    return api.grok_Dapi_UserDataStorage_GetValue(name, key, currentUser);
   }
 
   /** Removes a single value from Users Data Storage
@@ -627,8 +626,7 @@ export class UserDataStorage {
    * @param {boolean} currentUser get a value from a current user storage
    * @returns {Promise} */
   remove(name: string, key: string, currentUser: boolean = true): Promise<void> {
-    return new Promise((resolve, reject) =>
-      api.grok_Dapi_UserDataStorage_Delete(name, key, currentUser, () => resolve(), (e: any) => reject(e)));
+    return api.grok_Dapi_UserDataStorage_Delete(name, key, currentUser);
   }
 }
 
@@ -639,8 +637,9 @@ export class UserDataStorage {
  * */
 export class ProjectsDataSource extends HttpDataSource<Project> {
   /** @constructs TablesDataSource*/
-  constructor(s: any) {
-    super(s,);
+  constructor(s: any, clsName: string) {
+    super(s, clsName);
+    this.include('children');
   }
 
   /** Gets recent projects datasource
@@ -650,12 +649,20 @@ export class ProjectsDataSource extends HttpDataSource<Project> {
   }
 
   /** Opens the specified project. */
-  open(name: string, options?: {closeAll: boolean}): Promise<Project> {
+  open(name: string, options?: ProjectOpenOptions): Promise<Project> {
     return this
       .filter(name)
       .first()
       .then(p => p.open(options));
   }
+
+  /** Saves the Project */
+  save(e: Entity, options?: {saveRelations?: boolean}): Promise<Project> {
+    options ??= {};
+    options.saveRelations ??= true;
+    return toJs(api.grok_ProjectsDataSource_Save(this.dart, e.dart, options!.saveRelations));
+  }
+
 }
 
 /**
@@ -673,8 +680,7 @@ export class TablesDataSource extends HttpDataSource<TableInfo> {
    * @param {DataFrame} dataFrame
    * @returns {Promise<string>} */
   uploadDataFrame(dataFrame: DataFrame): Promise<string> {
-    return new Promise((resolve, reject) =>
-      api.grok_Dapi_TablesDataSource_UploadDataFrame(dataFrame.dart, (id: string | PromiseLike<string>) => resolve(id), (e: any) => reject(e)));
+    return api.grok_Dapi_TablesDataSource_UploadDataFrame(dataFrame.dart);
   }
 
   /** Loads a dataframe by id.
@@ -682,8 +688,7 @@ export class TablesDataSource extends HttpDataSource<TableInfo> {
    * @param {string} id - dataframe id
    * @returns {Promise<DataFrame>} */
   getTable(id: string): Promise<DataFrame> {
-    return new Promise((resolve, reject) =>
-      api.grok_Dapi_TablesDataSource_GetTable(id, (df: any) => resolve(toJs(df)), (e: any) => reject(e)));
+    return api.grok_Dapi_TablesDataSource_GetTable(id);
   }
 
 }
@@ -700,9 +705,7 @@ export class FileSource {
    * @returns {Promise<Boolean>} */
   exists(file: FileInfo | string): Promise<boolean> {
     file = this.setRoot(file);
-
-    return new Promise((resolve, reject) =>
-        api.grok_Dapi_UserFiles_Exists(file, (data: boolean | PromiseLike<boolean>) => resolve(data), (e: any) => reject(e)));
+    return api.grok_Dapi_UserFiles_Exists(file);
   }
 
   private setRoot(file: FileInfo | string): string {
@@ -721,7 +724,7 @@ export class FileSource {
    * @returns {Promise} */
   delete(file: FileInfo | string): Promise<void> {
     file = this.setRoot(file);
-    return new Promise((resolve, reject) => api.grok_Dapi_UserFiles_Delete(file, () => resolve(), (e: any) => reject(e)));
+    return api.grok_Dapi_UserFiles_Delete(file);
   }
 
   /** Moves a file.
@@ -734,7 +737,7 @@ export class FileSource {
       files[i] = this.setRoot(files[i]);
     newPath = this.setRoot(newPath);
 
-    return new Promise((resolve, reject) => api.grok_Dapi_UserFiles_Move(files, newPath, () => resolve(), (e: any) => reject(e)));
+    return api.grok_Dapi_UserFiles_Move(files, newPath);
   }
 
   /** Renames a file.
@@ -746,19 +749,18 @@ export class FileSource {
     file = this.setRoot(file);
     newName = this.setRoot(newName);
 
-    return new Promise((resolve, reject) => api.grok_Dapi_UserFiles_Rename(file, newName, () => resolve(), (e: any) => reject(e)));
+    return api.grok_Dapi_UserFiles_Rename(file, newName);
   }
 
   /** Lists files according to a search pattern.
    * Sample: {@link https://public.datagrok.ai/js/samples/dapi/files}
-   * @param {FileInfo | string} file
-   * @param {boolean} recursive
-   * @param {string} searchPattern
+   * @param {FileInfo | string} file - folder
+   * @param {boolean} recursive - whether to search in folders recursively
+   * @param {string} searchPattern - search pattern, such as "*.csv"
    * @returns {Promise<FileInfo[]>} */
-  list(file: FileInfo | string, recursive: boolean, searchPattern: string | null = null): Promise<FileInfo[]> {
+  async list(file: FileInfo | string, recursive: boolean, searchPattern: string | null = null): Promise<FileInfo[]> {
     file = this.setRoot(file);
-    return new Promise((resolve, reject) =>
-        api.grok_Dapi_UserFiles_List(file, recursive, searchPattern, this.root, (data: any) => resolve(toJs(data)), (e: any) => reject(e)));
+    return toJs(await api.grok_Dapi_UserFiles_List(file, recursive, searchPattern, this.root));
   }
 
   /** Reads a file as string.
@@ -768,8 +770,7 @@ export class FileSource {
   readAsText(file: FileInfo | string): Promise<string> {
     file = this.setRoot(file);
 
-    return new Promise((resolve, reject) => 
-        api.grok_Dapi_UserFiles_ReadAsText(file, (data: string | PromiseLike<string>) => resolve(data), (e: any) => reject(e)));
+    return api.grok_Dapi_UserFiles_ReadAsText(file);
   }
 
   /** Reads a file as bytes.
@@ -779,8 +780,16 @@ export class FileSource {
   readAsBytes(file: FileInfo | string): Promise<Uint8Array> {
     file = this.setRoot(file);
 
-    return new Promise((resolve, reject) =>
-        api.grok_Dapi_UserFiles_ReadAsBytes(file, (data: any) => resolve(toJs(data)), (e: any) => reject(e)));
+    return api.grok_Dapi_UserFiles_ReadAsBytes(file);
+  }
+
+  /** Reads a d42 file as a list of dataframes.
+   * @param {FileInfo | string} file
+   * @returns {Promise<DataFrame[]>} */
+  async readBinaryDataFrames(file: FileInfo | string): Promise<DataFrame[]> {
+    file = this.setRoot(file);
+    const dfList = await api.grok_Dapi_UserFiles_ReadBinaryDataFrames(file);
+    return dfList.map((t: any) => new DataFrame(t));
   }
 
   /** Writes a file.
@@ -789,7 +798,7 @@ export class FileSource {
    * @param {Array<number>} blob
    * @returns {Promise} */
   write(file: FileInfo | string, blob: number[]): Promise<void> {
-    return new Promise((resolve, reject) => api.grok_Dapi_UserFiles_Write(file, blob, () => resolve(), (e: any) => reject(e)));
+    return api.grok_Dapi_UserFiles_Write(file, blob);
   }
 
   /** Writes a text file.
@@ -800,7 +809,7 @@ export class FileSource {
   writeAsText(file: FileInfo | string, data: string): Promise<void> {
     file = this.setRoot(file);
 
-    return new Promise((resolve, reject) => api.grok_Dapi_UserFiles_WriteAsText(file, data, () => resolve(), (e: any) => reject(e)));
+    return api.grok_Dapi_UserFiles_WriteAsText(file, data);
   }
 }
 

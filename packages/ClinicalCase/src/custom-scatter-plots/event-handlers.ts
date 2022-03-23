@@ -1,4 +1,4 @@
-import { colorsForSurvivalChart } from "../constants";
+import { colorsForSurvivalChart } from "../constants/constants";
 import { divideTo4Quadrants, divideTo6Quadrants, drawCensored, drawHorizontalInterval, numOfPatientsInQuadrant, renderLegend, renderNormalRanges, renderQuadrantsDefinitions, renderText, setCanvasStyle } from "./utils";
 import * as DG from "datagrok-api/dg";
 

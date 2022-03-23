@@ -1,8 +1,10 @@
 <!-- TITLE: Quality assurance -->
 <!-- SUBTITLE: -->
 
+# Quality assurance
+
 Datagrok is an incredibly powerful platform. To give users the best possible performance, we have created a number of
-unique, proprietary technologies such as [in-memory columnar database](architecture.md#in-memory-database) and fast
+unique, proprietary technologies such as [in-memory columnar database](architecture.md#data-engine) and fast
 [visualizations](architecture.md#viewers). To provide the seamless end-to-end-experience, we took ownership of
 [data access](../../home.md#access),
 [data governance](../../home.md#access),
@@ -22,7 +24,7 @@ around the proactive identification of defects.
 
 Here are some of the main components of our development infrastructure:
 
-## Continuous integration system
+# Continuous integration system
 
 Whenever a new code is checked into our source code repository, several tasks get executed automatically:
 
@@ -30,6 +32,7 @@ Whenever a new code is checked into our source code repository, several tasks ge
 2. [Unit tests](#unit-tests)
 3. Compilation
 4. Packaging the platform in Docker containers
+5. [Snyk](https://snyk.io/) and [Grype](https://github.com/anchore/grype/) check for vulnerabilities
 
 Every time docker image is built, tasks get executed:
 
@@ -40,7 +43,7 @@ Every time docker image is built, tasks get executed:
 5. [Stress testing](#stress-testing)
 
 We use Jenkins for continuous integration. This is how our control panel looks like:
-![](continuous-integration.png)
+![CI](continuous-integration.png)
 
 ## Unit tests
 
@@ -58,6 +61,14 @@ cover interactions between different modules. Typically, they are a lot heavier 
 frequently by developers.
 
 Results of the integration tests are kept in the [test tracking system](#test-tracking-system).
+
+## JS API tests
+
+A separate suite of tests is devoted for the [JS API](../js-api.md). These tests are executed automatically on a server
+using a headless browser mode. The test suite is written in TypeScript, and is a regular Datagrok package. It is
+open-sourced and located [here](../../../packages/ApiTests)
+; additions are welcome. Results are reported to the
+[test tracking system](#test-tracking-system)
 
 ## UI tests
 
@@ -96,7 +107,7 @@ stories by having the ability to quickly read them, execute, and report the comp
 quickly navigate to the corresponding JIRA issues (integration with JIRA was done using Datagrok's OpenAPI capabilities)
 .
 
-![](test-tracking-system.png)
+![Test Tracking System](test-tracking-system.png)
 
 ## Performance benchmarks
 
@@ -122,3 +133,4 @@ see [stress testing results](stress-testing-results.md).
 See also:
 
 * [Architecture](architecture.md)
+* [Architecture](infrastructure.md)

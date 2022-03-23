@@ -503,9 +503,8 @@ export function link(
   return link;
 }
 
-/** Creates a [Dialog].
- * @returns {Dialog} */
-export function dialog(options: any = ''): Dialog {
+/** Creates a [Dialog]. */
+export function dialog(options?: { title?: string, helpUrl?: string } | string): Dialog {
   return Dialog.create(options);
 }
 
@@ -525,8 +524,8 @@ export function showPopup(element: HTMLElement, anchor: HTMLElement, vertical: b
   return api.grok_UI_ShowPopup(element, anchor, vertical);
 }
 
-export function rangeSlider(minRange: number, maxRange: number, min: number, max: number): RangeSlider {
-  let rs = RangeSlider.create();
+export function rangeSlider(minRange: number, maxRange: number, min: number, max: number, vertical: boolean = false): RangeSlider {
+  let rs = RangeSlider.create(vertical);
   rs.setValues(minRange, maxRange, min, max);
   return rs;
 }
@@ -652,7 +651,7 @@ export function choiceInput<T>(name: string, selected: T, items: T[], onValueCha
   return new InputBase(api.grok_ChoiceInput(name, selected, items), onValueChanged);
 }
 
-export function multiChoiceInput<T>(name: string, value: T, items: T[], onValueChanged: Function | null = null): InputBase {
+export function multiChoiceInput<T>(name: string, value: T[], items: T[], onValueChanged: Function | null = null): InputBase {
   return new InputBase(api.grok_MultiChoiceInput(name, value, items), onValueChanged);
 }
 
@@ -698,6 +697,10 @@ export function tableInput(name: string, table: DataFrame, tables: DataFrame[] =
 
 export function textInput(name: string, value: string, onValueChanged: Function | null = null): InputBase {
   return new InputBase(api.grok_TextInput(name, value), onValueChanged);
+}
+
+export function colorInput(name: string, value: string, onValueChanged: Function | null = null): InputBase {
+  return new InputBase(api.grok_ColorInput(name, value), onValueChanged);
 }
 
 /**
@@ -812,7 +815,7 @@ export class Tooltip {
   }
 
   /** Associated the specified visual element with the corresponding item. */
-  bind(element: HTMLElement, tooltip?: string | null): HTMLElement {
+  bind(element: HTMLElement, tooltip?: string | null | (() => string | null)): HTMLElement {
     if (tooltip != null)
       api.grok_Tooltip_SetOn(element, tooltip);
     return element;
@@ -1184,6 +1187,13 @@ export let icons = {
   search: (handler: Function, tooltipMsg: string | null = null) => _iconFA('search', handler, tooltipMsg),
   filter: (handler: Function, tooltipMsg: string | null = null) => _iconFA('filter', handler, tooltipMsg),
   play: (handler: Function, tooltipMsg: string | null = null) => _iconFA('play', handler, tooltipMsg),
+}
+
+export namespace tools {
+  export function click<T extends HTMLElement>(e: T, handler: () => void): T {
+    e.addEventListener('click', handler);
+    return e;
+  }
 }
 
 export namespace cards {

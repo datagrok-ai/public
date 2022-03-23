@@ -4,17 +4,21 @@
  * */
 
 import {BitSet, Column, DataFrame} from './dataframe';
-import {SIMILARITY_METRIC, SimilarityMetric, TYPE} from './const';
-import {Observable, Subject, Subscription} from "rxjs";
+import {FUNC_TYPES, SEMTYPE, SIMILARITY_METRIC, SimilarityMetric, TYPE, UNITS} from './const';
+import {Subject, Subscription} from "rxjs";
 import {Menu, Widget} from "./widgets";
 import {Func} from "./entities";
 import * as ui from "../ui";
 import {SemanticValue} from "./grid";
 import $ from "cash-dom";
-import {element} from "../ui";
+import {Utils} from "./utils";
 
 let api = <any>window;
 declare let grok: any;
+
+export function isMolBlock(s: string) {
+  return s.includes('M  END');
+}
 
 /** Cheminformatics-related routines */
 export namespace chem {
@@ -51,7 +55,7 @@ export namespace chem {
       return [];
     }
 
-    async exportStructure(format: string): Promise<string> {
+    async exportStructure(_format: string): Promise<string> {
       return 'dummy';
     }
 
@@ -79,6 +83,9 @@ export namespace chem {
   }
 
 
+  /**
+   * Molecule sketcher that supports multiple dynamically initialized implementations.
+   * */
   export class Sketcher extends Widget {
 
     molInput: HTMLInputElement = ui.element('input');
@@ -86,13 +93,18 @@ export namespace chem {
     /* molInputSubscription: Subscription | null = null; */
     changedSub: Subscription | null = null;
     sketcher: SketcherBase | null = null;
+    onChanged: Subject<any> = new Subject<any>();
+
+    /** Whether or not currently drawn molecule becomes the current object as you sketch it */
+    syncCurrentObject: boolean = true;
+
     listeners: Function[] = [];
 
-    _smiles: string | null = null;
-    _molFile: string | null = null;
-    _smarts: string | null = null;
+    _smiles: string = '';
+    _molFile: string = '';
+    _smarts: string = '';
 
-    getSmiles(): string | null {
+    getSmiles(): string {
       return this.sketcher ? this.sketcher.smiles : this._smiles;
     }
 
@@ -102,7 +114,7 @@ export namespace chem {
         this.sketcher!.smiles = x;
     }
 
-    getMolFile(): string | null {
+    getMolFile(): string {
       return this.sketcher ? this.sketcher.molFile : this._molFile;
     }
 
@@ -110,6 +122,14 @@ export namespace chem {
       this._molFile = x;
       if (this.sketcher != null)
         this.sketcher!.molFile = x;
+    }
+
+    /** Sets the molecule, supports either SMILES or MOLBLOCK formats */
+    setMolecule(molString: string) {
+      if (isMolBlock(molString))
+        this.setMolFile(molString)
+      else
+        this.setSmiles(molString);
     }
 
     get supportedExportFormats(): string[] {
@@ -127,6 +147,20 @@ export namespace chem {
         this.changedSub = this.sketcher.onChanged.subscribe((_: any) => callback());
     }
 
+    /** Sets SMILES, MOLBLOCK, or any other molecule representation */
+    setValue(x: string) {
+      const extractor = Func
+        .find({meta: {role: FUNC_TYPES.CONVERTER, inputRegexp: null}})
+        .find((f) => new RegExp(f.options['inputRegexp']).test(x));
+
+      if (extractor != null)
+        extractor
+          .apply({id: x})
+          .then((mol) => this.setMolecule(mol));
+      else
+        this.setMolecule(x);
+    }
+
     constructor() {
       super(ui.div());
 
@@ -134,30 +168,37 @@ export namespace chem {
       if (funcs.length == 0)
         throw 'Sketcher functions not found. Please install OpenChemLib, or MarvinJS package.';
 
-      
-      $(this.molInput).attr('placeholder', 'SMILES, Inchi, Inchi keys, ChEMBL id, etc');
-      const smilesInputHandler = (e: any) => {
+      $(this.molInput).attr('placeholder', 'SMILES, MOLBLOCK, Inchi, ChEMBL id, etc');
+
+      const applyInput = (e: any) => {
         const newSmilesValue: string = (e?.target as HTMLTextAreaElement).value;
-        if (this.getSmiles() !== newSmilesValue) {
-          this.setSmiles(newSmilesValue);
-        }
+
+        if (this.getSmiles() !== newSmilesValue)
+          this.setValue(newSmilesValue);
+
         const currentSmiles = this.getSmiles();
-        if (currentSmiles !== newSmilesValue) {
+
+        if (currentSmiles !== newSmilesValue)
           (e?.target as HTMLTextAreaElement).value = currentSmiles ?? '';
-        }
       };
-      this.molInput.addEventListener('focusout', (e) => {
-        smilesInputHandler(e);
-      });
+
       this.molInput.addEventListener('keydown', (e) => {
-        if (e.keyCode == 13)
-          smilesInputHandler(e);
+        if (e.key == 'Enter') {
+          applyInput(e);
+          e.stopImmediatePropagation();
+        }
       });
 
       let optionsIcon = ui.iconFA('bars', () => {
         Menu
           .popup()
-          .item('Add to favorites', () => console.log(this.sketcher!.molFile))
+          .item('Copy as SMILES', () => navigator.clipboard.writeText(this.sketcher!.smiles))
+          .item('Copy as MOLBLOCK', () => navigator.clipboard.writeText(this.sketcher!.molFile))
+          .group('Favorites')
+            .item('Add to Favorites', () => Sketcher.addFavorite(this.sketcher!.molFile))
+            .separator()
+            .items(Sketcher.getFavorites().map((m) => ui.tools.click(svgMol(m, 200, 100), () => this.setMolecule(m))), () => {})
+            .endGroup()
           .separator()
           .items(funcs.map((f) => f.name), (name: string) => this.setSketcher(name))
           .show();
@@ -175,6 +216,17 @@ export namespace chem {
       this.setSketcher(funcs[0].name);
     }
 
+    static readonly FAVORITES_KEY = 'chem-molecule-favorites';
+
+    static getFavorites(): string[] {
+      return JSON.parse(localStorage.getItem(Sketcher.FAVORITES_KEY) ?? '[]');
+    }
+
+    static addFavorite(molecule: string) {
+      let s = JSON.stringify([...Sketcher.getFavorites().slice(-9), molecule]);
+      localStorage.setItem(Sketcher.FAVORITES_KEY, s);
+    }
+
     detach() {
       this.changedSub?.unsubscribe();
       this.sketcher?.detach();
@@ -185,30 +237,25 @@ export namespace chem {
       ui.empty(this.host);
       this.changedSub?.unsubscribe();
 
-      let molFile = this.sketcher?.molFile ?? this._molFile;
-      let smiles = this.sketcher?.smiles ?? this._smiles;
+      if (this.sketcher?.molFile) this._molFile = this.sketcher?.molFile;
 
       let f = Func.find({name: name})[0];
       this.sketcher = await f.apply();
-      /*
-      // A backward connection from the sketched molecule to the text
-      this.molInputSubscription?.unsubscribe();
-      this.molInputSubscription = this.sketcher!.onChanged.subscribe((_) => {
-        this.molInput.value = this.getSmiles() ?? ''; });
-      */
       this.host.appendChild(this.sketcher!.root);
       await ui.tools.waitForElementInDom(this.root);
       await this.sketcher!.init();
       this.changedSub = this.sketcher!.onChanged.subscribe((_: any) => {
+        this.onChanged.next(null);
         for (let callback of this.listeners)
           callback();
-        grok.shell.o = SemanticValue.fromValueType(this.sketcher!.smiles, 'Molecule');
+        if (this.syncCurrentObject)
+          grok.shell.o = SemanticValue.fromValueType(this.sketcher!.molFile, SEMTYPE.MOLECULE, UNITS.Molecule.MOLBLOCK);
       });
 
-      if (molFile != null)
-        this.sketcher!.molFile = molFile;
-      else if (smiles != null)
-        this.sketcher!.smiles = smiles;
+      if (!Utils.isEmpty(this._molFile))
+        this.sketcher!.molFile = this._molFile;
+      else if (!Utils.isEmpty(this._smiles))
+        this.sketcher!.smiles = this._smiles;
     }
   }
 
@@ -228,7 +275,6 @@ export namespace chem {
    * @returns {Promise<DataFrame>, if sorted; Promise<Column>, otherwise}
    * */
   export async function similarityScoring(column: Column, molecule: string = '', settings: { sorted?: boolean } = {sorted: false}) {
-
     const result = await grok.functions.call('Chem:similarityScoring', {
       'molStringsColumn': column,
       'molString': molecule,
@@ -237,7 +283,6 @@ export namespace chem {
     if (molecule.length != 0) {
       return settings.sorted ? result : result.columns.byIndex(0);
     }
-
   }
 
   /**
@@ -255,9 +300,8 @@ export namespace chem {
 
   /**
    * Searches for a molecular pattern in a given column, returning a bitset with hits.
-   * See example: {@link substructure-search}
+   * See example: {@link https://public.datagrok.ai/js/samples/domains/chem/substructure-search-library}
    * @async
-   * @deprecated
    * @param {Column} column - Column with molecules to search
    * @param {string} pattern - Pattern, either one of which RDKit supports
    * @param settings
@@ -274,7 +318,6 @@ export namespace chem {
         !(settings?.hasOwnProperty('substructLibrary') && !settings.substructLibrary),
       'molStringSmarts': ''
     })).get(0);
-    
   }
 
   /**
@@ -306,8 +349,8 @@ export namespace chem {
    * @param {string} molecule - Reference molecule in one of formats supported by RDKit:
    *   smiles, cxsmiles, molblock, v3Kmolblock, and inchi
    * @param {Object} settings - Properties for the similarity function
-   * @param {int} limit - Would return top limit molecules based on the score
-   * @param {int} cutoff - Would drop molecules which score is lower than cutoff
+   * @param {int} settings.limit - Would return top limit molecules based on the score
+   * @param {int} settings.cutoff - Would drop molecules which score is lower than cutoff
    * @returns {Promise<DataFrame>} - DataFrame with 3 columns:
    *   - molecule: original molecules string representation from the input column
    *   - score: similarity scores within the range from 0.0 to 1.0;
@@ -337,7 +380,7 @@ export namespace chem {
    * @returns {Promise<DataFrame>}
    * */
   export function findSimilarServer(column: Column, molecule: string, metric: SimilarityMetric = SIMILARITY_METRIC.TANIMOTO, limit: number = 10, minScore: number = 0.7): Promise<DataFrame> {
-    return new Promise((resolve, reject) => api.grok_Chem_SimilaritySearch(column.dart, molecule, metric,
+    return new Promise((resolve, _reject) => api.grok_Chem_SimilaritySearch(column.dart, molecule, metric,
       limit, minScore, (t: any) => resolve(new DataFrame(t))));
   }
 
@@ -350,13 +393,14 @@ export namespace chem {
    * @returns {Promise<BitSet>}
    * */
   export function searchSubstructureServer(column: Column, pattern: string, isSmarts: boolean = true): Promise<BitSet> {
-    return new Promise((resolve, reject) => api.grok_Chem_SubstructureSearch(column.dart, pattern, isSmarts, (bs: any) => resolve(new BitSet(bs))));
+    return new Promise((resolve, _reject) => api.grok_Chem_SubstructureSearch(column.dart, pattern, isSmarts, (bs: any) => resolve(new BitSet(bs))));
   }
 
   /**
    * Searches for a molecular pattern in a given column, returning a bitset with hits.
    * See example: {@link https://public.datagrok.ai/js/samples/domains/chem/substructure-search}
    * @async
+   * @deprecated
    * @param {Column} column - Column with molecules to search
    * @param {string} molecule - Substructure being sought, either one of which RDKit supports:
    *   smiles, cxsmiles, molblock, v3Kmolblock, and inchi
@@ -410,9 +454,6 @@ export namespace chem {
   /**
    * Returns available descriptors tree.
    * See example: {@link https://public.datagrok.ai/js/samples/domains/chem/descriptors}
-   *
-   * @async
-   * @returns {Promise<Object>}
    * */
   export function descriptorsTree(): Promise<object> {
     return new Promise((resolve, reject) => api.grok_Chem_DescriptorsTree((tree: any) => resolve(JSON.parse(tree)), (e: any) => reject(e)));
@@ -433,7 +474,7 @@ export namespace chem {
     ): HTMLDivElement {
     let root = document.createElement('div');
     import('openchemlib/full.js').then((OCL) => {
-      let m = smiles.endsWith("M END") ? OCL.Molecule.fromMolfile(smiles): OCL.Molecule.fromSmiles(smiles);
+      let m = smiles.includes("M  END") ? OCL.Molecule.fromMolfile(smiles): OCL.Molecule.fromSmiles(smiles);
       root.innerHTML = m.toSVG(width, height, undefined, options);
     });
     return root;
@@ -443,14 +484,6 @@ export namespace chem {
    * Renders a molecule to canvas (using RdKit)
    * TODO: should NOT be async
    * See example: {@link }
-   * @param {string} smiles - accepts smiles/molfile format
-   * @param {number} x
-   * @param {number} y
-   * @param {number} w
-   * @param {number} h
-   * @param {Object} canvas
-   * @param {string} molString
-   * @param {string} scaffoldMolString
    * */
   export async function canvasMol(
     x: number, y: number, w: number, h: number,
@@ -486,37 +519,8 @@ export namespace chem {
   }
 
   export async function showSketcherDialog() {
-
     ui.dialog()
       .add(new Sketcher().root)
       .show();
-    return;
-
-    /*
-    let funcs = Func.find({tags: ['moleculeSketcher']});
-    let host = ui.box(null, {style: {width: '500px', height: '500px'}});
-    let changedSub: Subscription | null = null;
-    let sketcher: SketcherBase | null = null;
-
-    async function setSketcher(name: string) {
-      ui.empty(host);
-      changedSub?.unsubscribe();
-      let molFile = sketcher?.molFile;
-      let f = Func.find({name: name})[0];
-      sketcher = await f.apply();
-      host.appendChild(sketcher!.root);
-      await sketcher!.init();
-      changedSub = sketcher!.onChanged.subscribe((_) => grok.shell.o = SemanticValue.fromValueType(sketcher!.smiles, 'Molecule'));
-      if (molFile != null)
-        sketcher!.molFile = molFile;
-    }
-
-    ui.dialog()
-      .add(ui.choiceInput('Sketcher', funcs[0].name, funcs.map((f) => f.name), setSketcher))
-      .add(host)
-      .show();
-
-    await setSketcher(funcs[0].name);
-    */
   }
 }

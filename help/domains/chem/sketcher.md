@@ -3,9 +3,8 @@
 
 # Molecule sketcher
 
-Sketch a molecule using the built-in editor, or retrieve one by entering compound
-identifier. The following compound identifiers are natively understood since they
-have a prefix that uniquely identifies source system:
+Sketch a molecule using the built-in editor, or retrieve one by entering compound identifier. The following compound
+identifiers are natively understood since they have a prefix that uniquely identifies source system:
 
 | Identifier       | Example                                            |
 |------------------|----------------------------------------------------|
@@ -17,14 +16,12 @@ have a prefix that uniquely identifies source system:
 | comptox          | DTXSID8060290                                      |
 | zinc             | ZINC000000080829                                   |
 
-All of the following sources can be referenced by prefixing source name followed by colon to the 
-identifier, i.e. 'pubchem:11122':
+All of the following sources can be referenced by prefixing source name followed by colon to the identifier, i.e. '
+pubchem:11122':
 
-chembl, pdb, drugbank, pubchem_dotf, gtopdb, ibm, kegg_ligand, zinc, nih_ncc,
-emolecules, atlas, chebi, fdasrs, surechembl, pubchem_tpharma, pubchem, recon,
-molport, bindingdb, nikkaji, comptox, lipidmaps, carotenoiddb, metabolights,
-brenda, pharmgkb, hmdb, nmrshiftdb2, lincs, chemicalbook, selleck, mcule, actor,
-drugcentral, rhea
+chembl, pdb, drugbank, pubchem_dotf, gtopdb, ibm, kegg_ligand, zinc, nih_ncc, emolecules, atlas, chebi, fdasrs,
+surechembl, pubchem_tpharma, pubchem, recon, molport, bindingdb, nikkaji, comptox, lipidmaps, carotenoiddb,
+metabolights, brenda, pharmgkb, hmdb, nmrshiftdb2, lincs, chemicalbook, selleck, mcule, actor, drugcentral, rhea
 
 ![Sketcher](../../uploads/chem/sketcher.png "Sketcher")
 

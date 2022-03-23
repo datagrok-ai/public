@@ -2,7 +2,7 @@
 import * as grok from 'datagrok-api/grok';
 import * as ui from 'datagrok-api/ui';
 import * as DG from 'datagrok-api/dg';
-import { Track, TutorialRunner } from './track';
+import { TutorialRunner } from './tutorial-runner';
 import '../css/tutorial.css';
 
 export class TutorialWidget extends DG.Widget {
@@ -26,7 +26,7 @@ export class TutorialWidget extends DG.Widget {
         this.totalTracks = runners.length;
         let i = 0;
 
-        while(runners){
+        while(i < this.totalTracks){
         
             let complete = await runners[i].getCompleted(runners[i].track.tutorials);
             let total = runners[i].track.tutorials.length;

@@ -78,6 +78,11 @@ export class GridCell {
     return new GridCell(api.grok_Grid_GetCell(grid.dart, columnName, gridRow));
   }
 
+  /** Returns a synthecic GridCell that only contains value but no row/col. Useful for rendering values. */
+  static fromValue(value: any): GridCell {
+    return new GridCell(api.grok_GridCell_FromValue(value));
+  }
+
   /** @returns {string} Cell type */
   get cellType(): string {
     return api.grok_GridCell_Get_CellType(this.dart);
@@ -146,6 +151,9 @@ export class GridCell {
   get style(): GridCellStyle {
     return new GridCellStyle(api.grok_GridCell_Get_Style(this.dart));
   }
+
+  /** Calculates cell background color, according to color-coding. */
+  get color(): number { return api.grok_GridCell_Get_Color(this.dart); }
 
   /** Grid cell bounds.
    * Sample: {@link https://public.datagrok.ai/js/samples/grid/cell-bounds}
@@ -360,7 +368,9 @@ export class Grid extends Viewer {
   static fromProperties(items: any[], props: Property[]): Grid {
     const t = DataFrame.create(items.length);
     for (let p of props)
-      t.columns.addNewVirtual(p.name, (i: number) => p.get(items[i]), p.propertyType);
+      t.columns.addNewVirtual(p.name,
+        (i: number) => p.get(items[i]), p.propertyType,
+        p.set == null ? null : ((i: number, x: any) => p.set(items[i], x)));
     return Grid.create(t);
   }
 
@@ -592,7 +602,7 @@ export class CanvasRenderer {
    * @param {Object} value
    * @param {Object} context
    **/
-  render(g: CanvasRenderingContext2D, x: number, y: number, w: number, h: number, value: object, context: object): void {
+  render(g: CanvasRenderingContext2D, x: number, y: number, w: number, h: number, value: any, context: any): void {
     throw 'Not implemented';
   }
 }
@@ -607,7 +617,7 @@ export class GridCellRenderer extends CanvasRenderer {
     throw 'Not implemented';
   }
 
-  renderInternal(g: CanvasRenderingContext2D, x: number, y: number, w: number, h: number, gridCell: any, cellStyle: any): void {
+  renderInternal(g: CanvasRenderingContext2D, x: number, y: number, w: number, h: number, gridCell: GridCell, cellStyle: GridCellStyle): void {
     this.render(g, x, y, w, h, new GridCell(gridCell), new GridCellStyle(cellStyle));
   }
 
@@ -624,12 +634,18 @@ export class SemanticValue {
     this.dart = dart;
   }
 
-  static fromValueType(value: any, semType: SemType | null) {
-    return new SemanticValue(api.grok_SemanticValue(value, semType));
+  static fromValueType(value: any, semType: SemType | null, units?: string) {
+    const v = new SemanticValue(api.grok_SemanticValue(value, semType));
+    if (units)
+      v.units = units;
+    return v;
   }
 
   get value(): any { return api.grok_SemanticValue_Get_Value(this.dart); }
   set value(x: any) { api.grok_SemanticValue_Set_Value(this.dart, x); }
+
+  get units(): any { return api.grok_SemanticValue_Get_Units(this.dart); }
+  set units(x: any) { api.grok_SemanticValue_Set_Units(this.dart, x); }
 
   get semType(): string { return api.grok_SemanticValue_Get_SemType(this.dart); }
   set semType(x: string) { api.grok_SemanticValue_Set_SemType(this.dart, x); }

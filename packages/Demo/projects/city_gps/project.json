@@ -1,0 +1,15 @@
+{
+  "tags": [
+    "demo",
+    "default",
+    "geo",
+    "google-map"
+  ],
+  "name": "City GPS",
+  "description": "One hour of GPS coordinates of a group of people",
+  "tables": [
+    {
+      "path": "demo/geo/city_gps.csv"
+    }
+  ]
+}

@@ -107,6 +107,15 @@ export enum TYPE {
   NOTEBOOK = 'Notebook'
 }
 
+export enum FILTER_TYPE {
+ HISTOGRAM = 'histogram',
+ CATEGORICAL = 'categorical',
+ MULTI_VALUE = 'multi-value',
+ BOOL_COLUMNS = 'bool-columns',
+ FREE_TEXT = 'free-text',
+ COLUMN_FREE_TEXT = 'column-free-text'
+}
+
 export const TYPES_SCALAR = new Set([TYPE.INT, TYPE.BIG_INT, TYPE.FLOAT, TYPE.NUM, TYPE.BOOL, TYPE.STRING]);
 
 /** @enum {VIEWER_PROPERTY_TYPE} */
@@ -152,6 +161,15 @@ export const SEMTYPE = {
   MONEY: 'Money',
   IMAGE: 'Image',
   FILE: 'File',
+}
+
+export const UNITS = {
+  Molecule : {
+    SMILES: 'smiles',
+    MOLBLOCK: 'molblock',
+    V3K_MOLBLOCK: 'v3Kmolblock',
+    INCHI: 'inchi'
+  }
 }
 
 /////// Stats
@@ -207,6 +225,13 @@ export const TAGS = {
   /** Set on a dataframe column; used to format column contents in grids, CSV export, passing to scripts */
   FORMAT: 'format',
   FORMULA: 'formula',
+
+  CELL_RENDERER: 'cell.renderer',
+  UNITS: 'units',  // see DG.UNITS
+
+  CHEM: {
+    SCAFFOLD: 'chem-scaffold'
+  }
 }
 
 export const FUNC_TYPES = {
@@ -265,8 +290,12 @@ export const FUNC_TYPES = {
   /**
    * Function analysis. Examples: sensitivity analysis, parameter editor
    * Func => View */
-  FUNCTION_ANALYSIS: 'functionAnalysis'
+  FUNCTION_ANALYSIS: 'functionAnalysis',
+
+  /** Converts values. Has one input and one output */
+  CONVERTER: 'converter'
 }
+
 
 ////// Viewers
 /** @enum {VIEWER} */
@@ -331,15 +360,23 @@ export enum DEMO_DATASET {
   RANDOM_WALK = 'random walk',
   GEO = 'geo',
   MOLECULES = 'molecules',
+  DOSE_RESPONSE = 'dose-response',
 }
 
 /** @enum {DOCK_TYPE} */
 export enum DOCK_TYPE {
   LEFT = "left",
   RIGHT = "right",
-  TOP = "top",
+  TOP = "up",
   DOWN = "down",
   FILL = "fill",
+}
+
+export enum LEGEND_POSITION {
+  LEFT = "left",
+  RIGHT = "right",
+  TOP = "top",
+  BOTTOM = "bottom",
 }
 
 export enum COLOR_CODING_TYPE {
@@ -391,6 +428,13 @@ export enum MARKER_TYPE {
   GRADIENT = "gradient",
 }
 
+export enum USER_STATUS {
+  STATUS_NEW = "new",
+  STATUS_ACTIVE = "active",
+  STATUS_BLOCKED = "blocked",
+  STATUS_GUEST = "guest"
+}
+
 /**
  * @typedef {string} AggregationType
  * @typedef {string} SyncType
@@ -434,6 +478,7 @@ export type ColorCodingType = `${COLOR_CODING_TYPE}`;
 export type MarkerCodingType = `${MARKER_TYPE}`;
 export type DemoDatasetName = `${DEMO_DATASET}`;
 export type DockType = `${DOCK_TYPE}`;
+export type LegendPosition = `${LEGEND_POSITION}`;
 export type CsvImportOptions = { delimiter?: string, decimalSeparator?: string, thousandSeparator?: string };
 export type IndexPredicate = (ind: number) => boolean;
 export type StringPredicate = (str: string) => boolean;

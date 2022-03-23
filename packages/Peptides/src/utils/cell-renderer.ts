@@ -1,8 +1,6 @@
 import {ChemPalette} from './chem-palette';
 import * as DG from 'datagrok-api/dg';
 
-const cp = new ChemPalette('grok');
-
 /**
  * A function to expand column size based on its contents.
  *
@@ -22,9 +20,8 @@ export function expandColumn(
   let maxLen = 0;
   col.categories.forEach((ent: string) => {
     const len = cellRenderSize(ent);
-    if (len > maxLen) {
+    if (len > maxLen)
       maxLen = len;
-    }
   });
   setTimeout(() => {
       grid.columns.byName(col.name)!.width = Math.min(Math.max(maxLen * textSizeMult, minSize), maxSize);
@@ -43,12 +40,11 @@ export function expandColumn(
 export function setAARRenderer(col: DG.Column, grid: DG.Grid | null = null, grouping = false) {
   col.semType = 'aminoAcids';
   col.setTag('cell.renderer', 'aminoAcids');
-  if (grouping) {
+  if (grouping)
     col.setTag('groups', `${grouping}`);
-  }
-  if (grid) {
+
+  if (grid)
     expandColumn(col, grid, (ent) => measureAAR(ent));
-  }
 }
 /**
  * A function to measure amino acid residue
@@ -76,38 +72,37 @@ export function measureAAR(s: string): number {
  * @param {number} [pivot=0] Pirvot.
  * @param {boolean} [left=false] Is left aligned.
  * @param {boolean} [hideMod=false] Hide amino acid redidue modifications.
+ * @param {number} [transparencyRate=0.0] Transparency rate where 1.0 is fully transparent
  * @return {number} x coordinate to start printing at.
  */
 function printLeftOrCentered(
   x: number, y: number, w: number, h: number,
   g: CanvasRenderingContext2D, s: string, color = ChemPalette.undefinedColor,
-  pivot: number = 0, left = false, hideMod = false,
+  pivot: number = 0, left = false, hideMod = false, transparencyRate: number = 1.0,
 ) {
   g.textAlign = 'start';
   let colorPart = pivot == -1 ? s.substring(0) : s.substring(0, pivot);
-  if (colorPart.length == 1) {
+  if (colorPart.length == 1)
     colorPart = colorPart.toUpperCase();
-  }
+
   if (colorPart.length >= 3) {
-    if (colorPart.substring(0, 3) in ChemPalette.AAFullNames) {
+    if (colorPart.substring(0, 3) in ChemPalette.AAFullNames)
       colorPart = ChemPalette.AAFullNames[s.substring(0, 3)] + colorPart.substr(3);
-    } else if (colorPart.substring(1, 4) in ChemPalette.AAFullNames) {
+    else if (colorPart.substring(1, 4) in ChemPalette.AAFullNames)
       colorPart = colorPart[0] + ChemPalette.AAFullNames[s.substring(1, 4)] + colorPart.substr(4);
-    }
   }
   let grayPart = pivot == -1 ? '' : s.substr(pivot);
   if (hideMod) {
     let end = colorPart.lastIndexOf(')');
     let beg = colorPart.indexOf('(');
-    if (beg > -1 && end > -1 && end - beg > 2) {
+    if (beg > -1 && end > -1 && end - beg > 2)
       colorPart = colorPart.substr(0, beg) + '(+)' + colorPart.substr(end + 1);
-    }
+
 
     end = grayPart.lastIndexOf(')');
     beg = grayPart.indexOf('(');
-    if (beg > -1 && end > -1 && end - beg > 2) {
+    if (beg > -1 && end > -1 && end - beg > 2)
       grayPart = grayPart.substr(0, beg) + '(+)' + grayPart.substr(end + 1);
-    }
   }
   const textSize = g.measureText(colorPart + grayPart);
   const indent = 5;
@@ -116,6 +111,7 @@ function printLeftOrCentered(
 
   function draw(dx1: number, dx2: number) {
     g.fillStyle = color;
+    g.globalAlpha = transparencyRate;
     g.fillText(
       colorPart,
       x + dx1,
@@ -147,37 +143,57 @@ function printLeftOrCentered(
  * @extends {DG.GridCellRenderer}
  */
 export class AminoAcidsCellRenderer extends DG.GridCellRenderer {
-    chemPalette: ChemPalette | null;
+  chemPalette: ChemPalette | null;
 
-    /**
+  /**
      * Renderer name.
      *
      * @readonly
      * @memberof AminoAcidsCellRenderer
      */
-    get name() {
-      return 'aminoAcidsCR';
-    }
+  get name() {
+    return 'aminoAcidsCR';
+  }
 
-    /**
+  /**
      * Cell type.
      *
      * @readonly
      * @memberof AminoAcidsCellRenderer
      */
-    get cellType() {
-      return 'aminoAcids';
-    }
+  get cellType() {
+    return 'aminoAcids';
+  }
 
-    /**
+  /**
+     * Cell height.
+     *
+     * @readonly
+     * @memberof AminoAcidsCellRenderer
+     */
+  get defaultHeight() {
+    return 15;
+  }
+
+  /**
+     * Cell width.
+     *
+     * @readonly
+     * @memberof AminoAcidsCellRenderer
+     */
+  get defaultWidth() {
+    return 30;
+  }
+
+  /**
      * Constructor.
      */
-    constructor() {
-      super();
-      this.chemPalette = null;
-    }
+  constructor() {
+    super();
+    this.chemPalette = null;
+  }
 
-    /**
+  /**
      * Cell renderer function.
      *
      * @param {CanvasRenderingContext2D} g Canvas rendering context.
@@ -188,22 +204,26 @@ export class AminoAcidsCellRenderer extends DG.GridCellRenderer {
      * @param {DG.GridCell} gridCell Grid cell.
      * @param {DG.GridCellStyle} cellStyle Cell style.
      */
-    render(g: CanvasRenderingContext2D, x: number, y: number, w: number, h: number,
-      gridCell: DG.GridCell, cellStyle: DG.GridCellStyle) {
-      if (this.chemPalette === null) {
-        this.chemPalette = new ChemPalette('grok', gridCell.tableColumn?.getTag('groups') ? true : false);
-      }
-      g.save();
-      g.beginPath();
-      g.rect(x, y, w, h);
-      g.clip();
-      g.font = `14px monospace`;
-      g.textBaseline = 'top';
-      const s: string = gridCell.cell.value ? gridCell.cell.value : '-';
-      const [color, pivot] = cp.getColorPivot(s);
-      printLeftOrCentered(x, y, w, h, g, s, color, pivot, false, true);
-      g.restore();
-    }
+  render(
+    g: CanvasRenderingContext2D, x: number, y: number, w: number, h: number, gridCell: DG.GridCell,
+    cellStyle: DG.GridCellStyle) {
+    // this.chemPalette ??= new ChemPalette('grok', gridCell.tableColumn?.getTag('groups') ? true : false);
+
+    y -= 2;
+    g.save();
+    g.beginPath();
+    g.rect(x, y, w, h);
+    g.clip();
+    g.font = `12px monospace`;
+    g.textBaseline = 'top';
+    const s: string = gridCell.cell.value ? gridCell.cell.value : '-';
+    let [color, outerS, innerS, pivot] = ChemPalette.getColorAAPivot(s);
+    if (innerS)
+      outerS = s;
+
+    printLeftOrCentered(x, y, w, h, g, outerS, color, pivot, false, true);
+    g.restore();
+  }
 }
 
 /**
@@ -235,6 +255,26 @@ export class AlignedSequenceCellRenderer extends DG.GridCellRenderer {
   }
 
   /**
+   * Cell height.
+   *
+   * @readonly
+   * @memberof AlignedSequenceCellRenderer
+   */
+  get defaultHeight() {
+    return 30;
+  }
+
+  /**
+   * Cell width.
+   *
+   * @readonly
+   * @memberof AlignedSequenceCellRenderer
+   */
+  get defaultWidth() {
+    return 230;
+  }
+
+  /**
    * Cell renderer function.
    *
    * @param {CanvasRenderingContext2D} g Canvas rendering context.
@@ -246,31 +286,35 @@ export class AlignedSequenceCellRenderer extends DG.GridCellRenderer {
    * @param {DG.GridCellStyle} cellStyle Cell style.
    * @memberof AlignedSequenceCellRenderer
    */
-  render(g: CanvasRenderingContext2D, x: number, y: number, w: number, h: number,
-    gridCell: DG.GridCell, cellStyle: DG.GridCellStyle ) {
-    w = Math.min(gridCell.grid.canvas.width - x, w);
+  render(
+    g: CanvasRenderingContext2D, x: number, y: number, w: number, h: number, gridCell: DG.GridCell,
+    cellStyle: DG.GridCellStyle,
+  ) {
+    const grid = gridCell.grid;
+    const cell = gridCell.cell;
+    w = grid ? Math.min(grid.canvas.width - x, w) : g.canvas.width - x;
     g.save();
     g.beginPath();
     g.rect(x, y, w, h);
     g.clip();
-    g.font = '14px monospace';
+    g.font = '12px monospace';
     g.textBaseline = 'top';
-    const s: string = gridCell.cell.value ?? '';
+    const s: string = cell.value ?? '';
 
     //TODO: can this be replaced/merged with splitSequence?
     const subParts = s.split('-');
     const [text, simplified] = processSequence(subParts);
     const textSize = g.measureText(text.join(''));
-    x = Math.max(x, x + (w - textSize.width) / 2);
+    let x_1 = Math.max(x, x + (w - textSize.width) / 2);
 
-    subParts.forEach((amino: string, index) => {
-      const [color, pivot] = cp.getColorPivot(amino);
+    subParts.forEach((amino, index) => {
+      let [color, outerAmino,, pivot] = ChemPalette.getColorAAPivot(amino);
       g.fillStyle = ChemPalette.undefinedColor;
       if (index + 1 < subParts.length) {
-        const gap = simplified?'':' ';
-        amino += `${amino?'':'-'}${gap}`;
+        const gap = simplified ? '' : ' ';
+        outerAmino += `${outerAmino ? '' : '-'}${gap}`;
       }
-      x = printLeftOrCentered(x, y, w, h, g, amino, color, pivot, true);
+      x_1 = printLeftOrCentered(x_1, y, w, h, g, outerAmino, color, pivot, true);
     });
 
     g.restore();
@@ -293,10 +337,117 @@ export function processSequence(subParts: string[]): [string[], boolean] {
   const text: string[] = [];
   const gap = simplified ? '' : ' ';
   subParts.forEach((amino: string, index) => {
-    if (index < subParts.length) {
+    if (index < subParts.length)
       amino += `${amino ? '' : '-'}${gap}`;
-    }
+
     text.push(amino);
   });
   return [text, simplified];
+}
+
+/**
+ * Aligned sequence difference cell renderer.
+ *
+ * @export
+ * @class AlignedSequenceDifferenceCellRenderer
+ * @extends {DG.GridCellRenderer}
+ */
+export class AlignedSequenceDifferenceCellRenderer extends DG.GridCellRenderer {
+  /**
+   * Renderer name.
+   *
+   * @readonly
+   * @memberof AlignedSequenceDifferenceCellRenderer
+   */
+  get name() {
+    return 'alignedSequenceDifferenceCR';
+  }
+
+  /**
+   * Cell type.
+   *
+   * @readonly
+   * @memberof AlignedSequenceDifferenceCellRenderer
+   */
+  get cellType() {
+    return 'alignedSequenceDifference';
+  }
+
+  /**
+   * Cell height.
+   *
+   * @readonly
+   * @memberof AlignedSequenceDifferenceCellRenderer
+   */
+  get defaultHeight() {
+    return 30;
+  }
+
+  /**
+   * Cell width.
+   *
+   * @readonly
+   * @memberof AlignedSequenceDifferenceCellRenderer
+   */
+  get defaultWidth() {
+    return 230;
+  }
+
+  /**
+   * Cell renderer function.
+   *
+   * @param {CanvasRenderingContext2D} g Canvas rendering context.
+   * @param {number} x x coordinate on the canvas.
+   * @param {number} y y coordinate on the canvas.
+   * @param {number} w width of the cell.
+   * @param {number} h height of the cell.
+   * @param {DG.GridCell} gridCell Grid cell.
+   * @param {DG.GridCellStyle} cellStyle Cell style.
+   * @memberof AlignedSequenceDifferenceCellRenderer
+   */
+  render(
+    g: CanvasRenderingContext2D, x: number, y: number, w: number, h: number, gridCell: DG.GridCell,
+    cellStyle: DG.GridCellStyle,
+  ) {
+    const grid = gridCell.grid;
+    const cell = gridCell.cell;
+
+    w = grid ? Math.min(grid.canvas.width - x, w) : g.canvas.width - x;
+    g.save();
+    g.beginPath();
+    g.rect(x, y, w, h);
+    g.clip();
+    g.font = '12px monospace';
+    g.textBaseline = 'top';
+    const s: string = cell.value ?? '';
+
+    //TODO: can this be replaced/merged with splitSequence?
+    const [s1, s2] = s.split('#');
+    const subParts1 = s1.split('-');
+    const subParts2 = s2.split('-');
+    const [text] = processSequence(subParts1);
+    const textSize = g.measureText(text.join(''));
+    x = Math.max(x, x + (w - textSize.width) / 2);
+
+    subParts1.forEach((amino1: string, index) => {
+      let amino2 = subParts2[index];
+      const [color1, amino1Outer, amino1Inner, pivot1] = ChemPalette.getColorAAPivot(amino1);
+      const [color2, amino2Outer, amino2Inner, pivot2] = ChemPalette.getColorAAPivot(amino2);
+
+      if (amino1 != amino2) {
+        const verticalShift = 7;
+
+        amino1 = amino1Outer + (amino1Inner !== '' ? '(' + amino1Inner + ')' : '');
+        amino2 = amino2Outer + (amino2Inner !== '' ? '(' + amino2Inner + ')' : '');
+        amino1 = amino1 === '' ? '-' : amino1;
+        amino2 = amino2 === '' ? '-' : amino2;
+
+        const x1 = printLeftOrCentered(x, y - verticalShift, w, h, g, amino1, color1, pivot1, true);
+        x = printLeftOrCentered(x, y + verticalShift, w, h, g, amino2, color2, pivot2, true);
+        x = Math.max(x, x1) + 4;
+      } else
+        x = printLeftOrCentered(x, y, w, h, g, amino1 ? amino1 : '-', color1, pivot1, true, true, 0.5) + 4;
+    });
+    g.restore();
+  }
 }

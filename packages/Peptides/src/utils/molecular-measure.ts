@@ -142,9 +142,9 @@ const _lib = [
 const weightsLib : {[name: string]: number} = {};
 
 // Create a dictionary linking one-letter code with the corresponding residues weight.
-for (const d of _lib) {
+for (const d of _lib)
   weightsLib[d['One-letter']] = parseFloat(d.Weight.substring(0, d.Weight.length-2));
-}
+
 
 /**
  * Calculates molecular weight of the given peptide in daltons.
@@ -167,9 +167,8 @@ export function getSequenceMolecularWeight(sequence: string): number {
   }
 
   for (const i of sequence) {
-    if (i in weightsLib) {
+    if (i in weightsLib)
       sum += weightsLib[i];
-    }
   }
   return sum;
 }

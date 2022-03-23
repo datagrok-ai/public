@@ -3,8 +3,7 @@
 
 # Impala
 
-Provides access to [Impala](https://impala.apache.org/) database
-using SQL queries via JDBC driver. 
+Provides access to [Impala](https://impala.apache.org/) database using SQL queries via JDBC driver.
 
 ## Connection parameters
 
@@ -28,5 +27,5 @@ using SQL queries via JDBC driver.
 
 See also:
 
-  * [Data connection](../data-connection.md)
-  * [Impala](https://impala.apache.org/)
+* [Data connection](../data-connection.md)
+* [Impala](https://impala.apache.org/)

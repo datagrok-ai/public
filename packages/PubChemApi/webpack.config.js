@@ -1,21 +1,37 @@
 const path = require('path');
+const packageName = path.parse(require('./package.json').name).name.toLowerCase().replace(/-/g, '');
 
 module.exports = {
   mode: 'development',
   entry: {
-    package: './src/package.js'
+    package: './src/package.ts',
+    test: {
+      filename: 'package-test.js',
+      library: {type: 'var', name: `${packageName}_test`},
+      import: './src/package-test.ts',
+    },
   },
   devtool: 'inline-source-map',
+  devServer: {
+    contentBase: './dist',
+  },
+  target: 'web',
+  module: {
+    rules: [
+      {
+        test: /\.ts?$/,
+        use: 'ts-loader',
+        exclude: /node_modules/,
+      },
+    ]
+  },
+  resolve: {
+    extensions: ['.mjs', '.js', '.json', '.ts', '.tsx'],
+  },
   externals: {
     'datagrok-api/dg': 'DG',
     'datagrok-api/grok': 'grok',
     'datagrok-api/ui': 'ui',
-    'openchemlib/full.js': 'OCL',
-    'rxjs': 'rxjs',
-    'http': 'http',
-    'rxjs/operators': 'rxjs.operators',
-    'cash-dom': '$',
-    'dayjs': 'dayjs',
   },
   output: {
     filename: '[name].js',

@@ -3,7 +3,7 @@
 
 # Google Map view action settings
 
-Allows to link actions to map and show estimated parameters on cursor. 
+Allows to link actions to map and show estimated parameters on cursor.
 
 ## Actions
 
@@ -12,15 +12,15 @@ Allows to link actions to map and show estimated parameters on cursor.
 | Prediction | Shows predict parameter based on demographics statistics |
 | Statistics | Shows demographics statistics                            |
 
-
 Actions can be set for:
-  * DoubleClick
-  * CtrlClick
+
+* DoubleClick
+* CtrlClick
 
 ## Prediction
 
-Predicts parameter using predicted model selected in "Model" parameter. Description of model available on 
-Property panel after selection.
+Predicts parameter using predicted model selected in "Model" parameter. Description of model available on Property panel
+after selection.
 
 ## Demographics statistics
 

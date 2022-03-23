@@ -1,0 +1,13 @@
+{
+  "tags": [
+    "demo",
+    "default",
+    "chem"
+  ],
+  "description": "Randomly chosen 1,000 molecules from ChEMBL",
+  "tables": [
+    {
+      "path": "demo/chem/smiles.csv"
+    }
+  ]
+}

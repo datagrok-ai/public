@@ -1,2 +1,2 @@
 @echo Assure running the Docker daemon (Docker Desktop)
-docker compose -f="localhost.docker-compose.yaml" up
+docker compose --project-name datagrok -f="localhost.docker-compose.yaml" --profile all up

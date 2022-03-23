@@ -1,0 +1,45 @@
+{
+  "name": "@datagrok-libraries/ml",
+  "publishConfig": {
+    "access": "public"
+  },
+  "friendlyName": "Datagrok ML library",
+  "version": "0.0.14",
+  "description": "Machine learning supporting utilities",
+  "dependencies": {
+    "datagrok-api": ">=0.95.8",
+    "@datagrok-libraries/utils": ">=0.0.22",
+    "cash-dom": "latest",
+    "dayjs": "latest",
+    "fastest-levenshtein": "^1.0.12",
+    "jaro-winkler-typescript": "^1.0.1",
+    "umap-js": "^1.3.3",
+    "@keckelt/tsne": "^1.0.2"
+  },
+  "devDependencies": {
+    "typescript": "^4.2.3",
+    "ts-loader": "^9.2.6",
+    "webpack": "latest",
+    "webpack-cli": "latest",
+    "@typescript-eslint/eslint-plugin": "^4.29.1",
+    "@typescript-eslint/parser": "^4.29.1",
+    "eslint": "^7.32.0",
+    "eslint-config-google": "^0.14.0"
+  },
+  "scripts": {
+    "link": "npm link",
+    "link-api": "npm link datagrok-api",
+    "link-utils": "npm link @datagrok-libraries/utils",
+    "link-all": "npm link datagrok-api @datagrok-libraries/utils",
+    "debug-ml": "grok publish --rebuild",
+    "release-ml": "grok publish --rebuild --release",
+    "build-ml": "tsc",
+    "build": "tsc",
+    "debug-ml-public": "grok publish public --rebuild",
+    "release-ml-public": "grok publish public --rebuild --release",
+    "debug-ml-local": "grok publish local --rebuild",
+    "release-ml-local": "grok publish local --rebuild --release",
+    "lint": "eslint src --ext .ts",
+    "lint-fix": "eslint src --ext .ts --fix"
+  }
+}

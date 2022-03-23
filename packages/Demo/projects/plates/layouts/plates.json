@@ -1,0 +1,129 @@
+{
+  "#type": "ViewLayout",
+  "type": "TableView",
+  "viewStateMap": {
+    "containerType": "horizontal",
+    "state": {
+      "width": 1011,
+      "height": 973
+    },
+    "children": [
+      {
+        "containerType": "fill",
+        "state": {
+          "width": 485,
+          "height": 973,
+          "documentManager": true
+        },
+        "children": [
+          {
+            "containerType": "panel",
+            "state": {
+              "width": 485,
+              "height": 973,
+              "element": {
+                "id": "9e871400-cea0-11e9-9c95-e15599e42f77",
+                "type": "Grid",
+                "look": {
+                  "#type": "HeatMapLook",
+                  "allowColumnMenu": true,
+                  "topLevelDefaultMenu": true,
+                  "columns": [
+                    {
+                      "width": 81,
+                      "columnName": "Test Set",
+                      "cellType": "string"
+                    },
+                    {
+                      "width": 91,
+                      "columnName": "Well Type",
+                      "cellType": "string"
+                    },
+                    {
+                      "width": 73,
+                      "columnName": "Position",
+                      "cellType": "string"
+                    },
+                    {
+                      "width": 91,
+                      "columnName": "Avg. Result",
+                      "cellType": "number"
+                    }
+                  ]
+                }
+              }
+            },
+            "children": []
+          }
+        ]
+      },
+      {
+        "containerType": "panel",
+        "state": {
+          "width": 517,
+          "height": 973,
+          "element": {
+            "id": "9ed11550-cea0-11e9-8134-f714530e6abe",
+            "type": "Shape Map",
+            "look": {
+              "regionColumnName": "Position",
+              "colorColumnName": "Avg. Result",
+              "map": "plate-16x24",
+              "showColorScale": false,
+              "showColorSelector": false,
+              "title": "",
+              "description": "# Plate Viewer\n\nThis viewer represents an experimental plate"
+            }
+          }
+        },
+        "children": []
+      }
+    ],
+    "tableId": "bc697ab0-0b50-11e9-c160-33a4f40c88c9"
+  },
+  "columns": [
+    {
+      "name": "Position",
+      "type": "string",
+      "id": "8781ad10-cea0-11e9-fd16-bf44c9eada8f",
+      "friendlyName": "Position",
+      "entityTags": [
+        {
+          "tag": ".semantic_detection_duration",
+          "id": "9ed13c60-cea0-11e9-a54d-135d0c7405ff"
+        },
+        {
+          "tag": ".id",
+          "id": "9ed13c60-cea0-11e9-8bae-e9a06499f73e"
+        }
+      ],
+      "metaParams": {
+        ".semantic_detection_duration": "1",
+        ".id": "8781ad10-cea0-11e9-fd16-bf44c9eada8f"
+      }
+    },
+    {
+      "name": "Avg. Result",
+      "type": "double",
+      "id": "8781ad10-cea0-11e9-ad7b-6754e288a2f4",
+      "friendlyName": "Avg.  Result",
+      "entityTags": [
+        {
+          "tag": ".semantic_detection_duration",
+          "id": "9ed13c60-cea0-11e9-8714-8d51cbab0184"
+        },
+        {
+          "tag": ".id",
+          "id": "9ed13c60-cea0-11e9-ce79-ef84b87776e3"
+        }
+      ],
+      "metaParams": {
+        ".semantic_detection_duration": "1",
+        ".id": "8781ad10-cea0-11e9-ad7b-6754e288a2f4"
+      }
+    }
+  ],
+  "id": "83da7700-cea0-11e9-ac45-61d4be8af9d2",
+  "name": "Hts2x16x242",
+  "friendlyName": "hts_2x16x24 (2)"
+}

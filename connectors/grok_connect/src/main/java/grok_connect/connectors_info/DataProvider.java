@@ -22,7 +22,7 @@ public abstract class DataProvider
 
     public String outputCsv;
 
-    public abstract boolean isParametrized();
+    public abstract boolean autoInterpolation();
 
     public abstract DataFrame execute(FuncCall queryRun)
             throws ClassNotFoundException, SQLException, ParseException, IOException, QueryCancelledByUser, GrokConnectException;

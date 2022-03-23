@@ -15,8 +15,8 @@ export const options = {
   animation: false,
   xAxis: {
     type: 'value',
-    // min: (value) => value.min - 1,
-    // max: (value) => value.max + 1,
+    min: 'dataMin',
+    max: 'dataMax',
   },
   yAxis: {
     type: 'category',
@@ -59,3 +59,9 @@ export const options = {
 export function deepCopy(object) {
   return JSON.parse(JSON.stringify(object));
 }
+
+export const VISIBILITY_MODE = {
+  ALWAYS: 'Always',
+  AUTO: 'Auto',
+  NEVER: 'Never',
+};

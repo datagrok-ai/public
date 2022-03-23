@@ -5,6 +5,7 @@ import * as DG from 'datagrok-api/dg';
 import { welcomeView } from "./welcome-view";
 import { compareColumns } from './compare-columns';
 import { AddNewColumnDialog } from './dialogs/add-new-column';
+import { FormulaLinesDialog } from './dialogs/formula-lines';
 import { DistributionProfilerViewer } from './distribution-profiler';
 import { SystemStatusWidget } from "./widgets/system-status-widget";
 import { RecentProjectsWidget } from "./widgets/recent-projects-widget";
@@ -121,7 +122,7 @@ export function _usersSearch(s: string): Promise<any[]> {
 //description: Protein Data Bank
 //tags: search
 //input: string s
-//output: widget
+//output: widget w
 export function _pdbSearch(s: string): Promise<any> {
   return pdbSearch(s);
 }
@@ -129,7 +130,7 @@ export function _pdbSearch(s: string): Promise<any> {
 //description: PubChem
 //tags: search
 //input: string s
-//output: widget
+//output: widget w
 export function _pubChemSearch(s: string): Promise<any> {
   return pubChemSearch(s);
 }
@@ -137,7 +138,23 @@ export function _pubChemSearch(s: string): Promise<any> {
 //description: PubChem
 //tags: search
 //input: string s
-//output: widget
+//output: widget w
 export function _wikiSearch(s: string): Promise<any> {
   return wikiSearch(s);
 }
+
+//name: formulaLinesEditor
+//input: dataframe src {optional: grok.shell.o}
+//top-menu: Data | Formula Lines...
+export function formulaLinesDialog(src: DG.DataFrame | DG.Viewer): FormulaLinesDialog {
+  return new FormulaLinesDialog(src);
+}
+
+// Adds "Formula Lines" menu group to the Scatter Plot context menu:
+grok.events.onContextMenu.subscribe((args) => {
+  let src = args.args.context;
+  if (src instanceof DG.ScatterPlotViewer) {
+    let menu = args.args.menu.find('Tools');
+    menu.item('Formula Lines...', () => { formulaLinesDialog(src); });
+  }
+});

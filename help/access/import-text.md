@@ -5,16 +5,16 @@
 
 Use this feature for finer control of the import options, as well as text editing.
 
-Any changes made to the text or to the options are automatically applied, unless 'Auto sync' option
-is off. The preview of the data is in the bottom pane.
+Any changes made to the text or to the options are automatically applied, unless 'Auto sync' option is off. The preview
+of the data is in the bottom pane.
 
-Datagrok tries to auto-detect parameters automatically, so vast majority
-of the datasets can be imported by simply dragging that file into the browser
-window, or opening it via the **File | Open (Ctrl+O)** command.
+Datagrok tries to auto-detect parameters automatically, so vast majority of the datasets can be imported by simply
+dragging that file into the browser window, or opening it via the **File | Open (
+Ctrl+O)** command.
 
 Options and commands:
 
-|[]()                 |                                                                |
+|                     |                                                                |
 |---------------------|----------------------------------------------------------------|
 | Delimiter           | Field separator                                                |
 | New line            | New line                                                       |
@@ -27,4 +27,5 @@ Options and commands:
 | Done                | Add the table to the workspace                                 |
 
 See also:
+
 * [Importing data](importing-data.md)

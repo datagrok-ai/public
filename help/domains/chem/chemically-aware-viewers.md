@@ -26,7 +26,7 @@ Molecules in [bar chart](../../visualize/viewers/bar-chart.md)
 R-group analysis done using [trellis plot](../../visualize/viewers/trellis-plot.md).
 
 ![Trellis plot](../../uploads/viewers/trellis-plot-molecules.png "Trellis plot: molecules")
-   
+
 ## Form
 
 Molecules in the [form](../../visualize/viewers/form.md).
@@ -36,11 +36,11 @@ Molecules in the [form](../../visualize/viewers/form.md).
 ## Tile viewer
 
 ![Tile viewer](../../uploads/viewers/tile-viewer-molecules.png "Tile viewer: molecules")
- 
+
 ## Network diagram
 
 ![Network diagram](../../uploads/viewers/network-diagram-molecules.png "Network diagram: molecules")
- 
-   
+
 See also:
-  * [Viewers](../../visualize/viewers.md)
+
+* [Viewers](../../visualize/viewers.md)

@@ -2,15 +2,14 @@ import * as grok from 'datagrok-api/grok';
 import * as DG from "datagrok-api/dg";
 import * as ui from "datagrok-api/ui";
 import { study } from "../clinical-study";
-import { ILazyLoading } from '../lazy-loading/lazy-loading';
-import { checkMissingDomains, updateDivInnerHTML } from './utils';
+import { updateDivInnerHTML } from '../utils/utils';
 import { _package } from '../package';
 import { getUniqueValues } from '../data-preparation/utils';
-import { LAB_RES_N, LAB_TEST, VISIT_NAME, SUBJECT_ID, VS_TEST, VS_RES_N } from '../columns-constants';
-import { requiredColumnsByView } from '../constants';
+import { LAB_RES_N, LAB_TEST, VISIT_NAME, SUBJECT_ID, VS_TEST, VS_RES_N } from '../constants/columns-constants';
+import { ClinicalCaseViewBase } from '../model/ClinicalCaseViewBase';
 
 
-export class MatrixesView extends DG.ViewBase implements ILazyLoading {
+export class MatrixesView extends ClinicalCaseViewBase {
 
   matrixPlot: any;
   martixPlotDiv = ui.box();
@@ -31,14 +30,10 @@ export class MatrixesView extends DG.ViewBase implements ILazyLoading {
     this.helpUrl = `${_package.webRoot}/views_help/correlation_matrix.md`;
   }
 
-  loaded: boolean;
-
-  load(): void {
-    checkMissingDomains(requiredColumnsByView[this.name], this);
-  }
+  loaded = false;
 
   createView(): void {
-    this.domains = this.domains.filter(it => study.domains[it] !== null);
+    this.domains = this.domains.filter(it => study.domains[it] !== null && !this.optDomainsWithMissingCols.includes(it));
     this.domains.forEach(it => {
       let df = study.domains[it].clone(null, [SUBJECT_ID, VISIT_NAME, this.domainFields[it]['test'], this.domainFields[it]['res']]);
       df.getCol(this.domainFields[it]['test']).name = 'test';
@@ -92,7 +87,7 @@ export class MatrixesView extends DG.ViewBase implements ILazyLoading {
         //@ts-ignore
         valuesMultiChoices.input.style.maxHeight = '100%';
         multichoices[domain] = valuesMultiChoices;
-      })
+      });
 
       let acc = ui.accordion();
       this.domains.forEach(domain => {
