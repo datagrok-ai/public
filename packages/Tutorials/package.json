@@ -2,9 +2,10 @@
 	"name": "@datagrok/tutorials",
 	"beta": false,
 	"friendlyName": "Tutorials",
-	"version": "1.0.1",
+	"version": "1.0.2",
 	"description": "",
 	"dependencies": {
+		"@datagrok-libraries/utils": "0.0.22",
 		"cash-dom": "^8.1.0",
 		"css-loader": "^6.3.0",
 		"datagrok-api": ">=0.95.8",
@@ -38,5 +39,11 @@
 		"release-tutorials-local": "grok publish local --rebuild --release",
 		"debug-tutorials-localhost": "grok publish localhost --rebuild",
 		"release-tutorials-localhost": "grok publish localhost --rebuild --release"
-	}
+	},
+	"canEdit": [
+		"Developers"
+	],
+	"canView": [
+		"All users"
+	]
 }

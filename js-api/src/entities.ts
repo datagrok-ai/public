@@ -1,15 +1,16 @@
-import {ColumnType, ScriptLanguage, SemType, Type, TYPE} from "./const";
+import {ColumnType, ScriptLanguage, SemType, Type, TYPE, USER_STATUS} from "./const";
 import { FuncCall } from "./functions";
 import {toJs} from "./wrappers";
-import {DataFrame} from "./dataframe";
 import {FileSource} from "./dapi";
 import {MapProxy} from "./utils";
+import {DataFrame} from "./dataframe";
 
 declare var grok: any;
 let api = <any>window;
 
 type PropertyGetter = (a: object) => any;
 type PropertySetter = (a: object, value: any) => void;
+type ValueValidator<T> = (value: T) => string;
 
 /** @class
  * Base class for system objects stored in the database in a structured manner.
@@ -91,18 +92,25 @@ export class User extends Entity {
     super(dart);
   }
 
+  static create(): User {return new User(api.grok_User_From_Id(null)); };
   static fromId(id: string): User { return new User(api.grok_User_From_Id(id)); }
 
   static current(): User { return new User(api.grok_User()); }
 
   /** First name */
   get firstName(): string { return api.grok_User_Get_FirstName(this.dart); }
+  set firstName(name: string) {api.grok_User_Set_FirstName(this.dart, name);}
 
   /** Last name */
   get lastName(): string { return api.grok_User_Get_LastName(this.dart); }
+  set lastName(name: string) {api.grok_User_Set_LastName(this.dart, name);}
+
+  get status(): string & USER_STATUS { return api.grok_User_Get_Status(this.dart); }
+  set status(name: string & USER_STATUS) {api.grok_User_Set_Status(this.dart, name);}
 
   /** Email */
   get email(): string | null { return api.grok_User_Get_Email(this.dart); }
+  set email(email: string | null) {api.grok_User_Set_Email(this.dart, email);}
 
   /** Picture URL */
   get picture(): string | object { return api.grok_User_Get_Picture(this.dart); }
@@ -115,6 +123,7 @@ export class User extends Entity {
 
   /** Login */
   get login(): string { return api.grok_User_Get_Login(this.dart); }
+  set login(login: string) {api.grok_User_Set_Login(this.dart, login);}
 
   toMarkup(): string { return api.grok_User_ToMarkup(this.dart); }
 
@@ -196,12 +205,12 @@ export class Func extends Entity {
   }
 
   /** Returns functions with the specified attributes. */
-  static find(params?: { package?: string, name?: string, tags?: string[], returnType?: string}): Func[] {
-    return api.grok_Func_Find(params?.package, params?.name, params?.tags, params?.returnType);
+  static find(params?: { package?: string, name?: string, tags?: string[], meta?: any, returnType?: string, returnSemType?: string}): Func[] {
+    return api.grok_Func_Find(params?.package, params?.name, params?.tags, params?.meta, params?.returnType, params?.returnSemType);
   }
 
-  /** Returns functions (including these) with the specified attributes. */
-  static async findAll(params?: { package?: string, name?: string, tags?: string[], returnType?: string}): Promise<Func[]> {
+  /** Returns functions (including queries and scripts) with the specified attributes. */
+  static async findAll(params?: { package?: string, name?: string, tags?: string[], meta?: any, returnType?: string, returnSemType?: string}): Promise<Func[]> {
     let functions = Func.find(params);
     let queries = await grok.dapi.queries.include('params,connection').filter(`name="${params?.name}"`).list();
     let scripts = await grok.dapi.scripts.include('params').filter(`name="${params?.name}"`).list();
@@ -215,32 +224,92 @@ export class Func extends Entity {
   }
 }
 
+export interface ProjectOpenOptions {
+  closeAll: boolean;
+  openViews: 'all' | 'saved' | 'none';
+}
+
 /** Represents a project */
 export class Project extends Entity {
   constructor(dart: any) {
     super(dart);
+
+    this.options = new MapProxy(api.grok_Project_Get_Options(this.dart), 'options');
   }
 
-  get pictureUrl(): string { return api.grok_PictureMixin_Get_PictureUrl(this.dart); }
-  get path(): string { return api.grok_Project_Get_Path(this.dart); }
-  get isOnServer(): string { return api.grok_Project_Get_IsOnServer(this.dart); }
-  get isLocal(): string { return api.grok_Project_Get_IsLocal(this.dart); }
+  public options: any;
+
+  static create(): Project {return toJs(api.grok_Project_From_Id(null)); };
+
+  get pictureUrl(): string {
+    return api.grok_PictureMixin_Get_PictureUrl(this.dart);
+  }
+
+  get path(): string {
+    return api.grok_Project_Get_Path(this.dart);
+  }
+
+  get isOnServer(): string {
+    return api.grok_Project_Get_IsOnServer(this.dart);
+  }
+
+  get isLocal(): string {
+    return api.grok_Project_Get_IsLocal(this.dart);
+  }
 
   /** Project description */
-  get description(): string { return api.grok_Project_Description(this.dart); }
+  get description(): string {
+    return api.grok_Project_Description(this.dart);
+  }
 
   /** Project changes flag */
-  get isDirty(): boolean { return api.grok_Project_IsDirty(this.dart); }
+  get isDirty(): boolean {
+    return api.grok_Project_IsDirty(this.dart);
+  }
 
   /** Project is empty flag */
-  get isEmpty(): boolean { return api.grok_Project_IsEmpty(this.dart); }
+  get isEmpty(): boolean {
+    return api.grok_Project_IsEmpty(this.dart);
+  }
 
-  toMarkup(): string { return api.grok_Project_ToMarkup(this.dart); }
+  toMarkup(): string {
+    return api.grok_Project_ToMarkup(this.dart);
+  }
 
   /** Opens the project in workspace */
-  open(options?: {closeAll: boolean}): Promise<Project> {
-    return api.grok_Project_Open(this.dart, options?.closeAll ?? false);
+  open(options?: ProjectOpenOptions): Promise<Project> {
+    let openViews = options?.openViews ?? 'all';
+    return api.grok_Project_Open(this.dart, options?.closeAll ?? false, openViews == 'all' || openViews == 'saved', openViews == 'all');
   }
+
+  get links(): Entity[] {
+    return toJs(api.grok_Project_GetRelations(this.dart, true));
+  }
+
+  get children(): Entity[] {
+    return toJs(api.grok_Project_GetRelations(this.dart, false));
+  }
+
+  addLink(entity: Entity | DataFrame): void {
+    if (entity instanceof DataFrame)
+      entity = entity.getTableInfo();
+    api.grok_Project_AddRelation(this.dart, entity.dart, true);
+  }
+
+  addChild(entity: Entity |DataFrame): void {
+    if (entity instanceof DataFrame)
+      entity = entity.getTableInfo();
+    api.grok_Project_AddRelation(this.dart, entity.dart, false);
+  }
+
+  removeLink(entity: Entity): void {
+    api.grok_Project_AddRelation(this.dart, entity.dart);
+  }
+
+  removeChild(entity: Entity): void {
+    api.grok_Project_AddRelation(this.dart, entity.dart);
+  }
+
 }
 
 /** Represents a data query
@@ -343,6 +412,11 @@ export class TableInfo extends Entity {
   constructor(dart: any) {
     super(dart);
   }
+
+  static fromDataFrame(t: DataFrame): TableInfo {return toJs(api.grok_DataFrame_Get_TableInfo(t.dart)); }
+
+  get dataFrame(): DataFrame { return api.grok_TableInfo_Get_DataFrame(this.dart); }
+
 }
 
 /** @extends Entity
@@ -493,7 +567,7 @@ export class Credentials extends Entity {
   }
 
   /** Collection of parameters: login, password, API key, etc. */
-  get parameters(): object { return api.grok_Credentials_Parameters(this.dart); }
+  get parameters(): Record<string, string> { return api.grok_Credentials_Parameters(this.dart); }
 }
 
 /** Represents a script environment */
@@ -526,6 +600,13 @@ export class LogEventType extends Entity {
 
   /** Friendly name of the event type */
   get name(): string { return api.grok_LogEventType_Get_Name(this.dart); }
+
+  get comment(): string { return api.grok_LogEventType_Get_Comment(this.dart); }
+  set comment(comment) { api.grok_LogEventType_Set_Comment(this.dart, comment); }
+
+  get isError(): boolean { return api.grok_LogEventType_Get_IsError(this.dart); }
+  set isError(isError) { api.grok_LogEventType_Set_IsError(this.dart, isError); }
+
 }
 
 export class LogEvent extends Entity {
@@ -603,16 +684,16 @@ export class LogEventParameterValue extends Entity {
  * Represents a package, which is a unit of distribution of content in the Datagrok platform.
  */
 export class Package extends Entity {
-  public webRoot: string | undefined;
-  public version: string;
+  public webRoot: string = '';
+  public version: string = '';
 
   constructor(dart: any | undefined = undefined) {
     super(dart);
+
     if (typeof dart === 'string') {
       this.webRoot = dart;
       this.dart = null;
     }
-    this.version = "";
   }
 
   /** Override init() method to provide package-specific initialization.
@@ -707,6 +788,9 @@ export interface PropertyOptions {
    * Signature: validator(x: DG.Type): string | null.
    * [null] indicates that the value is valid, [string] describes a validation error. */
   validators?: string[];
+
+  /** List of value validators (functions that take a value and return error message or null) */
+  valueValidators?: ValueValidator<any>[];
 
   /** Custom field caption shown in [PropertyGrid] */
   caption?: string;

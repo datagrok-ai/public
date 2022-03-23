@@ -1,0 +1,46 @@
+.pep-textarea-box {
+  position: relative;
+}
+
+.pep-textarea-box:hover .pep-snippet-editor-icon {
+  visibility: visible;
+}
+
+.pep-snippet-editor-icon {
+  position: absolute;
+  top: 5px;
+  visibility: hidden;
+  margin: 5px;
+  z-index: 1;
+}
+
+.pep-reset-icon {
+  right: 10px;
+}
+
+.pep-snippet-editor-icon i {
+  font-size: 13px;
+}
+
+.pep-snippet-editor-icon:hover {
+  background-color: var(--steel-1);
+  border-radius: 2px;
+}
+
+.pep-snippet-inline-icon i {
+  font-size: 13px;
+}
+
+.pep-textinput {
+  height: 50px;
+  overflow: hidden;
+}
+
+#pep-hist-host #center {
+  height: 131px;
+}
+
+#pep-hist-host > #root {
+  height: unset;
+  width: 100%;
+}

@@ -3,12 +3,12 @@ import * as DG from "datagrok-api/dg";
 import * as ui from "datagrok-api/ui";
 import { study } from "../clinical-study";
 import { validationRulesList, _package } from "../package";
-import { pinnacleRuleIdColumnName, validationResultRuleIdColumn } from "../validation/constants";
-import { createRulesDataFrame } from '../validation/validation-utils';
-import { ILazyLoading } from '../lazy-loading/lazy-loading';
+import { pinnacleRuleIdColumnName, validationResultRuleIdColumn } from "../sdtm-validation/constants";
+import { createRulesDataFrame } from '../sdtm-validation/validation-utils';
 import { getUniqueValues } from '../data-preparation/utils';
+import { ClinicalCaseViewBase } from '../model/ClinicalCaseViewBase';
 
-export class ValidationView extends DG.ViewBase implements ILazyLoading {
+export class ValidationView extends ClinicalCaseViewBase {
 
   resultsDataframe: DG.DataFrame;
   rulesDataframe: DG.DataFrame;
@@ -30,12 +30,6 @@ export class ValidationView extends DG.ViewBase implements ILazyLoading {
     }
     this.helpUrl = `${_package.webRoot}/views_help/validation.md`;
   }
-
-  loaded: boolean;
-
-  load(): void {
-    this.createView();
- }
 
   createView(): void {
     this.resultsDataframe = study.validationResults;
@@ -108,7 +102,6 @@ export class ValidationView extends DG.ViewBase implements ILazyLoading {
   
   private getViolatedRulesDataframe(rules: DG.DataFrame, uniqueViolatedRuleIds: any) {
     const res = createRulesDataFrame();
-    console.log(rules.columns.names());
     let column = rules.getCol(pinnacleRuleIdColumnName);
     let rowCount = rules.rowCount;
     for (let i = 0; i < rowCount; i++) {

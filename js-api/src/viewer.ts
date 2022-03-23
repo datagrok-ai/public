@@ -1,7 +1,7 @@
 /** A viewer that is typically docked inside a [TableView]. */
 import {TYPE, VIEWER, ViewerPropertyType, ViewerType} from "./const";
 import {Column, DataFrame} from "./dataframe.js";
-import {DateTime, Property} from "./entities";
+import {DateTime, Property, PropertyOptions} from "./entities";
 import {Menu, ObjectPropertyBag, Widget} from "./widgets";
 import {_toJson} from "./utils";
 import {toJs} from "./wrappers";
@@ -10,6 +10,7 @@ import * as rxjs from "rxjs";
 import {Subscription} from "rxjs";
 import {map} from 'rxjs/operators';
 import {Grid, Point, Rect} from "./grid";
+import {FormulaLinesHelper} from "./helpers";
 
 declare let DG: any;
 declare let ui: any;
@@ -122,7 +123,7 @@ export class Viewer extends Widget {
   /** Returns viewer type (see VIEWER constants)
    * @returns {string} */
   get type(): ViewerType {
-    return this.getOptions().type;
+    return api.grok_Viewer_Get_Type(this.dart);
   }
 
   get table(): DataFrame {
@@ -141,6 +142,14 @@ export class Viewer extends Widget {
 
   set dataFrame(t: DataFrame | undefined) {
     api.grok_Viewer_Set_DataFrame(this.dart, t == null ? null : t.dart);
+  }
+
+  get helpUrl(): string {
+    return api.grok_Viewer_Get_HelpUrl(this.dart);
+  }
+
+  set helpUrl(s: string) {
+    api.grok_Viewer_Set_HelpUrl(this.dart, s);
   }
 
   static grid(t: DataFrame, options: object | null = null): Grid {
@@ -199,6 +208,10 @@ export class Viewer extends Widget {
         new StreamSubscription(dart).cancel();
       }
     );
+  }
+
+  removeFromView() {
+    return toJs(api.grok_Viewer_Remove_From_View(this.dart));
   }
 }
 
@@ -272,7 +285,7 @@ export class JsViewer extends Viewer {
    * @param {string} dataPropertyName
    * @param {object} options
    * @returns {Column} */
-  protected column(dataPropertyName: string, options: {} | null = null): Column {
+  protected column(dataPropertyName: string, options: { [key: string]: any } & PropertyOptions | null = null): Column {
     return this.addProperty(`${dataPropertyName}ColumnName`, TYPE.STRING, null, options);
   }
 
@@ -281,7 +294,7 @@ export class JsViewer extends Viewer {
    * @param {number} defaultValue
    * @param {object} options
    * @returns {number} */
-  protected int(propertyName: ViewerPropertyType, defaultValue: number | null = null, options: {} | null = null): number {
+  protected int(propertyName: ViewerPropertyType, defaultValue: number | null = null, options: { [key: string]: any } & PropertyOptions | null = null): number {
     return this.addProperty(propertyName, TYPE.INT, defaultValue, options);
   }
 
@@ -290,7 +303,7 @@ export class JsViewer extends Viewer {
    * @param {number} defaultValue
    * @param {object} options
    * @returns {number} */
-  protected float(propertyName: ViewerPropertyType, defaultValue: number | null = null, options: {} | null = null): number {
+  protected float(propertyName: ViewerPropertyType, defaultValue: number | null = null, options: { [key: string]: any } & PropertyOptions | null = null): number {
     return this.addProperty(propertyName, TYPE.FLOAT, defaultValue, options);
   }
 
@@ -299,7 +312,7 @@ export class JsViewer extends Viewer {
    * @param {string} defaultValue
    * @param {object} options
    * @returns {string} */
-  protected string(propertyName: ViewerPropertyType, defaultValue: string | null = null, options: {} | null = null): string {
+  protected string(propertyName: ViewerPropertyType, defaultValue: string | null = null, options: { [key: string]: any } & PropertyOptions | null = null): string {
     return this.addProperty(propertyName, TYPE.STRING, defaultValue, options);
   }
 
@@ -308,7 +321,7 @@ export class JsViewer extends Viewer {
    * @param {string[]} defaultValue
    * @param {object} options
    * @returns {string[]} */
-  protected stringList(propertyName: ViewerPropertyType, defaultValue: string[] | null = null, options: {} | null = null): string[] {
+  protected stringList(propertyName: ViewerPropertyType, defaultValue: string[] | null = null, options: { [key: string]: any } & PropertyOptions | null = null): string[] {
     return this.addProperty(propertyName, TYPE.STRING_LIST, defaultValue, options);
   }
 
@@ -317,7 +330,7 @@ export class JsViewer extends Viewer {
    * @param {boolean} defaultValue
    * @param {object} options
    * @returns {boolean} */
-  protected bool(propertyName: ViewerPropertyType, defaultValue: boolean | null = null, options: {} | null = null): boolean {
+  protected bool(propertyName: ViewerPropertyType, defaultValue: boolean | null = null, options: { [key: string]: any } & PropertyOptions | null = null): boolean {
     return this.addProperty(propertyName, TYPE.BOOL, defaultValue, options);
   }
 
@@ -326,8 +339,27 @@ export class JsViewer extends Viewer {
    * @param {DateTime} defaultValue
    * @param {object} options
    * @returns {DateTime} */
-  protected dateTime(propertyName: ViewerPropertyType, defaultValue: DateTime | null = null, options: {} | null = null): DateTime {
+  protected dateTime(propertyName: ViewerPropertyType, defaultValue: DateTime | null = null, options: { [key: string]: any } & PropertyOptions | null = null): DateTime {
     return this.addProperty(propertyName, TYPE.DATE_TIME, defaultValue, options);
+  }
+}
+
+
+// export interface FilterState {
+//   type: FILTER_TYPE | string;
+//   column?: string;
+// }
+
+/** Represents a group of filters that are located together. */
+export class FilterGroup extends Viewer {
+  dart: any;
+
+  constructor(dart: any) {
+    super(dart);
+  }
+
+  add(state: string) {
+    api.grok_FilterGroup_Add(this.dart, state);
   }
 }
 
@@ -355,8 +387,9 @@ export class ScatterPlotViewer extends Viewer {
   get viewport(): Rect { return toJs(api.grok_ScatterPlotViewer_Get_Viewport(this.dart)); }
   set viewport(viewport: Rect) { api.grok_ScatterPlotViewer_Set_Viewport(this.dart, viewport.x, viewport.y, viewport.width, viewport.height); }
 
-  /** Converts world coords to screen coords */
+  /** Convert coords */
   worldToScreen(x: number, y: number): Point { return toJs(api.grok_ScatterPlotViewer_WorldToScreen(this.dart, x, y)); }
+  screenToWorld(x: number, y: number): Point { return toJs(api.grok_ScatterPlotViewer_ScreenToWorld(this.dart, x, y)); }
 
   get onZoomed(): rxjs.Observable<Rect> { return this.onEvent('d4-scatterplot-zoomed'); }
   get onResetView(): rxjs.Observable<null> { return this.onEvent('d4-scatterplot-reset-view'); }
@@ -365,81 +398,25 @@ export class ScatterPlotViewer extends Viewer {
   get onBeforeDrawScene(): rxjs.Observable<null> { return this.onEvent('d4-before-draw-scene'); }
 }
 
-interface FormulaLine {
-  id?: string;
-  type?: string;
-  title?: string;
-  description?: string;
-  color?: string;
-  visible?: boolean;
-  opacity?: number;
-  zindex?: number;
-  min?: number;
-  max?: number;
-  formula?: string;
-
-  // Specific to lines:
-  width?: number;
-  spline?: number;
-  style?: string;
-
-  // Specific to bands:
-  column?: string;
-  column2?: string;
-}
-
 export class ViewerMetaHelper {
-  private readonly viewer: Viewer;
-  private formulaLines: FormulaLine[] = [];
-  private formulaLinesProp: string = 'formulaLines';
+  private readonly _viewer: Viewer;
+
+  readonly formulaLines: ViewerFormulaLinesHelper;
 
   constructor(viewer: Viewer) {
+    this._viewer = viewer;
+    this.formulaLines = new ViewerFormulaLinesHelper(this._viewer);
+  }
+}
+
+export class ViewerFormulaLinesHelper extends FormulaLinesHelper {
+  readonly viewer: Viewer;
+
+  get storage(): string { return this.viewer.props['formulaLines']; }
+  set storage(value: string) { this.viewer.props['formulaLines'] = value; }
+
+  constructor(viewer: Viewer) {
+    super();
     this.viewer = viewer;
-    this.formulaLines = this.getFormulaLines();
-  }
-
-  getFormulaLines(): FormulaLine[] {
-    let json: string | null = this.viewer.props[this.formulaLinesProp];
-    if (json)
-      return JSON.parse(json);
-
-    return [];
-  }
-
-  addFormulaLines(items: FormulaLine[] | null = null): void {
-    if (!items)
-      return;
-
-    let json: string | null = _toJson(items);
-    if (json)
-      this.viewer.props[this.formulaLinesProp] = json;
-  }
-
-  addFormulaItem(item: FormulaLine): void {
-    this.formulaLines.push(item);
-    this.addFormulaLines(this.formulaLines);
-  }
-
-  addFormulaLine(item: FormulaLine): void {
-    item.type = 'line';
-    this.addFormulaItem(item);
-  }
-
-  addFormulaBand(item: FormulaLine): void {
-    item.type = 'band';
-    this.addFormulaItem(item);
-  }
-
-  removeFormulaLines(...ids: string[]): void {
-    if (ids.length == 0) {
-      this.formulaLines = [];
-      this.viewer.props[this.formulaLinesProp] = '[]';
-      return;
-    }
-
-    this.formulaLines = this.formulaLines.filter((item: FormulaLine) =>
-        item.id == undefined || ids.indexOf(item.id) == -1);
-
-    this.addFormulaLines(this.formulaLines);
   }
 }

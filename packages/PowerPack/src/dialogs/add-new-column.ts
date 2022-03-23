@@ -85,7 +85,7 @@ export class AddNewColumnDialog {
         .add(this.inputName)
         .add(this.inputType)
         .add(this.inputExpression);
-        
+
     this.uiDialog
         .add(await this.initUiLayout())
         .onOK(async () => await this.addNewColumnAction())
@@ -341,16 +341,9 @@ export class AddNewColumnDialog {
   /** Creates new unique Column Name. */
   getResultColumnName(): string {
     let input = this.inputName!.input as HTMLInputElement;
-
-    if (this.edit)
-      return input.value;
-    else
-      return DG.utils.getUniqueName(
-          input.value
-          ? input.value
-          : input.placeholder,
-          this.sourceDf!.columns.names()
-      );
+    return this.edit
+      ? input.value
+      : this.sourceDf!.columns.getUnusedName(input.value ?? input.placeholder);
   }
 
   /** Detects selected item in the ChoiceBox. */

@@ -3,283 +3,474 @@
   "version": "2.0",
   "name": "link-tables-test",
   "url": "https://dev.datagrok.ai/",
-  "tests": [{
-    "id": "8c843989-3c52-4598-8e12-d9d005d06f41",
-    "name": "link-tables-test",
-    "commands": [{
-      "id": "f8499376-1292-4cc5-b1f0-66d51031ab9b",
-      "comment": "",
-      "command": "open",
-      "target": "/projects?selenium=true&q=selenium",
-      "targets": [],
-      "value": ""
-    }, {
-      "id": "0d5ff243-6826-48ac-bf85-c84b164c00df",
-      "comment": "",
-      "command": "type",
-      "target": "xpath=//div[@id='signup-login-fields']/div/div/input",
-      "targets": [
-        ["id=login", "id"],
-        ["css=#login", "css"],
-        ["css=#login", "css:finder"],
-        ["xpath=//input[@id='login']", "xpath:attributes"],
-        ["xpath=//div[@id='rootDiv']/div/input", "xpath:idRelative"],
-        ["xpath=//input", "xpath:position"]
-      ],
-      "value": "selenium"
-    }, {
-      "id": "5c68ac56-c1ac-44d6-b7cf-411b4656aa93",
-      "comment": "",
-      "command": "type",
-      "target": "xpath=//div[@id='signup-login-fields']/div/div[2]/input",
-      "targets": [
-        ["id=password", "id"],
-        ["css=#password", "css"],
-        ["css=#password", "css:finder"],
-        ["xpath=//input[@id='password']", "xpath:attributes"],
-        ["xpath=//div[@id='rootDiv']/div/input[2]", "xpath:idRelative"],
-        ["xpath=//input[2]", "xpath:position"]
-      ],
-      "value": "selenium"
-    }, {
-      "id": "4dc9fa98-2dff-4ef2-b6ef-9eaae7b30efb",
-      "comment": "",
-      "command": "click",
-      "target": "xpath=//div[@id='signup-login-fields']/div[2]/button",
-      "targets": [
-        ["linkText=LOGIN", "linkText"],
-        ["css=a", "css"],
-        ["css=a", "css:finder"],
-        ["xpath=//a[contains(text(),'LOGIN')]", "xpath:link"],
-        ["xpath=//div[@id='rootDiv']/div/a", "xpath:idRelative"],
-        ["xpath=//a[contains(@href, '#')]", "xpath:href"],
-        ["xpath=//a", "xpath:position"]
-      ],
-      "value": ""
-    }, {
-      "id": "dcb0deca-1d8b-4c6d-9f16-008598489db4",
-      "comment": "",
-      "command": "doubleClick",
-      "target": "name=div-SeleniumTestDataP2",
-      "targets": [
-        ["css=.d4-current", "css:finder"],
-        ["xpath=(//div[@name='div-Project \"Selenium test data p2\"'])[2]", "xpath:attributes"],
-        ["xpath=//div[@id='datasets']/div/div[2]/div[5]", "xpath:idRelative"],
-        ["xpath=//div[2]/div[5]", "xpath:position"]
-      ],
-      "value": ""
-    }, {
-      "id": "ce9a15bd-ac04-49a1-9cd1-e288df55ef0e",
-      "comment": "",
-      "command": "pause",
-      "target": "3000",
-      "targets": [],
-      "value": ""
-    }, {
-      "id": "da69c1b8-789e-4b40-b198-7c23ce5230f9",
-      "comment": "",
-      "command": "click",
-      "target": "xpath=(//div[@name='div-Data'])[2]",
-      "targets": [
-        ["css=.d4-menu-item-hover:nth-child(5)", "css:finder"],
-        ["xpath=(//div[@name='div-Data'])[2]", "xpath:attributes"],
-        ["xpath=//div[@id='rootDiv']/div/div[3]/div[2]/div/div/div/div/div/div/div[2]/div/div/div[5]", "xpath:idRelative"],
-        ["xpath=//div[2]/div/div/div/div/div/div/div[2]/div/div/div[5]", "xpath:position"]
-      ],
-      "value": ""
-    }, {
-      "id": "548d2b9a-3066-4692-8e18-53f347f422b1",
-      "comment": "",
-      "command": "click",
-      "target": "xpath=(//div[@name='div-Data---Link-Tables...'])[2]",
-      "targets": [
-        ["css=.d4-menu-item:nth-child(3) .d4-menu-item:nth-child(5) > .d4-menu-item-container-fixed > .d4-menu-item-container > .d4-menu-item:nth-child(5)", "css:finder"],
-        ["xpath=(//div[@name='div-Data---Link-Tables...'])[2]", "xpath:attributes"],
-        ["xpath=//div[@id='rootDiv']/div/div[3]/div[2]/div/div/div/div/div/div/div[2]/div/div/div[5]/div/div/div[5]", "xpath:idRelative"],
-        ["xpath=//div[2]/div/div/div/div/div/div/div[2]/div/div/div[5]/div/div/div[5]", "xpath:position"]
-      ],
-      "value": ""
-    }, {
-      "id": "9fb2263e-f9a0-457b-8fba-27fdbac6ef59",
-      "comment": "",
-      "command": "pause",
-      "target": "1000",
-      "targets": [],
-      "value": ""
-    }, {
-      "id": "bdde9593-876c-49a2-8198-079b02b2af21",
-      "comment": "",
-      "command": "verifyElementNotPresent",
-      "target": "css=i[name=\"icon-exclamation-circle\"]",
-      "targets": [
-        ["css=i[name=\"icon-exclamation-circle\"]", "css"],
-        ["css=.fa-exclamation-circle", "css:finder"],
-        ["xpath=//i[@name='icon-exclamation-circle']", "xpath:attributes"],
-        ["xpath=//div[@id='rootDiv']/div/div[2]/i", "xpath:idRelative"],
-        ["xpath=//div[2]/i", "xpath:position"]
-      ],
-      "value": ""
-    }, {
-      "id": "2a8b2ac8-2765-46b4-a058-bd6f907b0783",
-      "comment": "",
-      "command": "executeScript",
-      "target": "element = document.querySelector('[name=input-selectTableLeft]');element.value = 'Auto'; element.dispatchEvent(new Event('change'));",
-      "targets": [],
-      "value": ""
-    }, {
-      "id": "1e7c1d25-ff49-4c64-9a85-e8252883d7b8",
-      "comment": "",
-      "command": "pause",
-      "target": "1000",
-      "targets": [],
-      "value": ""
-    }, {
-      "id": "4b13c300-377a-49d1-9272-6841c5d89ae0",
-      "comment": "",
-      "command": "executeScript",
-      "target": "element = document.querySelector('[name=input-selectTableRight]');element.value = 'Selling'; element.dispatchEvent(new Event('change'));",
-      "targets": [],
-      "value": ""
-    }, {
-      "id": "863f3085-3ca4-44a9-b297-487a04b1e586",
-      "comment": "",
-      "command": "pause",
-      "target": "1000",
-      "targets": [],
-      "value": ""
-    }, {
-      "id": "ed0df503-68a4-490e-a9d6-0b889e7499a6",
-      "comment": "",
-      "command": "verifyElementNotPresent",
-      "target": "xpath=//i[@name='icon-exclamation-circle']",
-      "targets": [],
-      "value": ""
-    }, {
-      "id": "4ade0f7b-b2a1-4b93-bb31-6cf3e6cf7dd9",
-      "comment": "",
-      "command": "click",
-      "target": "name=input-Link-Tables---Link-Type",
-      "targets": [
-        ["id=108", "id"],
-        ["name=input-Link-Tables---Link-Type", "name"],
-        ["css=#\\31 08", "css:finder"],
-        ["xpath=//select[@id='108']", "xpath:attributes"],
-        ["xpath=//div[2]/select", "xpath:position"]
-      ],
-      "value": ""
-    }, {
-      "id": "e94318c4-1b7c-47f4-8cc2-dd1b69f74e12",
-      "comment": "",
-      "command": "select",
-      "target": "name=input-Link-Tables---Link-Type",
-      "targets": [
-        ["id=108", "id"],
-        ["name=input-Link-Tables---Link-Type", "name"],
-        ["css=#\\31 08", "css:finder"],
-        ["xpath=//select[@id='108']", "xpath:attributes"],
-        ["xpath=//div[2]/select", "xpath:position"]
-      ],
-      "value": "label=row to filter"
-    }, {
-      "id": "cb57a3d6-edc2-49bc-8bc3-92032f0e61f3",
-      "comment": "",
-      "command": "click",
-      "target": "name=button-OK",
-      "targets": [
-        ["name=button-OK", "name"],
-        ["css=.enabled", "css:finder"],
-        ["xpath=//button[@name='button-OK']", "xpath:attributes"],
-        ["xpath=//div[3]/div/button", "xpath:position"],
-        ["xpath=//button[contains(.,'OK')]", "xpath:innerText"]
-      ],
-      "value": ""
-    }, {
-      "id": "8b171743-7418-4c41-b687-9a8e61a30d03",
-      "comment": "",
-      "command": "verifyElementNotPresent",
-      "target": "xpath=//i[@name='icon-exclamation-circle']",
-      "targets": [],
-      "value": ""
-    }, {
-      "id": "0b65512a-db8c-4e04-a71e-3d89c435fc68",
-      "comment": "",
-      "command": "pause",
-      "target": "1000",
-      "targets": [],
-      "value": ""
-    }, {
-      "id": "ef662817-80d7-4fbf-9769-1d729073aebf",
-      "comment": "",
-      "command": "executeScript",
-      "target": "let element = document.querySelector(\"div[name=viewer-Grid] canvas:nth-child(4)\");  let event = new MouseEvent(\"click\", {     bubbles: true,     cancelable: false,     view: window,     button: 2,     buttons: 0,     clientX: element.getBoundingClientRect().x+60,     clientY: element.getBoundingClientRect().y+150}); element.dispatchEvent(event);",
-      "targets": [],
-      "value": ""
-    }, {
-      "id": "efd326b7-5863-4fd6-bbbb-30b6de356d1d",
-      "comment": "",
-      "command": "pause",
-      "target": "1000",
-      "targets": [],
-      "value": ""
-    }, {
-      "id": "032b0f56-fbb2-44c1-88b1-5ecdcff6805c",
-      "comment": "",
-      "command": "executeScript",
-      "target": "let element = document.querySelector(\"div[name=viewer-Grid] canvas:nth-child(4)\");  let event = new MouseEvent(\"click\", {     bubbles: true,     cancelable: false,     view: window,     button: 2,     buttons: 0,     clientX: element.getBoundingClientRect().x+60,     clientY: element.getBoundingClientRect().y+90}); element.dispatchEvent(event);",
-      "targets": [],
-      "value": ""
-    }, {
-      "id": "f58de51e-0fd8-47dc-bf6d-e39b06ca2bd2",
-      "comment": "",
-      "command": "pause",
-      "target": "1000",
-      "targets": [],
-      "value": ""
-    }, {
-      "id": "24c48aa3-9a5e-4bac-856a-a8dd1e4c044a",
-      "comment": "",
-      "command": "verifyText",
-      "target": "name=span-filtered",
-      "targets": [],
-      "value": "0 filtered rows"
-    }, {
-      "id": "645f2e61-3aa0-4018-9fa4-a4787952397c",
-      "comment": "",
-      "command": "executeScript",
-      "target": "let element = document.querySelector(\"div[name=viewer-Grid] canvas:nth-child(4)\");  let event = new MouseEvent(\"click\", {     bubbles: true,     cancelable: false,     view: window,     button: 2,     buttons: 0,     clientX: element.getBoundingClientRect().x+60,     clientY: element.getBoundingClientRect().y+250}); element.dispatchEvent(event);",
-      "targets": [],
-      "value": ""
-    }, {
-      "id": "d6db86c5-4125-4a1b-97d1-3b33a1bf0242",
-      "comment": "",
-      "command": "pause",
-      "target": "1000",
-      "targets": [],
-      "value": ""
-    }, {
-      "id": "8a2f260b-a9f7-4b7a-aa2e-47cbd93dec2c",
-      "comment": "",
-      "command": "verifyText",
-      "target": "name=span-filtered",
-      "targets": [],
-      "value": "1 filtered rows"
-    }, {
-      "id": "63699542-52af-43e3-8f3a-d2aa2ace6e57",
-      "comment": "",
-      "command": "pause",
-      "target": "1000",
-      "targets": [],
-      "value": ""
-    }]
-  }],
-  "suites": [{
-    "id": "a15dce56-7b6b-432a-856e-28abdd3a43bc",
-    "name": "link-tables-test",
-    "persistSession": false,
-    "parallel": false,
-    "timeout": 300,
-    "tests": ["8c843989-3c52-4598-8e12-d9d005d06f41"]
-  }],
-  "urls": ["https://dev.datagrok.ai/"],
+  "tests": [
+    {
+      "id": "8c843989-3c52-4598-8e12-d9d005d06f41",
+      "name": "link-tables-test",
+      "commands": [
+        {
+          "id": "f8499376-1292-4cc5-b1f0-66d51031ab9b",
+          "comment": "",
+          "command": "open",
+          "target": "/projects?selenium=true&q=selenium",
+          "targets": [],
+          "value": ""
+        },
+        {
+          "id": "0d5ff243-6826-48ac-bf85-c84b164c00df",
+          "comment": "",
+          "command": "type",
+          "target": "xpath=//div[@id='signup-login-fields']/div/div/input",
+          "targets": [
+            [
+              "id=login",
+              "id"
+            ],
+            [
+              "css=#login",
+              "css"
+            ],
+            [
+              "css=#login",
+              "css:finder"
+            ],
+            [
+              "xpath=//input[@id='login']",
+              "xpath:attributes"
+            ],
+            [
+              "xpath=//div[@id='rootDiv']/div/input",
+              "xpath:idRelative"
+            ],
+            [
+              "xpath=//input",
+              "xpath:position"
+            ]
+          ],
+          "value": "selenium"
+        },
+        {
+          "id": "5c68ac56-c1ac-44d6-b7cf-411b4656aa93",
+          "comment": "",
+          "command": "type",
+          "target": "xpath=//div[@id='signup-login-fields']/div/div[2]/input",
+          "targets": [
+            [
+              "id=password",
+              "id"
+            ],
+            [
+              "css=#password",
+              "css"
+            ],
+            [
+              "css=#password",
+              "css:finder"
+            ],
+            [
+              "xpath=//input[@id='password']",
+              "xpath:attributes"
+            ],
+            [
+              "xpath=//div[@id='rootDiv']/div/input[2]",
+              "xpath:idRelative"
+            ],
+            [
+              "xpath=//input[2]",
+              "xpath:position"
+            ]
+          ],
+          "value": "selenium"
+        },
+        {
+          "id": "4dc9fa98-2dff-4ef2-b6ef-9eaae7b30efb",
+          "comment": "",
+          "command": "click",
+          "target": "xpath=//div[@id='signup-login-fields']/div[2]/button",
+          "targets": [
+            [
+              "linkText=LOGIN",
+              "linkText"
+            ],
+            [
+              "css=a",
+              "css"
+            ],
+            [
+              "css=a",
+              "css:finder"
+            ],
+            [
+              "xpath=//a[contains(text(),'LOGIN')]",
+              "xpath:link"
+            ],
+            [
+              "xpath=//div[@id='rootDiv']/div/a",
+              "xpath:idRelative"
+            ],
+            [
+              "xpath=//a[contains(@href, '#')]",
+              "xpath:href"
+            ],
+            [
+              "xpath=//a",
+              "xpath:position"
+            ]
+          ],
+          "value": ""
+        },
+        {
+          "id": "dcb0deca-1d8b-4c6d-9f16-008598489db4",
+          "comment": "",
+          "command": "doubleClick",
+          "target": "name=div-SeleniumTestDataP2",
+          "targets": [
+            [
+              "css=.d4-current",
+              "css:finder"
+            ],
+            [
+              "xpath=(//div[@name='div-Project \"Selenium test data p2\"'])[2]",
+              "xpath:attributes"
+            ],
+            [
+              "xpath=//div[@id='datasets']/div/div[2]/div[5]",
+              "xpath:idRelative"
+            ],
+            [
+              "xpath=//div[2]/div[5]",
+              "xpath:position"
+            ]
+          ],
+          "value": ""
+        },
+        {
+          "id": "ce9a15bd-ac04-49a1-9cd1-e288df55ef0e",
+          "comment": "",
+          "command": "pause",
+          "target": "3000",
+          "targets": [],
+          "value": ""
+        },
+        {
+          "id": "da69c1b8-789e-4b40-b198-7c23ce5230f9",
+          "comment": "",
+          "command": "click",
+          "target": "xpath=(//div[@name='div-Data'])[2]",
+          "targets": [
+            [
+              "css=.d4-menu-item-hover:nth-child(5)",
+              "css:finder"
+            ],
+            [
+              "xpath=(//div[@name='div-Data'])[2]",
+              "xpath:attributes"
+            ],
+            [
+              "xpath=//div[@id='rootDiv']/div/div[3]/div[2]/div/div/div/div/div/div/div[2]/div/div/div[5]",
+              "xpath:idRelative"
+            ],
+            [
+              "xpath=//div[2]/div/div/div/div/div/div/div[2]/div/div/div[5]",
+              "xpath:position"
+            ]
+          ],
+          "value": ""
+        },
+        {
+          "id": "548d2b9a-3066-4692-8e18-53f347f422b1",
+          "comment": "",
+          "command": "click",
+          "target": "xpath=(//div[@name='div-Data---Link-Tables...'])[2]",
+          "targets": [
+            [
+              "css=.d4-menu-item:nth-child(3) .d4-menu-item:nth-child(5) > .d4-menu-item-container-fixed > .d4-menu-item-container > .d4-menu-item:nth-child(5)",
+              "css:finder"
+            ],
+            [
+              "xpath=(//div[@name='div-Data---Link-Tables...'])[2]",
+              "xpath:attributes"
+            ],
+            [
+              "xpath=//div[@id='rootDiv']/div/div[3]/div[2]/div/div/div/div/div/div/div[2]/div/div/div[5]/div/div/div[5]",
+              "xpath:idRelative"
+            ],
+            [
+              "xpath=//div[2]/div/div/div/div/div/div/div[2]/div/div/div[5]/div/div/div[5]",
+              "xpath:position"
+            ]
+          ],
+          "value": ""
+        },
+        {
+          "id": "9fb2263e-f9a0-457b-8fba-27fdbac6ef59",
+          "comment": "",
+          "command": "pause",
+          "target": "1000",
+          "targets": [],
+          "value": ""
+        },
+        {
+          "id": "bdde9593-876c-49a2-8198-079b02b2af21",
+          "comment": "",
+          "command": "verifyElementNotPresent",
+          "target": "css=i[name=\"icon-exclamation-circle\"]",
+          "targets": [
+            [
+              "css=i[name=\"icon-exclamation-circle\"]",
+              "css"
+            ],
+            [
+              "css=.fa-exclamation-circle",
+              "css:finder"
+            ],
+            [
+              "xpath=//i[@name='icon-exclamation-circle']",
+              "xpath:attributes"
+            ],
+            [
+              "xpath=//div[@id='rootDiv']/div/div[2]/i",
+              "xpath:idRelative"
+            ],
+            [
+              "xpath=//div[2]/i",
+              "xpath:position"
+            ]
+          ],
+          "value": ""
+        },
+        {
+          "id": "2a8b2ac8-2765-46b4-a058-bd6f907b0783",
+          "comment": "",
+          "command": "executeScript",
+          "target": "element = document.querySelector('[name=input-selectTableLeft]');element.value = 'Auto'; element.dispatchEvent(new Event('change'));",
+          "targets": [],
+          "value": ""
+        },
+        {
+          "id": "1e7c1d25-ff49-4c64-9a85-e8252883d7b8",
+          "comment": "",
+          "command": "pause",
+          "target": "1000",
+          "targets": [],
+          "value": ""
+        },
+        {
+          "id": "4b13c300-377a-49d1-9272-6841c5d89ae0",
+          "comment": "",
+          "command": "executeScript",
+          "target": "element = document.querySelector('[name=input-selectTableRight]');element.value = 'Selling'; element.dispatchEvent(new Event('change'));",
+          "targets": [],
+          "value": ""
+        },
+        {
+          "id": "863f3085-3ca4-44a9-b297-487a04b1e586",
+          "comment": "",
+          "command": "pause",
+          "target": "1000",
+          "targets": [],
+          "value": ""
+        },
+        {
+          "id": "ed0df503-68a4-490e-a9d6-0b889e7499a6",
+          "comment": "",
+          "command": "verifyElementNotPresent",
+          "target": "xpath=//i[@name='icon-exclamation-circle']",
+          "targets": [],
+          "value": ""
+        },
+        {
+          "id": "4ade0f7b-b2a1-4b93-bb31-6cf3e6cf7dd9",
+          "comment": "",
+          "command": "click",
+          "target": "name=input-Link-Tables---Link-Type",
+          "targets": [
+            [
+              "id=108",
+              "id"
+            ],
+            [
+              "name=input-Link-Tables---Link-Type",
+              "name"
+            ],
+            [
+              "css=#\\31 08",
+              "css:finder"
+            ],
+            [
+              "xpath=//select[@id='108']",
+              "xpath:attributes"
+            ],
+            [
+              "xpath=//div[2]/select",
+              "xpath:position"
+            ]
+          ],
+          "value": ""
+        },
+        {
+          "id": "e94318c4-1b7c-47f4-8cc2-dd1b69f74e12",
+          "comment": "",
+          "command": "select",
+          "target": "name=input-Link-Tables---Link-Type",
+          "targets": [
+            [
+              "id=108",
+              "id"
+            ],
+            [
+              "name=input-Link-Tables---Link-Type",
+              "name"
+            ],
+            [
+              "css=#\\31 08",
+              "css:finder"
+            ],
+            [
+              "xpath=//select[@id='108']",
+              "xpath:attributes"
+            ],
+            [
+              "xpath=//div[2]/select",
+              "xpath:position"
+            ]
+          ],
+          "value": "label=row to filter"
+        },
+        {
+          "id": "cb57a3d6-edc2-49bc-8bc3-92032f0e61f3",
+          "comment": "",
+          "command": "click",
+          "target": "name=button-OK",
+          "targets": [
+            [
+              "name=button-OK",
+              "name"
+            ],
+            [
+              "css=.enabled",
+              "css:finder"
+            ],
+            [
+              "xpath=//button[@name='button-OK']",
+              "xpath:attributes"
+            ],
+            [
+              "xpath=//div[3]/div/button",
+              "xpath:position"
+            ],
+            [
+              "xpath=//button[contains(.,'OK')]",
+              "xpath:innerText"
+            ]
+          ],
+          "value": ""
+        },
+        {
+          "id": "8b171743-7418-4c41-b687-9a8e61a30d03",
+          "comment": "",
+          "command": "verifyElementNotPresent",
+          "target": "xpath=//i[@name='icon-exclamation-circle']",
+          "targets": [],
+          "value": ""
+        },
+        {
+          "id": "0b65512a-db8c-4e04-a71e-3d89c435fc68",
+          "comment": "",
+          "command": "pause",
+          "target": "1000",
+          "targets": [],
+          "value": ""
+        },
+        {
+          "id": "ef662817-80d7-4fbf-9769-1d729073aebf",
+          "comment": "",
+          "command": "executeScript",
+          "target": "let element = document.querySelector(\"div[name=viewer-Grid] canvas:nth-child(4)\");  let event = new MouseEvent(\"click\", {     bubbles: true,     cancelable: false,     view: window,     button: 2,     buttons: 0,     clientX: element.getBoundingClientRect().x+60,     clientY: element.getBoundingClientRect().y+150}); element.dispatchEvent(event);",
+          "targets": [],
+          "value": ""
+        },
+        {
+          "id": "efd326b7-5863-4fd6-bbbb-30b6de356d1d",
+          "comment": "",
+          "command": "pause",
+          "target": "1000",
+          "targets": [],
+          "value": ""
+        },
+        {
+          "id": "032b0f56-fbb2-44c1-88b1-5ecdcff6805c",
+          "comment": "",
+          "command": "executeScript",
+          "target": "let element = document.querySelector(\"div[name=viewer-Grid] canvas:nth-child(4)\");  let event = new MouseEvent(\"click\", {     bubbles: true,     cancelable: false,     view: window,     button: 2,     buttons: 0,     clientX: element.getBoundingClientRect().x+60,     clientY: element.getBoundingClientRect().y+90}); element.dispatchEvent(event);",
+          "targets": [],
+          "value": ""
+        },
+        {
+          "id": "f58de51e-0fd8-47dc-bf6d-e39b06ca2bd2",
+          "comment": "",
+          "command": "pause",
+          "target": "1000",
+          "targets": [],
+          "value": ""
+        },
+        {
+          "id": "24c48aa3-9a5e-4bac-856a-a8dd1e4c044a",
+          "comment": "",
+          "command": "verifyText",
+          "target": "name=span-filtered",
+          "targets": [],
+          "value": "0 filtered rows"
+        },
+        {
+          "id": "645f2e61-3aa0-4018-9fa4-a4787952397c",
+          "comment": "",
+          "command": "executeScript",
+          "target": "let element = document.querySelector(\"div[name=viewer-Grid] canvas:nth-child(4)\");  let event = new MouseEvent(\"click\", {     bubbles: true,     cancelable: false,     view: window,     button: 2,     buttons: 0,     clientX: element.getBoundingClientRect().x+60,     clientY: element.getBoundingClientRect().y+250}); element.dispatchEvent(event);",
+          "targets": [],
+          "value": ""
+        },
+        {
+          "id": "d6db86c5-4125-4a1b-97d1-3b33a1bf0242",
+          "comment": "",
+          "command": "pause",
+          "target": "1000",
+          "targets": [],
+          "value": ""
+        },
+        {
+          "id": "8a2f260b-a9f7-4b7a-aa2e-47cbd93dec2c",
+          "comment": "",
+          "command": "verifyText",
+          "target": "name=span-filtered",
+          "targets": [],
+          "value": "1 filtered rows"
+        },
+        {
+          "id": "63699542-52af-43e3-8f3a-d2aa2ace6e57",
+          "comment": "",
+          "command": "pause",
+          "target": "1000",
+          "targets": [],
+          "value": ""
+        }
+      ]
+    }
+  ],
+  "suites": [
+    {
+      "id": "a15dce56-7b6b-432a-856e-28abdd3a43bc",
+      "name": "link-tables-test",
+      "persistSession": false,
+      "parallel": false,
+      "timeout": 300,
+      "tests": [
+        "8c843989-3c52-4598-8e12-d9d005d06f41"
+      ]
+    }
+  ],
+  "urls": [
+    "https://dev.datagrok.ai/"
+  ],
   "plugins": []
 }

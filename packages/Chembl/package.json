@@ -6,5 +6,7 @@
   "description": "Chembl integration",
   "scripts": {
     "deploy": "grok publish"
-  }
+  },
+  "canEdit": [ "Developers" ],
+  "canView": [ "All users" ]
 }

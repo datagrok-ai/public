@@ -1,10 +1,20 @@
 const path = require('path');
+const packageName = path.parse(require('./package.json').name).name.toLowerCase().replace(/-/g, '');
 
 module.exports = {
   mode: 'development',
   entry: {
-    package: './src/package.ts',
+    package: ['./src/package.ts'],
+    test: {
+      filename: 'package-test.js',
+      library: {type: 'var', name: `${packageName}_test`},
+      import: './src/package-test.ts',
+    },
   },
+  devServer: {
+    contentBase: './dist',
+  },
+  target: 'web',
   module: {
     rules: [
       {
@@ -12,10 +22,14 @@ module.exports = {
         use: 'ts-loader',
         exclude: /node_modules/,
       },
+      {
+        test: /\.css$/i,
+        use: ['style-loader', 'css-loader'],
+      },
     ],
   },
   resolve: {
-    extensions: ['.tsx', '.js', '.ts'],
+    extensions: ['.mjs', '.js', '.json', '.ts', '.tsx'],
   },
   devtool: 'inline-source-map',
   externals: {
@@ -31,5 +45,9 @@ module.exports = {
     library: 'peptides',
     libraryTarget: 'var',
     path: path.resolve(__dirname, 'dist'),
+  },
+  experiments: {
+    asyncWebAssembly: true,
+    topLevelAwait: true,
   },
 };

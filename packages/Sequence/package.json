@@ -11,5 +11,7 @@
     "common/ngl_viewer/ngl.js",
     "web-logo-viewer/web-logo-viewer.js",
     "sequence-cell-renderer/sequence-cell-renderer.js"
-  ]
+  ],
+  "canEdit": [ "Developers" ],
+  "canView": [ "All users" ]
 }

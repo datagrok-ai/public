@@ -63,4 +63,26 @@ public class ConnectionPool {
             connectionPool.put(key, new HikariDataSourceInformation(url, properties, driverClassName));
         return connectionPool.get(key).hikariDataSource.getConnection();
     }
+
+    public Map<String, Connection> nativeConnectionsConnectionPool = Collections.synchronizedMap(new HashMap<>());
+
+    Connection getNativeConnection(String url, java.util.Properties info, String driverClassName) {
+        String key = url + info + driverClassName;
+        if (url != null && info != null && driverClassName != null && nativeConnectionsConnectionPool.containsKey(key)) {
+            Connection conn = nativeConnectionsConnectionPool.get(key);
+            try {
+                if (!conn.isClosed())
+                    return nativeConnectionsConnectionPool.get(key);
+            } catch (SQLException throwables) {
+                //TODO: log in query
+                throwables.printStackTrace(System.out);
+            }
+        }
+        return null;
+    }
+
+    void putNativeConnection(Connection conn, String url, java.util.Properties info, String driverClassName) {
+        if (url != null && info != null && driverClassName != null)
+            nativeConnectionsConnectionPool.put(url + info + driverClassName, conn);
+    }
 }

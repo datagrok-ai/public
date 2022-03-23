@@ -1,6 +1,6 @@
-name: Datagrok Libraries
+name: Libraries
 on:
-  workflow_dispatch: {}
+  workflow_dispatch: { }
   push:
     branches:
       - 'master'
@@ -8,7 +8,8 @@ on:
       - 'libraries/*/package.json'
 jobs:
   metadata:
-    runs-on: ubuntu-latest
+    name: Check version was changed
+    runs-on: ubuntu-20.04
     outputs:
       matrix: ${{ steps.generate-matrix.outputs.matrix }}
       continue: ${{ steps.generate-matrix.outputs.continue }}
@@ -20,31 +21,43 @@ jobs:
       - name: Generate matrix
         id: generate-matrix
         run: |
+          set -ex
           if [[ $(git log -n 1 --pretty=%B) == *"Merge branch 'master' of"* ]]; then
-            commit=$(git log --format="%H" -n 1 --no-merges)
+            commit="$(git log --format="%H" -n 1 --no-merges)"
           else
             commit=${{ github.sha }}
           fi
 
-          CHANGED_DIRS=$(git diff-tree --no-commit-id --name-only -r $(echo -n $commit) 'libraries/*/package.json' | xargs -I {} dirname {})
+          CHANGED_DIRS="$(git diff-tree --no-commit-id --name-only -r "$(echo -n "$commit")" 'libraries/*/package.json' | xargs -I {} dirname {})"
 
           MATRIX_INCLUDE_JSON="["
 
           for DIR in ${CHANGED_DIRS}; do
-            scripts=$(jq  '. | select( has("scripts") == true ).scripts' ${DIR}/package.json)
+            if [ -f "${DIR}/package.json" ]; then
+              scripts="$(jq  '. | select( has("scripts") == true ).scripts' "${DIR}/package.json")"
+          
+              if [ -z "$(jq  '. | select( has("build") == true )' <<< "$scripts")" ]; then
+                build='false'
+              else
+                build='true'
+              fi
+              if [ -z "$(jq  '. | select( has("test") == true )' <<< "$scripts")" ]; then
+                test='false'
+              else
+                test='true'
+              fi
 
-            if [ -z "$(jq  '. | select( has("build") == true )' <<< $scripts)" ]; then
-              build='false'
-            else
-              build='true'
+              name="$(jq .name "${DIR}/package.json" | sed 's/"//g')"
+              current_version="$(jq .version "${DIR}/package.json" | sed 's/"//g')"
+              npm_json="$(curl --retry 3 "https://registry.npmjs.org/${name}/${current_version}")"
+              if [[ $npm_json == "\"version not found: ${current_version}\"" ]]; then
+                CHANGED_VERSION='true'
+              else
+                CHANGED_VERSION='false'
+              fi
+          
+              MATRIX_INCLUDE_JSON+="{\"project\": \"${DIR}\", \"build\": \"${build}\", \"test\": \"${test}\", \"changed_version\": \"${CHANGED_VERSION}\"}"
             fi
-            if [ -z "$(jq  '. | select( has("test") == true )' <<< $scripts)" ]; then
-              test='false'
-            else
-              test='true'
-            fi
-
-            MATRIX_INCLUDE_JSON+="{\"project\": \"${DIR}\", \"build\": \"${build}\", \"test\": \"${test}\"}"
           done
 
           MATRIX_INCLUDE_JSON="${MATRIX_INCLUDE_JSON//\}\{/\}, \{}"
@@ -60,6 +73,7 @@ jobs:
           echo "::set-output name=matrix::${MATRIX_JSON}"
 
   build:
+    name: Build and publish to npm
     needs: metadata
     if: needs.metadata.outputs.continue == 'yes'
     runs-on: ubuntu-latest
@@ -90,12 +104,14 @@ jobs:
         working-directory: ${{ matrix.project }}
         if: ${{ matrix.build == 'true' }}
       - run: npm publish --access public
+        if: ${{ matrix.changed_version == 'true' }}
         working-directory: ${{ matrix.project }}
         env:
           NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
       - name: Commit package-lock.json
+        if: ${{ matrix.changed_version == 'true' }}
         run: |
-          if [ ! -z "$(git status -s ${{ matrix.project }}/package-lock.json)" ]; then
+          if [ -n "$(git status -s ${{ matrix.project }}/package-lock.json)" ]; then
             git config --global user.name 'GitHub Actions'
             git config --global user.email 'githubactions@datagrok.ai'
             git pull

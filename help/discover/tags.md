@@ -2,33 +2,31 @@
 
 # Tags
 
-Most of the objects in Datagrok can be annotated with metadata (key-value pairs). The
-metadata could be set manually; additionally, some of it gets assigned automatically.
-Some keys affect the way an object (such as a column) interacts with the platform; other have no
-effect at all, except that you can search objects by metadata.
+Most of the objects in Datagrok can be annotated with metadata (key-value pairs). The metadata could be set manually;
+additionally, some of it gets assigned automatically. Some keys affect the way an object (such as a column) interacts
+with the platform; other have no effect at all, except that you can search objects by metadata.
 
-Below are some of the standard tags related to tables or columns. To edit 
-column's metadata, right-click on it and select "Properties..." (or press F2 in the grid).
+Below are some of the standard tags related to tables or columns. To edit column's metadata, right-click on it and
+select "Properties..." (or press F2 in the grid).
 
 ## Quality
 
-Applicable to columns. Determines column's [semantic type](semantic-types.md); used for
-making automatic suggestions on functions, layouts, and predictive models
-applicable to the current context. Also, see [units](#units).
+Applicable to columns. Determines column's [semantic type](semantic-types.md); used for making automatic suggestions on
+functions, layouts, and predictive models applicable to the current context. Also, see [units](#units).
 
 ## Units
 
-Applicable to columns. Determines units in which the values are stored. 
-Also, see [quality](#quality).
+Applicable to columns. Determines units in which the values are stored. Also, see [quality](#quality).
 
 ## Format
 
-Applicable to numeric or datetime columns. Determines the way values should 
-be represented.
- 
+Applicable to numeric or datetime columns. Determines the way values should be represented.
+
 ### Numbers
 
-In addition to the standard notation (example: "#.000"), the following formats are predefined and could be used (they also appear as choices when you right-click on a column and open "Format" section):
+In addition to the standard notation (example: "#.000"), the following formats are predefined and could be used (they
+also appear as choices when you right-click on a column and open "Format"
+section):
 
 |           Format           | Example |
 |----------------------------|---------|
@@ -64,7 +62,8 @@ The standard formats representing date and time include:
 | relative                | 29 years ago                |
 | auto                    | Jul 21, 1991                |
 
-In case you need to define a different date format, proceed to column properties and edit the template string. Here are the valid specifiers:
+In case you need to define a different date format, proceed to column properties and edit the template string. Here are
+the valid specifiers:
 
 | Symbol |          Meaning                 |          Example           |
 |--------|----------------------------------|----------------------------|
@@ -98,48 +97,44 @@ Indicates on what basis the columns are colored. Numerical columns have the opti
 
 ## .color-coding-conditional
 
-Applies conditional formatting to numeric and categorical columns. See an [example](https://public.datagrok.ai/js/samples/grid/color-coding-conditional).
+Applies conditional formatting to numeric and categorical columns. See
+an [example](https://public.datagrok.ai/js/samples/grid/color-coding-conditional).
 
 ## Formula
 
-Formula used for creating a derived column. Edit it in the "Formula" section on the property panel
-to recalculate. Note that changing the `formula` tag does not cause recalculation.
+Formula used for creating a derived column. Edit it in the "Formula" section on the property panel to recalculate. Note
+that changing the `formula` tag does not cause recalculation.
 
 ## Layout-id
 
 Applicable to columns. Used for matching layout columns with table columns when a layout is applied.
 See [layout suggestions](../visualize/view-layout.md#layout-suggestions) for details.
- 
+
 ## .tooltip
 
-Applicable to tables. Contains comma-separated list of column names to be used as a row tooltip.
-This tag starts with ".", therefore it is not shown in the UI. 
+Applicable to tables. Contains comma-separated list of column names to be used as a row tooltip. This tag starts with "
+.", therefore it is not shown in the UI.
 
 ## .row.group.tooltip
 
-JSON-serialized settings of the viewer that is used to visualize a group of rows on a
-tooltip. It is shown when user moves the cursor over the area that represents multiple
-rows (such a a histogram bin, or a pie chart pie). 
-Applicable to tables.
+JSON-serialized settings of the viewer that is used to visualize a group of rows on a tooltip. It is shown when user
+moves the cursor over the area that represents multiple rows (such a a histogram bin, or a pie chart pie). Applicable to
+tables.
 
 ## .semantic-detection-duration
 
-Indicates number of milliseconds spent for detecting column's semantic type.
-This tag starts with ".", therefore it is not shown in the UI.
-Applicable to columns.  
+Indicates number of milliseconds spent for detecting column's semantic type. This tag starts with "
+.", therefore it is not shown in the UI. Applicable to columns.
 
 ## .choices
 
-JSON-encoded list of strings used by the grid cell editor to populate a combo box.
-See also [auto-choices](#.auto-choices).
-Applicable to string columns.
+JSON-encoded list of strings used by the grid cell editor to populate a combo box. See
+also [auto-choices](#.auto-choices). Applicable to string columns.
 
 ## .auto-choices
 
-When set to 'true', switches the cell editor to a combo box that only allows to choose values
-from a list of already existing values in the column.
-See also [choices](#.choices).
-Applicable for string columns.
+When set to 'true', switches the cell editor to a combo box that only allows to choose values from a list of already
+existing values in the column. See also [choices](#.choices). Applicable for string columns.
 
 ## Cell-renderer
 
@@ -147,70 +142,65 @@ Column cell renderer.
 
 ## Query
 
-A [query](../access/data-query.md) that was used to produce this table.
-Applicable to tables.
+A [query](../access/data-query.md) that was used to produce this table. Applicable to tables.
 
 ## Import-time
 
-When was the table created.
-Applicable to tables.
+When was the table created. Applicable to tables.
 
 ## Db
 
-Applicable to columns. A database the content of this column was retrieved from.
-Used for data augmentation and impact analysis.
-See also [db-schema](#db-schema), [db-table](#db-table), [db-column](#db-column), [db-path](#db-path). 
+Applicable to columns. A database the content of this column was retrieved from. Used for data augmentation and impact
+analysis. See also [db-schema](#db-schema), [db-table](#db-table)
+, [db-column](#db-column), [db-path](#db-path).
 
 ## Db-schema
 
-Applicable to columns. A database schema the content of this column was retrieved from.
-Used for data augmentation and impact analysis.
-See also [db](#db), [db-table](#db-table), [db-column](#db-column), [db-path](#db-path). 
+Applicable to columns. A database schema the content of this column was retrieved from. Used for data augmentation and
+impact analysis. See also [db](#db), [db-table](#db-table)
+, [db-column](#db-column), [db-path](#db-path).
 
 ## Db-table
 
-Applicable to columns. A database table the content of this column was retrieved from.
-Used for data augmentation and impact analysis.
-See also [db](#db), [db-schema](#db-schema), [db-column](#db-column), [db-path](#db-path). 
+Applicable to columns. A database table the content of this column was retrieved from. Used for data augmentation and
+impact analysis. See also [db](#db), [db-schema](#db-schema)
+, [db-column](#db-column), [db-path](#db-path).
 
 ## Db-column
 
-Applicable to columns. A database column the content of this column was retrieved from.
-Used for data augmentation and impact analysis.
-See also [db](#db), [db-schema](#db-schema), [db-table](#db-table), [db-path](#db-path). 
+Applicable to columns. A database column the content of this column was retrieved from. Used for data augmentation and
+impact analysis. See also [db](#db), [db-schema](#db-schema)
+, [db-table](#db-table), [db-path](#db-path).
 
 ## Db-path
 
-Applicable to columns. A database column, in the form on "db.schema.table.column", that 
-the content of this column was retrieved from. Used for data augmentation and impact analysis.
-See also [db](#db), [db-schema](#db-schema), [db-table](#db-table), [db-column](#db-column). 
+Applicable to columns. A database column, in the form on "db.schema.table.column", that the content of this column was
+retrieved from. Used for data augmentation and impact analysis. See also [db](#db), [db-schema](#db-schema)
+, [db-table](#db-table), [db-column](#db-column).
 
-## Id
+## ID
 
-Entity id, as it is stored in the database.
-Applicable to tables, columnms, and other entities.
+Entity id, as it is stored in the database. Applicable to tables, columnms, and other entities.
 
 ## Data-connection-id
 
-Id of the [data connection](../access/data-connection.md) that was used to populate the table.
-Applicable to tables. 
+ID of the [data connection](../access/data-connection.md) that was used to populate the table. Applicable to tables.
 
 ## .history
 
-History of all modifications applied to that table.
-Applies to tables.
+History of all modifications applied to that table. Applies to tables.
 
 ## .script
 
-[Grok script](../overview/grok-script.md) that was used to create a table. It could represent getting a data
-via a [database query](../access/data-query.md), from a web service, from a file share, or using any
+[Grok script](../overview/grok-script.md) that was used to create a table. It could represent getting a data via
+a [database query](../access/data-query.md), from a web service, from a file share, or using any
 other [function](../overview/functions/function.md) that returns a [table](../overview/table.md).
 
-If this tag is present in a table, a "data sync" option appears next to this table in the 
-"Upload table" dialog. If the option is checked, the table will not be uploaded to the server. Instead,
-the script will get re-executed when user opens this project next time.  
+If this tag is present in a table, a "data sync" option appears next to this table in the
+"Upload table" dialog. If the option is checked, the table will not be uploaded to the server. Instead, the script will
+get re-executed when user opens this project next time.
 
-Applies to tables. 
+Applies to tables.
 
 ## Chem-descriptor
 
@@ -220,8 +210,7 @@ A [molecular descriptor](../domains/chem/descriptors.md) used for calculating th
 
 A [molecular fingerprinter](../domains/chem/fingerprints.md) used for calculating the values of that column.
 
-
-
 See also:
+
 * [Metadata](metadata.md)
 * [JS API: metadata](https://public.datagrok.ai/js/samples/data-frame/metadata)

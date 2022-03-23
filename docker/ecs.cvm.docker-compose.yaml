@@ -1,5 +1,7 @@
 version: "3"
 
+x-aws-logs_retention: 14
+
 networks:
   cvm:
 
@@ -103,7 +105,7 @@ x-aws-cloudformation:
         Protocol: "HTTP"
     H2oTCP5005TargetGroup:
       Properties:
-        HealthCheckPath: /info
+        HealthCheckPath: /helper/info
         Matcher:
           HttpCode: 200
         TargetGroupAttributes:
@@ -134,6 +136,12 @@ x-aws-cloudformation:
             Value: lb_cookie
           - Key: stickiness.lb_cookie.duration_seconds
             Value: 86400
+
+    H2oService:
+      Properties:
+        NetworkConfiguration:
+          AwsvpcConfiguration:
+            AssignPublicIp: DISABLED
 
     GrokcomputeTCP80TargetGroup:
     GrokcomputeTCP80Listener:
@@ -184,6 +192,10 @@ x-aws-cloudformation:
             ContainerPort: 5005
             TargetGroupArn:
               Ref: GrokcomputeTCP5005TargetGroup
+        NetworkConfiguration:
+          AwsvpcConfiguration:
+            AssignPublicIp: DISABLED
+
 
     JupyterkernelgatewayTCP5005Listener:
     JupyterkernelgatewayTCP5005ListenerRule:
@@ -235,9 +247,7 @@ x-aws-cloudformation:
                 - TargetGroupArn:
                     Ref: JupyterkernelgatewayTCP8888TargetGroup
             Type: forward
-        Protocol: "HTTPS"
-        Certificates:
-          - arn:aws:acm:us-east-2:766822877060:certificate/6bd7a4c0-7087-457a-8493-066389561e57
+        Protocol: "HTTP"
     JupyterkernelgatewayTCP8888ListenerRule:
       Properties:
         Priority: 4
@@ -260,6 +270,10 @@ x-aws-cloudformation:
         - JupyterkernelgatewayTCP5005ListenerRule
         - JupyterkernelgatewayTCP8888Listener
         - JupyterkernelgatewayTCP8888ListenerRule
+      Properties:
+        NetworkConfiguration:
+          AwsvpcConfiguration:
+            AssignPublicIp: DISABLED
 
     JupyternotebookTCP5005Listener:
     JupyternotebookTCP5005ListenerRule:
@@ -311,9 +325,7 @@ x-aws-cloudformation:
                 - TargetGroupArn:
                     Ref: JupyternotebookTCP8889TargetGroup
             Type: forward
-        Protocol: "HTTPS"
-        Certificates:
-          - arn:aws:acm:us-east-2:766822877060:certificate/6bd7a4c0-7087-457a-8493-066389561e57
+        Protocol: "HTTP"
     JupyternotebookTCP8889ListenerRule:
       Properties:
         Priority: 6
@@ -336,6 +348,10 @@ x-aws-cloudformation:
         - JupyternotebookTCP5005ListenerRule
         - JupyternotebookTCP8889Listener
         - JupyternotebookTCP8889ListenerRule
+      Properties:
+        NetworkConfiguration:
+          AwsvpcConfiguration:
+            AssignPublicIp: DISABLED
 
     JupyterkernelgatewayTaskDefinition:
       Properties:

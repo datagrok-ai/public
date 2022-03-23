@@ -3,12 +3,12 @@ import {__obs, _sub, observeStream, StreamSubscription} from "./events";
 import {Observable, Subscription} from "rxjs";
 import {Func, Property, PropertyOptions} from "./entities";
 import {Cell, Column, DataFrame} from "./dataframe";
-import {ColorType, Type} from "./const";
-import * as React from "react";
+import {ColorType, FILTER_TYPE, LegendPosition, Type} from "./const";
 import * as rxjs from "rxjs";
 import { filter } from 'rxjs/operators';
 import {Rect} from "./grid";
 import $ from "cash-dom";
+import {Viewer} from "./viewer";
 
 declare let grok: any;
 declare let DG: any;
@@ -204,7 +204,7 @@ export class Widget {
    * @returns {*}
    * @private
    */
-  addProperty(propertyName: string, propertyType: Type, defaultValue: any = null, options: { [key: string]: string } & PropertyOptions | null = null): any {
+  addProperty(propertyName: string, propertyType: Type, defaultValue: any = null, options: { [key: string]: any } & PropertyOptions | null = null): any {
     let obj = this;
     // @ts-ignore
     let p = Property.create(propertyName, propertyType, (_) => obj[propertyName], null, defaultValue);
@@ -228,14 +228,14 @@ export class Widget {
     return new Widget(root);
   }
 
-  /** Creates a {@see Widget} from the specified React component. */
-  // @ts-ignore
-  static react(reactComponent: React.DOMElement<any, any> | Array<React.DOMElement<any, any>> | React.CElement<any, any> | Array<React.CElement<any, any>> | React.ReactElement | Array<React.ReactElement>): Widget {
-    let widget = Widget.fromRoot(ui.div());
-    // @ts-ignore
-    ReactDOM.render(reactComponent, widget.root);
-    return widget;
-  }
+  // /** Creates a {@see Widget} from the specified React component. */
+  // // @ts-ignore
+  // static react(reactComponent: React.DOMElement<any, any> | Array<React.DOMElement<any, any>> | React.CElement<any, any> | Array<React.CElement<any, any>> | React.ReactElement | Array<React.ReactElement>): Widget {
+  //   let widget = Widget.fromRoot(ui.div());
+  //   // @ts-ignore
+  //   ReactDOM.render(reactComponent, widget.root);
+  //   return widget;
+  // }
 }
 
 
@@ -243,11 +243,25 @@ export class Widget {
  * Supports collaborative filtering by efficiently working together with
  * other filters. */
 export abstract class Filter extends Widget {
-  dataFrame: DataFrame | null;
+
+  /** An indicator icon on the left of the filter header, before the name.
+   * A filter is responsible for hiding or showing it, depending on its state. */
   indicator: HTMLDivElement;
+
+  /** Group of control icons on the right of the filter header, after the name.
+   * FilterGroup takes care of its visibility. */
   controls: HTMLDivElement;
-  host: HTMLElement;
+
+  /** A DataFrame this filter is associated with. */
+  dataFrame: DataFrame | null;
+
+  /** A column this filter is associated with. */
+  column: Column | null = null;
+
   columnName?: string;
+
+  /** Caption to be shown in the filter group. */
+  get caption(): string { return this.columnName ?? ''}
 
   constructor() {
     super(ui.div());
@@ -255,10 +269,20 @@ export abstract class Filter extends Widget {
     this.dataFrame = null;
     this.indicator = ui.div([], 'd4-filter-indicator');
     this.controls = ui.div([], 'd4-flex-row');
-    this.host = this.root;
 
     $(this.indicator).hide();
   }
+
+  // static create(type: FILTER_TYPE | null, column: Column): Filter {
+  //   return api.grok_Filter_ForColumn(column, type);
+  // }
+  //
+  // static forColumn(column: Column) { return Filter.create(null, column); }
+  //
+  // static histogram(column: Column) { return Filter.create(FILTER_TYPE.HISTOGRAM, column); }
+  // static categorical(column: Column) { return Filter.create(FILTER_TYPE.CATEGORICAL, column); }
+  // static multiValue(column: Column) { return Filter.create(FILTER_TYPE.MULTI_VALUE, column); }
+  // static freeText(column: Column) { return Filter.create(FILTER_TYPE.FREE_TEXT, column); }
 
   /** Override to indicate whether the filter actually filters something (most don't in the initial state).
    * This is used to minimize the number of unnecessary computations. */
@@ -282,6 +306,7 @@ export abstract class Filter extends Widget {
   /** Override to load filter state. */
   applyState(state: any): void {
     this.columnName = state.columnName;
+    this.column = this.columnName && this.dataFrame ? this.dataFrame.col(this.columnName) : null;
     console.log('apply state');
   }
 
@@ -370,13 +395,13 @@ export class Accordion extends DartWidget {
   }
 
   /** Adds a pane */
-  addPane(name: string, getContent: Function, expanded: boolean = false, before: AccordionPane | null = null): AccordionPane {
+  addPane(name: string, getContent: () => HTMLElement, expanded: boolean = false, before: AccordionPane | null = null): AccordionPane {
     return toJs(api.grok_Accordion_AddPane(this.dart, name, getContent, expanded, before !== null ? before.dart : null, null));
   }
 
   /** Adds a pane with the count indicator next to the title.
    * getCount() is executed immediately. */
-  addCountPane(name: string, getContent: Function, getCount: Function, expanded: boolean = false, before: AccordionPane | null = null): AccordionPane {
+  addCountPane(name: string, getContent: () => HTMLElement, getCount: () => number, expanded: boolean = false, before: AccordionPane | null = null): AccordionPane {
     return toJs(api.grok_Accordion_AddPane(this.dart, name, getContent, expanded, before !== null ? before.dart : null, getCount));
   }
 
@@ -543,11 +568,11 @@ export class Dialog extends DartWidget {
   }
 
   /** Creates a new dialog with the specified options. */
-  static create(options: { title?: string, helpUrl?: string } | string = ''): Dialog {
+  static create(options?: { title?: string, helpUrl?: string } | string): Dialog {
     if (typeof options === 'string')
       return new Dialog(api.grok_Dialog(options, null));
     else
-      return new Dialog(api.grok_Dialog(options?.title, options?.helpUrl));
+      return new Dialog(api.grok_Dialog(options?.title ?? '', options?.helpUrl));
   }
 
   /** When provided, adds a "?" icon to the dialog header on the right. */
@@ -560,6 +585,14 @@ export class Dialog extends DartWidget {
 
   /** Returns a list of the dialog's inputs. */
   get inputs(): InputBase[] { return api.grok_Dialog_Get_Inputs(this.dart); }
+
+  /** Returns an input with the specified caption, or throws an exception. */
+  input(caption: string): InputBase {
+    const input = this.inputs.find((f) => f.caption == caption);
+    if (!input)
+      throw `Input "${caption}" not found.`;
+    return input;
+  }
 
   /**
    * Sets the OK button handler, and shows the OK button
@@ -664,6 +697,11 @@ export class Dialog extends DartWidget {
   clear() {
     api.grok_Dialog_Clear(this.dart);
   }
+
+  /** Returns currently open dialogs. */
+  static getOpenDialogs(): Dialog[] {
+    return api.grok_Dialog_GetOpenDialogs();
+  }
 }
 
 /**
@@ -715,9 +753,7 @@ export class Menu {
     api.grok_Menu_Clear(this.dart);
   }
 
-  /** Returns an existing menu group or adds a new group with the specified text.
-   * @param {string} text
-   * @returns {Menu} */
+  /** Returns an existing menu group or adds a new group with the specified text. */
   group(text: string, order: number | null = null): Menu {
     return toJs(api.grok_Menu_Group(this.dart, text, order));
   }
@@ -728,20 +764,13 @@ export class Menu {
     return toJs(api.grok_Menu_EndGroup(this.dart));
   }
 
-  /** Adds a menu group with the specified text and handler.
-   * @param {string} text
-   * @param {Function} onClick - callback with no parameters
-   * @returns {Menu} */
-  item(text: string, onClick: Function, order: number | null = null): Menu {
+  /** Adds a menu group with the specified text and handler. */
+  item(text: string, onClick: () => void, order: number | null = null): Menu {
     return toJs(api.grok_Menu_Item(this.dart, text, onClick, order));
   }
 
-  /** For each item in items, adds a menu group with the specified text and handler.
-   * Returns this.
-   * @param {string[]} items
-   * @param {Function} onClick - a callback with one parameter
-   * @returns {Menu} */
-  items(items: string[], onClick: Function): Menu {
+  /** For each item in items, adds a menu group with the specified text and handler. */
+  items(items: string[] | HTMLElement[], onClick: (item: string) => void): Menu {
     return toJs(api.grok_Menu_Items(this.dart, items, onClick));
   }
 
@@ -871,6 +900,11 @@ export class InputBase {
   /** Adds the specified caption */
   addCaption(caption: string): void {
     api.grok_InputBase_AddCaption(this.dart, caption);
+  };
+
+  /** Adds the specified postfix */
+  addPostfix(postfix: string): void {
+    api.grok_InputBase_AddPostfix(this.dart, postfix);
   };
 
   /** Adds a usage example to the input's hamburger menu */
@@ -1338,8 +1372,8 @@ export class TreeViewNode {
 /** A slider that lets user control both min and max values. */
 export class RangeSlider extends DartWidget {
 
-  static create(): RangeSlider {
-    return toJs(api.grok_RangeSlider());
+  static create(vertical: boolean = false): RangeSlider {
+    return toJs(api.grok_RangeSlider(vertical));
   }
 
   /** Minimum range value. */
@@ -1433,20 +1467,20 @@ export class Legend extends DartWidget {
   }
 
   static create(column: Column): Legend {
-    return api.grok_Legend(column.dart);
+    return toJs(api.grok_Legend(column.dart));
   }
 
   /** Column for the legend */
   get column(): Column { return toJs(api.grok_Legend_Get_Column(this.dart)); }
-  set column(column: Column) { api.grok_Legend_Set_Column(this.dart, column); }
+  set column(column: Column) { api.grok_Legend_Set_Column(this.dart, column.dart); }
 
   /** Whether or not to show empty categories */
   get showNulls(): Boolean { return api.grok_Legend_Get_ShowNulls(this.dart); }
   set showNulls(show: Boolean) { api.grok_Legend_Set_ShowNulls(this.dart, show); }
 
   /** Position (left / right / top / bottom) */
-  get position(): String { return api.grok_Legend_Get_Position(this.dart); }
-  set position(pos: String) { api.grok_Legend_Set_Position(this.dart, pos); }
+  get position(): LegendPosition { return api.grok_Legend_Get_Position(this.dart); }
+  set position(pos: LegendPosition) { api.grok_Legend_Set_Position(this.dart, pos); }
 }
 
 

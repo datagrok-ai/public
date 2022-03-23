@@ -25,6 +25,7 @@ export * from './src/ui/wizard';
 export {time, timeAsync, Utils, HtmlUtils, LruCache} from './src/utils';
 export {ObjectHandler, EntityMetaDartProxy} from './ui';
 export * from './src/data';
+export * from './src/helpers';
 
 export let chem = _chem;
 export let ml = _ml;

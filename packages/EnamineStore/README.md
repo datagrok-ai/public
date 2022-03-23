@@ -1,7 +1,7 @@
 EnamineStore is a [package](https://datagrok.ai/help/develop/develop#packages) for the [Datagrok](https://datagrok.ai) platform.
 It provides integration with the [Enamine Store](https://enaminestore.com), a service for online shopping for the chemical building blocks.
 
-There are two ways to use the integration: as an [application](https://datagrok.ai/help/develop/develop#applications),
+There are two ways to use the integration: as an [application](https://datagrok.ai/help/develop/how-to/build-an-app),
 or as an [info panel](https://datagrok.ai/help/discover/info-panels) for chemical structures.
  
 # Application

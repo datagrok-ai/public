@@ -19,6 +19,11 @@ class MultiValueFilter extends DG.Filter {
     this.render();
   }
 
+  applyState(state) {
+    super.applyState(state);
+    this.render();
+  }
+
   detach() {
     super.detach();
     console.log('multi filter detached');

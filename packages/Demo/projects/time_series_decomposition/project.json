@@ -1,0 +1,15 @@
+{
+  "tags": [
+    "time-series",
+    "default",
+    "scripting-viewer"
+  ],
+  "name": "Time series decomposition",
+  "description": "Time series decomposition of number birth per month 1987-2000 years in NY state",
+  "tables": [
+    {
+      "path": "demo/births.csv",
+      "id": "251d74c0-e440-11e8-fd8a-294af62929e1"
+    }
+  ]
+}

@@ -24,6 +24,24 @@ export class Utils {
   static replaceAll(string: string, search: string, replace: string) {
     return string.split(search).join(replace);
   }
+
+  static isEmpty(s?: string) {
+    return !s || s === '';
+  }
+
+  static nullIfEmpty(s?: string) {
+    return Utils.isEmpty(s) ? null : s;
+  }
+
+  /** Downloads the specified content locally */
+  static download(filename: string, content: BlobPart, contentType?: string) {
+    contentType = contentType ?? 'application/octet-stream';
+    const a = document.createElement('a');
+    const blob = new Blob([content], {'type':contentType});
+    a.href = window.URL.createObjectURL(blob);
+    a.download = filename;
+    a.click();
+  }
 }
 
 
@@ -55,6 +73,15 @@ export class DartList<T> implements Iterable<T> {
 
   /** Sets the value at the given [index] in the list to [value]. */
   set(index: number, value: T): T { return api.grok_List_Get(this.dart, index, value); }
+
+  includes(item: T, start?: number) {
+    const length = this.length;
+    for (let i = (start ? start : 0); i < length; i++) {
+      if (this.get(i) === item)
+        return true;
+    }
+    return false;
+  }
 
   * [Symbol.iterator](): Iterator<T> {
     for (let i = 0; i < this.length; i++)
@@ -289,8 +316,8 @@ export class LruCache {
   private size: number;
   private head: number;
 
-  constructor() {
-    this.capacity = 100;
+  constructor(capacity: number = 100) {
+    this.capacity = capacity;
     this.forward = new Uint16Array(this.capacity);
     this.backward = new Uint16Array(this.capacity);
     this.V = new Array(this.capacity);
@@ -413,7 +440,7 @@ export class LruCache {
    * @param  {Function} createFromKey - Function to create a new item.
    * @return {any}
    */
-  getOrCreate(key: any, createFromKey: any) {
+  getOrCreate(key: any, createFromKey: (key: any) => any) {
     let value = this.get(key);
     if (typeof value !== 'undefined')
       return value;
@@ -451,16 +478,28 @@ export function _options(element: HTMLElement, options: any) {
 /**
  * Converts entity properties between JavaScript and Dart.
  * See also: {@link include}
- * @param {string} s
  */
-export function _propsToDart(s: string): string {
-  const jsToDart: { [index: string]: string } = {
-    'adminMemberships': 'parents.parent',
-    'memberships': 'parents.parent',
-    'inputs': 'params',
-    'outputs': 'params',
+export function _propsToDart(s: string, cls: string): string {
+  const jsToDart: { [indes:string] : {[index: string]: string} } = {
+    'Group' : {
+      'adminMemberships': 'parents.parent',
+      'memberships': 'parents.parent',
+      'members': 'children.child',
+      'adminMembers': 'children.child',
+    },
+    'Project': {
+      'children': 'relations.entity',
+      'links': 'relations.entity'
+    },
+    'Function': {
+      'inputs': 'params',
+      'outputs': 'params'
+    }
   };
 
+  let propsMap = jsToDart[cls];
+  if (!propsMap)
+    return s;
   let res = '';
   if (s === res) return res;
   let ents = s.split(',');
@@ -469,11 +508,11 @@ export function _propsToDart(s: string): string {
 
     while (props) {
       let idx = props.indexOf('.');
-      let match = jsToDart[props];
+      let match = propsMap[props];
       if (match) res += match;
       else {
         let p = (idx === -1) ? props : props.slice(0, idx);
-        res += jsToDart[p] || p;
+        res += propsMap[p] || p;
       }
       if (idx === -1) props = '';
       else {
@@ -489,9 +528,4 @@ export function _propsToDart(s: string): string {
 
 export function format(x: number, format?: string): string {
   return api.grok_Utils_FormatNumber(x, format);
-}
-
-export function getUniqueName(name: string, existing: string[],
-    options?: { auto?: boolean, idx?: number, render?: Function, choices?: string[] }): string {
-  return api.grok_Utils_GetUniqueName(name, existing, options?.auto, options?.idx, options?.render, options?.choices);
 }

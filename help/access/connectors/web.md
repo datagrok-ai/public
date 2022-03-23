@@ -3,7 +3,7 @@
 
 # Web
 
-Provides access to data sources via REST API based on 
+Provides access to data sources via REST API based on
 [OpenAPI 2.0 (Swagger API)](https://swagger.io/).
 
 ## Connection parameters
@@ -17,6 +17,6 @@ Provides access to data sources via REST API based on
 
 See also:
 
-  * [Data connection](../data-connection.md)
-  * [Swagger](https://swagger.io/)
-  * [OpenAPI](https://swagger.io/docs/specification/about/)
+* [Data connection](../data-connection.md)
+* [Swagger](https://swagger.io/)
+* [OpenAPI](https://swagger.io/docs/specification/about/)

@@ -65,6 +65,15 @@ export class Shell {
     api.grok_CloseTable(table.dart);
   }
 
+  /** Last error state */
+  get lastError(): string {
+    return api.grok_Get_LastError();
+  }
+
+  set lastError(s: string) {
+    api.grok_Set_LastError(s);
+  }
+
   /** Current user
    *  @type {User} */
   get user(): User {
@@ -196,7 +205,7 @@ export class Shell {
    * @returns {TableView} */
   //Obsolete
   getTableView(tableName: string): TableView {
-    return new TableView(api.grok_GetTableView(tableName));
+    return toJs(api.grok_GetTableView(tableName));
   }
 
   /** Closes everything (views, tables, projects) and returns the platform to the initial state. */

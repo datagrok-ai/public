@@ -49,5 +49,7 @@
     "prepublishOnly": "npm run build",
     "upload-debug": "datagrok-upload http://localhost:8082 debug rebuild",
     "upload-deploy": "datagrok-upload http://localhost:8082 deploy rebuild"
-  }
+  },
+  "canEdit": [ "Developers" ],
+  "canView": [ "All users" ]
 }

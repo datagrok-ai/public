@@ -64,6 +64,106 @@ export async function exportFuncCall(call: DG.FuncCall) {
     }
   });
 
+  const addToFile = (imageId: number, visibleTitle: string, width: number, height: number, plotCount?: number) => {
+    if (imageId === null || imageId === undefined) return;
+
+    const worksheet = exportWorkbook.getWorksheet(getSheetName(visibleTitle, DIRECTION.INPUT)) ||
+                      exportWorkbook.getWorksheet(getSheetName(visibleTitle, DIRECTION.OUTPUT));
+    if (worksheet) {
+      const columnForImage = (
+        ((call.inputs[realNames[visibleTitle]] ||
+          call.outputs[realNames[visibleTitle]]) as DG.DataFrame)
+          .columns as DG.ColumnList)
+        .length + 1 + (plotCount ? plotCount * (Math.ceil(width / 64.0) + 1): 0);
+      worksheet.addImage(imageId, {
+        tl: {col: columnForImage, row: 0},
+        ext: {width, height},
+      });
+    } else {
+      const newWorksheet = exportWorkbook.addWorksheet(`Output - Plot - ${visibleTitle}`);
+      newWorksheet.addImage(imageId, {
+        tl: {col: 0, row: 0},
+        ext: {width, height},
+      });
+    }
+  };
+
+  const exportImage = async (imageDiv: Element, visibleTitle: string) => {
+    const regex = /background-image: url\(.*\)/;
+    const urlAttr = imageDiv.outerHTML.match(regex)?.[0];
+    if (!urlAttr) return;
+    const url = urlAttr.substring(23, urlAttr?.length - 2);
+    const pic = (await(await fetch(url)).arrayBuffer());
+    const imageId = exportWorkbook.addImage({
+      buffer: pic,
+      extension: 'png',
+    });
+    addToFile(imageId, visibleTitle, imageDiv.clientWidth, imageDiv.clientHeight);
+  };
+
+  const exportPlot = async (plotDiv: ChildNode | null | undefined,
+    blockDiv: Element, visibleTitle: string, plotCount? : number) => {
+    const titleDiv = blockDiv.firstChild as HTMLElement;
+    if (!titleDiv) return;
+
+    if (plotDiv && !titleDiv.getElementsByClassName('svg-table').length &&
+         (plotDiv as HTMLElement).getAttribute('name') === 'viewer-Grid') return;
+
+    if (plotDiv && titleDiv.getElementsByClassName('svg-table').length) {
+      if ((plotDiv as HTMLElement).getAttribute('name') === 'viewer-OutliersSelectionViewer') {
+        return;
+      }
+      if ((plotDiv as HTMLElement).getAttribute('name') === 'viewer-Grid') {
+        (titleDiv.getElementsByClassName('svg-table')[0] as HTMLElement).click();
+        await new Promise((r) => setTimeout(r, 150));
+        plotDiv = titleDiv.nextSibling;
+      }
+    }
+
+    if (plotDiv) {
+      const plot = (plotDiv as HTMLElement).getElementsByClassName('d4-layout-middle')[0];
+      const canvas = await DG.HtmlUtils.renderToCanvas(plot as HTMLElement);
+      const dataUrl = canvas.toDataURL('image/png');
+
+      const imageId = exportWorkbook.addImage({
+        base64: dataUrl,
+        extension: 'png',
+      });
+      addToFile(imageId, visibleTitle, canvas.width, canvas.height, plotCount);
+    }
+  };
+
+  const exportTab = async (tab: HTMLElement) => {
+    const blockDivs = document.getElementsByClassName('ui-div ui-block');
+    let visibleTitle: string = '';
+    let plotCount: number = 0;
+
+    for (let i = 0; i < blockDivs.length; i++) {
+      const blockDiv = blockDivs[i];
+
+      if ((blockDiv as HTMLElement).style.display === 'none') continue;
+
+      if (blockDiv.firstChild?.firstChild?.textContent) {
+        visibleTitle = blockDiv.firstChild?.firstChild?.textContent;
+        plotCount = 0;
+      } else {
+        plotCount++;
+      }
+
+      if ((blockDiv.firstChild?.nextSibling as HTMLElement).getAttribute('name') === 'viewer-OutliersSelectionViewer') {
+        plotCount--;
+      }
+
+      const imageDiv = blockDiv.getElementsByClassName('grok-scripting-image-container')[0];
+      if (imageDiv) {
+        await exportImage(imageDiv, visibleTitle);
+      } else {
+        const plotDiv: ChildNode | null | undefined = blockDiv.firstChild?.nextSibling;
+        await exportPlot(plotDiv, blockDiv, visibleTitle, plotCount);
+      }
+    };
+  };
+
   // UWAGA: very fragile solution
   const funcView = document.getElementsByClassName('grok-view grok-view-func ui-box')[0];
   const resultView = funcView.getElementsByClassName('d4-tab-host ui-box')[0];
@@ -71,178 +171,15 @@ export async function exportFuncCall(call: DG.FuncCall) {
     const tabs = resultView.getElementsByClassName('d4-tab-header-stripe')[0].children;
     const selectedByUser = resultView.getElementsByClassName('d4-tab-header selected')[0];
     for (let i=0; i< tabs.length; i++) {
-      (tabs[i] as HTMLElement).click();
+      const tab = tabs[i] as HTMLElement;
+      tab.click();
       await new Promise((r) => setTimeout(r, 150));
-
-      const titleDivs = document.getElementsByClassName('grok-func-results-header');
-      if (!titleDivs.length) continue;
-      let skipNext = false;
-
-      for (let i = 0; i < titleDivs.length; i++) {
-        if (skipNext) {
-          skipNext = false;
-          continue;
-        }
-        const titleDiv = titleDivs[i];
-        if (titleDiv.parentElement?.style.display === 'none') continue;
-
-        const visibleTitle = titleDiv.firstChild?.textContent;
-        if (visibleTitle === null || visibleTitle === undefined) continue;
-
-        let imageId;
-        let width = 0;
-        let height = 0;
-
-        const imageDiv = titleDiv.parentElement?.getElementsByClassName('grok-scripting-image-container')[0];
-        if (imageDiv) {
-          const regex = /background-image: url\(.*\)/;
-          const urlAttr = imageDiv.outerHTML.match(regex)?.[0];
-          if (!urlAttr) continue;
-          const url = urlAttr.substring(23, urlAttr?.length - 2);
-          const pic = (await (await fetch(url)).arrayBuffer());
-          imageId = exportWorkbook.addImage({
-            buffer: pic,
-            extension: 'png',
-          });
-          width = imageDiv.clientWidth;
-          height = imageDiv.clientHeight;
-        } else {
-          let plotDiv: ChildNode | null | undefined = titleDiv.nextSibling;
-
-          if (plotDiv && !titleDiv.getElementsByClassName('svg-table').length && (plotDiv as HTMLElement).getAttribute('name') === 'viewer-Grid') continue;
-
-          if (plotDiv && titleDiv.getElementsByClassName('svg-table').length) {
-            if ((plotDiv as HTMLElement).getAttribute('name') === 'viewer-OutliersSelectionViewer') {
-              plotDiv = titleDiv.parentElement?.nextSibling?.firstChild?.nextSibling;
-              skipNext = true;
-            }
-            if ((plotDiv as HTMLElement).getAttribute('name') === 'viewer-Grid') {
-              (titleDiv.getElementsByClassName('svg-table')[0] as HTMLElement).click();
-              await new Promise((r) => setTimeout(r, 150));
-              plotDiv = titleDiv.nextSibling;
-            }
-          }
-          console.log(plotDiv);
-
-          if (plotDiv) {
-            const plot = (plotDiv as HTMLElement).getElementsByClassName('d4-layout-middle')[0];
-            const canvas = await DG.HtmlUtils.renderToCanvas(plot as HTMLElement);
-            const dataUrl = canvas.toDataURL('image/png');
-
-            imageId = exportWorkbook.addImage({
-              base64: dataUrl,
-              extension: 'png',
-            });
-            width = canvas.width;
-            height = canvas.height;
-          }
-        }
-
-        if (imageId === null || imageId === undefined) continue;
-
-        const worksheet = exportWorkbook.getWorksheet(getSheetName(visibleTitle, DIRECTION.INPUT)) ||
-                          exportWorkbook.getWorksheet(getSheetName(visibleTitle, DIRECTION.OUTPUT));
-        if (worksheet) {
-          console.log(visibleTitle);
-          console.log(realNames[visibleTitle]);
-          const columnForImage = (((call
-            .inputs[realNames[visibleTitle]] || call
-            .outputs[realNames[visibleTitle]]) as DG.DataFrame)
-            .columns as DG.ColumnList)
-            .length + 1;
-          worksheet.addImage(imageId, {
-            tl: {col: columnForImage, row: 0},
-            ext: {width, height},
-          });
-        } else {
-          const newWorksheet = exportWorkbook.addWorksheet(`Output - Plot - ${visibleTitle}`);
-          newWorksheet.addImage(imageId, {
-            tl: {col: 0, row: 0},
-            ext: {width, height},
-          });
-        }
-      }
+      await exportTab(tab);
     }
     (selectedByUser as HTMLElement).click();
   } else {
     const resultView = document.getElementsByClassName('ui-panel grok-func-results')[0];
-    const titleDivs = resultView.getElementsByClassName('grok-func-results-header');
-    let skipNext = false;
-
-    for (let i=0; i< titleDivs.length; i++) {
-      if (skipNext) {
-        skipNext = false;
-        continue;
-      }
-
-      const titleDiv = titleDivs[i];
-      const visibleTitle = titleDiv.firstChild?.textContent;
-      if (visibleTitle === null || visibleTitle === undefined) continue;
-
-      let imageId;
-      let width = 0;
-      let height = 0;
-
-      const imageDiv = titleDiv.parentElement?.getElementsByClassName('grok-scripting-image-container')[0];
-      if (imageDiv) {
-        const regex = /background-image: url\(.*\)/;
-        const urlAttr = imageDiv.outerHTML.match(regex)?.[0];
-        if (!urlAttr) continue;
-        const url = urlAttr.substring(23, urlAttr?.length - 2);
-        const pic = (await (await fetch(url)).arrayBuffer());
-        imageId = exportWorkbook.addImage({
-          buffer: pic,
-          extension: 'png',
-        });
-        width = imageDiv.clientWidth;
-        height = imageDiv.clientHeight;
-      } else {
-        let plotDiv: ChildNode | null | undefined = titleDiv.nextSibling;
-        if (plotDiv &&
-            ((plotDiv as HTMLElement).getAttribute('name') === 'viewer-Grid' ||
-            (plotDiv as HTMLElement).getAttribute('name') === 'viewer-OutliersSelectionViewer')) {
-          if (titleDiv.getElementsByClassName('svg-table').length) {
-            plotDiv = titleDiv.parentElement?.nextSibling?.firstChild?.nextSibling;
-            skipNext = true;
-          } else {
-            continue;
-          }
-        }
-
-        if (plotDiv) {
-          const plot = (plotDiv as HTMLElement).getElementsByClassName('d4-layout-middle')[0];
-          const canvas = await DG.HtmlUtils.renderToCanvas(plot as HTMLElement);
-          const dataUrl = canvas.toDataURL('image/png');
-
-          imageId = exportWorkbook.addImage({
-            base64: dataUrl,
-            extension: 'png',
-          });
-          width = canvas.width;
-          height = canvas.height;
-        }
-      }
-
-      if (imageId === null || imageId === undefined) continue;
-
-      const worksheet = exportWorkbook.getWorksheet(getSheetName(visibleTitle, DIRECTION.OUTPUT));
-      if (worksheet) {
-        const columnForImage = ((call
-          .outputs[realNames[visibleTitle]] as DG.DataFrame)
-          .columns as DG.ColumnList)
-          .length + 1;
-        worksheet.addImage(imageId, {
-          tl: {col: columnForImage, row: 0},
-          ext: {width, height},
-        });
-      } else {
-        const newWorksheet = exportWorkbook.addWorksheet(`Output - Plot - ${visibleTitle}`);
-        newWorksheet.addImage(imageId, {
-          tl: {col: 0, row: 0},
-          ext: {width, height},
-        });
-      }
-    }
+    await exportTab(resultView as HTMLElement);
   }
 
   if (scalarOutputs.length) {

@@ -3,420 +3,797 @@
   "version": "2.0",
   "name": "windows-saving-test",
   "url": "https://dev.datagrok.ai/",
-  "tests": [{
-    "id": "f2f5c8f1-2e74-40d3-a768-7073e9951d7e",
-    "name": "windows-saving-test",
-    "commands": [{
-      "id": "03be918d-8bdb-494f-a622-b857c07ccadf",
-      "comment": "",
-      "command": "open",
-      "target": "/?selenium=true&q=selenium",
-      "targets": [],
-      "value": ""
-    }, {
-      "id": "a1fd5274-3dc0-45a3-a4d0-82165499e57b",
-      "comment": "",
-      "command": "type",
-      "target": "xpath=//div[@id='signup-login-fields']/div/div/input",
-      "targets": [
-        ["id=login", "id"],
-        ["css=#login", "css"],
-        ["css=#login", "css:finder"],
-        ["xpath=//input[@id='login']", "xpath:attributes"],
-        ["xpath=//div[@id='rootDiv']/div/input", "xpath:idRelative"],
-        ["xpath=//input", "xpath:position"]
-      ],
-      "value": "selenium"
-    }, {
-      "id": "b5ab63d7-15bf-40c0-a98f-78755106918c",
-      "comment": "",
-      "command": "type",
-      "target": "xpath=//div[@id='signup-login-fields']/div/div[2]/input",
-      "targets": [
-        ["id=password", "id"],
-        ["css=#password", "css"],
-        ["css=#password", "css:finder"],
-        ["xpath=//input[@id='password']", "xpath:attributes"],
-        ["xpath=//div[@id='rootDiv']/div/input[2]", "xpath:idRelative"],
-        ["xpath=//input[2]", "xpath:position"]
-      ],
-      "value": "selenium"
-    }, {
-      "id": "6b269c8d-adac-499f-a870-800efef3ea1d",
-      "comment": "",
-      "command": "click",
-      "target": "xpath=//div[@id='signup-login-fields']/div[2]/button",
-      "targets": [
-        ["linkText=LOGIN", "linkText"],
-        ["css=a", "css"],
-        ["css=a", "css:finder"],
-        ["xpath=//a[contains(text(),'LOGIN')]", "xpath:link"],
-        ["xpath=//div[@id='rootDiv']/div/a", "xpath:idRelative"],
-        ["xpath=//a[contains(@href, '#')]", "xpath:href"],
-        ["xpath=//a", "xpath:position"]
-      ],
-      "value": ""
-    }, {
-      "id": "1223e27f-03d0-429b-b7cc-2140f552f093",
-      "comment": "",
-      "command": "verifyElementNotPresent",
-      "target": "css=i[name=\"icon-exclamation-circle\"]",
-      "targets": [
-        ["css=i[name=\"exclamation-circle\"]", "css"],
-        ["css=.fa-exclamation-circle", "css:finder"],
-        ["xpath=//i[@name='exclamation-circle']", "xpath:attributes"],
-        ["xpath=//div[@id='rootDiv']/div/div[2]/i", "xpath:idRelative"],
-        ["xpath=//div[2]/i", "xpath:position"]
-      ],
-      "value": ""
-    }, {
-      "id": "82de1932-4777-4e53-b635-4e1b219ab50e",
-      "comment": "",
-      "command": "pause",
-      "target": "4000",
-      "targets": [],
-      "value": ""
-    }, {
-      "id": "f59f2e8c-dfd9-45a2-8462-59f16fd0e874",
-      "comment": "",
-      "command": "click",
-      "target": "xpath=//i[@name='icon-window']",
-      "targets": [
-        ["css=.fa-window", "css:finder"],
-        ["xpath=//i[@name='icon-window']", "xpath:attributes"],
-        ["xpath=//div[@id='rootDiv']/div/div/div[8]/i", "xpath:idRelative"],
-        ["xpath=//div[8]/i", "xpath:position"]
-      ],
-      "value": ""
-    }, {
-      "id": "a7100e53-ef10-40dc-9dc0-77944dcbb89c",
-      "comment": "",
-      "command": "pause",
-      "target": "1000",
-      "targets": [],
-      "value": ""
-    }, {
-      "id": "7ca3d680-b40b-4037-ace9-923fcb997746",
-      "comment": "",
-      "command": "verifyElementNotPresent",
-      "target": "css=i[name=\"icon-exclamation-circle\"]",
-      "targets": [
-        ["name=icon-exclamation-triangle", "name"],
-        ["xpath=//i[@name='icon-exclamation-triangle']", "xpath:attributes"],
-        ["xpath=//i", "xpath:position"]
-      ],
-      "value": ""
-    }, {
-      "id": "81224af8-600f-4683-8b6b-00220a3c0688",
-      "comment": "",
-      "command": "click",
-      "target": "xpath=//div[@name='div-window-switch-Menu']",
-      "targets": [
-        ["css=.d4-toggle-button:nth-child(1) > .ui-input-bool-switch", "css:finder"],
-        ["xpath=//div[@name='div-window-switch-Menu']", "xpath:attributes"],
-        ["xpath=//div[@id='rootDiv']/div/div[2]/div/div/div[2]/div/div", "xpath:idRelative"],
-        ["xpath=//div[2]/div/div/div[2]/div/div", "xpath:position"]
-      ],
-      "value": ""
-    }, {
-      "id": "0905c5f8-e20d-452d-a515-2fd675777f36",
-      "comment": "",
-      "command": "pause",
-      "target": "1000",
-      "targets": [],
-      "value": ""
-    }, {
-      "id": "e5fc0734-f63e-46d9-96af-ddb84a299893",
-      "comment": "",
-      "command": "verifyElementNotPresent",
-      "target": "css=i[name=\"icon-exclamation-circle\"]",
-      "targets": [
-        ["name=icon-exclamation-triangle", "name"],
-        ["xpath=//i[@name='icon-exclamation-triangle']", "xpath:attributes"],
-        ["xpath=//i", "xpath:position"]
-      ],
-      "value": ""
-    }, {
-      "id": "6cba0907-cd72-43de-9663-e6e3755f080b",
-      "comment": "",
-      "command": "click",
-      "target": "xpath=//div[@name='div-window-switch-Tables']",
-      "targets": [
-        ["css=.d4-toggle-button:nth-child(2) > .ui-input-bool-switch", "css:finder"],
-        ["xpath=//div[@name='div-window-switch-Tables']", "xpath:attributes"],
-        ["xpath=//div[@id='rootDiv']/div/div[2]/div/div/div[2]/div[2]/div", "xpath:idRelative"],
-        ["xpath=//div[2]/div[2]/div", "xpath:position"]
-      ],
-      "value": ""
-    }, {
-      "id": "77e44c6d-7bf4-4a42-b572-fc6cf5866509",
-      "comment": "",
-      "command": "pause",
-      "target": "1000",
-      "targets": [],
-      "value": ""
-    }, {
-      "id": "0b5d90d9-5be7-402a-a72f-dc1773eab4c9",
-      "comment": "",
-      "command": "verifyElementNotPresent",
-      "target": "css=i[name=\"icon-exclamation-circle\"]",
-      "targets": [
-        ["css=i[name=\"exclamation-circle\"]", "css"],
-        ["css=.fa-exclamation-circle", "css:finder"],
-        ["xpath=//i[@name='exclamation-circle']", "xpath:attributes"],
-        ["xpath=//div[@id='rootDiv']/div/div[2]/i", "xpath:idRelative"],
-        ["xpath=//div[2]/i", "xpath:position"]
-      ],
-      "value": ""
-    }, {
-      "id": "cf82c781-8a6b-4fee-bef1-9743ec523e2e",
-      "comment": "",
-      "command": "click",
-      "target": "xpath=//div[@name='div-window-switch-Columns']",
-      "targets": [
-        ["css=.d4-toggle-button:nth-child(3) > .ui-input-bool-switch", "css:finder"],
-        ["xpath=//div[@name='div-window-switch-Columns']", "xpath:attributes"],
-        ["xpath=//div[@id='rootDiv']/div/div[2]/div/div/div[2]/div[3]/div", "xpath:idRelative"],
-        ["xpath=//div[2]/div[3]/div", "xpath:position"]
-      ],
-      "value": ""
-    }, {
-      "id": "acda6bdb-bdee-458e-bd91-72943088d021",
-      "comment": "",
-      "command": "pause",
-      "target": "1000",
-      "targets": [],
-      "value": ""
-    }, {
-      "id": "78f6625f-5bf3-4359-a819-70f909f01c90",
-      "comment": "",
-      "command": "verifyElementNotPresent",
-      "target": "css=i[name=\"icon-exclamation-circle\"]",
-      "targets": [
-        ["css=i[name=\"exclamation-circle\"]", "css"],
-        ["css=.fa-exclamation-circle", "css:finder"],
-        ["xpath=//i[@name='exclamation-circle']", "xpath:attributes"],
-        ["xpath=//div[@id='rootDiv']/div/div[2]/i", "xpath:idRelative"],
-        ["xpath=//div[2]/i", "xpath:position"]
-      ],
-      "value": ""
-    }, {
-      "id": "a08d626c-84cd-499b-b533-cc70419a20fe",
-      "comment": "",
-      "command": "click",
-      "target": "xpath=//div[@name='div-window-switch-Properties']",
-      "targets": [
-        ["css=.d4-toggle-button:nth-child(4) > .ui-input-bool-switch", "css:finder"],
-        ["xpath=//div[@name='div-window-switch-Properties']", "xpath:attributes"],
-        ["xpath=//div[@id='rootDiv']/div/div[2]/div/div/div[2]/div[4]/div", "xpath:idRelative"],
-        ["xpath=//div[2]/div[4]/div", "xpath:position"]
-      ],
-      "value": ""
-    }, {
-      "id": "cc9e27c9-3ed1-4f75-bbd1-46abf2d1477a",
-      "comment": "",
-      "command": "pause",
-      "target": "1000",
-      "targets": [],
-      "value": ""
-    }, {
-      "id": "515658c1-e972-4e87-90d1-12a0ad7d0a90",
-      "comment": "",
-      "command": "verifyElementNotPresent",
-      "target": "css=i[name=\"icon-exclamation-circle\"]",
-      "targets": [
-        ["css=i[name=\"exclamation-circle\"]", "css"],
-        ["css=.fa-exclamation-circle", "css:finder"],
-        ["xpath=//i[@name='exclamation-circle']", "xpath:attributes"],
-        ["xpath=//div[@id='rootDiv']/div/div[2]/i", "xpath:idRelative"],
-        ["xpath=//div[2]/i", "xpath:position"]
-      ],
-      "value": ""
-    }, {
-      "id": "98cc7517-7811-492e-85ce-7f50d9b1d93e",
-      "comment": "",
-      "command": "click",
-      "target": "xpath=//div[@name='div-window-switch-Variables']",
-      "targets": [
-        ["css=.d4-toggle-button:nth-child(6) > .ui-input-bool-switch", "css:finder"],
-        ["xpath=//div[@name='div-window-switch-Variables']", "xpath:attributes"],
-        ["xpath=//div[@id='rootDiv']/div/div[2]/div/div/div[2]/div[6]/div", "xpath:idRelative"],
-        ["xpath=//div[2]/div[6]/div", "xpath:position"]
-      ],
-      "value": ""
-    }, {
-      "id": "fa43ce1d-d5fc-44b3-a5c7-135c600cabe4",
-      "comment": "",
-      "command": "pause",
-      "target": "1000",
-      "targets": [],
-      "value": ""
-    }, {
-      "id": "3e92bc23-35b4-4e78-a809-47d7d3dd8934",
-      "comment": "",
-      "command": "verifyElementNotPresent",
-      "target": "css=i[name=\"icon-exclamation-circle\"]",
-      "targets": [
-        ["css=i[name=\"exclamation-circle\"]", "css"],
-        ["css=.fa-exclamation-circle", "css:finder"],
-        ["xpath=//i[@name='exclamation-circle']", "xpath:attributes"],
-        ["xpath=//div[@id='rootDiv']/div/div[2]/i", "xpath:idRelative"],
-        ["xpath=//div[2]/i", "xpath:position"]
-      ],
-      "value": ""
-    }, {
-      "id": "e17b9985-51c8-44db-8a4a-27f9695bbe33",
-      "comment": "",
-      "command": "click",
-      "target": "xpath=//div[@name='div-window-switch-Console']",
-      "targets": [
-        ["css=.d4-toggle-button:nth-child(7) > .ui-input-bool-switch", "css:finder"],
-        ["xpath=//div[@name='div-window-switch-Console']", "xpath:attributes"],
-        ["xpath=//div[@id='rootDiv']/div/div[2]/div/div/div[2]/div[7]/div", "xpath:idRelative"],
-        ["xpath=//div[2]/div[7]/div", "xpath:position"]
-      ],
-      "value": ""
-    }, {
-      "id": "f5ee4a61-800f-444f-80b0-7f132a2de99e",
-      "comment": "",
-      "command": "pause",
-      "target": "1000",
-      "targets": [],
-      "value": ""
-    }, {
-      "id": "1d2ca398-375f-4d45-810f-c991b73bbef1",
-      "comment": "",
-      "command": "verifyElementNotPresent",
-      "target": "css=i[name=\"icon-exclamation-circle\"]",
-      "targets": [
-        ["css=i[name=\"exclamation-circle\"]", "css"],
-        ["css=.fa-exclamation-circle", "css:finder"],
-        ["xpath=//i[@name='exclamation-circle']", "xpath:attributes"],
-        ["xpath=//div[@id='rootDiv']/div/div[2]/i", "xpath:idRelative"],
-        ["xpath=//div[2]/i", "xpath:position"]
-      ],
-      "value": ""
-    }, {
-      "id": "769b563e-a578-4d7e-ab8f-c9c505bb045c",
-      "comment": "",
-      "command": "click",
-      "target": "xpath=//div[@name='div-window-switch-Context-Help']",
-      "targets": [
-        ["css=.d4-toggle-button:nth-child(8) > .ui-input-bool-switch", "css:finder"],
-        ["xpath=//div[@name='div-window-switch-Context-Help']", "xpath:attributes"],
-        ["xpath=//div[@id='rootDiv']/div/div[2]/div/div/div[2]/div[8]/div", "xpath:idRelative"],
-        ["xpath=//div[2]/div[8]/div", "xpath:position"]
-      ],
-      "value": ""
-    }, {
-      "id": "ff26ecd2-7dd9-421a-9af6-2d5ea7110420",
-      "comment": "",
-      "command": "pause",
-      "target": "1000",
-      "targets": [],
-      "value": ""
-    }, {
-      "id": "11e25566-ca05-4e30-9c59-3a5f7d17757e",
-      "comment": "",
-      "command": "verifyElementNotPresent",
-      "target": "css=i[name=\"icon-exclamation-circle\"]",
-      "targets": [
-        ["css=i[name=\"exclamation-circle\"]", "css"],
-        ["css=.fa-exclamation-circle", "css:finder"],
-        ["xpath=//i[@name='exclamation-circle']", "xpath:attributes"],
-        ["xpath=//div[@id='rootDiv']/div/div[2]/i", "xpath:idRelative"],
-        ["xpath=//div[2]/i", "xpath:position"]
-      ],
-      "value": ""
-    }, {
-      "id": "09d798e0-8e56-464c-bb69-485dace7d1f4",
-      "comment": "",
-      "command": "click",
-      "target": "xpath=//div[@name='div-window-switch-Toolbox']",
-      "targets": [
-        ["css=.d4-toggle-button:nth-child(5) > .ui-input-bool-switch", "css:finder"],
-        ["xpath=//div[@name='div-window-switch-Toolbox']", "xpath:attributes"],
-        ["xpath=//div[@id='rootDiv']/div/div[2]/div/div/div[2]/div[5]/div", "xpath:idRelative"],
-        ["xpath=//div[2]/div[5]/div", "xpath:position"]
-      ],
-      "value": ""
-    }, {
-      "id": "950c160a-af43-4a98-920a-8fa87b48e504",
-      "comment": "",
-      "command": "pause",
-      "target": "1000",
-      "targets": [],
-      "value": ""
-    }, {
-      "id": "f584dc32-8db8-4152-992a-eaae36f584f2",
-      "comment": "",
-      "command": "verifyElementNotPresent",
-      "target": "css=i[name=\"icon-exclamation-circle\"]",
-      "targets": [
-        ["css=i[name=\"exclamation-circle\"]", "css"],
-        ["css=.fa-exclamation-circle", "css:finder"],
-        ["xpath=//i[@name='exclamation-circle']", "xpath:attributes"],
-        ["xpath=//div[@id='rootDiv']/div/div[2]/i", "xpath:idRelative"],
-        ["xpath=//div[2]/i", "xpath:position"]
-      ],
-      "value": ""
-    }, {
-      "id": "ad994b35-decd-4667-8ac4-912eeaf524ab",
-      "comment": "",
-      "command": "open",
-      "target": "/?selenium=true&q=selenium",
-      "targets": [],
-      "value": ""
-    }, {
-      "id": "58e59559-467a-4405-937f-0b848fc7f718",
-      "comment": "",
-      "command": "pause",
-      "target": "3000",
-      "targets": [],
-      "value": ""
-    }, {
-      "id": "568952b5-b62f-4f8b-9061-491a18c740e5",
-      "comment": "",
-      "command": "verifyElementNotPresent",
-      "target": "css=.grok-help",
-      "targets": [
-        ["css=.grok-help", "css:finder"],
-        ["xpath=(//div[@id='elementContent']/div)[3]", "xpath:idRelative"],
-        ["xpath=//div[3]/div[3]/div[2]/div/div", "xpath:position"]
-      ],
-      "value": ""
-    }, {
-      "id": "8c9768b5-df00-469c-9b7d-8f6ee9354890",
-      "comment": "",
-      "command": "verifyElementNotPresent",
-      "target": "css=.grok-entity-prop-panel",
-      "targets": [
-        ["css=.grok-entity-prop-panel", "css:finder"],
-        ["xpath=(//div[@id='elementContent']/div/div)[3]", "xpath:idRelative"],
-        ["xpath=//div[3]/div/div/div[3]/div/div[2]/div/div/div", "xpath:position"]
-      ],
-      "value": ""
-    }, {
-      "id": "a0c32bf7-52be-4cdf-9c2f-9b6af6752eed",
-      "comment": "",
-      "command": "verifyElementNotPresent",
-      "target": "css=.layout-toolbox",
-      "targets": [
-        ["css=.layout-toolbox", "css:finder"],
-        ["xpath=//div[@id='rootDiv']/div/div[2]", "xpath:idRelative"],
-        ["xpath=//div[10]/div/div[2]", "xpath:position"]
-      ],
-      "value": ""
-    }]
-  }],
-  "suites": [{
-    "id": "28cd5b22-f454-4a03-909e-e9502da8e7be",
-    "name": "windows-saving-test",
-    "persistSession": false,
-    "parallel": false,
-    "timeout": 300,
-    "tests": ["f2f5c8f1-2e74-40d3-a768-7073e9951d7e"]
-  }],
-  "urls": ["https://dev.datagrok.ai/"],
+  "tests": [
+    {
+      "id": "f2f5c8f1-2e74-40d3-a768-7073e9951d7e",
+      "name": "windows-saving-test",
+      "commands": [
+        {
+          "id": "03be918d-8bdb-494f-a622-b857c07ccadf",
+          "comment": "",
+          "command": "open",
+          "target": "/?selenium=true&q=selenium",
+          "targets": [],
+          "value": ""
+        },
+        {
+          "id": "a1fd5274-3dc0-45a3-a4d0-82165499e57b",
+          "comment": "",
+          "command": "type",
+          "target": "xpath=//div[@id='signup-login-fields']/div/div/input",
+          "targets": [
+            [
+              "id=login",
+              "id"
+            ],
+            [
+              "css=#login",
+              "css"
+            ],
+            [
+              "css=#login",
+              "css:finder"
+            ],
+            [
+              "xpath=//input[@id='login']",
+              "xpath:attributes"
+            ],
+            [
+              "xpath=//div[@id='rootDiv']/div/input",
+              "xpath:idRelative"
+            ],
+            [
+              "xpath=//input",
+              "xpath:position"
+            ]
+          ],
+          "value": "selenium"
+        },
+        {
+          "id": "b5ab63d7-15bf-40c0-a98f-78755106918c",
+          "comment": "",
+          "command": "type",
+          "target": "xpath=//div[@id='signup-login-fields']/div/div[2]/input",
+          "targets": [
+            [
+              "id=password",
+              "id"
+            ],
+            [
+              "css=#password",
+              "css"
+            ],
+            [
+              "css=#password",
+              "css:finder"
+            ],
+            [
+              "xpath=//input[@id='password']",
+              "xpath:attributes"
+            ],
+            [
+              "xpath=//div[@id='rootDiv']/div/input[2]",
+              "xpath:idRelative"
+            ],
+            [
+              "xpath=//input[2]",
+              "xpath:position"
+            ]
+          ],
+          "value": "selenium"
+        },
+        {
+          "id": "6b269c8d-adac-499f-a870-800efef3ea1d",
+          "comment": "",
+          "command": "click",
+          "target": "xpath=//div[@id='signup-login-fields']/div[2]/button",
+          "targets": [
+            [
+              "linkText=LOGIN",
+              "linkText"
+            ],
+            [
+              "css=a",
+              "css"
+            ],
+            [
+              "css=a",
+              "css:finder"
+            ],
+            [
+              "xpath=//a[contains(text(),'LOGIN')]",
+              "xpath:link"
+            ],
+            [
+              "xpath=//div[@id='rootDiv']/div/a",
+              "xpath:idRelative"
+            ],
+            [
+              "xpath=//a[contains(@href, '#')]",
+              "xpath:href"
+            ],
+            [
+              "xpath=//a",
+              "xpath:position"
+            ]
+          ],
+          "value": ""
+        },
+        {
+          "id": "1223e27f-03d0-429b-b7cc-2140f552f093",
+          "comment": "",
+          "command": "verifyElementNotPresent",
+          "target": "css=i[name=\"icon-exclamation-circle\"]",
+          "targets": [
+            [
+              "css=i[name=\"exclamation-circle\"]",
+              "css"
+            ],
+            [
+              "css=.fa-exclamation-circle",
+              "css:finder"
+            ],
+            [
+              "xpath=//i[@name='exclamation-circle']",
+              "xpath:attributes"
+            ],
+            [
+              "xpath=//div[@id='rootDiv']/div/div[2]/i",
+              "xpath:idRelative"
+            ],
+            [
+              "xpath=//div[2]/i",
+              "xpath:position"
+            ]
+          ],
+          "value": ""
+        },
+        {
+          "id": "82de1932-4777-4e53-b635-4e1b219ab50e",
+          "comment": "",
+          "command": "pause",
+          "target": "4000",
+          "targets": [],
+          "value": ""
+        },
+        {
+          "id": "f59f2e8c-dfd9-45a2-8462-59f16fd0e874",
+          "comment": "",
+          "command": "click",
+          "target": "xpath=//i[@name='icon-window']",
+          "targets": [
+            [
+              "css=.fa-window",
+              "css:finder"
+            ],
+            [
+              "xpath=//i[@name='icon-window']",
+              "xpath:attributes"
+            ],
+            [
+              "xpath=//div[@id='rootDiv']/div/div/div[8]/i",
+              "xpath:idRelative"
+            ],
+            [
+              "xpath=//div[8]/i",
+              "xpath:position"
+            ]
+          ],
+          "value": ""
+        },
+        {
+          "id": "a7100e53-ef10-40dc-9dc0-77944dcbb89c",
+          "comment": "",
+          "command": "pause",
+          "target": "1000",
+          "targets": [],
+          "value": ""
+        },
+        {
+          "id": "7ca3d680-b40b-4037-ace9-923fcb997746",
+          "comment": "",
+          "command": "verifyElementNotPresent",
+          "target": "css=i[name=\"icon-exclamation-circle\"]",
+          "targets": [
+            [
+              "name=icon-exclamation-triangle",
+              "name"
+            ],
+            [
+              "xpath=//i[@name='icon-exclamation-triangle']",
+              "xpath:attributes"
+            ],
+            [
+              "xpath=//i",
+              "xpath:position"
+            ]
+          ],
+          "value": ""
+        },
+        {
+          "id": "81224af8-600f-4683-8b6b-00220a3c0688",
+          "comment": "",
+          "command": "click",
+          "target": "xpath=//div[@name='div-window-switch-Menu']",
+          "targets": [
+            [
+              "css=.d4-toggle-button:nth-child(1) > .ui-input-bool-switch",
+              "css:finder"
+            ],
+            [
+              "xpath=//div[@name='div-window-switch-Menu']",
+              "xpath:attributes"
+            ],
+            [
+              "xpath=//div[@id='rootDiv']/div/div[2]/div/div/div[2]/div/div",
+              "xpath:idRelative"
+            ],
+            [
+              "xpath=//div[2]/div/div/div[2]/div/div",
+              "xpath:position"
+            ]
+          ],
+          "value": ""
+        },
+        {
+          "id": "0905c5f8-e20d-452d-a515-2fd675777f36",
+          "comment": "",
+          "command": "pause",
+          "target": "1000",
+          "targets": [],
+          "value": ""
+        },
+        {
+          "id": "e5fc0734-f63e-46d9-96af-ddb84a299893",
+          "comment": "",
+          "command": "verifyElementNotPresent",
+          "target": "css=i[name=\"icon-exclamation-circle\"]",
+          "targets": [
+            [
+              "name=icon-exclamation-triangle",
+              "name"
+            ],
+            [
+              "xpath=//i[@name='icon-exclamation-triangle']",
+              "xpath:attributes"
+            ],
+            [
+              "xpath=//i",
+              "xpath:position"
+            ]
+          ],
+          "value": ""
+        },
+        {
+          "id": "6cba0907-cd72-43de-9663-e6e3755f080b",
+          "comment": "",
+          "command": "click",
+          "target": "xpath=//div[@name='div-window-switch-Tables']",
+          "targets": [
+            [
+              "css=.d4-toggle-button:nth-child(2) > .ui-input-bool-switch",
+              "css:finder"
+            ],
+            [
+              "xpath=//div[@name='div-window-switch-Tables']",
+              "xpath:attributes"
+            ],
+            [
+              "xpath=//div[@id='rootDiv']/div/div[2]/div/div/div[2]/div[2]/div",
+              "xpath:idRelative"
+            ],
+            [
+              "xpath=//div[2]/div[2]/div",
+              "xpath:position"
+            ]
+          ],
+          "value": ""
+        },
+        {
+          "id": "77e44c6d-7bf4-4a42-b572-fc6cf5866509",
+          "comment": "",
+          "command": "pause",
+          "target": "1000",
+          "targets": [],
+          "value": ""
+        },
+        {
+          "id": "0b5d90d9-5be7-402a-a72f-dc1773eab4c9",
+          "comment": "",
+          "command": "verifyElementNotPresent",
+          "target": "css=i[name=\"icon-exclamation-circle\"]",
+          "targets": [
+            [
+              "css=i[name=\"exclamation-circle\"]",
+              "css"
+            ],
+            [
+              "css=.fa-exclamation-circle",
+              "css:finder"
+            ],
+            [
+              "xpath=//i[@name='exclamation-circle']",
+              "xpath:attributes"
+            ],
+            [
+              "xpath=//div[@id='rootDiv']/div/div[2]/i",
+              "xpath:idRelative"
+            ],
+            [
+              "xpath=//div[2]/i",
+              "xpath:position"
+            ]
+          ],
+          "value": ""
+        },
+        {
+          "id": "cf82c781-8a6b-4fee-bef1-9743ec523e2e",
+          "comment": "",
+          "command": "click",
+          "target": "xpath=//div[@name='div-window-switch-Columns']",
+          "targets": [
+            [
+              "css=.d4-toggle-button:nth-child(3) > .ui-input-bool-switch",
+              "css:finder"
+            ],
+            [
+              "xpath=//div[@name='div-window-switch-Columns']",
+              "xpath:attributes"
+            ],
+            [
+              "xpath=//div[@id='rootDiv']/div/div[2]/div/div/div[2]/div[3]/div",
+              "xpath:idRelative"
+            ],
+            [
+              "xpath=//div[2]/div[3]/div",
+              "xpath:position"
+            ]
+          ],
+          "value": ""
+        },
+        {
+          "id": "acda6bdb-bdee-458e-bd91-72943088d021",
+          "comment": "",
+          "command": "pause",
+          "target": "1000",
+          "targets": [],
+          "value": ""
+        },
+        {
+          "id": "78f6625f-5bf3-4359-a819-70f909f01c90",
+          "comment": "",
+          "command": "verifyElementNotPresent",
+          "target": "css=i[name=\"icon-exclamation-circle\"]",
+          "targets": [
+            [
+              "css=i[name=\"exclamation-circle\"]",
+              "css"
+            ],
+            [
+              "css=.fa-exclamation-circle",
+              "css:finder"
+            ],
+            [
+              "xpath=//i[@name='exclamation-circle']",
+              "xpath:attributes"
+            ],
+            [
+              "xpath=//div[@id='rootDiv']/div/div[2]/i",
+              "xpath:idRelative"
+            ],
+            [
+              "xpath=//div[2]/i",
+              "xpath:position"
+            ]
+          ],
+          "value": ""
+        },
+        {
+          "id": "a08d626c-84cd-499b-b533-cc70419a20fe",
+          "comment": "",
+          "command": "click",
+          "target": "xpath=//div[@name='div-window-switch-Properties']",
+          "targets": [
+            [
+              "css=.d4-toggle-button:nth-child(4) > .ui-input-bool-switch",
+              "css:finder"
+            ],
+            [
+              "xpath=//div[@name='div-window-switch-Properties']",
+              "xpath:attributes"
+            ],
+            [
+              "xpath=//div[@id='rootDiv']/div/div[2]/div/div/div[2]/div[4]/div",
+              "xpath:idRelative"
+            ],
+            [
+              "xpath=//div[2]/div[4]/div",
+              "xpath:position"
+            ]
+          ],
+          "value": ""
+        },
+        {
+          "id": "cc9e27c9-3ed1-4f75-bbd1-46abf2d1477a",
+          "comment": "",
+          "command": "pause",
+          "target": "1000",
+          "targets": [],
+          "value": ""
+        },
+        {
+          "id": "515658c1-e972-4e87-90d1-12a0ad7d0a90",
+          "comment": "",
+          "command": "verifyElementNotPresent",
+          "target": "css=i[name=\"icon-exclamation-circle\"]",
+          "targets": [
+            [
+              "css=i[name=\"exclamation-circle\"]",
+              "css"
+            ],
+            [
+              "css=.fa-exclamation-circle",
+              "css:finder"
+            ],
+            [
+              "xpath=//i[@name='exclamation-circle']",
+              "xpath:attributes"
+            ],
+            [
+              "xpath=//div[@id='rootDiv']/div/div[2]/i",
+              "xpath:idRelative"
+            ],
+            [
+              "xpath=//div[2]/i",
+              "xpath:position"
+            ]
+          ],
+          "value": ""
+        },
+        {
+          "id": "98cc7517-7811-492e-85ce-7f50d9b1d93e",
+          "comment": "",
+          "command": "click",
+          "target": "xpath=//div[@name='div-window-switch-Variables']",
+          "targets": [
+            [
+              "css=.d4-toggle-button:nth-child(6) > .ui-input-bool-switch",
+              "css:finder"
+            ],
+            [
+              "xpath=//div[@name='div-window-switch-Variables']",
+              "xpath:attributes"
+            ],
+            [
+              "xpath=//div[@id='rootDiv']/div/div[2]/div/div/div[2]/div[6]/div",
+              "xpath:idRelative"
+            ],
+            [
+              "xpath=//div[2]/div[6]/div",
+              "xpath:position"
+            ]
+          ],
+          "value": ""
+        },
+        {
+          "id": "fa43ce1d-d5fc-44b3-a5c7-135c600cabe4",
+          "comment": "",
+          "command": "pause",
+          "target": "1000",
+          "targets": [],
+          "value": ""
+        },
+        {
+          "id": "3e92bc23-35b4-4e78-a809-47d7d3dd8934",
+          "comment": "",
+          "command": "verifyElementNotPresent",
+          "target": "css=i[name=\"icon-exclamation-circle\"]",
+          "targets": [
+            [
+              "css=i[name=\"exclamation-circle\"]",
+              "css"
+            ],
+            [
+              "css=.fa-exclamation-circle",
+              "css:finder"
+            ],
+            [
+              "xpath=//i[@name='exclamation-circle']",
+              "xpath:attributes"
+            ],
+            [
+              "xpath=//div[@id='rootDiv']/div/div[2]/i",
+              "xpath:idRelative"
+            ],
+            [
+              "xpath=//div[2]/i",
+              "xpath:position"
+            ]
+          ],
+          "value": ""
+        },
+        {
+          "id": "e17b9985-51c8-44db-8a4a-27f9695bbe33",
+          "comment": "",
+          "command": "click",
+          "target": "xpath=//div[@name='div-window-switch-Console']",
+          "targets": [
+            [
+              "css=.d4-toggle-button:nth-child(7) > .ui-input-bool-switch",
+              "css:finder"
+            ],
+            [
+              "xpath=//div[@name='div-window-switch-Console']",
+              "xpath:attributes"
+            ],
+            [
+              "xpath=//div[@id='rootDiv']/div/div[2]/div/div/div[2]/div[7]/div",
+              "xpath:idRelative"
+            ],
+            [
+              "xpath=//div[2]/div[7]/div",
+              "xpath:position"
+            ]
+          ],
+          "value": ""
+        },
+        {
+          "id": "f5ee4a61-800f-444f-80b0-7f132a2de99e",
+          "comment": "",
+          "command": "pause",
+          "target": "1000",
+          "targets": [],
+          "value": ""
+        },
+        {
+          "id": "1d2ca398-375f-4d45-810f-c991b73bbef1",
+          "comment": "",
+          "command": "verifyElementNotPresent",
+          "target": "css=i[name=\"icon-exclamation-circle\"]",
+          "targets": [
+            [
+              "css=i[name=\"exclamation-circle\"]",
+              "css"
+            ],
+            [
+              "css=.fa-exclamation-circle",
+              "css:finder"
+            ],
+            [
+              "xpath=//i[@name='exclamation-circle']",
+              "xpath:attributes"
+            ],
+            [
+              "xpath=//div[@id='rootDiv']/div/div[2]/i",
+              "xpath:idRelative"
+            ],
+            [
+              "xpath=//div[2]/i",
+              "xpath:position"
+            ]
+          ],
+          "value": ""
+        },
+        {
+          "id": "769b563e-a578-4d7e-ab8f-c9c505bb045c",
+          "comment": "",
+          "command": "click",
+          "target": "xpath=//div[@name='div-window-switch-Context-Help']",
+          "targets": [
+            [
+              "css=.d4-toggle-button:nth-child(8) > .ui-input-bool-switch",
+              "css:finder"
+            ],
+            [
+              "xpath=//div[@name='div-window-switch-Context-Help']",
+              "xpath:attributes"
+            ],
+            [
+              "xpath=//div[@id='rootDiv']/div/div[2]/div/div/div[2]/div[8]/div",
+              "xpath:idRelative"
+            ],
+            [
+              "xpath=//div[2]/div[8]/div",
+              "xpath:position"
+            ]
+          ],
+          "value": ""
+        },
+        {
+          "id": "ff26ecd2-7dd9-421a-9af6-2d5ea7110420",
+          "comment": "",
+          "command": "pause",
+          "target": "1000",
+          "targets": [],
+          "value": ""
+        },
+        {
+          "id": "11e25566-ca05-4e30-9c59-3a5f7d17757e",
+          "comment": "",
+          "command": "verifyElementNotPresent",
+          "target": "css=i[name=\"icon-exclamation-circle\"]",
+          "targets": [
+            [
+              "css=i[name=\"exclamation-circle\"]",
+              "css"
+            ],
+            [
+              "css=.fa-exclamation-circle",
+              "css:finder"
+            ],
+            [
+              "xpath=//i[@name='exclamation-circle']",
+              "xpath:attributes"
+            ],
+            [
+              "xpath=//div[@id='rootDiv']/div/div[2]/i",
+              "xpath:idRelative"
+            ],
+            [
+              "xpath=//div[2]/i",
+              "xpath:position"
+            ]
+          ],
+          "value": ""
+        },
+        {
+          "id": "09d798e0-8e56-464c-bb69-485dace7d1f4",
+          "comment": "",
+          "command": "click",
+          "target": "xpath=//div[@name='div-window-switch-Toolbox']",
+          "targets": [
+            [
+              "css=.d4-toggle-button:nth-child(5) > .ui-input-bool-switch",
+              "css:finder"
+            ],
+            [
+              "xpath=//div[@name='div-window-switch-Toolbox']",
+              "xpath:attributes"
+            ],
+            [
+              "xpath=//div[@id='rootDiv']/div/div[2]/div/div/div[2]/div[5]/div",
+              "xpath:idRelative"
+            ],
+            [
+              "xpath=//div[2]/div[5]/div",
+              "xpath:position"
+            ]
+          ],
+          "value": ""
+        },
+        {
+          "id": "950c160a-af43-4a98-920a-8fa87b48e504",
+          "comment": "",
+          "command": "pause",
+          "target": "1000",
+          "targets": [],
+          "value": ""
+        },
+        {
+          "id": "f584dc32-8db8-4152-992a-eaae36f584f2",
+          "comment": "",
+          "command": "verifyElementNotPresent",
+          "target": "css=i[name=\"icon-exclamation-circle\"]",
+          "targets": [
+            [
+              "css=i[name=\"exclamation-circle\"]",
+              "css"
+            ],
+            [
+              "css=.fa-exclamation-circle",
+              "css:finder"
+            ],
+            [
+              "xpath=//i[@name='exclamation-circle']",
+              "xpath:attributes"
+            ],
+            [
+              "xpath=//div[@id='rootDiv']/div/div[2]/i",
+              "xpath:idRelative"
+            ],
+            [
+              "xpath=//div[2]/i",
+              "xpath:position"
+            ]
+          ],
+          "value": ""
+        },
+        {
+          "id": "ad994b35-decd-4667-8ac4-912eeaf524ab",
+          "comment": "",
+          "command": "open",
+          "target": "/?selenium=true&q=selenium",
+          "targets": [],
+          "value": ""
+        },
+        {
+          "id": "58e59559-467a-4405-937f-0b848fc7f718",
+          "comment": "",
+          "command": "pause",
+          "target": "3000",
+          "targets": [],
+          "value": ""
+        },
+        {
+          "id": "568952b5-b62f-4f8b-9061-491a18c740e5",
+          "comment": "",
+          "command": "verifyElementNotPresent",
+          "target": "css=.grok-help",
+          "targets": [
+            [
+              "css=.grok-help",
+              "css:finder"
+            ],
+            [
+              "xpath=(//div[@id='elementContent']/div)[3]",
+              "xpath:idRelative"
+            ],
+            [
+              "xpath=//div[3]/div[3]/div[2]/div/div",
+              "xpath:position"
+            ]
+          ],
+          "value": ""
+        },
+        {
+          "id": "8c9768b5-df00-469c-9b7d-8f6ee9354890",
+          "comment": "",
+          "command": "verifyElementNotPresent",
+          "target": "css=.grok-entity-prop-panel",
+          "targets": [
+            [
+              "css=.grok-entity-prop-panel",
+              "css:finder"
+            ],
+            [
+              "xpath=(//div[@id='elementContent']/div/div)[3]",
+              "xpath:idRelative"
+            ],
+            [
+              "xpath=//div[3]/div/div/div[3]/div/div[2]/div/div/div",
+              "xpath:position"
+            ]
+          ],
+          "value": ""
+        },
+        {
+          "id": "a0c32bf7-52be-4cdf-9c2f-9b6af6752eed",
+          "comment": "",
+          "command": "verifyElementNotPresent",
+          "target": "css=.layout-toolbox",
+          "targets": [
+            [
+              "css=.layout-toolbox",
+              "css:finder"
+            ],
+            [
+              "xpath=//div[@id='rootDiv']/div/div[2]",
+              "xpath:idRelative"
+            ],
+            [
+              "xpath=//div[10]/div/div[2]",
+              "xpath:position"
+            ]
+          ],
+          "value": ""
+        }
+      ]
+    }
+  ],
+  "suites": [
+    {
+      "id": "28cd5b22-f454-4a03-909e-e9502da8e7be",
+      "name": "windows-saving-test",
+      "persistSession": false,
+      "parallel": false,
+      "timeout": 300,
+      "tests": [
+        "f2f5c8f1-2e74-40d3-a768-7073e9951d7e"
+      ]
+    }
+  ],
+  "urls": [
+    "https://dev.datagrok.ai/"
+  ],
   "plugins": []
 }

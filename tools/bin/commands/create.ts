@@ -70,6 +70,8 @@ function createDirectoryContents(name: string, config: utils.Config, templateDir
         contents = JSON.stringify(_package, null, '\t');
       }
       if (file === 'package.js' && ts) copyFilePath = path.join(packageDir, 'package.ts');
+      if (file === 'package-test.js' && ts) return false;
+      if (file === 'package-test.ts' && !ts) return false;
       if (file === 'tsconfig.json' && !ts) return false;
       if (file === 'ts.webpack.config.js') return false;
       if (file === '.eslintrc.json') {

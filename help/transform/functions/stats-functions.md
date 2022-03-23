@@ -5,11 +5,15 @@
 
 This type of function assumes working with whole columns or a set of numbers.
 
-As parameters of the function, you can pass a whole column using the square brackets syntax `$[columnName]` or a list of any numbers enclosed in square brackets using the syntax `[n1, n2, ....]`. Null arguments are ignored and do not affect the results of statistical functions.
+As parameters of the function, you can pass a whole column using the square brackets syntax `$[columnName]` or a list of
+any numbers enclosed in square brackets using the syntax `[n1, n2, ....]`. Null arguments are ignored and do not affect
+the results of statistical functions.
 
 You can also use expressions such as `[${Width}, 270, ${Height}]` to pass row values as numbers in a list.
 
->By default, real numbers in a new column show only 2 digits after the integer part. You can change this behavior by setting the appropriate format for displaying the data in the column. To do this, click on the column heading and in the opened context menu select "Format" option.
+> By default, real numbers in a new column show only 2 digits after the integer part.
+> You can change this behavior by setting the appropriate format for displaying the data in the column.
+> To do this, click on the column heading and in the opened context menu select "Format" option.
 
 *Function List:*
 
@@ -40,7 +44,8 @@ Avg($[Age])           // Average age
 
 ## <a name="kurt"></a>Kurt(`data`)
 
-Returns the kurtosis of the data. Kurtosis characterizes the relative peakedness or flatness of a distribution compared with the normal distribution.
+Returns the kurtosis of the data. Kurtosis characterizes the relative peakedness or flatness of a distribution compared
+with the normal distribution.
 
 ```javascript
 Kurt([1, 2, 3])      // -1.5

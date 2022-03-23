@@ -62,7 +62,7 @@ async function testCase(title, f) {
   console.clear();
   console.log('Chem Benchmark');
 
-  let rdKitCellRenderer = await grok.functions.call('Chem:rdkitCellRenderer');
+  let rdKitCellRenderer = await grok.functions.call('Chem:rdKitCellRenderer');
   let grid = DG.Viewer.grid(df);
   let canvas = grid.canvas;
   let ctx = canvas.getContext('2d');

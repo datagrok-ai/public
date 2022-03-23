@@ -3,68 +3,74 @@
 
 # JavaScript API
 
-[Grok JS API](js-api.md) allows to control all aspects of the Datagrok platform. The API
-can be used either from ad-hoc [scripts](scripting.md) (`Functions | Scripts | New JavaScript Script`) 
-or from [packages](develop.md#packages). 
+[Datagrok JS API](https://datagrok.ai/js-api) allows to control all aspects of the Datagrok platform. The API can be
+used either from ad-hoc [scripts](../compute/scripting.md) (`Functions | Scripts | New JavaScript Script`)
+or from [packages](develop.md#packages).
 
 This document covers the following areas:
 
-  * [API Structure](#api-structure)
-  * [Data Manipulation](#data-manipulation)
-  * [Views](#views)
-  * [Registering Functions](#registering-functions)
-  * [Events](#events)
-  * [User-defined Types](#user-defined-types)
-  * [Docking](#docking)
-  * [REST API](#rest-api)
-  * [Machine Learning](#machine-learning)
-  * [Cheminformatics](#cheminformatics)
+* [API Structure](#api-structure)
+* [Data Manipulation](#data-manipulation)
+* [Views](#views)
+* [Registering Functions](#registering-functions)
+* [Events](#events)
+* [User-defined Types](#user-defined-types)
+* [Docking](#docking)
+* [REST API](#rest-api)
+* [Machine Learning](#machine-learning)
+* [Cheminformatics](#cheminformatics)
 
 ## API structure
 
-There are three entry points to the API: 
-**grok** for easy discoverability of the functionality, 
-**ui** for building user interfaces, and 
-**DG** for instantiating classes directly.
+There are three entry points to the API:
+
+* [**grok**](https://datagrok.ai/js-api/modules/grok) for easy discoverability of the functionality,
+* [**ui**](https://datagrok.ai/js-api/modules/ui) for building user interfaces, and
+* [**DG**](https://datagrok.ai/js-api/modules/dg) for instantiating classes directly.
 
 ### Grok
 
-`grok` is the entry point for most of the commonly used functionality in the platform. 
-It is structured in a way to make the discovery of the capabilities very easy, especially 
-with IntelliSense. You would just type `grok.`, then select the most appropriate choice 
-the IntelliSense gives you, and so on. For instance, let’s imagine that you want to 
-construct a dataframe from a CSV file. You would see the following choices after you 
-typed `grok.`: [shell, chem, data, data, ml]. What we want to do it related to data, so we 
-would type `grok.data` and see the following choices: [demo, query, compareTables, parseCsv, upload]. 
-Obviously, we should choose parseCsv; when we select it, IntelliSense will help us with 
-the parameters as well. This is the preferred way for using the API for both ad-hoc scripting
-and more complex development, since the resulting code is streamlined and easily readable. 
-However, in cases where the fluent API does not cover your particular use case, or sometimes
-for performance reasons, you will need to work with classes from the DG namespace.
+`grok` is the entry point for most of the commonly used functionality in the platform. It is structured in a way to make
+the discovery of the capabilities very easy, especially with IntelliSense. You would just type `grok.`, then select the
+most appropriate choice the IntelliSense gives you, and so on. For instance, let’s imagine that you want to construct a
+dataframe from a CSV file. You would see the following choices after you typed `grok.`: [shell, chem, data, data, ml].
+What we want to do it related to data, so we would type `grok.data` and see the following
+choices: [demo, query, compareTables, parseCsv, upload]. Obviously, we should choose parseCsv; when we select it,
+IntelliSense will help us with the parameters as well. This is the preferred way for using the API for both ad-hoc
+scripting and more complex development, since the resulting code is streamlined and easily readable. However, in cases
+where the fluent API does not cover your particular use case, or sometimes for performance reasons, you will need to
+work with classes from the DG namespace.
 
 ### Ui
 
-Building a UI is a special form of programming, and many languages were invented for that
-purpose only (HTML, XAML, JSX). We have prioritized the following aspects when choosing 
-our approach: simplicity, discoverability, readability.
- 
+Building a UI is a special form of programming, and many languages were invented for that purpose only (HTML, XAML, JSX)
+. We have prioritized the following aspects when choosing our approach:
+simplicity, discoverability, readability.
+
 ```javascript
 ui.dialog('Windows')
   .add(ui.span(['People of Earth, your attention, please… ']))
   .onOK(() => { grok.shell.info('OK!'); })
   .show();
-``` 
+```
 
-### Dg
+### DG
 
-Check out [JS API Class Reference](https://datagrok.ai/js-api/) 
+Check out [JS API Class Reference](https://datagrok.ai/js-api/)
+
+### Shell
+
+Datarok visual shell is used to get access to top-level views, tables, methods, and platform states.
+
+Learn more here: [Datagrok Shell reference](./shell.md)
 
 ## Data manipulation
 
 ### Dataframe
 
-Use [DataFrame](/js-api/classes/dg.dataframe), [Column](/js-api/classes/dg.column), [ColumnList](/js-api/classes/dg.columnlist), 
-and [Row](/js-api/classes/dg.row) classes for table manipulation.
+Use [DataFrame](https://datagrok.ai/js-api/classes/dg.DataFrame), [Column](https://datagrok.ai/js-api/classes/dg.column)
+, [ColumnList](https://datagrok.ai/js-api/classes/dg.ColumnList), and [Row](https://datagrok.ai/js-api/classes/dg.row)
+classes for table manipulation.
 
 ```javascript
 demog = grok.testData('demog', 5000);
@@ -79,11 +85,12 @@ demog.rows.addNew().subj = 'Iron Man';
 foo.set(1, 777);
 demog.set('age', 1, 44);
 
-``` 
+```
 
-### Bitset
+### BitSet
 
-Each [DataFrame](/js-api/classes/dg.dataframe) is associated with two [bitsets](/js-api/classes/dg.bitset): selection and filter.
+Each [DataFrame](https://datagrok.ai/js-api/classes/dg.DataFrame) is associated with
+two [bitsets](https://datagrok.ai/js-api/classes/dg.BitSet): selection and filter.
 
 ```javascript
 // bit set (same applies to filter)
@@ -93,7 +100,8 @@ demog.selection.findNext(0, false);
 ```
 
 DataFrame code snippets:
-* [DataFrame manipulation](https://public.datagrok.ai/js/samples/data-frame/manipulate)
+
+* [DataFrame manipulation](https://public.datagrok.ai/js/samples/data-frame/modification/manipulate)
 * [DataFrame events](https://public.datagrok.ai/js/samples/data-frame/events)
 
 ## Views
@@ -114,13 +122,12 @@ grok.shell.dockElement(e, 'JS', 'left', 0.5);
 
 ## Registering functions
 
-Pretty much anything in Datagrok is a [function](../overview/functions/function.md), it is a concept that
-connects together [scripts](scripting.md) written in different languages, predictive models, statistical
-functions, query transformations, data flows, and many other features.
+Pretty much anything in Datagrok is a [function](../overview/functions/function.md), it is a concept that connects
+together [scripts](../compute/scripting.md) written in different languages, predictive models, statistical functions,
+query transformations, data flows, and many other features.
 
-The following code registers a "jsConcat" function that becomes a first-class
-citizen in the platform (i.e., it can be used from console, gets registered
-in help, there could be an optional audit trail associated with the invocations, etc)
+The following code registers a "jsConcat" function that becomes a first-class citizen in the platform (i.e., it can be
+used from console, gets registered in help, there could be an optional audit trail associated with the invocations, etc)
 
 To test the newly registered function, enter "jsConcat(42, 33)" in the [Console](../overview/navigation.md#console).
 
@@ -130,8 +137,8 @@ grok.functions.register({
     run: (foo, bar) => `${foo}_${bar}`});
 ```
 
-The code below registers two functions, "jsWidget" and "jsSuggestCountryName".  
-To test jsWidget, create a new Dashboard, and click on "Widget" under "Widgets".
+The code below registers two functions, "jsWidget" and "jsSuggestCountryName". To test jsWidget, create a new Dashboard,
+and click on "Widget" under "Widgets".
 
 ```javascript
 grok.functions.register({
@@ -161,48 +168,47 @@ grok.functions.register({
 Internally, JavaScript-based applications are functions that are annotated accordingly.
 
 Code snippets:
+
 * [Dynamic registering](https://public.datagrok.ai/js/samples/functions/register-function)
 * [Functions: Parameter validators](https://public.datagrok.ai/js/samples/functions/func-params-enhancement)
 * [Functions: Info panels](https://public.datagrok.ai/js/samples/functions/info-panels/info-panels)
 * [Functions: Custom viewers](https://public.datagrok.ai/js/samples/functions/custom-viewers/viewers)
 
-
 ## Events
 
-We are exposing events coming out of the platform as a stream via the 
-[Rx.JS](rxjs.dev) library that makes it easy to compose asynchronous or callback-based code.
-The API makes easy to subscribe to either global, or instance-related events:
+We are exposing events coming out of the platform as a stream via the
+[Rx.JS](https://rxjs.dev/) library that makes it easy to compose asynchronous or callback-based code. The API makes easy
+to subscribe to either global, or instance-related events:
 
 ```javascript
    // global event when user changes the current project
-   grok.events.onCurrentProjectChanged.subscribe(_ => 
+   grok.events.onCurrentProjectChanged.subscribe(_ =>
        grok.shell.info(`Current project changed: ${grok.shell.project.name}`));
 
    // subscribing to DataFrame events
    demog = grok.data.testData('demog', 5000);
    demog.onValuesChanged.subscribe((_) => grok.shell.info('values changed'));
-``` 
+```
 
 Event-related code snippets:
+
 * [Global events](https://public.datagrok.ai/js/samples/events/global-events)
 * [DataFrame events](https://public.datagrok.ai/js/samples/data-frame/events)
 
-To figure out what events are coming out of the platform, use the Inspector tool.
-Open it (Alt+I), go to the "Client Log" tab, and perform the action that you want
-to intercept. In the panel, you will see one or more of the events, click on them
-to inspect event parameters. To simplify the development process, we also generate
-JavaScript code for handling this particular event, copy-paste it from the
-property panel into your code if needed. 
+To figure out what events are coming out of the platform, use the Inspector tool. Open it (Alt+I), go to the "Client
+Log" tab, and perform the action that you want to intercept. In the panel, you will see one or more of the events, click
+on them to inspect event parameters. To simplify the development process, we also generate JavaScript code for handling
+this particular event, copy-paste it from the property panel into your code if needed.
 
-![](inspector-events.png)
+![inspector-events](tools/inspector-events.png)
 
 ## User-defined types
 
-Define your own classes, and integrate them easily by providing a meta-class
-that extends `DG.EntityMeta`. This will provide native support for 
-context actions, rendering, drag-and drop, tooltips, and favorites.
+Define your own classes, and integrate them easily by providing a meta-class that extends `DG.EntityMeta`. This will
+provide native support for context actions, rendering, drag-and drop, tooltips, and favorites.
 
 Code snippets:
+
 * [Custom "Fruit" class](https://public.datagrok.ai/js/samples/ui/meta/meta)
 
 ## Docking
@@ -214,19 +220,20 @@ grok.shell.dockManager.dock(ui.divText('first'), DG.DOCK_TYPE.RIGHT, null, 'Firs
 ```
 
 Docking code snippets:
+
 * [Top level](https://public.datagrok.ai/js/samples/ui/docking/docking)
 * [Table view](https://public.datagrok.ai/js/samples/ui/docking/docking-table-view)
 * [Floating windows](https://public.datagrok.ai/js/samples/ui/docking/docking-floating)
 
-
 ## REST API
 
-Use `grok.dapi` entry point for managing server-based objects, such as datasets,
-connection, users, credentials, jobs, packages, etc.
+Use `grok.dapi` entry point for managing server-based objects, such as datasets, connection, users, credentials, jobs,
+packages, etc.
 
-See also [HttpDataSource](https://datagrok.ai/js-api/classes/dg.httpdatasource) subclasses.  
+See also [HttpDataSource](https://datagrok.ai/js-api/classes/dg.HttpDataSource) subclasses.
 
 Code snippets:
+
 * [List of projects](https://public.datagrok.ai/js/samples/dapi/projects-list)
 * [Who am I](https://public.datagrok.ai/js/samples/dapi/who-am-i)
 
@@ -235,6 +242,7 @@ Code snippets:
 Use `grok.ml` entry point for machine learning-related routines.
 
 Code snippets:
+
 * [Clustering](https://public.datagrok.ai/js/samples/domains/data-science/cluster)
 * [Missing values imputation](https://public.datagrok.ai/js/samples/domains/data-science/missing-values-imputation)
 * [PCA](https://public.datagrok.ai/js/samples/domains/data-science/pca)
@@ -247,15 +255,15 @@ Use `grok.chem` entry point for cheminformatics-related routines.
 
 Code snippets:
 
-  * [Calculating descriptors](https://public.datagrok.ai/js/samples/domains/data-science/random-data)
-  * [Chemical diversity](https://public.datagrok.ai/js/samples/domains/chem/diversity-search)
-  * [Chemical similarity](https://public.datagrok.ai/js/samples/domains/chem/similarity-search)
-  * [Substructure search](https://public.datagrok.ai/js/samples/domains/chem/substructure-search)
-  * [R-group analysis](https://public.datagrok.ai/js/samples/domains/chem/r-group)
-  * [Most common substructure](https://public.datagrok.ai/js/samples/domains/chem/mcs)
-  * [Iterating over atoms and bonds](https://public.datagrok.ai/js/samples/domains/chem/mol-atoms-bonds)
-  * [Custom info panel for molecules](https://public.datagrok.ai/js/samples/domains/chem/mol-panel)
-  * [Rendering molecules to SVG](https://public.datagrok.ai/js/samples/domains/chem/mol-rendering)
+* [Calculating descriptors](https://public.datagrok.ai/js/samples/domains/data-science/random-data)
+* [Chemical diversity](https://public.datagrok.ai/js/samples/domains/chem/diversity-search)
+* [Chemical similarity](https://public.datagrok.ai/js/samples/domains/chem/similarity-search)
+* [Substructure search](https://public.datagrok.ai/js/samples/domains/chem/substructure-search)
+* [R-group analysis](https://public.datagrok.ai/js/samples/domains/chem/r-group)
+* [Most common substructure](https://public.datagrok.ai/js/samples/domains/chem/mcs)
+* [Iterating over atoms and bonds](https://public.datagrok.ai/js/samples/domains/chem/mol-atoms-bonds)
+* [Custom info panel for molecules](https://public.datagrok.ai/js/samples/domains/chem/mol-panel)
+* [Rendering molecules to SVG](https://public.datagrok.ai/js/samples/domains/chem/mol-rendering)
 
 ## Videos
 
@@ -263,5 +271,5 @@ Code snippets:
 
 See also:
 
-  * [JavaScript development](develop.md) 
-  * [JavaScript API Samples](https://public.datagrok.ai/js)
+* [JavaScript development](develop.md)
+* [JavaScript API Samples](https://public.datagrok.ai/js)

@@ -18,5 +18,7 @@
 		"release-vdjtools-public": "grok publish public --rebuild --release",
 		"debug-vdjtools-local": "grok publish local --rebuild",
 		"release-vdjtools-local": "grok publish local --rebuild --release"
-	}
+	},
+	"canEdit": [ "Developers" ],
+	"canView": [ "All users" ]
 }

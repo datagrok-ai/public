@@ -1,0 +1,22 @@
+name: Grok Connect
+on:
+  workflow_dispatch: {}
+  push:
+    paths:
+      - 'connectors/**'
+jobs:
+  build:
+    name: Build Grok Connect package
+    runs-on: ubuntu-20.04
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v2
+      - name: Set up JDK 8
+        uses: actions/setup-java@v2
+        with:
+          java-version: '8'
+          distribution: 'adopt'
+          cache: maven
+      - name: Build with Maven
+        working-directory: ./connectors
+        run: mvn -Dmaven.test.skip=true package
