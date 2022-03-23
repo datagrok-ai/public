@@ -8,6 +8,7 @@
   "description": "",
   "dependencies": {
     "datagrok-api": ">0.95.4",
+    "@datagrok-libraries/utils": ">=0.0.22",
     "cash-dom": "latest",
     "dayjs": "latest",
     "jstat": "latest"

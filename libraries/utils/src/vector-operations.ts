@@ -1,4 +1,5 @@
 import {Matrix, Vector, Coordinates, Vectors, DistanceMetric} from './type-declarations';
+import {randomFloat, randomInt} from './random';
 
 /**
  * Asserts a condition by throwing an Error.
@@ -12,17 +13,6 @@ export function assert(condition: boolean = false, message: string = 'Assertion 
   if (!condition) {
     throw new Error(message);
   }
-}
-
-/**
- * Generates single random integer from 0 to range.
- *
- * @export
- * @param {number} range Max generating value.
- * @return {number} A random integer generated.
- */
-export function randomInt(range: number): number {
-  return Math.floor(Math.random() * range);
 }
 
 /**
@@ -67,7 +57,7 @@ export function vectorAdd(p: Vector, q: Vector, multiplier: number = 1): Vector 
   let total = new Vector(nItems);
 
   for (let i = 0; i < p.length; ++i) {
-    total[i] = p[i]+multiplier*q[i];
+    total[i] = p[i] + multiplier * q[i];
   }
   return total;
 }
@@ -98,7 +88,7 @@ function vectorSquare(v: Vector): Vector {
   let total = new Vector(nItems);
 
   for (let i = 0; i < v.length; ++i) {
-    total[i] = v[i]*v[i];
+    total[i] = v[i] * v[i];
   }
   return total;
 }
@@ -117,7 +107,7 @@ export function fillRandomMatrix(dimension1: number, dimension2: number, scale: 
 
   for (let i = 0; i < dimension1; ++i) {
     for (let j = 0; j < dimension2; ++j) {
-      matrix[i][j] = Math.random() * scale;
+      matrix[i][j] = randomFloat(scale);
     }
   }
   return matrix;
@@ -148,7 +138,7 @@ export function calculateEuclideanDistance(p: Vector, q: Vector): number {
  */
 export function calcDistanceMatrix(data: Vectors, distance: DistanceMetric): Matrix {
   const nItems = data.length;
-  let matrix = initCoordinates(nItems, nItems, 0);
+  const matrix = initCoordinates(nItems, nItems, 0);
 
   for (let i = 0; i < nItems; ++i) {
     for (let j = i+1; j < nItems; ++j) {

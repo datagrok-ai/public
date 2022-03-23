@@ -4,8 +4,8 @@ import {
   calcDistanceMatrix,
   fillRandomMatrix,
   vectorAdd,
-  randomInt,
-} from '@datagrok-libraries/utils/src/operations';
+} from '@datagrok-libraries/utils/src/vector-operations';
+import {randomInt} from '@datagrok-libraries/utils/src/random';
 
 /**
  * Implements stochastic proximity embedding.
