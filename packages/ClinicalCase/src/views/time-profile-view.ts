@@ -2,12 +2,14 @@ import * as grok from 'datagrok-api/grok';
 import * as DG from "datagrok-api/dg";
 import * as ui from "datagrok-api/ui";
 import { study } from "../clinical-study";
-import { addDataFromDmDomain, convertColToString, createPivotedDataframe, createPivotedDataframeAvg, getUniqueValues, getVisitNamesAndDays } from '../data-preparation/utils';
-import { ETHNIC, LAB_RES_N, LAB_TEST, VISIT_DAY, VISIT_NAME, RACE, SEX, SUBJECT_ID, TREATMENT_ARM, VS_TEST, VS_RES_N } from '../columns-constants';
+import { addDataFromDmDomain, createPivotedDataframeAvg, getUniqueValues, getVisitNamesAndDays } from '../data-preparation/utils';
+import { ETHNIC, LAB_RES_N, LAB_TEST, VISIT_DAY, VISIT_NAME, RACE, SEX, SUBJECT_ID, VS_TEST, VS_RES_N } from '../constants/columns-constants';
 import { dynamicComparedToBaseline } from '../data-preparation/data-preparation';
-import { updateDivInnerHTML } from './utils';
+import { updateDivInnerHTML } from '../utils/utils';
 import { _package } from '../package';
 import { ClinicalCaseViewBase } from '../model/ClinicalCaseViewBase';
+import { TRT_ARM_FIELD, VIEWS_CONFIG } from '../views-config';
+import { TIME_PROFILE_VIEW_NAME } from '../constants/view-names-constants';
 
 
 export class TimeProfileView extends ClinicalCaseViewBase {
@@ -22,7 +24,7 @@ export class TimeProfileView extends ClinicalCaseViewBase {
     relativeChangeFromBlDataFrame: DG.DataFrame;
     uniqueLabValues: any;
     uniqueVisits: any;
-    splitBy = [ TREATMENT_ARM, SEX, RACE, ETHNIC ];
+    splitBy: any;
     types = ['Values', 'Changes'];
     domains = ['vs', 'lb'];
     domainFields = {'lb': {'test': LAB_TEST, 'res': LAB_RES_N}, 'vs': {'test': VS_TEST, 'res': VS_RES_N}};
@@ -41,14 +43,14 @@ export class TimeProfileView extends ClinicalCaseViewBase {
     }
 
     createView(): void {
-        this.splitBy = this.splitBy.filter(it => study.domains.dm && study.domains.dm.columns.names().includes(it));
-        this.domains = this.domains.filter(it => study.domains[it] !== null);
+        this.splitBy = [ VIEWS_CONFIG[TIME_PROFILE_VIEW_NAME][TRT_ARM_FIELD], SEX, RACE, ETHNIC ].filter(it => study.domains.dm && study.domains.dm.columns.names().includes(it));
+        this.domains = this.domains.filter(it => study.domains[it] !== null && !this.optDomainsWithMissingCols.includes(it));
         this.selectedDomain = this.domains[0];
         this.uniqueLabValues = Array.from(getUniqueValues(study.domains[this.selectedDomain], this.domainFields[this.selectedDomain]['test']));
         this.uniqueVisits = Array.from(getUniqueValues(study.domains[this.selectedDomain], VISIT_NAME));
         this.selectedLabValue = this.uniqueLabValues[ 0 ] as string;
         this.selectedType = this.types[0];
-        this.visitNamesAndDays = getVisitNamesAndDays(study.domains[this.selectedDomain]);
+        this.visitNamesAndDays = getVisitNamesAndDays(study.domains[this.selectedDomain], VISIT_NAME, VISIT_DAY);
         this.bl = this.visitNamesAndDays[0].name;
         this.ep = this.visitNamesAndDays[this.visitNamesAndDays.length-1].name;
         this.createLaboratoryDataframe();
@@ -59,7 +61,7 @@ export class TimeProfileView extends ClinicalCaseViewBase {
             this.uniqueLabValues = Array.from(getUniqueValues(study.domains[this.selectedDomain], this.domainFields[this.selectedDomain]['test']));
             this.uniqueVisits = Array.from(getUniqueValues(study.domains[this.selectedDomain], VISIT_NAME));
             this.selectedLabValue = this.uniqueLabValues[ 0 ] as string;
-            this.visitNamesAndDays = getVisitNamesAndDays(study.domains[this.selectedDomain]);
+            this.visitNamesAndDays = getVisitNamesAndDays(study.domains[this.selectedDomain], VISIT_NAME, VISIT_DAY);
             if (this.visitNamesAndDays.findIndex(it => it.name === this.bl) === -1) {
                 this.bl = this.visitNamesAndDays[0].name;
             }

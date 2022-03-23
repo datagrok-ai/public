@@ -54,12 +54,12 @@ export abstract class FormulaLinesHelper {
   }
 
   add(item: FormulaLine) {
-    let newItem = this.setDefaults(item);
+    let newItem = FormulaLinesHelper.setDefaults(item);
     this.items = this.items.concat(newItem);
   }
 
   addAll(items: FormulaLine[]) {
-    let newItems = items.map((item) => { return this.setDefaults(item); });
+    let newItems = items.map((item) => { return FormulaLinesHelper.setDefaults(item); });
     this.items = this.items.concat(newItems);
   }
 
@@ -87,9 +87,12 @@ export abstract class FormulaLinesHelper {
     this.items = this.items.filter(predicate);
   }
 
-  clear() { this.items = []; }
+  clear(): FormulaLinesHelper {
+    this.items = [];
+    return this;
+  }
 
-  setDefaults(item: FormulaLine): FormulaLine { return toJs(api.grok_FormulaLineHelper_SetDefaultParams(item)); }
+  static setDefaults(item: FormulaLine): FormulaLine { return toJs(api.grok_FormulaLineHelper_SetDefaultParams(item)); }
 
-  getMeta(item: FormulaLine): FormulaLineMeta { return toJs(api.grok_FormulaLineHelper_GetMeta(item)); }
+  static getMeta(item: FormulaLine): FormulaLineMeta { return toJs(api.grok_FormulaLineHelper_GetMeta(item)); }
 }

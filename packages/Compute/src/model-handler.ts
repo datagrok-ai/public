@@ -2,6 +2,7 @@ import * as grok from 'datagrok-api/grok';
 import * as ui from 'datagrok-api/ui';
 import * as DG from 'datagrok-api/dg';
 import {ModelCatalogView} from "./model-catalog-view";
+import {TYPE} from "datagrok-api/dg";
 
 export class ModelHandler extends DG.ObjectHandler {
   get type() {
@@ -66,20 +67,33 @@ export class ModelHandler extends DG.ObjectHandler {
       ui.divText(x.description, 'ui-description'),
       this.renderDetails(x),
     ], 'd4-gallery-item'), {contextMenu: false});
+    let c = grok.functions.getCurrentCall();
     card.ondblclick = (e) => {
-      ModelHandler.openModel(x);
+      ModelHandler.openModel(x, c);
     }
     return card;
   }
 
-  static openModel(x: DG.Script, parentView?: DG.ViewBase) {
-    let view = DG.FunctionView.createFromFunc(x);
-    grok.shell.addView(view);
+  static openModel(x: DG.Script, parentCall?: DG.FuncCall) {
+    if (x.inputs.length == 0 && x.outputs.length == 1 && x.outputs[0].propertyType == TYPE.VIEW) {
+      x.apply().then((view) => {
+        console.log(parentCall);
+        view.parentCall = parentCall;
+        view.close();
+        grok.shell.addView(view);
+      }).catch((error) => {
+        grok.shell.error(error);
+      });
+    } else {
+      let view = DG.FunctionView.createFromFunc(x);
+      view.parentCall = parentCall!;
+      grok.shell.addView(view);
+    }
   }
 
   init() {
     this.registerParamFunc('Open', async (t: DG.Script) => {
-
+      ModelHandler.openModel(t);
     });
   }
 }

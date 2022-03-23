@@ -11,7 +11,7 @@ import {aligned1} from './test-data';
 
 import * as DG from 'datagrok-api/dg';
 import * as grok from 'datagrok-api/grok';
-import { StringMetrics } from '@datagrok-libraries/ml/src/typed-metrics';
+import {StringMetrics} from '@datagrok-libraries/ml/src/typed-metrics';
 
 export const _package = new DG.Package();
 

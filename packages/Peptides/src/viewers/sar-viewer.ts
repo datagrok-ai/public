@@ -4,8 +4,8 @@ import * as DG from 'datagrok-api/dg';
 
 import $ from 'cash-dom';
 import {StringDictionary} from '@datagrok-libraries/utils/src/type-declarations';
-
-import {model} from '../model';
+import {PeptidesController} from '../peptides';
+// import {PeptidesModel} from '../model';
 
 /**
  * Structure-activity relationship viewer.
@@ -28,8 +28,11 @@ export class SARViewer extends DG.JsViewer {
   protected _initialBitset: DG.BitSet | null;
   protected viewerVGrid: DG.Grid | null;
   protected currentBitset: DG.BitSet | null;
-  grouping: boolean;
-  groupMapping: StringDictionary | null;
+  protected grouping: boolean;
+  protected groupMapping: StringDictionary | null;
+  // model: PeptidesModel | null;
+  protected _name: string = 'Monomer-Positions';
+  protected controller: PeptidesController | null;
   // protected pValueThreshold: number;
   // protected amountOfBestAARs: number;
   // duplicatesHandingMethod: string;
@@ -51,6 +54,8 @@ export class SARViewer extends DG.JsViewer {
     this._initialBitset = null;
     this.viewGridInitialized = false;
     this.currentBitset = null;
+    // this.model = null;
+    this.controller = null;
 
     //TODO: find a way to restrict activityColumnName to accept only numerical columns (double even better)
     this.activityColumnName = this.string('activityColumnName');
@@ -58,47 +63,38 @@ export class SARViewer extends DG.JsViewer {
     this.filterMode = this.bool('filterMode', false);
     this.bidirectionalAnalysis = this.bool('bidirectionalAnalysis', false);
     this.grouping = this.bool('grouping', false);
-    // this.pValueThreshold = this.float('pValueThreshold', 0.1);
-    // this.amountOfBestAARs = this.int('amountOfBestAAR', 1);
-    // this.duplicatesHandingMethod = this.string('duplicatesHandlingMethod', 'median', {choices: ['median']});
 
     this.sourceGrid = null;
   }
 
-  /**
-   * Initializes SARViewer.
-   *
-   * @memberof SARViewer
-   */
+  get name() {
+    return this._name;
+  }
+
   init() {
     this._initialBitset = this.dataFrame!.filter.clone();
     this.currentBitset = this._initialBitset.clone();
     this.initialized = true;
-    this.subs.push(model.statsDf$.subscribe((data) => this.statsDf = data));
-    this.subs.push(model.viewerGrid$.subscribe((data) => {
+  }
+
+  async onTableAttached() {
+    this.sourceGrid = this.view?.grid ?? (grok.shell.v as DG.TableView).grid;
+    this.dataFrame?.setTag('dataType', 'peptides');
+    this.controller = await PeptidesController.getInstance(this.dataFrame!);
+    // this.model = PeptidesModel.getOrInit(this.dataFrame!);
+    // this.model = this.controller.getOrInitModel();
+
+    this.subs.push(this.controller.onStatsDataFrameChanged.subscribe((data) => this.statsDf = data));
+    this.subs.push(this.controller.onSARGridChanged.subscribe((data) => {
       this.viewerGrid = data;
-      this.render();
+      this.render(false);
     }));
-    this.subs.push(model.viewerVGrid$.subscribe((data) => this.viewerVGrid = data));
-    this.subs.push(model.groupMapping$.subscribe((data) => this.groupMapping = data));
+    this.subs.push(this.controller.onSARVGridChanged.subscribe((data) => this.viewerVGrid = data));
+    this.subs.push(this.controller.onGroupMappingChanged.subscribe((data) => this.groupMapping = data));
+
+    await this.render();
   }
 
-  /**
-   * Function that is executed when the table is attached.
-   *
-   * @memberof SARViewer
-   */
-  onTableAttached() {
-    this.sourceGrid = this.view.grid;
-    this.sourceGrid?.dataFrame?.setTag('dataType', 'peptides');
-    this.render();
-  }
-
-  /**
-   * Function that is executed when the viewer is detached from the table.
-   *
-   * @memberof SARViewer
-   */
   detach() {
     this.subs.forEach((sub) => sub.unsubscribe());
   }
@@ -109,7 +105,7 @@ export class SARViewer extends DG.JsViewer {
    * @param {DG.Property} property New property.
    * @memberof SARViewer
    */
-  onPropertyChanged(property: DG.Property) {
+  async onPropertyChanged(property: DG.Property) {
     super.onPropertyChanged(property);
 
     if (!this.initialized) {
@@ -130,7 +126,7 @@ export class SARViewer extends DG.JsViewer {
       }
     }
 
-    this.render();
+    await this.render();
   }
 
   /**
@@ -144,41 +140,37 @@ export class SARViewer extends DG.JsViewer {
       return;
 
     //TODO: optimize. Don't calculate everything again if only view changes
-    if (computeData) {
-      if (typeof this.dataFrame !== 'undefined' && this.activityColumnName && this.sourceGrid) {
-        await model?.updateData(
-          this.dataFrame!,
-          this.activityColumnName,
-          this.scaling,
-          this.sourceGrid,
-          this.bidirectionalAnalysis,
-          this._initialBitset,
-          this.grouping,
-        );
+    if (typeof this.dataFrame !== 'undefined' && this.activityColumnName && this.sourceGrid) {
+      if (computeData) {
+        await this.controller!.updateData(this.activityColumnName, this.scaling, this.sourceGrid,
+          this.bidirectionalAnalysis, this._initialBitset, this.grouping);
+      }
 
-        if (this.viewerGrid !== null && this.viewerVGrid !== null) {
-          $(this.root).empty();
-          this.root.appendChild(this.viewerGrid.root);
-          this.viewerGrid.dataFrame!.onCurrentCellChanged.subscribe((_) => {
-            this.currentBitset = applyBitset(
-              this.dataFrame!, this.viewerGrid!, this.aminoAcidResidue,
-              this.groupMapping!, this._initialBitset!, this.filterMode,
-            ) ?? this.currentBitset;
-            syncGridsFunc(false, this.viewerGrid!, this.viewerVGrid!, this.aminoAcidResidue);
-          });
-          this.viewerVGrid.dataFrame!.onCurrentCellChanged.subscribe((_) => {
-            syncGridsFunc(true, this.viewerGrid!, this.viewerVGrid!, this.aminoAcidResidue);
-          });
-          this.dataFrame!.onRowsFiltering.subscribe((_) => {
-            sourceFilteringFunc(this.filterMode, this.dataFrame!, this.currentBitset!, this._initialBitset!);
-          });
-          grok.events.onAccordionConstructed.subscribe((accordion: DG.Accordion) => {
-            accordionFunc(
-              accordion, this.viewerGrid!, this.aminoAcidResidue,
-              this._initialBitset!, this.activityColumnName, this.statsDf!,
-            );
-          });
-        }
+      if (this.viewerGrid !== null && this.viewerVGrid !== null) {
+        $(this.root).empty();
+        const title = ui.h1(this._name, {style: {'align-self': 'center'}});
+        const gridRoot = this.viewerGrid.root;
+        gridRoot.style.width = 'auto';
+        this.root.appendChild(ui.divV([title, gridRoot]));
+        this.viewerGrid.dataFrame!.onCurrentCellChanged.subscribe((_) => {
+          this.currentBitset = applyBitset(
+            this.dataFrame!, this.viewerGrid!, this.aminoAcidResidue,
+            this.groupMapping!, this._initialBitset!, this.filterMode,
+          ) ?? this.currentBitset;
+          syncGridsFunc(false, this.viewerGrid!, this.viewerVGrid!, this.aminoAcidResidue);
+        });
+        this.viewerVGrid.dataFrame!.onCurrentCellChanged.subscribe((_) => {
+          syncGridsFunc(true, this.viewerGrid!, this.viewerVGrid!, this.aminoAcidResidue);
+        });
+        this.dataFrame.onRowsFiltering.subscribe((_) => {
+          sourceFilteringFunc(this.filterMode, this.dataFrame!, this.currentBitset!, this._initialBitset!);
+        });
+        grok.events.onAccordionConstructed.subscribe((accordion: DG.Accordion) => {
+          accordionFunc(
+            accordion, this.viewerGrid!, this.aminoAcidResidue,
+            this._initialBitset!, this.activityColumnName, this.statsDf!,
+          );
+        });
       }
     }
     //fixes viewers not rendering immediately after analyze.
@@ -195,27 +187,31 @@ export class SARViewer extends DG.JsViewer {
  */
 export class SARViewerVertical extends DG.JsViewer {
   viewerVGrid: DG.Grid | null;
+  // model: PeptidesModel | null;
+  protected _name = 'Sequence-Activity relationship';
+  controller: PeptidesController | null;
 
-  /**
-   * Creates an instance of SARViewerVertical.
-   *
-   * @memberof SARViewerVertical
-   */
   constructor() {
     super();
 
     this.viewerVGrid = null;
-    this.subs.push(model.viewerVGrid$.subscribe((data) => {
+    this.controller = null;
+  }
+
+  get name() {
+    return this._name;
+  }
+
+  async onTableAttached() {
+    // this.model = PeptidesModel.getOrInit(this.dataFrame!);
+    this.controller = await PeptidesController.getInstance(this.dataFrame!);
+
+    this.subs.push(this.controller.onSARVGridChanged.subscribe((data) => {
       this.viewerVGrid = data;
       this.render();
     }));
   }
 
-  /**
-   * Viewer render function.
-   *
-   * @memberof SARViewerVertical
-   */
   render() {
     if (this.viewerVGrid) {
       $(this.root).empty();
@@ -225,19 +221,15 @@ export class SARViewerVertical extends DG.JsViewer {
   }
 }
 
-function syncGridsFunc(
-  sourceVertical: boolean,
-  viewerGrid: DG.Grid,
-  viewerVGrid: DG.Grid,
-  aminoAcidResidue: string,
-) { //TODO: refactor, move
+//TODO: refactor, move
+function syncGridsFunc(sourceVertical: boolean, viewerGrid: DG.Grid, viewerVGrid: DG.Grid, aminoAcidResidue: string) {
   if (viewerGrid && viewerGrid.dataFrame && viewerVGrid && viewerVGrid.dataFrame) {
     if (sourceVertical) {
       const dfCell = viewerVGrid.dataFrame.currentCell;
-      if (dfCell.column === null || dfCell.column.name !== 'Mean difference')
+      if (dfCell.column === null || dfCell.column.name !== 'Diff')
         return;
 
-      const otherColName: string = viewerVGrid.dataFrame.get('Position', dfCell.rowIndex);
+      const otherColName: string = viewerVGrid.dataFrame.get('Pos', dfCell.rowIndex);
       const otherRowName: string = viewerVGrid.dataFrame.get(aminoAcidResidue, dfCell.rowIndex);
       let otherRowIndex = -1;
       for (let i = 0; i < viewerGrid.dataFrame.rowCount; i++) {
@@ -259,24 +251,20 @@ function syncGridsFunc(
       for (let i = 0; i < viewerVGrid.dataFrame.rowCount; i++) {
         if (
           viewerVGrid.dataFrame.get(aminoAcidResidue, i) === otherAAR &&
-          viewerVGrid.dataFrame.get('Position', i) === otherPos
+          viewerVGrid.dataFrame.get('Pos', i) === otherPos
         ) {
           otherRowIndex = i;
           break;
         }
       }
       if (otherRowIndex !== -1)
-        viewerVGrid.dataFrame.currentCell = viewerVGrid.dataFrame.cell(otherRowIndex, 'Mean difference');
+        viewerVGrid.dataFrame.currentCell = viewerVGrid.dataFrame.cell(otherRowIndex, 'Diff');
     }
   }
 }
 
 function sourceFilteringFunc(
-  filterMode: boolean,
-  dataFrame: DG.DataFrame,
-  currentBitset: DG.BitSet,
-  initialBitset: DG.BitSet,
-) {
+  filterMode: boolean, dataFrame: DG.DataFrame, currentBitset: DG.BitSet, initialBitset: DG.BitSet) {
   if (filterMode) {
     dataFrame.selection.setAll(false, false);
     dataFrame.filter.copyFrom(currentBitset);
@@ -287,13 +275,8 @@ function sourceFilteringFunc(
 }
 
 function applyBitset(
-  dataFrame: DG.DataFrame,
-  viewerGrid: DG.Grid,
-  aminoAcidResidue: string,
-  groupMapping: StringDictionary,
-  initialBitset: DG.BitSet,
-  filterMode: boolean,
-) {
+  dataFrame: DG.DataFrame, viewerGrid: DG.Grid, aminoAcidResidue: string, groupMapping: StringDictionary,
+  initialBitset: DG.BitSet, filterMode: boolean) {
   let currentBitset = null;
   if (
     viewerGrid.dataFrame &&
@@ -330,13 +313,8 @@ function applyBitset(
 }
 
 function accordionFunc(
-  accordion: DG.Accordion,
-  viewerGrid: DG.Grid,
-  aminoAcidResidue: string,
-  initialBitset: DG.BitSet,
-  activityColumnName: string,
-  statsDf: DG.DataFrame,
-) {
+  accordion: DG.Accordion, viewerGrid: DG.Grid, aminoAcidResidue: string, initialBitset: DG.BitSet,
+  activityColumnName: string, statsDf: DG.DataFrame) {
   if (accordion.context instanceof DG.RowGroup) {
     const originalDf: DG.DataFrame = DG.toJs(accordion.context.dataFrame);
     const viewerDf = viewerGrid.dataFrame;
@@ -381,7 +359,7 @@ function accordionFunc(
 
         const tableMap: StringDictionary = {'Statistics:': ''};
         for (const colName of new Set(['Count', 'pValue', 'Mean difference'])) {
-          const query = `${aminoAcidResidue} = ${currentAAR} and Position = ${currentPosition}`;
+          const query = `${aminoAcidResidue} = ${currentAAR} and Pos = ${currentPosition}`;
           const textNum = statsDf.groupBy([colName]).where(query).aggregate().get(colName, 0);
           // const text = textNum === 0 ? '<0.01' : `${colName === 'Count' ? textNum : textNum.toFixed(2)}`;
           const text = colName === 'Count' ? `${textNum}` : textNum < 0.01 ? '<0.01' : textNum.toFixed(2);

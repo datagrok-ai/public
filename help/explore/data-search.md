@@ -16,9 +16,8 @@ changes.
 | Up     | Previous matching cell |
 | Down   | Next matching cell     |
 | Esc    | Close search           |
-| Enter  | Select matching rows   |
-| Alt+S  | Select matching rows   |
-| Alt+F  | Filter matching rows   |
+| Enter or Alt+S  | Filter matching rows   |
+| Shift+Enter or Alt+F  | Filter matching rows   |
 
 ## Examples
 

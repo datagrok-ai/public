@@ -1,4 +1,4 @@
-import { SUBJECT_ID } from "../columns-constants";
+import { SUBJECT_ID } from "../constants/columns-constants";
 
 export function renderText(ctx, text, baseline, align, x, y, condition, color = 'black') {
   if (condition) {

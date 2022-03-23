@@ -35,7 +35,7 @@ public class AthenaDataProvider extends JdbcDataProvider {
         }};
     }
 
-    public boolean isParametrized() {
+    public boolean autoInterpolation() {
         return false;
     }
 

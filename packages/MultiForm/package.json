@@ -1,7 +1,6 @@
 {
   "name": "@datagrok/multi-form",
-  "beta": true,
-  "version": "0.1.0",
+  "version": "0.2.0",
   "fullName": "MultiForm",
   "description": "MultiForm viewer provides a convenient way to visualize a set of selected rows.",
   "sources": [

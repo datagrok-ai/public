@@ -3,7 +3,7 @@ import {jaroWinkler} from 'jaro-winkler-typescript';
 
 import {DistanceMetric} from '@datagrok-libraries/utils/src/type-declarations';
 import {similarityMetric} from '@datagrok-libraries/utils/src/similarity-metrics';
-import {calculateEuclideanDistance} from '@datagrok-libraries/utils/src/operations';
+import {calculateEuclideanDistance} from '@datagrok-libraries/utils/src/vector-operations';
 import BitArray from '@datagrok-libraries/utils/src/bit-array';
 import {Vector, StringDictionary} from '@datagrok-libraries/utils/src/type-declarations';
 

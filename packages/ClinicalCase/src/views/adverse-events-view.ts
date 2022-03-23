@@ -3,12 +3,12 @@ import * as DG from "datagrok-api/dg";
 import * as ui from "datagrok-api/ui";
 import { study, ClinRow } from "../clinical-study";
 import { addDataFromDmDomain } from '../data-preparation/utils';
-import { AE_BODY_SYSTEM, AE_CAUSALITY, AE_DECOD_TERM, AE_OUTCOME, AE_SEVERITY, AE_START_DAY, SUBJECT_ID, TREATMENT_ARM } from '../columns-constants';
-import { ILazyLoading } from '../lazy-loading/lazy-loading';
-import { checkColumnsAndCreateViewer, checkMissingDomains, updateDivInnerHTML } from './utils';
+import { AE_BODY_SYSTEM, AE_CAUSALITY, AE_OUTCOME, AE_SEVERITY, SUBJECT_ID } from '../constants/columns-constants';
+import { updateDivInnerHTML } from '../utils/utils';
 import { _package } from '../package';
-import { requiredColumnsByView } from '../constants';
 import { ClinicalCaseViewBase } from '../model/ClinicalCaseViewBase';
+import { AE_START_DAY_FIELD, AE_TERM_FIELD, TRT_ARM_FIELD, VIEWS_CONFIG } from '../views-config';
+import { checkColumnsAndCreateViewer } from '../utils/views-validation-utils';
 
 
 export class AdverseEventsView extends ClinicalCaseViewBase {
@@ -30,8 +30,12 @@ export class AdverseEventsView extends ClinicalCaseViewBase {
   }
 
   createView(): void {
-    if (study.domains.dm.col(TREATMENT_ARM)) {
-      this.aeWithArm = addDataFromDmDomain(study.domains.ae.clone(), study.domains.dm, study.domains.ae.columns.names(), [TREATMENT_ARM]);
+
+    if (study.domains.ae.col(VIEWS_CONFIG[this.name][AE_START_DAY_FIELD]) && !study.domains.ae.col('week')) {
+      study.domains.ae.columns.addNewFloat('week').init((i) => Math.floor(study.domains.ae.get(VIEWS_CONFIG[this.name][AE_START_DAY_FIELD], i) / 7));
+    };
+    if (study.domains.dm.col(VIEWS_CONFIG[this.name][TRT_ARM_FIELD])) {
+      this.aeWithArm = addDataFromDmDomain(study.domains.ae.clone(), study.domains.dm, study.domains.ae.columns.names(), [VIEWS_CONFIG[this.name][TRT_ARM_FIELD]]);
     } else {
       this.aeWithArm = study.domains.ae.clone();
     }
@@ -44,44 +48,44 @@ export class AdverseEventsView extends ClinicalCaseViewBase {
     };
 
     checkColumnsAndCreateViewer(
-      study.domains.ae,
-      [AE_DECOD_TERM],
+      this.aeWithArm,
+      [VIEWS_CONFIG[this.name][AE_TERM_FIELD]],
       this.typesPlot, () => {
-        let bar = this.bar(AE_DECOD_TERM, 'Types', viewerTitle, TREATMENT_ARM);
+        let bar = this.bar(VIEWS_CONFIG[this.name][AE_TERM_FIELD], 'Types', viewerTitle, VIEWS_CONFIG[this.name][TRT_ARM_FIELD]);
         updateDivInnerHTML(this.typesPlot, bar);
       },
       'Types');
 
     checkColumnsAndCreateViewer(
-      study.domains.ae,
+      this.aeWithArm,
       [AE_BODY_SYSTEM],
       this.typesPlot, () => {
-        let bar = this.bar(AE_BODY_SYSTEM, 'Body system', viewerTitle, TREATMENT_ARM);
+        let bar = this.bar(AE_BODY_SYSTEM, 'Body system', viewerTitle, VIEWS_CONFIG[this.name][TRT_ARM_FIELD]);
         updateDivInnerHTML(this.bodySystemsPlot, bar);
       },
       'Body system');
 
     checkColumnsAndCreateViewer(
-      study.domains.ae,
+      this.aeWithArm,
       [AE_CAUSALITY],
       this.typesPlot, () => {
-        let bar = this.bar(AE_CAUSALITY, 'Causality', viewerTitle, TREATMENT_ARM);
+        let bar = this.bar(AE_CAUSALITY, 'Causality', viewerTitle, VIEWS_CONFIG[this.name][TRT_ARM_FIELD]);
         updateDivInnerHTML(this.causalityPlot, bar);
       },
       'Causality');
 
     checkColumnsAndCreateViewer(
-      study.domains.ae,
+      this.aeWithArm,
       [AE_OUTCOME],
       this.typesPlot, () => {
-        let bar = this.bar(AE_OUTCOME, 'Outcome', viewerTitle, TREATMENT_ARM);
+        let bar = this.bar(AE_OUTCOME, 'Outcome', viewerTitle, VIEWS_CONFIG[this.name][TRT_ARM_FIELD]);
         updateDivInnerHTML(this.outcomePlot, bar);
       },
       'Outcome');
 
     checkColumnsAndCreateViewer(
-      study.domains.ae,
-      [AE_START_DAY],
+      this.aeWithArm,
+      [VIEWS_CONFIG[this.name][AE_START_DAY_FIELD]],
       this.eventsPerWeekPlot, () => {
         let bar = this.eventsPerWeek(viewerTitle);
         updateDivInnerHTML(this.eventsPerWeekPlot, bar);
@@ -89,8 +93,8 @@ export class AdverseEventsView extends ClinicalCaseViewBase {
       'Events per week');
 
     checkColumnsAndCreateViewer(
-      study.domains.ae,
-      [SUBJECT_ID, AE_START_DAY],
+      this.aeWithArm,
+      [SUBJECT_ID, VIEWS_CONFIG[this.name][AE_START_DAY_FIELD]],
       this.allEventsPlot, () => {
         let bar = this.allEvents(viewerTitle);
         updateDivInnerHTML(this.allEventsPlot, bar);
@@ -130,8 +134,8 @@ export class AdverseEventsView extends ClinicalCaseViewBase {
   }
 
   private createLegend() {
-    if (this.aeWithArm.col(TREATMENT_ARM)) {
-      let legend = DG.Legend.create(this.aeWithArm.columns.byName(TREATMENT_ARM));
+    if (this.aeWithArm.col(VIEWS_CONFIG[this.name][TRT_ARM_FIELD])) {
+      let legend = DG.Legend.create(this.aeWithArm.columns.byName(VIEWS_CONFIG[this.name][TRT_ARM_FIELD]));
       legend.root.style.width = '500px';
       legend.root.style.height = '35px';
       return legend.root;
@@ -154,7 +158,7 @@ export class AdverseEventsView extends ClinicalCaseViewBase {
 
   private allEvents(viewerTitle: any) {
     let scatterPlot = this.aeWithArm.plot.scatter({
-      x: AE_START_DAY,
+      x: VIEWS_CONFIG[this.name][AE_START_DAY_FIELD],
       y: SUBJECT_ID,
       color: this.aeWithArm.col(AE_SEVERITY) ? AE_SEVERITY : '',
       markerDefaultSize: 5,

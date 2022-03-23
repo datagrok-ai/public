@@ -51,43 +51,19 @@ We recommend this method if you want to jump-start with Datagrok on your local m
    docker-compose -f docker/localhost.docker-compose.yaml --project-name datagrok --profile all down --volumes
    ```
 
-## Troubleshooting
-
-1. In case of any issues, check the settings in the Datagrok (Tools | Settings...).
-    * Connectors
-        * External Host: grok_connect
-    * Scripting:
-        * CVM Url: `http://cvm:8090`
-        * CVM URL Client: `http://localhost:8090`
-        * H2o Url: `http://h2o:54321`
-        * API Url: `http://datagrok:8080/api`
-        * Cvm Split: `true`
-    * Dev:
-        * CVM Url: `http://localhost:8090`
-        * Cvm Split: `true`
-        * API Url: `http://datagrok:8080/api`
-
-2. Check containers logs for any possible errors and report the problem if there is any
-
-   ```shell
-   docker-compose -f docker/localhost.docker-compose.yaml --project-name datagrok --profile all logs
-   ```
-
-3. Restart Docker compose stand
-
-    ```shell
-    docker-compose -f docker/localhost.docker-compose.yaml --project-name datagrok --profile all stop
-    docker-compose -f docker/localhost.docker-compose.yaml --project-name datagrok --profile all up -d
-    ```
-
-4. For advanced service troubleshooting, you can access the containers shell
-
-    ```shell
-    # Replace <service> with one of the services: db, datagrok, grok_connect, grok_compute, jupyter_notebook, jupyter_kernel_gateway, h2o
-    docker-compose -f docker/localhost.docker-compose.yaml --project-name datagrok --profile all exec <service> /bin/sh
-    ```
-
 ## Advanced usage
+
+### Demo Databases
+
+Datagrok provides demo databases with demo data for the full experience.
+
+If you want to install demo databases with Datagrok locally, run
+
+```shell
+docker-compose -f docker/localhost.docker-compose.yaml --project-name datagrok --profile all --profile demo up -d
+```
+
+### CVM features
 
 If you do not need CVM features, you can run only Datagrok application containers:
 
@@ -95,7 +71,13 @@ If you do not need CVM features, you can run only Datagrok application container
 docker-compose -f docker/localhost.docker-compose.yaml --project-name datagrok --profile datagrok up -d
 ```
 
-To run Datagrok with exact CVM features, specify them in the command line using `--profile` flag
+If you need CVM features only, you can run only CVM application containers:
+
+```shell
+docker-compose -f docker/localhost.docker-compose.yaml --project-name datagrok --profile cvm up -d
+```
+
+To run Datagrok with exact CVM features, specify them in the command-line using `--profile` flag
 
 * Cheminformatics
 
@@ -132,6 +114,53 @@ To run Datagrok with exact CVM features, specify them in the command line using 
      --profile modeling \
      up -d
    ```
+
+* Datagrok container is not required to be started for any feature
+
+   ```shell
+   docker-compose -f docker/localhost.docker-compose.yaml --project-name datagrok \
+     --profile chem \
+     --profile scripting \
+     --profile jupyter_notebook \
+     --profile modeling \
+     up -d
+   ```
+
+## Troubleshooting
+
+1. In case of any issues, check the settings in the Datagrok (Tools | Settings...).
+    * Connectors
+        * External Host: grok_connect
+    * Scripting:
+        * CVM Url: `http://cvm:8090`
+        * CVM URL Client: `http://localhost:8090`
+        * H2o Url: `http://h2o:54321`
+        * API Url: `http://datagrok:8080/api`
+        * Cvm Split: `true`
+    * Dev:
+        * CVM Url: `http://localhost:8090`
+        * Cvm Split: `true`
+        * API Url: `http://datagrok:8080/api`
+
+2. Check containers logs for any possible errors and report the problem if there is any
+
+   ```shell
+   docker-compose -f docker/localhost.docker-compose.yaml --project-name datagrok --profile all logs
+   ```
+
+3. Restart Docker compose stand
+
+    ```shell
+    docker-compose -f docker/localhost.docker-compose.yaml --project-name datagrok --profile all stop
+    docker-compose -f docker/localhost.docker-compose.yaml --project-name datagrok --profile all up -d
+    ```
+
+4. For advanced service troubleshooting, you can access the containers shell
+
+    ```shell
+    # Replace <service> with one of the services: db, datagrok, grok_connect, grok_compute, jupyter_notebook, jupyter_kernel_gateway, h2o
+    docker-compose -f docker/localhost.docker-compose.yaml --project-name datagrok --profile all exec <service> /bin/sh
+    ```
 
 ## Useful links
 

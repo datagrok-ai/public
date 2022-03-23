@@ -194,15 +194,6 @@ Style-related commands reside under the **Style** submenu:
 
 ![Pick up](../uploads/gifs/pickupstyle.gif "Pick up")
 
-Tooltip-related settings reside under the **Tooltip** submenu:
-
-|                      |                                                                                  |
-|----------------------|----------------------------------------------------------------------------------|
-| Hide                 | Hide the tooltip                                                                 |
-| Use as Group Tooltip | Use this viewer in [tooltips that correspond to groups of rows](#group-tooltips) |
-| Remove Group Tooltip | Stop using this viewer as a group tooltip                                        |
-| Set Default Tooltip  | Set up tooltip settings common to most viewers                                   |
-
 The commands from the **To Script** submenu produce code that can be used to build a similar visualization using R or
 Python:
 
@@ -210,6 +201,20 @@ Python:
 |-----------|-------------------------------------------------------------------|
 | to R      | Open the visualization preview and get the code snippet in R      |
 | to Python | Open the visualization preview and get the code snippet in Python |
+
+## Row tooltips
+
+Tooltip-related settings reside under the **Tooltip** submenu:
+
+|                           |                                                                                  |
+|---------------------------|----------------------------------------------------------------------------------|
+| Hide                      | Hide the tooltip                                                                 |
+| Use as Group Tooltip      | Use this viewer in [tooltips that correspond to groups of rows](#group-tooltips) |
+| Remove Group Tooltip      | Stop using this viewer as a group tooltip                                        |
+| Set Default Tooltip...    | Set row tooltip settings for all viewers associated with the data frame          |
+| Set `<Viewer>` Tooltip... | Set a tooltip template for this specific viewer                                  |
+
+See also: [setting tooltips programmatically](https://public.datagrok.ai/js/samples/ui/viewers/viewew-tooltips)
 
 ## Group tooltips
 

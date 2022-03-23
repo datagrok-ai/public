@@ -152,6 +152,9 @@ export class GridCell {
     return new GridCellStyle(api.grok_GridCell_Get_Style(this.dart));
   }
 
+  /** Calculates cell background color, according to color-coding. */
+  get color(): number { return api.grok_GridCell_Get_Color(this.dart); }
+
   /** Grid cell bounds.
    * Sample: {@link https://public.datagrok.ai/js/samples/grid/cell-bounds}
    */

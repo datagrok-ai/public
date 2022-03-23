@@ -32,6 +32,16 @@ export class Utils {
   static nullIfEmpty(s?: string) {
     return Utils.isEmpty(s) ? null : s;
   }
+
+  /** Downloads the specified content locally */
+  static download(filename: string, content: BlobPart, contentType?: string) {
+    contentType = contentType ?? 'application/octet-stream';
+    const a = document.createElement('a');
+    const blob = new Blob([content], {'type':contentType});
+    a.href = window.URL.createObjectURL(blob);
+    a.download = filename;
+    a.click();
+  }
 }
 
 
@@ -430,7 +440,7 @@ export class LruCache {
    * @param  {Function} createFromKey - Function to create a new item.
    * @return {any}
    */
-  getOrCreate(key: any, createFromKey: any) {
+  getOrCreate(key: any, createFromKey: (key: any) => any) {
     let value = this.get(key);
     if (typeof value !== 'undefined')
       return value;
@@ -468,16 +478,28 @@ export function _options(element: HTMLElement, options: any) {
 /**
  * Converts entity properties between JavaScript and Dart.
  * See also: {@link include}
- * @param {string} s
  */
-export function _propsToDart(s: string): string {
-  const jsToDart: { [index: string]: string } = {
-    'adminMemberships': 'parents.parent',
-    'memberships': 'parents.parent',
-    'inputs': 'params',
-    'outputs': 'params',
+export function _propsToDart(s: string, cls: string): string {
+  const jsToDart: { [indes:string] : {[index: string]: string} } = {
+    'Group' : {
+      'adminMemberships': 'parents.parent',
+      'memberships': 'parents.parent',
+      'members': 'children.child',
+      'adminMembers': 'children.child',
+    },
+    'Project': {
+      'children': 'relations.entity',
+      'links': 'relations.entity'
+    },
+    'Function': {
+      'inputs': 'params',
+      'outputs': 'params'
+    }
   };
 
+  let propsMap = jsToDart[cls];
+  if (!propsMap)
+    return s;
   let res = '';
   if (s === res) return res;
   let ents = s.split(',');
@@ -486,11 +508,11 @@ export function _propsToDart(s: string): string {
 
     while (props) {
       let idx = props.indexOf('.');
-      let match = jsToDart[props];
+      let match = propsMap[props];
       if (match) res += match;
       else {
         let p = (idx === -1) ? props : props.slice(0, idx);
-        res += jsToDart[p] || p;
+        res += propsMap[p] || p;
       }
       if (idx === -1) props = '';
       else {

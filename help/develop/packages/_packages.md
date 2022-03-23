@@ -335,7 +335,7 @@ Your package might contain the following additional folders, depending on your n
 
 [nvm]: https://github.com/nvm-sh/nvm#installing-and-updating
 
-[package section]: https://datagrok.ai/js-api/classes/dg.package
+[package section]: https://datagrok.ai/js-api/classes/dg.Package
 
 [public repository]: https://github.com/datagrok-ai/public/tree/master/packages
 

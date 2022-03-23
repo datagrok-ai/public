@@ -3,7 +3,7 @@
 # DataFrame
 
 DataFrame is a tabular structure with strongly-typed columns of various types. A dataframe class
-[DG.DataFrame](https://datagrok.ai/js-api/classes/dg.dataframe)
+[DG.DataFrame](https://datagrok.ai/js-api/classes/dg.DataFrame)
 is used in virtually any Datagrok extension or application. It operates via a columnar in-memory data engine which
 Datagrok implemented from scratch to support highly efficient operation with data in a modern browser together with fast
 in-browser data visualizations.
@@ -14,7 +14,7 @@ Dataframe stores data as list of columns. Constructing, modifying and efficientl
 both [`DG.Column`][101] and [`DG.DataFrame`][100] classes. Event handling, visual aspects of working with dataframes,
 fast column selection, handy construction methods and row-based access are provided in
 [`DG.DataFrame`][100]. Instances of [`DG.ColumnList`][099], [`DG.RowList`][098],
-[`DG.Row`](https://datagrok.ai/js-api/classes/dg.row) and [`DG.Cell`](https://datagrok.ai/js-api/classes/dg.cell) are
+[`DG.Row`](https://datagrok.ai/js-api/classes/dg.Row) and [`DG.Cell`](https://datagrok.ai/js-api/classes/dg.cell) are
 used as related properties or functions return values of `DG.Column` and `DG.DataFrame`.
 
 ## Dataframe design

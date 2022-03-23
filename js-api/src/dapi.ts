@@ -18,7 +18,7 @@ import {
   Package,
   UserSession,
   Property,
-  FileInfo, HistoryEntry
+  FileInfo, HistoryEntry, ProjectOpenOptions
 } from "./entities";
 import {ViewLayout} from "./views/view";
 import {toDart, toJs} from "./wrappers";
@@ -52,7 +52,7 @@ export class Dapi {
   /** Data Queries API endpoint
    *  @type {HttpDataSource<DataQuery>} */
   get queries(): HttpDataSource<DataQuery> {
-    return new HttpDataSource(api.grok_Dapi_Queries());
+    return new HttpDataSource(api.grok_Dapi_Queries(), 'Function');
   }
 
   /** Data Connections API endpoint
@@ -70,7 +70,7 @@ export class Dapi {
   /** Data Jobs API endpoint
    *  @type {HttpDataSource<DataJob>} */
   get jobs(): HttpDataSource<DataJob> {
-    return new HttpDataSource(api.grok_Dapi_Jobs());
+    return new HttpDataSource(api.grok_Dapi_Jobs(), 'Function');
   }
 
   /** Jupyter Notebooks API endpoint
@@ -112,7 +112,7 @@ export class Dapi {
   /** Groups API endpoint
    *  @type {GroupsDataSource} */
   get groups(): GroupsDataSource {
-    return new GroupsDataSource(api.grok_Dapi_Groups());
+    return new GroupsDataSource(api.grok_Dapi_Groups(), 'Group');
   }
 
   /** Permissions API endpoint
@@ -124,13 +124,13 @@ export class Dapi {
   /** Scripts API endpoint
    *  @type {HttpDataSource<Script>} */
   get scripts(): HttpDataSource<Script> {
-    return new HttpDataSource(api.grok_Dapi_Scripts());
+    return new HttpDataSource(api.grok_Dapi_Scripts(), 'Function');
   }
 
   /** Projects API endpoint
    *  @type {HttpDataSource<Project>} */
   get projects(): ProjectsDataSource {
-    return new ProjectsDataSource(api.grok_Dapi_Projects());
+    return new ProjectsDataSource(api.grok_Dapi_Projects(), 'Project');
   }
 
   /** Environments API endpoint
@@ -217,10 +217,12 @@ export class Dapi {
  */
 export class HttpDataSource<T> {
   dart: any;
+  clsName: string;
 
   /** @constructs HttpDataSource */
-  constructor(s: any) {
+  constructor(s: any, clsName?: string | null) {
     this.dart = s;
+    this.clsName = clsName ?? '';
   }
 
   /** Returns all entities that satisfy the filtering criteria (see {@link filter}).
@@ -307,7 +309,7 @@ export class HttpDataSource<T> {
    * @param {string} include
    * @returns {HttpDataSource} */
   include(include: string): HttpDataSource<T> {
-    this.dart = api.grok_DataSource_Include(this.dart, _propsToDart(include));
+    this.dart = api.grok_DataSource_Include(this.dart, _propsToDart(include, this.clsName));
     return this;
   }
 }
@@ -361,8 +363,10 @@ export class AdminDataSource {
  * */
 export class GroupsDataSource extends HttpDataSource<Group> {
   /** @constructs CredentialsDataSource*/
-  constructor(s: any) {
-    super(s);
+  constructor(s: any, clsName: string) {
+    super(s, clsName);
+    this.include('members');
+    this.include('memberships');
   }
 
   /** Creates a new group
@@ -633,8 +637,9 @@ export class UserDataStorage {
  * */
 export class ProjectsDataSource extends HttpDataSource<Project> {
   /** @constructs TablesDataSource*/
-  constructor(s: any) {
-    super(s,);
+  constructor(s: any, clsName: string) {
+    super(s, clsName);
+    this.include('children');
   }
 
   /** Gets recent projects datasource
@@ -644,7 +649,7 @@ export class ProjectsDataSource extends HttpDataSource<Project> {
   }
 
   /** Opens the specified project. */
-  open(name: string, options?: {closeAll: boolean}): Promise<Project> {
+  open(name: string, options?: ProjectOpenOptions): Promise<Project> {
     return this
       .filter(name)
       .first()
