@@ -17,6 +17,7 @@ import {manualAlignmentWidget} from './widgets/manual-alignment';
 import {SARViewer, SARViewerVertical} from './viewers/sar-viewer';
 import {peptideMoleculeWidget, getMolecule} from './widgets/peptide-molecule';
 import {SubstViewer} from './viewers/subst-viewer';
+import {runKalign, testMSAEnoughMemory} from './utils/multiple-sequence-alignment';
 import {substTableWidget} from './widgets/subst-table';
 import {msaWidget} from './widgets/multiple-sequence-alignment';
 
@@ -226,6 +227,25 @@ export async function peptideMolfile2(aar: string): Promise<DG.Widget> {
 //output: dataframe result
 export async function multipleSequenceAlignment(col: DG.Column): Promise<DG.DataFrame> {
   return await msaWidget(col);
+}
+
+//name: Multiple sequence alignment for any column
+//input: dataframe table
+//input: column col
+//output: dataframe result
+export async function multipleSequenceAlignmentAny(table: DG.DataFrame, col: DG.Column): Promise<DG.DataFrame> {
+  const msaCol = await runKalign(col, false);
+  table.columns.add(msaCol);
+  return table;
+}
+
+//name: Test multiple sequence alignment for any column
+//input: dataframe table
+//input: column col
+//output: column result
+export async function runTestMSAEnoughMemory(table: DG.DataFrame, col: DG.Column) {
+  await testMSAEnoughMemory(col);
+  return col;
 }
 
 //name: Substitution
