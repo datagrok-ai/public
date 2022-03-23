@@ -6,6 +6,7 @@ import { filter, map } from 'rxjs/operators';
 import { Tutorial } from "../../../tutorial";
 import { _package } from '../../../package';
 import { interval } from 'rxjs';
+import wu from "wu";
 
 
 export class VirtualScreeningTutorial extends Tutorial {
@@ -270,7 +271,7 @@ export class VirtualScreeningTutorial extends Tutorial {
     if (!sketcherInput) return;
 
     await this.action('Filter the compounds by the substituents "CCl.OCc1ccccc1C"', interval(1000).pipe(
-      map(() => screeningData.rows.filters),
+      map(() => wu(screeningData.rows.filters).toArray()),
       filter((filters: string[]) => filters.some((f) => f === `${curatedMolColName}: contains Cc1ccccc1CO.CCl`))), // TODO: check if this string replacement is ok
       sketcherInput, 'As you might have noticed, some of the most potent molecules in the data happen ' +
       'to have them. The next step is to identify the scaffolds at the core of these molecules and look ' +
