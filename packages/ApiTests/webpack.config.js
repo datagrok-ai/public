@@ -10,7 +10,10 @@ module.exports = {
   },
   module: {
     rules: [
-      { test: /\.tsx?$/, loader: 'ts-loader' }
+      { test: /\.ts$/,
+        loader: 'ts-loader',
+        exclude: /node_modules/,
+      }
     ],
   },
   devtool: 'inline-source-map',

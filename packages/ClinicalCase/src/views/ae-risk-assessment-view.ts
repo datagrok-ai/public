@@ -3,11 +3,10 @@ import * as DG from "datagrok-api/dg";
 import * as ui from "datagrok-api/ui";
 import { study } from "../clinical-study";
 import { createAERiskAssessmentDataframe } from '../data-preparation/data-preparation';
-import { updateDivInnerHTML } from './utils';
-import { TREATMENT_ARM } from '../columns-constants';
+import { updateDivInnerHTML } from '../utils/utils';
 import { ClinicalCaseViewBase } from '../model/ClinicalCaseViewBase';
-import { AE_PERCENT, NEG_LOG10_P_VALUE, RISK_DIFFERENCE, SE_RD_WITH_SIGN_LEVEL } from '../constants';
-import { DataFrame } from 'datagrok-api/dg';
+import { AE_PERCENT, NEG_LOG10_P_VALUE, RISK_DIFFERENCE, SE_RD_WITH_SIGN_LEVEL } from '../constants/constants';
+import { AE_TERM_FIELD, TRT_ARM_FIELD, VIEWS_CONFIG } from '../views-config';
 
 export class AERiskAssessmentView extends ClinicalCaseViewBase {
 
@@ -15,8 +14,8 @@ export class AERiskAssessmentView extends ClinicalCaseViewBase {
   volcanoPlotXAxis = '';
   volcanoPlotYAxis = NEG_LOG10_P_VALUE;
   volcanoPlotMarkerSize = '';
-  placeboArm = [];
-  activeArm = [];
+  placeboArm: string[];
+  activeArm: string[];
   treatmentArmOptions: string[];
   riskAssessmentDiv = ui.box();
   initialGuide: any;
@@ -32,9 +31,11 @@ export class AERiskAssessmentView extends ClinicalCaseViewBase {
   }
 
   createView(): void {
+    this.activeArm = [];
+    this.placeboArm = [];
     this.volcanoPlotXAxis = RISK_DIFFERENCE;
     this.volcanoPlotMarkerSize = Object.values(this.sizeOptions)[0];
-    this.treatmentArmOptions = study.domains.dm.col(TREATMENT_ARM).categories;
+    this.treatmentArmOptions = study.domains.dm.col(VIEWS_CONFIG[this.name][TRT_ARM_FIELD]).categories;
     this.initialGuide = ui.info('Please select values for treatment/placebo arms in a property panel', '', false);
     updateDivInnerHTML(this.riskAssessmentDiv, this.initialGuide);
     this.root.append(this.riskAssessmentDiv);
@@ -51,7 +52,7 @@ export class AERiskAssessmentView extends ClinicalCaseViewBase {
   }
 
   updateRiskAssessmentDataframe() {
-    this.riskAssessmentDataframe = createAERiskAssessmentDataframe(study.domains.ae, study.domains.dm.clone(), this.placeboArm, this.activeArm, this.pValueLimit);
+    this.riskAssessmentDataframe = createAERiskAssessmentDataframe(study.domains.ae, study.domains.dm.clone(), VIEWS_CONFIG[this.name][TRT_ARM_FIELD], VIEWS_CONFIG[this.name][AE_TERM_FIELD], this.placeboArm, this.activeArm, this.pValueLimit);
     this.riskAssessmentDataframe.col(this.volcanoPlotXAxis).tags[DG.TAGS.COLOR_CODING_TYPE] = 'Conditional';
     this.riskAssessmentDataframe.col(this.volcanoPlotXAxis).tags[DG.TAGS.COLOR_CODING_CONDITIONAL] = `{"-100-0":"#0000FF","0-100":"#FF0000"}`;
   }
@@ -62,7 +63,8 @@ export class AERiskAssessmentView extends ClinicalCaseViewBase {
       y: this.volcanoPlotYAxis,
       color: this.volcanoPlotXAxis,
       showViewerFormulaLines: true,
-      size: this.volcanoPlotMarkerSize
+      size: this.volcanoPlotMarkerSize,
+      rowTooltip: `${VIEWS_CONFIG[this.name][AE_TERM_FIELD]}_ACTIVE\n${RISK_DIFFERENCE}\n${NEG_LOG10_P_VALUE}\n${AE_PERCENT}`
     });
 
     let lines: DG.FormulaLine[] = [];

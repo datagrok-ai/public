@@ -4,9 +4,10 @@
 	"version": "0.1.0",
 	"description": "",
 	"dependencies": {
+		"@datagrok-libraries/statistics": ">=0.0.15",
+		"@datagrok-libraries/utils": ">=0.0.16",
 		"cash-dom": "^8.1.0",
 		"datagrok-api": ">=0.116.0",
-		"@datagrok-libraries/utils": ">=0.0.16",
 		"jstat": "^1.9.5",
 		"moment": "^2.29.1",
 		"ts-loader": "^8.1.0",
@@ -25,8 +26,8 @@
 		"release-clinicalcase-public": "grok publish public --rebuild --release"
 	},
 	"devDependencies": {
-		"webpack-cli": "^4.7.2",
-		"@datagrok/charts": "latest"
+		"@datagrok/charts": "latest",
+		"webpack-cli": "^4.7.2"
 	},
 	"canEdit": [
 		"Developers"

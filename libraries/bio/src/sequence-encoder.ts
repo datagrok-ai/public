@@ -1,4 +1,4 @@
-import {assert} from '@datagrok-libraries/utils/src/operations';
+import {assert} from '@datagrok-libraries/utils/src/vector-operations';
 
 type SideChainScale = {[name: string]: number};
 type SideChainScaleCollection = {[name: string]: SideChainScale};

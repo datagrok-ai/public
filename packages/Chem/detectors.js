@@ -5,6 +5,13 @@ class ChemPackageDetectors extends DG.Package {
     'canonical_smiles', 'core', 'scaffold',
     'r1', 'r2', 'r3', 'r4', 'r5'];
 
+  /** @param s {String} - string to check
+   * @returns {boolean} */
+  static likelySmiles(s) {
+    return false;
+    //s.includes(' ')
+  }
+
   //tags: semTypeDetector
   //input: column col
   //output: string semType
@@ -22,6 +29,9 @@ class ChemPackageDetectors extends DG.Package {
 
       return col.semType;
     }
+
+    if (DG.Detector.sampleCategories(col, (s) => ChemPackageDetectors.likelySmiles(s)))
+      return DG.SEMTYPE.MOLECULE;
 
     return null;
   }

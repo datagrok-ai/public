@@ -1,6 +1,6 @@
 import * as DG from "datagrok-api/dg";
 import * as grok from 'datagrok-api/grok';
-import { VISIT_DAY, VISIT_NAME, SUBJECT_ID, TREATMENT_ARM } from "../columns-constants";
+import { VISIT_DAY, VISIT_NAME, SUBJECT_ID } from "../constants/columns-constants";
 
 export function getUniqueValues(df: DG.DataFrame, colName: string) {
     const uniqueIds = new Set();
@@ -29,6 +29,18 @@ export function getUniqueValues(df: DG.DataFrame, colName: string) {
     let rowCount = df.rowCount;
     for (let i = 0; i < rowCount; i++){
         if(column.isNone(i)){
+            df.rows.removeAt(i);
+            i--;
+            rowCount-=1;
+        }
+    }
+  }
+
+  export function filetrValueFromDf(df: DG.DataFrame, colName: string, value: any) {
+    let column = df.columns.byName(colName);
+    let rowCount = df.rowCount;
+    for (let i = 0; i < rowCount; i++){
+        if(column.get(i) === value){
             df.rows.removeAt(i);
             i--;
             rowCount-=1;
@@ -65,11 +77,16 @@ export function getUniqueValues(df: DG.DataFrame, colName: string) {
     const startDate = new Date(start) as any;
     const endDate = new Date(end) as any;
     const diffTime = endDate - startDate;
-    return Math.ceil(diffTime / (1000 * 60 * 60 * 24)); 
+    return Math.round(diffTime / (1000 * 60 * 60 * 24)); 
   }
 
 
 export function addDataFromDmDomain(df: DG.DataFrame, dm: DG.DataFrame, columnsToExtract: string[], columnsToExtractFromDm: string[], subjIdColName = SUBJECT_ID) {
+    const missingDmCols = columnsToExtractFromDm.filter(it => !dm.columns.names().includes(it));
+    if (missingDmCols.length) {
+        grok.shell.error(`Columns ${missingDmCols.join(',')} are missing in DM domain`);
+        return;
+    }
     let withArm = grok.data.joinTables(df, dm, [ subjIdColName ], [ SUBJECT_ID ], columnsToExtract, columnsToExtractFromDm, DG.JOIN_TYPE.LEFT, false);
    // columnsToExtractFromDm.forEach(it => changeEmptyStringsToUnknown(withArm, it));
     return withArm;
@@ -107,18 +124,19 @@ export function dictToString(dict: any){
     return str;
 }
 
-export function getVisitNamesAndDays(df: DG.DataFrame, allowNulls = false) {
+export function getVisitNamesAndDays(df: DG.DataFrame, nameCol: string, dayCol: string, allowNulls = false) {
     const data = df
-        .groupBy([VISIT_DAY, VISIT_NAME])
+        .groupBy([dayCol, nameCol])
         .aggregate();
     const visitsArray = [];
     let rowCount = data.rowCount;
     for (let i = 0; i < rowCount; i++) {
-        const day = data.getCol(VISIT_DAY).isNone(i) ? null : data.get(VISIT_DAY, i);
-        const name = data.getCol(VISIT_NAME).isNone(i) ? null : data.get(VISIT_NAME, i);
+        const day = data.getCol(dayCol).isNone(i) ? null : data.get(dayCol, i);
+        const name = data.getCol(nameCol).isNone(i) ? null : data.get(nameCol, i);
         if (allowNulls) {
-            if (!visitsArray.filter(it => it.day === day && it.name === name).length) {
-                visitsArray.push({day: day, name: name})
+            const nameStr = name ?? '';
+            if (!visitsArray.filter(it => it.day === day && it.name === nameStr).length) {
+                visitsArray.push({day: day, name: nameStr })
             };
 
         } else {

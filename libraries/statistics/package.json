@@ -8,6 +8,7 @@
   "description": "",
   "dependencies": {
     "datagrok-api": ">0.95.4",
+    "@datagrok-libraries/utils": ">=0.0.22",
     "cash-dom": "latest",
     "dayjs": "latest",
     "jstat": "latest"
@@ -22,6 +23,9 @@
   },
   "scripts": {
     "link": "npm link",
+    "link-api": "npm link datagrok-api",
+    "link-utils": "npm link @datagrok-libraries/utils",
+    "link-all": "npm link datagrok-api @datagrok-libraries/utils",
     "debug-statistics": "grok publish --rebuild",
     "release-statistics": "grok publish --rebuild --release",
     "build-statistics": "tsc",

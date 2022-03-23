@@ -442,7 +442,7 @@ Now open the folder with your package with `File → Open Folder`, add some brea
 button. You should see a view with a left-side pane and a green "Run" (play) button on top of it, with the neightbour
 dropdown repeating the name of the configuration from `launch.json`. If this is not the case, and you see some other
 names or an invitation to create a configuration, it means the pre-made `.vscode` folder isn't recognized by VS Code. In
-such case, check that you do `File → Open Folder` on the folder which _contains_ the pre-made `.vscode` folder.
+such case, check that you do `File → Open Folder` on the folder which *contains* the pre-made `.vscode` folder.
 
 First time you hit run, you'll need to enter your Datagrok credentials into the newly appeared Chrome window. After you
 have done this, close Chrome, stop debugging from VS Code and start debugging same way again. This time your breakpoints
@@ -467,9 +467,9 @@ Fill this configuration with the following:
 
 ![WebStorm: Shell Script configuration content](packages/webstorm-debugging-03.png)
 
-_Note._ This configuration looks controversial, but this is so only to overcome the known problems in WebStorm. It turns
+*Note.* This configuration looks controversial, but this is so only to overcome the known problems in WebStorm. It turns
 out both interpreter and script parameters have to be specified. Omitting the script parameter will work if you run
-the `Webpack & Publish` configuration standalone, but _won't_
+the `Webpack & Publish` configuration standalone, but *won't*
 work as part of the other's configuration build step, which we'd need later. As for the trailing `echo`, it is simply
 due to the way this build step works in WebStorm:
 it concatenates the interpreter line with the script call line, and we use it to suppress the redundant script call
@@ -511,7 +511,7 @@ in WebStorm IDEs. We broke the run step into two steps intentionally to alleviat
 [no longer required](https://intellij-support.jetbrains.com/hc/en-us/community/posts/360010507240-where-is-JETBRAINS-IDE-SUPPORT-chrome-extension-it-cant-be-found-anywhere-now-on-the-internet)
 to debug JavaScript from JetBrains IDEs. In February 2021 JetBrains has removed this plugin from the Chrome store.
 
-_See also:_
+*See also:*
 
 * Debugging JavaScript in WebStorm ([1](https://www.youtube.com/watch?v=Qcqnmle6Wu8),
   [2](https://www.youtube.com/watch?v=YNNDMpoGV0w))

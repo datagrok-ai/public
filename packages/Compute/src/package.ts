@@ -8,14 +8,10 @@ import {_functionParametersGrid} from './function-views/function-parameters-grid
 import {ModelCatalogView} from './model-catalog-view';
 import wu from 'wu';
 import {OutliersSelectionViewer} from './outliers-selection/outliers-selection-viewer';
+import {ModelsWidget} from './models-widget'
 
 let initCompleted: boolean = false;
 export const _package = new DG.Package();
-
-//name: test
-export function test() {
-  grok.shell.info(_package.webRoot);
-}
 
 //name: OutliersSelectionViewer
 //description: Creates an outliers selection viewer
@@ -23,6 +19,13 @@ export function test() {
 //output: viewer
 export function OutliersSelection() {
   return new OutliersSelectionViewer();
+}
+
+
+//output: widget result
+//tags: dashboard
+export function modelsWidget(): DG.Widget {
+  return new ModelsWidget();
 }
 
 //name: Export to Excel

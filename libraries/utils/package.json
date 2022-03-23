@@ -4,13 +4,12 @@
     "access": "public"
   },
   "fullName": "Utils",
-  "version": "0.0.23",
+  "version": "0.1.1",
   "description": "Common utilities",
   "dependencies": {
     "@types/node": "^14.14.37",
     "datagrok-api": ">=0.117.0",
     "dts-bundle": "^0.7.3",
-    "js-yaml": "^4.1.0",
     "node-fetch": "^2.6.0"
   },
   "devDependencies": {
@@ -20,6 +19,7 @@
   "scripts": {
     "link": "npm link",
     "link-api": "npm link datagrok-api",
+    "link-all": "npm link datagrok-api",
     "build": "tsc"
   }
 }

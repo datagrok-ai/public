@@ -1,7 +1,8 @@
 import * as grok from 'datagrok-api/grok';
 import * as ui from 'datagrok-api/ui';
 import * as DG from 'datagrok-api/dg';
-import {ChemPalette} from '../utils/chem-palette';
+// import {ChemPalette} from '../utils/chem-palette';
+import {PeptidesController} from '../peptides';
 
 /**
  * 3D representation widget of peptide molecule.
@@ -43,15 +44,16 @@ export async function peptideMoleculeWidget(pep: string): Promise<DG.Widget> {
 export function getMolecule(pep: string): string {
   const split = pep.split('-');
   const mols = [];
+  const chemPalette = PeptidesController.chemPalette;
   for (let i = 1; i < split.length - 1; i++) {
-    if (split[i] in ChemPalette.AASmiles) {
-      const aar = ChemPalette.AASmiles[split[i]];
-      mols[i] = aar.substr(0, aar.length - 1);
+    if (split[i] in chemPalette.AASmiles) {
+      const aar = chemPalette.AASmiles[split[i]];
+      mols[i] = aar.substring(0, aar.length - 1);
     } else if (!split[i] || split[i] == '-')
       mols[i] = '';
     else
       return '';
   }
-  const smiles = mols.join('') + 'O';
-  return smiles;
+
+  return mols.join('') + 'O';
 }

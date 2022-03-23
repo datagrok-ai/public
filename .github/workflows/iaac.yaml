@@ -3,7 +3,7 @@ name: "IaaC script Security Scan"
 on:
   push:
     paths:
-      - 'help/develop/admin/deploy/cloudformation.json'
+      - 'help/develop/admin/deploy/cloudformation/cloudformation.json'
     branches:
       - 'master'
 jobs:
@@ -19,6 +19,8 @@ jobs:
           SNYK_TOKEN: ${{ secrets.SNYK_TOKEN }}
         with:
           args: --severity-threshold=high
+          sarif: true
+          file: 'help/develop/admin/deploy/cloudformation/cloudformation.json'
       - uses: github/codeql-action/upload-sarif@v1
         with:
           sarif_file: snyk.sarif

@@ -27,14 +27,14 @@ export const entExtract = {
 };
 
 export const helpUrls = {
-  Column: { wiki: 'https://datagrok.ai/help/overview/table', class: 'https://datagrok.ai/js-api/classes/dg.column' },
-  DataConnection: { wiki: 'https://datagrok.ai/help/develop/how-to/access-data', class: 'https://datagrok.ai/js-api/classes/dg.dataconnection' },
-  DataFrame: { wiki: 'https://datagrok.ai/help/overview/table', class: 'https://datagrok.ai/js-api/classes/dg.dataframe' },
-  DataQuery: { wiki: 'https://datagrok.ai/help/develop/how-to/access-data', class: 'https://datagrok.ai/js-api/classes/dg.dataquery' },
-  FileInfo: { wiki: 'https://datagrok.ai/help/develop/how-to/access-data', class: 'https://datagrok.ai/js-api/classes/dg.fileinfo' },
-  Script: { wiki: 'https://datagrok.ai/help/compute/scripting', class: 'https://datagrok.ai/js-api/classes/dg.script' },
-  ViewLayout: { wiki: 'https://datagrok.ai/help/develop/how-to/layouts', class: 'https://datagrok.ai/js-api/classes/dg.viewlayout' },
-  View: { wiki: 'https://datagrok.ai/help/develop/ui#views', class: 'https://datagrok.ai/js-api/classes/dg.view' },
+  Column: { wiki: 'https://datagrok.ai/help/overview/table', class: 'https://datagrok.ai/js-api/classes/dg.Column' },
+  DataConnection: { wiki: 'https://datagrok.ai/help/develop/how-to/access-data', class: 'https://datagrok.ai/js-api/classes/dg.DataConnection' },
+  DataFrame: { wiki: 'https://datagrok.ai/help/overview/table', class: 'https://datagrok.ai/js-api/classes/dg.DataFrame' },
+  DataQuery: { wiki: 'https://datagrok.ai/help/develop/how-to/access-data', class: 'https://datagrok.ai/js-api/classes/dg.DataQuery' },
+  FileInfo: { wiki: 'https://datagrok.ai/help/develop/how-to/access-data', class: 'https://datagrok.ai/js-api/classes/dg.FileInfo' },
+  Script: { wiki: 'https://datagrok.ai/help/compute/scripting', class: 'https://datagrok.ai/js-api/classes/dg.Script' },
+  ViewLayout: { wiki: 'https://datagrok.ai/help/develop/how-to/layouts', class: 'https://datagrok.ai/js-api/classes/dg.ViewLayout' },
+  View: { wiki: 'https://datagrok.ai/help/develop/ui#views', class: 'https://datagrok.ai/js-api/classes/dg.View' },
 };
 
 export const tags = {

@@ -13,7 +13,7 @@
 		"css/molstar.css"
 	],
 	"dependencies": {
-		"@datagrok-libraries/utils": ">=0.0.15",
+		"@datagrok-libraries/utils": ">=0.0.22",
 		"cash-dom": "latest",
 		"datagrok-api": ">=0.95.11",
 		"dayjs": "latest",
