@@ -3,6 +3,7 @@ import * as ui from 'datagrok-api/ui';
 import $ from 'cash-dom';
 import { filter } from 'rxjs/operators';
 import { Tutorial } from '../../../tutorial';
+import wu from 'wu';
 
 
 export class FiltersTutorial extends Tutorial {
@@ -48,7 +49,7 @@ export class FiltersTutorial extends Tutorial {
     await this.action('Click on the "AS" label within the "DIS_POP" filter',
       this.t!.onFilterChanged.pipe(filter(() => {
         const filters = this.t!.rows.filters;
-        return filters.length === 1 && filters[0] === 'DIS_POP: AS';
+        return filters.length === 1 && filters.get(0) === 'DIS_POP: AS';
       })), null, catFilterInfo);
 
     const keysToSwitch = 'A convenient way to quickly browse data by categories is to click ' +
@@ -58,7 +59,7 @@ export class FiltersTutorial extends Tutorial {
     await this.action('Filter the dataset by the most common disease',
     this.t!.onFilterChanged.pipe(filter(() => {
       const filters = this.t!.rows.filters;
-      return filters.length === 1 && filters[0] === 'DIS_POP: RA';
+      return filters.length === 1 && filters.get(0) === 'DIS_POP: RA';
     })), null, keysToSwitch);
 
     const indicatorInfo = 'To filter by multiple categories, either check each label manually ' +
@@ -67,7 +68,7 @@ export class FiltersTutorial extends Tutorial {
       this.t!.onFilterChanged.pipe(filter(() => {
         const filters = this.t!.rows.filters;
         return filters.length === 1 &&
-          filters[0] === 'DIS_POP: AS, Indigestion, PsA, Psoriasis, UC';
+          filters.get(0) === 'DIS_POP: AS, Indigestion, PsA, Psoriasis, UC';
       })), $('div.d4-flex-row.d4-filter-header').filter((idx, el) => $(el)
         .find('label.d4-filter-column-name')[0]?.textContent === 'DIS_POP')
         .find('div.d4-filter-indicator')[0],
@@ -82,7 +83,7 @@ export class FiltersTutorial extends Tutorial {
       this.t!.onFilterChanged.pipe(filter(() => {
         let rMatch, sMatch;
         rMatch = sMatch = false;
-        this.t!.rows.filters.forEach((f) => {
+        wu(this.t!.rows.filters).forEach((f) => {
           if (f === 'RACE: Asian, Black') {
             rMatch = true;
           } else if (f === 'SEX: F') {
@@ -121,7 +122,7 @@ export class FiltersTutorial extends Tutorial {
       'the values that pass filter. For more accurate results, use the <i class="grok-icon fal fa-keyboard"></i> ' +
       'icon in the numeric filter header. It toggles the range inputs.';
     await this.action('Find records for people aged 40 to 60',
-      this.t!.onFilterChanged.pipe(filter(() => this.t!.rows.filters.some((s) => s === 'AGE: [40,60]'))),
+      this.t!.onFilterChanged.pipe(filter(() => wu(this.t!.rows.filters).some((s) => s === 'AGE: [40,60]'))),
       $('div.d4-flex-row.d4-filter-header').filter((idx, el) => $(el)
         .find('label.d4-filter-column-name')[0]?.textContent === 'AGE')
         .find('i.grok-icon.fa-keyboard')[0],
