@@ -655,7 +655,7 @@ export class GridCellRendererProxy extends GridCellRenderer {
   }
 
   renderInternal(g: CanvasRenderingContext2D, x: number, y: number, w: number, h: number, gridCell: GridCell, cellStyle: GridCellStyle): void {
-    api.grok_GridCellRenderer_Render(this.dart, x, y, w, h, gridCell.dart);
+    api.grok_GridCellRenderer_Render(this.dart, g, x, y, w, h, gridCell.dart);
   }
 }
 
