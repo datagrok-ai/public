@@ -129,13 +129,8 @@ export class GridCell {
   }
 
   /** Custom text to be shown in a cell . */
-  get customText(): string {
-    return api.grok_GridCell_Get_CustomText(this.dart);
-  }
-
-  set customText(x: string) {
-    api.grok_GridCell_Set_CustomText(this.dart, x);
-  }
+  get customText(): string { return api.grok_GridCell_Get_CustomText(this.dart); }
+  set customText(x: string) { api.grok_GridCell_Set_CustomText(this.dart, x); }
 
   /** @returns {Grid} this cell belongs to. */
   get grid(): Grid {
@@ -160,6 +155,11 @@ export class GridCell {
    */
   get bounds(): Rect {
     return Rect.fromDart(api.grok_GridCell_Get_Bounds(this.dart));
+  }
+
+  /** Returns grid cell renderer. */
+  get renderer(): GridCellRenderer {
+    return api.grok_GridCell_Get_Renderer(this.dart);
   }
 }
 
@@ -510,6 +510,17 @@ export class Grid extends Viewer {
   get onRowsSorted(): Observable<any> { return __obs('d4-grid-rows-sorted', this.dart); }
 
   get onCellValueEdited(): Observable<GridCell> { return __obs('d4-grid-cell-value-edited', this.dart); }
+  get onCurrentCellChanged(): Observable<GridCell> { return __obs('d4-grid-current-cell-changed', this.dart); }
+  get onCellClick(): Observable<GridCell> { return __obs('d4-grid-cell-click', this.dart); }
+  get onCellDoubleClick(): Observable<GridCell> { return __obs('d4-grid-cell-double-click', this.dart); }
+  get onCellMouseDown(): Observable<GridCell> { return __obs('d4-grid-cell-mouse-down', this.dart); }
+  get onCellKeyDown(): Observable<GridCell> { return __obs('d4-grid-cell-key-down', this.dart); }
+  get onRowEnter(): Observable<GridCell> { return __obs('d4-grid-row-enter', this.dart); }
+
+  get onBeforeDrawOverlay(): Observable<EventData> { return __obs('d4-grid-before-draw-overlay', this.dart); }
+  get onAfterDrawOverlay(): Observable<EventData> { return __obs('d4-grid-after-draw-overlay', this.dart); }
+  get onBeforeDrawContent(): Observable<EventData> { return __obs('d4-grid-before-draw-content', this.dart); }
+  get onAfterDrawContent(): Observable<EventData> { return __obs('d4-grid-after-draw-content', this.dart); }
 
   /**
    * Currently visible cells
@@ -623,6 +634,28 @@ export class GridCellRenderer extends CanvasRenderer {
 
   static register(renderer: any): void {
     api.grok_GridCellRenderer_Register(renderer);
+  }
+}
+
+
+/** Proxy class for the Dart-based grid cell renderers. */
+export class GridCellRendererProxy extends GridCellRenderer {
+  dart: any;
+
+  constructor(dart: any) {
+    super();
+    this.dart = dart;
+  }
+
+  get name(): string { return api.grok_GridCellRenderer_Get_CellType(this.dart); }
+  get cellType(): string { return api.grok_GridCellRenderer_Get_CellType(this.dart); }
+
+  render(g: CanvasRenderingContext2D, x: number, y: number, w: number, h: number, value: any, context: any): void {
+    this.renderInternal(g, x, y, w, h, value, context);
+  }
+
+  renderInternal(g: CanvasRenderingContext2D, x: number, y: number, w: number, h: number, gridCell: GridCell, cellStyle: GridCellStyle): void {
+    api.grok_GridCellRenderer_Render(this.dart, x, y, w, h, gridCell.dart);
   }
 }
 
