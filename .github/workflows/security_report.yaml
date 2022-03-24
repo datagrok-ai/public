@@ -1,0 +1,77 @@
+name: "Security Report"
+
+on:
+  push:
+    paths-ignore:
+      - '**/*.md'
+      - '**/*.txt'
+    branches-ignore:
+      - 'dependabot/**'
+
+jobs:
+  report:
+    runs-on: ubuntu-20.04
+    name: Gererate vulnerability scan report
+    permissions:
+      security-events: write
+    strategy:
+      fail-fast: false
+      matrix:
+        target: [ 'connectors', 'packages', 'tools', 'js-api', 'libraries' ]
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v2
+      - name: Set up JDK 8
+        if: matrix.target == 'connectors'
+        uses: actions/setup-java@v2
+        with:
+          java-version: '8'
+          distribution: 'adopt'
+          cache: maven
+      - name: Build with Maven
+        if: matrix.target == 'connectors'
+        working-directory: ./${{ matrix.target }}
+        run: mvn -Dmaven.test.skip=true package
+      - name: Create SBOM by Syft
+        uses: docker://anchore/syft:latest
+        with:
+          args: dir:./${{ matrix.target }} -o json --file ${{ matrix.target }}.sbom.syft.json
+      - name: Scan SBOM by Grype
+        continue-on-error: true
+        env:
+          GRYPE_FAIL_ON_SEVERITY: critical
+        uses: docker://anchore/grype:latest
+        with:
+          args: sbom:./${{ matrix.target }}.sbom.syft.json -o json --file ${{ matrix.target }}.grype.json
+      - name: Upload Artifact
+        uses: actions/upload-artifact@v2
+        with:
+          name: ${{ matrix.target }}.grype.json
+          path: ${{ matrix.target }}.grype.json
+          retention-days: 7
+      - name: Create CSV from JSON scan
+        run: |
+          jq -r '[
+            "CVE",
+            "Link",
+            "Severity",
+            "Package Name",
+            "Current version",
+            "Fixed Version",
+            "From"
+          ],
+          (.matches | group_by(.vulnerability.severity)[][]| [
+            .vulnerability.id,
+            .vulnerability.dataSource,
+            .vulnerability.severity,
+            .artifact.name,
+            .artifact.version,
+            (.vulnerability.fix.versions | join("\n")),
+            .artifact.locations[].path
+          ]) | @csv' ${{ matrix.target }}.grype.json > ${{ matrix.target }}.report.csv
+      - name: Upload Artifact
+        uses: actions/upload-artifact@v2
+        with:
+          name: ${{ matrix.target }}.report.csv
+          path: ${{ matrix.target }}.report.csv
+          retention-days: 7
