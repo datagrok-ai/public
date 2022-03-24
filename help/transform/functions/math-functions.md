@@ -217,12 +217,12 @@ Returns the 10-based logarithm of `x`.
 Log10(100)    // 2
 ```
 
-## <a name="max"></a>Max(`x`, `y`)
+## <a name="max"></a>Max([`x`, `y` ...])
 
 Returns the maximum of `x` and `y`.
 
 ```javascript
-Max(15, 21)    // 21
+Max([15, 21])    // 21
 ```
 
 ## <a name="median"></a>Median([`x1`, `x2`, `x3`...])
@@ -234,12 +234,12 @@ Median([0, 2, 5])       // 2
 Median([0, 2, 5, 9])    // 2.5
 ```
 
-## <a name="min"></a>Min(`x`, `y`)
+## <a name="min"></a>Min([`x`, `y` ...])
 
 Returns the minimum of `x` and `y`.
 
 ```javascript
-Min(15, 21)    // 15
+Min([15, 21])    // 15
 ```
 
 ## <a name="mod"></a>Mod(`x`, `y`)
