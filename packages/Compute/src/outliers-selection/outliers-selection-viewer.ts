@@ -131,6 +131,20 @@ export class OutliersSelectionViewer extends DG.JsViewer {
     });
 
     const updateGroupsTable = () => {
+      if ((inputData.columns as DG.ColumnList).byName(OUTLIER_RATIONALE_COL_LABEL)) {
+        for (let i = 0; i < inputData.rowCount; i++) {
+          if (inputData.columns.byName(IS_OUTLIER_COL_LABEL).get(i)) {
+            if (inputData.columns.byName(OUTLIER_RATIONALE_COL_LABEL).get(i) === '') {
+              (inputData.columns as DG.ColumnList).byName(OUTLIER_RATIONALE_COL_LABEL).set(i, "Manual", false)
+            }
+          } else {
+            if (inputData.columns.byName(OUTLIER_RATIONALE_COL_LABEL).get(i) !== '') {
+              (inputData.columns as DG.ColumnList).byName(OUTLIER_RATIONALE_COL_LABEL).set(i, '', false)
+            }
+          }
+        }
+      }
+
       const uniqueValues: {[key:string]: number} = {};
       if ((inputData.columns as DG.ColumnList).byName(OUTLIER_RATIONALE_COL_LABEL)) {
         for (let i = 0; i < inputData.rowCount; i++) {
@@ -173,13 +187,6 @@ export class OutliersSelectionViewer extends DG.JsViewer {
     inputData.selection.setAll(false);
 
     updateGroupsTable();
-
-    // const info = ui.info(
-    //   ui.div([
-    //     ui.p('Hold the “SHIFT” key and start to draw a freehand selection on the plot area'),
-    //   ], {style: {'white-space': 'pre-wrap'}}),
-    // );
-    // info.style.marginBottom = '0px';
 
     this.root.innerHTML = '';
     this.root.append(
