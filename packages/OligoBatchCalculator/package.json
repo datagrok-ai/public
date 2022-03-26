@@ -1,7 +1,7 @@
 {
 	"name": "@datagrok/oligo-batch-calculator",
 	"beta": false,
-	"friendlyName": "OligoBatchCalculator",
+	"friendlyName": "Oligo Batch Calculator",
 	"version": "0.0.3",
 	"description": "",
 	"dependencies": {
