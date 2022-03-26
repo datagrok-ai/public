@@ -16,6 +16,8 @@
 		"typescript": "latest"
 	},
 	"scripts": {
+		"link-all": "npm link datagrok-api  @datagrok-libraries/utils",
+		"link-api": "npm link datagrok-api ",
 		"debug-powergrid": "grok publish --rebuild",
 		"release-powergrid": "grok publish --rebuild --release",
 		"build-powergrid": "webpack",

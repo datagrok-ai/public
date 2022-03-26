@@ -4,6 +4,7 @@ import * as ui from 'datagrok-api/ui';
 import * as DG from 'datagrok-api/dg';
 import {ImageCellRenderer} from "./cell-types/image-cell-renderer";
 import {HyperlinkCellRenderer} from "./cell-types/hyperlink-cell-renderer";
+import {TestCellRenderer} from "./cell-types/test-cell-renderer";
 
 export const _package = new DG.Package();
 
@@ -21,4 +22,12 @@ export function imageUrlCellRenderer() {
 //output: grid_cell_renderer result
 export function hyperlinkCellRenderer() {
   return new HyperlinkCellRenderer();
+}
+
+//name: testCellRenderer
+//tags: cellRenderer, cellRenderer-test
+//meta.cellType: test
+//output: grid_cell_renderer result
+export function testCellRenderer() {
+  return new TestCellRenderer();
 }
