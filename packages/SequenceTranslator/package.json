@@ -1,6 +1,6 @@
 {
   "name": "@datagrok/sequence-translator",
-  "friendlyName": "SequenceTranslator",
+  "friendlyName": "Sequence Translator",
   "version": "0.0.8",
   "description": "",
   "dependencies": {
