@@ -9,10 +9,6 @@ import {PeptidesController} from '../peptides';
 
 /**
  * Structure-activity relationship viewer.
- *
- * @export
- * @class SARViewer
- * @extends {DG.JsViewer}
  */
 export class SARViewer extends DG.JsViewer {
   protected viewerGrid: DG.Grid | null;
@@ -37,11 +33,6 @@ export class SARViewer extends DG.JsViewer {
   // protected amountOfBestAARs: number;
   // duplicatesHandingMethod: string;
 
-  /**
-   * Creates an instance of SARViewer.
-   *
-   * @memberof SARViewer
-   */
   constructor() {
     super();
 
@@ -129,12 +120,7 @@ export class SARViewer extends DG.JsViewer {
     await this.render();
   }
 
-  /**
-   * Viewer render function.
-   *
-   * @param {boolean} [computeData=true] Recalculate data.
-   * @memberof SARViewer
-   */
+
   async render(computeData = true) {
     if (!this.initialized)
       return;
@@ -180,10 +166,6 @@ export class SARViewer extends DG.JsViewer {
 
 /**
  * Vertical structure activity relationship viewer.
- *
- * @export
- * @class SARViewerVertical
- * @extends {DG.JsViewer}
  */
 export class SARViewerVertical extends DG.JsViewer {
   viewerVGrid: DG.Grid | null;
