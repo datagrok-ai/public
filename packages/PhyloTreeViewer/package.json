@@ -1,6 +1,6 @@
 {
 	"name": "@datagrok/phylotree-viewer",
-	"friendlyName": "PhyloTreeViewer",
+	"friendlyName": "Phylo Tree",
 	"version": "0.0.4",
 	"description": "",
 	"dependencies": {
