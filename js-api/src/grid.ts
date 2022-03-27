@@ -161,6 +161,10 @@ export class GridCell {
   get renderer(): GridCellRenderer {
     return api.grok_GridCell_Get_Renderer(this.dart);
   }
+
+  /** Gets or sets HTML element for this grid cell. */
+  get element(): HTMLElement { return api.grok_GridCell_Get_Element(this.dart); }
+  set element(e: HTMLElement) { api.grok_GridCell_Set_Element(this.dart, e); }
 }
 
 /** Represents a grid column */
