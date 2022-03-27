@@ -3,7 +3,7 @@ import {TYPE, VIEWER, ViewerPropertyType, ViewerType} from "./const";
 import {Column, DataFrame} from "./dataframe.js";
 import {DateTime, Property, PropertyOptions} from "./entities";
 import {Menu, ObjectPropertyBag, Widget} from "./widgets";
-import {_toJson} from "./utils";
+import {_toJson, MapProxy} from "./utils";
 import {toJs} from "./wrappers";
 import {__obs, StreamSubscription} from "./events";
 import * as rxjs from "rxjs";
@@ -50,6 +50,7 @@ export class TypedEventArgs<TData> {
 export class Viewer extends Widget {
   props: ObjectPropertyBag & any | undefined;
 
+  public tags: any;
   private _meta: ViewerMetaHelper | undefined;
 
   /** @constructs Viewer */
@@ -57,9 +58,11 @@ export class Viewer extends Widget {
     super(root ?? api.grok_Viewer_Root(dart));
     this.dart = dart;
 
-    if (dart != null)
-    /** @member {ObjectPropertyBag} */
+    if (dart != null) {
+      /** @member {ObjectPropertyBag} */
       this.props = new ObjectPropertyBag(this, api.grok_Viewer_Get_Look(this.dart));
+      this.tags = new MapProxy(api.grok_Viewer_Get_Tags(this.dart), 'tags', 'string');
+    }
   }
 
   /** Creates a new viewer of the specified type.

@@ -830,6 +830,8 @@ export class Property {
   get name(): string { return api.grok_Property_Get_Name(this.dart); }
   set name(s: string) { api.grok_Property_Set_Name(this.dart, s); }
 
+  get caption(): string { return api.grok_Property_Get_Caption(this.dart); }
+
   /** Property category */
   get category(): string { return api.grok_Property_Get_Category(this.dart); }
   set category(s: string) { api.grok_Property_Set_Category(this.dart, s); }

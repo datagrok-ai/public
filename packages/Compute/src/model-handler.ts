@@ -85,7 +85,7 @@ export class ModelHandler extends DG.ObjectHandler {
         grok.shell.error(error);
       });
     } else {
-      let view = DG.FunctionView.createFromFunc(x);
+      let view = new DG.FunctionView(x);
       view.parentCall = parentCall!;
       grok.shell.addView(view);
     }
