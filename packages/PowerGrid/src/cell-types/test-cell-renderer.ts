@@ -1,5 +1,6 @@
 import * as ui from 'datagrok-api/ui';
 import * as DG from 'datagrok-api/dg';
+import * as grok from 'datagrok-api/grok';
 import {GridCell} from "datagrok-api/dg";
 
 export class TestCellRenderer extends DG.GridCellRenderer {
@@ -38,5 +39,18 @@ export class TestCellRenderer extends DG.GridCellRenderer {
     const g = gridCell.grid.canvas.getContext('2d')!;
     g.fillStyle = 'red';
     g.fillRect(r.x, r.y, r.width, r.height);
+  }
+}
+
+
+export class HtmlTestCellRenderer extends DG.GridCellRenderer {
+  get name() { return 'htest'; }
+  get cellType() { return 'htest'; }
+
+  get defaultWidth(): number | null { return 200; }
+  get defaultHeight(): number | null { return 100; }
+
+  render(g: CanvasRenderingContext2D, x: number, y: number, w: number, h: number, gridCell: DG.GridCell, cellStyle: DG.GridCellStyle) {
+    gridCell.element = ui.button('foo', () => grok.shell.info('' + gridCell.gridRow));
   }
 }
