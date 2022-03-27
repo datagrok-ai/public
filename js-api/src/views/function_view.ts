@@ -105,6 +105,7 @@ export class FunctionView extends ViewBase {
           p.processOutput();
 
           if (p.property.propertyType == TYPE.DATA_FRAME) {
+            console.log('add df');
           this.appendResultDataFrame(
             p.value, p, { caption: p.property.name, category: p.property.category});
           }
@@ -131,7 +132,7 @@ export class FunctionView extends ViewBase {
     let caption = options?.caption;
     let viewers: Viewer[] = param.aux['viewers'] ?? [];
     caption ??= param.aux['viewerTitle'] ?? ((this.singleDfParam && viewers.length == 1) ? '' : param.property.caption) ?? '';
-    let existingViewers: Viewer[] = this.paramViewers.get(param.name) ?? [];
+    let existingViewers: Viewer[] | undefined = this.paramViewers.get(param.name);
     if (existingViewers != null) {
       for (let v of existingViewers) {
         v.dataFrame = df;
@@ -146,8 +147,9 @@ export class FunctionView extends ViewBase {
     let hideList: HTMLElement[] = [];
     let blocks: number = 0;
     let blockSize: number = 0;
-    let gridWrapper = div('ui-div,ui-block');
+    let gridWrapper = div([], 'ui-div,ui-block');
 
+    console.log(viewers);
     /*  var gridSwitch = !viewers?.any((v) => v
       is
       GridCore
@@ -235,15 +237,16 @@ export class FunctionView extends ViewBase {
     for (let viewer of viewers) {
       existingViewers.push(viewer);
       let block = viewer.tags['.block-size'] ?? 100;
-      let wrapper = div('ui-div,ui-block,ui-block-${block}');
+      let wrapper = div([], `ui-div,ui-block,ui-block-${block}`);
       if (blocks + block <= 100) {
         hideList.push(wrapper);
         blockSize += block;
       }
       blocks += block;
       wrapper.appendChild(header);
-      header = div('grok-func-results-header');
-      wrapper.append(viewer.root);
+      header = div([], 'grok-func-results-header');
+      wrapper.appendChild(viewer.root);
+      let height = 400;
       /*        if (viewer.type == 'grid')
               {
                 // @ts-ignore
@@ -252,16 +255,18 @@ export class FunctionView extends ViewBase {
                 if (totalHeight < height)
                   height = totalHeight;
               }*/
-      viewer.root.style.height = '${height}px';
+      viewer.root.style.height = `${height}px`;
       this._appendResultElement(wrapper, options?.category);
+      console.log('add viewer');
     }
 
   }
 
   _appendResultElement(d: HTMLElement, category?: string) {
-    if (category != null && this.resultsTabControl != null && this.resultTabs.get(category) != null)
-      this.resultTabs.get(category)!.appendChild(d);
-    else
+    console.log('element');
+   // if (category != null && this.resultsTabControl != null && this.resultTabs.get(category) != null)
+   //   this.resultTabs.get(category)!.appendChild(d);
+   // else
       this.resultsDiv.appendChild(d);
   }
 
