@@ -640,6 +640,7 @@ export class GridCellRenderer extends CanvasRenderer {
   onKeyPress(gridCell: GridCell, e: KeyboardEvent): void {}
 
   onMouseEnter(gridCell: GridCell, e: MouseEvent): void {}
+  onMouseLeave(gridCell: GridCell, e: MouseEvent): void {}
   onMouseDown(gridCell: GridCell, e: MouseEvent): void {}
   onMouseUp(gridCell: GridCell, e: MouseEvent): void {}
   onMouseMove(gridCell: GridCell, e: MouseEvent): void {}

@@ -11,23 +11,32 @@ export class TestCellRenderer extends DG.GridCellRenderer {
 
   render(g: CanvasRenderingContext2D, x: number, y: number, w: number, h: number, gridCell: DG.GridCell, cellStyle: DG.GridCellStyle) {
     g.fillStyle = 'black';
-    g.fillText(`test`, x + 3, y + 3);
+    g.fillText(`test`, x + 25, y + 10);
   }
 
   onKeyDown(gridCell: GridCell, e: KeyboardEvent): void { console.log('keyDown', gridCell, e); }
   onKeyPress(gridCell: GridCell, e: KeyboardEvent): void { console.log('keyPress', gridCell, e); }
 
-  onMouseEnter(gridCell: GridCell, e: MouseEvent): void { console.log('mouseEnter', gridCell, e); }
+  onMouseLeave(gridCell: GridCell, e: MouseEvent): void { console.log('mouseLeave', gridCell, e); }
   onMouseDown(gridCell: GridCell, e: MouseEvent): void { console.log('mouseDown', gridCell, e); }
   onMouseUp(gridCell: GridCell, e: MouseEvent): void { console.log('mouseUp', gridCell, e); }
   onClick(gridCell: GridCell, e: MouseEvent): void { console.log('click', gridCell, e); }
   onDoubleClick(gridCell: GridCell, e: MouseEvent): void { console.log('doubleClick', gridCell, e); }
 
-  // dynamic rendering
+  // rendering in mouse event coordinates
   onMouseMove(gridCell: GridCell, e: MouseEvent): void {
     console.log('mouseMove', gridCell, e);
     const g = gridCell.grid.canvas.getContext('2d')!;
     g.fillStyle = 'blue';
     g.fillRect(e.offsetX, e.offsetY, 2, 2);
+  }
+
+  // rendering in cell coordinates
+  onMouseEnter(gridCell: GridCell, e: MouseEvent): void {
+    console.log('mouseEnter', gridCell, e);
+    const r = gridCell.bounds;
+    const g = gridCell.grid.canvas.getContext('2d')!;
+    g.fillStyle = 'red';
+    g.fillRect(r.x, r.y, r.width, r.height);
   }
 }
