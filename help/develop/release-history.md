@@ -1,6 +1,21 @@
 <!-- TITLE: Release History -->
 <!-- SUBTITLE: -->
 
+# 2022-03-28 Dev build 0.142.0
+
+## Latest Docker Images
+
+* Datagrok: 
+  *  `docker pull datagrok/datagrok:0.142.0`
+  *  `docker pull datagrok/datagrok:latest`
+  
+* [Docker-Compose](admin/docker-compose.md)
+
+## Addressed Issues
+
+* Unable to set value to datetime column from JS 
+
+
 # 2022-03-28 Dev build 0.141.0
 
 ## Latest Docker Images
