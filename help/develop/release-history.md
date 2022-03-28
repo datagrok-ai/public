@@ -1,6 +1,22 @@
 <!-- TITLE: Release History -->
 <!-- SUBTITLE: -->
 
+# 2022-03-28 Dev build 0.141.0
+
+## Latest Docker Images
+
+* Datagrok: 
+  *  `docker pull datagrok/datagrok:0.141.0`
+  *  `docker pull datagrok/datagrok:latest`
+  
+* [Docker-Compose](admin/docker-compose.md)
+
+## Addressed Issues
+
+* Merged in kdoncov/grok_connect_vulnerability_fixes (pull request #163) 
+* Remove deploy folder 
+
+
 # 2022-03-28 Dev build 0.140.0
 
 ## Latest Docker Images
