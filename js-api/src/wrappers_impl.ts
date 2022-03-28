@@ -1,6 +1,7 @@
 import {Property} from "./entities";
 import {TYPE, TYPES_SCALAR} from "./const";
 import {TypedEventArgs} from "./viewer";
+import dayjs from "dayjs";
 
 /** Converts list of Dart objects to JavaScript objects by calling {@link toJs}
  * @param {object[]} params
@@ -62,6 +63,8 @@ export function toDart(x: any): any {
     return x.toDart();
   if (typeof x.dart !== 'undefined')
     return x.dart;
+  if (dayjs.isDayjs(x))
+    return x.valueOf() * 1000;
   return x;
 }
 
