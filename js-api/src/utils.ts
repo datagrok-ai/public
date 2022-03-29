@@ -304,7 +304,7 @@ export function _identityInt32(length: number): Int32Array {
 /**
  * Inspired by https://github.com/Yomguithereal/mnemonist/blob/master/lru-cache.js
  * */
-export class LruCache {
+export class LruCache<K = any, V = any> {
   private capacity: number;
   public onItemEvicted: Function | null;
   private items: {};
@@ -334,7 +334,7 @@ export class LruCache {
    * @param {number} pointer - Pointer of the value to splay on top.
    * @return {LruCache}
    */
-  splayOnTop(pointer: number) {
+  splayOnTop(pointer: number): LruCache<K, V> {
     let oldHead = this.head;
 
     if (this.head === pointer)
@@ -361,9 +361,8 @@ export class LruCache {
    * Checks whether the key exists in the cache.
    *
    * @param  {any} key   - Key.
-   * @return {boolean}
    */
-  has(key: any) {
+  has(key: any): boolean {
     return key in this.items;
   }
 
@@ -372,9 +371,8 @@ export class LruCache {
    *
    * @param  {any} key   - Key.
    * @param  {any} value - Value.
-   * @return {undefined}
    */
-  set(key: any, value: any) {
+  set(key: any, value: any): void {
 
     // The key already exists, we just need to update the value and splay on top
     // @ts-ignore
@@ -417,15 +415,14 @@ export class LruCache {
   /**
    * Gets the value attached to the given key, and makes it the most recently used item.
    *
-   * @param  {any} key   - Key.
-   * @return {any}
+   * @param  {any} key - Key.
    */
-  get(key: any) {
+  get(key: any): V | undefined {
     // @ts-ignore
     let pointer = this.items[key];
 
     if (typeof pointer === 'undefined')
-      return;
+      return undefined;
 
     this.splayOnTop(pointer);
 
@@ -440,9 +437,9 @@ export class LruCache {
    * @param  {Function} createFromKey - Function to create a new item.
    * @return {any}
    */
-  getOrCreate(key: any, createFromKey: (key: any) => any) {
+  getOrCreate(key: K, createFromKey: (key: K) => V): V {
     let value = this.get(key);
-    if (typeof value !== 'undefined')
+    if (value !== undefined)
       return value;
     else {
       let item = createFromKey(key);
