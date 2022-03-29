@@ -1,10 +1,8 @@
-import * as grok from 'datagrok-api/grok';
 import * as ui from 'datagrok-api/ui';
 import * as DG from 'datagrok-api/dg';
 import {Property} from 'datagrok-api/dg';
 import BitArray from '@datagrok-libraries/utils/src/bit-array';
-import {similarityMetric} from '@datagrok-libraries/utils/src/similarity-metrics';
-import {getDiverseSubset} from '@datagrok-libraries/utils/src/operations';
+import {similarityMetric, getDiverseSubset} from '@datagrok-libraries/utils/src/similarity-metrics';
 import {chemGetFingerprints} from '../chem-searches';
 import $ from 'cash-dom';
 import {ArrayUtils} from '@datagrok-libraries/utils/src/array-utils';
@@ -41,8 +39,10 @@ export class ChemDiversityViewer extends DG.JsViewer {
 
     if (this.dataFrame) {
       this.subs.push(DG.debounce(this.dataFrame.onRowsRemoved, 50).subscribe(async (_) => await this.render()));
-      this.subs.push(DG.debounce(this.dataFrame.onCurrentRowChanged, 50).subscribe(async (_) => await this.render(false)));
-      this.subs.push(DG.debounce(this.dataFrame.selection.onChanged, 50).subscribe(async (_) => await this.render(false)));
+      this.subs.push(DG.debounce(this.dataFrame.onCurrentRowChanged, 50)
+        .subscribe(async (_) => await this.render(false)));
+      this.subs.push(DG.debounce(this.dataFrame.selection.onChanged, 50)
+        .subscribe(async (_) => await this.render(false)));
       this.subs.push(DG.debounce(ui.onSizeChanged(this.root), 50).subscribe(async (_) => await this.render(false)));
 
       this.moleculeColumn = this.dataFrame.columns.bySemType(DG.SEMTYPE.MOLECULE);
@@ -67,8 +67,10 @@ export class ChemDiversityViewer extends DG.JsViewer {
       return;
 
     if (this.dataFrame) {
-      if (computeData)
-        this.renderMolIds = await chemDiversitySearch(this.moleculeColumn, this.fpSim, this.limit, this.fingerprint as Fingerprint);
+      if (computeData) {
+        this.renderMolIds =
+          await chemDiversitySearch(this.moleculeColumn, this.fpSim, this.limit, this.fingerprint as Fingerprint);
+      }
 
       if (this.root.hasChildNodes())
         this.root.removeChild(this.root.childNodes[0]);

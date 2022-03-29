@@ -1,8 +1,6 @@
 import * as grok from 'datagrok-api/grok';
-import * as ui from 'datagrok-api/ui';
 import * as DG from 'datagrok-api/dg';
 import * as OCL from 'openchemlib/full.js';
-
 
 export function _saveAsSdf() {
   //todo: load OpenChemLib (or use RDKit?)
@@ -19,7 +17,8 @@ export function _saveAsSdf() {
 
   for (let i = 0; i < table.rowCount; i++) {
     try {
-      const mol = OCL.Molecule.fromSmiles(structureColumn.get(i));
+      const molecule: string = structureColumn.get(i);
+      const mol = molecule.includes('M  END') ? OCL.Molecule.fromMolfile(molecule) : OCL.Molecule.fromSmiles(molecule);
       result += i == 0 ? '' : '\n';
       result += `${mol.toMolfile()}\n`;
 
