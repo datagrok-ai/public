@@ -16,7 +16,7 @@ import {IDPS} from './IDPs';
 
 export const _package = new DG.Package();
 
-const defaultInput = 'A';//'AGGTCCTCTTGACTTAGGCC';
+const defaultInput = 'AGGTCCTCTTGACTTAGGCC';
 const sequenceWasCopied = 'Copied';
 const tooltipSequence = 'Copy sequence';
 
