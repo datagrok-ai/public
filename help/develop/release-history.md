@@ -1,6 +1,24 @@
 <!-- TITLE: Release History -->
 <!-- SUBTITLE: -->
 
+# 2022-03-29 Dev build 0.143.0
+
+## Latest Docker Images
+
+* Datagrok: 
+  *  `docker pull datagrok/datagrok:0.143.0`
+  *  `docker pull datagrok/datagrok:latest`
+  
+* [Docker-Compose](admin/docker-compose.md)
+
+## Addressed Issues
+
+* Unable to set value to datetime column from JS 
+* Added an example of turning the color-coding off 
+* #396: Chem: support SMARTS for db querying 
+* Elasticsearch config 
+
+
 # 2022-03-28 Dev build 0.142.0
 
 ## Latest Docker Images
