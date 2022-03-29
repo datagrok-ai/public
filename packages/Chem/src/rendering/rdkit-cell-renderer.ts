@@ -7,10 +7,10 @@ import {convertToRDKit} from '../analysis/r-group-analysis';
 import {drawRdKitMoleculeToOffscreenCanvas} from '../utils/chem-common-rdkit';
 import {RDModule, RDMol} from '../rdkit-api';
 import {isMolBlock} from '../utils/chem-utils';
-import {GridCellStyle} from "datagrok-api/dg";
+import {GridCellStyle} from 'datagrok-api/dg';
 
 interface IMolInfo {
-  mol: RDMol | null;    // null when molString is invalid?
+  mol: RDMol | null; // null when molString is invalid?
   substruct: any;
   molString: string;
   scaffoldMolString: string;
@@ -26,11 +26,11 @@ export class GridCellRendererProxy extends DG.GridCellRenderer {
     this._cellType = cellType;
   }
 
-  get defaultWidth(): number | null { return this.renderer.defaultWidth;  }
-  get defaultHeight(): number | null { return this.renderer.defaultHeight; }
+  get defaultWidth(): number | null {return this.renderer.defaultWidth;}
+  get defaultHeight(): number | null {return this.renderer.defaultHeight;}
 
-  get name(): string { return this.renderer.name; }
-  get cellType(): string { return this._cellType; }
+  get name(): string {return this.renderer.name;}
+  get cellType(): string {return this._cellType;}
 
   render(
     g: CanvasRenderingContext2D, x: number, y: number, w: number, h: number,
@@ -91,7 +91,7 @@ M  END
           if (scaffoldIsMolBlock) {
             const rdKitScaffoldMol = this._fetchMol(scaffoldMolString, '', molRegenerateCoords, false).mol;
             if (rdKitScaffoldMol && rdKitScaffoldMol.is_valid()) {
-              let substructJson = mol.generate_aligned_coords(rdKitScaffoldMol, true, true, false);
+              const substructJson = mol.generate_aligned_coords(rdKitScaffoldMol, true, true, false);
               substruct = substructJson === '' ? {} : JSON.parse(substructJson);
             }
           } else if (molRegenerateCoords) {
@@ -119,7 +119,7 @@ M  END
       mol: mol,
       substruct: substruct,
       molString: molString,
-      scaffoldMolString: scaffoldMolString
+      scaffoldMolString: scaffoldMolString,
     };
   }
 
@@ -133,9 +133,8 @@ M  END
   }
 
   _rendererGetOrCreate(
-        width: number, height: number, molString: string, scaffoldMolString: string,
-        highlightScaffold: boolean, molRegenerateCoords: boolean, scaffoldRegenerateCoords: boolean): OffscreenCanvas {
-
+    width: number, height: number, molString: string, scaffoldMolString: string,
+    highlightScaffold: boolean, molRegenerateCoords: boolean, scaffoldRegenerateCoords: boolean): OffscreenCanvas {
     const fetchMolObj = this._fetchMol(molString, scaffoldMolString, molRegenerateCoords, scaffoldRegenerateCoords);
     const rdKitMol = fetchMolObj.mol;
     const substruct = fetchMolObj.substruct;
@@ -162,8 +161,8 @@ M  END
   }
 
   _fetchRender(
-        width: number, height: number, molString: string, scaffoldMolString: string,
-        highlightScaffold: boolean, molRegenerateCoords: boolean, scaffoldRegenerateCoords: boolean): OffscreenCanvas {
+    width: number, height: number, molString: string, scaffoldMolString: string,
+    highlightScaffold: boolean, molRegenerateCoords: boolean, scaffoldRegenerateCoords: boolean): OffscreenCanvas {
     const name = width + ' || ' + height + ' || ' +
       molString + ' || ' + scaffoldMolString + ' || ' + highlightScaffold + ' || ' +
       molRegenerateCoords + ' || ' + scaffoldRegenerateCoords;
@@ -174,8 +173,8 @@ M  END
 
   _drawMolecule(x: number, y: number, w: number, h: number, onscreenCanvas: HTMLCanvasElement,
     molString: string, scaffoldMolString: string, highlightScaffold: boolean,
-    molRegenerateCoords: boolean, scaffoldRegenerateCoords: boolean, modifyCanvas: boolean = false) {
-    // const r = window.devicePixelRatio;
+    molRegenerateCoords: boolean, scaffoldRegenerateCoords: boolean, notDf: boolean = false) {
+    const r = window.devicePixelRatio;
     // if (modifyCanvas) {
     //   onscreenCanvas.width = w * r;
     //   onscreenCanvas.height = h * r;
@@ -183,8 +182,10 @@ M  END
     //   onscreenCanvas.style.height = h + 'px';
     // }
     //
-    // x = r * x; y = r * y;
-    // w = r * w; h = r * h;
+    if (!notDf) {
+      x = r * x; y = r * y;
+      w = r * w; h = r * h;
+    }
 
     const offscreenCanvas = this._fetchRender(w, h, molString, scaffoldMolString,
       highlightScaffold, molRegenerateCoords, scaffoldRegenerateCoords);
@@ -217,7 +218,7 @@ M  END
     const colTemp = gridCell.cell.column.temp;
 
     const singleScaffoldHighlightMolString = this._initScaffoldString(colTemp, 'chem-scaffold');
-    const singleScaffoldFilterMolString = this._initScaffoldString(colTemp, 'chem-scaffold-filter'); // expected a molBlock
+    const singleScaffoldFilterMolString = this._initScaffoldString(colTemp, 'chem-scaffold-filter'); //expected molBlock
     const singleScaffoldMolString = singleScaffoldFilterMolString ?? singleScaffoldHighlightMolString;
     // TODO: make both filtering scaffold and single highlight scaffold appear
 
