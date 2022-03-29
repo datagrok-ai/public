@@ -171,16 +171,16 @@ M  END
   _drawMolecule(x: number, y: number, w: number, h: number, onscreenCanvas: HTMLCanvasElement,
     molString: string, scaffoldMolString: string, highlightScaffold: boolean,
     molRegenerateCoords: boolean, scaffoldRegenerateCoords: boolean, modifyCanvas: boolean = false) {
-    const r = window.devicePixelRatio;
-    if (modifyCanvas) {
-      onscreenCanvas.width = w * r;
-      onscreenCanvas.height = h * r;
-      onscreenCanvas.style.width = w + 'px';
-      onscreenCanvas.style.height = h + 'px';
-    }
-
-    x = r * x; y = r * y;
-    w = r * w; h = r * h;
+    // const r = window.devicePixelRatio;
+    // if (modifyCanvas) {
+    //   onscreenCanvas.width = w * r;
+    //   onscreenCanvas.height = h * r;
+    //   onscreenCanvas.style.width = w + 'px';
+    //   onscreenCanvas.style.height = h + 'px';
+    // }
+    //
+    // x = r * x; y = r * y;
+    // w = r * w; h = r * h;
 
     const renderObj = this._fetchRender(w, h,
       molString, scaffoldMolString, highlightScaffold, molRegenerateCoords, scaffoldRegenerateCoords);
