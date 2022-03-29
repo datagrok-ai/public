@@ -142,17 +142,17 @@ M  END
       drawRdKitMoleculeToOffscreenCanvas(rdKitMol, width, height, canvas, highlightScaffold ? substruct : null);
     else {
       // draw a crossed rectangle
-      const ctx = canvas.getContext('2d');
-      ctx!.lineWidth = 1;
-      ctx!.strokeStyle = '#EFEFEF';
-      ctx!.beginPath();
-      ctx!.moveTo(0, 0);
-      ctx!.lineTo(width, height);
-      ctx!.stroke();
-      ctx!.beginPath();
-      ctx!.moveTo(width, 0);
-      ctx!.lineTo(0, height);
-      ctx!.stroke();
+      const ctx = canvas.getContext('2d')!;
+      ctx.lineWidth = 1;
+      ctx.strokeStyle = '#EFEFEF';
+      ctx.beginPath();
+      ctx.moveTo(0, 0);
+      ctx.lineTo(width, height);
+      ctx.stroke();
+      ctx.beginPath();
+      ctx.moveTo(width, 0);
+      ctx.lineTo(0, height);
+      ctx.stroke();
     }
     return {canvas: canvas};
   }
