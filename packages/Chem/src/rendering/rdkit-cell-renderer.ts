@@ -2,8 +2,6 @@
  * RDKit-based molecule cell renderer.
  * */
 
-import * as grok from 'datagrok-api/grok';
-import * as ui from 'datagrok-api/ui';
 import * as DG from 'datagrok-api/dg';
 import {convertToRDKit} from '../analysis/r-group-analysis';
 import {drawRdKitMoleculeToOffscreenCanvas} from '../utils/chem-common-rdkit';
@@ -72,7 +70,7 @@ M  END
   get defaultHeight() {return 100;}
 
   _fetchMolGetOrCreate(molString: string, scaffoldMolString: string, molRegenerateCoords: boolean) {
-    let mol: RDMol | null = null;
+    let mol: RDMol | null;
     let substructJson = '{}';
     try {
       mol = this.rdKitModule.get_mol(molString);
@@ -102,14 +100,14 @@ M  END
             mol = this.rdKitModule.get_mol(molBlock);
           }
           if (!scaffoldIsMolBlock || molRegenerateCoords) {
-            mol!.normalize_2d_molblock();
-            mol!.straighten_2d_layout();
+            mol.normalize_2d_molblock();
+            mol.straighten_2d_layout();
           }
         }
         if (!mol!.is_valid()) {
           console.error(
             'Chem | In _fetchMolGetOrCreate: RDKit mol is invalid on a molString molecule: `' + molString + '`');
-          mol!.delete();
+          mol.delete();
         }
       } catch (e) {
         console.error(
@@ -135,7 +133,6 @@ M  END
     const rdKitMol = fetchMolObj.mol;
     const substruct = fetchMolObj.substruct;
 
-    const canvasId = '_canvas-rdkit-' + this.canvasCounter;
     const canvas = new OffscreenCanvas(width, height);
     this.canvasCounter++;
     if (rdKitMol != null)
