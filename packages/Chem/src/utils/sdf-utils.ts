@@ -20,7 +20,8 @@ export function _saveAsSdf() {
   for (let i = 0; i < table.rowCount; i++) {
     try {
       const mol = OCL.Molecule.fromSmiles(structureColumn.get(i));
-      result += `\n${mol.toMolfile()}\n`;
+      result += i == 0 ? '' : '\n';
+      result += `${mol.toMolfile()}\n`;
 
       // properties
       for (const col of table.columns) {
@@ -34,8 +35,5 @@ export function _saveAsSdf() {
     }
   }
 
-  const element = document.createElement('a');
-  element.setAttribute('href', 'data:text/plain;charset=utf-8,' + encodeURIComponent(result));
-  element.setAttribute('download', table.name + '.sdf');
-  element.click();
+  DG.Utils.download(table.name + '.sdf', result);
 }
