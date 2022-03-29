@@ -7,6 +7,7 @@ import {convertToRDKit} from '../analysis/r-group-analysis';
 import {drawRdKitMoleculeToOffscreenCanvas} from '../utils/chem-common-rdkit';
 import {RDModule, RDMol} from '../rdkit-api';
 import {isMolBlock} from '../utils/chem-utils';
+import {GridCellStyle} from "datagrok-api/dg";
 
 interface IMolInfo {
   mol: RDMol | null;    // null when molString is invalid?
@@ -161,8 +162,8 @@ M  END
   }
 
   _fetchRender(
-    width: number, height: number, molString: string, scaffoldMolString: string,
-    highlightScaffold: boolean, molRegenerateCoords: boolean, scaffoldRegenerateCoords: boolean) {
+        width: number, height: number, molString: string, scaffoldMolString: string,
+        highlightScaffold: boolean, molRegenerateCoords: boolean, scaffoldRegenerateCoords: boolean): OffscreenCanvas {
     const name = width + ' || ' + height + ' || ' +
       molString + ' || ' + scaffoldMolString + ' || ' + highlightScaffold + ' || ' +
       molRegenerateCoords + ' || ' + scaffoldRegenerateCoords;
@@ -201,7 +202,7 @@ M  END
     return scaffoldString;
   }
 
-  render(g: any, x: number, y: number, w: number, h: number, gridCell: DG.GridCell, cellStyle: any) {
+  render(g: any, x: number, y: number, w: number, h: number, gridCell: DG.GridCell, cellStyle: GridCellStyle) {
     const molString = convertToRDKit(gridCell.cell.value);
     if (molString == null || molString === '')
       return;
