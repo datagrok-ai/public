@@ -46,7 +46,7 @@ export class ModelsWidget extends DG.Widget {
     topbar.style.alignItems = 'center';
 
     this.modelsList = ui.divV([]);
-    this.modelsList.style.margin = '0 12px';
+    this.modelsList.style.marginLeft = '12px';
 
     this.root.appendChild(ui.splitV([
         ui.box(topbar, {style:{maxHeight:'40px'}}),
