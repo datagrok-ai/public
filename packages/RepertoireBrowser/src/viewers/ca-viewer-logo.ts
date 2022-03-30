@@ -62,13 +62,13 @@ export class Logo extends DG.JsViewer {
   }
 
 
-  async render(newAligned: DG.DataFrame) {
+  render(newAligned: DG.DataFrame) {
     this.splitted = newAligned;
     $(this.root).empty();
     this.findLogo();
   }
 
-  async findLogo() {
+  findLogo() {
     this.getInfoFromDf();
     logojs.embedProteinLogo(this.root, {alphabet: this.LET_COLORS, ppm: this.ppm});
   }

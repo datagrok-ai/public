@@ -189,7 +189,7 @@ export interface PhylocanvasTreeNode {
 /**
  * Represents simple tree statistics.
  */
-interface TreeStats {
+type TreeStats = {
   totalLeaves: number;
   leavesIntersected: number;
   totalSubtreeLength: number;

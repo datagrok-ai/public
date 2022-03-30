@@ -3,86 +3,13 @@ import * as grok from 'datagrok-api/grok';
 import * as DG from 'datagrok-api/dg';
 
 import {TwinPviewer} from './viewers/twin-p-viewer';
-import {CompostionPviewer} from './viewers/composition-p-viewer';
 import {TreeBrowser} from './tree';
 import {_package} from './package';
+import {CustomFilter, StringMap} from './utils/filters';
+import {AminoacidsWebLogo} from './viewers/web-logo';
+import {genData} from './utils/example-generator';
 
 import $ from 'cash-dom';
-
-function customFilter(
-  df: DG.DataFrame, ptmMap: {[key: string]: string}, cdrMap: {[key: string]: string}, referenceDf: DG.DataFrame,
-  indexes: Int32Array) {
-  const ptmKeys = Object.keys(ptmMap);
-  const ptmHKeys = ptmKeys.filter((v) => v.startsWith('H')).map((v) => v.slice(2));
-  const ptmLKeys = ptmKeys.filter((v) => v.startsWith('L')).map((v) => v.slice(2));
-  const cdrKeys = Object.keys(cdrMap);
-  const normalizedCDRMap: {[key: string]: string} = {};
-  //FIXME: can be preprocessed and saved
-  const normalizeCDRnames = (v: string, ct: string) => {
-    let cdrName = v.split('_')[0];
-    cdrName = cdrName.charAt(0).toUpperCase() + cdrName.slice(1);
-    normalizedCDRMap[`${ct} ${cdrName}`] = v;
-    return cdrName;
-  };
-
-  const cdrHKeys = cdrKeys.filter((v) => v.includes('CDRH')).map((v) => normalizeCDRnames(v, 'H'));
-  const cdrLKeys = cdrKeys.filter((v) => v.includes('CDRL')).map((v) => normalizeCDRnames(v, 'L'));
-
-  const createFilterGroup = (ptmNames: string[], cdrNames: string[], chainType: string) => {
-    cdrNames.unshift('None');
-    //@ts-ignore: method api is wrong
-    const ptmInput = ui.multiChoiceInput('PTM', [] as string[], ptmNames);
-    const cdrInput = ui.choiceInput('CDR', cdrNames[0], cdrNames);
-
-    const probabilityHeader = ui.divText('Probability: [0.5; 1]');
-    const probabilityInput = ui.rangeSlider(0, 1, 0.5, 1);
-    const probabilityHost = ui.divV([
-      probabilityHeader, ui.divH([ui.inlineText(['0']), probabilityInput.root, ui.inlineText(['1'])])]);
-
-    probabilityInput.onValuesChanged.subscribe((_) => {
-      probabilityHeader.textContent =
-        `Probability: [${probabilityInput.min.toFixed(3)}; ${probabilityInput.max.toFixed(3)}]`;
-    });
-    $(probabilityInput.root).children('*').height('17px').css('max-width', '265px');
-
-    const filterBtn = ui.button('Apply', () => {
-      const cMin = parseFloat(probabilityInput.min.toFixed(3));
-      const cMax = parseFloat(probabilityInput.max.toFixed(3));
-      const ptmInputValue: string[] = ptmInput.value;
-      const currentCdr = cdrInput.stringValue === 'None'?
-        'max' :cdrMap[normalizedCDRMap[`${chainType} ${cdrInput.stringValue}`]];
-
-      df.filter.init((index: number) => {
-        for (const chosenPTM of ptmInputValue) {
-          const binStr = referenceDf.get(ptmMap[`${chainType} ${chosenPTM}`], indexes[index]);
-          if (typeof binStr === 'undefined' || binStr === '')
-            return false;
-
-          const cdrs = JSON.parse(binStr);
-          if (!Object.keys(cdrs).includes(currentCdr))
-            return false;
-
-          const currentProbability = cdrs[currentCdr];
-          if (typeof currentProbability === 'undefined' || currentProbability > cMax || currentProbability < cMin)
-            return false;
-        }
-
-        return true;
-      });
-    });
-    const heading = ui.h3(`${chainType} chain filter`);
-    heading.style.margin = '0px';
-
-    return ui.divV([heading, cdrInput.root, ptmInput.root, probabilityHost, filterBtn]);
-  };
-
-  const filterH = createFilterGroup(ptmHKeys, cdrHKeys, 'H');
-  filterH.style.margin = '10px';
-  const filterL = createFilterGroup(ptmLKeys, cdrLKeys, 'L');
-  filterL.style.margin = '10px';
-
-  return new DG.Widget(ui.divV([filterH, filterL]));
-}
 
 export class MolecularLiabilityBrowser {
   mlbTable: DG.DataFrame;
@@ -102,9 +29,15 @@ export class MolecularLiabilityBrowser {
   treesIcon: HTMLElement;
 
   twinPviewer: TwinPviewer;
-  compostionPviewer: CompostionPviewer;
 
-  async changeVid(): Promise<void> {
+  pf: PropertiesData;
+
+  constructor() {
+    //external data load
+    this.pf = require('./externalData/properties.json') as PropertiesData;
+  }
+
+  changeVid(silent = false) {
     if (!this.vids.includes(this.vIdInput.value)) {
       Object.keys(this.idMapping).every((vid) => {
         if (this.idMapping[vid].includes(this.vIdInput.value)) {
@@ -115,7 +48,8 @@ export class MolecularLiabilityBrowser {
       });
 
       if (!this.vids.includes(this.vIdInput.value)) {
-        grok.shell.warning('No PDB data data for associated v id');
+        if (!silent)
+          grok.shell.warning('No PDB data data for associated v id');
         return;
       }
     }
@@ -160,128 +94,6 @@ export class MolecularLiabilityBrowser {
     this.hideShowIcon.classList.value = 'grok-icon fal fa-eye';
 
     pi.close();
-  };
-
-  setPropertiesFilters(
-    ptmMap: { [key: string]: string },
-    cdrMap: { [key: string]: string },
-    referenceDf: DG.DataFrame,
-    indexes: Int32Array): void {
-    interface PropertiesData {
-      source: string;
-      names: string[];
-      yellowLeft: number[];
-      yellowRight: number[];
-      redLeft: number[];
-      redRight: number[];
-      plotsX: number[][];
-      plotsY: number[][];
-      tooltips: string[];
-    };
-
-    //external data load
-    const pf = require('./externalData/properties.json') as PropertiesData;
-
-    //this.mlbView.grid.columns.byName('CDR Clothia').visible = false;
-
-    //bands on plots for properties
-    for (let i = 0; i < pf.names.length; i++) {
-      this.mlbTable.col(pf.names[i])!.setTag(
-        '.default-filter', '{ "min": ' + pf.yellowLeft[i] + ', "max": ' + pf.yellowRight[i] + ' }');
-      this.mlbTable.col(pf.names[i])!.setTag('.charts', '[' +
-        '{"type": "band", "title":"BandYellowLeft", "rule" : "' +
-        pf.redLeft[i] + '-' + pf.yellowLeft[i] + '", "color": "#FFD700", "opacity": 15},' +
-        '{"type": "band", "title":"BandYellowRight", "rule" : "' +
-        pf.yellowRight[i] + '-' + pf.redRight[i] + '", "color": "#FFD700", "opacity": 15}, ' +
-        '{"type": "band", "title":"BandRedLeft", "rule" : "< ' + pf.redLeft[i] +
-          '", "color": "#DC143C", "opacity": 15}, ' +
-        '{"type": "band", "title":"BandRedRight", "rule" : "> ' + pf.redRight[i] +
-          '", "color": "#DC143C", "opacity": 15},' +
-        '{ "type": "spline", "title": "TAP metrics", "y" : [' +
-        pf.plotsY[i].toString() + '], "color": "#7570B3", "width": 1, "x" : [' +
-        pf.plotsX[i].toString() + '], "normalize-y": true, "visible": true}' +
-        ']');
-    }
-
-    for (let i = 0; i < pf.names.length; i++)
-      this.mlbTable.columns.byName(pf.names[i]).width = 150;
-
-
-    const filters = this.mlbView.addViewer(DG.VIEWER.FILTERS);
-    const cFilter = customFilter(this.mlbTable, ptmMap, cdrMap, referenceDf, indexes);
-    $(this.mlbView.root).ready(() => $(filters.root).ready(() => filters.root.append(cFilter.root)));
-
-    grok.events.onTooltipShown.subscribe((args) => {
-      if (args.args.context instanceof DG.Column) {
-        switch (args.args.context.name) {
-        case 'cdr length':
-          args.args.element.innerHTML = pf.tooltips[0];
-          break;
-
-        case 'surface cdr hydrophobicity':
-          args.args.element.innerHTML = pf.tooltips[1];
-          break;
-
-        case 'positive cdr charge':
-          args.args.element.innerHTML = pf.tooltips[2];
-          break;
-
-        case 'negative cdr charge':
-          args.args.element.innerHTML = pf.tooltips[3];
-          break;
-
-        case 'sfvcsp':
-          args.args.element.innerHTML = pf.tooltips[4];
-          break;
-
-        default:
-          break;
-        }
-      }
-    });
-  }
-
-  setView(): void {
-    this.mlbView = grok.shell.addTableView(this.mlbTable);
-
-    grok.shell.windows.showProperties = false;
-    grok.shell.windows.showHelp = false;
-    this.mlbView.ribbonMenu.clear();
-
-    this.mlbView.name = 'Molecular Liability Browser';
-    for (const column of this.mlbTable.columns)
-      column.name = column.name.replaceAll('_', ' ');
-    this.mlbView.grid.columns.byName('v id')!.width = 120;
-    this.mlbView.grid.columns.byName('v id')!.cellType = 'html';
-
-    //table visual polishing
-
-    this.mlbView.grid.onCellRender.subscribe(function(args) {
-      if (args.cell.isColHeader) {
-        const textSize = args.g.measureText(args.cell.gridColumn.name);
-        args.g.fillText(args.cell.gridColumn.name, args.bounds.x +
-          (args.bounds.width - textSize.width) / 2, args.bounds.y +
-          (textSize.fontBoundingBoxAscent + textSize.fontBoundingBoxDescent));
-        args.g.fillStyle = '#4b4b4a';
-        args.preventDefault();
-      }
-    });
-
-    this.mlbView.grid.onCellPrepare((gc) => {
-      if (gc.isTableCell && gc.gridColumn.name === 'v id') {
-        if (this.vids.includes(gc.cell.value.toString())) {
-          gc.style.element = ui.divV([
-            ui.link(gc.cell.value.toString(), () => {
-              this.vIdInput.value = gc.cell.value;
-              this.changeVid();
-            })],
-          {style: {position: 'absolute', top: 'calc(50% - 8px)', left: '5px'}});
-        } else {
-          gc.style.element = ui.divV([ui.label(gc.cell.value.toString())],
-            {style: {position: 'absolute', top: 'calc(50% - 8px)', left: '5px'}});
-        }
-      }
-    });
   }
 
   setVidInput(): void {
@@ -377,16 +189,158 @@ export class MolecularLiabilityBrowser {
         grok.events.fireCustomEvent('closeAllDock2', null);
     });
     this.hideShowIcon2.classList.value = 'grok-icon fal fa-eye-slash';
+  }
 
-    grok.events.onCustomEvent('closeAllDock2').subscribe((v) => {
-      this.compostionPviewer.close(this.mlbView);
-      this.hideShowIcon2.classList.value = 'grok-icon fal fa-eye-slash';
+  onFiltersTooltipShown(args: any) {
+    if (args.args.context instanceof DG.Column) {
+      switch (args.args.context.name) {
+      case 'cdr length':
+        args.args.element.innerHTML = this.pf.tooltips[0];
+        break;
+
+      case 'surface cdr hydrophobicity':
+        args.args.element.innerHTML = this.pf.tooltips[1];
+        break;
+
+      case 'positive cdr charge':
+        args.args.element.innerHTML = this.pf.tooltips[2];
+        break;
+
+      case 'negative cdr charge':
+        args.args.element.innerHTML = this.pf.tooltips[3];
+        break;
+
+      case 'sfvcsp':
+        args.args.element.innerHTML = this.pf.tooltips[4];
+        break;
+
+      default:
+        break;
+      }
+    }
+  }
+
+  setPropertiesFilters(
+    ptmMap: StringMap,
+    cdrMap: StringMap,
+    referenceDf: DG.DataFrame,
+    indexes: Int32Array,
+  ): void {
+    //this.mlbView.grid.columns.byName('CDR Clothia').visible = false;
+
+    //bands on plots for properties
+    for (let i = 0; i < this.pf.names.length; i++) {
+      this.mlbTable.col(this.pf.names[i])!.setTag(
+        '.default-filter', '{ "min": ' + this.pf.yellowLeft[i] + ', "max": ' + this.pf.yellowRight[i] + ' }');
+      this.mlbTable.col(this.pf.names[i])!.setTag('.charts', '[' +
+        '{"type": "band", "title":"BandYellowLeft", "rule" : "' +
+        this.pf.redLeft[i] + '-' + this.pf.yellowLeft[i] + '", "color": "#FFD700", "opacity": 15},' +
+        '{"type": "band", "title":"BandYellowRight", "rule" : "' +
+        this.pf.yellowRight[i] + '-' + this.pf.redRight[i] + '", "color": "#FFD700", "opacity": 15}, ' +
+        '{"type": "band", "title":"BandRedLeft", "rule" : "< ' + this.pf.redLeft[i] +
+          '", "color": "#DC143C", "opacity": 15}, ' +
+        '{"type": "band", "title":"BandRedRight", "rule" : "> ' + this.pf.redRight[i] +
+          '", "color": "#DC143C", "opacity": 15},' +
+        '{ "type": "spline", "title": "TAP metrics", "y" : [' +
+        this.pf.plotsY[i].toString() + '], "color": "#7570B3", "width": 1, "x" : [' +
+        this.pf.plotsX[i].toString() + '], "normalize-y": true, "visible": true}' +
+        ']');
+    }
+
+    for (let i = 0; i < this.pf.names.length; i++)
+      this.mlbTable.columns.byName(this.pf.names[i]).width = 150;
+
+    const filters = this.mlbView.addViewer(DG.VIEWER.FILTERS);
+    const cFilter = new CustomFilter(this.mlbTable, ptmMap, cdrMap, referenceDf, indexes).create();
+
+    $(this.mlbView.root).ready(() => $(filters.root).ready(() => filters.root.append(cFilter.root)));
+
+    grok.events.onTooltipShown.subscribe(this.onFiltersTooltipShown.bind(this));
+  }
+
+  setView(vIdColName = 'v id'): void {
+    this.mlbView = grok.shell.addTableView(this.mlbTable);
+
+    grok.shell.windows.showProperties = false;
+    grok.shell.windows.showHelp = false;
+    this.mlbView.ribbonMenu.clear();
+
+    this.mlbView.name = 'Molecular Liability Browser';
+    for (const column of this.mlbTable.columns)
+      column.name = column.name.replaceAll('_', ' ');
+    this.mlbView.grid.columns.byName(vIdColName)!.width = 120;
+    this.mlbView.grid.columns.byName(vIdColName)!.cellType = 'html';
+
+    //table visual polishing
+
+    this.mlbView.grid.onCellRender.subscribe(function(args) {
+      if (args.cell.isColHeader) {
+        const textSize = args.g.measureText(args.cell.gridColumn.name);
+        args.g.fillText(args.cell.gridColumn.name, args.bounds.x +
+          (args.bounds.width - textSize.width) / 2, args.bounds.y +
+          (textSize.fontBoundingBoxAscent + textSize.fontBoundingBoxDescent));
+        args.g.fillStyle = '#4b4b4a';
+        args.preventDefault();
+      }
     });
 
-    grok.events.onCustomEvent('showAllDock2').subscribe((v) => {
-      this.compostionPviewer.open(this.mlbView, this.mlbTable);
-      this.hideShowIcon2.classList.value = 'grok-icon fal fa-eye';
+    this.mlbView.grid.onCellPrepare((gc) => {
+      if (gc.isTableCell && gc.gridColumn.name === 'v id') {
+        if (this.vids.includes(gc.cell.value.toString())) {
+          gc.style.element = ui.divV([
+            ui.link(gc.cell.value.toString(), () => {
+              this.vIdInput.value = gc.cell.value;
+              this.changeVid();
+            })],
+          {style: {position: 'absolute', top: 'calc(50% - 8px)', left: '5px'}});
+        } else {
+          gc.style.element = ui.divV([ui.label(gc.cell.value.toString())],
+            {style: {position: 'absolute', top: 'calc(50% - 8px)', left: '5px'}});
+        }
+      }
     });
+  }
+
+  async readSequences() {
+    //this.seqTable = (await grok.data.loadTable(_package.webRoot + 'src/examples/h_out1.csv'));
+    const [hChainDf, lChainDf] = genData(this.mlbTable.col('v id').toList());
+    return [hChainDf, lChainDf];
+  }
+
+  mergeSequenceColumns(df: DG.DataFrame, chain: string, startingColumnIndex = 13) {
+    const positionRegExp = /^\d+[A-Z]*$/g;
+    const columns: DG.ColumnList = df.columns;
+    const names = columns.names().slice(startingColumnIndex);
+    const positionColumns = names.filter((v: string) => v.match(positionRegExp) !== null);
+    const seqCol = columns.addNewVirtual(
+      `${chain} chain sequence`,
+      (i: number) => positionColumns.map((v) => df.get(v, i)).join(''),
+    );
+    seqCol.semType = AminoacidsWebLogo.residuesSet;
+    return seqCol;
+  }
+
+  addLogoViewer(table: DG.DataFrame, chain: string, dockType: DG.DOCK_TYPE, node?: DG.DockNode) {
+    const seqCol = this.mergeSequenceColumns(table, chain);
+
+    grok.data.joinTables(
+      this.mlbTable,
+      table,
+      ['v id'],
+      ['Id'],
+      (this.mlbTable.columns as DG.ColumnList).names(),
+      [seqCol.name],
+      DG.JOIN_TYPE.LEFT,
+      true,
+    );
+
+    const logo = this.mlbView.addViewer('AminoacidsWebLogo');
+    return this.mlbView.dockManager.dock(logo, dockType, node, `${chain} chain`, 0.2);
+  }
+
+  onMLBGridCurrentRowChanged(args: any) {
+    this.vIdInput.value = this.mlbTable.currentRow['v id'];
+    this.changeVid(true);
   }
 
   async init(urlVid: string | null) {
@@ -395,6 +349,9 @@ export class MolecularLiabilityBrowser {
     ////////////////////////////////////////////////////
     this.mlbTable = (await grok.data.loadTable(_package.webRoot + 'src/examples/mlb.csv'));
     this.mlbTable.columns.remove('ngl');
+
+    const [hChainDf, lChainDf] = await this.readSequences();
+
     for (const column of this.mlbTable.columns)
       column.name = column.name.replaceAll('_', ' ');
 
@@ -403,7 +360,6 @@ export class MolecularLiabilityBrowser {
     this.vidsObsPTMs = ['VR000000044'];
     ////////////////////////////////////////////////////
 
-    this.compostionPviewer = new CompostionPviewer();
     const ptmMap = JSON.parse(await _package.files.readAsText('ptm_map.json'));
     const cdrMap = JSON.parse(await _package.files.readAsText('cdr_map.json'));
     const referenceDf = (await _package.files.readBinaryDataFrames('ptm_in_cdr.d42'))[0];
@@ -415,6 +371,10 @@ export class MolecularLiabilityBrowser {
     pi.close();
 
     this.setView();
+
+    const hNode = this.addLogoViewer(hChainDf, 'Heavy', DG.DOCK_TYPE.TOP);
+    this.addLogoViewer(lChainDf, 'Light', DG.DOCK_TYPE.DOWN, hNode);
+
     this.allVids = this.mlbTable.col('v id')!;
     this.allIds = this.mlbTable.col('gdb id mappings')!;
     this.idMapping = {};
@@ -427,10 +387,6 @@ export class MolecularLiabilityBrowser {
     if (dfTree) {
       const treeBrowser = new TreeBrowser();
       treeBrowser.init(dfTree, this.mlbView);
-      //this.mlbView.dockManager.dock(treeBrowser, DG.DOCK_TYPE.DOWN);
-      this.mlbView.dataFrame.onCurrentRowChanged.subscribe((args) => {
-        // console.warn([this.mlbView.dataFrame.currentRowIdx]);
-      });
     }
 
     this.setVidInput();
@@ -448,9 +404,18 @@ export class MolecularLiabilityBrowser {
 
     this.changeVid();
     this.setPropertiesFilters(ptmMap, cdrMap, referenceDf, indexes);
-
-    this.mlbTable.onFilterChanged.subscribe((_) => {
-      this.compostionPviewer.do(this.mlbView);
-    });
+    this.mlbTable.onCurrentRowChanged.subscribe(this.onMLBGridCurrentRowChanged.bind(this));
   }
+}
+
+type PropertiesData = {
+  source: string;
+  names: string[];
+  yellowLeft: number[];
+  yellowRight: number[];
+  redLeft: number[];
+  redRight: number[];
+  plotsX: number[][];
+  plotsY: number[][];
+  tooltips: string[];
 }
