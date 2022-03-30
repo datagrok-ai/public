@@ -24,7 +24,7 @@ export class ModelsWidget extends DG.Widget {
     this.permanentFilter = '#model';
     this.objectType = 'Script';
 
-    this.caption = super.addProperty('caption', DG.TYPE.STRING, 'Model catalog');
+    this.caption = super.addProperty('caption', DG.TYPE.STRING, 'Models');
     this.order = super.addProperty('order', DG.TYPE.STRING, '0');
 
     let topbar = ui.divH([
