@@ -168,10 +168,10 @@ export function linkV3000(molBlocks: string[], threeDx: boolean = false, twoMole
   macroMolBlock += 'M  V30 BEGIN BOND\n';
   macroMolBlock += bondBlock;
   macroMolBlock += 'M  V30 END BOND\n';
-  macroMolBlock += 'M  V30 END CTAB\n';
   macroMolBlock += 'M  V30 BEGIN COLLECTION\n';
   macroMolBlock += collectionBlock;
   macroMolBlock += 'M  V30 END COLLECTION\n';
+  macroMolBlock += 'M  V30 END CTAB\n';
   macroMolBlock += 'M  END\n';
 
   return macroMolBlock;
