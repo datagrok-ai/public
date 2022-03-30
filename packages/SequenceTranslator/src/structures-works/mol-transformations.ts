@@ -33,7 +33,7 @@ export function getNucleotidesMol(smilesCodes: string[]) {
   return linkV3000(molBlocks);
 }
 
-export function linkV3000(molBlocks: string[], threeDx: boolean = false, twoMolecules: boolean = false) {
+export function linkV3000(molBlocks: string[], twoMolecules: boolean = false) {
   let macroMolBlock = '\nDatagrok macromolecule handler\n\n';
   macroMolBlock += '  0  0  0  0  0  0              0 V3000\n';
   macroMolBlock += 'M  V30 BEGIN CTAB\n';
@@ -138,22 +138,13 @@ export function linkV3000(molBlocks: string[], threeDx: boolean = false, twoMole
     sequenceShift += twoMolecules ? -7 : 0;
   }
 
-  //3dx fix
-  if (threeDx) {
-    const entries = 4;
-    const collNumber = Math.ceil(collection.length / entries);
-    for (let i = 0; i < collNumber; i++) {
-      collectionBlock += 'M  V30 MDLV30/STEABS ATOMS=(';
-      const entriesCurrent = i + 1 == collNumber ? collection.length - (collNumber - 1)*entries : entries;
-      for (let j = 0; j < entriesCurrent; j++)
-        collectionBlock += (j + 1 == entriesCurrent) ? collection[entries*i + j] : collection[entries*i + j] + ' ';
-
-      collectionBlock += ')\n';
-    }
-  } else {
+  const entries = 4;
+  const collNumber = Math.ceil(collection.length / entries);
+  for (let i = 0; i < collNumber; i++) {
     collectionBlock += 'M  V30 MDLV30/STEABS ATOMS=(';
-    for (let i = 0; i < collection.length; i++)
-      collectionBlock += (i + 1 == collection.length) ? collection[i] : collection[i] + ' ';
+    const entriesCurrent = i + 1 == collNumber ? collection.length - (collNumber - 1)*entries : entries;
+    for (let j = 0; j < entriesCurrent; j++)
+      collectionBlock += (j + 1 == entriesCurrent) ? collection[entries*i + j] : collection[entries*i + j] + ' ';
 
     collectionBlock += ')\n';
   }
