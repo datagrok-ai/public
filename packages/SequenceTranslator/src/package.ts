@@ -5,7 +5,7 @@ import * as DG from 'datagrok-api/dg';
 import * as OCL from 'openchemlib/full.js';
 import $ from 'cash-dom';
 import {defineAxolabsPattern} from './defineAxolabsPattern';
-import {saveSenseAntiSense} from './structures-works/save-sense-antisense';
+import {saveSenseAntiSense, saveSdf} from './structures-works/save-sense-antisense';
 import {sequenceToSmiles, sequenceToMolV3000} from './structures-works/from-monomers';
 import {convertSequence, undefinedInputSequence} from './structures-works/sequence-codes-tools';
 import {map, COL_NAMES} from './structures-works/map';
@@ -259,24 +259,17 @@ async function saveTableAsSdFile(table: DG.DataFrame) {
         COL_NAMES.SALT_MASS, COL_NAMES.BATCH_MW].join('\', \''),
     );
   }
-  const structureColumn = table.columns.byName(COL_NAMES.SEQUENCE);
-  let result = '';
+  const structureColumn = table.col(COL_NAMES.SEQUENCE)!;
+  const typeColumn = table.col(COL_NAMES.TYPE)!;
   for (let i = 0; i < table.rowCount; i++) {
     try {
-      const molBlock = sequenceToMolV3000(structureColumn.get(i));
-      const mol = OCL.Molecule.fromMolfile(molBlock);
-      result += `\n${mol.toMolfile()}\n`;
-      for (const col of table.columns)
-        result += `>  <${col.name}>\n${col.get(i)}\n\n`;
-      result += '$$$$';
+      const ss = (typeColumn.get(i) == 'SS') ? structureColumn.get(i) : '';
+      const as = (typeColumn.get(i) == 'AS') ? structureColumn.get(i) : '';
+      saveSdf(as, ss, true);
     } catch (error) {
       console.error(error);
     }
   }
-  const element = document.createElement('a');
-  element.setAttribute('href', 'data:text/plain;charset=utf-8,' + encodeURIComponent(result));
-  element.setAttribute('download', table.name + '.sdf');
-  element.click();
 }
 
 const weightsObj: {[code: string]: number} = {};
