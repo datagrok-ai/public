@@ -7,6 +7,13 @@ import {PhylocanvasGL, TreeTypes, Shapes} from '@phylocanvas/phylocanvas.gl';
 import {TreeAnalyzer, PhylocanvasTreeNode} from './utils/tree-stats';
 
 export class TreeBrowser {// extends DG.JsViewer {
+  static treeGridColumnsNameMapping = {
+    totalLeaves: {name: 'Leaves', dType: 'int'},
+    leavesIntersected: {name: 'Intersected', dType: 'int'},
+    totalSubtreeLength: {name: 'Height', dType: 'double'},
+  };
+
+
   idColumnName: string = 'v id';
   treeSemanticType = 'newick';
   title: string;
@@ -129,6 +136,18 @@ export class TreeBrowser {// extends DG.JsViewer {
     //treeDf.rows.requestFilter
   }
 
+  onTreeGridCellTooltip(cell: DG.GridCell, x: number, y: number) {
+    if (cell.isColHeader) {
+      const msg = {
+        [TreeBrowser.treeGridColumnsNameMapping.totalLeaves.name]: 'Total tree leaves',
+        [TreeBrowser.treeGridColumnsNameMapping.leavesIntersected.name]: 'Tree leaves found also in the main taible',
+        [TreeBrowser.treeGridColumnsNameMapping.totalSubtreeLength.name]: 'Tree height',
+      };
+      ui.tooltip.show(msg[cell.tableColumn.name] ?? cell.tableColumn.name, x, y);
+      return true;
+    }
+  }
+
   /**
    * Adds a grid with simple tree statistics.
    * @param {string} treesColumnName Column containing trees in Newick format.
@@ -146,8 +165,8 @@ export class TreeBrowser {// extends DG.JsViewer {
     const df = DG.DataFrame.fromColumns(baseColumnNames.map((v) => this.dataFrame.col(v)));
 
     for (const k of Object.keys(stats)) {
-      const dType = k.toLowerCase().includes('length') ? 'double' : 'int';
-      (df.columns as DG.ColumnList).add(DG.Column.fromList(dType, k, stats[k]));
+      const col = TreeBrowser.treeGridColumnsNameMapping[k];
+      (df.columns as DG.ColumnList).add(DG.Column.fromList(col.dType, col.name, stats[k]));
     }
 
     // TODO: fix this ad hoc.
@@ -157,10 +176,13 @@ export class TreeBrowser {// extends DG.JsViewer {
     df.col(treesColumnName).semType = this.treeSemanticType;
 
     const grid = DG.Viewer.grid(df, {
-      rowHeight: 160,
+      //rowHeight: 160,
     });
 
+    grid.col('TREE').visible = false;
+
     grid.onCellRender.subscribe(this._onTreeGridCellRender.bind(this));
+    grid.onCellTooltip(this.onTreeGridCellTooltip.bind(this));
     return grid;
   }
 
@@ -207,7 +229,7 @@ export class TreeBrowser {// extends DG.JsViewer {
       const index = this.cloneIndex[cloneId]['index'][0];
 
       this.treeGrid.dataFrame.currentRowIdx = index;
-      this.selectTree(index);
+      this.selectTree(index, df.get(this.idColumnName, currentRowIdx));
     }
   }
 
@@ -238,6 +260,8 @@ export class TreeBrowser {// extends DG.JsViewer {
       showLabels: true,
       showLeafLabels: true,
       shape: Shapes.Dot,
+      fontFamily: 'Roboto',
+      fontSize: 13,
       size: treeDiv.getBoundingClientRect(),
       source: this._takeTreeAt(this.treeGrid.dataFrame.currentRowIdx),
       type: TreeTypes.Rectangular,
@@ -318,8 +342,9 @@ export class TreeBrowser {// extends DG.JsViewer {
   /**
    * Selects a tree from the given index in the table.
    * @param {number} index Index to take tree from.
+   * @param {string} [node] Node id to select.
    */
-  selectTree(index: number) {
+  selectTree(index: number, node?: string) {
     const cloneId = this._getCloneIdAt(index);
     const treeItems = this.cloneIndex[cloneId].items;
 
@@ -346,7 +371,7 @@ export class TreeBrowser {// extends DG.JsViewer {
       return styles;
     }.bind(this);
 
-    this.phyloTreeViewer.setProps({styles: _modifyNodeStyles()});
+    this.phyloTreeViewer.setProps({styles: _modifyNodeStyles(), selectedIds: node ? [node] : []});
   }
 
   // get root(): HTMLElement {
