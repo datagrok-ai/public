@@ -17,6 +17,7 @@ The filter then must be registered in the `package.js` file:
 export function radioButtonFilter() {
   return new RadioButtonFilter();
 }
+
 ```
 
 The filter then can be invoked in the package with JS API as shown in 
@@ -26,6 +27,7 @@ let tv = grok.shell.addTableView(grok.data.demo.demog());
 tv.filters({filters: [
   {type: 'Widgets:radioButtonFilter', columnName: 'race'},
 ]});
+
 ```
 
 Or, alternatively, the filter can be added through UI:
