@@ -1,6 +1,32 @@
 <!-- TITLE: Release History -->
 <!-- SUBTITLE: -->
 
+# 2022-03-30 Dev build 0.145.0
+
+## Latest Docker Images
+
+* Datagrok: 
+  *  `docker pull datagrok/datagrok:0.145.0`
+  *  `docker pull datagrok/datagrok:latest`
+  
+* [Docker-Compose](admin/docker-compose.md)
+
+## Addressed Issues
+
+* Chem: polishing 
+* Closes #401: Vertical Axis: incorrect label density for custom renderers (i.e., Molecules) 
+* Chem: bumped version up to 0.51 
+* LruCache<Key, Value>: added generic arguments and strongly-typed it 
+* Simplified code to avoid warnings 
+* Chem rendering: strongly-typed, simplified 
+* Chem: work in progress 
+* Chem: new version, bug fixes, sdf saving 
+* SequenceTranslator: minor fixes 
+* Update models widget 
+* JBIO: refine LOGO viewer (WIP)
+* Chem: UI improvements 
+
+
 # 2022-03-29 Dev build 0.143.0
 
 ## Latest Docker Images
