@@ -8,6 +8,7 @@ import {defineAxolabsPattern} from './defineAxolabsPattern';
 import {saveSenseAntiSense} from './structures-works/save-sense-antisense';
 import {sequenceToSmiles, sequenceToMolV3000} from './structures-works/from-monomers';
 import {convertSequence, undefinedInputSequence} from './structures-works/sequence-codes-tools';
+import {map} from './structures-works/map';
 import {SALTS_CSV} from './salts';
 import {USERS_CSV} from './users';
 import {ICDS} from './ICDs';
@@ -275,6 +276,33 @@ async function saveTableAsSdFile(table: DG.DataFrame) {
   element.click();
 }
 
+const weightsObj: {[code: string]: number} = {};
+for (const synthesizer of Object.keys(map)) {
+  for (const technology of Object.keys(map[synthesizer])) {
+    for (const code of Object.keys(map[synthesizer][technology]))
+      weightsObj[code] = map[synthesizer][technology][code].weight;
+  }
+}
+// const overhangsWeightsObj: {[index: string]: number} = {};
+// const lst = Object.keys(MODIFICATIONS);
+// lst.forEach((key, i) => overhangsWeightsObj[key] = lst[i]);
+
+function sortByStringLengthInDescendingOrder(array: string[]): string[] {
+  return array.sort(function(a, b) {return b.length - a.length;});
+}
+
+function molecularWeight(sequence: string, weightsObj: {[index: string]: number}): number {
+  const codes = sortByStringLengthInDescendingOrder(Object.keys(weightsObj));
+  let weight = 0;
+  let i = 0;
+  while (i < sequence.length) {
+    const matchedCode = codes.find((s) => s == sequence.slice(i, i + s.length))!;
+    weight += weightsObj[sequence.slice(i, i + matchedCode.length)];
+    i += matchedCode!.length;
+  }
+  return weight - 61.97;
+}
+
 //tags: autostart
 export function autostartOligoSdFileSubscription() {
   grok.events.onViewAdded.subscribe((v: any) => {
@@ -293,9 +321,6 @@ export function oligoSdFile(table: DG.DataFrame) {
     if (t.columns.contains('Compound Name'))
       return grok.shell.error('Columns already exist!');
 
-    table.col('Source')?.init('Johnson and Johnson Pharma');
-    table.col('ICD')?.init('No Contract');
-
     const sequence = t.col('Sequence')!;
     const salt = t.col('Salt')!;
     const equivalents = t.col('Equivalents')!;
@@ -307,8 +332,8 @@ export function oligoSdFile(table: DG.DataFrame) {
     );
     const chargeCol = saltsDf.col('CHARGE')!.toList();
     const saltNames = saltsDf.col('DISPLAY')!.toList();
-    const molWeight = saltsDf.col('MOLWEIGHT')!.toList();
-    t.columns.addNewFloat('Cpd MW').init((i: number) => ((i + 1) % 3 == 0) ? DG.FLOAT_NULL : molWeight[i]);
+    t.columns.addNewFloat('Cpd MW')
+      .init((i: number) => ((i + 1) % 3 == 0) ? DG.FLOAT_NULL : molecularWeight(sequence.get(i), weightsObj));
     t.columns.addNewFloat('Salt mass').init((i: number) => {
       const v = chargeCol[saltNames.indexOf(salt.get(i))];
       const n = (v == null) ? 0 : chargeCol[saltNames.indexOf(salt.get(i))];
@@ -329,6 +354,8 @@ export function oligoSdFile(table: DG.DataFrame) {
   const d = ui.div([
     ui.icons.edit(() => {
       d.innerHTML = '';
+      if (table.col('IDP')!.type != DG.COLUMN_TYPE.STRING)
+        table.changeColumnType('IDP', DG.COLUMN_TYPE.STRING);
       d.append(
         ui.link('Add Columns', () => {
           addColumns(table, saltsDf);
@@ -351,27 +378,35 @@ export function oligoSdFile(table: DG.DataFrame) {
       idpsCol.cellType = 'html';
       view.grid.onCellPrepare(function(gc: DG.GridCell) {
         if (gc.isTableCell) {
-          if (gc.gridColumn.name == 'Type')
-            gc.style.element = ui.choiceInput('', gc.cell.value, ['AS', 'SS', 'Duplex']).root;
-          else if (gc.gridColumn.name == 'Owner') {
-            gc.style.element = ui.choiceInput('', gc.cell.value, usersDf.columns.byIndex(0).toList(), () => {
-              view.dataFrame.col('Owner')!.set(gc.gridRow, gc.cell.value);
+          if (gc.gridColumn.name == 'Type') {
+            gc.style.element = ui.choiceInput('', gc.cell.value, ['AS', 'SS', 'Duplex'], (v: string) => {
+              const gridRow = gc.gridRow;
+              view.dataFrame.col('Type')!.set(gridRow, v);
+            }).root;
+          } else if (gc.gridColumn.name == 'Owner') {
+            gc.style.element = ui.choiceInput('', gc.cell.value, usersDf.columns.byIndex(0).toList(), (v: string) => {
+              const gridRow = gc.gridRow;
+              view.dataFrame.col('Owner')!.set(gridRow, v);
             }).root;
           } else if (gc.gridColumn.name == 'Salt') {
-            gc.style.element = ui.choiceInput('', gc.cell.value, saltsDf.columns.byIndex(1).toList(), () => {
-              view.dataFrame.col('Salt')!.set(gc.gridRow, gc.cell.value);
+            gc.style.element = ui.choiceInput('', gc.cell.value, saltsDf.columns.byIndex(1).toList(), (v: string) => {
+              const gridRow = gc.gridRow;
+              view.dataFrame.col('Salt')!.set(gridRow, v);
             }).root;
           } else if (gc.gridColumn.name == 'Source') {
-            gc.style.element = ui.choiceInput('', gc.cell.value, sourcesDf.columns.byIndex(0).toList(), () => {
-              view.dataFrame.col('Source')!.set(gc.gridRow, gc.cell.value);
+            gc.style.element = ui.choiceInput('', gc.cell.value, sourcesDf.columns.byIndex(0).toList(), (v: string) => {
+              const gridRow = gc.gridRow;
+              view.dataFrame.col('Source')!.set(gridRow, v);
             }).root;
           } else if (gc.gridColumn.name == 'ICD') {
-            gc.style.element = ui.choiceInput('', gc.cell.value, icdsDf.columns.byIndex(0).toList(), () => {
-              view.dataFrame.col('ICD')!.set(gc.gridRow, gc.cell.value);
+            gc.style.element = ui.choiceInput('', gc.cell.value, icdsDf.columns.byIndex(0).toList(), (v: string) => {
+              const gridRow = gc.gridRow;
+              view.dataFrame.col('ICD')!.set(gridRow, v);
             }).root;
           } else if (gc.gridColumn.name == 'IDP') {
-            gc.style.element = ui.choiceInput('', gc.cell.value, idpsDf.columns.byIndex(0).toList(), () => {
-              view.dataFrame.col('IDP')!.set(gc.gridRow, gc.cell.value);
+            gc.style.element = ui.choiceInput('', gc.cell.value, idpsDf.columns.byIndex(0).toList(), (v: string) => {
+              const gridRow = gc.gridRow;
+              view.dataFrame.col('IDP')!.set(gridRow, v);
             }).root;
           }
         }
