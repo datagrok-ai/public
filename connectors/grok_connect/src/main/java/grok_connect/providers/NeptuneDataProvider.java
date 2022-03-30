@@ -48,9 +48,9 @@ public class NeptuneDataProvider extends JdbcDataProvider {
             if (conn.credentials.parameters.get("secretAccessKey") != null)
                 System.setProperty("aws.secretKey",
                         conn.credentials.parameters.get("secretAccessKey").toString());
-            if (conn.credentials.parameters.get("serviceRegion") != null)
-                properties.setProperty("serviceRegion",  conn.credentials.parameters.get("serviceRegion").toString());
         }
+        if (conn.parameters.get("serviceRegion") != null)
+            properties.setProperty("serviceRegion",  conn.parameters.get("serviceRegion").toString());
 
         return properties;
     }
