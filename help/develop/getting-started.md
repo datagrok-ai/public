@@ -128,7 +128,7 @@ extensions.
 
 [viewers]: https://github.com/datagrok-ai/public/tree/master/packages/Viewers
 
-[filters]: https://github.com/datagrok-ai/public/blob/master/packages/Widgets/src/filters/radio_button_filter.js
+[filters]: https://github.com/datagrok-ai/public/blob/master/packages/Widgets/src/filters/radio-button-filter.ts
 
 [datagrok-tools README]: https://github.com/datagrok-ai/public/tree/master/tools#datagrok-tools
 
