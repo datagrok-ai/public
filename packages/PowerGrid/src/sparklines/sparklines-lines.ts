@@ -22,7 +22,7 @@ export class SparklineCellRenderer extends DG.GridCellRenderer {
 
   render(g: CanvasRenderingContext2D, x: number, y: number, w: number, h: number, gridCell: GridCell, cellStyle: DG.GridCellStyle) {
 
-    x += 2; y += 2; w -= 4; h -= 4;
+    x += 4; y += 2; w -= 6; h -= 4;
 
     if (w < 20 || h < 10) return;
 
