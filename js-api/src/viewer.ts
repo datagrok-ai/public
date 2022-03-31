@@ -136,11 +136,11 @@ export class Viewer extends Widget {
   }
 
   /** @type {DataFrame} */
-  get dataFrame(): DataFrame | undefined {
+  get dataFrame(): DataFrame {
     return toJs(api.grok_Viewer_Get_DataFrame(this.dart));
   }
 
-  set dataFrame(t: DataFrame | undefined) {
+  set dataFrame(t: DataFrame) {
     api.grok_Viewer_Set_DataFrame(this.dart, t == null ? null : t.dart);
   }
 

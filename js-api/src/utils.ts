@@ -3,8 +3,15 @@ import * as rxjs from 'rxjs';
 import {toDart, toJs} from './wrappers';
 import {Cell, Row} from './dataframe';
 import $ from "cash-dom";
+import {MARKER_TYPE} from "./const";
 
 let api = <any>window;
+
+export namespace Paint {
+  export function marker(g: CanvasRenderingContext2D, markerType: MARKER_TYPE, x: number, y: number, color: number, size: number) {
+    api.grok_Paint_Marker(g, markerType, x, y, color, size);
+  }
+}
 
 export class Utils {
   /** @param {Iterable} iterable*/

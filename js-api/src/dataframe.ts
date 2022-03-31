@@ -871,6 +871,11 @@ export class Column {
     return api.grok_Column_GetRawDataDartium(this.dart);
   }
 
+  /** Linearly maps idx-th value to the [0,1] interval, where 0 represents column minimum, and 1 represents maximum. */
+  scale(idx: number): number {
+    return api.grok_Column_Scale(this.dart, idx);
+  }
+
   setRawData(rawData: Int32Array | Float32Array | Float64Array | Uint32Array, notify: boolean = true): void {
     api.grok_Column_SetRawData(this.dart, rawData, notify);
   }
