@@ -1,15 +1,29 @@
 import {Balloon} from './widgets';
-import * as rxjs from 'rxjs';
 import {toDart, toJs} from './wrappers';
-import {Cell, Row} from './dataframe';
-import $ from "cash-dom";
 import {MARKER_TYPE} from "./const";
+import {Rect} from "./grid";
 
 let api = <any>window;
 
 export namespace Paint {
+  const tempCanvas = new HTMLCanvasElement();
+
+  /** Renders a marker */
   export function marker(g: CanvasRenderingContext2D, markerType: MARKER_TYPE, x: number, y: number, color: number, size: number) {
     api.grok_Paint_Marker(g, markerType, x, y, color, size);
+  }
+
+  /** Renders a PNG image from bytes */
+  export function pngImage(g: CanvasRenderingContext2D, bounds: Rect, imageBytes: Uint8Array) {
+    let r = new FileReader();
+    r.readAsBinaryString(new Blob([imageBytes]));
+    r.onload = function() {
+      let img = new Image();
+      img.onload = function() {
+        g.drawImage(img, bounds.x, bounds.y, bounds.width, bounds.height);
+      }
+      img.src = "data:image/jpeg;base64," + window.btoa(r.result as string);
+    };
   }
 }
 
@@ -38,6 +52,32 @@ export class Utils {
 
   static nullIfEmpty(s?: string) {
     return Utils.isEmpty(s) ? null : s;
+  }
+
+  /** Shows "Open File" dialog, and lets you process the result. */
+  static openFile(options: {accept: string, open: (file: File) => void}): void {
+    let input: HTMLInputElement = document.createElement('input');
+    input.type = 'file';
+    input.multiple = false;
+    input.accept = options.accept ?? '';
+    input.onchange = _this => {
+        options.open(input.files![0]);
+    };
+    input.click();
+  }
+
+  /** Shows "Open File" dialog, and lets you process the result. */
+  static openFileBytes(options: {accept: string, open: (bytes: Uint8Array) => void}): void {
+    Utils.openFile({
+      accept: options.accept,
+      open: (f) => {
+        var reader = new FileReader();
+        reader.onload = () => {
+          options.open(new Uint8Array(reader.result as ArrayBuffer));
+        };
+        reader.readAsArrayBuffer(f);
+      }
+    })
   }
 
   /** Downloads the specified content locally */
