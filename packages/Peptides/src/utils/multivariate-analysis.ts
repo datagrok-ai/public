@@ -1,7 +1,7 @@
 import * as grok from 'datagrok-api/grok';
 import * as DG from 'datagrok-api/dg';
 
-import {AlignedSequenceEncoder} from '@datagrok-libraries/utils/src/sequence-encoder';
+import {AlignedSequenceEncoder} from '@datagrok-libraries/bio/src/sequence-encoder';
 
 export async function callMVA(
   tableGrid: DG.Grid,
@@ -45,9 +45,8 @@ function _encodeSequences(sequencesCol: DG.Column): DG.DataFrame {
 
   for (let j = 0; j < nRows; ++j) {
     const s = AlignedSequenceEncoder.clean(sequencesCol.get(j));
-    for (let i = 0; i < nCols; ++i) {
+    for (let i = 0; i < nCols; ++i)
       positions[i][j] = enc.encodeLettter(s[i]);
-    }
   }
   const df = DG.DataFrame.fromColumns(positions.map(
     (v, i) => DG.Column.fromFloat32Array((i+1).toString(), v),
@@ -56,23 +55,23 @@ function _encodeSequences(sequencesCol: DG.Column): DG.DataFrame {
 }
 
 async function _scaleColumn(column: DG.Column, method: string): Promise<DG.Column> {
-  if (method == 'none') {
+  if (method == 'none')
     return column;
-  }
+
 
   const formula = (method.startsWith('-') ? '0-' : '')+'Log10(${'+column.name+'})';
   const newCol = await column.applyFormula(formula);
 
-  if (newCol == null) {
+  if (newCol == null)
     throw new Error('Column formula returned unexpected null.');
-  }
+
   return newCol!;
 }
 
 function _insertColumns(targetDf: DG.DataFrame, columns: DG.Column[]): DG.DataFrame {
-  for (const col of columns) {
+  for (const col of columns)
     targetDf.columns.add(col);
-  }
+
   return targetDf;
 }
 
