@@ -5,11 +5,15 @@ import {Paint} from "datagrok-api/src/utils";
 import {Color} from "datagrok-api/src/widgets";
 import {MARKER_TYPE} from "datagrok-api/src/const";
 
+function names(columns: Iterable<DG.Column>): string[] {
+  return Array.from(columns).map((c: any) => c.name)
+}
+
 function getDataColumns(gc: DG.GridColumn): DG.Column[] {
   if (gc.settings == null)
-    gc.settings = gc.grid.dataFrame.columns.byNames(Array.from(gc.grid.dataFrame.columns.numerical).map((c: any) => c.name));
+    gc.settings = names(gc.grid.dataFrame.columns.numerical);
 
-  return gc.settings;
+  return gc.grid.dataFrame.columns.byNames(gc.settings);
 }
 
 export class SparklineCellRenderer extends DG.GridCellRenderer {
@@ -51,9 +55,12 @@ export class SparklineCellRenderer extends DG.GridCellRenderer {
   }
 
   renderSettings(gridColumn: DG.GridColumn): HTMLElement {
-    return ui.columnsInput('Sparkline columns', gridColumn.grid.dataFrame, (names: any) => {
-      gridColumn.settings = names;
+    return ui.columnsInput('Sparkline columns', gridColumn.grid.dataFrame, (columns) => {
+      gridColumn.settings = names(columns);
       gridColumn.grid.invalidate();
+    }, {
+      available: names(gridColumn.grid.dataFrame.columns.numerical),
+      checked: gridColumn.settings ?? names(gridColumn.grid.dataFrame.columns.numerical)
     }).root;
   }
 }

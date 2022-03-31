@@ -687,8 +687,9 @@ export function columnInput(name: string, table: DataFrame, value: Column | null
   return new InputBase(api.grok_ColumnInput(name, table.dart, value?.dart), onValueChanged);
 }
 
-export function columnsInput(name: string, table: DataFrame, onValueChanged: Function | null = null): InputBase {
-  return new InputBase(api.grok_ColumnsInput(name, table.dart), onValueChanged);
+export function columnsInput(name: string, table: DataFrame, onValueChanged: (columns: Column[]) => void,
+                             options?: {available?: string[], checked?: string[]}): InputBase {
+  return new InputBase(api.grok_ColumnsInput(name, table.dart, options?.available, options?.checked), onValueChanged);
 }
 
 export function tableInput(name: string, table: DataFrame, tables: DataFrame[] = grok.shell.tables, onValueChanged: Function | null = null): InputBase {
