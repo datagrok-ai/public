@@ -190,8 +190,7 @@ export class GridColumn {
     return col === null ? null : new Column(col);
   }
 
-  /** Index of the column.
-   *  @returns {number} */
+  /** Index of the column. */
   get idx(): number {
     return api.grok_GridColumn_Get_Idx(this.dart);
   }
@@ -305,6 +304,11 @@ export class GridColumnList {
    *  @returns {number}  */
   get length(): number {
     return api.grok_GridColumnList_Get_Length(this.dart);
+  }
+
+  /** Adds a new column to the grid (but not to the underlying dataframe). */
+  add(options: {gridColumnName?: string, cellType: string}): GridColumn {
+    return api.grok_GridColumnList_Add(this.dart, options.cellType, options.gridColumnName);
   }
 }
 
