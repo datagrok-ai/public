@@ -5,6 +5,7 @@ import * as DG from 'datagrok-api/dg';
 import {ImageCellRenderer} from "./cell-types/image-cell-renderer";
 import {HyperlinkCellRenderer} from "./cell-types/hyperlink-cell-renderer";
 import {HtmlTestCellRenderer, TestCellRenderer} from "./cell-types/test-cell-renderer";
+import {SparklineCellRenderer} from "./sparklines/sparklines-lines";
 
 export const _package = new DG.Package();
 
@@ -30,6 +31,15 @@ export function hyperlinkCellRenderer() {
 //output: grid_cell_renderer result
 export function testCellRenderer() {
   return new TestCellRenderer();
+}
+
+//name: sparklineCellRenderer
+//tags: cellRenderer, cellRenderer-sparkline
+//meta.cellType: sparkline
+//meta.virtual: true
+//output: grid_cell_renderer result
+export function sparklineCellRenderer() {
+  return new SparklineCellRenderer();
 }
 
 //name: htestCellRenderer
