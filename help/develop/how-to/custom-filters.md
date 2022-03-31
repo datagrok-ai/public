@@ -2,10 +2,10 @@
 
 # Filters
 
-Developers can extend Datagrok with custom filters. This could be done by defining a class that extends 
-[DG.Filter](https://datagrok.ai/js-api/classes/dg.Filter) class. An 
-[example](https://github.com/datagrok-ai/public/blob/master/packages/Widgets/src/filters/radio_button_filter.js) of 
-such class can be found in the [Widgets](https://github.com/datagrok-ai/public/tree/master/packages/Widgets) package.
+Developers can extend Datagrok with custom filters. This could be done by defining a class that extends
+[DG.Filter](https://datagrok.ai/js-api/classes/dg.Filter) class. An
+[example](https://github.com/datagrok-ai/public/blob/master/packages/Widgets/src/filters/radio_button_filter.js) of such
+class can be found in the [Widgets](https://github.com/datagrok-ai/public/tree/master/packages/Widgets) package.
 
 The filter then must be registered in the `package.js` file:
 
@@ -20,8 +20,9 @@ export function radioButtonFilter() {
 
 ```
 
-The filter then can be invoked in the package with JS API as shown in 
+The filter then can be invoked in the package with JS API as shown in
 [custom filters example](https://dev.datagrok.ai/js/samples/ui/viewers/filters/custom-filters):
+
 ```js
 let tv = grok.shell.addTableView(grok.data.demo.demog());
 tv.filters({filters: [
