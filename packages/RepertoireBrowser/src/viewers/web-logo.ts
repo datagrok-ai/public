@@ -38,11 +38,13 @@ export class NucleotidesWebLogo extends DG.JsViewer {
     this.considerNullSequences = this.bool('considerNullSequences', false);
 
     this.root.appendChild(this.canvas);
-    ui.onSizeChanged(this.canvas).subscribe((_) => {
-      this.canvas.width = this.canvas.clientWidth;
-      this.canvas.height = this.canvas.clientHeight;
-      this.render(false);
-    });
+    ui.onSizeChanged(this.canvas).subscribe(this.onSizeChanged.bind(this));
+  }
+
+  onSizeChanged(args: any) {
+    this.canvas.width = this.canvas.clientWidth;
+    this.canvas.height = this.canvas.clientHeight;
+    this.render(false);
   }
 
   onPropertyChanged(property: DG.Property): void {
