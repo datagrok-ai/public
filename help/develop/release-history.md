@@ -4737,7 +4737,6 @@
 * datagrok-tools: update package template (WIP)
 * Functions: Categories order
 * (Bug) Conditional Coloring: Empty cells are coloured if all values in this column are empty
-* Merge branch 'master' of https://bitbucket.org/skalkin/reddata
 * Simplify info panels example
 * Viewers: render boolean values as categories on axes
 * (Bug) Grid: empty cells are colored in gray and cell borders are not visible for categorically and linearly colored
