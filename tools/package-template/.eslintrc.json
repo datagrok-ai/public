@@ -32,6 +32,7 @@
       {
         "allowSingleLine": true
       }
-    ]
+    ],
+    "block-spacing": "always"
   }
 }
