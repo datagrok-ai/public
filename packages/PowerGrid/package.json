@@ -21,6 +21,7 @@
 		"debug-powergrid": "grok publish --rebuild",
 		"release-powergrid": "grok publish --rebuild --release",
 		"build-powergrid": "webpack",
+		"powergrid-deploy": "webpack & grok publish",
 		"build": "webpack",
 		"debug-powergrid-dev": "grok publish dev --rebuild",
 		"release-powergrid-dev": "grok publish dev --rebuild --release",
