@@ -6,7 +6,7 @@ import {Rect} from "./grid";
 let api = <any>window;
 
 export namespace Paint {
-  const tempCanvas = new HTMLCanvasElement();
+  //const tempCanvas = new HTMLCanvasElement();
 
   /** Renders a marker */
   export function marker(g: CanvasRenderingContext2D, markerType: MARKER_TYPE, x: number, y: number, color: number, size: number) {
