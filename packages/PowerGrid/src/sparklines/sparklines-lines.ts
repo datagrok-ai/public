@@ -82,7 +82,7 @@ export class SparklineCellRenderer extends DG.GridCellRenderer {
         console.log(JSON.stringify(gridColumn.settings));
       }, {
         available: names(gridColumn.grid.dataFrame.columns.numerical),
-        checked: settings.columnNames ?? names(gridColumn.grid.dataFrame.columns.numerical)
+        checked: settings?.columnNames ?? names(gridColumn.grid.dataFrame.columns.numerical)
       })
     ]);
   }
