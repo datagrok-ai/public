@@ -4,7 +4,8 @@ import {Entity, Func, Property} from "./entities";
 import {DartWidget, ProgressIndicator,} from "./widgets";
 import {MapProxy, _toIterable} from "./utils";
 import {Observable} from "rxjs";
-import {__obs} from "./events";
+import {__obs, StreamSubscription} from "./events";
+import * as rxjs from "rxjs";
 declare let grok: any;
 declare let DG: any;
 let api = <any>window;
@@ -155,6 +156,21 @@ export class FuncCallParam {
   processOutput(): void {
     api.grok_FuncCallParam_ProcessOutput(this.dart);
   }
+
+  get onChanged(): Observable<any> {
+    let object = this.dart;
+    return rxjs.fromEventPattern(
+      function (handler) {
+        return api.grok_FuncCallParam_OnChanged(object, function (x: any) {
+          handler(toJs(x));
+        });
+      },
+      function (handler, dart) {
+        new StreamSubscription(dart).cancel();
+      }
+    );
+  }
+
 }
 
 

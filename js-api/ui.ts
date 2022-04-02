@@ -1161,14 +1161,14 @@ export function star(id: string): HTMLElement {
 
 function _icon(type: string, handler: Function, tooltipMsg: string | null = null): HTMLElement {
   let e = $(`<i class="grok-icon grok-font-icon-${type}"></i>`)[0] as HTMLElement;
-  e?.addEventListener('click', () => handler());
+  e?.addEventListener('click', (e) => handler(e));
   tooltip.bind(e, tooltipMsg);
   return e;
 }
 
 function _iconFA(type: string, handler: Function, tooltipMsg: string | null = null): HTMLElement {
   let e = $(`<i class="grok-icon fal fa-${type}"></i>`)[0] as HTMLElement;
-  e?.addEventListener('click', () => handler());
+  e?.addEventListener('click', (e) => handler(e));
   tooltip.bind(e, tooltipMsg);
   return e;
 }
