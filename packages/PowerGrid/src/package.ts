@@ -6,6 +6,7 @@ import {ImageCellRenderer} from "./cell-types/image-cell-renderer";
 import {HyperlinkCellRenderer} from "./cell-types/hyperlink-cell-renderer";
 import {HtmlTestCellRenderer, TestCellRenderer} from "./cell-types/test-cell-renderer";
 import {SparklineCellRenderer} from "./sparklines/sparklines-lines";
+import {BarCellRenderer} from "./cell-types/bar-cell-renderer";
 
 export const _package = new DG.Package();
 
@@ -48,4 +49,12 @@ export function sparklineCellRenderer() {
 //output: grid_cell_renderer result
 export function htestCellRenderer() {
   return new HtmlTestCellRenderer();
+}
+
+//name: barCellRenderer
+//tags: cellRenderer, cellRenderer-bar
+//meta.cellType: bar
+//output: grid_cell_renderer result
+export function barCellRenderer() {
+  return new BarCellRenderer();
 }
