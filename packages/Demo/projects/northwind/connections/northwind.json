@@ -2,7 +2,7 @@
   "#type": "DataConnection",
   "name": "Northwind",
   "parameters": {
-    "server": "$DEMO_DB_SERVER",
+    "server": "northwind",
     "port": 5432,
     "db": "northwind"
   },
