@@ -4,11 +4,13 @@ import {Context, FuncCall, FuncCallParam} from "../functions";
 import * as ui from "../../ui";
 import {Viewer} from "../viewer";
 import {TabControl} from "../widgets";
-import {div, splitH} from "../../ui";
+import {div, iconSvg, setDisplay, setDisplayAll, splitH, Tooltip} from "../../ui";
 import {DataFrame} from "../dataframe";
 import {View, ViewBase} from "./view";
 import {TYPE} from "../const";
 import wu from "wu";
+import $ from "cash-dom";
+import {shell} from "../../grok";
 
 
 let api = <any>window;
@@ -150,90 +152,56 @@ export class FunctionView extends ViewBase {
     let gridWrapper = div([], 'ui-div,ui-block');
 
     console.log(viewers);
-    /*  var gridSwitch = !viewers?.any((v) => v
-      is
-      GridCore
-    )
-      ;
-      htmlSetDisplay(gridWrapper, false);
-      DivElement
-      getHeader(bool
-      sw
-    )
-      {
-        var s = caption ?? df.name ?? '';
-        var header = div('grok-func-results-header', []);
-        if (s.isNotEmpty) {
-          var h = ui.h1(s);
-          tooltip.setOn(h, () => s);
-          header.append(h);
-        }
-        if (gridSwitch) {
-          var icon = Icons.svg('table', (e)
-          {
-            e.stopPropagation();
-            htmlSetDisplayAll(hideList, !sw);
-            htmlSetDisplay(gridWrapper, sw);
-            gridWrapper.classes.add('ui-block-$blockSize');
-          }
-        ,
-          'Show grid'
-        ).
-          root;
-          if (!sw)
-            icon.classes.add('active');
-          header.append(icon);
-        }
-        if (!xp.tables.contains(df))
-          header.append(Icons.plus((e)
-        {
-          e.stopPropagation();
-          var v = addDataFrame(df, forcedByUser
-        :
-          true
-        )
-          ;
-          print(v);
-          for (var viewer in viewers) {
-            if (viewer is!
-            GridCore
-          )
-            {
-              var newViewer = ViewerDescriptor.byType(viewer.descriptor.name)
-                .init(
-                  df, look
-            :
-              viewer.look
-            )
-              ;
-              v.addViewer(newViewer);
-            }
-          }
-        }
-      ,
-        'Add to workspace'
-      ).
-        root
-      )
-        ;
-        return header;
-      }
+    let gridSwitch = !wu(viewers).some((v: Viewer) => v.type == 'grid');
+    $(gridWrapper).hide();
 
-      if (gridSwitch) {
-        gridWrapper.append(getHeader(false));
-        var grid = new GridCore.grid()
-          ..dataFrame = df;
-        grid.root.style.height = '${height}px';
-        gridWrapper.append(grid.root);
-        existingViewers.add(grid);
+    let getHeader = (sw: boolean) => {
+      let s = caption ?? df.name ?? '';
+      let header = div([], 'grok-func-results-header');
+      if (s != '') {
+        let h = ui.h1(s);
+        Tooltip.bind(h, () => s);
+        header.appendChild(h);
       }
-      */
-    /*
-        let header = getHeader(true);
-        _appendResultElement(gridWrapper, category, param)
-        ;
-    */
-    let header = ui.span([caption]);
+      if (gridSwitch) {
+        let icon = iconSvg('table', (e) => {
+            e.stopPropagation();
+            setDisplayAll(hideList, !sw);
+            setDisplay(gridWrapper, sw);
+            gridWrapper.classList.add('ui-block-$blockSize');
+          }
+          , 'Show grid');
+        if (!sw)
+          icon.classList.add('active');
+        header.appendChild(icon);
+      }
+      if (!shell.tables.includes(df))
+        header.appendChild(ui.icons.add(async (e: any) => {
+            let v = shell.addTableView(df);
+            for (let viewer of viewers) {
+              if (viewer.type != 'grid') {
+                let newViewer = await df.plot.fromType(viewer.type) as Viewer;
+                newViewer.setOptions(viewer.getOptions());
+                v.addViewer(newViewer);
+              }
+            }
+            shell.v = v;
+          },
+          'Add to workspace'
+        ));
+      return header;
+    }
+
+    if (gridSwitch) {
+      gridWrapper.appendChild(getHeader(false));
+      let grid = df.plot.grid();
+      grid.root.style.height = '${height}px';
+      gridWrapper.appendChild(grid.root);
+      existingViewers.push(grid);
+    }
+
+    let header = getHeader(true);
+    this._appendResultElement(gridWrapper, options?.category);
     for (let viewer of viewers) {
       existingViewers.push(viewer);
       let block = viewer.tags['.block-size'] ?? 100;
@@ -247,14 +215,13 @@ export class FunctionView extends ViewBase {
       header = div([], 'grok-func-results-header');
       wrapper.appendChild(viewer.root);
       let height = 400;
-      /*        if (viewer.type == 'grid')
-              {
-                // @ts-ignore
-                let totalHeight = viewer.getOptions()['rowHeight'] *
-                  (viewer.dataFrame.rowCount + 1);
-                if (totalHeight < height)
-                  height = totalHeight;
-              }*/
+      if (viewer.type == 'grid') {
+        // @ts-ignore
+        let totalHeight = viewer.getOptions()['rowHeight'] *
+          (viewer.dataFrame!.rowCount + 1);
+        if (totalHeight < height)
+          height = totalHeight;
+      }
       viewer.root.style.height = `${height}px`;
       this._appendResultElement(wrapper, options?.category);
       console.log('add viewer');
