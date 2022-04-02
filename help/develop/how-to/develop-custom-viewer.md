@@ -498,7 +498,7 @@ doing it in a package:
 import {AwesomeViewer} from './awesome-viewer.js'
 
 //tags: autostart
-export function initPackage() {
+export function initFunctionPackage() {
   grok.shell.registerViewer('AwesomeViewer', 'Creates an awesome viewer', () => new AwesomeViewer());
 }
 ```
