@@ -15,6 +15,7 @@ dependency-reduced-pom.xml
 # NPM modules
 node_modules/
 upload.keys.json
+test-report.html
 
 # Build results
 dist/
