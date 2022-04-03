@@ -1,0 +1,152 @@
+name: Packages Test
+
+on:
+  workflow_dispatch: { }
+  push:
+    paths:
+      - 'packages/**'
+
+env:
+  HOST: Dev
+
+jobs:
+  metadata:
+    name: Check packages were changed
+    runs-on: ubuntu-20.04
+    outputs:
+      matrix: ${{ steps.generate-matrix.outputs.matrix }}
+      continue: ${{ steps.generate-matrix.outputs.continue }}
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v2
+        with:
+          fetch-depth: 3
+      - name: Generate matrix
+        id: generate-matrix
+        run: |
+          echo '::echo::on'
+          if [[ $(git log -n 1 --pretty=%B) == *"Merge branch 'master' of"* ]]; then
+            commit="$(git log --format="%H" -n 1 --no-merges)"
+          else
+            commit=${{ github.sha }}
+          fi
+
+          CHANGED_PACKAGES="$(git diff-tree --no-commit-id --name-only -r "$(echo -n "$commit")" 'packages/**' | xargs -I {} dirname {} | awk -F'/' '{print $2}' | sort -u)"
+          MATRIX_INCLUDE_JSON="["
+
+          for PACKAGE in ${CHANGED_PACKAGES}; do
+            DIR="packages/${PACKAGE}"
+            if [ -f "${DIR}/package.json" ]; then
+          
+              if [ -d "${DIR}/src/tests" ] || [ "$PACKAGE" = "*Tests*" ]; then
+                test='true'
+              else
+                test='false'
+              fi
+
+              scripts="$(jq  '. | select( has("scripts") == true ).scripts' "${DIR}/package.json")"
+              if [ -z "$(jq  '. | select( has("build") == true )' <<< "$scripts")" ]; then
+                build='false'
+              else
+                build='true'
+              fi
+
+              MATRIX_INCLUDE_JSON+="{\"package\": \"${PACKAGE}\", \"project\": \"${DIR}\", \"build\": \"${build}\", \"test\": \"${test}\"}"
+            fi
+          done
+
+          MATRIX_INCLUDE_JSON="${MATRIX_INCLUDE_JSON//\}\{/\}, \{}"
+          MATRIX_INCLUDE_JSON+="]"
+          MATRIX_JSON="{\"include\": ${MATRIX_INCLUDE_JSON}}"
+
+          CONTINUE_JOB="no"
+          if [[ "${MATRIX_INCLUDE_JSON}" != "[]" ]]; then
+            CONTINUE_JOB="yes"
+          fi
+          echo "::set-output name=continue::${CONTINUE_JOB}"
+          echo "::set-output name=matrix::${MATRIX_JSON}"
+          echo '::echo::off'
+
+  test:
+    name: Test
+    needs: metadata
+    if: needs.metadata.outputs.continue == 'yes'
+    runs-on: ubuntu-latest
+    environment: Dev
+    strategy:
+      fail-fast: false
+      max-parallel: 10
+      matrix: ${{ fromJson(needs.metadata.outputs.matrix) }}
+    steps:
+      - uses: actions/checkout@v2
+      - name: Setup Node
+        uses: actions/setup-node@v2
+        with:
+          node-version: '12.x'
+          registry-url: 'https://registry.npmjs.org'
+          scope: '@datagrok'
+      - name: Upgrade npm
+        run: npm install -g npm@latest
+      - name: npm version
+        run: npm version
+      - name: Install npm dependencies
+        run: npm install
+        working-directory: ${{ matrix.project }}
+      - name: Install datagrok tools
+        run: npm install -g datagrok-tools@latest
+        working-directory: ./tools
+      - name: Build package with npm
+        run: npm run build
+        working-directory: ${{ matrix.project }}
+        if: ${{ matrix.build == 'true' }}
+      - name: Build package with webpack
+        run: webpack
+        working-directory: ${{ matrix.project }}
+        if: ${{ matrix.build == 'false' }}
+      - name: Create configuration for grok command-line tool
+        run: echo 'N' | grok config add --default --alias ${HOST} --server ${{ secrets.DATAGROK_API_URL }} --key ${{ secrets.DATAGROK_DEV_TOKEN }}
+      - name: Publish package to Datagrok
+        run: grok publish ${HOST}
+        working-directory: ${{ matrix.project }}
+      - name: Install ApiTests
+        run: npm install
+        working-directory: ./packages/ApiTests
+      - name: Test Package
+        id: test-package
+        run: |
+          echo "::set-output name=status::success"
+          npm run test -- --verbose=false || echo "::set-output name=status::error"
+        env:
+          TARGET_PACKAGE: ${{ matrix.package }}
+          JEST_HTML_REPORTER_PAGE_TITLE: "${{ matrix.package }} Test Report. Commit ${{ github.sha }}."
+          JEST_HTML_REPORTER_OUTPUT_PATH: "./${{ matrix.package }}-test-report-${{ github.sha }}.html"
+          JEST_HTML_REPORTER_INCLUDE_FAILURE_MSG: true
+          JEST_HTML_REPORTER_INCLUDE_CONSOLE_LOG: true
+          JEST_HTML_REPORTER_INCLUDE_SUITE_FAILURE: true
+        working-directory: ./packages/ApiTests
+      - name: Create GitHub Action status for package
+        run: |
+          if [ "${{ steps.test-package.outputs.status }}" == "error" ]; then
+            MESSAGE='Tests failed, please view logs'
+          else
+            MESSAGE='Package passed all tests'
+          fi
+          curl -f -s -X POST \
+            --url "https://api.github.com/repos/${{ github.repository }}/statuses/${{ github.sha }}" \
+            -H 'accept: application/vnd.github.v3+json' \
+            -H "authorization: Bearer ${{ secrets.GITHUB_TOKEN }}" \
+            -H 'content-type: application/json' \
+            -d "{ \"state\": \"${{ steps.test-package.outputs.status }}\",
+            \"target_url\": \"https://github.com/${{ github.repository }}/actions/runs/${GITHUB_RUN_ID}\",
+            \"description\": \"${MESSAGE}\", \"context\": \"--> Tested: ${{ matrix.package }}\"
+            }"
+      - name: Upload Artifact
+        uses: actions/upload-artifact@v2
+        with:
+          name: ${{ matrix.package }}-test-report-${{ github.sha }}.html
+          path: ./packages/ApiTests/${{ matrix.package }}-test-report-${{ github.sha }}.html
+          retention-days: 7
+      - name: Report failed tests for package
+        if: steps.test-package.outputs.status == 'error'
+        run: |
+          echo "::error file=packages/${{ matrix.package }},title=Package ${{ matrix.package }} failed tests::Check ${{ matrix.package }}-test-report-${{ github.sha }}.html report for results"

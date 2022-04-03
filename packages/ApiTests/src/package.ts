@@ -36,7 +36,7 @@ import './ui/tabControl';
 import './ui/list';
 import './ui/image';
 import './ui/viewers-adding'
-import './ui/grid'
+// import './ui/grid'
 
 import {runTests} from "@datagrok-libraries/utils/src/test";
 export let _package = new DG.Package();
