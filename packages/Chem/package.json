@@ -47,7 +47,12 @@
     "path": "^0.12.7",
     "webpack": "latest",
     "webpack-cli": "latest",
-    "workerloader-jest-transformer": "^0.0.5"
+    "workerloader-jest-transformer": "^0.0.5",
+    "@types/jest": "latest",
+    "jest": "latest",
+    "jest-html-reporter": "latest",
+    "puppeteer": "^13.1.2",
+    "ts-jest": "^27.1.2"
   },
   "browser": {
     "fs": false,
@@ -64,7 +69,9 @@
     "build": "webpack",
     "lint": "eslint \"./src/**/*.ts\"",
     "lint-fix": "eslint \"./src/**/*.ts\" --fix",
-    "test": "set HOST=dev && jest"
+    "test": "set HOST=dev && jest",
+    "test-dev": "set HOST=dev && jest",
+    "test-local": "set HOST=localhost && jest"
   },
   "canEdit": [
     "Developers"

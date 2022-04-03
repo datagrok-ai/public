@@ -1,49 +1,57 @@
 {
-	"name": "@datagrok/tutorials",
-	"beta": false,
-	"friendlyName": "Tutorials",
-	"version": "1.1.0",
-	"description": "",
-	"dependencies": {
-		"@datagrok-libraries/utils": "0.0.22",
-		"cash-dom": "^8.1.0",
-		"css-loader": "^6.3.0",
-		"datagrok-api": ">=0.136.0",
-		"dayjs": "^1.10.6",
-		"rxjs": "6.6.7",
-		"style-loader": "^3.3.0",
-		"ts-loader": "^9.2.5",
-		"typescript": "^4.3.5"
-	},
-	"devDependencies": {
-		"@typescript-eslint/eslint-plugin": "^4.29.1",
-		"@typescript-eslint/parser": "^4.29.1",
-		"eslint": "^7.32.0",
-		"eslint-config-google": "^0.14.0",
-		"webpack": "^5.50.0",
-		"webpack-cli": "^4.7.2"
-	},
-	"scripts": {
-		"link-api": "npm link datagrok-api",
-		"debug-tutorials": "grok publish --rebuild",
-		"build-debug-tutorials": "webpack && grok publish",
-		"release-tutorials": "grok publish --rebuild --release",
-		"build-tutorials": "webpack",
-		"build": "webpack",
-		"build-ts": "tsc",
-		"check-code-style": "eslint ./src/*.ts",
-		"fix-style-errors": "eslint ./src/*.ts --fix",
-		"debug-tutorials-public": "grok publish public --rebuild",
-		"release-tutorials-public": "grok publish public --rebuild --release",
-		"debug-tutorials-local": "grok publish local --rebuild",
-		"release-tutorials-local": "grok publish local --rebuild --release",
-		"debug-tutorials-localhost": "grok publish localhost --rebuild",
-		"release-tutorials-localhost": "grok publish localhost --rebuild --release"
-	},
-	"canEdit": [
-		"Developers"
-	],
-	"canView": [
-		"All users"
-	]
+  "name": "@datagrok/tutorials",
+  "beta": false,
+  "friendlyName": "Tutorials",
+  "version": "1.1.0",
+  "description": "",
+  "dependencies": {
+    "@datagrok-libraries/utils": "0.0.22",
+    "cash-dom": "^8.1.0",
+    "css-loader": "^6.3.0",
+    "datagrok-api": ">=0.136.0",
+    "dayjs": "^1.10.6",
+    "rxjs": "6.6.7",
+    "style-loader": "^3.3.0",
+    "ts-loader": "^9.2.5",
+    "typescript": "^4.3.5"
+  },
+  "devDependencies": {
+    "@typescript-eslint/eslint-plugin": "^4.29.1",
+    "@typescript-eslint/parser": "^4.29.1",
+    "eslint": "^7.32.0",
+    "eslint-config-google": "^0.14.0",
+    "webpack": "^5.50.0",
+    "webpack-cli": "^4.7.2",
+    "@types/jest": "latest",
+    "jest": "latest",
+    "jest-html-reporter": "latest",
+    "puppeteer": "^13.1.2",
+    "ts-jest": "^27.1.2"
+  },
+  "scripts": {
+    "link-api": "npm link datagrok-api",
+    "debug-tutorials": "grok publish --rebuild",
+    "build-debug-tutorials": "webpack && grok publish",
+    "release-tutorials": "grok publish --rebuild --release",
+    "build-tutorials": "webpack",
+    "build": "webpack",
+    "build-ts": "tsc",
+    "check-code-style": "eslint ./src/*.ts",
+    "fix-style-errors": "eslint ./src/*.ts --fix",
+    "debug-tutorials-public": "grok publish public --rebuild",
+    "release-tutorials-public": "grok publish public --rebuild --release",
+    "debug-tutorials-local": "grok publish local --rebuild",
+    "release-tutorials-local": "grok publish local --rebuild --release",
+    "debug-tutorials-localhost": "grok publish localhost --rebuild",
+    "release-tutorials-localhost": "grok publish localhost --rebuild --release",
+    "test": "set HOST=dev && jest",
+    "test-dev": "set HOST=dev && jest",
+    "test-local": "set HOST=localhost && jest"
+  },
+  "canEdit": [
+    "Developers"
+  ],
+  "canView": [
+    "All users"
+  ]
 }
