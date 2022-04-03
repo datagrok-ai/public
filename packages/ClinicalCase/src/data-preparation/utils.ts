@@ -183,3 +183,43 @@ export function convertColToString(df: DG.DataFrame, col: string) {
         df.col(`${col}_s`).name = col;
     }
 }
+
+
+export function replaceNullsWithValues(df: DG.DataFrame, newValue: any) {
+    const columns = df.columns.names();
+    columns.forEach(col => {
+        let column = df.columns.byName(col);
+        let rowCount = df.rowCount;
+        for (let i = 0; i < rowCount; i++) {
+            if (column.isNone(i)) {
+                column.set(i, newValue);
+            }
+        }
+    })
+}
+
+export function createTotalValuesForRowsAndCols(initTable: DG.DataFrame, groupCol: string, totalColName: string) {
+    const totalValuesTable = initTable.clone();
+    totalValuesTable.columns.addNewFloat(totalColName);
+    totalValuesTable.rows.addNew();
+    const rowCount = totalValuesTable.rowCount;
+
+    for (let column of totalValuesTable.columns) {
+        if (column.name !== groupCol) {
+            const totalEventsInCat = column.stats['sum'];
+            totalValuesTable.set(column.name, rowCount - 1, totalEventsInCat);
+        }
+    }
+
+    for (let i = 0; i < rowCount; i++) {
+        let totalEventsInGroup = 0;
+        for (let column of totalValuesTable.columns) {
+            if (column.name !== groupCol) {
+                totalEventsInGroup += column.get(i);
+            }
+        }
+        totalValuesTable.set(totalColName, i, totalEventsInGroup);
+    }
+
+    return totalValuesTable;
+}

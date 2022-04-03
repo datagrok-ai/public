@@ -9,6 +9,7 @@ import { _package } from '../package';
 import { ClinicalCaseViewBase } from '../model/ClinicalCaseViewBase';
 import { TRT_ARM_FIELD, VIEWS_CONFIG } from '../views-config';
 import {tTest} from "@datagrok-libraries/statistics/src/tests";
+import { getPearsonChiCriterionPValue } from '../stats/pearson-chi-criteria';
 var { jStat } = require('jstat')
 
 
@@ -136,19 +137,6 @@ export class QuestionnaiesView extends ClinicalCaseViewBase {
     updateDivInnerHTML(this.questionsDiv, this.questionsAcc.root);
   }
 
-  private updateQuestionsPanel() {
-    this.updateQuestions();
-    let questionsPanels = [];
-    this.questions.forEach(question => {
-      let questionDf = this.createQuestionDf(question);
-      let questionGraph = this.selectedGraphType === 'histogram' ? 
-        this.createHistogram(questionDf, true, 'Auto') : this.createLineChart(questionDf, true, 'Auto', 'Med | Q1, Q3', '');
-      questionGraph.prepend(ui.divText(question));
-      questionsPanels.push(ui.block25([questionGraph]));
-    });
-    updateDivInnerHTML(this.questionsDiv, ui.block(questionsPanels));
-  }
-
   private updateQuestionGrid(){
     this.updateQuestions();
     updateDivInnerHTML(this.questionsDiv, this.createQuestionsDfGrid().root);
@@ -166,9 +154,12 @@ export class QuestionnaiesView extends ClinicalCaseViewBase {
         .groupBy(this.questionsDf.columns.names())
         .where({ [QS_TEST]: `${question}`, [VISIT_NUM]: `${it}` })
         .aggregate();
+        console.log(question);
         const pValue = this.getPValue(questionVisitNumDf);
         return pValue;
-      })
+      });
+      df.col(`${it}`).tags[DG.TAGS.COLOR_CODING_TYPE] = 'Conditional';
+      df.col(`${it}`).tags['.color-coding-conditional'] = `{"0-0.05":"#00FF00"}`;
     });
     this.subscribeToGridCurrentRow(df);
     let grid = df.plot.grid();
@@ -178,10 +169,12 @@ export class QuestionnaiesView extends ClinicalCaseViewBase {
     col.width = this.graphCellWidth;
     let self = this;
     grid.onCellPrepare(function (gc) {
-      if (gc.isTableCell && gc.gridColumn.name === 'Graphs') {
-        const question = gc.grid.dataFrame.get('Question', gc.tableRowIndex);
-        const eventElement = self.createQuestionCharts(question, true);
-        gc.style.element = eventElement;
+      if (gc.isTableCell) {
+        if (gc.gridColumn.name === 'Graphs') {
+          const question = gc.grid.dataFrame.get('Question', gc.tableRowIndex);
+          const eventElement = self.createQuestionCharts(question, true);
+          gc.style.element = eventElement;
+        }
       }
     });
     return grid;
@@ -204,14 +197,16 @@ export class QuestionnaiesView extends ClinicalCaseViewBase {
       })
       const pValue = dataForAnova.length === 2 ? tTest(dataForAnova[0], dataForAnova[1])['p-value'] : jStat.anovaftest(...dataForAnova);
       return pValue;
+    } else {
+      const pValue = getPearsonChiCriterionPValue(df, QS_RES, this.selectedSplitBy);
+      return pValue;
     }
-    return null;
 }
 
   private updateQuestions() {
     this.openedQuestionsDfs = {};
     this.questionsDf = this.qsWithDm
-      .groupBy([SUBJECT_ID, QS_CATEGORY, QS_SUB_CATEGORY, QS_TEST, QS_RES, QS_RES_N, VISIT_NUM].concat(this.splitBy))
+      .groupBy(this.qsWithDm.columns.names())
       .where({ [QS_CATEGORY]: `${this.selectedCategory}`, [QS_SUB_CATEGORY]: `${this.selectedSubCategory}` })
       .aggregate();
     this.questions = this.questionsDf
@@ -362,33 +357,6 @@ export class QuestionnaiesView extends ClinicalCaseViewBase {
     }
 
     acc.addPane('Charts', () => createChartsPane(), true);
-
-    /*  const expandedPanes = this.questionsAcc.panes.filter(it => it.expanded);
-
-    let getPaneContent = (df, rowNum) => {
-      if (!rowNum) {
-        return ui.divText('No records found');
-      } else {
-        let grid = df.plot.grid();
-        grid.root.style.width = '250px';
-        return ui.div(grid.root);
-      }
-  }
-
-    expandedPanes.forEach(pane => {
-      const df = this.openedQuestionsDfs[pane.name];
-      const rowNum = df.rowCount === 1 && df.col(QS_CATEGORY).isNone(0) ? 0 : df.rowCount;
-      acc.addCountPane(`${pane.name}`,
-      () => getPaneContent(df, rowNum),
-      () => rowNum,
-      true);
-
-    let dfPanel = acc.getPane(`${pane.name}`);
-    //@ts-ignore
-    $(dfPanel.root).css('display', 'flex');
-    //@ts-ignore
-    $(dfPanel.root).css('opacity', '1');
-    });  */
 
     return acc.root;
   }
