@@ -1,49 +1,49 @@
 {
-	"name": "@datagrok/sqlite",
-	"beta": false,
-	"friendlyName": "SQLite",
-	"version": "0.1.1",
-	"description": "",
-	"dependencies": {
-		"datagrok-api": "latest",
-		"@datagrok-libraries/utils": "latest",
-		"file-loader": "latest",
-		"ts-loader": "latest",
-		"typescript": "latest"
-	},
-	"devDependencies": {
-		"@types/sql.js": "latest",
-		"@typescript-eslint/eslint-plugin": "latest",
-		"@typescript-eslint/parser": "latest",
-		"eslint": "latest",
-		"eslint-config-google": "latest",
-		"webpack": "latest",
-		"webpack-cli": "latest"
-	},
-	"browser": {
-		"fs": false,
-		"path": false,
-		"os": false,
-		"crypto": false
-	},
-	"scripts": {
-		"debug-sqlite": "grok publish --rebuild",
-		"release-sqlite": "grok publish --rebuild --release",
-		"build-sqlite": "webpack",
-		"build": "webpack",
-		"debug-sqlite-public": "grok publish public --rebuild",
-		"release-sqlite-public": "grok publish public --rebuild --release",
-		"debug-sqlite-local": "grok publish local --rebuild",
-		"release-sqlite-local": "grok publish local --rebuild --release",
-		"debug-sqlite-core": "grok publish core --rebuild",
-		"release-sqlite-core": "grok publish core --rebuild --release",
-		"lint": "eslint src --ext .ts",
-		"lint-fix": "eslint src --ext .ts --fix"
-	},
-	"canEdit": [
-		"Developers"
-	],
-	"canView": [
-		"All users"
-	]
+  "name": "@datagrok/sqlite",
+  "beta": false,
+  "friendlyName": "SQLite",
+  "version": "0.1.1",
+  "description": "",
+  "dependencies": {
+    "datagrok-api": "latest",
+    "@datagrok-libraries/utils": "latest",
+    "file-loader": "latest",
+    "ts-loader": "latest",
+    "typescript": "latest"
+  },
+  "devDependencies": {
+    "@types/sql.js": "latest",
+    "@typescript-eslint/eslint-plugin": "latest",
+    "@typescript-eslint/parser": "latest",
+    "eslint": "latest",
+    "eslint-config-google": "latest",
+    "webpack": "latest",
+    "webpack-cli": "latest"
+  },
+  "browser": {
+    "fs": false,
+    "path": false,
+    "os": false,
+    "crypto": false
+  },
+  "scripts": {
+    "debug-sqlite": "grok publish --rebuild",
+    "release-sqlite": "grok publish --rebuild --release",
+    "build-sqlite": "webpack",
+    "build": "webpack",
+    "debug-sqlite-public": "grok publish public --rebuild",
+    "release-sqlite-public": "grok publish public --rebuild --release",
+    "debug-sqlite-local": "grok publish local --rebuild",
+    "release-sqlite-local": "grok publish local --rebuild --release",
+    "debug-sqlite-core": "grok publish core --rebuild",
+    "release-sqlite-core": "grok publish core --rebuild --release",
+    "lint": "eslint src --ext .ts",
+    "lint-fix": "eslint src --ext .ts --fix"
+  },
+  "canEdit": [
+    "Developers"
+  ],
+  "canView": [
+    "All users"
+  ]
 }
