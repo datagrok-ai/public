@@ -1,6 +1,38 @@
 <!-- TITLE: Release History -->
 <!-- SUBTITLE: -->
 
+# 2022-04-03 Dev build 0.139.3
+
+## Latest Docker Images
+
+* Datagrok: 
+  *  `docker pull datagrok/datagrok:0.139.3`
+  *  `docker pull datagrok/datagrok:latest`
+  
+* [Docker-Compose](admin/docker-compose.md)
+
+## Addressed Issues
+
+* (Bug) Viewers: 'Edit Viewer Tooltip..." disregards the table a viewer is bound to 
+* Closes #374: Grid: rendering dataframe values as HTML # 
+* Grok Connect vulnerability fixes (#294) 
+* (Bug) toCsv() throws an exception 
+* User status interop 
+* (Bug) Filter indicator is hidden after restoring the layout 
+* Adjusted documentation 
+* Closes #382: JS API: Grid: Expose grid-related events 
+* Closes #340: Expose Grid renderers for DG native data types 
+* Compute: added table updating on manual outliers selection 
+* Closes #383: Items are unexpectedly filtered out after new rows were added 
+* Removed unnecessary comments 
+* Fixed column name in a sample script 
+* (Bug) Query View: "Add results to workspace" button does not work 
+* Fixed the type annotation 
+* Closes #385: Filters saved on older DG versions are not restored 
+* Fixed the friendly name 
+* Function View convert to TS WIP 
+
+
 # 2022-03-22 Dev build 0.139.0
 
 ## Latest Docker Images
