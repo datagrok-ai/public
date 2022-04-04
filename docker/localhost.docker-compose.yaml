@@ -92,7 +92,8 @@ services:
         \"dbAdminPassword\": \"postgres\",
         \"dbLogin\": \"dg\",
         \"dbPassword\": \"dg\",
-        \"adminPassword\": \"admin\"
+        \"adminPassword\": \"admin\",
+        \"adminDevKey\": \"admin\"
       }"
 #      GROK_COMPONENTS: "${COMPOSE_PROFILES:?err}"
     ports:
@@ -107,14 +108,14 @@ services:
     restart: unless-stopped
     profiles: [ "all", "datagrok" ]
 
-  grok_connect:
-    image: datagrok/grok_connect:latest
-    networks:
-      datagrok:
-        aliases:
-          - grok_connect
-    restart: unless-stopped
-    profiles: [ "all", "datagrok", "grok_connect" ]
+#  grok_connect:
+#    image: datagrok/grok_connect:latest
+#    networks:
+#      datagrok:
+#        aliases:
+#          - grok_connect
+#    restart: unless-stopped
+#    profiles: [ "all", "datagrok", "grok_connect" ]
 
   grok_compute:
     image: datagrok/grok_compute:latest
