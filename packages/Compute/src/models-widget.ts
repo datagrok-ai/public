@@ -4,6 +4,7 @@ import * as ui from "datagrok-api/ui";
 import {ModelHandler} from './model-handler';
 import {TYPE} from "datagrok-api/dg";
 import $ from 'cash-dom';
+import {FunctionView} from "@datagrok-libraries/utils/src/function-view";
 const api = <any>window;
 
 
@@ -102,13 +103,13 @@ export class ModelsWidget extends DG.Widget {
       views.push(v.name)
     
     if (views.includes('Models')){
-          let view = DG.FunctionView.createFromFunc(x);
+          let view = new FunctionView(x);
           view.parentCall = parentCall!;
           grok.shell.addView(view);
     }else{
           grok.functions.call("Compute:ModelCatalog");
           setTimeout(() => {
-          let view = DG.FunctionView.createFromFunc(x);
+          let view = new FunctionView(x);
           view.parentCall = parentCall!;
           grok.shell.addView(view);
           }, 500)
