@@ -132,7 +132,7 @@ jobs:
         run: |
           if [ -n "$(git status -s ${{ matrix.project }}/package-lock.json)" ]; then
             git config --global user.name 'GitHub Actions'
-            git config --global user.email 'githubactions@datagrok.ai'
+            git config --global user.email 'spodolskaya@datagrok.ai'
             git pull
             git add ${{ matrix.project }}/package-lock.json
             git commit -m "GitHub Actions: Update ${{ matrix.project }}/package-lock.json"
