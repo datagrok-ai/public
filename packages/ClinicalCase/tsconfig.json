@@ -6,6 +6,7 @@
     "lib": ["ES2020", "DOM"],
     "moduleResolution": "node",
     "skipLibCheck": true,
-    "sourceMap": true
+    "sourceMap": true,
+    "esModuleInterop": true
   }
 }
