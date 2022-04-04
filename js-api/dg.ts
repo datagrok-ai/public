@@ -18,7 +18,6 @@ export * from './src/widgets';
 export * from './src/views/view';
 export * from './src/views/card_view';
 export * from './src/views/multi_view';
-export * from './src/views/function_view';
 export * from './src/viewer';
 export * from './src/docking';
 export * from './src/wrappers_impl';

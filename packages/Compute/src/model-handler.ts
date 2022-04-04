@@ -3,6 +3,7 @@ import * as ui from 'datagrok-api/ui';
 import * as DG from 'datagrok-api/dg';
 import {ModelCatalogView} from "./model-catalog-view";
 import {TYPE} from "datagrok-api/dg";
+import {FunctionView} from '@datagrok-libraries/utils/src/function-view';
 
 export class ModelHandler extends DG.ObjectHandler {
   get type() {
@@ -85,7 +86,7 @@ export class ModelHandler extends DG.ObjectHandler {
         grok.shell.error(error);
       });
     } else {
-      let view = new DG.FunctionView(x);
+      let view = new FunctionView(x);
       view.parentCall = parentCall!;
       grok.shell.addView(view);
     }
