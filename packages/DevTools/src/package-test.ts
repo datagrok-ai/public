@@ -1,11 +1,12 @@
 import * as DG from "datagrok-api/dg";
 import * as grok from "datagrok-api/grok";
-import {runTests} from "@datagrok-libraries/utils/src/test";
+import {runTests, tests} from '@datagrok-libraries/utils/src/test';
 
 import "./tests/function-signature-editor-test";
 import './tests/dev-panel-test';
 
 export let _package = new DG.Package();
+export {tests}
 
 //name: test
 //input: string category {optional: true}

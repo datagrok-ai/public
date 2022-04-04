@@ -11,7 +11,7 @@ function oclMol(mol: string): OCL.Molecule {
 }
 
 export class OCLCellRenderer extends DG.GridCellRenderer {
-  molCache: DG.LruCache = new DG.LruCache();
+  molCache: DG.LruCache<string, OCL.Molecule> = new DG.LruCache<string, OCL.Molecule>();
   static _canvas: HTMLCanvasElement = ui.canvas();
   get name() {return 'OpenChemLib';}
   get cellType() {return DG.SEMTYPE.MOLECULE;}
@@ -39,7 +39,7 @@ export class OCLCellRenderer extends DG.GridCellRenderer {
       return;
 
     try {
-      const mol: OCL.Molecule = this.molCache.getOrCreate(molString, () => oclMol(molString));
+      const mol = this.molCache.getOrCreate(molString, () => oclMol(molString));
       OCLCellRenderer._canvas.width = w;
       OCLCellRenderer._canvas.height = h;
       // @ts-ignore

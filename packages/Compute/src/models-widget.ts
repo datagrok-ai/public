@@ -1,67 +1,118 @@
 import * as grok from 'datagrok-api/grok';
 import * as DG from "datagrok-api/dg";
 import * as ui from "datagrok-api/ui";
+import {ModelHandler} from './model-handler';
+import {TYPE} from "datagrok-api/dg";
 import $ from 'cash-dom';
+const api = <any>window;
+
 
 export class ModelsWidget extends DG.Widget {
   caption: string;
   order: string;
+  meta: ModelHandler;
+  name: string;
+  permanentFilter: string;
+  objectType: string;
+  modelsList: HTMLDivElement;
 
   constructor() {
-    super(ui.panel());
-    this.caption = super.addProperty('caption', DG.TYPE.STRING, 'Model catalog');
+    super(ui.box());
+    
+    this.meta = new ModelHandler();
+    this.name = 'Models';
+    this.permanentFilter = '#model';
+    this.objectType = 'Script';
+
+    this.caption = super.addProperty('caption', DG.TYPE.STRING, 'Models');
     this.order = super.addProperty('order', DG.TYPE.STRING, '0');
-    this.getModels();
+
+    let topbar = ui.divH([
+        ui.choiceInput('', 'Recent', ['Recent','Newest','Oldest'], (v:string) => {
+            this.modelsList.innerHTML = '';
+            this.getModels(v);
+        }).root,
+        ui.link('Open Model Catalog', ()=>{
+            grok.functions.call("Compute:ModelCatalog");
+            setTimeout(() => {
+            for (let v of grok.shell.views)
+                if (v.name === 'Models')
+                    grok.shell.v = v;
+            }, 500);
+    })
+    ]);
+    topbar.style.justifyContent = 'space-between';
+    topbar.style.margin = '0 12px';
+    topbar.style.alignItems = 'center';
+
+    this.modelsList = ui.divV([]);
+    this.modelsList.style.marginLeft = '12px';
+
+    this.root.appendChild(ui.splitV([
+        ui.box(topbar, {style:{maxHeight:'40px'}}),
+        this.modelsList
+    ]));
+
+    DG.ObjectHandler.register(new ModelHandler());
+
+    this.getModels('updatedOn');
   }
 
-  async getModels(){
-    let count = (await grok.dapi.scripts.filter('#model').list()).length; 
-    let titles = [ui.h3('Simulation'), ui.h3('Other')]; 
-    for (let i in titles){
-        titles[i].style.color = 'var(--grey-3)';
-        titles[i].style.fontSize = '12px';
-        titles[i].style.textTransform = 'uppercase';
-        titles[i].style.letterSpacing = '1px';
-        titles[i].style.margin = '5px 0';
-    }
+    
 
-    let modelsList = ui.divV([
-        titles[0],
-        ui.divV([],'models-widget-group'),
-        titles[1],
-        ui.divV([],'models-widget-group'),
-    ]);
+  async getModels(order:string){
+    let b = true;
+    let v = order;
+
+    switch(order){
+        case 'Recent': 
+            v = 'updatedOn';
+            break;
+        case 'Newest': 
+            v = 'createdOn';
+            break;
+        case 'Oldest': 
+            v = 'createdOn';
+            b = false;
+            break;
+        default:
+            v = 'updatedOn';     
+    }
 
     grok.dapi.scripts
         .filter('#model')
+        .order(v, b)
         .list()
         .then((scripts) => scripts.map((p) => {
-            if(p.tags.includes("simulation")){
-                let div = ui.link('', p.path, undefined, null);
-                div.append(modelData(p))
-                $(modelsList).find('.models-widget-group')[0]?.append(div); 
-            }else{               
-                let div = ui.link('', p.path, undefined, null);
-                div.append(modelData(p))
-                $(modelsList).find('.models-widget-group')[1]?.append(div); 
-            }
+            let d = this.meta.renderMarkup(p);
+            d.ondblclick = (e) => {
+                ModelsWidget.openModel(p);
+              }
+            d.style.color = 'var(--blue-1)';
+            d.style.margin = '4px 0';
+            $(d).find('.ui-label').addClass('ui-link');
+            
+            this.modelsList.append(d)  
         }));
-
-    this.root.appendChild(modelsList);
   }
-}
 
-function modelData(p: any){
-    let img = ui.iconImage('logo', `/images/entities/${p.language}.png`);
-    img.style.width = '30px';
-    img.style.height = '30px';
-    img.style.border = 'none';
-    let card = ui.cards.summary(
-        img,
-        [
-            ui.div(ui.link(p.friendlyName, p, undefined, null)),
-            ui.div([p.updatedOn], {style:{color:'var(--grey-4)'}})
-    ]);
-    ui.tooltip.bind(card, p);
-    return card;
+  static openModel(x: DG.Script, parentCall?: DG.FuncCall) {
+    let views = []  
+    for (let v of grok.shell.views)
+      views.push(v.name)
+    
+    if (views.includes('Models')){
+          let view = DG.FunctionView.createFromFunc(x);
+          view.parentCall = parentCall!;
+          grok.shell.addView(view);
+    }else{
+          grok.functions.call("Compute:ModelCatalog");
+          setTimeout(() => {
+          let view = DG.FunctionView.createFromFunc(x);
+          view.parentCall = parentCall!;
+          grok.shell.addView(view);
+          }, 500)
+    }
   }
+
+} 

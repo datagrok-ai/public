@@ -496,6 +496,7 @@ export function openChemLibSketcher() {
 //description: Opens SDF file
 //tags: file-handler
 //meta.ext: sdf
+//meta.maxSize: 200000
 //input: list bytes
 //output: list tables
 export function importSdf(bytes: Uint8Array) {

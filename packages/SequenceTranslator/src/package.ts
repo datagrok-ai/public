@@ -5,9 +5,10 @@ import * as DG from 'datagrok-api/dg';
 import * as OCL from 'openchemlib/full.js';
 import $ from 'cash-dom';
 import {defineAxolabsPattern} from './defineAxolabsPattern';
-import {saveSenseAntiSense} from './structures-works/save-sense-antisense';
+import {saveSenseAntiSense, saveSdf} from './structures-works/save-sense-antisense';
 import {sequenceToSmiles, sequenceToMolV3000} from './structures-works/from-monomers';
 import {convertSequence, undefinedInputSequence} from './structures-works/sequence-codes-tools';
+import {map, COL_NAMES} from './structures-works/map';
 import {SALTS_CSV} from './salts';
 import {USERS_CSV} from './users';
 import {ICDS} from './ICDs';
@@ -16,7 +17,7 @@ import {IDPS} from './IDPs';
 
 export const _package = new DG.Package();
 
-const defaultInput = 'A';//'AGGTCCTCTTGACTTAGGCC';
+const defaultInput = 'AGGTCCTCTTGACTTAGGCC';
 const sequenceWasCopied = 'Copied';
 const tooltipSequence = 'Copy sequence';
 
@@ -253,32 +254,52 @@ export function sequenceTranslator(): void {
 async function saveTableAsSdFile(table: DG.DataFrame) {
   if (!table.columns.contains('Compound Name')) {
     grok.shell.warning(
-      'File saved without columns \'Compound Name\', \'Compound Components\', \'Cpd MW\', \'Salt mass\', \'Batch MW\'');
+      'File saved without columns \'' +
+      [COL_NAMES.COMPOUND_NAME, COL_NAMES.COMPOUND_COMMENTS, COL_NAMES.CPD_MW,
+        COL_NAMES.SALT_MASS, COL_NAMES.BATCH_MW].join('\', \''),
+    );
   }
-  const structureColumn = table.columns.byName('Sequence');
-  let result = '';
+  const structureColumn = table.col(COL_NAMES.SEQUENCE)!;
+  const typeColumn = table.col(COL_NAMES.TYPE)!;
   for (let i = 0; i < table.rowCount; i++) {
     try {
-      const molBlock = sequenceToMolV3000(structureColumn.get(i));
-      const mol = OCL.Molecule.fromMolfile(molBlock);
-      result += `\n${mol.toMolfile()}\n`;
-      for (const col of table.columns)
-        result += `>  <${col.name}>\n${col.get(i)}\n\n`;
-      result += '$$$$';
+      const ss = (typeColumn.get(i) == 'SS') ? structureColumn.get(i) : '';
+      const as = (typeColumn.get(i) == 'AS') ? structureColumn.get(i) : '';
+      saveSdf(as, ss, true);
     } catch (error) {
       console.error(error);
     }
   }
-  const element = document.createElement('a');
-  element.setAttribute('href', 'data:text/plain;charset=utf-8,' + encodeURIComponent(result));
-  element.setAttribute('download', table.name + '.sdf');
-  element.click();
+}
+
+const weightsObj: {[code: string]: number} = {};
+for (const synthesizer of Object.keys(map)) {
+  for (const technology of Object.keys(map[synthesizer])) {
+    for (const code of Object.keys(map[synthesizer][technology]))
+      weightsObj[code] = map[synthesizer][technology][code].weight;
+  }
+}
+
+function sortByStringLengthInDescendingOrder(array: string[]): string[] {
+  return array.sort(function(a, b) {return b.length - a.length;});
+}
+
+function molecularWeight(sequence: string, weightsObj: {[index: string]: number}): number {
+  const codes = sortByStringLengthInDescendingOrder(Object.keys(weightsObj));
+  let weight = 0;
+  let i = 0;
+  while (i < sequence.length) {
+    const matchedCode = codes.find((s) => s == sequence.slice(i, i + s.length))!;
+    weight += weightsObj[sequence.slice(i, i + matchedCode.length)];
+    i += matchedCode!.length;
+  }
+  return weight - 61.97;
 }
 
 //tags: autostart
 export function autostartOligoSdFileSubscription() {
   grok.events.onViewAdded.subscribe((v: any) => {
-    if (v.type == 'TableView' && v.dataFrame.columns.contains('Type'))
+    if (v.type == 'TableView' && v.dataFrame.columns.contains(COL_NAMES.TYPE))
       oligoSdFile(v.dataFrame);
   });
 }
@@ -289,97 +310,87 @@ export function oligoSdFile(table: DG.DataFrame) {
   const sourcesDf = DG.DataFrame.fromCsv(SOURCES);
   const icdsDf = DG.DataFrame.fromCsv(ICDS);
   const idpsDf = DG.DataFrame.fromCsv(IDPS);
+
   function addColumns(t: DG.DataFrame, saltsDf: DG.DataFrame) {
-    if (t.columns.contains('Compound Name'))
+    if (t.columns.contains(COL_NAMES.COMPOUND_NAME))
       return grok.shell.error('Columns already exist!');
 
-    table.col('Source')?.init('Johnson and Johnson Pharma');
-    table.col('ICD')?.init('No Contract');
+    const sequence = t.col(COL_NAMES.SEQUENCE)!;
+    const salt = t.col(COL_NAMES.SALT)!;
+    const equivalents = t.col(COL_NAMES.EQUIVALENTS)!;
 
-    const sequence = t.col('Sequence')!;
-    const salt = t.col('Salt')!;
-    const equivalents = t.col('Equivalents')!;
-
-    t.columns.addNewString('Compound Name').init((i: number) => sequence.get(i));
-    t.columns.addNewString('Compound Comments').init((i: number) => (i > 0 && i % 2 == 0) ?
+    t.columns.addNewString(COL_NAMES.COMPOUND_NAME).init((i: number) => sequence.get(i));
+    t.columns.addNewString(COL_NAMES.COMPOUND_COMMENTS).init((i: number) => (i > 0 && i % 2 == 0) ?
       sequence.getString(i) + '; duplex of SS: ' + sequence.getString(i - 2) + ' and AS: ' + sequence.getString(i - 1) :
       sequence.getString(i),
     );
     const chargeCol = saltsDf.col('CHARGE')!.toList();
     const saltNames = saltsDf.col('DISPLAY')!.toList();
-    const molWeight = saltsDf.col('MOLWEIGHT')!.toList();
-    t.columns.addNewFloat('Cpd MW').init((i: number) => ((i + 1) % 3 == 0) ? DG.FLOAT_NULL : molWeight[i]);
-    t.columns.addNewFloat('Salt mass').init((i: number) => {
+    t.columns.addNewFloat(COL_NAMES.CPD_MW)
+      .init((i: number) => ((i + 1) % 3 == 0) ? DG.FLOAT_NULL : molecularWeight(sequence.get(i), weightsObj));
+    t.columns.addNewFloat(COL_NAMES.SALT_MASS).init((i: number) => {
       const v = chargeCol[saltNames.indexOf(salt.get(i))];
       const n = (v == null) ? 0 : chargeCol[saltNames.indexOf(salt.get(i))];
       return n * equivalents.get(i);
     });
-    t.columns.addNewCalculated('Batch MW', '${Cpd MW} + ${Salt mass}', DG.COLUMN_TYPE.FLOAT, false);
+    t.columns.addNewCalculated(COL_NAMES.BATCH_MW,
+      '${' + COL_NAMES.CPD_MW + '} + ${' + COL_NAMES.SALT_MASS + '}', DG.COLUMN_TYPE.FLOAT, false,
+    );
 
     addColumnsPressed = true;
     return newDf = t;
   }
 
-  const columnsOrder = ['Chemistry', 'Number', 'Type', 'Chemistry Name', 'Internal compound ID',
-    'IDP', 'Sequence', 'Compound Name', 'Compound Comments', 'Salt', 'Equivalents', 'Purity', 'Cpd MW', 'Salt mass',
-    'Batch MW', 'Source', 'ICD', 'Owner'];
   let newDf: DG.DataFrame;
   let addColumnsPressed = false;
 
   const d = ui.div([
     ui.icons.edit(() => {
       d.innerHTML = '';
+      if (table.col(COL_NAMES.IDP)!.type != DG.COLUMN_TYPE.STRING)
+        table.changeColumnType(COL_NAMES.IDP, DG.COLUMN_TYPE.STRING);
       d.append(
         ui.link('Add Columns', () => {
           addColumns(table, saltsDf);
-          grok.shell.tableView(table.name).grid.columns.setOrder(columnsOrder);
-        }, 'Add columns: Compound Name, Compound Components, Cpd MW, Salt mass, Batch MW', ''),
+          grok.shell.tableView(table.name).grid.columns.setOrder(Object.values(COL_NAMES));
+        }, 'Add columns: \'' + [COL_NAMES.COMPOUND_NAME, COL_NAMES.COMPOUND_COMMENTS, COL_NAMES.CPD_MW,
+          COL_NAMES.SALT_MASS, COL_NAMES.BATCH_MW].join('\', \''), ''),
         ui.button('Save SD file', () => saveTableAsSdFile(addColumnsPressed ? newDf : table)),
       );
+
       const view = grok.shell.getTableView(table.name);
-      const saltCol = view.grid.col('Salt')!;
-      const typeCol = view.grid.col('Type')!;
-      const ownerCol = view.grid.col('Owner')!;
-      const sourcesCol = view.grid.col('Source')!;
-      const icdsCol = view.grid.col('ICD')!;
-      const idpsCol = view.grid.col('IDP')!;
+      const saltCol = view.grid.col(COL_NAMES.SALT)!;
+      const typeCol = view.grid.col(COL_NAMES.TYPE)!;
+      const ownerCol = view.grid.col(COL_NAMES.OWNER)!;
+      const sourcesCol = view.grid.col(COL_NAMES.SOURCE)!;
+      const icdsCol = view.grid.col(COL_NAMES.ICD)!;
+      const idpsCol = view.grid.col(COL_NAMES.IDP)!;
       saltCol.cellType = 'html';
       typeCol.cellType = 'html';
       ownerCol.cellType = 'html';
       sourcesCol.cellType = 'html';
       icdsCol.cellType = 'html';
       idpsCol.cellType = 'html';
+
+      const obj: {[index: string]: string[]} = {};
+      obj[COL_NAMES.TYPE] = ['AS', 'SS', 'Duplex'];
+      obj[COL_NAMES.OWNER] = usersDf.columns.byIndex(0).toList();
+      obj[COL_NAMES.SALT] = saltsDf.columns.byIndex(1).toList();
+      obj[COL_NAMES.SOURCE] = sourcesDf.columns.byIndex(0).toList();
+      obj[COL_NAMES.ICD] = icdsDf.columns.byIndex(0).toList();
+      obj[COL_NAMES.IDP] = idpsDf.columns.byIndex(0).toList();
+
       view.grid.onCellPrepare(function(gc: DG.GridCell) {
         if (gc.isTableCell) {
-          if (gc.gridColumn.name == 'Type')
-            gc.style.element = ui.choiceInput('', gc.cell.value, ['AS', 'SS', 'Duplex']).root;
-          else if (gc.gridColumn.name == 'Owner') {
-            gc.style.element = ui.choiceInput('', gc.cell.value, usersDf.columns.byIndex(0).toList(), () => {
-              view.dataFrame.col('Owner')!.set(gc.gridRow, gc.cell.value);
-            }).root;
-          } else if (gc.gridColumn.name == 'Salt') {
-            gc.style.element = ui.choiceInput('', gc.cell.value, saltsDf.columns.byIndex(1).toList(), () => {
-              view.dataFrame.col('Salt')!.set(gc.gridRow, gc.cell.value);
-            }).root;
-          } else if (gc.gridColumn.name == 'Source') {
-            gc.style.element = ui.choiceInput('', gc.cell.value, sourcesDf.columns.byIndex(0).toList(), () => {
-              view.dataFrame.col('Source')!.set(gc.gridRow, gc.cell.value);
-            }).root;
-          } else if (gc.gridColumn.name == 'ICD') {
-            gc.style.element = ui.choiceInput('', gc.cell.value, icdsDf.columns.byIndex(0).toList(), () => {
-              view.dataFrame.col('ICD')!.set(gc.gridRow, gc.cell.value);
-            }).root;
-          } else if (gc.gridColumn.name == 'IDP') {
-            gc.style.element = ui.choiceInput('', gc.cell.value, idpsDf.columns.byIndex(0).toList(), () => {
-              view.dataFrame.col('IDP')!.set(gc.gridRow, gc.cell.value);
-            }).root;
+          for (const [key, value] of Object.entries(obj)) {
+            if (gc.gridColumn.name == key) {
+              gc.style.element = ui.choiceInput('', gc.cell.value, value, (v: string) => {
+                const gridRow = gc.gridRow;
+                view.dataFrame.col(key)!.set(gridRow, v);
+              }).root;
+            }
           }
         }
-      });
-
-      table.onDataChanged.subscribe((_) => {
-        if (table.currentCol.name == 'IDP' && typeof table.currentCell.value != 'number')
-          grok.shell.error('Value should be numeric');
       });
     }),
   ]);

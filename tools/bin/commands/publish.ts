@@ -41,12 +41,13 @@ export async function processPackage(debug: boolean, rebuild: boolean, host: str
   let localTimestamps: Indexable = {};
   let files = await walk({
     path: '.',
-    ignoreFiles: ['.npmignore', '.gitignore'],
+    ignoreFiles: ['.npmignore', '.gitignore', '.grokignore'],
     includeEmpty: false,
     follow: true
   });
 
-  if (!rebuild && fs.existsSync('webpack.config.js')) {
+  let isWebpack = fs.existsSync('webpack.config.js');
+  if (!rebuild && isWebpack) {
     if (fs.existsSync('dist/package.js')) {
       const distFiles = await walk({
         path: './dist',
@@ -79,6 +80,10 @@ export async function processPackage(debug: boolean, rebuild: boolean, host: str
       return;
     if (relativePath.startsWith('dist') && rebuild)
       return;
+    if (relativePath.startsWith('src') && !rebuild && isWebpack) {
+      if (!relativePath.startsWith('src/package'))
+        return;
+    }
     if (relativePath.startsWith('upload.keys.json'))
       return;
     if (relativePath === 'zip')

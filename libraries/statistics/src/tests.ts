@@ -9,7 +9,9 @@ type testStats = {
   'p-value less': number,
 };
 
-export function tTest(arr1: number[], arr2: number[], devKnown=false, devEqual=false): testStats {
+type Population = number[] | Float32Array | Int32Array;
+
+export function tTest(arr1: Population, arr2: Population, devKnown=false, devEqual=false): testStats {
   const m1: number = jStat.mean(arr1);
   const m2: number = jStat.mean(arr2);
   const v1: number = jStat.variance(arr1);

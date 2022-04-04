@@ -11,6 +11,26 @@ export const TECHNOLOGIES = {
   ASO_GAPMERS: 'For ASO Gapmers',
   SI_RNA: 'For 2\'-OMe and 2\'-F modified siRNA',
 };
+export const COL_NAMES = {
+  CHEMISTRY: 'Chemistry',
+  NUMBER: 'Number',
+  TYPE: 'Type',
+  CHEMISTRY_NAME: 'Chemistry Name',
+  INTERNAL_COMPOUND_ID: 'Internal compound ID',
+  IDP: 'IDP',
+  SEQUENCE: 'Sequence',
+  COMPOUND_NAME: 'Compound Name',
+  COMPOUND_COMMENTS: 'Compound Comments',
+  SALT: 'Salt',
+  EQUIVALENTS: 'Equivalents',
+  PURITY: 'Purity',
+  CPD_MW: 'Cpd MW',
+  SALT_MASS: 'Salt mass',
+  BATCH_MW: 'Batch MW',
+  SOURCE: 'Source',
+  ICD: 'ICD',
+  OWNER: 'Owner',
+};
 // interface CODES {
 // }
 export const MODIFICATIONS: {[index: string]: {left: string, right: string}} = {

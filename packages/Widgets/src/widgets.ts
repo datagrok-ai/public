@@ -1,7 +1,16 @@
+import * as ui from 'datagrok-api/ui';
+import * as DG from 'datagrok-api/dg';
+
+import * as rxjs from 'rxjs';
+import $ from 'cash-dom';
+
+import './styles/widget.css';
+
 /**
  * Widget demo
  * */
-class TimeWidget extends DG.Widget {
+export class TimeWidget extends DG.Widget {
+  caption: string;
 
   constructor() {
     super(ui.panel([], 'welcome-time-widget'));
@@ -15,7 +24,7 @@ class TimeWidget extends DG.Widget {
     this.render();
   }
 
-  onPropertyChanged(property) { this.render(); }
+  onPropertyChanged(_: DG.Property) {this.render();}
 
   render() {
     $(this.root).empty();
@@ -24,16 +33,18 @@ class TimeWidget extends DG.Widget {
 }
 
 
-class SmilesLengthWidget extends DG.Widget {
+export class SmilesLengthWidget extends DG.Widget {
+  smiles: string;
+
   constructor() {
     super(ui.div());
 
     // properties
-    this.smiles = this.addProperty('smiles', DG.TYPE.STRING, null, { semType: DG.SEMTYPE.MOLECULE });
+    this.smiles = this.addProperty('smiles', DG.TYPE.STRING, null, {semType: DG.SEMTYPE.MOLECULE});
     this.render();
   }
 
-  onPropertyChanged(property) { this.render(); }
+  onPropertyChanged(_: DG.Property) {this.render();}
 
   render() {
     this.root.innerText = `Length: ${this.smiles === null ? 'none' : this.smiles.length}`;

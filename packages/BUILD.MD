@@ -1,33 +1,37 @@
 # Build instructions
 
 This repository contains 3 types of packages:
-1. JS API itself: `/js-api`
-2. Libraries: `/libraries`
-3. Regular Datagrok packages: `/packages`
+1. Datagrok JS API: `/js-api`
+2. Shared libraries: `/libraries`
+3. Datagrok packages: `/packages`
 
 # Building JS-API and libraries
 
-To build JS-SPI simply run `npm install` and `npm rub build` inside package folder. It builds Typescript code to Javascript.
+To build JS-API, run `npm install` and `npm pub build` inside the package folder. It builds Typescript code to Javascript.
 
 # Working with package dependencies
 
-Each package or library must have a certain list of dependencies. It can depend on js-api or library.
-Usually, you must specify minimal library version package can work with, otherwise, you can't build a package because of lack of code it needs.
-If package uses features from js-api that implemented in the new version, you must specify correct version constraint, i.e. `>=0.108.0`
-If package uses features from libraries, you must specify correct version constraint for library.
-Run `npm install` inside a package folder, and Node downloads all dependencies to `node_modules` folder of the package, including Datagrok and third-party packages.
+Each package or library must have a certain list of dependencies. It can depend on js-api or on a library.
+Make sure to  specify minimal library version a package can work with.
+If a package uses features from js-api that are implemented in the new version, you must specify the version constraint, i.e. `>=0.108.0`
+If a package uses features from libraries, you must specify the correct version constraint for library.
 
-Feel free to change package code and publish it anywhere with `grok publish` for debugging and testing.
+To install package dependencies, run `npm install` from the package folder. 
+
+To publish a package, run `grok publish` from the package folder. See [this guide](../help/develop/develop.md) for 
+details.
 
 # Publishing packages and libraries
 
-Publishing the package or the library to NPM is the right way to make you changes available for customers and other developers.
+To make you changes available to others, publish a package to NPM. 
 
-To publish something you need to bump package or library version and push this change to the repository.
-Please, ensure that GitHub action completed successfully. 
+To publish a package or a library, you need to bump package version, and push this change to the repository.
+This will trigger the automatic GitHub action. Make sure that GitHub action completed successfully before
+trying to use the new package. 
 
-If you add something to library, it is your responsibility to publish it.
-If you add something to js-api, please, note that others can use it only after publishing of a new platform version.
+It is the package author's responsibility to publish the package/library when the time is right.
+
+If you add something to js-api, note that the changes will be available with the next core release.
 
 # NPM scopes
 

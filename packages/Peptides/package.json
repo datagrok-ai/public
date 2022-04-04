@@ -1,64 +1,64 @@
 {
-	"name": "@datagrok/peptides",
-	"version": "0.8.9",
-	"description": "",
-	"dependencies": {
-		"@biowasm/aioli": ">=2.4.0",
-		"@datagrok-libraries/bio": ">=0.0.4",
-		"@datagrok-libraries/ml": ">=0.0.14",
-		"@datagrok-libraries/statistics": ">=0.1.5",
-		"@datagrok-libraries/utils": ">=0.0.22",
-		"cash-dom": "latest",
-		"d3": "latest",
-		"datagrok-api": ">=0.123.0",
-		"dayjs": "latest",
-		"file-loader": "^6.2.0",
-		"jstat": "^1.9.5",
-		"logojs-react": "^2.1.1",
-		"rxjs": "^6.5.5"
-	},
-	"devDependencies": {
-		"@types/d3": "^7.0.0",
-		"@types/jquery": "^3.5.6",
-		"@typescript-eslint/eslint-plugin": "latest",
-		"@typescript-eslint/parser": "latest",
-		"css-loader": "^5.2.4",
-		"eslint": "latest",
-		"eslint-config-google": "latest",
-		"style-loader": "^2.0.0",
-		"ts-loader": "latest",
-		"typescript": "latest",
-		"webpack": "latest",
-		"webpack-cli": "latest"
-	},
-	"sources": [
-		"common/ngl_viewer/ngl.js"
-	],
-	"scripts": {
-		"link-api": "npm link datagrok-api",
-		"link-utils": "npm link @datagrok-libraries/utils",
-		"link-statistics": "npm link @datagrok-libraries/statistics",
-		"link-ml": "npm link @datagrok-libraries/ml",
-		"link-bio": "npm link @datagrok-libraries/bio",
-		"link-all": "npm link datagrok-api @datagrok-libraries/utils @datagrok-libraries/statistics link @datagrok-libraries/ml @datagrok-libraries/bio",
-		"install-dependencies": "npm install",
-		"debug-peptides": "grok publish --rebuild",
-		"release-peptides": "grok publish --rebuild --release",
-		"build-peptides": "webpack",
-		"build": "webpack",
-		"debug-peptides-dev": "grok publish dev --rebuild",
-		"release-peptides-dev": "grok publish dev --rebuild --release",
-		"debug-peptides-public": "grok publish public --rebuild",
-		"release-peptides-public": "grok publish public --rebuild --release",
-		"debug-peptides-local": "grok publish local --rebuild",
-		"release-peptides-local": "grok publish local --rebuild --release",
-		"lint": "eslint \"./src/**/*.ts\"",
-		"lint-fix": "eslint \"./src/**/*.ts\" --fix"
-	},
-	"canEdit": [
-		"Developers"
-	],
-	"canView": [
-		"All users"
-	]
+  "name": "@datagrok/peptides",
+  "version": "0.8.10",
+  "description": "",
+  "dependencies": {
+    "@biowasm/aioli": ">=2.4.0",
+    "@datagrok-libraries/bio": ">=0.0.4",
+    "@datagrok-libraries/ml": ">=0.0.14",
+    "@datagrok-libraries/statistics": ">=0.1.5",
+    "@datagrok-libraries/utils": ">=0.0.22",
+    "cash-dom": "latest",
+    "d3": "latest",
+    "datagrok-api": ">=0.123.0",
+    "dayjs": "latest",
+    "file-loader": "^6.2.0",
+    "jstat": "^1.9.5",
+    "logojs-react": "^2.1.1",
+    "rxjs": "^6.5.5"
+  },
+  "devDependencies": {
+    "@types/d3": "^7.0.0",
+    "@types/jquery": "^3.5.6",
+    "@typescript-eslint/eslint-plugin": "latest",
+    "@typescript-eslint/parser": "latest",
+    "css-loader": "^5.2.4",
+    "eslint": "latest",
+    "eslint-config-google": "latest",
+    "style-loader": "^2.0.0",
+    "ts-loader": "latest",
+    "typescript": "latest",
+    "webpack": "latest",
+    "webpack-cli": "latest"
+  },
+  "sources": [
+    "common/ngl_viewer/ngl.js"
+  ],
+  "scripts": {
+    "link-api": "npm link datagrok-api",
+    "link-utils": "npm link @datagrok-libraries/utils",
+    "link-statistics": "npm link @datagrok-libraries/statistics",
+    "link-ml": "npm link @datagrok-libraries/ml",
+    "link-bio": "npm link @datagrok-libraries/bio",
+    "link-all": "npm link datagrok-api @datagrok-libraries/utils @datagrok-libraries/statistics link @datagrok-libraries/ml @datagrok-libraries/bio",
+    "install-dependencies": "npm install",
+    "debug-peptides": "grok publish --rebuild",
+    "release-peptides": "grok publish --rebuild --release",
+    "build-peptides": "webpack",
+    "build": "webpack",
+    "debug-peptides-dev": "grok publish dev --rebuild",
+    "release-peptides-dev": "grok publish dev --rebuild --release",
+    "debug-peptides-public": "grok publish public --rebuild",
+    "release-peptides-public": "grok publish public --rebuild --release",
+    "debug-peptides-local": "grok publish local --rebuild",
+    "release-peptides-local": "grok publish local --rebuild --release",
+    "lint": "eslint \"./src/**/*.ts\"",
+    "lint-fix": "eslint \"./src/**/*.ts\" --fix"
+  },
+  "canEdit": [
+    "Developers"
+  ],
+  "canView": [
+    "All users"
+  ]
 }

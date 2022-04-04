@@ -1,22 +1,44 @@
 {
-  "name": "@datagrok/widgets",
-  "beta": true,
-  "version": "0.1.0",
-  "fullName": "MultiForm",
-  "description": "A collection of commonly used widgets, viewers, filters, and cell renderers.",
-  "sources": [
-    "src/widgets.js",
-    "src/widgets.css",
-    "src/filters/radio_button_filter.js",
-    "src/filters/multi-value-filter.js"
-  ],
-  "canEdit": [
-    "Developers"
-  ],
-  "canView": [
-    "All users"
-  ],
-  "dependencies": {
-    "datagrok-tools": "^4.1.20"
-  }
+	"name": "@datagrok/widgets",
+	"beta": true,
+	"friendlyName": "Widgets",
+	"version": "0.2.0",
+	"description": "A collection of commonly used widgets, viewers, filters, and cell renderers.",
+	"canEdit": [
+		"Developers"
+	],
+	"canView": [
+		"All users"
+	],
+	"dependencies": {
+		"datagrok-api": "latest",
+		"rxjs": "^6.5.5",
+		"cash-dom": "latest"
+	},
+	"devDependencies": {
+		"webpack": "latest",
+		"webpack-cli": "latest",
+		"ts-loader": "latest",
+		"typescript": "latest",
+		"style-loader": "latest",
+		"css-loader": "latest",
+		"eslint": "latest",
+		"eslint-config-google": "latest",
+		"@typescript-eslint/eslint-plugin": "latest",
+		"@typescript-eslint/parser": "latest"
+	},
+	"scripts": {
+		"debug-widgets": "grok publish --rebuild",
+		"release-widgets": "grok publish --rebuild --release",
+		"build-widgets": "webpack",
+		"build": "webpack",
+		"debug-widgets-dev": "grok publish dev --rebuild",
+		"release-widgets-dev": "grok publish dev --rebuild --release",
+		"debug-widgets-local": "grok publish local --rebuild",
+		"release-widgets-local": "grok publish local --rebuild --release",
+		"debug-widgets-core": "grok publish core --rebuild",
+		"release-widgets-core": "grok publish core --rebuild --release",
+		"lint": "eslint src --ext .ts",
+		"lint-fix": "eslint src --ext .ts --fix"
+	}
 }

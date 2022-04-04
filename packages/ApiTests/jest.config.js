@@ -20,5 +20,14 @@ module.exports = {
           "module": "es2020",
       }
     }
-  }
+  },
+  reporters: [
+    "default",
+    [
+      "./node_modules/jest-html-reporter",
+      {
+        "includeConsoleLog": true
+      }
+    ]
+  ]
 }

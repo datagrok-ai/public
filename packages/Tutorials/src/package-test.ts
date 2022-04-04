@@ -1,9 +1,10 @@
 import * as DG from 'datagrok-api/dg';
-import {runTests} from '@datagrok-libraries/utils/src/test';
+import {runTests, tests} from '@datagrok-libraries/utils/src/test';
 import './tests/app-test';
 import './tests/tutorial-test';
 
 export let _package = new DG.Package();
+export {tests}
 
 //name: test
 //input: string category {optional: true}
