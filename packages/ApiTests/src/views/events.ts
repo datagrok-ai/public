@@ -1,13 +1,17 @@
 import * as grok from 'datagrok-api/grok';
 import * as DG from 'datagrok-api/dg';
 import { Subscription } from 'rxjs';
-import { after, category, expect, test } from "@datagrok-libraries/utils/src/test";
+import {after, before, category, expect, test} from "@datagrok-libraries/utils/src/test";
 
 category('View events', () => {
-  const df = grok.data.demo.demog();
-  const tv = grok.shell.addTableView(df);
+  let df = grok.data.demo.demog();
+  let tv: DG.TableView;
   const subs: Subscription[] = [];
 
+  before(async () => {
+    df = grok.data.demo.demog();
+    tv = grok.shell.addTableView(df);
+  })
   test('On view adding', async () => {
     let v0: DG.View;
     let v1: DG.TableView;
