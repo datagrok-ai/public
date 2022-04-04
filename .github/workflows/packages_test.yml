@@ -111,8 +111,10 @@ jobs:
       - name: Test Package
         id: test-package
         run: |
-          npm run test -- --verbose=false || echo \
-            "::error file=packages/${{ matrix.package }},title=Package ${{ matrix.package }} failed tests::Check ${{ matrix.package }}-test-report-${{ github.sha }}.html report for results"
+          npm run test -- --verbose=false || {
+            echo "::error file=packages/${{ matrix.package }},title=Package ${{ matrix.package }} failed tests::Check ${{ matrix.package }}-test-report-${{ github.sha }}.html report for results";
+            echo "::set-output name=status::error";
+          }
         env:
           JEST_HTML_REPORTER_PAGE_TITLE: "${{ matrix.package }} Test Report. Commit ${{ github.sha }}."
           JEST_HTML_REPORTER_OUTPUT_PATH: "./${{ matrix.package }}-test-report-${{ github.sha }}.html"
