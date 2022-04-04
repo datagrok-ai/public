@@ -172,7 +172,7 @@ export class FunctionView extends DG.ViewBase {
     let blockSize: number = 0;
     const gridWrapper = ui.block([]);
 
-    const gridSwitch = !wu(viewers).some((v: DG.Viewer) => v.type == 'grid');
+    const gridSwitch = !wu(viewers).some((v: DG.Viewer) => v.type == 'Grid');
     $(gridWrapper).hide();
 
     const getHeader = (sw: boolean) => {
@@ -201,7 +201,7 @@ export class FunctionView extends DG.ViewBase {
           const v = grok.shell.addTableView(df);
           (async () => {
             for (const viewer of viewers) {
-              if (viewer.type != 'grid') {
+              if (viewer.type != 'Grid') {
                 const newViewer = await df.plot.fromType(viewer.type) as DG.Viewer;
                 newViewer.setOptions(viewer.getOptions());
                 v.addViewer(newViewer);
