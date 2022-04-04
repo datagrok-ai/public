@@ -1,15 +1,39 @@
 import * as OCL from 'openchemlib/full.js';
 
+const PHOSHATE = `
+Datagrok monomer library Nucleotides
+
+  0  0  0  0  0  0              0 V3000
+M  V30 BEGIN CTAB
+M  V30 COUNTS 5 4 0 0 0
+M  V30 BEGIN ATOM
+M  V30 1 O -1.5 0 0 0
+M  V30 2 P 0 0 0 0
+M  V30 3 O 0 1 0 0
+M  V30 4 O 0 -1 0 0
+M  V30 5 O 1.5 0 0 0
+M  V30 END ATOM
+M  V30 BEGIN BOND
+M  V30 1 1 1 2
+M  V30 2 2 2 3
+M  V30 3 1 2 4
+M  V30 4 1 2 5
+M  V30 END BOND
+M  V30 END CTAB
+M  V30 BEGIN COLLECTION
+M  V30 END COLLECTION
+M  END`;
+
 export function getNucleotidesMol(smilesCodes: string[]) {
   const molBlocks: string[] = [];
 
   for (let i = 0; i < smilesCodes.length - 1; i++)
-    molBlocks.push(rotateNucleotidesV3000(smilesCodes[i]));
+    smilesCodes[i] == 'OP(=O)(O)O' ? molBlocks.push(PHOSHATE) : molBlocks.push(rotateNucleotidesV3000(smilesCodes[i]));
 
   return linkV3000(molBlocks);
 }
 
-export function linkV3000(molBlocks: string[], threeDx: boolean = false, twoMolecules: boolean = false) {
+export function linkV3000(molBlocks: string[], twoMolecules: boolean = false) {
   let macroMolBlock = '\nDatagrok macromolecule handler\n\n';
   macroMolBlock += '  0  0  0  0  0  0              0 V3000\n';
   macroMolBlock += 'M  V30 BEGIN CTAB\n';
@@ -46,7 +70,8 @@ export function linkV3000(molBlocks: string[], threeDx: boolean = false, twoMole
         index = molBlocks[i].indexOf(' ', index) + 1;
         indexEnd = molBlocks[i].indexOf(' ', index);
 
-        let coordinate = Math.round(10000*(parseFloat(molBlocks[i].substring(index, indexEnd)) + xShift))/10000;
+        const totalShift = xShift - coordinates.x[0];
+        let coordinate = Math.round(10000*(parseFloat(molBlocks[i].substring(index, indexEnd)) + totalShift))/10000;
         molBlocks[i] = molBlocks[i].slice(0, index) + coordinate + molBlocks[i].slice(indexEnd);
 
         index = molBlocks[i].indexOf(' ', index) + 1;
@@ -109,26 +134,17 @@ export function linkV3000(molBlocks: string[], threeDx: boolean = false, twoMole
 
     natom += twoMolecules ? numbers.natom : numbers.natom - 1;
     nbond += numbers.nbond;
-    xShift += twoMolecules ? 0 : coordinates.x[numbers.natom - 1];
+    xShift += twoMolecules ? 0 : coordinates.x[numbers.natom - 1] - coordinates.x[0];
     sequenceShift += twoMolecules ? -7 : 0;
   }
 
-  //3dx fix
-  if (threeDx) {
-    const entries = 4;
-    const collNumber = Math.ceil(collection.length / entries);
-    for (let i = 0; i < collNumber; i++) {
-      collectionBlock += 'M  V30 MDLV30/STEABS ATOMS=(';
-      const entriesCurrent = i + 1 == collNumber ? collection.length - (collNumber - 1)*entries : entries;
-      for (let j = 0; j < entriesCurrent; j++)
-        collectionBlock += (j + 1 == entriesCurrent) ? collection[entries*i + j] : collection[entries*i + j] + ' ';
-
-      collectionBlock += ')\n';
-    }
-  } else {
+  const entries = 4;
+  const collNumber = Math.ceil(collection.length / entries);
+  for (let i = 0; i < collNumber; i++) {
     collectionBlock += 'M  V30 MDLV30/STEABS ATOMS=(';
-    for (let i = 0; i < collection.length; i++)
-      collectionBlock += (i + 1 == collection.length) ? collection[i] : collection[i] + ' ';
+    const entriesCurrent = i + 1 == collNumber ? collection.length - (collNumber - 1)*entries : entries;
+    for (let j = 0; j < entriesCurrent; j++)
+      collectionBlock += (j + 1 == entriesCurrent) ? collection[entries*i + j] : collection[entries*i + j] + ' ';
 
     collectionBlock += ')\n';
   }
@@ -143,10 +159,10 @@ export function linkV3000(molBlocks: string[], threeDx: boolean = false, twoMole
   macroMolBlock += 'M  V30 BEGIN BOND\n';
   macroMolBlock += bondBlock;
   macroMolBlock += 'M  V30 END BOND\n';
-  macroMolBlock += 'M  V30 END CTAB\n';
   macroMolBlock += 'M  V30 BEGIN COLLECTION\n';
   macroMolBlock += collectionBlock;
   macroMolBlock += 'M  V30 END COLLECTION\n';
+  macroMolBlock += 'M  V30 END CTAB\n';
   macroMolBlock += 'M  END\n';
 
   return macroMolBlock;

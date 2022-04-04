@@ -4,9 +4,8 @@ import * as DG from 'datagrok-api/dg';
 export class ChemPalette {
     cp:{ [Key: string]: string; } = {};
     constructor(scheme: string) {
-      if (scheme == 'grok') {
+      if (scheme == 'grok')
         this.cp = ChemPalette.getDatagrok();
-      }
     }
 
     showTooltip(cell:DG.GridCell, x:number, y:number) {
@@ -15,12 +14,12 @@ export class ChemPalette {
       // eslint-disable-next-line no-unused-vars
       const [_c, aar, _p] = this.getColorAAPivot(s);
       if (aar in ChemPalette.AASmiles) {
-        if (s in ChemPalette.AANames) {
+        if (s in ChemPalette.AANames)
           toDisplay = [ui.divText(ChemPalette.AANames[s])];
-        }
-        if (s in ChemPalette.AAFullNames) {
+
+        if (s in ChemPalette.AAFullNames)
           toDisplay = [ui.divText(ChemPalette.AANames[ChemPalette.AAFullNames[s]])];
-        }
+
         const sketch = grok.chem.svgMol(ChemPalette.AASmiles[aar]);
         toDisplay.push(sketch);
       }

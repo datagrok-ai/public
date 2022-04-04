@@ -1,12 +1,87 @@
 <!-- TITLE: Release History -->
 <!-- SUBTITLE: -->
 
-# 2022-04-03 Dev build 0.139.3
+# 2022-03-30 Dev build 0.145.0
 
 ## Latest Docker Images
 
 * Datagrok: 
-  *  `docker pull datagrok/datagrok:0.139.3`
+  *  `docker pull datagrok/datagrok:0.145.0`
+  *  `docker pull datagrok/datagrok:latest`
+  
+* [Docker-Compose](admin/docker-compose.md)
+
+## Addressed Issues
+
+* Chem: polishing 
+* Closes #401: Vertical Axis: incorrect label density for custom renderers (i.e., Molecules) 
+* Chem: bumped version up to 0.51 
+* LruCache<Key, Value>: added generic arguments and strongly-typed it 
+* Simplified code to avoid warnings 
+* Chem rendering: strongly-typed, simplified 
+* Chem: work in progress 
+* Chem: new version, bug fixes, sdf saving 
+* SequenceTranslator: minor fixes 
+* Update models widget 
+* JBIO: refine LOGO viewer (WIP)
+* Chem: UI improvements 
+
+
+# 2022-03-29 Dev build 0.143.0
+
+## Latest Docker Images
+
+* Datagrok: 
+  *  `docker pull datagrok/datagrok:0.143.0`
+  *  `docker pull datagrok/datagrok:latest`
+  
+* [Docker-Compose](admin/docker-compose.md)
+
+## Addressed Issues
+
+* Unable to set value to datetime column from JS 
+* Added an example of turning the color-coding off 
+* #396: Chem: support SMARTS for db querying 
+* Elasticsearch config 
+
+
+# 2022-03-28 Dev build 0.142.0
+
+## Latest Docker Images
+
+* Datagrok: 
+  *  `docker pull datagrok/datagrok:0.142.0`
+  *  `docker pull datagrok/datagrok:latest`
+  
+* [Docker-Compose](admin/docker-compose.md)
+
+## Addressed Issues
+
+* Unable to set value to datetime column from JS 
+
+
+# 2022-03-28 Dev build 0.141.0
+
+## Latest Docker Images
+
+* Datagrok: 
+  *  `docker pull datagrok/datagrok:0.141.0`
+  *  `docker pull datagrok/datagrok:latest`
+  
+* [Docker-Compose](admin/docker-compose.md)
+
+## Addressed Issues
+
+* Merged in kdoncov/grok_connect_vulnerability_fixes (pull request #163) 
+* Remove deploy folder 
+
+
+# 2022-03-28 Dev build 0.140.0
+
+## Latest Docker Images
+
+* Datagrok: 
+  *  `docker pull datagrok/datagrok:0.140.0`
   *  `docker pull datagrok/datagrok:latest`
   
 * [Docker-Compose](admin/docker-compose.md)
@@ -27,10 +102,16 @@
 * Removed unnecessary comments 
 * Fixed column name in a sample script 
 * (Bug) Query View: "Add results to workspace" button does not work 
-* Fixed the type annotation 
 * Closes #385: Filters saved on older DG versions are not restored 
+* Fixed the type annotation 
 * Fixed the friendly name 
-* Function View convert to TS WIP 
+* Closes #393: GridCellRenderer: ability to handle mouse input 
+* Closes #393: GridCellRenderer: ability to handle mouse input \- added onMouseLeave 
+* VPN access to dev resources 
+* Closes #393: GridCellRenderer: ability to handle mouse input \- fixed onMouseLeave 
+* Closes #395: GridCellRenderer: ability to render HTML elements 
+* VPN with credentials 
+* Clinical Case: questionnaires view in pogress 
 
 
 # 2022-03-22 Dev build 0.139.0
@@ -4656,7 +4737,6 @@
 * datagrok-tools: update package template (WIP)
 * Functions: Categories order
 * (Bug) Conditional Coloring: Empty cells are coloured if all values in this column are empty
-* Merge branch 'master' of https://bitbucket.org/skalkin/reddata
 * Simplify info panels example
 * Viewers: render boolean values as categories on axes
 * (Bug) Grid: empty cells are colored in gray and cell borders are not visible for categorically and linearly colored

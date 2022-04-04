@@ -9,9 +9,9 @@ export function splitAlignedPeptides(peptideColumn: DG.Column) {
     splitted = peptideStr.split('-');
 
     if (isFirstRun) {
-      for (let i = 0; i < splitted.length; i++) {
+      for (let i = 0; i < splitted.length; i++)
         splitPeptidesArray.push([]);
-      }
+
       isFirstRun = false;
     }
 
@@ -28,9 +28,9 @@ export function splitAlignedPeptides(peptideColumn: DG.Column) {
   // filter out the columns with the same values
   splitPeptidesArray = splitPeptidesArray.filter((positionArray, index) => {
     const isRetained = new Set(positionArray).size > 1;
-    if (!isRetained) {
+    if (!isRetained)
       columnNames.splice(index, 1);
-    }
+
     return isRetained;
   });
 

@@ -137,7 +137,7 @@ services:
           - cvm
           - nginx_cvm
     restart: unless-stopped
-    profiles: [ "all", "cvm", "chem", "jupyter_notebook", "scripting" ]
+    profiles: [ "all", "nginx", "cvm", "chem", "jupyter_notebook", "scripting" ]
 
   jupyter_notebook:
     image: datagrok/jupyter_notebook:latest

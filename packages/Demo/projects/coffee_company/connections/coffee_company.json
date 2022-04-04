@@ -1,7 +1,7 @@
 {
   "#type": "DataConnection",
   "parameters": {
-    "server": "$DEMO_DB_SERVER",
+    "server": "starbucks",
     "port": 5432,
     "db": "starbucks"
   },

@@ -96,9 +96,7 @@ in [Datagrok configuration](configuration.md). Datagrok server will deploy all r
 startup.
 
 To deploy Datagrok in Kubernetes, including Cloud solutions for Kubernetes, such
-as [AWS EKS](https://aws.amazon.com/eks/), you can use
-our [prepared deployment scripts and ingress configuration](https://github.com/datagrok-ai/public/tree/master/help/develop/admin/deploy/k8s)
-.
+as [AWS EKS](https://aws.amazon.com/eks/), you can use our prepared deployment scripts and ingress configuration.
 
 ### Regular machine deployment
 

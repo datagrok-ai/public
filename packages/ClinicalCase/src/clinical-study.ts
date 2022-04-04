@@ -5,6 +5,7 @@ import { vaidateAEDomain, vaidateDMDomain } from './sdtm-validation/services/val
 import { createValidationDataFrame } from './sdtm-validation/validation-utils';
 import { SITE_ID, STUDY_ID } from './constants/columns-constants';
 import { addVisitDayFromTvDomain, createEventStartEndDaysCol } from './data-preparation/data-preparation';
+import { createFilters } from './utils/utils';
 
 export class ClinicalDomains {
   ae: DG.DataFrame = null;
@@ -75,7 +76,7 @@ export class ClinicalStudy {
   subjectsCount: number;
   sitesCount: number;
   validationResults: DG.DataFrame;
-  labDataForCorelationMatrix: DG.DataFrame;
+  dmFilters: DG.Viewer;
 
   initFromWorkspace(): void {
     for (let t of grok.shell.tables) {
@@ -106,6 +107,14 @@ export class ClinicalStudy {
   private process(): void {
     createEventStartEndDaysCol();
     addVisitDayFromTvDomain();
+    if (this.domains.dm) {
+      this.dmFilters = createFilters(this.domains.dm);
+      grok.shell.topMenu
+        .group('Cohort')
+        .item('Filter', () => {
+          grok.shell.o = this.dmFilters.root;
+        });
+    }
   }
 
 

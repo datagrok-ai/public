@@ -161,6 +161,10 @@ export class GridCell {
   get renderer(): GridCellRenderer {
     return api.grok_GridCell_Get_Renderer(this.dart);
   }
+
+  /** Gets or sets HTML element for this grid cell. */
+  get element(): HTMLElement { return api.grok_GridCell_Get_Element(this.dart); }
+  set element(e: HTMLElement) { api.grok_GridCell_Set_Element(this.dart, e); }
 }
 
 /** Represents a grid column */
@@ -186,102 +190,51 @@ export class GridColumn {
     return col === null ? null : new Column(col);
   }
 
-  /** Index of the column.
-   *  @returns {number} */
+  /** Index of the column. */
   get idx(): number {
     return api.grok_GridColumn_Get_Idx(this.dart);
   }
 
   /** @returns {string} Column name. */
-  get name(): string {
-    return api.grok_GridColumn_Get_Name(this.dart);
-  }
-
-  set name(x: string) {
-    api.grok_GridColumn_Set_Name(this.dart, x);
-  }
+  get name(): string { return api.grok_GridColumn_Get_Name(this.dart); }
+  set name(x: string) { api.grok_GridColumn_Set_Name(this.dart, x); }
 
   /** Column width in pixels.
-   * Sample: {@link https://public.datagrok.ai/js/samples/grid/resize-columns}
-   *  @returns {number} */
-  get width(): number {
-    return api.grok_GridColumn_Get_Width(this.dart);
-  }
+   * Sample: {@link https://public.datagrok.ai/js/samples/grid/resize-columns} */
+  get width(): number { return api.grok_GridColumn_Get_Width(this.dart); }
+  set width(x: number) { api.grok_GridColumn_Set_Width(this.dart, x); }
 
-  set width(x: number) {
-    api.grok_GridColumn_Set_Width(this.dart, x);
-  }
-
-  /** Background column as a 4-byte ARGB number.
-   *  @returns {number} */
-  get backColor(): number {
-    return api.grok_GridColumn_Get_BackColor(this.dart);
-  }
-
-  set backColor(x: number) {
-    api.grok_GridColumn_Set_BackColor(this.dart, x);
-  }
+  /** Background column as a 4-byte ARGB number. */
+  get backColor(): number { return api.grok_GridColumn_Get_BackColor(this.dart); }
+  set backColor(x: number) { api.grok_GridColumn_Set_BackColor(this.dart, x); }
 
   /** Column format.
-   * Sample: {@link https://public.datagrok.ai/js/samples/grid/html-markup-cells}
-   *  @returns {string} */
-  get format(): string {
-    return api.grok_GridColumn_Get_Format(this.dart);
-  }
-
-  set format(x: string) {
-    api.grok_GridColumn_Set_Format(this.dart, x);
-  }
+   * Sample: {@link https://public.datagrok.ai/js/samples/grid/html-markup-cells} */
+  get format(): string { return api.grok_GridColumn_Get_Format(this.dart); }
+  set format(x: string) { api.grok_GridColumn_Set_Format(this.dart, x); }
 
   /** @returns {string} Cell type. */
-  get cellType(): string {
-    return api.grok_GridColumn_Get_CellType(this.dart);
-  }
+  get cellType(): string { return api.grok_GridColumn_Get_CellType(this.dart); }
+  set cellType(x: string) { api.grok_GridColumn_Set_CellType(this.dart, x); }
 
-  set cellType(x: string) {
-    api.grok_GridColumn_Set_CellType(this.dart, x);
-  }
-
-  /** Column visibility.
-   *  @returns {boolean} */
-  get visible(): boolean {
-    return api.grok_GridColumn_Get_Visible(this.dart);
-  }
-
-  set visible(x: boolean) {
-    api.grok_GridColumn_Set_Visible(this.dart, x);
-  }
+  /** Column visibility.  */
+  get visible(): boolean { return api.grok_GridColumn_Get_Visible(this.dart); }
+  set visible(x: boolean) { api.grok_GridColumn_Set_Visible(this.dart, x); }
 
   /** Custom colors for categories.
    * Sample: {@link https://public.datagrok.ai/js/samples/grid/category-colors}
    *  @returns {Object.<string, number>} */
-  get categoryColors(): { [s: string]: number } {
-    return api.grok_GridColumn_Get_CategoryColors(this.dart);
-  }
-
-  set categoryColors(x: { [s: string]: number }) {
-    api.grok_GridColumn_Set_CategoryColors(this.dart, x);
-  }
+  get categoryColors(): { [s: string]: number } { return api.grok_GridColumn_Get_CategoryColors(this.dart); }
+  set categoryColors(x: { [s: string]: number }) { api.grok_GridColumn_Set_CategoryColors(this.dart, x); }
 
   /** Whether the column is editable.
    *  @returns {boolean} */
-  get editable(): boolean {
-    return api.grok_GridColumn_Get_Editable(this.dart);
-  }
+  get editable(): boolean { return api.grok_GridColumn_Get_Editable(this.dart); }
+  set editable(x: boolean) { api.grok_GridColumn_Set_Editable(this.dart, x); }
 
-  set editable(x: boolean) {
-    api.grok_GridColumn_Set_Editable(this.dart, x);
-  }
-
-  /** Whether the column is selected.
-   *  @returns {boolean}  */
-  get selected(): boolean {
-    return api.grok_GridColumn_Get_Selected(this.dart);
-  }
-
-  set selected(x: boolean) {
-    api.grok_GridColumn_Set_Selected(this.dart, x);
-  }
+  /** Whether the column is selected. */
+  get selected(): boolean { return api.grok_GridColumn_Get_Selected(this.dart); }
+  set selected(x: boolean) { api.grok_GridColumn_Set_Selected(this.dart, x); }
 
   /** Column position from the left side.
    *  @returns {number}  */
@@ -299,6 +252,10 @@ export class GridColumn {
   getVisibleCells(): Iterable<GridCell> {
     return this.grid.getVisibleCells(this);
   }
+
+  /** Grid column settings. */
+  get settings(): any | null { return api.grok_GridColumn_Get_Settings(this.dart); }
+  set settings(s: any | null) { api.grok_GridColumn_Set_Settings(this.dart, s); }
 }
 
 /** Represents grid columns. */
@@ -347,6 +304,11 @@ export class GridColumnList {
    *  @returns {number}  */
   get length(): number {
     return api.grok_GridColumnList_Get_Length(this.dart);
+  }
+
+  /** Adds a new column to the grid (but not to the underlying dataframe). */
+  add(options: {gridColumnName?: string, cellType: string}): GridColumn {
+    return api.grok_GridColumnList_Add(this.dart, options.cellType, options.gridColumnName);
   }
 }
 
@@ -628,6 +590,8 @@ export class GridCellRenderer extends CanvasRenderer {
     throw 'Not implemented';
   }
 
+  renderSettings(gridColumn: GridColumn): Element | null { return null; }
+
   renderInternal(g: CanvasRenderingContext2D, x: number, y: number, w: number, h: number, gridCell: GridCell, cellStyle: GridCellStyle): void {
     this.render(g, x, y, w, h, new GridCell(gridCell), new GridCellStyle(cellStyle));
   }
@@ -635,6 +599,17 @@ export class GridCellRenderer extends CanvasRenderer {
   static register(renderer: any): void {
     api.grok_GridCellRenderer_Register(renderer);
   }
+
+  onKeyDown(gridCell: GridCell, e: KeyboardEvent): void {}
+  onKeyPress(gridCell: GridCell, e: KeyboardEvent): void {}
+
+  onMouseEnter(gridCell: GridCell, e: MouseEvent): void {}
+  onMouseLeave(gridCell: GridCell, e: MouseEvent): void {}
+  onMouseDown(gridCell: GridCell, e: MouseEvent): void {}
+  onMouseUp(gridCell: GridCell, e: MouseEvent): void {}
+  onMouseMove(gridCell: GridCell, e: MouseEvent): void {}
+  onClick(gridCell: GridCell, e: MouseEvent): void {}
+  onDoubleClick(gridCell: GridCell, e: MouseEvent): void {}
 }
 
 

@@ -718,13 +718,25 @@ export class Package extends Entity {
       this._name = x;
   }
 
+  getModuleName(file: String) {
+    if (this.dart != null)
+      return api.grok_Package_GetModuleName(this.dart, file);
+    else
+      return null;
+  }
+
+  getModule(file: String) {
+    if (this.dart != null)
+      return api.grok_Package_GetModule(this.dart, file)();
+    else
+      return null;
+  }
   get meta() { return (this.dart == null) ? null : toJs(api.grok_Package_Get_Meta(this.dart)); }
 
   /** Loads package
    * @returns {Promise<Package>} */
-  async load(): Promise<Package> {
-    return new Promise((resolve, reject) =>
-      api.grok_Dapi_Packages_Load(this.name, (data: any) => resolve(data), (e: any) => reject(e)));
+  async load(options?: {file: String}): Promise<Package> {
+    return new api.grok_Dapi_Packages_Load(this.dart, options?.file);
   }
 
   /** Returns credentials for package

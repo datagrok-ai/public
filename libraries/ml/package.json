@@ -4,11 +4,11 @@
     "access": "public"
   },
   "friendlyName": "Datagrok ML library",
-  "version": "0.0.14",
+  "version": "0.0.16",
   "description": "Machine learning supporting utilities",
   "dependencies": {
-    "datagrok-api": ">=0.95.8",
-    "@datagrok-libraries/utils": ">=0.0.22",
+    "datagrok-api": "^0.123.0",
+    "@datagrok-libraries/utils": "^0.1.2",
     "cash-dom": "latest",
     "dayjs": "latest",
     "fastest-levenshtein": "^1.0.12",

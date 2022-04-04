@@ -871,6 +871,11 @@ export class Column {
     return api.grok_Column_GetRawDataDartium(this.dart);
   }
 
+  /** Linearly maps idx-th value to the [0,1] interval, where 0 represents column minimum, and 1 represents maximum. */
+  scale(idx: number): number {
+    return api.grok_Column_Scale(this.dart, idx);
+  }
+
   setRawData(rawData: Int32Array | Float32Array | Float64Array | Uint32Array, notify: boolean = true): void {
     api.grok_Column_SetRawData(this.dart, rawData, notify);
   }
@@ -1149,46 +1154,32 @@ export class ColumnList {
     return new Promise((resolve, reject) => api.grok_ColumnList_GetNewCalculated(this.dart, name, expression, type, treatAsString, (c: any) => resolve(toJs(c)), (e: any) => reject(e)));
   }
 
-  /** Adds a string column
-   * @param {string} name
-   * @returns {Column} */
+  /** Creates and adds a string column. */
   addNewString(name: string): Column { return this.addNew(name, TYPE.STRING); }
 
-  /** Adds a new integer column
-   * @param {string} name
-   * @returns {Column}
-   * {@link https://dev.datagrok.ai/script/samples/javascript/data-frame/modification/add-columns}
-   * */
+  /** Creates and adds an integer column
+   *  {@link https://dev.datagrok.ai/script/samples/javascript/data-frame/modification/add-columns} */
   addNewInt(name: string): Column { return this.addNew(name, TYPE.INT); }
 
-  /** Adds a new float column
-   * @param {string} name
-   * @returns {Column}
-   * */
+  /** Creates and adds a float column */
   addNewFloat(name: string): Column { return this.addNew(name, TYPE.FLOAT); }
 
-  /** Adds a new qualified number column
-   * @param {string} name
-   * @returns {Column}
+  /** Creates and adds a qualified number column
    * {@link https://dev.datagrok.ai/script/samples/javascript/data-frame/modification/add-columns}
    * */
   addNewQnum(name: string): Column { return this.addNew(name, TYPE.QNUM); }
 
-  /** Adds a new datetime column
-   * @param {string} name
-   * @returns {Column}
+  /** Creates and adds a datetime column
    * {@link https://dev.datagrok.ai/script/samples/javascript/data-frame/modification/add-columns}
    * */
   addNewDateTime(name: string): Column { return this.addNew(name, TYPE.DATE_TIME); }
 
-  /** Adds a new boolean column
-   * @param {string} name
-   * @returns {Column}
+  /** Creates and adds a boolean column
    * {@link https://dev.datagrok.ai/script/samples/javascript/data-frame/modification/add-columns}
    * */
   addNewBool(name: string): Column { return this.addNew(name, TYPE.BOOL); }
 
-  /** Adds a virtual column.
+  /** Creates and adds a virtual column.
    * @param {string} name
    * @param getValue - value constructor function that accepts int index and returns value
    * @param setValue - function that gets invoked when a column cell value is set
@@ -1447,6 +1438,9 @@ export class Cell {
    * @returns {*} */
   get value(): any { return api.grok_Cell_Get_Value(this.dart); }
   set value(x: any) { api.grok_Cell_Set_Value(this.dart, x); }
+
+  /** Whether the cell is empty */
+  isNone(): boolean { return this.column.isNone(this.rowIndex); }
 
   /** @returns {string} */
   toString(): string {

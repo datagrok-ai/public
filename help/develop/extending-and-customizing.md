@@ -43,11 +43,9 @@ With using our [JavaScript API](js-api.md), you can create your own:
   on-the-fly
 * [connections](../access/data-connection.md), to add new public or in-house data sources, such
   as [Chembl](https://www.ebi.ac.uk/chembl/) or [ENA](https://www.ebi.ac.uk/ena/browser/),
-
-custom [filters](https://github.com/datagrok-ai/public/blob/master/packages/Widgets/src/filters/radio_button_filter.js)
-, which allow adding a filtering mask to an active dataset; in addition, viewers themselves may act as filters, and
-filtering through one viewer shall reflect the state in all the other active viewers
-
+  custom [filters](https://github.com/datagrok-ai/public/blob/master/packages/Widgets/src/filters/radio-button-filter.ts)
+  , which allow adding a filtering mask to an active dataset; in addition, viewers themselves may act as filters, and
+  filtering through one viewer shall reflect the state in all the other active viewers
 * [accordion sections](ui.md#accordions) — accordion is an area on the left of the Datagrok UI, useful for additional
   custom functionality
 
