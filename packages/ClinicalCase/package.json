@@ -1,38 +1,46 @@
 {
-	"name": "@datagrok/clinical-case",
-	"friendlyName": "Clinical Case",
-	"version": "0.1.0",
-	"description": "",
-	"dependencies": {
-		"@datagrok-libraries/statistics": ">=0.0.15",
-		"@datagrok-libraries/utils": ">=0.0.16",
-		"cash-dom": "^8.1.0",
-		"datagrok-api": ">=0.116.0",
-		"jstat": "^1.9.5",
-		"moment": "^2.29.1",
-		"ts-loader": "^8.1.0",
-		"typescript": "^4.2.3",
-		"webpack": "^5.33.2"
-	},
-	"scripts": {
-		"link-api": "npm link datagrok-api",
-		"debug-clinicalcase": "webpack && grok publish",
-		"release-clinicalcase": "webpack && grok publish --release",
-		"build-clinicalcase": "webpack",
-		"build": "webpack",
-		"debug-clinicalcase-dev": "grok publish dev --rebuild",
-		"release-clinicalcase-dev": "grok publish dev --rebuild --release",
-		"debug-clinicalcase-public": "grok publish public --rebuild",
-		"release-clinicalcase-public": "grok publish public --rebuild --release"
-	},
-	"devDependencies": {
-		"@datagrok/charts": "latest",
-		"webpack-cli": "^4.7.2"
-	},
-	"canEdit": [
-		"Developers"
-	],
-	"canView": [
-		"All users"
-	]
+  "name": "@datagrok/clinical-case",
+  "friendlyName": "Clinical Case",
+  "version": "0.1.0",
+  "description": "",
+  "dependencies": {
+    "@datagrok-libraries/statistics": ">=0.0.15",
+    "@datagrok-libraries/utils": ">=0.0.16",
+    "cash-dom": "^8.1.0",
+    "datagrok-api": ">=0.116.0",
+    "jstat": "^1.9.5",
+    "moment": "^2.29.1",
+    "ts-loader": "^8.1.0",
+    "typescript": "^4.2.3",
+    "webpack": "^5.33.2"
+  },
+  "scripts": {
+    "link-api": "npm link datagrok-api",
+    "debug-clinicalcase": "webpack && grok publish",
+    "release-clinicalcase": "webpack && grok publish --release",
+    "build-clinicalcase": "webpack",
+    "build": "webpack",
+    "debug-clinicalcase-dev": "grok publish dev --rebuild",
+    "release-clinicalcase-dev": "grok publish dev --rebuild --release",
+    "debug-clinicalcase-public": "grok publish public --rebuild",
+    "release-clinicalcase-public": "grok publish public --rebuild --release",
+    "test": "set HOST=dev && jest",
+    "test-dev": "set HOST=dev && jest",
+    "test-local": "set HOST=localhost && jest"
+  },
+  "devDependencies": {
+    "@datagrok/charts": "latest",
+    "webpack-cli": "^4.7.2",
+    "@types/jest": "latest",
+    "jest": "latest",
+    "jest-html-reporter": "latest",
+    "puppeteer": "^13.1.2",
+    "ts-jest": "^27.1.2"
+  },
+  "canEdit": [
+    "Developers"
+  ],
+  "canView": [
+    "All users"
+  ]
 }
