@@ -20,7 +20,7 @@ afterAll(async () => {
 });
 
 it('TEST', async () => {
-  const target_package:string = process.env.TARGET_PACKAGE ?? 'ApiTests';
+  const target_package:string = process.env.TARGET_PACKAGE ?? 'PubChemApi';
   console.log(`Testing ${target_package} package`);
 
   //console.log(require('root-require')('package.json').version);
