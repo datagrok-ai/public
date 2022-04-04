@@ -8,10 +8,15 @@ export class FunctionView extends DG.ViewBase {
   constructor(func: DG.Func) {
     super();
     this.func = func;
-    this.context = DG.Context.create();
+    this.context = DG.Context.cloneDefault();
     this.controlsRoot.style.maxWidth = '370px';
     this.box = true;
     this._setFunction(undefined).then((r) => {});
+  }
+
+  private _type: string = 'function';
+  public get type(): string {
+    return this._type;
   }
   public func: DG.Func;
   private readonly context: DG.Context;
@@ -53,7 +58,7 @@ export class FunctionView extends DG.ViewBase {
 
         self.appendResultDataFrame(param,
           {height: (self.singleDfParam && !grok.shell.windows.presentationMode) ? 600 : 400,
-            category: 'Input'});
+            category: 'INPUT'});
       }));
     }
 
@@ -84,8 +89,8 @@ export class FunctionView extends DG.ViewBase {
     const categories: string[] = [];
     //  resultTabs.clear();
     if (this.showInputs) {
-      categories.push('Input');
-      this.resultTabs.set('Input', this.inputsDiv);
+      categories.push('INPUT');
+      this.resultTabs.set('INPUT', this.inputsDiv);
     }
     for (const p of this.func.outputs) {
       if (categories.includes(p.category))
@@ -99,14 +104,14 @@ export class FunctionView extends DG.ViewBase {
           this.resultTabs.set(c, ui.div([], 'ui-panel,grok-func-results'));
         let name = c;
         if (this.showInputs && categories.length == 2 && c == 'Misc')
-          name = 'Output';
+          name = 'OUTPUT';
         this.resultsTabControl.addPane(name, () => this.resultTabs.get(c) ?? ui.div());
       }
       if (categories.length > 1 && this.showInputs && showOutput)
         this.resultsTabControl.currentPane = this.resultsTabControl.panes[1];
       this.resultsDiv = this.resultsTabControl.root;
     } else {
-      this.resultsDiv = ui.div([], 'ui-panel,grok-func-results');
+      this.resultsDiv = ui.panel([], 'grok-func-results');
       this.resultsTabControl = undefined;
     }
     this.resultsRoot.innerHTML = '';
@@ -118,12 +123,12 @@ export class FunctionView extends DG.ViewBase {
       const runButton = ui.bigButton('Run', async () => {
         call.aux['view'] = this.dart;
         await call.call(true, undefined, {processed: true});
-        console.log(call);
+        this.clearResults(false, true);
         for (const [, p] of call.outputParams) {
+          console.log('param', p.value);
           p.processOutput();
-          if (p.property.propertyType == DG.TYPE.DATA_FRAME) {
+          if (p.property.propertyType == DG.TYPE.DATA_FRAME && p.value != null)
             this.appendResultDataFrame(p, {caption: p.property.name, category: p.property.category});
-          }
         }
       });
       const editor: HTMLDivElement = await call.getEditor(true);
@@ -137,13 +142,14 @@ export class FunctionView extends DG.ViewBase {
   paramViewers: Map<string, DG.Viewer[]> = new Map();
   resultsTabControl: DG.TabControl | undefined;
   resultTabs: Map<String, HTMLElement> = new Map();
-  resultsDiv: HTMLElement = ui.div([], 'ui-panel,grok-func-results');
-  controlsRoot: HTMLDivElement = ui.div([], 'ui-box');
-  resultsRoot: HTMLDivElement = ui.div([], 'ui-box');
-  inputsDiv: HTMLDivElement = ui.div([], 'ui-panel,grok-func-results');
+  resultsDiv: HTMLElement = ui.panel([], 'grok-func-results');
+  controlsRoot: HTMLDivElement = ui.box();
+  resultsRoot: HTMLDivElement = ui.box();
+  inputsDiv: HTMLDivElement = ui.panel([], 'grok-func-results');
 
   appendResultDataFrame(param: DG.FuncCallParam, options?: { caption?: string, category?: string, height?: number}) {
     const df = param.value;
+    console.log('dataframe', df);
     let caption = options?.caption;
     let height = options?.height ?? 400;
     const viewers: DG.Viewer[] = param.aux['viewers'] ?? [];
@@ -164,7 +170,7 @@ export class FunctionView extends DG.ViewBase {
     const hideList: HTMLElement[] = [];
     let blocks: number = 0;
     let blockSize: number = 0;
-    const gridWrapper = ui.div([], 'ui-div,ui-block');
+    const gridWrapper = ui.block([]);
 
     const gridSwitch = !wu(viewers).some((v: DG.Viewer) => v.type == 'grid');
     $(gridWrapper).hide();
@@ -220,9 +226,11 @@ export class FunctionView extends DG.ViewBase {
     let header = getHeader(true);
     this._appendResultElement(gridWrapper, options?.category);
     for (const viewer of viewers) {
+      if (viewer?.tags == null)
+        continue;
       existingViewers.push(viewer);
       const block = viewer.tags['.block-size'] ?? 100;
-      const wrapper = ui.div([], `ui-div,ui-block,ui-block-${block}`);
+      const wrapper = ui.block([], `ui-block-${block}`);
       if (blocks + block <= 100) {
         hideList.push(wrapper);
         blockSize += block;
@@ -240,7 +248,6 @@ export class FunctionView extends DG.ViewBase {
       }
       viewer.root.style.height = `${height}px`;
       this._appendResultElement(wrapper, options?.category);
-      console.log('add viewer');
     }
   }
 

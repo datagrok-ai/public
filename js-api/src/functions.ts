@@ -186,6 +186,9 @@ export class Context {
     return toJs(api.grok_Context_Create());
   }
 
+  static cloneDefault(): Context {
+    return toJs(api.grok_Context_CloneDefault());
+  }
   setVariable(name: string, value: any): void {
     api.grok_Context_Set_Variable(this.dart, name, toDart(value));
   }
