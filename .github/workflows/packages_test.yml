@@ -6,9 +6,6 @@ on:
     paths:
       - 'packages/**'
 
-env:
-  HOST: Dev
-
 jobs:
   metadata:
     name: Check packages were changed
@@ -24,7 +21,6 @@ jobs:
       - name: Generate matrix
         id: generate-matrix
         run: |
-          echo '::echo::on'
           if [[ $(git log -n 1 --pretty=%B) == *"Merge branch 'master' of"* ]]; then
             commit="$(git log --format="%H" -n 1 --no-merges)"
           else
@@ -37,13 +33,7 @@ jobs:
           for PACKAGE in ${CHANGED_PACKAGES}; do
             DIR="packages/${PACKAGE}"
             if [ -f "${DIR}/package.json" ]; then
-          
-              if [ -d "${DIR}/src/tests" ] || [ "$PACKAGE" = "*Tests*" ]; then
-                test='true'
-              else
-                test='false'
-              fi
-
+              datagrok_api_version=$(jq '(. | select( has("dependencies") == true ).dependencies) * (. | select( has("devDependencies") == true ).devDependencies) | ."datagrok-api"' "${DIR}/package.json" | sed 's/["^>=]//g')
               scripts="$(jq  '. | select( has("scripts") == true ).scripts' "${DIR}/package.json")"
               if [ -z "$(jq  '. | select( has("build") == true )' <<< "$scripts")" ]; then
                 build='false'
@@ -51,7 +41,16 @@ jobs:
                 build='true'
               fi
 
-              MATRIX_INCLUDE_JSON+="{\"package\": \"${PACKAGE}\", \"project\": \"${DIR}\", \"build\": \"${build}\", \"test\": \"${test}\"}"
+              if [ -z "$(jq  '. | select( has("test") == true )' <<< "$scripts")" ]; then
+                test='false'
+              else
+                test='true'
+              fi
+
+              MATRIX_INCLUDE_JSON+="{\"package\": \"${PACKAGE}\", \"datagrok_version\": \"latest\", \"project\": \"${DIR}\", \"build\": \"${build}\", \"test\": \"${test}\"}"
+              if [[ "$datagrok_api_version" != 'latest' ]]; then
+                MATRIX_INCLUDE_JSON+="{\"package\": \"${PACKAGE}\", \"datagrok_version\": \"$datagrok_api_version\", \"project\": \"${DIR}\", \"build\": \"${build}\", \"test\": \"${test}\"}"
+              fi
             fi
           done
 
@@ -63,6 +62,7 @@ jobs:
           if [[ "${MATRIX_INCLUDE_JSON}" != "[]" ]]; then
             CONTINUE_JOB="yes"
           fi
+          echo '::echo::on'
           echo "::set-output name=continue::${CONTINUE_JOB}"
           echo "::set-output name=matrix::${MATRIX_JSON}"
           echo '::echo::off'
@@ -72,13 +72,57 @@ jobs:
     needs: metadata
     if: needs.metadata.outputs.continue == 'yes'
     runs-on: ubuntu-latest
-    environment: Dev
+#    environment: Dev
+    env:
+      HOST: GitHubAction
     strategy:
       fail-fast: false
       max-parallel: 10
       matrix: ${{ fromJson(needs.metadata.outputs.matrix) }}
     steps:
       - uses: actions/checkout@v2
+        with:
+          fetch-depth: 1
+      - name: Set Datagrok image version
+        id: datagrok-image
+        run: |
+          v=${{ matrix.datagrok_version }}
+          
+          if [[ ${{ matrix.datagrok_version }} != 'latest' ]]; then
+            major=$(awk -F. '{print $1}' <<<"$v")
+            minor=$(awk -F. '{print $2}' <<<"$v")
+            filter=$(sed 's/\./\\\\./g' <<< $v)
+
+            latest_images=$(curl --retry 5 -s -S \
+              "https://registry.hub.docker.com/v2/repositories/datagrok/datagrok/tags?page_size=100")
+
+            tag=null
+            count=10
+            while [[ "$tag" == "null" ]] && [ $count -gt 0 ]; do
+              tag=$(jq "[.results[] | select(.name | test(\"${major}\\\.${minor}\\\.0\"))] | sort_by(.tag_last_pushed) | .[0].name" <<<$latest_images)
+              let 'minor = minor + 1'
+              count=$((count - 1))
+            done
+
+            if [[ "$tag" == "null" ]] && [ $count -eq 0 ]; then
+              echo "::error title=${{ matrix.package }}: failed tests::Could not find compatible Datagrok image version for package ${{ matrix.package }}";
+              exit 1
+            fi
+          else
+            tag=$v
+          fi
+          
+          tag="$(sed s/\"//g <<<$tag)@$(docker inspect --format='{{index .RepoDigests 0}}' datagrok/datagrok:$tag | cut -c1-8)"
+
+          commit_sha=${GITHUB_SHA::8}
+
+          sed -i "s,datagrok/datagrok:latest,datagrok/datagrok:$tag,g" docker/localhost.docker-compose.yaml
+          echo "::set-output name=version::$tag"
+          echo "::set-output name=commit_sha::$commit_sha"
+          echo "::notice title=${{ matrix.package }}::datagrok/datagrok:$tag docker version was used for tests"
+      - name: Run Datagrok
+#        run: docker-compose -p datagrok -f "docker/localhost.docker-compose.yaml" --profile datagrok --profile db --profile cvm up -d
+        run: docker-compose -p datagrok -f "docker/localhost.docker-compose.yaml" --profile datagrok --profile db up -d
       - name: Setup Node
         uses: actions/setup-node@v2
         with:
@@ -103,50 +147,57 @@ jobs:
         run: webpack
         working-directory: ${{ matrix.project }}
         if: ${{ matrix.build == 'false' }}
+      - name: Wait for Datagrok to become available
+        timeout-minutes: 5
+        run: |
+          until curl -s http://localhost:8080/api/admin/health | grep -e '"status":"Running"'
+          do
+            sleep 1
+          done
       - name: Create configuration for grok command-line tool
-        run: echo 'N' | grok config add --default --alias ${HOST} --server ${{ secrets.DATAGROK_API_URL }} --key ${{ secrets.DATAGROK_DEV_TOKEN }}
+        run: echo 'N' | grok config add --default --alias ${HOST} --server 'http://localhost:8080/api' --key admin
       - name: Publish package to Datagrok
         run: grok publish ${HOST}
         working-directory: ${{ matrix.project }}
-      - name: Install ApiTests
-        run: npm install
-        working-directory: ./packages/ApiTests
       - name: Test Package
         id: test-package
         run: |
-          echo "::set-output name=status::success"
-          npm run test -- --verbose=false || echo "::set-output name=status::error"
+          npm run test -- --verbose=false
         env:
-          TARGET_PACKAGE: ${{ matrix.package }}
-          JEST_HTML_REPORTER_PAGE_TITLE: "${{ matrix.package }} Test Report. Commit ${{ github.sha }}."
-          JEST_HTML_REPORTER_OUTPUT_PATH: "./${{ matrix.package }}-test-report-${{ github.sha }}.html"
+          JEST_HTML_REPORTER_PAGE_TITLE: "${{ matrix.package }} Test Report. Datagrok version datagrok/datagrok:${{ steps.datagrok-image.outputs.version }}. Commit ${{ steps.datagrok-image.outputs.commit_sha }}."
+          JEST_HTML_REPORTER_OUTPUT_PATH: "./test-${{ matrix.package }}-${{ steps.datagrok-image.outputs.version }}-${{ steps.datagrok-image.outputs.commit_sha }}.html"
           JEST_HTML_REPORTER_INCLUDE_FAILURE_MSG: true
           JEST_HTML_REPORTER_INCLUDE_CONSOLE_LOG: true
           JEST_HTML_REPORTER_INCLUDE_SUITE_FAILURE: true
-        working-directory: ./packages/ApiTests
-      - name: Create GitHub Action status for package
+        working-directory: ${{ matrix.project }}
+      - name: Create error notification
+        if: failure()
         run: |
-          if [ "${{ steps.test-package.outputs.status }}" == "error" ]; then
-            MESSAGE='Tests failed, please view logs'
-          else
-            MESSAGE='Package passed all tests'
-          fi
-          curl -f -s -X POST \
-            --url "https://api.github.com/repos/${{ github.repository }}/statuses/${{ github.sha }}" \
-            -H 'accept: application/vnd.github.v3+json' \
-            -H "authorization: Bearer ${{ secrets.GITHUB_TOKEN }}" \
-            -H 'content-type: application/json' \
-            -d "{ \"state\": \"${{ steps.test-package.outputs.status }}\",
-            \"target_url\": \"https://github.com/${{ github.repository }}/actions/runs/${GITHUB_RUN_ID}\",
-            \"description\": \"${MESSAGE}\", \"context\": \"--> Tested: ${{ matrix.package }}\"
-            }"
+          echo "::error title=${{ matrix.package }}: failed tests with datagrok:${{ steps.datagrok-image.outputs.version }}::Check test-${{ matrix.package }}-${{ steps.datagrok-image.outputs.version }}-${{ steps.datagrok-image.outputs.commit_sha }}.html report for results"
+          echo "::set-output name=status::error"
       - name: Upload Artifact
+        if: always()
         uses: actions/upload-artifact@v2
         with:
-          name: ${{ matrix.package }}-test-report-${{ github.sha }}.html
-          path: ./packages/ApiTests/${{ matrix.package }}-test-report-${{ github.sha }}.html
+          name: test-${{ matrix.package }}-${{ steps.datagrok-image.outputs.version }}-${{ steps.datagrok-image.outputs.commit_sha }}.html
+          path: ${{ matrix.project }}/test-${{ matrix.package }}-${{ steps.datagrok-image.outputs.version }}-${{ steps.datagrok-image.outputs.commit_sha }}.html
           retention-days: 7
-      - name: Report failed tests for package
-        if: steps.test-package.outputs.status == 'error'
-        run: |
-          echo "::error file=packages/${{ matrix.package }},title=Package ${{ matrix.package }} failed tests::Check ${{ matrix.package }}-test-report-${{ github.sha }}.html report for results"
+#      - name: Create GitHub Action status for package
+#        run: |
+#          if [ "${{ steps.test-package.outputs.status }}" == "error" ]; then
+#            MESSAGE='Tests failed, please view logs'
+#          else
+#            MESSAGE='Package passed all tests'
+#          fi
+#          curl -f -s -X POST \
+#            --url "https://api.github.com/repos/${{ github.repository }}/statuses/${{ steps.datagrok-image.outputs.commit_sha }}" \
+#            -H 'accept: application/vnd.github.v3+json' \
+#            -H "authorization: Bearer ${{ secrets.GITHUB_TOKEN }}" \
+#            -H 'content-type: application/json' \
+#            -d "{ \"state\": \"${{ steps.test-package.outputs.status }}\",
+#            \"target_url\": \"https://github.com/${{ github.repository }}/actions/runs/${GITHUB_RUN_ID}\",
+#            \"description\": \"${MESSAGE}\", \"context\": \"--> Tested: ${{ matrix.package }} on datagrok:${{ steps.datagrok-image.outputs.version }}\"
+#            }"
+      - name: Stop Datagrok
+        if: always()
+        run: docker-compose -p datagrok -f "docker/localhost.docker-compose.yaml" --profile datagrok down --volumes

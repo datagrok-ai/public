@@ -21,7 +21,12 @@
     "eslint": "^7.32.0",
     "eslint-config-google": "^0.14.0",
     "webpack": "^5.50.0",
-    "webpack-cli": "^4.7.2"
+    "webpack-cli": "^4.7.2",
+    "@types/jest": "latest",
+    "jest": "latest",
+    "jest-html-reporter": "latest",
+    "puppeteer": "^13.1.2",
+    "ts-jest": "^27.1.2"
   },
   "scripts": {
     "link-api": "npm link datagrok-api",
@@ -38,7 +43,10 @@
     "debug-tutorials-local": "grok publish local --rebuild",
     "release-tutorials-local": "grok publish local --rebuild --release",
     "debug-tutorials-localhost": "grok publish localhost --rebuild",
-    "release-tutorials-localhost": "grok publish localhost --rebuild --release"
+    "release-tutorials-localhost": "grok publish localhost --rebuild --release",
+    "test": "set HOST=dev && jest",
+    "test-dev": "set HOST=dev && jest",
+    "test-local": "set HOST=localhost && jest"
   },
   "canEdit": [
     "Developers"

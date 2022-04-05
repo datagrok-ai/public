@@ -5,7 +5,7 @@
 	"description": "",
 	"dependencies": {
 		"@datagrok-libraries/utils": "0.1.0",
-		"datagrok-api": ">=0.125.0",
+		"datagrok-api": ">=0.145.0",
 		"rxjs": "^6.6.7",
 		"wu": "latest"
 	},
@@ -34,7 +34,7 @@
 		"build": "webpack",
 		"test": "jest",
 		"debug-js-api-tests-dev": "grok publish dev --rebuild",
-		"release-js-api-tests-dev": "grok publish dev --rebuild --release",
+		"release-js-api-tests-dev": "webpack && grok publish dev  --release",
 		"debug-js-api-tests-public": "grok publish public --rebuild",
 		"release-js-api-tests-public": "grok publish public --rebuild --release",
 		"debug-js-api-tests-local": "grok publish local --rebuild",

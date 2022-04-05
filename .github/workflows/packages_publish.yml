@@ -95,6 +95,8 @@ jobs:
       matrix: ${{ fromJson(needs.metadata.outputs.matrix) }}
     steps:
       - uses: actions/checkout@v2
+        with:
+          token: ${{ secrets.WRITE_TOKEN }}
       - name: Setup Node
         uses: actions/setup-node@v2
         with:
@@ -132,10 +134,10 @@ jobs:
         run: |
           if [ -n "$(git status -s ${{ matrix.project }}/package-lock.json)" ]; then
             git config --global user.name 'GitHub Actions'
-            git config --global user.email 'githubactions@datagrok.ai'
+            git config --global user.email 'spodolskaya@datagrok.ai'
             git pull
             git add ${{ matrix.project }}/package-lock.json
-            git commit -m "GitHub Actions: Update ${{ matrix.project }}/package-lock.json"
+            git commit -m "GitHub Actions: Update ${{ matrix.project }}/package-lock.json [skip ci]"
             count=0
             retries=10
             until git push; do
