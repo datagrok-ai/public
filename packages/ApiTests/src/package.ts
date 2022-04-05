@@ -35,7 +35,7 @@ import './ui/accordion';
 import './ui/tabControl';
 import './ui/list';
 import './ui/image';
-import './ui/viewers-adding';
+import './ui/viewers-adding'
 import './grid/grid';
 
 import {runTests} from "@datagrok-libraries/utils/src/test";

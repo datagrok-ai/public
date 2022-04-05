@@ -4,6 +4,7 @@
 	"version": "0.7.1",
 	"description": "",
 	"dependencies": {
+		"@datagrok-libraries/utils": "^0.2.0",
 		"cash-dom": "latest",
 		"codemirror": "^5.64.0",
 		"datagrok-api": ">=0.99.0",
@@ -30,10 +31,13 @@
 	},
 	"scripts": {
 		"link-api": "npm link datagrok-api",
+		"link-utils": "npm link @datagrok-libraries/utils",
+		"link-all": "npm link datagrok-api @datagrok-libraries/utils",
 		"debug-compute": "webpack & grok publish dev --release",
 		"release-compute": "grok publish --rebuild --release",
 		"build-compute": "webpack",
 		"build": "webpack",
+		"build-compute-local": "npm --prefix ./../../js-api run build && npm --prefix ./../../libraries/utils run build && npm run build",
 		"debug-compute-dev": "webpack && grok publish dev --rebuild",
 		"release-compute-dev": "grok publish dev --release",
 		"debug-compute-local": "grok publish local --rebuild",

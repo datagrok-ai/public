@@ -9,6 +9,7 @@ import {ModelCatalogView} from './model-catalog-view';
 import wu from 'wu';
 import {OutliersSelectionViewer} from './outliers-selection/outliers-selection-viewer';
 import {ModelsWidget} from './models-widget'
+import {FunctionView} from "@datagrok-libraries/utils/src/function-view";
 
 let initCompleted: boolean = false;
 export const _package = new DG.Package();
@@ -133,8 +134,8 @@ export function init() {
     }).root;
   });
 
-  grok.events.onViewAdding.subscribe((v: DG.View) => {
-    if (v instanceof DG.FunctionView && v.func?.hasTag("model")) {
+  grok.events.onViewAdding.subscribe((v: DG.ViewBase) => {
+    if (v.type == 'function' && (v as FunctionView).func?.hasTag("model")) {
       let modelsView = wu(grok.shell.views).find((v) => v.parentCall?.func.name == 'modelCatalog');
       if (modelsView != undefined) {
         v.parentCall = modelsView!.parentCall;

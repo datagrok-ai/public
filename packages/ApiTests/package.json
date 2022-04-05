@@ -32,7 +32,7 @@
 		"link-api": "npm link datagrok-api",
 		"build-js-api-tests": "webpack",
 		"build": "webpack",
-		"test": "set HOST=localhost && jest",
+		"test": "jest",
 		"debug-js-api-tests-dev": "grok publish dev --rebuild",
 		"release-js-api-tests-dev": "webpack && grok publish dev  --release",
 		"debug-js-api-tests-public": "grok publish public --rebuild",

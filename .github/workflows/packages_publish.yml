@@ -137,7 +137,7 @@ jobs:
             git config --global user.email 'spodolskaya@datagrok.ai'
             git pull
             git add ${{ matrix.project }}/package-lock.json
-            git commit -m "GitHub Actions: Update ${{ matrix.project }}/package-lock.json"
+            git commit -m "GitHub Actions: Update ${{ matrix.project }}/package-lock.json [skip ci]"
             count=0
             retries=10
             until git push; do
