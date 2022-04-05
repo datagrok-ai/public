@@ -406,9 +406,8 @@ export class AlignedSequenceDifferenceCellRenderer extends DG.GridCellRenderer {
    * @memberof AlignedSequenceDifferenceCellRenderer
    */
   render(
-    g: CanvasRenderingContext2D, x: number, y: number, w: number, h: number, gridCell: DG.GridCell,
-    cellStyle: DG.GridCellStyle,
-  ) {
+      g: CanvasRenderingContext2D, x: number, y: number, w: number, h: number, gridCell: DG.GridCell,
+      cellStyle: DG.GridCellStyle) {
     const grid = gridCell.grid;
     const cell = gridCell.cell;
 
@@ -427,26 +426,32 @@ export class AlignedSequenceDifferenceCellRenderer extends DG.GridCellRenderer {
     const subParts2 = s2.split('-');
     const [text] = processSequence(subParts1);
     const textSize = g.measureText(text.join(''));
-    x = Math.max(x, x + (w - textSize.width) / 2);
+    let updatedX = Math.max(x, x + (w - (textSize.width + subParts1.length * 4)) / 2);
+    // 28 is the height of the two substitutions on top of each other + space
+    let updatedY = Math.max(y, y + (h - 28) / 2);
 
+    let amino2;
+    let updatedAmino1: string;
+    let updatedAmino2: string;
     subParts1.forEach((amino1: string, index) => {
-      let amino2 = subParts2[index];
+      amino2 = subParts2[index];
       const [color1, amino1Outer, amino1Inner, pivot1] = ChemPalette.getColorAAPivot(amino1);
       const [color2, amino2Outer, amino2Inner, pivot2] = ChemPalette.getColorAAPivot(amino2);
 
+      updatedAmino1 = amino1Outer + (amino1Inner !== '' ? '(' + amino1Inner + ')' : '');
+      updatedAmino1 = updatedAmino1 === '' ? '-' : updatedAmino1;
+
       if (amino1 != amino2) {
+        updatedAmino2 = amino2Outer + (amino2Inner !== '' ? '(' + amino2Inner + ')' : '');
+        updatedAmino2 = updatedAmino2 === '' ? '-' : updatedAmino2;
+
         const verticalShift = 7;
-
-        amino1 = amino1Outer + (amino1Inner !== '' ? '(' + amino1Inner + ')' : '');
-        amino2 = amino2Outer + (amino2Inner !== '' ? '(' + amino2Inner + ')' : '');
-        amino1 = amino1 === '' ? '-' : amino1;
-        amino2 = amino2 === '' ? '-' : amino2;
-
-        const x1 = printLeftOrCentered(x, y - verticalShift, w, h, g, amino1, color1, pivot1, true);
-        x = printLeftOrCentered(x, y + verticalShift, w, h, g, amino2, color2, pivot2, true);
-        x = Math.max(x, x1) + 4;
+        const subX0 = printLeftOrCentered(updatedX, updatedY - verticalShift, w, h, g, updatedAmino1, color1, pivot1, true);
+        const subX1 = printLeftOrCentered(updatedX, updatedY + verticalShift, w, h, g, updatedAmino2, color2, pivot2, true);
+        updatedX = Math.max(subX1, subX0);
       } else
-        x = printLeftOrCentered(x, y, w, h, g, amino1 ? amino1 : '-', color1, pivot1, true, true, 0.5) + 4;
+        updatedX = printLeftOrCentered(updatedX, updatedY, w, h, g, updatedAmino1, color1, pivot1, true, true, 0.5);
+      updatedX += 4;
     });
     g.restore();
   }
