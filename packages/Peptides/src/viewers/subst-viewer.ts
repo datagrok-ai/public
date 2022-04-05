@@ -17,6 +17,7 @@ export class SubstViewer extends DG.JsViewer {
   // casesGrid: DG.Grid | null;
   // model: PeptidesModel | null;
   controller: PeptidesController | null;
+  _titleHost = ui.divText(this._name, {id: 'pep-viewer-title'});
 
   constructor() {
     super();
@@ -245,15 +246,9 @@ export class SubstViewer extends DG.JsViewer {
 
   render() {
     $(this.root).empty();
-    const title = ui.divText(this._name);
-    title.style.height = '23px';
-    title.style.fontSize = '1.2rem';
-    title.style.fontFamily = `'Roboto', 'Roboto Local', sans-serif`;
-    title.style.color = '#4D5261';
-    title.style.textAlign = 'center';
     const gridRoot = this.viewerGrid!.root;
     gridRoot.style.width = 'auto';
-    this.root.appendChild(ui.divV([title, gridRoot]));
+    this.root.appendChild(ui.divV([this._titleHost, gridRoot]));
   }
 
   split(peptideColumn: DG.Column, filter: boolean = true): string[][] {

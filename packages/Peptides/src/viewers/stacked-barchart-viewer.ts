@@ -72,14 +72,14 @@ export function addViewerToHeader(grid: DG.Grid, barchart: StackedBarChart) {
   barchart.unhighlight();
 }
 
-type stackedBarChartDatatype = {
-  'name': string,
-  'data': {'name': string, 'count': number, 'selectedCount': number, 'fixedSelectedCount': number}[],
-}[];
+// type stackedBarChartDatatype = {
+//   'name': string,
+//   'data': {'name': string, 'count': number, 'selectedCount': number, 'fixedSelectedCount': number}[],
+// }[];
 
-type bartStatsType = {
-  [Key: string]: {'name': string, 'count': number, 'selectedCount': number, 'fixedSelectedCount': number}[],
-};
+// type bartStatsType = {
+//   [Key: string]: {'name': string, 'count': number, 'selectedCount': number, 'fixedSelectedCount': number}[],
+// };
 
 export class StackedBarChart extends DG.JsViewer {
   public dataEmptyAA: string;

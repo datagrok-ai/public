@@ -10,7 +10,7 @@ let browser: puppeteer.Browser;
 let page: puppeteer.Page;
 
 beforeAll(async () => {
-  let out = await utils.getBrowserPage(puppeteer);
+  const out = await utils.getBrowserPage(puppeteer);
   browser = out.browser;
   page = out.page;
 }, P_START_TIMEOUT);
@@ -24,20 +24,21 @@ it('TEST', async () => {
   console.log(`Testing ${target_package} package`);
 
   //console.log(require('root-require')('package.json').version);
-  let r = await page.evaluate((target_package):Promise<object> => {
+  const r = await page.evaluate((target_package):Promise<object> => {
     return new Promise<object>((resolve, reject) => {
       (<any>window).grok.functions.eval(target_package + ':test()').then((df: any) => {
-        let cStatus = df.columns.byName('success');
-        let cMessage = df.columns.byName('result');
-        let cCat = df.columns.byName('category');
-        let cName = df.columns.byName('name');
+        const cStatus = df.columns.byName('success');
+        const cMessage = df.columns.byName('result');
+        const cCat = df.columns.byName('category');
+        const cName = df.columns.byName('name');
         let failed = false;
         let report = '';
-        for (let i = 0; i < df.rowCount; i++)
+        for (let i = 0; i < df.rowCount; i++) {
           if (!cStatus.get(i)) {
             report += `${cCat.get(i)}.${cName.get(i)}: ${cMessage.get(i)}\n`;
             failed = true;
           }
+        }
         resolve({report, failed});
       }).catch((e: any) => reject(e));
     });

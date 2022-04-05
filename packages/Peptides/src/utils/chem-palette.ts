@@ -29,6 +29,7 @@ export class ChemPalette {
    * @param {DG.GridCell} cell Grid cell to show tooltip over.
    * @param {number} x x coordinate of the mouse pointer.
    * @param {number} y y coordinate of the mouse pointer.
+   * @param {MonomerLibrary} monomerLib Monomer Library instance
    */
   static showTooltip(cell: DG.GridCell, x: number, y: number, monomerLib: MonomerLibrary) {
     // if (!this.isInit) {

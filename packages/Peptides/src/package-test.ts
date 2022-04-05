@@ -7,7 +7,7 @@ import './tests/peptides-tests';
 import './tests/msa-tests';
 
 export const _packageTest = new DG.Package();
-export {tests}
+export {tests};
 
 //name: test
 //input: string category {optional: true}

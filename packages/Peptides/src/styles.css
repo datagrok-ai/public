@@ -44,3 +44,11 @@
   height: unset;
   width: 100%;
 }
+
+#pep-viewer-title {
+  height: 23px;
+  font-size: 1.2rem;
+  font-family: 'Roboto', 'Roboto Local', sans-serif;
+  color: #4D5261;
+  text-align: center;
+}
