@@ -36,7 +36,7 @@ import './ui/tabControl';
 import './ui/list';
 import './ui/image';
 import './ui/viewers-adding'
-// import './ui/grid'
+import './grid/grid';
 
 import {runTests} from "@datagrok-libraries/utils/src/test";
 export let _package = new DG.Package();
@@ -83,5 +83,82 @@ export async function testPackages(): Promise<DG.DataFrame> {
   }
 
   return result!;
+}
+
+
+
+//name: testManager
+//top-menu: Tools | Dev | Test Manager
+export async function testManager() {
+  let testFunctions = DG.Func.find({ name: 'Test' });
+  const packagesTestsList = {};
+  for (let f of testFunctions) {
+    //@ts-ignore
+    await f.package.load({ file: f.options.file });
+    //@ts-ignore
+    const allPackageTests = f.package.getModule(f.options.file).tests;
+    if (allPackageTests) {
+      //@ts-ignore
+      packagesTestsList[ f.package.friendlyName ] = allPackageTests;
+    }
+  }
+  createTestMangerUI(packagesTestsList);
+}
+
+function createTestMangerUI(packagesTests: any) {
+  Object.keys(packagesTests).forEach(pack => {
+    Object.keys(packagesTests[ pack ]).forEach(cat => {
+      //@ts-ignore
+      packagesTests[ pack ][ cat ].tests.forEach(t => t.active = true);
+    })
+  });
+  const v = grok.shell.newView('Test manager');
+  const acc = ui.accordion();
+  Object.keys(packagesTests).forEach(pack => {
+    acc.addCountPane(pack, () => {
+      const catAcc = ui.accordion();
+      Object.keys(packagesTests[ pack ]).forEach(cat => {
+        catAcc.addCountPane(cat, () => {
+          let testsDf = DG.DataFrame.create(packagesTests[ pack ][ cat ].tests.length);
+          //@ts-ignore
+          testsDf.columns.addNewString('Test').init((i) => packagesTests[ pack ][ cat ].tests[ i ].name);
+          //@ts-ignore
+          testsDf.columns.addNewBool('Active').init((i) => packagesTests[ pack ][ cat ].tests[ i ].active);
+          testsDf.onCurrentCellChanged.subscribe(() => {
+            setTimeout(() => {
+              if (testsDf.currentCol.name === 'Active') {
+                packagesTests[ pack ][ cat ].tests[ testsDf.currentRowIdx ].active = testsDf.currentCol.get(testsDf.currentRowIdx);
+                //@ts-ignore
+                catAcc.getPane(`${cat}`).root.children[ 0 ].children[ 0 ].innerHTML = `${packagesTests[ pack ][ cat ].tests.filter(it => it.active).length}`;
+              }
+            }, 100);
+          });
+          return testsDf.plot.grid().root;
+        },
+          //@ts-ignore
+          () => packagesTests[ pack ][ cat ].tests.filter(it => it.active).length);
+        let panel = catAcc.getPane(`${cat}`);
+        //@ts-ignore
+        $(panel.root).css('display', 'flex');
+        //@ts-ignore
+        $(panel.root).css('opacity', '1');
+      });
+      return catAcc.root;
+    }, () => Object.keys(packagesTests[ pack ]).length);
+  });
+  const runTestsButton = ui.bigButton('Run', () => {
+    Object.keys(packagesTests).forEach(pack => {
+      Object.keys(packagesTests[ pack ]).forEach(cat => {
+        //@ts-ignore
+        packagesTests[ pack ][ cat ].tests.forEach(t => {
+          if (t.active) {
+            t.test();
+          }
+        });
+      })
+    });
+  });
+  v.append(runTestsButton);
+  v.append(acc.root);
 }
 

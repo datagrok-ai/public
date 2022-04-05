@@ -324,14 +324,13 @@ export function oligoSdFile(table: DG.DataFrame) {
       sequence.getString(i) + '; duplex of SS: ' + sequence.getString(i - 2) + ' and AS: ' + sequence.getString(i - 1) :
       sequence.getString(i),
     );
-    const chargeCol = saltsDf.col('CHARGE')!.toList();
+    const molWeightCol = saltsDf.col('MOLWEIGHT')!.toList();
     const saltNames = saltsDf.col('DISPLAY')!.toList();
     t.columns.addNewFloat(COL_NAMES.CPD_MW)
       .init((i: number) => ((i + 1) % 3 == 0) ? DG.FLOAT_NULL : molecularWeight(sequence.get(i), weightsObj));
     t.columns.addNewFloat(COL_NAMES.SALT_MASS).init((i: number) => {
-      const v = chargeCol[saltNames.indexOf(salt.get(i))];
-      const n = (v == null) ? 0 : chargeCol[saltNames.indexOf(salt.get(i))];
-      return n * equivalents.get(i);
+      const mw = molWeightCol[saltNames.indexOf(salt.get(i))];
+      return mw * equivalents.get(i);
     });
     t.columns.addNewCalculated(COL_NAMES.BATCH_MW,
       '${' + COL_NAMES.CPD_MW + '} + ${' + COL_NAMES.SALT_MASS + '}', DG.COLUMN_TYPE.FLOAT, false,
@@ -372,17 +371,17 @@ export function oligoSdFile(table: DG.DataFrame) {
       icdsCol.cellType = 'html';
       idpsCol.cellType = 'html';
 
-      const obj: {[index: string]: string[]} = {};
-      obj[COL_NAMES.TYPE] = ['AS', 'SS', 'Duplex'];
-      obj[COL_NAMES.OWNER] = usersDf.columns.byIndex(0).toList();
-      obj[COL_NAMES.SALT] = saltsDf.columns.byIndex(1).toList();
-      obj[COL_NAMES.SOURCE] = sourcesDf.columns.byIndex(0).toList();
-      obj[COL_NAMES.ICD] = icdsDf.columns.byIndex(0).toList();
-      obj[COL_NAMES.IDP] = idpsDf.columns.byIndex(0).toList();
+      const colNamesToItemsObj: {[index: string]: string[]} = {};
+      colNamesToItemsObj[COL_NAMES.TYPE] = ['AS', 'SS', 'Duplex'];
+      colNamesToItemsObj[COL_NAMES.OWNER] = usersDf.columns.byIndex(0).toList();
+      colNamesToItemsObj[COL_NAMES.SALT] = saltsDf.columns.byIndex(1).toList();
+      colNamesToItemsObj[COL_NAMES.SOURCE] = sourcesDf.columns.byIndex(0).toList();
+      colNamesToItemsObj[COL_NAMES.ICD] = icdsDf.columns.byIndex(0).toList();
+      colNamesToItemsObj[COL_NAMES.IDP] = idpsDf.columns.byIndex(0).toList();
 
       view.grid.onCellPrepare(function(gc: DG.GridCell) {
         if (gc.isTableCell) {
-          for (const [key, value] of Object.entries(obj)) {
+          for (const [key, value] of Object.entries(colNamesToItemsObj)) {
             if (gc.gridColumn.name == key) {
               gc.style.element = ui.choiceInput('', gc.cell.value, value, (v: string) => {
                 const gridRow = gc.gridRow;
