@@ -60,10 +60,10 @@ jobs:
         run: |
           if [ -n "$(git status -s js-api/package-lock.json)" ]; then
             git config --global user.name 'GitHub Actions'
-            git config --global user.email 'githubactions@datagrok.ai'
+            git config --global user.email 'spodolskaya@datagrok.ai'
             git pull
             git add js-api/package-lock.json
-            git commit -m "GitHub Actions: Update js-api/package-lock.json"
+            git commit -m "GitHub Actions: Update js-api/package-lock.json [skip ci]"
             count=0
             until git push; do
               exit=$?
