@@ -12,23 +12,23 @@ import {SARMultipleFilter} from '../utils/SAR-multiple-filter';
  * Structure-activity relationship viewer.
  */
 export class SARViewer extends DG.JsViewer {
-  protected viewerGrid: DG.Grid | null;
-  protected sourceGrid: DG.Grid | null;
-  protected activityColumnName: string;
-  protected scaling: string;
-  protected bidirectionalAnalysis: boolean;
-  protected filterMode: boolean;
-  protected statsDf: DG.DataFrame | null;
-  protected initialized: boolean;
-  protected viewGridInitialized: boolean;
-  protected aminoAcidResidue;
-  protected viewerVGrid: DG.Grid | null;
-  protected grouping: boolean;
-  protected groupMapping: StringDictionary | null;
-  // model: PeptidesModel | null;
-  protected _name: string = 'Monomer-Positions';
-  protected controller: PeptidesController | null;
-  protected multipleFilter: SARMultipleFilter;
+  viewerGrid: DG.Grid | null;
+  sourceGrid: DG.Grid | null;
+  activityColumnName: string;
+  scaling: string;
+  bidirectionalAnalysis: boolean;
+  filterMode: boolean;
+  statsDf: DG.DataFrame | null;
+  initialized: boolean;
+  viewGridInitialized: boolean;
+  aminoAcidResidue;
+  viewerVGrid: DG.Grid | null;
+  grouping: boolean;
+  groupMapping: StringDictionary | null;
+  _title = 'Monomer-Positions';
+  _name = 'Structure-Activity Relationship';
+  controller: PeptidesController | null;
+  multipleFilter: SARMultipleFilter;
   // protected pValueThreshold: number;
   // protected amountOfBestAARs: number;
   // duplicatesHandingMethod: string;
@@ -79,9 +79,6 @@ export class SARViewer extends DG.JsViewer {
     return this.dataFrame!.filter;// ?? DG.BitSet.create(1, (_) => true);
   }
 
-  init() {
-  }
-
   async onTableAttached() {
     this.sourceGrid = this.view?.grid ?? (grok.shell.v as DG.TableView).grid;
     this.dataFrame?.setTag('dataType', 'peptides');
@@ -128,10 +125,8 @@ export class SARViewer extends DG.JsViewer {
   async onPropertyChanged(property: DG.Property) {
     super.onPropertyChanged(property);
 
-    if (!this.initialized) {
-      this.init();
+    if (!this.initialized)
       return;
-    }
 
     if (property.name === 'grouping')
       this.multipleFilter.resetSelection();
@@ -145,7 +140,7 @@ export class SARViewer extends DG.JsViewer {
 
     if (property.name === 'scaling' && typeof this.dataFrame !== 'undefined') {
       const minActivity = DG.Stats.fromColumn(
-        this.dataFrame!.col(this.activityColumnName)!,
+        this.dataFrame.col(this.activityColumnName)!,
         this.dataFrame.filter,
       ).min;
       if (minActivity && minActivity <= 0 && this.scaling !== 'none') {
@@ -163,7 +158,7 @@ export class SARViewer extends DG.JsViewer {
     if (!this.viewerGrid)
       return;
 
-    const viewerGridDf = this.viewerGrid!.dataFrame;
+    const viewerGridDf = this.viewerGrid.dataFrame;
 
     if (viewerGridDf && viewerGridDf.currentCell.value && viewerGridDf.currentCol.name !== this.aminoAcidResidue) {
       //const currentAAR: string = viewerGridDf.get(this.aminoAcidResidue, viewerGridDf.currentRowIdx);
@@ -261,7 +256,12 @@ export class SARViewer extends DG.JsViewer {
 
         if (this.viewerGrid !== null && this.viewerVGrid !== null) {
           $(this.root).empty();
-          const title = ui.h1(this._name, {style: {'align-self': 'center'}});
+          const title = ui.divText(this._title);
+          title.style.height = '23px';
+          title.style.fontSize = '1.2rem';
+          title.style.fontFamily = `'Roboto', 'Roboto Local', sans-serif`;
+          title.style.color = '#4D5261';
+          title.style.textAlign = 'center';
           const gridRoot = this.viewerGrid.root;
           gridRoot.style.width = 'auto';
           this.root.appendChild(ui.divV([title, gridRoot]));
@@ -318,7 +318,13 @@ export class SARViewerVertical extends DG.JsViewer {
   render() {
     if (this.viewerVGrid) {
       $(this.root).empty();
-      this.root.appendChild(this.viewerVGrid.root);
+      const title = ui.divText('Most Potent Residues');
+      title.style.height = '23px';
+      title.style.fontSize = '1.2rem';
+      title.style.fontFamily = `'Roboto', 'Roboto Local', sans-serif`;
+      title.style.color = '#4D5261';
+      title.style.textAlign = 'center';
+      this.root.appendChild(ui.divV([title, this.viewerVGrid.root]));
     }
     this.viewerVGrid?.invalidate();
   }

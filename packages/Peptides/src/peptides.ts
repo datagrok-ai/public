@@ -207,10 +207,13 @@ export class PeptidesController {
     const originalDfName = this.dataFrame.name;
     const dockManager = view.dockManager;
 
+    options.title = 'Sutructure-Activity Relationship';
     const sarViewer = await this.dataFrame.plot.fromType('peptide-sar-viewer', options) as SARViewer;
     sarViewer.helpUrl = this.helpUrl;
 
-    const sarViewerVertical = await this.dataFrame.plot.fromType('peptide-sar-viewer-vertical') as SARViewerVertical;
+    const sarViewerVerticalOptions = {title: 'Most Potent Residues'};
+    const sarViewerVertical =
+      await this.dataFrame.plot.fromType('peptide-sar-viewer-vertical', sarViewerVerticalOptions) as SARViewerVertical;
     sarViewerVertical.helpUrl = this.helpUrl;
 
     const sarViewersGroup: viewerTypes[] = [sarViewer, sarViewerVertical];
@@ -221,8 +224,12 @@ export class PeptidesController {
 
     let nodeList = dockViewers(sarViewersGroup, DG.DOCK_TYPE.RIGHT, dockManager, DG.DOCK_TYPE.DOWN);
 
+    const substViewerOptions = {
+      'activityColumnName': `${options['activityColumnName']}Scaled`,
+      'title': 'Substitution analysis',
+    };
     const substViewer = await this.dataFrame.plot.fromType(
-      'substitution-analysis-viewer', {'activityColumnName': `${options['activityColumnName']}Scaled`}) as SubstViewer;
+      'substitution-analysis-viewer', substViewerOptions) as SubstViewer;
     const substViewersGroup = [substViewer];
 
     tableGrid.props.allowEdit = false;
