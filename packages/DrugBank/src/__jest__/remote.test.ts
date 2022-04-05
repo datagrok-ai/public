@@ -46,4 +46,4 @@ it('TEST', async () => {
   console.log(r.report);
   // @ts-ignore
   expect(r.failed).toBe(false);
-}, 100000);
+}, P_START_TIMEOUT);
