@@ -245,9 +245,13 @@ export class SubstViewer extends DG.JsViewer {
 
   render() {
     $(this.root).empty();
-    const title = ui.h1(this.name, {style: {'align-self': 'center'}});
+    const title = ui.divText(this._name);
+    title.style.height = '23px';
+    title.style.fontSize = '1.2rem';
+    title.style.fontFamily = `'Roboto', 'Roboto Local', sans-serif`;
+    title.style.color = '#4D5261';
+    title.style.textAlign = 'center';
     const gridRoot = this.viewerGrid!.root;
-    title.style.alignContent = 'center';
     gridRoot.style.width = 'auto';
     this.root.appendChild(ui.divV([title, gridRoot]));
   }
