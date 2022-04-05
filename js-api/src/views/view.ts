@@ -4,14 +4,15 @@ import * as ui from '../../ui';
 import {FilterGroup, ScatterPlotViewer, Viewer} from '../viewer';
 import {DockManager, DockNode} from '../docking';
 import {Grid} from '../grid';
-import {Menu, ToolboxPage} from '../widgets';
-import {Entity, Func, Script} from '../entities';
+import {Menu, TabControl, ToolboxPage} from '../widgets';
+import {Entity, Func, Property, Script} from '../entities';
 import {toDart, toJs} from '../wrappers';
 import {_options, _toIterable} from '../utils';
 import {StreamSubscription} from '../events';
 import $ from "cash-dom";
 import {Subscription} from "rxjs";
-import {FuncCall} from "../functions";
+import {FuncCall, FuncCallParam} from "../functions";
+import {div} from "../../ui";
 
 
 let api = <any>window;
@@ -56,7 +57,7 @@ export class ViewBase {
 
   set box(b: boolean) {
     let r = $(this.root);
-    r.removeClass('ui-panel').removeClass('ui-box');
+    r.removeClass('ui-panel').removeClass('ui-box').removeClass('ui-div');
     r.addClass(b ? 'ui-box' : 'ui-panel');
   }
 
@@ -86,11 +87,11 @@ export class ViewBase {
     this._name = s;
   }
 
-  get parentCall(): FuncCall {
+  get parentCall(): FuncCall | undefined  {
     return toJs(api.grok_View_Get_ParentCall(this.dart));
   }
 
-  set parentCall(s: FuncCall) {
+  set parentCall(s: FuncCall | undefined) {
     api.grok_View_Set_ParentCall(this.dart, toDart(s));
   }
 
@@ -706,24 +707,6 @@ export class DockView extends View {
 
   _handleResize(): string {
     return api.grok_DockView_HandleResize(this.dart);
-  }
-}
-
-export class FunctionView extends View {
-  constructor(dart: any) {
-    super(dart);
-  }
-
-  static createFromFunc(func: Func): FunctionView {
-    return new FunctionView(api.grok_FunctionView(func.dart));
-  }
-
-  get func(): Func {
-    return toJs(api.grok_FunctionView_Get_Func(this.dart));
-  }
-
-  set func(f: Func) {
-      api.grok_FunctionView_Set_Func(this.dart, f.dart);
   }
 }
 

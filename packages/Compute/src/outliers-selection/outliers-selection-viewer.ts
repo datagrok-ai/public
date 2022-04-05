@@ -189,7 +189,7 @@ export class OutliersSelectionViewer extends DG.JsViewer {
     updateGroupsTable();
 
     this.root.innerHTML = '';
-    this.root.append(
+    this.root.appendChild(
       ui.divV([
         ui.divV([
           groupsListGrid.root,

@@ -195,6 +195,7 @@ export function iconFA(name: string, handler: ((this: HTMLElement, ev: MouseEven
 
 export function iconImage(name: string, path: string, handler: ((this: HTMLElement, ev: MouseEvent) => any) | null = null, tooltipMsg: string | null = null): HTMLElement {
   let i = element('i');
+  i.classList.add('grok-icon');
   i.classList.add('image-icon');
   if (!path.startsWith('http') && !path.startsWith('/') && !path.startsWith('data:'))
     path = '/images/$path';
@@ -209,6 +210,7 @@ export function iconImage(name: string, path: string, handler: ((this: HTMLEleme
 export function iconSvg(name: string, handler: ((this: HTMLElement, ev: MouseEvent) => any) | null = null, tooltipMsg: string | null = null): HTMLElement {
   let i = element('i');
   i.classList.add('svg-icon');
+  i.classList.add('grok-icon');
   i.classList.add(`svg-${name}`);
   if (handler !== null)
     i.addEventListener('click', handler);
@@ -1160,14 +1162,14 @@ export function star(id: string): HTMLElement {
 
 function _icon(type: string, handler: Function, tooltipMsg: string | null = null): HTMLElement {
   let e = $(`<i class="grok-icon grok-font-icon-${type}"></i>`)[0] as HTMLElement;
-  e?.addEventListener('click', () => handler());
+  e?.addEventListener('click', (e) => handler(e));
   tooltip.bind(e, tooltipMsg);
   return e;
 }
 
 function _iconFA(type: string, handler: Function, tooltipMsg: string | null = null): HTMLElement {
   let e = $(`<i class="grok-icon fal fa-${type}"></i>`)[0] as HTMLElement;
-  e?.addEventListener('click', () => handler());
+  e?.addEventListener('click', (e) => handler(e));
   tooltip.bind(e, tooltipMsg);
   return e;
 }
@@ -1188,6 +1190,18 @@ export let icons = {
   search: (handler: Function, tooltipMsg: string | null = null) => _iconFA('search', handler, tooltipMsg),
   filter: (handler: Function, tooltipMsg: string | null = null) => _iconFA('filter', handler, tooltipMsg),
   play: (handler: Function, tooltipMsg: string | null = null) => _iconFA('play', handler, tooltipMsg),
+}
+
+export function setDisplayAll(elements: HTMLElement[], show: boolean): void {
+  elements.forEach((e) => setDisplay(e, show));
+}
+
+export function setDisplay(element: HTMLElement, show: boolean) {
+  if (show)
+    element.style.removeProperty('display');
+  else
+    element.style.display = 'none';
+  return element;
 }
 
 export namespace tools {

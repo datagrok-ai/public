@@ -1,10 +1,11 @@
 import {paramsToJs, toDart, toJs} from "./wrappers";
 import {Type} from "./const";
-import {Entity, Func} from "./entities";
+import {Entity, Func, Property} from "./entities";
 import {DartWidget, ProgressIndicator,} from "./widgets";
 import {MapProxy, _toIterable} from "./utils";
 import {Observable} from "rxjs";
-import {__obs} from "./events";
+import {__obs, StreamSubscription} from "./events";
+import * as rxjs from "rxjs";
 declare let grok: any;
 declare let DG: any;
 let api = <any>window;
@@ -136,8 +137,47 @@ export class Functions {
   get onAfterRunAction(): Observable<FuncCall> { return __obs('d4-after-run-action'); }
 }
 
+
+export class FuncCallParam {
+  readonly dart: any;
+  public aux: any;
+
+  constructor(dart: any) {
+    this.dart = dart;
+    this.aux = new MapProxy(api.grok_FuncCallParam_Get_Aux(this.dart));
+  }
+
+  get name(): string {return this.property.name; }
+
+  get value(): any { return toJs(api.grok_FuncCallParam_Get_Value(this.dart)); }
+
+  get property(): Property { return toJs(api.grok_FuncCallParam_Get_Param(this.dart)); }
+
+  processOutput(): void {
+    api.grok_FuncCallParam_ProcessOutput(this.dart);
+  }
+
+  get onChanged(): Observable<any> {
+    let object = this.dart;
+    return rxjs.fromEventPattern(
+      function (handler) {
+        return api.grok_FuncCallParam_OnChanged(object, function (x: any) {
+          handler(toJs(x));
+        });
+      },
+      function (handler, dart) {
+        new StreamSubscription(dart).cancel();
+      }
+    );
+  }
+
+}
+
+
 export class Context {
   readonly dart: any;
+
+
   constructor(dart: any) {
     this.dart = dart;
   }
@@ -146,6 +186,9 @@ export class Context {
     return toJs(api.grok_Context_Create());
   }
 
+  static cloneDefault(): Context {
+    return toJs(api.grok_Context_CloneDefault());
+  }
   setVariable(name: string, value: any): void {
     api.grok_Context_Set_Variable(this.dart, name, toDart(value));
   }
@@ -165,11 +208,15 @@ export class FuncCall {
   public outputs: any;
   public aux: any;
   public options: any;
+  public inputParams: any;
+  public outputParams: any;
 
   constructor(dart: any) {
     this.dart = dart;
     this.inputs = new FuncCallParamMapProxy(this.dart, true);
     this.outputs = new FuncCallParamMapProxy(this.dart, false);
+    this.inputParams = new MapProxy(api.grok_FuncCall_Get_Params(this.dart, true));
+    this.outputParams = new MapProxy(api.grok_FuncCall_Get_Params(this.dart, false));
     this.aux = new MapProxy(api.grok_FuncCall_Get_Aux(this.dart));
     this.options = new MapProxy(api.grok_FuncCall_Get_Options(this.dart));
   }
@@ -204,7 +251,7 @@ export class FuncCall {
     api.grok_FuncCall_Edit(this.dart);
   }
 
-  getEditor(condensed?: boolean, showTableSelectors?: boolean): Promise<HTMLElement> {
+  getEditor(condensed?: boolean, showTableSelectors?: boolean): Promise<HTMLDivElement> {
     return new Promise((resolve, reject) => api.grok_FuncCall_Get_Editor(this.dart, condensed, showTableSelectors, (out: any) => resolve(out), (err: any) => reject(err)));
   }
 }

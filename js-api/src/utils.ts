@@ -135,6 +135,8 @@ export class DartList<T> implements Iterable<T> {
     return list as DartList<T>;
   }
 
+  [key: number]: any;
+
   /** Returns the number of objects in this list. */
   get length(): number { return api.grok_List_Get_Length(this.dart); }
 
@@ -194,12 +196,12 @@ export const MapProxy = new Proxy(class {
       return _toIterable(api.grok_Map_Keys(this.dart));
     }
     values() {
-      return _toIterable(api.grok_Map_Values(this.dart));
+      return _toIterable(toJs(api.grok_Map_Values(this.dart)));
     }
     * [Symbol.iterator] () {
       for (let key of this.keys()) {
         const value = toJs(api.grok_Map_Get(this.dart, key));
-        yield [key, value];
+        yield [key, toJs(value)];
       }
     }
     entries() {
@@ -207,7 +209,7 @@ export const MapProxy = new Proxy(class {
     }
     forEach(callback: (key: string, value: any) => void) {
       for (const [key, value] of this) {
-        callback(key, value);
+        callback(key, toJs(value));
       }
     }
     delete(key: string) {
