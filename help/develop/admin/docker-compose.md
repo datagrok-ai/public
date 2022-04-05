@@ -68,7 +68,7 @@ docker-compose -f docker/localhost.docker-compose.yaml --project-name datagrok -
 If you do not need CVM features, you can run only Datagrok application containers:
 
 ```shell
-docker-compose -f docker/localhost.docker-compose.yaml --project-name datagrok --profile datagrok up -d
+docker-compose -f docker/localhost.docker-compose.yaml --project-name datagrok --profile datagrok --profile db up -d
 ```
 
 If you need CVM features only, you can run only CVM application containers:
@@ -82,25 +82,25 @@ To run Datagrok with exact CVM features, specify them in the command-line using 
 * Cheminformatics
 
    ```shell
-   docker-compose -f docker/localhost.docker-compose.yaml --project-name datagrok --profile datagrok --profile chem up -d
+   docker-compose -f docker/localhost.docker-compose.yaml --project-name datagrok --profile datagrok --profile db --profile chem up -d
    ```
 
 * Jupyter notebook
 
    ```shell
-   docker-compose -f docker/localhost.docker-compose.yaml --project-name datagrok --profile datagrok --profile jupyter_notebook up -d
+   docker-compose -f docker/localhost.docker-compose.yaml --project-name datagrok --profile datagrok --profile db --profile jupyter_notebook up -d
    ```
 
 * Scripting
 
    ```shell
-   docker-compose -f docker/localhost.docker-compose.yaml --project-name datagrok --profile datagrok --profile scripting up -d
+   docker-compose -f docker/localhost.docker-compose.yaml --project-name datagrok --profile datagrok --profile db --profile scripting up -d
    ```
 
 * Modeling
 
    ```shell
-   docker-compose -f docker/localhost.docker-compose.yaml --project-name datagrok --profile datagrok --profile modeling up -d
+   docker-compose -f docker/localhost.docker-compose.yaml --project-name datagrok --profile datagrok --profile db --profile modeling up -d
    ```
 
 * Features can be enabled in any combination
@@ -108,6 +108,7 @@ To run Datagrok with exact CVM features, specify them in the command-line using 
    ```shell
    docker-compose -f docker/localhost.docker-compose.yaml --project-name datagrok \
      --profile datagrok \
+     --profile db \
      --profile chem \
      --profile scripting \
      --profile jupyter_notebook \

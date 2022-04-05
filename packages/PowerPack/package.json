@@ -4,7 +4,7 @@
 	"sources": [
 		"css/power-pack.css"
 	],
-	"version": "0.0.6",
+	"version": "0.0.7",
 	"description": "",
 	"dependencies": {
 		"@datagrok-libraries/utils": ">=0.0.16",

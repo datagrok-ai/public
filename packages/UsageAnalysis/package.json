@@ -23,10 +23,18 @@
     "debug-usageanalysis-dev": "grok publish dev --rebuild",
     "release-usageanalysis-dev": "grok publish dev --rebuild --release",
     "debug-usageanalysis-public": "grok publish public --rebuild",
-    "release-usageanalysis-public": "grok publish public --rebuild --release"
+    "release-usageanalysis-public": "grok publish public --rebuild --release",
+    "test": "set HOST=dev && jest",
+    "test-dev": "set HOST=dev && jest",
+    "test-local": "set HOST=localhost && jest"
   },
   "devDependencies": {
-    "webpack-cli": "^4.7.2"
+    "webpack-cli": "^4.7.2",
+    "@types/jest": "latest",
+    "jest": "latest",
+    "jest-html-reporter": "latest",
+    "puppeteer": "^13.1.2",
+    "ts-jest": "^27.1.2"
   },
   "canEdit": [
     "Developers"

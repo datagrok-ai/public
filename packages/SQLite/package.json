@@ -18,7 +18,12 @@
     "eslint": "latest",
     "eslint-config-google": "latest",
     "webpack": "latest",
-    "webpack-cli": "latest"
+    "webpack-cli": "latest",
+    "@types/jest": "latest",
+    "jest": "latest",
+    "jest-html-reporter": "latest",
+    "puppeteer": "^13.1.2",
+    "ts-jest": "^27.1.2"
   },
   "browser": {
     "fs": false,
@@ -38,7 +43,10 @@
     "debug-sqlite-core": "grok publish core --rebuild",
     "release-sqlite-core": "grok publish core --rebuild --release",
     "lint": "eslint src --ext .ts",
-    "lint-fix": "eslint src --ext .ts --fix"
+    "lint-fix": "eslint src --ext .ts --fix",
+    "test": "set HOST=dev && jest",
+    "test-dev": "set HOST=dev && jest",
+    "test-local": "set HOST=localhost && jest"
   },
   "canEdit": [
     "Developers"
