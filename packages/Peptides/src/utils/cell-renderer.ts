@@ -305,7 +305,7 @@ export class AlignedSequenceCellRenderer extends DG.GridCellRenderer {
     const subParts = s.split('-');
     const [text, simplified] = processSequence(subParts);
     const textSize = g.measureText(text.join(''));
-    let x_1 = Math.max(x, x + (w - textSize.width) / 2);
+    let x1 = Math.max(x, x + (w - textSize.width) / 2);
 
     subParts.forEach((amino, index) => {
       let [color, outerAmino,, pivot] = ChemPalette.getColorAAPivot(amino);
@@ -314,7 +314,7 @@ export class AlignedSequenceCellRenderer extends DG.GridCellRenderer {
         const gap = simplified ? '' : ' ';
         outerAmino += `${outerAmino ? '' : '-'}${gap}`;
       }
-      x_1 = printLeftOrCentered(x_1, y, w, h, g, outerAmino, color, pivot, true);
+      x1 = printLeftOrCentered(x1, y, w, h, g, outerAmino, color, pivot, true);
     });
 
     g.restore();
@@ -406,8 +406,8 @@ export class AlignedSequenceDifferenceCellRenderer extends DG.GridCellRenderer {
    * @memberof AlignedSequenceDifferenceCellRenderer
    */
   render(
-      g: CanvasRenderingContext2D, x: number, y: number, w: number, h: number, gridCell: DG.GridCell,
-      cellStyle: DG.GridCellStyle) {
+    g: CanvasRenderingContext2D, x: number, y: number, w: number, h: number, gridCell: DG.GridCell,
+    cellStyle: DG.GridCellStyle) {
     const grid = gridCell.grid;
     const cell = gridCell.cell;
 
@@ -428,7 +428,7 @@ export class AlignedSequenceDifferenceCellRenderer extends DG.GridCellRenderer {
     const textSize = g.measureText(text.join(''));
     let updatedX = Math.max(x, x + (w - (textSize.width + subParts1.length * 4)) / 2);
     // 28 is the height of the two substitutions on top of each other + space
-    let updatedY = Math.max(y, y + (h - 28) / 2);
+    const updatedY = Math.max(y, y + (h - 28) / 2);
 
     let amino2;
     let updatedAmino1: string;
@@ -445,9 +445,9 @@ export class AlignedSequenceDifferenceCellRenderer extends DG.GridCellRenderer {
         updatedAmino2 = amino2Outer + (amino2Inner !== '' ? '(' + amino2Inner + ')' : '');
         updatedAmino2 = updatedAmino2 === '' ? '-' : updatedAmino2;
 
-        const verticalShift = 7;
-        const subX0 = printLeftOrCentered(updatedX, updatedY - verticalShift, w, h, g, updatedAmino1, color1, pivot1, true);
-        const subX1 = printLeftOrCentered(updatedX, updatedY + verticalShift, w, h, g, updatedAmino2, color2, pivot2, true);
+        const vShift = 7;
+        const subX0 = printLeftOrCentered(updatedX, updatedY - vShift, w, h, g, updatedAmino1, color1, pivot1, true);
+        const subX1 = printLeftOrCentered(updatedX, updatedY + vShift, w, h, g, updatedAmino2, color2, pivot2, true);
         updatedX = Math.max(subX1, subX0);
       } else
         updatedX = printLeftOrCentered(updatedX, updatedY, w, h, g, updatedAmino1, color1, pivot1, true, true, 0.5);

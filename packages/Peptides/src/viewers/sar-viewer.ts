@@ -25,7 +25,7 @@ export class SARViewer extends DG.JsViewer {
   viewerVGrid: DG.Grid | null;
   grouping: boolean;
   groupMapping: StringDictionary | null;
-  _title = 'Monomer-Positions';
+  _titleHost = ui.divText('Monomer-Positions', {id: 'pep-viewer-title'});
   _name = 'Structure-Activity Relationship';
   controller: PeptidesController | null;
   multipleFilter: SARMultipleFilter;
@@ -256,15 +256,9 @@ export class SARViewer extends DG.JsViewer {
 
         if (this.viewerGrid !== null && this.viewerVGrid !== null) {
           $(this.root).empty();
-          const title = ui.divText(this._title);
-          title.style.height = '23px';
-          title.style.fontSize = '1.2rem';
-          title.style.fontFamily = `'Roboto', 'Roboto Local', sans-serif`;
-          title.style.color = '#4D5261';
-          title.style.textAlign = 'center';
           const gridRoot = this.viewerGrid.root;
           gridRoot.style.width = 'auto';
-          this.root.appendChild(ui.divV([title, gridRoot]));
+          this.root.appendChild(ui.divV([this._titleHost, gridRoot]));
         this.viewerGrid.dataFrame!.onCurrentCellChanged.subscribe((_) => {
           this.applyBitset();
           syncGridsFunc(false, this.viewerGrid!, this.viewerVGrid!, this.aminoAcidResidue);
@@ -292,6 +286,7 @@ export class SARViewerVertical extends DG.JsViewer {
   viewerVGrid: DG.Grid | null;
   // model: PeptidesModel | null;
   protected _name = 'Sequence-Activity relationship';
+  _titleHost = ui.divText('Most Potent Residues', {id: 'pep-viewer-title'});
   controller: PeptidesController | null;
 
   constructor() {
@@ -318,13 +313,7 @@ export class SARViewerVertical extends DG.JsViewer {
   render() {
     if (this.viewerVGrid) {
       $(this.root).empty();
-      const title = ui.divText('Most Potent Residues');
-      title.style.height = '23px';
-      title.style.fontSize = '1.2rem';
-      title.style.fontFamily = `'Roboto', 'Roboto Local', sans-serif`;
-      title.style.color = '#4D5261';
-      title.style.textAlign = 'center';
-      this.root.appendChild(ui.divV([title, this.viewerVGrid.root]));
+      this.root.appendChild(ui.divV([this._titleHost, this.viewerVGrid.root]));
     }
     this.viewerVGrid?.invalidate();
   }
