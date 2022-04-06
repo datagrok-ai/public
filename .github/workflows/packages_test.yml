@@ -2,10 +2,11 @@ name: Packages Test
 
 on:
   workflow_dispatch:
-    packages:
-      description: 'Packages to run tests separated by spaces'
-      required: true
-      type: string
+    inputs:
+      packages:
+        description: 'Packages to run tests separated by spaces'
+        required: true
+        type: string
   push:
     paths:
       - 'packages/**'
