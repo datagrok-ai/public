@@ -1,7 +1,11 @@
 name: Packages Test
 
 on:
-  workflow_dispatch: { }
+  workflow_dispatch:
+    packages:
+      description: 'Packages to run tests separated by spaces'
+      required: true
+      type: string
   push:
     paths:
       - 'packages/**'
@@ -14,6 +18,8 @@ jobs:
       matrix: ${{ steps.generate-matrix.outputs.matrix }}
       continue: ${{ steps.generate-matrix.outputs.continue }}
     steps:
+      - name: Print GitHub event action
+        run: echo "${{ github.event.action }}"
       - name: Checkout
         uses: actions/checkout@v2
         with:
@@ -30,10 +36,11 @@ jobs:
           CHANGED_PACKAGES="$(git diff-tree --no-commit-id --name-only -r "$(echo -n "$commit")" 'packages/**' | xargs -I {} dirname {} | awk -F'/' '{print $2}' | sort -u)"
           MATRIX_INCLUDE_JSON="["
 
-          for PACKAGE in ${CHANGED_PACKAGES}; do
+          CHANGED_PACKAGES+=" ${{ github.event.inputs.packages }}"
+
+          for PACKAGE in $(echo ${CHANGED_PACKAGES} | sort -u); do
             DIR="packages/${PACKAGE}"
             if [ -f "${DIR}/package.json" ]; then
-              datagrok_api_version=$(jq '(. | select( has("dependencies") == true ).dependencies) * (. | select( has("devDependencies") == true ).devDependencies) | ."datagrok-api"' "${DIR}/package.json" | sed 's/["^>=]//g')
               scripts="$(jq  '. | select( has("scripts") == true ).scripts' "${DIR}/package.json")"
               if [ -z "$(jq  '. | select( has("build") == true )' <<< "$scripts")" ]; then
                 build='false'
@@ -48,6 +55,8 @@ jobs:
               fi
 
               MATRIX_INCLUDE_JSON+="{\"package\": \"${PACKAGE}\", \"datagrok_version\": \"latest\", \"project\": \"${DIR}\", \"build\": \"${build}\", \"test\": \"${test}\"}"
+
+              datagrok_api_version=$(jq '(. | select( has("dependencies") == true ).dependencies) * (. | select( has("devDependencies") == true ).devDependencies) | ."datagrok-api"' "${DIR}/package.json" | sed 's/["^>=]//g')
               if [[ "$datagrok_api_version" != 'latest' ]]; then
                 MATRIX_INCLUDE_JSON+="{\"package\": \"${PACKAGE}\", \"datagrok_version\": \"$datagrok_api_version\", \"project\": \"${DIR}\", \"build\": \"${build}\", \"test\": \"${test}\"}"
               fi
