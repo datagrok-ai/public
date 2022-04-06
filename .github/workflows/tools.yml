@@ -19,7 +19,6 @@ jobs:
         id: check-version
         working-directory: ./tools
         run: |
-          set -ex
           name="$(jq .name package.json | sed 's/"//g')"
           current_version="$(jq .version package.json | sed 's/"//g')"
           npm_response="$(curl --retry 3 "https://registry.npmjs.org/${name}/${current_version}")"

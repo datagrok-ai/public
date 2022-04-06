@@ -10,10 +10,10 @@ on:
     branches:
       - 'master'
     paths:
-      - 'packages/*/package.json'
+      - 'packages/**'
 jobs:
   metadata:
-    name: Check version was changed
+    name: Check changes
     runs-on: ubuntu-20.04
     outputs:
       matrix: ${{ steps.generate-matrix.outputs.matrix }}
@@ -33,14 +33,15 @@ jobs:
             commit=${{ github.sha }}
           fi
 
-          CHANGED_DIRS="$(git diff-tree --no-commit-id --name-only -r "$(echo -n "$commit")" 'packages/*/package.json' | xargs -I {} dirname {})"
+          CHANGED_DIRS="$(git diff-tree --no-commit-id --name-only -r "$(echo -n "$commit")" 'packages/**' | xargs -I {} dirname {} | awk -F'/' '{print $2}' | sort -u)"
           MATRIX_INCLUDE_JSON="["
 
           for p in ${{ github.event.inputs.packages }}; do
-            CHANGED_DIRS+=" packages/$p"
+            CHANGED_DIRS+=" $p"
           done
 
-          for DIR in ${CHANGED_DIRS}; do
+          for PACKAGE in $(echo ${CHANGED_PACKAGES} | sort -u); do
+            DIR="packages/${PACKAGE}"
             if [ -f "${DIR}/package.json" ]; then
               scripts="$(jq  '. | select( has("scripts") == true ).scripts' "${DIR}/package.json")"
           
@@ -76,7 +77,7 @@ jobs:
                 CHANGED_VERSION='false'
               fi
 
-              MATRIX_INCLUDE_JSON+="{\"project\": \"${DIR}\", \"build\": \"${build}\", \"test\": \"${test}\", \"install_jsapi\": \"${install_jsapi}\", \"install_tools\": \"${install_tools}\", \"changed_version\": \"${CHANGED_VERSION}\"}"
+              MATRIX_INCLUDE_JSON+="{\"package\": \"${PACKAGE}\", \"changed_version\": \"${CHANGED_VERSION}\", \"build\": \"${build}\", \"test\": \"${test}\", \"install_jsapi\": \"${install_jsapi}\", \"install_tools\": \"${install_tools}\", \"project\": \"${DIR}\"}"
             fi
           done
 
@@ -92,9 +93,28 @@ jobs:
           echo "::set-output name=continue::${CONTINUE_JOB}"
           echo "::set-output name=matrix::${MATRIX_JSON}"
 
-  build:
-    name: Build and publish to npm
+  test:
+    name: Test
     needs: metadata
+    if: needs.metadata.outputs.continue == 'yes'
+    runs-on: ubuntu-latest
+    environment: Prod
+    continue-on-error: true
+    strategy:
+      fail-fast: false
+      max-parallel: 10
+      matrix: ${{ fromJson(needs.metadata.outputs.matrix) }}
+    steps:
+      - uses: ./.github/workflows/my-action
+        if: ${{ matrix.test == 'true' }}
+        with:
+          package: ${{ matrix.package }}
+
+  publish:
+    name: Publish to npm
+    needs:
+      - metadata
+      - test
     if: needs.metadata.outputs.continue == 'yes'
     runs-on: ubuntu-latest
     environment: Prod

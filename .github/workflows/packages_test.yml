@@ -1,6 +1,13 @@
 name: Packages Test
 
 on:
+  workflow_call:
+    branches:
+      - 'master'
+    inputs:
+      package:
+        required: true
+        type: string
   workflow_dispatch:
     inputs:
       packages:
@@ -8,18 +15,20 @@ on:
         required: true
         type: string
   push:
+    branches-ignore:
+      - 'master'
     paths:
       - 'packages/**'
 
 jobs:
   metadata:
-    name: Check packages were changed
+    name: Check changes
     runs-on: ubuntu-20.04
     outputs:
       matrix: ${{ steps.generate-matrix.outputs.matrix }}
       continue: ${{ steps.generate-matrix.outputs.continue }}
     steps:
-      - name: Print GitHub event action
+      - name: Check
         run: echo "${{ github.event.action }}"
       - name: Checkout
         uses: actions/checkout@v2
@@ -34,7 +43,11 @@ jobs:
             commit=${{ github.sha }}
           fi
 
-          CHANGED_PACKAGES="$(git diff-tree --no-commit-id --name-only -r "$(echo -n "$commit")" 'packages/**' | xargs -I {} dirname {} | awk -F'/' '{print $2}' | sort -u)"
+          if [[ "${{ inputs.package }}" == "" ]]; then
+            CHANGED_PACKAGES="$(git diff-tree --no-commit-id --name-only -r "$(echo -n "$commit")" 'packages/**' | xargs -I {} dirname {} | awk -F'/' '{print $2}' | sort -u)"
+          else
+            CHANGED_PACKAGES="${{ inputs.package }}"
+          fi
           MATRIX_INCLUDE_JSON="["
 
           CHANGED_PACKAGES+=" ${{ github.event.inputs.packages }}"
