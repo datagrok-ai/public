@@ -1,6 +1,11 @@
 name: Packages Publish
 on:
-  workflow_dispatch: { }
+  workflow_dispatch:
+    inputs:
+      packages:
+        description: 'Packages to publish separated by spaces'
+        required: true
+        type: string
   push:
     branches:
       - 'master'
@@ -30,6 +35,10 @@ jobs:
 
           CHANGED_DIRS="$(git diff-tree --no-commit-id --name-only -r "$(echo -n "$commit")" 'packages/*/package.json' | xargs -I {} dirname {})"
           MATRIX_INCLUDE_JSON="["
+
+          for p in ${{ github.event.inputs.packages }}; do
+            CHANGED_DIRS+=" packages/$p"
+          done
 
           for DIR in ${CHANGED_DIRS}; do
             if [ -f "${DIR}/package.json" ]; then
