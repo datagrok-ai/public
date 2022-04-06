@@ -111,10 +111,10 @@ jobs:
           else
             tag=$v
           fi
-          
-          tag="$(sed s/\"//g <<<$tag)@$(docker inspect --format='{{index .RepoDigests 0}}' datagrok/datagrok:$tag | cut -c1-8)"
 
-          commit_sha=${GITHUB_SHA::8}
+          tag="$(sed s/\"//g <<<$tag)"
+
+          commit_sha=$(echo ${{ github.sha }} | cut -c1-8)
 
           sed -i "s,datagrok/datagrok:latest,datagrok/datagrok:$tag,g" docker/localhost.docker-compose.yaml
           echo "::set-output name=version::$tag"
