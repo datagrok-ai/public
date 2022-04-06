@@ -8,6 +8,7 @@ import $ from 'cash-dom';
 import {ArrayUtils} from '@datagrok-libraries/utils/src/array-utils';
 import {Fingerprint} from '../utils/chem-common';
 import {renderMolecule} from '../rendering/render-molecule';
+import {updateMetricsLink} from '../utils/ui-utils';
 
 export class ChemDiversityViewer extends DG.JsViewer {
   moleculeColumn: DG.Column;
@@ -16,6 +17,8 @@ export class ChemDiversityViewer extends DG.JsViewer {
   limit: number;
   renderMolIds: number[];
   fingerprint: string;
+  metricsProperties = ['distanceMetric', 'fingerprint'];
+  metricsDiv = ui.div();
   fpSim;
 
   constructor() {
@@ -28,6 +31,7 @@ export class ChemDiversityViewer extends DG.JsViewer {
     this.initialized = false;
     this.renderMolIds = [];
     this.fpSim = similarityMetric[this.distanceMetric];
+    updateMetricsLink(this.distanceMetric, this.fingerprint, this.metricsDiv, this, {fontSize: '10px', fontWeight: 'normal', paddingBottom: '15px'});
   }
 
   init(): void {
@@ -59,6 +63,8 @@ export class ChemDiversityViewer extends DG.JsViewer {
     super.onPropertyChanged(property);
     if (!this.initialized)
       return;
+    if (this.metricsProperties.includes(property.name))
+      updateMetricsLink(this.distanceMetric, this.fingerprint, this.metricsDiv, this, {fontSize: '10px', fontWeight: 'normal', paddingBottom: '15px'});
     this.render();
   }
 
@@ -79,7 +85,10 @@ export class ChemDiversityViewer extends DG.JsViewer {
       const grids = [];
       let cnt = 0; let cnt2 = 0;
 
-      panel[cnt++] = ui.h1('Diverse structures');
+      panel[cnt++] = ui.divH([
+        ui.h1('Diverse structures'),
+        this.metricsDiv,
+      ]);
       for (let i = 0; i < this.limit; ++i) {
         const grid = ui.div([
           renderMolecule(this.moleculeColumn.get(this.renderMolIds[i])),

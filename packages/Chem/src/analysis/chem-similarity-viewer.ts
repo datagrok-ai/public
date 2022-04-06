@@ -9,7 +9,7 @@ import {Fingerprint} from "../utils/chem-common";
 import {chem} from "datagrok-api/grok";
 import Sketcher = chem.Sketcher;
 import {renderMolecule} from "../rendering/render-molecule";
-import { updateDivInnerHTML } from '../utils/ui-utils';
+import { updateMetricsLink } from '../utils/ui-utils';
 
 export class ChemSimilarityViewer extends DG.JsViewer {
   moleculeColumn?: DG.Column;
@@ -56,19 +56,7 @@ export class ChemSimilarityViewer extends DG.JsViewer {
         .show();
     });
     this.sketchButton.id = 'reference';
-    this.updateMetricsLink();
-  }
-
-  updateMetricsLink(){
-    const metricsButton = ui.button(`${this.distanceMetric}/${this.fingerprint}`, () => {
-      if (!grok.shell.windows.showProperties) {
-        grok.shell.windows.showProperties = true;
-      };
-      grok.shell.o = this;
-    });
-    metricsButton.style.fontSize = '10px';
-    metricsButton.style.fontWeight = 'normal';
-    updateDivInnerHTML(this.metricsDiv, metricsButton);
+    updateMetricsLink(this.distanceMetric, this.fingerprint, this.metricsDiv, this, {fontSize: '10px', fontWeight: 'normal'});
   }
 
   onTableAttached() {
@@ -87,9 +75,8 @@ export class ChemSimilarityViewer extends DG.JsViewer {
   }
 
   onPropertyChanged(property: Property): void {
-    if(this.metricsProperties.includes(property.name)) {
-      this.updateMetricsLink();
-    }
+    if (this.metricsProperties.includes(property.name))
+      updateMetricsLink(this.distanceMetric, this.fingerprint, this.metricsDiv, this, {fontSize: '10px', fontWeight: 'normal'});
     super.onPropertyChanged(property);
     this.render();
   }
