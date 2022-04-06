@@ -3,8 +3,8 @@
 #help-url: https://datagrok.ai/help/domains/chem/functions/sim-maps
 #language: python
 #tags: demo, chem, rdkit
-#input: string mol = COc1cccc2cc(C(=O)NCCCCN3CCN(c4cccc5nccnc54)CC3)oc21 {semType: Molecule} [Molecule, in SMILES format]
-#input: string refmol = CCCN(CCCCN1CCN(c2ccccc2OC)CC1)Cc1ccc2ccccc2c1 {semType: Molecule} [Reference molecule, in SMILES format]
+#input: string mol = "COc1cccc2cc(C(=O)NCCCCN3CCN(c4cccc5nccnc54)CC3)oc21" {semType: Molecule} [Molecule, in SMILES format]
+#input: string refmol = "CCCN(CCCCN1CCN(c2ccccc2OC)CC1)Cc1ccc2ccccc2c1" {semType: Molecule} [Reference molecule, in SMILES format]
 #input: int radius = 2 [Fingerprint function radius]
 #output: double maxweight [The maximum weight that was found when creating the map]
 #output: graphics simMap [Similarity Map]

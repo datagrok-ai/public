@@ -8,7 +8,7 @@
 #input: column reactants1 {type:categorical; semType: Molecule} [Reactants molecules first set, in SMILES format]
 #input: dataframe data2 [Second data table]
 #input: column reactants2 {type:categorical; semType: Molecule} [Reactants molecules second set, in SMILES format]
-#input: string reaction = [C:1](=[O:2])-[OD1].[N!H0:3]>>[C:1](=[O:2])[N:3] [Reaction, in SMARTS format]
+#input: string reaction = "[C:1](=[O:2])-[OD1].[N!H0:3]>>[C:1](=[O:2])[N:3]" [Reaction, in SMARTS format]
 #input: bool matrixExpansion = false [If checked, reactants will be combined from two sets, if is not - reactants will be combined sequentially]
 #input: bool randomize = false [Randomize reactants]
 #input: int seed = -1 [Random seed, set -1 to disable seed]

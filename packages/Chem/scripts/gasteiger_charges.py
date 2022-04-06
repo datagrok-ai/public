@@ -4,7 +4,7 @@
 #language: python
 #tags: demo, chem, rdkit, panel
 #condition: true
-#input: string mol = COc1cccc2cc(C(=O)NCCCCN3CCN(c4cccc5nccnc54)CC3)oc21 {semType: Molecule} [Molecule, in SMILES format]
+#input: string mol = "COc1cccc2cc(C(=O)NCCCCN3CCN(c4cccc5nccnc54)CC3)oc21" {semType: Molecule} [Molecule, in SMILES format]
 #input: int contours = 10
 #output: graphics charges [The Gasteiger partial charges]
 
