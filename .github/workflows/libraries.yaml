@@ -1,17 +1,24 @@
 name: Libraries
 on:
-  workflow_dispatch: { }
+  workflow_dispatch:
+    inputs:
+      libraries:
+        description: 'Libraries separated by spaces'
+        required: true
+        type: string
   push:
     branches:
       - 'master'
     paths:
       - 'libraries/*/package.json'
+
 jobs:
   metadata:
-    name: Check version was changed
+    name: Check changes
     runs-on: ubuntu-20.04
     outputs:
-      matrix: ${{ steps.generate-matrix.outputs.matrix }}
+      publish_matrix: ${{ steps.generate-matrix.outputs.publish_matrix }}
+      test_matrix: ${{ steps.generate-matrix.outputs.test_matrix }}
       continue: ${{ steps.generate-matrix.outputs.continue }}
     steps:
       - name: Checkout
@@ -21,18 +28,23 @@ jobs:
       - name: Generate matrix
         id: generate-matrix
         run: |
-          set -ex
           if [[ $(git log -n 1 --pretty=%B) == *"Merge branch 'master' of"* ]]; then
             commit="$(git log --format="%H" -n 1 --no-merges)"
           else
             commit=${{ github.sha }}
           fi
 
-          CHANGED_DIRS="$(git diff-tree --no-commit-id --name-only -r "$(echo -n "$commit")" 'libraries/*/package.json' | xargs -I {} dirname {})"
+          CHANGED_LIBS="$(git diff-tree --no-commit-id --name-only -r "$(echo -n "$commit")" 'libraries/*/package.json' | xargs -I {} dirname {} | awk -F'/' '{print $2}' | sort -u)"
 
-          MATRIX_INCLUDE_JSON="["
+          for l in ${{ github.event.inputs.libraries }}; do
+            CHANGED_LIBS+=" $l"
+          done
 
-          for DIR in ${CHANGED_DIRS}; do
+          MATRIX_PUBLISH_JSON="["
+          MATRIX_TEST_JSON="["
+
+          for LIB in ${CHANGED_LIBS}; do
+            DIR="libraries/$LIB"
             if [ -f "${DIR}/package.json" ]; then
               scripts="$(jq  '. | select( has("scripts") == true ).scripts' "${DIR}/package.json")"
           
@@ -52,36 +64,44 @@ jobs:
               npm_json="$(curl --retry 3 "https://registry.npmjs.org/${name}/${current_version}")"
               if [[ $npm_json == "\"version not found: ${current_version}\"" ]]; then
                 CHANGED_VERSION='true'
+                for p in $(grep -l "$name" packages/*/package.json | awk -F'/' '{print $2}' | sort -u); do
+                  MATRIX_TEST_JSON+="{\"name\":\"${LIB}\", \"version\":\"$current_version\", \"package\":\"${p}\"}"
+                done
               else
                 CHANGED_VERSION='false'
               fi
           
-              MATRIX_INCLUDE_JSON+="{\"project\": \"${DIR}\", \"build\": \"${build}\", \"test\": \"${test}\", \"changed_version\": \"${CHANGED_VERSION}\"}"
+              MATRIX_PUBLISH_JSON+="{\"project\": \"${LIB}\", \"changed_version\": \"${CHANGED_VERSION}\", \"build\": \"${build}\", \"test\": \"${test}\"}"
             fi
           done
 
-          MATRIX_INCLUDE_JSON="${MATRIX_INCLUDE_JSON//\}\{/\}, \{}"
-          MATRIX_INCLUDE_JSON+="]"
-          MATRIX_JSON="{\"include\": ${MATRIX_INCLUDE_JSON}}"
-          echo "${MATRIX_JSON}"
+          MATRIX_PUBLISH_JSON="${MATRIX_PUBLISH_JSON//\}\{/\}, \{}"
+          MATRIX_PUBLISH_JSON+="]"
+          PUBLISH_JSON="{\"include\": ${MATRIX_PUBLISH_JSON}}"
+          MATRIX_TEST_JSON="${MATRIX_TEST_JSON//\}\{/\}, \{}"
+          MATRIX_TEST_JSON+="]"
+          TEST_JSON="{\"include\": ${MATRIX_TEST_JSON}}"
 
           CONTINUE_JOB="no"
-          if [[ "${MATRIX_INCLUDE_JSON}" != "[]" ]]; then
+          if [[ "${MATRIX_PUBLISH_JSON}" != "[]" ]]; then
             CONTINUE_JOB="yes"
           fi
+          echo '::echo::on'
           echo "::set-output name=continue::${CONTINUE_JOB}"
-          echo "::set-output name=matrix::${MATRIX_JSON}"
+          echo "::set-output name=publish_matrix::${PUBLISH_JSON}"
+          echo "::set-output name=test_matrix::${TEST_JSON}"
+          echo '::echo::off'
 
-  build:
+  publish:
     name: Build and publish to npm
     needs: metadata
     if: needs.metadata.outputs.continue == 'yes'
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-20.04
     environment: Prod
     strategy:
       fail-fast: false
       max-parallel: 10
-      matrix: ${{ fromJson(needs.metadata.outputs.matrix) }}
+      matrix: ${{ fromJson(needs.metadata.outputs.publish_matrix) }}
     steps:
       - uses: actions/checkout@v2
       - name: Setup Node
@@ -95,28 +115,90 @@ jobs:
       - name: npm version
         run: npm version
       - run: npm install
-        working-directory: ${{ matrix.project }}
+        working-directory: libraries/${{ matrix.project }}
       - run: npm run test
-        working-directory: ${{ matrix.project }}
+        working-directory: libraries/${{ matrix.project }}
         if: ${{ matrix.test == 'true' }}
         continue-on-error: true
       - run: npm run build
-        working-directory: ${{ matrix.project }}
+        working-directory: libraries/${{ matrix.project }}
         if: ${{ matrix.build == 'true' }}
       - run: npm publish --access public
         if: ${{ matrix.changed_version == 'true' }}
-        working-directory: ${{ matrix.project }}
+        working-directory: libraries/${{ matrix.project }}
         env:
           NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
       - name: Commit package-lock.json
         if: ${{ matrix.changed_version == 'true' }}
         run: |
-          if [ -n "$(git status -s ${{ matrix.project }}/package-lock.json)" ]; then
+          if [ -n "$(git status -s libraries/${{ matrix.project }}/package-lock.json)" ]; then
             git config --global user.name 'GitHub Actions'
             git config --global user.email 'spodolskaya@datagrok.ai'
             git pull
-            git add ${{ matrix.project }}/package-lock.json
-            git commit -m "GitHub Actions: Update ${{ matrix.project }}/package-lock.json [skip ci]"
+            git add libraries/${{ matrix.project }}/package-lock.json
+            git commit -m "GitHub Actions: Update libraries/${{ matrix.project }}/package-lock.json [skip ci]"
+            count=0
+            retries=10
+            until git push; do
+              exit=$?
+              wait=$((2 ** count))
+              count=$((count + 1))
+              if [ $count -lt "$retries" ]; then
+                echo "Retry $count/$retries exited $exit, retrying 'git push' in $wait seconds..."
+                sleep $wait
+                git pull --rebase
+              else
+                echo "Retry $count/$retries exited $exit, no more retries left for 'git push'."
+                exit $exit
+              fi
+            done
+          fi
+
+  test:
+    name: Test compatibility
+    needs:
+      - metadata
+      - publish
+    if: needs.metadata.outputs.continue == 'yes'
+    runs-on: ubuntu-20.04
+    environment: Prod
+    strategy:
+      fail-fast: false
+      max-parallel: 10
+      matrix: ${{ fromJson(needs.metadata.outputs.test_matrix) }}
+    steps:
+      - uses: actions/checkout@v2
+      - name: Setup Node
+        uses: actions/setup-node@v2
+        with:
+          node-version: '12.x'
+          registry-url: 'https://registry.npmjs.org'
+      - name: Upgrade npm
+        run: npm install -g npm@latest
+      - name: npm version
+        run: npm version
+      - name: Install dependencies
+        run: npm install
+        working-directory: packages/${{ matrix.package }}
+      - name: Build package with webpack
+        run: webpack
+        working-directory: packages/${{ matrix.package }}
+      - name: Change requirements
+        if: failure()
+        run: |
+          old_version=$(jq '(. | select( has("dependencies") == true ).dependencies) * (. | select( has("devDependencies") == true ).devDependencies) | ."@datagrok-libraries/${{ matrix.name }}"' package.json | sed 's/"//g')
+          sed -i "s,\"@datagrok-libraries/${{ matrix.name }}\": \"$old_version\",\"@datagrok-libraries/${{ matrix.name }}\": \"$old_version <${{ matrix.version }}\",g" "package.json"
+          echo "::warning title=${{ matrix.package }} library ${{ matrix.name }}::Changed rule for ${{ matrix.name }} in ${{ matrix.package }}: $old_version --> $(jq  '(. | select( has("dependencies") == true ).dependencies) * (. | select( has("devDependencies") == true ).devDependencies) | ."@datagrok-libraries/${{ matrix.name }}"' "package.json" | sed 's/"//g')"
+        working-directory: packages/${{ matrix.package }}
+      - name: Commit package-lock.json
+        if: failure()
+        run: |
+          if [ -n "$(git status -s packages/${{ matrix.package }}/package.json)" ]; then
+            git config --global user.name 'GitHub Actions'
+            git config --global user.email 'spodolskaya@datagrok.ai'
+            git pull
+            git add packages/${{ matrix.package }}/package.json
+            git commit -m "GitHub Actions: Update packages/${{ matrix.package }}/package.json [skip ci]"
             count=0
             retries=10
             until git push; do

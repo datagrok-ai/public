@@ -46,4 +46,4 @@ it('TEST', async () => {
   console.log(r.report);
   // @ts-ignore
   expect(r.failed).toBe(false);
-}, 30000000);
+}, 300000);
