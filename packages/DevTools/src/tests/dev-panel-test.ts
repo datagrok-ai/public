@@ -48,16 +48,15 @@ category('Dev panel', () => {
   });
 
   test('Dev panel content', async () => {
-    if (!entities.length)
-      throw 'Failed to find entities for the test';
-    const ent = entities[0];
-    grok.shell.o = ent;
     devPane.expanded = true;
-    await delay(delayDuration);
+    await delay(1000);
     const devPaneContainer = devPane.root.querySelector('.dt-dev-pane-container');
     const snippetSection = devPane.root.querySelector('.dt-snippet-section');
     const textArea = devPane.root.querySelector('.dt-textarea-box');
-    [devPaneContainer, snippetSection, textArea].forEach((el) => assure.notNull(el));
+    [devPaneContainer, snippetSection, textArea].forEach((el) => {
+      console.log(el)
+      assure.notNull(el)
+    });
   });
 
   after(async () => {

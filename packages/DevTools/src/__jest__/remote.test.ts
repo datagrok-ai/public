@@ -16,14 +16,13 @@ beforeAll(async () => {
 }, P_START_TIMEOUT);
 
 afterAll(async () => {
-  await browser.close();
+  await browser?.close();
 });
 
 it('TEST', async () => {
   const target_package:string = process.env.TARGET_PACKAGE ?? 'DevTools';
   console.log(`Testing ${target_package} package`);
 
-  //console.log(require('root-require')('package.json').version);
   let r = await page.evaluate((target_package):Promise<object> => {
     return new Promise<object>((resolve, reject) => {
       (<any>window).grok.functions.eval(target_package + ':test()').then((df: any) => {
