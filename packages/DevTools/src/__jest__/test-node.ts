@@ -1,13 +1,12 @@
 import * as path from "path";
 import * as os from "os";
 import * as fs from "fs";
-// @ts-ignore
 import * as yaml from 'js-yaml';
-const fetch = require('node-fetch');
+import fetch from 'node-fetch';
 
 export async function getToken(url: string, key: string) {
   let response = await fetch(`${url}/users/login/dev/${key}`, {method: 'POST'});
-  let json = await response.json();
+  let json = await response.json() as Record<string, any>;
   if (json.isSuccess == true)
     return json.token;
   else
@@ -16,7 +15,7 @@ export async function getToken(url: string, key: string) {
 
 export async function getWebUrl(url: string, token: string) {
   let response = await fetch(`${url}/admin/plugins/admin/settings`, {headers: {Authorization: token}});
-  let json = await response.json();
+  let json = await response.json() as Record<string, any>;
   return json.settings.webRoot;
 }
 
