@@ -10,6 +10,7 @@ import {
 } from '@datagrok-libraries/ml/src/workers/dimensionality-reducing-worker-creator';
 import {Measure, StringMetrics} from '@datagrok-libraries/ml/src/typed-metrics';
 import {Coordinates} from '@datagrok-libraries/utils/src/type-declarations';
+import * as C from './constants';
 
 /**
  * Finds a column with an activity.
@@ -52,14 +53,13 @@ export function cleanAlignedSequencesColumn(col: DG.Column): Array<string> {
  * @return {Promise<DG.ScatterPlotViewer>} A viewer.
  */
 export async function createPeptideSimilaritySpaceViewer(
-  table: DG.DataFrame, alignedSequencesColumn: DG.Column, method: string, measure: string, cyclesCount: number,
-  view: DG.TableView | null, activityColumnName?: string | null): Promise<DG.ScatterPlotViewer> {
+  table: DG.DataFrame, method: string, measure: string, cyclesCount: number, view?: DG.TableView, col?: DG.Column,
+): Promise<DG.ScatterPlotViewer> {
   const pi = DG.TaskBarProgressIndicator.create('Creating embedding...');
 
-  activityColumnName = activityColumnName ?? inferActivityColumnsName(table);
-
   const axesNames = ['~X', '~Y', '~MW'];
-  const columnData = alignedSequencesColumn.toList().map((v, _) => AlignedSequenceEncoder.clean(v));
+  const columnData = (col ?? table.getCol(C.COLUMNS_NAMES.ALIGNED_SEQUENCE)).toList()
+    .map((v) => AlignedSequenceEncoder.clean(v));
 
   const embcols = await createDimensinalityReducingWorker(
     {data: columnData, metric: measure as StringMetrics}, method, cyclesCount);
@@ -94,10 +94,12 @@ export async function createPeptideSimilaritySpaceViewer(
   }
 
   const viewerOptions = {
-    x: '~X', y: '~Y', color: activityColumnName ?? '~MW', size: '~MW', title: 'Peptide Space', showYSelector: false,
-    showXSelector: false, showColorSelector: false, showSizeSelector: false,
+    x: '~X', y: '~Y', color: C.COLUMNS_NAMES.ACTIVITY ?? '~MW', size: '~MW', title: 'Peptide Space',
+    showYSelector: false, showXSelector: false, showColorSelector: false, showSizeSelector: false,
   };
   const viewer = table.plot.scatter(viewerOptions);
+
+  view?.dockManager.dock(viewer, DG.DOCK_TYPE.RIGHT, null, 'Peptide Space viewer');
 
   pi.close();
   return viewer;
@@ -145,14 +147,7 @@ export class PeptideSimilaritySpaceWidget {
    */
   public async drawViewer(): Promise<DG.Viewer> {
     const viewer = await createPeptideSimilaritySpaceViewer(
-      this.currentDf,
-      this.alignedSequencesColumn,
-      this.method,
-      this.metrics,
-      this.cycles,
-      null,
-      null,
-    );
+      this.currentDf, this.method, this.metrics, this.cycles, undefined, this.alignedSequencesColumn);
     viewer.root.style.width = 'auto';
     return viewer;
   }

@@ -1,6 +1,8 @@
 import * as grok from 'datagrok-api/grok';
 import * as DG from 'datagrok-api/dg';
 
+import * as C from '../utils/constants';
+
 import {AlignedSequenceEncoder} from '@datagrok-libraries/bio/src/sequence-encoder';
 
 export async function callMVA(
@@ -12,18 +14,18 @@ export async function callMVA(
 ) {
   const activityCol = await _scaleColumn(currentDf.getCol(options['activityColumnName']), options['scaling']);
   const encDf = _encodeSequences(sequencesCol);
-  const scaledColName = `${options['activityColumnName']}scaled`;
+  // const scaledColName = `${options['activityColumnName']}scaled`;
 
   _insertColumns(
     currentDf,
-    [DG.Column.fromList('double', scaledColName, activityCol.toList())],
+    [DG.Column.fromList('double', C.COLUMNS_NAMES.ACTIVITY_SCALED, activityCol.toList())],
   );
   _insertColumns(currentDf, encDf.columns);
 
   const res = await grok.functions.call('MultivariateAnalysis', {
     table: currentDf,
     features: encDf.columns.names(),
-    prediction: scaledColName,
+    prediction: C.COLUMNS_NAMES.ACTIVITY_SCALED,
     components: 10,
     showScores: true,
     showRegresCoefs: true,

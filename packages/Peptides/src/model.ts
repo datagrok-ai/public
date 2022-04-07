@@ -9,11 +9,11 @@ import {tTest} from '@datagrok-libraries/statistics/src/tests';
 import {fdrcorrection} from '@datagrok-libraries/statistics/src/multiple-tests';
 import {ChemPalette} from './utils/chem-palette';
 import {MonomerLibrary} from './monomer-library';
+import * as C from './utils/constants';
 
 
 export class PeptidesModel {
   private _dataFrame: DG.DataFrame;
-  private _activityColumn: string | null;
   private _activityScaling: string | null;
   private _sourceGrid: DG.Grid | null;
   private _twoColorMode: boolean | null;
@@ -30,7 +30,6 @@ export class PeptidesModel {
 
   private constructor(dataFrame: DG.DataFrame) {
     this._dataFrame = dataFrame;
-    this._activityColumn = null;
     this._activityScaling = null;
     this._sourceGrid = null;
     this._twoColorMode = null;
@@ -66,9 +65,9 @@ export class PeptidesModel {
     return this._substFlagSubject.asObservable();
   }
 
-  async updateData(activityCol: string | null, activityScaling: string | null, sourceGrid: DG.Grid | null,
-    twoColorMode: boolean | null, initialBitset: DG.BitSet | null, grouping: boolean | null) {
-    this._activityColumn = activityCol ?? this._activityColumn;
+  async updateData(
+    activityScaling?: string, sourceGrid?: DG.Grid, twoColorMode?: boolean, initialBitset?: DG.BitSet,
+    grouping?: boolean) {
     this._activityScaling = activityScaling ?? this._activityScaling;
     this._sourceGrid = sourceGrid ?? this._sourceGrid;
     this._twoColorMode = twoColorMode ?? this._twoColorMode;
@@ -78,13 +77,10 @@ export class PeptidesModel {
   }
 
   async updateDefault() {
-    if (
-      this._activityColumn && this._activityScaling && this._sourceGrid && this._twoColorMode !== null &&
-      !this._isUpdating
-    ) {
+    if (this._activityScaling && this._sourceGrid && this._twoColorMode !== null && !this._isUpdating) {
       this._isUpdating = true;
-      const [viewerGrid, viewerVGrid, statsDf, groupMapping] = await this.describe(
-        this._activityColumn, this._activityScaling, this._twoColorMode, this._grouping);
+      const [viewerGrid, viewerVGrid, statsDf, groupMapping] =
+        await this.describe(this._activityScaling, this._twoColorMode, this._grouping);
       this._statsDataFrameSubject.next(statsDf);
       this._groupMappingSubject.next(groupMapping);
       this._sarGridSubject.next(viewerGrid);
@@ -111,7 +107,7 @@ export class PeptidesModel {
   }
 
   async describe(
-    activityColumn: string, activityScaling: string, twoColorMode: boolean, grouping: boolean,
+    activityScaling: string, twoColorMode: boolean, grouping: boolean,
   ): Promise<[DG.Grid, DG.Grid, DG.DataFrame, StringDictionary]> {
     if (this._sourceGrid === null)
       throw new Error(`Source grid is not initialized`);
@@ -124,50 +120,47 @@ export class PeptidesModel {
     splitSeqDf.name = 'Split sequence';
 
     const positionColumns = (splitSeqDf.columns as DG.ColumnList).names();
-    const activityColumnScaled = `${activityColumn}Scaled`;
     const renderColNames: string[] = (splitSeqDf.columns as DG.ColumnList).names();
     const positionColName = 'Pos';
     const aminoAcidResidue = 'AAR';
 
-    (splitSeqDf.columns as DG.ColumnList).add(this._dataFrame.getCol(activityColumn));
+    (splitSeqDf.columns as DG.ColumnList).add(this._dataFrame.getCol(C.COLUMNS_NAMES.ACTIVITY));
 
-    joinDataFrames(this._dataFrame, positionColumns, splitSeqDf, activityColumn);
+    joinDataFrames(this._dataFrame, positionColumns, splitSeqDf);
 
     for (const dfCol of (this._dataFrame.columns as DG.ColumnList)) {
-      if (splitSeqDf.col(dfCol.name) && dfCol.name != activityColumn)
+      if (splitSeqDf.col(dfCol.name) && dfCol.name != C.COLUMNS_NAMES.ACTIVITY)
         PeptidesController.setAARRenderer(dfCol, this._sourceGrid);
     }
 
     sortSourceGrid(this._sourceGrid);
 
     const [scaledDf, newColName] = await PeptidesController.scaleActivity(
-      activityScaling, activityColumn, activityColumnScaled, this._dataFrame);
+      activityScaling, this._dataFrame, this._dataFrame.temp[C.COLUMNS_NAMES.ACTIVITY]);
     //TODO: make another func
-    const scaledCol = scaledDf.getCol(activityColumnScaled);
-    const oldScaledCol = this._dataFrame.getCol(activityColumnScaled);
-    const oldScaledColGridName = oldScaledCol.temp['gridName'];
-    const oldScaledGridCol = this._sourceGrid.col(oldScaledColGridName);
-
+    const scaledCol = scaledDf.getCol(C.COLUMNS_NAMES.ACTIVITY_SCALED);
     (splitSeqDf.columns as DG.ColumnList).add(scaledCol);
+    const oldScaledCol = this._dataFrame.getCol(C.COLUMNS_NAMES.ACTIVITY_SCALED);
     (this._dataFrame.columns as DG.ColumnList).replace(oldScaledCol, scaledCol);
-    if (newColName === activityColumn)
-      this._sourceGrid.col(activityColumn)!.name = `~${activityColumn}`;
-    if (oldScaledGridCol !== null) {
-      oldScaledGridCol.name = newColName;
-      oldScaledGridCol.visible = true;
+    const gridCol = this._sourceGrid.col(C.COLUMNS_NAMES.ACTIVITY_SCALED);
+    if (gridCol !== null) {
+      gridCol.name = newColName;
+      this._dataFrame.temp[C.COLUMNS_NAMES.ACTIVITY_SCALED] = newColName;
     }
+
     this._sourceGrid.columns.setOrder([newColName]);
 
     splitSeqDf = splitSeqDf.clone(this._initialBitset);
 
     //unpivot a table and handle duplicates
     splitSeqDf = splitSeqDf.groupBy(positionColumns)
-      .add('med', activityColumnScaled, activityColumnScaled)
+      .add('med', C.COLUMNS_NAMES.ACTIVITY_SCALED, C.COLUMNS_NAMES.ACTIVITY_SCALED)
       .aggregate();
 
-    const peptidesCount = splitSeqDf.getCol(activityColumnScaled).length;
+    const peptidesCount = splitSeqDf.getCol(C.COLUMNS_NAMES.ACTIVITY_SCALED).length;
 
-    let matrixDf = splitSeqDf.unpivot([activityColumnScaled], positionColumns, positionColName, aminoAcidResidue);
+    let matrixDf =
+      splitSeqDf.unpivot([C.COLUMNS_NAMES.ACTIVITY_SCALED], positionColumns, positionColName, aminoAcidResidue);
 
     //TODO: move to chem palette
     let groupMapping: StringDictionary = {};
@@ -182,8 +175,7 @@ export class PeptidesModel {
 
     //statistics for specific AAR at a specific position
     const statsDf = await calculateStatistics(
-      matrixDf, positionColName, aminoAcidResidue, activityColumnScaled, peptidesCount, splitSeqDf, groupMapping,
-    );
+      matrixDf, positionColName, aminoAcidResidue, peptidesCount, splitSeqDf, groupMapping);
 
     // SAR matrix table
     //pivot a table to make it matrix-like
@@ -258,7 +250,7 @@ const groupDescription: {[key: string]: {'description': string, 'aminoAcids': st
   '-': {'description': 'Unknown Amino Acid', 'aminoAcids': ['-']},
 };
 
-function joinDataFrames(df: DG.DataFrame, positionColumns: string[], splitSeqDf: DG.DataFrame, activityColumn: string) {
+function joinDataFrames(df: DG.DataFrame, positionColumns: string[], splitSeqDf: DG.DataFrame) {
   // if (df.col(activityColumnScaled))
   //   (df.columns as DG.ColumnList).remove(activityColumnScaled);
 
@@ -272,8 +264,8 @@ function joinDataFrames(df: DG.DataFrame, positionColumns: string[], splitSeqDf:
   const dfColsSet = new Set((df.columns as DG.ColumnList).names());
   if (!positionColumns.every((col: string) => dfColsSet.has(col))) {
     df.join(
-      splitSeqDf, [activityColumn], [activityColumn], (df.columns as DG.ColumnList).names(), positionColumns, 'inner',
-      true);
+      splitSeqDf, [C.COLUMNS_NAMES.ACTIVITY], [C.COLUMNS_NAMES.ACTIVITY], (df.columns as DG.ColumnList).names(),
+      positionColumns, 'inner', true);
   }
 }
 
@@ -298,11 +290,11 @@ function sortSourceGrid(sourceGrid: DG.Grid) {
 }
 
 async function calculateStatistics(
-  matrixDf: DG.DataFrame, positionColName: string, aminoAcidResidue: string, activityColumnScaled: string,
-  peptidesCount: number, splitSeqDf: DG.DataFrame, groupMapping: StringDictionary,
+  matrixDf: DG.DataFrame, positionColName: string, aminoAcidResidue: string, peptidesCount: number,
+  splitSeqDf: DG.DataFrame, groupMapping: StringDictionary,
 ) {
   matrixDf = matrixDf.groupBy([positionColName, aminoAcidResidue])
-    .add('count', activityColumnScaled, 'Count')
+    .add('count', C.COLUMNS_NAMES.ACTIVITY_SCALED, 'Count')
     .aggregate();
 
   const countThreshold = 4;
@@ -324,15 +316,15 @@ async function calculateStatistics(
     //@ts-ignore
     splitSeqDf.rows.select((row) => groupMapping[row[position]] === aar);
     const currentActivity: number[] = splitSeqDf
-      .clone(splitSeqDf.selection, [activityColumnScaled])
-      .getCol(activityColumnScaled)
+      .clone(splitSeqDf.selection, [C.COLUMNS_NAMES.ACTIVITY_SCALED])
+      .getCol(C.COLUMNS_NAMES.ACTIVITY_SCALED)
       .toList();
 
     //@ts-ignore
     splitSeqDf.rows.select((row) => groupMapping[row[position]] !== aar);
     const otherActivity: number[] = splitSeqDf
-      .clone(splitSeqDf.selection, [activityColumnScaled])
-      .getCol(activityColumnScaled)
+      .clone(splitSeqDf.selection, [C.COLUMNS_NAMES.ACTIVITY_SCALED])
+      .getCol(C.COLUMNS_NAMES.ACTIVITY_SCALED)
       .toList();
 
     const testResult = tTest(currentActivity, otherActivity);
