@@ -1,0 +1,216 @@
+name: Packages
+on:
+  workflow_dispatch:
+    inputs:
+      packages:
+        description: 'Packages separated by spaces'
+        required: true
+        type: string
+  push:
+    paths:
+      - 'packages/**'
+
+jobs:
+  metadata:
+    name: Check changes
+    runs-on: ubuntu-20.04
+    outputs:
+      matrix_test: ${{ steps.generate-matrix.outputs.matrix_test }}
+      matrix_publish: ${{ steps.generate-matrix.outputs.matrix_publish }}
+      test: ${{ steps.generate-matrix.outputs.test }}
+      publish: ${{ steps.generate-matrix.outputs.publish }}
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v2
+        with:
+          fetch-depth: 3
+      - name: Generate matrix
+        id: generate-matrix
+        run: |
+          if [[ $(git log -n 1 --pretty=%B) == *"Merge branch 'master' of"* ]]; then
+            commit="$(git log --format="%H" -n 1 --no-merges)"
+          else
+            commit=${{ github.sha }}
+          fi
+
+          CHANGED_PACKAGES="$(git diff-tree --no-commit-id --name-only -r "$(echo -n "$commit")" 'packages/**' | xargs -I {} dirname {} | awk -F'/' '{print $2}' | sort -u)"
+          MATRIX_PUBLISH_JSON="["
+
+          for p in ${{ github.event.inputs.packages }}; do
+            CHANGED_PACKAGES+=" $p"
+          done
+
+          for PACKAGE in $(echo ${CHANGED_PACKAGES} | sort -u); do
+            DIR="packages/${PACKAGE}"
+            if [ -f "${DIR}/package.json" ]; then
+              MATRIX_PUBLISH_JSON+="{\"package\": \"${PACKAGE}\""
+
+              scripts="$(jq  '. | select( has("scripts") == true ).scripts' "${DIR}/package.json")"
+              dependencies="$(jq  '(. | select( has("dependencies") == true ).dependencies) * (. | select( has("devDependencies") == true ).devDependencies)' "${DIR}/package.json")"
+
+              if [ ! -z "$(jq  '. | select( has("test") == true )' <<< "$scripts")" ]; then
+                MATRIX_PUBLISH_JSON+=", \"test\": \"true\""
+              fi
+
+              name="$(jq .name "${DIR}/package.json" | sed 's/"//g')"
+              current_version="$(jq .version "${DIR}/package.json" | sed 's/"//g')"
+              npm_json="$(curl --retry 3 -s "https://registry.npmjs.org/${name}/${current_version}")"
+              if [[ $npm_json == "\"version not found: ${current_version}\"" ]]; then
+                MATRIX_PUBLISH_JSON+=", \"publish\": \"true\""
+
+                if [ ! -z "$(jq  '. | select( has("datagrok-api") == true )' <<< "$dependencies")" ]; then
+                  MATRIX_PUBLISH_JSON+=", \"install_jsapi\": \"true\""
+                fi
+                if [ ! -z "$(jq  '. | select( has("datagrok-tools") == true )' <<< "$dependencies")" ]; then
+                  MATRIX_PUBLISH_JSON+=", \"install_tools\": \"true\""
+                fi
+              fi
+
+              MATRIX_PUBLISH_JSON+="}"
+            fi
+          done
+
+          MATRIX_PUBLISH_JSON="${MATRIX_PUBLISH_JSON//\}\{/\}, \{}"
+          MATRIX_PUBLISH_JSON+="]"
+
+          PUBLISH_JSON="{\"include\": ${MATRIX_PUBLISH_JSON}}"
+
+          CONTINUE_PUBLISH_JOB="no"
+          if [[ "${MATRIX_PUBLISH_JSON}" != "[]" ]]; then
+            CONTINUE_PUBLISH_JOB="yes"
+          fi
+          echo '::echo::on'
+          echo "::set-output name=publish::${CONTINUE_PUBLISH_JOB}"
+          echo "::set-output name=matrix_publish::${PUBLISH_JSON}"
+          echo '::echo::off'
+
+  publish:
+    name: Test and publish to npm
+    needs:
+      - metadata
+    if: needs.metadata.outputs.publish == 'yes'
+    runs-on: ubuntu-20.04
+    environment: Prod
+    env:
+      HOST: GitHubAction
+    strategy:
+      fail-fast: false
+      max-parallel: 10
+      matrix: ${{ fromJson(needs.metadata.outputs.matrix_publish) }}
+    steps:
+      - uses: actions/checkout@v2
+        with:
+          token: ${{ secrets.WRITE_TOKEN }}
+      - name: Run datagrok stand
+        id: datagrok-image
+        if: ${{ matrix.test == 'true' }}
+        run: |
+          commit_sha=$(echo ${{ github.sha }} | cut -c1-8)
+          echo "::set-output name=commit_sha::$commit_sha"
+          docker-compose -p datagrok -f "docker/localhost.docker-compose.yaml" --profile datagrok --profile db up -d
+          docker_sha=$(docker images --quiet datagrok/datagrok:latest)
+          echo "::set-output name=docker_sha::$docker_sha"
+          echo "::notice title=${{ matrix.package }}::datagrok/datagrok:latest SHA=$docker_sha docker version was used for tests"
+      - name: Setup Node
+        uses: actions/setup-node@v2
+        with:
+          node-version: '12.x'
+          registry-url: 'https://registry.npmjs.org'
+          scope: '@datagrok'
+      - name: Upgrade npm
+        run: npm install -g npm@latest
+      - name: npm version
+        run: npm version
+      - run: npm install
+        working-directory: packages/${{ matrix.package }}
+      - name: js-api dependencies
+        run: npm install
+        working-directory: ./js-api
+        if: ${{ matrix.install_jsapi == 'true' }}
+      - name: tools dependencies
+        run: npm install
+        working-directory: ./tools
+        if: ${{ matrix.install_tools == 'true' }}
+      - name: Build package
+        id: build
+        run: webpack
+        working-directory: packages/${{ matrix.package }}
+      - name: Install datagrok tools
+        run: npm install -g datagrok-tools@latest
+      - name: Wait for Datagrok to become available
+        if: ${{ matrix.test == 'true' }}
+        timeout-minutes: 5
+        run: |
+          until curl -s http://localhost:8080/api/admin/health | grep -e '"status":"Running"'
+          do
+            sleep 1
+          done
+      - name: Create configuration for grok command-line tool
+        if: ${{ matrix.test == 'true' }}
+        run: echo 'N' | grok config add --default --alias ${HOST} --server 'http://localhost:8080/api' --key admin
+      - name: Publish package to Datagrok
+        if: ${{ matrix.test == 'true' }}
+        run: grok publish ${HOST}
+        working-directory: packages/${{ matrix.package }}
+      - name: Test Package
+        if: ${{ matrix.test == 'true' }}
+        id: test-package
+        run: |
+          npm run test -- --verbose=false
+        env:
+          JEST_HTML_REPORTER_PAGE_TITLE: "${{ matrix.package }} Test Report. Datagrok version datagrok/datagrok:latest SHA=${{ steps.datagrok-image.outputs.docker_sha }}. Commit ${{ steps.datagrok-image.outputs.commit_sha }}."
+          JEST_HTML_REPORTER_OUTPUT_PATH: "./test-${{ matrix.package }}-${{ steps.datagrok-image.outputs.docker_sha }}-${{ steps.datagrok-image.outputs.commit_sha }}.html"
+          JEST_HTML_REPORTER_INCLUDE_FAILURE_MSG: true
+          JEST_HTML_REPORTER_INCLUDE_CONSOLE_LOG: true
+          JEST_HTML_REPORTER_INCLUDE_SUITE_FAILURE: true
+        working-directory: packages/${{ matrix.package }}
+
+      - name: Create error notification
+        if: failure() && steps.test-package.outcome == 'failure'
+        run: |
+          echo "::error title=${{ matrix.package }}: failed tests with datagrok:latest SHA=${{ steps.datagrok-image.outputs.docker_sha }}::Check test-${{ matrix.package }}-${{ steps.datagrok-image.outputs.docker_sha }}-${{ steps.datagrok-image.outputs.commit_sha }}.html report for results"
+          echo "::set-output name=status::error"
+
+      - name: Upload Artifact
+        if: always() && (steps.test-package.outcome == 'failure' || steps.test-package.outcome == 'success')
+        uses: actions/upload-artifact@v2
+        with:
+          name: test-${{ matrix.package }}-${{ steps.datagrok-image.outputs.docker_sha }}-${{ steps.datagrok-image.outputs.commit_sha }}.html
+          path: packages/${{ matrix.package }}/test-${{ matrix.package }}-${{ steps.datagrok-image.outputs.docker_sha }}-${{ steps.datagrok-image.outputs.commit_sha }}.html
+          retention-days: 7
+
+      - name: Publish to npm
+        run: npm publish --access public
+        working-directory: packages/${{ matrix.package }}
+        env:
+          NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
+        if: github.ref == 'refs/heads/master' && always() && steps.build.outcome == 'success'
+      - name: Commit package-lock.json
+        run: |
+          if [ -n "$(git status -s packages/${{ matrix.package }}/package-lock.json)" ]; then
+            git config --global user.name 'GitHub Actions'
+            git config --global user.email 'spodolskaya@datagrok.ai'
+            git pull
+            git add packages/${{ matrix.package }}/package-lock.json
+            git commit -m "GitHub Actions: Update packages/${{ matrix.package }}/package-lock.json [skip ci]"
+            count=0
+            retries=10
+            until git push; do
+              exit=$?
+              wait=$((2 ** count))
+              count=$((count + 1))
+              if [ $count -lt "$retries" ]; then
+                echo "Retry $count/$retries exited $exit, retrying 'git push' in $wait seconds..."
+                sleep $wait
+                git pull --rebase
+              else
+                echo "Retry $count/$retries exited $exit, no more retries left for 'git push'."
+                exit $exit
+              fi
+            done
+          fi
+        if: github.ref == 'refs/heads/master' && always() && steps.build.outcome == 'success'
+
+      - name: Stop Datagrok
+        if: always() && (steps.datagrok-image.outcome == 'failure' || steps.datagrok-image.outcome == 'success')
+        run: docker-compose -p datagrok -f "docker/localhost.docker-compose.yaml" --profile all down --volumes

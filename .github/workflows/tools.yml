@@ -19,7 +19,6 @@ jobs:
         id: check-version
         working-directory: ./tools
         run: |
-          set -ex
           name="$(jq .name package.json | sed 's/"//g')"
           current_version="$(jq .version package.json | sed 's/"//g')"
           npm_response="$(curl --retry 3 "https://registry.npmjs.org/${name}/${current_version}")"
@@ -38,6 +37,8 @@ jobs:
     environment: Prod
     steps:
       - uses: actions/checkout@v2
+        with:
+          token: ${{ secrets.WRITE_TOKEN }}
       - name: Setup Node
         uses: actions/setup-node@v2
         with:
