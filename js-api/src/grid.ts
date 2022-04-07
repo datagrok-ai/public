@@ -566,15 +566,6 @@ export class CanvasRenderer {
     return null;
   }
 
-  /**
-   * @param {CanvasRenderingContext2D} g
-   * @param {number} x
-   * @param {number} y
-   * @param {number} w
-   * @param {number} h
-   * @param {Object} value
-   * @param {Object} context
-   **/
   render(g: CanvasRenderingContext2D, x: number, y: number, w: number, h: number, value: any, context: any): void {
     throw 'Not implemented';
   }
