@@ -7,8 +7,8 @@ on:
         required: true
         type: string
   push:
-    branches:
-      - 'master'
+#    branches:
+#      - 'master'
     paths:
       - 'libraries/*/package.json'
 
