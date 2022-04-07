@@ -27,21 +27,20 @@ jobs:
       - name: Generate matrix
         id: generate-matrix
         run: |
-          if [[ $(git log -n 1 --pretty=%B) == *"Merge branch 'master' of"* ]]; then
-            commit="$(git log --format="%H" -n 1 --no-merges)"
+          if [[ ${{ github.event.inputs.libraries }} == "" ]]; then
+            if [[ $(git log -n 1 --pretty=%B) == *"Merge branch 'master' of"* ]]; then
+              commit="$(git log --format="%H" -n 1 --no-merges)"
+            else
+              commit=${{ github.sha }}
+            fi
+            CHANGED_LIBS="$(git diff-tree --no-commit-id --name-only -r "$(echo -n "$commit")" 'libraries/*/package.json' | xargs -I {} dirname {} | awk -F'/' '{print $2}' | sort -u)"
           else
-            commit=${{ github.sha }}
+            CHANGED_LIBS="${{ github.event.inputs.libraries }}"
           fi
-
-          CHANGED_LIBS="$(git diff-tree --no-commit-id --name-only -r "$(echo -n "$commit")" 'libraries/*/package.json' | xargs -I {} dirname {} | awk -F'/' '{print $2}' | sort -u)"
-
-          for l in ${{ github.event.inputs.libraries }}; do
-            CHANGED_LIBS+=" $l"
-          done
 
           MATRIX_PUBLISH_JSON="["
 
-          for LIB in ${CHANGED_LIBS}; do
+          for LIB in $(echo ${CHANGED_LIBS} | sort -u); do
             DIR="libraries/$LIB"
             if [ -f "${DIR}/package.json" ]; then
               scripts="$(jq  '. | select( has("scripts") == true ).scripts' "${DIR}/package.json")"
