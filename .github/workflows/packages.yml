@@ -27,18 +27,18 @@ jobs:
       - name: Generate matrix
         id: generate-matrix
         run: |
-          if [[ $(git log -n 1 --pretty=%B) == *"Merge branch 'master' of"* ]]; then
-            commit="$(git log --format="%H" -n 1 --no-merges)"
+          if [[ ${{ github.event.inputs.packages }} == "" ]]; then
+            if [[ $(git log -n 1 --pretty=%B) == *"Merge branch 'master' of"* ]]; then
+              commit="$(git log --format="%H" -n 1 --no-merges)"
+            else
+              commit=${{ github.sha }}
+            fi
+            CHANGED_PACKAGES="$(git diff-tree --no-commit-id --name-only -r "$(echo -n "$commit")" 'packages/**' | xargs -I {} dirname {} | awk -F'/' '{print $2}' | sort -u)"
           else
-            commit=${{ github.sha }}
+            CHANGED_PACKAGES="${{ github.event.inputs.packages }}"
           fi
 
-          CHANGED_PACKAGES="$(git diff-tree --no-commit-id --name-only -r "$(echo -n "$commit")" 'packages/**' | xargs -I {} dirname {} | awk -F'/' '{print $2}' | sort -u)"
           MATRIX_PUBLISH_JSON="["
-
-          for p in ${{ github.event.inputs.packages }}; do
-            CHANGED_PACKAGES+=" $p"
-          done
 
           for PACKAGE in $(echo ${CHANGED_PACKAGES} | sort -u); do
             DIR="packages/${PACKAGE}"
@@ -155,8 +155,7 @@ jobs:
       - name: Test Package
         if: ${{ matrix.test == 'true' }}
         id: test-package
-        run: |
-          npm run test -- --verbose=false
+        run: jest --verbose=false
         env:
           JEST_HTML_REPORTER_PAGE_TITLE: "${{ matrix.package }} Test Report. Datagrok version datagrok/datagrok:latest SHA=${{ steps.datagrok-image.outputs.docker_sha }}. Commit ${{ steps.datagrok-image.outputs.commit_sha }}."
           JEST_HTML_REPORTER_OUTPUT_PATH: "./test-${{ matrix.package }}-${{ steps.datagrok-image.outputs.docker_sha }}-${{ steps.datagrok-image.outputs.commit_sha }}.html"
@@ -181,10 +180,11 @@ jobs:
 
       - name: Publish to npm
         run: npm publish --access public
+        id: publish
         working-directory: packages/${{ matrix.package }}
         env:
           NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
-        if: github.ref == 'refs/heads/master' && always() && steps.build.outcome == 'success'
+        if: github.ref == 'refs/heads/master' && always() && steps.build.outcome == 'success' && matrix.publish == 'true'
       - name: Commit package-lock.json
         run: |
           if [ -n "$(git status -s packages/${{ matrix.package }}/package-lock.json)" ]; then
@@ -209,7 +209,7 @@ jobs:
               fi
             done
           fi
-        if: github.ref == 'refs/heads/master' && always() && steps.build.outcome == 'success'
+        if: github.ref == 'refs/heads/master' && always() && steps.publish.outcome == 'success'
 
       - name: Stop Datagrok
         if: always() && (steps.datagrok-image.outcome == 'failure' || steps.datagrok-image.outcome == 'success')
