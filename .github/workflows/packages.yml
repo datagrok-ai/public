@@ -27,7 +27,7 @@ jobs:
       - name: Generate matrix
         id: generate-matrix
         run: |
-          if [[ ${{ github.event.inputs.packages }} == "" ]]; then
+          if [[ "${{ github.event.inputs.packages }}" == "" ]]; then
             if [[ $(git log -n 1 --pretty=%B) == *"Merge branch 'master' of"* ]]; then
               commit="$(git log --format="%H" -n 1 --no-merges)"
             else
