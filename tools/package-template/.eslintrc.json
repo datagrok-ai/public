@@ -33,6 +33,6 @@
         "allowSingleLine": true
       }
     ],
-    "block-spacing": "always"
+    "block-spacing": 2
   }
 }
