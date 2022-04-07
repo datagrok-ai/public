@@ -5,6 +5,7 @@ import {callMVA} from '../utils/multivariate-analysis';
 import {PeptidesController} from '../peptides';
 import '../styles.css';
 import {StringDictionary} from '@datagrok-libraries/utils/src/type-declarations';
+import * as C from '../utils/constants';
 
 /**
  * Peptide analysis widget.
@@ -17,7 +18,7 @@ import {StringDictionary} from '@datagrok-libraries/utils/src/type-declarations'
  * @return {Promise<DG.Widget>} Widget containing peptide analysis.
  */
 export async function analyzePeptidesWidget(
-  col: DG.Column, view: DG.TableView, tableGrid: DG.Grid, currentDf: DG.DataFrame,
+  view: DG.TableView, tableGrid: DG.Grid, currentDf: DG.DataFrame, col: DG.Column,
 ): Promise<DG.Widget> {
   let tempCol = null;
   let tempDf: DG.DataFrame;
@@ -35,11 +36,11 @@ export async function analyzePeptidesWidget(
       const currentActivityCol = activityColumnChoice.value.name;
 
       [tempDf, newScaledColName] = await PeptidesController.scaleActivity(
-        currentMethod, currentActivityCol, `${currentActivityCol}Scaled`, currentDf);
+        currentMethod, currentDf, currentActivityCol);
 
       const hist = tempDf.plot.histogram({
         filteringEnabled: false,
-        valueColumnName: `${currentActivityCol}Scaled`,
+        valueColumnName: C.COLUMNS_NAMES.ACTIVITY_SCALED,
         legendVisibility: 'Never',
         showXAxis: true,
         showColumnSelector: false,
@@ -69,24 +70,30 @@ export async function analyzePeptidesWidget(
   const startBtn = ui.button('Launch SAR', async () => {
     const progress = DG.TaskBarProgressIndicator.create('Loading SAR...');
     if (activityColumnChoice.value.type === DG.TYPE.FLOAT) {
-      const activityColumn = activityColumnChoice.value.name;
-      const activityColumnScaled = `${activityColumn}Scaled`;
-      const originalDfColumns = (currentDf.columns as DG.ColumnList).names();
+      const activityColumn: string = activityColumnChoice.value.name;
+      // const activityColumnScaled = `${activityColumn}Scaled`;
+      // const originalDfColumns = (currentDf.columns as DG.ColumnList).names();
       const options: StringDictionary = {
-        'activityColumnName': activityColumn,
+        'activityColumnName': C.COLUMNS_NAMES.ACTIVITY,
         'scaling': activityScalingMethod.value,
       };
 
-      const scaledCol = tempDf.getCol(activityColumnScaled);
-      (currentDf.columns as DG.ColumnList).add(scaledCol);
-      tableGrid.col(activityColumnScaled)!.name = newScaledColName;
-      scaledCol.temp['gridName'] = newScaledColName;
-      if (newScaledColName === activityColumn)
-        tableGrid.col(activityColumn)!.name = `~${activityColumn}`;
-      tableGrid.columns.setOrder([newScaledColName]);
+      const newDf = currentDf.clone(currentDf.filter, [col.name, activityColumn]);
+      newDf.getCol(activityColumn).name = C.COLUMNS_NAMES.ACTIVITY;
+      newDf.getCol(col.name).name = C.COLUMNS_NAMES.ALIGNED_SEQUENCE;
+      (newDf.columns as DG.ColumnList).add(tempDf.getCol(C.COLUMNS_NAMES.ACTIVITY_SCALED));
+      newDf.temp[C.COLUMNS_NAMES.ACTIVITY] = activityColumn;
+      const newView = grok.shell.addTableView(newDf);
+      const newGrid = newView.grid;
+      newGrid.col(C.COLUMNS_NAMES.ACTIVITY_SCALED)!.name = newScaledColName;
+      newDf.temp[C.COLUMNS_NAMES.ACTIVITY_SCALED] = newScaledColName;
+      // newCol.temp['gridName'] = newScaledColName;
+      // if (newScaledColName === activityColumn)
+      //   newGrid.col(activityColumn)!.name = `~${activityColumn}`;
+      newGrid.columns.setOrder([newScaledColName]);
 
-      const peptides = await PeptidesController.getInstance(currentDf);
-      await peptides.init(tableGrid, view, options, col, originalDfColumns);
+      const peptides = await PeptidesController.getInstance(newDf);
+      await peptides.init(newGrid, newView, options);
     } else
       grok.shell.error('The activity column must be of floating point number type!');
     progress.close();

@@ -6,6 +6,7 @@ import $ from 'cash-dom';
 import {StringDictionary} from '@datagrok-libraries/utils/src/type-declarations';
 import {PeptidesController} from '../peptides';
 import {SARMultipleFilter} from '../utils/SAR-multiple-filter';
+import * as C from '../utils/constants';
 // import {PeptidesModel} from '../model';
 
 /**
@@ -14,14 +15,13 @@ import {SARMultipleFilter} from '../utils/SAR-multiple-filter';
 export class SARViewer extends DG.JsViewer {
   viewerGrid: DG.Grid | null;
   sourceGrid: DG.Grid | null;
-  activityColumnName: string;
+  // activityColumnName: string;
   scaling: string;
   bidirectionalAnalysis: boolean;
   filterMode: boolean;
   statsDf: DG.DataFrame | null;
   initialized: boolean;
   viewGridInitialized: boolean;
-  aminoAcidResidue;
   viewerVGrid: DG.Grid | null;
   grouping: boolean;
   groupMapping: StringDictionary | null;
@@ -41,13 +41,12 @@ export class SARViewer extends DG.JsViewer {
     this.statsDf = null;
     this.groupMapping = null;
     this.initialized = false;
-    this.aminoAcidResidue = 'AAR';
     this.viewGridInitialized = false;
     // this.model = null;
     this.controller = null;
 
     //TODO: find a way to restrict activityColumnName to accept only numerical columns (double even better)
-    this.activityColumnName = this.string('activityColumnName');
+    // this.activityColumnName = this.string('activityColumnName');
     this.scaling = this.string('scaling', 'none', {choices: ['none', 'lg', '-lg']});
     this.filterMode = this.bool('filterMode', false);
     this.bidirectionalAnalysis = this.bool('bidirectionalAnalysis', false);
@@ -55,7 +54,7 @@ export class SARViewer extends DG.JsViewer {
 
     this.sourceGrid = null;
     this.multipleFilter = new SARMultipleFilter(this.filterMode);
-    this.multipleFilter.addResource('residueColumnName', this.aminoAcidResidue);
+    this.multipleFilter.addResource('residueColumnName', C.COLUMNS_NAMES.AMINO_ACID_RESIDUE);
   }
 
   get name() {
@@ -78,6 +77,9 @@ export class SARViewer extends DG.JsViewer {
   private get filter() {
     return this.dataFrame!.filter;// ?? DG.BitSet.create(1, (_) => true);
   }
+  get selection() {
+    return this.dataFrame!.selection;
+  }
 
   async onTableAttached() {
     this.sourceGrid = this.view?.grid ?? (grok.shell.v as DG.TableView).grid;
@@ -89,6 +91,7 @@ export class SARViewer extends DG.JsViewer {
 
     this.multipleFilter.addResource('dataFrame', this.dataFrame);
     this.multipleFilter.resetSelection();
+    this.multipleFilter.addResource('activityColumnName', C.COLUMNS_NAMES.ACTIVITY_SCALED);
 
     this.subs.push(this.controller.onStatsDataFrameChanged.subscribe((data) => this.statsDf = data));
     this.subs.push(this.controller.onSARGridChanged.subscribe((data) => {
@@ -136,104 +139,20 @@ export class SARViewer extends DG.JsViewer {
       this.multipleFilter.filteringMode = this.filterMode;
 
     if (property.name === 'activityColumnName')
-      this.multipleFilter.addResource('activityColumnName', `${this.activityColumnName}Scaled`);
+      this.multipleFilter.addResource('activityColumnName', C.COLUMNS_NAMES.ACTIVITY_SCALED);
 
     if (property.name === 'scaling' && typeof this.dataFrame !== 'undefined') {
-      const minActivity = DG.Stats.fromColumn(
-        this.dataFrame.col(this.activityColumnName)!,
-        this.dataFrame.filter,
-      ).min;
+      const minActivity = DG.Stats.fromColumn(this.dataFrame.getCol(C.COLUMNS_NAMES.ACTIVITY), this.dataFrame.filter)
+        .min;
       if (minActivity && minActivity <= 0 && this.scaling !== 'none') {
         grok.shell.warning(`Could not apply ${this.scaling}: ` +
-          `activity column ${this.activityColumnName} contains zero or negative values, falling back to 'none'.`);
+          `activity column ${C.COLUMNS_NAMES.ACTIVITY} contains zero or negative values, falling back to 'none'.`);
         property.set(this, 'none');
         return;
       }
     }
 
     await this.render();
-  }
-
-  applyBitset() {
-    if (!this.viewerGrid)
-      return;
-
-    const viewerGridDf = this.viewerGrid.dataFrame;
-
-    if (viewerGridDf && viewerGridDf.currentCell.value && viewerGridDf.currentCol.name !== this.aminoAcidResidue) {
-      //const currentAAR: string = viewerGridDf.get(this.aminoAcidResidue, viewerGridDf.currentRowIdx);
-      //const currentPosition = viewerGridDf.currentCol.name;
-      //const aarLabel = `${currentAAR === '-' ? 'Gap' : currentAAR} - ${currentPosition}`;
-      const splitColName = '~splitCol';
-      const otherLabel = 'Other';
-      const aarLabel = this.multipleFilter.filterLabel;
-      const splitCol = this.dataFrame!.col(splitColName) ?? this.dataFrame!.columns.addNew(splitColName, 'string');
-
-      (splitCol! as DG.Column).init((i) => this.filter.get(i) ? aarLabel : otherLabel);
-
-      const colorMap: {[index: string]: string | number} = {};
-
-      colorMap[otherLabel] = DG.Color.blue;
-      colorMap[aarLabel] = DG.Color.orange;
-      // colorMap[currentAAR] = cp.getColor(currentAAR);
-      this.dataFrame!.getCol(splitColName).colors.setCategorical(colorMap);
-    }
-  }
-
-  accordionFunc(accordion: DG.Accordion) {
-    if (accordion.context instanceof DG.RowGroup) {
-      const originalDf: DG.DataFrame = DG.toJs(accordion.context.dataFrame);
-      const viewerDf = this.viewerGrid!.dataFrame;
-
-      if (
-        originalDf.getTag('dataType') === 'peptides' &&
-        originalDf.col('~splitCol') &&
-        viewerDf &&
-        viewerDf.currentCol !== null
-      ) {
-        const labelStr = this.multipleFilter.filterLabel;
-        const currentColor = DG.Color.toHtml(DG.Color.orange);
-        const otherColor = DG.Color.toHtml(DG.Color.blue);
-        const currentLabel = ui.label(labelStr, {style: {color: currentColor}});
-        const otherLabel = ui.label('Other', {style: {color: otherColor}});
-        const elements: (HTMLLabelElement | HTMLElement)[] = [currentLabel, otherLabel];
-        const distPane = accordion.getPane('Distribution');
-
-        if (distPane)
-          accordion.removePane(distPane);
-
-        const getContent = () => {
-          const hist = originalDf.clone(this.dataFrame!.filter).plot.histogram({
-          // const hist = originalDf.plot.histogram({
-            filteringEnabled: false,
-            valueColumnName: `${this.activityColumnName}Scaled`,
-            splitColumnName: '~splitCol',
-            legendVisibility: 'Never',
-            showXAxis: true,
-            showColumnSelector: false,
-            showRangeSlider: false,
-          }).root;
-
-          hist.style.width = 'auto';
-          elements.push(hist);
-
-          this.multipleFilter.addResource('activityColumnName', `${this.activityColumnName}Scaled`);
-
-          const stats = this.multipleFilter.getStatistics();
-          const tableMap: StringDictionary = {
-            'Statistics:': '',
-            'Count': stats.count.toString(),
-            'p-value': stats.pValue < 0.01 ? '<0.01' : stats.pValue.toFixed(2),
-            'Mean difference': stats.meanDifference.toFixed(2),
-          };
-
-          elements.push(ui.tableFromMap(tableMap));
-          return ui.divV(elements);
-        };
-
-        accordion.addPane('Distribution', getContent.bind(this), true);
-      }
-    }
   }
 
   /**
@@ -246,36 +165,33 @@ export class SARViewer extends DG.JsViewer {
     if (!this.initialized)
       return;
 
-    try {
-    //TODO: optimize. Don't calculate everything again if only view changes
-      if (typeof this.dataFrame !== 'undefined' && this.activityColumnName && this.sourceGrid) {
-        if (computeData) {
-          await this.controller!.updateData(this.activityColumnName, this.scaling, this.sourceGrid,
-            this.bidirectionalAnalysis, this.filter, this.grouping);
-        }
 
-        if (this.viewerGrid !== null && this.viewerVGrid !== null) {
-          $(this.root).empty();
-          const gridRoot = this.viewerGrid.root;
-          gridRoot.style.width = 'auto';
-          this.root.appendChild(ui.divV([this._titleHost, gridRoot]));
-        this.viewerGrid.dataFrame!.onCurrentCellChanged.subscribe((_) => {
-          this.applyBitset();
-          syncGridsFunc(false, this.viewerGrid!, this.viewerVGrid!, this.aminoAcidResidue);
-        });
-        this.viewerVGrid.dataFrame!.onCurrentCellChanged.subscribe((_) => {
-          syncGridsFunc(true, this.viewerGrid!, this.viewerVGrid!, this.aminoAcidResidue);
-        });
-        grok.events.onAccordionConstructed.subscribe((accordion: DG.Accordion) => {
-          this.accordionFunc(accordion);
-        });
-        }
+    //TODO: optimize. Don't calculate everything again if only view changes
+    if (typeof this.dataFrame !== 'undefined' && this.sourceGrid) {
+      if (computeData) {
+        await this.controller!.updateData(this.scaling, this.sourceGrid, this.bidirectionalAnalysis, this.filter,
+          this.grouping);
       }
-      //fixes viewers not rendering immediately after analyze.
-      this.viewerGrid?.invalidate();
-    } catch (error) {
-      console.warn(error);
+
+      if (this.viewerGrid !== null && this.viewerVGrid !== null) {
+        $(this.root).empty();
+        const gridRoot = this.viewerGrid.root;
+        gridRoot.style.width = 'auto';
+        this.root.appendChild(ui.divV([this._titleHost, gridRoot]));
+      this.viewerGrid.dataFrame!.onCurrentCellChanged.subscribe((_) => {
+        // this.applyBitset();
+        syncGridsFunc(false, this.viewerGrid!, this.viewerVGrid!);
+      });
+      this.viewerVGrid.dataFrame!.onCurrentCellChanged.subscribe((_) => {
+        syncGridsFunc(true, this.viewerGrid!, this.viewerVGrid!);
+      });
+      // grok.events.onAccordionConstructed.subscribe((accordion: DG.Accordion) => {
+      //   this.accordionFunc(accordion);
+      // });
+      }
     }
+    //fixes viewers not rendering immediately after analyze.
+    this.viewerGrid?.invalidate();
   }
 }
 
@@ -320,7 +236,7 @@ export class SARViewerVertical extends DG.JsViewer {
 }
 
 //TODO: refactor, move
-function syncGridsFunc(sourceVertical: boolean, viewerGrid: DG.Grid, viewerVGrid: DG.Grid, aminoAcidResidue: string) {
+function syncGridsFunc(sourceVertical: boolean, viewerGrid: DG.Grid, viewerVGrid: DG.Grid) {
   if (viewerGrid && viewerGrid.dataFrame && viewerVGrid && viewerVGrid.dataFrame) {
     if (sourceVertical) {
       const dfCell = viewerVGrid.dataFrame.currentCell;
@@ -328,10 +244,10 @@ function syncGridsFunc(sourceVertical: boolean, viewerGrid: DG.Grid, viewerVGrid
         return;
 
       const otherColName: string = viewerVGrid.dataFrame.get('Pos', dfCell.rowIndex);
-      const otherRowName: string = viewerVGrid.dataFrame.get(aminoAcidResidue, dfCell.rowIndex);
+      const otherRowName: string = viewerVGrid.dataFrame.get(C.COLUMNS_NAMES.AMINO_ACID_RESIDUE, dfCell.rowIndex);
       let otherRowIndex = -1;
       for (let i = 0; i < viewerGrid.dataFrame.rowCount; i++) {
-        if (viewerGrid.dataFrame.get(aminoAcidResidue, i) === otherRowName) {
+        if (viewerGrid.dataFrame.get(C.COLUMNS_NAMES.AMINO_ACID_RESIDUE, i) === otherRowName) {
           otherRowIndex = i;
           break;
         }
@@ -340,15 +256,15 @@ function syncGridsFunc(sourceVertical: boolean, viewerGrid: DG.Grid, viewerVGrid
         viewerGrid.dataFrame.currentCell = viewerGrid.dataFrame.cell(otherRowIndex, otherColName);
     } else {
       const otherPos: string = viewerGrid.dataFrame.currentCol?.name;
-      if (typeof otherPos === 'undefined' && otherPos !== aminoAcidResidue)
+      if (typeof otherPos === 'undefined' && otherPos !== C.COLUMNS_NAMES.AMINO_ACID_RESIDUE)
         return;
 
       const otherAAR: string =
-        viewerGrid.dataFrame.get(aminoAcidResidue, viewerGrid.dataFrame.currentRowIdx);
+        viewerGrid.dataFrame.get(C.COLUMNS_NAMES.AMINO_ACID_RESIDUE, viewerGrid.dataFrame.currentRowIdx);
       let otherRowIndex = -1;
       for (let i = 0; i < viewerVGrid.dataFrame.rowCount; i++) {
         if (
-          viewerVGrid.dataFrame.get(aminoAcidResidue, i) === otherAAR &&
+          viewerVGrid.dataFrame.get(C.COLUMNS_NAMES.AMINO_ACID_RESIDUE, i) === otherAAR &&
           viewerVGrid.dataFrame.get('Pos', i) === otherPos
         ) {
           otherRowIndex = i;

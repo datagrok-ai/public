@@ -34,6 +34,7 @@
       "error",
       "1tbs",
       { "allowSingleLine": true }
-    ]
+    ],
+    "block-spacing": 2
   }
 }

@@ -20,6 +20,7 @@ import {SubstViewer} from './viewers/subst-viewer';
 import {runKalign, testMSAEnoughMemory} from './utils/multiple-sequence-alignment';
 import {substTableWidget} from './widgets/subst-table';
 import {msaWidget} from './widgets/multiple-sequence-alignment';
+import {getDistributionWidget} from './widgets/distribution';
 
 export const _package = new DG.Package();
 let currentGrid: DG.Grid;
@@ -91,9 +92,7 @@ export async function peptidesPanel(col: DG.Column): Promise<DG.Widget> {
   if (!(col.temp['isAnalysisApplicable'] ?? true))
     return new DG.Widget(ui.divText('Analysis is not applicable'));
 
-  [currentView, currentGrid, currentTable, alignedSequenceColumn] =
-    getOrDefineWIP(currentView, currentGrid, currentTable, col);
-  return await analyzePeptidesWidget(col, currentView, currentGrid, currentTable);
+  return await analyzePeptidesWidget(...getOrDefineWIP(currentView, currentGrid, currentTable, col));
 }
 
 //name: peptide-sar-viewer
@@ -254,6 +253,14 @@ export async function runTestMSAEnoughMemory(table: DG.DataFrame, col: DG.Column
 //output: widget result
 export async function peptideSubstitution(table: DG.DataFrame): Promise<DG.Widget> {
   return substTableWidget(table);
+}
+
+//name: Distribution
+//tags: panel, widgets
+//input: dataframe table {semType: viewerTable}
+//output: widget result
+export function peptideDistribution(table: DG.DataFrame): DG.Widget {
+  return getDistributionWidget(table);
 }
 
 //name: alignedSequenceDifferenceCellRenderer

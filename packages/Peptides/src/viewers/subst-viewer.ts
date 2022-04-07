@@ -43,7 +43,8 @@ export class SubstViewer extends DG.JsViewer {
   async onTableAttached() {
     // this.model = PeptidesModel.getOrInit(this.dataFrame!);
     this.controller = await PeptidesController.getInstance(this.dataFrame!);
-    await this.controller.updateData(null, null, (grok.shell.v as DG.TableView).grid, null, null, null);
+    const u = undefined;
+    await this.controller.updateData(u, (grok.shell.v as DG.TableView).grid);
     this.subs.push(this.controller.onSubstFlagChanged.subscribe(() => this.calcSubstitutions()));
   }
 

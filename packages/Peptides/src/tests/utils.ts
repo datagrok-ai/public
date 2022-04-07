@@ -86,13 +86,7 @@ export async function _testPeptideSimilaritySpaceViewer(
 
   try {
     viewer = await createPeptideSimilaritySpaceViewer(
-      table,
-      alignedSequencesColumn,
-      method,
-      measure,
-      cyclesCount,
-      null,
-    );
+      table, method, measure, cyclesCount, undefined, alignedSequencesColumn);
     df = viewer.dataFrame!;
   } catch (error) {
     noException = false;

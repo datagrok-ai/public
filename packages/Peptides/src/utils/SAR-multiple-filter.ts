@@ -6,6 +6,8 @@ import {StringDictionary} from '@datagrok-libraries/utils/src/type-declarations'
 import {MultipleSelection} from './SAR-multiple-selection';
 import {FilteringStatistics, Stats as FilterStats} from './filtering-statistics';
 
+import * as C from './constants';
+
 /**
  * Implements multiple filtering callbacks to be used in events subscription.
  */
@@ -141,14 +143,41 @@ export class SARMultipleFilter {
     else
       changeFilter.bind(this.selection)(pos!, res!);
 
-    console.warn([ctrlPressed ? 'ctrl+click' : 'click', this.selection.filter]);
+    // console.warn([ctrlPressed ? 'ctrl+click' : 'click', this.selection.filter]);
 
     if (this.filterMode)
       this.resources.dataFrame!.rows.requestFilter();
     else
       this.maskRows();
 
+    this.createSplitCol(df);
+    this.resources.dataFrame!.temp[C.STATS] = this.getStatistics();
+
     grid.invalidate();
+  }
+
+  createSplitCol(viewerDf: DG.DataFrame) {
+    let aarLabel = this.filterLabel;
+    if (aarLabel === '') {
+      const currentAAR: string = viewerDf.get(C.COLUMNS_NAMES.AMINO_ACID_RESIDUE, viewerDf.currentRowIdx);
+      const currentPosition = viewerDf.currentCol.name;
+      aarLabel = `${currentAAR === '-' ? 'Gap' : currentAAR} - ${currentPosition}`;
+    }
+
+    const splitCol = this.resources.dataFrame!.col(C.COLUMNS_NAMES.SPLIT_COL) ??
+    this.resources.dataFrame!.columns.addNew(C.COLUMNS_NAMES.SPLIT_COL, 'string') as DG.Column;
+
+    const bitset = this.filterMode ? this.resources.dataFrame!.filter : this.resources.dataFrame!.selection;
+    splitCol.init((i) => bitset.get(i) ? aarLabel : C.CATEGORY_OTHER);
+    splitCol.setCategoryOrder([aarLabel, C.CATEGORY_OTHER]);
+    splitCol.compact();
+
+    const colorMap: {[index: string]: string | number} = {};
+
+    colorMap[C.CATEGORY_OTHER] = DG.Color.blue;
+    colorMap[aarLabel] = DG.Color.orange;
+    // colorMap[currentAAR] = cp.getColor(currentAAR);
+    this.resources.dataFrame!.getCol(C.COLUMNS_NAMES.SPLIT_COL).colors.setCategorical(colorMap);
   }
 
   /**
@@ -239,12 +268,12 @@ export class SARMultipleFilter {
       df.filter.and(this.mask);
       df.selection.setAll(false, false);
 
-      console.warn(['onRowsFiltering', this.selection.filter, df.filter.trueCount]);
+      // console.warn(['onRowsFiltering', this.selection.filter, df.filter.trueCount]);
     } else {
       df.selection.copyFrom(this.mask);
       df.filter.fireChanged();
 
-      console.warn(['onSelectionChanged', this.selection.filter, df.selection.trueCount]);
+      // console.warn(['onSelectionChanged', this.selection.filter, df.selection.trueCount]);
     }
   }
 

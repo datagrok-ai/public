@@ -10,6 +10,7 @@ import {Observable} from 'rxjs';
 import {MonomerLibrary} from './monomer-library';
 import {_package} from './package';
 import {setAARRenderer} from './utils/cell-renderer';
+import * as C from './utils/constants';
 
 type viewerTypes = SARViewer | SARViewerVertical | SubstViewer;
 export class PeptidesController {
@@ -69,21 +70,24 @@ export class PeptidesController {
   }
 
   async updateData(
-    activityCol: string | null, activityScaling: string | null, sourceGrid: DG.Grid | null,
-    twoColorMode: boolean | null, initialBitset: DG.BitSet | null, grouping: boolean | null,
+    activityScaling?: string, sourceGrid?: DG.Grid, twoColorMode?: boolean, initialBitset?: DG.BitSet,
+    grouping?: boolean,
   ) {
-    await this._model.updateData(
-      activityCol, activityScaling, sourceGrid, twoColorMode, initialBitset, grouping);
+    await this._model.updateData(activityScaling, sourceGrid, twoColorMode, initialBitset, grouping);
   }
 
   static async scaleActivity(
-    activityScaling: string, activityColumn: string, activityColumnScaled: string, df: DG.DataFrame,
+    activityScaling: string, df: DG.DataFrame, originalActivityName?: string,
   ): Promise<[DG.DataFrame, string]> {
     // const df = sourceGrid.dataFrame!;
-    const tempDf = df.clone(null, [activityColumn]);
+    let currentActivityColName = originalActivityName ?? C.COLUMNS_NAMES.ACTIVITY;
+    const flag = (df.columns as DG.ColumnList).names().includes(currentActivityColName) &&
+      currentActivityColName === originalActivityName;
+    currentActivityColName = flag ? currentActivityColName : C.COLUMNS_NAMES.ACTIVITY;
+    const tempDf = df.clone(null, [currentActivityColName]);
 
-    let formula = '${' + activityColumn + '}';
-    let newColName = activityColumn;
+    let formula = '${' + currentActivityColName + '}';
+    let newColName = originalActivityName ?? df.temp[C.COLUMNS_NAMES.ACTIVITY] ?? currentActivityColName;
     switch (activityScaling) {
     case 'none':
       break;
@@ -99,9 +103,13 @@ export class PeptidesController {
       throw new Error(`ScalingError: method \`${activityScaling}\` is not available.`);
     }
 
-    await (tempDf.columns as DG.ColumnList).addNewCalculated(activityColumnScaled, formula);
+    await (tempDf.columns as DG.ColumnList).addNewCalculated(C.COLUMNS_NAMES.ACTIVITY_SCALED, formula);
 
     return [tempDf, newColName];
+  }
+
+  get originalActivityColumnName(): string {
+    return this.dataFrame.temp[C.COLUMNS_NAMES.ACTIVITY];
   }
 
   static splitAlignedPeptides(peptideColumn: DG.Column, filter: boolean = true): [DG.DataFrame, number[]] {
@@ -181,9 +189,7 @@ export class PeptidesController {
    * @param {DG.Column} col Aligned sequences column.
    * @memberof Peptides
    */
-  async init(
-    tableGrid: DG.Grid, view: DG.TableView, options: StringDictionary, col: DG.Column, originalDfColumns: string[],
-  ) {
+  async init(tableGrid: DG.Grid, view: DG.TableView, options: StringDictionary) {
     function adjustCellSize(grid: DG.Grid) {
       const colNum = grid.columns.length;
       for (let i = 0; i < colNum; ++i) {
@@ -195,16 +201,13 @@ export class PeptidesController {
 
     for (let i = 0; i < tableGrid.columns.length; i++) {
       const aarCol = tableGrid.columns.byIndex(i);
-      if (aarCol &&
-          aarCol.name &&
-          aarCol.column?.semType != 'aminoAcids'
-      ) {
-        //@ts-ignore
-        tableGrid.columns.byIndex(i)?.visible = false;
-      }
+      if (aarCol && aarCol.name && aarCol.column?.semType !== C.SEM_TYPES.AMINO_ACIDS &&
+        aarCol.name !== this.dataFrame.temp[C.COLUMNS_NAMES.ACTIVITY_SCALED]
+      )
+        tableGrid.columns.byIndex(i)!.visible = false;
     }
 
-    const originalDfName = this.dataFrame.name;
+    // const originalDfName = this.dataFrame.name;
     const dockManager = view.dockManager;
 
     options.title = 'Sutructure-Activity Relationship';
@@ -218,14 +221,13 @@ export class PeptidesController {
 
     const sarViewersGroup: viewerTypes[] = [sarViewer, sarViewerVertical];
 
-    const peptideSpaceViewer = await createPeptideSimilaritySpaceViewer(
-      this.dataFrame, col, 't-SNE', 'Levenshtein', 100, view, `${options['activityColumnName']}Scaled`);
-    dockManager.dock(peptideSpaceViewer, DG.DOCK_TYPE.RIGHT, null, 'Peptide Space viewer');
+    await createPeptideSimilaritySpaceViewer(this.dataFrame, 't-SNE', 'Levenshtein', 100, view);
+    // dockManager.dock(peptideSpaceViewer, DG.DOCK_TYPE.RIGHT, null, 'Peptide Space viewer');
 
     let nodeList = dockViewers(sarViewersGroup, DG.DOCK_TYPE.RIGHT, dockManager, DG.DOCK_TYPE.DOWN);
 
     const substViewerOptions = {
-      'activityColumnName': `${options['activityColumnName']}Scaled`,
+      'activityColumnName': C.COLUMNS_NAMES.ACTIVITY_SCALED,
       'title': 'Substitution analysis',
     };
     const substViewer = await this.dataFrame.plot.fromType(
@@ -235,31 +237,31 @@ export class PeptidesController {
     tableGrid.props.allowEdit = false;
     adjustCellSize(tableGrid);
 
-    const hideIcon = ui.iconFA('window-close', () => {
-      const viewers = [];
-      for (const viewer of view.viewers) {
-        if (viewer.type !== DG.VIEWER.GRID)
-          viewers.push(viewer);
-      }
-      viewers.forEach((v) => v.close());
+    // const hideIcon = ui.iconFA('window-close', () => {
+    //   const viewers = [];
+    //   for (const viewer of view.viewers) {
+    //     if (viewer.type !== DG.VIEWER.GRID)
+    //       viewers.push(viewer);
+    //   }
+    //   viewers.forEach((v) => v.close());
 
-      const cols = (this.dataFrame.columns as DG.ColumnList);
-      for (const colName of cols.names()) {
-        if (!originalDfColumns.includes(colName))
-          cols.remove(colName);
-      }
+    //   const cols = (this.dataFrame.columns as DG.ColumnList);
+    //   for (const colName of cols.names()) {
+    //     if (!originalDfColumns.includes(colName))
+    //       cols.remove(colName);
+    //   }
 
-      this.dataFrame.selection.setAll(false);
-      this.dataFrame.filter.setAll(true);
+    //   this.dataFrame.selection.setAll(false);
+    //   this.dataFrame.filter.setAll(true);
 
-      tableGrid.setOptions({'colHeaderHeight': 20});
-      tableGrid.columns.setVisible(originalDfColumns);
-      tableGrid.props.allowEdit = true;
-      tableGrid.temp['containsBarchart'] = false;
-      this.dataFrame.name = originalDfName;
+    //   tableGrid.setOptions({'colHeaderHeight': 20});
+    //   tableGrid.columns.setVisible(originalDfColumns);
+    //   tableGrid.props.allowEdit = true;
+    //   tableGrid.temp['containsBarchart'] = false;
+    //   this.dataFrame.name = originalDfName;
 
-      view.setRibbonPanels(ribbonPanels);
-    }, 'Close viewers and restore dataframe');
+    //   view.setRibbonPanels(ribbonPanels);
+    // }, 'Close viewers and restore dataframe');
 
     let isSA = false;
     const switchViewers = ui.iconFA('toggle-on', () => {
@@ -275,7 +277,7 @@ export class PeptidesController {
     }, 'Toggle viewer group');
 
     const ribbonPanels = view.getRibbonPanels();
-    view.setRibbonPanels([[hideIcon, switchViewers]]);
+    view.setRibbonPanels([[switchViewers]]);
   }
 }
 
