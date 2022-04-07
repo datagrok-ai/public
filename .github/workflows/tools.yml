@@ -37,6 +37,8 @@ jobs:
     environment: Prod
     steps:
       - uses: actions/checkout@v2
+        with:
+          token: ${{ secrets.WRITE_TOKEN }}
       - name: Setup Node
         uses: actions/setup-node@v2
         with:
