@@ -155,7 +155,7 @@ jobs:
       - name: Test Package
         if: ${{ matrix.test == 'true' }}
         id: test-package
-        run: jest --verbose=false
+        run: npm run test -- --verbose=false
         env:
           JEST_HTML_REPORTER_PAGE_TITLE: "${{ matrix.package }} Test Report. Datagrok version datagrok/datagrok:latest SHA=${{ steps.datagrok-image.outputs.docker_sha }}. Commit ${{ steps.datagrok-image.outputs.commit_sha }}."
           JEST_HTML_REPORTER_OUTPUT_PATH: "./test-${{ matrix.package }}-${{ steps.datagrok-image.outputs.docker_sha }}-${{ steps.datagrok-image.outputs.commit_sha }}.html"
