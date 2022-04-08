@@ -11,6 +11,7 @@ import {MonomerLibrary} from './monomer-library';
 import {_package} from './package';
 import {setAARRenderer} from './utils/cell-renderer';
 import * as C from './utils/constants';
+import { PeptideSpaceViewer } from './viewers/peptide-space-viewer';
 
 type viewerTypes = SARViewer | SARViewerVertical | SubstViewer;
 export class PeptidesController {
@@ -190,6 +191,7 @@ export class PeptidesController {
    * @memberof Peptides
    */
   async init(tableGrid: DG.Grid, view: DG.TableView, options: StringDictionary) {
+    this.dataFrame.temp[C.EMBEDDING_STATUS] = false;
     function adjustCellSize(grid: DG.Grid) {
       const colNum = grid.columns.length;
       for (let i = 0; i < colNum; ++i) {
@@ -221,7 +223,12 @@ export class PeptidesController {
 
     const sarViewersGroup: viewerTypes[] = [sarViewer, sarViewerVertical];
 
-    await createPeptideSimilaritySpaceViewer(this.dataFrame, 't-SNE', 'Levenshtein', 100, view);
+    const peptideSpaceViewerOptions = {method: 't-SNE', measure: 'Levenshtein', cyclesCount: 100};
+    const peptideSpaceViewer =
+      await this.dataFrame.plot.fromType('peptide-space-viewer', peptideSpaceViewerOptions) as PeptideSpaceViewer;
+    dockManager.dock(peptideSpaceViewer, DG.DOCK_TYPE.RIGHT, null, 'Peptide Space Viewer');
+
+    // await createPeptideSimilaritySpaceViewer(this.dataFrame, 't-SNE', 'Levenshtein', 100, view);
     // dockManager.dock(peptideSpaceViewer, DG.DOCK_TYPE.RIGHT, null, 'Peptide Space viewer');
 
     let nodeList = dockViewers(sarViewersGroup, DG.DOCK_TYPE.RIGHT, dockManager, DG.DOCK_TYPE.DOWN);

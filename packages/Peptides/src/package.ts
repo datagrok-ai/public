@@ -21,6 +21,7 @@ import {runKalign, testMSAEnoughMemory} from './utils/multiple-sequence-alignmen
 import {substTableWidget} from './widgets/subst-table';
 import {msaWidget} from './widgets/multiple-sequence-alignment';
 import {getDistributionWidget} from './widgets/distribution';
+import { PeptideSpaceViewer } from './viewers/peptide-space-viewer';
 
 export const _package = new DG.Package();
 let currentGrid: DG.Grid;
@@ -117,6 +118,14 @@ export function sarVertical(): SARViewerVertical {
 //output: viewer result
 export function subst(): SubstViewer {
   return new SubstViewer();
+}
+
+//name: peptide-space-viewer
+//description: Peptide Space Viewer
+//tags: viewer
+//output: viewer result
+export function peptideSpace(): PeptideSpaceViewer {
+  return new PeptideSpaceViewer();
 }
 
 //name: StackedBarchart Widget
