@@ -2,7 +2,7 @@ import {map, stadardPhosphateLinkSmiles, SYNTHESIZERS, TECHNOLOGIES, MODIFICATIO
 import {isValidSequence} from './sequence-codes-tools';
 import {getNucleotidesMol} from './mol-transformations';
 
-export function sequenceToMolV3000(sequence: string, inverted: boolean = false): string {
+export function sequenceToMolV3000(sequence: string, inverted: boolean = false, oclRender: boolean = false): string {
   const obj = getObjectWithCodesAndSmiles(sequence);
   let codes = sortByStringLengthInDescendingOrder(Object.keys(obj));
   let i = 0;
@@ -41,7 +41,7 @@ export function sequenceToMolV3000(sequence: string, inverted: boolean = false):
     }
   }
 
-  return getNucleotidesMol(smilesCodes);
+  return getNucleotidesMol(smilesCodes, oclRender);
 }
 
 export function sequenceToSmiles(sequence: string, inverted: boolean = false): string {
