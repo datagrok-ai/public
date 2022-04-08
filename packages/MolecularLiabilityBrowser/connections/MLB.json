@@ -1,0 +1,17 @@
+{
+    "name": "MLB",
+    "#type": "DataConnection",
+    "parameters": {
+      "server": "b-cell.cgvdh1loz2qk.us-east-1.rds.amazonaws.com",
+      "db": "b_cell_datagrok_test"
+    },
+    "credentials" : {
+      "parameters": {
+        "login": "",
+        "password": ""
+      }
+    },
+    "dataSource": "PostgreSQL",
+    "description": "Molecular Liability Browser data",
+    "tags": ["demo"]
+}

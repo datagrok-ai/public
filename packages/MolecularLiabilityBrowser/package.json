@@ -1,0 +1,38 @@
+{
+	"name": "molecularliabilitybrowser",
+	"fullName": "MolecularLiabilityBrowser",
+	"version": "0.0.1",
+	"description": "",
+	"sources": [
+		"css/ngl.css",
+		"css/pviz-core.css",
+		"css/additionalStyles.css",
+		"src/viewers/pviz-bundle.min.js",
+		"common/ngl_viewer/ngl.js"
+	],
+	"dependencies": {
+		"cash-dom": "latest",
+		"datagrok-api": ">=0.95.5",
+		"logojs-react": "^2.1.1",
+		"ts-loader": "^9.2.5",
+		"typescript": "^4.5.4",
+		"rxjs": "^6.5.5",
+		"@phylocanvas/phylocanvas.gl": "^1.39.0"
+	},
+	"devDependencies": {
+		"webpack": "^5.66.0",
+		"webpack-cli": "latest",
+		"eslint": "latest",
+		"eslint-config-google": "latest",
+		"@typescript-eslint/eslint-plugin": "latest",
+		"@typescript-eslint/parser": "latest"
+	},
+	"scripts": {
+		"debug-mlb": "grok publish local --rebuild",
+		"debug-molecularliabilitybrowser": "grok publish jnj --rebuild",
+		"release-molecularliabilitybrowser": "grok publish jnj --rebuild --release",
+		"build": "webpack",
+		"lint": "eslint src --ext .ts",
+		"lint-fix": "eslint src --ext .ts --fix"
+	}
+}
