@@ -24,16 +24,16 @@ M  V30 BEGIN COLLECTION
 M  V30 END COLLECTION
 M  END`;
 
-export function getNucleotidesMol(smilesCodes: string[]) {
+export function getNucleotidesMol(smilesCodes: string[], oclRender: boolean = false) {
   const molBlocks: string[] = [];
 
   for (let i = 0; i < smilesCodes.length - 1; i++)
     smilesCodes[i] == 'OP(=O)(O)O' ? molBlocks.push(PHOSHATE) : molBlocks.push(rotateNucleotidesV3000(smilesCodes[i]));
 
-  return linkV3000(molBlocks);
+  return linkV3000(molBlocks, false, oclRender);
 }
 
-export function linkV3000(molBlocks: string[], twoMolecules: boolean = false) {
+export function linkV3000(molBlocks: string[], twoMolecules: boolean = false, oclRender: boolean = false) {
   let macroMolBlock = '\nDatagrok macromolecule handler\n\n';
   macroMolBlock += '  0  0  0  0  0  0              0 V3000\n';
   macroMolBlock += 'M  V30 BEGIN CTAB\n';
@@ -140,15 +140,24 @@ export function linkV3000(molBlocks: string[], twoMolecules: boolean = false) {
 
   const entries = 4;
   const collNumber = Math.ceil(collection.length / entries);
-  for (let i = 0; i < collNumber; i++) {
+
+  if (oclRender) {
     collectionBlock += 'M  V30 MDLV30/STEABS ATOMS=(';
-    const entriesCurrent = i + 1 == collNumber ? collection.length - (collNumber - 1)*entries : entries;
-    for (let j = 0; j < entriesCurrent; j++)
-      collectionBlock += (j + 1 == entriesCurrent) ? collection[entries*i + j] : collection[entries*i + j] + ' ';
+
+    for (let j = 0; j < collection.length; j++)
+      collectionBlock += collection[j] + ' ';
 
     collectionBlock += ')\n';
-  }
+  } else {
+    for (let i = 0; i < collNumber; i++) {
+      collectionBlock += 'M  V30 MDLV30/STEABS ATOMS=(';
+      const entriesCurrent = i + 1 == collNumber ? collection.length - (collNumber - 1)*entries : entries;
+      for (let j = 0; j < entriesCurrent; j++)
+        collectionBlock += (j + 1 == entriesCurrent) ? collection[entries*i + j] : collection[entries*i + j] + ' ';
 
+      collectionBlock += ')\n';
+    }
+  }
 
   //generate file
   twoMolecules? natom : natom++;

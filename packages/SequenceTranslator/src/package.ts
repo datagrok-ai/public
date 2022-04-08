@@ -93,7 +93,7 @@ export function sequenceTranslator(): void {
         const canvas = ui.canvas(300, 170);
         canvas.addEventListener('click', () => {
           const canv = ui.canvas($(window).width(), $(window).height());
-          const mol = sequenceToMolV3000(inputSequenceField.value.replace(/\s/g, ''));
+          const mol = sequenceToMolV3000(inputSequenceField.value.replace(/\s/g, ''), false, true);
           // @ts-ignore
           OCL.StructureView.drawMolecule(canv, OCL.Molecule.fromMolfile(mol), {suppressChiralText: true});
           ui.dialog('Molecule: ' + inputSequenceField.value)
@@ -102,7 +102,7 @@ export function sequenceTranslator(): void {
         });
         $(canvas).on('mouseover', () => $(canvas).css('cursor', 'zoom-in'));
         $(canvas).on('mouseout', () => $(canvas).css('cursor', 'default'));
-        const mol = sequenceToMolV3000(inputSequenceField.value.replace(/\s/g, ''));
+        const mol = sequenceToMolV3000(inputSequenceField.value.replace(/\s/g, ''), false, true);
         // @ts-ignore
         OCL.StructureView.drawMolecule(canvas, OCL.Molecule.fromMolfile(mol), {suppressChiralText: true});
         moleculeSvgDiv.append(canvas);
