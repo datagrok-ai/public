@@ -8,7 +8,7 @@ import {defineAxolabsPattern} from './defineAxolabsPattern';
 import {saveSenseAntiSense} from './structures-works/save-sense-antisense';
 import {sequenceToSmiles, sequenceToMolV3000} from './structures-works/from-monomers';
 import {convertSequence, undefinedInputSequence} from './structures-works/sequence-codes-tools';
-import {map, COL_NAMES} from './structures-works/map';
+import {map, COL_NAMES, MODIFICATIONS} from './structures-works/map';
 import {SALTS_CSV} from './salts';
 import {USERS_CSV} from './users';
 import {ICDS} from './ICDs';
@@ -281,13 +281,19 @@ for (const synthesizer of Object.keys(map)) {
       weightsObj[code] = map[synthesizer][technology][code].weight;
   }
 }
+for (const [key, value] of Object.entries(MODIFICATIONS))
+  weightsObj[key] = value.molecularWeight;
 
 function sortByStringLengthInDescendingOrder(array: string[]): string[] {
   return array.sort(function(a, b) {return b.length - a.length;});
 }
 
+function stringifyItems(items: string[]): string {
+  return '["' + items.join('", "') + '"]';
+}
+
 function molecularWeight(sequence: string, weightsObj: {[index: string]: number}): number {
-  const codes = sortByStringLengthInDescendingOrder(Object.keys(weightsObj));
+  const codes = sortByStringLengthInDescendingOrder(Object.keys(weightsObj)).concat(Object.keys(MODIFICATIONS));
   let weight = 0;
   let i = 0;
   while (i < sequence.length) {
@@ -359,38 +365,22 @@ export function oligoSdFile(table: DG.DataFrame) {
         ui.button('Save SD file', () => saveTableAsSdFile(addColumnsPressed ? newDf : table)),
       );
 
-      const view = grok.shell.getTableView(table.name);
-      const saltCol = view.grid.col(COL_NAMES.SALT)!;
-      const typeCol = view.grid.col(COL_NAMES.TYPE)!;
-      const ownerCol = view.grid.col(COL_NAMES.OWNER)!;
-      const sourcesCol = view.grid.col(COL_NAMES.SOURCE)!;
-      const icdsCol = view.grid.col(COL_NAMES.ICD)!;
-      const idpsCol = view.grid.col(COL_NAMES.IDP)!;
-      saltCol.cellType = 'html';
-      typeCol.cellType = 'html';
-      ownerCol.cellType = 'html';
-      sourcesCol.cellType = 'html';
-      icdsCol.cellType = 'html';
-      idpsCol.cellType = 'html';
+      const view = grok.shell.getTableView(table.name)!;
 
-      const colNamesToItemsObj: {[index: string]: string[]} = {};
-      colNamesToItemsObj[COL_NAMES.TYPE] = ['AS', 'SS', 'Duplex'];
-      colNamesToItemsObj[COL_NAMES.OWNER] = usersDf.columns.byIndex(0).toList();
-      colNamesToItemsObj[COL_NAMES.SALT] = saltsDf.columns.byIndex(1).toList();
-      colNamesToItemsObj[COL_NAMES.SOURCE] = sourcesDf.columns.byIndex(0).toList();
-      colNamesToItemsObj[COL_NAMES.ICD] = icdsDf.columns.byIndex(0).toList();
-      colNamesToItemsObj[COL_NAMES.IDP] = idpsDf.columns.byIndex(0).toList();
+      view.table!.col(COL_NAMES.TYPE)!.setTag(DG.TAGS.CHOICES, '["AS", "SS", "Duplex"]');
+      view.table!.col(COL_NAMES.OWNER)!.setTag(DG.TAGS.CHOICES, stringifyItems(usersDf.columns.byIndex(0).toList()));
+      view.table!.col(COL_NAMES.SALT)!.setTag(DG.TAGS.CHOICES, stringifyItems(saltsDf.columns.byIndex(1).toList()));
+      view.table!.col(COL_NAMES.SOURCE)!.setTag(DG.TAGS.CHOICES, stringifyItems(sourcesDf.columns.byIndex(0).toList()));
+      view.table!.col(COL_NAMES.ICD)!.setTag(DG.TAGS.CHOICES, stringifyItems(icdsDf.columns.byIndex(0).toList()));
+      view.table!.col(COL_NAMES.IDP)!.setTag(DG.TAGS.CHOICES, stringifyItems(idpsDf.columns.byIndex(0).toList()));
 
-      view.grid.onCellPrepare(function(gc: DG.GridCell) {
-        if (gc.isTableCell) {
-          for (const [key, value] of Object.entries(colNamesToItemsObj)) {
-            if (gc.gridColumn.name == key) {
-              gc.style.element = ui.choiceInput('', gc.cell.value, value, (v: string) => {
-                const gridRow = gc.gridRow;
-                view.dataFrame.col(key)!.set(gridRow, v);
-              }).root;
-            }
-          }
+      grok.events.onContextMenu.subscribe((args) => {
+        if ([COL_NAMES.TYPE, COL_NAMES.OWNER, COL_NAMES.SALT, COL_NAMES.SOURCE, COL_NAMES.ICD, COL_NAMES.IDP]
+          .includes(args.args.context.table.currentCol.name)) {
+          args.args.menu.item('Fill Column With Value', () => {
+            const v = args.args.context.table.currentCell.value;
+            args.args.context.table.currentCell.column.init(v);
+          });
         }
       });
     }),
