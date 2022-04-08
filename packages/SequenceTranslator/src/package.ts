@@ -5,7 +5,7 @@ import * as DG from 'datagrok-api/dg';
 import * as OCL from 'openchemlib/full.js';
 import $ from 'cash-dom';
 import {defineAxolabsPattern} from './defineAxolabsPattern';
-import {saveSenseAntiSense, saveSdf} from './structures-works/save-sense-antisense';
+import {saveSenseAntiSense} from './structures-works/save-sense-antisense';
 import {sequenceToSmiles, sequenceToMolV3000} from './structures-works/from-monomers';
 import {convertSequence, undefinedInputSequence} from './structures-works/sequence-codes-tools';
 import {map, COL_NAMES} from './structures-works/map';
@@ -77,12 +77,8 @@ export function sequenceTranslator(): void {
         });
         switchInput.enabled = true;
       } else {
-        asoGapmersGrid.onCellPrepare(function(gc) {
-          gc.style.backColor = 0xFFFFFFFF;
-        });
-        omeAndFluoroGrid.onCellPrepare(function(gc) {
-          gc.style.backColor = 0xFFFFFFFF;
-        });
+        asoGapmersGrid.onCellPrepare(function(gc) {gc.style.backColor = 0xFFFFFFFF;});
+        omeAndFluoroGrid.onCellPrepare(function(gc) {gc.style.backColor = 0xFFFFFFFF;});
       }
 
       outputTableDiv.append(
@@ -261,15 +257,21 @@ async function saveTableAsSdFile(table: DG.DataFrame) {
   }
   const structureColumn = table.col(COL_NAMES.SEQUENCE)!;
   const typeColumn = table.col(COL_NAMES.TYPE)!;
+  let result = '';
   for (let i = 0; i < table.rowCount; i++) {
-    try {
-      const ss = (typeColumn.get(i) == 'SS') ? structureColumn.get(i) : '';
-      const as = (typeColumn.get(i) == 'AS') ? structureColumn.get(i) : '';
-      saveSdf(as, ss, true);
-    } catch (error) {
-      console.error(error);
+    result += (typeColumn.get(i) == 'SS') ?
+      sequenceToMolV3000(structureColumn.get(i)) + '\n' + `>  <Sequence>\nSense Strand\n\n` :
+      sequenceToMolV3000(structureColumn.get(i), true) + '\n' + `>  <Sequence>\nAnti Sense\n\n`;
+    for (const col of table.columns) {
+      if (col.name != COL_NAMES.SEQUENCE)
+        result += `>  <${col.name}>\n${col.get(i)}\n\n`;
     }
+    result += '$$$$\n\n';
   }
+  const element = document.createElement('a');
+  element.setAttribute('href', 'data:text/plain;charset=utf-8,' + encodeURIComponent(result));
+  element.setAttribute('download', table.name + '.sdf');
+  element.click();
 }
 
 const weightsObj: {[code: string]: number} = {};
@@ -327,7 +329,7 @@ export function oligoSdFile(table: DG.DataFrame) {
     const molWeightCol = saltsDf.col('MOLWEIGHT')!.toList();
     const saltNames = saltsDf.col('DISPLAY')!.toList();
     t.columns.addNewFloat(COL_NAMES.CPD_MW)
-      .init((i: number) => ((i + 1) % 3 == 0) ? DG.FLOAT_NULL : molecularWeight(sequence.get(i), weightsObj));
+      .init((i: number) => molecularWeight(sequence.get(i), weightsObj));
     t.columns.addNewFloat(COL_NAMES.SALT_MASS).init((i: number) => {
       const mw = molWeightCol[saltNames.indexOf(salt.get(i))];
       return mw * equivalents.get(i);
