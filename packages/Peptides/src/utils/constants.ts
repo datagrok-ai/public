@@ -14,3 +14,5 @@ export const SEM_TYPES = {
 };
 
 export const STATS = 'stats';
+
+export const EMBEDDING_STATUS = 'embeddingStatus';
