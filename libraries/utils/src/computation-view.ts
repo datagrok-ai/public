@@ -14,7 +14,7 @@ import {FunctionView} from "./function-view";
  * - a structured way to represent input and output parameters: {@link parameters}
  * - generic way to generate UI for inputs, outputs, and interactivity (running the model, etc)
  *   - persisting historical results to the db (via {@link parameters})
- * - export (to Excel and PDF): {@link saveExcel}, {@link savePdf}
+ * - export (to Excel and PDF): {@link export}
  * - easy loading of historical runs
  * - routing
  * - entering the real, measured (as opposed to predicted) values manually
@@ -22,14 +22,27 @@ import {FunctionView} from "./function-view";
  * */
 export class ComputationView extends FunctionView {
 
-  onInputChanged: rxjs.Observable<void> = new rxjs.Subject();
-  onComputationStarted: rxjs.Observable<FuncCall> = new rxjs.Subject();
-  onComputationCompleted: rxjs.Observable<FuncCall> = new rxjs.Subject();
+  onViewInitialized: rxjs.Subject<void> = new rxjs.Subject();
+  onInputChanged: rxjs.Subject<void> = new rxjs.Subject();
+  onComputationStarted: rxjs.Subject<FuncCall> = new rxjs.Subject();
+  onComputationCompleted: rxjs.Subject<FuncCall> = new rxjs.Subject();
+  onComputationSucceeded: rxjs.Subject<FuncCall> = new rxjs.Subject();
+  onComputationError: rxjs.Subject<FuncCall> = new rxjs.Subject();
+
+  func: DG.Func = new DG.Func(null);
+  call: DG.FuncCall = new DG.FuncCall(null);
+  lastCall?: DG.FuncCall;
+
+  constructor(func: DG.Func) {
+    super(func);
+    this.func = func;
+    this.init().then((_) => this.onViewInitialized.next());
+  }
 
   /** List of parameters (both input and output) for this computation */
-  get parameters(): FuncCallParam[] { return []; }
+  get parameters(): FuncCall { return new DG.FuncCall(null); }
 
-  get inputFields(): Iterable<DG.InputBase> { return []; }
+  get inputFields(): Map<string, DG.InputBase> { return new Map(); }
 
   /** Saves the computation results to the historical results, returns its id. See also {@link loadRun}. */
   async saveRun(call: FuncCall): Promise<string> { return 'xxx'; }
@@ -38,27 +51,36 @@ export class ComputationView extends FunctionView {
   async loadRun(runId: string): Promise<void> { }
 
   /** The actual computation function. */
-  async compute(call: FuncCall): Promise<FuncCall> { return new DG.FuncCall(null); }
+  async compute(call: FuncCall): Promise<void> { }
 
   async run(): Promise<void> {
-    const call = this.inputFieldsToParameters();
-    const result = await this.compute(call);
-    this.outputParametersToView(result);
+    this.lastCall = this.call.clone();
+    this.inputFieldsToParameters(this.lastCall);
+
+    try {
+      await this.compute(this.lastCall);
+    }
+    catch (e) {
+      this.onComputationError.next(this.lastCall);
+    }
+
+    this.outputParametersToView(this.lastCall);
   }
 
-  init(): void {}
+  async init(): Promise<void> {}
 
   /** Builds the complete view. Override it if completely custom implementation is needed,
    * otherwise consider overriding {@link buildInputBlock} and/or {@link buildOutputBlock} */
   build(): HTMLElement { return ui.splitH([this.buildInputBlock(), this.buildOutputBlock()]); }
 
   /** Override to build completely custom input block (the one with inputs, usually on the left).
-   * If only specific field, consider overriding {@link buildInputField}. */
+   * If only specific field, consider overriding {@link buildCustomInputs}. */
   buildInputBlock(): HTMLElement { return ui.div(); }
 
-  /** Override to create a custom input control. */
-  buildInputField(p: DG.Property): DG.InputBase { return ui.intInput('foo', 0); }
+  /** Custom inputs for the specified fields. Inputs for these fields will not be created by {@link buildInputBlock}. */
+  buildCustomInputs(): Map<String, DG.InputBase> { return new Map(); }
 
+  /** Override to create output block. */
   buildOutputBlock(): HTMLElement { return ui.div(); }
 
   /** Override to create a custom input control. */
@@ -67,8 +89,13 @@ export class ComputationView extends FunctionView {
     ui.comboPopup('Export', this.supportedExportFormats, (format) => this.export(format))]);
   }
 
-  inputFieldsToParameters(): FuncCall { return new FuncCall(null); }
+  /** Creates function parameters based on the data entered by the user. */
+  inputFieldsToParameters(call: FuncCall): void { }
+
+  /** Visualizes computation results */
   outputParametersToView(call: FuncCall | null): void { }
+
+  processComputationError(call: FuncCall) { grok.shell.error(call.errorMessage!);  }
 
   /** Override to provide supported export formats.
    * These formats are available under the "Export" popup on the ribbon panel. */

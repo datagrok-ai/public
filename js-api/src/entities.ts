@@ -69,17 +69,13 @@ export class Entity {
   /** Returns a string representing the object */
   toString(): string { return api.grok_Object_ToString(this.dart); }
 
-  hasTag(tag: string): boolean {
-    return api.grok_Entity_Has_Tag(this.dart, tag);
-  }
+  hasTag(tag: string): boolean { return api.grok_Entity_Has_Tag(this.dart, tag); }
 
-  tag(tag: string): boolean {
-    return api.grok_Entity_Tag(this.dart, tag);
-  }
+  /** Adds a specified tag */
+  tag(tag: string): boolean { return api.grok_Entity_Tag(this.dart, tag); }
 
-  unTag(tag: string): boolean {
-    return api.grok_Entity_UnTag(this.dart, tag);
-  }
+  /** Removes a specified tag */
+  unTag(tag: string): boolean { return api.grok_Entity_UnTag(this.dart, tag); }
 }
 
 /**
