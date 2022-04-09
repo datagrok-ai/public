@@ -138,8 +138,11 @@ export class Functions {
 }
 
 
+/** Represents a parameter of a function. */
 export class FuncCallParam {
   readonly dart: any;
+
+  /** Auxiliary data used for storing additional information associated with this parameter. */
   public aux: any;
 
   constructor(dart: any) {
@@ -147,10 +150,11 @@ export class FuncCallParam {
     this.aux = new MapProxy(api.grok_FuncCallParam_Get_Aux(this.dart));
   }
 
-  get name(): string {return this.property.name; }
+  get name(): string { return this.property.name; }
 
   get value(): any { return toJs(api.grok_FuncCallParam_Get_Value(this.dart)); }
 
+  /** A property that re*/
   get property(): Property { return toJs(api.grok_FuncCallParam_Get_Param(this.dart)); }
 
   processOutput(): void {
@@ -170,13 +174,11 @@ export class FuncCallParam {
       }
     );
   }
-
 }
 
 
 export class Context {
   readonly dart: any;
-
 
   constructor(dart: any) {
     this.dart = dart;
@@ -189,6 +191,7 @@ export class Context {
   static cloneDefault(): Context {
     return toJs(api.grok_Context_CloneDefault());
   }
+
   setVariable(name: string, value: any): void {
     api.grok_Context_Set_Variable(this.dart, name, toDart(value));
   }
@@ -196,14 +199,13 @@ export class Context {
   getVariable(name: string): any {
     return toJs(api.grok_Context_Get_Variable(this.dart, name));
   }
-
 }
 
 /** Represents a function call
  * {@link https://datagrok.ai/help/overview/functions/function-call*}
  * */
 export class FuncCall {
-  private readonly dart: any;
+  public readonly dart: any;
   public inputs: any;
   public outputs: any;
   public aux: any;
@@ -221,8 +223,9 @@ export class FuncCall {
     this.options = new MapProxy(api.grok_FuncCall_Get_Options(this.dart));
   }
 
+  /** Function this call is associated with. */
   get func(): Func { return toJs(api.grok_FuncCall_Get_Func(this.dart)); }
-  set func(func: Func) {api.grok_FuncCall_Get_Func(this.dart, func.dart)}
+  set func(func: Func) { api.grok_FuncCall_Get_Func(this.dart, func.dart) }
 
   /** Returns function call parameter value
    * @param {string} name
@@ -231,8 +234,12 @@ export class FuncCall {
     return toJs(api.grok_FuncCall_Get_Param_Value(this.dart, name));
   }
 
+  /** Function call execution context. */
   get context(): Context { return toJs(api.grok_FuncCall_Get_Context(this.dart)); }
   set context(context: Context) { api.grok_FuncCall_Set_Context(this.dart, context.dart); }
+
+  /** Error message, if this call resulted in an exception, or null. */
+  get errorMessage(): string | null { return api.grok_FuncCall_Get_ErrorMessage(this.dart); }
 
   getOutputParamValue(): any {
     return toJs(api.grok_FuncCall_Get_Output_Param_Value(this.dart));
@@ -247,13 +254,15 @@ export class FuncCall {
     return new Promise((resolve, reject) => api.grok_FuncCall_Call(this.dart, (out: any) => resolve(toJs(out)), (err: any) => reject(err), showProgress, toDart(progress), options?.processed, options?.report));
   }
 
-  edit() {
-    api.grok_FuncCall_Edit(this.dart);
-  }
+  /** Shows the corresponding dialog (or view). */
+  edit() { api.grok_FuncCall_Edit(this.dart); }
 
   getEditor(condensed?: boolean, showTableSelectors?: boolean): Promise<HTMLDivElement> {
     return new Promise((resolve, reject) => api.grok_FuncCall_Get_Editor(this.dart, condensed, showTableSelectors, (out: any) => resolve(out), (err: any) => reject(err)));
   }
+
+  /** Makes a shallow copy. */
+  clone(): FuncCall { return api.grok_Entity_Clone(this.dart); }
 }
 
 export function callFuncWithDartParameters<T>(f: (...params: any[]) => T, params: object): T {

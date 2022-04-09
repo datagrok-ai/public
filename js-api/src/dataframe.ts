@@ -589,7 +589,7 @@ export class Row {
         return true;
       },
       get(target: any, name) {
-        if (name == 'cells' || target.hasOwnProperty(name))
+        if (name == 'cells' || name == 'get' || target.hasOwnProperty(name))
           return target[<any>name];
         return target.table.get(name, target.idx);
       }
