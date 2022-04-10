@@ -150,24 +150,30 @@ export class SARMultipleFilter {
     else
       this.maskRows();
 
-    this.createSplitCol(df);
+    this.createSplitCol();
     this.resources.dataFrame!.temp[C.STATS] = this.getStatistics();
 
     grid.invalidate();
   }
 
-  createSplitCol(viewerDf: DG.DataFrame) {
+  createSplitCol() {
+    this.resources.assert(['grid', 'dataFrame']);
+
+    const viewerDf = this.resources.grid!.dataFrame!;
+    const df = this.resources.dataFrame!;
     let aarLabel = this.filterLabel;
     if (aarLabel === '') {
       const currentAAR: string = viewerDf.get(C.COLUMNS_NAMES.AMINO_ACID_RESIDUE, viewerDf.currentRowIdx);
-      const currentPosition = viewerDf.currentCol.name;
-      aarLabel = `${currentAAR === '-' ? 'Gap' : currentAAR} - ${currentPosition}`;
+      const currentPosition = viewerDf.currentCol?.name;
+
+      aarLabel = (currentAAR && currentPosition) ?? true ? 'All' :
+        `${currentAAR === '-' ? 'Gap' : currentAAR} - ${currentPosition}`;
     }
 
-    const splitCol = this.resources.dataFrame!.col(C.COLUMNS_NAMES.SPLIT_COL) ??
-    this.resources.dataFrame!.columns.addNew(C.COLUMNS_NAMES.SPLIT_COL, 'string') as DG.Column;
+    const splitCol = df.col(C.COLUMNS_NAMES.SPLIT_COL) ??
+    df.columns.addNew(C.COLUMNS_NAMES.SPLIT_COL, 'string') as DG.Column;
 
-    const bitset = this.filterMode ? this.resources.dataFrame!.filter : this.resources.dataFrame!.selection;
+    const bitset = this.filterMode ? df.filter : df.selection;
     splitCol.init((i) => bitset.get(i) ? aarLabel : C.CATEGORY_OTHER);
     splitCol.setCategoryOrder([aarLabel, C.CATEGORY_OTHER]);
     splitCol.compact();
@@ -177,7 +183,7 @@ export class SARMultipleFilter {
     colorMap[C.CATEGORY_OTHER] = DG.Color.blue;
     colorMap[aarLabel] = DG.Color.orange;
     // colorMap[currentAAR] = cp.getColor(currentAAR);
-    this.resources.dataFrame!.getCol(C.COLUMNS_NAMES.SPLIT_COL).colors.setCategorical(colorMap);
+    df.getCol(C.COLUMNS_NAMES.SPLIT_COL).colors.setCategorical(colorMap);
   }
 
   /**
