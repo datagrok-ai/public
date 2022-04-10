@@ -4,12 +4,12 @@
     "access": "public"
   },
   "fullName": "Utils",
-  "version": "0.2.1",
+  "version": "0.2.3",
   "description": "Common utilities",
   "dependencies": {
     "cash-dom": "latest",
     "@types/node": "^14.14.37",
-    "datagrok-api": "^0.145.0",
+    "datagrok-api": "^0.146.0",
     "dts-bundle": "^0.7.3",
     "node-fetch": "^2.6.0",
     "wu": "latest"

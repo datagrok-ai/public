@@ -10,6 +10,8 @@ import wu from 'wu';
 import {OutliersSelectionViewer} from './outliers-selection/outliers-selection-viewer';
 import {ModelsWidget} from './models-widget'
 import {FunctionView} from "@datagrok-libraries/utils/src/function-view";
+import {delay} from "@datagrok-libraries/utils/src/test";
+import {ComputationView} from "@datagrok-libraries/utils/src/computation-view";
 
 let initCompleted: boolean = false;
 export const _package = new DG.Package();
@@ -159,4 +161,22 @@ export function modelCatalog() {
   let view = new ModelCatalogView();
   view.name = 'Models';
   grok.shell.addView(view);
+}
+
+
+//name: computationTest
+//input: int delayMs {description: Wait time; units: ms}
+//input: string error {description: When specified, throws this error}
+//output: dataframe result
+export async function computationTest(delayMs: number, error: string): Promise<DG.DataFrame> {
+  await delay(delayMs);
+  if (error != null || error != '')
+    throw error;
+  return grok.data.demo.demog();
+}
+
+//name: testComputationView();
+export function testComputationView() {
+  let f = DG.Func.find({name: 'computationTest'})[0];
+  grok.shell.addView(new ComputationView(f));
 }

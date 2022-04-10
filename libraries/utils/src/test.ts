@@ -150,6 +150,7 @@ async function execTest(t: Test, predicate: string | undefined) {
   return r;
 }
 
+/** Waits [ms] milliseconds */
 export async function delay(ms: number) {
-  await  new Promise(r => setTimeout(r, ms));
+  await new Promise(r => setTimeout(r, ms));
 }
