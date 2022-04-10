@@ -73,7 +73,7 @@ export class MultiView extends ViewBase {
   }
 
   get name(): string {
-    return this._fixedName ?? this._name;
+    return this._fixedName ?? super.name;
   }
 
   set name(s: string) {
@@ -85,7 +85,7 @@ export class MultiView extends ViewBase {
     this._currentView = x;
     this.toolbox = x.toolbox;
     this.setRibbonPanels(x.getRibbonPanels());
-    this._name = x.name;
+    this.name = x.name;
     if (x instanceof DockView) {
       console.log('bingo');
       x.initDock();
