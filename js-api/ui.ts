@@ -1149,9 +1149,10 @@ function _icon(type: string, handler: Function, tooltipMsg: string | null = null
   return e;
 }
 
-function _iconFA(type: string, handler: Function, tooltipMsg: string | null = null): HTMLElement {
+function _iconFA(type: string, handler: Function | null, tooltipMsg: string | null = null): HTMLElement {
   let e = $(`<i class="grok-icon fal fa-${type}"></i>`)[0] as HTMLElement;
-  e?.addEventListener('click', (e) => handler(e));
+  if (handler != null)
+    e?.addEventListener('click', (e) => handler(e));
   tooltip.bind(e, tooltipMsg);
   return e;
 }
@@ -1161,7 +1162,7 @@ export let icons = {
   help: (handler: Function, tooltipMsg: string | null = null) => _icon('help', handler, tooltipMsg),
   settings: (handler: Function, tooltipMsg: string | null = null) => _icon('settings', handler, tooltipMsg),
   edit: (handler: Function, tooltipMsg: string | null = null) => _iconFA('pen', handler, tooltipMsg),
-  save: (handler: Function, tooltipMsg: string | null = null) => _iconFA('save', handler, tooltipMsg),
+  save: (handler: Function | null, tooltipMsg: string | null = null) => _iconFA('save', handler, tooltipMsg),
   copy: (handler: Function, tooltipMsg: string | null = null) => _iconFA('copy', handler, tooltipMsg),
   add: (handler: Function, tooltipMsg: string | null = null) => _iconFA('plus', handler, tooltipMsg),
   remove: (handler: Function, tooltipMsg: string | null = null) => _iconFA('minus', handler, tooltipMsg),

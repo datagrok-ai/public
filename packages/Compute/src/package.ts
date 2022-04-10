@@ -12,6 +12,7 @@ import {ModelsWidget} from './models-widget'
 import {FunctionView} from "@datagrok-libraries/utils/src/function-view";
 import {delay} from "@datagrok-libraries/utils/src/test";
 import {ComputationView} from "@datagrok-libraries/utils/src/computation-view";
+import {ComputeView} from "./function-views/compute-view";
 
 let initCompleted: boolean = false;
 export const _package = new DG.Package();
@@ -178,5 +179,5 @@ export async function computationTest(delayMs: number, error: string): Promise<D
 //name: testComputationView();
 export function testComputationView() {
   let f = DG.Func.find({name: 'computationTest'})[0];
-  grok.shell.addView(new ComputationView(f));
+  grok.shell.addView(new ComputeView(f));
 }

@@ -99,66 +99,129 @@ export async function testManager() {
     const allPackageTests = f.package.getModule(f.options.file).tests;
     if (allPackageTests) {
       //@ts-ignore
-      packagesTestsList[ f.package.friendlyName ] = allPackageTests;
+      packagesTestsList[ f.package.friendlyName ] = {name: f.package.name, tests: allPackageTests};
     }
   }
   createTestMangerUI(packagesTestsList);
 }
 
+
 function createTestMangerUI(packagesTests: any) {
-  Object.keys(packagesTests).forEach(pack => {
-    Object.keys(packagesTests[ pack ]).forEach(cat => {
-      //@ts-ignore
-      packagesTests[ pack ][ cat ].tests.forEach(t => t.active = true);
-    })
-  });
-  const v = grok.shell.newView('Test manager');
-  const acc = ui.accordion();
-  Object.keys(packagesTests).forEach(pack => {
-    acc.addCountPane(pack, () => {
-      const catAcc = ui.accordion();
-      Object.keys(packagesTests[ pack ]).forEach(cat => {
-        catAcc.addCountPane(cat, () => {
-          let testsDf = DG.DataFrame.create(packagesTests[ pack ][ cat ].tests.length);
-          //@ts-ignore
-          testsDf.columns.addNewString('Test').init((i) => packagesTests[ pack ][ cat ].tests[ i ].name);
-          //@ts-ignore
-          testsDf.columns.addNewBool('Active').init((i) => packagesTests[ pack ][ cat ].tests[ i ].active);
-          testsDf.onCurrentCellChanged.subscribe(() => {
-            setTimeout(() => {
-              if (testsDf.currentCol.name === 'Active') {
-                packagesTests[ pack ][ cat ].tests[ testsDf.currentRowIdx ].active = testsDf.currentCol.get(testsDf.currentRowIdx);
-                //@ts-ignore
-                catAcc.getPane(`${cat}`).root.children[ 0 ].children[ 0 ].innerHTML = `${packagesTests[ pack ][ cat ].tests.filter(it => it.active).length}`;
-              }
-            }, 100);
-          });
-          return testsDf.plot.grid().root;
-        },
-          //@ts-ignore
-          () => packagesTests[ pack ][ cat ].tests.filter(it => it.active).length);
-        let panel = catAcc.getPane(`${cat}`);
-        //@ts-ignore
-        $(panel.root).css('display', 'flex');
-        //@ts-ignore
-        $(panel.root).css('opacity', '1');
-      });
-      return catAcc.root;
-    }, () => Object.keys(packagesTests[ pack ]).length);
-  });
-  const runTestsButton = ui.bigButton('Run', () => {
+
+  let addCheckbox = (item: any, onChangeFunction: () => void) => {
+    item.enableCheckBox(false);
+    item.checkBox?.addEventListener('change', onChangeFunction);
+  };
+
+  let applyToAllTests = (functionToApply: (t: any, p?: string) => void) => {
     Object.keys(packagesTests).forEach(pack => {
-      Object.keys(packagesTests[ pack ]).forEach(cat => {
+      Object.keys(packagesTests[ pack ].tests).forEach(cat => {
         //@ts-ignore
-        packagesTests[ pack ][ cat ].tests.forEach(t => {
-          if (t.active) {
-            t.test();
-          }
-        });
+        packagesTests[ pack ].tests[ cat ].tests.forEach(t => functionToApply(t, packagesTests[ pack ].name));
       })
     });
+  }
+
+  applyToAllTests((t, p) => {
+    t.packageName = p;
+    t.active = false
   });
-  v.append(runTestsButton);
-  v.append(acc.root);
+
+  let collectActiveTests = () => {
+    //@ts-ignore
+    let activeTests = [];
+    Object.keys(packagesTests).forEach(pack => {
+      Object.keys(packagesTests[ pack ].tests).forEach(cat => {
+        //@ts-ignore
+        activeTests = activeTests.concat(packagesTests[ pack ].tests[ cat ].tests.filter(t => t.active));
+      });
+    });
+    //@ts-ignore
+    return activeTests;
+  }
+
+  let runAllTests = async (activeTests: any) => {
+    //@ts-ignore
+    const promises = activeTests.map((t) => 
+      grok.functions.call(
+        `${t.packageName}:test`, {
+        "category": t.category,
+        "test": t.name
+      })
+    );
+    Promise.all(promises).then((res) => {
+      const testsResultsDf = res.reduce(
+        (previousDf, currentDf) => previousDf.append(currentDf)
+      );
+      grok.shell.addTableView(testsResultsDf);
+      updateTestResultsIcons(tree, testsResultsDf);
+    });
+  };
+
+  let updateTestResultsIcons = (tree: DG.TreeViewNode, testResults: DG.DataFrame) => {
+    const items = tree.items;
+    let rowCount = testResults.rowCount;
+    for (let i = 0; i < rowCount; i++){
+        const item = items.filter(it => it.root.id === `${testResults.get('category', i)}|${testResults.get('name', i)}`)[0];
+        updateIcon(testResults.get('success', i), item.root.children[1].children[0].children[1]);
+    }
+  }
+
+  let updateIcon = (passed: boolean, iconDiv: Element) => {
+    const icon = passed ? ui.iconFA('check') : ui.iconFA('ban');
+    icon.style.fontWeight = 'bold';
+    icon.style.paddingLeft = '5px';
+    icon.style.color = passed ? 'lightgreen' : 'red';
+    iconDiv.innerHTML = '';
+    iconDiv.append(icon);
+  }
+
+  const v = grok.shell.newView('Test manager');
+  const tree = ui.tree();
+  Object.keys(packagesTests).forEach(pack => {
+    const packageGroup = tree.group(pack);
+    addCheckbox(packageGroup, () => {
+      //@ts-ignore
+      Object.keys(packagesTests[ pack ].tests).forEach(cat => {
+        //@ts-ignore
+        packagesTests[ pack ].tests[ cat ].tests.forEach(t => t.active = packageGroup.checked);
+      });
+    });
+    Object.keys(packagesTests[ pack ].tests).forEach(cat => {
+      const catGroup = packageGroup.group(cat);
+      addCheckbox(catGroup, () => {
+        //@ts-ignore
+        packagesTests[ pack ].tests[ cat ].tests.forEach(t => {
+          t.active = catGroup.checked;
+        });
+      });
+      //@ts-ignore
+      packagesTests[ pack ].tests[ cat ].tests.forEach(t => {
+        let testPassed = ui.div();
+        let itemDiv = ui.splitH([
+          ui.divText(t.name),
+          testPassed
+        ], {style: {display: 'block'}});
+        let item = catGroup.item(itemDiv);
+        item.root.id = `${cat}|${t.name}`;
+        addCheckbox(item, () => {
+          t.active = item.checked;
+        });
+      });
+    });
+  });
+
+  const runTestsButton = ui.bigButton('Run', async () => {
+    let actTests = collectActiveTests();
+    if(actTests.length) {
+      runAllTests(actTests);
+    }
+  });
+
+  v.setRibbonPanels(
+    //@ts-ignore
+    [ [ runTestsButton ] ] ,
+  );
+  v.append(tree.root);
 }
 

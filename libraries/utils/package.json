@@ -4,7 +4,7 @@
     "access": "public"
   },
   "fullName": "Utils",
-  "version": "0.2.3",
+  "version": "0.2.4",
   "description": "Common utilities",
   "dependencies": {
     "cash-dom": "latest",
@@ -12,6 +12,7 @@
     "datagrok-api": "^0.146.0",
     "dts-bundle": "^0.7.3",
     "node-fetch": "^2.6.0",
+    "rxjs": "^7.4.0",
     "wu": "latest"
   },
   "devDependencies": {
