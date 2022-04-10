@@ -824,10 +824,7 @@ export class Tooltip {
     return element;
   }
 
-  /** Shows the tooltip at the specified position
-   * @param {HTMLElement | string} content
-   * @param {number} x
-   * @param {number} y */
+  /** Shows the tooltip at the specified position */
   show(content: HTMLElement | string, x: number, y: number): void {
     api.grok_Tooltip_Show(content, x, y);
   }
@@ -836,31 +833,16 @@ export class Tooltip {
     api.grok_Tooltip_ShowRowGroup(dataFrame.dart, indexPredicate, x, y);
   }
 
-  /** Returns a tooltip element.
-   * @returns {HTMLElement} */
+  /** Returns a tooltip element. */
   get root(): HTMLElement {
     return api.grok_Tooltip_Get_Root();
   }
 
-  /** @returns {boolean} isVisible */
-  get isVisible(): boolean {
-    return api.grok_Tooltip_Is_Visible();
-  }
+  get isVisible(): boolean { return api.grok_Tooltip_Is_Visible(); }
 
-  /** @returns {Observable} */
-  get onTooltipRequest(): rxjs.Observable<any> {
-    return __obs('d4-tooltip-request');
-  }
-
-  /** @returns {Observable} */
-  get onTooltipShown(): rxjs.Observable<any> {
-    return __obs('d4-tooltip-shown');
-  }
-
-  /** @returns {Observable} */
-  get onTooltipClosed(): rxjs.Observable<any> {
-    return __obs('d4-tooltip-closed');
-  }
+  get onTooltipRequest(): rxjs.Observable<any> { return __obs('d4-tooltip-request'); }
+  get onTooltipShown(): rxjs.Observable<any> { return __obs('d4-tooltip-shown'); }
+  get onTooltipClosed(): rxjs.Observable<any> { return __obs('d4-tooltip-closed'); }
 }
 
 export let tooltip = new Tooltip();
