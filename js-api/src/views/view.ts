@@ -36,7 +36,7 @@ export class ViewBase {
     if (createHost)
       this.dart = api.grok_View_CreateJsViewHost(this);
 
-    this._name = 'New view';
+    this.name = 'New view';
     this._root = ui.panel([], 'grok-view');
     this._root.tabIndex = 0;
 
@@ -76,16 +76,9 @@ export class ViewBase {
     this._helpUrl = url;
   }
 
-  protected _name: string;
-
-  /** @type {string} */
-  get name(): string {
-    return this._name;
-  }
-
-  set name(s: string) {
-    this._name = s;
-  }
+  /** View name */
+  get name(): string { return api.grok_View_Get_Name(this.dart); }
+  set name(s: string) { api.grok_View_Set_Name(this.dart, s); }
 
   get parentCall(): FuncCall | undefined  {
     return toJs(api.grok_View_Get_ParentCall(this.dart));

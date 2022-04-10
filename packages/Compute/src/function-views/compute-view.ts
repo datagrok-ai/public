@@ -2,8 +2,7 @@ import * as grok from 'datagrok-api/grok';
 import * as rxjs from 'rxjs';
 import * as ui from 'datagrok-api/ui';
 import * as DG from 'datagrok-api/dg';
-import {DataFrame, FuncCall} from "datagrok-api/dg";
-import {FunctionView} from "./function-view";
+import {DataFrame, FuncCall, FuncCallParam, Grid, TYPE} from 'datagrok-api/dg';
 
 /**
  * Base class for handling Compute models (see https://github.com/datagrok-ai/public/blob/master/help/compute/compute.md).
@@ -20,12 +19,14 @@ import {FunctionView} from "./function-view";
  * - entering the real, measured (as opposed to predicted) values manually
  * - notifications for changing inputs, completion of computations, etc: {@link onInputChanged}
  * */
-export class ComputationView extends DG.ViewBase {
+export class ComputeView extends DG.ViewBase {
 
   func: DG.Func;
   call: DG.FuncCall;    // what is being currently edited
   lastCall?: DG.FuncCall;
   _inputFields: Map<string, DG.InputBase> = new Map<string, DG.InputBase>();
+  _inputBlock?: HTMLDivElement;
+  _outputBlock?: HTMLDivElement;
 
   onViewInitialized: rxjs.Subject<void> = new rxjs.Subject();
   onInputChanged: rxjs.Subject<void> = new rxjs.Subject();
@@ -35,12 +36,13 @@ export class ComputationView extends DG.ViewBase {
   onComputationError: rxjs.Subject<FuncCall> = new rxjs.Subject();
 
   constructor(func: DG.Func) {
-    super(func);
+    super();
 
     this.func = func;
+    this.name = func.friendlyName;
     this.call = func.prepare();
 
-    this.initTopMenu(this.ribbonMenu);
+    this.initTopMenu();
     this.initRibbonPanels();
 
     this.init().then((_) => {
@@ -80,8 +82,8 @@ export class ComputationView extends DG.ViewBase {
   async init(): Promise<void> {}
 
   /** Override to customize top menu*/
-  initTopMenu(menu: DG.Menu) {
-    menu
+  initTopMenu() {
+    this.ribbonMenu = DG.Menu.create()
       .group(this.func.friendlyName)
       .item('Run', () => this.run());
   }
@@ -89,7 +91,7 @@ export class ComputationView extends DG.ViewBase {
   /** Override to customize ribbon panels */
   initRibbonPanels() {
     this.setRibbonPanels([[
-      ui.bigButton('RUN', () => this.run()),
+      ui.icons.play(() => this.run(), 'RUN'),
       ui.comboPopup(
         ui.icons.save(null, 'Export'),
         this.supportedExportFormats,
@@ -108,14 +110,14 @@ export class ComputationView extends DG.ViewBase {
     for (const p of this.func.inputs)
       this._inputFields.set(p.name, DG.InputBase.forProperty(p, this.call.dart));
 
-    return ui.inputs(this._inputFields.values())
+    return this._inputBlock = ui.inputs(this._inputFields.values())
   }
 
   /** Custom inputs for the specified fields. Inputs for these fields will not be created by {@link buildInputBlock}. */
   buildCustomInputs(): Map<String, DG.InputBase> { return new Map(); }
 
   /** Override to create output block. */
-  buildOutputBlock(): HTMLElement { return ui.div(); }
+  buildOutputBlock(): HTMLElement { return this._outputBlock = ui.div(); }
 
   /** Override to create a custom input control. */
   buildRibbonPanel(): HTMLElement { return ui.divH([
@@ -126,8 +128,23 @@ export class ComputationView extends DG.ViewBase {
   /** Creates function parameters based on the data entered by the user. */
   inputFieldsToParameters(call: FuncCall): void { }
 
-  /** Visualizes computation results */
-  outputParametersToView(call: FuncCall | null): void { }
+  /** Visualizes computation results. Requires _outputBlock. */
+  outputParametersToView(call: FuncCall | null): void {
+    ui.empty(this._outputBlock!);
+
+    if (call == null)
+      return;
+
+    for (let p of this.func.outputs)
+      this._outputBlock?.appendChild(this.renderOutputParameter(call, call?.outputParams[p.name]));
+  }
+
+  renderOutputParameter(call: FuncCall, param: FuncCallParam): HTMLElement {
+    if (param.property.propertyType == TYPE.DATA_FRAME)
+      return Grid.grid(call.outputParams[param.name]).root;
+    else
+      return ui.divText(`Unknown type: ${param.property.propertyType}`);
+  }
 
   /** Override to provide custom computation error handling. */
   processComputationError(call: FuncCall) { grok.shell.error(call.errorMessage!);  }
