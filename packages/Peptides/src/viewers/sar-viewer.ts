@@ -21,7 +21,7 @@ export class SARViewer extends DG.JsViewer {
   filterMode: boolean;
   statsDf: DG.DataFrame | null;
   initialized: boolean;
-  viewGridInitialized: boolean;
+  viewerGridInitialized: boolean;
   viewerVGrid: DG.Grid | null;
   grouping: boolean;
   groupMapping: StringDictionary | null;
@@ -41,7 +41,7 @@ export class SARViewer extends DG.JsViewer {
     this.statsDf = null;
     this.groupMapping = null;
     this.initialized = false;
-    this.viewGridInitialized = false;
+    this.viewerGridInitialized = false;
     // this.model = null;
     this.controller = null;
 
@@ -174,20 +174,26 @@ export class SARViewer extends DG.JsViewer {
       }
 
       if (this.viewerGrid !== null && this.viewerVGrid !== null) {
+        if (!this.viewerGridInitialized) {
+          this.multipleFilter.addResource('grid', this.viewerGrid);
+          this.multipleFilter.createSplitCol();
+          // this.dataFrame.selection.fireChanged();
+          this.viewerGridInitialized = true;
+        }
         $(this.root).empty();
         const gridRoot = this.viewerGrid.root;
         gridRoot.style.width = 'auto';
         this.root.appendChild(ui.divV([this._titleHost, gridRoot]));
-      this.viewerGrid.dataFrame!.onCurrentCellChanged.subscribe((_) => {
-        // this.applyBitset();
-        syncGridsFunc(false, this.viewerGrid!, this.viewerVGrid!);
-      });
-      this.viewerVGrid.dataFrame!.onCurrentCellChanged.subscribe((_) => {
-        syncGridsFunc(true, this.viewerGrid!, this.viewerVGrid!);
-      });
-      // grok.events.onAccordionConstructed.subscribe((accordion: DG.Accordion) => {
-      //   this.accordionFunc(accordion);
-      // });
+        this.viewerGrid.dataFrame!.onCurrentCellChanged.subscribe((_) => {
+          // this.applyBitset();
+          syncGridsFunc(false, this.viewerGrid!, this.viewerVGrid!);
+        });
+        this.viewerVGrid.dataFrame!.onCurrentCellChanged.subscribe((_) => {
+          syncGridsFunc(true, this.viewerGrid!, this.viewerVGrid!);
+        });
+        // grok.events.onAccordionConstructed.subscribe((accordion: DG.Accordion) => {
+        //   this.accordionFunc(accordion);
+        // });
       }
     }
     //fixes viewers not rendering immediately after analyze.

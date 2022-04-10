@@ -19,7 +19,9 @@ export function getDistributionPlot(df: DG.DataFrame, valueCol: string, splitCol
 
 export function getDistributionWidget(table: DG.DataFrame): DG.Widget {
   // const labelStr = this.multipleFilter.filterLabel;
-  const [aarStr, otherStr] = table.getCol(C.COLUMNS_NAMES.SPLIT_COL).categories;
+  let [aarStr, otherStr] = table.getCol(C.COLUMNS_NAMES.SPLIT_COL).categories;
+  if (typeof otherStr === 'undefined')
+    [aarStr, otherStr] = [otherStr, aarStr];
   const currentColor = DG.Color.toHtml(DG.Color.orange);
   const otherColor = DG.Color.toHtml(DG.Color.blue);
   const currentLabel = ui.label(aarStr, {style: {color: currentColor}});
