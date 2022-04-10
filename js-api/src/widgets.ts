@@ -810,6 +810,87 @@ export class Balloon {
 }
 
 
+// abstract class Input<T = any> {
+//
+//   //_input: HTMLElement;
+//   _format: string = '';
+//   _root: HTMLElement = ui.div();
+//   _captionLabel: HTMLLabelElement = ui.element('label');
+//   _nullable: boolean = true;
+//
+//   onValueChanged: rxjs.Subject<any> = new rxjs.Subject();
+//
+//    /** Visual root (typically a div element that contains {@link caption} and {@link input}) */
+//   abstract get root(): HTMLElement;
+//
+//   get caption(): string { return this._captionLabel.innerText; }
+//
+//   /** Value format. */
+//   get format(): string { return this._format; }
+//   set format(s: string) { this._format = s; }
+//
+//   get captionLabel(): HTMLElement { return this._captionLabel; }
+//
+//   /** Returns the actual input */
+//   abstract get input(): HTMLElement;
+//
+//   /** Whether empty values are allowed */
+//   get nullable(): boolean { return this._nullable; }
+//   set nullable(v: boolean) { this._nullable = v; }
+//
+//   /** Input value */
+//   get value(): T { return toJs(api.grok_InputBase_Get_Value(this.dart)); }
+//   set value(x: T) { toDart(api.grok_InputBase_Set_Value(this.dart, x)); }
+//
+//   /** String representation of the {@link value} */
+//   get stringValue(): string { return api.grok_InputBase_Get_StringValue(this.dart); }
+//   set stringValue(s: string) { api.grok_InputBase_Set_StringValue(this.dart, s); }
+//
+//   /** Whether the input is readonly */
+//   get readOnly(): boolean { return api.grok_InputBase_Get_ReadOnly(this.dart); }
+//   set readOnly(v: boolean) { api.grok_InputBase_Set_ReadOnly(this.dart, v); }
+//
+//   /** Whether the input is enabled */
+//   get enabled(): boolean { return api.grok_InputBase_Get_Enabled(this.dart); }
+//   set enabled(v: boolean) { api.grok_InputBase_Set_Enabled(this.dart, v); }
+//
+//   /// Occurs when [value] is changed, either by user or programmatically.
+//   abstract onChanged(callback: Function): StreamSubscription;
+//
+//   /// Occurs when [value] is changed by user.
+//   abstract onInput(callback: Function): StreamSubscription;
+//
+//   /** Saves the value. Used in dialog history. See also {@link load} */
+//   save(): any {
+//     return api.grok_InputBase_Save(this.dart);
+//   };
+//
+//   /** Loads the value. Used in dialog history. See also {@link load} */
+//   load(s: any): any { return api.grok_InputBase_Load(this.dart, s); };
+//
+//   init(): any {
+//     return api.grok_InputBase_Init(this.dart);
+//   };
+//
+//   /** Fires the 'changed' event */
+//   fireChanged(): any {
+//     return api.grok_InputBase_FireChanged(this.dart);
+//   };
+//
+//   /** Adds the specified caption */
+//   addCaption(caption: string): void { };
+//
+//   /** Adds the specified postfix */
+//   addPostfix(postfix: string): void { };
+//
+//   /** Adds a usage example to the input's hamburger menu */
+//   addPatternMenu(pattern: any): void { }
+//
+//   /** Sets the tooltip */
+//   setTooltip(msg: string): void { ui.tooltip.bind(this.root, msg); };
+// }
+
+
 /** Input control base. Could be used for editing {@link Property} values as well.
  * The root is a div that consists of {@link captionLabel} and {@link input}.
  * */
@@ -841,14 +922,10 @@ export class InputBase {
   get format(): string { return api.grok_InputBase_Get_Format(this.dart); }
   set format(s: string) { api.grok_InputBase_Set_Format(this.dart, s); }
 
-  get captionLabel(): string {
-    return api.grok_InputBase_Get_CaptionLabel(this.dart);
-  }
+  get captionLabel(): HTMLElement { return api.grok_InputBase_Get_CaptionLabel(this.dart); }
 
   /** Returns the actual input */
-  get input(): HTMLElement {
-    return api.grok_InputBase_Get_Input(this.dart);
-  }
+  get input(): HTMLElement { return api.grok_InputBase_Get_Input(this.dart); }
 
   /** Whether empty values are allowed */
   get nullable(): boolean { return api.grok_InputBase_Get_Nullable(this.dart); }
