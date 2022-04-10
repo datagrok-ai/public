@@ -262,7 +262,7 @@ export class FuncCall {
   }
 
   /** Makes a shallow copy. */
-  clone(): FuncCall { return api.grok_Entity_Clone(this.dart); }
+  clone(): FuncCall { return api.grok_FuncCall_Clone(this.dart); }
 }
 
 export function callFuncWithDartParameters<T>(f: (...params: any[]) => T, params: object): T {

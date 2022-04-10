@@ -599,8 +599,8 @@ export function makeDroppable<T>(e: Element,
   );
 }
 
-export function inputs(inputs: InputBase[], options: any = null) {
-  return form(inputs, options);
+export function inputs(inputs: Iterable<InputBase>, options: any = null) {
+  return form([...inputs], options);
 }
 
 /** Creates new nodes tree.

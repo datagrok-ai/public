@@ -2,7 +2,7 @@ import * as grok from 'datagrok-api/grok';
 import * as rxjs from 'rxjs';
 import * as ui from 'datagrok-api/ui';
 import * as DG from 'datagrok-api/dg';
-import {FuncCall, FuncCallParam} from "datagrok-api/dg";
+import {FuncCall} from "datagrok-api/dg";
 import {FunctionView} from "./function-view";
 
 /**
@@ -20,7 +20,12 @@ import {FunctionView} from "./function-view";
  * - entering the real, measured (as opposed to predicted) values manually
  * - notifications for changing inputs, completion of computations, etc: {@link onInputChanged}
  * */
-export class ComputationView extends FunctionView {
+export class ComputationView extends DG.ViewBase {
+
+  func: DG.Func;
+  call: DG.FuncCall;    // what is being currently edited
+  lastCall?: DG.FuncCall;
+  _inputFields: Map<string, DG.InputBase> = new Map<string, DG.InputBase>();
 
   onViewInitialized: rxjs.Subject<void> = new rxjs.Subject();
   onInputChanged: rxjs.Subject<void> = new rxjs.Subject();
@@ -29,20 +34,20 @@ export class ComputationView extends FunctionView {
   onComputationSucceeded: rxjs.Subject<FuncCall> = new rxjs.Subject();
   onComputationError: rxjs.Subject<FuncCall> = new rxjs.Subject();
 
-  func: DG.Func = new DG.Func(null);
-  call: DG.FuncCall = new DG.FuncCall(null);
-  lastCall?: DG.FuncCall;
-
   constructor(func: DG.Func) {
     super(func);
+
     this.func = func;
-    this.init().then((_) => this.onViewInitialized.next());
+    this.call = func.prepare();
+
+    this.init().then((_) => {
+      this.root.appendChild(this.build());
+      return this.onViewInitialized.next();
+    });
   }
 
-  /** List of parameters (both input and output) for this computation */
-  get parameters(): FuncCall { return new DG.FuncCall(null); }
-
-  get inputFields(): Map<string, DG.InputBase> { return new Map(); }
+  /** All inputs that are bound to fields */
+  get inputFields(): Map<string, DG.InputBase> { return this._inputFields; }
 
   /** Saves the computation results to the historical results, returns its id. See also {@link loadRun}. */
   async saveRun(call: FuncCall): Promise<string> { return 'xxx'; }
@@ -51,8 +56,9 @@ export class ComputationView extends FunctionView {
   async loadRun(runId: string): Promise<void> { }
 
   /** The actual computation function. */
-  async compute(call: FuncCall): Promise<void> { }
+  async compute(call: FuncCall): Promise<void> { await call.call(); }
 
+  /** Maps inputs to parameters, computes, and maps output parameters to the UI. */
   async run(): Promise<void> {
     this.lastCall = this.call.clone();
     this.inputFieldsToParameters(this.lastCall);
@@ -67,6 +73,7 @@ export class ComputationView extends FunctionView {
     this.outputParametersToView(this.lastCall);
   }
 
+  /** Override to provide custom initialization. {@link onViewInitialized} gets fired after that. */
   async init(): Promise<void> {}
 
   /** Builds the complete view. Override it if completely custom implementation is needed,
@@ -75,7 +82,12 @@ export class ComputationView extends FunctionView {
 
   /** Override to build completely custom input block (the one with inputs, usually on the left).
    * If only specific field, consider overriding {@link buildCustomInputs}. */
-  buildInputBlock(): HTMLElement { return ui.div(); }
+  buildInputBlock(): HTMLElement {
+    for (const p of this.func.inputs)
+      this._inputFields.set(p.name, DG.InputBase.forProperty(p, this.call));
+
+    return ui.inputs(this._inputFields.values())
+  }
 
   /** Custom inputs for the specified fields. Inputs for these fields will not be created by {@link buildInputBlock}. */
   buildCustomInputs(): Map<String, DG.InputBase> { return new Map(); }
@@ -95,6 +107,7 @@ export class ComputationView extends FunctionView {
   /** Visualizes computation results */
   outputParametersToView(call: FuncCall | null): void { }
 
+  /** Override to provide custom computation error handling. */
   processComputationError(call: FuncCall) { grok.shell.error(call.errorMessage!);  }
 
   /** Override to provide supported export formats.
