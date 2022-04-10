@@ -98,9 +98,17 @@ export class SARViewer extends DG.JsViewer {
       this.viewerGrid = data;
       this.multipleFilter.addResource('grid', this.viewerGrid);
       this.multipleFilter.onSARGridChanged();
+      this.viewerGrid.dataFrame!.onCurrentCellChanged.subscribe((_) => {
+        syncGridsFunc(false, this.viewerGrid!, this.viewerVGrid!);
+      });
       this.render(false);
     }));
-    this.subs.push(this.controller.onSARVGridChanged.subscribe((data) => this.viewerVGrid = data));
+    this.subs.push(this.controller.onSARVGridChanged.subscribe((data) => {
+      this.viewerVGrid = data;
+      this.viewerVGrid.dataFrame!.onCurrentCellChanged.subscribe((_) => {
+        syncGridsFunc(true, this.viewerGrid!, this.viewerVGrid!);
+      });
+    }));
     this.subs.push(this.controller.onGroupMappingChanged.subscribe((data) => {
       this.groupMapping = data;
       this.multipleFilter.addResource('groupMapping', this.groupMapping);
@@ -177,23 +185,12 @@ export class SARViewer extends DG.JsViewer {
         if (!this.viewerGridInitialized) {
           this.multipleFilter.addResource('grid', this.viewerGrid);
           this.multipleFilter.createSplitCol();
-          // this.dataFrame.selection.fireChanged();
           this.viewerGridInitialized = true;
         }
         $(this.root).empty();
         const gridRoot = this.viewerGrid.root;
         gridRoot.style.width = 'auto';
         this.root.appendChild(ui.divV([this._titleHost, gridRoot]));
-        this.viewerGrid.dataFrame!.onCurrentCellChanged.subscribe((_) => {
-          // this.applyBitset();
-          syncGridsFunc(false, this.viewerGrid!, this.viewerVGrid!);
-        });
-        this.viewerVGrid.dataFrame!.onCurrentCellChanged.subscribe((_) => {
-          syncGridsFunc(true, this.viewerGrid!, this.viewerVGrid!);
-        });
-        // grok.events.onAccordionConstructed.subscribe((accordion: DG.Accordion) => {
-        //   this.accordionFunc(accordion);
-        // });
       }
     }
     //fixes viewers not rendering immediately after analyze.
@@ -245,21 +242,23 @@ export class SARViewerVertical extends DG.JsViewer {
 function syncGridsFunc(sourceVertical: boolean, viewerGrid: DG.Grid, viewerVGrid: DG.Grid) {
   if (viewerGrid && viewerGrid.dataFrame && viewerVGrid && viewerVGrid.dataFrame) {
     if (sourceVertical) {
-      const dfCell = viewerVGrid.dataFrame.currentCell;
-      if (dfCell.column === null || dfCell.column.name !== 'Diff')
+      const vGridDf = viewerVGrid.dataFrame;
+      const currentRowIdx = vGridDf.currentRowIdx;
+      const currentColName = vGridDf.currentCol?.name;
+      if (currentColName !== 'Mean difference')
         return;
 
-      const otherColName: string = viewerVGrid.dataFrame.get('Pos', dfCell.rowIndex);
-      const otherRowName: string = viewerVGrid.dataFrame.get(C.COLUMNS_NAMES.AMINO_ACID_RESIDUE, dfCell.rowIndex);
+      const otherColName: string = vGridDf.get('Pos', currentRowIdx);
+      const otherRowName: string = vGridDf.get(C.COLUMNS_NAMES.AMINO_ACID_RESIDUE, currentRowIdx);
       let otherRowIndex = -1;
-      for (let i = 0; i < viewerGrid.dataFrame.rowCount; i++) {
+      const rows = viewerGrid.dataFrame.rowCount;
+      for (let i = 0; i < rows; i++) {
         if (viewerGrid.dataFrame.get(C.COLUMNS_NAMES.AMINO_ACID_RESIDUE, i) === otherRowName) {
           otherRowIndex = i;
           break;
         }
       }
-      if (otherRowIndex !== -1)
-        viewerGrid.dataFrame.currentCell = viewerGrid.dataFrame.cell(otherRowIndex, otherColName);
+      viewerGrid.dataFrame.currentCell = viewerGrid.dataFrame.cell(otherRowIndex, otherColName);
     } else {
       const otherPos: string = viewerGrid.dataFrame.currentCol?.name;
       if (typeof otherPos === 'undefined' && otherPos !== C.COLUMNS_NAMES.AMINO_ACID_RESIDUE)
