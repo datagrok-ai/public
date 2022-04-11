@@ -56,8 +56,8 @@ class UniChemSource {
   };
 
   constructor(
-    id: number, name: string, fullName:string, labelName: string,
-    baseUrl: string, homePage: string, description: string,
+    id: number, name: string, fullName:string, labelName: string, baseUrl: string, homePage: string,
+    description: string,
   ) {
     this.id = id;
     this.name = name;
@@ -94,7 +94,10 @@ async function getCompoundsIds(inchiKey: string) {
   const params = {'method': 'GET', 'referrerPolicy': 'strict-origin-when-cross-origin'};
   //@ts-ignore: it says 'referrerPolicy' doesn't have such value which is wrong
   const response = await grok.dapi.fetchProxy(url, params);
-  const sources: {[key: string]: any}[] = (await response.json()).filter((s: {[key: string]: string | number}) => {
+  const json = await response.json();
+  if (json.error)
+    return;
+  const sources: {[key: string]: any}[] = json.filter((s: {[key: string]: string | number}) => {
     //@ts-ignore: it's a string at this point 100%
     const srcId = parseInt(s['src_id']);
     s['src_id'] = srcId;
@@ -111,11 +114,14 @@ export async function identifiersWidget(smiles: string) {
   const inchiKey = rdKitModule.get_inchikey_for_inchi(mol.get_inchi());
   mol.delete();
   const idMap = await getCompoundsIds(inchiKey);
+
+  if (typeof idMap === 'undefined')
+    return new DG.Widget(ui.divText('Not found in UniChem'));
+
   await UniChemSource.refreshSources();
 
   for (const [source, id] of Object.entries(idMap))
     idMap[source] = ui.link(id, () => window.open(UniChemSource.byName(source)!.baseUrl + id));
-
 
   return new DG.Widget(ui.tableFromMap(idMap));
 }
