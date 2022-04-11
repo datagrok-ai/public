@@ -2,7 +2,7 @@ import * as ui from 'datagrok-api/ui';
 import * as DG from 'datagrok-api/dg';
 import {Property} from 'datagrok-api/dg';
 import BitArray from '@datagrok-libraries/utils/src/bit-array';
-import {similarityMetric, getDiverseSubset} from '@datagrok-libraries/utils/src/similarity-metrics';
+import {similarityMetric, getDiverseSubset, CHEM_SIMILARITY_METRICS} from '@datagrok-libraries/utils/src/similarity-metrics';
 import {chemGetFingerprints} from '../chem-searches';
 import $ from 'cash-dom';
 import {ArrayUtils} from '@datagrok-libraries/utils/src/array-utils';
@@ -19,7 +19,6 @@ export class ChemDiversityViewer extends DG.JsViewer {
   fingerprint: string;
   metricsProperties = ['distanceMetric', 'fingerprint'];
   metricsDiv = ui.div();
-  fpSim;
 
   constructor() {
     super();
@@ -27,10 +26,9 @@ export class ChemDiversityViewer extends DG.JsViewer {
     this.moleculeColumn = this.column('moleculeColumnName');
     this.fingerprint = this.string('fingerprint', 'Morgan', {choices: ['Morgan', 'RDKit', 'Pattern']});
     this.limit = this.int('limit', 10);
-    this.distanceMetric = this.string('distanceMetric', 'Tanimoto', {choices: Object.keys(similarityMetric)});
+    this.distanceMetric = this.string('distanceMetric', CHEM_SIMILARITY_METRICS[0], {choices: CHEM_SIMILARITY_METRICS});
     this.initialized = false;
     this.renderMolIds = [];
-    this.fpSim = similarityMetric[this.distanceMetric];
     updateMetricsLink(this.distanceMetric, this.fingerprint, this.metricsDiv, this, {fontSize: '10px', fontWeight: 'normal', paddingBottom: '15px'});
   }
 
@@ -75,7 +73,7 @@ export class ChemDiversityViewer extends DG.JsViewer {
     if (this.dataFrame) {
       if (computeData) {
         this.renderMolIds =
-          await chemDiversitySearch(this.moleculeColumn, this.fpSim, this.limit, this.fingerprint as Fingerprint);
+          await chemDiversitySearch(this.moleculeColumn, similarityMetric[this.distanceMetric], this.limit, this.fingerprint as Fingerprint);
       }
 
       if (this.root.hasChildNodes())

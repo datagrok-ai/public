@@ -12,7 +12,11 @@ export const similarityMetric: {[name: string]: (x: BitArray, y: BitArray) => nu
   'Rogot-Goldberg': rogotGoldbergSimilarity,
   'Russel': russelSimilarity,
   'Sokal': sokalSimilarity,
-}
+  'Hamming': hammingSimilarity,
+  'Euclidean': euclideanSimilarity,
+};
+
+export const CHEM_SIMILARITY_METRICS = ['Tanimoto', 'Dice', 'Cosine', 'Hamming', 'Euclidean'];
 
 /**
  * Returns Tanimoto similarity between two BitArray's
@@ -57,6 +61,30 @@ export function cosineSimilarity(x: BitArray, y: BitArray): number {
     return 0.0;
   const common = x.andWithCountBits(y, true);
   return common / Math.sqrt(total);
+}
+
+/**
+ * Returns Euclidean similarity between two BitArray's
+ * 
+ * @param {BitArray} x 
+ * @param {BitArray} y 
+ * @returns euclidean similarity
+ */
+ export function euclideanSimilarity(x: BitArray, y: BitArray): number {
+  const euclideanDistance = Math.sqrt(x.trueCount() + y.trueCount() - 2*x.andWithCountBits(y, true));
+  return 1/(1+euclideanDistance);
+}
+
+/**
+ * Returns Hamming similarity between two BitArray's
+ * 
+ * @param {BitArray} x 
+ * @param {BitArray} y 
+ * @returns hamming similarity
+ */
+ export function hammingSimilarity(x: BitArray, y: BitArray): number {
+  const hammingDistance = x.trueCount() + y.trueCount() - 2*x.andWithCountBits(y, true);
+  return 1/(1+hammingDistance);
 }
 
 /**
