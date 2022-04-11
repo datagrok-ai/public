@@ -34,47 +34,33 @@ export class PeptidesController {
     return dataFrame.temp[PeptidesController.controllerName];
   }
 
-  static get controllerName() {
-    return PeptidesController._controllerName;
-  }
+  static get controllerName() { return PeptidesController._controllerName; }
 
-  get dataFrame() {
-    return this._model.dataFrame;
-  }
+  get dataFrame() { return this._model.dataFrame; }
 
   static setAARRenderer(col: DG.Column, grid: DG.Grid, grouping?: boolean) {
     return setAARRenderer(col, grid, grouping);
   }
 
-  get onStatsDataFrameChanged(): Observable<DG.DataFrame> {
-    return this._model.onStatsDataFrameChanged;
-  }
+  get onStatsDataFrameChanged(): Observable<DG.DataFrame> { return this._model.onStatsDataFrameChanged; }
 
-  get onSARGridChanged(): Observable<DG.Grid> {
-    return this._model.onSARGridChanged;
-  }
+  get onSARGridChanged(): Observable<DG.Grid> { return this._model.onSARGridChanged; }
 
-  get onSARVGridChanged(): Observable<DG.Grid> {
-    return this._model.onSARVGridChanged;
-  }
+  get onSARVGridChanged(): Observable<DG.Grid> { return this._model.onSARVGridChanged; }
 
-  get onGroupMappingChanged(): Observable<StringDictionary> {
-    return this._model.onGroupMappingChanged;
-  }
+  get onGroupMappingChanged(): Observable<StringDictionary> { return this._model.onGroupMappingChanged; }
 
-  get onSubstFlagChanged(): Observable<boolean> {
-    return this._model.onSubstFlagChanged;
-  }
+  get onSubstTableChanged(): Observable<DG.DataFrame> { return this._model.onSubstTableChanged; }
 
-  async updateDefault() {
-    await this._model.updateDefault();
-  }
+  async updateDefault() { await this._model.updateDefault(); }
 
   async updateData(
     activityScaling?: string, sourceGrid?: DG.Grid, twoColorMode?: boolean, initialBitset?: DG.BitSet,
-    grouping?: boolean,
+    grouping?: boolean, activityLimit?: number, maxSubstitutions?: number, isSubstitutionOn?: boolean,
   ) {
-    await this._model.updateData(activityScaling, sourceGrid, twoColorMode, initialBitset, grouping);
+    await this._model.updateData(
+      activityScaling, sourceGrid, twoColorMode, initialBitset, grouping, activityLimit, maxSubstitutions,
+      isSubstitutionOn);
   }
 
   static async scaleActivity(
@@ -109,9 +95,9 @@ export class PeptidesController {
     return [tempDf, newColName];
   }
 
-  get originalActivityColumnName(): string {
-    return this.dataFrame.temp[C.COLUMNS_NAMES.ACTIVITY];
-  }
+  get originalActivityColumnName(): string { return this.dataFrame.temp[C.COLUMNS_NAMES.ACTIVITY]; }
+
+  get substTooltipData() { return this._model.substTooltipData; }
 
   static splitAlignedPeptides(peptideColumn: DG.Column, filter: boolean = true): [DG.DataFrame, number[]] {
     const splitPeptidesArray: string[][] = [];
@@ -231,60 +217,34 @@ export class PeptidesController {
     // await createPeptideSimilaritySpaceViewer(this.dataFrame, 't-SNE', 'Levenshtein', 100, view);
     // dockManager.dock(peptideSpaceViewer, DG.DOCK_TYPE.RIGHT, null, 'Peptide Space viewer');
 
-    let nodeList = dockViewers(sarViewersGroup, DG.DOCK_TYPE.RIGHT, dockManager, DG.DOCK_TYPE.DOWN);
+    dockViewers(sarViewersGroup, DG.DOCK_TYPE.RIGHT, dockManager, DG.DOCK_TYPE.DOWN);
 
-    const substViewerOptions = {
-      'activityColumnName': C.COLUMNS_NAMES.ACTIVITY_SCALED,
-      'title': 'Substitution analysis',
-    };
-    const substViewer = await this.dataFrame.plot.fromType(
-      'substitution-analysis-viewer', substViewerOptions) as SubstViewer;
-    const substViewersGroup = [substViewer];
+    // const substViewerOptions = {
+    //   'activityColumnName': C.COLUMNS_NAMES.ACTIVITY_SCALED,
+    //   'title': 'Substitution analysis',
+    // };
+    // const substViewer = await this.dataFrame.plot.fromType(
+    //   'substitution-analysis-viewer', substViewerOptions) as SubstViewer;
+    // const substViewersGroup = [substViewer];
 
     tableGrid.props.allowEdit = false;
     adjustCellSize(tableGrid);
 
-    // const hideIcon = ui.iconFA('window-close', () => {
-    //   const viewers = [];
-    //   for (const viewer of view.viewers) {
-    //     if (viewer.type !== DG.VIEWER.GRID)
-    //       viewers.push(viewer);
-    //   }
-    //   viewers.forEach((v) => v.close());
+    // let isSA = false;
+    // const switchViewers = ui.iconFA('toggle-on', () => {
+    //   $(switchViewers).toggleClass('fa-toggle-off').toggleClass('fa-toggle-on');
+    //   nodeList?.forEach((node) => {
+    //     view.dockManager.close(node);
+    //     node.container.destroy();
+    //   });
+    //   const getCurrentViewerGroup = () => isSA ? substViewersGroup : sarViewersGroup;
+    //   getCurrentViewerGroup().forEach((v) => v.removeFromView());
+    //   isSA = !isSA;
+    //   nodeList = dockViewers(getCurrentViewerGroup(), DG.DOCK_TYPE.LEFT, dockManager, DG.DOCK_TYPE.DOWN);
+    // }, 'Toggle viewer group');
 
-    //   const cols = (this.dataFrame.columns as DG.ColumnList);
-    //   for (const colName of cols.names()) {
-    //     if (!originalDfColumns.includes(colName))
-    //       cols.remove(colName);
-    //   }
-
-    //   this.dataFrame.selection.setAll(false);
-    //   this.dataFrame.filter.setAll(true);
-
-    //   tableGrid.setOptions({'colHeaderHeight': 20});
-    //   tableGrid.columns.setVisible(originalDfColumns);
-    //   tableGrid.props.allowEdit = true;
-    //   tableGrid.temp['containsBarchart'] = false;
-    //   this.dataFrame.name = originalDfName;
-
-    //   view.setRibbonPanels(ribbonPanels);
-    // }, 'Close viewers and restore dataframe');
-
-    let isSA = false;
-    const switchViewers = ui.iconFA('toggle-on', () => {
-      $(switchViewers).toggleClass('fa-toggle-off').toggleClass('fa-toggle-on');
-      nodeList?.forEach((node) => {
-        view.dockManager.close(node);
-        node.container.destroy();
-      });
-      const getCurrentViewerGroup = () => isSA ? substViewersGroup : sarViewersGroup;
-      getCurrentViewerGroup().forEach((v) => v.removeFromView());
-      isSA = !isSA;
-      nodeList = dockViewers(getCurrentViewerGroup(), DG.DOCK_TYPE.LEFT, dockManager, DG.DOCK_TYPE.DOWN);
-    }, 'Toggle viewer group');
-
-    const ribbonPanels = view.getRibbonPanels();
-    view.setRibbonPanels([[switchViewers]]);
+    // const ribbonPanels = view.getRibbonPanels();
+    // view.setRibbonPanels([[switchViewers]]);
   }
 }
 

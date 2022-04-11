@@ -7,6 +7,7 @@ import $ from 'cash-dom';
 import {setAARRenderer} from '../utils/cell-renderer';
 import {PeptidesController} from '../peptides';
 // import {PeptidesModel} from '../model';
+import * as C from '../utils/constants';
 
 export class SubstViewer extends DG.JsViewer {
   viewerGrid: DG.Grid | null;
@@ -45,11 +46,10 @@ export class SubstViewer extends DG.JsViewer {
     this.controller = await PeptidesController.getInstance(this.dataFrame!);
     const u = undefined;
     await this.controller.updateData(u, (grok.shell.v as DG.TableView).grid);
-    this.subs.push(this.controller.onSubstFlagChanged.subscribe(() => this.calcSubstitutions()));
+    // this.subs.push(this.controller.onSubstFlagChanged.subscribe(() => this.calcSubstitutions()));
   }
 
   calcSubstitutions() {
-    const aarColName = 'AAR';
     const df: DG.DataFrame = this.dataFrame!;
     const col: DG.Column = df.columns.bySemType('alignedSequence');
     // let values: number[] = df.columns.byName('IC50').toList();
@@ -127,7 +127,7 @@ export class SubstViewer extends DG.JsViewer {
     const dfLength = tableValuesKeys.length;
     const cols = [...nColsArray.keys()].map((v) => DG.Column.int(v.toString(), dfLength));
     cols.forEach((currentCol) => currentCol.semType = 'Substitution');
-    const aarCol = DG.Column.string(aarColName, dfLength);
+    const aarCol = DG.Column.string(C.COLUMNS_NAMES.AMINO_ACID_RESIDUE, dfLength);
     cols.splice(0, 1, aarCol);
     const table = DG.DataFrame.fromColumns(cols);
 
@@ -150,8 +150,8 @@ export class SubstViewer extends DG.JsViewer {
       (gCell, x, y) => {
         if (gCell.cell.value !== DG.INT_NULL && gCell.tableColumn !== null && gCell.tableRowIndex !== null) {
           const colName = gCell.tableColumn.name;
-          if (colName !== aarColName) {
-            const aar = this.viewerGrid!.table.get(aarColName, gCell.tableRowIndex);
+          if (colName !== C.COLUMNS_NAMES.AMINO_ACID_RESIDUE) {
+            const aar = this.viewerGrid!.table.get(C.COLUMNS_NAMES.AMINO_ACID_RESIDUE, gCell.tableRowIndex);
             const pos = parseInt(colName);
             const lengthTableTooltip = tableTooltips[aar][pos].length;
             const sortedTableTooltips = [];
@@ -210,8 +210,8 @@ export class SubstViewer extends DG.JsViewer {
     this.viewerGrid.props.allowEdit = false;
 
     table.onCurrentCellChanged.subscribe((_) => {
-      if (table.currentCol !== null && table.currentCol.name !== aarColName && table.currentCell.value !== null) {
-        const aar = table.get(aarColName, table.currentRowIdx);
+      if (table.currentCol?.name !== C.COLUMNS_NAMES.AMINO_ACID_RESIDUE && table.currentCell.value !== null) {
+        const aar = table.get(C.COLUMNS_NAMES.AMINO_ACID_RESIDUE, table.currentRowIdx);
         const pos = parseInt(table.currentCol.name);
         const currentCase = tableCases[aar][pos];
         const tempDfLength = currentCase.length;
