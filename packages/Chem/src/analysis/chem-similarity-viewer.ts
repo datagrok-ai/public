@@ -3,7 +3,7 @@ import * as ui from 'datagrok-api/ui';
 import * as DG from 'datagrok-api/dg';
 import {Property} from 'datagrok-api/dg';
 import * as chemSearches from '../chem-searches';
-import {similarityMetric} from '@datagrok-libraries/utils/src/similarity-metrics';
+import {CHEM_SIMILARITY_METRICS, similarityMetric} from '@datagrok-libraries/utils/src/similarity-metrics';
 import $ from 'cash-dom';
 import {Fingerprint} from "../utils/chem-common";
 import {chem} from "datagrok-api/grok";
@@ -40,7 +40,7 @@ export class ChemSimilarityViewer extends DG.JsViewer {
     super();
     this.limit = this.int('limit', 10);
     this.minScore = this.float('minScore', 0.1);
-    this.distanceMetric = this.string('distanceMetric', Object.keys(similarityMetric)[0], {choices: Object.keys(similarityMetric)});
+    this.distanceMetric = this.string('distanceMetric', CHEM_SIMILARITY_METRICS[0], {choices: CHEM_SIMILARITY_METRICS});
     this.fingerprint = this.string('fingerprint', 'Morgan', {choices: ['Morgan', 'RDKit', 'Pattern']});
     this.hotSearch = this.bool('hotSearch', true);
     this.sketchButton = ui.button('Sketch reference', () => {
