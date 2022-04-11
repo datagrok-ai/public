@@ -29,6 +29,10 @@ export class SARViewer extends DG.JsViewer {
   _name = 'Structure-Activity Relationship';
   controller: PeptidesController | null;
   multipleFilter: SARMultipleFilter;
+  maxSubstitutions: number;
+  activityLimit: number;
+  showSubstitution: boolean;
+  substTable: DG.DataFrame | null;
   // protected pValueThreshold: number;
   // protected amountOfBestAARs: number;
   // duplicatesHandingMethod: string;
@@ -44,6 +48,7 @@ export class SARViewer extends DG.JsViewer {
     this.viewerGridInitialized = false;
     // this.model = null;
     this.controller = null;
+    this.substTable = null;
 
     //TODO: find a way to restrict activityColumnName to accept only numerical columns (double even better)
     // this.activityColumnName = this.string('activityColumnName');
@@ -51,6 +56,10 @@ export class SARViewer extends DG.JsViewer {
     this.filterMode = this.bool('filterMode', false);
     this.bidirectionalAnalysis = this.bool('bidirectionalAnalysis', false);
     this.grouping = this.bool('grouping', false);
+
+    this.showSubstitution = this.bool('showSubstitution', false);
+    this.maxSubstitutions = this.int('maxSubstitutions', 1);
+    this.activityLimit = this.float('activityLimit', 2);
 
     this.sourceGrid = null;
     this.multipleFilter = new SARMultipleFilter(this.filterMode);
@@ -100,6 +109,8 @@ export class SARViewer extends DG.JsViewer {
       this.multipleFilter.onSARGridChanged();
       this.viewerGrid.dataFrame!.onCurrentCellChanged.subscribe((_) => {
         syncGridsFunc(false, this.viewerGrid!, this.viewerVGrid!);
+        grok.shell.info(this.viewerGrid?.dataFrame?.currentCol.name);
+        this.sendSubstitutionTable();
       });
       this.render(false);
     }));
@@ -119,6 +130,7 @@ export class SARViewer extends DG.JsViewer {
     this.subs.push(this.dataFrame!.onSelectionChanged.subscribe((_) => {
       this.multipleFilter.maskRows();
     }));
+    this.subs.push(this.controller.onSubstTableChanged.subscribe(substTable => this.substTable = substTable));
 
     await this.render();
   }
@@ -139,17 +151,19 @@ export class SARViewer extends DG.JsViewer {
     if (!this.initialized)
       return;
 
-    if (property.name === 'grouping')
+    const propName = property.name;
+
+    if (propName === 'grouping')
       this.multipleFilter.resetSelection();
 
 
-    if (property.name === 'filterMode')
+    if (propName === 'filterMode')
       this.multipleFilter.filteringMode = this.filterMode;
 
-    if (property.name === 'activityColumnName')
+    if (propName === 'activityColumnName')
       this.multipleFilter.addResource('activityColumnName', C.COLUMNS_NAMES.ACTIVITY_SCALED);
 
-    if (property.name === 'scaling' && typeof this.dataFrame !== 'undefined') {
+    if (propName === 'scaling' && typeof this.dataFrame !== 'undefined') {
       const minActivity = DG.Stats.fromColumn(this.dataFrame.getCol(C.COLUMNS_NAMES.ACTIVITY), this.dataFrame.filter)
         .min;
       if (minActivity && minActivity <= 0 && this.scaling !== 'none') {
@@ -160,7 +174,44 @@ export class SARViewer extends DG.JsViewer {
       }
     }
 
+    if (!this.showSubstitution && ['maxSubstitutions', 'activityLimit'].includes(propName))
+      return;
+
     await this.render();
+  }
+
+  sendSubstitutionTable() {
+    grok.shell.info(this.viewerGrid?.dataFrame?.currentCol.name);
+    const df = this.viewerGrid!.dataFrame!;
+    if (df.currentCol?.name !== C.COLUMNS_NAMES.AMINO_ACID_RESIDUE) {
+      const col: DG.Column = this.dataFrame!.columns.bySemType(C.SEM_TYPES.ALIGNED_SEQUENCE);
+      const aar = df.get(C.COLUMNS_NAMES.AMINO_ACID_RESIDUE, df.currentRowIdx);
+      const pos = parseInt(df.currentCol.name);
+      const currentCase = this.controller!.substTooltipData[aar][pos];
+      const tempDfLength = currentCase.length;
+      const initCol = DG.Column.string('Initial', tempDfLength);
+      const subsCol = DG.Column.string('Substituted', tempDfLength);
+
+      const tempDf = DG.DataFrame.fromColumns([
+        initCol,
+        subsCol,
+        DG.Column.float('Difference', tempDfLength),
+      ]);
+
+      for (let i = 0; i < tempDfLength; i++) {
+        const row = currentCase[i];
+        tempDf.rows.setValues(i, [col.get(row[0]), col.get(row[1]), row[2]]);
+      }
+
+      tempDf.temp['isReal'] = true;
+
+      initCol.semType = C.SEM_TYPES.ALIGNED_SEQUENCE;
+      initCol.temp['isAnalysisApplicable'] = false;
+      subsCol.semType = C.SEM_TYPES.ALIGNED_SEQUENCE;
+      subsCol.temp['isAnalysisApplicable'] = false;
+
+      grok.shell.o = DG.SemanticValue.fromValueType(tempDf, 'Substitution');
+    }
   }
 
   /**
@@ -173,12 +224,11 @@ export class SARViewer extends DG.JsViewer {
     if (!this.initialized)
       return;
 
-
     //TODO: optimize. Don't calculate everything again if only view changes
     if (typeof this.dataFrame !== 'undefined' && this.sourceGrid) {
       if (computeData) {
         await this.controller!.updateData(this.scaling, this.sourceGrid, this.bidirectionalAnalysis, this.filter,
-          this.grouping);
+          this.grouping, this.activityLimit, this.maxSubstitutions, this.showSubstitution);
       }
 
       if (this.viewerGrid !== null && this.viewerVGrid !== null) {
@@ -190,6 +240,7 @@ export class SARViewer extends DG.JsViewer {
         $(this.root).empty();
         const gridRoot = this.viewerGrid.root;
         gridRoot.style.width = 'auto';
+
         this.root.appendChild(ui.divV([this._titleHost, gridRoot]));
       }
     }
