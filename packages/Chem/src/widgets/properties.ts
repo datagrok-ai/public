@@ -30,6 +30,6 @@ async function getIUPACName(smiles: string): Promise<string> {
   const url = `https://pubchem.ncbi.nlm.nih.gov/rest/pug/compound/smiles/${smiles}/property/IUPACName/JSON`;
   const response = await fetch(url);
   const responseJson = await response.json();
-  const result = responseJson['PropertyTable']['Properties'][0];
-  return result.hasOwnProperty('IUPACName') ? result['IUPACName'] : 'Not found in PubChem';
+  const result = responseJson.PropertyTable?.Properties;
+  return (result && result[0].hasOwnProperty('IUPACName')) ? result[0].IUPACName : 'Not found in PubChem';
 }
