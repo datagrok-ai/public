@@ -141,30 +141,32 @@ function createTestMangerUI(packagesTests: any) {
   }
 
   let runAllTests = async (activeTests: any) => {
+    let testsResultsDf: DG.DataFrame;
     //@ts-ignore
-    const promises = activeTests.map((t) => 
+    activeTests.forEach(t => {
       grok.functions.call(
         `${t.packageName}:test`, {
         "category": t.category,
         "test": t.name
+      }).then((res) => {
+        if (!testsResultsDf) {
+          testsResultsDf = res;
+        } else {
+          testsResultsDf = testsResultsDf.append(res);
+        }
+        updateTestResultsIcon(tree, t.packageName, t.category, t.name, res.get('success', 0));
+        if (testsResultsDf.rowCount === activeTests.length) {
+          grok.shell.addTableView(testsResultsDf);
+        }
       })
-    );
-    Promise.all(promises).then((res) => {
-      const testsResultsDf = res.reduce(
-        (previousDf, currentDf) => previousDf.append(currentDf)
-      );
-      grok.shell.addTableView(testsResultsDf);
-      updateTestResultsIcons(tree, testsResultsDf);
-    });
+    })
   };
 
-  let updateTestResultsIcons = (tree: DG.TreeViewNode, testResults: DG.DataFrame) => {
+
+  let updateTestResultsIcon = (tree: DG.TreeViewNode, pack: string, cat: string, name: string, success?: boolean) => {
     const items = tree.items;
-    let rowCount = testResults.rowCount;
-    for (let i = 0; i < rowCount; i++){
-        const item = items.filter(it => it.root.id === `${testResults.get('category', i)}|${testResults.get('name', i)}`)[0];
-        updateIcon(testResults.get('success', i), item.root.children[1].children[0].children[1]);
-    }
+    const item = items.filter(it => it.root.id === `${pack}|${cat}|${name}`)[0];
+    success === undefined ? item.root.children[1].children[0].children[1].innerHTML = '' : updateIcon(success, item.root.children[1].children[0].children[1]);
   }
 
   let updateIcon = (passed: boolean, iconDiv: Element) => {
@@ -172,7 +174,6 @@ function createTestMangerUI(packagesTests: any) {
     icon.style.fontWeight = 'bold';
     icon.style.paddingLeft = '5px';
     icon.style.color = passed ? 'lightgreen' : 'red';
-    iconDiv.innerHTML = '';
     iconDiv.append(icon);
   }
 
@@ -203,7 +204,7 @@ function createTestMangerUI(packagesTests: any) {
           testPassed
         ], {style: {display: 'block'}});
         let item = catGroup.item(itemDiv);
-        item.root.id = `${cat}|${t.name}`;
+        item.root.id = `${t.packageName}|${cat}|${t.name}`;
         addCheckbox(item, () => {
           t.active = item.checked;
         });
@@ -213,6 +214,7 @@ function createTestMangerUI(packagesTests: any) {
 
   const runTestsButton = ui.bigButton('Run', async () => {
     let actTests = collectActiveTests();
+    actTests.forEach(t => updateTestResultsIcon(tree, t.packageName, t.category, t.name));
     if(actTests.length) {
       runAllTests(actTests);
     }
