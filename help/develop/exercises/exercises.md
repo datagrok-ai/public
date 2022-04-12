@@ -56,17 +56,22 @@ Prerequisites: basic JavaScript knowledge.
 1. Install the necessary tools (Node.js, npm, webpack, datagrok-tools) following
    [these instructions](../develop.md#development)
 2. Get a dev key for [Dev Server](https://dev.datagrok.ai) (you will work with this server) and add it by
-   running `grok config`
+   running `grok config`. User icon (at the lower left corner) / Summary / Developer key...
 3. Create a default package [called](https://datagrok.ai/help/develop/develop#naming-conventions)
    `<yourFirstName>-sequence` using datagrok-tools: `grok create <yourFirstName>-sequence`
 4. Upload it to the server: `grok publish dev --rebuild` (see other options [here](../develop.md#deployment-modes))
-5. Launch the platform and run the package's `test` function using different methods:
+5. Launch the platform and run the package's `info()` function using different methods:
 
-* via the [Functions](https://dev.datagrok.ai/functions?q=test) view
-* via the [Packages](https://dev.datagrok.ai/packages?) menu (find your package, click on it and run `test`
+* via the [Functions](https://dev.datagrok.ai/functions?q=info) view
+* via the [Packages](https://dev.datagrok.ai/packages?) menu (find your package, click on it and run `info()`
   from the `Functions` pane in the property panel on the left)
 * via the [console](../../overview/navigation.md#console): press `~` key anywhere inside Datagrok, the Console will
-  appear to the right; execute `<yourFirstName>Sequence:test()` there
+  appear to the right; execute `<loginName>Sequence:info()` there.
+  The identifier used as package name (before ':') will be obtained
+  by transformation kebab style of folder name to camel style, or can be 
+  specified directly with attribute `friendlyName` in `package.json` file.
+  
+As a result of the function execution you should see an info notification with url of package's webRoot.
 
 ## Semantic types
 
@@ -121,7 +126,7 @@ You will learn: how to write semantic type detectors, how to develop context-spe
    met, it should return `"dna_nucleotide"` string.
 
    For best performance, don't iterate over all column values, instead
-   iterate [on `column.categories`](https://datagrok.ai/help/develop/dataframe#work-with-categories)
+   iterate [on `column.categories`](https://datagrok.ai/help/develop/advanced/data-frame#work-with-categories)
    . Full Datagrok Column type API could be found [here](https://datagrok.ai/help/develop/dataframe#dgcolumn).
 
 4. Upload your package to `dev.datagrok.ai` using `grok publish dev --rebuild`
@@ -178,16 +183,17 @@ In this exercise, we will count occurrences of a given subsequence in a nucleoti
    is responsible for it. To open a default input file `cars`, click the `Star` icon in the top menu.
 4. Run the script again and proceed to the Datagrok's console. As in Quake, it's available by pressing a `~` button
    anywhere inside Datagrok. In the console, you would see the script execution result. Just one line above the result
-   you could see the console's command to execute the script. Enter it again to the console to get the same result.
+   you could see the console's command to execute the script. Enter it again to the console to get the same result 
+   (but in console you should specify script with namespace prefix as `<yourLogin>:<script_name>`).
 5. Let's modify the script to solve the task of counting sequence occurrences. Add a new preamble:
-   (use any `#description` you like):
+   (use any `#description` you like). Spaces are not allowed between '#' and attribute name:
 
     ```python
-    # name: CountSubsequencePython
-    # language: python
-    # input: string sequence
-    # input: string subsequence
-    # output: int count
+    #name: CountSubsequencePython
+    #language: python
+    #input: string sequence
+    #input: string subsequence
+    #output: int count
     ```
 
    In the body, implement a Python function counting all occurrences of a given `subsequence` in a `sequence`. Return
@@ -228,12 +234,12 @@ repeat what we've achieved in the last point of the previous exercise, now with 
    dataframe. To start with, the function's Datagrok signature should look as follows:
 
     ```python
-    # name: CountSubsequencePythonDataframe
-    # language: python
-    # input: dataframe sequences
-    # input: column columnName
-    # input: string subsequence = acc
-    # output: dataframe result {action:join(sequences)}
+    #name: CountSubsequencePythonDataframe
+    #language: python
+    #input: dataframe sequences
+    #input: column columnName
+    #input: string subsequence = "acc"
+    #output: dataframe result {action:join(sequences)}
     ```
 
    This function takes as an input a dataframe with a column containing nucleotide sequences, named as a value of
@@ -270,12 +276,12 @@ repeat what we've achieved in the last point of the previous exercise, now with 
     * You don't need to import `pandas`, Datagrok does this automatically: to each Python script it adds a preamble with
       most popular imports (`os`, `io`, `json`, `pandas as pd`, `requests`
       , `datetime`, `timedelta`)
-    * Note that the `column inputColName` is just a string with a column name passed to a script, not an actual column
+    * Note that the column `columnName` is just a string with a column name passed to a script, not an actual column
       content
 
-3. Run the function with a "Play" button on top of the function window. THe dialog will prompt you to select a
+3. Run the function with a "Play" button on top of the function window. The dialog will prompt you to select a
    dataframe. Navigate to a "Data" view (first button on the left sidebar) and open a file with nucleotide sequences
-   (say, `Demo Files / bio / sars-cov-2.csv`). Go back to the `Run Function` dialog to select the opened dataframe.
+   (say, `Demo Files / bio / sars-cov-2.csv` available at public.datagrok.ai). Go back to the `Run Function` dialog to select the opened dataframe.
 
 4. Now choose a column with nucleotide sequences from the dropdown. Notice how the list of columns is automatically
    formed for the selected dataframe. Finally, run the function to get the resulting dataframe.
