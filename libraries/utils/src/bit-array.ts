@@ -69,7 +69,7 @@ export default class BitArray {
   constructor(arg: number | Uint32Array, defaultValue: boolean | number = false) {
     if (typeof arg === 'number') {
       const length = arg;
-      let buff = BitArray._createBuffer(length);
+      const buff = BitArray._createBuffer(length);
       if (defaultValue)
         for (let i = 0; i < buff.length; i++)
           buff[i] = -1;
@@ -78,13 +78,12 @@ export default class BitArray {
     } else if (arg instanceof Uint32Array) {
       this._data = arg as Uint32Array;
       this._length = defaultValue as number;
-    } else {
-      throw new Error("Invalid constructor");
-    }
+    } else
+      throw new Error('Invalid constructor');
   }
 
 
-  getRawData() { return this._data; }
+  getRawData() {return this._data;}
 
   assureGoez(num: number, argName: String): void {
     if (num < 0) throw new Error(`${argName} should be greater than zero`);
@@ -153,9 +152,8 @@ export default class BitArray {
   }
 
   setLength(value: number): void {
-    if (value < 0) {
+    if (value < 0)
       throw new Error('should be >= 0');
-    }
 
     if (value == this._length) return;
     const nIntsNeeded = Math.floor((value + 0x1f) / 0x20);
@@ -166,9 +164,9 @@ export default class BitArray {
     }
 
     if (value > this._length) {
-      if (this._length % 0x20 > 0) {
+      if (this._length % 0x20 > 0)
         this._data[this.lengthInInts - 1] &= (1 << ((this._length % 0x20) & 0x1f)) - 1;
-      }
+
       this._data.fill(0, this.lengthInInts, nIntsNeeded);
     }
     this._length = value;
@@ -176,9 +174,8 @@ export default class BitArray {
   }
 
   static fromAnd(set1: BitArray, set2: BitArray): BitArray {
-    if (set1._length != set2._length) {
+    if (set1._length != set2._length)
       throw new Error(`Lengths differ (${set1._length} != ${set2._length})`);
-    }
 
     const temp = new BitArray(set1._length);
     temp._length = set1._length;
@@ -186,9 +183,9 @@ export default class BitArray {
     temp._version = 0;
 
     const len = set1.lengthInInts;
-    for (let i = 0; i < len; i++) {
+    for (let i = 0; i < len; i++)
       temp._data[i] = set1._data[i] & set2._data[i];
-    }
+
     return temp;
   }
 
@@ -201,9 +198,8 @@ export default class BitArray {
     temp._version = 0;
 
     for (let i = 0; i < temp._length; i++) {
-      if (values[i]) {
+      if (values[i])
         temp._data[Math.floor(i / 0x20)] |= 1 << ((i % 0x20) & 0x1f);
-      }
     }
     return temp;
   }
@@ -211,9 +207,9 @@ export default class BitArray {
   /// Constructs a [BitSet] of length [count], where idx-th bit is determined by a call to [flag] (idx).
   static fromSeq(count: number, flag: Function): BitArray {
     const temp = new BitArray(count);
-    for (let i = 0; i < count; ++i) {
+    for (let i = 0; i < count; ++i)
       temp.setBit(i, flag(i));
-    }
+
     temp._version = 0;
     return temp;
   }
@@ -248,17 +244,14 @@ export default class BitArray {
       num2 += 4;
     }
 
-    if (len - num2 == 3) {
+    if (len - num2 == 3)
       temp._data[num1] = (bytes[num2 + 2] & 0xff) << 0x10;
-    }
 
-    if (len - num2 == 2) {
+    if (len - num2 == 2)
       temp._data[num1] |= (bytes[num2 + 1] & 0xff) << 8;
-    }
 
-    if (len - num2 == 1) {
+    if (len - num2 == 1)
       temp._data[num1] |= bytes[num2] & 0xff;
-    }
 
     temp._version = 0;
     return temp;
@@ -275,14 +268,12 @@ export default class BitArray {
     if (this._length != other._length) return false;
     if (this._length == 0) return true;
 
-    for (let i = 0; i < this._data.length - 1; i++) {
+    for (let i = 0; i < this._data.length - 1; i++)
       if (this._data[i] != other._data[i]) return false;
-    }
 
     for (let i = (this._data.length - 1) * 8; i < this._length; i++) {
-      if (this.getBit(i) != other.getBit(i)) {
+      if (this.getBit(i) != other.getBit(i))
         return false;
-      }
     }
     return true;
   }
@@ -301,9 +292,8 @@ export default class BitArray {
     this.setAll(false, false);
 
     for (let i = 0; i < this._length; i++) {
-      if (flag(i)) {
+      if (flag(i))
         this._data[Math.floor(i / 0x20)] |= 1 << ((i % 0x20) & 0x1f);
-      }
     }
 
     this.incrementVersion(notify);
@@ -312,9 +302,9 @@ export default class BitArray {
 
   /// Inverts a bitset.
   invert(notify = true): void {
-    for (let i = 0; i < this._data.length; i++) {
+    for (let i = 0; i < this._data.length; i++)
       this._data[i] ^= -1;
-    }
+
     this.incrementVersion(notify);
   }
 
@@ -334,50 +324,43 @@ export default class BitArray {
   /// Clears the bitset if [clear] flag is true.
   /// Change notification is raised when [notify] is true.
   setIndexes(indexes: Array<number>, value=true, clear=true, notify=true): void {
-    if (clear) {
+    if (clear)
       this.setAll(!value, false);
-    }
 
-    for (const i of indexes) {
+    for (const i of indexes)
       this.setFast(i, value);
-    }
 
     this.incrementVersion(notify);
   }
 
   everyIndex(indexes: Array<number>, value=true): boolean {
     for (const index of indexes) {
-      if (this.getBit(index) != value) {
+      if (this.getBit(index) != value)
         return false;
-      }
     }
     return true;
   }
 
   anyIndex(indexes: Array<number>, value=true): boolean {
     for (const index of indexes) {
-      if (this.getBit(index) == value) {
+      if (this.getBit(index) == value)
         return true;
-      }
     }
     return false;
   }
 
   setWhere(check: Function, value=true, clear=true, notify=true, allowClear=true): void {
-    if (clear && allowClear) {
+    if (clear && allowClear)
       this.setAll(!value, false);
-    }
 
     if (allowClear) {
       for (let i = 0; i < this._length; i++) {
-        if (check(i)) {
+        if (check(i))
           this.setFast(i, value);
-        }
       }
     } else {
-      for (let i = 0; i < this._length; i++) {
+      for (let i = 0; i < this._length; i++)
         this.setFast(i, check(i) ? value : !value);
-      }
     }
 
     this.incrementVersion(notify);
@@ -392,13 +375,11 @@ export default class BitArray {
 
     //todo: optimize
     if (value) {
-      for (let i = start; i <= end; i++) {
+      for (let i = start; i <= end; i++)
         this.setTrue(i);
-      }
     } else {
-      for (let i = start; i <= end; i++) {
+      for (let i = start; i <= end; i++)
         this.setFalse(i);
-      }
     }
 
     this.incrementVersion(notify);
@@ -407,13 +388,11 @@ export default class BitArray {
 
   /// Sets n randomly chosen bits to value, remaining bits to !value.
   setRandom(n: number, value: boolean, notify=true): void {
-    if (n < 0 || n > this._length) {
+    if (n < 0 || n > this._length)
       throw new Error('n must be >= 0 && <= Count');
-    }
 
-    if (n > this._length / 2) {
+    if (n > this._length / 2)
       this.setRandom(this._length - n, !value);
-    }
 
     this.setAll(!value);
 
@@ -430,13 +409,11 @@ export default class BitArray {
   /// Modifies current bitset by performing the bitwise AND operation against the
   /// corresponding elements in the specified bitset.
   and(value: BitArray, notify=true): BitArray {
-    if (this._length != value._length) {
+    if (this._length != value._length)
       throw new Error('Array lengths differ.');
-    }
 
-    for (let i = 0, len = this.lengthInInts; i < len; i++) {
+    for (let i = 0, len = this.lengthInInts; i < len; i++)
       this._data[i] &= value._data[i];
-    }
 
     this.incrementVersion(notify);
     return this;
@@ -445,14 +422,12 @@ export default class BitArray {
   /// Performs the bitwise AND NOT operation on the elements in the current bitset
   /// against the corresponding elements in the specified bitset.
   andNot(value: BitArray, notify=true): BitArray {
-    if (this._length != value._length) {
+    if (this._length != value._length)
       throw new Error('Array lengths differ.');
-    }
 
     const len = this.lengthInInts;
-    for (let num2 = 0; num2 < len; num2++) {
+    for (let num2 = 0; num2 < len; num2++)
       this._data[num2] &= ~value._data[num2];
-    }
 
     this.incrementVersion(notify);
     return this;
@@ -461,13 +436,11 @@ export default class BitArray {
   /// Performs the bitwise NOT AND operation on the elements in the current bitset
   /// against the corresponding elements in the specified bitset.
   notAnd(value: BitArray, notify=true): BitArray {
-    if (this._length != value._length) {
+    if (this._length != value._length)
       throw new Error('Array lengths differ.');
-    }
 
-    for (let i = 0, len = this.lengthInInts; i < len; i++) {
+    for (let i = 0, len = this.lengthInInts; i < len; i++)
       this._data[i] = (~this._data[i]) & value._data[i];
-    }
 
     this.incrementVersion(notify);
     return this;
@@ -475,9 +448,8 @@ export default class BitArray {
 
   /// Inverts all bit values in the current bitset
   not(notify = true): BitArray {
-    for (let i = 0, len = this.lengthInInts; i < len; i++) {
+    for (let i = 0, len = this.lengthInInts; i < len; i++)
       this._data[i] = ~this._data[i];
-    }
 
     this.incrementVersion(notify);
     return this;
@@ -486,13 +458,11 @@ export default class BitArray {
   /// Performs the bitwise OR operation on the elements in the current bitset
   /// against the corresponding elements in the specified bitset.
   or(value: BitArray, notify = true) {
-    if (this._length != value._length) {
+    if (this._length != value._length)
       throw new Error('Array lengths differ.');
-    }
 
-    for (let i = 0, len = this.lengthInInts; i < len; i++) {
+    for (let i = 0, len = this.lengthInInts; i < len; i++)
       this._data[i] |= value._data[i];
-    }
 
     this.incrementVersion(notify);
     return this;
@@ -501,13 +471,11 @@ export default class BitArray {
   /// Performs the bitwise exclusive OR operation on the elements in the current bitset
   /// against the corresponding elements in the specified bitset.
   xor(value: BitArray, notify = true) {
-    if (this._length != value._length) {
+    if (this._length != value._length)
       throw new Error('Array lengths differ.');
-    }
 
-    for (let i = 0, len = this.lengthInInts; i < len; i++) {
+    for (let i = 0, len = this.lengthInInts; i < len; i++)
       this._data[i] ^= value._data[i];
-    }
 
     this.incrementVersion(notify);
     return this;
@@ -528,13 +496,11 @@ export default class BitArray {
 
     //if (!contains(!flag)) return; // nothing to do
 
-    for (let i = oldlength - 1; i >= pos; i--) {
+    for (let i = oldlength - 1; i >= pos; i--)
       this.setBit(i + n, this.getBit(i));
-    }
 
-    for (let i = pos; i < pos + n; i++) {
+    for (let i = pos; i < pos + n; i++)
       this.setBit(i, flag);
-    }
 
     // endUpdate();
   }
@@ -543,25 +509,22 @@ export default class BitArray {
   /// bits appropriately.
   removeAt(pos: number, n = 1): void {
     // the most primitive implementation, optimize it later!
-    if (n < 0) {
+    if (n < 0)
       throw new Error('n cannot be negative');
-    }
 
     this.assureInRange(pos, 0, this._length - n, 'pos');
 
     if (this.contains(true)) {
-      for (let i = pos; i < this._length - n; i++) {
+      for (let i = pos; i < this._length - n; i++)
         this.setBit(i, this.getBit(i + n));
-      }
     }
 
     this.setLength(this._length - n);
   }
 
   removeByMask(mask: BitArray, flag = true): BitArray {
-    if (this._length != mask.length) {
+    if (this._length != mask.length)
       throw new Error('length != mask.length');
-    }
 
     if (mask == this) { // no need to iterate
       this.setLength(mask.countBits(!flag));
@@ -569,9 +532,8 @@ export default class BitArray {
     } else {
       let dstIdx = 0;
 
-      for (let srcIdx = -1; (srcIdx = mask.findNext(srcIdx, !flag)) != -1;) {
+      for (let srcIdx = -1; (srcIdx = mask.findNext(srcIdx, !flag)) != -1;)
         this.setFast(dstIdx++, this.getBit(srcIdx));
-      }
 
       this._length = dstIdx;
       this._version++;
@@ -588,20 +550,18 @@ export default class BitArray {
   /// Similar to the [] operator.
   setBit(pos: number, bit: boolean, notify = true) {
     this.setFast(pos, bit);
-    if (notify) {
+    if (notify)
       this._version++;
-    } else {
+    else
       this._version++;
-    }
   }
 
   /// Sets [i]-th bit to [value], does not check bounds, does not increment version
   setFast(i: number, value: boolean): void {
-    if (value) {
+    if (value)
       this._data[Math.floor(i / 0x20)] |= 1 << (i & 0x1f);
-    } else {
+    else
       this._data[Math.floor(i / 0x20)] &= ~(1 << (i & 0x1f));
-    }
   }
 
   setTrue(pos: number): void {
@@ -639,9 +599,8 @@ export default class BitArray {
         k &= ~((4294967295) << remainingBits);
       }
 
-      for (; k != 0; k >>>= 8) {
+      for (; k != 0; k >>>= 8)
         this._selectedCount += BitArray._onBitCount[k & 0xff];
-      }
 
       this._selectedCountVersion = this._version;
     }
@@ -653,13 +612,11 @@ export default class BitArray {
   countWhere(check: Function): number {
     let result = 0;
     if (this.trueCount() == this._length) {
-      for (let i = 0; i < this._length; i++) {
+      for (let i = 0; i < this._length; i++)
         result += check(i) ? 1 : 0;
-      }
     } else {
-      for (let i = -1; (i = this.findNext(i, true)) != -1;) {
+      for (let i = -1; (i = this.findNext(i, true)) != -1;)
         result += check(i) ? 1 : 0;
-      }
     }
     return result;
   }
@@ -670,20 +627,17 @@ export default class BitArray {
 
     let count = 0; const len = this.lengthInInts; let i = 0;
     for (; i < len - 1; i++) {
-      for (var k = this._data[i] & second._data[i]; k != 0; k >>>= 8) {
+      for (let k = this._data[i] & second._data[i]; k != 0; k >>>= 8)
         count += BitArray._onBitCount[k & 0xff];
-      }
     }
 
     // The last int.
-    var k = this._data[i] & second._data[i];
+    let k = this._data[i] & second._data[i];
     const remainingBits = this._length & 0x1f;
-    if (remainingBits != 0) {
+    if (remainingBits != 0)
       k &= ~((4294967295) << remainingBits);
-    }
-    for (; k != 0; k >>>= 8) {
+    for (; k != 0; k >>>= 8)
       count += BitArray._onBitCount[k & 0xff];
-    }
 
     return (value ? count : this._length - count);
   }
@@ -723,9 +677,8 @@ export default class BitArray {
         k &= ((0xffffffff << unusedBits) & 0xffffffff);
         unusedBits = 0;
       } else if (!value && k == -4294967296) // looking for false, all bits are set
-      {
+
         continue;
-      }
 
       for (let j = 0; k != 0; j += 8, k >>>= 8) {
         const p = BitArray._firstOnBit[k & 0xff];
@@ -757,9 +710,8 @@ export default class BitArray {
       }
       for (let j = 24; k != 0; j -= 8, k <<= 8) {
         const p = BitArray._lastOnBit[k >>> 0x18];
-        if (p >= 0) {
+        if (p >= 0)
           return p + (i * 32) + j;
-        }
       }
     }
     return -1;

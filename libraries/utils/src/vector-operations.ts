@@ -10,9 +10,8 @@ import {randomFloat, randomInt} from './random';
  * @throws {Error}
  */
 export function assert(condition: boolean = false, message: string = 'Assertion error.') {
-  if (!condition) {
+  if (!condition)
     throw new Error(message);
-  }
 }
 
 /**
@@ -37,7 +36,8 @@ function initCoordinates(dimension1: number, dimension2: number, fill: number = 
  * @todo Might be slow since used Array.map. Probably needs performance revision.
  */
 export function transposeMatrix(matrix: Matrix): Matrix {
-  return new Array(matrix[0].length).fill(0).map((_, i) => (new Vector(matrix.length).fill(0).map((_, j) => (matrix[j][i]))));
+  return new Array(matrix[0].length).fill(0)
+    .map((_, i) => (new Vector(matrix.length).fill(0).map((_, j) => (matrix[j][i]))));
 }
 
 /**
@@ -52,13 +52,13 @@ export function transposeMatrix(matrix: Matrix): Matrix {
 export function vectorAdd(p: Vector, q: Vector, multiplier: number = 1): Vector {
   const nItems = p.length;
 
-  assert(nItems == q.length, 'Vector lengths do not match.')
+  assert(nItems == q.length, 'Vector lengths do not match.');
 
-  let total = new Vector(nItems);
+  const total = new Vector(nItems);
 
-  for (let i = 0; i < p.length; ++i) {
+  for (let i = 0; i < p.length; ++i)
     total[i] = p[i] + multiplier * q[i];
-  }
+
   return total;
 }
 
@@ -71,9 +71,9 @@ export function vectorAdd(p: Vector, q: Vector, multiplier: number = 1): Vector 
 function itemsSum(v: Vector): number {
   let total = 0;
 
-  for (let i = 0; i < v.length; ++i) {
+  for (let i = 0; i < v.length; ++i)
     total += v[i];
-  }
+
   return total;
 }
 
@@ -85,11 +85,11 @@ function itemsSum(v: Vector): number {
  */
 function vectorSquare(v: Vector): Vector {
   const nItems = v.length;
-  let total = new Vector(nItems);
+  const total = new Vector(nItems);
 
-  for (let i = 0; i < v.length; ++i) {
+  for (let i = 0; i < v.length; ++i)
     total[i] = v[i] * v[i];
-  }
+
   return total;
 }
 
@@ -103,12 +103,11 @@ function vectorSquare(v: Vector): Vector {
  * @return {Matrix} A new matrix filled with random floating point  values.
  */
 export function fillRandomMatrix(dimension1: number, dimension2: number, scale: number = 1.): Matrix {
-  let matrix = initCoordinates(dimension1, dimension2);
+  const matrix = initCoordinates(dimension1, dimension2);
 
   for (let i = 0; i < dimension1; ++i) {
-    for (let j = 0; j < dimension2; ++j) {
+    for (let j = 0; j < dimension2; ++j)
       matrix[i][j] = randomFloat(scale);
-    }
   }
   return matrix;
 }
@@ -154,13 +153,13 @@ export function genRange(begin: number, end: number, endExclusive = false): Int3
   const nItems = end - begin + (endExclusive ? 0 : 1);
   const series = new Int32Array(nItems);
 
-  for (let i = 0; i < nItems; ++i) {
+  for (let i = 0; i < nItems; ++i)
     series[i] = begin + i;
-  }
+
   return series;
 }
 
-/**  
+/**
  * Returns order of values as if they are sorted.
  *
  * @export
@@ -178,30 +177,28 @@ export function argSort(values: any[], reverse = false): number[] {
 
 /**
  * Returns the indexes of the most diverse objects according to the dist function
- * 
  * @param {number} length total number of objects
- * @param {number} n number of diverse elements to find 
+ * @param {number} n number of diverse elements to find
  * @param {(i1: number, i2: number) => number} dist a function which calculates distance between two objects using their indexes
  * @returns {number[]} The indexes of the most diverse objects
  */
 export function getDiverseSubset(length: number, n: number, dist: (i1: number, i2: number) => number): number[] {
-
   function maxBy(values: IterableIterator<number>, orderBy: (i: number) => number) {
     let maxValue = null;
     let maxOrderBy = null;
 
     for (const element of values) {
-      let elementOrderBy = orderBy(element);
+      const elementOrderBy = orderBy(element);
       if (maxOrderBy == null || elementOrderBy > maxOrderBy) {
         maxValue = element;
         maxOrderBy = elementOrderBy;
       }
     }
-    return maxValue;  
+    return maxValue;
   }
 
-  let subset = [randomInt(length - 1)];
-  let complement = new Set();
+  const subset = [randomInt(length - 1)];
+  const complement = new Set();
 
   for (let i = 0; i < length; ++i) {
     if (!subset.includes(i))
@@ -209,10 +206,10 @@ export function getDiverseSubset(length: number, n: number, dist: (i1: number, i
   }
 
   while (subset.length < n) {
-    let idx = maxBy(
+    const idx = maxBy(
       complement.values() as IterableIterator<number>,
       (i) => Math.min.apply(Math, subset.map(function (val, index) {
-        return dist(i, val); 
+        return dist(i, val);
       })));
     if (idx) {
       subset.push(idx);
@@ -224,28 +221,28 @@ export function getDiverseSubset(length: number, n: number, dist: (i1: number, i
 
 /**
  * Returns normalized vector
- * 
  * @param data numerical array
  */
 export function normalize(data: Vector): Vector {
   let mean = 0;
   let std = 0;
 
-  for (let i = 0; i < data.length; ++i) {
+  for (let i = 0; i < data.length; ++i)
     mean += data[i];
-  }
+
   mean /= data.length;
 
-  for (let i = 0; i < data.length; ++i) {
+  for (let i = 0; i < data.length; ++i)
     std += (data[i] - mean) * (data[i] - mean);
-  }
+
   std = Math.sqrt(std / data.length);
 
-  for (let i = 0; i < data.length; ++i) {
+  for (let i = 0; i < data.length; ++i)
     data[i] = (data[i] - mean) / std;
-  }
+
   return data;
 }
+
 /**
  * Finds set difference between two lists.
  * @param {any[]} a The first list.
