@@ -4,7 +4,7 @@ import * as DG from 'datagrok-api/dg';
 
 import {TwinPviewer} from './viewers/twin-p-viewer';
 import {_package} from './package';
-import {TreeBrowser} from './tree';
+// import {TreeBrowser} from './tree';
 import {Subscription} from 'rxjs';
 
 export class MolecularLiabilityBrowser {
@@ -13,7 +13,7 @@ export class MolecularLiabilityBrowser {
   vidsObsPTMs: string[];
   allVids: DG.Column;
   allIds: DG.Column;
-  idMapping: { [key: string]: string[]; };
+  idMapping: {[key: string]: string[];};
 
   mlbView: DG.TableView;
   vIdInput: DG.InputBase;
@@ -115,9 +115,9 @@ export class MolecularLiabilityBrowser {
         '{"type": "band", "title":"BandYellowRight", "rule" : "' +
         pf.yellowRight[i] + '-' + pf.redRight[i] + '", "color": "#FFD700", "opacity": 15}, ' +
         '{"type": "band", "title":"BandRedLeft", "rule" : "< ' + pf.redLeft[i] +
-          '", "color": "#DC143C", "opacity": 15}, ' +
+        '", "color": "#DC143C", "opacity": 15}, ' +
         '{"type": "band", "title":"BandRedRight", "rule" : "> ' + pf.redRight[i] +
-          '", "color": "#DC143C", "opacity": 15},' +
+        '", "color": "#DC143C", "opacity": 15},' +
         '{ "type": "spline", "title": "TAP metrics", "y" : [' +
         pf.plotsY[i].toString() + '], "color": "#7570B3", "width": 1, "x" : [' +
         pf.plotsX[i].toString() + '], "normalize-y": true, "visible": true}' +
@@ -183,7 +183,7 @@ export class MolecularLiabilityBrowser {
         const textSize = args.g.measureText(args.cell.gridColumn.name);
         args.g.fillText(args.cell.gridColumn.name, args.bounds.x +
           (args.bounds.width - textSize.width) / 2, args.bounds.y +
-          (textSize.fontBoundingBoxAscent + textSize.fontBoundingBoxDescent));
+        (textSize.fontBoundingBoxAscent + textSize.fontBoundingBoxDescent));
         args.g.fillStyle = '#4b4b4a';
         args.preventDefault();
       }
@@ -192,12 +192,12 @@ export class MolecularLiabilityBrowser {
     this.mlbView.grid.onCellPrepare((gc) => {
       if (gc.isTableCell && gc.gridColumn.name === 'v id') {
         if (this.vids.includes(gc.cell.value.toString())) {
-          gc.style.element = ui.divV([
-            ui.link(gc.cell.value.toString(), () => {
+          gc.style.element = ui.divV(
+            [ui.link(gc.cell.value.toString(), () => {
               this.vIdInput.value = gc.cell.value;
               this.changeVid();
             })],
-          {style: {position: 'absolute', top: 'calc(50% - 8px)', left: '5px'}});
+            {style: {position: 'absolute', top: 'calc(50% - 8px)', left: '5px'}});
         } else {
           gc.style.element = ui.divV([ui.label(gc.cell.value.toString())],
             {style: {position: 'absolute', top: 'calc(50% - 8px)', left: '5px'}});
@@ -292,27 +292,29 @@ export class MolecularLiabilityBrowser {
   }
 
   async init(urlVid) {
-    // const pi = DG.TaskBarProgressIndicator.create('Loading data...');
+    const pi = DG.TaskBarProgressIndicator.create('Loading data...');
 
-    // this.mlbTable = (await grok.functions.call('MolecularLiabilityBrowser:GetMolecularLiabilityBrowser'));
-    // for (const column of this.mlbTable.columns)
-    //   column.name = column.name.replaceAll('_', ' ');
+    this.mlbTable = (await grok.functions.call('MolecularLiabilityBrowser:GetMolecularLiabilityBrowser'));
+    for (const column of this.mlbTable.columns)
+      column.name = column.name.replaceAll('_', ' ');
 
 
+    // 'ngl' column have been removed from query 2022-04
     // this.mlbTable.columns.remove('ngl');
 
-    // const vidsRaw = (await grok.functions.call('MolecularLiabilityBrowser:getVids'));
-    // this.vids = vidsRaw.columns[0].toList();
-    // this.vidsObsPTMs = (await grok.functions.call('MolecularLiabilityBrowser:getObservedPtmVids')).columns[0].toList();
+    const vidsRaw = (await grok.functions.call('MolecularLiabilityBrowser:getVids'));
+    this.vids = vidsRaw.columns[0].toList();
+    this.vidsObsPTMs = (await grok.functions.call('MolecularLiabilityBrowser:getObservedPtmVids'))
+      .columns[0].toList();
 
-    // pi.close();
+    pi.close();
 
     // grok.events.onViewRemoved.subscribe((v) => {
     //   if (v.type === DG.VIEW_TYPE.TABLE_VIEW && (v as DG.TableView).dataFrame.id === this.mlbTable.id)
     //     this.subs.forEach((s) => s.unsubscribe());
     // });
 
-    // this.setView();
+    // this.setView(); kjbkjbkjbkj iug iuu g
     // this.allVids = this.mlbTable.col('v id')!;
     // this.allIds = this.mlbTable.col('gdb id mappings')!;
     // this.idMapping = {};

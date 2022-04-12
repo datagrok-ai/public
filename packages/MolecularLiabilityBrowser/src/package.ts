@@ -23,7 +23,8 @@ export async function init() {
   const pi = DG.TaskBarProgressIndicator.create('Loading filters data...');
   ptmMap = JSON.parse(await _package.files.readAsText('ptm_map.json'));
   cdrMap = JSON.parse(await _package.files.readAsText('cdr_map.json'));
-  referenceDf = (await _package.files.readBinaryDataFrames(`ptm_in_cdr.d42`))[0];
+  // There is no file 'ptm_in_cdr.d42'
+  // referenceDf = (await _package.files.readBinaryDataFrames(`ptm_in_cdr.d42`))[0];
   pi.close();
 }
 
@@ -32,6 +33,9 @@ export async function init() {
 //tags: filter
 //output: filter result
 export function mlbFilter() {
+  // There is no referenceDf
+  alert('MLBFilter()!!!');
+
   if (!(ptmMap && cdrMap && referenceDf))
     throw new Error(`Filter data is not initialized!`);
 
