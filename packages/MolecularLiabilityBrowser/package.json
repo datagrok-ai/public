@@ -29,8 +29,6 @@
 	},
 	"scripts": {
 		"debug-mlb": "grok publish local --rebuild",
-		"debug-molecularliabilitybrowser": "grok publish jnj --rebuild",
-		"release-molecularliabilitybrowser": "grok publish jnj --rebuild --release",
 		"build": "webpack",
 		"lint": "eslint src --ext .ts",
 		"lint-fix": "eslint src --ext .ts --fix"

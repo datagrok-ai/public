@@ -1,0 +1,22 @@
+{
+  "Asndeamidation(NGNSNT)":"ADA",
+  "Aspisomerisation(DGDSDTDDDH)":"AI",
+  "Fragmentation(DP)":"FR",
+  "Hydroxylysine":"HYL",
+  "Hydroxyproline":"HYP",
+  "LysineGlycation(KEKDEKED)": "LG",
+  "Methylarginine": "MA",
+  "Methyllysine":"MLY",
+  "Metoxidation(M)":"MeO",
+  "N6-acetyllysine": "N6AL",
+  "N-linked_glycosylation":"NG",
+  "N-terminalglutamate(VHandVL)(E)":"NtG",
+  "O-linked_glycosylation": "OlG",
+  "Phosphoserine_Phosphothreonine": "PP",
+  "Phosphotyrosine":"PTB",
+  "Pyrrolidone_carboxylic_acid":"PCA",
+  "S-palmitoyl_cysteine":"SPC",
+  "SUMOylation": "SUMO",
+  "Trpoxidation(W)":"TO",
+  "Ubiquitination": "UB"
+}

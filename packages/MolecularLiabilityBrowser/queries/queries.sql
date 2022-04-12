@@ -1,6 +1,11 @@
 --name: getMolecularLiabilityBrowser
 --connection: MLB
-select v_id, NGL, gdb_id_mappings, cdr_length, surface_cdr_hydrophobicity, positive_cdr_charge, negative_cdr_charge, SFvCSP from public.mlb_main
+SELECT 
+	v_id, gdb_id_mappings, 
+	cdr_length, surface_cdr_hydrophobicity, positive_cdr_charge, negative_cdr_charge, SFvCSP 
+FROM 
+	public.mlb_main
+-- NGL column removed from query 2022-04-08 (atanas/lstolbov)
 --end
 
 --name: getObservedPtmVids
@@ -73,5 +78,9 @@ SELECT DISTINCT ON (v_id) v_id, NGL, gdb_id_mappings, cdr_length, surface_cdr_hy
 
 --name: getVids
 --connection: MLB
-select jf.v_id from db_v2.pdb_files pf join db_v2.json_files jf on pf.v_id = jf.v_id
+SELECT 
+	jf.v_id 
+FROM 
+	db_v2.pdb_files pf 
+	JOIN db_v2.json_files jf ON pf.v_id = jf.v_id
 --end
