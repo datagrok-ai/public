@@ -1,6 +1,54 @@
 <!-- TITLE: Release History -->
 <!-- SUBTITLE: -->
 
+# 2022-04-12 Dev build 0.147.0
+
+## Latest Docker Images
+
+* Datagrok: 
+  *  `docker pull datagrok/datagrok:0.147.0`
+  *  `docker pull datagrok/datagrok:latest`
+  
+* [Docker-Compose](admin/docker-compose.md)
+
+## Addressed Issues
+
+* Allow minor builds in push_version script 
+* PGAdmin connect through SSH tunnel 
+* Function View convert to TS WIP 
+* #424: Blocking option (graying it out) to switch to log scale for columns with negative values \- WIP 
+* Closes $443: PowerGrid: PercentCompleted cell renderer 
+* Allow user to rename the viewers from the arranged tab #341 
+* ignore IDE files 
+* removed duplicate 
+* Updated public token 
+* #424: Blocking option (graying it out) to switch to log scale for columns with negative values 
+* New method: ListUtils.move(list, from, to) 
+* Grid: manual row reordering 
+* Closes #455: Ability to define order of categories 
+* Grid: fixed an issue with the exception when row header is not visible 
+* Default value computing error handling 
+* Closes #464: ability to rearrange columns 
+* Closes #465: Column selectors: search field is invisible (above the screen) when the number of columns is big 
+* Grid: Order columns: ability to show/hide all selected columns at once 
+* Grid: Order or Hide: ability to reorder all selected columns at once 
+* #466: ComputationView \- work in progress 
+* Added banner 
+* (Bug) DataFrame: Column.init(...) does not increment dataframe version 
+* (Bug) Grid: html cells: rendered cells should be invalidated when table content changes 
+* #470: JS API: JS-based custom inputs \- work in progress 
+* Peptides: initial state distribution widget fix 
+* API Tests: updated tests manager UI 
+* #439 WIP: fix sync function error 
+* API Tests: updated test manager 
+* Miss configured in-visualisation filter kills the browser session #344 
+* Chem: added euclidean and hamming similarity metrics, selected most commonly used similarity metrics for cheminformatics 
+* Closes #471: fixed widgets not handling exceptions 
+* New VPN server 
+* #448: Substitution and SAR viewers merge WIP 
+* Utils: update for Chem run 
+
+
 # 2022-03-30 Dev build 0.145.0
 
 ## Latest Docker Images
