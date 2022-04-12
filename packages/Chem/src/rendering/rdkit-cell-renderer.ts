@@ -173,20 +173,7 @@ M  END
 
   _drawMolecule(x: number, y: number, w: number, h: number, onscreenCanvas: HTMLCanvasElement,
     molString: string, scaffoldMolString: string, highlightScaffold: boolean,
-    molRegenerateCoords: boolean, scaffoldRegenerateCoords: boolean, notDf: boolean = false) {
-    const r = window.devicePixelRatio;
-    // if (modifyCanvas) {
-    //   onscreenCanvas.width = w * r;
-    //   onscreenCanvas.height = h * r;
-    //   onscreenCanvas.style.width = w + 'px';
-    //   onscreenCanvas.style.height = h + 'px';
-    // }
-    //
-    if (!notDf) {
-      x = r * x; y = r * y;
-      w = r * w; h = r * h;
-    }
-
+    molRegenerateCoords: boolean, scaffoldRegenerateCoords: boolean) {
     const offscreenCanvas = this._fetchRender(w, h, molString, scaffoldMolString,
       highlightScaffold, molRegenerateCoords, scaffoldRegenerateCoords);
     const image = offscreenCanvas.getContext('2d')!.getImageData(0, 0, w, h);
@@ -203,15 +190,19 @@ M  END
     return scaffoldString;
   }
 
-  render(g: any, x: number, y: number, w: number, h: number, gridCell: DG.GridCell, cellStyle: GridCellStyle) {
+  render(g: any, x: number, y: number, w: number, h: number,
+    gridCell: DG.GridCell, cellStyle: DG.GridCellStyle) {
     const molString = convertToRDKit(gridCell.cell.value);
     if (molString == null || molString === '')
       return;
 
+    const r = window.devicePixelRatio;
+    x = r * x; y = r * y;
+    w = r * w; h = r * h;
 
     // value-based drawing (coming from HtmlCellRenderer.renderValue)
     if (gridCell.cell.column == null) {
-      this._drawMolecule(x, y, w, h, g.canvas, molString, '', false, false, false, true);
+      this._drawMolecule(x, y, w, h, g.canvas, molString, '', false, false, false);
       return;
     }
 
