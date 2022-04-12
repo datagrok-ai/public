@@ -1,5 +1,6 @@
 import * as ui from 'datagrok-api/ui';
 import * as DG from 'datagrok-api/dg';
+import {delay} from "@datagrok-libraries/utils/src/test";
 
 /** Formula Line types */
 const enum ITEM_TYPE {
@@ -72,16 +73,19 @@ class Host {
     if (src instanceof DG.DataFrame) {
       this._dframeHelper = src.meta.formulaLines;
       this.dframeItems = this._dframeHelper.items;
-    } else if (src instanceof DG.Viewer) {
-      this._viewerHelper = src.meta.formulaLines;
-      this.viewerItems = this._viewerHelper.items;
-      if (src.dataFrame) {
-        this._dframeHelper = src.dataFrame.meta.formulaLines;
-        this.dframeItems = this._dframeHelper.items;
-      } else
-        throw 'Viewer not attached to table.';
-    } else
-      throw 'Unknown source of Formula Lines.';
+    } else {
+      {
+        this._viewerHelper = src.meta.formulaLines;
+        {
+          this.viewerItems = this._viewerHelper.items;
+          if (src.dataFrame) {
+            this._dframeHelper = src.dataFrame.meta.formulaLines;
+            this.dframeItems = this._dframeHelper.items;
+          } else
+            throw 'Viewer not attached to table.';
+        }
+      }
+    }
   }
 
   save() {
@@ -192,7 +196,7 @@ class Table {
       this._onItemChangedAction(this._currentItemIdx);
     });
 
-    this.setFirstItemAsCurrent();
+    delay(1).then((_) => this.setFirstItemAsCurrent());
   }
 
   setFirstItemAsCurrent() {
