@@ -29,12 +29,11 @@ export namespace ArrayUtils {
   export function genRange(begin: number, end: number, endExclusive = false): Int32Array {
     const nItems = end - begin + (endExclusive ? 0 : 1);
     const series = new Int32Array(nItems);
-    for (let i = 0; i < nItems; ++i) {
+    for (let i = 0; i < nItems; ++i)
       series[i] = begin + i;
-    }
     return series;
   }
-  
+
   /**  
    * Returns order of values as if they are sorted.
    *

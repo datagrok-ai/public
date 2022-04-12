@@ -51,7 +51,7 @@ export type Options = {[name: string]: any};
  * @param {any} v2 The second vector.
  * @return {number} Distance between these two vectors.
  */
- export type DistanceMetric = (v1: any, v2: any) => (number);
+export type DistanceMetric = (v1: any, v2: any) => (number);
 
 /**
  * Denotes a simple string to string dictionary.
@@ -59,4 +59,4 @@ export type Options = {[name: string]: any};
  * @export
  * @type StringDictionary
  */
- export type StringDictionary = {[key: string]: string};
+export type StringDictionary = {[key: string]: string};

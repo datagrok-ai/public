@@ -2,8 +2,8 @@ import * as grok from 'datagrok-api/grok';
 import * as rxjs from 'rxjs';
 import * as ui from 'datagrok-api/ui';
 import * as DG from 'datagrok-api/dg';
-import {DataFrame, FuncCall} from "datagrok-api/dg";
-import {FunctionView} from "./function-view";
+import {DataFrame, FuncCall} from 'datagrok-api/dg';
+import {FunctionView} from './function-view';
 
 /**
  * Base class for handling Compute models (see https://github.com/datagrok-ai/public/blob/master/help/compute/compute.md).
@@ -21,9 +21,8 @@ import {FunctionView} from "./function-view";
  * - notifications for changing inputs, completion of computations, etc: {@link onInputChanged}
  * */
 export class ComputationView extends DG.ViewBase {
-
   func: DG.Func;
-  call: DG.FuncCall;    // what is being currently edited
+  call: DG.FuncCall; // what is being currently edited
   lastCall?: DG.FuncCall;
   _inputFields: Map<string, DG.InputBase> = new Map<string, DG.InputBase>();
 
