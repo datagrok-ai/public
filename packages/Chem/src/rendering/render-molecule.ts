@@ -7,10 +7,10 @@ import {isMolBlock} from '../utils/chem-utils';
 import $ from 'cash-dom';
 //import {convertToRDKit} from '../analysis/r-group-analysis';
 //import {oclMol} from '../utils/chem-common-ocl';
-import {_properties, getRdKitModule, renderer} from '../package';
+import {_properties, renderer} from '../package';
 import {chem} from 'datagrok-api/grok';
 import Sketcher = chem.Sketcher;
-import {GridCell, GridCellRenderer} from 'datagrok-api/dg';
+import {GridCell} from 'datagrok-api/dg';
 
 /** Renders the molecule and returns div with the canvas inside. */
 export function renderMolecule(
@@ -29,8 +29,11 @@ export function renderMolecule(
 
   const moleculeHost = ui.canvas(options.width, options.height);
   $(moleculeHost).addClass('chem-canvas');
+  const r = window.devicePixelRatio;
+
   // @ts-ignore
-  renderer.render(moleculeHost.getContext('2d')!, 0, 0, options.width, options.height, GridCell.fromValue(molStr), null);
+  renderer.render(moleculeHost.getContext('2d')!, 0, 0, options.width / r, options.height / r,
+    GridCell.fromValue(molStr));
 
   const moreBtn = ui.iconFA(
     'ellipsis-v',
