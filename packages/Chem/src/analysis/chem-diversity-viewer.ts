@@ -2,34 +2,27 @@ import * as ui from 'datagrok-api/ui';
 import * as DG from 'datagrok-api/dg';
 import {Property} from 'datagrok-api/dg';
 import BitArray from '@datagrok-libraries/utils/src/bit-array';
-import {similarityMetric, getDiverseSubset, CHEM_SIMILARITY_METRICS} from '@datagrok-libraries/utils/src/similarity-metrics';
+import {similarityMetric, getDiverseSubset} from '@datagrok-libraries/utils/src/similarity-metrics';
 import {chemGetFingerprints} from '../chem-searches';
 import $ from 'cash-dom';
 import {ArrayUtils} from '@datagrok-libraries/utils/src/array-utils';
 import {Fingerprint} from '../utils/chem-common';
 import {renderMolecule} from '../rendering/render-molecule';
-import {updateMetricsLink} from '../utils/ui-utils';
+import {ChemSearchBaseViewer} from './chem-search-base-viewer';
 
-export class ChemDiversityViewer extends DG.JsViewer {
+export class ChemDiversityViewer extends ChemSearchBaseViewer {
   moleculeColumn: DG.Column;
   initialized: boolean;
-  distanceMetric: string;
-  limit: number;
   renderMolIds: number[];
-  fingerprint: string;
-  metricsProperties = ['distanceMetric', 'fingerprint'];
-  metricsDiv = ui.div();
+  metricsDiv = ui.div('', {style: {height: '10px', display: 'flex', justifyContent: 'right'}});
 
   constructor() {
     super();
 
     this.moleculeColumn = this.column('moleculeColumnName');
-    this.fingerprint = this.string('fingerprint', 'Morgan', {choices: ['Morgan', 'RDKit', 'Pattern']});
-    this.limit = this.int('limit', 10);
-    this.distanceMetric = this.string('distanceMetric', CHEM_SIMILARITY_METRICS[0], {choices: CHEM_SIMILARITY_METRICS});
     this.initialized = false;
     this.renderMolIds = [];
-    updateMetricsLink(this.distanceMetric, this.fingerprint, this.metricsDiv, this, {fontSize: '10px', fontWeight: 'normal', paddingBottom: '15px'});
+    this.updateMetricsLink(this.metricsDiv, this, {fontSize: '10px', fontWeight: 'normal', paddingBottom: '15px'});
   }
 
   init(): void {
@@ -62,7 +55,7 @@ export class ChemDiversityViewer extends DG.JsViewer {
     if (!this.initialized)
       return;
     if (this.metricsProperties.includes(property.name))
-      updateMetricsLink(this.distanceMetric, this.fingerprint, this.metricsDiv, this, {fontSize: '10px', fontWeight: 'normal', paddingBottom: '15px'});
+      this.updateMetricsLink(this.metricsDiv, this, {fontSize: '10px', fontWeight: 'normal', paddingBottom: '15px'});
     this.render();
   }
 
@@ -73,7 +66,8 @@ export class ChemDiversityViewer extends DG.JsViewer {
     if (this.dataFrame) {
       if (computeData) {
         this.renderMolIds =
-          await chemDiversitySearch(this.moleculeColumn, similarityMetric[this.distanceMetric], this.limit, this.fingerprint as Fingerprint);
+          await chemDiversitySearch(
+            this.moleculeColumn, similarityMetric[this.distanceMetric], this.limit, this.fingerprint as Fingerprint);
       }
 
       if (this.root.hasChildNodes())
@@ -83,14 +77,14 @@ export class ChemDiversityViewer extends DG.JsViewer {
       const grids = [];
       let cnt = 0; let cnt2 = 0;
 
-      panel[cnt++] = ui.divH([
-        ui.h1('Diverse structures'),
-        this.metricsDiv,
-      ]);
+      panel[cnt++] = this.metricsDiv;
       for (let i = 0; i < this.limit; ++i) {
         const grid = ui.div([
-          renderMolecule(this.moleculeColumn.get(this.renderMolIds[i])),
-        ], {style: {width: '200px', height: '100px', margin: '5px'}});
+          renderMolecule(
+            this.moleculeColumn.get(this.renderMolIds[i]),
+            //@ts-ignore
+            {width: this.sizesMap[this.size].width, height: this.sizesMap[this.size].height}),
+        ], {style: {margin: '5px'}});
 
         let divClass = 'd4-flex-col';
 
