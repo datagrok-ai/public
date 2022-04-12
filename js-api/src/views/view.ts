@@ -76,9 +76,20 @@ export class ViewBase {
     this._helpUrl = url;
   }
 
-  /** View name */
-  get name(): string { return api.grok_View_Get_Name(this.dart); }
-  set name(s: string) { api.grok_View_Set_Name(this.dart, s); }
+  // /** View name */
+  // get name(): string { return api.grok_View_Get_Name(this.dart); }
+  // set name(s: string) { api.grok_View_Set_Name(this.dart, s); }
+
+  protected _name: string = 'New View';
+
+  /** @type {string} */
+  get name(): string {
+    return this._name;
+  }
+
+  set name(s: string) {
+    this._name = s;
+  }
 
   get parentCall(): FuncCall | undefined  {
     return toJs(api.grok_View_Get_ParentCall(this.dart));
