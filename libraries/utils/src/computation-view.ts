@@ -99,7 +99,7 @@ export class ComputationView extends DG.ViewBase {
 
   /** Builds the complete view. Override it if completely custom implementation is needed,
    * otherwise consider overriding {@link buildInputBlock} and/or {@link buildOutputBlock} */
-  build(): HTMLElement { return ui.splitH([this.buildInputBlock(), this.buildOutputBlock()]); }
+  build(): HTMLElement {return ui.splitH([this.buildInputBlock(), this.buildOutputBlock()]);}
 
   /** Override to build completely custom input block (the one with inputs, usually on the left).
    * If only specific field, consider overriding {@link buildCustomInputs}. */
