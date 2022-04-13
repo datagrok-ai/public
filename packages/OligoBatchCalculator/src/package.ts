@@ -89,28 +89,28 @@ export async function extinctionCoefficient(sequence: string, extCoefsObj?: {[i:
   const additionalModificationsDf = await getAdditionalModifications();
   const additionalCodes = additionalModificationsDf.col(COL_NAMES.ABBREVIATION)!.categories;
   const output = isValidSequence(sequence, additionalCodes);
-  sequence = normalizeSequence(sequence, output.expectedSynthesizer, output.expectedTechnology);
+  const ns = normalizeSequence(sequence, output.expectedSynthesizer, output.expectedTechnology);
   let nearestNeighbourSum = 0;
   let individualBasisSum = 0;
   let modificationsSum = 0;
   if (extCoefsObj != null) {
     for (const modif of Object.keys(extCoefsObj)) {
-      modificationsSum += (sequence.match(new RegExp(modif, 'g')) || []).length * extCoefsObj[modif];
-      sequence = deleteWord(sequence, modif);
+      if (typeof extCoefsObj[modif] == 'number') {
+        modificationsSum += (sequence.match(new RegExp(modif, 'g')) || []).length * extCoefsObj[modif];
+        sequence = deleteWord(sequence, modif);
+      }
     }
   }
-  for (let i = 0; i < sequence.length - 2; i += 2) {
-    nearestNeighbourSum += (sequence[i] == sequence[i + 2]) ?
-      nearestNeighbour[sequence.slice(i, i + 2)][sequence.slice(i + 2, i + 4)] :
+  for (let i = 0; i < ns.length - 2; i += 2) {
+    nearestNeighbourSum += (ns[i] == ns[i + 2]) ?
+      nearestNeighbour[ns.slice(i, i + 2)][ns.slice(i + 2, i + 4)] :
       (
-        nearestNeighbour['r' + ((sequence[i + 1] == 'T') ? 'U' : sequence[i + 1])]['r' + ((sequence[i + 3] == 'T') ?
-          'U' : sequence[i + 3])] +
-        nearestNeighbour['d' + ((sequence[i + 1] == 'U') ? 'T' : sequence[i + 1])]['d' + ((sequence[i + 3] == 'U') ?
-          'T' : sequence[i + 3])]
+        nearestNeighbour['r' + ((ns[i + 1] == 'T') ? 'U' : ns[i + 1])]['r' + ((ns[i + 3] == 'T') ? 'U' : ns[i + 3])] +
+        nearestNeighbour['d' + ((ns[i + 1] == 'U') ? 'T' : ns[i + 1])]['d' + ((ns[i + 3] == 'U') ? 'T' : ns[i + 3])]
       ) / 2;
   }
-  for (let i = 2; i < sequence.length - 2; i += 2)
-    individualBasisSum += individualBases[sequence.slice(i, i + 2)];
+  for (let i = 2; i < ns.length - 2; i += 2)
+    individualBasisSum += individualBases[ns.slice(i, i + 2)];
   return nearestNeighbourSum - individualBasisSum + modificationsSum;
 }
 
@@ -302,10 +302,10 @@ export async function OligoBatchCalculatorApp(): Promise<void> {
             ], 'inputSequence'),
           ]), {style: {maxHeight: '230px'}},
         ),
-        // ui.splitV([
-        //   title,
-        //   gridDiv,
-        // ]),
+        ui.splitV([
+          title,
+          gridDiv,
+        ]),
       ]),
       codesTablesDiv,
     ]),
