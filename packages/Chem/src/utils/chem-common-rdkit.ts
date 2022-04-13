@@ -94,7 +94,7 @@ export function drawMoleculeToCanvas(
         substructJson = '{}';
     }
     const substruct = JSON.parse(substructJson);
-    let offscreenCanvas = new OffscreenCanvas(w, h);
+    const offscreenCanvas = new OffscreenCanvas(w, h);
     drawRdKitMoleculeToOffscreenCanvas(mol, w, h, offscreenCanvas, substruct);
     const image = offscreenCanvas!.getContext('2d')!.getImageData(0, 0, w, h);
     const context = onscreenCanvas.getContext('2d')!;

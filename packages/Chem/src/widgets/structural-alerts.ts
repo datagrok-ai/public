@@ -63,7 +63,12 @@ export async function structuralAlertsWidget(smiles: string) {
   const list = ui.div(alerts.map((i) => {
     const description = ui.divText(_alertsDescriptions[i]);
     const imageHost = ui.canvas(width, height);
-    drawMoleculeToCanvas(0, 0, width, height, imageHost, smiles, _alertsSmarts[i]);
+    const r = window.devicePixelRatio;
+    imageHost.width = width*r;
+    imageHost.height = height*r;
+    imageHost.style.width = width.toString() + 'px';
+    imageHost.style.height = height.toString() + 'px';
+    drawMoleculeToCanvas(0, 0, width*r, height*r, imageHost, smiles, _alertsSmarts[i]);
     const host = ui.div([description, imageHost], 'd4-flex-col');
     host.style.margin = '5px';
     return host;
