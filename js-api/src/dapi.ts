@@ -55,10 +55,14 @@ export class Dapi {
     return new HttpDataSource(api.grok_Dapi_Queries(), 'Function');
   }
 
+  get functions(): HttpDataSource<Func> {
+    return new HttpDataSource(api.grok_Dapi_Functions(), 'Function');
+  }
+
   /** Data Connections API endpoint
    *  @type {HttpDataSource<DataConnection>} */
-  get connections(): HttpDataSource<DataConnection> {
-    return new HttpDataSource(api.grok_Dapi_Connections());
+  get connections(): DataConnectionsDataSource {
+    return new DataConnectionsDataSource(api.grok_Dapi_Connections());
   }
 
   /** Credentials API endpoint
@@ -487,6 +491,27 @@ export class EntitiesDataSource extends HttpDataSource<Entity> {
     return new Promise((resolve, reject) => api.grok_EntitiesDataSource_DeleteProperties(this.dart, props, (_: any) => resolve(), (e: any) => reject(e)));
   }
 }
+
+/**
+ * Functionality for handling connections collection from server and working with credentials remote endpoint
+ * Allows to manage {@link DataConnection}
+ * See also: {@link https://datagrok.ai/help/govern/security}
+ * @extends HttpDataSource
+ * */
+export class DataConnectionsDataSource extends HttpDataSource<DataConnection> {
+  /** @constructs DataConnectionsDataSource*/
+  constructor(s: any) {
+    super(s);
+  }
+
+  /** Saves the Connections */
+  save(e: DataConnection, options?: {saveCredentials?: boolean}): Promise<DataConnection> {
+    options ??= {};
+    options.saveCredentials ??= true;
+    return toJs(api.grok_DataConnectionsDataSource_Save(this.dart, e.dart, options!.saveCredentials));
+  }
+}
+
 
 /**
  * Functionality for handling credentials collection from server and working with credentials remote endpoint
