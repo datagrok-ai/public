@@ -18,7 +18,7 @@ Datagrok. [See API Examples](https://public.datagrok.ai/js/samples/ui)
 
 ## Design toolkit
 
-Figma Datagrok UIKit avaliable on [Figma Community](https://www.figma.com/@datagrok)
+Figma Datagrok UIKit available on [Figma Community](https://www.figma.com/@datagrok)
 
 ## Table of contents
 
@@ -234,7 +234,7 @@ are laid out. The main axis is defined by rows or columns.
  ```javascript
  ui.divH([ui.span('Item 1'), ui.span('Item 2'), ui.span('Item 3')]); // One row
  ui.divV([ui.span('Item 1'), ui.span('Item 2'), ui.span('Item 3')]); // One column
- ui.divV([ui.span('Item'), ui.divH([ui.span('Item 2'), ui.span('Item 3')])]); // Сombined row and column
+ ui.divV([ui.span('Item'), ui.divH([ui.span('Item 2'), ui.span('Item 3')])]); // Combined row and column
  ```
 
 ## Splitters
@@ -426,7 +426,7 @@ view.lineChart();
 
 ### Markup viewer
 
-Use this viewer to host any text, arbitrary HTML content, or markdown-formatted text. In most casees, the viewer will
+Use this viewer to host any text, arbitrary HTML content, or markdown-formatted text. In most cases, the viewer will
 auto-detect content type. Use the "mode" property to explicitly specify it.
 
 ```javascript
@@ -623,13 +623,13 @@ There are three types of dialogs:
 * modal dialog
 * fullscreen modal dialog
 
-For each dialog, you can set the position by viewport by x and y-asix.
+For each dialog, you can set the position by viewport by the X and Y axes.
 
 ## Standard dialog
 
 ```javascript
-// Standart dialog
-ui.dialog('Standart dialog')
+// Standard dialog
+ui.dialog('Standard dialog')
   .add(ui.span(['Some content...']))
   .onOK(() => {})
   .addContextAction('My Action', () => {}))
@@ -801,7 +801,7 @@ Input field allows users to enter and edit text or numeric values in one line. T
 * **String input** allows to enter or edit text value.
 * **Search input** is a string input with predefined parameters. It has the text "Search" as a placeholder, search-icon
   to the left side and hover-clear-icon to the right side of the input field. Also pressing Esc or the clear-icon
-  cleares the input.
+  clears the input.
 
 ```javascript
 ui.intInput('Age', 30);
@@ -825,7 +825,7 @@ ui.stringInput('', '', null, {icon: myIcon, clearIcon: true});
 The text area is an input control that allows the user to enter several lines of text.
 
 ```javascript
-ui.textInput('Lable','Text area text data');
+ui.textInput('Label', 'Text area text data');
 ```
 
 ### Dropdown selection
@@ -1027,7 +1027,7 @@ Tab control organize and allow navigation between a different content area or vi
 
 ```javascript
 ui.tabControl({
-      'Fisrt Tab': ui.panel('First panel'),
+      'First Tab': ui.panel('First panel'),
       'Second Tab': () => ui.panel('Second panel')
   })
 ```
