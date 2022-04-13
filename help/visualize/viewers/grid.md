@@ -35,8 +35,8 @@
 
 |                           |                |
 |---------------------------|----------------|
-| Double-click column header | Sort           |
-| Menu\| Current Column\ |Sort      | Sort |
+| Double-click column header | Sort          |
+| Menu\| Current Column\| Sort      | Sort |
 
 ## Editing
 
@@ -47,6 +47,8 @@
 | Ctrl+V       | Paste into cell         |
 | Ctrl+click   | Invert column selection |
 | ≡            | Open column filter      |
+| Enter or the "+" icon at the last row | Add a row (requires `Allow Edit` set to true) |
+| Edit \| Add Rows... | Add a specific number of rows at a specified position |
 
 ## Resizing and reordering
 
