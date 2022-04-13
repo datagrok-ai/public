@@ -28,11 +28,16 @@ export function renderMolecule(
   isMolBlock(molStr) ? molFile = molStr : smiles = molStr;
 
   const moleculeHost = ui.canvas(options.width, options.height);
+
   $(moleculeHost).addClass('chem-canvas');
   const r = window.devicePixelRatio;
+  moleculeHost.width = options.width*r;
+  moleculeHost.height = options.height*r;
+  moleculeHost.style.width = (options.width).toString() + 'px';
+  moleculeHost.style.height = (options.height).toString() + 'px';
 
   // @ts-ignore
-  renderer.render(moleculeHost.getContext('2d')!, 0, 0, options.width / r, options.height / r,
+  renderer.render(moleculeHost.getContext('2d')!, 0, 0, options.width, options.height,
     GridCell.fromValue(molStr));
 
   const moreBtn = ui.iconFA(
