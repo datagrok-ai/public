@@ -309,18 +309,19 @@ export class MolecularLiabilityBrowser {
 
     pi.close();
 
-    // grok.events.onViewRemoved.subscribe((v) => {
-    //   if (v.type === DG.VIEW_TYPE.TABLE_VIEW && (v as DG.TableView).dataFrame.id === this.mlbTable.id)
-    //     this.subs.forEach((s) => s.unsubscribe());
-    // });
+    window.alert('Here we are!');
 
-    // this.setView(); kjbkjbkjbkj iug iuu g
-    // this.allVids = this.mlbTable.col('v id')!;
-    // this.allIds = this.mlbTable.col('gdb id mappings')!;
-    // this.idMapping = {};
-    // for (let i = 0; i < this.allVids.length; i++)
-    //   this.idMapping[this.allVids.get(i)] = this.allIds.get(i).replaceAll(' ', '').split(',');
+    grok.events.onViewRemoved.subscribe((v) => {
+      if (v.type === DG.VIEW_TYPE.TABLE_VIEW && (v as DG.TableView).dataFrame.id === this.mlbTable.id)
+        this.subs.forEach((s) => s.unsubscribe());
+    });
 
+    this.setView();
+    this.allVids = this.mlbTable.col('v id')!;
+    this.allIds = this.mlbTable.col('gdb id mappings')!;
+    this.idMapping = {};
+    for (let i = 0; i < this.allVids.length; i++)
+      this.idMapping[this.allVids.get(i)] = this.allIds.get(i).replaceAll(' ', '').split(',');
 
     // const path = _package.webRoot + 'src/examples/tree.csv';
     // const dfTree = await grok.data.loadTable(path);
