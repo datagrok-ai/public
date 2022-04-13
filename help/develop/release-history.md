@@ -1,6 +1,24 @@
 <!-- TITLE: Release History -->
 <!-- SUBTITLE: -->
 
+# 2022-04-13 Dev build 0.148.1
+
+## Latest Docker Images
+
+* Datagrok: 
+  *  `docker pull datagrok/datagrok:0.148.1`
+  *  `docker pull datagrok/datagrok:latest`
+  
+* [Docker-Compose](admin/docker-compose.md)
+
+## Addressed Issues
+
+* Temporarily rolled back JsView.name-related changes 
+* Dataframe formula lines are not shown on scatter plot, if scatterplot's table was changed in properties panel #375 
+* MLB return connection to deploy 
+* Wiki: Fix misspellings 
+
+
 # 2022-04-12 Dev build 0.148.0
 
 ## Latest Docker Images
