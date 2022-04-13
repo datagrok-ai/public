@@ -1,5 +1,5 @@
 import {map} from './map';
-import {sortByStringLengthInDescendingOrder} from './package';
+import {sortByStringLengthInDescendingOrder} from './helpers';
 
 export function getAllCodesOfSynthesizer(synthesizer: string): string[] {
   let codes: string[] = [];
@@ -8,10 +8,10 @@ export function getAllCodesOfSynthesizer(synthesizer: string): string[] {
   return codes;
 }
 
-function getListOfPossibleSynthesizersByFirstMatchedCode(sequence: string, overhangCodes: string[]): string[] {
+function getListOfPossibleSynthesizersByFirstMatchedCode(sequence: string, additionalCodes: string[]): string[] {
   const synthesizers: string[] = [];
   Object.keys(map).forEach((synthesizer: string) => {
-    const matched = overhangCodes.find((s) => s == sequence.slice(0, s.length));
+    const matched = additionalCodes.find((s) => s == sequence.slice(0, s.length));
     const cutoffIndex = (matched == null) ? 0 : matched.length;
     const codes = getAllCodesOfSynthesizer(synthesizer);
     if (codes.some((s) => s == sequence.slice(cutoffIndex, cutoffIndex + s.length)))
@@ -20,10 +20,10 @@ function getListOfPossibleSynthesizersByFirstMatchedCode(sequence: string, overh
   return synthesizers;
 }
 
-function possibleTechnologiesByFirstMatchedCode(sequence: string, synthesizer: string, overhangs: string[]): string[] {
+function possibleTechnologiesByFirstMatchedCode(sequence: string, synthesizer: string, additCodes: string[]): string[] {
   const technologies: string[] = [];
   Object.keys(map[synthesizer]).forEach((technology: string) => {
-    const matched = overhangs.find((s) => s == sequence.slice(0, s.length));
+    const matched = additCodes.find((s) => s == sequence.slice(0, s.length));
     const cutoffIndex = (matched == null) ? 0 : matched.length;
     const codes = Object.keys(map[synthesizer][technology]);
     if (codes.some((s) => s == sequence.slice(cutoffIndex, cutoffIndex + s.length)))
@@ -32,14 +32,14 @@ function possibleTechnologiesByFirstMatchedCode(sequence: string, synthesizer: s
   return technologies;
 }
 
-export function isValidSequence(sequence: string, overhangCodes: string[]): {
+export function isValidSequence(sequence: string, additionalCodes: string[]): {
   indexOfFirstNotValidCharacter: number,
   expectedSynthesizer: string | null,
   expectedTechnology: string | null
 } {
-  const sortedOverhangCodes = sortByStringLengthInDescendingOrder(overhangCodes);
+  const sortedAdditionalCodes = sortByStringLengthInDescendingOrder(additionalCodes);
 
-  const possibleSynthesizers = getListOfPossibleSynthesizersByFirstMatchedCode(sequence, sortedOverhangCodes);
+  const possibleSynthesizers = getListOfPossibleSynthesizersByFirstMatchedCode(sequence, sortedAdditionalCodes);
   if (possibleSynthesizers.length == 0)
     return {indexOfFirstNotValidCharacter: 0, expectedSynthesizer: null, expectedTechnology: null};
 
@@ -50,7 +50,7 @@ export function isValidSequence(sequence: string, overhangCodes: string[]): {
 
   possibleSynthesizers.forEach((synthesizer, synthesizerIndex) => {
     const codes = sortByStringLengthInDescendingOrder(getAllCodesOfSynthesizer(synthesizer)
-      .concat(sortedOverhangCodes));
+      .concat(sortedAdditionalCodes));
     while (outputIndices[synthesizerIndex] < sequence.length) {
       const matchedCode = codes
         .find((c) => c == sequence.slice(outputIndices[synthesizerIndex], outputIndices[synthesizerIndex] + c.length));
@@ -88,7 +88,7 @@ export function isValidSequence(sequence: string, overhangCodes: string[]): {
   }
 
   const possibleTechnologies = possibleTechnologiesByFirstMatchedCode(
-    sequence, expectedSynthesizer, sortedOverhangCodes);
+    sequence, expectedSynthesizer, sortedAdditionalCodes);
   if (possibleTechnologies.length == 0)
     return {indexOfFirstNotValidCharacter: 0, expectedSynthesizer: null, expectedTechnology: null};
 
@@ -96,7 +96,7 @@ export function isValidSequence(sequence: string, overhangCodes: string[]): {
 
   possibleTechnologies.forEach((technology: string, technologyIndex: number) => {
     const codes = sortByStringLengthInDescendingOrder(
-      Object.keys(map[expectedSynthesizer][technology]).concat(sortedOverhangCodes));
+      Object.keys(map[expectedSynthesizer][technology]).concat(sortedAdditionalCodes));
     while (outputIndices[technologyIndex] < sequence.length) {
       const matchedCode = codes
         .find((c) => c == sequence.slice(outputIndices[technologyIndex], outputIndices[technologyIndex] + c.length));
