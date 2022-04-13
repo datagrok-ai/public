@@ -1,3 +1,2 @@
 .env.local
-connections/*
 .vscode/*

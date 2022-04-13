@@ -1,0 +1,17 @@
+{
+    "name": "MLB",
+    "#type": "DataConnection",
+    "parameters": {
+        "server" : "",
+        "db": ""
+    },
+    "credentials": {
+        "paraneters": {
+            "login": "",
+            "password": ""
+        }
+    },
+    "dataSource": "PostgreSQL",
+    "description": "Molecular Liability Browser data",
+    "tags": ["demo"]
+}
