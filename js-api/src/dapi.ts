@@ -18,7 +18,7 @@ import {
   Package,
   UserSession,
   Property,
-  FileInfo, HistoryEntry, ProjectOpenOptions
+  FileInfo, HistoryEntry, ProjectOpenOptions, Func
 } from "./entities";
 import {ViewLayout} from "./views/view";
 import {toDart, toJs} from "./wrappers";
