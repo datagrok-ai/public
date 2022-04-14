@@ -3,6 +3,8 @@ import * as grok from 'datagrok-api/grok';
 import * as ui from 'datagrok-api/ui';
 import * as DG from 'datagrok-api/dg';
 
+import * as C from './utils/constants';
+
 import {
   AlignedSequenceCellRenderer,
   AlignedSequenceDifferenceCellRenderer,
@@ -286,7 +288,7 @@ function getOrDefineWIP(
   view ??= (grok.shell.v as DG.TableView);
   grid ??= view.grid;
   dataframe ??= grok.shell.t;
-  column ??= (dataframe.columns as DG.ColumnList).bySemType('alignedSequence');
+  column ??= (dataframe.columns as DG.ColumnList).bySemType(C.SEM_TYPES.ALIGNED_SEQUENCE);
   if (column === null)
     throw new Error('Table does not contain aligned sequence columns');
 

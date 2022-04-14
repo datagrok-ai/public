@@ -2,17 +2,18 @@ import * as ui from 'datagrok-api/ui';
 import * as DG from 'datagrok-api/dg';
 
 export function substTableWidget(table: DG.DataFrame): DG.Widget {
-  if (!table?.temp['isReal'])
+  const substTable = table?.temp['substTable'];
+  if (!substTable)
     return new DG.Widget(ui.label('No substitution'));
 
-  const dfRowCount = table.rowCount;
+  const dfRowCount = substTable.rowCount;
   const aminoInputFrom = ui.stringInput('from', '');
   const aminoInputTo = ui.stringInput('to', '');
   const fromToMap: {[key: string]: DG.BitSet} = {};
   let aminoFrom = '';
   let aminoTo = '';
-  const initialCol: DG.Column = table.columns.byName('Initial');
-  const substitutedCol: DG.Column = table.columns.byName('Substituted');
+  const initialCol: DG.Column = substTable.columns.byName('Initial');
+  const substitutedCol: DG.Column = substTable.columns.byName('Substituted');
 
   for (let i = 0; i < initialCol.length; ++i) {
     const sequenceDifference = `${initialCol.get(i)}#${substitutedCol.get(i)}`;
@@ -21,7 +22,7 @@ export function substTableWidget(table: DG.DataFrame): DG.Widget {
 
   initialCol.semType = 'alignedSequenceDifference';
   initialCol.name = 'Substitution';
-  table.columns.remove('Substituted');
+  substTable.columns.remove('Substituted');
   // const substCol = table.getCol('Substitution');
 
   for (let i = 0; i < dfRowCount; ++i) {
@@ -46,18 +47,19 @@ export function substTableWidget(table: DG.DataFrame): DG.Widget {
     aminoFrom = aminoInputFrom.value;
     const fromKey = aminoFrom + '#' + aminoTo;
     if (fromKey in fromToMap)
-      table.selection.copyFrom(fromToMap[fromKey]);
+      substTable.selection.copyFrom(fromToMap[fromKey]);
   });
 
   aminoInputTo.onInput(() => {
     aminoTo = aminoInputTo.value;
     const toKey = aminoFrom + '#' + aminoTo;
     if (toKey in fromToMap)
-      table.selection.copyFrom(fromToMap[toKey]);
+      substTable.selection.copyFrom(fromToMap[toKey]);
   });
 
-  const grid = table.plot.grid();
+  const grid = substTable.plot.grid();
   grid.props.allowEdit = false;
   grid.root.style.width = 'auto';
+  grid.root.style.height = '150px';
   return new DG.Widget(ui.divV([aminoInputFrom.root, aminoInputTo.root, grid.root]));
 }

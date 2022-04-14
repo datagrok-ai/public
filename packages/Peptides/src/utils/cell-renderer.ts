@@ -1,7 +1,7 @@
 import {ChemPalette} from './chem-palette';
 import * as DG from 'datagrok-api/dg';
 
-import * as C from '../utils/constants';
+import * as C from './constants';
 
 /**
  * A function to expand column size based on its contents.
@@ -158,7 +158,7 @@ export class AminoAcidsCellRenderer extends DG.GridCellRenderer {
      * @memberof AminoAcidsCellRenderer
      */
   get cellType() {
-    return 'aminoAcids';
+    return C.SEM_TYPES.AMINO_ACIDS;
   }
 
   /**
@@ -247,7 +247,7 @@ export class AlignedSequenceCellRenderer extends DG.GridCellRenderer {
    * @memberof AlignedSequenceCellRenderer
    */
   get cellType() {
-    return 'alignedSequence';
+    return C.SEM_TYPES.ALIGNED_SEQUENCE;
   }
 
   /**

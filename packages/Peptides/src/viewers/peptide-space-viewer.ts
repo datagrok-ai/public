@@ -54,7 +54,7 @@ export class PeptideSpaceViewer extends DG.JsViewer {
         await computeWeights(this.dataFrame!, this.method, this.measure, this.cyclesCount);
 
         const viewerOptions = {
-          x: '~X', y: '~Y', color: C.COLUMNS_NAMES.ACTIVITY ?? '~MW', size: '~MW', title: 'Peptide Space',
+          x: '~X', y: '~Y', color: C.COLUMNS_NAMES.ACTIVITY_SCALED ?? '~MW', size: '~MW', title: 'Peptide Space',
           showYSelector: false, showXSelector: false, showColorSelector: false, showSizeSelector: false,
         };
         const viewerRoot = this.dataFrame!.plot.scatter(viewerOptions).root;
@@ -101,13 +101,15 @@ export async function computeWeights(
       const col = table.col(axis);
       const newCol = edf.getCol(axis);
 
-      if (col != null) {
-        for (let i = 0; i < newCol.length; ++i) {
-          const v = newCol.get(i);
-          table.set(axis, i, v);
-        }
-      } else
-        table.columns.insert(newCol);
+      // if (col != null) {
+      //   for (let i = 0; i < newCol.length; ++i) {
+      //     const v = newCol.get(i);
+      //     table.set(axis, i, v);
+      //   }
+      // } else
+      //   table.columns.insert(newCol);
+      const columnList = table.columns as DG.ColumnList;
+      col !== null ? columnList.replace(col, newCol) : columnList.insert(newCol);
     }
   } catch (error) {
     grok.shell.error('Could not compute embeddings. See console for details.');

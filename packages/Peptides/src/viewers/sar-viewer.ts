@@ -107,18 +107,19 @@ export class SARViewer extends DG.JsViewer {
       this.viewerGrid = data;
       this.multipleFilter.addResource('grid', this.viewerGrid);
       this.multipleFilter.onSARGridChanged();
-      this.viewerGrid.dataFrame!.onCurrentCellChanged.subscribe((_) => {
-        syncGridsFunc(false, this.viewerGrid!, this.viewerVGrid!);
-        grok.shell.info(this.viewerGrid?.dataFrame?.currentCol.name);
-        this.sendSubstitutionTable();
-      });
+      grok.shell.info(this.viewerGrid?.dataFrame?.currentCol?.name);
+      // this.viewerGrid.dataFrame!.onCurrentCellChanged.subscribe((_) => {
+      //   syncGridsFunc(false, this.viewerGrid!, this.viewerVGrid!);
+      //   grok.shell.warning(this.viewerGrid?.dataFrame?.currentCol?.name!);
+      //   this.sendSubstitutionTable();
+      // });
       this.render(false);
     }));
     this.subs.push(this.controller.onSARVGridChanged.subscribe((data) => {
       this.viewerVGrid = data;
-      this.viewerVGrid.dataFrame!.onCurrentCellChanged.subscribe((_) => {
-        syncGridsFunc(true, this.viewerGrid!, this.viewerVGrid!);
-      });
+      // this.viewerVGrid.dataFrame!.onCurrentCellChanged.subscribe((_) => {
+      //   syncGridsFunc(true, this.viewerGrid!, this.viewerVGrid!);
+      // });
     }));
     this.subs.push(this.controller.onGroupMappingChanged.subscribe((data) => {
       this.groupMapping = data;
@@ -178,40 +179,6 @@ export class SARViewer extends DG.JsViewer {
       return;
 
     await this.render();
-  }
-
-  sendSubstitutionTable() {
-    grok.shell.info(this.viewerGrid?.dataFrame?.currentCol.name);
-    const df = this.viewerGrid!.dataFrame!;
-    if (df.currentCol?.name !== C.COLUMNS_NAMES.AMINO_ACID_RESIDUE) {
-      const col: DG.Column = this.dataFrame!.columns.bySemType(C.SEM_TYPES.ALIGNED_SEQUENCE);
-      const aar = df.get(C.COLUMNS_NAMES.AMINO_ACID_RESIDUE, df.currentRowIdx);
-      const pos = parseInt(df.currentCol.name);
-      const currentCase = this.controller!.substTooltipData[aar][pos];
-      const tempDfLength = currentCase.length;
-      const initCol = DG.Column.string('Initial', tempDfLength);
-      const subsCol = DG.Column.string('Substituted', tempDfLength);
-
-      const tempDf = DG.DataFrame.fromColumns([
-        initCol,
-        subsCol,
-        DG.Column.float('Difference', tempDfLength),
-      ]);
-
-      for (let i = 0; i < tempDfLength; i++) {
-        const row = currentCase[i];
-        tempDf.rows.setValues(i, [col.get(row[0]), col.get(row[1]), row[2]]);
-      }
-
-      tempDf.temp['isReal'] = true;
-
-      initCol.semType = C.SEM_TYPES.ALIGNED_SEQUENCE;
-      initCol.temp['isAnalysisApplicable'] = false;
-      subsCol.semType = C.SEM_TYPES.ALIGNED_SEQUENCE;
-      subsCol.temp['isAnalysisApplicable'] = false;
-
-      grok.shell.o = DG.SemanticValue.fromValueType(tempDf, 'Substitution');
-    }
   }
 
   /**
@@ -286,49 +253,5 @@ export class SARViewerVertical extends DG.JsViewer {
       this.root.appendChild(ui.divV([this._titleHost, this.viewerVGrid.root]));
     }
     this.viewerVGrid?.invalidate();
-  }
-}
-
-//TODO: refactor, move
-function syncGridsFunc(sourceVertical: boolean, viewerGrid: DG.Grid, viewerVGrid: DG.Grid) {
-  if (viewerGrid && viewerGrid.dataFrame && viewerVGrid && viewerVGrid.dataFrame) {
-    if (sourceVertical) {
-      const vGridDf = viewerVGrid.dataFrame;
-      const currentRowIdx = vGridDf.currentRowIdx;
-      const currentColName = vGridDf.currentCol?.name;
-      if (currentColName !== 'Mean difference')
-        return;
-
-      const otherColName: string = vGridDf.get('Pos', currentRowIdx);
-      const otherRowName: string = vGridDf.get(C.COLUMNS_NAMES.AMINO_ACID_RESIDUE, currentRowIdx);
-      let otherRowIndex = -1;
-      const rows = viewerGrid.dataFrame.rowCount;
-      for (let i = 0; i < rows; i++) {
-        if (viewerGrid.dataFrame.get(C.COLUMNS_NAMES.AMINO_ACID_RESIDUE, i) === otherRowName) {
-          otherRowIndex = i;
-          break;
-        }
-      }
-      viewerGrid.dataFrame.currentCell = viewerGrid.dataFrame.cell(otherRowIndex, otherColName);
-    } else {
-      const otherPos: string = viewerGrid.dataFrame.currentCol?.name;
-      if (typeof otherPos === 'undefined' && otherPos !== C.COLUMNS_NAMES.AMINO_ACID_RESIDUE)
-        return;
-
-      const otherAAR: string =
-        viewerGrid.dataFrame.get(C.COLUMNS_NAMES.AMINO_ACID_RESIDUE, viewerGrid.dataFrame.currentRowIdx);
-      let otherRowIndex = -1;
-      for (let i = 0; i < viewerVGrid.dataFrame.rowCount; i++) {
-        if (
-          viewerVGrid.dataFrame.get(C.COLUMNS_NAMES.AMINO_ACID_RESIDUE, i) === otherAAR &&
-          viewerVGrid.dataFrame.get('Pos', i) === otherPos
-        ) {
-          otherRowIndex = i;
-          break;
-        }
-      }
-      if (otherRowIndex !== -1)
-        viewerVGrid.dataFrame.currentCell = viewerVGrid.dataFrame.cell(otherRowIndex, 'Diff');
-    }
   }
 }
