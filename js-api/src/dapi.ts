@@ -562,12 +562,14 @@ export class PermissionsDataSource {
    * */
   // { [key:string]:number; }
   get(e: Entity): Promise<Map<string, Group[]>> {
-    return new Promise((resolve, reject) =>
-      api.grok_Dapi_Get_Permissions(e.dart, (data: any) => {
-        data.view = toJs(data.view);
-        data.edit = toJs(data.edit);
-        resolve(data);
-      }, (e: any) => reject(e)));
+    let data = api.grok_Dapi_Get_Permissions(e.dart);
+    data.view = toJs(data.view);
+    data.edit = toJs(data.edit);
+    return data;
+  }
+
+  check(e: Entity, permission: 'Edit' | 'View' | 'Share' | 'Delete' ): Promise<boolean> {
+    return api.grok_Dapi_Check_Permissions(e.dart, permission);
   }
 
   /** Grants permission on entity to the group
@@ -577,8 +579,7 @@ export class PermissionsDataSource {
    * @returns {Promise}
    * */
   grant(e: Entity, g: Group, edit: boolean): Promise<any> {
-    return new Promise((resolve, reject) =>
-      api.grok_Dapi_Set_Permission(e.dart, g.dart, edit, (data: any) => resolve(data), (e: any) => reject(e)));
+    return api.grok_Dapi_Set_Permission(e.dart, g.dart, edit);
   }
 
   /** Revokes permission on entity from the group
@@ -587,8 +588,7 @@ export class PermissionsDataSource {
    * @returns {Promise}
    * */
   revoke(g: Group, e: Entity): Promise<any> {
-    return new Promise((resolve, reject) =>
-      api.grok_Dapi_Delete_Permission(e.dart, g.dart, (data: any) => resolve(data), (e: any) => reject(e)));
+    return api.grok_Dapi_Delete_Permission(e.dart, g.dart);
   }
 }
 
