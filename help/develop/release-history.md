@@ -1,6 +1,29 @@
 <!-- TITLE: Release History -->
 <!-- SUBTITLE: -->
 
+# 2022-04-14 Dev build 0.148.2
+
+## Latest Docker Images
+
+* Datagrok: 
+  *  `docker pull datagrok/datagrok:0.148.2`
+  *  `docker pull datagrok/datagrok:latest`
+  
+* [Docker-Compose](admin/docker-compose.md)
+
+## Addressed Issues
+
+* Dialogs: add missing wiki links 
+* Oligo Batch Calculator: convert modifications from overhang to additional (WIP)
+* Chem: high definition rendering 
+* (Bug) Saving Connection doesn't save credentials 
+* APP_DATA variable in package deploy 
+* Chem: small fixes 
+* Chem: widget test annotation 
+* (Bug) NPM repositories: package manager opens with an exception  (WIP)
+* Add missing import statement 
+
+
 # 2022-04-13 Dev build 0.148.1
 
 ## Latest Docker Images
