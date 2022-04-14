@@ -23,6 +23,10 @@
       "error",
       120
     ],
+    "space-infix-ops": [
+      "error", 
+      {"int32Hint": true}
+    ],
     "require-jsdoc": "off",
     "spaced-comment": "off",
     "linebreak-style": 0,
