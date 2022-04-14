@@ -7,7 +7,6 @@ import {convertToRDKit} from '../analysis/r-group-analysis';
 import {drawRdKitMoleculeToOffscreenCanvas} from '../utils/chem-common-rdkit';
 import {RDModule, RDMol} from '../rdkit-api';
 import {isMolBlock} from '../utils/chem-utils';
-import {GridCellStyle} from 'datagrok-api/dg';
 
 interface IMolInfo {
   mol: RDMol | null; // null when molString is invalid?

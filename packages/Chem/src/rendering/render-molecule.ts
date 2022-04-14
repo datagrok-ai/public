@@ -31,8 +31,8 @@ export function renderMolecule(
 
   $(moleculeHost).addClass('chem-canvas');
   const r = window.devicePixelRatio;
-  moleculeHost.width = options.width*r;
-  moleculeHost.height = options.height*r;
+  moleculeHost.width = options.width * r;
+  moleculeHost.height = options.height * r;
   moleculeHost.style.width = (options.width).toString() + 'px';
   moleculeHost.style.height = (options.height).toString() + 'px';
 
