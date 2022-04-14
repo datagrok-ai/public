@@ -7,6 +7,7 @@ import * as logojs from 'logojs-react';
 // import {splitAlignedPeptides} from '../utils/split-aligned';
 import {ChemPalette} from '../utils/chem-palette';
 import {PeptidesController} from '../peptides';
+import * as C from '../utils/constants';
 
 /**
  * Logo viewer.
@@ -34,7 +35,7 @@ export class Logo extends DG.JsViewer {
   constructor() {
     super();
     this.initialized = false;
-    this.colSemType = this.string('colSemType', 'alignedSequence');
+    this.colSemType = this.string('colSemType', C.SEM_TYPES.ALIGNED_SEQUENCE);
 
     this.splitted = null;
     this.ppm = [];

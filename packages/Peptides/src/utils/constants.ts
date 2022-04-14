@@ -19,3 +19,7 @@ export enum SEM_TYPES {
 export const STATS = 'stats';
 
 export const EMBEDDING_STATUS = 'embeddingStatus';
+
+export enum FLAGS {
+  CELL_CHANGING = 'isCellChanging',
+}

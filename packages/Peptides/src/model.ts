@@ -1,4 +1,5 @@
 import * as ui from 'datagrok-api/ui';
+import * as grok from 'datagrok-api/grok';
 import * as DG from 'datagrok-api/dg';
 
 import {Subject, Observable} from 'rxjs';
@@ -10,6 +11,7 @@ import {fdrcorrection} from '@datagrok-libraries/statistics/src/multiple-tests';
 import {ChemPalette} from './utils/chem-palette';
 import {MonomerLibrary} from './monomer-library';
 import * as C from './utils/constants';
+import * as type from './utils/types';
 
 
 export class PeptidesModel {
@@ -54,7 +56,7 @@ export class PeptidesModel {
 
   get onSubstTableChanged(): Observable<DG.DataFrame> { return this._substitutionTableSubject.asObservable(); }
 
-  get substTooltipData(): { [aar: string]: number[][][]; } { return this._substTableTooltipData!; }
+  get substTooltipData(): type.substTooltip { return this._substTableTooltipData!; }
 
   async updateData(
     activityScaling?: string, sourceGrid?: DG.Grid, twoColorMode?: boolean, initialBitset?: DG.BitSet,
@@ -181,6 +183,8 @@ export class PeptidesModel {
 
     // show all the statistics in a tooltip over cell
     setTooltipFunc(renderColNames, statsDf, peptidesCount, this._grouping, sarGrid, sarVGrid, this._dataFrame);
+
+    setInteractionCallback(sarGrid, sarVGrid, this.dataFrame, this.substTooltipData);
 
     postProcessGrids(this._sourceGrid, invalidIndexes, this._grouping, sarGrid, sarVGrid);
 
@@ -616,9 +620,6 @@ function setCellRendererFunc(
       return;
     }
 
-    if (tableColName === C.COLUMNS_NAMES.MEAN_DIFFERENCE)
-      console.log('md col');
-
     if (cell.isTableCell && tableColName && tableRowIndex !== null && renderColNames.indexOf(tableColName) !== -1) {
       const gridTable = cell.grid.table;
       const currentPosition = tableColName !== C.COLUMNS_NAMES.MEAN_DIFFERENCE ?
@@ -729,6 +730,24 @@ function setTooltipFunc(
   sarVGrid.onCellTooltip(onCellTooltipFunc);
 }
 
+function setInteractionCallback(
+  sarGrid: DG.Grid, sarVGrid: DG.Grid, sourceDf: DG.DataFrame, substTooltipData: type.substTooltip,
+) {
+  const sarDf = sarGrid.dataFrame;
+  const sarVDf = sarVGrid.dataFrame;
+  sarDf.onCurrentCellChanged.subscribe((_) => {
+    if (!sarDf.currentCol)
+      return;
+    syncGridsFunc(false, sarDf, sarVDf);
+    sendSubstitutionTable(sarDf, sourceDf, substTooltipData);
+  });
+  sarVDf.onCurrentCellChanged.subscribe((_) => {
+    if (!sarVDf.currentCol)
+      return;
+    syncGridsFunc(true, sarDf, sarVDf);
+  });
+}
+
 function postProcessGrids(
   sourceGrid: DG.Grid, invalidIndexes: number[], grouping: boolean, sarGrid: DG.Grid, sarVGrid: DG.Grid,
 ) {
@@ -818,4 +837,90 @@ export function split(peptideColumn: DG.Column, filter: boolean = true): string[
   }
 
   return splitPeptidesArray;
+}
+
+function sendSubstitutionTable(sarDf: DG.DataFrame, sourceDf: DG.DataFrame, substTooltipData: type.substTooltip) {
+  const currentColName = sarDf.currentCol.name;
+  if (currentColName !== C.COLUMNS_NAMES.AMINO_ACID_RESIDUE) {
+    const col: DG.Column = sourceDf.columns.bySemType(C.SEM_TYPES.ALIGNED_SEQUENCE);
+    const aar = sarDf.get(C.COLUMNS_NAMES.AMINO_ACID_RESIDUE, sarDf.currentRowIdx);
+    const pos = parseInt(currentColName);
+    const currentCase = substTooltipData[aar][pos];
+    const tempDfLength = currentCase.length;
+    const initCol = DG.Column.string('Initial', tempDfLength);
+    const subsCol = DG.Column.string('Substituted', tempDfLength);
+
+    const tempDf = DG.DataFrame.fromColumns([
+      initCol,
+      subsCol,
+      DG.Column.float('Difference', tempDfLength),
+    ]);
+
+    for (let i = 0; i < tempDfLength; i++) {
+      const row = currentCase[i];
+      tempDf.rows.setValues(i, [col.get(row[0]), col.get(row[1]), row[2]]);
+    }
+
+    // tempDf.temp['isReal'] = true;
+
+    initCol.semType = C.SEM_TYPES.ALIGNED_SEQUENCE;
+    initCol.temp['isAnalysisApplicable'] = false;
+    subsCol.semType = C.SEM_TYPES.ALIGNED_SEQUENCE;
+    subsCol.temp['isAnalysisApplicable'] = false;
+
+    // grok.shell.o = DG.SemanticValue.fromValueType(tempDf, 'Substitution');
+    sourceDf.temp['substTable'] = tempDf;
+  }
+}
+
+//TODO: refactor, move
+function syncGridsFunc(sourceVertical: boolean, sarDf: DG.DataFrame, sarVDf: DG.DataFrame) {
+  let otherColName: string;
+  let otherRowIndex: number;
+  const otherDf = sourceVertical ? sarDf : sarVDf;
+
+  if (otherDf.temp[C.FLAGS.CELL_CHANGING])
+    return;
+
+  //on vertical SAR viewer click
+  if (sourceVertical) {
+    const currentRowIdx = sarVDf.currentRowIdx;
+    const currentColName = sarVDf.currentCol.name;
+    if (currentColName !== C.COLUMNS_NAMES.MEAN_DIFFERENCE)
+      return;
+
+    otherColName = sarVDf.get(C.COLUMNS_NAMES.POSITION, currentRowIdx);
+    const otherRowName: string = sarVDf.get(C.COLUMNS_NAMES.AMINO_ACID_RESIDUE, currentRowIdx);
+    otherRowIndex = -1;
+    const rows = sarDf.rowCount;
+    for (let i = 0; i < rows; i++) {
+      if (sarDf.get(C.COLUMNS_NAMES.AMINO_ACID_RESIDUE, i) === otherRowName) {
+        otherRowIndex = i;
+        break;
+      }
+    }
+  //on SAR viewer click
+  } else {
+    otherColName = C.COLUMNS_NAMES.MEAN_DIFFERENCE;
+    const otherPos: string = sarDf.currentCol.name;
+    if (otherPos === C.COLUMNS_NAMES.AMINO_ACID_RESIDUE)
+      return;
+
+    const otherAAR: string =
+      sarDf.get(C.COLUMNS_NAMES.AMINO_ACID_RESIDUE, sarDf.currentRowIdx);
+    otherRowIndex = -1;
+    for (let i = 0; i < sarVDf.rowCount; i++) {
+      if (
+        sarVDf.get(C.COLUMNS_NAMES.AMINO_ACID_RESIDUE, i) === otherAAR &&
+        sarVDf.get(C.COLUMNS_NAMES.POSITION, i) === otherPos
+      ) {
+        otherRowIndex = i;
+        break;
+      }
+    }
+  }
+  otherDf.temp[C.FLAGS.CELL_CHANGING] = true;
+  if (otherRowIndex !== -1)
+    otherDf.currentCell = otherDf.cell(otherRowIndex, otherColName);
+  otherDf.temp[C.FLAGS.CELL_CHANGING] = false;
 }
