@@ -19,5 +19,11 @@
     "release-#{PACKAGE_NAME_LOWERCASE}": "webpack && grok publish --release",
     "build-#{PACKAGE_NAME_LOWERCASE}": "webpack",
     "build": "webpack"
-  }
+  },
+  "canEdit": [
+    "Developers"
+  ],
+  "canView": [
+    "All users"
+  ]
 }
