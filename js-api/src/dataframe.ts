@@ -1515,7 +1515,7 @@ export class BitSet {
   }
 
   /** Whether any bits are set to false. */
-  get anyTrue(): boolean { return this.trueCount > 0; }
+  get anyTrue(): boolean { return this.falseCount > 0; }
 
   /** Whether any bits are set to true. */
   get anyFalse(): boolean { return this.trueCount > 0; }
@@ -1615,7 +1615,7 @@ export class BitSet {
   /** Sets all bits by setting i-th bit to the results of f(i)
    * @param {Function} f
    * @returns {BitSet} */
-  init(f: IndexPredicate): BitSet {
+  init(f: IndexPredicate, notify: boolean = true): BitSet {
     let buf = api.grok_BitSet_Get_Buffer(this.dart);
     let length = this.length;
 
@@ -1629,7 +1629,8 @@ export class BitSet {
     }
 
     api.grok_BitSet_Set_Buffer(this.dart, buf);
-    this.fireChanged();
+    if (notify)
+      this.fireChanged();
     return this;
   }
 
