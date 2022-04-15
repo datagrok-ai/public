@@ -1514,11 +1514,11 @@ export class BitSet {
     return api.grok_BitSet_Get_FalseCount(this.dart);
   }
 
-  /** Whether any bits are set to false. */
-  get anyTrue(): boolean { return this.falseCount > 0; }
-
   /** Whether any bits are set to true. */
-  get anyFalse(): boolean { return this.trueCount > 0; }
+  get anyTrue(): boolean { return this.trueCount > 0; }
+
+  /** Whether any bits are set to false. */
+  get anyFalse(): boolean { return this.falseCount > 0; }
 
   /** Clones a bitset
    *  @returns {BitSet} */
