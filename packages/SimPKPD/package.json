@@ -1,5 +1,6 @@
 {
 	"name": "@datagrok/simpkpd",
+	"beta": true,
 	"friendlyName": "SimPKPD",
 	"version": "0.0.2",
 	"description": "",
