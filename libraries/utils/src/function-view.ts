@@ -5,13 +5,13 @@ import * as ui from 'datagrok-api/ui';
 import * as DG from 'datagrok-api/dg';
 
 export class FunctionView extends DG.ViewBase {
-  constructor(func: DG.Func) {
+  constructor(func: DG.Func, call?: DG.FuncCall) {
     super();
     this.func = func;
     this.context = DG.Context.cloneDefault();
     this.controlsRoot.style.maxWidth = '370px';
     this.box = true;
-    this._setFunction(undefined).then((r) => {});
+    this._setFunction(call).then((r) => {});
   }
 
   private _type: string = 'function';

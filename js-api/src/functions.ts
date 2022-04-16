@@ -1,7 +1,7 @@
 import {paramsToJs, toDart, toJs} from "./wrappers";
 import {Type} from "./const";
 import {Entity, Func, Property} from "./entities";
-import {DartWidget, ProgressIndicator,} from "./widgets";
+import {DartWidget, InputBase, ProgressIndicator,} from "./widgets";
 import {MapProxy, _toIterable} from "./utils";
 import {Observable} from "rxjs";
 import {__obs, StreamSubscription} from "./events";
@@ -227,6 +227,9 @@ export class FuncCall {
   get func(): Func { return toJs(api.grok_FuncCall_Get_Func(this.dart)); }
   set func(func: Func) { api.grok_FuncCall_Get_Func(this.dart, func.dart) }
 
+  get parentCall(): FuncCall { return toJs(api.grok_FuncCall_Get_ParentCall(this.dart)); }
+  set parentCall(c: FuncCall) {api.grok_FuncCall_Get_ParentCall(this.dart, c.dart)}
+
   /** Returns function call parameter value
    * @param {string} name
    * @returns {object} */
@@ -259,6 +262,10 @@ export class FuncCall {
 
   getEditor(condensed?: boolean, showTableSelectors?: boolean): Promise<HTMLDivElement> {
     return new Promise((resolve, reject) => api.grok_FuncCall_Get_Editor(this.dart, condensed, showTableSelectors, (out: any) => resolve(out), (err: any) => reject(err)));
+  }
+
+  buildEditor(root: HTMLDivElement, options?: {condensed: boolean}): Promise<InputBase[]> {
+    return api.grok_FuncCall_Build_Editor(this.dart, root, options);
   }
 
   /** Makes a shallow copy. */

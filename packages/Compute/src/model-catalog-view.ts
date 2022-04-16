@@ -3,14 +3,13 @@ import * as ui from 'datagrok-api/ui';
 import * as DG from 'datagrok-api/dg';
 import {ModelHandler} from './model-handler';
 import {onboardModel} from './onboard-model';
-const api = <any>window;
 
 /* eslint-disable */
 
-export class ModelCatalogView extends DG.CardView {
+export class ModelCatalogView extends DG.CustomCardView {
 
   constructor() {
-    super(api.grok_CardView_Create({dataSource: grok.dapi.scripts, permanentFilter: '#model'}));
+    super({dataSource: grok.dapi.functions, permanentFilter: '#model'});
 
     this.meta = new ModelHandler();
     this.name = 'Models';
