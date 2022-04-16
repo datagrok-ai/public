@@ -51,6 +51,11 @@ export class CardView extends View {
 
 }
 
+export class CustomCardView extends CardView {
+  constructor(options: any) {
+    super(api.grok_CardView_Create(options));
+  }
+}
 
 /** Projects view */
 export class ProjectsView extends CardView {

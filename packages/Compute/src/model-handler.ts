@@ -10,12 +10,12 @@ export class ModelHandler extends DG.ObjectHandler {
     return 'Model';
   }
 
-  async getById(id: string): Promise<DG.Script> {
+  async getById(id: string): Promise<DG.Func> {
     console.log('id:', id);
-    return await grok.dapi.scripts.find(id);
+    return await grok.dapi.functions.find(id);
   }
 
-  async refresh(x: DG.Script): Promise<DG.Script> {
+  async refresh(x: DG.Script): Promise<DG.Func> {
     let script = await this.getById(x.id);
     console.log('script:', script);
     return script;
@@ -29,18 +29,18 @@ export class ModelHandler extends DG.ObjectHandler {
 
   // Checks whether this is the handler for [x]
   isApplicable(x: any) {
-    return x instanceof DG.Script && x.hasTag('model');
+    return x instanceof DG.Func && x.hasTag('model');
   }
 
-  renderIcon(x: DG.Script, context: any = null): HTMLElement {
-    return this.getLanguageIcon(x.language);
+  renderIcon(x: DG.Func, context: any = null): HTMLElement {
+    return x instanceof DG.Script ? this.getLanguageIcon(x.language) : ui.iconFA('lightning');
   }
 
-  renderMarkup(x: DG.Script): HTMLElement {
+  renderMarkup(x: DG.Func): HTMLElement {
     return ui.span([this.renderIcon(x), ui.label(x.friendlyName, {style: {marginLeft: '4px'}})], {style: {display: 'inline-flex'}});
   }
 
-  renderProperties(x: DG.Script) {
+  renderProperties(x: DG.Func) {
     const a = ui.accordion();
     a.context = x;
     a.addTitle(ui.span([this.renderIcon(x), ui.label(x.friendlyName), ui.contextActions(x), ui.star(x.id)]));
@@ -54,15 +54,15 @@ export class ModelHandler extends DG.ObjectHandler {
     return a.root;
   }
 
-  renderDetails(x: DG.Script) {
+  renderDetails(x: DG.Func) {
     return ui.divV([ui.render(x.author), ui.render(x.createdOn)], {style: {lineHeight: '150%'}});
   }
 
-  renderTooltip(x: DG.Script) {
+  renderTooltip(x: DG.Func) {
     return ui.divText(`${x.friendlyName}`);
   }
 
-  renderCard(x: DG.Script, context?: any): HTMLElement {
+  renderCard(x: DG.Func, context?: any): HTMLElement {
     let card = ui.bind(x, ui.divV([
       ui.h2(this.renderMarkup(x)),
       ui.divText(x.description, 'ui-description'),
@@ -75,26 +75,13 @@ export class ModelHandler extends DG.ObjectHandler {
     return card;
   }
 
-  static openModel(x: DG.Script, parentCall?: DG.FuncCall) {
-    if (x.inputs.length == 0 && x.outputs.length == 1 && x.outputs[0].propertyType == TYPE.VIEW) {
-      x.apply().then((view) => {
-        console.log(parentCall);
-        view.parentCall = parentCall;
-        view.close();
-        grok.shell.addView(view);
-      }).catch((error) => {
-        grok.shell.error(error);
-      });
-    } else {
-      let view = new FunctionView(x);
-      view.parentCall = parentCall!;
-      grok.shell.addView(view);
-    }
+  static openModel(x: DG.Func, parentCall?: DG.FuncCall) {
+    let fc = x.prepare();
+    if (parentCall != null)
+      fc.parentCall = parentCall;
+    fc.edit();
   }
 
   init() {
-    this.registerParamFunc('Open', async (t: DG.Script) => {
-      ModelHandler.openModel(t);
-    });
   }
 }
