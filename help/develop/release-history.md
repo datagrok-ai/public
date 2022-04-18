@@ -1,6 +1,27 @@
 <!-- TITLE: Release History -->
 <!-- SUBTITLE: -->
 
+# 2022-04-18 Dev build 0.148.4
+
+## Latest Docker Images
+
+* Datagrok: 
+  *  `docker pull datagrok/datagrok:0.148.4`
+  *  `docker pull datagrok/datagrok:latest`
+  
+* [Docker-Compose](admin/docker-compose.md)
+
+## Addressed Issues
+
+* #466 Computation View \- Integration with FunctionView 
+* #466 Computation View \- Added super calls 
+* Oligo Batch Calculator: convert modifications from overhang to additional 
+* Clinical Case: global filters in progress 
+* Chem: similarity/diversity search tests 
+* API tests: moved test manager to DevTools 
+* JS-API: exposed setBufferSilent method 
+
+
 # 2022-04-18 Dev build 0.148.3
 
 ## Latest Docker Images
