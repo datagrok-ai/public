@@ -4,21 +4,18 @@ import * as ui from 'datagrok-api/ui';
 import {MonomerLibrary} from '../monomer-library';
 import {PeptidesController} from '../peptides';
 
+import * as C from '../utils/constants';
+
 export function addViewerToHeader(grid: DG.Grid, barchart: StackedBarChart) {
   if (grid.temp['containsBarchart'])
     return;
 
   function eventAction(mouseMove: MouseEvent) {
     const cell = grid.hitTest(mouseMove.offsetX, mouseMove.offsetY);
-    if (cell !== null && cell?.isColHeader && cell.tableColumn?.semType == 'aminoAcids')
-      barchart.highlight(cell, mouseMove.offsetX, mouseMove.offsetY, mouseMove);
-    else
-      return;
-
-    if (cell?.isColHeader && cell.tableColumn?.semType == 'aminoAcids')
+    if (cell?.isColHeader && cell.tableColumn?.semType == C.SEM_TYPES.AMINO_ACIDS) {
+      barchart.highlight(cell, mouseMove);
       barchart.beginSelection(mouseMove);
-    else
-      barchart.unhighlight();
+    }
   }
 
   // The following events makes the barchart interactive
@@ -32,7 +29,10 @@ export function addViewerToHeader(grid: DG.Grid, barchart: StackedBarChart) {
   grid.setOptions({'colHeaderHeight': 130});
 
   grid.onCellTooltip((cell, x, y) => {
-    if (cell.tableColumn && ['aminoAcids', 'alignedSequence'].includes(cell.tableColumn.semType) ) {
+    if (
+      cell.tableColumn &&
+      [C.SEM_TYPES.AMINO_ACIDS, C.SEM_TYPES.ALIGNED_SEQUENCE].includes(cell.tableColumn.semType as C.SEM_TYPES)
+    ) {
       if (!cell.isColHeader) {
         const monomerLib = cell.cell.dataFrame.temp[MonomerLibrary.id];
         PeptidesController.chemPalette.showTooltip(cell, x, y, monomerLib);
@@ -96,6 +96,7 @@ export class StackedBarChart extends DG.JsViewer {
   private selected: {'colName' : string, 'aaName' : string}[] = [];
   private highlightedMask: DG.BitSet | null = null;
   private aggregatedSelectedTables: {[Key: string]: DG.DataFrame} = {};
+  controller!: PeptidesController;
 
   constructor() {
     super();
@@ -122,11 +123,13 @@ export class StackedBarChart extends DG.JsViewer {
   }
 
   // Stream subscriptions
-  onTableAttached() {
+  async onTableAttached() {
     this.init();
+    this.controller = await PeptidesController.getInstance(this.dataFrame);
     if (this.dataFrame) {
       this.subs.push(DG.debounce(this.dataFrame.selection.onChanged, 50).subscribe((_) => this.computeData()));
       this.subs.push(DG.debounce(this.dataFrame.filter.onChanged, 50).subscribe((_) => this.computeData()));
+      this.subs.push(DG.debounce(this.dataFrame.onValuesChanged, 50).subscribe(() => this.computeData()));
       this.highlightedMask = DG.BitSet.create(this.dataFrame.rowCount);
     }
   }
@@ -141,7 +144,7 @@ export class StackedBarChart extends DG.JsViewer {
     this.aminoColumnIndices = {};
 
     this.dataFrame!.columns.names().forEach((name: string) => {
-      if (this.dataFrame!.getCol(name).semType === 'aminoAcids' &&
+      if (this.dataFrame!.getCol(name).semType === C.SEM_TYPES.AMINO_ACIDS &&
           !this.dataFrame!.getCol(name).categories.includes('COOH') &&
           !this.dataFrame!.getCol(name).categories.includes('NH2')) {
         this.aminoColumnIndices[name] = this.aminoColumnNames.length + 1;
@@ -305,10 +308,12 @@ export class StackedBarChart extends DG.JsViewer {
     });
   }
 
-  highlight(cell: DG.GridCell, offsetX:number, offsetY:number, mouseEvent: MouseEvent) {
+  highlight(cell: DG.GridCell, mouseEvent: MouseEvent) {
     if (!cell.tableColumn?.name || !this.aminoColumnNames.includes(cell.tableColumn.name))
       return;
 
+    const offsetX = mouseEvent.offsetX;
+    const offsetY = mouseEvent.offsetY;
     const colName = cell.tableColumn?.name;
     const innerMargin = 0.02;
     const margin = 0.2;
@@ -327,71 +332,85 @@ export class StackedBarChart extends DG.JsViewer {
     });
 
     this.highlighted = null;
-    barData.forEach((obj) => {
+    const xStart = x + (w - barWidth) / 2;
+    for (const obj of barData) {
       const sBarHeight = h * obj['count'] / this.max;
       const gapSize = sBarHeight * innerMargin;
       const verticalShift = (this.max - sum) / this.max;
       const subBartHeight = sBarHeight - gapSize;
-      const yStart = h * verticalShift + gapSize / 2;
-      const xStart = (w - barWidth) / 2;
+      const yStart = y + h * verticalShift + gapSize / 2;
 
-      if (offsetX >= x + xStart &&
-          offsetY >= y + yStart &&
-          offsetX <= x + xStart + barWidth &&
-          offsetY <= y + yStart + subBartHeight)
+      const isIntersectingX = offsetX >= xStart && offsetX <= xStart + barWidth;
+      const isIntersectingY = offsetY >= yStart && offsetY <= yStart + subBartHeight;
+
+      if (isIntersectingX && isIntersectingY) {
         this.highlighted = {'colName': colName, 'aaName': obj['name']};
-
-
-      sum -= obj['count'];
-    });
-
-    if (!this.highlighted)
-      return;
-
-    if (mouseEvent.type == 'click') {
-      let idx = -1;
-
-      for (let i = 0; i < this.selected.length; ++i) {
-        if (JSON.stringify(this.selected[i]) == JSON.stringify(this.highlighted))
-          idx = i;
+        break;
       }
 
-      if (mouseEvent.shiftKey && idx == -1)
-        this.selected.push(this.highlighted);
-
-      if (mouseEvent.shiftKey && (mouseEvent.ctrlKey || mouseEvent.metaKey) && idx != -1)
-        this.selected.splice(idx, 1);
+      sum -= obj['count'];
     }
+
+    // if (!this.highlighted)
+    //   return;
+
+    // if (mouseEvent.type == 'click') {
+    //   let idx = -1;
+
+    //   for (let i = 0; i < this.selected.length; ++i) {
+    //     if (JSON.stringify(this.selected[i]) == JSON.stringify(this.highlighted))
+    //       idx = i;
+    //   }
+
+    //   if (mouseEvent.shiftKey && idx == -1)
+    //     this.selected.push(this.highlighted);
+
+    //   if (mouseEvent.shiftKey && (mouseEvent.ctrlKey || mouseEvent.metaKey) && idx != -1)
+    //     this.selected.splice(idx, 1);
+    // }
   }
 
   unhighlight() {
     this.highlighted = null;
     this.highlightedMask!.setAll(false);
+    ui.tooltip.hide();
     this.computeData();
   }
 
   beginSelection(event: MouseEvent) {
-    if (!this.dataFrame)
+    if (!this.highlighted)
       return;
-
-    this.highlightedMask!.setAll(false);
-
-    this.dataFrame.selection.handleClick((i: number) => {
-      for (const high of this.selected) {
-        if (high['aaName'] === (this.dataFrame!.getCol(high['colName']).get(i)))
-          return true;
-      }
-      return false;
-    }, event);
-
-    if (this.highlighted) {
-      this.dataFrame.rows.match({[this.highlighted['colName']]: this.highlighted['aaName']}).highlight();
-      this.highlightedMask!.handleClick((i: number) => {
-        if (this.highlighted!['aaName'] === (this.dataFrame!.getCol(this.highlighted!['colName']).get(i)))
-          return true;
-        return false;
-      }, event);
+    const aar = this.highlighted!['aaName'];
+    const position = this.highlighted!['colName'];
+    if (event.type === 'click')
+      this.controller.setSARGridCellAt(aar, position);
+    else {
+      ui.tooltip.showRowGroup(this.dataFrame, (i) => {
+        const currentAAR = this.dataFrame.get(position, i);
+        return currentAAR === aar;
+      }, event.offsetX, event.offsetY);
     }
+    // if (!this.dataFrame)
+    //   return;
+
+    // this.highlightedMask!.setAll(false);
+
+    // this.dataFrame.selection.handleClick((i: number) => {
+    //   for (const high of this.selected) {
+    //     if (high['aaName'] === (this.dataFrame!.getCol(high['colName']).get(i)))
+    //       return true;
+    //   }
+    //   return false;
+    // }, event);
+
+    // if (this.highlighted) {
+    //   this.dataFrame.rows.match({[this.highlighted['colName']]: this.highlighted['aaName']}).highlight();
+    //   this.highlightedMask!.handleClick((i: number) => {
+    //     if (this.highlighted!['aaName'] === (this.dataFrame!.getCol(this.highlighted!['colName']).get(i)))
+    //       return true;
+    //     return false;
+    //   }, event);
+    // }
 
     this.computeData();
   }
