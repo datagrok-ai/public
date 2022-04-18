@@ -96,7 +96,8 @@ More information about Datagrok design and components:
 4. After the Datagrok container starts, the Datagrok server will deploy the database. You can check the status by
    checking running task log in [CloudWatch](https://aws.amazon.com/cloudwatch/)
 
-5. Create `DATAGROK_DNS` and `CVM_DNS` DNS records which will route to the newly created Application Load Balancers.
+5. Create `DATAGROK_DNS` and `CVM_DNS` DNS records which will route to the newly created Internet-facing Application
+   Load Balancers.
 
 ## Configure Datagrok settings
 
