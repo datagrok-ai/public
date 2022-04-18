@@ -1,3 +1,5 @@
+/* eslint-disable */
+
 import * as grok from 'datagrok-api/grok';
 import * as rxjs from 'rxjs';
 import * as ui from 'datagrok-api/ui';
@@ -20,7 +22,7 @@ import {FunctionView} from './function-view';
  * - entering the real, measured (as opposed to predicted) values manually
  * - notifications for changing inputs, completion of computations, etc: {@link onInputChanged}
  * */
-export class ComputationView extends DG.ViewBase {
+export class ComputationView extends FunctionView {
   func: DG.Func;
   call: DG.FuncCall; // what is being currently edited
   lastCall?: DG.FuncCall;
@@ -52,10 +54,10 @@ export class ComputationView extends DG.ViewBase {
   get inputFields(): Map<string, DG.InputBase> { return this._inputFields; }
 
   /** Saves the computation results to the historical results, returns its id. See also {@link loadRun}. */
-  async saveRun(call: FuncCall): Promise<string> { return 'xxx'; }
+  async saveRun(call: FuncCall): Promise<string> { return 'xxx'; /* await grok.dapi.functions.calls.save(call);*/ }
 
   /** Loads the specified historical results. See also {@link saveRun}. */
-  async loadRun(runId: string): Promise<void> { }
+  async loadRun(runId: string): Promise<void> { /* await grok.dapi.functions.calls.find(call.id);*/}
 
   /** The actual computation function. */
   async compute(call: FuncCall): Promise<void> { await call.call(); }

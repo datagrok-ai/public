@@ -918,6 +918,9 @@ export class InputBase {
     return api.grok_InputBase_Get_Caption(this.dart);
   }
 
+  /** Property if associated with */
+  get property(): any { return toJs(api.grok_InputBase_Get_Property(this.dart)); }
+
   /** Value format. */
   get format(): string { return api.grok_InputBase_Get_Format(this.dart); }
   set format(s: string) { api.grok_InputBase_Set_Format(this.dart, s); }
