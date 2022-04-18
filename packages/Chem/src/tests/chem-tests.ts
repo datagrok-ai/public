@@ -5,6 +5,9 @@ import {_testSearchSubstructure,
 import * as DG from 'datagrok-api/dg';
 import * as grok from 'datagrok-api/grok';
 import * as ui from 'datagrok-api/ui';
+import {_testDiversitySearchViewerOpen, _testSimilaritySearchFunctionality,
+  _testSimilaritySearchViewerOpen} from './similarity-diversity-utils';
+
 
 category('chem', () => {
   test('searchSubstructure.sar-small', async () => {
@@ -206,38 +209,19 @@ CN1C(=O)CN=C(c2cc(Cl)ccc12)C3CCCCC3`);
       .show();
   });
 
-  test('testSimilaritySearchViewer', async () => {
-    const table = grok.data.demo.molecules(1000);
-    table.selection.set(0, true);
-    const view = grok.shell.addTableView(table);
-    const similaritySearchviewer = view.addViewer('SimilaritySearchViewer');
-    table.currentRowIdx = 5;
-    table.selection.set(2, true);
-    table.selection.set(6, true);
-    table.selection.set(5, true);
-    table.rows.removeAt(2, 10);
-    similaritySearchviewer.setOptions({
-      distanceMetric: 'Dice',
-      limit: 100,
-      minScore: 0.5,
-      moleculeColumnName: 'smiles',
-    });
+  test('similaritySearchViewerOpen', async () => {
+    await _testSimilaritySearchViewerOpen();
   });
 
-  test('testDiversitySearchViewer', async () => {
-    const table = grok.data.demo.molecules(1000);
-    table.selection.set(0, true);
-    const view = grok.shell.addTableView(table);
-    const similaritySearchviewer = view.addViewer('DiversitySearchViewer');
-    table.currentRowIdx = 5;
-    table.selection.set(2, true);
-    table.selection.set(6, true);
-    table.selection.set(5, true);
-    table.rows.removeAt(2, 100);
-    similaritySearchviewer.setOptions({
-      distanceMetric: 'dice',
-      limit: 100,
-      moleculeColumnName: 'smiles',
-    });
+  test('similaritySearchFunctionality', async () => {
+    await _testSimilaritySearchFunctionality('Tanimoto', 'Morgan');
+    await _testSimilaritySearchFunctionality('Dice', 'Morgan');
+    await _testSimilaritySearchFunctionality('Cosine', 'Morgan');
+    await _testSimilaritySearchFunctionality('Euclidean', 'Morgan');
+    await _testSimilaritySearchFunctionality('Hamming', 'Morgan');
+  });
+
+  test('diversitySearchViewerOpen', async () => {
+    await _testDiversitySearchViewerOpen();
   });
 });
