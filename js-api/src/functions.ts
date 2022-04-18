@@ -261,11 +261,11 @@ export class FuncCall {
   edit() { api.grok_FuncCall_Edit(this.dart); }
 
   getEditor(condensed?: boolean, showTableSelectors?: boolean): Promise<HTMLDivElement> {
-    return new Promise((resolve, reject) => api.grok_FuncCall_Get_Editor(this.dart, condensed, showTableSelectors, (out: any) => resolve(out), (err: any) => reject(err)));
+    return api.grok_FuncCall_Get_Editor(this.dart, condensed, showTableSelectors);
   }
 
-  buildEditor(root: HTMLDivElement, options?: {condensed: boolean}): Promise<InputBase[]> {
-    return api.grok_FuncCall_Build_Editor(this.dart, root, options);
+  buildEditor(root: HTMLDivElement, options?: {condensed?: boolean, showTableSelectors?: boolean}): Promise<InputBase[]> {
+    return api.grok_FuncCall_Build_Editor(this.dart, root, options?.condensed, options?.showTableSelectors);
   }
 
   /** Makes a shallow copy. */

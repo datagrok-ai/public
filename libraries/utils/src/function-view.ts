@@ -3,6 +3,7 @@ import $ from 'cash-dom';
 import * as grok from 'datagrok-api/grok';
 import * as ui from 'datagrok-api/ui';
 import * as DG from 'datagrok-api/dg';
+import {FuncCall} from "datagrok-api/dg";
 
 export class FunctionView extends DG.ViewBase {
   constructor(func: DG.Func, call?: DG.FuncCall) {
@@ -11,7 +12,7 @@ export class FunctionView extends DG.ViewBase {
     this.context = DG.Context.cloneDefault();
     this.controlsRoot.style.maxWidth = '370px';
     this.box = true;
-    this._setFunction(call).then((r) => {});
+    this.init().then((r) => {});
   }
 
   private _type: string = 'function';
@@ -19,35 +20,28 @@ export class FunctionView extends DG.ViewBase {
     return this._type;
   }
   public func: DG.Func;
-  private readonly context: DG.Context;
+  readonly context: DG.Context;
+  public call?: DG.FuncCall;
+  public lastCall?: DG.FuncCall;
+  _inputFields: Map<string, DG.InputBase> = new Map<string, DG.InputBase>();
 
-
-  async _setFunction(call: DG.FuncCall | undefined) {
+  async init() {
     /*
       var meta = EntityMeta.forEntity(f);
       func = await meta.refresh(f);
     */
-    if (call != undefined) {
-      /*  if (call.validateParameterValues().isEmpty)
-          runFunc(call).then((_) => call.reset());
-        _callPath = '/${call.toUri()}';
-        Routing.setPath(this.path, f.name, true);*/
-    }
 
-    call ??= this.func.prepare();
-    call.aux['view'] = this;
-    call.context = this.context;
+    this.call ??= this.func.prepare();
+    this.call.aux['view'] = this;
+    this.call.context = this.context;
 
     this.singleDfParam = wu(this.func.outputs).filter((p) => p.propertyType == DG.TYPE.DATA_FRAME)
       .toArray().length == 1;
-    const runSection = this.renderRunSection(call);
     //var fullRunSection = div();
-
-    const funcDiv = ui.div([runSection], 'ui-div');
     //var fullDiv = div('ui-panel', [getFullSection(func, call, fullRunSection)]);
     //htmlSetDisplay(fullDiv, false);
 
-    for (const inParam of wu(call.inputParams.values() as DG.FuncCallParam[])
+    for (const inParam of wu(this.call.inputParams.values() as DG.FuncCallParam[])
       .filter((p: DG.FuncCallParam) =>
         p.property.propertyType == DG.TYPE.DATA_FRAME && p.property.options['viewer'] != null)) {
       this.showInputs = true;
@@ -62,8 +56,7 @@ export class FunctionView extends DG.ViewBase {
       }));
     }
 
-    this.controlsRoot.innerHTML = '';
-    this.controlsRoot.appendChild(funcDiv);
+
     //this.controlsRoot.appendChild(fullDiv);
 
     /*advancedModeSwitch.onChanged.listen((_) {
@@ -75,14 +68,27 @@ export class FunctionView extends DG.ViewBase {
       htmlSetDisplay(funcDiv, !advancedModeSwitch.value);
     });*/
     //setRibbon();
-
-    this.root.appendChild(ui.splitH([this.controlsRoot, this.resultsRoot] ));
+    this.root.appendChild(this.build());
     /*
     Routing.setPath(this.path, f.name, true);
     */
+
+    this.name = this.func.friendlyName;
+  }
+
+  build(): HTMLElement {return ui.splitH([this.buildInputBlock(), this.buildOutputBlock()]);}
+
+  buildInputBlock(): HTMLElement {
+    const funcDiv = ui.div([this.renderRunSection(this.call!)], 'ui-div');
+    this.controlsRoot.innerHTML = '';
+    this.controlsRoot.appendChild(funcDiv);
+    return this.controlsRoot;
+  }
+
+  buildOutputBlock(): HTMLElement {
     this.resultsRoot.innerHTML = '';
     this.resultsRoot.appendChild(this.resultsDiv);
-    this.name = this.func.friendlyName;
+    return this.resultsRoot;
   }
 
   clearResults(clearTabs: boolean = true, showOutput: boolean = true) {
@@ -114,25 +120,48 @@ export class FunctionView extends DG.ViewBase {
       this.resultsDiv = ui.panel([], 'grok-func-results');
       this.resultsTabControl = undefined;
     }
-    this.resultsRoot.innerHTML = '';
-    this.resultsRoot.appendChild(this.resultsDiv);
+    this.buildOutputBlock();
+  }
+
+  inputFieldsToParameters(call: FuncCall): void { }
+
+  async run(): Promise<void> {
+    this.lastCall = this.call!.clone();
+    this.inputFieldsToParameters(this.lastCall);
+
+    try {
+      await this.compute(this.lastCall);
+    } catch (e) {
+      // this.onComputationError.next(this.lastCall);
+    }
+
+    this.outputParametersToView(this.lastCall);
+  }
+
+  async compute(call: FuncCall): Promise<void> {
+    await call.call(true, undefined, {processed: true});
+  }
+
+  outputParametersToView(call: FuncCall): void {
+    this.clearResults(false, true);
+    for (const [, p] of call.outputParams) {
+      p.processOutput();
+      if (p.property.propertyType == DG.TYPE.DATA_FRAME && p.value != null)
+        this.appendResultDataFrame(p, {caption: p.property.name, category: p.property.category});
+    }
   }
 
   renderRunSection(call: DG.FuncCall): HTMLElement {
     return ui.wait(async () => {
       const runButton = ui.bigButton('Run', async () => {
         call.aux['view'] = this.dart;
-        await call.call(true, undefined, {processed: true});
-        this.clearResults(false, true);
-        for (const [, p] of call.outputParams) {
-          console.log('param', p.value);
-          p.processOutput();
-          if (p.property.propertyType == DG.TYPE.DATA_FRAME && p.value != null)
-            this.appendResultDataFrame(p, {caption: p.property.name, category: p.property.category});
-        }
+        await this.run();
       });
-      const editor: HTMLDivElement = await call.getEditor(true);
+      const editor = ui.div();
+      const inputs: DG.InputBase[] = await call.buildEditor(editor, {condensed: true});
       editor.appendChild(ui.buttonsInput([runButton]));
+      for (const input of inputs)
+        this._inputFields.set(input.property.name, input);
       return editor;
     });
   }
