@@ -42,7 +42,7 @@ export class ValidationView extends ClinicalCaseViewBase {
 
     grok.data.linkTables(this.rulesDataframe, this.resultsDataframe,
       [ `${pinnacleRuleIdColumnName}` ], [ `${validationResultRuleIdColumn}` ],
-      [ DG.SYNC_TYPE.CURRENT_ROW_TO_SELECTION, DG.SYNC_TYPE.CURRENT_ROW_TO_SELECTION ]);
+      [ DG.SYNC_TYPE.CURRENT_ROW_TO_SELECTION ]);
 
     this.generateUI();
   }
@@ -84,7 +84,7 @@ export class ValidationView extends ClinicalCaseViewBase {
       tabControl[`${key.toUpperCase()} (${this.errorsByDomain[ key ]})`] = DG.Viewer.grid(domainDataframe).root;
       grok.data.linkTables(this.resultsDataframe, domainDataframe,
         [ `Row number`,  'Domain'], [ `Row number`,  'Domain lower case' ],
-        [ DG.SYNC_TYPE.SELECTION_TO_FILTER, DG.SYNC_TYPE.SELECTION_TO_FILTER ]);
+        [ DG.SYNC_TYPE.SELECTION_TO_FILTER ]);
     })
     return tabControl;
   }

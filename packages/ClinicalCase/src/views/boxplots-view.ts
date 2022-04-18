@@ -35,6 +35,23 @@ export class BoxPlotsView extends ClinicalCaseViewBase {
 
   pValuesArray: any;
 
+  viewerTitle = {
+    style: {
+      'color': 'var(--grey-6)',
+      'margin': '12px 0px 6px 12px',
+      'font-size': '14px',
+      'font-weight': 'bold'
+    }
+  };
+
+  viewerTitlePValue = {
+    style: {
+      'color': 'var(--grey-6)',
+      'margin': '12px 0px 6px 100px',
+      'font-size': '12px',
+    }
+  };
+
 
   constructor(name) {
     super({});
@@ -47,22 +64,6 @@ export class BoxPlotsView extends ClinicalCaseViewBase {
     this.domains = this.domains.filter(it => study.domains[it] !== null && !this.optDomainsWithMissingCols.includes(it));
     this.splitBy =  [VIEWS_CONFIG[DISTRIBUTIONS_VIEW_NAME][TRT_ARM_FIELD], SEX, RACE, ETHNIC].filter(it => study.domains.dm.columns.names().includes(it));
     this.selectedSplitBy = this.splitBy[0];
-    let viewerTitle = {
-      style: {
-        'color': 'var(--grey-6)',
-        'margin': '12px 0px 6px 12px',
-        'font-size': '14px',
-        'font-weight': 'bold'
-      }
-    };
-
-    let viewerTitlePValue = {
-      style: {
-        'color': 'var(--grey-6)',
-        'margin': '12px 0px 6px 100px',
-        'font-size': '12px',
-      }
-    };
 
     this.domains.forEach(it => {
       let df = study.domains[it].clone(null, [SUBJECT_ID, VISIT_NAME, VISIT_DAY, this.domainFields[it]['test'], this.domainFields[it]['res']]);
@@ -96,18 +97,18 @@ export class BoxPlotsView extends ClinicalCaseViewBase {
       .aggregate();
     this.getTopPValues(4);
 
-    this.updateBoxPlots(viewerTitle, viewerTitlePValue, this.selectedSplitBy);
+    this.updateBoxPlots(this.viewerTitle, this.viewerTitlePValue, this.selectedSplitBy);
 
     let blVisitChoices = ui.choiceInput('Baseline', this.bl, this.uniqueVisits);
     blVisitChoices.onChanged((v) => {
       this.bl = blVisitChoices.value;
-      this.updateBoxPlots(viewerTitle, viewerTitlePValue, this.selectedSplitBy);
+      this.updateBoxPlots(this.viewerTitle, this.viewerTitlePValue, this.selectedSplitBy);
     });
 
     let splitByChoices = ui.choiceInput('Split by', this.selectedSplitBy, this.splitBy);
     splitByChoices.onChanged((v) => {
       this.selectedSplitBy = splitByChoices.value;
-      this.updateBoxPlots(viewerTitle, viewerTitlePValue, this.selectedSplitBy);
+      this.updateBoxPlots(this.viewerTitle, this.viewerTitlePValue, this.selectedSplitBy);
     });
 
     let selectBiomarkers = ui.iconFA('cog', () => {
@@ -122,7 +123,7 @@ export class BoxPlotsView extends ClinicalCaseViewBase {
         //@ts-ignore
         valuesMultiChoices.input.style.maxHeight = '100%';
         multichoices[domain] = valuesMultiChoices;
-      })
+      });
 
       let acc = ui.accordion();
       this.domains.forEach(domain => {
@@ -132,12 +133,12 @@ export class BoxPlotsView extends ClinicalCaseViewBase {
         $(panel.root).css('display', 'flex');
         //@ts-ignore
         $(panel.root).css('opacity', '1');
-      })
+      });
 
       ui.dialog({ title: 'Select values' })
         .add(ui.div(acc.root, { style: { width: '400px', height: '300px' } }))
         .onOK(() => {
-          this.updateBoxPlots(viewerTitle, viewerTitlePValue, this.selectedSplitBy);
+          this.updateBoxPlots(this.viewerTitle, this.viewerTitlePValue, this.selectedSplitBy);
         })
         .show();
     });
@@ -149,7 +150,15 @@ export class BoxPlotsView extends ClinicalCaseViewBase {
     this.root.append(ui.div([
       ui.block([this.boxPlotDiv])
     ]));
+
+    grok.data.linkTables(study.domains.dm, this.distrDataframe,
+      [ SUBJECT_ID ], [ SUBJECT_ID ],
+      [ DG.SYNC_TYPE.FILTER_TO_FILTER ]);
     
+  }
+
+  updateGlobalFilter(): void {
+    this.updateBoxPlots(this.viewerTitle, this.viewerTitlePValue, this.selectedSplitBy);
   }
 
   private updateBoxPlots(viewerTitle: any, viewerTitlePValue: any, category: string) {
@@ -158,7 +167,7 @@ export class BoxPlotsView extends ClinicalCaseViewBase {
       this.pValuesArray = [];
       Object.keys(this.selectedValuesByDomain).forEach(domain => {
         this.selectedValuesByDomain[domain].forEach(it => {
-          let df = createBaselineEndpointDataframe(this.distrDataframe, study.domains.dm, [category], 'test', 'res', [], it, this.bl, '', VISIT_NAME, `${it}_BL`);
+          let df = createBaselineEndpointDataframe(this.distrDataframe.clone(this.distrDataframe.filter), study.domains.dm, [category], 'test', 'res', [], it, this.bl, '', VISIT_NAME, `${it}_BL`);
           this.getPValues(df, domain, it, category, `${it}_BL`);
           const plot = DG.Viewer.boxPlot(df, {
             category: category,

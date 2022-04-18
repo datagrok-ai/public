@@ -1,5 +1,7 @@
+import * as grok from "datagrok-api/grok";
 import * as DG from "datagrok-api/dg";
 import * as ui from "datagrok-api/ui";
+import { study } from "../clinical-study";
 import { ValidationHelper } from "../helpers/validation-helper";
 import { updateDivInnerHTML } from "../utils/utils";
 import { createValidationErrorsDiv, getRequiredColumnsByView } from "../utils/views-validation-utils";
@@ -15,6 +17,7 @@ export class ClinicalCaseViewBase extends DG.ViewBase {
   domainsAndColumnsForValidation: {};
   validator: ValidationHelper;
   optDomainsWithMissingCols: string[];
+  filterChanged = false;
 
   load(): void {
     this.validator = new ValidationHelper(getRequiredColumnsByView()[this.name]);
@@ -29,6 +32,8 @@ export class ClinicalCaseViewBase extends DG.ViewBase {
   }
 
   createView() { }
+
+  updateGlobalFilter() {}
 
   async propertyPanel() {
     return await this.createAccWithTitle(this.name).root;

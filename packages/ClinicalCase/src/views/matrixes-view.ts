@@ -119,8 +119,8 @@ export class MatrixesView extends ClinicalCaseViewBase {
       ]
     ]);
     this.updateMarixPlot();
-  }
 
+  }
 
   private updateMarixPlot() {
     if (this.selectedValues && this.bl) {
@@ -134,6 +134,11 @@ export class MatrixesView extends ClinicalCaseViewBase {
         this.root.className = 'grok-view ui-box';
         updateDivInnerHTML(this.martixPlotDiv, this.matrixPlot.root);
       });
+      if(study.domains.dm) {
+        grok.data.linkTables(study.domains.dm, filteredDataframe,
+          [ SUBJECT_ID ], [ SUBJECT_ID ],
+          [ DG.SYNC_TYPE.FILTER_TO_FILTER ]);
+      }
     }
   }
 

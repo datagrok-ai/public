@@ -15,6 +15,7 @@ import { updateDivInnerHTML } from "../utils/utils";
 
 export class SurvivalAnalysisView extends ClinicalCaseViewBase {
 
+  tabControl: DG.TabControl;
   survivalPlotDiv = ui.box();
   covariatesPlotDiv = ui.box();
   survivalGridDivCreate = ui.box();
@@ -73,18 +74,13 @@ export class SurvivalAnalysisView extends ClinicalCaseViewBase {
     this.updatePlotCovariatesChoices();
 
     this.createSurvivalDataframe = ui.bigButton('Create dataset', () => {
-      this.refreshDataframe();
-      this.filterChanged = true;
-      this.updateChartsAfterFiltering();
-      this.survivalDataframe.onFilterChanged.subscribe((_) => {
-        this.filterChanged = true;
-      });
+      this.createDataset();
     });
 
     let guide = ui.info(SURVIVAL_ANALYSIS_GUIDE, 'Survival Analysis Quick Guide', false);
 
-    let tabControl = ui.tabControl(null, false);
-    tabControl.addPane('Dataset', () =>
+    this.tabControl = ui.tabControl(null, false);
+    this.tabControl.addPane('Dataset', () =>
       ui.splitV([
         ui.splitH([
           ui.box(ui.panel([
@@ -99,7 +95,7 @@ export class SurvivalAnalysisView extends ClinicalCaseViewBase {
         ])
       ]));
 
-    tabControl.addPane('Survival Chart', () => ui.splitV([
+      this.tabControl.addPane('Survival Chart', () => ui.splitV([
       ui.splitH([
         ui.box(ui.panel([
           ui.inputs([
@@ -111,19 +107,19 @@ export class SurvivalAnalysisView extends ClinicalCaseViewBase {
         this.survivalPlotDiv
       ])
     ]));
-    tabControl.getPane('Survival Chart').header.addEventListener('click', () => {
+    this.tabControl.getPane('Survival Chart').header.addEventListener('click', () => {
       this.updateChartsAfterFiltering();
 
     });
 
-    tabControl.addPane('Covariates', () => ui.splitV([
+    this.tabControl.addPane('Covariates', () => ui.splitV([
       ui.box(
         //@ts-ignore
         this.plotCovariatesChoicesDiv,
         { style: { maxHeight: '50px' } }),
       this.covariatesPlotDiv
     ]));
-    tabControl.getPane('Covariates').header.addEventListener('click', () => {
+    this.tabControl.getPane('Covariates').header.addEventListener('click', () => {
       this.updateChartsAfterFiltering();
     });
     this.root.className = 'grok-view ui-box';
@@ -137,14 +133,27 @@ export class SurvivalAnalysisView extends ClinicalCaseViewBase {
 
     this.root.append(ui.splitV([
       guide,
-      tabControl.root
+      this.tabControl.root
     ]))
     //@ts-ignore
     guide.parentNode.style.flexGrow = '0';
     //@ts-ignore
     guide.parentNode.classList = 'ui-div';
 
-    // this.updateParameterPanel('Dataset');
+  }
+
+  updateGlobalFilter(): void {
+    this.tabControl.currentPane = this.tabControl.getPane('Dataset');
+    this.createDataset();
+  }
+
+  private createDataset() {
+    this.refreshDataframe();
+    this.filterChanged = true;
+    this.updateChartsAfterFiltering();
+    this.survivalDataframe.onFilterChanged.subscribe((_) => {
+      this.filterChanged = true;
+    });
   }
 
   private updateEndpointOptions(){
@@ -231,7 +240,7 @@ export class SurvivalAnalysisView extends ClinicalCaseViewBase {
   }
 
   private refreshDataframe(){
-     this.survivalDataframe = createSurvivalData(study.domains.dm, study.domains.ae ?? null, this.endpoint, this.endpointOptions[this.endpoint], this.covariates);
+     this.survivalDataframe = createSurvivalData(study.domains.dm.clone(study.domains.dm.filter), study.domains.ae ?? null, this.endpoint, this.endpointOptions[this.endpoint], this.covariates);
      this.survivalColumns = this.survivalDataframe.columns.names();
      this.survivalOptions = [''].concat(this.survivalColumns.filter(it => it !== 'time' && it !== 'status' && it !== SUBJECT_ID));
      this.strata = '';

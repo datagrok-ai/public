@@ -110,10 +110,36 @@ export async function clinicalCaseApp(): Promise<any> {
         }
         if (obj.loaded) {
           setObj(obj);
+          if (obj.filterChanged) {
+            obj.updateGlobalFilter();
+            this.filterChanged = false;
+          }
         }
       }
     }, 100)
   });
+
+  if (study.domains.dm) {
+    const updateFilterProperty = (obj) => {
+      if (obj.name === grok.shell.v.name){
+        setTimeout(() => {
+          obj.updateGlobalFilter();
+        })
+      }
+      obj.filterChanged = true;
+    }
+    study.domains.dm.onFilterChanged.subscribe(()=> {
+      VIEWS.forEach(it => {
+        if (it.hasOwnProperty('filterChanged')) {
+          updateFilterProperty(it);
+        } else {
+          if (tableViewHelpers[it.name].updateGlobalFilter !== undefined) {
+            updateFilterProperty(tableViewHelpers[it.name]);
+          }
+        }
+      })
+    });
+  }
 }
 
 

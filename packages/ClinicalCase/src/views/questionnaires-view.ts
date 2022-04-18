@@ -24,11 +24,9 @@ export class QuestionnaiesView extends ClinicalCaseViewBase {
   selectedCategory = '';
   selectedSubCategory = '';
   questionsDiv = ui.box();
-  questionsAcc: DG.Accordion;
   questions = [];
   questionsDf: DG.DataFrame;
   openedQuestionsDfs = {};
-  switchButton: any;
   graphTypes = [ 'histogram', 'linechart' ];
   graphTypesDiv = ui.div();
   graphTypesChoice: DG.InputBase;
@@ -47,20 +45,20 @@ export class QuestionnaiesView extends ClinicalCaseViewBase {
   }
 
   createView(): void {
-    this.splitBy = [SEX, RACE, ETHNIC, [VIEWS_CONFIG[this.name][TRT_ARM_FIELD]]].filter(it => study.domains.dm.columns.names().includes(it)) as string[];
-    this.selectedSplitBy = this.splitBy.length ? this.splitBy[0] : '';
+    this.splitBy = [ SEX, RACE, ETHNIC, [ VIEWS_CONFIG[ this.name ][ TRT_ARM_FIELD ] ] ].filter(it => study.domains.dm.columns.names().includes(it)) as string[];
+    this.selectedSplitBy = this.splitBy.length ? this.splitBy[ 0 ] : '';
     this.qsWithDm = addDataFromDmDomain(study.domains.qs, study.domains.dm, study.domains.qs.columns.names(), this.splitBy);
     this.qsCategories = this.qsWithDm.col(QS_CATEGORY).categories;
-    this.selectedCategory = this.qsCategories[0];
-    this.selectedGraphType = this.graphTypes[0];
+    this.selectedCategory = this.qsCategories[ 0 ];
+    this.selectedGraphType = this.graphTypes[ 0 ];
     this.updateSubCategoriesChoice();
-    this.updateQuestionsAcc();
+    this.updateQuestionGrid();
 
     this.categoriesChoice = ui.choiceInput('Category', this.selectedCategory, this.qsCategories);
     this.categoriesChoice.onChanged((v) => {
       this.selectedCategory = this.categoriesChoice.value;
       this.updateSubCategoriesChoice();
-      this.switchButton.value ? this.updateQuestionsAcc() : this.updateQuestionGrid();
+      this.updateQuestionGrid();
     });
     this.categoriesChoice.input.style.width = '100px';
 
@@ -74,29 +72,25 @@ export class QuestionnaiesView extends ClinicalCaseViewBase {
     this.splitByChoice = ui.choiceInput('Split By', this.selectedSplitBy, this.splitBy);
     this.splitByChoice.onChanged((v) => {
       this.selectedSplitBy = this.splitByChoice.value;
-      this.switchButton.value ? this.updateQuestionsAcc() : this.updateQuestionGrid();
+      this.updateQuestionGrid();
     });
     this.splitByChoice.input.style.width = '100px';
 
-    this.switchButton = ui.switchInput('Accordion', true);
-    this.switchButton.onChanged((v) => {
-      if (this.switchButton.value) {
-        this.updateQuestionsAcc();
-        updateDivInnerHTML(this.graphTypesDiv, '');
-      } else {
-        this.updateQuestionGrid();
-        updateDivInnerHTML(this.graphTypesDiv, this.graphTypesChoice.root);
-
-      }
-    });
-
     this.setRibbonPanels(
-      [[this.categoriesChoice.root], [this.subCategoriesDiv], [this.switchButton.root], [this.splitByChoice.root]]
+      [ [ this.categoriesChoice.root ], [ this.subCategoriesDiv ], [ this.splitByChoice.root ] ]
     );
 
     this.root.className = 'grok-view ui-box';
     this.root.append(this.questionsDiv);
 
+    grok.data.linkTables(study.domains.dm, this.qsWithDm,
+      [ SUBJECT_ID ], [ SUBJECT_ID ],
+      [ DG.SYNC_TYPE.FILTER_TO_FILTER ]);
+
+  }
+
+  updateGlobalFilter(): void {
+    this.updateQuestionGrid();
   }
 
   private updateSubCategories() {
@@ -114,28 +108,12 @@ export class QuestionnaiesView extends ClinicalCaseViewBase {
     this.subCategoriesChoice = ui.choiceInput('Sub Category', this.selectedSubCategory, this.qsSubCategories);
     this.subCategoriesChoice.onChanged((v) => {
       this.selectedSubCategory = this.subCategoriesChoice.value;
-      this.switchButton.value ? this.updateQuestionsAcc() : this.updateQuestionGrid();
+      this.updateQuestionGrid();
     });
     this.subCategoriesChoice.input.style.width = '150px';
     updateDivInnerHTML(this.subCategoriesDiv, this.subCategoriesChoice.root);
   }
 
-  private updateQuestionsAcc() {
-    this.questionsAcc = ui.accordion();
-    grok.shell.o = this.setPropertyPanel();
-    this.updateQuestions();
-    this.questions.forEach(question => {
-      this.questionsAcc.addPane(`${question}`, () => this.createQuestionCharts(question));
-      let questionPanel = this.questionsAcc.getPane(`${question}`);
-      questionPanel.root.addEventListener('click', (event) => {
-        let paneHeaderClass = 'd4-accordion-pane-header';
-        if(event.composedPath()[0]['classList'].contains(paneHeaderClass)) {
-          grok.shell.o = this.setPropertyPanel();
-        };
-      });
-    });
-    updateDivInnerHTML(this.questionsDiv, this.questionsAcc.root);
-  }
 
   private updateQuestionGrid(){
     this.updateQuestions();
@@ -154,7 +132,6 @@ export class QuestionnaiesView extends ClinicalCaseViewBase {
         .groupBy(this.questionsDf.columns.names())
         .where({ [QS_TEST]: `${question}`, [VISIT_NUM]: `${it}` })
         .aggregate();
-        console.log(question);
         const pValue = this.getPValue(questionVisitNumDf);
         return pValue;
       });
@@ -205,7 +182,7 @@ export class QuestionnaiesView extends ClinicalCaseViewBase {
 
   private updateQuestions() {
     this.openedQuestionsDfs = {};
-    this.questionsDf = this.qsWithDm
+    this.questionsDf = this.qsWithDm.clone(this.qsWithDm.filter)
       .groupBy(this.qsWithDm.columns.names())
       .where({ [QS_CATEGORY]: `${this.selectedCategory}`, [QS_SUB_CATEGORY]: `${this.selectedSubCategory}` })
       .aggregate();

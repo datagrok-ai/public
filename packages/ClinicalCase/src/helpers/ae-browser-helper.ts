@@ -23,6 +23,7 @@ export class AEBrowserHelper {
     currentSubjId = '';
     currentAeDay: number;
     name = AE_BROWSER_VIEW_NAME;
+    filterChanged = false;
 
     constructor(dataFrame: DG.DataFrame) {
         let presentDomains = [];
@@ -37,6 +38,11 @@ export class AEBrowserHelper {
             }
         });
         this.domains = this.domains.filter(it => presentDomains.includes(it));
+        if (study.domains.dm) {
+            grok.data.linkTables(study.domains.dm, this.aeToSelect,
+                [ SUBJECT_ID ], [ SUBJECT_ID ],
+                [ DG.SYNC_TYPE.FILTER_TO_FILTER ]);
+        }
     }
 
     updateDomains() {

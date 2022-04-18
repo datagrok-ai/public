@@ -62,6 +62,12 @@ export class LaboratoryView extends ClinicalCaseViewBase {
       grok.shell.o = new ClinRow(this.lb.currentRow);
     });
 
+    if(study.domains.dm) {
+      grok.data.linkTables(study.domains.dm, this.lb,
+        [ SUBJECT_ID ], [ SUBJECT_ID ],
+        [ DG.SYNC_TYPE.FILTER_TO_FILTER ]);
+    }
+
     this.root.className = 'grok-view ui-box';
 
     let tabControl = ui.tabControl(null, false);
@@ -106,7 +112,6 @@ export class LaboratoryView extends ClinicalCaseViewBase {
 
   }
 
-
   updateHysLawScatterPlot() {
     if (this.selectedALT && this.selectedAST && this.selectedBLN) {
       this.createHysLawScatterPlot();
@@ -116,6 +121,11 @@ export class LaboratoryView extends ClinicalCaseViewBase {
 
   private createHysLawScatterPlot() {
     let hysLawDataframe = createHysLawDataframe(this.lb, this.dm, this.selectedALT, this.selectedAST, this.selectedBLN, VIEWS_CONFIG[this.name][TRT_ARM_FIELD]);
+    if(study.domains.dm) {
+      grok.data.linkTables(study.domains.dm, hysLawDataframe,
+        [ SUBJECT_ID ], [ SUBJECT_ID ],
+        [ DG.SYNC_TYPE.FILTER_TO_FILTER ]);
+    }
     this.hysLawScatterPlot = createHysLawScatterPlot(hysLawDataframe, ALT, BILIRUBIN, VIEWS_CONFIG[this.name][TRT_ARM_FIELD]);
   }
 
@@ -125,6 +135,11 @@ export class LaboratoryView extends ClinicalCaseViewBase {
     let epNumCol = `${this.selectedLabBlEp}_EP`;
     let baselineEndpointDataframe = createBaselineEndpointDataframe(this.lb, this.dm, [VIEWS_CONFIG[this.name][TRT_ARM_FIELD]], LAB_TEST, LAB_RES_N,
       [LAB_LO_LIM_N, LAB_HI_LIM_N], this.selectedLabBlEp, this.selectedBl, this.selectedEp, visitCol, blNumCol, epNumCol);
+      if(study.domains.dm) {
+        grok.data.linkTables(study.domains.dm, baselineEndpointDataframe,
+          [ SUBJECT_ID ], [ SUBJECT_ID ],
+          [ DG.SYNC_TYPE.FILTER_TO_FILTER ]);
+      }
     this.baselineEndpointPlot = createBaselineEndpointScatterPlot(baselineEndpointDataframe, blNumCol, epNumCol, VIEWS_CONFIG[this.name][TRT_ARM_FIELD],
       baselineEndpointDataframe.get(LAB_LO_LIM_N, 0), baselineEndpointDataframe.get(LAB_HI_LIM_N, 0));
     updateDivInnerHTML(this.baselineEndpointDiv, this.baselineEndpointPlot.root);
@@ -134,6 +149,11 @@ export class LaboratoryView extends ClinicalCaseViewBase {
     let labValue = this.selectedLabDistr;
     let labValueNumColumn = `${labValue} values`;
     let disributionDataframe = createLabValuesByVisitDataframe(this.lb, this.dm, labValue, VIEWS_CONFIG[this.name][TRT_ARM_FIELD], this.selectedArm, labValueNumColumn, VISIT_DAY);
+    if(study.domains.dm) {
+      grok.data.linkTables(study.domains.dm, disributionDataframe,
+        [ SUBJECT_ID ], [ SUBJECT_ID ],
+        [ DG.SYNC_TYPE.FILTER_TO_FILTER ]);
+    }
     this.distributionPlot = DG.Viewer.boxPlot(disributionDataframe, {
       category: VISIT_DAY,
       value: labValueNumColumn,

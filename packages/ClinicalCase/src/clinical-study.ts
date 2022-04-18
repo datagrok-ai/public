@@ -1,6 +1,7 @@
 /* Do not change these import lines. Datagrok will import API library in exactly the same manner */
 import * as grok from 'datagrok-api/grok';
 import * as DG from 'datagrok-api/dg';
+import * as ui from "datagrok-api/ui";
 import { vaidateAEDomain, vaidateDMDomain } from './sdtm-validation/services/validation-service';
 import { createValidationDataFrame } from './sdtm-validation/validation-utils';
 import { SITE_ID, STUDY_ID } from './constants/columns-constants';
@@ -109,10 +110,19 @@ export class ClinicalStudy {
     addVisitDayFromTvDomain();
     if (this.domains.dm) {
       this.dmFilters = createFilters(this.domains.dm);
+      this.domains.dm.onFilterChanged.subscribe(() => {
+      });
       grok.shell.topMenu
         .group('Cohort')
         .item('Filter', () => {
-          grok.shell.o = this.dmFilters.root;
+          const dialog = ui.dialog({ title: '' })
+          .add(ui.div(this.dmFilters.root))
+          //@ts-ignore
+          .onOK(() => {})
+          .show();
+          dialog.root.addEventListener("mouseenter", (event) => {
+            this.dmFilters.root.removeAttribute('data-widget');
+          });
         });
     }
   }

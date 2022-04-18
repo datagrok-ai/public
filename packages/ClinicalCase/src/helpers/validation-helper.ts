@@ -6,6 +6,7 @@ export class ValidationHelper {
     missingColumnsInReqDomains;
     missingColumnsInOptDomains;
     missingDomains;
+    filterChanged = false;
 
     constructor(domainsAndColumnsToCheck) {
         this.domainsAndColumnsToCheck = domainsAndColumnsToCheck;

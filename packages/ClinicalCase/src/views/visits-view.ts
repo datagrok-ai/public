@@ -98,6 +98,9 @@ export class VisitsView extends ClinicalCaseViewBase {
             }, 100);
 
         });
+        grok.data.linkTables(study.domains.dm, this.pivotedSv,
+            [ SUBJECT_ID ], [ SUBJECT_ID ],
+            [ DG.SYNC_TYPE.FILTER_TO_FILTER ]);
     }
 
     private eventsSinceLastVisitCols() {
@@ -253,6 +256,9 @@ export class VisitsView extends ClinicalCaseViewBase {
             }, 100);
 
         });
+        grok.data.linkTables(study.domains.dm, df,
+            [ SUBJECT_ID ], [ SUBJECT_ID ],
+            [ DG.SYNC_TYPE.FILTER_TO_FILTER ]);
         return df;
     }
 
