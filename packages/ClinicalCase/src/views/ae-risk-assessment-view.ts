@@ -7,9 +7,12 @@ import { updateDivInnerHTML } from '../utils/utils';
 import { ClinicalCaseViewBase } from '../model/ClinicalCaseViewBase';
 import { AE_PERCENT, NEG_LOG10_P_VALUE, RISK_DIFFERENCE, SE_RD_WITH_SIGN_LEVEL } from '../constants/constants';
 import { AE_TERM_FIELD, TRT_ARM_FIELD, VIEWS_CONFIG } from '../views-config';
+import { SUBJECT_ID } from '../constants/columns-constants';
 
 export class AERiskAssessmentView extends ClinicalCaseViewBase {
 
+  aeDf: DG.DataFrame;
+  riskAssessmentDfPopPanelDiv = ui.div();
   riskAssessmentDataframe: DG.DataFrame;
   volcanoPlotXAxis = '';
   volcanoPlotYAxis = NEG_LOG10_P_VALUE;
@@ -31,6 +34,7 @@ export class AERiskAssessmentView extends ClinicalCaseViewBase {
   }
 
   createView(): void {
+    this.aeDf = study.domains.ae.clone();
     this.activeArm = [];
     this.placeboArm = [];
     this.volcanoPlotXAxis = RISK_DIFFERENCE;
@@ -39,6 +43,14 @@ export class AERiskAssessmentView extends ClinicalCaseViewBase {
     this.initialGuide = ui.info('Please select values for treatment/placebo arms in a property panel', '', false);
     updateDivInnerHTML(this.riskAssessmentDiv, this.initialGuide);
     this.root.append(this.riskAssessmentDiv);
+    grok.data.linkTables(study.domains.dm, this.aeDf,
+      [ SUBJECT_ID ], [ SUBJECT_ID ],
+      [ DG.SYNC_TYPE.FILTER_TO_FILTER ]);
+  }
+
+  updateGlobalFilter(): void {
+    this.updateRiskAssessmentDataframe();
+    this.updateVolcanoPlot();
   }
 
   createVolcanoPlotDiv() {
@@ -52,9 +64,10 @@ export class AERiskAssessmentView extends ClinicalCaseViewBase {
   }
 
   updateRiskAssessmentDataframe() {
-    this.riskAssessmentDataframe = createAERiskAssessmentDataframe(study.domains.ae, study.domains.dm.clone(), VIEWS_CONFIG[this.name][TRT_ARM_FIELD], VIEWS_CONFIG[this.name][AE_TERM_FIELD], this.placeboArm, this.activeArm, this.pValueLimit);
+    this.riskAssessmentDataframe = createAERiskAssessmentDataframe(this.aeDf.clone(this.aeDf.filter), study.domains.dm.clone(), VIEWS_CONFIG[this.name][TRT_ARM_FIELD], VIEWS_CONFIG[this.name][AE_TERM_FIELD], this.placeboArm, this.activeArm, this.pValueLimit);
     this.riskAssessmentDataframe.col(this.volcanoPlotXAxis).tags[DG.TAGS.COLOR_CODING_TYPE] = 'Conditional';
     this.riskAssessmentDataframe.col(this.volcanoPlotXAxis).tags[DG.TAGS.COLOR_CODING_CONDITIONAL] = `{"-100-0":"#0000FF","0-100":"#FF0000"}`;
+    this.updateRiskAssessmentDfOnPropPanel();
   }
 
   updateVolcanoPlot() {
@@ -90,12 +103,13 @@ export class AERiskAssessmentView extends ClinicalCaseViewBase {
     updateDivInnerHTML(this.riskAssessmentDiv, ui.splitV([this.volcanoPlot.root]))
   }
 
+  updateRiskAssessmentDfOnPropPanel() {
+    updateDivInnerHTML(this.riskAssessmentDfPopPanelDiv, this.riskAssessmentDataframe ? this.riskAssessmentDataframe.plot.grid().root : '');
+  }
+
   override async propertyPanel() {
 
     let acc = this.createAccWithTitle(this.name);
-    let dfDiv = ui.div();
-
-    let updateDf = () => { updateDivInnerHTML(dfDiv, this.riskAssessmentDataframe ? this.riskAssessmentDataframe.plot.grid().root : ''); }
 
     const treatmentArmPane = (arm, armToCheck, name) => {
       acc.addPane(name, () => {
@@ -110,7 +124,6 @@ export class AERiskAssessmentView extends ClinicalCaseViewBase {
           }
           this[arm] = armChoices.value;
           this.createVolcanoPlotDiv();
-          updateDf();
         });
         return armChoices.root;
       });
@@ -120,8 +133,7 @@ export class AERiskAssessmentView extends ClinicalCaseViewBase {
     treatmentArmPane('activeArm', 'placeboArm', `Active arm`);
 
     acc.addPane(`AE risk dataframe`, () => {
-      updateDf();
-      return dfDiv;
+      return this.riskAssessmentDfPopPanelDiv;
     });
 
     acc.addPane('Parameters', () => {

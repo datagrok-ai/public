@@ -87,6 +87,12 @@ export class TimeProfileView extends ClinicalCaseViewBase {
             yColumnNames: [`${this.selectedLabValue} avg(${this.domainFields[this.selectedDomain]['res']})`],
             whiskersType: 'Med | Q1, Q3'
         });
+        if (study.domains.dm) {
+            grok.data.linkTables(study.domains.dm, this.linechart.dataFrame,
+                [ SUBJECT_ID ], [ SUBJECT_ID ],
+                [ DG.SYNC_TYPE.FILTER_TO_FILTER ]);
+        }
+
         this.root.append(this.linechart.root);
         this.setRibbonPanels([
             [
@@ -123,6 +129,11 @@ export class TimeProfileView extends ClinicalCaseViewBase {
             default: {
                 break;
             }
+        }
+        if(study.domains.dm) {
+            grok.data.linkTables(study.domains.dm, this.linechart.dataFrame,
+                [ SUBJECT_ID ], [ SUBJECT_ID ],
+                [ DG.SYNC_TYPE.FILTER_TO_FILTER ]);
         }
     }
 

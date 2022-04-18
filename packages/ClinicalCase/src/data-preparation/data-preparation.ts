@@ -43,7 +43,7 @@ export function createHysLawDataframe(lb: DG.DataFrame, dm: DG.DataFrame, altNam
     joined = addDataFromDmDomain(joined, dm, [SUBJECT_ID, ALT, BILIRUBIN, AST], [trt_arm]);
   }
   if (missingDataAlt || missingDataAst || missingDataBln) {
-    grok.shell.error(`Some values were missing in ${LAB_RES_N} and/or ${LAB_HI_LIM_N}. The results should be reviewed manually.`)
+    grok.shell.error(`Some values were missing in ${LAB_RES_N} and/or ${LAB_HI_LIM_N}. The results of Hy's law should be reviewed manually.`)
   }
   return joined;
 }
@@ -132,11 +132,11 @@ export function addColumnWithDrugPlusDosage(df: DG.DataFrame, drugCol: string, d
   return df;
 }
 
-export function createSurvivalData(dmDf: DG.DataFrame, aeDF: DG.DataFrame, endpoint: string, SDTMendpoint: string, covariates: string[]) {
+export function createSurvivalData(dmDf: DG.DataFrame, aeDf: DG.DataFrame, endpoint: string, SDTMendpoint: string, covariates: string[]) {
   let dm = dmDf.clone();
   filterNulls(dm, SUBJ_REF_ENDT); // according to SDTMIG v3.3 RFENDTC is null for screen failures or unassigned subjects
   if (SDTMendpoint === AE_START_DATE) {
-    const ae = aeDF.clone();
+    const ae = aeDf.clone();
     if (endpoint == 'HOSPITALIZATION') {
       filterBooleanColumn(ae, AE_REQ_HOSP, false);
     }

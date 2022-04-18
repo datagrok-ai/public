@@ -27,6 +27,14 @@ export class StudySummaryView extends ClinicalCaseViewBase {
   sexChart = ui.box();
   raceChart = ui.box();
   ageChart = ui.box();
+  viewerTitle = {
+    style: {
+      'color': 'var(--grey-6)',
+      'margin': '12px 0px 6px 12px',
+      'font-size': '16px',
+    }
+  };
+  test: any
 
   constructor(name) {
     super({});
@@ -42,23 +50,17 @@ export class StudySummaryView extends ClinicalCaseViewBase {
       this.errorsByDomain = errorsMap.withCount;
       this.errorsByDomainWithLinks = errorsMap.withLinks;
     }
+
     this.buildView();
   }
 
   async buildView() {
 
-    let viewerTitle = {
-      style: {
-        'color': 'var(--grey-6)',
-        'margin': '12px 0px 6px 12px',
-        'font-size': '16px',
-      }
-    };
     checkColumnsAndCreateViewer(
       study.domains.dm,
       [SUBJ_REF_STDT],
       this.enrollmentChart,
-      async () => { await this.createCumulativeEnrollmentChart(viewerTitle) },
+      async () => { await this.createCumulativeEnrollmentChart(this.viewerTitle) },
       'Cumulative enrollment');
 
     let summary = ui.tableFromMap({
@@ -85,7 +87,7 @@ export class StudySummaryView extends ClinicalCaseViewBase {
       [VIEWS_CONFIG[this.name][TRT_ARM_FIELD]],
       this.armChart, () => {
         let arm = DG.Viewer.barChart(study.domains.dm, { split: VIEWS_CONFIG[this.name][TRT_ARM_FIELD], style: 'dashboard', barColor: DG.Color.lightBlue });
-        arm.root.prepend(ui.divText('Treatment arm', viewerTitle));
+        arm.root.prepend(ui.divText('Treatment arm', this.viewerTitle));
         updateDivInnerHTML(this.armChart, arm.root);
       },
       'Treatment arm');
@@ -95,7 +97,7 @@ export class StudySummaryView extends ClinicalCaseViewBase {
       [SEX],
       this.sexChart, () => {
         let sex = DG.Viewer.barChart(study.domains.dm, { split: SEX, style: 'dashboard' });
-        sex.root.prepend(ui.divText('Sex', viewerTitle));
+        sex.root.prepend(ui.divText('Sex', this.viewerTitle));
         updateDivInnerHTML(this.sexChart, sex.root);
       },
       'Sex');
@@ -105,7 +107,7 @@ export class StudySummaryView extends ClinicalCaseViewBase {
       [RACE],
       this.raceChart, () => {
         let race = DG.Viewer.barChart(study.domains.dm, { split: RACE, style: 'dashboard' });
-        race.root.prepend(ui.divText('Race', viewerTitle));
+        race.root.prepend(ui.divText('Race', this.viewerTitle));
         updateDivInnerHTML(this.raceChart, race.root);
       },
       'Race');
@@ -115,7 +117,7 @@ export class StudySummaryView extends ClinicalCaseViewBase {
       [AGE],
       this.ageChart, () => {
         let age = DG.Viewer.histogram(study.domains.dm, { value: AGE, style: 'dashboard' });
-        age.root.prepend(ui.divText('Age', viewerTitle));
+        age.root.prepend(ui.divText('Age', this.viewerTitle));
         updateDivInnerHTML(this.ageChart, age.root);
       },
       'Age');
@@ -152,7 +154,7 @@ export class StudySummaryView extends ClinicalCaseViewBase {
       updateDivInnerHTML(this.enrollmentChart, formatErrorMessage);
 
     } else {
-      let subjsPerDay = cumulativeEnrollemntByDay(study.domains.dm, dateCol, SUBJECT_ID, cumulativeCol);
+      let subjsPerDay = cumulativeEnrollemntByDay(study.domains.dm.clone(study.domains.dm.filter), dateCol, SUBJECT_ID, cumulativeCol);
       let refStartCol = subjsPerDay.col(dateCol);
       let lc = DG.Viewer.lineChart(subjsPerDay);
       lc.setOptions({ x: `${dateCol}`, yColumnNames: [cumulativeCol] });
@@ -216,5 +218,14 @@ export class StudySummaryView extends ClinicalCaseViewBase {
       }, true)
     }
     return acc.root;
+  }
+
+  updateGlobalFilter(): void {
+    checkColumnsAndCreateViewer(
+      study.domains.dm,
+      [SUBJ_REF_STDT],
+      this.enrollmentChart,
+      async () => { await this.createCumulativeEnrollmentChart(this.viewerTitle) },
+      'Cumulative enrollment');
   }
 }

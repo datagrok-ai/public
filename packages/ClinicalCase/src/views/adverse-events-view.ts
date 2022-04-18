@@ -34,10 +34,15 @@ export class AdverseEventsView extends ClinicalCaseViewBase {
     if (study.domains.ae.col(VIEWS_CONFIG[this.name][AE_START_DAY_FIELD]) && !study.domains.ae.col('week')) {
       study.domains.ae.columns.addNewFloat('week').init((i) => Math.floor(study.domains.ae.get(VIEWS_CONFIG[this.name][AE_START_DAY_FIELD], i) / 7));
     };
-    if (study.domains.dm.col(VIEWS_CONFIG[this.name][TRT_ARM_FIELD])) {
-      this.aeWithArm = addDataFromDmDomain(study.domains.ae.clone(), study.domains.dm, study.domains.ae.columns.names(), [VIEWS_CONFIG[this.name][TRT_ARM_FIELD]]);
-    } else {
-      this.aeWithArm = study.domains.ae.clone();
+    if (study.domains.dm) {
+      if (study.domains.dm.col(VIEWS_CONFIG[ this.name ][ TRT_ARM_FIELD ])) {
+        this.aeWithArm = addDataFromDmDomain(study.domains.ae.clone(), study.domains.dm, study.domains.ae.columns.names(), [ VIEWS_CONFIG[ this.name ][ TRT_ARM_FIELD ] ]);
+      } else {
+        this.aeWithArm = study.domains.ae.clone();
+      };
+      grok.data.linkTables(study.domains.dm, this.aeWithArm,
+        [ SUBJECT_ID ], [ SUBJECT_ID ],
+        [ DG.SYNC_TYPE.FILTER_TO_FILTER ]);
     }
     let viewerTitle = {
       style: {
@@ -117,7 +122,7 @@ export class AdverseEventsView extends ClinicalCaseViewBase {
         ui.splitH([this.typesPlot, this.bodySystemsPlot, this.causalityPlot, this.outcomePlot], { style: { width: '100%' } })
       ]),
       ui.splitH([grid.root])
-    ]))
+    ]));
 
   }
 

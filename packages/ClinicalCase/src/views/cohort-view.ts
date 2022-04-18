@@ -171,7 +171,7 @@ export class CohortView extends ClinicalCaseViewBase {
 
         grok.data.linkTables(this.savedCohorts, this.savedInclCriteria,
             ['Name'], ['Cohort'],
-            [DG.SYNC_TYPE.CURRENT_ROW_TO_ROW, DG.SYNC_TYPE.CURRENT_ROW_TO_FILTER]);
+            [DG.SYNC_TYPE.CURRENT_ROW_TO_FILTER]);
 
 
         let viewerTitle = {

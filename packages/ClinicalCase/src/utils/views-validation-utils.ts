@@ -149,7 +149,6 @@ export function getRequiredColumnsByView() {
         'req_domains': {
           'lb': {
             'req': [
-  
             ]
           }
         }
@@ -298,7 +297,11 @@ export function getRequiredColumnsByView() {
               sdtmCols.VISIT_NAME
             ]
           },
-  
+          'dm': {
+            'req': [
+              sdtmCols.SUBJECT_ID
+            ]
+          },
         }
       },
       [QUESTIONNAIRES_VIEW_NAME]: {
@@ -312,7 +315,17 @@ export function getRequiredColumnsByView() {
               sdtmCols.QS_RES
             ]
           },
-  
+          'dm': {
+            'req': [
+              sdtmCols.SUBJECT_ID
+            ],
+            'opt': [
+              sdtmCols.ETHNIC,
+              sdtmCols.SEX,
+              sdtmCols.RACE,
+              VIEWS_CONFIG[QUESTIONNAIRES_VIEW_NAME][TRT_ARM_FIELD]
+            ]
+          },
         }
       },
     }
