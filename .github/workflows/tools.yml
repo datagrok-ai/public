@@ -2,10 +2,8 @@ name: Tools Package
 on:
   workflow_dispatch: { }
   push:
-    branches:
-      - 'master'
     paths:
-      - 'tools/package.json'
+      - 'tools/**'
 jobs:
   check:
     runs-on: ubuntu-20.04
@@ -33,7 +31,6 @@ jobs:
     name: Build and publish to npm
     runs-on: ubuntu-20.04
     needs: check
-    if: needs.check.outputs.changed_version == 'true'
     environment: Prod
     steps:
       - uses: actions/checkout@v2
@@ -52,9 +49,11 @@ jobs:
         working-directory: ./tools
       - run: npm publish
         working-directory: ./tools
+        if: github.ref == 'refs/heads/master' && needs.check.outputs.changed_version == 'true'
         env:
           NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
       - name: Commit package-lock.json
+        if: github.ref == 'refs/heads/master' && needs.check.outputs.changed_version == 'true'
         run: |
           if [ -n "$(git status -s tools/package-lock.json)" ]; then
             git config --global user.name 'GitHub Actions'
