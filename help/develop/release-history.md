@@ -1,6 +1,37 @@
 <!-- TITLE: Release History -->
 <!-- SUBTITLE: -->
 
+# 2022-04-18 Dev build 0.148.3
+
+## Latest Docker Images
+
+* Datagrok: 
+  *  `docker pull datagrok/datagrok:0.148.3`
+  *  `docker pull datagrok/datagrok:latest`
+  
+* [Docker-Compose](admin/docker-compose.md)
+
+## Addressed Issues
+
+* Dialogs: add missing wiki links 
+* (Bug) Saving Connection doesn't save credentials 
+* APP_DATA variable in package deploy 
+* (Bug) NPM repositories: package manager opens with an exception  
+* Add missing import statement 
+* Method to check current user permissions 
+* Fixed typing 
+* (Bug) Registry is undefined when a package repository update job is launched (WIP)
+* Added Alexander to the list of users. 
+* #480: Ordering categories: SMILES should be rendered as molecules 
+* JS-API: added notify parameter for BitSet.init 
+* JS-API: BitSet anyTrue & anyFalse methods fix 
+* JS-API: added notify parameter to BitSet.init 
+* Revert grok_server and connectors changes 
+* HttpDataSource -\- dapi.functions support 
+* Retired the obsolete SDTM package. All hail ClinicalCase! 
+* Fixed wrong parameter name 
+
+
 # 2022-04-14 Dev build 0.148.2
 
 ## Latest Docker Images
