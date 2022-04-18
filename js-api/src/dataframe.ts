@@ -1628,7 +1628,7 @@ export class BitSet {
         buf[idx] |= 1 << (i & 0x1f);
     }
 
-    api.grok_BitSet_Set_Buffer(this.dart, buf);
+    api.grok_BitSet_SetBufferSilent(this.dart, buf);
     if (notify)
       this.fireChanged();
     return this;
