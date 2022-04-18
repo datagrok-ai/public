@@ -5,39 +5,34 @@ import {tTest} from '@datagrok-libraries/statistics/src/tests';
 /** Column statistics helper. */
 export class FilteringStatistics {
   private data?: Float32Array;
-  private stats: Stats;
+  private stats: Stats = {
+    count: 0,
+    pValue: 1.,
+    meanDifference: 0.,
+  };
 
   /**
    * Creates an instance of FilteringStatistics.
    * @param {Float32Array} [data] Numeric values to consider.
    */
-  constructor(data?: Float32Array) {
-    this.data = data;
-    this.stats = {
-      count: 0,
-      pValue: 1.,
-      meanDifference: 0.,
-    };
-  }
+  constructor(data?: Float32Array) {this.data = data;}
 
   /**
    * Sets values to make statistical analysis.
    * @param {Float32Array} data Those values.
    */
-  setData(data: Float32Array) {
-    this.data = data;
-  }
+  setData(data: Float32Array) {this.data = data;}
 
   /**
    * Sets bit mask to split population into two groups.
    * @param {DG.BitSet} mask The mask to perform splitting.
    */
   setMask(mask: DG.BitSet) {
-    if (this.data) {
-      const selected = this.data.filter((_, i) => mask.get(i));
-      const rest = this.data.filter((_, i) => !mask.get(i));
-      this.stats = this.calcStats(selected, rest);
-    }
+    if (!this.data)
+      return;
+    const selected = this.data.filter((_, i) => mask.get(i));
+    const rest = this.data.filter((_, i) => !mask.get(i));
+    this.stats = this.calcStats(selected, rest);
   }
 
   /**
@@ -57,13 +52,11 @@ export class FilteringStatistics {
   }
 
   /** Returns calculated statistics. */
-  get result(): Stats {
-    return this.stats;
-  }
+  get result(): Stats {return this.stats;}
 }
 
-export interface Stats {
+export type Stats = {
   count: number,
   pValue: number,
   meanDifference: number,
-}
+};

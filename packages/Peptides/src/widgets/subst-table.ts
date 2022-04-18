@@ -1,10 +1,10 @@
 import * as ui from 'datagrok-api/ui';
 import * as DG from 'datagrok-api/dg';
 
-export function substTableWidget(table: DG.DataFrame): DG.Widget {
-  const substTable = table?.temp['substTable'];
+export function substitutionsWidget(table: DG.DataFrame): DG.Widget {
+  const substTable = table.temp['substTable'] as DG.DataFrame;
   if (!substTable)
-    return new DG.Widget(ui.label('No substitution'));
+    return new DG.Widget(ui.label('No substitution table generated'));
 
   const dfRowCount = substTable.rowCount;
   const aminoInputFrom = ui.stringInput('from', '');
@@ -12,17 +12,12 @@ export function substTableWidget(table: DG.DataFrame): DG.Widget {
   const fromToMap: {[key: string]: DG.BitSet} = {};
   let aminoFrom = '';
   let aminoTo = '';
-  const initialCol: DG.Column = substTable.columns.byName('Initial');
-  const substitutedCol: DG.Column = substTable.columns.byName('Substituted');
-
-  for (let i = 0; i < initialCol.length; ++i) {
-    const sequenceDifference = `${initialCol.get(i)}#${substitutedCol.get(i)}`;
-    initialCol.set(i, sequenceDifference);
-  }
+  const initialCol: DG.Column = substTable.getCol('Initial');
+  const substitutedCol: DG.Column = substTable.getCol('Substituted');
 
   initialCol.semType = 'alignedSequenceDifference';
   initialCol.name = 'Substitution';
-  substTable.columns.remove('Substituted');
+  // substTable.columns.remove('Substituted');
   // const substCol = table.getCol('Substitution');
 
   for (let i = 0; i < dfRowCount; ++i) {
@@ -34,7 +29,7 @@ export function substTableWidget(table: DG.DataFrame): DG.Widget {
 
     for (let j = 0; j < aminosFrom.length; ++j) {
       if (aminosFrom[j] != aminosTo[j]) {
-        const idx = (aminosFrom[j] === '' ? '-' : aminosFrom[j]) + '#' + (aminosTo[j] === '' ? '-' : aminosTo[j]);
+        const idx = `${getAmino(aminosFrom[j])}#${getAmino(aminosTo[j])}`;
 
         if (!(idx in fromToMap))
           fromToMap[idx] = DG.BitSet.create(dfRowCount);
@@ -43,16 +38,21 @@ export function substTableWidget(table: DG.DataFrame): DG.Widget {
     }
   }
 
+  for (let i = 0; i < initialCol.length; ++i) {
+    const sequenceDifference = `${initialCol.get(i)}#${substitutedCol.get(i)}`;
+    initialCol.set(i, sequenceDifference);
+  }
+
   aminoInputFrom.onInput(() => {
-    aminoFrom = aminoInputFrom.value;
-    const fromKey = aminoFrom + '#' + aminoTo;
+    aminoFrom = getAmino(aminoInputFrom.value);
+    const fromKey = `${aminoFrom}#${aminoTo}`;
     if (fromKey in fromToMap)
       substTable.selection.copyFrom(fromToMap[fromKey]);
   });
 
   aminoInputTo.onInput(() => {
-    aminoTo = aminoInputTo.value;
-    const toKey = aminoFrom + '#' + aminoTo;
+    aminoTo = getAmino(aminoInputTo.value);
+    const toKey = `${aminoFrom}#${aminoTo}`;
     if (toKey in fromToMap)
       substTable.selection.copyFrom(fromToMap[toKey]);
   });
@@ -62,4 +62,8 @@ export function substTableWidget(table: DG.DataFrame): DG.Widget {
   grid.root.style.width = 'auto';
   grid.root.style.height = '150px';
   return new DG.Widget(ui.divV([aminoInputFrom.root, aminoInputTo.root, grid.root]));
+}
+
+function getAmino(amino: string): string {
+  return amino === '' ? '-' : amino;
 }
