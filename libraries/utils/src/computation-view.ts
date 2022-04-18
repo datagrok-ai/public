@@ -78,7 +78,7 @@ export class ComputationView extends FunctionView {
   }
 
   /** Override to provide custom initialization. {@link onViewInitialized} gets fired after that. */
-  async init(): Promise<void> {}
+  async init(): Promise<void> { await super.init(); }
 
   /** Override to customize top menu*/
   initTopMenu(menu: DG.Menu) {
@@ -106,6 +106,7 @@ export class ComputationView extends FunctionView {
   /** Override to build completely custom input block (the one with inputs, usually on the left).
    * If only specific field, consider overriding {@link buildCustomInputs}. */
   buildInputBlock(): HTMLElement {
+    return super.buildInputBlock();
     for (const p of this.func.inputs)
       this._inputFields.set(p.name, DG.InputBase.forProperty(p, this.call.dart));
 
@@ -116,7 +117,7 @@ export class ComputationView extends FunctionView {
   buildCustomInputs(): Map<String, DG.InputBase> { return new Map(); }
 
   /** Override to create output block. */
-  buildOutputBlock(): HTMLElement { return ui.div(); }
+  buildOutputBlock(): HTMLElement { return super.buildOutputBlock(); }
 
   /** Override to create a custom input control. */
   buildRibbonPanel(): HTMLElement { return ui.divH([
@@ -125,10 +126,10 @@ export class ComputationView extends FunctionView {
   }
 
   /** Creates function parameters based on the data entered by the user. */
-  inputFieldsToParameters(call: FuncCall): void { }
+  inputFieldsToParameters(call: FuncCall): void { super.inputFieldsToParameters(call); }
 
   /** Visualizes computation results */
-  outputParametersToView(call: FuncCall | null): void { }
+  outputParametersToView(call: FuncCall): void { super.outputParametersToView(call); }
 
   /** Override to provide custom computation error handling. */
   processComputationError(call: FuncCall) { grok.shell.error(call.errorMessage!);  }
