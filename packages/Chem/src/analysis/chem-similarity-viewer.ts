@@ -83,7 +83,7 @@ export class ChemSimilarityViewer extends ChemSearchBaseViewer {
         this.isEditedFromSketcher = false;
       this.curIdx = this.dataFrame!.currentRowIdx == -1 ? 0 : this.dataFrame!.currentRowIdx;
       if (computeData && !this.gridSelect) {
-        this.targetMoleculeIdx = this.dataFrame!.currentRowIdx;
+        this.targetMoleculeIdx = this.dataFrame!.currentRowIdx == -1 ? 0 : this.dataFrame!.currentRowIdx;
         const df = await chemSimilaritySearch(this.dataFrame!, this.moleculeColumn!,
           this.targetMolecule, this.distanceMetric, this.limit, this.minScore, this.fingerprint as Fingerprint);
         this.molCol = df.getCol('smiles');
