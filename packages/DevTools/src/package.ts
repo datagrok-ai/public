@@ -6,7 +6,7 @@ import { IconTool } from "./icon-tool";
 import { EntityType } from './constants';
 import './styles.css';
 import * as tests from "./tests/test-examples";
-import {testPackages} from "./package-testing";
+import {_testManager} from "./package-testing";
 import {viewersGallery} from "./viewers-gallery";
 import { functionSignatureEditor } from './function-signature-editor';
 import { addToJSContextCommand, getMinifiedClassNameMap, _renderDevPanel } from './dev-panel';
@@ -81,8 +81,10 @@ export function _IconTool(): void {
   grok.shell.newView('Icon Tool', [new IconTool('Icon Tool')]);
 }
 
-//name: testPackages
-export async function _testPackages(): Promise<void> { await testPackages(); }
+
+//name: testManager
+//top-menu: Tools | Dev | Test Manager
+export async function testManager(): Promise<void> { await _testManager(); }
 
 //tags: unitTest
 export function _throwsException(): void { tests.throwsException(); }
