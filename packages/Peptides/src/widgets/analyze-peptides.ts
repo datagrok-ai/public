@@ -6,6 +6,7 @@ import {PeptidesController} from '../peptides';
 import '../styles.css';
 import {StringDictionary} from '@datagrok-libraries/utils/src/type-declarations';
 import * as C from '../utils/constants';
+import {FilteringStatistics} from '../utils/filtering-statistics';
 
 /**
  * Peptide analysis widget.
@@ -78,11 +79,23 @@ export async function analyzePeptidesWidget(
         'scaling': activityScalingMethod.value,
       };
 
+      //prepare new DF
       const newDf = currentDf.clone(currentDf.filter, [col.name, activityColumn]);
       newDf.getCol(activityColumn).name = C.COLUMNS_NAMES.ACTIVITY;
       newDf.getCol(col.name).name = C.COLUMNS_NAMES.ALIGNED_SEQUENCE;
-      (newDf.columns as DG.ColumnList).add(tempDf.getCol(C.COLUMNS_NAMES.ACTIVITY_SCALED));
+      const activityScaledCol = tempDf.getCol(C.COLUMNS_NAMES.ACTIVITY_SCALED);
+      (newDf.columns as DG.ColumnList).add(activityScaledCol);
       newDf.temp[C.COLUMNS_NAMES.ACTIVITY] = activityColumn;
+      newDf.name = 'Peptides analysis';
+      newDf.temp[C.PEPTIDES_ANALYSIS] = true;
+
+      //calculate initial stats
+      const stats = new FilteringStatistics();
+      stats.setData(activityScaledCol.getRawData() as Float32Array);
+      stats.setMask(newDf.selection);
+      newDf.temp[C.STATS] = stats;
+
+      //set up views
       const newView = grok.shell.addTableView(newDf);
       const newGrid = newView.grid;
       newGrid.col(C.COLUMNS_NAMES.ACTIVITY_SCALED)!.name = newScaledColName;
@@ -100,21 +113,21 @@ export async function analyzePeptidesWidget(
   });
   startBtn.style.alignSelf = 'center';
 
-  const startMVABtn = ui.button('Launch MVA', async () => {
-    if (activityColumnChoice.value.type === DG.TYPE.FLOAT) {
-      const progress = DG.TaskBarProgressIndicator.create('Loading MVA...');
+  // const startMVABtn = ui.button('Launch MVA', async () => {
+  //   if (activityColumnChoice.value.type === DG.TYPE.FLOAT) {
+  //     const progress = DG.TaskBarProgressIndicator.create('Loading MVA...');
 
-      const options: {[key: string]: string} = {
-        'activityColumnName': activityColumnChoice.value.name,
-        'scaling': activityScalingMethod.value,
-      };
+  //     const options: {[key: string]: string} = {
+  //       'activityColumnName': activityColumnChoice.value.name,
+  //       'scaling': activityScalingMethod.value,
+  //     };
 
-      await callMVA(tableGrid, view, currentDf, options, col);
+  //     await callMVA(tableGrid, view, currentDf, options, col);
 
-      progress.close();
-    } else
-      grok.shell.error('The activity column must be of floating point number type!');
-  });
+  //     progress.close();
+  //   } else
+  //     grok.shell.error('The activity column must be of floating point number type!');
+  // });
 
 
   const viewer = await currentDf.plot.fromType('peptide-logo-viewer');

@@ -9,7 +9,10 @@ export enum COLUMNS_NAMES {
   MEAN_DIFFERENCE = 'Mean difference',
 }
 
-export const CATEGORY_OTHER = 'Other';
+export enum CATEGORIES {
+  OTHER = 'Other',
+  ALL = 'All',
+}
 
 export enum SEM_TYPES {
   AMINO_ACIDS = 'aminoAcids',
@@ -19,6 +22,8 @@ export enum SEM_TYPES {
 export const STATS = 'stats';
 
 export const EMBEDDING_STATUS = 'embeddingStatus';
+
+export const PEPTIDES_ANALYSIS = 'isPeptidesAnalysis';
 
 export enum FLAGS {
   CELL_CHANGING = 'isCellChanging',

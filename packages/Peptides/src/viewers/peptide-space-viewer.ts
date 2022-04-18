@@ -6,14 +6,13 @@ import $ from 'cash-dom';
 
 import {getSequenceMolecularWeight} from '../utils/molecular-measure';
 import {AlignedSequenceEncoder} from '@datagrok-libraries/bio/src/sequence-encoder';
-import {DimensionalityReducer} from '@datagrok-libraries/ml/src/reduce-dimensionality';
 import {
   createDimensinalityReducingWorker,
 } from '@datagrok-libraries/ml/src/workers/dimensionality-reducing-worker-creator';
-import {Measure, StringMetrics} from '@datagrok-libraries/ml/src/typed-metrics';
+import {StringMetrics} from '@datagrok-libraries/ml/src/typed-metrics';
 import {Coordinates} from '@datagrok-libraries/utils/src/type-declarations';
 import * as C from '../utils/constants';
-import { PeptidesController } from '../peptides';
+import {PeptidesController} from '../peptides';
 
 export class PeptideSpaceViewer extends DG.JsViewer {
   method: string;
@@ -22,12 +21,14 @@ export class PeptideSpaceViewer extends DG.JsViewer {
   controller: PeptidesController | null = null;
   customProperties = new Set(['method', 'measure', 'cyclesCount']);
   isEmbeddingCreating: boolean = false;
-  
+
   constructor() {
     super();
 
-    this.method = this.addProperty('method', DG.TYPE.STRING, 'UMAP', {choices: ['UMAP', 't-SNE', 'SPE', 'pSPE', 'OriginalSPE']});
-    this.measure = this.addProperty('measure', DG.TYPE.STRING, 'Levenshtein', {choices: ['Levenshtein', 'Jaro-Winkler']});
+    const methodChoices = ['UMAP', 't-SNE', 'SPE', 'pSPE', 'OriginalSPE'];
+    this.method = this.addProperty('method', DG.TYPE.STRING, 'UMAP', {choices: methodChoices});
+    const measureChoices = ['Levenshtein', 'Jaro-Winkler'];
+    this.measure = this.addProperty('measure', DG.TYPE.STRING, 'Levenshtein', {choices: measureChoices});
     this.cyclesCount = this.addProperty('cyclesCount', DG.TYPE.INT, 100);
   }
 
