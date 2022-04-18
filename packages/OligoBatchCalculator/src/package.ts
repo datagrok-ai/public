@@ -89,15 +89,15 @@ export async function extinctionCoefficient(sequence: string, extCoefsObj?: {[i:
   const additionalModificationsDf = await getAdditionalModifications();
   const additionalCodes = additionalModificationsDf.col(COL_NAMES.ABBREVIATION)!.categories;
   const output = isValidSequence(sequence, additionalCodes);
-  const ns = normalizeSequence(sequence, output.expectedSynthesizer, output.expectedTechnology);
+  let ns = normalizeSequence(sequence, output.expectedSynthesizer, output.expectedTechnology);
   let nearestNeighbourSum = 0;
   let individualBasisSum = 0;
   let modificationsSum = 0;
   if (extCoefsObj != null) {
-    for (const modif of Object.keys(extCoefsObj)) {
-      if (typeof extCoefsObj[modif] == 'number') {
-        modificationsSum += (sequence.match(new RegExp(modif, 'g')) || []).length * extCoefsObj[modif];
-        sequence = deleteWord(sequence, modif);
+    for (const modif of Object.keys(extCoefsObj)) {//@ts-ignore
+      if (extCoefsObj[modif] != 'Base') {//@ts-ignore
+        modificationsSum += (sequence.match(new RegExp(modif, 'g')) || []).length * parseFloat(extCoefsObj[modif]);
+        ns = deleteWord(ns, modif);
       }
     }
   }

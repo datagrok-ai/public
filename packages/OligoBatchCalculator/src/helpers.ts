@@ -6,7 +6,7 @@ export function deleteWord(sequence: string, searchTerm: string): string {
   let n = sequence.search(searchTerm);
   while (sequence.search(searchTerm) > -1) {
     n = sequence.search(searchTerm);
-    sequence = sequence.substring(0, n - 1) + sequence.substring(n + searchTerm.length - 1, sequence.length);
+    sequence = sequence.substring(0, n) + sequence.substring(n + searchTerm.length, sequence.length);
   }
   return sequence;
 }
@@ -29,7 +29,7 @@ export function mergeOptions(obj1: {[ind: string]: number}, obj2: {[ind: string]
       obj3[attrname] = obj1[attrname];
   }
   for (const attrname in obj2) {
-    if (Object.prototype.hasOwnProperty.call(obj1, attrname))
+    if (Object.prototype.hasOwnProperty.call(obj2, attrname))
       obj3[attrname] = obj2[attrname];
   }
   return obj3;
