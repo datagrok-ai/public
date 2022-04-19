@@ -5,8 +5,12 @@ import * as DG from 'datagrok-api/dg';
 import {ImageCellRenderer} from "./cell-types/image-cell-renderer";
 import {HyperlinkCellRenderer} from "./cell-types/hyperlink-cell-renderer";
 import {HtmlTestCellRenderer, TestCellRenderer} from "./cell-types/test-cell-renderer";
-import {SparklineCellRenderer} from "./sparklines/sparklines-lines";
 import {BarCellRenderer} from "./cell-types/bar-cell-renderer";
+
+import {SparklineCellRenderer} from "./sparklines/sparklines-lines";
+import {BarchartCellRenderer} from "./sparklines/barchart";
+import {PiechartCellRenderer} from "./sparklines/piechart";
+import {RadarchartCellRender} from "./sparklines/radarchart";
 
 export const _package = new DG.Package();
 
@@ -34,15 +38,6 @@ export function testCellRenderer() {
   return new TestCellRenderer();
 }
 
-//name: sparklineCellRenderer
-//tags: cellRenderer, cellRenderer-sparkline
-//meta.cellType: sparkline
-//meta.virtual: true
-//output: grid_cell_renderer result
-export function sparklineCellRenderer() {
-  return new SparklineCellRenderer();
-}
-
 //name: htestCellRenderer
 //tags: cellRenderer, cellRenderer-htest
 //meta.cellType: htest
@@ -57,4 +52,40 @@ export function htestCellRenderer() {
 //output: grid_cell_renderer result
 export function barCellRenderer() {
   return new BarCellRenderer();
+}
+
+//name: sparklineCellRenderer
+//tags: cellRenderer, cellRenderer-sparkline
+//meta.cellType: sparkline_ts
+//meta.virtual: true
+//output: grid_cell_renderer result
+export function sparklineCellRenderer() {
+  return new SparklineCellRenderer();
+}
+
+//name: barchartCellRenderer
+//tags: cellRenderer, cellRenderer-barchart
+//meta.cellType: barchart_ts
+//meta.virtual: true
+//output: grid_cell_renderer result
+export function barchartCellRenderer() {
+  return new BarchartCellRenderer();
+}
+
+//name: piechartCellRender
+//tags: cellRenderer, cellRenderer-piechart
+//meta.cellType: piechart_ts
+//meta.virtual: true
+//output: grid_cell_renderer result
+export function piechartCellRenderer() {
+  return new PiechartCellRenderer();
+}
+
+//name: radarCellRenderer
+//tags: cellRenderer, cellRenderer-radar
+//meta.cellType: radarchart_ts
+//meta.virtual: true
+//output: grid_cell_renderer result
+export function radarCellRenderer() {
+  return new RadarchartCellRender();
 }
