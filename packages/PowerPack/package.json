@@ -45,6 +45,12 @@
 			"propertyType": "bool",
 			"defaultValue": true,
 			"nullable": false
+		},
+		{
+			"name": "allowEditDFLines",
+			"propertyType": "bool",
+			"defaultValue": true,
+			"nullable": false
 		}
 	],
 	"canEdit": [
