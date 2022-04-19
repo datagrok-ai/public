@@ -47,11 +47,10 @@
 			"nullable": false
 		},
 		{
-			"name": "showDataFrameLines",
+			"name": "allowEditDFLines",
 			"propertyType": "bool",
 			"defaultValue": true,
-			"nullable": false,
-			"tags": ["FormulaLines"]
+			"nullable": false
 		}
 	],
 	"canEdit": [

@@ -33,8 +33,8 @@ const enum BTN_CAPTION {
   EMPTY = 'Empty',
 }
 
-const DEFAULT_OPTIONS: EditorOptions = {
-  showDataFrameLines: true,
+export const DEFAULT_OPTIONS: EditorOptions = {
+  allowEditDFLines: true,
 };
 
 const HISTORY_KEY = 'formula-lines-dialog';
@@ -242,8 +242,9 @@ interface AxisColumns {
   x: DG.Column
 }
 
-interface EditorOptions {
-  showDataFrameLines: boolean,
+export interface EditorOptions {
+  allowEditDFLines: boolean,
+  [propertyName: string]: any,
 }
 
 /**
@@ -879,11 +880,14 @@ export class FormulaLinesDialog {
       });
 
     /** Init DataFrame Table (in the second tab) */
-    if (this.options.showDataFrameLines && this.host.dframeItems)
+    if (this.options.allowEditDFLines && this.host.dframeItems) {
       tabs.addPane(ITEM_SOURCE.DATAFRAME, () => {
         this.dframeTable = this._initTable(this.host.dframeItems!);
         return this.dframeTable.root;
       });
+    } else { // Overrides the standard component logic that hides the header containing only one tab
+      tabs.header.style.removeProperty('display');
+    }
 
     /** Display "Add new" button */
     tabs.header.append(this.creationControl.button);
