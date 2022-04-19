@@ -152,7 +152,6 @@ export function init() {
 }
 
 //name: Model Catalog
-//tags: app
 export function modelCatalog() {
 /*  let view = new DG.MultiView({
     viewFactories: {
