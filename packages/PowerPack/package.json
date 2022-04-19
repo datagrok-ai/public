@@ -45,6 +45,13 @@
 			"propertyType": "bool",
 			"defaultValue": true,
 			"nullable": false
+		},
+		{
+			"name": "showDataFrameLines",
+			"propertyType": "bool",
+			"defaultValue": true,
+			"nullable": false,
+			"tags": ["FormulaLines"]
 		}
 	],
 	"canEdit": [

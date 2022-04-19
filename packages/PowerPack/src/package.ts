@@ -19,6 +19,7 @@ import { HtmlWidget } from "./widgets/html-widget";
 import {PowerPackSettingsEditor} from "./settings-editor";
 
 export let _package = new DG.Package();
+export let _properties: {[propertyName: string]: any};
 
 //name: compareColumns
 //top-menu: Data | Compare Columns...
@@ -42,12 +43,10 @@ export function _distributionProfiler(): DistributionProfilerViewer {
 
 //name: welcomeView
 //tags: autostart
-export function _welcomeView(): void {
-  _package.getProperties().then((props) => {
-    // @ts-ignore
-    if (props['showWelcomeView'])
-      welcomeView();
-  });
+export async function _welcomeView(): Promise<void> {
+  _properties = await _package.getProperties();
+  if (_properties['showWelcomeView'])
+    welcomeView();
 }
 
 //output: widget result

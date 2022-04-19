@@ -33,6 +33,10 @@ const enum BTN_CAPTION {
   EMPTY = 'Empty',
 }
 
+const DEFAULT_OPTIONS: EditorOptions = {
+  showDataFrameLines: true,
+};
+
 const HISTORY_KEY = 'formula-lines-dialog';
 const HISTORY_LENGTH = 12;
 
@@ -236,6 +240,10 @@ interface AxisNames {
 interface AxisColumns {
   y: DG.Column,
   x: DG.Column
+}
+
+interface EditorOptions {
+  showDataFrameLines: boolean,
 }
 
 /**
@@ -803,6 +811,7 @@ export class FormulaLinesDialog {
   dframeTable?: Table;
   creationControl: CreationControl;
   tabs: DG.TabControl;
+  options: EditorOptions;
 
   /** Returns the Table corresponding to the current tab in the tab control */
   get _currentTable(): Table {
@@ -812,8 +821,9 @@ export class FormulaLinesDialog {
   }
 
   /** Initializes all parameters and opens the Dialog window */
-  constructor(src: DG.DataFrame | DG.Viewer) {
+  constructor(src: DG.DataFrame | DG.Viewer, options: EditorOptions = DEFAULT_OPTIONS) {
     /** Init Helpers */
+    this.options = options;
     this.host = this._initHost(src);
     this.creationControl = this._initCreationControl();
     this.preview = this._initPreview(src);
@@ -869,7 +879,7 @@ export class FormulaLinesDialog {
       });
 
     /** Init DataFrame Table (in the second tab) */
-    if (this.host.dframeItems)
+    if (this.options.showDataFrameLines && this.host.dframeItems)
       tabs.addPane(ITEM_SOURCE.DATAFRAME, () => {
         this.dframeTable = this._initTable(this.host.dframeItems!);
         return this.dframeTable.root;
