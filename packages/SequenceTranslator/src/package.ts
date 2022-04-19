@@ -260,8 +260,8 @@ async function saveTableAsSdFile(table: DG.DataFrame) {
   let result = '';
   for (let i = 0; i < table.rowCount; i++) {
     result += (typeColumn.get(i) == 'SS') ?
-      sequenceToMolV3000(structureColumn.get(i)) + '\n' + `>  <Sequence>\nSense Strand\n\n` :
-      sequenceToMolV3000(structureColumn.get(i), true) + '\n' + `>  <Sequence>\nAnti Sense\n\n`;
+      sequenceToMolV3000(structureColumn.get(i), false, true) + '\n' + `>  <Sequence>\nSense Strand\n\n` :
+      sequenceToMolV3000(structureColumn.get(i), true, true) + '\n' + `>  <Sequence>\nAnti Sense\n\n`;
     for (const col of table.columns) {
       if (col.name != COL_NAMES.SEQUENCE)
         result += `>  <${col.name}>\n${col.get(i)}\n\n`;
@@ -324,7 +324,6 @@ export function oligoSdFile(table: DG.DataFrame) {
       return grok.shell.error('Columns already exist!');
 
     const sequence = t.col(COL_NAMES.SEQUENCE)!;
-    const salt = t.col(COL_NAMES.SALT)!;
     const equivalents = t.col(COL_NAMES.EQUIVALENTS)!;
 
     t.columns.addNewString(COL_NAMES.COMPOUND_NAME).init((i: number) => sequence.get(i));
@@ -332,12 +331,11 @@ export function oligoSdFile(table: DG.DataFrame) {
       sequence.getString(i) + '; duplex of SS: ' + sequence.getString(i - 2) + ' and AS: ' + sequence.getString(i - 1) :
       sequence.getString(i),
     );
-    const molWeightCol = saltsDf.col('MOLWEIGHT')!.toList();
-    const saltNames = saltsDf.col('DISPLAY')!.toList();
     t.columns.addNewFloat(COL_NAMES.CPD_MW)
       .init((i: number) => molecularWeight(sequence.get(i), weightsObj));
+    const mwCol = t.col(COL_NAMES.CPD_MW)!;
     t.columns.addNewFloat(COL_NAMES.SALT_MASS).init((i: number) => {
-      const mw = molWeightCol[saltNames.indexOf(salt.get(i))];
+      const mw = mwCol.get(i);
       return mw * equivalents.get(i);
     });
     t.columns.addNewCalculated(COL_NAMES.BATCH_MW,
