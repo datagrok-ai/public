@@ -5,7 +5,7 @@ import * as DG from 'datagrok-api/dg';
 import { welcomeView } from "./welcome-view";
 import { compareColumns } from './compare-columns';
 import { AddNewColumnDialog } from './dialogs/add-new-column';
-import { FormulaLinesDialog } from './dialogs/formula-lines';
+import { FormulaLinesDialog, DEFAULT_OPTIONS, EditorOptions } from './dialogs/formula-lines';
 import { DistributionProfilerViewer } from './distribution-profiler';
 import { SystemStatusWidget } from "./widgets/system-status-widget";
 import { RecentProjectsWidget } from "./widgets/recent-projects-widget";
@@ -44,7 +44,6 @@ export function _distributionProfiler(): DistributionProfilerViewer {
 //name: welcomeView
 //tags: autostart
 export async function _welcomeView(): Promise<void> {
-  _properties = await _package.getProperties();
   if (_properties['showWelcomeView'])
     welcomeView();
 }
@@ -146,7 +145,11 @@ export function _wikiSearch(s: string): Promise<any> {
 //input: dataframe src {optional: grok.shell.o}
 //top-menu: Data | Formula Lines...
 export function formulaLinesDialog(src: DG.DataFrame | DG.Viewer): FormulaLinesDialog {
-  return new FormulaLinesDialog(src);
+  const options = Object.keys(_properties)
+    .filter((k) => k in DEFAULT_OPTIONS)
+    .reduce((opts, k) => (opts[k] = _properties[k], opts), <EditorOptions>{});
+  //TODO: use property's 'category' or 'tags' to distinguish relevant properties
+  return new FormulaLinesDialog(src, options);
 }
 
 // Adds "Formula Lines" menu group to the Scatter Plot context menu:
@@ -158,3 +161,8 @@ grok.events.onContextMenu.subscribe((args) => {
       menu.item('Formula Lines...', () => { formulaLinesDialog(src); });
   }
 });
+
+//tags: init
+export async function powerPackInit() {
+  _properties = await _package.getProperties();
+}
