@@ -5,35 +5,37 @@ import {GridCell, Point} from "datagrok-api/src/grid";
 import {Paint} from "datagrok-api/src/utils";
 import {Color} from "datagrok-api/src/widgets";
 import {MARKER_TYPE} from "datagrok-api/src/const";
+import {getSettingsBase, names, SummarySettingsBase} from "./base";
 
-interface SparklineSettings {
+interface SparklineSettings extends SummarySettingsBase {
   normalize: boolean;
-  columnNames: string[];
 }
 
-function names(columns: Iterable<DG.Column>): string[] {
-  return Array.from(columns).map((c: any) => c.name)
-}
 
 function getSettings(gc: DG.GridColumn): SparklineSettings {
+  // return gc.settings ??= {
+  //   normalize: true,
+  //   columnNames: names(gc.grid.dataFrame.columns.numerical)
+  // }
   return gc.settings ??= {
-    normalize: true,
-    columnNames: names(gc.grid.dataFrame.columns.numerical)
+    ...getSettingsBase(gc),
+    ...{normalize: true,},
   }
 }
 
-function getDataColumns(gc: DG.GridColumn): DG.Column[] {
-  return gc.grid.dataFrame.columns.byNames(getSettings(gc).columnNames);
-}
 
 export class SparklineCellRenderer extends DG.GridCellRenderer {
   get name() { return 'sparkline'; }
-  get cellType() { return 'sparkline'; }
+
+  get cellType() { return 'sparkline_ts'; }
 
   render(g: CanvasRenderingContext2D, x: number, y: number, w: number, h: number, gridCell: GridCell, cellStyle: DG.GridCellStyle) {
 
     const settings = getSettings(gridCell.gridColumn);
-    x += 4; y += 2; w -= 6; h -= 4;
+    x += 4;
+    y += 2;
+    w -= 6;
+    h -= 4;
 
     if (w < 20 || h < 10) return;
 
@@ -51,24 +53,30 @@ export class SparklineCellRenderer extends DG.GridCellRenderer {
     }
 
     g.beginPath();
+    let started = false;
     for (let i = 0; i < cols.length; i++) {
-      let p = getPos(i, row);
+      if (!cols[i].isNone(row)) {
+        let p = getPos(i, row);
 
-      if (i == 0 || cols[i].isNone(row))
-        g.moveTo(p.x, p.y);
-      else
-        g.lineTo(p.x, p.y);
+        if (!started) {
+          g.moveTo(p.x, p.y);
+          started = true;
+        } else
+          g.lineTo(p.x, p.y);
+      }
     }
     g.stroke();
 
     for (let i = 0; i < cols.length; i++) {
-      let p = getPos(i, row);
-      Paint.marker(g, MARKER_TYPE.CIRCLE, p.x, p.y, Color.red, 3);
+      if (!cols[i].isNone(row)) {
+        let p = getPos(i, row);
+        Paint.marker(g, MARKER_TYPE.CIRCLE, p.x, p.y, Color.blue, 3);
+      }
     }
   }
 
   renderSettings(gridColumn: DG.GridColumn): HTMLElement {
-    gridColumn.settings ??= { normalize: true };
+    gridColumn.settings ??= {normalize: true};
     const settings: SparklineSettings = gridColumn.settings;
 
     const normalizeInput = InputBase.forProperty(Property.js('normalize', TYPE.BOOL), settings);
