@@ -43,7 +43,7 @@ export function _distributionProfiler(): DistributionProfilerViewer {
 
 //name: welcomeView
 //tags: autostart
-export async function _welcomeView(): Promise<void> {
+export function _welcomeView(): void {
   if (_properties['showWelcomeView'])
     welcomeView();
 }
