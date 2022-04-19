@@ -23,8 +23,7 @@ import {FunctionView} from './function-view';
  * - notifications for changing inputs, completion of computations, etc: {@link onInputChanged}
  * */
 export class ComputationView extends FunctionView {
-  func: DG.Func;
-  call: DG.FuncCall; // what is being currently edited
+
   lastCall?: DG.FuncCall;
   _inputFields: Map<string, DG.InputBase> = new Map<string, DG.InputBase>();
 
@@ -38,16 +37,13 @@ export class ComputationView extends FunctionView {
   constructor(func: DG.Func) {
     super(func);
 
-    this.func = func;
-    this.call = func.prepare();
-
-    this.initTopMenu(this.ribbonMenu);
-    this.initRibbonPanels();
-
-    this.init().then((_) => {
-      this.root.appendChild(this.build());
-      return this.onViewInitialized.next();
-    });
+    if (func != null)
+      this.init(func).then((_) => {
+        this.root.appendChild(this.build());
+        this.initTopMenu(this.ribbonMenu);
+        this.initRibbonPanels();
+        return this.onViewInitialized.next();
+      });
   }
 
   /** All inputs that are bound to fields */
@@ -64,7 +60,7 @@ export class ComputationView extends FunctionView {
 
   /** Maps inputs to parameters, computes, and maps output parameters to the UI. */
   async run(): Promise<void> {
-    this.lastCall = this.call.clone();
+    this.lastCall = this.call!.clone();
     this.inputFieldsToParameters(this.lastCall);
 
     try {
@@ -78,7 +74,7 @@ export class ComputationView extends FunctionView {
   }
 
   /** Override to provide custom initialization. {@link onViewInitialized} gets fired after that. */
-  async init(): Promise<void> { await super.init(); }
+  async init(func: DG.Func): Promise<void> { await super.init(func); }
 
   /** Override to customize top menu*/
   initTopMenu(menu: DG.Menu) {
@@ -107,10 +103,6 @@ export class ComputationView extends FunctionView {
    * If only specific field, consider overriding {@link buildCustomInputs}. */
   buildInputBlock(): HTMLElement {
     return super.buildInputBlock();
-    for (const p of this.func.inputs)
-      this._inputFields.set(p.name, DG.InputBase.forProperty(p, this.call.dart));
-
-    return ui.inputs(this._inputFields.values())
   }
 
   /** Custom inputs for the specified fields. Inputs for these fields will not be created by {@link buildInputBlock}. */
