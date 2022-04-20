@@ -19,15 +19,9 @@ export function sequenceToMolV3000(sequence: string, inverted: boolean = false, 
   }
   for (let i = 0; i < codesList.length; i++) {
     if (dropdowns.includes(codesList[i])) {
-      if (i == codesList.length -1 || (i < codesList.length - 1 && links.includes(codesList[i + 1]))) {
-        smilesCodes.push((i >= codesList.length / 2) ?
-          MODIFICATIONS[codesList[i]].right:
-          MODIFICATIONS[codesList[i]].left);
-      } else if (i < codesList.length - 1) {
-        smilesCodes.push((i >= codesList.length / 2) ?
-          MODIFICATIONS[codesList[i]].right : MODIFICATIONS[codesList[i]].left);
-        smilesCodes.push(stadardPhosphateLinkSmiles);
-      }
+      smilesCodes.push((i >= codesList.length / 2) ?
+        MODIFICATIONS[codesList[i]].right : MODIFICATIONS[codesList[i]].left);
+      smilesCodes.push(stadardPhosphateLinkSmiles);
     } else {
       if (links.includes(codesList[i]) ||
         includesStandardLinkAlready.includes(codesList[i]) ||
@@ -61,15 +55,9 @@ export function sequenceToSmiles(sequence: string, inverted: boolean = false): s
   }
   for (let i = 0; i < codesList.length; i++) {
     if (dropdowns.includes(codesList[i])) {
-      if (i == codesList.length -1 || (i < codesList.length - 1 && links.includes(codesList[i + 1]))) {
-        smiles += (i >= codesList.length / 2) ?
-          MODIFICATIONS[codesList[i]].right:
-          MODIFICATIONS[codesList[i]].left;
-      } else if (i < codesList.length - 1) {
-        smiles += (i >= codesList.length / 2) ?
-          MODIFICATIONS[codesList[i]].right + stadardPhosphateLinkSmiles:
-          MODIFICATIONS[codesList[i]].left + stadardPhosphateLinkSmiles;
-      }
+      smiles += (i >= codesList.length / 2) ?
+        MODIFICATIONS[codesList[i]].right + stadardPhosphateLinkSmiles:
+        MODIFICATIONS[codesList[i]].left + stadardPhosphateLinkSmiles;
     } else {
       if (links.includes(codesList[i]) ||
         includesStandardLinkAlready.includes(codesList[i]) ||
