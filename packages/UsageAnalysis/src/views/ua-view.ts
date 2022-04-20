@@ -9,14 +9,20 @@ import {UaQueryViewer} from "../viewers/abstract/ua-query-viewer";
 export abstract class UaView extends DG.ViewBase {
   uaToolbox: UaToolbox;
   viewers: UaQueryViewer[] = [];
+  initialized: boolean = false;
 
   protected constructor(viewName: string, uaToolbox: UaToolbox) {
     super();
     this.name = viewName;
     this.uaToolbox = uaToolbox;
     this.toolbox = uaToolbox.rootAccordion.root;
+  }
 
-    this.initViewers();
+  tryToinitViewers() {
+    if(!this.initialized) {
+      this.initialized = true;
+      this.initViewers();
+    }
   }
 
   abstract initViewers() : any; // for sync and async code

@@ -8,6 +8,7 @@ import {UaView} from "./ua-view";
 import {UaFilter} from "../filter2";
 import {UaFilterableQueryViewer} from "../viewers/ua-filterable-query-viewer";
 import {UaDataFrameQueryViewer} from "../viewers/ua-data-frame-query-viewer";
+import { TopPackagesViewer } from '../drilldown_viewers/events/top-packages-viewer';
 
 export class OverviewView extends UaView {
 
@@ -28,33 +29,33 @@ export class OverviewView extends UaView {
     );
     this.viewers.push(uniqueUsersViewer);
 
-    let eventsViewer = new UaFilterableQueryViewer(
-        this.uaToolbox.filterStream,
-        'Events',
-        'Events1',
-        (t: DG.DataFrame) => {
-          let viewer = DG.Viewer.lineChart(t, UaFilterableQueryViewer.splineStyle).root;
-          viewer.style.maxHeight = '150px';
-          return viewer;
-        }
-    );
-    this.viewers.push(eventsViewer);
+    // let eventsViewer = new UaFilterableQueryViewer(
+    //     this.uaToolbox.filterStream,
+    //     'Events',
+    //     'Events1',
+    //     (t: DG.DataFrame) => {
+    //       let viewer = DG.Viewer.lineChart(t, UaFilterableQueryViewer.splineStyle).root;
+    //       viewer.style.maxHeight = '150px';
+    //       return viewer;
+    //     }
+    // );
+    // this.viewers.push(eventsViewer);
 
-    let errorsViewer = new UaFilterableQueryViewer(
-        this.uaToolbox.filterStream,
-        'Errors',
-        'Errors1',
-        (t: DG.DataFrame) => {
-          let viewer = DG.Viewer.lineChart(t, UaFilterableQueryViewer.splineStyle).root;
-          viewer.style.maxHeight = '150px';
-          return viewer;
-        }
-    );
-    this.viewers.push(errorsViewer);
+    // let errorsViewer = new UaFilterableQueryViewer(
+    //     this.uaToolbox.filterStream,
+    //     'Errors',
+    //     'Errors1',
+    //     (t: DG.DataFrame) => {
+    //       let viewer = DG.Viewer.lineChart(t, UaFilterableQueryViewer.splineStyle).root;
+    //       viewer.style.maxHeight = '150px';
+    //       return viewer;
+    //     }
+    // );
+    // this.viewers.push(errorsViewer);
 
     let uniqueUsersListViewer = new UaFilterableQueryViewer(
         this.uaToolbox.filterStream,
-        'Unique Users List',
+        'Unique Users',
         'UniqueUsersList',
         (t: DG.DataFrame) => {
           let ids = Array.from(t.getCol('id').values());
@@ -83,6 +84,9 @@ export class OverviewView extends UaView {
     );
     this.viewers.push(totalUsersViewer);
 
+    let topPackagesViewer = new TopPackagesViewer('Packages', 'TopPackages', this.uaToolbox.filterStream);
+    this.viewers.push(topPackagesViewer);
+
     this.root.append(ui.block25([
       ui.block([totalUsersViewer.root]),
       ui.block([uniqueUsersListViewer.root]),
@@ -90,8 +94,8 @@ export class OverviewView extends UaView {
 
     this.root.append(ui.block75([
       ui.block([uniqueUsersViewer.root]),
-      ui.block([eventsViewer.root]),
-      ui.block([errorsViewer.root])
+      ui.block([topPackagesViewer.root]),
+      // ui.block([errorsViewer.root])
     ]));
   }
 
