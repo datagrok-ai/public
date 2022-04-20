@@ -63,6 +63,144 @@ export class Rect {
   get bottom(): number {
     return this.y + this.height;
   }
+
+  // --
+
+  getTop(height: number) {
+    return new Rect(this.left, this.top, this.width, height);
+  }
+
+  getBottom(height: number) {
+    return new Rect(this.left, this.bottom - height, this.width, height)
+  }
+
+  getLeft(width: number) {
+    return new Rect(this.left, this.top, width, this.height);
+  }
+
+  getRight(width: number) {
+    return new Rect(this.right - width, this.top, width, this.height);
+  }
+
+  getTopLeft(width: number, height: number) {
+    return new Rect(this.left, this.top, width, height);
+  }
+
+  getTopRight(width: number, height: number) {
+    return new Rect(this.right - width, this.top, width, height);
+  }
+
+  getBottomLeft(width: number, height: number) {
+    return new Rect(this.left, this.bottom - height, width, height);
+  }
+
+  getBottomRight(width: number, height: number) {
+    return new Rect(this.right - width, this.bottom - height, width, height);
+  }
+
+  cutLeft(dw: number) {
+    return new Rect(this.left + dw, this.top, this.width - dw, this.height);
+  }
+
+  cutTop(dh: number) {
+    return new Rect(this.left, this.top + dh, this.width, this.height - dh);
+  }
+
+  cutBottom(dh: number) {
+    return new Rect(this.left, this.top, this.width, this.height - dh);
+  }
+
+  cutRight(dw: number) {
+    return new Rect(this.left, this.top, this.width - dw, this.height);
+  }
+
+  // --
+
+  below(height: number) {
+    return new Rect(this.left, this.bottom, this.width, height);
+  }
+
+  above(height: number) {
+    return new Rect(this.left, this.top - height, this.width, height);
+  }
+
+  // --
+
+  toTheLeft(width: number) {
+    return new Rect(this.left - width, this.top, width, this.height);
+  }
+
+  toTheRight(width: number) {
+    return new Rect(this.right, this.top, width, this.height);
+  }
+
+  toTheTop(height: number) {
+    return this.above(height);
+  }
+
+  toTheBottom(height: number) {
+    return this.below(height);
+  }
+
+  //--
+
+  getTopScaled(ratio: number) {
+    return this.getTop(this.height * ratio);
+  }
+
+  getBottomScaled(ratio: number) {
+    return this.getBottom(this.height * ratio);
+  }
+
+  getLeftScaled(ratio: number) {
+    return this.getLeft(this.width * ratio);
+  }
+
+  getRightScaled(ratio: number) {
+    return this.getRight(this.width * ratio);
+  }
+
+  // --
+
+  getTopPart(count: number, index: number) {
+    return new Rect(
+      this.left, this.top + (this.height / count) * index,
+      this.width, this.height / count);
+  }
+
+  getLeftPart(count: number, index: number) {
+    return new Rect(
+      this.left + (this.width / count) * index, this.top,
+      this.width / count, this.height);
+  }
+
+  getGridPart(xCount: number, yCount: number, x: number, y: number) {
+    return new Rect(
+      this.left + (this.width / xCount) * x, this.top + (this.height / yCount) * y,
+      this.width / xCount, this.height / y);
+  }
+
+  inflate(dx: number, dy: number) {
+    return new Rect(
+      this.left - dx, this.top - dy,
+      this.width + 2 * dx, this.height + 2 * dy);
+  }
+
+  inflateSize(dw: number, dh: number) {
+    return new Rect(this.left, this.top, this.width + dw, this.height + dh);
+  }
+
+  inflateRel(dxRatio: number, dyRatio: number) {
+    return this.inflate(this.width * (dxRatio - 1), this.height * (dyRatio - 1));
+  }
+
+  // --
+
+  fitSquare() {
+    const size = Math.min(this.width, this.height);
+    return new Rect(
+      this.left + (this.width - size) / 2, this.top + (this.height - size) / 2, size, size);
+  }
 }
 
 /** Represents a grid cell */
