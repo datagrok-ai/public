@@ -50,6 +50,7 @@ into account various parameters: the average number of words per sentence or
 syllables per word, percentage of long words, etc.
 
 The `Text Statistics` info panel calculates two common formulas:
+
 * [Flesch reading-ease](https://en.wikipedia.org/wiki/Flesch%E2%80%93Kincaid_readability_tests) test for English
 * [LIX](https://en.wikipedia.org/wiki/Lix_(readability_test)) formula for other languages
 
