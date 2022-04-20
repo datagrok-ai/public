@@ -25,12 +25,12 @@ declare global {
   }
 }
 
-CanvasRenderingContext2D.prototype.setFillStyle = function (fill) {
+CanvasRenderingContext2D.prototype.setFillStyle = function (fill: string | CanvasGradient | CanvasPattern) {
   this.fillStyle = fill;
   return this;
 }
 
-CanvasRenderingContext2D.prototype.setStrokeStyle = function (stroke) {
+CanvasRenderingContext2D.prototype.setStrokeStyle = function (stroke: string | CanvasGradient | CanvasPattern) {
   this.strokeStyle = stroke;
   return this;
 }
@@ -39,11 +39,11 @@ CanvasRenderingContext2D.prototype.roundRect = function (x: number, y: number, w
   if (w < 2 * r) r = w / 2;
   if (h < 2 * r) r = h / 2;
   this.beginPath();
-  this.moveTo(x + r, y);
-  this.arcTo(x + w, y, x + w, y + h, r);
-  this.arcTo(x + w, y + h, x, y + h, r);
-  this.arcTo(x, y + h, x, y, r);
-  this.arcTo(x, y, x + w, y, r);
+  this.moveTo(x+r, y);
+  this.arcTo(x+w, y,   x+w, y+h, r);
+  this.arcTo(x+w, y+h, x,   y+h, r);
+  this.arcTo(x,   y+h, x,   y,   r);
+  this.arcTo(x,   y,   x+w, y,   r);
   this.closePath();
   return this;
 }
@@ -59,7 +59,7 @@ CanvasRenderingContext2D.prototype.line = function (x1, y1, x2, y2, color) {
   return this;
 }
 
-CanvasRenderingContext2D.prototype.polygon = function (pa) {
+CanvasRenderingContext2D.prototype.polygon = function (pa: Point[]) {
 
   this.beginPath();
 
