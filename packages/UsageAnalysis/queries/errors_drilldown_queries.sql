@@ -1,6 +1,6 @@
 --name: FunctionInfoByFriendlyName
 --input: string name
---connection: System:DatagrokAdmin
+--connection: System:Datagrok
 select * from event_types et
 where friendly_name = @name;
 --end
@@ -9,7 +9,7 @@ where friendly_name = @name;
 --input: string name
 --input: string date { pattern: datetime }
 --input: list users
---connection: System:DatagrokAdmin
+--connection: System:Datagrok
 select et.* from event_types et
 join events e on e.event_type_id = et.id
 join users_sessions s on e.session_id = s.id

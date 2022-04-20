@@ -2,7 +2,7 @@
 --input: string date { pattern: datetime }
 --input: list users
 --input: string data_source
---connection: System:DatagrokAdmin
+--connection: System:Datagrok
 select q.name, count(1) from events e
 join queries q on e.event_type_id = q.id
 join connections c on c.id = q.connection_id
@@ -20,7 +20,7 @@ group by q.name
 --input: string name
 --input: string date { pattern: datetime }
 --input: list users
---connection: System:DatagrokAdmin
+--connection: System:Datagrok
 select u.name, count(e.id) from events e
 join queries q on e.event_type_id = q.id
 join users_sessions s on e.session_id = s.id
@@ -36,7 +36,7 @@ group by u.name
 --input: string name
 --input: string date { pattern: datetime }
 --input: list users
---connection: System:DatagrokAdmin
+--connection: System:Datagrok
 select u.name, count(e.id) from events e
 join queries q on e.event_type_id = q.id
 join connections c on c.id = q.connection_id
