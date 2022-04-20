@@ -1,17 +1,41 @@
-import {Balloon} from './widgets';
+import {Balloon, Color} from './widgets';
 import {toDart, toJs} from './wrappers';
-import {MARKER_TYPE} from "./const";
-import {Rect} from "./grid";
+import {ColorType, MARKER_TYPE} from "./const";
+import {Point, Rect} from "./grid";
 
 let api = <any>window;
 
 declare global {
   interface CanvasRenderingContext2D {
+
+    setFillStyle(fill: string | CanvasGradient | CanvasPattern): CanvasRenderingContext2D;
+
+    setStrokeStyle(stroke: string | CanvasGradient | CanvasPattern): CanvasRenderingContext2D;
+
     roundRect(x: number, y: number, w: number, h: number, r: number): CanvasRenderingContext2D
+
+    line(x1: number, y1: number, x2: number, y2: number, color: ColorType): CanvasRenderingContext2D;
+
+    /**
+     * Use stroke() or fill() after.
+     * @param pa: Array of points
+     */
+    polygon(pa: Point[]): CanvasRenderingContext2D;
+
   }
 }
 
-CanvasRenderingContext2D.prototype.roundRect = function(x: number, y: number, w: number, h: number, r: number) {
+CanvasRenderingContext2D.prototype.setFillStyle = function (fill: string | CanvasGradient | CanvasPattern) {
+  this.fillStyle = fill;
+  return this;
+}
+
+CanvasRenderingContext2D.prototype.setStrokeStyle = function (stroke: string | CanvasGradient | CanvasPattern) {
+  this.strokeStyle = stroke;
+  return this;
+}
+
+CanvasRenderingContext2D.prototype.roundRect = function (x: number, y: number, w: number, h: number, r: number) {
   if (w < 2 * r) r = w / 2;
   if (h < 2 * r) r = h / 2;
   this.beginPath();
@@ -21,7 +45,33 @@ CanvasRenderingContext2D.prototype.roundRect = function(x: number, y: number, w:
   this.arcTo(x,   y+h, x,   y,   r);
   this.arcTo(x,   y,   x+w, y,   r);
   this.closePath();
-  return this;  
+  return this;
+}
+
+CanvasRenderingContext2D.prototype.line = function (x1, y1, x2, y2, color) {
+
+  this.beginPath();
+  this.strokeStyle = Color.toRgb(color);
+  this.moveTo(x1, y1);
+  this.lineTo(x2, y2);
+  this.stroke();
+
+  return this;
+}
+
+CanvasRenderingContext2D.prototype.polygon = function (pa: Point[]) {
+
+  this.beginPath();
+
+  const last_p = pa[pa.length - 1]
+  this.moveTo(last_p.x, last_p.y);
+
+  for (let p of pa) {
+    this.lineTo(p.x, p.y);
+  }
+  this.closePath();
+
+  return this;
 }
 
 
