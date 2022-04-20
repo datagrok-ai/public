@@ -2,8 +2,8 @@ import * as grok from 'datagrok-api/grok';
 import * as ui from 'datagrok-api/ui';
 import * as DG from 'datagrok-api/dg';
 
-const CURRENT_USER = false;
-const STORAGE_NAME = 'oligo-batch-calculator-storage';
+export const CURRENT_USER = false;
+export const STORAGE_NAME = 'oligo-batch-calculator-storage';
 export const COL_NAMES = {
   LONG_NAMES: 'Long name',
   ABBREVIATION: 'Abbreviation',
@@ -13,7 +13,7 @@ export const COL_NAMES = {
   ACTION: 'Action',
   CHANGE_LOGS: 'Change logs',
 };
-const ADMIN_USERS = ['Baozhong Zhao', 'Sijin Guo', 'Saika Siddiqui', 'Vadym Kovadlo'];
+export const ADMIN_USERS = ['Baozhong Zhao', 'Sijin Guo', 'Saika Siddiqui', 'Vadym Kovadlo'];
 
 export async function getAdditionalModifications(): Promise<DG.DataFrame> {
   const modifications: any[] = [];
@@ -94,80 +94,17 @@ export async function addModificationButton(modificationsDf: DG.DataFrame): Prom
 }
 
 export function deleteAdditionalModification(additionalModificationsDf: DG.DataFrame, rowIndex: number): void {
-  ui.dialog(
-    'Do you want to delete ' + additionalModificationsDf.col(COL_NAMES.ABBREVIATION)!.getString(rowIndex) + ' ?',
-  )
+  const v = additionalModificationsDf.col(COL_NAMES.ABBREVIATION)!.getString(rowIndex);
+  ui.dialog('Delete Additional Modification')
+    .add(ui.divText('Do you want to delete row ' + v + ' ?'))
     .onOK(() => {
       grok.dapi.users.current().then(async (user) => {
-        if (ADMIN_USERS.includes(user.firstName + ' ' + user.lastName)) {
-          additionalModificationsDf.rows.removeAt(rowIndex, 1, true);
-          const keyToDelete = additionalModificationsDf.col(COL_NAMES.ABBREVIATION)!.get(rowIndex);
-          await grok.dapi.userDataStorage.remove(STORAGE_NAME, keyToDelete, CURRENT_USER);
-        } else
-          grok.shell.info('You don\'t have permission for this action');
+        if (!ADMIN_USERS.includes(user.firstName + ' ' + user.lastName))
+          return grok.shell.info('You don\'t have permission for this action');
+        additionalModificationsDf.rows.removeAt(rowIndex, 1, true);
+        const keyToDelete = additionalModificationsDf.col(COL_NAMES.ABBREVIATION)!.get(rowIndex);
+        await grok.dapi.userDataStorage.remove(STORAGE_NAME, keyToDelete, CURRENT_USER);
       });
     })
     .show();
-}
-
-export function editAdditionalModification(additionalModificationsDf: DG.DataFrame, rowIndex: number): void {
-  grok.dapi.users.current().then(async (user) => {
-    if (ADMIN_USERS.includes(user.firstName + ' ' + user.lastName)) {
-      const longName = ui.stringInput(COL_NAMES.LONG_NAMES,
-        additionalModificationsDf.col(COL_NAMES.LONG_NAMES)!.get(rowIndex));
-      ui.tooltip.bind(longName.root, 'Examples: \'Inverted Abasic\', \'Cyanine 3 CPG\', \'5-Methyl dC\'');
-      const oldAbbreviation = additionalModificationsDf.col(COL_NAMES.ABBREVIATION)!.get(rowIndex);
-      const abbreviation = ui.stringInput(COL_NAMES.ABBREVIATION, oldAbbreviation);
-      ui.tooltip.bind(abbreviation.root, 'Examples: \'invabasic\', \'Cy3\', \'5MedC\'');
-      const molecularWeight = ui.floatInput(COL_NAMES.MOLECULAR_WEIGHT,
-        additionalModificationsDf.col(COL_NAMES.MOLECULAR_WEIGHT)!.get(rowIndex));
-      const baseModification = ui.choiceInput(COL_NAMES.BASE_MODIFICATION,
-        'NO', ['NO', 'rU', 'rA', 'rC', 'rG', 'dA', 'dC', 'dG', 'dT'], (v: string) => {
-          if (v != 'NO')
-            extinctionCoefficient.value = 'Base';
-          extinctionCoefficient.enabled = (v == 'NO');
-        });
-      const extinctionCoefficient = ui.stringInput(COL_NAMES.EXTINCTION_COEFFICIENT,
-        additionalModificationsDf.col(COL_NAMES.EXTINCTION_COEFFICIENT)!.get(rowIndex));
-      const changeLogsCol = additionalModificationsDf.col(COL_NAMES.CHANGE_LOGS)!;
-      ui.dialog('Edit Modification')
-        .add(ui.block([
-          longName.root,
-          abbreviation.root,
-          molecularWeight.root,
-          baseModification.root,
-          extinctionCoefficient.root,
-        ]))
-        .onOK(async () => {
-          if (longName.value.length > 300)
-            return grok.shell.warning('Long Name shouldn\'t contain more than 300 characters');
-          if (abbreviation.value.length > 100)
-            return grok.shell.warning('Abbreviation shouldn\'t contain more than 100 characters');
-          const newLog = changeLogsCol.get(rowIndex) + Date() + ' by ' + user.firstName + ' ' + user.lastName + '; ';
-          await grok.dapi.userDataStorage.postValue(
-            STORAGE_NAME,
-            abbreviation.value,
-            JSON.stringify({
-              longName: longName.value,
-              abbreviation: abbreviation.value,
-              molecularWeight: molecularWeight.value,
-              extinctionCoefficient: extinctionCoefficient.value,
-              baseModification: baseModification.value,
-              changeLogs: newLog,
-            }),
-            CURRENT_USER,
-          );
-          if (oldAbbreviation != abbreviation.value)
-            await grok.dapi.userDataStorage.remove(STORAGE_NAME, oldAbbreviation, CURRENT_USER);
-          additionalModificationsDf.set(COL_NAMES.LONG_NAMES, rowIndex, longName.value);
-          additionalModificationsDf.set(COL_NAMES.ABBREVIATION, rowIndex, abbreviation.value);
-          additionalModificationsDf.set(COL_NAMES.MOLECULAR_WEIGHT, rowIndex, molecularWeight.value);
-          additionalModificationsDf.set(COL_NAMES.EXTINCTION_COEFFICIENT, rowIndex, extinctionCoefficient.value);
-          additionalModificationsDf.set(COL_NAMES.BASE_MODIFICATION, rowIndex, baseModification.value);
-          additionalModificationsDf.set(COL_NAMES.CHANGE_LOGS, rowIndex, newLog);
-        })
-        .show();
-    } else
-      grok.shell.info('You don\'t have permission for this action');
-  });
 }
