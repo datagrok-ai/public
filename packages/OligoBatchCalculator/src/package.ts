@@ -5,7 +5,7 @@ import $ from 'cash-dom';
 import {map, individualBases, nearestNeighbour} from './map';
 import {isValidSequence, getAllCodesOfSynthesizer} from './validation';
 import {deleteWord, saveAsCsv, sortByStringLengthInDescendingOrder, mergeOptions} from './helpers';
-import {COL_NAMES, getAdditionalModifications, addModificationButton, editAdditionalModification,
+import {COL_NAMES, CURRENT_USER, STORAGE_NAME, ADMIN_USERS, getAdditionalModifications, addModificationButton,
   deleteAdditionalModification} from './additional-modifications';
 
 export const _package = new DG.Package();
@@ -126,11 +126,11 @@ function normalizeSequence(sequence: string, synthesizer: string | null, technol
 //name: Oligo Batch Calculator
 //tags: app
 export async function OligoBatchCalculatorApp(): Promise<void> {
-  const additionalModificationsDf = await getAdditionalModifications();
-  const additionalCodes = additionalModificationsDf.col(COL_NAMES.ABBREVIATION)!.categories;
-  const additionalAbbreviations = additionalModificationsDf.col(COL_NAMES.ABBREVIATION)!.toList();
-  const additionalWeights = additionalModificationsDf.col(COL_NAMES.MOLECULAR_WEIGHT)!.toList();
-  const extinctionCoefficients = additionalModificationsDf.col(COL_NAMES.EXTINCTION_COEFFICIENT)!.toList();
+  const additionalModsDf = await getAdditionalModifications();
+  const additionalCodes = additionalModsDf.col(COL_NAMES.ABBREVIATION)!.categories;
+  const additionalAbbreviations = additionalModsDf.col(COL_NAMES.ABBREVIATION)!.toList();
+  const additionalWeights = additionalModsDf.col(COL_NAMES.MOLECULAR_WEIGHT)!.toList();
+  const extinctionCoefficients = additionalModsDf.col(COL_NAMES.EXTINCTION_COEFFICIENT)!.toList();
   const additionalWeightsObj: {[index: string]: number} = {};
   const extinctionCoeffsObj: {[index: string]: number} = {};
   additionalAbbreviations.forEach((key, i) => additionalWeightsObj[key] = additionalWeights[i]);
@@ -270,12 +270,23 @@ export async function OligoBatchCalculatorApp(): Promise<void> {
   ]);
   const omeAndFluoroGrid = DG.Viewer.grid(omeAndFluoroDf!, {showRowHeader: false, showCellTooltip: false});
 
-  const additionaModifsGrid = DG.Viewer.grid(additionalModificationsDf, {showRowHeader: false, showCellTooltip: false});
+  const additionaModifsGrid = DG.Viewer.grid(additionalModsDf, {showRowHeader: false, showCellTooltip: true});
   additionaModifsGrid.col(COL_NAMES.LONG_NAMES)!.width = 110;
   additionaModifsGrid.col(COL_NAMES.ABBREVIATION)!.width = 80;
   additionaModifsGrid.col(COL_NAMES.MOLECULAR_WEIGHT)!.width = 105;
   additionaModifsGrid.col(COL_NAMES.BASE_MODIFICATION)!.width = 110;
   additionaModifsGrid.col(COL_NAMES.EXTINCTION_COEFFICIENT)!.width = 100;
+
+  // Hide 'CHANGE_LOGS' column, display its content in tooltip
+  additionaModifsGrid.columns.setVisible(additionalModsDf.columns.names().slice(0, -1));
+  additionalModsDf.col(COL_NAMES.CHANGE_LOGS)!.name = '~' + COL_NAMES.CHANGE_LOGS;
+  additionaModifsGrid.onCellTooltip(function(cell, x, y) {
+    if (cell.isTableCell) {
+      const v = additionalModsDf.col('~' + COL_NAMES.CHANGE_LOGS)!.get(cell.gridRow).split('; ').slice(0, -1);
+      ui.tooltip.show(ui.divText(v), x, y);
+      return true;
+    }
+  });
 
   const codesTablesDiv = ui.splitV([
     ui.box(ui.h2('ASO Gapmers'), {style: {maxHeight: '40px'}}),
@@ -321,16 +332,45 @@ export async function OligoBatchCalculatorApp(): Promise<void> {
   col.cellType = 'html';
   additionaModifsGrid.onCellPrepare(function(gc) {
     if (gc.isTableCell && gc.gridColumn.name == COL_NAMES.ACTION) {
-      gc.style.element = ui.divH([
-        ui.button(ui.iconFA('trash-alt'), () => deleteAdditionalModification(additionalModificationsDf, gc.gridRow)),
-        ui.button(ui.iconFA('edit'), () => editAdditionalModification(additionalModificationsDf, gc.gridRow)),
-      ]);
+      const icon = ui.iconFA('trash-alt');
+      gc.style.element = ui.button(icon, () => deleteAdditionalModification(additionalModsDf, gc.gridRow));
     }
+  });
+
+  additionalModsDf.onValuesChanged.subscribe(async (_) => {
+    grok.dapi.users.current().then((user) => {
+      if (!ADMIN_USERS.includes(user.firstName + ' ' + user.lastName))
+        return grok.shell.warning('You don\'t have permission for this action');
+    });
+    if (additionalModsDf.currentCol.name == COL_NAMES.ABBREVIATION) {
+      const entries = await grok.dapi.userDataStorage.get(STORAGE_NAME, CURRENT_USER);
+      if (additionalModsDf.currentCell.value.length > 100)
+        return grok.shell.warning('Abbreviation shouldn\'t contain more than 100 characters');
+      if (additionalModsDf.currentCell.value in entries)
+        return grok.shell.warning('Abbreviation ' + additionalModsDf.currentCell.value + ' already exists');
+    }
+    if (additionalModsDf.currentCol.name == COL_NAMES.LONG_NAMES && additionalModsDf.currentCell.value.length > 300)
+      return grok.shell.warning('Long Name shouldn\'t contain more than 300 characters');
+
+    const rowIndex = additionalModsDf.currentCell.rowIndex;
+    await grok.dapi.userDataStorage.postValue(
+      STORAGE_NAME,
+      additionalModsDf.col(COL_NAMES.ABBREVIATION)?.get(rowIndex),
+      JSON.stringify({
+        longName: additionalModsDf.col(COL_NAMES.LONG_NAMES)?.get(rowIndex),
+        abbreviation: additionalModsDf.col(COL_NAMES.ABBREVIATION)?.get(rowIndex),
+        molecularWeight: additionalModsDf.col(COL_NAMES.MOLECULAR_WEIGHT)?.get(rowIndex),
+        extinctionCoefficient: additionalModsDf.col(COL_NAMES.EXTINCTION_COEFFICIENT)?.get(rowIndex),
+        baseModification: additionalModsDf.col(COL_NAMES.BASE_MODIFICATION)?.get(rowIndex),
+        changeLogs: additionalModsDf.col(COL_NAMES.CHANGE_LOGS)?.get(rowIndex),
+      }),
+      CURRENT_USER,
+    );
   });
 
   view.setRibbonPanels([[
     ui.iconFA('redo', () => inputSequences.value = ''),
-    ui.iconFA('plus', () => addModificationButton(additionalModificationsDf)),
+    ui.iconFA('plus', () => addModificationButton(additionalModsDf)),
     ui.iconFA('arrow-to-bottom', () => saveAsCsv(table)),
     switchInput.root,
   ]]);
