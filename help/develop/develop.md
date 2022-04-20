@@ -550,13 +550,13 @@ file:
 
 ```json
 "properties": [
-{
-"name": "Property name",
-"propertyType": "string", // `DG.TYPES_SCALAR` are supported
-"choices": ["value #1", "value #2"], // Optional field with values of the property type
-"defaultValue": "value #2", // Optional field with a default value (it should in choices, if they are given)
-"nullable": false                     // Optional field determining whether the property value can be null
-}
+  {
+    "name": "Property name",
+    "propertyType": "string",             // `DG.TYPES_SCALAR` are supported
+    "choices": ["value #1", "value #2"],  // Optional field with values of the property type
+    "defaultValue": "value #2",           // Optional field with a default value (it should be in choices, if they are given)
+    "nullable": false                     // Optional field determining whether the property value can be null
+  }
 ]
 ```
 
@@ -567,7 +567,7 @@ const props = await _package.getProperties();
 ```
 
 The above call outputs an object where the keys are property names and the values are serialized property values. It's
-possible to customize the editor's appearance by defining a special [editor function](#settings-editors).
+possible to customize the editor's appearance by defining a special [editor function](function-roles.md#settings-editors).
 
 ## Documentation
 
