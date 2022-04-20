@@ -57,6 +57,8 @@ export class PeptidesController {
 
   get sarVGrid() {return this._model.sarVGrid;}
 
+  get sourceGrid() {return this._model._sourceGrid!; }
+
   async updateData(
     activityScaling?: string, sourceGrid?: DG.Grid, twoColorMode?: boolean, grouping?: boolean, activityLimit?: number,
     maxSubstitutions?: number, isSubstitutionOn?: boolean, filterMode?: boolean,
@@ -192,21 +194,21 @@ export class PeptidesController {
         break;
       }
     }
-    sarDf.currentRowIdx = index;
-    sarDf.currentCol = sarDf.getCol(position);
+    position = position === C.CATEGORIES.ALL ? C.COLUMNS_NAMES.AMINO_ACID_RESIDUE : position;
+    sarDf.currentCell = sarDf.cell(index, position);
   }
 
   /**
    * Class initializer
    *
-   * @param {DG.Grid} tableGrid Working talbe grid.
-   * @param {DG.TableView} view Working view.
+   * @param {DG.Grid} sourceGrid Working talbe grid.
+   * @param {DG.TableView} currentView Working view.
    * @param {DG.DataFrame} currentDf Working table.
    * @param {StringDictionary} options SAR viewer options
    * @param {DG.Column} col Aligned sequences column.
    * @memberof Peptides
    */
-  async init(tableGrid: DG.Grid, view: DG.TableView, options: StringDictionary) {
+  async init(sourceGrid: DG.Grid, currentView: DG.TableView, options: StringDictionary) {
     this.dataFrame.temp[C.EMBEDDING_STATUS] = false;
     function adjustCellSize(grid: DG.Grid) {
       const colNum = grid.columns.length;
@@ -217,17 +219,17 @@ export class PeptidesController {
       grid.props.rowHeight = 20;
     }
 
-    for (let i = 0; i < tableGrid.columns.length; i++) {
-      const aarCol = tableGrid.columns.byIndex(i);
+    for (let i = 0; i < sourceGrid.columns.length; i++) {
+      const aarCol = sourceGrid.columns.byIndex(i);
       if (aarCol && aarCol.name && aarCol.column?.semType !== C.SEM_TYPES.AMINO_ACIDS &&
         aarCol.name !== this.dataFrame.temp[C.COLUMNS_NAMES.ACTIVITY_SCALED]
       )
-        tableGrid.columns.byIndex(i)!.visible = false;
+        sourceGrid.columns.byIndex(i)!.visible = false;
     }
 
-    await this.updateData(options.scaling, tableGrid, false, false, 1, 2, false, false);
+    await this.updateData(options.scaling, sourceGrid, false, false, 1, 2, false, false);
 
-    const dockManager = view.dockManager;
+    const dockManager = currentView.dockManager;
 
     this.sarViewer = await this.dataFrame.plot.fromType('peptide-sar-viewer', options) as SARViewer;
     this.sarViewer.helpUrl = this.helpUrl;
@@ -245,12 +247,14 @@ export class PeptidesController {
 
     dockViewers(sarViewersGroup, DG.DOCK_TYPE.RIGHT, dockManager, DG.DOCK_TYPE.DOWN);
 
-    tableGrid.props.allowEdit = false;
-    adjustCellSize(tableGrid);
+    sourceGrid.props.allowEdit = false;
+    adjustCellSize(sourceGrid);
 
     this._model.sarGrid.invalidate();
     this._model.sarVGrid.invalidate();
   }
+
+  invalidateSourceGrid() { this.sourceGrid.invalidate(); }
 }
 
 function dockViewers(
