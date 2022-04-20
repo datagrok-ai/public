@@ -672,7 +672,7 @@ export class PeptidesModel {
   }
 
   invalidateGrids() {
-    this.stackedBarchart.computeData();
+    this.stackedBarchart?.computeData();
     this.sarGrid.invalidate();
     this.sarVGrid.invalidate();
     this._sourceGrid?.invalidate();
