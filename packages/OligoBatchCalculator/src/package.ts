@@ -2,25 +2,16 @@ import * as grok from 'datagrok-api/grok';
 import * as ui from 'datagrok-api/ui';
 import * as DG from 'datagrok-api/dg';
 import $ from 'cash-dom';
-import {map, individualBases, nearestNeighbour} from './map';
-import {isValidSequence, getAllCodesOfSynthesizer} from './validation';
-import {deleteWord, saveAsCsv, sortByStringLengthInDescendingOrder, mergeOptions} from './helpers';
+import {weightsObj, individualBases, nearestNeighbour} from './map';
+import {isValidSequence} from './validation';
+import {deleteWord, saveAsCsv, sortByStringLengthInDescOrder, mergeOptions, normalizeSequence} from './helpers';
 import {COL_NAMES, CURRENT_USER, STORAGE_NAME, ADMIN_USERS, getAdditionalModifications, addModificationButton,
   deleteAdditionalModification} from './additional-modifications';
 
 export const _package = new DG.Package();
 
 const NAME_OF_COLUMN_WITH_SEQUENCES = 'Sequence';
-let weightsObj: {[code: string]: number} = {};
-const normalizedObj: {[code: string]: string} = {};
-for (const synthesizer of Object.keys(map)) {
-  for (const technology of Object.keys(map[synthesizer])) {
-    for (const code of Object.keys(map[synthesizer][technology])) {
-      weightsObj[code] = map[synthesizer][technology][code].weight;
-      normalizedObj[code] = map[synthesizer][technology][code].normalized;
-    }
-  }
-}
+
 
 //name: opticalDensity
 //input: string sequence
@@ -71,15 +62,14 @@ export async function molecularMass(sequence: string, amount: number, outputUnit
 
 export function molecularWeight(sequence: string, additionalWeightsObj?: {[index: string]: number}): number {
   const codes = (additionalWeightsObj == null) ?
-    sortByStringLengthInDescendingOrder(Object.keys(weightsObj)) :
-    sortByStringLengthInDescendingOrder(Object.keys(weightsObj).concat(Object.keys(additionalWeightsObj)));
-  if (additionalWeightsObj != null)
-    weightsObj = mergeOptions(weightsObj, additionalWeightsObj);
+    sortByStringLengthInDescOrder(Object.keys(weightsObj)) :
+    sortByStringLengthInDescOrder(Object.keys(weightsObj).concat(Object.keys(additionalWeightsObj)));
+  const obj = (additionalWeightsObj != null) ? mergeOptions(weightsObj, additionalWeightsObj) : weightsObj;
   let weight = 0;
   let i = 0;
   while (i < sequence.length) {
     const matchedCode = codes.find((s) => s == sequence.slice(i, i + s.length))!;
-    weight += weightsObj[sequence.slice(i, i + matchedCode.length)];
+    weight += obj[sequence.slice(i, i + matchedCode.length)];
     i += matchedCode!.length;
   }
   return weight - 61.97;
@@ -114,15 +104,6 @@ export async function extinctionCoefficient(sequence: string, extCoefsObj?: {[i:
   return nearestNeighbourSum - individualBasisSum + modificationsSum;
 }
 
-function normalizeSequence(sequence: string, synthesizer: string | null, technology: string | null): string {
-  const codes = (technology == null) ?
-    getAllCodesOfSynthesizer(synthesizer!) :
-    Object.keys(map[synthesizer!][technology]);
-  const sortedCodes = sortByStringLengthInDescendingOrder(codes);
-  const regExp = new RegExp('(' + sortedCodes.join('|') + ')', 'g');
-  return sequence.replace(regExp, function(code) {return normalizedObj[code];});
-}
-
 //name: Oligo Batch Calculator
 //tags: app
 export async function OligoBatchCalculatorApp(): Promise<void> {
@@ -135,10 +116,9 @@ export async function OligoBatchCalculatorApp(): Promise<void> {
   const extinctionCoeffsObj: {[index: string]: number} = {};
   additionalAbbreviations.forEach((key, i) => additionalWeightsObj[key] = additionalWeights[i]);
   additionalAbbreviations.forEach((key, i) => extinctionCoeffsObj[key] = extinctionCoefficients[i]);
+  const mainGrid = DG.Viewer.grid(DG.DataFrame.create(), {'showRowHeader': false});
 
   async function render(text: string): Promise<void> {
-    gridDiv.innerHTML = '';
-
     const sequences = text.split('\n')
       .map((s) => s.replace(/\s/g, ''))
       .filter((item) => item);
@@ -180,14 +160,14 @@ export async function OligoBatchCalculatorApp(): Promise<void> {
         reasonsOfError[i] = 'Sequence is expected to be in synthesizer \'' + output.expectedSynthesizer +
           '\', please see table below to see list of valid codes';
       }
-    }
+    };
 
     const moleName1 = (units.value == 'µmole' || units.value == 'mg') ? 'µmole' : 'nmole';
     const moleName2 = (units.value == 'µmole') ? 'µmole' : 'nmole';
     const massName = (units.value == 'µmole') ? 'mg' : (units.value == 'mg') ? units.value : 'µg';
     const c = (units.value == 'mg' || units.value == 'µmole') ? 1000 : 1;
 
-    table = DG.DataFrame.fromColumns([
+    mainGrid.dataFrame = DG.DataFrame.fromColumns([
       DG.Column.fromList('int', 'Item', Array(...Array(sequences.length + 1).keys()).slice(1)),
       DG.Column.fromStrings(NAME_OF_COLUMN_WITH_SEQUENCES, sequences),
       DG.Column.fromList('int', 'Length', normalizedSequences.map((s) => s.length / 2)),
@@ -200,10 +180,9 @@ export async function OligoBatchCalculatorApp(): Promise<void> {
       DG.Column.fromList('double', 'Ext. Coefficient', extinctionCoefficients),
     ]);
 
-    const grid = DG.Viewer.grid(table, {'showRowHeader': false});
-    const col = grid.col(NAME_OF_COLUMN_WITH_SEQUENCES)!;
+    const col = mainGrid.col(NAME_OF_COLUMN_WITH_SEQUENCES)!;
     col.cellType = 'html';
-    grid.onCellPrepare(function(gc) {
+    mainGrid.onCellPrepare(function(gc) {
       if (gc.isTableCell && gc.gridColumn.name == NAME_OF_COLUMN_WITH_SEQUENCES) {
         const items = (indicesOfFirstNotValidCharacter[gc.gridRow] < 0) ?
           [ui.divText(gc.cell.value, {style: {color: 'grey'}})] :
@@ -217,7 +196,6 @@ export async function OligoBatchCalculatorApp(): Promise<void> {
         gc.style.element = ui.divH(items, {style: {margin: '6px 0 0 6px'}});
       }
     });
-    gridDiv.append(grid.root);
   }
 
   const windows = grok.shell.windows;
@@ -226,8 +204,6 @@ export async function OligoBatchCalculatorApp(): Promise<void> {
   windows.showHelp = false;
 
   const defaultInput = 'fAmCmGmAmCpsmU\nmApsmApsfGmAmUmCfGfAfC\nmAmUfGmGmUmCmAfAmGmA';
-  let table = DG.DataFrame.create();
-  const gridDiv = ui.box();
 
   const inputSequences = ui.textInput('', defaultInput, (txt: string) => render(txt));
   const yieldAmount = ui.floatInput('', 1, () => render(inputSequences.value));
@@ -239,36 +215,38 @@ export async function OligoBatchCalculatorApp(): Promise<void> {
   title.style.maxHeight = '40px';
   $(title).children('h2').css('margin', '0px');
 
-  const asoGapmersDf = DG.DataFrame.fromObjects([
-    {'Name': '2\'MOE-5Me-rU', 'BioSpring': '5', 'Janssen GCRS': 'moeT', 'Weight': 378.27},
-    {'Name': '2\'MOE-rA', 'BioSpring': '6', 'Janssen GCRS': 'moeA', 'Weight': 387.29},
-    {'Name': '2\'MOE-5Me-rC', 'BioSpring': '7', 'Janssen GCRS': 'moe5mC', 'Weight': 377.29},
-    {'Name': '2\'MOE-rG', 'BioSpring': '8', 'Janssen GCRS': 'moeG', 'Weight': 403.28},
-    {'Name': '5-Methyl-dC', 'BioSpring': '9', 'Janssen GCRS': '5mC', 'Weight': 303.21},
-    {'Name': 'ps linkage', 'BioSpring': '*', 'Janssen GCRS': 'ps', 'Weight': 16.07},
-    {'Name': 'dA', 'BioSpring': 'A', 'Janssen GCRS': 'A, dA', 'Weight': 313.21},
-    {'Name': 'dC', 'BioSpring': 'C', 'Janssen GCRS': 'C, dC', 'Weight': 289.18},
-    {'Name': 'dG', 'BioSpring': 'G', 'Janssen GCRS': 'G, dG', 'Weight': 329.21},
-    {'Name': 'dT', 'BioSpring': 'T', 'Janssen GCRS': 'T, dT', 'Weight': 304.2},
-    {'Name': 'rA', 'BioSpring': '', 'Janssen GCRS': 'rA', 'Weight': 329.21},
-    {'Name': 'rC', 'BioSpring': '', 'Janssen GCRS': 'rC', 'Weight': 305.18},
-    {'Name': 'rG', 'BioSpring': '', 'Janssen GCRS': 'rG', 'Weight': 345.21},
-    {'Name': 'rU', 'BioSpring': '', 'Janssen GCRS': 'rU', 'Weight': 306.17},
-  ]);
-  const asoGapmersGrid = DG.Viewer.grid(asoGapmersDf!, {showRowHeader: false, showCellTooltip: false});
+  const asoGapmersGrid = DG.Viewer.grid(
+    DG.DataFrame.fromObjects([
+      {'Name': '2\'MOE-5Me-rU', 'BioSpring': '5', 'Janssen GCRS': 'moeT', 'Weight': 378.27},
+      {'Name': '2\'MOE-rA', 'BioSpring': '6', 'Janssen GCRS': 'moeA', 'Weight': 387.29},
+      {'Name': '2\'MOE-5Me-rC', 'BioSpring': '7', 'Janssen GCRS': 'moe5mC', 'Weight': 377.29},
+      {'Name': '2\'MOE-rG', 'BioSpring': '8', 'Janssen GCRS': 'moeG', 'Weight': 403.28},
+      {'Name': '5-Methyl-dC', 'BioSpring': '9', 'Janssen GCRS': '5mC', 'Weight': 303.21},
+      {'Name': 'ps linkage', 'BioSpring': '*', 'Janssen GCRS': 'ps', 'Weight': 16.07},
+      {'Name': 'dA', 'BioSpring': 'A', 'Janssen GCRS': 'A, dA', 'Weight': 313.21},
+      {'Name': 'dC', 'BioSpring': 'C', 'Janssen GCRS': 'C, dC', 'Weight': 289.18},
+      {'Name': 'dG', 'BioSpring': 'G', 'Janssen GCRS': 'G, dG', 'Weight': 329.21},
+      {'Name': 'dT', 'BioSpring': 'T', 'Janssen GCRS': 'T, dT', 'Weight': 304.2},
+      {'Name': 'rA', 'BioSpring': '', 'Janssen GCRS': 'rA', 'Weight': 329.21},
+      {'Name': 'rC', 'BioSpring': '', 'Janssen GCRS': 'rC', 'Weight': 305.18},
+      {'Name': 'rG', 'BioSpring': '', 'Janssen GCRS': 'rG', 'Weight': 345.21},
+      {'Name': 'rU', 'BioSpring': '', 'Janssen GCRS': 'rU', 'Weight': 306.17},
+    ])!, {showRowHeader: false, showCellTooltip: false},
+  );
 
-  const omeAndFluoroDf = DG.DataFrame.fromObjects([
-    {'Name': '2\'-fluoro-U', 'BioSpring': '1', 'Axolabs': 'Uf', 'Janssen GCRS': 'fU', 'Weight': 308.16},
-    {'Name': '2\'-fluoro-A', 'BioSpring': '2', 'Axolabs': 'Af', 'Janssen GCRS': 'fA', 'Weight': 331.2},
-    {'Name': '2\'-fluoro-C', 'BioSpring': '3', 'Axolabs': 'Cf', 'Janssen GCRS': 'fC', 'Weight': 307.18},
-    {'Name': '2\'-fluoro-G', 'BioSpring': '4', 'Axolabs': 'Gf', 'Janssen GCRS': 'fG', 'Weight': 347.19},
-    {'Name': '2\'OMe-rU', 'BioSpring': '5', 'Axolabs': 'u', 'Janssen GCRS': 'mU', 'Weight': 320.2},
-    {'Name': '2\'OMe-rA', 'BioSpring': '6', 'Axolabs': 'a', 'Janssen GCRS': 'mA', 'Weight': 343.24},
-    {'Name': '2\'OMe-rC', 'BioSpring': '7', 'Axolabs': 'c', 'Janssen GCRS': 'mC', 'Weight': 319.21},
-    {'Name': '2\'OMe-rG', 'BioSpring': '8', 'Axolabs': 'g', 'Janssen GCRS': 'mG', 'Weight': 359.24},
-    {'Name': 'ps linkage', 'BioSpring': '*', 'Axolabs': 's', 'Janssen GCRS': 'ps', 'Weight': 16.07},
-  ]);
-  const omeAndFluoroGrid = DG.Viewer.grid(omeAndFluoroDf!, {showRowHeader: false, showCellTooltip: false});
+  const omeAndFluoroGrid = DG.Viewer.grid(
+    DG.DataFrame.fromObjects([
+      {'Name': '2\'-fluoro-U', 'BioSpring': '1', 'Axolabs': 'Uf', 'Janssen GCRS': 'fU', 'Weight': 308.16},
+      {'Name': '2\'-fluoro-A', 'BioSpring': '2', 'Axolabs': 'Af', 'Janssen GCRS': 'fA', 'Weight': 331.2},
+      {'Name': '2\'-fluoro-C', 'BioSpring': '3', 'Axolabs': 'Cf', 'Janssen GCRS': 'fC', 'Weight': 307.18},
+      {'Name': '2\'-fluoro-G', 'BioSpring': '4', 'Axolabs': 'Gf', 'Janssen GCRS': 'fG', 'Weight': 347.19},
+      {'Name': '2\'OMe-rU', 'BioSpring': '5', 'Axolabs': 'u', 'Janssen GCRS': 'mU', 'Weight': 320.2},
+      {'Name': '2\'OMe-rA', 'BioSpring': '6', 'Axolabs': 'a', 'Janssen GCRS': 'mA', 'Weight': 343.24},
+      {'Name': '2\'OMe-rC', 'BioSpring': '7', 'Axolabs': 'c', 'Janssen GCRS': 'mC', 'Weight': 319.21},
+      {'Name': '2\'OMe-rG', 'BioSpring': '8', 'Axolabs': 'g', 'Janssen GCRS': 'mG', 'Weight': 359.24},
+      {'Name': 'ps linkage', 'BioSpring': '*', 'Axolabs': 's', 'Janssen GCRS': 'ps', 'Weight': 16.07},
+    ])!, {showRowHeader: false, showCellTooltip: false},
+  );
 
   const additionaModifsGrid = DG.Viewer.grid(additionalModsDf, {showRowHeader: false, showCellTooltip: true});
   additionaModifsGrid.col(COL_NAMES.LONG_NAMES)!.width = 110;
@@ -310,23 +288,25 @@ export async function OligoBatchCalculatorApp(): Promise<void> {
             ui.h2('Input Sequences'),
             ui.div([
               inputSequences.root,
-            ], 'inputSequence'),
+            ], 'inputSequences'),
           ]), {style: {maxHeight: '230px'}},
         ),
         ui.splitV([
           title,
-          gridDiv,
+          mainGrid.root,
         ]),
       ]),
       codesTablesDiv,
     ]),
   ]);
   view.box = true;
-
-  const switchInput = ui.switchInput('Codes', true, (v: boolean) => (v) ?
-    $(codesTablesDiv).show() :
-    $(codesTablesDiv).hide(),
-  );
+  view.path = '/apps/OligoBatchCalculator/';
+  view.setRibbonPanels([[
+    ui.iconFA('redo', () => inputSequences.value = ''),
+    ui.iconFA('plus', () => addModificationButton(additionalModsDf)),
+    ui.iconFA('arrow-to-bottom', () => saveAsCsv(mainGrid.dataFrame!)),
+    ui.switchInput('Codes', true, (v: boolean) => (v) ? $(codesTablesDiv).show() : $(codesTablesDiv).hide()).root,
+  ]]);
 
   const col = additionaModifsGrid.col(COL_NAMES.ACTION)!;
   col.cellType = 'html';
@@ -374,18 +354,4 @@ export async function OligoBatchCalculatorApp(): Promise<void> {
       CURRENT_USER,
     );
   });
-
-  view.setRibbonPanels([[
-    ui.iconFA('redo', () => inputSequences.value = ''),
-    ui.iconFA('plus', () => addModificationButton(additionalModsDf)),
-    ui.iconFA('arrow-to-bottom', () => saveAsCsv(table)),
-    switchInput.root,
-  ]]);
-
-  $('.inputSequence textarea')
-    .css('resize', 'none')
-    .css('min-height', '70px')
-    .css('width', '100%')
-    .css('font-family', 'monospace')
-    .attr('spellcheck', 'false');
 }

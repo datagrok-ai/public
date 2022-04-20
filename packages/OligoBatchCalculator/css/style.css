@@ -1,0 +1,6 @@
+.inputSequences textarea {
+  resize: none;
+  min-height: 70px;
+  width: 100%;
+  font-family: monospace;
+}

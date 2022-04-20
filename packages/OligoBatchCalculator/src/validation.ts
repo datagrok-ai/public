@@ -1,12 +1,5 @@
 import {map} from './map';
-import {sortByStringLengthInDescendingOrder} from './helpers';
-
-export function getAllCodesOfSynthesizer(synthesizer: string): string[] {
-  let codes: string[] = [];
-  for (const technology of Object.keys(map[synthesizer]))
-    codes = codes.concat(Object.keys(map[synthesizer][technology]));
-  return codes;
-}
+import {sortByStringLengthInDescOrder, getAllCodesOfSynthesizer} from './helpers';
 
 function getListOfPossibleSynthesizersByFirstMatchedCode(sequence: string, additionalCodes: string[]): string[] {
   const synthesizers: string[] = [];
@@ -37,7 +30,7 @@ export function isValidSequence(sequence: string, additionalCodes: string[]): {
   expectedSynthesizer: string | null,
   expectedTechnology: string | null
 } {
-  const sortedAdditionalCodes = sortByStringLengthInDescendingOrder(additionalCodes);
+  const sortedAdditionalCodes = sortByStringLengthInDescOrder(additionalCodes);
 
   const possibleSynthesizers = getListOfPossibleSynthesizersByFirstMatchedCode(sequence, sortedAdditionalCodes);
   if (possibleSynthesizers.length == 0)
@@ -49,7 +42,7 @@ export function isValidSequence(sequence: string, additionalCodes: string[]): {
   const nucleotides = ['A', 'U', 'T', 'C', 'G'];
 
   possibleSynthesizers.forEach((synthesizer, synthesizerIndex) => {
-    const codes = sortByStringLengthInDescendingOrder(getAllCodesOfSynthesizer(synthesizer)
+    const codes = sortByStringLengthInDescOrder(getAllCodesOfSynthesizer(synthesizer)
       .concat(sortedAdditionalCodes));
     while (outputIndices[synthesizerIndex] < sequence.length) {
       const matchedCode = codes
@@ -95,7 +88,7 @@ export function isValidSequence(sequence: string, additionalCodes: string[]): {
   outputIndices = Array(possibleTechnologies.length).fill(0);
 
   possibleTechnologies.forEach((technology: string, technologyIndex: number) => {
-    const codes = sortByStringLengthInDescendingOrder(
+    const codes = sortByStringLengthInDescOrder(
       Object.keys(map[expectedSynthesizer][technology]).concat(sortedAdditionalCodes));
     while (outputIndices[technologyIndex] < sequence.length) {
       const matchedCode = codes
