@@ -337,6 +337,11 @@ export async function OligoBatchCalculatorApp(): Promise<void> {
     }
   });
 
+  let tempValue = '';
+  additionalModsDf.onCurrentCellChanged.subscribe(() => {
+    tempValue = additionalModsDf.currentCell.value;
+  });
+
   additionalModsDf.onValuesChanged.subscribe(async (_) => {
     grok.dapi.users.current().then((user) => {
       if (!ADMIN_USERS.includes(user.firstName + ' ' + user.lastName))
@@ -346,8 +351,10 @@ export async function OligoBatchCalculatorApp(): Promise<void> {
       const entries = await grok.dapi.userDataStorage.get(STORAGE_NAME, CURRENT_USER);
       if (additionalModsDf.currentCell.value.length > 100)
         return grok.shell.warning('Abbreviation shouldn\'t contain more than 100 characters');
-      if (additionalModsDf.currentCell.value in entries)
+      if (additionalModsDf.currentCell.value in entries) {
+        additionalModsDf.set(additionalModsDf.currentCol.name, additionalModsDf.currentRowIdx, tempValue);
         return grok.shell.warning('Abbreviation ' + additionalModsDf.currentCell.value + ' already exists');
+      }
     }
     if (additionalModsDf.currentCol.name == COL_NAMES.LONG_NAMES && additionalModsDf.currentCell.value.length > 300)
       return grok.shell.warning('Long Name shouldn\'t contain more than 300 characters');
