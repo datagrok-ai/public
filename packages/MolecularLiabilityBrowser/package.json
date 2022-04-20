@@ -11,7 +11,7 @@
 		"common/ngl_viewer/ngl.js"
 	],
 	"dependencies": {
-		"@datagrok-libraries/utils": ">=0.0.22",
+		"@datagrok-libraries/utils": ">=0.0.22 <0.2.9",
 		"@deck.gl/core": "^8.7.5",
 		"@deck.gl/layers": "^8.7.5",
 		"@luma.gl/constants": "^8.5.10",
