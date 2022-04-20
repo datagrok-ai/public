@@ -59,6 +59,7 @@ export class PeptidesModel {
   _filterMode: boolean = false;
   splitCol!: DG.Column;
   isBitsetChangedInitialized: boolean = false;
+  stackedBarchart!: StackedBarChart;
 
   private constructor(dataFrame: DG.DataFrame) {
     this._dataFrame = dataFrame;
@@ -81,7 +82,7 @@ export class PeptidesModel {
 
   get onSubstTableChanged(): Observable<DG.DataFrame> {return this._substitutionTableSubject.asObservable();}
 
-  get substTooltipData(): type.substTooltip {return this._substTableTooltipData!;}
+  get substTooltipData(): type.SubstitutionsTooltipData {return this._substTableTooltipData!;}
 
   async updateData(
     activityScaling?: string, sourceGrid?: DG.Grid, twoColorMode?: boolean, grouping?: boolean, activityLimit?: number,
@@ -124,9 +125,9 @@ export class PeptidesModel {
   }
 
   async updateBarchart() {
-    const stackedBarchart = await this._dataFrame?.plot.fromType('StackedBarChartAA') as StackedBarChart;
-    if (stackedBarchart && this._sourceGrid)
-      addViewerToHeader(this._sourceGrid, stackedBarchart);
+    this.stackedBarchart = await this._dataFrame?.plot.fromType('StackedBarChartAA') as StackedBarChart;
+    if (this.stackedBarchart && this._sourceGrid)
+      addViewerToHeader(this._sourceGrid, this.stackedBarchart);
   }
 
   static get modelName() { return PeptidesModel._modelName; }
@@ -204,11 +205,11 @@ export class PeptidesModel {
     //TODO: move everything below out to controller
     const [sarGrid, sarVGrid] = this.createGrids(matrixDf, positionColumns, sequenceDf, this._grouping);
 
-    this.setCellRendererFunc(
+    this.setCellRenderers(
       renderColNames, statsDf, this._twoColorMode!, sarGrid, sarVGrid, this._isSubstitutionOn!, substTable!);
 
     // show all the statistics in a tooltip over cell
-    this.setTooltipFunc(renderColNames, statsDf, peptidesCount, this._grouping, sarGrid, sarVGrid, this._dataFrame);
+    this.setTooltips(renderColNames, statsDf, peptidesCount, this._grouping, sarGrid, sarVGrid, this._dataFrame);
 
     this.setInteractionCallback(sarGrid, sarVGrid, this.dataFrame, this.substTooltipData);
 
@@ -217,6 +218,8 @@ export class PeptidesModel {
     this.setBitsetCallback();
 
     this.postProcessGrids(this._sourceGrid, invalidIndexes, this._grouping, sarGrid, sarVGrid);
+
+    this.invalidateGrids();
 
     //TODO: return class instead
     return [sarGrid, sarVGrid, statsDf, substTable!, groupMapping];
@@ -487,12 +490,12 @@ export class PeptidesModel {
     return [sarGrid, sarVGrid];
   }
 
-  setCellRendererFunc(
+  setCellRenderers(
     renderColNames: string[], statsDf: DG.DataFrame, twoColorMode: boolean, sarGrid: DG.Grid, sarVGrid: DG.Grid,
     isSubstitutionOn: boolean, substTable?: DG.DataFrame,
   ) {
     const mdCol = statsDf.getCol(C.COLUMNS_NAMES.MEAN_DIFFERENCE);
-    const cellRendererFunc = function(args: DG.GridCellRenderArgs) {
+    const cellRendererAction = function(args: DG.GridCellRenderArgs) {
       const canvasContext = args.g;
       const bound = args.bounds;
       const cell = args.cell;
@@ -571,15 +574,15 @@ export class PeptidesModel {
       }
       canvasContext.restore();
     };
-    sarGrid.onCellRender.subscribe(cellRendererFunc);
-    sarVGrid.onCellRender.subscribe(cellRendererFunc);
+    sarGrid.onCellRender.subscribe(cellRendererAction);
+    sarVGrid.onCellRender.subscribe(cellRendererAction);
   }
 
-  setTooltipFunc(
+  setTooltips(
     renderColNames: string[], statsDf: DG.DataFrame, peptidesCount: number, grouping: boolean, sarGrid: DG.Grid,
     sarVGrid: DG.Grid, sourceDf: DG.DataFrame,
   ) {
-    const onCellTooltipFunc = async (cell: DG.GridCell, x: number, y: number) => {
+    const onCellTooltipAction = async (cell: DG.GridCell, x: number, y: number) => {
       if (
         !cell.isRowHeader && !cell.isColHeader && cell.tableColumn !== null && cell.cell.value !== null &&
           cell.tableRowIndex !== null && renderColNames.indexOf(cell.tableColumn.name) !== -1) {
@@ -620,12 +623,12 @@ export class PeptidesModel {
       }
       return true;
     };
-    sarGrid.onCellTooltip(onCellTooltipFunc);
-    sarVGrid.onCellTooltip(onCellTooltipFunc);
+    sarGrid.onCellTooltip(onCellTooltipAction);
+    sarVGrid.onCellTooltip(onCellTooltipAction);
   }
 
   setInteractionCallback(
-    sarGrid: DG.Grid, sarVGrid: DG.Grid, sourceDf: DG.DataFrame, substTooltipData: type.substTooltip,
+    sarGrid: DG.Grid, sarVGrid: DG.Grid, sourceDf: DG.DataFrame, substTooltipData: type.SubstitutionsTooltipData,
   ) {
     const sarDf = sarGrid.dataFrame;
     const sarVDf = sarVGrid.dataFrame;
@@ -646,13 +649,18 @@ export class PeptidesModel {
     };
 
     sarGrid.onCurrentCellChanged.subscribe((gc) => {
-      if (!sarDf.currentCol || sarDf.currentRowIdx === -1 || !gc.cell.value)
+      const isNegativeRowIndex = sarDf.currentRowIdx === -1;
+      if (!sarDf.currentCol || (!sarDf.currentCell.value && !isNegativeRowIndex))
         return;
-      const [aar, position] = getAARandPosition();
       this.syncGrids(false, sarDf, sarVDf);
+      let aar: string = C.CATEGORIES.ALL;
+      let position: string = C.CATEGORIES.ALL;
+      if (!isNegativeRowIndex)
+        [aar, position] = getAARandPosition();
       this.sendSubstitutionTable(sarDf, sourceDf, substTooltipData);
       this.modifyOrCreateSplitCol(aar, position);
       this.fireBitsetChanged();
+      this.invalidateGrids();
       grok.shell.o = this.dataFrame;
     });
 
@@ -663,6 +671,14 @@ export class PeptidesModel {
     });
   }
 
+  invalidateGrids() {
+    this.stackedBarchart.computeData();
+    this.sarGrid.invalidate();
+    this.sarVGrid.invalidate();
+    this._sourceGrid?.invalidate();
+    //TODO: this.peptideSpaceGrid.invalidate();
+  }
+
   setBitsetCallback() {
     if (this.isBitsetChangedInitialized)
       return;
@@ -671,7 +687,10 @@ export class PeptidesModel {
 
     const changeBitset = (currentBitset: DG.BitSet, previousBitset: DG.BitSet) => {
       previousBitset.setAll(!this._filterMode, false);
-      currentBitset.init((i) => this.splitCol.get(i) !== C.CATEGORIES.OTHER, false);
+      currentBitset.init((i) => {
+        const currentCategory = this.splitCol.get(i);
+        return currentCategory !== C.CATEGORIES.OTHER && currentCategory !== C.CATEGORIES.ALL;
+    }, false);
     };
 
     const recalculateStatistics =
@@ -781,7 +800,9 @@ export class PeptidesModel {
     return splitPeptidesArray;
   }
 
-  sendSubstitutionTable(sarDf: DG.DataFrame, sourceDf: DG.DataFrame, substTooltipData: type.substTooltip) {
+  sendSubstitutionTable(sarDf: DG.DataFrame, sourceDf: DG.DataFrame, substTooltipData: type.SubstitutionsTooltipData) {
+    if (sarDf.currentRowIdx === -1)
+      sourceDf.temp['substTable'] = null;
     const currentColName = sarDf.currentCol.name;
     if (currentColName !== C.COLUMNS_NAMES.AMINO_ACID_RESIDUE) {
       const col: DG.Column = sourceDf.columns.bySemType(C.SEM_TYPES.ALIGNED_SEQUENCE);
@@ -834,9 +855,9 @@ export class PeptidesModel {
       otherColName = sarVDf.get(C.COLUMNS_NAMES.POSITION, currentRowIdx);
       const otherRowName: string = sarVDf.get(C.COLUMNS_NAMES.AMINO_ACID_RESIDUE, currentRowIdx);
       otherRowIndex = -1;
-      const rows = sarDf.rowCount;
+      const rows = otherDf.rowCount;
       for (let i = 0; i < rows; i++) {
-        if (sarDf.get(C.COLUMNS_NAMES.AMINO_ACID_RESIDUE, i) === otherRowName) {
+        if (otherDf.get(C.COLUMNS_NAMES.AMINO_ACID_RESIDUE, i) === otherRowName) {
           otherRowIndex = i;
           break;
         }
@@ -862,8 +883,7 @@ export class PeptidesModel {
       }
     }
     otherDf.temp[C.FLAGS.CELL_CHANGING] = true;
-    if (otherRowIndex !== -1)
-      otherDf.currentCell = otherDf.cell(otherRowIndex, otherColName);
+    otherDf.currentCell = otherDf.cell(otherRowIndex, otherColName);
     otherDf.temp[C.FLAGS.CELL_CHANGING] = false;
   }
 
