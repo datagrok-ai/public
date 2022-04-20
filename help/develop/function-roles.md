@@ -18,13 +18,13 @@ Typically, each function type has a special tag denoting what the function does,
 You can use these tags to search for certain functions either from the platform's interface
 ([https://public.datagrok.ai/functions?q](https://public.datagrok.ai/functions?q)) or from within your code:
 
-**TIP** To disable all package functions (for debug purposes), use the
-`initPackageFunctions=false` flag in the start URL, such as
-`https://public.datagrok.ai?initPackageFunctions=false`
-
 ```js
 const applications = DG.Func.find({tags: [DG.FUNC_TYPES.APP]});
 ```
+
+**TIP** To disable all package functions (for debug purposes), use the
+`initPackageFunctions=false` flag in the start URL, such as
+`https://public.datagrok.ai?initPackageFunctions=false`.
 
 ## Applications
 
