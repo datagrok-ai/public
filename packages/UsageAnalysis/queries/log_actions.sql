@@ -1,5 +1,5 @@
 --name: Log Actions
---connection: System:DatagrokAdmin
+--connection: System:Datagrok
 
 select u.first_name, u.email, e.event_time, et.name, e.description
 from events e
@@ -12,7 +12,7 @@ order by event_time desc
 
 --name: Log Actions Summary
 --input: string eventTime = today {pattern: datetime}
---connection: System:DatagrokAdmin
+--connection: System:Datagrok
 
 select u.login, t.name, t.source, count(*) as runs from events e
 inner join event_types t on t.id = e.event_type_id
@@ -25,7 +25,7 @@ order by 1,2,4 desc
 
 --name: Log Actions Summary by Hours
 --input: string eventTime = today {pattern: datetime}
---connection: System:DatagrokAdmin
+--connection: System:Datagrok
 
 select u.login, t.name, t.source, date_part('hour', e.event_time) as hour, count(*) as runs from events e
 inner join event_types t on t.id = e.event_type_id

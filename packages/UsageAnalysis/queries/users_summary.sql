@@ -1,5 +1,5 @@
 --name: Schema columns
---connection: System:DatagrokAdmin
+--connection: System:Datagrok
 
 SELECT *
 FROM information_schema.columns

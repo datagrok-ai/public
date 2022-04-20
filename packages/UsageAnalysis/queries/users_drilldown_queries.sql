@@ -1,7 +1,7 @@
 --name: TopEventsOfUser
 --input: string date { pattern: datetime }
 --input: string name
---connection: System:DatagrokAdmin
+--connection: System:Datagrok
 select et.friendly_name, count(1) from events e
 inner join event_types et on e.event_type_id = et.id
 inner join users_sessions s on e.session_id = s.id
