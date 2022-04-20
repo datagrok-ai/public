@@ -115,17 +115,15 @@ export class PeptidesModel {
         this._substitutionTableSubject.next(substTable);
         this._isSubstInitialized = true;
       }
-
-      this._sourceGrid.invalidate();
-
-      this._isUpdating = false;
     }
-
     await this.updateBarchart();
+    this.invalidateGrids();
+
+    this._isUpdating = false;
   }
 
   async updateBarchart() {
-    this.stackedBarchart = await this._dataFrame?.plot.fromType('StackedBarChartAA') as StackedBarChart;
+    this.stackedBarchart ??= await this._dataFrame?.plot.fromType('StackedBarChartAA') as StackedBarChart;
     if (this.stackedBarchart && this._sourceGrid)
       addViewerToHeader(this._sourceGrid, this.stackedBarchart);
   }
@@ -218,8 +216,6 @@ export class PeptidesModel {
     this.setBitsetCallback();
 
     this.postProcessGrids(this._sourceGrid, invalidIndexes, this._grouping, sarGrid, sarVGrid);
-
-    this.invalidateGrids();
 
     //TODO: return class instead
     return [sarGrid, sarVGrid, statsDf, substTable!, groupMapping];
