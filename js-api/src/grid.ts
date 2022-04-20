@@ -3,8 +3,8 @@ import {Viewer} from "./viewer";
 import {toDart, toJs} from "./wrappers";
 import {__obs, _sub, EventData, StreamSubscription} from "./events";
 import {_identityInt32, _toIterable} from "./utils";
-import { Observable } from "rxjs";
-import { RangeSlider } from "./widgets";
+import {Observable} from "rxjs";
+import {RangeSlider} from "./widgets";
 import {SemType} from "./const";
 import {Property} from "./entities";
 
@@ -66,137 +66,140 @@ export class Rect {
 
   // --
 
-  getTop(height: number) {
+  getTop(height: number): Rect {
     return new Rect(this.left, this.top, this.width, height);
   }
 
-  getBottom(height: number) {
+  getBottom(height: number): Rect {
     return new Rect(this.left, this.bottom - height, this.width, height)
   }
 
-  getLeft(width: number) {
+  getLeft(width: number): Rect {
     return new Rect(this.left, this.top, width, this.height);
   }
 
-  getRight(width: number) {
+  getRight(width: number): Rect {
     return new Rect(this.right - width, this.top, width, this.height);
   }
 
-  getTopLeft(width: number, height: number) {
+  getTopLeft(width: number, height: number): Rect {
     return new Rect(this.left, this.top, width, height);
   }
 
-  getTopRight(width: number, height: number) {
+  getTopRight(width: number, height: number): Rect {
     return new Rect(this.right - width, this.top, width, height);
   }
 
-  getBottomLeft(width: number, height: number) {
+  getBottomLeft(width: number, height: number): Rect {
     return new Rect(this.left, this.bottom - height, width, height);
   }
 
-  getBottomRight(width: number, height: number) {
+  getBottomRight(width: number, height: number): Rect {
     return new Rect(this.right - width, this.bottom - height, width, height);
   }
 
-  cutLeft(dw: number) {
+  //--
+
+  cutLeft(dw: number): Rect {
     return new Rect(this.left + dw, this.top, this.width - dw, this.height);
   }
 
-  cutTop(dh: number) {
+  cutTop(dh: number): Rect {
     return new Rect(this.left, this.top + dh, this.width, this.height - dh);
   }
 
-  cutBottom(dh: number) {
+  cutBottom(dh: number): Rect {
     return new Rect(this.left, this.top, this.width, this.height - dh);
   }
 
-  cutRight(dw: number) {
+  cutRight(dw: number): Rect {
     return new Rect(this.left, this.top, this.width - dw, this.height);
   }
 
   // --
 
-  below(height: number) {
+  below(height: number): Rect {
     return new Rect(this.left, this.bottom, this.width, height);
   }
 
-  above(height: number) {
+  above(height: number): Rect {
     return new Rect(this.left, this.top - height, this.width, height);
   }
 
   // --
 
-  toTheLeft(width: number) {
+  toTheLeft(width: number): Rect {
     return new Rect(this.left - width, this.top, width, this.height);
   }
 
-  toTheRight(width: number) {
+  toTheRight(width: number): Rect {
     return new Rect(this.right, this.top, width, this.height);
+
   }
 
-  toTheTop(height: number) {
+  toTheTop(height: number): Rect {
     return this.above(height);
   }
 
-  toTheBottom(height: number) {
+  toTheBottom(height: number): Rect {
     return this.below(height);
   }
 
-  //--
+  // --
 
-  getTopScaled(ratio: number) {
+  getTopScaled(ratio: number): Rect {
     return this.getTop(this.height * ratio);
   }
 
-  getBottomScaled(ratio: number) {
+  getBottomScaled(ratio: number): Rect {
     return this.getBottom(this.height * ratio);
   }
 
-  getLeftScaled(ratio: number) {
+  getLeftScaled(ratio: number): Rect {
     return this.getLeft(this.width * ratio);
   }
 
-  getRightScaled(ratio: number) {
+  getRightScaled(ratio: number): Rect {
     return this.getRight(this.width * ratio);
   }
 
   // --
 
-  getTopPart(count: number, index: number) {
+  getTopPart(count: number, index: number): Rect {
     return new Rect(
       this.left, this.top + (this.height / count) * index,
       this.width, this.height / count);
   }
 
-  getLeftPart(count: number, index: number) {
+  getLeftPart(count: number, index: number): Rect {
     return new Rect(
       this.left + (this.width / count) * index, this.top,
       this.width / count, this.height);
   }
 
-  getGridPart(xCount: number, yCount: number, x: number, y: number) {
+  getGridPart(xCount: number, yCount: number, x: number, y: number): Rect {
     return new Rect(
       this.left + (this.width / xCount) * x, this.top + (this.height / yCount) * y,
       this.width / xCount, this.height / y);
   }
 
-  inflate(dx: number, dy: number) {
+  // --
+
+  inflate(dx: number, dy: number): Rect {
     return new Rect(
       this.left - dx, this.top - dy,
       this.width + 2 * dx, this.height + 2 * dy);
   }
 
-  inflateSize(dw: number, dh: number) {
+  inflateSize(dw: number, dh: number): Rect {
     return new Rect(this.left, this.top, this.width + dw, this.height + dh);
   }
 
-  inflateRel(dxRatio: number, dyRatio: number) {
+  inflateRel(dxRatio: number, dyRatio: number): Rect {
     return this.inflate(this.width * (dxRatio - 1), this.height * (dyRatio - 1));
   }
 
-  // --
-
-  fitSquare() {
+  fitSquare(): Rect {
     const size = Math.min(this.width, this.height);
     return new Rect(
       this.left + (this.width - size) / 2, this.top + (this.height - size) / 2, size, size);
