@@ -31,7 +31,7 @@ Add the actual panel's code at `TextStats/src/package.js`:
 //tags: panel, widgets
 //input: string str
 //output: widget result
-textStats(str) {
+export function textStats(str) {
   // for 'gattaca', produces {"g": 1, "a": 3, "t": 2, "c": 1}
   const symbolCounts = Array.from(str).reduce((counts, ch) => {
     counts[ch] = (counts[ch] || 0) + 1;
@@ -53,8 +53,11 @@ producing a `widget`, taking a `string` as an input.
 Run webpack from the TextStats folder:
 
 ```
-webpack
+npm run build
 ```
+
+Note. The `build` script in `package.json` includes commands to process your package, e.g., `webpack`.
+You are not supposed to modify this script.
 
 ## 4. Publish
 
