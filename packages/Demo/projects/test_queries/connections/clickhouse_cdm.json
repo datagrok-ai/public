@@ -1,11 +1,11 @@
 {
   "#type":"DataConnection",
-  "name":"MariaDBNorthwind",
-  "friendlyName":"Northwind",
+  "name":"ClickHouseCDM",
+  "friendlyName":"CDM",
   "parameters": {
     "server":"dev.datagrok.ai",
-    "db":"Northwind",
-    "port": 23306
+    "db":"cdm_synthea",
+    "port": 28123
   },
   "credentials" : {
     "parameters" : {
@@ -13,7 +13,7 @@
       "password": "datagrok"
     }
   },
-  "dataSource":"MariaDB",
-  "description": "Northwind sample database",
-  "tags": ["demo"]
+  "dataSource":"ClickHouse",
+  "description": "CDM sample database",
+  "tags": ["demo", "cdm"]
 }

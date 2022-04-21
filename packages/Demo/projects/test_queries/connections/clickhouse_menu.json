@@ -1,11 +1,11 @@
 {
   "#type":"DataConnection",
-  "name":"MariaDBNorthwind",
-  "friendlyName":"Northwind",
+  "name":"ClickHouseMenu",
+  "friendlyName":"Menu",
   "parameters": {
     "server":"dev.datagrok.ai",
-    "db":"Northwind",
-    "port": 23306
+    "db":"menu",
+    "port": 28125
   },
   "credentials" : {
     "parameters" : {
@@ -13,7 +13,7 @@
       "password": "datagrok"
     }
   },
-  "dataSource":"MariaDB",
-  "description": "Northwind sample database",
+  "dataSource":"ClickHouse",
+  "description": "Menu sample database",
   "tags": ["demo"]
 }

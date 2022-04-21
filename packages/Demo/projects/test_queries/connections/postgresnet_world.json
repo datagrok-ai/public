@@ -1,11 +1,11 @@
 {
   "#type": "DataConnection",
-  "name": "PostgreSQLNorthwind",
-  "friendlyName": "Northwind",
+  "name": "PostgresNetWorld",
+  "friendlyName": "World",
   "parameters": {
     "server": "dev.datagrok.ai",
-    "port": 54322,
-    "db": "northwind"
+    "port": 54323,
+    "db": "world"
   },
   "credentials" : {
     "parameters" : {
@@ -13,7 +13,7 @@
       "password": "datagrok"
     }
   },
-  "dataSource": "PostgreSQL",
-  "description": "Northwind sample database",
+  "dataSource": "PostgresNet",
+  "description": "World sample database",
   "tags": ["demo"]
 }
