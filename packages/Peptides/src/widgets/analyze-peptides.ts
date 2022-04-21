@@ -18,9 +18,7 @@ import {FilteringStatistics} from '../utils/filtering-statistics';
  * @param {DG.DataFrame} currentDf Working table.
  * @return {Promise<DG.Widget>} Widget containing peptide analysis.
  */
-export async function analyzePeptidesWidget(
-  view: DG.TableView, tableGrid: DG.Grid, currentDf: DG.DataFrame, col: DG.Column,
-): Promise<DG.Widget> {
+export async function analyzePeptidesWidget(currentDf: DG.DataFrame, col: DG.Column): Promise<DG.Widget> {
   let tempCol = null;
   let tempDf: DG.DataFrame;
   let newScaledColName: string;
@@ -35,6 +33,7 @@ export async function analyzePeptidesWidget(
     'Scaling', 'none', ['none', 'lg', '-lg'],
     async (currentMethod: string) => {
       const currentActivityCol = activityColumnChoice.value.name;
+      
 
       [tempDf, newScaledColName] = await PeptidesController.scaleActivity(
         currentMethod, currentDf, currentActivityCol);
@@ -75,7 +74,6 @@ export async function analyzePeptidesWidget(
       // const activityColumnScaled = `${activityColumn}Scaled`;
       // const originalDfColumns = (currentDf.columns as DG.ColumnList).names();
       const options: StringDictionary = {
-        'activityColumnName': C.COLUMNS_NAMES.ACTIVITY,
         'scaling': activityScalingMethod.value,
       };
 
@@ -85,28 +83,13 @@ export async function analyzePeptidesWidget(
       newDf.getCol(col.name).name = C.COLUMNS_NAMES.ALIGNED_SEQUENCE;
       const activityScaledCol = tempDf.getCol(C.COLUMNS_NAMES.ACTIVITY_SCALED);
       (newDf.columns as DG.ColumnList).add(activityScaledCol);
-      newDf.temp[C.COLUMNS_NAMES.ACTIVITY] = activityColumn;
+      // newDf.temp[C.COLUMNS_NAMES.ACTIVITY] = activityColumn;
       newDf.name = 'Peptides analysis';
-      newDf.temp[C.PEPTIDES_ANALYSIS] = true;
-
-      //calculate initial stats
-      const stats = new FilteringStatistics();
-      stats.setData(activityScaledCol.getRawData() as Float32Array);
-      stats.setMask(newDf.selection);
-      newDf.temp[C.STATS] = stats;
-
-      //set up views
-      const newView = grok.shell.addTableView(newDf);
-      const newGrid = newView.grid;
-      newGrid.col(C.COLUMNS_NAMES.ACTIVITY_SCALED)!.name = newScaledColName;
       newDf.temp[C.COLUMNS_NAMES.ACTIVITY_SCALED] = newScaledColName;
-      // newCol.temp['gridName'] = newScaledColName;
-      // if (newScaledColName === activityColumn)
-      //   newGrid.col(activityColumn)!.name = `~${activityColumn}`;
-      newGrid.columns.setOrder([newScaledColName]);
+      newDf.tags['isPeptidesAnalysis'] = 'true';
 
       const peptides = await PeptidesController.getInstance(newDf);
-      await peptides.init(newGrid, newView, options);
+      await peptides.init(newDf);
     } else
       grok.shell.error('The activity column must be of floating point number type!');
     progress.close();

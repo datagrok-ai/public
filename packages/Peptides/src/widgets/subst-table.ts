@@ -1,8 +1,12 @@
 import * as ui from 'datagrok-api/ui';
 import * as DG from 'datagrok-api/dg';
+import { PeptidesController } from '../peptides';
 
-export function substitutionsWidget(table: DG.DataFrame): DG.Widget {
-  const substTable = table.temp['substTable'] as DG.DataFrame;
+export async function substitutionsWidget(table: DG.DataFrame): Promise<DG.Widget> {
+  const controller = await PeptidesController.getInstance(table);
+  controller.init(table);
+  const substTable = controller.getSubstitutions();
+
   if (!substTable)
     return new DG.Widget(ui.label('No substitution table generated'));
 

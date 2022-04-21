@@ -15,26 +15,36 @@ import * as type from './utils/types';
 import {FilteringStatistics} from './utils/filtering-statistics';
 
 export class PeptidesModel {
-  _dataFrame: DG.DataFrame;
-  _activityScaling: string | null = null;
-  _sourceGrid: DG.Grid | null = null;
-  _twoColorMode: boolean | null = null;
-  _grouping: boolean = false;
-  _isUpdating: boolean = false;
-  _substitutionTable: DG.DataFrame | null = null;
+  static _modelName = 'peptidesModel';
+  
   _statsDataFrameSubject = new Subject<DG.DataFrame>();
   _sarGridSubject = new Subject<DG.Grid>();
   _sarVGridSubject = new Subject<DG.Grid>();
   _groupMappingSubject = new Subject<StringDictionary>();
   _substitutionTableSubject = new Subject<DG.DataFrame>();
-  static _modelName = 'peptidesModel';
-  _activityLimit: number | null = null;
-  _maxSubstitutions: number | null = null;
-  _isSubstitutionOn: boolean | null = null;
+
+  _isUpdating: boolean = false;
   _isSubstInitialized = false;
-  _substTableTooltipData: { [aar: string]: number[][][]; } | null = null;
-  sarGrid!: DG.Grid;
-  sarVGrid!: DG.Grid;
+  isBitsetChangedInitialized = false;
+
+  //viewer properties
+  _grouping!: boolean;
+  _filterMode!: boolean;
+  _twoColorMode!: boolean;
+  _activityScaling!: string;
+  _isSubstitutionOn!: boolean;
+  _activityLimit!: number;
+  _maxSubstitutions!: number;
+
+  _sarGrid!: DG.Grid;
+  _sarVGrid!: DG.Grid;
+  _sourceGrid!: DG.Grid;
+  _dataFrame: DG.DataFrame;
+  _substitutionTable!: DG.DataFrame;
+  splitCol!: DG.Column;
+  stackedBarchart!: StackedBarChart;
+
+  _substTableTooltipData!: { [aar: string]: number[][][]; };
 
   aarGroups = {
     'R': 'PC', 'H': 'PC', 'K': 'PC',
@@ -56,18 +66,47 @@ export class PeptidesModel {
     },
     '-': {'description': 'Unknown Amino Acid', 'aminoAcids': ['-']},
   };
-  _filterMode: boolean = false;
-  splitCol!: DG.Column;
-  isBitsetChangedInitialized: boolean = false;
-  stackedBarchart!: StackedBarChart;
 
   private constructor(dataFrame: DG.DataFrame) {
     this._dataFrame = dataFrame;
+    this._dataFrame.temp[C.PEPTIDES_ANALYSIS] = true;
+
+    this.updateProperties();
   }
 
   static getInstance(dataFrame: DG.DataFrame): PeptidesModel {
     dataFrame.temp[PeptidesModel.modelName] ??= new PeptidesModel(dataFrame);
     return dataFrame.temp[PeptidesModel.modelName];
+  }
+
+  updateProperties() {
+    this._activityScaling = this._dataFrame.tags['scaling'];
+    this._filterMode = this.stringToBool(this._dataFrame.tags['filterMode']);
+    this._twoColorMode = this.stringToBool(this._dataFrame.tags['bidirectionalAnalysis']);
+    this._grouping = this.stringToBool(this._dataFrame.tags['grouping']);
+    this._isSubstitutionOn = this.stringToBool(this._dataFrame.tags['showSubstitution']);
+    this._maxSubstitutions = parseInt(this._dataFrame.tags['maxSubstitutions']);
+    this._activityLimit = parseFloat(this._dataFrame.tags['activityLimit']);
+  }
+
+  stringToBool(str: string) {
+    return str === 'true' ? true : false;
+  }
+
+  setProperties(
+    activityScaling: string, filterMode: boolean, twoColorMode: boolean, grouping: boolean, isSubstitutionOn: boolean,
+    maxSubstitutions: number, activityLimit: number, forceUpdate = false,
+  ) {
+    const chooseAction = (value: string, defaultValue: any) => forceUpdate ? value : defaultValue ?? value;
+    this._dataFrame.tags['scaling'] = chooseAction(`${activityScaling}`, this._dataFrame.tags['scaling']);
+    this._dataFrame.tags['filterMode'] = chooseAction(`${filterMode}`, this._dataFrame.tags['filterMode']);
+    this._dataFrame.tags['bidirectionalAnalysis'] = chooseAction(`${twoColorMode}`, this._dataFrame.tags['bidirectionalAnalysis']);
+    this._dataFrame.tags['grouping'] = chooseAction(`${grouping}`, this._dataFrame.tags['grouping']);
+    this._dataFrame.tags['showSubstitution'] = chooseAction(`${isSubstitutionOn}`, this._dataFrame.tags['showSubstitution']);
+    this._dataFrame.tags['maxSubstitutions'] = chooseAction(`${maxSubstitutions}`, this._dataFrame.tags['maxSubstitutions']);
+    this._dataFrame.tags['activityLimit'] = chooseAction(`${activityLimit}`, this._dataFrame.tags['activityLimit']);
+    
+    this.updateProperties();
   }
 
   get dataFrame(): DG.DataFrame {return this._dataFrame;}
@@ -88,6 +127,7 @@ export class PeptidesModel {
     activityScaling?: string, sourceGrid?: DG.Grid, twoColorMode?: boolean, grouping?: boolean, activityLimit?: number,
     maxSubstitutions?: number, isSubstitutionOn?: boolean, filterMode?: boolean,
   ) {
+    //FIXME: threre are too many assignments, some are duplicating
     this._activityScaling = activityScaling ?? this._activityScaling;
     this._sourceGrid = sourceGrid ?? this._sourceGrid;
     this._twoColorMode = twoColorMode ?? this._twoColorMode;
@@ -96,6 +136,8 @@ export class PeptidesModel {
     this._maxSubstitutions = maxSubstitutions ?? this._maxSubstitutions;
     this._isSubstitutionOn = isSubstitutionOn ?? this._isSubstitutionOn;
     this._filterMode = filterMode ?? this._filterMode;
+    this.setProperties(this._activityScaling, this._filterMode, this._twoColorMode, this._grouping,
+      this._isSubstitutionOn, this._maxSubstitutions, this._activityLimit, true);
 
     await this.updateDefault();
   }
@@ -105,8 +147,6 @@ export class PeptidesModel {
       this._isUpdating = true;
       const [viewerGrid, viewerVGrid, statsDf, substTable, groupMapping] = await this.initializeViewersComponents();
       //FIXME: modify during the initializeViewersComponents stages
-      this.sarGrid = viewerGrid;
-      this.sarVGrid = viewerVGrid;
       this._statsDataFrameSubject.next(statsDf);
       this._groupMappingSubject.next(groupMapping);
       this._sarGridSubject.next(viewerGrid);
@@ -139,7 +179,6 @@ export class PeptidesModel {
     let invalidIndexes: number[];
     const col: DG.Column = (this._dataFrame.columns as DG.ColumnList).bySemType(C.SEM_TYPES.ALIGNED_SEQUENCE)!;
     [splitSeqDf, invalidIndexes] = PeptidesController.splitAlignedPeptides(col);
-    splitSeqDf.name = 'Split sequence';
 
     const positionColumns = (splitSeqDf.columns as DG.ColumnList).names();
     const renderColNames: string[] = (splitSeqDf.columns as DG.ColumnList).names();
@@ -203,13 +242,16 @@ export class PeptidesModel {
     //TODO: move everything below out to controller
     const [sarGrid, sarVGrid] = this.createGrids(matrixDf, positionColumns, sequenceDf, this._grouping);
 
+    this._sarGrid = sarGrid;
+    this._sarVGrid = sarVGrid;
+
     this.setCellRenderers(
       renderColNames, statsDf, this._twoColorMode!, sarGrid, sarVGrid, this._isSubstitutionOn!, substTable!);
 
     // show all the statistics in a tooltip over cell
     this.setTooltips(renderColNames, statsDf, peptidesCount, this._grouping, sarGrid, sarVGrid, this._dataFrame);
 
-    this.setInteractionCallback(sarGrid, sarVGrid, this.dataFrame, this.substTooltipData);
+    this.setInteractionCallback();
 
     this.modifyOrCreateSplitCol(C.CATEGORIES.ALL, C.CATEGORIES.ALL);
 
@@ -312,8 +354,17 @@ export class PeptidesModel {
     //TODO: enable grouping
     // Object.keys(aarGroups).forEach((value) => groupMapping[value] = value);
     this._substTableTooltipData = tableCases;
+    this.substitutionTable = table;
 
     return table;
+  }
+
+  get substitutionTable() { return this._substitutionTable; }
+  set substitutionTable(table: DG.DataFrame) {
+    if (!table)
+      throw new Error(`Substitution table cannot be set to null`);
+    this._substitutionTable = table;
+    this._substitutionTableSubject.next(table);
   }
 
   joinDataFrames(df: DG.DataFrame, positionColumns: string[], splitSeqDf: DG.DataFrame) {
@@ -623,12 +674,9 @@ export class PeptidesModel {
     sarVGrid.onCellTooltip(onCellTooltipAction);
   }
 
-  setInteractionCallback(
-    sarGrid: DG.Grid, sarVGrid: DG.Grid, sourceDf: DG.DataFrame, substTooltipData: type.SubstitutionsTooltipData,
-  ) {
-    const sarDf = sarGrid.dataFrame;
-    const sarVDf = sarVGrid.dataFrame;
-
+  setInteractionCallback() {
+    const sarDf = this._sarGrid.dataFrame;
+    const sarVDf = this._sarVGrid.dataFrame;
 
     const getAARandPosition = (isVertical = false): [string, string] => {
       let aar : string;
@@ -644,7 +692,7 @@ export class PeptidesModel {
       return [aar, position];
     };
 
-    sarGrid.onCurrentCellChanged.subscribe((gc) => {
+    this._sarGrid.onCurrentCellChanged.subscribe((gc) => {
       const isNegativeRowIndex = sarDf.currentRowIdx === -1;
       if (!sarDf.currentCol || (!sarDf.currentCell.value && !isNegativeRowIndex))
         return;
@@ -653,14 +701,14 @@ export class PeptidesModel {
       let position: string = C.CATEGORIES.ALL;
       if (!isNegativeRowIndex)
         [aar, position] = getAARandPosition();
-      this.sendSubstitutionTable(sarDf, sourceDf, substTooltipData);
+      this.dataFrame.temp['substTable'] = this.getSubstitutionTable();
       this.modifyOrCreateSplitCol(aar, position);
       this.fireBitsetChanged();
       this.invalidateGrids();
       grok.shell.o = this.dataFrame;
     });
 
-    sarVGrid.onCurrentCellChanged.subscribe((gc) => {
+    this._sarVGrid.onCurrentCellChanged.subscribe((gc) => {
       if (!sarVDf.currentCol || sarVDf.currentRowIdx === -1)
         return;
       this.syncGrids(true, sarDf, sarVDf);
@@ -669,8 +717,8 @@ export class PeptidesModel {
 
   invalidateGrids() {
     this.stackedBarchart?.computeData();
-    this.sarGrid.invalidate();
-    this.sarVGrid.invalidate();
+    this._sarGrid.invalidate();
+    this._sarVGrid.invalidate();
     this._sourceGrid?.invalidate();
     //TODO: this.peptideSpaceGrid.invalidate();
   }
@@ -796,15 +844,19 @@ export class PeptidesModel {
     return splitPeptidesArray;
   }
 
-  sendSubstitutionTable(sarDf: DG.DataFrame, sourceDf: DG.DataFrame, substTooltipData: type.SubstitutionsTooltipData) {
+  getSubstitutionTable() {
+    if (!this.substitutionTable)
+      this.calcSubstitutions();
+    const sarDf = this._sarGrid.dataFrame;
+    const sourceDf = this._sourceGrid.dataFrame;
     if (sarDf.currentRowIdx === -1)
-      sourceDf.temp['substTable'] = null;
+      return null;
     const currentColName = sarDf.currentCol.name;
     if (currentColName !== C.COLUMNS_NAMES.AMINO_ACID_RESIDUE) {
       const col: DG.Column = sourceDf.columns.bySemType(C.SEM_TYPES.ALIGNED_SEQUENCE);
       const aar = sarDf.get(C.COLUMNS_NAMES.AMINO_ACID_RESIDUE, sarDf.currentRowIdx);
       const pos = parseInt(currentColName);
-      const currentCase = substTooltipData[aar][pos];
+      const currentCase = this.substTooltipData[aar][pos];
       const tempDfLength = currentCase.length;
       const initCol = DG.Column.string('Initial', tempDfLength);
       const subsCol = DG.Column.string('Substituted', tempDfLength);
@@ -828,8 +880,9 @@ export class PeptidesModel {
       subsCol.temp['isAnalysisApplicable'] = false;
 
       // grok.shell.o = DG.SemanticValue.fromValueType(tempDf, 'Substitution');
-      sourceDf.temp['substTable'] = tempDf;
+      return tempDf;
     }
+    return null;
   }
 
   //TODO: refactor, use this.sarDf and accept aar & position as parameters
