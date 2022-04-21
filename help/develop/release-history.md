@@ -1,6 +1,34 @@
 <!-- TITLE: Release History -->
 <!-- SUBTITLE: -->
 
+# 2022-04-21 Dev build 0.148.6
+
+## Latest Docker Images
+
+* Datagrok: 
+  *  `docker pull datagrok/datagrok:0.148.6`
+  *  `docker pull datagrok/datagrok:latest`
+  
+* [Docker-Compose](admin/docker-compose.md)
+
+## Addressed Issues
+
+* JS-API: setBuffer method 
+* Closes #488: Positioning of Grid cells in HTML rendering mode 
+* Menu capitalization fixes. 
+* Closes #489: Grid: "Current Column | Sort | Custom..." should open the "Order or Hide Columns" dialog 
+* bug: duplicated event firing 
+* Closes #490: Custom order of categories should be saved in the view layout 
+* Wrong data is shown in viewers using calculated column after calculated column's formula was updated #434 
+* Allow user to rename the viewers from the arranged tab #341 
+* bug: changing cell-double-click features 
+* (Bug) Wrong output of getCategoryIndex with caseSensitive = false 
+* Updated public token 
+* Datlas: use reader/writer login in Datagrok system connection, if reader login isn't available 
+* (Bug) Previously deployed packages sometimes get deleted during repository publication (WIP)
+* Ability to use Func options for grouping  
+
+
 # 2022-04-18 Dev build 0.148.4
 
 ## Latest Docker Images
