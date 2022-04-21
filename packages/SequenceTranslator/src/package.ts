@@ -324,6 +324,7 @@ export function oligoSdFile(table: DG.DataFrame) {
       return grok.shell.error('Columns already exist!');
 
     const sequence = t.col(COL_NAMES.SEQUENCE)!;
+    const salt = t.col(COL_NAMES.SALT)!;
     const equivalents = t.col(COL_NAMES.EQUIVALENTS)!;
 
     t.columns.addNewString(COL_NAMES.COMPOUND_NAME).init((i: number) => sequence.get(i));
@@ -331,11 +332,12 @@ export function oligoSdFile(table: DG.DataFrame) {
       sequence.getString(i) + '; duplex of SS: ' + sequence.getString(i - 2) + ' and AS: ' + sequence.getString(i - 1) :
       sequence.getString(i),
     );
+    const molWeightCol = saltsDf.col('MOLWEIGHT')!.toList();
+    const saltNames = saltsDf.col('DISPLAY')!.toList();
     t.columns.addNewFloat(COL_NAMES.CPD_MW)
       .init((i: number) => molecularWeight(sequence.get(i), weightsObj));
-    const mwCol = t.col(COL_NAMES.CPD_MW)!;
     t.columns.addNewFloat(COL_NAMES.SALT_MASS).init((i: number) => {
-      const mw = mwCol.get(i);
+      const mw = molWeightCol[saltNames.indexOf(salt.get(i))];
       return mw * equivalents.get(i);
     });
     t.columns.addNewCalculated(COL_NAMES.BATCH_MW,
@@ -367,7 +369,7 @@ export function oligoSdFile(table: DG.DataFrame) {
 
       view.table!.col(COL_NAMES.TYPE)!.setTag(DG.TAGS.CHOICES, '["AS", "SS", "Duplex"]');
       view.table!.col(COL_NAMES.OWNER)!.setTag(DG.TAGS.CHOICES, stringifyItems(usersDf.columns.byIndex(0).toList()));
-      view.table!.col(COL_NAMES.SALT)!.setTag(DG.TAGS.CHOICES, stringifyItems(saltsDf.columns.byIndex(1).toList()));
+      view.table!.col(COL_NAMES.SALT)!.setTag(DG.TAGS.CHOICES, stringifyItems(saltsDf.columns.byIndex(0).toList()));
       view.table!.col(COL_NAMES.SOURCE)!.setTag(DG.TAGS.CHOICES, stringifyItems(sourcesDf.columns.byIndex(0).toList()));
       view.table!.col(COL_NAMES.ICD)!.setTag(DG.TAGS.CHOICES, stringifyItems(icdsDf.columns.byIndex(0).toList()));
       view.table!.col(COL_NAMES.IDP)!.setTag(DG.TAGS.CHOICES, stringifyItems(idpsDf.columns.byIndex(0).toList()));
