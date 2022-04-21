@@ -5,7 +5,7 @@ import * as ui from 'datagrok-api/ui';
 import * as DG from 'datagrok-api/dg';
 
 export class FunctionView extends DG.ViewBase {
-  constructor(func: DG.Func) {
+  constructor(func: DG.Func | null) {
     super();
     this.func = func;
     this.context = DG.Context.cloneDefault();
@@ -19,7 +19,7 @@ export class FunctionView extends DG.ViewBase {
   public get type(): string {
     return this._type;
   }
-  public func: DG.Func;
+  public func: DG.Func | null;
   readonly context: DG.Context;
   public call?: DG.FuncCall;
   public lastCall?: DG.FuncCall;
@@ -99,7 +99,7 @@ export class FunctionView extends DG.ViewBase {
       categories.push('INPUT');
       this.resultTabs.set('INPUT', this.inputsDiv);
     }
-    for (const p of this.func.outputs) {
+    for (const p of this.func!.outputs) {
       if (categories.includes(p.category))
         continue;
       categories.push(p.category);

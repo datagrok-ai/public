@@ -1,5 +1,5 @@
-/* eslint-disable */
-
+/* eslint-disable max-len */
+/* eslint-disable valid-jsdoc */
 import * as grok from 'datagrok-api/grok';
 import * as rxjs from 'rxjs';
 import * as ui from 'datagrok-api/ui';
@@ -23,7 +23,6 @@ import {FunctionView} from './function-view';
  * - notifications for changing inputs, completion of computations, etc: {@link onInputChanged}
  * */
 export class ComputationView extends FunctionView {
-
   lastCall?: DG.FuncCall;
   _inputFields: Map<string, DG.InputBase> = new Map<string, DG.InputBase>();
 
@@ -34,29 +33,24 @@ export class ComputationView extends FunctionView {
   onComputationSucceeded: rxjs.Subject<FuncCall> = new rxjs.Subject();
   onComputationError: rxjs.Subject<FuncCall> = new rxjs.Subject();
 
-  constructor(func: DG.Func) {
+  constructor(func: DG.Func | null) {
     super(func);
 
     if (func != null)
-      this.init(func).then((_) => {
-        this.root.appendChild(this.build());
-        this.initTopMenu(this.ribbonMenu);
-        this.initRibbonPanels();
-        return this.onViewInitialized.next();
-      });
+      this.init(func);
   }
 
   /** All inputs that are bound to fields */
-  get inputFields(): Map<string, DG.InputBase> { return this._inputFields; }
+  get inputFields(): Map<string, DG.InputBase> {return this._inputFields;}
 
   /** Saves the computation results to the historical results, returns its id. See also {@link loadRun}. */
-  async saveRun(call: FuncCall): Promise<string> { return 'xxx'; /* await grok.dapi.functions.calls.save(call);*/ }
+  async saveRun(call: FuncCall): Promise<string> {return 'xxx'; /* await grok.dapi.functions.calls.save(call);*/}
 
   /** Loads the specified historical results. See also {@link saveRun}. */
-  async loadRun(runId: string): Promise<void> { /* await grok.dapi.functions.calls.find(call.id);*/}
+  async loadRun(runId: string): Promise<void> {/* await grok.dapi.functions.calls.find(call.id);*/}
 
   /** The actual computation function. */
-  async compute(call: FuncCall): Promise<void> { await call.call(); }
+  async compute(call: FuncCall): Promise<void> {await call.call();}
 
   /** Maps inputs to parameters, computes, and maps output parameters to the UI. */
   async run(): Promise<void> {
@@ -65,8 +59,7 @@ export class ComputationView extends FunctionView {
 
     try {
       await this.compute(this.lastCall);
-    }
-    catch (e) {
+    } catch (e) {
       this.onComputationError.next(this.lastCall);
     }
 
@@ -74,13 +67,20 @@ export class ComputationView extends FunctionView {
   }
 
   /** Override to provide custom initialization. {@link onViewInitialized} gets fired after that. */
-  async init(func: DG.Func): Promise<void> { await super.init(func); }
+  async init(func: DG.Func): Promise<void> {
+    await super.init(func);
+    // this.initTopMenu(this.ribbonMenu);
+    this.initRibbonPanels();
+    return this.onViewInitialized.next();
+  }
 
   /** Override to customize top menu*/
   initTopMenu(menu: DG.Menu) {
-    menu
-      .group(this.func.friendlyName)
-      .item('Run', () => this.run());
+    if (this.func) {
+      menu
+        .group(this.func.friendlyName)
+        .item('Run', () => this.run());
+    }
   }
 
   /** Override to customize ribbon panels */
@@ -90,7 +90,8 @@ export class ComputationView extends FunctionView {
       ui.comboPopup(
         ui.icons.save(null, 'Export'),
         this.supportedExportFormats,
-        async (format) => DG.Utils.download('output.csv', await this.export(format)),
+        async (format: string) =>
+          DG.Utils.download(`${this.name} - ${new Date().toLocaleString()}.${this.supportedExportExtensions[format]}`, await this.export(format)),
       ),
     ]]);
   }
@@ -106,34 +107,51 @@ export class ComputationView extends FunctionView {
   }
 
   /** Custom inputs for the specified fields. Inputs for these fields will not be created by {@link buildInputBlock}. */
-  buildCustomInputs(): Map<String, DG.InputBase> { return new Map(); }
+  buildCustomInputs(): Map<String, DG.InputBase> {return new Map();}
 
   /** Override to create output block. */
-  buildOutputBlock(): HTMLElement { return super.buildOutputBlock(); }
+  buildOutputBlock(): HTMLElement {return super.buildOutputBlock();}
 
   /** Override to create a custom input control. */
-  buildRibbonPanel(): HTMLElement { return ui.divH([
-    ui.button('RUN', () => {}),
-    ui.comboPopup('Export', this.supportedExportFormats, (format) => this.export(format))]);
+  buildRibbonPanel(): HTMLElement {
+    return ui.divH([
+      ui.button('RUN', () => {}),
+      ui.comboPopup('Export',
+        this.supportedExportFormats, (format: string) => this.export(format)),
+    ]);
   }
 
   /** Creates function parameters based on the data entered by the user. */
-  inputFieldsToParameters(call: FuncCall): void { super.inputFieldsToParameters(call); }
+  inputFieldsToParameters(call: FuncCall): void {super.inputFieldsToParameters(call);}
 
   /** Visualizes computation results */
-  outputParametersToView(call: FuncCall): void { super.outputParametersToView(call); }
+  outputParametersToView(call: FuncCall): void {super.outputParametersToView(call);}
 
   /** Override to provide custom computation error handling. */
-  processComputationError(call: FuncCall) { grok.shell.error(call.errorMessage!);  }
+  processComputationError(call: FuncCall) {grok.shell.error(call.errorMessage!);}
 
   /** Override to provide supported export formats.
    * These formats are available under the "Export" popup on the ribbon panel. */
-  get supportedExportFormats(): string[] { return ['Excel', 'PDF', 'CSV']; }
+  get supportedExportFormats(): string[] {
+    return [
+      'Excel', 'PDF', 'CSV',
+    ];
+  }
+
+  /** Override to provide custom file extensions for exported formats.
+   * These formats are available under the "Export" popup on the ribbon panel. */
+  get supportedExportExtensions(): Record<string, string> {
+    return {
+      'Excel': 'xlsx',
+      'PDF': 'pdf',
+      'CSV': 'csv',
+    };
+  }
 
   /** Override to provide custom export. */
   async export(format: string): Promise<Blob> {
     if (format == 'CSV')
       return new Blob([(this.lastCall?.getOutputParamValue() as DataFrame).toCsv()]);
-    throw `Format "${format}" is not supported.`;
+    throw new Error(`Format "${format}" is not supported.`);
   }
 }
