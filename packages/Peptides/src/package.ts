@@ -93,7 +93,9 @@ export async function peptidesPanel(col: DG.Column): Promise<DG.Widget> {
   if (!(col.temp['isAnalysisApplicable'] ?? true))
     return new DG.Widget(ui.divText('Analysis is not applicable'));
 
-  return await analyzePeptidesWidget(...getOrDefineWIP(currentView, currentGrid, currentTable, col));
+  [currentView, currentGrid, currentTable, alignedSequenceColumn] =
+    getOrDefine(currentView, currentGrid, currentTable, alignedSequenceColumn);
+  return analyzePeptidesWidget(currentTable, alignedSequenceColumn);
 }
 
 //name: peptide-sar-viewer
@@ -135,7 +137,7 @@ export async function stackedBarchartWidget(col: DG.Column): Promise<DG.Widget> 
 //input: string peptide {semType: alignedSequence}
 //output: widget result
 export async function peptideMolecule(peptide: string): Promise<DG.Widget> {
-  return await peptideMoleculeWidget(peptide);
+  return peptideMoleculeWidget(peptide);
 }
 
 //name: Peptide Molecule
@@ -144,9 +146,9 @@ export async function peptideMolecule(peptide: string): Promise<DG.Widget> {
 //output: widget result
 export async function peptideMolecule2(aar: string): Promise<DG.Widget> {
   [currentView, currentGrid, currentTable, alignedSequenceColumn] =
-    getOrDefineWIP(currentView, currentGrid, currentTable, alignedSequenceColumn);
+    getOrDefine(currentView, currentGrid, currentTable, alignedSequenceColumn);
   const peptide = alignedSequenceColumn.get(currentTable.currentRowIdx);
-  return await peptideMolecule(peptide);
+  return peptideMolecule(peptide);
 }
 
 //name: StackedBarChartAA
@@ -185,7 +187,7 @@ export function logov() {
 //output: widget result
 export function manualAlignment(monomer: string) {
   [currentView, currentGrid, currentTable, alignedSequenceColumn] =
-    getOrDefineWIP(currentView, currentGrid, currentTable, alignedSequenceColumn);
+    getOrDefine(currentView, currentGrid, currentTable, alignedSequenceColumn);
   //TODO: recalculate Molfile and Molecule panels on sequence update
   return manualAlignmentWidget(alignedSequenceColumn, currentTable);
 }
@@ -196,9 +198,9 @@ export function manualAlignment(monomer: string) {
 //output: widget result
 export async function peptideSpacePanel(col: DG.Column): Promise<DG.Widget> {
   [currentView, currentGrid, currentTable, alignedSequenceColumn] =
-    getOrDefineWIP(currentView, currentGrid, currentTable, col);
+    getOrDefine(currentView, currentGrid, currentTable, col);
   const widget = new PeptideSimilaritySpaceWidget(col, currentView);
-  return await widget.draw();
+  return widget.draw();
 }
 
 //name: Molfile
@@ -207,7 +209,7 @@ export async function peptideSpacePanel(col: DG.Column): Promise<DG.Widget> {
 //output: widget result
 export async function peptideMolfile(peptide: string): Promise<DG.Widget> {
   const smiles = getMolecule(peptide);
-  return await grok.functions.call('Chem:molfile', {'smiles': smiles});
+  return grok.functions.call('Chem:molfile', {'smiles': smiles});
 }
 
 //name: Molfile
@@ -216,9 +218,9 @@ export async function peptideMolfile(peptide: string): Promise<DG.Widget> {
 //output: widget result
 export async function peptideMolfile2(aar: string): Promise<DG.Widget> {
   [currentView, currentGrid, currentTable, alignedSequenceColumn] =
-    getOrDefineWIP(currentView, currentGrid, currentTable, alignedSequenceColumn);
+    getOrDefine(currentView, currentGrid, currentTable, alignedSequenceColumn);
   const peptide = alignedSequenceColumn.get(currentTable.currentRowIdx);
-  return await peptideMolfile(peptide);
+  return peptideMolfile(peptide);
 }
 
 //name: Multiple sequence alignment
@@ -226,7 +228,7 @@ export async function peptideMolfile2(aar: string): Promise<DG.Widget> {
 //input: column col {semType: alignedSequence}
 //output: dataframe result
 export async function multipleSequenceAlignment(col: DG.Column): Promise<DG.DataFrame> {
-  return await msaWidget(col);
+  return msaWidget(col);
 }
 
 //name: Multiple sequence alignment for any column
@@ -276,7 +278,7 @@ export function alignedSequenceDifferenceCellRenderer() {
   return new AlignedSequenceDifferenceCellRenderer();
 }
 
-function getOrDefineWIP(
+function getOrDefine(
   view?: DG.TableView, grid?: DG.Grid, dataframe?: DG.DataFrame, column?: DG.Column | null,
 ): [DG.TableView, DG.Grid, DG.DataFrame, DG.Column] {
   view ??= (grok.shell.v as DG.TableView);

@@ -38,11 +38,11 @@ category('peptides', async () => {
 
   test('Peptides-controller', async () => {
     const peptides = await PeptidesController.getInstance(peptidesDf);
-    peptides.init(peptidesGrid, pepView, options); //, peptidesDf.columns.names());
+    peptides.init(peptidesDf); //, peptidesDf.columns.names());
   });
 
   test('widgets.analyze-peptides', async () => {
-    await analyzePeptidesWidget(pepView, peptidesGrid, peptidesDf, asCol);
+    await analyzePeptidesWidget(peptidesDf, asCol);
   });
 
   test('widgets.manual-alignment', async () => {
