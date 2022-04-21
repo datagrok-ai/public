@@ -1,11 +1,11 @@
 {
   "#type": "DataConnection",
-  "name": "PostgreSQLNorthwind",
-  "friendlyName": "Northwind",
+  "name": "MySQLIsobotMidsun",
+  "friendlyName": "Isobot Midsun",
   "parameters": {
     "server": "dev.datagrok.ai",
-    "port": 54322,
-    "db": "northwind"
+    "port": 33062,
+    "db": "isobot_midsun"
   },
   "credentials" : {
     "parameters" : {
@@ -13,7 +13,7 @@
       "password": "datagrok"
     }
   },
-  "dataSource": "PostgreSQL",
-  "description": "Northwind sample database",
+  "dataSource": "MySQL",
+  "description": "Midsun DB hosted on Datagrok",
   "tags": ["demo"]
 }

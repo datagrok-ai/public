@@ -3,14 +3,14 @@
   "name": "MongoDBNorthwind",
   "friendlyName": "Northwind",
   "parameters": {
-    "server": "$DEMO_DB_SERVER",
+    "server": "dev.datagrok.ai",
     "db": "northwind",
     "port": 22017
   },
   "credentials": {
     "parameters": {
-      "login": "northwind",
-      "password": "northwind"
+      "login": "datagrok",
+      "password": "datagrok"
     }
   },
   "dataSource": "MongoDB",

@@ -5,12 +5,12 @@
   "parameters": {
     "server": "dev.datagrok.ai",
     "port": 21521,
-    "db": "northwind"
+    "db": "XEPDB1"
   },
   "credentials" : {
     "parameters" : {
-      "login": "northwind",
-      "password": "northwind"
+      "login": "datagrok",
+      "password": "datagrok"
     }
   },
   "dataSource": "Oracle",

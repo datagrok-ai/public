@@ -1,11 +1,11 @@
 {
   "#type": "DataConnection",
-  "name": "MSSQLNorthwind",
-  "friendlyName": "Northwind",
+  "name": "PostgresNetCDM",
+  "friendlyName": "CDM",
   "parameters": {
     "server": "dev.datagrok.ai",
-    "port": 21433,
-    "db": "northwind"
+    "port": 54321,
+    "db": "cdm_souffleur"
   },
   "credentials" : {
     "parameters" : {
@@ -13,7 +13,7 @@
       "password": "datagrok"
     }
   },
-  "dataSource": "MS SQL",
-  "description": "Northwind sample database",
-  "tags": ["demo"]
+  "dataSource": "PostgresNet",
+  "description": "CDM sample database",
+  "tags": ["demo", "cdm"]
 }

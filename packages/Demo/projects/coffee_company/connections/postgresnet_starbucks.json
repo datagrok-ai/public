@@ -1,11 +1,11 @@
 {
   "#type": "DataConnection",
-  "name": "PostgreSQLNorthwind",
-  "friendlyName": "Northwind",
+  "name": "PostgresNetStarbucks",
+  "friendlyName": "Starbucks",
   "parameters": {
     "server": "dev.datagrok.ai",
-    "port": 54322,
-    "db": "northwind"
+    "port": 54324,
+    "db": "starbucks"
   },
   "credentials" : {
     "parameters" : {
@@ -13,7 +13,7 @@
       "password": "datagrok"
     }
   },
-  "dataSource": "PostgreSQL",
-  "description": "Northwind sample database",
+  "dataSource": "PostgresNet",
+  "description": "Coffee company sample database",
   "tags": ["demo"]
 }
