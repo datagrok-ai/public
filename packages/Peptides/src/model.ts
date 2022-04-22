@@ -227,7 +227,7 @@ export class PeptidesModel {
     this._sarVGrid = sarVGrid;
 
     this.setCellRenderers(
-      renderColNames, statsDf, this._twoColorMode!, sarGrid, sarVGrid, this._isSubstitutionOn!, substTable!);
+      renderColNames, statsDf, this._twoColorMode, sarGrid, sarVGrid, this._isSubstitutionOn);
 
     // show all the statistics in a tooltip over cell
     this.setTooltips(renderColNames, statsDf, peptidesCount, this._grouping, sarGrid, sarVGrid, this._dataFrame);
@@ -541,10 +541,10 @@ export class PeptidesModel {
 
   setCellRenderers(
     renderColNames: string[], statsDf: DG.DataFrame, twoColorMode: boolean, sarGrid: DG.Grid, sarVGrid: DG.Grid,
-    isSubstitutionOn: boolean, substTable?: DG.DataFrame,
+    isSubstitutionOn: boolean,
   ) {
     const mdCol = statsDf.getCol(C.COLUMNS_NAMES.MEAN_DIFFERENCE);
-    const cellRendererAction = function(args: DG.GridCellRenderArgs) {
+    const cellRendererAction = (args: DG.GridCellRenderArgs) => {
       const canvasContext = args.g;
       const bound = args.bounds;
       const cell = args.cell;
@@ -606,18 +606,19 @@ export class PeptidesModel {
           canvasContext.closePath();
 
           canvasContext.fill();
-        }
-        if (isSubstitutionOn) {
-          canvasContext.textBaseline = 'middle';
-          canvasContext.textAlign = 'center';
-          canvasContext.fillStyle = DG.Color.toHtml(DG.Color.black);
-          canvasContext.font = '13px Roboto, Roboto Local, sans-serif';
-          const substValue = substTable?.groupBy([currentPosition])
-            .where(queryAAR)
-            .aggregate()
-            .get(currentPosition, 0);
-          if (substValue && substValue !== DG.INT_NULL)
-            canvasContext.fillText(substValue, midX, midY);
+          if (isSubstitutionOn) {
+            canvasContext.textBaseline = 'middle';
+            canvasContext.textAlign = 'center';
+            canvasContext.fillStyle = DG.Color.toHtml(DG.Color.black);
+            // DG.Color.getContrastColor()
+            canvasContext.font = '13px Roboto, Roboto Local, sans-serif';
+            const substValue = this.substitutionTable.groupBy([currentPosition])
+              .where(queryAAR)
+              .aggregate()
+              .get(currentPosition, 0);
+            if (substValue && substValue !== DG.INT_NULL)
+              canvasContext.fillText(substValue, midX, midY);
+          }
         }
         args.preventDefault();
       }
@@ -847,7 +848,7 @@ export class PeptidesModel {
   }
 
   getSubstitutionTable() {
-    if (!this.substitutionTable)
+    if (!this._casesTable)
       this.calcSubstitutions();
     const sarDf = this._sarGrid.dataFrame;
     const sourceDf = this._sourceGrid.dataFrame;
@@ -858,6 +859,12 @@ export class PeptidesModel {
       const col: DG.Column = sourceDf.columns.bySemType(C.SEM_TYPES.ALIGNED_SEQUENCE);
       const aar = sarDf.get(C.COLUMNS_NAMES.AMINO_ACID_RESIDUE, sarDf.currentRowIdx);
       const pos = parseInt(currentColName);
+      const substitutionsCount = this.substitutionTable.groupBy([currentColName])
+        .where(`${C.COLUMNS_NAMES.AMINO_ACID_RESIDUE} = ${aar}`)
+        .aggregate()
+        .get(currentColName, 0);
+      if (substitutionsCount === DG.INT_NULL)
+        return null;
       const currentCase = this._casesTable[aar][pos];
       const tempDfLength = currentCase.length;
       const initCol = DG.Column.string('Initial', tempDfLength);
