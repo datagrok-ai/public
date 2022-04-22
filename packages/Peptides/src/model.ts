@@ -44,28 +44,9 @@ export class PeptidesModel {
   splitCol!: DG.Column;
   stackedBarchart!: StackedBarChart;
 
-  _substTableTooltipData!: { [aar: string]: number[][][]; };
-
-  aarGroups = {
-    'R': 'PC', 'H': 'PC', 'K': 'PC',
-    'D': 'NC', 'E': 'NC',
-    'S': 'U', 'T': 'U', 'N': 'U', 'Q': 'U',
-    'C': 'SC', 'U': 'SC', 'G': 'SC', 'P': 'SC',
-    'A': 'H', 'V': 'H', 'I': 'H', 'L': 'H', 'M': 'H', 'F': 'H', 'Y': 'H', 'W': 'H',
-    '-': '-',
-  };
-
-  groupDescription: {[key: string]: {'description': string, aminoAcids: string[]}} = {
-    'PC': {'description': 'Positive Amino Acids, with Electrically Charged Side Chains', 'aminoAcids': ['R', 'H', 'K']},
-    'NC': {'description': 'Negative Amino Acids, with Electrically Charged Side Chains', 'aminoAcids': ['D', 'E']},
-    'U': {'description': 'Amino Acids with Polar Uncharged Side Chains', 'aminoAcids': ['S', 'T', 'N', 'Q']},
-    'SC': {'description': 'Special Cases', 'aminoAcids': ['C', 'U', 'G', 'P']},
-    'H': {
-      'description': 'Amino Acids with Hydrophobic Side Chain',
-      'aminoAcids': ['A', 'V', 'I', 'L', 'M', 'F', 'Y', 'W'],
-    },
-    '-': {'description': 'Unknown Amino Acid', 'aminoAcids': ['-']},
-  };
+  // _substTableTooltipData!: { [aar: string]: number[][][]; };
+  _casesTable!: type.SubstitutionCases;
+  _substTableTooltipData!: type.SubstitutionTooltips;
 
   private constructor(dataFrame: DG.DataFrame) {
     this._dataFrame = dataFrame;
@@ -121,7 +102,7 @@ export class PeptidesModel {
 
   get onSubstTableChanged(): Observable<DG.DataFrame> {return this._substitutionTableSubject.asObservable();}
 
-  get substTooltipData(): type.SubstitutionsTooltipData {return this._substTableTooltipData!;}
+  get substTooltipData(): type.SubstitutionTooltips {return this._substTableTooltipData!;}
 
   async updateData(
     activityScaling?: string, sourceGrid?: DG.Grid, twoColorMode?: boolean, grouping?: boolean, activityLimit?: number,
@@ -209,12 +190,12 @@ export class PeptidesModel {
     //TODO: move to chem palette
     let groupMapping: StringDictionary = {};
     if (this._grouping) {
-      groupMapping = this.aarGroups;
+      groupMapping = C.aarGroups;
       const aarCol = matrixDf.getCol(C.COLUMNS_NAMES.AMINO_ACID_RESIDUE);
       aarCol.init((index) => groupMapping[aarCol.get(index)[0]] ?? '-');
       aarCol.compact();
     } else
-      Object.keys(this.aarGroups).forEach((value) => groupMapping[value] = value);
+      Object.keys(C.aarGroups).forEach((value) => groupMapping[value] = value);
 
 
     //statistics for specific AAR at a specific position
@@ -264,55 +245,69 @@ export class PeptidesModel {
   }
 
   calcSubstitutions() {
-    const col: DG.Column = this.dataFrame.columns.bySemType(C.SEM_TYPES.ALIGNED_SEQUENCE);
-    const values: number[] = this.dataFrame.getCol(C.COLUMNS_NAMES.ACTIVITY_SCALED).toList();
-    const splitedMatrix = this.split(col);
+    // const col: DG.Column = this.dataFrame.columns.bySemType(C.SEM_TYPES.ALIGNED_SEQUENCE);
+    // const values: number[] = this.dataFrame.getCol(C.COLUMNS_NAMES.ACTIVITY_SCALED).toList();
+    const activityValues = this.dataFrame.getCol(C.COLUMNS_NAMES.ACTIVITY_SCALED);
+    // const splitedMatrix = this.split(col);
+     const columnList = (this.dataFrame.columns as DG.ColumnList).toList()
+      .filter(col => col.semType === C.SEM_TYPES.AMINO_ACIDS);
+    if (columnList.length === 0)
+      throw new Error(`Couldn't find any column of semType '${C.SEM_TYPES.AMINO_ACIDS}'`);
 
-    const tableValues: { [aar: string]: number[] } = {};
-    const tableTooltips: { [aar: string]: {}[][] } = {};
-    const tableCases: { [aar: string]: number[][][] } = {};
+    const tableValues: { [aar: string]: number[]; } = {};
+    const tableTooltips: { [aar: string]: {}[][]; } = {};
+    const tableCases: { [aar: string]: number[][][]; } = {};
 
-    const nRows = splitedMatrix.length;
-    const nCols = splitedMatrix[0].length;
-    const nColsArray = Array(nCols);
+    // const nRows = splitedMatrix.length;
+    // const nCols = splitedMatrix[0].length;
+    // const nColsArray = Array(nCols);
+    const nCols = columnList.length;
+    const nRows = this.dataFrame.rowCount;
 
+    //TODO: this looks **very** expensive
     for (let i = 0; i < nRows - 1; i++) {
       for (let j = i + 1; j < nRows; j++) {
         let substCounter = 0;
-        const subst1: { [pos: number]: [string, {}] } = {};
-        const subst2: { [pos: number]: [string, {}] } = {};
-        const delta = values[i] - values[j];
+        const subst1: { [pos: number]: [string, {key: string, value: string, diff: number}] } = {};
+        const subst2: { [pos: number]: [string, {key: string, value: string, diff: number}] } = {};
+        const activityValI = activityValues.get(i) as number;
+        const activityValJ = activityValues.get(j) as number;
+        const strActivityValI = activityValI.toFixed(2);
+        const strActivityValJ = activityValJ.toFixed(2);
+        const delta = activityValI - activityValJ;
 
-        if (Math.abs(delta) < this._activityLimit!)
+        if (Math.abs(delta) < this._activityLimit)
           continue;
 
         for (let k = 0; k < nCols; k++) {
-          const smik = splitedMatrix[i][k];
-          const smjk = splitedMatrix[j][k];
-          if (smik != smjk) {
-            const vi = values[i].toFixed(2);
-            const vj = values[j].toFixed(2);
-            substCounter++;
-            subst1[k] = [
-              smik,
-              {
-                key: `${smik === '-' ? 'Empty' : smik} → ${smjk === '-' ? 'Empty' : smjk}`,
-                value: `${vi} → ${vj}`,
-                diff: values[j] - values[i],
-              },
-            ];
-            subst2[k] = [
-              smjk,
-              {
-                key: `${smjk === '-' ? 'Empty' : smjk} → ${smik === '-' ? 'Empty' : smik}`,
-                value: `${vj} → ${vi}`,
-                diff: values[i] - values[j],
-              },
-            ];
-          }
+          // const smik = splitedMatrix[i][k];
+          // const smjk = splitedMatrix[j][k];
+          const smik = columnList[k].get(i) as string;
+          const smjk = columnList[k].get(j) as string;
+
+          if (smik === smjk)
+            continue;
+
+          substCounter++;
+          subst1[k] = [
+            smik,
+            {
+              key: `${smik === '-' ? 'Empty' : smik} → ${smjk === '-' ? 'Empty' : smjk}`,
+              value: `${strActivityValI} → ${strActivityValJ}`,
+              diff: -delta,
+            },
+          ];
+          subst2[k] = [
+            smjk,
+            {
+              key: `${smjk === '-' ? 'Empty' : smjk} → ${smik === '-' ? 'Empty' : smik}`,
+              value: `${strActivityValJ} → ${strActivityValI}`,
+              diff: delta,
+            },
+          ];
         }
 
-        if (substCounter > this._maxSubstitutions! || substCounter === 0)
+        if (substCounter > this._maxSubstitutions || substCounter === 0)
           continue;
 
         for (const subst of [subst1, subst2]) {
@@ -320,9 +315,12 @@ export class PeptidesModel {
             const posInt = parseInt(pos);
             const aar = subst[posInt][0];
             if (!Object.keys(tableValues).includes(aar)) {
-              tableValues[aar] = Array(...nColsArray).map(() => DG.INT_NULL);
-              tableTooltips[aar] = Array(...nColsArray).map(() => []);
-              tableCases[aar] = Array(...nColsArray).map(() => []);
+              // tableValues[aar] = Array(...nColsArray).map(() => DG.INT_NULL);
+              // tableTooltips[aar] = Array(...nColsArray).map(() => []);
+              // tableCases[aar] = Array(...nColsArray).map(() => []);
+              tableValues[aar] = Array(nCols).fill(DG.INT_NULL);
+              tableTooltips[aar] = Array(nCols).fill([]);
+              tableCases[aar] = Array(nCols).fill([]);
             }
 
             tableValues[aar][posInt] = tableValues[aar][posInt] === DG.INT_NULL ? 1 : tableValues[aar][posInt] + 1;
@@ -337,23 +335,27 @@ export class PeptidesModel {
 
     const tableValuesKeys = Object.keys(tableValues);
     const dfLength = tableValuesKeys.length;
-    const cols = [...nColsArray.keys()].map((v) => DG.Column.int(`${v < 10 ? 0 : ''}${v}`, dfLength));
-    cols.forEach((currentCol) => currentCol.semType = 'Substitution');
+    const cols = columnList.map(col => {
+      const newCol = DG.Column.int(`${col.name}`, dfLength);
+      newCol.semType = 'Substitution';
+      return newCol;
+    });
     const aarCol = DG.Column.string(C.COLUMNS_NAMES.AMINO_ACID_RESIDUE, dfLength);
-    cols.splice(0, 1, aarCol);
+    cols.splice(0, 0, aarCol);
     const table = DG.DataFrame.fromColumns(cols);
 
     for (let i = 0; i < dfLength; i++) {
       const aar = tableValuesKeys[i];
-      tableValues[aar].splice(0, 1);
+      // tableValues[aar].splice(0, 1);
       table.rows.setValues(i, [aar, ...tableValues[aar]]);
     }
 
-    // let groupMapping: { [key: string]: string } = {};
+    // let groupMapping: { [key: string]: string } =  {};
 
     //TODO: enable grouping
     // Object.keys(aarGroups).forEach((value) => groupMapping[value] = value);
-    this._substTableTooltipData = tableCases;
+    this._substTableTooltipData = tableTooltips;
+    this._casesTable = tableCases;
     this.substitutionTable = table;
 
     return table;
@@ -660,7 +662,7 @@ export class PeptidesModel {
       }
       if (!cell.isColHeader && cell.tableColumn?.name == C.COLUMNS_NAMES.AMINO_ACID_RESIDUE) {
         if (grouping) {
-          const currentGroup = this.groupDescription[cell.cell.value];
+          const currentGroup = C.groupDescription[cell.cell.value];
           const divText = ui.divText('Amino Acids in this group: ' + currentGroup[C.SEM_TYPES.AMINO_ACIDS].join(', '));
           ui.tooltip.show(ui.divV([ui.h3(currentGroup['description']), divText]), x, y);
         } else {
@@ -856,7 +858,7 @@ export class PeptidesModel {
       const col: DG.Column = sourceDf.columns.bySemType(C.SEM_TYPES.ALIGNED_SEQUENCE);
       const aar = sarDf.get(C.COLUMNS_NAMES.AMINO_ACID_RESIDUE, sarDf.currentRowIdx);
       const pos = parseInt(currentColName);
-      const currentCase = this.substTooltipData[aar][pos];
+      const currentCase = this._casesTable[aar][pos];
       const tempDfLength = currentCase.length;
       const initCol = DG.Column.string('Initial', tempDfLength);
       const subsCol = DG.Column.string('Substituted', tempDfLength);
