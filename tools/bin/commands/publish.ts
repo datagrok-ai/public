@@ -81,7 +81,7 @@ export async function processPackage(debug: boolean, rebuild: boolean, host: str
     if (relativePath.startsWith('dist') && rebuild)
       return;
     if (relativePath.startsWith('src') && !rebuild && isWebpack) {
-      if (!relativePath.startsWith('src/package'))
+      if (!relativePath.startsWith('src/package') && !relativePath.startsWith('src\\package'))
         return;
     }
     if (relativePath.startsWith('upload.keys.json'))
