@@ -79,7 +79,7 @@ export async function extinctionCoefficient(sequence: string, extCoefsObj?: {[i:
   const additionalModificationsDf = await getAdditionalModifications();
   const additionalCodes = additionalModificationsDf.col(COL_NAMES.ABBREVIATION)!.categories;
   const output = isValidSequence(sequence, additionalCodes);
-  let ns = normalizeSequence(sequence, output.expectedSynthesizer, output.expectedTechnology);
+  let ns = normalizeSequence(sequence, output.synthesizer, output.technology);
   let nearestNeighbourSum = 0;
   let individualBasisSum = 0;
   let modificationsSum = 0;
@@ -132,12 +132,11 @@ export async function OligoBatchCalculatorApp(): Promise<void> {
     const molecularMasses = Array(sequences.length);
     const reasonsOfError = Array(sequences.length);
 
-    for (const sequence of sequences) {
-      const i = sequences.indexOf(sequence);
+    for (const [i, sequence] of sequences.entries()) {
       const output = isValidSequence(sequence, additionalCodes);
-      indicesOfFirstNotValidCharacter[i] = output.indexOfFirstNotValidCharacter;
+      indicesOfFirstNotValidCharacter[i] = output.indexOfFirstNotValidChar;
       if (indicesOfFirstNotValidCharacter[i] < 0) {
-        normalizedSequences[i] = normalizeSequence(sequence, output.expectedSynthesizer, output.expectedTechnology);
+        normalizedSequences[i] = normalizeSequence(sequence, output.synthesizer, output.technology);
         if (normalizedSequences[i].length > 2) {
           try {
             molecularWeights[i] = molecularWeight(sequence, additionalWeightsObj);
@@ -154,10 +153,10 @@ export async function OligoBatchCalculatorApp(): Promise<void> {
           reasonsOfError[i] = 'Sequence should contain at least two nucleotides';
           indicesOfFirstNotValidCharacter[i] = 0;
         }
-      } else if (output.expectedSynthesizer == null)
+      } else if (output.synthesizer == null)
         reasonsOfError[i] = 'Not valid input';
       else {
-        reasonsOfError[i] = 'Sequence is expected to be in synthesizer \'' + output.expectedSynthesizer +
+        reasonsOfError[i] = 'Sequence is expected to be in synthesizer \'' + output.synthesizer +
           '\', please see table below to see list of valid codes';
       }
     };

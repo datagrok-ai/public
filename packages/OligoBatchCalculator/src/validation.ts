@@ -26,15 +26,15 @@ function possibleTechnologiesByFirstMatchedCode(sequence: string, synthesizer: s
 }
 
 export function isValidSequence(sequence: string, additionalCodes: string[]): {
-  indexOfFirstNotValidCharacter: number,
-  expectedSynthesizer: string | null,
-  expectedTechnology: string | null
+  indexOfFirstNotValidChar: number,
+  synthesizer: string | null,
+  technology: string | null
 } {
   const sortedAdditionalCodes = sortByStringLengthInDescOrder(additionalCodes);
 
   const possibleSynthesizers = getListOfPossibleSynthesizersByFirstMatchedCode(sequence, sortedAdditionalCodes);
   if (possibleSynthesizers.length == 0)
-    return {indexOfFirstNotValidCharacter: 0, expectedSynthesizer: null, expectedTechnology: null};
+    return {indexOfFirstNotValidChar: 0, synthesizer: null, technology: null};
 
   let outputIndices = Array(possibleSynthesizers.length).fill(0);
 
@@ -70,26 +70,26 @@ export function isValidSequence(sequence: string, additionalCodes: string[]): {
   });
 
   const indexOfExpectedSythesizer = Math.max(...outputIndices); //Math.max.apply(Math, outputIndices);
-  const indexOfFirstNotValidCharacter = (indexOfExpectedSythesizer == sequence.length) ? -1 : indexOfExpectedSythesizer;
-  const expectedSynthesizer = possibleSynthesizers[outputIndices.indexOf(indexOfExpectedSythesizer)];
-  if (indexOfFirstNotValidCharacter != -1) {
+  const indexOfFirstNotValidChar = (indexOfExpectedSythesizer == sequence.length) ? -1 : indexOfExpectedSythesizer;
+  const synthesizer = possibleSynthesizers[outputIndices.indexOf(indexOfExpectedSythesizer)];
+  if (indexOfFirstNotValidChar != -1) {
     return {
-      indexOfFirstNotValidCharacter: indexOfFirstNotValidCharacter,
-      expectedSynthesizer: expectedSynthesizer,
-      expectedTechnology: null,
+      indexOfFirstNotValidChar: indexOfFirstNotValidChar,
+      synthesizer: synthesizer,
+      technology: null,
     };
   }
 
   const possibleTechnologies = possibleTechnologiesByFirstMatchedCode(
-    sequence, expectedSynthesizer, sortedAdditionalCodes);
+    sequence, synthesizer, sortedAdditionalCodes);
   if (possibleTechnologies.length == 0)
-    return {indexOfFirstNotValidCharacter: 0, expectedSynthesizer: null, expectedTechnology: null};
+    return {indexOfFirstNotValidChar: 0, synthesizer: null, technology: null};
 
   outputIndices = Array(possibleTechnologies.length).fill(0);
 
   possibleTechnologies.forEach((technology: string, technologyIndex: number) => {
     const codes = sortByStringLengthInDescOrder(
-      Object.keys(map[expectedSynthesizer][technology]).concat(sortedAdditionalCodes));
+      Object.keys(map[synthesizer][technology]).concat(sortedAdditionalCodes));
     while (outputIndices[technologyIndex] < sequence.length) {
       const matchedCode = codes
         .find((c) => c == sequence.slice(outputIndices[technologyIndex], outputIndices[technologyIndex] + c.length));
@@ -115,12 +115,12 @@ export function isValidSequence(sequence: string, additionalCodes: string[]): {
     }
   });
 
-  const indexOfExpectedTechnology = Math.max(...outputIndices); //Math.max.apply(Math, outputIndices);
-  const expectedTechnology = possibleTechnologies[outputIndices.indexOf(indexOfExpectedTechnology)];
+  const indexOfTechnology = Math.max(...outputIndices); //Math.max.apply(Math, outputIndices);
+  const technology = possibleTechnologies[outputIndices.indexOf(indexOfTechnology)];
 
   return {
-    indexOfFirstNotValidCharacter: indexOfFirstNotValidCharacter,
-    expectedSynthesizer: expectedSynthesizer,
-    expectedTechnology: expectedTechnology,
+    indexOfFirstNotValidChar: indexOfFirstNotValidChar,
+    synthesizer: synthesizer,
+    technology: technology,
   };
 }
