@@ -934,6 +934,10 @@ export class InputBase {
   get nullable(): boolean { return api.grok_InputBase_Get_Nullable(this.dart); }
   set nullable(v: boolean) { api.grok_InputBase_Set_Nullable(this.dart, v); }
 
+  /** Whether events are thrown on value set */
+  get notify(): boolean { return api.grok_InputBase_Get_Notify(this.dart); }
+  set notify(v: boolean) { api.grok_InputBase_Set_Notify(this.dart, v); }
+
   /** Input value */
   get value(): any { return toJs(api.grok_InputBase_Get_Value(this.dart)); }
   set value(x: any) { toDart(api.grok_InputBase_Set_Value(this.dart, x)); }
