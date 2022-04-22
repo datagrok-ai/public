@@ -36,7 +36,7 @@ export async function analyzePeptidesWidget(currentDf: DG.DataFrame, col: DG.Col
       
 
       [tempDf, newScaledColName] = await PeptidesController.scaleActivity(
-        currentMethod, currentDf, currentActivityCol);
+        currentMethod, currentDf, currentActivityCol, true);
 
       const hist = tempDf.plot.histogram({
         filteringEnabled: false,

@@ -75,14 +75,14 @@ export class PeptidesController {
   }
 
   static async scaleActivity(
-    activityScaling: string, df: DG.DataFrame, originalActivityName?: string,
+    activityScaling: string, df: DG.DataFrame, originalActivityName?: string, cloneBitset = false,
   ): Promise<[DG.DataFrame, string]> {
     // const df = sourceGrid.dataFrame!;
     let currentActivityColName = originalActivityName ?? C.COLUMNS_NAMES.ACTIVITY;
     const flag = (df.columns as DG.ColumnList).names().includes(currentActivityColName) &&
       currentActivityColName === originalActivityName;
     currentActivityColName = flag ? currentActivityColName : C.COLUMNS_NAMES.ACTIVITY;
-    const tempDf = df.clone(null, [currentActivityColName]);
+    const tempDf = df.clone(cloneBitset ? df.filter : null, [currentActivityColName]);
 
     let formula = '${' + currentActivityColName + '}';
     let newColName = 'activity'; //originalActivityName ?? df.temp[C.COLUMNS_NAMES.ACTIVITY] ?? currentActivityColName;
@@ -152,8 +152,8 @@ export class PeptidesController {
 
     //create column names list
     const columnNames = Array.from({length: modeMonomerCount}, (_, index) => `${index + 1 < 10 ? 0 : ''}${index + 1 }`);
-    columnNames.splice(0, 0, 'N-terminal');
-    columnNames.push('C-terminal');
+    columnNames.splice(0, 0, 'Nterminal');
+    columnNames.push('Cterminal');
 
     // filter out the columns with the same values
     if (filter) {
