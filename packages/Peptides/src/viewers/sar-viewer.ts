@@ -14,9 +14,9 @@ export class SARViewerBase extends DG.JsViewer {
   sourceGrid!: DG.Grid;
   controller!: PeptidesController;
   scaling: string;
-  filterMode: boolean;
+  // filterMode: boolean;
   bidirectionalAnalysis: boolean;
-  grouping: boolean;
+  // grouping: boolean;
   showSubstitution: boolean;
   maxSubstitutions: number;
   activityLimit: number;
@@ -28,9 +28,9 @@ export class SARViewerBase extends DG.JsViewer {
     super();
 
     this.scaling = this.string('scaling', 'none', {choices: ['none', 'lg', '-lg']});
-    this.filterMode = this.bool('filterMode', false);
+    // this.filterMode = this.bool('filterMode', false);
     this.bidirectionalAnalysis = this.bool('bidirectionalAnalysis', false);
-    this.grouping = this.bool('grouping', false);
+    // this.grouping = this.bool('grouping', false);
 
     this.showSubstitution = this.bool('showSubstitution', false);
     this.maxSubstitutions = this.int('maxSubstitutions', 1);
@@ -45,7 +45,7 @@ export class SARViewerBase extends DG.JsViewer {
     this.controller.init(this.dataFrame);
     await this.requestDataUpdate();
 
-    this.subs.push(this.controller.onGroupMappingChanged.subscribe(() => {this.render(true);}));
+    // this.subs.push(this.controller.onGroupMappingChanged.subscribe(() => {this.render(true);}));
   }
 
   detach() {this.subs.forEach((sub) => sub.unsubscribe());}
@@ -63,8 +63,8 @@ export class SARViewerBase extends DG.JsViewer {
   }
 
   async requestDataUpdate() {
-    await this.controller.updateData(this.scaling, this.sourceGrid, this.bidirectionalAnalysis, this.grouping,
-      this.activityLimit, this.maxSubstitutions, this.showSubstitution, this.filterMode);
+    await this.controller.updateData(this.scaling, this.sourceGrid, this.bidirectionalAnalysis,
+      this.activityLimit, this.maxSubstitutions, this.showSubstitution);
   }
 
   async onPropertyChanged(property: DG.Property) {

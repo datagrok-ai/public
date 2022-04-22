@@ -1,7 +1,6 @@
 import * as grok from 'datagrok-api/grok';
 import * as DG from 'datagrok-api/dg';
 import {PeptidesModel} from './model';
-import {StringDictionary} from '@datagrok-libraries/utils/src/type-declarations';
 import {SARViewer, SARViewerVertical} from './viewers/sar-viewer';
 import {ChemPalette} from './utils/chem-palette';
 import {Observable} from 'rxjs';
@@ -39,8 +38,8 @@ export class PeptidesController {
 
   get dataFrame() {return this._model.dataFrame;}
 
-  static setAARRenderer(col: DG.Column, grid: DG.Grid, grouping?: boolean) {
-    return setAARRenderer(col, grid, grouping);
+  static setAARRenderer(col: DG.Column, grid: DG.Grid) {
+    return setAARRenderer(col, grid);
   }
 
   get onStatsDataFrameChanged(): Observable<DG.DataFrame> {return this._model.onStatsDataFrameChanged;}
@@ -49,7 +48,7 @@ export class PeptidesController {
 
   get onSARVGridChanged(): Observable<DG.Grid> {return this._model.onSARVGridChanged;}
 
-  get onGroupMappingChanged(): Observable<StringDictionary> {return this._model.onGroupMappingChanged;}
+  // get onGroupMappingChanged(): Observable<StringDictionary> {return this._model.onGroupMappingChanged;}
 
   get onSubstTableChanged(): Observable<DG.DataFrame> {return this._model.onSubstTableChanged;}
 
@@ -62,12 +61,12 @@ export class PeptidesController {
   get sourceGrid() {return this._model._sourceGrid!; }
 
   async updateData(
-    activityScaling?: string, sourceGrid?: DG.Grid, twoColorMode?: boolean, grouping?: boolean, activityLimit?: number,
+    activityScaling?: string, sourceGrid?: DG.Grid, twoColorMode?: boolean, activityLimit?: number,
     maxSubstitutions?: number, isSubstitutionOn?: boolean, filterMode?: boolean,
   ) {
+    filterMode ??= false;
     await this._model.updateData(
-      activityScaling, sourceGrid, twoColorMode, grouping, activityLimit, maxSubstitutions, isSubstitutionOn,
-      filterMode);
+      activityScaling, sourceGrid, twoColorMode, activityLimit, maxSubstitutions, isSubstitutionOn, filterMode);
   }
 
   getSubstitutions() {
@@ -277,7 +276,7 @@ export class PeptidesController {
     }
 
     const options = {scaling: table.tags['scaling']};
-    await this.updateData(table.tags['scaling'], sourceGrid, false, false, 1, 2, false, false);
+    await this.updateData(table.tags['scaling'], sourceGrid, false, 1, 2, false, false);
 
     const dockManager = currentView.dockManager;
 

@@ -20,7 +20,7 @@ export class PeptidesModel {
   _statsDataFrameSubject = new Subject<DG.DataFrame>();
   _sarGridSubject = new Subject<DG.Grid>();
   _sarVGridSubject = new Subject<DG.Grid>();
-  _groupMappingSubject = new Subject<StringDictionary>();
+  // _groupMappingSubject = new Subject<StringDictionary>();
   _substitutionTableSubject = new Subject<DG.DataFrame>();
 
   _isUpdating: boolean = false;
@@ -28,7 +28,7 @@ export class PeptidesModel {
   isBitsetChangedInitialized = false;
 
   //viewer properties
-  _grouping!: boolean;
+  // _grouping!: boolean;
   _filterMode!: boolean;
   _twoColorMode!: boolean;
   _activityScaling!: string;
@@ -64,7 +64,7 @@ export class PeptidesModel {
     this._activityScaling = this._dataFrame.tags['scaling'];
     this._filterMode = this.stringToBool(this._dataFrame.tags['filterMode']);
     this._twoColorMode = this.stringToBool(this._dataFrame.tags['bidirectionalAnalysis']);
-    this._grouping = this.stringToBool(this._dataFrame.tags['grouping']);
+    // this._grouping = this.stringToBool(this._dataFrame.tags['grouping']);
     this._isSubstitutionOn = this.stringToBool(this._dataFrame.tags['showSubstitution']);
     this._maxSubstitutions = parseInt(this._dataFrame.tags['maxSubstitutions']);
     this._activityLimit = parseFloat(this._dataFrame.tags['activityLimit']);
@@ -75,14 +75,14 @@ export class PeptidesModel {
   }
 
   setProperties(
-    activityScaling: string, filterMode: boolean, twoColorMode: boolean, grouping: boolean, isSubstitutionOn: boolean,
+    activityScaling: string, filterMode: boolean, twoColorMode: boolean, isSubstitutionOn: boolean,
     maxSubstitutions: number, activityLimit: number, forceUpdate = false,
   ) {
     const chooseAction = (value: string, defaultValue: any) => forceUpdate ? value : defaultValue ?? value;
     this._dataFrame.tags['scaling'] = chooseAction(`${activityScaling}`, this._dataFrame.tags['scaling']);
     this._dataFrame.tags['filterMode'] = chooseAction(`${filterMode}`, this._dataFrame.tags['filterMode']);
     this._dataFrame.tags['bidirectionalAnalysis'] = chooseAction(`${twoColorMode}`, this._dataFrame.tags['bidirectionalAnalysis']);
-    this._dataFrame.tags['grouping'] = chooseAction(`${grouping}`, this._dataFrame.tags['grouping']);
+    // this._dataFrame.tags['grouping'] = chooseAction(`${grouping}`, this._dataFrame.tags['grouping']);
     this._dataFrame.tags['showSubstitution'] = chooseAction(`${isSubstitutionOn}`, this._dataFrame.tags['showSubstitution']);
     this._dataFrame.tags['maxSubstitutions'] = chooseAction(`${maxSubstitutions}`, this._dataFrame.tags['maxSubstitutions']);
     this._dataFrame.tags['activityLimit'] = chooseAction(`${activityLimit}`, this._dataFrame.tags['activityLimit']);
@@ -98,27 +98,27 @@ export class PeptidesModel {
 
   get onSARVGridChanged(): Observable<DG.Grid> {return this._sarVGridSubject.asObservable();}
 
-  get onGroupMappingChanged(): Observable<StringDictionary> {return this._groupMappingSubject.asObservable();}
+  // get onGroupMappingChanged(): Observable<StringDictionary> {return this._groupMappingSubject.asObservable();}
 
   get onSubstTableChanged(): Observable<DG.DataFrame> {return this._substitutionTableSubject.asObservable();}
 
   get substTooltipData(): type.SubstitutionTooltips {return this._substTableTooltipData!;}
 
   async updateData(
-    activityScaling?: string, sourceGrid?: DG.Grid, twoColorMode?: boolean, grouping?: boolean, activityLimit?: number,
+    activityScaling?: string, sourceGrid?: DG.Grid, twoColorMode?: boolean,  activityLimit?: number, 
     maxSubstitutions?: number, isSubstitutionOn?: boolean, filterMode?: boolean,
   ) {
     //FIXME: threre are too many assignments, some are duplicating
     this._activityScaling = activityScaling ?? this._activityScaling;
     this._sourceGrid = sourceGrid ?? this._sourceGrid;
     this._twoColorMode = twoColorMode ?? this._twoColorMode;
-    this._grouping = grouping ?? this._grouping;
+    // this._grouping = grouping ?? this._grouping;
     this._activityLimit = activityLimit ?? this._activityLimit;
     this._maxSubstitutions = maxSubstitutions ?? this._maxSubstitutions;
     this._isSubstitutionOn = isSubstitutionOn ?? this._isSubstitutionOn;
     this._filterMode = filterMode ?? this._filterMode;
-    this.setProperties(this._activityScaling, this._filterMode, this._twoColorMode, this._grouping,
-      this._isSubstitutionOn, this._maxSubstitutions, this._activityLimit, true);
+    this.setProperties(this._activityScaling, this._filterMode, this._twoColorMode, this._isSubstitutionOn,
+      this._maxSubstitutions, this._activityLimit, true);
 
     await this.updateDefault();
   }
@@ -126,10 +126,10 @@ export class PeptidesModel {
   async updateDefault() {
     if (this._activityScaling && this._sourceGrid && this._twoColorMode !== null && !this._isUpdating) {
       this._isUpdating = true;
-      const [viewerGrid, viewerVGrid, statsDf, substTable, groupMapping] = await this.initializeViewersComponents();
+      const [viewerGrid, viewerVGrid, statsDf, substTable] = await this.initializeViewersComponents();
       //FIXME: modify during the initializeViewersComponents stages
       this._statsDataFrameSubject.next(statsDf);
-      this._groupMappingSubject.next(groupMapping);
+      // this._groupMappingSubject.next(groupMapping);
       this._sarGridSubject.next(viewerGrid);
       this._sarVGridSubject.next(viewerVGrid);
       if (this._isSubstitutionOn) {
@@ -151,7 +151,7 @@ export class PeptidesModel {
 
   static get modelName() { return PeptidesModel._modelName; }
 
-  async initializeViewersComponents(): Promise<[DG.Grid, DG.Grid, DG.DataFrame, DG.DataFrame, StringDictionary]> {
+  async initializeViewersComponents(): Promise<[DG.Grid, DG.Grid, DG.DataFrame, DG.DataFrame]> {
     if (this._sourceGrid === null)
       throw new Error(`Source grid is not initialized`);
 
@@ -188,18 +188,19 @@ export class PeptidesModel {
       [C.COLUMNS_NAMES.ACTIVITY_SCALED], positionColumns, C.COLUMNS_NAMES.POSITION, C.COLUMNS_NAMES.AMINO_ACID_RESIDUE);
 
     //TODO: move to chem palette
-    let groupMapping: StringDictionary = {};
-    if (this._grouping) {
-      groupMapping = C.aarGroups;
-      const aarCol = matrixDf.getCol(C.COLUMNS_NAMES.AMINO_ACID_RESIDUE);
-      aarCol.init((index) => groupMapping[aarCol.get(index)[0]] ?? '-');
-      aarCol.compact();
-    } else
-      Object.keys(C.aarGroups).forEach((value) => groupMapping[value] = value);
+    // let groupMapping: StringDictionary = {};
+    // if (this._grouping) {
+    //   groupMapping = C.aarGroups;
+    //   const aarCol = matrixDf.getCol(C.COLUMNS_NAMES.AMINO_ACID_RESIDUE);
+    //   aarCol.init((index) => groupMapping[aarCol.get(index)[0]] ?? '-');
+    //   aarCol.compact();
+    // } else
+    //   Object.keys(C.aarGroups).forEach((value) => groupMapping[value] = value);
 
 
+    //FIXME: for some reason Mean difference is not calculated for all the AARs
     //statistics for specific AAR at a specific position
-    const statsDf = await this.calculateStatistics(matrixDf, peptidesCount, splitSeqDf, groupMapping);
+    const statsDf = await this.calculateStatistics(matrixDf, peptidesCount, splitSeqDf);
 
     // SAR matrix table
     //pivot a table to make it matrix-like
@@ -221,7 +222,7 @@ export class PeptidesModel {
       substTable = this.calcSubstitutions();
 
     //TODO: move everything below out to controller
-    const [sarGrid, sarVGrid] = this.createGrids(matrixDf, positionColumns, sequenceDf, this._grouping);
+    const [sarGrid, sarVGrid] = this.createGrids(matrixDf, positionColumns, sequenceDf);
 
     this._sarGrid = sarGrid;
     this._sarVGrid = sarVGrid;
@@ -230,7 +231,7 @@ export class PeptidesModel {
       renderColNames, statsDf, this._twoColorMode, sarGrid, sarVGrid, this._isSubstitutionOn);
 
     // show all the statistics in a tooltip over cell
-    this.setTooltips(renderColNames, statsDf, peptidesCount, this._grouping, sarGrid, sarVGrid, this._dataFrame);
+    this.setTooltips(renderColNames, statsDf, peptidesCount, sarGrid, sarVGrid, this._dataFrame);
 
     this.setInteractionCallback();
 
@@ -238,10 +239,10 @@ export class PeptidesModel {
 
     this.setBitsetCallback();
 
-    this.postProcessGrids(this._sourceGrid, invalidIndexes, this._grouping, sarGrid, sarVGrid);
+    this.postProcessGrids(this._sourceGrid, invalidIndexes, sarGrid, sarVGrid);
 
     //TODO: return class instead
-    return [sarGrid, sarVGrid, statsDf, substTable!, groupMapping];
+    return [sarGrid, sarVGrid, statsDf, substTable!];
   }
 
   calcSubstitutions() {
@@ -418,9 +419,7 @@ export class PeptidesModel {
     sourceGrid.columns.setOrder([newColName]);
   }
 
-  async calculateStatistics(
-    matrixDf: DG.DataFrame, peptidesCount: number, splitSeqDf: DG.DataFrame, groupMapping: StringDictionary,
-  ) {
+  async calculateStatistics(matrixDf: DG.DataFrame, peptidesCount: number, splitSeqDf: DG.DataFrame) {
     matrixDf = matrixDf.groupBy([C.COLUMNS_NAMES.POSITION, C.COLUMNS_NAMES.AMINO_ACID_RESIDUE])
       .add('count', C.COLUMNS_NAMES.ACTIVITY_SCALED, 'Count')
       .aggregate();
@@ -442,14 +441,14 @@ export class PeptidesModel {
       const aar = matrixDf.get(C.COLUMNS_NAMES.AMINO_ACID_RESIDUE, i);
 
       //@ts-ignore
-      splitSeqDf.rows.select((row) => groupMapping[row[position]] === aar);
+      splitSeqDf.rows.select((row) => row[position] === aar);
       const currentActivity: number[] = splitSeqDf
         .clone(splitSeqDf.selection, [C.COLUMNS_NAMES.ACTIVITY_SCALED])
         .getCol(C.COLUMNS_NAMES.ACTIVITY_SCALED)
         .toList();
 
       //@ts-ignore
-      splitSeqDf.rows.select((row) => groupMapping[row[position]] !== aar);
+      splitSeqDf.rows.select((row) => row[position] !== aar);
       const otherActivity: number[] = splitSeqDf
         .clone(splitSeqDf.selection, [C.COLUMNS_NAMES.ACTIVITY_SCALED])
         .getCol(C.COLUMNS_NAMES.ACTIVITY_SCALED)
@@ -514,9 +513,7 @@ export class PeptidesModel {
     return sequenceDf;
   }
 
-  createGrids(
-    matrixDf: DG.DataFrame, positionColumns: string[], sequenceDf: DG.DataFrame, grouping: boolean,
-  ) {
+  createGrids(matrixDf: DG.DataFrame, positionColumns: string[], sequenceDf: DG.DataFrame) {
     const sarGrid = matrixDf.plot.grid();
     sarGrid.sort([C.COLUMNS_NAMES.AMINO_ACID_RESIDUE]);
     sarGrid.columns.setOrder([C.COLUMNS_NAMES.AMINO_ACID_RESIDUE].concat(positionColumns as C.COLUMNS_NAMES[]));
@@ -526,15 +523,13 @@ export class PeptidesModel {
     sarVGrid.col(C.COLUMNS_NAMES.P_VALUE)!.format = 'four digits after comma';
     sarVGrid.col(C.COLUMNS_NAMES.P_VALUE)!.name = 'P-Value';
 
-    if (!grouping) {
-      let tempCol = (matrixDf.columns as DG.ColumnList).byName(C.COLUMNS_NAMES.AMINO_ACID_RESIDUE);
-      if (tempCol)
-        PeptidesController.setAARRenderer(tempCol, sarGrid);
+    let tempCol = (matrixDf.columns as DG.ColumnList).byName(C.COLUMNS_NAMES.AMINO_ACID_RESIDUE);
+    if (tempCol)
+      PeptidesController.setAARRenderer(tempCol, sarGrid);
 
-      tempCol = (sequenceDf.columns as DG.ColumnList).byName(C.COLUMNS_NAMES.AMINO_ACID_RESIDUE);
-      if (tempCol)
-        PeptidesController.setAARRenderer(tempCol, sarGrid);
-    }
+    tempCol = (sequenceDf.columns as DG.ColumnList).byName(C.COLUMNS_NAMES.AMINO_ACID_RESIDUE);
+    if (tempCol)
+      PeptidesController.setAARRenderer(tempCol, sarGrid);
 
     return [sarGrid, sarVGrid];
   }
@@ -570,6 +565,9 @@ export class PeptidesModel {
         const currentPosition = tableColName !== C.COLUMNS_NAMES.MEAN_DIFFERENCE ?
           tableColName : gridTable.get(C.COLUMNS_NAMES.POSITION, tableRowIndex);
         const currentAAR = gridTable.get(C.COLUMNS_NAMES.AMINO_ACID_RESIDUE, tableRowIndex);
+        if (currentAAR === 'Aib' && currentPosition === '02')
+          console.log('stop');
+        
         const queryAAR = `${C.COLUMNS_NAMES.AMINO_ACID_RESIDUE} = ${currentAAR}`;
         if (cellValue) {
           const query = `${queryAAR} and ${C.COLUMNS_NAMES.POSITION} = ${currentPosition}`;
@@ -629,8 +627,8 @@ export class PeptidesModel {
   }
 
   setTooltips(
-    renderColNames: string[], statsDf: DG.DataFrame, peptidesCount: number, grouping: boolean, sarGrid: DG.Grid,
-    sarVGrid: DG.Grid, sourceDf: DG.DataFrame,
+    renderColNames: string[], statsDf: DG.DataFrame, peptidesCount: number, sarGrid: DG.Grid, sarVGrid: DG.Grid,
+    sourceDf: DG.DataFrame,
   ) {
     const onCellTooltipAction = async (cell: DG.GridCell, x: number, y: number) => {
       if (
@@ -662,14 +660,13 @@ export class PeptidesModel {
         ui.tooltip.show(ui.tableFromMap(tooltipMap), x, y);
       }
       if (!cell.isColHeader && cell.tableColumn?.name == C.COLUMNS_NAMES.AMINO_ACID_RESIDUE) {
-        if (grouping) {
-          const currentGroup = C.groupDescription[cell.cell.value];
-          const divText = ui.divText('Amino Acids in this group: ' + currentGroup[C.SEM_TYPES.AMINO_ACIDS].join(', '));
-          ui.tooltip.show(ui.divV([ui.h3(currentGroup['description']), divText]), x, y);
-        } else {
-          const monomerLib = sourceDf.temp[MonomerLibrary.id];
-          ChemPalette.showTooltip(cell, x, y, monomerLib);
-        }
+        // if (grouping) {
+        //   const currentGroup = C.groupDescription[cell.cell.value];
+        //   const divText = ui.divText('Amino Acids in this group: ' + currentGroup[C.SEM_TYPES.AMINO_ACIDS].join(', '));
+        //   ui.tooltip.show(ui.divV([ui.h3(currentGroup['description']), divText]), x, y);
+        // } else {
+        const monomerLib = sourceDf.temp[MonomerLibrary.id];
+        ChemPalette.showTooltip(cell, x, y, monomerLib);
       }
       return true;
     };
@@ -756,9 +753,7 @@ export class PeptidesModel {
 
   fireBitsetChanged() {(this._filterMode ? this._dataFrame.filter : this._dataFrame.selection).fireChanged();}
 
-  postProcessGrids(
-    sourceGrid: DG.Grid, invalidIndexes: number[], grouping: boolean, sarGrid: DG.Grid, sarVGrid: DG.Grid,
-  ) {
+  postProcessGrids(sourceGrid: DG.Grid, invalidIndexes: number[], sarGrid: DG.Grid, sarVGrid: DG.Grid) {
     sourceGrid.onCellPrepare((cell: DG.GridCell) => {
       const currentRowIndex = cell.tableRowIndex;
       if (currentRowIndex && invalidIndexes.includes(currentRowIndex) && !cell.isRowHeader)
@@ -780,10 +775,10 @@ export class PeptidesModel {
       }
     }
 
-    if (grouping) {
-      sarGrid.col(C.COLUMNS_NAMES.AMINO_ACID_RESIDUE)!.name = 'Groups';
-      sarVGrid.col(C.COLUMNS_NAMES.AMINO_ACID_RESIDUE)!.name = 'Groups';
-    }
+    // if (grouping) {
+    //   sarGrid.col(C.COLUMNS_NAMES.AMINO_ACID_RESIDUE)!.name = 'Groups';
+    //   sarVGrid.col(C.COLUMNS_NAMES.AMINO_ACID_RESIDUE)!.name = 'Groups';
+    // }
 
     sarGrid.props.allowEdit = false;
     sarVGrid.props.allowEdit = false;
