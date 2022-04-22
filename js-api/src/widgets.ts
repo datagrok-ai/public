@@ -1158,8 +1158,11 @@ export class Color {
     return api.grok_Color_GetContrastColor(color);
   }
 
-  /** Converts ARGB-formatted integer color to a HTML-formatted string (such as `#FF68Gf5T`). See also {@link toRgb}. */
-  static toHtml(color: number) { return api.grok_Color_ToHtml(color); }
+  /** Converts ARGB-formatted integer color to a HTML-formatted string (such as `#ffffff`). See also {@link toRgb}. */
+  static toHtml(color: number): string { return api.grok_Color_ToHtml(color); }
+
+  /** Convert HTML-formatted string (such as `#ffffff`) to ARGB-fromatted integer color */
+  static fromHtml(htmlColor: string): number { return api.grok_Color_FromHtml(htmlColor); }
 
   /** Converts ARGB-formatted integer color to a HTML-formatted string (such as `rbg(20, 46, 124)`). See also {@link toHtml. }*/
   static toRgb(color: ColorType): string {
