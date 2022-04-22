@@ -332,12 +332,13 @@ export function oligoSdFile(table: DG.DataFrame) {
       sequence.getString(i) + '; duplex of SS: ' + sequence.getString(i - 2) + ' and AS: ' + sequence.getString(i - 1) :
       sequence.getString(i),
     );
-    const molWeightCol = saltsDf.col('MOLWEIGHT')!.toList();
-    const saltNames = saltsDf.col('DISPLAY')!.toList();
+    const molWeightCol = saltsDf.col('MOLWEIGHT')!;
+    const saltNamesList = saltsDf.col('DISPLAY')!.toList();
     t.columns.addNewFloat(COL_NAMES.CPD_MW)
       .init((i: number) => molecularWeight(sequence.get(i), weightsObj));
     t.columns.addNewFloat(COL_NAMES.SALT_MASS).init((i: number) => {
-      const mw = molWeightCol[saltNames.indexOf(salt.get(i))];
+      const saltRowIndex = saltNamesList.indexOf(salt.get(i));
+      const mw = molWeightCol.get(saltRowIndex);
       return mw * equivalents.get(i);
     });
     t.columns.addNewCalculated(COL_NAMES.BATCH_MW,
