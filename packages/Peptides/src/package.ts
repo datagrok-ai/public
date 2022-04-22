@@ -94,7 +94,7 @@ export async function peptidesPanel(col: DG.Column): Promise<DG.Widget> {
     return new DG.Widget(ui.divText('Analysis is not applicable'));
 
   [currentView, currentGrid, currentTable, alignedSequenceColumn] =
-    getOrDefine(currentView, currentGrid, currentTable, alignedSequenceColumn);
+    getOrDefine(undefined, undefined, col.dataFrame, col);
   return analyzePeptidesWidget(currentTable, alignedSequenceColumn);
 }
 
@@ -146,7 +146,7 @@ export async function peptideMolecule(peptide: string): Promise<DG.Widget> {
 //output: widget result
 export async function peptideMolecule2(aar: string): Promise<DG.Widget> {
   [currentView, currentGrid, currentTable, alignedSequenceColumn] =
-    getOrDefine(currentView, currentGrid, currentTable, alignedSequenceColumn);
+    getOrDefine();
   const peptide = alignedSequenceColumn.get(currentTable.currentRowIdx);
   return peptideMolecule(peptide);
 }
@@ -187,7 +187,7 @@ export function logov() {
 //output: widget result
 export function manualAlignment(monomer: string) {
   [currentView, currentGrid, currentTable, alignedSequenceColumn] =
-    getOrDefine(currentView, currentGrid, currentTable, alignedSequenceColumn);
+    getOrDefine();
   //TODO: recalculate Molfile and Molecule panels on sequence update
   return manualAlignmentWidget(alignedSequenceColumn, currentTable);
 }
@@ -198,7 +198,7 @@ export function manualAlignment(monomer: string) {
 //output: widget result
 export async function peptideSpacePanel(col: DG.Column): Promise<DG.Widget> {
   [currentView, currentGrid, currentTable, alignedSequenceColumn] =
-    getOrDefine(currentView, currentGrid, currentTable, col);
+    getOrDefine(undefined, undefined, col.dataFrame, col);
   const widget = new PeptideSimilaritySpaceWidget(col, currentView);
   return widget.draw();
 }
@@ -218,7 +218,7 @@ export async function peptideMolfile(peptide: string): Promise<DG.Widget> {
 //output: widget result
 export async function peptideMolfile2(aar: string): Promise<DG.Widget> {
   [currentView, currentGrid, currentTable, alignedSequenceColumn] =
-    getOrDefine(currentView, currentGrid, currentTable, alignedSequenceColumn);
+    getOrDefine();
   const peptide = alignedSequenceColumn.get(currentTable.currentRowIdx);
   return peptideMolfile(peptide);
 }
