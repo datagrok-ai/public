@@ -230,7 +230,9 @@ export function descriptorsApp(context: any) {
 //name: saveAsSdf
 //description: Save as SDF
 //tags: fileExporter
-export function saveAsSdf() {_saveAsSdf();}
+export function saveAsSdf() {
+  _saveAsSdf();
+}
 
 //#region Top menu
 
