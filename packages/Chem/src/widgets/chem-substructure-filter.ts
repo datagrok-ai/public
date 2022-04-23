@@ -30,7 +30,7 @@ export class SubstructureFilter extends DG.Filter {
   }
 
   get isFiltering(): boolean {
-    return !this.sketcher?.getMolFile().endsWith(this.WHITE_MOL);
+    return !this.sketcher?.getMolFile()?.endsWith(this.WHITE_MOL);
   }
 
   constructor() {
