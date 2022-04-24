@@ -19,5 +19,3 @@ See also:
 
 * [Group](../govern/group.md)
 * [User](user.md)
-* [Group members editor](edit-group-members.md)
-* [Group memberships editor](edit-group-memberships.md)
