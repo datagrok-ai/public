@@ -12,14 +12,14 @@ const BarCellSettingsProperties = {
 };
 
 export class BarCellRenderer extends DG.GridCellRenderer {
-  get name() {return 'bar';}
+  get name() { return 'bar'; }
 
-  get cellType() {return 'bar';}
+  get cellType() { return 'bar'; }
 
   render(
     g: CanvasRenderingContext2D,
     x: number, y: number, w: number, h: number,
-    gridCell: DG.GridCell, cellStyle: DG.GridCellStyle,
+    gridCell: DG.GridCell, cellStyle: DG.GridCellStyle
   ) {
     if (gridCell.cell.isNone())
       return;
