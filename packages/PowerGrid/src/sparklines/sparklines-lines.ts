@@ -5,7 +5,7 @@ import {GridCell, Point, Rect} from 'datagrok-api/src/grid';
 import {Paint} from 'datagrok-api/src/utils';
 import {Color} from 'datagrok-api/src/widgets';
 import {MARKER_TYPE} from 'datagrok-api/src/const';
-import {getSettingsBase, names, SummarySettingsBase} from './base';
+import {getSettingsBase, names, SummarySettingsBase} from './shared';
 
 
 interface SparklineSettings extends SummarySettingsBase {
@@ -22,14 +22,14 @@ function getSettings(gc: DG.GridColumn): SparklineSettings {
 
 
 export class SparklineCellRenderer extends DG.GridCellRenderer {
-  get name() {return 'sparkline';}
+  get name() { return 'sparkline'; }
 
-  get cellType() {return 'sparkline_ts';}
+  get cellType() { return 'sparkline_ts'; }
 
   render(
     g: CanvasRenderingContext2D,
     x: number, y: number, w: number, h: number,
-    gridCell: GridCell, cellStyle: DG.GridCellStyle,
+    gridCell: GridCell, cellStyle: DG.GridCellStyle
   ) {
     const df = gridCell.grid.dataFrame;
 
@@ -61,8 +61,9 @@ export class SparklineCellRenderer extends DG.GridCellRenderer {
         if (!started) {
           g.moveTo(p.x, p.y);
           started = true;
-        } else
+        } else {
           g.lineTo(p.x, p.y);
+        }
       }
     }
     g.stroke();
@@ -87,7 +88,6 @@ export class SparklineCellRenderer extends DG.GridCellRenderer {
       ui.columnsInput('Sparkline columns', gridColumn.grid.dataFrame, (columns) => {
         settings.columnNames = names(columns);
         gridColumn.grid.invalidate();
-        console.log(JSON.stringify(gridColumn.settings));
       }, {
         available: names(gridColumn.grid.dataFrame.columns.numerical),
         checked: settings?.columnNames ?? names(gridColumn.grid.dataFrame.columns.numerical),

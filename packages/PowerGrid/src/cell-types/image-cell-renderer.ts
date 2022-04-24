@@ -2,20 +2,20 @@
 import * as DG from 'datagrok-api/dg';
 
 export class ImageCellRenderer extends DG.GridCellRenderer {
-  get name() {return 'ImageUrl';}
+  get name() { return 'ImageUrl'; }
 
-  get cellType() {return 'ImageUrl';}
+  get cellType() { return 'ImageUrl'; }
 
-  get defaultWidth(): number | null {return 200;}
+  get defaultWidth(): number | null { return 200; }
 
-  get defaultHeight(): number | null {return 100;}
+  get defaultHeight(): number | null { return 100; }
 
   static images: DG.LruCache = new DG.LruCache();
 
   render(
     g: CanvasRenderingContext2D,
     x: number, y: number, w: number, h: number,
-    gridCell: DG.GridCell, cellStyle: DG.GridCellStyle,
+    gridCell: DG.GridCell, cellStyle: DG.GridCellStyle
   ) {
     g.fillText(`image ${gridCell.cell.value}`, x + 3, y + 3);
 
@@ -32,7 +32,6 @@ export class ImageCellRenderer extends DG.GridCellRenderer {
 
     if (!img.complete || img.naturalWidth == 0)
       return;
-
 
     g.save();
     g.rect(x, y, w, h);
