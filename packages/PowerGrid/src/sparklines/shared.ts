@@ -8,9 +8,7 @@ export interface SummarySettingsBase {
   columnNames: string[];
 }
 
-export function getSettingsBase(
-  gc: DG.GridColumn,
-): SummarySettingsBase {
+export function getSettingsBase(gc: DG.GridColumn): SummarySettingsBase {
   return gc.settings ??= {
     columnNames: names(gc.grid.dataFrame.columns.numerical),
   };
