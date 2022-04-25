@@ -5,8 +5,11 @@ import * as DG from 'datagrok-api/dg';
 import {NglAspect} from './ngl-aspect';
 import {PvizAspect} from './pviz-aspect';
 import {MiscMethods} from './misc';
+import {DataLoader, JsonType, ObsPtmType, PdbType} from '../utils/data-loader';
 
 export class TwinPviewer {
+  dataLoader: DataLoader;
+
   root: HTMLElement;
   nglHost: HTMLElement;
   pVizHostL: HTMLElement;
@@ -46,11 +49,15 @@ export class TwinPviewer {
   pViz: PvizAspect;
 
   isOpened: boolean = false;
-  jsonStr: any;
-  pdbStr: string;
-  jsonObsPtm: any;
+  jsonStr: JsonType; // TODO: descriptive name
+  pdbStr: PdbType;
+  jsonObsPtm: ObsPtmType;
 
-  public init(json: any, pdb: string, jsonObsPtm: any) {
+  constructor(dataLoader: DataLoader) {
+    this.dataLoader = dataLoader;
+  }
+
+  public init(json: JsonType, pdb: PdbType, jsonObsPtm: ObsPtmType) {
     // ---- SIDEPANEL REMOVAL ----
     const windows = grok.shell.windows;
     windows.showProperties = false;
@@ -86,17 +93,17 @@ export class TwinPviewer {
     }).root;
 
     this.ngl = new NglAspect();
-    this.pViz = new PvizAspect();
+    this.pViz = new PvizAspect(this.dataLoader);
   }
 
-  public async reset(json: string, pdb: string, jsonObsPtm: any) {
+  public async reset(json: JsonType, pdb: PdbType, jsonObsPtm: ObsPtmType) {
     this.jsonStr = json;
     this.pdbStr = pdb;
     this.jsonObsPtm = jsonObsPtm;
 
     this.twinSelections = {'H': {}, 'L': {}};
 
-    const groups: {[_: string]: any} = {};
+    const groups: { [_: string]: any } = {};
     const items: DG.TreeViewNode[] = [];
 
     for (const g in groups)
@@ -127,18 +134,14 @@ export class TwinPviewer {
     if (!!this.sequenceTabs)
       mlbView.dockManager.close(this.sequenceTabs.root);
 
-
     if (!!this.panelNode)
       mlbView.dockManager.close(this.panelNode);
-
 
     if (!!this.nglNode)
       mlbView.dockManager.close(this.nglNode);
 
-
     if (!!this.sequenceNode)
       mlbView.dockManager.close(this.sequenceNode);
-
 
     this.isOpened = false;
   }
@@ -228,9 +231,9 @@ export class TwinPviewer {
     this.ptmMotifChoices = ui.multiChoiceInput('', [], ptmMotifPredictions);
 
     // ---- INPUTS PANEL ----
-    if (!this.accOptions)
+    if (!this.accOptions) {
       this.accOptions = ui.accordion();
-    else {
+    } else {
       this.accOptions.removePane(this.accOptions.getPane('3D model'));
       this.accOptions.removePane(this.accOptions.getPane('Sequence'));
       this.accOptions.removePane(this.accOptions.getPane('Predicted PTMs'));
@@ -247,12 +250,11 @@ export class TwinPviewer {
 
     if (this.jsonObsPtm !== null) {
       const obsPtmKeys =
-        [...new Set([...Object.keys(this.jsonObsPtm.ptm_observed.H), ...Object.keys(this.jsonObsPtm.ptm_observed.L)])];
+        [...new Set([...Object.keys(this.jsonObsPtm.H), ...Object.keys(this.jsonObsPtm.L)])];
       const obsPtmPredictions: string[] = [];
 
       for (let i = 0; i < obsPtmKeys.length; i++)
         obsPtmPredictions.push(obsPtmKeys[i].replaceAll('_', ' '));
-
 
       //@ts-ignore
       this.ptmObsChoices = ui.multiChoiceInput('', [], obsPtmPredictions);

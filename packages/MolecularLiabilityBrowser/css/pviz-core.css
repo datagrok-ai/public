@@ -2,6 +2,7 @@
     svg.pviz rect.background {
         fill: white;
     }
+
     line.x-bar {
         display: none;
     }
@@ -18,6 +19,7 @@ div.header {
 div#main {
     background: #eee;
 }
+
 footer {
     height: 2em;
     width: 100%;
@@ -31,9 +33,10 @@ text.sequence {
     text-anchor: middle;
     font-family: monospace;
 }
-line.sequence-bg{
-    stroke-width:3px;
-    stroke:#aaa;
+
+line.sequence-bg {
+    stroke-width: 3px;
+    stroke: #aaa;
 }
 
 g.axis-bubble text {
@@ -41,10 +44,12 @@ g.axis-bubble text {
     alignment-baseline: middle;
     font-family: monospace;
 }
+
 g.axis-bubble rect {
     stroke: #777;
     fill: white;
 }
+
 svg.pviz rect.background {
     fill: white;
 }
@@ -79,6 +84,7 @@ g.feature text {
 g.feature.Region rect.feature {
     fill: #1f78b4;
 }
+
 g.feature.Molecule_processing rect.feature {
     fill: #b2df8a;
 }
@@ -121,6 +127,7 @@ g.one-hidden-layer text {
 g.axis g.tick line {
     stroke: black;
 }
+
 g.axis path.domain {
     stroke: black;
     fill: none;
@@ -140,6 +147,7 @@ rect.brush {
     fill: black;
     fill-opacity: 0.3;
 }
+
 /*
  *
  g.icon:hover path{
@@ -157,10 +165,12 @@ g.feature.secondary_structure line.beta_strand {
     stroke: green;
     stroke-width: 3
 }
+
 g.feature.secondary_structure path.beta_strand {
     stroke: green;
     fill: green
 }
+
 g.feature.secondary_structure path.turn {
     stroke: green;
     fill: none;
@@ -180,18 +190,26 @@ svg.one-liner line {
     stroke: black;
     stroke-width: 1px;
 }
+
 svg.one-liner rect {
     fill: blue;
     fill-opacity: 0.7;
 }
+
 svg.one-liner rect.subline-0 {
     fill: blue;
 }
+
 svg.one-liner rect.subline-1 {
     fill: red;
 }
+
 svg.one-liner rect.subline-2 {
     fill: green;
+}
+
+g.groupset-title text {
+    font-weight: bold;
 }
 
 /** collapser
@@ -199,32 +217,38 @@ svg.one-liner rect.subline-2 {
  */
 g.groupset-title > polygon.collapse_expand {
     fill: #7F7F7F;
-    border:1px solid #ccc;
+    border: 1px solid #ccc;
 }
+
 g.layers > g.hidden {
     display: none;
 }
+
 line.category-separator-line {
-    display:none;
-    pointer-events:none;
+    display: none;
+    pointer-events: none;
 }
+
 /** select
  *
  */
 g.select {
-     fill:7f7f7f;
-     fill-opacity:0.3;
- }
+    fill: #7f7f7f;
+    fill-opacity: 0.3;
+}
+
 g.feature.data > .feature.selected {
     stroke: none;
     color: #3FFFFF;
     fill: #3FFFFF;
 }
+
 g.feature.data > rect.feature.tooltip-bg {
     fill-opacity: 0;
     stroke-opacity: 0;
 }
-g>rect.groupset-background {
+
+g > rect.groupset-background {
     fill-opacity: 0;
     stroke-opacity: 0;
 }

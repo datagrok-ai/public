@@ -3,19 +3,33 @@ import * as grok from 'datagrok-api/grok';
 import * as DG from 'datagrok-api/dg';
 
 import {TwinPviewer} from './viewers/twin-p-viewer';
-import {_package} from './package';
 import {TreeBrowser} from './tree';
 import {Subscription} from 'rxjs';
-import {genData} from './utils/example-generator';
 import {AminoacidsWebLogo} from './viewers/web-logo';
 
+import {
+  DataLoader,
+  JsonType,
+  PdbType,
+  NumsType,
+  ObsPtmType,
+} from './utils/data-loader';
+import {DataLoaderFiles} from './utils/data-loader-files';
+
+
 export class MolecularLiabilityBrowser {
+  dataLoader: DataLoader = null;
+
+  constructor(dataLoader: DataLoader) {
+    this.dataLoader = dataLoader;
+  }
+
   mlbTable: DG.DataFrame;
   vids: string[];
   vidsObsPTMs: string[];
   allVids: DG.Column;
   allIds: DG.Column;
-  idMapping: {[key: string]: string[];};
+  idMapping: { [key: string]: string[]; };
 
   mlbView: DG.TableView;
   vIdInput: DG.InputBase;
@@ -51,37 +65,28 @@ export class MolecularLiabilityBrowser {
     // this.mlbView.path = `/Table/${this.vIdInput.value}`;
     //hideShowIcon.classList.value = 'grok-icon fal fa-eye';
     // const pi = DG.TaskBarProgressIndicator.create('Creating NGL view');
-
-    // const pName = _package.nqName;
-    // const options = {'vid': this.vIdInput.value};
-    // const jsonStr = JSON.parse((await grok.functions.call(`${pName}:getJsonByVid`, options)).columns[0].get(0));
-    // const pdbStr = (await grok.functions.call(`${pName}:getPdbByVid`, options)).columns[0].get(0);
-    // const jsonN = JSON.parse(
-    //   (await grok.functions.call(`${pName}:getJsonComplementByVid`, options)).columns[0].get(0));
-    // let jsonStrObsPtm = null;
-    // if (this.vidsObsPTMs.includes(this.vIdInput.value))
-    //   jsonStrObsPtm = JSON.parse((await grok.functions.call(`${pName}:getJsonObsByVid`, options)).columns[0].get(0));
     // #endregion
 
-    // #region Code from RepretoireBrowser
+    // #region Code from RepertoireBrowser
     this.mlbView.path = `/Table/${this.vIdInput.value}`;
     //hideShowIcon.classList.value = 'grok-icon fal fa-eye';
     const pi = DG.TaskBarProgressIndicator.create('Creating 3D view');
 
     ////////////////////////////////////////////////////
-    const jsonStr = require('./examples/example.json');
-    //let path = _package.webRoot + 'examples/example.pdb';
-    const pdbStr: string = require('./examples/examplePDB.json').pdb;
-    const jsonN = require('./examples/exampleNums.json');
+    const jsonStr: JsonType = await this.dataLoader.load_example(this.vIdInput.value);
 
-    let jsonStrObsPtm = null;
+    const pdbStr: PdbType = (await this.dataLoader.load_pdb(this.vIdInput.value));
+
+    const jsonNums: NumsType = await this.dataLoader.realNums;
+
+    let jsonStrObsPtm: ObsPtmType = null;
     if (this.vidsObsPTMs.includes(this.vIdInput.value))
-      jsonStrObsPtm = require('./examples/exampleOptm.json');
+      jsonStrObsPtm = await this.dataLoader.load_obsPtm(this.vIdInput.value);
     ////////////////////////////////////////////////////
     // #region
 
-    const hNumberingStr = jsonN.heavy_numbering;
-    const lNumberingStr = jsonN.light_numbering;
+    const hNumberingStr = jsonNums.heavy_numbering;
+    const lNumberingStr = jsonNums.light_numbering;
 
     const hNumbering = [];
     const lNumbering = [];
@@ -89,19 +94,18 @@ export class MolecularLiabilityBrowser {
     for (let i = 0; i < hNumberingStr.length; i++)
       hNumbering.push(parseInt(hNumberingStr[i].replaceAll(' ', '')));
 
-
     for (let i = 0; i < lNumberingStr.length; i++)
       lNumbering.push(parseInt(lNumberingStr[i].replaceAll(' ', '')));
-
 
     jsonStr['map_H'] = hNumbering;
     jsonStr['map_L'] = lNumbering;
 
     if (!this.twinPviewer) {
-      this.twinPviewer = new TwinPviewer();
+      this.twinPviewer = new TwinPviewer(this.dataLoader);
       this.twinPviewer.init(jsonStr, pdbStr, jsonStrObsPtm);
-    } else
+    } else {
       this.twinPviewer.reset(jsonStr, pdbStr, jsonStrObsPtm);
+    }
 
     this.twinPviewer.show(this.mlbView);
     this.twinPviewer.open(this.mlbView);
@@ -110,20 +114,8 @@ export class MolecularLiabilityBrowser {
   };
 
   setPropertiesFilters(): void {
-    interface PropertiesData {
-      source: string;
-      names: string[];
-      yellowLeft: number[];
-      yellowRight: number[];
-      redLeft: number[];
-      redRight: number[];
-      plotsX: number[][];
-      plotsY: number[][];
-      tooltips: string[];
-    };
-
     //external data load
-    const pf = require('./externalData/properties.json') as PropertiesData;
+    const pf = this.dataLoader.filterProperties;
 
     //this.mlbView.grid.columns.byName('CDR Clothia').visible = false;
 
@@ -148,7 +140,6 @@ export class MolecularLiabilityBrowser {
 
     for (let i = 0; i < pf.names.length; i++)
       this.mlbTable.columns.byName(pf.names[i]).width = 150;
-
 
     //FIXME: filters appear separately
     this.mlbView.addViewer(DG.VIEWER.FILTERS);
@@ -205,7 +196,7 @@ export class MolecularLiabilityBrowser {
         const textSize = args.g.measureText(args.cell.gridColumn.name);
         args.g.fillText(args.cell.gridColumn.name, args.bounds.x +
           (args.bounds.width - textSize.width) / 2, args.bounds.y +
-        (textSize.fontBoundingBoxAscent + textSize.fontBoundingBoxDescent));
+          (textSize.fontBoundingBoxAscent + textSize.fontBoundingBoxDescent));
         args.g.fillStyle = '#4b4b4a';
         args.preventDefault();
       }
@@ -313,13 +304,6 @@ export class MolecularLiabilityBrowser {
     });
   }
 
-  async readSequences() {
-    //this.seqTable = (await grok.data.loadTable(_package.webRoot + 'src/examples/h_out1.csv'));
-    const [hChainDf, lChainDf] = genData(this.mlbTable.col('v id').toList());
-
-    return [hChainDf, lChainDf];
-  }
-
   mergeSequenceColumns(df: DG.DataFrame, chain: string, startingColumnIndex = 13) {
     const positionRegExp = /^\d+[A-Z]*$/g;
     const columns: DG.ColumnList = df.columns;
@@ -327,7 +311,7 @@ export class MolecularLiabilityBrowser {
     const positionColumns = names.filter((v: string) => v.match(positionRegExp) !== null);
     const seqCol = columns.addNewVirtual(
       `${chain} chain sequence`,
-      (i: number) => positionColumns.map((v) => df.get(v, i)).join(''),
+      (i: number) => positionColumns.map((v) => df.get(v, i)).join('')
     );
     seqCol.semType = AminoacidsWebLogo.residuesSet;
     return seqCol;
@@ -344,7 +328,7 @@ export class MolecularLiabilityBrowser {
       (this.mlbTable.columns as DG.ColumnList).names(),
       [seqCol.name],
       DG.JOIN_TYPE.LEFT,
-      true,
+      true
     );
 
     const logo = this.mlbView.addViewer('AminoacidsWebLogo');
@@ -360,42 +344,31 @@ export class MolecularLiabilityBrowser {
     const pi = DG.TaskBarProgressIndicator.create('Loading data...');
 
     // #region Commented due to using code from RepertoireBrowser
-    // this.mlbTable = (await grok.functions.call('MolecularLiabilityBrowser:GetMolecularLiabilityBrowser'));
-    // for (const column of this.mlbTable.columns)
-    //   column.name = column.name.replaceAll('_', ' ');
-
-    // // 'ngl' column have been removed from query 2022-04
-    // // this.mlbTable.columns.remove('ngl');
-
     // const vidsRaw = (await grok.functions.call('MolecularLiabilityBrowser:getVids'));
-    // this.vids = vidsRaw.columns[0].toList();
-    // this.vidsObsPTMs = (await grok.functions.call('MolecularLiabilityBrowser:getObservedPtmVids'))
-    //   .columns[0].toList();
     // #endregion
 
     ////////////////////////////////////////////////////
-    this.mlbTable = (await grok.data.loadTable(_package.webRoot + 'src/examples/mlb.csv'));
-    this.mlbTable.columns.remove('ngl');
+    this.mlbTable = await this.dataLoader.load_mlbDf();
 
-    const [hChainDf, lChainDf] = await this.readSequences();
+    const hChainDf = await this.dataLoader.load_hChainDf();
+    const lChainDf = await this.dataLoader.load_lChainDf();
 
     for (const column of this.mlbTable.columns)
       column.name = column.name.replaceAll('_', ' ');
 
     // let vidsRaw = (await grok.functions.call('MolecularLiabilityBrowser:getVids'));
-    this.vids = ['VR000000008', 'VR000000043', 'VR000000044'];
-    this.vidsObsPTMs = ['VR000000044'];
+    this.vids = await this.dataLoader.getVids();
+    this.vidsObsPTMs = await this.dataLoader.getObservedPtmVids();
     ////////////////////////////////////////////////////
 
     // #region Code from RepertoireBrowser till pi.close()
-    const ptmMap = JSON.parse(await _package.files.readAsText('ptm_map.json'));
-    const cdrMap = JSON.parse(await _package.files.readAsText('cdr_map.json'));
-    const referenceDf = (await _package.files.readBinaryDataFrames('ptm_in_cdr.d42'))[0];
+    const referenceDf = await this.dataLoader.refDf;
 
     const tempDf = referenceDf.clone(null, ['v_id']);
     (tempDf.columns as DG.ColumnList).addNewInt('index').init((i) => i);
-    const indexes = (this.mlbTable.clone(null, ['v id']).
-      join(tempDf, ['v id'], ['v_id'], [], ['index'], 'left', false).getCol('index').getRawData() as Int32Array);
+    const indexes = (this.mlbTable.clone(null, ['v id'])
+      .join(tempDf, ['v id'], ['v_id'], [], ['index'], 'left', false)
+      .getCol('index').getRawData() as Int32Array);
     // #endregion
 
     pi.close();
@@ -418,8 +391,7 @@ export class MolecularLiabilityBrowser {
     for (let i = 0; i < this.allVids.length; i++)
       this.idMapping[this.allVids.get(i)] = this.allIds.get(i).replaceAll(' ', '').split(',');
 
-    const path = _package.webRoot + 'src/examples/tree.csv';
-    const dfTree = await grok.data.loadTable(path);
+    const dfTree: DG.DataFrame = await this.dataLoader.load_treeDf();
     if (dfTree) {
       const treeBrowser = new TreeBrowser();
       await treeBrowser.init(dfTree, this.mlbView);

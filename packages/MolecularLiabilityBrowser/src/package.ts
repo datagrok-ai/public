@@ -2,11 +2,16 @@ import * as grok from 'datagrok-api/grok';
 import * as DG from 'datagrok-api/dg';
 import {MolecularLiabilityBrowser} from './molecular-liability-browser';
 import {MLBFilter} from './custom-filters';
+import {AminoacidsWebLogo} from './viewers/web-logo';
+import {DataLoader} from './utils/data-loader';
+import {DataLoaderFiles} from './utils/data-loader-files';
+// import {DataLoaderJnj} from './utils/data-loader-jnj';
 
 export const _package = new DG.Package();
-let ptmMap: {[key: string]: string};
-let cdrMap: {[key: string]: string};
-let referenceDf: DG.DataFrame;
+
+/** DataLoader instance
+ */
+let dl: DataLoader;
 
 function getPathSegments(path: string) {
   const parser = document.createElement('a');
@@ -21,9 +26,10 @@ function getPathSegments(path: string) {
 //tags: init
 export async function init() {
   const pi = DG.TaskBarProgressIndicator.create('Loading filters data...');
-  ptmMap = JSON.parse(await _package.files.readAsText('ptm_map.json'));
-  cdrMap = JSON.parse(await _package.files.readAsText('cdr_map.json'));
-  referenceDf = (await _package.files.readBinaryDataFrames(`ptm_in_cdr.d42`))[0];
+
+  dl = new DataLoaderFiles();
+  // dl = new DataLoaderJnj();
+  await dl.init();
   pi.close();
 }
 
@@ -32,10 +38,10 @@ export async function init() {
 //tags: filter
 //output: filter result
 export function mlbFilter() {
-  if (!(ptmMap && cdrMap && referenceDf))
+  if (!(dl.ptmMap && dl.cdrMap && dl.refDf))
     throw new Error(`Filter data is not initialized!`);
 
-  return new MLBFilter(ptmMap, cdrMap, referenceDf);
+  return new MLBFilter(dl.ptmMap, dl.cdrMap, dl.refDf);
 }
 
 //name: Molecular Liability Browser
@@ -44,6 +50,13 @@ export async function MolecularLiabilityBrowserApp() {
   grok.shell.windows.showToolbox = false;
   const vid = getPathSegments(<string><unknown>window.location);
 
-  const app = new MolecularLiabilityBrowser();
+  const app = new MolecularLiabilityBrowser(dl);
   await app.init(vid);
+}
+
+//name: AminoacidsWebLogo
+//tags: viewer, panel
+//output: viewer result
+export function aminoacidsWebLogoViewer() {
+  return new AminoacidsWebLogo();
 }

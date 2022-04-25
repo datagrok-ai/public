@@ -3,19 +3,21 @@ import * as DG from 'datagrok-api/dg';
 
 import $ from 'cash-dom';
 
+type ChainTypeType = 'L' | 'H';
+
 /**
  * Single-option categorical filter that demonstrates the concept of collaborative filtering:
  * 1. On onRowsFiltering event, only FILTER OUT rows that do not satisfy this filter's criteria
  * 2. Call dataFrame.rows.requestFilter when filtering criteria changes.
  * */
 export class MLBFilter extends DG.Filter {
-  chainType: 'L' | 'H';
+  chainType: ChainTypeType;
   ptmMap: { [key: string]: string; };
   cdrMap: { [key: string]: string; };
   referenceDf: DG.DataFrame;
   ptmKeys: string[];
   cdrKeys: string[];
-  normalizedCDRMap: {[key: string]: string};
+  normalizedCDRMap: { [key: string]: string };
   indexes: Int32Array;
   cMin: number;
   cMax: number;
@@ -23,7 +25,7 @@ export class MLBFilter extends DG.Filter {
   currentCdr: string;
 
   constructor(
-    ptmMap: {[key: string]: string}, cdrMap: {[key: string]: string}, referenceDf: DG.DataFrame) {
+    ptmMap: { [key: string]: string }, cdrMap: { [key: string]: string }, referenceDf: DG.DataFrame) {
     super();
     this.root = ui.divV(null, 'd4-mlb-filter');
     this.subs = [];
@@ -99,9 +101,10 @@ export class MLBFilter extends DG.Filter {
 
 
         const currentProbability = cdrs[this.currentCdr];
-        if (typeof currentProbability === 'undefined' ||
-            currentProbability > this.cMax || currentProbability < this.cMin)
-          return false;
+        if (
+          typeof currentProbability === 'undefined' ||
+          currentProbability > this.cMax || currentProbability < this.cMin
+        ) return false;
       }
 
       return true;
@@ -121,7 +124,7 @@ export class MLBFilter extends DG.Filter {
     $(this.root).empty();
 
     const chainTypeInput = ui.choiceInput('Chain type', 'L', ['L', 'H'], () => {
-      this.chainType = chainTypeInput.stringValue as typeof this.chainType;
+      this.chainType = chainTypeInput.stringValue as ChainTypeType;
       this.dataFrame.rows.requestFilter();
     });
     //@ts-ignore: method api is wrong
@@ -130,7 +133,7 @@ export class MLBFilter extends DG.Filter {
       this.dataFrame.rows.requestFilter();
     });
     const cdrInput = ui.choiceInput('CDR', this.currentCdr, this.cdrKeys, () => {
-      this.currentCdr = cdrInput.stringValue === 'None'?
+      this.currentCdr = cdrInput.stringValue === 'None' ?
         'max' : this.cdrMap[this.normalizedCDRMap[`${this.chainType} ${cdrInput.stringValue}`]];
       this.dataFrame.rows.requestFilter();
     });
