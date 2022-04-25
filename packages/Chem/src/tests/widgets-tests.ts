@@ -2,47 +2,95 @@ import * as DG from 'datagrok-api/dg';
 import * as grok from 'datagrok-api/grok';
 import * as ui from 'datagrok-api/ui';
 import {category, test, expect, delay} from '@datagrok-libraries/utils/src/test';
-import {drugLikenessWidget} from '../widgets/drug-likeness';
-import {identifiersWidget} from '../widgets/identifiers';
-import {molfileWidget} from '../widgets/molfile';
-import {propertiesWidget} from '../widgets/properties';
-import {structuralAlertsWidget} from '../widgets/structural-alerts';
+import {assessDruglikeness, drugLikenessWidget} from '../widgets/drug-likeness';
+import {getIdMap, identifiersWidget} from '../widgets/identifiers';
+import {getPanelElements, molfileWidget} from '../widgets/molfile';
+import {getPropertiesMap, propertiesWidget} from '../widgets/properties';
+import {getStructuralAlerts, structuralAlertsWidget} from '../widgets/structural-alerts';
 import {structure2dWidget} from '../widgets/structure2d';
 import {structure3dWidget} from '../widgets/structure3d';
-import {toxicityWidget} from '../widgets/toxicity';
+import {getRisks, toxicityWidget} from '../widgets/toxicity';
+import * as utils from './utils';
+import $ from 'cash-dom';
 
-category('Chem: Widgets', () => {
-  const molStr = 'O=C1CN=C(c2ccccc2N1)C3CCCCC3';
+category('Chem: Widgets', async () => {
+  const molStr = 'CC(C)Cc1ccc(cc1)C(C)C(=O)N2CCCC2C(=O)OCCO';
 
+  //Test smiles, mol2000, mol3000; Check results for testing example
   test('drug-likeness', async () => {
+    const dl = assessDruglikeness(molStr);
+    const expectedDescription = await utils.loadFileAsText('tests/drug-likeness.json');
+
+    expect(dl[0], 7.210692227408717);
+    expect(JSON.stringify(dl[1]), expectedDescription);
+
     drugLikenessWidget(molStr);
   });
 
+  //Test smiles, mol2000, mol3000; Check results for testing example
   test('identifiers', async () => {
-    identifiersWidget(molStr);
+    //RdKit Module is not initialized
+    const idMap = await getIdMap(molStr);
+    const expectedIdMap = await utils.loadFileAsText('tests/identifiers.json');
+    expect(JSON.stringify(idMap), expectedIdMap);
+
+    await identifiersWidget(molStr);
   });
 
+  // Test smiles, mol2000, mol3000; Compare with existing mol string; Test copy feature
   test('molfile', async () => {
+    const panelElements = getPanelElements(molStr);
+    const expectedStr = (await utils.loadFileAsText('tests/molfile.sdf')).trim();
+    expect(($(panelElements[2].input).val() as string).trim(), expectedStr);
+
+    //NotAllowedError: Document is not focused.
+    $(panelElements[0]).trigger('click');
+    expect((await navigator.clipboard.readText()).trim(), expectedStr);
+
     molfileWidget(molStr);
   });
 
+  //Test smiles, mol2000, mol3000;Compare the calculated values
   test('properties', async () => {
+    const propertiesMap = getPropertiesMap(molStr);
+    const expectedPropertiesMap = await utils.loadFileAsText('tests/properties.json');
+    expect(JSON.stringify(propertiesMap), expectedPropertiesMap);
+
     propertiesWidget(molStr);
   });
 
+  //Test smiles, mol2000, mol3000; Compare the found substructures; Visual test required
   test('structural-alerts', async () => {
-    structuralAlertsWidget(molStr);
+    //Bad state: Cannot use origin without a scheme: undefinedfiles/alert-collection.csv
+    const structuralAlerts = await getStructuralAlerts(molStr);
+    const expectedSA = [1029, 1229];
+    expect(structuralAlerts, expectedSA);
+
+    await structuralAlertsWidget(molStr);
   });
 
+  //Test smiles, mol2000, mol3000; Check if image is returned; Visual test required
   test('structure-2d', async () => {
     await grok.functions.call('structure2d', {smiles: molStr});
   });
 
+  //Test smiles, mol2000, mol3000; Visual test required
   test('structure-3d', async () => {
+    //Errors calling structure3d: molecule: Value not defined.
     await grok.functions.call('structure3d', {smiles: molStr});
   });
 
+  //Test smiles, mol2000, mol3000; Check results for testing example
   test('toxicity', async () => {
+    const risks = getRisks(molStr);
+    const expectedRisks = {
+      'Mutagenicity': 'None',
+      'Tumorigenicity': 'None',
+      'Irritating effects': 'Low',
+      'Reproductive effects': 'High',
+    };
+    expect(JSON.stringify(risks), JSON.stringify(expectedRisks));
+
     toxicityWidget(molStr);
   });
 
