@@ -1,3 +1,6 @@
+import * as grok from 'datagrok-api/grok';
+import * as ui from 'datagrok-api/ui';
+// import * as DG from 'datagrok-api/dg';
 import {map, SYNTHESIZERS, TECHNOLOGIES, MODIFICATIONS} from './map';
 import {asoGapmersNucleotidesToBioSpring, asoGapmersNucleotidesToGcrs,
   asoGapmersBioSpringToNucleotides, asoGapmersBioSpringToGcrs, asoGapmersGcrsToNucleotides,
@@ -15,93 +18,108 @@ export function isValidSequence(sequence: string): {
   synthesizer: string | null,
   technology: string | null
 } {
-  const possibleSynthesizers = getListOfPossibleSynthesizersByFirstMatchedCode(sequence);
-  if (possibleSynthesizers.length == 0)
+  let possibleSynthesizers = getListOfPossibleSynthesizersByFirstMatchedCode(sequence);
+
+  if (possibleSynthesizers.length > 1) {
+    const synthesizer = ui.choiceInput('Choose synthesizer from list: ', possibleSynthesizers[0], possibleSynthesizers);
+    ui.dialog('Choose Synthesizer')
+      .add(ui.panel([synthesizer.root], {style: {fontWeight: 'bold'}}))
+      .onOK(() => possibleSynthesizers = [synthesizer.value])
+      .onCancel(() => {
+        possibleSynthesizers = [possibleSynthesizers[0]];
+        grok.shell.warning('Input sequence is expected to be in format ' + possibleSynthesizers[0]);
+      })
+      .show();
+  } else if (possibleSynthesizers.length == 0)
     return {indexOfFirstNotValidChar: 0, synthesizer: null, technology: null};
 
-  let outputIndices = Array(possibleSynthesizers.length).fill(0);
+  let outputIndex = 0;
 
   const firstUniqueCharacters = ['r', 'd'];
   const nucleotides = ['A', 'U', 'T', 'C', 'G'];
 
-  possibleSynthesizers.forEach((synthesizer, synthesizerIndex) => {
+  possibleSynthesizers.forEach((synthesizer) => {
     const codes = getAllCodesOfSynthesizer(synthesizer);
-    while (outputIndices[synthesizerIndex] < sequence.length) {
-      const matchedCode = codes
-        .find((c) => c == sequence.slice(outputIndices[synthesizerIndex], outputIndices[synthesizerIndex] + c.length));
+    while (outputIndex < sequence.length) {
+      const matchedCode = codes.find((c) => c == sequence.slice(outputIndex, outputIndex + c.length));
 
       if (matchedCode == null)
         break;
 
       if ( // for mistake pattern 'rAA'
-        outputIndices[synthesizerIndex] > 1 &&
-        nucleotides.includes(sequence[outputIndices[synthesizerIndex]]) &&
-        firstUniqueCharacters.includes(sequence[outputIndices[synthesizerIndex] - 2])
+        outputIndex > 1 &&
+        nucleotides.includes(sequence[outputIndex]) &&
+        firstUniqueCharacters.includes(sequence[outputIndex - 2])
       ) break;
 
       if ( // for mistake pattern 'ArA'
-        firstUniqueCharacters.includes(sequence[outputIndices[synthesizerIndex] + 1]) &&
-        nucleotides.includes(sequence[outputIndices[synthesizerIndex]])
+        firstUniqueCharacters.includes(sequence[outputIndex + 1]) &&
+        nucleotides.includes(sequence[outputIndex])
       ) {
-        outputIndices[synthesizerIndex]++;
+        outputIndex++;
         break;
       }
 
-      outputIndices[synthesizerIndex] += matchedCode.length;
+      outputIndex += matchedCode.length;
     }
   });
 
-  const indexOfExpectedSythesizer = Math.max(...outputIndices);
-  const indexOfFirstNotValidChar = (indexOfExpectedSythesizer == sequence.length) ? -1 : indexOfExpectedSythesizer;
-  const synthesizer = possibleSynthesizers[outputIndices.indexOf(indexOfExpectedSythesizer)];
+  const indexOfFirstNotValidChar = (outputIndex == sequence.length) ? -1 : outputIndex;
   if (indexOfFirstNotValidChar != -1) {
     return {
       indexOfFirstNotValidChar: indexOfFirstNotValidChar,
-      synthesizer: synthesizer,
+      synthesizer: possibleSynthesizers[0],
       technology: null,
     };
   }
 
-  const possibleTechnologies = getListOfPossibleTechnologiesByFirstMatchedCode(sequence, synthesizer);
-  if (possibleTechnologies.length == 0)
+  let possibleTechnologies = getListOfPossibleTechnologiesByFirstMatchedCode(sequence, possibleSynthesizers[0]);
+
+  if (possibleTechnologies.length > 1) {
+    const technology = ui.choiceInput('Choose technology from list: ', possibleTechnologies[0], possibleTechnologies);
+    ui.dialog('Choose Technology')
+      .add(ui.panel([technology.root], {style: {fontWeight: 'bold'}}))
+      .onOK(() => possibleTechnologies = [technology.value])
+      .onCancel(() => {
+        possibleTechnologies = [possibleTechnologies[0]];
+        grok.shell.warning('Input sequence is expected to be in format ' + possibleTechnologies[0]);
+      })
+      .show();
+  } else if (possibleTechnologies.length == 0)
     return {indexOfFirstNotValidChar: 0, synthesizer: null, technology: null};
 
-  outputIndices = Array(possibleTechnologies.length).fill(0);
+  outputIndex = 0;
 
-  possibleTechnologies.forEach((technology: string, technologyIndex: number) => {
-    const codes = Object.keys(map[synthesizer][technology]);
-    while (outputIndices[technologyIndex] < sequence.length) {
-      const matchedCode = codes
-        .find((c) => c == sequence.slice(outputIndices[technologyIndex], outputIndices[technologyIndex] + c.length));
+  possibleTechnologies.forEach((technology: string) => {
+    const codes = Object.keys(map[possibleSynthesizers[0]][technology]);
+    while (outputIndex < sequence.length) {
+      const matchedCode = codes.find((c) => c == sequence.slice(outputIndex, outputIndex + c.length));
 
       if (matchedCode == null)
         break;
 
       if ( // for mistake pattern 'rAA'
-        outputIndices[technologyIndex] > 1 &&
-        nucleotides.includes(sequence[outputIndices[technologyIndex]]) &&
-        firstUniqueCharacters.includes(sequence[outputIndices[technologyIndex] - 2])
+        outputIndex > 1 &&
+        nucleotides.includes(sequence[outputIndex]) &&
+        firstUniqueCharacters.includes(sequence[outputIndex - 2])
       ) break;
 
       if ( // for mistake pattern 'ArA'
-        firstUniqueCharacters.includes(sequence[outputIndices[technologyIndex] + 1]) &&
-        nucleotides.includes(sequence[outputIndices[technologyIndex]])
+        firstUniqueCharacters.includes(sequence[outputIndex + 1]) &&
+        nucleotides.includes(sequence[outputIndex])
       ) {
-        outputIndices[technologyIndex]++;
+        outputIndex++;
         break;
       }
 
-      outputIndices[technologyIndex] += matchedCode.length;
+      outputIndex += matchedCode.length;
     }
   });
 
-  const indexOfExpectedTechnology = Math.max(...outputIndices);
-  const expectedTechnology = possibleTechnologies[outputIndices.indexOf(indexOfExpectedTechnology)];
-
   return {
     indexOfFirstNotValidChar: indexOfFirstNotValidChar,
-    synthesizer: synthesizer,
-    technology: expectedTechnology,
+    synthesizer: possibleSynthesizers[0],
+    technology: possibleTechnologies[outputIndex],
   };
 }
 
