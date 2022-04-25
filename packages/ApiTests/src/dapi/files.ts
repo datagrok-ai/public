@@ -53,7 +53,7 @@ category('Dapi: files', () => {
   });
 
   test('Dapi: package files', async () => {
-    let files = await _package.files.list('', false, '*.csv');
+    let files = await _package.files.list('', false, 'csv');
     expect(files.length > 0, true);
     files.every((f) => expect(f.extension, 'csv'));
   });
