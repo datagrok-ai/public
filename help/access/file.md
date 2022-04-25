@@ -34,6 +34,7 @@ Represents a file in the file system.
 ### Molecular structure formats
 
 | Extension | Description                        | Source             |
+|-----------|------------------------------------|--------------------|
 | .cif      | Crystallographic Information File  | [NglViewer] plugin |
 | .pdb      | Protein Data Bank                  | [NglViewer] plugin |
 | .pqr      | PQR                                | [NglViewer] plugin |
