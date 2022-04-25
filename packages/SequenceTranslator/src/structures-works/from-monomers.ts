@@ -92,9 +92,9 @@ function getObjectWithCodesAndSmiles(sequence: string) {
   }
   // TODO: create object based from synthesizer type to avoid key(codes) duplicates
   const output = isValidSequence(sequence);
-  if (output.expectedSynthesizer == SYNTHESIZERS.MERMADE_12)
+  if (output.synthesizer == SYNTHESIZERS.MERMADE_12)
     obj['g'] = map[SYNTHESIZERS.MERMADE_12][TECHNOLOGIES.SI_RNA]['g'].SMILES;
-  else if (output.expectedSynthesizer == SYNTHESIZERS.AXOLABS)
+  else if (output.synthesizer == SYNTHESIZERS.AXOLABS)
     obj['g'] = map[SYNTHESIZERS.AXOLABS][TECHNOLOGIES.SI_RNA]['g'].SMILES;
   return obj;
 }
