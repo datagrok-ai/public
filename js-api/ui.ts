@@ -818,7 +818,7 @@ export class Tooltip {
   }
 
   /** Associated the specified visual element with the corresponding item. */
-  bind(element: HTMLElement, tooltip?: string | null | (() => string | null)): HTMLElement {
+  bind(element: HTMLElement, tooltip?: string | null | (() => string | HTMLElement | null)): HTMLElement {
     if (tooltip != null)
       api.grok_Tooltip_SetOn(element, tooltip);
     return element;
