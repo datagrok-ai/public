@@ -5,7 +5,7 @@ import * as ui from 'datagrok-api/ui';
 import * as OCL from 'openchemlib/full.js';
 import {isMolBlock} from './chem-utils';
 
-export function renderDescription(description: OCL.IParameterizedString[], smiles: string | null = null) {
+export function renderDescription(description: OCL.IParameterizedString[]) {
   const host = ui.div([]);
   const molsHost = ui.div([], 'd4-flex-wrap');
   const width = 200;
@@ -15,8 +15,7 @@ export function renderDescription(description: OCL.IParameterizedString[], smile
   for (const entry of description) {
     if (entry.type == 2 || entry.type == 3) {
       const divElement = ui.div(
-        [ui.label(entry.value), lastMolCanvas],
-        lastMolCanvas === null ? {} : {classes: 'd4-flex-col', style: {margin: '5px'}},
+        [ui.label(entry.value), lastMolCanvas], lastMolCanvas ? {classes: 'd4-flex-col', style: {margin: '5px'}} : null,
       );
       (lastMolCanvas ? molsHost : host).append(divElement);
       lastMolCanvas = null;
