@@ -7,7 +7,7 @@ import $ from 'cash-dom';
 import {defineAxolabsPattern} from './defineAxolabsPattern';
 import {saveSenseAntiSense} from './structures-works/save-sense-antisense';
 import {sequenceToSmiles, sequenceToMolV3000} from './structures-works/from-monomers';
-import {convertSequence, undefinedInputSequence} from './structures-works/sequence-codes-tools';
+import {convertSequence, undefinedInputSequence, isValidSequence} from './structures-works/sequence-codes-tools';
 import {map, COL_NAMES, MODIFICATIONS} from './structures-works/map';
 import {SALTS_CSV} from './salts';
 import {USERS_CSV} from './users';
@@ -35,29 +35,31 @@ export function sequenceTranslator(): void {
     const pi = DG.TaskBarProgressIndicator.create('Rendering table and molecule...');
     let errorsExist = false;
     try {
-      const outputSequenceObj = convertSequence(sequence);
+      sequence = sequence.replace(/\s/g, '');
+      const output = isValidSequence(sequence);
+      const outputSequenceObj = convertSequence(sequence, output);
       const tableRows = [];
 
       for (const key of Object.keys(outputSequenceObj).slice(1)) {
-        const indexOfFirstNotValidCharacter = ('indexOfFirstNotValidCharacter' in outputSequenceObj) ?
-          JSON.parse(outputSequenceObj.indexOfFirstNotValidCharacter!).indexOfFirstNotValidCharacter :
+        const indexOfFirstNotValidChar = ('indexOfFirstNotValidChar' in outputSequenceObj) ?
+          JSON.parse(outputSequenceObj.indexOfFirstNotValidChar!).indexOfFirstNotValidChar :
           -1;
-        if ('indexOfFirstNotValidCharacter' in outputSequenceObj) {
-          const indexOfFirstNotValidCharacter = ('indexOfFirstNotValidCharacter' in outputSequenceObj) ?
-            JSON.parse(outputSequenceObj.indexOfFirstNotValidCharacter!).indexOfFirstNotValidCharacter :
+        if ('indexOfFirstNotValidChar' in outputSequenceObj) {
+          const indexOfFirstNotValidChar = ('indexOfFirstNotValidChar' in outputSequenceObj) ?
+            JSON.parse(outputSequenceObj.indexOfFirstNotValidChar!).indexOfFirstNotValidChar :
             -1;
-          if (indexOfFirstNotValidCharacter != -1)
+          if (indexOfFirstNotValidChar != -1)
             errorsExist = true;
         }
 
         tableRows.push({
           'key': key,
-          'value': ('indexOfFirstNotValidCharacter' in outputSequenceObj) ?
+          'value': ('indexOfFirstNotValidChar' in outputSequenceObj) ?
             ui.divH([
-              ui.divText(sequence.slice(0, indexOfFirstNotValidCharacter), {style: {color: 'grey'}}),
+              ui.divText(sequence.slice(0, indexOfFirstNotValidChar), {style: {color: 'grey'}}),
               ui.tooltip.bind(
-                ui.divText(sequence.slice(indexOfFirstNotValidCharacter), {style: {color: 'red'}}),
-                'Expected format: ' + JSON.parse(outputSequenceObj.indexOfFirstNotValidCharacter!).expectedSynthesizer +
+                ui.divText(sequence.slice(indexOfFirstNotValidChar), {style: {color: 'red'}}),
+                'Expected format: ' + JSON.parse(outputSequenceObj.indexOfFirstNotValidChar!).synthesizer +
                 '. See tables with valid codes on the right',
               ),
             ]) : //@ts-ignore
@@ -67,13 +69,12 @@ export function sequenceTranslator(): void {
       }
 
       if (errorsExist) {
-        const expectedSynthesizer = JSON.parse(outputSequenceObj.indexOfFirstNotValidCharacter!)
-          .expectedSynthesizer.slice(0, -6);
+        const synthesizer = JSON.parse(outputSequenceObj.indexOfFirstNotValidChar!).synthesizer.slice(0, -6);
         asoGapmersGrid.onCellPrepare(function(gc) {
-          gc.style.backColor = (gc.gridColumn.name == expectedSynthesizer) ? 0xFFF00000 : 0xFFFFFFFF;
+          gc.style.backColor = (gc.gridColumn.name == synthesizer) ? 0xFFF00000 : 0xFFFFFFFF;
         });
         omeAndFluoroGrid.onCellPrepare(function(gc) {
-          gc.style.backColor = (gc.gridColumn.name == expectedSynthesizer) ? 0xFFF00000 : 0xFFFFFFFF;
+          gc.style.backColor = (gc.gridColumn.name == synthesizer) ? 0xFFF00000 : 0xFFFFFFFF;
         });
         switchInput.enabled = true;
       } else {
