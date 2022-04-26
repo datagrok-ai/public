@@ -300,8 +300,9 @@ export class PeptidesController {
     sourceGrid.props.allowEdit = false;
     adjustCellSize(sourceGrid);
 
-    this._model._sarGrid.invalidate();
-    this._model._sarVGrid.invalidate();
+    // this._model._sarGrid.invalidate();
+    // this._model._sarVGrid.invalidate();
+    this._model.invalidateGrids();
   }
 
   invalidateSourceGrid() { this.sourceGrid.invalidate(); }

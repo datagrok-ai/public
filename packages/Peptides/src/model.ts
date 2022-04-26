@@ -3,7 +3,6 @@ import * as grok from 'datagrok-api/grok';
 import * as DG from 'datagrok-api/dg';
 
 import {Subject, Observable} from 'rxjs';
-import {StringDictionary} from '@datagrok-libraries/utils/src/type-declarations';
 import {addViewerToHeader, StackedBarChart} from './viewers/stacked-barchart-viewer';
 import {PeptidesController} from './peptides';
 import {tTest} from '@datagrok-libraries/statistics/src/tests';
@@ -240,6 +239,19 @@ export class PeptidesModel {
     this.setBitsetCallback();
 
     this.postProcessGrids(this._sourceGrid, invalidIndexes, sarGrid, sarVGrid);
+
+    if (this.dataFrame.tags[C.TAGS.AAR] && this.dataFrame.tags[C.TAGS.POSITION]) {
+      const sarDf = sarGrid.dataFrame;
+      const rowCount = sarDf.rowCount;
+      let index = -1;
+      for (let i = 0; i < rowCount; i++) {
+        if (sarDf.get(C.COLUMNS_NAMES.AMINO_ACID_RESIDUE, i) === this.dataFrame.tags[C.TAGS.AAR]) {
+          index = i;
+          break;
+        }
+      }
+      sarDf.currentCell = sarDf.cell(index, this.dataFrame.tags[C.TAGS.POSITION]);
+    }
 
     //TODO: return class instead
     return [sarGrid, sarVGrid, statsDf, substTable!];
@@ -699,8 +711,13 @@ export class PeptidesModel {
       this.syncGrids(false, sarDf, sarVDf);
       let aar: string = C.CATEGORIES.ALL;
       let position: string = C.CATEGORIES.ALL;
-      if (!isNegativeRowIndex)
+      if (!isNegativeRowIndex) {
         [aar, position] = getAARandPosition();
+        this.dataFrame.tags[C.TAGS.AAR] = aar;
+        this.dataFrame.tags[C.TAGS.POSITION] = position;
+      } else {
+        this.dataFrame.tags[C.TAGS.AAR] = this.dataFrame.tags[C.TAGS.POSITION] = null;
+      }
       this.dataFrame.temp['substTable'] = this.getSubstitutionTable();
       this.modifyOrCreateSplitCol(aar, position);
       this.fireBitsetChanged();
@@ -940,8 +957,7 @@ export class PeptidesModel {
     otherDf.temp[C.FLAGS.CELL_CHANGING] = false;
   }
 
-  getSplitColValueAt(index: number, aar: string, position: string): string {
-    const aarLabel = `${aar === '-' ? 'Gap' : aar} : ${position}`;
+  getSplitColValueAt(index: number, aar: string, position: string, aarLabel: string): string {
     const currentAAR = this.dataFrame.get(position, index) as string;
     return currentAAR === aar ? aarLabel : C.CATEGORIES.OTHER;
   }
@@ -957,7 +973,7 @@ export class PeptidesModel {
     }
 
     const aarLabel = `${aar === '-' ? 'Gap' : aar} : ${position}`;
-    this.splitCol.init((i) => this.getSplitColValueAt(i, aar, position));
+    this.splitCol.init((i) => this.getSplitColValueAt(i, aar, position, aarLabel));
 
     // splitCol.init((i) => bitset.get(i) ? aarLabel : C.CATEGORY_OTHER);
     this.splitCol.setCategoryOrder([aarLabel]);
