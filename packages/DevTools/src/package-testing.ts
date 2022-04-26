@@ -142,7 +142,6 @@ function createTestManagerUI(packagesTests: any) {
     Object.keys(packagesTests[ pack ].tests).forEach(cat => {
       const catGroup = packageGroup.group(cat);
       addCheckboxAndLabelClickListener(catGroup, true, () => {
-        //@ts-ignore
         packagesTests[ pack ].tests[ cat ].tests.forEach(t => {
           t.active = catGroup.checked;
         });
@@ -150,13 +149,12 @@ function createTestManagerUI(packagesTests: any) {
       () => {
         grok.shell.o = getTestsInfoDf(`Package = ${packagesTests[ pack ].tests[cat].tests[0].packageName} and category = ${cat}`);
       });
-      //@ts-ignore
       packagesTests[ pack ].tests[ cat ].tests.forEach(t => {
         let testPassed = ui.div();
         let itemDiv = ui.splitH([
           testPassed,
           ui.divText(t.name)
-        ], {style: {display: 'block'}});
+        ], false, {style: {display: 'block'}});
         let item = catGroup.item(itemDiv);
         item.root.id = `${t.packageName}|${cat}|${t.name}`;
         addCheckboxAndLabelClickListener(item, false, () => {

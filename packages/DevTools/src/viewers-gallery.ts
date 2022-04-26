@@ -414,7 +414,7 @@ function render(viewer:any, table:DG.DataFrame){
         tabs.style.paddingLeft = '20px';
         
         clearRoot([descriptionBox])
-        descriptionBox.append(ui.splitH([viewerbox,tabs], {style:{height:'100%'}}));   
+        descriptionBox.append(ui.splitH([viewerbox, tabs], false, { style: { height: '100%' } }));   
 
         //@ts-ignore
         let link = DG.Viewer.fromType(viewer.name, table).helpUrl;
