@@ -1,6 +1,6 @@
 <!-- TITLE: Test packages -->
 # Package testing
-To make sure that a package works correctly it need to properly tested. Each package should include a bunch of unit tests responsible for different aspects of the package such as UI or logic underneath. And developer should be able to easily run tests at any time (while developing a package or to perform regression testing).
+To make sure that a package works correctly it need to be properly tested. Each package should include a bunch of unit tests responsible for different aspects of the package such as UI or logic underneath. And developers should be able to easily run tests at any time (while developing a package or to perform regression testing).
 
 ## Test manager
 
