@@ -1,7 +1,6 @@
 import * as grok from 'datagrok-api/grok';
 import * as ui from 'datagrok-api/ui';
 import * as DG from 'datagrok-api/dg';
-import {Property} from 'datagrok-api/dg';
 import * as chemSearches from '../chem-searches';
 import {similarityMetric} from '@datagrok-libraries/utils/src/similarity-metrics';
 import $ from 'cash-dom';
@@ -10,17 +9,15 @@ import {renderMolecule} from '../rendering/render-molecule';
 import {ChemSearchBaseViewer} from './chem-search-base-viewer';
 
 export class ChemSimilarityViewer extends ChemSearchBaseViewer {
-  moleculeColumn?: DG.Column;
   isEditedFromSketcher: boolean = false;
   hotSearch: boolean;
   sketchButton: HTMLButtonElement;
-  metricsDiv = ui.div('', {style: {height: '10px', display: 'flex', justifyContent: 'right'}});
   sketchedMolecule: string = '';
   curIdx: number = 0;
   molCol: DG.Column | null = null;
   idxs: DG.Column | null = null;
   scores: DG.Column | null = null;
-  minScore: number;
+  cutOff: number;
   gridSelect: boolean = false;
   targetMoleculeIdx: number = 0;
 
@@ -31,8 +28,8 @@ export class ChemSimilarityViewer extends ChemSearchBaseViewer {
   }
 
   constructor() {
-    super();
-    this.minScore = this.float('minScore', 0.01);
+    super('similarity');
+    this.cutOff = this.float('cutOff', 0.01);
     this.hotSearch = this.bool('hotSearch', true);
     this.sketchButton = ui.button('Sketch', () => {
       const sketcher = new grok.chem.Sketcher();
@@ -52,30 +49,15 @@ export class ChemSimilarityViewer extends ChemSearchBaseViewer {
     this.updateMetricsLink(this.metricsDiv, this, {fontSize: '10px', fontWeight: 'normal', height: '10px'});
   }
 
-  onTableAttached() {
+  init() {
     this.isEditedFromSketcher = false;
     this.hotSearch = true;
-    if (this.dataFrame) {
-      this.subs.push(DG.debounce(this.dataFrame.onRowsRemoved, 50).subscribe(async (_) => await this.render()));
-      this.subs.push(DG.debounce(this.dataFrame.onCurrentRowChanged, 50).subscribe(async (_) => await this.render()));
-      this.subs.push(
-        DG.debounce(this.dataFrame.selection.onChanged, 50).subscribe(async (_) => await this.render(false)));
-      this.subs.push(DG.debounce(ui.onSizeChanged(this.root), 50).subscribe(async (_) => await this.render(false)));
-      grok.data.detectSemanticTypes(this.dataFrame).then(() => {
-        this.moleculeColumn = this.dataFrame!.columns.bySemType(DG.SEMTYPE.MOLECULE);
-        this.render();
-      });
-    }
-  }
-
-  onPropertyChanged(property: Property): void {
-    if (this.metricsProperties.includes(property.name))
-      this.updateMetricsLink(this.metricsDiv, this, {fontSize: '10px', fontWeight: 'normal', height: '10px'});
-    super.onPropertyChanged(property);
-    this.render();
+    this.initialized = true;
   }
 
   async render(computeData = true) {
+    if (!this.beforeRender())
+      return;
     if (this.moleculeColumn) {
       if (!this.gridSelect && this.curIdx != this.dataFrame!.currentRowIdx)
         this.isEditedFromSketcher = false;
@@ -83,7 +65,7 @@ export class ChemSimilarityViewer extends ChemSearchBaseViewer {
       if (computeData && !this.gridSelect) {
         this.targetMoleculeIdx = this.dataFrame!.currentRowIdx == -1 ? 0 : this.dataFrame!.currentRowIdx;
         const df = await chemSimilaritySearch(this.dataFrame!, this.moleculeColumn!,
-          this.targetMolecule, this.distanceMetric, this.limit, this.minScore, this.fingerprint as Fingerprint);
+          this.targetMolecule, this.distanceMetric, this.limit, this.cutOff, this.fingerprint as Fingerprint);
         this.molCol = df.getCol('smiles');
         this.idxs = df.getCol('indexes');
         this.scores = df.getCol('score');
