@@ -14,6 +14,11 @@ export enum CATEGORIES {
   ALL = 'All',
 }
 
+export enum TAGS {
+  AAR = 'AAR',
+  POSITION = 'Pos',
+}
+
 export enum SEM_TYPES {
   AMINO_ACIDS = 'aminoAcids',
   ALIGNED_SEQUENCE = 'alignedSequence',
