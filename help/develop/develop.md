@@ -63,7 +63,7 @@ In addition to that, it might contain the following folders:
 * `css`: CSS files for custom styling.
   Examples: [Notebooks](https://github.com/datagrok-ai/public/tree/master/packages/Notebooks)
   , [Discovery](https://github.com/datagrok-ai/public/tree/master/packages/Discovery)
-* `tables` and `data-samples`: data for demonstration and testing.
+* `files` and `tables`: data for demonstration and testing.
   Examples: [Chem](https://github.com/datagrok-ai/public/tree/master/packages/Chem)
   , [Sunburst](https://github.com/datagrok-ai/public/tree/master/packages/Sunburst)
 * `layouts`: `json` files with table view [layouts](how-to/layouts.md)
