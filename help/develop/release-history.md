@@ -1,6 +1,34 @@
 <!-- TITLE: Release History -->
 <!-- SUBTITLE: -->
 
+# 2022-04-26 Dev build 0.150.0
+
+## Latest Docker Images
+
+* Datagrok: 
+  *  `docker pull datagrok/datagrok:0.150.0`
+  *  `docker pull datagrok/datagrok:latest`
+  
+* [Docker-Compose](admin/docker-compose.md)
+
+## Addressed Issues
+
+* JS: Ability to disable events in InputBase (WIP)
+* Exposed DG.Color.fromHtml method in JsApi 
+* JS-API: add a default parameter value for FileSource.list() 
+* (Bug) NPM repositories: missing proxy settings (WIP)
+* Closes #433: Data exported to csv is incorrect in 'sign' columns if there is more than one such column and there are some nulls 
+* DevTools: minor version bump 
+* Closes #526: [LineChart] \- axes do not scale to plotted points but to max values of plotted columns 
+* Closes #367: Persisting visualizations zoom when saving analysis \- proper handling of the "no action" zoom type 
+* Code cleanup 
+* Wiki: an article about routing (WIP)
+* Updated help links 
+* Closes #367: Persisting visualizations zoom when saving analysis 
+* #466 Computation View \- splitting on components and services 
+* Peptides version bump 
+
+
 # 2022-04-21 Dev build 0.148.6
 
 ## Latest Docker Images
