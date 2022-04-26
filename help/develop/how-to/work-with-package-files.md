@@ -4,7 +4,7 @@
 
 There are multiple ways to access your data in the Datagrok platform. To learn more about them,
 please refer to the [main article](access-data.md) covering this topic. Here we will focus on
-one specific use case: package files. This option is well suited for public data used for
+files that are part of the package. This option is well suited for public data used for
 demonstration purposes, as the data is distributed directly with the package.
 
 ## Package structure conventions
@@ -25,8 +25,8 @@ package.json
 These conventions are not set in stone, so you can create other folders for your data, using
 the special directories Datagrok is aware of simply allows you to implement more flexible and
 maintainable solutions. Let's take dataframes stored under the `tables` folder as an example.
-Their metadata, as well as additional import options from the `<table_name>_csv_options.json`
-file, are taken into account.
+Their import options from an additional file `<table_name>_csv_options.json`, if present,
+are taken into account.
 
 ## Accessing files in package code
 
