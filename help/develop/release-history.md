@@ -1,6 +1,25 @@
 <!-- TITLE: Release History -->
 <!-- SUBTITLE: -->
 
+# 2022-04-26 Dev build 0.150.1
+
+## Latest Docker Images
+
+* Datagrok: 
+  *  `docker pull datagrok/datagrok:0.150.1`
+  *  `docker pull datagrok/datagrok:latest`
+  
+* [Docker-Compose](admin/docker-compose.md)
+
+## Addressed Issues
+
+* Packages: skip the build step for packages that were published along with build outputs 
+* #501 Wiki: package files (AppData) 
+* Chem: added column picker to similarity search, refactoring 
+* Fixed an issue with the barchart. 
+* Closes #530: Grid: do not include units in the column header 
+
+
 # 2022-04-26 Dev build 0.150.0
 
 ## Latest Docker Images
