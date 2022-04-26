@@ -225,6 +225,7 @@ export const TAGS = {
   /** Set on a dataframe column; used to format column contents in grids, CSV export, passing to scripts */
   FORMAT: 'format',
   FORMULA: 'formula',
+  SEMTYPE: 'quality',
 
   CELL_RENDERER: 'cell.renderer',
   UNITS: 'units',  // see DG.UNITS
