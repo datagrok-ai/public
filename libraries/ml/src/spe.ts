@@ -25,7 +25,7 @@ export class SPEBase {
   protected dlambda2: number;
   protected epsilon: number;
   protected distanceFunction: DistanceMetric;
-  protected distance: Coordinates;
+  distance: Coordinates;
 
   /**
    * Creates an instance of SPEBase.

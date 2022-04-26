@@ -12,6 +12,7 @@ export function createDimensinalityReducingWorker(
   dataMetric: ValidTypes,
   method: string,
   cyclesCount?: number,
+  returnDistanceMatrix?: boolean
 ): Promise<unknown> {
   return new Promise(function(resolve) {
     const worker = new Worker(new URL('./dimensionality-reducer', import.meta.url));
@@ -21,8 +22,8 @@ export function createDimensinalityReducingWorker(
       measure: dataMetric.metric,
       cyclesCount: cyclesCount,
     });
-    worker.onmessage = ({data: {embedding}}) => {
-      resolve(embedding);
+    worker.onmessage = ({data: {distance, embedding}}) => {
+      returnDistanceMatrix? resolve({distance: distance, embedding: embedding}) : resolve(embedding);
     };
   });
 }

@@ -8,7 +8,7 @@ import {KnownMetrics} from '../typed-metrics';
  * @param {KnownMethods} method Embedding method.
  * @param {KnownMetrics} measure Distance metric.
  * @param {number} cyclesCount Number of cycles to repeat.
- * @return {Coordinates} Embedding.
+ * @return {any} Embedding (and distance matrix where applicable).
  */
 function onMessage(columnData: any[], method: KnownMethods, measure: KnownMetrics, cyclesCount?: number) {
   const reducer = new DimensionalityReducer(
@@ -23,6 +23,7 @@ function onMessage(columnData: any[], method: KnownMethods, measure: KnownMetric
 self.onmessage = ({data: {columnData, method, measure, cyclesCount}}) => {
   const embedding = onMessage(columnData, method, measure, cyclesCount);
   self.postMessage({
-    embedding: embedding,
+    distance: embedding.distance,
+    embedding: embedding.embedding,
   });
 };
