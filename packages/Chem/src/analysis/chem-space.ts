@@ -13,18 +13,21 @@ import BitArray from '@datagrok-libraries/utils/src/bit-array';
 export async function chemSpace(
   molColumn: DG.Column,
   methodName: string,
-  similarityMetric: string): Promise<DG.ColumnList> {
+  similarityMetric: string,
+  axes: string[],
+  returnDistances?: boolean): Promise<any> {
   const fpColumn = await chemGetFingerprints(molColumn, Fingerprint.Morgan);
-  const coordinates: Coordinates =
+  const {distance: distance, embedding: coordinates}: any =
     await createDimensinalityReducingWorker(
-      {data: fpColumn as BitArray[], metric: similarityMetric as BitArrayMetrics}, methodName) as Coordinates;
-  const axes = ['Embed_X', 'Embed_Y'];
+      {data: fpColumn as BitArray[], metric: similarityMetric as BitArrayMetrics},
+      methodName, undefined, returnDistances);
   const cols: DG.Column[] = [];
 
   coordinates[0] = normalize(coordinates[0]);
+  //coordinates[1] = normalize(coordinates[1]);
   for (let i = 0; i < axes.length; ++i) {
     const name = axes[i];
     cols[i] = (DG.Column.fromFloat32Array(name, coordinates[i]));
   }
-  return new DG.ColumnList(cols);
+  return returnDistances ? {distance: distance, coordinates: new DG.ColumnList(cols)} : new DG.ColumnList(cols);
 }

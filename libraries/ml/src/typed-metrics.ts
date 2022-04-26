@@ -1,8 +1,7 @@
 import * as fl from 'fastest-levenshtein';
 import {jaroWinkler} from 'jaro-winkler-typescript';
-
 import {DistanceMetric} from '@datagrok-libraries/utils/src/type-declarations';
-import {similarityMetric} from '@datagrok-libraries/utils/src/similarity-metrics';
+import {distanceMetrics} from '@datagrok-libraries/utils/src/similarity-metrics';
 import {calculateEuclideanDistance} from '@datagrok-libraries/utils/src/vector-operations';
 import BitArray from '@datagrok-libraries/utils/src/bit-array';
 import {Vector, StringDictionary} from '@datagrok-libraries/utils/src/type-declarations';
@@ -16,16 +15,16 @@ export const AvailableMetrics = {
     'Jaro-Winkler': jaroWinkler,
   },
   'BitArray': {
-    'Tanimoto': similarityMetric['Tanimoto'],
-    'Dice': similarityMetric['Dice'],
-    'Asymmetric': similarityMetric['Asymmetric'],
-    'Braun-Blanquet': similarityMetric['Braun-Blanquet'],
-    'Cosine': similarityMetric['Cosine'],
-    'Kulczynski': similarityMetric['Kulczynski'],
-    'Mc-Connaughey': similarityMetric['Mc-Connaughey'],
-    'Rogot-Goldberg': similarityMetric['Rogot-Goldberg'],
-    'Russel': similarityMetric['Russel'],
-    'Sokal': similarityMetric['Sokal'],
+    'Tanimoto': distanceMetrics['Tanimoto'],
+    'Dice': distanceMetrics['Dice'],
+    'Asymmetric': distanceMetrics['Asymmetric'],
+    'Braun-Blanquet': distanceMetrics['Braun-Blanquet'],
+    'Cosine': distanceMetrics['Cosine'],
+    'Kulczynski': distanceMetrics['Kulczynski'],
+    'Mc-Connaughey': distanceMetrics['Mc-Connaughey'],
+    'Rogot-Goldberg': distanceMetrics['Rogot-Goldberg'],
+    'Russel': distanceMetrics['Russel'],
+    'Sokal': distanceMetrics['Sokal'],
   },
 };
 

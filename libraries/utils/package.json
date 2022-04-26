@@ -4,7 +4,7 @@
     "access": "public"
   },
   "fullName": "Utils",
-  "version": "0.2.9",
+  "version": "0.3.9",
   "description": "Common utilities",
   "dependencies": {
     "cash-dom": "latest",

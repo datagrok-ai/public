@@ -3,6 +3,7 @@ import * as DG from 'datagrok-api/dg';
 
 import {chemSpace} from './chem-space';
 import * as chemSearches from '../chem-searches';
+import {getSimilarityFromDistance} from '@datagrok-libraries/utils/src/similarity-metrics';
 
 // Searches for activity cliffs in a chemical dataset by selected cutoff
 export async function getActivityCliffs(
@@ -20,15 +21,25 @@ export async function getActivityCliffs(
   else
     initialSimilarityLimit = similarity / 100;
 
+
+  const axes = ['Embed_X', 'Embed_Y'];
+  //@ts-ignore
+  const colNameInd = df.columns.names().filter((it) => it.includes(axes[0])).length + 1;
+
+  const {distance, coordinates} = await chemSpace(smiles, methodName, 'Tanimoto',
+    axes.map((it) => `${it}_${colNameInd}`), true);
+
+  for (const col of coordinates)
+    df.columns.add(col);
+
   const dfSmiles = DG.DataFrame.fromColumns([DG.Column.fromList('string', 'smiles', smiles.toList())]);
   const dim = smiles.length;
-  const simArr: DG.Column[] = Array(dim -1);
+  const simArr: DG.Column[] = Array(dim - 1);
 
-  for (let i = 0; i != dim - 1; ++i) {
-    const mol = smiles.get(i);
-    dfSmiles.rows.removeAt(0, 1, false);
-    simArr[i] = (await chemSearches.chemGetSimilarities(dfSmiles.col('smiles')!, mol))!;
-  }
+  if (!distance)
+    await getSimilaritiesMarix(dim, smiles, dfSmiles, simArr);
+  else
+    getSimilaritiesMarixFromDistances(dim, distance, simArr);
 
   const optSimilarityLimit = initialSimilarityLimit;
 
@@ -73,38 +84,36 @@ export async function getActivityCliffs(
     }
   }
 
-  const sali = DG.Column.fromList('double', 'sali', saliCount);
-  const coords = await chemSpace(smiles, methodName, 'Tanimoto');
-
-  for (const col of coords)
-    df.columns.add(col);
+  const sali = DG.Column.fromList('double', `sali_${colNameInd}`, saliCount);
 
   df.columns.add(sali);
 
   const view = grok.shell.getTableView(df.name);
   const sp = view.addViewer(DG.Viewer.scatterPlot(df, {
-    xColumnName: 'Embed_X',
-    yColumnName: 'Embed_Y',
-    size: 'sali',
+    xColumnName: `${axes[0]}_${colNameInd}`,
+    yColumnName: `${axes[1]}_${colNameInd}`,
+    size: sali.name,
+    color: activities.name,
+    showXSelector: false,
+    showYSelector: false,
+    showSizeSelector: false,
+    showColorSelector: false,
+    markerMinSize: 5,
+    markerMaxSize: 25,
   }));
 
-  sp.props.showXSelector = false;
-  sp.props.showYSelector = false;
-  sp.props.showSizeSelector = false;
-  sp.props.showColorSelector = false;
-  sp.props.markerMinSize = 5;
-  sp.props.markerMaxSize = 25;
-  sp.props.colorColumnName = 'activity';
+  sp.onEvent('d4-before-draw-scene')
+    .subscribe((_) => renderLines(sp, n1, n2, `${axes[0]}_${colNameInd}`, `${axes[1]}_${colNameInd}`));
 
-  sp.onEvent('d4-before-draw-scene').subscribe((_) => renderLines(sp, n1, n2));
+  sp.addProperty('similarityLimit', 'double', optSimilarityLimit);
 }
 
-function renderLines(sp: DG.Viewer, n1: number[], n2: number[]) {
+function renderLines(sp: DG.Viewer, n1: number[], n2: number[], xAxis: string, yAxis: string) {
   //@ts-ignore
   const ctx = sp.getInfo()['canvas'].getContext('2d');
 
-  const x = sp.dataFrame!.columns.byName('Embed_X');
-  const y = sp.dataFrame!.columns.byName('Embed_Y');
+  const x = sp.dataFrame!.columns.byName(xAxis);
+  const y = sp.dataFrame!.columns.byName(yAxis);
 
   for (let i = 0; i < n1.length; i++) {
     ctx.beginPath();
@@ -118,9 +127,28 @@ function renderLines(sp: DG.Viewer, n1: number[], n2: number[]) {
     const pointFrom = sp.worldToScreen(x.get(num1), y.get(num1));
     ctx.lineTo(pointFrom.x, pointFrom.y);
     //@ts-ignore
-    const pointTo = sp.worldToScreen(x.get(num2), sp.dataFrame.get('Embed_Y', num2));
+    const pointTo = sp.worldToScreen(x.get(num2), sp.dataFrame.get(yAxis, num2));
     ctx.lineTo(pointTo.x, pointTo.y);
 
     ctx.stroke();
   }
+}
+
+async function getSimilaritiesMarix(dim: number, smiles: DG.Column, dfSmiles: DG.DataFrame, simArr: DG.Column[]) {
+  for (let i = 0; i != dim - 1; ++i) {
+    const mol = smiles.get(i);
+    dfSmiles.rows.removeAt(0, 1, false);
+    simArr[i] = (await chemSearches.chemGetSimilarities(dfSmiles.col('smiles')!, mol))!;
+  }
+  return simArr;
+}
+
+function getSimilaritiesMarixFromDistances(dim: number, distances: [], simArr: DG.Column[]) {
+  for (let i = 0; i < dim - 1; ++i) {
+    const similarityArr = [];
+    for (let j = i + 1; j < dim; ++j)
+      similarityArr.push(getSimilarityFromDistance(distances[i][j]));
+    simArr[i] = DG.Column.fromFloat32Array('similarity', Float32Array.from(similarityArr));
+  }
+  return simArr;
 }
