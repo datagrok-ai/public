@@ -7,16 +7,20 @@ To make sure that a package works correctly it need to properly tested. Each pac
 'Test manager' is a tool within Datagrok platform which provides a convenient interface to select and run package unit tests with further results exploration.
 
 To start 'Test manager' go to top menu Tools -> Dev -> Test manager
+
 ![Test manager start](test-mngr-start.png)
 
 After starting the tool you will see a list of all package tests divided by package name. Inside each package tests are divided by category.
 Using checkboxes you can choose which tests you want to run at a time. You can choose either whole package or required category or exact tests inside a category. After all required tests are selected click on `RUN` button at the top.
+
 ![Tests list](test-mngr-tests-list.png)
 
 Failed tests will be marked with red cancel sign while passed test will be marked with green tick mark.
+
 ![Tests list](test-mngr-results.png)
 
 You can get more detailed information on tests results by clicking on a test/category/package name. Information will be shown on a property panel.
+
 ![Tests property panel](test-mngr-property-panel.png)
 
 
