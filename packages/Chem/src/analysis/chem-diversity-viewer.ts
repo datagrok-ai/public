@@ -1,6 +1,5 @@
 import * as ui from 'datagrok-api/ui';
 import * as DG from 'datagrok-api/dg';
-import {Property} from 'datagrok-api/dg';
 import BitArray from '@datagrok-libraries/utils/src/bit-array';
 import {similarityMetric, getDiverseSubset} from '@datagrok-libraries/utils/src/similarity-metrics';
 import {chemGetFingerprints} from '../chem-searches';
@@ -11,65 +10,25 @@ import {renderMolecule} from '../rendering/render-molecule';
 import {ChemSearchBaseViewer} from './chem-search-base-viewer';
 
 export class ChemDiversityViewer extends ChemSearchBaseViewer {
-  moleculeColumn: DG.Column;
-  initialized: boolean;
   renderMolIds: number[];
-  metricsDiv = ui.div('', {style: {height: '10px', display: 'flex', justifyContent: 'right'}});
+  columnNames = [];
 
   constructor() {
-    super();
-
-    this.moleculeColumn = this.column('moleculeColumnName');
-    this.initialized = false;
+    super('diversity');
     this.renderMolIds = [];
     this.updateMetricsLink(this.metricsDiv, this, {fontSize: '10px', fontWeight: 'normal', paddingBottom: '15px'});
   }
 
-  init(): void {
-    this.initialized = true;
-  }
-
-  async onTableAttached(): Promise<void> {
-    this.init();
-
-    if (this.dataFrame) {
-      this.subs.push(DG.debounce(this.dataFrame.onRowsRemoved, 50).subscribe(async (_) => await this.render()));
-      this.subs.push(DG.debounce(this.dataFrame.onCurrentRowChanged, 50)
-        .subscribe(async (_) => await this.render(false)));
-      this.subs.push(DG.debounce(this.dataFrame.selection.onChanged, 50)
-        .subscribe(async (_) => await this.render(false)));
-      this.subs.push(DG.debounce(ui.onSizeChanged(this.root), 50).subscribe(async (_) => await this.render(false)));
-
-      this.moleculeColumn = this.dataFrame.columns.bySemType(DG.SEMTYPE.MOLECULE);
-    }
-
-    await this.render();
-  }
-
-  detach() {
-    this.subs.forEach((sub) => sub.unsubscribe());
-  }
-
-  onPropertyChanged(property: Property): void {
-    super.onPropertyChanged(property);
-    if (!this.initialized)
-      return;
-    if (this.metricsProperties.includes(property.name))
-      this.updateMetricsLink(this.metricsDiv, this, {fontSize: '10px', fontWeight: 'normal', paddingBottom: '15px'});
-    this.render();
-  }
 
   async render(computeData = true): Promise<void> {
-    if (!this.initialized)
+    if (!this.beforeRender())
       return;
-
     if (this.dataFrame) {
       if (computeData) {
         this.renderMolIds =
           await chemDiversitySearch(
-            this.moleculeColumn, similarityMetric[this.distanceMetric], this.limit, this.fingerprint as Fingerprint);
+            this.moleculeColumn!, similarityMetric[this.distanceMetric], this.limit, this.fingerprint as Fingerprint);
       }
-
       if (this.root.hasChildNodes())
         this.root.removeChild(this.root.childNodes[0]);
 
@@ -81,7 +40,7 @@ export class ChemDiversityViewer extends ChemSearchBaseViewer {
       for (let i = 0; i < this.limit; ++i) {
         const grid = ui.div([
           renderMolecule(
-            this.moleculeColumn.get(this.renderMolIds[i]),
+            this.moleculeColumn!.get(this.renderMolIds[i]),
             //@ts-ignore
             {width: this.sizesMap[this.size].width, height: this.sizesMap[this.size].height}),
         ], {style: {margin: '5px'}});

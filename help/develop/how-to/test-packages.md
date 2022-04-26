@@ -4,7 +4,7 @@ To make sure that a package works correctly it needs to be properly tested. Each
 
 ## Test manager
 
-'Test manager' is a tool within Datagrok platform which provides a convenient interface to select and run package unit tests with further results exploration.
+'Test manager' is a tool within Datagrok platform which provides a convenient interface to select and run package unit tests with further results exploration. 'Test manager' itself is a part of DevTools package.
 
 To start 'Test manager' go to top menu Tools -> Dev -> Test manager
 

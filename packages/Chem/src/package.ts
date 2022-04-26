@@ -266,7 +266,7 @@ export async function chemSpaceTopMenu(table: DG.DataFrame,
   similarityMetric: string = 'Tanimoto',
   plotEmbeddings: boolean) {
   return new Promise<void>(async (resolve, reject) => {
-    const embeddings = await chemSpace(smiles, methodName, similarityMetric);
+    const embeddings = await chemSpace(smiles, methodName, similarityMetric, ['Embed_X', 'Embed_Y']);
     const cols = table.columns as DG.ColumnList;
     for (const col of embeddings)
       cols.add(col);
