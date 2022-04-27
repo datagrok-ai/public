@@ -45,6 +45,7 @@
       "functions": "never",
       "objects": "only-multiline",
       "imports": "only-multiline"
-    }]
+    }],
+    "guard-for-in": "off"
   }
 }
