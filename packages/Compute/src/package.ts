@@ -3,7 +3,6 @@ import * as grok from 'datagrok-api/grok';
 import * as ui from 'datagrok-api/ui';
 import * as DG from 'datagrok-api/dg';
 import {ModelHandler} from './model-handler';
-import {exportFuncCall} from './export-funccall';
 import {_functionParametersGrid} from './function-views/function-parameters-grid';
 import {ModelCatalogView} from './model-catalog-view';
 import wu from 'wu';
@@ -30,13 +29,6 @@ export function OutliersSelection() {
 //tags: dashboard
 export function modelsWidget(): DG.Widget {
   return new ModelsWidget();
-}
-
-//name: Export to Excel
-//input: funccall call
-//tags: export
-export function exportToExcel(call: DG.FuncCall) {
-  exportFuncCall(call);
 }
 
 /* eslint-disable */
