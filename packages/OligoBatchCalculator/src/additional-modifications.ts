@@ -114,7 +114,7 @@ export function editAdditionalModification(additionalModificationsDf: DG.DataFra
   grok.dapi.users.current().then(async (user) => {
     if (ADMIN_USERS.includes(user.firstName + ' ' + user.lastName)) {
       const longName = ui.stringInput(COL_NAMES.LONG_NAMES,
-        additionalModificationsDf.col(COL_NAMES.ABBREVIATION)!.get(rowIndex));
+        additionalModificationsDf.col(COL_NAMES.LONG_NAMES)!.get(rowIndex));
       ui.tooltip.bind(longName.root, 'Examples: \'Inverted Abasic\', \'Cyanine 3 CPG\', \'5-Methyl dC\'');
       const oldAbbreviation = additionalModificationsDf.col(COL_NAMES.ABBREVIATION)!.get(rowIndex);
       const abbreviation = ui.stringInput(COL_NAMES.ABBREVIATION, oldAbbreviation);
@@ -130,7 +130,7 @@ export function editAdditionalModification(additionalModificationsDf: DG.DataFra
       const extinctionCoefficient = ui.stringInput(COL_NAMES.EXTINCTION_COEFFICIENT,
         additionalModificationsDf.col(COL_NAMES.EXTINCTION_COEFFICIENT)!.get(rowIndex));
       const changeLogsCol = additionalModificationsDf.col(COL_NAMES.CHANGE_LOGS)!;
-      ui.dialog('Add Modification')
+      ui.dialog('Edit Modification')
         .add(ui.block([
           longName.root,
           abbreviation.root,
@@ -143,9 +143,6 @@ export function editAdditionalModification(additionalModificationsDf: DG.DataFra
             return grok.shell.warning('Long Name shouldn\'t contain more than 300 characters');
           if (abbreviation.value.length > 100)
             return grok.shell.warning('Abbreviation shouldn\'t contain more than 100 characters');
-          const entries = await grok.dapi.userDataStorage.get(STORAGE_NAME, CURRENT_USER);
-          if (abbreviation.value in entries)
-            return grok.shell.warning('Abbreviation ' + abbreviation.value + ' already exists');
           const newLog = changeLogsCol.get(rowIndex) + Date() + ' by ' + user.firstName + ' ' + user.lastName + '; ';
           await grok.dapi.userDataStorage.postValue(
             STORAGE_NAME,

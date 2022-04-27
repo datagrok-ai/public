@@ -174,13 +174,13 @@ export class SARMultipleFilter {
     df.columns.addNew(C.COLUMNS_NAMES.SPLIT_COL, 'string') as DG.Column;
 
     const bitset = this.filterMode ? df.filter : df.selection;
-    splitCol.init((i) => bitset.get(i) ? aarLabel : C.CATEGORY_OTHER);
-    splitCol.setCategoryOrder([aarLabel, C.CATEGORY_OTHER]);
+    splitCol.init((i) => bitset.get(i) ? aarLabel : C.CATEGORIES.OTHER);
+    splitCol.setCategoryOrder([aarLabel, C.CATEGORIES.OTHER]);
     splitCol.compact();
 
     const colorMap: {[index: string]: string | number} = {};
 
-    colorMap[C.CATEGORY_OTHER] = DG.Color.blue;
+    colorMap[C.CATEGORIES.OTHER] = DG.Color.blue;
     colorMap[aarLabel] = DG.Color.orange;
     // colorMap[currentAAR] = cp.getColor(currentAAR);
     df.getCol(C.COLUMNS_NAMES.SPLIT_COL).colors.setCategorical(colorMap);

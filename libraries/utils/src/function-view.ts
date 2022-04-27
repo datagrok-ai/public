@@ -3,16 +3,16 @@ import $ from 'cash-dom';
 import * as grok from 'datagrok-api/grok';
 import * as ui from 'datagrok-api/ui';
 import * as DG from 'datagrok-api/dg';
-import {FuncCall} from "datagrok-api/dg";
 
 export class FunctionView extends DG.ViewBase {
-  constructor(func: DG.Func, call?: DG.FuncCall) {
+  constructor(func: DG.Func) {
     super();
     this.func = func;
     this.context = DG.Context.cloneDefault();
     this.controlsRoot.style.maxWidth = '370px';
     this.box = true;
-    this.init().then((r) => {});
+    if (func != null)
+      this.init(func).then((r) => {});
   }
 
   private _type: string = 'function';
@@ -25,7 +25,8 @@ export class FunctionView extends DG.ViewBase {
   public lastCall?: DG.FuncCall;
   _inputFields: Map<string, DG.InputBase> = new Map<string, DG.InputBase>();
 
-  async init() {
+  async init(func: DG.Func) {
+    this.func ??= func;
     /*
       var meta = EntityMeta.forEntity(f);
       func = await meta.refresh(f);
@@ -123,7 +124,7 @@ export class FunctionView extends DG.ViewBase {
     this.buildOutputBlock();
   }
 
-  inputFieldsToParameters(call: FuncCall): void { }
+  inputFieldsToParameters(call: DG.FuncCall): void { }
 
   async run(): Promise<void> {
     this.lastCall = this.call!.clone();
@@ -138,11 +139,11 @@ export class FunctionView extends DG.ViewBase {
     this.outputParametersToView(this.lastCall);
   }
 
-  async compute(call: FuncCall): Promise<void> {
+  async compute(call: DG.FuncCall): Promise<void> {
     await call.call(true, undefined, {processed: true});
   }
 
-  outputParametersToView(call: FuncCall): void {
+  outputParametersToView(call: DG.FuncCall): void {
     this.clearResults(false, true);
     for (const [, p] of call.outputParams) {
       p.processOutput();

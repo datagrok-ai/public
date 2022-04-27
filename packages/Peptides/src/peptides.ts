@@ -1,24 +1,23 @@
-import * as ui from 'datagrok-api/ui';
 import * as DG from 'datagrok-api/dg';
-import {createPeptideSimilaritySpaceViewer} from './utils/peptide-similarity-space';
 import {PeptidesModel} from './model';
 import {StringDictionary} from '@datagrok-libraries/utils/src/type-declarations';
 import {SARViewer, SARViewerVertical} from './viewers/sar-viewer';
-import {SubstViewer} from './viewers/subst-viewer';
 import {ChemPalette} from './utils/chem-palette';
 import {Observable} from 'rxjs';
 import {MonomerLibrary} from './monomer-library';
 import {_package} from './package';
 import {setAARRenderer} from './utils/cell-renderer';
 import * as C from './utils/constants';
-import { PeptideSpaceViewer } from './viewers/peptide-space-viewer';
+import {PeptideSpaceViewer} from './viewers/peptide-space-viewer';
 
-type viewerTypes = SARViewer | SARViewerVertical | SubstViewer;
+type viewerTypes = SARViewer | SARViewerVertical;
 export class PeptidesController {
   private static _controllerName: string = 'peptidesController';
   private helpUrl = '/help/domains/bio/peptides.md';
 
   private _model: PeptidesModel;
+  sarViewer!: SARViewer;
+  sarViewerVertical!: SARViewerVertical;
 
   private constructor(dataFrame: DG.DataFrame) {
     this._model = PeptidesModel.getInstance(dataFrame);
@@ -34,33 +33,39 @@ export class PeptidesController {
     return dataFrame.temp[PeptidesController.controllerName];
   }
 
-  static get controllerName() { return PeptidesController._controllerName; }
+  static get controllerName() {return PeptidesController._controllerName;}
 
-  get dataFrame() { return this._model.dataFrame; }
+  get dataFrame() {return this._model.dataFrame;}
 
   static setAARRenderer(col: DG.Column, grid: DG.Grid, grouping?: boolean) {
     return setAARRenderer(col, grid, grouping);
   }
 
-  get onStatsDataFrameChanged(): Observable<DG.DataFrame> { return this._model.onStatsDataFrameChanged; }
+  get onStatsDataFrameChanged(): Observable<DG.DataFrame> {return this._model.onStatsDataFrameChanged;}
 
-  get onSARGridChanged(): Observable<DG.Grid> { return this._model.onSARGridChanged; }
+  get onSARGridChanged(): Observable<DG.Grid> {return this._model.onSARGridChanged;}
 
-  get onSARVGridChanged(): Observable<DG.Grid> { return this._model.onSARVGridChanged; }
+  get onSARVGridChanged(): Observable<DG.Grid> {return this._model.onSARVGridChanged;}
 
-  get onGroupMappingChanged(): Observable<StringDictionary> { return this._model.onGroupMappingChanged; }
+  get onGroupMappingChanged(): Observable<StringDictionary> {return this._model.onGroupMappingChanged;}
 
-  get onSubstTableChanged(): Observable<DG.DataFrame> { return this._model.onSubstTableChanged; }
+  get onSubstTableChanged(): Observable<DG.DataFrame> {return this._model.onSubstTableChanged;}
 
-  async updateDefault() { await this._model.updateDefault(); }
+  async updateDefault() {await this._model.updateDefault();}
+
+  get sarGrid() {return this._model.sarGrid;}
+
+  get sarVGrid() {return this._model.sarVGrid;}
+
+  get sourceGrid() {return this._model._sourceGrid!; }
 
   async updateData(
-    activityScaling?: string, sourceGrid?: DG.Grid, twoColorMode?: boolean, initialBitset?: DG.BitSet,
-    grouping?: boolean, activityLimit?: number, maxSubstitutions?: number, isSubstitutionOn?: boolean,
+    activityScaling?: string, sourceGrid?: DG.Grid, twoColorMode?: boolean, grouping?: boolean, activityLimit?: number,
+    maxSubstitutions?: number, isSubstitutionOn?: boolean, filterMode?: boolean,
   ) {
     await this._model.updateData(
-      activityScaling, sourceGrid, twoColorMode, initialBitset, grouping, activityLimit, maxSubstitutions,
-      isSubstitutionOn);
+      activityScaling, sourceGrid, twoColorMode, grouping, activityLimit, maxSubstitutions, isSubstitutionOn,
+      filterMode);
   }
 
   static async scaleActivity(
@@ -95,9 +100,9 @@ export class PeptidesController {
     return [tempDf, newColName];
   }
 
-  get originalActivityColumnName(): string { return this.dataFrame.temp[C.COLUMNS_NAMES.ACTIVITY]; }
+  get originalActivityColumnName(): string {return this.dataFrame.temp[C.COLUMNS_NAMES.ACTIVITY];}
 
-  get substTooltipData() { return this._model.substTooltipData; }
+  get substTooltipData() {return this._model.substTooltipData;}
 
   static splitAlignedPeptides(peptideColumn: DG.Column, filter: boolean = true): [DG.DataFrame, number[]] {
     const splitPeptidesArray: string[][] = [];
@@ -162,21 +167,48 @@ export class PeptidesController {
     ];
   }
 
-  static get chemPalette() {
-    return ChemPalette;
+  static get chemPalette() { return ChemPalette; }
+
+  syncProperties(isSourceSAR = true) {
+    const sourceViewer = isSourceSAR ? this.sarViewer : this.sarViewerVertical;
+    const targetViewer = isSourceSAR ? this.sarViewerVertical : this.sarViewer;
+    const properties = sourceViewer.props.getProperties();
+    for (const property of properties)
+      targetViewer.props.set(property.name, property.get(sourceViewer));
+  }
+
+  modifyOrCreateSplitCol(aar: string, position: string, notify: boolean = true) {
+    this._model.modifyOrCreateSplitCol(aar, position);
+    if (notify)
+      this._model.fireBitsetChanged();
+  }
+
+  setSARGridCellAt(aar: string, position: string) {
+    const sarDf = this.sarGrid.dataFrame;
+    const aarCol = sarDf.getCol(C.COLUMNS_NAMES.AMINO_ACID_RESIDUE);
+    const aarColLen = aarCol.length;
+    let index = -1;
+    for (let i = 0; i < aarColLen; i++) {
+      if (aarCol.get(i) === aar) {
+        index = i;
+        break;
+      }
+    }
+    position = position === C.CATEGORIES.ALL ? C.COLUMNS_NAMES.AMINO_ACID_RESIDUE : position;
+    sarDf.currentCell = sarDf.cell(index, position);
   }
 
   /**
    * Class initializer
    *
-   * @param {DG.Grid} tableGrid Working talbe grid.
-   * @param {DG.TableView} view Working view.
+   * @param {DG.Grid} sourceGrid Working talbe grid.
+   * @param {DG.TableView} currentView Working view.
    * @param {DG.DataFrame} currentDf Working table.
    * @param {StringDictionary} options SAR viewer options
    * @param {DG.Column} col Aligned sequences column.
    * @memberof Peptides
    */
-  async init(tableGrid: DG.Grid, view: DG.TableView, options: StringDictionary) {
+  async init(sourceGrid: DG.Grid, currentView: DG.TableView, options: StringDictionary) {
     this.dataFrame.temp[C.EMBEDDING_STATUS] = false;
     function adjustCellSize(grid: DG.Grid) {
       const colNum = grid.columns.length;
@@ -187,65 +219,42 @@ export class PeptidesController {
       grid.props.rowHeight = 20;
     }
 
-    for (let i = 0; i < tableGrid.columns.length; i++) {
-      const aarCol = tableGrid.columns.byIndex(i);
+    for (let i = 0; i < sourceGrid.columns.length; i++) {
+      const aarCol = sourceGrid.columns.byIndex(i);
       if (aarCol && aarCol.name && aarCol.column?.semType !== C.SEM_TYPES.AMINO_ACIDS &&
         aarCol.name !== this.dataFrame.temp[C.COLUMNS_NAMES.ACTIVITY_SCALED]
       )
-        tableGrid.columns.byIndex(i)!.visible = false;
+        sourceGrid.columns.byIndex(i)!.visible = false;
     }
 
-    // const originalDfName = this.dataFrame.name;
-    const dockManager = view.dockManager;
+    await this.updateData(options.scaling, sourceGrid, false, false, 1, 2, false, false);
 
-    options.title = 'Sutructure-Activity Relationship';
-    const sarViewer = await this.dataFrame.plot.fromType('peptide-sar-viewer', options) as SARViewer;
-    sarViewer.helpUrl = this.helpUrl;
+    const dockManager = currentView.dockManager;
 
-    const sarViewerVerticalOptions = {title: 'Most Potent Residues'};
-    const sarViewerVertical =
-      await this.dataFrame.plot.fromType('peptide-sar-viewer-vertical', sarViewerVerticalOptions) as SARViewerVertical;
-    sarViewerVertical.helpUrl = this.helpUrl;
+    this.sarViewer = await this.dataFrame.plot.fromType('peptide-sar-viewer', options) as SARViewer;
+    this.sarViewer.helpUrl = this.helpUrl;
 
-    const sarViewersGroup: viewerTypes[] = [sarViewer, sarViewerVertical];
+    this.sarViewerVertical =
+      await this.dataFrame.plot.fromType('peptide-sar-viewer-vertical', options) as SARViewerVertical;
+      this.sarViewerVertical.helpUrl = this.helpUrl;
+
+    const sarViewersGroup: viewerTypes[] = [this.sarViewer, this.sarViewerVertical];
 
     const peptideSpaceViewerOptions = {method: 't-SNE', measure: 'Levenshtein', cyclesCount: 100};
     const peptideSpaceViewer =
       await this.dataFrame.plot.fromType('peptide-space-viewer', peptideSpaceViewerOptions) as PeptideSpaceViewer;
     dockManager.dock(peptideSpaceViewer, DG.DOCK_TYPE.RIGHT, null, 'Peptide Space Viewer');
 
-    // await createPeptideSimilaritySpaceViewer(this.dataFrame, 't-SNE', 'Levenshtein', 100, view);
-    // dockManager.dock(peptideSpaceViewer, DG.DOCK_TYPE.RIGHT, null, 'Peptide Space viewer');
-
     dockViewers(sarViewersGroup, DG.DOCK_TYPE.RIGHT, dockManager, DG.DOCK_TYPE.DOWN);
 
-    // const substViewerOptions = {
-    //   'activityColumnName': C.COLUMNS_NAMES.ACTIVITY_SCALED,
-    //   'title': 'Substitution analysis',
-    // };
-    // const substViewer = await this.dataFrame.plot.fromType(
-    //   'substitution-analysis-viewer', substViewerOptions) as SubstViewer;
-    // const substViewersGroup = [substViewer];
+    sourceGrid.props.allowEdit = false;
+    adjustCellSize(sourceGrid);
 
-    tableGrid.props.allowEdit = false;
-    adjustCellSize(tableGrid);
-
-    // let isSA = false;
-    // const switchViewers = ui.iconFA('toggle-on', () => {
-    //   $(switchViewers).toggleClass('fa-toggle-off').toggleClass('fa-toggle-on');
-    //   nodeList?.forEach((node) => {
-    //     view.dockManager.close(node);
-    //     node.container.destroy();
-    //   });
-    //   const getCurrentViewerGroup = () => isSA ? substViewersGroup : sarViewersGroup;
-    //   getCurrentViewerGroup().forEach((v) => v.removeFromView());
-    //   isSA = !isSA;
-    //   nodeList = dockViewers(getCurrentViewerGroup(), DG.DOCK_TYPE.LEFT, dockManager, DG.DOCK_TYPE.DOWN);
-    // }, 'Toggle viewer group');
-
-    // const ribbonPanels = view.getRibbonPanels();
-    // view.setRibbonPanels([[switchViewers]]);
+    this._model.sarGrid.invalidate();
+    this._model.sarVGrid.invalidate();
   }
+
+  invalidateSourceGrid() { this.sourceGrid.invalidate(); }
 }
 
 function dockViewers(

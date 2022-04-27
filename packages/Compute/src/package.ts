@@ -152,17 +152,16 @@ export function init() {
 }
 
 //name: Model Catalog
-//tags: app
-export function modelCatalog() {
-/*  let view = new DG.MultiView({
-    viewFactories: {
-      'Models': {factory: () => new ModelCatalogView(), allowClose: false}
-    }
-  });*/
-  let view = new ModelCatalogView();
-  view.name = 'Models';
-  grok.shell.addView(view);
-}
+// export function modelCatalog() {
+// /*  let view = new DG.MultiView({
+//     viewFactories: {
+//       'Models': {factory: () => new ModelCatalogView(), allowClose: false}
+//     }
+//   });*/
+//   let view = new ModelCatalogView();
+//   view.name = 'Models';
+//   grok.shell.addView(view);
+// }
 
 
 //name: computationTest

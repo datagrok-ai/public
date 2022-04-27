@@ -142,10 +142,10 @@ export function linkV3000(molBlocks: string[], twoMolecules: boolean = false, oc
   const collNumber = Math.ceil(collection.length / entries);
 
   if (oclRender) {
-    collectionBlock += 'M  V30 MDLV30/STEABS ATOMS=(';
+    collectionBlock += 'M  V30 MDLV30/STEABS ATOMS=(' + collection.length;
 
     for (let j = 0; j < collection.length; j++)
-      collectionBlock += collection[j] + ' ';
+      collectionBlock += ' ' + collection[j];
 
     collectionBlock += ')\n';
   } else {
