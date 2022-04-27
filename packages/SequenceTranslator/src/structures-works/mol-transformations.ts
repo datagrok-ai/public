@@ -110,6 +110,8 @@ export function linkV3000(molBlocks: string[], twoMolecules: boolean = false, oc
     molBlocks[1] = invertNucleotidesV3000(molBlocks[1]);
 
   for (let i = 0; i < molBlocks.length; i++) {
+    molBlocks[i] = molBlocks[i].replaceAll('(-\nM  V30 ', '(')
+      .replaceAll('-\nM  V30 ', '').replaceAll(' )', ')');
     const numbers = extractAtomsBondsNumbersV3000(molBlocks[i]);
     const coordinates = extractAtomDataV3000(molBlocks[i]);
     let indexAtoms = molBlocks[i].indexOf('M  V30 BEGIN ATOM'); // V3000 index for atoms coordinates
@@ -184,7 +186,7 @@ export function linkV3000(molBlocks: string[], twoMolecules: boolean = false, oc
     while (indexCollection != -1) {
       indexCollection += 28;
       const collectionEnd = molBlocks[i].indexOf(')', indexCollection);
-      const collectionEntries = molBlocks[i].substring(indexCollection, collectionEnd).split(' ');
+      const collectionEntries = molBlocks[i].substring(indexCollection, collectionEnd).split(' ').slice(1);
       collectionEntries.forEach((e) => {
         collection.push(parseInt(e) + natom);
       });
@@ -209,13 +211,15 @@ export function linkV3000(molBlocks: string[], twoMolecules: boolean = false, oc
 
     collectionBlock += ')\n';
   } else {
+    collectionBlock += 'M  V30 MDLV30/STEABS ATOMS=(' + collection.length + ' -\n';
     for (let i = 0; i < collNumber; i++) {
-      collectionBlock += 'M  V30 MDLV30/STEABS ATOMS=(';
+      collectionBlock += 'M  V30 ';
       const entriesCurrent = i + 1 == collNumber ? collection.length - (collNumber - 1)*entries : entries;
-      for (let j = 0; j < entriesCurrent; j++)
-        collectionBlock += (j + 1 == entriesCurrent) ? collection[entries*i + j] : collection[entries*i + j] + ' ';
-
-      collectionBlock += ')\n';
+      for (let j = 0; j < entriesCurrent; j++) {
+        collectionBlock += (j + 1 == entriesCurrent) ?
+          (i == collNumber - 1 ? collection[entries*i + j] + ')\n' : collection[entries*i + j] + ' -\n') :
+          collection[entries*i + j] + ' ';
+      }
     }
   }
 
