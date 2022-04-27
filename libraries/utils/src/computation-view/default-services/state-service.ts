@@ -3,9 +3,9 @@ import * as grok from 'datagrok-api/grok';
 import * as ui from 'datagrok-api/ui';
 import * as DG from 'datagrok-api/dg';
 import * as rxjs from 'rxjs';
-import {ComputationViewStateService} from '../common/service-interfaces';
+import {StateService} from '../common/service-interfaces';
 
-export class DefaultComputationViewStateService implements ComputationViewStateService {
+export class DefaultStateService implements StateService {
   name = 'Model';
 
   lastCall: DG.FuncCall | null = null;

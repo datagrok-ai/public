@@ -4,13 +4,17 @@ import * as grok from 'datagrok-api/grok';
 import * as ui from 'datagrok-api/ui';
 import * as DG from 'datagrok-api/dg';
 import {Component, ExportService} from '../common/service-interfaces';
-import {DefaultExportService} from '../default-services/export-service';
+import {tokens} from '../common/inject-tokens';
 
 export class DefaultExportComponent implements Component {
   public root: HTMLElement = ui.div();
 
+  public static inject = [
+    tokens.exportService,
+  ] as const;
+
   constructor(
-    private exportService: ExportService = new DefaultExportService(),
+    private exportService: ExportService,
   ) {
     this.render();
   }

@@ -4,7 +4,8 @@ import * as grok from 'datagrok-api/grok';
 import * as ui from 'datagrok-api/ui';
 import * as DG from 'datagrok-api/dg';
 import {FunctionView} from '../function-view';
-import {Component, ComputationViewStateService} from './common/service-interfaces';
+import {Component, StateService} from './common/service-interfaces';
+import {tokens} from './common/inject-tokens';
 
 /**
  * Base class for handling Compute models (see https://github.com/datagrok-ai/public/blob/master/help/compute/compute.md).
@@ -22,8 +23,16 @@ import {Component, ComputationViewStateService} from './common/service-interface
  * - notifications for changing inputs, completion of computations, etc: {@link onInputChanged}
  * */
 export class ComputationView extends FunctionView {
+  public static inject = [
+    tokens.stateService,
+    tokens.inputPanel,
+    tokens.outputPanel,
+    tokens.exportPanel,
+  ] as const;
+
+  /** Not intented to be used directly in common case. Use {@link ComputationViewBuilder} instead. */
   constructor(
-    public state: ComputationViewStateService,
+    public state: StateService,
     public inputPanel: Component,
     public outputPanel: Component,
     public exportButton: Component,
