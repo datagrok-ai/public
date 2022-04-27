@@ -13,21 +13,6 @@ import {Coordinates} from '@datagrok-libraries/utils/src/type-declarations';
 import * as C from './constants';
 
 /**
- * Finds a column with an activity.
- *
- * @param {DG.DataFrame} table The data frame to search for.
- * @return {(string | null)} Column name or null if not found.
- */
-function inferActivityColumnsName(table: DG.DataFrame): string | null {
-  const re = /activity|ic50/i;
-  for (const name of table.columns.names()) {
-    if (name.match(re))
-      return name;
-  }
-  return null;
-}
-
-/**
  * Cast an aligned sequences column to clean sequences.
  *
  * @export

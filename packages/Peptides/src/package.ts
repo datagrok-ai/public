@@ -18,12 +18,11 @@ import {PeptideSimilaritySpaceWidget} from './utils/peptide-similarity-space';
 import {manualAlignmentWidget} from './widgets/manual-alignment';
 import {SARViewer, SARViewerVertical} from './viewers/sar-viewer';
 import {peptideMoleculeWidget, getMolecule} from './widgets/peptide-molecule';
-import {SubstViewer} from './viewers/subst-viewer';
 import {runKalign, testMSAEnoughMemory} from './utils/multiple-sequence-alignment';
-import {substTableWidget} from './widgets/subst-table';
+import {substitutionsWidget} from './widgets/subst-table';
 import {msaWidget} from './widgets/multiple-sequence-alignment';
 import {getDistributionWidget} from './widgets/distribution';
-import { PeptideSpaceViewer } from './viewers/peptide-space-viewer';
+import {PeptideSpaceViewer} from './viewers/peptide-space-viewer';
 
 export const _package = new DG.Package();
 let currentGrid: DG.Grid;
@@ -36,7 +35,6 @@ async function main(chosenFile: string) {
   const path = _package.webRoot + 'files/' + chosenFile;
   const peptides = (await grok.data.loadTable(path));
   peptides.name = 'Peptides';
-  peptides.setTag('dataType', 'peptides');
   const view = grok.shell.addTableView(peptides);
   currentGrid = view.grid;
   view.name = 'PeptidesView';
@@ -112,14 +110,6 @@ export function sar(): SARViewer {
 //output: viewer result
 export function sarVertical(): SARViewerVertical {
   return new SARViewerVertical();
-}
-
-//name: substitution-analysis-viewer
-//description: Substitution Analysis Viewer
-//tags: viewer
-//output: viewer result
-export function subst(): SubstViewer {
-  return new SubstViewer();
 }
 
 //name: peptide-space-viewer
@@ -263,7 +253,9 @@ export async function runTestMSAEnoughMemory(table: DG.DataFrame, col: DG.Column
 //input: dataframe table {semType: Substitution}
 //output: widget result
 export async function peptideSubstitution(table: DG.DataFrame): Promise<DG.Widget> {
-  return substTableWidget(table);
+  if (!table.temp[C.PEPTIDES_ANALYSIS])
+    return new DG.Widget(ui.divText('This widget is only applicable for peptides analysis'));
+  return substitutionsWidget(table);
 }
 
 //name: Distribution
@@ -271,6 +263,8 @@ export async function peptideSubstitution(table: DG.DataFrame): Promise<DG.Widge
 //input: dataframe table {semType: viewerTable}
 //output: widget result
 export function peptideDistribution(table: DG.DataFrame): DG.Widget {
+  if (!table.temp[C.PEPTIDES_ANALYSIS])
+    return new DG.Widget(ui.divText('This widget is only applicable for peptides analysis'));
   return getDistributionWidget(table);
 }
 

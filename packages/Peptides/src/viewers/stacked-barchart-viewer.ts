@@ -4,22 +4,29 @@ import * as ui from 'datagrok-api/ui';
 import {MonomerLibrary} from '../monomer-library';
 import {PeptidesController} from '../peptides';
 
+import * as C from '../utils/constants';
+import * as type from '../utils/types';
+
 export function addViewerToHeader(grid: DG.Grid, barchart: StackedBarChart) {
   if (grid.temp['containsBarchart'])
     return;
+  
+  const compareBarParts = (bar1: type.BarChart.BarPart | null, bar2: type.BarChart.BarPart | null) =>
+    bar1 && bar2 && bar1.aaName === bar2.aaName && bar1.colName === bar2.colName;
 
-  function eventAction(mouseMove: MouseEvent) {
+  const eventAction = (mouseMove: MouseEvent) => {
     const cell = grid.hitTest(mouseMove.offsetX, mouseMove.offsetY);
-    if (cell !== null && cell?.isColHeader && cell.tableColumn?.semType == 'aminoAcids')
-      barchart.highlight(cell, mouseMove.offsetX, mouseMove.offsetY, mouseMove);
-    else
-      return;
-
-    if (cell?.isColHeader && cell.tableColumn?.semType == 'aminoAcids')
-      barchart.beginSelection(mouseMove);
-    else
-      barchart.unhighlight();
-  }
+    if (cell?.isColHeader && cell.tableColumn?.semType == C.SEM_TYPES.AMINO_ACIDS) {
+      const newBarPart = barchart.findAARandPosition(cell, mouseMove);
+      const previousClickedBarPart = barchart._previousClickedBarPart;
+      if (mouseMove.type === 'click' && compareBarParts(newBarPart, previousClickedBarPart))
+        barchart.isSameBarClicked = true;
+      else
+        barchart.currentBarPart = newBarPart;
+      barchart.requestAction(mouseMove);
+      barchart.computeData();
+    }
+  };
 
   // The following events makes the barchart interactive
   rxjs.fromEvent<MouseEvent>(grid.overlay, 'mousemove').subscribe((mouseMove: MouseEvent) => eventAction(mouseMove));
@@ -32,16 +39,17 @@ export function addViewerToHeader(grid: DG.Grid, barchart: StackedBarChart) {
   grid.setOptions({'colHeaderHeight': 130});
 
   grid.onCellTooltip((cell, x, y) => {
-    if (cell.tableColumn && ['aminoAcids', 'alignedSequence'].includes(cell.tableColumn.semType) ) {
+    if (
+      cell.tableColumn &&
+      [C.SEM_TYPES.AMINO_ACIDS, C.SEM_TYPES.ALIGNED_SEQUENCE].includes(cell.tableColumn.semType as C.SEM_TYPES)
+    ) {
       if (!cell.isColHeader) {
         const monomerLib = cell.cell.dataFrame.temp[MonomerLibrary.id];
         PeptidesController.chemPalette.showTooltip(cell, x, y, monomerLib);
-      } else {
-        if (barchart.highlighted) {
-          let elements: HTMLElement[] = [];
-          elements = elements.concat([ui.divText(barchart.highlighted.aaName)]);
-          ui.tooltip.show(ui.divV(elements), x, y);
-        }
+      } else if (barchart.currentBarPart) {
+        let elements: HTMLElement[] = [];
+        elements = elements.concat([ui.divText(barchart.currentBarPart.aaName)]);
+        ui.tooltip.show(ui.divV(elements), x, y);
       }
     }
     return true;
@@ -72,34 +80,31 @@ export function addViewerToHeader(grid: DG.Grid, barchart: StackedBarChart) {
   barchart.unhighlight();
 }
 
-// type stackedBarChartDatatype = {
-//   'name': string,
-//   'data': {'name': string, 'count': number, 'selectedCount': number, 'fixedSelectedCount': number}[],
-// }[];
-
-// type bartStatsType = {
-//   [Key: string]: {'name': string, 'count': number, 'selectedCount': number, 'fixedSelectedCount': number}[],
-// };
-
 export class StackedBarChart extends DG.JsViewer {
-  public dataEmptyAA: string;
-  public highlighted: {'colName' : string, 'aaName' : string} | null = null;
-  public tableCanvas: HTMLCanvasElement | undefined;
-  public aminoColumnNames: string[] = [];
-  private ord: { [Key: string]: number; } = {};
-  private aminoColumnIndices: {[Key: string]: number} = {};
-  private aggregatedTables: {[Key: string]: DG.DataFrame} = {};
-  private aggregatedHighlightedTables: {[Key: string]: DG.DataFrame} = {};
-  private max = 0;
-  private barStats:
-    {[Key: string]: {'name': string, 'count': number, 'highlightedCount': number, 'selectedCount': number}[]} = {};
-  private selected: {'colName' : string, 'aaName' : string}[] = [];
-  private highlightedMask: DG.BitSet | null = null;
-  private aggregatedSelectedTables: {[Key: string]: DG.DataFrame} = {};
+  dataEmptyAA: string;
+  _currentBarPart: type.BarChart.BarPart | null = null;
+  tableCanvas: HTMLCanvasElement | undefined;
+  aminoColumnNames: string[] = [];
+  ord: { [Key: string]: number; } = {};
+  aminoColumnIndices: {[Key: string]: number} = {};
+  aggregatedFilterTables: type.DataFrameDict = {};
+  max = 0;
+  barStats: {[Key: string]: type.BarChart.BarStatsObject[]} = {};
+  selected: type.BarChart.BarPart[] = [];
+  aggregatedSelectedTables: type.DataFrameDict = {};
+  controller!: PeptidesController;
+  isSameBarClicked: boolean = false;
+  _previousClickedBarPart: type.BarChart.BarPart | null = null;
 
   constructor() {
     super();
     this.dataEmptyAA = this.string('dataEmptyAA', '-');
+  }
+
+  get currentBarPart() { return this._currentBarPart; }
+  set currentBarPart(barPart: type.BarChart.BarPart | null) {
+    this._currentBarPart = barPart;
+    this.isSameBarClicked = false;
   }
 
   init() {
@@ -122,12 +127,13 @@ export class StackedBarChart extends DG.JsViewer {
   }
 
   // Stream subscriptions
-  onTableAttached() {
+  async onTableAttached() {
     this.init();
+    this.controller = await PeptidesController.getInstance(this.dataFrame);
     if (this.dataFrame) {
       this.subs.push(DG.debounce(this.dataFrame.selection.onChanged, 50).subscribe((_) => this.computeData()));
       this.subs.push(DG.debounce(this.dataFrame.filter.onChanged, 50).subscribe((_) => this.computeData()));
-      this.highlightedMask = DG.BitSet.create(this.dataFrame.rowCount);
+      this.subs.push(DG.debounce(this.dataFrame.onValuesChanged, 50).subscribe(() => this.computeData()));
     }
   }
 
@@ -141,7 +147,7 @@ export class StackedBarChart extends DG.JsViewer {
     this.aminoColumnIndices = {};
 
     this.dataFrame!.columns.names().forEach((name: string) => {
-      if (this.dataFrame!.getCol(name).semType === 'aminoAcids' &&
+      if (this.dataFrame!.getCol(name).semType === C.SEM_TYPES.AMINO_ACIDS &&
           !this.dataFrame!.getCol(name).categories.includes('COOH') &&
           !this.dataFrame!.getCol(name).categories.includes('NH2')) {
         this.aminoColumnIndices[name] = this.aminoColumnNames.length + 1;
@@ -149,20 +155,13 @@ export class StackedBarChart extends DG.JsViewer {
       }
     });
 
-    this.aggregatedTables = {};
-    this.aggregatedHighlightedTables = {};
+    this.aggregatedFilterTables = {};
     this.aggregatedSelectedTables = {};
     //TODO: optimize it, why store so many tables?
     this.aminoColumnNames.forEach((name) => {
-      this.aggregatedTables[name] = this.dataFrame!
+      this.aggregatedFilterTables[name] = this.dataFrame!
         .groupBy([name])
         .whereRowMask(this.dataFrame!.filter)
-        .add('count', name, `${name}_count`)
-        .aggregate();
-
-      this.aggregatedHighlightedTables[name] = this.dataFrame!
-        .groupBy([name])
-        .whereRowMask(this.highlightedMask!)
         .add('count', name, `${name}_count`)
         .aggregate();
 
@@ -175,43 +174,35 @@ export class StackedBarChart extends DG.JsViewer {
 
     this.barStats = {};
 
-    for (const [name, df] of Object.entries(this.aggregatedTables)) {
-      const colObj: {
-        'name': string,
-        'data': { 'name': string, 'count': number, 'highlightedCount': number, 'selectedCount': number}[],
-      } = {'name': name, 'data': []};
+    for (const [name, df] of Object.entries(this.aggregatedFilterTables)) {
+      const colData: {'name': string, 'count': number, 'selectedCount': number}[] = [];
       const aminoCol = df.getCol(name);
       const aminoCountCol = df.getCol(`${name}_count`);
-      this.barStats[colObj['name']] = colObj['data'];
+      this.barStats[name] = colData;
 
       for (let i = 0; i < df.rowCount; i++) {
         const amino = aminoCol.get(i);
         const aminoCount = aminoCountCol.get(i);
-        const aminoObj = {'name': amino, 'count': aminoCount, 'highlightedCount': 0, 'selectedCount': 0};
-        const aggHighlightedAminoCol = this.aggregatedHighlightedTables[name].getCol(`${name}`);
-        const aggHighlightedCountCol = this.aggregatedHighlightedTables[name].getCol(`${name}_count`);
+        const aminoObj = {'name': amino, 'count': aminoCount, 'selectedCount': 0};
         const aggSelectedAminoCol = this.aggregatedSelectedTables[name].getCol(`${name}`);
         const aggSelectedCountCol = this.aggregatedSelectedTables[name].getCol(`${name}_count`);
 
         if (!amino || amino === this.dataEmptyAA)
           continue;
 
-        colObj['data'].push(aminoObj);
+        colData.push(aminoObj);
 
-        for (const col of [aggHighlightedCountCol, aggSelectedCountCol]) {
-          for (let j = 0; j < col.length; j++) {
-            const highlightedAmino = aggHighlightedAminoCol.get(j);
-            const selectedAmino = aggSelectedAminoCol.get(j);
-            const curAmino = (col == aggHighlightedCountCol ? highlightedAmino : selectedAmino);
-            if (curAmino == amino) {
-              aminoObj[col == aggHighlightedCountCol ? 'highlightedCount' : 'selectedCount'] = col.get(j);
-              break;
-            }
+        for (let j = 0; j < aggSelectedCountCol.length; j++) {
+          const selectedAmino = aggSelectedAminoCol.get(j);
+          const curAmino = (selectedAmino);
+          if (curAmino == amino) {
+            aminoObj['selectedCount'] = aggSelectedCountCol.get(j);
+            break;
           }
         }
       }
 
-      colObj['data'].sort((o1, o2) => this.ord[o2['name']] - this.ord[o1['name']]);
+      colData.sort((o1, o2) => this.ord[o2['name']] - this.ord[o1['name']]);
     }
 
     this.max = this.dataFrame!.filter.trueCount;
@@ -291,24 +282,16 @@ export class StackedBarChart extends DG.JsViewer {
         );
       }
 
-      if (obj['highlightedCount'] > eps && obj['highlightedCount'] > obj['selectedCount']) {
-        g.fillStyle = 'rgb(209,242,251)';
-        g.fillRect(
-          x + xStart - w * selectLineRatio * 2,
-          y + yStart + h * obj['selectedCount'] / this.max - gapSize,
-          barWidth * selectLineRatio,
-          h * (obj['highlightedCount'] - obj['selectedCount']) / this.max - gapSize,
-        );
-      }
-
       sum -= obj['count'];
     });
   }
 
-  highlight(cell: DG.GridCell, offsetX:number, offsetY:number, mouseEvent: MouseEvent) {
+  findAARandPosition(cell: DG.GridCell, mouseEvent: MouseEvent) {
     if (!cell.tableColumn?.name || !this.aminoColumnNames.includes(cell.tableColumn.name))
-      return;
+      return null;
 
+    const offsetX = mouseEvent.offsetX;
+    const offsetY = mouseEvent.offsetY;
     const colName = cell.tableColumn?.name;
     const innerMargin = 0.02;
     const margin = 0.2;
@@ -326,73 +309,53 @@ export class StackedBarChart extends DG.JsViewer {
       sum += obj['count'];
     });
 
-    this.highlighted = null;
-    barData.forEach((obj) => {
+    const xStart = x + (w - barWidth) / 2;
+    for (const obj of barData) {
       const sBarHeight = h * obj['count'] / this.max;
       const gapSize = sBarHeight * innerMargin;
       const verticalShift = (this.max - sum) / this.max;
       const subBartHeight = sBarHeight - gapSize;
-      const yStart = h * verticalShift + gapSize / 2;
-      const xStart = (w - barWidth) / 2;
+      const yStart = y + h * verticalShift + gapSize / 2;
 
-      if (offsetX >= x + xStart &&
-          offsetY >= y + yStart &&
-          offsetX <= x + xStart + barWidth &&
-          offsetY <= y + yStart + subBartHeight)
-        this.highlighted = {'colName': colName, 'aaName': obj['name']};
+      const isIntersectingX = offsetX >= xStart && offsetX <= xStart + barWidth;
+      const isIntersectingY = offsetY >= yStart && offsetY <= yStart + subBartHeight;
 
+      if (isIntersectingX && isIntersectingY)
+        return {'colName': colName, 'aaName': obj['name']};
 
       sum -= obj['count'];
-    });
-
-    if (!this.highlighted)
-      return;
-
-    if (mouseEvent.type == 'click') {
-      let idx = -1;
-
-      for (let i = 0; i < this.selected.length; ++i) {
-        if (JSON.stringify(this.selected[i]) == JSON.stringify(this.highlighted))
-          idx = i;
-      }
-
-      if (mouseEvent.shiftKey && idx == -1)
-        this.selected.push(this.highlighted);
-
-      if (mouseEvent.shiftKey && (mouseEvent.ctrlKey || mouseEvent.metaKey) && idx != -1)
-        this.selected.splice(idx, 1);
     }
+
+    return null;
   }
 
   unhighlight() {
-    this.highlighted = null;
-    this.highlightedMask!.setAll(false);
+    ui.tooltip.hide();
     this.computeData();
   }
 
-  beginSelection(event: MouseEvent) {
-    if (!this.dataFrame)
+  /**
+   * Requests highlight/select/filter action based on currentBarPart
+   * @param event 
+   * @returns 
+   */
+  requestAction(event: MouseEvent) {
+    if (!this._currentBarPart)
       return;
-
-    this.highlightedMask!.setAll(false);
-
-    this.dataFrame.selection.handleClick((i: number) => {
-      for (const high of this.selected) {
-        if (high['aaName'] === (this.dataFrame!.getCol(high['colName']).get(i)))
-          return true;
+    let aar = this._currentBarPart!['aaName'];
+    let position = this._currentBarPart!['colName'];
+    if (event.type === 'click') {
+      if (this.isSameBarClicked) {
+        aar = position = C.CATEGORIES.ALL;
+        this.currentBarPart = null;
       }
-      return false;
-    }, event);
-
-    if (this.highlighted) {
-      this.dataFrame.rows.match({[this.highlighted['colName']]: this.highlighted['aaName']}).highlight();
-      this.highlightedMask!.handleClick((i: number) => {
-        if (this.highlighted!['aaName'] === (this.dataFrame!.getCol(this.highlighted!['colName']).get(i)))
-          return true;
-        return false;
-      }, event);
+      this.controller.setSARGridCellAt(aar, position);
+      this._previousClickedBarPart = this._currentBarPart;
+    } else {
+      ui.tooltip.showRowGroup(this.dataFrame, (i) => {
+        const currentAAR = this.dataFrame.get(position, i);
+        return currentAAR === aar;
+      }, event.offsetX, event.offsetY);
     }
-
-    this.computeData();
   }
 }

@@ -6,8 +6,6 @@ import * as chemSearches from '../chem-searches';
 import {similarityMetric} from '@datagrok-libraries/utils/src/similarity-metrics';
 import $ from 'cash-dom';
 import {Fingerprint} from '../utils/chem-common';
-import {chem} from 'datagrok-api/grok';
-import Sketcher = chem.Sketcher;
 import {renderMolecule} from '../rendering/render-molecule';
 import {ChemSearchBaseViewer} from './chem-search-base-viewer';
 
@@ -37,7 +35,7 @@ export class ChemSimilarityViewer extends ChemSearchBaseViewer {
     this.minScore = this.float('minScore', 0.01);
     this.hotSearch = this.bool('hotSearch', true);
     this.sketchButton = ui.button('Sketch', () => {
-      const sketcher = new Sketcher();
+      const sketcher = new grok.chem.Sketcher();
       sketcher.setMolecule(this.targetMolecule);
       ui.dialog()
         .add(sketcher.root)

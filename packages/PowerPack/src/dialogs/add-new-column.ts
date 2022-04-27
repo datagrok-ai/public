@@ -341,9 +341,12 @@ export class AddNewColumnDialog {
   /** Creates new unique Column Name. */
   getResultColumnName(): string {
     let input = this.inputName!.input as HTMLInputElement;
+    let value: string = input.value;
+    if ((value ?? '') == '')
+      value = input.placeholder;
     return this.edit
-      ? input.value
-      : this.sourceDf!.columns.getUnusedName(input.value ?? input.placeholder);
+      ? value
+      : this.sourceDf!.columns.getUnusedName(value);
   }
 
   /** Detects selected item in the ChoiceBox. */

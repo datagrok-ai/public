@@ -1,6 +1,6 @@
 import * as ui from 'datagrok-api/ui';
 import * as DG from 'datagrok-api/dg';
-import {chem} from "datagrok-api/src/chem";
+import {chem} from 'datagrok-api/src/chem';
 import Sketcher = chem.Sketcher;
 
 let subscr: any = null;
@@ -113,12 +113,12 @@ export function getMolColumnPropertyPanel(col: DG.Column) {
       regenerateCoordsCheckbox,
       moleculeFilteringChoice,
     ]),
-  ])
+  ]);
 
   const panes = ui.accordion('chem-settings');
   panes.addPane('RDKit', () => rdKitPane);
   panes.addPane('Scaffold', () => {
-    let sketcher = new Sketcher();
+    const sketcher = new Sketcher();
     sketcher.syncCurrentObject = false;
     sketcher.setMolFile(col.tags['chem-scaffold']);
     sketcher.onChanged.subscribe((_) => col.tags['chem-scaffold'] = sketcher.getMolFile());
