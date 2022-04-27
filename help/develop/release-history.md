@@ -1,6 +1,22 @@
 <!-- TITLE: Release History -->
 <!-- SUBTITLE: -->
 
+# 2022-04-27 Dev build 0.150.2
+
+## Latest Docker Images
+
+* Datagrok: 
+  *  `docker pull datagrok/datagrok:0.150.2`
+  *  `docker pull datagrok/datagrok:latest`
+  
+* [Docker-Compose](admin/docker-compose.md)
+
+## Addressed Issues
+
+* Scatter Plot: Animated zoom to filter 
+* Ability to save new user without permissions 
+
+
 # 2022-04-26 Dev build 0.150.1
 
 ## Latest Docker Images
