@@ -3,10 +3,8 @@
 import * as grok from 'datagrok-api/grok';
 import * as ui from 'datagrok-api/ui';
 import * as DG from 'datagrok-api/dg';
-import {Component, ComputationViewStateService} from '../common/service-interfaces';
-import {DefaultComputationViewStateService} from '../default-services/state-service';
-import {DefaultHistoricalRunComponent} from './historical-run-load-component';
-import {DefaultHistoricalRunService} from '../default-services/historical-run-service';
+import {Component, StateService} from '../common/service-interfaces';
+import {tokens} from '../common/inject-tokens';
 
 export class DefaultInputPanelComponent implements Component {
   public root: HTMLElement = ui.div();
@@ -14,9 +12,14 @@ export class DefaultInputPanelComponent implements Component {
   /** All inputs that are bound to fields */
   public inputFields: Record<string, DG.InputBase> = {};
 
+  public static inject = [
+    tokens.stateService,
+    tokens.historyPanel,
+  ] as const;
+
   constructor(
-    private state: ComputationViewStateService = new DefaultComputationViewStateService(),
-    private loadRunsButton: DefaultHistoricalRunComponent = new DefaultHistoricalRunComponent(new DefaultHistoricalRunService),
+    private state: StateService,
+    private loadRunsButton: Component,
   ) {
     this.render();
   }

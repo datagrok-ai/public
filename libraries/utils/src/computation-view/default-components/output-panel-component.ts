@@ -3,14 +3,18 @@
 import * as grok from 'datagrok-api/grok';
 import * as ui from 'datagrok-api/ui';
 import * as DG from 'datagrok-api/dg';
-import {Component, ComputationViewStateService} from '../common/service-interfaces';
-import {DefaultComputationViewStateService} from '../default-services/state-service';
+import {Component, StateService} from '../common/service-interfaces';
+import {tokens} from '../common/inject-tokens';
 
 export class DefaultOutputPanelComponent implements Component {
   public root: HTMLElement = ui.div([]);
 
+  public static inject = [
+    tokens.stateService,
+  ] as const;
+
   constructor(
-    private state: ComputationViewStateService = new DefaultComputationViewStateService,
+    private state: StateService,
   ) {
     this.state.onComputationCompleted.subscribe(() => this.render());
   }

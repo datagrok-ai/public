@@ -22,7 +22,7 @@ export interface ExportService {
   export(format: string): Promise<Blob>
 }
 
-export interface ComputationViewStateService {
+export interface StateService {
   /** Name of view */
   name: string
 

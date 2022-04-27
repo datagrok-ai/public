@@ -7,22 +7,23 @@
   "version": "0.3.9",
   "description": "Common utilities",
   "dependencies": {
-    "cash-dom": "latest",
     "@types/node": "^14.14.37",
+    "cash-dom": "latest",
     "datagrok-api": "^0.148.3",
     "dts-bundle": "^0.7.3",
+    "exceljs": "^4.3.0",
     "node-fetch": "^2.6.0",
     "rxjs": "^7.4.0",
     "wu": "latest"
   },
   "devDependencies": {
+    "@types/wu": "latest",
     "@typescript-eslint/eslint-plugin": "^5.11.0",
     "@typescript-eslint/parser": "^5.11.0",
     "eslint": "^8.8.0",
     "eslint-config-google": "^0.14.0",
     "ts-loader": "^9.2.6",
-    "typescript": "^4.2.3",
-    "@types/wu": "latest"
+    "typescript": "^4.2.3"
   },
   "scripts": {
     "link": "npm link",
