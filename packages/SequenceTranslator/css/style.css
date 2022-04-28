@@ -1,0 +1,18 @@
+.inputSequence textarea {
+  resize: none;
+  min-height: 70px;
+  width: 100%;
+  font-family: monospace;
+}
+
+.inputSequence .input-base {
+  margin: '0';
+}
+
+.inputSequence select {
+  width: 100%;
+}
+
+.sequence .children {
+  padding: '5px 0';
+}
