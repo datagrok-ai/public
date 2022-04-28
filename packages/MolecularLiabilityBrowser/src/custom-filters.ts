@@ -94,11 +94,9 @@ export class MLBFilter extends DG.Filter {
         if (typeof binStr === 'undefined' || binStr === '')
           return false;
 
-
         const cdrs = JSON.parse(binStr);
         if (!Object.keys(cdrs).includes(this.currentCdr))
           return false;
-
 
         const currentProbability = cdrs[this.currentCdr];
         if (
@@ -115,7 +113,6 @@ export class MLBFilter extends DG.Filter {
 
     for (let i = 0; i < rowCount; i++)
       filter.set(i, getStateFor(i), false);
-
 
     filter.fireChanged();
   }

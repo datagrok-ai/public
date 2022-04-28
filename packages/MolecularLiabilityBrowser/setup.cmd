@@ -7,4 +7,4 @@ cd %package_dir%
 rmdir /s /q node_modules
 call npm install
 call npm link datagrok-api
-webpack
+call npm run build
