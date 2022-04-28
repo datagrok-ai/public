@@ -15,11 +15,17 @@
             color: #044484;
         }
     </style>
-<script src="./RDKit_minimal_2021.03_03.js"></script><script>
-  onRuntimeInitialized: initRDKitModule().then(function (instance) {
-      RDKitModule = instance;
-      console.log('version: ' + RDKitModule.version());
-  });
+<script src="./RDKit_minimal.js"></script><script>
+var RDKitModule = null;
+(async () => {
+  RDKitModule = await initRDKitModule(
+    {locateFile: () => 'RDKit_minimal_2021.03_18.wasm'});
+
+//  onRuntimeInitialized: initRDKitModule().then(function (instance) {
+//      RDKitModule = instance;
+//      console.log('version: ' + RDKitModule.version());
+//  });
+})();
 </script><link rel="prefetch"></head>
 
 
