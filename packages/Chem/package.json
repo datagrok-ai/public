@@ -37,7 +37,7 @@
   },
   "devDependencies": {
     "datagrok-api": "^0.148.0",
-    "@datagrok-libraries/ml": "^0.0.19",
+    "@datagrok-libraries/ml": "^0.0.19 <0.1.21",
     "@datagrok-libraries/utils": "^0.2.7",
     "@types/jest": "latest",
     "@types/offscreencanvas": "latest",
