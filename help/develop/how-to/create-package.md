@@ -11,9 +11,9 @@ Before we start, [set up development environment](set-up-environment.md) if you 
 
 Now, let's create a package:
 
- ```
- grok create TextStats
- ```
+```
+grok create TextStats
+```
 
 This creates a folder `TextStats` with the default [package structure](../develop.md#package-structure). For the newly
 created package, you have to install the dependencies. Run this from the `TextStats` folder:
@@ -29,7 +29,7 @@ Add the actual panel's code at `TextStats/src/package.js`:
 ```
 //name: Text Stats
 //tags: panel, widgets
-//input: string str
+//input: string str {semType: text}
 //output: widget result
 export function textStats(str) {
   // for 'gattaca', produces {"g": 1, "a": 3, "t": 2, "c": 1}
@@ -72,7 +72,11 @@ The return code should be `0` to indicate a successful deployment.
 ## 5. Test
 
 Now go to Datagrok and open any data file with string columns. This could be a `demog` dataset from our demo datasets.
+Find any text column, right-click on it, pick `Column Properties`, then add a tag: `quality : text`. 
+This tag tells Datagrok that there is a plain text stored inside this column.
 Navigate to a text cell and find your freshly added panel with text stats on the right side of Datagrok UI.
+Note, that semantic type `text` of a column matches `{semType: text}` in function parameter declaration.
+Datagrok also can detect semantic types automatically, or with help of [Detectors](./define-semantic-type-detectors.md) .
 
 We have completed the deployment. Let's navigate to `Manage | Packages` and find your package in the list. Note it has
 your name prefixed with a `v.`, which means it's only published for you. This is called a Debug mode. To make it
