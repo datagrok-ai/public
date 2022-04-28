@@ -335,7 +335,7 @@ export class MolecularLiabilityBrowser {
     );
 
     const logo = this.mlbView.addViewer('AminoacidsWebLogo', {sequenceColumnName: seqCol.name});
-    return this.mlbView.dockManager.dock(logo, dockType, node, `${chain} chain`, 0.2);
+    return this.mlbView.dockManager.dock(logo, dockType, node, `${chain} chain`, 0.22);
   }
 
   onMLBGridCurrentRowChanged(args: any) {
