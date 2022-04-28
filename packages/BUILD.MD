@@ -82,6 +82,8 @@ There is a way to inject your js-api inside local Docker container. Use [Docker 
 Run `npm run build` inside `js-api` folder, by default, it saves a bundle to `../../xamgle/web/js/api` folder. Map this folder to Datagrok Docker:
 ```
     volumes:
-      - c/path/xamgle/web/js/api:/home/grok/datagrok/html.build/web/js/api
+      - type: bind
+        source: c/path/xamgle/web/js/api
+        target: /home/grok/datagrok/html.build/web/js/api
 ```
 Refresh browser page.
