@@ -86,7 +86,7 @@ export function sequenceTranslator(): void {
         ui.div([
           DG.HtmlTable.create(tableRows, (item: { key: string; value: string; }) =>
             [item.key, item.value], ['Code', 'Sequence']).root,
-        ], 'table'),
+        ]),
       );
       semTypeOfInputSequence.textContent = 'Detected input type: ' + outputSequenceObj.type;
 
@@ -116,7 +116,7 @@ export function sequenceTranslator(): void {
 
   const semTypeOfInputSequence = ui.divText('');
   const moleculeSvgDiv = ui.block([]);
-  const outputTableDiv = ui.div([], 'table');
+  const outputTableDiv = ui.div([]);
   const inputSequenceField = ui.textInput('', defaultInput, (sequence: string) => updateTableAndMolecule(sequence));
 
   const asoDf = DG.DataFrame.fromObjects([
@@ -192,7 +192,7 @@ export function sequenceTranslator(): void {
               ui.div([
                 inputSequenceField.root,
               ], 'input-base'),
-            ], 'sequenceInput'),
+            ], 'inputSequence'),
             semTypeOfInputSequence,
             ui.block([
               ui.h1('Output'),
@@ -234,18 +234,6 @@ export function sequenceTranslator(): void {
   tabControl.onTabChanged.subscribe((_) =>
     v.setRibbonPanels([(tabControl.currentPane.name == 'MAIN') ? topPanel : []]));
   v.setRibbonPanels([topPanel]);
-
-  $('.sequence')
-    .children().css('padding', '5px 0');
-  $('.sequenceInput .input-base')
-    .css('margin', '0');
-  $('.sequenceInput textarea')
-    .css('resize', 'none')
-    .css('min-height', '50px')
-    .css('width', '100%')
-    .attr('spellcheck', 'false');
-  $('.sequenceInput select')
-    .css('width', '100%');
 }
 
 async function saveTableAsSdFile(table: DG.DataFrame) {
