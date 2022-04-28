@@ -14,7 +14,7 @@ import {structure3dWidget} from './widgets/structure3d';
 import {toxicityWidget} from './widgets/toxicity';
 import {chemSpace} from './analysis/chem-space';
 import {getActivityCliffs} from './analysis/activity-cliffs';
-import {addDescriptors, getDescriptorsApp, getDescriptorsSingle} from './descriptors/descriptors-calculation';
+import {getDescriptorsApp, getDescriptorsSingle} from './descriptors/descriptors-calculation';
 import {addInchiKeys, addInchis} from './panels/inchi';
 import {addMcs} from './panels/find-mcs';
 import * as chemCommonRdKit from './utils/chem-common-rdkit';
@@ -430,7 +430,6 @@ export function convertMolecule(molecule: string, from: string, to: string): str
 export function editMoleculeCell(cell: DG.GridCell) {
   const sketcher = new Sketcher();
   sketcher.setMolecule(cell.cell.value);
-
   ui.dialog()
     .add(sketcher)
     .onOK(() => cell.cell.value = sketcher.getMolFile())
