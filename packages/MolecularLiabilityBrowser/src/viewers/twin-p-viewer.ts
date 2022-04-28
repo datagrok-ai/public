@@ -123,9 +123,8 @@ export class TwinPviewer {
       this.panelNode = mlbView.dockManager.dock(this.root, DG.DOCK_TYPE.RIGHT, null, 'NGL', 0.2);
       this.nglNode = mlbView.dockManager.dock(this.nglHost, DG.DOCK_TYPE.LEFT, this.panelNode, 'NGL', 0.3);
       this.sequenceNode =
-        //@ts-ignore
-        mlbView.dockManager.dock(this.sequenceTabs, DG.DOCK_TYPE.DOWN, this.nglNode, 'Sequence', 0.225);
-      MiscMethods.setDockSize(mlbView, this.nglNode, this.sequenceTabs);
+        mlbView.dockManager.dock(this.sequenceTabs.root, DG.DOCK_TYPE.DOWN, this.nglNode, 'Sequence', 0.225);
+      MiscMethods.setDockSize(mlbView, this.nglNode, this.sequenceTabs.root);
     }
   }
 
@@ -150,7 +149,7 @@ export class TwinPviewer {
       this.pViz.render('H');
       this.pViz.render('L');
       this.ngl.render(val);
-      MiscMethods.setDockSize(mlbView, this.nglNode, this.sequenceTabs);
+      MiscMethods.setDockSize(mlbView, this.nglNode, this.sequenceTabs.root);
     };
 
     await this.ngl.init(mlbView, this.pdbStr, this.jsonStr, this.colorScheme, this.nglHost,
@@ -162,7 +161,7 @@ export class TwinPviewer {
       this.ptmChoices.value, this.ptmMotifChoices.value, obsChoice, this.cdrScheme,
       this.paratopes, this.ptmProb.value, this.twinSelections);
 
-    MiscMethods.setDockSize(mlbView, this.nglNode, this.sequenceTabs);
+    MiscMethods.setDockSize(mlbView, this.nglNode, this.sequenceTabs.root);
 
     grok.events.onCustomEvent('selectionChanged').subscribe((v) => {
       this.ngl.render(false);

@@ -42,7 +42,7 @@ export class MiscMethods {
   }
 
   // ---- Resizing ----
-  static setDockSize(view: DG.TableView, node:any, nodeContent: any) {
+  static setDockSize(view: DG.TableView, node: DG.DockNode, nodeContent: HTMLElement | DG.Viewer) {
     const rootNodeHeight = view.dockManager.rootNode.container.containerElement.clientHeight;
     let newHeight = 0;
     //@ts-ignore
