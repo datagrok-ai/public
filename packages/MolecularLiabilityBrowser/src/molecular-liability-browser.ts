@@ -138,12 +138,15 @@ export class MolecularLiabilityBrowser {
         ']');
     }
 
-    for (let i = 0; i < pf.names.length; i++)
-      this.mlbTable.columns.byName(pf.names[i]).width = 150;
+    const filterList: {type: string, column?: string}[] = [];
 
-    //FIXME: filters appear separately
-    this.mlbView.addViewer(DG.VIEWER.FILTERS);
-    this.mlbView.filters({filters: [{type: 'MolecularLiabilityBrowser:mlbFilter'}]});
+    for (const pfName of pf.names) {
+      this.mlbTable.columns.byName(pfName).width = 150;
+      filterList.push({type: 'histogram', column: pfName});
+    }
+    filterList.push({type: 'MolecularLiabilityBrowser:mlbFilter'});
+
+    this.mlbView.filters({filters: filterList});
 
     grok.events.onTooltipShown.subscribe((args) => {
       if (args.args.context instanceof DG.Column) {

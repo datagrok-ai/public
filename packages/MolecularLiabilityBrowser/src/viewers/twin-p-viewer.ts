@@ -86,11 +86,10 @@ export class TwinPviewer {
     this.pVizHostL = ui.box();
     this.pVizHostH = ui.box();
 
-    //@ts-ignore
     this.sequenceTabs = ui.tabControl({
       'HEAVY': this.pVizHostH,
       'LIGHT': this.pVizHostL,
-    }).root;
+    });
 
     this.ngl = new NglAspect();
     this.pViz = new PvizAspect(this.dataLoader);
