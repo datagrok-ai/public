@@ -1066,7 +1066,13 @@ export class ColumnList {
    * @returns {Column} */
   bySemType(semType: SemType): Column | null {
     let col = api.grok_ColumnList_BySemType(this.dart, semType);
-    return col == null ? null : toJs(col);
+    return col == null ? null : col;
+  }
+
+  /** All columns of [semType], or empty list.
+   * @returns {Column[]} */
+  bySemTypeAll(semType: SemType): Column[] {
+    return api.grok_ColumnList_BySemTypeAll(this.dart, semType);
   }
 
   /** Finds columns by the corresponding semTypes, or null, if any of the sem types could not be found.
