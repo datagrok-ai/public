@@ -1,16 +1,18 @@
 <!-- TITLE: Routing -->
 
 # Routing
+
 Sometimes it is useful to share a link with a colleague or business executive that opens an app in a specific state
-depending on the URI and points to the important information that the one would like to share. Datagrok provides
-routing support for package developers to achieve this.
+depending on the URI and points to the important information that the one would like to share. Datagrok provides routing
+support for package developers to achieve this.
 
 ## Routing tutorial
 
-Routing is implemented by manipulating the `basePath` and `path` properties of the `View`. Let's build a simple app
-that opens tables, based on the URL path and applies selection according to the parameters passed in the URL.
+Routing is implemented by manipulating the `basePath` and `path` properties of the `View`. Let's build a simple app that
+opens tables, based on the URL path and applies selection according to the parameters passed in the URL.
 
 We start off by getting the path and splitting it in segments:
+
 ```javascript
 //name: Test
 //tags: app
@@ -65,11 +67,13 @@ Path segments can be used to provide intended behavior. In this case, the table 
 segment, which corresponds to the `.basePath` set previously, and the selection options can be retrieved from the fifth
 path segment.
 
-That's it! Now you've learned how to use routing to enhance your apps.
-For additional info see the full code and useful links below.
+That's it! Now you've learned how to use routing to enhance your apps. For additional info see the full code and useful
+links below.
 
 ## Tutorial code
+
 Here's the full code used in the tutorial.
+
 ```javascript
 /* Do not change these import lines to match external modules in webpack configuration */
 import * as DG from 'datagrok-api/dg';
