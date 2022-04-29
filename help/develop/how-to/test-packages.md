@@ -16,13 +16,17 @@ To test packages locally before publishing you can use the Jest framework.
 2) [Run Datagrok instance locally](../admin/docker-compose.md)
 3) [Configure grok tool](set-up-environment.md#configuration) with localhost credentials.
 4) [Publish the package to the HOST](publish-packages.md#private-packages), which was set on the first step.
+
    ```shell
    grok publish <HOST>
    ```
+
 5) Run tests for the package
+
    ```shell
    npm test
    ```
+
 6) The results are available in the command-line output or the `test-report.html` file.
 
 ## Tests after a change in a public package
