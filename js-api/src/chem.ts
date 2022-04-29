@@ -194,6 +194,9 @@ export namespace chem {
           .popup()
           .item('Copy as SMILES', () => navigator.clipboard.writeText(this.sketcher!.smiles))
           .item('Copy as MOLBLOCK', () => navigator.clipboard.writeText(this.sketcher!.molFile))
+          .group('Recent')
+            .items(Sketcher.getRecent().map((m) => ui.tools.click(svgMol(m, 200, 100), () => this.setMolecule(m))), () => {})
+            .endGroup()
           .group('Favorites')
             .item('Add to Favorites', () => Sketcher.addFavorite(this.sketcher!.molFile))
             .separator()
@@ -217,6 +220,7 @@ export namespace chem {
     }
 
     static readonly FAVORITES_KEY = 'chem-molecule-favorites';
+    static readonly RECENT_KEY = 'chem-molecule-recent';
 
     static getFavorites(): string[] {
       return JSON.parse(localStorage.getItem(Sketcher.FAVORITES_KEY) ?? '[]');
@@ -225,6 +229,17 @@ export namespace chem {
     static addFavorite(molecule: string) {
       let s = JSON.stringify([...Sketcher.getFavorites().slice(-9), molecule]);
       localStorage.setItem(Sketcher.FAVORITES_KEY, s);
+    }
+
+    static getRecent(): string[] {
+      return JSON.parse(localStorage.getItem(Sketcher.RECENT_KEY) ?? '[]');
+    }
+
+    static addRecent(molecule: string) {
+      if (!Sketcher.getRecent().includes(molecule)) {
+        let s = JSON.stringify([...Sketcher.getRecent().slice(-9), molecule]);
+        localStorage.setItem(Sketcher.RECENT_KEY, s);
+      }
     }
 
     detach() {
