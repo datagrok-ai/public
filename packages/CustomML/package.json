@@ -2,10 +2,10 @@
   "name": "@datagrok/custom-ml",
   "beta": true,
   "friendlyName": "CustomML",
-  "version": "0.0.3",
+  "version": "0.0.4",
   "description": "",
   "dependencies": {
-    "datagrok-api": ">0.94.10"
+    "datagrok-api": "^0.94.10"
   },
   "devDependencies": {
     "webpack": "latest",

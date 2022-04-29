@@ -2,10 +2,10 @@
   "name": "@datagrok/chembl-browser",
   "beta": true,
   "fullName": "ChemblBrowser",
-  "version": "0.0.3",
+  "version": "0.0.4",
   "description": "",
   "dependencies": {
-    "datagrok-api": ">0.94.10"
+    "datagrok-api": "^0.94.10"
   },
   "scripts": {
     "link-api": "npm link datagrok-api",

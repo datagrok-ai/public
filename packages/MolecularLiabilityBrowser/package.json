@@ -1,7 +1,7 @@
 {
 	"name": "molecularliabilitybrowser",
 	"fullName": "MolecularLiabilityBrowser",
-	"version": "0.0.1",
+	"version": "0.0.2",
 	"description": "",
 	"sources": [
 		"css/ngl.css",
@@ -18,7 +18,7 @@
 		"@luma.gl/core": "^8.5.10",
 		"@phylocanvas/phylocanvas.gl": "^1.43.0",
 		"cash-dom": "latest",
-		"datagrok-api": ">=0.95.5",
+		"datagrok-api": "^0.95.5",
 		"logojs-react": "^2.1.1",
 		"rxjs": "^6.5.5",
 		"ts-loader": "^9.2.5",

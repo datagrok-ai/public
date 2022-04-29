@@ -2,7 +2,7 @@
 	"name": "@datagrok/chembl-api",
 	"beta": true,
 	"friendlyName": "ChemblAPI",
-	"version": "0.0.2",
+	"version": "0.0.3",
 	"description": "",
 	"dependencies": {
 		"datagrok-api": "latest",

@@ -2,10 +2,10 @@
 	"name": "@datagrok/dsp",
 	"fullName": "DSP",
 	"beta": true,
-	"version": "0.0.3",
+	"version": "0.0.4",
 	"description": "A pack of various digital signal processing tools",
 	"dependencies": {
-		"datagrok-api": ">0.94.10"
+		"datagrok-api": "^0.94.10"
 	},
 	"scripts": {
 		"debug-dsp": "grok publish --rebuild",
