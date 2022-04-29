@@ -432,7 +432,10 @@ export function editMoleculeCell(cell: DG.GridCell) {
   sketcher.setMolecule(cell.cell.value);
   ui.dialog()
     .add(sketcher)
-    .onOK(() => cell.cell.value = sketcher.getMolFile())
+    .onOK(() => {
+      cell.cell.value = sketcher.getMolFile();
+      Sketcher.addRecent(sketcher.getSmiles());
+    })
     .show();
 }
 
