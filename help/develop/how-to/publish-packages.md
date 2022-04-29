@@ -26,7 +26,7 @@ the [repository master branch](../../collaborate/public-repository.md). Then Git
 
 ### Trigger GitHub Actions manually
 
-If an error occurred during the publishing action, it is possible to trigger the publishing action manually. GitHub will
+If an error occurred for the action triggered by the commit, it is possible to trigger the action manually. GitHub will
 check the package version from `package.json` in the NPM repository. If the version is absent, it will run the
 publishing job. Otherwise, it will run the test and build jobs instead.
 
