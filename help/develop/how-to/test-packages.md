@@ -24,13 +24,13 @@ To test packages locally before publishing you can use the Jest framework.
 grok publish <HOST>
 ```
 
-3) Run tests for the package
+5) Run tests for the package
 
 ```shell
 npm test
 ```
 
-4) The results are available in the command-line output or the `test-report.html` file.
+6) The results are available in the command-line output or the `test-report.html` file.
 
 ## Tests after a change in a public package
 
