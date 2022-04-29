@@ -1,6 +1,32 @@
 <!-- TITLE: Release History -->
 <!-- SUBTITLE: -->
 
+# 2022-04-29 Dev build 0.150.3
+
+## Latest Docker Images
+
+* Datagrok: 
+  *  `docker pull datagrok/datagrok:0.150.3`
+  *  `docker pull datagrok/datagrok:latest`
+  
+* [Docker-Compose](admin/docker-compose.md)
+
+## Addressed Issues
+
+* Top Menu: change "mousedown" event to "click" for clicks on menu items 
+* (Bug) Package content validation: one-line functions get annotation warnings 
+* Closes #532: Show only filtered category items on legends 
+* #342: (Only) show filtered category items on scatterplot axes 
+* Scatter Plot: Animated zoom to filter 
+* Caching Column.getUsedCategories for performance reasons 
+* JS: bySemTypeAll method 
+* DataSourceCardView categories (WIP)
+* setup for connect refined 
+* Sketching: size up 
+* Chem: saving recent molecules in sketcher 
+* JS API: saving recent molecules in sketcher 
+
+
 # 2022-04-27 Dev build 0.150.2
 
 ## Latest Docker Images
