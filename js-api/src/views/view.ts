@@ -26,6 +26,7 @@ export class ViewBase {
   private _helpUrl: string | null = null;
   protected _root: HTMLDivElement;
   private _closing: boolean;
+  private _path: string | null = null;
 
   /** 
    * @constructs ViewBase
@@ -157,11 +158,13 @@ export class ViewBase {
   /** 
    * View URI, relative to the platform root. See also {@link basePath}
    * @type {string} */
-  get path(): string {
-    return '';
+  get path(): string | null {
+    return this._path;
   }
 
-  set path(s: string) {
+  set path(s: string | null) {
+    this._path = s;
+    api.grok_View_URL_changed(this.dart);
   }
 
   /** Handles URL path.
