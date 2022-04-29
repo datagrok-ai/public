@@ -4,12 +4,12 @@
 	"sources": [
 		"css/power-pack.css"
 	],
-	"version": "0.0.9",
+	"version": "0.0.10",
 	"description": "",
 	"dependencies": {
-		"@datagrok-libraries/utils": ">=0.0.16",
+		"@datagrok-libraries/utils": "^0.0.16",
 		"cash-dom": "latest",
-		"datagrok-api": ">=0.125.0",
+		"datagrok-api": "^0.125.0",
 		"rxjs": "^6.5.5"
 	},
 	"devDependencies": {
