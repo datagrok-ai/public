@@ -31,7 +31,8 @@ the [share dialog](../collaborate/sharing.md).
 ## Privileges
 
 Granting permissions to groups rather than to users simplifies security administration. Permission sets assigned to a
-group are inherited by all members of the group. [Groups can be nested](./group.md#examples), however, circular membership is forbidden.
+group are inherited by all members of the group. [Groups can be nested](./group.md#examples), however, circular
+membership is forbidden.
 
 ![Role-based model](../uploads/security/role-based-model.png "Role-based model")
 [Role-based model.drawio](../uploads/security/role-based-model.drawio)

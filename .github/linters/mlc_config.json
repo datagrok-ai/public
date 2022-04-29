@@ -11,6 +11,12 @@
     },
     {
       "pattern": "^https://www.nginx.com"
+    },
+    {
+      "pattern": "^https://help.github.com"
+    },
+    {
+      "pattern": "^https://guides.github.com"
     }
   ],
   "retryOn429": true

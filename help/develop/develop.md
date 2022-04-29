@@ -567,7 +567,8 @@ const props = await _package.getProperties();
 ```
 
 The above call outputs an object where the keys are property names and the values are serialized property values. It's
-possible to customize the editor's appearance by defining a special [editor function](function-roles.md#settings-editors).
+possible to customize the editor's appearance by defining a
+special [editor function](function-roles.md#settings-editors).
 
 ## Documentation
 
