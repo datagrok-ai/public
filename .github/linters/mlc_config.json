@@ -17,6 +17,12 @@
     },
     {
       "pattern": "^https://guides.github.com"
+    },
+    {
+      "pattern": "^https://dev.socrata.com"
+    },
+    {
+      "pattern": "^https://pubs.acs.org"
     }
   ],
   "retryOn429": true
