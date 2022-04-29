@@ -21,7 +21,8 @@ const confTemplate = yaml.load(fs.readFileSync(confTemplateDir, { encoding: 'utf
 
 let dependencies: string[] = [];
 
-function createDirectoryContents(name: string, config: utils.Config, templateDir: string, packageDir: string, ide: string = '', ts: boolean = false, eslint: boolean = false) {
+function createDirectoryContents(name: string, config: utils.Config, templateDir: string, packageDir: string, ide: string = '', ts: boolean = false, eslint: boolean = false, jest: boolean = false) {
+
   const filesToCreate = fs.readdirSync(templateDir);
 
   filesToCreate.forEach(file => {
@@ -64,6 +65,20 @@ function createDirectoryContents(name: string, config: utils.Config, templateDir
             'lint-fix': `eslint src${ts ? ' --ext .ts' : ''} --fix`,
           });
         }
+        if (jest) {
+          Object.assign(_package.devDependencies, {
+            'jest': 'latest',
+            'jest-html-reporter': 'latest',
+            '@types/jest': 'latest',
+            'puppeteer': 'latest'
+          }, ts ? {
+            'ts-jest': 'latest'
+          } : {});
+          Object.assign(_package.scripts, {
+            'test': 'jest',
+          });
+        }
+
         // Save module names for installation prompt
         for (let [module, tag] of Object.entries(Object.assign({}, _package.dependencies, _package.devDependencies)))
           dependencies.push(`${module}@${tag}`);
@@ -74,6 +89,9 @@ function createDirectoryContents(name: string, config: utils.Config, templateDir
       if (file === 'package-test.ts' && !ts) return false;
       if (file === 'tsconfig.json' && !ts) return false;
       if (file === 'ts.webpack.config.js') return false;
+      if (file === 'remote.test.ts' && (!ts || !jest)) return false;
+      if (file === 'test-node.ts' && (!ts || !jest)) return false;
+      if (file === 'jest.config.js' && !jest) return false;
       if (file === '.eslintrc.json') {
         if (!eslint) return false;
         if (ts) {
@@ -92,7 +110,7 @@ function createDirectoryContents(name: string, config: utils.Config, templateDir
       if (file === '.vscode' && !(ide == 'vscode' && platform == 'win32')) return;
       fs.mkdirSync(copyFilePath);
       // recursive call
-      createDirectoryContents(name, config, origFilePath, copyFilePath, ide, ts);
+      createDirectoryContents(name, config, origFilePath, copyFilePath, ide, ts, eslint, jest);
     }
   })
 }
@@ -101,7 +119,7 @@ export function create(args: CreateArgs) {
   const nOptions = Object.keys(args).length - 1;
   const nArgs = args['_'].length;
   if (nArgs > 2 || nOptions > 3) return false;
-  if (nOptions && !Object.keys(args).slice(1).every(op => ['ide', 'ts', 'eslint'].includes(op))) return false;
+  if (nOptions && !Object.keys(args).slice(1).every(op => ['ide', 'ts', 'eslint', 'jest'].includes(op))) return false;
 
   // Create `config.yaml` if it doesn't exist yet
   if (!fs.existsSync(grokDir)) fs.mkdirSync(grokDir);
@@ -130,7 +148,7 @@ export function create(args: CreateArgs) {
       console.log('The package directory should be empty');
       return false;
     }
-    createDirectoryContents(name, config, templateDir, packageDir, args.ide, args.ts, args.eslint);
+    createDirectoryContents(name, config, templateDir, packageDir, args.ide, args.ts, args.eslint, args.jest);
     console.log(help.package(name, args.ts));
     console.log(`\nThe package has the following dependencies:\n${dependencies.join(' ')}\n`);
     console.log('Running `npm install` to get the required dependencies...\n');
@@ -149,4 +167,5 @@ interface CreateArgs {
   ide?: string,
   ts?: boolean,
   eslint?: boolean,
+  jest?: boolean
 }
