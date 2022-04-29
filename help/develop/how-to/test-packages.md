@@ -41,11 +41,11 @@ The results are available in the actions artifacts: `test-<PACKAGE NAME>-<DOCKER
 
 ### Trigger GitHub Actions manually
 
-If an error occurred during for commit action, it is possible to trigger the action manually.
+If an error occurred for the action triggered by the commit, it is possible to trigger the action manually.
 
 1) Use [Packages workflow](https://github.com/datagrok-ai/public/actions/workflows/packages.yml)
-2) Press `run workflow` and set packages list to test separated with spaces, for example: `Demo Tutorials`. Use
-   the `master` branch. Then `Run workflow`
+2) Press `run workflow` and set packages list to test separated with spaces, for example: `Demo Tutorials`. Choose the
+   target branch. Then `Run workflow`. Note that publish to the NPM registry is executed for the master branch only.
 3) Check that the GitHub Actions workflow finished successfully
 4) The results are available in the actions artifacts: `test-<PACKAGE NAME>-<DOCKER IMAGE SHA>-<COMMIT SHA>.html`
 
