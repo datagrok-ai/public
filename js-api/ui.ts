@@ -1099,13 +1099,21 @@ function spliterResize (divider: HTMLElement, previousSibling: HTMLElement, next
   divider.style.backgroundColor = 'var(--grey-1)';
     
   function onMouseDown(e:any){
+
+    if (nextSibling.classList.contains('ui-box') == false){
+      nextSibling = nextSibling.parentElement!;
+    }
+    if (previousSibling.classList.contains('ui-box') == false){
+      previousSibling = previousSibling.parentElement!;
+    }
+
       md = {e,
             offsetLeft:  divider.offsetLeft,
             offsetTop:   divider.offsetTop,
-            topHeight:  previousSibling.parentElement!.offsetHeight,
-            bottomHeight: nextSibling.parentElement!.offsetHeight,
-            leftWidth:  previousSibling.parentElement!.offsetWidth,
-            rightWidth: nextSibling.parentElement!.offsetWidth
+            topHeight:  previousSibling.offsetHeight,
+            bottomHeight: nextSibling.offsetHeight,
+            leftWidth:  previousSibling.offsetWidth,
+            rightWidth: nextSibling.offsetWidth
           };
       divider.style.backgroundColor = 'var(--grey-2)';    
       document.onmousemove = onMouseMove;
@@ -1119,12 +1127,12 @@ function spliterResize (divider: HTMLElement, previousSibling: HTMLElement, next
     var delta = {x: e.clientX - md.e.clientX, y: e.clientY - md.e.clientY};
     if (horizontal){
       delta.x = Math.min(Math.max(delta.x, - md.leftWidth), md.rightWidth);
-      previousSibling.parentElement!.style.maxWidth = (md.leftWidth + delta.x) + "px";
-      nextSibling.parentElement!.style.maxWidth = (md.rightWidth - delta.x) + "px";
+      previousSibling.style.maxWidth = (md.leftWidth + delta.x) + "px";
+      nextSibling.style.maxWidth = (md.rightWidth - delta.x) + "px";
     }else{
       delta.x = Math.min(Math.max(delta.y, - md.topHeight), md.bottomHeight);
-      previousSibling.parentElement!.style.maxHeight = (md.topHeight + delta.y) + "px";
-      nextSibling.parentElement!.style.maxHeight = (md.bottomHeight - delta.y) + "px";
+      previousSibling.style.maxHeight = (md.topHeight + delta.y) + "px";
+      nextSibling.style.maxHeight = (md.bottomHeight - delta.y) + "px";
     }
   }
 
