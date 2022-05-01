@@ -363,6 +363,78 @@ export class TableQuery extends DataQuery {
   set fields(fields: string[]) { api.grok_TableQuery_SetFields(this.dart, fields); }
 }
 
+export class TableQuery extends DataQuery {
+  constructor(dart: any) { super(dart); }
+
+  static create(connection: DataConnection): TableQuery {
+    return toJs(api.grok_TableQuery_Create(connection.dart));
+  }
+
+  get table(): string { return api.grok_TableQuery_GetTable(this.dart); }
+  set table(tableName: string) { api.grok_TableQuery_SetTable(this.dart, tableName); }
+
+  get fields(): string[] { return api.grok_TableQuery_GetFields(this.dart); }
+  set fields(fields: string[]) { api.grok_TableQuery_SetFields(this.dart, fields); }
+
+  async executeTable(): Promise<DataFrame> { return toJs(await api.grok_TableQuery_ExecuteTable(this.dart)); }
+
+  get whereClauses(): {[key: string]: string}[] { return api.grok_TableQuery_GetWhereClauses(this.dart); }
+  set whereClauses(wl: {[key: string]: string}[]) { api.grok_TableQuery_SetWhereClauses(this.dart, wl); }
+
+  get aggregationsDb(): {[key: string]: string}[] { return api.grok_TableQuery_GetAggregationsDB(this.dart); }
+  set aggregationsDb(wl: {[key: string]: string}[]) { api.grok_TableQuery_SetAggregationsDB(this.dart, wl); }
+
+  get havingDb(): {[key: string]: string}[] { return api.grok_TableQuery_GetHavingDB(this.dart); }
+  set havingDb(wl: {[key: string]: string}[]) { api.grok_TableQuery_SetHavingDB(this.dart, wl); }
+
+  get orderByDb(): {[key: string]: string}[] { return api.grok_TableQuery_GetHavingDB(this.dart); }
+  set orderByDb(wl: {[key: string]: string}[]) { api.grok_TableQuery_SetHavingDB(this.dart, wl); }
+
+  static from(table: string): DbTableQueryBuilder {return toJs(api.grok_TableQuery_From(table)); }
+  static fromTable(table: TableInfo): DbTableQueryBuilder {return toJs(api.grok_TableQuery_FromTable(table)); }
+}
+
+export class DbTableQueryBuilder {
+  dart: any;
+
+  constructor(dart: any) {
+    this.dart = dart;
+  }
+
+  static from(table: string): DbTableQueryBuilder { return toJs(api.grok_DbTableQueryBuilder_From(table)); }
+  static fromTable(table: TableInfo): DbTableQueryBuilder {
+    return toJs(api.grok_DbTableQueryBuilder_FromTable(table));
+  }
+
+  selectAll(): DbTableQueryBuilder { return toJs(api.grok_DbTableQueryBuilder_SelectAll(this.dart)); }
+
+  select(fields: string[]): DbTableQueryBuilder { return toJs(api.grok_DbTableQueryBuilder_Select(this.dart, fields)); }
+
+  selectAggr(functionString: string, field: string, as?: string): DbTableQueryBuilder {
+    return toJs(api.grok_DbTableQueryBuilder_SelectAggr(this.dart, functionString, field, as));
+  }
+
+  groupBy(fields: string[]): DbTableQueryBuilder {
+    return toJs(api.grok_DbTableQueryBuilder_GroupBy(this.dart, fields));
+  }
+
+  pivotOn(fields: string[]): DbTableQueryBuilder {
+    return toJs(api.grok_DbTableQueryBuilder_PivotOn(this.dart, fields));
+  }
+
+  where(field: string, pattern: string): DbTableQueryBuilder {
+    return toJs(api.grok_DbTableQueryBuilder_Where(this.dart, field, pattern));
+  }
+
+  sortBy(field: string, as?: boolean): DbTableQueryBuilder {
+    return toJs(api.grok_DbTableQueryBuilder_SortBy(this.dart, field, as));
+  }
+
+  limit(n: number): DbTableQueryBuilder { return toJs(api.grok_DbTableQueryBuilder_Limit(this.dart, n)); }
+
+  build(): TableQuery { return toJs(api.grok_DbTableQueryBuilder_Build(this.dart)); }
+}
+
 /** Represents a data job
  * @extends Func
  * {@link https://datagrok.ai/help/access/data-job}
