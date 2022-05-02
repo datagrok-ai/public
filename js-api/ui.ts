@@ -1043,15 +1043,15 @@ export function boxFixed(item: Widget | InputBase | HTMLElement | null, options:
 }
 
 /** Div flex-box container that positions child elements vertically. */
-export function splitV(items: HTMLElement[], resize: Boolean | null = false, options: ElementOptions | null = null): HTMLDivElement {
+export function splitV(items: HTMLElement[], options: ElementOptions | null = null, resize: boolean | null = false): HTMLDivElement {
   let b = box(null, options);
-  if (resize && items.length>1){
-    items.forEach((v, i)=>{
+  if (resize && items.length > 1){
+    items.forEach((v, i) => {
       let divider = box();
       $(b).addClass('ui-split-v').append(box(v))
-      if(i != items.length-1) {
+      if (i != items.length - 1) {
         $(b).append(divider)
-        spliterResize(divider, items[i], items[i+1])
+        spliterResize(divider, items[i], items[i + 1])
       }
     })
   } else {
@@ -1061,15 +1061,15 @@ export function splitV(items: HTMLElement[], resize: Boolean | null = false, opt
 }
 
 /** Div flex-box container that positions child elements horizontally. */
-export function splitH(items: HTMLElement[], resize: Boolean | null = false, options: ElementOptions | null = null): HTMLDivElement {
+export function splitH(items: HTMLElement[], options: ElementOptions | null = null, resize: boolean | null = false): HTMLDivElement {
   let b = box(null, options);
-  if (resize && items.length>1){
-    items.forEach((v, i)=>{
+  if (resize && items.length > 1) {
+    items.forEach((v, i) => {
       let divider = box();
       $(b).addClass('ui-split-h').append(box(v))
-      if(i != items.length-1) {
+      if (i != items.length - 1) {
         $(b).append(divider)
-        spliterResize(divider, items[i], items[i+1], true)
+        spliterResize(divider, items[i], items[i + 1], true)
       }
     })
   } else {
@@ -1078,7 +1078,7 @@ export function splitH(items: HTMLElement[], resize: Boolean | null = false, opt
   return b;
 }
 
-function spliterResize (divider: HTMLElement, previousSibling: HTMLElement, nextSibling: HTMLElement, horizontal: Boolean | null = false){
+function spliterResize (divider: HTMLElement, previousSibling: HTMLElement, nextSibling: HTMLElement, horizontal: boolean | null = false){
   var md: any;
   divider.onmousedown = onMouseDown;
 
