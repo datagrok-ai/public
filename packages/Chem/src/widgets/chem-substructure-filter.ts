@@ -30,7 +30,7 @@ export class SubstructureFilter extends DG.Filter {
   }
 
   get isFiltering(): boolean {
-    return !this.sketcher.getMolFile().endsWith(this.WHITE_MOL);
+    return !this.sketcher?.getMolFile().endsWith(this.WHITE_MOL);
   }
 
   constructor() {
@@ -70,8 +70,14 @@ export class SubstructureFilter extends DG.Filter {
       this.sketcher.setMolFile(this.column?.temp['chem-scaffold-filter']);
   }
 
+  detach() {
+    super.detach();
+    if (this.column?.temp['chem-scaffold-filter'])
+      this.column.temp['chem-scaffold-filter'] = null;
+  }
+
   applyFilter(): void {
-    if (this.bitset) {
+    if (this.bitset && !this.isDetached) {
       this.dataFrame?.filter.and(this.bitset);
       this.column!.temp['chem-scaffold-filter'] = this.sketcher.getMolFile();
     }
