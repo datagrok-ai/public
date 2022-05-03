@@ -256,8 +256,8 @@ export namespace chem {
 
       let f = Func.find({name: name})[0];
       this.sketcher = await f.apply();
-      this.host!.style.minWidth = '600px';
-      this.host!.style.minHeight = '450px';
+      this.host!.style.minWidth = '500px';
+      this.host!.style.minHeight = '400px';
       this.host.appendChild(this.sketcher!.root);
       await ui.tools.waitForElementInDom(this.root);
       await this.sketcher!.init();
