@@ -120,6 +120,7 @@ export class Widget {
   props: any; //ObjectPropertyBag;
   subs: Subscription[];
   dart: any;
+  isDetached: boolean = false;
 
   /** @constructs Widget and initializes its root. */
   constructor(widgetRoot: HTMLElement) {
@@ -191,6 +192,7 @@ export class Widget {
    * Be sure to call super.detach() if this method is overridden.  */
   detach(): void {
     this.subs.forEach((s) => s.unsubscribe());
+    this.isDetached = true;
   }
 
   /** Registers an property with the specified type, name, and defaultValue.
