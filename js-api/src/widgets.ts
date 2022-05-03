@@ -324,9 +324,8 @@ export abstract class Filter extends Widget {
     );
   }
 
-  detach() {
+  detach(): void {
     super.detach();
-
     if (this.isFiltering)
       this.dataFrame?.rows?.requestFilter();
   }
