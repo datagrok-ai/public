@@ -1,6 +1,30 @@
 <!-- TITLE: Release History -->
 <!-- SUBTITLE: -->
 
+# 2022-05-03 Dev build 0.150.5
+
+## Latest Docker Images
+
+* Datagrok: 
+  *  `docker pull datagrok/datagrok:0.150.5`
+  *  `docker pull datagrok/datagrok:latest`
+  
+* [Docker-Compose](admin/docker-compose.md)
+
+## Addressed Issues
+
+* Chem: sketching issues with substructure search 
+* DataSourceCardView categories (WIP)
+* (Bug) Color coding: Selected palette in "Colors" panel differs from the actual colors 
+* (Bug) Modal window positioning bugs 
+* (Bug) Color Coding: Color does not change for boolean columns (WIP)
+* Chem: minor fixes 
+* Chem: converter smiles -> mol for marvin input 
+* Fixes #519: chem widgets test fix 
+* #524 Chem Filters: highlighting stays after you close the filter group. wip \* The re-opening of the filter gives some flicker \* Needs to manage the filter state idiomatically, not with chem-scaffold-filter-prev 
+* Closes #547: Chem: SubstructureFilter: substructure is not saved properly 
+
+
 # 2022-04-29 Dev build 0.150.4
 
 ## Latest Docker Images
