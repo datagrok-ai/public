@@ -532,6 +532,10 @@ export namespace chem {
       // @ts-ignore
       let mol = new OCL.Molecule.fromMolfile(s);
       return mol.toSmiles();
+    } else if (sourceFormat == 'smiles' && targetFormat == 'mol'){
+      // @ts-ignore
+      let mol = new OCL.Molecule.fromSmiles(s);
+      return mol.toMolfile();
     }
   }
 
