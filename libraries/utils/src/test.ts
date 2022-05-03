@@ -72,7 +72,7 @@ export function expect(actual: any, expected: any): void {
 }
 
 export function expectFloat(actual: number, expected: number, tolerance = 0.001): void {
-  const areEqual = Math.abs(actual - expected) < 0.001;
+  const areEqual = Math.abs(actual - expected) < tolerance;
   if (!areEqual)
     throw `Expected ${expected}, got ${actual} (tolerance = ${tolerance})`;
 }
