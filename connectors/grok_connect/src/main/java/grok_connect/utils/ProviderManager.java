@@ -44,6 +44,7 @@ public class ProviderManager {
             add(new SnowflakeDataProvider(ProviderManager.this));
             add(new ClickHouseProvider(ProviderManager.this));
             add(new NeptuneDataProvider(ProviderManager.this));
+            add(new SapHanaDataProvider(ProviderManager.this));
         }};
     }
 
