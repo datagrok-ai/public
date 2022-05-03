@@ -30,7 +30,7 @@ export class SubstructureFilter extends DG.Filter {
   }
 
   get isFiltering(): boolean {
-    return !this.sketcher?.getMolFile()?.endsWith(this.WHITE_MOL);
+    return !this.sketcher?.getMolFile().endsWith(this.WHITE_MOL);
   }
 
   constructor() {
@@ -66,23 +66,41 @@ export class SubstructureFilter extends DG.Filter {
     this.onSketcherChangedSubs = onChangedEvent.subscribe(async (_: any) => await this._onSketchChanged());
     super.attach(dataFrame);
 
-    if (this.column?.temp['chem-scaffold-filter-prev']) {
-      this.column.temp['chem-scaffold-filter'] = this.column.temp['chem-scaffold-filter-prev'];
-      this.sketcher.setMolFile(this.column.temp['chem-scaffold-filter-prev']);
-      delete this.column.temp['chem-scaffold-filter-prev'];
-    }
+    if (this.column?.temp['chem-scaffold-filter'])
+      this.sketcher.setMolFile(this.column?.temp['chem-scaffold-filter']);
+  }
+
+  detach() {
+    super.detach();
+    if (this.column?.temp['chem-scaffold-filter'])
+      this.column.temp['chem-scaffold-filter'] = null;
   }
 
   applyFilter(): void {
-    if (this.bitset) {
+    if (this.bitset && !this.isDetached) {
       this.dataFrame?.filter.and(this.bitset);
       this.column!.temp['chem-scaffold-filter'] = this.sketcher.getMolFile();
     }
   }
 
+  /** Override to save filter state. */
+  saveState(): any {
+    const state = super.saveState();
+    state.molBlock = this.sketcher.getMolFile();
+    return state;
+  }
+
+  /** Override to load filter state. */
+  applyState(state: any): void {
+    super.applyState(state);
+    if (state.molBlock)
+      this.sketcher.setMolFile(state.molBlock);
+  }
+
   async _onSketchChanged(): Promise<void> {
     if (!this.isFiltering) {
-      delete this.column?.temp['chem-scaffold-filter'];
+      if (this.column?.temp['chem-scaffold-filter'])
+        delete this.column.temp['chem-scaffold-filter'];
       this.bitset = null;
     }
     else if (wu(this.dataFrame!.rows.filters).has(`${this.columnName}: ${this.filterSummary}`)) {
@@ -100,13 +118,5 @@ export class SubstructureFilter extends DG.Filter {
       }
     }
     this.dataFrame?.rows.requestFilter();
-  }
-
-  override detach(): void {
-    super.detach();
-    if (this.column?.temp['chem-scaffold-filter']) {
-      this.column.temp['chem-scaffold-filter-prev'] = this.column.temp['chem-scaffold-filter'];
-      delete this.column.temp['chem-scaffold-filter'];
-    }
   }
 }

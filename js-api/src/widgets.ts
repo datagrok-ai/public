@@ -120,6 +120,7 @@ export class Widget {
   props: any; //ObjectPropertyBag;
   subs: Subscription[];
   dart: any;
+  isDetached: boolean = false;
 
   /** @constructs Widget and initializes its root. */
   constructor(widgetRoot: HTMLElement) {
@@ -191,6 +192,7 @@ export class Widget {
    * Be sure to call super.detach() if this method is overridden.  */
   detach(): void {
     this.subs.forEach((s) => s.unsubscribe());
+    this.isDetached = true;
   }
 
   /** Registers an property with the specified type, name, and defaultValue.
@@ -324,8 +326,9 @@ export abstract class Filter extends Widget {
     );
   }
 
-  detach(): void {
+  detach() {
     super.detach();
+
     if (this.isFiltering)
       this.dataFrame?.rows?.requestFilter();
   }
@@ -933,10 +936,6 @@ export class InputBase {
   get nullable(): boolean { return api.grok_InputBase_Get_Nullable(this.dart); }
   set nullable(v: boolean) { api.grok_InputBase_Set_Nullable(this.dart, v); }
 
-  /** Whether events are thrown on value set */
-  get notify(): boolean { return api.grok_InputBase_Get_Notify(this.dart); }
-  set notify(v: boolean) { api.grok_InputBase_Set_Notify(this.dart, v); }
-
   /** Input value */
   get value(): any { return toJs(api.grok_InputBase_Get_Value(this.dart)); }
   set value(x: any) { toDart(api.grok_InputBase_Set_Value(this.dart, x)); }
@@ -1157,11 +1156,8 @@ export class Color {
     return api.grok_Color_GetContrastColor(color);
   }
 
-  /** Converts ARGB-formatted integer color to a HTML-formatted string (such as `#ffffff`). See also {@link toRgb}. */
-  static toHtml(color: number): string { return api.grok_Color_ToHtml(color); }
-
-  /** Convert HTML-formatted string (such as `#ffffff`) to ARGB-fromatted integer color */
-  static fromHtml(htmlColor: string): number { return api.grok_Color_FromHtml(htmlColor); }
+  /** Converts ARGB-formatted integer color to a HTML-formatted string (such as `#FF68Gf5T`). See also {@link toRgb}. */
+  static toHtml(color: number) { return api.grok_Color_ToHtml(color); }
 
   /** Converts ARGB-formatted integer color to a HTML-formatted string (such as `rbg(20, 46, 124)`). See also {@link toHtml. }*/
   static toRgb(color: ColorType): string {
