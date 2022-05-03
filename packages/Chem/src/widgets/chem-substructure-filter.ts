@@ -67,8 +67,8 @@ export class SubstructureFilter extends DG.Filter {
     super.attach(dataFrame);
 
     if (this.column?.temp['chem-scaffold-filter-prev']) {
-      this.column.temp['chem-scaffold-filter'] = this.column?.temp['chem-scaffold-filter-prev'];
-      this.sketcher.setMolFile(this.column!.temp['chem-scaffold-filter-prev']);
+      this.column.temp['chem-scaffold-filter'] = this.column.temp['chem-scaffold-filter-prev'];
+      this.sketcher.setMolFile(this.column.temp['chem-scaffold-filter-prev']);
       delete this.column.temp['chem-scaffold-filter-prev'];
     }
   }
