@@ -203,7 +203,7 @@ export namespace chem {
             .items(Sketcher.getFavorites().map((m) => ui.tools.click(svgMol(m, 200, 100), () => this.setMolecule(m))), () => {})
             .endGroup()
           .separator()
-          .items(funcs.map((f) => f.name), (name: string) => this.setSketcher(name))
+          .items(funcs.map((f) => f.friendlyName), (name: string) => this.setSketcher(name))
           .show();
       });
       $(optionsIcon).addClass('d4-input-options');

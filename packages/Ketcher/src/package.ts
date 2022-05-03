@@ -6,7 +6,7 @@ import {KetcherSketcher} from './ketcher';
 
 export let _package = new DG.Package();
 
-//name: ketcherSketcher
+//name: Ketcher
 //tags: moleculeSketcher
 //output: widget sketcher
 export function ketcherSketcher() {

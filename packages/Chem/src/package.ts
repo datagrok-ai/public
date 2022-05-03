@@ -489,7 +489,7 @@ export function openChemLibSketch() {
     .showModal(true);
 }
 
-//name: openChemLibSketcher
+//name: Open Chem Sketcher
 //tags: moleculeSketcher
 //output: widget sketcher
 export function openChemLibSketcher() {
