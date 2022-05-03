@@ -36,7 +36,7 @@
     "wu": "latest"
   },
   "devDependencies": {
-    "datagrok-api": "^0.148.0",
+    "datagrok-api": "^0.151.0",
     "@datagrok-libraries/ml": "^0.0.19",
     "@datagrok-libraries/utils": "^0.2.7",
     "@types/jest": "latest",
