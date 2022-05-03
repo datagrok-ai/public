@@ -66,8 +66,11 @@ export class SubstructureFilter extends DG.Filter {
     this.onSketcherChangedSubs = onChangedEvent.subscribe(async (_: any) => await this._onSketchChanged());
     super.attach(dataFrame);
 
-    if (this.column?.temp['chem-scaffold-filter'])
-      this.sketcher.setMolFile(this.column?.temp['chem-scaffold-filter']);
+    if (this.column?.temp['chem-scaffold-filter-prev']) {
+      this.column.temp['chem-scaffold-filter'] = this.column?.temp['chem-scaffold-filter-prev'];
+      this.sketcher.setMolFile(this.column!.temp['chem-scaffold-filter-prev']);
+      delete this.column.temp['chem-scaffold-filter-prev'];
+    }
   }
 
   applyFilter(): void {
@@ -79,8 +82,7 @@ export class SubstructureFilter extends DG.Filter {
 
   async _onSketchChanged(): Promise<void> {
     if (!this.isFiltering) {
-      if (this.column?.temp['chem-scaffold-filter'])
-        delete this.column.temp['chem-scaffold-filter'];
+      delete this.column?.temp['chem-scaffold-filter'];
       this.bitset = null;
     }
     else if (wu(this.dataFrame!.rows.filters).has(`${this.columnName}: ${this.filterSummary}`)) {
@@ -98,5 +100,13 @@ export class SubstructureFilter extends DG.Filter {
       }
     }
     this.dataFrame?.rows.requestFilter();
+  }
+
+  override detach(): void {
+    super.detach();
+    if (this.column?.temp['chem-scaffold-filter']) {
+      this.column.temp['chem-scaffold-filter-prev'] = this.column.temp['chem-scaffold-filter'];
+      delete this.column.temp['chem-scaffold-filter'];
+    }
   }
 }
