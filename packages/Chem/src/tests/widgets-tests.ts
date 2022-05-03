@@ -1,9 +1,9 @@
 import * as DG from 'datagrok-api/dg';
 import * as grok from 'datagrok-api/grok';
 import * as ui from 'datagrok-api/ui';
-import {category, test, expect, delay} from '@datagrok-libraries/utils/src/test';
+import {category, test, expect, delay, expectFloat, before} from '@datagrok-libraries/utils/src/test';
 import {assessDruglikeness, drugLikenessWidget} from '../widgets/drug-likeness';
-import {getIdMap, identifiersWidget} from '../widgets/identifiers';
+import {getIdMap, getOrLoadUnichemSources, identifiersWidget} from '../widgets/identifiers';
 import {getPanelElements, molfileWidget} from '../widgets/molfile';
 import {getPropertiesMap, propertiesWidget} from '../widgets/properties';
 import {getStructuralAlerts, structuralAlertsWidget} from '../widgets/structural-alerts';
@@ -12,16 +12,24 @@ import {structure3dWidget} from '../widgets/structure3d';
 import {getRisks, toxicityWidget} from '../widgets/toxicity';
 import * as utils from './utils';
 import $ from 'cash-dom';
+import { _package } from '../package-test';
+import * as chemCommonRdKit from '../utils/chem-common-rdkit';
+
 
 category('Chem: Widgets', async () => {
   const molStr = 'CC(C)Cc1ccc(cc1)C(C)C(=O)N2CCCC2C(=O)OCCO';
+
+  before(async () => {
+    chemCommonRdKit.setRdKitWebRoot(_package.webRoot);
+    await chemCommonRdKit.initRdKitModuleLocal();
+  });
 
   //Test smiles, mol2000, mol3000; Check results for testing example
   test('drug-likeness', async () => {
     const dl = assessDruglikeness(molStr);
     const expectedDescription = await utils.loadFileAsText('tests/drug-likeness.json');
 
-    expect(dl[0], 7.210692227408717);
+    expectFloat(dl[0], 7.210692227408717);
     expect(JSON.stringify(dl[1]), expectedDescription);
 
     drugLikenessWidget(molStr);
@@ -29,7 +37,6 @@ category('Chem: Widgets', async () => {
 
   //Test smiles, mol2000, mol3000; Check results for testing example
   test('identifiers', async () => {
-    //RdKit Module is not initialized
     const idMap = await getIdMap(molStr);
     const expectedIdMap = await utils.loadFileAsText('tests/identifiers.json');
     expect(JSON.stringify(idMap), expectedIdMap);
@@ -40,12 +47,13 @@ category('Chem: Widgets', async () => {
   // Test smiles, mol2000, mol3000; Compare with existing mol string; Test copy feature
   test('molfile', async () => {
     const panelElements = getPanelElements(molStr);
-    const expectedStr = (await utils.loadFileAsText('tests/molfile.sdf')).trim();
-    expect(($(panelElements[2].input).val() as string).trim(), expectedStr);
+    const expectedStr = await utils.loadFileAsText('tests/molfile.sdf');
+    expect($(panelElements[2].input).val() as string, expectedStr);
 
     //NotAllowedError: Document is not focused.
     $(panelElements[0]).trigger('click');
-    expect((await navigator.clipboard.readText()).trim(), expectedStr);
+    const clipboardStr = (await navigator.clipboard.readText()).replaceAll('\r', '');
+    expect(clipboardStr, expectedStr);
 
     molfileWidget(molStr);
   });
@@ -61,10 +69,11 @@ category('Chem: Widgets', async () => {
 
   //Test smiles, mol2000, mol3000; Compare the found substructures; Visual test required
   test('structural-alerts', async () => {
-    //Bad state: Cannot use origin without a scheme: undefinedfiles/alert-collection.csv
     const structuralAlerts = await getStructuralAlerts(molStr);
-    const expectedSA = [1029, 1229];
-    expect(structuralAlerts, expectedSA);
+    const expectedStructuralAlerts = [1029, 1229];
+    expect(structuralAlerts.length, expectedStructuralAlerts.length);
+    for (const expectedSA of expectedStructuralAlerts)
+      expect(structuralAlerts.includes(expectedSA), true);
 
     await structuralAlertsWidget(molStr);
   });
@@ -76,7 +85,6 @@ category('Chem: Widgets', async () => {
 
   //Test smiles, mol2000, mol3000; Visual test required
   test('structure-3d', async () => {
-    //Errors calling structure3d: molecule: Value not defined.
     await grok.functions.call('structure3d', {smiles: molStr});
   });
 

@@ -1,8 +1,14 @@
 import * as grok from 'datagrok-api/grok';
 import * as ui from 'datagrok-api/ui';
 import * as DG from 'datagrok-api/dg';
-import {getRdKitModule} from '../utils/chem-common-rdkit';
-import {_package} from '../package';
+import {getRdKitModule, getRdKitWebRoot} from '../utils/chem-common-rdkit';
+
+let unichemSources: DG.DataFrame;
+
+export async function getOrLoadUnichemSources(): Promise<DG.DataFrame> {
+  unichemSources ??= await grok.data.loadTable(`${getRdKitWebRoot()}files/unichem-sources.csv`);
+  return unichemSources;
+}
 
 class UniChemSource {
   id: number;
@@ -69,7 +75,7 @@ class UniChemSource {
   }
 
   static async refreshSources() {
-    const table = DG.DataFrame.fromCsv(await _package.files.readAsText('unichem-sources.csv'));
+    const table = await getOrLoadUnichemSources();
     const rowCount = table.rowCount;
     for (let i = 0; i < rowCount; i++) {
       const id = table.get('src_id', i);
