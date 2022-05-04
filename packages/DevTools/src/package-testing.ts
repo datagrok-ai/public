@@ -2,17 +2,15 @@ import * as grok from 'datagrok-api/grok';
 import * as ui from 'datagrok-api/ui';
 import * as DG from 'datagrok-api/dg';
 
+
 export async function _testManager() {
   let testFunctions = DG.Func.find({ name: 'Test' });
   const packagesTestsList = {};
   for (let f of testFunctions) {
-    //@ts-ignore
     await f.package.load({ file: f.options.file });
-    //@ts-ignore
     const allPackageTests = f.package.getModule(f.options.file).tests;
     if (allPackageTests) {
-      //@ts-ignore
-      packagesTestsList[ f.package.friendlyName ] = {name: f.package.name, tests: allPackageTests};
+      packagesTestsList[f.package.friendlyName] = { name: f.package.name, tests: allPackageTests };
     }
   }
   createTestManagerUI(packagesTestsList);
@@ -26,15 +24,14 @@ function createTestManagerUI(packagesTests: any) {
   let addCheckboxAndLabelClickListener = (item: DG.TreeViewNode, isGroup: boolean, onChangeFunction: () => void, onItemClickFunction: () => void) => {
     item.enableCheckBox(false);
     item.checkBox?.addEventListener('change', onChangeFunction);
-    const label = isGroup? item.root.children[0].children[2] : item.root.children[1];
+    const label = isGroup ? item.root.children[0].children[2] : item.root.children[1];
     label.addEventListener('click', onItemClickFunction);
   };
 
   let applyToAllTests = (functionToApply: (t: any, p?: string) => void) => {
     Object.keys(packagesTests).forEach(pack => {
-      Object.keys(packagesTests[ pack ].tests).forEach(cat => {
-        //@ts-ignore
-        packagesTests[ pack ].tests[ cat ].tests.forEach(t => functionToApply(t, packagesTests[ pack ].name));
+      Object.keys(packagesTests[pack].tests).forEach(cat => {
+        packagesTests[pack].tests[cat].tests.forEach(t => functionToApply(t, packagesTests[pack].name));
       })
     });
   }
@@ -45,15 +42,12 @@ function createTestManagerUI(packagesTests: any) {
   });
 
   let collectActiveTests = () => {
-    //@ts-ignore
     let activeTests = [];
     Object.keys(packagesTests).forEach(pack => {
-      Object.keys(packagesTests[ pack ].tests).forEach(cat => {
-        //@ts-ignore
-        activeTests = activeTests.concat(packagesTests[ pack ].tests[ cat ].tests.filter(t => t.active));
+      Object.keys(packagesTests[pack].tests).forEach(cat => {
+        activeTests = activeTests.concat(packagesTests[pack].tests[cat].tests.filter(t => t.active));
       });
     });
-    //@ts-ignore
     return activeTests;
   }
 
@@ -63,7 +57,6 @@ function createTestManagerUI(packagesTests: any) {
   }
 
   let runAllTests = async (activeTests: any) => {
-    //@ts-ignore
     activeTests.forEach(t => {
       const start = Date.now();
       grok.functions.call(
@@ -114,11 +107,11 @@ function createTestManagerUI(packagesTests: any) {
     accIcon.className = 'grok-icon svg-icon svg-view-layout';
     acc.addTitle(ui.span([accIcon, ui.label(`Tests details`)]));
     let grid;
-    if(testsResultsDf) {
-      grid = testsResultsDf.
-      groupBy(testsResultsDf.columns.names())
-      .where(condition)
-      .aggregate().plot.grid().root;
+    if (testsResultsDf) {
+      grid = testsResultsDf
+        .groupBy(testsResultsDf.columns.names())
+        .where(condition)
+        .aggregate().plot.grid().root;
     }
     acc.addPane('Results', () => ui.div(grid), true);
     return acc.root;
@@ -129,40 +122,38 @@ function createTestManagerUI(packagesTests: any) {
   Object.keys(packagesTests).forEach(pack => {
     const packageGroup = tree.group(pack);
     addCheckboxAndLabelClickListener(packageGroup, true, () => {
-      //@ts-ignore
-      Object.keys(packagesTests[ pack ].tests).forEach(cat => {
-        //@ts-ignore
-        packagesTests[ pack ].tests[ cat ].tests.forEach(t => t.active = packageGroup.checked);
+      Object.keys(packagesTests[pack].tests).forEach(cat => {
+        packagesTests[pack].tests[cat].tests.forEach(t => t.active = packageGroup.checked);
       });
-    }, 
-    () => {
-      //@ts-ignore
-      grok.shell.o = getTestsInfoDf(`Package = ${Object.values(packagesTests[ pack ].tests)[0].tests[0].packageName}`);
-    });
-    Object.keys(packagesTests[ pack ].tests).forEach(cat => {
+    },
+      () => {
+        //@ts-ignore
+        grok.shell.o = getTestsInfoDf(`Package = ${Object.values(packagesTests[pack].tests)[0].tests[0].packageName}`);
+      });
+    Object.keys(packagesTests[pack].tests).forEach(cat => {
       const catGroup = packageGroup.group(cat);
       addCheckboxAndLabelClickListener(catGroup, true, () => {
-        packagesTests[ pack ].tests[ cat ].tests.forEach(t => {
+        packagesTests[pack].tests[cat].tests.forEach(t => {
           t.active = catGroup.checked;
         });
       },
-      () => {
-        grok.shell.o = getTestsInfoDf(`Package = ${packagesTests[ pack ].tests[cat].tests[0].packageName} and category = ${cat}`);
-      });
-      packagesTests[ pack ].tests[ cat ].tests.forEach(t => {
+        () => {
+          grok.shell.o = getTestsInfoDf(`Package = ${packagesTests[pack].tests[cat].tests[0].packageName} and category = ${cat}`);
+        });
+      packagesTests[pack].tests[cat].tests.forEach(t => {
         let testPassed = ui.div();
         let itemDiv = ui.splitH([
           testPassed,
           ui.divText(t.name)
-        ], false, {style: {display: 'block'}});
+        ], { style: { display: 'block' } });
         let item = catGroup.item(itemDiv);
         item.root.id = `${t.packageName}|${cat}|${t.name}`;
         addCheckboxAndLabelClickListener(item, false, () => {
           t.active = item.checked;
         },
-        () => {
-          grok.shell.o = getTestsInfoDf(`Package = ${t.packageName} and category = ${cat} and name =  ${t.name}`);
-        });
+          () => {
+            grok.shell.o = getTestsInfoDf(`Package = ${t.packageName} and category = ${cat} and name =  ${t.name}`);
+          });
       });
     });
   });
@@ -170,14 +161,13 @@ function createTestManagerUI(packagesTests: any) {
   const runTestsButton = ui.bigButton('Run', async () => {
     let actTests = collectActiveTests();
     actTests.forEach(t => updateTestResultsIcon(tree, t.packageName, t.category, t.name));
-    if(actTests.length) {
+    if (actTests.length) {
       runAllTests(actTests);
     }
   });
 
   v.setRibbonPanels(
-    //@ts-ignore
-    [ [ runTestsButton ] ] ,
+    [[runTestsButton]],
   );
   v.append(tree.root);
 }
