@@ -2,8 +2,8 @@
   "name": "@datagrok/chem",
   "friendlyName": "Chem",
   "fullName": "Chem",
-  "version": "0.51.8",
-  "description": "Cheminformatics support: \n\n* RDKit-based rendering \n* Molecule sketching \n*",
+  "version": "0.51.9",
+  "description": "Cheminformatics support: \n\n* RDKit-based rendering \n* Molecule sketching \n* Feature based analysis",
   "properties": [
     {
       "name": "Renderer",
