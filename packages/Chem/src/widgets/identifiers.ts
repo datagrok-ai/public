@@ -1,8 +1,14 @@
 import * as grok from 'datagrok-api/grok';
 import * as ui from 'datagrok-api/ui';
 import * as DG from 'datagrok-api/dg';
-import {getRdKitModule} from '../utils/chem-common-rdkit';
-import {_package} from '../package';
+import {getRdKitModule, getRdKitWebRoot} from '../utils/chem-common-rdkit';
+
+let unichemSources: DG.DataFrame;
+
+export async function getOrLoadUnichemSources(): Promise<DG.DataFrame> {
+  unichemSources ??= await grok.data.loadTable(`${getRdKitWebRoot()}files/unichem-sources.csv`);
+  return unichemSources;
+}
 
 class UniChemSource {
   id: number;
@@ -69,7 +75,7 @@ class UniChemSource {
   }
 
   static async refreshSources() {
-    const table = DG.DataFrame.fromCsv(await _package.files.readAsText('unichem-sources.csv'));
+    const table = await getOrLoadUnichemSources();
     const rowCount = table.rowCount;
     for (let i = 0; i < rowCount; i++) {
       const id = table.get('src_id', i);
@@ -91,24 +97,22 @@ class UniChemSource {
 
 async function getCompoundsIds(inchiKey: string) {
   const url = `https://www.ebi.ac.uk/unichem/rest/inchikey/${inchiKey}`;
-  const params = {'method': 'GET', 'referrerPolicy': 'strict-origin-when-cross-origin'};
-  //@ts-ignore: it says 'referrerPolicy' doesn't have such value which is wrong
+  const params: RequestInit = {method: 'GET', referrerPolicy: 'strict-origin-when-cross-origin'};
   const response = await grok.dapi.fetchProxy(url, params);
   const json = await response.json();
   if (json.error)
     return;
   const sources: {[key: string]: any}[] = json.filter((s: {[key: string]: string | number}) => {
-    //@ts-ignore: it's a string at this point 100%
-    const srcId = parseInt(s['src_id']);
+    const srcId = parseInt(`${s['src_id']}`);
     s['src_id'] = srcId;
     return srcId in UniChemSource.idNames;
   });
 
   return response.status !== 200 ?
-    {} : Object.fromEntries(sources.map((m) => [UniChemSource.idNames[(m['src_id'] as number)], m['src_compound_id']]));
+    {} : Object.fromEntries(sources.map(m => [UniChemSource.idNames[(m['src_id'] as number)], m['src_compound_id']]));
 }
 
-export async function identifiersWidget(smiles: string) {
+export async function getIdMap(smiles: string) {
   const rdKitModule = getRdKitModule();
   const mol = rdKitModule.get_mol(smiles);
   const inchiKey = rdKitModule.get_inchikey_for_inchi(mol.get_inchi());
@@ -116,12 +120,22 @@ export async function identifiersWidget(smiles: string) {
   const idMap = await getCompoundsIds(inchiKey);
 
   if (typeof idMap === 'undefined')
-    return new DG.Widget(ui.divText('Not found in UniChem'));
+    return null;
 
   await UniChemSource.refreshSources();
 
   for (const [source, id] of Object.entries(idMap))
-    idMap[source] = ui.link(id, () => window.open(UniChemSource.byName(source)!.baseUrl + id));
+    idMap[source] = {id: id, link: UniChemSource.byName(source)!.baseUrl + id};
+    // idMap[source] = ui.link(id, () => window.open(UniChemSource.byName(source)!.baseUrl + id));
 
+  return idMap;
+}
+
+export async function identifiersWidget(smiles: string) {
+  const idMap = await getIdMap(smiles);
+  if (idMap === null)
+    return new DG.Widget(ui.divText('Not found in UniChem'));
+  for (const [source, identifier] of Object.entries(idMap))
+    idMap[source] = ui.link(identifier.id, () => window.open(identifier.link));
   return new DG.Widget(ui.tableFromMap(idMap));
 }

@@ -1,6 +1,174 @@
 <!-- TITLE: Release History -->
 <!-- SUBTITLE: -->
 
+# 2022-05-03 Dev build 0.150.5
+
+## Latest Docker Images
+
+* Datagrok: 
+  *  `docker pull datagrok/datagrok:0.150.5`
+  *  `docker pull datagrok/datagrok:latest`
+  
+* [Docker-Compose](admin/docker-compose.md)
+
+## Addressed Issues
+
+* Chem: sketching issues with substructure search 
+* DataSourceCardView categories (WIP)
+* (Bug) Color coding: Selected palette in "Colors" panel differs from the actual colors 
+* (Bug) Modal window positioning bugs 
+* (Bug) Color Coding: Color does not change for boolean columns (WIP)
+* Chem: minor fixes 
+* Chem: converter smiles -> mol for marvin input 
+* Fixes #519: chem widgets test fix 
+* #524 Chem Filters: highlighting stays after you close the filter group. wip \* The re-opening of the filter gives some flicker \* Needs to manage the filter state idiomatically, not with chem-scaffold-filter-prev 
+* Closes #547: Chem: SubstructureFilter: substructure is not saved properly 
+
+
+# 2022-04-29 Dev build 0.150.4
+
+## Latest Docker Images
+
+* Datagrok: 
+  *  `docker pull datagrok/datagrok:0.150.4`
+  *  `docker pull datagrok/datagrok:latest`
+  
+* [Docker-Compose](admin/docker-compose.md)
+
+## Addressed Issues
+
+* Top Menu: change "mousedown" event to "click" for clicks on menu items 
+* (Bug) Package content validation: one-line functions get annotation warnings 
+* Closes #532: Show only filtered category items on legends 
+* #342: (Only) show filtered category items on scatterplot axes 
+* Scatter Plot: Animated zoom to filter 
+* Caching Column.getUsedCategories for performance reasons 
+* JS: bySemTypeAll method 
+* DataSourceCardView categories (WIP)
+* setup for connect refined 
+* Sketching: size up 
+* (Bug) Can't set and get ViewBase URL 
+* Packages build and test documentation 
+* Fixed analyzer warnings 
+
+
+# 2022-04-29 Dev build 0.150.3
+
+## Latest Docker Images
+
+* Datagrok: 
+  *  `docker pull datagrok/datagrok:0.150.3`
+  *  `docker pull datagrok/datagrok:latest`
+  
+* [Docker-Compose](admin/docker-compose.md)
+
+## Addressed Issues
+
+* Top Menu: change "mousedown" event to "click" for clicks on menu items 
+* (Bug) Package content validation: one-line functions get annotation warnings 
+* Closes #532: Show only filtered category items on legends 
+* #342: (Only) show filtered category items on scatterplot axes 
+* Scatter Plot: Animated zoom to filter 
+* Caching Column.getUsedCategories for performance reasons 
+* JS: bySemTypeAll method 
+* DataSourceCardView categories (WIP)
+* setup for connect refined 
+* Sketching: size up 
+* Chem: saving recent molecules in sketcher 
+* JS API: saving recent molecules in sketcher 
+
+
+# 2022-04-27 Dev build 0.150.2
+
+## Latest Docker Images
+
+* Datagrok: 
+  *  `docker pull datagrok/datagrok:0.150.2`
+  *  `docker pull datagrok/datagrok:latest`
+  
+* [Docker-Compose](admin/docker-compose.md)
+
+## Addressed Issues
+
+* Scatter Plot: Animated zoom to filter 
+* Ability to save new user without permissions 
+
+
+# 2022-04-26 Dev build 0.150.1
+
+## Latest Docker Images
+
+* Datagrok: 
+  *  `docker pull datagrok/datagrok:0.150.1`
+  *  `docker pull datagrok/datagrok:latest`
+  
+* [Docker-Compose](admin/docker-compose.md)
+
+## Addressed Issues
+
+* Packages: skip the build step for packages that were published along with build outputs 
+* #501 Wiki: package files (AppData) 
+* Chem: added column picker to similarity search, refactoring 
+* Fixed an issue with the barchart. 
+* Closes #530: Grid: do not include units in the column header 
+
+
+# 2022-04-26 Dev build 0.150.0
+
+## Latest Docker Images
+
+* Datagrok: 
+  *  `docker pull datagrok/datagrok:0.150.0`
+  *  `docker pull datagrok/datagrok:latest`
+  
+* [Docker-Compose](admin/docker-compose.md)
+
+## Addressed Issues
+
+* JS: Ability to disable events in InputBase (WIP)
+* Exposed DG.Color.fromHtml method in JsApi 
+* JS-API: add a default parameter value for FileSource.list() 
+* (Bug) NPM repositories: missing proxy settings (WIP)
+* Closes #433: Data exported to csv is incorrect in 'sign' columns if there is more than one such column and there are some nulls 
+* DevTools: minor version bump 
+* Closes #526: [LineChart] \- axes do not scale to plotted points but to max values of plotted columns 
+* Closes #367: Persisting visualizations zoom when saving analysis \- proper handling of the "no action" zoom type 
+* Code cleanup 
+* Wiki: an article about routing (WIP)
+* Updated help links 
+* Closes #367: Persisting visualizations zoom when saving analysis 
+* #466 Computation View \- splitting on components and services 
+* Peptides version bump 
+
+
+# 2022-04-21 Dev build 0.148.6
+
+## Latest Docker Images
+
+* Datagrok: 
+  *  `docker pull datagrok/datagrok:0.148.6`
+  *  `docker pull datagrok/datagrok:latest`
+  
+* [Docker-Compose](admin/docker-compose.md)
+
+## Addressed Issues
+
+* JS-API: setBuffer method 
+* Closes #488: Positioning of Grid cells in HTML rendering mode 
+* Menu capitalization fixes. 
+* Closes #489: Grid: "Current Column | Sort | Custom..." should open the "Order or Hide Columns" dialog 
+* bug: duplicated event firing 
+* Closes #490: Custom order of categories should be saved in the view layout 
+* Wrong data is shown in viewers using calculated column after calculated column's formula was updated #434 
+* Allow user to rename the viewers from the arranged tab #341 
+* bug: changing cell-double-click features 
+* (Bug) Wrong output of getCategoryIndex with caseSensitive = false 
+* Updated public token 
+* Datlas: use reader/writer login in Datagrok system connection, if reader login isn't available 
+* (Bug) Previously deployed packages sometimes get deleted during repository publication (WIP)
+* Ability to use Func options for grouping  
+
+
 # 2022-04-18 Dev build 0.148.4
 
 ## Latest Docker Images

@@ -664,7 +664,7 @@ section.
 * [Package credentials](manage-credentials.md#package-credentials)
 * [Managing credentials](manage-credentials.md)
 
-## Ui and ux
+## UI and UX
 
 Most of the UI capabilities Datagrok offers are described as samples in
 our [ApiSamples package](https://github.com/datagrok-ai/public/tree/master/packages/ApiSamples). You may view them all

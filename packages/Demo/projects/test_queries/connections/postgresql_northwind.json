@@ -3,14 +3,14 @@
   "name": "PostgreSQLNorthwind",
   "friendlyName": "Northwind",
   "parameters": {
-    "server": "$DEMO_DB_SERVER",
-    "port": 5432,
+    "server": "dev.datagrok.ai",
+    "port": 54322,
     "db": "northwind"
   },
   "credentials" : {
     "parameters" : {
-      "login": "northwind",
-      "password": "northwind"
+      "login": "datagrok",
+      "password": "datagrok"
     }
   },
   "dataSource": "PostgreSQL",

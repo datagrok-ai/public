@@ -1,6 +1,6 @@
 --name: NewUsersSummaryByDate
 --input: string days
---connection: System:DatagrokAdmin
+--connection: System:Datagrok
 SELECT
     DATE(joined) as day, 
 	COUNT(*)

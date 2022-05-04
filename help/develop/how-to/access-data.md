@@ -339,7 +339,7 @@ provides a full understanding of the `files` API.
 
 ### Other ways for reading files
 
-Finally, let's walkthrough other methods that can be used to open files from JavaScript:
+Finally, let's walk through other methods that can be used to open files from JavaScript:
 
 * If you define a function that takes an input of `file` type (also
   see [FileInfo](https://github.com/datagrok-ai/public/blob/14eb2acd6e36b33f64c4a0d108e940f7624af479/js-api/src/entities.js#L317))

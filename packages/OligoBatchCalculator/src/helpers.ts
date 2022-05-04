@@ -1,6 +1,21 @@
-// import * as grok from 'datagrok-api/grok';
-// import * as ui from 'datagrok-api/ui';
 import * as DG from 'datagrok-api/dg';
+import {map, normalizedObj} from './map';
+
+export function normalizeSequence(sequence: string, synthesizer: string | null, technology: string | null): string {
+  const codes = (technology == null) ?
+    getAllCodesOfSynthesizer(synthesizer!) :
+    Object.keys(map[synthesizer!][technology]);
+  const sortedCodes = sortByStringLengthInDescOrder(codes);
+  const regExp = new RegExp('(' + sortedCodes.join('|') + ')', 'g');
+  return sequence.replace(regExp, function(code) {return normalizedObj[code];});
+}
+
+export function getAllCodesOfSynthesizer(synthesizer: string): string[] {
+  let codes: string[] = [];
+  for (const technology of Object.keys(map[synthesizer]))
+    codes = codes.concat(Object.keys(map[synthesizer][technology]));
+  return codes;
+}
 
 export function deleteWord(sequence: string, searchTerm: string): string {
   let n = sequence.search(searchTerm);
@@ -18,7 +33,7 @@ export function saveAsCsv(table: DG.DataFrame): void {
   link.click();
 }
 
-export function sortByStringLengthInDescendingOrder(array: string[]): string[] {
+export function sortByStringLengthInDescOrder(array: string[]): string[] {
   return array.sort(function(a, b) {return b.length - a.length;});
 }
 

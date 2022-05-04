@@ -1,7 +1,7 @@
 --name: EventByErrorMessageAndFriendlyName
 --input: string errorMessage
 --input: string friendlyName
---connection: System:DatagrokAdmin
+--connection: System:Datagrok
 select * from events e
 where error_message = @errorMessage
 and friendly_name = @friendlyName;
@@ -13,7 +13,7 @@ and friendly_name = @friendlyName;
 --input: string friendlyName
 --input: bool isError
 --input: string comment
---connection: System:DatagrokAdmin
+--connection: System:Datagrok
 update events
 set is_error = @isError,
 comment = @comment

@@ -2,12 +2,13 @@
 	"name": "@datagrok/oligo-batch-calculator",
 	"beta": false,
 	"friendlyName": "Oligo Batch Calculator",
-	"version": "0.0.3",
+	"version": "0.0.5",
 	"description": "",
 	"dependencies": {
-		"datagrok-api": ">0.94.10",
+		"datagrok-api": "^0.94.10",
 		"ts-loader": "latest",
-		"typescript": "latest"
+		"typescript": "latest",
+		"@datagrok-libraries/utils": "^0.2.9"
 	},
 	"devDependencies": {
 		"@typescript-eslint/eslint-plugin": "^4.29.1",
@@ -28,6 +29,9 @@
 		"debug-oligobatchcalculator-local": "grok publish local --rebuild",
 		"release-oligobatchcalculator-local": "grok publish local --rebuild --release"
 	},
+	"sources": [
+		"css/style.css"
+	],
 	"canEdit": [ "Developers" ],
 	"canView": [ "All users" ]
 }

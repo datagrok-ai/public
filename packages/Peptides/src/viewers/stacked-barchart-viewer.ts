@@ -130,6 +130,7 @@ export class StackedBarChart extends DG.JsViewer {
   async onTableAttached() {
     this.init();
     this.controller = await PeptidesController.getInstance(this.dataFrame);
+    this.controller.init(this.dataFrame);
     if (this.dataFrame) {
       this.subs.push(DG.debounce(this.dataFrame.selection.onChanged, 50).subscribe((_) => this.computeData()));
       this.subs.push(DG.debounce(this.dataFrame.filter.onChanged, 50).subscribe((_) => this.computeData()));

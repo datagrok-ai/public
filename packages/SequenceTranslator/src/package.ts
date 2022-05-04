@@ -7,7 +7,7 @@ import $ from 'cash-dom';
 import {defineAxolabsPattern} from './defineAxolabsPattern';
 import {saveSenseAntiSense} from './structures-works/save-sense-antisense';
 import {sequenceToSmiles, sequenceToMolV3000} from './structures-works/from-monomers';
-import {convertSequence, undefinedInputSequence} from './structures-works/sequence-codes-tools';
+import {convertSequence, undefinedInputSequence, isValidSequence} from './structures-works/sequence-codes-tools';
 import {map, COL_NAMES, MODIFICATIONS} from './structures-works/map';
 import {SALTS_CSV} from './salts';
 import {USERS_CSV} from './users';
@@ -17,7 +17,7 @@ import {IDPS} from './IDPs';
 
 export const _package = new DG.Package();
 
-const defaultInput = 'AGGTCCTCTTGACTTAGGCC';
+const defaultInput = 'fAmCmGmAmCpsmU';
 const sequenceWasCopied = 'Copied';
 const tooltipSequence = 'Copy sequence';
 
@@ -35,29 +35,31 @@ export function sequenceTranslator(): void {
     const pi = DG.TaskBarProgressIndicator.create('Rendering table and molecule...');
     let errorsExist = false;
     try {
-      const outputSequenceObj = convertSequence(sequence);
+      sequence = sequence.replace(/\s/g, '');
+      const output = isValidSequence(sequence);
+      const outputSequenceObj = convertSequence(sequence, output);
       const tableRows = [];
 
       for (const key of Object.keys(outputSequenceObj).slice(1)) {
-        const indexOfFirstNotValidCharacter = ('indexOfFirstNotValidCharacter' in outputSequenceObj) ?
-          JSON.parse(outputSequenceObj.indexOfFirstNotValidCharacter!).indexOfFirstNotValidCharacter :
+        const indexOfFirstNotValidChar = ('indexOfFirstNotValidChar' in outputSequenceObj) ?
+          JSON.parse(outputSequenceObj.indexOfFirstNotValidChar!).indexOfFirstNotValidChar :
           -1;
-        if ('indexOfFirstNotValidCharacter' in outputSequenceObj) {
-          const indexOfFirstNotValidCharacter = ('indexOfFirstNotValidCharacter' in outputSequenceObj) ?
-            JSON.parse(outputSequenceObj.indexOfFirstNotValidCharacter!).indexOfFirstNotValidCharacter :
+        if ('indexOfFirstNotValidChar' in outputSequenceObj) {
+          const indexOfFirstNotValidChar = ('indexOfFirstNotValidChar' in outputSequenceObj) ?
+            JSON.parse(outputSequenceObj.indexOfFirstNotValidChar!).indexOfFirstNotValidChar :
             -1;
-          if (indexOfFirstNotValidCharacter != -1)
+          if (indexOfFirstNotValidChar != -1)
             errorsExist = true;
         }
 
         tableRows.push({
           'key': key,
-          'value': ('indexOfFirstNotValidCharacter' in outputSequenceObj) ?
+          'value': ('indexOfFirstNotValidChar' in outputSequenceObj) ?
             ui.divH([
-              ui.divText(sequence.slice(0, indexOfFirstNotValidCharacter), {style: {color: 'grey'}}),
+              ui.divText(sequence.slice(0, indexOfFirstNotValidChar), {style: {color: 'grey'}}),
               ui.tooltip.bind(
-                ui.divText(sequence.slice(indexOfFirstNotValidCharacter), {style: {color: 'red'}}),
-                'Expected format: ' + JSON.parse(outputSequenceObj.indexOfFirstNotValidCharacter!).expectedSynthesizer +
+                ui.divText(sequence.slice(indexOfFirstNotValidChar), {style: {color: 'red'}}),
+                'Expected format: ' + JSON.parse(outputSequenceObj.indexOfFirstNotValidChar!).synthesizer +
                 '. See tables with valid codes on the right',
               ),
             ]) : //@ts-ignore
@@ -67,13 +69,12 @@ export function sequenceTranslator(): void {
       }
 
       if (errorsExist) {
-        const expectedSynthesizer = JSON.parse(outputSequenceObj.indexOfFirstNotValidCharacter!)
-          .expectedSynthesizer.slice(0, -6);
+        const synthesizer = JSON.parse(outputSequenceObj.indexOfFirstNotValidChar!).synthesizer.slice(0, -6);
         asoGapmersGrid.onCellPrepare(function(gc) {
-          gc.style.backColor = (gc.gridColumn.name == expectedSynthesizer) ? 0xFFF00000 : 0xFFFFFFFF;
+          gc.style.backColor = (gc.gridColumn.name == synthesizer) ? 0xFFF00000 : 0xFFFFFFFF;
         });
         omeAndFluoroGrid.onCellPrepare(function(gc) {
-          gc.style.backColor = (gc.gridColumn.name == expectedSynthesizer) ? 0xFFF00000 : 0xFFFFFFFF;
+          gc.style.backColor = (gc.gridColumn.name == synthesizer) ? 0xFFF00000 : 0xFFFFFFFF;
         });
         switchInput.enabled = true;
       } else {
@@ -85,7 +86,7 @@ export function sequenceTranslator(): void {
         ui.div([
           DG.HtmlTable.create(tableRows, (item: { key: string; value: string; }) =>
             [item.key, item.value], ['Code', 'Sequence']).root,
-        ], 'table'),
+        ]),
       );
       semTypeOfInputSequence.textContent = 'Detected input type: ' + outputSequenceObj.type;
 
@@ -115,7 +116,7 @@ export function sequenceTranslator(): void {
 
   const semTypeOfInputSequence = ui.divText('');
   const moleculeSvgDiv = ui.block([]);
-  const outputTableDiv = ui.div([], 'table');
+  const outputTableDiv = ui.div([]);
   const inputSequenceField = ui.textInput('', defaultInput, (sequence: string) => updateTableAndMolecule(sequence));
 
   const asoDf = DG.DataFrame.fromObjects([
@@ -191,7 +192,7 @@ export function sequenceTranslator(): void {
               ui.div([
                 inputSequenceField.root,
               ], 'input-base'),
-            ], 'sequenceInput'),
+            ], 'inputSequence'),
             semTypeOfInputSequence,
             ui.block([
               ui.h1('Output'),
@@ -233,18 +234,6 @@ export function sequenceTranslator(): void {
   tabControl.onTabChanged.subscribe((_) =>
     v.setRibbonPanels([(tabControl.currentPane.name == 'MAIN') ? topPanel : []]));
   v.setRibbonPanels([topPanel]);
-
-  $('.sequence')
-    .children().css('padding', '5px 0');
-  $('.sequenceInput .input-base')
-    .css('margin', '0');
-  $('.sequenceInput textarea')
-    .css('resize', 'none')
-    .css('min-height', '50px')
-    .css('width', '100%')
-    .attr('spellcheck', 'false');
-  $('.sequenceInput select')
-    .css('width', '100%');
 }
 
 async function saveTableAsSdFile(table: DG.DataFrame) {
@@ -324,6 +313,7 @@ export function oligoSdFile(table: DG.DataFrame) {
       return grok.shell.error('Columns already exist!');
 
     const sequence = t.col(COL_NAMES.SEQUENCE)!;
+    const salt = t.col(COL_NAMES.SALT)!;
     const equivalents = t.col(COL_NAMES.EQUIVALENTS)!;
 
     t.columns.addNewString(COL_NAMES.COMPOUND_NAME).init((i: number) => sequence.get(i));
@@ -331,11 +321,13 @@ export function oligoSdFile(table: DG.DataFrame) {
       sequence.getString(i) + '; duplex of SS: ' + sequence.getString(i - 2) + ' and AS: ' + sequence.getString(i - 1) :
       sequence.getString(i),
     );
+    const molWeightCol = saltsDf.col('MOLWEIGHT')!;
+    const saltNamesList = saltsDf.col('DISPLAY')!.toList();
     t.columns.addNewFloat(COL_NAMES.CPD_MW)
       .init((i: number) => molecularWeight(sequence.get(i), weightsObj));
-    const mwCol = t.col(COL_NAMES.CPD_MW)!;
     t.columns.addNewFloat(COL_NAMES.SALT_MASS).init((i: number) => {
-      const mw = mwCol.get(i);
+      const saltRowIndex = saltNamesList.indexOf(salt.get(i));
+      const mw = molWeightCol.get(saltRowIndex);
       return mw * equivalents.get(i);
     });
     t.columns.addNewCalculated(COL_NAMES.BATCH_MW,
@@ -367,7 +359,7 @@ export function oligoSdFile(table: DG.DataFrame) {
 
       view.table!.col(COL_NAMES.TYPE)!.setTag(DG.TAGS.CHOICES, '["AS", "SS", "Duplex"]');
       view.table!.col(COL_NAMES.OWNER)!.setTag(DG.TAGS.CHOICES, stringifyItems(usersDf.columns.byIndex(0).toList()));
-      view.table!.col(COL_NAMES.SALT)!.setTag(DG.TAGS.CHOICES, stringifyItems(saltsDf.columns.byIndex(1).toList()));
+      view.table!.col(COL_NAMES.SALT)!.setTag(DG.TAGS.CHOICES, stringifyItems(saltsDf.columns.byIndex(0).toList()));
       view.table!.col(COL_NAMES.SOURCE)!.setTag(DG.TAGS.CHOICES, stringifyItems(sourcesDf.columns.byIndex(0).toList()));
       view.table!.col(COL_NAMES.ICD)!.setTag(DG.TAGS.CHOICES, stringifyItems(icdsDf.columns.byIndex(0).toList()));
       view.table!.col(COL_NAMES.IDP)!.setTag(DG.TAGS.CHOICES, stringifyItems(idpsDf.columns.byIndex(0).toList()));

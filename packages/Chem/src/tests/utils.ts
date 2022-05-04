@@ -3,7 +3,7 @@ import * as grok from "datagrok-api/grok";
 import {expect} from "@datagrok-libraries/utils/src/test";
 import {_package} from "../package-test";
 
-export async function requireText(name: string): Promise<string> {
+export async function loadFileAsText(name: string): Promise<string> {
   return await _package.files.readAsText(name);
 }
 
@@ -25,7 +25,7 @@ export async function _testSearchSubstructure(csv: string, pattern: string, true
 }
 
 export async function _testSearchSubstructureSARSmall(params: any | null = null) {
-  const file = await requireText('sar-small.csv');
+  const file = await loadFileAsText('sar-small.csv');
 
   // await grok.functions.call('Chem:initChem');
   const df = DG.DataFrame.fromCsv(file);

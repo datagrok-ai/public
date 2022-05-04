@@ -11,9 +11,9 @@ import {_packageTest} from '../package-test';
 category('peptides', async () => {
   let peptidesDf: DG.DataFrame;
   let options: StringDictionary;
-  let peptidesGrid: DG.Grid;
+  // let peptidesGrid: DG.Grid;
   let asCol: DG.Column;
-  let pepView: DG.TableView;
+  // let pepView: DG.TableView;
 
   before(async () => {
     peptidesDf = DG.DataFrame.fromCsv(await _packageTest.files.readAsText('aligned.csv'));
@@ -22,8 +22,8 @@ category('peptides', async () => {
       scaling: '-lg',
     };
     asCol = peptidesDf.getCol('AlignedSequence');
-    pepView = grok.shell.addTableView(peptidesDf);
-    peptidesGrid = pepView.grid;
+    // pepView = grok.shell.addTableView(peptidesDf);
+    // peptidesGrid = pepView.grid;
   });
 
   test('utils.split-sequence', async () => {
@@ -38,11 +38,11 @@ category('peptides', async () => {
 
   test('Peptides-controller', async () => {
     const peptides = await PeptidesController.getInstance(peptidesDf);
-    peptides.init(peptidesGrid, pepView, options); //, peptidesDf.columns.names());
+    peptides.init(peptidesDf); //, peptidesDf.columns.names());
   });
 
   test('widgets.analyze-peptides', async () => {
-    await analyzePeptidesWidget(pepView, peptidesGrid, peptidesDf, asCol);
+    await analyzePeptidesWidget(peptidesDf, asCol);
   });
 
   test('widgets.manual-alignment', async () => {
@@ -54,7 +54,7 @@ category('peptides', async () => {
   });
 
   after(async () => {
-    pepView.close();
+    // pepView.close();
     grok.shell.closeTable(peptidesDf);
   });
 });

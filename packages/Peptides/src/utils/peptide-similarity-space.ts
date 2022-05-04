@@ -118,7 +118,8 @@ export class PeptideSimilaritySpaceWidget {
     this.availableMetrics = Measure.getMetricByDataType('String');
     this.method = this.availableMethods[0];
     this.metrics = this.availableMetrics[0];
-    this.currentDf = alignedSequencesColumn.dataFrame;
+    const df = alignedSequencesColumn.dataFrame;
+    this.currentDf = df.clone(df.filter);
     this.alignedSequencesColumn = alignedSequencesColumn;
     this.viewer = ui.div([]);
     this.view = view;

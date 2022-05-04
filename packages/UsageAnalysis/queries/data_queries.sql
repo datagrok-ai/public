@@ -1,7 +1,7 @@
 --name: Queries1
 --input: string date { pattern: datetime }
 --input: list users
---connection: System:DatagrokAdmin
+--connection: System:Datagrok
 select e.event_time::date, count(1) from events e
 join queries q on e.event_type_id = q.id
 join users_sessions s on e.session_id = s.id
@@ -14,7 +14,7 @@ group by e.event_time::date;
 --name: TopQueries
 --input: string date { pattern: datetime }
 --input: list users
---connection: System:DatagrokAdmin
+--connection: System:Datagrok
 select q.name, count(1) from events e
 join queries q on e.event_type_id = q.id
 join users_sessions s on e.session_id = s.id
@@ -27,7 +27,7 @@ group by q.name
 --name: TopConnections
 --input: string date { pattern: datetime }
 --input: list users
---connection: System:DatagrokAdmin
+--connection: System:Datagrok
 select c.name, count(1) from events e
 join queries q on e.event_type_id = q.id
 join connections c on c.id = q.connection_id
@@ -41,7 +41,7 @@ group by c.name
 --name: TopDataSources
 --input: string date { pattern: datetime }
 --input: list users
---connection: System:DatagrokAdmin
+--connection: System:Datagrok
 select c.data_source, count(1) from events e
 join queries q on e.event_type_id = q.id
 join connections c on c.id = q.connection_id

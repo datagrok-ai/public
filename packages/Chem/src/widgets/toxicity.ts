@@ -4,43 +4,54 @@ import * as OCL from 'openchemlib/full.js';
 import {renderDescription} from '../utils/chem-common-ocl';
 import {oclMol} from '../utils/chem-common-ocl';
 
-export function toxicityWidget(smiles: string) {
-  const mol = oclMol(smiles);
-  const riskTypes: {[index: number]: string} = {
-    0: 'Mutagenicity',
-    1: 'Tumorigenicity',
-    2: 'Irritating effects',
-    3: 'Reproductive effects',
-  };
-  const riskLevels: {[index: number]: string} = {
-    0: 'Unknown',
-    1: 'None',
-    2: 'Low',
-    3: 'High',
-  };
+const riskTypes: {[index: number]: string} = {
+  0: 'Mutagenicity',
+  1: 'Tumorigenicity',
+  2: 'Irritating effects',
+  3: 'Reproductive effects',
+};
+const riskLevels: {[index: number]: string} = {
+  0: 'Unknown',
+  1: 'None',
+  2: 'Low',
+  3: 'High',
+};
 
-  const riskColorCoding: {[index: string]: number} = {
-    'Unknown': DG.Color.black,
-    'None': DG.Color.darkGreen,
-    'Low': DG.Color.orange,
-    'High': DG.Color.darkRed,
-  };
+const riskColorCoding: {[index: string]: number} = {
+  'Unknown': DG.Color.black,
+  'None': DG.Color.darkGreen,
+  'Low': DG.Color.orange,
+  'High': DG.Color.darkRed,
+};
 
-  const risks: {[index: string]: HTMLDivElement} = {};
+export function getRisks(molStr: string): {[index: string]: string} {
+  const mol = oclMol(molStr);
   const toxicityPredictor = new OCL.ToxicityPredictor();
-  Object.keys(riskTypes).forEach((typeId) => {
-    //@ts-ignore
-    const currentRisk = riskLevels[toxicityPredictor.assessRisk(mol, typeId)];
-    const currentRiskHost = ui.divText(currentRisk);
 
-    currentRiskHost.style.color = DG.Color.toHtml(riskColorCoding[currentRisk]);
+  const risks: {[index: string]: string} = {};
+  for (const typeId of Object.keys(riskTypes)) {
+    const numTypeId = parseInt(typeId);
+    const currentRisk = riskLevels[toxicityPredictor.assessRisk(mol, numTypeId)];
+    risks[riskTypes[numTypeId]] = currentRisk;
+  }
+
+  return risks;
+}
+
+export function toxicityWidget(molStr: string) {
+  const risks = getRisks(molStr);
+
+  const risksTable: {[index: string]: HTMLDivElement} = {};
+  for (const [type, risk] of Object.entries(risks)) {
+    const currentRiskHost = ui.divText(risk);
+    currentRiskHost.style.color = DG.Color.toHtml(riskColorCoding[risk]);
     currentRiskHost.style.fontWeight = 'bolder';
-    //@ts-ignore
-    ui.tooltip.bind(currentRiskHost, () => renderDescription(toxicityPredictor.getDetail(mol, typeId)));
 
     //@ts-ignore
-    risks[riskTypes[typeId]] = currentRiskHost;
-  });
+    ui.tooltip.bind(currentRiskHost, () => renderDescription(toxicityPredictor.getDetail(mol, numTypeId)));
 
-  return new DG.Widget(ui.tableFromMap(risks));
+    risksTable[type] = currentRiskHost;
+  }
+
+  return new DG.Widget(ui.tableFromMap(risksTable));
 }

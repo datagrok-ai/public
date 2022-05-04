@@ -7,6 +7,8 @@ import * as grok from "datagrok-api/grok";
 import {UaDataFrameQueryViewer} from "../viewers/ua-data-frame-query-viewer";
 import {UaQueryViewer} from "../viewers/abstract/ua-query-viewer";
 import {TopDataSourcesViewer} from "../drilldown_viewers/top-data-sources-viewer";
+import { TopQueriesViewer } from "../drilldown_viewers/data/top-queries-viewer";
+import { TopConnectionsViewer } from "../drilldown_viewers/data/top-connection-viewer";
 
 export class DataView extends UaView {
 
@@ -23,20 +25,10 @@ export class DataView extends UaView {
     );
     this.viewers.push(queriesViewer);
 
-    let topQueriesViewer = new UaFilterableQueryViewer(
-        this.uaToolbox.filterStream,
-        'Queries',
-        'TopQueries',
-        (t: DG.DataFrame) => DG.Viewer.barChart(t, UaQueryViewer.defaultBarchartOptions).root
-    );
+    let topQueriesViewer = new TopQueriesViewer(this.uaToolbox.filterStream);
     this.viewers.push(topQueriesViewer);
 
-    let topConnectionsViewer = new UaFilterableQueryViewer(
-        this.uaToolbox.filterStream,
-        'Connections',
-        'TopConnections',
-        (t: DG.DataFrame) => DG.Viewer.barChart(t, UaQueryViewer.defaultBarchartOptions).root
-    );
+    let topConnectionsViewer = new TopConnectionsViewer(this.uaToolbox.filterStream);
     this.viewers.push(topConnectionsViewer);
 
     let topDataSourcesViewer = new TopDataSourcesViewer(this.uaToolbox.filterStream);

@@ -1,7 +1,7 @@
 --name: UniqueUsers
 --input: string date { pattern: datetime }
 --input: list users
---connection: System:DatagrokAdmin
+--connection: System:Datagrok
 select t.date::date, count(t.id) as user_count from (
 	select distinct on (date(e.event_time), u.id) u.id, e.event_time as date
 	from events e
@@ -16,7 +16,7 @@ group by t.date::date;
 --name: UniqueSessions
 --input: string date { pattern: datetime }
 --input: list users
---connection: System:DatagrokAdmin
+--connection: System:Datagrok
 select t.date::date, count(t.id) as user_count from (
 	select distinct on (date(e.event_time), u.id) u.id, e.event_time as date
 	from events e
@@ -31,7 +31,7 @@ group by t.date::date;
 --name: Usage
 --input: string date { pattern: datetime }
 --input: list users
---connection: System:DatagrokAdmin
+--connection: System:Datagrok
 select u.login as user, u.id as user_id, t.name, t.source, e.id as event_id, e.event_time, e.description from events e
 inner join event_types t on e.event_type_id = t.id
 inner join users_sessions s on e.session_id = s.id
@@ -44,7 +44,7 @@ order by e.event_time desc
 --name: TopPackagesByUsers
 --input: string date { pattern: datetime }
 --input: list users
---connection: System:DatagrokAdmin
+--connection: System:Datagrok
 select t.name, count(t.id) from (
 	select pp.name, u.id from event_types et
 	join published_packages pp on et.package_id = pp.id
@@ -70,7 +70,7 @@ limit 50;
 --name: TopUsers
 --input: string date { pattern: datetime }
 --input: list users
---connection: System:DatagrokAdmin
+--connection: System:Datagrok
 select u.login, count(1) from events e
 inner join event_types t on e.event_type_id = t.id
 inner join users_sessions s on e.session_id = s.id

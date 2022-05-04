@@ -1,13 +1,13 @@
 {
   "name": "@datagrok/clinical-case",
   "friendlyName": "Clinical Case",
-  "version": "0.1.0",
+  "version": "0.1.1",
   "description": "",
   "dependencies": {
-    "@datagrok-libraries/statistics": ">=0.0.15",
-    "@datagrok-libraries/utils": ">=0.0.16",
+    "@datagrok-libraries/statistics": "^0.0.15",
+    "@datagrok-libraries/utils": "^0.0.16",
     "cash-dom": "^8.1.0",
-    "datagrok-api": ">=0.116.0",
+    "datagrok-api": "^0.116.0",
     "jstat": "^1.9.5",
     "moment": "^2.29.1",
     "ts-loader": "^8.1.0",

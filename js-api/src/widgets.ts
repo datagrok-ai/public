@@ -326,9 +326,8 @@ export abstract class Filter extends Widget {
     );
   }
 
-  detach() {
+  detach(): void {
     super.detach();
-
     if (this.isFiltering)
       this.dataFrame?.rows?.requestFilter();
   }
@@ -935,6 +934,10 @@ export class InputBase {
   /** Whether empty values are allowed */
   get nullable(): boolean { return api.grok_InputBase_Get_Nullable(this.dart); }
   set nullable(v: boolean) { api.grok_InputBase_Set_Nullable(this.dart, v); }
+  
+  /** Whether events are thrown on value set */
+  get notify(): boolean { return api.grok_InputBase_Get_Notify(this.dart); }
+  set notify(v: boolean) { api.grok_InputBase_Set_Notify(this.dart, v); }
 
   /** Input value */
   get value(): any { return toJs(api.grok_InputBase_Get_Value(this.dart)); }
@@ -1156,8 +1159,11 @@ export class Color {
     return api.grok_Color_GetContrastColor(color);
   }
 
-  /** Converts ARGB-formatted integer color to a HTML-formatted string (such as `#FF68Gf5T`). See also {@link toRgb}. */
-  static toHtml(color: number) { return api.grok_Color_ToHtml(color); }
+ /** Converts ARGB-formatted integer color to a HTML-formatted string (such as `#ffffff`). See also {@link toRgb}. */
+  static toHtml(color: number): string { return api.grok_Color_ToHtml(color); }
+
+  /** Convert HTML-formatted string (such as `#ffffff`) to ARGB-fromatted integer color */
+  static fromHtml(htmlColor: string): number { return api.grok_Color_FromHtml(htmlColor); }
 
   /** Converts ARGB-formatted integer color to a HTML-formatted string (such as `rbg(20, 46, 124)`). See also {@link toHtml. }*/
   static toRgb(color: ColorType): string {

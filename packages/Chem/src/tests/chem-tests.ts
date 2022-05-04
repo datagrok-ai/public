@@ -1,7 +1,7 @@
 import {category, expect, expectFloat, test} from '@datagrok-libraries/utils/src/test';
 import {_testSearchSubstructure,
   _testSearchSubstructureAllParameters,
-  _testSearchSubstructureSARSmall, requireText} from './utils';
+  _testSearchSubstructureSARSmall, loadFileAsText} from './utils';
 import * as DG from 'datagrok-api/dg';
 import * as grok from 'datagrok-api/grok';
 import * as ui from 'datagrok-api/ui';
@@ -38,7 +38,7 @@ COc1ccc2c(c1)c(CC(=O)N3CCCC3C(=O)Oc4ccc(C)cc4OC)c(C)n2C(=O)c5ccc(Cl)cc5
   });
 
   test('findSimilar.sar-small', async () => {
-    const dfInput = DG.DataFrame.fromCsv(await requireText('sar-small.csv'));
+    const dfInput = DG.DataFrame.fromCsv(await loadFileAsText('sar-small.csv'));
     const colInput = dfInput.columns[0];
     const dfResult: DG.DataFrame = // shouldn't be null
       (await grok.chem.findSimilar(colInput, 'O=C1CN=C(C2CCCCC2)C2:C:C:C:C:C:2N1'))!;

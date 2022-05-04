@@ -2,10 +2,10 @@
 	"name": "@datagrok/hit-triage",
 	"beta": true,
 	"friendlyName": "HitTriage",
-	"version": "0.0.1",
+	"version": "0.0.2",
 	"description": "",
 	"dependencies": {
-		"datagrok-api": ">0.94.10",
+		"datagrok-api": "^0.94.10",
 		"ts-loader": "latest",
 		"typescript": "latest",
 		"cash-dom": "latest"

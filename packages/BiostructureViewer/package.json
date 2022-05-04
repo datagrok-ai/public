@@ -2,7 +2,7 @@
   "name": "biostructureviewer",
   "beta": false,
   "friendlyName": "BiostructureViewer",
-  "version": "0.2.3",
+  "version": "0.2.4",
   "description": "",
   "sources": [
     "css/ngl.css",
@@ -13,9 +13,9 @@
     "css/molstar.css"
   ],
   "dependencies": {
-    "@datagrok-libraries/utils": ">=0.0.22 <0.2.6 <0.2.7",
+    "@datagrok-libraries/utils": ">=0.0.22 <0.2.6 <0.2.7 <0.2.9",
     "cash-dom": "latest",
-    "datagrok-api": ">=0.95.11",
+    "datagrok-api": "^0.95.11",
     "dayjs": "latest",
     "molstar": "^3.0.0-dev.4"
   },

@@ -11,14 +11,14 @@
 		"common/ngl_viewer/ngl.js"
 	],
 	"dependencies": {
-		"@datagrok-libraries/utils": ">=0.0.22",
+		"@datagrok-libraries/utils": ">=0.0.22 <0.2.9",
 		"@deck.gl/core": "^8.7.5",
 		"@deck.gl/layers": "^8.7.5",
 		"@luma.gl/constants": "^8.5.10",
 		"@luma.gl/core": "^8.5.10",
 		"@phylocanvas/phylocanvas.gl": "^1.43.0",
 		"cash-dom": "latest",
-		"datagrok-api": ">=0.95.5",
+		"datagrok-api": "^0.95.5",
 		"logojs-react": "^2.1.1",
 		"rxjs": "^6.5.5",
 		"ts-loader": "^9.2.5",

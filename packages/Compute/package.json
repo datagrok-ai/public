@@ -1,7 +1,7 @@
 {
 	"name": "@datagrok/compute",
 	"friendlyName": "Compute",
-	"version": "0.7.1",
+	"version": "0.7.2",
 	"description": "",
 	"dependencies": {
 		"@datagrok-libraries/utils": "^0.2.4",

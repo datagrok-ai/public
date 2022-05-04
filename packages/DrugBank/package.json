@@ -2,10 +2,10 @@
   "name": "@datagrok/drug-bank",
   "beta": false,
   "friendlyName": "DrugBank",
-  "version": "0.0.3",
+  "version": "0.0.4",
   "description": "",
   "dependencies": {
-    "datagrok-api": ">0.94.10",
+    "datagrok-api": "^0.94.10",
     "cash-dom": "latest",
     "dayjs": "latest",
     "openchemlib": "latest",

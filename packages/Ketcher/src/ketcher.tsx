@@ -121,6 +121,14 @@ export class KetcherSketcher extends grok.chem.SketcherBase {
     this.smilesToMol(smiles).then((molFile) => this.setMolFile(molFile));
   }
 
+  async getSmarts(): Promise<string> {
+    return this.smiles;
+  }
+
+  setSmarts(s: string) {
+    this.smiles = s;
+  }
+
   get molFile() {
     return this._molFile;
   }
