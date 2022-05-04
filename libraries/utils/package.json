@@ -8,8 +8,8 @@
   "description": "Common utilities",
   "dependencies": {
     "@types/node": "^14.14.37",
-    "cash-dom": "latest",
-    "datagrok-api": "^0.148.3",
+    "cash-dom": "^8.1.1",
+    "datagrok-api": "^0.150.2",
     "dts-bundle": "^0.7.3",
     "exceljs": "^4.3.0",
     "node-fetch": "^2.6.0",
