@@ -9,6 +9,7 @@
     //"noImplicitAny": true,
     "lib": [
       "ES2021",
+      "ES2021.String",
       "DOM"
     ],
     "moduleResolution": "node",
