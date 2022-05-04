@@ -24,7 +24,7 @@ export class ViewBase {
   dart: any;
   subs: Subscription[];
   private _helpUrl: string | null = null;
-  protected _root: HTMLDivElement;
+  protected _root: HTMLElement;
   private _closing: boolean;
   private _path: string | null = null;
 
@@ -51,6 +51,10 @@ export class ViewBase {
   get root(): HTMLElement {
     return this._root;
   }
+
+  set root(newRoot: HTMLElement){
+    this._root = newRoot
+  } 
 
   get box(): boolean {
     return $(this.root).hasClass('ui-box');

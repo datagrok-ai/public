@@ -1,3 +1,4 @@
+/* eslint-disable valid-jsdoc */
 import wu from 'wu';
 import $ from 'cash-dom';
 import * as grok from 'datagrok-api/grok';
@@ -5,44 +6,20 @@ import * as ui from 'datagrok-api/ui';
 import * as DG from 'datagrok-api/dg';
 
 export class FunctionView extends DG.ViewBase {
-  constructor(func: DG.Func | null) {
+  constructor(func: DG.Func) {
     super();
     this.func = func;
-    this.context = DG.Context.cloneDefault();
-    this.controlsRoot.style.maxWidth = '370px';
-    this.box = true;
-    if (func != null)
-      this.init(func).then((r) => {});
   }
 
-  private _type: string = 'function';
-  public get type(): string {
-    return this._type;
-  }
-  public func: DG.Func | null;
-  readonly context: DG.Context;
-  public call?: DG.FuncCall;
-  public lastCall?: DG.FuncCall;
-  _inputFields: Map<string, DG.InputBase> = new Map<string, DG.InputBase>();
-
-  async init(func: DG.Func) {
-    this.func ??= func;
-    /*
-      var meta = EntityMeta.forEntity(f);
-      func = await meta.refresh(f);
-    */
-
-    this.call ??= this.func.prepare();
-    this.call.aux['view'] = this;
-    this.call.context = this.context;
+  init() {
+    this.lastCall ??= this.func.prepare();
+    this.lastCall.aux['view'] = this;
+    this.lastCall.context = DG.Context.cloneDefault();
 
     this.singleDfParam = wu(this.func.outputs).filter((p) => p.propertyType == DG.TYPE.DATA_FRAME)
       .toArray().length == 1;
-    //var fullRunSection = div();
-    //var fullDiv = div('ui-panel', [getFullSection(func, call, fullRunSection)]);
-    //htmlSetDisplay(fullDiv, false);
 
-    for (const inParam of wu(this.call.inputParams.values() as DG.FuncCallParam[])
+    for (const inParam of wu(this.lastCall.inputParams.values() as DG.FuncCallParam[])
       .filter((p: DG.FuncCallParam) =>
         p.property.propertyType == DG.TYPE.DATA_FRAME && p.property.options['viewer'] != null)) {
       this.showInputs = true;
@@ -57,39 +34,57 @@ export class FunctionView extends DG.ViewBase {
       }));
     }
 
-
-    //this.controlsRoot.appendChild(fullDiv);
-
-    /*advancedModeSwitch.onChanged.listen((_) {
-      if (advancedModeSwitch.value)
-        fullRunSection.append(runSection);
-      else
-        funcDiv.append(runSection);
-      htmlSetDisplay(fullDiv, advancedModeSwitch.value);
-      htmlSetDisplay(funcDiv, !advancedModeSwitch.value);
-    });*/
-    //setRibbon();
     this.root.appendChild(this.build());
-    /*
-    Routing.setPath(this.path, f.name, true);
-    */
-
     this.name = this.func.friendlyName;
+    this.box = true;
   }
 
-  build(): HTMLElement {return ui.splitH([this.buildInputBlock(), this.buildOutputBlock()]);}
+  private _type: string = 'function';
+  public get type(): string {
+    return this._type;
+  }
+  public func: DG.Func;
+  public lastCall: DG.FuncCall | null = null;
+  _inputFields: Map<string, DG.InputBase> = new Map<string, DG.InputBase>();
 
-  buildInputBlock(): HTMLElement {
-    const funcDiv = ui.div([this.renderRunSection(this.call!)], 'ui-div');
-    this.controlsRoot.innerHTML = '';
-    this.controlsRoot.appendChild(funcDiv);
-    return this.controlsRoot;
+  /** Input panel for form, run button, etc. On the left side by default */
+  inputPanel = ui.div() as HTMLElement;
+  /** Override if custom input panel is required */
+  buildInputPanel(): HTMLElement {
+    return ui.div([this.buildInputForm(this.lastCall!)]);
+  }
+  /** Call to update input panel */
+  async renderInputPanel() {
+    const newInputPanel = this.buildInputPanel();
+    this.inputPanel.replaceWith(newInputPanel);
+    this.inputPanel = newInputPanel;
   }
 
-  buildOutputBlock(): HTMLElement {
-    this.resultsRoot.innerHTML = '';
-    this.resultsRoot.appendChild(this.resultsDiv);
-    return this.resultsRoot;
+  /** Output panel for viewing results. On the right side by default */
+  outputPanel = ui.div() as HTMLElement;
+  /** Override if custom ouptut panel is required */
+  buildOutputPanel(): HTMLElement {
+    return ui.div();
+  }
+  /** Call to update output panel */
+  async renderOutputPanel() {
+    const newOutputPanel = this.buildOutputPanel();
+    console.log('newOutputPanel', newOutputPanel);
+    this.outputPanel.replaceWith(newOutputPanel);
+    this.outputPanel = newOutputPanel;
+    console.log('outputPanel', this.outputPanel);
+  }
+
+  public async render() {
+    const newRoot = this.build();
+    this.root.replaceWith(newRoot);
+    this.root = newRoot;
+  }
+
+  build(): HTMLElement {
+    this.renderInputPanel();
+    this.renderOutputPanel();
+    return ui.divH([this.inputPanel, this.outputPanel]);
   }
 
   clearResults(clearTabs: boolean = true, showOutput: boolean = true) {
@@ -121,13 +116,14 @@ export class FunctionView extends DG.ViewBase {
       this.resultsDiv = ui.panel([], 'grok-func-results');
       this.resultsTabControl = undefined;
     }
-    this.buildOutputBlock();
+    this.buildOutputPanel();
   }
 
   inputFieldsToParameters(call: DG.FuncCall): void { }
 
   async run(): Promise<void> {
-    this.lastCall = this.call!.clone();
+    if (!this.lastCall) return;
+
     this.inputFieldsToParameters(this.lastCall);
 
     try {
@@ -140,7 +136,9 @@ export class FunctionView extends DG.ViewBase {
   }
 
   async compute(call: DG.FuncCall): Promise<void> {
-    await call.call(true, undefined, {processed: true});
+    ui.setUpdateIndicator(this.outputPanel, true);
+    this.lastCall = await call.call(true, undefined, {processed: true});
+    ui.setUpdateIndicator(this.outputPanel, false);
   }
 
   outputParametersToView(call: DG.FuncCall): void {
@@ -152,34 +150,16 @@ export class FunctionView extends DG.ViewBase {
     }
   }
 
-  renderRunSection(call: DG.FuncCall): HTMLElement {
-    return ui.wait(async () => {
-      const runButton = ui.bigButton('Run', async () => {
-        call.aux['view'] = this.dart;
-        await this.run();
-      });
-      const editor = ui.div();
-      const inputs: DG.InputBase[] = await call.buildEditor(editor, {condensed: true});
-      editor.appendChild(ui.buttonsInput([runButton]));
-      for (const input of inputs)
-        this._inputFields.set(input.property.name, input);
-      return editor;
-    });
-  }
-
   showInputs: boolean = false;
   singleDfParam: boolean = false;
   paramViewers: Map<string, DG.Viewer[]> = new Map();
   resultsTabControl: DG.TabControl | undefined;
   resultTabs: Map<String, HTMLElement> = new Map();
   resultsDiv: HTMLElement = ui.panel([], 'grok-func-results');
-  controlsRoot: HTMLDivElement = ui.box();
-  resultsRoot: HTMLDivElement = ui.box();
   inputsDiv: HTMLDivElement = ui.panel([], 'grok-func-results');
 
   appendResultDataFrame(param: DG.FuncCallParam, options?: { caption?: string, category?: string, height?: number}) {
     const df = param.value;
-    console.log('dataframe', df);
     let caption = options?.caption;
     let height = options?.height ?? 400;
     const viewers: DG.Viewer[] = param.aux['viewers'] ?? [];
@@ -287,4 +267,20 @@ export class FunctionView extends DG.ViewBase {
     else
       this.resultsDiv.appendChild(d);
   }
+
+  /** helper methods */
+  buildInputForm(call: DG.FuncCall): HTMLElement {
+    return ui.wait(async () => {
+      const runButton = ui.bigButton('Run', async () => {
+        call.aux['view'] = this.dart;
+        await this.run();
+      });
+      const editor = ui.div();
+      const inputs: DG.InputBase[] = await call.buildEditor(editor, {condensed: true});
+      editor.appendChild(ui.buttonsInput([runButton]));
+      for (const input of inputs)
+        this._inputFields.set(input.property.name, input);
+      return editor;
+    });
+  };
 }
