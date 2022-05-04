@@ -705,6 +705,27 @@ export class Dialog extends DartWidget {
   }
 }
 
+
+/** See {@link Menu.items} */
+export interface IMenuItemsOptions<T = any> {
+
+  /** Whether or not a check box appears before the item */
+  isChecked?: (item: T) => boolean;
+
+  /** If result is not null, the item is grayed out and the result is shown in the tooltip */
+  isValid?: (item: T) => string | null;
+
+  /** Text to be shown on the menu item */
+  toString?: (item: T) => string;
+
+  /** Tooltip */
+  getTooltip?: (item: T) => string;
+
+  /** Gets invoked when the mouse enters the item */
+  onMouseEnter?: (item: T) => void;
+}
+
+
 /**
  * Menu (either top menu or popup menu).
  * Top menu sample: {@link https://public.datagrok.ai/js/samples/ui/menu}
@@ -771,8 +792,8 @@ export class Menu {
   }
 
   /** For each item in items, adds a menu group with the specified text and handler. */
-  items(items: string[] | HTMLElement[], onClick: (item: string) => void): Menu {
-    return toJs(api.grok_Menu_Items(this.dart, items, onClick));
+  items<T = any>(items: T[], onClick: (item: T) => void, options: IMenuItemsOptions<T> | null = null): Menu {
+    return toJs(api.grok_Menu_Items(this.dart, items, onClick, options?.isValid, options?.isChecked, options?.toString, options?.getTooltip, options?.onMouseEnter));
   }
 
   /** Adds a separator line.
