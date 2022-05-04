@@ -1,11 +1,12 @@
 import * as ui from 'datagrok-api/ui';
 import * as DG from 'datagrok-api/dg';
 import {MiscMethods} from './misc';
+import {PdbType} from '../utils/data-loader';
 
 export class NglAspect {
   stage: any;
   schemeObj: any;
-  pdbStr: string;
+  pdbStr: PdbType;
   json: any;
   colorScheme: any;
   nglHost: HTMLElement;
@@ -14,8 +15,10 @@ export class NglAspect {
   paratopes: DG.InputBase;
   selection: any;
 
-  public async init(view: DG.TableView, pdbStr: string, json: any, colorScheme: any, nglHost: HTMLElement,
-    repChoice: DG.InputBase, cdrScheme: DG.InputBase, paratopes: DG.InputBase, twinSelections: any) {
+  public async init(
+    view: DG.TableView, pdbStr: PdbType, json: any, colorScheme: any, nglHost: HTMLElement,
+    repChoice: DG.InputBase, cdrScheme: DG.InputBase, paratopes: DG.InputBase, twinSelections: any
+  ) {
     this.colorScheme = colorScheme;
     nglHost.style.backgroundColor = this.colorScheme['colBackground'];
     view.box = true;
@@ -150,8 +153,8 @@ export class NglAspect {
   }
 
   // load the 3D model
-  private async loadPdb(pdbStr: string, repChoice: DG.InputBase, schemeObj: any) {
-    const stringBlob = new Blob([pdbStr], {type: 'text/plain'});
+  private async loadPdb(pdbStr: PdbType, repChoice: DG.InputBase, schemeObj: any) {
+    const stringBlob = new Blob([<string>pdbStr], {type: 'text/plain'});
     await this.stage.loadFile(stringBlob, {ext: 'pdb'}).then(function(o: any) {
       o.addRepresentation(repChoice.value, schemeObj);
       o.autoView();

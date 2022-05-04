@@ -429,11 +429,12 @@ export function convertMolecule(molecule: string, from: string, to: string): str
 //input: grid_cell cell
 export function editMoleculeCell(cell: DG.GridCell) {
   const sketcher = new Sketcher();
+  const unit = cell.cell.column.tags[DG.TAGS.UNITS];
   sketcher.setMolecule(cell.cell.value);
   ui.dialog()
     .add(sketcher)
     .onOK(() => {
-      cell.cell.value = sketcher.getMolFile();
+      cell.cell.value = unit == 'molblock' ? sketcher.getMolFile() : sketcher.getSmiles();
       Sketcher.addRecent(sketcher.getSmiles());
     })
     .show();
