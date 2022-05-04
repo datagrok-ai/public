@@ -90,17 +90,20 @@ M  END
           if (scaffoldIsMolBlock) {
             const rdKitScaffoldMol = this._fetchMol(scaffoldMolString, '', molRegenerateCoords, false).mol;
             if (rdKitScaffoldMol && rdKitScaffoldMol.is_valid()) {
-              const substructJson = mol.generate_aligned_coords(rdKitScaffoldMol, true, true, false);
+              let substructJson;
+              try {
+                substructJson = mol.generate_aligned_coords(rdKitScaffoldMol, true, true, false);
+              } catch {
+                substructJson = '{}';
+              }
               substruct = substructJson === '' ? {} : JSON.parse(substructJson);
             }
           } else if (molRegenerateCoords) {
-            const molBlock = mol.get_new_coords(true);
-            mol.delete();
-            mol = this.rdKitModule.get_mol(molBlock);
+            mol.set_new_coords(true);
           }
           if (!scaffoldIsMolBlock || molRegenerateCoords) {
-            mol.normalize_2d_molblock();
-            mol.straighten_2d_layout();
+            mol!.normalize_depiction();
+            mol!.straighten_depiction();
           }
         }
         if (!mol!.is_valid()) {

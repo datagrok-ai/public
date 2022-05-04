@@ -83,8 +83,8 @@ export function drawMoleculeToCanvas(
     const molBlock = mol.get_new_coords(true);
     mol.delete();
     mol = getRdKitModule().get_mol(molBlock);
-    mol.normalize_2d_molblock();
-    mol.straighten_2d_layout();
+    mol.normalize_depiction();
+    mol.straighten_depiction();
     const scaffoldMol = scaffoldMolString == null ? null :
       getRdKitModule().get_qmol(convertToRDKit(scaffoldMolString)!);
     let substructJson = '{}';
