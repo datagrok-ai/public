@@ -1,16 +1,17 @@
 /* Do not change these import lines to match external modules in webpack configuration */
-import * as grok from 'datagrok-api/grok';
-import * as ui from 'datagrok-api/ui';
+// import * as grok from 'datagrok-api/grok';
+// import * as ui from 'datagrok-api/ui';
 import * as DG from 'datagrok-api/dg';
-import {ImageCellRenderer} from "./cell-types/image-cell-renderer";
-import {HyperlinkCellRenderer} from "./cell-types/hyperlink-cell-renderer";
-import {HtmlTestCellRenderer, TestCellRenderer} from "./cell-types/test-cell-renderer";
-import {BarCellRenderer} from "./cell-types/bar-cell-renderer";
 
-import {SparklineCellRenderer} from "./sparklines/sparklines-lines";
-import {BarchartCellRenderer} from "./sparklines/barchart";
-import {PiechartCellRenderer} from "./sparklines/piechart";
-import {RadarchartCellRender} from "./sparklines/radarchart";
+import {ImageCellRenderer} from './cell-types/image-cell-renderer';
+import {HyperlinkCellRenderer} from './cell-types/hyperlink-cell-renderer';
+import {HtmlTestCellRenderer, TestCellRenderer} from './cell-types/test-cell-renderer';
+import {BarCellRenderer} from './cell-types/bar-cell-renderer';
+
+import {SparklineCellRenderer} from './sparklines/sparklines-lines';
+import {BarChartCellRenderer} from './sparklines/barchart';
+import {PieChartCellRenderer} from './sparklines/piechart';
+import {RadarChartCellRender} from './sparklines/radarchart';
 
 export const _package = new DG.Package();
 
@@ -69,7 +70,7 @@ export function sparklineCellRenderer() {
 //meta.virtual: true
 //output: grid_cell_renderer result
 export function barchartCellRenderer() {
-  return new BarchartCellRenderer();
+  return new BarChartCellRenderer();
 }
 
 //name: piechartCellRender
@@ -78,7 +79,7 @@ export function barchartCellRenderer() {
 //meta.virtual: true
 //output: grid_cell_renderer result
 export function piechartCellRenderer() {
-  return new PiechartCellRenderer();
+  return new PieChartCellRenderer();
 }
 
 //name: radarCellRenderer
@@ -87,5 +88,5 @@ export function piechartCellRenderer() {
 //meta.virtual: true
 //output: grid_cell_renderer result
 export function radarCellRenderer() {
-  return new RadarchartCellRender();
+  return new RadarChartCellRender();
 }

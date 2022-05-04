@@ -248,22 +248,16 @@ export class IconTool extends DG.ViewBase {
         ]),
           ui.divV([
           browseFile,
-          ui.inputs([
-            //@ts-ignore
+          ui.inputs(<Iterable<DG.InputBase>>[
             fileButtons,
             imageMargin,
-            //@ts-ignore
             setTransperency,
-            //@ts-ignore
             removeColor,
             text,
             fontSize,
-            //@ts-ignore
             textPosition,
             fontWeight,
-            //@ts-ignore
             setColors,
-            //@ts-ignore
             ui.buttonsInput([dwnl])
           ]),
           image,

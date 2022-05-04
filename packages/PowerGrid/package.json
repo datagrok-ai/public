@@ -1,31 +1,37 @@
 {
-  "name": "power-grid",
-  "friendlyName": "PowerGrid",
-  "version": "0.0.3",
-  "description": "",
-  "dependencies": {
-    "datagrok-api": "latest",
-    "cash-dom": "latest",
-    "dayjs": "latest"
-  },
-  "devDependencies": {
-    "webpack": "latest",
-    "webpack-cli": "latest",
-    "ts-loader": "latest",
-    "typescript": "latest"
-  },
-  "scripts": {
-    "link-all": "npm link datagrok-api  @datagrok-libraries/utils",
-    "link-api": "npm link datagrok-api ",
-    "debug-powergrid": "grok publish --rebuild",
-    "release-powergrid": "grok publish --rebuild --release",
-    "build-powergrid": "webpack",
-    "powergrid-deploy": "webpack & grok publish",
-    "build": "webpack",
-    "debug-powergrid-dev": "grok publish dev --rebuild",
-    "release-powergrid-dev": "grok publish dev --rebuild --release",
-    "debug-powergrid-public": "grok publish public --rebuild",
-    "release-powergrid-public": "grok publish public --rebuild --release",
-    "debug-powergrid-local": "grok publish local --rebuild"
-  }
+	"name": "power-grid",
+	"friendlyName": "PowerGrid",
+	"version": "0.0.3",
+	"description": "",
+	"dependencies": {
+		"cash-dom": "latest",
+		"datagrok-api": "^0.148.5",
+		"dayjs": "latest"
+	},
+	"devDependencies": {
+		"@typescript-eslint/eslint-plugin": "^5.20.0",
+		"@typescript-eslint/parser": "^5.20.0",
+		"eslint": "latest",
+		"eslint-config-google": "latest",
+		"ts-loader": "latest",
+		"typescript": "latest",
+		"webpack": "latest",
+		"webpack-cli": "latest"
+	},
+	"scripts": {
+		"lint": "eslint src --ext .ts",
+		"lint-fix": "eslint src --ext .ts --fix",
+		"link-all": "npm link datagrok-api  @datagrok-libraries/utils",
+		"link-api": "npm link datagrok-api ",
+		"debug-powergrid": "grok publish --rebuild",
+		"release-powergrid": "grok publish --rebuild --release",
+		"build-powergrid": "webpack",
+		"powergrid-deploy": "webpack & grok publish",
+		"build": "webpack",
+		"debug-powergrid-dev": "grok publish dev --rebuild",
+		"release-powergrid-dev": "grok publish dev --rebuild --release",
+		"debug-powergrid-public": "grok publish public --rebuild",
+		"release-powergrid-public": "grok publish public --rebuild --release",
+		"debug-powergrid-local": "grok publish local --rebuild"
+	}
 }

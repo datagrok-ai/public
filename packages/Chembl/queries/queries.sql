@@ -94,7 +94,7 @@ select protein_class_id, parent_id, pref_name, definition, class_level from prot
 
 --name: bioactivity data for bacterial targets for @organism
 --connection: chembl
---input: string organism = Shigella {suggestions: Chembl:organisms}
+--input: string organism = "Shigella" {suggestions: Chembl:organisms}
 SELECT md.chembl_id AS compound_chembl_id,
 cs.canonical_smiles,
 act.standard_type,
@@ -115,8 +115,8 @@ FROM target_dictionary td
 
 --name: activity details for compound and all its salts which have an IC50 bioactivity value in nM against a target of interest
 --connection: chembl
---input: string compound = CHEMBL192
---input: string target = CHEMBL1827
+--input: string compound = "CHEMBL192"
+--input: string target = "CHEMBL1827"
 SELECT m.chembl_id AS compound_chembl_id,
 s.canonical_smiles,
 r.compound_key,
@@ -152,8 +152,8 @@ FROM compound_structures s
 
 --name: compounds which are selective to one target over a second target
 --connection: chembl
---input: string selectiveFor = CHEMBL301
---input: string over = CHEMBL4036
+--input: string selectiveFor = "CHEMBL301"
+--input: string over = "CHEMBL4036"
 SELECT md.chembl_id,
 cs.canonical_smiles
 FROM target_dictionary td
@@ -199,7 +199,7 @@ AND tt.parent_type  = 'PROTEIN';
 
 --name: PK data from 'Curated Drug Pharmacokinetic Data' source for @drug
 --connection: chembl
---input: string drug = LEVOFLOXACIN
+--input: string drug = "LEVOFLOXACIN"
 SELECT DISTINCT
   d.title,
   min(case when ap.standard_type = 'DATASET' then coalesce(ap.standard_value::text, ap.standard_text_value) else null end)         dataset,
@@ -240,7 +240,7 @@ ORDER BY cr.compound_name, act.toid, act.standard_type;
 
 --name: compound activity details for all targets containing @protein
 --connection: chembl
---input: string protein = P08172
+--input: string protein = "P08172"
 SELECT DISTINCT
   m.chembl_id                      AS compound_chembl_id,
   s.canonical_smiles,
@@ -270,7 +270,7 @@ FROM compound_structures s
 
 --name: compound activity details for @target
 --connection: chembl
---input: string target = CHEMBL1827
+--input: string target = "CHEMBL1827"
 SELECT m.chembl_id AS compound_chembl_id,
 s.canonical_smiles,
 r.compound_key,

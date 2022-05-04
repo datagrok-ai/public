@@ -25,12 +25,12 @@ declare global {
   }
 }
 
-CanvasRenderingContext2D.prototype.setFillStyle = function (fill) {
+CanvasRenderingContext2D.prototype.setFillStyle = function (fill: string | CanvasGradient | CanvasPattern) {
   this.fillStyle = fill;
   return this;
 }
 
-CanvasRenderingContext2D.prototype.setStrokeStyle = function (stroke) {
+CanvasRenderingContext2D.prototype.setStrokeStyle = function (stroke: string | CanvasGradient | CanvasPattern) {
   this.strokeStyle = stroke;
   return this;
 }
@@ -49,7 +49,6 @@ CanvasRenderingContext2D.prototype.roundRect = function (x: number, y: number, w
 }
 
 CanvasRenderingContext2D.prototype.line = function (x1, y1, x2, y2, color) {
-
   this.beginPath();
   this.strokeStyle = Color.toRgb(color);
   this.moveTo(x1, y1);
@@ -59,8 +58,7 @@ CanvasRenderingContext2D.prototype.line = function (x1, y1, x2, y2, color) {
   return this;
 }
 
-CanvasRenderingContext2D.prototype.polygon = function (pa) {
-
+CanvasRenderingContext2D.prototype.polygon = function (pa: Point[]) {
   this.beginPath();
 
   const last_p = pa[pa.length - 1]

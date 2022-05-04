@@ -1,7 +1,7 @@
 --name: TopFunctions
 --input: string date { pattern: datetime }
 --input: list users
---connection: System:DatagrokAdmin
+--connection: System:Datagrok
 select et.name, count(1) from events e
 join event_types et on e.event_type_id = et.id
 join users_sessions s on e.session_id = s.id
@@ -15,7 +15,7 @@ group by et.name
 --name: TopPackageFunctions
 --input: string date { pattern: datetime }
 --input: list users
---connection: System:DatagrokAdmin
+--connection: System:Datagrok
 select et.name, count(1) from event_types et
 join events e on e.event_type_id = et.id
 join users_sessions s on e.session_id = s.id
@@ -35,7 +35,7 @@ group by et.name
 --name: Events1
 --input: string date { pattern: datetime }
 --input: list users
---connection: System:DatagrokAdmin
+--connection: System:Datagrok
 select e.event_time::date, count(1) from events e
 join users_sessions s on e.session_id = s.id
 join users u on u.id = s.user_id
@@ -47,7 +47,7 @@ group by e.event_time::date;
 --name: TopPackages
 --input: string date { pattern: datetime }
 --input: list users
---connection: System:DatagrokAdmin
+--connection: System:Datagrok
 select pp.name, count(1) from event_types et
 join published_packages pp on et.package_id = pp.id
 join events e on e.event_type_id = et.id
@@ -69,7 +69,7 @@ limit 50
 --name: TopSources
 --input: string date { pattern: datetime }
 --input: list users
---connection: System:DatagrokAdmin
+--connection: System:Datagrok
 select et.source, count(1) from event_types et
 join events e on e.event_type_id = et.id
 join users_sessions s on e.session_id = s.id

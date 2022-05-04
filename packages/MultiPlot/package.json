@@ -1,12 +1,12 @@
 {
 	"name": "@datagrok/multiplot",
 	"friendlyName": "MultiPlot",
-	"version": "0.0.2",
+	"version": "0.0.3",
 	"beta": true,
 	"description": "",
 	"dependencies": {
 		"chokidar": "^3.5.2",
-		"datagrok-api": ">0.94.10",
+		"datagrok-api": "^0.94.10",
 		"typescript": "^4.3.5",
 		"ws": "^7.5.1"
 	},

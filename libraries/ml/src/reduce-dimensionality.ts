@@ -1,7 +1,12 @@
 import * as umj from 'umap-js';
 import {TSNE} from '@keckelt/tsne';
-
-import {Options, DistanceMetric, Coordinates, Vector, Vectors} from '@datagrok-libraries/utils/src/type-declarations';
+import {
+  Options,
+  DistanceMetric,
+  Coordinates,
+  Vector,
+  Vectors,
+  Matrix} from '@datagrok-libraries/utils/src/type-declarations';
 import {
   calcDistanceMatrix,
   transposeMatrix,
@@ -33,10 +38,10 @@ abstract class Reducer {
    * Is to embed the data given into the two-dimensional space.
    *
    * @abstract
-   * @return {Coordinates} Cartesian coordinate of this embedding.
+   * @return {any} Cartesian coordinate of this embedding and distance matrix where applicable.
    * @memberof Reducer
    */
-  abstract transform(): Coordinates;
+  abstract transform(): { [key: string] : Matrix };
 }
 
 /**
@@ -48,7 +53,7 @@ abstract class Reducer {
 class TSNEReducer extends Reducer {
   protected reducer: TSNE;
   protected iterations: number;
-  protected distance: DistanceMetric;
+  protected distanceFn: DistanceMetric;
 
   /**
    * Creates an instance of TSNEReducer.
@@ -59,20 +64,21 @@ class TSNEReducer extends Reducer {
     super(options);
     this.reducer = new TSNE(options);
     this.iterations = options?.iterations ?? 100;
-    this.distance = options.distance;
+    this.distanceFn = options.distance;
   }
 
   /**
    * Embeds the data given into the two-dimensional space using t-SNE method.
-   * @return {Coordinates} Cartesian coordinate of this embedding.
+   * @return {any} Cartesian coordinate of this embedding and distance matrix where applicable.
    */
-  public transform(): Coordinates {
-    this.reducer.initDataDist(calcDistanceMatrix(this.data, this.distance));
+  public transform(): { [key: string] : Matrix } {
+    const distance = calcDistanceMatrix(this.data, this.distanceFn);
+    this.reducer.initDataDist(distance);
 
     for (let i = 0; i < this.iterations; ++i) {
       this.reducer.step(); // every time you call this, solution gets better
     }
-    return this.reducer.getSolution();
+    return {distance: distance, embedding: this.reducer.getSolution()};
   }
 }
 
@@ -130,9 +136,9 @@ class UMAPReducer extends Reducer {
 
   /**
    * Embeds the data given into the two-dimensional space using UMAP method.
-   * @return {Coordinates} Cartesian coordinate of this embedding.
+   * @return {any} Cartesian coordinate of this embedding.
    */
-  public transform(): Coordinates {
+  public transform(): { [key: string] : Matrix } {
     this._encode();
 
     const embedding = this.reducer.fit(this.vectors);
@@ -141,7 +147,7 @@ class UMAPReducer extends Reducer {
       return new Array(data.length).fill(0).map((_, i) => (Vector.from(data[i])));
     }
 
-    return arrayCast2Coordinates(embedding);
+    return {embedding: arrayCast2Coordinates(embedding)};
   }
 }
 
@@ -166,10 +172,11 @@ class SPEReducer extends Reducer {
 
   /**
    * Embeds the data given into the two-dimensional space using the original SPE method.
-   * @return {Coordinates} Cartesian coordinate of this embedding.
+   * @return {any} Cartesian coordinate of this embedding and distance matrix where applicable.
    */
-  public transform(): Coordinates {
-    return this.reducer.embed(this.data);
+  public transform(): { [key: string] : Matrix } {
+    const emb = this.reducer.embed(this.data);
+    return {distance: this.reducer.distance, embedding: emb};
   }
 }
 
@@ -194,10 +201,11 @@ class PSPEReducer extends Reducer {
 
   /**
    * Embeds the data given into the two-dimensional space using the modified SPE method.
-   * @return {Coordinates} Cartesian coordinate of this embedding.
+   * @return {any} Cartesian coordinate of this embedding and distance matrix where applicable.
    */
-  public transform(): Coordinates {
-    return this.reducer.embed(this.data);
+  public transform(): { [key: string] : Matrix } {
+    const emb = this.reducer.embed(this.data);
+    return {distance: this.reducer.distance, embedding: emb};
   }
 }
 
@@ -222,10 +230,11 @@ class OriginalSPEReducer extends Reducer {
 
   /**
    * Embeds the data given into the two-dimensional space using the original SPE method.
-   * @return {Coordinates} Cartesian coordinate of this embedding.
+   * @return {any} Cartesian coordinate of this embedding and distance matrix where applicable.
    */
-  public transform(): Coordinates {
-    return this.reducer.embed(this.data);
+  public transform(): { [key: string] : Matrix } {
+    const emb = this.reducer.embed(this.data);
+    return {distance: this.reducer.distance, embedding: emb};
   }
 }
 
@@ -293,19 +302,20 @@ export class DimensionalityReducer {
    *
    * @param {boolean} transpose Whether to transform coordinates to have columns-first orientation.
    * @throws {Error} If the embedding method was not found.
-   * @return {Coordinates} Cartesian coordinate of this embedding.
+   * @return {any} Cartesian coordinate of this embedding and distance matrix where applicable.
    * @memberof DimensionalityReducer
    */
-  public transform(transpose: boolean = false): Coordinates {
+  public transform(transpose: boolean = false): { [key: string] : Matrix } {
     if (this.reducer == undefined) {
       throw new Error('Reducer was not defined.');
     }
-    let embedding = this.reducer.transform();
+
+    let {embedding, distance} = this.reducer.transform();
 
     if (transpose) {
       embedding = transposeMatrix(embedding);
     }
-    return embedding;
+    return {distance: distance, embedding: embedding};
   }
 
   /**

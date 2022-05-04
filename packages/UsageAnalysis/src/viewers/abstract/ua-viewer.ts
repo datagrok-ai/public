@@ -21,7 +21,7 @@ export abstract class UaViewer {
     "showYSelectors": false,
     "showAggrSelectors": false,
     "showSplitSelector": false,
-    "showYAxis": false,
+    // "showYAxis": false,
     "showMarkers": "Never",
     "Title":"Users"
   };

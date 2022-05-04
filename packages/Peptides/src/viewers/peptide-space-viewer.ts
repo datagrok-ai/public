@@ -18,7 +18,7 @@ export class PeptideSpaceViewer extends DG.JsViewer {
   method: string;
   measure: string;
   cyclesCount: number;
-  controller: PeptidesController | null = null;
+  // controller: PeptidesController | null = null;
   customProperties = new Set(['method', 'measure', 'cyclesCount']);
   isEmbeddingCreating: boolean = false;
 
@@ -35,7 +35,7 @@ export class PeptideSpaceViewer extends DG.JsViewer {
   async onFrameAttached(dataFrame: DG.DataFrame) {
     super.onFrameAttached(dataFrame);
 
-    this.controller = await PeptidesController.getInstance(this.dataFrame!);
+    // this.controller = await PeptidesController.getInstance(this.dataFrame!);
 
     await this.render(this.dataFrame!.temp[C.EMBEDDING_STATUS]);
   }

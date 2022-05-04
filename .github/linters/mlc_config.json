@@ -11,6 +11,18 @@
     },
     {
       "pattern": "^https://www.nginx.com"
+    },
+    {
+      "pattern": "^https://help.github.com"
+    },
+    {
+      "pattern": "^https://guides.github.com"
+    },
+    {
+      "pattern": "^https://dev.socrata.com"
+    },
+    {
+      "pattern": "^https://pubs.acs.org"
     }
   ],
   "retryOn429": true

@@ -26,8 +26,11 @@ export function getDistributionWidget(table: DG.DataFrame): DG.Widget {
   let [aarStr, otherStr] = splitCol.categories;
   if (typeof otherStr === 'undefined')
     [aarStr, otherStr] = [otherStr, aarStr];
-  const currentColor = DG.Color.toHtml(DG.Color.orange);
-  const otherColor = DG.Color.toHtml(DG.Color.blue);
+  // const currentColor = DG.Color.toHtml(DG.Color.orange);
+  // const otherColor = DG.Color.toHtml(DG.Color.blue);
+  const currentColor = DG.Color.toHtml(DG.Color.getCategoryColor(splitCol, aarStr));
+  const otherColor = DG.Color.toHtml(DG.Color.getCategoryColor(splitCol, otherStr));
+
   const currentLabel = ui.label(aarStr, {style: {color: currentColor}});
   const otherLabel = ui.label(otherStr, {style: {color: otherColor}});
   const elements: (HTMLLabelElement | HTMLElement)[] = [currentLabel, otherLabel];

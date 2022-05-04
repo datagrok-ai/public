@@ -818,7 +818,7 @@ export class Tooltip {
   }
 
   /** Associated the specified visual element with the corresponding item. */
-  bind(element: HTMLElement, tooltip?: string | null | (() => string | null)): HTMLElement {
+  bind(element: HTMLElement, tooltip?: string | null | (() => string | HTMLElement | null)): HTMLElement {
     if (tooltip != null)
       api.grok_Tooltip_SetOn(element, tooltip);
     return element;
@@ -1043,17 +1043,99 @@ export function boxFixed(item: Widget | InputBase | HTMLElement | null, options:
 }
 
 /** Div flex-box container that positions child elements vertically. */
-export function splitV(items: HTMLElement[], options: ElementOptions | null = null): HTMLDivElement {
+export function splitV(items: HTMLElement[], options: ElementOptions | null = null, resize: boolean | null = false): HTMLDivElement {
   let b = box(null, options);
-  $(b).addClass('ui-split-v').append(items.map(item => box(item)));
+  if (resize && items.length > 1){
+    items.forEach((v, i) => {
+      let divider = box();
+      $(b).addClass('ui-split-v').append(box(v))
+      if (i != items.length - 1) {
+        $(b).append(divider)
+        spliterResize(divider, items[i], items[i + 1])
+      }
+    })
+  } else {
+    $(b).addClass('ui-split-v').append(items.map(item => box(item)))
+  }
   return b;
 }
 
 /** Div flex-box container that positions child elements horizontally. */
-export function splitH(items: HTMLElement[], options: ElementOptions | null = null): HTMLDivElement {
+export function splitH(items: HTMLElement[], options: ElementOptions | null = null, resize: boolean | null = false): HTMLDivElement {
   let b = box(null, options);
-  $(b).addClass('ui-split-h').append(items.map(item => box(item)));
+  if (resize && items.length > 1) {
+    items.forEach((v, i) => {
+      let divider = box();
+      $(b).addClass('ui-split-h').append(box(v))
+      if (i != items.length - 1) {
+        $(b).append(divider)
+        spliterResize(divider, items[i], items[i + 1], true)
+      }
+    })
+  } else {
+    $(b).addClass('ui-split-h').append(items.map(item => box(item)))
+  }
   return b;
+}
+
+function spliterResize (divider: HTMLElement, previousSibling: HTMLElement, nextSibling: HTMLElement, horizontal: boolean | null = false){
+  var md: any;
+  divider.onmousedown = onMouseDown;
+
+  if (horizontal){
+    divider.style.cssText = `
+    background-image: url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='30' height='20'><path d='M 8 3 h 10 M 8 6 h 10 M 8 9 h 10' fill='none' stroke='%239497A0' stroke-width='1.25'/></svg>");
+    max-width: 4px;
+    cursor: col-resize;`
+  }else{
+    divider.style.cssText = `
+    background-image: url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='30' height='20'><path d='M 2 5 v 10 M 5 5 v 10 M 8 5 v 10' fill='none' stroke='%239497A0' stroke-width='1.25'/></svg>");
+    max-height: 4px;
+    cursor: row-resize;`
+  }
+
+  divider.style.backgroundRepeat = 'no-repeat';
+  divider.style.backgroundPosition = 'center';
+  divider.style.backgroundColor = 'var(--grey-1)';
+    
+  function onMouseDown(e:any){
+
+    if (nextSibling.classList.contains('ui-box') == false){
+      nextSibling = nextSibling.parentElement!;
+    }
+    if (previousSibling.classList.contains('ui-box') == false){
+      previousSibling = previousSibling.parentElement!;
+    }
+
+      md = {e,
+            offsetLeft:  divider.offsetLeft,
+            offsetTop:   divider.offsetTop,
+            topHeight:  previousSibling.offsetHeight,
+            bottomHeight: nextSibling.offsetHeight,
+            leftWidth:  previousSibling.offsetWidth,
+            rightWidth: nextSibling.offsetWidth
+          };
+      divider.style.backgroundColor = 'var(--grey-2)';    
+      document.onmousemove = onMouseMove;
+      document.onmouseup = () => {
+        divider.style.backgroundColor= 'var(--grey-1)';  
+        document.onmousemove = document.onmouseup = null;
+      }
+  }
+
+  function onMouseMove(e:any){
+    var delta = {x: e.clientX - md.e.clientX, y: e.clientY - md.e.clientY};
+    if (horizontal){
+      delta.x = Math.min(Math.max(delta.x, - md.leftWidth), md.rightWidth);
+      previousSibling.style.maxWidth = (md.leftWidth + delta.x) + "px";
+      nextSibling.style.maxWidth = (md.rightWidth - delta.x) + "px";
+    }else{
+      delta.x = Math.min(Math.max(delta.y, - md.topHeight), md.bottomHeight);
+      previousSibling.style.maxHeight = (md.topHeight + delta.y) + "px";
+      nextSibling.style.maxHeight = (md.bottomHeight - delta.y) + "px";
+    }
+  }
+
 }
 
 export function block(items: HTMLElement[], options: string | ElementOptions | null = null): HTMLDivElement {

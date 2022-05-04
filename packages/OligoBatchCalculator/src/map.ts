@@ -337,3 +337,14 @@ export const map: {
     },
   },
 };
+
+export const weightsObj: {[code: string]: number} = {};
+export const normalizedObj: {[code: string]: string} = {};
+for (const synthesizer of Object.keys(map)) {
+  for (const technology of Object.keys(map[synthesizer])) {
+    for (const code of Object.keys(map[synthesizer][technology])) {
+      weightsObj[code] = map[synthesizer][technology][code].weight;
+      normalizedObj[code] = map[synthesizer][technology][code].normalized;
+    }
+  }
+}

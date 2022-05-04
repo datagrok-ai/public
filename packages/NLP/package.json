@@ -1,11 +1,11 @@
 {
 	"name": "@datagrok/nlp",
 	"fullName": "NLP",
-	"version": "1.0.0",
+	"version": "1.0.1",
 	"description": "Natural Language Processing Package",
 	"dependencies": {
 		"aws-sdk": "^2.762.0",
-		"datagrok-api": ">0.94.10",
+		"datagrok-api": "^0.94.10",
 		"util": "^0.12.3"
 	},
 	"devDependencies": {

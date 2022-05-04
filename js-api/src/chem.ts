@@ -194,13 +194,16 @@ export namespace chem {
           .popup()
           .item('Copy as SMILES', () => navigator.clipboard.writeText(this.sketcher!.smiles))
           .item('Copy as MOLBLOCK', () => navigator.clipboard.writeText(this.sketcher!.molFile))
+          .group('Recent')
+            .items(Sketcher.getRecent().map((m) => ui.tools.click(svgMol(m, 200, 100), () => this.setMolecule(m))), () => {})
+            .endGroup()
           .group('Favorites')
             .item('Add to Favorites', () => Sketcher.addFavorite(this.sketcher!.molFile))
             .separator()
             .items(Sketcher.getFavorites().map((m) => ui.tools.click(svgMol(m, 200, 100), () => this.setMolecule(m))), () => {})
             .endGroup()
           .separator()
-          .items(funcs.map((f) => f.name), (name: string) => this.setSketcher(name))
+          .items(funcs.map((f) => f.friendlyName), (name: string) => this.setSketcher(name))
           .show();
       });
       $(optionsIcon).addClass('d4-input-options');
@@ -217,6 +220,7 @@ export namespace chem {
     }
 
     static readonly FAVORITES_KEY = 'chem-molecule-favorites';
+    static readonly RECENT_KEY = 'chem-molecule-recent';
 
     static getFavorites(): string[] {
       return JSON.parse(localStorage.getItem(Sketcher.FAVORITES_KEY) ?? '[]');
@@ -225,6 +229,17 @@ export namespace chem {
     static addFavorite(molecule: string) {
       let s = JSON.stringify([...Sketcher.getFavorites().slice(-9), molecule]);
       localStorage.setItem(Sketcher.FAVORITES_KEY, s);
+    }
+
+    static getRecent(): string[] {
+      return JSON.parse(localStorage.getItem(Sketcher.RECENT_KEY) ?? '[]');
+    }
+
+    static addRecent(molecule: string) {
+      if (!Sketcher.getRecent().includes(molecule)) {
+        let s = JSON.stringify([...Sketcher.getRecent().slice(-9), molecule]);
+        localStorage.setItem(Sketcher.RECENT_KEY, s);
+      }
     }
 
     detach() {
@@ -239,8 +254,12 @@ export namespace chem {
 
       if (this.sketcher?.molFile) this._molFile = this.sketcher?.molFile;
 
-      let f = Func.find({name: name})[0];
-      this.sketcher = await f.apply();
+      let funcs = Func.find({tags: ['moleculeSketcher']});
+      let f = funcs.find(e => e.friendlyName == name || e.name == name);
+
+      this.sketcher = await f!.apply();
+      this.host!.style.minWidth = '500px';
+      this.host!.style.minHeight = '400px';
       this.host.appendChild(this.sketcher!.root);
       await ui.tools.waitForElementInDom(this.root);
       await this.sketcher!.init();
@@ -515,6 +534,10 @@ export namespace chem {
       // @ts-ignore
       let mol = new OCL.Molecule.fromMolfile(s);
       return mol.toSmiles();
+    } else if (sourceFormat == 'smiles' && targetFormat == 'mol'){
+      // @ts-ignore
+      let mol = new OCL.Molecule.fromSmiles(s);
+      return mol.toMolfile();
     }
   }
 

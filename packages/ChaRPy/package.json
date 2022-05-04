@@ -2,10 +2,10 @@
   "name": "@datagrok/charpy",
   "beta": true,
   "fullName": "ChaRPy",
-  "version": "1.0.2",
+  "version": "1.0.3",
   "description": "",
   "dependencies": {
-    "datagrok-api": ">0.94.10"
+    "datagrok-api": "^0.94.10"
   },
   "devDependencies": {
     "@babel/cli": "7.1.2",

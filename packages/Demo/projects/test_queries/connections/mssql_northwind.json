@@ -9,8 +9,8 @@
   },
   "credentials" : {
     "parameters" : {
-      "login": "northwind",
-      "password": "northwind"
+      "login": "datagrok",
+      "password": "datagrok"
     }
   },
   "dataSource": "MS SQL",

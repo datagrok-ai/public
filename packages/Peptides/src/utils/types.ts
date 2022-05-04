@@ -1,6 +1,7 @@
 import * as DG from 'datagrok-api/dg';
 
-export type SubstitutionsTooltipData = {[aar: string]: number[][][]};
+export type SubstitutionCases = {[aar: string]: number[][][]};
+export type SubstitutionTooltips = { [aar: string]: {}[][]; };
 export type DataFrameDict = {[key: string]: DG.DataFrame};
 
 export namespace BarChart {

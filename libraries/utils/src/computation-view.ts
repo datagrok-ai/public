@@ -1,10 +1,8 @@
-/* eslint-disable */
-
+/* eslint-disable max-len */
+/* eslint-disable valid-jsdoc */
 import * as grok from 'datagrok-api/grok';
-import * as rxjs from 'rxjs';
 import * as ui from 'datagrok-api/ui';
 import * as DG from 'datagrok-api/dg';
-import {DataFrame, FuncCall} from 'datagrok-api/dg';
 import {FunctionView} from './function-view';
 
 /**
@@ -23,117 +21,33 @@ import {FunctionView} from './function-view';
  * - notifications for changing inputs, completion of computations, etc: {@link onInputChanged}
  * */
 export class ComputationView extends FunctionView {
-
-  lastCall?: DG.FuncCall;
-  _inputFields: Map<string, DG.InputBase> = new Map<string, DG.InputBase>();
-
-  onViewInitialized: rxjs.Subject<void> = new rxjs.Subject();
-  onInputChanged: rxjs.Subject<void> = new rxjs.Subject();
-  onComputationStarted: rxjs.Subject<FuncCall> = new rxjs.Subject();
-  onComputationCompleted: rxjs.Subject<FuncCall> = new rxjs.Subject();
-  onComputationSucceeded: rxjs.Subject<FuncCall> = new rxjs.Subject();
-  onComputationError: rxjs.Subject<FuncCall> = new rxjs.Subject();
-
   constructor(func: DG.Func) {
     super(func);
-
-    if (func != null)
-      this.init(func).then((_) => {
-        this.root.appendChild(this.build());
-        this.initTopMenu(this.ribbonMenu);
-        this.initRibbonPanels();
-        return this.onViewInitialized.next();
-      });
   }
-
-  /** All inputs that are bound to fields */
-  get inputFields(): Map<string, DG.InputBase> { return this._inputFields; }
-
-  /** Saves the computation results to the historical results, returns its id. See also {@link loadRun}. */
-  async saveRun(call: FuncCall): Promise<string> { return 'xxx'; /* await grok.dapi.functions.calls.save(call);*/ }
-
-  /** Loads the specified historical results. See also {@link saveRun}. */
-  async loadRun(runId: string): Promise<void> { /* await grok.dapi.functions.calls.find(call.id);*/}
-
-  /** The actual computation function. */
-  async compute(call: FuncCall): Promise<void> { await call.call(); }
-
-  /** Maps inputs to parameters, computes, and maps output parameters to the UI. */
-  async run(): Promise<void> {
-    this.lastCall = this.call!.clone();
-    this.inputFieldsToParameters(this.lastCall);
-
-    try {
-      await this.compute(this.lastCall);
-    }
-    catch (e) {
-      this.onComputationError.next(this.lastCall);
-    }
-
-    this.outputParametersToView(this.lastCall);
-  }
-
-  /** Override to provide custom initialization. {@link onViewInitialized} gets fired after that. */
-  async init(func: DG.Func): Promise<void> { await super.init(func); }
-
-  /** Override to customize top menu*/
-  initTopMenu(menu: DG.Menu) {
-    menu
-      .group(this.func.friendlyName)
-      .item('Run', () => this.run());
-  }
-
-  /** Override to customize ribbon panels */
-  initRibbonPanels() {
-    this.setRibbonPanels([[
-      ui.bigButton('RUN', () => this.run()),
-      ui.comboPopup(
-        ui.icons.save(null, 'Export'),
-        this.supportedExportFormats,
-        async (format) => DG.Utils.download('output.csv', await this.export(format)),
-      ),
-    ]]);
-  }
-
-  /** Builds the complete view. Override it if completely custom implementation is needed,
-   * otherwise consider overriding {@link buildInputBlock} and/or {@link buildOutputBlock} */
-  build(): HTMLElement {return ui.splitH([this.buildInputBlock(), this.buildOutputBlock()]);}
-
-  /** Override to build completely custom input block (the one with inputs, usually on the left).
-   * If only specific field, consider overriding {@link buildCustomInputs}. */
-  buildInputBlock(): HTMLElement {
-    return super.buildInputBlock();
-  }
-
-  /** Custom inputs for the specified fields. Inputs for these fields will not be created by {@link buildInputBlock}. */
-  buildCustomInputs(): Map<String, DG.InputBase> { return new Map(); }
 
   /** Override to create output block. */
-  buildOutputBlock(): HTMLElement { return super.buildOutputBlock(); }
-
-  /** Override to create a custom input control. */
-  buildRibbonPanel(): HTMLElement { return ui.divH([
-    ui.button('RUN', () => {}),
-    ui.comboPopup('Export', this.supportedExportFormats, (format) => this.export(format))]);
+  override buildOutputPanel(): HTMLElement {
+    console.log('ouptut updated');
+    const outputs = this.lastCall?.outputs as Record<string, any>;
+    const panel = ui.accordion('Output data');
+    panel.addPane('Output data', () => {
+      return ui.divV(
+        Object.entries(outputs).map(([key, val]) => ui.span([`${key}: `, `${val}`])),
+      );
+    });
+    return panel.root;
   }
 
-  /** Creates function parameters based on the data entered by the user. */
-  inputFieldsToParameters(call: FuncCall): void { super.inputFieldsToParameters(call); }
-
-  /** Visualizes computation results */
-  outputParametersToView(call: FuncCall): void { super.outputParametersToView(call); }
-
-  /** Override to provide custom computation error handling. */
-  processComputationError(call: FuncCall) { grok.shell.error(call.errorMessage!);  }
-
-  /** Override to provide supported export formats.
-   * These formats are available under the "Export" popup on the ribbon panel. */
-  get supportedExportFormats(): string[] { return ['Excel', 'PDF', 'CSV']; }
-
-  /** Override to provide custom export. */
-  async export(format: string): Promise<Blob> {
-    if (format == 'CSV')
-      return new Blob([(this.lastCall?.getOutputParamValue() as DataFrame).toCsv()]);
-    throw `Format "${format}" is not supported.`;
-  }
+  /** helper methods */
+  override buildInputForm(call: DG.FuncCall): HTMLElement {
+    return ui.wait(async () => {
+      const runButton = ui.bigButton('Run', async () => {
+        await this.run();
+      });
+      const editor = ui.div([], 'ui-form');
+      const inputs: DG.InputBase[] = await call.buildEditor(editor, {condensed: true});
+      editor.appendChild(ui.divH([ui.divV([this.historyPanel], {style: {'justify-content': 'center'}}), runButton], {style: {'justify-content': 'space-between'}}));
+      return ui.panel([editor]);
+    });
+  };
 }

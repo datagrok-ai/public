@@ -2,7 +2,7 @@
 	"name": "@datagrok/seldon",
 	"beta": true,
 	"friendlyName": "Seldon",
-	"version": "0.0.2",
+	"version": "0.0.3",
 	"description": "",
 	"dependencies": {
 		"datagrok-api": "latest",

@@ -41,7 +41,7 @@ scripting and more complex development, since the resulting code is streamlined 
 where the fluent API does not cover your particular use case, or sometimes for performance reasons, you will need to
 work with classes from the DG namespace.
 
-### Ui
+### UI
 
 Building a UI is a special form of programming, and many languages were invented for that purpose only (HTML, XAML, JSX)
 . We have prioritized the following aspects when choosing our approach:

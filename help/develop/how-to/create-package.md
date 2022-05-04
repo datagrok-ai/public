@@ -11,14 +11,14 @@ Before we start, [set up development environment](set-up-environment.md) if you 
 
 Now, let's create a package:
 
- ```
- grok create TextStats
- ```
+```shell
+grok create TextStats --ts --jest
+```
 
 This creates a folder `TextStats` with the default [package structure](../develop.md#package-structure). For the newly
 created package, you have to install the dependencies. Run this from the `TextStats` folder:
 
-```
+```shell
 npm install
 ```
 
@@ -29,9 +29,9 @@ Add the actual panel's code at `TextStats/src/package.js`:
 ```
 //name: Text Stats
 //tags: panel, widgets
-//input: string str
+//input: string str {semType: text}
 //output: widget result
-textStats(str) {
+export function textStats(str) {
   // for 'gattaca', produces {"g": 1, "a": 3, "t": 2, "c": 1}
   const symbolCounts = Array.from(str).reduce((counts, ch) => {
     counts[ch] = (counts[ch] || 0) + 1;
@@ -52,15 +52,18 @@ producing a `widget`, taking a `string` as an input.
 
 Run webpack from the TextStats folder:
 
+```shell
+npm run build
 ```
-webpack
-```
+
+Note. The `build` script in `package.json` includes commands to process your package, e.g., `webpack`. You are not
+supposed to modify this script.
 
 ## 4. Publish
 
 Now, let's [publish](../develop.md#publishing) our package to the `dev` server:
 
-```
+```shell
 grok publish dev
 ```
 
@@ -69,7 +72,11 @@ The return code should be `0` to indicate a successful deployment.
 ## 5. Test
 
 Now go to Datagrok and open any data file with string columns. This could be a `demog` dataset from our demo datasets.
-Navigate to a text cell and find your freshly added panel with text stats on the right side of Datagrok UI.
+Find any text column, right-click on it, pick `Column Properties`, then add a tag: `quality : text`. This tag tells
+Datagrok that there is a plain text stored inside this column. Navigate to a text cell and find your freshly added panel
+with text stats on the right side of Datagrok UI. Note, that semantic type `text` of a column matches `{semType: text}`
+in function parameter declaration. Datagrok also can detect semantic types automatically, or with help
+of [Detectors](./define-semantic-type-detectors.md) .
 
 We have completed the deployment. Let's navigate to `Manage | Packages` and find your package in the list. Note it has
 your name prefixed with a `v.`, which means it's only published for you. This is called a Debug mode. To make it
@@ -80,3 +87,4 @@ for these groups of interest.
 See also:
 
 * [Datagrok JavaScript development](../develop.md)
+* [Test packages](test-packages.md)

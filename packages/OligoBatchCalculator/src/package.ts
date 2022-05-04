@@ -2,25 +2,16 @@ import * as grok from 'datagrok-api/grok';
 import * as ui from 'datagrok-api/ui';
 import * as DG from 'datagrok-api/dg';
 import $ from 'cash-dom';
-import {map, individualBases, nearestNeighbour} from './map';
-import {isValidSequence, getAllCodesOfSynthesizer} from './validation';
-import {deleteWord, saveAsCsv, sortByStringLengthInDescendingOrder, mergeOptions} from './helpers';
-import {COL_NAMES, getAdditionalModifications, addModificationButton, editAdditionalModification,
+import {weightsObj, individualBases, nearestNeighbour} from './map';
+import {isValidSequence} from './validation';
+import {deleteWord, saveAsCsv, sortByStringLengthInDescOrder, mergeOptions, normalizeSequence} from './helpers';
+import {COL_NAMES, CURRENT_USER, STORAGE_NAME, ADMIN_USERS, getAdditionalModifications, addModificationButton,
   deleteAdditionalModification} from './additional-modifications';
 
 export const _package = new DG.Package();
 
 const NAME_OF_COLUMN_WITH_SEQUENCES = 'Sequence';
-let weightsObj: {[code: string]: number} = {};
-const normalizedObj: {[code: string]: string} = {};
-for (const synthesizer of Object.keys(map)) {
-  for (const technology of Object.keys(map[synthesizer])) {
-    for (const code of Object.keys(map[synthesizer][technology])) {
-      weightsObj[code] = map[synthesizer][technology][code].weight;
-      normalizedObj[code] = map[synthesizer][technology][code].normalized;
-    }
-  }
-}
+
 
 //name: opticalDensity
 //input: string sequence
@@ -71,15 +62,14 @@ export async function molecularMass(sequence: string, amount: number, outputUnit
 
 export function molecularWeight(sequence: string, additionalWeightsObj?: {[index: string]: number}): number {
   const codes = (additionalWeightsObj == null) ?
-    sortByStringLengthInDescendingOrder(Object.keys(weightsObj)) :
-    sortByStringLengthInDescendingOrder(Object.keys(weightsObj).concat(Object.keys(additionalWeightsObj)));
-  if (additionalWeightsObj != null)
-    weightsObj = mergeOptions(weightsObj, additionalWeightsObj);
+    sortByStringLengthInDescOrder(Object.keys(weightsObj)) :
+    sortByStringLengthInDescOrder(Object.keys(weightsObj).concat(Object.keys(additionalWeightsObj)));
+  const obj = (additionalWeightsObj != null) ? mergeOptions(weightsObj, additionalWeightsObj) : weightsObj;
   let weight = 0;
   let i = 0;
   while (i < sequence.length) {
     const matchedCode = codes.find((s) => s == sequence.slice(i, i + s.length))!;
-    weight += weightsObj[sequence.slice(i, i + matchedCode.length)];
+    weight += obj[sequence.slice(i, i + matchedCode.length)];
     i += matchedCode!.length;
   }
   return weight - 61.97;
@@ -89,7 +79,7 @@ export async function extinctionCoefficient(sequence: string, extCoefsObj?: {[i:
   const additionalModificationsDf = await getAdditionalModifications();
   const additionalCodes = additionalModificationsDf.col(COL_NAMES.ABBREVIATION)!.categories;
   const output = isValidSequence(sequence, additionalCodes);
-  let ns = normalizeSequence(sequence, output.expectedSynthesizer, output.expectedTechnology);
+  let ns = normalizeSequence(sequence, output.synthesizer, output.technology);
   let nearestNeighbourSum = 0;
   let individualBasisSum = 0;
   let modificationsSum = 0;
@@ -114,31 +104,21 @@ export async function extinctionCoefficient(sequence: string, extCoefsObj?: {[i:
   return nearestNeighbourSum - individualBasisSum + modificationsSum;
 }
 
-function normalizeSequence(sequence: string, synthesizer: string | null, technology: string | null): string {
-  const codes = (technology == null) ?
-    getAllCodesOfSynthesizer(synthesizer!) :
-    Object.keys(map[synthesizer!][technology]);
-  const sortedCodes = sortByStringLengthInDescendingOrder(codes);
-  const regExp = new RegExp('(' + sortedCodes.join('|') + ')', 'g');
-  return sequence.replace(regExp, function(code) {return normalizedObj[code];});
-}
-
 //name: Oligo Batch Calculator
 //tags: app
 export async function OligoBatchCalculatorApp(): Promise<void> {
-  const additionalModificationsDf = await getAdditionalModifications();
-  const additionalCodes = additionalModificationsDf.col(COL_NAMES.ABBREVIATION)!.categories;
-  const additionalAbbreviations = additionalModificationsDf.col(COL_NAMES.ABBREVIATION)!.toList();
-  const additionalWeights = additionalModificationsDf.col(COL_NAMES.MOLECULAR_WEIGHT)!.toList();
-  const extinctionCoefficients = additionalModificationsDf.col(COL_NAMES.EXTINCTION_COEFFICIENT)!.toList();
+  const additionalModsDf = await getAdditionalModifications();
+  const additionalCodes = additionalModsDf.col(COL_NAMES.ABBREVIATION)!.categories;
+  const additionalAbbreviations = additionalModsDf.col(COL_NAMES.ABBREVIATION)!.toList();
+  const additionalWeights = additionalModsDf.col(COL_NAMES.MOLECULAR_WEIGHT)!.toList();
+  const extinctionCoefficients = additionalModsDf.col(COL_NAMES.EXTINCTION_COEFFICIENT)!.toList();
   const additionalWeightsObj: {[index: string]: number} = {};
   const extinctionCoeffsObj: {[index: string]: number} = {};
   additionalAbbreviations.forEach((key, i) => additionalWeightsObj[key] = additionalWeights[i]);
   additionalAbbreviations.forEach((key, i) => extinctionCoeffsObj[key] = extinctionCoefficients[i]);
+  const mainGrid = DG.Viewer.grid(DG.DataFrame.create(), {'showRowHeader': false});
 
   async function render(text: string): Promise<void> {
-    gridDiv.innerHTML = '';
-
     const sequences = text.split('\n')
       .map((s) => s.replace(/\s/g, ''))
       .filter((item) => item);
@@ -152,12 +132,11 @@ export async function OligoBatchCalculatorApp(): Promise<void> {
     const molecularMasses = Array(sequences.length);
     const reasonsOfError = Array(sequences.length);
 
-    for (const sequence of sequences) {
-      const i = sequences.indexOf(sequence);
+    for (const [i, sequence] of sequences.entries()) {
       const output = isValidSequence(sequence, additionalCodes);
-      indicesOfFirstNotValidCharacter[i] = output.indexOfFirstNotValidCharacter;
+      indicesOfFirstNotValidCharacter[i] = output.indexOfFirstNotValidChar;
       if (indicesOfFirstNotValidCharacter[i] < 0) {
-        normalizedSequences[i] = normalizeSequence(sequence, output.expectedSynthesizer, output.expectedTechnology);
+        normalizedSequences[i] = normalizeSequence(sequence, output.synthesizer, output.technology);
         if (normalizedSequences[i].length > 2) {
           try {
             molecularWeights[i] = molecularWeight(sequence, additionalWeightsObj);
@@ -174,20 +153,20 @@ export async function OligoBatchCalculatorApp(): Promise<void> {
           reasonsOfError[i] = 'Sequence should contain at least two nucleotides';
           indicesOfFirstNotValidCharacter[i] = 0;
         }
-      } else if (output.expectedSynthesizer == null)
+      } else if (output.synthesizer == null)
         reasonsOfError[i] = 'Not valid input';
       else {
-        reasonsOfError[i] = 'Sequence is expected to be in synthesizer \'' + output.expectedSynthesizer +
+        reasonsOfError[i] = 'Sequence is expected to be in synthesizer \'' + output.synthesizer +
           '\', please see table below to see list of valid codes';
       }
-    }
+    };
 
     const moleName1 = (units.value == 'µmole' || units.value == 'mg') ? 'µmole' : 'nmole';
     const moleName2 = (units.value == 'µmole') ? 'µmole' : 'nmole';
     const massName = (units.value == 'µmole') ? 'mg' : (units.value == 'mg') ? units.value : 'µg';
     const c = (units.value == 'mg' || units.value == 'µmole') ? 1000 : 1;
 
-    table = DG.DataFrame.fromColumns([
+    mainGrid.dataFrame = DG.DataFrame.fromColumns([
       DG.Column.fromList('int', 'Item', Array(...Array(sequences.length + 1).keys()).slice(1)),
       DG.Column.fromStrings(NAME_OF_COLUMN_WITH_SEQUENCES, sequences),
       DG.Column.fromList('int', 'Length', normalizedSequences.map((s) => s.length / 2)),
@@ -200,10 +179,9 @@ export async function OligoBatchCalculatorApp(): Promise<void> {
       DG.Column.fromList('double', 'Ext. Coefficient', extinctionCoefficients),
     ]);
 
-    const grid = DG.Viewer.grid(table, {'showRowHeader': false});
-    const col = grid.col(NAME_OF_COLUMN_WITH_SEQUENCES)!;
+    const col = mainGrid.col(NAME_OF_COLUMN_WITH_SEQUENCES)!;
     col.cellType = 'html';
-    grid.onCellPrepare(function(gc) {
+    mainGrid.onCellPrepare(function(gc) {
       if (gc.isTableCell && gc.gridColumn.name == NAME_OF_COLUMN_WITH_SEQUENCES) {
         const items = (indicesOfFirstNotValidCharacter[gc.gridRow] < 0) ?
           [ui.divText(gc.cell.value, {style: {color: 'grey'}})] :
@@ -217,7 +195,6 @@ export async function OligoBatchCalculatorApp(): Promise<void> {
         gc.style.element = ui.divH(items, {style: {margin: '6px 0 0 6px'}});
       }
     });
-    gridDiv.append(grid.root);
   }
 
   const windows = grok.shell.windows;
@@ -226,8 +203,6 @@ export async function OligoBatchCalculatorApp(): Promise<void> {
   windows.showHelp = false;
 
   const defaultInput = 'fAmCmGmAmCpsmU\nmApsmApsfGmAmUmCfGfAfC\nmAmUfGmGmUmCmAfAmGmA';
-  let table = DG.DataFrame.create();
-  const gridDiv = ui.box();
 
   const inputSequences = ui.textInput('', defaultInput, (txt: string) => render(txt));
   const yieldAmount = ui.floatInput('', 1, () => render(inputSequences.value));
@@ -239,43 +214,56 @@ export async function OligoBatchCalculatorApp(): Promise<void> {
   title.style.maxHeight = '40px';
   $(title).children('h2').css('margin', '0px');
 
-  const asoGapmersDf = DG.DataFrame.fromObjects([
-    {'Name': '2\'MOE-5Me-rU', 'BioSpring': '5', 'Janssen GCRS': 'moeT', 'Weight': 378.27},
-    {'Name': '2\'MOE-rA', 'BioSpring': '6', 'Janssen GCRS': 'moeA', 'Weight': 387.29},
-    {'Name': '2\'MOE-5Me-rC', 'BioSpring': '7', 'Janssen GCRS': 'moe5mC', 'Weight': 377.29},
-    {'Name': '2\'MOE-rG', 'BioSpring': '8', 'Janssen GCRS': 'moeG', 'Weight': 403.28},
-    {'Name': '5-Methyl-dC', 'BioSpring': '9', 'Janssen GCRS': '5mC', 'Weight': 303.21},
-    {'Name': 'ps linkage', 'BioSpring': '*', 'Janssen GCRS': 'ps', 'Weight': 16.07},
-    {'Name': 'dA', 'BioSpring': 'A', 'Janssen GCRS': 'A, dA', 'Weight': 313.21},
-    {'Name': 'dC', 'BioSpring': 'C', 'Janssen GCRS': 'C, dC', 'Weight': 289.18},
-    {'Name': 'dG', 'BioSpring': 'G', 'Janssen GCRS': 'G, dG', 'Weight': 329.21},
-    {'Name': 'dT', 'BioSpring': 'T', 'Janssen GCRS': 'T, dT', 'Weight': 304.2},
-    {'Name': 'rA', 'BioSpring': '', 'Janssen GCRS': 'rA', 'Weight': 329.21},
-    {'Name': 'rC', 'BioSpring': '', 'Janssen GCRS': 'rC', 'Weight': 305.18},
-    {'Name': 'rG', 'BioSpring': '', 'Janssen GCRS': 'rG', 'Weight': 345.21},
-    {'Name': 'rU', 'BioSpring': '', 'Janssen GCRS': 'rU', 'Weight': 306.17},
-  ]);
-  const asoGapmersGrid = DG.Viewer.grid(asoGapmersDf!, {showRowHeader: false, showCellTooltip: false});
+  const asoGapmersGrid = DG.Viewer.grid(
+    DG.DataFrame.fromObjects([
+      {'Name': '2\'MOE-5Me-rU', 'BioSpring': '5', 'Janssen GCRS': 'moeT', 'Weight': 378.27},
+      {'Name': '2\'MOE-rA', 'BioSpring': '6', 'Janssen GCRS': 'moeA', 'Weight': 387.29},
+      {'Name': '2\'MOE-5Me-rC', 'BioSpring': '7', 'Janssen GCRS': 'moe5mC', 'Weight': 377.29},
+      {'Name': '2\'MOE-rG', 'BioSpring': '8', 'Janssen GCRS': 'moeG', 'Weight': 403.28},
+      {'Name': '5-Methyl-dC', 'BioSpring': '9', 'Janssen GCRS': '5mC', 'Weight': 303.21},
+      {'Name': 'ps linkage', 'BioSpring': '*', 'Janssen GCRS': 'ps', 'Weight': 16.07},
+      {'Name': 'dA', 'BioSpring': 'A', 'Janssen GCRS': 'A, dA', 'Weight': 313.21},
+      {'Name': 'dC', 'BioSpring': 'C', 'Janssen GCRS': 'C, dC', 'Weight': 289.18},
+      {'Name': 'dG', 'BioSpring': 'G', 'Janssen GCRS': 'G, dG', 'Weight': 329.21},
+      {'Name': 'dT', 'BioSpring': 'T', 'Janssen GCRS': 'T, dT', 'Weight': 304.2},
+      {'Name': 'rA', 'BioSpring': '', 'Janssen GCRS': 'rA', 'Weight': 329.21},
+      {'Name': 'rC', 'BioSpring': '', 'Janssen GCRS': 'rC', 'Weight': 305.18},
+      {'Name': 'rG', 'BioSpring': '', 'Janssen GCRS': 'rG', 'Weight': 345.21},
+      {'Name': 'rU', 'BioSpring': '', 'Janssen GCRS': 'rU', 'Weight': 306.17},
+    ])!, {showRowHeader: false, showCellTooltip: false},
+  );
 
-  const omeAndFluoroDf = DG.DataFrame.fromObjects([
-    {'Name': '2\'-fluoro-U', 'BioSpring': '1', 'Axolabs': 'Uf', 'Janssen GCRS': 'fU', 'Weight': 308.16},
-    {'Name': '2\'-fluoro-A', 'BioSpring': '2', 'Axolabs': 'Af', 'Janssen GCRS': 'fA', 'Weight': 331.2},
-    {'Name': '2\'-fluoro-C', 'BioSpring': '3', 'Axolabs': 'Cf', 'Janssen GCRS': 'fC', 'Weight': 307.18},
-    {'Name': '2\'-fluoro-G', 'BioSpring': '4', 'Axolabs': 'Gf', 'Janssen GCRS': 'fG', 'Weight': 347.19},
-    {'Name': '2\'OMe-rU', 'BioSpring': '5', 'Axolabs': 'u', 'Janssen GCRS': 'mU', 'Weight': 320.2},
-    {'Name': '2\'OMe-rA', 'BioSpring': '6', 'Axolabs': 'a', 'Janssen GCRS': 'mA', 'Weight': 343.24},
-    {'Name': '2\'OMe-rC', 'BioSpring': '7', 'Axolabs': 'c', 'Janssen GCRS': 'mC', 'Weight': 319.21},
-    {'Name': '2\'OMe-rG', 'BioSpring': '8', 'Axolabs': 'g', 'Janssen GCRS': 'mG', 'Weight': 359.24},
-    {'Name': 'ps linkage', 'BioSpring': '*', 'Axolabs': 's', 'Janssen GCRS': 'ps', 'Weight': 16.07},
-  ]);
-  const omeAndFluoroGrid = DG.Viewer.grid(omeAndFluoroDf!, {showRowHeader: false, showCellTooltip: false});
+  const omeAndFluoroGrid = DG.Viewer.grid(
+    DG.DataFrame.fromObjects([
+      {'Name': '2\'-fluoro-U', 'BioSpring': '1', 'Axolabs': 'Uf', 'Janssen GCRS': 'fU', 'Weight': 308.16},
+      {'Name': '2\'-fluoro-A', 'BioSpring': '2', 'Axolabs': 'Af', 'Janssen GCRS': 'fA', 'Weight': 331.2},
+      {'Name': '2\'-fluoro-C', 'BioSpring': '3', 'Axolabs': 'Cf', 'Janssen GCRS': 'fC', 'Weight': 307.18},
+      {'Name': '2\'-fluoro-G', 'BioSpring': '4', 'Axolabs': 'Gf', 'Janssen GCRS': 'fG', 'Weight': 347.19},
+      {'Name': '2\'OMe-rU', 'BioSpring': '5', 'Axolabs': 'u', 'Janssen GCRS': 'mU', 'Weight': 320.2},
+      {'Name': '2\'OMe-rA', 'BioSpring': '6', 'Axolabs': 'a', 'Janssen GCRS': 'mA', 'Weight': 343.24},
+      {'Name': '2\'OMe-rC', 'BioSpring': '7', 'Axolabs': 'c', 'Janssen GCRS': 'mC', 'Weight': 319.21},
+      {'Name': '2\'OMe-rG', 'BioSpring': '8', 'Axolabs': 'g', 'Janssen GCRS': 'mG', 'Weight': 359.24},
+      {'Name': 'ps linkage', 'BioSpring': '*', 'Axolabs': 's', 'Janssen GCRS': 'ps', 'Weight': 16.07},
+    ])!, {showRowHeader: false, showCellTooltip: false},
+  );
 
-  const additionaModifsGrid = DG.Viewer.grid(additionalModificationsDf, {showRowHeader: false, showCellTooltip: false});
+  const additionaModifsGrid = DG.Viewer.grid(additionalModsDf, {showRowHeader: false, showCellTooltip: true});
   additionaModifsGrid.col(COL_NAMES.LONG_NAMES)!.width = 110;
   additionaModifsGrid.col(COL_NAMES.ABBREVIATION)!.width = 80;
   additionaModifsGrid.col(COL_NAMES.MOLECULAR_WEIGHT)!.width = 105;
   additionaModifsGrid.col(COL_NAMES.BASE_MODIFICATION)!.width = 110;
   additionaModifsGrid.col(COL_NAMES.EXTINCTION_COEFFICIENT)!.width = 100;
+
+  // Hide 'CHANGE_LOGS' column, display its content in tooltip
+  additionaModifsGrid.columns.setVisible(additionalModsDf.columns.names().slice(0, -1));
+  additionalModsDf.col(COL_NAMES.CHANGE_LOGS)!.name = '~' + COL_NAMES.CHANGE_LOGS;
+  additionaModifsGrid.onCellTooltip(function(cell, x, y) {
+    if (cell.isTableCell) {
+      const v = additionalModsDf.col('~' + COL_NAMES.CHANGE_LOGS)!.get(cell.gridRow).split('; ').slice(0, -1);
+      ui.tooltip.show(ui.divText(v), x, y);
+      return true;
+    }
+  });
 
   const codesTablesDiv = ui.splitV([
     ui.box(ui.h2('ASO Gapmers'), {style: {maxHeight: '40px'}}),
@@ -299,46 +287,70 @@ export async function OligoBatchCalculatorApp(): Promise<void> {
             ui.h2('Input Sequences'),
             ui.div([
               inputSequences.root,
-            ], 'inputSequence'),
+            ], 'inputSequences'),
           ]), {style: {maxHeight: '230px'}},
         ),
         ui.splitV([
           title,
-          gridDiv,
+          mainGrid.root,
         ]),
       ]),
       codesTablesDiv,
     ]),
   ]);
   view.box = true;
-
-  const switchInput = ui.switchInput('Codes', true, (v: boolean) => (v) ?
-    $(codesTablesDiv).show() :
-    $(codesTablesDiv).hide(),
-  );
+  view.path = '/apps/OligoBatchCalculator/';
+  view.setRibbonPanels([[
+    ui.iconFA('redo', () => inputSequences.value = ''),
+    ui.iconFA('plus', () => addModificationButton(additionalModsDf)),
+    ui.iconFA('arrow-to-bottom', () => saveAsCsv(mainGrid.dataFrame!)),
+    ui.switchInput('Codes', true, (v: boolean) => (v) ? $(codesTablesDiv).show() : $(codesTablesDiv).hide()).root,
+  ]]);
 
   const col = additionaModifsGrid.col(COL_NAMES.ACTION)!;
   col.cellType = 'html';
   additionaModifsGrid.onCellPrepare(function(gc) {
     if (gc.isTableCell && gc.gridColumn.name == COL_NAMES.ACTION) {
-      gc.style.element = ui.divH([
-        ui.button(ui.iconFA('trash-alt'), () => deleteAdditionalModification(additionalModificationsDf, gc.gridRow)),
-        ui.button(ui.iconFA('edit'), () => editAdditionalModification(additionalModificationsDf, gc.gridRow)),
-      ]);
+      const icon = ui.iconFA('trash-alt');
+      gc.style.element = ui.button(icon, () => deleteAdditionalModification(additionalModsDf, gc.gridRow));
     }
   });
 
-  view.setRibbonPanels([[
-    ui.iconFA('redo', () => inputSequences.value = ''),
-    ui.iconFA('plus', () => addModificationButton(additionalModificationsDf)),
-    ui.iconFA('arrow-to-bottom', () => saveAsCsv(table)),
-    switchInput.root,
-  ]]);
+  let tempValue = '';
+  additionalModsDf.onCurrentCellChanged.subscribe(() => {
+    tempValue = additionalModsDf.currentCell.value;
+  });
 
-  $('.inputSequence textarea')
-    .css('resize', 'none')
-    .css('min-height', '70px')
-    .css('width', '100%')
-    .css('font-family', 'monospace')
-    .attr('spellcheck', 'false');
+  additionalModsDf.onValuesChanged.subscribe(async (_) => {
+    grok.dapi.users.current().then((user) => {
+      if (!ADMIN_USERS.includes(user.firstName + ' ' + user.lastName))
+        return grok.shell.warning('You don\'t have permission for this action');
+    });
+    if (additionalModsDf.currentCol.name == COL_NAMES.ABBREVIATION) {
+      const entries = await grok.dapi.userDataStorage.get(STORAGE_NAME, CURRENT_USER);
+      if (additionalModsDf.currentCell.value.length > 100)
+        return grok.shell.warning('Abbreviation shouldn\'t contain more than 100 characters');
+      if (additionalModsDf.currentCell.value in entries) {
+        additionalModsDf.set(additionalModsDf.currentCol.name, additionalModsDf.currentRowIdx, tempValue);
+        return grok.shell.warning('Abbreviation ' + additionalModsDf.currentCell.value + ' already exists');
+      }
+    }
+    if (additionalModsDf.currentCol.name == COL_NAMES.LONG_NAMES && additionalModsDf.currentCell.value.length > 300)
+      return grok.shell.warning('Long Name shouldn\'t contain more than 300 characters');
+
+    const rowIndex = additionalModsDf.currentCell.rowIndex;
+    await grok.dapi.userDataStorage.postValue(
+      STORAGE_NAME,
+      additionalModsDf.col(COL_NAMES.ABBREVIATION)?.get(rowIndex),
+      JSON.stringify({
+        longName: additionalModsDf.col(COL_NAMES.LONG_NAMES)?.get(rowIndex),
+        abbreviation: additionalModsDf.col(COL_NAMES.ABBREVIATION)?.get(rowIndex),
+        molecularWeight: additionalModsDf.col(COL_NAMES.MOLECULAR_WEIGHT)?.get(rowIndex),
+        extinctionCoefficient: additionalModsDf.col(COL_NAMES.EXTINCTION_COEFFICIENT)?.get(rowIndex),
+        baseModification: additionalModsDf.col(COL_NAMES.BASE_MODIFICATION)?.get(rowIndex),
+        changeLogs: additionalModsDf.col(COL_NAMES.CHANGE_LOGS)?.get(rowIndex),
+      }),
+      CURRENT_USER,
+    );
+  });
 }

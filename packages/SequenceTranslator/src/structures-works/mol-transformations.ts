@@ -24,11 +24,71 @@ M  V30 BEGIN COLLECTION
 M  V30 END COLLECTION
 M  END`;
 
+const THIOPHOSHATE = `
+Datagrok monomer library Nucleotides
+
+  0  0  0  0  0  0              0 V3000
+M  V30 BEGIN CTAB
+M  V30 COUNTS 5 4 0 0 0
+M  V30 BEGIN ATOM
+M  V30 1 O -1.5 0 0 0
+M  V30 2 P 0 0 0 0
+M  V30 3 O 0 1 0 0
+M  V30 4 S 0 -1 0 0
+M  V30 5 O 1.5 0 0 0
+M  V30 END ATOM
+M  V30 BEGIN BOND
+M  V30 1 1 1 2
+M  V30 2 2 2 3
+M  V30 3 1 2 4
+M  V30 4 1 2 5
+M  V30 END BOND
+M  V30 END CTAB
+M  V30 BEGIN COLLECTION
+M  V30 END COLLECTION
+M  END`;
+
+const INVABASIC = `
+Datagrok monomer library Nucleotides
+
+  0  0  0  0  0  0              0 V3000
+M  V30 BEGIN CTAB
+M  V30 COUNTS 8 8 0 0 0
+M  V30 BEGIN ATOM
+M  V30 1 O 1.0934 -2.1636 0 0
+M  V30 2 C 1.8365 -1.4945 0 0 CFG=2
+M  V30 3 C 2.8147 -1.7024 0 0
+M  V30 4 C 3.3147 -0.8364 0 0 VAL=3
+M  V30 5 O 2.6455 -0.0932 0 0
+M  V30 6 C 1.732 -0.5 0 0 CFG=1
+M  V30 7 C 0.866 0 0 0
+M  V30 8 O 0.866 1 0 0
+M  V30 END ATOM
+M  V30 BEGIN BOND
+M  V30 1 1 2 1 CFG=1
+M  V30 2 1 2 3
+M  V30 3 1 3 4
+M  V30 4 1 4 5
+M  V30 5 1 6 5
+M  V30 6 1 2 6
+M  V30 7 1 6 7 CFG=3
+M  V30 8 1 7 8
+M  V30 END BOND
+M  V30 BEGIN COLLECTION
+M  V30 MDLV30/STEABS ATOMS=(2 2 6)
+M  V30 END COLLECTION
+M  V30 END CTAB
+M  END`;
+
 export function getNucleotidesMol(smilesCodes: string[], oclRender: boolean = false) {
   const molBlocks: string[] = [];
 
-  for (let i = 0; i < smilesCodes.length - 1; i++)
-    smilesCodes[i] == 'OP(=O)(O)O' ? molBlocks.push(PHOSHATE) : molBlocks.push(rotateNucleotidesV3000(smilesCodes[i]));
+  for (let i = 0; i < smilesCodes.length - 1; i++) {
+    smilesCodes[i] == 'OP(=O)(O)O' ? molBlocks.push(PHOSHATE) :
+      smilesCodes[i] == 'OP(=O)(S)O' ? molBlocks.push(THIOPHOSHATE) :
+        smilesCodes[i] == 'O[C@@H]1C[C@@H]O[C@H]1CO' ? molBlocks.push(rotateNucleotidesV3000(INVABASIC)) :
+          molBlocks.push(rotateNucleotidesV3000(smilesCodes[i]));
+  }
 
   return linkV3000(molBlocks, false, oclRender);
 }
@@ -50,6 +110,8 @@ export function linkV3000(molBlocks: string[], twoMolecules: boolean = false, oc
     molBlocks[1] = invertNucleotidesV3000(molBlocks[1]);
 
   for (let i = 0; i < molBlocks.length; i++) {
+    molBlocks[i] = molBlocks[i].replaceAll('(-\nM  V30 ', '(')
+      .replaceAll('-\nM  V30 ', '').replaceAll(' )', ')');
     const numbers = extractAtomsBondsNumbersV3000(molBlocks[i]);
     const coordinates = extractAtomDataV3000(molBlocks[i]);
     let indexAtoms = molBlocks[i].indexOf('M  V30 BEGIN ATOM'); // V3000 index for atoms coordinates
@@ -124,7 +186,7 @@ export function linkV3000(molBlocks: string[], twoMolecules: boolean = false, oc
     while (indexCollection != -1) {
       indexCollection += 28;
       const collectionEnd = molBlocks[i].indexOf(')', indexCollection);
-      const collectionEntries = molBlocks[i].substring(indexCollection, collectionEnd).split(' ');
+      const collectionEntries = molBlocks[i].substring(indexCollection, collectionEnd).split(' ').slice(1);
       collectionEntries.forEach((e) => {
         collection.push(parseInt(e) + natom);
       });
@@ -149,13 +211,15 @@ export function linkV3000(molBlocks: string[], twoMolecules: boolean = false, oc
 
     collectionBlock += ')\n';
   } else {
+    collectionBlock += 'M  V30 MDLV30/STEABS ATOMS=(' + collection.length + ' -\n';
     for (let i = 0; i < collNumber; i++) {
-      collectionBlock += 'M  V30 MDLV30/STEABS ATOMS=(';
+      collectionBlock += 'M  V30 ';
       const entriesCurrent = i + 1 == collNumber ? collection.length - (collNumber - 1)*entries : entries;
-      for (let j = 0; j < entriesCurrent; j++)
-        collectionBlock += (j + 1 == entriesCurrent) ? collection[entries*i + j] : collection[entries*i + j] + ' ';
-
-      collectionBlock += ')\n';
+      for (let j = 0; j < entriesCurrent; j++) {
+        collectionBlock += (j + 1 == entriesCurrent) ?
+          (i == collNumber - 1 ? collection[entries*i + j] + ')\n' : collection[entries*i + j] + ' -\n') :
+          collection[entries*i + j] + ' ';
+      }
     }
   }
 
@@ -186,7 +250,7 @@ function rotateNucleotidesV3000(molecule: string) {
   const indexThreePrime = coordinates.atomIndex.indexOf(natom);
 
   //fix 5 prime if inadequate
-  if (natom > 6)
+  if (natom > 8)
     fix5Prime(coordinates, indexFivePrime, indexThreePrime);
 
   const xCenter = (coordinates.x[indexThreePrime] + coordinates.x[indexFivePrime])/2;

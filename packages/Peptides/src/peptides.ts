@@ -1,6 +1,6 @@
+import * as grok from 'datagrok-api/grok';
 import * as DG from 'datagrok-api/dg';
 import {PeptidesModel} from './model';
-import {StringDictionary} from '@datagrok-libraries/utils/src/type-declarations';
 import {SARViewer, SARViewerVertical} from './viewers/sar-viewer';
 import {ChemPalette} from './utils/chem-palette';
 import {Observable} from 'rxjs';
@@ -9,6 +9,7 @@ import {_package} from './package';
 import {setAARRenderer} from './utils/cell-renderer';
 import * as C from './utils/constants';
 import {PeptideSpaceViewer} from './viewers/peptide-space-viewer';
+import { FilteringStatistics } from './utils/filtering-statistics';
 
 type viewerTypes = SARViewer | SARViewerVertical;
 export class PeptidesController {
@@ -18,10 +19,10 @@ export class PeptidesController {
   private _model: PeptidesModel;
   sarViewer!: SARViewer;
   sarViewerVertical!: SARViewerVertical;
+  isInitialized = false;
 
   private constructor(dataFrame: DG.DataFrame) {
     this._model = PeptidesModel.getInstance(dataFrame);
-    // this.getOrInitModel(this._dataFrame);
   }
 
   static async getInstance(dataFrame: DG.DataFrame): Promise<PeptidesController> {
@@ -37,8 +38,8 @@ export class PeptidesController {
 
   get dataFrame() {return this._model.dataFrame;}
 
-  static setAARRenderer(col: DG.Column, grid: DG.Grid, grouping?: boolean) {
-    return setAARRenderer(col, grid, grouping);
+  static setAARRenderer(col: DG.Column, grid: DG.Grid) {
+    return setAARRenderer(col, grid);
   }
 
   get onStatsDataFrameChanged(): Observable<DG.DataFrame> {return this._model.onStatsDataFrameChanged;}
@@ -47,39 +48,43 @@ export class PeptidesController {
 
   get onSARVGridChanged(): Observable<DG.Grid> {return this._model.onSARVGridChanged;}
 
-  get onGroupMappingChanged(): Observable<StringDictionary> {return this._model.onGroupMappingChanged;}
+  // get onGroupMappingChanged(): Observable<StringDictionary> {return this._model.onGroupMappingChanged;}
 
   get onSubstTableChanged(): Observable<DG.DataFrame> {return this._model.onSubstTableChanged;}
 
   async updateDefault() {await this._model.updateDefault();}
 
-  get sarGrid() {return this._model.sarGrid;}
+  get sarGrid() {return this._model._sarGrid;}
 
-  get sarVGrid() {return this._model.sarVGrid;}
+  get sarVGrid() {return this._model._sarVGrid;}
 
   get sourceGrid() {return this._model._sourceGrid!; }
 
   async updateData(
-    activityScaling?: string, sourceGrid?: DG.Grid, twoColorMode?: boolean, grouping?: boolean, activityLimit?: number,
+    activityScaling?: string, sourceGrid?: DG.Grid, twoColorMode?: boolean, activityLimit?: number,
     maxSubstitutions?: number, isSubstitutionOn?: boolean, filterMode?: boolean,
   ) {
+    filterMode ??= false;
     await this._model.updateData(
-      activityScaling, sourceGrid, twoColorMode, grouping, activityLimit, maxSubstitutions, isSubstitutionOn,
-      filterMode);
+      activityScaling, sourceGrid, twoColorMode, activityLimit, maxSubstitutions, isSubstitutionOn, filterMode);
+  }
+
+  getSubstitutions() {
+    return this._model.getSubstitutionTable();
   }
 
   static async scaleActivity(
-    activityScaling: string, df: DG.DataFrame, originalActivityName?: string,
+    activityScaling: string, df: DG.DataFrame, originalActivityName?: string, cloneBitset = false,
   ): Promise<[DG.DataFrame, string]> {
     // const df = sourceGrid.dataFrame!;
     let currentActivityColName = originalActivityName ?? C.COLUMNS_NAMES.ACTIVITY;
     const flag = (df.columns as DG.ColumnList).names().includes(currentActivityColName) &&
       currentActivityColName === originalActivityName;
     currentActivityColName = flag ? currentActivityColName : C.COLUMNS_NAMES.ACTIVITY;
-    const tempDf = df.clone(null, [currentActivityColName]);
+    const tempDf = df.clone(cloneBitset ? df.filter : null, [currentActivityColName]);
 
     let formula = '${' + currentActivityColName + '}';
-    let newColName = originalActivityName ?? df.temp[C.COLUMNS_NAMES.ACTIVITY] ?? currentActivityColName;
+    let newColName = 'activity'; //originalActivityName ?? df.temp[C.COLUMNS_NAMES.ACTIVITY] ?? currentActivityColName;
     switch (activityScaling) {
     case 'none':
       break;
@@ -96,6 +101,7 @@ export class PeptidesController {
     }
 
     await (tempDf.columns as DG.ColumnList).addNewCalculated(C.COLUMNS_NAMES.ACTIVITY_SCALED, formula);
+    df.tags['scaling'] = activityScaling;
 
     return [tempDf, newColName];
   }
@@ -145,8 +151,8 @@ export class PeptidesController {
 
     //create column names list
     const columnNames = Array.from({length: modeMonomerCount}, (_, index) => `${index + 1 < 10 ? 0 : ''}${index + 1 }`);
-    columnNames.splice(0, 0, 'N-terminal');
-    columnNames.push('C-terminal');
+    columnNames.splice(0, 0, 'Nterminal');
+    columnNames.push('Cterminal');
 
     // filter out the columns with the same values
     if (filter) {
@@ -169,7 +175,31 @@ export class PeptidesController {
 
   static get chemPalette() { return ChemPalette; }
 
+  assertVar(variable: string, init = false): boolean {
+    //@ts-ignore
+    let foundVariable: any = this[variable];
+    if (!foundVariable && init) {
+      //@ts-ignore
+      this[variable] = foundVariable = this.dataFrame.temp[variable];
+    }
+
+    const assertionResult = foundVariable ? true : false
+    if (init && !assertionResult)
+      throw new Error(`Variable assertion error: variable '${variable}' is not found in dataFrame`);
+      
+    return assertionResult;
+  }
+
+  assertVariables(variables: string[], init = false) {
+    let result = true;
+    for (const variable of variables)
+      result &&= this.assertVar(variable, init);
+
+    return result;
+  }
+
   syncProperties(isSourceSAR = true) {
+    this.assertVariables(['sarViewer', 'sarViewerVertical'], true);
     const sourceViewer = isSourceSAR ? this.sarViewer : this.sarViewerVertical;
     const targetViewer = isSourceSAR ? this.sarViewerVertical : this.sarViewer;
     const properties = sourceViewer.props.getProperties();
@@ -208,7 +238,25 @@ export class PeptidesController {
    * @param {DG.Column} col Aligned sequences column.
    * @memberof Peptides
    */
-  async init(sourceGrid: DG.Grid, currentView: DG.TableView, options: StringDictionary) {
+  async init(table: DG.DataFrame) {
+    if (this.isInitialized)
+      return;
+    this.isInitialized = true;
+    //calculate initial stats
+    const stats = new FilteringStatistics();
+    const activityScaledCol = table.getCol(C.COLUMNS_NAMES.ACTIVITY_SCALED);
+    stats.setData(activityScaledCol.getRawData() as Float32Array);
+    stats.setMask(table.selection);
+    table.temp[C.STATS] = stats;
+
+    //set up views
+    let currentView = grok.shell.v as DG.TableView ;
+    if (currentView.dataFrame.tags['isPeptidesAnalysis'] !== 'true')
+      currentView = grok.shell.addTableView(table);
+    const sourceGrid = currentView.grid;
+    sourceGrid.col(C.COLUMNS_NAMES.ACTIVITY_SCALED)!.name = table.temp[C.COLUMNS_NAMES.ACTIVITY_SCALED];
+    sourceGrid.columns.setOrder([table.temp[C.COLUMNS_NAMES.ACTIVITY_SCALED]]);
+    
     this.dataFrame.temp[C.EMBEDDING_STATUS] = false;
     function adjustCellSize(grid: DG.Grid) {
       const colNum = grid.columns.length;
@@ -227,14 +275,16 @@ export class PeptidesController {
         sourceGrid.columns.byIndex(i)!.visible = false;
     }
 
-    await this.updateData(options.scaling, sourceGrid, false, false, 1, 2, false, false);
+    const options = {scaling: table.tags['scaling']};
+    await this.updateData(table.tags['scaling'], sourceGrid, false, 1, 2, false, false);
 
     const dockManager = currentView.dockManager;
 
-    this.sarViewer = await this.dataFrame.plot.fromType('peptide-sar-viewer', options) as SARViewer;
+    this.dataFrame.temp['sarViewer'] = this.sarViewer =
+      await this.dataFrame.plot.fromType('peptide-sar-viewer', options) as SARViewer;
     this.sarViewer.helpUrl = this.helpUrl;
 
-    this.sarViewerVertical =
+    this.dataFrame.temp['sarViewerVertical'] = this.sarViewerVertical =
       await this.dataFrame.plot.fromType('peptide-sar-viewer-vertical', options) as SARViewerVertical;
       this.sarViewerVertical.helpUrl = this.helpUrl;
 
@@ -250,8 +300,9 @@ export class PeptidesController {
     sourceGrid.props.allowEdit = false;
     adjustCellSize(sourceGrid);
 
-    this._model.sarGrid.invalidate();
-    this._model.sarVGrid.invalidate();
+    // this._model._sarGrid.invalidate();
+    // this._model._sarVGrid.invalidate();
+    this._model.invalidateGrids();
   }
 
   invalidateSourceGrid() { this.sourceGrid.invalidate(); }

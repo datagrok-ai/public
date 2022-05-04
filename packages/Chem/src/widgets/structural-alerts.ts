@@ -13,13 +13,13 @@ let _data: string[] | null = null;
 
 function loadAlertsCollection(smarts: string[]) {
   _data = smarts;
-  for (let i = 0; i < smarts.length; i++) {
-    const currentSmarts = smarts[i];
+  for (const currentSmarts of smarts)
     _smartsMap.set(currentSmarts, getRdKitModule().get_qmol(currentSmarts));
-  }
 }
 
-function getStructuralAlerts(smiles: string): number[] {
+export async function getStructuralAlerts(smiles: string): Promise<number[]> {
+  if (_data === null)
+    await loadSADataset();
   const alerts: number[] = [];
   const mol = getRdKitModule().get_mol(smiles);
   //TODO: use SustructLibrary and count_matches instead. Currently throws an error on rule id 221
@@ -53,10 +53,9 @@ async function loadSADataset() {
 }
 
 export async function structuralAlertsWidget(smiles: string) {
-  if (_data === null)
-    await loadSADataset();
-
-  const alerts = getStructuralAlerts(smiles);
+  const alerts = await getStructuralAlerts(smiles);
+  if (alerts.length === 0)
+    return new DG.Widget(ui.divText('No alerts'));
   // await (await getRdKitService()).getStructuralAlerts(smiles); // getStructuralAlerts(smiles);
   const width = 200;
   const height = 100;
@@ -73,8 +72,6 @@ export async function structuralAlertsWidget(smiles: string) {
     host.style.margin = '5px';
     return host;
   }), 'd4-flex-wrap');
-  if (!alerts.length)
-    list.innerText = 'No Alerts';
 
   return new DG.Widget(list);
 }

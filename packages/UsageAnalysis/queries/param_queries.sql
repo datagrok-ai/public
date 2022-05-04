@@ -1,6 +1,6 @@
 --name: _groupCompleter
 --input: string sub
---connection: System:DatagrokAdmin
+--connection: System:Datagrok
 select id, name from (
 select id, name, (case when name = @sub then 10 when name like @sub || '%' then 9 else 1 end) as weight from groups
 where personal = false and name ilike '%' || @sub || '%'
@@ -12,7 +12,7 @@ limit 50
 
 --name: _userCompleter
 --input: string sub
---connection: System:DatagrokAdmin
+--connection: System:Datagrok
 select id, name from (
 select id, friendly_name as name, (case when
 friendly_name = @sub or login = @sub or first_name = @sub or last_name = @sub then 10
@@ -31,7 +31,7 @@ limit 50
 
 --name: _actionCompleter
 --input: string sub
---connection: System:DatagrokAdmin
+--connection: System:Datagrok
 select name from (
 select distinct name, (case when name = @sub then 10 when name like @sub || '%' then 9 else 1 end) as weight from event_types
 where name ilike '%' || @sub || '%'
@@ -43,7 +43,7 @@ limit 50
 
 --name: _queriesCompleter
 --input: string sub
---connection: System:DatagrokAdmin
+--connection: System:Datagrok
 select id, name from (
 select id, name, (case when name = @sub then 10 when name like @sub || '%' then 9 else 1 end) as weight from queries
 where name ilike '%' || @sub || '%'
@@ -55,7 +55,7 @@ limit 50
 
 --name: _projectCompleter
 --input: string sub
---connection: System:DatagrokAdmin
+--connection: System:Datagrok
 select id, name from (
 select id, name, (case when name = @sub then 10 when name like @sub || '%' then 9 else 1 end) as weight  from projects
 where name ilike '%' || @sub || '%'
@@ -69,7 +69,7 @@ limit 50
 --input: string action { suggestions: LogAnalysis:actionCompleter }
 --input: string user { suggestions: LogAnalysis:userCompleter}
 --input: string date { pattern: datetime }
---connection: System:DatagrokAdmin
+--connection: System:Datagrok
 select t.name, t.source, e.event_time from events e
 inner join event_types t on e.event_type_id = t.id
 inner join users_sessions s on e.session_id = s.id
@@ -81,7 +81,7 @@ where u.id = @user and @date(e.event_time) and t.name = @action
 --name: @group members
 --tags: log
 --input: string group { suggestions: LogAnalysis:groupCompleter }
---connection: System:DatagrokAdmin
+--connection: System:Datagrok
 WITH RECURSIVE children(id, name, is_admin, depth, path, path1, cycle) AS (
         SELECT g.id, g.friendly_name, false, 1, ARRAY[g.id], ''::text, false
         FROM groups g
@@ -99,7 +99,7 @@ WITH RECURSIVE children(id, name, is_admin, depth, path, path1, cycle) AS (
 --name: actions by @user on @date
 --input: string user { suggestions: LogAnalysis:userCompleter }
 --input: string date { pattern: datetime }
---connection: System:DatagrokAdmin
+--connection: System:Datagrok
 select t.name, t.source, e.event_time from events e
 inner join event_types t on e.event_type_id = t.id
 inner join users_sessions s on e.session_id = s.id
@@ -111,7 +111,7 @@ where u.id = @user and @date(e.event_time)
 --name: @user events by hours
 --tags: log
 --input: string @user { suggestions: logAnalysis:userCompleter }
---connection: System:DatagrokAdmin
+--connection: System:Datagrok
 select hh as hours_ago, description  from
 (select e.description, extract(hour from now() - e.event_time) as hh
 from users u

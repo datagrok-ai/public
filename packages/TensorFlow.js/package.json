@@ -2,12 +2,12 @@
 	"name": "@datagrok/tensorflow-dev",
 	"beta": true,
 	"friendlyName": "TensorFlow.js",
-	"version": "0.0.3",
+	"version": "0.0.4",
 	"description": "",
 	"dependencies": {
 		"@tensorflow/tfjs": "latest",
 		"cash-dom": "latest",
-		"datagrok-api": ">0.94.10",
+		"datagrok-api": "^0.94.10",
 		"dayjs": "latest",
 		"jszip": "latest",
 		"jszip-sync": "^3.2.1-sync"

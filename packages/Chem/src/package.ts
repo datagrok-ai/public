@@ -14,7 +14,7 @@ import {structure3dWidget} from './widgets/structure3d';
 import {toxicityWidget} from './widgets/toxicity';
 import {chemSpace} from './analysis/chem-space';
 import {getActivityCliffs} from './analysis/activity-cliffs';
-import {addDescriptors, getDescriptorsApp, getDescriptorsSingle} from './descriptors/descriptors-calculation';
+import {getDescriptorsApp, getDescriptorsSingle} from './descriptors/descriptors-calculation';
 import {addInchiKeys, addInchis} from './panels/inchi';
 import {addMcs} from './panels/find-mcs';
 import * as chemCommonRdKit from './utils/chem-common-rdkit';
@@ -230,7 +230,9 @@ export function descriptorsApp(context: any) {
 //name: saveAsSdf
 //description: Save as SDF
 //tags: fileExporter
-export function saveAsSdf() {_saveAsSdf();}
+export function saveAsSdf() {
+  _saveAsSdf();
+}
 
 //#region Top menu
 
@@ -264,7 +266,7 @@ export async function chemSpaceTopMenu(table: DG.DataFrame,
   similarityMetric: string = 'Tanimoto',
   plotEmbeddings: boolean) {
   return new Promise<void>(async (resolve, reject) => {
-    const embeddings = await chemSpace(smiles, methodName, similarityMetric);
+    const embeddings = await chemSpace(smiles, methodName, similarityMetric, ['Embed_X', 'Embed_Y']);
     const cols = table.columns as DG.ColumnList;
     for (const col of embeddings)
       cols.add(col);
@@ -381,16 +383,16 @@ export function structure2d(smiles: string) {
 //name: Structure 3D
 //description: 3D molecule representation
 //tags: panel, chem, widgets
-//input: string molecule { semType: Molecule }
+//input: string smiles { semType: Molecule }
 //output: widget result
-export async function structure3d(molecule: string) {
-  if (isMolBlock(molecule)) {
-    const mol = getRdKitModule().get_mol(molecule);
-    molecule = mol.get_smiles();
+export async function structure3d(smiles: string) {
+  if (isMolBlock(smiles)) {
+    const mol = getRdKitModule().get_mol(smiles);
+    smiles = mol.get_smiles();
     mol?.delete();
   }
 
-  return molecule ? structure3dWidget(molecule) : new DG.Widget(ui.divText('SMILES is empty'));
+  return smiles ? structure3dWidget(smiles) : new DG.Widget(ui.divText('SMILES is empty'));
 }
 
 //name: Toxicity
@@ -427,11 +429,14 @@ export function convertMolecule(molecule: string, from: string, to: string): str
 //input: grid_cell cell
 export function editMoleculeCell(cell: DG.GridCell) {
   const sketcher = new Sketcher();
+  const unit = cell.cell.column.tags[DG.TAGS.UNITS];
   sketcher.setMolecule(cell.cell.value);
-
   ui.dialog()
     .add(sketcher)
-    .onOK(() => cell.cell.value = sketcher.getMolFile())
+    .onOK(() => {
+      cell.cell.value = unit == 'molblock' ? sketcher.getMolFile() : sketcher.getSmiles();
+      Sketcher.addRecent(sketcher.getSmiles());
+    })
     .show();
 }
 
@@ -485,7 +490,7 @@ export function openChemLibSketch() {
     .showModal(true);
 }
 
-//name: openChemLibSketcher
+//name: Open Chem Sketcher
 //tags: moleculeSketcher
 //output: widget sketcher
 export function openChemLibSketcher() {

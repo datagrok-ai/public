@@ -1,7 +1,7 @@
 {
   "name": "@datagrok/chembl",
   "tags": ["chem"],
-  "version": "0.0.1",
+  "version": "0.0.2",
   "fullName": "Chembl",
   "description": "Chembl integration",
   "scripts": {

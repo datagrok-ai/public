@@ -10,4 +10,4 @@ functionality, however some actions could be undone by pressing `Ctrl+Z`:
 * Removing selected rows or columns (`Shift+Delete`)
 * Closing a viewer by clicking on the `x` icon
 
-Maximum one operation could be undone. 
+Maximum one operation could be undone.

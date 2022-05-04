@@ -781,9 +781,9 @@ export class FileSource {
    * Sample: {@link https://public.datagrok.ai/js/samples/dapi/files}
    * @param {FileInfo | string} file - folder
    * @param {boolean} recursive - whether to search in folders recursively
-   * @param {string} searchPattern - search pattern, such as "*.csv"
+   * @param {string} searchPattern - search pattern, such as part of a filename or extension, e.g., "filename-prefix" and "csv"
    * @returns {Promise<FileInfo[]>} */
-  async list(file: FileInfo | string, recursive: boolean, searchPattern: string | null = null): Promise<FileInfo[]> {
+  async list(file: FileInfo | string, recursive: boolean = false, searchPattern: string | null = null): Promise<FileInfo[]> {
     file = this.setRoot(file);
     return toJs(await api.grok_Dapi_UserFiles_List(file, recursive, searchPattern, this.root));
   }

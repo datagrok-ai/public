@@ -3,7 +3,6 @@ import * as grok from 'datagrok-api/grok';
 import * as DG from 'datagrok-api/dg';
 
 import {Subject, Observable} from 'rxjs';
-import {StringDictionary} from '@datagrok-libraries/utils/src/type-declarations';
 import {addViewerToHeader, StackedBarChart} from './viewers/stacked-barchart-viewer';
 import {PeptidesController} from './peptides';
 import {tTest} from '@datagrok-libraries/statistics/src/tests';
@@ -15,59 +14,79 @@ import * as type from './utils/types';
 import {FilteringStatistics} from './utils/filtering-statistics';
 
 export class PeptidesModel {
-  _dataFrame: DG.DataFrame;
-  _activityScaling: string | null = null;
-  _sourceGrid: DG.Grid | null = null;
-  _twoColorMode: boolean | null = null;
-  _grouping: boolean = false;
-  _isUpdating: boolean = false;
-  _substitutionTable: DG.DataFrame | null = null;
+  static _modelName = 'peptidesModel';
+  
   _statsDataFrameSubject = new Subject<DG.DataFrame>();
   _sarGridSubject = new Subject<DG.Grid>();
   _sarVGridSubject = new Subject<DG.Grid>();
-  _groupMappingSubject = new Subject<StringDictionary>();
+  // _groupMappingSubject = new Subject<StringDictionary>();
   _substitutionTableSubject = new Subject<DG.DataFrame>();
-  static _modelName = 'peptidesModel';
-  _activityLimit: number | null = null;
-  _maxSubstitutions: number | null = null;
-  _isSubstitutionOn: boolean | null = null;
+
+  _isUpdating: boolean = false;
   _isSubstInitialized = false;
-  _substTableTooltipData: { [aar: string]: number[][][]; } | null = null;
-  sarGrid!: DG.Grid;
-  sarVGrid!: DG.Grid;
+  isBitsetChangedInitialized = false;
 
-  aarGroups = {
-    'R': 'PC', 'H': 'PC', 'K': 'PC',
-    'D': 'NC', 'E': 'NC',
-    'S': 'U', 'T': 'U', 'N': 'U', 'Q': 'U',
-    'C': 'SC', 'U': 'SC', 'G': 'SC', 'P': 'SC',
-    'A': 'H', 'V': 'H', 'I': 'H', 'L': 'H', 'M': 'H', 'F': 'H', 'Y': 'H', 'W': 'H',
-    '-': '-',
-  };
+  //viewer properties
+  // _grouping!: boolean;
+  _filterMode!: boolean;
+  _twoColorMode!: boolean;
+  _activityScaling!: string;
+  _isSubstitutionOn!: boolean;
+  _activityLimit!: number;
+  _maxSubstitutions!: number;
 
-  groupDescription: {[key: string]: {'description': string, aminoAcids: string[]}} = {
-    'PC': {'description': 'Positive Amino Acids, with Electrically Charged Side Chains', 'aminoAcids': ['R', 'H', 'K']},
-    'NC': {'description': 'Negative Amino Acids, with Electrically Charged Side Chains', 'aminoAcids': ['D', 'E']},
-    'U': {'description': 'Amino Acids with Polar Uncharged Side Chains', 'aminoAcids': ['S', 'T', 'N', 'Q']},
-    'SC': {'description': 'Special Cases', 'aminoAcids': ['C', 'U', 'G', 'P']},
-    'H': {
-      'description': 'Amino Acids with Hydrophobic Side Chain',
-      'aminoAcids': ['A', 'V', 'I', 'L', 'M', 'F', 'Y', 'W'],
-    },
-    '-': {'description': 'Unknown Amino Acid', 'aminoAcids': ['-']},
-  };
-  _filterMode: boolean = false;
+  _sarGrid!: DG.Grid;
+  _sarVGrid!: DG.Grid;
+  _sourceGrid!: DG.Grid;
+  _dataFrame: DG.DataFrame;
+  _substitutionTable!: DG.DataFrame;
   splitCol!: DG.Column;
-  isBitsetChangedInitialized: boolean = false;
   stackedBarchart!: StackedBarChart;
+
+  // _substTableTooltipData!: { [aar: string]: number[][][]; };
+  _casesTable!: type.SubstitutionCases;
+  _substTableTooltipData!: type.SubstitutionTooltips;
 
   private constructor(dataFrame: DG.DataFrame) {
     this._dataFrame = dataFrame;
+    this._dataFrame.temp[C.PEPTIDES_ANALYSIS] = true;
+
+    this.updateProperties();
   }
 
   static getInstance(dataFrame: DG.DataFrame): PeptidesModel {
     dataFrame.temp[PeptidesModel.modelName] ??= new PeptidesModel(dataFrame);
     return dataFrame.temp[PeptidesModel.modelName];
+  }
+
+  updateProperties() {
+    this._activityScaling = this._dataFrame.tags['scaling'];
+    this._filterMode = this.stringToBool(this._dataFrame.tags['filterMode']);
+    this._twoColorMode = this.stringToBool(this._dataFrame.tags['bidirectionalAnalysis']);
+    // this._grouping = this.stringToBool(this._dataFrame.tags['grouping']);
+    this._isSubstitutionOn = this.stringToBool(this._dataFrame.tags['showSubstitution']);
+    this._maxSubstitutions = parseInt(this._dataFrame.tags['maxSubstitutions']);
+    this._activityLimit = parseFloat(this._dataFrame.tags['activityLimit']);
+  }
+
+  stringToBool(str: string) {
+    return str === 'true' ? true : false;
+  }
+
+  setProperties(
+    activityScaling: string, filterMode: boolean, twoColorMode: boolean, isSubstitutionOn: boolean,
+    maxSubstitutions: number, activityLimit: number, forceUpdate = false,
+  ) {
+    const chooseAction = (value: string, defaultValue: any) => forceUpdate ? value : defaultValue ?? value;
+    this._dataFrame.tags['scaling'] = chooseAction(`${activityScaling}`, this._dataFrame.tags['scaling']);
+    this._dataFrame.tags['filterMode'] = chooseAction(`${filterMode}`, this._dataFrame.tags['filterMode']);
+    this._dataFrame.tags['bidirectionalAnalysis'] = chooseAction(`${twoColorMode}`, this._dataFrame.tags['bidirectionalAnalysis']);
+    // this._dataFrame.tags['grouping'] = chooseAction(`${grouping}`, this._dataFrame.tags['grouping']);
+    this._dataFrame.tags['showSubstitution'] = chooseAction(`${isSubstitutionOn}`, this._dataFrame.tags['showSubstitution']);
+    this._dataFrame.tags['maxSubstitutions'] = chooseAction(`${maxSubstitutions}`, this._dataFrame.tags['maxSubstitutions']);
+    this._dataFrame.tags['activityLimit'] = chooseAction(`${activityLimit}`, this._dataFrame.tags['activityLimit']);
+    
+    this.updateProperties();
   }
 
   get dataFrame(): DG.DataFrame {return this._dataFrame;}
@@ -78,24 +97,27 @@ export class PeptidesModel {
 
   get onSARVGridChanged(): Observable<DG.Grid> {return this._sarVGridSubject.asObservable();}
 
-  get onGroupMappingChanged(): Observable<StringDictionary> {return this._groupMappingSubject.asObservable();}
+  // get onGroupMappingChanged(): Observable<StringDictionary> {return this._groupMappingSubject.asObservable();}
 
   get onSubstTableChanged(): Observable<DG.DataFrame> {return this._substitutionTableSubject.asObservable();}
 
-  get substTooltipData(): type.SubstitutionsTooltipData {return this._substTableTooltipData!;}
+  get substTooltipData(): type.SubstitutionTooltips {return this._substTableTooltipData!;}
 
   async updateData(
-    activityScaling?: string, sourceGrid?: DG.Grid, twoColorMode?: boolean, grouping?: boolean, activityLimit?: number,
+    activityScaling?: string, sourceGrid?: DG.Grid, twoColorMode?: boolean,  activityLimit?: number, 
     maxSubstitutions?: number, isSubstitutionOn?: boolean, filterMode?: boolean,
   ) {
+    //FIXME: threre are too many assignments, some are duplicating
     this._activityScaling = activityScaling ?? this._activityScaling;
     this._sourceGrid = sourceGrid ?? this._sourceGrid;
     this._twoColorMode = twoColorMode ?? this._twoColorMode;
-    this._grouping = grouping ?? this._grouping;
+    // this._grouping = grouping ?? this._grouping;
     this._activityLimit = activityLimit ?? this._activityLimit;
     this._maxSubstitutions = maxSubstitutions ?? this._maxSubstitutions;
     this._isSubstitutionOn = isSubstitutionOn ?? this._isSubstitutionOn;
     this._filterMode = filterMode ?? this._filterMode;
+    this.setProperties(this._activityScaling, this._filterMode, this._twoColorMode, this._isSubstitutionOn,
+      this._maxSubstitutions, this._activityLimit, true);
 
     await this.updateDefault();
   }
@@ -103,12 +125,10 @@ export class PeptidesModel {
   async updateDefault() {
     if (this._activityScaling && this._sourceGrid && this._twoColorMode !== null && !this._isUpdating) {
       this._isUpdating = true;
-      const [viewerGrid, viewerVGrid, statsDf, substTable, groupMapping] = await this.initializeViewersComponents();
+      const [viewerGrid, viewerVGrid, statsDf, substTable] = await this.initializeViewersComponents();
       //FIXME: modify during the initializeViewersComponents stages
-      this.sarGrid = viewerGrid;
-      this.sarVGrid = viewerVGrid;
       this._statsDataFrameSubject.next(statsDf);
-      this._groupMappingSubject.next(groupMapping);
+      // this._groupMappingSubject.next(groupMapping);
       this._sarGridSubject.next(viewerGrid);
       this._sarVGridSubject.next(viewerVGrid);
       if (this._isSubstitutionOn) {
@@ -130,7 +150,7 @@ export class PeptidesModel {
 
   static get modelName() { return PeptidesModel._modelName; }
 
-  async initializeViewersComponents(): Promise<[DG.Grid, DG.Grid, DG.DataFrame, DG.DataFrame, StringDictionary]> {
+  async initializeViewersComponents(): Promise<[DG.Grid, DG.Grid, DG.DataFrame, DG.DataFrame]> {
     if (this._sourceGrid === null)
       throw new Error(`Source grid is not initialized`);
 
@@ -139,7 +159,6 @@ export class PeptidesModel {
     let invalidIndexes: number[];
     const col: DG.Column = (this._dataFrame.columns as DG.ColumnList).bySemType(C.SEM_TYPES.ALIGNED_SEQUENCE)!;
     [splitSeqDf, invalidIndexes] = PeptidesController.splitAlignedPeptides(col);
-    splitSeqDf.name = 'Split sequence';
 
     const positionColumns = (splitSeqDf.columns as DG.ColumnList).names();
     const renderColNames: string[] = (splitSeqDf.columns as DG.ColumnList).names();
@@ -168,18 +187,19 @@ export class PeptidesModel {
       [C.COLUMNS_NAMES.ACTIVITY_SCALED], positionColumns, C.COLUMNS_NAMES.POSITION, C.COLUMNS_NAMES.AMINO_ACID_RESIDUE);
 
     //TODO: move to chem palette
-    let groupMapping: StringDictionary = {};
-    if (this._grouping) {
-      groupMapping = this.aarGroups;
-      const aarCol = matrixDf.getCol(C.COLUMNS_NAMES.AMINO_ACID_RESIDUE);
-      aarCol.init((index) => groupMapping[aarCol.get(index)[0]] ?? '-');
-      aarCol.compact();
-    } else
-      Object.keys(this.aarGroups).forEach((value) => groupMapping[value] = value);
+    // let groupMapping: StringDictionary = {};
+    // if (this._grouping) {
+    //   groupMapping = C.aarGroups;
+    //   const aarCol = matrixDf.getCol(C.COLUMNS_NAMES.AMINO_ACID_RESIDUE);
+    //   aarCol.init((index) => groupMapping[aarCol.get(index)[0]] ?? '-');
+    //   aarCol.compact();
+    // } else
+    //   Object.keys(C.aarGroups).forEach((value) => groupMapping[value] = value);
 
 
+    //FIXME: for some reason Mean difference is not calculated for all the AARs
     //statistics for specific AAR at a specific position
-    const statsDf = await this.calculateStatistics(matrixDf, peptidesCount, splitSeqDf, groupMapping);
+    const statsDf = await this.calculateStatistics(matrixDf, peptidesCount, splitSeqDf);
 
     // SAR matrix table
     //pivot a table to make it matrix-like
@@ -201,76 +221,106 @@ export class PeptidesModel {
       substTable = this.calcSubstitutions();
 
     //TODO: move everything below out to controller
-    const [sarGrid, sarVGrid] = this.createGrids(matrixDf, positionColumns, sequenceDf, this._grouping);
+    const [sarGrid, sarVGrid] = this.createGrids(matrixDf, positionColumns, sequenceDf);
+
+    this._sarGrid = sarGrid;
+    this._sarVGrid = sarVGrid;
 
     this.setCellRenderers(
-      renderColNames, statsDf, this._twoColorMode!, sarGrid, sarVGrid, this._isSubstitutionOn!, substTable!);
+      renderColNames, statsDf, this._twoColorMode, sarGrid, sarVGrid, this._isSubstitutionOn);
 
     // show all the statistics in a tooltip over cell
-    this.setTooltips(renderColNames, statsDf, peptidesCount, this._grouping, sarGrid, sarVGrid, this._dataFrame);
+    this.setTooltips(renderColNames, statsDf, peptidesCount, sarGrid, sarVGrid, this._dataFrame);
 
-    this.setInteractionCallback(sarGrid, sarVGrid, this.dataFrame, this.substTooltipData);
+    this.setInteractionCallback();
 
     this.modifyOrCreateSplitCol(C.CATEGORIES.ALL, C.CATEGORIES.ALL);
 
     this.setBitsetCallback();
 
-    this.postProcessGrids(this._sourceGrid, invalidIndexes, this._grouping, sarGrid, sarVGrid);
+    this.postProcessGrids(this._sourceGrid, invalidIndexes, sarGrid, sarVGrid);
+
+    if (this.dataFrame.tags[C.TAGS.AAR] && this.dataFrame.tags[C.TAGS.POSITION]) {
+      const sarDf = sarGrid.dataFrame;
+      const rowCount = sarDf.rowCount;
+      let index = -1;
+      for (let i = 0; i < rowCount; i++) {
+        if (sarDf.get(C.COLUMNS_NAMES.AMINO_ACID_RESIDUE, i) === this.dataFrame.tags[C.TAGS.AAR]) {
+          index = i;
+          break;
+        }
+      }
+      sarDf.currentCell = sarDf.cell(index, this.dataFrame.tags[C.TAGS.POSITION]);
+    }
 
     //TODO: return class instead
-    return [sarGrid, sarVGrid, statsDf, substTable!, groupMapping];
+    return [sarGrid, sarVGrid, statsDf, substTable!];
   }
 
   calcSubstitutions() {
-    const col: DG.Column = this.dataFrame.columns.bySemType(C.SEM_TYPES.ALIGNED_SEQUENCE);
-    const values: number[] = this.dataFrame.getCol(C.COLUMNS_NAMES.ACTIVITY_SCALED).toList();
-    const splitedMatrix = this.split(col);
+    // const col: DG.Column = this.dataFrame.columns.bySemType(C.SEM_TYPES.ALIGNED_SEQUENCE);
+    // const values: number[] = this.dataFrame.getCol(C.COLUMNS_NAMES.ACTIVITY_SCALED).toList();
+    const activityValues = this.dataFrame.getCol(C.COLUMNS_NAMES.ACTIVITY_SCALED);
+    // const splitedMatrix = this.split(col);
+     const columnList = (this.dataFrame.columns as DG.ColumnList).toList()
+      .filter(col => col.semType === C.SEM_TYPES.AMINO_ACIDS);
+    if (columnList.length === 0)
+      throw new Error(`Couldn't find any column of semType '${C.SEM_TYPES.AMINO_ACIDS}'`);
 
-    const tableValues: { [aar: string]: number[] } = {};
-    const tableTooltips: { [aar: string]: {}[][] } = {};
-    const tableCases: { [aar: string]: number[][][] } = {};
+    const tableValues: { [aar: string]: number[]; } = {};
+    const tableTooltips: { [aar: string]: {}[][]; } = {};
+    const tableCases: { [aar: string]: number[][][]; } = {};
 
-    const nRows = splitedMatrix.length;
-    const nCols = splitedMatrix[0].length;
-    const nColsArray = Array(nCols);
+    // const nRows = splitedMatrix.length;
+    // const nCols = splitedMatrix[0].length;
+    // const nColsArray = Array(nCols);
+    const nCols = columnList.length;
+    const nRows = this.dataFrame.rowCount;
 
+    //TODO: this looks **very** expensive
     for (let i = 0; i < nRows - 1; i++) {
       for (let j = i + 1; j < nRows; j++) {
         let substCounter = 0;
-        const subst1: { [pos: number]: [string, {}] } = {};
-        const subst2: { [pos: number]: [string, {}] } = {};
-        const delta = values[i] - values[j];
+        const subst1: { [pos: number]: [string, {key: string, value: string, diff: number}] } = {};
+        const subst2: { [pos: number]: [string, {key: string, value: string, diff: number}] } = {};
+        const activityValI = activityValues.get(i) as number;
+        const activityValJ = activityValues.get(j) as number;
+        const strActivityValI = activityValI.toFixed(2);
+        const strActivityValJ = activityValJ.toFixed(2);
+        const delta = activityValI - activityValJ;
 
-        if (Math.abs(delta) < this._activityLimit!)
+        if (Math.abs(delta) < this._activityLimit)
           continue;
 
         for (let k = 0; k < nCols; k++) {
-          const smik = splitedMatrix[i][k];
-          const smjk = splitedMatrix[j][k];
-          if (smik != smjk) {
-            const vi = values[i].toFixed(2);
-            const vj = values[j].toFixed(2);
-            substCounter++;
-            subst1[k] = [
-              smik,
-              {
-                key: `${smik === '-' ? 'Empty' : smik} → ${smjk === '-' ? 'Empty' : smjk}`,
-                value: `${vi} → ${vj}`,
-                diff: values[j] - values[i],
-              },
-            ];
-            subst2[k] = [
-              smjk,
-              {
-                key: `${smjk === '-' ? 'Empty' : smjk} → ${smik === '-' ? 'Empty' : smik}`,
-                value: `${vj} → ${vi}`,
-                diff: values[i] - values[j],
-              },
-            ];
-          }
+          // const smik = splitedMatrix[i][k];
+          // const smjk = splitedMatrix[j][k];
+          const smik = columnList[k].get(i) as string;
+          const smjk = columnList[k].get(j) as string;
+
+          if (smik === smjk)
+            continue;
+
+          substCounter++;
+          subst1[k] = [
+            smik,
+            {
+              key: `${smik === '-' ? 'Empty' : smik} → ${smjk === '-' ? 'Empty' : smjk}`,
+              value: `${strActivityValI} → ${strActivityValJ}`,
+              diff: -delta,
+            },
+          ];
+          subst2[k] = [
+            smjk,
+            {
+              key: `${smjk === '-' ? 'Empty' : smjk} → ${smik === '-' ? 'Empty' : smik}`,
+              value: `${strActivityValJ} → ${strActivityValI}`,
+              diff: delta,
+            },
+          ];
         }
 
-        if (substCounter > this._maxSubstitutions! || substCounter === 0)
+        if (substCounter > this._maxSubstitutions || substCounter === 0)
           continue;
 
         for (const subst of [subst1, subst2]) {
@@ -278,9 +328,12 @@ export class PeptidesModel {
             const posInt = parseInt(pos);
             const aar = subst[posInt][0];
             if (!Object.keys(tableValues).includes(aar)) {
-              tableValues[aar] = Array(...nColsArray).map(() => DG.INT_NULL);
-              tableTooltips[aar] = Array(...nColsArray).map(() => []);
-              tableCases[aar] = Array(...nColsArray).map(() => []);
+              // tableValues[aar] = Array(...nColsArray).map(() => DG.INT_NULL);
+              // tableTooltips[aar] = Array(...nColsArray).map(() => []);
+              // tableCases[aar] = Array(...nColsArray).map(() => []);
+              tableValues[aar] = Array(nCols).fill(DG.INT_NULL);
+              tableTooltips[aar] = Array(nCols).fill([]);
+              tableCases[aar] = Array(nCols).fill([]);
             }
 
             tableValues[aar][posInt] = tableValues[aar][posInt] === DG.INT_NULL ? 1 : tableValues[aar][posInt] + 1;
@@ -295,25 +348,38 @@ export class PeptidesModel {
 
     const tableValuesKeys = Object.keys(tableValues);
     const dfLength = tableValuesKeys.length;
-    const cols = [...nColsArray.keys()].map((v) => DG.Column.int(`${v < 10 ? 0 : ''}${v}`, dfLength));
-    cols.forEach((currentCol) => currentCol.semType = 'Substitution');
+    const cols = columnList.map(col => {
+      const newCol = DG.Column.int(`${col.name}`, dfLength);
+      newCol.semType = 'Substitution';
+      return newCol;
+    });
     const aarCol = DG.Column.string(C.COLUMNS_NAMES.AMINO_ACID_RESIDUE, dfLength);
-    cols.splice(0, 1, aarCol);
+    cols.splice(0, 0, aarCol);
     const table = DG.DataFrame.fromColumns(cols);
 
     for (let i = 0; i < dfLength; i++) {
       const aar = tableValuesKeys[i];
-      tableValues[aar].splice(0, 1);
+      // tableValues[aar].splice(0, 1);
       table.rows.setValues(i, [aar, ...tableValues[aar]]);
     }
 
-    // let groupMapping: { [key: string]: string } = {};
+    // let groupMapping: { [key: string]: string } =  {};
 
     //TODO: enable grouping
     // Object.keys(aarGroups).forEach((value) => groupMapping[value] = value);
-    this._substTableTooltipData = tableCases;
+    this._substTableTooltipData = tableTooltips;
+    this._casesTable = tableCases;
+    this.substitutionTable = table;
 
     return table;
+  }
+
+  get substitutionTable() { return this._substitutionTable; }
+  set substitutionTable(table: DG.DataFrame) {
+    if (!table)
+      throw new Error(`Substitution table cannot be set to null`);
+    this._substitutionTable = table;
+    this._substitutionTableSubject.next(table);
   }
 
   joinDataFrames(df: DG.DataFrame, positionColumns: string[], splitSeqDf: DG.DataFrame) {
@@ -365,9 +431,7 @@ export class PeptidesModel {
     sourceGrid.columns.setOrder([newColName]);
   }
 
-  async calculateStatistics(
-    matrixDf: DG.DataFrame, peptidesCount: number, splitSeqDf: DG.DataFrame, groupMapping: StringDictionary,
-  ) {
+  async calculateStatistics(matrixDf: DG.DataFrame, peptidesCount: number, splitSeqDf: DG.DataFrame) {
     matrixDf = matrixDf.groupBy([C.COLUMNS_NAMES.POSITION, C.COLUMNS_NAMES.AMINO_ACID_RESIDUE])
       .add('count', C.COLUMNS_NAMES.ACTIVITY_SCALED, 'Count')
       .aggregate();
@@ -389,14 +453,14 @@ export class PeptidesModel {
       const aar = matrixDf.get(C.COLUMNS_NAMES.AMINO_ACID_RESIDUE, i);
 
       //@ts-ignore
-      splitSeqDf.rows.select((row) => groupMapping[row[position]] === aar);
+      splitSeqDf.rows.select((row) => row[position] === aar);
       const currentActivity: number[] = splitSeqDf
         .clone(splitSeqDf.selection, [C.COLUMNS_NAMES.ACTIVITY_SCALED])
         .getCol(C.COLUMNS_NAMES.ACTIVITY_SCALED)
         .toList();
 
       //@ts-ignore
-      splitSeqDf.rows.select((row) => groupMapping[row[position]] !== aar);
+      splitSeqDf.rows.select((row) => row[position] !== aar);
       const otherActivity: number[] = splitSeqDf
         .clone(splitSeqDf.selection, [C.COLUMNS_NAMES.ACTIVITY_SCALED])
         .getCol(C.COLUMNS_NAMES.ACTIVITY_SCALED)
@@ -461,9 +525,7 @@ export class PeptidesModel {
     return sequenceDf;
   }
 
-  createGrids(
-    matrixDf: DG.DataFrame, positionColumns: string[], sequenceDf: DG.DataFrame, grouping: boolean,
-  ) {
+  createGrids(matrixDf: DG.DataFrame, positionColumns: string[], sequenceDf: DG.DataFrame) {
     const sarGrid = matrixDf.plot.grid();
     sarGrid.sort([C.COLUMNS_NAMES.AMINO_ACID_RESIDUE]);
     sarGrid.columns.setOrder([C.COLUMNS_NAMES.AMINO_ACID_RESIDUE].concat(positionColumns as C.COLUMNS_NAMES[]));
@@ -473,25 +535,23 @@ export class PeptidesModel {
     sarVGrid.col(C.COLUMNS_NAMES.P_VALUE)!.format = 'four digits after comma';
     sarVGrid.col(C.COLUMNS_NAMES.P_VALUE)!.name = 'P-Value';
 
-    if (!grouping) {
-      let tempCol = (matrixDf.columns as DG.ColumnList).byName(C.COLUMNS_NAMES.AMINO_ACID_RESIDUE);
-      if (tempCol)
-        PeptidesController.setAARRenderer(tempCol, sarGrid);
+    let tempCol = (matrixDf.columns as DG.ColumnList).byName(C.COLUMNS_NAMES.AMINO_ACID_RESIDUE);
+    if (tempCol)
+      PeptidesController.setAARRenderer(tempCol, sarGrid);
 
-      tempCol = (sequenceDf.columns as DG.ColumnList).byName(C.COLUMNS_NAMES.AMINO_ACID_RESIDUE);
-      if (tempCol)
-        PeptidesController.setAARRenderer(tempCol, sarGrid);
-    }
+    tempCol = (sequenceDf.columns as DG.ColumnList).byName(C.COLUMNS_NAMES.AMINO_ACID_RESIDUE);
+    if (tempCol)
+      PeptidesController.setAARRenderer(tempCol, sarGrid);
 
     return [sarGrid, sarVGrid];
   }
 
   setCellRenderers(
     renderColNames: string[], statsDf: DG.DataFrame, twoColorMode: boolean, sarGrid: DG.Grid, sarVGrid: DG.Grid,
-    isSubstitutionOn: boolean, substTable?: DG.DataFrame,
+    isSubstitutionOn: boolean,
   ) {
     const mdCol = statsDf.getCol(C.COLUMNS_NAMES.MEAN_DIFFERENCE);
-    const cellRendererAction = function(args: DG.GridCellRenderArgs) {
+    const cellRendererAction = (args: DG.GridCellRenderArgs) => {
       const canvasContext = args.g;
       const bound = args.bounds;
       const cell = args.cell;
@@ -517,6 +577,9 @@ export class PeptidesModel {
         const currentPosition = tableColName !== C.COLUMNS_NAMES.MEAN_DIFFERENCE ?
           tableColName : gridTable.get(C.COLUMNS_NAMES.POSITION, tableRowIndex);
         const currentAAR = gridTable.get(C.COLUMNS_NAMES.AMINO_ACID_RESIDUE, tableRowIndex);
+        if (currentAAR === 'Aib' && currentPosition === '02')
+          console.log('stop');
+        
         const queryAAR = `${C.COLUMNS_NAMES.AMINO_ACID_RESIDUE} = ${currentAAR}`;
         if (cellValue) {
           const query = `${queryAAR} and ${C.COLUMNS_NAMES.POSITION} = ${currentPosition}`;
@@ -553,18 +616,19 @@ export class PeptidesModel {
           canvasContext.closePath();
 
           canvasContext.fill();
-        }
-        if (isSubstitutionOn) {
-          canvasContext.textBaseline = 'middle';
-          canvasContext.textAlign = 'center';
-          canvasContext.fillStyle = DG.Color.toHtml(DG.Color.black);
-          canvasContext.font = '13px Roboto, Roboto Local, sans-serif';
-          const substValue = substTable?.groupBy([currentPosition])
-            .where(queryAAR)
-            .aggregate()
-            .get(currentPosition, 0);
-          if (substValue && substValue !== DG.INT_NULL)
-            canvasContext.fillText(substValue, midX, midY);
+          if (isSubstitutionOn) {
+            canvasContext.textBaseline = 'middle';
+            canvasContext.textAlign = 'center';
+            canvasContext.fillStyle = DG.Color.toHtml(DG.Color.black);
+            // DG.Color.getContrastColor()
+            canvasContext.font = '13px Roboto, Roboto Local, sans-serif';
+            const substValue = this.substitutionTable.groupBy([currentPosition])
+              .where(queryAAR)
+              .aggregate()
+              .get(currentPosition, 0);
+            if (substValue && substValue !== DG.INT_NULL)
+              canvasContext.fillText(substValue, midX, midY);
+          }
         }
         args.preventDefault();
       }
@@ -575,8 +639,8 @@ export class PeptidesModel {
   }
 
   setTooltips(
-    renderColNames: string[], statsDf: DG.DataFrame, peptidesCount: number, grouping: boolean, sarGrid: DG.Grid,
-    sarVGrid: DG.Grid, sourceDf: DG.DataFrame,
+    renderColNames: string[], statsDf: DG.DataFrame, peptidesCount: number, sarGrid: DG.Grid, sarVGrid: DG.Grid,
+    sourceDf: DG.DataFrame,
   ) {
     const onCellTooltipAction = async (cell: DG.GridCell, x: number, y: number) => {
       if (
@@ -608,14 +672,13 @@ export class PeptidesModel {
         ui.tooltip.show(ui.tableFromMap(tooltipMap), x, y);
       }
       if (!cell.isColHeader && cell.tableColumn?.name == C.COLUMNS_NAMES.AMINO_ACID_RESIDUE) {
-        if (grouping) {
-          const currentGroup = this.groupDescription[cell.cell.value];
-          const divText = ui.divText('Amino Acids in this group: ' + currentGroup[C.SEM_TYPES.AMINO_ACIDS].join(', '));
-          ui.tooltip.show(ui.divV([ui.h3(currentGroup['description']), divText]), x, y);
-        } else {
-          const monomerLib = sourceDf.temp[MonomerLibrary.id];
-          ChemPalette.showTooltip(cell, x, y, monomerLib);
-        }
+        // if (grouping) {
+        //   const currentGroup = C.groupDescription[cell.cell.value];
+        //   const divText = ui.divText('Amino Acids in this group: ' + currentGroup[C.SEM_TYPES.AMINO_ACIDS].join(', '));
+        //   ui.tooltip.show(ui.divV([ui.h3(currentGroup['description']), divText]), x, y);
+        // } else {
+        const monomerLib = sourceDf.temp[MonomerLibrary.id];
+        ChemPalette.showTooltip(cell, x, y, monomerLib);
       }
       return true;
     };
@@ -623,12 +686,9 @@ export class PeptidesModel {
     sarVGrid.onCellTooltip(onCellTooltipAction);
   }
 
-  setInteractionCallback(
-    sarGrid: DG.Grid, sarVGrid: DG.Grid, sourceDf: DG.DataFrame, substTooltipData: type.SubstitutionsTooltipData,
-  ) {
-    const sarDf = sarGrid.dataFrame;
-    const sarVDf = sarVGrid.dataFrame;
-
+  setInteractionCallback() {
+    const sarDf = this._sarGrid.dataFrame;
+    const sarVDf = this._sarVGrid.dataFrame;
 
     const getAARandPosition = (isVertical = false): [string, string] => {
       let aar : string;
@@ -644,23 +704,28 @@ export class PeptidesModel {
       return [aar, position];
     };
 
-    sarGrid.onCurrentCellChanged.subscribe((gc) => {
+    this._sarGrid.onCurrentCellChanged.subscribe((gc) => {
       const isNegativeRowIndex = sarDf.currentRowIdx === -1;
       if (!sarDf.currentCol || (!sarDf.currentCell.value && !isNegativeRowIndex))
         return;
       this.syncGrids(false, sarDf, sarVDf);
       let aar: string = C.CATEGORIES.ALL;
       let position: string = C.CATEGORIES.ALL;
-      if (!isNegativeRowIndex)
+      if (!isNegativeRowIndex) {
         [aar, position] = getAARandPosition();
-      this.sendSubstitutionTable(sarDf, sourceDf, substTooltipData);
+        this.dataFrame.tags[C.TAGS.AAR] = aar;
+        this.dataFrame.tags[C.TAGS.POSITION] = position;
+      } else {
+        this.dataFrame.tags[C.TAGS.AAR] = this.dataFrame.tags[C.TAGS.POSITION] = null;
+      }
+      this.dataFrame.temp['substTable'] = this.getSubstitutionTable();
       this.modifyOrCreateSplitCol(aar, position);
       this.fireBitsetChanged();
       this.invalidateGrids();
       grok.shell.o = this.dataFrame;
     });
 
-    sarVGrid.onCurrentCellChanged.subscribe((gc) => {
+    this._sarVGrid.onCurrentCellChanged.subscribe((gc) => {
       if (!sarVDf.currentCol || sarVDf.currentRowIdx === -1)
         return;
       this.syncGrids(true, sarDf, sarVDf);
@@ -669,8 +734,8 @@ export class PeptidesModel {
 
   invalidateGrids() {
     this.stackedBarchart?.computeData();
-    this.sarGrid.invalidate();
-    this.sarVGrid.invalidate();
+    this._sarGrid.invalidate();
+    this._sarVGrid.invalidate();
     this._sourceGrid?.invalidate();
     //TODO: this.peptideSpaceGrid.invalidate();
   }
@@ -705,9 +770,7 @@ export class PeptidesModel {
 
   fireBitsetChanged() {(this._filterMode ? this._dataFrame.filter : this._dataFrame.selection).fireChanged();}
 
-  postProcessGrids(
-    sourceGrid: DG.Grid, invalidIndexes: number[], grouping: boolean, sarGrid: DG.Grid, sarVGrid: DG.Grid,
-  ) {
+  postProcessGrids(sourceGrid: DG.Grid, invalidIndexes: number[], sarGrid: DG.Grid, sarVGrid: DG.Grid) {
     sourceGrid.onCellPrepare((cell: DG.GridCell) => {
       const currentRowIndex = cell.tableRowIndex;
       if (currentRowIndex && invalidIndexes.includes(currentRowIndex) && !cell.isRowHeader)
@@ -729,10 +792,10 @@ export class PeptidesModel {
       }
     }
 
-    if (grouping) {
-      sarGrid.col(C.COLUMNS_NAMES.AMINO_ACID_RESIDUE)!.name = 'Groups';
-      sarVGrid.col(C.COLUMNS_NAMES.AMINO_ACID_RESIDUE)!.name = 'Groups';
-    }
+    // if (grouping) {
+    //   sarGrid.col(C.COLUMNS_NAMES.AMINO_ACID_RESIDUE)!.name = 'Groups';
+    //   sarVGrid.col(C.COLUMNS_NAMES.AMINO_ACID_RESIDUE)!.name = 'Groups';
+    // }
 
     sarGrid.props.allowEdit = false;
     sarVGrid.props.allowEdit = false;
@@ -796,15 +859,25 @@ export class PeptidesModel {
     return splitPeptidesArray;
   }
 
-  sendSubstitutionTable(sarDf: DG.DataFrame, sourceDf: DG.DataFrame, substTooltipData: type.SubstitutionsTooltipData) {
+  getSubstitutionTable() {
+    if (!this._casesTable)
+      this.calcSubstitutions();
+    const sarDf = this._sarGrid.dataFrame;
+    const sourceDf = this._sourceGrid.dataFrame;
     if (sarDf.currentRowIdx === -1)
-      sourceDf.temp['substTable'] = null;
+      return null;
     const currentColName = sarDf.currentCol.name;
     if (currentColName !== C.COLUMNS_NAMES.AMINO_ACID_RESIDUE) {
       const col: DG.Column = sourceDf.columns.bySemType(C.SEM_TYPES.ALIGNED_SEQUENCE);
       const aar = sarDf.get(C.COLUMNS_NAMES.AMINO_ACID_RESIDUE, sarDf.currentRowIdx);
       const pos = parseInt(currentColName);
-      const currentCase = substTooltipData[aar][pos];
+      const substitutionsCount = this.substitutionTable.groupBy([currentColName])
+        .where(`${C.COLUMNS_NAMES.AMINO_ACID_RESIDUE} = ${aar}`)
+        .aggregate()
+        .get(currentColName, 0);
+      if (substitutionsCount === DG.INT_NULL)
+        return null;
+      const currentCase = this._casesTable[aar][pos];
       const tempDfLength = currentCase.length;
       const initCol = DG.Column.string('Initial', tempDfLength);
       const subsCol = DG.Column.string('Substituted', tempDfLength);
@@ -828,8 +901,9 @@ export class PeptidesModel {
       subsCol.temp['isAnalysisApplicable'] = false;
 
       // grok.shell.o = DG.SemanticValue.fromValueType(tempDf, 'Substitution');
-      sourceDf.temp['substTable'] = tempDf;
+      return tempDf;
     }
+    return null;
   }
 
   //TODO: refactor, use this.sarDf and accept aar & position as parameters
@@ -883,8 +957,7 @@ export class PeptidesModel {
     otherDf.temp[C.FLAGS.CELL_CHANGING] = false;
   }
 
-  getSplitColValueAt(index: number, aar: string, position: string): string {
-    const aarLabel = `${aar === '-' ? 'Gap' : aar} : ${position}`;
+  getSplitColValueAt(index: number, aar: string, position: string, aarLabel: string): string {
     const currentAAR = this.dataFrame.get(position, index) as string;
     return currentAAR === aar ? aarLabel : C.CATEGORIES.OTHER;
   }
@@ -900,7 +973,7 @@ export class PeptidesModel {
     }
 
     const aarLabel = `${aar === '-' ? 'Gap' : aar} : ${position}`;
-    this.splitCol.init((i) => this.getSplitColValueAt(i, aar, position));
+    this.splitCol.init((i) => this.getSplitColValueAt(i, aar, position, aarLabel));
 
     // splitCol.init((i) => bitset.get(i) ? aarLabel : C.CATEGORY_OTHER);
     this.splitCol.setCategoryOrder([aarLabel]);

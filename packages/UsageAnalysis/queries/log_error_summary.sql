@@ -1,6 +1,6 @@
 --name: Log Error Summary
 --input: string eventTime = today {pattern: datetime}
---connection: System:DatagrokAdmin
+--connection: System:Datagrok
 
 select v.value, count(*) from events e
 inner join event_parameter_values v on v.event_id = e.id

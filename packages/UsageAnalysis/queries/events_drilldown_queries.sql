@@ -1,6 +1,6 @@
 --name: PackageInfo
 --input: string name
---connection: System:DatagrokAdmin
+--connection: System:Datagrok
 select * from packages
 where name = @name;
 --end
@@ -8,7 +8,7 @@ where name = @name;
 
 --name: FunctionInfoByName
 --input: string name
---connection: System:DatagrokAdmin
+--connection: System:Datagrok
 select * from event_types et
 where name = @name;
 --end
@@ -18,7 +18,7 @@ where name = @name;
 --input: string name
 --input: string date { pattern: datetime }
 --input: list users
---connection: System:DatagrokAdmin
+--connection: System:Datagrok
 select u.name, count(e.id) from event_types et
 join published_packages pp on et.package_id = pp.id
 join events e on e.event_type_id = et.id
@@ -43,7 +43,7 @@ limit 50
 --input: string date { pattern: datetime }
 --input: list users
 --input: string name
---connection: System:DatagrokAdmin
+--connection: System:Datagrok
 select et.name, count(1) from event_types et
 join published_packages pp on et.package_id = pp.id
 join events e on e.event_type_id = et.id
@@ -68,7 +68,7 @@ limit 50;
 --input: string date { pattern: datetime }
 --input: list users
 --input: string name
---connection: System:DatagrokAdmin
+--connection: System:Datagrok
 select e.error_message || '(' || e.friendly_name || ')' as error_and_event, e.error_message, e.friendly_name, count(1) from event_types et
 join published_packages pp on et.package_id = pp.id
 join events e on e.event_type_id = et.id
@@ -91,7 +91,7 @@ limit 50;
 --input: string name
 --input: string date { pattern: datetime }
 --input: list users
---connection: System:DatagrokAdmin
+--connection: System:Datagrok
 select u.name, count(e.id) from event_types et
 join events e on e.event_type_id = et.id
 join users_sessions s on e.session_id = s.id
@@ -109,7 +109,7 @@ limit 50
 --input: string name
 --input: string date { pattern: datetime }
 --input: list users
---connection: System:DatagrokAdmin
+--connection: System:Datagrok
 select et.friendly_name, count(1) from event_types et
 join events e on e.event_type_id = et.id
 join users_sessions s on e.session_id = s.id
@@ -135,7 +135,7 @@ limit 50;
 --input: string name
 --input: string date { pattern: datetime }
 --input: list users
---connection: System:DatagrokAdmin
+--connection: System:Datagrok
 select u.name, count(e.id) from event_types et
 join events e on e.event_type_id = et.id
 join users_sessions s on e.session_id = s.id

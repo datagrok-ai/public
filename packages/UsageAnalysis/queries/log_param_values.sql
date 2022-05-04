@@ -1,5 +1,5 @@
 --name: Log Parameter Values
---connection: System:DatagrokAdmin
+--connection: System:Datagrok
 
 select et.name as event_name, e.event_time, ep.name as param_name, epv.value 
 from event_types et, events e, event_parameters ep, event_parameter_values epv

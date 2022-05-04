@@ -9,13 +9,14 @@ import * as C from '../utils/constants';
 let IS_PROPERTY_CHANGING = false;
 
 export class SARViewerBase extends DG.JsViewer {
+  tempName!: string;
   viewerGrid!: DG.Grid;
   sourceGrid!: DG.Grid;
   controller!: PeptidesController;
   scaling: string;
-  filterMode: boolean;
+  // filterMode: boolean;
   bidirectionalAnalysis: boolean;
-  grouping: boolean;
+  // grouping: boolean;
   showSubstitution: boolean;
   maxSubstitutions: number;
   activityLimit: number;
@@ -27,9 +28,9 @@ export class SARViewerBase extends DG.JsViewer {
     super();
 
     this.scaling = this.string('scaling', 'none', {choices: ['none', 'lg', '-lg']});
-    this.filterMode = this.bool('filterMode', false);
+    // this.filterMode = this.bool('filterMode', false);
     this.bidirectionalAnalysis = this.bool('bidirectionalAnalysis', false);
-    this.grouping = this.bool('grouping', false);
+    // this.grouping = this.bool('grouping', false);
 
     this.showSubstitution = this.bool('showSubstitution', false);
     this.maxSubstitutions = this.int('maxSubstitutions', 1);
@@ -37,10 +38,14 @@ export class SARViewerBase extends DG.JsViewer {
   }
 
   async onTableAttached() {
+    super.onTableAttached();
+    this.dataFrame.temp[this.tempName] ??= this;
     this.sourceGrid = this.view?.grid ?? (grok.shell.v as DG.TableView).grid;
-    this.controller = await PeptidesController.getInstance(this.dataFrame!);
+    this.controller = await PeptidesController.getInstance(this.dataFrame);
+    this.controller.init(this.dataFrame);
+    await this.requestDataUpdate();
 
-    this.subs.push(this.controller!.onGroupMappingChanged.subscribe(() => {this.render(true);}));
+    // this.subs.push(this.controller.onGroupMappingChanged.subscribe(() => {this.render(true);}));
   }
 
   detach() {this.subs.forEach((sub) => sub.unsubscribe());}
@@ -50,18 +55,24 @@ export class SARViewerBase extends DG.JsViewer {
       return;
     if (!refreshOnly) {
       $(this.root).empty();
-      const viewerRoot = this.viewerGrid!.root;
+      const viewerRoot = this.viewerGrid.root;
       viewerRoot.style.width = 'auto';
       this.root.appendChild(ui.divV([this._titleHost, viewerRoot]));
     }
     this.viewerGrid?.invalidate();
   }
 
+  async requestDataUpdate() {
+    await this.controller.updateData(this.scaling, this.sourceGrid, this.bidirectionalAnalysis,
+      this.activityLimit, this.maxSubstitutions, this.showSubstitution);
+  }
+
   async onPropertyChanged(property: DG.Property) {
+    super.onPropertyChanged(property);
+    this.dataFrame.tags[property.name] = `${property.get(this)}`;
     if (!this.initialized || IS_PROPERTY_CHANGING)
       return;
-
-    super.onPropertyChanged(property);
+      
     const propName = property.name;
 
     if (propName === 'scaling' && typeof this.dataFrame !== 'undefined') {
@@ -77,8 +88,7 @@ export class SARViewerBase extends DG.JsViewer {
     if (!this.showSubstitution && ['maxSubstitutions', 'activityLimit'].includes(propName))
       return;
 
-    await this.controller!.updateData(this.scaling, this.sourceGrid!, this.bidirectionalAnalysis, this.grouping,
-      this.activityLimit, this.maxSubstitutions, this.showSubstitution, this.filterMode);
+    await this.requestDataUpdate();
     this.render(true);
   }
 }
@@ -89,6 +99,7 @@ export class SARViewerBase extends DG.JsViewer {
 export class SARViewer extends SARViewerBase {
   _titleHost = ui.divText('Monomer-Positions', {id: 'pep-viewer-title'});
   _name = 'Structure-Activity Relationship';
+  tempName = 'sarViewer';
 
   constructor() { super(); }
 
@@ -98,7 +109,7 @@ export class SARViewer extends SARViewerBase {
     await super.onTableAttached();
     this.viewerGrid = this.controller.sarGrid;
 
-    this.subs.push(this.controller!.onSARGridChanged.subscribe((data) => {
+    this.subs.push(this.controller.onSARGridChanged.subscribe((data) => {
       this.viewerGrid = data;
       this.render();
     }));
@@ -107,8 +118,10 @@ export class SARViewer extends SARViewerBase {
     this.render();
   }
 
+  isInitialized() { return this.controller?.sarGrid ?? false; }
+
   async onPropertyChanged(property: DG.Property): Promise<void> {
-    if (!this.initialized || IS_PROPERTY_CHANGING)
+    if (!this.isInitialized() || IS_PROPERTY_CHANGING)
       return;
 
     await super.onPropertyChanged(property);
@@ -122,8 +135,9 @@ export class SARViewer extends SARViewerBase {
  * Vertical structure activity relationship viewer.
  */
 export class SARViewerVertical extends SARViewerBase {
-  protected _name = 'Sequence-Activity relationship';
+  _name = 'Sequence-Activity relationship';
   _titleHost = ui.divText('Most Potent Residues', {id: 'pep-viewer-title'});
+  tempName = 'sarViewerVertical';
 
   constructor() {
     super();
@@ -131,20 +145,10 @@ export class SARViewerVertical extends SARViewerBase {
 
   get name() {return this._name;}
 
-  async onPropertyChanged(property: DG.Property): Promise<void> {
-    if (!this.initialized || IS_PROPERTY_CHANGING)
-      return;
-
-    await super.onPropertyChanged(property);
-    IS_PROPERTY_CHANGING = true;
-    this.controller.syncProperties(false);
-    IS_PROPERTY_CHANGING = false;
-  }
-
   async onTableAttached() {
     await super.onTableAttached();
-
     this.viewerGrid = this.controller.sarVGrid;
+
     this.subs.push(this.controller.onSARVGridChanged.subscribe((data) => {
       this.viewerGrid = data;
       this.render();
@@ -152,5 +156,17 @@ export class SARViewerVertical extends SARViewerBase {
 
     this.initialized = true;
     this.render();
+  }
+
+  isInitialized() { return this.controller?.sarVGrid ?? false; }
+
+  async onPropertyChanged(property: DG.Property): Promise<void> {
+    if (!this.isInitialized() || IS_PROPERTY_CHANGING)
+      return;
+
+    await super.onPropertyChanged(property);
+    IS_PROPERTY_CHANGING = true;
+    this.controller.syncProperties(false);
+    IS_PROPERTY_CHANGING = false;
   }
 }
