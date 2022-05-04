@@ -68,13 +68,48 @@ export async function assertNoError(ms: number): Promise<boolean> {
 /** Tests two objects for equality, throws an exception if they are not equal. */
 export function expect(actual: any, expected: any): void {
   if (actual !== expected)
-    throw `Expected "${expected}", got "${actual}"`;
+    throw new Error(`Expected "${expected}", got "${actual}"`);
 }
 
 export function expectFloat(actual: number, expected: number, tolerance = 0.001): void {
   const areEqual = Math.abs(actual - expected) < tolerance;
   if (!areEqual)
-    throw `Expected ${expected}, got ${actual} (tolerance = ${tolerance})`;
+    throw new Error(`Expected ${expected}, got ${actual} (tolerance = ${tolerance})`);
+}
+
+export function expectObject(actual: {[key: string]: any}, expected: {[key: string]: any}) {
+  for (const [expectedKey, expectedValue] of Object.entries(expected)) {
+    if (!actual.hasOwnProperty(expectedKey))
+      throw new Error(`Expected property "${expectedKey}" not found`);
+
+    const actualValue = actual[expectedKey];
+    if (actualValue instanceof Array && expectedValue instanceof Array)
+      expectArray(actualValue, expectedValue);
+    else if (actualValue instanceof Object && expectedValue instanceof Object)
+      expectObject(actualValue, expectedValue);
+    else if (actualValue != expectedValue)
+      throw new Error(`Expected ${expectedValue} for key ${expectedKey}, got ${actualValue}`);
+  }
+}
+
+export function expectArray(actual: any[], expected: any[]) {
+  const actualLength = actual.length;
+  const expectedLength = expected.length;
+
+  if (actualLength != expectedLength) {
+      throw new Error(`Arrays are of different length: actual array length is ${actualLength} ` +
+        `and expected array length is ${expectedLength}`);
+  }
+
+  for (let i = 0; i < actualLength; i++) {
+    if (actual[i] instanceof Array && expected[i] instanceof Array) {
+      expectArray(actual[i], expected[i]);
+    } else if (actual[i] instanceof Object && expected[i] instanceof Object) {
+      expectObject(actual[i], expected[i]);
+    } else if (actual[i] != expected[i]) { 
+      throw new Error(`Expected ${expected[i]} at position ${i}, got ${actual[i]}`);   
+    }
+  }
 }
 
 /** Defines a test suite. */
