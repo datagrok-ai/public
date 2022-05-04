@@ -1,11 +1,14 @@
 import * as grok from 'datagrok-api/grok';
 import * as ui from 'datagrok-api/ui';
 
-//@ts-ignore
-import mutcodes from '../externalData/mutcodes.json';
 import {MiscMethods} from './misc';
+import {DataLoader, MutcodesDataType} from '../utils/data-loader';
 
 export class PvizAspect {
+  private dataLoader: DataLoader;
+
+  get mutcodes(): MutcodesDataType { return this.dataLoader.mutcodes; };
+
   ngl: any;
   pviz: any;
   pVizParams: any;
@@ -23,8 +26,14 @@ export class PvizAspect {
   ptmProb: any;
   selection: any;
 
-  async init(json, jsonObs, colorScheme, pVizHostH, pVizHostL,
-    ptmChoices, ptmMotifChoices, ptmObsChoices, cdrScheme, paratopes, ptmProb, twinSelections) {
+  constructor(dataLoader: DataLoader) {
+    this.dataLoader = dataLoader;
+  }
+
+  async init(
+    json, jsonObs, colorScheme, pVizHostH, pVizHostL,
+    ptmChoices, ptmMotifChoices, ptmObsChoices, cdrScheme, paratopes, ptmProb, twinSelections
+  ) {
     //@ts-ignore
     this.pviz = window.pviz;
     this.pVizParams = {};
@@ -62,7 +71,8 @@ export class PvizAspect {
       new this.pviz.SeqEntryAnnotInteractiveView({
         model: seqEntry,
         collapsible: true,
-        el: host}).render();
+        el: host,
+      }).render();
 
       const ptmCodes = Object.keys(this.pVizParams.ptmMap[chain].ptmColorObj);
       const motCodes = Object.keys(this.pVizParams.motMap[chain].motColorObj);
@@ -79,7 +89,6 @@ export class PvizAspect {
       seqEntry.addFeatures(pVizParams.cdrMap[chain].cdrFeatureMap);
       if (this.paratopes.value === true)
         seqEntry.addFeatures(this.pVizParams.parMap[chain].parFeatureMap);
-
 
       seqEntry.addFeatures(this.pVizParams.denMap[chain].denFeatureMap);
       seqEntry.addFeatures(this.pVizParams.ptmMap[chain].ptmFeatureMap);
@@ -130,7 +139,7 @@ export class PvizAspect {
 
         for (let i = 0; i < ptmsArPoint.length; i++) {
           ptmsStr += '\n' + ptmsArPoint[i][0].replace('_', ' ') +
-          ' probability  ~' + (ptmsArPoint[i][1] > 1 ? ptmsArPoint[i][1] / 100 : ptmsArPoint[i][1]).toFixed(2);
+            ' probability  ~' + (ptmsArPoint[i][1] > 1 ? ptmsArPoint[i][1] / 100 : ptmsArPoint[i][1]).toFixed(2);
         }
 
         ui.tooltip.show(
@@ -144,10 +153,10 @@ export class PvizAspect {
       });
 
       this.pviz.FeatureDisplayer.addMouseoverCallback(ptmCodes, async function(ft) {
-        const selectorStr = 'g.feature.' + mutcodes[ft.category.replaceAll(' ', '_')] + '.' +
+        const selectorStr = 'g.feature.' + this.mutcodes[ft.category.replaceAll(' ', '_')] + '.' +
           ft.category.replaceAll(' ', '_').replaceAll(')', '\\)').replaceAll('(', '\\(') + ' rect.feature';
         let el = document.querySelectorAll(selectorStr);
-        const elLst = pVizParams.ptmMap[chain].ptmElObj[mutcodes[ft.category.replaceAll(' ', '_')]];
+        const elLst = pVizParams.ptmMap[chain].ptmElObj[this.mutcodes[ft.category.replaceAll(' ', '_')]];
         //@ts-ignore
         el = el[elLst.indexOf(ft.start)];
 
@@ -157,15 +166,15 @@ export class PvizAspect {
           el.getBoundingClientRect().left + 10,
           //@ts-ignore
           el.getBoundingClientRect().top + 10);
-      }).addMouseoutCallback(ptmCodes, function(ft) {
+      }.bind(this)).addMouseoutCallback(ptmCodes, function(ft) {
         ui.tooltip.hide();
       });
 
       this.pviz.FeatureDisplayer.addMouseoverCallback(motCodes, async function(ft) {
-        const selectorStr = 'g.feature.' + mutcodes[ft.category.replaceAll(' ', '_')] + '.' +
+        const selectorStr = 'g.feature.' + this.mutcodes[ft.category.replaceAll(' ', '_')] + '.' +
           ft.category.replaceAll(' ', '_').replaceAll(')', '\\)').replaceAll('(', '\\(') + ' rect.feature';
         let el = document.querySelectorAll(selectorStr);
-        const elLst = pVizParams.motMap[chain].motElObj[mutcodes[ft.category.replaceAll(' ', '_')]];
+        const elLst = pVizParams.motMap[chain].motElObj[this.mutcodes[ft.category.replaceAll(' ', '_')]];
         //@ts-ignore
         el = el[elLst.indexOf(ft.start)];
 
@@ -175,7 +184,7 @@ export class PvizAspect {
           el.getBoundingClientRect().left + 10,
           //@ts-ignore
           el.getBoundingClientRect().top + 10);
-      }).addMouseoutCallback(motCodes, function(ft) {
+      }.bind(this)).addMouseoutCallback(motCodes, function(ft) {
         ui.tooltip.hide();
       });
 
@@ -213,8 +222,9 @@ export class PvizAspect {
         if (switchObj[chain][ft.start] === undefined) {
           switchObj[chain][ft.start] = {};
           switchObj[chain][ft.start]['state'] = true;
-        } else
+        } else {
           switchObj[chain][ft.start]['state'] = !switchObj[chain][ft.start]['state'];
+        }
 
 
         grok.events.fireCustomEvent('selectionChanged', null);
@@ -225,8 +235,9 @@ export class PvizAspect {
         if (switchObj[chain][ft.start] === undefined) {
           switchObj[chain][ft.start] = {};
           switchObj[chain][ft.start]['state'] = true;
-        } else
+        } else {
           switchObj[chain][ft.start]['state'] = !switchObj[chain][ft.start]['state'];
+        }
 
 
         grok.events.fireCustomEvent('selectionChanged', null);
@@ -237,8 +248,9 @@ export class PvizAspect {
         if (switchObj[chain][ft.start] === undefined) {
           switchObj[chain][ft.start] = {};
           switchObj[chain][ft.start]['state'] = true;
-        } else
+        } else {
           switchObj[chain][ft.start]['state'] = !switchObj[chain][ft.start]['state'];
+        }
 
 
         grok.events.fireCustomEvent('selectionChanged', null);
@@ -249,8 +261,9 @@ export class PvizAspect {
         if (switchObj[chain][ft.start] === undefined) {
           switchObj[chain][ft.start] = {};
           switchObj[chain][ft.start]['state'] = true;
-        } else
+        } else {
           switchObj[chain][ft.start]['state'] = !switchObj[chain][ft.start]['state'];
+        }
 
 
         grok.events.fireCustomEvent('selectionChanged', null);
@@ -289,7 +302,7 @@ export class PvizAspect {
           this.ptmChoices.forEach((ptm) => {
             const selectorStrPTM = 'g.feature.' + ptm.replace(' ', '_') + ' rect.feature';
             const elPTM = document.querySelectorAll(selectorStrPTM);
-            const elLstPTM = pVizParams.ptmMap[chosenTracksChain].ptmElObj[mutcodes[ptm.replace(' ', '_')]];
+            const elLstPTM = pVizParams.ptmMap[chosenTracksChain].ptmElObj[this.mutcodes[ptm.replace(' ', '_')]];
             listsPredictedPtms[ptm] = [elPTM, elLstPTM];
           });
 
@@ -299,9 +312,11 @@ export class PvizAspect {
             if (typeof elLstPTM !== 'undefined' && elLstPTM.indexOf(position) !== -1) {
               if (switchObj[keyChain][position]['state'] === false) {
                 elPTM[elLstPTM.indexOf(position)].style.fill =
-                  pVizParams.ptmMap[keyChain].ptmColorObj[mutcodes[ptm.replace(' ', '_')]][elLstPTM.indexOf(position)];
-              } else
+                  pVizParams.ptmMap[keyChain]
+                    .ptmColorObj[this.mutcodes[ptm.replace(' ', '_')]][elLstPTM.indexOf(position)];
+              } else {
                 elPTM[elLstPTM.indexOf(position)].style.fill = 'black';
+              }
             }
           });
 
@@ -309,10 +324,10 @@ export class PvizAspect {
           const listsMotifsPtms = [];
 
           this.motChoices.forEach((ptm) => {
-            const selectorStrPTM = 'g.feature.' + mutcodes[ptm.replaceAll(' ', '_')] + '.' +
+            const selectorStrPTM = 'g.feature.' + this.mutcodes[ptm.replaceAll(' ', '_')] + '.' +
               ptm.replaceAll(' ', '_').replaceAll(')', '\\)').replaceAll('(', '\\(') + ' rect.feature';
             const elPTM = document.querySelectorAll(selectorStrPTM);
-            const elLstPTM = pVizParams.motMap[chosenTracksChain].motElObj[mutcodes[ptm.replace(' ', '_')]];
+            const elLstPTM = pVizParams.motMap[chosenTracksChain].motElObj[this.mutcodes[ptm.replace(' ', '_')]];
             listsMotifsPtms[ptm] = [elPTM, elLstPTM];
           });
 
@@ -322,10 +337,11 @@ export class PvizAspect {
             if (typeof elLstPTM !== 'undefined' && elLstPTM.indexOf(position) !== -1) {
               if (switchObj[keyChain][position]['state'] === false) {
                 elPTM[elLstPTM.indexOf(position)].style.fill =
-                  pVizParams.motMap[keyChain].
-                    motColorObj[mutcodes[ptm.replace(' ', '_')]][elLstPTM.indexOf(position)];
-              } else
+                  pVizParams.motMap[keyChain]
+                    .motColorObj[this.mutcodes[ptm.replace(' ', '_')]][elLstPTM.indexOf(position)];
+              } else {
                 elPTM[elLstPTM.indexOf(position)].style.fill = 'black';
+              }
             }
           });
 
@@ -348,8 +364,9 @@ export class PvizAspect {
                 if (switchObj[keyChain][position]['state'] === false) {
                   elPTM[elLstPTM.indexOf(position)].style.fill =
                     pVizParams.obsMap[keyChain].obsColorObj[ptm.replace(' ', '_')][elLstPTM.indexOf(position)];
-                } else
+                } else {
                   elPTM[elLstPTM.indexOf(position)].style.fill = 'black';
+                }
               }
             });
           }
@@ -409,10 +426,12 @@ export class PvizAspect {
         parProbObj.push(this.json.parapred_predictions[chain][index]);
       });
 
-      parMap[chain] = {parFeatureMap: parFeatureMap,
+      parMap[chain] = {
+        parFeatureMap: parFeatureMap,
         parColorObj: {'P': parColorArr},
         parElObj: parElObj,
-        parProbObj: parProbObj};
+        parProbObj: parProbObj
+      };
     });
 
     this.pVizParams.parMap = (parMap);
@@ -432,7 +451,6 @@ export class PvizAspect {
           this.json.ptm_predictions[chain][ptm].forEach((point) => {
             if (!(denFeatureMap.includes(point[0])))
               denFeatureMap.push(point[0]);
-
 
             denColorArr[point[0]] = denColorArr[point[0]] == -1 ?
               (point[1] > 1 ? point[1] / 100 : point[1]) :
@@ -469,12 +487,13 @@ export class PvizAspect {
       for (let i = 0; i < denColorArr.length; i++)
         denColorArr[i] = palette[Math.round(denColorArr[i] * 4)];
 
-
-      denMap[chain] = {denFeatureMap: denFeatureMap,
+      denMap[chain] = {
+        denFeatureMap: denFeatureMap,
         denColorObj: {'D': denColorArr},
         denElObj: denElObj,
         denProbObj: denProbObj,
-        denPtmArr: denPtmArr};
+        denPtmArr: denPtmArr
+      };
     });
 
     this.pVizParams.denMap = (denMap);
@@ -504,7 +523,7 @@ export class PvizAspect {
               ptmFeatureMap.push({
                 groupSet: 'Predicted PTMs',
                 category: ptm,
-                type: mutcodes[ptm.replace(' ', '_')],
+                type: this.mutcodes[ptm.replace(' ', '_')],
                 start: point[0],
                 end: point[0],
                 text: '',
@@ -516,9 +535,9 @@ export class PvizAspect {
             }
           });
           if (ptmColorArr.length > 0) {
-            ptmColorObj[mutcodes[ptm.replace(' ', '_')]] = ptmColorArr;
-            ptmElObj[mutcodes[ptm.replace(' ', '_')]] = ptmElArr;
-            ptmProbObj[mutcodes[ptm.replace(' ', '_')]] = ptmProbArr;
+            ptmColorObj[this.mutcodes[ptm.replace(' ', '_')]] = ptmColorArr;
+            ptmElObj[this.mutcodes[ptm.replace(' ', '_')]] = ptmElArr;
+            ptmProbObj[this.mutcodes[ptm.replace(' ', '_')]] = ptmProbArr;
           }
         }
       });
@@ -553,7 +572,7 @@ export class PvizAspect {
               ptmFeatureMap.push({
                 groupSet: 'Predicted PTMs',
                 category: ptm,
-                type: mutcodes[ptm.replaceAll(' ', '_')],
+                type: this.mutcodes[ptm.replaceAll(' ', '_')],
                 start: point[0],
                 end: point[0],
                 text: '',
@@ -565,9 +584,9 @@ export class PvizAspect {
             }
           });
           if (ptmColorArr.length > 0) {
-            ptmColorObj[mutcodes[ptm.replaceAll(' ', '_')]] = ptmColorArr;
-            ptmElObj[mutcodes[ptm.replaceAll(' ', '_')]] = ptmElArr;
-            ptmProbObj[mutcodes[ptm.replaceAll(' ', '_')]] = ptmProbArr;
+            ptmColorObj[this.mutcodes[ptm.replaceAll(' ', '_')]] = ptmColorArr;
+            ptmElObj[this.mutcodes[ptm.replaceAll(' ', '_')]] = ptmElArr;
+            ptmProbObj[this.mutcodes[ptm.replaceAll(' ', '_')]] = ptmProbArr;
           }
         }
       });
