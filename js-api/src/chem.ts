@@ -254,8 +254,10 @@ export namespace chem {
 
       if (this.sketcher?.molFile) this._molFile = this.sketcher?.molFile;
 
-      let f = Func.find({name: name})[0];
-      this.sketcher = await f.apply();
+      let funcs = Func.find({tags: ['moleculeSketcher']});
+      let f = funcs.find(e => e.friendlyName == name || e.name == name);
+
+      this.sketcher = await f!.apply();
       this.host!.style.minWidth = '500px';
       this.host!.style.minHeight = '400px';
       this.host.appendChild(this.sketcher!.root);
