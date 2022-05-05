@@ -15,13 +15,18 @@ export class ModelCatalogView extends DG.CustomCardView {
     this.name = 'Models';
     this.permanentFilter = '#model';
 
-    this.objectType = 'Script';
-    this.categoryFilters =       {
-      'language': 'Language',
+    this.objectType = 'Func';
+    this.categoryFilters = {
+      'options.direction': 'Direction',
       'tag': 'Tags',
       'createdOn': 'Created',
       'author.id': 'Author'
     };
+    this.hierarchy = [
+      'options.direction',
+      'options.domain'
+    ];
+    this.showTree = true;
     this.initRibbon();
     this.initMenu();
   }
