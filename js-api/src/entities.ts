@@ -11,6 +11,7 @@ let api = <any>window;
 type PropertyGetter = (a: object) => any;
 type PropertySetter = (a: object, value: any) => void;
 type ValueValidator<T> = (value: T) => string;
+type DataConnectionDBParams = {dataSource: string, server: string, db: string, login?: string, password?: string};
 
 /** @class
  * Base class for system objects stored in the database in a structured manner.
@@ -326,6 +327,34 @@ export class DataQuery extends Func {
   set query(q: string) { api.grok_Query_Set_Query(this.dart, q); }
 }
 
+/** Represents a table query
+ * @extends DataQuery */
+export class TableQuery extends DataQuery {
+  /** @constructs TableQeury */
+  constructor(dart: any) { super(dart); }
+
+  /** Creates a TableQuery
+   * @param {DataConnection} connection - DataConnection to query table from
+   * @returns {TableQuery} */
+  static create(connection: DataConnection): TableQuery {
+    return toJs(api.grok_TableQuery_Create(connection.dart));
+  }
+
+  /** Table name
+   * @type {string} */
+  get table(): string { return api.grok_TableQuery_GetTable(this.dart); }
+  set table(tableName: string) { api.grok_TableQuery_SetTable(this.dart, tableName); }
+
+  /** Fields array
+   * @type {string[]} */
+  get fields(): string[] { return api.grok_TableQuery_GetFields(this.dart); }
+  set fields(fields: string[]) { api.grok_TableQuery_SetFields(this.dart, fields); }
+
+  /** Executes query
+   * @returns {Promise<DataFrame>} */
+   async executeTable(): Promise<DataFrame> { return toJs(await api.grok_TableQuery_ExecuteTable(this.dart)); }
+}
+
 /** Represents a data job
  * @extends Func
  * {@link https://datagrok.ai/help/access/data-job}
@@ -356,6 +385,14 @@ export class DataConnection extends Entity {
     return new Promise((resolve, reject) => api.grok_DataConnection_test(this.dart, (s: any) => resolve(toJs(s)), (e: any) => reject(e)));
   }
 
+  /** Creates a database connection
+   * @param {string} name - Connection name
+   * @param {DataConnectionDBParams} parameters - Database connection info and credentials
+   * @returns {DataConnection} */
+   static createDB(name: string, parameters: DataConnectionDBParams): DataConnection {
+    return toJs(api.grok_DataConnection_Create(
+      name, parameters.dataSource, parameters.server, parameters.db, parameters.login, parameters.password));
+  }
 }
 
 /** Represents a predictive model
