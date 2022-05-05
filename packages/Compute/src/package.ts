@@ -11,7 +11,6 @@ import {ModelsWidget} from './models-widget'
 import {FunctionView} from "@datagrok-libraries/utils/src/function-view";
 import {delay} from "@datagrok-libraries/utils/src/test";
 import {ComputationView} from "@datagrok-libraries/utils/src/computation-view";
-import {ComputeView} from "./function-views/compute-view";
 
 let initCompleted: boolean = false;
 export const _package = new DG.Package();
@@ -39,10 +38,13 @@ export function modelsWidget(): DG.Widget {
 //output: view result
 export function functionParametersGrid(f: DG.Func): DG.View {
   return _functionParametersGrid(f);
+  document.getElementById('root')?.appendChild(ui.h1('Hello World'));
 }
 
 //name: hof
+//tags: model
 export function hof() {
+  grok.shell.info('blablabla');
   let f: DG.Func = DG.Func.byName('Sin');
   let v: DG.View = functionParametersGrid(f);
   grok.shell.addView(v);
@@ -129,8 +131,8 @@ export function init() {
     }).root;
   });
 
-  grok.events.onViewAdding.subscribe((v: DG.ViewBase) => {
-    if (v.type == 'function' && (v as FunctionView).func?.hasTag("model")) {
+/*  grok.events.onViewAdding.subscribe((v: DG.ViewBase) => {
+    if (v instanceof ComputationView && (v as ComputationView).func?.hasTag("model")) {
       let modelsView = wu(grok.shell.views).find((v) => v.parentCall?.func.name == 'modelCatalog');
       if (modelsView != undefined) {
         v.parentCall = modelsView!.parentCall;
@@ -138,22 +140,18 @@ export function init() {
         v.toolbox = modelsList;
       }
     }
-  });
+  });*/
 
   initCompleted = true;
 }
 
 //name: Model Catalog
-// export function modelCatalog() {
-// /*  let view = new DG.MultiView({
-//     viewFactories: {
-//       'Models': {factory: () => new ModelCatalogView(), allowClose: false}
-//     }
-//   });*/
-//   let view = new ModelCatalogView();
-//   view.name = 'Models';
-//   grok.shell.addView(view);
-// }
+//tags: app
+ export function modelCatalog() {
+   let view = new ModelCatalogView();
+   view.name = 'Models';
+   grok.shell.addView(view);
+ }
 
 
 //name: computationTest
@@ -170,5 +168,5 @@ export async function computationTest(delayMs: number, error: string): Promise<D
 //name: testComputationView();
 export function testComputationView() {
   let f = DG.Func.find({name: 'computationTest'})[0];
-  grok.shell.addView(new ComputeView(f));
+  //grok.shell.addView(new ComputationView(f));
 }

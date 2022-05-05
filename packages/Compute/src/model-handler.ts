@@ -33,15 +33,15 @@ export class ModelHandler extends DG.ObjectHandler {
   }
 
   renderIcon(x: DG.Func, context: any = null): HTMLElement {
-    return x instanceof DG.Script ? this.getLanguageIcon(x.language) : ui.iconFA('lightning');
+    return x instanceof DG.Script ? this.getLanguageIcon(x.language) : ui.iconImage(x.package.name, x.package.getIconUrl());
   }
 
   renderMarkup(x: DG.Func): HTMLElement {
-    return ui.span([this.renderIcon(x), ui.label(x.friendlyName, {style: {marginLeft: '4px'}})], {style: {display: 'inline-flex'}});
+    return ui.span([this.renderIcon(x), ui.label(x.friendlyName)]);
   }
 
   renderProperties(x: DG.Func) {
-    const a = ui.accordion();
+    const a = ui.accordion('ComputeModel');
     a.context = x;
     a.addTitle(ui.span([this.renderIcon(x), ui.label(x.friendlyName), ui.contextActions(x), ui.star(x.id)]));
     a.addPane('Details', () => {
@@ -63,11 +63,13 @@ export class ModelHandler extends DG.ObjectHandler {
   }
 
   renderCard(x: DG.Func, context?: any): HTMLElement {
+    let h = this.renderMarkup(x);
+    h.classList.add('d4-link-label');
     let card = ui.bind(x, ui.divV([
-      ui.h2(this.renderMarkup(x)),
+      ui.h2(h),
       ui.divText(x.description, 'ui-description'),
       this.renderDetails(x),
-    ], 'd4-gallery-item'), {contextMenu: false});
+    ]));
     let c = grok.functions.getCurrentCall();
     card.ondblclick = (e) => {
       ModelHandler.openModel(x, c);
