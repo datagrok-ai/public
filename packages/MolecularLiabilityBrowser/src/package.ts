@@ -1,10 +1,13 @@
 import * as grok from 'datagrok-api/grok';
 import * as DG from 'datagrok-api/dg';
+
 import {MolecularLiabilityBrowser} from './molecular-liability-browser';
 import {MLBFilter} from './custom-filters';
-import {AminoacidsWebLogo} from './viewers/web-logo';
 import {DataLoader} from './utils/data-loader';
 import {DataLoaderFiles} from './utils/data-loader-files';
+
+import {WebLogo} from '@datagrok-libraries/bio';
+
 // import {DataLoaderJnj} from './utils/data-loader-jnj';
 
 export const _package = new DG.Package();
@@ -54,9 +57,9 @@ export async function MolecularLiabilityBrowserApp() {
   await app.init(vid);
 }
 
-//name: AminoacidsWebLogo
+//name: WebLogo
 //tags: viewer, panel
 //output: viewer result
 export function aminoacidsWebLogoViewer() {
-  return new AminoacidsWebLogo();
+  return new WebLogo();
 }
