@@ -102,6 +102,9 @@ M  END
             mol.set_new_coords(true);
           }
           if (!scaffoldIsMolBlock || molRegenerateCoords) {
+            if (!mol.has_coords()) {
+              mol.set_new_coords();
+            }
             mol!.normalize_depiction();
             mol!.straighten_depiction();
           }
