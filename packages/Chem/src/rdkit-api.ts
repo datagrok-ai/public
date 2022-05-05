@@ -46,11 +46,13 @@ export interface RDMol {
   get_aromatic_form(): string;
   get_kekule_from(): string;
   get_new_coords(useCoordGen?: boolean): string;
+  set_new_coords(useCoordGen?: boolean): boolean;
   remove_hs(): string;
   add_hs(): string;
 
-  normalize_2d_molblock(): string;
-  straighten_2d_layout(): void;
+  normalize_depiction(): void;
+  straighten_depiction(): void;
+  compute_hash(): string;
 
   /** Reclaims the memory used for that molecule. */
   delete(): void;

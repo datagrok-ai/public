@@ -36,8 +36,9 @@ export class RdKitServiceWorkerSubstructure extends RdKitServiceWorkerSimilarity
         }
         if (normalizeCoordinates) {
           if (isMolBlock(item)) {
-            item = mol.normalize_2d_molblock();
-            mol.straighten_2d_layout();
+            mol.normalize_depiction();
+            item = mol.compute_hash();
+            mol.straighten_depiction();
             if (!hashToMolblock[item])
               hashToMolblock[item] = mol.get_molblock();
           }
