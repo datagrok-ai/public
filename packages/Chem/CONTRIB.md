@@ -1,7 +1,7 @@
-# Chem package developer guide
+# Contributor's guide for Chem package
 
 * If you are a contributor to this package, be guided by this document on the library
-design and engineering choices.
+design and engineering choices
 
 * Contribute to this file if you have a knowledge about third-parties such as a
 chemical library (RdKit, OpenChemLib, etc.) or peculiarities of Chrome, or any other
@@ -13,6 +13,12 @@ ask @dskatov and @StLeonidas on getting access to these videos and a walk-throug
 * If you are an external contributor, post any question on Chem directly in
 [issues](https://github.com/datagrok-ai/public/issues) with a label `Question` and
 a project `Chem`
+
+## Commit guide
+
+Make sure to follow our common contributor's guide:
+
+https://github.com/datagrok-ai/public/blob/master/CONTRIB.md
 
 ## API design
 
