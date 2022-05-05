@@ -49,6 +49,12 @@ export class CardView extends View {
   get categoryFilters(): object { return toJs(api.grok_CardView_Get_CategoryFilters(this.dart)); }
   set categoryFilters(ff: object) { api.grok_CardView_Set_CategoryFilters(this.dart, ff); }
 
+  get hierarchy(): string[] { return toJs(api.grok_CardView_Get_Hierarchy(this.dart)); }
+  set hierarchy(s: string[]) { api.grok_CardView_Set_Hierarchy(this.dart, s); }
+
+  get showTree(): boolean { return api.grok_CardView_Get_ShowTree(this.dart); }
+  set showTree(s: boolean) { api.grok_CardView_Set_ShowTree(this.dart, s); }
+
 }
 
 export class CustomCardView extends CardView {

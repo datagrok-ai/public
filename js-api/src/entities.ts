@@ -758,6 +758,10 @@ export class Package extends Entity {
       return null;
   }
 
+  getIconUrl(): string {
+    return api.grok_Package_GetIconUrl(this.dart);
+  }
+
   getModule(file: String) {
     if (this.dart != null)
       return api.grok_Package_GetModule(this.dart, file)();
