@@ -41,6 +41,7 @@ export interface RDMol {
   get_morgan_fp_as_uint8array(radius: number, fplen: number): Uint8Array;
 
   is_valid(): boolean;
+  has_coords(): boolean;
 
   get_stereo_tags(): string;
   get_aromatic_form(): string;
