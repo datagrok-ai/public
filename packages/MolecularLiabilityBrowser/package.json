@@ -40,10 +40,14 @@
     "webpack-cli": "latest"
   },
   "scripts": {
+    "link-api": "npm link datagrok-api",
+    "link-utils": "npm link @datagrok-libraries/utils",
+    "link-bio": "npm link @datagrok-libraries/bio",
+    "link-all": "npm link datagrok-api @datagrok-libraries/utils @datagrok-libraries/bio",
     "debug-mlb": "grok publish local --rebuild",
     "local-mlb": "grok publish local",
     "build": "webpack",
-    "lint": "eslint src --ext .ts",
-    "lint-fix": "eslint src --ext .ts --fix"
+    "lint": "eslint \"./src/**/*.ts\"",
+    "lint-fix": "eslint \"./src/**/*.ts\" --fix"
   }
 }

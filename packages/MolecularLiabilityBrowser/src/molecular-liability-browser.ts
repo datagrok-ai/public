@@ -5,8 +5,6 @@ import * as DG from 'datagrok-api/dg';
 import {TwinPviewer} from './viewers/twin-p-viewer';
 import {TreeBrowser} from './tree';
 import {Subscription} from 'rxjs';
-import {AminoacidsWebLogo} from './viewers/web-logo';
-
 import {
   DataLoader,
   JsonType,
@@ -15,6 +13,9 @@ import {
   ObsPtmType,
 } from './utils/data-loader';
 import {DataLoaderFiles} from './utils/data-loader-files';
+import {Aminoacids} from '@datagrok-libraries/bio';
+
+// import {WebLogo} from '@datagrok-libraries/bio';
 
 
 export class MolecularLiabilityBrowser {
@@ -35,7 +36,9 @@ export class MolecularLiabilityBrowser {
   vIdInput: DG.InputBase;
   filterIcon: HTMLElement;
   filterIcon2: HTMLElement;
-  queryIcon: HTMLElement;
+  selectionClearIcon: HTMLElement;
+  queryIdIcon: HTMLElement;
+  queryAntigenIcon: HTMLElement;
   hideShowIcon: HTMLElement;
   hideShowIcon2: HTMLElement;
   treesIcon: HTMLElement;
@@ -138,13 +141,15 @@ export class MolecularLiabilityBrowser {
         ']');
     }
 
-    const filterList: {type: string, column?: string}[] = [];
+    const filterList: { type: string, column?: string }[] = [];
 
     for (const pfName of pf.names) {
       this.mlbTable.columns.byName(pfName).width = 150;
       filterList.push({type: 'histogram', column: pfName});
     }
     filterList.push({type: 'MolecularLiabilityBrowser:mlbFilter'});
+    filterList.push({type: DG.FILTER_TYPE.MULTI_VALUE, column: 'antigen list'});
+    filterList.push({type: DG.FILTER_TYPE.MULTI_VALUE, column: 'antigen gene symbol'});
 
     this.mlbView.filters({filters: filterList});
 
@@ -245,11 +250,17 @@ export class MolecularLiabilityBrowser {
       const a = this.mlbTable;
       a.rows.select((row) => this.vidsObsPTMs.includes(row['v id'].toString()));
       grok.functions.call('CmdSelectionToFilter');
-    }), 'filter data with observed PTMs');
+    }), 'Filter data with observed PTMs');
   }
 
-  setQueryIcon(): void {
-    this.queryIcon = ui.tooltip.bind(ui.iconFA('layer-group', () => {
+  setSelectionClearIcon(): void {
+    this.selectionClearIcon = ui.tooltip.bind(ui.iconFA('broom', () => {
+      this.mlbTable.rows.select((i) => false);
+    }), 'Selection clear');
+  }
+
+  setQueryIdIcon(): void {
+    this.queryIdIcon = ui.tooltip.bind(ui.iconFA('layer-group', () => {
       //get all possible IDs
       const allIds = this.mlbTable.col('v id')!.toList().concat(
         this.mlbTable.col('gdb id mappings')!.toList().map((x) => x.replaceAll(' ', '').split(',')).flat());
@@ -284,7 +295,54 @@ export class MolecularLiabilityBrowser {
           this.mlbTable.filter.fireChanged();
         })
         .show();
-    }), 'multiple id query');
+    }), 'Filter by multiple id query');
+  }
+
+  setQueryAntigenIcon(): void {
+    function QueryAntigenIconHandler() {
+      const agIds = this.mlbTable.col('antigen list').toList()
+        .map((x) => x.replaceAll(' ', '').split(',')).flat();
+      const agNcbiIds = this.mlbTable.col('antigen ncbi id').toList()
+        .map((x) => x.replaceAll(' ', '').split(',')).flat();
+      const geneSymbols = this.mlbTable.col('antigen gene symbol').toList()
+        .map((x) => x.replaceAll(' ', '').split(',')).flat();
+      const allIds = [].concat(agIds, agNcbiIds, geneSymbols);
+
+      const txtInput = ui.textInput('', '');
+      //@ts-ignore
+      txtInput.input.placeholder = 'Paste antigen id or gene symbol here ...';
+      txtInput.input.style.resize = 'none';
+
+      ui.dialog({title: 'Filter by antigen id / antigen gene symbol'})
+        .add(ui.box(txtInput.input))
+        .onOK(() => {
+          const query = txtInput.stringValue.replaceAll(' ', '').split(',').filter((v) => v != '');
+          const missing = query.filter((id) => !allIds.includes(id));
+
+          if (missing.length > 0) {
+            for (let i = 0; i < missing.length; i++)
+              grok.shell.warning(`Value '${missing[i]}' not found in the base.`);
+          }
+
+          if (query.length > 0) {
+            this.mlbTable.rows.filter((row) => {
+              const rowIds = [].concat(
+                row['antigen gene symbol'].replace(' ', '').split(','),
+                row['antigen ncbi id'].replace(' ', '').split(','),
+                row['antigen list'].replace(' ', '').split(',')
+              ).filter((v) => v != '');
+              return rowIds.some((rowId) => query.includes(rowId));
+            });
+          } else {
+            this.mlbTable.rows.filter((row) => true);
+          }
+          this.mlbTable.filter.fireChanged();
+        })
+        .show();
+    }
+
+    this.queryAntigenIcon = ui.tooltip.bind(
+      ui.iconFA('key', QueryAntigenIconHandler.bind(this)), 'Filter by antigen id / antigen gene symbol query');
   }
 
   setHideShowIcon(): void {
@@ -316,7 +374,7 @@ export class MolecularLiabilityBrowser {
       `${chain} chain sequence`,
       (i: number) => positionColumns.map((v) => df.get(v, i)).join('')
     );
-    seqCol.semType = AminoacidsWebLogo.residuesSet;
+    seqCol.semType = Aminoacids.SemTypeMultipleAlignment;
     return seqCol;
   }
 
@@ -334,7 +392,8 @@ export class MolecularLiabilityBrowser {
       true
     );
 
-    const logo = this.mlbView.addViewer('AminoacidsWebLogo', {sequenceColumnName: seqCol.name});
+    // const webLogo: WebLogo = new WebLogo();
+    const logo = this.mlbView.addViewer('WebLogo', {sequenceColumnName: seqCol.name});
     return this.mlbView.dockManager.dock(logo, dockType, node, `${chain} chain`, 0.22);
   }
 
@@ -358,6 +417,22 @@ export class MolecularLiabilityBrowser {
 
     for (const column of this.mlbTable.columns)
       column.name = column.name.replaceAll('_', ' ');
+
+    // TODO: Leonid instructed to hide the columns, but no luck
+    // const mlbColumnsToHide = ['cdr length', 'surface cdr hydrophobicity', 'positive cdr charge',
+    //   'negative cdr charge', 'sfvscp'];
+    // const mlbColumnsToHide = ['cdr length',];
+    const mlbColumnsToHide = [];
+    for (const column of this.mlbTable.columns) {
+      if (mlbColumnsToHide.includes(column.name))
+        column.name = '~' + column.name;
+    }
+
+    const mlbColumnsToMultiValue = ['antigen list', 'antigen ncbi id', 'antigen gene symbol'];
+    for (const column of this.mlbTable.columns) {
+      if (mlbColumnsToMultiValue.includes(column.name))
+        column.setTag(DG.TAGS.MULTI_VALUE_SEPARATOR, ',');
+    }
 
     // let vidsRaw = (await grok.functions.call('MolecularLiabilityBrowser:getVids'));
     this.vids = await this.dataLoader.getVids();
@@ -403,12 +478,16 @@ export class MolecularLiabilityBrowser {
     this.setVidInput();
     //this.setFilterIcon();
     this.setFilterIcon2();
-    this.setQueryIcon();
+    this.setQueryIdIcon();
+    this.setQueryAntigenIcon();
+    this.setSelectionClearIcon();
     this.setHideShowIcon();
 
     this.mlbView.setRibbonPanels([
       [this.vIdInput.root],
-      [this.filterIcon, this.filterIcon2, this.queryIcon, this.hideShowIcon, this.hideShowIcon2],
+      [this.filterIcon, this.filterIcon2, this.queryIdIcon, this.queryAntigenIcon],
+      [this.selectionClearIcon],
+      [this.hideShowIcon, this.hideShowIcon2],
     ]);
 
     if (urlVid != null)

@@ -79,8 +79,20 @@ export class DataLoaderFiles extends DataLoader {
     const df: DG.DataFrame = DG.DataFrame.fromCsv(await _package.files.readAsText(this._files.mlb));
     for (const column of df.columns)
       column.name = column.name.replaceAll('_', ' ');
+
     // 'ngl' column have been removed from query 2022-04
     df.columns.remove('ngl');
+
+    // Convert 'antigen ncbi id' to string as it is a column with lists of ids
+    // TODO: Convert column type does not work as expected
+    /* Examples: text -> loaded -> converted
+       "3592,51561,3593" -> 3592515613593 -> "3592515613593.00"
+       "952" -> 952 -> "952.00"
+       "3553,3590,335,4045,105805883,102116898,3543,27132,100423062,389812,10892,9080,5284,3904,8740"
+         -> Infinity -> "Infinity"
+     */
+    df.changeColumnType('antigen ncbi id', DG.COLUMN_TYPE.STRING);
+
     return df;
   }
 
