@@ -1,6 +1,42 @@
 <!-- TITLE: Release History -->
 <!-- SUBTITLE: -->
 
+# 2022-05-06 Dev build 0.151.1
+
+## Latest Docker Images
+
+* Datagrok: 
+  *  `docker pull datagrok/datagrok:0.151.1`
+  *  `docker pull datagrok/datagrok:latest`
+  
+* [Docker-Compose](admin/docker-compose.md)
+
+## Addressed Issues
+
+* Update the linear color-coding section 
+* Add .item to grid context menu args 
+* Added Widget.isDetached property 
+* Closes #524: Filters: highlighting stays after you close the filter group 
+* Chem: substrucure search queries fixed 
+* Molecule input: code cleanup 
+* \- update DG to RDKit_minimal_2022.03_1 \- add support for chemical reaction drawing \- add support for additional FPs 
+* (Bug) Color Coding: Color does not change for boolean columns 
+* Closes #556: added expectObject and expectArray functions 
+* Single WebLogo class for multiple alignments and palettes to bio 
+* JS API: additional options for Menu.items 
+* Documentation \- WIP 
+* #558 Chem: Contributors guide 
+* #558 Chem: Contributors guide. wip 
+* Zeno integration (WIP)
+* (Bug) Grid: ctrl+click no longer inverts selection 
+* DataSourceCardView categories (WIP)
+* (Bug) Error when closing a view 
+* make sure the molecule has coordinates before calling normalize_depiction() and straighten_depiction() 
+* ScatterPlot: made the "viewport" property hidden 
+* Functions: dateTimeFromUnixTimestamp (WIP)
+* Closes #367: Persisting visualizations zoom when saving analysis Closes #552: Zoom Sliders get reset on the Scatter Plot (Zoom And Filter: no action, Axes Follow Filter: false) on opening the filter panel with some filtering applied 
+
+
 # 2022-05-03 Dev build 0.150.5
 
 ## Latest Docker Images
