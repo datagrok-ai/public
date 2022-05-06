@@ -7,7 +7,7 @@ import {_functionParametersGrid} from './function-views/function-parameters-grid
 import {ModelCatalogView} from './model-catalog-view';
 import wu from 'wu';
 import {OutliersSelectionViewer} from './outliers-selection/outliers-selection-viewer';
-import {ModelsWidget} from './models-widget'
+//import {ModelsWidget} from './models-widget'
 import {FunctionView} from "@datagrok-libraries/utils/src/function-view";
 import {delay} from "@datagrok-libraries/utils/src/test";
 import {ComputationView} from "@datagrok-libraries/utils/src/computation-view";
@@ -24,11 +24,11 @@ export function OutliersSelection() {
 }
 
 
-//output: widget result
+/*//output: widget result
 //tags: dashboard
 export function modelsWidget(): DG.Widget {
   return new ModelsWidget();
-}
+}*/
 
 /* eslint-disable */
 
