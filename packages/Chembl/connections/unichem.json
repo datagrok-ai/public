@@ -1,6 +1,6 @@
 {
   "#type": "DataConnection",
-  "name": "PostgresNetUnichem",
+  "name": "Unichem",
   "friendlyName": "Unichem",
   "parameters":{
     "server": "dev.datagrok.ai",

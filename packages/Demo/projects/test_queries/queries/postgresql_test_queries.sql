@@ -1,52 +1,52 @@
 --name: PostgresqlAll
---connection: PostgresqlNorthwind
+--connection: PostgreSQLNorthwind
 select * from orders;
 --end
 
 --name: PostgresqlByInt
---connection: PostgresqlNorthwind
+--connection: PostgreSQLNorthwind
 --input: int orderid
 select * from orders where orderid = @orderid;
 --end
 
 --name: PostgresqlByStringPatternInt
---connection: PostgresqlNorthwind
+--connection: PostgreSQLNorthwind
 --input: string shipVia {pattern: int}
 SELECT * FROM orders WHERE @shipVia(shipVia);
 --end
 
 --name: PostgresqlByDouble
---connection: PostgresqlNorthwind
+--connection: PostgreSQLNorthwind
 --input: double freight
 SELECT * FROM orders WHERE freight >= @freight;
 --end
 
 --name: PostgresqlByStringChoices
---connection: PostgresqlNorthwind
+--connection: PostgreSQLNorthwind
 --input: string shipCountry {choices: ["France", "Germany", "USA", "Finland"]}
 SELECT * FROM orders WHERE shipCountry = @shipCountry;
 --end
 
 --name: PostgresqlByStringPatternString
---connection: PostgresqlNorthwind
+--connection: PostgreSQLNorthwind
 --input: string shipCity {pattern: string}
 SELECT * FROM orders WHERE @shipCity(shipCity);
 --end
 
 --name: PostgresqlByBool
---connection: PostgresqlNorthwind
+--connection: PostgreSQLNorthwind
 --input: bool freightLess100
 SELECT * FROM orders WHERE ((freight < 100) OR NOT @freightLess100);
 --end
 
 --name: PostgresqlByDatetime
---connection: PostgresqlNorthwind
+--connection: PostgreSQLNorthwind
 --input: datetime requiredDate
 SELECT * FROM orders WHERE requiredDate >= @requiredDate;
 --end
 
 --name: PostgresqlByStringPatternDatetime
---connection: PostgresqlNorthwind
+--connection: PostgreSQLNorthwind
 --input: string orderDate {pattern: datetime}
 SELECT * FROM orders WHERE @orderDate(orderDate);
 --end

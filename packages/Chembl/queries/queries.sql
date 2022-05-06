@@ -1,5 +1,5 @@
 --name: chemblIdToSmiles
---connection: chembl
+--connection: Chembl
 --input: string id
 --output: string smiles { semType: molecule }
 select canonical_smiles from compound_structures s
@@ -9,7 +9,7 @@ where d.chembl_id = @id
 
 
 --name: molregnoToSmiles
---connection: chembl
+--connection: Chembl
 --input: int molregno
 --output: string smiles { semType: molecule }
 select canonical_smiles from compound_structures where molregno = @molregno
@@ -17,7 +17,7 @@ select canonical_smiles from compound_structures where molregno = @molregno
 
 
 --name: nameToSmiles
---connection: chembl
+--connection: Chembl
 --input: string compoundName
 --output: string smiles { semType: molecule }
 select cs.canonical_smiles
@@ -33,7 +33,7 @@ inner join
 
 
 --name: _compoundNames
---connection: chembl
+--connection: Chembl
 --input: string sub
 select distinct compound_name from compound_structures
 where compound_name ilike '%' || @sub || '%'
@@ -42,7 +42,7 @@ limit 50
 
 
 --name: _organisms
---connection: chembl
+--connection: Chembl
 --input: string sub
 select distinct organism from target_dictionary
 where organism ilike '%' || @sub || '%'
@@ -51,7 +51,7 @@ limit 50
 
 
 --name: _proteinTypes
---connection: chembl
+--connection: Chembl
 --input: string sub
 select distinct short_name from protein_classification
 where short_name ilike '%' || @sub || '%'
@@ -60,7 +60,7 @@ limit 50
 
 
 --name: _targetTypes
---connection: chembl
+--connection: Chembl
 --input: string sub
 select target_type from target_type
 where target_type ilike '%' || @sub || '%'
@@ -69,7 +69,7 @@ limit 50
 
 
 --name: _assayTypes
---connection: chembl
+--connection: Chembl
 --input: string sub
 select assay_type from assay_type
 where assay_type ilike '%' || @sub || '%'
@@ -78,7 +78,7 @@ limit 50
 
 
 --name: _relationshipTypes
---connection: chembl
+--connection: Chembl
 --input: string sub
 select relationship_type from relationship_type
 where relationship_type ilike '%' || @sub || '%'
@@ -87,13 +87,13 @@ limit 50
 
 
 --name: protein classification
---connection: chembl
+--connection: Chembl
 select protein_class_id, parent_id, pref_name, definition, class_level from protein_classification
 --end
 
 
 --name: bioactivity data for bacterial targets for @organism
---connection: chembl
+--connection: Chembl
 --input: string organism = "Shigella" {suggestions: Chembl:organisms}
 SELECT md.chembl_id AS compound_chembl_id,
 cs.canonical_smiles,
@@ -114,7 +114,7 @@ FROM target_dictionary td
 
 
 --name: activity details for compound and all its salts which have an IC50 bioactivity value in nM against a target of interest
---connection: chembl
+--connection: Chembl
 --input: string compound = "CHEMBL192"
 --input: string target = "CHEMBL1827"
 SELECT m.chembl_id AS compound_chembl_id,
@@ -151,7 +151,7 @@ FROM compound_structures s
 
 
 --name: compounds which are selective to one target over a second target
---connection: chembl
+--connection: Chembl
 --input: string selectiveFor = "CHEMBL301"
 --input: string over = "CHEMBL4036"
 SELECT md.chembl_id,
@@ -183,7 +183,7 @@ AND td.chembl_id              = @over;
 
 
 --name: target ChEMBL_ID, target_name, target_type, protein accessions and sequences for all protein targets
---connection: chembl
+--connection: Chembl
 SELECT t.chembl_id AS target_chembl_id,
 t.pref_name        AS target_name,
 t.target_type,
@@ -198,7 +198,7 @@ AND tt.parent_type  = 'PROTEIN';
 
 
 --name: PK data from 'Curated Drug Pharmacokinetic Data' source for @drug
---connection: chembl
+--connection: Chembl
 --input: string drug = "LEVOFLOXACIN"
 SELECT DISTINCT
   d.title,
@@ -239,7 +239,7 @@ ORDER BY cr.compound_name, act.toid, act.standard_type;
 
 
 --name: compound activity details for all targets containing @protein
---connection: chembl
+--connection: Chembl
 --input: string protein = "P08172"
 SELECT DISTINCT
   m.chembl_id                      AS compound_chembl_id,
@@ -269,7 +269,7 @@ FROM compound_structures s
 
 
 --name: compound activity details for @target
---connection: chembl
+--connection: Chembl
 --input: string target = "CHEMBL1827"
 SELECT m.chembl_id AS compound_chembl_id,
 s.canonical_smiles,
@@ -298,7 +298,7 @@ AND t.chembl_id      = @target;
 
 
 --name: @pattern substructure search
---connection: chembl
+--connection: Chembl
 --input: string pattern {semType: Substructure}
 --input: int maxRows = 1000
  select molregno,m as smiles from rdk.mols where m@>@pattern
@@ -307,7 +307,7 @@ AND t.chembl_id      = @target;
 
 
 --name: @pattern similarity search
---connection: chembl
+--connection: Chembl
 --input: string pattern {semType: Substructure}
 --input: int maxRows = 1000
 select fps.molregno, cs.canonical_smiles as smiles
@@ -319,7 +319,7 @@ limit @maxRows
 
 
 --name: @pattern similarity search with @threshold
---connection: chembl
+--connection: Chembl
 --input: string pattern {semType: Substructure}
 --input: double threshold
 set rdkit.tanimoto_threshold=@threshold;
@@ -328,7 +328,7 @@ select * from get_mfp2_neighbors(@pattern)
 
 
 --name: all chembl ids with inchi keys
---connection: chembl
+--connection: Chembl
 select
   molecule_dictionary.chembl_id,
   compound_structures.standard_inchi_key
@@ -339,7 +339,7 @@ from
 
 
 --name: inchiKeyToChembl
---connection: chembl
+--connection: Chembl
 --input: dataframe ids
 select
   molecule_dictionary.chembl_id
@@ -352,7 +352,7 @@ from
 
 
 --name: inchiKeyToSmiles
---connection: chembl
+--connection: Chembl
 --input: dataframe ids
 select
   compound_structures.canonical_smiles
@@ -364,7 +364,7 @@ from
 
 
 --name: inchiKeyToInchi
---connection: chembl
+--connection: Chembl
 --input: dataframe ids
 select
   compound_structures.standard_inchi
@@ -376,7 +376,7 @@ from
 
 
 --name: chemblToSmiles
---connection: chembl
+--connection: Chembl
 --input: dataframe ids
 select
   compound_structures.canonical_smiles
@@ -389,7 +389,7 @@ from
 
 
 --name: chemblToInchi
---connection: chembl
+--connection: Chembl
 --input: dataframe ids
 select
   compound_structures.standard_inchi
@@ -402,7 +402,7 @@ from
 
 
 --name: chemblToInchiKey
---connection: chembl
+--connection: Chembl
 --input: dataframe ids
 select
   compound_structures.standard_inchi_key
@@ -415,7 +415,7 @@ from
 
 
 --name: allChemblStructures
---connection: chembl
+--connection: Chembl
 select
   canonical_smiles
 from

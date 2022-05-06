@@ -1,6 +1,6 @@
 {
   "#type": "DataConnection",
-  "name": "PostgresNetChembl",
+  "name": "Chembl",
   "friendlyName": "CHEMBL",
   "parameters":{
     "server": "dev.datagrok.ai",
