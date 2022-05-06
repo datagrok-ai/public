@@ -33,7 +33,7 @@ jobs:
             else
               commit=${{ github.sha }}
             fi
-            CHANGED_LIBS="$(git diff-tree --no-commit-id --name-only -r "$(echo -n "$commit")" 'libraries/*/package.json' | xargs -I {} dirname {} | awk -F'/' '{print $2}' | sort -u)"
+            CHANGED_LIBS="$(git diff-tree -m --no-commit-id --name-only -r "$(echo -n "$commit")" 'libraries/*/package.json' | xargs -I {} dirname {} | awk -F'/' '{print $2}' | sort -u)"
           else
             CHANGED_LIBS="${{ github.event.inputs.libraries }}"
           fi
