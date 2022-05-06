@@ -144,7 +144,7 @@ export interface CsvExportOptions {
  */
 export class DataFrame {
   public readonly dart: any;
-  public columns: ColumnList & any;
+  public columns: ColumnList;
   public rows: RowList;
   public filter: BitSet;
   public temp: any;
