@@ -2,8 +2,13 @@
   "name": "@datagrok/dev-tools",
   "beta": false,
   "friendlyName": "DevTools",
-  "version": "1.3.2",
+  "version": "1.3.3",
   "description": "",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/datagrok-ai/public.git",
+    "directory": "packages/DevTools"
+  },
   "dependencies": {
     "@datagrok-libraries/utils": "latest",
     "@types/codemirror": "^5.60.5",
