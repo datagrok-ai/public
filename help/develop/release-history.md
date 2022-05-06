@@ -1,6 +1,27 @@
 <!-- TITLE: Release History -->
 <!-- SUBTITLE: -->
 
+# 2022-05-06 Dev build 0.151.2
+
+## Latest Docker Images
+
+* Datagrok: 
+  *  `docker pull datagrok/datagrok:0.151.2`
+  *  `docker pull datagrok/datagrok:latest`
+  
+* [Docker-Compose](admin/docker-compose.md)
+
+## Addressed Issues
+
+* Color-coding: add a check for the currently used color-coding type to the column context menu 
+* git-secret for credentials 
+* git-secret documentation 
+* Fix links in Help documentation 
+* git-secret 
+* Connection queries for Demo package 
+* DataSourceCardView categories (WIP)
+
+
 # 2022-05-06 Dev build 0.151.1
 
 ## Latest Docker Images
