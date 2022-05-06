@@ -23,6 +23,9 @@
     },
     {
       "pattern": "^https://pubs.acs.org"
+    },
+    {
+      "pattern": "https://www.merckgroup.com"
     }
   ],
   "retryOn429": true
