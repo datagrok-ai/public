@@ -4,7 +4,7 @@
 	"version": "0.7.2",
 	"description": "",
 	"dependencies": {
-		"@datagrok-libraries/utils": "^0.3.9",
+		"@datagrok-libraries/utils": "^0.4.0",
 		"cash-dom": "latest",
 		"codemirror": "^5.64.0",
 		"datagrok-api": "^0.151.0",

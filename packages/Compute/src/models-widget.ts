@@ -7,6 +7,7 @@ import $ from 'cash-dom';
 import {FunctionView} from "@datagrok-libraries/utils/src/function-view";
 const api = <any>window;
 
+/*
 
 export class ModelsWidget extends DG.Widget {
   caption: string;
@@ -116,4 +117,4 @@ export class ModelsWidget extends DG.Widget {
     }
   }
 
-} 
+} */
