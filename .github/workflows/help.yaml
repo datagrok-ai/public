@@ -72,12 +72,17 @@ jobs:
       - name: Create entrypoint for Pandoc
         working-directory: ./help
         run: |
-          echo '#!/bin/sh' > entrypoint.sh;
+          echo '#!/bin/sh' > entrypoint.sh
           files="$(find . -type f -name '*.md' -not -path "*/_*" -not -name '*-test.md' -printf '%P ')"
           for f in $files; do
-            mkdir -p "output/help/$(dirname "${f}")";
-            echo "cd /github/workspace/help/output/help/$(dirname "${f}")" >> entrypoint.sh;
-            echo "pandoc -f gfm -t html --extract-media=. --resource-path=.:/github/workspace/help/$(dirname "${f}") --lua-filter=/github/workspace/links-to-html.lua --lua-filter=/github/workspace/table-id.lua --output=/github/workspace/help/output/help/${f/.md/.html} \"/github/workspace/help/${f}\"" >> entrypoint.sh;
+            if [[ "$(dirname ${f})" == "." ]]; then
+              dir=''
+            else
+              dir=$(dirname "${f}")
+            fi
+            mkdir -p "output/help/${dir}";
+            echo "cd /github/workspace/help/output/help/${dir}" >> entrypoint.sh;
+            echo "pandoc -f gfm -t html --extract-media=. --resource-path=.:/github/workspace/help/${dir} --lua-filter=/github/workspace/links-to-html.lua --lua-filter=/github/workspace/table-id.lua --output=/github/workspace/help/output/help/${f/.md/.html} \"/github/workspace/help/${f}\"" >> entrypoint.sh;
           done;
       - name: Convert Mardown to HTML
         uses: docker://pandoc/core:latest
