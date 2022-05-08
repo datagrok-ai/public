@@ -1,8 +1,13 @@
 {
 	"name": "@datagrok/sunburst",
 	"fullName": "Sunburst",
-	"version": "1.0.1",
+	"version": "1.0.2",
 	"description": "Sunburst chart for the datagrok platform",
+	"repository": {
+    "type": "git",
+    "url": "https://github.com/datagrok-ai/public.git",
+    "directory": "packages/Sunburst"
+  },
 	"dependencies": {
 		"d3": "^5.16.0",
 		"d3-hierarchy": "^1.1.9",

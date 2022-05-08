@@ -1,8 +1,13 @@
 {
   "name": "@datagrok/multi-form",
-  "version": "0.2.0",
+  "version": "0.2.1",
   "fullName": "MultiForm",
   "description": "MultiForm viewer provides a convenient way to visualize a set of selected rows.",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/datagrok-ai/public.git",
+    "directory": "packages/MultiForm"
+  },
   "sources": [
     "src/multi_form.css",
     "src/multi_form.js"

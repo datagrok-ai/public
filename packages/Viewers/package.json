@@ -1,8 +1,13 @@
 {
 	"name": "@datagrok/viewers",
 	"fullName": "Viewers",
-	"version": "0.0.2",
+	"version": "0.0.3",
 	"description": "Set of custom JavaScript viewers",
+	"repository": {
+    "type": "git",
+    "url": "https://github.com/datagrok-ai/public.git",
+    "directory": "packages/Viewers"
+  },
 	"dependencies": {
 		"datagrok-api": ">0.94.10",
 		"circos": "^2.1.0",

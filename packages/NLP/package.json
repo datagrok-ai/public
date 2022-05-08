@@ -1,8 +1,13 @@
 {
 	"name": "@datagrok/nlp",
 	"fullName": "NLP",
-	"version": "1.0.1",
+	"version": "1.0.2",
 	"description": "Natural Language Processing Package",
+	"repository": {
+    "type": "git",
+    "url": "https://github.com/datagrok-ai/public.git",
+    "directory": "packages/NLP"
+  },
 	"dependencies": {
 		"aws-sdk": "^2.762.0",
 		"datagrok-api": "^0.94.10",

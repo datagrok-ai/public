@@ -2,8 +2,13 @@
 	"name": "@datagrok/seldon",
 	"beta": true,
 	"friendlyName": "Seldon",
-	"version": "0.0.3",
+	"version": "0.0.4",
 	"description": "",
+	"repository": {
+    "type": "git",
+    "url": "https://github.com/datagrok-ai/public.git",
+    "directory": "packages/Seldon"
+  },
 	"dependencies": {
 		"datagrok-api": "latest",
 		"ts-loader": "latest",

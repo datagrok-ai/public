@@ -1,9 +1,14 @@
 {
   "name": "@datagrok/chembl",
   "tags": ["chem"],
-  "version": "0.0.2",
+  "version": "0.0.3",
   "fullName": "Chembl",
   "description": "Chembl integration",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/datagrok-ai/public.git",
+    "directory": "packages/Chembl"
+  },
   "scripts": {
     "deploy": "grok publish"
   },

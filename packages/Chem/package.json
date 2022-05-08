@@ -2,8 +2,13 @@
   "name": "@datagrok/chem",
   "friendlyName": "Chem",
   "fullName": "Chem",
-  "version": "0.51.10",
+  "version": "0.51.11",
   "description": "Cheminformatics support: \n\n* RDKit-based rendering \n* Molecule sketching \n* Feature based analysis",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/datagrok-ai/public.git",
+    "directory": "packages/Chem"
+  },
   "properties": [
     {
       "name": "Renderer",

@@ -1,8 +1,13 @@
 {
 	"name": "@datagrok/charts",
 	"fullName": "Charts",
-	"version": "0.1.1",
+	"version": "0.1.2",
 	"description": "",
+	"repository": {
+    "type": "git",
+    "url": "https://github.com/datagrok-ai/public.git",
+    "directory": "packages/Charts"
+  },
 	"dependencies": {
 		"cash-dom": "^8.1.0",
 		"datagrok-api": "^0.94.10",

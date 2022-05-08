@@ -1,8 +1,13 @@
 {
 	"name": "@datagrok/api-tests",
 	"friendlyName": "API Tests",
-	"version": "0.0.3",
+	"version": "0.0.4",
 	"description": "",
+	"repository": {
+    "type": "git",
+    "url": "https://github.com/datagrok-ai/public.git",
+    "directory": "packages/ApiTests"
+  },
 	"dependencies": {
 		"@datagrok-libraries/utils": "0.1.0",
 		"datagrok-api": "^0.145.0",

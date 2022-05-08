@@ -1,8 +1,13 @@
 {
   "name": "molecular-liability-browser",
   "fullName": "MolecularLiabilityBrowser",
-  "version": "0.0.2",
+  "version": "0.0.3",
   "description": "",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/datagrok-ai/public.git",
+    "directory": "packages/MolecularLiabilityBrowser"
+  },
   "sources": [
     "css/ngl.css",
     "css/pviz-core.css",

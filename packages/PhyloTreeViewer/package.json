@@ -1,8 +1,13 @@
 {
 	"name": "@datagrok/phylotree-viewer",
 	"friendlyName": "Phylo Tree",
-	"version": "0.0.5",
+	"version": "0.0.6",
 	"description": "",
+	"repository": {
+    "type": "git",
+    "url": "https://github.com/datagrok-ai/public.git",
+    "directory": "packages/PhyloTreeViewer"
+  },
 	"dependencies": {
 		"datagrok-api": "^0.121.0"
 	},
