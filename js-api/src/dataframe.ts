@@ -144,7 +144,7 @@ export interface CsvExportOptions {
  */
 export class DataFrame {
   public readonly dart: any;
-  public columns: ColumnList;
+  public columns: ColumnList & any;
   public rows: RowList;
   public filter: BitSet;
   public temp: any;
@@ -180,7 +180,7 @@ export class DataFrame {
   static fromProperties(properties: Property[], rows: number = 0) {
     let df = DataFrame.create(rows);
     for (let p of properties)
-      df.columns.addNew(p.name, p.propertyType);
+      df.columns.addNew(p.name, <ColumnType>p.propertyType);
     return df;
   }
 
