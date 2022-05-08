@@ -1,8 +1,13 @@
 {
   "name": "@datagrok/chemspace",
-  "version": "0.2.0",
+  "version": "0.2.1",
   "fullName": "Chemspace",
   "description": "Chemspace API demo",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/datagrok-ai/public.git",
+    "directory": "packages/Chemspace"
+  },
   "sources": [
     "css/chemspace.css"
   ],

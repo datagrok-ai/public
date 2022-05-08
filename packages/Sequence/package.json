@@ -1,8 +1,13 @@
 {
   "name": "@datagrok/sequence",
-  "version": "0.1.0",
+  "version": "0.1.1",
   "fullName": "Sequence",
   "description": "Support for the biological sequences (DNA, RNA, proteins), including FASTA readers, 3D visualization of molecules, MSA viewer, and functions for working with sequences",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/datagrok-ai/public.git",
+    "directory": "packages/Sequence"
+  },
   "sources": [
     "ntseq/ntseq.js",
     "readFasta/fasta_utils.js",

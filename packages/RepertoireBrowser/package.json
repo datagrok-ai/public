@@ -1,8 +1,13 @@
 {
 	"name": "@datagrok/repertoire-browser",
 	"friendlyName": "Repertoire Browser",
-	"version": "0.1.1",
+	"version": "0.1.2",
 	"description": "B-cell repertoire browser",
+	"repository": {
+    "type": "git",
+    "url": "https://github.com/datagrok-ai/public.git",
+    "directory": "packages/RepertoireBrowser"
+  },
 	"sources": [
 		"css/ngl.css",
 		"css/pviz-core.css",

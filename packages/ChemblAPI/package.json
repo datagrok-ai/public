@@ -2,8 +2,13 @@
 	"name": "@datagrok/chembl-api",
 	"beta": true,
 	"friendlyName": "ChemblAPI",
-	"version": "0.0.3",
+	"version": "0.0.4",
 	"description": "",
+	"repository": {
+    "type": "git",
+    "url": "https://github.com/datagrok-ai/public.git",
+    "directory": "packages/ChemblAPI"
+  },
 	"dependencies": {
 		"datagrok-api": "latest",
 		"cash-dom": "latest",

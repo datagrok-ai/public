@@ -1,8 +1,13 @@
 {
   "name": "@datagrok/ngl-viewer",
-  "version": "0.1.0",
+  "version": "0.1.1",
   "fullName": "NGL Viewer",
   "description": "Web-based 3D molecular graphics. Supports the following file formats: .PDB, .CIF, SDF, MOL",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/datagrok-ai/public.git",
+    "directory": "packages/NglViewer"
+  },
   "sources": [
     "css/ngl.css",
     "common/ngl_viewer/ngl.js"

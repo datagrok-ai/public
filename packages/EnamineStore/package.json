@@ -1,8 +1,13 @@
 {
   "name": "@datagrok/enamine-store",
-  "version": "0.2.0",
+  "version": "0.2.1",
   "fullName": "Enamine Store",
   "description": "Enamine Store API demo",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/datagrok-ai/public.git",
+    "directory": "packages/EnamineStore"
+  },
   "sources": [
     "css/enamine_store.css"
   ],

@@ -1,8 +1,13 @@
 {
   "name": "@datagrok/spgi",
-  "version": "0.4.0",
+  "version": "0.4.1",
   "fullName": "SPGi",
   "description": "SPGi projects views",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/datagrok-ai/public.git",
+    "directory": "packages/SPGi"
+  },
   "privileges": {
     "view": ["NXEval", "Datagrok", "Developers"]
   },

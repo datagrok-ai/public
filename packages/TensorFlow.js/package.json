@@ -2,8 +2,13 @@
 	"name": "@datagrok/tensorflow-dev",
 	"beta": true,
 	"friendlyName": "TensorFlow.js",
-	"version": "0.0.4",
+	"version": "0.0.5",
 	"description": "",
+	"repository": {
+    "type": "git",
+    "url": "https://github.com/datagrok-ai/public.git",
+    "directory": "packages/TensorFlow.js"
+  },
 	"dependencies": {
 		"@tensorflow/tfjs": "latest",
 		"cash-dom": "latest",

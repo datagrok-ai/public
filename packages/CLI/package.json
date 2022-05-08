@@ -1,9 +1,14 @@
 {
   "name": "@datagrok/cli",
   "beta": true,
-  "version": "0.1.0",
+  "version": "0.1.1",
   "fullName": "CLI",
   "description": "Demonstrates integration with command-line tools",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/datagrok-ai/public.git",
+    "directory": "packages/CLI"
+  },
   "sources": [
   ]
 }

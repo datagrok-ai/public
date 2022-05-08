@@ -2,8 +2,13 @@
   "name": "@datagrok/drug-bank",
   "beta": false,
   "friendlyName": "DrugBank",
-  "version": "0.0.4",
+  "version": "0.0.5",
   "description": "",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/datagrok-ai/public.git",
+    "directory": "packages/DrugBank"
+  },
   "dependencies": {
     "datagrok-api": "^0.94.10",
     "cash-dom": "latest",

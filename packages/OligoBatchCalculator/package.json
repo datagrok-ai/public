@@ -2,8 +2,13 @@
 	"name": "@datagrok/oligo-batch-calculator",
 	"beta": false,
 	"friendlyName": "Oligo Batch Calculator",
-	"version": "0.0.5",
+	"version": "0.0.6",
 	"description": "",
+	"repository": {
+    "type": "git",
+    "url": "https://github.com/datagrok-ai/public.git",
+    "directory": "packages/OligoBatchCalculator"
+  },
 	"dependencies": {
 		"datagrok-api": "^0.94.10",
 		"ts-loader": "latest",

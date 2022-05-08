@@ -1,8 +1,13 @@
 {
   "name": "@datagrok/pedometer",
-  "version": "0.1.0",
+  "version": "0.1.1",
   "fullName": "Pedometer",
   "description": "Pedometer for accelerometer signals",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/datagrok-ai/public.git",
+    "directory": "packages/Pedometer"
+  },
   "sources": [
   ],
   "canEdit": [ "Developers" ],

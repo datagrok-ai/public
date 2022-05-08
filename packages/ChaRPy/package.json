@@ -2,8 +2,13 @@
   "name": "@datagrok/charpy",
   "beta": true,
   "fullName": "ChaRPy",
-  "version": "1.0.3",
+  "version": "1.0.4",
   "description": "",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/datagrok-ai/public.git",
+    "directory": "packages/ChaRPy"
+  },
   "dependencies": {
     "datagrok-api": "^0.94.10"
   },

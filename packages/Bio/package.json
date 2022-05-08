@@ -2,8 +2,13 @@
 	"name": "@datagrok/bio",
 	"beta": true,
 	"friendlyName": "Bio",
-	"version": "0.0.3",
+	"version": "0.0.4",
 	"description": "",
+	"repository": {
+    "type": "git",
+    "url": "https://github.com/datagrok-ai/public.git",
+    "directory": "packages/Bio"
+  },
 	"dependencies": {
 		"cash-dom": "latest",
 		"datagrok-api": "^0.94.10",
