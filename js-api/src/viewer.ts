@@ -56,6 +56,10 @@ export class Viewer extends Widget {
   /** @constructs Viewer */
   constructor(dart: any, root?: HTMLElement) {
     super(root ?? api.grok_Viewer_Root(dart));
+    this.initDartObject(dart);
+  }
+
+  initDartObject(dart: any) {
     this.dart = dart;
 
     if (dart != null) {
@@ -234,6 +238,8 @@ export class JsViewer extends Viewer {
     let _root = ui.box();
     super(null, _root);
 
+    this.dart = api.grok_Viewer_FromJsViewer(this);
+    this.initDartObject(this.dart);
     this._root = _root;
 
     /** @type {StreamSubscription[]} */
