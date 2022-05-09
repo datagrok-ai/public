@@ -1,6 +1,25 @@
 <!-- TITLE: Release History -->
 <!-- SUBTITLE: -->
 
+# 2022-05-09 Dev build 0.151.3
+
+## Latest Docker Images
+
+* Datagrok: 
+  *  `docker pull datagrok/datagrok:0.151.3`
+  *  `docker pull datagrok/datagrok:latest`
+  
+* [Docker-Compose](admin/docker-compose.md)
+
+## Addressed Issues
+
+* DataSourceCardView categories (WIP)
+* Update Chem package-lock.json [skip-ci] 
+* Peptides: bump vesion of libraries/ml 
+* Chem: passing parameters to SPE, bumb versions of Chem, libraries/ml 
+* libraries/ml: ability to pass parameters to dimensionality reducing algorithms, bump version 
+
+
 # 2022-05-06 Dev build 0.151.2
 
 ## Latest Docker Images
