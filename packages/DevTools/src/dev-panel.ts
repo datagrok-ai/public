@@ -2,6 +2,7 @@ import * as grok from 'datagrok-api/grok';
 import * as ui from 'datagrok-api/ui';
 import * as DG from 'datagrok-api/dg';
 import $ from 'cash-dom';
+import CodeMirror from 'codemirror';
 import {
   dfExts,
   entExtract,
@@ -12,6 +13,7 @@ import {
   EntityType,
   supportedEntityTypes,
 } from './constants';
+
 
 
 function getGroupInput(type: string): HTMLElement {
@@ -98,6 +100,30 @@ export async function _renderDevPanel(ent: EntityType, minifiedClassNameMap: {})
   (editor.input as HTMLInputElement).style.height = '200px';
   (editor.input as HTMLInputElement).style.overflow = 'hidden';
 
+  setTimeout(function () {
+    let codeMirror = CodeMirror.fromTextArea(editor.input as HTMLTextAreaElement, {
+      readOnly: true,
+      lineNumbers:false,
+      showCursorWhenSelecting: false,
+      lineWrapping: true,
+      mode:  "javascript",
+    });
+
+    //@ts-ignore
+    codeMirror.display.wrapper.style.marginTop = '10px';
+    //@ts-ignore
+    codeMirror.display.wrapper.style.width = '100%';
+    //@ts-ignore
+    codeMirror.display.wrapper.style.height = '200px';
+    //@ts-ignore
+    codeMirror.display.wrapper.style.border = '1px solid var(--grey-1)';
+    //@ts-ignore
+    codeMirror.display.wrapper.style.borderRadius = '2px';
+
+  }, 300);
+  /*
+  
+  */
   const playBtn = ui.button(ui.iconFA('play'), () => {
     eval(`(async () => {\n${editor.value}\n})()`); // TODO: script approval
   }, 'Run');
