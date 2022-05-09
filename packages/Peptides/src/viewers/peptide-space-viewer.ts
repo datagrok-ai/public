@@ -80,7 +80,7 @@ export async function computeWeights(
       .map((v) => AlignedSequenceEncoder.clean(v));
 
     const embcols = await createDimensinalityReducingWorker(
-      {data: columnData, metric: measure as StringMetrics}, method, cyclesCount);
+      {data: columnData, metric: measure as StringMetrics}, method, {cycles: cyclesCount});
 
     const columns = Array.from(
       embcols as Coordinates, (v: Float32Array, k) => DG.Column.fromFloat32Array(axesNames[k], v));
