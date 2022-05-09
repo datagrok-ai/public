@@ -52,6 +52,10 @@ jobs:
                 MATRIX_PUBLISH_JSON+=", \"test\": \"true\""
               fi
 
+              if [ ! -z "$(jq  '. | select( has("build") == true )' <<< "$scripts")" ]; then
+                MATRIX_PUBLISH_JSON+=", \"build\": \"true\""
+              fi
+
               name="$(jq .name "${DIR}/package.json" | sed 's/"//g')"
               current_version="$(jq .version "${DIR}/package.json" | sed 's/"//g')"
               npm_json="$(curl --retry 3 -s "https://registry.npmjs.org/${name}/${current_version}")"
@@ -132,6 +136,7 @@ jobs:
         working-directory: ./tools
         if: ${{ matrix.install_tools == 'true' }}
       - name: Build package
+        if: ${{ matrix.build == 'true' }}
         id: build
         run: webpack
         working-directory: packages/${{ matrix.package }}
@@ -184,7 +189,7 @@ jobs:
         working-directory: packages/${{ matrix.package }}
         env:
           NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
-        if: github.ref == 'refs/heads/master' && always() && steps.build.outcome == 'success' && matrix.publish == 'true'
+        if: github.ref == 'refs/heads/master' && always() && matrix.publish == 'true' && (steps.build.outcome == 'success' || steps.build.outcome == 'skipped')
       - name: Commit package-lock.json
         run: |
           if [ -n "$(git status -s packages/${{ matrix.package }}/package-lock.json)" ]; then
