@@ -49,7 +49,7 @@ export async function _testDimensionalityReducer(columnData: Array<string>, meth
 
   try {
     embcols = await createDimensinalityReducingWorker(
-      {data: columnData, metric: measure as StringMetrics}, method, cyclesCount);
+      {data: columnData, metric: measure as StringMetrics}, method, {cycles: cyclesCount});
   } catch (error) {
     noException = false;
   }
