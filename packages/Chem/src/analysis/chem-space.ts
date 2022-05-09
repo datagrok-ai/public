@@ -15,12 +15,21 @@ export async function chemSpace(
   methodName: string,
   similarityMetric: string,
   axes: string[],
+  options?: any,
   returnDistances?: boolean): Promise<any> {
   const fpColumn = await chemGetFingerprints(molColumn, Fingerprint.Morgan);
-  const {distance: distance, embedding: coordinates}: any =
+  let distance;
+  let coordinates;
+  const dimensionalityReduceRes: any =
     await createDimensinalityReducingWorker(
       {data: fpColumn as BitArray[], metric: similarityMetric as BitArrayMetrics},
-      methodName, undefined, returnDistances);
+      methodName, options, returnDistances);
+  if (returnDistances) {
+    distance = dimensionalityReduceRes.distance;
+    coordinates = dimensionalityReduceRes.embedding;
+  } else
+    coordinates = dimensionalityReduceRes;
+
   const cols: DG.Column[] = [];
 
   coordinates[0] = normalize(coordinates[0]);

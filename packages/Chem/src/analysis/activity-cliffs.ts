@@ -5,6 +5,10 @@ import {chemSpace} from './chem-space';
 import * as chemSearches from '../chem-searches';
 import {getSimilarityFromDistance} from '@datagrok-libraries/utils/src/similarity-metrics';
 
+const options = {
+  'SPE': {cycles: 2000, lambda: 1.0, dlambda: 0.0005}
+}
+
 // Searches for activity cliffs in a chemical dataset by selected cutoff
 export async function getActivityCliffs(
   df: DG.DataFrame,
@@ -27,7 +31,7 @@ export async function getActivityCliffs(
   const colNameInd = df.columns.names().filter((it) => it.includes(axes[0])).length + 1;
 
   const {distance, coordinates} = await chemSpace(smiles, methodName, 'Tanimoto',
-    axes.map((it) => `${it}_${colNameInd}`), true);
+    axes.map((it) => `${it}_${colNameInd}`), (options as any)[methodName], true);
 
   for (const col of coordinates)
     df.columns.add(col);

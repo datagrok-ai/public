@@ -25,7 +25,9 @@ export function rGroupAnalysis(col: DG.Column) {
   const visualAnalysisCheck = ui.boolInput('Visual analysis', true);
 
   const mcsButton = ui.button('MCS', async () => {
+    ui.setUpdateIndicator(sketcher.root, true);
     const smiles: string = await findMCS(col.name, col.dataFrame);
+    ui.setUpdateIndicator(sketcher.root, false);
     sketcher.setSmiles(smiles);
   });
   ui.tooltip.bind(mcsButton, 'Most Common Substructure');
