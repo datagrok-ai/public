@@ -11,18 +11,18 @@ import {Coordinates} from '@datagrok-libraries/utils/src/type-declarations';
  * @param {number} cyclesCount Number of cycles to repeat.
  * @return {Coordinates} Embedding.
  */
-function onMessage(columnData: any[], method: KnownMethods, measure: KnownMetrics, cyclesCount: number): Coordinates {
+function onMessage(columnData: any[], method: KnownMethods, measure: KnownMetrics, options: number): Coordinates {
   const reducer = new DimensionalityReducer(
     columnData,
     method,
     measure,
-    {cycles: cyclesCount},
+    options,
   );
   return reducer.transform(true);
 }
 
-self.onmessage = ({data: {columnData, method, measure, cyclesCount}}) => {
-  const embedding = onMessage(columnData, method, measure, cyclesCount);
+self.onmessage = ({data: {columnData, method, measure, options}}) => {
+  const embedding = onMessage(columnData, method, measure, options);
   self.postMessage({
     embedding: embedding,
   });
