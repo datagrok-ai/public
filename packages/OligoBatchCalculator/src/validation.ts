@@ -1,4 +1,4 @@
-import {map} from './map';
+import {map, SYNTHESIZERS} from './map';
 import {sortByStringLengthInDescOrder, getAllCodesOfSynthesizer} from './helpers';
 
 function getListOfPossibleSynthesizersByFirstMatchedCode(sequence: string, additionalCodes: string[]): string[] {
@@ -27,8 +27,8 @@ function possibleTechnologiesByFirstMatchedCode(sequence: string, synthesizer: s
 
 export function isValidSequence(sequence: string, additionalCodes: string[]): {
   indexOfFirstNotValidChar: number,
-  synthesizer: string | null,
-  technology: string | null
+  synthesizer: string[] | null,
+  technology: string[] | null
 } {
   const sortedAdditionalCodes = sortByStringLengthInDescOrder(additionalCodes);
 
@@ -75,7 +75,7 @@ export function isValidSequence(sequence: string, additionalCodes: string[]): {
   if (indexOfFirstNotValidChar != -1) {
     return {
       indexOfFirstNotValidChar: indexOfFirstNotValidChar,
-      synthesizer: synthesizer,
+      synthesizer: [synthesizer],
       technology: null,
     };
   }
@@ -120,7 +120,31 @@ export function isValidSequence(sequence: string, additionalCodes: string[]): {
 
   return {
     indexOfFirstNotValidChar: indexOfFirstNotValidChar,
-    synthesizer: synthesizer,
-    technology: technology,
+    synthesizer: [synthesizer],
+    technology: [technology],
   };
+}
+
+export function validate(sequence: string, additionalCodes: string[]): number {
+  const firstUniqueCharacters = ['r', 'd'];
+  const nucleotides = ['A', 'U', 'T', 'C', 'G'];
+  const codes = sortByStringLengthInDescOrder(getAllCodesOfSynthesizer(SYNTHESIZERS.GCRS).concat(additionalCodes));
+  let i = 0;
+  while (i < sequence.length) {
+    const matchedCode = codes.find((c) => c == sequence.slice(i, i + c.length));
+
+    if (matchedCode == null)
+      break;
+
+    if (i > 1 && nucleotides.includes(sequence[i]) && firstUniqueCharacters.includes(sequence[i - 2]))
+      break;
+
+    if (firstUniqueCharacters.includes(sequence[i + 1]) && nucleotides.includes(sequence[i])) {
+      i++;
+      break;
+    }
+
+    i += matchedCode.length;
+  }
+  return (i == sequence.length) ? -1 : i;
 }

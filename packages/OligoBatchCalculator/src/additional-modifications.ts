@@ -84,7 +84,7 @@ export async function addModificationButton(modificationsDf: DG.DataFrame): Prom
           ).then(() => grok.shell.info('Posted'));
           modificationsDf.rows.addNew([
             longName.value, abbreviation.value, molecularWeight.value,
-            extCoefficient.value, baseModification.value, modifiedLogs,
+            baseModification.value, extCoefficient.value, modifiedLogs,
           ]);
         })
         .show();

@@ -11,6 +11,8 @@ export const TECHNOLOGIES = {
   ASO_GAPMERS: 'For ASO Gapmers',
   SI_RNA: 'For 2\'-OMe and 2\'-F modified siRNA',
 };
+export const firstUniqueCharacters = ['r', 'd'];
+export const nucleotides = ['A', 'U', 'T', 'C', 'G'];
 export const individualBases: {[index: string]: number} = {
   'dA': 15400, 'dC': 7400, 'dG': 11500, 'dT': 8700, 'rA': 15400, 'rC': 7200, 'rG': 11500, 'rU': 9900,
 };
@@ -348,3 +350,21 @@ for (const synthesizer of Object.keys(map)) {
     }
   }
 }
+function getAllCodesOfSynthesizer(synthesizer: string): string[] {
+  let codes: string[] = [];
+  for (const technology of Object.keys(map[synthesizer]))
+    codes = codes.concat(Object.keys(map[synthesizer][technology]));
+  return codes;
+}
+export const firstLoopClasses: string[] = [
+  'BioSpring Codes For ASO Gapmers',
+  'BioSpring Codes For 2\'-OMe and 2\'-F modified siRNA',
+  'Axolabs Codes',
+  'Janssen GCRS Codes',
+];
+export const obj: {[i: string]: string[]} = {};
+// obj['BioSpring Codes For ASO Gapmers'] = Object.keys(map['BioSpring Codes']['For ASO Gapmers']);
+// obj['BioSpring Codes For 2\'-OMe and 2\'-F modified siRNA'] = Object.keys(
+//   map['BioSpring Codes']['For 2\'-OMe and 2\'-F modified siRNA']);
+// obj['Axolabs Codes'] = getAllCodesOfSynthesizer('Axolabs Codes');
+obj['Janssen GCRS Codes'] = getAllCodesOfSynthesizer('Janssen GCRS Codes');
