@@ -1,42 +1,54 @@
 {
-	"name": "@datagrok/oligo-batch-calculator",
-	"beta": false,
-	"friendlyName": "Oligo Batch Calculator",
-	"version": "0.0.6",
-	"description": "",
-	"repository": {
+  <<<<<<<
+  Updated
+  upstream
+  "name": "@datagrok/oligo-batch-calculator",
+  "beta": false,
+  "friendlyName": "Oligo Batch Calculator",
+  "version": "0.0.6",
+  "description": "",
+  "repository": {
     "type": "git",
     "url": "https://github.com/datagrok-ai/public.git",
     "directory": "packages/OligoBatchCalculator"
   },
-	"dependencies": {
-		"datagrok-api": "^0.94.10",
-		"ts-loader": "latest",
-		"typescript": "latest",
-		"@datagrok-libraries/utils": "^0.2.9"
-	},
-	"devDependencies": {
-		"@typescript-eslint/eslint-plugin": "^4.29.1",
-		"@typescript-eslint/parser": "^4.29.1",
-		"cash-dom": "^8.1.0",
-		"webpack": "^5.64.0",
-		"webpack-cli": "^4.9.1",
-		"eslint": "^7.32.0",
-		"eslint-config-google": "^0.14.0"
-	},
-	"scripts": {
-		"debug-oligobatchcalculator": "grok publish --rebuild",
-		"release-oligobatchcalculator": "grok publish --rebuild --release",
-		"build-oligobatchcalculator": "webpack",
-		"build": "webpack",
-		"debug-oligobatchcalculator-public": "grok publish public --rebuild",
-		"release-oligobatchcalculator-public": "grok publish public --rebuild --release",
-		"debug-oligobatchcalculator-local": "grok publish local --rebuild",
-		"release-oligobatchcalculator-local": "grok publish local --rebuild --release"
-	},
-	"sources": [
-		"css/style.css"
-	],
-	"canEdit": [ "Developers" ],
-	"canView": [ "All users" ]
+  "dependencies": {
+    "datagrok-api": "^0.94.10",
+    "ts-loader": "latest",
+    "typescript": "latest",
+    "@datagrok-libraries/utils": "^0.2.9"
+  },
+  "devDependencies": {
+    "@typescript-eslint/eslint-plugin": "^4.29.1",
+    "@typescript-eslint/parser": "^4.29.1",
+    "cash-dom": "^8.1.0",
+    "webpack": "^5.64.0",
+    "webpack-cli": "^4.9.1",
+    "eslint": "^7.32.0",
+    "eslint-config-google": "^0.14.0",
+    "jest-html-reporter": "^3.5.0",
+    "jest": "^27.0.0",
+    "@types/jest": "^27.0.0",
+    "ts-jest": "^27.0.0",
+    "puppeteer": "latest"
+  },
+  "scripts": {
+    "debug-oligobatchcalculator": "grok publish --rebuild",
+    "release-oligobatchcalculator": "grok publish --rebuild --release",
+    "build-oligobatchcalculator": "webpack",
+    "build": "webpack",
+    "debug-oligobatchcalculator-public": "grok publish public --rebuild",
+    "release-oligobatchcalculator-public": "grok publish public --rebuild --release",
+    "debug-oligobatchcalculator-local": "grok publish local --rebuild",
+    "release-oligobatchcalculator-local": "grok publish local --rebuild --release"
+  },
+  "sources": [
+    "css/style.css"
+  ],
+  "canEdit": [
+    "Developers"
+  ],
+  "canView": [
+    "All users"
+  ]
 }

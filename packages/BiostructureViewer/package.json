@@ -25,11 +25,6 @@
     "molstar": "^3.0.0-dev.4"
   },
   "devDependencies": {
-    "@types/jest": "latest",
-    "jest": "latest",
-    "jest-html-reporter": "latest",
-    "puppeteer": "^13.1.2",
-    "ts-jest": "^27.1.2",
     "typescript": "^4.4.4",
     "@typescript-eslint/eslint-plugin": "^4.29.1",
     "@typescript-eslint/parser": "^4.29.1",
@@ -42,7 +37,12 @@
     "mini-css-extract-plugin": "^2.5.2",
     "sass": "^1.49.0",
     "webpack": "latest",
-    "webpack-cli": "latest"
+    "webpack-cli": "latest",
+    "jest-html-reporter": "^3.5.0",
+    "jest": "^27.0.0",
+    "@types/jest": "^27.0.0",
+    "ts-jest": "^27.0.0",
+    "puppeteer": "latest"
   },
   "scripts": {
     "link-api": "npm link datagrok-api",
