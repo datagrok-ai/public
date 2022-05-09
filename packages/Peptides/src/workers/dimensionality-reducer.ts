@@ -1,6 +1,5 @@
 import {DimensionalityReducer, KnownMethods} from '@datagrok-libraries/ml/src/reduce-dimensionality';
 import {KnownMetrics} from '@datagrok-libraries/ml/src/typed-metrics';
-import {Coordinates} from '@datagrok-libraries/utils/src/type-declarations';
 
 /**
  * Worker thread receiving data function.
@@ -8,10 +7,10 @@ import {Coordinates} from '@datagrok-libraries/utils/src/type-declarations';
  * @param {any[]} columnData Samples to process.
  * @param {string} method Embedding method.
  * @param {string} measure Distance metric.
- * @param {number} cyclesCount Number of cycles to repeat.
- * @return {Coordinates} Embedding.
+ * @param {any} options Options to pass to algorithm.
+ * @return {any} Embedding (and distance matrix where applicable).
  */
-function onMessage(columnData: any[], method: KnownMethods, measure: KnownMetrics, options: number): Coordinates {
+function onMessage(columnData: any[], method: KnownMethods, measure: KnownMetrics, options: any): any {
   const reducer = new DimensionalityReducer(
     columnData,
     method,
@@ -24,7 +23,8 @@ function onMessage(columnData: any[], method: KnownMethods, measure: KnownMetric
 self.onmessage = ({data: {columnData, method, measure, options}}) => {
   const embedding = onMessage(columnData, method, measure, options);
   self.postMessage({
-    embedding: embedding,
+    distance: embedding.distance,
+    embedding: embedding.embedding,
   });
 };
 
