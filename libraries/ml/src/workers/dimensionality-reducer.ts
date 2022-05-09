@@ -10,18 +10,18 @@ import {KnownMetrics} from '../typed-metrics';
  * @param {number} cyclesCount Number of cycles to repeat.
  * @return {any} Embedding (and distance matrix where applicable).
  */
-function onMessage(columnData: any[], method: KnownMethods, measure: KnownMetrics, cyclesCount?: number) {
+function onMessage(columnData: any[], method: KnownMethods, measure: KnownMetrics, options?: any) {
   const reducer = new DimensionalityReducer(
     columnData,
     method,
     measure,
-    cyclesCount ? {cycles: cyclesCount} : undefined,
+    options,
   );
   return reducer.transform(true);
 }
 
-self.onmessage = ({data: {columnData, method, measure, cyclesCount}}) => {
-  const embedding = onMessage(columnData, method, measure, cyclesCount);
+self.onmessage = ({data: {columnData, method, measure, options}}) => {
+  const embedding = onMessage(columnData, method, measure, options);
   self.postMessage({
     distance: embedding.distance,
     embedding: embedding.embedding,
