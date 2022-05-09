@@ -67,12 +67,12 @@ function createDirectoryContents(name: string, config: utils.Config, templateDir
         }
         if (jest) {
           Object.assign(_package.devDependencies, {
-            'jest': 'latest',
-            'jest-html-reporter': 'latest',
-            '@types/jest': 'latest',
-            'puppeteer': 'latest'
+            'jest-html-reporter': '^3.5.0',
+            'jest': '^27.0.0',
+            '@types/jest': '^27.0.0'
           }, ts ? {
-            'ts-jest': 'latest'
+            'ts-jest': '^27.0.0',
+            'puppeteer': 'latest'
           } : {});
           Object.assign(_package.scripts, {
             'test': 'jest',

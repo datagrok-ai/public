@@ -34,7 +34,7 @@
     "test-local": "set HOST=localhost && jest"
   },
   "sources": [
-	"css/style.css"
+    "css/style.css"
   ],
   "devDependencies": {
     "@typescript-eslint/eslint-plugin": "^4.29.1",
@@ -44,10 +44,10 @@
     "eslint-config-google": "^0.14.0",
     "webpack": "^5.31.0",
     "webpack-cli": "^4.6.0",
-    "@types/jest": "latest",
-    "jest": "latest",
-    "jest-html-reporter": "latest",
-    "puppeteer": "^13.1.2",
-    "ts-jest": "^27.1.2"
+    "jest-html-reporter": "^3.5.0",
+    "jest": "^27.0.0",
+    "@types/jest": "^27.0.0",
+    "ts-jest": "^27.0.0",
+    "puppeteer": "latest"
   }
 }
