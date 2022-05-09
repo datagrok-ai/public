@@ -3,6 +3,8 @@ import * as grok from 'datagrok-api/grok';
 import * as ui from 'datagrok-api/ui';
 import * as DG from 'datagrok-api/dg';
 
+import $ from 'cash-dom';
+
 import * as C from './utils/constants';
 
 import {
@@ -268,6 +270,28 @@ export function peptideDistribution(table: DG.DataFrame): DG.Widget {
   if (!table.temp[C.PEPTIDES_ANALYSIS])
     return new DG.Widget(ui.divText('This widget is only applicable for peptides analysis'));
   return getDistributionWidget(table);
+}
+
+//name: Get Peptides Structure
+//tags: panel, widgets
+//input: column col {semType: alignedSequence}
+//output: widget result
+export function getPeptidesStructure(col: DG.Column): DG.Widget {
+  const getButtonTooltip = 'Retrieves peptides structure from customer database by special id column';
+  const getButton = ui.button('Get structure', async () => {
+    const progress = DG.TaskBarProgressIndicator.create('Getting structure...');
+    try {
+      const params = {peptidesTable: col.dataFrame};
+      const result = await grok.functions.call('Customerextensions:getPeptidesStructure', params);
+      const text = result ? 'Structure retreived' : 'Structure retreivial is not possible';
+      grok.shell.info(text);
+    } catch (e) {
+      console.warn(e);
+    } finally {
+      progress.close();
+    }
+  }, getButtonTooltip);
+  return new DG.Widget(getButton);
 }
 
 //name: alignedSequenceDifferenceCellRenderer
