@@ -6,8 +6,8 @@ const ADDITIONAL_CODES: string[] = [];
 const inputOutputObjs: {
   [inputSequence: string]: {
     indexOfFirstNotValidChar: number,
-    synthesizer: string | null,
-    technology: string | null
+    synthesizer: string[] | null,
+    technology: string[] | null
   }
 } = {
   'fNAmCmGmAmCpsmU': {
@@ -27,23 +27,23 @@ const inputOutputObjs: {
   },
   'mGrArCrU': {
     indexOfFirstNotValidChar: -1,
-    synthesizer: SYNTHESIZERS.GCRS,
+    synthesizer: [SYNTHESIZERS.GCRS],
     technology: null,
   },
   'fUfA5mC': {
     indexOfFirstNotValidChar: -1,
-    synthesizer: SYNTHESIZERS.GCRS,
+    synthesizer: [SYNTHESIZERS.GCRS],
     technology: null,
   },
   'mUmUmAmUmCmUmUmGmAmUmUmG': {
     indexOfFirstNotValidChar: -1,
-    synthesizer: SYNTHESIZERS.GCRS,
-    technology: TECHNOLOGIES.SI_RNA,
+    synthesizer: [SYNTHESIZERS.GCRS],
+    technology: [TECHNOLOGIES.SI_RNA],
   },
   'mApsmApsfGmAmUmCfAfCfGmG': {
     indexOfFirstNotValidChar: -1,
-    synthesizer: SYNTHESIZERS.GCRS,
-    technology: TECHNOLOGIES.SI_RNA,
+    synthesizer: [SYNTHESIZERS.GCRS],
+    technology: [TECHNOLOGIES.SI_RNA],
   },
   'ArA': {
     indexOfFirstNotValidChar: 1,
@@ -67,32 +67,32 @@ const inputOutputObjs: {
   },
   'fAGACGT': {
     indexOfFirstNotValidChar: -1,
-    synthesizer: SYNTHESIZERS.GCRS,
-    technology: TECHNOLOGIES.SI_RNA,
+    synthesizer: [SYNTHESIZERS.GCRS],
+    technology: [TECHNOLOGIES.SI_RNA],
   },
   'AGfA': {
     indexOfFirstNotValidChar: -1,
-    synthesizer: SYNTHESIZERS.GCRS,
+    synthesizer: [SYNTHESIZERS.GCRS],
     technology: null,
   },
   'TrA': {
     indexOfFirstNotValidChar: -1,
-    synthesizer: SYNTHESIZERS.GCRS,
-    technology: TECHNOLOGIES.ASO_GAPMERS,
+    synthesizer: [SYNTHESIZERS.GCRS],
+    technology: [TECHNOLOGIES.ASO_GAPMERS],
   },
   'rAT': {
     indexOfFirstNotValidChar: -1,
-    synthesizer: SYNTHESIZERS.GCRS,
-    technology: TECHNOLOGIES.ASO_GAPMERS,
+    synthesizer: [SYNTHESIZERS.GCRS],
+    technology: [TECHNOLOGIES.ASO_GAPMERS],
   },
   'mUrA': {
     indexOfFirstNotValidChar: -1,
-    synthesizer: SYNTHESIZERS.GCRS,
-    technology: TECHNOLOGIES.SI_RNA,
+    synthesizer: [SYNTHESIZERS.GCRS],
+    technology: [TECHNOLOGIES.SI_RNA],
   },
   'fAGgfA': {
     indexOfFirstNotValidChar: 3,
-    synthesizer: SYNTHESIZERS.GCRS,
+    synthesizer: [SYNTHESIZERS.GCRS],
     technology: null,
   },
 };

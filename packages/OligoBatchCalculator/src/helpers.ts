@@ -1,10 +1,19 @@
 import * as DG from 'datagrok-api/dg';
 import {map, normalizedObj} from './map';
+import {COL_NAMES} from './additional-modifications';
 
-export function normalizeSequence(sequence: string, synthesizer: string | null, technology: string | null): string {
+export function normalizeSequence(sequence: string, synthesizer: string | null, technology: string | null,
+  additionalModsDf: DG.DataFrame): string {
+  const additionalCodesCol = additionalModsDf.col(COL_NAMES.ABBREVIATION)!;
+  const baseModifsCol = additionalModsDf.col(COL_NAMES.BASE_MODIFICATION)!;
+
   const codes = (technology == null) ?
-    getAllCodesOfSynthesizer(synthesizer!) :
+    getAllCodesOfSynthesizer(synthesizer!).concat(additionalCodesCol.toList()) :
     Object.keys(map[synthesizer!][technology]);
+
+  for (let i = 0; i < additionalModsDf.rowCount; i++)
+    normalizedObj[additionalCodesCol.getString(i)] = (baseModifsCol.get(i) != 'NO') ? baseModifsCol.get(i) : '';
+
   const sortedCodes = sortByStringLengthInDescOrder(codes);
   const regExp = new RegExp('(' + sortedCodes.join('|') + ')', 'g');
   return sequence.replace(regExp, function(code) {return normalizedObj[code];});

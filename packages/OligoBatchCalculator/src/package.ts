@@ -2,8 +2,8 @@ import * as grok from 'datagrok-api/grok';
 import * as ui from 'datagrok-api/ui';
 import * as DG from 'datagrok-api/dg';
 import $ from 'cash-dom';
-import {weightsObj, individualBases, nearestNeighbour} from './map';
-import {isValidSequence} from './validation';
+import {weightsObj, individualBases, nearestNeighbour, SYNTHESIZERS} from './map';
+import {validate} from './validation';
 import {deleteWord, saveAsCsv, sortByStringLengthInDescOrder, mergeOptions, normalizeSequence} from './helpers';
 import {COL_NAMES, CURRENT_USER, STORAGE_NAME, ADMIN_USERS, getAdditionalModifications, addModificationButton,
   deleteAdditionalModification} from './additional-modifications';
@@ -35,9 +35,11 @@ export async function opticalDensity(sequence: string, amount: number, outputUni
 //input: string outputUnits {choices: ['Optical Density', 'Milligrams', 'Micrograms']}
 //output: double nMole
 export async function nMole(sequence: string, amount: number, outputUnits: string, extinctionCoefficientsObj:
-  {[index: string]: number}): Promise<number> {
+  {[index: string]: number}, weightsObj: {[index: string]: number}): Promise<number> {
   const ec = await extinctionCoefficient(sequence, extinctionCoefficientsObj);
-  return (outputUnits == 'Optical Density') ? 1000000 * amount / ec : 1000 * amount / molecularWeight(sequence);
+  return (outputUnits == 'Optical Density') ?
+    1000000 * amount / ec :
+    1000 * amount / molecularWeight(sequence, weightsObj);
 }
 
 //name: molecularMass
@@ -49,13 +51,22 @@ export async function molecularMass(sequence: string, amount: number, outputUnit
   const additionalModificationsDf = await getAdditionalModifications();
   const additionalAbbreviations = additionalModificationsDf.col(COL_NAMES.ABBREVIATION)!.toList();
   const extinctionCoefficients = additionalModificationsDf.col(COL_NAMES.EXTINCTION_COEFFICIENT)!.toList();
+  const additionalWeights = additionalModificationsDf.col(COL_NAMES.MOLECULAR_WEIGHT)!.toList();
   const extinctionCoefficientsObj: {[index: string]: number} = {};
-  additionalAbbreviations.forEach((key, i) => extinctionCoefficientsObj[key] = extinctionCoefficients[i]);
+  const additionalWeightsObj: {[index: string]: number} = {};
+  additionalAbbreviations.forEach((key, i) => additionalWeightsObj[key] = additionalWeights[i]);
+  additionalAbbreviations.forEach((key, i) => {
+    if (extinctionCoefficients[i] != 'Base')
+      extinctionCoefficientsObj[key] = extinctionCoefficients[i];
+  });
   const ec = await extinctionCoefficient(sequence, extinctionCoefficientsObj);
   const od = await opticalDensity(sequence, amount, outputUnits, extinctionCoefficientsObj);
-  const nm = await nMole(sequence, amount, outputUnits, extinctionCoefficientsObj);
-  if (outputUnits == 'Optical Density' || outputUnits == 'OD')
-    return (ec == 0) ? amount * molecularWeight(sequence) : 1000 * amount * molecularWeight(sequence) / ec;
+  const nm = await nMole(sequence, amount, outputUnits, extinctionCoefficientsObj, additionalWeightsObj);
+  if (outputUnits == 'Optical Density' || outputUnits == 'OD') {
+    return (ec == 0) ?
+      amount * molecularWeight(sequence, additionalWeightsObj) :
+      1000 * amount * molecularWeight(sequence, additionalWeightsObj) / ec;
+  }
   const coefficient = (outputUnits == 'Milligrams' || outputUnits == 'Micromoles') ? 1 : 1000;
   return amount / ec * molecularWeight(sequence) * coefficient * od / nm;
 }
@@ -77,9 +88,9 @@ export function molecularWeight(sequence: string, additionalWeightsObj?: {[index
 
 export async function extinctionCoefficient(sequence: string, extCoefsObj?: {[i: string]: number}): Promise<number> {
   const additionalModificationsDf = await getAdditionalModifications();
-  const additionalCodes = additionalModificationsDf.col(COL_NAMES.ABBREVIATION)!.categories;
-  const output = isValidSequence(sequence, additionalCodes);
-  let ns = normalizeSequence(sequence, output.synthesizer, output.technology);
+  // const additionalCodes = additionalModificationsDf.col(COL_NAMES.ABBREVIATION)!.categories;
+  // const output = isValidSequence(sequence, additionalCodes);
+  let ns = normalizeSequence(sequence, SYNTHESIZERS.GCRS, null, additionalModificationsDf);
   let nearestNeighbourSum = 0;
   let individualBasisSum = 0;
   let modificationsSum = 0;
@@ -115,7 +126,10 @@ export async function OligoBatchCalculatorApp(): Promise<void> {
   const additionalWeightsObj: {[index: string]: number} = {};
   const extinctionCoeffsObj: {[index: string]: number} = {};
   additionalAbbreviations.forEach((key, i) => additionalWeightsObj[key] = additionalWeights[i]);
-  additionalAbbreviations.forEach((key, i) => extinctionCoeffsObj[key] = extinctionCoefficients[i]);
+  additionalAbbreviations.forEach((key, i) => {
+    if (extinctionCoefficients[i] != 'Base')
+      extinctionCoeffsObj[key] = extinctionCoefficients[i];
+  });
   const mainGrid = DG.Viewer.grid(DG.DataFrame.create(), {'showRowHeader': false});
 
   async function render(text: string): Promise<void> {
@@ -133,15 +147,15 @@ export async function OligoBatchCalculatorApp(): Promise<void> {
     const reasonsOfError = Array(sequences.length);
 
     for (const [i, sequence] of sequences.entries()) {
-      const output = isValidSequence(sequence, additionalCodes);
-      indicesOfFirstNotValidCharacter[i] = output.indexOfFirstNotValidChar;
+      indicesOfFirstNotValidCharacter[i] = validate(sequence, additionalCodes);
       if (indicesOfFirstNotValidCharacter[i] < 0) {
-        normalizedSequences[i] = normalizeSequence(sequence, output.synthesizer, output.technology);
+        normalizedSequences[i] = normalizeSequence(sequence, SYNTHESIZERS.GCRS, null, additionalModsDf);
         if (normalizedSequences[i].length > 2) {
           try {
             molecularWeights[i] = molecularWeight(sequence, additionalWeightsObj);
             extinctionCoefficients[i] = await extinctionCoefficient(normalizedSequences[i], extinctionCoeffsObj);
-            nMoles[i] = await nMole(sequence, yieldAmount.value, units.value, extinctionCoeffsObj);
+            nMoles[i] = await nMole(sequence, yieldAmount.value, units.value, extinctionCoeffsObj,
+              additionalWeightsObj);
             opticalDensities[i] = await opticalDensity(sequence, yieldAmount.value, units.value, extinctionCoeffsObj);
             molecularMasses[i] = await molecularMass(sequence, yieldAmount.value, units.value);
           } catch (e) {
@@ -153,10 +167,11 @@ export async function OligoBatchCalculatorApp(): Promise<void> {
           reasonsOfError[i] = 'Sequence should contain at least two nucleotides';
           indicesOfFirstNotValidCharacter[i] = 0;
         }
-      } else if (output.synthesizer == null)
-        reasonsOfError[i] = 'Not valid input';
-      else {
-        reasonsOfError[i] = 'Sequence is expected to be in synthesizer \'' + output.synthesizer +
+      // }
+      // else if (output.synthesizer == null)
+      // reasonsOfError[i] = 'Not valid input';
+      } else {
+        reasonsOfError[i] = 'Sequence is expected to be in synthesizer \'' + SYNTHESIZERS.GCRS +
           '\', please see table below to see list of valid codes';
       }
     };
@@ -273,6 +288,9 @@ export async function OligoBatchCalculatorApp(): Promise<void> {
     ui.box(ui.h2('Additional modifications'), {style: {maxHeight: '40px'}}),
     additionaModifsGrid.root,
   ], {style: {maxWidth: '600px'}});
+
+  additionalModsDf.col(COL_NAMES.BASE_MODIFICATION)!
+    .setTag(DG.TAGS.CHOICES, '["NO", "rU", "rA", "rC", "rG", "dA", "dC", "dG", "dT"]');
 
   const view = grok.shell.newView('Oligo Batch Calculator', [
     ui.splitH([
