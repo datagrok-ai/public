@@ -480,7 +480,11 @@ export type MarkerCodingType = `${MARKER_TYPE}`;
 export type DemoDatasetName = `${DEMO_DATASET}`;
 export type DockType = `${DOCK_TYPE}`;
 export type LegendPosition = `${LEGEND_POSITION}`;
-export type CsvImportOptions = { delimiter?: string, decimalSeparator?: string, thousandSeparator?: string };
+export type ColumnInfo = {name: string, type?: string, semType?: string};
+export type CsvImportOptions = {
+  delimiter?: string, decimalSeparator?: string, thousandSeparator?: string, headerRow?: boolean,
+  columnFilterNames?: string[], columnFilterRegexp?: string, mergeDelimiters?: boolean, maxRows?: number,
+  rowFilterTop?: number, rowFilterProb?: number, nullStrings?: string[], columnImportOptions?: ColumnInfo[]};
 export type IndexPredicate = (ind: number) => boolean;
 export type StringPredicate = (str: string) => boolean;
 export type ScriptLanguage = `${SCRIPT_LANGUAGE}`;
