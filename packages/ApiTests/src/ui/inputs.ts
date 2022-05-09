@@ -24,7 +24,7 @@ category('UI: Inputs', () => {
       'textInput': ui.textInput('', ''),
       'searchInput': ui.searchInput('', ''),
       'columnInput': ui.columnInput('', t, t.col('age')),
-      'columnsInput': ui.columnsInput('', t),
+      'columnsInput': ui.columnsInput('', t, () => null),
       'tableInput': ui.tableInput('', tables[0], tables)
     };
     v = grok.shell.newView('');
