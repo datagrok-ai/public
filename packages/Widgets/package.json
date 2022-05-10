@@ -5,10 +5,10 @@
 	"version": "0.2.1",
 	"description": "A collection of commonly used widgets, viewers, filters, and cell renderers.",
 	"repository": {
-    "type": "git",
-    "url": "https://github.com/datagrok-ai/public.git",
-    "directory": "packages/Widgets"
-  },
+		"type": "git",
+		"url": "https://github.com/datagrok-ai/public.git",
+		"directory": "packages/Widgets"
+	},
 	"canEdit": [
 		"Developers"
 	],
@@ -33,6 +33,7 @@
 		"@typescript-eslint/parser": "latest"
 	},
 	"scripts": {
+		"link-api": "npm link datagrok-api",
 		"debug-widgets": "grok publish --rebuild",
 		"release-widgets": "grok publish --rebuild --release",
 		"build-widgets": "webpack",
