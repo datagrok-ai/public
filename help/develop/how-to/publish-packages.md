@@ -53,4 +53,4 @@ grok publish <HOST>
 
 If you want to use this package with other users, share the package with the [group](../../govern/group.md).
 
-[Share package](share-package.png)
+![Share package](share-package.png)
