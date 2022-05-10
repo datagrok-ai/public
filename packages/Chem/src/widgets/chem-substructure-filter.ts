@@ -10,7 +10,7 @@ import {chem} from 'datagrok-api/grok';
 import {chemSubstructureSearchLibrary} from "../chem-searches";
 import {initRdKitService} from "../utils/chem-common-rdkit";
 import {Subscription} from "rxjs";
-import {debounceTime} from 'rxjs/operators';
+import {debounceTime, filter} from 'rxjs/operators';
 import Sketcher = chem.Sketcher;
 import wu from 'wu';
 
@@ -30,7 +30,7 @@ export class SubstructureFilter extends DG.Filter {
   }
 
   get isFiltering(): boolean {
-    return !this.sketcher?.getMolFile().endsWith(this.WHITE_MOL);
+    return super.isFiltering && !this.sketcher?.getMolFile().endsWith(this.WHITE_MOL);
   }
 
   constructor() {
@@ -54,17 +54,23 @@ export class SubstructureFilter extends DG.Filter {
   }
 
   attach(dataFrame: DG.DataFrame): void {
+    super.attach(dataFrame);
+
     this.column = dataFrame.columns.bySemType(DG.SEMTYPE.MOLECULE);
     this.columnName = this.column?.name;
     this.onSketcherChangedSubs?.unsubscribe();
 
-    // warmup
-    chemSubstructureSearchLibrary(this.column!, '', ''); // No await
+    // hide the scaffold when user deactivates the filter
+    this.subs.push(this.dataFrame!.onRowsFiltering
+      .pipe(filter((_) => this.column != null && !this.isFiltering))
+      .subscribe((_) => delete this.column!.temp['chem-scaffold-filter']));
+
+    chemSubstructureSearchLibrary(this.column!, '', '')
+      .then((_) => {}); // Nothing, just a warmup
 
     let onChangedEvent: any = this.sketcher.onChanged;
     onChangedEvent = onChangedEvent.pipe(debounceTime(this._debounceTime));
     this.onSketcherChangedSubs = onChangedEvent.subscribe(async (_: any) => await this._onSketchChanged());
-    super.attach(dataFrame);
 
     if (this.column?.temp['chem-scaffold-filter'])
       this.sketcher.setMolFile(this.column?.temp['chem-scaffold-filter']);

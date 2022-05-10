@@ -4,7 +4,7 @@ import * as DG from 'datagrok-api/dg';
 import {MolecularLiabilityBrowser} from './molecular-liability-browser';
 import {NucleotidesWebLogo, AminoacidsWebLogo} from './viewers/web-logo';
 
-export const _package = new DG.Package();
+export const _package: DG.Package = new DG.Package();
 
 function getPathSegments(path: string) {
   const parser = document.createElement('a');

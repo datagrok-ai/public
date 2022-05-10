@@ -287,8 +287,11 @@ export abstract class Filter extends Widget {
   // static freeText(column: Column) { return Filter.create(FILTER_TYPE.FREE_TEXT, column); }
 
   /** Override to indicate whether the filter actually filters something (most don't in the initial state).
-   * This is used to minimize the number of unnecessary computations. */
-  abstract get isFiltering(): boolean;
+   * This is used to minimize the number of unnecessary computations.
+   * Make sure to call super.isFiltering to check whether the filter has been disabled by the user */
+  get isFiltering(): boolean {
+    return !this.root.parentElement!.classList.contains('d4-filter-disabled');
+  }
 
   /** Override to provide short filter summary that might be shown on viewers or in the property panel. */
   abstract get filterSummary(): string;
