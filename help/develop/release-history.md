@@ -1,6 +1,30 @@
 <!-- TITLE: Release History -->
 <!-- SUBTITLE: -->
 
+# 2022-05-10 Dev build 0.151.4
+
+## Latest Docker Images
+
+* Datagrok: 
+  *  `docker pull datagrok/datagrok:0.151.4`
+  *  `docker pull datagrok/datagrok:latest`
+  
+* [Docker-Compose](admin/docker-compose.md)
+
+## Addressed Issues
+
+* (Bug) Fix Demo deploy 
+* #566: CsvImportOptions extension and ColumnInfo type 
+* GitHub #566: CsvImportOptions 
+* (Bug) Oligo Batch Calculator: not valid sequences with additional modifications 
+* (Bug) Packages: missing version check during package upload 
+* Peptides: Get Peptides Structure panel 
+* Initial commit introducing Pinned Columns feature 
+* Add codeMirror to devTools 
+* (Bug) JS API: JS-based viewers that are instantiated directly are not linked to the Dart viewer 
+* Public token 
+
+
 # 2022-05-09 Dev build 0.151.3
 
 ## Latest Docker Images
