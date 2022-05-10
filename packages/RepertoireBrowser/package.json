@@ -4,10 +4,10 @@
 	"version": "0.1.2",
 	"description": "B-cell repertoire browser",
 	"repository": {
-    "type": "git",
-    "url": "https://github.com/datagrok-ai/public.git",
-    "directory": "packages/RepertoireBrowser"
-  },
+		"type": "git",
+		"url": "https://github.com/datagrok-ai/public.git",
+		"directory": "packages/RepertoireBrowser"
+	},
 	"sources": [
 		"css/ngl.css",
 		"css/pviz-core.css",
@@ -36,22 +36,21 @@
 	},
 	"scripts": {
 		"build": "webpack",
-
 		"link-utils": "npm link @datagrok-libraries/utils",
 		"link-all": "npm link @datagrok-libraries/utils",
-
 		"lint": "eslint \"./src/**/*.ts\"",
 		"lint-fix": "eslint \"./src/**/*.ts\" --fix",
-		
 		"debug-repertoirebrowser-local": "grok publish local --rebuild",
 		"release-repertoirebrowser-local": "grok publish local --rebuild --release",
-
 		"debug-repertoirebrowser": "grok publish dev --rebuild",
 		"release-repertoirebrowser": "grok publish dev --rebuild --release",
-
 		"debug-repertoirebrowser-public": "grok publish public --rebuild",
 		"release-repertoirebrowser-public": "grok publish public --rebuild --release"
 	},
-	"canEdit": [ "Developers" ],
-	"canView": [ "All users" ]
+	"canEdit": [
+		"Developers"
+	],
+	"canView": [
+		"All users"
+	]
 }

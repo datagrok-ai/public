@@ -15,8 +15,9 @@ export class MultiValueFilter extends DG.Filter {
     this.subs = [];
   }
 
-  //@ts-ignore: it doesn't return boolean
-  get isFiltering() {return this.root.querySelectorAll('input[type=\'checkbox\']:not(:checked)');}
+  get isFiltering() {
+    return super.isFiltering && this.root.querySelectorAll('input[type=\'checkbox\']:not(:checked)').length > 0;
+  }
 
   get filterSummary() {return `${this.getSelectedInputs().length}`;}
 
