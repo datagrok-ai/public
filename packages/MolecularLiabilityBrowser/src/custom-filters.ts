@@ -112,7 +112,7 @@ export class MLBFilter extends DG.Filter {
     const rowCount = this.dataFrame.rowCount;
 
     for (let i = 0; i < rowCount; i++)
-      filter.set(i, getStateFor(i), false);
+      filter.set(i, filter.get(i) && getStateFor(i), false);
 
     filter.fireChanged();
   }
