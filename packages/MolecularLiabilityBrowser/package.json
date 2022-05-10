@@ -1,7 +1,7 @@
 {
   "name": "molecular-liability-browser",
   "fullName": "MolecularLiabilityBrowser",
-  "version": "0.0.3",
+  "version": "0.0.4",
   "description": "",
   "repository": {
     "type": "git",
@@ -12,7 +12,7 @@
     "css/ngl.css",
     "css/pviz-core.css",
     "css/additionalStyles.css",
-    "src/viewers/pviz-bundle.min.js",
+    "vendor/pviz-bundle.min.js",
     "common/ngl_viewer/ngl.js"
   ],
   "dependencies": {
