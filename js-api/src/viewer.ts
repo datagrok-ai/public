@@ -102,7 +102,7 @@ export class Viewer extends Widget {
     return JSON.parse(api.grok_Viewer_Serialize(this.dart, includeDefaults));
   }
 
-  getInfo(): object {
+  getInfo(): { [index: string]: any } {
     return api.grok_Viewer_GetInfo(this.dart);
   }
 
