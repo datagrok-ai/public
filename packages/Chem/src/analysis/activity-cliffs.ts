@@ -4,6 +4,7 @@ import * as DG from 'datagrok-api/dg';
 import {chemSpace} from './chem-space';
 import * as chemSearches from '../chem-searches';
 import {getSimilarityFromDistance} from '@datagrok-libraries/utils/src/similarity-metrics';
+import {ScatterPlotViewer} from "datagrok-api/dg";
 
 const options = {
   'SPE': {cycles: 2000, lambda: 1.0, dlambda: 0.0005}
@@ -19,13 +20,7 @@ export async function getActivityCliffs(
   const automaticSimilarityLimit = false;
   const MIN_SIMILARITY = 80;
 
-  let initialSimilarityLimit = 0;
-  if (automaticSimilarityLimit)
-    initialSimilarityLimit = MIN_SIMILARITY;
-  else
-    initialSimilarityLimit = similarity / 100;
-
-
+  let initialSimilarityLimit = automaticSimilarityLimit ? MIN_SIMILARITY : similarity / 100;
   const axes = ['Embed_X', 'Embed_Y'];
   //@ts-ignore
   const colNameInd = df.columns.names().filter((it) => it.includes(axes[0])).length + 1;
@@ -104,18 +99,16 @@ export async function getActivityCliffs(
     showColorSelector: false,
     markerMinSize: 5,
     markerMaxSize: 25,
-  }));
+  })) as ScatterPlotViewer;
 
   sp.onEvent('d4-before-draw-scene')
-    .subscribe((_) => renderLines(sp, n1, n2, `${axes[0]}_${colNameInd}`, `${axes[1]}_${colNameInd}`));
+    .subscribe((_: any) => renderLines(sp, n1, n2, `${axes[0]}_${colNameInd}`, `${axes[1]}_${colNameInd}`));
 
   sp.addProperty('similarityLimit', 'double', optSimilarityLimit);
 }
 
-function renderLines(sp: DG.Viewer, n1: number[], n2: number[], xAxis: string, yAxis: string) {
-  //@ts-ignore
+function renderLines(sp: DG.ScatterPlotViewer, n1: number[], n2: number[], xAxis: string, yAxis: string) {
   const ctx = sp.getInfo()['canvas'].getContext('2d');
-
   const x = sp.dataFrame!.columns.byName(xAxis);
   const y = sp.dataFrame!.columns.byName(yAxis);
 
@@ -127,10 +120,8 @@ function renderLines(sp: DG.Viewer, n1: number[], n2: number[], xAxis: string, y
     const num1 = n1[i];
     const num2 = n2[i];
 
-    //@ts-ignore
     const pointFrom = sp.worldToScreen(x.get(num1), y.get(num1));
     ctx.lineTo(pointFrom.x, pointFrom.y);
-    //@ts-ignore
     const pointTo = sp.worldToScreen(x.get(num2), sp.dataFrame.get(yAxis, num2));
     ctx.lineTo(pointTo.x, pointTo.y);
 
