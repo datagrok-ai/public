@@ -217,9 +217,9 @@ Returns the 10-based logarithm of `x`.
 Log10(100)    // 2
 ```
 
-## <a name="max"></a>Max([`x`, `y` ...])
+## <a name="max"></a>Max([`x1`, `x2`, `x3` ...])
 
-Returns the maximum of `x` and `y`.
+Returns the maximum value from the specified array of numbers.
 
 ```javascript
 Max([15, 21])    // 21
@@ -234,9 +234,9 @@ Median([0, 2, 5])       // 2
 Median([0, 2, 5, 9])    // 2.5
 ```
 
-## <a name="min"></a>Min([`x`, `y` ...])
+## <a name="min"></a>Min([`x1`, `x2`, `x3` ...])
 
-Returns the minimum of `x` and `y`.
+Returns the minimum value from the specified array of numbers.
 
 ```javascript
 Min([15, 21])    // 15
