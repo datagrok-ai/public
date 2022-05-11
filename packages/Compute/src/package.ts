@@ -43,10 +43,13 @@ export function functionParametersGrid(f: DG.Func): DG.View {
 
 //name: hof
 //tags: model
+//description: some description
 export function hof() {
-  grok.shell.info('blablabla');
+  grok.shell.info('hof');
   let f: DG.Func = DG.Func.byName('Sin');
   let v: DG.View = functionParametersGrid(f);
+  let c = grok.functions.getCurrentCall();
+  v.parentCall = c;
   grok.shell.addView(v);
 }
 

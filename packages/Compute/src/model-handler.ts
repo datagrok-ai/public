@@ -1,9 +1,6 @@
 import * as grok from 'datagrok-api/grok';
 import * as ui from 'datagrok-api/ui';
 import * as DG from 'datagrok-api/dg';
-import {ModelCatalogView} from "./model-catalog-view";
-import {TYPE} from "datagrok-api/dg";
-import {FunctionView} from '@datagrok-libraries/utils/src/function-view';
 
 export class ModelHandler extends DG.ObjectHandler {
   get type() {
@@ -16,9 +13,7 @@ export class ModelHandler extends DG.ObjectHandler {
   }
 
   async refresh(x: DG.Script): Promise<DG.Func> {
-    let script = await this.getById(x.id);
-    console.log('script:', script);
-    return script;
+    return await this.getById(x.id);
   }
 
   getLanguageIcon(language: string) {
@@ -37,7 +32,11 @@ export class ModelHandler extends DG.ObjectHandler {
   }
 
   renderMarkup(x: DG.Func): HTMLElement {
-    return ui.span([this.renderIcon(x), ui.label(x.friendlyName)]);
+    let markup = ui.span([this.renderIcon(x), ui.label(x.friendlyName)]);
+    let c = grok.functions.getCurrentCall();
+    markup.ondblclick = (e) => {
+      ModelHandler.openModel(x, c); }
+    return markup;
   }
 
   renderProperties(x: DG.Func) {
@@ -55,11 +54,11 @@ export class ModelHandler extends DG.ObjectHandler {
   }
 
   renderDetails(x: DG.Func) {
-    return ui.divV([ui.render(x.author), ui.render(x.createdOn)], {style: {lineHeight: '150%'}});
+    return ui.divV([ui.divText(x.description, 'ui-description'), ui.render(x.author), ui.render(x.createdOn)], {style: {lineHeight: '150%'}});
   }
 
   renderTooltip(x: DG.Func) {
-    return ui.divText(`${x.friendlyName}`);
+    return ui.divText(x.description, 'ui-description');
   }
 
   renderCard(x: DG.Func, context?: any): HTMLElement {
@@ -67,13 +66,10 @@ export class ModelHandler extends DG.ObjectHandler {
     h.classList.add('d4-link-label');
     let card = ui.bind(x, ui.divV([
       ui.h2(h),
-      ui.divText(x.description, 'ui-description'),
       this.renderDetails(x),
     ]));
     let c = grok.functions.getCurrentCall();
-    card.ondblclick = (e) => {
-      ModelHandler.openModel(x, c);
-    }
+    card.ondblclick = (e) => { ModelHandler.openModel(x, c); }
     return card;
   }
 

@@ -23,6 +23,7 @@ import {
 import {ViewLayout} from "./views/view";
 import {toDart, toJs} from "./wrappers";
 import {_propsToDart} from "./utils";
+import {FuncCall} from "./functions";
 
 let api = <any>window;
 
@@ -55,8 +56,8 @@ export class Dapi {
     return new HttpDataSource(api.grok_Dapi_Queries(), 'Function');
   }
 
-  get functions(): HttpDataSource<Func> {
-    return new HttpDataSource(api.grok_Dapi_Functions(), 'Function');
+  get functions(): FuncsDataSource {
+    return new FuncsDataSource(api.grok_Dapi_Functions());
   }
 
   /** Data Connections API endpoint
@@ -512,6 +513,22 @@ export class DataConnectionsDataSource extends HttpDataSource<DataConnection> {
   }
 }
 
+/**
+ * Functionality for handling functions collection from server
+ * Allows managing {@link Func}
+ * @extends HttpDataSource
+ * */
+export class FuncsDataSource extends HttpDataSource<Func> {
+  /** @constructs DataConnectionsDataSource*/
+  constructor(s: any) {
+    super(s);
+  }
+
+  public get calls() {
+    return new HttpDataSource<FuncCall>(api.grok_Dapi_Function_Calls());
+  }
+
+}
 
 /**
  * Functionality for handling credentials collection from server and working with credentials remote endpoint

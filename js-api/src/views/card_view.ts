@@ -3,6 +3,11 @@ import {ObjectHandler} from "../../ui";
 import {toJs} from "../wrappers";
 let api = <any>window;
 
+export enum RENDER_MODE {
+  BRIEF = "Brief",
+  CARD = "Card",
+  GRID = "Grid",
+}
 /** Base view for working with a collection of objects that reside on the server.
  *  Typically, results are filtered by applying AND operation between two
  *  filters: {@link permanentFilter} (which is set programmatically and is not visible)
@@ -46,15 +51,25 @@ export class CardView extends View {
   get permanentFilter(): string { return api.grok_CardView_Get_PermanentFilter(this.dart); }
   set permanentFilter(s: string) { api.grok_CardView_Set_PermanentFilter(this.dart, s); }
 
-  get categoryFilters(): object { return toJs(api.grok_CardView_Get_CategoryFilters(this.dart)); }
-  set categoryFilters(ff: object) { api.grok_CardView_Set_CategoryFilters(this.dart, ff); }
+  /** Category filter properties list */
+  get categoryFilters(): { [property: string]: string } { return toJs(api.grok_CardView_Get_CategoryFilters(this.dart)); }
+  set categoryFilters(ff: { [property: string]: string }) { api.grok_CardView_Set_CategoryFilters(this.dart, ff); }
 
+  /** Grouping properties list */
   get hierarchy(): string[] { return toJs(api.grok_CardView_Get_Hierarchy(this.dart)); }
   set hierarchy(s: string[]) { api.grok_CardView_Set_Hierarchy(this.dart, s); }
 
+  /** Grouping mode on */
   get showTree(): boolean { return api.grok_CardView_Get_ShowTree(this.dart); }
   set showTree(s: boolean) { api.grok_CardView_Set_ShowTree(this.dart, s); }
 
+  /** Render mode */
+  get renderMode(): RENDER_MODE { return api.grok_CardView_Get_RenderMode(this.dart); }
+  set renderMode(s: RENDER_MODE) { api.grok_CardView_Set_RenderMode(this.dart, s); }
+
+  refresh() {
+    api.grok_CardView_Refresh(this.dart);
+  }
 }
 
 export class CustomCardView extends CardView {
