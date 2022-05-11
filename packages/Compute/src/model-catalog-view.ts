@@ -14,17 +14,19 @@ export class ModelCatalogView extends DG.CustomCardView {
     this.meta = new ModelHandler();
     this.name = 'Models';
     this.permanentFilter = '#model';
+    this.renderMode = DG.RENDER_MODE.BRIEF;
 
     this.objectType = 'Func';
     this.categoryFilters = {
-      'options.direction': 'Direction',
-      'tag': 'Tags',
-      'createdOn': 'Created',
-      'author.id': 'Author'
+      'options.department': 'Department',
+      'options.status': 'Status',
+      'options.group': 'Group',
+      'tag': 'Tags'
     };
     this.hierarchy = [
-      'options.direction',
-      'options.domain'
+      'options.department',
+      'options.status',
+      'options.group'
     ];
     this.showTree = true;
     this.initRibbon();
@@ -32,7 +34,7 @@ export class ModelCatalogView extends DG.CustomCardView {
   }
 
   initRibbon() {
-    this.setRibbonPanels([[ui.icons.add(() => onboardModel())]]);
+    this.setRibbonPanels([[ui.icons.sync(() => this.refresh())], [ui.icons.add(() => onboardModel())]]);
   }
 
   initMenu() {
