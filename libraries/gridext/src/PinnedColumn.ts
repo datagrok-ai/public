@@ -201,8 +201,12 @@ export class PinnedColumn {
 
     this.m_observerResize.observe(eCanvasThis);
     const colGtrid0 = grid.columns.byIndex(0);
-    if(colGtrid0 !== null)
-      colGtrid0.visible = false;
+    if(colGtrid0 !== null) {
+      try{ colGtrid0.visible = false; }
+      catch(e) {
+        console.error("ERROR: Couldn't set visible property to false");
+      }
+    }
 
 
     //OnResize Row header
@@ -512,8 +516,12 @@ export class PinnedColumn {
 
     if (dart.m_arRowHeaders.length === 0) {
       const colGrid0 = grid.columns.byIndex(0);
-      if(colGrid0 !== null)
-       colGrid0.visible = true;
+      if(colGrid0 !== null) {
+        try{colGrid0.visible = true;}
+        catch(e) {
+          console.error("ERROR: Couldn't set visible property to true");
+        }
+      }
     }
     if(this.m_root === null)
       throw new Error('Root cannot be null');
