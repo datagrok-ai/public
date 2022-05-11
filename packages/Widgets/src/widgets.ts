@@ -4,7 +4,7 @@ import * as DG from 'datagrok-api/dg';
 import * as rxjs from 'rxjs';
 import $ from 'cash-dom';
 
-import './styles/widget.css';
+import './styles/widgets.css';
 
 /**
  * Widget demo
