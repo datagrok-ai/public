@@ -9,8 +9,8 @@
     "directory": "packages/ClinicalCase"
   },
   "dependencies": {
-    "@datagrok-libraries/statistics": "^0.0.15",
-    "@datagrok-libraries/utils": "^0.0.16",
+    "@datagrok-libraries/statistics": "^0.0.1",
+    "@datagrok-libraries/utils": "^0.0.17",
     "cash-dom": "^8.1.0",
     "datagrok-api": "^0.116.0",
     "jstat": "^1.9.5",
