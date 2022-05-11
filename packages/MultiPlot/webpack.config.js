@@ -36,7 +36,7 @@ module.exports = {
   },
   
   optimization: {
-    moduleIds: 'hashed',
+    moduleIds: 'deterministic',
     chunkIds: 'deterministic'
   },
   resolve: {
