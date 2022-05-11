@@ -11,7 +11,7 @@
   },
 	"dependencies": {
 		"chokidar": "^3.5.2",
-		"datagrok-api": "^0.94.10",
+		"datagrok-api": "^0.95.0",
 		"typescript": "^4.3.5",
 		"ws": "^7.5.1"
 	},
