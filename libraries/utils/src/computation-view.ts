@@ -21,33 +21,5 @@ import {FunctionView} from './function-view';
  * - notifications for changing inputs, completion of computations, etc: {@link onInputChanged}
  * */
 export class ComputationView extends FunctionView {
-  constructor(func: DG.Func) {
-    super(func);
-  }
 
-  /** Override to create output block. */
-  override buildOutputPanel(): HTMLElement {
-    console.log('ouptut updated');
-    const outputs = this.lastCall?.outputs as Record<string, any>;
-    const panel = ui.accordion('Output data');
-    panel.addPane('Output data', () => {
-      return ui.divV(
-        Object.entries(outputs).map(([key, val]) => ui.span([`${key}: `, `${val}`])),
-      );
-    });
-    return panel.root;
-  }
-
-  /** helper methods */
-  override buildInputForm(call: DG.FuncCall): HTMLElement {
-    return ui.wait(async () => {
-      const runButton = ui.bigButton('Run', async () => {
-        await this.run();
-      });
-      const editor = ui.div([], 'ui-form');
-      const inputs: DG.InputBase[] = await call.buildEditor(editor, {condensed: true});
-      editor.appendChild(ui.divH([ui.divV([this.historyPanel], {style: {'justify-content': 'center'}}), runButton], {style: {'justify-content': 'space-between'}}));
-      return ui.panel([editor]);
-    });
-  };
 }
