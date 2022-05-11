@@ -23,6 +23,15 @@ export function OutliersSelection() {
   return new OutliersSelectionViewer();
 }
 
+//name: ComputationViewTest
+//description: Creates an outliers selection viewer
+//tags: viewer
+//input: funccall call
+//output: view result
+export function ComputationViewTest(call: DG.FuncCall) {
+  return new ComputationView(call.func);
+}
+
 
 /*//output: widget result
 //tags: dashboard
