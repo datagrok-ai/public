@@ -6,8 +6,10 @@ on:
       - 'connectors/**'
 jobs:
   build:
-    name: Build Grok Connect package
+    name: Build maven
     runs-on: ubuntu-20.04
+    outputs:
+      version: ${{ steps.get_version.outputs.version }}
     steps:
       - name: Checkout
         uses: actions/checkout@v2
@@ -20,3 +22,76 @@ jobs:
       - name: Build with Maven
         working-directory: ./connectors
         run: mvn -Dmaven.test.skip=true package
+      - name: Get version
+        id: get_version
+        working-directory: ./connectors
+        run: |
+          current_version=$(mvn help:evaluate -Dexpression=project.version -q -DforceStdout)
+          token=$(curl -sSL "https://auth.docker.io/token?service=registry.docker.io&scope=repository:datagrok/grok_connect:pull" | jq --raw-output .token)
+          image_status=$(curl -LIs -o /dev/null -w "%{http_code}" -H "Authorization: Bearer ${token}" "https://registry.hub.docker.com/v2/datagrok/grok_connect/manifests/${current_version}")
+          echo '::echo::on'
+          if [[ "${image_status}" == "404" ]] || [[ "${{ github.ref }}" != "refs/heads/master" ]]; then
+            echo "::set-output name=version::${current_version}"
+          fi
+          echo '::echo::off'
+
+  docker:
+    name: Build Docker
+    needs: build
+    if: needs.build.outputs.version != ''
+    environment: Prod
+    runs-on: ubuntu-20.04
+    strategy:
+      fail-fast: false
+      matrix:
+        arch: [ 'amd64', 'arm64' ]
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v2
+      - name: Set up QEMU
+        uses: docker/setup-qemu-action@v2
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v2
+      - name: Login to DockerHub
+        uses: docker/login-action@v2
+        with:
+          username: ${{ secrets.DOCKERHUB_USERNAME }}
+          password: ${{ secrets.DOCKERHUB_TOKEN }}
+      - name: Get cache
+        if: github.ref == 'refs/heads/master'
+        id: cache
+        run: echo "::set-output name=image::type=registry,ref=datagrok/grok_connect:cache,mode=max"
+      - name: Set output
+        if: github.ref != 'refs/heads/master'
+        id: output
+        run: |
+          commit_sha=$(echo ${{ github.sha }} | cut -c1-8)
+          branch=$(echo ${GITHUB_REF#refs/heads/})
+          echo "::set-output name=commit_sha::${commit_sha}"
+          echo "::set-output name=branch::${branch}"
+          echo "::set-output name=image::type=docker,dest=/tmp/grok_connect_${{ needs.build.outputs.version }}-${commit_sha}-${{ github.run_id }}-${{ github.run_attempt }}.tar"
+
+      - name: Build and push
+        uses: docker/build-push-action@v3
+        with:
+          context: ./connectors
+          platforms: linux/${{ matrix.arch }}
+          push: ${{ github.ref == 'refs/heads/master' }}
+          tags: datagrok/grok_connect:latest,datagrok/grok_connect:${{ needs.build.outputs.version }}
+          cache-from: type=registry,ref=datagrok/grok_connect:cache
+          cache-to: ${{ steps.cache.outputs.image }}
+          outputs: ${{ steps.output.outputs.image }}
+          build-args: |
+            BRANCH=${{ steps.output.outputs.branch }}
+            COMMIT_PUBLIC=${{ github.sha }}
+          labels: |
+            BRANCH=${{ steps.output.outputs.branch }}
+            COMMIT_PUBLIC=${{ github.sha }}
+
+      - name: Upload Artifact
+        if: github.ref != 'refs/heads/master'
+        uses: actions/upload-artifact@v2
+        with:
+          name: grok_connect_${{ needs.build.outputs.version }}-${{ matrix.arch }}-${{ steps.output.outputs.commit_sha }}-${{ github.run_id }}-${{ github.run_attempt }}.tar
+          path: /tmp/grok_connect_${{ needs.build.outputs.version }}-${{ steps.output.outputs.commit_sha }}-${{ github.run_id }}-${{ github.run_attempt }}.tar
+          retention-days: 7
