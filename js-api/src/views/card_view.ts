@@ -55,6 +55,9 @@ export class CardView extends View {
   get categoryFilters(): { [property: string]: string } { return toJs(api.grok_CardView_Get_CategoryFilters(this.dart)); }
   set categoryFilters(ff: { [property: string]: string }) { api.grok_CardView_Set_CategoryFilters(this.dart, ff); }
 
+  /** Text filter properties list */
+  get filters(): { [property: string]: string } { return toJs(api.grok_CardView_Get_Filters(this.dart)); }
+  set filters(ff: { [property: string]: string }) { api.grok_CardView_Set_Filters(this.dart, ff); }
   /** Grouping properties list */
   get hierarchy(): string[] { return toJs(api.grok_CardView_Get_Hierarchy(this.dart)); }
   set hierarchy(s: string[]) { api.grok_CardView_Set_Hierarchy(this.dart, s); }
@@ -67,9 +70,8 @@ export class CardView extends View {
   get renderMode(): RENDER_MODE { return api.grok_CardView_Get_RenderMode(this.dart); }
   set renderMode(s: RENDER_MODE) { api.grok_CardView_Set_RenderMode(this.dart, s); }
 
-  refresh() {
-    api.grok_CardView_Refresh(this.dart);
-  }
+  refresh() {api.grok_CardView_Refresh(this.dart);}
+  repaint() {api.grok_CardView_Repaint(this.dart);}
 }
 
 export class CustomCardView extends CardView {

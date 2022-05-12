@@ -57,8 +57,8 @@ export function hof() {
   grok.shell.info('hof');
   let f: DG.Func = DG.Func.byName('Sin');
   let v: DG.View = functionParametersGrid(f);
-  let c = grok.functions.getCurrentCall();
-  v.parentCall = c;
+  v.parentCall = grok.functions.getCurrentCall().parentCall;
+  v.parentView = v.parentCall?.aux['view'];
   grok.shell.addView(v);
 }
 
