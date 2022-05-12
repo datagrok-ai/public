@@ -57,6 +57,7 @@ export class PeptideSpaceViewer extends DG.JsViewer {
         const viewerOptions = {
           x: '~X', y: '~Y', color: C.COLUMNS_NAMES.ACTIVITY_SCALED ?? '~MW', size: '~MW', title: 'Peptide Space',
           showYSelector: false, showXSelector: false, showColorSelector: false, showSizeSelector: false,
+          zoomAndFilter: 'no action', axesFollowFilter: false,
         };
         const viewerRoot = this.dataFrame!.plot.scatter(viewerOptions).root;
         viewerRoot.style.width = 'auto';

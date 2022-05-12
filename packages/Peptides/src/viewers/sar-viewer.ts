@@ -32,7 +32,7 @@ export class SARViewerBase extends DG.JsViewer {
     this.bidirectionalAnalysis = this.bool('bidirectionalAnalysis', false);
     // this.grouping = this.bool('grouping', false);
 
-    this.showSubstitution = this.bool('showSubstitution', false);
+    this.showSubstitution = this.bool('showSubstitution', true);
     this.maxSubstitutions = this.int('maxSubstitutions', 1);
     this.activityLimit = this.float('activityLimit', 2);
   }

@@ -61,6 +61,7 @@ export async function substitutionsWidget(table: DG.DataFrame): Promise<DG.Widge
       substTable.selection.copyFrom(fromToMap[toKey]);
   });
 
+  (substTable.columns as DG.ColumnList).remove('Substituted');
   const grid = substTable.plot.grid();
   grid.props.allowEdit = false;
   grid.root.style.width = 'auto';

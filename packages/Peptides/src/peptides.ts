@@ -151,8 +151,8 @@ export class PeptidesController {
 
     //create column names list
     const columnNames = Array.from({length: modeMonomerCount}, (_, index) => `${index + 1 < 10 ? 0 : ''}${index + 1 }`);
-    columnNames.splice(0, 0, 'Nterminal');
-    columnNames.push('Cterminal');
+    columnNames.splice(0, 0, 'N');
+    columnNames.push('C');
 
     // filter out the columns with the same values
     if (filter) {

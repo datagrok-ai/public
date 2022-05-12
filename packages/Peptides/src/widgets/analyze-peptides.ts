@@ -121,7 +121,7 @@ export async function analyzePeptidesWidget(currentDf: DG.DataFrame, col: DG.Col
       ui.splitH([
         ui.splitV([ui.inputs([activityColumnChoice, activityScalingMethod]), startBtn]),
         histogramHost,
-      ], null, {style: {height: 'unset'}}),
+      ], {style: {height: 'unset'}}),
       // histogramHost,
     ]),
   );
