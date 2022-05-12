@@ -14,31 +14,36 @@ import {PeptidesController} from '../peptides';
 export async function peptideMoleculeWidget(pep: string): Promise<DG.Widget> {
   const pi = DG.TaskBarProgressIndicator.create('Creating NGL view');
 
-  const smiles = getMolecule(pep);
-  if (smiles == '')
-    return new DG.Widget(ui.divH([]));
+  let widgetHost = ui.divH([]);
+  try {
+    const smiles = getMolecule(pep);
+    if (smiles == '')
+      throw new Error('Couldn\'t get smiles');
 
 
-  let molfileStr = (await grok.functions.call('Peptides:SmiTo3D', {smiles}));
+    let molfileStr = (await grok.functions.call('Peptides:SmiTo3D', {smiles}));
 
-  molfileStr = molfileStr.replaceAll('\\n', '\n'); ;
-  const stringBlob = new Blob([molfileStr], {type: 'text/plain'});
-  const nglHost = ui.div([], {classes: 'd4-ngl-viewer', id: 'ngl-3d-host'});
+    molfileStr = molfileStr.replaceAll('\\n', '\n'); ;
+    const stringBlob = new Blob([molfileStr], {type: 'text/plain'});
+    const nglHost = ui.div([], {classes: 'd4-ngl-viewer', id: 'ngl-3d-host'});
 
-  //@ts-ignore
-  const stage = new NGL.Stage(nglHost, {backgroundColor: 'white'});
-  //@ts-ignore
-  stage.loadFile(stringBlob, {ext: 'sdf'}).then(function(comp: NGL.StructureComponent) {
-    stage.setSize(300, 300);
-    comp.addRepresentation('ball+stick');
-    comp.autoView();
-  });
-  const sketch = grok.chem.svgMol(smiles);
-  const panel = ui.divH([sketch]);
+    //@ts-ignore
+    const stage = new NGL.Stage(nglHost, {backgroundColor: 'white'});
+    //@ts-ignore
+    stage.loadFile(stringBlob, {ext: 'sdf'}).then(function(comp: NGL.StructureComponent) {
+      stage.setSize(300, 300);
+      comp.addRepresentation('ball+stick');
+      comp.autoView();
+    });
+    const sketch = grok.chem.svgMol(smiles);
+    const panel = ui.divH([sketch]);
 
+    widgetHost = ui.div([panel, nglHost]);
+  } catch(e) {
+    widgetHost = ui.divText('Couldn\'t get peptide structure');
+  }
   pi.close();
-
-  return new DG.Widget(ui.div([panel, nglHost]));
+  return new DG.Widget(widgetHost);
 }
 
 export function getMolecule(pep: string): string {

@@ -619,7 +619,7 @@ export class PeptidesModel {
           if (isSubstitutionOn) {
             canvasContext.textBaseline = 'middle';
             canvasContext.textAlign = 'center';
-            canvasContext.fillStyle = DG.Color.toHtml(DG.Color.black);
+            canvasContext.fillStyle = DG.Color.toHtml(DG.Color.getContrastColor(DG.Color.fromHtml(coef)));
             // DG.Color.getContrastColor()
             canvasContext.font = '13px Roboto, Roboto Local, sans-serif';
             const substValue = this.substitutionTable.groupBy([currentPosition])
@@ -842,8 +842,8 @@ export class PeptidesModel {
 
     //create column names list
     const columnNames = Array.from({length: modeMonomerCount}, (_, index) => `${index + 1 < 10 ? 0 : ''}${index + 1}`);
-    columnNames.splice(0, 0, 'N-terminal');
-    columnNames.push('C-terminal');
+    columnNames.splice(0, 0, 'N');
+    columnNames.push('C');
 
     // filter out the columns with the same values
     if (filter) {
