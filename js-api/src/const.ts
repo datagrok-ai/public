@@ -53,11 +53,12 @@ export enum COLUMN_TYPE {
   INT = 'int',
   FLOAT = 'double',
   BOOL = 'bool',
+  BYTE_ARRAY = 'byte_array',
   DATE_TIME = 'datetime',
   BIG_INT = 'bigint',
   QNUM = 'qnum',
   DATA_FRAME = 'dataframe',
-  OBJECT = 'object'
+  OBJECT = 'object',
 }
 
 
@@ -73,6 +74,7 @@ export enum TYPE {
   STRING_LIST = 'string_list',
   DATE_TIME = 'datetime',
   OBJECT = 'object',
+  BYTE_ARRAY = 'byte_array',
   DATA_FRAME = 'dataframe',
   DATA_FRAME_LIST = 'dataframe_list',
   CELL = 'cell',
