@@ -1185,6 +1185,11 @@ export class ColumnList {
    * */
   addNewBool(name: string): Column { return this.addNew(name, TYPE.BOOL); }
 
+  /** Creates and adds a boolean column
+   * {@link https://dev.datagrok.ai/script/samples/javascript/data-frame/modification/add-columns}
+   * */
+  addNewBytes(name: string): Column { return this.addNew(name, TYPE.BYTE_ARRAY); }
+
   /** Creates and adds a virtual column.
    * @param {string} name
    * @param getValue - value constructor function that accepts int index and returns value

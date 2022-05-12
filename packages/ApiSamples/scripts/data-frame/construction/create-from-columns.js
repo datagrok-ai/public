@@ -17,6 +17,6 @@ let t2 = DG.DataFrame.fromColumns([
   DG.Column.fromStrings('countries', ['USA', 'Canada', 'Mexico']),
   DG.Column.fromStrings('population', ['321', '35', '121']),
   DG.Column.fromType(DG.COLUMN_TYPE.FLOAT, 'float', 3),
-  DG.Column.qnum('qnum', 3)
+  DG.Column.qnum('qnum', 3),
 ]);
 grok.shell.addTableView(t2);

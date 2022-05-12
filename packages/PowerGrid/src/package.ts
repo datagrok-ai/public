@@ -7,6 +7,7 @@ import {ImageCellRenderer} from './cell-types/image-cell-renderer';
 import {HyperlinkCellRenderer} from './cell-types/hyperlink-cell-renderer';
 import {HtmlTestCellRenderer, TestCellRenderer} from './cell-types/test-cell-renderer';
 import {BarCellRenderer} from './cell-types/bar-cell-renderer';
+import {BinaryImageCellRenderer} from './cell-types/binary-image-cell-renderer';
 
 import {SparklineCellRenderer} from './sparklines/sparklines-lines';
 import {BarChartCellRenderer} from './sparklines/barchart';
@@ -21,6 +22,14 @@ export const _package = new DG.Package();
 //output: grid_cell_renderer result
 export function imageUrlCellRenderer() {
   return new ImageCellRenderer();
+}
+
+//name: binaryImageCellRenderer
+//tags: cellRenderer, cellRenderer-BinaryImage
+//meta.cellType: BinaryImage
+//output: grid_cell_renderer result
+export function binaryImageCellRenderer() {
+  return new BinaryImageCellRenderer();
 }
 
 //name: hyperlinkCellRenderer

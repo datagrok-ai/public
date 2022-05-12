@@ -6,9 +6,9 @@ import {Paint} from 'datagrok-api/src/utils';
 // Put on hold - waiting for the binary column to be implemented.
 
 export class BinaryImageCellRenderer extends DG.GridCellRenderer {
-  get name() { return 'Binary Image'; }
+  get name() { return 'BinaryImage'; }
 
-  get cellType() { return 'binary image'; }
+  get cellType() { return 'BinaryImage'; }
 
   get defaultWidth(): number | null { return 200; }
 
@@ -29,7 +29,7 @@ export class BinaryImageCellRenderer extends DG.GridCellRenderer {
 
   onDoubleClick(gridCell: GridCell, e: MouseEvent): void {
     Utils.openFileBytes({
-      accept: 'image/png',
+      accept: 'image/jpg, image/jpeg, image/png',
       open: (bytes) => {
         gridCell.cell.value = bytes;
       },
