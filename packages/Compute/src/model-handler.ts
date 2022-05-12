@@ -1,6 +1,7 @@
 import * as grok from 'datagrok-api/grok';
 import * as ui from 'datagrok-api/ui';
 import * as DG from 'datagrok-api/dg';
+import wu from "wu";
 
 export class ModelHandler extends DG.ObjectHandler {
   get type() {
@@ -8,7 +9,6 @@ export class ModelHandler extends DG.ObjectHandler {
   }
 
   async getById(id: string): Promise<DG.Func> {
-    console.log('id:', id);
     return await grok.dapi.functions.find(id);
   }
 
@@ -45,20 +45,17 @@ export class ModelHandler extends DG.ObjectHandler {
     a.addTitle(ui.span([this.renderIcon(x), ui.label(x.friendlyName), ui.contextActions(x), ui.star(x.id)]));
     a.addPane('Details', () => {
       return this.renderDetails(x);
-    });
-    a.addCountPane('Usage', () => {
-      return ui.span(['Usage statistics']);
-    }, () => 99);
+    }, true);
     a.end();
     return a.root;
   }
 
   renderDetails(x: DG.Func) {
-    return ui.divV([ui.divText(x.description, 'ui-description'), ui.render(x.author), ui.render(x.createdOn)], {style: {lineHeight: '150%'}});
+    return ui.divV([ui.divText(x.description, 'ui-description'), ui.span([ui.render(x.author), ' created ', ui.render(x.createdOn)])], {style: {lineHeight: '150%'}});
   }
 
   renderTooltip(x: DG.Func) {
-    return ui.divText(x.description, 'ui-description');
+    return this.renderCard(x);
   }
 
   renderCard(x: DG.Func, context?: any): HTMLElement {
@@ -75,8 +72,11 @@ export class ModelHandler extends DG.ObjectHandler {
 
   static openModel(x: DG.Func, parentCall?: DG.FuncCall) {
     let fc = x.prepare();
-    if (parentCall != null)
+    if (parentCall != null) {
+      let modelsView = wu(grok.shell.views).find((v) => v.parentCall?.func.name == 'modelCatalog');
+      parentCall.aux['view'] = modelsView;
       fc.parentCall = parentCall;
+    }
     fc.edit();
   }
 

@@ -23,6 +23,12 @@ export class ModelCatalogView extends DG.CustomCardView {
       'options.group': 'Group',
       'tag': 'Tags'
     };
+
+    this.filters = {
+      'All': '',
+      'Favorites': 'starredBy = @current',
+      'Used by me': 'usedBy = @current'
+    };
     this.hierarchy = [
       'options.department',
       'options.status',
