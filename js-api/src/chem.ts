@@ -15,6 +15,9 @@ import {Utils} from "./utils";
 
 let api = <any>window;
 declare let grok: any;
+const _STORAGE_NAME = 'sketcher';
+const _KEY = 'selected';
+
 
 export function isMolBlock(s: string) {
   return s.includes('M  END');
@@ -210,13 +213,13 @@ export namespace chem {
 
       let molInputDiv = ui.div([this.molInput, optionsIcon], 'grok-sketcher-input');
 
-      //let sketcherChoice = ui.choiceInput('Sketcher', funcs[0].name, funcs.map((f) => f.name), (name: string) => this.setSketcher(name))
       this.root.appendChild(ui.div([
         molInputDiv,
-        //sketcherChoice.root,
         this.host]));
 
-      this.setSketcher(funcs[0].name);
+      grok.dapi.userDataStorage.getValue(_STORAGE_NAME, _KEY, true).then((sname: string) => {
+        funcs.map(f => f.name).includes(sname) ? this.setSketcher(sname) : this.setSketcher(funcs[0].name);
+      });
     }
 
     static readonly FAVORITES_KEY = 'chem-molecule-favorites';
@@ -257,6 +260,7 @@ export namespace chem {
       let funcs = Func.find({tags: ['moleculeSketcher']});
       let f = funcs.find(e => e.friendlyName == name || e.name == name);
 
+      grok.dapi.userDataStorage.postValue(_STORAGE_NAME, _KEY, f!.name, true);
       this.sketcher = await f!.apply();
       this.host!.style.minWidth = '500px';
       this.host!.style.minHeight = '400px';
