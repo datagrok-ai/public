@@ -6,8 +6,7 @@
  * Follow this naming convention to ensure that your detectors are properly loaded.
  */
 class PowerGridPackageDetectors extends DG.Package {
-
-  /** @param s {String} - string to check
+  /* @param s {String} - string to check
    * @returns {boolean} */
   static likelyImageUrl(s) {
     if (s == null)
@@ -23,5 +22,13 @@ class PowerGridPackageDetectors extends DG.Package {
   detectImageColumn(col) {
     if (DG.Detector.sampleCategories(col, (s) => PowerGridPackageDetectors.likelyImageUrl(s)))
       return 'ImageUrl';
+  }
+
+  //tags: semTypeDetector
+  //input: column col
+  //output: string semType
+  detectByteArrayColumn(col) {
+    if (col.type == DG.COLUMN_TYPE.BYTE_ARRAY)
+      return 'BinaryImage';
   }
 }
