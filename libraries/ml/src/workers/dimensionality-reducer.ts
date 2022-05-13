@@ -7,7 +7,7 @@ import {KnownMetrics} from '../typed-metrics';
  * @param {any[]} columnData Samples to process.
  * @param {KnownMethods} method Embedding method.
  * @param {KnownMetrics} measure Distance metric.
- * @param {number} cyclesCount Number of cycles to repeat.
+ * @param {any} options Options to pass to algorithm.
  * @return {any} Embedding (and distance matrix where applicable).
  */
 function onMessage(columnData: any[], method: KnownMethods, measure: KnownMetrics, options?: any) {
