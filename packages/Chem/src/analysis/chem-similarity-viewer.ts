@@ -17,7 +17,7 @@ export class ChemSimilarityViewer extends ChemSearchBaseViewer {
   molCol: DG.Column | null = null;
   idxs: DG.Column | null = null;
   scores: DG.Column | null = null;
-  cutOff: number;
+  cutoff: number;
   gridSelect: boolean = false;
   targetMoleculeIdx: number = 0;
 
@@ -29,7 +29,7 @@ export class ChemSimilarityViewer extends ChemSearchBaseViewer {
 
   constructor() {
     super('similarity');
-    this.cutOff = this.float('cutOff', 0.01);
+    this.cutoff = this.float('cutoff', 0.01);
     this.hotSearch = this.bool('hotSearch', true);
     this.sketchButton = ui.button('Sketch', () => {
       const sketcher = new grok.chem.Sketcher();
@@ -65,7 +65,7 @@ export class ChemSimilarityViewer extends ChemSearchBaseViewer {
       if (computeData && !this.gridSelect) {
         this.targetMoleculeIdx = this.dataFrame!.currentRowIdx == -1 ? 0 : this.dataFrame!.currentRowIdx;
         const df = await chemSimilaritySearch(this.dataFrame!, this.moleculeColumn!,
-          this.targetMolecule, this.distanceMetric, this.limit, this.cutOff, this.fingerprint as Fingerprint);
+          this.targetMolecule, this.distanceMetric, this.limit, this.cutoff, this.fingerprint as Fingerprint);
         this.molCol = df.getCol('smiles');
         this.idxs = df.getCol('indexes');
         this.scores = df.getCol('score');

@@ -45,7 +45,7 @@ export class QuestionnaiesView extends ClinicalCaseViewBase {
   }
 
   createView(): void {
-    this.splitBy = [ SEX, RACE, ETHNIC, [ VIEWS_CONFIG[ this.name ][ TRT_ARM_FIELD ] ] ].filter(it => study.domains.dm.columns.names().includes(it)) as string[];
+    this.splitBy = [ SEX, RACE, ETHNIC,  VIEWS_CONFIG[ this.name ][ TRT_ARM_FIELD ] ].filter(it => study.domains.dm.columns.names().includes(it)) as string[];
     this.selectedSplitBy = this.splitBy.length ? this.splitBy[ 0 ] : '';
     this.qsWithDm = addDataFromDmDomain(study.domains.qs, study.domains.dm, study.domains.qs.columns.names(), this.splitBy);
     this.qsCategories = this.qsWithDm.col(QS_CATEGORY).categories;
@@ -271,17 +271,15 @@ export class QuestionnaiesView extends ClinicalCaseViewBase {
     return boxplot;
   }
 
-  private createBoxPlotsByStudyNum(questionDf: DG.DataFrame){
+  private createBoxPlotsByStudyNum(questionDf: DG.DataFrame, acc: DG.Accordion){
     const splittedDf = questionDf.groupBy([ VISIT_NUM ]).getGroups();
-    const splittedDiv = ui.splitV([], {style: {width: '100%', height: '100%'}});
     Object.keys(splittedDf).forEach(visit => {
       const divWithVisit = ui.divV([
         this.createBoxPlot(splittedDf[visit]),
         ui.divText(`${visit}`)
       ]);
-      splittedDiv.append(divWithVisit);
+      acc.addPane(visit, () => divWithVisit);
     });
-    return splittedDiv;
   }
 
 
@@ -294,7 +292,7 @@ export class QuestionnaiesView extends ClinicalCaseViewBase {
     graph.style.width = `${this.graphCellWidth}px`;
   }
 
-  private createSplitByBarcharts(df: DG.DataFrame, showParameter: boolean, legend: string, horizontal: boolean){
+  private createSplitByBarcharts(df: DG.DataFrame, showParameter: boolean, legend: string, horizontal: boolean, acc?: DG.Accordion){
     const style = {style: {width: '100%', height: '100%'}}
     const splittedDiv = horizontal ? ui.splitH([], style) : ui.splitV([], style);
     const splittedDf = df.groupBy([ this.selectedSplitBy ]).getGroups();
@@ -323,14 +321,14 @@ export class QuestionnaiesView extends ClinicalCaseViewBase {
     acc.addPane('Summary', () => ui.tableFromMap(this.getQuestionSummary(this.selectedQuestionDf)), true);
 
     let createChartsPane = () => {
+      const chartsAcc = ui.accordion();
       if (!this.isCategorical(this.selectedQuestionDf)) {
-        return ui.divV([
-          this.createLineChart(this.selectedQuestionDf, true, 'Auto', 'Med | Q1, Q3', ''),
-          this.createBoxPlotsByStudyNum(this.selectedQuestionDf)
-        ])
+          chartsAcc.addPane('Linechart', () => this.createLineChart(this.selectedQuestionDf, true, 'Auto', 'Med | Q1, Q3', ''));
+          this.createBoxPlotsByStudyNum(this.selectedQuestionDf, chartsAcc);
       } else {
-        return this.createSplitByBarcharts(this.selectedQuestionDf, true, 'Auto', false);
+        this.createSplitByBarcharts(this.selectedQuestionDf, true, 'Auto', false);
       }
+      return chartsAcc.root;
     }
 
     acc.addPane('Charts', () => createChartsPane(), true);
