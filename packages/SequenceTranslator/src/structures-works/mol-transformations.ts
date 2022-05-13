@@ -95,7 +95,7 @@ export function getNucleotidesMol(smilesCodes: string[], oclRender: boolean = fa
 
 export function linkV3000(molBlocks: string[], twoMolecules: boolean = false, oclRender: boolean = false) {
   let macroMolBlock = '\nDatagrok macromolecule handler\n\n';
-  macroMolBlock += '  0  0  0  0  0  0              0 V3000\n';
+  macroMolBlock += '  0  0  0  0  0  0            999 V3000\n';
   macroMolBlock += 'M  V30 BEGIN CTAB\n';
   let atomBlock = '';
   let bondBlock = '';
