@@ -412,7 +412,7 @@ export function tableFromMap(map: { [key: string]: any }): HTMLTableElement {
 /** Creates an editable html table for the specified items (rows) and properties (columns). */
 export function tableFromProperties(items: any[], properties: Property[]) {
   return table(items,
-    (item, i) => properties.map((p) => InputBase.forProperty(p, item).input),
+    (item, _) => properties.map((p) => InputBase.forProperty(p, item).input),
     properties.map((p) => p.name));
 }
 
@@ -433,7 +433,11 @@ export function waitBox(getElement: () => Promise<HTMLElement>): any {
 
 /** Creates a visual element representing list of [items]. */
 export function list(items: any[], options?: {processNode?: (node: HTMLElement) => void}): HTMLElement {
-  return api.grok_UI_List(Array.from(items).map(toDart));
+  const host: HTMLElement = api.grok_UI_List(Array.from(items).map(toDart));
+  if (options?.processNode != null)
+    for (const c of Array.from(host.children))
+      options.processNode(c as HTMLElement);
+  return host;
 }
 
 export function iframe(options?: {src?: string, width?: string, height?: string}) {
@@ -645,64 +649,64 @@ export namespace input {
 }
 
 
-export function intInput(name: string, value: number, onValueChanged: Function | null = null): InputBase {
+export function intInput(name: string, value: number, onValueChanged: Function | null = null): InputBase<number | null> {
   return new InputBase(api.grok_IntInput(name, value), onValueChanged);
 }
 
-export function choiceInput<T>(name: string, selected: T, items: T[], onValueChanged: Function | null = null): InputBase {
+export function choiceInput<T>(name: string, selected: T, items: T[], onValueChanged: Function | null = null): InputBase<T | null> {
   return new InputBase(api.grok_ChoiceInput(name, selected, items), onValueChanged);
 }
 
-export function multiChoiceInput<T>(name: string, value: T[], items: T[], onValueChanged: Function | null = null): InputBase {
+export function multiChoiceInput<T>(name: string, value: T[], items: T[], onValueChanged: Function | null = null): InputBase<T | null> {
   return new InputBase(api.grok_MultiChoiceInput(name, value, items), onValueChanged);
 }
 
-export function stringInput(name: string, value: string, onValueChanged: Function | null = null, options: { icon?: string | HTMLElement, clearIcon?: boolean, escClears?: boolean, placeholder?: String } | null = null): InputBase {
+export function stringInput(name: string, value: string, onValueChanged: Function | null = null, options: { icon?: string | HTMLElement, clearIcon?: boolean, escClears?: boolean, placeholder?: String } | null = null): InputBase<string> {
   return new InputBase(api.grok_StringInput(name, value, options), onValueChanged);
 }
 
-export function searchInput(name: string, value: string, onValueChanged: Function | null = null): InputBase {
+export function searchInput(name: string, value: string, onValueChanged: Function | null = null): InputBase<string> {
   return new InputBase(api.grok_SearchInput(name, value), onValueChanged);
 }
 
-export function floatInput(name: string, value: number, onValueChanged: Function | null = null): InputBase {
+export function floatInput(name: string, value: number, onValueChanged: Function | null = null): InputBase<number | null> {
   return new InputBase(api.grok_FloatInput(name, value), onValueChanged);
 }
 
-export function dateInput(name: string, value: DateTime, onValueChanged: Function | null = null): InputBase {
+export function dateInput(name: string, value: DateTime, onValueChanged: Function | null = null): InputBase<DateTime | null> {
   return new InputBase(api.grok_DateInput(name, value.dart), onValueChanged);
 }
 
-export function boolInput(name: string, value: boolean, onValueChanged: Function | null = null): InputBase {
+export function boolInput(name: string, value: boolean, onValueChanged: Function | null = null): InputBase<boolean | null> {
   return new InputBase(api.grok_BoolInput(name, value), onValueChanged);
 }
 
-export function switchInput(name: string, value: boolean, onValueChanged: Function | null = null): InputBase {
+export function switchInput(name: string, value: boolean, onValueChanged: Function | null = null): InputBase<boolean> {
   return new InputBase(api.grok_SwitchInput(name, value), onValueChanged);
 }
 
-export function moleculeInput(name: string, value: string, onValueChanged: Function | null = null): InputBase {
+export function moleculeInput(name: string, value: string, onValueChanged: Function | null = null): InputBase<string> {
   return new InputBase(api.grok_MoleculeInput(name, value), onValueChanged);
 }
 
-export function columnInput(name: string, table: DataFrame, value: Column | null, onValueChanged: Function | null = null): InputBase {
+export function columnInput(name: string, table: DataFrame, value: Column | null, onValueChanged: Function | null = null): InputBase<Column | null> {
   return new InputBase(api.grok_ColumnInput(name, table.dart, value?.dart), onValueChanged);
 }
 
 export function columnsInput(name: string, table: DataFrame, onValueChanged: (columns: Column[]) => void,
-                             options?: {available?: string[], checked?: string[]}): InputBase {
+                             options?: {available?: string[], checked?: string[]}): InputBase<Column[]> {
   return new InputBase(api.grok_ColumnsInput(name, table.dart, options?.available, options?.checked), onValueChanged);
 }
 
-export function tableInput(name: string, table: DataFrame, tables: DataFrame[] = grok.shell.tables, onValueChanged: Function | null = null): InputBase {
+export function tableInput(name: string, table: DataFrame, tables: DataFrame[] = grok.shell.tables, onValueChanged: Function | null = null): InputBase<DataFrame | null> {
   return new InputBase(api.grok_TableInput(name, table, tables), onValueChanged);
 }
 
-export function textInput(name: string, value: string, onValueChanged: Function | null = null): InputBase {
+export function textInput(name: string, value: string, onValueChanged: Function | null = null): InputBase<string> {
   return new InputBase(api.grok_TextInput(name, value), onValueChanged);
 }
 
-export function colorInput(name: string, value: string, onValueChanged: Function | null = null): InputBase {
+export function colorInput(name: string, value: string, onValueChanged: Function | null = null): InputBase<string> {
   return new InputBase(api.grok_ColorInput(name, value), onValueChanged);
 }
 
@@ -794,7 +798,7 @@ export class tools {
       if (document.contains(element))
         return resolve(element);
 
-      const observer = new MutationObserver(mutations => {
+      const observer = new MutationObserver(_ => {
         if (document.contains(element)) {
           resolve(element);
           observer.disconnect();
@@ -1078,16 +1082,17 @@ export function splitH(items: HTMLElement[], options: ElementOptions | null = nu
   return b;
 }
 
-function spliterResize (divider: HTMLElement, previousSibling: HTMLElement, nextSibling: HTMLElement, horizontal: boolean | null = false){
-  var md: any;
+function spliterResize(divider: HTMLElement, previousSibling: HTMLElement, nextSibling: HTMLElement, horizontal: boolean = false) {
+  let md: any;
   divider.onmousedown = onMouseDown;
 
-  if (horizontal){
+  if (horizontal) {
     divider.style.cssText = `
     background-image: url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='30' height='20'><path d='M 8 3 h 10 M 8 6 h 10 M 8 9 h 10' fill='none' stroke='%239497A0' stroke-width='1.25'/></svg>");
     max-width: 4px;
     cursor: col-resize;`
-  }else{
+  }
+  else {
     divider.style.cssText = `
     background-image: url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='30' height='20'><path d='M 2 5 v 10 M 5 5 v 10 M 8 5 v 10' fill='none' stroke='%239497A0' stroke-width='1.25'/></svg>");
     max-height: 4px;
@@ -1097,45 +1102,42 @@ function spliterResize (divider: HTMLElement, previousSibling: HTMLElement, next
   divider.style.backgroundRepeat = 'no-repeat';
   divider.style.backgroundPosition = 'center';
   divider.style.backgroundColor = 'var(--grey-1)';
-    
-  function onMouseDown(e:any){
 
-    if (nextSibling.classList.contains('ui-box') == false){
+  function onMouseDown(e: any) {
+    if (!nextSibling.classList.contains('ui-box'))
       nextSibling = nextSibling.parentElement!;
-    }
-    if (previousSibling.classList.contains('ui-box') == false){
+    if (!previousSibling.classList.contains('ui-box'))
       previousSibling = previousSibling.parentElement!;
-    }
 
-      md = {e,
-            offsetLeft:  divider.offsetLeft,
-            offsetTop:   divider.offsetTop,
-            topHeight:  previousSibling.offsetHeight,
-            bottomHeight: nextSibling.offsetHeight,
-            leftWidth:  previousSibling.offsetWidth,
-            rightWidth: nextSibling.offsetWidth
-          };
-      divider.style.backgroundColor = 'var(--grey-2)';    
-      document.onmousemove = onMouseMove;
-      document.onmouseup = () => {
-        divider.style.backgroundColor= 'var(--grey-1)';  
-        document.onmousemove = document.onmouseup = null;
-      }
+    md = {
+      e,
+      offsetLeft: divider.offsetLeft,
+      offsetTop: divider.offsetTop,
+      topHeight: previousSibling.offsetHeight,
+      bottomHeight: nextSibling.offsetHeight,
+      leftWidth: previousSibling.offsetWidth,
+      rightWidth: nextSibling.offsetWidth
+    };
+    divider.style.backgroundColor = 'var(--grey-2)';
+    document.onmousemove = onMouseMove;
+    document.onmouseup = () => {
+      divider.style.backgroundColor = 'var(--grey-1)';
+      document.onmousemove = document.onmouseup = null;
+    }
   }
 
-  function onMouseMove(e:any){
-    var delta = {x: e.clientX - md.e.clientX, y: e.clientY - md.e.clientY};
-    if (horizontal){
-      delta.x = Math.min(Math.max(delta.x, - md.leftWidth), md.rightWidth);
+  function onMouseMove(e: any) {
+    const delta = {x: e.clientX - md.e.clientX, y: e.clientY - md.e.clientY};
+    if (horizontal) {
+      delta.x = Math.min(Math.max(delta.x, -md.leftWidth), md.rightWidth);
       previousSibling.style.maxWidth = (md.leftWidth + delta.x) + "px";
       nextSibling.style.maxWidth = (md.rightWidth - delta.x) + "px";
-    }else{
-      delta.x = Math.min(Math.max(delta.y, - md.topHeight), md.bottomHeight);
+    } else {
+      delta.x = Math.min(Math.max(delta.y, -md.topHeight), md.bottomHeight);
       previousSibling.style.maxHeight = (md.topHeight + delta.y) + "px";
       nextSibling.style.maxHeight = (md.bottomHeight - delta.y) + "px";
     }
   }
-
 }
 
 export function block(items: HTMLElement[], options: string | ElementOptions | null = null): HTMLDivElement {
