@@ -1,12 +1,12 @@
-import {Cell, Column, DataFrame, Row} from "./dataframe";
-import {Viewer} from "./viewer";
-import {toDart, toJs} from "./wrappers";
-import {__obs, _sub, EventData, StreamSubscription} from "./events";
-import {_identityInt32, _toIterable} from "./utils";
-import {Observable} from "rxjs";
-import {RangeSlider} from "./widgets";
-import {SemType} from "./const";
-import {Property} from "./entities";
+import {Cell, Column, DataFrame, Row} from './dataframe';
+import {Viewer} from './viewer';
+import {toDart, toJs} from './wrappers';
+import {__obs, _sub, EventData, StreamSubscription} from './events';
+import {_identityInt32, _toIterable} from './utils';
+import {Observable} from 'rxjs';
+import {RangeSlider} from './widgets';
+import {SemType} from './const';
+import {Property} from './entities';
 
 
 let api = <any>window;
@@ -40,143 +40,270 @@ export class Rect {
     return new Rect(_bytes[0], _bytes[1], _bytes[2], _bytes[3]);
   }
 
+  /** The midpoint of the rectangle along the x-axis. */
   get midX(): number {
     return this.x + this.width / 2;
   }
 
+  /** The midpoint of the rectangle along the y-axis. */
   get midY(): number {
     return this.y + this.height / 2;
   }
 
+  /** Left border position of the rectangle along the x-axis. */
   get left(): number {
     return this.x;
   }
 
+  /** Top border position of the rectangle along the y-axis. */
   get top(): number {
     return this.y;
   }
 
+  /** Right border position of the rectangle along the x-axis. */
   get right(): number {
     return this.x + this.width;
   }
 
+  /** Bottom border position of the rectangle along the y-axis. */
   get bottom(): number {
     return this.y + this.height;
   }
 
   // --
 
+  /**
+   * Rectangle's top part of height {@link height}.
+   * New rectangle with the same top border as the original, but with a height of {@link height}.
+   * The result may be larger than the original rectangle along y-axis.
+   * @param height {number} new rectangle height
+   */
   getTop(height: number): Rect {
     return new Rect(this.left, this.top, this.width, height);
   }
 
+  /**
+   * Rectangle's bottom part of height {@link height}.
+   * New rectangle with the same bottom border as the original, but with a height of {@link height}.
+   * The result may be larger than the original rectangle along y-axis.
+   * @param height {number} new rectangle height
+   */
   getBottom(height: number): Rect {
-    return new Rect(this.left, this.bottom - height, this.width, height)
+    return new Rect(this.left, this.bottom - height, this.width, height);
   }
 
+  /**
+   * Rectangle's left part of width {@link width}.
+   * New rectangle with the same left border as the original, but with a width of {@link width}.
+   * The result may be larger than the original rectangle along x-axis.
+   * @param width {number} new rectangle width
+   */
   getLeft(width: number): Rect {
     return new Rect(this.left, this.top, width, this.height);
   }
 
+  /**
+   * Rectangle's right part of width {@link width}.
+   * New rectangle with the same right border as the original, but with a width of {@link width}.
+   * The result may be larger than the original rectangle along x-axis.
+   * @param width {number} new rectangle width
+   */
   getRight(width: number): Rect {
     return new Rect(this.right - width, this.top, width, this.height);
   }
 
+  /**
+   * New rectangle with the same top-left corner as the original, but with new {@link width} and {@link height}.
+   * The result may be larger than the original rectangle on both axes.
+   * @param width {number} new rectangle width
+   * @param height {number} new rectangle height
+   */
   getTopLeft(width: number, height: number): Rect {
     return new Rect(this.left, this.top, width, height);
   }
 
+  /**
+   * New rectangle with the same top-right corner as the original, but with new {@link width} and {@link height}.
+   * The result may be larger than the original rectangle on both axes.
+   * @param width {number} new rectangle width
+   * @param height {number} new rectangle height
+   */
   getTopRight(width: number, height: number): Rect {
     return new Rect(this.right - width, this.top, width, height);
   }
 
+  /**
+   * New rectangle with the same bottom-left corner as the original,
+   * but with new {@link width} and {@link height}.
+   * The result may be larger than the original rectangle on both axes.
+   * @param width {number} new rectangle width
+   * @param height {number} new rectangle height
+   */
   getBottomLeft(width: number, height: number): Rect {
     return new Rect(this.left, this.bottom - height, width, height);
   }
 
+  /**
+   * New rectangle with the same bottom-right corner as the original,
+   * but with new {@link width} and {@link height}.
+   * The result may be larger than the original rectangle on both axes.
+   * @param width {number} new rectangle width
+   * @param height {number} new rectangle height
+   */
   getBottomRight(width: number, height: number): Rect {
     return new Rect(this.right - width, this.bottom - height, width, height);
   }
 
   //--
 
+  /**
+   * New rectangle with the same right border as the original, but with the left border clipped by {@link dw}.
+   * @param dw {number} delta width
+   */
   cutLeft(dw: number): Rect {
     return new Rect(this.left + dw, this.top, this.width - dw, this.height);
   }
 
+  /**
+   * New rectangle with the same bottom border as the original, but with the top border clipped by {@link dh}.
+   * @param dh {number} delta height
+   */
   cutTop(dh: number): Rect {
     return new Rect(this.left, this.top + dh, this.width, this.height - dh);
   }
 
+  /**
+   * New rectangle with the same top border as the original, but with the bottom border clipped by {@link dh}.
+   * @param dh {number} delta height
+   */
   cutBottom(dh: number): Rect {
     return new Rect(this.left, this.top, this.width, this.height - dh);
   }
 
+  /**
+   * New rectangle with the same left border as the original, but with the right border clipped by {@link dw}.
+   * @param dw {number} delta width
+   */
   cutRight(dw: number): Rect {
     return new Rect(this.left, this.top, this.width - dw, this.height);
   }
 
   // --
 
+  /** New rectangle below the original with a height of {@link height}.
+   * @param height {number} new rectangle height
+   */
   below(height: number): Rect {
     return new Rect(this.left, this.bottom, this.width, height);
   }
 
+  /** New rectangle above the original with a height of {@link height}.
+   * @param height {number} new rectangle height
+   */
   above(height: number): Rect {
     return new Rect(this.left, this.top - height, this.width, height);
   }
 
-  // --
-
+  /** New rectangle to the left of the original with a width of {@link width}.
+   * @param width {number} new rectangle width
+   */
   toTheLeft(width: number): Rect {
     return new Rect(this.left - width, this.top, width, this.height);
   }
 
+  /**
+   * New rectangle to the right of the original with a width of {@link width}.
+   * @param width {number} new rectangle width
+   */
   toTheRight(width: number): Rect {
     return new Rect(this.right, this.top, width, this.height);
-
   }
 
+  /**
+   * New rectangle above the original with a height of {@link height}. See {@link above}.
+   * @param height {number} new rectangle height
+   */
   toTheTop(height: number): Rect {
     return this.above(height);
   }
 
+  /**
+   * New rectangle below the original with a height of {@link height}. See {@link below}.
+   * @param height {number} new rectangle height
+   */
   toTheBottom(height: number): Rect {
     return this.below(height);
   }
 
   // --
 
+  /**
+   * New rectangle with the same top border as the original, but with a height
+   * scaled with {@link ratio} of the original height. See also {@link getTop}.
+   * @param ratio {number} height scale factor
+   */
   getTopScaled(ratio: number): Rect {
     return this.getTop(this.height * ratio);
   }
 
+  /**
+   * New rectangle with the same bottom border as the original, but with a height
+   * scaled with {@link ratio} of the original height. See also {@link getBottom}.
+   * @param ratio {number} height scale factor
+   */
   getBottomScaled(ratio: number): Rect {
     return this.getBottom(this.height * ratio);
   }
 
+  /**
+   * New rectangle with the same left border as the original, but with a width
+   * scaled with {@link ratio} of original width. See also {@link getLeft}.
+   * @param ratio {number} width scale factor
+   */
   getLeftScaled(ratio: number): Rect {
     return this.getLeft(this.width * ratio);
   }
 
+  /**
+   * New rectangle with the same right border as the original, but with a width
+   * scaled with {@link ratio} of original width. See also {@link getRight}.
+   * @param ratio {number} width scale factor
+   */
   getRightScaled(ratio: number): Rect {
     return this.getRight(this.width * ratio);
   }
 
   // --
 
+  /**
+   * Horizontal part of {@link index} of the original rectangle sliced on {@link count} parts.
+   * @param count {number} count of parts to divide the rectangle vertically
+   * @param index {number} index of part to return
+   */
   getTopPart(count: number, index: number): Rect {
     return new Rect(
       this.left, this.top + (this.height / count) * index,
       this.width, this.height / count);
   }
 
+  /**
+   * Vertical part of {@link index} of the original rectangle slices on {@link count} parts.
+   * @param count {number} count of parts to divide rectangle horizontally
+   * @param index {number} index of part to return
+   */
   getLeftPart(count: number, index: number): Rect {
     return new Rect(
       this.left + (this.width / count) * index, this.top,
       this.width / count, this.height);
   }
 
+  /**
+   * Returns ({@link x}, {@link y}) part of the original rectangle divided into parts by a grid.
+   * @param xCount {number} dividing grid size along x-axis
+   * @param yCount {number} dividing grid size along y-axis
+   * @param x {number} index of part to return along x-axis
+   * @param y {number} index of part to return along y-axis
+   */
   getGridPart(xCount: number, yCount: number, x: number, y: number): Rect {
     return new Rect(
       this.left + (this.width / xCount) * x, this.top + (this.height / yCount) * y,
@@ -185,20 +312,40 @@ export class Rect {
 
   // --
 
+  /**
+   * Inflated rectangle with left and right borders of the original shifted outside by {@link dx}
+   * and top and bottom borders shifted outside by {@link dy}.
+   * Overall size increased by 2*{@link dx} along x-axis, and by 2*{@link dy} along y-axis.
+   * @param dx {number} vertical borders shift delta along x-axis
+   * @param dy {number} horizontal borders shift delta along y-axis
+   */
   inflate(dx: number, dy: number): Rect {
     return new Rect(
       this.left - dx, this.top - dy,
       this.width + 2 * dx, this.height + 2 * dy);
   }
 
+  /**
+   * Inflated rectangle with right border of the original shifted outside by {@link dw}
+   * and bottom border shifted outside by {@link dh}.
+   * @param dw {number} delta width
+   * @param dh {number} delta height
+   */
   inflateSize(dw: number, dh: number): Rect {
     return new Rect(this.left, this.top, this.width + dw, this.height + dh);
   }
 
+  /**
+   * Inflated rectangle with new width scaled by {@link dxRatio} of the original
+   * and height scaled by {@link dyRatio}.
+   * @param dxRatio {number} width scale ratio
+   * @param dyRatio {number} height scale ratio
+   */
   inflateRel(dxRatio: number, dyRatio: number): Rect {
     return this.inflate(this.width * (dxRatio - 1), this.height * (dyRatio - 1));
   }
 
+  /** Square fitted (inscribed) to the original rectangle */
   fitSquare(): Rect {
     const size = Math.min(this.width, this.height);
     return new Rect(
