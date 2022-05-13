@@ -94,6 +94,7 @@ export namespace chem {
     molInput: HTMLInputElement = ui.element('input');
     host: HTMLDivElement = ui.box(null, 'grok-sketcher');
     /* molInputSubscription: Subscription | null = null; */
+    sketchMenu: Menu;
     changedSub: Subscription | null = null;
     sketcher: SketcherBase | null = null;
     onChanged: Subject<any> = new Subject<any>();
@@ -192,22 +193,22 @@ export namespace chem {
         }
       });
 
+      this.sketchMenu = Menu
+      .popup()
+      .item('Copy as SMILES', () => navigator.clipboard.writeText(this.sketcher!.smiles))
+      .item('Copy as MOLBLOCK', () => navigator.clipboard.writeText(this.sketcher!.molFile))
+      .group('Recent')
+        .items(Sketcher.getRecent().map((m) => ui.tools.click(svgMol(m, 200, 100), () => this.setMolecule(m))), () => {})
+        .endGroup()
+      .group('Favorites')
+        .item('Add to Favorites', () => Sketcher.addFavorite(this.sketcher!.molFile))
+        .separator()
+        .items(Sketcher.getFavorites().map((m) => ui.tools.click(svgMol(m, 200, 100), () => this.setMolecule(m))), () => {})
+        .endGroup()
+      .separator()
+      .items(funcs.map((f) => f.friendlyName), (name: string) => this.setSketcher(name));
       let optionsIcon = ui.iconFA('bars', () => {
-        Menu
-          .popup()
-          .item('Copy as SMILES', () => navigator.clipboard.writeText(this.sketcher!.smiles))
-          .item('Copy as MOLBLOCK', () => navigator.clipboard.writeText(this.sketcher!.molFile))
-          .group('Recent')
-            .items(Sketcher.getRecent().map((m) => ui.tools.click(svgMol(m, 200, 100), () => this.setMolecule(m))), () => {})
-            .endGroup()
-          .group('Favorites')
-            .item('Add to Favorites', () => Sketcher.addFavorite(this.sketcher!.molFile))
-            .separator()
-            .items(Sketcher.getFavorites().map((m) => ui.tools.click(svgMol(m, 200, 100), () => this.setMolecule(m))), () => {})
-            .endGroup()
-          .separator()
-          .items(funcs.map((f) => f.friendlyName), (name: string) => this.setSketcher(name))
-          .show();
+        this.sketchMenu.show()
       });
       $(optionsIcon).addClass('d4-input-options');
 
@@ -260,7 +261,13 @@ export namespace chem {
       let funcs = Func.find({tags: ['moleculeSketcher']});
       let f = funcs.find(e => e.friendlyName == name || e.name == name);
 
+      await grok.dapi.userDataStorage.getValue(_STORAGE_NAME, _KEY, true).then((sname: string) => {
+        let fr = funcs.find(e => e.name == sname);
+        this.sketchMenu.find(fr!.friendlyName)._check.innerHTML = '';
+      });
       grok.dapi.userDataStorage.postValue(_STORAGE_NAME, _KEY, f!.name, true);
+      this.sketchMenu.find(f!.friendlyName)._check.append(ui.iconFA('check'));
+
       this.sketcher = await f!.apply();
       this.host!.style.minWidth = '500px';
       this.host!.style.minHeight = '400px';
