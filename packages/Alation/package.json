@@ -1,0 +1,47 @@
+{
+	"name": "alation",
+	"beta": true,
+	"friendlyName": "Alation",
+	"version": "0.0.1",
+	"description": "",
+	"properties": [
+		{
+			"name": "Base URL",
+			"propertyType": "string"
+		}
+	],
+	"dependencies": {
+		"datagrok-api": "latest",
+		"cash-dom": "latest",
+		"dayjs": "latest",
+		"uuid-by-string": "latest",
+		"@datagrok-libraries/utils": "latest"
+	},
+	"devDependencies": {
+		"webpack": "latest",
+		"webpack-cli": "latest",
+		"ts-loader": "latest",
+		"typescript": "latest",
+		"eslint": "latest",
+		"eslint-config-google": "latest",
+		"@typescript-eslint/eslint-plugin": "latest",
+		"@typescript-eslint/parser": "latest"
+	},
+	"scripts": {
+		"link-all": "",
+		"debug-alation": "webpack && grok publish ",
+		"release-alation": "webpack && grok publish --release",
+		"build-alation": "webpack",
+		"build": "webpack",
+		"debug-alation-eval": "grok publish eval --rebuild",
+		"release-alation-eval": "grok publish eval --rebuild --release",
+		"lint": "eslint src --ext .ts",
+		"lint-fix": "eslint src --ext .ts --fix"
+	},
+	"canEdit": [
+		"Developers"
+	],
+	"canView": [
+		"All users"
+	]
+}

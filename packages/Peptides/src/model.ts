@@ -240,7 +240,7 @@ export class PeptidesModel {
 
     this.postProcessGrids(this._sourceGrid, invalidIndexes, sarGrid, sarVGrid);
 
-    if (this.dataFrame.tags[C.TAGS.AAR] && this.dataFrame.tags[C.TAGS.POSITION]) {
+    if (this.dataFrame.tags[C.TAGS.AAR] !== '' && this.dataFrame.tags[C.TAGS.POSITION] !== '') {
       const sarDf = sarGrid.dataFrame;
       const rowCount = sarDf.rowCount;
       let index = -1;
@@ -716,7 +716,7 @@ export class PeptidesModel {
         this.dataFrame.tags[C.TAGS.AAR] = aar;
         this.dataFrame.tags[C.TAGS.POSITION] = position;
       } else {
-        this.dataFrame.tags[C.TAGS.AAR] = this.dataFrame.tags[C.TAGS.POSITION] = null;
+        this.dataFrame.tags[C.TAGS.AAR] = this.dataFrame.tags[C.TAGS.POSITION] = '';
       }
       this.dataFrame.temp['substTable'] = this.getSubstitutionTable();
       this.modifyOrCreateSplitCol(aar, position);
