@@ -30,55 +30,6 @@ type RowPredicate = (row: Row) => boolean;
 type Comparer = (a: any, b: any) => number;
 type IndexSetter = (index: number, value: any) => void;
 
-/** Proxy wrapper for ColumnList */
-const ColumnListProxy = new Proxy(class {
-      columnList: ColumnList;
-      constructor(columnList: any) {
-        this.columnList = columnList;
-      }
-
-    }, {
-      construct(target, args) {
-        // @ts-ignore
-        return new Proxy(new target(...args), {
-          get: function (target: any, prop) {
-            const val = target.columnList[prop];
-            if (typeof prop === 'symbol')
-              return val;
-            const propNumber = Number(prop);
-
-            if (typeof val === 'function') {
-              return function (...args :string[]) {
-                return val.apply(target.columnList, args);
-              };
-            }
-            else if (val)
-              return val;
-            else if (!isNaN(propNumber))
-              return target.columnList.byIndex(propNumber);
-            else
-              return target.columnList.byName(prop);
-          },
-          set: function (target, prop, value) {
-            const val = target.columnList[prop];
-            const propNumber = Number(prop);
-
-            if (typeof val === 'function')
-              throw new Error(`Can't set on function`);
-
-            let oldColumn;
-            if (!isNaN(propNumber))
-              oldColumn = target.columnList.byIndex(propNumber);
-            else
-              oldColumn = target.columnList.byName(prop);
-            target.o.replace(oldColumn, value)
-            return true;
-          }
-        });
-      }
-    }
-);
-
 
 /** Column CSV export options */
 export interface ColumnCsvExportOptions {
@@ -144,7 +95,7 @@ export interface CsvExportOptions {
  */
 export class DataFrame {
   public readonly dart: any;
-  public columns: ColumnList & any;
+  public columns: ColumnList;
   public rows: RowList;
   public filter: BitSet;
   public temp: any;
@@ -155,7 +106,7 @@ export class DataFrame {
 
   constructor(dart: any) {
     this.dart = dart;
-    this.columns = new ColumnListProxy(toJs(api.grok_DataFrame_Columns(this.dart)));
+    this.columns = toJs(api.grok_DataFrame_Columns(this.dart));
     this.rows = new RowList(this, api.grok_DataFrame_Rows(this.dart));
     this.filter = new BitSet(api.grok_DataFrame_Get_Filter(this.dart));
     this.temp = new MapProxy(api.grok_DataFrame_Get_Temp(this.dart), 'temp');
@@ -613,8 +564,10 @@ export class Row {
   toDart(): any { return api.grok_Row(this.table.dart, this.idx); }
 }
 
-/** Strongly-typed column. */
-export class Column {
+/** Strongly-typed column.
+ * Use {@link get} and {@link set} to access elements by index.
+ * */
+export class Column<T = any> {
   public dart: any;
   public temp: any;
   public tags: any;
@@ -661,12 +614,12 @@ export class Column {
   }
 
   /** [array] will be not be copied and will be used as column's storage */
-  static fromInt32Array(name: string, array: Int32Array, length: number | null = null): Column {
+  static fromInt32Array(name: string, array: Int32Array, length: number | null = null): Column<number> {
     return toJs(api.grok_Column_FromInt32Array(name, array, length));
   }
 
   /** [array] will be not be copied and will be used as column's storage */
-  static fromFloat32Array(name: string, array: Float32Array, length: number | null = null): Column {
+  static fromFloat32Array(name: string, array: Float32Array, length: number | null = null): Column<number> {
     return toJs(api.grok_Column_FromFloat32Array(name, array, length));
   }
 
@@ -684,7 +637,7 @@ export class Column {
    * @param {string} name
    * @param {BitSet} bitset
    * @returns {Column} */
-  static fromBitSet(name: string, bitset: BitSet): Column {
+  static fromBitSet(name: string, bitset: BitSet): Column<boolean> {
     return toJs(api.grok_Column_FromBitSet(name, bitset.dart));
   }
 
@@ -692,7 +645,7 @@ export class Column {
    * @param {string} name
    * @param {number} length
    * @returns {Column} */
-  static int(name: string, length: number = 0): Column {
+  static int(name: string, length: number = 0): Column<number> {
     return Column.fromType(TYPE.INT, name, length);
   }
 
@@ -700,7 +653,7 @@ export class Column {
    * @param {string} name
    * @param {number} length
    * @returns {Column} */
-  static float(name: string, length: number = 0): Column {
+  static float(name: string, length: number = 0): Column<number> {
     return Column.fromType(TYPE.FLOAT, name, length);
   }
 
@@ -708,7 +661,7 @@ export class Column {
    * @param {string} name
    * @param {number} length
    * @returns {Column} */
-  static string(name: string, length: number = 0): Column {
+  static string(name: string, length: number = 0): Column<string> {
     return Column.fromType(TYPE.STRING, name, length);
   }
 
@@ -716,7 +669,7 @@ export class Column {
    * @param {string} name
    * @param {number} length
    * @returns {Column} */
-  static bool(name: string, length: number = 0): Column {
+  static bool(name: string, length: number = 0): Column<boolean> {
     return Column.fromType(TYPE.BOOL, name, length);
   }
 
@@ -732,7 +685,7 @@ export class Column {
    * @param {string} name
    * @param {number} length
    * @returns {Column} */
-  static dataFrame(name: string, length: number = 0): Column {
+  static dataFrame(name: string, length: number = 0): Column<DataFrame> {
     return Column.fromType(TYPE.DATA_FRAME, name, length);
   }
 
@@ -745,7 +698,7 @@ export class Column {
    * @param {number[]} values
    * @param {boolean} exact - if true, strips out qualifier from [values].
    * */
-  static qnum(name: string, length: number = 0, values: number[] = [], exact: boolean = true): Column {
+  static qnum(name: string, length: number = 0, values: number[] = [], exact: boolean = true): Column<number> {
     let col = Column.fromType(TYPE.QNUM, name, length);
     if (values !== null) {
       let buffer = col.getRawData();
@@ -883,7 +836,7 @@ export class Column {
   /** Gets i-th value
    * @param {number} row - row index
    * @returns {object} - or null if isNone(i) */
-  get(row: number): any {
+  get(row: number): T {
     return api.grok_Column_GetValue(this.dart, row);
   }
 
@@ -908,13 +861,13 @@ export class Column {
   }
 
   /**
-   * Sets [i]-th value to [x]
+   * Sets [i]-th value to [x], and optionally notifies the dataframe about this change.
    * @param {number} i
-   * @param x
+   * @param value
    * @param {boolean} notify
    */
-  set(i: number, x: any, notify: boolean = true): void {
-    api.grok_Column_SetValue(this.dart, i, toDart(x), notify);
+  set(i: number, value: T | null, notify: boolean = true): void {
+    api.grok_Column_SetValue(this.dart, i, toDart(value), notify);
   }
 
   /** Returns whether i-th value is missing.
@@ -1161,19 +1114,19 @@ export class ColumnList {
   }
 
   /** Creates and adds a string column. */
-  addNewString(name: string): Column { return this.addNew(name, TYPE.STRING); }
+  addNewString(name: string): Column<string> { return this.addNew(name, TYPE.STRING); }
 
   /** Creates and adds an integer column
    *  {@link https://dev.datagrok.ai/script/samples/javascript/data-frame/modification/add-columns} */
-  addNewInt(name: string): Column { return this.addNew(name, TYPE.INT); }
+  addNewInt(name: string): Column<number> { return this.addNew(name, TYPE.INT); }
 
   /** Creates and adds a float column */
-  addNewFloat(name: string): Column { return this.addNew(name, TYPE.FLOAT); }
+  addNewFloat(name: string): Column<number> { return this.addNew(name, TYPE.FLOAT); }
 
   /** Creates and adds a qualified number column
    * {@link https://dev.datagrok.ai/script/samples/javascript/data-frame/modification/add-columns}
    * */
-  addNewQnum(name: string): Column { return this.addNew(name, TYPE.QNUM); }
+  addNewQnum(name: string): Column<number> { return this.addNew(name, TYPE.QNUM); }
 
   /** Creates and adds a datetime column
    * {@link https://dev.datagrok.ai/script/samples/javascript/data-frame/modification/add-columns}
@@ -1183,12 +1136,12 @@ export class ColumnList {
   /** Creates and adds a boolean column
    * {@link https://dev.datagrok.ai/script/samples/javascript/data-frame/modification/add-columns}
    * */
-  addNewBool(name: string): Column { return this.addNew(name, TYPE.BOOL); }
+  addNewBool(name: string): Column<boolean> { return this.addNew(name, TYPE.BOOL); }
 
   /** Creates and adds a boolean column
    * {@link https://dev.datagrok.ai/script/samples/javascript/data-frame/modification/add-columns}
    * */
-  addNewBytes(name: string): Column { return this.addNew(name, TYPE.BYTE_ARRAY); }
+  addNewBytes(name: string): Column<Uint8Array> { return this.addNew(name, TYPE.BYTE_ARRAY); }
 
   /** Creates and adds a virtual column.
    * @param {string} name
@@ -1624,8 +1577,10 @@ export class BitSet {
   // }
 
   /** Sets all bits by setting i-th bit to the results of f(i)
-   * @param {Function} f
-   * @returns {BitSet} */
+   * @param {Function} f - function that accepts bit index and returns bit value
+   * @param notify - whether BitSet's `changed` event should be fired
+   * @returns {BitSet} - this
+   * */
   init(f: IndexPredicate, notify: boolean = true): BitSet {
     let buf = api.grok_BitSet_Get_Buffer(this.dart);
     let length = this.length;
