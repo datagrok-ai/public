@@ -35,5 +35,5 @@ renderer when user creates a summary column of specified type. Here is how it lo
 
 See also:
 
-* []()
+* [Customize a grid](./customize-grid.md)
 * [JavaScript development](../develop.md)
