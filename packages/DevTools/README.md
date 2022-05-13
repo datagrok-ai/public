@@ -18,6 +18,27 @@ Components:
 
      The command outputs a code snippet that adds a viewer of this type to the current view. The options you selected are saved and passed to the `addViewer` method. See the [How to manipulate viewers](https://datagrok.ai/help/develop/how-to/manipulate-viewers) article to learn more about API to work with viewers.
 
+   3. `Test manager` is a component that provides an interface for running package unit tests and further results exploration.
+   To start `Test manager` you should go to top menu `Tools` -> `Dev` -> `Test manager`
+   
+   ![Test manager start](./img/test-mngr-start.png)
+
+   After starting the tool you will see a list of all package tests divided by package name. Inside each package, the tests
+   are divided by category. Using checkboxes you can choose which tests you want to run at a time. You can choose either
+   the whole package or required category or exact tests inside a category. After all required tests are selected click on
+   the `RUN` button at the top.
+
+   ![Tests list](./img/test-mngr-tests-list.png)
+
+   Failed tests are marked with a red cancel sign while passed tests are marked with a green tick mark.
+
+   ![Tests list](./img/test-mngr-results.png)
+
+   You can get more detailed information on test results by clicking on a test/category/package name. Information will be
+   shown on a property panel.
+
+   ![Tests property panel](./img/test-mngr-property-panel.png)
+
 
 See also:
   - [JavaScript Development](https://datagrok.ai/help/develop/develop) 

@@ -1,0 +1,24 @@
+**/node_modules/
+**/.dart_tools/
+**/.dart_tool/
+**/.pub/
+**/build/
+**/target/
+**/.packages
+**/pubspec.lock
+**/dependency-reduced-pom.xml
+**/*.class
+**/docker_version
+
+# Desktop Service Store
+**/.DS_Store
+
+# Visual Studio Code
+**/.vscode
+**/.idea
+**/.git/
+**/.github/
+**/.gitignore
+
+.dockerignore
+Dockerfile

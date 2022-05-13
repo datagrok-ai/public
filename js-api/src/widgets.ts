@@ -743,6 +743,7 @@ export interface IMenuItemsOptions<T = any> {
  * */
 export class Menu {
   dart: any;
+  _check: HTMLDivElement = ui.div('d4-menu-item-check');
 
   constructor(dart: any) {
     this.dart = dart;

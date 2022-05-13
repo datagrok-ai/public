@@ -1,6 +1,7 @@
 import * as ui from 'datagrok-api/ui';
 import * as DG from 'datagrok-api/dg';
 import { PeptidesController } from '../peptides';
+import * as C from '../utils/constants';
 
 export async function substitutionsWidget(table: DG.DataFrame): Promise<DG.Widget> {
   const controller = await PeptidesController.getInstance(table);
@@ -24,6 +25,7 @@ export async function substitutionsWidget(table: DG.DataFrame): Promise<DG.Widge
   // substTable.columns.remove('Substituted');
   // const substCol = table.getCol('Substitution');
 
+  substTable.filter.setAll(false);
   for (let i = 0; i < dfRowCount; ++i) {
     // const [from, to] = substCol!.get(i).split('#');
     const from = initialCol.get(i);
@@ -32,12 +34,17 @@ export async function substitutionsWidget(table: DG.DataFrame): Promise<DG.Widge
     const aminosTo: [] = to.split('-');
 
     for (let j = 0; j < aminosFrom.length; ++j) {
-      if (aminosFrom[j] != aminosTo[j]) {
-        const idx = `${getAmino(aminosFrom[j])}#${getAmino(aminosTo[j])}`;
+      const aar: string = table.tags[C.TAGS.AAR];
+      const pos = parseInt(table.tags[C.TAGS.POSITION]);
+      const aarFrom = aminosFrom[j];
+      const aarTo = aminosTo[j];
+      if (j == pos && aarFrom != aminosTo[j] && (aarFrom == aar || aarTo == aar)) {
+        const idx = `${getAmino(aarFrom)}#${getAmino(aarTo)}`;
 
         if (!(idx in fromToMap))
           fromToMap[idx] = DG.BitSet.create(dfRowCount);
         fromToMap[idx].set(i, true);
+        substTable.filter.set(i, true);
       }
     }
   }
