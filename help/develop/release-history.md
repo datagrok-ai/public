@@ -1,6 +1,41 @@
 <!-- TITLE: Release History -->
 <!-- SUBTITLE: -->
 
+# 2022-05-13 Dev build 0.151.5
+
+## Latest Docker Images
+
+* Datagrok: 
+  *  `docker pull datagrok/datagrok:0.151.5`
+  *  `docker pull datagrok/datagrok:latest`
+  
+* [Docker-Compose](admin/docker-compose.md)
+
+## Addressed Issues
+
+* Closes #545: Including columns headers when copying data from the table (ctrl + c / cmd +c ) 
+* ddt folder 
+* restore lines 
+* Closes #546: [ScatterPlot] \- the config panel is being closed when trying to change some values in dropdowns 
+* Closes #465: Column selectors: search field is invisible (above the screen) when the number of columns is big 
+* Closes #507: [Filter panel \- Structures] Turning on / off doesn't work for structure columns in the filter panel 
+* [Formula Lines] Columns with parentheses in its names used in Bands' formulas breaks Formula Lines rendering #542 
+* DataSourceCardView categories (WIP)
+* Bio: fix the build errors 
+* Multiplot: fix the build errors 
+* Model Catalog improvements 
+* #466 Computation View \- simple structure 
+* HierarchyView: minor UI improvements 
+* Fixes #550, #560, #536: various fixes and improvements 
+* Chem: sketcher selection 
+* column+snippet 
+* PowerGrid help \- WIP 
+* JS API: Document function roles 
+* Zeno integration (WIP)
+* Datagrok build context 
+* Grok Connect build image 
+
+
 # 2022-05-10 Dev build 0.151.4
 
 ## Latest Docker Images
