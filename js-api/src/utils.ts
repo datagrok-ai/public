@@ -79,11 +79,11 @@ export namespace Paint {
     if (w < 2 * r) r = w / 2;
     if (h < 2 * r) r = h / 2;
     g.beginPath();
-    g.moveTo(x+r, y);
-    g.arcTo(x+w, y,   x+w, y+h, r);
-    g.arcTo(x+w, y+h, x,   y+h, r);
-    g.arcTo(x,   y+h, x,   y,   r);
-    g.arcTo(x,   y,   x+w, y,   r);
+    g.moveTo(x + r, y);
+    g.arcTo(x + w, y, x + w, y + h, r);
+    g.arcTo(x + w, y + h, x, y + h, r);
+    g.arcTo(x, y + h, x, y, r);
+    g.arcTo(x, y, x + w, y, r);
     g.closePath();
     return g;
   }

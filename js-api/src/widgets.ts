@@ -920,7 +920,7 @@ export class Balloon {
 /** Input control base. Could be used for editing {@link Property} values as well.
  * The root is a div that consists of {@link captionLabel} and {@link input}.
  * */
-export class InputBase {
+export class InputBase<T = any> {
   dart: any;
 
   constructor(dart: any, onChanged: any = null) {
@@ -933,7 +933,7 @@ export class InputBase {
     return toJs(api.grok_InputBase_ForProperty(property.dart, source));
   }
 
-  static forColumn(column: Column): InputBase {
+  static forColumn<T = any>(column: Column<T>): InputBase<T | null> {
     return toJs(api.grok_InputBase_ForColumn(column.dart));
   }
 
@@ -965,8 +965,8 @@ export class InputBase {
   set notify(v: boolean) { api.grok_InputBase_Set_Notify(this.dart, v); }
 
   /** Input value */
-  get value(): any { return toJs(api.grok_InputBase_Get_Value(this.dart)); }
-  set value(x: any) { toDart(api.grok_InputBase_Set_Value(this.dart, x)); }
+  get value(): T { return toJs(api.grok_InputBase_Get_Value(this.dart)); }
+  set value(x: T) { toDart(api.grok_InputBase_Set_Value(this.dart, x)); }
 
   /** String representation of the {@link value} */
   get stringValue(): string { return api.grok_InputBase_Get_StringValue(this.dart); }
@@ -980,12 +980,12 @@ export class InputBase {
   get enabled(): boolean { return api.grok_InputBase_Get_Enabled(this.dart); }
   set enabled(v: boolean) { api.grok_InputBase_Set_Enabled(this.dart, v); }
 
-  /// Occurs when [value] is changed, either by user or programmatically.
+  /** Occurs when [value] is changed, either by user or programmatically. */
   onChanged(callback: Function): StreamSubscription {
     return _sub(api.grok_InputBase_OnChanged(this.dart, callback));
   }
 
-  /// Occurs when [value] is changed by user.
+  /** Occurs when [value] is changed by user. */
   onInput(callback: Function): StreamSubscription {
     return _sub(api.grok_InputBase_OnInput(this.dart, callback));
   }
