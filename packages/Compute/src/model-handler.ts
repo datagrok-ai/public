@@ -55,16 +55,25 @@ export class ModelHandler extends DG.ObjectHandler {
   }
 
   renderTooltip(x: DG.Func) {
-    return this.renderCard(x);
+    return this._renderCard(x);
   }
 
-  renderCard(x: DG.Func, context?: any): HTMLElement {
+  _renderCard(x: DG.Func, context?: any): HTMLElement {
     let h = this.renderMarkup(x);
     h.classList.add('d4-link-label');
     let card = ui.bind(x, ui.divV([
       ui.h2(h),
       this.renderDetails(x),
     ]));
+    let c = grok.functions.getCurrentCall();
+    card.ondblclick = (e) => { ModelHandler.openModel(x, c); }
+    return card;
+  }
+
+  renderCard(x: DG.Func, context?: any): HTMLElement {
+    let h = this.renderMarkup(x);
+    h.classList.add('d4-link-label');
+    let card = ui.bind(x, ui.h2(h));
     let c = grok.functions.getCurrentCall();
     card.ondblclick = (e) => { ModelHandler.openModel(x, c); }
     return card;

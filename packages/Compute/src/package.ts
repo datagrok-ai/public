@@ -11,6 +11,7 @@ import {OutliersSelectionViewer} from './outliers-selection/outliers-selection-v
 import {FunctionView} from "@datagrok-libraries/utils/src/function-view";
 import {delay} from "@datagrok-libraries/utils/src/test";
 import {ComputationView} from "@datagrok-libraries/utils/src/computation-view";
+import './css/model-card.css';
 
 let initCompleted: boolean = false;
 export const _package = new DG.Package();
@@ -29,7 +30,7 @@ export function OutliersSelection() {
 //input: funccall call
 //output: view result
 export function ComputationViewTest(call: DG.FuncCall) {
-  return new ComputationView(call.func);
+ // return new ComputationView(call.func);
 }
 
 
@@ -51,14 +52,28 @@ export function functionParametersGrid(f: DG.Func): DG.View {
 }
 
 //name: hof
-//tags: model
+//tags: model, sidebar
 //description: some description
 export function hof() {
   grok.shell.info('hof');
   let f: DG.Func = DG.Func.byName('Sin');
   let v: DG.View = functionParametersGrid(f);
+  v.parentCall = grok.functions.getCurrentCall();
+  //v.parentView = v.parentCall?.aux['view'];
+  grok.shell.addView(v);
+}
+
+
+//name: hof2
+//tags: model
+//description: some description 2 2 2
+export function hof2() {
+  grok.shell.info('hof2');
+  let f: DG.Func = DG.Func.byName('Sin');
+  let v: DG.View = functionParametersGrid(f);
   v.parentCall = grok.functions.getCurrentCall().parentCall;
   v.parentView = v.parentCall?.aux['view'];
+  v.path = 'hof';
   grok.shell.addView(v);
 }
 

@@ -14,7 +14,7 @@ export class ModelCatalogView extends DG.CustomCardView {
     this.meta = new ModelHandler();
     this.name = 'Models';
     this.permanentFilter = '#model';
-    this.renderMode = DG.RENDER_MODE.BRIEF;
+    //this.renderMode = DG.RENDER_MODE.BRIEF;
 
     this.objectType = 'Func';
     this.categoryFilters = {
