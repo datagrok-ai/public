@@ -12,7 +12,7 @@
 		"@datagrok-libraries/utils": "^0.4.0",
 		"cash-dom": "latest",
 		"codemirror": "^5.64.0",
-		"datagrok-api": "^0.151.0",
+		"datagrok-api": "^0.151.4",
 		"dayjs": "latest",
 		"exceljs": "^4.3.0",
 		"file-saver": "^2.0.5",

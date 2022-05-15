@@ -1,0 +1,20 @@
+.d4-gallery-card.entity-model i {
+    height: 32px;
+    width: 32px;
+    position: initial;
+}
+
+
+.d4-gallery-card.entity-model .d4-link-label i.grok-icon + label {
+    margin-left: 6px;
+    align-items: center;
+    display: inline-flex;
+}
+
+.d4-gallery-card.entity-model {
+    padding: 0 8px;
+    align-items: center;
+    display: flex;
+    margin: 0;
+    height: 44px;
+}
