@@ -1,7 +1,6 @@
 //name: Heat Exchange
 //language: javascript
-//tags: model, simulation
-//meta.modality: Small molecule
+//tags: simulation
 //input: int len = 1000
 //input: double k = 1.2
 //output: dataframe simulation {viewer: Line Chart(multiAxis: "true")}
@@ -9,6 +8,7 @@
 //output: double finalSaturation
 //output: double finalConcentration
 //meta.domain: Manufacturing
+//meta.modality: Small molecule
 
 function sigmoid(z) {
   return 1 / (1 + Math.exp(-z));

@@ -1,5 +1,5 @@
 //name: Logistic Map
-//tags: model, simulation
+//tags: simulation
 //description: Archetypal example of how complex, chaotic behaviour can arise from very simple non-linear dynamical equations.
 //language: javascript
 //input: int iterations = 1000 [Number of iterations per point]

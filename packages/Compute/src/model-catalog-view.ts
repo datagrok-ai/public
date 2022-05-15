@@ -19,8 +19,8 @@ export class ModelCatalogView extends DG.CustomCardView {
     this.objectType = 'Func';
     this.categoryFilters = {
       'options.department': 'Department',
-      'options.status': 'Status',
       'options.group': 'Group',
+      'options.process': 'Process',
       'tag': 'Tags'
     };
 
@@ -31,7 +31,7 @@ export class ModelCatalogView extends DG.CustomCardView {
     };
     this.hierarchy = [
       'options.department',
-      'options.status',
+      'options.process',
       'options.group'
     ];
     this.showTree = true;

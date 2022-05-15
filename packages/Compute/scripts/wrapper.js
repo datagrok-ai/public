@@ -1,7 +1,6 @@
 //name: wrapper
 //language: javascript
 //output: view v
-//tags: model
 //meta.domain: math
 //meta.direction: up
 

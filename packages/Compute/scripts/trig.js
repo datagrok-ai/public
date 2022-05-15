@@ -1,7 +1,6 @@
 //name: trig
 //description: Returns sin, cos, and tan
 //language: javascript
-//tags: model
 //input: double x
 //output: double sin
 //output: double cos

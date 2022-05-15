@@ -52,7 +52,7 @@ export function functionParametersGrid(f: DG.Func): DG.View {
 }
 
 //name: hof
-//tags: model, sidebar
+//tags: sidebar
 //description: some description
 export function hof() {
   grok.shell.info('hof');
@@ -65,7 +65,6 @@ export function hof() {
 
 
 //name: hof2
-//tags: model
 //description: some description 2 2 2
 export function hof2() {
   grok.shell.info('hof2');

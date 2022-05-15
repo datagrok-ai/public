@@ -10,7 +10,6 @@
 #input: double perV = 30 {category: PK parameters} [peripheral compartment volume]
 #input: double interRate = 1 {category: PK parameters} [intercompartmental rate] 
 #output: graphics popPK
-#tags: model
 #meta.domain: PKPD
 
 require("ggplot2")
