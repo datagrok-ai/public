@@ -151,7 +151,7 @@ export class WebLogo extends DG.JsViewer {
       const [jPos, monomer] = getMonomer(this.canvas.getCursorPosition(args));
 
       //if (this.dataFrame && this.seqCol && monomer) {
-      if (this.seqCol && monomer) {
+      if (this.dataFrame && this.seqCol && monomer) {
         ui.tooltip.showRowGroup(this.dataFrame, (iRow) => {
           const seq = this.seqCol!.get(iRow);
           const mSeq = seq ? seq[this.startPosition + jPos] : null;
@@ -171,7 +171,7 @@ export class WebLogo extends DG.JsViewer {
 
       // prevents deselect all rows if we miss monomer bounds
       //if (this.dataFrame && this.seqCol && monomer) {
-      if (this.seqCol && monomer) {
+      if (this.dataFrame && this.seqCol && monomer) {
         this.dataFrame.selection.init((iRow) => {
           const seq = this.seqCol!.get(iRow);
           const mSeq = seq ? seq[this.startPosition + jPos] : null;
