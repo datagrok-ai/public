@@ -1,6 +1,35 @@
 <!-- TITLE: Release History -->
 <!-- SUBTITLE: -->
 
+# 2022-05-15 Dev build 0.151.6
+
+## Latest Docker Images
+
+* Datagrok: 
+  *  `docker pull datagrok/datagrok:0.151.6`
+  *  `docker pull datagrok/datagrok:latest`
+  
+* [Docker-Compose](admin/docker-compose.md)
+
+## Addressed Issues
+
+* Wiki: PowerGrid: Sparklines (WIP)
+* DevTools: added test manager to readme.md 
+* Chem: activity cliffs tooltip in progress 
+* Chem: selected sketcher check 
+* Peptides: barchart unselect fix 
+* Peptides #587: substitution table fix 
+* Fix doc: comments to Rect class methods 
+* Chem: tests.md update 
+* bio WebLogo startPosition endPosition attributes and positionNames column tag 
+* ST: notation modified 
+* Closes #588: DataFrame: strongly-typed columns #588 
+* Closes #589: Strongly-typed InputBase.value 
+* Fix bio WebLogo startPosition endPosition options and positionNames tag 
+* Fix bio WebLogo startPosition endPosition options and positionNames tag for JSViewer.dataFrame attribute type 
+* Model Catalog improvements 
+
+
 # 2022-05-13 Dev build 0.151.5
 
 ## Latest Docker Images
