@@ -12,7 +12,6 @@
 #input: double effect = 8 {category: PD parameters} [EC50]
 #output: graphics PKPD
 #output: double Cmax {units: nM}
-#tags: model
 #meta.domain: PKPD
 
 require("ggplot2")

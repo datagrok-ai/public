@@ -1,6 +1,6 @@
 #name: Fab Arm Exchange
 #language: python
-#tags: model, antibody-eng
+#tags: antibody-eng
 #meta.department: BTDS
 #meta.status: Upstream
 #meta.group: Bioengineering process

@@ -1,5 +1,5 @@
 //name: Lorenz Attractor
-//tags: model, simulation
+//tags: simulation
 //meta.domain: Nonlinear dynamics
 //description: Set of chaotic solutions of the system for weather prediction. It illustrates the phenomenon known as the Butterfly effect or (more technically) sensitive dependence on initial conditions
 //language: javascript

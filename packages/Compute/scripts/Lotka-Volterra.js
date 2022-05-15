@@ -1,5 +1,5 @@
 //name: Lotka-Volterra
-//tags: model, simulation
+//tags: simulation
 //meta.domain: Nonlinear dynamics
 //description: Model describes the dynamics of biological systems in which two species interact, one as a predator and the other as prey.
 //language: javascript
@@ -13,7 +13,7 @@
 //input: double timeStart = 0
 //input: double timeStop = 18
 //output: dataframe df {viewer: Line Chart(x: "Time", multiAxis: "true", title: "Lotka-Volterra Model")}
-//meta.direction: down
+
 
 function sumArrays(...arrays) {
   return Array.from({ length: 2 })

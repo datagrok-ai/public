@@ -1,7 +1,6 @@
 #name: IntervalsFromECG
 #description: Identify the beats in an ECG signal and compute the IBIs
 #language: python
-#tags: model
 #input: double samplingFrequency = 2048
 #input: int bpmMax = 120 [Maximal expected heart rate (in beats per minute): (1 < bpm_max <= 400)]
 #input: double delta = 0 [Threshold for the peak detection. By default it is computed from the signal (adaptive thresholding)]
