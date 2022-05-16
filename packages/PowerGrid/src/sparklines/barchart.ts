@@ -1,6 +1,6 @@
 import * as DG from 'datagrok-api/dg';
 import * as ui from 'datagrok-api/ui';
-import {GridCell, GridColumn, Rect} from 'datagrok-api/src/grid';
+// import {GridCell, GridColumn, Rect} from 'datagrok-api/src/grid';
 import {getSettingsBase, names, SummarySettingsBase} from './shared';
 
 
@@ -23,14 +23,14 @@ export class BarChartCellRenderer extends DG.GridCellRenderer {
   render(
     g: CanvasRenderingContext2D,
     x: number, y: number, w: number, h: number,
-    gridCell: GridCell, cellStyle: DG.GridCellStyle
+    gridCell: DG.GridCell, cellStyle: DG.GridCellStyle
   ) {
     const df = gridCell.grid.dataFrame;
 
     if (w < 20 || h < 10 || df === void 0) return;
 
     const settings = getSettings(gridCell.gridColumn);
-    const b = new Rect(x, y, w, h).inflate(-2, -2);
+    const b = new DG.Rect(x, y, w, h).inflate(-2, -2);
     const row = gridCell.cell.row.idx;
     const cols = df.columns.byNames(settings.columnNames);
 
@@ -49,7 +49,7 @@ export class BarChartCellRenderer extends DG.GridCellRenderer {
     }
   }
 
-  renderSettings(gc: GridColumn): Element {
+  renderSettings(gc: DG.GridColumn): Element {
     gc.settings ??= getSettings(gc);
     const settings = gc.settings;
 

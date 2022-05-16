@@ -1,6 +1,4 @@
 import * as DG from 'datagrok-api/dg';
-import {Point} from "datagrok-api/src/grid";
-import {ColorType} from "datagrok-api/src/const";
 
 declare global {
 
@@ -10,28 +8,27 @@ declare global {
 
     setStrokeStyle(stroke: string | CanvasGradient | CanvasPattern): CanvasRenderingContext2D;
 
-    line(x1: number, y1: number, x2: number, y2: number, color: ColorType): CanvasRenderingContext2D;
+    line(x1: number, y1: number, x2: number, y2: number, color: DG.ColorType): CanvasRenderingContext2D;
 
     /**
      * Use stroke() or fill() after.
      * @param pa: Array of points
      */
-    polygon(pa: Point[]): CanvasRenderingContext2D;
+    polygon(pa: DG.Point[]): CanvasRenderingContext2D;
   }
-}
+};
 
-CanvasRenderingContext2D.prototype.setFillStyle = function (fill) {
+CanvasRenderingContext2D.prototype.setFillStyle = function(fill) {
   this.fillStyle = fill;
   return this;
-}
+};
 
-CanvasRenderingContext2D.prototype.setStrokeStyle = function (stroke) {
+CanvasRenderingContext2D.prototype.setStrokeStyle = function(stroke) {
   this.strokeStyle = stroke;
   return this;
-}
+};
 
-CanvasRenderingContext2D.prototype.line = function (x1, y1, x2, y2, color) {
-
+CanvasRenderingContext2D.prototype.line = function(x1, y1, x2, y2, color) {
   this.beginPath();
   this.strokeStyle = DG.Color.toRgb(color);
   this.moveTo(x1, y1);
@@ -39,10 +36,9 @@ CanvasRenderingContext2D.prototype.line = function (x1, y1, x2, y2, color) {
   this.stroke();
 
   return this;
-}
+};
 
-CanvasRenderingContext2D.prototype.polygon = function (pa) {
-
+CanvasRenderingContext2D.prototype.polygon = function(pa) {
   this.beginPath();
 
   const last_p = pa[pa.length - 1]
@@ -54,4 +50,4 @@ CanvasRenderingContext2D.prototype.polygon = function (pa) {
   this.closePath();
 
   return this;
-}
+};
