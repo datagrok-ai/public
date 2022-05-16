@@ -1,11 +1,14 @@
 import * as grok from 'datagrok-api/grok';
 import * as DG from 'datagrok-api/dg';
+
 import {MolecularLiabilityBrowser} from './molecular-liability-browser';
-import {MLBFilter} from './custom-filters';
-import {AminoacidsWebLogo} from './viewers/web-logo';
+import {PtmFilter} from './custom-filters';
 import {DataLoader} from './utils/data-loader';
 import {DataLoaderFiles} from './utils/data-loader-files';
-// import {DataLoaderJnj} from './utils/data-loader-jnj';
+
+import {WebLogo} from '@datagrok-libraries/bio';
+
+// import {DataLoaderDb} from './utils/data-loader-jnj';
 
 export const _package = new DG.Package();
 
@@ -28,20 +31,20 @@ export async function init() {
   const pi = DG.TaskBarProgressIndicator.create('Loading filters data...');
 
   dl = new DataLoaderFiles();
-  // dl = new DataLoaderJnj();
+  // dl = new DataLoaderDb();
   await dl.init();
   pi.close();
 }
 
-//name: MLB Filter
-//description: MLB Filter
+//name: PTM filter
+//description: PTM filter
 //tags: filter
 //output: filter result
-export function mlbFilter() {
+export function ptmFilter() {
   if (!(dl.ptmMap && dl.cdrMap && dl.refDf))
     throw new Error(`Filter data is not initialized!`);
 
-  return new MLBFilter(dl.ptmMap, dl.cdrMap, dl.refDf);
+  return new PtmFilter(dl.ptmMap, dl.cdrMap, dl.refDf);
 }
 
 //name: Molecular Liability Browser
@@ -54,9 +57,9 @@ export async function MolecularLiabilityBrowserApp() {
   await app.init(vid);
 }
 
-//name: AminoacidsWebLogo
+//name: WebLogo
 //tags: viewer, panel
 //output: viewer result
-export function aminoacidsWebLogoViewer() {
-  return new AminoacidsWebLogo();
+export function webLogoViewer() {
+  return new WebLogo();
 }

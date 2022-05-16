@@ -1,4 +1,5 @@
 const path = require('path');
+const packageName = path.parse(require('./package.json').name).name.toLowerCase().replace(/-/g, '');
 
 module.exports = {
   mode: 'development',
@@ -6,12 +7,12 @@ module.exports = {
     package: './src/package.ts',
   },
   resolve: {
-    extensions: ['.js', '.json', '.ts'],
+    extensions: ['.ts', '.tsx', '.js', '.json'],
   },
   module: {
     rules: [
       {
-        test: /\.tsx?$/,
+        test: /\.ts(x?)$/,
         use: 'ts-loader',
         exclude: /node_modules/,
       },
