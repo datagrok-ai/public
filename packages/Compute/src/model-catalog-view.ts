@@ -32,8 +32,8 @@ export class ModelCatalogView extends DG.CustomCardView {
     };
     this.hierarchy = [
       'options.department',
-      'options.process',
-      'options.group'
+      'options.group',
+      'options.process'
     ];
     this.showTree = true;
     this.initRibbon();
