@@ -1,7 +1,5 @@
 import * as DG from 'datagrok-api/dg';
 import * as ui from 'datagrok-api/ui';
-// import {GridCell, GridColumn, Point, Rect} from 'datagrok-api/src/grid';
-// import {Color} from 'datagrok-api/src/widgets';
 import {getSettingsBase, names, SummarySettingsBase} from './shared';
 
 

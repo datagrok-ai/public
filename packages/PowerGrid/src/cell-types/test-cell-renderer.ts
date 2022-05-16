@@ -1,7 +1,7 @@
 import * as ui from 'datagrok-api/ui';
 import * as DG from 'datagrok-api/dg';
 import * as grok from 'datagrok-api/grok';
-// import {GridCell} from 'datagrok-api/dg';
+
 
 export class TestCellRenderer extends DG.GridCellRenderer {
   get name() { return 'test'; }
