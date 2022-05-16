@@ -16,6 +16,10 @@ You can customize which columns / objects' features will be used to form the gra
 
 ## Images
 
+You can add image column to your table by adding ```DG.Column.fromType(DG.COLUMN_TYPE.BYTE_ARRAY, 'byte array col', 4), ``` to the dataframe's constructor. Supported extensions so far are .jpg, .png, .jpeg. Inside this column your images will be represented as byte arrays. To add image simply double click on the cell and choose the file you need.
+
+![](../../help/develop/how-to/binary-cell-renderer.gif "adding image")
+
 See also:
 
 * [Viewers](https://datagrok.ai/help/visualize/viewers)
