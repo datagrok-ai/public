@@ -1,6 +1,8 @@
 import * as grok from 'datagrok-api/grok';
 import * as ui from 'datagrok-api/ui';
 
+import {take} from 'rxjs/operators';
+
 import * as constants from './const';
 import * as alationApi from './alation-api';
 import * as types from './types';
@@ -38,7 +40,7 @@ export async function retrieveKeys() {
 
   const apiResponse = await alationApi.testToken(constants.API_TOKEN_KEY, tokenMap.apiToken, userId);
   if (apiResponse.token_status !== constants.TOKEN_STATUS.ACTIVE) {
-    grok.shell.error(`API access token status is ${apiResponse.token_status ?? 'expired'}`);
+    grok.shell.warning(`API access token status is ${apiResponse.token_status ?? 'expired, regenerating...'}`);
     await updateUserStorage(tokenMap.refreshToken, userId);
     tokenMap = await getAllTokensFromStorage();
   }
@@ -64,7 +66,7 @@ async function updateTokensDialog(refreshToken: string, userId: number) {
       await updateUserStorage(refreshTokenInputValue, userIdInputValue);
     })
     .showModal(false);
-  return dialog.onClose.toPromise();
+  return dialog.onClose.pipe(take(1)).toPromise();
 }
 
 async function updateUserStorage(refreshToken: string, userId: number) {
