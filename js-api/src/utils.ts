@@ -94,10 +94,10 @@ export namespace Paint {
   }
 
   /** Renders a PNG image from bytes */
-  export function pngImage(g: CanvasRenderingContext2D, bounds: Rect, imageBytes: Uint8Array, gridCell: GridCell) {
+  export function pngImage(g: CanvasRenderingContext2D, bounds: Rect, imageBytes: Uint8Array) {
     let r = new FileReader();
     r.readAsBinaryString(new Blob([imageBytes]));
-    
+
     r.onload = function() {
       let img = new Image();
 
