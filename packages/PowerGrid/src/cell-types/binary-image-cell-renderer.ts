@@ -1,6 +1,5 @@
 import * as DG from 'datagrok-api/dg';
 
-// Put on hold - waiting for the binary column to be implemented.
 
 export class BinaryImageCellRenderer extends DG.GridCellRenderer {
   get name() { return 'BinaryImage'; }

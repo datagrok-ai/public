@@ -1,10 +1,6 @@
 import * as DG from 'datagrok-api/dg';
 import {InputBase, Property, TYPE} from 'datagrok-api/dg';
 import * as ui from 'datagrok-api/ui';
-// import {GridCell, Point, Rect} from 'datagrok-api/src/grid';
-// import {Paint} from 'datagrok-api/src/utils';
-// import {Color} from 'datagrok-api/src/widgets';
-// import {MARKER_TYPE} from 'datagrok-api/src/const';
 import {getSettingsBase, names, SummarySettingsBase} from './shared';
 
 
