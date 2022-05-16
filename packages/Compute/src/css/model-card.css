@@ -24,13 +24,13 @@
     flex-direction: row!important;
 }
 
-.model-catalog-view .grok-gallery-grid[mode="Brief"] .grok-gallery-grid .d4-link-label i.grok-icon {
+.model-catalog-view .grok-gallery-grid[mode="Brief"] .d4-link-label i.grok-icon {
     width: 32px;
     height: 32px;
     position: initial;
 }
 
-.model-catalog-view .grok-gallery-grid[mode="Brief"] .grok-gallery-grid .d4-link-label label {
+.model-catalog-view .grok-gallery-grid[mode="Brief"] .d4-link-label label {
     margin-left: 8px;
 }
 
