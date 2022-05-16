@@ -64,15 +64,11 @@ export class ModelHandler extends DG.ObjectHandler {
   }
 
   renderTooltip(x: DG.Func) {
-    return this._renderCard(x);
-  }
-
-  _renderCard(x: DG.Func, context?: any): HTMLElement {
     let h = this.renderMarkup(x);
     h.classList.add('d4-link-label');
     let card = ui.bind(x, ui.divV([
       ui.h2(h),
-      this.renderDetails(x),
+      ui.divV([ui.divText(x.description, 'ui-description')], {style: {lineHeight: '150%'}})
     ]));
     let c = grok.functions.getCurrentCall();
     card.ondblclick = (e) => { ModelHandler.openModel(x, c); }
