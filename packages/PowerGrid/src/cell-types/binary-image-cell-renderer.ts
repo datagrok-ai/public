@@ -20,7 +20,7 @@ export class BinaryImageCellRenderer extends DG.GridCellRenderer {
     if (w < 5 || h < 5) return;
     const bytes = gridCell.cell.value;
     if (bytes?.constructor === Uint8Array)
-      DG.Paint.pngImage(g, new DG.Rect(x, y, w, h), bytes, gridCell);
+      DG.Paint.pngImage(g, new DG.Rect(x, y, w, h), bytes);
   }
 
   onDoubleClick(gridCell: DG.GridCell, e: MouseEvent): void {
