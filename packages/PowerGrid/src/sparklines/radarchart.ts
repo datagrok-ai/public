@@ -1,7 +1,6 @@
 import * as DG from 'datagrok-api/dg';
 import * as ui from 'datagrok-api/ui';
-import {GridCell, GridColumn, Point, Rect} from 'datagrok-api/src/grid';
-import {Color} from 'datagrok-api/src/widgets';
+
 import {getSettingsBase, names, SummarySettingsBase} from './shared';
 
 
@@ -37,31 +36,31 @@ export class RadarChartCellRender extends DG.GridCellRenderer {
   render(
     g: CanvasRenderingContext2D,
     x: number, y: number, w: number, h: number,
-    gridCell: GridCell, cellStyle: DG.GridCellStyle
+    gridCell: DG.GridCell, cellStyle: DG.GridCellStyle
   ) {
     const df = gridCell.grid.dataFrame;
 
     if (w < 20 || h < 10) return;
 
     const settings = getSettings(gridCell.gridColumn);
-    const box = new Rect(x, y, w, h).fitSquare().inflate(-2, -2);
+    const box = new DG.Rect(x, y, w, h).fitSquare().inflate(-2, -2);
     const row = gridCell.cell.row.idx;
     const cols = df.columns.byNames(settings.columnNames);
 
     g.strokeStyle = 'lightgray';
 
     // axes' point calculator
-    const p = (col: number, ratio: number) => new Point(
+    const p = (col: number, ratio: number) => new DG.Point(
       box.midX + ratio * box.width * Math.cos(2 * Math.PI * col / (cols.length)) / 2,
       box.midY + ratio * box.width * Math.sin(2 * Math.PI * col / (cols.length)) / 2);
 
     // axes
     for (let i = 0; i < cols.length; i++)
-      g.line(box.midX, box.midY, p(i, 1).x, p(i, 1).y, Color.lightGray);
+      g.line(box.midX, box.midY, p(i, 1).x, p(i, 1).y, DG.Color.lightGray);
 
     // Grid
     for (let i = 1; i <= 4; i++) {
-      g.setStrokeStyle(Color.toRgb(Color.lightGray))
+      g.setStrokeStyle(DG.Color.toRgb(DG.Color.lightGray))
         .polygon(it.range(cols.length).map((col) => p(col, i / 4)))
         .stroke();
     }
@@ -73,7 +72,7 @@ export class RadarChartCellRender extends DG.GridCellRenderer {
       .fill();
   }
 
-  renderSettings(gc: GridColumn): Element {
+  renderSettings(gc: DG.GridColumn): Element {
     gc.settings ??= getSettings(gc);
     const settings = gc.settings;
 
