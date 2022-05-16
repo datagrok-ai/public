@@ -11,10 +11,11 @@ export class ModelCatalogView extends DG.CustomCardView {
   constructor() {
     super({dataSource: grok.dapi.functions, permanentFilter: '#model'});
 
+    this.root.classList.add('model-catalog-view');
     this.meta = new ModelHandler();
     this.name = 'Models';
     this.permanentFilter = '#model';
-    //this.renderMode = DG.RENDER_MODE.BRIEF;
+    this.renderMode = DG.RENDER_MODE.BRIEF;
 
     this.objectType = 'Func';
     this.categoryFilters = {
@@ -40,14 +41,11 @@ export class ModelCatalogView extends DG.CustomCardView {
   }
 
   initRibbon() {
-    this.setRibbonPanels([[ui.icons.sync(() => this.refresh())], [ui.icons.add(() => onboardModel())]]);
+    this.setRibbonPanels([[ui.icons.sync(() => this.refresh())]]);
   }
 
   initMenu() {
     this.ribbonMenu
-      .group('Models')
-        .item('Add New...', () => onboardModel())
-      .endGroup()
       .group('Help')
         .item('Compute Engine', () => window.open('https://github.com/datagrok-ai/public/tree/master/packages/Compute', '_blank'))
         .item('Developing Models', () => window.open('https://datagrok.ai/help/compute/scripting', '_blank'))
