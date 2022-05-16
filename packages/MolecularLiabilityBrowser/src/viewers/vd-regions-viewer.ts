@@ -4,7 +4,6 @@ import * as DG from 'datagrok-api/dg';
 
 import * as rxjs from 'rxjs';
 
-import {WebLogoViewer} from './web-logo-viewer';
 import {WebLogo} from '@datagrok-libraries/bio';
 
 
