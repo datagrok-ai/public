@@ -1,9 +1,9 @@
 import * as DG from 'datagrok-api/dg';
+import * as bio from '@datagrok-libraries/bio';
 
 import $ from 'cash-dom';
 
 import * as logojs from 'logojs-react';
-import {ChemPalette} from '../utils/chem-pallete';
 
 export class Logo extends DG.JsViewer {
   initialized: boolean;
@@ -37,7 +37,7 @@ export class Logo extends DG.JsViewer {
     {color: 'rgb(182, 223, 138)', regex: 'W'},
     {color: 'rgb(152,223,138)', regex: 'Y'},
     {color: 'rgb(205, 111, 71)', regex: 'Z'},
-  ]; ;
+  ];
 
   PROT_NUMS = {
     'A': 0, 'B': 1, 'C': 2, 'D': 3, 'E': 4, 'F': 5, 'G': 6, 'H': 7, 'I': 8, 'K': 9, 'L': 10, 'M': 11,
@@ -85,12 +85,12 @@ export class Logo extends DG.JsViewer {
         if (c != '-') {
           if (c[1] == '(')
             this.ppm[index][this.PROT_NUMS[c.substr(0, 1).toUpperCase()]] += 1 / size;
-          else if (c.substr(0, 3) in ChemPalette.AAFullNames && (c.length == 3 || c.at(3) == '('))
-            this.ppm[index][this.PROT_NUMS[ChemPalette.AAFullNames[c.substr(0, 3)]]] += 1 / size;
-          else if (c.at(0)?.toLowerCase() == c.at(0) && c.substr(1, 3) in ChemPalette.AAFullNames &&
+          else if (c.substr(0, 3) in bio.Aminoacids.AAFullNames && (c.length == 3 || c.at(3) == '('))
+            this.ppm[index][this.PROT_NUMS[bio.Aminoacids.AAFullNames[c.substr(0, 3)]]] += 1 / size;
+          else if (c.at(0)?.toLowerCase() == c.at(0) && c.substr(1, 3) in bio.Aminoacids.AAFullNames &&
             (c.length == 4 || c.at(4) == '(')
           )
-            this.ppm[index][this.PROT_NUMS[ChemPalette.AAFullNames[c.substr(1, 3)]]] += 1 / size;
+            this.ppm[index][this.PROT_NUMS[bio.Aminoacids.AAFullNames[c.substr(1, 3)]]] += 1 / size;
           else
             this.ppm[index][this.PROT_NUMS[c]] += 1 / size;
         }
