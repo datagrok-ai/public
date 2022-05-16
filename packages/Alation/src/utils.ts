@@ -21,11 +21,12 @@ export async function retrieveKeys() {
   let tokenMap = await getAllTokensFromStorage();
   let userId = parseInt(tokenMap.userId === '' ? '0' : tokenMap.userId);
 
-  if (tokenMap.userId === '' || tokenMap.refreshToken === '' || tokenMap.apiToken === '')
+  if (tokenMap.userId === '' || tokenMap.refreshToken === '' || tokenMap.apiToken === '') {
     await updateTokensDialog(tokenMap.refreshToken, userId);
-  
-  tokenMap = await getAllTokensFromStorage();
-  userId = parseInt(tokenMap.userId === '' ? '0' : tokenMap.userId);
+    tokenMap = await getAllTokensFromStorage();
+    userId = parseInt(tokenMap.userId === '' ? '0' : tokenMap.userId);
+  }
+
   const refreshResponse = await alationApi.testToken(
     constants.REFRESH_TOKEN_KEY, tokenMap.refreshToken, userId) as types.refreshTokenResponse;
   if (refreshResponse.token_status !== constants.TOKEN_STATUS.ACTIVE) {
@@ -39,8 +40,10 @@ export async function retrieveKeys() {
   if (apiResponse.token_status !== constants.TOKEN_STATUS.ACTIVE) {
     grok.shell.error(`API access token status is ${apiResponse.token_status ?? 'expired'}`);
     await updateUserStorage(tokenMap.refreshToken, userId);
+    tokenMap = await getAllTokensFromStorage();
   }
-  return await getAllTokensFromStorage();
+
+  return tokenMap;
 }
 
 async function updateTokensDialog(refreshToken: string, userId: number) {
