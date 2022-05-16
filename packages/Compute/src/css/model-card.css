@@ -1,20 +1,33 @@
-.d4-gallery-card.entity-model i {
-    height: 32px;
-    width: 32px;
+.model-catalog-view .d4-gallery-card.entity-model i {
+    height: 64px;
+    width: 64px;
     position: initial;
 }
 
-
-.d4-gallery-card.entity-model .d4-link-label i.grok-icon + label {
+.model-catalog-view .d4-gallery-card.entity-model .d4-link-label i.grok-icon + label {
     margin-left: 6px;
     align-items: center;
     display: inline-flex;
 }
 
-.d4-gallery-card.entity-model {
+.model-catalog-view .d4-gallery-card.entity-model {
     padding: 0 8px;
     align-items: center;
     display: flex;
     margin: 0;
-    height: 44px;
+    height: 94px;
+}
+
+.model-catalog-view .grok-gallery-grid[mode="Brief"] .grok-gallery-grid {
+    flex-direction: row!important;
+}
+
+.model-catalog-view .grok-gallery-grid[mode="Brief"] .grok-gallery-grid .d4-link-label i.grok-icon {
+    width: 32px;
+    height: 32px;
+    position: initial;
+}
+
+.model-catalog-view .grok-gallery-grid[mode="Brief"] .grok-gallery-grid .d4-link-label label {
+    margin-left: 8px;
 }

@@ -28,7 +28,16 @@ export class ModelHandler extends DG.ObjectHandler {
   }
 
   renderIcon(x: DG.Func, context: any = null): HTMLElement {
-    return x instanceof DG.Script ? this.getLanguageIcon(x.language) : ui.iconImage(x.package.name, x.package.getIconUrl());
+    if (x instanceof DG.Script)
+      return this.getLanguageIcon(x.language);
+    let iconUrl = x.package.getIconUrl();
+    if (x.options['icon'] != null) {
+      let packagePathSegments = iconUrl.split('/');
+      packagePathSegments.pop();
+      packagePathSegments.push(x.options['icon']);
+      iconUrl = packagePathSegments.join('/')
+    }
+    return ui.iconImage(x.package.name, iconUrl);
   }
 
   renderMarkup(x: DG.Func): HTMLElement {
