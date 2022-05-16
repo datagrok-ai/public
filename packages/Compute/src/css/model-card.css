@@ -35,5 +35,27 @@
 }
 
 .model-catalog-view .grok-gallery-grid[mode="Brief"] .grok-gallery-grid .d4-link-label {
-    width: initial!important;
+    min-width: 250px;
+    margin-bottom: 9px;
+    color: var(--grey-6);
+    padding: 10px;
+    width: initial;
+}
+
+.model-catalog-view .d4-tree-view-root > .d4-tree-view-group-host > .d4-tree-view-group > .d4-tree-view-node {
+    font-size: 20px;
+    padding: 4px 0;
+    color: var(--grey-6);
+}
+
+.model-catalog-view .d4-tree-view-root > .d4-tree-view-group-host > .d4-tree-view-group > .d4-tree-view-group-host > .d4-tree-view-group > .d4-tree-view-node {
+    font-size: 16px;
+    padding: 4px 0;
+    color: var(--grey-6);
+}
+
+.model-catalog-view .d4-tree-view-root > .d4-tree-view-group-host > .d4-tree-view-group > .d4-tree-view-group-host > .d4-tree-view-group > .d4-tree-view-group-host > .d4-tree-view-group .d4-tree-view-node {
+    font-size: 14px;
+    padding: 4px 0;
+    color: var(--grey-6);
 }

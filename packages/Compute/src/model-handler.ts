@@ -60,7 +60,7 @@ export class ModelHandler extends DG.ObjectHandler {
   }
 
   renderDetails(x: DG.Func) {
-    return ui.divV([ui.divText(x.description, 'ui-description'), ui.span([ui.render(x.author), ' created ', ui.render(x.createdOn)])], {style: {lineHeight: '150%'}});
+    return ui.divV([ui.markdown(x.description), ui.span([ui.render(x.author), ' created ', ui.render(x.createdOn)])], {style: {lineHeight: '150%'}});
   }
 
   renderTooltip(x: DG.Func) {
