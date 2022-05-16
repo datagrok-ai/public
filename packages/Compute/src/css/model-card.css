@@ -2,12 +2,14 @@
     height: 64px;
     width: 64px;
     position: initial;
+    flex-shrink: 0;
 }
 
 .model-catalog-view .d4-gallery-card.entity-model .d4-link-label i.grok-icon + label {
     margin-left: 6px;
     align-items: center;
     display: inline-flex;
+    white-space: normal;
 }
 
 .model-catalog-view .d4-gallery-card.entity-model {
@@ -30,4 +32,8 @@
 
 .model-catalog-view .grok-gallery-grid[mode="Brief"] .grok-gallery-grid .d4-link-label label {
     margin-left: 8px;
+}
+
+.model-catalog-view .grok-gallery-grid[mode="Brief"] .grok-gallery-grid .d4-link-label {
+    width: initial!important;
 }
