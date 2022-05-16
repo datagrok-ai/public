@@ -1,7 +1,7 @@
 import {Balloon, Color} from './widgets';
 import {toDart, toJs} from './wrappers';
 import {ColorType, MARKER_TYPE} from "./const";
-import {Point, Rect} from "./grid";
+import {Point, Rect, GridCell} from "./grid";
 
 let api = <any>window;
 
@@ -94,14 +94,18 @@ export namespace Paint {
   }
 
   /** Renders a PNG image from bytes */
-  export function pngImage(g: CanvasRenderingContext2D, bounds: Rect, imageBytes: Uint8Array) {
+  export function pngImage(g: CanvasRenderingContext2D, bounds: Rect, imageBytes: Uint8Array, gridCell: GridCell) {
     let r = new FileReader();
     r.readAsBinaryString(new Blob([imageBytes]));
+    
     r.onload = function() {
       let img = new Image();
+
       img.onload = function() {
+        bounds = new Rect(bounds.x, bounds.y, bounds.width, bounds.height).fit(img.width, img.height)
         g.drawImage(img, bounds.x, bounds.y, bounds.width, bounds.height);
       }
+
       img.src = "data:image/jpeg;base64," + window.btoa(r.result as string);
     };
   }

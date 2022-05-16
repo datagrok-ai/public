@@ -1,6 +1,6 @@
 import * as DG from 'datagrok-api/dg';
 import * as ui from 'datagrok-api/ui';
-import {GridCell, GridColumn, Rect} from 'datagrok-api/src/grid';
+// import {GridCell, GridColumn, Rect} from 'datagrok-api/src/grid';
 import {getSettingsBase, names, SummarySettingsBase} from './shared';
 
 
@@ -31,7 +31,7 @@ export class PieChartCellRenderer extends DG.GridCellRenderer {
   render(
     g: CanvasRenderingContext2D,
     x: number, y: number, w: number, h: number,
-    gridCell: GridCell, cellStyle: DG.GridCellStyle
+    gridCell: DG.GridCell, cellStyle: DG.GridCellStyle
   ) {
     const df = gridCell.grid.dataFrame;
 
@@ -40,7 +40,7 @@ export class PieChartCellRenderer extends DG.GridCellRenderer {
     const settings = getSettings(gridCell.gridColumn);
     const row: number = gridCell.cell.row.idx;
     const cols = df.columns.byNames(settings.columnNames);
-    const box = new Rect(x, y, w, h).fitSquare().inflate(-2, -2);
+    const box = new DG.Rect(x, y, w, h).fitSquare().inflate(-2, -2);
 
     for (let i = 0; i < cols.length; i++) {
       if (cols[i].isNone(row))
@@ -58,7 +58,7 @@ export class PieChartCellRenderer extends DG.GridCellRenderer {
     }
   }
 
-  renderSettings(gc: GridColumn): Element {
+  renderSettings(gc: DG.GridColumn): Element {
     gc.settings ??= getSettings(gc);
     const settings = gc.settings;
 
