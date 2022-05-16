@@ -11,34 +11,51 @@ import {PeptidesController} from '../peptides';
  * @param {string} pep Peptide string.
  * @return {Promise<DG.Widget>} Widget.
  */
-export async function peptideMoleculeWidget(pep: string): Promise<DG.Widget> {
+export async function peptideMoleculeWidget(pep: string, currentTable: DG.DataFrame): Promise<DG.Widget> {
   const pi = DG.TaskBarProgressIndicator.create('Creating NGL view');
 
   let widgetHost = ui.divH([]);
+  let smiles = '';
+  let molfileStr = '';
   try {
-    const smiles = getMolecule(pep);
-    if (smiles == '')
-      throw new Error('Couldn\'t get smiles');
+    try {
+      const params = {table: currentTable};
+      const result = await grok.functions.call('Customerextensions:getPeptideStructure', params) as string[];
+      if (result.length !== 0) {
+        smiles = result[0];
+        molfileStr = result[1];
+        throw new Error(`Found structure in DB`);
+      }
 
+      smiles = getMolecule(pep);
+      if (smiles == '')
+        throw new Error('Couldn\'t get smiles');
 
-    let molfileStr = (await grok.functions.call('Peptides:SmiTo3D', {smiles}));
+      molfileStr = (await grok.functions.call('Peptides:SmiTo3D', {smiles})) as string;
+    } catch(e) {
+      console.warn(e);
+    }
 
-    molfileStr = molfileStr.replaceAll('\\n', '\n'); ;
-    const stringBlob = new Blob([molfileStr], {type: 'text/plain'});
-    const nglHost = ui.div([], {classes: 'd4-ngl-viewer', id: 'ngl-3d-host'});
+    try {
+      molfileStr = molfileStr.replaceAll('\\n', '\n'); ;
+      const stringBlob = new Blob([molfileStr], {type: 'text/plain'});
+      const nglHost = ui.div([], {classes: 'd4-ngl-viewer', id: 'ngl-3d-host'});
 
-    //@ts-ignore
-    const stage = new NGL.Stage(nglHost, {backgroundColor: 'white'});
-    //@ts-ignore
-    stage.loadFile(stringBlob, {ext: 'sdf'}).then(function(comp: NGL.StructureComponent) {
-      stage.setSize(300, 300);
-      comp.addRepresentation('ball+stick');
-      comp.autoView();
-    });
-    const sketch = grok.chem.svgMol(smiles);
-    const panel = ui.divH([sketch]);
+      //@ts-ignore
+      const stage = new NGL.Stage(nglHost, {backgroundColor: 'white'});
+      //@ts-ignore
+      stage.loadFile(stringBlob, {ext: 'sdf'}).then(function(comp: NGL.StructureComponent) {
+        stage.setSize(300, 300);
+        comp.addRepresentation('ball+stick');
+        comp.autoView();
+      });
+      const sketch = grok.chem.svgMol(molfileStr);
+      const panel = ui.divH([sketch]);
 
-    widgetHost = ui.div([panel, nglHost]);
+      widgetHost = ui.div([panel, nglHost]);
+    } catch(e) {
+      widgetHost = ui.divText('Couldn\'t get peptide structure');
+    }
   } catch(e) {
     widgetHost = ui.divText('Couldn\'t get peptide structure');
   }
