@@ -2,7 +2,7 @@
 import * as grok from 'datagrok-api/grok';
 import * as ui from 'datagrok-api/ui';
 import * as DG from 'datagrok-api/dg';
-import './dataframe/data_frame';
+import './dataframe/dataframe';
 import './dataframe/calculated-columns';
 import './dataframe/events';
 import './shell/shell';
@@ -30,9 +30,9 @@ import './ui/buttons';
 import './widgets/legend';
 import './ui/icons';
 import './ui/tables';
-import './ui/rangeSlider';
+import './ui/range-slider';
 import './ui/accordion';
-import './ui/tabControl';
+import './ui/tab-control';
 import './ui/list';
 import './ui/image';
 import './ui/viewers-adding'

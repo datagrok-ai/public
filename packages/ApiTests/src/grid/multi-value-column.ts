@@ -32,5 +32,4 @@ category('Grid: MultiValuesColumn', () => {
         v.close();
         grok.shell.closeAll();
     });
-
 });
