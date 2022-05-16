@@ -11,7 +11,7 @@ import {
   PtmMapType
 } from './data-loader';
 
-export class DataLoaderJnj extends DataLoader {
+export class DataLoaderDb extends DataLoader {
   private _pName: string = 'MolecularLiabilityBrowser';
 
   private _files: { [name: string]: string } = {
@@ -88,8 +88,6 @@ export class DataLoaderJnj extends DataLoader {
 
   async load_mlbDf(): Promise<DG.DataFrame> {
     const df = await grok.functions.call(`${this._pName}:GetMolecularLiabilityBrowser`);
-    for (const column of df.columns)
-      column.name = column.name.replaceAll('_', ' ');
     // 'ngl' column have been removed from query 2022-04
     df.columns.remove('ngl');
     return df;

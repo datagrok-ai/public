@@ -42,12 +42,12 @@ export class MiscMethods {
   }
 
   // ---- Resizing ----
-  static setDockSize(view: DG.TableView, node: DG.DockNode, nodeContent: HTMLElement | DG.Viewer) {
+  static setDockSize(view: DG.TableView, node: DG.DockNode, nodeContent: HTMLElement | DG.Viewer): DG.DockNode {
     const rootNodeHeight = view.dockManager.rootNode.container.containerElement.clientHeight;
     let newHeight = 0;
     //@ts-ignore
     newHeight = $('#feature-viewer').outerHeight(true) + 55;
-    newHeight = 1 / (rootNodeHeight / newHeight);
+    newHeight = rootNodeHeight != 0 ? 1 / (rootNodeHeight / newHeight) : 0.5;
 
     //@ts-ignore
     return view.dockManager.dock(nodeContent, 'down', node, 'Sequence', newHeight.toFixed(2));

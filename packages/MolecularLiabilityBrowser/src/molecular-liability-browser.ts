@@ -14,6 +14,7 @@ import {
 } from './utils/data-loader';
 import {DataLoaderFiles} from './utils/data-loader-files';
 import {Aminoacids} from '@datagrok-libraries/bio';
+import {RegionSelectorViewer} from './viewers/vd-regions-viewer';
 
 // import {WebLogo} from '@datagrok-libraries/bio';
 
@@ -43,6 +44,7 @@ export class MolecularLiabilityBrowser {
   hideShowIcon2: HTMLElement;
   treesIcon: HTMLElement;
 
+  regionsViewer: RegionSelectorViewer;
   twinPviewer: TwinPviewer;
   //compostionPviewer: CompostionPviewer;
 
@@ -110,8 +112,8 @@ export class MolecularLiabilityBrowser {
       this.twinPviewer.reset(jsonStr, pdbStr, jsonStrObsPtm);
     }
 
-    this.twinPviewer.show(this.mlbView);
-    this.twinPviewer.open(this.mlbView);
+    await this.twinPviewer.show(this.mlbView);
+    await this.twinPviewer.open(this.mlbView);
 
     pi.close();
   };
@@ -126,49 +128,74 @@ export class MolecularLiabilityBrowser {
     for (let i = 0; i < pf.names.length; i++) {
       this.mlbTable.col(pf.names[i])!.setTag(
         '.default-filter', '{ "min": ' + pf.yellowLeft[i] + ', "max": ' + pf.yellowRight[i] + ' }');
-      this.mlbTable.col(pf.names[i])!.setTag('.charts', '[' +
-        '{"type": "band", "title":"BandYellowLeft", "rule" : "' +
-        pf.redLeft[i] + '-' + pf.yellowLeft[i] + '", "color": "#FFD700", "opacity": 15},' +
-        '{"type": "band", "title":"BandYellowRight", "rule" : "' +
-        pf.yellowRight[i] + '-' + pf.redRight[i] + '", "color": "#FFD700", "opacity": 15}, ' +
-        '{"type": "band", "title":"BandRedLeft", "rule" : "< ' + pf.redLeft[i] +
-        '", "color": "#DC143C", "opacity": 15}, ' +
-        '{"type": "band", "title":"BandRedRight", "rule" : "> ' + pf.redRight[i] +
-        '", "color": "#DC143C", "opacity": 15},' +
-        '{ "type": "spline", "title": "TAP metrics", "y" : [' +
-        pf.plotsY[i].toString() + '], "color": "#7570B3", "width": 1, "x" : [' +
-        pf.plotsX[i].toString() + '], "normalize-y": true, "visible": true}' +
-        ']');
+      // this.mlbTable.col(pf.names[i])!.setTag('.default-filter', JSON.stringify(
+      //   {
+      //     min: pf.yellowLeft[i],
+      //     max: pf.yellowRight[i]
+      //   }));
+      this.mlbTable.col(pf.names[i])!.setTag('.charts', JSON.stringify([
+        {
+          title: 'BandYellowLeft', type: 'band',
+          rule: `${pf.redLeft[i]}-${pf.yellowLeft[i]}`,
+          color: '#FFD700', opacity: 15
+        },
+        {
+          title: 'BandYellowRight', type: 'band',
+          rule: `${pf.yellowRight[i]}-${pf.redRight[i]}`,
+          color: '#FFD700', opacity: 15
+        },
+        {title: 'BandRedLeft', type: 'band', rule: `< ${pf.redLeft[i]}`, color: '#DC143C', opacity: 15},
+        {title: 'BandRedRight', type: 'band', rule: `> ${pf.redRight[i]}`, color: '#DC143C', opacity: 15},
+        {
+          'title': 'TAP metrics', 'type': 'spline',
+          'color': '#7570B3', 'width': 1, 'normalize-y': true, 'visible': true,
+          'x': pf.plotsX[i], 'y': pf.plotsY[i],
+        }
+      ]));
+
+      // this.mlbTable.col(pf.names[i])!.setTag('.charts', '[' +
+      //   '{"type": "band", "title":"BandYellowLeft", "rule" : "' +
+      //   pf.redLeft[i] + '-' + pf.yellowLeft[i] + '", "color": "#FFD700", "opacity": 15},' +
+      //   '{"type": "band", "title":"BandYellowRight", "rule" : "' +
+      //   pf.yellowRight[i] + '-' + pf.redRight[i] + '", "color": "#FFD700", "opacity": 15}, ' +
+      //   '{"type": "band", "title":"BandRedLeft", "rule" : "< ' + pf.redLeft[i] +
+      //   '", "color": "#DC143C", "opacity": 15}, ' +
+      //   '{"type": "band", "title":"BandRedRight", "rule" : "> ' + pf.redRight[i] +
+      //   '", "color": "#DC143C", "opacity": 15},' +
+      //   '{ "type": "spline", "title": "TAP metrics", "y" : [' +
+      //   pf.plotsY[i].toString() + '], "color": "#7570B3", "width": 1, "x" : [' +
+      //   pf.plotsX[i].toString() + '], "normalize-y": true, "visible": true}' +
+      //   ']');
     }
 
-    const filterList: { type: string, column?: string }[] = [];
+    const filterList: { type: string, column?: string, label?: string }[] = [];
 
     for (const pfName of pf.names) {
       this.mlbTable.columns.byName(pfName).width = 150;
       filterList.push({type: 'histogram', column: pfName});
     }
-    filterList.push({type: 'MolecularLiabilityBrowser:mlbFilter'});
-    filterList.push({type: DG.FILTER_TYPE.MULTI_VALUE, column: 'antigen list'});
-    filterList.push({type: DG.FILTER_TYPE.MULTI_VALUE, column: 'antigen gene symbol'});
+    filterList.push({type: 'MolecularLiabilityBrowser:ptmFilter'});
+    filterList.push({type: DG.FILTER_TYPE.MULTI_VALUE, column: 'antigen list', label: 'antigen id'});
+    filterList.push({type: DG.FILTER_TYPE.MULTI_VALUE, column: 'antigen gene symbol', label: 'antigen gene symbol'});
 
-    this.mlbView.filters({filters: filterList});
+    const filterView = this.mlbView.filters({filters: filterList});
 
     grok.events.onTooltipShown.subscribe((args) => {
       if (args.args.context instanceof DG.Column) {
         switch (args.args.context.name) {
-        case 'cdr length':
+        case 'cdr_length':
           args.args.element.innerHTML = pf.tooltips[0];
           break;
 
-        case 'surface cdr hydrophobicity':
+        case 'surface_cdr_hydrophobicity':
           args.args.element.innerHTML = pf.tooltips[1];
           break;
 
-        case 'positive cdr charge':
+        case 'positive_cdr_charge':
           args.args.element.innerHTML = pf.tooltips[2];
           break;
 
-        case 'negative cdr charge':
+        case 'negative_cdr_charge':
           args.args.element.innerHTML = pf.tooltips[3];
           break;
 
@@ -183,7 +210,7 @@ export class MolecularLiabilityBrowser {
     });
   }
 
-  setView(): void {
+  async setView(): Promise<void> {
     this.mlbView = grok.shell.addTableView(this.mlbTable);
 
     grok.shell.windows.showProperties = false;
@@ -191,22 +218,40 @@ export class MolecularLiabilityBrowser {
     this.mlbView.ribbonMenu.clear();
 
     this.mlbView.name = 'Molecular Liability Browser';
-    for (const column of this.mlbTable.columns)
-      column.name = column.name.replaceAll('_', ' ');
+    // for (const column of this.mlbTable.columns)
+    //   column.name = column.name.replaceAll('_', ' ');
+    for (const column of this.mlbTable.columns) {
+      const gridColumn: DG.GridColumn = this.mlbView.grid.columns.byName(column.name);
+      gridColumn.name = column.name.replaceAll('_', ' ');
+    }
 
     this.mlbView.grid.columns.byName('v id')!.width = 120;
     this.mlbView.grid.columns.byName('v id')!.cellType = 'html';
 
+    // Leonid instructed to hide the columns
+    const mlbColumnsToHide = [].concat(...[
+      ['cdr length', 'surface cdr hydrophobicity', 'positive cdr charge', 'negative cdr charge', 'sfvcsp'],
+      ['antigen list', 'antigen ncbi id', 'antigen gene symbol'],
+      ['Heavy chain sequence', 'Light chain sequence']
+    ]);
+    for (let colI = 0; colI < this.mlbView.grid.columns.length; colI++) {
+      const gridColumn: DG.GridColumn = this.mlbView.grid.columns.byIndex(colI);
+      if (gridColumn.column !== null && mlbColumnsToHide.includes(gridColumn.column.name))
+        gridColumn.visible = false;
+    }
+
     //table visual polishing
 
-    this.mlbView.grid.onCellRender.subscribe(function(args) {
+    this.mlbView.grid.onCellRender.subscribe((args: DG.GridCellRenderArgs) => {
       if (args.cell.isColHeader) {
-        const textSize = args.g.measureText(args.cell.gridColumn.name);
-        args.g.fillText(args.cell.gridColumn.name, args.bounds.x +
-          (args.bounds.width - textSize.width) / 2, args.bounds.y +
-          (textSize.fontBoundingBoxAscent + textSize.fontBoundingBoxDescent));
-        args.g.fillStyle = '#4b4b4a';
-        args.preventDefault();
+        if (args.cell.gridColumn.visible) {
+          const textSize = args.g.measureText(args.cell.gridColumn.name);
+          args.g.fillText(args.cell.gridColumn.name, args.bounds.x +
+            (args.bounds.width - textSize.width) / 2, args.bounds.y +
+            (textSize.fontBoundingBoxAscent + textSize.fontBoundingBoxDescent));
+          args.g.fillStyle = '#4b4b4a';
+        }
+        args.preventDefault(); // this is required to prevent drawing headers of hidden columns
       }
     });
 
@@ -365,36 +410,74 @@ export class MolecularLiabilityBrowser {
     });
   }
 
-  mergeSequenceColumns(df: DG.DataFrame, chain: string, startingColumnIndex = 13) {
+  /** Calculate common positions sequence names for both Heavy and Light chains.
+   * This is a draft.
+   * @param {string[]} heavyPositions
+   * @param {string[]} lightPositions
+   */
+  mergeSequencePositionsForImgt(heavyPositions: string[], lightPositions: string[]) {
+    const res: string[] = [];
+    let heavyI = 0;
+    let lightI = 0;
+    const positionRe = /^(\d+)([A-Z]*)$/g;
+
+    while (heavyI < heavyPositions.length && lightI < lightPositions.length) {
+      const heavyPositionName: string = heavyPositions[heavyI];
+      const lightPositionName: string = lightPositions[lightI];
+      const heavyPosM: RegExpMatchArray = heavyPositionName.match(positionRe);
+      const lightPosM: RegExpMatchArray = lightPositionName.match(positionRe);
+
+      const heavyPosNumber: number = parseInt(heavyPosM[0]);
+      const lightPosNumber: number = parseInt(lightPosM[0]);
+
+      const heavyPosPostfix: string = heavyPosM[1];
+      const lightPosPostfix: string = lightPosM[1];
+
+      if (heavyPosNumber == lightPosNumber) {
+        if (heavyPosPostfix == lightPosPostfix) {
+          res.push(heavyPositionName);
+          heavyI++;
+          lightI++;
+        }
+      }
+    }
+  }
+
+  /** Builds multiple alignment sequences from monomers in positions
+   *  as virtual (calculated) column in source DataFrame.
+   * @param {DG.DataFrame} df  DataFrame with ANARCI results
+   * @param {string} chain  Name of chain (used for result column name)
+   * @param {number} startingColumnIndex  The first column with positions
+   * @return {DG.Column}
+   */
+  mergeSequenceColumns(df: DG.DataFrame, chain: string, startingColumnIndex?: number) {
     const positionRegExp = /^\d+[A-Z]*$/g;
     const columns: DG.ColumnList = df.columns;
-    const names = columns.names().slice(startingColumnIndex);
-    const positionColumns = names.filter((v: string) => v.match(positionRegExp) !== null);
+
+    // All positions schemes contains position '1'
+    const positionNames = startingColumnIndex !== void 0 ? columns.names().slice(startingColumnIndex) :
+      columns.names().slice(columns.names().indexOf('1'));
+
+    const positionColumns = positionNames.filter((v: string) => v.match(positionRegExp) !== null);
     const seqCol = columns.addNewVirtual(
       `${chain} chain sequence`,
       (i: number) => positionColumns.map((v) => df.get(v, i)).join('')
     );
     seqCol.semType = Aminoacids.SemTypeMultipleAlignment;
+
+    const positionNamesTxt = positionNames.join(', '); /* Spaces are for word wrap */
+    seqCol.setTag('positionNames', positionNamesTxt);
+
     return seqCol;
   }
 
-  addLogoViewer(table: DG.DataFrame, chain: string, dockType: DG.DOCK_TYPE, node?: DG.DockNode) {
-    const seqCol = this.mergeSequenceColumns(table, chain);
-
-    grok.data.joinTables(
-      this.mlbTable,
-      table,
-      ['v id'],
-      ['Id'],
-      (this.mlbTable.columns as DG.ColumnList).names(),
-      [seqCol.name],
-      DG.JOIN_TYPE.LEFT,
-      true
-    );
+  addLogoViewer(table: DG.DataFrame, seqCol: DG.Column, dockType: DG.DOCK_TYPE, node?: DG.DockNode) {
+    // Hide heavy & light chains amino acid sequences visually
+    this.mlbView.grid.columns.byName(seqCol.name).visible = false;
 
     // const webLogo: WebLogo = new WebLogo();
     const logo = this.mlbView.addViewer('WebLogo', {sequenceColumnName: seqCol.name});
-    return this.mlbView.dockManager.dock(logo, dockType, node, `${chain} chain`, 0.22);
+    return this.mlbView.dockManager.dock(logo, dockType, node, `${seqCol.name} chain`, 0.22);
   }
 
   onMLBGridCurrentRowChanged(args: any) {
@@ -412,21 +495,8 @@ export class MolecularLiabilityBrowser {
     ////////////////////////////////////////////////////
     this.mlbTable = await this.dataLoader.load_mlbDf();
 
-    const hChainDf = await this.dataLoader.load_hChainDf();
-    const lChainDf = await this.dataLoader.load_lChainDf();
-
     for (const column of this.mlbTable.columns)
       column.name = column.name.replaceAll('_', ' ');
-
-    // TODO: Leonid instructed to hide the columns, but no luck
-    // const mlbColumnsToHide = ['cdr length', 'surface cdr hydrophobicity', 'positive cdr charge',
-    //   'negative cdr charge', 'sfvscp'];
-    // const mlbColumnsToHide = ['cdr length',];
-    const mlbColumnsToHide = [];
-    for (const column of this.mlbTable.columns) {
-      if (mlbColumnsToHide.includes(column.name))
-        column.name = '~' + column.name;
-    }
 
     const mlbColumnsToMultiValue = ['antigen list', 'antigen ncbi id', 'antigen gene symbol'];
     for (const column of this.mlbTable.columns) {
@@ -449,25 +519,49 @@ export class MolecularLiabilityBrowser {
       .getCol('index').getRawData() as Int32Array);
     // #endregion
 
-    pi.close();
+    //#region -- Build columns with multiple alignments --
+    /* Firstly get positions list for every chain.
+       Secondly merge them to common positions sequence.
+       Thirdly build sequences by common po
+     */
+    const hChainDf = await this.dataLoader.load_hChainDf();
+    const lChainDf = await this.dataLoader.load_lChainDf();
+    [{name: 'Heavy', df: hChainDf}, {name: 'Light', df: lChainDf}].forEach((chain) => {
+      const seqCol = this.mergeSequenceColumns(chain.df, chain.name);
+      grok.data.joinTables(
+        this.mlbTable, chain.df,
+        ['v id'], ['Id'],
+        (this.mlbTable.columns as DG.ColumnList).names(), [seqCol.name],
+        DG.JOIN_TYPE.LEFT, true);
 
-    // window.alert('Here we are!');
+      // crutch, because grok.data.joinTables() loses right table columns tags
+      this.mlbTable.col(seqCol.name).setTag('positionNames', chain.df.col(seqCol.name).getTag('positionNames'));
+    });
+    //#endregion -- Build columns with multiple alignments --
+
+    pi.close();
 
     grok.events.onViewRemoved.subscribe((v) => {
       if (v.type === DG.VIEW_TYPE.TABLE_VIEW && (v as DG.TableView).dataFrame.id === this.mlbTable.id)
         this.subs.forEach((s) => s.unsubscribe());
     });
 
-    this.setView();
+    await this.setView();
 
-    const hNode = this.addLogoViewer(hChainDf, 'Heavy', DG.DOCK_TYPE.TOP);
-    this.addLogoViewer(lChainDf, 'Light', DG.DOCK_TYPE.DOWN, hNode);
+
+    // const hNode = this.addLogoViewer(hChainDf, 'Heavy', DG.DOCK_TYPE.TOP);
+    // this.addLogoViewer(lChainDf, 'Light', DG.DOCK_TYPE.DOWN, hNode);
 
     this.allVids = this.mlbTable.col('v id')!;
     this.allIds = this.mlbTable.col('gdb id mappings')!;
     this.idMapping = {};
     for (let i = 0; i < this.allVids.length; i++)
       this.idMapping[this.allVids.get(i)] = this.allIds.get(i).replaceAll(' ', '').split(',');
+
+    if (this.mlbView) {
+      this.regionsViewer = new RegionSelectorViewer();
+      await this.regionsViewer.init(this.mlbView);
+    }
 
     const dfTree: DG.DataFrame = await this.dataLoader.load_treeDf();
     if (dfTree) {
@@ -492,7 +586,6 @@ export class MolecularLiabilityBrowser {
 
     if (urlVid != null)
       this.vIdInput.value = urlVid;
-
 
     this.changeVid();
     this.setPropertiesFilters();
