@@ -10,7 +10,7 @@ type ChainTypeType = 'L' | 'H';
  * 1. On onRowsFiltering event, only FILTER OUT rows that do not satisfy this filter's criteria
  * 2. Call dataFrame.rows.requestFilter when filtering criteria changes.
  * */
-export class MLBFilter extends DG.Filter {
+export class PtmFilter extends DG.Filter {
   chainType: ChainTypeType;
   ptmMap: { [key: string]: string; };
   cdrMap: { [key: string]: string; };
@@ -55,7 +55,7 @@ export class MLBFilter extends DG.Filter {
   }
 
   get caption() {
-    return 'MLB Filter';
+    return 'PTM filter';
   }
 
   get isFiltering() {

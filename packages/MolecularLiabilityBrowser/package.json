@@ -1,7 +1,7 @@
 {
   "name": "molecular-liability-browser",
   "fullName": "MolecularLiabilityBrowser",
-  "version": "0.0.4",
+  "version": "0.0.5",
   "description": "",
   "repository": {
     "type": "git",
@@ -13,9 +13,11 @@
     "css/pviz-core.css",
     "css/additionalStyles.css",
     "vendor/pviz-bundle.min.js",
-    "common/ngl_viewer/ngl.js"
+    "common/ngl_viewer/ngl.js",
+    "css/vd-regions-viewer.css"
   ],
   "dependencies": {
+    "@datagrok-libraries/bio": "^0.0.8",
     "@datagrok-libraries/utils": ">=0.0.22 <0.2.9",
     "@deck.gl/core": "^8.7.5",
     "@deck.gl/layers": "^8.7.5",

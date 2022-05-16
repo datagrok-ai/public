@@ -77,8 +77,6 @@ export class DataLoaderFiles extends DataLoader {
 
   async load_mlbDf(): Promise<DG.DataFrame> {
     const df: DG.DataFrame = DG.DataFrame.fromCsv(await _package.files.readAsText(this._files.mlb));
-    for (const column of df.columns)
-      column.name = column.name.replaceAll('_', ' ');
 
     // 'ngl' column have been removed from query 2022-04
     df.columns.remove('ngl');
@@ -91,7 +89,7 @@ export class DataLoaderFiles extends DataLoader {
        "3553,3590,335,4045,105805883,102116898,3543,27132,100423062,389812,10892,9080,5284,3904,8740"
          -> Infinity -> "Infinity"
      */
-    df.changeColumnType('antigen ncbi id', DG.COLUMN_TYPE.STRING);
+    // df.changeColumnType('antigen_ncbi_id', DG.COLUMN_TYPE.STRING);
 
     return df;
   }
