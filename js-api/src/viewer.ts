@@ -1,5 +1,5 @@
 /** A viewer that is typically docked inside a [TableView]. */
-import {TYPE, VIEWER, ViewerPropertyType, ViewerType} from "./const";
+import {FILTER_TYPE, TYPE, VIEWER, ViewerPropertyType, ViewerType} from "./const";
 import {Column, DataFrame} from "./dataframe.js";
 import {DateTime, Property, PropertyOptions} from "./entities";
 import {Menu, ObjectPropertyBag, Widget} from "./widgets";
@@ -354,10 +354,11 @@ export class JsViewer extends Viewer {
 }
 
 
-// export interface FilterState {
-//   type: FILTER_TYPE | string;
-//   column?: string;
-// }
+export interface FilterState {
+  type: FILTER_TYPE;
+  column?: string;
+}
+
 
 /** Represents a group of filters that are located together. */
 export class FilterGroup extends Viewer {
@@ -367,7 +368,7 @@ export class FilterGroup extends Viewer {
     super(dart);
   }
 
-  add(state: string) {
+  add(state: FilterState) {
     api.grok_FilterGroup_Add(this.dart, state);
   }
 }
