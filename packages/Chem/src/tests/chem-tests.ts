@@ -39,21 +39,21 @@ COc1ccc2c(c1)c(CC(=O)N3CCCC3C(=O)Oc4ccc(C)cc4OC)c(C)n2C(=O)c5ccc(Cl)cc5
 
   test('findSimilar.sar-small', async () => {
     const dfInput = DG.DataFrame.fromCsv(await loadFileAsText('sar-small.csv'));
-    const colInput = dfInput.columns[0];
+    const colInput = dfInput.columns.byIndex(0);
     const dfResult: DG.DataFrame = // shouldn't be null
       (await grok.chem.findSimilar(colInput, 'O=C1CN=C(C2CCCCC2)C2:C:C:C:C:C:2N1'))!;
     const numRowsOriginal = dfInput.rowCount;
     const numRows = dfResult.rowCount;
     const columnNames = [
-      dfResult.columns[0].name,
-      dfResult.columns[1].name,
-      dfResult.columns[2].name,
+      dfResult.columns.byIndex(0).name,
+      dfResult.columns.byIndex(1).name,
+      dfResult.columns.byIndex(2).name,
     ];
     const first5Rows: any[] = [];
     for (let i = 0; i < 5; ++i) {
-      const molecule: string = dfResult.columns[0].get(i);
-      const score: number = dfResult.columns[1].get(i);
-      const index: number = dfResult.columns[2].get(i);
+      const molecule: string = dfResult.columns.byIndex(0).get(i);
+      const score: number = dfResult.columns.byIndex(1).get(i);
+      const index: number = dfResult.columns.byIndex(2).get(i);
       first5Rows[i] = {molecule, score, index};
     }
     expect(numRows, numRowsOriginal);
@@ -80,7 +80,8 @@ COc1ccc2c(c1)c(CC(=O)N3CCCC3C(=O)Oc4ccc(C)cc4OC)c(C)n2C(=O)c5ccc(Cl)cc5
 
   test('getSimilarities.molecules', async () => {
     const df = grok.data.demo.molecules();
-    const scores = (await grok.chem.getSimilarities(df.columns['smiles'], 'O=C1CN=C(C2CCCCC2)C2:C:C:C:C:C:2N1'))!;
+    const scores = (await grok.chem.getSimilarities(df.columns.byName('smiles'),
+      'O=C1CN=C(C2CCCCC2)C2:C:C:C:C:C:2N1'))!;
     expectFloat(scores.get(0), 0.1034);
     expectFloat(scores.get(1), 0.07407);
     expectFloat(scores.get(2), 0.11111);
@@ -126,7 +127,7 @@ CN1C(=O)CN=C(c2cc(Cl)ccc12)C3CCCCC3`);
       O=C1CN=C(c2cc(Cl)ccc2N1)C3CCCCC3
       CN1C(=O)CN=C(c2cc(Cl)ccc12)C3CCCCC3`);
     const v = grok.shell.addTableView(t);
-    await grok.functions.call('Chem:addMcsPanel', {col: t.columns['smiles']});
+    await grok.functions.call('Chem:addMcsPanel', {col: t.columns.byName('smiles')});
     v.close();
   });
 
@@ -140,7 +141,7 @@ CN1C(=O)CN=C(c2cc(Cl)ccc12)C3CCCCC3`);
       CCOC(=O)C1=C(C)NC(=C(C1c2csc(n2)c3ccc(Cl)cc3)C(=O)OC(C)C)
       CCOC(=O)C1=C(C)NC(=C(C1c2csc(n2)c3ccc(Cl)cc3)C(=O)OCC(C)C)`);
     const v = grok.shell.addTableView(t);
-    await grok.functions.call('Chem:addInchisPanel', {col: t.columns['smiles']});
+    await grok.functions.call('Chem:addInchisPanel', {col: t.columns.byName('smiles')});
     v.close();
   });
 
@@ -154,7 +155,7 @@ CN1C(=O)CN=C(c2cc(Cl)ccc12)C3CCCCC3`);
       CCOC(=O)C1=C(C)NC(=C(C1c2csc(n2)c3ccc(Cl)cc3)C(=O)OC(C)C)
       CCOC(=O)C1=C(C)NC(=C(C1c2csc(n2)c3ccc(Cl)cc3)C(=O)OCC(C)C)`);
     const v = grok.shell.addTableView(t);
-    await grok.functions.call('Chem:addInchisKeysPanel', {col: t.columns['smiles']});
+    await grok.functions.call('Chem:addInchisKeysPanel', {col: t.columns.byName('smiles')});
     v.close();
   });
 

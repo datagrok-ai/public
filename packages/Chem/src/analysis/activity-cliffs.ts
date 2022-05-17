@@ -4,9 +4,8 @@ import * as ui from 'datagrok-api/ui';
 import {chemSpace} from './chem-space';
 import * as chemSearches from '../chem-searches';
 import {getSimilarityFromDistance} from '@datagrok-libraries/utils/src/similarity-metrics';
-import {renderMolecule} from '../rendering/render-molecule';
-import {updateDivInnerHTML} from '../utils/ui-utils';
 import {findMCS} from '../scripts-api';
+import {drawMoleculeToCanvas} from '../utils/chem-common-rdkit';
 
 const options = {
   'SPE': {cycles: 2000, lambda: 1.0, dlambda: 0.0005},
@@ -102,96 +101,164 @@ export async function getActivityCliffs(
     markerMinSize: 5,
     markerMaxSize: 25,
   }));
-  const div = ui.div('');
-  view.root.append(div);
+  const listCliffs = ui.button('List cliffs', () => {
+    grok.shell.o = ui.div(linesDf.plot.grid().root);
+  });
+  listCliffs.style.position = 'absolute';
+  listCliffs.style.top = '10px';
+  listCliffs.style.right = '10px';
+  view.root.append(ui.div(listCliffs));
 
-  //@ts-ignore
   const canvas = sp.getInfo()['canvas'];
   let lines: any[] = [];
-  //@ts-ignore
-  canvas.addEventListener('mousedown', function(event) {
-    setTimeout(() => {
-      const rect = canvas.getBoundingClientRect();
-      const x = event.clientX - rect.left;
-      const y = event.clientY - rect.top;
-      let clickedOnLine = false;
-      for (const line of lines) {
-        const dist =
-      Math.abs(Math.hypot(line.a[0] - x, line.a[1] - y) +
-      Math.hypot(line.b[0] - x, line.b[1] - y) - Math.hypot(line.a[0] - line.b[0], line.a[1] - line.b[1]));
-        if (dist < 2) {
-          const tooltipDiv = ui.divV([]);
-          //@ts-ignore
-          line.mols.forEach((mol) => {
-            tooltipDiv.append(renderMolecule(
+  let linesDf: DG.DataFrame;
+  let lastSelectedLineId: number|null = null;
+  let currentLineId: number|null = null;
+  const tooltips: any = {};
+
+  let timer: NodeJS.Timeout;
+  canvas.addEventListener('mousemove', function(event : MouseEvent) {
+    clearTimeout(timer);
+    timer = setTimeout(function() {
+      const line = checkCursorOnLine(event, canvas, lines);
+      if (line && df.mouseOverRowIdx === -1) {
+        if (line.id !== lastSelectedLineId) {
+          lastSelectedLineId = line.id;
+          if (!tooltips[line.id]) {
+            tooltips[line.id] = ui.divText('Loading...');
+            const mcsDf = DG.DataFrame.create(2);
             //@ts-ignore
-              df.get('smiles', mol), {width: 120, height: 60}));
-          });
-          tooltipDiv.append(ui.divText('MCS:'));
-          const mscDiv = ui.div('Loading mcs...');
-          tooltipDiv.append(mscDiv);
-          const mcsDf = DG.DataFrame.create(2);
-          //@ts-ignore
-          mcsDf.columns.addNewString('smiles').init((i) => df.get('smiles', line.mols[i]));
-          findMCS('smiles', mcsDf).then((mcs) => {
-            updateDivInnerHTML(mscDiv, mcs);
-          });
-          updateDivInnerHTML(div, tooltipDiv);
-          div.style.top = (event.clientY) + 'px';
-          div.style.left = (event.clientX) + 'px';
-          div.style.position = 'fixed';
-          div.style.display = 'block';
-          div.style.background = 'snow';
-          div.style.border = 'solid 1px';
-          clickedOnLine = true;
-          break;
+            mcsDf.columns.addNewString('smiles').init((i) => df.get(smiles.name, line.mols[i]));
+            findMCS('smiles', mcsDf, true).then((mcs) => {
+              tooltips[line.id] = ui.divH([]);
+              const columnNames = ui.divV([
+                ui.divText('smiles'),
+                ui.divText(activities.name),
+              ]);
+              columnNames.style.fontWeight = 'bold';
+              columnNames.style.display = 'flex';
+              columnNames.style.justifyContent = 'space-between';
+              tooltips[line.id].append(columnNames);
+              line.mols.forEach((mol: any) => {
+                const imageHost = ui.canvas(200, 100);
+                drawMoleculeToCanvas(0, 0, 200, 100, imageHost, df.get('smiles', mol), mcs);
+                const activity = ui.divText(df.get(activities.name, mol).toFixed(2));
+                activity.style.display = 'flex';
+                activity.style.justifyContent = 'left';
+                activity.style.paddingLeft = '30px';
+                tooltips[line.id].append(ui.divV([
+                  imageHost,
+                  activity,
+                ]));
+              });
+              ui.tooltip.show(tooltips[line.id], event.clientX, event.clientY);
+            });
+          }
+          ui.tooltip.show(tooltips[line.id], event.clientX, event.clientY);
         }
       }
-      if (!clickedOnLine) {
-        div.style.border = 'none';
-        div.innerHTML = '';
-      }
+    }, 1000);
+  });
 
-      event.stopPropagation();
-    }, 500);
+
+  canvas.addEventListener('mousedown', function(event: MouseEvent) {
+    const line = checkCursorOnLine(event, canvas, lines);
+    if (line && df.mouseOverRowIdx === -1) {
+      if (event.ctrlKey) {
+        line.selected = !line.selected;
+        linesDf.selection.set(line.id, line.selected);
+        if (!line.selected)
+        //@ts-ignore
+          line.mols.forEach((m) => df.selection.set(m, false));
+        //@ts-ignore
+        lines.forEach((l) => {
+          if (l.selected)
+            //@ts-ignore
+            l.mols.forEach((m) => df.selection.set(m, true));
+        });
+      } else {
+        if (!currentLineId || currentLineId !== line.id) {
+          currentLineId = line.id;
+          df.currentRowIdx = line.mols[0];
+          linesDf.currentRowIdx = line.id;
+          df.selection.set(0, !lines[0].selected);
+          df.selection.set(0, lines[0].selected);
+        }
+      }
+    } else {
+      currentLineId = null;
+      df.currentRowIdx = -1;
+      linesDf.currentRowIdx = -1;
+      df.selection.set(0, !lines[0].selected);
+      df.selection.set(0, lines[0].selected);
+    }
   });
 
   sp.onEvent('d4-before-draw-scene')
     .subscribe((_) => {
-      div.innerHTML = '';
-      div.style.border = 'none';
-      lines = renderLines(sp, n1, n2, `${axes[0]}_${colNameInd}`, `${axes[1]}_${colNameInd}`);
+      const renderRes = renderLines(sp, n1, n2,
+        `${axes[0]}_${colNameInd}`, `${axes[1]}_${colNameInd}`, lines, linesDf, currentLineId, smiles, activities);
+      lines = renderRes.lines;
+      linesDf = renderRes.linesDf;
     });
 
   sp.addProperty('similarityLimit', 'double', optSimilarityLimit);
 }
 
-function renderLines(sp: DG.Viewer, n1: number[], n2: number[], xAxis: string, yAxis: string) {
+function checkCursorOnLine(event: any, canvas: any, lines: any[]) {
+  const rect = canvas.getBoundingClientRect();
+  const x = event.clientX - rect.left;
+  const y = event.clientY - rect.top;
+  for (const line of lines) {
+    const dist =
+      Math.abs(Math.hypot(line.a[0] - x, line.a[1] - y) +
+      Math.hypot(line.b[0] - x, line.b[1] - y) - Math.hypot(line.a[0] - line.b[0], line.a[1] - line.b[1]));
+    if (dist < 2)
+      return line;
+  }
+  return null;
+}
+
+function renderLines(sp: DG.Viewer, n1: number[],
+  n2: number[], xAxis: string, yAxis: string, lines: any[], linesDf: DG.DataFrame, currentLineId: number|null,
+  smiles: DG.Column, activities: DG.Column) {
   //@ts-ignore
   const canvas = sp.getInfo()['canvas'];
   const ctx = canvas.getContext('2d') as CanvasRenderingContext2D;
-
   const x = sp.dataFrame!.columns.byName(xAxis);
   const y = sp.dataFrame!.columns.byName(yAxis);
-
-  const lines = [];
-
-  for (let i = 0; i < n1.length; i++) {
+  if (!lines.length)
+    linesDf = createLines(n1, n2, lines, linesDf, smiles, activities);
+  for (let i = 0; i < lines.length; i++) {
+    //@ts-ignore
+    const pointFrom = sp.worldToScreen(x.get(lines[i].mols[0]), y.get(lines[i].mols[0]));
+    //@ts-ignore
+    const pointTo = sp.worldToScreen(x.get(lines[i].mols[1]), y.get(lines[i].mols[1]));
+    lines[i].a = [pointFrom.x, pointFrom.y];
+    lines[i].b = [pointTo.x, pointTo.y];
     const line = new Path2D();
+    line.moveTo(lines[i].a[0], lines[i].a[1]);
+    ctx.strokeStyle = lines[i].id === currentLineId ? 'red' : lines[i].selected ? 'yellow' : 'green';
+    ctx.lineWidth = 1;
+    line.lineTo(lines[i].b[0], lines[i].b[1]);
+    ctx.stroke(line);
+  }
+  return {lines: lines, linesDf: linesDf};
+}
+
+function createLines(n1: number[], n2: number[],
+  lines: any[], linesDf: DG.DataFrame, smiles: DG.Column, activities: DG.Column) {
+  for (let i = 0; i < n1.length; i++) {
     const num1 = n1[i];
     const num2 = n2[i];
-    //@ts-ignore
-    const pointFrom = sp.worldToScreen(x.get(num1), y.get(num1));
-    //@ts-ignore
-    const pointTo = sp.worldToScreen(x.get(num2), sp.dataFrame.get(yAxis, num2));
-    line.moveTo(pointFrom.x, pointFrom.y);
-    ctx.strokeStyle = 'green';
-    ctx.lineWidth = 1;
-    line.lineTo(pointTo.x, pointTo.y);
-    ctx.stroke(line);
-    lines.push({a: [pointFrom.x, pointFrom.y], b: [pointTo.x, pointTo.y], mols: [num1, num2]});
+    lines.push({id: i, mols: [num1, num2], selected: false});
   }
-  return lines;
+  linesDf = DG.DataFrame.create(lines.length);
+  linesDf.columns.addNewString('1_smiles').init((i) => smiles.get(lines[i].mols[0]));
+  linesDf.columns.addNewString('2_smiles').init((i) => smiles.get(lines[i].mols[1]));
+  linesDf.columns.addNewFloat('act_diff')
+    .init((i) => activities.get(lines[i].mols[0]) - activities.get(lines[i].mols[1]));
+  return linesDf;
 }
 
 async function getSimilaritiesMarix(dim: number, smiles: DG.Column, dfSmiles: DG.DataFrame, simArr: DG.Column[]) {

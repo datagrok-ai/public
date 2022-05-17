@@ -60,8 +60,8 @@ export function rGroupAnalysis(col: DG.Column) {
         const view = grok.shell.getTableView(col.dataFrame.name);
         if (visualAnalysisCheck.value && view) {
           view.trellisPlot({
-            xColumnNames: [res.columns[0].name],
-            yColumnNames: [res.columns[1].name],
+            xColumnNames: [res.columns.byIndex(0).name],
+            yColumnNames: [res.columns.byIndex(1).name],
           });
         }
       } else

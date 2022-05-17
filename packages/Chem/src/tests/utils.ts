@@ -7,10 +7,11 @@ export async function loadFileAsText(name: string): Promise<string> {
   return await _package.files.readAsText(name);
 }
 
-export async function _testSearchSubstructure(csv: string, pattern: string, trueIndices: number[], params: any | null = null) {
+export async function _testSearchSubstructure(csv: string,
+  pattern: string, trueIndices: number[], params: any | null = null) {
   // await grok.functions.call('Chem:initChem');
   const df = DG.DataFrame.fromCsv(csv);
-  const col = df.columns[0];
+  const col = df.columns.byIndex(0);
   const bitset: DG.BitSet = (params !== null) ?
     (await grok.chem.searchSubstructure(col, pattern, params)) :
     (await grok.chem.searchSubstructure(col, pattern));
@@ -29,7 +30,7 @@ export async function _testSearchSubstructureSARSmall(params: any | null = null)
 
   // await grok.functions.call('Chem:initChem');
   const df = DG.DataFrame.fromCsv(file);
-  const col = df.columns[0];
+  const col = df.columns.byIndex(0);
   const bitset: DG.BitSet = (params !== null) ?
     (await grok.chem.searchSubstructure(col, 'O=C1CN=C(C2CCCCC2)C2:C:C:C:C:C:2N1', params)) :
     (await grok.chem.searchSubstructure(col, 'O=C1CN=C(C2CCCCC2)C2:C:C:C:C:C:2N1'));

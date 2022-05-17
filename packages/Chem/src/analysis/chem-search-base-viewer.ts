@@ -17,7 +17,7 @@ export class ChemSearchBaseViewer extends DG.JsViewer {
     'normal': {height: 100, width: 200},
     'large': {height: 150, width: 300}};
   size: string;
-  moleculeColumn?: DG.Column;
+  moleculeColumn?: DG.Column|null;
   moleculeColumnName: string;
   initialized: boolean = false;
   metricsDiv = ui.div('', {style: {height: '10px', display: 'flex', justifyContent: 'right'}});
@@ -89,7 +89,8 @@ export class ChemSearchBaseViewer extends DG.JsViewer {
   beforeRender() {
     if (!this.initialized)
       return false;
-    if (this.dataFrame && this.moleculeColumnName && this.dataFrame.col(this.moleculeColumnName)!.semType !== DG.SEMTYPE.MOLECULE) {
+    if (this.dataFrame && this.moleculeColumnName &&
+          this.dataFrame.col(this.moleculeColumnName)!.semType !== DG.SEMTYPE.MOLECULE) {
       grok.shell.error(`${this.moleculeColumnName} is not Molecule type`);
       return false;
     }
