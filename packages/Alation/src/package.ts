@@ -127,13 +127,19 @@ export async function connectToDb(tableObject: types.table, name: string): Promi
   } catch {
     console.warn(`Couldn't find connection with id '${dsId}', creating new...`);
   }
-  
+
+  const helpText = ui.inlineText(['The database credentials are stored in the secure ',
+    ui.link('Datagrok Credentials Management Service', 'https://datagrok.ai/help/govern/security#credentials'),
+    ' and the connection is created that can be used as any other ',
+    ui.link('Data Connection', 'https://datagrok.ai/help/access/data-connection'), ' in Datagrok.']);
+  const helpHost = ui.div(helpText, 'alation-help-host');
+  $(helpHost).width(500);
   const usernameField = ui.stringInput('Login', '');
   const passwordField = ui.stringInput('Password', '');
   $(passwordField.root as HTMLInputElement).children('.ui-input-editor').attr('type', 'password');
   const dialog = ui.dialog(`Open ${name}`);
   dialog
-    .add(ui.div([usernameField, passwordField]))
+    .add(ui.divV([helpHost, usernameField, passwordField]))
     .onOK(async () => {
       if (!dsConnection) {
         let dbType: string | null = null;
