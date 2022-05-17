@@ -110,12 +110,13 @@ export enum TYPE {
 }
 
 export enum FILTER_TYPE {
- HISTOGRAM = 'histogram',
- CATEGORICAL = 'categorical',
- MULTI_VALUE = 'multi-value',
- BOOL_COLUMNS = 'bool-columns',
- FREE_TEXT = 'free-text',
- COLUMN_FREE_TEXT = 'column-free-text'
+  HISTOGRAM = 'histogram',
+  CATEGORICAL = 'categorical',
+  MULTI_VALUE = 'multi-value',
+  BOOL_COLUMNS = 'bool-columns',
+  FREE_TEXT = 'free-text',
+  COLUMN_FREE_TEXT = 'column-free-text',
+  SUBSTRUCTURE = 'Chem:substructureFilter'
 }
 
 export const TYPES_SCALAR = new Set([TYPE.INT, TYPE.BIG_INT, TYPE.FLOAT, TYPE.NUM, TYPE.BOOL, TYPE.STRING]);
