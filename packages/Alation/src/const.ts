@@ -12,6 +12,7 @@ export const URI_MAP = {
   column: 'column',
   result: 'result',
   create_api_token: 'createAPIAccessToken',
+  account_auth: 'account/auth',
 };
 
 export const DATASOURCE_URI_MAP = {

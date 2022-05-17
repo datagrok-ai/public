@@ -2,10 +2,12 @@ import * as grok from 'datagrok-api/grok';
 import * as ui from 'datagrok-api/ui';
 
 import {take} from 'rxjs/operators';
+import $ from 'cash-dom';
 
 import * as constants from './const';
 import * as alationApi from './alation-api';
 import * as types from './types';
+import { getBaseURL } from './package';
 
 const UDS = grok.dapi.userDataStorage;
 
@@ -49,10 +51,22 @@ export async function retrieveKeys() {
 }
 
 async function updateTokensDialog(refreshToken: string, userId: number) {
+  const authLink = ui.link(
+    'My Account -> Account Settings -> Authentication', `${await getBaseURL()}${constants.URI_MAP.account_auth})`);
+  const refreshTokenHelpText = ui.inlineText(['Refresh token is a long living token the used to manage and create ',
+    'API Access Tokens which can be used to interact with the other Alation APIs. It can be found in ',
+    authLink, '.']);
+  const userIdHelpText = ui.inlineText(['User ID is an ID associated with your account on Alation instance. It can ',
+    'be found in My Account -> User Profile. The User ID then will be shown in address bar of your browser.']);
+  const dataStorageHelpText = ui.inlineText(['Datagrok stores this data in a secure environment called ',
+    ui.link('User Data Storage', 'https://datagrok.ai/help/develop/how-to/user-data-storage'), '.']);
+  const helpHost = ui.divV([refreshTokenHelpText, userIdHelpText, dataStorageHelpText], 'alation-help-host');
+  $(helpHost).width(500);
+
   const refreshTokenInput = ui.stringInput('Refresh token', refreshToken);
   const userIdInput = ui.intInput('User ID', userId);
   const dialog = ui.dialog('Update keys')
-    .add(ui.divV([userIdInput.root, refreshTokenInput.root]))
+    .add(ui.divV([helpHost, userIdInput.root, refreshTokenInput.root]))
     .onOK(async () => {
       const refreshTokenInputValue = refreshTokenInput.stringValue;
       const userIdInputValue = userIdInput.value as number;
