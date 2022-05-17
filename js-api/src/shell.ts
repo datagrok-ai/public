@@ -37,15 +37,12 @@ export class Shell {
     return toJs(api.grok_CurrentTable());
   }
 
-  /** Current view
-   *  @type {ViewBase} */
-  get v(): ViewBase {
-    return toJs(api.grok_Get_CurrentView());
-  }
+  /** Current view */
+  get v(): ViewBase { return toJs(api.grok_Get_CurrentView()); }
+  set v(view: ViewBase) { api.grok_Set_CurrentView(view.dart); }
 
-  set v(view: ViewBase) {
-    api.grok_Set_CurrentView(view.dart);
-  }
+  /** Current table view, or null */
+  get tv(): TableView { return toJs(api.grok_Get_CurrentView()); }
 
   /** Current project
    *  @type {Project} */

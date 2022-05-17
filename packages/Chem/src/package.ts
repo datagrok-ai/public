@@ -64,7 +64,6 @@ export async function initChem() {
   _rdRenderer = new RDKitCellRenderer(getRdKitModule());
   renderer = new GridCellRendererProxy(_rdRenderer, 'Molecule');
   _renderers = new Map();
-  _properties = {};
 }
 
 //tags: autostart

@@ -139,7 +139,9 @@ export async function stackedBarchartWidget(col: DG.Column): Promise<DG.Widget> 
 //input: string peptide {semType: alignedSequence}
 //output: widget result
 export async function peptideMolecule(peptide: string): Promise<DG.Widget> {
-  return peptideMoleculeWidget(peptide);
+  [currentView, currentGrid, currentTable, alignedSequenceColumn] =
+    getOrDefine();
+  return peptideMoleculeWidget(peptide, currentTable);
 }
 
 //name: Peptide Molecule

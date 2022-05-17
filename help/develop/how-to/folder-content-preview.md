@@ -1,4 +1,4 @@
-<!-- TITLE: Develop custom file handlers -->
+<!-- TITLE: Custom folder content preview -->
 
 # Folder content preview
 
@@ -6,8 +6,8 @@ To provide custom folder content preview, register a function tagged as `folderV
 parameters `folder` and `files`, inspects them and returns a widget if a custom preview could be provided, or null
 otherwise.
 
-The following function adds the 'START' button if one of the files in that folder is named "
-demog.csv":
+The following function adds the 'START' button if one of the files in that folder is named 
+"demog.csv":
 
 ```js
 //tags: folderViewer

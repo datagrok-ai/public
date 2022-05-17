@@ -1,5 +1,4 @@
 import * as DG from 'datagrok-api/dg';
-import {InputBase, Property, TYPE} from 'datagrok-api/dg';
 import * as ui from 'datagrok-api/ui';
 import {getSettingsBase, names, SummarySettingsBase} from './shared';
 
@@ -76,7 +75,7 @@ export class SparklineCellRenderer extends DG.GridCellRenderer {
     gridColumn.settings ??= {normalize: true};
     const settings: SparklineSettings = gridColumn.settings;
 
-    const normalizeInput = InputBase.forProperty(Property.js('normalize', TYPE.BOOL), settings);
+    const normalizeInput = DG.InputBase.forProperty(DG.Property.js('normalize', DG.TYPE.BOOL), settings);
     normalizeInput.onChanged(() => gridColumn.grid.invalidate());
 
     return ui.inputs([

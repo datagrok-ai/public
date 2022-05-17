@@ -9,14 +9,16 @@ import * as DG from 'datagrok-api/dg';
 import ExcelJS from 'exceljs';
 
 export class FunctionView extends DG.ViewBase {
-  constructor(func: DG.Func) {
+  constructor(funcCall: DG.FuncCall) {
     super();
-    this.func = func;
+    this.preparedCall = funcCall;
     this.context = DG.Context.cloneDefault();
     this.controlsRoot.style.maxWidth = '370px';
     this.box = true;
-    if (func != null)
-      this.init(func).then((r) => {});
+  }
+
+  get func() {
+    return this.preparedCall!.func;
   }
 
   onViewInitialized: rxjs.Subject<void> = new rxjs.Subject();
@@ -31,20 +33,18 @@ export class FunctionView extends DG.ViewBase {
   public get type(): string {
     return this._type;
   }
-  public func: DG.Func;
   readonly context: DG.Context;
-  public preparedCall?: DG.FuncCall;
-  public lastCall?: DG.FuncCall;
+  public preparedCall: DG.FuncCall | null;
+  public lastCall?: DG.FuncCall | null;
   _inputFields: Map<string, DG.InputBase> = new Map<string, DG.InputBase>();
 
-  async init(func: DG.Func) {
-    this.func ??= func;
+  async init(funcCall: DG.FuncCall) {
+    this.preparedCall ??= funcCall;
     /*
       var meta = EntityMeta.forEntity(f);
       func = await meta.refresh(f);
     */
 
-    this.preparedCall ??= this.func.prepare();
     this.preparedCall.aux['view'] = this;
     this.preparedCall.context = this.context;
 

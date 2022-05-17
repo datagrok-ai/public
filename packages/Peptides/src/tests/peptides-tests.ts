@@ -50,7 +50,7 @@ category('peptides', async () => {
   });
 
   test('widgets.peptide-molecule', async () => {
-    await peptideMoleculeWidget('NH2--A-N-T-T-Y-K-N-Y-R-S-N-L-L--COOH');
+    await peptideMoleculeWidget('NH2--A-N-T-T-Y-K-N-Y-R-S-N-L-L--COOH', peptidesDf);
   });
 
   after(async () => {
