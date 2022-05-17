@@ -12,12 +12,13 @@ import $ from 'cash-dom';
 import getUuid from 'uuid-by-string';
 
 export const _package = new DG.Package();
-export let baseUrl: string;
+let baseUrl: string;
 
-//tags: init
-export async function initAlation() {
-  baseUrl = (await _package.getProperties()).get('Base URL') as string;
+export async function getBaseURL() {
+  const properties = await _package.getProperties() as {[key: string]: any};
+  baseUrl = properties['Base URL'] as string;
   baseUrl = baseUrl.endsWith('/') ? baseUrl : `${baseUrl}/`;
+  return baseUrl;
 }
 
 //name: Alation
@@ -27,7 +28,7 @@ export async function alationApp() {
 
   await utils.retrieveKeys();
   
-  const dataSourcesList = await alationApi.listDataSources();
+  const dataSourcesList = await alationApi.getDataSources();
   const tree = createTree(dataSourcesList, 'data-source');
   const descriptionHost = ui.div(undefined, 'alation-description');
   const treeHost = ui.divV([ui.h1('Data Sources'), tree.root]);
@@ -49,15 +50,15 @@ function createTree(
         (tableObject.title || tableObject.name).trim() || `Unnamed table id ${tableObject.id}`;
       const item = treeRootNode!.item(name, tableObject);
       item.root.addEventListener('dblclick', async () => connectToDb(tableObject, name));
-      item.root.addEventListener('mousedown', (ev) => {
+      item.root.addEventListener('mousedown', async (ev) => {
         if (ev.button === 2) {
           const contextMenu = DG.Menu.create();
           contextMenu.item('Connect to DB', async () => connectToDb(tableObject, name));
           return contextMenu.show();
         }
         const description = tableObject.description
-          .replaceAll('src="/', `src="${baseUrl}`)
-          .replaceAll('href="/', `href="${baseUrl}`);
+          .replaceAll('src="/', `src="${await getBaseURL()}`)
+          .replaceAll('href="/', `href="${await getBaseURL()}`);
         $('.alation-description').empty().html(description);
       });
     });
@@ -76,8 +77,8 @@ function createTree(
 
     group.root.addEventListener('mousedown', async () => {
       const description = dataSourceObject.description
-        .replaceAll('src="/', `src="${baseUrl}`)
-        .replaceAll('href="/', `href="${baseUrl}`);
+        .replaceAll('src="/', `src="${await getBaseURL()}`)
+        .replaceAll('href="/', `href="${await getBaseURL()}`);
       $('.alation-description').empty().html(description);
       if (isFirstTimeMap[objectType][currentId]) {
         const pi = DG.TaskBarProgressIndicator.create('Loading child entities...');

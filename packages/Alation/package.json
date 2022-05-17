@@ -15,7 +15,8 @@
 		"cash-dom": "latest",
 		"dayjs": "latest",
 		"uuid-by-string": "latest",
-		"@datagrok-libraries/utils": "latest"
+		"@datagrok-libraries/utils": "latest",
+		"rxjs": "^6.5.5"
 	},
 	"devDependencies": {
 		"webpack": "latest",

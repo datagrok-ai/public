@@ -1,6 +1,8 @@
 import * as grok from 'datagrok-api/grok';
 import * as ui from 'datagrok-api/ui';
 
+import {take} from 'rxjs/operators';
+
 import * as constants from './const';
 import * as alationApi from './alation-api';
 import * as types from './types';
@@ -21,11 +23,12 @@ export async function retrieveKeys() {
   let tokenMap = await getAllTokensFromStorage();
   let userId = parseInt(tokenMap.userId === '' ? '0' : tokenMap.userId);
 
-  if (tokenMap.userId === '' || tokenMap.refreshToken === '' || tokenMap.apiToken === '')
+  if (tokenMap.userId === '' || tokenMap.refreshToken === '' || tokenMap.apiToken === '') {
     await updateTokensDialog(tokenMap.refreshToken, userId);
-  
-  tokenMap = await getAllTokensFromStorage();
-  userId = parseInt(tokenMap.userId === '' ? '0' : tokenMap.userId);
+    tokenMap = await getAllTokensFromStorage();
+    userId = parseInt(tokenMap.userId === '' ? '0' : tokenMap.userId);
+  }
+
   const refreshResponse = await alationApi.testToken(
     constants.REFRESH_TOKEN_KEY, tokenMap.refreshToken, userId) as types.refreshTokenResponse;
   if (refreshResponse.token_status !== constants.TOKEN_STATUS.ACTIVE) {
@@ -37,10 +40,12 @@ export async function retrieveKeys() {
 
   const apiResponse = await alationApi.testToken(constants.API_TOKEN_KEY, tokenMap.apiToken, userId);
   if (apiResponse.token_status !== constants.TOKEN_STATUS.ACTIVE) {
-    grok.shell.error(`API access token status is ${apiResponse.token_status ?? 'expired'}`);
+    grok.shell.warning(`API access token status is ${apiResponse.token_status ?? 'expired, regenerating...'}`);
     await updateUserStorage(tokenMap.refreshToken, userId);
+    tokenMap = await getAllTokensFromStorage();
   }
-  return await getAllTokensFromStorage();
+
+  return tokenMap;
 }
 
 async function updateTokensDialog(refreshToken: string, userId: number) {
@@ -61,7 +66,7 @@ async function updateTokensDialog(refreshToken: string, userId: number) {
       await updateUserStorage(refreshTokenInputValue, userIdInputValue);
     })
     .showModal(false);
-  return dialog.onClose.toPromise();
+  return dialog.onClose.pipe(take(1)).toPromise();
 }
 
 async function updateUserStorage(refreshToken: string, userId: number) {
