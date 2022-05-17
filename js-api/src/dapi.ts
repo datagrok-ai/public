@@ -27,6 +27,8 @@ import {FuncCall} from "./functions";
 
 let api = <any>window;
 
+type LoggerPutCallback = (logRecord: {message: string, params: object, type: string}) => void;
+
 /**
  * Exposes Datagrok's server-side functionality.
  *
@@ -856,9 +858,9 @@ export class FileSource {
 }
 
 export class Logger {
-  putCallback: any;
+  putCallback?: LoggerPutCallback;
 
-  constructor(putCallback?: any) {
+  constructor(putCallback?: LoggerPutCallback) {
     this.putCallback = putCallback;
   }
 
