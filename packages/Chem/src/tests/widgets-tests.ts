@@ -3,12 +3,10 @@ import * as grok from 'datagrok-api/grok';
 import * as ui from 'datagrok-api/ui';
 import {category, test, expect, delay, expectFloat, before} from '@datagrok-libraries/utils/src/test';
 import {assessDruglikeness, drugLikenessWidget} from '../widgets/drug-likeness';
-import {getIdMap, getOrLoadUnichemSources, identifiersWidget} from '../widgets/identifiers';
+import {getIdMap, identifiersWidget} from '../widgets/identifiers';
 import {getPanelElements, molfileWidget} from '../widgets/molfile';
 import {getPropertiesMap, propertiesWidget} from '../widgets/properties';
 import {getStructuralAlerts, structuralAlertsWidget} from '../widgets/structural-alerts';
-import {structure2dWidget} from '../widgets/structure2d';
-import {structure3dWidget} from '../widgets/structure3d';
 import {getRisks, toxicityWidget} from '../widgets/toxicity';
 import * as utils from './utils';
 import $ from 'cash-dom';
@@ -122,7 +120,7 @@ category('Chem: Widgets', async () => {
   });
 
   test('substructure-filter-panel', async () => {
-    const df = DG.DataFrame.fromColumns([grok.data.demo.molecules(1000).columns[0]]);
+    const df = DG.DataFrame.fromColumns([grok.data.demo.molecules(1000).columns.byIndex(0)]);
     const view = grok.shell.addTableView(df);
     view.filters();
     await delay(100);

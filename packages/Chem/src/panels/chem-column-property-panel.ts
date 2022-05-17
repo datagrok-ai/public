@@ -14,7 +14,7 @@ export function getMolColumnPropertyPanel(col: DG.Column) {
     scaffoldColName = NONE;
 
   // TODO: replace with an efficient version, bySemTypesExact won't help; GROK-8094
-  const columnsList = Array.from(col.dataFrame.columns).filter(
+  const columnsList = Array.from(col.dataFrame.columns as any).filter(
     (c: any) => c.semType === DG.SEMTYPE.MOLECULE).map((c: any) => c.name);
   const columnsSet = new Set(columnsList);
   columnsSet.delete(col.name);

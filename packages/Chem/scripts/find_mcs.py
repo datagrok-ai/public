@@ -2,6 +2,7 @@
 #language: python
 #input: string smiles
 #input: dataframe df
+#input: bool returnSmarts
 #output: string result
 
 from rdkit import Chem
@@ -22,4 +23,4 @@ for n in range(0, length):
     continue
   mols[n] = mol
 mols = mols[mols != np.array(None)]
-result = Chem.MolToSmiles(Chem.MolFromSmarts(rdFMCS.FindMCS(mols).smartsString))
+result = rdFMCS.FindMCS(mols).smartsString if returnSmarts else Chem.MolToSmiles(Chem.MolFromSmarts(rdFMCS.FindMCS(mols).smartsString))
