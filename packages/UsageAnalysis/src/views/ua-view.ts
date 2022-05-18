@@ -26,4 +26,7 @@ export abstract class UaView extends DG.ViewBase {
   }
 
   abstract initViewers() : any; // for sync and async code
+
+  handleUrlParams(params: {[key: string]: string}) : void {
+  }
 }

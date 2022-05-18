@@ -14,6 +14,7 @@ import {TopFunctionsViewer} from "../drilldown_viewers/events/top-functions-view
 import {TopSourcesViewer} from "../drilldown_viewers/events/top-sources-viewer";
 
 export class EventsView extends UaView {
+  topPackagesViewer: TopPackagesViewer | null = null;
   constructor(uaToolbox: UaToolbox) {
     super('Events', uaToolbox);
   }
@@ -25,8 +26,8 @@ export class EventsView extends UaView {
     let topPackageFunctionsViewer = new TopPackageFunctionsViewer(this.uaToolbox.filterStream);
     this.viewers.push(topPackageFunctionsViewer);
 
-    let topPackagesViewer = new TopPackagesViewer('Packages', 'TopPackages', this.uaToolbox.filterStream);
-    this.viewers.push(topPackagesViewer);
+    this.topPackagesViewer = new TopPackagesViewer('Packages', 'TopPackages', this.uaToolbox.filterStream);
+    this.viewers.push(this.topPackagesViewer);
 
     let eventsViewer = new UaFilterableQueryViewer(
         this.uaToolbox.filterStream,
@@ -41,10 +42,16 @@ export class EventsView extends UaView {
 
     this.root.append(ui.divV([
           ui.divH([ui.block([eventsViewer.root])]),
-          ui.divH([ui.block50([topPackagesViewer.root]), ui.block50([topPackageFunctionsViewer.root])]),
+          ui.divH([ui.block50([this.topPackagesViewer.root]), ui.block50([topPackageFunctionsViewer.root])]),
           ui.divH([ui.block50([topFunctionsViewer.root]), ui.block50([topSourcesViewer.root])])
         ])
     );
+  }
+
+  handleUrlParams(params: {[key: string]: string}) : void {
+    if (params.hasOwnProperty('package')) {
+      this.topPackagesViewer?.categorySelected(params['package']);
+    }
   }
 
 }
