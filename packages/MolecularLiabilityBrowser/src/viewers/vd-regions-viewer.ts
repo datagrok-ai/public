@@ -227,24 +227,37 @@ export class RegionSelectorViewer {
     this.mainLayout = ui.table(
       ['Heavy', 'Light'],
       (chain) => {
-        return [...Array(regionsFiltered.length).keys()].map((rI) => {
-          const wl: WebLogo = this.logos[rI][chain];
-          wl.root.style.height = '100%';
-          // return wl.root;
-
-          const resDiv = ui.div([wl.root]/*`${chain} ${regionsFiltered[rI]}`*/, {
+        const elements = [
+          // This is chain label
+          ...(regionsFiltered.length > 0 ? [ui.div(chain, {
             style: {
-              // background: '#CCFFCC',
-              height: '100%',
-              margin: '4px',
+              transform: 'rotate(-90deg)',
+              font: '12px Roboto, Roboto Local, sans-serif',
+              textAlign: 'center',
+              width: '16px',
+              marginTop: '24px',
+              marginLeft: '6px',
             }
-          });
+          })] : []),
+          // List with controls for regions
+          ...[...Array(regionsFiltered.length).keys()].map((rI) => {
+            const wl: WebLogo = this.logos[rI][chain];
+            wl.root.style.height = '100%';
 
-          return resDiv;
-        });
+            const resDiv = ui.div([wl.root]/*`${chain} ${regionsFiltered[rI]}`*/, {
+              style: {
+                height: '100%',
+                marginTop: '4px',
+                marginBottom: '4px',
+              }
+            });
+
+            return resDiv;
+          })];
+        return elements;
       },
-      regionsFiltered.map((r) => r.name));
-    // this.mainLayout.className = 'mlb-vd-regions-viewer-table';
+      [, ...regionsFiltered.map((r) => r.name)]);
+    this.mainLayout.className = 'mlb-vd-regions-viewer-table2';
     // this.mainLayout.style.background = '#EEEEFF';
     // this.mainLayout.style.height = '100%';
     // this.mainLayout.style.border = '1px solid black';
@@ -257,22 +270,10 @@ export class RegionSelectorViewer {
       await this.logos[rI]['Light'].init();
     }
     this.calcSize();
-
-    // for (const regionI in regionsIndices) {
-    //   const region = this.regions[regionI];
-    //   const regionDiv = ui.divV([
-    //     ui.span(['Heavy']), // Heavy
-    //     ui.div(['Light']),  // Light
-    //   ], {
-    //     style: {height: '100%', background: 'green',}
-    //   });
-    //   const addedDiv = this.root.appendChild(regionDiv);
-    //   this.view.push(regionDiv);
-    // }
   }
 
   private calcSize() {
-    const logoHeight = (this.root.clientHeight - 46) / 2;
+    const logoHeight = (this.root.clientHeight - 54) / 2;
 
     for (let rI = 0; rI < this.logos.length; rI++) {
       this.logos[rI]['Heavy'].root.style.height = `${logoHeight}px`;
