@@ -72,7 +72,7 @@ export class SARViewerBase extends DG.JsViewer {
     this.dataFrame.tags[property.name] = `${property.get(this)}`;
     if (!this.initialized || IS_PROPERTY_CHANGING)
       return;
-      
+
     const propName = property.name;
 
     if (propName === 'scaling' && typeof this.dataFrame !== 'undefined') {
@@ -101,7 +101,7 @@ export class SARViewer extends SARViewerBase {
   _name = 'Structure-Activity Relationship';
   tempName = 'sarViewer';
 
-  constructor() { super(); }
+  constructor() {super();}
 
   get name() {return this._name;}
 
@@ -118,7 +118,7 @@ export class SARViewer extends SARViewerBase {
     this.render();
   }
 
-  isInitialized() { return this.controller?.sarGrid ?? false; }
+  isInitialized() {return this.controller?.sarGrid ?? false;}
 
   async onPropertyChanged(property: DG.Property): Promise<void> {
     if (!this.isInitialized() || IS_PROPERTY_CHANGING)
@@ -158,7 +158,7 @@ export class SARViewerVertical extends SARViewerBase {
     this.render();
   }
 
-  isInitialized() { return this.controller?.sarVGrid ?? false; }
+  isInitialized() {return this.controller?.sarVGrid ?? false;}
 
   async onPropertyChanged(property: DG.Property): Promise<void> {
     if (!this.isInitialized() || IS_PROPERTY_CHANGING)
