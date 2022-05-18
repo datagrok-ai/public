@@ -1,6 +1,6 @@
 import * as ui from 'datagrok-api/ui';
 import * as DG from 'datagrok-api/dg';
-import { PeptidesController } from '../peptides';
+import {PeptidesController} from '../peptides';
 import * as C from '../utils/constants';
 
 export async function substitutionsWidget(table: DG.DataFrame): Promise<DG.Widget> {

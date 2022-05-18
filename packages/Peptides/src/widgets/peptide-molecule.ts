@@ -32,7 +32,7 @@ export async function peptideMoleculeWidget(pep: string, currentTable: DG.DataFr
         throw new Error('Couldn\'t get smiles');
 
       molfileStr = (await grok.functions.call('Peptides:SmiTo3D', {smiles})) as string;
-    } catch(e) {
+    } catch (e) {
       console.warn(e);
     }
 
@@ -53,10 +53,10 @@ export async function peptideMoleculeWidget(pep: string, currentTable: DG.DataFr
       const panel = ui.divH([sketch]);
 
       widgetHost = ui.div([panel, nglHost]);
-    } catch(e) {
+    } catch (e) {
       widgetHost = ui.divText('Couldn\'t get peptide structure');
     }
-  } catch(e) {
+  } catch (e) {
     widgetHost = ui.divText('Couldn\'t get peptide structure');
   }
   pi.close();

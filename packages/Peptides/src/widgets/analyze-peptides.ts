@@ -33,7 +33,7 @@ export async function analyzePeptidesWidget(currentDf: DG.DataFrame, col: DG.Col
     'Scaling', 'none', ['none', 'lg', '-lg'],
     async (currentMethod: string) => {
       const currentActivityCol = activityColumnChoice.value.name;
-      
+
 
       [tempDf, newScaledColName] = await PeptidesController.scaleActivity(
         currentMethod, currentDf, currentActivityCol, true);

@@ -10,7 +10,7 @@ import * as type from '../utils/types';
 export function addViewerToHeader(grid: DG.Grid, barchart: StackedBarChart) {
   if (grid.temp['containsBarchart'])
     return;
-  
+
   const compareBarParts = (bar1: type.BarChart.BarPart | null, bar2: type.BarChart.BarPart | null) =>
     bar1 && bar2 && bar1.aaName === bar2.aaName && bar1.colName === bar2.colName;
 
@@ -101,7 +101,7 @@ export class StackedBarChart extends DG.JsViewer {
     this.dataEmptyAA = this.string('dataEmptyAA', '-');
   }
 
-  get currentBarPart() { return this._currentBarPart; }
+  get currentBarPart() {return this._currentBarPart;}
   set currentBarPart(barPart: type.BarChart.BarPart | null) {
     this._currentBarPart = barPart;
     this.isSameBarClicked = false;
@@ -337,8 +337,8 @@ export class StackedBarChart extends DG.JsViewer {
 
   /**
    * Requests highlight/select/filter action based on currentBarPart
-   * @param event 
-   * @returns 
+   * @param event
+   * @returns
    */
   requestAction(event: MouseEvent) {
     if (!this._currentBarPart)

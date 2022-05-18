@@ -9,7 +9,7 @@ import {_package} from './package';
 import {setAARRenderer} from './utils/cell-renderer';
 import * as C from './utils/constants';
 import {PeptideSpaceViewer} from './viewers/peptide-space-viewer';
-import { FilteringStatistics } from './utils/filtering-statistics';
+import {FilteringStatistics} from './utils/filtering-statistics';
 
 type viewerTypes = SARViewer | SARViewerVertical;
 export class PeptidesController {
@@ -36,11 +36,9 @@ export class PeptidesController {
 
   static get controllerName() {return PeptidesController._controllerName;}
 
-  get dataFrame() {return this._model.dataFrame;}
+  static get chemPalette() {return ChemPalette;}
 
-  static setAARRenderer(col: DG.Column, grid: DG.Grid) {
-    return setAARRenderer(col, grid);
-  }
+  get dataFrame() {return this._model.dataFrame;}
 
   get onStatsDataFrameChanged(): Observable<DG.DataFrame> {return this._model.onStatsDataFrameChanged;}
 
@@ -58,19 +56,14 @@ export class PeptidesController {
 
   get sarVGrid() {return this._model._sarVGrid;}
 
-  get sourceGrid() {return this._model._sourceGrid!; }
+  get sourceGrid() {return this._model._sourceGrid;}
 
-  async updateData(
-    activityScaling?: string, sourceGrid?: DG.Grid, twoColorMode?: boolean, activityLimit?: number,
-    maxSubstitutions?: number, isSubstitutionOn?: boolean, filterMode?: boolean,
-  ) {
-    filterMode ??= false;
-    await this._model.updateData(
-      activityScaling, sourceGrid, twoColorMode, activityLimit, maxSubstitutions, isSubstitutionOn, filterMode);
-  }
+  get originalActivityColumnName(): string {return this.dataFrame.temp[C.COLUMNS_NAMES.ACTIVITY];}
 
-  getSubstitutions() {
-    return this._model.getSubstitutionTable();
+  get substTooltipData() {return this._model.substTooltipData;}
+
+  static setAARRenderer(col: DG.Column, grid: DG.Grid) {
+    return setAARRenderer(col, grid);
   }
 
   static async scaleActivity(
@@ -105,10 +98,6 @@ export class PeptidesController {
 
     return [tempDf, newColName];
   }
-
-  get originalActivityColumnName(): string {return this.dataFrame.temp[C.COLUMNS_NAMES.ACTIVITY];}
-
-  get substTooltipData() {return this._model.substTooltipData;}
 
   static splitAlignedPeptides(peptideColumn: DG.Column, filter: boolean = true): [DG.DataFrame, number[]] {
     const splitPeptidesArray: string[][] = [];
@@ -173,7 +162,18 @@ export class PeptidesController {
     ];
   }
 
-  static get chemPalette() { return ChemPalette; }
+  async updateData(
+    activityScaling?: string, sourceGrid?: DG.Grid, twoColorMode?: boolean, activityLimit?: number,
+    maxSubstitutions?: number, isSubstitutionOn?: boolean, filterMode?: boolean,
+  ) {
+    filterMode ??= false;
+    await this._model.updateData(
+      activityScaling, sourceGrid, twoColorMode, activityLimit, maxSubstitutions, isSubstitutionOn, filterMode);
+  }
+
+  getSubstitutions() {
+    return this._model.getSubstitutionTable();
+  }
 
   assertVar(variable: string, init = false): boolean {
     //@ts-ignore
@@ -183,10 +183,10 @@ export class PeptidesController {
       this[variable] = foundVariable = this.dataFrame.temp[variable];
     }
 
-    const assertionResult = foundVariable ? true : false
+    const assertionResult = foundVariable ? true : false;
     if (init && !assertionResult)
       throw new Error(`Variable assertion error: variable '${variable}' is not found in dataFrame`);
-      
+
     return assertionResult;
   }
 
@@ -250,13 +250,13 @@ export class PeptidesController {
     table.temp[C.STATS] = stats;
 
     //set up views
-    let currentView = grok.shell.v as DG.TableView ;
+    let currentView = grok.shell.v as DG.TableView;
     if (currentView.dataFrame.tags['isPeptidesAnalysis'] !== 'true')
       currentView = grok.shell.addTableView(table);
     const sourceGrid = currentView.grid;
     sourceGrid.col(C.COLUMNS_NAMES.ACTIVITY_SCALED)!.name = table.temp[C.COLUMNS_NAMES.ACTIVITY_SCALED];
     sourceGrid.columns.setOrder([table.temp[C.COLUMNS_NAMES.ACTIVITY_SCALED]]);
-    
+
     this.dataFrame.temp[C.EMBEDDING_STATUS] = false;
     function adjustCellSize(grid: DG.Grid) {
       const colNum = grid.columns.length;
@@ -286,7 +286,7 @@ export class PeptidesController {
 
     this.dataFrame.temp['sarViewerVertical'] = this.sarViewerVertical =
       await this.dataFrame.plot.fromType('peptide-sar-viewer-vertical', options) as SARViewerVertical;
-      this.sarViewerVertical.helpUrl = this.helpUrl;
+    this.sarViewerVertical.helpUrl = this.helpUrl;
 
     const sarViewersGroup: viewerTypes[] = [this.sarViewer, this.sarViewerVertical];
 
@@ -305,7 +305,7 @@ export class PeptidesController {
     this._model.invalidateGrids();
   }
 
-  invalidateSourceGrid() { this.sourceGrid.invalidate(); }
+  invalidateSourceGrid() {this.sourceGrid.invalidate();}
 }
 
 function dockViewers(
