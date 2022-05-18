@@ -10,12 +10,12 @@
   },
 	"dependencies": {
 		"cash-dom": "latest",
-		"datagrok-api": "^0.148.5",
 		"dayjs": "latest"
 	},
 	"devDependencies": {
 		"@typescript-eslint/eslint-plugin": "^5.20.0",
 		"@typescript-eslint/parser": "^5.20.0",
+		"datagrok-api": "^0.151.3",
 		"eslint": "latest",
 		"eslint-config-google": "latest",
 		"ts-loader": "latest",

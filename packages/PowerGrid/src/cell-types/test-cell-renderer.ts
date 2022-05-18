@@ -1,7 +1,7 @@
 import * as ui from 'datagrok-api/ui';
 import * as DG from 'datagrok-api/dg';
 import * as grok from 'datagrok-api/grok';
-import {GridCell} from 'datagrok-api/dg';
+
 
 export class TestCellRenderer extends DG.GridCellRenderer {
   get name() { return 'test'; }
@@ -21,22 +21,22 @@ export class TestCellRenderer extends DG.GridCellRenderer {
     g.fillText(`test`, x + 25, y + 10);
   }
 
-  onKeyDown(gridCell: GridCell, e: KeyboardEvent): void { console.log('keyDown', gridCell, e); }
+  onKeyDown(gridCell: DG.GridCell, e: KeyboardEvent): void { console.log('keyDown', gridCell, e); }
 
-  onKeyPress(gridCell: GridCell, e: KeyboardEvent): void { console.log('keyPress', gridCell, e); }
+  onKeyPress(gridCell: DG.GridCell, e: KeyboardEvent): void { console.log('keyPress', gridCell, e); }
 
-  onMouseLeave(gridCell: GridCell, e: MouseEvent): void { console.log('mouseLeave', gridCell, e); }
+  onMouseLeave(gridCell: DG.GridCell, e: MouseEvent): void { console.log('mouseLeave', gridCell, e); }
 
-  onMouseDown(gridCell: GridCell, e: MouseEvent): void { console.log('mouseDown', gridCell, e); }
+  onMouseDown(gridCell: DG.GridCell, e: MouseEvent): void { console.log('mouseDown', gridCell, e); }
 
-  onMouseUp(gridCell: GridCell, e: MouseEvent): void { console.log('mouseUp', gridCell, e); }
+  onMouseUp(gridCell: DG.GridCell, e: MouseEvent): void { console.log('mouseUp', gridCell, e); }
 
-  onClick(gridCell: GridCell, e: MouseEvent): void { console.log('click', gridCell, e); }
+  onClick(gridCell: DG.GridCell, e: MouseEvent): void { console.log('click', gridCell, e); }
 
-  onDoubleClick(gridCell: GridCell, e: MouseEvent): void { console.log('doubleClick', gridCell, e); }
+  onDoubleClick(gridCell: DG.GridCell, e: MouseEvent): void { console.log('doubleClick', gridCell, e); }
 
   // rendering in mouse event coordinates
-  onMouseMove(gridCell: GridCell, e: MouseEvent): void {
+  onMouseMove(gridCell: DG.GridCell, e: MouseEvent): void {
     console.log('mouseMove', gridCell, e);
     const g = gridCell.grid.canvas.getContext('2d')!;
     g.fillStyle = 'blue';
@@ -44,7 +44,7 @@ export class TestCellRenderer extends DG.GridCellRenderer {
   }
 
   // rendering in cell coordinates
-  onMouseEnter(gridCell: GridCell, e: MouseEvent): void {
+  onMouseEnter(gridCell: DG.GridCell, e: MouseEvent): void {
     console.log('mouseEnter', gridCell, e);
     const r = gridCell.bounds;
     const g = gridCell.grid.canvas.getContext('2d')!;
