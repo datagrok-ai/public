@@ -11,6 +11,7 @@ import {UaDataFrameQueryViewer} from "../viewers/ua-data-frame-query-viewer";
 import { TopPackagesViewer } from '../drilldown_viewers/events/top-packages-viewer';
 
 export class OverviewView extends UaView {
+  topPackagesViewer: TopPackagesViewer | null = null;
 
   constructor(uaToolbox: UaToolbox) {
     super('Overview', uaToolbox);
@@ -84,8 +85,8 @@ export class OverviewView extends UaView {
     );
     this.viewers.push(totalUsersViewer);
 
-    let topPackagesViewer = new TopPackagesViewer('Packages', 'TopPackages', this.uaToolbox.filterStream);
-    this.viewers.push(topPackagesViewer);
+    this.topPackagesViewer = new TopPackagesViewer('Packages', 'TopPackages', this.uaToolbox.filterStream);
+    this.viewers.push(this.topPackagesViewer);
 
     this.root.append(ui.block25([
       ui.block([totalUsersViewer.root]),
@@ -94,9 +95,14 @@ export class OverviewView extends UaView {
 
     this.root.append(ui.block75([
       ui.block([uniqueUsersViewer.root]),
-      ui.block([topPackagesViewer.root]),
-      // ui.block([errorsViewer.root])
+      ui.block([this.topPackagesViewer.root]),
     ]));
+  }
+
+  handleUrlParams(params: {[key: string]: string}) : void {
+    if (params.hasOwnProperty('package')) {
+      this.topPackagesViewer?.categorySelected(params['package']);
+    }
   }
 
 }

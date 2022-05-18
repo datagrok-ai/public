@@ -9,6 +9,7 @@ import {PropertyPanel} from "../../property-panel";
 import {UaDataFrameQueryViewer} from "../../viewers/ua-data-frame-query-viewer";
 import {BehaviorSubject} from "rxjs"
 import {TopFunctionErrorsViewer} from "../function_errors/top-function-errors-viewer";
+import { ViewHandler } from "../../view-handler";
 
 export class TopPackagesViewer extends UaFilterableQueryViewer {
 
@@ -20,46 +21,59 @@ export class TopPackagesViewer extends UaFilterableQueryViewer {
         (t: DG.DataFrame) => {
           let viewer = DG.Viewer.barChart(t, UaQueryViewer.defaultBarchartOptions);
           viewer.onEvent('d4-bar-chart-on-category-clicked').subscribe(async (args) => {
-            let entity = await grok.dapi.packages.filter(`shortName = "${args.args.categories[0]}"`).first();
-            let pp = new PropertyPanel(
-                entity,
-                [new UaDataFrameQueryViewer(
-                  'Package Info',
-                  'PackageInfo',
-                  (t: DG.DataFrame) => DG.Viewer.grid(t).root,
-                  null as any,
-                  {name: args.args.categories[0]},
-                  filterStream.getValue(),
-                  false
-              ),
-              new UaDataFrameQueryViewer(
-                  'Functions Of Package',
-                  'TopFunctionsOfPackage',
-                  (t: DG.DataFrame) => DG.Viewer.barChart(t, UaQueryViewer.defaultBarchartOptions).root,
-                  null as any,
-                  {name: args.args.categories[0]},
-                  filterStream.getValue(),
-                  false
-              ),
-              new UaDataFrameQueryViewer(
-                  'Users Of Package',
-                  'TopUsersOfPackage',
-                  (t: DG.DataFrame) => DG.Viewer.barChart(t, UaQueryViewer.defaultBarchartOptions).root,
-                  null as any,
-                  {name: args.args.categories[0]},
-                  filterStream.getValue(),
-                  false
-              ),
-              new TopFunctionErrorsViewer('Errors Of Package','TopErrorsOfPackage', filterStream, {name: args.args.categories[0]}, false),
-            ],
-            `Packages: ${args.args.categories[0]}`,
-            'Packages');
-
-            grok.shell.o = pp.getRoot();
+            this.categorySelected(args.args.categories[0]);
           });
           return viewer.root;
         }
-    );
+    );    
+  }
+
+  async categorySelected(category: string)  {
+    ViewHandler.getInstance().setUrlParam('package', category);
+
+    let entity = await grok.dapi.packages.filter(`shortName = "${category}"`).first();
+    let pp = new PropertyPanel(
+        entity,
+        [new UaDataFrameQueryViewer(
+          'Package Info',
+          'PackageInfo',
+          (t: DG.DataFrame) => {
+            let res: any = {};
+            for (let c of t.columns) {
+              res[c.name] = c.get(0);
+            }
+
+            return ui.tableFromMap(res);
+          },
+          null as any,
+          {name: category},
+          this.filterSubscription.getValue(),
+          false
+      ),
+      new UaDataFrameQueryViewer(
+          'Functions Of Package',
+          'TopFunctionsOfPackage',
+          (t: DG.DataFrame) => DG.Viewer.barChart(t, UaQueryViewer.defaultBarchartOptions).root,
+          null as any,
+          {name: category},
+          this.filterSubscription.getValue(),
+          false
+      ),
+      new UaDataFrameQueryViewer(
+          'Users Of Package',
+          'TopUsersOfPackage',
+          (t: DG.DataFrame) => DG.Viewer.barChart(t, UaQueryViewer.defaultBarchartOptions).root,
+          null as any,
+          {name: category},
+          this.filterSubscription.getValue(),
+          false
+      ),
+      new TopFunctionErrorsViewer('Errors Of Package','TopErrorsOfPackage', this.filterSubscription, {name: category}, false),
+    ],
+    `Packages: ${category}`,
+    'Packages');
+
+    grok.shell.o = pp.getRoot();
   }
 
 }
