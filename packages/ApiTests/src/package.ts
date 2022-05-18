@@ -19,6 +19,7 @@ import './dapi/groups';
 import './ui/inputs';
 import './ui/forms';
 import './dapi/dapi';
+import './dapi/connection';
 import './dapi/entities';
 import './dapi/layouts';
 import './dapi/projects';
