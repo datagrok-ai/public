@@ -5,6 +5,7 @@ import * as DG from 'datagrok-api/dg';
 import './dataframe/dataframe';
 import './dataframe/calculated-columns';
 import './dataframe/events';
+import './functions/functions';
 import './shell/shell';
 import './shell/windows';
 import './viewer/viewer';
