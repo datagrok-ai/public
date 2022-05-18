@@ -1,6 +1,7 @@
 import * as DG from 'datagrok-api/dg';
 import {TYPE} from 'datagrok-api/dg';
 
+
 interface BarCellSettings {
   color: string;
   radius: number;

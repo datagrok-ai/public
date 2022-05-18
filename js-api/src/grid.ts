@@ -40,7 +40,10 @@ export class Rect {
     return new Rect(_bytes[0], _bytes[1], _bytes[2], _bytes[3]);
   }
 
-  /** The midpoint of the rectangle along the x-axis. */
+  fromCenterSize(cx: number, cy: number, width: number, height: number): Rect{
+    return new Rect(cx - width / 2, cy - height / 2, width, height);
+  }
+
   get midX(): number {
     return this.x + this.width / 2;
   }
@@ -350,6 +353,12 @@ export class Rect {
     const size = Math.min(this.width, this.height);
     return new Rect(
       this.left + (this.width - size) / 2, this.top + (this.height - size) / 2, size, size);
+  }
+
+  fit(width: number, height: number): Rect {
+    return width / height > this.width / this.height 
+      ? this.fromCenterSize(this.midX, this.midY, this.width, height * (this.width / width)) 
+      : this.fromCenterSize(this.midX, this.midY, width * (this.height / height), this.height) 
   }
 }
 
