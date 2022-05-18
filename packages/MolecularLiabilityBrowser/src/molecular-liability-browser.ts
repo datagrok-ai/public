@@ -171,7 +171,8 @@ export class MolecularLiabilityBrowser {
     const filterList: { type: string, column?: string, label?: string }[] = [];
 
     for (const pfName of pf.names) {
-      this.mlbTable.columns.byName(pfName).width = 150;
+      // this.mlbTable.columns.byName(pfName).width = 150;
+      this.mlbView.grid.col(pfName).width = 150;
       filterList.push({type: 'histogram', column: pfName});
     }
     filterList.push({type: 'MolecularLiabilityBrowser:ptmFilter'});
