@@ -9,6 +9,7 @@ import { ErrorsView } from './views/errors-view';
 import { FunctionErrorsView } from './views/function-errors-view';
 import { UsersView } from './views/users-view';
 import { DataView } from './views/data-view';
+import {ViewBase} from "datagrok-api/dg";
 
 const APP_PREFIX: string = `/apps/UsageAnalysis/`;
 export class ViewHandler {
@@ -60,20 +61,13 @@ export class ViewHandler {
     for (let v of neededViews) {
       grok.shell.addView(v);
     }
-  
-    grok.events.onEvent('d4-current-view-changed').subscribe((a) => {
-      if (grok.shell.v instanceof UaView)
-        grok.shell.v.tryToinitViewers();
-    });
-  
 
-    let arr = views.map(v => v.name);
-    grok.events.onEvent('d4-current-view-changed').subscribe(
-        () => {
-          if (arr.indexOf(grok.shell.v.name) != -1)
-            grok.shell.v.path = `${APP_PREFIX}${grok.shell.v.name}`;
-        });
-
+    let onCurrentViewChanged = (view: ViewBase) => {
+      if (view instanceof UaView) {
+        view.tryToinitViewers();
+        view.path = `${APP_PREFIX}${grok.shell.v.name}`;
+      }
+    };
 
     if (pathSplits.length > 3 &&  pathSplits[3] != '') {
       let viewName = pathSplits[3];
@@ -88,6 +82,10 @@ export class ViewHandler {
     }
     else
       grok.shell.v = overviewView;
+
+    onCurrentViewChanged(grok.shell.v);
+
+    grok.events.onEvent('d4-current-view-changed').subscribe(() => onCurrentViewChanged(grok.shell.v));
   }
 
   getSearchParameters() {
