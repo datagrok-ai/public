@@ -7,9 +7,9 @@
 import * as ui from 'datagrok-api/ui';
 import * as DG from 'datagrok-api/dg';
 import {chem} from 'datagrok-api/grok';
-import {chemSubstructureSearchLibrary} from "../chem-searches";
-import {initRdKitService} from "../utils/chem-common-rdkit";
-import {Subscription} from "rxjs";
+import {chemSubstructureSearchLibrary} from '../chem-searches';
+import {initRdKitService} from '../utils/chem-common-rdkit';
+import {Subscription} from 'rxjs';
 import {debounceTime, filter} from 'rxjs/operators';
 import Sketcher = chem.Sketcher;
 import wu from 'wu';
@@ -35,7 +35,7 @@ export class SubstructureFilter extends DG.Filter {
 
   constructor() {
     super();
-    initRdKitService();  // No await
+    initRdKitService(); // No await
     this.root = ui.divV([]);
     this._indicateProgress(false);
     this.loader.style.position = 'absolute';
@@ -47,9 +47,9 @@ export class SubstructureFilter extends DG.Filter {
 
   get _debounceTime(): number {
     const sz = this.column!.length;
-    const szMin = 500, szMax = 10000, msecMax = 1000;
-    if (sz < szMin) { return 0; }
-    if (sz > szMax) { return msecMax; }
+    const szMin = 500; const szMax = 10000; const msecMax = 1000;
+    if (sz < szMin) return 0;
+    if (sz > szMax) return msecMax;
     return Math.floor(msecMax * ((sz - szMin) / (szMax - szMin)));
   }
 
@@ -108,18 +108,15 @@ export class SubstructureFilter extends DG.Filter {
       if (this.column?.temp['chem-scaffold-filter'])
         delete this.column.temp['chem-scaffold-filter'];
       this.bitset = null;
-    }
-    else if (wu(this.dataFrame!.rows.filters).has(`${this.columnName}: ${this.filterSummary}`)) {
+    } else if (wu(this.dataFrame!.rows.filters).has(`${this.columnName}: ${this.filterSummary}`)) {
       // some other filter is already filtering for the exact same thing
       return;
-    }
-    else {
+    } else {
       this._indicateProgress();
       try {
         this.bitset = await chemSubstructureSearchLibrary(
           this.column!, this.sketcher.getMolFile(), await this.sketcher.getSmarts());
-      }
-      finally {
+      } finally {
         this._indicateProgress(false);
       }
     }

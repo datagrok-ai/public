@@ -109,7 +109,7 @@ export async function getActivityCliffs(
   listCliffs.style.right = '10px';
   view.root.append(ui.div(listCliffs));
 
-  const canvas = sp.getInfo()['canvas'];
+  const canvas = (sp.getInfo() as any)['canvas'];
   let lines: any[] = [];
   let linesDf: DG.DataFrame;
   let lastSelectedLineId: number|null = null;
@@ -119,7 +119,7 @@ export async function getActivityCliffs(
   let timer: NodeJS.Timeout;
   canvas.addEventListener('mousemove', function(event : MouseEvent) {
     clearTimeout(timer);
-    timer = setTimeout(function() {
+    timer = global.setTimeout(function() {
       const line = checkCursorOnLine(event, canvas, lines);
       if (line && df.mouseOverRowIdx === -1) {
         if (line.id !== lastSelectedLineId) {
@@ -254,10 +254,10 @@ function createLines(n1: number[], n2: number[],
     lines.push({id: i, mols: [num1, num2], selected: false});
   }
   linesDf = DG.DataFrame.create(lines.length);
-  linesDf.columns.addNewString('1_smiles').init((i) => smiles.get(lines[i].mols[0]));
-  linesDf.columns.addNewString('2_smiles').init((i) => smiles.get(lines[i].mols[1]));
+  linesDf.columns.addNewString('1_smiles').init((i: any) => smiles.get(lines[i].mols[0]));
+  linesDf.columns.addNewString('2_smiles').init((i: any) => smiles.get(lines[i].mols[1]));
   linesDf.columns.addNewFloat('act_diff')
-    .init((i) => activities.get(lines[i].mols[0]) - activities.get(lines[i].mols[1]));
+    .init((i: any) => activities.get(lines[i].mols[0]) - activities.get(lines[i].mols[1]));
   return linesDf;
 }
 
