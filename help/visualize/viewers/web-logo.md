@@ -11,21 +11,21 @@ while the height of symbols within the stack indicates the relative frequency of
 In general, a sequence logo provides a richer and more precise description of, for example, a binding site,
 than would a consensus sequence.
 
-You must specify the tag ```semType``` with value ```AminoacidsMultipleAlignment``` or 
-```NucleotidesMultipleAlignment``` for the data column with multiple alignment sequences, it is mandatory to 
+You must specify the tag ```semType``` with value ```AminoacidsMultipleAlignment``` or
+```NucleotidesMultipleAlignment``` for the data column with multiple alignment sequences, it is mandatory to
 select the palette for monomers' colors.
 
-You can customize the look of the viewer with properties. Properties ```startPosition``` and ```endPosition```) 
+You can customize the look of the viewer with properties. Properties ```startPosition``` and ```endPosition```)
 allow to display multiple alignment partially. If property  ```startPosition``` (```endPosition```)
-is not specified, then the Logo will be plotted from the first (till the last) position of sequences. 
+is not specified, then the Logo will be plotted from the first (till the last) position of sequences.
 
-### General
+## General
 
 |             |              |
 |-------------|--------------|
 | Right click | Context menu |
 
-### Properties
+## Properties
 
 | Property name        | Default | Description                                          |
 |----------------------|---------|------------------------------------------------------|
