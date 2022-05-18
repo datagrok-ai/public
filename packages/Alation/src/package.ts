@@ -176,5 +176,8 @@ export async function getTable(dsConnection: DG.DataConnection, tableObject: typ
   const columns = await alationApi.getColumns(tableObject.id);
   query.fields = columns.map((v) => v.name);
   const df = await query.executeTable();
-  return grok.shell.addTableView(df);
+  df.name = tableObject.name || `Unnamed table id ${tableObject.id}`;
+  const tableView = grok.shell.addTableView(df);
+  tableView.name = tableObject.title ?? df.name;
+  return tableView;
 }
