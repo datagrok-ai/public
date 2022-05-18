@@ -69,12 +69,12 @@ export class WebLogo extends DG.JsViewer {
   protected cp: StringDictionary | null = null;
 
   // private readonly host: HTMLDivElement;
+  private msgHost?: HTMLElement;
   private canvas?: HTMLCanvasElement;
   private slider?: DG.RangeSlider;
   private textBaseline: CanvasTextBaseline;
 
   private axisHeight: number = 12;
-  private positionWidth: number = 16;
 
   private seqCol: DG.Column | null = null;
   // private maxLength: number = 100;
@@ -84,6 +84,7 @@ export class WebLogo extends DG.JsViewer {
   private rowsNull: number = 0;
 
   // Viewer's properties (likely they should be public so that they can be set outside)
+  public positionWidth: number;
   public minHeight: number;
   public maxHeight: number;
   public considerNullSequences: boolean;
@@ -97,13 +98,17 @@ export class WebLogo extends DG.JsViewer {
 
   private endPosition: number = -1;
 
-  private get Length(): number { return this.endPosition - this.startPosition + 1; }
+  /** For startPosition equals to endPosition Length is 1 */
+  private get Length(): number {
+    return this.startPosition <= this.endPosition ? this.endPosition - this.startPosition + 1 : 0;
+  }
 
   constructor() {
     super();
 
     this.textBaseline = 'top';
 
+    this.positionWidth = this.float('positionWidth', 16);
     this.minHeight = this.float('minHeight', 50);
     this.maxHeight = this.float('maxHeight', 100);
 
@@ -115,12 +120,15 @@ export class WebLogo extends DG.JsViewer {
   }
 
   async init(): Promise<void> {
+    this.msgHost = ui.div('No message');
+    this.msgHost.style.display = 'none';
+
     this.canvas = ui.canvas();
     this.canvas.style.width = '100%';
 
-    this.slider = ui.rangeSlider(0, 20, 2, 5);
-    this.slider.root.style.width = '100%';
-    this.slider.root.style.height = '12px';
+    // this.slider = ui.rangeSlider(0, 20, 2, 5);
+    // this.slider.root.style.width = '100%';
+    // this.slider.root.style.height = '12px';
 
     // this.host = ui.divV([/*this.slider,*/this.canvas]);
 
@@ -143,14 +151,13 @@ export class WebLogo extends DG.JsViewer {
 
     };
 
-    rxjs.fromEvent(this.canvas, 'mousemove').subscribe((e: Event) => {
+    rxjs.fromEvent<MouseEvent>(this.canvas, 'mousemove').subscribe((e: MouseEvent) => {
       if (!this.canvas)
         return;
 
       const args = e as MouseEvent;
       const [jPos, monomer] = getMonomer(this.canvas.getCursorPosition(args));
 
-      //if (this.dataFrame && this.seqCol && monomer) {
       if (this.dataFrame && this.seqCol && monomer) {
         ui.tooltip.showRowGroup(this.dataFrame, (iRow) => {
           const seq = this.seqCol!.get(iRow);
@@ -162,15 +169,14 @@ export class WebLogo extends DG.JsViewer {
       }
     });
 
-    rxjs.fromEvent(this.canvas, 'mousedown').subscribe((e: Event) => {
-      if (!this.canvas)
+    rxjs.fromEvent<MouseEvent>(this.canvas, 'mousedown').subscribe((e: MouseEvent) => {
+      if (!this.canvas || e.button != 0)
         return;
 
       const args = e as MouseEvent;
       const [jPos, monomer] = getMonomer(this.canvas.getCursorPosition(args));
 
       // prevents deselect all rows if we miss monomer bounds
-      //if (this.dataFrame && this.seqCol && monomer) {
       if (this.dataFrame && this.seqCol && monomer) {
         this.dataFrame.selection.init((iRow) => {
           const seq = this.seqCol!.get(iRow);
@@ -180,22 +186,14 @@ export class WebLogo extends DG.JsViewer {
       }
     });
 
+    this.root.append(this.msgHost);
     this.root.append(this.canvas);
     // this.root.appendChild(this.slider.root);
-    // this.root.append(this.host);
 
-    // ui.onSizeChanged(this.canvas).subscribe(this.canvasOnSizeChanged.bind(this));
     ui.onSizeChanged(this.root).subscribe(this.rootOnSizeChanged.bind(this));
 
     this.render(true);
   }
-
-  // canvasOnSizeChanged(args: any) {
-  //   this.canvas.width = this.canvas.clientWidth;
-  //   this.canvas.height = this.canvas.clientHeight;
-  //   console.debug(`WebLogo.onSizeChanged() width=${this.canvas.width}, height=${this.canvas.height}`);
-  //   this.render(false);
-  // }
 
   rootOnSizeChanged(args: any) {
     if (!this.canvas)
@@ -235,7 +233,7 @@ export class WebLogo extends DG.JsViewer {
         this.startPosition = this.startPositionName && this.positionNames ?
           this.positionNames.indexOf(this.startPositionName) : 0;
         this.endPosition = this.endPositionName && this.positionNames ?
-          this.positionNames.indexOf(this.endPositionName) : maxLength;
+          this.positionNames.indexOf(this.endPositionName) : (maxLength - 1);
 
         //#region -- palette --
         switch (this.seqCol.semType) {
@@ -273,11 +271,14 @@ export class WebLogo extends DG.JsViewer {
     case 'endPositionName':
       this.updateSeqCol();
       break;
-    case 'minHeight':
+    case 'positionWidth':
       this.render(true);
       break;
+    case 'minHeight':
+      this.rootOnSizeChanged(null);
+      break;
     case 'maxHeight':
-      this.render(true);
+      this.rootOnSizeChanged(null);
       break;
     }
   }
@@ -391,6 +392,15 @@ export class WebLogo extends DG.JsViewer {
 
   // reflect changes made to filter/selection
   render(recalc = true) {
+    if (this.msgHost) {
+      if (this.seqCol && !this.cp) {
+        this.msgHost!.innerText = `Unknown palette (column semType: '${this.seqCol.semType}').`;
+        this.msgHost!.style.display = '';
+      } else {
+        this.msgHost!.style.display = 'none';
+      }
+    }
+
     if (!this.canvas || !this.seqCol || !this.dataFrame || !this.cp ||
       this.startPosition === -1 || this.endPosition === -1)
       return;
@@ -406,22 +416,30 @@ export class WebLogo extends DG.JsViewer {
     //   rowCount -= this.rowsNull;
 
     g.resetTransform();
-    g.clearRect(0, 0, this.canvas.width, this.canvas.height);
+    //g.clearRect(0, 0, this.canvas.width, this.canvas.height);
+    g.fillStyle = 'white';
+    g.fillRect(0, 0, this.canvas.width, this.canvas.height);
     g.textBaseline = this.textBaseline;
+
+    //#region Plot positionNames
+    g.resetTransform();
+    g.fillStyle = 'black';
+    g.textAlign = 'center';
+    g.font = '10px Roboto, Roboto Local, sans-serif';
+    const posNameMaxWidth = Math.max(...this.positions.map((pos) => g.measureText(pos.name).width));
+    const hScale = posNameMaxWidth < (this.positionWidth - 2) ? 1 : (this.positionWidth - 2) / posNameMaxWidth;
 
     for (let jPos = 0; jPos < this.Length; jPos++) {
       const pos: PositionInfo = this.positions[jPos];
       g.resetTransform();
-      g.fillStyle = 'black';
-      g.textAlign = 'center';
-      g.font = '10px Roboto, Roboto Local, sans-serif';
-      const posNameTm: TextMetrics = g.measureText(pos.name);
-      const jPosWidth = posNameTm.width < (this.positionWidth - 2) ? posNameTm.width : (this.positionWidth - 2);
       g.setTransform(
-        jPosWidth / posNameTm.width, 0, 0, 1,
+        hScale, 0, 0, 1,
         jPos * this.positionWidth + this.positionWidth / 2, 0);
       g.fillText(pos.name, 0, 0);
+    }
+    //#endregion Plot positionNames
 
+    for (let jPos = 0; jPos < this.Length; jPos++) {
       for (const [monomer, pmInfo] of Object.entries(this.positions[jPos].freq)) {
         if (monomer !== '-') {
           const b = pmInfo.bounds;
