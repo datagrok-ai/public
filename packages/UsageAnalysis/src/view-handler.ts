@@ -24,6 +24,9 @@ export class ViewHandler {
   }
 
   private constructor() {
+  }
+
+  init() {
     let pathSplits = decodeURI(window.location.pathname).split('/');
     let params = this.getSearchParameters();
 
