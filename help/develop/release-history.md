@@ -1,6 +1,42 @@
 <!-- TITLE: Release History -->
 <!-- SUBTITLE: -->
 
+# 2022-05-18 Dev build 0.151.7
+
+## Latest Docker Images
+
+* Datagrok: 
+  *  `docker pull datagrok/datagrok:0.151.7`
+  *  `docker pull datagrok/datagrok:latest`
+  
+* [Docker-Compose](admin/docker-compose.md)
+
+## Addressed Issues
+
+* (Bug) Color Coding: After enabling Conditional for numeric column, the colors are displayed as Linear 
+* Share git secret to aparamonov 
+* #594: the 'Features' dialog in the predictive modeling view shows incorrect count of checked columns when opened for the second time 
+* TreeView harmonization 
+* (Bug) Connections deploy doesn't deploy connection credentials 
+* Folder content preview wiki: fixed the title 
+* FilterGroup.add: fixed the signature. 
+* Added shell.tv: TableView 
+* Grok connect: test numeric types 
+* Datlas split to libraries (WIP) 
+* Chem: fix the issue with duplicated function name 
+* Chem: sketcher bug fix 
+* JS API Tests: Functions: tests for all built-in arithmetic/logical/date functions (WIP)
+* JS API Tests: connections: create, edit, delete, share (WIP)
+* JBIO: Labels 'Heavy' and 'Light' on Logo rows (WIP)
+* Usage analysis: apps/UsageAnalysis/Data URL not working 
+* Usage analysis: can't reopen the app after closing all views 
+* #607: setting table name upon retrievial 
+* #607: top-menu and toolbox link to Alation app 
+* Alation ESLint fixes 
+* PowerGrid: improved help on embedded images 
+* Demo script: adding a specified filter to the already existing filter groupaa 
+
+
 # 2022-05-15 Dev build 0.151.6
 
 ## Latest Docker Images
