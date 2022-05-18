@@ -23,7 +23,8 @@ export async function getBaseURL() {
 
 //name: Alation
 //tags: app
-export async function alationApp() {
+//top-menu: Admin | Alation @Toolbox Data | Alation
+export async function Alation() {
   const progressIndicator = DG.TaskBarProgressIndicator.create('Loading Alation...');
 
   await utils.retrieveKeys();
@@ -174,7 +175,7 @@ export async function getTable(dsConnection: DG.DataConnection, tableObject: typ
   const query = DG.TableQuery.create(dsConnection);
   query.table = `${tableObject.schema_name}.${tableObject.name}`;
   const columns = await alationApi.getColumns(tableObject.id);
-  query.fields = columns.map((v) => v.name);
+  query.fields = columns.map(v => v.name);
   const df = await query.executeTable();
   df.name = tableObject.name || `Unnamed table id ${tableObject.id}`;
   const tableView = grok.shell.addTableView(df);
