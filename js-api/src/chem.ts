@@ -17,6 +17,7 @@ let api = <any>window;
 declare let grok: any;
 const _STORAGE_NAME = 'sketcher';
 const _KEY = 'selected';
+const _DEFAULT_SKETCHER = 'openChemLibSketcher';
 
 
 export function isMolBlock(s: string) {
@@ -263,6 +264,8 @@ export namespace chem {
 
       await grok.dapi.userDataStorage.getValue(_STORAGE_NAME, _KEY, true).then((sname: string) => {
         let fr = funcs.find(e => e.name == sname);
+        if (fr === undefined)
+          fr = funcs.find(e => e.name == _DEFAULT_SKETCHER);
         this.sketchMenu.find(fr!.friendlyName)._check.innerHTML = '';
       });
       grok.dapi.userDataStorage.postValue(_STORAGE_NAME, _KEY, f!.name, true);
