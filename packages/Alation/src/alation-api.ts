@@ -3,10 +3,10 @@ import * as grok from 'datagrok-api/grok';
 import * as types from './types';
 import * as constants from './const';
 import * as utils from './utils';
-import { getBaseURL } from './package';
+import {getBaseURL} from './package';
 
 export async function testToken(
-    tokenType: types.alationTokenType, token: string, userId: number): Promise<types.tokenResponse> {
+  tokenType: types.alationTokenType, token: string, userId: number): Promise<types.tokenResponse> {
   const url = `${await getBaseURL()}integration/v1/${constants.URI_MAP[tokenType]}/`;
   const data: types.alationDataType = {user_id: userId};
   data[tokenType] = token;
@@ -23,11 +23,12 @@ export async function testToken(
   return response.json();
 }
 
-export async function createAPIAccessToken(refreshToken: string, userId: number): Promise<types.createApiTokenResponse> {
+export async function createAPIAccessToken(
+  refreshToken: string, userId: number): Promise<types.createApiTokenResponse> {
   const url = `${await getBaseURL()}integration/v1/${constants.URI_MAP.create_api_token}/`;
   const params = {
     method: 'POST',
-    headers: {Accept: 'application/json', 'Content-Type': 'application/json'},
+    headers: {'Accept': 'application/json', 'Content-Type': 'application/json'},
     body: JSON.stringify({user_id: userId, refresh_token: refreshToken}),
   };
 
@@ -59,8 +60,11 @@ export async function getColumns(tableId: number): Promise<types.column[]> {
 async function getResponseFor(url: string): Promise<types.baseEntity[]>;
 async function getResponseFor(url: string, params: RequestInit): Promise<types.baseEntity[]>;
 async function getResponseFor(url: string, returnJson: boolean): Promise<types.baseEntity[] | string>;
-async function getResponseFor(url: string, params: RequestInit, returnJson: boolean): Promise<types.baseEntity[] | string>;
-async function getResponseFor(url: string, paramsOrReturnJson?: RequestInit | boolean, returnJson?: boolean): Promise<types.baseEntity[] | string> {
+async function getResponseFor(
+  url: string, params: RequestInit, returnJson: boolean): Promise<types.baseEntity[] | string>;
+async function getResponseFor(
+  url: string, paramsOrReturnJson?: RequestInit | boolean, returnJson?: boolean,
+): Promise<types.baseEntity[] | string> {
   let params: RequestInit;
   if (typeof paramsOrReturnJson === 'boolean' || typeof paramsOrReturnJson === 'undefined') {
     returnJson = paramsOrReturnJson;
@@ -68,7 +72,7 @@ async function getResponseFor(url: string, paramsOrReturnJson?: RequestInit | bo
       method: 'GET',
       headers: {
         'Accept': 'application/json',
-        TOKEN: await utils.getApiToken(),
+        'TOKEN': await utils.getApiToken(),
       },
     };
   }
@@ -81,7 +85,8 @@ async function getResponseFor(url: string, paramsOrReturnJson?: RequestInit | bo
 }
 
 export async function testQuery(execResultId: number): Promise<string> {
-  const url = `${await getBaseURL()}integration/v1/${constants.URI_MAP.result}/${execResultId}/${constants.FORMAT.csv}/`;
+  const url =
+    `${await getBaseURL()}integration/v1/${constants.URI_MAP.result}/${execResultId}/${constants.FORMAT.csv}/`;
   return getResponseFor(url, false) as Promise<string>;
 }
 
@@ -92,7 +97,7 @@ export async function getDataSourceById(dataSourceId: number): Promise<types.dat
     headers: {
       'Accept': 'application/json',
       'TOKEN': await utils.getApiToken(),
-    }
+    },
   };
 
   const response = await grok.dapi.fetchProxy(url, params);

@@ -7,7 +7,7 @@ import $ from 'cash-dom';
 import * as constants from './const';
 import * as alationApi from './alation-api';
 import * as types from './types';
-import { getBaseURL } from './package';
+import {getBaseURL} from './package';
 
 const UDS = grok.dapi.userDataStorage;
 

@@ -1,9 +1,9 @@
 export type alationTokenType = 'refresh_token' | 'api_access_token';
 export type alationDataType = {[key: string]: string | number};
-export type refreshTokenResponse = {created_at: string, last_used_at: string | null, name: string, refresh_token: string, 
-  token_expires_at: string, token_status: string, user_id: number};
-export type apiTokenResponse = {api_access_token: string, created_at: string, token_expires_at: string, token_status: string,
-  user_id: number};
+export type refreshTokenResponse = {created_at: string, last_used_at: string | null, name: string,
+  refresh_token: string, token_expires_at: string, token_status: string, user_id: number};
+export type apiTokenResponse = {api_access_token: string, created_at: string, token_expires_at: string,
+  token_status: string, user_id: number};
 export type tokenResponse = refreshTokenResponse | apiTokenResponse;
 export type dataSource = {host: string, port: number, deployment_setup_complete: boolean, db_username: string,
   dbname: string, supports_explain: boolean, has_aws_glue_metastore: boolean, supports_qli_daterange: boolean,
@@ -25,8 +25,8 @@ export type dataSource = {host: string, port: number, deployment_setup_complete:
   can_toggle_ds_privacy: boolean, exclude_schemas: null, compose_oauth_enabled: boolean};
 export type schema = {custom_fields: any[], db_comment: null | string, description: string, ds_id: number, id: number,
   key: string, name: string, title: string, url: string};
-export type table = {base_table_key: null | string, description: string, ds_id: number, id: number, key: string, name: string,
-  custom_fields: {value: {otype: string, oid: number}[], field_id: number, field_name: string}[],
+export type table = {base_table_key: null | string, description: string, ds_id: number, id: number, key: string,
+  name: string, custom_fields: {value: {otype: string, oid: number}[], field_id: number, field_name: string}[],
   partition_columns: null | string, partition_definition: null | string, schema_id: number, schema_name: string,
   sql: null | string, table_comment: null | string, table_type: string, title: string, url: string};
 // type baseEntity = {id: number, title: string, description: string};
