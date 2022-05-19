@@ -3,16 +3,24 @@ const path = require('path');
 module.exports = {
   mode: 'development',
   entry: {
-    package: './src/package.ts'
+    package: './src/package.ts',
   },
   resolve: {
-    fallback: { "url": false },
-    extensions: ['.wasm', '.mjs', '.js', '.json', '.ts', '.tsx']
+    fallback: {'url': false},
+    extensions: ['.wasm', '.mjs', '.ts', '.js', '.json', '.tsx'],
   },
   module: {
     rules: [
-      { test: /\.tsx?$/, loader: 'ts-loader' },
-      { test: /\.css$/, use: ['style-loader', 'css-loader'] }
+      {
+        test: /\.ts(x?)$/,
+        use: 'ts-loader',
+        exclude: /node_modules/,
+      },
+      {
+        test: /\.css$/,
+        use: ['style-loader', 'css-loader'],
+        exclude: /node_modules/,
+      },
     ],
   },
   devtool: 'inline-source-map',
