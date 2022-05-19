@@ -1,5 +1,6 @@
 import * as DG from 'datagrok-api/dg';
-import {category, test} from "@datagrok-libraries/utils/src/test";
+import * as grok from 'datagrok-api/grok';
+import {category, expect, test} from "@datagrok-libraries/utils/src/test";
 
 category('DataFrame', () => {
   test('create from arrays', async () => {
@@ -49,5 +50,86 @@ Tesla, Model S,  ,          1.6,    120000`);
       DG.Column.fromFloat32Array('floats', new Float32Array(100))
     ]);
   });
+
+  //creation of dataframes used in testing
+  let df1 = DG.DataFrame.create(2);
+  df1.columns.add(DG.Column.fromStrings('countries', ['USA', 'Canada']));
+  df1.columns.add(DG.Column.fromInt32Array('population', Int32Array.from([1, 4])));
+  let df2 = DG.DataFrame.create(2);
+  df2.columns.add(DG.Column.fromStrings('countries', ['France', 'Mexico']));
+  df2.columns.add(DG.Column.fromInt32Array('population', Int32Array.from([2, 3])));
+  let df = DG.DataFrame.create(4);
+  df.columns.add(DG.Column.fromStrings('countries', ['USA', 'Canada', 'France', 'Mexico']));
+  df.columns.add(DG.Column.fromInt32Array('population', Int32Array.from([1, 4, 2, 3])));
+  
+  test('append method', async () => {
+    df1.append(df2);
+    //expect(df1.append(df2), df);
+  });
+
+  test('cell method', async () => {
+    //df.cell(1, 'countries');
+    expect(df1.cell(1, 'countries').toString(), 'countries : 1');
+  });
+
+  test('get method', async () => {
+    expect(df.get('countries', 1), 'Canada');
+  });
+
+  test('change column type method', async () => {
+    df1.changeColumnType('countries', 'int');
+    expect(typeof(df1.get('countries', 1)), 'number');
+  });
+
+  test('col method', async () => {
+    let res = df1.col('population')?.getRawData();
+    expect(res?.toString(), "1,4");
+  });
+
+  test('getcol method', async () => {
+    let res = df1.getCol('population').getRawData();
+    expect(res.toString(), "1,4");
+  });
+
+  test('get sorted order method', async () => {
+    const arr: object[] = [];
+    arr.push(df.columns.names()[1]);
+    let order = df.getSortedOrder(arr);
+    expect(order.toString(), '0,2,3,1');
+  });
+
+  test('get table info', async () => {
+    return df1.getTableInfo();
+  });
+
+  test('toString method', async () => {
+    expect(typeof(df1.getCol('population').getRawData().toString()), 'string');
+  });
+
+  test('toCsv method', async () => {
+    return df1.toCsv();
+  });
+
+  test('set method', async () => {
+    df1.set("population", 1, 5);
+    expect(5, df1.get("population", 1));
+  });
+
+  test('get density method', async () => {
+    let t = DG.DataFrame.create(3);
+    t.columns.add(DG.Column.fromInt32Array('numbers', Int32Array.from([1, 4, 2])));
+    t.columns.add(DG.Column.fromInt32Array('digits', Int32Array.from([2, 1, 3])));
+    let res = t.getDensity(4, 2, 'numbers', 'digits');
+    return res;
+  });
+
+  test('set tag method and get tag method', async () => {
+    df1.columns.byName('population').setTag('units', 'm');
+    expect('m', df1.columns.byName('population').getTag('units'));
+  });
+
+  //test('row method', async () => {
+    //return df1.row(1);
+  //});
 
 });
