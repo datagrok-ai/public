@@ -36,3 +36,9 @@ pubspec.lock
 .dart_tool
 .packages
 /docker/vm.docker-compose.yaml
+/packages/GridExtDemo/src/package.d.ts
+/packages/GridExtDemo/src/package.d.ts.map
+/packages/GridExtDemo/src/package.js
+/libraries/gridext/src/PinnedColumn.d.ts
+/libraries/gridext/src/PinnedColumn.d.ts.map
+/libraries/gridext/src/PinnedColumn.js
