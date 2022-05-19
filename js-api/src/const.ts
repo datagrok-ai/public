@@ -109,6 +109,10 @@ export enum TYPE {
   NOTEBOOK = 'Notebook'
 }
 
+// export type FILTER_TYPE =
+//   'histogram' | 'categorical' | 'multi-value' | 'bool-columns' |
+//   'free-text' | 'column-free-text' | 'Chem:substructureFilter';
+
 export enum FILTER_TYPE {
   HISTOGRAM = 'histogram',
   CATEGORICAL = 'categorical',
@@ -137,7 +141,7 @@ export enum VIEWER_PROPERTY_TYPE {
 
 export enum VIEW_TYPE {
   TABLE_VIEW = 'TableView'
-};
+}
 
 ///////
 /** @enum {SEMTYPE} */
