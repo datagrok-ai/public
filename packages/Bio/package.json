@@ -1,6 +1,6 @@
 {
   "name": "@datagrok/bio",
-  "beta": true,
+  "beta": false,
   "friendlyName": "Bio",
   "version": "0.0.6",
   "description": "",
@@ -28,6 +28,7 @@
     "debug-sequences1": "grok publish --rebuild",
     "release-sequences1": "grok publish --rebuild --release",
     "build-sequences1": "webpack",
+    "local-bio": "grok publish local",
     "build": "webpack",
     "debug-sequences1-public": "grok publish public --rebuild",
     "release-sequences1-public": "grok publish public --rebuild --release",
