@@ -28,7 +28,7 @@ module.exports = {
   },
   output: {
     filename: '[name].js',
-    library: 'sequences1',
+    library: 'bio',
     libraryTarget: 'var',
     path: path.resolve(__dirname, 'dist'),
   },

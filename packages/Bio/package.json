@@ -2,7 +2,7 @@
   "name": "@datagrok/bio",
   "beta": true,
   "friendlyName": "Bio",
-  "version": "0.0.5",
+  "version": "0.0.6",
   "description": "",
   "repository": {
     "type": "git",
@@ -10,9 +10,9 @@
     "directory": "packages/Bio"
   },
   "dependencies": {
-    "@datagrok-libraries/bio": "^0.0.10",
+    "@datagrok-libraries/bio": "^0.0.14",
     "cash-dom": "latest",
-    "datagrok-api": "^0.151.7",
+    "datagrok-api": "^0.148.6",
     "dayjs": "latest",
     "ts-loader": "^9.2.5",
     "typescript": "^4.4.2"
@@ -34,5 +34,7 @@
     "debug-sequences1-local": "grok publish local --rebuild",
     "release-sequences1-local": "grok publish local --rebuild --release"
   },
-  "canEdit": [ "Developers" ]
+  "canEdit": [
+    "Developers"
+  ]
 }

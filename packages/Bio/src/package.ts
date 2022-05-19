@@ -2,7 +2,8 @@
 import * as grok from 'datagrok-api/grok';
 import * as ui from 'datagrok-api/ui';
 import * as DG from 'datagrok-api/dg';
-import { SequenceAlignment, Aligned } from './seq_align';
+import {SequenceAlignment, Aligned} from './seq_align';
+
 export let _package = new DG.Package();
 
 import {WebLogo} from '@datagrok-libraries/bio/src/viewers/web-logo';
@@ -14,10 +15,10 @@ import {WebLogo} from '@datagrok-libraries/bio/src/viewers/web-logo';
 //input: string seq1
 //input: string seq2
 //output: object res 
-export function sequenceAlignment(alignType:string, alignTable:string, gap:number, seq1:string, seq2:string){
-    let toAlign = new SequenceAlignment(seq1,seq2,gap,alignTable);
-    let res = alignType == 'Local alignment' ? toAlign.smithWaterman() : toAlign.needlemanWunch();
-    return res
+export function sequenceAlignment(alignType: string, alignTable: string, gap: number, seq1: string, seq2: string) {
+  let toAlign = new SequenceAlignment(seq1, seq2, gap, alignTable);
+  let res = alignType == 'Local alignment' ? toAlign.smithWaterman() : toAlign.needlemanWunch();
+  return res;
 }
 
 //name: WebLogo
@@ -25,5 +26,5 @@ export function sequenceAlignment(alignType:string, alignTable:string, gap:numbe
 //tags: viewer, panel
 //output: viewer result
 export function webLogoViewer() {
-    return new WebLogo();
+  return new WebLogo();
 }
