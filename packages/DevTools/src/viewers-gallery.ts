@@ -249,10 +249,12 @@ export async function viewersGallery() {
             viewers[i].icon = 'grok-icon svg-icon svg-project';
         }
 
+        //disable viewers
+        /*
         if (i > 40) {
             viewers[i].disabled = true;
         }
-
+        */
     }
 
     filterBox.append(ui.divV([
