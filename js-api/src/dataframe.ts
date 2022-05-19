@@ -565,6 +565,8 @@ export class Row {
   toDart(): any { return api.grok_Row(this.table.dart, this.idx); }
 }
 
+type KnownColumnTags = 'format' | 'colors';
+
 /** Strongly-typed column.
  * Use {@link get} and {@link set} to access elements by index.
  * */

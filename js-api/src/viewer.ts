@@ -355,7 +355,7 @@ export class JsViewer extends Viewer {
 
 
 export interface FilterState {
-  type: FILTER_TYPE;
+  type: FILTER_TYPE | string;
   column?: string;
 }
 
