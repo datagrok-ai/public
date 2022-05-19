@@ -10,7 +10,7 @@
 	},
 	"dependencies": {
 		"@datagrok-libraries/utils": "0.4.0",
-		"datagrok-api": "^0.151.0",
+		"datagrok-api": "^0.151.7",
 		"rxjs": "^6.6.7",
 		"wu": "latest"
 	},
