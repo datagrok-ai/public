@@ -15,9 +15,8 @@ category('Dialog: Missing Values Imputation', () => {
         grok.shell.addTableView(await demog);
     });
 
-    test('dialogs.multivariateAnalysis', async () => {
-        grok.shell.topMenu.find('Tools').find('Data Science').find('Missing Values Imputation...').root.dispatchEvent(new MouseEvent('mousedown'));
-        grok.shell.topMenu.find('Tools').find('Data Science').find('Missing Values Imputation...').root.dispatchEvent(new MouseEvent('mousedown'));
+    test('dialogs.missingValuesImputation', async () => {
+        grok.shell.topMenu.find('Tools').find('Data Science').find('Missing Values Imputation...').root.click()
         await delay(1000);
         isDialogPresent('Missing Values Imputation');
 
@@ -50,13 +49,20 @@ category('Dialog: Missing Values Imputation', () => {
         }
         if (okButton) {
             okButton.click();
-            await delay(5000);
+            await delay(8000);
         }
-
+        
+        if (((await demog).col('AGE')?.stats.missingValueCount) != 0)
+            throw 'column AGE contains empty rows!'
+                
+        if (((await demog).col('WEIGHT')?.stats.missingValueCount) != 0)
+            throw 'column WEIGHT contains empty rows!'
+        if (((await demog).col('HEIGHT')?.stats.missingValueCount) != 0)
+            throw 'column HEIGHT contains empty rows!'
     });
 
-   /*  after(async () => {
+     after(async () => {
         v.close();
         grok.shell.closeAll();
-    }); */
+    }); 
 });

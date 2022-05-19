@@ -38,7 +38,8 @@ import './ui/tab-control';
 import './ui/list';
 import './ui/image';
 import './ui/viewers-adding'
-import './grid/grid';
+import './grid/grid'; 
+import './gui/missing-values-imputation'
 
 import {runTests} from "@datagrok-libraries/utils/src/test";
 import { TreeViewNode } from 'datagrok-api/dg';
