@@ -1,7 +1,7 @@
 import * as grok from 'datagrok-api/grok';
 import * as DG from 'datagrok-api/dg';
 
-import { category, expectObject, expect } from "@datagrok-libraries/utils/src/test";
+import { category, expectObject, expect, test } from "@datagrok-libraries/utils/src/test";
 
 const GDC = grok.dapi.connections;
 
