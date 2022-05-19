@@ -102,7 +102,9 @@ export async function getActivityCliffs(
     markerMaxSize: 25,
   }));
   const listCliffs = ui.button('List cliffs', () => {
-    grok.shell.o = ui.div(linesDf.plot.grid().root);
+    ui.dialog({title: 'Activity cliffs'})
+      .add(ui.div(linesDf.plot.grid().root))
+      .show();
   });
   listCliffs.style.position = 'absolute';
   listCliffs.style.top = '10px';
@@ -112,8 +114,6 @@ export async function getActivityCliffs(
   const canvas = (sp.getInfo() as any)['canvas'];
   let lines: any[] = [];
   let linesDf: DG.DataFrame;
-  let lastSelectedLineId: number|null = null;
-  let currentLineId: number|null = null;
   const tooltips: any = {};
 
   let timer: NodeJS.Timeout;
@@ -122,40 +122,37 @@ export async function getActivityCliffs(
     timer = global.setTimeout(function() {
       const line = checkCursorOnLine(event, canvas, lines);
       if (line && df.mouseOverRowIdx === -1) {
-        if (line.id !== lastSelectedLineId) {
-          lastSelectedLineId = line.id;
-          if (!tooltips[line.id]) {
-            tooltips[line.id] = ui.divText('Loading...');
-            const mcsDf = DG.DataFrame.create(2);
-            //@ts-ignore
-            mcsDf.columns.addNewString('smiles').init((i) => df.get(smiles.name, line.mols[i]));
-            findMCS('smiles', mcsDf, true).then((mcs) => {
-              tooltips[line.id] = ui.divH([]);
-              const columnNames = ui.divV([
-                ui.divText('smiles'),
-                ui.divText(activities.name),
-              ]);
-              columnNames.style.fontWeight = 'bold';
-              columnNames.style.display = 'flex';
-              columnNames.style.justifyContent = 'space-between';
-              tooltips[line.id].append(columnNames);
-              line.mols.forEach((mol: any) => {
-                const imageHost = ui.canvas(200, 100);
-                drawMoleculeToCanvas(0, 0, 200, 100, imageHost, df.get('smiles', mol), mcs);
-                const activity = ui.divText(df.get(activities.name, mol).toFixed(2));
-                activity.style.display = 'flex';
-                activity.style.justifyContent = 'left';
-                activity.style.paddingLeft = '30px';
-                tooltips[line.id].append(ui.divV([
-                  imageHost,
-                  activity,
-                ]));
-              });
-              ui.tooltip.show(tooltips[line.id], event.clientX, event.clientY);
+        if (!tooltips[line.id]) {
+          tooltips[line.id] = ui.divText('Loading...');
+          const mcsDf = DG.DataFrame.create(2);
+          //@ts-ignore
+          mcsDf.columns.addNewString('smiles').init((i) => df.get(smiles.name, line.mols[i]));
+          findMCS('smiles', mcsDf, true).then((mcs) => {
+            tooltips[line.id] = ui.divH([]);
+            const columnNames = ui.divV([
+              ui.divText('smiles'),
+              ui.divText(activities.name),
+            ]);
+            columnNames.style.fontWeight = 'bold';
+            columnNames.style.display = 'flex';
+            columnNames.style.justifyContent = 'space-between';
+            tooltips[line.id].append(columnNames);
+            line.mols.forEach((mol: any) => {
+              const imageHost = ui.canvas(200, 100);
+              drawMoleculeToCanvas(0, 0, 200, 100, imageHost, df.get('smiles', mol), mcs);
+              const activity = ui.divText(df.get(activities.name, mol).toFixed(2));
+              activity.style.display = 'flex';
+              activity.style.justifyContent = 'left';
+              activity.style.paddingLeft = '30px';
+              tooltips[line.id].append(ui.divV([
+                imageHost,
+                activity,
+              ]));
             });
-          }
-          ui.tooltip.show(tooltips[line.id], event.clientX, event.clientY);
+            ui.tooltip.show(tooltips[line.id], event.clientX, event.clientY);
+          });
         }
+        ui.tooltip.show(tooltips[line.id], event.clientX, event.clientY);
       }
     }, 1000);
   });
@@ -177,27 +174,20 @@ export async function getActivityCliffs(
             l.mols.forEach((m) => df.selection.set(m, true));
         });
       } else {
-        if (!currentLineId || currentLineId !== line.id) {
-          currentLineId = line.id;
-          df.currentRowIdx = line.mols[0];
+        if (linesDf.currentRowIdx !== line.id) {
           linesDf.currentRowIdx = line.id;
+          df.currentRowIdx = line.mols[0];
           df.selection.set(0, !lines[0].selected);
           df.selection.set(0, lines[0].selected);
         }
       }
-    } else {
-      currentLineId = null;
-      df.currentRowIdx = -1;
-      linesDf.currentRowIdx = -1;
-      df.selection.set(0, !lines[0].selected);
-      df.selection.set(0, lines[0].selected);
     }
   });
 
   sp.onEvent('d4-before-draw-scene')
     .subscribe((_) => {
       const renderRes = renderLines(sp, n1, n2,
-        `${axes[0]}_${colNameInd}`, `${axes[1]}_${colNameInd}`, lines, linesDf, currentLineId, smiles, activities);
+        `${axes[0]}_${colNameInd}`, `${axes[1]}_${colNameInd}`, lines, linesDf, smiles, activities);
       lines = renderRes.lines;
       linesDf = renderRes.linesDf;
     });
@@ -220,15 +210,31 @@ function checkCursorOnLine(event: any, canvas: any, lines: any[]) {
 }
 
 function renderLines(sp: DG.Viewer, n1: number[],
-  n2: number[], xAxis: string, yAxis: string, lines: any[], linesDf: DG.DataFrame, currentLineId: number|null,
+  n2: number[], xAxis: string, yAxis: string, lines: any[], linesDf: DG.DataFrame,
   smiles: DG.Column, activities: DG.Column) {
   //@ts-ignore
   const canvas = sp.getInfo()['canvas'];
   const ctx = canvas.getContext('2d') as CanvasRenderingContext2D;
   const x = sp.dataFrame!.columns.byName(xAxis);
   const y = sp.dataFrame!.columns.byName(yAxis);
-  if (!lines.length)
-    linesDf = createLines(n1, n2, lines, linesDf, smiles, activities);
+  if (!lines.length) {
+    linesDf = createLines(sp, n1, n2, lines, linesDf, smiles, activities);
+    linesDf.onCurrentRowChanged.subscribe(() => {
+      sp.dataFrame.currentRowIdx = linesDf.currentRowIdx !== -1 ? lines[linesDf.currentRowIdx].mols[0] : -1;
+      sp.dataFrame.selection.set(0, !lines[0].selected);
+      sp.dataFrame.selection.set(0, lines[0].selected);
+    });
+    linesDf.onSelectionChanged.subscribe((v) => {
+      const line = lines[linesDf.mouseOverRowIdx];
+      line.selected = !line.selected;
+      //@ts-ignore
+      lines.forEach((l) => {
+        if (l.selected)
+          //@ts-ignore
+          l.mols.forEach((m) => sp.dataFrame.selection.set(m, true));
+      });
+    });
+  }
   for (let i = 0; i < lines.length; i++) {
     //@ts-ignore
     const pointFrom = sp.worldToScreen(x.get(lines[i].mols[0]), y.get(lines[i].mols[0]));
@@ -238,7 +244,7 @@ function renderLines(sp: DG.Viewer, n1: number[],
     lines[i].b = [pointTo.x, pointTo.y];
     const line = new Path2D();
     line.moveTo(lines[i].a[0], lines[i].a[1]);
-    ctx.strokeStyle = lines[i].id === currentLineId ? 'red' : lines[i].selected ? 'yellow' : 'green';
+    ctx.strokeStyle = lines[i].id === linesDf.currentRowIdx ? 'red' : lines[i].selected ? 'yellow' : 'green';
     ctx.lineWidth = 1;
     line.lineTo(lines[i].b[0], lines[i].b[1]);
     ctx.stroke(line);
@@ -246,7 +252,7 @@ function renderLines(sp: DG.Viewer, n1: number[],
   return {lines: lines, linesDf: linesDf};
 }
 
-function createLines(n1: number[], n2: number[],
+function createLines(sp: DG.Viewer, n1: number[], n2: number[],
   lines: any[], linesDf: DG.DataFrame, smiles: DG.Column, activities: DG.Column) {
   for (let i = 0; i < n1.length; i++) {
     const num1 = n1[i];
@@ -257,7 +263,12 @@ function createLines(n1: number[], n2: number[],
   linesDf.columns.addNewString('1_smiles').init((i: any) => smiles.get(lines[i].mols[0]));
   linesDf.columns.addNewString('2_smiles').init((i: any) => smiles.get(lines[i].mols[1]));
   linesDf.columns.addNewFloat('act_diff')
-    .init((i: any) => activities.get(lines[i].mols[0]) - activities.get(lines[i].mols[1]));
+    .init((i) => Math.abs(activities.get(lines[i].mols[0]) - activities.get(lines[i].mols[1])));
+  linesDf.columns.addNewInt('line_index').init((i) => i);
+  linesDf.col('1_smiles')!.tags[DG.TAGS.UNITS] = 'smiles';
+  linesDf.col('2_smiles')!.tags[DG.TAGS.UNITS] = 'smiles';
+  linesDf.col('1_smiles')!.semType = DG.SEMTYPE.MOLECULE;
+  linesDf.col('2_smiles')!.semType = DG.SEMTYPE.MOLECULE;
   return linesDf;
 }
 
