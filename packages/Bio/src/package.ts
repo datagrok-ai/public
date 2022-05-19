@@ -5,6 +5,7 @@ import * as DG from 'datagrok-api/dg';
 import { SequenceAlignment, Aligned } from './seq_align';
 export let _package = new DG.Package();
 
+import {WebLogo} from '@datagrok-libraries/bio/src/viewers/web-logo';
 
 //name: sequenceAlignment
 //input: string alignType {choices: ['Local alignment', 'Global alignment']}
@@ -17,4 +18,12 @@ export function sequenceAlignment(alignType:string, alignTable:string, gap:numbe
     let toAlign = new SequenceAlignment(seq1,seq2,gap,alignTable);
     let res = alignType == 'Local alignment' ? toAlign.smithWaterman() : toAlign.needlemanWunch();
     return res
+}
+
+//name: WebLogo
+//description: WebLogo viewer
+//tags: viewer, panel
+//output: viewer result
+export function webLogoViewer() {
+    return new WebLogo();
 }
