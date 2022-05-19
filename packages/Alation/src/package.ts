@@ -27,15 +27,18 @@ export async function getBaseURL() {
 export async function Alation() {
   const progressIndicator = DG.TaskBarProgressIndicator.create('Loading Alation...');
 
+  const treeHost = ui.div();
+  const descriptionHost = ui.div(undefined, 'alation-description');
+  const rightPanelHost = ui.divV([ui.h1('Data Sources'), treeHost]);
+  descriptionHost.style.maxWidth = '50%';
+  descriptionHost.style.margin = '10px';
+  grok.shell.newView('Alation Browser', [ui.divH([rightPanelHost, descriptionHost])]);
+
   await utils.retrieveKeys();
 
   const dataSourcesList = await alationApi.getDataSources();
   const tree = createTree(dataSourcesList, 'data-source');
-  const descriptionHost = ui.div(undefined, 'alation-description');
-  const treeHost = ui.divV([ui.h1('Data Sources'), tree.root]);
-  descriptionHost.style.maxWidth = '50%';
-  descriptionHost.style.margin = '10px';
-  grok.shell.newView('Alation Browser', [ui.divH([treeHost, descriptionHost])]);
+  treeHost.innerHTML = tree.root.outerHTML;
 
   progressIndicator.close();
 }
