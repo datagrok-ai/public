@@ -18,6 +18,10 @@
     "typescript": "^4.4.2"
   },
   "devDependencies": {
+    "@typescript-eslint/eslint-plugin": "latest",
+    "@typescript-eslint/parser": "latest",
+    "eslint": "latest",
+    "eslint-config-google": "latest",
     "webpack": "latest",
     "webpack-cli": "latest"
   },
@@ -33,7 +37,9 @@
     "debug-sequences1-public": "grok publish public --rebuild",
     "release-sequences1-public": "grok publish public --rebuild --release",
     "debug-sequences1-local": "grok publish local --rebuild",
-    "release-sequences1-local": "grok publish local --rebuild --release"
+    "release-sequences1-local": "grok publish local --rebuild --release",
+    "lint": "eslint \"./src/**/*.ts\"",
+    "lint-fix": "eslint \"./src/**/*.ts\" --fix"
   },
   "canEdit": [
     "Developers"
