@@ -17,7 +17,8 @@ export async function getActivityCliffs(
   smiles: DG.Column,
   activities: DG.Column,
   similarity: number,
-  methodName: string) {
+  methodName: string)
+  : Promise<void> {
   const automaticSimilarityLimit = false;
   const MIN_SIMILARITY = 80;
 
@@ -195,7 +196,7 @@ export async function getActivityCliffs(
   sp.addProperty('similarityLimit', 'double', optSimilarityLimit);
 }
 
-function checkCursorOnLine(event: any, canvas: any, lines: any[]) {
+function checkCursorOnLine(event: any, canvas: any, lines: any[]): any {
   const rect = canvas.getBoundingClientRect();
   const x = event.clientX - rect.left;
   const y = event.clientY - rect.top;
@@ -210,8 +211,8 @@ function checkCursorOnLine(event: any, canvas: any, lines: any[]) {
 }
 
 function renderLines(sp: DG.Viewer, n1: number[],
-  n2: number[], xAxis: string, yAxis: string, lines: any[], linesDf: DG.DataFrame,
-  smiles: DG.Column, activities: DG.Column) {
+  n2: number[], xAxis: string, yAxis: string, lines: any[], linesDf: DG.DataFrame, currentLineId: number|null,
+  smiles: DG.Column, activities: DG.Column): any {
   //@ts-ignore
   const canvas = sp.getInfo()['canvas'];
   const ctx = canvas.getContext('2d') as CanvasRenderingContext2D;
@@ -252,8 +253,9 @@ function renderLines(sp: DG.Viewer, n1: number[],
   return {lines: lines, linesDf: linesDf};
 }
 
-function createLines(sp: DG.Viewer, n1: number[], n2: number[],
-  lines: any[], linesDf: DG.DataFrame, smiles: DG.Column, activities: DG.Column) {
+function createLines(n1: number[], n2: number[],
+  lines: any[], linesDf: DG.DataFrame, smiles: DG.Column, activities: DG.Column)
+  : DG.DataFrame {
   for (let i = 0; i < n1.length; i++) {
     const num1 = n1[i];
     const num2 = n2[i];
@@ -272,7 +274,8 @@ function createLines(sp: DG.Viewer, n1: number[], n2: number[],
   return linesDf;
 }
 
-async function getSimilaritiesMarix(dim: number, smiles: DG.Column, dfSmiles: DG.DataFrame, simArr: DG.Column[]) {
+async function getSimilaritiesMarix(dim: number, smiles: DG.Column, dfSmiles: DG.DataFrame, simArr: DG.Column[])
+  : Promise<DG.Column[]> {
   for (let i = 0; i != dim - 1; ++i) {
     const mol = smiles.get(i);
     dfSmiles.rows.removeAt(0, 1, false);
@@ -281,7 +284,8 @@ async function getSimilaritiesMarix(dim: number, smiles: DG.Column, dfSmiles: DG
   return simArr;
 }
 
-function getSimilaritiesMarixFromDistances(dim: number, distances: [], simArr: DG.Column[]) {
+function getSimilaritiesMarixFromDistances(dim: number, distances: [], simArr: DG.Column[])
+  : DG.Column[] {
   for (let i = 0; i < dim - 1; ++i) {
     const similarityArr = [];
     for (let j = i + 1; j < dim; ++j)

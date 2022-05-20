@@ -71,7 +71,7 @@ export function renderMolecule(
   return ui.divV([moreBtn, moleculeHost], 'chem-mol-box');
 }
 
-export function _svgDiv(mol: any) {
+export function _svgDiv(mol: any): HTMLDivElement {
   const root = ui.div();
   root.innerHTML = mol.get_svg();
   return root;

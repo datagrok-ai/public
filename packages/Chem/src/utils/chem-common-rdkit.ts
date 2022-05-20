@@ -14,11 +14,11 @@ export let _rdKitService: RdKitService;
 export let _webRoot: string | null;
 let moduleInitialized = false;
 
-export function setRdKitWebRoot(webRootValue: string) {
+export function setRdKitWebRoot(webRootValue: string): void {
   _webRoot = webRootValue;
 }
 
-export async function initRdKitModuleLocal() {
+export async function initRdKitModuleLocal(): Promise<void> {
   _rdKitModule = await initRDKitModule(
     {locateFile: () => `${_webRoot}/dist/${rdKitLibVersion}.wasm`});
   if (!_rdKitModule)
@@ -29,7 +29,7 @@ export async function initRdKitModuleLocal() {
   _rdKitService = new RdKitService();
 }
 
-export async function initRdKitService() {
+export async function initRdKitService(): Promise<void> {
   await _rdKitService!.init(_webRoot!);
 }
 
@@ -39,7 +39,7 @@ export function getRdKitModule(): RDModule {
   return _rdKitModule!;
 }
 
-export async function getRdKitService() {
+export async function getRdKitService(): Promise<RdKitService> {
   await initRdKitService();
   if (!_rdKitService)
     throw "RdKit Service isn't initialized";

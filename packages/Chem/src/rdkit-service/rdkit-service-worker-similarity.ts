@@ -13,7 +13,7 @@ export class RdKitServiceWorkerSimilarity extends RdKitServiceWorkerBase {
     super(module, webRoot);
   }
 
-  initMorganFingerprints() {
+  initMorganFingerprints(): void {
     this.freeMorganFingerprints();
     if (this._rdKitMols === null)
       return;

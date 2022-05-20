@@ -38,7 +38,7 @@ export function getRisks(molStr: string): {[index: string]: string} {
   return risks;
 }
 
-export function toxicityWidget(molStr: string) {
+export function toxicityWidget(molStr: string): DG.Widget {
   const risks = getRisks(molStr);
 
   const risksTable: {[index: string]: HTMLDivElement} = {};

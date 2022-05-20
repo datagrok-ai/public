@@ -17,7 +17,19 @@ async function getIUPACName(smiles: string): Promise<string> {
   return (result && result[0].hasOwnProperty('IUPACName')) ? result[0].IUPACName : 'Not found in PubChem';
 }
 
-export function getPropertiesMap(smiles: string) {
+export function getPropertiesMap(smiles: string): {
+  SMILES: string;
+  Formula: string;
+  MW: number;
+  'Number of HBA': number;
+  'Number of HBD': number;
+  LogP: number;
+  LogS: number;
+  'Polar Surface Area': number;
+  'Number of rotatabe bonds': number;
+  'Number of stereo centers': number;
+  Name: any;
+} {
   const mol = oclMol(smiles);
   const formula = mol.getMolecularFormula();
   const molProps = new OCL.MoleculeProperties(mol);

@@ -11,7 +11,7 @@ export class OpenChemLibSketcher extends grok.chem.SketcherBase {
     super();
   }
 
-  async init() {
+  async init(): Promise<void> {
     const id = `ocl-sketcher-${sketcherId++}`;
     this.root.id = id;
 
@@ -44,11 +44,11 @@ export class OpenChemLibSketcher extends grok.chem.SketcherBase {
     return this.smiles;
   }
 
-  setSmarts(s: string) {
+  setSmarts(s: string): void {
     this.smiles = s;
   }
 
-  detach() {
+  detach(): void {
     console.log('OCL sketcher detached');
     super.detach();
   }
