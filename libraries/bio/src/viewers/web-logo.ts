@@ -8,6 +8,7 @@ import {StringDictionary} from '@datagrok-libraries/utils/src/type-declarations'
 
 import {Aminoacids, AminoacidsPalettes} from '../aminoacids';
 import {Nucleotides, NucleotidesPalettes} from '../nucleotides';
+import {SeqPalette} from '../seq-palettes';
 
 // Using color schemes from chem-palette
 
@@ -65,10 +66,12 @@ export class PositionInfo {
 export class WebLogo extends DG.JsViewer {
   public static residuesSet = 'nucleotides';
 
-  // private readonly colorScheme: ColorScheme = ColorSchemes[NucleotidesWebLogo.residuesSet];
-  protected cp: StringDictionary | null = null;
+  private initialized: boolean = false;
 
-  // private readonly host: HTMLDivElement;
+  // private readonly colorScheme: ColorScheme = ColorSchemes[NucleotidesWebLogo.residuesSet];
+  protected cp: SeqPalette | null = null;
+
+  private host?: HTMLDivElement;
   private msgHost?: HTMLElement;
   private canvas?: HTMLCanvasElement;
   private slider?: DG.RangeSlider;
@@ -88,9 +91,10 @@ export class WebLogo extends DG.JsViewer {
   public minHeight: number;
   public maxHeight: number;
   public considerNullSequences: boolean;
-  public sequenceColumnName: string;
-  public startPositionName: string;
-  public endPositionName: string;
+  public sequenceColumnName: string | null;
+  public startPositionName: string | null;
+  public endPositionName: string | null;
+  public fixWidth: boolean;
 
   private positionNames: string[] = [];
 
@@ -117,14 +121,24 @@ export class WebLogo extends DG.JsViewer {
 
     this.startPositionName = this.string('startPositionName', null);
     this.endPositionName = this.string('endPositionName', null);
+
+    this.fixWidth = this.bool('fixWidth', false);
   }
 
-  async init(): Promise<void> {
+  private async init(): Promise<void> {
+    if (this.initialized)
+      alert('WebLogo second initialization!');
+
+    this.initialized = true;
+    this.helpUrl = '/help/visualize/viewers/web-logo.md';
+
     this.msgHost = ui.div('No message');
     this.msgHost.style.display = 'none';
 
     this.canvas = ui.canvas();
     this.canvas.style.width = '100%';
+
+    this.host = ui.div([this.msgHost, this.canvas]);
 
     // this.slider = ui.rangeSlider(0, 20, 2, 5);
     // this.slider.root.style.width = '100%';
@@ -151,7 +165,7 @@ export class WebLogo extends DG.JsViewer {
 
     };
 
-    rxjs.fromEvent<MouseEvent>(this.canvas, 'mousemove').subscribe((e: MouseEvent) => {
+    this.subs.push(rxjs.fromEvent<MouseEvent>(this.canvas, 'mousemove').subscribe((e: MouseEvent) => {
       if (!this.canvas)
         return;
 
@@ -167,9 +181,9 @@ export class WebLogo extends DG.JsViewer {
       } else {
         ui.tooltip.hide();
       }
-    });
+    }));
 
-    rxjs.fromEvent<MouseEvent>(this.canvas, 'mousedown').subscribe((e: MouseEvent) => {
+    this.subs.push(rxjs.fromEvent<MouseEvent>(this.canvas, 'mousedown').subscribe((e: MouseEvent) => {
       if (!this.canvas || e.button != 0)
         return;
 
@@ -184,45 +198,37 @@ export class WebLogo extends DG.JsViewer {
           return mSeq === monomer;
         });
       }
-    });
+    }));
 
-    this.root.append(this.msgHost);
-    this.root.append(this.canvas);
+    this.subs.push(ui.onSizeChanged(this.root).subscribe(this.rootOnSizeChanged.bind(this)));
+
+    this.root.append(this.host);
     // this.root.appendChild(this.slider.root);
 
-    ui.onSizeChanged(this.root).subscribe(this.rootOnSizeChanged.bind(this));
-
+    this.calcSize();
     this.render(true);
   }
 
   rootOnSizeChanged(args: any) {
-    if (!this.canvas)
-      return;
-
-    // this.canvas.width calculate in this._calculate() method
-
-    const height = Math.min(this.maxHeight, Math.max(this.minHeight, this.root.clientHeight));
-    // if (this.canvas.width > this.root.clientWidth) /* horizontal scroller is enabled */
-    //   height -= 6; /* free some space for horizontal scroller */
-    this.canvas.height = height;
-    this.canvas.style.height = `${height}px`;
+    this.calcSize();
+    this.render(true);
 
     // console.debug(`WebLogo.onRootSizeChanged() ` +
     //   `root.width=${this.root.clientWidth}, root.height=${this.root.clientHeight}, ` +
     //   `canvas.width=${this.canvas.width}, canvas.height=${this.canvas.height} .`);
-
-    this.render(true);
   }
 
   /** Assigns {@link seqCol} and {@link cp} based on {@link sequenceColumnName} and calls {@link render}().
    */
   updateSeqCol(): void {
     if (this.dataFrame) {
-      this.seqCol = this.dataFrame.col(this.sequenceColumnName);
+      this.seqCol = this.sequenceColumnName ? this.dataFrame.col(this.sequenceColumnName) : null;
+      if (this.seqCol == null) {
+        this.seqCol = this.pickUpSeqCol(this.dataFrame);
+        this.sequenceColumnName = this.seqCol ? this.seqCol.name : null;
+      }
       if (this.seqCol) {
-        let maxLength = 0;
-        for (const category of this.seqCol.categories)
-          maxLength = Math.max(maxLength, category.length);
+        const maxLength = Math.max(...this.seqCol.categories.map((s) => s.length));
 
         // Get position names from data column tag 'positionNames'
         const positionNamesTxt = this.seqCol.getTag('positionNames');
@@ -235,16 +241,7 @@ export class WebLogo extends DG.JsViewer {
         this.endPosition = this.endPositionName && this.positionNames ?
           this.positionNames.indexOf(this.endPositionName) : (maxLength - 1);
 
-        //#region -- palette --
-        switch (this.seqCol.semType) {
-        case Aminoacids.SemTypeMultipleAlignment:
-          this.cp = AminoacidsPalettes.GrokGroups;
-          break;
-        case Nucleotides.SemTypeMultipleAlignment:
-          this.cp = NucleotidesPalettes.Chromatogram;
-          break;
-        }
-        //#endregion -- palette --
+        this.cp = this.pickUpPalette(this.seqCol);
       } else {
         this.cp = null;
         this.positionNames = [];
@@ -256,11 +253,12 @@ export class WebLogo extends DG.JsViewer {
   }
 
   onPropertyChanged(property: DG.Property): void {
+    // console.debug(`WebLogo.onPropertyChanged( ${property.name} = '' })`);
     super.onPropertyChanged(property);
 
     switch (property.name) {
     case 'considerNullSequences':
-      this.render();
+      this.render(true);
       break;
     case 'sequenceColumnName':
       this.updateSeqCol();
@@ -280,24 +278,22 @@ export class WebLogo extends DG.JsViewer {
     case 'maxHeight':
       this.rootOnSizeChanged(null);
       break;
+    case 'fixWidth':
+      this.render(true);
+      break;
     }
   }
 
-  onTableAttached() {
+  async onTableAttached() {
+    console.debug(`WebLogo.onTableAttached( dataFrame = ${this.dataFrame ? 'data' : 'null'} )`);
     this.updateSeqCol();
 
     if (this.dataFrame !== void 0) {
-      // There are two approaches:
-      // first  - look in the dataFrame for the first matching column by semType of the
-      //          corresponding viewer (but we want only one class of a more universal viewer),
-      // second - draw column data if the passed column is of suitable semType
-      // We decided that we will not search, but we will display asked data if we can
-      // const semType = (<typeof NucleotidesWebLogo>(this.constructor)).residuesSet;
-      // this.seqCol = (this.dataFrame.columns as DG.ColumnList).bySemType(semType);
-
-      this.dataFrame.selection.onChanged.subscribe((_) => this.render());
-      this.dataFrame.filter.onChanged.subscribe((_) => this.render());
+      this.subs.push(this.dataFrame.selection.onChanged.subscribe((_) => this.render()));
+      this.subs.push(this.dataFrame.filter.onChanged.subscribe((_) => this.render()));
     }
+
+    await this.init();
   }
 
   protected _nullSequence(fillerResidue = 'X'): string {
@@ -308,13 +304,9 @@ export class WebLogo extends DG.JsViewer {
   }
 
   protected _calculate() {
-    if (!this.canvas || !this.seqCol || !this.dataFrame || this.startPosition === -1 || this.endPosition === -1)
+    if (!this.canvas || !this.host || !this.seqCol || !this.dataFrame ||
+      this.startPosition === -1 || this.endPosition === -1)
       return;
-
-    const width = this.Length * this.positionWidth;
-    this.canvas.width = width;
-    this.canvas.style.width = `${width}px`;
-    this.root.style.width = `${this.canvas.width}px`;
 
     this.positions = new Array(this.Length);
     for (let jPos = 0; jPos < this.Length; jPos++) {
@@ -339,7 +331,7 @@ export class WebLogo extends DG.JsViewer {
       } else {
         for (let jPos = 0; jPos < this.Length; jPos++) {
           const pmInfo = this.positions[jPos].freq;
-          const m: string = s[this.startPosition + jPos];
+          const m: string = s[this.startPosition + jPos] || '-';
           if (!(m in pmInfo))
             pmInfo[m] = new PositionMonomerInfo();
 
@@ -469,5 +461,86 @@ export class WebLogo extends DG.JsViewer {
         }
       }
     }
+  }
+
+  private calcSize() {
+    if (!this.canvas || !this.host)
+      return;
+
+    const width: number = this.Length * this.positionWidth;
+    this.canvas.width = width;
+    this.canvas.style.width = `${width}px`;
+
+    let height = Math.min(this.maxHeight, Math.max(this.minHeight, this.root.clientHeight));
+    if (width > this.root.clientWidth) /* horizontal scroller is enabled */
+      height -= 6; /* free some space for horizontal scroller */
+    this.canvas.height = height;
+    this.canvas.style.height = `${height}px`;
+
+    // Adjust host and root width
+    if (this.fixWidth) {
+      // full width for canvas host and root
+      this.root.style.width = this.host.style.width = `${width}px`;
+      this.root.style.height = this.host.style.height = `${height}px`;
+      this.host.style.setProperty('overflow', 'hidden', 'important');
+    } else {
+      // allow scroll canvas in root
+      this.root.style.width = this.host.style.width = '100%';
+      this.host.style.overflowX = 'auto!important';
+      this.host.style.setProperty('overflow', null);
+    }
+  }
+
+  /**
+   * @param {DG.Column} seqCol Column to look for a palette
+   * @param {number}  minLength minimum length of sequence to detect palette (empty strings are allowed)
+   * @return {SeqPalette} Palette corresponding to the alphabet of the sequences in the column
+   */
+  private pickUpPalette(seqCol: DG.Column, minLength: number = 0): SeqPalette | null {
+    let res: SeqPalette | null = null;
+    switch (seqCol.semType) {
+    case Aminoacids.SemTypeMultipleAlignment:
+      res = AminoacidsPalettes.GrokGroups;
+      break;
+    case Nucleotides.SemTypeMultipleAlignment:
+      res = NucleotidesPalettes.Chromatogram;
+      break;
+    }
+    if (res === null) {
+      // The alphabet of nucleotides is a smaller set, so we check it first.
+      const alphabet = {...Nucleotides.Names, ...{'-': 'gap'}};
+      res = DG.Detector.sampleCategories(seqCol, (s) => {
+        return !s || (s.length > minLength && s.split('').every((n) => n in alphabet));
+      }) ? NucleotidesPalettes.Chromatogram : null;
+    }
+    if (res === null) {
+      // And then check for amino acids alphabet.
+      const alphabet = {...Aminoacids.Names, ...{'-': 'gap'}};
+      res = DG.Detector.sampleCategories(seqCol, (s) => {
+        return !s || (s.length > minLength && s.split('').every((n) => n in alphabet));
+      }) ? AminoacidsPalettes.GrokGroups : null;
+    }
+    return res;
+  }
+
+  /** First try to find column with semType 'alignedSequence'.
+   * Next look for column with data alphabet corresponding to any of the known palettes.
+   * @param {DG.DataFrame} dataFrame
+   * @return {DG.Column} The column we were looking for or null
+   */
+  private pickUpSeqCol(dataFrame: DG.DataFrame): DG.Column | null {
+    let res: DG.Column | null = dataFrame.columns.toList()
+      .find((c: DG.Column) => c.semType == 'alignedSequence') || null;
+
+    if (res == null) {
+      for (const col of dataFrame.columns) {
+        const cp = this.pickUpPalette(col as DG.Column, 5);
+        if (cp !== null) {
+          res = col;
+          break;
+        }
+      }
+    }
+    return res;
   }
 }
