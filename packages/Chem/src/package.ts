@@ -115,7 +115,7 @@ export async function rdKitCellRenderer(): Promise<RDKitCellRenderer> {
 //meta.cellType: Molecule
 //meta-cell-renderer-sem-type: Molecule
 //output: grid_cell_renderer result
-export async function chemCellRenderer(): Promise<any> {
+export async function chemCellRenderer(): Promise<DG.GridCellRenderer> {
   const renderer = _properties.Renderer ?? 'RDKit';
   if (!_renderers.has(renderer)) {
     const renderFunctions = DG.Func.find({meta: {chemRendererName: renderer}});
@@ -224,7 +224,7 @@ export async function searchSubstructure(
 
 //name: Descriptors App
 //tags: app
-export function descriptorsApp(context: any): void {
+export function descriptorsApp(): void {
   getDescriptorsApp();
 }
 
@@ -260,7 +260,7 @@ export async function activityCliffs(df: DG.DataFrame, smiles: DG.Column, activi
 //output: viewer result
 export async function chemSpaceTopMenu(table: DG.DataFrame, smiles: DG.Column, methodName: string,
       similarityMetric: string = 'Tanimoto', plotEmbeddings: boolean) : Promise<void> {
-  return new Promise<void>(async (resolve, reject) => {
+  return new Promise<void>(async (resolve, _) => {
     const embeddings = await chemSpace(smiles, methodName, similarityMetric, ['Embed_X', 'Embed_Y']);
     const cols = table.columns as DG.ColumnList;
     for (const col of embeddings)
