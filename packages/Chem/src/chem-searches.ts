@@ -13,8 +13,7 @@ import {tanimotoSimilarity} from '@datagrok-libraries/utils/src/similarity-metri
 import {assure} from '@datagrok-libraries/utils/src/test';
 
 function _chemFindSimilar(molStringsColumn: DG.Column,
-  queryMolString: string, settings: { [name: string]: any })
-  :DG.DataFrame | 0 {
+  queryMolString: string, settings: { [name: string]: any }): DG.DataFrame {
   const len = molStringsColumn.length;
   const distances = _chemGetSimilarities(queryMolString);
   const limit = Math.min((settings.hasOwnProperty('limit') ? settings.limit : len), len);
@@ -69,8 +68,7 @@ const _chemCache = new CacheParams();
 
 async function _invalidate(
   molStringsColumn: DG.Column, queryMolString: string | null,
-  includeFingerprints: boolean, endSection = true)
-  : Promise<void> {
+  includeFingerprints: boolean, endSection = true): Promise<void> {
   await chemBeginCriticalSection();
   try {
     const sameColumnAndVersion = () =>
@@ -142,7 +140,7 @@ export async function chemGetSimilarities(molStringsColumn: DG.Column, queryMolS
 
 export async function chemFindSimilar(
   molStringsColumn: DG.Column, queryMolString = '', settings: { [name: string]: any } = {})
-  : Promise<DG.DataFrame | 0 | null> {
+  : Promise<DG.DataFrame | null> {
   assure.notNull(molStringsColumn, 'molStringsColumn');
   assure.notNull(queryMolString, 'queryMolString');
 
@@ -182,8 +180,7 @@ export function chemSubstructureSearchGraph(molStringsColumn: DG.Column, molStri
 }
 
 export async function chemSubstructureSearchLibrary(
-  molStringsColumn: DG.Column, molString: string, molStringSmarts: string)
-  : Promise<DG.BitSet> {
+  molStringsColumn: DG.Column, molString: string, molStringSmarts: string): Promise<DG.BitSet> {
   await _invalidate(molStringsColumn, molString, false, false);
   try {
     const result = DG.BitSet.create(molStringsColumn.length);
