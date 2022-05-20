@@ -514,6 +514,10 @@ export class GridColumn {
   get cellType(): string { return api.grok_GridColumn_Get_CellType(this.dart); }
   set cellType(x: string) { api.grok_GridColumn_Set_CellType(this.dart, x); }
 
+  /** Grid cell renderer. */
+  get renderer(): GridCellRenderer { return toJs(api.grok_GridColumn_Get_Renderer(this.dart)); }
+  set renderer(x: GridCellRenderer) { api.grok_GridColumn_Set_Renderer(this.dart, toDart(x)); }
+
   /** Column visibility.  */
   get visible(): boolean { return api.grok_GridColumn_Get_Visible(this.dart); }
   set visible(x: boolean) { api.grok_GridColumn_Set_Visible(this.dart, x); }
