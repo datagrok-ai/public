@@ -19,7 +19,7 @@ export let _package = new DG.Package();
 //name: Usage Analysis
 //tags: app
 export function usageAnalysisApp(): void {
-  ViewHandler.getInstance();
+  ViewHandler.getInstance().init();
 }
 
 //output: widget result

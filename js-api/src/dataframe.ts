@@ -29,6 +29,7 @@ let api = <any>window;
 type RowPredicate = (row: Row) => boolean;
 type Comparer = (a: any, b: any) => number;
 type IndexSetter = (index: number, value: any) => void;
+type ColumnId = number | string | Column;
 
 
 /** Column CSV export options */
@@ -356,7 +357,7 @@ export class DataFrame {
    * @param {BitSet} rowMask - Mask of the rows to sort. Result array will contain [rowIndexes.length] elements.
    * @returns {Int32Array}
    * */
-  getSortedOrder(sortByColumnIds: object[], sortOrders: boolean[] | null = null, rowMask: BitSet | null = null): Int32Array {
+  getSortedOrder(sortByColumnIds: ColumnId[], sortOrders: boolean[] | null = null, rowMask: BitSet | null = null): Int32Array {
     return api.grok_DataFrame_GetSortedOrder(this.dart, sortByColumnIds.map(toDart), sortOrders, toDart(rowMask));
   }
 

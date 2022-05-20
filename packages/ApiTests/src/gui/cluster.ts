@@ -14,8 +14,7 @@ category('Dialog: Cluster', () => {
     });
 
    test('dialogs.cluster', async () => {
-        //grok.shell.topMenu.find('Tools').find('Data Science').find('Cluster...').root.dispatchEvent(new MouseEvent('mousedown'));
-        grok.shell.topMenu.find('Tools').find('Data Science').find('Cluster...').root.dispatchEvent(new MouseEvent('mousedown')); await delay(1000);
+        grok.shell.topMenu.find('Tools').find('Data Science').find('Cluster...').root.click(); await delay(1000);
         isDialogPresent('Cluster Data');
 
         let okButton = document.getElementsByClassName('ui-btn ui-btn-ok enabled')[0] as HTMLElement;
@@ -23,7 +22,7 @@ category('Dialog: Cluster', () => {
 
         isColumnPresent(demog.columns, 'clusters');
 
-        grok.shell.topMenu.find('Tools').find('Data Science').find('Cluster...').root.dispatchEvent(new MouseEvent('mousedown')); await delay(1000);
+        grok.shell.topMenu.find('Tools').find('Data Science').find('Cluster...').root.click(); await delay(1000);
         isDialogPresent('Cluster Data');
 
         returnDialog('Cluster Data')!.input('Show scatter plot').input.click(); await delay(2000);
@@ -52,7 +51,7 @@ category('Dialog: Cluster', () => {
         if (demog.columns.byName('clusters (2)') != null)
             throw 'cluster (2) column did not disappear after clicking on the "Cancel" button';
 
-        grok.shell.topMenu.find('Tools').find('Data Science').find('Cluster...').root.dispatchEvent(new MouseEvent('mousedown')); await delay(1000);
+        grok.shell.topMenu.find('Tools').find('Data Science').find('Cluster...').root.click(); await delay(1000);
         isDialogPresent('Cluster Data');
 
         setDialogInputValue('Cluster Data', 'Normalize', 'Z-scores'); await delay(500);

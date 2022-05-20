@@ -3,6 +3,7 @@ import * as ui from "datagrok-api/ui";
 import {InputBase} from "datagrok-api/src/widgets";
 import { BehaviorSubject  } from "rxjs";
 import {UaFilter} from "./filter2";
+import {ViewHandler} from "./view-handler";
 
 export class UaToolbox {
   rootAccordion: DG.Accordion;
@@ -18,7 +19,7 @@ export class UaToolbox {
   }
 
   constructor() {
-    this.dateInput = ui.stringInput('Date', 'this week');
+    this.dateInput = ui.stringInput('Date', 'this month');
     this.dateInput.addPatternMenu('datetime');
     this.dateInput.setTooltip('Set the date period');
 
@@ -33,11 +34,22 @@ export class UaToolbox {
       this.dateInput,
       this.usersInput,
       // @ts-ignore
-      ui.buttonsInput([ui.bigButton('Apply', () => {
-        this.filterStream.next(this.getFilter());
-      })])
+      ui.buttonsInput([ui.bigButton('Apply', () => this.applyFilter())])
     ]), true);
 
   }
 
+  applyFilter () {
+    this.filterStream.next(this.getFilter());
+    ViewHandler.getInstance().setUrlParam('date', this.dateInput.value, true);
+    ViewHandler.getInstance().setUrlParam('users', this.usersInput.value, true);
+  }
+
+  setDate(value: string) {
+    this.dateInput.value = value;
+  }
+
+  setUsers(value: string) {
+    this.usersInput.value = value;
+  }
 }

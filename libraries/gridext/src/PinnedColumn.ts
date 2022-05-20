@@ -9,7 +9,6 @@ function trimText(str : string, g : any, nWidth : number) {
   if(nW <= nWidth)
     return str;
 
-  let nHFont = tm.actualBoundingBoxAscent + tm.actualBoundingBoxDescent;
   let strDots = "...";
   tm = g.measureText(strDots);
   let nWDots  = tm.width;

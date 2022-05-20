@@ -16,31 +16,30 @@ category('Dialog: Random Data', () => {
     });
 
     test('dialogs.randomData', async () => {
-        grok.shell.topMenu.find('Tools').find('Data Science').find('Random Data...').root.dispatchEvent(new MouseEvent('mousedown'));
-        grok.shell.topMenu.find('Tools').find('Data Science').find('Random Data...').root.dispatchEvent(new MouseEvent('mousedown')); await delay(1000);
+        grok.shell.topMenu.find('Tools').find('Data Science').find('Random Data...').root.click(); await delay(1000);
         isDialogPresent('Random Data');
         let okButton = document.getElementsByClassName('ui-btn ui-btn-ok enabled')[0] as HTMLElement;
         okButton!.click(); await delay(1000);
 
-        grok.shell.topMenu.find('Tools').find('Data Science').find('Random Data...').root.dispatchEvent(new MouseEvent('mousedown')); await delay(1000);
+        grok.shell.topMenu.find('Tools').find('Data Science').find('Random Data...').root.click(); await delay(1000);
         isDialogPresent('Random Data');
         setDialogInputValue('Random Data', 'Distribution', 'log-normal'); await delay(500);
         okButton = document.getElementsByClassName('ui-btn ui-btn-ok enabled')[0] as HTMLElement;
         okButton!.click(); await delay(1000);
 
-        grok.shell.topMenu.find('Tools').find('Data Science').find('Random Data...').root.dispatchEvent(new MouseEvent('mousedown')); await delay(1000);
+        grok.shell.topMenu.find('Tools').find('Data Science').find('Random Data...').root.click(); await delay(1000);
         isDialogPresent('Random Data');
         setDialogInputValue('Random Data', 'Distribution', 'binomial'); await delay(500);
         okButton = document.getElementsByClassName('ui-btn ui-btn-ok enabled')[0] as HTMLElement;
         okButton!.click(); await delay(1000);
 
-        grok.shell.topMenu.find('Tools').find('Data Science').find('Random Data...').root.dispatchEvent(new MouseEvent('mousedown')); await delay(1000);
+        grok.shell.topMenu.find('Tools').find('Data Science').find('Random Data...').root.click(); await delay(1000);
         isDialogPresent('Random Data');
         setDialogInputValue('Random Data', 'Distribution', 'poisson'); await delay(500);
         okButton = document.getElementsByClassName('ui-btn ui-btn-ok enabled')[0] as HTMLElement;
         okButton!.click(); await delay(1000);
 
-        grok.shell.topMenu.find('Tools').find('Data Science').find('Random Data...').root.dispatchEvent(new MouseEvent('mousedown')); await delay(1000);
+        grok.shell.topMenu.find('Tools').find('Data Science').find('Random Data...').root.click(); await delay(1000);
         isDialogPresent('Random Data');
         setDialogInputValue('Random Data', 'Distribution', 'uniform'); await delay(500);
         okButton = document.getElementsByClassName('ui-btn ui-btn-ok enabled')[0] as HTMLElement;
@@ -52,7 +51,7 @@ category('Dialog: Random Data', () => {
         isColumnPresent(demog.columns, 'uniform');
         isColumnPresent(demog.columns, 'log-normal');
 
-        grok.shell.topMenu.find('Tools').find('Data Science').find('Random Data...').root.dispatchEvent(new MouseEvent('mousedown')); await delay(1000);
+        grok.shell.topMenu.find('Tools').find('Data Science').find('Random Data...').root.click(); await delay(1000);
         isDialogPresent('Random Data');
         returnDialog('Random Data')!.input('Show histogram').input.click(); await delay(3000);
         isViewerPresent(Array.from(v.viewers), 'Histogram');
@@ -75,7 +74,7 @@ category('Dialog: Random Data', () => {
             }
         }
 
-        grok.shell.topMenu.find('Tools').find('Data Science').find('Random Data...').root.dispatchEvent(new MouseEvent('mousedown')); await delay(1000);
+        grok.shell.topMenu.find('Tools').find('Data Science').find('Random Data...').root.click(); await delay(1000);
         isDialogPresent('Random Data');
         returnDialog('Random Data')!.input('Show histogram').input.click(); await delay(3000);
         isViewerPresent(Array.from(v.viewers), 'Histogram');

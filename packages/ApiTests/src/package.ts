@@ -5,6 +5,7 @@ import * as DG from 'datagrok-api/dg';
 import './dataframe/dataframe';
 import './dataframe/calculated-columns';
 import './dataframe/events';
+import './functions/functions';
 import './shell/shell';
 import './shell/windows';
 import './viewer/viewer';
@@ -18,6 +19,7 @@ import './dapi/groups';
 import './ui/inputs';
 import './ui/forms';
 import './dapi/dapi';
+import './dapi/connection';
 import './dapi/entities';
 import './dapi/layouts';
 import './dapi/projects';
@@ -36,7 +38,8 @@ import './ui/tab-control';
 import './ui/list';
 import './ui/image';
 import './ui/viewers-adding'
-import './grid/grid';
+import './grid/grid'; 
+import './gui/missing-values-imputation'
 
 import {runTests} from "@datagrok-libraries/utils/src/test";
 import { TreeViewNode } from 'datagrok-api/dg';

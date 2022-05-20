@@ -16,15 +16,15 @@ category('Dialog: PCA', () => {
     });
 
     test('dialogs.pca', async () => {
-        grok.shell.topMenu.find('Tools').find('Data Science').find('Principal Component Analysis...').root.dispatchEvent(new MouseEvent('mousedown'));
-        grok.shell.topMenu.find('Tools').find('Data Science').find('Principal Component Analysis...').root.dispatchEvent(new MouseEvent('mousedown')); await delay(1000);
+        grok.shell.topMenu.find('Tools').find('Data Science').find('Principal Component Analysis...').root.click();
+        grok.shell.topMenu.find('Tools').find('Data Science').find('Principal Component Analysis...').root.click(); await delay(1000);
         isDialogPresent('PCA');
 
         let okButton = document.getElementsByClassName('ui-btn ui-btn-ok enabled')[0] as HTMLElement;
         okButton!.click(); await delay(1000);
         isErrorBallon('Errors calling PCA: features: Value not defined.');
 
-        grok.shell.topMenu.find('Tools').find('Data Science').find('Principal Component Analysis...').root.dispatchEvent(new MouseEvent('mousedown')); await delay(1000);
+        grok.shell.topMenu.find('Tools').find('Data Science').find('Principal Component Analysis...').root.click(); await delay(1000);
         isDialogPresent('PCA');
 
         let featuresField:DG.Column[] = [];
