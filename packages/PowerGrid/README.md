@@ -5,9 +5,9 @@ and support for [images](#images).
 
 ## Sparklines
 
-Sparklines are small charts that are built based on numerical columns. They help users to analyze and compare objects in data sets quickly by presenting them in a visual way. In Datagrok sparklines are available in four different reprentations: sparklines, bar charts, pie charts, and radar charts. 
+Sparklines are small charts that are built based on numerical columns. They help users to analyze and compare objects in data sets quickly by presenting them in a visual way. Datagrok offers four types of sparklines: sparklines, bar charts, pie charts, and radar charts. 
 
-Sparklines come in handy when you want to have a brief look at your data set and form a first impression. Lets check the example:
+Sparklines come in handy when you want to have a brief look at your data set and form a first impression. Let's check the example:
 
 Imagine that we have a table filled with the patients data.
 
@@ -19,7 +19,7 @@ We want to quickly check the records of patients with a high Body Mass Index.
 ![](https://i.imgur.com/2wEOT2m.png)
 ![](/public/packages/PowerGrid/images/spark.png)
 
-We add sparklines summary column that includes AGE, HEIGHT, and WEIGHT data. Now we can visually distinguish the records of people with high BMI by checking the sparklines on the right. We are looking for charts where the second and third dots are almost on the same level.
+We add a sparklines summary column that includes AGE, HEIGHT, and WEIGHT data. Now we can visually distinguish the records of people with high BMI by checking the sparklines on the right. We are looking for charts where the second and third dots are almost on the same level.
 
 **To add sparklines column, do the following:**
 
