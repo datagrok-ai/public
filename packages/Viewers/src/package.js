@@ -76,7 +76,7 @@ export function barchart() {
 }
 
 //name: flagCellRenderer
-//tags: cellRenderer, cellRenderer-flag
+//tags: cellRenderer
 //meta-cell-renderer-sem-type: flag
 //output: grid_cell_renderer result
 export function flagCellRenderer() {

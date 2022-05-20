@@ -661,7 +661,8 @@ First, let's explore how scripting viewer works.
 
    ```javascript
     //name: nucleotideBoxCellRenderer
-    //tags: cellRenderer, cellRenderer-dna_nucleotide
+    //tags: cellRenderer
+    //meta.cellType: dna_nucleotide
     //output: grid_cell_renderer result
     export function nucleotideBoxCellRenderer() {
       return new NucleotideBoxCellRenderer();

@@ -54,7 +54,7 @@ class SequencePackage extends DG.Package {
   }
 
   //name: sequenceCellRenderer
-  //tags: cellRenderer, cellRenderer-nucleotides
+  //tags: cellRenderer
   //meta-cell-renderer-sem-type: nucleotides
   //output: grid_cell_renderer result
   sequenceCellRenderer() {

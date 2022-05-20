@@ -115,15 +115,15 @@ export async function countToTen(s, progress) {
 
 
 //name: fullPlateRenderer
-//tags: cellRenderer, cellRenderer-demo_plate
-//meta-cell-renderer-sem-type: demo_plate
+//tags: cellRenderer
+//meta.cellType: demo_plate
 //output: grid_cell_renderer result
 export function fullPlateRenderer() {
   return new plt.FullPlateRenderer();
 }
 
 //name: plateCellRenderer
-//tags: cellRenderer, cellRenderer-demo_plate
+//tags: cellRenderer
 //meta-cell-renderer-sem-type: demo_plate
 //output: grid_cell_renderer result
 export function briefPlateCellRenderer() {
