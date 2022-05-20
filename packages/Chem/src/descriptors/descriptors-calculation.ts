@@ -2,25 +2,22 @@ import * as ui from 'datagrok-api/ui';
 import * as grok from 'datagrok-api/grok';
 import * as DG from 'datagrok-api/dg';
 import {getDescriptorsTree, getDescriptorsPy} from '../scripts-api';
-import {StringUtils} from "@datagrok-libraries/utils/src/string-utils";
 
 const _STORAGE_NAME = 'rdkit_descriptors';
 const _KEY = 'selected';
 
-/** Adds descriptors to table*/
-export async function addDescriptors(smiles: DG.Column, viewTable: DG.DataFrame): Promise<void> {
+/** Adds descriptors to table */
+export async function addDescriptors(smilesCol: DG.Column, viewTable: DG.DataFrame): Promise<void> {
   openDescriptorsDialog(await getSelected(), async (selected: any) => {
     await grok.dapi.userDataStorage.postValue(_STORAGE_NAME, _KEY, JSON.stringify(selected));
-    getSelected().then((selected) => {
-      const pi = DG.TaskBarProgressIndicator.create('Calculating descriptors');
-      getDescriptorsPy(
-        smiles.name, DG.DataFrame.fromColumns([smiles]), 'selected',
-        DG.DataFrame.fromColumns([DG.Column.fromList('string', 'selected', selected)]),
-      ).then((table: any) => {
-        addResultColumns(table, viewTable);
-      });
-      pi.close();
-    });
+    selected = await getSelected();
+    const pi = DG.TaskBarProgressIndicator.create('Calculating descriptors');
+    const table = await getDescriptorsPy(
+      smilesCol.name, DG.DataFrame.fromColumns([smilesCol]), 'selected',
+      DG.DataFrame.fromColumns([DG.Column.fromList('string', 'selected', selected)]),
+    );
+    addResultColumns(table, viewTable);
+    pi.close();
   });
 }
 

@@ -506,6 +506,7 @@ export namespace chem {
       options?: {[key: string]: boolean | number | string}
     ): HTMLDivElement {
     let root = document.createElement('div');
+    // @ts-ignore
     import('openchemlib/full.js').then((OCL) => {
       let m = smiles.includes("M  END") ? OCL.Molecule.fromMolfile(smiles): OCL.Molecule.fromSmiles(smiles);
       root.innerHTML = m.toSVG(width, height, undefined, options);

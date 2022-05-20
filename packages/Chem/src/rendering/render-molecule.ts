@@ -1,12 +1,8 @@
 import * as grok from 'datagrok-api/grok';
 import * as ui from 'datagrok-api/ui';
 import * as DG from 'datagrok-api/dg';
-//import * as OCL from 'openchemlib/full';
-//import {RDMol} from '../rdkit-api';
 import {isMolBlock} from '../utils/chem-utils';
 import $ from 'cash-dom';
-//import {convertToRDKit} from '../analysis/r-group-analysis';
-//import {oclMol} from '../utils/chem-common-ocl';
 import {_properties, renderer} from '../package';
 import {chem} from 'datagrok-api/grok';
 import Sketcher = chem.Sketcher;

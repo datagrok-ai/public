@@ -111,7 +111,8 @@ export async function rdKitCellRenderer(): Promise<RDKitCellRenderer> {
 }
 
 //name: chemCellRenderer
-//tags: cellRenderer
+//tags: cellRenderer,cellRenderer-Molecule
+//meta.cellType: Molecule
 //meta-cell-renderer-sem-type: Molecule
 //output: grid_cell_renderer result
 export async function chemCellRenderer(): Promise<any> {

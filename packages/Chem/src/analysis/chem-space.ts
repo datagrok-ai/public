@@ -1,8 +1,6 @@
 import * as DG from 'datagrok-api/dg';
 // TODO: clean up this module
 import {chemGetFingerprints} from '../chem-searches';
-//import {getRdKitWebRoot} from '../chem-common-rdkit';
-import {Coordinates} from '@datagrok-libraries/utils/src/type-declarations';
 import {createDimensinalityReducingWorker} from
   '@datagrok-libraries/ml/src/workers/dimensionality-reducing-worker-creator';
 import {BitArrayMetrics} from '@datagrok-libraries/ml/src/typed-metrics';
@@ -10,19 +8,20 @@ import {normalize} from '@datagrok-libraries/utils/src/vector-operations';
 import {Fingerprint} from '../utils/chem-common';
 import BitArray from '@datagrok-libraries/utils/src/bit-array';
 
-export async function chemSpace(
-  molColumn: DG.Column,
-  methodName: string,
-  similarityMetric: string,
-  axes: string[],
-  options?: any,
-  returnDistances?: boolean): Promise<any> {
+// export interface IChemSpaceResults {
+//
+// }
+
+export async function chemSpace(molColumn: DG.Column, methodName: string, similarityMetric: string,
+        axes: string[], options?: any, returnDistances?: boolean): Promise<any> {
+
   const fpColumn = await chemGetFingerprints(molColumn, Fingerprint.Morgan);
   let distance;
   let coordinates;
   const dimensionalityReduceRes: any =
     await createDimensinalityReducingWorker(
-      {data: fpColumn as BitArray[], metric: similarityMetric as BitArrayMetrics},
+      // @ts-ignore
+      {data: fpColumn, metric: similarityMetric as BitArrayMetrics},
       methodName, options, returnDistances);
   if (returnDistances) {
     distance = dimensionalityReduceRes.distance;
