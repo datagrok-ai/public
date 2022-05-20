@@ -92,7 +92,7 @@ Tesla, Model S,  ,          1.6,    120000`);
   });
 
   test('get sorted order method', async () => {
-    const arr: object[] = [];
+    const arr = [];
     arr.push(df.columns.names()[1]);
     let order = df.getSortedOrder(arr);
     expect(order.toString(), '0,2,3,1');
