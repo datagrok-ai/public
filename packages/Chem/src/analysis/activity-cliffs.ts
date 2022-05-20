@@ -211,7 +211,7 @@ function checkCursorOnLine(event: any, canvas: any, lines: any[]): any {
 }
 
 function renderLines(sp: DG.Viewer, n1: number[],
-  n2: number[], xAxis: string, yAxis: string, lines: any[], linesDf: DG.DataFrame, currentLineId: number|null,
+  n2: number[], xAxis: string, yAxis: string, lines: any[], linesDf: DG.DataFrame,
   smiles: DG.Column, activities: DG.Column): any {
   //@ts-ignore
   const canvas = sp.getInfo()['canvas'];
@@ -253,7 +253,7 @@ function renderLines(sp: DG.Viewer, n1: number[],
   return {lines: lines, linesDf: linesDf};
 }
 
-function createLines(n1: number[], n2: number[],
+function createLines(sp: DG.Viewer, n1: number[], n2: number[],
   lines: any[], linesDf: DG.DataFrame, smiles: DG.Column, activities: DG.Column)
   : DG.DataFrame {
   for (let i = 0; i < n1.length; i++) {
