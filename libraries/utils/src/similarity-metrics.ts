@@ -170,11 +170,11 @@ export function rogotGoldbergDistance(x: BitArray, y: BitArray): number {
 }
 
 export function getSimilarityFromDistance(distance: number) {
-  return 1/(1+distance);
+  return 1 / ( 1 + distance);
 }
 
 export function getDistanceFromSimilarity(similarity: number) {
-  return 1/similarity - 1;
+  return 1 / similarity - 1;
 }
 
 export function getDiverseSubset(length: number, n: number, dist: (i1: number, i2: number) => number) {

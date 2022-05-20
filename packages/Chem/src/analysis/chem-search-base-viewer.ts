@@ -45,7 +45,7 @@ export class ChemSearchBaseViewer extends DG.JsViewer {
 
     if (this.dataFrame) {
       this.subs.push(DG.debounce(this.dataFrame.onRowsRemoved, 50).subscribe(async (_) => await this.render()));
-      const compute = this.name === 'diversity' ? false : true;
+      const compute = this.name !== 'diversity';
       this.subs.push(DG.debounce(this.dataFrame.onCurrentRowChanged, 50)
         .subscribe(async (_) => await this.render(compute)));
       this.subs.push(DG.debounce(this.dataFrame.selection.onChanged, 50)

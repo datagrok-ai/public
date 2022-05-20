@@ -202,9 +202,8 @@ export async function findSimilar(molStringsColumn: DG.Column, molString: string
 //input: string molStringSmarts
 //output: column result
 export async function searchSubstructure(
-  molStringsColumn: DG.Column, molString: string,
-  substructLibrary: boolean, molStringSmarts: string)
-  : Promise<DG.Column<any>> {
+      molStringsColumn: DG.Column, molString: string,
+      substructLibrary: boolean, molStringSmarts: string) : Promise<DG.Column<any>> {
   assure.notNull(molStringsColumn, 'molStringsColumn');
   assure.notNull(molString, 'molString');
   assure.notNull(substructLibrary, 'substructLibrary');
@@ -245,12 +244,8 @@ export function saveAsSdf(): void {
 //input: column activities
 //input: double similarity = 80 [Similarity cutoff]
 //input: string methodName { choices:["UMAP", "t-SNE", "SPE"] }
-export async function activityCliffs(df: DG.DataFrame,
-  smiles: DG.Column,
-  activities: DG.Column,
-  similarity: number,
-  methodName: string)
-  : Promise<void> {
+export async function activityCliffs(df: DG.DataFrame, smiles: DG.Column, activities: DG.Column,
+      similarity: number, methodName: string) : Promise<void> {
   await getActivityCliffs(df, smiles, activities, similarity, methodName);
 }
 
@@ -262,12 +257,8 @@ export async function activityCliffs(df: DG.DataFrame,
 //input: string similarityMetric { choices:["Tanimoto", "Asymmetric", "Cosine", "Sokal"] }
 //input: bool plotEmbeddings = true
 //output: viewer result
-export async function chemSpaceTopMenu(table: DG.DataFrame,
-  smiles: DG.Column,
-  methodName: string,
-  similarityMetric: string = 'Tanimoto',
-  plotEmbeddings: boolean)
-  : Promise<void> {
+export async function chemSpaceTopMenu(table: DG.DataFrame, smiles: DG.Column, methodName: string,
+      similarityMetric: string = 'Tanimoto', plotEmbeddings: boolean) : Promise<void> {
   return new Promise<void>(async (resolve, reject) => {
     const embeddings = await chemSpace(smiles, methodName, similarityMetric, ['Embed_X', 'Embed_Y']);
     const cols = table.columns as DG.ColumnList;
