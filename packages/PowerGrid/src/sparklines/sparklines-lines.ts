@@ -4,14 +4,14 @@ import {getSettingsBase, names, SummarySettingsBase} from './shared';
 
 
 interface SparklineSettings extends SummarySettingsBase {
-  normalize: boolean;
+  globalScale: boolean;
 }
 
 
 function getSettings(gc: DG.GridColumn): SparklineSettings {
   return gc.settings ??= {
     ...getSettingsBase(gc),
-    ...{normalize: true},
+    ...{globalScale: false},
   };
 }
 
@@ -37,11 +37,11 @@ export class SparklineCellRenderer extends DG.GridCellRenderer {
 
     const row = gridCell.cell.row.idx;
     const cols = df.columns.byNames(settings.columnNames);
-    const gmin = settings.normalize ? 0 : Math.min(...cols.map((c: DG.Column) => c.min));
-    const gmax = settings.normalize ? 0 : Math.max(...cols.map((c: DG.Column) => c.max));
+    const gmin = settings.globalScale ? Math.min(...cols.map((c: DG.Column) => c.min)) : 0;
+    const gmax = settings.globalScale ? Math.max(...cols.map((c: DG.Column) => c.max)) : 0;
 
     function getPos(col: number, row: number): DG.Point {
-      const r: number = settings.normalize ? cols[col].scale(row) : (cols[col].get(row) - gmin) / (gmax - gmin);
+      const r: number = settings.globalScale ? (cols[col].get(row) - gmin) / (gmax - gmin) : cols[col].scale(row);
       return new DG.Point(
         b.left + b.width * (cols.length == 1 ? 0 : col / (cols.length - 1)),
         (b.top + b.height) - b.height * r);
@@ -72,10 +72,10 @@ export class SparklineCellRenderer extends DG.GridCellRenderer {
   }
 
   renderSettings(gridColumn: DG.GridColumn): HTMLElement {
-    gridColumn.settings ??= {normalize: true};
+    gridColumn.settings ??= { globalScale: true };
     const settings: SparklineSettings = gridColumn.settings;
 
-    const normalizeInput = DG.InputBase.forProperty(DG.Property.js('normalize', DG.TYPE.BOOL), settings);
+    const normalizeInput = DG.InputBase.forProperty(DG.Property.js('globalScale', DG.TYPE.BOOL), settings);
     normalizeInput.onChanged(() => gridColumn.grid.invalidate());
 
     return ui.inputs([
