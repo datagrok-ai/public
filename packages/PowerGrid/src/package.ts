@@ -17,7 +17,7 @@ import {RadarChartCellRender} from './sparklines/radar-chart';
 export const _package = new DG.Package();
 
 //name: imageUrlCellRenderer
-//tags: cellRenderer, cellRenderer-ImageUrl
+//tags: cellRenderer
 //meta.cellType: ImageUrl
 //output: grid_cell_renderer result
 export function imageUrlCellRenderer() {
@@ -25,7 +25,7 @@ export function imageUrlCellRenderer() {
 }
 
 //name: binaryImageCellRenderer
-//tags: cellRenderer, cellRenderer-BinaryImage
+//tags: cellRenderer
 //meta.cellType: BinaryImage
 //output: grid_cell_renderer result
 export function binaryImageCellRenderer() {
@@ -33,7 +33,7 @@ export function binaryImageCellRenderer() {
 }
 
 //name: hyperlinkCellRenderer
-//tags: cellRenderer, cellRenderer-Hyperlink
+//tags: cellRenderer
 //meta.cellType: Hyperlink
 //output: grid_cell_renderer result
 export function hyperlinkCellRenderer() {
@@ -41,7 +41,7 @@ export function hyperlinkCellRenderer() {
 }
 
 //name: testCellRenderer
-//tags: cellRenderer, cellRenderer-test
+//tags: cellRenderer
 //meta.cellType: test
 //output: grid_cell_renderer result
 export function testCellRenderer() {
@@ -49,7 +49,7 @@ export function testCellRenderer() {
 }
 
 //name: htestCellRenderer
-//tags: cellRenderer, cellRenderer-htest
+//tags: cellRenderer
 //meta.cellType: htest
 //output: grid_cell_renderer result
 export function htestCellRenderer() {
@@ -57,7 +57,7 @@ export function htestCellRenderer() {
 }
 
 //name: barCellRenderer
-//tags: cellRenderer, cellRenderer-bar
+//tags: cellRenderer
 //meta.cellType: bar
 //output: grid_cell_renderer result
 export function barCellRenderer() {
@@ -65,7 +65,7 @@ export function barCellRenderer() {
 }
 
 //name: Sparklines
-//tags: cellRenderer, cellRenderer-sparkline
+//tags: cellRenderer
 //meta.cellType: sparkline
 //meta.virtual: true
 //output: grid_cell_renderer result
@@ -74,7 +74,7 @@ export function sparklineCellRenderer() {
 }
 
 //name: Bar Chart
-//tags: cellRenderer, cellRenderer-barchart
+//tags: cellRenderer
 //meta.cellType: barchart
 //meta.virtual: true
 //output: grid_cell_renderer result
@@ -83,7 +83,7 @@ export function barchartCellRenderer() {
 }
 
 //name: Pie Chart
-//tags: cellRenderer, cellRenderer-piechart
+//tags: cellRenderer
 //meta.cellType: piechart
 //meta.virtual: true
 //output: grid_cell_renderer result
@@ -92,8 +92,8 @@ export function piechartCellRenderer() {
 }
 
 //name: Radar
-//tags: cellRenderer, cellRenderer-radar
-//meta.cellType: radarchart
+//tags: cellRenderer
+//meta.cellType: radar
 //meta.virtual: true
 //output: grid_cell_renderer result
 export function radarCellRenderer() {

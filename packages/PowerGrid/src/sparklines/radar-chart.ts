@@ -22,7 +22,7 @@ function getSettings(gc: DG.GridColumn): RadarChartSettings {
 export class RadarChartCellRender extends DG.GridCellRenderer {
   get name() { return 'radar ts'; }
 
-  get cellType() { return 'radarchart'; }
+  get cellType() { return 'radar'; }
 
   // getPreferredCellSize(col: DG.GridColumn) {
   //   return new Size(80,80);

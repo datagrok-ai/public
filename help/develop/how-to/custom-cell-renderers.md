@@ -13,8 +13,8 @@ Be careful, there should be no spaces between the comment starting slash charact
 
 ```typescript
 //name: piechartCellRender
-//tags: cellRenderer, cellRenderer-piechart
-//meta.cellType: piechart_ts
+//tags: cellRenderer
+//meta.cellType: piechart
 //meta.virtual: true
 //output: grid_cell_renderer result
 export function piechartCellRenderer() {

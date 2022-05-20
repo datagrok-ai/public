@@ -163,16 +163,16 @@ export function stackedBarChart(): DG.JsViewer {
 }
 
 //name: alignedSequenceCellRenderer
-//tags: cellRenderer, cellRenderer-alignedSequence
-//meta-cell-renderer-sem-type: alignedSequence
+//tags: cellRenderer
+//meta.cellType: alignedSequence
 //output: grid_cell_renderer result
 export function alignedSequenceCellRenderer() {
   return new AlignedSequenceCellRenderer();
 }
 
 //name: aminoAcidsCellRenderer
-//tags: cellRenderer, cellRenderer-aminoAcids
-//meta-cell-renderer-sem-type: aminoAcids
+//tags: cellRenderer
+//cellType: aminoAcids
 //output: grid_cell_renderer result
 export function aminoAcidsCellRenderer() {
   return new AminoAcidsCellRenderer();
@@ -297,7 +297,7 @@ export function getPeptidesStructure(col: DG.Column): DG.Widget {
 }
 
 //name: alignedSequenceDifferenceCellRenderer
-//tags: cellRenderer, cellRenderer-alignedSequenceDifference
+//tags: cellRenderer
 //meta-cell-renderer-sem-type: alignedSequenceDifference
 //output: grid_cell_renderer result
 export function alignedSequenceDifferenceCellRenderer() {
