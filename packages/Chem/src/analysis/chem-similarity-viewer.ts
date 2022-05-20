@@ -49,13 +49,13 @@ export class ChemSimilarityViewer extends ChemSearchBaseViewer {
     this.updateMetricsLink(this.metricsDiv, this, {fontSize: '10px', fontWeight: 'normal', height: '10px'});
   }
 
-  init() {
+  init(): void {
     this.isEditedFromSketcher = false;
     this.hotSearch = true;
     this.initialized = true;
   }
 
-  async render(computeData = true) {
+  async render(computeData = true): Promise<void> {
     if (!this.beforeRender())
       return;
     if (this.moleculeColumn) {
@@ -137,7 +137,7 @@ export async function chemSimilaritySearch(
   limit: number,
   minScore: number,
   fingerprint: Fingerprint,
-) {
+) : Promise<DG.DataFrame> {
   limit = Math.min(limit, smiles.length);
   const targetFingerprint = chemSearches.chemGetFingerprint(molecule, fingerprint);
   const fingerprintCol = await chemSearches.chemGetFingerprints(smiles, fingerprint);

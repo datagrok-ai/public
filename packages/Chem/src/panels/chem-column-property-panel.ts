@@ -5,7 +5,7 @@ import Sketcher = chem.Sketcher;
 
 let subscr: any = null;
 
-export function getMolColumnPropertyPanel(col: DG.Column) {
+export function getMolColumnPropertyPanel(col: DG.Column): DG.Widget {
   const NONE = 'None';
   let scaffoldColName;
   if (col?.temp && col.temp['scaffold-col'])
@@ -41,13 +41,13 @@ export function getMolColumnPropertyPanel(col: DG.Column) {
       col.dataFrame.fireValuesChanged();
     });
 
-  const matchMoleculeFilteringToDropdown = (v: string) => {
+  const matchMoleculeFilteringToDropdown = (v: string): string => {
     if (v === 'categorical') return 'Categorical';
     if (v === 'sketching') return 'Sketching';
     return 'Dynamic';
   };
 
-  const matchDropdownToMoleculeFiltering = (v: string) => {
+  const matchDropdownToMoleculeFiltering = (v: string): void => {
     if (v === 'Categorical')
       col.temp['.molecule-filtering'] = 'categorical';
     else if (v === 'Sketching')

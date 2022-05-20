@@ -19,7 +19,7 @@ export function convertToRDKit(smiles: string | null): string | null {
  * @export
  * @param {DG.Column} col Column contaning SMILES
  */
-export function rGroupAnalysis(col: DG.Column) {
+export function rGroupAnalysis(col: DG.Column): void {
   const sketcher = new grok.chem.Sketcher();
   const columnPrefixInput = ui.stringInput('Column prefix', 'R');
   const visualAnalysisCheck = ui.boolInput('Visual analysis', true);

@@ -11,7 +11,7 @@ const _smartsMap: Map<string, any> = new Map();
 let _data: string[] | null = null;
 
 
-function loadAlertsCollection(smarts: string[]) {
+function loadAlertsCollection(smarts: string[]): void {
   _data = smarts;
   for (const currentSmarts of smarts)
     _smartsMap.set(currentSmarts, getRdKitModule().get_qmol(currentSmarts));
@@ -37,14 +37,14 @@ export async function getStructuralAlerts(smiles: string): Promise<number[]> {
 }
 
 export function initStructuralAlertsContext(
-  alertsSmarts: string[], alertsDescriptions: string[]) {
+  alertsSmarts: string[], alertsDescriptions: string[]): void {
   _alertsSmarts = alertsSmarts;
   _alertsDescriptions = alertsDescriptions;
   loadAlertsCollection(_alertsSmarts);
   // await (await getRdKitService()).initStructuralAlerts(_alertsSmarts);
 }
 
-async function loadSADataset() {
+async function loadSADataset(): Promise<void> {
   const path = getRdKitWebRoot() + 'files/alert-collection.csv';
   const table = await grok.data.loadTable(path);
   const alertsSmartsList = table.columns.byName('smarts').toList();
@@ -52,7 +52,7 @@ async function loadSADataset() {
   initStructuralAlertsContext(alertsSmartsList, alertsDescriptionsList);
 }
 
-export async function structuralAlertsWidget(smiles: string) {
+export async function structuralAlertsWidget(smiles: string): Promise<DG.Widget> {
   const alerts = await getStructuralAlerts(smiles);
   if (alerts.length === 0)
     return new DG.Widget(ui.divText('No alerts'));
