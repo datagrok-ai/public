@@ -32,11 +32,11 @@ export class ChemSearchBaseViewer extends DG.JsViewer {
     this.name = name;
   }
 
-  init() {
+  init(): void {
     this.initialized = true;
   }
 
-  detach() {
+  detach(): void {
     this.subs.forEach((sub) => sub.unsubscribe());
   }
 
@@ -71,7 +71,7 @@ export class ChemSearchBaseViewer extends DG.JsViewer {
     this.render();
   }
 
-  updateMetricsLink(metricsDiv: HTMLDivElement, object: any, options: any) {
+  updateMetricsLink(metricsDiv: HTMLDivElement, object: any, options: any): void {
     const metricsButton = ui.button(`${this.distanceMetric}/${this.fingerprint}`, () => {
       if (!grok.shell.windows.showProperties)
         grok.shell.windows.showProperties = true;

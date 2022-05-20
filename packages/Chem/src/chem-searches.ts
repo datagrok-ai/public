@@ -6,14 +6,15 @@ import {
   defaultMorganFpLength,
   defaultMorganFpRadius,
   Fingerprint,
-  rdKitFingerprintToBitArray
+  rdKitFingerprintToBitArray,
 } from './utils/chem-common';
 import BitArray from '@datagrok-libraries/utils/src/bit-array';
 import {tanimotoSimilarity} from '@datagrok-libraries/utils/src/similarity-metrics';
 import {assure} from '@datagrok-libraries/utils/src/test';
 
 function _chemFindSimilar(molStringsColumn: DG.Column,
-  queryMolString: string, settings: { [name: string]: any }) {
+  queryMolString: string, settings: { [name: string]: any })
+  :DG.DataFrame | 0 {
   const len = molStringsColumn.length;
   const distances = _chemGetSimilarities(queryMolString);
   const limit = Math.min((settings.hasOwnProperty('limit') ? settings.limit : len), len);
@@ -45,7 +46,7 @@ function _chemFindSimilar(molStringsColumn: DG.Column,
 }
 
 // Only this function receives {sorted} in settings
-function _chemGetSimilarities(queryMolString: string) {
+function _chemGetSimilarities(queryMolString: string): number[] {
   const fingerprints = _chemCache.morganFingerprints!;
   const distances = new Array(fingerprints.length).fill(0.0);
   const sample = chemGetFingerprint(queryMolString, Fingerprint.Morgan);
@@ -68,7 +69,8 @@ const _chemCache = new CacheParams();
 
 async function _invalidate(
   molStringsColumn: DG.Column, queryMolString: string | null,
-  includeFingerprints: boolean, endSection = true) {
+  includeFingerprints: boolean, endSection = true)
+  : Promise<void> {
   await chemBeginCriticalSection();
   try {
     const sameColumnAndVersion = () =>
@@ -126,7 +128,8 @@ async function _invalidate(
 // smiles, cxsmiles, molblock, v3Kmolblock, and inchi;
 // see https://github.com/rdkit/rdkit/blob/master/Code/MinimalLib/minilib.h
 
-export async function chemGetSimilarities(molStringsColumn: DG.Column, queryMolString = '') {
+export async function chemGetSimilarities(molStringsColumn: DG.Column, queryMolString = '')
+  : Promise<DG.Column | null> {
   assure.notNull(molStringsColumn, 'molStringsColumn');
   assure.notNull(queryMolString, 'queryMolString');
 
@@ -138,7 +141,8 @@ export async function chemGetSimilarities(molStringsColumn: DG.Column, queryMolS
 }
 
 export async function chemFindSimilar(
-  molStringsColumn: DG.Column, queryMolString = '', settings: { [name: string]: any } = {}) {
+  molStringsColumn: DG.Column, queryMolString = '', settings: { [name: string]: any } = {})
+  : Promise<DG.DataFrame | 0 | null> {
   assure.notNull(molStringsColumn, 'molStringsColumn');
   assure.notNull(queryMolString, 'queryMolString');
 
@@ -148,7 +152,7 @@ export async function chemFindSimilar(
   return result;
 }
 
-export function chemSubstructureSearchGraph(molStringsColumn: DG.Column, molString: string) {
+export function chemSubstructureSearchGraph(molStringsColumn: DG.Column, molString: string): DG.BitSet {
   const len = molStringsColumn.length;
   const result = DG.BitSet.create(len);
   if (molString.length == 0)
@@ -178,7 +182,8 @@ export function chemSubstructureSearchGraph(molStringsColumn: DG.Column, molStri
 }
 
 export async function chemSubstructureSearchLibrary(
-  molStringsColumn: DG.Column, molString: string, molStringSmarts: string) {
+  molStringsColumn: DG.Column, molString: string, molStringSmarts: string)
+  : Promise<DG.BitSet> {
   await _invalidate(molStringsColumn, molString, false, false);
   try {
     const result = DG.BitSet.create(molStringsColumn.length);

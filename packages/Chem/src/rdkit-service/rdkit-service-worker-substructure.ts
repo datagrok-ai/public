@@ -59,7 +59,7 @@ export class RdKitServiceWorkerSubstructure extends RdKitServiceWorkerSimilarity
     return {molIdxToHash, hashToMolblock};
   }
 
-  searchSubstructure(queryMolString: string, querySmarts: string) {
+  searchSubstructure(queryMolString: string, querySmarts: string): string {
     const matches: number[] = [];
     if (this._rdKitMols) {
       try {
@@ -104,7 +104,7 @@ export class RdKitServiceWorkerSubstructure extends RdKitServiceWorkerSimilarity
     return '[' + matches.join(', ') + ']';
   }
 
-  freeMoleculesStructures() {
+  freeMoleculesStructures(): void {
     if (this._rdKitMols !== null) {
       for (let mol of this._rdKitMols!)
         mol.delete();

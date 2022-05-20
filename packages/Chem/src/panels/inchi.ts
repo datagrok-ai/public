@@ -5,7 +5,7 @@ import {_rdKitModule, getRdKitModule} from '../utils/chem-common-rdkit';
 import {StringUtils} from "@datagrok-libraries/utils/src/string-utils";
 import {RDMol} from "../rdkit-api";
 
-function addDerived(col: DG.Column, description: string, extract: (mol: RDMol) => string) {
+function addDerived(col: DG.Column, description: string, extract: (mol: RDMol) => string): void {
   const pi = DG.TaskBarProgressIndicator.create(description);
   const result = new Array(col.length);
   for (let i = 0; i < result.length; i++) {
