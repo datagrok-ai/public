@@ -126,9 +126,8 @@ M  END
     };
   }
 
-  _fetchMol(
-    molString: string, scaffoldMolString: string,
-    molRegenerateCoords: boolean, scaffoldRegenerateCoords: boolean): IMolInfo {
+  _fetchMol(molString: string, scaffoldMolString: string, molRegenerateCoords: boolean,
+            scaffoldRegenerateCoords: boolean): IMolInfo {
     const name = molString + ' || ' + scaffoldMolString + ' || ' +
       molRegenerateCoords + ' || ' + scaffoldRegenerateCoords;
     return this.molCache.getOrCreate(name, (_: any) =>

@@ -5,15 +5,13 @@ import {ValidTypes} from '../typed-metrics';
  *
  * @param {ValidTypes} dataMetric The data to process.
  * @param {string} method A method of dimensionality reduction.
- * @param {number} cyclesCount Number of iterations to run.
+ * @param options
+ * @param returnDistanceMatrix
  * @return {Promise<unknown>} Resulting embedding.
  */
-export function createDimensinalityReducingWorker(
-  dataMetric: ValidTypes,
-  method: string,
-  options?: any,
-  returnDistanceMatrix?: boolean,
-): Promise<unknown> {
+export function createDimensinalityReducingWorker(dataMetric: ValidTypes, method: string,
+      options?: any, returnDistanceMatrix?: boolean): Promise<unknown> {
+
   return new Promise(function(resolve) {
     const worker = new Worker(new URL('./dimensionality-reducer', import.meta.url));
     worker.postMessage({
@@ -23,7 +21,7 @@ export function createDimensinalityReducingWorker(
       options: options,
     });
     worker.onmessage = ({data: {distance, embedding}}) => {
-      returnDistanceMatrix? resolve({distance: distance, embedding: embedding}) : resolve(embedding);
+      returnDistanceMatrix ? resolve({distance: distance, embedding: embedding}) : resolve(embedding);
     };
   });
 }

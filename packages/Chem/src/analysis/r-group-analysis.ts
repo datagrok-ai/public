@@ -14,10 +14,8 @@ export function convertToRDKit(smiles: string | null): string | null {
 }
 
 /**
- * R-Group Analysis
- *
- * @export
- * @param {DG.Column} col Column contaning SMILES
+ * Opens a dialog with the sketcher that allows to sketch a core (or perform MCS),
+ * and initiate the R-Group Analysis for the specified column with molecules.
  */
 export function rGroupAnalysis(col: DG.Column): void {
   const sketcher = new grok.chem.Sketcher();
