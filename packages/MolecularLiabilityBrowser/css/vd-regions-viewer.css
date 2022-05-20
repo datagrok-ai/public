@@ -1,3 +1,4 @@
+/*
 .mlb-vd-regions-viewer-table {
     border: 1px solid var(--grey-6);
     height: 100% !important;
@@ -27,4 +28,19 @@
     display: flex;
     flex-direction: column;
     flex-grow: 1;
+}
+/**/
+
+.mlb-vd-regions-viewer-table2 tr td:first-child {
+    margin: 0;
+    padding: 0;
+}
+
+.mlb-vd-regions-viewer-table2 tr:first-child td {
+    padding-left: 4px;
+    font-weight: bolder;
+}
+
+.mlb-vd-regions-viewer-table2 tr td {
+    padding-right: 8px;
 }

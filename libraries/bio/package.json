@@ -5,19 +5,18 @@
   },
   "beta": true,
   "friendlyName": "Datagrok bio library",
-  "version": "0.0.9",
+  "version": "0.0.14",
   "description": "",
-  "main": "src/index.ts",
   "dependencies": {
     "@datagrok-libraries/utils": ">=0.0.22",
     "cash-dom": "latest",
-    "datagrok-api": ">=0.108.0",
+    "datagrok-api": "^0.148.6",
     "dayjs": "latest",
     "rxjs": "^6.5.5"
   },
   "devDependencies": {
-    "@typescript-eslint/eslint-plugin": "^4.29.1",
-    "@typescript-eslint/parser": "^4.29.1",
+    "@typescript-eslint/eslint-plugin": "latest",
+    "@typescript-eslint/parser": "latest",
     "eslint": "latest",
     "eslint-config-google": "latest",
     "ts-loader": "^9.2.6",

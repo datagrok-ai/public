@@ -16,6 +16,19 @@ You can customize which columns / objects' features will be used to form the gra
 
 ## Images
 
+Datagrok supports two types of images in cells: embedded and linked.
+
+### Embedded images
+
+To programmatically add an image column to the dataframe, use the
+following code:  ```dataFrame.columns.addNewBytes('my image')```.
+
+To add an image, double-click on the cell and choose the file.
+Supported extensions are `.jpg`, `.png`, and `.jpeg`. 
+
+![](../../help/develop/how-to/binary-cell-renderer.gif "adding image")
+
+
 See also:
 
 * [Viewers](https://datagrok.ai/help/visualize/viewers)

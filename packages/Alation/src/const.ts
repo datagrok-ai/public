@@ -16,7 +16,7 @@ export const URI_MAP = {
 };
 
 export const DATASOURCE_URI_MAP = {
-  schemas: (ds_id: number) => `${ds_id}/available_schemas`,
+  schemas: (dsId: number) => `${dsId}/available_schemas`,
 };
 
 export enum TOKEN_STATUS {

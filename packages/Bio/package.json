@@ -1,35 +1,41 @@
 {
-	"name": "@datagrok/bio",
-	"beta": true,
-	"friendlyName": "Bio",
-	"version": "0.0.4",
-	"description": "",
-	"repository": {
+  "name": "@datagrok/bio",
+  "beta": false,
+  "friendlyName": "Bio",
+  "version": "0.0.6",
+  "description": "",
+  "repository": {
     "type": "git",
     "url": "https://github.com/datagrok-ai/public.git",
     "directory": "packages/Bio"
   },
-	"dependencies": {
-		"cash-dom": "latest",
-		"datagrok-api": "^0.95.0",
-		"dayjs": "latest",
-		"ts-loader": "^9.2.5",
-		"typescript": "^4.4.2"
-	},
-	"devDependencies": {
-		"webpack": "latest",
-		"webpack-cli": "latest"
-	},
-	"scripts": {
-		"link-api": "npm link datagrok-api",
-		"debug-sequences1": "grok publish --rebuild",
-		"release-sequences1": "grok publish --rebuild --release",
-		"build-sequences1": "webpack",
-		"build": "webpack",
-		"debug-sequences1-public": "grok publish public --rebuild",
-		"release-sequences1-public": "grok publish public --rebuild --release",
-		"debug-sequences1-local": "grok publish local --rebuild",
-		"release-sequences1-local": "grok publish local --rebuild --release"
-	},
-	"canEdit": [ "Developers" ]
+  "dependencies": {
+    "@datagrok-libraries/bio": "^0.0.14",
+    "cash-dom": "latest",
+    "datagrok-api": "^0.148.6",
+    "dayjs": "latest",
+    "ts-loader": "^9.2.5",
+    "typescript": "^4.4.2"
+  },
+  "devDependencies": {
+    "webpack": "latest",
+    "webpack-cli": "latest"
+  },
+  "scripts": {
+    "link-api": "npm link datagrok-api",
+    "link-bio": "npm link @datagrok-libraries/bio",
+    "link-all": "npm link datagrok-api @datagrok-libraries/bio",
+    "debug-sequences1": "grok publish --rebuild",
+    "release-sequences1": "grok publish --rebuild --release",
+    "build-sequences1": "webpack",
+    "local-bio": "grok publish local",
+    "build": "webpack",
+    "debug-sequences1-public": "grok publish public --rebuild",
+    "release-sequences1-public": "grok publish public --rebuild --release",
+    "debug-sequences1-local": "grok publish local --rebuild",
+    "release-sequences1-local": "grok publish local --rebuild --release"
+  },
+  "canEdit": [
+    "Developers"
+  ]
 }

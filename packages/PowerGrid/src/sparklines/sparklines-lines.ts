@@ -1,6 +1,5 @@
 import * as DG from 'datagrok-api/dg';
 import * as ui from 'datagrok-api/ui';
-
 import {getSettingsBase, names, SummarySettingsBase} from './shared';
 
 
@@ -67,7 +66,7 @@ export class SparklineCellRenderer extends DG.GridCellRenderer {
     for (let i = 0; i < cols.length; i++) {
       if (!cols[i].isNone(row)) {
         const p = getPos(i, row);
-        DG.utils.Paint.marker(g, DG.MARKER_TYPE.CIRCLE, p.x, p.y, DG.Color.blue, 3);
+        DG.Paint.marker(g, DG.MARKER_TYPE.CIRCLE, p.x, p.y, DG.Color.blue, 3);
       }
     }
   }

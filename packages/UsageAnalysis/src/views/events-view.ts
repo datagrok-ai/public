@@ -48,9 +48,10 @@ export class EventsView extends UaView {
     );
   }
 
-  handleUrlParams(params: {[key: string]: string}) : void {
-    if (params.hasOwnProperty('package')) {
-      this.topPackagesViewer?.categorySelected(params['package']);
+  handleUrlParams(params: Map<string,string>) : void {
+    if (params.has('package')) {
+      // @ts-ignore
+      this.topPackagesViewer?.categorySelected(params.get('package'));
     }
   }
 

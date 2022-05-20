@@ -7,7 +7,7 @@ import $ from 'cash-dom';
 import * as constants from './const';
 import * as alationApi from './alation-api';
 import * as types from './types';
-import { getBaseURL } from './package';
+import {getBaseURL} from './package';
 
 const UDS = grok.dapi.userDataStorage;
 
@@ -34,7 +34,7 @@ export async function retrieveKeys() {
   const refreshResponse = await alationApi.testToken(
     constants.REFRESH_TOKEN_KEY, tokenMap.refreshToken, userId) as types.refreshTokenResponse;
   if (refreshResponse.token_status !== constants.TOKEN_STATUS.ACTIVE) {
-    grok.shell.error(`Refresh token status is ${refreshResponse.token_status ?? 'expired'}`);
+    grok.shell.error(`Refresh token ${`status is ${refreshResponse.token_status}` ?? 'expired'}`);
     await updateTokensDialog(tokenMap.refreshToken, userId);
     tokenMap = await getAllTokensFromStorage();
     userId = parseInt(tokenMap.userId === '' ? '0' : tokenMap.userId);
@@ -42,7 +42,7 @@ export async function retrieveKeys() {
 
   const apiResponse = await alationApi.testToken(constants.API_TOKEN_KEY, tokenMap.apiToken, userId);
   if (apiResponse.token_status !== constants.TOKEN_STATUS.ACTIVE) {
-    grok.shell.warning(`API access token status is ${apiResponse.token_status ?? 'expired, regenerating...'}`);
+    grok.shell.warning(`API access ${`status is ${apiResponse.token_status}` ?? 'expired, regenerating...'}`);
     await updateUserStorage(tokenMap.refreshToken, userId);
     tokenMap = await getAllTokensFromStorage();
   }
@@ -73,7 +73,7 @@ async function updateTokensDialog(refreshToken: string, userId: number) {
       const refreshResponse = await alationApi.testToken(
         constants.REFRESH_TOKEN_KEY, refreshTokenInputValue, userIdInputValue) as types.refreshTokenResponse;
       if (refreshResponse.token_status !== constants.TOKEN_STATUS.ACTIVE) {
-        grok.shell.error(`Refresh token status is ${refreshResponse.token_status ?? 'expired'}`);
+        grok.shell.error(`Refresh token ${`status is ${refreshResponse.token_status}` ?? 'expired'}`);
         await updateTokensDialog(refreshTokenInputValue, userIdInputValue);
         return;
       }

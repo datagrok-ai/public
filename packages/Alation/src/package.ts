@@ -23,29 +23,33 @@ export async function getBaseURL() {
 
 //name: Alation
 //tags: app
-export async function alationApp() {
+//top-menu: Admin | Alation @Toolbox Data | Alation
+export async function Alation() {
   const progressIndicator = DG.TaskBarProgressIndicator.create('Loading Alation...');
 
-  await utils.retrieveKeys();
-  
-  const dataSourcesList = await alationApi.getDataSources();
-  const tree = createTree(dataSourcesList, 'data-source');
+  const treeHost = ui.div();
   const descriptionHost = ui.div(undefined, 'alation-description');
-  const treeHost = ui.divV([ui.h1('Data Sources'), tree.root]);
+  const rightPanelHost = ui.divV([ui.h1('Data Sources'), treeHost]);
   descriptionHost.style.maxWidth = '50%';
   descriptionHost.style.margin = '10px';
-  grok.shell.newView('Alation Browser', [ui.divH([treeHost, descriptionHost])]);
+  grok.shell.newView('Alation Browser', [ui.divH([rightPanelHost, descriptionHost])]);
+
+  await utils.retrieveKeys();
+
+  const dataSourcesList = await alationApi.getDataSources();
+  const tree = createTree(dataSourcesList, 'data-source');
+  treeHost.innerHTML = tree.root.outerHTML;
 
   progressIndicator.close();
 }
 
 function createTree(
-    objects: types.baseEntity[], objectType: types.specialType, treeRootNode?: DG.TreeViewNode): DG.TreeViewNode {
+  objects: types.baseEntity[], objectType: types.specialType, treeRootNode?: DG.TreeViewNode): DG.TreeViewNode {
   objects = utils.filterDuplicates(objects);
   treeRootNode ??= ui.tree();
 
   if (objectType === 'table') {
-    (objects as types.table[]).forEach(tableObject => {
+    (objects as types.table[]).forEach((tableObject) => {
       const name =
         (tableObject.title || tableObject.name).trim() || `Unnamed table id ${tableObject.id}`;
       const item = treeRootNode!.item(name, tableObject);
@@ -98,25 +102,25 @@ async function getChildren(objectType: types.specialType, currentId: number, gro
   let dataList: types.baseEntity[];
   let nextObjectType: types.specialType;
   switch (objectType) {
-    case 'data-source':
-      dataList = await alationApi.getSchemas(currentId);
-      nextObjectType = 'schema';
-      break;
-    case 'schema':
-      dataList = await alationApi.getTables(currentId);
-      nextObjectType = 'table';
-      break;
+  case 'data-source':
+    dataList = await alationApi.getSchemas(currentId);
+    nextObjectType = 'schema';
+    break;
+  case 'schema':
+    dataList = await alationApi.getTables(currentId);
+    nextObjectType = 'table';
+    break;
     // case 'table':
     //   dataList = await alationApi.getColumns(currentId);
     //   nextObjectType = 'column';
     //   break;
-    default:
-      throw new Error(`Unknown datasource type '${objectType}'`);
+  default:
+    throw new Error(`Unknown datasource type '${objectType}'`);
   }
   createTree(dataList, nextObjectType, group);
 }
 
-export async function connectToDb(tableObject: types.table, name: string): Promise<void> { 
+export async function connectToDb(tableObject: types.table, name: string): Promise<void> {
   const dataSource = await alationApi.getDataSourceById(tableObject.ds_id);
   const dsId = getUuid(`${dataSource.dbname}_id${dataSource.id}`, 5);
   let dsConnection: DG.DataConnection | null = null;
@@ -149,10 +153,10 @@ export async function connectToDb(tableObject: types.table, name: string): Promi
             break;
           }
         }
-    
+
         if (dbType === null)
           throw new Error(`DBTypeError: Unsupported DB type '${dataSource.dbtype}'`);
-    
+
         const dcParams = {
           dataSource: dbType,
           server: `${dataSource.host}:${dataSource.port}`,
@@ -176,5 +180,8 @@ export async function getTable(dsConnection: DG.DataConnection, tableObject: typ
   const columns = await alationApi.getColumns(tableObject.id);
   query.fields = columns.map((v) => v.name);
   const df = await query.executeTable();
-  return grok.shell.addTableView(df);
+  df.name = tableObject.name || `Unnamed table id ${tableObject.id}`;
+  const tableView = grok.shell.addTableView(df);
+  tableView.name = tableObject.title ?? df.name;
+  return tableView;
 }
