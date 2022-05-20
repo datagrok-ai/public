@@ -96,7 +96,7 @@ export function canvasMol(
 //name: getCLogP
 //input: string smiles {semType: Molecule}
 //output: double cLogP
-export function getCLogP(smiles: string): any {
+export function getCLogP(smiles: string): number {
   const mol = getRdKitModule().get_mol(smiles);
   const res = JSON.parse(mol.get_descriptors()).CrippenClogP;
   mol?.delete();
