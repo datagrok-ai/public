@@ -13,7 +13,8 @@ import {tanimotoSimilarity} from '@datagrok-libraries/utils/src/similarity-metri
 import {assure} from '@datagrok-libraries/utils/src/test';
 
 function _chemFindSimilar(molStringsColumn: DG.Column,
-  queryMolString: string, settings: { [name: string]: any }): DG.DataFrame {
+      queryMolString: string, settings: { [name: string]: any }): DG.DataFrame {
+
   const len = molStringsColumn.length;
   const distances = _chemGetSimilarities(queryMolString);
   const limit = Math.min((settings.hasOwnProperty('limit') ? settings.limit : len), len);
@@ -127,27 +128,25 @@ async function _invalidate(
 // see https://github.com/rdkit/rdkit/blob/master/Code/MinimalLib/minilib.h
 
 export async function chemGetSimilarities(molStringsColumn: DG.Column, queryMolString = '')
-  : Promise<DG.Column | null> {
+      : Promise<DG.Column | null> {
   assure.notNull(molStringsColumn, 'molStringsColumn');
   assure.notNull(queryMolString, 'queryMolString');
 
   await _invalidate(molStringsColumn, queryMolString, true);
-  const result = queryMolString.length != 0 ?
+
+  return queryMolString.length != 0 ?
     DG.Column.fromList(DG.COLUMN_TYPE.FLOAT, 'distances',
       _chemGetSimilarities(queryMolString)) : null;
-  return result;
 }
 
-export async function chemFindSimilar(
-  molStringsColumn: DG.Column, queryMolString = '', settings: { [name: string]: any } = {})
-  : Promise<DG.DataFrame | null> {
+export async function chemFindSimilar(molStringsColumn: DG.Column, queryMolString = '',
+                                      settings: { [name: string]: any } = {}) : Promise<DG.DataFrame | null> {
   assure.notNull(molStringsColumn, 'molStringsColumn');
   assure.notNull(queryMolString, 'queryMolString');
 
   await _invalidate(molStringsColumn, queryMolString, true);
-  const result = queryMolString.length != 0 ?
+  return queryMolString.length != 0 ?
     _chemFindSimilar(molStringsColumn, queryMolString, settings) : null;
-  return result;
 }
 
 export function chemSubstructureSearchGraph(molStringsColumn: DG.Column, molString: string): DG.BitSet {
