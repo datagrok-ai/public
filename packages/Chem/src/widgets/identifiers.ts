@@ -74,7 +74,7 @@ class UniChemSource {
     this.description = description;
   }
 
-  static async refreshSources() {
+  static async refreshSources(): Promise<void> {
     const table = await getOrLoadUnichemSources();
     const rowCount = table.rowCount;
     for (let i = 0; i < rowCount; i++) {
@@ -86,7 +86,7 @@ class UniChemSource {
     }
   }
 
-  static byName(name: string) {
+  static byName(name: string): UniChemSource | null {
     for (const source of Object.values(this._sources)) {
       if (source.name === name)
         return source;
@@ -95,7 +95,7 @@ class UniChemSource {
   }
 }
 
-async function getCompoundsIds(inchiKey: string) {
+async function getCompoundsIds(inchiKey: string): Promise<{[k:string]: any} | undefined> {
   const url = `https://www.ebi.ac.uk/unichem/rest/inchikey/${inchiKey}`;
   const params: RequestInit = {method: 'GET', referrerPolicy: 'strict-origin-when-cross-origin'};
   const response = await grok.dapi.fetchProxy(url, params);
@@ -112,7 +112,7 @@ async function getCompoundsIds(inchiKey: string) {
     {} : Object.fromEntries(sources.map(m => [UniChemSource.idNames[(m['src_id'] as number)], m['src_compound_id']]));
 }
 
-export async function getIdMap(smiles: string) {
+export async function getIdMap(smiles: string): Promise<{[k:string]: any} | null> {
   const rdKitModule = getRdKitModule();
   const mol = rdKitModule.get_mol(smiles);
   const inchiKey = rdKitModule.get_inchikey_for_inchi(mol.get_inchi());
@@ -131,7 +131,7 @@ export async function getIdMap(smiles: string) {
   return idMap;
 }
 
-export async function identifiersWidget(smiles: string) {
+export async function identifiersWidget(smiles: string): Promise<DG.Widget> {
   const idMap = await getIdMap(smiles);
   if (idMap === null)
     return new DG.Widget(ui.divText('Not found in UniChem'));

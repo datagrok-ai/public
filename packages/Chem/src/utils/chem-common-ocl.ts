@@ -5,7 +5,7 @@ import * as ui from 'datagrok-api/ui';
 import * as OCL from 'openchemlib/full.js';
 import {isMolBlock} from './chem-utils';
 
-export function renderDescription(description: OCL.IParameterizedString[]) {
+export function renderDescription(description: OCL.IParameterizedString[]): HTMLDivElement {
   const host = ui.div([]);
   const molsHost = ui.div([], 'd4-flex-wrap');
   const width = 200;
@@ -31,7 +31,7 @@ export function renderDescription(description: OCL.IParameterizedString[]) {
   return host;
 }
 
-function _molToCanvas(mol: OCL.Molecule, width=200, height=100) {
+function _molToCanvas(mol: OCL.Molecule, width = 200, height = 100): HTMLCanvasElement {
   const canvas = ui.canvas(width, height);
   if (mol !== null)
     OCL.StructureView.drawMolecule(canvas, mol);

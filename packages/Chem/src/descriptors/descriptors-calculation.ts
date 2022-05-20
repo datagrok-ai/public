@@ -25,7 +25,7 @@ export async function addDescriptors(smiles: DG.Column, viewTable: DG.DataFrame)
 }
 
 /** Calculates descriptors for single entry*/
-export function getDescriptorsSingle(smiles: string) {
+export function getDescriptorsSingle(smiles: string): DG.Widget {
   const widget = new DG.Widget(ui.div());
   const result = ui.div();
   const selectButton = ui.bigButton('SELECT', async () => {
@@ -63,7 +63,7 @@ export function getDescriptorsSingle(smiles: string) {
 }
 
 /** demo application for descriptor calculation*/
-export function getDescriptorsApp() {
+export function getDescriptorsApp(): void {
   const defaultSmiles = 'O=C1CN=C(c2ccccc2N1)C3CCCCC3';
   let sketcherValue = defaultSmiles;
 
@@ -119,7 +119,7 @@ export function getDescriptorsApp() {
 }
 
 //description: Open descriptors selection dialog
-function openDescriptorsDialog(selected: any, onOK: any) {
+function openDescriptorsDialog(selected: any, onOK: any): void {
   //grok.chem.descriptorsTree().then((descriptors: { [_: string]: any }) => {
   getDescriptorsTree().then((descriptors: { [_: string]: any }) => {
     const tree = ui.tree();
@@ -176,7 +176,7 @@ function openDescriptorsDialog(selected: any, onOK: any) {
 }
 
 //description: Get selected descriptors
-async function getSelected() {
+async function getSelected() : Promise<any> {
   const str = await grok.dapi.userDataStorage.getValue(_STORAGE_NAME, _KEY);
   let selected = (str != null && str !== '') ? JSON.parse(str) : [];
   if (selected.length === 0) {
@@ -189,7 +189,7 @@ async function getSelected() {
 }
 
 //description: Removes all children from node
-function removeChildren(node: any) {
+function removeChildren(node: any): void {
   while (node.firstChild)
     node.removeChild(node.firstChild);
 }

@@ -2,7 +2,7 @@ import * as grok from 'datagrok-api/grok';
 import * as DG from 'datagrok-api/dg';
 import * as OCL from 'openchemlib/full.js';
 
-export function _saveAsSdf() {
+export function _saveAsSdf(): void {
   //todo: load OpenChemLib (or use RDKit?)
   //todo: open dialog
   //todo: UI for choosing structure column if necessary

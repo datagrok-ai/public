@@ -14,7 +14,7 @@ export enum Fingerprint {
 
 // By https://github.com/mistval/locko
 
-export async function criticalSectionBegin(key: string) {
+export async function criticalSectionBegin(key: string): Promise<any> {
   if (!lockPromiseForKey[key])
     lockPromiseForKey[key] = Promise.resolve();
   const takeLockPromise = lockPromiseForKey[key];
@@ -24,7 +24,7 @@ export async function criticalSectionBegin(key: string) {
   return takeLockPromise;
 }
 
-export function criticalSectionEnd(key: string) {
+export function criticalSectionEnd(key: string): void {
   if (unlockFunctionForKey[key]) {
     unlockFunctionForKey[key]();
     delete unlockFunctionForKey[key];
@@ -33,22 +33,21 @@ export function criticalSectionEnd(key: string) {
 
 const CHEM_TOKEN = 'CHEM_TOKEN';
 
-export async function chemBeginCriticalSection(token = CHEM_TOKEN) {
+export async function chemBeginCriticalSection(token = CHEM_TOKEN): Promise<void> {
   let warned = false;
   if (unlockFunctionForKey[token]) {
     console.warn('Chem | Is already in a critical section, waiting...');
     warned = true;
   }
   await criticalSectionBegin(token);
-  if (warned) {
+  if (warned)
     console.warn('Chem | Left the critical section');
-  }
 }
 
-export function chemEndCriticalSection(token = CHEM_TOKEN) {
+export function chemEndCriticalSection(token = CHEM_TOKEN): void {
   criticalSectionEnd(token);
 }
 
-export function rdKitFingerprintToBitArray(fp: Uint8Array) {
+export function rdKitFingerprintToBitArray(fp: Uint8Array): BitArray {
   return BitArray.fromBytes(fp);
 }

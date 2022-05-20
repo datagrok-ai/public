@@ -33,13 +33,13 @@ export class GridCellRendererProxy extends DG.GridCellRenderer {
 
   render(
     g: CanvasRenderingContext2D, x: number, y: number, w: number, h: number,
-    gridCell: DG.GridCell, cellStyle: DG.GridCellStyle) {
+    gridCell: DG.GridCell, cellStyle: DG.GridCellStyle): void {
     this.renderer.render(g, x, y, w, h, gridCell, cellStyle);
   }
 
   renderInternal(
     g: CanvasRenderingContext2D, x: number, y: number, w: number, h: number,
-    gridCell: DG.GridCell, cellStyle: DG.GridCellStyle) {
+    gridCell: DG.GridCell, cellStyle: DG.GridCellStyle): void {
     this.renderer.renderInternal(g, x, y, w, h, gridCell, cellStyle);
   }
 }
@@ -64,8 +64,8 @@ M  END
     };
   }
 
-  get name() {return 'RDKit cell renderer';}
-  get cellType() {return DG.SEMTYPE.MOLECULE;}
+  get name(): string {return 'RDKit cell renderer';}
+  get cellType(): DG.SemType {return DG.SEMTYPE.MOLECULE;}
   get defaultWidth() {return 200;}
   get defaultHeight() {return 100;}
 
@@ -98,13 +98,11 @@ M  END
               }
               substruct = substructJson === '' ? {} : JSON.parse(substructJson);
             }
-          } else if (molRegenerateCoords) {
+          } else if (molRegenerateCoords)
             mol.set_new_coords(true);
-          }
           if (!scaffoldIsMolBlock || molRegenerateCoords) {
-            if (!mol.has_coords()) {
+            if (!mol.has_coords())
               mol.set_new_coords();
-            }
             mol!.normalize_depiction();
             mol!.straighten_depiction();
           }
@@ -130,7 +128,7 @@ M  END
 
   _fetchMol(
     molString: string, scaffoldMolString: string,
-    molRegenerateCoords: boolean, scaffoldRegenerateCoords: boolean) {
+    molRegenerateCoords: boolean, scaffoldRegenerateCoords: boolean): IMolInfo {
     const name = molString + ' || ' + scaffoldMolString + ' || ' +
       molRegenerateCoords + ' || ' + scaffoldRegenerateCoords;
     return this.molCache.getOrCreate(name, (_: any) =>
@@ -178,7 +176,7 @@ M  END
 
   _drawMolecule(x: number, y: number, w: number, h: number, onscreenCanvas: HTMLCanvasElement,
     molString: string, scaffoldMolString: string, highlightScaffold: boolean,
-    molRegenerateCoords: boolean, scaffoldRegenerateCoords: boolean) {
+    molRegenerateCoords: boolean, scaffoldRegenerateCoords: boolean): void {
     const offscreenCanvas = this._fetchRender(w, h, molString, scaffoldMolString,
       highlightScaffold, molRegenerateCoords, scaffoldRegenerateCoords);
     const image = offscreenCanvas.getContext('2d')!.getImageData(0, 0, w, h);
@@ -196,7 +194,7 @@ M  END
   }
 
   render(g: any, x: number, y: number, w: number, h: number,
-    gridCell: DG.GridCell, cellStyle: DG.GridCellStyle) {
+    gridCell: DG.GridCell, cellStyle: DG.GridCellStyle): void {
     const molString = convertToRDKit(gridCell.cell.value);
     if (molString == null || molString === '')
       return;

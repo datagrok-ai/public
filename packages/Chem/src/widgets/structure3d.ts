@@ -2,7 +2,7 @@ import * as ui from 'datagrok-api/ui';
 import * as DG from 'datagrok-api/dg';
 import {smilesTo3DCoordinates} from '../scripts-api';
 
-export async function structure3dWidget(smiles: string) {
+export async function structure3dWidget(smiles: string): Promise<DG.Widget> {
   const sdf = (await smilesTo3DCoordinates(smiles)).replaceAll('\\n', '\n');
   const stringBlob = new Blob([sdf], {type: 'text/plain'});
 

@@ -13,7 +13,7 @@ export class RdKitService {
     this.workerCount = Math.max(1, cpuLogicalCores - 2);
   }
 
-  async init(webRoot: string) {
+  async init(webRoot: string): Promise<void> {
     if (!this._initWaiters) {
       this._initWaiters = [];
       for (let i = 0; i < this.workerCount; ++i) {
@@ -56,7 +56,8 @@ export class RdKitService {
     );
   }
 
-  async initMoleculesStructures(dict: string[], normalizeCoordinates = false, usePatternFingerprints: boolean = false): Promise<any> {
+  async initMoleculesStructures(dict: string[], normalizeCoordinates = false, usePatternFingerprints: boolean = false)
+    : Promise<any> {
     return this._initParallelWorkers(dict, (i: number, segment: any) =>
       this.parallelWorkers[i].initMoleculesStructures(segment, normalizeCoordinates, usePatternFingerprints),
     (resultArray: any[]) => resultArray.reduce((acc: any, item: any) => {
@@ -68,7 +69,7 @@ export class RdKitService {
     }, {molIdxToHash: [], hashToMolblock: {}}));
   }
 
-  async searchSubstructure(query: string, querySmarts: string) {
+  async searchSubstructure(query: string, querySmarts: string): Promise<any> {
     const t = this;
     return this._doParallel(
       (i: number, _: number) => {
@@ -83,7 +84,7 @@ export class RdKitService {
       });
   }
 
-  async initMorganFingerprints() {
+  async initMorganFingerprints(): Promise<any> {
     return this._doParallel(
       (i: number, _: number) => {
         return this.parallelWorkers[i].initMorganFingerprints();
@@ -93,7 +94,7 @@ export class RdKitService {
     );
   }
 
-  async getMorganFingerprints() {
+  async getMorganFingerprints(): Promise<any> {
     const t = this;
     return (await this._doParallel(
       (i: number, _: number) => {
