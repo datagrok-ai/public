@@ -19,7 +19,7 @@ function getSettings(gc: DG.GridColumn): SparklineSettings {
 export class SparklineCellRenderer extends DG.GridCellRenderer {
   get name() { return 'sparkline'; }
 
-  get cellType() { return 'sparkline_ts'; }
+  get cellType() { return 'sparkline'; }
 
   render(
     g: CanvasRenderingContext2D,
@@ -31,7 +31,7 @@ export class SparklineCellRenderer extends DG.GridCellRenderer {
     if (w < 20 || h < 10 || df === void 0) return;
 
     const settings = getSettings(gridCell.gridColumn);
-    const b = new DG.Rect(x, y, w, h).inflate(-2, -2);
+    const b = new DG.Rect(x, y, w, h).inflate(-3, -2);
     g.strokeStyle = 'lightgrey';
     g.lineWidth = 1;
 
@@ -75,7 +75,15 @@ export class SparklineCellRenderer extends DG.GridCellRenderer {
     gridColumn.settings ??= { globalScale: true };
     const settings: SparklineSettings = gridColumn.settings;
 
-    const normalizeInput = DG.InputBase.forProperty(DG.Property.js('globalScale', DG.TYPE.BOOL), settings);
+    const globalScaleProp = DG.Property.js('globalScale', DG.TYPE.BOOL, {
+      description: 'Determines the way a value is mapped to the vertical scale.\n' +
+        '- Global Scale OFF: bottom is column minimum, top is column maximum. Use when columns ' +
+        'contain values in different units.\n' +
+        '- Global Scale ON: uses the same scale. This lets you compare values ' +
+        'across columns, if units are the same (for instance, use it for tracking change over time).'
+    });
+
+    const normalizeInput = DG.InputBase.forProperty(globalScaleProp, settings);
     normalizeInput.onChanged(() => gridColumn.grid.invalidate());
 
     return ui.inputs([

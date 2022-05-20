@@ -28,7 +28,7 @@ class PowerGridPackageDetectors extends DG.Package {
   //input: column col
   //output: string semType
   detectByteArrayColumn(col) {
-    if (col.type == DG.COLUMN_TYPE.BYTE_ARRAY)
+    if (col.type === DG.COLUMN_TYPE.BYTE_ARRAY)
       return 'BinaryImage';
   }
 }
