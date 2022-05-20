@@ -10,16 +10,14 @@ export interface SummarySettingsBase {
 
 type getSettingsFunc<Type extends SummarySettingsBase> = (gs: DG.GridColumn) => Type;
 
-export function getSettingsBase<Type extends SummarySettingsBase>(
-    gc: DG.GridColumn
-): Type{
+export function getSettingsBase<Type extends SummarySettingsBase>(gc: DG.GridColumn): Type {
     return gc.settings ??= {
         columnNames: names(gc.grid.dataFrame.columns.numerical),
     }
 }
 
 function getDataColumns<Type extends SummarySettingsBase>(
-    gc: DG.GridColumn, getSettings: getSettingsFunc<Type>
-): DG.Column[] {
-    return gc.grid.dataFrame.columns.byNames(getSettings(gc).columnNames);
+    gc: DG.GridColumn,
+    getSettings: getSettingsFunc<Type>): DG.Column[] {
+  return gc.grid.dataFrame.columns.byNames(getSettings(gc).columnNames);
 }

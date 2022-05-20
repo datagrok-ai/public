@@ -17,7 +17,7 @@ function getSettings(gc: DG.GridColumn): BarChartSettings {
 export class BarChartCellRenderer extends DG.GridCellRenderer {
   get name() { return 'bar ts'; }
 
-  get cellType() { return 'barchart_ts'; }
+  get cellType() { return 'barchart'; }
 
   render(
     g: CanvasRenderingContext2D,

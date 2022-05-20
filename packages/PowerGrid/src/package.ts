@@ -10,9 +10,9 @@ import {BarCellRenderer} from './cell-types/bar-cell-renderer';
 import {BinaryImageCellRenderer} from './cell-types/binary-image-cell-renderer';
 
 import {SparklineCellRenderer} from './sparklines/sparklines-lines';
-import {BarChartCellRenderer} from './sparklines/barchart';
+import {BarChartCellRenderer} from './sparklines/bar-chart';
 import {PieChartCellRenderer} from './sparklines/piechart';
-import {RadarChartCellRender} from './sparklines/radarchart';
+import {RadarChartCellRender} from './sparklines/radar-chart';
 
 export const _package = new DG.Package();
 
@@ -64,36 +64,36 @@ export function barCellRenderer() {
   return new BarCellRenderer();
 }
 
-//name: sparklineCellRenderer
+//name: Sparklines
 //tags: cellRenderer, cellRenderer-sparkline
-//meta.cellType: sparkline_ts
+//meta.cellType: sparkline
 //meta.virtual: true
 //output: grid_cell_renderer result
 export function sparklineCellRenderer() {
   return new SparklineCellRenderer();
 }
 
-//name: barchartCellRenderer
+//name: Bar Chart
 //tags: cellRenderer, cellRenderer-barchart
-//meta.cellType: barchart_ts
+//meta.cellType: barchart
 //meta.virtual: true
 //output: grid_cell_renderer result
 export function barchartCellRenderer() {
   return new BarChartCellRenderer();
 }
 
-//name: piechartCellRender
+//name: Pie Chart
 //tags: cellRenderer, cellRenderer-piechart
-//meta.cellType: piechart_ts
+//meta.cellType: piechart
 //meta.virtual: true
 //output: grid_cell_renderer result
 export function piechartCellRenderer() {
   return new PieChartCellRenderer();
 }
 
-//name: radarCellRenderer
+//name: Radar
 //tags: cellRenderer, cellRenderer-radar
-//meta.cellType: radarchart_ts
+//meta.cellType: radarchart
 //meta.virtual: true
 //output: grid_cell_renderer result
 export function radarCellRenderer() {
