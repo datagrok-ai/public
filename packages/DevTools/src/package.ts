@@ -6,7 +6,7 @@ import { IconTool } from "./icon-tool";
 import { EntityType } from './constants';
 import './styles.css';
 import * as tests from "./tests/test-examples";
-import {_testManager} from "./package-testing";
+import {testManagerView, _renderTestManagerPanel} from "./package-testing";
 import {viewersGallery} from "./viewers-gallery";
 import { functionSignatureEditor } from './function-signature-editor';
 import { addToJSContextCommand, getMinifiedClassNameMap, _renderDevPanel } from './dev-panel';
@@ -22,6 +22,14 @@ export function renderDevPanel(ent: EntityType): Promise<DG.Widget> {
   return _renderDevPanel(ent, minifiedClassNameMap);
 }
 
+//name: renderTestManagerPanel
+//tags: dev-tools
+//input: object ent
+//output: widget panel
+export function renderTestManagerPanel(ent: EntityType): Promise<DG.Widget> {
+  return _renderTestManagerPanel(ent);
+}
+
 //tags: autostart
 export function describeCurrentObj(): void {
   minifiedClassNameMap = getMinifiedClassNameMap();
@@ -31,6 +39,7 @@ export function describeCurrentObj(): void {
     if (ent == null) return; 
     let devPane = acc.getPane('Dev');
     if (!devPane) devPane = acc.addPane('Dev', () => ui.wait(async () => (await renderDevPanel(ent)).root));
+    if (!acc.getPane('Test manager')) acc.addPane('Test manager', () => ui.wait(async () => (await renderTestManagerPanel(ent)).root));
   });
 
   grok.events.onContextMenu.subscribe((args) => {
@@ -84,7 +93,7 @@ export function _IconTool(): void {
 
 //name: testManager
 //top-menu: Tools | Dev | Test Manager
-export async function testManager(): Promise<void> { await _testManager(); }
+export async function testManager(): Promise<void> { await testManagerView(); }
 
 //tags: unitTest
 export function _throwsException(): void { tests.throwsException(); }
