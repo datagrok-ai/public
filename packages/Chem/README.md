@@ -19,6 +19,11 @@ modern multicore CPUs by running computations in multiple threads.
 
 Here are some of the features:
 
+* Molecule sketching
+  * OpenChemLib
+* SAR analysis
+* Chembl integration
+* Pubchem integration
 * Works completely on the client side where possible.
 * [RDKit](https://www.rdkit.org)-based rendering. 
   * Highlighting substructures on search (in progress) 
@@ -29,14 +34,13 @@ Here are some of the features:
 
 The following features are still in the core, but we plan to move them out to this package:
 
-* Molecule sketching
-  * OpenChemLib
-* SAR analysis
 * Property calculators (server-side)
 * 3D: coordinate calculation using RDKit, rendering using [NGL Viewer](http://nglviewer.org/)
-* Chembl integration
-* Pubchem integration
 * "Sketch-to-predict": run predictive models as you sketch the molecule
+
+# Sketcher
+
+Supports multiple sketchers (MarvinJS, OpenChemLib, Ketcher).
 
 See also: 
   * [Cheminformatics predictive modeling](https://datagrok.ai/help/domains/chem/chem-predictive-modeling)
