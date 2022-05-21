@@ -19,6 +19,7 @@ const _STORAGE_NAME = 'sketcher';
 const _KEY = 'selected';
 const _DEFAULT_SKETCHER = 'openChemLibSketcher';
 
+let extractors: Func[];  // id => molecule
 
 export function isMolBlock(s: string) {
   return s.includes('M  END');
@@ -85,6 +86,7 @@ export namespace chem {
     async init() {
     }
   }
+
 
 
   /**
@@ -154,13 +156,12 @@ export namespace chem {
 
     /** Sets SMILES, MOLBLOCK, or any other molecule representation */
     setValue(x: string) {
-      const extractor = Func
-        .find({meta: {role: FUNC_TYPES.CONVERTER, inputRegexp: null}})
+      const extractor = extractors
         .find((f) => new RegExp(f.options['inputRegexp']).test(x));
 
       if (extractor != null)
         extractor
-          .apply({id: x})
+          .apply([ new RegExp(extractor.options['inputRegexp']).exec(x)![1] ])
           .then((mol) => this.setMolecule(mol));
       else
         this.setMolecule(x);
@@ -170,10 +171,22 @@ export namespace chem {
       super(ui.div());
 
       let funcs = Func.find({tags: ['moleculeSketcher']});
-      if (funcs.length == 0)
-        throw 'Sketcher functions not found. Please install OpenChemLib, or MarvinJS package.';
-
       $(this.molInput).attr('placeholder', 'SMILES, MOLBLOCK, Inchi, ChEMBL id, etc');
+
+      if (extractors == null) {
+        const extractorSearchOptions = {
+          meta: {
+            role: FUNC_TYPES.CONVERTER,
+            inputRegexp: null,
+          },
+          returnSemType: SEMTYPE.MOLECULE
+        };
+
+        const load: Promise<any> = api.grok_Func_LoadQueriesScripts();
+        load
+          .then((_) => { extractors = Func.find(extractorSearchOptions); })
+          .catch((_) => extractors = []);
+      }
 
       const applyInput = (e: any) => {
         const newSmilesValue: string = (e?.target as HTMLTextAreaElement).value;
