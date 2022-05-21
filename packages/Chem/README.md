@@ -42,6 +42,35 @@ The following features are still in the core, but we plan to move them out to th
 
 Supports multiple sketchers (MarvinJS, OpenChemLib, Ketcher).
 
+## Molecule queries
+
+Out-of-the-box, you can paste SMILES, MOLBLOCK, and InChi keys into the input field, and the sketcher
+automatically translates it to a structure. In addition to that, you can make sketcher understand
+other structure notations (such as from your company's internal database of structures) by registering
+a function annotated in a special way. The following example provides support for Chembl. The important
+tags are:
+* `--meta.role: converter`: indicates that such a function serves as a value converter
+* `--meta.inputRegexp: (CHEMBL[0-9]+)`: RegExp that is evaluated to check if this function
+  is applicable to the user input. The captured group (in this case the whole input) is then
+  passed to this function as a parameter. 
+* `--output: string smiles { semType: Molecule }`: should return string with the semType `Molecule`
+
+```
+--name: chemblIdToSmiles
+--meta.role: converter
+--meta.inputRegexp: (CHEMBL[0-9]+)
+--connection: Chembl
+--input: string id = CHEMBL1185
+--output: string smiles { semType: Molecule }
+select canonical_smiles from compound_structures s
+join molecule_dictionary d on s.molregno = d.molregno
+where d.chembl_id = @id
+```
+
+A molecule query does not have to be a database query, any [function](../../help/overview/functions/function.md)
+will do. For instance, InChi query is implemented as a Python script. 
+
+
 See also: 
   * [Cheminformatics predictive modeling](https://datagrok.ai/help/domains/chem/chem-predictive-modeling)
   * [Datagrok JS API](https://datagrok.ai/help/develop/js-api)

@@ -1,7 +1,9 @@
 --name: chemblIdToSmiles
+--meta.role: converter
+--meta.inputRegexp: (CHEMBL[0-9]+)
 --connection: Chembl
---input: string id
---output: string smiles { semType: molecule }
+--input: string id = "CHEMBL1185"
+--output: string smiles { semType: Molecule }
 select canonical_smiles from compound_structures s
 join molecule_dictionary d on s.molregno = d.molregno
 where d.chembl_id = @id
@@ -11,7 +13,7 @@ where d.chembl_id = @id
 --name: molregnoToSmiles
 --connection: Chembl
 --input: int molregno
---output: string smiles { semType: molecule }
+--output: string smiles { semType: Molecule }
 select canonical_smiles from compound_structures where molregno = @molregno
 --end
 
@@ -19,7 +21,7 @@ select canonical_smiles from compound_structures where molregno = @molregno
 --name: nameToSmiles
 --connection: Chembl
 --input: string compoundName
---output: string smiles { semType: molecule }
+--output: string smiles { semType: Molecule }
 select cs.canonical_smiles
 from compound_structures cs
 inner join
