@@ -21,8 +21,8 @@ const _DEFAULT_SKETCHER = 'openChemLibSketcher';
 
 let extractors: Func[];  // id => molecule
 
-export function isMolBlock(s: string) {
-  return s.includes('M  END');
+export function isMolBlock(s: string | null) {
+  return s != null && s.includes('M  END');
 }
 
 /** Cheminformatics-related routines */
@@ -204,6 +204,14 @@ export namespace chem {
         if (e.key == 'Enter') {
           applyInput(e);
           e.stopImmediatePropagation();
+        }
+      });
+
+      this.molInput.addEventListener('paste', (e) => {
+        const text = e.clipboardData?.getData('text/plain');
+        if (text != null && isMolBlock(text)) {
+          e.preventDefault();
+          this.setValue(text);
         }
       });
 
