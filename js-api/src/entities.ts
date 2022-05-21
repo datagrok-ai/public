@@ -120,7 +120,7 @@ export class User extends Entity {
 
   /** Login */
   get login(): string { return api.grok_User_Get_Login(this.dart); }
-  set login(login: string) {api.grok_User_Set_Login(this.dart, login);}
+  set login(login: string) { api.grok_User_Set_Login(this.dart, login); }
 
   toMarkup(): string { return api.grok_User_ToMarkup(this.dart); }
 
@@ -197,7 +197,16 @@ export class Func extends Entity {
    *  Executes the function with the specified {link parameters}, and returns result.
    *  If necessary, the corresponding package will be loaded as part of the call.
    * */
-  async apply(parameters: object = {}): Promise<any> {
+  async apply(parameters: {[name: string]: any} | any[] = {} ): Promise<any> {
+    if (Array.isArray(parameters)) {
+      if (parameters.length != this.inputs.length)
+        throw `${this.name}: expected ${this.inputs.length} parameters, got ${parameters.length}`;
+      const params = {};
+      for (let i = 0; i < this.inputs.length; i++)
+        params[this.inputs[i].name] = parameters[i];
+      parameters = params;
+    }
+
     return (await this.prepare(parameters).call()).getOutputParamValue();
   }
 
