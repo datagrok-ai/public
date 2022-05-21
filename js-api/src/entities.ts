@@ -176,10 +176,8 @@ export class Func extends Entity {
 
   get package(): Package { return api.grok_Func_Get_Package(this.dart); }
 
-  /** Returns {@link FuncCall} object in a stand-by state
-   * @param {object} parameters
-   * @returns {FuncCall} */
-  prepare(parameters: object = {}): FuncCall {
+  /** Returns {@link FuncCall} object in a stand-by state */
+  prepare(parameters: {[name: string]: any} = {}): FuncCall {
     return toJs(api.grok_Func_Prepare(this.dart, parameters));
   };
 
@@ -197,11 +195,12 @@ export class Func extends Entity {
    *  Executes the function with the specified {link parameters}, and returns result.
    *  If necessary, the corresponding package will be loaded as part of the call.
    * */
-  async apply(parameters: {[name: string]: any} | any[] = {} ): Promise<any> {
+  async apply(parameters: {[name: string]: any} | any[] = {}): Promise<any> {
+    parameters ??= {};
     if (Array.isArray(parameters)) {
       if (parameters.length != this.inputs.length)
         throw `${this.name}: expected ${this.inputs.length} parameters, got ${parameters.length}`;
-      const params = {};
+      const params: any = {};
       for (let i = 0; i < this.inputs.length; i++)
         params[this.inputs[i].name] = parameters[i];
       parameters = params;
