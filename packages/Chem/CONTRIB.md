@@ -1,24 +1,75 @@
 # Contributor's guide for Chem package
 
-* If you are a contributor to this package, be guided by this document on the library
-design and engineering choices
+* From this document you will learn about the Chem library design and engineering choices
 
-* Contribute to this file if you have a knowledge about third-parties such as a
-chemical library (RdKit, OpenChemLib, etc.) or peculiarities of Chrome, or any other
-knowledge which isn't explicitly expressed in the code
+* Contribute to this file if you obtain any knowledge about third-parties used within or
+  in any way connected with the `Chem` package, such as:
+  * specifics about behavior of a chemical library (RdKit, OpenChemLib, etc.),
+  * peculiarities of Chrome (some things in JS or WebAssembly may change over time),
+  * any knowledge which isn't explicitly expressed in the code, or isn't yet part of this file
 
-* Contributors from Datagrok should also check the videos recorded about the design,
-ask @dskatov and @StLeonidas on getting access to these videos and a walk-through
+* Maintain this file when changing library internals and architecture
 
-* If you are an external contributor, post any question on Chem directly in
+* Contributors from Datagrok should also check the videos we recorded about the design;
+ask @dskatov and @StLeonidas for accessing these videos, and a walk-through
+
+* If you are an external contributor, post any question about Chem directly to our github
 [issues](https://github.com/datagrok-ai/public/issues) with a label `Question` and
-a project `Chem`
+put it under a project `Chem`
 
-## Commit guide
+## Before you start
+
+### Code contribution guidelines
 
 Make sure to follow our common contributor's guide:
 
 https://github.com/datagrok-ai/public/blob/master/CONTRIB.md
+
+### Preparing working environment
+
+Don't just do `npm install & webpack` at the start. This may fail, as explained below.
+
+The `Chem` library depends on common
+Datarok libraries located at `public/js-api`, `public/libraries/utils`, and `public/libraries/ml`.
+They have corresponding npm packages at
+[`@datagrok-libraries/utils`](https://www.npmjs.com/package/@datagrok-libraries/utils),
+[`@datagrok-libraries/ml`](https://www.npmjs.com/package/@datagrok-libraries/ml),
+and
+['js-api`](https://www.npmjs.com/package/datagrok-api).
+Often you will be editing both the Chem package and some corresponding functionality in the
+mentioned libraries. Publishing these libraries to npm after changing them to let Chem `npm install`
+fetch the changes isn't a feasible approach either, as the changes in these packages often
+batch together.
+
+The solution is to use `npm` linking of local folders as installable npm packages.
+
+To set up  fully local working environment, you need to link the three packages above to `Chem`.
+The script `setup.cmd` does it for you. Call it before starting to work with the `Chem` code
+locally, say, on a freshly checked out `public` code.
+
+The script `setup.cmd` must be run with the current directory set to `public/packages/Chem`.
+
+**IMPORTANT:** If you are maintaining two or more copies of a `public` repo on your machine,
+remember calling `setup.cmd` when switching with working between them. If you don't, it may happen
+that you are using Datagrok libraries from one such folder, linked with `npm`, through another such
+folder, thus possibly mixing some parallel implementations.
+
+If you are still experiencing errors on `Chem` when running `webpack`, even if you've already
+used `setup.cmd`, here are some hints for troubleshooting:
+
+1. Manually delete `npm_modules` from your `public/libraries/utils`, `public/libraries/ml`,
+and `public/js-api` locations, then repeat running `setup.cmd` from inside the `Chem` folder
+
+2. Make sure no specific library from the three above is installed globally in `npm`: `npm list -g`
+
+3. Clean npm cache: `npm cache clean --force`, check `%AppData%/npm-cache` is actually empty
+
+### npm-based setup for the Chem development environment
+
+The npm scripts from `package.json` called `build-chem-local`, `link-all`, and their combination,
+are meant to replace the current `setup.cmd` script. In particular, these npm scripts are involved
+in CI pipelines in Datagrok. We need to check the status of these scripts for local development
+environment use case, and deprecate `setup.cmd` in their favor, when possible.
 
 ## API design
 
@@ -73,14 +124,14 @@ We need to resolve this part eventually, but the priority isn't the highest.
 
 The folder `Chem/testbed` offers a standalone web-page for testing RdKit.
 This page doesn't require Datagrok in place. This testbed is useful when certain
-issues of the library are identified and a bug report needs to be produced.
+issues of the RdKit library are identified and a bug report needs to be produced.
 
 To run the testbed:
 
-1. Install `npm install http-server'
+1. Go to `/testbed` folder, install `npm install http-server'
 
-2. Run `run-server.bat` and go to one of the locations from the screen.
-Typically it is `https://localhost:81`.
+2. Run `run-server.bat` and go to one of the locations from the console output.
+Typically it is `https://localhost:81`
 
 Testbed needs to run through the web server, as it serves WebAssembly.
 
@@ -88,7 +139,7 @@ If you test a new version of RdKit, just replace the locations in the
 `GettingStartedJS.html` to the new ones and commit these changes along
 with the RdKit library version being tested.
 
-The test form is forked from RdKit's original testbed:
+The test code is forked from RdKit's original testbed and adopted to our use case:
 [link](https://github.com/ptosco/rdkit/tree/master/Code/MinimalLib#live-demos)
 
 
