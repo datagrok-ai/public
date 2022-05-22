@@ -39,17 +39,15 @@ export async function Alation() {
 
   const dataSourcesList = await alationApi.getDataSources();
   const tree = createTree(dataSourcesList, 'data-source');
-  treeHost.innerHTML = tree.root.outerHTML;
+  $(treeHost).append([tree.root]);
 
   grok.events.onContextMenu.subscribe((args: any) => {
     const tableObject = args.args.item.value;
     if (typeof tableObject.table_type == 'undefined')
       return;
     const name = (tableObject.title || tableObject.name).trim() || `Unnamed table id ${tableObject.id}`;
-    // const contextMenu = DG.Menu.create();
     const contextMenu = args.args.menu;
-    contextMenu.item('Get table', async () => connectToDb(tableObject, name));
-    // contextMenu.show();
+    contextMenu.item('Open table', async () => connectToDb(tableObject, name));
   });
 
   progressIndicator.close();
