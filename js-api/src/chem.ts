@@ -216,19 +216,20 @@ export namespace chem {
       });
 
       this.sketchMenu = Menu
-      .popup()
-      .item('Copy as SMILES', () => navigator.clipboard.writeText(this.sketcher!.smiles))
-      .item('Copy as MOLBLOCK', () => navigator.clipboard.writeText(this.sketcher!.molFile))
-      .group('Recent')
-        .items(Sketcher.getRecent().map((m) => ui.tools.click(svgMol(m, 200, 100), () => this.setMolecule(m))), () => {})
-        .endGroup()
-      .group('Favorites')
-        .item('Add to Favorites', () => Sketcher.addFavorite(this.sketcher!.molFile))
+        .popup()
+        .item('Copy as SMILES', () => navigator.clipboard.writeText(this.sketcher!.smiles))
+        .item('Copy as MOLBLOCK', () => navigator.clipboard.writeText(this.sketcher!.molFile))
+        .group('Recent')
+          .items(Sketcher.getRecent().map((m) => ui.tools.click(svgMol(m, 200, 100), () => this.setMolecule(m))), () => {})
+          .endGroup()
+        .group('Favorites')
+          .item('Add to Favorites', () => Sketcher.addFavorite(this.sketcher!.molFile))
+          .separator()
+          .items(Sketcher.getFavorites().map((m) => ui.tools.click(svgMol(m, 200, 100), () => this.setMolecule(m))), () => {})
+          .endGroup()
         .separator()
-        .items(Sketcher.getFavorites().map((m) => ui.tools.click(svgMol(m, 200, 100), () => this.setMolecule(m))), () => {})
-        .endGroup()
-      .separator()
-      .items(funcs.map((f) => f.friendlyName), (name: string) => this.setSketcher(name));
+        .items(funcs.map((f) => f.friendlyName), (name: string) => this.setSketcher(name));
+
       let optionsIcon = ui.iconFA('bars', () => {
         this.sketchMenu.show()
       });
