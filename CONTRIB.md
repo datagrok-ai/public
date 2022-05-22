@@ -4,6 +4,12 @@
 
 1. Node version [12.22.x](https://nodejs.org/dist/v12.22.7/)
 2. Npm version 8.x.x: `npm install -g npm@8.x.x`
+3. Latest `typescript`.
+
+We are only using pure JavaScript in the packages not yet converted to TypeScript, such as
+`public/packages/Charts`.
+
+We use **only** TypeScript in all actual and new packages. Avoid using pure JavaScript.
 
 ## Code style
 
@@ -14,9 +20,9 @@ In particular:
 
 1. **Add** intermediate spaces in `a, b`, `1, 2, 3`, `if (...`, `...) {`, `a == b`, and similar
 
-2. **Do not** add empty lines in the beginning and/or the ending of the code block.
+2. **Do not** add empty lines in the beginning and/or the ending of the code block
 
-3. The default is **2 spaces per tab**.
+3. The default is **2 spaces per tab**
 
 4. We are *not strict*
    about [braces for code blocks of a single statement](https://google.github.io/styleguide/jsguide.html#formatting-braces-all)
@@ -27,7 +33,7 @@ In particular:
    up-to-date [configuration file](https://github.com/datagrok-ai/public/blob/master/tools/package-template/.eslintrc.json)
    .
 
-6. **Do not** delete `package-lock.json` from the repository. Update it when needed.
+6. **Do not** delete `package-lock.json` from the repository. Update it when needed
 
 7. Document your code when there is a need for it, but do not overdo it. For instance, there is no
    reason to include information that is already in the function/class signature, such as types of
@@ -57,19 +63,19 @@ file with the settings
 
 ## Git
 
-In this public repo, we follow some Git best practices.
+In this public repo, we follow some Git best practices:
 
-1. Configure the commit authorship. Set your name and email address correctly.
-2. Write descriptive and meaningful commit messages. Commit messages will be included in changelogs.
+1. Configure the commit authorship. Set your name and email address correctly
+2. Write descriptive and meaningful commit messages. Commit messages will be included in changelogs
 3. Keep your working branch up to date by frequently fetching changes from the remote server. It
-   will prevent bugs, rework, and the tiresome resolve of conflicts.
-4. Test your changes before pushing to avoid the broken code in the repository.
+   will prevent bugs, rework, and the tiresome resolve of conflicts
+4. Test your changes before pushing to avoid the broken code in the repository
 5. Refer to the issue or task number in your commit. It will help to track the work done on the task
-   or issue.
+   or issue
 6. Do not mix "refactoring" with a new feature
 7. Do not create unnecessary merge loops. To pull changes after commit creation
    use `git pull --rebase`.
-8. Push one commit at a time to avoid unexpected GitHub Actions behavior.
+8. Push one commit at a time to avoid unexpected GitHub Actions behavior
 
 
 ## Performance recommendations
