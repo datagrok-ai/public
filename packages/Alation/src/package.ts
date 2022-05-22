@@ -57,12 +57,15 @@ function createTree(
   objects: types.baseEntity[], objectType: types.specialType, treeRootNode?: DG.TreeViewNode): DG.TreeViewNode {
   objects = utils.filterDuplicates(objects);
   treeRootNode ??= ui.tree();
+  const iconClass = objectType === 'data-source' ? 'svg-data-connection' : 'svg-database-tables';
+  const iconElement = `<i class="grok-icon svg-icon ${iconClass}"></i>`;
 
   if (objectType === 'table') {
     (objects as types.table[]).forEach((tableObject) => {
       const name =
         (tableObject.title || tableObject.name).trim() || `Unnamed table id ${tableObject.id}`;
       const item = treeRootNode!.item(name, tableObject);
+      $(item.root).children().first().before(iconElement);
       item.root.addEventListener('dblclick', async () => connectToDb(tableObject, name));
       item.root.addEventListener('mousedown', async (ev) => {
         if (ev.button != 0 || isSettingDescription)
@@ -87,6 +90,8 @@ function createTree(
     const group = treeRootNode!.group(name, dataSourceObject, false);
     isFirstTimeMap[objectType] ??= {};
     isFirstTimeMap[objectType][currentId] = true;
+
+    $(group.root).children().first().children().first().after(iconElement);
 
     group.root.addEventListener('mousedown', async (ev) => {
       if (ev.button != 0 || isSettingDescription)
