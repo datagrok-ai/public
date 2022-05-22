@@ -443,8 +443,9 @@ export class TimelinesViewer extends EChartViewer {
   removeTimeOptions() {
     this.option.xAxis = {
       type: 'value',
-      boundaryGap: ['0%', '0%'],
       axisLabel: { formatter: null },
+      min: 'dataMin',
+      max: 'dataMax',
     };
   }
 
