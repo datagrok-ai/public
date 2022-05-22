@@ -13,6 +13,7 @@ import getUuid from 'uuid-by-string';
 
 export const _package = new DG.Package();
 let baseUrl: string;
+let isSettingDescription = false;
 
 export async function getBaseURL() {
   const properties = await _package.getProperties() as {[key: string]: any};
@@ -38,7 +39,16 @@ export async function Alation() {
 
   const dataSourcesList = await alationApi.getDataSources();
   const tree = createTree(dataSourcesList, 'data-source');
-  treeHost.innerHTML = tree.root.outerHTML;
+  $(treeHost).append([tree.root]);
+
+  grok.events.onContextMenu.subscribe((args: any) => {
+    const tableObject = args.args.item.value;
+    if (typeof tableObject.table_type == 'undefined')
+      return;
+    const name = (tableObject.title || tableObject.name).trim() || `Unnamed table id ${tableObject.id}`;
+    const contextMenu = args.args.menu;
+    contextMenu.item('Open table', async () => connectToDb(tableObject, name));
+  });
 
   progressIndicator.close();
 }
@@ -47,23 +57,25 @@ function createTree(
   objects: types.baseEntity[], objectType: types.specialType, treeRootNode?: DG.TreeViewNode): DG.TreeViewNode {
   objects = utils.filterDuplicates(objects);
   treeRootNode ??= ui.tree();
+  const iconClass = objectType === 'data-source' ? 'svg-data-connection' : 'svg-database-tables';
+  const iconElement = `<i class="grok-icon svg-icon ${iconClass}"></i>`;
 
   if (objectType === 'table') {
     (objects as types.table[]).forEach((tableObject) => {
       const name =
         (tableObject.title || tableObject.name).trim() || `Unnamed table id ${tableObject.id}`;
       const item = treeRootNode!.item(name, tableObject);
+      $(item.root).children().first().before(iconElement);
       item.root.addEventListener('dblclick', async () => connectToDb(tableObject, name));
       item.root.addEventListener('mousedown', async (ev) => {
-        if (ev.button === 2) {
-          const contextMenu = DG.Menu.create();
-          contextMenu.item('Connect to DB', async () => connectToDb(tableObject, name));
-          return contextMenu.show();
-        }
+        if (ev.button != 0 || isSettingDescription)
+          return;
+        isSettingDescription = true;
         const description = tableObject.description
           .replaceAll('src="/', `src="${await getBaseURL()}`)
           .replaceAll('href="/', `href="${await getBaseURL()}`);
         $('.alation-description').empty().html(description);
+        isSettingDescription = false;
       });
     });
 
@@ -79,17 +91,23 @@ function createTree(
     isFirstTimeMap[objectType] ??= {};
     isFirstTimeMap[objectType][currentId] = true;
 
-    group.root.addEventListener('mousedown', async () => {
+    $(group.root).children().first().children().first().after(iconElement);
+
+    group.root.addEventListener('mousedown', async (ev) => {
+      if (ev.button != 0 || isSettingDescription)
+        return;
+      isSettingDescription = true;
+      const pi = DG.TaskBarProgressIndicator.create('Loading child entities...');
       const description = dataSourceObject.description
         .replaceAll('src="/', `src="${await getBaseURL()}`)
         .replaceAll('href="/', `href="${await getBaseURL()}`);
       $('.alation-description').empty().html(description);
       if (isFirstTimeMap[objectType][currentId]) {
-        const pi = DG.TaskBarProgressIndicator.create('Loading child entities...');
-        await getChildren(objectType, currentId, group);
         isFirstTimeMap[objectType][currentId] = false;
-        pi.close();
+        await getChildren(objectType, currentId, group);
       }
+      pi.close();
+      isSettingDescription = false;
     });
   });
 
