@@ -10,7 +10,7 @@ import {
   AlignedSequenceDifferenceCellRenderer,
   AminoAcidsCellRenderer,
 } from './utils/cell-renderer';
-import {Logo} from './viewers/logo-viewer';
+// import {Logo} from './viewers/logo-viewer';
 import {StackedBarChart} from './viewers/stacked-barchart-viewer';
 
 import {analyzePeptidesWidget} from './widgets/analyze-peptides';
@@ -172,13 +172,6 @@ export function alignedSequenceCellRenderer() {
 //output: grid_cell_renderer result
 export function aminoAcidsCellRenderer() {
   return new AminoAcidsCellRenderer();
-}
-
-//name: peptide-logo-viewer
-//tags: viewer, panel
-//output: viewer result
-export function logov() {
-  return new Logo();
 }
 
 //name: Manual Alignment

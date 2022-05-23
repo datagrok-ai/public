@@ -20,7 +20,7 @@ export async function callMVA(
     currentDf,
     [DG.Column.fromList('double', C.COLUMNS_NAMES.ACTIVITY_SCALED, activityCol.toList())],
   );
-  _insertColumns(currentDf, encDf.columns);
+  _insertColumns(currentDf, encDf.columns.toList());
 
   const res = await grok.functions.call('MultivariateAnalysis', {
     table: currentDf,
