@@ -112,6 +112,7 @@ export async function analyzePeptidesWidget(currentDf: DG.DataFrame, col: DG.Col
 
   // const viewer = await currentDf.plot.fromType('peptide-logo-viewer');
   const viewer = await currentDf.plot.fromType('WebLogo');
+  viewer.root.style.setProperty('height', '130px');
 
   return new DG.Widget(
     ui.divV([
