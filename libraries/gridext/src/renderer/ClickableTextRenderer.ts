@@ -65,7 +65,7 @@ export class ClickableTextRenderer extends GridCellRendererEx {
     const nAscent = Math.abs(tm.actualBoundingBoxAscent);
     const nDescent = tm.actualBoundingBoxDescent;
     const nHFont = nAscent + nDescent + 2 * nYInset;
-    const options : any = cellGrid.grid.getOptions();
+    const options : any = cellGrid.grid.getOptions(true);
     const nHRow = options.look.rowHeight;
     const nDeltaY = Math.floor((nHRow - nHFont) / 2);
     const nXX = 0 + ((cellGrid.gridColumn.width - nWLabel) / 2);
