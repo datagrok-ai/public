@@ -7,6 +7,7 @@ import '../styles.css';
 import {StringDictionary} from '@datagrok-libraries/utils/src/type-declarations';
 import * as C from '../utils/constants';
 import {FilteringStatistics} from '../utils/filtering-statistics';
+import { getSeparator } from '../utils/misc';
 
 /**
  * Peptide analysis widget.
@@ -22,6 +23,8 @@ export async function analyzePeptidesWidget(currentDf: DG.DataFrame, col: DG.Col
   let tempCol = null;
   let tempDf: DG.DataFrame;
   let newScaledColName: string;
+  const separator = getSeparator(col);
+  col.tags[C.TAGS.SEPARATOR] ??= separator;
 
   for (const column of currentDf.columns.numerical)
     tempCol = column.type === DG.TYPE.FLOAT ? column : null;
@@ -33,7 +36,6 @@ export async function analyzePeptidesWidget(currentDf: DG.DataFrame, col: DG.Col
     'Scaling', 'none', ['none', 'lg', '-lg'],
     async (currentMethod: string) => {
       const currentActivityCol = activityColumnChoice.value.name;
-
 
       [tempDf, newScaledColName] = await PeptidesController.scaleActivity(
         currentMethod, currentDf, currentActivityCol, true);
@@ -67,15 +69,12 @@ export async function analyzePeptidesWidget(currentDf: DG.DataFrame, col: DG.Col
   activityColumnChoice.fireChanged();
   activityScalingMethod.fireChanged();
 
+  const inputsList = [activityColumnChoice, activityScalingMethod];
+
   const startBtn = ui.button('Launch SAR', async () => {
     const progress = DG.TaskBarProgressIndicator.create('Loading SAR...');
     if (activityColumnChoice.value.type === DG.TYPE.FLOAT) {
       const activityColumn: string = activityColumnChoice.value.name;
-      // const activityColumnScaled = `${activityColumn}Scaled`;
-      // const originalDfColumns = (currentDf.columns as DG.ColumnList).names();
-      const options: StringDictionary = {
-        'scaling': activityScalingMethod.value,
-      };
 
       //prepare new DF
       const newDf = currentDf.clone(currentDf.filter, [col.name, activityColumn]);
@@ -83,7 +82,6 @@ export async function analyzePeptidesWidget(currentDf: DG.DataFrame, col: DG.Col
       newDf.getCol(col.name).name = C.COLUMNS_NAMES.ALIGNED_SEQUENCE;
       const activityScaledCol = tempDf.getCol(C.COLUMNS_NAMES.ACTIVITY_SCALED);
       (newDf.columns as DG.ColumnList).add(activityScaledCol);
-      // newDf.temp[C.COLUMNS_NAMES.ACTIVITY] = activityColumn;
       newDf.name = 'Peptides analysis';
       newDf.temp[C.COLUMNS_NAMES.ACTIVITY_SCALED] = newScaledColName;
       newDf.tags['isPeptidesAnalysis'] = 'true';
@@ -112,14 +110,13 @@ export async function analyzePeptidesWidget(currentDf: DG.DataFrame, col: DG.Col
   //     grok.shell.error('The activity column must be of floating point number type!');
   // });
 
-
   const viewer = await currentDf.plot.fromType('peptide-logo-viewer');
 
   return new DG.Widget(
     ui.divV([
       viewer.root,
       ui.splitH([
-        ui.splitV([ui.inputs([activityColumnChoice, activityScalingMethod]), startBtn]),
+        ui.splitV([ui.inputs(inputsList), startBtn]),
         histogramHost,
       ], {style: {height: 'unset'}}),
       // histogramHost,

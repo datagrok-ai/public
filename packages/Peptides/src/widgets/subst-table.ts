@@ -22,6 +22,7 @@ export async function substitutionsWidget(table: DG.DataFrame): Promise<DG.Widge
 
   initialCol.semType = 'alignedSequenceDifference';
   initialCol.name = 'Substitution';
+  const separator = initialCol.tags[C.TAGS.SEPARATOR];
   // substTable.columns.remove('Substituted');
   // const substCol = table.getCol('Substitution');
 
@@ -30,8 +31,8 @@ export async function substitutionsWidget(table: DG.DataFrame): Promise<DG.Widge
     // const [from, to] = substCol!.get(i).split('#');
     const from = initialCol.get(i);
     const to = substitutedCol.get(i);
-    const aminosFrom: [] = from.split('-');
-    const aminosTo: [] = to.split('-');
+    const aminosFrom: [] = from.split(separator);
+    const aminosTo: [] = to.split(separator);
 
     for (let j = 0; j < aminosFrom.length; ++j) {
       const aar: string = table.tags[C.TAGS.AAR];

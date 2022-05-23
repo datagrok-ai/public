@@ -806,6 +806,7 @@ export class PeptidesModel {
 
   //TODO: merge, generalize
   split(peptideColumn: DG.Column, filter: boolean = true): string[][] {
+    const separator = peptideColumn.tags[C.TAGS.SEPARATOR];
     const splitPeptidesArray: string[][] = [];
     let currentSplitPeptide: string[];
     let modeMonomerCount = 0;
@@ -815,7 +816,7 @@ export class PeptidesModel {
     // splitting data
     const monomerLengths: { [index: string]: number } = {};
     for (let i = 0; i < colLength; i++) {
-      currentSplitPeptide = peptideColumn.get(i).split('-').map((value: string) => value ? value : '-');
+      currentSplitPeptide = peptideColumn.get(i).split(separator).map((value: string) => value ? value : '-');
       splitPeptidesArray.push(currentSplitPeptide);
       currentLength = currentSplitPeptide.length;
       monomerLengths[currentLength + ''] =
@@ -885,6 +886,7 @@ export class PeptidesModel {
       const tempDfLength = currentCase.length;
       const initCol = DG.Column.string('Initial', tempDfLength);
       const subsCol = DG.Column.string('Substituted', tempDfLength);
+      initCol.tags[C.TAGS.SEPARATOR] = this.dataFrame.getCol(C.COLUMNS_NAMES.ALIGNED_SEQUENCE).tags[C.TAGS.SEPARATOR];
 
       const tempDf = DG.DataFrame.fromColumns([
         initCol,

@@ -3,8 +3,6 @@ import * as grok from 'datagrok-api/grok';
 import * as ui from 'datagrok-api/ui';
 import * as DG from 'datagrok-api/dg';
 
-import $ from 'cash-dom';
-
 import * as C from './utils/constants';
 
 import {
@@ -139,8 +137,7 @@ export async function stackedBarchartWidget(col: DG.Column): Promise<DG.Widget> 
 //input: string peptide {semType: alignedSequence}
 //output: widget result
 export async function peptideMolecule(peptide: string): Promise<DG.Widget> {
-  [currentView, currentGrid, currentTable, alignedSequenceColumn] =
-    getOrDefine();
+  [currentView, currentGrid, currentTable, alignedSequenceColumn] = getOrDefine();
   return peptideMoleculeWidget(peptide, currentTable);
 }
 
@@ -149,8 +146,7 @@ export async function peptideMolecule(peptide: string): Promise<DG.Widget> {
 //input: string aar {semType: aminoAcids}
 //output: widget result
 export async function peptideMolecule2(aar: string): Promise<DG.Widget> {
-  [currentView, currentGrid, currentTable, alignedSequenceColumn] =
-    getOrDefine();
+  [currentView, currentGrid, currentTable, alignedSequenceColumn] = getOrDefine();
   const peptide = alignedSequenceColumn.get(currentTable.currentRowIdx);
   return peptideMolecule(peptide);
 }
@@ -190,8 +186,7 @@ export function logov() {
 //input: string monomer {semType: aminoAcids}
 //output: widget result
 export function manualAlignment(monomer: string) {
-  [currentView, currentGrid, currentTable, alignedSequenceColumn] =
-    getOrDefine();
+  [currentView, currentGrid, currentTable, alignedSequenceColumn] = getOrDefine();
   //TODO: recalculate Molfile and Molecule panels on sequence update
   return manualAlignmentWidget(alignedSequenceColumn, currentTable);
 }
@@ -212,7 +207,8 @@ export async function peptideSpacePanel(col: DG.Column): Promise<DG.Widget> {
 //input: string peptide { semType: alignedSequence }
 //output: widget result
 export async function peptideMolfile(peptide: string): Promise<DG.Widget> {
-  const smiles = getMolecule(peptide);
+  [currentView, currentGrid, currentTable, alignedSequenceColumn] = getOrDefine();
+  const smiles = getMolecule(peptide, alignedSequenceColumn.tags[C.TAGS.SEPARATOR]);
   return grok.functions.call('Chem:molfile', {'smiles': smiles});
 }
 
@@ -221,8 +217,7 @@ export async function peptideMolfile(peptide: string): Promise<DG.Widget> {
 //input: string aar { semType: aminoAcids }
 //output: widget result
 export async function peptideMolfile2(aar: string): Promise<DG.Widget> {
-  [currentView, currentGrid, currentTable, alignedSequenceColumn] =
-    getOrDefine();
+  [currentView, currentGrid, currentTable, alignedSequenceColumn] = getOrDefine();
   const peptide = alignedSequenceColumn.get(currentTable.currentRowIdx);
   return peptideMolfile(peptide);
 }
