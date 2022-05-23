@@ -1,0 +1,50 @@
+{
+  "name": "molecular-liability-browser-data",
+  "friendlyName": "MolecularLiabilityBrowserData",
+  "version": "0.0.1",
+  "description": "Data for MolecularLiabilityBrowser",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/datagrok-ai/public.git",
+    "directory": "packages/MolecularLiabilityBrowserData"
+  },
+  "sources": [],
+  "dependencies": {
+    "datagrok-api": "latest",
+    "cash-dom": "latest",
+    "dayjs": "latest",
+    "@datagrok-libraries/utils": "latest",
+    "ts-loader": "^9.2.5",
+    "typescript": "^4.5.4"
+  },
+  "devDependencies": {
+    "@types/node": "^17.0.24",
+    "@typescript-eslint/eslint-plugin": "latest",
+    "@typescript-eslint/parser": "latest",
+    "eslint": "latest",
+    "eslint-config-google": "latest",
+    "webpack": "^5.66.0",
+    "webpack-cli": "latest"
+  },
+  "scripts": {
+    "link-all": "",
+    "debug-molecularliabilitybrowser-data": "webpack && grok publish ",
+    "release-molecularliabilitybrowser-data": "webpack && grok publish --release",
+    "build-molecularliabilitybrowser-data": "webpack",
+    "build": "webpack",
+    "debug-molecularliabilitybrowser-data-dev": "grok publish dev --rebuild",
+    "release-molecularliabilitybrowser-data-dev": "grok publish dev --rebuild --release",
+    "debug-molecularliabilitybrowser-data-public": "grok publish public --rebuild",
+    "release-molecularliabilitybrowser-data-public": "grok publish public --rebuild --release",
+    "local-mlb-data": "grok publish local",
+    "debug-mlb-data": "grok publish local --rebuild",
+    "lint": "eslint \"./src/**/*.ts\"",
+    "lint-fix": "eslint \"./src/**/*.ts\" --fix"
+  },
+  "canEdit": [
+    "Developers"
+  ],
+  "canView": [
+    "All users"
+  ]
+}
