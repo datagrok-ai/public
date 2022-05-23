@@ -101,13 +101,13 @@ export class ClickableTextRenderer extends GridCellRendererEx {
         document.body.style.cursor = 'auto';
       }
     }
-    this.onMouseMove(cellGrid, e);
+    //this.onMouseMove(cellGrid, e);
   }
 
 
   onMouseLeaveEx(cellGrid : DG.GridCell, e : MouseEvent, nXOnCell : number, nYOnCell : number) : void {
     //console.log('Out');
     document.body.style.cursor = 'auto';
-    this.onMouseLeave(cellGrid, e);
+    //this.onMouseLeave(cellGrid, e);
   }
 }

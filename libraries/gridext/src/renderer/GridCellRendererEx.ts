@@ -1,6 +1,6 @@
 import * as DG from 'datagrok-api/dg';
 
-export class GridCellRendererEx extends DG.GridCellRenderer {
+export class GridCellRendererEx {// temporary to adress a bug of importing during tests | extends DG.GridCellRenderer {
   isClickable(cellGrid : DG.GridCell, nXOnCell : number, nYOnCell : number) {
     return false;
   }
@@ -27,5 +27,9 @@ export class GridCellRendererEx extends DG.GridCellRenderer {
 
   onMouseLeaveEx(cellGrid : DG.GridCell, e : MouseEvent, nXOnCell : number, nYOnCell : number) : void {
     //this.onMouseLeave(cellGrid, e);
+  }
+
+  render(g: CanvasRenderingContext2D, x: number, y: number, w: number, h: number, value: any, context: any): void {
+
   }
 }
