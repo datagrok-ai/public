@@ -2,7 +2,7 @@
   "dataSource": "Files",
   "parameters": {
     "dir": "",
-    "hiddenRoot": "${PACKAGE_ROOT}/files/demo",
+    "hiddenRoot": "${PROJECT_ROOT}/files/demo",
     "indexFiles": true
   },
   "name": "Files",
