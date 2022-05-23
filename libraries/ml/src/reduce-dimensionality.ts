@@ -16,40 +16,20 @@ import {SPEBase, PSPEBase, OriginalSPE} from './spe';
 import {Measure, KnownMetrics, AvailableMetrics, isBitArrayMetric, AvailableDataTypes} from './typed-metrics';
 import BitArray from '@datagrok-libraries/utils/src/bit-array';
 
-/**
- * Abstract dimensionality reducer.
- *
- * @abstract
- * @class Reducer
- */
+/** Abstract dimensionality reducer */
 abstract class Reducer {
   protected data: Vectors;
 
-  /**
-   * Creates an instance of Reducer.
-   * @param {Options} options Options to pass to the constructor.
-   * @memberof Reducer
-   */
   constructor(options: Options) {
     this.data = options.data;
   }
 
-  /**
-   * Is to embed the data given into the two-dimensional space.
-   *
-   * @abstract
-   * @return {any} Cartesian coordinate of this embedding and distance matrix where applicable.
-   * @memberof Reducer
-   */
+  /** Embeds the data given into the two-dimensional space.
+   * @return {any} Cartesian coordinate of this embedding and distance matrix where applicable. */
   abstract transform(): { [key: string] : Matrix };
 }
 
-/**
- * Implements t-SNE dimensionality reduction.
- *
- * @class TSNEReducer
- * @extends {Reducer}
- */
+/** t-SNE dimensionality reduction. */
 class TSNEReducer extends Reducer {
   protected reducer: TSNE;
   protected iterations: number;
