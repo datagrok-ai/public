@@ -2,6 +2,7 @@ import {ChemPalette} from './chem-palette';
 import * as DG from 'datagrok-api/dg';
 
 import * as C from './constants';
+import { getSeparator } from './misc';
 
 /**
  * A function to expand column size based on its contents.
@@ -298,7 +299,7 @@ export class AlignedSequenceCellRenderer extends DG.GridCellRenderer {
     const s: string = cell.value ?? '';
 
     //TODO: can this be replaced/merged with splitSequence?
-    const subParts = s.split('-');
+    let subParts = s.split(gridCell.tableColumn?.tags[C.TAGS.SEPARATOR]);
     const [text, simplified] = processSequence(subParts);
     const textSize = g.measureText(text.join(''));
     let x1 = Math.max(x, x + (w - textSize.width) / 2);
@@ -418,8 +419,9 @@ export class AlignedSequenceDifferenceCellRenderer extends DG.GridCellRenderer {
 
     //TODO: can this be replaced/merged with splitSequence?
     const [s1, s2] = s.split('#');
-    const subParts1 = s1.split('-');
-    const subParts2 = s2.split('-');
+    const separator = getSeparator(gridCell.tableColumn!);
+    const subParts1 = s1.split(separator);
+    const subParts2 = s2.split(separator);
     const [text] = processSequence(subParts1);
     const textSize = g.measureText(text.join(''));
     let updatedX = Math.max(x, x + (w - (textSize.width + subParts1.length * 4)) / 2);

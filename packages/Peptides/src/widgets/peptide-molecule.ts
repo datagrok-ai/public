@@ -3,6 +3,7 @@ import * as ui from 'datagrok-api/ui';
 import * as DG from 'datagrok-api/dg';
 // import {ChemPalette} from '../utils/chem-palette';
 import {PeptidesController} from '../peptides';
+import * as C from '../utils/constants';
 
 /**
  * 3D representation widget of peptide molecule.
@@ -13,6 +14,8 @@ import {PeptidesController} from '../peptides';
  */
 export async function peptideMoleculeWidget(pep: string, currentTable: DG.DataFrame): Promise<DG.Widget> {
   const pi = DG.TaskBarProgressIndicator.create('Creating NGL view');
+  const separator =
+    (currentTable.columns as DG.ColumnList).bySemType(C.SEM_TYPES.ALIGNED_SEQUENCE)!.tags[C.TAGS.SEPARATOR];
 
   let widgetHost = ui.divH([]);
   let smiles = '';
@@ -27,7 +30,7 @@ export async function peptideMoleculeWidget(pep: string, currentTable: DG.DataFr
         throw new Error(`Found structure in DB`);
       }
 
-      smiles = getMolecule(pep);
+      smiles = getMolecule(pep, separator);
       if (smiles == '')
         throw new Error('Couldn\'t get smiles');
 
@@ -63,8 +66,8 @@ export async function peptideMoleculeWidget(pep: string, currentTable: DG.DataFr
   return new DG.Widget(widgetHost);
 }
 
-export function getMolecule(pep: string): string {
-  const split = pep.split('-');
+export function getMolecule(pep: string, separator: string): string {
+  const split = pep.split(separator);
   const mols = [];
   const chemPalette = PeptidesController.chemPalette;
   for (let i = 1; i < split.length - 1; i++) {

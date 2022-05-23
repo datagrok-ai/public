@@ -8,6 +8,7 @@ import * as logojs from 'logojs-react';
 import {ChemPalette} from '../utils/chem-palette';
 import {PeptidesController} from '../peptides';
 import * as C from '../utils/constants';
+import { getSeparator } from '../utils/misc';
 
 /**
  * Logo viewer.
@@ -134,18 +135,18 @@ export class Logo extends DG.JsViewer {
    * @memberof Logo
    */
   async render() {
-    const bits = this.dataFrame!.selection;
+    const bits = this.dataFrame.selection;
     let selected = false;
     if (bits.trueCount > 0) {
       selected = true;
-      this.target = this.dataFrame!
-        .groupBy([this.dataFrame!.columns.bySemType(this.colSemType).name])
-        .whereRowMask(this.dataFrame!.selection)
+      this.target = this.dataFrame
+        .groupBy([this.dataFrame.columns.bySemType(this.colSemType).name])
+        .whereRowMask(this.dataFrame.selection)
         .aggregate();
     }
     if (selected)
       [this.splitted] = PeptidesController.splitAlignedPeptides(this.target!.columns.bySemType(this.colSemType));
-    else [this.splitted] = PeptidesController.splitAlignedPeptides(this.dataFrame!.columns.bySemType(this.colSemType));
+    else [this.splitted] = PeptidesController.splitAlignedPeptides(this.dataFrame.columns.bySemType(this.colSemType));
     $(this.root).empty();
 
     if (typeof this.dataFrame !== 'undefined')
@@ -170,13 +171,14 @@ export class Logo extends DG.JsViewer {
   getInfoFromDf() {
     let index: number = 0;
     this.ppm = [];
+    const separator = getSeparator((this.dataFrame.columns as DG.ColumnList).bySemType(C.SEM_TYPES.ALIGNED_SEQUENCE)!);
 
     for (const col of this.splitted!.columns) {
       const size = col.length;
       this.ppm.push(new Array(22).fill(0));
       for (let i = 0; i < col.length; i++) {
         const c = col.get(i);
-        if (c != '-') {
+        if (c != separator) {
           if (c[1] == '(')
             this.ppm[index][this.PROT_NUMS[c.substr(0, 1).toUpperCase()]] += 1 / size;
           else if (c.substr(0, 3) in ChemPalette.AAFullNames && (c.length == 3 || c.at(3) == '('))
