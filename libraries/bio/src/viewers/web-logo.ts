@@ -95,6 +95,8 @@ export class WebLogo extends DG.JsViewer {
   public startPositionName: string | null;
   public endPositionName: string | null;
   public fixWidth: boolean;
+  public verticalAlignment: string | null;
+  public horizontalAlignment: string | null;
 
   private positionNames: string[] = [];
 
@@ -112,9 +114,12 @@ export class WebLogo extends DG.JsViewer {
 
     this.textBaseline = 'top';
 
-    this.positionWidth = this.float('positionWidth', 16);
-    this.minHeight = this.float('minHeight', 50);
-    this.maxHeight = this.float('maxHeight', 100);
+    this.positionWidth = this.float('positionWidth', 16/*,
+      {editor: 'slider', min: 4, max: 64, postfix: 'px'}*/);
+    this.minHeight = this.float('minHeight', 50/*,
+      {editor: 'slider', min: 25, max: 250, postfix: 'px'}*/);
+    this.maxHeight = this.float('maxHeight', 100/*,
+      {editor: 'slider', min: 25, max: 500, postfix: 'px'}*/);
 
     this.considerNullSequences = this.bool('considerNullSequences', false);
     this.sequenceColumnName = this.string('sequenceColumnName', null);
@@ -123,6 +128,11 @@ export class WebLogo extends DG.JsViewer {
     this.endPositionName = this.string('endPositionName', null);
 
     this.fixWidth = this.bool('fixWidth', false);
+
+    this.verticalAlignment = this.string('verticalAlignment', 'middle',
+      {choices: ['top', 'middle', 'bottom']});
+    this.horizontalAlignment = this.string('horizontalAlignment', 'center',
+      {choices: ['left', 'center', 'right']});
   }
 
   private async init(): Promise<void> {
@@ -143,8 +153,6 @@ export class WebLogo extends DG.JsViewer {
     // this.slider = ui.rangeSlider(0, 20, 2, 5);
     // this.slider.root.style.width = '100%';
     // this.slider.root.style.height = '12px';
-
-    // this.host = ui.divV([/*this.slider,*/this.canvas]);
 
     const getMonomer = (p: DG.Point): [number, string | null, PositionMonomerInfo | null] => {
       const jPos = Math.floor(p.x / this.positionWidth);
@@ -205,12 +213,10 @@ export class WebLogo extends DG.JsViewer {
     this.root.append(this.host);
     // this.root.appendChild(this.slider.root);
 
-    this.calcSize();
     this.render(true);
   }
 
   rootOnSizeChanged(args: any) {
-    this.calcSize();
     this.render(true);
 
     // console.debug(`WebLogo.onRootSizeChanged() ` +
@@ -273,19 +279,25 @@ export class WebLogo extends DG.JsViewer {
       this.render(true);
       break;
     case 'minHeight':
-      this.rootOnSizeChanged(null);
+      this.render(true);
       break;
     case 'maxHeight':
-      this.rootOnSizeChanged(null);
+      this.render(true);
       break;
     case 'fixWidth':
+      this.render(true);
+      break;
+    case 'verticalAlignment':
+      this.render(true);
+      break;
+    case 'horizontalAlignment':
       this.render(true);
       break;
     }
   }
 
   async onTableAttached() {
-    console.debug(`WebLogo.onTableAttached( dataFrame = ${this.dataFrame ? 'data' : 'null'} )`);
+    // console.debug(`WebLogo.onTableAttached( dataFrame = ${this.dataFrame ? 'data' : 'null'} )`);
     this.updateSeqCol();
 
     if (this.dataFrame !== void 0) {
@@ -307,6 +319,8 @@ export class WebLogo extends DG.JsViewer {
     if (!this.canvas || !this.host || !this.seqCol || !this.dataFrame ||
       this.startPosition === -1 || this.endPosition === -1)
       return;
+
+    this.calcSize();
 
     this.positions = new Array(this.Length);
     for (let jPos = 0; jPos < this.Length; jPos++) {
@@ -408,7 +422,6 @@ export class WebLogo extends DG.JsViewer {
     //   rowCount -= this.rowsNull;
 
     g.resetTransform();
-    //g.clearRect(0, 0, this.canvas.width, this.canvas.height);
     g.fillStyle = 'white';
     g.fillRect(0, 0, this.canvas.width, this.canvas.height);
     g.textBaseline = this.textBaseline;
@@ -471,24 +484,58 @@ export class WebLogo extends DG.JsViewer {
     this.canvas.width = width;
     this.canvas.style.width = `${width}px`;
 
-    let height = Math.min(this.maxHeight, Math.max(this.minHeight, this.root.clientHeight));
-    if (width > this.root.clientWidth) /* horizontal scroller is enabled */
-      height -= 6; /* free some space for horizontal scroller */
-    this.canvas.height = height;
-    this.canvas.style.height = `${height}px`;
+    const height = Math.min(this.maxHeight, Math.max(this.minHeight, this.root.clientHeight));
+    // const canvasHeight: number = width > this.root.clientWidth ? height - 8 : height;
+    this.host.style.setProperty('height', `${height}px`);
+    const canvasHeight: number = this.host.clientHeight;
+    this.canvas.height = canvasHeight;
+    this.canvas.style.setProperty('height', `${canvasHeight}px`);
 
     // Adjust host and root width
     if (this.fixWidth) {
       // full width for canvas host and root
       this.root.style.width = this.host.style.width = `${width}px`;
-      this.root.style.height = this.host.style.height = `${height}px`;
+      this.root.style.height /*= this.host.style.height*/ = `${height}px`;
       this.host.style.setProperty('overflow', 'hidden', 'important');
     } else {
       // allow scroll canvas in root
       this.root.style.width = this.host.style.width = '100%';
       this.host.style.overflowX = 'auto!important';
       this.host.style.setProperty('overflow', null);
+
+      this.host.style.setProperty('text-align', this.horizontalAlignment);
+
+      // vertical alignment
+      let hostTopMargin = 0;
+      switch (this.verticalAlignment) {
+      case 'top':
+        hostTopMargin = 0;
+        break;
+      case 'middle':
+        hostTopMargin = Math.max(0, (this.root.clientHeight - height) / 2);
+        break;
+      case 'bottom':
+        hostTopMargin = Math.max(0, this.root.clientHeight - height);
+        break;
+      }
+      this.host.style.setProperty('margin-top', `${hostTopMargin}px`, 'important');
+
+      if (this.root.clientHeight < height) {
+        this.host.style.setProperty('height', `${this.root.clientHeight}px`);
+        this.host.style.setProperty('overflow-y', null);
+      } else {
+        this.host.style.setProperty('overflow-y', 'hidden', 'important');
+      }
     }
+
+    // console.debug(
+    //   `this.root.style.height = ${this.root.style.height}\n` +
+    //   `this.root.clientHeight = ${this.root.clientHeight}\n` +
+    //   `this.host.style.height = ${this.host.style.height}\n` +
+    //   `this.host.clientHeight = ${this.host.clientHeight}\n` +
+    //   '\n' +
+    //   `this.canvas.height       = ${this.canvas.height}\n` +
+    //   `this.canvas.style.height = ${this.canvas.style.height}`);
   }
 
   /**
