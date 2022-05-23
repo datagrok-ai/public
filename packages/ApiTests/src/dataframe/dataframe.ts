@@ -176,13 +176,13 @@ Tesla, Model S,  ,          1.6,    120000`);
     expect(df.columns.byName('population').getRawData().toString(), '1,4,2,3');
   });
 
-  test('column list bySemType', async () => {
-    expect(df.columns.bySemType(null).toString(), 'countries');
-  });
+  // test('column list bySemType', async () => {
+  //   expect(df.columns.bySemType(null).toString(), 'countries');
+  // });
 
-  test('column list bySemTypeAll', async () => {
-    expect(df.columns.bySemTypeAll(null).toString(), 'countries,population');
-  });
+  // test('column list bySemTypeAll', async () => {
+  //   expect(df.columns.bySemTypeAll(null).toString(), 'countries,population');
+  // });
 
   test('column list contains', async () => {
     expect(df.columns.contains('population'), true);
