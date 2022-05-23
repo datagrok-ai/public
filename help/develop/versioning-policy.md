@@ -6,7 +6,7 @@
 ## Docker Image Versioning policy
 
 The Datagrok versioning policy requires to include a major, minor, and test version number and look
-like: `MAJOR.MINOR.TEST`.
+like: `MAJOR.MINOR.PATCH-<BUILD>`.
 
 ### Major release
 
@@ -20,23 +20,40 @@ concepts.
 For a major release, the `MAJOR` component must be incremented by one, and the `MINOR` and `TEST`
 components must be set to zero.
 
+The [CI/CD Flow for patch releases](CI_flow.md#major-release) includes all checks, and deployment to all envieonments.
+
 ### Minor release
 
-Minor releases are the most common type of release which has the most recent features and bugfixes. Every release is
-tested on the dev environment and passes all [quality assurance](admin/quality-assurance.md) requirements.
+Minor releases are the stable release which has the most recent features. Every release is tested on the test
+environment and passes all [quality assurance](admin/quality-assurance.md) requirements.
 
-For a minor release, the `MINOR` component must be incremented by one, and the `TEST` component must be set to zero.
+For a minor release, the `MINOR` component must be incremented by one, and the `PATCH` component must be set to zero.
 The `MAJOR` component must remain unchanged.
 
-### Test release
+The [CI/CD Flow for patch releases](CI_flow.md#minor-release) includes all checks, and deployment to dev and test
+environments.
 
-Test releases are unstable. We do not recommend them for production usage.
+### Patch release
+
+Patch releases are the most common type of release which has the most recent bugfixes and small new features. Every
+release is tested on the dev environment and passes all [quality assurance](admin/quality-assurance.md) requirements.
+
+For a patch release, the `PATCH` component must be incremented by one, and the `MINOR` and `MAJOR`
+components must remain unchanged.
+
+The [CI/CD Flow for patch releases](CI_flow.md#patch-release) includes all checks, and deployment to dev environment.
+
+### Build release
+
+Build releases are unstable. We do not recommend them for production usage.
 
 It may contain breaking changes, unstable features, serious errors, could cause crashes. Also, it may not include all
 the features that are already in other versions.
 
-For a test release, the `TEST` component must be incremented by one, and the `MINOR` and `MAJOR`
+For a test release, the `BUILD` component must be added to version, and the `PATCH`, `MINOR` and `MAJOR`
 components must remain unchanged.
+
+The [CI/CD Flow for build releases](CI_flow.md#build-release) is simple and does not include most of the checks.
 
 ### Version information in Docker image
 
@@ -62,7 +79,8 @@ Every Docker container has information about version and branch it was build on:
     Commit public: <commit>
     ```
 
-See also:
+### More information
 
 * [Release History](release-history.md)
 * [Stable Releases](release-stable.md)
+* [CI/CD Flow](CI_flow.md)
