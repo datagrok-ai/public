@@ -4,19 +4,20 @@ import * as rxjs from 'rxjs';
 import * as GridUtils from '../utils/GridUtils';
 import {GridCellRendererEx} from "./GridCellRendererEx";
 
-function getRenderer(cellGrid : DG.GridCell) : DG.GridCellRenderer {
+function getRenderer(cellGrid : DG.GridCell) : GridCellRendererEx | null {
   const colGrid = cellGrid.gridColumn;
   if (colGrid === null || colGrid === undefined) {
     throw new Error('Grid cell is detached from the Grid column');
   }
 
-  let renderer : DG.GridCellRenderer | null = GridUtils.getGridColumnRenderer(colGrid);
+  let renderer : GridCellRendererEx | null = GridUtils.getGridColumnRenderer(colGrid);
   if(renderer !== null) {
     return renderer;
   }
 
-  renderer = cellGrid.renderer;
-  return renderer;
+  //renderer = cellGrid.renderer;
+  //return renderer;
+  return null;
 }
 
 function convertToCellXY(arXY : Array<number>, cellGrid : DG.GridCell, e : MouseEvent) : void {
@@ -63,7 +64,7 @@ class RendererUIManagerImpl {
           return;
         }
         const renderer = getRenderer(cell);
-        if(renderer instanceof GridCellRendererEx) {//  onMouseEvent(e, cell, 'onMouseDown');
+        if(renderer instanceof GridCellRendererEx) {
           convertToCellXY(arXY, cell, eMouse);
           renderer.onMouseDownEx(cell, eMouse, arXY[0], arXY[1]);
         }
@@ -79,7 +80,7 @@ class RendererUIManagerImpl {
         }
 
       const renderer = getRenderer(cell);
-      if(renderer instanceof GridCellRendererEx) {//  onMouseEvent(e, cell, 'onMouseDown');
+      if(renderer instanceof GridCellRendererEx) {
         convertToCellXY(arXY, cell, eMouse);
         renderer.onMouseUpEx(cell, eMouse, arXY[0], arXY[1]);
       }
