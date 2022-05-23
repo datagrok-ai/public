@@ -75,7 +75,7 @@ export function _viewerGallery(): void {
       let panel = view.getRibbonPanels();
       panel[0][1].remove();
       
-      let icon = ui.iconFA('', ()=>{viewersGallery()});
+      let icon = ui.iconFA('', ()=>{viewersGallery()}, 'Add viewer');
       icon.className = 'grok-icon svg-icon svg-add-viewer';
 
       let btn = ui.div([icon]);
