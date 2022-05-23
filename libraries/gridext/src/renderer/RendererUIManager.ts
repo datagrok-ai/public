@@ -51,9 +51,6 @@ export class RendererUIManager {
     }
 
     const manager = new RendererUIManagerImpl(grid);
-    const dart = DG.toDart(grid);
-    dart.m_managerUIRenderer = manager;
-
     return true;
   }
 
@@ -65,7 +62,6 @@ export class RendererUIManager {
     const dart = DG.toDart(grid);
     const manager = dart.m_managerUIRenderer;
     manager.dispose();
-    dart.m_managerUIRenderer = null;
     return true;
   }
 }
@@ -75,6 +71,8 @@ export class RendererUIManager {
 class RendererUIManagerImpl {
   constructor(grid : DG.Grid) {
     this.m_grid = grid;
+    const dart = DG.toDart(grid);
+    dart.m_managerUIRenderer = this;
 
     this.m_handlerCellRender = grid.onCellRender.subscribe((args) => {
 
@@ -113,7 +111,7 @@ class RendererUIManagerImpl {
         if (cell === null || cell === undefined || cell.dart === undefined || !cell.isTableCell) {
           return;
         }
-        //onMouseEvent(e, cell, 'onMouseUp');
+
       const renderer = getRenderer(cell);
       if(renderer instanceof GridCellRendererEx) {//  onMouseEvent(e, cell, 'onMouseDown');
         convertToCellXY(arXY, cell, eMouse);
@@ -133,8 +131,6 @@ class RendererUIManagerImpl {
             convertToCellXY(arXY, cell, eMouse);
             renderer.onClickEx(cell, eMouse, arXY[0], arXY[1]);
           }
-
-          //onMouseEvent(e, cell, 'onClick');
         }
 
         nXDown = -1;
@@ -154,8 +150,6 @@ class RendererUIManagerImpl {
             convertToCellXY(arXY, cell, eMouse);
             renderer.onMouseEnterEx(cell, eMouse, arXY[0], arXY[1]);
           }
-
-          //onMouseEvent(e, cell, 'onMouseEnter');
         }
 
         if (cellCurrent !== null && (cell === null || cellCurrent.gridColumn.name !== cell.gridColumn.name || cellCurrent.gridRow !== cell.gridRow)) {
@@ -197,8 +191,6 @@ class RendererUIManagerImpl {
             convertToCellXY(arXY, cellCurrent, eMouse);
             renderer.onMouseLeaveEx(cellCurrent, eMouse, arXY[0], arXY[1]);
           }
-
-          //onMouseEvent(e, cellCurrent, 'onMouseLeave');
         }
 
         cellCurrent = null;
@@ -238,6 +230,8 @@ class RendererUIManagerImpl {
     this.m_handlerViewerClosed.unsubscribe();
     this.m_handlerViewerClosed = null;
 
+    const dart = DG.toDart(this.m_grid);
+    dart.m_managerUIRenderer = null;
     this.m_grid = null;
   }
 
