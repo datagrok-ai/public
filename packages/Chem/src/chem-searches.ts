@@ -13,8 +13,7 @@ import {tanimotoSimilarity} from '@datagrok-libraries/utils/src/similarity-metri
 import {assure} from '@datagrok-libraries/utils/src/test';
 
 function _chemFindSimilar(molStringsColumn: DG.Column,
-      queryMolString: string, settings: { [name: string]: any }): DG.DataFrame {
-
+  queryMolString: string, settings: { [name: string]: any }): DG.DataFrame {
   const len = molStringsColumn.length;
   const distances = _chemGetSimilarities(queryMolString);
   const limit = Math.min((settings.hasOwnProperty('limit') ? settings.limit : len), len);
@@ -56,13 +55,20 @@ function _chemGetSimilarities(queryMolString: string): number[] {
 }
 
 class CacheParams {
-  cachedForCol : DG.Column | null = null;
-  cachedForColVersion: number | null = null;
-  column: DG.Column | null = null;
-  query: string | null = null;
-  moleculesWereIndexed: boolean | null = false;
-  morganFingerprintsWereIndexed: boolean | null = false;
-  morganFingerprints: BitArray[] | null = null;
+  // cachedForCol : DG.Column | null = null;
+  // cachedForColVersion: number | null = null;
+  // column: DG.Column | null = null;
+  // query: string | null = null;
+  // moleculesWereIndexed: boolean | null = false;
+  // morganFingerprintsWereIndexed: boolean | null = false;
+  // morganFingerprints: BitArray[] | null = null;
+  morganFingerprintsData: DG.Column | null = null;
+  get morganFingerprints(): BitArray[] | null {
+    if (this.morganFingerprintsData == null)
+      return null;
+    else
+      return this.morganFingerprintsData.toList().map((el) => BitArray.fromBytes(el));
+  }
 }
 
 const _chemCache = new CacheParams();
@@ -72,17 +78,18 @@ async function _invalidate(
   includeFingerprints: boolean, endSection = true): Promise<void> {
   await chemBeginCriticalSection();
   try {
-    const sameColumnAndVersion = () =>
-      molStringsColumn === _chemCache.cachedForCol &&
-      molStringsColumn.version === _chemCache.cachedForColVersion;
-    if (!sameColumnAndVersion() || !includeFingerprints && (queryMolString === null || queryMolString.length === 0)) {
-      _chemCache.cachedForCol = molStringsColumn;
-      _chemCache.cachedForColVersion = molStringsColumn.version;
-      _chemCache.moleculesWereIndexed = false;
-      _chemCache.morganFingerprintsWereIndexed = false;
-      _chemCache.morganFingerprints = null;
+    const fingerprintColumnName = molStringsColumn.name + 'Fingerprints';
+    const sameColumnAndVersion1 = () =>
+      molStringsColumn.getTag('_fingerprintsColumnName') &&
+      molStringsColumn.getTag('_fingerprintsColumnVersion') == String(molStringsColumn.version);
+    if (!sameColumnAndVersion1() || !molStringsColumn.getTag('_includeFingerprints') &&
+      (queryMolString === null || queryMolString.length === 0)) {
+      molStringsColumn.setTag('_fingerprintsColumnName', fingerprintColumnName);
+      molStringsColumn.setTag('_moleculesWereIndexed', 'false');
+      molStringsColumn.setTag('_morganFingerprintsWereIndexed', 'false');
+      molStringsColumn.setTag('_fingerprintsColumnVersion', String(molStringsColumn.version + 1));
     }
-    if (sameColumnAndVersion() && !_chemCache.moleculesWereIndexed) {
+    if (sameColumnAndVersion1() && !(molStringsColumn.getTag('_moleculesWereIndexed') == 'true')) {
       // TODO: avoid creating an additional array here
       const {molIdxToHash, hashToMolblock} =
         await (await getRdKitService()).initMoleculesStructures(molStringsColumn.toList());
@@ -101,22 +108,82 @@ async function _invalidate(
         if (needsUpdate) {
           // This seems to be the only way to trigger re-calculation of categories
           molStringsColumn.compact();
-          _chemCache.cachedForColVersion = molStringsColumn.version;
         }
       }
-      _chemCache.moleculesWereIndexed = true;
-      _chemCache.morganFingerprintsWereIndexed = false;
-      _chemCache.morganFingerprints = null;
-      console.log(`RdKit molecules for a dataset ${_chemCache.cachedForCol?.name} invalidated`);
+      molStringsColumn.setTag('_moleculesWereIndexed', 'true');
+      molStringsColumn.setTag('_morganFingerprintsWereIndexed', 'false');
+      molStringsColumn.setTag('_fingerprintsColumnVersion', String(molStringsColumn.version + 1));
+
+      console.log(`RdKit molecules for a dataset ${molStringsColumn?.name} invalidated`);
     }
     if (includeFingerprints) {
-      if (sameColumnAndVersion() && !_chemCache.morganFingerprintsWereIndexed) {
+      if (sameColumnAndVersion1() && !(molStringsColumn.getTag('_morganFingerprintsWereIndexed') == 'true')) {
         await (await getRdKitService()).initMorganFingerprints();
-        _chemCache.morganFingerprintsWereIndexed = true;
-        _chemCache.morganFingerprints = await (await getRdKitService()).getMorganFingerprints();
-        console.log(`Morgan fingerprints for a dataset ${_chemCache.cachedForCol?.name} invalidated`);
+        molStringsColumn.setTag('_morganFingerprintsWereIndexed', 'true');
+        molStringsColumn.setTag('_fingerprintsColumnVersion', String(molStringsColumn.version + 1));
+        const morganFingerprints = await (await getRdKitService()).getMorganFingerprints();
+        const newCol = DG.Column.fromType(DG.COLUMN_TYPE.BYTE_ARRAY,
+          molStringsColumn.getTag('_fingerprintsColumnName'),
+          morganFingerprints.length);
+
+        for (let i = 0; i < morganFingerprints.length; i++)
+          newCol.set(i, new Uint8Array(morganFingerprints[i].buffer.buffer));
+
+        const df = molStringsColumn.dataFrame;
+        if (df.columns.names().includes(fingerprintColumnName))
+          df.columns.replace(fingerprintColumnName, newCol);
+        else
+          df.columns.add(newCol);
+
+        console.log(`Morgan fingerprints for a dataset ${molStringsColumn?.name} invalidated`);
       }
+      _chemCache.morganFingerprintsData = molStringsColumn.dataFrame.columns.byName(fingerprintColumnName);
     }
+    // const sameColumnAndVersion = () =>
+    //   molStringsColumn === _chemCache.cachedForCol &&
+    //   molStringsColumn.version === _chemCache.cachedForColVersion;
+    // if (!sameColumnAndVersion() || !includeFingerprints && (queryMolString === null || queryMolString.length === 0)) {
+    //   _chemCache.cachedForCol = molStringsColumn;
+    //   _chemCache.cachedForColVersion = molStringsColumn.version;
+    //   _chemCache.moleculesWereIndexed = false;
+    //   _chemCache.morganFingerprintsWereIndexed = false;
+    //   _chemCache.morganFingerprints = null;
+    // }
+    // if (sameColumnAndVersion() && !_chemCache.moleculesWereIndexed) {
+    //   // TODO: avoid creating an additional array here
+    //   const {molIdxToHash, hashToMolblock} =
+    //     await (await getRdKitService()).initMoleculesStructures(molStringsColumn.toList());
+    //   let i = 0;
+    //   if (molIdxToHash.length > 0) {
+    //     let needsUpdate = false;
+    //     for (const item of molIdxToHash) {
+    //       const notify = (i === molIdxToHash.length - 1);
+    //       const molStr = hashToMolblock[item];
+    //       if (molStr) {
+    //         molStringsColumn.setString(i, molStr, notify);
+    //         needsUpdate = true;
+    //       }
+    //       ++i;
+    //     }
+    //     if (needsUpdate) {
+    //       // This seems to be the only way to trigger re-calculation of categories
+    //       molStringsColumn.compact();
+    //       _chemCache.cachedForColVersion = molStringsColumn.version;
+    //     }
+    //   }
+    //   _chemCache.moleculesWereIndexed = true;
+    //   _chemCache.morganFingerprintsWereIndexed = false;
+    //   _chemCache.morganFingerprints = null;
+    //   console.log(`RdKit molecules for a dataset ${_chemCache.cachedForCol?.name} invalidated`);
+    // }
+    // if (includeFingerprints) {
+    //   if (sameColumnAndVersion() && !_chemCache.morganFingerprintsWereIndexed) {
+    //     await (await getRdKitService()).initMorganFingerprints();
+    //     _chemCache.morganFingerprintsWereIndexed = true;
+    //     _chemCache.morganFingerprints = await (await getRdKitService()).getMorganFingerprints();
+    //     console.log(`Morgan fingerprints for a dataset ${_chemCache.cachedForCol?.name} invalidated`);
+    //   }
+    // }
   } finally {
     if (endSection)
       chemEndCriticalSection();
@@ -140,7 +207,7 @@ export async function chemGetSimilarities(molStringsColumn: DG.Column, queryMolS
 }
 
 export async function chemFindSimilar(molStringsColumn: DG.Column, queryMolString = '',
-                                      settings: { [name: string]: any } = {}) : Promise<DG.DataFrame | null> {
+  settings: { [name: string]: any } = {}) : Promise<DG.DataFrame | null> {
   assure.notNull(molStringsColumn, 'molStringsColumn');
   assure.notNull(queryMolString, 'queryMolString');
 
