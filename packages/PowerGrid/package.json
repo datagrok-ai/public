@@ -15,7 +15,7 @@
 	"devDependencies": {
 		"@typescript-eslint/eslint-plugin": "^5.20.0",
 		"@typescript-eslint/parser": "^5.20.0",
-		"datagrok-api": "^0.151.3",
+		"datagrok-api": "^1.0.0",
 		"eslint": "latest",
 		"eslint-config-google": "latest",
 		"ts-loader": "latest",

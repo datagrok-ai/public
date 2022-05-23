@@ -10,7 +10,7 @@
     "directory": "packages/SimPKPD"
   },
 	"dependencies": {
-		"datagrok-api": "latest",
+		"datagrok-api": "^1.0.0",
 		"cash-dom": "latest",
 		"dayjs": "latest"
 	},

@@ -12,7 +12,7 @@
     "@datagrok-libraries/statistics": "^0.0.1",
     "@datagrok-libraries/utils": "^0.0.17",
     "cash-dom": "^8.1.0",
-    "datagrok-api": "^0.116.0",
+    "datagrok-api": "^1.0.0",
     "jstat": "^1.9.5",
     "moment": "^2.29.1",
     "ts-loader": "^8.1.0",

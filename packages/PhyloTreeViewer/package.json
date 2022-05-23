@@ -9,7 +9,7 @@
     "directory": "packages/PhyloTreeViewer"
   },
 	"dependencies": {
-		"datagrok-api": "^0.121.0"
+		"datagrok-api": "^1.0.0"
 	},
 	"sources": [
 		"phylotree/phylotree.css",

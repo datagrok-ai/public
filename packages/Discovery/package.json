@@ -10,7 +10,7 @@
     "directory": "packages/Discovery"
   },
   "dependencies": {
-    "datagrok-api": "^0.94.10"
+    "datagrok-api": "^1.0.0"
   },
   "devDependencies": {
     "webpack": "latest",

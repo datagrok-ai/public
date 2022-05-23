@@ -9,7 +9,7 @@
     "directory": "packages/Demo"
   },
   "dependencies": {
-    "datagrok-api": "^0.117.0",
+    "datagrok-api": "^1.0.0",
     "ts-loader": "latest",
     "typescript": "latest"
   },

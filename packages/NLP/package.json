@@ -10,7 +10,7 @@
   },
 	"dependencies": {
 		"aws-sdk": "^2.762.0",
-		"datagrok-api": "^0.94.10",
+		"datagrok-api": "^1.0.0",
 		"util": "^0.12.3"
 	},
 	"devDependencies": {

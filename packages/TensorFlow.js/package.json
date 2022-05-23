@@ -12,7 +12,7 @@
 	"dependencies": {
 		"@tensorflow/tfjs": "latest",
 		"cash-dom": "latest",
-		"datagrok-api": "^0.94.10",
+		"datagrok-api": "^1.0.0",
 		"dayjs": "latest",
 		"jszip": "latest",
 		"jszip-sync": "^3.2.1-sync"

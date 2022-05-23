@@ -12,7 +12,7 @@
 	"dependencies": {
 		"@types/react": "^17.0.39",
 		"@types/react-dom": "^17.0.9",
-		"datagrok-api": "^0.94.10",
+		"datagrok-api": "^1.0.0",
 		"file-loader": "^6.2.0",
 		"ketcher-core": "^1.2.1",
 		"ketcher-react": "^2.4.1",
