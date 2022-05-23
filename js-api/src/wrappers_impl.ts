@@ -63,8 +63,6 @@ export function toDart(x: any): any {
     return x.toDart();
   if (typeof x.dart !== 'undefined')
     return x.dart;
-  if (dayjs.isDayjs(x))
-    return x.valueOf() * 1000;
   return x;
 }
 

@@ -20,8 +20,9 @@ import {filter} from "rxjs/operators";
 import {Widget} from "./widgets";
 import {Grid} from "./grid";
 import {ScatterPlotViewer, Viewer} from "./viewer";
-import {Property, TableInfo} from "./entities";
+import {DateTime, Property, TableInfo} from "./entities";
 import {FormulaLinesHelper} from "./helpers";
+import dayjs from "dayjs";
 
 declare let grok: any;
 declare let DG: any;
@@ -980,6 +981,23 @@ export class Column<T = any> {
   /** @returns {string} */
   toString(): string {
     return api.grok_Object_ToString(this.dart);
+  }
+}
+
+export class DateTimeColumn extends Column<dayjs.Dayjs> {
+
+  get(row: number): dayjs.Dayjs {
+    return dayjs(api.grok_DateTimeColumn_GetValue(this.dart, row));
+  }
+
+  /**
+   * Sets [i]-th value to [x], and optionally notifies the dataframe about this change.
+   * @param {number} i
+   * @param value
+   * @param {boolean} notify
+   */
+  set(i: number, value: dayjs.Dayjs | null, notify: boolean = true): void {
+    api.grok_DateTimeColumn_SetValue(this.dart, i, value?.valueOf(), notify);
   }
 }
 
