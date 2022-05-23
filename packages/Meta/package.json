@@ -1,0 +1,892 @@
+{
+  "name": "@datagrok/meta",
+  "version": "1.0.0",
+  "description": "Meta information for @datagrok scope",
+  "data":{
+    "dev-tools": {
+      "dependencies": {
+        "1.0.1": {
+          "datagrok-api": ">0.94.10"
+        },
+        "1.0.2": {
+          "datagrok-api": ">=0.95.8"
+        },
+        "1.1.2": {
+          "datagrok-api": ">=0.99.0"
+        },
+        "1.2.1": {
+          "datagrok-api": ">=0.99.0"
+        },
+        "1.2.2": {
+          "datagrok-api": ">=0.99.0"
+        },
+        "1.2.3": {
+          "datagrok-api": ">=0.99.0"
+        },
+        "1.3.0": {
+          "datagrok-api": ">=0.149.0"
+        },
+        "1.3.1": {
+          "datagrok-api": "^0.149.0"
+        },
+        "1.3.2": {
+          "datagrok-api": "^0.150.5"
+        },
+        "1.3.3": {
+          "datagrok-api": "^0.150.5"
+        }
+      },
+      "description": "DevTools is a [package](https://datagrok.ai/help/develop/develop#packages) for the [Datagrok](https://datagrok.ai) platform. Its purpose is to simplify and assist in the development of platform extensions. This is achieved through familiarizing developers"
+    },
+    "sqlite": {
+      "dependencies": {
+        "0.0.3": {
+          "datagrok-api": "^0.151.6"
+        },
+        "0.0.4": {
+          "datagrok-api": "^0.151.6"
+        },
+        "0.1.0": {
+          "datagrok-api": "^0.151.6"
+        },
+        "0.1.1": {
+          "datagrok-api": "^0.151.6"
+        },
+        "0.1.2": {
+          "datagrok-api": "^0.151.6"
+        },
+        "0.1.3": {
+          "datagrok-api": "^0.151.6"
+        }
+      },
+      "description": "SQLite is a [package](https://datagrok.ai/help/develop/develop#packages) for the [Datagrok](https://datagrok.ai) platform \r that provides support for importing and previewing SQLite files."
+    },
+    "demo-scripts": {
+      "dependencies": {
+        "1.0.1": {
+          "datagrok-api": "^0.151.6"
+        }
+      },
+      "description": "*DemoScripts* is a [package](https://datagrok.ai/help/develop/develop#packages) for the [Datagrok](https://datagrok.ai) platform. It demonstrates the [scripting](https://datagrok.ai/help/compute/scripting) functionality for [Python](https://www.python.org"
+    },
+    "tutorials": {
+      "dependencies": {
+        "1.0.0": {
+          "datagrok-api": ">0.94.10"
+        },
+        "1.0.1": {
+          "datagrok-api": ">=0.95.8"
+        },
+        "1.0.2": {
+          "datagrok-api": ">=0.95.8"
+        },
+        "1.1.0": {
+          "datagrok-api": ">=0.136.0"
+        },
+        "1.1.1": {
+          "datagrok-api": "^0.136.0"
+        },
+        "1.1.2": {
+          "datagrok-api": "^0.136.0"
+        }
+      },
+      "description": "The package contains a collection of interactive materials helping users explore the [Datagrok](https://datagrok.ai) platform."
+    },
+    "chem": {
+      "dependencies": {
+        "0.33.0": {
+          "datagrok-api": ">0.94.10"
+        },
+        "0.36.0": {
+          "datagrok-api": "^0.151.6"
+        },
+        "0.41.0": {
+          "datagrok-api": ">0.94.10"
+        },
+        "0.41.1": {
+          "datagrok-api": ">0.94.10"
+        },
+        "0.41.2": {
+          "datagrok-api": ">0.94.10"
+        },
+        "0.46.3": {
+          "datagrok-api": ">0.94.10"
+        },
+        "0.47.2": {
+          "datagrok-api": ">0.94.10"
+        },
+        "0.48.1": {
+          "datagrok-api": ">0.94.10"
+        },
+        "0.48.2": {
+          "datagrok-api": ">0.94.10"
+        },
+        "0.49.1": {
+          "datagrok-api": ">=0.115.0"
+        },
+        "0.49.2": {
+          "datagrok-api": ">=0.115.0"
+        },
+        "0.49.3": {
+          "datagrok-api": "^0.115.0"
+        },
+        "0.49.4": {
+          "datagrok-api": "^0.123.0"
+        },
+        "0.50.0": {
+          "datagrok-api": "^0.123.0"
+        },
+        "0.50.1": {
+          "datagrok-api": "^0.123.0"
+        },
+        "0.51.1": {
+          "datagrok-api": "^0.123.0"
+        },
+        "0.51.3": {
+          "datagrok-api": "^0.144.0"
+        },
+        "0.51.4": {
+          "datagrok-api": "^0.151.6"
+        },
+        "0.51.5": {
+          "datagrok-api": "^0.151.6"
+        },
+        "0.51.6": {
+          "datagrok-api": "^0.151.6"
+        },
+        "0.51.8": {
+          "datagrok-api": "^0.151.6"
+        },
+        "0.51.9": {
+          "datagrok-api": "^0.151.6"
+        },
+        "0.51.10": {
+          "datagrok-api": "^0.151.6"
+        },
+        "0.51.11": {
+          "datagrok-api": "^0.151.6"
+        },
+        "0.51.12": {
+          "datagrok-api": "^0.151.6"
+        }
+      },
+      "description": "Cheminformatics support: \n\n* RDKit-based rendering \n* Molecule sketching \n* Feature based analysis"
+    },
+    "demo": {
+      "dependencies": {
+        "0.0.2": {
+          "datagrok-api": "^0.151.6"
+        },
+        "0.0.3": {
+          "datagrok-api": "0.115.0"
+        },
+        "0.0.5": {
+          "datagrok-api": ">=0.115.0"
+        },
+        "0.0.6": {
+          "datagrok-api": ">=0.117.0"
+        },
+        "1.0.0": {
+          "datagrok-api": ">=0.117.0"
+        },
+        "1.0.1": {
+          "datagrok-api": "^0.117.0"
+        },
+        "1.0.2": {
+          "datagrok-api": "^0.117.0"
+        }
+      },
+      "description": "*Demo:Scripts* is a [package](https://datagrok.ai/help/develop/develop#packages) for the [Datagrok](https://datagrok.ai) platform. It demonstrates the [scripting](https://datagrok.ai/help/compute/scripting) functionality for [Python](https://www.python.or"
+    },
+    "sequence-translator": {
+      "dependencies": {
+        "0.0.3": {
+          "datagrok-api": ">0.94.10"
+        },
+        "0.0.4": {
+          "datagrok-api": ">0.94.10"
+        },
+        "0.0.5": {
+          "datagrok-api": ">0.94.10"
+        },
+        "0.0.6": {
+          "datagrok-api": ">0.94.10"
+        },
+        "0.0.8": {
+          "datagrok-api": ">0.94.10"
+        },
+        "0.0.9": {
+          "datagrok-api": ">0.94.10"
+        },
+        "0.0.12": {
+          "datagrok-api": "^0.151.0"
+        }
+      },
+      "description": "![Sequence Translator](img/Sequence%20Translator%20Axolabs.png)"
+    },
+    "power-pack": {
+      "dependencies": {
+        "0.0.2": {
+          "datagrok-api": "^0.151.6"
+        },
+        "0.0.3": {
+          "datagrok-api": "^0.151.6"
+        },
+        "0.0.4": {
+          "datagrok-api": ">=0.95.8"
+        },
+        "0.0.5": {
+          "datagrok-api": ">=0.119.0"
+        },
+        "0.0.6": {
+          "datagrok-api": ">=0.125.0"
+        },
+        "0.0.7": {
+          "datagrok-api": ">=0.125.0"
+        },
+        "0.0.9": {
+          "datagrok-api": ">=0.125.0"
+        },
+        "0.0.10": {
+          "datagrok-api": "^0.125.0"
+        },
+        "0.0.11": {
+          "datagrok-api": "^0.125.0"
+        }
+      },
+      "description": "Commonly used platform enhancements"
+    },
+    "clinical-case": {
+      "dependencies": {
+        "0.0.2": {
+          "datagrok-api": ">0.94.10"
+        },
+        "0.1.0": {
+          "datagrok-api": ">=0.116.0"
+        },
+        "0.1.2": {
+          "datagrok-api": "^0.116.0"
+        }
+      },
+      "description": "Provides support for dealing with clinical data represented in the [SDTM](https://www.cdisc.org/standards/foundational/sdtm) format."
+    },
+    "pubchem-api": {
+      "dependencies": {
+        "0.2.0": {
+          "datagrok-api": "^0.151.6"
+        },
+        "0.2.1": {
+          "datagrok-api": "^0.151.6"
+        },
+        "0.2.2": {
+          "datagrok-api": "^0.151.6"
+        }
+      },
+      "description": ""
+    },
+    "peptides": {
+      "dependencies": {
+        "0.2.0": {
+          "datagrok-api": ">0.95.4"
+        },
+        "0.3.0": {
+          "datagrok-api": ">0.95.4"
+        },
+        "0.4.1": {
+          "datagrok-api": ">0.95.4"
+        },
+        "0.4.2": {
+          "datagrok-api": ">=0.95.11"
+        },
+        "0.4.3": {
+          "datagrok-api": ">=0.95.11"
+        },
+        "0.5.6": {
+          "datagrok-api": ">=0.104.0"
+        },
+        "0.6.0": {
+          "datagrok-api": ">=0.104.0"
+        },
+        "0.6.1": {
+          "datagrok-api": ">=0.104.0"
+        },
+        "0.7.1": {
+          "datagrok-api": ">=0.104.0"
+        },
+        "0.8.4": {
+          "datagrok-api": ">=0.104.0"
+        },
+        "0.8.5": {
+          "datagrok-api": ">=0.104.0"
+        },
+        "0.8.6": {
+          "datagrok-api": ">=0.115.0"
+        },
+        "0.8.7": {
+          "datagrok-api": ">=0.115.0"
+        },
+        "0.8.8": {
+          "datagrok-api": ">=0.115.0"
+        },
+        "0.8.9": {
+          "datagrok-api": ">=0.123.0"
+        },
+        "0.8.10": {
+          "datagrok-api": ">=0.123.0"
+        },
+        "0.8.12": {
+          "datagrok-api": "^0.148.6"
+        },
+        "0.8.13": {
+          "datagrok-api": "^0.148.6"
+        },
+        "0.8.14": {
+          "datagrok-api": "^0.148.6"
+        }
+      },
+      "description": "Provides advanced tools for analyzing collections of peptides."
+    },
+    "ca-marvin": {
+      "dependencies": {
+        "0.1.0": {
+          "datagrok-api": "^0.151.6"
+        },
+        "0.1.1": {
+          "datagrok-api": "^0.151.6"
+        },
+        "0.1.2": {
+          "datagrok-api": "^0.151.6"
+        },
+        "0.1.3": {
+          "datagrok-api": "^0.151.6"
+        }
+      },
+      "description": "caMarvin is a [package](https://datagrok.ai/help/develop/develop#packages) for the [Datagrok](https://datagrok.ai) platform."
+    },
+    "oligo-batch-calculator": {
+      "dependencies": {
+        "0.0.3": {
+          "datagrok-api": ">0.94.10"
+        },
+        "0.0.4": {
+          "datagrok-api": ">0.94.10"
+        },
+        "0.0.5": {
+          "datagrok-api": "^0.94.10"
+        },
+        "0.0.6": {
+          "datagrok-api": "^0.94.10"
+        }
+      },
+      "description": "![Oligo Batch Calculator](img/screen.jpg)"
+    },
+    "drug-bank": {
+      "dependencies": {
+        "0.0.3": {
+          "datagrok-api": ">0.94.10"
+        },
+        "0.0.4": {
+          "datagrok-api": "^0.94.10"
+        },
+        "0.0.5": {
+          "datagrok-api": "^0.94.10"
+        }
+      },
+      "description": "DrugBank is a [package](https://datagrok.ai/help/develop/develop#packages) for the [Datagrok](https://datagrok.ai) platform."
+    },
+    "grok-scripts": {
+      "dependencies": {
+        "1.0.0": {
+          "datagrok-api": "^0.151.6"
+        },
+        "1.0.1": {
+          "datagrok-api": "^0.151.6"
+        }
+      },
+      "description": "Grok Scripts"
+    },
+    "api-tests": {
+      "dependencies": {
+        "0.0.2": {
+          "datagrok-api": "0.110.0"
+        },
+        "0.0.3": {
+          "datagrok-api": "^0.145.0"
+        },
+        "0.0.4": {
+          "datagrok-api": "^0.145.0"
+        }
+      },
+      "description": "js-api-tests is a [package](https://datagrok.ai/help/develop/develop#packages) for the [Datagrok](https://datagrok.ai) platform."
+    },
+    "api-samples": {
+      "dependencies": {
+        "1.0.1": {
+          "datagrok-api": "^0.151.6"
+        },
+        "1.0.2": {
+          "datagrok-api": "^0.151.6"
+        }
+      },
+      "description": "API Samples"
+    },
+    "usage-analysis": {
+      "dependencies": {
+        "0.0.3": {
+          "datagrok-api": ">=0.116.0"
+        },
+        "0.0.4": {
+          "datagrok-api": ">=0.116.0"
+        }
+      },
+      "description": "Usage Analysis System"
+    },
+    "multiplot": {
+      "dependencies": {},
+      "description": "MultiPlot is a [package](https://datagrok.ai/help/develop/develop#packages) for the [Datagrok](https://datagrok.ai) platform."
+    },
+    "sdtm": {
+      "dependencies": {
+        "1.0.0": {
+          "datagrok-api": "^0.151.6"
+        }
+      },
+      "description": "SDTM Viewer"
+    },
+    "impute": {
+      "dependencies": {
+        "1.0.2": {
+          "datagrok-api": ">0.94.10"
+        },
+        "1.0.3": {
+          "datagrok-api": "^0.94.10"
+        },
+        "1.0.4": {
+          "datagrok-api": "^0.94.10"
+        }
+      },
+      "description": "Impute is a [package](https://datagrok.ai/help/develop/develop#packages) for the [Datagrok](https://datagrok.ai) platfrom. It provides the user with a selection of tools designed to impute an incomplete dataset in an orderly predictive fashion,  so as to"
+    },
+    "nlp": {
+      "dependencies": {
+        "1.0.0": {
+          "datagrok-api": ">0.94.10"
+        },
+        "1.0.1": {
+          "datagrok-api": "^0.94.10"
+        },
+        "1.0.2": {
+          "datagrok-api": "^0.94.10"
+        }
+      },
+      "description": "Natural Language Processing Package"
+    },
+    "charpy": {
+      "dependencies": {},
+      "description": "ChaRPy is a [package](https://datagrok.ai/help/develop/develop#packages) for the [Datagrok](https://datagrok.ai) platform. It extends Datagrok viewers with two commands, \"To Python script\" and \"To R script\", which translate a selected viewer to Python or"
+    },
+    "compute": {
+      "dependencies": {
+        "0.2.5": {
+          "datagrok-api": ">=0.95.8"
+        },
+        "0.2.6": {
+          "datagrok-api": ">=0.95.8"
+        },
+        "0.2.7": {
+          "datagrok-api": ">=0.95.8"
+        },
+        "0.2.8": {
+          "datagrok-api": ">=0.95.8"
+        },
+        "0.3.0": {
+          "datagrok-api": ">=0.95.8"
+        },
+        "0.4.0": {
+          "datagrok-api": ">=0.95.8"
+        },
+        "0.4.1": {
+          "datagrok-api": ">=0.95.8"
+        },
+        "0.5.1": {
+          "datagrok-api": ">=0.98.0"
+        },
+        "0.6.1": {
+          "datagrok-api": ">=0.99.0"
+        },
+        "0.6.2": {
+          "datagrok-api": ">=0.99.0"
+        },
+        "0.6.3": {
+          "datagrok-api": ">=0.99.0"
+        },
+        "0.6.4": {
+          "datagrok-api": ">=0.99.0"
+        },
+        "0.6.5": {
+          "datagrok-api": ">=0.99.0"
+        },
+        "0.6.6": {
+          "datagrok-api": ">=0.99.0"
+        },
+        "0.6.7": {
+          "datagrok-api": ">=0.99.0"
+        },
+        "0.7.1": {
+          "datagrok-api": ">=0.99.0"
+        },
+        "0.7.2": {
+          "datagrok-api": "^0.148.1"
+        },
+        "0.7.3": {
+          "datagrok-api": "^0.151.0"
+        }
+      },
+      "description": "Provides additional analytical and UI blocks for  [Datagrok scientific computing](../../help/compute/compute.md)"
+    },
+    "seldon": {
+      "dependencies": {},
+      "description": "Seldon is a [package](https://datagrok.ai/help/develop/develop#packages) for the [Datagrok](https://datagrok.ai) platform. It allows connecting to a [Seldon Cluster](https://www.seldon.io/) with deployed machine learning models and easily apply them withi"
+    },
+    "chembl": {
+      "dependencies": {
+        "0.0.1": {
+          "datagrok-api": "^0.151.6"
+        },
+        "0.0.2": {
+          "datagrok-api": "^0.151.6"
+        },
+        "0.0.3": {
+          "datagrok-api": "^0.151.6"
+        }
+      },
+      "description": "Chembl integration"
+    },
+    "widgets": {
+      "dependencies": {},
+      "description": "A collection of commonly used widgets, viewers, filters, and cell renderers."
+    },
+    "charts": {
+      "dependencies": {
+        "0.0.5": {
+          "datagrok-api": ">0.94.10"
+        },
+        "0.0.6": {
+          "datagrok-api": ">0.94.10"
+        },
+        "0.0.7": {
+          "datagrok-api": ">0.94.10"
+        },
+        "0.0.8": {
+          "datagrok-api": ">0.94.10"
+        },
+        "0.0.9": {
+          "datagrok-api": ">0.94.10"
+        },
+        "0.1.0": {
+          "datagrok-api": ">0.94.10"
+        },
+        "0.1.1": {
+          "datagrok-api": "^0.94.10"
+        },
+        "0.1.2": {
+          "datagrok-api": "^0.94.10"
+        }
+      },
+      "description": "Charts is a [package](https://datagrok.ai/help/develop/develop#packages) for the [Datagrok](https://datagrok.ai) platform. It provides visualizations built using the [ECharts](https://echarts.apache.org/en/index.html) library."
+    },
+    "bio-signals": {
+      "dependencies": {
+        "0.0.3": {
+          "datagrok-api": ">0.94.10"
+        },
+        "0.0.4": {
+          "datagrok-api": "^0.94.10"
+        },
+        "0.0.5": {
+          "datagrok-api": "^0.94.10"
+        }
+      },
+      "description": "BioSignals is a [package](https://datagrok.ai/help/develop/develop#packages) for the [Datagrok](https://datagrok.ai) platfrom. The goal of the project is to offer an efficient and automated biosignal processing routine. The initial version is based on [py"
+    },
+    "dsp": {
+      "dependencies": {
+        "0.0.3": {
+          "datagrok-api": ">0.94.10"
+        }
+      },
+      "description": "A pack of various digital signal processing tools"
+    },
+    "chembl-browser": {
+      "dependencies": {},
+      "description": "Chembl Browser is a [package](https://datagrok.ai/help/develop/develop#packages) for the [Datagrok](https://datagrok.ai) platfrom. The goal of the project is to demonstrate opportunities of the platform to build usable apps with a comfortable interface to"
+    },
+    "discovery": {
+      "dependencies": {},
+      "description": "Discovery is a [package](https://datagrok.ai/help/develop/develop#packages) for the [Datagrok](https://datagrok.ai) platform. It ships a playground app \"Discovery\" which we use for trying out and showcasing new functionality of Datagrok platform at demos"
+    },
+    "simpkpd": {
+      "dependencies": {
+        "0.0.1": {
+          "datagrok-api": "^0.151.6"
+        },
+        "0.0.2": {
+          "datagrok-api": "^0.151.6"
+        }
+      },
+      "description": "SimPKPD is a [package](https://datagrok.ai/help/develop/develop#packages) for the [Datagrok](https://datagrok.ai) platform."
+    },
+    "multi-form": {
+      "dependencies": {
+        "0.2.0": {
+          "datagrok-api": "^0.151.6"
+        },
+        "0.2.1": {
+          "datagrok-api": "^0.151.6"
+        }
+      },
+      "description": "MultiForm viewer provides a convenient way to visualize a set of selected rows."
+    },
+    "tensorflow-dev": {
+      "dependencies": {},
+      "description": "TensorFlow.js is a [package](https://datagrok.ai/help/develop/develop#packages) for the [Datagrok](https://datagrok.ai) platform which provies support for training and applying TensorFlow.js-based predictive models."
+    },
+    "schemas-demo": {
+      "dependencies": {
+        "1.0.0": {
+          "datagrok-api": "^0.151.6"
+        }
+      },
+      "description": "Demonstrates relations between schemas, properties, files, and functions"
+    },
+    "chembl-api": {
+      "dependencies": {},
+      "description": "ChemblAPI is a [package](https://datagrok.ai/help/develop/develop#packages) for the [Datagrok](https://datagrok.ai) platform."
+    },
+    "notebooks": {
+      "dependencies": {
+        "0.2.13": {
+          "datagrok-api": ">0.94.10"
+        },
+        "0.3.0": {
+          "datagrok-api": ">0.94.10"
+        },
+        "0.3.1": {
+          "datagrok-api": "^0.94.10"
+        },
+        "0.3.2": {
+          "datagrok-api": "^0.94.10"
+        }
+      },
+      "description": "JupyterLab Notebooks integration package"
+    },
+    "custom-ml": {
+      "dependencies": {
+        "0.0.3": {
+          "datagrok-api": ">0.94.10"
+        }
+      },
+      "description": "CustomML is a [package](https://datagrok.ai/help/develop/develop#packages) for the [custom machine learning models](https://datagrok.ai/help/learn/custom-ml-models)."
+    },
+    "phylotree-viewer": {
+      "dependencies": {
+        "0.0.3": {
+          "datagrok-api": ">0.94.10"
+        },
+        "0.0.4": {
+          "datagrok-api": ">=0.121.0"
+        },
+        "0.0.5": {
+          "datagrok-api": "^0.121.0"
+        },
+        "0.0.6": {
+          "datagrok-api": "^0.121.0"
+        }
+      },
+      "description": "*PhyloTreeViewer* is a [Datagrok package](https://datagrok.ai/help/develop/develop#packages) for phylogenetic trees visualization."
+    },
+    "ketcher": {
+      "dependencies": {
+        "0.0.29": {
+          "datagrok-api": ">0.94.10"
+        },
+        "0.0.31": {
+          "datagrok-api": "^0.94.10"
+        }
+      },
+      "description": "Adds [Ketcher](https://lifescience.opensource.epam.com/ketcher/index.html) as an optional molecular sketcher."
+    },
+    "bio": {
+      "dependencies": {},
+      "description": "sequences1 is a [package](https://datagrok.ai/help/develop/develop#packages) for the [Datagrok](https://datagrok.ai) platform."
+    },
+    "viewers": {
+      "dependencies": {
+        "0.0.2": {
+          "datagrok-api": ">0.94.10"
+        },
+        "0.0.3": {
+          "datagrok-api": ">0.94.10"
+        }
+      },
+      "description": "Set of custom JavaScript viewers"
+    },
+    "sunburst": {
+      "dependencies": {
+        "1.0.0": {
+          "datagrok-api": "^0.1.42"
+        },
+        "1.0.1": {
+          "datagrok-api": "^0.1.42"
+        },
+        "1.0.2": {
+          "datagrok-api": "^0.1.42"
+        }
+      },
+      "description": "Sunburst chart for the datagrok platform"
+    },
+    "repertoire-browser": {
+      "dependencies": {
+        "0.1.0": {
+          "datagrok-api": ">=0.95.5"
+        }
+      },
+      "description": "RepertoireBrowser is a [package](https://datagrok.ai/help/develop/develop#packages) for the [Datagrok](https://datagrok.ai) platform."
+    },
+    "vdj-tools": {
+      "dependencies": {},
+      "description": "VDJtools is a [package](https://datagrok.ai/help/develop/develop#packages) for the [Datagrok](https://datagrok.ai) platform."
+    },
+    "ngl-viewer": {
+      "dependencies": {
+        "0.1.0": {
+          "datagrok-api": "^0.151.6"
+        },
+        "0.1.1": {
+          "datagrok-api": "^0.151.6"
+        }
+      },
+      "description": "Web-based 3D molecular graphics. Supports the following file formats: .PDB, .CIF, SDF, MOL"
+    },
+    "swaggers": {
+      "dependencies": {
+        "0.1.0": {
+          "datagrok-api": "^0.151.6"
+        },
+        "0.1.1": {
+          "datagrok-api": "^0.151.6"
+        }
+      },
+      "description": "Collection of Swagger"
+    },
+    "covid": {
+      "dependencies": {},
+      "description": "Package contains queries for data from open sources on the current situation in the world with coronavirus"
+    },
+    "tika": {
+      "dependencies": {
+        "0.1.0": {
+          "datagrok-api": "^0.151.6"
+        },
+        "0.1.1": {
+          "datagrok-api": "^0.151.6"
+        }
+      },
+      "description": "Apache Tika CLI tools integration"
+    },
+    "spgi": {
+      "dependencies": {
+        "0.4.0": {
+          "datagrok-api": "^0.151.6"
+        },
+        "0.4.1": {
+          "datagrok-api": "^0.151.6"
+        }
+      },
+      "description": "SPGi projects views"
+    },
+    "leaflet": {
+      "dependencies": {
+        "0.1.0": {
+          "datagrok-api": "^0.151.6"
+        },
+        "0.1.1": {
+          "datagrok-api": "^0.151.6"
+        }
+      },
+      "description": "Interactive map with a number of extensions that uses Leaflet.js"
+    },
+    "sequence": {
+      "dependencies": {
+        "0.1.0": {
+          "datagrok-api": "^0.151.6"
+        },
+        "0.1.1": {
+          "datagrok-api": "^0.151.6"
+        }
+      },
+      "description": "Support for the biological sequences (DNA, RNA, proteins), including FASTA readers, 3D visualization of molecules, MSA viewer, and functions for working with sequences"
+    },
+    "pedometer": {
+      "dependencies": {
+        "0.1.0": {
+          "datagrok-api": "^0.151.6"
+        },
+        "0.1.1": {
+          "datagrok-api": "^0.151.6"
+        }
+      },
+      "description": "Pedometer for accelerometer signals"
+    },
+    "cli": {
+      "dependencies": {},
+      "description": "Demonstrates integration with command-line tools"
+    },
+    "enamine-store": {
+      "dependencies": {
+        "0.2.0": {
+          "datagrok-api": "^0.151.6"
+        },
+        "0.2.1": {
+          "datagrok-api": "^0.151.6"
+        }
+      },
+      "description": "Enamine Store API demo"
+    },
+    "chemspace": {
+      "dependencies": {
+        "0.2.0": {
+          "datagrok-api": "^0.151.6"
+        },
+        "0.2.1": {
+          "datagrok-api": "^0.151.6"
+        }
+      },
+      "description": "Chemspace API demo"
+    },
+    "file-editors": {
+      "dependencies": {},
+      "description": "Support for editing end previewing multiple file formats (PDF, SVG)"
+    },
+    "grokopenchemlib": {
+      "dependencies": {
+        "0.0.2": {
+          "datagrok-api": ">0.94.10"
+        }
+      },
+      "description": "OpenChemLib is a [package](https://datagrok.ai/help/develop/develop#packages) for the [Datagrok](https://datagrok.ai) platform."
+    },
+    "hit-triage": {
+      "dependencies": {},
+      "description": "HitTriage helps chemists assess the quality of hits and decide which compounds should make it to the next stage. It does it in a managed, reproducible manner, with the triage template consisting of separate steps."
+    },
+    "power-grid": {
+      "dependencies": {
+        "0.0.4": {
+          "datagrok-api": "^0.148.5"
+        }
+      },
+      "description": "PowerGrid contains popular spreadsheet extensions, such as [sparklines](#sparklines)\r and support for [images](#images)."
+    }
+  }
+}
