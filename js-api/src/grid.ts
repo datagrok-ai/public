@@ -785,11 +785,14 @@ export class Grid extends Viewer {
   get onBeforeDrawContent(): Observable<EventData> { return __obs('d4-grid-before-draw-content', this.dart); }
   get onAfterDrawContent(): Observable<EventData> { return __obs('d4-grid-after-draw-content', this.dart); }
 
-  /**
-   * Currently visible cells
-   */
+  /** Returns currently visible cells */
   getVisibleCells(column: GridColumn | null = null): Iterable<GridCell> {
     return _toIterable(api.grok_Grid_GetVisibleCells(this.dart, column?.dart))
+  }
+
+  /** Resizes the grid to fit the content */
+  autoSize(maxWidth: number, maxHeight: number, minWidth?: number, minHeight?: number, autoSizeOnDataChange?: boolean): void {
+    api.grok_Grid_AutoSize(this.dart, maxWidth, maxHeight, minWidth, minHeight, autoSizeOnDataChange);
   }
 }
 
