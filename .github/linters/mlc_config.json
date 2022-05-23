@@ -26,6 +26,9 @@
     },
     {
       "pattern": "https://www.merckgroup.com"
+    },
+    {
+      "pattern": "https://www.microsoft.com"
     }
   ],
   "retryOn429": true
