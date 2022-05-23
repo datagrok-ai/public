@@ -34,8 +34,60 @@ function convertToCellXY(arXY : Array<number>, cellGrid : DG.GridCell, e : Mouse
 
 
 export class RendererUIManager {
+  constructor() {
+    throw new Error("Cannot create instances of the RendererUIManager class");
+  }
+
+  static isRegistered(grid : DG.Grid) : boolean {
+    const dart = DG.toDart(grid);
+    const b = dart.m_managerUIRenderer instanceof RendererUIManagerImpl;
+    return b;
+  }
+
+
+  static register(grid : DG.Grid) : boolean {
+    if(RendererUIManager.isRegistered(grid)) {
+      return false;
+    }
+
+    const manager = new RendererUIManagerImpl(grid);
+    const dart = DG.toDart(grid);
+    dart.m_managerUIRenderer = manager;
+
+    return true;
+  }
+
+  static unregister(grid : DG.Grid) : boolean {
+    if(!RendererUIManager.isRegistered(grid)) {
+      return false;
+    }
+
+    const dart = DG.toDart(grid);
+    const manager = dart.m_managerUIRenderer;
+    manager.dispose();
+    dart.m_managerUIRenderer = null;
+    return true;
+  }
+}
+
+
+
+class RendererUIManagerImpl {
   constructor(grid : DG.Grid) {
-   this.m_grid = grid;
+    this.m_grid = grid;
+
+    this.m_handlerCellRender = grid.onCellRender.subscribe((args) => {
+
+      if (args.cell.isTableCell) {
+        const renderer = args.cell.gridColumn === null ? null : GridUtils.getGridColumnRenderer(args.cell.gridColumn);
+        if(renderer !== null) {
+          renderer.render(args.g, args.bounds.x, args.bounds.y, args.bounds.width, args.bounds.height, args.cell, args.cell.style);
+          args.preventDefault();
+        }
+      }
+    });
+
+
 
     const arXY = [-1,-1];
     let nXDown = -1;
@@ -155,12 +207,18 @@ export class RendererUIManager {
     this.m_handlerViewerClosed = grok.events.onViewerClosed.subscribe((args) => {
       const viewer = args.args.viewer;
       if(DG.toDart(viewer) === DG.toDart(this.m_grid)){
-        this.dispose();
+        if(this.m_grid === null)
+          throw new Error("Grid cannot be null.");
+
+        RendererUIManager.unregister(this.m_grid);
       }
     });
   }
 
   dispose() : void {
+
+    this.m_handlerCellRender.unsubscribe();
+    this.m_handlerCellRender = null;
 
     this.m_handlerMouseDown.unsubscribe();
     this.m_handlerMouseDown = null;
@@ -184,6 +242,7 @@ export class RendererUIManager {
   }
 
   private m_grid : DG.Grid | null;
+  private m_handlerCellRender : any;
   private m_handlerMouseDown : any;
   private m_handlerMouseUp : any;
   private m_handlerClick : any;
