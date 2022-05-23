@@ -17,7 +17,7 @@ export class ClickableTextRenderer extends GridCellRendererEx {
     }
     str = TextUtils.trimText(str, g, nW);
     const strFont : string  = style.font;
-    if (strFont !== null && strFont !== undefined && strFont!== '') {
+    if (strFont !== null && strFont !== undefined && strFont !== '') {
       g.font = strFont;
     }
     let tm = g.measureText(str);
