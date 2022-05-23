@@ -52,7 +52,7 @@ export async function retrieveKeys() {
 
 async function updateTokensDialog(refreshToken: string, userId: number) {
   const authLink = ui.link(
-    'My Account -> Account Settings -> Authentication', `${await getBaseURL()}${constants.URI_MAP.account_auth})`);
+    'My Account -> Account Settings -> Authentication', `${await getBaseURL()}${constants.URI_MAP.account_auth}`);
   const refreshTokenHelpText = ui.inlineText(['Refresh token is a long living token the used to manage and create ',
     'API Access Tokens which can be used to interact with the other Alation APIs. It can be found in ',
     authLink, '.']);
@@ -98,5 +98,5 @@ async function getAllTokensFromStorage() {
 }
 
 export async function getApiToken() {
-  return await UDS.getValue(constants.STORAGE_NAME, constants.API_TOKEN_KEY, true);
+  return UDS.getValue(constants.STORAGE_NAME, constants.API_TOKEN_KEY, true);
 }
