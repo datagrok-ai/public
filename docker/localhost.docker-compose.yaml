@@ -108,14 +108,28 @@ services:
     restart: unless-stopped
     profiles: [ "all", "datagrok" ]
 
-#  grok_connect:
-#    image: datagrok/grok_connect:latest
-#    networks:
-#      datagrok:
-#        aliases:
-#          - grok_connect
-#    restart: unless-stopped
-#    profiles: [ "all", "datagrok", "grok_connect" ]
+  grok_scaler:
+    image: datagrok/grok_scaler:latest
+    user: root
+    environment:
+      API_SECRET: localhost-api-token
+    networks:
+      datagrok:
+        aliases:
+          - grok_scaler
+    volumes:
+      - /var/run/docker.sock:/var/run/docker.sock
+    restart: unless-stopped
+    profiles: [ "all", "grok_scaler" ]
+
+  grok_connect:
+    image: datagrok/grok_connect:latest
+    networks:
+      datagrok:
+        aliases:
+          - grok_connect
+    restart: unless-stopped
+    profiles: [ "all", "grok_connect" ]
 
   grok_compute:
     image: datagrok/grok_compute:latest
