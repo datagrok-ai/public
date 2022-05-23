@@ -51,7 +51,6 @@ export class SPEBase {
   /**
    * Initializes distance matrix.
    *
-   * @protected
    * @param {Vectors} vectors Input vectors to calculate distance between.
    * @memberof SPEBase
    */
@@ -94,10 +93,12 @@ export class SPEBase {
     for (let cycle = 0; cycle < this.cycles; ++cycle) {
       for (let step = 0; step < this.steps; ++step) {
         // Select two points, i and j, at random, ...
-        const i = randomInt(nItems); let j = randomInt(nItems);
+        const i = randomInt(nItems);
+        let j = randomInt(nItems);
         while (i == j) j = randomInt(nItems);
 
-        const rowi = coordinates[i]; const rowj = coordinates[j];
+        const rowi = coordinates[i];
+        const rowj = coordinates[j];
 
         // ... retrieve (or evaluate) their proximity in the input space, rij and ...
         const r = this.calcDistance(vectors, i, j);
@@ -106,7 +107,7 @@ export class SPEBase {
 
         // If rij <= rc, or if rij > rc and dij < rij ...
         if ((this.cutoff == 0) || (r <= this.cutoff) || (d < r)) {
-          const multiplier = lambda2*(r-d)/(d+this.epsilon);
+          const multiplier = lambda2*(r - d) / (d + this.epsilon);
           // ... update the coordinates xi and xj.
           const diffIJ = vectorAdd(rowi, rowj, -1);
           coordinates[i] = vectorAdd(rowi, diffIJ, multiplier);
@@ -161,7 +162,7 @@ export class PSPEBase extends SPEBase {
         const d = calculateEuclideanDistance(rowi, rowj);
         // If rij <= rc, or if rij > rc and dij < rij ...
         if ((this.cutoff == 0) || (r <= this.cutoff) || (d < r)) {
-          const multiplier = lambda*(r-d)/(d+this.epsilon);
+          const multiplier = lambda * (r - d) / (d + this.epsilon);
           const diffIJ = vectorAdd(rowi, rowj, -1);
           // ... update the coordinates xj.
           coordinates[j] = vectorAdd(rowj, diffIJ, -multiplier);
@@ -234,14 +235,16 @@ export class OriginalSPE extends SPEBase {
     for (let cycle = 0; cycle < this.cycles; ++cycle) {
       for (let step = 0; step < this.steps; ++step) {
         // Select two points, i and j, at random, ...
-        const i = randomInt(nItems); let j = randomInt(nItems);
+        const i = randomInt(nItems);
+        let j = randomInt(nItems);
         while (i == j) j = randomInt(nItems);
 
-        const rowi = coordinates[i]; const rowj = coordinates[j];
+        const rowi = coordinates[i];
+        const rowj = coordinates[j];
 
-        // ... retrieve (or evaluate) their proximity in the input space, rij and ...
+        // retrieve (or evaluate) their proximity in the input space, rij and ...
         const r = this.calcDistance(vectors, i, j);
-        // ... compute their Euclidean distance on the D-dimensional map, dij.
+        // compute their Euclidean distance on the D-dimensional map, dij.
         const d = calculateEuclideanDistance(rowi, rowj);
 
         if ((r <= radius) || (d < r)) {

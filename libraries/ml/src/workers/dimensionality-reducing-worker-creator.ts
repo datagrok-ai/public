@@ -5,7 +5,7 @@ import {ValidTypes} from '../typed-metrics';
  *
  * @param {ValidTypes} dataMetric The data to process.
  * @param {string} method A method of dimensionality reduction.
- * @param options
+ * @param options - key-value pairs
  * @param returnDistanceMatrix
  * @return {Promise<unknown>} Resulting embedding.
  */
