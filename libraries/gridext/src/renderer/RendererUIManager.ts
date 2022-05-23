@@ -24,7 +24,7 @@ function convertToCellXY(arXY : Array<number>, cellGrid : DG.GridCell, e : Mouse
   const colG = cellGrid.gridColumn;
   const sbHorz = grid.horzScroll;
   const nXOnCell = e.offsetX - colG.left + Math.floor(sbHorz.min);
-  const options : any = grid.getOptions();
+  const options : any = grid.getOptions(true);
   const nHColHeader = options.look.colHeaderHeight;
   const nHRow = options.look.rowHeight;
   const nYOnCell = e.offsetY - nHColHeader - nHRow * (cellGrid.gridRow - Math.floor(grid.vertScroll.min));

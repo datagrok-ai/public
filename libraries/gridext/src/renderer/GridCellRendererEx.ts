@@ -6,26 +6,26 @@ export class GridCellRendererEx extends DG.GridCellRenderer {
   }
 
   onMouseDownEx(cellGrid : DG.GridCell, e : MouseEvent, nXOnCell : number, nYOnCell : number) : void {
-    this.onMouseDown(cellGrid, e);
+    //this.onMouseDown(cellGrid, e);
   }
 
   onMouseUpEx(cellGrid : DG.GridCell, e : MouseEvent, nXOnCell : number, nYOnCell : number) : void {
-    this.onMouseUp(cellGrid, e);
+    //this.onMouseUp(cellGrid, e);
   }
 
   onClickEx(cellGrid : DG.GridCell, e : MouseEvent, nXOnCell : number, nYOnCell : number) : void {
-    this.onClick(cellGrid, e);
+    //this.onClick(cellGrid, e);
   }
 
   onMouseMoveEx(cellGrid : DG.GridCell, e : MouseEvent, nXOnCell : number, nYOnCell : number) : void {
-    this.onMouseMove(cellGrid, e);
+    //this.onMouseMove(cellGrid, e);
   }
 
   onMouseEnterEx(cellGrid : DG.GridCell, e : MouseEvent, nXOnCell : number, nYOnCell : number) : void {
-    this.onMouseEnter(cellGrid, e);
+    //this.onMouseEnter(cellGrid, e);
   }
 
   onMouseLeaveEx(cellGrid : DG.GridCell, e : MouseEvent, nXOnCell : number, nYOnCell : number) : void {
-    this.onMouseLeave(cellGrid, e);
+    //this.onMouseLeave(cellGrid, e);
   }
 }
