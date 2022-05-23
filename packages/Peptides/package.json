@@ -15,7 +15,7 @@
     "@datagrok-libraries/utils": "^0.1.2",
     "cash-dom": "latest",
     "d3": "latest",
-    "datagrok-api": "^0.151.0",
+    "datagrok-api": "^1.0.0",
     "dayjs": "latest",
     "file-loader": "^6.2.0",
     "jstat": "^1.9.5",

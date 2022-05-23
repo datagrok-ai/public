@@ -9,7 +9,7 @@
     "directory": "packages/BioSignals"
   },
   "dependencies": {
-    "datagrok-api": "^0.94.10",
+    "datagrok-api": "^1.0.0",
     "echarts": "^5.0.2"
   },
   "scripts": {

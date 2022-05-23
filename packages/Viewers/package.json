@@ -9,7 +9,7 @@
     "directory": "packages/Viewers"
   },
 	"dependencies": {
-		"datagrok-api": ">0.94.10",
+		"datagrok-api": "^1.0.0",
 		"circos": "^2.1.0",
 		"d3": "^6.2.0",
 		"d3-cloud": "^1.2.5",

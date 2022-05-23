@@ -10,7 +10,7 @@
     "directory": "packages/ChemblBrowser"
   },
   "dependencies": {
-    "datagrok-api": "^0.94.10"
+    "datagrok-api": "^1.0.0"
   },
   "scripts": {
     "link-api": "npm link datagrok-api",

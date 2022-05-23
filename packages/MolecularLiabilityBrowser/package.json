@@ -25,7 +25,7 @@
     "@luma.gl/core": "^8.5.10",
     "@phylocanvas/phylocanvas.gl": "^1.43.0",
     "cash-dom": "latest",
-    "datagrok-api": "^0.148.6",
+    "datagrok-api": "^1.0.0",
     "logojs-react": "^2.1.1",
     "rxjs": "^6.5.5",
     "ts-loader": "^9.2.5",

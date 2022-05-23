@@ -16,7 +16,7 @@
 		"All users"
 	],
 	"dependencies": {
-		"datagrok-api": "latest",
+		"datagrok-api": "^1.0.0",
 		"rxjs": "^6.5.5",
 		"cash-dom": "latest"
 	},

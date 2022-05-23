@@ -10,7 +10,7 @@
     "directory": "packages/DrugBank"
   },
   "dependencies": {
-    "datagrok-api": "^0.94.10",
+    "datagrok-api": "^1.0.0",
     "cash-dom": "latest",
     "dayjs": "latest",
     "openchemlib": "latest",

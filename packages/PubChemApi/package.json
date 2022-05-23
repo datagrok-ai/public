@@ -9,7 +9,7 @@
     "directory": "packages/PubChemApi"
   },
   "dependencies": {
-    "datagrok-api": "latest",
+    "datagrok-api": "^1.0.0",
     "@datagrok-libraries/utils": "^0.0.22"
   },
   "devDependencies": {
