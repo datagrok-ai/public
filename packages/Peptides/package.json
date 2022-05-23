@@ -14,16 +14,11 @@
     "@datagrok-libraries/statistics": "^0.1.6",
     "@datagrok-libraries/utils": "^0.1.2",
     "cash-dom": "latest",
-    "d3": "latest",
     "datagrok-api": "^1.0.0",
-    "dayjs": "latest",
     "file-loader": "^6.2.0",
-    "jstat": "^1.9.5",
-    "logojs-react": "^2.1.1",
     "rxjs": "^6.5.5"
   },
   "devDependencies": {
-    "@types/d3": "^7.0.0",
     "@types/jquery": "^3.5.6",
     "@typescript-eslint/eslint-plugin": "latest",
     "@typescript-eslint/parser": "latest",

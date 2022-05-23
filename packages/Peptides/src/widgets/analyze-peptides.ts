@@ -29,13 +29,13 @@ export async function analyzePeptidesWidget(currentDf: DG.DataFrame, col: DG.Col
   for (const column of currentDf.columns.numerical)
     tempCol = column.type === DG.TYPE.FLOAT ? column : null;
 
-  const defaultColumn: DG.Column = currentDf.col('activity') || currentDf.col('IC50') || tempCol;
+  const defaultColumn: DG.Column<number> | null = currentDf.col('activity') || currentDf.col('IC50') || tempCol;
   const histogramHost = ui.div([], {id: 'pep-hist-host'});
 
   const activityScalingMethod = ui.choiceInput(
     'Scaling', 'none', ['none', 'lg', '-lg'],
     async (currentMethod: string) => {
-      const currentActivityCol = activityColumnChoice.value.name;
+      const currentActivityCol = activityColumnChoice.value?.name;
 
       [tempDf, newScaledColName] = await PeptidesController.scaleActivity(
         currentMethod, currentDf, currentActivityCol, true);
@@ -56,8 +56,8 @@ export async function analyzePeptidesWidget(currentDf: DG.DataFrame, col: DG.Col
   activityScalingMethod.setTooltip('Function to apply for each value in activity column');
 
   const activityScalingMethodState = function(_: any) {
-    activityScalingMethod.enabled =
-      activityColumnChoice.value && DG.Stats.fromColumn(activityColumnChoice.value, currentDf.filter).min > 0;
+    activityScalingMethod.enabled = (activityColumnChoice.value ?? false) &&
+      DG.Stats.fromColumn(activityColumnChoice.value!, currentDf.filter).min > 0;
     activityScalingMethod.fireChanged();
   };
   const activityColumnChoice = ui.columnInput(
@@ -73,7 +73,7 @@ export async function analyzePeptidesWidget(currentDf: DG.DataFrame, col: DG.Col
 
   const startBtn = ui.button('Launch SAR', async () => {
     const progress = DG.TaskBarProgressIndicator.create('Loading SAR...');
-    if (activityColumnChoice.value.type === DG.TYPE.FLOAT) {
+    if (activityColumnChoice.value?.type === DG.TYPE.FLOAT) {
       const activityColumn: string = activityColumnChoice.value.name;
 
       //prepare new DF
@@ -110,7 +110,8 @@ export async function analyzePeptidesWidget(currentDf: DG.DataFrame, col: DG.Col
   //     grok.shell.error('The activity column must be of floating point number type!');
   // });
 
-  const viewer = await currentDf.plot.fromType('peptide-logo-viewer');
+  // const viewer = await currentDf.plot.fromType('peptide-logo-viewer');
+  const viewer = await currentDf.plot.fromType('WebLogo');
 
   return new DG.Widget(
     ui.divV([

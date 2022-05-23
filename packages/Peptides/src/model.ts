@@ -354,7 +354,7 @@ export class PeptidesModel {
 
     const tableValuesKeys = Object.keys(tableValues);
     const dfLength = tableValuesKeys.length;
-    const cols = columnList.map((col) => {
+    const cols: DG.Column<any>[] = columnList.map((col) => {
       const newCol = DG.Column.int(`${col.name}`, dfLength);
       newCol.semType = 'Substitution';
       return newCol;
@@ -873,7 +873,7 @@ export class PeptidesModel {
       return null;
     const currentColName = sarDf.currentCol.name;
     if (currentColName !== C.COLUMNS_NAMES.AMINO_ACID_RESIDUE) {
-      const col: DG.Column = sourceDf.columns.bySemType(C.SEM_TYPES.ALIGNED_SEQUENCE);
+      const col: DG.Column<string> = sourceDf.columns.bySemType(C.SEM_TYPES.ALIGNED_SEQUENCE)!;
       const aar = sarDf.get(C.COLUMNS_NAMES.AMINO_ACID_RESIDUE, sarDf.currentRowIdx);
       const pos = parseInt(currentColName);
       const substitutionsCount = this.substitutionTable.groupBy([currentColName])
