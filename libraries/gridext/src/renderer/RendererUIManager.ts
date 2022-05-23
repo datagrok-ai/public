@@ -33,40 +33,6 @@ function convertToCellXY(arXY : Array<number>, cellGrid : DG.GridCell, e : Mouse
 }
 
 
-export class RendererUIManager {
-  constructor() {
-    throw new Error("Cannot create instances of the RendererUIManager class");
-  }
-
-  static isRegistered(grid : DG.Grid) : boolean {
-    const dart = DG.toDart(grid);
-    const b = dart.m_managerUIRenderer instanceof RendererUIManagerImpl;
-    return b;
-  }
-
-
-  static register(grid : DG.Grid) : boolean {
-    if(RendererUIManager.isRegistered(grid)) {
-      return false;
-    }
-
-    const manager = new RendererUIManagerImpl(grid);
-    return true;
-  }
-
-  static unregister(grid : DG.Grid) : boolean {
-    if(!RendererUIManager.isRegistered(grid)) {
-      return false;
-    }
-
-    const dart = DG.toDart(grid);
-    const manager = dart.m_managerUIRenderer;
-    manager.dispose();
-    return true;
-  }
-}
-
-
 
 class RendererUIManagerImpl {
   constructor(grid : DG.Grid) {
@@ -196,13 +162,14 @@ class RendererUIManagerImpl {
         cellCurrent = null;
       });
 
+    const managerThis = this;
     this.m_handlerViewerClosed = grok.events.onViewerClosed.subscribe((args) => {
       const viewer = args.args.viewer;
       if(DG.toDart(viewer) === DG.toDart(this.m_grid)){
         if(this.m_grid === null)
           throw new Error("Grid cannot be null.");
 
-        RendererUIManager.unregister(this.m_grid);
+        managerThis.dispose();
       }
     });
   }
@@ -243,4 +210,37 @@ class RendererUIManagerImpl {
   private m_handlerMouseMove : any;
   private m_handlerMouseOut : any;
   private m_handlerViewerClosed: any;
+}
+
+export class RendererUIManager {
+  constructor() {
+    throw new Error("Cannot create instances of the RendererUIManager class");
+  }
+
+  static isRegistered(grid : DG.Grid) : boolean {
+    const dart = DG.toDart(grid);
+    const b = dart.m_managerUIRenderer instanceof RendererUIManagerImpl;
+    return b;
+  }
+
+
+  static register(grid : DG.Grid) : boolean {
+    if(RendererUIManager.isRegistered(grid)) {
+      return false;
+    }
+
+    const manager = new RendererUIManagerImpl(grid);
+    return true;
+  }
+
+  static unregister(grid : DG.Grid) : boolean {
+    if(!RendererUIManager.isRegistered(grid)) {
+      return false;
+    }
+
+    const dart = DG.toDart(grid);
+    const manager = dart.m_managerUIRenderer;
+    manager.dispose();
+    return true;
+  }
 }
