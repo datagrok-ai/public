@@ -39,6 +39,7 @@ export class TimelinesViewer extends EChartViewer {
     this.columnData = {};
     this.count = 0;
     this.selectionColor = DG.Color.toRgb(DG.Color.selectedRows);
+    this.defaultColor = DG.Color.toRgb(DG.Color.histogramBar);
     this.zoomState = [[0, 100], [0, 100], [0, 100], [0, 100]];
     this.tooltipOffset = 10;
     this.initialized = false;
@@ -98,12 +99,21 @@ export class TimelinesViewer extends EChartViewer {
         if (z.type === 'slider') z.show = this.showZoomSliders;
       });
     } else if (property.name.endsWith('ColumnName')) {
-      const columnData = this.updateColumnData(property);
-      if (property.name === 'colorByColumnName') {
-        this.colorMap = this.getColorMap(columnData.categories);
-        this.updateLegend(columnData.column);
+      if (property.get(this)) {
+        const columnData = this.updateColumnData(property);
+        if (property.name === 'colorByColumnName') {
+          this.colorMap = this.getColorMap(columnData.categories);
+          this.updateLegend(columnData.column);
+          this.switchLegendVisibility(this.legendVisibility);
+        }
+      } else {
+        if (property.name === 'colorByColumnName') {
+          this.hideLegend();
+          this.colorMap = null;
+          this.columnData[property.name] = null;
+        }
       }
-    } else if (property.name === 'legendVisibility') {
+    } else if (property.name === 'legendVisibility' && this.colorByColumnName) {
       this.switchLegendVisibility(property.get(this));
     }
     this.render();
@@ -235,8 +245,9 @@ export class TimelinesViewer extends EChartViewer {
             height: this.markerSize
           },
           style: {
-            fill: api.value(5) ? this.selectionColor : this.colorMap[isNaN(api.value(3)) ?
-              this.data[params.dataIndex][3][0] : api.value(3)]
+            fill: api.value(5) ? this.selectionColor
+              : this.colorMap ? this.colorMap[isNaN(api.value(3)) ? this.data[params.dataIndex][3][0] : api.value(3)]
+              : this.defaultColor,
           }
         };
 
@@ -284,8 +295,11 @@ export class TimelinesViewer extends EChartViewer {
           type: 'rect',
           transition: ['shape'],
           shape: rectShape,
-          style: { fill: api.value(5) ? this.selectionColor : this.colorMap[isNaN(api.value(3)) ?
-            this.data[params.dataIndex][3][0] : api.value(3)] }
+          style: {
+            fill: api.value(5) ? this.selectionColor
+              : this.colorMap ? this.colorMap[isNaN(api.value(3)) ? this.data[params.dataIndex][3][0] : api.value(3)]
+              : this.defaultColor,
+          }
         });
       }
 
@@ -386,7 +400,8 @@ export class TimelinesViewer extends EChartViewer {
     this.data.length = 0;
     let tempObj = {};
 
-    const { categories: colorCategories, data: colorBuf } = this.columnData.colorByColumnName;
+    const colorCategories = this.columnData.colorByColumnName?.categories;
+    const colorBuf = this.columnData.colorByColumnName?.data;
     const { categories: eventCategories, data: eventBuf } = this.columnData.eventColumnName;
     const { column: startColumn } = this.columnData.startColumnName;
     const { column: endColumn } = this.columnData.endColumnName;
@@ -405,7 +420,7 @@ export class TimelinesViewer extends EChartViewer {
         if (end == null)
           end = Math.max(this.getColumnMax(startColumn), this.getColumnMax(endColumn));
       }
-      const color = colorCategories[colorBuf[i]];
+      const color = this.colorByColumnName ? colorCategories[colorBuf[i]] : this.defaultColor;
       const event = eventCategories[eventBuf[i]];
       const key = `${id}-${event}-${start}-${end}`;
       if (tempObj.hasOwnProperty(key)) {
@@ -458,7 +473,8 @@ export class TimelinesViewer extends EChartViewer {
 
   updateContainers() {
     $(this.titleDiv).removeClass().empty();
-    this.switchLegendVisibility(this.legendVisibility);
+    if (this.colorByColumnName)
+      this.switchLegendVisibility(this.legendVisibility);
     $(this.chart.getDom()).show();
   }
 
