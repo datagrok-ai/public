@@ -1,6 +1,36 @@
 <!-- TITLE: Release History -->
 <!-- SUBTITLE: -->
 
+# 2022-05-23 Dev build 1.1.1
+
+## Latest Docker Images
+
+* Datagrok: 
+  *  `docker pull datagrok/datagrok:1.1.1`
+  *  `docker pull datagrok/datagrok:latest`
+  
+* [Docker-Compose](admin/docker-compose.md)
+
+## Addressed Issues
+
+* Sidebar integration improvements 
+* PowerGrid: code cleanup, added a description to the "Global Scale", gave friendly names to renderers. 
+* Removed sparkline renderers from core 
+* Property description is rendered as markup. Code cleanup. 
+* (Bug) File Browser: "Bad state: no element" error when clicking on the empty folder in the tree 
+* Chem: Code cleanup 
+* Closes #630: Structure queries 
+* Closes #523: Sketcher: ability to paste molblock 
+* Better function signatures 
+* Complete CI Flow 
+* Moved CI Flow images to Help 
+* Ignore drawio backups 
+* New CI Flow Documentation 
+* Resolves  #617 Charts: Timelines: setting "Color by" to empty results in an exception 
+* CDM: sample project 
+* Datlas split to libraries (WIP) 
+
+
 # 2022-05-20 Stable version 1.0.0
 
 ## Latest Docker Images
