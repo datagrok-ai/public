@@ -92,7 +92,6 @@ jobs:
     environment: Prod
     strategy:
       fail-fast: false
-      max-parallel: 10
       matrix: ${{ fromJson(needs.metadata.outputs.publish_matrix) }}
     steps:
       - uses: actions/checkout@v2
