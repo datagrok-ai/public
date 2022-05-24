@@ -29,6 +29,9 @@
     },
     {
       "pattern": "https://www.microsoft.com"
+    },
+    {
+      "pattern": "https://www.epa.gov"
     }
   ],
   "retryOn429": true
