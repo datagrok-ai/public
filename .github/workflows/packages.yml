@@ -194,7 +194,7 @@ jobs:
 
       - name: Get package information
         id: info
-        if: github.ref == 'refs/heads/master' && always() && steps.publish.outcome == 'success' && matrix.install_jsapi == 'true'
+        if: github.ref == 'refs/heads/master' && always() && steps.publish.outcome == 'success' && matrix.install_jsapi == 'true' && matrix.package != 'Meta'
         working-directory: packages/${{ matrix.package }}
         run: |
           dependencies="$(jq  '(. | select( has("dependencies") == true ).dependencies) * (. | select( has("devDependencies") == true ).devDependencies)' package.json)"          
