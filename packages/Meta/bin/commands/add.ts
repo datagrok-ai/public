@@ -45,8 +45,8 @@ export function add(args: CreateArgs) {
 interface CreateArgs {
   _: string[],
   package: string,
-  description?: string,
   ver: string,
+  description?: string,
   dep?: string,
   depver?: string
 }
