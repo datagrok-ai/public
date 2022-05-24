@@ -18,11 +18,11 @@ function addPackageVersion(name: string, description: string, packageVersion: st
   }
   if (jsonContent.data.hasOwnProperty(name)){
     var result = {...jsonContent['data'][name]['dependencies'][packageVersion], ...data[name]['dependencies'][packageVersion]};
-    jsonContent['data'][name]['dependencies'][packageVersion] = result
-    jsonContent['data'][name]['description'] = data[name]['description']
+    jsonContent['data'][name]['dependencies'][packageVersion] = result;
+    jsonContent['data'][name]['description'] = data[name]['description'];
   } else {
     var result = {...jsonContent['data'], ...data};
-    jsonContent.data = result
+    jsonContent.data = result;
   }
 
   fs.writeFileSync(jsonTemplateLoc, JSON.stringify(jsonContent, null, 2) + '\n');
@@ -43,5 +43,5 @@ interface CreateArgs {
   description: string,
   ver: string,
   dep: string,
-  depver: string,
+  depver: string
 }
