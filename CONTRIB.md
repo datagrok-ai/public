@@ -64,14 +64,16 @@ file with the settings
 
 In this public repo, we follow some Git best practices:
 
-1. Configure the commit authorship. Set your name and email address correctly
+1. Configure the commit authorship. Set your name and email address correctly.
 2. Write descriptive and meaningful commit messages. Commit messages will be included in changelogs
 3. Keep your working branch up to date by frequently fetching changes from the remote server. It will prevent bugs,
    rework, and the tiresome resolve of conflicts
 4. Test your changes before pushing to avoid the broken code in the repository
 5. Refer to the issue or task number in your commit. It will help to track the work done on the task or issue
 6. Name of branches should be meaningful. Please, use the agreed
-   standard: `<first letter of your name><you surname>/<task number and meaningful short description>`
+   standard: `<first letter of your name><you surname>/<task ID and meaningful short description>`. Task ID can be from
+   any task tracking system. Use the full ID. For example `GROK-XXXX-description` for Jira issues or `#XXX-description`
+   for GitHub issues.
 7. Do not mix "refactoring" with a new feature
 8. Do not create unnecessary merge loops. To pull changes after commit creation use `git pull --rebase`. Run the
    following commands to make the work easier with rebase.
