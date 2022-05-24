@@ -1,9 +1,9 @@
-import {after, before, category, expect, test} from "@datagrok-libraries/utils/src/test";
+import {after, before, category, expect, test} from '@datagrok-libraries/utils/src/test';
 import * as grok from 'datagrok-api/grok';
 import * as ui from 'datagrok-api/ui';
 import * as DG from 'datagrok-api/dg';
 
-let demog = grok.data.demo.demog();
+const demog = grok.data.demo.demog();
 
 category('Shell', () => {
   before(async () => {
@@ -11,7 +11,7 @@ category('Shell', () => {
   });
 
   test('AddView', async () => {
-    let v = grok.shell.addTableView(demog);
+    const v = grok.shell.addTableView(demog);
     expect(grok.shell.v, v);
     expect(grok.shell.v instanceof DG.TableView, true);
     expect((grok.shell.v as DG.TableView).dataFrame, demog);
@@ -22,8 +22,7 @@ category('Shell', () => {
   });
 
   after(async () => {
- //   v.close();
-   // grok.shell.closeTable(v.table!);
+    //   v.close();
+    // grok.shell.closeTable(v.table!);
   });
-
 });

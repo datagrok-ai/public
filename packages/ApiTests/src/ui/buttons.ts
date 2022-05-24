@@ -1,8 +1,8 @@
-import { after, before, category, delay, expect, test } from "@datagrok-libraries/utils/src/test";
+import {after, before, category, delay, expect, test} from '@datagrok-libraries/utils/src/test';
 import * as grok from 'datagrok-api/grok';
 import * as ui from 'datagrok-api/ui';
 import * as DG from 'datagrok-api/dg';
-import { caption, enabled, checkHTMLElement } from './utils';
+import {caption, enabled, checkHTMLElement} from './utils';
 
 category('UI: Buttons', () => {
   let v: DG.View;
@@ -17,16 +17,14 @@ category('UI: Buttons', () => {
   });
 
   test('button.root', async () => {
-    for (const [key, value] of Object.entries(buttons)) {
+    for (const [key, value] of Object.entries(buttons))
       checkHTMLElement(key, value, v, '.ui-btn');
-    }
-  })
+  });
 
   test('button.click', async () => {
-    for (const [key, value] of Object.entries(buttons)) {
+    for (const [key, value] of Object.entries(buttons))
       onClick(value);
-    }
-  })
+  });
 
   after(async () => {
     v.close();
@@ -37,7 +35,7 @@ category('UI: Buttons', () => {
     v.append(root);
 
     let check = false;
-    root.addEventListener("click", function () {
+    root.addEventListener('click', function() {
       check = true;
     });
 
@@ -48,6 +46,5 @@ category('UI: Buttons', () => {
 
     root.remove();
   }
-
 });
 

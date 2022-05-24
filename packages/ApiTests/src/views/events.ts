@@ -1,7 +1,7 @@
 import * as grok from 'datagrok-api/grok';
 import * as DG from 'datagrok-api/dg';
-import { Subscription } from 'rxjs';
-import {after, before, category, expect, test} from "@datagrok-libraries/utils/src/test";
+import {Subscription} from 'rxjs';
+import {after, before, category, expect, test} from '@datagrok-libraries/utils/src/test';
 
 category('View events', () => {
   let df = grok.data.demo.demog();
@@ -11,7 +11,7 @@ category('View events', () => {
   before(async () => {
     df = grok.data.demo.demog();
     tv = grok.shell.addTableView(df);
-  })
+  });
   test('On view adding', async () => {
     let v0: DG.View;
     let v1: DG.TableView;
@@ -40,7 +40,7 @@ category('View events', () => {
         expect(grok.shell.view(view.name) != null, true);
         expect(view.name, view.type === DG.TYPE.TABLE_VIEW ?
           v1.name : view.type === DG.View.FUNCTIONS ?
-          v2.name : v0.name);
+            v2.name : v0.name);
       }));
       v0 = grok.shell.newView('test');
       v1 = grok.shell.addTableView(df);
@@ -133,8 +133,7 @@ category('View events', () => {
 function closeViews(...views: DG.ViewBase[]) {
   views.forEach((view) => {
     view.close();
-    if (view instanceof DG.TableView && view.table) {
+    if (view instanceof DG.TableView && view.table)
       grok.shell.closeTable(view.table);
-    }
   });
 }

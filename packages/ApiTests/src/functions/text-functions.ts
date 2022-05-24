@@ -1,5 +1,5 @@
 import * as grok from 'datagrok-api/grok';
-import { category, expect, expectFloat, test } from '@datagrok-libraries/utils/src/test';
+import {category, expect, expectFloat, test} from '@datagrok-libraries/utils/src/test';
 
 
 category('Text functions', () => {

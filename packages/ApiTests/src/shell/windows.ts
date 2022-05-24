@@ -1,4 +1,4 @@
-import {after, before, category, delay, test} from "@datagrok-libraries/utils/src/test";
+import {after, before, category, delay, test} from '@datagrok-libraries/utils/src/test';
 import * as grok from 'datagrok-api/grok';
 import * as ui from 'datagrok-api/ui';
 import * as DG from 'datagrok-api/dg';
@@ -12,7 +12,7 @@ category('Shell - Windows', () => {
 
   test('ShowColumns', async () => {
     await checkSwitch('showColumns', '.d4-root.d4-column-grid');
-  })
+  });
   test('ShowHelp', async () => {
     await checkSwitch('showHelp', '.grok-help-host > .grok-help');
   });
@@ -48,11 +48,10 @@ category('Shell - Windows', () => {
     v.close();
     grok.shell.closeTable(v.table!);
   });
-
 });
 
 function checkElementVisible(selector: string, exists: boolean = true): void {
-  let e = document.body.querySelector(selector);
+  const e = document.body.querySelector(selector);
   if (e == undefined && exists)
     throw `Element "${selector}" not found`;
   if ((e != undefined && e instanceof HTMLElement && e.offsetParent != undefined) && !exists)
@@ -60,8 +59,7 @@ function checkElementVisible(selector: string, exists: boolean = true): void {
 }
 
 async function checkSwitch(sw: string, selector: string) {
-
-  let state = (<any>grok.shell.windows)[sw];
+  const state = (<any>grok.shell.windows)[sw];
   try {
     (<any>grok.shell.windows)[sw] = true;
     checkElementVisible(selector);

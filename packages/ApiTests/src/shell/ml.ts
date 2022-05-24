@@ -1,4 +1,4 @@
-import {after, before, category, expect, test} from "@datagrok-libraries/utils/src/test";
+import {after, before, category, expect, test} from '@datagrok-libraries/utils/src/test';
 import * as grok from 'datagrok-api/grok';
 import * as ui from 'datagrok-api/ui';
 import * as DG from 'datagrok-api/dg';
@@ -19,7 +19,7 @@ category('ML', () => {
 
   test('Cluster', async () => {
     const data = await grok.data.loadTable('https://public.datagrok.ai/demo/xclara.csv');
-    const resultDf = await grok.ml.cluster(data, ["V1", "V2"], 3);
+    const resultDf = await grok.ml.cluster(data, ['V1', 'V2'], 3);
 
     expect(resultDf.getCol('clusters').categories.length, 3);
   });
@@ -38,9 +38,9 @@ category('ML', () => {
   test('PCA', async () => {
     const data = await grok.data.loadTable('https://public.datagrok.ai/demo/cars.csv');
     const resultDf = await grok.ml.pca(
-      data, ["wheel.base", "length", "width", "height", "city.mpg", "price"], 2, true, true,
+      data, ['wheel.base', 'length', 'width', 'height', 'city.mpg', 'price'], 2, true, true,
     );
-    
+
     expect((resultDf.columns as DG.ColumnList).names().includes('PCA0'), true);
     expect((resultDf.columns as DG.ColumnList).names().includes('PCA1'), true);
   });

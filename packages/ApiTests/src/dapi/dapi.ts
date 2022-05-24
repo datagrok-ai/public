@@ -1,10 +1,9 @@
-import {after, before, category, expect, test} from "@datagrok-libraries/utils/src/test";
+import {after, before, category, expect, test} from '@datagrok-libraries/utils/src/test';
 import * as grok from 'datagrok-api/grok';
 import * as ui from 'datagrok-api/ui';
 import * as DG from 'datagrok-api/dg';
 
 category('Dapi', () => {
-
   test('Dapi: all data sources', async () => {
     await grok.dapi.queries.first();
     await grok.dapi.connections.first();
@@ -23,7 +22,7 @@ category('Dapi', () => {
   });
 
   test('Dapi: logging', async () => {
-    const logger = new DG.Logger(m => (m.params as {[key: string]: any})['jsApiTest2'] = 'jsApiTest3');
+    const logger = new DG.Logger((m) => (m.params as {[key: string]: any})['jsApiTest2'] = 'jsApiTest3');
     const jsApiTestType = 'jsApiTestType';
     logger.log('jsApiTest0', {jsApiTest1: 'jsApiTest2'}, jsApiTestType);
     expect((await grok.dapi.logTypes.list({filter: jsApiTestType}))[0].name, jsApiTestType);
