@@ -1,6 +1,6 @@
 import * as grok from 'datagrok-api/grok';
 import * as DG from 'datagrok-api/dg';
-import { after, before, category, expect, test } from "@datagrok-libraries/utils/src/test";
+import {after, before, category, expect, test} from '@datagrok-libraries/utils/src/test';
 
 category('Viewer', () => {
   let df: DG.DataFrame;
@@ -15,7 +15,7 @@ category('Viewer', () => {
 
   test('TableView.addViewer(ViewerType)', async () => {
     try {
-      for (let viewerType of coreViewerTypes) {
+      for (const viewerType of coreViewerTypes) {
         const viewer = tv.addViewer(viewerType);
         if (!(viewer instanceof DG.Viewer))
           throw `TableView.addViewer('${viewerType}') should add a Viewer instance`;
@@ -25,7 +25,7 @@ category('Viewer', () => {
         throw 'TableView.addViewer failed to attach some viewers to the table view';
     } finally {
       closeViewers(tv);
-    }    
+    }
   });
 
   test('Viewer.close()', async () => {
@@ -42,7 +42,7 @@ category('Viewer', () => {
   });
 
   test('Viewer.fromType(ViewerType, DataFrame)', async () => {
-    for (let viewerType of coreViewerTypes) {
+    for (const viewerType of coreViewerTypes) {
       const viewer = DG.Viewer.fromType(viewerType, df);
       if (!(viewer instanceof DG.Viewer))
         throw `Viewer.fromType('${viewerType}', df) should add a Viewer instance`;

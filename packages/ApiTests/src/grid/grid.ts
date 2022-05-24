@@ -1,12 +1,12 @@
 import * as grok from 'datagrok-api/grok';
 import * as DG from 'datagrok-api/dg';
-import { after, before, category, expect, test } from '@datagrok-libraries/utils/src/test';
+import {after, before, category, expect, test} from '@datagrok-libraries/utils/src/test';
 
 
 category('Grid', () => {
   let v: DG.TableView;
   let grid: DG.Grid;
-  let demog = grok.data.demo.demog(1000);
+  const demog = grok.data.demo.demog(1000);
   demog.columns.byName('study').name = '~study';
 
   before(async () => {
@@ -16,16 +16,16 @@ category('Grid', () => {
 
   test('grid.setOrder', async () => {
     grid.columns.setOrder(['race', 'age']);
-    let firstCol = grid.columns.byIndex(1);
-    let secondCol = grid.columns.byIndex(2);
+    const firstCol = grid.columns.byIndex(1);
+    const secondCol = grid.columns.byIndex(2);
     if (firstCol?.dart.columnName != 'race' || secondCol?.dart.columnName != 'age')
-      throw 'grid.setOrder does not work'
+      throw 'grid.setOrder does not work';
   });
 
   test('grid.resizeColumn', async () => {
     let check = false;
 
-    grid.onColumnResized.subscribe((_) => { check = true });
+    grid.onColumnResized.subscribe((_) => {check = true;});
     grid.columns.byName('age')!.width = 200;
 
     if (check == false)
@@ -33,9 +33,9 @@ category('Grid', () => {
   });
 
   test('grid.filter', async () => {
-    demog.rows.match('sex = M').filter()
+    demog.rows.match('sex = M').filter();
     if (demog.filter.trueCount != 605)
-      throw 'Filtering error'
+      throw 'Filtering error';
   });
 
   test('grid.colorCoding', async () => {
@@ -43,7 +43,7 @@ category('Grid', () => {
       'Asian': 0xFF0000FF,
       'Black': 0xFF800080,
       'Caucasian': 0xFF05754A,
-      'Other': 0XFFE4DD47
+      'Other': 0XFFE4DD47,
     };
 
     demog.col('height')!.tags[DG.TAGS.COLOR_CODING_TYPE] = 'Conditional';
@@ -53,32 +53,32 @@ category('Grid', () => {
     demog.col('age')!.tags[DG.TAGS.COLOR_CODING_LINEAR] = `[${DG.Color.orange}, ${DG.Color.green}]`;
 
     //categorical RACE column check
-    let raceTags: string[] = Array.from(demog.col('race')!.tags);
+    const raceTags: string[] = Array.from(demog.col('race')!.tags);
     if (!hasTag(raceTags, '.color-coding-categorical') || !hasTag(raceTags, '{"Asian":4278190335,"Black":4286578816,"Caucasian":4278547786,"Other":4293188935}'))
-      throw 'Categorical Color Coding error'
+      throw 'Categorical Color Coding error';
 
     //numerical HEIGHT column check for Conditional ColorCoding
-    let heightTags: string[] = Array.from(demog.col('height')!.tags);
+    const heightTags: string[] = Array.from(demog.col('height')!.tags);
     if (!hasTag(heightTags, '.color-coding-type') || !hasTag(heightTags, 'Conditional') || !hasTag(heightTags, '.color-coding-conditional') || !hasTag(heightTags, '{"20-170":"#00FF00","170-190":"#220505"}'))
-      throw 'Conditional Color Coding error'
+      throw 'Conditional Color Coding error';
 
     //numerical AGE column check for Linear ColorCoding
-    let ageTags: string[] = Array.from(demog.col('age')!.tags);
+    const ageTags: string[] = Array.from(demog.col('age')!.tags);
     if (!hasTag(ageTags, '.color-coding-type') || !hasTag(ageTags, 'Linear') || !hasTag(ageTags, '.color-coding-linear') || !hasTag(ageTags, '[4294944000, 4278255360]'))
-      throw 'Linear Color Coding error'
+      throw 'Linear Color Coding error';
   });
 
   test('grid.columnVisibility', async () => {
-    let studyColVisible = grid.columns.byName('~study')!.visible;
+    const studyColVisible = grid.columns.byName('~study')!.visible;
 
     grid.columns.setVisible(['age', 'sex', 'race', 'height', 'weight', 'site', 'subj', 'started']);
-    let diseaseColVisible = grid.columns.byName('disease')!.visible;
+    const diseaseColVisible = grid.columns.byName('disease')!.visible;
 
     if (studyColVisible != false)
-      throw 'Hiding a column by adding ~ to the name doesn\'t work'
+      throw 'Hiding a column by adding ~ to the name doesn\'t work';
 
     if (diseaseColVisible != false)
-      throw 'Hiding a column by using columns.setVisible doesn\'t work'
+      throw 'Hiding a column by using columns.setVisible doesn\'t work';
   });
 
 
@@ -86,19 +86,18 @@ category('Grid', () => {
     demog.col('site')!.tags[DG.TAGS.CHOICES] = '["New York", "Buffalo"]';
     demog.col('site')!.tags[DG.TAGS.AUTO_CHOICES] = 'New York';
 
-    let siteTags: string[] = Array.from(demog.col('site')!.tags);
+    const siteTags: string[] = Array.from(demog.col('site')!.tags);
 
     if (!hasTag(siteTags, '.choices') || !hasTag(siteTags, '["New York", "Buffalo"]') || !hasTag(siteTags, '.auto-choices') || !hasTag(siteTags, 'New York'))
-      throw 'Column Controlled Values (Choices) error'
+      throw 'Column Controlled Values (Choices) error';
   });
 
   test('GridColumn.renderer', async () => {
-    for (const col of demog.columns.numerical) {
+    for (const col of demog.columns.numerical)
       expect(grid.col(col.name)?.renderer.cellType, 'number');
-    }
-    for (const col of demog.columns.categorical) {
+
+    for (const col of demog.columns.categorical)
       expect(grid.col(col.name)?.renderer.cellType, DG.TYPE.STRING);
-    }
   });
 
   after(async () => {
@@ -116,5 +115,4 @@ category('Grid', () => {
     }
     return false;
   }
-
 });

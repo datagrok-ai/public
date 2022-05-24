@@ -1,8 +1,8 @@
-import {after, before, category, delay, expect, test} from "@datagrok-libraries/utils/src/test";
+import {after, before, category, delay, expect, test} from '@datagrok-libraries/utils/src/test';
 import * as grok from 'datagrok-api/grok';
 import * as ui from 'datagrok-api/ui';
 import * as DG from 'datagrok-api/dg';
-import {checkHTMLElement} from "./utils";
+import {checkHTMLElement} from './utils';
 
 category('UI - div', () => {
   const htmlElement = ui.divText('test');
@@ -16,7 +16,7 @@ category('UI - div', () => {
     'boxFixed': {'element': ui.boxFixed(htmlElement), 'selectors': ['.ui-box', '.ui-box-fixed']},
     'card': {'element': ui.card(htmlElement), 'selectors': ['.d4-item-card', '.ui-div']},
     'div': {'element': ui.div([htmlElement]), 'selectors': ['.ui-div']},
-    'divH': {'element': ui.divH([htmlElement, htmlElement]), 'selectors': ['.d4-flex-row', '.ui-div']}, 
+    'divH': {'element': ui.divH([htmlElement, htmlElement]), 'selectors': ['.d4-flex-row', '.ui-div']},
     'divText': {'element': ui.divText('test'), 'selectors': ['div']},
     'divV': {'element': ui.divV([htmlElement, htmlElement]), 'selectors': ['.d4-flex-col', '.ui-div']},
     'info': {'element': ui.info(htmlElement), 'selectors': ['.grok-info-bar-container', '.ui-div']},
@@ -38,9 +38,8 @@ category('UI - div', () => {
   });
 
   test('div.root', async () => {
-    for (const [key, value] of Object.entries(divs)) {
+    for (const [key, value] of Object.entries(divs))
       checkHTMLElement(key, value['element'], v, value['selectors']);
-    }
   });
 
   after(async () => {

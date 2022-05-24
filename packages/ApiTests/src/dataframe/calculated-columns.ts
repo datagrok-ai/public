@@ -1,7 +1,7 @@
 import * as grok from 'datagrok-api/grok';
 import * as DG from 'datagrok-api/dg';
-import { Subscription } from 'rxjs';
-import { after, category, expect, test } from "@datagrok-libraries/utils/src/test";
+import {Subscription} from 'rxjs';
+import {after, category, expect, test} from '@datagrok-libraries/utils/src/test';
 
 
 category('DataFrame', () => {
@@ -15,7 +15,7 @@ category('DataFrame', () => {
 
   test('Create a calculated column', async () => {
     try {
-      let column = await df.columns.addNewCalculated('new', '${x}+${y}-${z}');
+      const column = await df.columns.addNewCalculated('new', '${x}+${y}-${z}');
       expect(df.columns.contains(column.name), true);
       expect(column.tags[DG.TAGS.FORMULA], '${x}+${y}-${z}');
       expect(column.get(0), -2);
@@ -47,7 +47,7 @@ category('DataFrame', () => {
       dialogs.push(d);
     }));
     try {
-      let column = await df.columns.addNewCalculated('editable', '0');
+      const column = await df.columns.addNewCalculated('editable', '0');
       column.dialogs.editFormula();
     } finally {
       df.columns.remove('editable');

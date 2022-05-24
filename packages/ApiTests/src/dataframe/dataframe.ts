@@ -1,25 +1,25 @@
 import * as DG from 'datagrok-api/dg';
 import * as grok from 'datagrok-api/grok';
-import {category, expect, test} from "@datagrok-libraries/utils/src/test";
+import {category, expect, test} from '@datagrok-libraries/utils/src/test';
 
 category('DataFrame', () => {
   test('create from arrays', async () => {
-    let t = DG.DataFrame.fromColumns([
+    const t = DG.DataFrame.fromColumns([
       DG.Column.fromList('int', 'int', [1, 2, 3]),
       DG.Column.fromList('double', 'double', [1.1, 2.1, 3.1]),
-      DG.Column.fromList('string', 'string', ["a", "b", "c"]),
-      DG.Column.fromList('object', 'object', [{}, null, {a: 1, b: 2}])
+      DG.Column.fromList('string', 'string', ['a', 'b', 'c']),
+      DG.Column.fromList('object', 'object', [{}, null, {a: 1, b: 2}]),
     ]);
   });
 
   test('create from columns', async () => {
-    let t = DG.DataFrame.create(3);
+    const t = DG.DataFrame.create(3);
     t.columns.add(DG.Column.fromStrings('countries', ['USA', 'Canada', 'Mexico']));
     t.columns.add(DG.Column.fromStrings('population', ['321', '35', '121']));
   });
 
   test('create from csv', async () => {
-    let table = DG.DataFrame.fromCsv(
+    const table = DG.DataFrame.fromCsv(
       `make, model,    cylinders, volume, price
 Honda, Civic,    4,         1.4,    15000
 Honda, Accord,   6,         1.8,    20000
@@ -30,7 +30,7 @@ Tesla, Model S,  ,          1.6,    120000`);
   });
 
   test('create from json', async () => {
-    let table = DG.DataFrame.fromJson(`[
+    const table = DG.DataFrame.fromJson(`[
   {
     "name": "Roger Federer",
     "height": 185,
@@ -45,23 +45,23 @@ Tesla, Model S,  ,          1.6,    120000`);
   });
 
   test('create from typed arrays', async () => {
-    let table = DG.DataFrame.fromColumns([
+    const table = DG.DataFrame.fromColumns([
       DG.Column.fromInt32Array('ints', new Int32Array(100)),
-      DG.Column.fromFloat32Array('floats', new Float32Array(100))
+      DG.Column.fromFloat32Array('floats', new Float32Array(100)),
     ]);
   });
 
   //creation of dataframes used in testing
-  let df1 = DG.DataFrame.create(2);
+  const df1 = DG.DataFrame.create(2);
   df1.columns.add(DG.Column.fromStrings('countries', ['USA', 'Canada']));
   df1.columns.add(DG.Column.fromInt32Array('population', Int32Array.from([1, 4])));
-  let df2 = DG.DataFrame.create(2);
+  const df2 = DG.DataFrame.create(2);
   df2.columns.add(DG.Column.fromStrings('countries', ['France', 'Mexico']));
   df2.columns.add(DG.Column.fromInt32Array('population', Int32Array.from([2, 3])));
-  let df = DG.DataFrame.create(4);
+  const df = DG.DataFrame.create(4);
   df.columns.add(DG.Column.fromStrings('countries', ['USA', 'Canada', 'France', 'Mexico']));
   df.columns.add(DG.Column.fromInt32Array('population', Int32Array.from([1, 4, 2, 3])));
-  
+
   test('append method', async () => {
     df1.append(df2);
     //expect(df1.append(df2), df);
@@ -82,19 +82,19 @@ Tesla, Model S,  ,          1.6,    120000`);
   });
 
   test('col method', async () => {
-    let res = df1.col('population')?.getRawData();
-    expect(res?.toString(), "1,4");
+    const res = df1.col('population')?.getRawData();
+    expect(res?.toString(), '1,4');
   });
 
   test('getcol method', async () => {
-    let res = df1.getCol('population').getRawData();
-    expect(res.toString(), "1,4");
+    const res = df1.getCol('population').getRawData();
+    expect(res.toString(), '1,4');
   });
 
   test('get sorted order method', async () => {
     const arr = [];
     arr.push(df.columns.names()[1]);
-    let order = df.getSortedOrder(arr);
+    const order = df.getSortedOrder(arr);
     expect(order.toString(), '0,2,3,1');
   });
 
@@ -111,15 +111,15 @@ Tesla, Model S,  ,          1.6,    120000`);
   });
 
   test('set method', async () => {
-    df1.set("population", 1, 5);
-    expect(5, df1.get("population", 1));
+    df1.set('population', 1, 5);
+    expect(5, df1.get('population', 1));
   });
 
   test('get density method', async () => {
-    let t = DG.DataFrame.create(3);
+    const t = DG.DataFrame.create(3);
     t.columns.add(DG.Column.fromInt32Array('numbers', Int32Array.from([1, 4, 2])));
     t.columns.add(DG.Column.fromInt32Array('digits', Int32Array.from([2, 1, 3])));
-    let res = t.getDensity(4, 2, 'numbers', 'digits');
+    const res = t.getDensity(4, 2, 'numbers', 'digits');
     return res;
   });
 
@@ -130,7 +130,7 @@ Tesla, Model S,  ,          1.6,    120000`);
 
   test('column list add', async () => {
     df1.columns.add(DG.Column.fromInt32Array('popularity', Int32Array.from([12, 10])));
-    let res = df1.columns.byName('popularity').getRawData();
+    const res = df1.columns.byName('popularity').getRawData();
     expect(res.toString(), '12,10');
   });
 
@@ -147,7 +147,7 @@ Tesla, Model S,  ,          1.6,    120000`);
   test('column list addNewDateTime', async () => {
     return df.columns.addNewDateTime('newColumn');
   });
-  
+
   test('column list addNewFloat', async () => {
     df.columns.addNewFloat('newColumn');
     expect(typeof(df.get('newColumn', 1)), 'number');
@@ -178,14 +178,14 @@ Tesla, Model S,  ,          1.6,    120000`);
 
   test('column list bySemType', async () => {
     df1.onSemanticTypeDetected.subscribe((_) => {
-      let res = df1.columns.bySemType('country');
+      const res = df1.columns.bySemType('country');
       expect(res?.toString(), 'countries');
     });
   });
 
   test('column list bySemTypeAll', async () => {
     df1.onSemanticTypeDetected.subscribe((_) => {
-      let res = df1.columns.bySemTypeAll('country');
+      const res = df1.columns.bySemTypeAll('country');
       expect(res.toString(), 'countries');
     });
   });
@@ -195,11 +195,11 @@ Tesla, Model S,  ,          1.6,    120000`);
   });
 
   test('column list getUnusedName', async () => {
-    expect(df.columns.getUnusedName('population').toString(), 'population (2)')
+    expect(df.columns.getUnusedName('population').toString(), 'population (2)');
   });
 
   test('column list insert', async () => {
-    let newColumn = DG.Column.fromStrings('data', ['12', '34']);
+    const newColumn = DG.Column.fromStrings('data', ['12', '34']);
     df1.columns.insert(newColumn);
     expect(df1.get('data', 1).toString(), '34');
   });
@@ -214,7 +214,7 @@ Tesla, Model S,  ,          1.6,    120000`);
   });
 
   test('column list replace', async () => {
-    let newColumn = DG.Column.fromStrings('data', ['12', '34']);
+    const newColumn = DG.Column.fromStrings('data', ['12', '34']);
     df1.columns.replace('countries', newColumn);
     expect(df1.columns.names().toString(), 'data,population');
   });
@@ -237,12 +237,11 @@ Tesla, Model S,  ,          1.6,    120000`);
   });
 
   test('row list insertAt', async () => {
-    df1.rows.insertAt(2,2);
+    df1.rows.insertAt(2, 2);
     expect(df1.get('countries', 2), '');
   });
 
   test('row list match', async () => {
     return df1.rows.match('countries = USA').highlight();
   });
-
 });
