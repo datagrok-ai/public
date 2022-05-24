@@ -223,7 +223,7 @@ jobs:
             --dep ${{ steps.info.outputs.dep }} \
             --depver ${{ steps.info.outputs.depver }}
 
-      - name: Commit package-lock.json
+      - name: Commit package-lock.json and Meta package package.json
         id: git
         run: |
           git config --global user.name 'GitHub Actions'
@@ -288,12 +288,6 @@ jobs:
         run: npm install -g npm@latest
       - name: npm version
         run: npm version
-      - name: Build Meta package
-        working-directory: packages/Meta
-        run: |
-          npm install
-          npm run babel
-
       - name: Bump Meta package
         working-directory: packages/Meta
         run: |
