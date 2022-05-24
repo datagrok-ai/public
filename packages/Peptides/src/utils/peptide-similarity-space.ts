@@ -66,10 +66,10 @@ export async function createPeptideSimilaritySpaceViewer(
 
   // Add new axes.
   for (const axis of axesNames) {
-    const col = table.col(axis);
+    const axisCol = table.col(axis);
     const newCol = edf.getCol(axis);
 
-    if (col != null) {
+    if (axisCol != null) {
       for (let i = 0; i < newCol.length; ++i) {
         const v = newCol.get(i);
         table.set(axis, i, v);

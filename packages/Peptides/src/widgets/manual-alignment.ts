@@ -3,7 +3,6 @@ import * as grok from 'datagrok-api/grok';
 import * as DG from 'datagrok-api/dg';
 
 import $ from 'cash-dom';
-// import {splitAlignedPeptides} from '../utils/split-aligned';
 import '../styles.css';
 import {PeptidesController} from '../peptides';
 

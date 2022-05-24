@@ -4,10 +4,7 @@ import * as DG from 'datagrok-api/dg';
 import Aioli from '@biowasm/aioli';
 
 import {AlignedSequenceEncoder} from '@datagrok-libraries/bio/src/sequence-encoder';
-//@ts-ignore
-import {SEMTYPE} from '../semantics';
-
-// let CLI: any = undefined;
+import * as C from './constants';
 
 /**
  * Converts array of sequences into simple fasta string.
@@ -38,10 +35,9 @@ function _fastaToStrings(fasta: string): string[] {
 function _castAligned(seq: string): string {
   let delimited = '';
 
-  for (let i = 0; i < seq.length; ++i) {
-    const char = seq[i];
+  for (const char of seq)
     delimited += char == '-' ? char : `-${char}`;
-  }
+
   return `NH2${delimited}-COOH`;
 }
 
@@ -81,12 +77,6 @@ export async function runKalign(col: DG.Column, isAligned = false) : Promise<DG.
     reinit: true,
   });
 
-  // if (!CLI) {
-  //   CLI = await new Aioli('kalign/3.3.1');
-  //   console.info('kalign CLI was first initialized.');
-  // } else
-  //   console.info('Initialized kalign CLI was reused.');
-
   console.log(['fasta.length =', fasta.length]);
 
   await CLI.fs.writeFile('input.fa', fasta);
@@ -95,12 +85,9 @@ export async function runKalign(col: DG.Column, isAligned = false) : Promise<DG.
 
   console.warn(output);
 
-  // if (!buf)
-  //   console.warn(buf);
-
   const aligned = _fastaToStrings(buf).slice(0, sequences.length);
   const alignedCol = DG.Column.fromStrings(`(${col.name})msa`, _stringsToAligned(aligned));
-  alignedCol.semType = SEMTYPE.ALIGNED;
+  alignedCol.semType = C.SEM_TYPES.ALIGNED_SEQUENCE;
   return alignedCol;
 }
 

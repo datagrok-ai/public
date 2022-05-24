@@ -14,9 +14,7 @@ export class SARViewerBase extends DG.JsViewer {
   sourceGrid!: DG.Grid;
   controller!: PeptidesController;
   scaling: string;
-  // filterMode: boolean;
   bidirectionalAnalysis: boolean;
-  // grouping: boolean;
   showSubstitution: boolean;
   maxSubstitutions: number;
   activityLimit: number;
@@ -28,10 +26,7 @@ export class SARViewerBase extends DG.JsViewer {
     super();
 
     this.scaling = this.string('scaling', 'none', {choices: ['none', 'lg', '-lg']});
-    // this.filterMode = this.bool('filterMode', false);
     this.bidirectionalAnalysis = this.bool('bidirectionalAnalysis', false);
-    // this.grouping = this.bool('grouping', false);
-
     this.showSubstitution = this.bool('showSubstitution', true);
     this.maxSubstitutions = this.int('maxSubstitutions', 1);
     this.activityLimit = this.float('activityLimit', 2);
@@ -44,8 +39,6 @@ export class SARViewerBase extends DG.JsViewer {
     this.controller = await PeptidesController.getInstance(this.dataFrame);
     this.controller.init(this.dataFrame);
     await this.requestDataUpdate();
-
-    // this.subs.push(this.controller.onGroupMappingChanged.subscribe(() => {this.render(true);}));
   }
 
   detach() {this.subs.forEach((sub) => sub.unsubscribe());}

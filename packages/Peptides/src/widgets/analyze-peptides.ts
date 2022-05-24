@@ -1,13 +1,10 @@
 import * as grok from 'datagrok-api/grok';
 import * as ui from 'datagrok-api/ui';
 import * as DG from 'datagrok-api/dg';
-import {callMVA} from '../utils/multivariate-analysis';
 import {PeptidesController} from '../peptides';
 import '../styles.css';
-import {StringDictionary} from '@datagrok-libraries/utils/src/type-declarations';
 import * as C from '../utils/constants';
-import {FilteringStatistics} from '../utils/filtering-statistics';
-import { getSeparator } from '../utils/misc';
+import {getSeparator} from '../utils/misc';
 
 /**
  * Peptide analysis widget.
@@ -48,7 +45,6 @@ export async function analyzePeptidesWidget(currentDf: DG.DataFrame, col: DG.Col
         showColumnSelector: false,
         showRangeSlider: false,
         showBinSelector: false,
-      // bins: b,
       });
       histogramHost.lastChild?.remove();
       histogramHost.appendChild(hist.root);
@@ -81,7 +77,7 @@ export async function analyzePeptidesWidget(currentDf: DG.DataFrame, col: DG.Col
       newDf.getCol(activityColumn).name = C.COLUMNS_NAMES.ACTIVITY;
       newDf.getCol(col.name).name = C.COLUMNS_NAMES.ALIGNED_SEQUENCE;
       const activityScaledCol = tempDf.getCol(C.COLUMNS_NAMES.ACTIVITY_SCALED);
-      (newDf.columns as DG.ColumnList).add(activityScaledCol);
+      newDf.columns.add(activityScaledCol);
       newDf.name = 'Peptides analysis';
       newDf.temp[C.COLUMNS_NAMES.ACTIVITY_SCALED] = newScaledColName;
       newDf.tags['isPeptidesAnalysis'] = 'true';
@@ -110,7 +106,6 @@ export async function analyzePeptidesWidget(currentDf: DG.DataFrame, col: DG.Col
   //     grok.shell.error('The activity column must be of floating point number type!');
   // });
 
-  // const viewer = await currentDf.plot.fromType('peptide-logo-viewer');
   const viewer = await currentDf.plot.fromType('WebLogo');
   viewer.root.style.setProperty('height', '130px');
 
@@ -121,7 +116,6 @@ export async function analyzePeptidesWidget(currentDf: DG.DataFrame, col: DG.Col
         ui.splitV([ui.inputs(inputsList), startBtn]),
         histogramHost,
       ], {style: {height: 'unset'}}),
-      // histogramHost,
     ]),
   );
 }

@@ -10,7 +10,6 @@ import {
   AlignedSequenceDifferenceCellRenderer,
   AminoAcidsCellRenderer,
 } from './utils/cell-renderer';
-// import {Logo} from './viewers/logo-viewer';
 import {StackedBarChart} from './viewers/stacked-barchart-viewer';
 
 import {analyzePeptidesWidget} from './widgets/analyze-peptides';
@@ -168,7 +167,7 @@ export function alignedSequenceCellRenderer() {
 
 //name: aminoAcidsCellRenderer
 //tags: cellRenderer
-//cellType: aminoAcids
+//meta.cellType: aminoAcids
 //output: grid_cell_renderer result
 export function aminoAcidsCellRenderer() {
   return new AminoAcidsCellRenderer();
@@ -286,7 +285,7 @@ export function getPeptidesStructure(col: DG.Column): DG.Widget {
 
 //name: alignedSequenceDifferenceCellRenderer
 //tags: cellRenderer
-//meta-cell-renderer-sem-type: alignedSequenceDifference
+//meta.cellType: alignedSequenceDifference
 //output: grid_cell_renderer result
 export function alignedSequenceDifferenceCellRenderer() {
   return new AlignedSequenceDifferenceCellRenderer();
@@ -298,7 +297,7 @@ function getOrDefine(
   view ??= (grok.shell.v as DG.TableView);
   grid ??= view.grid;
   dataframe ??= grok.shell.t;
-  column ??= (dataframe.columns as DG.ColumnList).bySemType(C.SEM_TYPES.ALIGNED_SEQUENCE);
+  column ??= dataframe.columns.bySemType(C.SEM_TYPES.ALIGNED_SEQUENCE);
   if (column === null)
     throw new Error('Table does not contain aligned sequence columns');
 

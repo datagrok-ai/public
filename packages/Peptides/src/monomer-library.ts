@@ -1,6 +1,6 @@
 /** HELM associated sdf libraries with monomer processing*/
 export class MonomerLibrary {
-  private static _name = 'monomerLibrary';
+  static libName = 'monomerLibrary';
 
   private monomerFields: string[] = [
     'molecule', 'MonomerType', 'MonomerNaturalAnalogCode', 'MonomerName', 'MonomerCode', 'MonomerCaps', 'BranchMonomer',
@@ -64,8 +64,8 @@ export class MonomerLibrary {
 
     //order matters
     const links = Object.keys(entry.linkages);
-    for (let i = 0; i < links.length; i++)
-      monomerMol = monomerMol.replace('R#', entry.linkages[links[i]].type + ' ');
+    for (const link of links)
+      monomerMol = monomerMol.replace('R#', entry.linkages[link].type + ' ');
 
 
     return monomerMol;
@@ -77,7 +77,7 @@ export class MonomerLibrary {
   }
 
   static get id(): string {
-    return MonomerLibrary._name;
+    return MonomerLibrary.libName;
   }
 
   private getLinkData(mol: string, caps: string, name: string) {
@@ -91,7 +91,7 @@ export class MonomerLibrary {
       types[e.match(/\d+/)![0]] = e.match(/(?<=\])\w+/)![0];
     });
 
-    const data = rawData![0].replace('M  RGP  ', '').split(/\s+/);
+    const data = rawData[0].replace('M  RGP  ', '').split(/\s+/);
     const res: { [link: string]: { atomNumber: number, type: string } } = {};
     for (let i = 0; i < parseInt(data[0]); i++) {
       const code = parseInt(data[2 * i + 2]);
@@ -160,7 +160,7 @@ class SDFReader {
   parse(content: string, start: number, end: number, handler: any) {
     const molEnd = +content.indexOf('M  END\n', start) + 7;
     let localEnd = start;
-    this.dataColls['molecule'].push(content.substr(start, molEnd - start));
+    this.dataColls['molecule'].push(content.substring(start, molEnd));
 
     start = molEnd;
     while (localEnd < end) {
@@ -182,8 +182,7 @@ class SDFReader {
       if (localEnd === -1)
         localEnd = end;
       else if (content[localEnd + 1] != '\n')
-        localEnd = content.indexOf('\n', ++localEnd);
-      ;
+        localEnd = content.indexOf('\n', localEnd + 1);
 
       handler(propertyName, content.substring(start, localEnd));
       localEnd += 2;

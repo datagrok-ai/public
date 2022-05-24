@@ -12,7 +12,6 @@ import {
 import {StringMetrics} from '@datagrok-libraries/ml/src/typed-metrics';
 import {Coordinates} from '@datagrok-libraries/utils/src/type-declarations';
 import * as C from '../utils/constants';
-import {PeptidesController} from '../peptides';
 
 export class PeptideSpaceViewer extends DG.JsViewer {
   method: string;
@@ -34,17 +33,14 @@ export class PeptideSpaceViewer extends DG.JsViewer {
 
   async onFrameAttached(dataFrame: DG.DataFrame) {
     super.onFrameAttached(dataFrame);
-
-    // this.controller = await PeptidesController.getInstance(this.dataFrame!);
-
-    await this.render(this.dataFrame!.temp[C.EMBEDDING_STATUS]);
+    await this.render(this.dataFrame.temp[C.EMBEDDING_STATUS]);
   }
 
   async onPropertyChanged(property: DG.Property | null) {
     super.onPropertyChanged(property);
 
 
-    await this.render(this.customProperties.has(property?.name ?? '') || this.dataFrame!.temp[C.EMBEDDING_STATUS]);
+    await this.render(this.customProperties.has(property?.name ?? '') || this.dataFrame.temp[C.EMBEDDING_STATUS]);
   }
 
   async render(computeData=false) {
@@ -52,14 +48,14 @@ export class PeptideSpaceViewer extends DG.JsViewer {
       this.isEmbeddingCreating = true;
       $(this.root).empty();
       const viewerHost = ui.waitBox(async () => {
-        await computeWeights(this.dataFrame!, this.method, this.measure, this.cyclesCount);
+        await computeWeights(this.dataFrame, this.method, this.measure, this.cyclesCount);
 
         const viewerOptions = {
           x: '~X', y: '~Y', color: C.COLUMNS_NAMES.ACTIVITY_SCALED ?? '~MW', size: '~MW', title: 'Peptide Space',
           showYSelector: false, showXSelector: false, showColorSelector: false, showSizeSelector: false,
           zoomAndFilter: 'no action', axesFollowFilter: false,
         };
-        const viewerRoot = this.dataFrame!.plot.scatter(viewerOptions).root;
+        const viewerRoot = this.dataFrame.plot.scatter(viewerOptions).root;
         viewerRoot.style.width = 'auto';
         this.isEmbeddingCreating = false;
         viewerHost.style.paddingLeft = 'unset';
@@ -110,7 +106,7 @@ export async function computeWeights(
       //   }
       // } else
       //   table.columns.insert(newCol);
-      const columnList = table.columns as DG.ColumnList;
+      const columnList = table.columns;
       col !== null ? columnList.replace(col, newCol) : columnList.insert(newCol);
     }
   } catch (error) {

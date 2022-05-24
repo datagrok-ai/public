@@ -147,10 +147,10 @@ export class StackedBarChart extends DG.JsViewer {
     this.aminoColumnNames = [];
     this.aminoColumnIndices = {};
 
-    this.dataFrame!.columns.names().forEach((name: string) => {
-      if (this.dataFrame!.getCol(name).semType === C.SEM_TYPES.AMINO_ACIDS &&
-          !this.dataFrame!.getCol(name).categories.includes('COOH') &&
-          !this.dataFrame!.getCol(name).categories.includes('NH2')) {
+    this.dataFrame.columns.names().forEach((name: string) => {
+      if (this.dataFrame.getCol(name).semType === C.SEM_TYPES.AMINO_ACIDS &&
+          !this.dataFrame.getCol(name).categories.includes('COOH') &&
+          !this.dataFrame.getCol(name).categories.includes('NH2')) {
         this.aminoColumnIndices[name] = this.aminoColumnNames.length + 1;
         this.aminoColumnNames.push(name);
       }
@@ -160,15 +160,15 @@ export class StackedBarChart extends DG.JsViewer {
     this.aggregatedSelectedTables = {};
     //TODO: optimize it, why store so many tables?
     this.aminoColumnNames.forEach((name) => {
-      this.aggregatedFilterTables[name] = this.dataFrame!
+      this.aggregatedFilterTables[name] = this.dataFrame
         .groupBy([name])
-        .whereRowMask(this.dataFrame!.filter)
+        .whereRowMask(this.dataFrame.filter)
         .add('count', name, `${name}_count`)
         .aggregate();
 
-      this.aggregatedSelectedTables[name] = this.dataFrame!
+      this.aggregatedSelectedTables[name] = this.dataFrame
         .groupBy([name])
-        .whereRowMask(this.dataFrame!.selection)
+        .whereRowMask(this.dataFrame.selection)
         .add('count', name, `${name}_count`)
         .aggregate();
     });
@@ -206,7 +206,7 @@ export class StackedBarChart extends DG.JsViewer {
       colData.sort((o1, o2) => this.ord[o2['name']] - this.ord[o1['name']]);
     }
 
-    this.max = this.dataFrame!.filter.trueCount;
+    this.max = this.dataFrame.filter.trueCount;
   }
 
   renderBarToCanvas(g: CanvasRenderingContext2D, cell: DG.GridCell, x: number, y: number, w: number, h: number) {
@@ -343,8 +343,8 @@ export class StackedBarChart extends DG.JsViewer {
   requestAction(event: MouseEvent) {
     if (!this._currentBarPart)
       return;
-    let aar = this._currentBarPart!['aaName'];
-    let position = this._currentBarPart!['colName'];
+    let aar = this._currentBarPart['aaName'];
+    let position = this._currentBarPart['colName'];
     if (event.type === 'click') {
       if (this.isSameBarClicked) {
         aar = position = C.CATEGORIES.ALL;
