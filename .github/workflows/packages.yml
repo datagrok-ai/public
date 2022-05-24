@@ -220,7 +220,7 @@ jobs:
         run: |
           bin/grok-meta.js add \
             --package ${{ steps.info.outputs.name }} \
-            --description ${{ steps.info.outputs.description }} \
+            --description "${{ steps.info.outputs.description }}" \
             --ver ${{ steps.info.outputs.version }} \
             --dep ${{ steps.info.outputs.dep }} \
             --depver ${{ steps.info.outputs.depver }}
