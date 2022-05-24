@@ -3,7 +3,8 @@ const path = require('path');
 module.exports = {
   mode: 'development',
   entry: {
-    package: './src/package.ts'
+    test: {filename: 'package-test.js', library: {type: 'var', name:`apitests_test`}, import: './src/package-test.ts'},
+    package: './src/package.ts',
   },
   resolve: {
     extensions: ['.wasm', '.mjs', '.js', '.json', '.ts', '.tsx'],

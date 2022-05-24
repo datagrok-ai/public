@@ -840,7 +840,7 @@ export class Column<T = any> {
   /** Gets i-th value
    * @param {number} row - row index
    * @returns {object} - or null if isNone(i) */
-  get(row: number): T {
+  get(row: number): T | null {
     return api.grok_Column_GetValue(this.dart, row);
   }
 
@@ -985,16 +985,18 @@ export class Column<T = any> {
 }
 
 export class DateTimeColumn extends Column<dayjs.Dayjs> {
-
-  get(row: number): dayjs.Dayjs {
-    return dayjs(api.grok_DateTimeColumn_GetValue(this.dart, row));
+  /**
+   * Gets [i]-th value.
+   */
+  get(row: number): dayjs.Dayjs | null {
+    let v = api.grok_DateTimeColumn_GetValue(this.dart, row);
+    if (v == null)
+      return null;
+    return dayjs(v);
   }
 
   /**
    * Sets [i]-th value to [x], and optionally notifies the dataframe about this change.
-   * @param {number} i
-   * @param value
-   * @param {boolean} notify
    */
   set(i: number, value: dayjs.Dayjs | null, notify: boolean = true): void {
     api.grok_DateTimeColumn_SetValue(this.dart, i, value?.valueOf(), notify);
