@@ -1,7 +1,9 @@
 {
   "name": "@datagrok/chembl",
-  "tags": ["chem"],
-  "version": "0.0.3",
+  "tags": [
+    "chem"
+  ],
+  "version": "1.0.0",
   "fullName": "Chembl",
   "description": "Chembl integration",
   "repository": {
@@ -12,6 +14,10 @@
   "scripts": {
     "deploy": "grok publish"
   },
-  "canEdit": [ "Developers" ],
-  "canView": [ "All users" ]
+  "canEdit": [
+    "Developers"
+  ],
+  "canView": [
+    "All users"
+  ]
 }
