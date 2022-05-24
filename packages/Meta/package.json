@@ -596,7 +596,8 @@
           "datagrok-api": "^0.151.6"
         },
         "1.0.1": {},
-        "1.0.2": {}
+        "1.0.2": {},
+        "1.0.3": {}
       },
       "description": "Chembl integration"
     },
