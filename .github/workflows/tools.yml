@@ -57,7 +57,7 @@ jobs:
         run: |
           if [ -n "$(git status -s tools/package-lock.json)" ]; then
             git config --global user.name 'GitHub Actions'
-            git config --global user.email 'spodolskaya@datagrok.ai'
+            git config --global user.email 'github_actions@datagrok.ai'
             git pull
             git add tools/package-lock.json
             git commit -m "GitHub Actions: Update tools/package-lock.json [skip ci]"

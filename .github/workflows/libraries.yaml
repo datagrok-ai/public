@@ -126,7 +126,7 @@ jobs:
         run: |
           if [ -n "$(git status -s libraries/${{ matrix.project }}/package-lock.json)" ]; then
             git config --global user.name 'GitHub Actions'
-            git config --global user.email 'spodolskaya@datagrok.ai'
+            git config --global user.email 'github_actions@datagrok.ai'
             git pull
             git add libraries/${{ matrix.project }}/package-lock.json
             git commit -m "GitHub Actions: Update libraries/${{ matrix.project }}/package-lock.json [skip ci]"
@@ -169,7 +169,7 @@ jobs:
         run: |
           if [ -n "$(git status -s packages/*/package.json)" ]; then
             git config --global user.name 'GitHub Actions'
-            git config --global user.email 'spodolskaya@datagrok.ai'
+            git config --global user.email 'github_actions@datagrok.ai'
             git pull
             git add packages/*/package.json
             git commit -m "GitHub Actions: Update library ${{ matrix.project }} dependency rule for packages [skip ci]"
