@@ -139,7 +139,7 @@ jobs:
       - name: Build package
         if: ${{ matrix.build == 'true' }}
         id: build
-        run: webpack
+        run: npm run build
         working-directory: packages/${{ matrix.package }}
       - name: Install datagrok tools
         run: npm install -g datagrok-tools@latest
