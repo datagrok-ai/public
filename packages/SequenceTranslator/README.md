@@ -3,19 +3,25 @@
 ![Sequence Translator](img/Sequence%20Translator%20Axolabs.png)
 
 SequenceTranslator is a [package](https://datagrok.ai/help/develop/develop#packages) for
-the [Datagrok](https://datagrok.ai) platform, used to translate [oligonucleotide](https://en.wikipedia.org/wiki/Oligonucleotide) 
-sequences between [different representations](https://github.com/datagrok-ai/public/tree/master/packages/SequenceTranslator#sequence-representations).
+the [Datagrok](https://datagrok.ai) platform, used to
+translate [oligonucleotide](https://en.wikipedia.org/wiki/Oligonucleotide)
+sequences
+between [different representations](https://github.com/datagrok-ai/public/tree/master/packages/SequenceTranslator#sequence-representations)
+.
 
 Presentation: https://www.youtube.com/watch?v=2xuxJjpjXi4&t=3783s
 
-Oligonucleotides are characterized by the sequence of [nucleotide modifications](https://github.com/datagrok-ai/public/tree/master/packages/SequenceTranslator#axolabs-nucleotide-modifications) that make up the entire molecule. 
-The length of the oligonucleotide is usually 13-25 nucleotides long (denoted by "-mer").
+Oligonucleotides are characterized by the sequence
+of [nucleotide modifications](https://github.com/datagrok-ai/public/tree/master/packages/SequenceTranslator#axolabs-nucleotide-modifications)
+that make up the entire molecule. The length of the oligonucleotide is usually 13-25 nucleotides long (denoted by "
+-mer").
 
 Oligonucleotides are chemically synthesized. Chain assembly proceeds in the 3' to 5' direction by following a routine
-procedure referred to as a "synthetic cycle".
-Completion of a single synthetic cycle results in the addition of one nucleotide residue to the growing chain.
+procedure referred to as a "synthetic cycle". Completion of a single synthetic cycle results in the addition of one
+nucleotide residue to the growing chain.
 
 # Use cases
+
 | Name |  Steps  |
 |---|---|
 | Translate one sequence of types list | Paste sequence into the text field in `MAIN` tab of App |
@@ -23,12 +29,13 @@ Completion of a single synthetic cycle results in the addition of one nucleotide
 | Translate sequences using new Axolabs pattern | 1. Go to `AXOLABS` tab <br/>2. Drag & drop an Excel or CSV file with sequences into Datagrok <br/>3. Choose your table in the `Table` field <br/>4. Choose `SS Column`, and, if needed, `AS Column` and `ID Column`(needed to add column with concatenated ID and pattern name) <br/>5. Press `Convert Sequences` button  <br/>This will add the result column(s) to the right of the table. Save pattern, if needed|
 | Translate sequences using existing Axolabs pattern | 1. Go to `AXOLABS` tab <br/>2. Select your pattern in `Load Pattern` field <br/>3. Do steps #2-5 from previous use case |
 
-# Sequence representations 
+# Sequence representations
 
-In the modification section on the right side of the screen you can select modification for each base in your input sequence
-and check if PTO after the base is required.
+In the modification section on the right side of the screen you can select modification for each base in your input
+sequence and check if PTO after the base is required.
 
-Representations are splitted into categories by synthesizer's sequence format(BioSpring/Axolabs/MerMade) and type of molecule (Gapmers / siRNA). 
+Representations are splitted into categories by synthesizer's sequence format(BioSpring/Axolabs/MerMade) and type of
+molecule (Gapmers / siRNA).
 
 | Name | Example | Regular expression |
 |---|---|---|
@@ -44,6 +51,7 @@ Representations are splitted into categories by synthesizer's sequence format(Bi
 | Applied Biosystems Inc. (ABI) | `58877TTTACCACGT56788` | `^[5678ATGC]{10,}$` |
 
 # Axolabs nucleotide modifications
+
 | Name | Description | Symbols |
 |---|---|---|
 | `RNA` | RNA nucleotides | `A, C, G, U` |

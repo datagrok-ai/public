@@ -1,5 +1,10 @@
+# ChaRPy
+
 ChaRPy is a [package](https://datagrok.ai/help/develop/develop#packages) for the [Datagrok](https://datagrok.ai) platform.
-It extends Datagrok viewers with two commands, "To Python script" and "To R script", which translate a selected viewer to Python or R code, respectively, along with executing this code for displaying the resulting plot. The two commands are available via a hamburger menu (a top-left button in a viewer's header), and supported for most of the viewers in Datagrok.
+It extends Datagrok viewers with two commands, "To Python script" and "To R script", which translate a selected viewer
+to Python or R code, respectively, along with executing this code for displaying the resulting plot. The two commands
+are available via a hamburger menu (a top-left button in a viewer's header), and supported for most of the viewers in
+Datagrok.
 
 ![ChaRPy Demo](./charpy.gif)
 

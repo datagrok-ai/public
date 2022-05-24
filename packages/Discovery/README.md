@@ -1,5 +1,6 @@
-Discovery is a [package](https://datagrok.ai/help/develop/develop#packages) for the [Datagrok](https://datagrok.ai) platform.
-It ships a playground app "Discovery" which we use for trying out and showcasing new functionality of Datagrok platform at demos and in general.
+Discovery is a [package](https://datagrok.ai/help/develop/develop#packages) for the [Datagrok](https://datagrok.ai)
+platform. It ships a playground app "Discovery" which we use for trying out and showcasing new functionality of Datagrok
+platform at demos and in general.
 
 See also: 
 
