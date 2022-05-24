@@ -4,7 +4,7 @@ import * as DG from 'datagrok-api/dg';
 
 import * as rxjs from 'rxjs';
 
-import {WebLogo} from '@datagrok-libraries/bio';
+import {WebLogo} from '@datagrok-libraries/bio/src/viewers/web-logo';
 
 
 export enum VdRegionType {
@@ -126,8 +126,6 @@ export class RegionSelectorViewer {
 
     this.heavyWL = await this.mlbView.dataFrame.plot.fromType('WebLogo', {sequenceColumnName: 'Heavy chain sequence'});
     this.heavyWL.root.style.background = 'window';
-    // this.heavyWL.root.style.width = '100%';
-    this.heavyWL.root.style.height = '100%';
 
     // this.heavyDiv = ui.div([ui.inlineText(['Heavy blue']), this.heavyWL.root], {style: {width: '20%;'}});
     // this.heavyDiv.style.background = 'blue';
@@ -218,7 +216,8 @@ export class RegionSelectorViewer {
           sequenceColumnName: `${chain} chain sequence`,
           startPositionName: region.startPositionName,
           endPositionName: region.endPositionName,
-        })) as WebLogo;
+          fixWidth: true,
+        })) as unknown as WebLogo;
       }
     }
 
@@ -246,7 +245,7 @@ export class RegionSelectorViewer {
 
             const resDiv = ui.div([wl.root]/*`${chain} ${regionsFiltered[rI]}`*/, {
               style: {
-                height: '100%',
+                // height: '100%',
                 marginTop: '4px',
                 marginBottom: '4px',
               }
@@ -265,19 +264,24 @@ export class RegionSelectorViewer {
     this.root.appendChild(this.mainLayout);
     this.root.style.overflowX = 'auto';
 
-    for (let rI = 0; rI < this.logos.length; rI++) {
-      await this.logos[rI]['Heavy'].init();
-      await this.logos[rI]['Light'].init();
-    }
+    // for (let rI = 0; rI < this.logos.length; rI++) {
+    //   await this.logos[rI]['Heavy'].init();
+    //   await this.logos[rI]['Light'].init();
+    // }
     this.calcSize();
   }
 
   private calcSize() {
     const logoHeight = (this.root.clientHeight - 54) / 2;
 
+    const maxHeight: number = Math.min(logoHeight,
+      Math.max(...this.logos.map((wlDict) =>
+        Math.max(...Object.values(wlDict).map((wl) => wl.maxHeight))))
+    );
+
     for (let rI = 0; rI < this.logos.length; rI++) {
-      this.logos[rI]['Heavy'].root.style.height = `${logoHeight}px`;
-      this.logos[rI]['Light'].root.style.height = `${logoHeight}px`;
+      this.logos[rI]['Heavy'].root.style.height = `${maxHeight}px`;
+      this.logos[rI]['Light'].root.style.height = `${maxHeight}px`;
     }
   }
 

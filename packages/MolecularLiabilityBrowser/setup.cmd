@@ -21,6 +21,13 @@ call npm install
 call npm run build
 call npm link
 
+echo MLB-Data ...
+cd %package_dir%/../MolecularLiabilityBrowserData
+rmdir /s /q node_modules
+call npm install
+call npm run build
+call npm link
+
 echo MLB ...
 cd %package_dir%
 rmdir /s /q node_modules

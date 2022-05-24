@@ -6,8 +6,6 @@ import {PtmFilter} from './custom-filters';
 import {DataLoader} from './utils/data-loader';
 import {DataLoaderFiles} from './utils/data-loader-files';
 
-import {WebLogo} from '@datagrok-libraries/bio';
-
 // import {DataLoaderDb} from './utils/data-loader-jnj';
 
 export const _package = new DG.Package();
@@ -57,9 +55,4 @@ export async function MolecularLiabilityBrowserApp() {
   await app.init(vid);
 }
 
-//name: WebLogo
-//tags: viewer, panel
-//output: viewer result
-export function webLogoViewer() {
-  return new WebLogo();
-}
+/* WebLogo viewer is registered in Bio package */
