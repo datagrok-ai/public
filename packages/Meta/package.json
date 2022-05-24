@@ -2,7 +2,34 @@
   "name": "@datagrok/meta",
   "version": "1.0.0",
   "description": "Meta information for @datagrok scope",
-  "data":{
+  "dependencies": {
+    "@babel/runtime": "^7.16.0",
+    "fs": "latest",
+    "minimist": "^1.2.5",
+    "path": "^0.12.7"
+  },
+  "devDependencies": {
+    "@babel/cli": "^7.15.7",
+    "@babel/plugin-transform-runtime": "^7.16.0",
+    "@babel/preset-typescript": "7.15.0",
+    "@babel/preset-env": "^7.15.8"
+  },
+  "bin": {
+    "grok-meta": "./bin/grok-meta.js"
+  },
+  "scripts": {
+    "babel": "babel bin --extensions .ts -d bin"
+  },
+  "babel": {
+    "presets": [
+      "@babel/preset-typescript",
+      "@babel/preset-env"
+    ],
+    "plugins": [
+      "@babel/plugin-transform-runtime"
+    ]
+  },
+  "data": {
     "dev-tools": {
       "dependencies": {
         "1.0.1": {

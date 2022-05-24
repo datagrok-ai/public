@@ -11,7 +11,7 @@ on:
       - 'packages/**'
 
 jobs:
-  metadata:
+  matrix:
     name: Check changes
     runs-on: ubuntu-20.04
     outputs:
@@ -91,16 +91,17 @@ jobs:
   publish:
     name: Test and publish to npm
     needs:
-      - metadata
-    if: needs.metadata.outputs.publish == 'yes'
+      - matrix
+    if: needs.matrix.outputs.publish == 'yes'
     runs-on: ubuntu-20.04
     environment: Prod
     env:
       HOST: GitHubAction
     strategy:
       fail-fast: false
-      max-parallel: 10
-      matrix: ${{ fromJson(needs.metadata.outputs.matrix_publish) }}
+      matrix: ${{ fromJson(needs.matrix.outputs.matrix_publish) }}
+    outputs:
+      push: ${{ steps.git.outputs.push }}
     steps:
       - uses: actions/checkout@v2
         with:
@@ -190,14 +191,53 @@ jobs:
         env:
           NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
         if: github.ref == 'refs/heads/master' && always() && matrix.publish == 'true' && (steps.build.outcome == 'success' || steps.build.outcome == 'skipped')
-      - name: Commit package-lock.json
+
+      - name: Get package information
+        id: info
+        if: github.ref == 'refs/heads/master' && always() && steps.publish.outcome == 'success' && matrix.install_jsapi == 'true'
+        working-directory: packages/${{ matrix.package }}
         run: |
+          dependencies="$(jq  '(. | select( has("dependencies") == true ).dependencies) * (. | select( has("devDependencies") == true ).devDependencies)' package.json)"          
+          
+          echo "::set-output name=name::$(jq .name package.json | sed -e 's/"//g' -e 's,@datagrok/,,g')"
+          echo "::set-output name=version::$(jq .version package.json | sed 's/"//g')"
+          echo "::set-output name=dep::datagrok-api"
+          echo "::set-output name=depver::$(jq '."datagrok-api"' <<<$dependencies | sed 's/"//g')"
+      - name: Build Meta package
+        if: steps.info.outcome == 'success'
+        working-directory: packages/Meta
+        run: |
+          npm install
+          npm run babel
+
+      - name: Add new package version to Meta package
+        if: steps.info.outcome == 'success'
+        working-directory: packages/Meta
+        run: |
+          bin/grok-meta.js add \
+            --package ${{ steps.info.outputs.name }} \
+            --ver ${{ steps.info.outputs.version }} \
+            --dep ${{ steps.info.outputs.dep }} \
+            --depver ${{ steps.info.outputs.depver }}
+
+      - name: Commit package-lock.json
+        id: git
+        run: |
+          git config --global user.name 'GitHub Actions'
+          git config --global user.email 'github_actions@datagrok.ai'
+          git pull
+          continue=false
           if [ -n "$(git status -s packages/${{ matrix.package }}/package-lock.json)" ]; then
-            git config --global user.name 'GitHub Actions'
-            git config --global user.email 'spodolskaya@datagrok.ai'
-            git pull
             git add packages/${{ matrix.package }}/package-lock.json
             git commit -m "GitHub Actions: Update packages/${{ matrix.package }}/package-lock.json [skip ci]"
+            continue=true
+          fi
+          if [ -n "$(git status -s packages/Meta/package.json)" ]; then
+            git add packages/Meta/package.json
+            git commit -m "GitHub Actions: Update ${{ matrix.package }} in Meta package [skip ci]"
+            continue=true
+          fi
+          if [[ "${continue}" == "true" ]]; then
             count=0
             retries=10
             until git push; do
@@ -213,9 +253,87 @@ jobs:
                 exit $exit
               fi
             done
+            echo "::set-output name=push::yes"
           fi
-        if: github.ref == 'refs/heads/master' && always() && steps.publish.outcome == 'success'
+        if: github.ref == 'refs/heads/master' && always() && steps.publish.outcome == 'success' && steps.info.outcome == 'success'
 
       - name: Stop Datagrok
         if: always() && (steps.datagrok-image.outcome == 'failure' || steps.datagrok-image.outcome == 'success')
         run: docker-compose -p datagrok -f "docker/localhost.docker-compose.yaml" --profile all down --volumes
+
+  metadata:
+    name: Upgrade Meta package
+    needs:
+      - publish
+    if: needs.publish.outputs.push == 'yes'
+    runs-on: ubuntu-20.04
+    environment: Prod
+    concurrency:
+      group: metadata
+      cancel-in-progress: true
+    steps:
+      - uses: actions/checkout@v2
+        with:
+          token: ${{ secrets.WRITE_TOKEN }}
+      - name: Setup Node
+        uses: actions/setup-node@v2
+        with:
+          node-version: '12.x'
+          registry-url: 'https://registry.npmjs.org'
+          scope: '@datagrok'
+      - name: Upgrade npm
+        run: npm install -g npm@latest
+      - name: npm version
+        run: npm version
+      - name: Build Meta package
+        working-directory: packages/Meta
+        run: |
+          npm install
+          npm run babel
+
+      - name: Bump Meta package
+        working-directory: packages/Meta
+        run: |
+          current_version=$(jq .version package.json | sed 's/"//g')
+          patch=$(cut -d. -f3 <<<$current_version)
+          minor=$(cut -d. -f2 <<<$current_version)
+          major=$(cut -d. -f1 <<<$current_version)
+          upgrade='patch'
+          if [ "${patch}" -gt "98" ]; then
+            upgrade='minor'
+          fi
+          if [ "${minor}" -gt "98" ]; then
+            upgrade='major'
+          fi
+          npm version $upgrade
+
+      - name: Commit Meta package.json
+        id: git
+        run: |
+          git config --global user.name 'GitHub Actions'
+          git config --global user.email 'github_actions@datagrok.ai'
+          git pull
+          continue=false
+          if [ -n "$(git status -s packages/Meta/package.json)" ]; then
+            git add packages/Meta/package.json
+            git commit -m "GitHub Actions: Bump Meta package version"
+            continue=true
+          fi
+          if [[ "${continue}" == "true" ]]; then
+            count=0
+            retries=10
+            until git push; do
+              exit=$?
+              wait=$((2 ** count))
+              count=$((count + 1))
+              if [ $count -lt "$retries" ]; then
+                echo "Retry $count/$retries exited $exit, retrying 'git push' in $wait seconds..."
+                sleep $wait
+                git pull --rebase
+              else
+                echo "Retry $count/$retries exited $exit, no more retries left for 'git push'."
+                exit $exit
+              fi
+            done
+            echo "::set-output name=push::yes"
+          fi
