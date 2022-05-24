@@ -230,7 +230,7 @@ jobs:
         run: |
           git config --global user.name 'GitHub Actions'
           git config --global user.email 'github_actions@datagrok.ai'
-          git pull
+          git pull --rebase
           continue=false
           if [ -n "$(git status -s packages/${{ matrix.package }}/package-lock.json)" ]; then
             git add packages/${{ matrix.package }}/package-lock.json
@@ -311,7 +311,7 @@ jobs:
         run: |
           git config --global user.name 'GitHub Actions'
           git config --global user.email 'github_actions@datagrok.ai'
-          git pull
+          git pull --rebase
           continue=false
           if [ -n "$(git status -s packages/Meta/package.json)" ]; then
             git add packages/Meta/package.json
