@@ -2,7 +2,7 @@
   "name": "@datagrok/sequence-translator",
   "friendlyName": "Sequence Translator",
   "version": "0.0.12",
-  "description": "",
+  "description": "SequenceTranslator is a [package](https://datagrok.ai/help/develop/develop#packages) for\nthe [Datagrok](https://datagrok.ai) platform, used to\ntranslate [oligonucleotide](https://en.wikipedia.org/wiki/Oligonucleotide)\nsequences\nbetween [different representations](https://github.com/datagrok-ai/public/tree/master/packages/SequenceTranslator#sequence-representations).",
   "repository": {
     "type": "git",
     "url": "https://github.com/datagrok-ai/public.git",

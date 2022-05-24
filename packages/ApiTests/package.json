@@ -2,7 +2,7 @@
 	"name": "@datagrok/api-tests",
 	"friendlyName": "API Tests",
 	"version": "0.0.4",
-	"description": "",
+	"description": "js-api-tests is a [package](https://datagrok.ai/help/develop/develop#packages) for the [Datagrok](https://datagrok.ai) platform.",
 	"repository": {
 		"type": "git",
 		"url": "https://github.com/datagrok-ai/public.git",

@@ -19,7 +19,9 @@ function addPackageVersion(name: string, description: string, packageVersion: st
   if (jsonContent.data.hasOwnProperty(name)){
     var result = {...jsonContent['data'][name]['dependencies'][packageVersion], ...data[name]['dependencies'][packageVersion]};
     jsonContent['data'][name]['dependencies'][packageVersion] = result;
-    jsonContent['data'][name]['description'] = data[name]['description'];
+    if (description) {
+      jsonContent['data'][name]['description'] = data[name]['description'];
+    }
   } else {
     var result = {...jsonContent['data'], ...data};
     jsonContent.data = result;

@@ -1,7 +1,7 @@
 {
   "name": "@datagrok/peptides",
   "version": "0.8.14",
-  "description": "",
+  "description": "Provides advanced tools for analyzing collections of peptides.",
   "repository": {
     "type": "git",
     "url": "https://github.com/datagrok-ai/public.git",
