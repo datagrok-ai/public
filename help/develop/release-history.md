@@ -1,6 +1,29 @@
 <!-- TITLE: Release History -->
 <!-- SUBTITLE: -->
 
+# 2022-05-24 Dev build 1.1.2
+
+## Latest Docker Images
+
+* Datagrok: 
+  *  `docker pull datagrok/datagrok:1.1.2`
+  *  `docker pull datagrok/datagrok:latest`
+  
+* [Docker-Compose](admin/docker-compose.md)
+
+## Addressed Issues
+
+* Closes #641: Grid.autoSize(maxWidth, maxHeight) 
+* Grok Scaler 
+* Unable to set value to datetime column from JS (WIP)
+* Removed unused code 
+* Moved grok_api to separate library 
+* Grok Scaler documentation 
+* ApiTests: fix the build error 
+* ApiTests: add eslint plugin 
+* ApiTests: linting 
+
+
 # 2022-05-23 Dev build 1.1.1
 
 ## Latest Docker Images
