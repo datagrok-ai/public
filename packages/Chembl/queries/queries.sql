@@ -4,6 +4,7 @@
 --connection: Chembl
 --input: string id = "CHEMBL1185"
 --output: string smiles { semType: Molecule }
+--tags: unit-test
 select canonical_smiles from compound_structures s
 join molecule_dictionary d on s.molregno = d.molregno
 where d.chembl_id = @id
@@ -37,6 +38,7 @@ inner join
 --name: _compoundNames
 --connection: Chembl
 --input: string sub
+--tags: unit-test
 select distinct compound_name from compound_structures
 where compound_name ilike '%' || @sub || '%'
 limit 50
@@ -46,6 +48,7 @@ limit 50
 --name: _organisms
 --connection: Chembl
 --input: string sub
+--tags: unit-test
 select distinct organism from target_dictionary
 where organism ilike '%' || @sub || '%'
 limit 50
@@ -55,6 +58,7 @@ limit 50
 --name: _proteinTypes
 --connection: Chembl
 --input: string sub
+--tags: unit-test
 select distinct short_name from protein_classification
 where short_name ilike '%' || @sub || '%'
 limit 50
@@ -97,6 +101,7 @@ select protein_class_id, parent_id, pref_name, definition, class_level from prot
 --name: bioactivity data for bacterial targets for @organism
 --connection: Chembl
 --input: string organism = "Shigella" {suggestions: Chembl:organisms}
+--tags: unit-test
 SELECT md.chembl_id AS compound_chembl_id,
 cs.canonical_smiles,
 act.standard_type,
@@ -422,4 +427,11 @@ select
   canonical_smiles
 from
   compound_structures
+--end
+
+
+--name: unichemUnitTestQuery
+--connection: Unichem
+--tags: unit-test
+select count(from_id) from src10src11
 --end

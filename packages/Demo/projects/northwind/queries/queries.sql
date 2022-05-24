@@ -9,6 +9,7 @@ select distinct country from customers order by country
 
 
 --name: products
+--tags: unit-test
 select * from products
 --end
 
@@ -27,6 +28,7 @@ select * from customers
 --input: int quantity
 --input: string productName
 --input: string country { choices: northwind:countries }
+--tags: unit-test
 select
   order_details.orderid,
   order_details.unitprice,
