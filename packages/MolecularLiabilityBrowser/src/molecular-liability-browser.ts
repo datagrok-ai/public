@@ -13,7 +13,7 @@ import {
   ObsPtmType,
 } from './utils/data-loader';
 import {DataLoaderFiles} from './utils/data-loader-files';
-import {Aminoacids} from '@datagrok-libraries/bio';
+import {Aminoacids} from '@datagrok-libraries/bio/src/aminoacids';
 import {RegionSelectorViewer} from './viewers/vd-regions-viewer';
 
 // import {WebLogo} from '@datagrok-libraries/bio';
