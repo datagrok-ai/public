@@ -179,7 +179,7 @@ Tesla, Model S,  ,          1.6,    120000`);
   test('column list bySemType', async () => {
     df1.onSemanticTypeDetected.subscribe((_) => {
       let res = df1.columns.bySemType('country');
-      expect(res.toString(), 'countries');
+      expect(res?.toString(), 'countries');
     });
   });
 
