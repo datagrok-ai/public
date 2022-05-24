@@ -2,7 +2,7 @@
   "name": "@datagrok/impute",
   "fullName": "impute",
   "version": "1.0.4",
-  "description": "",
+  "description": "Impute is a [package](https://datagrok.ai/help/develop/develop#packages) for the [Datagrok](https://datagrok.ai) platform. It provides the user with a selection of tools designed to impute an incomplete dataset in an orderly predictive fashion, so as to retain the rest of the feature values associated with the missing instances.",
   "repository": {
     "type": "git",
     "url": "https://github.com/datagrok-ai/public.git",

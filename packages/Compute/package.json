@@ -2,7 +2,7 @@
 	"name": "@datagrok/compute",
 	"friendlyName": "Compute",
 	"version": "0.7.3",
-	"description": "",
+	"description": "Provides additional analytical and UI blocks for [Datagrok scientific computing](../../help/compute/compute.md)",
 	"repository": {
     "type": "git",
     "url": "https://github.com/datagrok-ai/public.git",

@@ -3,7 +3,7 @@
 	"beta": true,
 	"friendlyName": "ChemblAPI",
 	"version": "0.0.4",
-	"description": "",
+	"description": "ChemblAPI is a [package](https://datagrok.ai/help/develop/develop#packages) for the [Datagrok](https://datagrok.ai) platform.",
 	"repository": {
     "type": "git",
     "url": "https://github.com/datagrok-ai/public.git",

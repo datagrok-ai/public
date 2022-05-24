@@ -1,7 +1,6 @@
 # Compute
 
-Provides additional analytical and UI blocks for 
-[Datagrok scientific computing](../../help/compute/compute.md)
+Provides additional analytical and UI blocks for [Datagrok scientific computing](../../help/compute/compute.md)
 
 * Model browser
 * Outlier selector tool
@@ -9,5 +8,5 @@ Provides additional analytical and UI blocks for
 * Step-by-step wizard for onboarding new models
 * Model renderers
 * Function views
-  * Function parameter grid
+    * Function parameter grid
 * A set of examples

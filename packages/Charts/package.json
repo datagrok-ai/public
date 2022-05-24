@@ -1,39 +1,39 @@
 {
-	"name": "@datagrok/charts",
-	"fullName": "Charts",
-	"version": "0.1.2",
-	"description": "",
-	"repository": {
+  "name": "@datagrok/charts",
+  "fullName": "Charts",
+  "version": "0.1.2",
+  "description": "Charts package provides visualizations built using\nthe [ECharts](https://echarts.apache.org/en/index.html) library.",
+  "repository": {
     "type": "git",
     "url": "https://github.com/datagrok-ai/public.git",
     "directory": "packages/Charts"
   },
-	"dependencies": {
-		"cash-dom": "^8.1.0",
-		"datagrok-api": "^1.0.0",
-		"echarts": "^5.0.0",
-		"echarts-wordcloud": "^2.0.0",
-		"wu": "latest"
-	},
-	"scripts": {
-		"link-api": "npm link datagrok-api",
-		"charts-local": "webpack && grok publish local --rebuild --release",
-		"release-charts": "grok publish --rebuild --release",
-		"build-charts": "webpack",
-		"build": "webpack",
-		"debug-charts-dev": "grok publish dev --rebuild",
-		"release-charts-dev": "grok publish dev --rebuild --release",
-		"debug-charts-public": "grok publish public --rebuild",
-		"release-charts-public": "grok publish public --rebuild --release"
-	},
-	"canEdit": [
-		"Developers"
-	],
-	"canView": [
-		"All users"
-	],
-	"devDependencies": {
-		"css-loader": "^5.2.7",
-		"style-loader": "^2.0.0"
-	}
+  "dependencies": {
+    "cash-dom": "^8.1.0",
+    "datagrok-api": "^1.0.0",
+    "echarts": "^5.0.0",
+    "echarts-wordcloud": "^2.0.0",
+    "wu": "latest"
+  },
+  "scripts": {
+    "link-api": "npm link datagrok-api",
+    "charts-local": "webpack && grok publish local --rebuild --release",
+    "release-charts": "grok publish --rebuild --release",
+    "build-charts": "webpack",
+    "build": "webpack",
+    "debug-charts-dev": "grok publish dev --rebuild",
+    "release-charts-dev": "grok publish dev --rebuild --release",
+    "debug-charts-public": "grok publish public --rebuild",
+    "release-charts-public": "grok publish public --rebuild --release"
+  },
+  "canEdit": [
+    "Developers"
+  ],
+  "canView": [
+    "All users"
+  ],
+  "devDependencies": {
+    "css-loader": "^5.2.7",
+    "style-loader": "^2.0.0"
+  }
 }

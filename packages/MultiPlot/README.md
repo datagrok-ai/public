@@ -1,11 +1,13 @@
 # MultiPlot
 
-MultiPlot is a [package](https://datagrok.ai/help/develop/develop#packages) for the [Datagrok](https://datagrok.ai) platform.
+MultiPlot is a [package](https://datagrok.ai/help/develop/develop#packages) for the [Datagrok](https://datagrok.ai)
+platform.
 
-MultiPlot was developed in purpose to provide to user ability to easily create dashboards based on complex data which have common influencing parameter (usually presented as axis X on charts). Common axis X combined with compact form of presenting charts allow user quickly estimate data meaning.
+MultiPlot was developed in purpose to provide to user ability to easily create dashboards based on complex data which
+have common influencing parameter (usually presented as axis X on charts). Common axis X combined with compact form of
+presenting charts allow user quickly estimate data meaning.
 
 Distribution of the vertical space among the plots is based on following principles:
-
 
 1. There are fixed sized plots, size of which specified in pixels, for instance '50px';
 2. There are proportional sized plots, size of which speicfied in percents, for instance '25%'
@@ -13,6 +15,7 @@ Distribution of the vertical space among the plots is based on following princip
 4. Each plot could have title. Title could have default size specified in options or individual size.
 
 Types of charts:
+
 1. Scatterplot;
 2. Line chart;
 3. Bar chart;
@@ -20,11 +23,13 @@ Types of charts:
 
 ## Examples
 
-To make these examples working please open tables first. Feel free to use tables from 'data' folder or upload your own tables.
+To make these examples working please open tables first. Feel free to use tables from 'data' folder or upload your own
+tables.
 
 ### 1. simple 2 plots
 
 Source code:
+
 ```
 //name: MultiSimpleTwoPlots
 //description: Hello world script
@@ -78,14 +83,15 @@ func1();
 ### 2. advanced example (full features)
 
 This example show following features:
-1. Status chart, divided by categories using column and display markers colored by 
-values and limits
+
+1. Status chart, divided by categories using column and display markers colored by values and limits
 2. Timelines chart, display continuous data
-3. Multiline chart. Automatically created several linecharts. Categories are taken from specified column and used to distribute data through linecharts
+3. Multiline chart. Automatically created several linecharts. Categories are taken from specified column and used to
+   distribute data through linecharts
 
 <details>
   <summary>Show scriptc</summary>
-  
+
 ```
 //name: LoadMultiPlot
 //description: Hello world script

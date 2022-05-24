@@ -200,11 +200,13 @@ jobs:
         run: |
           dependencies="$(jq  '(. | select( has("dependencies") == true ).dependencies) * (. | select( has("devDependencies") == true ).devDependencies)' package.json)"          
           
+          echo '::echo::on'
           echo "::set-output name=name::$(jq .name package.json | sed -E -e 's/(^"|"$)//g' -e 's,@datagrok/,,g')"
           echo "::set-output name=description::$(jq .description package.json | sed -E 's/(^"|"$)//g')"
           echo "::set-output name=version::$(jq .version package.json | sed -E 's/(^"|"$)//g')"
           echo "::set-output name=dep::datagrok-api"
           echo "::set-output name=depver::$(jq '."datagrok-api"' <<<$dependencies | sed -E 's/(^"|"$)//g')"
+          echo '::echo::off'
       - name: Build Meta package
         if: steps.info.outcome == 'success'
         working-directory: packages/Meta
