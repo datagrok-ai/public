@@ -3,7 +3,7 @@
 	"beta": true,
 	"friendlyName": "TensorFlow.js",
 	"version": "0.0.5",
-	"description": "",
+	"description": "TensorFlow.js is a [package](https://datagrok.ai/help/develop/develop#packages) for the [Datagrok](https://datagrok.ai) platform which provies support for training and applying TensorFlow.js-based predictive models.",
 	"repository": {
     "type": "git",
     "url": "https://github.com/datagrok-ai/public.git",
