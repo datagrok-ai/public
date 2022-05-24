@@ -72,7 +72,7 @@ In this public repo, we follow some Git best practices:
 5. Refer to the issue or task number in your commit. It will help to track the work done on the task or issue
 6. Name of branches should be meaningful. Please, use the agreed
    standard: `<first letter of your name><you surname>/<task ID and meaningful short description>`. Task ID can be from
-   any task tracking system. Use the full ID. For example `GROK-XXXX-description` for Jira issues or `#XXX-description`
+   any task tracking system. Use the full ID. For example `jdoe/GROK-1234-description` for Jira issues or `jdoe/#123-description`
    for GitHub issues.
 7. Do not mix "refactoring" with a new feature
 8. Do not create unnecessary merge loops. To pull changes after commit creation use `git pull --rebase`. Run the
