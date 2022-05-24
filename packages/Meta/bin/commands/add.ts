@@ -9,13 +9,16 @@ function addPackageVersion(name: string, description: string, packageVersion: st
   var data = {
     [name]: {
       dependencies: {
-        [packageVersion]: {
-          [dependency]: dependencyVersion,
-        }
+        [packageVersion]: {}
       },
       description: description
     }
   }
+
+  if (dependency && dependencyVersion) {
+    data[name]['dependencies'][packageVersion][dependency] = [dependencyVersion];
+  }
+
   if (jsonContent.data.hasOwnProperty(name)){
     var result = {...jsonContent['data'][name]['dependencies'][packageVersion], ...data[name]['dependencies'][packageVersion]};
     jsonContent['data'][name]['dependencies'][packageVersion] = result;
@@ -32,7 +35,7 @@ function addPackageVersion(name: string, description: string, packageVersion: st
 
 export function add(args: CreateArgs) {
   const nOptions = Object.keys(args).length - 1;
-  if (nOptions < 4) return false;
+  if (nOptions < 2) return false;
   if (nOptions && !Object.keys(args).slice(1).every(op => ['package', 'description', 'ver', 'dep', 'depver'].includes(op))) return false;
 
   addPackageVersion(args.package, args.description, args.ver, args.dep, args.depver);
@@ -42,8 +45,8 @@ export function add(args: CreateArgs) {
 interface CreateArgs {
   _: string[],
   package: string,
-  description: string,
+  description?: string,
   ver: string,
-  dep: string,
-  depver: string
+  dep?: string,
+  depver?: string
 }
