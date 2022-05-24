@@ -142,6 +142,7 @@ jobs:
         run: npm run build
         working-directory: packages/${{ matrix.package }}
       - name: Install datagrok tools
+        if: ${{ matrix.test == 'true' }}
         run: npm install -g datagrok-tools@latest
       - name: Wait for Datagrok to become available
         if: ${{ matrix.test == 'true' }}
@@ -209,7 +210,7 @@ jobs:
         working-directory: packages/Meta
         run: |
           npm install
-          npm run babel
+          npm run build
 
       - name: Add new package version to Meta package
         if: steps.info.outcome == 'success'
