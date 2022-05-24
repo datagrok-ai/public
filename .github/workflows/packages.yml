@@ -207,7 +207,7 @@ jobs:
           if [[ "${{ matrix.install_jsapi }}" == "true" ]]; then
             deps+="datagrok-api=$(jq '."datagrok-api"' <<<$dependencies | sed -E 's/(^"|"$)//g') "
           fi
-          echo "::set-output name=dependencies::${deps}
+          echo "::set-output name=dependencies::${deps}"
           echo '::echo::off'
 
       - name: Build Meta package
