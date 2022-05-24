@@ -221,9 +221,12 @@
         },
         "1.0.2": {
           "datagrok-api": "^0.117.0"
+        },
+        "1.0.4": {
+          "datagrok-api": "^1.0.0"
         }
       },
-      "description": "*Demo:Scripts* is a [package](https://datagrok.ai/help/develop/develop#packages) for the [Datagrok](https://datagrok.ai) platform. It demonstrates the [scripting](https://datagrok.ai/help/compute/scripting) functionality for [Python](https://www.python.or"
+      "description": true
     },
     "sequence-translator": {
       "dependencies": {
