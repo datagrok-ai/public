@@ -11,9 +11,10 @@ To get help on a particular command, use:
 `
 
 const HELP_ADD = `
-Usage: grok add --package <name> --ver <semver> --dep <dependency_name> --depver <semver>
+Usage: grok add --package <name> --description <string> --ver <semver> --dep <dependency_name> --depver <semver>
 
 --package      Set package name to add/change in Meta package
+--description  Set package description to add/change in Meta package
 --ver          Set package version to add/change in Meta package
 --dep          Set package dependency to add/change in Meta package
 --depver       Set package dependency version to add to Meta package
