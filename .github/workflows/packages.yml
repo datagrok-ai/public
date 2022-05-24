@@ -214,7 +214,7 @@ jobs:
         if: steps.info.outcome == 'success'
         working-directory: packages/Meta
         run: |
-          npm install
+          npm ci
           npm run build
 
       - name: Add new package version to Meta package
@@ -320,6 +320,10 @@ jobs:
           fi
           npm version $upgrade
 
+      - name: Upgrade Meta package-lock.json
+        working-directory: packages/Meta
+        run: npm update
+
       - name: Commit Meta package.json
         id: git
         run: |
@@ -331,6 +335,7 @@ jobs:
           continue=false
           if [ -n "$(git status -s packages/Meta/package.json)" ]; then
             git add packages/Meta/package.json
+            git add packages/Meta/package-lock.json
             git commit -m "GitHub Actions: Bump Meta package version"
             continue=true
           fi
