@@ -6,15 +6,12 @@ import * as C from './constants';
 import {AlignedSequenceEncoder} from '@datagrok-libraries/bio/src/sequence-encoder';
 
 export async function callMVA(
-  tableGrid: DG.Grid,
-  view: DG.View,
   currentDf: DG.DataFrame,
   options: {[name: string]: string},
   sequencesCol: DG.Column,
 ) {
   const activityCol = await _scaleColumn(currentDf.getCol(options['activityColumnName']), options['scaling']);
   const encDf = _encodeSequences(sequencesCol);
-  // const scaledColName = `${options['activityColumnName']}scaled`;
 
   _insertColumns(
     currentDf,
@@ -50,10 +47,9 @@ function _encodeSequences(sequencesCol: DG.Column): DG.DataFrame {
     for (let i = 0; i < nCols; ++i)
       positions[i][j] = enc.encodeLettter(s[i]);
   }
-  const df = DG.DataFrame.fromColumns(positions.map(
+  return DG.DataFrame.fromColumns(positions.map(
     (v, i) => DG.Column.fromFloat32Array((i+1).toString(), v),
   ));
-  return df;
 }
 
 async function _scaleColumn(column: DG.Column, method: string): Promise<DG.Column> {
@@ -67,7 +63,7 @@ async function _scaleColumn(column: DG.Column, method: string): Promise<DG.Colum
   if (newCol == null)
     throw new Error('Column formula returned unexpected null.');
 
-  return newCol!;
+  return newCol;
 }
 
 function _insertColumns(targetDf: DG.DataFrame, columns: DG.Column[]): DG.DataFrame {

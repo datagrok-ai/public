@@ -46,8 +46,6 @@ export class PeptidesController {
 
   get onSARVGridChanged(): Observable<DG.Grid> {return this._model.onSARVGridChanged;}
 
-  // get onGroupMappingChanged(): Observable<StringDictionary> {return this._model.onGroupMappingChanged;}
-
   get onSubstTableChanged(): Observable<DG.DataFrame> {return this._model.onSubstTableChanged;}
 
   async updateDefault() {await this._model.updateDefault();}
@@ -69,9 +67,8 @@ export class PeptidesController {
   static async scaleActivity(
     activityScaling: string, df: DG.DataFrame, originalActivityName?: string, cloneBitset = false,
   ): Promise<[DG.DataFrame, string]> {
-    // const df = sourceGrid.dataFrame!;
     let currentActivityColName = originalActivityName ?? C.COLUMNS_NAMES.ACTIVITY;
-    const flag = (df.columns as DG.ColumnList).names().includes(currentActivityColName) &&
+    const flag = df.columns.names().includes(currentActivityColName) &&
       currentActivityColName === originalActivityName;
     currentActivityColName = flag ? currentActivityColName : C.COLUMNS_NAMES.ACTIVITY;
     const tempDf = df.clone(cloneBitset ? df.filter : null, [currentActivityColName]);
@@ -93,7 +90,7 @@ export class PeptidesController {
       throw new Error(`ScalingError: method \`${activityScaling}\` is not available.`);
     }
 
-    await (tempDf.columns as DG.ColumnList).addNewCalculated(C.COLUMNS_NAMES.ACTIVITY_SCALED, formula);
+    await tempDf.columns.addNewCalculated(C.COLUMNS_NAMES.ACTIVITY_SCALED, formula);
     df.tags['scaling'] = activityScaling;
 
     return [tempDf, newColName];
@@ -116,8 +113,8 @@ export class PeptidesController {
       monomerLengths[currentLength + ''] =
         monomerLengths[currentLength + ''] ? monomerLengths[currentLength + ''] + 1 : 1;
     }
-    //@ts-ignore: what I do here is converting string to number the most effective way I could find. parseInt is slow
-    modeMonomerCount = 1 * Object.keys(monomerLengths).reduce((a, b) => monomerLengths[a] > monomerLengths[b] ? a : b);
+    modeMonomerCount =
+      parseInt(Object.keys(monomerLengths).reduce((a, b) => monomerLengths[a] > monomerLengths[b] ? a : b));
 
     // making sure all of the sequences are of the same size
     // and marking invalid sequences
@@ -301,8 +298,6 @@ export class PeptidesController {
     sourceGrid.props.allowEdit = false;
     adjustCellSize(sourceGrid);
 
-    // this._model._sarGrid.invalidate();
-    // this._model._sarVGrid.invalidate();
     this._model.invalidateGrids();
   }
 

@@ -7,7 +7,6 @@ import {FilteringStatistics} from '../utils/filtering-statistics';
 
 export function getDistributionPlot(df: DG.DataFrame, valueCol: string, splitCol: string) {
   return df.plot.histogram({
-    // const hist = originalDf.plot.histogram({
     filteringEnabled: false,
     valueColumnName: valueCol,
     splitColumnName: splitCol,
@@ -19,15 +18,12 @@ export function getDistributionPlot(df: DG.DataFrame, valueCol: string, splitCol
 }
 
 export function getDistributionWidget(table: DG.DataFrame): DG.Widget {
-  // const labelStr = this.multipleFilter.filterLabel;
   const splitCol = table.col(C.COLUMNS_NAMES.SPLIT_COL);
   if (!splitCol)
     return new DG.Widget(ui.divText('No distribution'));
   let [aarStr, otherStr] = splitCol.categories;
   if (typeof otherStr === 'undefined')
     [aarStr, otherStr] = [otherStr, aarStr];
-  // const currentColor = DG.Color.toHtml(DG.Color.orange);
-  // const otherColor = DG.Color.toHtml(DG.Color.blue);
   const currentColor = DG.Color.toHtml(DG.Color.getCategoryColor(splitCol, aarStr));
   const otherColor = DG.Color.toHtml(DG.Color.getCategoryColor(splitCol, otherStr));
 
@@ -36,8 +32,6 @@ export function getDistributionWidget(table: DG.DataFrame): DG.Widget {
   const elements: (HTMLLabelElement | HTMLElement)[] = [currentLabel, otherLabel];
 
   const getContent = () => {
-    // const processedDf =
-    //   table.clone(null, [C.COLUMNS_NAMES.ACTIVITY_SCALED, C.COLUMNS_NAMES.SPLIT_COL]);
     const hist = getDistributionPlot(table, C.COLUMNS_NAMES.ACTIVITY_SCALED, C.COLUMNS_NAMES.SPLIT_COL).root;
 
     hist.style.width = 'auto';

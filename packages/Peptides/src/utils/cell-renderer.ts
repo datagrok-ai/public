@@ -2,7 +2,7 @@ import {ChemPalette} from './chem-palette';
 import * as DG from 'datagrok-api/dg';
 
 import * as C from './constants';
-import { getSeparator } from './misc';
+import {getSeparator} from './misc';
 
 /**
  * A function to expand column size based on its contents.
@@ -49,6 +49,7 @@ export function setAARRenderer(col: DG.Column, grid: DG.Grid | null = null, grou
   if (grid)
     expandColumn(col, grid, (ent) => measureAAR(ent));
 }
+
 /**
  * A function to measure amino acid residue
  *
@@ -132,59 +133,17 @@ function printLeftOrCentered(
   }
 }
 
-/**
- * Amino acid residue cell renderer.
- *
- * @export
- * @class AminoAcidsCellRenderer
- * @extends {DG.GridCellRenderer}
- */
 export class AminoAcidsCellRenderer extends DG.GridCellRenderer {
   chemPalette: ChemPalette | null;
 
-  /**
-     * Renderer name.
-     *
-     * @readonly
-     * @memberof AminoAcidsCellRenderer
-     */
-  get name() {
-    return 'aminoAcidsCR';
-  }
+  get name() { return 'aminoAcidsCR'; }
 
-  /**
-     * Cell type.
-     *
-     * @readonly
-     * @memberof AminoAcidsCellRenderer
-     */
-  get cellType() {
-    return C.SEM_TYPES.AMINO_ACIDS;
-  }
+  get cellType() { return C.SEM_TYPES.AMINO_ACIDS; }
 
-  /**
-     * Cell height.
-     *
-     * @readonly
-     * @memberof AminoAcidsCellRenderer
-     */
-  get defaultHeight() {
-    return 15;
-  }
+  get defaultHeight() { return 15; }
 
-  /**
-     * Cell width.
-     *
-     * @readonly
-     * @memberof AminoAcidsCellRenderer
-     */
-  get defaultWidth() {
-    return 30;
-  }
+  get defaultWidth() { return 30; }
 
-  /**
-     * Constructor.
-     */
   constructor() {
     super();
     this.chemPalette = null;
@@ -204,8 +163,6 @@ export class AminoAcidsCellRenderer extends DG.GridCellRenderer {
   render(
     g: CanvasRenderingContext2D, x: number, y: number, w: number, h: number, gridCell: DG.GridCell,
     cellStyle: DG.GridCellStyle) {
-    // this.chemPalette ??= new ChemPalette('grok', gridCell.tableColumn?.getTag('groups') ? true : false);
-
     y -= 2;
     g.save();
     g.beginPath();
@@ -223,53 +180,14 @@ export class AminoAcidsCellRenderer extends DG.GridCellRenderer {
   }
 }
 
-/**
- * Aligned sequence cell renderer.
- *
- * @export
- * @class AlignedSequenceCellRenderer
- * @extends {DG.GridCellRenderer}
- */
 export class AlignedSequenceCellRenderer extends DG.GridCellRenderer {
-  /**
-   * Renderer name.
-   *
-   * @readonly
-   * @memberof AlignedSequenceCellRenderer
-   */
-  get name() {
-    return 'alignedSequenceCR';
-  }
+  get name() { return 'alignedSequenceCR'; }
 
-  /**
-   * Cell type.
-   *
-   * @readonly
-   * @memberof AlignedSequenceCellRenderer
-   */
-  get cellType() {
-    return C.SEM_TYPES.ALIGNED_SEQUENCE;
-  }
+  get cellType() { return C.SEM_TYPES.ALIGNED_SEQUENCE; }
 
-  /**
-   * Cell height.
-   *
-   * @readonly
-   * @memberof AlignedSequenceCellRenderer
-   */
-  get defaultHeight() {
-    return 30;
-  }
+  get defaultHeight() { return 30; }
 
-  /**
-   * Cell width.
-   *
-   * @readonly
-   * @memberof AlignedSequenceCellRenderer
-   */
-  get defaultWidth() {
-    return 230;
-  }
+  get defaultWidth() { return 230; }
 
   /**
    * Cell renderer function.
@@ -299,7 +217,7 @@ export class AlignedSequenceCellRenderer extends DG.GridCellRenderer {
     const s: string = cell.value ?? '';
 
     //TODO: can this be replaced/merged with splitSequence?
-    let subParts = s.split(gridCell.tableColumn?.tags[C.TAGS.SEPARATOR]);
+    const subParts = s.split(getSeparator(cell.column));
     const [text, simplified] = processSequence(subParts);
     const textSize = g.measureText(text.join(''));
     let x1 = Math.max(x, x + (w - textSize.width) / 2);
@@ -318,13 +236,6 @@ export class AlignedSequenceCellRenderer extends DG.GridCellRenderer {
   }
 }
 
-/**
- * Function for sequence processing.
- *
- * @export
- * @param {string[]} subParts Sequence subparts.
- * @return {[string[], boolean]}
- */
 export function processSequence(subParts: string[]): [string[], boolean] {
   const simplified = !subParts.some((amino, index) =>
     amino.length > 1 &&
@@ -342,53 +253,14 @@ export function processSequence(subParts: string[]): [string[], boolean] {
   return [text, simplified];
 }
 
-/**
- * Aligned sequence difference cell renderer.
- *
- * @export
- * @class AlignedSequenceDifferenceCellRenderer
- * @extends {DG.GridCellRenderer}
- */
 export class AlignedSequenceDifferenceCellRenderer extends DG.GridCellRenderer {
-  /**
-   * Renderer name.
-   *
-   * @readonly
-   * @memberof AlignedSequenceDifferenceCellRenderer
-   */
-  get name() {
-    return 'alignedSequenceDifferenceCR';
-  }
+  get name() { return 'alignedSequenceDifferenceCR'; }
 
-  /**
-   * Cell type.
-   *
-   * @readonly
-   * @memberof AlignedSequenceDifferenceCellRenderer
-   */
-  get cellType() {
-    return 'alignedSequenceDifference';
-  }
+  get cellType() { return 'alignedSequenceDifference'; }
 
-  /**
-   * Cell height.
-   *
-   * @readonly
-   * @memberof AlignedSequenceDifferenceCellRenderer
-   */
-  get defaultHeight() {
-    return 30;
-  }
+  get defaultHeight() { return 30; }
 
-  /**
-   * Cell width.
-   *
-   * @readonly
-   * @memberof AlignedSequenceDifferenceCellRenderer
-   */
-  get defaultWidth() {
-    return 230;
-  }
+  get defaultWidth() { return 230; }
 
   /**
    * Cell renderer function.

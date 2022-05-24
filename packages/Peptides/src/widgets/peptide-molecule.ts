@@ -1,7 +1,6 @@
 import * as grok from 'datagrok-api/grok';
 import * as ui from 'datagrok-api/ui';
 import * as DG from 'datagrok-api/dg';
-// import {ChemPalette} from '../utils/chem-palette';
 import {PeptidesController} from '../peptides';
 import * as C from '../utils/constants';
 
@@ -14,10 +13,9 @@ import * as C from '../utils/constants';
  */
 export async function peptideMoleculeWidget(pep: string, currentTable: DG.DataFrame): Promise<DG.Widget> {
   const pi = DG.TaskBarProgressIndicator.create('Creating NGL view');
-  const separator =
-    (currentTable.columns as DG.ColumnList).bySemType(C.SEM_TYPES.ALIGNED_SEQUENCE)!.tags[C.TAGS.SEPARATOR];
+  const separator = currentTable.columns.bySemType(C.SEM_TYPES.ALIGNED_SEQUENCE)!.tags[C.TAGS.SEPARATOR];
 
-  let widgetHost = ui.divH([]);
+  let widgetHost;
   let smiles = '';
   let molfileStr = '';
   try {
@@ -40,7 +38,7 @@ export async function peptideMoleculeWidget(pep: string, currentTable: DG.DataFr
     }
 
     try {
-      molfileStr = molfileStr.replaceAll('\\n', '\n'); ;
+      molfileStr = molfileStr.replaceAll('\\n', '\n');
       const stringBlob = new Blob([molfileStr], {type: 'text/plain'});
       const nglHost = ui.div([], {classes: 'd4-ngl-viewer', id: 'ngl-3d-host'});
 

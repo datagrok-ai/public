@@ -32,14 +32,6 @@ export class ChemPalette {
    * @param {MonomerLibrary} monomerLib Monomer Library instance
    */
   static showTooltip(cell: DG.GridCell, x: number, y: number, monomerLib: MonomerLibrary) {
-    // if (!this.isInit) {
-    //   const validPackage = _package ?? _packageTest;
-    //   if (!validPackage)
-    //     throw new Error('No package instance found');
-    //   this.monomerLib = new MonomerLibrary(await validPackage.files.readAsText(`HELMMonomers_June10.sdf`));
-    //   this.isInit = true;
-    // }
-
     const s = cell.cell.value as string;
     let toDisplay = [ui.divText(s)];
     const [, aarOuter, aarInner] = ChemPalette.getColorAAPivot(s);
@@ -92,7 +84,6 @@ export class ChemPalette {
   }
 
   static getColorAAPivot(monomer: string = '', scheme: 'grok' = 'grok'): [string, string, string, number] {
-    // const chemPaletteInstance = ChemPalette.getDatagrok();
     const chemPaletteInstance = ChemPalette.getPalette(scheme);
     let [outerMonomer, innerMonomer] = ChemPalette.getInnerOuter(monomer);
     outerMonomer = (outerMonomer.length > 6 ? `${outerMonomer.slice(0, 3)}...` : outerMonomer);
@@ -281,11 +272,9 @@ export class ChemPalette {
   }
 
   static getPalette(scheme: 'grok'): StringDictionary {
-    switch (scheme) {
-    case 'grok':
+    if (scheme == 'grok')
       return ChemPalette.getDatagrok();
-    default:
+    else
       throw new Error(`ChemPalette: scheme \`${scheme}\` does not exist`);
-    }
   }
 }
