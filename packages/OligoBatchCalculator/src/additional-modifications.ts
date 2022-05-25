@@ -21,8 +21,10 @@ export async function getAdditionalModifications(): Promise<DG.DataFrame> {
   if (entries != null && Object.keys(entries).length == 0)
     grok.shell.info('Storage is empty. Try to post something to the storage');
   else {
-    for (const key of Object.keys(entries))
-      modifications.push(JSON.parse(entries[key]));
+    for (const key of Object.keys(entries)) {
+      if (!['baseModification', 'extinctionCoefficient', 'molecularWeight', 'abbreviation', 'longName'].includes(key))
+        modifications.push(JSON.parse(entries[key]));
+    }
   }
   const molWeightList = modifications.map((e) => (e.molecularWeight == undefined) ? 0 : e.molecularWeight);
   const extinctionCoefList = modifications.map((e) => String(e.extinctionCoefficient));

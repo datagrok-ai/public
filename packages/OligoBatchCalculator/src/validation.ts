@@ -139,10 +139,10 @@ export function validate(sequence: string, additionalCodes: string[]): number {
     if (i > 1 && nucleotides.includes(sequence[i]) && firstUniqueCharacters.includes(sequence[i - 2]))
       break;
 
-    if (firstUniqueCharacters.includes(sequence[i + 1]) && nucleotides.includes(sequence[i])) {
-      i++;
-      break;
-    }
+    // if (firstUniqueCharacters.includes(sequence[i + 1]) && nucleotides.includes(sequence[i])) {
+    //   i++;
+    //   break;
+    // }
 
     i += matchedCode.length;
   }
