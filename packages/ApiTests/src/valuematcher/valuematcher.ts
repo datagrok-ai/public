@@ -107,4 +107,11 @@ category('ValueMatcher', () => {
     expect(matcher.match('m').toString(), 'false');
     expect(matcher.validate('f').toString(), '"f" does not match "not in (m, f)"');
   });
+  
+  test('datetime pattern after the specified date', async () => {
+    let matcher = DG.ValueMatcher.dateTime('after 10/17/2019');
+    expect(matcher.operator, 'after');
+    expect(matcher.match('12/03/2022').toString(), 'true');
+    expect(matcher.validate('12/03/2022'), undefined);
+  });
 });
