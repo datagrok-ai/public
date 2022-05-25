@@ -44,7 +44,7 @@ import './ui/viewers-adding'
 import './grid/grid'; 
 import './gui/missing-values-imputation'
 import './gui/aggregate-rows'
-import './connections/chembl'
+//import './connections/chembl'
 
 import {runTests} from '@datagrok-libraries/utils/src/test';
 import {TreeViewNode} from 'datagrok-api/dg';
