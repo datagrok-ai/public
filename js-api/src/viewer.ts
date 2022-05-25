@@ -298,6 +298,10 @@ export class JsViewer extends Viewer {
     return this.addProperty(`${dataPropertyName}ColumnName`, TYPE.STRING, null, options);
   }
 
+  protected columnList(propertyName: ViewerPropertyType, defaultValue: string[] | null = null, options: { [key: string]: any } & PropertyOptions | null = null): string[] {
+    return this.addProperty(propertyName, DG.TYPE.COLUMN_LIST, defaultValue, options);
+  }
+
   /** Registers an integer property with the specified name and defaultValue
    * @param {ViewerPropertyType} propertyName
    * @param {number} defaultValue
