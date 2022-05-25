@@ -10,6 +10,7 @@ import {setAARRenderer} from './utils/cell-renderer';
 import * as C from './utils/constants';
 import {PeptideSpaceViewer} from './viewers/peptide-space-viewer';
 import {FilteringStatistics} from './utils/filtering-statistics';
+import * as type from './utils/types';
 
 type viewerTypes = SARViewer | SARViewerVertical;
 export class PeptidesController {
@@ -46,7 +47,7 @@ export class PeptidesController {
 
   get onSARVGridChanged(): Observable<DG.Grid> {return this._model.onSARVGridChanged;}
 
-  get onSubstTableChanged(): Observable<DG.DataFrame> {return this._model.onSubstTableChanged;}
+  get onSubstTableChanged(): Observable<type.SubstitutionsInfo> {return this._model.onSubstTableChanged;}
 
   async updateDefault() {await this._model.updateDefault();}
 
@@ -58,7 +59,7 @@ export class PeptidesController {
 
   get originalActivityColumnName(): string {return this.dataFrame.temp[C.COLUMNS_NAMES.ACTIVITY];}
 
-  get substTooltipData() {return this._model.substTooltipData;}
+  // get substTooltipData() {return this._model.substTooltipData;}
 
   static setAARRenderer(col: DG.Column, grid: DG.Grid) {
     return setAARRenderer(col, grid);
@@ -169,9 +170,9 @@ export class PeptidesController {
       activityScaling, sourceGrid, twoColorMode, activityLimit, maxSubstitutions, isSubstitutionOn, filterMode);
   }
 
-  getSubstitutions() {
-    return this._model.getSubstitutionTable();
-  }
+  // getSubstitutions() {
+  //   return this._model.getSubstitutionTable();
+  // }
 
   assertVar(variable: string, init = false): boolean {
     //@ts-ignore

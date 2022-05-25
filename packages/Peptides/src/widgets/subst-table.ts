@@ -6,9 +6,10 @@ import * as C from '../utils/constants';
 export async function substitutionsWidget(table: DG.DataFrame): Promise<DG.Widget> {
   const controller = await PeptidesController.getInstance(table);
   controller.init(table);
-  const substTable = controller.getSubstitutions();
+  // const substTable = controller.getSubstitutions();
+  const substTable: DG.DataFrame = DG.DataFrame.create();
 
-  if (!substTable)
+  if (true || !substTable)
     return new DG.Widget(ui.label('No substitution table generated'));
 
   const dfRowCount = substTable.rowCount;
