@@ -418,7 +418,6 @@ export class TimelinesViewer extends EChartViewer {
 
   getSeriesData() {
     this.data.length = 0;
-    this.dataMax = Number.NEGATIVE_INFINITY;
     const events = {};
     let tempObj = {};
 
@@ -435,7 +434,6 @@ export class TimelinesViewer extends EChartViewer {
       let start = this.getSafeValue(this.columnData.startColumnName, i);
       let end = this.getSafeValue(this.columnData.endColumnName, i);
       if (start === end && end === null && !this.eventsColumnNames) continue;
-      this.dataMax = Math.max(start, end, this.dataMax);
       if (this.eventsColumnNames) {
         for (const columnName of Object.keys(this.columnData.eventsColumnNames)) {
           events[columnName] = {
@@ -500,7 +498,7 @@ export class TimelinesViewer extends EChartViewer {
       type: 'value',
       axisLabel: { formatter: null },
       min: 'dataMin',
-      max: 'dataMax',
+      max: (value) => this.dataMax = value.max,
     };
   }
 
