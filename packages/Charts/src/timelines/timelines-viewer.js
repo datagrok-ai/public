@@ -15,6 +15,7 @@ export class TimelinesViewer extends EChartViewer {
     this.colorByColumnName = this.string('colorByColumnName');
     this.showOpenIntervals = this.bool('showOpenIntervals', false);
     this.eventColumnName = this.string('eventColumnName');
+    this.eventsColumnNames = this.addProperty('eventsColumnNames', DG.TYPE.COLUMN_LIST);
     this.showEventInTooltip = this.bool('showEventInTooltip', true);
 
     this.marker = this.string('marker', 'circle', { choices: ['circle', 'rect', 'ring', 'diamond'] });
@@ -98,7 +99,7 @@ export class TimelinesViewer extends EChartViewer {
       this.option.dataZoom.forEach((z) => {
         if (z.type === 'slider') z.show = this.showZoomSliders;
       });
-    } else if (property.name.endsWith('ColumnName')) {
+    } else if (property.name.endsWith('ColumnName') || property.name.endsWith('ColumnNames')) {
       if (property.get(this)) {
         const columnData = this.updateColumnData(property);
         if (property.name === 'colorByColumnName') {
@@ -323,14 +324,26 @@ export class TimelinesViewer extends EChartViewer {
   }
 
   updateColumnData(prop) {
-    const column = this.dataFrame.col(prop.get(this));
-    if (column == null)
-      return null;
-    this.columnData[prop.name] = {
+    const getColumnData = (column) => ({
       column,
       data: column.getRawData(),
       categories: column.type === DG.COLUMN_TYPE.STRING ? column.categories : null,
-    };
+    });
+
+    if (prop.name.endsWith('ColumnNames')) {
+      this.columnData[prop.name] = {};
+      for (const columnName of prop.get(this)) {
+        const column = this.dataFrame.col(columnName);
+        if (column == null)
+          return null;
+        this.columnData[prop.name][columnName] = getColumnData(column);
+      }
+    } else {
+      const column = this.dataFrame.col(prop.get(this));
+      if (column == null)
+        return null;
+      this.columnData[prop.name] = getColumnData(column);
+    }
     return this.columnData[prop.name];
   }
 
@@ -398,6 +411,8 @@ export class TimelinesViewer extends EChartViewer {
 
   getSeriesData() {
     this.data.length = 0;
+    this.dataMax = Number.NEGATIVE_INFINITY;
+    const events = {};
     let tempObj = {};
 
     const colorCategories = this.columnData.colorByColumnName?.categories;
@@ -412,7 +427,16 @@ export class TimelinesViewer extends EChartViewer {
       const id = this.getStrValue(this.columnData.splitByColumnName, i);
       let start = this.getSafeValue(this.columnData.startColumnName, i);
       let end = this.getSafeValue(this.columnData.endColumnName, i);
-      if (start === end && end === null) continue;
+      if (start === end && end === null && !this.eventsColumnNames) continue;
+      this.dataMax = Math.max(start, end, this.dataMax);
+      if (this.eventsColumnNames) {
+        for (const columnName of Object.keys(this.columnData.eventsColumnNames)) {
+          events[columnName] = {
+            start: this.getSafeValue(this.columnData.eventsColumnNames[columnName], i),
+            end: this.showOpenIntervals ? this.dataMax : null,
+          };
+        }
+      }
       if (this.showOpenIntervals) {
         // TODO: handle edge case of different column types
         if (start == null)
@@ -423,11 +447,20 @@ export class TimelinesViewer extends EChartViewer {
       const color = this.colorByColumnName ? colorCategories[colorBuf[i]] : this.defaultColor;
       const event = eventCategories[eventBuf[i]];
       const key = `${id}-${event}-${start}-${end}`;
-      if (tempObj.hasOwnProperty(key)) {
+      if (key in tempObj) {
         tempObj[key][3].push(color);
         tempObj[key][4].push(event);
       } else {
         tempObj[key] = [id, start, end, [color], [event], this.dataFrame.selection.get(i)];
+      }
+      for (const [event, points] of Object.entries(events)) {
+        const key = `${id}-${event}-${points.start}-${points.end}`;
+        if (key in tempObj) {
+          tempObj[key][3].push(color);
+          tempObj[key][4].push(event);
+        } else {
+          tempObj[key] = [id, points.start, points.end, [color], [event], this.dataFrame.selection.get(i)];
+        }
       }
     }
 
