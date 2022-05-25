@@ -13,47 +13,66 @@ export class UaToolbox {
   usersInput: ChoiceInput;
   filterStream: BehaviorSubject<UaFilter>;
 
-  getFilter() {
+  static async construct() {
+    let date = 'this month';
+    let users = ['all'];
+
+    let dateInput = ui.stringInput('Date', date);
+    dateInput.addPatternMenu('datetime');
+    dateInput.setTooltip('Set the date period');
+    let usersInput = await ChoiceInput.construct(async () => (await grok.dapi.groups.list()).map((u) => u.name));
+    
+    let filterStream = new BehaviorSubject(new UaFilter({
+      date: date,
+      users: users
+    }));
+
+    return new UaToolbox(dateInput, usersInput, filterStream)
+  }
+
+  private constructor(dateInput: InputBase, usersInput: ChoiceInput, filterStream: BehaviorSubject<UaFilter>) {
+    this.rootAccordion = ui.accordion();
+    this.rootAccordion.addPane('Filters', () => ui.narrowForm([
+      dateInput,
+      // @ts-ignore
+      usersInput.field,
+      // @ts-ignore
+      ui.buttonsInput([ui.bigButton('Apply', () => this.applyFilter())])
+    ]), true);
+
+    this.dateInput = dateInput;
+    this.usersInput = usersInput;
+    this.filterStream = filterStream;
+  }
+
+  async getFilter() {
     return new UaFilter({
       date: this.dateInput.value,
-      users: this.usersInput.getSelectedUsers()
+      users: await UaToolbox.getUsersInGroups(this.usersInput.getSelectedGroups())
     });
   }
 
-  constructor() {
-    this.dateInput = ui.stringInput('Date', 'this month');
-    this.dateInput.addPatternMenu('datetime');
-    this.dateInput.setTooltip('Set the date period');
-
-    this.rootAccordion = ui.accordion();
-
-    this.usersInput = new ChoiceInput(async () => (await grok.dapi.users.list()).map((u) => u.login));
-    this.usersInput.ready.then(() => {
-      this.rootAccordion.addPane('Filters', () => ui.narrowForm([
-        this.dateInput,
-        // @ts-ignore
-        this.usersInput.root,
-        // @ts-ignore
-        ui.buttonsInput([ui.bigButton('Apply', () => this.applyFilter())])
-      ]), true);
-    });
-    this.filterStream = new BehaviorSubject(this.getFilter());
-
+  static async getUsersInGroups(groups: string[]) {
+    if(groups.length == 1 && groups[0] == 'all')
+      return ['all'];
+    let res =  (await grok.data.query('UsageAnalysis:GetUsersInGroups', {groups: groups}))
+        .columns.byName('login').toList();
+    return res;
   }
 
-  applyFilter () {
-    this.filterStream.next(this.getFilter());
+
+
+  async applyFilter () {
+    this.filterStream.next(await this.getFilter());
     ViewHandler.getInstance().setUrlParam('date', this.dateInput.value, true);
-    ViewHandler.getInstance().setUrlParam('users', this.usersInput.getSelectedUsers().join(','), true);
+    ViewHandler.getInstance().setUrlParam('users', this.usersInput.getSelectedGroups().join(','), true);
   }
 
   setDate(value: string) {
     this.dateInput.value = value;
   }
 
-  setUsers(value: string) {
-    this.usersInput.ready.then(() => {
-      this.usersInput.addItems(value.split(','));
-    });
+  async setUsers(value: string) {
+    this.usersInput.addItems(value.split(','));
   }
 }

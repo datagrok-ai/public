@@ -22,6 +22,7 @@ export class TopUsersViewer extends UaFilterableQueryViewer {
             let entity = await grok.dapi.users.filter(`login = "${args.args.categories[0]}"`).first();
             let pp = new PropertyPanel(
                 entity,
+                null,
                 [new UaDataFrameQueryViewer(
                   'Events Of User',
                   'TopEventsOfUser',

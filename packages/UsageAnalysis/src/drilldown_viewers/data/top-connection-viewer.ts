@@ -23,6 +23,7 @@ export class TopConnectionsViewer extends UaFilterableQueryViewer {
             let entity = await grok.dapi.connections.filter(`shortName = "${args.args.categories[0]}"`).first();
             let pp = new PropertyPanel(
                 entity,
+                null,
                 [
                 new UaDataFrameQueryViewer(
                     'Users Of Connection',

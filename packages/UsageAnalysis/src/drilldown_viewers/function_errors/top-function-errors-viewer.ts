@@ -31,6 +31,7 @@ export class TopFunctionErrorsViewer extends UaFilterableQueryViewer {
 
             let pp = new PropertyPanel(
                 null,
+                null,
                 [new UaDataFrameViewer(
                   'Errors Info',
                     eventInfo,

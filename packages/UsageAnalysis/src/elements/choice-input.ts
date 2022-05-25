@@ -8,34 +8,32 @@ import Choices from "choices.js";
 import {InputBase} from "datagrok-api/dg";
 
 export class ChoiceInput {
+  choices: Choices;
+  field: InputBase;
 
-  choices: Choices | null = null;
-  root: InputBase | null = null;
-  ready: Promise<void>;
+  static async construct (funcToGetList: Function) {
+   // @ts-ignore
+    let field = ui.choiceInput('Lookup field',[], await funcToGetList());
 
-  constructor (funcToGetList: Function) {
+    field.input.setAttribute('multiple', '');
+    let choices = new Choices(field.input, {
+      addItems: true,
+      removeItems: true,
+      removeItemButton: true,
+      searchEnabled: true,
+      searchChoices: true,
+      itemSelectText: ''
+    });
 
-    let init = async () => {
-      // @ts-ignore
-      let field = ui.choiceInput('Lookup field',[], await funcToGetList());
-
-      field.input.setAttribute('multiple', '');
-      this.choices = new Choices(field.input, {
-        addItems: true,
-        removeItems: true,
-        removeItemButton: true,
-        searchEnabled: true,
-        searchChoices: true,
-        itemSelectText: ''
-      });
-
-      this.root = field;
-    };
-
-    this.ready = init();
+    return new ChoiceInput(choices, field);
   }
 
-  getSelectedUsers() : string[] {
+  private constructor(choices: Choices, field: InputBase) {
+    this.choices = choices;
+    this.field = field;
+  }
+
+  getSelectedGroups() : string[] {
     let users = [];
     // @ts-ignore
     users = this.choices?.getValue(true);

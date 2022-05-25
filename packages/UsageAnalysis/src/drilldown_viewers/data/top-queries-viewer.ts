@@ -23,6 +23,7 @@ export class TopQueriesViewer extends UaFilterableQueryViewer {
             let entity = await grok.dapi.queries.filter(`shortName = "${args.args.categories[0]}"`).first();
             let pp = new PropertyPanel(
                 entity,
+                null,
                 [
                 new UaDataFrameQueryViewer(
                     'Users Of Query',

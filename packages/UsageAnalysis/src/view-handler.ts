@@ -27,11 +27,11 @@ export class ViewHandler {
   private constructor() {
   }
 
-  init() {
+  async init() {
     let pathSplits = decodeURI(window.location.pathname).split('/');
     let params = this.getSearchParameters();
 
-    let toolbox = new UaToolbox();
+    let toolbox = await UaToolbox.construct();
 
     let overviewView = new OverviewView(toolbox);
   
@@ -98,10 +98,10 @@ export class ViewHandler {
 
       if (paramsHaveUsers) {
         //@ts-ignore
-        toolbox.setUsers(params.get('users'));
+        await toolbox.setUsers(params.get('users'));
       }
 
-      toolbox.applyFilter();
+      await toolbox.applyFilter();
     }
 
     onCurrentViewChanged(grok.shell.v, params);

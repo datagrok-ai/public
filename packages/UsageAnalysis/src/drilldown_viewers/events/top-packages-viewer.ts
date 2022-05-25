@@ -34,22 +34,23 @@ export class TopPackagesViewer extends UaFilterableQueryViewer {
     let entity = await grok.dapi.packages.filter(`shortName = "${category}"`).first();
     let pp = new PropertyPanel(
         entity,
-        [new UaDataFrameQueryViewer(
-          'Package Info',
-          'PackageInfo',
-          (t: DG.DataFrame) => {
-            let res: any = {};
-            for (let c of t.columns) {
-              res[c.name] = c.get(0);
-            }
+        new UaDataFrameQueryViewer(
+            'Package Info',
+            'PackageInfo',
+            (t: DG.DataFrame) => {
+              let res: any = {};
+              for (let c of t.columns) {
+                res[c.name] = c.get(0);
+              }
 
-            return ui.tableFromMap(res);
-          },
-          null as any,
-          {name: category},
-          this.filterSubscription.getValue(),
-          false
-      ),
+              return ui.tableFromMap(res);
+            },
+            null as any,
+            {name: category},
+            this.filterSubscription.getValue(),
+            false
+        ),
+        [
       new UaDataFrameQueryViewer(
           'Functions Of Package',
           'TopFunctionsOfPackage',

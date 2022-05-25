@@ -22,6 +22,7 @@ export class TopSourcesViewer extends UaFilterableQueryViewer {
 
             let pp = new PropertyPanel(
                 null,
+                null,
                 [new UaDataFrameQueryViewer(
                   'Functions Of Source',
                   'TopFunctionsOfSource',
