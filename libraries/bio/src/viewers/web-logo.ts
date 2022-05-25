@@ -184,7 +184,7 @@ export class WebLogo extends DG.JsViewer {
         ui.tooltip.showRowGroup(this.dataFrame, (iRow) => {
           const seq = this.seqCol!.get(iRow);
           const mSeq = seq ? seq[this.startPosition + jPos] : null;
-          return mSeq === monomer;
+          return mSeq === monomer && this.dataFrame.filter.get(iRow);
         }, args.x + 16, args.y + 16);
       } else {
         ui.tooltip.hide();
@@ -203,7 +203,7 @@ export class WebLogo extends DG.JsViewer {
         this.dataFrame.selection.init((iRow) => {
           const seq = this.seqCol!.get(iRow);
           const mSeq = seq ? seq[this.startPosition + jPos] : null;
-          return mSeq === monomer;
+          return mSeq === monomer && this.dataFrame.filter.get(iRow);
         });
       }
     }));
@@ -216,7 +216,7 @@ export class WebLogo extends DG.JsViewer {
     this.render(true);
   }
 
-  rootOnSizeChanged(args: any) {
+  private rootOnSizeChanged(args: any) {
     this.render(true);
 
     // console.debug(`WebLogo.onRootSizeChanged() ` +
@@ -226,7 +226,7 @@ export class WebLogo extends DG.JsViewer {
 
   /** Assigns {@link seqCol} and {@link cp} based on {@link sequenceColumnName} and calls {@link render}().
    */
-  updateSeqCol(): void {
+  private updateSeqCol(): void {
     if (this.dataFrame) {
       this.seqCol = this.sequenceColumnName ? this.dataFrame.col(this.sequenceColumnName) : null;
       if (this.seqCol == null) {
@@ -258,7 +258,7 @@ export class WebLogo extends DG.JsViewer {
     this.render();
   }
 
-  onPropertyChanged(property: DG.Property): void {
+  public override onPropertyChanged(property: DG.Property): void {
     // console.debug(`WebLogo.onPropertyChanged( ${property.name} = '' })`);
     super.onPropertyChanged(property);
 
@@ -296,7 +296,7 @@ export class WebLogo extends DG.JsViewer {
     }
   }
 
-  async onTableAttached() {
+  public override async onTableAttached() {
     // console.debug(`WebLogo.onTableAttached( dataFrame = ${this.dataFrame ? 'data' : 'null'} )`);
     this.updateSeqCol();
 
