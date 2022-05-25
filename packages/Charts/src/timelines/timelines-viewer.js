@@ -182,13 +182,18 @@ export class TimelinesViewer extends EChartViewer {
 
     this.columnData = columnPropNames.reduce((map, v, i) => {
       const column = this.dataFrame.getCol(columnNames[i]);
-      map[v] = {
-        column,
-        data: column.getRawData(),
-        categories: column.type === DG.COLUMN_TYPE.STRING ? column.categories : null,
-      };
+      map[v] = this.getColumnData(column);
       return map;
     }, {});
+    if (this.eventsColumnNames) {
+      this.columnData['eventsColumnNames'] = {};
+      for (const columnName of this.eventsColumnNames) {
+        const column = this.dataFrame.col(columnName);
+        if (column == null)
+          return null;
+        this.columnData['eventsColumnNames'][columnName] = this.getColumnData(column);
+      }
+    }  
 
     this.colorMap = this.getColorMap(this.columnData.colorByColumnName.categories);
     this.updateLegend(this.columnData.colorByColumnName.column);
@@ -323,26 +328,28 @@ export class TimelinesViewer extends EChartViewer {
     return null;
   }
 
-  updateColumnData(prop) {
-    const getColumnData = (column) => ({
+  getColumnData(column) {
+    return {
       column,
       data: column.getRawData(),
       categories: column.type === DG.COLUMN_TYPE.STRING ? column.categories : null,
-    });
+    };
+  }
 
+  updateColumnData(prop) {
     if (prop.name.endsWith('ColumnNames')) {
       this.columnData[prop.name] = {};
       for (const columnName of prop.get(this)) {
         const column = this.dataFrame.col(columnName);
         if (column == null)
           return null;
-        this.columnData[prop.name][columnName] = getColumnData(column);
+        this.columnData[prop.name][columnName] = this.getColumnData(column);
       }
     } else {
       const column = this.dataFrame.col(prop.get(this));
       if (column == null)
         return null;
-      this.columnData[prop.name] = getColumnData(column);
+      this.columnData[prop.name] = this.getColumnData(column);
     }
     return this.columnData[prop.name];
   }
