@@ -16,7 +16,7 @@ function addPackageVersion(name: string, description: string, packageVersion: st
   }
 
   if (dependency && dependencyVersion) {
-    data[name]['dependencies'][packageVersion][dependency] = [dependencyVersion];
+    data[name]['dependencies'][packageVersion][dependency] = dependencyVersion.toString();
   }
 
   if (jsonContent.data.hasOwnProperty(name)){
