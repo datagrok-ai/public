@@ -761,8 +761,14 @@
       "description": "Adds [Ketcher](https://lifescience.opensource.epam.com/ketcher/index.html) as an optional molecular sketcher."
     },
     "bio": {
-      "dependencies": {},
-      "description": "sequences1 is a [package](https://datagrok.ai/help/develop/develop#packages) for the [Datagrok](https://datagrok.ai) platform."
+      "dependencies": {
+        "1.0.0": {
+          "datagrok-api": [
+            "^1.0.0"
+          ]
+        }
+      },
+      "description": "Bio is a [package](https://datagrok.ai/help/develop/develop#packages) for the [Datagrok](https://datagrok.ai) platform"
     },
     "viewers": {
       "dependencies": {
