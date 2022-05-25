@@ -281,12 +281,12 @@ export async function OligoBatchCalculatorApp(): Promise<void> {
   });
 
   const codesTablesDiv = ui.splitV([
+    ui.box(ui.h2('Additional modifications'), {style: {maxHeight: '40px'}}),
+    additionaModifsGrid.root,
     ui.box(ui.h2('ASO Gapmers'), {style: {maxHeight: '40px'}}),
     asoGapmersGrid.root,
     ui.box(ui.h2('2\'-OMe and 2\'-F modifications'), {style: {maxHeight: '40px'}}),
     omeAndFluoroGrid.root,
-    ui.box(ui.h2('Additional modifications'), {style: {maxHeight: '40px'}}),
-    additionaModifsGrid.root,
   ], {style: {maxWidth: '600px'}});
 
   additionalModsDf.col(COL_NAMES.BASE_MODIFICATION)!
@@ -357,16 +357,29 @@ export async function OligoBatchCalculatorApp(): Promise<void> {
       return grok.shell.warning('Long Name shouldn\'t contain more than 300 characters');
 
     const rowIndex = additionalModsDf.currentCell.rowIndex;
+    if (additionalModsDf.currentCol.name == COL_NAMES.BASE_MODIFICATION) {
+      if (additionalModsDf.currentCell.value == 'NO') {
+        const extCoefChoiceInput = ui.floatInput('', 0);
+        ui.dialog('Enter Extinction Coefficient Value')
+          .add(extCoefChoiceInput)
+          .onOK(() => {
+            additionalModsDf.set(COL_NAMES.EXTINCTION_COEFFICIENT, rowIndex, String(extCoefChoiceInput.value));
+          })
+          .show();
+      } else
+        additionalModsDf.set(COL_NAMES.EXTINCTION_COEFFICIENT, rowIndex, 'Base');
+    }
+
     await grok.dapi.userDataStorage.postValue(
       STORAGE_NAME,
-      additionalModsDf.col(COL_NAMES.ABBREVIATION)?.get(rowIndex),
+      additionalModsDf.col(COL_NAMES.ABBREVIATION)!.get(rowIndex),
       JSON.stringify({
-        longName: additionalModsDf.col(COL_NAMES.LONG_NAMES)?.get(rowIndex),
-        abbreviation: additionalModsDf.col(COL_NAMES.ABBREVIATION)?.get(rowIndex),
-        molecularWeight: additionalModsDf.col(COL_NAMES.MOLECULAR_WEIGHT)?.get(rowIndex),
-        extinctionCoefficient: additionalModsDf.col(COL_NAMES.EXTINCTION_COEFFICIENT)?.get(rowIndex),
-        baseModification: additionalModsDf.col(COL_NAMES.BASE_MODIFICATION)?.get(rowIndex),
-        changeLogs: additionalModsDf.col(COL_NAMES.CHANGE_LOGS)?.get(rowIndex),
+        longName: additionalModsDf.col(COL_NAMES.LONG_NAMES)!.get(rowIndex),
+        abbreviation: additionalModsDf.col(COL_NAMES.ABBREVIATION)!.get(rowIndex),
+        molecularWeight: additionalModsDf.col(COL_NAMES.MOLECULAR_WEIGHT)!.get(rowIndex),
+        extinctionCoefficient: additionalModsDf.col(COL_NAMES.EXTINCTION_COEFFICIENT)!.get(rowIndex),
+        baseModification: additionalModsDf.col(COL_NAMES.BASE_MODIFICATION)!.get(rowIndex),
+        changeLogs: additionalModsDf.col(COL_NAMES.CHANGE_LOGS)!.get(rowIndex),
       }),
       CURRENT_USER,
     );
