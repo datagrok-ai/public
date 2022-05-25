@@ -28,6 +28,11 @@ export function isMolBlock(s: string | null) {
 /** Cheminformatics-related routines */
 export namespace chem {
 
+  export enum SKETCHER_MODE {
+    INPLACE = 'Inplace',
+    EXTERNAL = 'External'
+  }
+
   /** A common interface that all sketchers should implement */
   export abstract class SketcherBase extends Widget {
     readonly SMILES: string = 'smiles';
@@ -38,6 +43,7 @@ export namespace chem {
     _smiles: string;
     _smarts: string;
     _molFile: string;
+    _mode: string;
 
     constructor() {
       super(ui.box());
@@ -45,6 +51,7 @@ export namespace chem {
       this._smiles = this.addProperty('smiles', TYPE.STRING);
       this._smarts = this.addProperty('smarts', TYPE.STRING);
       this._molFile = this.addProperty('molFile', TYPE.STRING);
+      this._mode = this.addProperty('mode', TYPE.STRING, SKETCHER_MODE.EXTERNAL, { choices: [ SKETCHER_MODE.EXTERNAL, SKETCHER_MODE.INPLACE ] });
     }
 
     /** SMILES representation of the molecule */
@@ -82,6 +89,15 @@ export namespace chem {
       this._molFile = s;
     }
 
+    /** Sketcher mode */
+    get mode(): string {
+      return this._mode;
+    }
+
+    set mode(s: string) {
+      this._mode = s;
+    }
+
     /** Override to provide custom initialization. At this point, the root is already in the DOM. */
     async init() {
     }
@@ -97,7 +113,7 @@ export namespace chem {
     molInput: HTMLInputElement = ui.element('input');
     host: HTMLDivElement = ui.box(null, 'grok-sketcher');
     /* molInputSubscription: Subscription | null = null; */
-    sketchMenu: Menu;
+    sketchMenu?: Menu;
     changedSub: Subscription | null = null;
     sketcher: SketcherBase | null = null;
     onChanged: Subject<any> = new Subject<any>();
@@ -110,6 +126,17 @@ export namespace chem {
     _smiles: string = '';
     _molFile: string = '';
     _smarts: string = '';
+    _mode = SKETCHER_MODE.INPLACE;
+
+    getMode(): string {
+      return this.sketcher ? this.sketcher.mode : this._mode;
+    }
+
+    setMode(x: SKETCHER_MODE) {
+      this._mode = x;
+      if (this.sketcher != null)
+        this.sketcher!.mode = x;
+    }
 
     getSmiles(): string {
       return this.sketcher ? this.sketcher.smiles : this._smiles;
@@ -167,11 +194,88 @@ export namespace chem {
         this.setMolecule(x);
     }
 
-    constructor() {
+    constructor(mode?: SKETCHER_MODE) {
       super(ui.div());
+      if (mode)
+        this.setMode(mode);
+      this.root.append(ui.div([ ui.divText('') ]));
+      setTimeout(() => this.createSketcher(), 100);
+    }
 
-      let funcs = Func.find({tags: ['moleculeSketcher']});
-      $(this.molInput).attr('placeholder', 'SMILES, MOLBLOCK, Inchi, ChEMBL id, etc');
+    /** In case sketcher is opened in filter panel use EXTERNAL mode*/
+    setExternalModeForSubstrFilter() {
+      if (this.root.closest('.d4-filter')) {
+        this.setMode(SKETCHER_MODE.EXTERNAL);
+      };
+    }
+
+    createSketcher() {
+      this.setExternalModeForSubstrFilter();
+      this.root.innerHTML = '';
+      if (this._mode === SKETCHER_MODE.INPLACE) {
+        this.root.appendChild(this.createInplaceModeSketcher());
+      } else {
+        this.root.appendChild(this.createExternalModeSketcher());
+      }
+    }
+
+    createExternalModeSketcher(): HTMLElement {
+      let updateExtSketcherInnerHTML = (content: HTMLElement) => {
+        extSketcherDiv.innerHTML = '';
+        extSketcherDiv.append(content);
+      }
+      let updateExtSketcherContent = (extSketcherDiv: HTMLElement) => {
+        if (this.getSmiles()) {
+          const width = extSketcherDiv.parentElement!.clientWidth;
+          const height = width / 2;
+          let renderFunc = Func.find({ tags: [ 'molRenderer' ] });
+          if (renderFunc.length == 0) {
+            updateExtSketcherInnerHTML(svgMol(this.getSmiles(), width, height));
+          }
+          renderFunc![ 0 ]
+            .apply({ molStr: this.getSmiles(), width: width, height: height })
+            .then((molDiv) => {
+              updateExtSketcherInnerHTML(molDiv);
+            });
+        }
+        let sketchLink = ui.button('Sketch', () => updateExtSketcherContent(extSketcherDiv));
+        sketchLink.style.paddingLeft = '0px';
+        sketchLink.style.marginLeft = '0px';
+        updateExtSketcherInnerHTML(sketchLink);
+      };
+
+      const extSketcherDiv = ui.div([], {style: {cursor: 'pointer'}});
+
+      ui.tooltip.bind(extSketcherDiv, 'Click to edit filter');
+
+      extSketcherDiv.addEventListener('mousedown', () => {
+        let savedMolFile = this.getMolFile();
+        ui.dialog()
+          .add(this.createInplaceModeSketcher())
+          .onCancel(() => this.setMolFile(savedMolFile))
+          .onOK(() => {
+            updateExtSketcherContent(extSketcherDiv);
+          })
+          .show();
+      });
+
+      ui.onSizeChanged(extSketcherDiv).subscribe((_) => {
+        updateExtSketcherContent(extSketcherDiv);
+      });
+
+      updateExtSketcherContent(extSketcherDiv);
+      return extSketcherDiv;
+    }
+
+    createInplaceModeSketcher(): HTMLElement {
+      const molInputDiv = ui.div();
+      grok.dapi.userDataStorage.getValue(_STORAGE_NAME, _KEY, true).then((sname: string) => {
+        let funcs = Func.find({ tags: [ 'moleculeSketcher' ] });
+        if (funcs.length == 0)
+          throw 'Sketcher functions not found. Please install OpenChemLib, or MarvinJS package.';
+        let funcName = funcs.filter(f => f.friendlyName === sname)[ 0 ].name;
+
+        $(this.molInput).attr('placeholder', 'SMILES, MOLBLOCK, Inchi, ChEMBL id, etc');
 
       if (extractors == null) {
         const extractorSearchOptions = {
@@ -220,30 +324,28 @@ export namespace chem {
         .item('Copy as SMILES', () => navigator.clipboard.writeText(this.sketcher!.smiles))
         .item('Copy as MOLBLOCK', () => navigator.clipboard.writeText(this.sketcher!.molFile))
         .group('Recent')
-          .items(Sketcher.getRecent().map((m) => ui.tools.click(svgMol(m, 200, 100), () => this.setMolecule(m))), () => {})
+          .items(Sketcher.getRecent().map((m) => ui.tools.click(svgMol(m, 100, 70), () => this.setMolecule(m))), () => { })
           .endGroup()
         .group('Favorites')
           .item('Add to Favorites', () => Sketcher.addFavorite(this.sketcher!.molFile))
           .separator()
-          .items(Sketcher.getFavorites().map((m) => ui.tools.click(svgMol(m, 200, 100), () => this.setMolecule(m))), () => {})
+          .items(Sketcher.getFavorites().map((m) => ui.tools.click(svgMol(m, 100, 70), () => this.setMolecule(m))), () => { })
           .endGroup()
         .separator()
-        .items(funcs.map((f) => f.friendlyName), (name: string) => this.setSketcher(name));
-
+        .items(funcs.map((f) => f.friendlyName), (name: string) => this.setSketcher(name),
+          { isChecked: (item) => item === sname, toString: item => item });
       let optionsIcon = ui.iconFA('bars', () => {
-        this.sketchMenu.show()
+        this.sketchMenu!.show()
       });
       $(optionsIcon).addClass('d4-input-options');
 
-      let molInputDiv = ui.div([this.molInput, optionsIcon], 'grok-sketcher-input');
-
-      this.root.appendChild(ui.div([
-        molInputDiv,
-        this.host]));
-
-      grok.dapi.userDataStorage.getValue(_STORAGE_NAME, _KEY, true).then((sname: string) => {
-        funcs.map(f => f.name).includes(sname) ? this.setSketcher(sname) : this.setSketcher(funcs[0].name);
+        molInputDiv.append(ui.div([ this.molInput, optionsIcon ], 'grok-sketcher-input'))
+        funcs.map(f => f.name).includes(funcName) ? this.setSketcher(sname) : this.setSketcher(funcs[ 0 ].name);
       });
+
+      return ui.div([
+        molInputDiv,
+        this.host]);
     }
 
     static readonly FAVORITES_KEY = 'chem-molecule-favorites';
@@ -284,14 +386,7 @@ export namespace chem {
       let funcs = Func.find({tags: ['moleculeSketcher']});
       let f = funcs.find(e => e.friendlyName == name || e.name == name);
 
-      await grok.dapi.userDataStorage.getValue(_STORAGE_NAME, _KEY, true).then((sname: string) => {
-        let fr = funcs.find(e => e.name == sname);
-        if (fr === undefined)
-          fr = funcs.find(e => e.name == _DEFAULT_SKETCHER);
-        this.sketchMenu.find(fr!.friendlyName)._check.innerHTML = '';
-      });
-      grok.dapi.userDataStorage.postValue(_STORAGE_NAME, _KEY, f!.name, true);
-      this.sketchMenu.find(f!.friendlyName)._check.append(ui.iconFA('check'));
+      grok.dapi.userDataStorage.postValue(_STORAGE_NAME, _KEY, f!.friendlyName, true);
 
       this.sketcher = await f!.apply();
       this.host!.style.minWidth = '500px';
