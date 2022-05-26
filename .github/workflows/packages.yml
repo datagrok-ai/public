@@ -312,10 +312,10 @@ jobs:
           for package in $packages; do
             path="$GITHUB_WORKSPACE/gh-cache/info-${package}"
             name=$(cat ${path}/${package}.name.txt)
-            description="$(cat $GITHUB_WORKSPACE/gh-cache/${package}/${package}.description.txt)"
-            version=$(cat $GITHUB_WORKSPACE/gh-cache/${package}/${package}.version.txt)
+            description="$(cat ${path}/${package}.description.txt)"
+            version=$(cat ${path}/${package}.version.txt)
             grok_args=(add --package "${name}" --description "${description}" --ver "${version}")
-            dependencies=$(cat $GITHUB_WORKSPACE/gh-cache/${package}/${package}.dependencies.txt)
+            dependencies=$(cat ${path}/${package}.dependencies.txt)
             if [ -z "${dependencies}" ]; then
                bin/grok-meta.js "${grok_args[@]}"
             else
