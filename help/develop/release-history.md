@@ -1,6 +1,42 @@
 <!-- TITLE: Release History -->
 <!-- SUBTITLE: -->
 
+# 2022-05-26 Dev build 1.1.3
+
+## Latest Docker Images
+
+* Datagrok: 
+  *  `docker pull datagrok/datagrok:1.1.3`
+  *  `docker pull datagrok/datagrok:latest`
+  
+* [Docker-Compose](admin/docker-compose.md)
+
+## Addressed Issues
+
+* Closes #648: Viewers: Column selectors: Interactivity: previous column is not set back on mouse leave 
+* Closes #535: Chem: Structure filter (MarvinJS) cannot be removed from filter panel once added 
+* Charts: add webpack-cli to dev dependencies 
+* Simple mode: correct misspellings 
+* #618 Charts: Timelines: ability to define multiple "Events" columns (WIP) 
+* Test for dateTime pattern added 
+* JS API: JsViewer.columnList property 
+* Meta fix 
+* (Bug) Old version layout restoring hides row numbers column 
+* Extending UNDO mechanism (views closing, axes changes) #600 
+* Fix Meta package format 
+* Removed debug lines 
+* Added missing await 
+* Meta-package in NPM (WIP)
+* Fixed S3 file read 
+* JS API Tests: Functions: tests for all built-in arithmetic/logical/date functions (WIP)
+* Oligo Batch Calculator: editing option on the base modification logic (WIP)
+* Add uploading ANARCI (aligned to numbering scheme) antibodies sequences (to filter for an antigen) within position names columns to separate tables containing scheme and chain within table name. 
+* JS-Api: implemented sketcher inplace/external modes 
+* Usage analysis: use groups instead of users in filters 
+* #646: replaced objects with Maps & storing indexes 
+* JS API Tests: Stats: test each exposed method and property (WIP)
+
+
 # 2022-05-24 Dev build 1.1.2
 
 ## Latest Docker Images
