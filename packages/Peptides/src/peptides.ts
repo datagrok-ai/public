@@ -177,6 +177,10 @@ export class PeptidesController {
     return this._model.substitutionsInfo;
   }
 
+  getCurrentAARandPos() {
+    return {aar: this.dataFrame.getTag(C.TAGS.AAR), pos: this.dataFrame.getTag(C.TAGS.POSITION)};
+  }
+
   assertVar(variable: string, init = false): boolean {
     //@ts-ignore
     let foundVariable: any = this[variable];

@@ -9,6 +9,6 @@ export namespace BarChart {
   export type BarStatsObject = {name: string, count: number, selectedCount: number};
 }
 
-type UTypedArray = Uint8Array | Uint16Array | Uint32Array;
+export type UTypedArray = Uint8Array | Uint16Array | Uint32Array;
 //AAR: (Position: (index: indexList))
 export type SubstitutionsInfo = Map<string, Map<string, Map<number, number[] | UTypedArray>>>;
