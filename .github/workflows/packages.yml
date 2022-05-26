@@ -211,7 +211,7 @@ jobs:
         if: steps.info.outcome == 'success'
         uses: actions/upload-artifact@v3
         with:
-          name: ${{ matrix.package }}
+          name: info-${{ matrix.package }}
           path: |
             packages/${{ matrix.package }}/gh-cache/${{ matrix.package }}.name.txt
             packages/${{ matrix.package }}/gh-cache/${{ matrix.package }}.description.txt
@@ -307,10 +307,10 @@ jobs:
         id: add
         working-directory: packages/Meta
         run: |
-          packages=$(find $GITHUB_WORKSPACE/gh-cache -type d -mindepth 1 -maxdepth 1 -printf '%P ')
+          packages=$(find $GITHUB_WORKSPACE/gh-cache -mindepth 1 -maxdepth 1 -type d -name info-* -printf '%P '| sed 's/info-//g')
           echo "::set-output name=packages::$packages"
           for package in $packages; do
-            path="$GITHUB_WORKSPACE/gh-cache/${package}"
+            path="$GITHUB_WORKSPACE/gh-cache/info-${package}"
             name=$(cat ${path}/${package}.name.txt)
             description="$(cat $GITHUB_WORKSPACE/gh-cache/${package}/${package}.description.txt)"
             version=$(cat $GITHUB_WORKSPACE/gh-cache/${package}/${package}.version.txt)
