@@ -10,4 +10,5 @@ export namespace BarChart {
 }
 
 type UTypedArray = Uint8Array | Uint16Array | Uint32Array;
-export type SubstitutionsInfo = Map<string, Map<string, number[] | UTypedArray>>;
+//AAR: (Position: (index: indexList))
+export type SubstitutionsInfo = Map<string, Map<string, Map<number, number[] | UTypedArray>>>;
