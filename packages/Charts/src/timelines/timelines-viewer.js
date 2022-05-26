@@ -108,10 +108,10 @@ export class TimelinesViewer extends EChartViewer {
           this.switchLegendVisibility(this.legendVisibility);
         }
       } else {
+        this.columnData[property.name] = null;
         if (property.name === 'colorByColumnName') {
           this.hideLegend();
           this.colorMap = null;
-          this.columnData[property.name] = null;
         }
       }
     } else if (property.name === 'legendVisibility' && this.colorByColumnName) {
@@ -185,7 +185,7 @@ export class TimelinesViewer extends EChartViewer {
       map[v] = this.getColumnData(column);
       return map;
     }, {});
-    if (this.eventsColumnNames) {
+    if (this.eventsColumnNames?.length > 0) {
       this.columnData['eventsColumnNames'] = {};
       for (const columnName of this.eventsColumnNames) {
         const column = this.dataFrame.col(columnName);
@@ -418,53 +418,56 @@ export class TimelinesViewer extends EChartViewer {
 
   getSeriesData() {
     this.data.length = 0;
-    const events = {};
     let tempObj = {};
 
     const colorCategories = this.columnData.colorByColumnName?.categories;
     const colorBuf = this.columnData.colorByColumnName?.data;
-    const { categories: eventCategories, data: eventBuf } = this.columnData.eventColumnName;
-    const { column: startColumn } = this.columnData.startColumnName;
-    const { column: endColumn } = this.columnData.endColumnName;
-    (startColumn.type !== DG.COLUMN_TYPE.DATE_TIME || endColumn.type !== DG.COLUMN_TYPE.DATE_TIME) ?
-      this.removeTimeOptions() : this.addTimeOptions();
+    const eventCategories = this.columnData.eventColumnName?.categories;
+    const eventBuf = this.columnData.eventColumnName?.data;
+    const startColumn = this.columnData.startColumnName?.column;
+    const endColumn = this.columnData.endColumnName?.column;
+    const eventColumns = this.columnData.eventsColumnNames ? Object.keys(this.columnData.eventsColumnNames)
+      .map((columnName) => this.columnData.eventsColumnNames[columnName].column) : [];
+
+    if ([startColumn, endColumn, ...eventColumns].some((column) => column ? column.type !== DG.COLUMN_TYPE.DATE_TIME : false))
+      this.removeTimeOptions();
+    else
+      this.addTimeOptions();
 
     for (const i of this.dataFrame.filter.getSelectedIndexes()) {
       const id = this.getStrValue(this.columnData.splitByColumnName, i);
-      let start = this.getSafeValue(this.columnData.startColumnName, i);
-      let end = this.getSafeValue(this.columnData.endColumnName, i);
-      if (start === end && end === null && !this.eventsColumnNames) continue;
-      if (this.eventsColumnNames) {
+      const color = this.colorByColumnName ? colorCategories[colorBuf[i]] : this.defaultColor;
+      let start = startColumn ? this.getSafeValue(this.columnData.startColumnName, i) : null;
+      let end = endColumn ? this.getSafeValue(this.columnData.endColumnName, i) : null;
+      if (start === end && end === null && (!this.eventsColumnNames || this.eventsColumnNames.length === 0)) continue;
+      if (this.eventsColumnNames?.length > 0) {
         for (const columnName of Object.keys(this.columnData.eventsColumnNames)) {
-          events[columnName] = {
-            start: this.getSafeValue(this.columnData.eventsColumnNames[columnName], i),
-            end: this.showOpenIntervals ? this.dataMax : null,
-          };
+          const start = this.getSafeValue(this.columnData.eventsColumnNames[columnName], i);
+          const end = this.showOpenIntervals ? this.dataMax : null;
+          const key = `${id}-${columnName}-${start}-${end}`;
+          if (key in tempObj) {
+            tempObj[key][3].push(color);
+            tempObj[key][4].push(columnName);
+          } else {
+            tempObj[key] = [id, start, end, [color], [columnName], this.dataFrame.selection.get(i)];
+          }
         }
       }
-      if (this.showOpenIntervals) {
-        // TODO: handle edge case of different column types
-        if (start == null)
-          start = Math.min(this.getColumnMin(startColumn), this.getColumnMin(endColumn));
-        if (end == null)
-          end = Math.max(this.getColumnMax(startColumn), this.getColumnMax(endColumn));
-      }
-      const color = this.colorByColumnName ? colorCategories[colorBuf[i]] : this.defaultColor;
-      const event = eventCategories[eventBuf[i]];
-      const key = `${id}-${event}-${start}-${end}`;
-      if (key in tempObj) {
-        tempObj[key][3].push(color);
-        tempObj[key][4].push(event);
-      } else {
-        tempObj[key] = [id, start, end, [color], [event], this.dataFrame.selection.get(i)];
-      }
-      for (const [event, points] of Object.entries(events)) {
-        const key = `${id}-${event}-${points.start}-${points.end}`;
+      if (startColumn && endColumn) {
+        if (this.showOpenIntervals) {
+          // TODO: handle edge case of different column types
+          if (start == null)
+            start = Math.min(this.getColumnMin(startColumn), this.getColumnMin(endColumn));
+          if (end == null)
+            end = Math.max(this.getColumnMax(startColumn), this.getColumnMax(endColumn));
+        }
+        const event = eventCategories[eventBuf[i]];
+        const key = `${id}-${event}-${start}-${end}`;
         if (key in tempObj) {
           tempObj[key][3].push(color);
           tempObj[key][4].push(event);
         } else {
-          tempObj[key] = [id, points.start, points.end, [color], [event], this.dataFrame.selection.get(i)];
+          tempObj[key] = [id, start, end, [color], [event], this.dataFrame.selection.get(i)];
         }
       }
     }
@@ -518,7 +521,8 @@ export class TimelinesViewer extends EChartViewer {
 
   render() {
     this.updateContainers();
-    if (!this.splitByColumnName || !this.startColumnName || !this.endColumnName) {
+    if (!this.splitByColumnName || ((!this.startColumnName && !this.endColumnName) &&
+        (!this.eventsColumnNames || this.eventsColumnNames.length === 0))) {
       this.showErrorMessage('Not enough data to produce the result.');
       return;
     }
