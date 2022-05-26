@@ -3,7 +3,7 @@
   "tags": [
     "chem"
   ],
-  "version": "1.0.3",
+  "version": "1.0.4",
   "fullName": "Chembl",
   "description": "Chembl integration",
   "repository": {
@@ -14,9 +14,7 @@
   "scripts": {
     "deploy": "grok publish"
   },
-  "canEdit": [
-    "Developers"
-  ],
+  "canEdit": ["Developers"],
   "canView": [
     "All users"
   ]
