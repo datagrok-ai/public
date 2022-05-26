@@ -29,9 +29,6 @@ ctx.addEventListener('message', async (e: any) => {
     _rdKitServiceWorker!.freeMoleculesStructures();
     _rdKitServiceWorker = null;
     port.postMessage({op: op, retval: null});
-  } else if (op === WORKER_CALL.INIT_MORGAN_FINGERPRINTS) {
-    _rdKitServiceWorker!.initMorganFingerprints();
-    port.postMessage({op: op, retval: null});
   } else if (op === WORKER_CALL.GET_MORGAN_FINGERPRINTS) {
     const result = _rdKitServiceWorker!.getMorganFingerprints();
     port.postMessage({op: op, retval: result});
