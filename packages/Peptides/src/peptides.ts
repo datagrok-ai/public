@@ -173,6 +173,9 @@ export class PeptidesController {
   // getSubstitutions() {
   //   return this._model.getSubstitutionTable();
   // }
+  getSubstitutions() {
+    return this._model.substitutionsInfo;
+  }
 
   assertVar(variable: string, init = false): boolean {
     //@ts-ignore

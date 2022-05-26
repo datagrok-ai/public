@@ -266,61 +266,67 @@ export class PeptidesModel {
           continue;
 
         let substCounterFlag = false;
-        const tempData: [string, string, number][] = [];
-        const seenMonomers: Map<string, string[]> = new Map();
+        const tempData: {pos: string, seq1monomer: string, seq2monomer: string, seq1Idx: number, seq2Idx: number}[]
+          = [];
         for (const currentPosCol of columnList) {
           const seq1monomer = currentPosCol.get(seq1Idx);
           const seq2monomer = currentPosCol.get(seq2Idx);
           if (seq1monomer == seq2monomer)
             continue;
-          
+
           substCounter++;
           substCounterFlag = substCounter > this._maxSubstitutions;
           if (substCounterFlag)
             break;
-          
-          const colName = currentPosCol.name;
-          if (!seenMonomers.has(seq1monomer))
-            seenMonomers.set(seq1monomer, []);
 
-          let seenMonomersPositions = seenMonomers.get(seq1monomer)!;
-          if (!seenMonomersPositions.includes(colName)) {
-            tempData.push([seq1monomer, colName, seq2Idx]);
-            seenMonomersPositions.push(colName);
-          }
-
-          if (!seenMonomers.has(seq2monomer))
-            seenMonomers.set(seq2monomer, []);
-          
-          seenMonomersPositions = seenMonomers.get(seq2monomer)!;
-          if (!seenMonomersPositions.includes(colName)) {
-            tempData.push([seq2monomer, colName, seq1Idx]);
-            seenMonomersPositions.push(colName);
-          }
+          tempData.push({
+            pos: currentPosCol.name,
+            seq1monomer: seq1monomer,
+            seq2monomer: seq2monomer,
+            seq1Idx: seq1Idx,
+            seq2Idx: seq2Idx,
+          });
         }
 
         if (substCounterFlag || substCounter == 0)
           continue;
 
         for (const tempDataElement of tempData) {
-          const monomer = tempDataElement[0];
-          if (!this.substitutionsInfo.has(monomer))
-            this.substitutionsInfo.set(monomer, new Map());
+          const position = tempDataElement.pos;
+
+          //Working with seq1monomer
+          const seq1monomer = tempDataElement.seq1monomer;
+          if (!this.substitutionsInfo.has(seq1monomer))
+            this.substitutionsInfo.set(seq1monomer, new Map());
           
-          const positionsMap = this.substitutionsInfo.get(monomer)!;
-          const position = tempDataElement[1];
+          let positionsMap = this.substitutionsInfo.get(seq1monomer)!;
           if (!positionsMap.has(position))
-            positionsMap.set(position, []);
+            positionsMap.set(position, new Map());
           
-          (positionsMap.get(position)! as number[]).push(tempDataElement[2]);
+          let indexes = positionsMap.get(position)!;
+          
+          !indexes.has(seq1Idx) ? indexes.set(seq1Idx, [seq2Idx]) : (indexes.get(seq1Idx)! as number[]).push(seq2Idx);
+
+          //Working with seq2monomer
+          const seq2monomer = tempDataElement.seq2monomer;
+          if (!this.substitutionsInfo.has(seq2monomer))
+            this.substitutionsInfo.set(seq2monomer, new Map());
+
+          positionsMap = this.substitutionsInfo.get(seq2monomer)!;
+          if (!positionsMap.has(position))
+            positionsMap.set(position, new Map());
+          
+          indexes = positionsMap.get(position)!;
+          !indexes.has(seq2Idx) ? indexes.set(seq2Idx, [seq1Idx]) : (indexes.get(seq2Idx)! as number[]).push(seq1Idx);
         }
       }
     }
 
     const typedArray = getTypedArrayConstructor(nRows);
     for (const positionMap of this.substitutionsInfo.values())
-      for (const [position, indexArray] of positionMap.entries())
-        positionMap.set(position, new typedArray(indexArray as number[]));
+      for (const indexMap of positionMap.values())
+        for (const [index, indexArray] of indexMap.entries())
+          indexMap.set(index, new typedArray(indexArray));
   }
 
   joinDataFrames(positionColumns: string[], splitSeqDf: DG.DataFrame) {
@@ -561,12 +567,13 @@ export class PeptidesModel {
             canvasContext.textAlign = 'center';
             canvasContext.fillStyle = DG.Color.toHtml(DG.Color.getContrastColor(DG.Color.fromHtml(coef)));
             canvasContext.font = '13px Roboto, Roboto Local, sans-serif';
-            const substValue = this.substitutionsInfo.get(currentAAR)?.get(currentPosition)?.length;
+            let substValue = 0;
+            this.substitutionsInfo.get(currentAAR)?.get(currentPosition)?.forEach(idxs => substValue += idxs.length);
             // const substValue = this.substitutionTable.groupBy([currentPosition])
             //   .where(queryAAR)
             //   .aggregate()
             //   .get(currentPosition, 0);
-            if (substValue && substValue !== DG.INT_NULL)
+            if (substValue && substValue != 0)
               canvasContext.fillText(substValue.toString(), midX, midY);
           }
         }
