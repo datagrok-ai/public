@@ -933,6 +933,12 @@
         }
       },
       "description": "PowerGrid contains popular spreadsheet extensions, such as [sparklines](#sparklines)\r and support for [images](#images)."
+    },
+    "molecular-liability-browser": {
+      "dependencies": {
+        "0.0.8": {}
+      },
+      "description": "MolecularLiabilityBrowser is a [package](https://datagrok.ai/help/develop/develop#packages) for the [Datagrok](https://datagrok.ai) platform."
     }
   }
 }
