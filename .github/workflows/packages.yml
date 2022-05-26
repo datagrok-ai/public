@@ -208,7 +208,7 @@ jobs:
           echo "::set-output name=push::yes"
       - name: Upload artifact with package information
         id: cache
-        if: steps.info.outcome == 'success'
+        if: always() && steps.info.outcome == 'success'
         uses: actions/upload-artifact@v3
         with:
           name: info-${{ matrix.package }}
@@ -220,6 +220,7 @@ jobs:
           retention-days: 1
       - name: Commit package-lock.json
         id: git
+        if: always() && steps.publish.outcome == 'success'
         run: |
           git config --global user.name 'GitHub Actions'
           git config --global user.email 'github_actions@datagrok.ai'
@@ -249,7 +250,6 @@ jobs:
               fi
             done
           fi
-        if: always() && steps.publish.outcome == 'success'
       - name: Stop Datagrok
         if: always() && (steps.datagrok-image.outcome == 'failure' || steps.datagrok-image.outcome == 'success')
         run: docker-compose -p datagrok -f "docker/localhost.docker-compose.yaml" --profile all down --volumes
