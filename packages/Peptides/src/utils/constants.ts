@@ -23,6 +23,7 @@ export enum TAGS {
 export enum SEM_TYPES {
   AMINO_ACIDS = 'aminoAcids',
   ALIGNED_SEQUENCE = 'alignedSequence',
+  ALIGNED_SEQUENCE_DIFFERENCE = 'alignedSequenceDifference',
 }
 
 export const STATS = 'stats';

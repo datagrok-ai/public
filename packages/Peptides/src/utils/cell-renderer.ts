@@ -136,13 +136,13 @@ function printLeftOrCentered(
 export class AminoAcidsCellRenderer extends DG.GridCellRenderer {
   chemPalette: ChemPalette | null;
 
-  get name() { return 'aminoAcidsCR'; }
+  get name() {return 'aminoAcidsCR';}
 
-  get cellType() { return C.SEM_TYPES.AMINO_ACIDS; }
+  get cellType() {return C.SEM_TYPES.AMINO_ACIDS;}
 
-  get defaultHeight() { return 15; }
+  get defaultHeight() {return 15;}
 
-  get defaultWidth() { return 30; }
+  get defaultWidth() {return 30;}
 
   constructor() {
     super();
@@ -181,13 +181,13 @@ export class AminoAcidsCellRenderer extends DG.GridCellRenderer {
 }
 
 export class AlignedSequenceCellRenderer extends DG.GridCellRenderer {
-  get name() { return 'alignedSequenceCR'; }
+  get name() {return 'alignedSequenceCR';}
 
-  get cellType() { return C.SEM_TYPES.ALIGNED_SEQUENCE; }
+  get cellType() {return C.SEM_TYPES.ALIGNED_SEQUENCE;}
 
-  get defaultHeight() { return 30; }
+  get defaultHeight() {return 30;}
 
-  get defaultWidth() { return 230; }
+  get defaultWidth() {return 230;}
 
   /**
    * Cell renderer function.
@@ -254,13 +254,13 @@ export function processSequence(subParts: string[]): [string[], boolean] {
 }
 
 export class AlignedSequenceDifferenceCellRenderer extends DG.GridCellRenderer {
-  get name() { return 'alignedSequenceDifferenceCR'; }
+  get name() {return 'alignedSequenceDifferenceCR';}
 
-  get cellType() { return 'alignedSequenceDifference'; }
+  get cellType() {return C.SEM_TYPES.ALIGNED_SEQUENCE_DIFFERENCE;}
 
-  get defaultHeight() { return 30; }
+  get defaultHeight() {return 30;}
 
-  get defaultWidth() { return 230; }
+  get defaultWidth() {return 230;}
 
   /**
    * Cell renderer function.
