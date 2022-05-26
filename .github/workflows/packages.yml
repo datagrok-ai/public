@@ -101,7 +101,7 @@ jobs:
       fail-fast: false
       matrix: ${{ fromJson(needs.matrix.outputs.matrix_publish) }}
     outputs:
-      push: ${{ steps.git.outputs.push }}
+      push: ${{ steps.info.outputs.push }}
     steps:
       - uses: actions/checkout@v2
         with:
@@ -170,7 +170,6 @@ jobs:
           JEST_HTML_REPORTER_INCLUDE_CONSOLE_LOG: true
           JEST_HTML_REPORTER_INCLUDE_SUITE_FAILURE: true
         working-directory: packages/${{ matrix.package }}
-
       - name: Create error notification
         if: failure() && steps.test-package.outcome == 'failure'
         run: |
@@ -184,7 +183,6 @@ jobs:
           name: test-${{ matrix.package }}-${{ steps.datagrok-image.outputs.docker_sha }}-${{ steps.datagrok-image.outputs.commit_sha }}.html
           path: packages/${{ matrix.package }}/test-${{ matrix.package }}-${{ steps.datagrok-image.outputs.docker_sha }}-${{ steps.datagrok-image.outputs.commit_sha }}.html
           retention-days: 7
-
       - name: Publish to npm
         run: npm publish --access public
         id: publish
@@ -192,54 +190,35 @@ jobs:
         env:
           NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
         if: github.ref == 'refs/heads/master' && always() && matrix.publish == 'true' && (steps.build.outcome == 'success' || steps.build.outcome == 'skipped')
-
       - name: Get package information
         id: info
-        if: github.ref == 'refs/heads/master' && always() && steps.publish.outcome == 'success' && matrix.package != 'Meta'
+        if: always() && steps.publish.outcome == 'success' && matrix.package != 'Meta'
         working-directory: packages/${{ matrix.package }}
         run: |
           dependencies="$(jq  '(. | select( has("dependencies") == true ).dependencies) * (. | select( has("devDependencies") == true ).devDependencies)' package.json)"          
-          echo '::echo::on'
-          echo "::set-output name=name::$(jq .name package.json | sed -E -e 's/(^"|"$)//g' -e 's,@datagrok/,,g')"
-          echo "::set-output name=description::$(jq .description package.json | sed -E 's/(^"|"$)//g')"
-          echo "::set-output name=version::$(jq .version package.json | sed -E 's/(^"|"$)//g')"
           deps=''
           if [[ "${{ matrix.install_jsapi }}" == "true" ]]; then
             deps+="datagrok-api=$(jq '."datagrok-api"' <<<$dependencies | sed -E 's/(^"|"$)//g') "
           fi
-          echo "::set-output name=dependencies::${deps}"
-          echo '::echo::off'
-
-      - name: Build Meta package
+          mkdir gh-cache
+          echo "$(jq .name package.json | sed -E -e 's/(^"|"$)//g' -e 's,@datagrok/,,g')" >> gh-cache/${{ matrix.package }}.name.txt
+          echo "$(jq .description package.json | sed -E 's/(^"|"$)//g')" >> gh-cache/${{ matrix.package }}.description.txt
+          echo "$(jq .version package.json | sed -E 's/(^"|"$)//g')" >> gh-cache/${{ matrix.package }}.version.txt
+          echo "${deps}" >> gh-cache/${{ matrix.package }}.dependencies.txt
+          echo "::set-output name=push::yes"
+      - name: Upload artifact with package information
+        id: cache
         if: steps.info.outcome == 'success'
-        working-directory: packages/Meta
-        run: |
-          npm ci
-          npm run build
-
-      - name: Add new package version to Meta package
-        if: steps.info.outcome == 'success'
-        working-directory: packages/Meta
-        run: |
-          if [ -z "${{ steps.info.outputs.dependencies }}" ]; then
-            bin/grok-meta.js add \
-                --package "${{ steps.info.outputs.name }}" \
-                --description "${{ steps.info.outputs.description }}" \
-                --ver "${{ steps.info.outputs.version }}"
-          else
-            for d in ${{ steps.info.outputs.dependencies }}; do
-              dep=$(cut -d= -f1 <<<$d)
-              depver=$(cut -d= -f2 <<<$d)
-              bin/grok-meta.js add \
-                --package "${{ steps.info.outputs.name }}" \
-                --description "${{ steps.info.outputs.description }}" \
-                --ver "${{ steps.info.outputs.version }}" \
-                --dep "$dep" \
-                --depver "$depver"
-            done
-          fi
-
-      - name: Commit package-lock.json and Meta package package.json
+        uses: actions/upload-artifact@v3
+        with:
+          name: ${{ matrix.package }}
+          path: |
+            packages/${{ matrix.package }}/gh-cache/${{ matrix.package }}.name.txt
+            packages/${{ matrix.package }}/gh-cache/${{ matrix.package }}.description.txt
+            packages/${{ matrix.package }}/gh-cache/${{ matrix.package }}.version.txt
+            packages/${{ matrix.package }}/gh-cache/${{ matrix.package }}.dependencies.txt
+          retention-days: 1
+      - name: Commit package-lock.json
         id: git
         run: |
           git config --global user.name 'GitHub Actions'
@@ -251,11 +230,6 @@ jobs:
           if [ -n "$(git status -s packages/${{ matrix.package }}/package-lock.json)" ]; then
             git add packages/${{ matrix.package }}/package-lock.json
             git commit -m "GitHub Actions: Update packages/${{ matrix.package }}/package-lock.json [skip ci]"
-            continue=true
-          fi
-          if [ -n "$(git status -s packages/Meta/package.json)" ]; then
-            git add packages/Meta/package.json
-            git commit -m "GitHub Actions: Update ${{ matrix.package }} in Meta package [skip ci]"
             continue=true
           fi
           if [[ "${continue}" == "true" ]]; then
@@ -274,10 +248,8 @@ jobs:
                 exit $exit
               fi
             done
-            echo "::set-output name=push::yes"
           fi
-        if: github.ref == 'refs/heads/master' && always() && steps.publish.outcome == 'success' && steps.info.outcome == 'success'
-
+        if: always() && steps.publish.outcome == 'success'
       - name: Stop Datagrok
         if: always() && (steps.datagrok-image.outcome == 'failure' || steps.datagrok-image.outcome == 'success')
         run: docker-compose -p datagrok -f "docker/localhost.docker-compose.yaml" --profile all down --volumes
@@ -286,7 +258,7 @@ jobs:
     name: Upgrade Meta package
     needs:
       - publish
-    if: needs.publish.outputs.push == 'yes'
+    if: always() && needs.publish.outputs.push == 'yes'
     runs-on: ubuntu-20.04
     environment: Prod
     concurrency:
@@ -296,6 +268,11 @@ jobs:
       - uses: actions/checkout@v2
         with:
           token: ${{ secrets.WRITE_TOKEN }}
+      - name: Download all workflow run artifacts
+        id: download
+        uses: actions/download-artifact@v3
+        with:
+          path: gh-cache
       - name: Setup Node
         uses: actions/setup-node@v2
         with:
@@ -321,10 +298,35 @@ jobs:
             upgrade='major'
           fi
           npm version $upgrade
-
-      - name: Upgrade Meta package-lock.json
+      - name: Build Meta package
         working-directory: packages/Meta
-        run: npm update
+        run: |
+          npm install
+          npm run build
+      - name: Add new packages to Meta package
+        id: add
+        working-directory: packages/Meta
+        run: |
+          packages=$(find $GITHUB_WORKSPACE/gh-cache -type d -mindepth 1 -maxdepth 1 -printf '%P ')
+          echo "::set-output name=packages::$packages"
+          for package in $packages; do
+            path="$GITHUB_WORKSPACE/gh-cache/${package}"
+            name=$(cat ${path}/${package}.name.txt)
+            description="$(cat $GITHUB_WORKSPACE/gh-cache/${package}/${package}.description.txt)"
+            version=$(cat $GITHUB_WORKSPACE/gh-cache/${package}/${package}.version.txt)
+            grok_args=(add --package "${name}" --description "${description}" --ver "${version}")
+            dependencies=$(cat $GITHUB_WORKSPACE/gh-cache/${package}/${package}.dependencies.txt)
+            if [ -z "${dependencies}" ]; then
+               bin/grok-meta.js "${grok_args[@]}"
+            else
+              for d in ${dependencies}; do
+                dep=$(cut -d= -f1 <<<$d)
+                depver=$(cut -d= -f2 <<<$d)
+                dep_args=(--dep "$dep" --depver "$depver")
+                bin/grok-meta.js "${grok_args[@]}" "${dep_args[@]}"
+              done
+            fi
+          done
 
       - name: Commit Meta package.json
         id: git
@@ -338,7 +340,7 @@ jobs:
           if [ -n "$(git status -s packages/Meta/package.json)" ]; then
             git add packages/Meta/package.json
             git add packages/Meta/package-lock.json
-            git commit -m "GitHub Actions: Bump Meta package version"
+            git commit -m "GitHub Actions: Bump Meta package version for ${{ steps.add.outputs.packages }}"
             continue=true
           fi
           if [[ "${continue}" == "true" ]]; then
