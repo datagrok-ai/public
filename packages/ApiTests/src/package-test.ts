@@ -36,12 +36,12 @@ import './ui/accordion';
 import './ui/tab-control';
 import './ui/list';
 import './ui/image';
-import './ui/viewers-adding'
+import './ui/viewers-adding';
 import './grid/grid';
-import './gui/missing-values-imputation'
+import './gui/missing-values-imputation';
 
-import {runTests, tests} from "@datagrok-libraries/utils/src/test";
-export let _package = new DG.Package();
+import {runTests, tests} from '@datagrok-libraries/utils/src/test';
+export const _package = new DG.Package();
 export {tests};
 
 
@@ -51,7 +51,7 @@ export {tests};
 //output: dataframe result
 //top-menu: Tools | Dev | JS API Tests
 export async function test(category: string, test: string): Promise<DG.DataFrame> {
-  let data = await runTests({category, test});
+  const data = await runTests({category, test});
   return DG.DataFrame.fromObjects(data)!;
 }
 
@@ -59,18 +59,18 @@ export async function test(category: string, test: string): Promise<DG.DataFrame
 //output: dataframe result
 //top-menu: Tools | Dev | Test Packages
 export async function testPackages(): Promise<DG.DataFrame> {
-  let funcs = DG.Func.find({name:'test'});
-  let dfs:DG.DataFrame[] = [];
+  const funcs = DG.Func.find({name: 'test'});
+  const dfs:DG.DataFrame[] = [];
   for (const f of funcs) {
     if (f.package?.name != null) {
       grok.shell.closeAll();
       grok.shell.info(`Testing ${f.package.name}`);
-      let df = await f.apply();
+      const df = await f.apply();
       if (df == null) {
         grok.shell.error(`Failed to fetch test results from ${f.package.name}`);
         continue;
       }
-      let packageColumn = DG.Column.string('package', df.rowCount);
+      const packageColumn = DG.Column.string('package', df.rowCount);
       packageColumn.init((n) => f.package.name);
       df.columns.insert(packageColumn, 0);
       dfs.push(df);

@@ -1,7 +1,7 @@
 import * as DG from 'datagrok-api/dg';
 import * as grok from 'datagrok-api/grok';
 import {category, expect, test} from '@datagrok-libraries/utils/src/test';
-import dayjs from "dayjs";
+import dayjs from 'dayjs';
 
 category('DataFrame', () => {
   test('create from arrays', async () => {
@@ -247,14 +247,13 @@ Tesla, Model S,  ,          1.6,    120000`);
   });
 
   test('datetime column', async () => {
-    let t = grok.data.testData("demog");
-    let c = t.columns.byName('started');
+    const t = grok.data.testData('demog');
+    const c = t.columns.byName('started');
     c.set(1, dayjs('2022-01-01'));
     expect(c.get(1).valueOf(), 1640984400000);
     c.set(1, null);
     expect(c.get(1), null);
-    let v = grok.shell.addTableView(t);
+    const v = grok.shell.addTableView(t);
     v.close();
   });
-
 });
