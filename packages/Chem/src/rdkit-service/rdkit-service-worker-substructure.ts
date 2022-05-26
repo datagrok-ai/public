@@ -6,15 +6,14 @@ import {RDModule} from "../rdkit-api";
 
 export class RdKitServiceWorkerSubstructure extends RdKitServiceWorkerSimilarity {
   _patternFps: BitArray[] | null = null;
-   readonly _patternFpLength = 2048;
+  readonly _patternFpLength = 2048;
 
-   constructor(module: RDModule, webRoot: string) {
+  constructor(module: RDModule, webRoot: string) {
     super(module, webRoot);
   }
 
   initMoleculesStructures(dict: string[], normalizeCoordinates: boolean, usePatternFingerprints: boolean) {
     this.freeMoleculesStructures();
-    this.freeMorganFingerprints();
     if (dict.length === 0)
       return;
     this._rdKitMols = [];
