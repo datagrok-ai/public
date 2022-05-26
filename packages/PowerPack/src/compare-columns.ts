@@ -71,7 +71,7 @@ function addCols(t1: DG.InputBase, t2: DG.InputBase, outputs: HTMLDivElement) {
       showOutputs(t1, t2, c1, c2, outputs);
     } else if (t1.value === t2.value && grok.shell.table(t1.value).columns.length === 2) {
       let columnsNames = grok.shell.table(t1.value).columns.names();
-      c2.value = (columnsNames.indexOf(c1.value) === 0) ? columnsNames[1] : columnsNames[0];
+      c2.value = (columnsNames.indexOf(c1.value!) === 0) ? columnsNames[1] : columnsNames[0];
     }
   });
 
@@ -81,7 +81,7 @@ function addCols(t1: DG.InputBase, t2: DG.InputBase, outputs: HTMLDivElement) {
       showOutputs(t1, t2, c1, c2, outputs);
     } else if (t1.value === t2.value && grok.shell.table(t2.value).columns.length === 2) {
       let columnsNames = grok.shell.table(t2.value).columns.names();
-      c1.value = (columnsNames.indexOf(c2.value) === 0) ? columnsNames[1] : columnsNames[0];
+      c1.value = (columnsNames.indexOf(c2.value!) === 0) ? columnsNames[1] : columnsNames[0];
     }
   });
 
