@@ -1,5 +1,5 @@
 import * as grok from 'datagrok-api/grok';
-import {category, expect, expectFloat, test} from '@datagrok-libraries/utils/src/test';
+import {category, expect, test} from '@datagrok-libraries/utils/src/test';
 
 
 category('Text functions', () => {
@@ -57,18 +57,6 @@ category('Text functions', () => {
     expect(await gfe('NotEq("", "")'), false);
     expect(await gfe('NotEq("SKY", "sky")'), true);
     expect(await gfe('NotEq(" sky ", "sky")'), true);
-  });
-
-  test('ParseFloat', async () => {
-    expect(await gfe('ParseFloat("2025")'), 2025);
-    expectFloat(await gfe('ParseFloat("12.78")'), 12.78);
-    expectFloat(await gfe('ParseFloat("-012.150")'), -12.15);
-  });
-
-  test('ParseInt', async () => {
-    expect(await gfe('ParseInt("2025")'), 2025);
-    expect(await gfe('ParseInt("-012")'), -12);
-    expect(await gfe('ParseInt(" 0101 ")'), 101);
   });
 
   test('RegExpContains', async () => {
