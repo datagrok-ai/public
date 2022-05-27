@@ -2,7 +2,7 @@
   "name": "@datagrok/clinical-case",
   "friendlyName": "Clinical Case",
   "version": "0.1.2",
-  "description": "Provides support for dealing with clinical data represented in the\n[SDTM](https://www.cdisc.org/standards/foundational/sdtm) format.",
+  "description": "Provides support for dealing with clinical data represented in the [SDTM](https://www.cdisc.org/standards/foundational/sdtm) format.",
   "repository": {
     "type": "git",
     "url": "https://github.com/datagrok-ai/public.git",

@@ -3,7 +3,7 @@
 	"beta": true,
 	"friendlyName": "Seldon",
 	"version": "0.0.4",
-	"description": "Seldon is a [package](https://datagrok.ai/help/develop/develop#packages) for the\n[Datagrok](https://datagrok.ai) platform. It allows connecting to a\n[Seldon Cluster](https://www.seldon.io/) with deployed machine learning models and easily apply them within Datagrok.",
+	"description": "Seldon is a [package](https://datagrok.ai/help/develop/develop#packages) for the [Datagrok](https://datagrok.ai) platform. It allows connecting to a [Seldon Cluster](https://www.seldon.io/) with deployed machine learning models and easily apply them within Datagrok.",
 	"repository": {
     "type": "git",
     "url": "https://github.com/datagrok-ai/public.git",
