@@ -1,7 +1,5 @@
 import {RdKitServiceWorkerBase} from './rdkit-service-worker-base';
-import BitArray from '@datagrok-libraries/utils/src/bit-array';
-import {rdKitFingerprintToBitArray} from '../utils/chem-common';
-import {defaultMorganFpLength, defaultMorganFpRadius} from '../utils/chem-common';
+import {defaultMorganFpLength, defaultMorganFpRadius, Fingerprint} from '../utils/chem-common';
 import {RDModule} from "../rdkit-api";
 
 export class RdKitServiceWorkerSimilarity extends RdKitServiceWorkerBase {
@@ -12,44 +10,31 @@ export class RdKitServiceWorkerSimilarity extends RdKitServiceWorkerBase {
     super(module, webRoot);
   }
 
-  getMorganFingerprints() {
+  getFingerprints(fingerprintType: Fingerprint) {
     if (this._rdKitMols === null)
       return;
 
-    const morganFps: Uint8Array[] = [];
+    const fps: Uint8Array[] = [];
+    let fp: Uint8Array;
     for (let i = 0; i < this._rdKitMols.length; ++i) {
-      // let fp = new BitArray(this._fpLength);
       try {
-        const fp = this._rdKitMols[i].get_morgan_fp_as_uint8array(this._fpRadius, this._fpLength);
-        morganFps.push(fp);
-        // arr = rdKitFingerprintToBitArray(fp);
+        // try map maybe?
+        switch (fingerprintType) {
+        case Fingerprint.Morgan:
+          fp = this._rdKitMols[i].get_morgan_fp_as_uint8array(this._fpRadius, this._fpLength);
+          break;
+        case Fingerprint.Pattern:
+          fp = this._rdKitMols[i].get_pattern_fp_as_uint8array();
+          break;
+        default:
+          throw Error('Unknown fingerprint type: ' + fingerprintType);
+        }
+        fps.push(fp);
       } catch (e) {
         // nothing to do, bit is already 0
       }
     }
-
-    return morganFps!.map((e: any) => {
-      return {data: e, length: e.length};
-    });
-  }
-
-  getPatternFingerprints() {
-    if (this._rdKitMols === null)
-      return;
-
-    const patternFps: Uint8Array[] = [];
-    for (let i = 0; i < this._rdKitMols.length; ++i) {
-      // let fp = new BitArray(this._fpLength);
-      try {
-        const fp = this._rdKitMols[i].get_pattern_fp_as_uint8array();
-        patternFps.push(fp);
-        // arr = rdKitFingerprintToBitArray(fp);
-      } catch (e) {
-        // nothing to do, bit is already 0
-      }
-    }
-
-    return patternFps!.map((e: any) => {
+    return fps!.map((e: any) => {
       return {data: e, length: e.length};
     });
   }

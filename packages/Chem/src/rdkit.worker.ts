@@ -29,11 +29,8 @@ ctx.addEventListener('message', async (e: any) => {
     _rdKitServiceWorker!.freeMoleculesStructures();
     _rdKitServiceWorker = null;
     port.postMessage({op: op, retval: null});
-  } else if (op === WORKER_CALL.GET_MORGAN_FINGERPRINTS) {
-    const result = _rdKitServiceWorker!.getMorganFingerprints();
-    port.postMessage({op: op, retval: result});
-  } else if (op === WORKER_CALL.GET_PATTERN_FINGERPRINTS) {
-    const result = _rdKitServiceWorker!.getPatternFingerprints();
+  } else if (op === WORKER_CALL.GET_FINGERPRINTS) {
+    const result = _rdKitServiceWorker!.getFingerprints(args[0]);
     port.postMessage({op: op, retval: result});
   }
 });
