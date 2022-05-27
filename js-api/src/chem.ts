@@ -273,7 +273,11 @@ export namespace chem {
         let funcs = Func.find({ tags: [ 'moleculeSketcher' ] });
         if (funcs.length == 0)
           throw 'Sketcher functions not found. Please install OpenChemLib, or MarvinJS package.';
-        let funcName = sname ? funcs.filter(f => f.friendlyName === sname)[ 0 ].name : _DEFAULT_SKETCHER;
+
+        let fr = funcs.find(e => e.friendlyName == sname || e.name == sname);
+        if (fr === undefined) {
+          fr = funcs.find(e => e.name == _DEFAULT_SKETCHER);
+        }
 
         $(this.molInput).attr('placeholder', 'SMILES, MOLBLOCK, Inchi, ChEMBL id, etc');
 
@@ -286,7 +290,7 @@ export namespace chem {
           returnSemType: SEMTYPE.MOLECULE
         };
 
-        const load: Promise<any> = api.grok_Func_LoadQueriesScripts();
+         const load: Promise<any> = api.grok_Func_LoadQueriesScripts();
         load
           .then((_) => { extractors = Func.find(extractorSearchOptions); })
           .catch((_) => extractors = []);
@@ -339,8 +343,8 @@ export namespace chem {
       });
       $(optionsIcon).addClass('d4-input-options');
 
-        molInputDiv.append(ui.div([ this.molInput, optionsIcon ], 'grok-sketcher-input'))
-        funcs.map(f => f.name).includes(funcName) ? this.setSketcher(sname) : this.setSketcher(funcs[ 0 ].name);
+        molInputDiv.append(ui.div([ this.molInput, optionsIcon ], 'grok-sketcher-input'));
+        this.setSketcher(fr!.friendlyName);
       });
 
       return ui.div([
