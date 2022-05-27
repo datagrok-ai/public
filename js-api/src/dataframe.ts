@@ -1350,18 +1350,16 @@ export class RowList {
     }
   }
 
-  /** Selects rows by predicate.
+  /** Selects rows by predicate. See {@link DataFrame.selection}
    * Sample: {@link https://public.datagrok.ai/js/samples/data-frame/row-matching/select-rows}
-   * @param {RowPredicate} rowPredicate
    * */
   select(rowPredicate: RowPredicate): void {
     this._applyPredicate(this.table.selection, rowPredicate);
     this.table.selection.fireChanged();
   }
 
-  /** Filters rows by predicate.
+  /** Filters rows by predicate. See {@link DataFrame.filter}
    * Sample: {@link https://public.datagrok.ai/js/samples/data-frame/row-matching/select-rows}
-   * @param {RowPredicate} rowPredicate
    * */
   filter(rowPredicate: RowPredicate): void {
     this._applyPredicate(this.table.filter, rowPredicate);
