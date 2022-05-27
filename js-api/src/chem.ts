@@ -273,7 +273,7 @@ export namespace chem {
         let funcs = Func.find({ tags: [ 'moleculeSketcher' ] });
         if (funcs.length == 0)
           throw 'Sketcher functions not found. Please install OpenChemLib, or MarvinJS package.';
-        let funcName = funcs.filter(f => f.friendlyName === sname)[ 0 ].name;
+        let funcName = sname ? funcs.filter(f => f.friendlyName === sname)[ 0 ].name : _DEFAULT_SKETCHER;
 
         $(this.molInput).attr('placeholder', 'SMILES, MOLBLOCK, Inchi, ChEMBL id, etc');
 
