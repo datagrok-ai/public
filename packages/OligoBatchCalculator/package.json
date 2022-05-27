@@ -3,7 +3,7 @@
   "beta": false,
   "friendlyName": "Oligo Batch Calculator",
   "version": "0.0.6",
-  "description": "Calculates the following oligonucleotide properties:\n1. Length\n2. Optical Density\n3. NMoles\n4. Mass\n5. Molecular Weight\n6. Extinction Coefficient (using nearest neighbour method)",
+  "description": "Calculates the following oligonucleotide properties: Length, Optical Density, NMoles, Mass, Molecular Weight, Extinction Coefficient (using nearest neighbour method)",
   "repository": {
     "type": "git",
     "url": "https://github.com/datagrok-ai/public.git",

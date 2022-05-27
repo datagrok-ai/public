@@ -2,7 +2,7 @@
   "name": "@datagrok/bio-signals",
   "fullName": "BioSignals",
   "version": "0.0.5",
-  "description": "BioSignals is a package for the [Datagrok](https://datagrok.ai) platfrom.\n The goal of the project is to offer an efficient and automated biosignal processing routine.",
+  "description": "BioSignals is a package for the [Datagrok](https://datagrok.ai) platfrom. The goal of the project is to offer an efficient and automated biosignal processing routine.",
   "repository": {
     "type": "git",
     "url": "https://github.com/datagrok-ai/public.git",

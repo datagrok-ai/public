@@ -3,7 +3,7 @@
   "beta": true,
   "fullName": "ChaRPy",
   "version": "1.0.4",
-  "description": "ChaRPy package extends Datagrok viewers with two commands, \"To Python script\" and \"To R script\", which translate a selected viewer to Python or R code, respectively, along with executing this code for displaying the resulting plot.\nThe two commands are available via a hamburger menu (a top-left button in a viewer's header), and supported for most of the viewers in Datagrok.",
+  "description": "ChaRPy package extends Datagrok viewers with two commands 'To Python script' and 'To R script', which translate a selected viewer to Python or R code, respectively, along with executing this code for displaying the resulting plot. The two commands are available via a hamburger menu (a top-left button in a viewer's header), and supported for most of the viewers in Datagrok.",
   "repository": {
     "type": "git",
     "url": "https://github.com/datagrok-ai/public.git",

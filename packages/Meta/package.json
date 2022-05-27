@@ -1,6 +1,6 @@
 {
   "name": "@datagrok/meta",
-  "version": "1.0.9",
+  "version": "1.0.10",
   "description": "Meta information for @datagrok scope",
   "dependencies": {
     "@babel/runtime": "^7.16.0",
@@ -63,7 +63,7 @@
           "datagrok-api": "^0.150.5"
         }
       },
-      "description": "DevTools is a [package](https://datagrok.ai/help/develop/develop#packages) for the [Datagrok](https://datagrok.ai) platform. Its purpose is to simplify and assist in the development of platform extensions. This is achieved through familiarizing developers"
+      "description": "DevTools is a [package](https://datagrok.ai/help/develop/develop#packages) for the [Datagrok](https://datagrok.ai) platform. Its purpose is to simplify and assist in the development of platform extensions. This is achieved through familiarizing developers with Datagrok's [object](https://datagrok.ai/help/overview/objects) model and providing them with reproducible code snippets that fit their data. This approach allows to explore the key functionality from the interface, learn by example, jump to the [documentation](https://datagrok.ai/help/) or [API](https://datagrok.ai/js-api/) reference in one click, and much more. It also helps focus on the problem you are trying to solve: you can interact with your data from the outset while some of the program's building blocks are generated for you."
     },
     "sqlite": {
       "dependencies": {
@@ -86,7 +86,7 @@
           "datagrok-api": "^0.151.6"
         }
       },
-      "description": "SQLite is a [package](https://datagrok.ai/help/develop/develop#packages) for the [Datagrok](https://datagrok.ai) platform \r that provides support for importing and previewing SQLite files."
+      "description": "SQLite is a [package](https://datagrok.ai/help/develop/develop#packages) for the [Datagrok](https://datagrok.ai) platform that provides support for importing and previewing SQLite files."
     },
     "demo-scripts": {
       "dependencies": {
@@ -197,7 +197,7 @@
           "datagrok-api": "^1.0.0"
         }
       },
-      "description": "Cheminformatics support: \n\n* RDKit-based rendering \n* Molecule sketching \n* Feature based analysis"
+      "description": "Cheminformatics support: RDKit-based rendering, Molecule sketching, Feature based analysis"
     },
     "demo": {
       "dependencies": {
@@ -264,7 +264,7 @@
           "datagrok-api": "^0.151.0"
         }
       },
-      "description": "![Sequence Translator](img/Sequence%20Translator%20Axolabs.png)"
+      "description": "SequenceTranslator is a [package](https://datagrok.ai/help/develop/develop#packages) for the [Datagrok](https://datagrok.ai) platform, used to translate [oligonucleotide](https://en.wikipedia.org/wiki/Oligonucleotide) sequences between [different representations](https://github.com/datagrok-ai/public/tree/master/packages/SequenceTranslator#sequence-representations)."
     },
     "power-pack": {
       "dependencies": {
@@ -294,6 +294,9 @@
         },
         "0.0.11": {
           "datagrok-api": "^0.125.0"
+        },
+        "1.0.0": {
+          "datagrok-api": "^1.0.0"
         }
       },
       "description": "Commonly used platform enhancements"
@@ -420,7 +423,7 @@
           "datagrok-api": "^0.94.10"
         }
       },
-      "description": "![Oligo Batch Calculator](img/screen.jpg)"
+      "description": "Calculates the following oligonucleotide properties: Length, Optical Density, NMoles, Mass, Molecular Weight, Extinction Coefficient (using nearest neighbour method)"
     },
     "drug-bank": {
       "dependencies": {
@@ -484,8 +487,12 @@
       "description": "Usage Analysis System"
     },
     "multiplot": {
-      "dependencies": {},
-      "description": "MultiPlot is a [package](https://datagrok.ai/help/develop/develop#packages) for the [Datagrok](https://datagrok.ai) platform."
+      "dependencies": {
+        "0.0.4": {
+          "datagrok-api": "^0.95.0"
+        }
+      },
+      "description": "MultiPlot is a [package](https://datagrok.ai/help/develop/develop#packages) for the [Datagrok](https://datagrok.ai) platform. MultiPlot was developed in purpose to provide to user ability to easily create dashboards based on complex data which have common influencing parameter (usually presented as axis X on charts). Common axis X combined with compact form of presenting charts allow user quickly estimate data meaning."
     },
     "sdtm": {
       "dependencies": {
@@ -507,7 +514,7 @@
           "datagrok-api": "^0.94.10"
         }
       },
-      "description": "Impute is a [package](https://datagrok.ai/help/develop/develop#packages) for the [Datagrok](https://datagrok.ai) platfrom. It provides the user with a selection of tools designed to impute an incomplete dataset in an orderly predictive fashion,  so as to"
+      "description": "Impute is a [package](https://datagrok.ai/help/develop/develop#packages) for the [Datagrok](https://datagrok.ai) platform. It provides the user with a selection of tools designed to impute an incomplete dataset in an orderly predictive fashion, so as to retain the rest of the feature values associated with the missing instances."
     },
     "nlp": {
       "dependencies": {
@@ -524,8 +531,12 @@
       "description": "Natural Language Processing Package"
     },
     "charpy": {
-      "dependencies": {},
-      "description": "ChaRPy is a [package](https://datagrok.ai/help/develop/develop#packages) for the [Datagrok](https://datagrok.ai) platform. It extends Datagrok viewers with two commands, \"To Python script\" and \"To R script\", which translate a selected viewer to Python or"
+      "dependencies": {
+        "1.0.4": {
+          "datagrok-api": "^0.94.10"
+        }
+      },
+      "description": "ChaRPy package extends Datagrok viewers with two commands 'To Python script' and 'To R script', which translate a selected viewer to Python or R code, respectively, along with executing this code for displaying the resulting plot. The two commands are available via a hamburger menu (a top-left button in a viewer's header), and supported for most of the viewers in Datagrok."
     },
     "compute": {
       "dependencies": {
@@ -584,11 +595,15 @@
           "datagrok-api": "^0.151.0"
         }
       },
-      "description": "Provides additional analytical and UI blocks for  [Datagrok scientific computing](../../help/compute/compute.md)"
+      "description": "Provides additional analytical and UI blocks for [Datagrok scientific computing](../../help/compute/compute.md)"
     },
     "seldon": {
-      "dependencies": {},
-      "description": "Seldon is a [package](https://datagrok.ai/help/develop/develop#packages) for the [Datagrok](https://datagrok.ai) platform. It allows connecting to a [Seldon Cluster](https://www.seldon.io/) with deployed machine learning models and easily apply them withi"
+      "dependencies": {
+        "0.0.4": {
+          "datagrok-api": "latest"
+        }
+      },
+      "description": "Seldon is a [package](https://datagrok.ai/help/develop/develop#packages) for the [Datagrok](https://datagrok.ai) platform. It allows connecting to a [Seldon Cluster](https://www.seldon.io/) with deployed machine learning models and easily apply them within Datagrok."
     },
     "chembl": {
       "dependencies": {
@@ -609,7 +624,11 @@
       "description": "Chembl integration"
     },
     "widgets": {
-      "dependencies": {},
+      "dependencies": {
+        "0.2.1": {
+          "datagrok-api": "latest"
+        }
+      },
       "description": "A collection of commonly used widgets, viewers, filters, and cell renderers."
     },
     "charts": {
@@ -656,23 +675,30 @@
           "datagrok-api": "^0.94.10"
         }
       },
-      "description": "BioSignals is a [package](https://datagrok.ai/help/develop/develop#packages) for the [Datagrok](https://datagrok.ai) platfrom. The goal of the project is to offer an efficient and automated biosignal processing routine. The initial version is based on [py"
+      "description": "BioSignals is a package for the [Datagrok](https://datagrok.ai) platfrom. The goal of the project is to offer an efficient and automated biosignal processing routine."
     },
     "dsp": {
       "dependencies": {
         "0.0.3": {
           "datagrok-api": ">0.94.10"
-        }
+        },
+        "0.0.5": {}
       },
       "description": "A pack of various digital signal processing tools"
     },
     "chembl-browser": {
-      "dependencies": {},
-      "description": "Chembl Browser is a [package](https://datagrok.ai/help/develop/develop#packages) for the [Datagrok](https://datagrok.ai) platfrom. The goal of the project is to demonstrate opportunities of the platform to build usable apps with a comfortable interface to"
+      "dependencies": {
+        "0.0.5": {}
+      },
+      "description": "Chembl Browser is a [package](https://datagrok.ai/help/develop/develop#packages) for the [Datagrok](https://datagrok.ai) platform. The goal of the project is to demonstrate opportunities of the platform to build usable apps with a comfortable interface to search and view data. The initial version is based on [Chembl Database](https://www.ebi.ac.uk/chembl/g/#search_results/all) - ChEMBL is a manually curated database of bioactive molecules with drug-like properties."
     },
     "discovery": {
-      "dependencies": {},
-      "description": "Discovery is a [package](https://datagrok.ai/help/develop/develop#packages) for the [Datagrok](https://datagrok.ai) platform. It ships a playground app \"Discovery\" which we use for trying out and showcasing new functionality of Datagrok platform at demos"
+      "dependencies": {
+        "0.0.4": {
+          "datagrok-api": "^0.94.10"
+        }
+      },
+      "description": "Discovery is a [package](https://datagrok.ai/help/develop/develop#packages) for the [Datagrok](https://datagrok.ai) platform. It ships a playground app 'Discovery' which we use for trying out and showcasing new functionality of Datagrok platform at demos and in general."
     },
     "simpkpd": {
       "dependencies": {
@@ -681,6 +707,9 @@
         },
         "0.0.2": {
           "datagrok-api": "^0.151.6"
+        },
+        "0.0.4": {
+          "datagrok-api": "latest"
         }
       },
       "description": "SimPKPD is a [package](https://datagrok.ai/help/develop/develop#packages) for the [Datagrok](https://datagrok.ai) platform."
@@ -697,19 +726,28 @@
       "description": "MultiForm viewer provides a convenient way to visualize a set of selected rows."
     },
     "tensorflow-dev": {
-      "dependencies": {},
+      "dependencies": {
+        "0.0.5": {
+          "datagrok-api": "^0.94.10"
+        }
+      },
       "description": "TensorFlow.js is a [package](https://datagrok.ai/help/develop/develop#packages) for the [Datagrok](https://datagrok.ai) platform which provies support for training and applying TensorFlow.js-based predictive models."
     },
     "schemas-demo": {
       "dependencies": {
         "1.0.0": {
           "datagrok-api": "^0.151.6"
-        }
+        },
+        "1.0.1": {}
       },
       "description": "Demonstrates relations between schemas, properties, files, and functions"
     },
     "chembl-api": {
-      "dependencies": {},
+      "dependencies": {
+        "0.0.4": {
+          "datagrok-api": "latest"
+        }
+      },
       "description": "ChemblAPI is a [package](https://datagrok.ai/help/develop/develop#packages) for the [Datagrok](https://datagrok.ai) platform."
     },
     "notebooks": {
@@ -733,6 +771,9 @@
       "dependencies": {
         "0.0.3": {
           "datagrok-api": ">0.94.10"
+        },
+        "0.0.5": {
+          "datagrok-api": "^0.94.10"
         }
       },
       "description": "CustomML is a [package](https://datagrok.ai/help/develop/develop#packages) for the [custom machine learning models](https://datagrok.ai/help/learn/custom-ml-models)."
@@ -802,12 +843,17 @@
       "dependencies": {
         "0.1.0": {
           "datagrok-api": ">=0.95.5"
+        },
+        "0.1.2": {
+          "datagrok-api": "^0.121.0"
         }
       },
-      "description": "RepertoireBrowser is a [package](https://datagrok.ai/help/develop/develop#packages) for the [Datagrok](https://datagrok.ai) platform."
+      "description": "B-cell repertoire browser"
     },
     "vdj-tools": {
-      "dependencies": {},
+      "dependencies": {
+        "0.0.4": {}
+      },
       "description": "VDJtools is a [package](https://datagrok.ai/help/develop/develop#packages) for the [Datagrok](https://datagrok.ai) platform."
     },
     "ngl-viewer": {
@@ -833,7 +879,9 @@
       "description": "Collection of Swagger"
     },
     "covid": {
-      "dependencies": {},
+      "dependencies": {
+        "0.2.1": {}
+      },
       "description": "Package contains queries for data from open sources on the current situation in the world with coronavirus"
     },
     "tika": {
@@ -892,7 +940,9 @@
       "description": "Pedometer for accelerometer signals"
     },
     "cli": {
-      "dependencies": {},
+      "dependencies": {
+        "0.1.1": {}
+      },
       "description": "Demonstrates integration with command-line tools"
     },
     "enamine-store": {
@@ -918,7 +968,9 @@
       "description": "Chemspace API demo"
     },
     "file-editors": {
-      "dependencies": {},
+      "dependencies": {
+        "0.1.1": {}
+      },
       "description": "Support for editing end previewing multiple file formats (PDF, SVG)"
     },
     "grokopenchemlib": {
@@ -930,16 +982,20 @@
       "description": "OpenChemLib is a [package](https://datagrok.ai/help/develop/develop#packages) for the [Datagrok](https://datagrok.ai) platform."
     },
     "hit-triage": {
-      "dependencies": {},
-      "description": "HitTriage helps chemists assess the quality of hits and decide which compounds should make it to the next stage. It does it in a managed, reproducible manner, with the triage template consisting of separate steps."
+      "dependencies": {
+        "0.0.3": {
+          "datagrok-api": "^0.95.0"
+        }
+      },
+      "description": "HitTriage helps chemists assess the quality of hits and decide which compounds should make it to the next stage. It does it in a managed, reproducible manner, with the triage template consisting of separate steps. Technically, HitTriage is a [package](https://datagrok.ai/help/develop/develop#packages) for the [Datagrok](https://datagrok.ai) platform that contains the the `HitTriage` application."
     },
     "power-grid": {
       "dependencies": {
         "0.0.4": {
-          "datagrok-api": "^0.148.5"
+          "datagrok-api": "^0.151.3"
         }
       },
-      "description": "PowerGrid contains popular spreadsheet extensions, such as [sparklines](#sparklines)\r and support for [images](#images)."
+      "description": "PowerGrid contains popular spreadsheet extensions, such as [sparklines](#sparklines) and support for [images](#images)."
     },
     "molecular-liability-browser": {
       "dependencies": {
@@ -955,6 +1011,30 @@
         }
       },
       "description": "Data for MolecularLiabilityBrowser"
+    },
+    "alation": {
+      "dependencies": {
+        "0.0.1": {
+          "datagrok-api": "^1.0.0"
+        }
+      },
+      "description": "Alation is a [package](https://datagrok.ai/help/develop/develop#packages) for the [Datagrok](https://datagrok.ai) platform."
+    },
+    "cdm": {
+      "dependencies": {
+        "0.0.1": {
+          "datagrok-api": "^0.148.0"
+        }
+      },
+      "description": ""
+    },
+    "biostructureviewer": {
+      "dependencies": {
+        "0.2.5": {
+          "datagrok-api": "^0.95.11"
+        }
+      },
+      "description": "BiostructureViewer is a [package](https://datagrok.ai/help/develop/develop#packages) for the [Datagrok](https://datagrok.ai) platform."
     }
   }
 }
