@@ -1,6 +1,24 @@
 <!-- TITLE: Release History -->
 <!-- SUBTITLE: -->
 
+# 2022-05-27 Dev build 1.1.5
+
+## Latest Docker Images
+
+* Datagrok: 
+  *  `docker pull datagrok/datagrok:1.1.5`
+  *  `docker pull datagrok/datagrok:latest`
+  
+* [Docker-Compose](admin/docker-compose.md)
+
+## Addressed Issues
+
+* New Datagrok Image with caching layers 
+* Create release notes for every release 
+* Js-Api: fixed bug with function name in chem sketcher 
+* Js-Api: fixed bug with sketcher function 
+
+
 # 2022-05-27 Dev build 1.1.4
 
 ## Latest Docker Images
