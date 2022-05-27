@@ -234,6 +234,9 @@ export const TAGS = {
   FORMULA: 'formula',
   SEMTYPE: 'quality',
 
+  IGNORE_CUSTOM_FILTER: '.ignore-custom-filter',
+  STRUCTURE_FILTER_TYPE: '.structure-filter-type',
+
   CELL_RENDERER: 'cell.renderer',
   UNITS: 'units',  // see DG.UNITS
 
