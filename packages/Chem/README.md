@@ -42,6 +42,13 @@ The following features are still in the core, but we plan to move them out to th
 
 Supports multiple sketchers (MarvinJS, OpenChemLib, Ketcher).
 
+## Favorite and recent structures
+
+Access the recently sketched structures from the `☰ -> Recent` menu.
+
+`☰ -> Favorites` contains your favorite structures. To add current molecule
+to the favorites, click on `☰ -> Favorites -> Add to Favorites`.
+
 ## Molecule queries
 
 Out-of-the-box, you can paste SMILES, MOLBLOCK, and InChi keys into the input field, and the sketcher
