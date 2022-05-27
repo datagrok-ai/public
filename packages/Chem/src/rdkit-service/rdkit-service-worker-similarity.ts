@@ -32,4 +32,25 @@ export class RdKitServiceWorkerSimilarity extends RdKitServiceWorkerBase {
       return {data: e, length: e.length};
     });
   }
+
+  getPatternFingerprints() {
+    if (this._rdKitMols === null)
+      return;
+
+    const patternFps: Uint8Array[] = [];
+    for (let i = 0; i < this._rdKitMols.length; ++i) {
+      // let fp = new BitArray(this._fpLength);
+      try {
+        const fp = this._rdKitMols[i].get_pattern_fp_as_uint8array();
+        patternFps.push(fp);
+        // arr = rdKitFingerprintToBitArray(fp);
+      } catch (e) {
+        // nothing to do, bit is already 0
+      }
+    }
+
+    return patternFps!.map((e: any) => {
+      return {data: e, length: e.length};
+    });
+  }
 }

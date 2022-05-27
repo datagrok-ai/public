@@ -1,5 +1,6 @@
 import {RdKitServiceWorkerClient} from './rdkit-service-worker-client';
 import BitArray from '@datagrok-libraries/utils/src/bit-array';
+import {Fingerprint} from '../utils/chem-common';
 
 export class RdKitService {
   workerCount: number;
@@ -28,9 +29,8 @@ export class RdKitService {
   }
 
   async _doParallel(
-      fooScatter: (i: number, workerCount: number) => Promise<any>,
-      fooGather = (_: any) => []): Promise<any> {
-
+    fooScatter: (i: number, workerCount: number) => Promise<any>,
+    fooGather = (_: any) => []): Promise<any> {
     const promises = [];
     const workerCount = this.workerCount;
     for (let i = 0; i < workerCount; i++)
@@ -69,11 +69,13 @@ export class RdKitService {
     }, {molIdxToHash: [], hashToMolblock: {}}));
   }
 
-  async searchSubstructure(query: string, querySmarts: string): Promise<any> {
+  async searchSubstructure(query: string, querySmarts: string, patternFgs: BitArray[]): Promise<any> {
     const t = this;
     return this._doParallel(
-      (i: number, _: number) => {
-        return t.parallelWorkers[i].searchSubstructure(query, querySmarts);
+      (i: number, nWorkers: number) => {
+        return t.parallelWorkers[i].searchSubstructure(query, querySmarts, i < (nWorkers - 1) ?
+          patternFgs.slice(i * this.segmentLength, (i + 1) * this.segmentLength) :
+          patternFgs.slice(i * this.segmentLength, patternFgs.length));
       },
       (data: any) => {
         for (let k = 0; k < data.length; ++k) {
@@ -84,11 +86,33 @@ export class RdKitService {
       });
   }
 
+  async getFingerprints(fingerprintType: Fingerprint): Promise<Uint8Array[]> {
+    switch (fingerprintType) {
+      case Fingerprint.Morgan: return this.getMorganFingerprints();
+      case Fingerprint.Pattern: return this.getPatternFingerprints();
+      default: throw Error('Unknown fingerprint type: ' + fingerprintType);
+    }
+  }
+
   async getMorganFingerprints(): Promise<Uint8Array[]> {
     const t = this;
     return (await this._doParallel(
       (i: number, _: number) => {
         return t.parallelWorkers[i].getMorganFingerprints();
+      },
+      (data: any) => {
+        return [].concat.apply([], data);
+      })).map(
+      (obj: any) =>
+      // We deliberately choose Uint32Array over DG.BitSet here
+        obj.data);
+  }
+
+  async getPatternFingerprints(): Promise<Uint8Array[]> {
+    const t = this;
+    return (await this._doParallel(
+      (i: number, _: number) => {
+        return t.parallelWorkers[i].getPatternFingerprints();
       },
       (data: any) => {
         return [].concat.apply([], data);
