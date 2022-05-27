@@ -5,34 +5,27 @@ import {isMolBlock} from '../utils/chem-utils';
 import {RDModule} from "../rdkit-api";
 
 export class RdKitServiceWorkerSubstructure extends RdKitServiceWorkerSimilarity {
-  _patternFps: BitArray[] | null = null;
   readonly _patternFpLength = 2048;
 
   constructor(module: RDModule, webRoot: string) {
     super(module, webRoot);
   }
 
-  initMoleculesStructures(dict: string[], normalizeCoordinates: boolean, usePatternFingerprints: boolean) {
+  initMoleculesStructures(dict: string[], normalizeCoordinates: boolean) {
     this.freeMoleculesStructures();
     if (dict.length === 0)
       return;
     this._rdKitMols = [];
-    if (usePatternFingerprints)
-      this._patternFps = [];
+
     const hashToMolblock: {[_:string] : any} = {};
     const molIdxToHash = [];
     for (let i = 0; i < dict.length; ++i) {
       let item = dict[i];
       let mol = null;
-      let fp: BitArray | null = null;
-      if (usePatternFingerprints)
-        fp = new BitArray(this._patternFpLength);
+
       try {
         mol = this._rdKitModule.get_mol(item);
-        if (usePatternFingerprints) {
-          const fpRdKit = mol.get_pattern_fp_as_uint8array(this._patternFpLength);
-          fp = rdKitFingerprintToBitArray(fpRdKit);
-        }
+
         if (normalizeCoordinates) {
           if (isMolBlock(item)) {
             mol.normalize_depiction();
@@ -50,15 +43,18 @@ export class RdKitServiceWorkerSubstructure extends RdKitServiceWorkerSimilarity
         // Won't rethrow
       }
       this._rdKitMols.push(mol);
-      if (this._patternFps)
-        this._patternFps.push(fp!);
+      // if (this._patternFps)
+      //   this._patternFps.push(fp!);
       if (normalizeCoordinates)
         molIdxToHash.push(item);
     }
     return {molIdxToHash, hashToMolblock};
   }
 
-  searchSubstructure(queryMolString: string, querySmarts: string): string {
+  searchSubstructure(queryMolString: string, querySmarts: string, patternFps: BitArray[]): string {
+    console.log('8009');
+    // const myfps = patternFps;
+    // patternFps = this._patternFps!;
     const matches: number[] = [];
     if (this._rdKitMols) {
       try {
@@ -76,11 +72,12 @@ export class RdKitServiceWorkerSubstructure extends RdKitServiceWorkerSimilarity
               throw new Error('Chem | SMARTS not set');
           }
           if (queryMol && queryMol.is_valid()) {
-            if (this._patternFps) {
+            if (patternFps) {
               const fpRdKit = queryMol.get_pattern_fp_as_uint8array(this._patternFpLength);
               const queryMolFp = rdKitFingerprintToBitArray(fpRdKit);
-              for (let i = 0; i < this._patternFps.length; ++i) {
-                const crossedFp = BitArray.fromAnd(this._patternFps[i], queryMolFp);
+              for (let i = 0; i < patternFps.length; ++i) {
+                // nor effevtive
+                const crossedFp = BitArray.fromAnd(queryMolFp, patternFps[i]);
                 if (crossedFp.equals(queryMolFp))
                   if (this._rdKitMols[i]!.get_substruct_match(queryMol) !== '{}') // Is patternFP iff?
                     matches.push(i);
@@ -96,7 +93,7 @@ export class RdKitServiceWorkerSubstructure extends RdKitServiceWorkerSimilarity
         }
       } catch (e) {
         console.error(
-          'Possibly a malformed query: `' + queryMolString + '`');
+          e, 'Possibly a malformed query: `' + queryMolString + '`');
         // Won't rethrow
       }
     }
@@ -109,6 +106,5 @@ export class RdKitServiceWorkerSubstructure extends RdKitServiceWorkerSimilarity
         mol.delete();
       this._rdKitMols = null;
     }
-    this._patternFps = null;
   }
 }

@@ -1,6 +1,7 @@
 import RdKitWorkerClass from '../rdkit.worker.ts'; // .ts!
 import {WORKER_CALL} from './rdkit-service-worker-api';
 import {WorkerMessageBusClient} from '../worker-message-bus-client';
+import BitArray from '@datagrok-libraries/utils/src/bit-array';
 
 export class RdKitServiceWorkerClient extends WorkerMessageBusClient {
   constructor() {
@@ -13,12 +14,15 @@ export class RdKitServiceWorkerClient extends WorkerMessageBusClient {
   initMoleculesStructures = async (dict: string[], normalizeCoordinates: boolean, usePatternFingerprints: boolean) =>
     this.call(WORKER_CALL.INIT_MOLECULES_STRUCTURES, [dict, normalizeCoordinates, usePatternFingerprints]);
 
-  searchSubstructure = async (query: string, querySmarts: string) =>
-    this.call(WORKER_CALL.SEARCH_SUBSTRUCTURE, [query, querySmarts]);
+  searchSubstructure = async (query: string, querySmarts: string, patternFgs: BitArray[]) =>
+    this.call(WORKER_CALL.SEARCH_SUBSTRUCTURE, [query, querySmarts, patternFgs]);
 
   freeMoleculesStructures = async () =>
     this.call(WORKER_CALL.FREE_MOLECULES_STRUCTURES);
 
   getMorganFingerprints = async () =>
     this.call(WORKER_CALL.GET_MORGAN_FINGERPRINTS);
+
+  getPatternFingerprints = async () =>
+    this.call(WORKER_CALL.GET_PATTERN_FINGERPRINTS);
 }
