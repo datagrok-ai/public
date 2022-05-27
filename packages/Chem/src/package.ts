@@ -495,12 +495,22 @@ export function openChemLibSketcher(): OpenChemLibSketcher {
 //name: importSdfs
 //description: Opens SDF file
 //tags: file-handler
-//meta.ext: sdf
-//meta.maxSize: 200000
+//meta.ext: sdf,mol
 //input: list bytes
 //output: list tables
 export function importSdf(bytes: Uint8Array): DG.DataFrame[] {
   return _importSdf(Uint8Array.from(bytes));
+}
+
+//name: importMol
+//description: Opens MOL file
+//tags: file-handler
+//meta.ext: mol
+//input: string content
+//output: list tables
+export function importMol(content: string): DG.DataFrame[] {
+  let molCol = DG.Column.string('molecule', 1).init((_) => content);
+  return [DG.DataFrame.fromColumns([molCol])];
 }
 
 //name: oclCellRenderer
