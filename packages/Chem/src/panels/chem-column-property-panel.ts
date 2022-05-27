@@ -2,7 +2,6 @@ import * as ui from 'datagrok-api/ui';
 import * as DG from 'datagrok-api/dg';
 import {chem} from 'datagrok-api/src/chem';
 import Sketcher = chem.Sketcher;
-import {Subscription} from "rxjs";
 
 enum StructureFilterType {
   Sketch = 'Sketch',
