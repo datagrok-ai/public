@@ -87,32 +87,10 @@ export class RdKitService {
   }
 
   async getFingerprints(fingerprintType: Fingerprint): Promise<Uint8Array[]> {
-    switch (fingerprintType) {
-      case Fingerprint.Morgan: return this.getMorganFingerprints();
-      case Fingerprint.Pattern: return this.getPatternFingerprints();
-      default: throw Error('Unknown fingerprint type: ' + fingerprintType);
-    }
-  }
-
-  async getMorganFingerprints(): Promise<Uint8Array[]> {
     const t = this;
     return (await this._doParallel(
       (i: number, _: number) => {
-        return t.parallelWorkers[i].getMorganFingerprints();
-      },
-      (data: any) => {
-        return [].concat.apply([], data);
-      })).map(
-      (obj: any) =>
-      // We deliberately choose Uint32Array over DG.BitSet here
-        obj.data);
-  }
-
-  async getPatternFingerprints(): Promise<Uint8Array[]> {
-    const t = this;
-    return (await this._doParallel(
-      (i: number, _: number) => {
-        return t.parallelWorkers[i].getPatternFingerprints();
+        return t.parallelWorkers[i].getFingerprints(fingerprintType);
       },
       (data: any) => {
         return [].concat.apply([], data);
