@@ -1,6 +1,8 @@
 import * as grok from 'datagrok-api/grok';
+import {chem} from 'datagrok-api/grok';
 import * as ui from 'datagrok-api/ui';
 import * as DG from 'datagrok-api/dg';
+import {FILTER_TYPE} from 'datagrok-api/dg';
 import {getMolColumnPropertyPanel} from './panels/chem-column-property-panel';
 import * as chemSearches from './chem-searches';
 import {SubstructureFilter} from './widgets/chem-substructure-filter';
@@ -20,19 +22,18 @@ import {addMcs} from './panels/find-mcs';
 import * as chemCommonRdKit from './utils/chem-common-rdkit';
 import {rGroupAnalysis} from './analysis/r-group-analysis';
 import {identifiersWidget} from './widgets/identifiers';
-import {convertMoleculeImpl, isMolBlock} from './utils/chem-utils';
+import {convertMoleculeImpl, isMolBlock, MolNotation, molToMolblock} from './utils/chem-utils';
 import '../css/chem.css';
 import {ChemSimilarityViewer} from './analysis/chem-similarity-viewer';
 import {ChemDiversityViewer} from './analysis/chem-diversity-viewer';
 import {_saveAsSdf} from './utils/sdf-utils';
 import {Fingerprint} from './utils/chem-common';
 import {assure} from '@datagrok-libraries/utils/src/test';
-import {chem} from 'datagrok-api/grok';
-import Sketcher = chem.Sketcher;
 
 import {OpenChemLibSketcher} from './open-chem/ocl-sketcher';
 import {_importSdf} from './open-chem/sdf-importer';
 import {OCLCellRenderer} from './open-chem/ocl-cell-renderer';
+import Sketcher = chem.Sketcher;
 
 const drawMoleculeToCanvas = chemCommonRdKit.drawMoleculeToCanvas;
 
@@ -415,7 +416,7 @@ export async function identifiers(smiles: string): Promise<DG.Widget> {
 //input: string to {choices:["smiles", "molblock", "inchi", "v3Kmolblock"]}
 //output: string result {semType: Molecule}
 export function convertMolecule(molecule: string, from: string, to: string): string {
-  return convertMoleculeImpl(molecule, from, to, getRdKitModule());
+  return convertMoleculeImpl(molecule, from as MolNotation, to as MolNotation, getRdKitModule());
 }
 
 
@@ -518,4 +519,22 @@ export function importMol(content: string): DG.DataFrame[] {
 //meta.chemRendererName: OpenChemLib
 export async function oclCellRenderer(): Promise<OCLCellRenderer> {
   return new OCLCellRenderer();
+}
+
+//name: Use as Filter
+//description: Adds this structure as a substructure filter
+//context-menu: Use as Filter
+//input: string mol { semType: Molecule }
+export function useAsSubstructureFilter(mol: string): void {
+  let tv = grok.shell.tv;
+  let molCol = tv.dataFrame.columns.bySemType(DG.SEMTYPE.MOLECULE);
+  if (molCol == null)
+    return;
+
+  tv.filtersGroup.add({
+    type: FILTER_TYPE.SUBSTRUCTURE,
+    column: molCol.name,
+    columnName: molCol.name,
+    molBlock: molToMolblock(mol, getRdKitModule())
+  });
 }
