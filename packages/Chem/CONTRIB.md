@@ -142,5 +142,28 @@ with the RdKit library version being tested.
 The test code is forked from RdKit's original testbed and adopted to our use case:
 [link](https://github.com/ptosco/rdkit/tree/master/Code/MinimalLib#live-demos)
 
+## Working with SMARTS
+
+### RdKit specific behavior
+
+We worked on integrating Chem package with various sketchers. One case we based our design on
+is a combination of one of the commercial sketchers with RdKit processing of SMART templates.
+
+We've identified that RdKit was capable of processing both extended MolBlock format (the format
+including SMARTS patterns data, but based on MolBlock) and a regular SMARTS format. However,
+in several cases of SMARTS patterns from the customers, RdKit failed to process these SMARTS
+as a search pattern (raising exceptions), yet was able to process them as an extended MolBlock.
+In addition, the mentioned commercial sketcher was perfectly capable of returning such
+extended MolBlock + SMARTS format. Let's call this format MolBlock'.
+
+To let SMARTS-based substructure search work reliably with the above combination, we've
+introduced a failover, where two strings representing a molecule are passed. First, main
+argument is expected to be a MolBlock' data format, and the second optional argument
+is the one representing the actual SMARTS.
+
+In this setting, if RdKit fails to process a MolBlock', we let it process the second
+argument with SMARTS. This gave us a stable pipeline. Now we realise that we can safely
+revert the combination, i.e. first try a SMARTS, then try a MolBlock'. This would make more
+sense from the public API point of view.
 
 ## Future plans
