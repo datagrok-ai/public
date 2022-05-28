@@ -150,20 +150,51 @@ We worked on integrating Chem package with various sketchers. One case we based 
 is a combination of one of the commercial sketchers with RdKit processing of SMART templates.
 
 We've identified that RdKit was capable of processing both extended MolBlock format (the format
-including SMARTS patterns data, but based on MolBlock) and a regular SMARTS format. However,
-in several cases of SMARTS patterns from the customers, RdKit failed to process these SMARTS
-as a search pattern (raising exceptions), yet was able to process them as an extended MolBlock.
-In addition, the mentioned commercial sketcher was perfectly capable of returning such
-extended MolBlock + SMARTS format. Let's call this format MolBlock'.
+including SMARTS patterns data, but based on MolBlock properties) and a regular SMARTS format.
+However, in several cases of SMARTS patterns from the customers, RdKit failed to process these
+SMARTS as a search pattern (raising exceptions), yet was able to process them as a MolBlock with
+additional [properties](https://cms.gutow.uwosh.edu/gutow/marvin.1/doc/user/mol-csmol-doc.html),
+in particular `ALS`. In addition, the mentioned commercial sketcher was perfectly capable
+of returning such an extended MolBlock. Let's call this format MolBlock'. We first thought this
+is a block of properties specific to the commercial sketcher we've used, but this doesn't seem
+to be the case, as there are also property blocks described specific to this commercial
+sketcher.
+
+Here's an example of this MolBlock':
+
+```
+  MJ201900                      
+
+  6  6  1  0  0  0  0  0  0  0999 V2000
+   -2.2321    0.8473    0.0000 L   0  0  0  0  0  0  0  0  0  0  0  0
+   -2.9465    0.4348    0.0000 C   0  0  0  0  0  0  0  0  0  0  0  0
+   -2.9465   -0.3902    0.0000 C   0  0  0  0  0  0  0  0  0  0  0  0
+   -2.2321   -0.8027    0.0000 C   0  0  0  0  0  0  0  0  0  0  0  0
+   -1.5176   -0.3902    0.0000 C   0  0  0  0  0  0  0  0  0  0  0  0
+   -1.5176    0.4348    0.0000 C   0  0  0  0  0  0  0  0  0  0  0  0
+  2  3  1  0  0  0  0
+  3  4  2  0  0  0  0
+  4  5  1  0  0  0  0
+  5  6  2  0  0  0  0
+  1  2  2  0  0  0  0
+  6  1  1  0  0  0  0
+  1 F    2   6   7
+M  ALS   1  2 F C   N   
+M  END
+```
+
+The line before the last (with `ALS`) is "an addition" to the MDL MolFile.
 
 To let SMARTS-based substructure search work reliably with the above combination, we've
 introduced a failover, where two strings representing a molecule are passed. First, main
 argument is expected to be a MolBlock' data format, and the second optional argument
-is the one representing the actual SMARTS.
+is the one representing the actual SMARTS. In this setting, if RdKit fails to process
+a MolBlock', we let it process the second argument with SMARTS.
 
-In this setting, if RdKit fails to process a MolBlock', we let it process the second
-argument with SMARTS. This gave us a stable pipeline. Now we realise that we can safely
-revert the combination, i.e. first try a SMARTS, then try a MolBlock'. This would make more
-sense from the public API point of view.
+This gave us a stable pipeline. Now we realize that we can safely revert the combination,
+i.e. first try a SMARTS, then try a MolBlock'. This would make more sense from the public API
+point of view. Moreover, our assumption that MolBlock' was a special one, could actually
+be wrong, and we need to first try the SMARTS pattern. In addition, we are carrying an
+updated version of RdKit where these problems may be addressed.
 
 ## Future plans
