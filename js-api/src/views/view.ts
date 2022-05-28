@@ -403,7 +403,9 @@ export class TableView extends View {
   get grid(): Grid { return toJs(api.grok_View_Get_Grid(this.dart)); }
 
   /** Returns existing, or creates a new filter group. */
-  get filtersGroup(): FilterGroup { return toJs(api.grok_TableView_GetFilters(this.dart, true)); }
+  getFiltersGroup(options?: { createDefaultFilters?: boolean }): FilterGroup {
+    return toJs(api.grok_TableView_GetFilters(this.dart, options?.createDefaultFilters ?? true));
+  }
 
   get dataFrame(): DataFrame { return toJs(api.grok_View_Get_DataFrame(this.dart)); }
   set dataFrame(x: DataFrame) { api.grok_View_Set_DataFrame(this.dart, x.dart); }
