@@ -6,4 +6,4 @@ let options = {
   column: "smiles",
   columnName: "smiles"
 };
-tv.filtersGroup.add(options);
+tv.getFiltersGroup({createDefaultFilters: false}).add(options);
