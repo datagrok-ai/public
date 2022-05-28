@@ -950,6 +950,8 @@ export class SemanticValue {
   get units(): any { return api.grok_SemanticValue_Get_Units(this.dart); }
   set units(x: any) { api.grok_SemanticValue_Set_Units(this.dart, x); }
 
+  get dataType(): string { return api.grok_SemanticValue_Get_DataType(this.dart); }
+
   get semType(): string { return api.grok_SemanticValue_Get_SemType(this.dart); }
   set semType(x: string) { api.grok_SemanticValue_Set_SemType(this.dart, x); }
 
