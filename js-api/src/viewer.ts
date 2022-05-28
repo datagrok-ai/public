@@ -343,7 +343,7 @@ export class FilterGroup extends Viewer {
     super(dart);
   }
 
-  add(state: FilterState) {
+  add<T extends FilterState>(state: T) {
     api.grok_FilterGroup_Add(this.dart, state);
   }
 }

@@ -46,8 +46,12 @@ export class SubstructureFilter extends DG.Filter {
   }
 
   get _debounceTime(): number {
-    const sz = this.column!.length;
-    const szMin = 500; const szMax = 10000; const msecMax = 1000;
+    if (this.column == null)
+      return 1000;
+    const sz = this.column.length;
+    const szMin = 500;
+    const szMax = 10000;
+    const msecMax = 1000;
     if (sz < szMin) return 0;
     if (sz > szMax) return msecMax;
     return Math.floor(msecMax * ((sz - szMin) / (szMax - szMin)));
