@@ -127,6 +127,8 @@ export namespace chem {
     _smarts: string = '';
     _mode = SKETCHER_MODE.INPLACE;
 
+    extSketcherDiv = ui.div([], {style: {cursor: 'pointer'}});
+
     getMode(): string {
       return this.sketcher ? this.sketcher.mode : this._mode;
     }
@@ -145,6 +147,7 @@ export namespace chem {
       this._smiles = x;
       if (this.sketcher != null)
         this.sketcher!.smiles = x;
+      this.updateExtSketcherContent(this.extSketcherDiv);
     }
 
     getMolFile(): string {
@@ -155,6 +158,12 @@ export namespace chem {
       this._molFile = x;
       if (this.sketcher != null)
         this.sketcher!.molFile = x;
+      this.updateExtSketcherContent(this.extSketcherDiv);
+    }
+
+    get isEmpty(): boolean {
+      return (this.getSmiles() == null || this.getSmiles() == '') &&
+        (this.getMolFile() == null || this.getMolFile() == '');
     }
 
     /** Sets the molecule, supports either SMILES or MOLBLOCK formats */
@@ -210,60 +219,59 @@ export namespace chem {
     createSketcher() {
       this.setExternalModeForSubstrFilter();
       this.root.innerHTML = '';
-      if (this._mode === SKETCHER_MODE.INPLACE) {
+      if (this._mode === SKETCHER_MODE.INPLACE)
         this.root.appendChild(this.createInplaceModeSketcher());
-      } else {
+      else
         this.root.appendChild(this.createExternalModeSketcher());
-      }
     }
 
-    createExternalModeSketcher(): HTMLElement {
-      let updateExtSketcherInnerHTML = (content: HTMLElement) => {
-        extSketcherDiv.innerHTML = '';
-        extSketcherDiv.append(content);
-      }
-      let updateExtSketcherContent = (extSketcherDiv: HTMLElement) => {
-        if (this.getSmiles()) {
-          const width = extSketcherDiv.parentElement!.clientWidth;
-          const height = width / 2;
-          let renderFunc = Func.find({ tags: [ 'molRenderer' ] });
-          if (renderFunc.length == 0) {
-            updateExtSketcherInnerHTML(svgMol(this.getSmiles(), width, height));
-          }
-          renderFunc![ 0 ]
-            .apply({ molStr: this.getSmiles(), width: width, height: height })
-            .then((molDiv) => {
-              updateExtSketcherInnerHTML(molDiv);
-            });
+    _updateExtSketcherInnerHTML(content: HTMLElement) {
+      this.extSketcherDiv.innerHTML = '';
+      this.extSketcherDiv.append(content);
+    }
+
+    updateExtSketcherContent(extSketcherDiv: HTMLElement) {
+      if (!this.isEmpty && extSketcherDiv.parentElement) {
+        const width = extSketcherDiv.parentElement!.clientWidth;
+        const height = width / 2;
+        let renderFunc = Func.find({ tags: [ 'molRenderer' ] });
+        if (renderFunc.length == 0) {
+          this._updateExtSketcherInnerHTML(svgMol(this.getMolFile(), width, height));
         }
-        let sketchLink = ui.button('Sketch', () => updateExtSketcherContent(extSketcherDiv));
-        sketchLink.style.paddingLeft = '0px';
-        sketchLink.style.marginLeft = '0px';
-        updateExtSketcherInnerHTML(sketchLink);
-      };
+        renderFunc![ 0 ]
+          .apply({ molStr: this.getMolFile(), width: width, height: height })
+          .then((molDiv) => {
+            this._updateExtSketcherInnerHTML(molDiv);
+          });
+      }
+      let sketchLink = ui.button('Sketch', () => this.updateExtSketcherContent(extSketcherDiv));
+      sketchLink.style.paddingLeft = '0px';
+      sketchLink.style.marginLeft = '0px';
+      this._updateExtSketcherInnerHTML(sketchLink);
+    };
 
-      const extSketcherDiv = ui.div([], {style: {cursor: 'pointer'}});
+    createExternalModeSketcher(): HTMLElement {
+      this.extSketcherDiv = ui.div([], {style: {cursor: 'pointer'}});
+      ui.tooltip.bind(this.extSketcherDiv, 'Click to edit filter');
 
-      ui.tooltip.bind(extSketcherDiv, 'Click to edit filter');
-
-      extSketcherDiv.addEventListener('mousedown', () => {
+      this.extSketcherDiv.addEventListener('mousedown', () => {
         let savedMolFile = this.getMolFile();
         ui.dialog()
           .add(this.createInplaceModeSketcher())
           .onCancel(() => this.setMolFile(savedMolFile))
           .onOK(() => {
-            updateExtSketcherContent(extSketcherDiv);
+            this.updateExtSketcherContent(this.extSketcherDiv);
             Sketcher.addRecent(savedMolFile);
           })
           .show();
       });
 
-      ui.onSizeChanged(extSketcherDiv).subscribe((_) => {
-        updateExtSketcherContent(extSketcherDiv);
+      ui.onSizeChanged(this.extSketcherDiv).subscribe((_) => {
+        this.updateExtSketcherContent(this.extSketcherDiv);
       });
 
-      updateExtSketcherContent(extSketcherDiv);
-      return extSketcherDiv;
+      this.updateExtSketcherContent(this.extSketcherDiv);
+      return this.extSketcherDiv;
     }
 
     createInplaceModeSketcher(): HTMLElement {
