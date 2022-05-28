@@ -259,8 +259,7 @@ export class JsViewer extends Viewer {
   set root(r: HTMLElement) { this._root = r; }
 
   /** Gets called when a table is attached to the viewer. */
-  onTableAttached(): void {
-  }
+  onTableAttached(): void { }
 
   /** Gets called when this viewer is detached. */
   detach(): void {
@@ -278,8 +277,7 @@ export class JsViewer extends Viewer {
     return this._properties;
   }
 
-  /** cleanup() will get called when the viewer is disposed
-   * @param {Function} cleanup */
+  /** cleanup() will get called when the viewer is disposed */
   protected registerCleanup(cleanup: Function): void {
     api.grok_Widget_RegisterCleanup(this.root, cleanup);
   }
@@ -290,10 +288,7 @@ export class JsViewer extends Viewer {
   }
 
   /** Returns the column bound to the specified data property.
-   *  Note that "ColumnName" suffix (this determines whether this is a data property) should be omitted.
-   * @param {string} dataPropertyName
-   * @param {object} options
-   * @returns {Column} */
+   *  Note that "ColumnName" suffix (this determines whether this is a data property) should be omitted. */
   protected column(dataPropertyName: string, options: { [key: string]: any } & PropertyOptions | null = null): Column {
     return this.addProperty(`${dataPropertyName}ColumnName`, TYPE.STRING, null, options);
   }
@@ -302,56 +297,32 @@ export class JsViewer extends Viewer {
     return this.addProperty(propertyName, DG.TYPE.COLUMN_LIST, defaultValue, options);
   }
 
-  /** Registers an integer property with the specified name and defaultValue
-   * @param {ViewerPropertyType} propertyName
-   * @param {number} defaultValue
-   * @param {object} options
-   * @returns {number} */
+  /** Registers an integer property with the specified name and defaultValue */
   protected int(propertyName: ViewerPropertyType, defaultValue: number | null = null, options: { [key: string]: any } & PropertyOptions | null = null): number {
     return this.addProperty(propertyName, TYPE.INT, defaultValue, options);
   }
 
-  /** Registers a floating point property with the specified name and defaultValue
-   * @param {ViewerPropertyType} propertyName
-   * @param {number} defaultValue
-   * @param {object} options
-   * @returns {number} */
+  /** Registers a floating point property with the specified name and defaultValue */
   protected float(propertyName: ViewerPropertyType, defaultValue: number | null = null, options: { [key: string]: any } & PropertyOptions | null = null): number {
     return this.addProperty(propertyName, TYPE.FLOAT, defaultValue, options);
   }
 
-  /** Registers a string property with the specified name and defaultValue
-   * @param {ViewerPropertyType} propertyName
-   * @param {string} defaultValue
-   * @param {object} options
-   * @returns {string} */
+  /** Registers a string property with the specified name and defaultValue */
   protected string(propertyName: ViewerPropertyType, defaultValue: string | null = null, options: { [key: string]: any } & PropertyOptions | null = null): string {
     return this.addProperty(propertyName, TYPE.STRING, defaultValue, options);
   }
 
-  /** Registers a string list property with the specified name and defaultValue
-   * @param {ViewerPropertyType} propertyName
-   * @param {string[]} defaultValue
-   * @param {object} options
-   * @returns {string[]} */
+  /** Registers a string list property with the specified name and defaultValue */
   protected stringList(propertyName: ViewerPropertyType, defaultValue: string[] | null = null, options: { [key: string]: any } & PropertyOptions | null = null): string[] {
     return this.addProperty(propertyName, TYPE.STRING_LIST, defaultValue, options);
   }
 
-  /** Registers a boolean property with the specified name and defaultValue
-   * @param {ViewerPropertyType} propertyName
-   * @param {boolean} defaultValue
-   * @param {object} options
-   * @returns {boolean} */
+  /** Registers a boolean property with the specified name and defaultValue */
   protected bool(propertyName: ViewerPropertyType, defaultValue: boolean | null = null, options: { [key: string]: any } & PropertyOptions | null = null): boolean {
     return this.addProperty(propertyName, TYPE.BOOL, defaultValue, options);
   }
 
-  /** Registers a datetime property with the specified name and defaultValue
-   * @param {ViewerPropertyType} propertyName
-   * @param {DateTime} defaultValue
-   * @param {object} options
-   * @returns {DateTime} */
+  /** Registers a datetime property with the specified name and defaultValue */
   protected dateTime(propertyName: ViewerPropertyType, defaultValue: DateTime | null = null, options: { [key: string]: any } & PropertyOptions | null = null): DateTime {
     return this.addProperty(propertyName, TYPE.DATE_TIME, defaultValue, options);
   }
