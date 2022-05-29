@@ -463,6 +463,7 @@ export namespace chem {
    * */
   export async function searchSubstructure(column: Column, pattern: string = '', settings: {
     substructLibrary?: boolean;
+    molBlockFailover?: string;
   } = {}): Promise<BitSet> {
 
     return (await grok.functions.call('Chem:searchSubstructure', {
@@ -470,7 +471,7 @@ export namespace chem {
       'molString': pattern,
       'substructLibrary':
         !(settings?.hasOwnProperty('substructLibrary') && !settings.substructLibrary),
-      'molStringSmarts': ''
+      'molBlockFailover': (settings.hasOwnProperty('molBlockFailover') ? settings.molBlockFailover : '') ?? ''
     })).get(0);
   }
 
