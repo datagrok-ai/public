@@ -1,11 +1,19 @@
 function searchByGraph(inputSmilesSet, querySmiles) {
-  
-  let molQuery = Module.get_mol(querySmiles);
-  for (let smilesSet of inputSmilesSet) {
-    let molSet = Module.get_mol(smilesSet);
-    let match = molSet.get_substruct_match(molQuery);
+  let cntr = 0;
+  let molQuery = RDKitModule.get_mol(querySmiles);
+  for (let idx = 0; idx < inputSmilesSet.length; ++idx) {
+    const molString = inputSmilesSet[idx];
+    try {
+      let molSet = RDKitModule.get_mol(molString);
+      let match = molSet.get_substruct_match(molQuery);
+      if (match !== '{}') {
+        cntr++;
+      }
     molSet.delete();
+    } catch (e) {
+      console.log(`Cannot process a pattern ${idx}: \r\n`, molString);
+    }
   }
   molQuery.delete();
-  
+  return cntr;
 }

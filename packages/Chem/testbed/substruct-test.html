@@ -1,21 +1,22 @@
 <html>
 
-<script src="./data-input-chembl_100k.js"></script>
-<script src="./data-input-queries.js"/></script>
-<script src="./RDKit_minimal.js"/>
+<script src="./data-input-smiles.js"></script>
+<script src="./data-input-queries.js"></script>
+<script src="./RDKit_minimal.js"></script>
 <script src="./substruct-graph.js"></script>
 <script src="./substruct-graph-test.js"></script>
-<script src="./substruct-library.js"></script>
-<script src="./substruct-library-test.js"></script>
 <script src="./substruct-testing.js"></script>
 
 <script>
-var Module = null;
-async function main() {
-  Module = await initRDKitModule(
+var RDKitModule = null;
+(async () => {
+  RDKitModule = await initRDKitModule(
     {locateFile: () => 'RDKit_minimal_2022.03_1.wasm'});
-  data = data.slice(40000, 50000);
-  testSubstructLibrary(data, queries);
+  console.log('RDKit loaded');
+})();
+function main() {
+  const count = searchByGraph(data, 'c1ccccc1');//'C1(=CC=CC=C1)');
+  console.log('Found ', count, ' molecules out of ', data.length);
 }
 </script>
 
