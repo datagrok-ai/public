@@ -296,6 +296,9 @@ x   : impossible configuration
 Handling of these arguments is reflected in this issue:
 
 https://github.com/datagrok-ai/public/issues/663.
-                                                                                                                           	|            	|
+
+## Benchmarks
+
+
 ## Future plans
 
