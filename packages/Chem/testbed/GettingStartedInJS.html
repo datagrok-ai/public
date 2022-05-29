@@ -1,6 +1,7 @@
 <!DOCTYPE html>
 <!-- saved from url=(0084)https://unpkg.com/@rdkit/rdkit@2022.3.2/Code/MinimalLib/dist/GettingStartedInJS.html -->
-<html lang="en"><head><meta http-equiv="Content-Type" content="text/html; charset=UTF-8">
+<html lang="en">
+<head><meta http-equiv="Content-Type" content="text/html; charset=UTF-8">
     <meta http-equiv="X-UA-Compatible" content="IE=edge">
     
     <meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no">
@@ -15,13 +16,18 @@
             color: #044484;
         }
     </style>
-<script src="./RDKit_minimal.js"></script><script>
+<script src="./RDKit_minimal.js"></script>
+
+<script>
 var RDKitModule = null;
 (async () => {
   RDKitModule = await initRDKitModule(
     {locateFile: () => 'RDKit_minimal_2022.03_1.wasm'});
 })();
-</script><link rel="prefetch"></head>
+</script>
+
+<link rel="prefetch">
+</head>
 
 <body>
 <div class="container-fluid col-md-12">
