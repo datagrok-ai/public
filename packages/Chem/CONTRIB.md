@@ -97,7 +97,9 @@ https://github.com/ptosco/rdkit/tree/master/Code/MinimalLib
 
 The reason for it is that this fork ships customer-specific things.
 
-### Scaffold rendering offset
+### Specifics of rendering
+
+#### Scaffold rendering offset
 
 In a method
 [_drawMolecule]( https://github.com/datagrok-ai/public/blob/ad9bbbfc10347a1947a67762c19c96f4b1a0735f/packages/Chem/src/rendering/rdkit-cell-renderer.ts#L173)
@@ -119,6 +121,12 @@ for the molecule is evoked, the render will be required again. Therefore,
 this double-drawing only takes place on the first appearance.
 
 We need to resolve this part eventually, but the priority isn't the highest.
+
+#### Rendering for mol and qmol
+
+Rendering of both is possible, but will generally look differently for the same SMILES pattern:
+
+![](./misc/resources/drawing-mol-qmol.png)
 
 ### The testbed
 
