@@ -1,6 +1,6 @@
 function searchByGraph(inputSmilesSet, querySmiles) {
   let cntr = 0;
-  let molQuery = RDKitModule.get_mol(querySmiles);
+  let molQuery = RDKitModule.get_qmol(querySmiles);
   for (let idx = 0; idx < inputSmilesSet.length; ++idx) {
     const molString = inputSmilesSet[idx];
     try {
