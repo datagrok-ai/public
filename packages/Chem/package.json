@@ -2,7 +2,7 @@
   "name": "@datagrok/chem",
   "friendlyName": "Chem",
   "fullName": "Chem",
-  "version": "0.53.1",
+  "version": "0.54.1",
   "description": "Cheminformatics support: RDKit-based rendering, Molecule sketching, Feature based analysis",
   "repository": {
     "type": "git",
