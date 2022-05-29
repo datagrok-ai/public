@@ -69,11 +69,11 @@ export class RdKitService {
     }, {molIdxToHash: [], hashToMolblock: {}}));
   }
 
-  async searchSubstructure(query: string, querySmarts: string): Promise<any> {
+  async searchSubstructure(query: string, queryMolBlockFailover: string): Promise<any> {
     const t = this;
     return this._doParallel(
       (i: number, _: number) => {
-        return t.parallelWorkers[i].searchSubstructure(query, querySmarts);
+        return t.parallelWorkers[i].searchSubstructure(query, queryMolBlockFailover);
       },
       (data: any) => {
         for (let k = 0; k < data.length; ++k) {

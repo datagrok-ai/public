@@ -119,7 +119,7 @@ export class SubstructureFilter extends DG.Filter {
       this._indicateProgress();
       try {
         this.bitset = await chemSubstructureSearchLibrary(
-          this.column!, this.sketcher.getMolFile(), await this.sketcher.getSmarts());
+          this.column!, await this.sketcher.getSmarts(), this.sketcher.getMolFile());
       } finally {
         this._indicateProgress(false);
       }
