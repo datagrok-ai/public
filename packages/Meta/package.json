@@ -1,6 +1,6 @@
 {
   "name": "@datagrok/meta",
-  "version": "1.0.11",
+  "version": "1.0.12",
   "description": "Meta information for @datagrok scope",
   "dependencies": {
     "@babel/runtime": "^7.16.0",
@@ -813,6 +813,9 @@
       "dependencies": {
         "1.0.0": {
           "datagrok-api": "^1.0.0"
+        },
+        "1.0.1": {
+          "datagrok-api": "^1.1.5"
         }
       },
       "description": "Bio is a [package](https://datagrok.ai/help/develop/develop#packages) for the [Datagrok](https://datagrok.ai) platform"
