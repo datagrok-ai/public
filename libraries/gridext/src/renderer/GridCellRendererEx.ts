@@ -1,6 +1,7 @@
 import * as DG from 'datagrok-api/dg';
+import {PinnedColumn} from "../PinnedColumn";
 
-export class GridCellRendererEx {// temporary to adress a bug of importing during tests | extends DG.GridCellRenderer {
+export class GridCellRendererEx { //extends DG.GridCellRenderer { // temporary to address a bug of importing during tests | extends DG.GridCellRenderer {
   isClickable(cellGrid : DG.GridCell, nXOnCell : number, nYOnCell : number) {
     return false;
   }
@@ -27,6 +28,13 @@ export class GridCellRendererEx {// temporary to adress a bug of importing durin
 
   onMouseLeaveEx(cellGrid : DG.GridCell, e : MouseEvent, nXOnCell : number, nYOnCell : number) : void {
     //this.onMouseLeave(cellGrid, e);
+  }
+
+  onResizeWidth(colGrid : DG.GridColumn | PinnedColumn, grid : DG.Grid, nWCol : number, bAdjusting : boolean) : void  {
+
+  }
+  onResizeHeight(colGrid : DG.GridColumn | PinnedColumn, grid : DG.Grid, nHRow : number, bAdjusting : boolean) : void {
+
   }
 
   render(g: CanvasRenderingContext2D, x: number, y: number, w: number, h: number, value: any, context: any): void {
