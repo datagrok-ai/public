@@ -1,66 +1,10 @@
 import * as grok from 'datagrok-api/grok';
 import * as DG from 'datagrok-api/dg';
 import * as ui from 'datagrok-api/ui';
+import * as GridUtils from './utils/GridUtils';
+import * as TextUtils from './utils/TextUtils';
 import * as rxjs from 'rxjs';
-
-function trimText(str : string, g : any, nWidth : number) {
-  let tm = g.measureText(str);
-  let nW  = tm.width;
-  if(nW <= nWidth)
-    return str;
-
-  let strDots = "...";
-  tm = g.measureText(strDots);
-  let nWDots  = tm.width;
-  if(nWDots > nWidth)
-  {
-    strDots = "..";
-    tm = g.measureText(strDots);
-    nWDots = tm.width;
-    if(nWDots <= nWidth)
-      return  strDots;
-
-    strDots = ".";
-    tm = g.measureText(strDots);
-    nWDots = tm.width;
-    return nWDots <= nWidth ? strDots : "";
-  }
-
-  let nWAvail = nWidth - nWDots;
-  let strW = "W";
-  tm = g.measureText(strW);
-  let nWW = tm.width;
-
-  let nCharCount = Math.floor(nWAvail / nWW);
-  let strAdj = str.substring(0, nCharCount);
-  tm = g.measureText(strAdj);
-  if(tm.width > nWAvail)
-  {
-    for(var n=nCharCount -1; n>=0; --n)
-    {
-      strAdj = str.substring(0, n);
-      tm = g.measureText(strAdj);
-      if(tm.width <= nWAvail)
-        return strAdj + strDots;
-    }
-  }
-  else
-  {
-    let strAdjOld = strAdj;
-    for(var n=nCharCount +1; n<str.length; ++n)
-    {
-      strAdj = str.substring(0, n);
-      tm = g.measureText(strAdj);
-      if(tm.width > nWAvail)
-        return strAdjOld + strDots;
-
-      strAdjOld = strAdj;
-    }
-  }
-}
-
-
-
+import { GridCellRendererEx} from "./renderer/GridCellRendererEx";
 
 export function closeAllPinnedColumns(grid : DG.Grid)
 {
@@ -106,6 +50,86 @@ export function installPinnedColumns(grid : DG.Grid)
   }
 }
 
+
+function getRenderer(cell : DG.GridCell) : GridCellRendererEx | DG.GridCellRenderer {
+  const colGrid = cell.gridColumn;
+  if (colGrid === null || colGrid === undefined) {
+    throw new Error('Grid cell is detached from the Grid column');
+  }
+
+  let renderer = GridUtils.getGridColumnRenderer(colGrid);
+  if(renderer instanceof GridCellRendererEx) {
+    return renderer;
+  }
+
+  return cell.renderer;
+}
+
+
+function getGrid(colGrid : DG.GridColumn) : DG.Grid | null {
+  let grid : DG.Grid | null = colGrid.grid;
+  if( grid === null) {
+    grid = GridUtils.getInstalledGridForColumn(colGrid);
+    if(grid instanceof DG.Grid)
+      return grid;
+  }
+
+  return grid;
+}
+
+
+function notifyAllColsRowsResized(grid : DG.Grid, nHRows : number, bAdjusting : boolean) : void {
+
+  let renderer : GridCellRendererEx | null = null
+  let colGrid = null;
+  const lstColsGrid = grid.columns;
+  const nColCount = lstColsGrid.length;
+  for(let nCol=0; nCol<nColCount; ++nCol) {
+    colGrid = lstColsGrid.byIndex(nCol);
+    if(colGrid === null || !colGrid.visible){
+      continue
+    }
+
+    renderer = GridUtils.getGridColumnRenderer(colGrid);
+    if (renderer instanceof GridCellRendererEx) {
+      renderer.onResizeHeight(colGrid, grid, nHRows, bAdjusting);
+    }
+  }
+}
+
+
+function notifyAllPinnedColsRowsResized(colPinnedSource : PinnedColumn, nHRows : number, bAdjusting : boolean) : void {
+
+  const colGridSource  = colPinnedSource.getGridColumn();
+  if(colGridSource === null){
+    return;
+  }
+
+  const grid = colGridSource.grid;
+  const dart = DG.toDart(grid);
+  if(dart.m_arRowHeaders === undefined) {
+    throw new Error('Pinned Columns are not installed.');
+  }
+
+  let renderer : GridCellRendererEx | null = null
+  let colPinned = null;
+  let colGrid = null;
+  const nPinnedColCount = dart.m_arRowHeaders.length;
+  for(let nColPin=0; nColPin<nPinnedColCount; ++nColPin) {
+    colPinned = dart.m_arRowHeaders[nColPin];
+    colGrid = colPinned.m_colGrid;
+    if(colGrid === null) {
+      throw new Error('Pinned Column is detached.');
+    }
+
+    renderer = GridUtils.getGridColumnRenderer(colGrid);
+    if (renderer instanceof GridCellRendererEx  && colPinned.m_root !== null) {
+      renderer.onResizeHeight(colPinned, grid, nHRows, bAdjusting);
+    }
+  }
+}
+
+
 export function isPinnedColumn(colGrid : DG.GridColumn)
 {
   const grid = colGrid.grid;
@@ -116,8 +140,8 @@ export function isPinnedColumn(colGrid : DG.GridColumn)
 
   let colPinned = null;
   const nPinnedColCount = dart.m_arRowHeaders.length;
-  for(let n=0; n<nPinnedColCount; ++n) {
-    colPinned = dart.m_arRowHeaders[n];
+  for(let nColPin=0; nColPin<nPinnedColCount; ++nColPin) {
+    colPinned = dart.m_arRowHeaders[nColPin];
     if(DG.toDart(colPinned.m_colGrid) === DG.toDart(colGrid))
       return true;
   }
@@ -141,9 +165,11 @@ export class PinnedColumn {
   private m_handlerRowsFiltering : any;
   private m_handlerCurrRow : any;
   private m_handlerSel : any;
-  private m_handlerRowResized : any;
+  private m_handlerRowsResized : any;
+  private m_handlerRowsSorted : any;
   private m_handlerMouseDown : any;
   private m_handlerMouseUp : any;
+  private m_handlerMouseLeave : any;
   private m_handlerMouseMove : any;
   private m_handlerContextMenu : any;
 
@@ -152,10 +178,15 @@ export class PinnedColumn {
       throw new Error("HTML columns cannot be pinned.");
     }
 
+    const grid = getGrid(colGrid);
+    if(grid === null) {
+      throw new Error("Column '" + colGrid.name + "' is not attached to the grid.");
+    }
+
     if(isPinnedColumn(colGrid))
       throw new Error("Column '" + colGrid.name + "' is already pinned.");
 
-    const grid = colGrid.grid;
+
     const dart = DG.toDart(grid);
 
     if(dart.m_arRowHeaders === undefined)
@@ -169,7 +200,13 @@ export class PinnedColumn {
     const nW = colGrid.width;
     this.m_colGrid = colGrid;
 
-    colGrid.visible = false;
+    try {
+      colGrid.visible = false;
+    }
+    catch(e) {
+      //DG bug
+      console.error("ERROR: Couldn't hide column.");
+    }
 
     if(colGrid.settings === null || colGrid.settings === undefined)
       colGrid.settings = {};
@@ -180,13 +217,24 @@ export class PinnedColumn {
     grid.canvas.style.left = (grid.canvas.offsetLeft + nW).toString() + "px";
     grid.overlay.style.left= (grid.overlay.offsetLeft + nW).toString() + "px";
 
-    const eCanvasThis = ui.canvas(nW, 1500);
+    const eCanvasThis = ui.canvas(nW, 2500);
 
     if(grid.canvas.parentNode === null)
       throw new Error("Parent node for canvas cannot bre null.");
 
     grid.canvas.parentNode.insertBefore(eCanvasThis, grid.canvas);
     this.m_root = eCanvasThis;
+
+    const colGrid0 = grid.columns.byIndex(0);
+    if(colGrid0 !== null && colGrid0 !== undefined) {//DG Bug from reading layout
+    try{
+        colGrid0.visible = false;
+      }
+      catch(e) {
+        console.error("ERROR: Couldn't hide row header.");
+      }
+    }
+
 
 
     //OnResize Row header
@@ -199,13 +247,6 @@ export class PinnedColumn {
     });
 
     this.m_observerResize.observe(eCanvasThis);
-    const colGtrid0 = grid.columns.byIndex(0);
-    if(colGtrid0 !== null) {
-      try{ colGtrid0.visible = false; }
-      catch(e) {
-        console.error("ERROR: Couldn't set visible property to false");
-      }
-    }
 
 
     //OnResize Row header
@@ -229,7 +270,6 @@ export class PinnedColumn {
       headerThis.paint(g, grid);
     });
 
-
     this.m_handlerRowsFiltering = dframe.onRowsFiltering.subscribe(() => {
       setTimeout(() => {
         const g = eCanvasThis.getContext('2d');
@@ -244,14 +284,19 @@ export class PinnedColumn {
       }
     );
 
-
     this.m_handlerSel = dframe.onSelectionChanged.subscribe((e : any) => {
         const g = eCanvasThis.getContext('2d');
         headerThis.paint(g, grid);
       }
     );
 
-    this.m_handlerRowResized = grid.onRowsResized.subscribe((e : any) => {
+    this.m_handlerRowsResized = grid.onRowsResized.subscribe((e : any) => {
+        const g = eCanvasThis.getContext('2d');
+        headerThis.paint(g, grid);
+      }
+    );
+
+    this.m_handlerRowsSorted = grid.onRowsSorted.subscribe((e : any) => {
         const g = eCanvasThis.getContext('2d');
         headerThis.paint(g, grid);
       }
@@ -260,13 +305,13 @@ export class PinnedColumn {
     let nHResizeRowsBeforeDrag  = -1;
     let nResizeRowGridDragging = -1;
     let nYResizeDraggingAnchor = -1;
-
     let nResizeRowGridMoving = -1;
-
 
     let nYDraggingAnchor = -1;
     let nRowGridDragging = -1;
 
+    let arXYMouseOnCellDown = [-2, -2];
+    let arXYMouseOnCellUp = [-1, -1];
 
     this.m_handlerMouseDown = rxjs.fromEvent(document, 'mousedown').subscribe((e : Event) => {
 
@@ -275,14 +320,14 @@ export class PinnedColumn {
 
       const eMouse = e as MouseEvent;
 
-      if(eMouse.button !== 0)
+      if(eMouse.buttons !== 1)
         return;
 
       nResizeRowGridMoving = -1;
 
       const bAddToSel : boolean = eMouse.ctrlKey || eMouse.shiftKey;
 
-      let nRowGrid = bAddToSel ? -1 : PinnedColumn.hitTestRows(eCanvasThis, grid, eMouse, true);
+      let nRowGrid = bAddToSel ? -1 : PinnedColumn.hitTestRows(eCanvasThis, grid, eMouse, true, undefined);
       if (nRowGrid >= 0) {
         const options : any = grid.getOptions(true);
         const nHRows = options.look.rowHeight;
@@ -293,10 +338,16 @@ export class PinnedColumn {
       }
       else
       {
-        nRowGrid = PinnedColumn.hitTestRows(eCanvasThis, grid, eMouse, false);
+        nRowGrid = PinnedColumn.hitTestRows(eCanvasThis, grid, eMouse, false, arXYMouseOnCellDown);
 
         nRowGridDragging = nRowGrid;
         nYDraggingAnchor = eMouse.clientY;
+
+        const cell = grid.cell(colGrid.name, nRowGrid);
+        const renderer = getRenderer(cell);
+        if(renderer instanceof GridCellRendererEx) {
+          renderer.onMouseDownEx(cell, eMouse, arXYMouseOnCellDown[0], arXYMouseOnCellDown[1]);
+        }
       }
 
       e.preventDefault();
@@ -306,17 +357,22 @@ export class PinnedColumn {
 
     this.m_handlerMouseUp = rxjs.fromEvent(document, 'mouseup').subscribe((e) => {
 
-      if(DG.toDart(grok.shell.v) !== DG.toDart(viewTable))
+      if(DG.toDart(grok.shell.v) !== DG.toDart(viewTable)) {
         return;
+      }
 
       const eMouse = e as MouseEvent;
-      if(eMouse.button !== 0)
-        return;
 
-      nResizeRowGridDragging = -1;
+      if(nResizeRowGridDragging >= 0) {
+        const nHRow = GridUtils.getGridRowHeight(grid);
+        notifyAllPinnedColsRowsResized(headerThis, nHRow, false);
+        notifyAllColsRowsResized(grid, nHRow, false);
+      }
+
+
+      nHResizeRowsBeforeDrag = -1;
       nResizeRowGridDragging = -1;
       nYResizeDraggingAnchor = -1;
-
       nResizeRowGridMoving = -1;
 
       document.body.style.cursor = "auto";
@@ -324,14 +380,28 @@ export class PinnedColumn {
       if(nRowGridDragging >= 0) {
         const bAddToSel = eMouse.ctrlKey || eMouse.shiftKey;
 
-        const nRowGrid = PinnedColumn.hitTestRows(eCanvasThis, grid, eMouse, false);
+        const nRowGrid = PinnedColumn.hitTestRows(eCanvasThis, grid, eMouse, false, arXYMouseOnCellUp);
         if(!bAddToSel && nRowGrid === nRowGridDragging) {
 
-          const cellRH = grid.cell("", nRowGrid);
-          const nRowTable = cellRH.tableRowIndex;
-
-          if(nRowTable !== null)
-           dframe.currentRowIdx = nRowTable;
+          let cellRH = null;
+          try {
+            cellRH = grid.cell("", nRowGrid);
+          }
+          catch(e) {
+            let colG = null;
+            const lstCols = grid.columns;
+            for(let nC=1; nC<lstCols.length; ++nC) {
+              colG = lstCols.byIndex(nC);
+              cellRH = colG === null ? null : grid.cell(colG.name, nRowGrid);
+              if(cellRH !== null)
+                break;
+            }
+          }
+          if(cellRH !== null) {
+            const nRowTable : any = cellRH.tableRowIndex;
+            if(nRowTable !== null)
+            dframe.currentRow = nRowTable;
+          }
         }
         else
         {
@@ -345,31 +415,74 @@ export class PinnedColumn {
           let cellRH = null;
           let nRowTable = -1;
           for(let nRow=nRowMin; nRow<=nRowMax; ++nRow) {
-            cellRH = grid.cell("", nRow);
-            nRowTable = cellRH.tableRowIndex === null ? -1 : cellRH.tableRowIndex;
 
-            if(nRowTable >= 0)
-             bitsetSel.set(nRowTable, true, true);
+            try {
+              cellRH = grid.cell("", nRow);
+            }
+            catch(e) {
+              let colG = null;
+              const lstCols = grid.columns;
+              for(let nC=1; nC<lstCols.length; ++nC) {
+                colG = lstCols.byIndex(nC);
+                cellRH = colG === null ? null : grid.cell(colG.name, nRowGrid);
+                if(cellRH !== null)
+                  break;
+              }
+            }
+
+            if(cellRH !== null && cellRH.tableRowIndex !== null) {
+              nRowTable = cellRH.tableRowIndex;
+              bitsetSel.set(nRowTable, true, true);
+            }
           }
         }
 
+        const cell = grid.cell(colGrid.name, nRowGrid);
+        const renderer = getRenderer(cell);
+        if(renderer instanceof GridCellRendererEx) {
+          renderer.onMouseUpEx(cell, eMouse, arXYMouseOnCellUp[0], arXYMouseOnCellUp[1]);
+        }
+
+        if(arXYMouseOnCellUp[0] === arXYMouseOnCellDown[0] && arXYMouseOnCellDown[1] === arXYMouseOnCellUp[1]) {
+          if(renderer instanceof GridCellRendererEx) {
+            renderer.onClickEx(cell, eMouse, arXYMouseOnCellUp[0], arXYMouseOnCellUp[1]);
+          }
+        }
 
         nRowGridDragging = -1;
         nYDraggingAnchor = -1;
+        arXYMouseOnCellDown[0] = -2;
+        arXYMouseOnCellDown[1] = -2;
+        arXYMouseOnCellUp[0] = -1;
+        arXYMouseOnCellUp[1] = -1;
       }
       //e.preventDefault();
       //e.stopPropagation();
 
     });
 
+    let cellCurrent : DG.GridCell | null = null;
+    this.m_handlerMouseLeave = rxjs.fromEvent(document, 'mouseleave').subscribe((e) => {
+
+      if(cellCurrent !== null) {
+        const renderer = getRenderer(cellCurrent);
+        if (renderer instanceof GridCellRendererEx) {
+          const eMouse = e as MouseEvent;
+          renderer.onMouseLeaveEx(cellCurrent, eMouse, -1, -1);
+        }
+        cellCurrent = null;
+      }
+    });
+
 
     this.m_handlerMouseMove = rxjs.fromEvent(document, 'mousemove').subscribe((e) => {
 
-      if(DG.toDart(grok.shell.v) !== DG.toDart(viewTable))
+      if(DG.toDart(grok.shell.v) !== DG.toDart(viewTable)) {
         return;
+      }
 
-      const bDragging = nResizeRowGridDragging >= 0;
-      if (bDragging) {
+      const bResizing = nResizeRowGridDragging >= 0;
+      if (bResizing) {
 
         //console.log("Dragging : " + headerThis.m_strColName);
         const eMouse = e as MouseEvent;
@@ -386,13 +499,15 @@ export class PinnedColumn {
           return;
 
         g.fillStyle = "white";
-        const options : any = grid.getOptions(true);
-        const nHHeaderCols = options.look.colHeaderHeight;
+        const nHHeaderCols = GridUtils.getGridColumnHeaderHeight(grid);
         g.fillRect(0,nHHeaderCols, eCanvasThis.offsetWidth, eCanvasThis.offsetHeight);
 
         grid.setOptions({
-          rowHeight: nHRowGrid
+          rowHeight: nHRowGrid //this won't trigger onRowsRezized event, which is a DG bug
         });
+
+        notifyAllPinnedColsRowsResized(headerThis, nHRowGrid, true);
+        notifyAllColsRowsResized(grid, nHRowGrid, true);
 
         let header = null;
         const ar = grid.dart.m_arRowHeaders;
@@ -402,19 +517,50 @@ export class PinnedColumn {
           header.paint(g, grid);
         }
 
-        const colGrid0 = grid.columns.byIndex(0);
-        if(colGrid0 !== null)
-          colGrid0.visible = false;//temporary addressed the DG bug
+        try {
+          const colGrid0 = grid.columns.byIndex(0);
+          if (colGrid0 !== null)
+            colGrid0.visible = false;//temporary addressed the DG bug
+        }
+        catch(e) {
+          //DG bug
+        }
         return;
       }
 
+      const arXYOnCell = [-1,-1];
+      let nRowGrid = PinnedColumn.hitTestRows(eCanvasThis, grid, e as MouseEvent, false, arXYOnCell);
+      if(nRowGrid >= 0) {
+        const cell = grid.cell(colGrid.name, nRowGrid);
+        const renderer = getRenderer(cell);
 
-      if (nResizeRowGridDragging >= 0) {
-        document.body.style.cursor = "row-resize";
-        return;
+        if (renderer instanceof GridCellRendererEx) {
+
+          if (cellCurrent === null) {
+            renderer.onMouseEnterEx(cell, e as MouseEvent, arXYOnCell[0], arXYOnCell[1]);
+          }
+
+          if (cellCurrent !== null && nRowGrid !== cellCurrent.gridRow) {
+             renderer.onMouseLeaveEx(cellCurrent, e as MouseEvent, -1, -1);
+
+           renderer.onMouseEnterEx(cell, e as MouseEvent, arXYOnCell[0], arXYOnCell[1]);
+          }
+
+          renderer.onMouseMoveEx(cell, e as MouseEvent, arXYOnCell[0], arXYOnCell[1]);
+         }
+
+        cellCurrent = cell;
+      }
+      else if (cellCurrent !== null) {
+        const renderer = getRenderer(cellCurrent);
+        if (renderer instanceof GridCellRendererEx) {
+          renderer.onMouseLeaveEx(cellCurrent, e as MouseEvent, -1, -1);
+        }
+
+        cellCurrent = null;
       }
 
-      const nRowGrid = PinnedColumn.hitTestRows(eCanvasThis, grid, e as MouseEvent, true);
+      nRowGrid = PinnedColumn.hitTestRows(eCanvasThis, grid, e as MouseEvent, true, undefined);
       if (nRowGrid >= 0) {
         nResizeRowGridMoving = nRowGrid;
         document.body.style.cursor = "row-resize";
@@ -451,10 +597,27 @@ export class PinnedColumn {
     });
   }
 
-  public close() {
+  isPinned() : boolean {
+    return this.m_colGrid !== null;
+  }
 
-    if(this.m_colGrid === null)
+  getGridColumn() : DG.GridColumn | null{
+    return this.m_colGrid;
+  }
+
+  getWidth() : number {
+    return this.m_root === null ? -1 : this.m_root.offsetWidth;
+  }
+
+  getRoot() {
+    return this.m_root;
+  }
+
+  public close() : void {
+
+    if(this.m_colGrid === null) {
       throw new Error("Column has already been unpinned");
+    }
 
     if(this.m_observerResizeGrid !== null) {
       this.m_observerResizeGrid.disconnect();
@@ -469,8 +632,11 @@ export class PinnedColumn {
     this.m_handlerVScroll.unsubscribe();
     this.m_handlerVScroll = null;
 
-    this.m_handlerRowResized.unsubscribe();
-    this.m_handlerRowResized = null;
+    this.m_handlerRowsResized.unsubscribe();
+    this.m_handlerRowsResized = null;
+
+    this.m_handlerRowsSorted.unsubscribe();
+    this.m_handlerRowsSorted = null;
 
     this.m_handlerRowsFiltering.unsubscribe();
     this.m_handlerRowsFiltering = null;
@@ -486,6 +652,9 @@ export class PinnedColumn {
 
     this.m_handlerMouseUp.unsubscribe();
     this.m_handlerMouseUp = null;
+
+    this.m_handlerMouseLeave.unsubscribe();
+    this.m_handlerMouseLeave = null;
 
     this.m_handlerMouseMove.unsubscribe();
     this.m_handlerMouseMove = null;
@@ -509,7 +678,12 @@ export class PinnedColumn {
 
     this.m_colGrid.settings.idxPinned = -1;
     this.m_colGrid.settings.isPinned = false;
-    this.m_colGrid.visible = true;
+    try {
+      this.m_colGrid.visible = true;
+    }
+    catch(e) {
+      //DG bug
+    }
     this.m_colGrid = null;
 
 
@@ -534,26 +708,25 @@ export class PinnedColumn {
     this.m_root = null;
   }
 
-  getWidth() {
-    return this.m_root === null ? -1 : this.m_root.offsetWidth;
-  }
 
-
-  private paint(g : any, grid : DG.Grid)
-  {
+  private paint(g : CanvasRenderingContext2D | null, grid : DG.Grid) : void {
     //const nWDiv = entry.contentBoxSize ? entry.contentBoxSize[0].inlineSize : entry.contentRect.width;
 
-    if(this.m_root === null)
+    if(g === null) {
+      return;
+    }
+
+    if(this.m_root === null) {
       throw new Error('Root cannot be null.');
+    }
 
-    if(this.m_colGrid === null)
+    if(this.m_colGrid === null) {
       throw new Error('Column grid cannot be null.');
-
+    }
     const dframe = grid.dataFrame;
     const nW = this.m_root.offsetWidth;
 
     g.fillStyle = "white";
-    //const nHHeaderCols = GridUtils.getColumnHeaderHeight(grid);
     g.fillRect(0,0, this.m_root.offsetWidth, this.m_root.offsetHeight);
 
     if(this.m_colGrid.name === null)
@@ -564,7 +737,7 @@ export class PinnedColumn {
       return;
 
 
-    let str = trimText(this.m_colGrid.name, g, nW);
+    let str = TextUtils.trimText(this.m_colGrid.name, g, nW);
     g.font = "bold 13px Roboto, Roboto Local";
     const tm = g.measureText(str);
     const nWLabel = tm.width;
@@ -575,13 +748,14 @@ export class PinnedColumn {
 
     let nX = 0;
     let nY = 0;
-    const options : any = grid.getOptions(true);
-    //const nHHeaderCols = options.look.colHeaderHeight;
-    //const nHRowGrid = options.rowHeight;
-
-    const nH = options.look.colHeaderHeight;//GridUtils.getColumnHeaderHeight(grid);
+    const nH = GridUtils.getGridColumnHeaderHeight(grid);
+    g.translate(0,0);
+    g.textAlign = 'start';
     g.fillStyle = "Black";
-    g.fillText(str, nX + ((nW - nWLabel)>>1), nY + nH-2);
+    const nXX = nX + ((nW - nWLabel) >> 1);
+    const nYY = nY + nH-2;
+    //onsole.log("nXX " + nXX + " nYY = " + nYY + " CHH " + nH);
+    g.fillText(str, nXX, nYY);
 
 
     const nRowCurrent =  dframe.currentRow.idx;
@@ -595,7 +769,7 @@ export class PinnedColumn {
     let nRowMax = Math.ceil(scrollV.max);
 
     let nHH = grid.root.offsetHeight - nH;//GridUtils.getColumnHeaderHeight(grid);//.style.height;
-    const nHRow = options.look.rowHeight;//GridUtils.getRowHeight(grid);
+    const nHRow = GridUtils.getGridRowHeight(grid);
     let nRCount = Math.round(nHH/nHRow) +1;
     nRowMax = nRowMin + nRCount;
 
@@ -627,11 +801,24 @@ export class PinnedColumn {
       nRowTable = cellRH.tableRowIndex === null ? -1 : cellRH.tableRowIndex;
       nY = nYOffset + (nRG - nRowMin)*nHRowGrid;
 
-      try{cellRH.renderer.render(g, 0, nY, nW, nHRowGrid, cellRH, cellRH.style);}
+      let renderer : any = GridUtils.getGridColumnRenderer(cellRH.gridColumn);
+      if(renderer === null) {
+        renderer = cellRH.renderer;
+      }
+
+      try{renderer.render(g, 0, nY, nW, nHRowGrid, cellRH, cellRH.style);}
       catch(e) {
         throw e;
       }
 
+      const options : any = grid.getOptions(true);
+      if(options.look.showRowGridlines) {
+        g.strokeStyle = "Gainsboro";
+        g.beginPath();
+        g.moveTo(0, nY + nHRowGrid);
+        g.lineTo(this.m_root.offsetWidth - 1, nY + nHRowGrid);
+        g.stroke();
+      }
 
       bSel = nRowTable < 0 ? false : bitsetSel.get(nRowTable);
       if(bSel)
@@ -653,7 +840,7 @@ export class PinnedColumn {
   }
 
 
-  private static hitTestRows(eCanvasPinned : HTMLCanvasElement, grid : DG.Grid, e : MouseEvent, bBorder : boolean)
+  private static hitTestRows(eCanvasPinned : HTMLCanvasElement, grid : DG.Grid, e : MouseEvent, bBorder : boolean, arXYOnCell : Array<number> | undefined)
   {
     const rect = eCanvasPinned.getBoundingClientRect();
     const scrollLeft= window.pageXOffset || document.documentElement.scrollLeft;
@@ -663,9 +850,8 @@ export class PinnedColumn {
 
     if(nX <= e.clientX && e.clientX <= nX + eCanvasPinned.offsetWidth)   //on the rows header
     {
-      const options : any = grid.getOptions(true);
-      const nHHeaderCols = options.look.colHeaderHeight;
-      const nHRowGrid = options.look.rowHeight;
+      const nHHeaderCols = GridUtils.getGridColumnHeaderHeight(grid);
+      const nHRowGrid = GridUtils.getGridRowHeight(grid);
 
       const scroll = grid.vertScroll;
       const nRowMin = scroll.min;
@@ -685,8 +871,15 @@ export class PinnedColumn {
           return nRow -1;
         }
 
-        if(!bBorder && nYBorder - nHRowGrid <= nYMouseOnHeader && nYMouseOnHeader <= nYBorder)
-          return nRow -1;
+        if(!bBorder && nYBorder - nHRowGrid <= nYMouseOnHeader && nYMouseOnHeader <= nYBorder) {
+
+          if(arXYOnCell !== undefined) {
+            arXYOnCell[0] = e.clientX - nX;
+            arXYOnCell[1] = nYMouseOnHeader - nYBorder + nHRowGrid;
+          }
+
+          return nRow - 1;
+        }
       }
     }
 

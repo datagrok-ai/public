@@ -1,4 +1,5 @@
 import * as DG from 'datagrok-api/dg';
+import * as GridUtils from '../utils/GridUtils';
 import * as TextUtils from '../utils/TextUtils';
 import {GridCellRendererEx} from "./GridCellRendererEx";
 
@@ -9,7 +10,7 @@ function isNullText(cell : DG.Cell) : boolean {
 
 export class ClickableTextRenderer extends GridCellRendererEx {
 
-  render(g : CanvasRenderingContext2D, nX : number, nY : number, nW : number, nH : number, cellGrid : DG.GridCell, style : DG.GridCellStyle) {
+  render(g : CanvasRenderingContext2D, nX : number, nY : number, nW : number, nH : number, cellGrid : DG.GridCell, style : DG.GridCellStyle) : void {
     const cell : DG.Cell = cellGrid.cell;
     let str = isNullText(cell) ? null : cell.value.toString();
     if (str === null) {
@@ -41,7 +42,7 @@ export class ClickableTextRenderer extends GridCellRendererEx {
     g.textBaseline = strBaseOld;
   }
 
-  isClickable(cellGrid : DG.GridCell, nXOnCell : number, nYOnCell : number) {
+  isClickable(cellGrid : DG.GridCell, nXOnCell : number, nYOnCell : number) : boolean {
     const cell : DG.Cell = cellGrid.cell;
     const str : string = isNullText(cell) ? null : cellGrid.cell.value.toString();
     if (str === null) {
@@ -65,8 +66,8 @@ export class ClickableTextRenderer extends GridCellRendererEx {
     const nAscent = Math.abs(tm.actualBoundingBoxAscent);
     const nDescent = tm.actualBoundingBoxDescent;
     const nHFont = nAscent + nDescent + 2 * nYInset;
-    const options : any = cellGrid.grid.getOptions(true);
-    const nHRow = options.look.rowHeight;
+
+    const nHRow = GridUtils.getGridRowHeight(cellGrid.grid);
     const nDeltaY = Math.floor((nHRow - nHFont) / 2);
     const nXX = 0 + ((cellGrid.gridColumn.width - nWLabel) / 2);
     const bX = nXX <= 0 || (nXOnCell >= nXX && nXOnCell <= nXX + nWLabel);
