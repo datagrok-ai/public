@@ -9,7 +9,8 @@
   "parser": "@typescript-eslint/parser",
   "parserOptions": {
     "ecmaVersion": 12,
-    "sourceType": "module"
+    "sourceType": "module",
+    "project": ["tsconfig.json"]
   },
   "plugins": [
     "@typescript-eslint"
@@ -35,6 +36,8 @@
       "1tbs",
       { "allowSingleLine": true }
     ],
-    "block-spacing": 2
+    "block-spacing": 2,
+    "@typescript-eslint/explicit-function-return-type": ["error"],
+    "@typescript-eslint/no-unsafe-return": "error"
   }
 }

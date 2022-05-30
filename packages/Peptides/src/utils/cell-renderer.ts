@@ -19,7 +19,7 @@ import {getSeparator} from './misc';
 export function expandColumn(
   col: DG.Column, grid: DG.Grid, cellRenderSize: (cellVal: string) => number,
   textSizeMult = 10, minSize = 30, maxSize = 650, timeout = 500,
-) {
+): void {
   let maxLen = 0;
   col.categories.forEach((ent: string) => {
     const len = cellRenderSize(ent);
@@ -40,7 +40,7 @@ export function expandColumn(
  * @param {(DG.Grid | null)} [grid=null] Grid that contains the col column.
  * @param {boolean} [grouping=false] Is grouping enabled.
  */
-export function setAARRenderer(col: DG.Column, grid: DG.Grid | null = null, grouping = false) {
+export function setAARRenderer(col: DG.Column, grid: DG.Grid | null = null, grouping = false): void {
   col.semType = C.SEM_TYPES.AMINO_ACIDS;
   col.setTag('cell.renderer', C.SEM_TYPES.AMINO_ACIDS);
   if (grouping)
@@ -83,7 +83,7 @@ function printLeftOrCentered(
   x: number, y: number, w: number, h: number,
   g: CanvasRenderingContext2D, s: string, color = ChemPalette.undefinedColor,
   pivot: number = 0, left = false, hideMod = false, transparencyRate: number = 1.0,
-) {
+): number {
   g.textAlign = 'start';
   let colorPart = pivot == -1 ? s.substring(0) : s.substring(0, pivot);
   if (colorPart.length == 1)
@@ -114,7 +114,7 @@ function printLeftOrCentered(
   const colorTextSize = g.measureText(colorPart);
   const dy = (textSize.fontBoundingBoxAscent + textSize.fontBoundingBoxDescent) / 2;
 
-  function draw(dx1: number, dx2: number) {
+  function draw(dx1: number, dx2: number): void {
     g.fillStyle = color;
     g.globalAlpha = transparencyRate;
     g.fillText(colorPart, x + dx1, y + dy);
@@ -136,13 +136,13 @@ function printLeftOrCentered(
 export class AminoAcidsCellRenderer extends DG.GridCellRenderer {
   chemPalette: ChemPalette | null;
 
-  get name() {return 'aminoAcidsCR';}
+  get name(): string {return 'aminoAcidsCR';}
 
-  get cellType() {return C.SEM_TYPES.AMINO_ACIDS;}
+  get cellType(): string {return C.SEM_TYPES.AMINO_ACIDS;}
 
-  get defaultHeight() {return 15;}
+  get defaultHeight(): number {return 15;}
 
-  get defaultWidth() {return 30;}
+  get defaultWidth(): number {return 30;}
 
   constructor() {
     super();
@@ -162,7 +162,7 @@ export class AminoAcidsCellRenderer extends DG.GridCellRenderer {
      */
   render(
     g: CanvasRenderingContext2D, x: number, y: number, w: number, h: number, gridCell: DG.GridCell,
-    cellStyle: DG.GridCellStyle) {
+    cellStyle: DG.GridCellStyle): void {
     y -= 2;
     g.save();
     g.beginPath();
@@ -181,13 +181,13 @@ export class AminoAcidsCellRenderer extends DG.GridCellRenderer {
 }
 
 export class AlignedSequenceCellRenderer extends DG.GridCellRenderer {
-  get name() {return 'alignedSequenceCR';}
+  get name(): string {return 'alignedSequenceCR';}
 
-  get cellType() {return C.SEM_TYPES.ALIGNED_SEQUENCE;}
+  get cellType(): string {return C.SEM_TYPES.ALIGNED_SEQUENCE;}
 
-  get defaultHeight() {return 30;}
+  get defaultHeight(): number {return 30;}
 
-  get defaultWidth() {return 230;}
+  get defaultWidth(): number {return 230;}
 
   /**
    * Cell renderer function.
@@ -204,7 +204,7 @@ export class AlignedSequenceCellRenderer extends DG.GridCellRenderer {
   render(
     g: CanvasRenderingContext2D, x: number, y: number, w: number, h: number, gridCell: DG.GridCell,
     cellStyle: DG.GridCellStyle,
-  ) {
+  ): void {
     const grid = gridCell.grid;
     const cell = gridCell.cell;
     w = grid ? Math.min(grid.canvas.width - x, w) : g.canvas.width - x;
@@ -254,13 +254,13 @@ export function processSequence(subParts: string[]): [string[], boolean] {
 }
 
 export class AlignedSequenceDifferenceCellRenderer extends DG.GridCellRenderer {
-  get name() {return 'alignedSequenceDifferenceCR';}
+  get name(): string {return 'alignedSequenceDifferenceCR';}
 
-  get cellType() {return C.SEM_TYPES.ALIGNED_SEQUENCE_DIFFERENCE;}
+  get cellType(): string {return C.SEM_TYPES.ALIGNED_SEQUENCE_DIFFERENCE;}
 
-  get defaultHeight() {return 30;}
+  get defaultHeight(): number {return 30;}
 
-  get defaultWidth() {return 230;}
+  get defaultWidth(): number {return 230;}
 
   /**
    * Cell renderer function.
@@ -276,7 +276,7 @@ export class AlignedSequenceDifferenceCellRenderer extends DG.GridCellRenderer {
    */
   render(
     g: CanvasRenderingContext2D, x: number, y: number, w: number, h: number, gridCell: DG.GridCell,
-    cellStyle: DG.GridCellStyle) {
+    cellStyle: DG.GridCellStyle): void {
     const grid = gridCell.grid;
     const cell = gridCell.cell;
 

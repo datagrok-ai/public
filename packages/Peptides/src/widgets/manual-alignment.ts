@@ -13,7 +13,7 @@ import {PeptidesController} from '../peptides';
  * @param {DG.DataFrame} currentDf Working table.
  * @return {DG.Widget} Widget for manual sequence alignment.
  */
-export function manualAlignmentWidget(alignedSequenceCol: DG.Column, currentDf: DG.DataFrame) {
+export function manualAlignmentWidget(alignedSequenceCol: DG.Column<string>, currentDf: DG.DataFrame): DG.Widget {
   const sequenceInput = ui.textInput('', alignedSequenceCol.get(currentDf.currentRowIdx));
   $(sequenceInput.root).addClass('pep-textinput');
 

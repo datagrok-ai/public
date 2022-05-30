@@ -20,7 +20,7 @@ function onMessage(columnData: any[], method: KnownMethods, measure: KnownMetric
   return reducer.transform(true);
 }
 
-self.onmessage = ({data: {columnData, method, measure, options}}) => {
+self.onmessage = ({data: {columnData, method, measure, options}}): void => {
   const embedding = onMessage(columnData, method, measure, options);
   self.postMessage({
     distance: embedding.distance,

@@ -9,7 +9,7 @@ export async function callMVA(
   currentDf: DG.DataFrame,
   options: {[name: string]: string},
   sequencesCol: DG.Column,
-) {
+): Promise<void> {
   const activityCol = await _scaleColumn(currentDf.getCol(options['activityColumnName']), options['scaling']);
   const encDf = _encodeSequences(sequencesCol);
 

@@ -5,7 +5,7 @@ import * as C from '../utils/constants';
 import {StringDictionary} from '@datagrok-libraries/utils/src/type-declarations';
 import {FilteringStatistics} from '../utils/filtering-statistics';
 
-export function getDistributionPlot(df: DG.DataFrame, valueCol: string, splitCol: string) {
+export function getDistributionPlot(df: DG.DataFrame, valueCol: string, splitCol: string): DG.Viewer {
   return df.plot.histogram({
     filteringEnabled: false,
     valueColumnName: valueCol,
@@ -31,7 +31,7 @@ export function getDistributionWidget(table: DG.DataFrame): DG.Widget {
   const otherLabel = ui.label(otherStr, {style: {color: otherColor}});
   const elements: (HTMLLabelElement | HTMLElement)[] = [currentLabel, otherLabel];
 
-  const getContent = () => {
+  const getContent = (): HTMLDivElement => {
     const hist = getDistributionPlot(table, C.COLUMNS_NAMES.ACTIVITY_SCALED, C.COLUMNS_NAMES.SPLIT_COL).root;
 
     hist.style.width = 'auto';

@@ -7,14 +7,14 @@ import {PeptidesController} from '../peptides';
 import * as C from '../utils/constants';
 import * as type from '../utils/types';
 
-export function addViewerToHeader(grid: DG.Grid, barchart: StackedBarChart) {
+export function addViewerToHeader(grid: DG.Grid, barchart: StackedBarChart): void {
   if (grid.temp['containsBarchart'])
     return;
 
-  const compareBarParts = (bar1: type.BarChart.BarPart | null, bar2: type.BarChart.BarPart | null) =>
-    bar1 && bar2 && bar1.aaName === bar2.aaName && bar1.colName === bar2.colName;
+  const compareBarParts = (bar1: type.BarChart.BarPart | null, bar2: type.BarChart.BarPart | null): boolean =>
+    (bar1 && bar2 && bar1.aaName === bar2.aaName && bar1.colName === bar2.colName) ?? false;
 
-  const eventAction = (mouseMove: MouseEvent) => {
+  const eventAction = (mouseMove: MouseEvent): void => {
     const cell = grid.hitTest(mouseMove.offsetX, mouseMove.offsetY);
     if (cell?.isColHeader && cell.tableColumn?.semType == C.SEM_TYPES.AMINO_ACIDS) {
       const newBarPart = barchart.findAARandPosition(cell, mouseMove);
@@ -101,13 +101,13 @@ export class StackedBarChart extends DG.JsViewer {
     this.dataEmptyAA = this.string('dataEmptyAA', '-');
   }
 
-  get currentBarPart() {return this._currentBarPart;}
+  get currentBarPart(): type.BarChart.BarPart | null {return this._currentBarPart;}
   set currentBarPart(barPart: type.BarChart.BarPart | null) {
     this._currentBarPart = barPart;
     this.isSameBarClicked = false;
   }
 
-  init() {
+  init(): void {
     const groups: {[key: string]: string[]} = {
       'yellow': ['C', 'U'],
       'red': ['G', 'P'],
@@ -127,7 +127,7 @@ export class StackedBarChart extends DG.JsViewer {
   }
 
   // Stream subscriptions
-  async onTableAttached() {
+  async onTableAttached(): Promise<void> {
     this.init();
     this.controller = await PeptidesController.getInstance(this.dataFrame);
     this.controller.init(this.dataFrame);
@@ -139,11 +139,11 @@ export class StackedBarChart extends DG.JsViewer {
   }
 
   // Cancel subscriptions when the viewer is detached
-  detach() {
+  detach(): void {
     this.subs.forEach((sub) => sub.unsubscribe());
   }
 
-  computeData() {
+  computeData(): void {
     this.aminoColumnNames = [];
     this.aminoColumnIndices = {};
 
@@ -209,7 +209,7 @@ export class StackedBarChart extends DG.JsViewer {
     this.max = this.dataFrame.filter.trueCount;
   }
 
-  renderBarToCanvas(g: CanvasRenderingContext2D, cell: DG.GridCell, x: number, y: number, w: number, h: number) {
+  renderBarToCanvas(g: CanvasRenderingContext2D, cell: DG.GridCell, x: number, y: number, w: number, h: number): void {
     const name = cell.tableColumn!.name;
     const colNameSize = g.measureText(name).width;
     const barData = this.barStats[name];
@@ -287,7 +287,7 @@ export class StackedBarChart extends DG.JsViewer {
     });
   }
 
-  findAARandPosition(cell: DG.GridCell, mouseEvent: MouseEvent) {
+  findAARandPosition(cell: DG.GridCell, mouseEvent: MouseEvent): {colName: string, aaName: string} | null {
     if (!cell.tableColumn?.name || !this.aminoColumnNames.includes(cell.tableColumn.name))
       return null;
 
@@ -330,7 +330,7 @@ export class StackedBarChart extends DG.JsViewer {
     return null;
   }
 
-  unhighlight() {
+  unhighlight(): void {
     ui.tooltip.hide();
     this.computeData();
   }
@@ -340,7 +340,7 @@ export class StackedBarChart extends DG.JsViewer {
    * @param event
    * @returns
    */
-  requestAction(event: MouseEvent) {
+  requestAction(event: MouseEvent): void {
     if (!this._currentBarPart)
       return;
     let aar = this._currentBarPart['aaName'];

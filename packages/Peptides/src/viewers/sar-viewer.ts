@@ -32,7 +32,7 @@ export class SARViewerBase extends DG.JsViewer {
     this.activityLimit = this.float('activityLimit', 2);
   }
 
-  async onTableAttached() {
+  async onTableAttached(): Promise<void> {
     super.onTableAttached();
     this.dataFrame.temp[this.tempName] ??= this;
     this.sourceGrid = this.view?.grid ?? (grok.shell.v as DG.TableView).grid;
@@ -41,9 +41,9 @@ export class SARViewerBase extends DG.JsViewer {
     await this.requestDataUpdate();
   }
 
-  detach() {this.subs.forEach((sub) => sub.unsubscribe());}
+  detach(): void {this.subs.forEach((sub) => sub.unsubscribe());}
 
-  render(refreshOnly = false) {
+  render(refreshOnly = false): void {
     if (!this.initialized)
       return;
     if (!refreshOnly) {
@@ -55,12 +55,12 @@ export class SARViewerBase extends DG.JsViewer {
     this.viewerGrid?.invalidate();
   }
 
-  async requestDataUpdate() {
+  async requestDataUpdate(): Promise<void> {
     await this.controller.updateData(this.scaling, this.sourceGrid, this.bidirectionalAnalysis,
       this.activityLimit, this.maxSubstitutions, this.showSubstitution);
   }
 
-  async onPropertyChanged(property: DG.Property) {
+  async onPropertyChanged(property: DG.Property): Promise<void> {
     super.onPropertyChanged(property);
     this.dataFrame.tags[property.name] = `${property.get(this)}`;
     if (!this.initialized || IS_PROPERTY_CHANGING)
@@ -96,9 +96,9 @@ export class SARViewer extends SARViewerBase {
 
   constructor() {super();}
 
-  get name() {return this._name;}
+  get name(): string {return this._name;}
 
-  async onTableAttached() {
+  async onTableAttached(): Promise<void> {
     await super.onTableAttached();
     this.viewerGrid = this.controller.sarGrid;
 
@@ -111,8 +111,9 @@ export class SARViewer extends SARViewerBase {
     this.render();
   }
 
-  isInitialized() {return this.controller?.sarGrid ?? false;}
+  isInitialized(): DG.Grid {return this.controller.sarGrid;}
 
+  //1. debouncing in rxjs; 2. flags?
   async onPropertyChanged(property: DG.Property): Promise<void> {
     if (!this.isInitialized() || IS_PROPERTY_CHANGING)
       return;
@@ -124,9 +125,7 @@ export class SARViewer extends SARViewerBase {
   }
 }
 
-/**
- * Vertical structure activity relationship viewer.
- */
+/** Vertical structure activity relationship viewer. */
 export class SARViewerVertical extends SARViewerBase {
   _name = 'Sequence-Activity relationship';
   _titleHost = ui.divText('Most Potent Residues', {id: 'pep-viewer-title'});
@@ -136,9 +135,9 @@ export class SARViewerVertical extends SARViewerBase {
     super();
   }
 
-  get name() {return this._name;}
+  get name(): string {return this._name;}
 
-  async onTableAttached() {
+  async onTableAttached(): Promise<void> {
     await super.onTableAttached();
     this.viewerGrid = this.controller.sarVGrid;
 
@@ -151,7 +150,7 @@ export class SARViewerVertical extends SARViewerBase {
     this.render();
   }
 
-  isInitialized() {return this.controller?.sarVGrid ?? false;}
+  isInitialized(): DG.Grid {return this.controller.sarVGrid;}
 
   async onPropertyChanged(property: DG.Property): Promise<void> {
     if (!this.isInitialized() || IS_PROPERTY_CHANGING)
