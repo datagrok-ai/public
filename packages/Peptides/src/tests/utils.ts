@@ -13,7 +13,7 @@ import {StringMetrics} from '@datagrok-libraries/ml/src/typed-metrics';
  *
  * @param {DG.DataFrame} table Target table.
  */
-export function _testTableIsNotEmpty(table: DG.DataFrame) {
+export function _testTableIsNotEmpty(table: DG.DataFrame): void {
   expect(table.columns.length > 0 && table.rowCount > 0, true);
 }
 
@@ -23,7 +23,7 @@ export function _testTableIsNotEmpty(table: DG.DataFrame) {
  * @param {DG.DataFrame} table Demo table.
  * @param {DG.TableView} view Demo view.
  */
-export async function _testViewerIsDrawing(table: DG.DataFrame, view: DG.TableView) {
+export async function _testViewerIsDrawing(table: DG.DataFrame, view: DG.TableView): Promise<void> {
   let noException = true;
 
   try {
@@ -42,7 +42,8 @@ export async function _testViewerIsDrawing(table: DG.DataFrame, view: DG.TableVi
  * @param {string} method Embedding method.
  * @param {string} measure Measure to apply to a pair of strings.
  */
-export async function _testDimensionalityReducer(columnData: Array<string>, method: StringMetrics, measure: string) {
+export async function _testDimensionalityReducer(
+  columnData: Array<string>, method: StringMetrics, measure: string): Promise<void> {
   let noException = true;
   const cyclesCount = 100;
   let embcols;
@@ -79,7 +80,7 @@ export async function _testPeptideSimilaritySpaceViewer(
   method: string,
   measure: string,
   cyclesCount: number,
-) {
+): Promise<void> {
   let noException = true;
   let viewer;
   let df: DG.DataFrame;
@@ -114,7 +115,7 @@ export async function _testPeptideSimilaritySpaceViewer(
  * @export
  * @param {DG.Column} col Aligned sequences column.
  */
-export async function _testMSAIsCorrect(col: DG.Column) {
+export async function _testMSAIsCorrect(col: DG.Column): Promise<void> {
   const msaCol = await runKalign(col, true);
   expect(msaCol.toList().every((v, i) => v == col.get(i)), true);
 }

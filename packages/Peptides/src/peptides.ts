@@ -32,14 +32,14 @@ export class PeptidesController {
       const sdf = await _package.files.readAsText('HELMMonomers_June10.sdf');
       dataFrame.temp[MonomerLibrary.id] ??= new MonomerLibrary(sdf);
     }
-    return dataFrame.temp[PeptidesController.controllerName];
+    return dataFrame.temp[PeptidesController.controllerName] as PeptidesController;
   }
 
-  static get controllerName() {return PeptidesController._controllerName;}
+  static get controllerName(): string {return PeptidesController._controllerName;}
 
-  static get chemPalette() {return ChemPalette;}
+  static get chemPalette(): typeof ChemPalette {return ChemPalette;}
 
-  get dataFrame() {return this._model.dataFrame;}
+  get dataFrame(): DG.DataFrame {return this._model.dataFrame;}
 
   get onStatsDataFrameChanged(): Observable<DG.DataFrame> {return this._model.onStatsDataFrameChanged;}
 
@@ -49,19 +49,19 @@ export class PeptidesController {
 
   get onSubstTableChanged(): Observable<type.SubstitutionsInfo> {return this._model.onSubstTableChanged;}
 
-  async updateDefault() {await this._model.updateDefault();}
+  async updateDefault(): Promise<void> {await this._model.updateDefault();}
 
-  get sarGrid() {return this._model._sarGrid;}
+  get sarGrid(): DG.Grid {return this._model._sarGrid;}
 
-  get sarVGrid() {return this._model._sarVGrid;}
+  get sarVGrid(): DG.Grid {return this._model._sarVGrid;}
 
-  get sourceGrid() {return this._model._sourceGrid;}
+  get sourceGrid(): DG.Grid {return this._model._sourceGrid;}
 
-  get originalActivityColumnName(): string {return this.dataFrame.temp[C.COLUMNS_NAMES.ACTIVITY];}
+  get originalActivityColumnName(): string {return this.dataFrame.temp[C.COLUMNS_NAMES.ACTIVITY] as string;}
 
   // get substTooltipData() {return this._model.substTooltipData;}
 
-  static setAARRenderer(col: DG.Column, grid: DG.Grid) {
+  static setAARRenderer(col: DG.Column, grid: DG.Grid): void {
     return setAARRenderer(col, grid);
   }
 
@@ -164,21 +164,18 @@ export class PeptidesController {
   async updateData(
     activityScaling?: string, sourceGrid?: DG.Grid, twoColorMode?: boolean, activityLimit?: number,
     maxSubstitutions?: number, isSubstitutionOn?: boolean, filterMode?: boolean,
-  ) {
+  ): Promise<void> {
     filterMode ??= false;
     await this._model.updateData(
       activityScaling, sourceGrid, twoColorMode, activityLimit, maxSubstitutions, isSubstitutionOn, filterMode);
   }
 
-  // getSubstitutions() {
-  //   return this._model.getSubstitutionTable();
-  // }
-  getSubstitutions() {
+  getSubstitutions(): type.SubstitutionsInfo {
     return this._model.substitutionsInfo;
   }
 
-  getCurrentAARandPos() {
-    return {aar: this.dataFrame.getTag(C.TAGS.AAR), pos: this.dataFrame.getTag(C.TAGS.POSITION)};
+  getCurrentAARandPos(): {aar: string, pos: string} {
+    return {aar: this.dataFrame.getTag(C.TAGS.AAR) ?? 'All', pos: this.dataFrame.getTag(C.TAGS.POSITION) ?? 'All'};
   }
 
   assertVar(variable: string, init = false): boolean {
@@ -196,7 +193,7 @@ export class PeptidesController {
     return assertionResult;
   }
 
-  assertVariables(variables: string[], init = false) {
+  assertVariables(variables: string[], init = false): boolean {
     let result = true;
     for (const variable of variables)
       result &&= this.assertVar(variable, init);
@@ -204,7 +201,7 @@ export class PeptidesController {
     return result;
   }
 
-  syncProperties(isSourceSAR = true) {
+  syncProperties(isSourceSAR = true): void {
     this.assertVariables(['sarViewer', 'sarViewerVertical'], true);
     const sourceViewer = isSourceSAR ? this.sarViewer : this.sarViewerVertical;
     const targetViewer = isSourceSAR ? this.sarViewerVertical : this.sarViewer;
@@ -213,13 +210,13 @@ export class PeptidesController {
       targetViewer.props.set(property.name, property.get(sourceViewer));
   }
 
-  modifyOrCreateSplitCol(aar: string, position: string, notify: boolean = true) {
+  modifyOrCreateSplitCol(aar: string, position: string, notify: boolean = true): void {
     this._model.modifyOrCreateSplitCol(aar, position);
     if (notify)
       this._model.fireBitsetChanged();
   }
 
-  setSARGridCellAt(aar: string, position: string) {
+  setSARGridCellAt(aar: string, position: string): void {
     const sarDf = this.sarGrid.dataFrame;
     const aarCol = sarDf.getCol(C.COLUMNS_NAMES.AMINO_ACID_RESIDUE);
     const aarColLen = aarCol.length;
@@ -244,7 +241,7 @@ export class PeptidesController {
    * @param {DG.Column} col Aligned sequences column.
    * @memberof Peptides
    */
-  async init(table: DG.DataFrame) {
+  async init(table: DG.DataFrame): Promise<void> {
     if (this.isInitialized)
       return;
     this.isInitialized = true;
@@ -264,14 +261,14 @@ export class PeptidesController {
     sourceGrid.columns.setOrder([table.temp[C.COLUMNS_NAMES.ACTIVITY_SCALED]]);
 
     this.dataFrame.temp[C.EMBEDDING_STATUS] = false;
-    function adjustCellSize(grid: DG.Grid) {
+    const adjustCellSize = (grid: DG.Grid): void => {
       const colNum = grid.columns.length;
       for (let i = 0; i < colNum; ++i) {
         const iCol = grid.columns.byIndex(i)!;
         iCol.width = isNaN(parseInt(iCol.name)) ? 50 : 40;
       }
       grid.props.rowHeight = 20;
-    }
+    };
 
     for (let i = 0; i < sourceGrid.columns.length; i++) {
       const aarCol = sourceGrid.columns.byIndex(i);
@@ -309,7 +306,7 @@ export class PeptidesController {
     this._model.invalidateGrids();
   }
 
-  invalidateSourceGrid() {this.sourceGrid.invalidate();}
+  invalidateSourceGrid(): void {this.sourceGrid.invalidate();}
 }
 
 function dockViewers(

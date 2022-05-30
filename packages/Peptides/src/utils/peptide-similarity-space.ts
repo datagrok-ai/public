@@ -52,7 +52,7 @@ export async function createPeptideSimilaritySpaceViewer(
   const columns = Array.from(
     embcols as Coordinates, (v: Float32Array, k) => DG.Column.fromFloat32Array(axesNames[k], v));
 
-  function _getMW(sequences: string[]) {
+  function _getMW(sequences: string[]): Float32Array {
     const mw: Float32Array = new Float32Array(sequences.length);
 
     mw.map((_, index) => getSequenceMolecularWeight(sequences[index] ?? ''));
@@ -144,7 +144,7 @@ export class PeptideSimilaritySpaceWidget {
    * @protected
    * @memberof PeptideSimilaritySpaceWidget
    */
-  protected async updateViewer() {
+  protected async updateViewer(): Promise<void> {
     const viewer = await this.drawViewer();
     this.viewer.lastChild?.remove();
     this.viewer.appendChild(viewer.root);

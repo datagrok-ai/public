@@ -29,7 +29,7 @@ let currentTable: DG.DataFrame;
 let alignedSequenceColumn: DG.Column;
 let currentView: DG.TableView;
 
-async function main(chosenFile: string) {
+async function main(chosenFile: string): Promise<void> {
   const pi = DG.TaskBarProgressIndicator.create('Loading Peptides');
   const path = _package.webRoot + 'files/' + chosenFile;
   const peptides = (await grok.data.loadTable(path));
@@ -44,7 +44,7 @@ async function main(chosenFile: string) {
 
 //name: Peptides
 //tags: app
-export async function Peptides() {
+export async function Peptides(): Promise<void> {
   const wikiLink = ui.link('wiki', 'https://github.com/datagrok-ai/public/blob/master/help/domains/bio/peptides.md');
   const textLink = ui.inlineText(['For more details, see our ', wikiLink, '.']);
 
@@ -161,7 +161,7 @@ export function stackedBarChart(): DG.JsViewer {
 //tags: cellRenderer
 //meta.cellType: alignedSequence
 //output: grid_cell_renderer result
-export function alignedSequenceCellRenderer() {
+export function alignedSequenceCellRenderer(): AlignedSequenceCellRenderer {
   return new AlignedSequenceCellRenderer();
 }
 
@@ -169,7 +169,7 @@ export function alignedSequenceCellRenderer() {
 //tags: cellRenderer
 //meta.cellType: aminoAcids
 //output: grid_cell_renderer result
-export function aminoAcidsCellRenderer() {
+export function aminoAcidsCellRenderer(): AminoAcidsCellRenderer {
   return new AminoAcidsCellRenderer();
 }
 
@@ -177,7 +177,7 @@ export function aminoAcidsCellRenderer() {
 //tags: panel, widgets
 //input: string monomer {semType: aminoAcids}
 //output: widget result
-export function manualAlignment(monomer: string) {
+export function manualAlignment(monomer: string): DG.Widget {
   [currentView, currentGrid, currentTable, alignedSequenceColumn] = getOrDefine();
   //TODO: recalculate Molfile and Molecule panels on sequence update
   return manualAlignmentWidget(alignedSequenceColumn, currentTable);
@@ -201,7 +201,7 @@ export async function peptideSpacePanel(col: DG.Column): Promise<DG.Widget> {
 export async function peptideMolfile(peptide: string): Promise<DG.Widget> {
   [currentView, currentGrid, currentTable, alignedSequenceColumn] = getOrDefine();
   const smiles = getMolecule(peptide, alignedSequenceColumn.tags[C.TAGS.SEPARATOR]);
-  return grok.functions.call('Chem:molfile', {'smiles': smiles});
+  return grok.functions.call('Chem:molfile', {'smiles': smiles}) as Promise<DG.Widget>;
 }
 
 //name: Molfile
@@ -236,7 +236,7 @@ export async function multipleSequenceAlignmentAny(table: DG.DataFrame, col: DG.
 //input: dataframe table
 //input: column col
 //output: column result
-export async function runTestMSAEnoughMemory(table: DG.DataFrame, col: DG.Column) {
+export async function runTestMSAEnoughMemory(table: DG.DataFrame, col: DG.Column<string>): Promise<DG.Column<string>> {
   await testMSAEnoughMemory(col);
   return col;
 }
@@ -287,7 +287,7 @@ export function getPeptidesStructure(col: DG.Column): DG.Widget {
 //tags: cellRenderer
 //meta.cellType: alignedSequenceDifference
 //output: grid_cell_renderer result
-export function alignedSequenceDifferenceCellRenderer() {
+export function alignedSequenceDifferenceCellRenderer(): AlignedSequenceDifferenceCellRenderer {
   return new AlignedSequenceDifferenceCellRenderer();
 }
 

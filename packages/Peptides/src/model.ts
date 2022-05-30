@@ -52,10 +52,10 @@ export class PeptidesModel {
 
   static getInstance(dataFrame: DG.DataFrame): PeptidesModel {
     dataFrame.temp[PeptidesModel.modelName] ??= new PeptidesModel(dataFrame);
-    return dataFrame.temp[PeptidesModel.modelName];
+    return dataFrame.temp[PeptidesModel.modelName] as PeptidesModel;
   }
 
-  static get modelName() {return PeptidesModel._modelName;}
+  static get modelName(): string {return PeptidesModel._modelName;}
 
   get dataFrame(): DG.DataFrame {return this._dataFrame;}
 
@@ -67,7 +67,7 @@ export class PeptidesModel {
 
   get onSubstTableChanged(): Observable<type.SubstitutionsInfo> {return this._substitutionTableSubject.asObservable();}
 
-  updateProperties() {
+  updateProperties(): void {
     this._activityScaling = this._dataFrame.tags['scaling'];
     this._filterMode = stringToBool(this._dataFrame.tags['filterMode']);
     this._twoColorMode = stringToBool(this._dataFrame.tags['bidirectionalAnalysis']);
@@ -79,8 +79,10 @@ export class PeptidesModel {
   setProperties(
     activityScaling: string, filterMode: boolean, twoColorMode: boolean, isSubstitutionOn: boolean,
     maxSubstitutions: number, activityLimit: number, forceUpdate = false,
-  ) {
-    const chooseAction = (value: string, defaultValue: any) => forceUpdate ? value : defaultValue ?? value;
+  ): void {
+    const chooseAction =
+      (value: string, defaultValue: string | boolean | number): string | boolean | number =>
+        forceUpdate ? value : defaultValue ?? value;
     this._dataFrame.tags['scaling'] = chooseAction(`${activityScaling}`, this._dataFrame.tags['scaling']);
     this._dataFrame.tags['filterMode'] = chooseAction(`${filterMode}`, this._dataFrame.tags['filterMode']);
     this._dataFrame.tags['bidirectionalAnalysis'] =
@@ -97,7 +99,7 @@ export class PeptidesModel {
   async updateData(
     activityScaling?: string, sourceGrid?: DG.Grid, twoColorMode?: boolean, activityLimit?: number,
     maxSubstitutions?: number, isSubstitutionOn?: boolean, filterMode?: boolean,
-  ) {
+  ): Promise<void> {
     //FIXME: threre are too many assignments, some are duplicating
     this._activityScaling = activityScaling ?? this._activityScaling;
     this._sourceGrid = sourceGrid ?? this._sourceGrid;
@@ -112,7 +114,7 @@ export class PeptidesModel {
     await this.updateDefault();
   }
 
-  async updateDefault() {
+  async updateDefault(): Promise<void> {
     if (this._activityScaling && this._sourceGrid && this._twoColorMode !== null && !this._isUpdating) {
       this._isUpdating = true;
       const [viewerGrid, viewerVGrid, statsDf] = await this.initializeViewersComponents();
@@ -131,7 +133,7 @@ export class PeptidesModel {
     this._isUpdating = false;
   }
 
-  async updateBarchart() {
+  async updateBarchart(): Promise<void> {
     this.stackedBarchart ??= await this._dataFrame?.plot.fromType('StackedBarChartAA') as StackedBarChart;
     if (this.stackedBarchart && this._sourceGrid)
       addViewerToHeader(this._sourceGrid, this.stackedBarchart);
@@ -234,7 +236,7 @@ export class PeptidesModel {
   }
 
   //TODO: move to controller?
-  calcSubstitutions() {
+  calcSubstitutions(): void {
     const activityValues: DG.Column<number> = this.dataFrame.getCol(C.COLUMNS_NAMES.ACTIVITY_SCALED);
     const columnList: DG.Column<string>[] = this.dataFrame.columns.bySemTypeAll(C.SEM_TYPES.AMINO_ACIDS);
     const nCols = columnList.length;
@@ -309,16 +311,16 @@ export class PeptidesModel {
       }
     }
 
-    const typedArray = getTypedArrayConstructor(nRows);
+    const TypedArray = getTypedArrayConstructor(nRows);
     for (const positionMap of this.substitutionsInfo.values()) {
       for (const indexMap of positionMap.values()) {
         for (const [index, indexArray] of indexMap.entries())
-          indexMap.set(index, new typedArray(indexArray));
+          indexMap.set(index, new TypedArray(indexArray));
       }
     }
   }
 
-  joinDataFrames(positionColumns: string[], splitSeqDf: DG.DataFrame) {
+  joinDataFrames(positionColumns: string[], splitSeqDf: DG.DataFrame): void {
     // append splitSeqDf columns to source table and make sure columns are not added more than once
     const dfColsSet = new Set(this._dataFrame.columns.names());
     if (!positionColumns.every((col: string) => dfColsSet.has(col))) {
@@ -327,7 +329,7 @@ export class PeptidesModel {
     }
   }
 
-  sortSourceGrid(sourceGrid: DG.Grid) {
+  sortSourceGrid(sourceGrid: DG.Grid): void {
     if (sourceGrid) {
       const colNames: DG.GridColumn[] = [];
       for (let i = 1; i < sourceGrid.columns.length; i++)
@@ -350,7 +352,7 @@ export class PeptidesModel {
   //TODO: move out, merge with controller's scaleActivity
   async createScaledCol(
     activityScaling: string, df: DG.DataFrame, sourceGrid: DG.Grid, splitSeqDf: DG.DataFrame,
-  ) {
+  ): Promise<void> {
     const [scaledDf, newColName] = await PeptidesController.scaleActivity(
       activityScaling, df, df.temp[C.COLUMNS_NAMES.ACTIVITY]);
     //TODO: make another func
@@ -368,7 +370,8 @@ export class PeptidesModel {
   }
 
   //TODO: move out
-  async calculateStatistics(matrixDf: DG.DataFrame, peptidesCount: number, splitSeqDf: DG.DataFrame) {
+  async calculateStatistics(
+    matrixDf: DG.DataFrame, peptidesCount: number, splitSeqDf: DG.DataFrame): Promise<DG.DataFrame> {
     matrixDf = matrixDf.groupBy([C.COLUMNS_NAMES.POSITION, C.COLUMNS_NAMES.AMINO_ACID_RESIDUE])
       .add('count', C.COLUMNS_NAMES.ACTIVITY_SCALED, 'Count')
       .aggregate();
@@ -416,7 +419,7 @@ export class PeptidesModel {
     return matrixDf.clone();
   }
 
-  async setCategoryOrder(twoColorMode: boolean, statsDf: DG.DataFrame, matrixDf: DG.DataFrame) {
+  async setCategoryOrder(twoColorMode: boolean, statsDf: DG.DataFrame, matrixDf: DG.DataFrame): Promise<void> {
     const absMD = 'Absolute Mean difference';
     const sortArgument = twoColorMode ? absMD : C.COLUMNS_NAMES.MEAN_DIFFERENCE;
     if (twoColorMode)
@@ -424,17 +427,17 @@ export class PeptidesModel {
 
     const aarWeightsDf = statsDf.groupBy([C.COLUMNS_NAMES.AMINO_ACID_RESIDUE]).sum(sortArgument, 'weight').aggregate();
     const aarList = aarWeightsDf.getCol(C.COLUMNS_NAMES.AMINO_ACID_RESIDUE).toList();
-    const getWeight = (aar: string) => aarWeightsDf
+    const getWeight = (aar: string): number => aarWeightsDf
       .groupBy(['weight'])
       .where(`${C.COLUMNS_NAMES.AMINO_ACID_RESIDUE} = ${aar}`)
       .aggregate()
-      .get('weight', 0);
+      .get('weight', 0) as number;
     aarList.sort((first, second) => getWeight(second) - getWeight(first));
 
     matrixDf.getCol(C.COLUMNS_NAMES.AMINO_ACID_RESIDUE).setCategoryOrder(aarList);
   }
 
-  createVerticalTable(statsDf: DG.DataFrame, twoColorMode: boolean) {
+  createVerticalTable(statsDf: DG.DataFrame, twoColorMode: boolean): DG.DataFrame {
     // TODO: aquire ALL of the positions
     const columns = [C.COLUMNS_NAMES.MEAN_DIFFERENCE, C.COLUMNS_NAMES.AMINO_ACID_RESIDUE, C.COLUMNS_NAMES.POSITION,
       'Count', 'Ratio', C.COLUMNS_NAMES.P_VALUE];
@@ -459,7 +462,7 @@ export class PeptidesModel {
     return sequenceDf;
   }
 
-  createGrids(matrixDf: DG.DataFrame, positionColumns: string[], sequenceDf: DG.DataFrame) {
+  createGrids(matrixDf: DG.DataFrame, positionColumns: string[], sequenceDf: DG.DataFrame): DG.Grid[] {
     const sarGrid = matrixDf.plot.grid();
     sarGrid.sort([C.COLUMNS_NAMES.AMINO_ACID_RESIDUE]);
     sarGrid.columns.setOrder([C.COLUMNS_NAMES.AMINO_ACID_RESIDUE].concat(positionColumns as C.COLUMNS_NAMES[]));
@@ -484,9 +487,9 @@ export class PeptidesModel {
   setCellRenderers(
     renderColNames: string[], statsDf: DG.DataFrame, twoColorMode: boolean, sarGrid: DG.Grid, sarVGrid: DG.Grid,
     isSubstitutionOn: boolean,
-  ) {
+  ): void {
     const mdCol = statsDf.getCol(C.COLUMNS_NAMES.MEAN_DIFFERENCE);
-    const cellRendererAction = (args: DG.GridCellRenderArgs) => {
+    const cellRendererAction = (args: DG.GridCellRenderArgs): void => {
       const canvasContext = args.g;
       const bound = args.bounds;
       const cell = args.cell;
@@ -536,9 +539,9 @@ export class PeptidesModel {
             coef = DG.Color.toHtml(DG.Color.lightLightGray);
 
 
-          const chooseMin = () => twoColorMode ? 0 : mdCol.min;
-          const chooseMax = () => twoColorMode ? Math.max(Math.abs(mdCol.min), mdCol.max) : mdCol.max;
-          const chooseCurrent = () => twoColorMode ? Math.abs(cellValue) : cellValue;
+          const chooseMin = (): number => twoColorMode ? 0 : mdCol.min;
+          const chooseMax = (): number => twoColorMode ? Math.max(Math.abs(mdCol.min), mdCol.max) : mdCol.max;
+          const chooseCurrent = (): any => twoColorMode ? Math.abs(cellValue) : cellValue;
 
           const rCoef = (chooseCurrent() - chooseMin()) / (chooseMax() - chooseMin());
 
@@ -574,8 +577,8 @@ export class PeptidesModel {
   setTooltips(
     renderColNames: string[], statsDf: DG.DataFrame, peptidesCount: number, sarGrid: DG.Grid, sarVGrid: DG.Grid,
     sourceDf: DG.DataFrame,
-  ) {
-    const onCellTooltipAction = async (cell: DG.GridCell, x: number, y: number) => {
+  ): void {
+    const onCellTooltipAction = async (cell: DG.GridCell, x: number, y: number): Promise<boolean> => {
       if (
         !cell.isRowHeader && !cell.isColHeader && cell.tableColumn !== null && cell.cell.value !== null &&
           cell.tableRowIndex !== null && renderColNames.indexOf(cell.tableColumn.name) !== -1) {
@@ -615,7 +618,7 @@ export class PeptidesModel {
   }
 
   //TODO: think about it, move out?
-  setInteractionCallback() {
+  setInteractionCallback(): void {
     const sarDf = this._sarGrid.dataFrame;
     const sarVDf = this._sarVGrid.dataFrame;
 
@@ -661,7 +664,7 @@ export class PeptidesModel {
     });
   }
 
-  invalidateGrids() {
+  invalidateGrids(): void {
     this.stackedBarchart?.computeData();
     this._sarGrid.invalidate();
     this._sarVGrid.invalidate();
@@ -669,13 +672,13 @@ export class PeptidesModel {
     //TODO: this.peptideSpaceGrid.invalidate();
   }
 
-  setBitsetCallback() {
+  setBitsetCallback(): void {
     if (this.isBitsetChangedInitialized)
       return;
     const filter = this.dataFrame.filter;
     const selection = this.dataFrame.selection;
 
-    const changeBitset = (currentBitset: DG.BitSet, previousBitset: DG.BitSet) => {
+    const changeBitset = (currentBitset: DG.BitSet, previousBitset: DG.BitSet): void => {
       previousBitset.setAll(!this._filterMode, false);
       currentBitset.init((i) => {
         const currentCategory = this.splitCol.get(i);
@@ -684,7 +687,7 @@ export class PeptidesModel {
     };
 
     const recalculateStatistics =
-      (bitset: DG.BitSet) => (this.dataFrame.temp[C.STATS] as FilteringStatistics).setMask(bitset);
+      (bitset: DG.BitSet): void => (this.dataFrame.temp[C.STATS] as FilteringStatistics).setMask(bitset);
 
     filter.onChanged.subscribe(() => {
       changeBitset(filter, selection);
@@ -697,10 +700,10 @@ export class PeptidesModel {
     this.isBitsetChangedInitialized = true;
   }
 
-  fireBitsetChanged() {(this._filterMode ? this._dataFrame.filter : this._dataFrame.selection).fireChanged();}
+  fireBitsetChanged(): void {(this._filterMode ? this._dataFrame.filter : this._dataFrame.selection).fireChanged();}
 
   //TODO: move out
-  postProcessGrids(sourceGrid: DG.Grid, invalidIndexes: number[], sarGrid: DG.Grid, sarVGrid: DG.Grid) {
+  postProcessGrids(sourceGrid: DG.Grid, invalidIndexes: number[], sarGrid: DG.Grid, sarVGrid: DG.Grid): void {
     sourceGrid.onCellPrepare((cell: DG.GridCell) => {
       const currentRowIndex = cell.tableRowIndex;
       if (currentRowIndex && invalidIndexes.includes(currentRowIndex) && !cell.isRowHeader)
@@ -727,7 +730,7 @@ export class PeptidesModel {
   }
 
   //TODO: refactor, use this.sarDf and accept aar & position as parameters
-  syncGrids(sourceVertical: boolean, sarDf: DG.DataFrame, sarVDf: DG.DataFrame) {
+  syncGrids(sourceVertical: boolean, sarDf: DG.DataFrame, sarVDf: DG.DataFrame): void {
     let otherColName: string;
     let otherRowIndex: number;
     const otherDf = sourceVertical ? sarDf : sarVDf;
@@ -784,8 +787,7 @@ export class PeptidesModel {
 
   modifyOrCreateSplitCol(aar: string, position: string): void {
     const df = this.dataFrame;
-    this.splitCol = df.col(C.COLUMNS_NAMES.SPLIT_COL) ??
-      df.columns.addNew(C.COLUMNS_NAMES.SPLIT_COL, 'string');
+    this.splitCol = df.col(C.COLUMNS_NAMES.SPLIT_COL) ??df.columns.addNew(C.COLUMNS_NAMES.SPLIT_COL, 'string');
 
     if (aar === C.CATEGORIES.ALL && position === C.CATEGORIES.ALL) {
       this.splitCol.init(() => C.CATEGORIES.ALL);

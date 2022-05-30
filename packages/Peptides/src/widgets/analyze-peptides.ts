@@ -31,7 +31,7 @@ export async function analyzePeptidesWidget(currentDf: DG.DataFrame, col: DG.Col
 
   const activityScalingMethod = ui.choiceInput(
     'Scaling', 'none', ['none', 'lg', '-lg'],
-    async (currentMethod: string) => {
+    async (currentMethod: string): Promise<void> => {
       const currentActivityCol = activityColumnChoice.value?.name;
 
       [tempDf, newScaledColName] = await PeptidesController.scaleActivity(
@@ -51,7 +51,7 @@ export async function analyzePeptidesWidget(currentDf: DG.DataFrame, col: DG.Col
     });
   activityScalingMethod.setTooltip('Function to apply for each value in activity column');
 
-  const activityScalingMethodState = function(_: any) {
+  const activityScalingMethodState = (_: any): void => {
     activityScalingMethod.enabled = (activityColumnChoice.value ?? false) &&
       DG.Stats.fromColumn(activityColumnChoice.value!, currentDf.filter).min > 0;
     activityScalingMethod.fireChanged();
