@@ -87,6 +87,7 @@ export class WebLogo extends DG.JsViewer {
   private rowsNull: number = 0;
 
   // Viewer's properties (likely they should be public so that they can be set outside)
+  private _positionWidth: number;
   public positionWidth: number;
   public minHeight: number;
   public maxHeight: number;
@@ -97,6 +98,7 @@ export class WebLogo extends DG.JsViewer {
   public fixWidth: boolean;
   public verticalAlignment: string | null;
   public horizontalAlignment: string | null;
+  public fitArea: boolean;
 
   private positionNames: string[] = [];
 
@@ -114,7 +116,7 @@ export class WebLogo extends DG.JsViewer {
 
     this.textBaseline = 'top';
 
-    this.positionWidth = this.float('positionWidth', 16/*,
+    this._positionWidth = this.positionWidth = this.float('positionWidth', 16/*,
       {editor: 'slider', min: 4, max: 64, postfix: 'px'}*/);
     this.minHeight = this.float('minHeight', 50/*,
       {editor: 'slider', min: 25, max: 250, postfix: 'px'}*/);
@@ -133,11 +135,15 @@ export class WebLogo extends DG.JsViewer {
       {choices: ['top', 'middle', 'bottom']});
     this.horizontalAlignment = this.string('horizontalAlignment', 'center',
       {choices: ['left', 'center', 'right']});
+    this.fitArea = this.bool('fitArea', true,
+      {});
   }
 
   private async init(): Promise<void> {
-    if (this.initialized)
-      alert('WebLogo second initialization!');
+    if (this.initialized) {
+      console.error('WebLogo second initialization!');
+      return;
+    }
 
     this.initialized = true;
     this.helpUrl = '/help/visualize/viewers/web-logo.md';
@@ -155,7 +161,7 @@ export class WebLogo extends DG.JsViewer {
     // this.slider.root.style.height = '12px';
 
     const getMonomer = (p: DG.Point): [number, string | null, PositionMonomerInfo | null] => {
-      const jPos = Math.floor(p.x / this.positionWidth);
+      const jPos = Math.floor(p.x / this._positionWidth);
       const position = this.positions[jPos];
 
       if (position === void 0)
@@ -276,6 +282,7 @@ export class WebLogo extends DG.JsViewer {
       this.updateSeqCol();
       break;
     case 'positionWidth':
+      this._positionWidth = this.positionWidth;
       this.render(true);
       break;
     case 'minHeight':
@@ -291,6 +298,9 @@ export class WebLogo extends DG.JsViewer {
       this.render(true);
       break;
     case 'horizontalAlignment':
+      this.render(true);
+      break;
+    case 'fitArea':
       this.render(true);
       break;
     }
@@ -389,7 +399,7 @@ export class WebLogo extends DG.JsViewer {
         // const m: string = entry[0];
         const h: number = maxHeight * pmInfo.count / rowCount;
 
-        pmInfo.bounds = new DG.Rect(jPos * this.positionWidth, y, this.positionWidth, h);
+        pmInfo.bounds = new DG.Rect(jPos * this._positionWidth, y, this._positionWidth, h);
         y += h;
       }
     }
@@ -432,14 +442,14 @@ export class WebLogo extends DG.JsViewer {
     g.textAlign = 'center';
     g.font = '10px Roboto, Roboto Local, sans-serif';
     const posNameMaxWidth = Math.max(...this.positions.map((pos) => g.measureText(pos.name).width));
-    const hScale = posNameMaxWidth < (this.positionWidth - 2) ? 1 : (this.positionWidth - 2) / posNameMaxWidth;
+    const hScale = posNameMaxWidth < (this._positionWidth - 2) ? 1 : (this._positionWidth - 2) / posNameMaxWidth;
 
     for (let jPos = 0; jPos < this.Length; jPos++) {
       const pos: PositionInfo = this.positions[jPos];
       g.resetTransform();
       g.setTransform(
         hScale, 0, 0, 1,
-        jPos * this.positionWidth + this.positionWidth / 2, 0);
+        jPos * this._positionWidth + this._positionWidth / 2, 0);
       g.fillText(pos.name, 0, 0);
     }
     //#endregion Plot positionNames
@@ -480,11 +490,21 @@ export class WebLogo extends DG.JsViewer {
     if (!this.canvas || !this.host)
       return;
 
-    const width: number = this.Length * this.positionWidth;
+    let width: number = this.Length * this.positionWidth;
+    let height = Math.min(this.maxHeight, Math.max(this.minHeight, this.root.clientHeight));
+
+    if (this.fitArea) {
+      const xScale: number = this.root.clientHeight / height;
+      const yScale: number = this.root.clientWidth / width;
+      const scale = Math.max(1, Math.min(xScale, yScale));
+      width = width * scale;
+      height = height * scale;
+      this._positionWidth = this.positionWidth * scale;
+    }
+
     this.canvas.width = width;
     this.canvas.style.width = `${width}px`;
 
-    const height = Math.min(this.maxHeight, Math.max(this.minHeight, this.root.clientHeight));
     // const canvasHeight: number = width > this.root.clientWidth ? height - 8 : height;
     this.host.style.setProperty('height', `${height}px`);
     const canvasHeight: number = this.host.clientHeight;
@@ -558,14 +578,14 @@ export class WebLogo extends DG.JsViewer {
       const alphabet = {...Nucleotides.Names, ...{'-': 'gap'}};
       res = DG.Detector.sampleCategories(seqCol, (s) => {
         return !s || (s.length > minLength && s.split('').every((n) => n in alphabet));
-      }) ? NucleotidesPalettes.Chromatogram : null;
+      }, 1) ? NucleotidesPalettes.Chromatogram : null;
     }
     if (res === null) {
-      // And then check for amino acids alphabet.
+      // And then check for amino acid's alphabet.
       const alphabet = {...Aminoacids.Names, ...{'-': 'gap'}};
       res = DG.Detector.sampleCategories(seqCol, (s) => {
         return !s || (s.length > minLength && s.split('').every((n) => n in alphabet));
-      }) ? AminoacidsPalettes.GrokGroups : null;
+      }, 1) ? AminoacidsPalettes.GrokGroups : null;
     }
     return res;
   }
