@@ -15,7 +15,7 @@ export class RdKitServiceWorkerClient extends WorkerMessageBusClient {
   initMoleculesStructures = async (dict: string[], normalizeCoordinates: boolean, usePatternFingerprints: boolean) =>
     this.call(WORKER_CALL.INIT_MOLECULES_STRUCTURES, [dict, normalizeCoordinates, usePatternFingerprints]);
 
-  searchSubstructure = async (query: string, querySmarts: string, patternFgs: BitArray[]) =>
+  searchSubstructure = async (query: string, querySmarts: string, patternFgs: Uint8Array[]) =>
     this.call(WORKER_CALL.SEARCH_SUBSTRUCTURE, [query, querySmarts, patternFgs]);
 
   freeMoleculesStructures = async () =>
