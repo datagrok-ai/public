@@ -2182,6 +2182,7 @@ export class ColumnDialogHelper {
       let name = newCol.name;
       newCol = this.column.dataFrame.columns.replace(this.column, newCol);
       newCol.name = name;
+      api.grok_Column_UpdateDependentColumns(newCol.dart);
       sub.unsubscribe();
     });
   }
