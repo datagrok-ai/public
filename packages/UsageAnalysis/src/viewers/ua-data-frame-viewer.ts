@@ -13,7 +13,7 @@ export class UaDataFrameViewer extends UaViewer {
     this.reloadViewer();
   }
 
-  setViewer(loader: any, host: HTMLDivElement) {
+  setViewer(loader: any, host: HTMLDivElement, nameDiv: HTMLElement) {
     host.appendChild(DG.Viewer.grid(this.dataFrame).root);
     host.removeChild(loader);
   }
