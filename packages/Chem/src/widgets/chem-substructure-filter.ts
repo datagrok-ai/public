@@ -105,6 +105,9 @@ export class SubstructureFilter extends DG.Filter {
     super.applyState(state);
     if (state.molBlock)
       this.sketcher.setMolFile(state.molBlock);
+    //
+    // if (state.molBlock)
+    //   setTimeout(() => this._onSketchChanged(), 1000);
   }
 
   async _onSketchChanged(): Promise<void> {
@@ -112,18 +115,20 @@ export class SubstructureFilter extends DG.Filter {
       if (this.column?.temp['chem-scaffold-filter'])
         delete this.column.temp['chem-scaffold-filter'];
       this.bitset = null;
-    } else if (wu(this.dataFrame!.rows.filters).has(`${this.columnName}: ${this.filterSummary}`)) {
+    }
+    else if (wu(this.dataFrame!.rows.filters).has(`${this.columnName}: ${this.filterSummary}`)) {
       // some other filter is already filtering for the exact same thing
       return;
-    } else {
+    }
+    else {
       this._indicateProgress();
       try {
         this.bitset = await chemSubstructureSearchLibrary(
           this.column!, this.sketcher.getMolFile(), await this.sketcher.getSmarts());
+        this.dataFrame?.rows.requestFilter();
       } finally {
         this._indicateProgress(false);
       }
     }
-    this.dataFrame?.rows.requestFilter();
   }
 }
