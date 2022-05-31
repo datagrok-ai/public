@@ -1,54 +1,28 @@
 import * as grok from 'datagrok-api/grok';
 import * as DG from 'datagrok-api/dg';
 import * as ui from 'datagrok-api/ui';
-import * as GridUtils from './utils/GridUtils';
-import * as TextUtils from './utils/TextUtils';
+import * as GridUtils from '../utils/GridUtils';
+import * as TextUtils from '../utils/TextUtils';
 import * as rxjs from 'rxjs';
-import { GridCellRendererEx} from "./renderer/GridCellRendererEx";
+import { GridCellRendererEx} from "../renderer/GridCellRendererEx";
+import * as PinnedUtils from "./PinnedUtils";
+import {TableView} from "datagrok-api/dg";
 
-export function closeAllPinnedColumns(grid : DG.Grid)
-{
-  const dart = DG.toDart(grid);
-  let colPinned = null;
-  const nPinnedColCount =dart.m_arRowHeaders === undefined ? 0 : dart.m_arRowHeaders.length;
-  for(let n=0; n<nPinnedColCount; ++n) {
-    colPinned = dart.m_arRowHeaders[0];
-    colPinned.close();
-  }
-}
+const hSubscriber  = grok.events.onViewLayoutApplied.subscribe((layout : DG.ViewLayout) => {
+  const view : DG.TableView = layout.view as TableView;
+  const itViewers = view.viewers;
+  const arViewers = Array.from(itViewers);
 
-export function installPinnedColumns(grid : DG.Grid)
-{
-  closeAllPinnedColumns(grid);
-
-  let colGrid = null;
-  let settings = null;
-  const lstCols = grid.columns;
-  const arPinnedCols = new Array();
-
-  for(let nCol=0;nCol<lstCols.length; ++nCol) {
-    colGrid = lstCols.byIndex(nCol);
-    if(colGrid === null)
+  let viewer = null;
+  const nViewerCount = arViewers.length;
+  for (let n = 0; n < nViewerCount; ++n) {
+    viewer = arViewers[n];
+    if (viewer.type !== "Grid")
       continue;
 
-    settings = colGrid.settings;
-    if(settings !== null && settings !== undefined && settings.isPinned) {
-      arPinnedCols.push(colGrid);
-    }
+    PinnedUtils.installPinnedColumns(viewer as DG.Grid);
   }
-
-  arPinnedCols.sort((colOne, colTwo) => {
-    if(colOne.settings.idxPinned === colTwo.settings.idxPinned)
-      throw new Error("Pinned indices cannot be equal for different columns");
-
-    return colOne.settings.idxPinned < colTwo.settings.idxPinned ? -1 : 1;
-  });
-
-  for(let n=0;n<arPinnedCols.length; ++n) {
-    colGrid = arPinnedCols[n];
-    new PinnedColumn(colGrid);
-  }
-}
+});
 
 
 function getRenderer(cell : DG.GridCell) : GridCellRendererEx | DG.GridCellRenderer {
@@ -130,24 +104,7 @@ function notifyAllPinnedColsRowsResized(colPinnedSource : PinnedColumn, nHRows :
 }
 
 
-export function isPinnedColumn(colGrid : DG.GridColumn)
-{
-  const grid = colGrid.grid;
-  const dart = DG.toDart(grid);
 
-  if(dart.m_arRowHeaders === undefined)
-    return false;
-
-  let colPinned = null;
-  const nPinnedColCount = dart.m_arRowHeaders.length;
-  for(let nColPin=0; nColPin<nPinnedColCount; ++nColPin) {
-    colPinned = dart.m_arRowHeaders[nColPin];
-    if(DG.toDart(colPinned.m_colGrid) === DG.toDart(colGrid))
-      return true;
-  }
-
-  return false;
-}
 
 export class PinnedColumn {
 
@@ -171,7 +128,6 @@ export class PinnedColumn {
   private m_handlerMouseUp : any;
   private m_handlerMouseLeave : any;
   private m_handlerMouseMove : any;
-  private m_handlerContextMenu : any;
 
   constructor(colGrid : DG.GridColumn) {
     if (colGrid.cellType === 'html') {
@@ -183,9 +139,8 @@ export class PinnedColumn {
       throw new Error("Column '" + colGrid.name + "' is not attached to the grid.");
     }
 
-    if(isPinnedColumn(colGrid))
+    if(PinnedUtils.isPinnedColumn(colGrid))
       throw new Error("Column '" + colGrid.name + "' is already pinned.");
-
 
     const dart = DG.toDart(grid);
 
@@ -572,29 +527,6 @@ export class PinnedColumn {
         document.body.style.cursor = "auto";
       }
     });
-
-    const thisRowHeader = this;
-    this.m_handlerContextMenu = grok.events.onContextMenu.subscribe((args : any) => {
-      //this.m_handlerContextMenu = rxjs.fromEvent(viewTable.root, 'contextmenu').subscribe((e) => {
-      const e = args.causedBy;
-      const elem = document.elementFromPoint(e.clientX, e.clientY);//e.offsetY);
-      const b = elem === eCanvasThis;
-
-      if(b) {
-        let menu = args.args.menu;//DG.Menu.popup();
-
-        menu = menu.item("Unpin Column", (str : string) => {
-          thisRowHeader.close();
-        });
-
-        menu = menu.item("Unpin All Columns", (str : string) => {
-          closeAllPinnedColumns(grid);
-        });
-
-        e.preventDefault();
-        e.stopPropagation();
-      }
-    });
   }
 
   isPinned() : boolean {
@@ -658,9 +590,6 @@ export class PinnedColumn {
 
     this.m_handlerMouseMove.unsubscribe();
     this.m_handlerMouseMove = null;
-
-    this.m_handlerContextMenu.unsubscribe();
-    this.m_handlerContextMenu = null;
 
     const grid = this.m_colGrid.grid;
     const dart = DG.toDart(grid);

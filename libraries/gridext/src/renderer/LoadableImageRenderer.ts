@@ -2,7 +2,7 @@ import * as DG from 'datagrok-api/dg';
 import * as GridUtils from '../utils/GridUtils';
 import * as TextUtils from '../utils/TextUtils';
 import {GridCellRendererEx} from "./GridCellRendererEx";
-import {PinnedColumn} from "../PinnedColumn";
+import {PinnedColumn} from "../pinned/PinnedColumn";
 
 class ImageRequest {
   constructor(strIdImage : string, nW : number, nH : number) {
