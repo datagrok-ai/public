@@ -1,6 +1,6 @@
 {
   "name": "@datagrok/meta",
-  "version": "1.0.12",
+  "version": "1.0.13",
   "description": "Meta information for @datagrok scope",
   "dependencies": {
     "@babel/runtime": "^7.16.0",
@@ -1014,6 +1014,9 @@
       "dependencies": {
         "0.0.3": {
           "datagrok-api": "latest"
+        },
+        "1.0.0": {
+          "datagrok-api": "^1.1.5"
         }
       },
       "description": "Data for MolecularLiabilityBrowser"
