@@ -1,50 +1,47 @@
-import * as grok from 'datagrok-api/grok';
-import {category, expect, test} from '@datagrok-libraries/utils/src/test';
+import {category, test} from '@datagrok-libraries/utils/src/test';
+import {check} from './utils';
 
 
 category('Logical functions', () => {
-  const gfe = grok.functions.eval;
+  test('And', () => check({
+    'And(true, true)': true,
+    'And(true, false)': false,
+    'And(false, true)': false,
+    'And(false, false)': false,
+    'And(5 == 5, 10 < 20)': true,
+    'And(2, 3)': 3,
+    'And(0, 1)': 0,
+    'And(1, 1)': 1,
+  }));
 
-  test('And', async () => {
-    expect(await gfe('And(true, true)'), true);
-    expect(await gfe('And(true, false)'), false);
-    expect(await gfe('And(false, true)'), false);
-    expect(await gfe('And(false, false)'), false);
-    expect(await gfe('And(5 == 5, 10 < 20)'), true);
-    expect(await gfe('And(2, 3)'), 3);
-    expect(await gfe('And(0, 1)'), 0);
-    expect(await gfe('And(1, 1)'), 1);
-  });
+  test('Not', () => check({
+    'Not(true)': false,
+    'Not(false)': true,
+    'Not(1)': false,
+    'Not(0)': true,
+  }));
 
-  test('Not', async () => {
-    expect(await gfe('Not(true)'), false);
-    expect(await gfe('Not(false)'), true);
-    expect(await gfe('Not(1)'), false);
-    expect(await gfe('Not(0)'), true);
-  });
+  test('Or', () => check({
+    'Or(true, true)': true,
+    'Or(true, false)': true,
+    'Or(false, true)': true,
+    'Or(false, false)': false,
+    'Or(5 == 6, 20 < 10)': false,
+    'Or(2, 3)': 2,
+    'Or(0, 1)': 1,
+    'Or(1, 1)': 1,
+  }));
 
-  test('Or', async () => {
-    expect(await gfe('Or(true, true)'), true);
-    expect(await gfe('Or(true, false)'), true);
-    expect(await gfe('Or(false, true)'), true);
-    expect(await gfe('Or(false, false)'), false);
-    expect(await gfe('Or(5 == 6, 20 < 10)'), false);
-    expect(await gfe('Or(2, 3)'), 2);
-    expect(await gfe('Or(0, 1)'), 1);
-    expect(await gfe('Or(1, 1)'), 1);
-  });
-
-
-  test('Xor', async () => {
-    expect(await gfe('Xor(true, true)'), false);
-    expect(await gfe('Xor(true, false)'), true);
-    expect(await gfe('Xor(false, true)'), true);
-    expect(await gfe('Xor(false, false)'), false);
-    expect(await gfe('Xor(5 == 6, 20 < 10)'), false);
-    expect(await gfe('Xor(5 == 5, 10 < 20)'), false);
-    expect(await gfe('Xor(2, 3)'), false);
-    expect(await gfe('Xor(2, 2)'), false);
-    expect(await gfe('Xor(1, 0)'), true);
-    expect(await gfe('Xor(1, 1)'), false);
-  });
+  test('Xor', () => check({
+    'Xor(true, true)': false,
+    'Xor(true, false)': true,
+    'Xor(false, true)': true,
+    'Xor(false, false)': false,
+    'Xor(5 == 6, 20 < 10)': false,
+    'Xor(5 == 5, 10 < 20)': false,
+    'Xor(2, 3)': false,
+    'Xor(2, 2)': false,
+    'Xor(1, 0)': true,
+    'Xor(1, 1)': false,
+  }));
 });

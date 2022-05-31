@@ -1,162 +1,160 @@
-import * as grok from 'datagrok-api/grok';
-import {category, expect, test} from '@datagrok-libraries/utils/src/test';
+import {category, test} from '@datagrok-libraries/utils/src/test';
+import {check} from './utils';
 
 
 category('Text functions', () => {
-  const gfe = grok.functions.eval;
+  test('Add', () => check({
+    'Add("bitter", "sweet")': 'bittersweet',
+    'Add("", "right")': 'right',
+    'Add("left", "")': 'left',
+    'Add("", "")': '',
+  }));
 
-  test('Add', async () => {
-    expect(await gfe('Add("bitter", "sweet")'), 'bittersweet');
-    expect(await gfe('Add("", "right")'), 'right');
-    expect(await gfe('Add("left", "")'), 'left');
-    expect(await gfe('Add("", "")'), '');
-  });
+  test('Contains', () => check({
+    'Contains("stormy weather", "weather")': true,
+    'Contains("stormy weather", "sunny")': false,
+    'Contains("empty", "")': true,
+    'Contains("Case", "case")': false,
+  }));
 
-  test('Contains', async () => {
-    expect(await gfe('Contains("stormy weather", "weather")'), true);
-    expect(await gfe('Contains("stormy weather", "sunny")'), false);
-    expect(await gfe('Contains("empty", "")'), true);
-    expect(await gfe('Contains("Case", "case")'), false);
-  });
+  test('EndsWith', () => check({
+    'EndsWith("White Christmas", "Christmas")': true,
+    'EndsWith("White Christmas", "White")': false,
+    'EndsWith("White Christmas", "")': true,
+  }));
 
-  test('EndsWith', async () => {
-    expect(await gfe('EndsWith("White Christmas", "Christmas")'), true);
-    expect(await gfe('EndsWith("White Christmas", "White")'), false);
-    expect(await gfe('EndsWith("White Christmas", "")'), true);
-  });
+  test('Eq', () => check({
+    'Eq("sky", "sky")': true,
+    'Eq("", "")': true,
+    'Eq("SKY", "sky")': false,
+    'Eq(" sky ", "sky")': false,
+  }));
 
-  test('Eq', async () => {
-    expect(await gfe('Eq("sky", "sky")'), true);
-    expect(await gfe('Eq("", "")'), true);
-    expect(await gfe('Eq("SKY", "sky")'), false);
-    expect(await gfe('Eq(" sky ", "sky")'), false);
-  });
+  test('IsEmpty', () => check({
+    'IsEmpty("")': true,
+    'IsEmpty(null)': true,
+    'IsEmpty("dream")': false,
+    'IsEmpty("     ")': false,
+  }));
 
-  test('IsEmpty', async () => {
-    expect(await gfe('IsEmpty("")'), true);
-    expect(await gfe('IsEmpty(null)'), true);
-    expect(await gfe('IsEmpty("dream")'), false);
-    expect(await gfe('IsEmpty("     ")'), false);
-  });
+  test('IsNotEmpty', () => check({
+    'IsNotEmpty("")': false,
+    'IsNotEmpty(null)': false,
+    'IsNotEmpty("dream")': true,
+    'IsNotEmpty("     ")': true,
+  }));
 
-  test('IsNotEmpty', async () => {
-    expect(await gfe('IsNotEmpty("")'), false);
-    expect(await gfe('IsNotEmpty(null)'), false);
-    expect(await gfe('IsNotEmpty("dream")'), true);
-    expect(await gfe('IsNotEmpty("     ")'), true);
-  });
+  test('Length', () => check({
+    'Length("supercalifragilisticexpialidocious")': 34,
+    'Length("bright dawn")': 11,
+    'Length("")': 0,
+  }));
 
-  test('Length', async () => {
-    expect(await gfe('Length("supercalifragilisticexpialidocious")'), 34);
-    expect(await gfe('Length("bright dawn")'), 11);
-    expect(await gfe('Length("")'), 0);
-  });
+  test('NotEq', () => check({
+    'NotEq("sky", "sky")': false,
+    'NotEq("", "")': false,
+    'NotEq("SKY", "sky")': true,
+    'NotEq(" sky ", "sky")': true,
+  }));
 
-  test('NotEq', async () => {
-    expect(await gfe('NotEq("sky", "sky")'), false);
-    expect(await gfe('NotEq("", "")'), false);
-    expect(await gfe('NotEq("SKY", "sky")'), true);
-    expect(await gfe('NotEq(" sky ", "sky")'), true);
-  });
+  test('RegExpContains', () => check({
+    'RegExpContains("stormy weather", "weather")': true,
+    'RegExpContains("stormy weather", "sunny")': false,
+    'RegExpContains("empty", "")': true,
+    'RegExpContains("Case", "case")': false,
+    'RegExpContains("name@gmail.com", "[\w.\-]{0,25}@(hotmail|gmail)\.com")': true,
+  }));
 
-  test('RegExpContains', async () => {
-    expect(await gfe('RegExpContains("stormy weather", "weather")'), true);
-    expect(await gfe('RegExpContains("stormy weather", "sunny")'), false);
-    expect(await gfe('RegExpContains("empty", "")'), true);
-    expect(await gfe('RegExpContains("Case", "case")'), false);
-    expect(await gfe('RegExpContains("name@gmail.com", "[\w.\-]{0,25}@(hotmail|gmail)\.com")'), true);
-  });
+  test('RegExpExtract', () => check({
+    'RegExpExtract("Hello, world!", "l+", 0)': 'll',
+    'RegExpExtract("Hello, world!", "l+", 1)': 'l',
+  }));
 
-  test('RegExpExtract', async () => {
-    expect(await gfe('RegExpExtract("Hello, world!", "l+", 0)'), 'll');
-    expect(await gfe('RegExpExtract("Hello, world!", "l+", 1)'), 'l');
-  });
+  test('RegExpReplace', () => check({
+    'RegExpReplace("Hello, world!", "l+", "LL")': 'HeLLo, worLLd!',
+  }));
 
-  test('RegExpReplace', async () => {
-    expect(await gfe('RegExpReplace("Hello, world!", "l+", "LL")'), 'HeLLo, worLLd!');
-  });
+  test('ReplaceAll', () => check({
+    'ReplaceAll("New York", "York", "Orleans")': 'New Orleans',
+    'ReplaceAll("every", "", ".")': '.e.v.e.r.y.',
+    'ReplaceAll("day-to-day", "-", " ")': 'day to day',
+    'ReplaceAll("spaceless", " ", "-")': 'spaceless',
+  }));
 
-  test('ReplaceAll', async () => {
-    expect(await gfe('ReplaceAll("New York", "York", "Orleans")'), 'New Orleans');
-    expect(await gfe('ReplaceAll("every", "", ".")'), '.e.v.e.r.y.');
-    expect(await gfe('ReplaceAll("day-to-day", "-", " ")'), 'day to day');
-    expect(await gfe('ReplaceAll("spaceless", " ", "-")'), 'spaceless');
-  });
+  test('SplitString', () => check({
+    'SplitString("a,b,c,d", ",", 0)': 'a',
+    'SplitString("devil-may-care", "-", 1)': 'may',
+  }));
 
-  test('SplitString', async () => {
-    expect(await gfe('SplitString("a,b,c,d", ",", 0)'), 'a');
-    expect(await gfe('SplitString("devil-may-care", "-", 1)'), 'may');
-  });
+  test('StartsWith', () => check({
+    'StartsWith("Sunrise", "Sun")': true,
+    'StartsWith("Sunrise", "sun")': false,
+    'StartsWith("Sunrise", "moon")': false,
+    'StartsWith("Sunrise", "")': true,
+  }));
 
-  test('StartsWith', async () => {
-    expect(await gfe('StartsWith("Sunrise", "Sun")'), true);
-    expect(await gfe('StartsWith("Sunrise", "sun")'), false);
-    expect(await gfe('StartsWith("Sunrise", "moon")'), false);
-    expect(await gfe('StartsWith("Sunrise", "")'), true);
-  });
+  test('StrFind', () => check({
+    'StrFind("Hello, world!", "Hello")': 0,
+    'StrFind("Hello, world!", "hello")': -1,
+    'StrFind("Hello, world!", "world")': 7,
+    'StrFind("Hello, world!", "sun")': -1,
+    'StrFind("Hello, world!", "Hello, world!")': 0,
+    'StrFind("", "moon")': -1,
+    'StrFind("moon", "")': -1,
+    'StrFind("", "")': -1,
+  }));
 
-  test('StrFind', async () => {
-    expect(await gfe('StrFind("Hello, world!", "Hello")'), 0);
-    expect(await gfe('StrFind("Hello, world!", "hello")'), -1);
-    expect(await gfe('StrFind("Hello, world!", "world")'), 7);
-    expect(await gfe('StrFind("Hello, world!", "sun")'), -1);
-    expect(await gfe('StrFind("Hello, world!", "Hello, world!")'), 0);
-    expect(await gfe('StrFind("", "moon")'), -1);
-    expect(await gfe('StrFind("moon", "")'), -1);
-    expect(await gfe('StrFind("", "")'), -1);
-  });
+  test('StrLeft', () => check({
+    'StrLeft("crystal", 100)': 'crystal',
+    'StrLeft("crystal", 3)': 'cry',
+    'StrLeft("crystal", 0)': '',
+    'StrLeft("", 3)': '',
+    'StrLeft("crystal", -1)': 'crysta',
+    'StrLeft("crystal", -7)': '',
+    'StrLeft("crystal", -10)': '',
+  }));
 
-  test('StrLeft', async () => {
-    expect(await gfe('StrLeft("crystal", 100)'), 'crystal');
-    expect(await gfe('StrLeft("crystal", 3)'), 'cry');
-    expect(await gfe('StrLeft("crystal", 0)'), '');
-    expect(await gfe('StrLeft("", 3)'), '');
-    expect(await gfe('StrLeft("crystal", -1)'), 'crysta');
-    expect(await gfe('StrLeft("crystal", -7)'), '');
-    expect(await gfe('StrLeft("crystal", -10)'), '');
-  });
+  test('StrRight', () => check({
+    'StrRight("crystal", 100)': 'crystal',
+    'StrRight("crystal", 3)': 'tal',
+    'StrRight("crystal", 0)': '',
+    'StrRight("", 3)': '',
+    'StrRight("crystal", -1)': 'rystal',
+    'StrRight("crystal", -7)': '',
+    'StrRight("crystal", -10)': '',
+  }));
 
-  test('StrRight', async () => {
-    expect(await gfe('StrRight("crystal", 100)'), 'crystal');
-    expect(await gfe('StrRight("crystal", 3)'), 'tal');
-    expect(await gfe('StrRight("crystal", 0)'), '');
-    expect(await gfe('StrRight("", 3)'), '');
-    expect(await gfe('StrRight("crystal", -1)'), 'rystal');
-    expect(await gfe('StrRight("crystal", -7)'), '');
-    expect(await gfe('StrRight("crystal", -10)'), '');
-  });
+  test('StrRepeat', () => check({
+    'StrRepeat("a", 5)': 'aaaaa',
+    'StrRepeat("ma", 2)': 'mama',
+    'StrRepeat("", 2)': '',
+    'StrRepeat("day", 1)': 'day',
+    'StrRepeat("light", 0)': '',
+  }));
 
-  test('StrRepeat', async () => {
-    expect(await gfe('StrRepeat("a", 5)'), 'aaaaa');
-    expect(await gfe('StrRepeat("ma", 2)'), 'mama');
-    expect(await gfe('StrRepeat("", 2)'), '');
-    expect(await gfe('StrRepeat("day", 1)'), 'day');
-    expect(await gfe('StrRepeat("light", 0)'), '');
-  });
+  test('Substring', () => check({
+    'Substring("Snow storm", 5, 10)': 'storm',
+    'Substring("stars", 0, 5)': 'stars',
+    'Substring("galaxy", 0, 0)': '',
+    'Substring("", 0, 0)': '',
+  }));
 
-  test('Substring', async () => {
-    expect(await gfe('Substring("Snow storm", 5, 10)'), 'storm');
-    expect(await gfe('Substring("stars", 0, 5)'), 'stars');
-    expect(await gfe('Substring("galaxy", 0, 0)'), '');
-    expect(await gfe('Substring("", 0, 0)'), '');
-  });
+  test('ToLowerCase', () => check({
+    'ToLowerCase("ICE")': 'ice',
+    'ToLowerCase("snow")': 'snow',
+    'ToLowerCase("Wind")': 'wind',
+  }));
 
-  test('ToLowerCase', async () => {
-    expect(await gfe('ToLowerCase("ICE")'), 'ice');
-    expect(await gfe('ToLowerCase("snow")'), 'snow');
-    expect(await gfe('ToLowerCase("Wind")'), 'wind');
-  });
+  test('ToUpperCase', () => check({
+    'ToUpperCase("home")': 'HOME',
+    'ToUpperCase("CAT")': 'CAT',
+    'ToUpperCase("Toy")': 'TOY',
+  }));
 
-  test('ToUpperCase', async () => {
-    expect(await gfe('ToUpperCase("home")'), 'HOME');
-    expect(await gfe('ToUpperCase("CAT")'), 'CAT');
-    expect(await gfe('ToUpperCase("Toy")'), 'TOY');
-  });
-
-  test('Trim', async () => {
-    expect(await gfe('Trim("   Outer space   ")'), 'Outer space');
-    expect(await gfe('Trim("spacecraft")'), 'spacecraft');
-    expect(await gfe('Trim("   ")'), '');
-    expect(await gfe('Trim("")'), '');
-  });
+  test('Trim', () => check({
+    'Trim("   Outer space   ")': 'Outer space',
+    'Trim("spacecraft")': 'spacecraft',
+    'Trim("   ")': '',
+    'Trim("")': '',
+  }));
 });
