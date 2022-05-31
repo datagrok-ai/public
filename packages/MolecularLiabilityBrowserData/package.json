@@ -1,7 +1,7 @@
 {
   "name": "@datagrok/molecular-liability-browser-data",
   "friendlyName": "MolecularLiabilityBrowserData",
-  "version": "0.0.3",
+  "version": "1.0.0",
   "description": "Data for MolecularLiabilityBrowser",
   "repository": {
     "type": "git",
@@ -10,10 +10,10 @@
   },
   "sources": [],
   "dependencies": {
-    "datagrok-api": "latest",
+    "@datagrok-libraries/utils": "latest",
+    "datagrok-api": "^1.1.5",
     "cash-dom": "latest",
     "dayjs": "latest",
-    "@datagrok-libraries/utils": "latest",
     "ts-loader": "^9.2.5",
     "typescript": "^4.5.4"
   },
