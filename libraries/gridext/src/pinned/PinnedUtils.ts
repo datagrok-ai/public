@@ -102,7 +102,7 @@ export function handleContextMenu(args : any, fnMenuCallback : Function) : void 
   const colGrid = cell.gridColumn;
   if(colGrid.cellType === "html") {
     const renderer = GridUtils.getGridColumnRenderer(colGrid);
-    if((renderer instanceof GridCellRendererEx)) {
+    if(!(renderer instanceof GridCellRendererEx)) {
       return;
     }
   }
