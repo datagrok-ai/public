@@ -472,7 +472,7 @@ export namespace chem {
       'molStringsColumn': column,
       'molString': pattern,
       'substructLibrary':
-        !(settings?.hasOwnProperty('substructLibrary') && !settings.substructLibrary),
+        (settings?.hasOwnProperty('substructLibrary') && settings.substructLibrary),
       'molStringSmarts': ''
     })).get(0);
   }

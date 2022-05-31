@@ -88,6 +88,40 @@ category('chem', () => {
     await _testSearchSubstructure(df, 'smiles1', testSubstructure, [1, 4]);
   });
 
+  test('searchSustructurePerformanceWithoutLibrary', async () => {
+    const df = grok.data.demo.molecules(10000);
+
+    const startTime = performance.now();
+    await grok.chem.searchSubstructure(df.columns.byName('smiles'), 'c1ccccc1')!;
+    const midTime1 = performance.now();
+    for (let i = 0; i < 3; i++)
+      await grok.chem.searchSubstructure(df.columns.byName('smiles'), 'c1ccccc1')!;
+    const midTime2 = performance.now();
+    await grok.chem.searchSubstructure(df.columns.byName('smiles'), 'C1CC1')!;
+    const endTime = performance.now();
+
+    console.log(`first Call to WithoutLibrary took ${midTime1 - startTime} milliseconds`);
+    console.log(`loop Call to WithoutLibrary took ${midTime2 - midTime1} milliseconds`);
+    console.log(`last Call to WithoutLibrary took ${endTime - midTime2} milliseconds`);
+  });
+
+  test('searchSustructurePerformanceWithLibrary', async () => {
+    const df = grok.data.demo.molecules(10000);
+
+    const startTime = performance.now();
+    await grok.chem.searchSubstructure(df.columns.byName('smiles'), 'c1ccccc1', {substructLibrary: true})!;
+    const midTime1 = performance.now();
+    for (let i = 0; i < 3; i++)
+      await grok.chem.searchSubstructure(df.columns.byName('smiles'), 'c1ccccc1', {substructLibrary: true})!;
+    const midTime2 = performance.now();
+    await grok.chem.searchSubstructure(df.columns.byName('smiles'), 'C1CC1', {substructLibrary: true})!;
+    const endTime = performance.now();
+
+    console.log(`first Call to WithLibrary took ${midTime1 - startTime} milliseconds`);
+    console.log(`loop Call to WithLibrary took ${midTime2 - midTime1} milliseconds`);
+    console.log(`last Call to WithLibrary took ${endTime - midTime2} milliseconds`);
+  });
+
   test('findSimilar.sar-small', async () => {
     const dfInput = DG.DataFrame.fromCsv(await loadFileAsText('sar-small.csv'));
     const colInput = dfInput.columns.byIndex(0);

@@ -1,6 +1,4 @@
 import {RdKitServiceWorkerSimilarity} from './rdkit-service-worker-similarity';
-import {rdKitFingerprintToBitArray} from '../utils/chem-common';
-import BitArray from '@datagrok-libraries/utils/src/bit-array';
 import {isMolBlock} from '../utils/chem-utils';
 import {RDModule} from "../rdkit-api";
 
@@ -37,24 +35,17 @@ export class RdKitServiceWorkerSubstructure extends RdKitServiceWorkerSimilarity
         }
       } catch (e) {
         console.error('Chem | Possibly a malformed molString: `' + item + '`');
-        // preserving indices with a placeholder
         mol?.delete();
         mol = this._rdKitModule.get_mol('');
-        // Won't rethrow
       }
       this._rdKitMols.push(mol);
-      // if (this._patternFps)
-      //   this._patternFps.push(fp!);
       if (normalizeCoordinates)
         molIdxToHash.push(item);
     }
     return {molIdxToHash, hashToMolblock};
   }
 
-  searchSubstructure(queryMolString: string, querySmarts: string, patternFps: BitArray[]): string {
-    console.log('8009');
-    // const myfps = patternFps;
-    // patternFps = this._patternFps!;
+  searchSubstructure(queryMolString: string, querySmarts: string, patternFps: Uint8Array[]): string {
     const matches: number[] = [];
     if (this._rdKitMols) {
       try {
@@ -74,11 +65,8 @@ export class RdKitServiceWorkerSubstructure extends RdKitServiceWorkerSimilarity
           if (queryMol && queryMol.is_valid()) {
             if (patternFps) {
               const fpRdKit = queryMol.get_pattern_fp_as_uint8array(this._patternFpLength);
-              const queryMolFp = rdKitFingerprintToBitArray(fpRdKit);
               for (let i = 0; i < patternFps.length; ++i) {
-                // nor effevtive
-                const crossedFp = BitArray.fromAnd(queryMolFp, patternFps[i]);
-                if (crossedFp.equals(queryMolFp))
+                if (patternFps[i].every((el, index) => (el & fpRdKit[i]) == fpRdKit[i]))
                   if (this._rdKitMols[i]!.get_substruct_match(queryMol) !== '{}') // Is patternFP iff?
                     matches.push(i);
               }

@@ -69,7 +69,7 @@ export class RdKitService {
     }, {molIdxToHash: [], hashToMolblock: {}}));
   }
 
-  async searchSubstructure(query: string, querySmarts: string, patternFgs: BitArray[]): Promise<any> {
+  async searchSubstructure(query: string, querySmarts: string, patternFgs: Uint8Array[]): Promise<any> {
     const t = this;
     return this._doParallel(
       (i: number, nWorkers: number) => {
@@ -82,7 +82,7 @@ export class RdKitService {
           data[k] = JSON.parse(data[k]);
           data[k] = data[k].map((a: number) => a + t.segmentLength * k);
         }
-        return [].concat.apply([], data);
+        return [].concat(...data);
       });
   }
 
@@ -93,7 +93,7 @@ export class RdKitService {
         return t.parallelWorkers[i].getFingerprints(fingerprintType);
       },
       (data: any) => {
-        return [].concat.apply([], data);
+        return [].concat(...data);
       })).map(
       (obj: any) =>
       // We deliberately choose Uint32Array over DG.BitSet here
