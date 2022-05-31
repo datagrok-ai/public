@@ -13,7 +13,7 @@ export class ChoiceInput {
 
   static async construct (funcToGetList: Function) {
    // @ts-ignore
-    let field = ui.choiceInput('Lookup field',[], await funcToGetList());
+    let field = ui.choiceInput('Groups',[], await funcToGetList());
 
     field.input.setAttribute('multiple', '');
     let choices = new Choices(field.input, {
