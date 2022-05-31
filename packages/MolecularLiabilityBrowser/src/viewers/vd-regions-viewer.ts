@@ -13,6 +13,8 @@ export enum VdRegionType {
   CDR = 'cdr',
 }
 
+const vrt = VdRegionType;
+
 /** Describes V-DOMAIN (IG and TR) region (of multiple alignment)
  * https://www.imgt.org/IMGTScientificChart/Numbering/IMGTIGVLsuperfamily.html
  */
@@ -36,43 +38,41 @@ export class VdRegion {
     this.endPositionName = endPositionName;
   }
 
-  public toString(): string {
-    return `type: '${this.type}', name: '${this.name}', ` +
-      `start: '${this.startPositionName}', end: '${this.endPositionName}'`;
-  }
+  // public toString(): string {
+  //   return `type: '${this.type}', name: '${this.name}', ` +
+  //     `start: '${this.startPositionName}', end: '${this.endPositionName}'`;
+  // }
 }
 
-export class RegionViewer {
-  private readonly region: VdRegion;
+// Positions of regions for numbering schemes
+// http://www.bioinf.org.uk/abs/info.html
 
-  //#region -- Design --
-  private root: HTMLElement;
+const imgtRegions: VdRegion[] = [
+  new VdRegion(vrt.FR, 'FR1', '1', '26'),
+  new VdRegion(vrt.CDR, 'CDR1', '27', '38'), // 27-32
+  new VdRegion(vrt.FR, 'FR2', '39', '55'),
+  new VdRegion(vrt.CDR, 'CDR2', '56', '65'),
+  new VdRegion(vrt.FR, 'FR3', '66', '104'),
+  new VdRegion(vrt.CDR, 'CDR3', '105', '117'),
+  new VdRegion(vrt.FR, 'FR4', '118', '128'),
+];
 
-  //#endregion -- Design --
+const kabatRegions: VdRegion[] = [
+  new VdRegion(vrt.FR, 'FR1', '1', '26'),
+  new VdRegion(vrt.CDR, 'CDR1', '27', '38'), // L24-L34
+  new VdRegion(vrt.FR, 'FR2', '39', '55'),
+  new VdRegion(vrt.CDR, 'CDR2', '56', '65'),
+  new VdRegion(vrt.FR, 'FR3', '66', '104'),
+  new VdRegion(vrt.CDR, 'CDR3', '105', '117'),
+  new VdRegion(vrt.FR, 'FR4', '118', '128'),
 
-  constructor(region: VdRegion) {
-    this.region = region;
-  }
-
-  public init() {
-    const label: string = `start: ${this.region.startPositionName}, end: ${this.region.endPositionName}`;
-    this.root = ui.div([ui.inlineText([label])]);
-  }
-}
+];
 
 /** Viewer with tabs based on description of chain regions.
  *  Used to define regions of an immunoglobulin LC.
  */
-export class RegionSelectorViewer {
-  private readonly regions: VdRegion[] = [
-    new VdRegion(VdRegionType.FR, 'FR1', '1', '26'),
-    new VdRegion(VdRegionType.CDR, 'CDR1', '27', '38'),
-    new VdRegion(VdRegionType.FR, 'FR2', '39', '55'),
-    new VdRegion(VdRegionType.CDR, 'CDR2', '56', '65'),
-    new VdRegion(VdRegionType.FR, 'FR3', '66', '104'),
-    new VdRegion(VdRegionType.CDR, 'CDR3', '105', '117'),
-    new VdRegion(VdRegionType.FR, 'FR4', '118', '128'),
-  ];
+export class VdRegionsViewer {
+  private readonly regions: VdRegion[] = imgtRegions;
 
   private mlbView: DG.TableView;
 
@@ -88,13 +88,6 @@ export class RegionSelectorViewer {
   private root: HTMLElement;
 
   private regionTabs: DG.TabControl;
-
-  // private heavyDiv: HTMLDivElement;
-  // private lightDiv: HTMLDivElement;
-
-  private heavyWL: DG.Widget;
-  //private heavyWL: DG.Widget;
-  // private lightWL: WebLogo;
 
   //#endregion -- Design --
 
@@ -124,25 +117,15 @@ export class RegionSelectorViewer {
 
     //#endregion regionsDF with filter
 
-    this.heavyWL = await this.mlbView.dataFrame.plot.fromType('WebLogo', {sequenceColumnName: 'Heavy chain sequence'});
-    this.heavyWL.root.style.background = 'window';
-
-    // this.heavyDiv = ui.div([ui.inlineText(['Heavy blue']), this.heavyWL.root], {style: {width: '20%;'}});
-    // this.heavyDiv.style.background = 'blue';
-    // this.heavyDiv.appendChild(this.heavyWL.root);
-
-    // this.lightDiv = ui.div([ui.inlineText(['Light yellow'])], {style: {width: '20%;'}});
-    // this.lightDiv.style.background = 'yellow';
-
     this.root = ui.box(/*[this.heavyDiv, this.lightDiv]*/);
     // this.root.style.background = '#FFEEEE';
 
-    const rootNode: DG.DockNode = this.mlbView.dockManager.dock(this.root, DG.DOCK_TYPE.TOP);
+    const rootNode: DG.DockNode = this.mlbView.dockManager.dock(this.root, DG.DOCK_TYPE.DOWN);
 
     // this.root.appendChild(this.heavyDiv);
     // this.root.appendChild(this.lightDiv);
 
-    this.mlbView.dockManager.dock(this.regionsFg.root, DG.DOCK_TYPE.LEFT, rootNode, 'Filter regions', 0.2);
+    // this.mlbView.dockManager.dock(this.regionsFg.root, DG.DOCK_TYPE.LEFT, rootNode, 'Filter regions', 0.2);
 
     ui.onSizeChanged(this.root).subscribe(this.rootOnSizeChanged.bind(this));
     // rxjs.fromEvent(this.root, 'mousemove').subscribe(this.onMouseMoveRoot.bind(this));
@@ -195,11 +178,11 @@ export class RegionSelectorViewer {
       this.root.removeChild(this.mainLayout);
       this.mainLayout = null;
     }
-    console.log('RegionsSelectorViewer.destroyView()');
+    console.log('VdRegionsViewer.destroyView()');
   }
 
   private async buildView(): Promise<void> {
-    console.log('RegionSelectorViewer.buildView()');
+    console.log('VdRegionsViewer.buildView()');
 
     // const regionsIndices = this.regionsDf.filter.getSelectedIndexes();
     const chainList = ['Heavy', 'Light'];
@@ -209,16 +192,18 @@ export class RegionSelectorViewer {
     this.logos = [];
 
     for (let regionI = 0; regionI < regionsFiltered.length; regionI++) {
-      this.logos[regionI] = {};
+      const regionChains: { [chain: string]: WebLogo } = {};
       for (const chain of chainList) {
         const region: VdRegion = regionsFiltered[regionI];
-        this.logos[regionI][chain] = (await this.mlbView.dataFrame.plot.fromType('WebLogo', {
+        regionChains[chain] = (await this.mlbView.dataFrame.plot.fromType('WebLogo', {
           sequenceColumnName: `${chain} chain sequence`,
           startPositionName: region.startPositionName,
           endPositionName: region.endPositionName,
           fixWidth: true,
         })) as unknown as WebLogo;
       }
+      // WebLogo creation fires onRootSizeChanged event even before control being added to this.logos
+      this.logos[regionI] = regionChains;
     }
 
     // ui.tableFromMap()
@@ -308,4 +293,7 @@ export class RegionSelectorViewer {
   }
 
   //#endregion -- Events handling of Regions filter --
+  setScheme(scheme: string) {
+
+  }
 }

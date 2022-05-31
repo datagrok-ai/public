@@ -4,6 +4,7 @@ import sys
 from types import SimpleNamespace
 
 import pandas as pd
+import numpy as np
 import re
 import orjson as json
 
@@ -25,10 +26,10 @@ scheme_list = ['chothia', 'imgt', 'kabat']
 chain_list = ['heavy', 'light']
 
 
-def build_antibody_ma_table(antibody: sa.Table, scheme: str, chain: str, ma_path: str) -> sa.Table:
-    fn = os.path.join(ma_path, 'ma_{0}_{1}_{2}.csv'.format(scheme, chain, {'heavy': 'H', 'light': 'KL'}[chain]))
+def build_antibody_anarci_table(antibody: sa.Table, scheme: str, chain: str, anarci_path: str) -> sa.Table:
+    fn = os.path.join(anarci_path, 'anarci_{0}_{1}_{2}.csv'.format(scheme, chain, {'heavy': 'H', 'light': 'KL'}[chain]))
 
-    table_name = 'antibody_ma_{0}_{1}'.format(scheme, chain)
+    table_name = 'antibody_anarci_{0}_{1}'.format(scheme, chain)
     # Dynamic schema in SQLAlchemy
     # https://sparrigan.github.io/sql/sqla/2016/01/03/dynamic-tables.html
 
@@ -61,7 +62,7 @@ def build_antibody_ma_table(antibody: sa.Table, scheme: str, chain: str, ma_path
     return SimpleNamespace(src=fdf, dst=table)
 
 
-def build_schema(ma_path: str):
+def build_schema(anarci_path: str):
     antigen = sa.Table(
         'antigen', meta_v2,
         sa.Column('antigen_id', sa.Integer, primary_key=True, autoincrement=True),
@@ -107,24 +108,54 @@ def build_schema(ma_path: str):
         sa.Column('v_id', sa.String(), sa.ForeignKey(antibody.columns['v_id'])),
     )
 
-    antibody_ma_tables: dict[str, dict[str, any]] = \
-        dict([(
-            scheme,
-            dict([(
-                chain,
-                build_antibody_ma_table(antibody, scheme, chain, ma_path)
-            )  # ANARCI results file name
-                for chain in chain_list])
-        ) for scheme in scheme_list])
+    tree = sa.Table(
+        'tree', meta_v2,
+        sa.Column('CLONE', sa.Integer, primary_key=True),
+        sa.Column('NSEQ', sa.Integer, nullable=False),
+        sa.Column('NSITE', sapg.DOUBLE_PRECISION, nullable=False),
+        sa.Column('TREE_LENGTH', sapg.DOUBLE_PRECISION, nullable=False),
+        sa.Column('LHOOD', sapg.DOUBLE_PRECISION, nullable=False),
+        sa.Column('KAPPA_MLE', sapg.DOUBLE_PRECISION, nullable=False),
+        sa.Column('OMEGA_FWR_MLE', sapg.DOUBLE_PRECISION, nullable=False),
+        sa.Column('OMEGA_CDR_MLE', sapg.DOUBLE_PRECISION, nullable=False),
+        sa.Column('WRC_2_MLE', sapg.DOUBLE_PRECISION, nullable=False),
+        sa.Column('GYW_0_MLE', sapg.DOUBLE_PRECISION, nullable=False),
+        sa.Column('WA_1_MLE', sapg.DOUBLE_PRECISION, nullable=False),
+        sa.Column('TW_0_MLE', sapg.DOUBLE_PRECISION, nullable=False),
+        sa.Column('SYC_2_MLE', sapg.DOUBLE_PRECISION, nullable=False),
+        sa.Column('GRS_0_MLE', sapg.DOUBLE_PRECISION, nullable=False),
+        sa.Column('TREE', sa.String(), nullable=False),
+    )
+
+    # helper table to search tree/clone by antigen
+    antibody2tree = sa.Table(
+        'antibody2tree', meta_v2,
+        sa.Column('ab2tr_id', sa.Integer, primary_key=True, autoincrement=True),
+        sa.Column('CLONE', sa.Integer, sa.ForeignKey(tree.columns['CLONE'])),
+        sa.Column('v_id', sa.String(), sa.ForeignKey(antibody.columns['v_id'])),
+    )
+
+    # antibody_anarci_tables: dict[str, dict[str, any]] = \
+    #     dict([(
+    #         scheme,
+    #         dict([(
+    #             chain,
+    #             build_antibody_anarci_table(antibody, scheme, chain, anarci_path)
+    #         )  # ANARCI results file name
+    #             for chain in chain_list])
+    #     ) for scheme in scheme_list])
 
     return SimpleNamespace(
         antigen=antigen,
         antibody=antibody,
         antibody2antigen=antibody2antigen,
-        antibody_ma_tables=antibody_ma_tables)
+        tree=tree,
+        antibody2tree=antibody2tree,
+        # antibody_anarci_tables=antibody_anarci_tables
+    )
 
 
-def load_data_antibody_ma(conn: sae.Connection, antibody_df: pd.DataFrame, tables: dict[str, dict[str, any]]):
+def load_data_antibody_anarci(conn: sae.Connection, antibody_df: pd.DataFrame, tables: dict[str, dict[str, any]]):
     """
     There is no place to put position names in database table (only as a part of column name - bad idea).
     So we will not precalculate joined 'seq' column values.
@@ -139,6 +170,39 @@ def load_data_antibody_ma(conn: sae.Connection, antibody_df: pd.DataFrame, table
             sdf: pd.Dataframe = pd.read_sql_table(table_name=dst.name, schema=dst.schema, con=conn)
             fdf[~(fdf.Id.isin(sdf.Id)) & fdf.Id.isin(antibody_df.v_id)] \
                 .to_sql(name=dst.name, schema=dst.schema, con=conn, index=False, if_exists='append')
+
+
+def load_data_tree(conn: sae.Connection, antibody_df: pd.DataFrame, tree_f, dst: sa.Table):
+    fdf: pd.DataFrame = pd.read_csv(tree_f, sep='\t', skiprows=[1, ],
+                                    dtype={'CLONE': np.int32, })
+    sdf: pd.DataFrame = pd.read_sql_table(table_name=dst.name, schema=dst.schema, con=conn)
+    fdf[~(fdf.CLONE.isin(sdf.CLONE)) & (fdf['CLONE'] != 'REPERTOIRE')] \
+        .to_sql(name=dst.name, schema=dst.schema, con=conn, index=False, if_exists='append')
+
+
+vr_re = re.compile(r'VR\d+')
+
+
+def get_v_id_list(tree_txt) -> list[str]:
+    ids = vr_re.findall(tree_txt)
+    return ids
+
+
+def load_data_ab2tr(conn: sae.Connection, antibody_df: pd.DataFrame, tree_df, dst: sa.Table):
+    ab2tr_records: [{}] = []
+    for (_, tree_row) in tree_df.iterrows():
+        v_id_list: list[str] = get_v_id_list(tree_row['TREE'])
+        for v_id in v_id_list:
+            ab2tr_records.append({'CLONE': tree_row['CLONE'], 'v_id': v_id})
+    ab2tr_src = pd.DataFrame.from_records(ab2tr_records)
+
+    ab2tr_sdf = pd.read_sql_table(table_name=dst.name, schema=dst.schema, con=conn)
+    ab2tr_src[
+        ~(ab2tr_src.v_id.isin(ab2tr_sdf.v_id) & ab2tr_src.CLONE.isin(ab2tr_sdf.CLONE)) &
+        ab2tr_src.v_id.isin(antibody_df.v_id)
+        ] \
+        .to_sql(name=dst.name, schema=dst.schema, con=conn, index=False, if_exists='append')
+    k = 11
 
 
 @click.group(cls=DefaultGroup, default='main')
@@ -168,12 +232,15 @@ def cli():
 @click.option('--ab2ag', 'ab2ag_f',
               help='CSV file with antibody to antigen map',
               type=click.File('r'))
-@click.option('--ma-path', 'ma_path',
+@click.option('--tree', 'tree_f',
+              help='CSV file with trees of antibodies',
+              type=click.File('r'))
+@click.option('--anarci-path', 'anarci_path',
               help='Path to MA ANARCI .csv files',
               type=click.Path(exists=True))
 @click.pass_context
-def main(ctx, conn_str, ag_f, ab_f, ab2ag_f, ma_path):
-    s = build_schema(ma_path)
+def main(ctx, conn_str, ag_f, ab_f, ab2ag_f, tree_f, anarci_path):
+    s = build_schema(anarci_path)
 
     engine = sa.create_engine(conn_str)
 
@@ -223,7 +290,11 @@ def main(ctx, conn_str, ag_f, ab_f, ab2ag_f, ma_path):
             .to_sql(name=s.antibody2antigen.name, schema=s.antibody2antigen.schema, con=conn, index=False,
                     if_exists='append')
 
-        load_data_antibody_ma(conn, antibody_fdf, s.antibody_ma_tables)
+        # load_data_antibody_anarci(conn, antibody_fdf, s.antibody_anarci_tables)
+
+        load_data_tree(conn, antibody_fdf, tree_f, s.tree)
+        tree_sdf: pd.DataFrame = pd.read_sql_table(table_name=s.tree.name, schema=s.tree.schema, con=conn)
+        load_data_ab2tr(conn, antibody_fdf, tree_sdf, s.antibody2tree)
 
         k = 11
 

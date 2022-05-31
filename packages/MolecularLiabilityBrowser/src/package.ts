@@ -1,12 +1,14 @@
+import * as ui from 'datagrok-api/ui';
 import * as grok from 'datagrok-api/grok';
 import * as DG from 'datagrok-api/dg';
 
-import {MolecularLiabilityBrowser} from './molecular-liability-browser';
 import {PtmFilter} from './custom-filters';
 import {DataLoader} from './utils/data-loader';
 import {DataLoaderFiles} from './utils/data-loader-files';
+import {VdRegion, VdRegionsViewer} from './viewers/vd-regions-viewer';
+import {MolecularLiabilityBrowser} from './molecular-liability-browser';
 
-// import {DataLoaderDb} from './utils/data-loader-jnj';
+// import {DataLoaderDb} from './utils/data-loader-db';
 
 export const _package = new DG.Package();
 
@@ -14,15 +16,15 @@ export const _package = new DG.Package();
  */
 let dl: DataLoader;
 
-function getPathSegments(path: string) {
-  const parser = document.createElement('a');
-  parser.href = path;
-  const pathSegments = parser.pathname.split('/');
-  if (pathSegments.length > 4)
-    return pathSegments[4];
-  else
-    return null;
-}
+// function getPathSegments(path: string) {
+//   const parser = document.createElement('a');
+//   parser.href = path;
+//   const pathSegments = parser.pathname.split('/');
+//   if (pathSegments.length > 4)
+//     return pathSegments[4];
+//   else
+//     return null;
+// }
 
 //tags: init
 export async function init() {
@@ -49,10 +51,18 @@ export function ptmFilter() {
 //tags: app
 export async function MolecularLiabilityBrowserApp() {
   grok.shell.windows.showToolbox = false;
-  const vid = getPathSegments(<string><unknown>window.location);
+  const urlParams: URLSearchParams = new URLSearchParams(window.location.search);
 
   const app = new MolecularLiabilityBrowser(dl);
-  await app.init(vid);
+  await app.init(urlParams);
 }
 
 /* WebLogo viewer is registered in Bio package */
+
+//name: VdRegions
+//description: V-Domain regions viewer
+//tags: viewer, panel
+//output: viewer result
+export function vdRegionViewer() {
+  return new VdRegionsViewer();
+}

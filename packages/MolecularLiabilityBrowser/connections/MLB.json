@@ -1,7 +1,0 @@
-{
-    "name": "MLB",
-    "#type": "DataConnection",
-    "dataSource": "PostgreSQL",
-    "description": "Molecular Liability Browser data",
-    "tags": ["demo"]
-}

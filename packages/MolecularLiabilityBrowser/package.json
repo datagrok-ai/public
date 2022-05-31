@@ -1,7 +1,7 @@
 {
   "name": "@datagrok/molecular-liability-browser",
   "fullName": "MolecularLiabilityBrowser",
-  "version": "0.0.8",
+  "version": "0.0.9",
   "description": "MolecularLiabilityBrowser is a [package](https://datagrok.ai/help/develop/develop#packages) for the [Datagrok](https://datagrok.ai) platform.",
   "repository": {
     "type": "git",
@@ -17,14 +17,15 @@
     "css/vd-regions-viewer.css"
   ],
   "dependencies": {
-    "@datagrok-libraries/bio": "^0.0.16",
-    "@datagrok/bio": "^0.0.8",
+    "@datagrok-libraries/bio": "^1.0.0",
+    "@datagrok/bio": "^1.0.0",
     "@deck.gl/core": "^8.7.5",
     "@deck.gl/layers": "^8.7.5",
     "@luma.gl/constants": "^8.5.10",
     "@luma.gl/core": "^8.5.10",
     "@phylocanvas/phylocanvas.gl": "^1.43.0",
     "cash-dom": "latest",
+    "datagrok-api": "^1.1.5",
     "logojs-react": "^2.1.1",
     "rxjs": "^6.5.5",
     "ts-loader": "^9.2.5",
@@ -45,7 +46,7 @@
     "link-utils": "npm link @datagrok-libraries/utils",
     "link-bio": "npm link @datagrok-libraries/bio",
     "link-data": "npm link @datagrok/molecular-liability-browser-data",
-    "link-all": "npm link datagrok-api @datagrok-libraries/utils @datagrok-libraries/bio @datagrok/molecular-liability-browser-data",
+    "link-all": "npm link datagrok-api @datagrok-libraries/utils @datagrok-libraries/bio @datagrok/bio @datagrok/molecular-liability-browser-data",
     "debug-mlb": "grok publish local --rebuild",
     "local-mlb": "grok publish local",
     "build": "webpack",

@@ -47,7 +47,9 @@ export class DataLoaderDb extends DataLoader {
   async init() {
     // Here we should load files from src/externalData
     // But if we will use require(), commit will fail
-    await this.check_files(this._files);
+
+    // Checking files is disabled because it takes too long
+    // await this.check_files(this._files);
 
     this._filterProperties = JSON.parse(await _package.files.readAsText(this._files.filterProps));
     this._mutcodes = JSON.parse(await _package.files.readAsText(this._files.mutcodes));
@@ -61,6 +63,27 @@ export class DataLoaderDb extends DataLoader {
   async getVids(): Promise<string[]> {
     return await grok.functions.call(`${this._pName}:getVids`)
       .then((df: DG.DataFrame) => df.columns[0].toList());
+  }
+
+  async listAntigens(): Promise<DG.DataFrame> {
+    const df: DG.DataFrame = await grok.functions.call(`${this._pName}:listAntigens`);
+    return df;
+  }
+
+  async getMlbByAntigen(antigen: string): Promise<DG.DataFrame> {
+    const df: DG.DataFrame = await grok.functions.call(`${this._pName}:getMlbByAntigen`, {antigen: antigen});
+    return df;
+  }
+
+  async getTreeByAntigen(antigen: string): Promise<DG.DataFrame> {
+    const df: DG.DataFrame = await grok.functions.call(`${this._pName}:getTreeByAntigen`, {antigen: antigen});
+    return df;
+  }
+
+  async getAnarci(scheme: string, chain: string, antigen: string): Promise<DG.DataFrame> {
+    const df: DG.DataFrame = await grok.functions.call(
+      `${this._pName}:getAnarci_${scheme}_${chain}`, {antigen: antigen});
+    return df;
   }
 
   async getObservedPtmVids(): Promise<string[]> {
