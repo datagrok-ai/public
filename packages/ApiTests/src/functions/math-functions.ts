@@ -1,11 +1,9 @@
-import * as grok from 'datagrok-api/grok';
-import {category, expect, test} from '@datagrok-libraries/utils/src/test';
+import {category, test} from '@datagrok-libraries/utils/src/test';
+import {check} from './utils';
 
 
 category('Math functions', () => {
-  const gfe = grok.functions.eval;
-
-  test('Add', async () => {
-    expect(await gfe('Add(2, 10)'), 12);
-  });
+  test('Add', () => check({
+    'Add(2, 10)': 12,
+  }));
 });
